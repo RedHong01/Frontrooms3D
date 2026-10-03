@@ -49,7 +49,20 @@ Red: build the window's structure, not one pane; research what windows made sens
 | W1.4 Map landing | **New workflow window-landing** (clone proj_win), running in parallel with W1.3. It writes a clone-only MapWorld patch: an unscaled `Window {a}-{b}` root, the frame per side theme (face A into the non-tall cell), the map's own window trims dropped for kit windows, a render-only 16 mm stop band, a visible 6 mm `Glass_Window` slab (1.391 × 1.642) 12 mm behind the stops as a child of the pane, and the pane collider unchanged. Placeholder frames until G4 lands, then the real kit. Tests: 100 seeds, climb, Relay sight and nav unchanged, no colliders in the opening. Before/after frames on both faces, a 0.3 m close-up and the broken state. The result is the exact contract diff for the map chat and the promotion list | RUNNING |
 | W1.5 Glass | The slab uses the glass track's `FrontRooms/Glass` (`Glass_Window`, fix pass running). The break stages come from GD3, which hooks onto the same slab and window root. Ray tracing (G14) targets the visible slab | depends on the glass track + GD3 |
 | W1.6 Figma | The interactables workflow's three-view stage → `research/interactables/threeview/index.json` → 平面视觉 places K46–K47 in PROP KIT 2324:852 and K48+ in "PROP KIT · THREE-VIEW + ERA · CONT." (x 16577, y ≈ 25500), in its format | after W1.3 |
-| W1.7 In game | The map chat applies the contract; the visual chat promotes the kit FBX/JSON plus the glass shader and materials | after W1.4 + W1.5 |
+| W1.7 In game | The map chat applies the contract; the visual chat promotes the kit FBX/JSON plus the glass shader and materials | **after Red confirms the DW proposal** (D1.3) + W1.4 + W1.5 |
+
+## 0a'. DOOR MODEL UPDATE — D1 (Red, 2026-10-03 ~12:00: "research first, then a Figma proposal; implement after I confirm")
+
+Covers the door gap (RE8 construction, single-acting doors with real stops: option A decided), locked vs free doors from afar, the per-level door family (Lobby / Office / Run / true Exit, free + locked, shared grammar), the keyable lock (cylinder, plug, keyway, pins, deadbolt, lever as separate animatable parts), keys + tags + hosts, and the head-dip key shot. Windows (W1) go in the same proposal. **Nothing about doors or windows lands in the game before Red confirms.**
+
+| Step | What | Status |
+|---|---|---|
+| D1.1 Research | `research/interactables/02_period_hardware.md`, `04_door_re8_gap.md` (RE8 + slit evidence + two gap fixes), `05_locked_door_type.md` (free = wood-veneer office door; key door = painted steel back-of-house storeroom door; 6 / 12 / 20 m tests), `03_readability_placement_shots.md`; the head-dip shot is in the audit's ShotTimings proposal | DONE |
+| D1.2 Spec | `research/interactables/10_spec.md` (family, lock, keys, budgets, hero LOD0 + LOD1/LOD2, anchors) | DONE |
+| D1.3 Figma proposal | **New workflow doors-windows-proposal**: a new section **FRONTROOMS · DOORS + WINDOWS · PROPOSAL** (x 51297, y 2000), frames DW00–DW08 (problem → RE8 → gap fix → locked vs free from afar → family per level → the lock and key + head dip → windows → what changes and who does what → decisions). Phase 1 uses the research evidence now. Phase 2 fills the reserved `img:<Kit>_persp/_front` slots with model pre-renders when the interactables builds finish. RE8 reference media is listed for Red's download approval | RUNNING (phase 1) |
+| D1.4 Models | Interactables workflow build groups G1 (doors), G2 (lock + hardware), G3 (keys, tags, hosts, signage), then render, critic, fix and three-view. These are pre-renders for the proposal, not landing | RUNNING |
+| D1.5 Red confirms | Red reviews DW00–DW08 and picks or changes | WAIT-RED |
+| D1.6 Land | Promote the kit, then the map chat applies the door state machine (single-acting, its Phase 1 item 3), the window root and stop band, and SpawnKey hosts; the sound chat gets the events | after D1.5 |
 
 ## 0b. New tasks from Red (2026-10-03 ~10:3x)
 

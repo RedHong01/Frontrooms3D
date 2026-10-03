@@ -1,0 +1,182 @@
+// CLONE-ONLY probe (outlet workflow, 2026-10-03). Tests the map contract of
+// Documentation/research/outlets/02_code_paths.md §8.2 against the real map:
+//  1. faces: CollectWallFaces vs an independent walk over Cache.Edge;
+//  2. arch spans: face opening centre vs FrontRoomsMapWorld.CrossingPoint;
+//  3. geometry: every planned plate centre, raycast from 0.30 m in front along
+//     -normal, hits the shell collider at 0.30 m (on a solid wall at that height);
+//  4. determinism and lifecycle: RebuildChunk gives identical faces and plans,
+//     and the set registry drops the old set;
+//  5. cost: CollectWallFaces and Install time per chunk; no Collider under any set.
+// Run: Unity -batchmode -nographics -projectPath <clone> -executeMethod FrontRoomsOutletContractProbe.Run -logFile <log>
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsOutletContractProbe
+{
+    public static void Run()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        var outPath = Environment.GetEnvironmentVariable("OUTLET_PROBE_OUT") ?? "Temp/outlet_contract_probe.json";
+        var seeds = new[] { 0, 2554, 20388 };
+        sb.Append("{\n \"seeds\": [\n");
+        for (var si = 0; si < seeds.Length; si++)
+        {
+            var result = RunSeed(seeds[si], out var pass);
+            ok &= pass;
+            sb.Append(result).Append(si < seeds.Length - 1 ? ",\n" : "\n");
+        }
+        sb.Append(" ],\n \"pass\": ").Append(ok ? "true" : "false").Append("\n}\n");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
+        File.WriteAllText(outPath, sb.ToString());
+        Debug.Log("[OutletProbe] " + (ok ? "PASS" : "FAIL") + "\n" + sb);
+        EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    static string RunSeed(int seedOverride, out bool pass)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var root = new GameObject("OUTLET PROBE") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        FrontRoomsLevelProfile used = profile;
+        if (seedOverride != 0)
+        {
+            used = UnityEngine.Object.Instantiate(profile);
+            used.generation.seed = seedOverride;
+        }
+        world.Profile = used;
+        FrontRoomsWallFixtures.ProbeCollectMs = FrontRoomsWallFixtures.ProbeInstallMs = 0;
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        var collectMs = FrontRoomsWallFixtures.ProbeCollectMs;
+        var installMs = FrontRoomsWallFixtures.ProbeInstallMs;
+
+        var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+        int chunks = sets.Length, faces = 0, expected = 0, faceMismatch = 0, arches = 0, archMismatch = 0;
+        int fixtures = 0, hitOk = 0, hitMissNoNeighbour = 0, hitBad = 0, collidersUnderSets = 0, startAreaFaces = 0;
+        float worstArch = 0f, worstHit = 0f;
+        var badSamples = new List<string>();
+        var cs = MapGrid.CellSize;
+        var dirs = new[] { new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(-1, 0), new GridCoord(0, -1) };
+        foreach (var set in sets)
+        {
+            var origin = MapGrid.ChunkOrigin(set.coord);
+            // 1. Independent walk: every non-Open side of every cell of this chunk, outside the start area.
+            var mine = new HashSet<(int, int, int)>();
+            foreach (var f in set.faces)
+            {
+                var d = new GridCoord(f.behind.x - f.cell.x, f.behind.y - f.cell.y);
+                mine.Add((f.cell.x, f.cell.y, Array.IndexOf(dirs, d)));
+                if (world.InStartArea(f.cell) || world.InStartArea(f.behind)) startAreaFaces++;
+                if (world.Cache.Edge(f.cell, f.behind) != f.kind) faceMismatch++;
+            }
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var cell = new GridCoord(origin.x + i, origin.y + j);
+                if (world.InStartArea(cell)) continue;
+                for (var k = 0; k < 4; k++)
+                {
+                    var nb = cell + dirs[k];
+                    if (world.InStartArea(nb) || world.Cache.Edge(cell, nb) == EdgeKind.Open) continue;
+                    expected++;
+                    if (!mine.Contains((cell.x, cell.y, k))) faceMismatch++;
+                }
+            }
+            faces += set.faces.Count;
+
+            var chunkRoot = set.transform;
+            // 2. Arch spans against the map's own crossing point.
+            foreach (var f in set.faces)
+            {
+                if (f.kind != EdgeKind.Arch) continue;
+                arches++;
+                var centreLocal = f.origin - f.normal * ModuleUnits.WallHalf + f.along * ((f.openFrom + f.openTo) * .5f);
+                var err = Vector3.Distance(chunkRoot.TransformPoint(centreLocal), world.CrossingPoint(f.cell, f.behind));
+                worstArch = Mathf.Max(worstArch, err);
+                if (err > 1e-3f) archMismatch++;
+            }
+            // 3. Plate centres sit on solid shell at plate height.
+            foreach (var x in set.fixtures)
+            {
+                fixtures++;
+                var p = chunkRoot.TransformPoint(x.position);
+                var n = chunkRoot.TransformDirection(x.normal);
+                var hits = Physics.RaycastAll(p + n * .30f, -n, .40f, ~0, QueryTriggerInteraction.Ignore);
+                var shell = hits.Where(h => world.IsArchitecture(h.collider)).OrderBy(h => h.distance).ToArray();
+                var face = set.faces[x.face];
+                if (shell.Length == 0)
+                {
+                    if (!world.IsBuilt(face.behind)) hitMissNoNeighbour++;
+                    else { hitBad++; if (badSamples.Count < 8) badSamples.Add("miss " + face.cell + "->" + face.behind + " " + face.kind); }
+                    continue;
+                }
+                var e = Mathf.Abs(shell[0].distance - .30f);
+                worstHit = Mathf.Max(worstHit, e);
+                if (e <= .002f) hitOk++;
+                else { hitBad++; if (badSamples.Count < 8) badSamples.Add("dist " + shell[0].distance.ToString("0.000") + " " + face.cell + "->" + face.behind + " " + face.kind); }
+            }
+            collidersUnderSets += set.GetComponents<Collider>().Length;
+        }
+
+        // 4. Determinism and lifecycle on three chunks.
+        int rebuilt = 0, rebuildDiffs = 0;
+        var registryBefore = FrontRoomsWallFixtureSet.Registry.Count;
+        foreach (var set in sets.Take(3).ToArray())
+        {
+            var coord = set.coord;
+            var beforeFaces = Sig(set.faces);
+            var beforeFix = Sig(set.fixtures);
+            world.RebuildChunk(coord);
+            var again = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).FirstOrDefault(s => s.coord == coord && s != set);
+            rebuilt++;
+            if (again == null || Sig(again.faces) != beforeFaces || Sig(again.fixtures) != beforeFix) rebuildDiffs++;
+        }
+        var registryAfter = FrontRoomsWallFixtureSet.Registry.Count;
+        world.Release();
+        UnityEngine.Object.DestroyImmediate(root);
+        var registryEnd = FrontRoomsWallFixtureSet.Registry.Count;
+
+        pass = faceMismatch == 0 && archMismatch == 0 && hitBad == 0 && rebuildDiffs == 0 && collidersUnderSets == 0
+               && registryAfter == registryBefore && registryEnd == 0 && startAreaFaces == 0;
+        var r = new StringBuilder();
+        r.Append("  {\"seed\": ").Append(used.generation.seed)
+         .Append(", \"chunks\": ").Append(chunks)
+         .Append(", \"faces\": ").Append(faces).Append(", \"expectedFaces\": ").Append(expected).Append(", \"faceMismatches\": ").Append(faceMismatch)
+         .Append(", \"startAreaFaces\": ").Append(startAreaFaces)
+         .Append(", \"arches\": ").Append(arches).Append(", \"archMismatches\": ").Append(archMismatch).Append(", \"worstArchErrM\": ").Append(worstArch.ToString("0.000000"))
+         .Append(", \"fixtures\": ").Append(fixtures).Append(", \"onShellAt0_30\": ").Append(hitOk).Append(", \"noWallNeighbourUnbuilt\": ").Append(hitMissNoNeighbour)
+         .Append(", \"bad\": ").Append(hitBad).Append(", \"worstHitErrM\": ").Append(worstHit.ToString("0.0000"))
+         .Append(", \"rebuilt\": ").Append(rebuilt).Append(", \"rebuildDiffs\": ").Append(rebuildDiffs)
+         .Append(", \"registryBefore\": ").Append(registryBefore).Append(", \"registryAfterRebuild\": ").Append(registryAfter).Append(", \"registryAfterDestroy\": ").Append(registryEnd)
+         .Append(", \"collidersUnderSets\": ").Append(collidersUnderSets)
+         .Append(", \"collectMsPerChunk\": ").Append((collectMs / Math.Max(1, chunks)).ToString("0.000"))
+         .Append(", \"installMsPerChunk\": ").Append((installMs / Math.Max(1, chunks)).ToString("0.000"))
+         .Append(", \"badSamples\": [").Append(string.Join(", ", badSamples.Select(s => "\"" + s + "\""))).Append("]")
+         .Append(", \"pass\": ").Append(pass ? "true" : "false").Append("}");
+        return r.ToString();
+    }
+
+    static string Sig(List<FrontRoomsWallFixtures.Face> faces)
+    {
+        var sb = new StringBuilder();
+        foreach (var f in faces)
+            sb.Append(f.cell).Append(f.behind).Append((int)f.kind).Append(f.origin.ToString("F4")).Append(f.openFrom.ToString("F4")).Append(f.openTo.ToString("F4"))
+              .Append(f.cornerLow).Append(f.cornerHigh).Append(f.room).Append(f.zoneBorder).Append('|');
+        return sb.ToString();
+    }
+
+    static string Sig(List<FrontRoomsWallFixtures.Fixture> list)
+    {
+        var sb = new StringBuilder();
+        foreach (var x in list) sb.Append(x.kit).Append(x.position.ToString("F5")).Append(x.face).Append(x.variant).Append('|');
+        return sb.ToString();
+    }
+}

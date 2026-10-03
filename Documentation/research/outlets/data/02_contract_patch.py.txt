@@ -1,0 +1,80 @@
+import sys, io
+p = sys.argv[1]
+s = io.open(p, encoding="utf-8").read()
+anchor_field = "    readonly List<GridCoord> scratch = new List<GridCoord>();\n"
+assert s.count(anchor_field) == 1
+s = s.replace(anchor_field, anchor_field + "    // OUTLET CONTRACT (clone-only test patch)\n    readonly List<FrontRoomsWallFixtures.Face> wallFaces = new List<FrontRoomsWallFixtures.Face>();\n")
+anchor_call = "        shellColliders.Add(shell);\n\n        if (data.hasKey && !keysHeld.Contains(data.ownZone.id))"
+assert s.count(anchor_call) == 1
+call = ("        shellColliders.Add(shell);\n\n"
+        "        // OUTLET CONTRACT (clone-only test patch). The stopwatch is test instrumentation, not part of the request.\n"
+        "        var outletWatch = System.Diagnostics.Stopwatch.StartNew();\n"
+        "        CollectWallFaces(data, wallFaces);\n"
+        "        FrontRoomsWallFixtures.ProbeCollectMs += outletWatch.Elapsed.TotalMilliseconds;\n"
+        "        outletWatch.Restart();\n"
+        "        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, chunk.meshes);\n"
+        "        FrontRoomsWallFixtures.ProbeInstallMs += outletWatch.Elapsed.TotalMilliseconds;\n\n"
+        "        if (data.hasKey && !keysHeld.Contains(data.ownZone.id))")
+s = s.replace(anchor_call, call)
+anchor_helpers = "    static int HeightClass(float ceiling) =>"
+assert s.count(anchor_helpers) == 1
+helpers = '''    // ---------- OUTLET CONTRACT (clone-only test patch): wall faces for FrontRoomsWallFixtures ----------
+
+    static readonly GridCoord[] FaceSides = { new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(-1, 0), new GridCoord(0, -1) };
+
+    static EdgeKind OwnEdge(MapChunk data, int i, int j, GridCoord d)
+    {
+        var k = MapGrid.LocalIndex(i, j);
+        if (d.x > 0) return data.east[k];
+        if (d.y > 0) return data.north[k];
+        if (d.x < 0) return i > 0 ? data.east[k - 1] : data.west[j];
+        return j > 0 ? data.north[k - MapGrid.ChunkCells] : data.south[i];
+    }
+
+    /// Every wall face that looks into one of this chunk's map cells, including the faces of the
+    /// west and south border walls the neighbours build. Start-area cells, and faces whose wall
+    /// backs onto them, are left out (the stream rooms stand there).
+    void CollectWallFaces(MapChunk data, List<FrontRoomsWallFixtures.Face> into)
+    {
+        into.Clear();
+        const int n = MapGrid.ChunkCells;
+        var cs = MapGrid.CellSize;
+        for (var j = 0; j < n; j++)
+        for (var i = 0; i < n; i++)
+        {
+            var cell = data.Cell(i, j);
+            if (InStartArea(cell)) continue;
+            var zone = Cache.ZoneOf(cell);
+            var room = -1;
+            for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(i, j)) { room = r; break; }
+            foreach (var d in FaceSides)
+            {
+                var behind = cell + d;
+                var kind = OwnEdge(data, i, j, d);
+                if (kind == EdgeKind.Open || InStartArea(behind)) continue;
+                var alongX = d.y != 0;
+                var normal = new Vector3(-d.x, 0f, -d.y);
+                var line = new Vector3((i + (d.x > 0 ? 1 : 0)) * cs, 0f, (j + (d.y > 0 ? 1 : 0)) * cs);
+                float o0 = 0f, o1 = 0f, bottom = 0f;
+                if (kind == EdgeKind.Arch) { ArchOpening(d.x + d.y > 0 ? cell : behind, alongX, out var w, out var c); o0 = c - w * .5f; o1 = c + w * .5f; }
+                else if (kind == EdgeKind.Door) { o0 = (cs - DoorWidth) * .5f; o1 = (cs + DoorWidth) * .5f; }
+                else if (kind == EdgeKind.Window) { o0 = (cs - WindowWidth) * .5f; o1 = (cs + WindowWidth) * .5f; bottom = WindowSill; }
+                var t = alongX ? new GridCoord(1, 0) : new GridCoord(0, 1);
+                into.Add(new FrontRoomsWallFixtures.Face
+                {
+                    origin = line + normal * ModuleUnits.WallHalf, along = alongX ? Vector3.right : Vector3.forward, normal = normal,
+                    length = cs, kind = kind, openFrom = o0, openTo = o1, openBottom = bottom,
+                    ceiling = MapGrid.CeilingHeight(zone.height), baseTop = 0f,
+                    cornerLow = OwnEdge(data, i, j, new GridCoord(-t.x, -t.y)) != EdgeKind.Open,
+                    cornerHigh = OwnEdge(data, i, j, t) != EdgeKind.Open,
+                    zoneBorder = Cache.ZoneOf(behind).id != zone.id,
+                    cell = cell, behind = behind, theme = zone.theme, height = zone.height, room = room,
+                });
+            }
+        }
+    }
+
+'''
+s = s.replace(anchor_helpers, helpers + anchor_helpers)
+io.open(p, "w", encoding="utf-8").write(s)
+print("patched")

@@ -2,7 +2,7 @@
 
 Power-outlets workflow (N3), 2026-10-03. Read-only study of the real project; no file outside this folder was changed.
 
-**Revision 2 (11:50).**
+**Revision 2 (12:00).**
 - Every file:line reference was re-checked against the project as of 11:45. No map, Office or RoomStream file has changed since revision 1. The newest is `FrontRoomsMapWorld.cs` at 09:49.
 - New since revision 1:
   - the LOD convention, from the interactables spec that landed at 11:38 (§4.4);
@@ -13,7 +13,8 @@ Power-outlets workflow (N3), 2026-10-03. Read-only study of the real project; no
   - the edge-of-ring rule for floating outlets (§3);
   - an edit-mode submit hook for R3 (§4.5);
   - an unreachable Exit branch in RoomStream (§5);
-  - the `Fixture` struct (§8.1).
+  - the `Fixture` struct (§8.1);
+  - **a clone test of the exact contract code (§8.4, §11)**, which passes.
 
 - All numbers come from the code, or from a census run in the private clone `scratchpad/proj_outlet`.
 - The census uses the game's own generator: 3 seeds × 49 chunks.
@@ -42,6 +43,11 @@ Power-outlets workflow (N3), 2026-10-03. Read-only study of the real project; no
    - Every input is then the chunk's own data or a border edge that depends only on the seed. So the plan never depends on a neighbour's revision.
    - Add a **dress-time refinement for Office rooms** (option C). It runs inside `FrontRoomsOfficeKit.Dress`, which is visual-owned.
    - The map's only change is one call plus one helper in `BuildInto` (contract request, §8).
+   - That exact code was **tested in the clone** (§8.4).
+     - 0 face mismatches against the map's own edges over 3 seeds × 25 chunks.
+     - Every planned plate sits on solid shell at plate height.
+     - A rebuild gives an identical plan.
+     - Gathering costs 0.07–0.13 ms per chunk.
 6. **Rendering must be batched.** At a code-like density (1 per 3.66 m of wall) that is about 83 outlets per chunk, about 2,070 alive and about 65 within 12 m.
    - One GameObject per outlet breaks the ≤ 120-renderer room budget.
    - It also breaks the WebGL target of about 1,200 renderers alive.
@@ -151,7 +157,7 @@ Edges on the chunk's **east and north border belong to this chunk**. Its west an
 - **Arch span.** `ArchOpening` is private in MapWorld, so the map must pass the span. `MapHash` itself is `internal` (`FrontRoomsMap.cs` 213). All game scripts share Assembly-CSharp (no asmdef outside FMOD), so Office code can call `MapHash.Hash` for its own hashes.
 - **Cost.** In the census, gathering every face of a chunk through `Cache.Edge` / `Cache.ZoneOf` took **0.41–0.69 ms per chunk**.
   - That is editor Mono, a warm second pass, while 3 other Unity processes ran.
-  - It is an upper bound: reading the chunk arrays directly, as above, avoids the dictionary lookups.
+  - Reading the chunk arrays directly, as the contract helper does, measured **0.07–0.13 ms per chunk** in the clone (§8.4).
 
 ---
 
@@ -322,10 +328,10 @@ Build radius 2 means 25 chunks are alive. A 12 m radius covers about 0.79 of a c
     | Target | Quality level | lodBias | Where it is set |
     |---|---|---|---|
     | Editor Play Mode (the desktop reference) | 3, High | 1 | `ProjectSettings/QualitySettings.asset` 7, 195 |
-    | Mac/Win player | 5, Ultra | 2 | per-platform default, 301 and 338 |
+    | Mac/Win player | 5, Ultra | 2 | per-platform default, 301 and 338. `FrontRoomsCloudBuild.cs` 111 calls `SetQualityLevel(3)` in its Standalone path. That sets the editor's current level; whether a player then starts at High instead of its per-platform default is UNVERIFIED |
     | WebGL player | 3, High | 1 | per-platform default, 339; `FrontRooms3DBuild.ApplyWebGLSettings` also calls `SetQualityLevel(3)` at 146 |
 
-  - Revision 1 said the build script sets level 3 for every build. That is wrong: line 146 is inside the WebGL path.
+  - Revision 1 said the build script sets level 3 for every build. That was wrong: `FrontRooms3DBuild.cs` 146 is inside the WebGL path, and `BuildMac` (58–74) sets no level.
   - The interactables spec reads it the same way: Standalone runs Ultra (`10_spec.md` 232).
 
 | For a 0.114 m single-gang plate | lodBias 1 | lodBias 2 |
@@ -351,9 +357,14 @@ Build radius 2 means 25 chunks are alive. A 12 m radius covers about 0.79 of a c
   - R1 under the interim rule draws every outlet at every distance. That costs about 2 draws per outlet in the frustum, and it breaks the edge-of-ring rule in §3.
   - R3 does not depend on P-1 for culling. It does its own exact distance cull, and later its LOD switch, the same on every lodBias.
   - R3 reads the meshes by the P-1 names (`<NAME>_LOD0/1/2`), so the outlet module can declare `LOD_DISTANCES` today.
-  - Until P-1, R3 draws LOD0 out to `dcull`. That is a few hundred triangles per outlet, for about 65 outlets.
-- **Suggested outlet distances** (for the spec to confirm): d01 ≈ 2 m, d12 ≈ 5 m, dcull ≈ 12 m.
-  - As LODGroup heights for a 0.114 m plate, those are 3.66 % / 1.46 % / 0.61 % (table above).
+  - **Until P-1, the FBX holds LOD0 only, so R3 draws LOD0 out to `dcull`.**
+    - The interactables spec gives its 58 mm key a budget of 2,400 / 900 / 150 triangles (`10_spec.md` 514).
+    - At a similar LOD0, about 65 outlets within 12 m come to about 156 k triangles (ESTIMATE).
+    - With P-1 and switches at 1.5 / 4 / 12 m, that falls to about 15–20 k triangles (ESTIMATE).
+  - So outlets are a second reason to approve P-1. Do not invent a separate LOD convention for them.
+- **Suggested outlet distances** (for the spec to confirm): d01 ≈ 1.5–2 m, d12 ≈ 4–5 m, dcull ≈ 12 m.
+  - For comparison, the interactables spec uses 1.0 / 3.0 / 12 m for the 58 mm key and 1.5 / 5 / 20 m for the 30 mm closer shoe (`10_spec.md` 514, 948).
+  - As LODGroup heights for a 0.114 m plate, 2 / 5 / 12 m are 3.66 % / 1.46 % / 0.61 % (table above).
   - For a tiny hard-surface part, hand-built LOD1/LOD2 beats decimation. LOD2 could be a plate box with the face printed in its texture. P-1's per-level drop flags allow that.
 - **New material slots:** `kitlib.register_slot(...)` (132) adds one without editing kitlib. The importer remaps any slot that has a `Resources/Surfaces/<slot>.mat` (`FrontRoomsKitImporter.cs` 36–46). This is the interactables spec's P-4 route. An outlet's ivory or brown thermoplastic might need one; report it to the visual chat.
 
@@ -440,7 +451,7 @@ What the dress step can add that option B cannot, all inside `Office/` with no m
 | Determinism | edge inputs pure, but a border face's room context belongs to the neighbour, whose revision can change without this chunk rebuilding | every input is the chunk's own data or seed-pure borders | `roomSeed` includes the revision; deterministic |
 | Data at hand | kind, exact opening span, trim, both materials; no room, no corners | everything in §1.3 except furniture, gathered once from the arrays | floor rect, keep-clear strips (whole 3 m edges), furniture; no arch span, door position or corridor faces |
 | Furniture awareness | none | none (but never intersecting, §2.2) | full |
-| Streaming cost | 128 calls per chunk inside the chunk-build frame | one call per chunk; gathering ≤ 0.4–0.7 ms (census upper bound), planning ≪ 1 ms; installing R3 data is cheap; R1 would add 34–147 Instantiates | inside Dress's ≤ 3 ms room budget |
+| Streaming cost | 128 calls per chunk inside the chunk-build frame | one call per chunk; gathering **0.07–0.13 ms** measured in the clone (§8.4); stub plan + install 0.13–0.89 ms; R1 would add 34–147 Instantiates | inside Dress's ≤ 3 ms room budget |
 | Map change | many lines in `BuildEdge` | **one call plus one ~60-line helper** (contract §8) | none |
 | Title corridor | not applicable | same planner, own faces (§5) | Office variant through Dress |
 
@@ -477,7 +488,18 @@ public static class FrontRoomsWallFixtures
         public int room;            // index into MapChunk.rooms (topmost containing rect), -1 = corridor
     }
 
+    /// One planned fixture. Chunk-local metres.
+    public struct Fixture
+    {
+        public string kit;          // Kit_Outlet... / Kit_Jack... name from the spec
+        public Vector3 position;    // plate back on the face plane, at the plate centre (the kit's origin)
+        public Vector3 normal;      // = face normal; the kit's front (Blender -Y, Unity +Z) points along it
+        public int face;            // index into faces: Dress finds its room's outlets through Face.room
+        public byte variant;        // wear or colour variant: a separate mesh or material, never a MaterialPropertyBlock
+    }
+
     /// Pure and deterministic: no Unity objects, no UnityEngine.Random, no static state.
+    /// Hashes use MapHash.Hash(seed, cell.x, cell.y, salt + side), with salts of 409 and up and no revision (§3).
     public static void Plan(int seed, IReadOnlyList<Face> faces, FrontRooms.Map.MapChunk chunk, List<Fixture> into);
 
     /// Plan, then render it under chunkRoot: render-only (no colliders), shadows off, culled beyond ~12 m.
@@ -485,6 +507,10 @@ public static class FrontRoomsWallFixtures
         FrontRooms.Map.MapChunk chunk, List<Mesh> ownedMeshes);
 }
 ```
+
+- `FrontRoomsWallFixtureSet` (the component `Install` adds to the chunk root) goes in **its own file**, `Assets/Scripts/Office/FrontRoomsWallFixtureSet.cs`.
+  - It is a MonoBehaviour that `AddComponent` creates, so its class name must match the file name.
+  - It needs `[ExecuteAlways]`, so that OnEnable and OnDisable keep the R3 registry right in edit mode too. The clone test in §8.4 checks this.
 
 The density, heights and margins come from the spec. The code needs these geometric inputs:
 - corner inset: `WallHalf` + half the plate + margin;
@@ -494,7 +520,12 @@ The density, heights and margins come from the spec. The code needs these geomet
 
 ### 8.2 Contract request to the map chat (`FrontRoomsMapWorld.cs`)
 
-This will be tested in the clone with a clone-only patch before it is sent.
+- **Tested in the clone (§8.4).** This exact code was applied to `proj_outlet`'s copy of `FrontRoomsMapWorld.cs`. It compiles and passes on 3 seeds.
+- **A direct call is normal here.** The map already calls visual-owned code directly:
+  - `FrontRoomsKitLibrary.Spawn` (1648);
+  - `FrontRoomsPostStack.EnsureZoneVolume` (1720);
+  - `FrontRoomsSurfaces`.
+- Only the two dressers are bound by reflection (`ResolveDressers` 1428–1450). If the map chat prefers that soft binding, `Install` can be resolved the same way. Its parameter types are fixed above.
 
 ```csharp
 // (1) field
@@ -571,7 +602,7 @@ void CollectWallFaces(MapChunk data, List<FrontRoomsWallFixtures.Face> into)
   - the new file;
   - the `FrontRoomsOfficeKit.Dress` refinement (§6);
   - RoomStream placeholders → planner (§5);
-  - per-kit LOD thresholds in `FrontRoomsKitImporter`;
+  - the LOD switch distances: the interactables spec's P-1 (`make_lods` + `lodDistances` in the importer, §4.4), shared with that kit, **needs visual-chat approval**;
   - instancing on the outlet materials in `FrontRoomsRenderSetup`.
 
 ### 8.3 Tests in the clone, before the contract is sent
@@ -581,6 +612,36 @@ void CollectWallFaces(MapChunk data, List<FrontRoomsWallFixtures.Face> into)
 3. **Geometry.** Over 100 seeds, no outlet within the corner inset, a jamb's trim or a window span; none in start-area cells; plate back on the face plane (±1 mm).
 4. **Cost.** Install time per chunk, outlets alive, and draws added in the autopilot (`FrontRoomsMainScenePlaytest`, seeds 2554 and 20388). Against spec §8: ≥ 55 fps, p99 ≤ 33 ms.
 
+### 8.4 Clone test, done 2026-10-03 (~11:55)
+
+**Setup.**
+- The §8.2 code was applied to `scratchpad/proj_outlet` only.
+  - The clone-only patch script is `data/02_contract_patch.py.txt`. It adds a stopwatch, which is test instrumentation and not part of the request.
+  - The original is backed up in `scratchpad/outlet_logs/FrontRoomsMapWorld.cs.orig`.
+- A stub `FrontRoomsWallFixtures` with a placeholder rule (one hashed outlet on 60 % of faces) is in `data/02_wall_fixtures_stub.cs.txt`.
+- The probe is `FrontRoomsOutletContractProbe.Run` (`data/02_contract_probe.cs.txt`).
+  - It builds the real map with `BuildForCapture` at root (4992, 0, 4992), with the default profile.
+  - It ran in batch mode with `-nographics`, twice, on seeds 20261001, 2554 and 20388.
+  - Results: `data/02_contract_probe.json`.
+
+| Check | Result (3 seeds × 25 chunks, both runs) |
+|---|---|
+| Faces from `CollectWallFaces` vs an independent walk over `Cache.Edge` (all 4 sides of every cell) | 3,231 / 3,193 / 3,236 faces; **0 missing, 0 extra, 0 kind mismatches** (so `OwnEdge` reads the west and south border copies correctly) |
+| Arch spans: face opening centre vs `FrontRoomsMapWorld.CrossingPoint` | 1,117 / 969 / 1,014 arches; **0 mismatches**; worst error 0.5 mm (float) |
+| Plate centres: ray from 0.30 m in front, along −normal, must hit the shell collider at 0.30 m | 1,944 / 1,860 / 1,887 plates on solid wall at plate height, worst error 0.1 mm; **0 bad** |
+| Plates on a face whose wall the unbuilt neighbour owns (ring edge, §3) | 35 / 41 / 39, which is 1.8–2.1 % of plates. All are on the ring's west or south edge, ≥ 48 m from the player |
+| Rebuild (`RebuildChunk`) of 3 chunks | **identical faces and plans**; the set registry stays at 25; 0 sets left after the map is destroyed (`[ExecuteAlways]` OnDisable works in edit mode) |
+| Colliders added | 0 |
+| `CollectWallFaces` time per chunk | **0.07–0.13 ms** in 5 of 6 seed runs; one outlier of 1.8 ms (run 1, seed 20388: GC or machine load, with 3 other Unity processes running) |
+| Stub `Install` (AddComponent + copy + plan, no rendering) per chunk | 0.13–0.89 ms; one outlier of 3.2 ms in the same run |
+
+- **Context.** A chunk build costs about 18 ms (`research/webgl/03_measured_budgets.md` 68). The contract adds about 0.2–1 % to it.
+- **Not tested yet** (they need the real planner and renderer):
+  - a revisit shift and a neighbour-only shift;
+  - the Relay nav, interaction and Level Designer test suites;
+  - the R3 render path, including its edit-mode submit;
+  - the autopilot frame budget.
+
 ---
 
 ## 9. Cross-dependencies and risks
@@ -588,8 +649,14 @@ void CollectWallFaces(MapChunk data, List<FrontRoomsWallFixtures.Face> into)
 - **N1 level transitions** may add trims or base pieces at zone borders and change `BuildEdge`.
   - `Face.zoneBorder` and `baseTop` let the planner keep clear.
   - Re-check after N1 lands.
-- **LOD2** needs a pipeline change (§4.4), which needs visual-chat approval. The interactables spec, when written, should share the convention.
-- **R3 in edit mode.** Instanced draws are not GameObjects. Captures and the Level Designer preview need either a submit hook before `Camera.Render` or an R1 fallback when not playing. Verify this in the clone.
+- **LOD2** needs the interactables spec's P-1 pipeline change (§4.4), which needs visual-chat approval.
+  - Outlets use the same convention (`<NAME>_LOD0/1/2`, `LOD_DISTANCES`).
+  - Until P-1 lands they ship without a LODGroup, and R3 does the culling.
+- **R3 in edit mode.** Instanced draws are not GameObjects.
+  - Submit them from `RenderPipelineManager.beginCameraRendering`, per camera. That should cover the Scene view, the Level Designer preview and `Camera.Render` captures.
+  - Fallback: R1 when `!Application.isPlaying`.
+  - UNVERIFIED: test it in the clone with the capture harness.
+- **Glass RT cap.** GameObject outlets would compete for the 256 RT instances (§4.5). R3 avoids it. If the glass track later wants outlets in reflections, it would need an instanced-draw path, which is not worth it at 0.11 m.
 - **WebGL is a separate track.** Gate the instanced radius per platform (for example, `Application.platform == WebGLPlayer`, as `TickFixturesNearOnly` does at 1263). Never lower desktop.
 - **Sound.** If the sound chat wants hum or spark points, expose `FrontRoomsWallFixtureSet` positions the way `RelayEntries` does (2006–2010). There is no audio work in this task.
 
@@ -605,3 +672,19 @@ OUTLET_CENSUS_OUT=<out.json> /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.ap
 - The tool copies `MapHash.Hash` and checks the copy against the real one by reflection. It also copies `ArchOpening`.
 - Solid metres subtract opening spans and a 0.08 m inset at each inner corner.
 - Timings are editor Mono, second (warm) pass, with other Unity processes running on the machine.
+
+## 11. Reproduce the contract probe (§8.4)
+
+Run this in a private clone only. It patches the clone's `FrontRoomsMapWorld.cs`.
+
+```
+python3 Documentation/research/outlets/data/02_contract_patch.py.txt <clone>/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+# split data/02_wall_fixtures_stub.cs.txt at "// CLONE-ONLY STUB (outlet workflow). See" into
+#   <clone>/Assets/Scripts/Office/FrontRoomsWallFixtures.cs and .../FrontRoomsWallFixtureSet.cs
+cp Documentation/research/outlets/data/02_contract_probe.cs.txt <clone>/Assets/Editor/OutletCensus/FrontRoomsOutletContractProbe.cs
+OUTLET_PROBE_OUT=<out.json> /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity \
+  -batchmode -nographics -projectPath <clone> -executeMethod FrontRoomsOutletContractProbe.Run -logFile <log>
+```
+
+- The exit code is 0 on PASS and 1 on FAIL.
+- `proj_outlet` keeps the patch and the stub for the next outlet tasks. The real planner replaces the stub there.

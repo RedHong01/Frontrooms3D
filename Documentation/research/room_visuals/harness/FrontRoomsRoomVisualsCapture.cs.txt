@@ -8,7 +8,10 @@
 //      failing lamps, a strip of the five lamp temperaments, a furniture pile.
 //   4. The five title-stream profiles (Lobby, Shift, Office, Run, Exit), built
 //      in Play Mode by FrontRoomsRoomStream.BuildEditorPreview (the same code
-//      the edit-mode preview uses) at world (4992, 0, 4992), far from the map.
+//      the edit-mode preview uses) at world (4992, 0, 4992), far from the map,
+//      plus room 5: the Lobby breather that follows Exit in play (BuildRoom via
+//      reflection), so the Exit room's far door opens onto a room.
+//      Per profile: wide, detail, ceiling, arrival (far door shut), doorway.
 // Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsRoomVisualsCapture.RunBatch -logFile <f>
 // Output: <clone>/Verification/room_visuals/*.png, frames.txt, recipes.tsv, log.txt
 using System;
@@ -434,6 +437,7 @@ public static class FrontRoomsRoomVisualsCapture
         yield return Borders();
         yield return DeadLamp();
         yield return FailingLamp();
+        yield return StutterLamp();
         yield return LampStrip();
 
         // ===== 4. The title stream's five profiles =====
@@ -485,7 +489,11 @@ public static class FrontRoomsRoomVisualsCapture
         var detail = "seed " + runSeed + " · cell " + best + " (" + ZoneText(best) + ") · step " + bestStep + " · run " + StraightRun(best, bestStep) + " cells · " + LampsAround(fx, best, 3);
         MapSpace(detail);
         Capture(name + "_wide", name + " · " + detail + " · feet map-local " + MapLocal(feet) + " · score " + F(bestScore), WideFov);
-        yield return WallDetail(name + "_detail", feet, dir, detail);
+        // Wall-detail origins: the wide frame's feet first, then free cells of the same zone within 2 cells.
+        var origins = new List<Vector3> { feet };
+        foreach (var c in CellsAround(best, 2))
+            if (c != best && map.IsBuilt(c) && !map.InStartArea(c) && want(map.ZoneOf(c)) && FreeStanding(map.CellCenter(c))) origins.Add(map.CellCenter(c));
+        yield return WallDetail(name + "_detail", origins, dir, detail, pt => want(map.ZoneOf(map.CellOf(pt))));
         if (tall)
         {
             var c0 = map.CellCenter(best + bestStep);
@@ -496,7 +504,7 @@ public static class FrontRoomsRoomVisualsCapture
     }
 
     // An oblique view along the nearest plain wall (the shell's mesh collider: no door leaf, no pane): paper, the wall/floor junction, floor.
-    static IEnumerator WallDetail(string name, Vector3 fromFeet, Vector3 forward, string detail)
+    static List<RaycastHit> ShellHits(Vector3 fromFeet, Vector3 forward)
     {
         var eye = fromFeet + Vector3.up * 1.0f;
         var hits = new List<RaycastHit>();
@@ -508,8 +516,25 @@ public static class FrontRoomsRoomVisualsCapture
             hits.Add(hit);
         }
         hits.Sort((a, b) => a.distance.CompareTo(b.distance));
-        foreach (var best in hits)
+        return hits;
+    }
+
+    static IEnumerator WallDetail(string name, List<Vector3> origins, Vector3 forward, string detail, Func<Vector3, bool> inZone)
+    {
+        var fromFeet = origins[0];
+        var hits = ShellHits(fromFeet, forward);
+        // Pass 1 (strict): from the wide frame's feet, then from the other origins, the whole visible stretch
+        // is plain wall of the same zone and no door leaf or pane is within 2.2 m of the eye or of the look point.
+        // Pass 2 (the first rule): from the wide frame's feet, plain wall over the first 1.6 m only.
+        // Pass 0 is pass 1 plus no furniture (any non-architecture collider) within 1.0 m of the look point.
+        var passes = new List<(bool strict, bool clear, List<RaycastHit> hits)>();
+        foreach (var clearPass in new[] { true, false })
+            foreach (var o in origins) passes.Add((true, clearPass, o == fromFeet ? hits : ShellHits(o, forward)));
+        passes.Add((false, false, hits));
+        foreach (var (strict, clear, passHits) in passes)
+        foreach (var best in passHits)
         {
+            if (strict && !inZone(best.point + best.normal * .5f)) continue;
             var n = best.normal; n.y = 0f; n.Normalize();
             var along = new Vector3(n.z, 0f, -n.x);
             var p = best.point; p.y = 0f;
@@ -518,21 +543,50 @@ public static class FrontRoomsRoomVisualsCapture
                 var a = along * sgn;
                 var feet = p + n * 1.25f - a * 1.0f;
                 if (!FreeStanding(feet)) continue;
-                // The stretch of wall in frame must be plain wall too (no door, window or opening in the first 2 m).
+                // The stretch of wall in frame must be plain wall too (no door, window or opening).
                 var plain = true;
-                foreach (var t in new[] { .2f, .9f, 1.6f })
+                foreach (var t in strict ? new[] { -.5f, .2f, .9f, 1.6f, 2.4f } : new[] { .2f, .9f, 1.6f })
                 {
                     var probe = p + a * t + n * .5f + Vector3.up * 1.0f;
                     if (!Physics.Raycast(probe, -n, out var h2, .8f, ~0, QueryTriggerInteraction.Ignore) || !(h2.collider is MeshCollider)) { plain = false; break; }
                 }
                 if (!plain) continue;
-                Place(feet, p + a * .9f + Vector3.up * .45f);
+                var target = p + a * .9f + Vector3.up * .45f;
+                if (strict && (LeafOrPaneNear(feet + Vector3.up * 1.0f, 2.2f) || LeafOrPaneNear(target, 2.2f))) continue;
+                if (clear && (FurnitureNear(target, 1.0f) || FurnitureNear(feet + Vector3.up * 1.0f, 1.1f) || FurnitureNear((feet + Vector3.up * 1.0f + target) * .5f, .8f) || FurnitureNear(p - a * .3f + n * .3f + Vector3.up * .6f, .6f))) continue;
+                Place(feet, target);
                 yield return 4;
-                Capture(name, name + " · oblique wall/floor finish, 1.25 m off the wall · " + detail, DetailFov);
+                Capture(name, name + " · oblique wall/floor finish, 1.25 m off the wall · rule " + (clear ? "strict+clear" : strict ? "strict (furniture may be near)" : "lenient (a door or pane may be near)") + " · " + detail, DetailFov);
                 yield break;
             }
         }
         Log(name + ": no plain wall within 6 m of " + V(fromFeet) + " (" + hits.Count + " shell hits)");
+    }
+
+    // Any furniture renderer (Office kit, pile, module props: everything in a chunk that is not shell, lamp,
+    // door, pane, grade volume or key) whose bounds come within r of a point. Bounds, not colliders: many
+    // kit pieces have no collider.
+    static readonly string[] NotFurniture = { "Block ", "Collision", "Door hinge", "Window pane", "Fixture ", "Office grade", "Key " };
+    static bool FurnitureNear(Vector3 point, float r)
+    {
+        foreach (Transform chunk in map.transform)
+        foreach (Transform t in chunk)
+        {
+            var skip = false;
+            foreach (var prefix in NotFurniture) if (t.name.StartsWith(prefix, StringComparison.Ordinal)) { skip = true; break; }
+            if (skip) continue;
+            foreach (var rd in t.GetComponentsInChildren<Renderer>())
+                if (rd.bounds.SqrDistance(point) < r * r) return true;
+        }
+        return false;
+    }
+
+    // A map door leaf or window pane (architecture that is not the shell mesh) within r of a point.
+    static bool LeafOrPaneNear(Vector3 point, float r)
+    {
+        foreach (var c in Physics.OverlapSphere(point, r, ~0, QueryTriggerInteraction.Ignore))
+            if (!(c is MeshCollider) && map.IsArchitecture(c)) return true;
+        return false;
     }
 
     // ---------------- furniture pile ----------------
@@ -900,6 +954,58 @@ public static class FrontRoomsRoomVisualsCapture
         Capture("map-failing-lamp_dropout", "same lamp in a dropout: lamp clock " + F(c2) + " s, level " + F((float)Get(bestF, "level")) + ", light " + F(Get<Light>(bestF, "light").intensity) + " · " + detail, WideFov);
     }
 
+    // A stutter lamp's room: the same view on a normal moment (level ~0.97) and on an off flash of one of
+    // its own stutters (level 0.05). Same placement rule as the failing lamp: fewer lit neighbours preferred.
+    static IEnumerator StutterLamp()
+    {
+        var all = Fixtures();
+        var fx = FixtureByCell();
+        object bestF = null;
+        GridCoord best = default, bestStep = Steps[0];
+        var bestScore = float.MinValue;
+        foreach (var (f, cell, mode) in all)
+        {
+            if (mode != 1 || map.InStartArea(cell)) continue;
+            foreach (var s in Steps)
+            {
+                var from = cell + Mul(s, -1);
+                if (!map.IsBuilt(from) || map.PassageBetween(from, cell) != FrontRoomsMapWorld.Passage.Open || !FreeStanding(map.CellCenter(from))) continue;
+                var run = StraightRun(cell, s);
+                var others = 0f;
+                foreach (var n in CellsAround(cell, 1))
+                    if (n != cell && fx.TryGetValue(n, out var v)) others += v.mode == 0 || v.mode == 1 ? 1f : v.mode == 4 ? .4f : 0f;
+                var score = LampSitePreference(cell) + Mathf.Min(run, 4) * .5f - others * 1.2f;
+                if (score > bestScore) { bestScore = score; best = cell; bestStep = s; bestF = f; }
+            }
+        }
+        if (bestF == null) { Log("stutter lamp: none with a view in the built chunks"); yield break; }
+        var dir = Dir(bestStep);
+        var feet = map.CellCenter(best + Mul(bestStep, -1)) - dir * .6f;
+        if (!FreeStanding(feet)) feet = map.CellCenter(best + Mul(bestStep, -1));
+        Place(feet, map.CellCenter(best + Mul(bestStep, 2)) + Vector3.up * 1.55f);
+        yield return Settle(10);
+        var detail = "seed " + runSeed + " · stutter lamp in cell " + best + " (" + ZoneText(best) + ") · camera one cell back, looking " + bestStep + " · " + LampsAround(fx, best, 1);
+        MapSpace(detail);
+        // On: push its next stutter away and let it settle on its normal level.
+        Set(bestF, "eventEnd", 0f);
+        Set(bestF, "nextEvent", (float)Get(bestF, "clock") + 100f);
+        yield return 2;
+        Capture("map-stutter-lamp_on", "stutter ballast between stutters: level " + F((float)Get(bestF, "level")) + ", light " + F(Get<Light>(bestF, "light").intensity) + " · " + detail, WideFov);
+        // Off: start one of its own stutters now and catch an off flash (level 0.05).
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            Set(bestF, "nextEvent", (float)Get(bestF, "clock"));
+            Set(bestF, "eventEnd", 0f);
+            yield return 1;
+            var guard = 0;
+            while ((float)Get(bestF, "level") > .1f && (float)Get(bestF, "clock") < (float)Get(bestF, "eventEnd") && guard++ < 60) yield return 1;
+            if ((float)Get(bestF, "level") <= .1f) break;
+        }
+        var light = Get<Light>(bestF, "light");
+        Capture("map-stutter-lamp_off", "same lamp on an off flash of a stutter: level " + F((float)Get(bestF, "level")) + ", light " + (light.enabled ? F(light.intensity) : "off") + " · " + detail, WideFov);
+        Set(bestF, "nextEvent", (float)Get(bestF, "clock") + 100f);
+    }
+
     // The lens of one lamp of each temperament, from 1.7 m below and to the side.
     static IEnumerator LampStrip()
     {
@@ -966,6 +1072,24 @@ public static class FrontRoomsRoomVisualsCapture
         stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
             FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
             FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+        // In play the cycle runs Shift, Office, Run, Exit, then a Lobby breather (RuleForProfileIndex).
+        // The preview stops at Exit, so its far door would open onto the clear colour. Build the breather
+        // as room 5 with the stream's own BuildRoom (same materials), its far door shut.
+        var slotType = typeof(FrontRoomsRoomStream).GetNestedType("RoomSlot", BindingFlags.NonPublic);
+        var count = Enum.GetValues(typeof(RoomRule)).Length;
+        var slot = Activator.CreateInstance(slotType, true);
+        Set(slot, "sequence", count);
+        Set(slot, "rule", RoomRule.Lobby);
+        Set(slot, "startZ", count * FrontRoomsRoomStream.RoomLength);
+        Set(slot, "endZ", (count + 1) * FrontRoomsRoomStream.RoomLength);
+        var breather = new GameObject("Profile " + count + " / Lobby (breather after Exit, added by the harness)");
+        breather.transform.SetParent(go.transform, false);
+        breather.transform.localPosition = new Vector3(0f, 0f, count * FrontRoomsRoomStream.RoomLength);
+        Set(slot, "root", breather);
+        typeof(FrontRoomsRoomStream).GetMethod("BuildRoom", BF).Invoke(stream, new[] { slot, (object)count });
+        Set(slot, "doorProgress", 0f);
+        typeof(FrontRoomsRoomStream).GetMethod("ApplyDoorPose", BF).Invoke(stream, new[] { slot });
+        typeof(FrontRoomsRoomStream).GetMethod("ActivateRoomLightImmediately", BF).Invoke(stream, new[] { slot });
         yield return 5;
         var root = go.transform;
         var lights = go.GetComponentsInChildren<Light>(true);
@@ -1013,6 +1137,22 @@ public static class FrontRoomsRoomVisualsCapture
                 Shot(names[i] + "_threshold", root, new Vector3(0f, 1.62f, z0 + 2.8f), new Vector3(0f, .05f, z0 + 5.9f), DetailFov, "Exit · the floor 'threshold marker' strip (2.8 x 0.12 m, wall paper material)");
                 yield return 1;
             }
+            // Ceiling finish and lenses. Every profile wears the frosted Troffer_Lens: FrontRoomsSurfaces.OfficeLouver
+            // returns it too (the stream's "parabolic louvers in the Office" comment is stale).
+            Shot(names[i] + "_ceiling", root, new Vector3(0f, 1.62f, z0 + 2.5f), new Vector3(-.6f, 2.9f, z0 + 4.6f), DetailFov, rule + " · ceiling tiles and the frosted troffer lens, looking up about 31 deg");
+            yield return 1;
+            // Arrival as in play: 2 m inside (the stream's Entry anchor), this room's far door still shut
+            // (it opens only when the camera is within 4 m of it). Lamps held as above.
+            var hinges = new List<(Transform t, Quaternion q)>();
+            Transform roomRoot = null;
+            foreach (Transform c in root) if (c.name == "Profile " + i + " / " + rule) roomRoot = c;
+            if (roomRoot != null)
+                foreach (var t in roomRoot.GetComponentsInChildren<Transform>(true))
+                    if (t.name == "double door left hinge" || t.name == "double door right hinge") { hinges.Add((t, t.localRotation)); t.localRotation = Quaternion.identity; }
+            yield return 1;
+            Shot(names[i] + "_arrival", root, new Vector3(0f, 1.62f, z0 + 2.0f), new Vector3(0f, 1.25f, z0 + 12f), WideFov, rule + " · arrival as in play: 2 m inside, far door shut (" + hinges.Count + " leaves closed by the harness)");
+            foreach (var (t, q) in hinges) t.localRotation = q;
+            yield return 1;
         }
     }
 

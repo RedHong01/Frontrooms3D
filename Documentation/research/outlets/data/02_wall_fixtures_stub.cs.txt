@@ -1,0 +1,107 @@
+// CLONE-ONLY STUB (outlet workflow, 2026-10-03). Tests the map contract in
+// 02_code_paths.md §8. The planning rule here is a placeholder (one outlet per
+// face, hashed), not the spec's density rule; nothing is rendered.
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+public static class FrontRoomsWallFixtures
+{
+    /// One wall face as the map sees it at build time. Chunk-local metres, Y up.
+    public struct Face
+    {
+        public Vector3 origin;      // on the face plane, floor level, at the edge's low-coordinate end
+        public Vector3 along;       // +X or +Z
+        public Vector3 normal;      // into the cell this face serves
+        public float length;        // 3.0
+        public EdgeKind kind;
+        public float openFrom, openTo, openBottom;
+        public float ceiling;
+        public float baseTop;
+        public bool cornerLow, cornerHigh;
+        public bool zoneBorder;
+        public GridCoord cell, behind;
+        public ZoneTheme theme;
+        public ZoneHeight height;
+        public int room;
+    }
+
+    public struct Fixture
+    {
+        public string kit;
+        public Vector3 position;    // chunk-local, plate back on the face plane
+        public Vector3 normal;
+        public int face;
+        public byte variant;
+    }
+
+    // Probe instrumentation (clone only).
+    public static double ProbeCollectMs, ProbeInstallMs;
+
+    const int SaltRoll = 409, SaltSpot = 419, SaltVariant = 431;
+    const float PlateHalfWidth = .035f, PlateHalfHeight = .0575f, Margin = .10f, JambMargin = .05f;
+    public const float CentreHeight = .33f;
+
+    static int Side(Vector3 normal) => normal.x < -.5f ? 0 : normal.z < -.5f ? 1 : normal.x > .5f ? 2 : 3;
+
+    /// Pure and deterministic: no Unity objects, no UnityEngine.Random, no static state.
+    public static void Plan(int seed, IReadOnlyList<Face> faces, MapChunk chunk, List<Fixture> into)
+    {
+        into.Clear();
+        var segs = new List<Vector2>(3);
+        for (var f = 0; f < faces.Count; f++)
+        {
+            var face = faces[f];
+            var side = Side(face.normal);
+            if (MapHash.Unit(MapHash.Hash(seed, face.cell.x, face.cell.y, SaltRoll + side)) >= .6f) continue;
+            var a = (face.cornerLow ? ModuleUnits.WallHalf : 0f) + PlateHalfWidth + Margin;
+            var b = face.length - (face.cornerHigh ? ModuleUnits.WallHalf : 0f) - PlateHalfWidth - Margin;
+            segs.Clear();
+            if (face.kind == EdgeKind.Wall) segs.Add(new Vector2(a, b));
+            else
+            {
+                var clear = PlateHalfWidth + (face.kind == EdgeKind.Arch ? JambMargin : ModuleUnits.TrimFace + JambMargin);
+                segs.Add(new Vector2(a, face.openFrom - clear));
+                segs.Add(new Vector2(face.openTo + clear, b));
+            }
+            var best = -1;
+            for (var s = 0; s < segs.Count; s++)
+                if (segs[s].y - segs[s].x >= .2f && (best < 0 || segs[s].y - segs[s].x > segs[best].y - segs[best].x)) best = s;
+            if (best < 0) continue;
+            var u = Mathf.Lerp(segs[best].x, segs[best].y, MapHash.Unit(MapHash.Hash(seed, face.cell.x, face.cell.y, SaltSpot + side)));
+            var y = Mathf.Max(CentreHeight, face.baseTop + .02f + PlateHalfHeight);
+            into.Add(new Fixture
+            {
+                kit = "Kit_OutletDuplex",
+                position = face.origin + face.along * u + Vector3.up * y,
+                normal = face.normal,
+                face = f,
+                variant = (byte)(MapHash.Hash(seed, face.cell.x, face.cell.y, SaltVariant + side) % 3u),
+            });
+        }
+    }
+
+    public static FrontRoomsWallFixtureSet Install(Transform chunkRoot, IReadOnlyList<Face> faces, int seed, MapChunk chunk, List<Mesh> ownedMeshes)
+    {
+        var set = chunkRoot.gameObject.AddComponent<FrontRoomsWallFixtureSet>();
+        set.coord = chunk.coord;
+        set.faces = new List<Face>(faces);
+        Plan(seed, faces, chunk, set.fixtures);
+        return set;
+    }
+}
+// CLONE-ONLY STUB (outlet workflow). See FrontRoomsWallFixtures.cs.
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+[ExecuteAlways]
+public sealed class FrontRoomsWallFixtureSet : MonoBehaviour
+{
+    public static readonly HashSet<FrontRoomsWallFixtureSet> Registry = new HashSet<FrontRoomsWallFixtureSet>();
+    public GridCoord coord;
+    public List<FrontRoomsWallFixtures.Face> faces = new List<FrontRoomsWallFixtures.Face>();
+    public readonly List<FrontRoomsWallFixtures.Fixture> fixtures = new List<FrontRoomsWallFixtures.Fixture>();
+    void OnEnable() => Registry.Add(this);
+    void OnDisable() => Registry.Remove(this);
+}
