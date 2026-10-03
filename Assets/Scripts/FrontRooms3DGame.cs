@@ -88,10 +88,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     [SerializeField, Tooltip("Initial display mode. The player can switch HDR on or off from Display Settings while paused.")]
     bool defaultHdr = true;
     const string HdrPreferenceKey = "FrontRooms.Display.HDR";
-    // Assist: the Relay's state and distance on the HUD. Off by default (Red, 2026-10-03): the
-    // Relay is to be heard, not read; a player can turn it on in the pause screen's settings.
-    const string RelayReadoutPreferenceKey = "FrontRooms.Assist.RelayReadout";
-    bool relayReadout;
+    // The settings panel (pause → O): a cursor over rows of comfort, assist and input settings
+    // (FrontRoomsSettings, remembered across runs) plus HDR.
+    int settingsIndex;
     bool hdrEnabled;
     bool displaySettingsOpen;
     Font monoFont, bayonFont, serifFont;
@@ -149,6 +148,15 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     const float CalmHintSeconds = 9f;
     float gameplayHudAlpha;
     float yaw, pitch, elapsed, stepTime, hunterStepTime, flashTime;
+    // The player camera's layers: BaseEye for gameplay, shots and shakes for the picture (audit §6.4).
+    FrontRoomsCameraRig rig;
+    // Glass: a hold starts only on a fresh E-down on the pane; tap mode banks progress that drains in real time.
+    bool glassArmed;
+    float tapCredit, tapReadyAt;
+    // The reflection zone last asked for, and the cell it was worked out in (it changes only with the cell).
+    FrontRoomsLook.ReflectionZone reflectionZone;
+    GridCoord reflectionCell;
+    bool reflectionSet;
     string flash = "";
     const float Walk = 3.2f, Run = 5.5f;
     // Sprint stamina: about 5 s of running, refilling after a 1 s breather.
@@ -318,9 +326,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         AutopilotStart();
 #endif
-        // URP lights surfaces with the ambient probe, which is only rebuilt
-        // from the scene's ambient colours on a bake or here.
-        DynamicGI.UpdateEnvironment();
+        // The shared look's ambient and fog (FrontRoomsLook holds the scene's tuned values), which
+        // also rebuilds URP's ambient probe: it is only rebuilt from the ambient colours on a bake or here.
+        FrontRoomsLook.ApplyAmbient();
         InitializeFonts();
         cam = GetComponentInChildren<Camera>(true);
         if (cam == null) cam = CreateCamera(transform);
@@ -330,7 +338,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         BindHunter();
         BuildMaterials();
         hdrEnabled = PlayerPrefs.GetInt(HdrPreferenceKey, defaultHdr ? 1 : 0) != 0;
-        relayReadout = PlayerPrefs.GetInt(RelayReadoutPreferenceKey, 0) != 0;
+        FrontRoomsSettings.Load();
         ApplyHdrMode(hdrEnabled, false);
         BuildHud();
         BuildSound();
@@ -584,9 +592,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         playerBody.center = new Vector3(0f, ModuleUnits.PlayerHeight * .5f, 0f);
         playerBody.stepOffset = .3f;
         playerBody.skinWidth = .03f;
-        cam.transform.SetParent(playerRoot, false);
-        cam.transform.localPosition = new Vector3(0f, EyeHeight, 0f);
-        cam.transform.localRotation = Quaternion.identity;
+        rig = FrontRoomsCameraRig.Attach(playerRoot, cam, EyeHeight);
+        rig.ResetLayers();
         yaw = 0f;
         pitch = 0f;
         fallSpeed = 0f;
@@ -603,12 +610,27 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         map.DoorMoved += OnDoorMoved;
         map.GlassBroken += OnGlassBroken;
         map.KeyTaken += OnKeyTaken;
+        map.DoorPulled += OnDoorPulled;
+        // The camera feels the door (audit §3.3, §3.4, §3.7): the lever's push, the latch landing, a locked
+        // door's two rattle jolts on their beats, and the Relay's break when it is close.
+        map.DoorHandleTurned += (d, _) => Jolt(d.position, DoorJoltRange, FrontRoomsShotTimings.Open.PushImpulseDeg, FrontRoomsShotTimings.Open.PushImpulseDecay);
+        map.DoorLatched += (d, p) => Jolt(p, DoorJoltRange, FrontRoomsShotTimings.Open.ShutLatchImpulseDeg, FrontRoomsShotTimings.Open.PushImpulseDecay);
+        rattleJolts.Clear();
+        map.DoorLocked += p =>
+        {
+            rattleJolts.Add((elapsed + FrontRoomsShotTimings.Rattle.Jolt1, p));
+            rattleJolts.Add((elapsed + FrontRoomsShotTimings.Rattle.Jolt2, p));
+        };
+        map.DoorBroken += p => Jolt(p, FrontRoomsShotTimings.DoorBreak.CameraRange, FrontRoomsShotTimings.DoorBreak.BreakShakeDeg, FrontRoomsShotTimings.DoorBreak.BreakShakeDecay);
         // A live build radius change moves the far plane (in the start rooms UpdateStartRooms sets it every frame).
         map.LiveApplied += () => { if (cam != null && roomStream == null) cam.farClipPlane = map.SightDistance; };
         map.StreamFocus = map.CellCenter(startDoorCell);
         map.StartLampsNorth = 0f;
         map.StartLampsSouth = 0f;
         map.Begin(playerRoot, false);
+        // The start rooms take Level 0's reflection at once (no blend from the title's).
+        reflectionSet = false;
+        UpdateReflectionZone(true);
 
         tier = 1;
         tierStall = 0f;
@@ -618,6 +640,11 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         relay.DoorBlow += p =>
         {
             if (hunterRig != null) hunterRig.DoorBlow(relay.BlowIndex, relay.BlowCount);
+            // Each blow shakes the camera a little harder (the first at the minimum, the last at the maximum), within 8 m of the door.
+            var t = relay.BlowCount > 1 ? relay.BlowIndex / (relay.BlowCount - 1f) : 1f;
+            Jolt(p, FrontRoomsShotTimings.DoorBreak.CameraRange,
+                Mathf.Lerp(FrontRoomsShotTimings.DoorBreak.BlowShakeMinDeg, FrontRoomsShotTimings.DoorBreak.BlowShakeMaxDeg, t),
+                FrontRoomsShotTimings.DoorBreak.BlowShake);
             // Under FMOD the sound layer plays the blows (AUDIO_CONTRACT.md).
             if (!FrontRooms.Audio.FrontRoomsFmod.Ready) FoleyDoorBreak(Flat(p));
         };
@@ -812,7 +839,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
 
     void OnDoorMoved(Vector3 p)
     {
-        Sound(doorClip, Flat(p), .8f);
+        // Under FMOD the sound layer plays the door (AUDIO_CONTRACT.md).
+        if (!FrontRooms.Audio.FrontRoomsFmod.Ready) Sound(doorClip, Flat(p), .8f);
         relay?.Noise(p, hunterTuning.doorNoiseRadius);
         Event("door", Flat(p).ToString());
     }
@@ -828,7 +856,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     void OnKeyTaken(GridCoord zone)
     {
         keysTaken++;
-        Flash("KEY  /  OPENS THIS ZONE'S DOORS");
+        // The key panel fading in is the pickup cue until keys open doors (audit F1, 1.8).
         Event("key", zone.ToString());
     }
 
@@ -845,7 +873,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
 #endif
         {
             if (mouseSettleFrames > 0) mouseSettleFrames--;
-            else
+            // While a shot holds the look, mouse movement is dropped, not saved for later.
+            else if (rig == null || !rig.LookLocked)
             {
                 yaw += Input.GetAxisRaw("Mouse X") * 2.1f;
                 pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * 2.1f, -75f, 75f);
@@ -862,8 +891,32 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             local = new Vector2(horizontal, vertical);
             sprintHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         }
+        if (rig != null)
+        {
+            rig.ClampLook(ref yaw, ref pitch);
+            if (rig.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
+            // S cancels a shot that allows it (Esc is pause and never cancels).
+            if (rig.InShot && Input.GetKeyDown(KeyCode.S)) rig.Consume(ShotInput.Back);
+        }
         playerRoot.rotation = Quaternion.Euler(0f, yaw, 0f);
-        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        if (rig != null) rig.SetBase(pitch);
+        else cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        // A pull: the player steps clear onto the latch side while the leaf waits (single-acting doors).
+        var stepVelocity = Vector3.zero;
+        if (pullClear.HasValue)
+        {
+            pullClearTime += dt;
+            var toClear = pullClear.Value - playerRoot.position;
+            toClear.y = 0f;
+            // Arrive exactly (the last step lands on the spot): the spot sits right at the leaf's reach, so stopping short leaves the body in its way.
+            if (toClear.magnitude < 1e-3f || pullClearTime > PullStepSeconds || (relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase))) pullClear = null;
+            else
+            {
+                local = Vector2.zero;
+                sprintHeld = false;
+                stepVelocity = Vector3.ClampMagnitude(toClear / Mathf.Max(dt, 1e-4f), PullStepSpeed);
+            }
+        }
         var wish = playerRoot.right * local.x + playerRoot.forward * local.y;
         if (wish.sqrMagnitude > 1f) wish.Normalize();
         var sprinting = sprintHeld && wish.sqrMagnitude > .01f && stamina > 0f;
@@ -880,7 +933,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         fallSpeed = playerBody.isGrounded ? -1f : fallSpeed - 9.81f * dt;
         var before = playerPos;
         if (climbTime >= 0f || TryStartClimb(wish)) Climb(dt);
-        else playerBody.Move((wish * (sprinting ? Run : Walk) + glide + Vector3.up * fallSpeed) * dt);
+        else playerBody.Move((wish * (sprinting ? Run : Walk) + glide + stepVelocity + Vector3.up * fallSpeed) * dt);
         glide = Vector3.MoveTowards(glide, Vector3.zero, FrontRoomsRoomStream.TitleSpeed / GlideSeconds * dt);
         playerPos = Flat(playerRoot.position);
         if (Vector2.Distance(before, playerPos) > .001f)
@@ -925,7 +978,10 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (relay.Released || streamFade >= 0f || roomStream == null)
         {
             UpdateRelayTuning();
-            relay.Tick(dt, playerRoot.position, cam.transform.position, playerRoot.forward);
+            // The Relay sees the player's base eye, never a shot or shake pose.
+            relay.Tick(dt, playerRoot.position, rig != null ? rig.BaseEye.position : cam.transform.position, playerRoot.forward);
+            // A chasing or seeing Relay frees the player from any shot at once (audit §3.2).
+            if (rig != null && (relay.SeesPlayer || relay.State == HunterState.Chase)) rig.CancelForRelay();
         }
 #if UNITY_EDITOR
         if (tickWatch != null && tickWatch.Elapsed.TotalMilliseconds > autoRelayTickMs)
@@ -935,6 +991,63 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         }
 #endif
         UpdateRelayRig(dt);
+        UpdateReflectionZone(false);
+        // Picture layers last, after gameplay has read BaseEye this frame.
+        rig?.Tick(dt);
+    }
+
+    /// <summary>
+    /// The reflection cube for where the player stands (FrontRoomsLook, the visual chat's): the
+    /// zone's kind, or the dead-lamp cube under a dead, dim or missing lamp, keyed by the lamp's
+    /// temperament so a flicker never pumps it. Worked out again only when the player's cell
+    /// changes; Look crossfades over its own 0.5 s.
+    /// </summary>
+    void UpdateReflectionZone(bool force)
+    {
+        if (map == null || playerRoot == null) return;
+        var cell = map.CellOf(playerRoot.position);
+        if (!force && reflectionSet && cell == reflectionCell) return;
+        reflectionCell = cell;
+        FrontRoomsLook.ReflectionZone zone;
+        if (inStartRooms || map.InStartArea(cell)) zone = FrontRoomsLook.ReflectionZone.Level0;
+        else
+        {
+            var info = map.ZoneOf(cell);
+            var lamp = map.LampModeOf(cell);
+            if (lamp == ModuleLamp.Dead || lamp == ModuleLamp.Dim || lamp == ModuleLamp.Off) zone = FrontRoomsLook.ReflectionZone.DeadLamp;
+            else if (info.theme == ZoneTheme.Office) zone = FrontRoomsLook.ReflectionZone.Office;
+            else if (info.height == ZoneHeight.Tall) zone = FrontRoomsLook.ReflectionZone.Tall;
+            else zone = FrontRoomsLook.ReflectionZone.Level0;
+        }
+        if (!force && reflectionSet && zone == reflectionZone) return;
+        reflectionZone = zone;
+        FrontRoomsLook.SetZoneReflection(zone, force || !reflectionSet ? 0f : .5f);
+        reflectionSet = true;
+    }
+
+    // A pull's step: where to, and for how long the leaf waits for it (MapWorld.DoorPullBeatSeconds).
+    Vector3? pullClear;
+    float pullClearTime;
+    const float PullStepSeconds = FrontRoomsMapWorld.PullStepSeconds, PullStepSpeed = FrontRoomsMapWorld.PullStepSpeed;
+
+    // Flat reach from the body to any point of a leaf, open or shut: the use ray plus the open leaf's tip.
+    const float DoorJoltRange = Reach + ModuleUnits.DoorWidth * 1.2f;
+    // A locked door's rattle jolts, due at Rattle.Jolt1 and Jolt2 after the try (run time, so a pause holds them).
+    readonly List<(float at, Vector3 p)> rattleJolts = new List<(float, Vector3)>();
+
+    /// <summary>
+    /// The door opens toward the player: step them to the clear spot beside the latch, with the
+    /// controller (so walls still hold), during the pull beat. Not while the Relay chases or sees
+    /// them: they keep control, and the leaf rests on them until they move.
+    /// </summary>
+    void OnDoorPulled(FrontRoomsMapWorld.Door door, Vector3 clear)
+    {
+        if (playerRoot == null || (relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase))) return;
+        if (Flat(clear - playerRoot.position).sqrMagnitude < 1e-4f) return;
+        // Never a step that cannot finish in the pull beat (an open from across the cell): they keep control instead.
+        if (Flat(clear - playerRoot.position).magnitude > PullStepSpeed * PullStepSeconds) return;
+        pullClear = clear;
+        pullClearTime = 0f;
     }
 
     /// <summary>Walking into a broken window's frame from up to 0.95 m away starts a climb through it.</summary>
@@ -975,11 +1088,14 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         playerBody.enabled = false;
         playerRoot.position = Vector3.Lerp(climbFrom, climbTo, t * t * (3f - 2f * t)) + Vector3.up * (arc * ClimbLift);
         playerBody.enabled = true;
-        cam.transform.localPosition = new Vector3(0f, EyeHeight - arc * ClimbDuck, 0f);
+        // The duck under the window head is the body's stance, so the aim and the Relay see it too.
+        if (rig != null) rig.StanceDrop = arc * ClimbDuck;
+        else cam.transform.localPosition = new Vector3(0f, EyeHeight - arc * ClimbDuck, 0f);
         fallSpeed = 0f;
         if (t < 1f) return;
         climbTime = -1f;
-        cam.transform.localPosition = new Vector3(0f, EyeHeight, 0f);
+        if (rig != null) rig.StanceDrop = 0f;
+        else cam.transform.localPosition = new Vector3(0f, EyeHeight, 0f);
     }
 
     /// <summary>What the crosshair is on: E opens or shuts a door, holding E breaks glass.</summary>
@@ -989,12 +1105,25 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         aimed = null;
         prompt = null;
         aimedHold = false;
-        if (Physics.Raycast(new Ray(cam.transform.position, cam.transform.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
+        // Gameplay aims from the base eye: shots, shakes and leans are picture only.
+        var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+        if (Physics.Raycast(new Ray(eye.position, eye.rotation * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
         {
             prompt = map.Describe(hit.collider, out aimedHold);
+            // Tap mode: the pane breaks on repeated taps, so the prompt says so (the map's text is the hold prompt).
+            if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = "TAP E  ·  BREAK GLASS";
             if (prompt != null) aimed = hit.collider;
         }
-        if (previous != null && previous != aimed) map.ReleaseHold(previous);
+        if (previous != null && previous != aimed)
+        {
+            map.ReleaseHold(previous);
+            glassArmed = false;
+            tapCredit = 0f;
+            // Every pane not aimed at has no progress (leaving one releases it), so the bar starts again.
+            holdProgress = 0f;
+        }
+        // During a shot E belongs to the shot (cancel, or a buffered push), never to what is aimed at.
+        var pressed = Input.GetKeyDown(KeyCode.E) && (rig == null || !rig.Consume(ShotInput.Use));
         if (aimed == null)
         {
             holdProgress = 0f;
@@ -1003,23 +1132,52 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (!aimedHold)
         {
             holdProgress = 0f;
-            if (Input.GetKeyDown(KeyCode.E)) map.Use(aimed);
+            if (pressed) map.Use(aimed);
             return;
         }
-        if (Input.GetKey(KeyCode.E))
+        float step;
+        if (FrontRoomsSettings.TapToBreak)
         {
-            if (map.Hold(aimed, dt, out holdProgress))
+            // Tap mode: each tap banks a third of the hold, spent in real time, so taps are never faster than holding.
+            if (pressed && Time.time >= tapReadyAt)
+            {
+                tapCredit += TapProgress;
+                tapReadyAt = Time.time + TapCooldown;
+            }
+            step = Mathf.Min(dt, tapCredit);
+            tapCredit -= step;
+        }
+        else
+        {
+            // A hold starts only on a fresh press on the pane, not an E still held from a door.
+            if (pressed) glassArmed = true;
+            if (!Input.GetKey(KeyCode.E)) glassArmed = false;
+            step = glassArmed ? dt : 0f;
+        }
+        if (step > 0f)
+        {
+            if (map.Hold(aimed, step, out holdProgress))
             {
                 aimed = null;
                 holdProgress = 0f;
+                glassArmed = false;
+                tapCredit = 0f;
             }
         }
+        else if (FrontRoomsSettings.TapToBreak) map.PauseHold(aimed);   // the credit is spent: the stress stops, the progress stays
         else
         {
             map.ReleaseHold(aimed);
             holdProgress = 0f;
         }
     }
+
+    // Tap mode for breaking glass: progress per tap (seconds of hold) and the time between counted taps.
+    const float TapProgress = .35f, TapCooldown = .3f;
+
+    // The Relay rig's turn rate (picture only: the brain uses relay.Heading and SeesPlayer).
+    const float RelayTurnDegPerSecond = 360f;
+    int relayRelaysSeen = -1;
 
     void UpdateRelayRig(float dt)
     {
@@ -1029,7 +1187,15 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         var position = relay.Position;
         hunter.position = position;
         var facing = relay.SeesPlayer ? Flat(playerRoot.position - position) : Flat(relay.Heading);
-        if (facing.sqrMagnitude > .0001f) hunter.rotation = Quaternion.Euler(0f, Mathf.Atan2(facing.x, facing.y) * Mathf.Rad2Deg, 0f);
+        if (facing.sqrMagnitude > .0001f)
+        {
+            // It turns at a capped rate instead of snapping between its heading and the player (audit 1.5);
+            // the first frame it is out (release, relay) it simply faces the way it goes.
+            var target = Quaternion.Euler(0f, Mathf.Atan2(facing.x, facing.y) * Mathf.Rad2Deg, 0f);
+            var appeared = relay.Relays != relayRelaysSeen;
+            relayRelaysSeen = relay.Relays;
+            hunter.rotation = appeared ? target : Quaternion.RotateTowards(hunter.rotation, target, RelayTurnDegPerSecond * dt);
+        }
         var state = relay.State;
         if (hunterRig != null)
         {
@@ -1305,32 +1471,77 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         UpdateDisplaySettingsText();
     }
 
+    /// <summary>The settings panel's rows: section, name, value, and a step for ← → (or Enter).</summary>
+    (string section, string label, Func<string> value, Action<int> step)[] SettingsRows() => new (string, string, Func<string>, Action<int>)[]
+    {
+        ("OUTPUT", "HDR RENDER", () => hdrEnabled ? "ON" : "OFF  (SDR)", d => ApplyHdrMode(!hdrEnabled, true)),
+        ("COMFORT", "CAMERA MOTION", () => FrontRoomsSettings.CameraMotionPercent == 0 ? "OFF" : FrontRoomsSettings.CameraMotionPercent + "%", d => FrontRoomsSettings.StepCameraMotion(d)),
+        ("COMFORT", "REDUCE FLASHING", () => FrontRoomsSettings.ReduceFlashing ? "ON" : "OFF", d => FrontRoomsSettings.SetReduceFlashing(!FrontRoomsSettings.ReduceFlashing)),
+        ("INPUT", "BREAK GLASS", () => FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E", d => FrontRoomsSettings.SetTapToBreak(!FrontRoomsSettings.TapToBreak)),
+        ("ASSIST", "CAPTIONS", () => FrontRoomsSettings.Captions ? "ON" : "OFF", d => FrontRoomsSettings.SetCaptions(!FrontRoomsSettings.Captions)),
+        ("ASSIST", "RELAY READOUT", () => FrontRoomsSettings.RelayReadout ? "ON" : "OFF", d => FrontRoomsSettings.SetRelayReadout(!FrontRoomsSettings.RelayReadout)),
+    };
+
     void UpdateDisplaySettingsText()
     {
         if (displaySettingsText == null) return;
-        var mode = hdrEnabled ? "HDR RENDER  /  ON" : "HDR RENDER  /  OFF  (SDR)";
-        var readout = relayReadout ? "RELAY READOUT  /  ON" : "RELAY READOUT  /  OFF";
-        displaySettingsText.text = "<size=30><b>DISPLAY SETTINGS</b></size>\n\n"
-            + "OUTPUT\n<size=34><color=#F4DF3B>" + mode + "</color></size>\n\n"
-            + "ASSIST\n<size=26><color=#F4DF3B>" + readout + "</color></size>\n<size=16>THE RELAY'S STATE AND DISTANCE ON SCREEN</size>\n\n"
-            + "H  TOGGLE HDR    T  TOGGLE RELAY READOUT\nESC  CLOSE";
+        var rows = SettingsRows();
+        settingsIndex = (settingsIndex % rows.Length + rows.Length) % rows.Length;
+        var text = new System.Text.StringBuilder("<size=30><b>SETTINGS</b></size>\n");
+        string section = null;
+        for (var i = 0; i < rows.Length; i++)
+        {
+            if (rows[i].section != section)
+            {
+                section = rows[i].section;
+                text.Append("\n<size=14>").Append(section).Append("</size>\n");
+            }
+            var line = rows[i].label + "  /  " + rows[i].value();
+            text.Append(i == settingsIndex ? "<color=#F4DF3B>›  " + line + "</color>\n" : line + "\n");
+        }
+        text.Append("\n<size=16>↑ ↓  CHOOSE    ← →  CHANGE    ESC  CLOSE</size>");
+        displaySettingsText.text = text.ToString();
     }
 
-    /// <summary>The assist that shows the Relay's state and distance, remembered across runs.</summary>
-    void SetRelayReadout(bool on)
+    /// <summary>The settings panel's keys: ↑ ↓ (W S) choose a row, ← → (A D), Enter or Space change it; H and T stay as shortcuts.</summary>
+    void HandleSettingsKeys()
     {
-        relayReadout = on;
-        PlayerPrefs.SetInt(RelayReadoutPreferenceKey, on ? 1 : 0);
-        PlayerPrefs.Save();
+        var rows = SettingsRows();
+        var moved = 0;
+        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) moved = -1;
+        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) moved = 1;
+        if (moved != 0)
+        {
+            settingsIndex = (settingsIndex + moved + rows.Length) % rows.Length;
+            UpdateDisplaySettingsText();
+            return;
+        }
+        // ← → step (camera motion stops at its ends); Enter and Space cycle (2). On/off rows ignore the value.
+        var change = Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) ? -1
+            : Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) ? 1
+            : Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space) ? 2 : 0;
+        if (Input.GetKeyDown(KeyCode.H)) { ApplyHdrMode(!hdrEnabled, true); return; }
+        if (Input.GetKeyDown(KeyCode.T)) { FrontRoomsSettings.SetRelayReadout(!FrontRoomsSettings.RelayReadout); UpdateDisplaySettingsText(); return; }
+        if (change == 0) return;
+        rows[settingsIndex].step(change);
         UpdateDisplaySettingsText();
     }
+
+    /// <summary>The pause card, following the input settings.</summary>
+    string PauseText() => "<size=88><b>PAUSED</b></size>\n\n<size=13>WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  DOOR    "
+        + (FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E") + "  BREAK GLASS\nR  RESTART    O  SETTINGS</size>\n\n<color=#F4DF3B><size=20>ESC  RESUME</size></color>";
 
     void ToggleDisplaySettings()
     {
         if (phase != Phase.Paused || displaySettingsPanel == null) return;
         displaySettingsOpen = !displaySettingsOpen;
         displaySettingsPanel.SetActive(displaySettingsOpen);
-        if (overlayText != null) overlayText.enabled = !displaySettingsOpen;
+        if (overlayText != null)
+        {
+            overlayText.enabled = !displaySettingsOpen;
+            // Back on the pause card: its instructions follow the input setting just changed.
+            if (!displaySettingsOpen) overlayText.text = PauseText();
+        }
         UpdateDisplaySettingsText();
     }
 
@@ -1472,9 +1683,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         gameplayHudAlpha = 0f;
         ApplyGameplayHudAlpha();
 
-        displaySettingsPanel = Panel(g.transform, "Display settings", new Vector2(.5f, .5f), Vector2.zero, new Vector2(920, 560), new Color(.055f, .055f, .05f, .97f));
-        Rule(displaySettingsPanel.transform, "Display settings accent", new Vector2(0, .5f), new Vector2(28, 0), new Vector2(4, 236), accent);
-        displaySettingsText = Text(displaySettingsPanel.transform, "Display settings text", new Vector2(.5f, .5f), new Vector2(18, 0), new Vector2(760, 460), 24, TextAnchor.MiddleCenter);
+        displaySettingsPanel = Panel(g.transform, "Display settings", new Vector2(.5f, .5f), Vector2.zero, new Vector2(920, 720), new Color(.055f, .055f, .05f, .97f));
+        Rule(displaySettingsPanel.transform, "Display settings accent", new Vector2(0, .5f), new Vector2(28, 0), new Vector2(4, 320), accent);
+        displaySettingsText = Text(displaySettingsPanel.transform, "Display settings text", new Vector2(.5f, .5f), new Vector2(18, 0), new Vector2(760, 660), 24, TextAnchor.MiddleCenter);
         displaySettingsText.color = paper;
         displaySettingsPanel.SetActive(false);
         overlay = new GameObject("Menu"); overlay.transform.SetParent(g.transform, false); var image = overlay.AddComponent<Image>(); overlayImage = image;
@@ -1495,7 +1706,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             settingsRect.anchorMin = settingsRect.anchorMax = new Vector2(.5f, .5f);
             settingsRect.pivot = new Vector2(.5f, .5f);
             settingsRect.anchoredPosition = Vector2.zero;
-            settingsRect.sizeDelta = new Vector2(920f, 420f);
+            settingsRect.sizeDelta = new Vector2(920f, 720f);
         }
         logoImage = Panel(overlay.transform, "FrontRooms brand logo", new Vector2(.5f, .5f), Vector2.zero, new Vector2(965f, 192f), Color.white).GetComponent<Image>();
         logoImage.raycastTarget = false;
@@ -1544,7 +1755,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             overlayText.enabled = false;
         }
         else overlayText.enabled = true;
-        if (p == Phase.Paused) overlayText.text = "<size=88><b>PAUSED</b></size>\n\n<size=13>WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  DOOR    HOLD E  BREAK GLASS\nR  RESTART    O  DISPLAY SETTINGS</size>\n\n<color=#F4DF3B><size=20>ESC  RESUME</size></color>";
+        if (p == Phase.Paused) overlayText.text = PauseText();
+        // Re-locking the cursor can report one large mouse jump: ignore the first frames back.
+        if (playing && wasPaused) mouseSettleFrames = 2;
         if (p == Phase.Caught)
             overlayText.text = "<size=88><b>CAUGHT</b></size>\n\n<size=24>" + Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
     }
@@ -1560,11 +1773,11 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (!Application.isPlaying) return;
         if (phase == Phase.Title && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))) RequestTitleStart();
         else if (phase == Phase.Paused && Input.GetKeyDown(KeyCode.O)) ToggleDisplaySettings();
-        else if (displaySettingsOpen && Input.GetKeyDown(KeyCode.H)) ApplyHdrMode(!hdrEnabled, true);
-        else if (displaySettingsOpen && Input.GetKeyDown(KeyCode.T)) SetRelayReadout(!relayReadout);
         else if (Input.GetKeyDown(KeyCode.Escape) && displaySettingsOpen) ToggleDisplaySettings();
+        else if (displaySettingsOpen) HandleSettingsKeys();
         else if (Input.GetKeyDown(KeyCode.Escape) && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
-        if (Input.GetKeyDown(KeyCode.R) && phase != Phase.Playing && phase != Phase.Title) { restart = true; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
+        // R restarts from the pause or caught card, never while the settings panel is open.
+        if (!displaySettingsOpen && Input.GetKeyDown(KeyCode.R) && phase != Phase.Playing && phase != Phase.Title) { restart = true; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
         var dt = Mathf.Min(Time.deltaTime, .1f);
 #if UNITY_EDITOR
         if (autopilot) AutopilotTick(dt);
@@ -1575,6 +1788,12 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         {
             elapsed += dt;
             flashTime -= dt;
+            for (var i = rattleJolts.Count - 1; i >= 0; i--)
+            {
+                if (elapsed < rattleJolts[i].at) continue;
+                Jolt(rattleJolts[i].p, DoorJoltRange, FrontRoomsShotTimings.Rattle.CameraImpulseDeg, FrontRoomsShotTimings.Open.PushImpulseDecay);
+                rattleJolts.RemoveAt(i);
+            }
             UpdateMapPlay(dt);
         }
         UpdateHud();
@@ -1595,7 +1814,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         roomMetaText.text = play ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
         roomText.text = play ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
         // The Relay's state and distance are an assist, off by default.
-        var showThreat = play && released && relayReadout;
+        var showThreat = play && released && FrontRoomsSettings.RelayReadout;
         threatStateText.text = showThreat ? threat : "";
         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
         if (crosshairImage != null) crosshairImage.enabled = play;
@@ -1617,20 +1836,44 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         }
         if (roomPanel != null) roomPanel.SetActive(play);
         if (threatPanel != null) threatPanel.SetActive(showThreat);
-        if (keyPanel != null) keyPanel.SetActive(play && !inStartRooms && map.HasKeyFor(zone.id));
+        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id);
+        if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
+        {
+            keyLabelZone = zone.id;
+            keyLabelSet = true;
+            keyText.text = KeyLabel(zone);
+        }
+        if (keyPanel != null) keyPanel.SetActive(showKey);
         if (contextPanel != null) contextPanel.SetActive(play && hint.Length > 0);
     }
+
+    // The zone the key panel's label was written for (written again only when it changes).
+    GridCoord keyLabelZone;
+    bool keyLabelSet;
+
+    /// <summary>What the key panel calls the key it shows: the zone it belongs to (audit 1.8).</summary>
+    static string KeyLabel(ZoneInfo zone) => ZoneName(zone) + " KEY";
 
     float RelayDistance() => relay == null || !relay.Released ? -1f : Vector2.Distance(playerPos, Flat(relay.Position));
     void ApplyGameplayHudAlpha()
     {
-        if (roomHudGroup != null) roomHudGroup.alpha = gameplayHudAlpha;
-        if (threatHudGroup != null) threatHudGroup.alpha = gameplayHudAlpha;
+        // A takeover fades the HUD, but never the hint card (it carries captions).
+        var hud = gameplayHudAlpha * (rig != null ? 1f - rig.HudFade : 1f);
+        if (roomHudGroup != null) roomHudGroup.alpha = hud;
+        if (threatHudGroup != null) threatHudGroup.alpha = hud;
         if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
-        if (crosshairHudGroup != null) crosshairHudGroup.alpha = gameplayHudAlpha;
-        if (keyHudGroup != null) keyHudGroup.alpha = gameplayHudAlpha;
+        if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
+        if (keyHudGroup != null) keyHudGroup.alpha = hud;
     }
     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
+
+    /// <summary>A camera shake (picture only) when something happens within <paramref name="range"/> metres of the player.</summary>
+    void Jolt(Vector3 at, float range, float degrees, float decaySeconds)
+    {
+        if (rig == null || playerRoot == null || phase != Phase.Playing) return;
+        if (Flat(at - playerRoot.position).sqrMagnitude > range * range) return;
+        rig.AddTrauma(degrees, decaySeconds);
+    }
 
     /// <summary>How much faster than the base the tier makes the chase: the run cycle and its step clock follow, so the feet keep up (1 at tier 1).</summary>
     float ChasePace => relayTuning.chaseSpeed / Mathf.Max(.01f, hunterTuning.chaseSpeed);
@@ -1933,6 +2176,16 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
         {
             if (map.TryOpenDoor(here, next)) autoDoorsOpened++;
+            // The leaf is on its way (after a pull, the game has stepped the walker clear): wait for it, facing the door.
+            var opening = map.DoorBetween(here, next);
+            if (opening != null && opening.open)
+            {
+                var face = map.CrossingPoint(here, next) - playerRoot.position;
+                face.y = 0f;
+                yaw = Mathf.MoveTowardsAngle(yaw, Mathf.Atan2(face.x, face.z) * Mathf.Rad2Deg, 300f * dt);
+                local = Vector2.zero;
+                return;
+            }
         }
         else if (passage != FrontRoomsMapWorld.Passage.Open)
         {
@@ -1998,6 +2251,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         var go = new GameObject("AUTOPILOT / look-at camera");
         var shot = go.AddComponent<Camera>();
         shot.CopyFrom(cam);
+        // A capture mid-shot keeps the player's own field of view.
+        if (rig != null) shot.fieldOfView = rig.BaseFov;
         shot.enabled = false;
         go.transform.position = from;
         go.transform.LookAt(target);
@@ -2023,8 +2278,10 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         var go = new GameObject("AUTOPILOT / look-around camera");
         var shot = go.AddComponent<Camera>();
         shot.CopyFrom(cam);
+        // A capture mid-shot keeps the player's own field of view.
+        if (rig != null) shot.fieldOfView = rig.BaseFov;
         shot.enabled = false;
-        go.transform.position = cam.transform.position;
+        go.transform.position = rig != null ? rig.BaseEye.position : cam.transform.position;
         for (var i = 0; i < 4; i++)
         {
             go.transform.rotation = Quaternion.Euler(6f, yaw + i * 90f, 0f);
@@ -2040,6 +2297,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         var go = new GameObject("AUTOPILOT / relay camera");
         var shot = go.AddComponent<Camera>();
         shot.CopyFrom(cam);
+        // A capture mid-shot keeps the player's own field of view.
+        if (rig != null) shot.fieldOfView = rig.BaseFov;
         shot.enabled = false;
         // Stand in the most open of eight directions around the Relay, so the
         // shot is not taken from inside a wall.

@@ -45,6 +45,7 @@ import math
 import random
 
 import bmesh
+import bpy
 from mathutils import Vector
 
 # ------------------------------------------------------------------ frames
@@ -528,6 +529,7 @@ def box_u(kit, size, centre, slot, bevel=0.0005, segments=2, name="box"):
 def paint_wear(obj, fn=None):
     """Point colour attribute fr_wear (white = clean). fn(X, Y, Z) in Unity
     window-root metres -> (r, g, b)."""
+    bpy.context.view_layer.update()          # matrix_world of freshly placed parts
     mesh = obj.data
     attr = mesh.color_attributes.get("fr_wear") or mesh.color_attributes.new("fr_wear", "BYTE_COLOR", "POINT")
     mw = obj.matrix_world
@@ -554,6 +556,7 @@ def grain(obj, axis):
 
 
 def unity_verts(kit):
+    bpy.context.view_layer.update()
     for obj in kit.parts:
         mw = obj.matrix_world
         for v in obj.data.vertices:

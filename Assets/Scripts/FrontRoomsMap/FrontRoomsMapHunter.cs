@@ -35,15 +35,17 @@ public sealed class FrontRoomsMapHunter
     const float Radius = ModuleUnits.RelayRadius, ProbeBottom = .4f, ProbeTop = 1.95f;
     const float NodeStep = .25f, StraightRecheck = .25f;
     const int NodesPerCell = 12, MaxRegionCells = 4, MaxRegionNodes = NodesPerCell * NodesPerCell * MaxRegionCells * MaxRegionCells;
-    const float BlowInterval = .5f;
+    const float BlowInterval = FrontRoomsShotTimings.DoorBreak.BlowInterval;
     // The last blow lands this long before the door gives, so the rig's break-through snap reads as the impact.
-    const float FinalBlowLead = .1f;
+    const float FinalBlowLead = FrontRoomsShotTimings.DoorBreak.FinalBlowLead;
     // StateTime is summed frame by frame: 60 frames of 1/60 s fall just short of 1 s. Moments are met this early.
     const float TimeSlack = 1e-4f;
     // The rig's door squeeze: 1 on the door line, 0 from this far out.
     const float SqueezeReach = .6f;
-    // After the last blow it waits for the leaf to fall open (it swings in 0.18 s).
-    const float DoorFallSeconds = .25f;
+    // After the last blow it waits for the leaf to fall open: the throw past the stop and the bounce to rest.
+    const float DoorFallSeconds = FrontRoomsShotTimings.DoorBreak.ThrowSeconds + FrontRoomsMapWorld.DoorBreakBounceSeconds;
+    // Breaking from the stop side it stands this far in front of the opening; from the swing side, beside the latch, out of the leaf's sweep.
+    const float BreakFaceDistance = .45f;
     const float ReplanSeconds = .35f;
     const float LeashCheckSeconds = 1f;
     const int SpawnMinCells = 9, SpawnMaxCells = 15, LeashCells = 30;
@@ -111,6 +113,8 @@ public sealed class FrontRoomsMapHunter
     bool hasLeg;
     float straightCheck;
     FrontRoomsMapWorld.Door breakingDoor;
+    // Where it faces while it breaks: the door from the stop side, the lock from the swing side.
+    Vector3 breakFacing;
     HunterState resumeState;
     bool caught;
     uint rng;
@@ -159,6 +163,8 @@ public sealed class FrontRoomsMapHunter
         this.playerCollider = playerCollider;
         this.rig = rig;
         rng = (uint)seed | 1u;
+        // A door leaf the player swings stops on the Relay's body as on the player's.
+        if (world != null) world.RelayBody = () => Released ? position : (Vector3?)null;
     }
 
     public void Tick(float dt, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
@@ -260,7 +266,8 @@ public sealed class FrontRoomsMapHunter
         var step = position - before;
         step.y = 0f;
         Moving = step.sqrMagnitude > 1e-6f;
-        if (Moving) Heading = step.normalized;
+        if (State == HunterState.BreakDoor && breakingDoor != null) Heading = breakFacing;
+        else if (Moving) Heading = step.normalized;
         DoorSqueeze = DoorSqueezeAt(position);
 
         if (SeesPlayer && Flat(position - playerFeet).magnitude < tuning.catchDistance)
@@ -276,7 +283,7 @@ public sealed class FrontRoomsMapHunter
         position = feet;
         path.Clear();
         pathIndex = 0;
-        breakingDoor = null;
+        StopBreaking();
         ResetSteering();
         sweep.Clear();
         sweepIndex = 0;
@@ -459,7 +466,7 @@ public sealed class FrontRoomsMapHunter
         ResetSteering();
         path.Clear();
         pathIndex = 0;
-        breakingDoor = null;
+        StopBreaking();
         ListenPoint = null;
         Relays++;
         Arrived?.Invoke(position, tag);
@@ -570,10 +577,18 @@ public sealed class FrontRoomsMapHunter
                 Plan(here, path[path.Count - 1], goal);
                 return false;
             }
-            var face = world.CrossingPoint(here, next) - Flat(world.CellCenter(next) - world.CellCenter(here)).normalized * .45f;
-            if (MoveDirect(face, speed, dt))
+            if (door.broken)
+            {
+                // Already broken, its leaf still falling or resting on a body short of passable:
+                // wait at the stance, no new blows. It walks through once the leaf swings clear.
+                MoveDirect(BreakStance(door, here, next, out _), speed, dt);
+                return false;
+            }
+            if (MoveDirect(BreakStance(door, here, next, out var facing), speed, dt))
             {
                 breakingDoor = door;
+                breakFacing = facing;
+                world.MarkBeingBroken(door, true);
                 blowsStruck = 0;
                 BlowIndex = -1;
                 breakSeconds = Mathf.Max(.05f, tuning.breakDoorSeconds);
@@ -931,16 +946,52 @@ public sealed class FrontRoomsMapHunter
     bool Ignored(Collider c, bool furniture) =>
         c == null || c == playerCollider || (rig != null && c.transform.IsChildOf(rig)) || (!furniture && !world.IsArchitecture(c));
 
+    /// <summary>
+    /// Where to stand to break a shut door from cell <paramref name="here"/>,
+    /// and which way to face. From the stop side it shoulders the door in
+    /// front of the opening, and the leaf bursts away from it. From the swing
+    /// side the leaf will come toward it: it stands beside the latch, out of
+    /// the leaf's sweep, facing the lock, and rips it open.
+    /// </summary>
+    Vector3 BreakStance(FrontRoomsMapWorld.Door door, GridCoord here, GridCoord next, out Vector3 facing)
+    {
+        var into = Flat(world.CellCenter(next) - world.CellCenter(here)).normalized;
+        var face = world.CrossingPoint(here, next) - into * BreakFaceDistance;
+        facing = into;
+        if (!FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(here))) return face;
+        // The body plus 5 cm: MoveDirect calls a point reached 4 cm short of it.
+        var stance = FrontRoomsMapWorld.ClearOfSwing(door, face, Radius + .05f);
+        var toLock = Flat(FrontRoomsMapWorld.LockPoint(door, stance) - stance);
+        if (toLock.sqrMagnitude > 1e-4f) facing = toLock.normalized;
+        return stance;
+    }
+
+    // It leaves the door it was breaking (relayed, placed, or the door gave or opened).
+    void StopBreaking()
+    {
+        if (breakingDoor != null) world.MarkBeingBroken(breakingDoor, false);
+        breakingDoor = null;
+    }
+
     void TickBreak(float dt)
     {
+        // Opened under it (it was already swinging when the break began): nothing to break, walk on through.
+        if (breakingDoor != null && !breakingDoor.broken && world.PassageBetween(breakingDoor.a, breakingDoor.b) == FrontRoomsMapWorld.Passage.Open)
+        {
+            StopBreaking();
+            SetState(resumeState == HunterState.Chase ? HunterState.Chase : HunterState.Hunt);
+            return;
+        }
         // Blows every 0.5 s from 0.5 s in (0, 1, ... BlowCount - 2); the last one
         // (BlowCount - 1) a beat before the door gives at breakDoorSeconds.
+        // Each jolts the leaf toward its swing side (the map's picture of the blow).
         var final = BlowCount - 1;
         var due = StateTime + TimeSlack >= BreakSeconds - FinalBlowLead ? final : Mathf.Min(final - 1, Mathf.FloorToInt((StateTime + TimeSlack) / BlowInterval) - 1);
         while (breakingDoor != null && blowsStruck <= due)
         {
             BlowIndex = blowsStruck++;
             DoorBlow?.Invoke(breakingDoor.position);
+            world.JoltForBlow(breakingDoor, BlowIndex, BlowCount);
         }
         if (StateTime + TimeSlack < BreakSeconds) return;
         if (breakingDoor != null)

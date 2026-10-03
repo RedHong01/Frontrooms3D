@@ -23,7 +23,7 @@ bench in §2.0 (this Mac, editor). **ESTIMATE** = arithmetic or judgement. **UNV
 > native Metal plugin (`NativePlugin/FrontRoomsMetalGlassRT.mm`, task row G14) uses the M3 Max's hardware ray
 > tracing directly, through Unity's documented native rendering plug-in route (Manual
 > `low-level-native-plugin-rendering-extensions.html`: `IUnityGraphics`, and `GL.IssuePluginEvent` calls the plug-in
-> on the render thread). The G14 review measured ~0.5 ms at 1080p for the trace (`rt/01–03`). The report also said
+> on the render thread). The G14 review reports ~0.5 ms at 1080p for the trace (`VISUAL_CHAT_TASKS.md` status note, citing `rt/01–03`; I did not re-read those files). The report also said
 > Windows ray tracing needs HDRP. That is wrong too: `RayTracingAccelerationStructure` is an engine API, not an HDRP
 > one. It "only applies when SystemInfo.supportsRayTracing is true", and it can be bound to compute shaders or
 > globally "for all shader stages (including vertex and fragment shaders)" (ScriptReference
@@ -55,9 +55,11 @@ bench in §2.0 (this Mac, editor). **ESTIMATE** = arithmetic or judgement. **UNV
    Everything else is a pre-captured cube, box-projected only in rooms the player can see, with
    lights + probes in view ≤ 32 so URP's Forward+ tiles stay fine. Probes switch only off-screen, nearest
    first with hysteresis, so nothing pops (§3).
-5. **Tiers:** Web = zone cubes (+ optional PVS probes) + Relay-only overlay. High = cubes + room probes + a
-   planar for the held pane. Cinematic = High at full quality + realtime re-capture at hero windows + floor
-   SSR/planar. The full table is in §4.1.
+5. **Tiers** (full table in §4.1; RT added 2026-10-03):
+   - **Web:** zone cubes (+ optional PVS probes) + the Relay-only overlay.
+   - **High:** cubes + room probes + hardware RT glass reflections where available (Mac: Metal plugin; Windows: DX12
+     RT). Elsewhere a planar for the held pane.
+   - **Cinematic:** High at full quality + realtime re-capture at hero windows + floor SSR/planar.
 
 All costs are from an editor bench on your Mac (§2.0). They are ratios, not player or browser timings.
 
@@ -141,7 +143,9 @@ through a native plugin. Neither is shown by the `SystemInfo` flags below, which
   tricky to achieve in URP, especially in the presence of custom shaders"
   (https://discussions.unity.com/t/preview-of-screen-space-reflections-for-urp/1721494, reply of 2026-07-02).
   This is a research project of several weeks for a desktop-only result, and it is impossible on WebGL. Not
-  recommended this semester.
+  recommended this semester. *(2026-10-03: superseded. The Metal hardware path (G14) traces the rays in ~0.5 ms, so
+  the compute fallback is not needed on the Mac; G13 was dropped. The hit-shading problem described here still
+  applies to G14.)*
 
 ### 1.5 What Red should take away (rewritten 2026-10-03)
 
@@ -154,8 +158,8 @@ Ray tracing in FrontRooms means a **desktop-only reflection input to the glass s
 No HDRP and no surface-shader rewrite are needed. The glass shader now has ONE optional input for any of them,
 `_FR_GlassRTReflection` + `_FR_GlassRTWeight` (`10_implementation.md` §8). At weight 0 the output is bit-identical
 to the shader without the input (proved, `20_verification.md` §0). The hard part is shading the hit: the game's
-textures, the lit troffer lenses, the lamps and the Relay. Tracing the rays is the easy part (~0.5 ms at 1080p in
-the G14 bench). A planar camera (§2.4) is still the right tool where RT is unavailable: on a Windows card without
+textures, the lit troffer lenses, the lamps and the Relay. Tracing the rays is the easy part (~0.5 ms at 1080p
+reported by the G14 bench). A planar camera (§2.4) is still the right tool where RT is unavailable: on a Windows card without
 RT, and for the Relay-only overlay on the Web.
 
 ---

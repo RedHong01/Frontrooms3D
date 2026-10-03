@@ -514,21 +514,42 @@ def screw_head(kit, centre, normal, slot, rng, kind="flat", d=0.0095, segs=None,
     return obj
 
 
-def flat_head(kit, centre, normal, slot, rng, d=0.0095, half_segs=None, proud=0.00015, chamfer=0.0004,
-              slot_w=None, host=None, notch=0.0010, name="screw"):
-    """Slotted countersunk (flat) head, built directly (no boolean on the
-    head): two D-shaped halves, each a rim chamfer band (z 0 -> proud) and a
-    flat top, with the slot wall between them. 16 rim points by default,
-    44 tris. The slot continues ``notch`` deep into ``host`` (a box cut on
-    the plate under the head), so it reads as a real 1 mm slot."""
-    m = half_segs or SCREW_SEGS // 2
-    r = d / 2
-    w = slot_w or max(0.0008, d * 0.13)
+def _orient(bm, face, want):
+    face.normal_update()
+    if face.normal.dot(want) < 0:
+        face.normal_flip()
+
+
+def _head_frame(normal, rng):
     n = Vector(normal).normalized()
     a_, e1, e2 = _frame_for_axis(n)
     ang = rng.uniform(0, math.pi)
     t = e1 * math.cos(ang) + e2 * math.sin(ang)
-    s_ = n.cross(t)
+    return n, t, n.cross(t)
+
+
+def _bvec(v):
+    """Unity direction -> Blender direction."""
+    return Vector(U(*v))
+
+
+def _slot_notch(host, c0, n, t, s_, r, w, notch):
+    R = Matrix((t, s_, n)).transposed()
+    c2 = c0 + n * ((-notch + 0.0003) / 2)
+    cut(host, [cutter(None, None, R=R, centre=c2, half=(r * 0.97, w / 2, (notch + 0.0003) / 2))])
+
+
+def flat_head(kit, centre, normal, slot, rng, d=0.0095, half_segs=None, proud=0.00015, chamfer=0.0004,
+              slot_w=None, host=None, notch=0.0010, name="screw"):
+    """Slotted countersunk (flat) head, built directly: two D-shaped halves,
+    each a rim chamfer band (z 0 -> proud) and a flat top, with the slot
+    wall between them (16 rim points, 44 tris). The slot continues
+    ``notch`` deep into ``host`` (a box cut in the plate under the head),
+    so it reads as a real 1 mm slot."""
+    m = half_segs or SCREW_SEGS // 2
+    r = d / 2
+    w = slot_w or max(0.0008, d * 0.13)
+    n, t, s_ = _head_frame(normal, rng)
     c0 = Vector(centre)
     bm = bmesh.new()
     for sg in (1, -1):
@@ -540,30 +561,70 @@ def flat_head(kit, centre, normal, slot, rng, d=0.0095, half_segs=None, proud=0.
             ph = b0 + (math.pi - 2 * b0) * k / (m - 1)
             rim.append(bm.verts.new(U(*(c0 + t * (r * math.cos(th)) + s_ * (sg * r * math.sin(th))))))
             inn.append(bm.verts.new(U(*(c0 + n * proud + t * ((r - chamfer) * math.cos(ph)) + s_ * (sg * (r - chamfer) * math.sin(ph))))))
-        faces = []
         for k in range(m - 1):
-            faces.append(bm.faces.new((rim[k], rim[k + 1], inn[k + 1], inn[k])))
-        faces.append(bm.faces.new(inn))
-        faces.append(bm.faces.new((rim[0], inn[0], inn[-1], rim[-1])))
-    bm.normal_update()
-    # orient: away from the head's centre line, and up for the top
-    nb = Vector(U(*n)) - Vector(U(0, 0, 0))
-    cb = Vector(U(*c0))
-    for f in bm.faces:
-        fc = f.calc_center_median()
-        radial = fc - cb
-        want = radial - nb * radial.dot(nb)
-        if len(f.verts) > 4:
-            want = nb
-        elif want.length < 1e-9:
-            want = nb
-        if f.normal.dot(want) < 0:
-            f.normal_flip()
+            th = a0 + (math.pi - 2 * a0) * (k + 0.5) / (m - 1)
+            radial = t * math.cos(th) + s_ * (sg * math.sin(th))
+            _orient(bm, bm.faces.new((rim[k], rim[k + 1], inn[k + 1], inn[k])), _bvec(radial + n * 0.5))
+        _orient(bm, bm.faces.new(inn), _bvec(n))
+        _orient(bm, bm.faces.new((rim[0], inn[0], inn[-1], rim[-1])), _bvec(-s_ * sg))
     obj = _part(kit, bm, slot, name)
     if host is not None:
-        R = Matrix((t, s_, n)).transposed()
-        c2 = c0 + n * ((-notch + 0.0003) / 2)
-        cut(host, [cutter(None, None, R=R, centre=c2, half=(r * 0.97, w / 2, (notch + 0.0003) / 2))])
+        _slot_notch(host, c0, n, t, s_, r, w, notch)
+    obj["fr_screw"] = True
+    return obj
+
+
+def oval_head(kit, centre, normal, slot, rng, d=0.0068, half_segs=None, dome_k=0.18, slot_w=None, name="screw"):
+    """Slotted oval (raised countersunk) head, built directly: a full lower
+    band from the rim to the slot floor, then two half-domes separated by
+    the slot, with flat slot walls and floor (16 rim points, ~110 tris)."""
+    m = half_segs or SCREW_SEGS // 2
+    r = d / 2
+    dome = d * dome_k
+    w = slot_w or max(0.0008, d * 0.13)
+    depth = max(0.0006, 0.6 * dome)
+    zf = dome - depth
+    prof = [(r, 0.0), (0.82 * r, 0.55 * dome), (0.45 * r, 0.92 * dome), (0.0, dome)]
+
+    def r_at(z):
+        for (r0, z0), (r1, z1) in zip(prof, prof[1:]):
+            if z0 <= z <= z1:
+                return r0 + (r1 - r0) * (z - z0) / (z1 - z0)
+        return 0.0
+    upper = [(r_at(zf), zf)] + [(rr, zz) for rr, zz in prof if zz > zf + 1e-6 and rr > w / 2 + 1e-5]
+    n, t, s_ = _head_frame(normal, rng)
+    c0 = Vector(centre)
+    bm = bmesh.new()
+
+    def P(rad, ang, z):
+        return bm.verts.new(U(*(c0 + n * z + t * (rad * math.cos(ang)) + s_ * (rad * math.sin(ang)))))
+    af = math.asin((w / 2) / upper[0][0])
+    angs = {1: [af + (math.pi - 2 * af) * k / (m - 1) for k in range(m)],
+            -1: [math.pi + af + (math.pi - 2 * af) * k / (m - 1) for k in range(m)]}
+    ring_ang = angs[1] + angs[-1]
+    rim = [P(r, a, 0.0) for a in ring_ang]
+    flo = [P(upper[0][0], a, zf) for a in ring_ang]
+    N2 = len(ring_ang)
+    for i in range(N2):
+        j = (i + 1) % N2
+        mid = (ring_ang[i] + ring_ang[j]) / 2 + (math.pi if j == 0 else 0.0)
+        _orient(bm, bm.faces.new((rim[i], rim[j], flo[j], flo[i])), _bvec(t * math.cos(mid) + s_ * math.sin(mid) + n * 0.3))
+    halves = {1: flo[:m], -1: flo[m:]}
+    for sg in (1, -1):
+        arcs = [halves[sg]]
+        for rr, zz in upper[1:]:
+            a0 = math.asin((w / 2) / rr)
+            base = 0.0 if sg > 0 else math.pi
+            arcs.append([P(rr, base + a0 + (math.pi - 2 * a0) * k / (m - 1), zz) for k in range(m)])
+        for A, B in zip(arcs, arcs[1:]):
+            for k in range(m - 1):
+                mid = (angs[sg][k] + angs[sg][k + 1]) / 2
+                _orient(bm, bm.faces.new((A[k], A[k + 1], B[k + 1], B[k])), _bvec(t * math.cos(mid) + s_ * math.sin(mid) + n))
+        _orient(bm, bm.faces.new(arcs[-1]), _bvec(n))
+        wall = [a[0] for a in arcs] + [a[-1] for a in reversed(arcs)]
+        _orient(bm, bm.faces.new(wall), _bvec(-s_ * sg))
+    _orient(bm, bm.faces.new((halves[1][0], halves[-1][-1], halves[-1][0], halves[1][-1])), _bvec(n))
+    obj = _part(kit, bm, slot, name)
     obj["fr_screw"] = True
     return obj
 
@@ -721,6 +782,78 @@ def tri_count(objs):
     for o in objs:
         n += sum(len(p.vertices) - 2 for p in o.data.polygons)
     return n
+
+
+# ----------------------------------------------------------------- leaf
+def latch_z(x, inset=0.0):
+    """The bevelled latch edge (S 0.995 / P 0.9927), pulled in by inset."""
+    return LEAF_Z_LATCH_MID + LATCH_SLOPE * x - inset
+
+
+def latch_frame():
+    """Rotation (local -> Unity) of the latch edge: local x along the bevel
+    across the leaf (toward S), y up, z the outward edge normal."""
+    n = Vector((-LATCH_SLOPE, 0.0, 1.0)).normalized()
+    x = Vector((1.0, 0.0, LATCH_SLOPE)).normalized()
+    return Matrix((x, Vector((0, 1, 0)), n)).transposed(), n
+
+
+def leaf_section(inset=0.0, r_h=ARRIS, r_l=ARRIS, seams=(), seam_w=0.0003, seam_d=0.0003, segs=2):
+    """Plan section (X, Z) of the 44 mm visual leaf (§1.4): faces X +-0.022,
+    hinge edge Z 0.005 (square), latch edge bevelled 3 deg (S 0.995, P
+    0.9927); filleted arrises (r_h hinge side, r_l latch side; 2 segments);
+    V seam grooves on both edge faces at X in ``seams``. ``inset`` shrinks
+    the envelope (top / bottom chamfer rings)."""
+    xs = LEAF_X - inset
+    zh = LEAF_Z_HINGE + inset
+    pts, radii = [(-xs, zh)], [max(r_h - inset, 5e-5)]
+    for x in sorted(seams):
+        pts += [(x - seam_w / 2, zh), (x, zh + seam_d), (x + seam_w / 2, zh)]
+        radii += [0, 0, 0]
+    pts += [(xs, zh), (xs, latch_z(xs, inset))]
+    radii += [max(r_h - inset, 5e-5), max(r_l - inset, 5e-5)]
+    for x in sorted(seams, reverse=True):
+        pts += [(x + seam_w / 2, latch_z(x + seam_w / 2, inset)), (x, latch_z(x, inset) - seam_d),
+                (x - seam_w / 2, latch_z(x - seam_w / 2, inset))]
+        radii += [0, 0, 0]
+    pts += [(-xs, latch_z(-xs, inset))]
+    radii += [max(r_l - inset, 5e-5)]
+    return fillet_polygon(pts, radii, segs, closed=True)
+
+
+def chamfer_rings(y_edge, sign, section_fn):
+    """Three rings of a 2-segment 1.5 mm round at a leaf's bottom (sign +1)
+    or top (sign -1) edge: (Y, section) from the cap inward."""
+    A = ARRIS
+    out = []
+    for phi in (0.0, 45.0, 90.0):
+        o = A - A * math.sin(math.radians(phi))
+        h = A - A * math.cos(math.radians(phi))
+        out.append((y_edge + sign * h, section_fn(o)))
+    return out
+
+
+def leaf_mortise_cutters():
+    """Hinge-leaf mortises in the leaf's hinge edge (plate front flush at
+    Z 0.005, open toward the S face where the plate curls into the knuckle)."""
+    return [cutter((PLATE_X0, y0, LEAF_Z_HINGE - 0.0005), (0.030, y1, LEAF_Z_HINGE + PLATE_T)) for y0, y1 in HINGES]
+
+
+def edge_plate(kit, slot, yc, w, h, t, name, bevel=0.0003):
+    """A plate mortised flush into the bevelled latch edge, centred X 0,
+    height yc; returns (plate, cutter for the leaf body)."""
+    R, n = latch_frame()
+    face = Vector((0.0, yc, LEAF_Z_LATCH_MID))
+    plate = obox(kit, slot, centre=face - n * (t / 2), half=(w / 2, h / 2, t / 2), R=R, bevel=bevel, segs=1, name=name)
+    mort = cutter(None, None, R=R, centre=face - n * (t / 2 - 0.0002), half=(w / 2, h / 2, t / 2 + 0.0002))
+    return plate, mort
+
+
+def edge_opening(yc, w, h, depth=0.006):
+    """Cutter for a bolt opening through an edge plate at height yc."""
+    R, n = latch_frame()
+    face = Vector((0.0, yc, LEAF_Z_LATCH_MID))
+    return cutter(None, None, R=R, centre=face - n * (depth / 2 - 0.0003), half=(w / 2, h / 2, depth / 2))
 
 
 # ---------------------------------------------------------------- checks

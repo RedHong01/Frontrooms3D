@@ -25,9 +25,12 @@ Status: chosen direction, revision 3, 2026-10-03. Nothing is implemented. Writte
 
    The ink's part is in A.10.
 
-**Still open with Red:**
-- LD Q8 (EAR), Q10 (placard), Q11 (escalation coupling);
-- §7 below.
+7. **Later the same day** (relayed by the print chat):
+   - **Q10 placard: YES**, as designed in A.2. Its strings are narrative's, its typography 平面视觉's, the prop the visual chat's, and its placement 关卡设计's.
+   - **Q11: accepted.** Following the ink may raise the tier faster, which matches "every exit leads further in".
+   - **Q8 EAR (M7 LOGGED): keep, for later.**
+
+**Still open with Red:** §7 below.
 
 ---
 
@@ -180,7 +183,7 @@ The underprint is the building's power-failure exit guidance. It is honest about
 **Who printed it, and when.**
 - A contract-wallcovering mill (unnamed) printed a non-radioactive, light-charged ZnS:Cu underprint under the WP03 hard-edge print, in 1990.
 - It was sold as base-building life safety: "invisible by day, there when the power fails".
-- Each roll was drawn for one position on the floor plan. The roll stamp reads `LEVEL 0 · SHEET A-3 OF 4` / `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1` (A.11).
+- Each roll was drawn for one position on the floor plan. The roll stamp reads `LEVEL 0 · SHEET A-3 OF 4` / `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1` (A.11).
 - The underprint is invented. Its parts (pigment, chevron egress marking, NO EXIT, self-tests) are real and from the period.
 
 **Why only in the dark.**
@@ -223,7 +226,7 @@ The underprint is the building's power-failure exit guidance. It is honest about
 - With all Relay state text hidden from the HUD, the player learns to treat the plan as a map, never as a warning. Warnings come from the staged warning (A.10).
 
 **The forger: the other occupant.**
-- From T4 the roll stamp reads `OCCUPANTS 2`. Someone else has learned the ink and wants company.
+- From T4 the roll stamp reads `OCCUPANT LOAD 2`. Someone else has learned the ink and wants company.
 - **Why only FLOW:** they want you to come to them, and the building's "go" is the only word they have taught themselves.
 - **Why it shows under light:** real afterglow can never show under the lamp that feeds it. A FLOW you can see in full light is giving off its own light. It is too bright to be paper.
 - **The close tell:** the type is hand-drawn imitation, `THIƧ WAY OUT`: uneven, with the S of THIS reversed (A.11, layer 8).
@@ -265,11 +268,11 @@ The underprint is the building's power-failure exit guidance. It is honest about
 | M3 | NO EXIT | `NO` set larger above `EXIT`, as the code arranges it | A pocket. Always true |
 | M4 | OUT OF SERVICE | `OUT OF SERVICE · DOES NOT CLOSE` | The damage log. Over a run, a map of dead doors |
 | M5 | ALARM ROUTE | `ALARM · THIS WAY OUT`; on the door bars, `FIRE DOOR · KEEP CLOSED` | A door you can shut between you and the origin |
-| M6 | ROLL STAMP | Register crosshairs + `LEVEL 0 · SHEET A-3 OF 4` / `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1` | The substrate. It carries the escalation |
+| M6 | ROLL STAMP | Register crosshairs + `LEVEL 0 · SHEET A-3 OF 4` / `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1` | The substrate. It carries the escalation |
 | M7 | LOGGED | No new text | It was heard here, so leave quietly |
 | M8 | THIS WAY ON | `THIS WAY ON`; the stamp reads `SHEET A-1114 OF 4` | The plan has stopped pretending there is an outside. An Exit 8-style changed sign |
 | M9 | SCRATCH-THROUGH | A tally and words scratched through the décor: `IT ONLY GOES IN`, `SAME ROLL AGAIN`, `COUNTED 41 DOORS`, `R.M. 6/90`, `D.K. 11/90` | Other occupants were here. No gameplay meaning |
-| M10 | FORGERY | Hand-drawn imitation `THIƧ WAY OUT`; the stamp reads `OCCUPANTS 2` | Not the building's. It leads into a NO EXIT pocket |
+| M10 | FORGERY | Hand-drawn imitation `THIƧ WAY OUT`; the stamp reads `OCCUPANT LOAD 2` | Not the building's. It leads into a NO EXIT pocket |
 
 ### A.7 Run arc
 
@@ -279,7 +282,7 @@ The underprint is the building's power-failure exit guidance. It is honest about
 | T1 | + M4, the first self-test, the first alarm route; the stamp reads `SHEET A-4 OF 4` | It knows the building, not the monster |
 | T2 | M8, `SHEET A-1114 OF 4` | Every exit leads in |
 | T3 | M9 | Others followed it before me |
-| T4+ | `OCCUPANTS 2`, M10. Optional GROUND figures are not in v1 (§7) | Someone else writes in it |
+| T4+ | `OCCUPANT LOAD 2`, M10. Optional GROUND figures are not in v1 (§7) | Someone else writes in it |
 
 Optional Caught line: `OCCUPANT ACCOUNTED FOR` (map chat's HUD).
 
@@ -315,6 +318,26 @@ The systems chat owns the warning (`Documentation/RELAY_PURSUIT_REDESIGN.md`). T
 Revision 2 had an ink halo around the Relay (the herald brown-out). It is **withdrawn**. None of the three stages is a stealth rule (LD R13).
 
 ### A.11 Frozen ink content v1 (for `_FR_InkType` / `_FR_InkSubstance`)
+
+**Audit result (平面视觉, 2026-10-03), all accepted:**
+- **Kept:**
+  - Heros Bold;
+  - caps;
+  - 22 mm cap, 37.5 mm pitch, half-phrase brick;
+  - rotated vertical bars reading top to bottom.
+- **Changed by 平面视觉** (parameters go to the print chat):
+  - no `·` separators: phrases stack in two lines or use an em dash (`EXIT — BREAK GLASS`);
+  - one fixed tracking of +1 mm, with the cycle fitted only by the gaps between repeats;
+  - FIRE DOOR / KEEP CLOSED, OUT OF SERVICE / DOES NOT CLOSE and ALARM / THIS WAY OUT become two-line blocks. This drops the two earlier fit exceptions;
+  - layer 1 uses exactly layer 0's rhythm;
+  - NO 32 mm over EXIT 16 mm, the code's 2:1;
+  - the roll stamp becomes a US drawing title block: a 2.5 mm rule grid, values in Heros Bold 14 mm (`LEVEL 0 | SHEET A-3 OF 4` / `ROLL 0417 | PRINTED 03/90 | OCCUPANT LOAD 1`);
+  - register crosshairs move to the roll selvedge (x 14 / 736 mm);
+  - layers 8 and 9 are hand-drawn SVGs by 平面视觉;
+  - the ink colour is pale yellow-green, about #B6F5A0–#C9F7B0, faint, with soft bloom and screen-print edges (visual chat).
+- **String change accepted by narrative:** `OCCUPANTS n` → `OCCUPANT LOAD n`, the US code-analysis term for a building's rated head count.
+
+The tables and JSON below are v1. Where the audit differs, the audit wins until 平面视觉's parameters are merged here.
 
 **Strings are frozen; typography is provisional.** Red, 2026-10-03: type is decided with 平面视觉, which is auditing every typographic parameter below (face, sizes, spacing, layout, lettering, stamp) against its visual system (keep / change / cut). Its changes land through the print chat's generator. The strings stay narrative's.
 
@@ -381,11 +404,11 @@ Frozen 2026-10-03 so that the wallpaper-print chat can render without guessing. 
 
 | Layer | LD tier | Stamp line 1 | Stamp line 2 |
 |---|---|---|---|
-| 0 | T0 | `LEVEL 0 · SHEET A-3 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1` |
-| 1 | T1 | `LEVEL 0 · SHEET A-4 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1` |
-| 2 | T2 | `LEVEL 0 · SHEET A-1114 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1` |
-| 3 | T3 | `LEVEL 0 · SHEET A-1114 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1` |
-| 4 | T4+ | `LEVEL 0 · SHEET A-1114 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANTS 2` |
+| 0 | T0 | `LEVEL 0 · SHEET A-3 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1` |
+| 1 | T1 | `LEVEL 0 · SHEET A-4 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1` |
+| 2 | T2 | `LEVEL 0 · SHEET A-1114 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1` |
+| 3 | T3 | `LEVEL 0 · SHEET A-1114 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1` |
+| 4 | T4+ | `LEVEL 0 · SHEET A-1114 OF 4` | `ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 2` |
 
 Notes:
 - "SHEET A-1114 OF 4" is the T2 anomaly, Exit 8-style: a sheet number larger than the set.
@@ -420,15 +443,42 @@ Notes:
     "register": [{"xy_mm": [60, 60]}, {"xy_mm": [690, 1065]}], "register_shape": "circle d16 + cross 30, stroke 2.5",
     "stamp": {"cap_mm": 20, "tracking_mm": 1, "x_mm": 90, "baselines_mm": [560, 590]},
     "tiers": [
-      {"layer": 0, "ld": "T0", "lines": ["LEVEL 0 · SHEET A-3 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"]},
-      {"layer": 1, "ld": "T1", "lines": ["LEVEL 0 · SHEET A-4 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"]},
-      {"layer": 2, "ld": "T2", "lines": ["LEVEL 0 · SHEET A-1114 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"]},
-      {"layer": 3, "ld": "T3", "lines": ["LEVEL 0 · SHEET A-1114 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"]},
-      {"layer": 4, "ld": "T4+", "lines": ["LEVEL 0 · SHEET A-1114 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 2"]}
+      {"layer": 0, "ld": "T0", "lines": ["LEVEL 0 · SHEET A-3 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1"]},
+      {"layer": 1, "ld": "T1", "lines": ["LEVEL 0 · SHEET A-4 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1"]},
+      {"layer": 2, "ld": "T2", "lines": ["LEVEL 0 · SHEET A-1114 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1"]},
+      {"layer": 3, "ld": "T3", "lines": ["LEVEL 0 · SHEET A-1114 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 1"]},
+      {"layer": 4, "ld": "T4+", "lines": ["LEVEL 0 · SHEET A-1114 OF 4", "ROLL 0417 · PRINTED 03/90 · OCCUPANT LOAD 2"]}
     ]}
 }
 ```
 
+
+### A.12 The placard: strings v1 (Q10 approved)
+
+A framed evacuation plan on the map side of the start door. Ownership:
+
+| Part | Owner |
+|---|---|
+| Strings (below) | Narrative |
+| Typography and layout | 平面视觉 |
+| The prop | Visual chat |
+| Placement | 关卡设计 |
+
+**Behaviour.**
+- **Under light:** the printed plan reads.
+- **In the dark:** only the legend glows. It uses the same InkShape silhouettes and is gated by the placard cell's lamp, like the walls.
+
+| Part | String |
+|---|---|
+| Title | `EVACUATION PLAN` |
+| Title block (replaces the sub-line; 平面视觉) | `LEVEL 0` \| `SHEET A-2 OF 4` \| `PRINTED 03/90`, the same title block as the wall stamp |
+| On the plan | `YOU ARE HERE` (start room); `EXIT` (the door); beyond the door a blank area marked `SEE SHEET A-3` |
+| Legend head (glows) | `IN POWER FAILURE` |
+| Legend rows (glow) | chevrons `WAY ON` · two bars `EXIT` · closed bars `NO EXIT` |
+| Footer (printed) | `IN CASE OF FIRE DO NOT USE ELEVATORS` (standard US wording; there are no elevators) |
+
+- The sheet is A-2, so the walls' first stamp, A-3, is "the next sheet".
+- No glyph on the placard may differ from the wall grammar.
 
 ---
 
@@ -477,9 +527,8 @@ EGRESS gives the difference a reason: life-safety guidance must never be mistake
 ## 7. Open questions for Red
 
 1. **The T4+ GROUND figure layer for EGRESS** (small creeping figures as "the occupants", seen only during a sag from ≥ 6 m): add it, or leave it out? It is not in v1.
-2. **Placard (LD Q10):** a framed evacuation plan on the map side of the start door. Yes or no?
-3. **Caught line:** `OCCUPANT ACCOUNTED FOR` under CAUGHT. Yes or no?
-4. **Strings:** A.11 freezes every string, including the M9 scratch lines. Change any before the print chat renders?
+2. **Caught line:** `OCCUPANT ACCOUNTED FOR` under CAUGHT. Yes or no?
+3. **Strings:** A.11 freezes every string, including the M9 scratch lines. Change any before the print chat renders?
 
 ## 8. Not done / limits
 - **Research page built 2026-10-03:** Figma section "FRONTROOMS · GLOW INK · NARRATIVE RESEARCH" (2471:3804) on page 2099:76, frames GN01–GN06. Media and ledger are in `Research/week02/phosphor-narrative/` (`SOURCES.md`).

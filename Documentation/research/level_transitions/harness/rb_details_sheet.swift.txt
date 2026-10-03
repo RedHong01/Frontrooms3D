@@ -1,0 +1,374 @@
+import Foundation
+import AppKit
+import CoreText
+
+// FrontRooms-scale transition details, drawn in metres. Two sheets, 1920x1080.
+let bayonURL = URL(fileURLWithPath: "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Resources/Fonts/Bayon-Regular.ttf")
+CTFontManagerRegisterFontsForURL(bayonURL as CFURL, .process, nil)
+
+func C(_ hex: UInt32, _ a: CGFloat = 1) -> NSColor {
+  NSColor(srgbRed: CGFloat((hex >> 16) & 255) / 255, green: CGFloat((hex >> 8) & 255) / 255, blue: CGFloat(hex & 255) / 255, alpha: a)
+}
+let paperBG = C(0xF3F0E8), ink = C(0x1E1B17), mid = C(0x6B655C), faint = C(0xB9B2A6)
+let L0paper = C(0xC9B25E), L0paperDark = C(0x9C8740), officePaint = C(0x9AA693), officeDark = C(0x6E7A68)
+let metal = C(0x3B3024), gypsum = C(0xE4E0D6), stud = C(0xD8D2C4), L0carpet = C(0xC4AE80), offCarpet = C(0x7E9799)
+let stone = C(0xD3CFC6), rubber = C(0x2A2622), ceilingW = C(0xFBFAF7), accent = C(0xC2452D), vct = C(0xA9A79F), slab = C(0xC4BFB4), wood = C(0x8A5A34)
+
+func font(_ name: String, _ size: CGFloat) -> NSFont { NSFont(name: name, size: size) ?? NSFont.systemFont(ofSize: size) }
+let fTitle = font("Bayon-Regular", 44), fPanel = font("Bayon-Regular", 27), fLab = font("IBMPlexMono-Regular", 14), fLabB = font("IBMPlexMono-Medium", 14), fSmall = font("IBMPlexMono-Regular", 12.5)
+
+final class Sheet {
+  let W = 1920, H = 1080
+  let ctx: CGContext
+  init() {
+    ctx = CGContext(data: nil, width: W, height: H, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    ctx.translateBy(x: 0, y: CGFloat(H)); ctx.scaleBy(x: 1, y: -1)
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: true)
+    ctx.setFillColor(paperBG.cgColor); ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+  }
+  func save(_ path: String) {
+    let rep = NSBitmapImageRep(cgImage: ctx.makeImage()!)
+    try! rep.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to: URL(fileURLWithPath: path))
+  }
+}
+var S: Sheet! = nil
+var ctx: CGContext { S.ctx }
+
+// metres -> pixels; sx, sy separate (sy > 0); yUp for sections.
+struct Panel { var ox: CGFloat; var oy: CGFloat; var sx: CGFloat; var sy: CGFloat; var yUp: Bool
+  init(_ ox: CGFloat, _ oy: CGFloat, _ s: CGFloat, yUp: Bool, sy: CGFloat? = nil) { self.ox = ox; self.oy = oy; sx = s; self.sy = sy ?? s; self.yUp = yUp }
+  func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: ox + x * sx, y: yUp ? oy - y * sy : oy + y * sy) }
+  func r(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect {
+    let a = p(x, y), b = p(x + w, y + h)
+    return CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(b.x - a.x), height: abs(b.y - a.y))
+  }
+}
+func fill(_ r: CGRect, _ c: NSColor) { ctx.setFillColor(c.cgColor); ctx.fill(r) }
+func stroke(_ r: CGRect, _ c: NSColor, _ w: CGFloat = 1, dash: [CGFloat] = []) { ctx.saveGState(); ctx.setLineDash(phase: 0, lengths: dash); ctx.setStrokeColor(c.cgColor); ctx.setLineWidth(w); ctx.stroke(r); ctx.restoreGState() }
+func line(_ a: CGPoint, _ b: CGPoint, _ c: NSColor, _ w: CGFloat = 1, dash: [CGFloat] = []) {
+  ctx.saveGState(); ctx.setStrokeColor(c.cgColor); ctx.setLineWidth(w); ctx.setLineDash(phase: 0, lengths: dash)
+  ctx.move(to: a); ctx.addLine(to: b); ctx.strokePath(); ctx.restoreGState()
+}
+func poly(_ pts: [CGPoint], _ c: NSColor, stroke s: NSColor? = nil) {
+  ctx.saveGState(); ctx.setFillColor(c.cgColor); ctx.move(to: pts[0]); for q in pts.dropFirst() { ctx.addLine(to: q) }; ctx.closePath(); ctx.fillPath()
+  if let s = s { ctx.setStrokeColor(s.cgColor); ctx.setLineWidth(1); ctx.move(to: pts[0]); for q in pts.dropFirst() { ctx.addLine(to: q) }; ctx.closePath(); ctx.strokePath() }
+  ctx.restoreGState()
+}
+func circle(_ c: CGPoint, _ r: CGFloat, _ col: NSColor) { ctx.setFillColor(col.cgColor); ctx.fillEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)) }
+enum Al { case l, c, r }
+@discardableResult func text(_ s: String, _ x: CGFloat, _ y: CGFloat, _ f: NSFont, _ c: NSColor = ink, _ al: Al = .l, chip: NSColor? = nil) -> CGSize {
+  let attrs: [NSAttributedString.Key: Any] = [.font: f, .foregroundColor: c]
+  let sz = (s as NSString).size(withAttributes: attrs)
+  let dx: CGFloat = al == .l ? 0 : (al == .c ? -sz.width / 2 : -sz.width)
+  if let chip = chip { fill(CGRect(x: x + dx - 4, y: y - 1, width: sz.width + 8, height: sz.height + 2), chip) }
+  (s as NSString).draw(at: CGPoint(x: x + dx, y: y), withAttributes: attrs)
+  return sz
+}
+func lines(_ ls: [String], _ x: CGFloat, _ y: CGFloat, _ c: NSColor = mid, chip: NSColor? = nil) {
+  for (i, l) in ls.enumerated() { text(l, x, y + CGFloat(i) * 16, fSmall, c, .l, chip: chip) }
+}
+func hatch(_ r: CGRect, _ c: NSColor, _ step: CGFloat = 7) {
+  ctx.saveGState(); ctx.clip(to: r); ctx.setStrokeColor(c.cgColor); ctx.setLineWidth(0.8)
+  var x = r.minX - r.height
+  while x < r.maxX { ctx.move(to: CGPoint(x: x, y: r.maxY)); ctx.addLine(to: CGPoint(x: x + r.height, y: r.minY)); x += step }
+  ctx.strokePath(); ctx.restoreGState()
+}
+func tick(_ q: CGPoint) { line(CGPoint(x: q.x - 4, y: q.y + 4), CGPoint(x: q.x + 4, y: q.y - 4), ink, 1.4) }
+// horizontal dimension at pixel y between pixel xs
+func hdim(_ x1: CGFloat, _ x2: CGFloat, _ y: CGFloat, _ label: String, above: Bool = true, ext: CGFloat? = nil) {
+  if let e = ext { line(CGPoint(x: x1, y: e), CGPoint(x: x1, y: y), mid, 0.6); line(CGPoint(x: x2, y: e), CGPoint(x: x2, y: y), mid, 0.6) }
+  line(CGPoint(x: x1, y: y), CGPoint(x: x2, y: y), mid, 1); tick(CGPoint(x: x1, y: y)); tick(CGPoint(x: x2, y: y))
+  text(label, (x1 + x2) / 2, above ? y - 18 : y + 3, fSmall, ink, .c)
+}
+func vdim(_ x: CGFloat, _ y1: CGFloat, _ y2: CGFloat, _ label: String, right: Bool = true, ext: CGFloat? = nil) {
+  if let e = ext { line(CGPoint(x: e, y: y1), CGPoint(x: x, y: y1), mid, 0.6); line(CGPoint(x: e, y: y2), CGPoint(x: x, y: y2), mid, 0.6) }
+  line(CGPoint(x: x, y: y1), CGPoint(x: x, y: y2), mid, 1); tick(CGPoint(x: x, y: y1)); tick(CGPoint(x: x, y: y2))
+  text(label, right ? x + 7 : x - 7, (y1 + y2) / 2 - 8, fSmall, ink, right ? .l : .r)
+}
+func leader(_ from: CGPoint, _ to: CGPoint, _ label: String, _ al: Al = .l, bold: Bool = false, chip: NSColor? = nil) {
+  line(from, to, ink, 0.9); circle(from, 2.4, ink)
+  text(label, to.x + (al == .l ? 4 : (al == .r ? -4 : 0)), to.y - 9, bold ? fLabB : fLab, ink, al, chip: chip)
+}
+func panel(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ tag: String, _ title: String, _ scale: String, _ body: () -> Void) {
+  ctx.saveGState(); ctx.clip(to: CGRect(x: x + 1, y: y + 50, width: w - 2, height: h - 51)); body(); ctx.restoreGState()
+  stroke(CGRect(x: x, y: y, width: w, height: h), faint, 1)
+  line(CGPoint(x: x, y: y + 50), CGPoint(x: x + w, y: y + 50), faint, 1)
+  text(tag, x + 16, y + 10, fPanel, accent)
+  text(title, x + 46, y + 10, fPanel, ink)
+  text(scale, x + w - 14, y + 20, fSmall, mid, .r)
+}
+func header(_ title: String, _ sub: String) { text(title, 72, 34, fTitle, ink); text(sub, 1848, 52, fLab, mid, .r) }
+func legend(_ items: [(NSColor, String)]) {
+  var x: CGFloat = 72
+  for (c, s) in items {
+    fill(CGRect(x: x, y: 95, width: 14, height: 14), c); stroke(CGRect(x: x, y: 95, width: 14, height: 14), mid, 0.6)
+    x += 20 + text(s, x + 20, 93, fSmall, ink).width + 22
+  }
+}
+// plan wall along x, centred on y=0; top face (y<0) = Level 0 side.
+func wallPlan(_ P: Panel, _ x0: CGFloat, _ x1: CGFloat, top: NSColor, bot: NSColor, fin: CGFloat = 0.004) {
+  let t: CGFloat = 0.16, g: CGFloat = 0.032
+  fill(P.r(x0, -t / 2, x1 - x0, t), gypsum)
+  let core = P.r(x0, -t / 2 + g, x1 - x0, t - 2 * g); fill(core, stud); hatch(core, faint, 8)
+  line(P.p(x0, -t / 2 + g), P.p(x1, -t / 2 + g), mid, 0.6); line(P.p(x0, -t / 2 + g / 2), P.p(x1, -t / 2 + g / 2), faint, 0.5)
+  line(P.p(x0, t / 2 - g), P.p(x1, t / 2 - g), mid, 0.6); line(P.p(x0, t / 2 - g / 2), P.p(x1, t / 2 - g / 2), faint, 0.5)
+  fill(P.r(x0, -t / 2 - fin, x1 - x0, fin), top); fill(P.r(x0, t / 2, x1 - x0, fin), bot)
+}
+func chevrons(_ P: Panel, _ x0: CGFloat, _ x1: CGFloat, _ h: CGFloat, _ c: NSColor) {
+  var i = 0
+  while CGFloat(i) * 0.75 < x1 - x0 + 0.01 {
+    for j in 0..<3 {
+      let cx = x0 + 0.375 + CGFloat(i) * 0.75, cy = 0.56 + CGFloat(j) * 1.125
+      if cx > x1 - 0.1 || cy > h - 0.1 { continue }
+      poly([P.p(cx - 0.2, cy - 0.12), P.p(cx, cy + 0.12), P.p(cx + 0.2, cy - 0.12), P.p(cx + 0.13, cy - 0.12), P.p(cx, cy + 0.0), P.p(cx - 0.13, cy - 0.12)], c)
+      fill(P.r(cx - 0.33, 0, 0.03, h), c.withAlphaComponent(c.alphaComponent * 0.6))
+    }
+    i += 1
+  }
+}
+
+// =========================== SHEET 1: PLANS ===========================
+S = Sheet()
+header("FRONTROOMS SCALE · TRANSITION DETAILS · PLAN", "metres · wall 0.16 · cell 3.0 · from 02_real_buildings.md §3–4, §8")
+legend([(L0paper, "Level 0 paper"), (officePaint, "Office paint"), (metal, "steel frame / cove base"), (gypsum, "gypsum board"), (stud, "stud cavity"), (L0carpet, "Level 0 carpet"), (offCarpet, "Office carpet"), (stone, "saddle")])
+
+// A · door frame
+panel(72, 130, 870, 450, "A", "DOOR ON A BORDER · ONE STEEL FRAME ENDS BOTH FACES", "plan 1:7 (1400 px/m)") {
+  let x: CGFloat = 72, y: CGFloat = 130
+  let P = Panel(x + 330, y + 250, 1400, yUp: false)
+  let t: CGFloat = 0.16, fx: CGFloat = 0.12, face: CGFloat = 0.05, proud: CGFloat = 0.012, st: CGFloat = 0.0025
+  let stopA = -t / 2 - proud + 0.049, leafT: CGFloat = 0.045, fl = stopA - leafT / 2
+  fill(CGRect(x: x, y: y + 50, width: 870, height: P.p(0, fl).y - (y + 50)), L0carpet.withAlphaComponent(0.45))
+  fill(CGRect(x: x, y: P.p(0, fl).y, width: 870, height: y + 450 - P.p(0, fl).y), offCarpet.withAlphaComponent(0.40))
+  wallPlan(P, -0.30, fx, top: L0paper, bot: officePaint)
+  // frame (bent steel, drawn 2.5 mm)
+  for r in [P.r(fx - face, -t / 2 - proud, face, st), P.r(fx - face, -t / 2 - proud, st, proud), P.r(fx - st, -t / 2 - proud, st, t + 2 * proud),
+            P.r(fx - face, t / 2 + proud - st, face, st), P.r(fx - face, t / 2, st, proud), P.r(fx, stopA, 0.016, 0.016)] { fill(r, metal) }
+  fill(P.r(fx - face + st, -t / 2 - proud + st, face - 2 * st, proud - st), C(0xE9E4D8)); fill(P.r(fx - face + st, t / 2, face - 2 * st, proud - st), C(0xE9E4D8))
+  // leaf
+  fill(P.r(fx + 0.003, stopA - leafT, 0.30, leafT), wood); stroke(P.r(fx + 0.003, stopA - leafT, 0.30, leafT), metal, 0.8)
+  text("door leaf 0.045 in a 0.049 rabbet", P.p(fx + 0.04, 0).x, P.p(0, stopA - leafT).y + 4, fSmall, C(0xF3F0E8))
+  // floor change (drawn over the leaf)
+  line(P.p(fx - 0.03, fl), P.p(0.45, fl), C(0xF3F0E8), 4.5); line(P.p(fx - 0.03, fl), P.p(0.45, fl), accent, 2.5, dash: [8, 5])
+  text("floor change = closed-leaf line", x + 856, y + 196, fLabB, accent, .r)
+  // base office side
+  fill(P.r(-0.30, t / 2 + 0.004, (fx - face - 0.005) + 0.30, 0.006), rubber)
+  // dims
+  hdim(P.p(fx - face, 0).x, P.p(fx, 0).x, P.p(0, -t / 2 - proud).y - 16, "face 0.050", ext: P.p(0, -t / 2 - proud).y)
+  vdim(P.p(fx - face, 0).x - 26, P.p(0, -t / 2 - proud).y, P.p(0, -t / 2).y, "proud 0.012", right: false, ext: P.p(fx - face, 0).x)
+  leader(P.p(fx + 0.008, stopA + 0.008), CGPoint(x: x + 600, y: y + 231), "stop 0.016 × 0.016")
+  vdim(P.p(-0.24, 0).x, P.p(0, -t / 2).y, P.p(0, t / 2).y, "wall 0.16", right: true)
+  text("throat 0.163 = wall + 0.003", x + 604, y + 244, fSmall, ink)
+  // labels
+  text("LEVEL 0 · paper trimmed tight to the frame face · no base", x + 18, y + 64, fLabB, ink)
+  text("OFFICE · paint cut to the frame · cove base 0.10 high stops 0.005 short of the frame", x + 18, y + 420, fLabB, ink)
+  lines(["Real: steel frame, 2 in face,", "5/8 in stop; slip-on drywall", "frame wraps both faces; one", "paint colour both sides [SDI]."], x + 600, y + 282, ink)
+  lines(["Today: TrimFace 0.07, Proud 0.02,", "no stop, floor cut on wall centre."], x + 600, y + 352, mid)
+}
+
+// B · cased opening
+panel(978, 130, 870, 450, "B", "ARCH ON A BORDER · CASED OPENING, ONE FINISH IN THE JAMB", "plan 1:20 (500 px/m)") {
+  let x: CGFloat = 978, y: CGFloat = 130
+  let P = Panel(x + 35, y + 255, 500, yUp: false)
+  let o0: CGFloat = 0.25, o1: CGFloat = 1.35
+  fill(CGRect(x: x, y: y + 50, width: 870, height: P.p(0, 0).y - (y + 50)), L0carpet.withAlphaComponent(0.45))
+  fill(CGRect(x: x, y: P.p(0, 0).y, width: 870, height: y + 450 - P.p(0, 0).y), offCarpet.withAlphaComponent(0.40))
+  wallPlan(P, -0.1, o0, top: L0paper, bot: officePaint, fin: 0.008); wallPlan(P, o1, 1.75, top: L0paper, bot: officePaint, fin: 0.008)
+  fill(P.r(o0, -0.0815, o1 - o0, 0.163), stone); stroke(P.r(o0, -0.0815, o1 - o0, 0.163), mid, 0.8)
+  fill(P.r(o0 - 0.008, -0.08, 0.008, 0.16), officePaint); fill(P.r(o1, -0.08, 0.008, 0.16), officePaint)
+  for (xx, yy) in [(o0, CGFloat(-0.08)), (o0, 0.08), (o1, -0.08), (o1, 0.08)] { circle(P.p(xx, yy), 4.5, metal) }
+  text("saddle 0.163 × 0.010, bevel 1:2", P.p((o0 + o1) / 2, 0).x, P.p(0, 0).y - 9, fSmall, ink, .c)
+  hdim(P.p(o0, 0).x, P.p(o1, 0).x, P.p(0, 0.20).y, "opening 1.10–1.80 (ArchMinWidth + spread)", above: true, ext: P.p(0, 0.09).y)
+  leader(P.p(o0, -0.08), CGPoint(x: x + 300, y: y + 150), "corner bead on each arris; the paper stops on it", .l)
+  leader(P.p(o1 + 0.004, 0.03), CGPoint(x: x + 600, y: y + 185), "jamb + head soffit: ONE paint, never split", .l)
+  text("LEVEL 0 · broadloom · paper", x + 18, y + 64, fLabB, ink)
+  text("OFFICE · carpet tile · paint · cove base", x + 18, y + 420, fLabB, ink)
+  lines(["Real: drywall return + metal corner bead [USG 1980 p.22];", "trims 'where panels abut other materials' [USG 1982 p.23]."], x + 18, y + 86, mid)
+}
+
+// C · portal
+panel(72, 600, 870, 440, "C", "OPEN EDGE ON A BORDER · MAKE IT A PORTAL", "plan 1:40 (240 px/m)") {
+  let x: CGFloat = 72, y: CGFloat = 600
+  let P = Panel(x + 50, y + 272, 240, yUp: false)
+  fill(CGRect(x: x, y: y + 50, width: 870, height: P.p(0, 0).y - (y + 50)), L0carpet.withAlphaComponent(0.45))
+  fill(CGRect(x: x, y: P.p(0, 0).y, width: 870, height: y + 440 - P.p(0, 0).y), offCarpet.withAlphaComponent(0.40))
+  for xx in [CGFloat(0.0), 3.0] {
+    let r = P.r(xx - 0.08, -0.8, 0.16, 1.6); fill(r, gypsum); hatch(r, faint, 8)
+    let inner = xx == 0 ? CGFloat(0.08) : CGFloat(2.92 - 0.006)
+    fill(P.r(inner, -0.8, 0.006, 0.8), L0paper); fill(P.r(inner, 0, 0.006, 0.8), officePaint)
+  }
+  for px in [CGFloat(0.08), 2.82] { fill(P.r(px, -0.08, 0.10, 0.16), officePaint); stroke(P.r(px, -0.08, 0.10, 0.16), officeDark, 1) }
+  fill(P.r(0.18, -0.0815, 2.64, 0.163), stone)
+  stroke(P.r(0.18, -0.08, 2.64, 0.16), ink, 1.2, dash: [6, 4])
+  fill(P.r(0.086, 0.36, 2.828, 0.15), offCarpet)
+  text("header overhead 0.30–0.60 deep (dashed) · saddle or seam below it", P.p(1.5, 0).x, P.p(0, -0.08).y - 22, fSmall, ink, .c)
+  text("optional border band 0.15, set 0.36 back", P.p(1.5, 0).x, P.p(0, 0.36).y + 9, fSmall, C(0xF7F5EF), .c)
+  hdim(P.p(0.08, 0).x, P.p(0.18, 0).x, P.p(0, -0.30).y, "0.10", ext: P.p(0, -0.08).y)
+  vdim(P.p(0.30, 0).x, P.p(0, -0.08).y, P.p(0, 0.08).y, "0.16", right: true)
+  text("LEVEL 0 · paper on both corridor walls", x + 18, y + 64, fLabB, ink)
+  text("OFFICE · paint; the side-wall finishes change at the pilasters", x + 18, y + 412, fLabB, ink)
+  lines(["Real: lobby portals, Interiors 6/1990 p.125 (rb_01).", "Pilaster 0.10–0.20 wide × 0.16 deep, on the cove base."], x + 18, y + 86, mid)
+}
+
+// D · flat seam fixes
+panel(978, 600, 870, 440, "D", "FLAT SEAM + WALL END · THREE FIXES AND A CORNER", "plan 1:10 (1000 px/m)") {
+  let x: CGFloat = 978, y: CGFloat = 600
+  let titles = [["1 MOVE THE CHANGE", "to the next frame"], ["2 PILASTER", "0.10–0.16 × 0.05"], ["3 REVEAL", "0.013 × 0.013 slot"], ["4 WALL END", "+ corner guard"]]
+  let notes = [["one finish runs on;", "it changes at the", "next door or corner", "(Rule 2). No geometry."],
+               ["the pilaster owns", "the line; each finish", "dies into its side.", "Reads as a column wrap."],
+               ["aluminium reveal;", "both finishes stop in", "its shadow. Cheapest", "built object."],
+               ["end face: ONE finish,", "two corner beads;", "guard 0.05 wings,", "1.22 high or full."]]
+  for i in 0..<4 {
+    let cx = x + 22 + CGFloat(i) * 212
+    text(titles[i][0], cx, y + 62, fLabB, ink); text(titles[i][1], cx, y + 80, fSmall, mid)
+    let P = Panel(cx + 10, y + 215, 1000, yUp: false)
+    switch i {
+    case 0:
+      wallPlan(P, 0, 0.19, top: L0paper, bot: L0paper, fin: 0.005)
+    case 1:
+      wallPlan(P, 0, 0.19, top: L0paper, bot: officePaint, fin: 0.005)
+      fill(P.r(0, 0.08, 0.045, 0.005), L0paper)
+      fill(P.r(0.045, 0.08, 0.10, 0.05), officePaint); stroke(P.r(0.045, 0.08, 0.10, 0.05), officeDark, 1)
+      fill(P.r(0.045 - 0.001, 0.08 + 0.045, 0.102, 0.006), rubber)
+    case 2:
+      wallPlan(P, 0, 0.19, top: L0paper, bot: officePaint, fin: 0.005)
+      fill(P.r(0, 0.08, 0.09, 0.005), L0paper)
+      fill(P.r(0.09, 0.067, 0.013, 0.018), C(0x1A1714))
+    default:
+      let r = P.r(0, -0.08, 0.12, 0.16); fill(r, gypsum); hatch(P.r(0, -0.048, 0.12, 0.096), faint, 8)
+      fill(P.r(0, -0.085, 0.12, 0.005), L0paper); fill(P.r(0, 0.08, 0.12, 0.005), officePaint); fill(P.r(0.12, -0.085, 0.005, 0.17), officePaint)
+      circle(P.p(0.12, -0.08), 4, metal); circle(P.p(0.12, 0.08), 4, metal)
+      poly([P.p(0.075, 0.085), P.p(0.125, 0.085), P.p(0.125, 0.035), P.p(0.131, 0.035), P.p(0.131, 0.091), P.p(0.075, 0.091)], C(0xE2DCCB), stroke: mid)
+    }
+    lines(notes[i], cx, y + 356, ink)
+  }
+}
+S.save(CommandLine.arguments[1])
+
+// ======================= SHEET 2: SECTIONS ===========================
+S = Sheet()
+header("FRONTROOMS SCALE · TRANSITION DETAILS · SECTION + ELEVATION", "metres · ceilings 2.4 / 2.9 / 5.4 · from 02_real_buildings.md §5–7, §8")
+legend([(L0carpet, "Level 0 loop carpet"), (offCarpet, "Office carpet tile"), (vct, "vinyl tile"), (stone, "saddle"), (rubber, "rubber reducer / base"), (ceilingW, "ceiling, soffit"), (L0paper, "Level 0 paper"), (officePaint, "Office paint")])
+
+// A · floor joints
+panel(72, 130, 870, 450, "A", "FLOOR · SEAM, REDUCER, SADDLE", "section · 1500 px/m · height ×2") {
+  let x: CGFloat = 72, y: CGFloat = 130
+  let rows = ["CARPET ↔ CARPET · butt seam at the leaf line, no strip", "CARPET ↔ VINYL TILE · rubber reducer 0.05 × 0.006", "UNDER A DOOR · saddle the jamb depth, ≤ 0.013 high"]
+  let notes = [["CRI 104 (1982 on): seams along traffic,", "never perpendicular to a doorway.", "Guide spec: centred under the closed door."],
+               ["ADA 1991 4.5.2 / 4.5.3: carpet edge", "fastened and trimmed; ≤ 0.006 vertical,", "0.006–0.013 bevelled 1:2."],
+               ["marble or aluminium; each carpet", "stops on a saddle edge; the leaf", "closes over the saddle."]]
+  for i in 0..<3 {
+    let ry = y + 58 + CGFloat(i) * 128
+    text(rows[i], x + 18, ry + 4, fLabB, ink)
+    lines(notes[i], x + 590, ry + 30, mid)
+    let P = Panel(x + 215, ry + 100, 1500, yUp: true, sy: 3000)
+    fill(CGRect(x: x + 18, y: ry + 100, width: 560, height: 16), slab); hatch(CGRect(x: x + 18, y: ry + 100, width: 560, height: 16), faint, 6)
+    switch i {
+    case 0:
+      fill(P.r(-0.13, 0, 0.13, 0.008), L0carpet); fill(P.r(0, 0, 0.18, 0.006), offCarpet)
+      line(P.p(0, -0.002), P.p(0, 0.016), accent, 2, dash: [5, 3])
+      text("0.008 loop", P.p(-0.12, 0.008).x, P.p(0, 0.008).y - 18, fSmall, ink); text("0.006 tile", P.p(0.08, 0.006).x, P.p(0, 0.006).y - 18, fSmall, ink)
+    case 1:
+      fill(P.r(-0.13, 0, 0.13, 0.006), offCarpet); fill(P.r(0.05, 0, 0.13, 0.003), vct)
+      poly([P.p(-0.003, 0.0), P.p(-0.003, 0.0068), P.p(0.002, 0.007), P.p(0.05, 0.0034), P.p(0.05, 0.0)], rubber)
+      hdim(P.p(-0.003, 0).x, P.p(0.05, 0).x, P.p(0, 0.012).y, "0.05", ext: P.p(0, 0.007).y)
+    default:
+      fill(P.r(-0.13, 0, 0.11, 0.008), L0carpet); fill(P.r(0.163, 0, 0.08, 0.006), offCarpet)
+      poly([P.p(-0.02, 0.0), P.p(-0.02, 0.0015), P.p(0.0, 0.010), P.p(0.143, 0.010), P.p(0.163, 0.0015), P.p(0.163, 0.0)], stone, stroke: mid)
+      fill(P.r(0.05, 0.0125, 0.045, 0.0095), wood)
+      text("leaf", P.p(0.0725, 0).x, P.p(0, 0.022).y + 1, fSmall, C(0xF3F0E8), .c)
+      text("0.163 = jamb depth · 0.010 high", P.p(0.0715, 0).x, P.p(0, 0.010).y + 6, fSmall, ink, .c)
+    }
+  }
+}
+
+// B · same height grid change
+panel(978, 130, 870, 450, "B", "SAME HEIGHT 2×4 ↔ 2×2 · A GYPSUM BAND, NOT TEE TO TEE", "section 1:6 · plan 1:50") {
+  let x: CGFloat = 978, y: CGFloat = 130
+  let P = Panel(x + 435, y + 230, 1000, yUp: true)
+  let band: CGFloat = 0.30
+  // band: framing + board
+  fill(P.r(-band / 2, 0.016, band, 0.12), stud); hatch(P.r(-band / 2, 0.016, band, 0.12), faint, 8)
+  fill(P.r(-band / 2, 0, band, 0.016), ceilingW); stroke(P.r(-band / 2, 0, band, 0.016), mid, 1)
+  for side in [CGFloat(-1), 1] {
+    let ex = side * band / 2
+    // wall angle on band face
+    poly([P.p(ex, 0), P.p(ex + side * 0.022, 0), P.p(ex + side * 0.022, 0.0015), P.p(ex + side * 0.0015, 0.0015), P.p(ex + side * 0.0015, 0.022), P.p(ex, 0.022)], C(0xE6E4DE), stroke: mid)
+    var prev = ex
+    let widths: [CGFloat] = [0.26, 0.6, 0.6]
+    for wv in widths {
+      let next = prev + side * wv
+      let a = min(prev, next), b = max(prev, next)
+      fill(P.r(a + 0.01, 0.0015, (b - a) - 0.02, 0.016), side < 0 ? C(0xEFEBE2) : C(0xF7F6F2)); stroke(P.r(a + 0.01, 0.0015, (b - a) - 0.02, 0.016), faint, 0.6)
+      // tee at next
+      fill(P.r(next - 0.012, 0, 0.024, 0.0015), C(0xE6E4DE)); stroke(P.r(next - 0.012, 0, 0.024, 0.0015), mid, 0.6)
+      fill(P.r(next - 0.0015, 0.0015, 0.003, 0.036), mid); fill(P.r(next - 0.004, 0.034, 0.008, 0.006), mid)
+      prev = next
+    }
+  }
+  text("gypsum band 0.30, ceiling white", P.p(0, 0).x, P.p(0, 0).y + 6, fLabB, ink, .c)
+  leader(P.p(-band / 2 - 0.011, 0.001), CGPoint(x: x + 40, y: y + 288), "wall angle 0.022 × 0.022, each grid stops on its own", .l)
+  leader(P.p(band / 2 + 0.26, 0.001), CGPoint(x: x + 690, y: y + 288), "tee 0.024 face", .l)
+  text("LEVEL 0 · 2×4 lay-in", x + 18, y + 118, fLabB, ink); text("OFFICE · 2×2 lay-in", x + 852, y + 118, fLabB, ink, .r)
+  lines(["Real: grids never meet tee to tee; border tiles ≥ half [Armstrong].", "Variant: drop the band 0.05 = a shallow header."], x + 18, y + 62, mid)
+  // reflected ceiling plan strip
+  let R = Panel(x + 435, y + 375, 100, yUp: false)
+  fill(R.r(-4.3, -0.6, 4.3 - 0.15, 1.2), C(0xEFEBE2)); fill(R.r(0.15, -0.6, 4.3, 1.2), C(0xF7F6F2)); fill(R.r(-0.15, -0.6, 0.3, 1.2), ceilingW)
+  stroke(R.r(-0.15, -0.6, 0.3, 1.2), mid, 1)
+  var gx: CGFloat = -0.15 - 0.26
+  while gx > -4.3 { line(R.p(gx, -0.6), R.p(gx, 0.6), mid, 1); gx -= 1.2 }
+  line(R.p(-4.3, 0), R.p(-0.15, 0), mid, 1)
+  var hx: CGFloat = 0.15 + 0.26
+  while hx < 4.3 { line(R.p(hx, -0.6), R.p(hx, 0.6), mid, 1); hx += 0.6 }
+  line(R.p(0.15, 0), R.p(4.3, 0), mid, 1); line(R.p(0.15, -0.6 + 0.0), R.p(4.3, -0.6), mid, 0.6)
+  fill(R.r(-2.2, -0.3, 0.6, 1.2 * 0.5), C(0xFFFDF6)); stroke(R.r(-2.2, -0.3, 0.6, 0.6), mid, 0.6)
+  text("ceiling plan: 2×4 grid · band · 2×2 grid", x + 18, y + 424, fSmall, ink, chip: paperBG)
+}
+
+// C · height step at an open edge
+panel(72, 600, 870, 440, "C", "HEIGHT STEP 2.4 ↔ 2.9 · SOFFIT FACE ON THE LINE", "section 1:30 (100 px/m)") {
+  let x: CGFloat = 72, y: CGFloat = 600
+  let P = Panel(x + 435, y + 428, 100, yUp: true)
+  fill(P.r(-3.6, -0.12, 7.2, 0.12), slab)
+  fill(P.r(-3.6, 0, 3.6, 0.008), L0carpet); fill(P.r(0, 0, 3.6, 0.006), offCarpet)
+  // ceilings
+  fill(P.r(-3.6, 2.4, 3.58, 0.03), ceilingW); stroke(P.r(-3.6, 2.4, 3.58, 0.03), mid, 0.8)
+  fill(P.r(0.0, 2.9, 3.6, 0.03), ceilingW); stroke(P.r(0.0, 2.9, 3.6, 0.03), mid, 0.8)
+  // soffit: board face at x in [-0.02,0] from 2.4 to 2.9 + framing behind (left, above low ceiling)
+  fill(P.r(-0.30, 2.43, 0.28, 0.47), stud); hatch(P.r(-0.30, 2.43, 0.28, 0.47), faint, 8)
+  fill(P.r(-0.02, 2.4, 0.02, 0.53), ceilingW); stroke(P.r(-0.02, 2.4, 0.02, 0.53), mid, 1)
+  circle(P.p(0.0, 2.4), 4, metal)
+  // optional deeper header dashed
+  stroke(P.r(-0.02, 2.2, 0.30, 0.2), ink, 1, dash: [5, 4])
+  line(P.p(0, -0.01), P.p(0, 0.10), accent, 2)
+  vdim(P.p(0.9, 0).x, P.p(0, 2.9).y, P.p(0, 2.4).y, "fascia 0.50", right: true)
+  line(P.p(0.02, 2.4), P.p(3.6, 2.4), accent, 1.2, dash: [6, 4])
+  leader(P.p(0.0, 2.4), CGPoint(x: x + 540, y: y + 255), "bead on the lower arris; 2.4 ceiling on wall angle", .l)
+  leader(P.p(0.28, 2.25), CGPoint(x: x + 540, y: y + 300), "option: a 0.30 × 0.20 header reads as a beam", .l)
+  leader(P.p(0, 0.05), CGPoint(x: x + 540, y: y + 360), "floor: seam or border right under the face", .l)
+  text("2.4 datum carried round the 2.9 room (optional)", P.p(1.3, 2.4).x, P.p(0, 2.4).y + 4, fSmall, accent)
+  text("LEVEL 0 · Low 2.4", x + 30, y + 214, fLabB, ink)
+  text("OFFICE · Standard 2.9", x + 852, y + 152, fLabB, ink, .r)
+  lines(["Real: gypsum soffit (furr-down) with corner bead; lay-in dies into it on wall angle.", "2.9 ↔ 5.4: a 2.5 face; break it at 2.9 with a 0.05 reveal (rb_08).", "In a wall with a door: header faces 0.3 (Low) / 0.8 (Standard), paint, bead at the head."], x + 18, y + 60, mid)
+}
+
+// D · renovation elevation
+panel(978, 600, 870, 440, "D", "RENOVATION LAYER · PAINT OVER PAPER + A MOVED WALL", "elevation 1:30 (112 px/m)") {
+  let x: CGFloat = 978, y: CGFloat = 600
+  let P = Panel(x + 60, y + 418, 112, yUp: true)
+  fill(P.r(-0.6, -0.12, 7.4, 0.12), slab); fill(P.r(3.0, -0.12, 0.16, 0.12), C(0x8E877B))
+  fill(P.r(-0.6, 0, 3.6, 2.9), L0paper); chevrons(P, -0.75, 3.0, 2.9, L0paperDark.withAlphaComponent(0.75))
+  fill(P.r(3.16, 0, 3.7, 2.9), officePaint); chevrons(P, 3.0, 6.9, 2.9, officeDark.withAlphaComponent(0.16))
+  for k in 1...5 { let sx = 3.0 + CGFloat(k) * 0.75; line(P.p(sx, 0.1), P.p(sx, 2.9), officeDark.withAlphaComponent(0.7), 1.2) }
+  fill(P.r(3.0, 0, 0.16, 2.9), C(0xDCCFA0)); for k in 0..<6 { circle(P.p(3.08, 0.25 + CGFloat(k) * 0.48), 1.8, mid) }
+  fill(P.r(3.16, 0, 3.7, 0.10), rubber)
+  fill(P.r(4.75, 1.25, 0.48, 0.36), C(0xB3BCAD)); stroke(P.r(4.75, 1.25, 0.48, 0.36), officeDark.withAlphaComponent(0.5), 0.8)
+  text("LEVEL 0 PAPER · OLDER", x + 18, y + 64, fLabB, ink, chip: paperBG)
+  text("OFFICE PAINT OVER THE SAME PAPER · NEWER", x + 852, y + 64, fLabB, ink, .r, chip: paperBG)
+  leader(P.p(3.08, 2.3), CGPoint(x: x + 420, y: y + 112), "0.16 scar: old paper, screw holes", .l, chip: paperBG)
+  leader(P.p(3.08, 0.05), CGPoint(x: x + 120, y: y + 360), "base gap + floor track strip 0.16", .l, chip: paperBG)
+  leader(P.p(3.75, 2.0), CGPoint(x: x + 520, y: y + 160), "seams telegraph every 0.75", .l, chip: paperBG)
+  leader(P.p(5.0, 1.43), CGPoint(x: x + 640, y: y + 250), "flashing patch 0.3–0.6", .l, chip: paperBG)
+}
+S.save(CommandLine.arguments[2])
+print("done")

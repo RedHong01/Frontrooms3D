@@ -1,0 +1,234 @@
+{
+  "spec": "glow-ink EGRESS: strings = narrative A.11 (frozen 2026-10-03); typography v2 = 平面视觉 (2026-10-03). Layers 8/9 still v1 until 平面视觉's artwork arrives. Stamp label 'OCCUPANTS' until the narrative chat approves 'OCCUPANT LOAD'.",
+  "type_common": {
+    "font": "TeXGyre/texgyreheros-bold.otf",
+    "cap_mm": 22,
+    "tracking_mm": 1.0,
+    "pitch_mm": 37.5,
+    "field": 1.0,
+    "knockout": 0.55,
+    "separator": " · ",
+    "u_mirrored": false
+  },
+  "ink_type": [
+    {
+      "layer": 0,
+      "mark": "M1 FLOW",
+      "orient": "slots",
+      "n": 3,
+      "lines": [
+        "THIS WAY OUT"
+      ]
+    },
+    {
+      "layer": 1,
+      "mark": "M8 FLOW T2+",
+      "orient": "slots",
+      "n": 3,
+      "lines": [
+        "THIS WAY ON"
+      ]
+    },
+    {
+      "layer": 2,
+      "mark": "M2 HERE door",
+      "orient": "slots_rotated",
+      "n": 6,
+      "lines": [
+        "EXIT"
+      ],
+      "gap_glyph": "•"
+    },
+    {
+      "layer": 3,
+      "mark": "M2 HERE window",
+      "orient": "slots_rotated",
+      "n": 2,
+      "lines": [
+        "EXIT — BREAK GLASS"
+      ]
+    },
+    {
+      "layer": 4,
+      "mark": "M3 STOP",
+      "orient": "pairs_v2",
+      "cell_mm": [
+        125,
+        62.5
+      ],
+      "top": {
+        "text": "NO",
+        "cap_mm": 32
+      },
+      "bottom": {
+        "text": "EXIT",
+        "cap_mm": 16
+      },
+      "gap_mm": 6
+    },
+    {
+      "layer": 5,
+      "mark": "M4 BREACH",
+      "orient": "slots_rotated",
+      "n": 2,
+      "lines": [
+        "OUT OF SERVICE",
+        "DOES NOT CLOSE"
+      ]
+    },
+    {
+      "layer": 6,
+      "mark": "M5 pressure chevron",
+      "orient": "slots",
+      "n": 3,
+      "lines": [
+        "ALARM",
+        "THIS WAY OUT"
+      ]
+    },
+    {
+      "layer": 7,
+      "mark": "M5 pressure door",
+      "orient": "slots_rotated",
+      "n": 3,
+      "lines": [
+        "FIRE DOOR",
+        "KEEP CLOSED"
+      ]
+    },
+    {
+      "layer": 8,
+      "mark": "M10 forged FLOW",
+      "orient": "horizontal",
+      "cap_mm": 22,
+      "phrase": "THIƧ WAY OUT",
+      "hand": {
+        "stroke_mm": [
+          2.5,
+          4
+        ],
+        "rot_deg": 5,
+        "baseline_mm": 2.5,
+        "scale": 0.08,
+        "spacing_mm": 3,
+        "pitch_drift_mm": 4,
+        "seed": 1990
+      }
+    },
+    {
+      "layer": 9,
+      "mark": "M9 GROUND scratch",
+      "orient": "cluster",
+      "value_bg": 0.0,
+      "value_mark": 1.0,
+      "composite": "max",
+      "items": [
+        "TALLY 4x5+3",
+        "IT ONLY GOES IN",
+        "SAME ROLL AGAIN",
+        "COUNTED 41 DOORS",
+        "R.M. 6/90",
+        "D.K. 11/90"
+      ],
+      "cap_mm": [
+        25,
+        35
+      ],
+      "stroke_mm": [
+        2.5,
+        3
+      ],
+      "rot_deg": 6,
+      "v_range": [
+        0.1,
+        0.9
+      ],
+      "show": "tier>=T3 && GROUND && Hash(seed, cell&63, 977) < 0.125 && one tile per face && v in [0,1)"
+    }
+  ],
+  "ink_substance": {
+    "tile_mm": [
+      750,
+      1125
+    ],
+    "field": 0.7,
+    "marks": 0.4,
+    "register": [
+      {
+        "xy_mm": [
+          14,
+          60
+        ]
+      },
+      {
+        "xy_mm": [
+          736,
+          1065
+        ]
+      }
+    ],
+    "register_shape": "circle d16 + cross 30, stroke 2.5",
+    "stamp": {
+      "cap_mm": 20,
+      "tracking_mm": 1,
+      "x_mm": 90,
+      "baselines_mm": [
+        560,
+        590
+      ]
+    },
+    "tiers": [
+      {
+        "layer": 0,
+        "ld": "T0",
+        "lines": [
+          "LEVEL 0 · SHEET A-3 OF 4",
+          "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"
+        ]
+      },
+      {
+        "layer": 1,
+        "ld": "T1",
+        "lines": [
+          "LEVEL 0 · SHEET A-4 OF 4",
+          "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"
+        ]
+      },
+      {
+        "layer": 2,
+        "ld": "T2",
+        "lines": [
+          "LEVEL 0 · SHEET A-1114 OF 4",
+          "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"
+        ]
+      },
+      {
+        "layer": 3,
+        "ld": "T3",
+        "lines": [
+          "LEVEL 0 · SHEET A-1114 OF 4",
+          "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 1"
+        ]
+      },
+      {
+        "layer": 4,
+        "ld": "T4+",
+        "lines": [
+          "LEVEL 0 · SHEET A-1114 OF 4",
+          "ROLL 0417 · PRINTED 03/90 · OCCUPANTS 2"
+        ]
+      }
+    ],
+    "title_block": {
+      "cap_mm": 14,
+      "tracking_mm": 0.5,
+      "pad_mm": 8,
+      "rule_mm": 2.5,
+      "row_h_mm": 32,
+      "origin_mm": [
+        90,
+        536
+      ]
+    }
+  }
+}

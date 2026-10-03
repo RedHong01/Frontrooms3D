@@ -335,6 +335,91 @@ def figure8(R, d, n_full=64):
     return pts
 
 
+def plate_sweep(m, cx, cy, a, b, rc, k, profile):
+    """A rounded-rectangle solid along part Z: ``profile`` is a list of
+    (inset d, z) from the back face to the front face; each ring is the
+    outline (half sizes a, b, corner radius rc) inset by d. Back and front
+    are capped (n-gons, triangulated by tidy())."""
+    rings = []
+    for d, z in profile:
+        rr = max(rc - d, 0.00005)
+        rings.append([m.add((x, y, z)) for x, y in rounded_rect(cx, cy, a - d, b - d, rr, k)])
+    for A, B in zip(rings, rings[1:]):
+        m.bridge(A, B)
+    m.face(list(reversed(rings[0])))
+    m.face(rings[-1])
+    return rings
+
+
+def round_profile(r, k, reverse=False):
+    """(inset, rise) pairs of a quarter round of radius r in k steps."""
+    out = []
+    for i in range(k + 1):
+        t = math.radians(90.0 * i / k)
+        out.append((r * (1 - math.sin(t)), r * (1 - math.cos(t))))
+    return list(reversed(out)) if reverse else out
+
+
+def extrude_rounded_y(m, outline_xz, y0, y1, r, k=3):
+    """Extrude a CCW (X, Z) outline along part Y from y0 to y1 with both
+    end edges rounded (radius r, k steps): latches, plungers, strike lips."""
+    secs = []
+    for d, rise in round_profile(r, k):
+        secs.append((d, y0 + rise))
+    for d, rise in round_profile(r, k, reverse=True):
+        secs.append((d, y1 - rise))
+    sections = []
+    for d, y in secs:
+        o = offset_polygon(outline_xz, -d) if d > 1e-9 else outline_xz
+        sections.append([(x, y, z) for x, z in o])
+    return m.loft(sections)
+
+
+def arc_pts(cx, cy, r, a0, a1, n, include_start=True):
+    out = []
+    for i in range(0 if include_start else 1, n + 1):
+        t = math.radians(a0 + (a1 - a0) * i / n)
+        out.append((cx + r * math.cos(t), cy + r * math.sin(t)))
+    return out
+
+
+def latch_outline(t, throw, back, land=0.0005, tip_r=0.0005, bevel_deg=30.0, sagitta=0.0006, arc_n=10):
+    """Top view (X, Z) of a spring latchbolt, CCW: flat side at +X (the swing
+    side S), bevel facing -X (the push side P, where the stops are), §3.1.
+    The bevel chord runs from the land at the tip to the -X face at
+    ``bevel_deg`` off the bolt axis (Z), bulged ``sagitta`` (a rounded
+    bevel). Returns (outline, z where the bevel meets the -X face)."""
+    hx = t / 2
+    x0 = hx - tip_r - land                      # land end = bevel start
+    zb = throw - (x0 + hx) / math.tan(math.radians(bevel_deg))
+    pts = [(-hx, back), (hx, back), (hx, throw - tip_r)]
+    pts += arc_pts(hx - tip_r, throw - tip_r, tip_r, 0, 90, 3, include_start=False)
+    p0, p1 = Vector((x0, throw)), Vector((-hx, zb))
+    mid = (p0 + p1) / 2
+    nrm = Vector((-(p1 - p0).y, (p1 - p0).x)).normalized()
+    if nrm.dot(Vector((-1.0, 1.0))) < 0:
+        nrm = -nrm                              # bulge outward (toward -X / +Z)
+    half = (p1 - p0).length / 2
+    R = (half * half + sagitta * sagitta) / (2 * sagitta)
+    ctr = mid - nrm * (R - sagitta)
+    a0 = math.atan2(p0.y - ctr.y, p0.x - ctr.x)
+    a1 = math.atan2(p1.y - ctr.y, p1.x - ctr.x)
+    delta = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi     # the short arc
+    for i in range(arc_n + 1):
+        a = a0 + delta * i / arc_n
+        pts.append((ctr.x + R * math.cos(a), ctr.y + R * math.sin(a)))
+    return pts, zb
+
+
+def plunger_outline(x0, x1, back, protrude, n=12):
+    """Top view (X, Z) of the auxiliary deadlatch plunger: a bar with a
+    half-round nose standing ``protrude`` out of the front at Z 0."""
+    r = (x1 - x0) / 2
+    pts = [(x0, back), (x1, back), (x1, protrude - r)]
+    pts += arc_pts((x0 + x1) / 2, protrude - r, r, 0, 180, n, include_start=False)
+    return pts
+
+
 # ----------------------------------------------------------------- booleans
 def boolean(kit, obj, cutter, op="DIFFERENCE", slot=None):
     """EXACT boolean of a kit part with a Mesh (Unity coords). slot transfers
@@ -438,22 +523,24 @@ def _slot_cutter(cx, cy, ztop, depth, width, length, ang):
 
 
 def oval_screw(kit, cx, cy, zs, D=0.0070, dome=0.0012, slot_w=0.0008, slot_d=0.0008,
-               ang=0.0, segs=48, slot=CHROME, name="oval screw", dome_rings=(0.42, 0.78)):
+               ang=0.0, segs=48, slot=CHROME, name="oval screw", dome_rings=(0.42, 0.78), rim=0.00012):
     """Oval-head (raised countersunk) slotted wood/machine screw seen from the
     front: the rim sits at the surface z = zs (Unity part Z), the dome rises
     ``dome``; the countersunk underside stays hidden and is deleted."""
     r = D / 2
     R = (r * r + dome * dome) / (2 * dome)            # spherical cap radius
-    zc = zs + 0.00012 + dome - R
-    prof = [(0.0, zs - 0.0006), (r - 0.0004, zs - 0.0006), (r, zs), (r, zs + 0.00012)]
+    zc = zs + rim + dome - R
+    prof = [(0.0, zs - 0.0006), (r - 0.0004, zs - 0.0006), (r, zs)]
+    if rim > 0:
+        prof.append((r, zs + rim))
     for t in dome_rings:
         a = math.asin(r / R) * (1 - t)
         prof.append((R * math.sin(a), zc + R * math.cos(a)))
-    prof.append((0.0, zs + 0.00012 + dome))
+    prof.append((0.0, zs + rim + dome))
     m = Mesh()
     m.lathe(prof, segs, (cx, cy))
     obj = m.to_object(kit, name, slot)
-    boolean(kit, obj, _slot_cutter(cx, cy, zs + 0.00012 + dome, slot_d, slot_w, D + 0.002, ang), slot=DARK)
+    boolean(kit, obj, _slot_cutter(cx, cy, zs + rim + dome, slot_d, slot_w, D + 0.002, ang), slot=DARK)
     return obj
 
 
@@ -480,6 +567,81 @@ def countersink(cx, cy, zs, r_top, cone=0.0012, r_bottom=0.0, segs=48):
     prof += [(r_top, zs - 0.0003), (r_top, zs + 0.001), (0.0, zs + 0.001)]
     m.lathe(prof, segs, (cx, cy))
     return m
+
+
+# ------------------------------------------------------------------ strike
+STRIKE_W = 0.032
+STRIKE_T = 0.0016
+STRIKE_PROUD = 0.0002          # face 0.2 mm proud of the lining: never coplanar with it
+LIP_X0, LIP_X1 = -0.016, -0.040
+LIP_CURL = 0.0008              # the lip end rises to Z +0.001 (<= 1 mm, §3.1)
+
+
+def build_strike(kit, half_len, openings, lip_y, screw_y, screw_segs=48, lip_steps=9, corner_k=4):
+    """A strike plate in the part frame of 10_spec §3.1: plate centre on the
+    latch lining, front (+Z) facing the leaf edge, the curved lip toward part
+    -X (= door +X, the swing side the latch arrives from). ``openings`` =
+    [(y, half_x, half_y, box_depth)], dark dust boxes behind each.
+    Returns (plate, lip, boxes, screws)."""
+    zf, zb = STRIKE_PROUD, STRIKE_PROUD - STRIKE_T
+    m = Mesh()
+    plate_sweep(m, 0.0, 0.0, STRIKE_W / 2, half_len, 0.002, corner_k,
+                [(0.0, zb), (0.0, zf - 0.0003), (0.0003, zf)])
+    plate = m.to_object(kit, "strike plate", CHROME)
+    for y, hx, hy, depth in openings:
+        c = Mesh()
+        c.prism(rounded_rect(0.0, y, hx, hy, 0.001, 3), zb - 0.002, zf + 0.002)
+        boolean(kit, plate, c)
+    # Lip: a tongue off the -X edge round the latch opening, curling up
+    # toward the leaf by LIP_CURL over its outer 14 mm (one piece with the
+    # plate in reality; overlaps the plate edge by 0.3 mm here).
+    y0, y1 = lip_y
+    rc = 0.006
+    xs = [LIP_X0 + 0.0003] + [LIP_X0 + (LIP_X1 - LIP_X0) * i / (lip_steps - 1) for i in range(1, lip_steps)]
+    xs = sorted(set(xs + [LIP_X1 + rc]), reverse=True)
+    sections = []
+    for x in xs:
+        dy = 0.0
+        if x < LIP_X1 + rc:
+            dy = rc - math.sqrt(max(0.0, rc * rc - (x - (LIP_X1 + rc)) ** 2))
+        u = max(0.0, (-0.026 - x) / (-0.026 - LIP_X1))
+        zt = zf + LIP_CURL * u * u
+        a, b = y0 + dy, y1 - dy
+        e = 0.0002
+        sections.append([(x, a, zt - STRIKE_T), (x, b, zt - STRIKE_T), (x, b, zt - e), (x, b - e, zt),
+                         (x, a + e, zt), (x, a, zt - e)])
+    lm = Mesh()
+    lm.loft(sections)
+    lip = lm.to_object(kit, "strike lip", CHROME)
+    bm_ = Mesh()
+    for y, hx, hy, depth in openings:
+        top = [bm_.add((x, yy, zb)) for x, yy in rounded_rect(0.0, y, hx, hy, 0.001, 3)]
+        bot = [bm_.add((x, yy, zb - depth)) for x, yy in rounded_rect(0.0, y, hx, hy, 0.001, 3)]
+        n = len(top)
+        for i in range(n):
+            j = (i + 1) % n
+            bm_.face((top[i], top[j], bot[j], bot[i]))     # walls face inward
+        bm_.face(bot)                                       # floor faces the opening (+Z)
+    boxes = bm_.to_object(kit, "dust boxes", DARK, recalc=False)
+    screws = []
+    for sy, ang in zip(screw_y, (8.0, -23.0, 41.0, -5.0)):
+        s = flat_screw(kit, 0.0, sy, zf, D=0.0085, proud=0.0001, slot_w=0.0009, slot_d=0.0006, ang=ang,
+                       segs=screw_segs, name="strike screw")
+        screws.append(s)
+    return plate, lip, boxes, screws
+
+
+def strike_wear(openings):
+    def fn(p, n, slot):
+        x, y, z = p
+        g = 1.0
+        if x < LIP_X0 + 0.0005:
+            g = 0.62                                 # the lip: the latch rides it every close
+        for oy, hx, hy, d in openings:
+            if abs(y - oy) < hy + 0.0015 and abs(x) < hx + 0.0015:
+                g = min(g, 0.72)                     # bolts rub the opening edges
+        return (1.0, g, 1.0)
+    return fn
 
 
 # ------------------------------------------------------------------- meta

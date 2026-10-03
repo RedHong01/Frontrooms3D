@@ -1,0 +1,742 @@
+// WINDOW LANDING TESTS + FRAMES (private clone proj_win only; never copied into the real project).
+// Checks the clone-only [WINDOW-KIT] patch to FrontRoomsMapWorld and the visual facade FrontRoomsInteractableKit.Window
+// (interactables/10_spec.md §5, §6.5 item 7; 00_map_constraints.md). Edit mode, no Play session:
+//   - builds the map (BuildForCapture) per seed twice, kit OFF (the map's reflection hooks nulled = today's build) and
+//     kit ON, at the same root (4992, 0, 4992), and compares them;
+//   - per window: root name/pose, frame member and facing, render-only, clear opening, stop band, pane collider and
+//     name unchanged, renderer disabled, slab size/material/RT target, rays (E ray / sight) identical OFF vs ON before
+//     and after a break, the break leaves frame and stops, a rebuilt chunk keeps the frame and no pane;
+//   - every shell mesh (walls, floors, ceilings, coves, door trims) and the collision mesh identical OFF vs ON, except
+//     exactly the 3 trim boxes of each kit window;
+//   - frames (URP + post, 1920x1080, 4x MSAA) of one W-L0 and one W-OF window, today vs landed, both faces, close-ups,
+//     broken.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsWindowLandingTests.RunBatch -logFile <f> -quit
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsWindowLandingTests
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    const BindingFlags SF = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly Vector3 RootPosition = new Vector3(4992f, 0f, 4992f);
+    const float Eps = 1e-4f;
+
+    static readonly StringBuilder log = new StringBuilder();
+    static int passed, failed;
+    static readonly Dictionary<string, int> failKinds = new Dictionary<string, int>();
+    static string outDir;
+
+    static void Log(string s)
+    {
+        log.AppendLine(s);
+        Debug.Log("[WindowLanding] " + s);
+    }
+
+    static void Check(bool ok, string what)
+    {
+        if (ok) { passed++; return; }
+        failed++;
+        var kind = what.Split(':')[0];
+        failKinds.TryGetValue(kind, out var k);
+        failKinds[kind] = k + 1;
+        if (k < 6) Log("FAIL " + what);
+    }
+
+    static string F(float f, string fmt = "0.0000") => f.ToString(fmt, CultureInfo.InvariantCulture);
+    static string V(Vector3 v) => "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
+
+    public static void RunBatch()
+    {
+        outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "window_landing");
+        Directory.CreateDirectory(outDir);
+        try
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            Run();
+        }
+        catch (Exception e)
+        {
+            Check(false, "exception: " + e);
+        }
+        var verdict = (failed == 0 && passed > 0 ? "PASS" : "FAIL") + ": " + passed + " passed, " + failed + " failed";
+        Log("VERDICT " + verdict);
+        foreach (var kv in failKinds) Log("  fail kind " + kv.Key + " x" + kv.Value);
+        File.WriteAllText(Path.Combine(outDir, "window_landing_log.txt"), log.ToString());
+        if (Application.isBatchMode) EditorApplication.Exit(failed == 0 ? 0 : 3);
+    }
+
+    // ------------------------------------------------------------------ reflection on the map
+    static object Get(object o, string n) => o.GetType().GetField(n, BF)?.GetValue(o);
+
+    static IEnumerable<(GridCoord coord, object chunk)> Chunks(FrontRoomsMapWorld w)
+    {
+        var built = (IDictionary)typeof(FrontRoomsMapWorld).GetField("built", BF).GetValue(w);
+        var list = new List<(GridCoord, object)>();
+        foreach (DictionaryEntry e in built) list.Add(((GridCoord)e.Key, e.Value));
+        return list.OrderBy(t => t.Item1.x).ThenBy(t => t.Item1.y);
+    }
+
+    static List<FrontRoomsMapWorld.Window> Windows(object chunk) => ((IEnumerable)Get(chunk, "windows")).Cast<FrontRoomsMapWorld.Window>().ToList();
+
+    static void KitEnabled(bool on)
+    {
+        var t = typeof(FrontRoomsMapWorld);
+        // Resolve everything first (Office kit, pile, window kit), so "off" differs from "on" by the window kit only.
+        t.GetField("windowDress", SF).SetValue(null, null);
+        t.GetField("paneDress", SF).SetValue(null, null);
+        t.GetField("dressersResolved", SF).SetValue(null, false);
+        t.GetMethod("ResolveDressers", SF).Invoke(null, null);
+        if (on) return;
+        t.GetField("windowDress", SF).SetValue(null, null);
+        t.GetField("paneDress", SF).SetValue(null, null);
+    }
+
+    static readonly List<GameObject> roots = new List<GameObject>();
+    static readonly List<Object> owned = new List<Object>();
+
+    static FrontRoomsMapWorld BuildWorld(int seed, bool kit, out double ms)
+    {
+        KitEnabled(kit);
+        var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.generation.seed = seed;
+        owned.Add(profile);
+        var root = new GameObject("WINDOW LANDING / " + (kit ? "kit" : "today") + " / seed " + seed) { hideFlags = HideFlags.DontSave };
+        root.transform.position = RootPosition;
+        roots.Add(root);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = profile;
+        var sw = Stopwatch.StartNew();
+        world.BuildForCapture();
+        sw.Stop();
+        ms = sw.Elapsed.TotalMilliseconds;
+        world.TickFixturesForTools(0f);
+        Physics.SyncTransforms();
+        return world;
+    }
+
+    static void Free(FrontRoomsMapWorld w)
+    {
+        if (w == null) return;
+        var go = w.gameObject;
+        w.Release();
+        Object.DestroyImmediate(go);
+        roots.Remove(go);
+    }
+
+    // ------------------------------------------------------------------ window facts
+    sealed class Info
+    {
+        public long edge;
+        public GridCoord a, b, room;
+        public bool roomIsB;
+        public ZoneTheme theme;
+        public Vector3 origin, across;    // world: opening centre at floor, unit a->b
+        public string Key => "edge " + edge;
+    }
+
+    static Info Describe(FrontRoomsMapWorld w, FrontRoomsMapWorld.Window win)
+    {
+        var p = win.position;
+        Vector3 across;
+        if (win.pane != null)
+        {
+            var s = win.pane.transform.lossyScale;
+            across = Mathf.Abs(s.x) < Mathf.Abs(s.z) ? Vector3.right : Vector3.forward;
+        }
+        else across = win.root != null ? win.root.forward : Vector3.right;
+        across = Mathf.Abs(across.x) > .5f ? Vector3.right : Vector3.forward;
+        var a = w.CellOf(p - across * 1.5f + Vector3.up);
+        var b = w.CellOf(p + across * 1.5f + Vector3.up);
+        var tallA = w.Cache.ZoneOf(a).height == ZoneHeight.Tall;
+        var room = tallA ? b : a;
+        return new Info { edge = win.edge, a = a, b = b, room = room, roomIsB = tallA, theme = w.Cache.ZoneOf(room).theme, origin = p, across = across };
+    }
+
+    // ------------------------------------------------------------------ rays (the E ray, the Relay's sight ray: first collider)
+    static readonly float[] RayX = { -.80f, -.69f, -.60f, 0f, .60f, .69f, .80f };
+    static readonly float[] RayY = { .20f, .34f, .37f, 1.0f, 1.60f, 1.98f, 2.02f, 2.20f };
+
+    static string RaySignature(Info i, bool broken)
+    {
+        var sb = new StringBuilder();
+        var along = Vector3.Cross(Vector3.up, i.across);
+        foreach (var dir in new[] { 1f, -1f })
+        foreach (var x in RayX)
+        foreach (var y in RayY)
+        {
+            var from = i.origin + along * x + Vector3.up * y - i.across * (.6f * dir);
+            if (Physics.Raycast(from, i.across * dir, out var hit, 1.2f, ~0, QueryTriggerInteraction.Ignore))
+                sb.Append(Kind(hit.collider)).Append('@').Append(F(hit.distance, "0.000")).Append(' ');
+            else sb.Append("- ");
+        }
+        // The Relay's nav probe (radius 0.3, 0.4-1.95 m) straight through the opening, both ways.
+        foreach (var dir in new[] { 1f, -1f })
+        {
+            var start = i.origin - i.across * (.9f * dir);
+            var hitAny = Physics.CapsuleCast(start + Vector3.up * .70f, start + Vector3.up * 1.65f, .3f, i.across * dir, out var hit, 1.8f, ~0, QueryTriggerInteraction.Ignore);
+            sb.Append(hitAny ? "probe:" + Kind(hit.collider) : "probe:-").Append(' ');
+        }
+        return sb.ToString();
+    }
+
+    static string Kind(Collider c)
+    {
+        if (c == null) return "?";
+        var n = c.gameObject.name;
+        if (n.StartsWith("Window pane")) return "pane";
+        if (n == "Collision") return "shell";
+        return "other:" + n;
+    }
+
+    // ------------------------------------------------------------------ the run
+    static void Run()
+    {
+        var seeds = new List<int> { 20261001, 516574485, 4242, 1990, 7, 1955, 1993, 8086, 6502, 68000, 2600, 1984, 3, 11, 101, 777 };
+        int lobby = 0, office = 0, worlds = 0;
+        var timing = new StringBuilder();
+        Info capLobby = null, capOffice = null;
+        int capLobbySeed = 0, capOfficeSeed = 0;
+        foreach (var seed in seeds)
+        {
+            if (lobby >= 6 && office >= 4 && worlds >= 3 && capLobby != null && capOffice != null) break;
+            if (worlds >= 10 && lobby >= 1 && office >= 1) break;
+            // ---- OFF: today's build ----
+            var off = BuildWorld(seed, false, out var offMs);
+            var offWindows = new Dictionary<long, (Info info, string before, string after)>();
+            var offShell = ShellSnapshot(off);
+            foreach (var (coord, chunk) in Chunks(off))
+                foreach (var win in Windows(chunk))
+                {
+                    var i = Describe(off, win);
+                    offWindows[win.edge] = (i, RaySignature(i, false), null);
+                    // Kit absent: exactly today's window (visible cube, RT target on it, no root).
+                    var pr = win.pane.GetComponent<MeshRenderer>();
+                    Check(win.root == null && win.glass == pr && pr.enabled && win.pane.GetComponent<FrontRoomsMetalGlassTarget>() != null && win.pane.transform.childCount == 0,
+                        "today: seed " + seed + " " + i.Key + " kit absent -> visible pane cube with the RT target, no root");
+                }
+            if (offWindows.Count == 0)
+            {
+                Log("seed " + seed + ": no windows in range; skipped");
+                Free(off);
+                continue;
+            }
+            worlds++;
+            // Today's frames for the capture windows (decided here, from zones; the same edges are used kit ON).
+            // Frames: the first window of each member whose room cell and hall cell both have a steady, lit lamp.
+            if (capLobby == null) { capLobby = offWindows.Values.Select(t => t.info).FirstOrDefault(t => t.theme == ZoneTheme.Level0 && Lit(off, t)); if (capLobby != null) capLobbySeed = seed; }
+            if (capOffice == null) { capOffice = offWindows.Values.Select(t => t.info).FirstOrDefault(t => t.theme == ZoneTheme.Office && Lit(off, t)); if (capOffice != null) capOfficeSeed = seed; }
+            if (capLobby != null && capLobbySeed == seed) Shots(off, capLobby, "L0", "today");
+            if (capOffice != null && capOfficeSeed == seed) Shots(off, capOffice, "OF", "today");
+            var offRender = capLobbySeed == seed && capLobby != null ? RenderMs(capLobby) : -1;
+            // Break every window OFF to get the post-break signature.
+            BreakAll(off, offWindows, true);
+            Free(off);
+
+            // ---- ON: the kit ----
+            var on = BuildWorld(seed, true, out var onMs);
+            var onRender = capLobbySeed == seed && capLobby != null ? RenderMs(capLobby) : -1;
+            var onShell = ShellSnapshot(on);
+            var kitWindows = new List<(FrontRoomsMapWorld.Window win, Info info)>();
+            foreach (var (coord, chunk) in Chunks(on))
+                foreach (var win in Windows(chunk))
+                    kitWindows.Add((win, Describe(on, win)));
+            Check(kitWindows.Count == offWindows.Count, "count: seed " + seed + " windows ON " + kitWindows.Count + " vs today " + offWindows.Count);
+            CompareShell(seed, offShell, onShell, kitWindows.Select(k => k.info).ToList());
+            var frameTris = 0;
+            foreach (var (win, info) in kitWindows)
+            {
+                if (info.theme == ZoneTheme.Office) office++; else lobby++;
+                frameTris += CheckWindow(on, win, info, seed);
+                if (offWindows.TryGetValue(win.edge, out var o))
+                    Check(o.before == RaySignature(info, false), "rays-before: seed " + seed + " " + info.Key + "\n today " + o.before + "\n kit   " + RaySignature(info, false));
+            }
+            if (capLobby != null && capLobbySeed == seed) Shots(on, capLobby, "L0", "kit");
+            if (capOffice != null && capOfficeSeed == seed) Shots(on, capOffice, "OF", "kit");
+            // Break, then check what stays.
+            var broken = 0;
+            int probeClear = 0, probeBlocked = 0;
+            foreach (var (win, info) in kitWindows)
+            {
+                var root = win.root;
+                var frameBefore = FrameVertices(root);
+                var fired = 0;
+                void OnBroken(Vector3 p) => fired++;
+                on.GlassBroken += OnBroken;
+                var col = win.pane.GetComponent<Collider>();
+                var ok = on.Hold(col, 1.01f, out var progress);
+                on.GlassBroken -= OnBroken;
+                Physics.SyncTransforms();
+                broken++;
+                Check(ok && fired == 1 && progress >= 1f, "break: seed " + seed + " " + info.Key + " Hold returned " + ok + ", GlassBroken x" + fired);
+                Check(win.pane == null && win.glass == null, "break-kill: seed " + seed + " " + info.Key + " pane and slab destroyed");
+                Check(root != null && root.Find(FrontRoomsInteractableKit.FrameLabel) != null, "break-frame: seed " + seed + " " + info.Key + " frame (and its stops) stay");
+                Check(root != null && FrameVertices(root).SequenceEqual(frameBefore), "break-frame-same: seed " + seed + " " + info.Key);
+                Check(on.IsBrokenWindow(info.a, info.b) && on.PassageBetween(info.a, info.b) == FrontRoomsMapWorld.Passage.Open, "break-passage: seed " + seed + " " + info.Key);
+                Check(root != null && root.GetComponentsInChildren<Collider>(true).Length == 0, "break-colliders: seed " + seed + " " + info.Key);
+                if (offWindows.TryGetValue(win.edge, out var o2))
+                {
+                    var sig = RaySignature(info, true);
+                    Check(o2.after == sig, "rays-after: seed " + seed + " " + info.Key + "\n today " + o2.after + "\n kit   " + sig);
+                    Check(!sig.Contains("pane") && !sig.Contains("other:Window"), "open-after: seed " + seed + " " + info.Key + " " + sig);
+                    if (sig.Contains("probe:- probe:-")) probeClear++; else probeBlocked++;
+                }
+                ClearZone(root, info, "after-break");
+            }
+            if (capLobby != null && capLobbySeed == seed) Shot(on, capLobby, "L0_kit_broken_A", true, 1.6f, new Vector3(.25f, 1.62f, 1.6f), new Vector3(0f, 1.15f, 0f), 76f);
+            if (capOffice != null && capOfficeSeed == seed) Shot(on, capOffice, "OF_kit_broken_A", true, 1.6f, new Vector3(.25f, 1.62f, 1.6f), new Vector3(0f, 1.15f, 0f), 76f);
+            // Rebuild the chunks with broken windows: the frame comes back, the pane does not, trims stay out.
+            Log("seed " + seed + ": after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at " + probeClear + " windows; blocked by something else (same as today) at " + probeBlocked);
+            Rebuild(on, kitWindows.Select(k => k.info).ToList(), seed);
+            timing.AppendLine("seed " + seed + ": " + offWindows.Count + " windows; BuildForCapture today " + F((float)offMs, "0") + " ms, kit " + F((float)onMs, "0") + " ms; frame tris added " + frameTris
+                + (offRender >= 0 ? "; render median (W-L0 room view) today " + F((float)offRender, "0.00") + " ms, kit " + F((float)onRender, "0.00") + " ms" : ""));
+            Free(on);
+        }
+        // No member window with a lit room in range: frame the first one whose room lamp is on at all.
+        if (capLobby == null) CaptureOnly(seeds, ZoneTheme.Level0, "L0");
+        if (capOffice == null) CaptureOnly(seeds, ZoneTheme.Office, "OF");
+        KitEnabled(true);
+        Log("windows checked: W-L0 " + lobby + ", W-OF " + office + " in " + worlds + " worlds");
+        Check(lobby >= 1 && office >= 1, "coverage: both members seen (W-L0 " + lobby + ", W-OF " + office + ")");
+        Log("timing (edit mode, batch; see uptime load in the run notes):\n" + timing);
+        foreach (var o in owned) if (o != null) Object.DestroyImmediate(o);
+        owned.Clear();
+    }
+
+    static void CaptureOnly(List<int> seeds, ZoneTheme theme, string member)
+    {
+        foreach (var seed in seeds)
+        {
+            var off = BuildWorld(seed, false, out _);
+            Info pick = null;
+            foreach (var (coord, chunk) in Chunks(off))
+                foreach (var win in Windows(chunk))
+                {
+                    var i = Describe(off, win);
+                    var m = LampMode(off, i.room);
+                    if (pick == null && i.theme == theme && (m == 0 || m == 1 || m == 4)) pick = i;
+                }
+            if (pick == null) { Free(off); continue; }
+            Log("frames for " + member + ": no window with a steady lamp on both sides; using seed " + seed + " " + pick.Key + " (room lamp mode " + LampMode(off, pick.room) + ")");
+            Shots(off, pick, member, "today");
+            Free(off);
+            var on = BuildWorld(seed, true, out _);
+            Shots(on, pick, member, "kit");
+            foreach (var (coord, chunk) in Chunks(on))
+                foreach (var win in Windows(chunk))
+                    if (win.edge == pick.edge && win.pane != null) on.Hold(win.pane.GetComponent<Collider>(), 1.01f, out _);
+            Shot(on, pick, member + "_kit_broken_A", true, 1.6f, new Vector3(.25f, 1.62f, 1.6f), new Vector3(0f, 1.15f, 0f), 76f);
+            Free(on);
+            return;
+        }
+        Log("frames for " + member + ": none found");
+    }
+
+    static int LampMode(FrontRoomsMapWorld w, GridCoord cell)
+    {
+        foreach (var (coord, chunk) in Chunks(w))
+            foreach (var f in (IEnumerable)Get(chunk, "fixtures"))
+            {
+                var l = (Light)Get(f, "light");
+                if (l != null && w.CellOf(l.transform.position) == cell) return l.enabled ? (int)Get(f, "mode") : -2;
+            }
+        return -1;
+    }
+
+    static bool Lit(FrontRoomsMapWorld w, Info i)
+    {
+        var hall = i.room.Equals(i.a) ? i.b : i.a;
+        var h = LampMode(w, hall);
+        return LampMode(w, i.room) == 0 && (h == 0 || h == 1 || h == 4);
+    }
+
+    static void BreakAll(FrontRoomsMapWorld w, Dictionary<long, (Info info, string before, string after)> windows, bool record)
+    {
+        foreach (var (coord, chunk) in Chunks(w))
+            foreach (var win in Windows(chunk))
+            {
+                if (win.pane == null) continue;
+                w.Hold(win.pane.GetComponent<Collider>(), 1.01f, out _);
+            }
+        Physics.SyncTransforms();
+        foreach (var key in windows.Keys.ToList())
+        {
+            var t = windows[key];
+            windows[key] = (t.info, t.before, RaySignature(t.info, true));
+        }
+    }
+
+    // ------------------------------------------------------------------ per window
+    // Root-space geometry is composed from local transforms up to the chunk root (chunk-local metres, < 24 m), never
+    // through world space: at x ~ 5000 m a float holds only ~0.5 mm, which is coarser than the 0.1 mm checks.
+    static Matrix4x4 ToChunk(Transform t)
+    {
+        var m = Matrix4x4.identity;
+        for (; t != null && !t.name.StartsWith("Chunk "); t = t.parent)
+            m = Matrix4x4.TRS(t.localPosition, t.localRotation, t.localScale) * m;
+        return m;
+    }
+
+    static Matrix4x4 ToRoot(Transform t, Transform root) => ToChunk(root).inverse * ToChunk(t);
+
+    static List<Vector3> FrameVertices(Transform root)
+    {
+        var list = new List<Vector3>();
+        if (root == null) return list;
+        foreach (var f in root.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (f.sharedMesh == null) continue;
+            var m = ToRoot(f.transform, root);
+            foreach (var v in f.sharedMesh.vertices) list.Add(m.MultiplyPoint3x4(v));
+        }
+        return list;
+    }
+
+    static void ClearZone(Transform root, Info info, string when)
+    {
+        var verts = FrameVertices(root);
+        const float sx = FrontRoomsInteractableKit.StopX, ss = FrontRoomsInteractableKit.StopSill, sh = FrontRoomsInteractableKit.StopHead;
+        var inside = verts.Count(v => Mathf.Abs(v.x) < sx - Eps && v.y > ss + Eps && v.y < sh - Eps);
+        Check(inside == 0, "clear-zone: " + when + " " + info.Key + " " + inside + " frame vertices inside X ±0.6835 x Y 0.3665-1.9835");
+        // Inside the wall cut, only the stop band (|Z| <= 0.022, plus the W-OF screw domes' 1.5 mm on face A) and the
+        // lining/soffit faces at its edge.
+        bool InCut(Vector3 v) => Mathf.Abs(v.x) < FrontRoomsInteractableKit.LiningX - Eps && v.y > FrontRoomsInteractableKit.LiningSill + Eps && v.y < FrontRoomsInteractableKit.LiningHead - Eps;
+        var stray = verts.Count(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + .0015f + Eps);
+        Check(stray == 0, "stop-band: " + when + " " + info.Key + " " + stray + " vertices in the opening outside |Z| <= 0.0235");
+        var domes = verts.Count(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + Eps);
+        Check(domes == 0 || (info.theme == ZoneTheme.Office && verts.Where(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + Eps).All(v => v.z * (info.roomIsB ? 1f : -1f) > 0f && (Mathf.Abs(Mathf.Abs(v.x) - .6915f) < .0036f || Mathf.Abs(Mathf.Abs(v.y - 1.175f) - .8165f) < .0036f))),
+            "screw-domes: " + when + " " + info.Key + " " + domes + " vertices proud of the stop face are not screw heads");
+    }
+
+    static int CheckWindow(FrontRoomsMapWorld w, FrontRoomsMapWorld.Window win, Info info, int seed)
+    {
+        var tag = "seed " + seed + " " + info.Key + " " + info.a + "-" + info.b;
+        var root = win.root;
+        Check(root != null, "root: " + tag + " window.root set");
+        if (root == null) return 0;
+        Check(root.name == "Window " + info.a + "-" + info.b, "root-name: " + tag + " '" + root.name + "'");
+        Check(root.parent != null && root.parent.name.StartsWith("Chunk "), "root-parent: " + tag + " under the chunk root");
+        Check((root.localScale - Vector3.one).sqrMagnitude < 1e-10f && (root.lossyScale - Vector3.one).sqrMagnitude < 1e-8f, "root-scale: " + tag + " " + V(root.lossyScale));
+        Check((root.position - win.position).sqrMagnitude < 1e-8f && Mathf.Abs(root.position.y - w.transform.position.y) < Eps, "root-pose: " + tag + " root " + V(root.position) + " vs Window.position " + V(win.position));
+        var into = w.CellCenter(info.b) - w.CellCenter(info.a);
+        Check(Vector3.Dot(root.forward, into.normalized) > .9999f && Mathf.Abs(root.up.y - 1f) < 1e-5f, "root-facing: " + tag + " +Z " + V(root.forward) + " into b " + V(into));
+        // Frame member and facing.
+        var frame = root.Find(FrontRoomsInteractableKit.FrameLabel);
+        Check(frame != null && root.childCount == 1, "frame: " + tag + " one child '" + FrontRoomsInteractableKit.FrameLabel + "' (children " + root.childCount + ")");
+        var tris = 0;
+        if (frame != null)
+        {
+            var mf = frame.GetComponent<MeshFilter>();
+            var mr = frame.GetComponent<MeshRenderer>();
+            var meshName = mf != null && mf.sharedMesh != null ? mf.sharedMesh.name : "";
+            var want = info.theme == ZoneTheme.Office ? "Steel" : "Wood";
+            Check(meshName.Contains(want), "member: " + tag + " room " + info.theme + " -> '" + meshName + "' (want " + want + ")");
+            var main = mr != null && mr.sharedMaterials.Length > 0 && mr.sharedMaterials[0] != null ? mr.sharedMaterials[0].name : "";
+            Check(main == (info.theme == ZoneTheme.Office ? "Prop_SteelBrown" : "Prop_WoodWalnut") && mr.sharedMaterials.Length == 2 && mr.sharedMaterials[1] != null && mr.sharedMaterials[1].name == "Prop_Rubber",
+                "slots: " + tag + " " + string.Join(",", mr.sharedMaterials.Select(m => m != null ? m.name : "null")));
+            Check(mr.shadowCastingMode == ShadowCastingMode.On, "frame-shadow: " + tag);
+            var toRoom = w.CellCenter(info.room) - root.position;
+            toRoom.y = 0f;
+            Check(Vector3.Dot(frame.forward, toRoom.normalized) > .9999f, "face-a: " + tag + " frame +Z " + V(frame.forward) + " toward room " + V(toRoom.normalized));
+            if (mf != null && mf.sharedMesh != null) tris = mf.sharedMesh.triangles.Length / 3;
+            // Stops on both faces, all four sides: vertices in the band on each face and side.
+            var verts = FrameVertices(root);
+            // Stops on both faces, all four sides, mitred: band vertices (Z ±0.006..0.022) at the four sight-line corners
+            // (±0.6835, 0.3665 / 1.9835) and the four outer corners (±0.6995, 0.3505 / 1.9995) of each face.
+            foreach (var zSign in new[] { 1f, -1f })
+            {
+                bool Band(Vector3 v) => v.z * zSign >= FrontRoomsInteractableKit.StopZIn + .001f && v.z * zSign <= FrontRoomsInteractableKit.StopZOut + Eps;
+                var corners = 0;
+                foreach (var sx in new[] { -1f, 1f })
+                foreach (var top in new[] { false, true })
+                {
+                    var yIn = top ? FrontRoomsInteractableKit.StopHead : FrontRoomsInteractableKit.StopSill;
+                    var yOut = top ? FrontRoomsInteractableKit.LiningHead : FrontRoomsInteractableKit.LiningSill;
+                    if (verts.Any(v => Band(v) && Mathf.Abs(v.x - sx * FrontRoomsInteractableKit.StopX) < Eps && Mathf.Abs(v.y - yIn) < Eps)) corners++;
+                    if (verts.Any(v => Band(v) && Mathf.Abs(v.x - sx * FrontRoomsInteractableKit.LiningX) < Eps && Mathf.Abs(v.y - yOut) < Eps)) corners++;
+                }
+                Check(corners == 8, "stops: " + tag + " face " + (zSign > 0 ? "A" : "B") + " " + corners + "/8 stop-ring corners at the spec's numbers");
+            }
+            var maxZ = verts.Max(v => Mathf.Abs(v.z));
+            var wantZ = info.theme == ZoneTheme.Office ? FrontRoomsInteractableKit.CasingZ : .121f;
+            Check(Mathf.Abs(maxZ - wantZ) < Eps, "depth: " + tag + " max |Z| " + F(maxZ) + " (want " + F(wantZ) + ")");
+            var maxX = verts.Max(v => Mathf.Abs(v.x));
+            var wantX = info.theme == ZoneTheme.Office ? FrontRoomsInteractableKit.FaceOuterX : .800f;
+            Check(Mathf.Abs(maxX - wantX) < Eps, "width: " + tag + " max |X| " + F(maxX) + " (want " + F(wantX) + ")");
+            var maxY = verts.Max(v => v.y);
+            Check(Mathf.Abs(maxY - FrontRoomsInteractableKit.FaceHead) < Eps, "height: " + tag + " max Y " + F(maxY));
+            var minY = verts.Min(v => v.y);
+            var wantMinY = info.theme == ZoneTheme.Office ? .2745f : .250f;
+            Check(Mathf.Abs(minY - wantMinY) < Eps, "bottom: " + tag + " min Y " + F(minY) + " (want " + F(wantMinY) + ")");
+        }
+        Check(root.GetComponentsInChildren<Collider>(true).Length == 0 && root.GetComponentsInChildren<Light>(true).Length == 0, "render-only: " + tag);
+        ClearZone(root, info, "intact");
+        // The gameplay pane: unchanged, renderer off.
+        var pane = win.pane;
+        Check(pane != null && pane.name == "Window pane " + info.a + "-" + info.b, "pane-name: " + tag);
+        if (pane == null) return tris;
+        var box = pane.GetComponent<BoxCollider>();
+        var size = Vector3.Scale(box.size, pane.transform.lossyScale);
+        size = new Vector3(Mathf.Abs(size.x), Mathf.Abs(size.y), Mathf.Abs(size.z));
+        var wantSize = info.across == Vector3.right ? new Vector3(ModuleUnits.GlassThickness, 1.65f, 1.4f) : new Vector3(1.4f, 1.65f, ModuleUnits.GlassThickness);
+        Check(box.enabled && (size - wantSize).sqrMagnitude < 1e-8f, "pane-collider: " + tag + " " + V(size));
+        var paneCentre = ToRoot(pane.transform, root).MultiplyPoint3x4(box.center);
+        Check((paneCentre - FrontRoomsInteractableKit.GlassSlabCentre).sqrMagnitude < 1e-8f, "pane-centre: " + tag + " " + V(paneCentre) + " (root space)");
+        Check(w.IsArchitecture(box), "pane-mapped: " + tag + " windowByCollider keeps the collider");
+        var pr = pane.GetComponent<MeshRenderer>();
+        Check(pr != null && !pr.enabled, "pane-renderer: " + tag + " disabled, not destroyed");
+        Check(pane.GetComponent<FrontRoomsMetalGlassTarget>() == null, "rt-off-pane: " + tag);
+        // The visible slab.
+        Check(pane.transform.childCount == 1, "slab-count: " + tag + " " + pane.transform.childCount);
+        var slab = pane.transform.Find(FrontRoomsInteractableKit.GlassLabel);
+        Check(slab != null && win.glass != null && win.glass.transform == slab, "slab: " + tag + " child '" + FrontRoomsInteractableKit.GlassLabel + "' = Window.glass");
+        if (slab == null) return tris;
+        var sr = slab.GetComponent<MeshRenderer>();
+        Check(slab.GetComponent<Collider>() == null, "slab-collider: " + tag + " none");
+        Check(sr.enabled && sr.sharedMaterial != null && sr.sharedMaterial.name == "Glass_Window" && sr.sharedMaterial.shader.name == "FrontRooms/Glass", "slab-material: " + tag + " " + (sr.sharedMaterial != null ? sr.sharedMaterial.name + " / " + sr.sharedMaterial.shader.name : "null"));
+        Check(sr.shadowCastingMode == ShadowCastingMode.Off, "slab-shadow: " + tag);
+        Check(slab.GetComponent<FrontRoomsMetalGlassTarget>() != null, "rt-on-slab: " + tag);
+        var mn = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        var mx = -mn;
+        var slabToRoot = ToRoot(slab, root);
+        foreach (var v in slab.GetComponent<MeshFilter>().sharedMesh.vertices)
+        {
+            var p = slabToRoot.MultiplyPoint3x4(v);
+            mn = Vector3.Min(mn, p);
+            mx = Vector3.Max(mx, p);
+        }
+        Check(Mathf.Abs(mx.x - FrontRoomsInteractableKit.GlassEdgeX) < Eps && Mathf.Abs(mn.x + FrontRoomsInteractableKit.GlassEdgeX) < Eps
+            && Mathf.Abs(mn.y - FrontRoomsInteractableKit.GlassSill) < Eps && Mathf.Abs(mx.y - FrontRoomsInteractableKit.GlassHead) < Eps
+            && Mathf.Abs(mx.z - FrontRoomsInteractableKit.GlassHalfZ) < Eps && Mathf.Abs(mn.z + FrontRoomsInteractableKit.GlassHalfZ) < Eps,
+            "slab-size: " + tag + " " + V(mn) + " .. " + V(mx));
+        // Hidden edges: the bite behind the stop line on every side, and the 3 mm gap to the stops' inner faces.
+        Check(mx.x - FrontRoomsInteractableKit.StopX > .0119f && FrontRoomsInteractableKit.StopSill - mn.y > .0124f && mx.y - FrontRoomsInteractableKit.StopHead > .0124f
+            && FrontRoomsInteractableKit.StopZIn - mx.z > .0029f, "slab-pocket: " + tag);
+        // Inside the pane collider.
+        var half = new Vector3(.7f, .825f, .015f);
+        Check(mx.x <= half.x + Eps && mx.y <= 1.175f + half.y + Eps && mn.y >= 1.175f - half.y - Eps && mx.z <= half.z, "slab-inside-pane: " + tag);
+        return tris;
+    }
+
+    // ------------------------------------------------------------------ shell meshes: today vs kit
+    sealed class Shell
+    {
+        public readonly Dictionary<string, Vector3[]> meshes = new Dictionary<string, Vector3[]>();
+    }
+
+    static Shell ShellSnapshot(FrontRoomsMapWorld w)
+    {
+        var s = new Shell();
+        foreach (var (coord, chunk) in Chunks(w))
+        {
+            var root = (GameObject)Get(chunk, "root");
+            foreach (Transform block in root.transform)
+            {
+                if (block.name == "Collision")
+                {
+                    s.meshes[coord + "/Collision"] = block.GetComponent<MeshCollider>().sharedMesh.vertices;
+                    continue;
+                }
+                if (!block.name.StartsWith("Block ")) continue;
+                foreach (Transform r in block)
+                {
+                    var f = r.GetComponent<MeshFilter>();
+                    if (f != null && f.sharedMesh != null) s.meshes[coord + "/" + block.name + "/" + r.name] = f.sharedMesh.vertices;
+                }
+            }
+        }
+        return s;
+    }
+
+    static void CompareShell(int seed, Shell off, Shell on, List<Info> windows)
+    {
+        var trimName = FrontRoomsSurfaces.CoveBase != null ? FrontRoomsSurfaces.CoveBase.name : "Cove_Base";
+        int identical = 0, trimMeshes = 0, removedBoxes = 0, strayRemoved = 0;
+        foreach (var key in off.meshes.Keys.Union(on.meshes.Keys).OrderBy(k => k, StringComparer.Ordinal))
+        {
+            off.meshes.TryGetValue(key, out var a);
+            on.meshes.TryGetValue(key, out var b);
+            a ??= Array.Empty<Vector3>();
+            b ??= Array.Empty<Vector3>();
+            if (!key.EndsWith("/" + trimName))
+            {
+                var same = a.Length == b.Length && a.SequenceEqual(b);
+                Check(same, "shell: seed " + seed + " " + key + " differs (" + a.Length + " vs " + b.Length + " vertices)");
+                if (same) identical++;
+                continue;
+            }
+            trimMeshes++;
+            // ON must be OFF minus whole 24-vertex boxes, each one a window jamb or head.
+            Check(a.Length % 24 == 0 && b.Length % 24 == 0, "trim-boxes: seed " + seed + " " + key);
+            int i = 0, j = 0;
+            while (i < a.Length)
+            {
+                var match = j < b.Length;
+                for (var k = 0; match && k < 24; k++) match = a[i + k] == b[j + k];
+                if (match) { i += 24; j += 24; continue; }
+                // Removed box: its centre (chunk space -> world) must sit on a window edge's jamb or head.
+                var c = Vector3.zero;
+                for (var k = 0; k < 24; k++) c += a[i + k];
+                c /= 24f;
+                var world = RootPosition + ChunkOrigin(key) + c;
+                var near = windows.Any(win =>
+                {
+                    var d = world - win.origin;
+                    var along = Vector3.Cross(Vector3.up, win.across);
+                    var x = Mathf.Abs(Vector3.Dot(d, along));
+                    var z = Mathf.Abs(Vector3.Dot(d, win.across));
+                    return z < .01f && ((Mathf.Abs(x - .735f) < .01f && Mathf.Abs(d.y - 1.175f) < .01f) || (x < .01f && Mathf.Abs(d.y - 2.035f) < .01f));
+                });
+                if (near) removedBoxes++; else strayRemoved++;
+                i += 24;
+            }
+            Check(j == b.Length, "trim-tail: seed " + seed + " " + key + " ON has boxes OFF lacks");
+        }
+        Check(strayRemoved == 0, "trim-stray: seed " + seed + " " + strayRemoved + " removed trim boxes are not window trims");
+        Check(removedBoxes == 3 * windows.Count, "trim-count: seed " + seed + " removed " + removedBoxes + " boxes for " + windows.Count + " windows (want " + 3 * windows.Count + ")");
+        Log("seed " + seed + ": shell meshes identical " + identical + " (walls, floors, ceilings, columns, collision); trim meshes " + trimMeshes + "; window trim boxes removed " + removedBoxes + " for " + windows.Count + " windows; other trim boxes (doors, coves) unchanged");
+    }
+
+    static Vector3 ChunkOrigin(string key)
+    {
+        // key "(x, y)/..." -> chunk origin (local to the map root)
+        var s = key.Substring(1, key.IndexOf(')') - 1).Split(',');
+        var x = int.Parse(s[0].Trim(), CultureInfo.InvariantCulture);
+        var y = int.Parse(s[1].Trim(), CultureInfo.InvariantCulture);
+        return new Vector3(x * MapGrid.ChunkSize, 0f, y * MapGrid.ChunkSize);
+    }
+
+    // ------------------------------------------------------------------ rebuild after break
+    static void Rebuild(FrontRoomsMapWorld w, List<Info> windows, int seed)
+    {
+        var drop = typeof(FrontRoomsMapWorld).GetMethod("Drop", BF);
+        var build = typeof(FrontRoomsMapWorld).GetMethod("Build", BF, null, new[] { typeof(GridCoord) }, null);
+        var chunks = windows.Select(i => MapGrid.ChunkOf(w.CellOf(i.origin - i.across * .5f + Vector3.up))).Distinct().ToList();
+        foreach (var c in chunks)
+        {
+            drop.Invoke(w, new object[] { c });
+            build.Invoke(w, new object[] { c });
+        }
+        Physics.SyncTransforms();
+        foreach (var info in windows)
+        {
+            var tag = "seed " + seed + " " + info.Key;
+            FrontRoomsMapWorld.Window found = null;
+            foreach (var (coord, chunk) in Chunks(w))
+                foreach (var win in Windows(chunk))
+                    if (win.edge == info.edge) found = win;
+            var roots = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Where(t => t.name == "Window " + info.a + "-" + info.b && t.IsChildOf(w.transform)).ToList();
+            var panes = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Where(t => t.name == "Window pane " + info.a + "-" + info.b && t.IsChildOf(w.transform)).ToList();
+            Check(found == null && panes.Count == 0, "rebuild-no-pane: " + tag + " (Window entries " + (found != null ? 1 : 0) + ", panes " + panes.Count + ")");
+            Check(roots.Count == 1 && roots[0].Find(FrontRoomsInteractableKit.FrameLabel) != null, "rebuild-frame: " + tag + " roots " + roots.Count);
+            if (roots.Count == 1) ClearZone(roots[0], info, "rebuilt");
+        }
+    }
+
+    // ------------------------------------------------------------------ frames
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D readTex;
+
+    static void EnsureCamera()
+    {
+        if (cam != null) return;
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        var go = new GameObject("WINDOW LANDING / camera") { hideFlags = HideFlags.DontSave };
+        cam = go.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .06f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(.13f, .13f, .11f);
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "window landing" };
+        rt.Create();
+        readTex = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
+        cam.targetTexture = rt;
+    }
+
+    /// <summary>A view in window-root space (Z sign flipped so +Z is the room side, face A).</summary>
+    static void Shot(FrontRoomsMapWorld w, Info info, string name, bool roomSide, float unused, Vector3 eyeLocal, Vector3 lookLocal, float fov)
+    {
+        EnsureCamera();
+        var s = info.roomIsB ? 1f : -1f;
+        if (!roomSide) s = -s;
+        var rot = Quaternion.LookRotation(info.across, Vector3.up);
+        Vector3 P(Vector3 l) => info.origin + rot * new Vector3(l.x * s, l.y, l.z * s);
+        var eye = P(eyeLocal);
+        cam.fieldOfView = fov;
+        cam.nearClipPlane = fov < 60f ? .02f : .06f;
+        cam.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(P(lookLocal) - eye, Vector3.up));
+        w.TickFixturesForTools(0f);
+        cam.Render();
+        cam.Render();
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        readTex.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
+        readTex.Apply(false);
+        RenderTexture.active = prev;
+        File.WriteAllBytes(Path.Combine(outDir, name + ".png"), readTex.EncodeToPNG());
+        Log("frame " + name + ".png  eye " + V(eye) + " fov " + fov + " · " + info.Key + " " + info.a + "-" + info.b + " room " + info.room + " " + info.theme);
+    }
+
+    static void Shots(FrontRoomsMapWorld w, Info info, string member, string state)
+    {
+        var p = member + "_" + state + "_";
+        Shot(w, info, p + "A_1.6m", true, 0f, new Vector3(.25f, 1.62f, 1.6f), new Vector3(0f, 1.15f, 0f), 76f);
+        Shot(w, info, p + "B_1.6m", false, 0f, new Vector3(-.25f, 1.62f, 1.6f), new Vector3(0f, 1.15f, 0f), 76f);
+        Shot(w, info, p + "A_head_corner_0.3m", true, 0f, new Vector3(-.50f, 1.82f, .26f), new Vector3(-.70f, 2.00f, .04f), 50f);
+        Shot(w, info, p + "A_sill_0.4m", true, 0f, new Vector3(-.36f, .72f, .40f), new Vector3(-.70f, .35f, .06f), 50f);
+        Shot(w, info, p + "B_head_corner_0.3m", false, 0f, new Vector3(.50f, 1.82f, .26f), new Vector3(.70f, 2.00f, .04f), 50f);
+        if (member == "OF") Shot(w, info, p + "A_screws_0.3m", true, 0f, new Vector3(-.42f, 1.22f, .24f), new Vector3(-.69f, 1.10f, .02f), 50f);
+        Shot(w, info, p + "A_oblique_1.2m", true, 0f, new Vector3(1.1f, 1.62f, .75f), new Vector3(-.2f, 1.15f, 0f), 76f);
+    }
+
+    static double RenderMs(Info info)
+    {
+        EnsureCamera();
+        var s = info.roomIsB ? 1f : -1f;
+        var rot = Quaternion.LookRotation(info.across, Vector3.up);
+        var eye = info.origin + rot * new Vector3(.25f * s, 1.62f, 1.6f * s);
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .06f;
+        cam.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(info.origin + Vector3.up * 1.15f - eye, Vector3.up));
+        var px = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        var list = new List<double>();
+        var sw = new Stopwatch();
+        for (var i = 0; i < 18; i++)
+        {
+            sw.Restart();
+            cam.Render();
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            px.ReadPixels(new Rect(0, 0, 1, 1), 0, 0);
+            px.Apply(false);
+            RenderTexture.active = prev;
+            sw.Stop();
+            if (i >= 3) list.Add(sw.Elapsed.TotalMilliseconds);
+        }
+        Object.DestroyImmediate(px);
+        list.Sort();
+        return list[list.Count / 2];
+    }
+}

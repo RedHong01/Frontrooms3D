@@ -494,7 +494,7 @@ namespace FrontRooms.Audio
             {
                 windowStress = FrontRoomsFmod.Create(SoundIds.WindowStress, position);
                 if (windowStress.isValid()) windowStress.start();
-                lastStressProgress = 0f;
+                if (progress < lastStressProgress) lastStressProgress = 0f;   // a resumed tap keeps its progress: no repeated cracks
             }
             if (windowStress.isValid()) windowStress.setParameterByID(stressProgressId, progress);
             if (lastStressProgress < .35f && progress >= .35f) FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position);

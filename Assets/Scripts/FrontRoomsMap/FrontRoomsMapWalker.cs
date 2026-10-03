@@ -12,7 +12,7 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
 {
     const float Walk = 3.2f, Sprint = 5.5f;
     const float StaminaSeconds = 5f, RecoverDelay = 1f, RecoverRate = 1f;
-    const float EyeHeight = 1.62f, Reach = 2.4f, LookSpeed = 2f;
+    const float EyeHeight = ModuleUnits.PlayerEye, Reach = 2.4f, LookSpeed = 2f;
     static readonly Color Paper = new Color(.957f, .945f, .91f);
     static readonly Color Muted = new Color(.74f, .73f, .69f);
     static readonly Color Accent = new Color(.957f, .875f, .231f);
@@ -20,6 +20,8 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
     FrontRoomsMapWorld world;
     CharacterController body;
     Camera view;
+    // The same camera layers as the game: gameplay reads BaseEye, shots and shakes are picture only.
+    FrontRoomsCameraRig rig;
     float yaw, pitch, fallSpeed, sinceSprint;
     float stamina = StaminaSeconds;
     Collider aimed;
@@ -38,7 +40,11 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         yaw = newYaw;
         pitch = 0f;
         fallSpeed = 0f;
-        if (view != null) view.transform.localRotation = Quaternion.identity;
+        if (rig != null)
+        {
+            rig.ResetLayers();
+            rig.SetBase(0f);
+        }
         body.enabled = true;
     }
 
@@ -61,8 +67,6 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         body.skinWidth = .03f;
 
         var cameraObject = new GameObject("Map test camera");
-        cameraObject.transform.SetParent(go.transform, false);
-        cameraObject.transform.localPosition = new Vector3(0f, EyeHeight, 0f);
         cameraObject.tag = "MainCamera";
         var view = cameraObject.AddComponent<Camera>();
         view.fieldOfView = 72f;
@@ -73,6 +77,7 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         cameraObject.AddComponent<AudioListener>();
 
         var walker = go.AddComponent<FrontRoomsMapWalker>();
+        walker.rig = FrontRoomsCameraRig.Attach(go.transform, view, EyeHeight);
         walker.yaw = yaw;
         walker.world = world;
         walker.body = body;
@@ -93,17 +98,18 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
-        if (Cursor.lockState == CursorLockMode.Locked)
+        if (Cursor.lockState == CursorLockMode.Locked && !rig.LookLocked)
         {
             yaw += Input.GetAxisRaw("Mouse X") * LookSpeed;
             pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * LookSpeed, -80f, 80f);
         }
+        rig.ClampLook(ref yaw, ref pitch);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-        view.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        rig.SetBase(pitch);
 
         var h = (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
         var v = (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
-        var wish = transform.right * h + transform.forward * v;
+        var wish = rig.MoveLocked ? Vector3.zero : transform.right * h + transform.forward * v;
         if (wish.sqrMagnitude > 1f) wish.Normalize();
         var sprinting = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && wish.sqrMagnitude > .01f && stamina > 0f;
         if (sprinting)
@@ -120,6 +126,7 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         body.Move((wish * (sprinting ? Sprint : Walk) + Vector3.up * fallSpeed) * dt);
 
         Aim(dt);
+        rig.Tick(Mathf.Min(dt, .1f));
     }
 
     void Aim(float dt)
@@ -128,7 +135,8 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         aimed = null;
         prompt = null;
         holdPrompt = false;
-        var ray = new Ray(view.transform.position, view.transform.forward);
+        var eye = rig.BaseEye;
+        var ray = new Ray(eye.position, eye.rotation * Vector3.forward);
         if (Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
         {
             prompt = world.Describe(hit.collider, out holdPrompt);
@@ -139,7 +147,7 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         if (!holdPrompt)
         {
             holdProgress = 0f;
-            if (Input.GetKeyDown(KeyCode.E)) world.Use(aimed);
+            if (Input.GetKeyDown(KeyCode.E) && !rig.Consume(ShotInput.Use)) world.Use(aimed);
             return;
         }
         if (Input.GetKey(KeyCode.E))

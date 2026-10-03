@@ -20,6 +20,14 @@ Commands (run with a Python that has numpy + Pillow, e.g. /usr/bin/python3 on th
   preview <frames_dir> <out.png> [--art]
                                      2x2-tiled contact sheet in the Lobby palette
 
+  build-print <pattern_key> [out_dir] [--size 2048x2048]   (default out: patterns/out/<key>)
+                                     THE GAME PATH (Red, 2026-10-03): render the vector
+                                     pattern (patterns/<key>.py) at the slice size, make
+                                     the 8 keyframes on RAW values, encode each through
+                                     the visual chat's print_encode LUT, and write one
+                                     linear PNG per slice + a sheet, with no mips (the
+                                     visual chat's FrontRoomsPrintMips builds the array)
+
 Frames are PNGs sorted by name (K00.png, K01.png, ...). By default a frame is read
 as the encoding above. With --art a frame is authored ink art (black motif on
 white, e.g. a Figma 750x1125 frame at 1 px = 1 mm), and density = 1 - luminance.
@@ -205,6 +213,107 @@ def preview(frames, out, art, cell=256):
     print(f"preview -> {out}")
 
 
+# ------------------------------------------------------------------ game path
+LUT_PATH = os.path.join(HERE, "..", "lookdev", "print_encode_lut.json")
+
+
+def load_lut(path=LUT_PATH):
+    lut = json.load(open(path))
+    return (np.array(lut["density"], np.float64), np.array(lut["cream"], np.float64),
+            len(lut["density_raw"]), len(lut["cream_raw"]))
+
+
+def print_encode(raw_d, raw_c, lut):
+    """Bilinear lookup of the visual chat's print_encode table (Tools/lookdev/
+    print_encode_lut.json): x = raw density over the 257 density nodes, y = raw cream
+    over the 65 cream nodes, table[i][j] indexed [density][cream]. Applied per texel at
+    the frame's own resolution, before any resampling or mips."""
+    D, C, nd, nc = lut
+    x = np.clip(raw_d, 0, 1) * (nd - 1)
+    y = np.clip(raw_c, 0, 1) * (nc - 1)
+    i0 = np.minimum(np.floor(x).astype(int), nd - 2)
+    j0 = np.minimum(np.floor(y).astype(int), nc - 2)
+    fx, fy = x - i0, y - j0
+
+    def bil(T):
+        return ((T[i0, j0] * (1 - fx) + T[i0 + 1, j0] * fx) * (1 - fy)
+                + (T[i0, j0 + 1] * (1 - fx) + T[i0 + 1, j0 + 1] * fx) * fy)
+    return bil(D), bil(C)
+
+
+def raw_keyframes(k0):
+    """The 8 motion keyframes on RAW (density, cream) frames (H x W x 2). Same story
+    as gen-test: each step is one more thing wrong with the paper; K07 blends to K00."""
+    H = k0.shape[0]
+    d, c = k0[..., 0], k0[..., 1]
+
+    def two(dd, cc):
+        return np.stack([dd, cc], -1)
+    dbl = np.concatenate([k0, k0], 0)                            # x2 repeat, exact row pairs
+    dbl = dbl.reshape(H, 2, *k0.shape[1:]).mean(1)
+    return {
+        "K00_original": k0,
+        "K01_mirrored": k0[:, ::-1],
+        "K02_half_drop": np.roll(k0, H // 2, axis=0),
+        "K03_double_repeat": dbl,
+        "K04_starved_ink": two(d ** 2.2, c),
+        "K05_flooded_ink": two(d ** 0.45, c),
+        "K06_negative": two(1 - d, c * 0),
+        "K07_turned": np.roll(k0[::-1, ::-1], H // 2, axis=0),
+    }
+
+
+def build_print(key, out, w, h):
+    import hashlib
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(key, os.path.join(HERE, "patterns", key + ".py"))
+    pat = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pat)
+    SS = pat.SUPER
+    lab = pat.rasterise(pat.tile_pieces(pat.build_regions()), w * SS, h * SS)
+    enc = pat.encode_table()                                     # raw (density, cream) per ink
+    raw = np.stack([pat.box_down(enc[lab, 0].astype(np.float32), SS),
+                    pat.box_down(enc[lab, 1].astype(np.float32), SS)], -1)
+    lut = load_lut()
+    sha = hashlib.sha1(open(LUT_PATH, "rb").read()).hexdigest()
+    os.makedirs(os.path.join(out, "encoded"), exist_ok=True)
+    os.makedirs(os.path.join(out, "raw"), exist_ok=True)
+    report = {"pattern": key, "slice": [w, h], "tileMetres": list(TILE_METRES), "lut": "Tools/lookdev/print_encode_lut.json",
+              "lut_sha1": sha, "slices": []}
+    keys = raw_keyframes(raw)
+    encoded = []
+    for idx, (name, fr) in enumerate(keys.items()):
+        ed, ec = print_encode(fr[..., 0], fr[..., 1], lut)
+        rgba = np.stack([ed, ec, np.zeros_like(ed), np.ones_like(ed)], -1)
+        encoded.append(rgba)
+        Image.fromarray((np.clip(rgba, 0, 1) * 255 + .5).astype(np.uint8), "RGBA").save(
+            os.path.join(out, "encoded", f"K{idx:02d}.png"))     # the visual chat's builder reads K00..K07
+        save_frame(os.path.join(out, "raw", name + ".png"), np.concatenate([fr, np.zeros_like(fr[..., :1])], -1))
+        rx, ry = seam_report(np.concatenate([fr, np.zeros_like(fr[..., :1])], -1))
+        report["slices"].append({"file": f"encoded/K{idx:02d}.png", "name": name, "raw_mean": [round(float(fr[..., 0].mean()), 4), round(float(fr[..., 1].mean()), 4)],
+                                 "encoded_mean": [round(float(ed.mean()), 4), round(float(ec.mean()), 4)],
+                                 "seam_xy": [round(float(rx), 2), round(float(ry), 2)]})
+    cols, rows = 4, 2
+    sheet = np.zeros((rows * h, cols * w, 4), np.float32)
+    for i, a in enumerate(encoded):
+        r, c = divmod(i, cols)
+        sheet[r * h:(r + 1) * h, c * w:(c + 1) * w] = a
+    name = "FR_Print_" + "".join(p.capitalize() for p in key.split("_"))
+    Image.fromarray((np.clip(sheet, 0, 1) * 255 + .5).astype(np.uint8), "RGBA").save(os.path.join(out, name + ".png"))
+    json.dump({"columns": cols, "rows": rows, "slices": len(encoded), "sliceWidth": w, "sliceHeight": h,
+               "tileMetres": list(TILE_METRES), "encoded": True, "lut_sha1": sha, "mips": "none (FrontRoomsPrintMips)",
+               "encoding": "R/G = print_encode(raw density, raw cream); B = 0 (phosphor reserved); A = 1; linear"},
+              open(os.path.join(out, name + ".print.json"), "w"), indent=2)
+    # LUT self-test: at grid nodes the bilinear lookup must return the table exactly
+    D, C, nd, nc = lut
+    ii, jj = np.meshgrid(np.arange(nd), np.arange(nc), indexing="ij")
+    td, tc = print_encode(ii / (nd - 1), jj / (nc - 1), lut)
+    report["lut_node_max_err"] = float(max(np.abs(td - D).max(), np.abs(tc - C).max()))
+    json.dump(report, open(os.path.join(out, "print_report.json"), "w"), indent=2)
+    preview(frame_files(os.path.join(out, "raw")), os.path.join(out, "preview_raw_lobby.png"), False)
+    print(json.dumps(report, indent=1))
+
+
 def main(argv):
     if len(argv) < 2:
         sys.exit(__doc__)
@@ -213,11 +322,15 @@ def main(argv):
     cols = 4
     if "--cols" in args:
         cols = int(args[args.index("--cols") + 1])
-    pos = [a for i, a in enumerate(args) if not a.startswith("--") and (i == 0 or args[i - 1] != "--cols")]
+    pos = [a for i, a in enumerate(args) if not a.startswith("--") and (i == 0 or args[i - 1] not in ("--cols", "--size"))]
     if cmd == "gen-test":
         gen_test(pos[0])
     elif cmd == "gen-keys":
         gen_keys(pos[0], pos[1])
+    elif cmd == "build-print":
+        size = args[args.index("--size") + 1] if "--size" in args else "2048x2048"
+        w, h = (int(v) for v in size.lower().split("x"))
+        build_print(pos[0], pos[1] if len(pos) > 1 else os.path.join(HERE, "patterns", "out", pos[0]), w, h)
     elif cmd == "validate":
         sys.exit(1 if validate(frame_files(pos[0]), art) else 0)
     elif cmd == "pack":

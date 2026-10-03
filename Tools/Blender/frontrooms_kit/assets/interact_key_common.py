@@ -398,7 +398,7 @@ def dedupe(pts, eps=1e-9):
 
 
 def slab(kit, outline, thickness, slot, to3, round_r=0.0004, round_segs=3, holes=(), pockets=(),
-         support=0.00015, name="slab", uv="metres", back=True):
+         support=0.00015, name="slab", uv="metres", back=True, back_round=True):
     """A plate cut from a 2D outline with rounded perimeter edges.
 
     outline: CCW (u, v) points. to3(u, v, w) -> Blender point; w is the
@@ -409,7 +409,8 @@ def slab(kit, outline, thickness, slot, to3, round_r=0.0004, round_segs=3, holes
     undercut lip retains an insert under the opening edge.
     Support rings (``support`` in from every rounded edge) keep the flat
     faces shading flat under smooth normals.
-    back=False leaves the back face open (it lies on something)."""
+    back=False leaves the back face open (it lies on something); back_round=False
+    keeps the back perimeter edge square (one ring)."""
     outline = ccw(outline)
     t2 = thickness / 2
     bm = bmesh.new()
@@ -434,13 +435,16 @@ def slab(kit, outline, thickness, slot, to3, round_r=0.0004, round_segs=3, holes
         inset = r * (1 - math.sin(th))
         w = t2 - r + r * math.cos(th)
         front_rings.append(ring(offset_poly(outline, inset), w))
-    for a in reversed(angles):
-        th = math.radians(a)
-        inset = r * (1 - math.sin(th))
-        w = -(t2 - r + r * math.cos(th))
-        back_rings.append(ring(offset_poly(outline, inset), w))
-    if r > 0:
-        back_rings.append(ring(offset_poly(outline, r + support), -t2))
+    if back_round:
+        for a in reversed(angles):
+            th = math.radians(a)
+            inset = r * (1 - math.sin(th))
+            w = -(t2 - r + r * math.cos(th))
+            back_rings.append(ring(offset_poly(outline, inset), w))
+        if r > 0:
+            back_rings.append(ring(offset_poly(outline, r + support), -t2))
+    else:
+        back_rings.append(ring(outline, -t2))
     rings = front_rings + back_rings
     for a, b in zip(rings, rings[1:]):
         bridge(a, b)
@@ -614,21 +618,24 @@ def oval_screw(kit, centre, slot, axis="+Z", head_d=0.0055, dome_h=0.0011, rim_h
 
 
 def cup_hook(kit, base, slot, wire_r=0.0015, leg=0.012, bend_r=0.0055, rise=0.004, shoulder_d=0.0065,
-             shoulder_t=0.0015, verts=10, name="cup hook"):
+             shoulder_t=0.0015, verts=10, name="cup hook", rest_dz=-0.0012, shoulder_verts=20, rivet=False):
     """Screw-in brass cup hook on a surface facing Unity +Z.
 
     base = Unity point where the shank enters the surface (the shank axis).
     The wire leaves the shoulder along +Z for ``leg``, then bends up through
     a J of centreline radius ``bend_r`` and rises ``rise`` above the bend
     centre to a domed tip. Returns (objects, hook_point) where hook_point is
-    the ring's resting point: on top of the wire, just behind the bend
-    (Unity). The shank and thread stay inside the surface (never seen)."""
+    the ring's resting point: on top of the wire, rest_dz before the bend
+    starts, so a 1.8 mm two-coil ring seated there clears the J (Unity). The shank and thread stay inside the surface (never seen)."""
     bx, by, bz = base
     objs = []
     # Shoulder disc (lathe around Blender z, turned to face Unity +Z).
-    sh = kit.lathe([(shoulder_d * 0.5 - 0.0004, 0.0), (shoulder_d * 0.5, 0.0003), (shoulder_d * 0.5, shoulder_t - 0.0004),
-                    (shoulder_d * 0.5 - 0.0004, shoulder_t), (wire_r * 1.05, shoulder_t)], (0, 0, 0), slot,
-                   verts=20, rot=(90, 0, 0), name=name + " shoulder")
+    if rivet:       # a plain riveted collar (cabinet hook strips)
+        prof = [(shoulder_d * 0.5, 0.0), (shoulder_d * 0.5, shoulder_t), (wire_r * 1.05, shoulder_t)]
+    else:           # the turned shoulder disc of a screw-in cup hook
+        prof = [(shoulder_d * 0.5 - 0.0004, 0.0), (shoulder_d * 0.5, 0.0003), (shoulder_d * 0.5, shoulder_t - 0.0004),
+                (shoulder_d * 0.5 - 0.0004, shoulder_t), (wire_r * 1.05, shoulder_t)]
+    sh = kit.lathe(prof, (0, 0, 0), slot, verts=shoulder_verts, rot=(90, 0, 0), name=name + " shoulder")
     sh.location = U(bx, by, bz)
     objs.append(sh)
     # Wire centreline in Unity (X const), then to Blender.
@@ -653,7 +660,7 @@ def cup_hook(kit, base, slot, wire_r=0.0015, leg=0.012, bend_r=0.0055, rise=0.00
         radii.append(wire_r * rr)
     w = sweep(kit, [U(*p) for p in path], radii, slot, verts=verts, name=name + " wire", cap_start=True, cap_end=False)
     objs.append(w)
-    hook_point = (bx, by + wire_r, zl + 0.0010)
+    hook_point = (bx, by + wire_r, zl + rest_dz)
     return objs, hook_point
 
 
@@ -749,7 +756,7 @@ def _ang(c, p):
     return math.degrees(math.atan2(p[1] - c[1], p[0] - c[0]))
 
 
-def tag_outline(body, tab_r=TAB_R, rf=TAB_FILLET, seg=6):
+def tag_outline(body, tab_r=TAB_R, rf=TAB_FILLET, seg=6, tab_segs=14, fillet_segs=3, body_segs=26):
     """Tag outline (Unity X, Y; hole at the origin; body hangs below), CCW.
     body = ("rect", W, H, R, y_top) or ("round", D, y_top)."""
     pts = []
@@ -761,9 +768,9 @@ def tag_outline(body, tab_r=TAB_R, rf=TAB_FILLET, seg=6):
         # start at the right fillet's line tangent, CCW: fillet (cw), tab arc, left fillet (cw), around the body
         a0 = -90.0
         a1 = _ang(F, t_tab) - 360.0
-        pts += arc(F[0], F[1], rf, a0, a1, 4)
-        pts += arc(0.0, 0.0, tab_r, _ang((0, 0), t_tab), 180.0 - _ang((0, 0), t_tab), 20)
-        pts += arc(Fl[0], Fl[1], rf, _ang(Fl, t_tab_l), -90.0, 4)
+        pts += arc(F[0], F[1], rf, a0, a1, fillet_segs)
+        pts += arc(0.0, 0.0, tab_r, _ang((0, 0), t_tab), 180.0 - _ang((0, 0), t_tab), tab_segs)
+        pts += arc(Fl[0], Fl[1], rf, _ang(Fl, t_tab_l), -90.0, fillet_segs)
         hw = W / 2
         for (cx, cy, s) in ((-hw + R, y_top - R, 90), (-hw + R, y_bot + R, 180), (hw - R, y_bot + R, 270), (hw - R, y_top - R, 0)):
             pts += arc(cx, cy, R, s, s + 90, seg)
@@ -775,14 +782,14 @@ def tag_outline(body, tab_r=TAB_R, rf=TAB_FILLET, seg=6):
         Fl, t_tab_l, t_body_l = (-F[0], F[1]), (-t_tab[0], t_tab[1]), (-t_body[0], t_body[1])
         a_body_r = _ang(B, t_body)
         a_body_l = _ang(B, t_body_l)
-        pts += arc(B[0], B[1], R_b, a_body_l, a_body_r + 360.0, 44)
-        pts += arc(F[0], F[1], rf, _ang(F, t_body), _ang(F, t_tab) - 360.0, 4)
-        pts += arc(0.0, 0.0, tab_r, _ang((0, 0), t_tab), 180.0 - _ang((0, 0), t_tab), 20)
-        pts += arc(Fl[0], Fl[1], rf, _ang(Fl, t_tab_l), _ang(Fl, t_body_l), 4)
+        pts += arc(B[0], B[1], R_b, a_body_l, a_body_r + 360.0, body_segs)
+        pts += arc(F[0], F[1], rf, _ang(F, t_body), _ang(F, t_tab) - 360.0, fillet_segs)
+        pts += arc(0.0, 0.0, tab_r, _ang((0, 0), t_tab), 180.0 - _ang((0, 0), t_tab), tab_segs)
+        pts += arc(Fl[0], Fl[1], rf, _ang(Fl, t_tab_l), _ang(Fl, t_body_l), fillet_segs)
     return dedupe(pts)
 
 
-def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=6):
+def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_segs=16, window_segs=24):
     """Plastic key tag with a paper insert (era note R10). Unity part frame:
     origin = ring-hole centre (the swing pivot), hangs along -Y, front +Z,
     mid-plane Z = 0. window = ("rect", w, h, r, centre_y) or ("round", d,
@@ -790,13 +797,13 @@ def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=6):
     register_slots()
     outline = tag_outline(body, seg=seg)
     to3 = lambda u, v, w: U(u, v, w)
-    hole = circle(0.0, 0.0, TAG_HOLE_D / 2, 28)
+    hole = circle(0.0, 0.0, TAG_HOLE_D / 2, hole_segs)
     if window[0] == "rect":
         _, ww, wh, wr, wy = window
         wpoly = rounded_rect(ww, wh, wr, 3, 0.0, wy)
     else:
         _, wd, wy = window
-        wpoly = circle(0.0, wy, wd / 2, 40)
+        wpoly = circle(0.0, wy, wd / 2, window_segs)
     body_obj = slab(kit, outline, TAG_T, body_slot, to3, round_r=TAG_EDGE, round_segs=2,
                     holes=[{"poly": hole, "chamfer": 0.0003}],
                     pockets=[{"poly": wpoly, "depth": WINDOW_DEPTH, "chamfer": 0.00012, "lip": WINDOW_LIP}],
@@ -815,7 +822,7 @@ def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=6):
     else:
         qd = wd + 2 * under
         rect = number_cell_rect(NUMBER_DEFAULT_CELL, crop[0], crop[1], qd / wd, qd / wd)
-        ins = disc_uv(kit, (0.0, wy, zi), qd / 2, rect, KEYTAGNO, segs=40, name="tag insert")
+        ins = disc_uv(kit, (0.0, wy, zi), qd / 2, rect, KEYTAGNO, segs=window_segs, name="tag insert")
     def grime(p):
         Y = p.z
         return (1.0, 0.92 if Y < -0.02 else 1.0, 1.0, 1.0)
@@ -832,3 +839,19 @@ def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=6):
                                "defaultCell": NUMBER_DEFAULT_CELL, "crop": list(crop),
                                "setCell": "_BaseMap_ST = (1, 1, (n % 10) / 10, -(n // 10) / 10)"}
     return body_obj, ins
+
+
+def orient(obj, origin_U, axis_U, up_U=(0.0, 1.0, 0.0)):
+    """Place a part built around Blender +z (lathes, cylinders) so its local
+    +z runs along the Unity direction axis_U, its local +y toward up_U, with
+    its origin at the Unity point origin_U."""
+    z = Vector(U(*axis_U)).normalized()
+    y = Vector(U(*up_U))
+    y = (y - z * y.dot(z))
+    if y.length < 1e-6:
+        y = Vector((1, 0, 0)) - z * z.x
+    y.normalize()
+    x = y.cross(z)
+    o = Vector(U(*origin_U))
+    obj.matrix_basis = Matrix(((x.x, y.x, z.x, o.x), (x.y, y.y, z.y, o.y), (x.z, y.z, z.z, o.z), (0, 0, 0, 1)))
+    return obj

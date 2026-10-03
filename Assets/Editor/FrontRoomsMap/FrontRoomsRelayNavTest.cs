@@ -16,6 +16,8 @@ using UnityEngine;
 /// It checks: no exceptions; the body never stands in a wall, column or door;
 /// it never stands in furniture except while it passes through it with no
 /// way round; and that hunts end on their goal, or beside a covered one.
+/// Doors are single-acting: breaking a door from its swing side it never
+/// stands in the leaf's sweep, and every door it breaks ends on its swing side.
 /// Writes Verification/relay-nav-test.json.
 /// Headless: -executeMethod FrontRoomsRelayNavTest.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -41,6 +43,10 @@ public static class FrontRoomsRelayNavTest
         public float averageSeconds;
         public float worstPlanMs;
         public string doorRule;
+        public int doorBreaks;
+        public int breaksFromSwingSide;
+        public int breakStanceInSweepFrames;
+        public int brokenLeavesOffSwingSide;
         public List<string> failures = new List<string>();
     }
 
@@ -119,6 +125,14 @@ public static class FrontRoomsRelayNavTest
             // Blind, so every trial is a hunt by ear; the player stands at the goal.
             var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
             var hunter = new FrontRoomsMapHunter(world, tuning, playerCollider, null, 7);
+            // Single-acting doors: which side each break came from; the leaves are checked once the hunts are done.
+            var brokenDoors = new List<(FrontRoomsMapWorld.Door door, Vector3 at, bool swingSide)>();
+            world.DoorBrokenFrom += (d, at, swingSide) =>
+            {
+                brokenDoors.Add((d, at, swingSide));
+                report.doorBreaks++;
+                if (swingSide) report.breaksFromSwingSide++;
+            };
 
             var cells = new List<GridCoord>();
             var o = MapGrid.ChunkOrigin(mid);
@@ -182,6 +196,11 @@ public static class FrontRoomsRelayNavTest
                         report.furnitureFramesNotGhosting++;
                         if (report.failures.Count < 24) report.failures.Add("trial " + report.trials + " t " + t.ToString("F2") + ": in furniture '" + touched + "' at " + hunter.Position.ToString("F2") + " " + hunter.State + " · " + hunter.DebugSteering);
                     }
+                    if (hunter.State == HunterState.BreakDoor && InSweepOfBreak(world, hunter.Position))
+                    {
+                        report.breakStanceInSweepFrames++;
+                        if (report.failures.Count < 24) report.failures.Add("trial " + report.trials + " t " + t.ToString("F2") + ": breaking a door from inside its leaf's sweep at " + hunter.Position.ToString("F2"));
+                    }
                     if (t > TrialSeconds - .5f && report.failures.Count < 24) report.failures.Add("trial " + report.trials + " stuck t " + t.ToString("F2") + " at " + hunter.Position.ToString("F2") + " · " + hunter.DebugSteering);
                     if (hunter.State == HunterState.Search)
                     {
@@ -208,6 +227,15 @@ public static class FrontRoomsRelayNavTest
                 }
             }
             report.ghosts = hunter.Ghosts;
+            foreach (var (d, at, swingSide) in brokenDoors)
+            {
+                // At rest on its swing side at the bounce angle (the stops hold the other way), whichever side
+                // the Relay broke it from. The swingSide flag itself is checked in MapInteractionTests.
+                var leaf = d.leaf.transform.position;
+                if (FrontRoomsMapWorld.OnSwingSide(d, leaf) && Mathf.Abs(d.angle - FrontRoomsShotTimings.DoorBreak.BounceRestDeg) < .01f) continue;
+                report.brokenLeavesOffSwingSide++;
+                if (report.failures.Count < 24) report.failures.Add("broken door " + d.a + "→" + d.b + " rests at " + d.angle.ToString("F1") + "°, " + (FrontRoomsMapWorld.OnSwingSide(d, leaf) ? "on" : "off") + " its swing side (broken from the " + (swingSide ? "swing" : "stop") + " side)");
+            }
             report.doorRule = DoorRule(world, cells, playerCollider, player, rng, report);
             report.averageSeconds = report.arrived > 0 ? totalSeconds / report.arrived : 0f;
         }
@@ -231,9 +259,14 @@ public static class FrontRoomsRelayNavTest
         }
 
         var pass = report.trials >= Trials && report.exceptions == 0 && report.wallFrames == 0
-            && report.furnitureFramesNotGhosting == 0 && report.arrived >= report.trials * .95f;
+            && report.furnitureFramesNotGhosting == 0 && report.arrived >= report.trials * .95f
+            && report.breakStanceInSweepFrames == 0 && report.brokenLeavesOffSwingSide == 0
+            // Both break paths ran: some doors from the swing side (the rip), some from the stop side (the burst).
+            && report.breaksFromSwingSide > 0 && report.breaksFromSwingSide < report.doorBreaks;
         report.verdict = (pass ? "PASS" : "FAIL") + " · " + report.arrived + "/" + report.trials + " hunts arrived, " + report.ghosts + " pass-throughs, "
-            + report.wallFrames + " frames in architecture, " + report.furnitureFramesNotGhosting + " frames in furniture outside a pass-through, " + report.exceptions + " exceptions";
+            + report.wallFrames + " frames in architecture, " + report.furnitureFramesNotGhosting + " frames in furniture outside a pass-through, " + report.exceptions + " exceptions; "
+            + report.doorBreaks + " doors broken (" + report.breaksFromSwingSide + " from the swing side), " + report.breakStanceInSweepFrames + " frames breaking inside a sweep, "
+            + report.brokenLeavesOffSwingSide + " broken leaves off their swing side";
         var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-nav-test.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, JsonUtility.ToJson(report, true));
@@ -243,6 +276,20 @@ public static class FrontRoomsRelayNavTest
     }
 
     static float Flat(Vector3 v) => new Vector2(v.x, v.z).magnitude;
+
+    /// <summary>True when the Relay stands on the swing side of the door it is breaking (one on its cell's edges), inside the leaf's sweep plus its body.</summary>
+    static bool InSweepOfBreak(FrontRoomsMapWorld world, Vector3 feet)
+    {
+        var cell = world.CellOf(feet);
+        foreach (var s in new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) })
+        {
+            var door = world.DoorBetween(cell, cell + s);
+            if (door == null || !world.IsBeingBroken(door) || !FrontRoomsMapWorld.OnSwingSide(door, feet)) continue;
+            var reach = ModuleUnits.DoorWidth - ModuleUnits.DoorLeafGap * .5f + ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.RelayRadius;
+            if (Flat(feet - door.hinge.position) < reach) return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// The door rule: chasing, the Relay is right behind the player as they go

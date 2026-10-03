@@ -70,8 +70,20 @@ class Canvas:
         return np.asarray(self.img.resize((out_w, out_h), Image.BOX), np.float32) / 255.0
 
 
+_CAP = {}
+
+
+def cap_ratio(name):
+    """Cap height / em, measured from the font's own H (TeX Gyre Heros Bold: 0.729)."""
+    if name not in _CAP:
+        f = ImageFont.truetype(os.path.join(FONT_DIR, name), 1000)
+        l, t, r, b = f.getbbox("H")
+        _CAP[name] = (b - t) / 1000.0
+    return _CAP[name]
+
+
 def font(name, cap_mm, s):
-    return ImageFont.truetype(os.path.join(FONT_DIR, name), max(4, int(round(cap_mm * s / CAP_RATIO))))
+    return ImageFont.truetype(os.path.join(FONT_DIR, name), max(4, int(round(cap_mm * s / cap_ratio(name)))))
 
 
 def glyph_run_mask(f, text, tracking_px):
@@ -319,6 +331,120 @@ def type_image(L, spec_dir):
     return 1.0 - np.asarray(m, np.float32) / 255.0, {"source": os.path.basename(path), "source_px": mark.shape[0]}
 
 
+# ---------------------------------------------------------------- typography v2 (平面视觉)
+def text_mm(f, text, tracking_mm, s):
+    return (sum(f.getlength(ch) for ch in text) + tracking_mm * s * len(text)) / s
+
+
+def type_slots(L, common):
+    """v2 slot layout: n slots per 750 mm, each phrase flush left at its slot origin with
+    fixed tracking (the leftover is open space); `lines` is a block of 1-2 adjacent rows
+    at the 37.5 mm pitch; blocks brick-offset by half a slot. Optional `gap_glyph` sits
+    centred in each gap. Rotated layers are made horizontally and turned 90 deg CW
+    afterwards, so line 1 lands on the +u column and phrases sit flush top."""
+    cv = Canvas(TILE_MM, TILE_MM, PX_MM, 255)
+    s = cv.s
+    cap = L.get("cap_mm", common["cap_mm"])
+    tr = L.get("tracking_mm", common["tracking_mm"])
+    f = font(common["font"], cap, s)
+    n = L["n"]
+    slot = TILE_MM / n
+    lines = L["lines"]
+    pitch = common["pitch_mm"]
+    rows = int(round(TILE_MM / pitch))
+    widths = [text_mm(f, t, tr, s) for t in lines]
+    masks = [glyph_run_mask(f, t, tr * s) for t in lines]
+    gm = glyph_run_mask(f, L["gap_glyph"], tr * s) if L.get("gap_glyph") else None
+    for r in range(rows):
+        block, j = divmod(r, len(lines))
+        shift = (slot / 2) * (block % 2)
+        y_cap = (r * pitch + (pitch - cap) / 2) * s
+        m, adv, top, _ = masks[j]
+        for k in range(n):
+            x0 = (k * slot + shift) * s
+            cv.paste_mask(m, x0, y_cap - top, 0)
+            if gm is not None:
+                g, gadv, gtop, _ = gm
+                gap_mid = k * slot + shift + widths[j] + (slot - widths[j]) / 2
+                cv.paste_mask(g, gap_mid * s - gadv / 2, y_cap - top, 0)
+    return cv, {"n": n, "slot_mm": round(slot, 2), "tracking_mm": tr, "cap_mm": cap,
+                "widths_mm": [round(w, 1) for w in widths], "gaps_mm": [round(slot - w, 1) for w in widths],
+                "fits": all(w < slot for w in widths)}
+
+
+def type_pairs_v2(L, common):
+    """STOP v2: NO (32 mm) over EXIT (16 mm), centred, in 125 x 62.5 mm cells."""
+    cv = Canvas(TILE_MM, TILE_MM, PX_MM, 255)
+    s = cv.s
+    cw, ch = L["cell_mm"]
+    tr = L.get("tracking_mm", common["tracking_mm"])
+    mt, at, tt, _ = glyph_run_mask(font(common["font"], L["top"]["cap_mm"], s), L["top"]["text"], tr * s)
+    mb, ab, tb, _ = glyph_run_mask(font(common["font"], L["bottom"]["cap_mm"], s), L["bottom"]["text"], tr * s)
+    pair_h = L["top"]["cap_mm"] + L["gap_mm"] + L["bottom"]["cap_mm"]
+    cols, rows = int(round(TILE_MM / cw)), int(round(TILE_MM / ch))
+    for r in range(rows):
+        for c in range(cols):
+            cx = (c * cw + cw / 2 + (cw / 2) * (r % 2)) * s
+            y_top = (r * ch + (ch - pair_h) / 2) * s
+            cv.paste_mask(mt, cx - at / 2, y_top - tt, 0)
+            cv.paste_mask(mb, cx - ab / 2, y_top + (L["top"]["cap_mm"] + L["gap_mm"]) * s - tb, 0)
+    return cv, {"pair_mm": pair_h, "cells": [cols, rows], "fits_120mm_bar": ch + pair_h <= 120,
+                "widths_mm": [round(at / s, 1), round(ab / s, 1)]}
+
+
+def crosshair(cv, x_mm, y_mm, s, value=0):
+    """Register mark (circle d16 + 30 mm cross, 2.5 mm stroke), wrapped across edges."""
+    lw = int(round(2.5 * s))
+    for ox, oy in cv.offsets(((x_mm - 15) * s, (y_mm - 15) * s, (x_mm + 15) * s, (y_mm + 15) * s)):
+        x, y = x_mm * s + ox, y_mm * s + oy
+        r = 8 * s
+        cv.dr.ellipse((x - r, y - r, x + r, y + r), outline=value, width=lw)
+        cv.dr.line((x - 15 * s, y, x + 15 * s, y), fill=value, width=lw)
+        cv.dr.line((x, y - 15 * s, x, y + 15 * s), fill=value, width=lw)
+
+
+def substance_title_block(T, sub, common, all_tiers):
+    """v2 stamp: an architect's title block. Rows of cells with 2.5 mm rules; values in
+    Heros Bold left-aligned with padding; the box geometry is fixed across tiers (sized
+    to the widest value of each cell over every tier), so only the text changes."""
+    tb = sub["title_block"]
+    cv = Canvas(sub["tile_mm"][0], sub["tile_mm"][1], SUB_PX_MM, 255)
+    s = cv.s
+    for reg in sub["register"]:
+        crosshair(cv, reg["xy_mm"][0], reg["xy_mm"][1], s)
+    f = font(common["font"], tb["cap_mm"], s)
+    pad, rule, rh = tb["pad_mm"], tb["rule_mm"], tb["row_h_mm"]
+    cells_by_tier = [[[c for c in line.split(" · ")] for line in t["lines"]] for t in all_tiers]
+    rows = len(cells_by_tier[0])
+    # cell widths: widest over tiers, + padding both sides
+    cw = [[max(text_mm(f, cbt[r][c], tb["tracking_mm"], s) for cbt in cells_by_tier) + 2 * pad
+           for c in range(len(cells_by_tier[0][r]))] for r in range(rows)]
+    box_w = max(sum(row) for row in cw)
+    for row in cw:                                 # the last cell of a shorter row takes the rest
+        row[-1] += box_w - sum(row)
+    x0, y0 = tb["origin_mm"]
+    lw = max(1, int(round(rule * s)))
+    cells = [[c for c in line.split(" · ")] for line in T["lines"]]
+    for r in range(rows):
+        yt = y0 + r * rh
+        x = x0
+        for c, w in enumerate(cw[r]):
+            m, adv, top, bot = glyph_run_mask(f, cells[r][c], tb["tracking_mm"] * s)
+            cap_top = yt + (rh - tb["cap_mm"]) / 2
+            cv.img.paste(0, (int((x + pad) * s), int(cap_top * s - top)), m)
+            if c > 0:
+                cv.dr.line((x * s, yt * s, x * s, (yt + rh) * s), fill=0, width=lw)
+            x += w
+    H = rows * rh
+    cv.dr.rectangle((x0 * s, y0 * s, (x0 + box_w) * s, (y0 + H) * s), outline=0, width=lw)
+    for r in range(1, rows):
+        cv.dr.line((x0 * s, (y0 + r * rh) * s, (x0 + box_w) * s, (y0 + r * rh) * s), fill=0, width=lw)
+    a = cv.result(SUB_W, SUB_H)
+    return sub["marks"] + (sub["field"] - sub["marks"]) * a, {
+        "box_mm": [x0, y0, round(box_w, 1), H], "box_right_mm": round(x0 + box_w, 1),
+        "fits": x0 + box_w <= sub["tile_mm"][0] - 14 - 15}
+
+
 def substance(T, sub, common):
     cv = Canvas(sub["tile_mm"][0], sub["tile_mm"][1], SUB_PX_MM, 255)
     s = cv.s
@@ -374,6 +500,14 @@ def build(spec_path, out):
             a = cv.result(TYPE_PX, TYPE_PX)
             if o == "rotated":                    # 90 deg clockwise: reads top to bottom
                 a = np.rot90(a, k=-1).copy()
+        elif o in ("slots", "slots_rotated"):
+            cv, info = type_slots(L, common)
+            a = cv.result(TYPE_PX, TYPE_PX)
+            if o == "slots_rotated":
+                a = np.rot90(a, k=-1).copy()
+        elif o == "pairs_v2":
+            cv, info = type_pairs_v2(L, common)
+            a = cv.result(TYPE_PX, TYPE_PX)
         elif o == "pairs":
             cv, info = type_pairs(L, common)
             a = cv.result(TYPE_PX, TYPE_PX)
@@ -408,7 +542,8 @@ def build(spec_path, out):
     sub = spec["ink_substance"]
     subs = []
     for T in sub["tiers"]:
-        a, info = substance(T, sub, common)
+        a, info = (substance_title_block(T, sub, common, sub["tiers"]) if "title_block" in sub
+                   else substance(T, sub, common))
         subs.append(a)
         report["substance"].append({"layer": T["layer"], "ld": T["ld"], **info, "mean": round(float(a.mean()), 3),
                                     "seam_xy": [round(v, 2) for v in seam_ratio(a)]})

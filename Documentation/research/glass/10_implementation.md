@@ -1,16 +1,33 @@
-# 10 — Glass and zone reflections: implementation (G1–G4, G6)
+# 10 — Glass and zone reflections: implementation (G1–G4, G6, G14 hook)
 
-Date: 2026-10-02/03. Status: **DONE in the clone, not promoted.** Nothing in `Frontrooms3D/` was changed
-except this folder (`10_implementation.md`, `images/`, `logs/`).
+Date: 2026-10-02/03; fix pass 2026-10-03 11:00–12:15. Status: **in the clone, NOT signed off, not promoted.** The
+verification is `20_verification.md` (run 3). Red still has to judge it. The promotion list and the hand-merges are
+in `30_final.md`. Nothing in `Frontrooms3D/` was changed except this folder.
 
 All work is in the private clone
 `/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/proj_glass`
-(**the clone**; paths below are relative to its root). The clone is shared with the G11 ray-tracing
-bench (`Assets/Editor/G11Bench`); every Unity run here waited until no other Unity had the clone open
-(`glass_work/run_unity.sh` in the scratchpad). Values and plan: `interaction_audit/10_audit_report.md`
-§4.1–4.3 and `Documentation/VISUAL_CHAT_TASKS.md` rows G1–G4, G6.
+(**the clone**; paths below are relative to its root). Values and plan come from `interaction_audit/10_audit_report.md`
+§4.1–4.3 and `Documentation/VISUAL_CHAT_TASKS.md` rows G1–G4, G6, G14.
 
 Tags: **UNVERIFIED** = not confirmed by a run, the code, or a page I read.
+
+---
+
+## 0. What the fix pass changed (2026-10-03)
+
+| Critic issue | Verdict | What was done |
+|---|---|---|
+| 1 G14 hook missing | true | Hook added (`FrontRoomsGlass.shader:101-106, 161-163, 168-178, 453-485`). The critic's plain uniform branch was **not** bit-identical: 49/90 checks failed by ≤ 9.5e-7. So the hook sits behind the global keyword `_FR_GLASS_RT`, the critic's fallback. Proof: 175/175 against today's shader and again against the final shader (`20_verification.md` §8.2) |
+| 2 F5 merge / stale ambient | true | `FrontRoomsLook.cs` = main's 10:23 file + 2 code lines + comments (§2). G10 re-run: B = C within noise |
+| 3 reflection energy ~3× low | true (arithmetic re-done: 0.082 / 0.109 / 0.157 / 0.385) | `#define _SPECULAR_SETUP 1` (`:127`), `_PaneF0` .08 (`:423`); window alpha .11 + .89 F⁵; props .12 + .88; bottle .30 + .70; `_ReflectionMin` 1.0 |
+| 4 RT study wrong | true | `11_reflections_and_raytracing.md`: correction box, §0.1, §1 heading, §1.2, §1.5, §4.1 RT row, §4.2 (single hook), §4.3 (new IDs G15–G18) |
+| 5 hook contract gaps | true | Contract in §8.1. Depth tag implemented in the one texture (A > 1 = 1 + eye depth); `_RTReceive`. Registration tested at render scale 1 and 0.75 |
+| 6 `_ReflectionMin` divisor | true | Divides by `_FR_ZoneReflNominal` (`:258-263`, `FrontRoomsZoneReflection.cs:240, 252`). Dip test: glass now dips with the world (§6.3). Probe keywords added as `multi_compile_fragment` like URP Lit, **not** the critic's `#define` (reason in §3.1). `ReflectionProbe.intensity` measured: applied in **gamma** |
+| 7 global cap in gamma | true | Zone intensities stored linear: `ZoneLinear` {.5, .5, .45, .5}, `MaxLinear` .5 (`FrontRoomsZoneReflection.cs:45-48`). The slider gets `LinearToGamma` (`:131`) |
+| 8 pane does not read; grime cues wrong | true | Specks fade with distance, smears widened, rim .12 / corner .3 / 6 cm, scatter 1 (window) / .5 (props), faces offset, `_DustFilm` for props. The frame cue is map work (W1.4) |
+| 9 stale cubes | true | The capture now draws panes as `Glass_Window`, writes `capture_manifest.txt`, and `WarnIfStale()` checks it. Cubes recaptured with the F5 ambient. RoomStream title hook (1 line) |
+| 10 robustness | true | Scene-load reset, early-return re-check, Play-mode-stop release, capture-step/unscaled time, `FlipY = !graphicsUVStartsAtTop`. All tested in play mode (§6.3) |
+| 11 WebGL / variants | partly done | Dead SH pragma and interpolator removed; RT keyword stripped from WebGL builds; shards tested and fixed. **Not done:** a WebGL build variant count and RGB9e5 in browsers (no WebGL build was made) |
 
 ---
 
@@ -18,26 +35,27 @@ Tags: **UNVERIFIED** = not confirmed by a run, the code, or a page I read.
 
 | Row | Result |
 |---|---|
-| G1 shader | `FrontRooms/Glass` (HLSL, URP lighting): transparent, premultiplied "Alpha + Preserve Specular", ZWrite off, no shadow caster, Cull Back. Audit §4.2 values. Grime laid out in pane metres. Crack and palm hooks. Compiles offline for WebGL 2 (GLES3x) and Metal with no errors. |
-| G2 grime maps | 6 CC0 ambientCG scans packed into 2 textures by a script. Desktop: BC7 1024 px and 512 px. WebGL: DXT5 at half size. |
-| G3 materials | `Glass_Window` (FrontRooms/Glass + grime), `Glass_Edge` and `Glass_Shard` (URP Lit, opaque, with MotionVectors) in `Resources/Surfaces`. Made by a new editor file, plus a one-line hook in RenderSetup. |
-| G4 prop glass | `Prop_Glass` and `Prop_BottleBlue` moved onto `FrontRooms/Glass` without grime. The kit look holds (§6.3). After the hook, the old generator's SrcAlpha write is overridden (checked). |
-| G6 reflections | Four 256 px HDR cubes (Level0, Office, Tall, DeadLamp) captured in the **real map**, with lamps lit exactly as the game lights them. `FrontRoomsLook.SetZoneReflection` is implemented. A **play-mode test proves** that a runtime change reaches URP: a mirror sphere renders cube A, then the 0.5 s fade, then cube B. The two paths match (mean difference 0.04/255). |
+| G1 shader | `FrontRooms/Glass` (HLSL, URP lighting, 498 lines):<br>• transparent, premultiplied "Alpha + Preserve Specular", **specular workflow with two-surface reflectance `_PaneF0` .08**, ZWrite off, no shadow caster, Cull Back;<br>• grime laid out in pane metres; crack and palm hooks;<br>• the G14 RT/planar input behind `_FR_GLASS_RT`.<br>Compiles offline for WebGL 2 (GLES3x) and Metal, including the hook and probe-blending sets (`logs/compile_check_fixpass.txt`) |
+| G2 grime maps | 6 CC0 ambientCG scans packed into 2 textures. Desktop: BC7 1024 / 512. WebGL: DXT5 at half size |
+| G3 materials | `Glass_Window` (glass + grime), `Glass_Edge` (URP Lit opaque), `Glass_Shard` (URP Lit opaque, **base 0.85 × the Level 0 carpet**), and new `Glass_ShardClear` (transparent glass for desktop debris). Made by `FrontRoomsGlassSetup`, plus a one-line hook in RenderSetup |
+| G4 prop glass | `Prop_Glass` and `Prop_BottleBlue` on `FrontRooms/Glass`, no grime. **Correction:** the run-2 "kit look holds" was wrong. The hutch read as solid doors. Run 3 fixes it with physical reflectance + a light dust film (`20_verification.md` §7) |
+| G6 reflections | Four 256 px HDR cubes captured in the real map with the game's lamps and the **F5 ambient**, with panes drawn as `Glass_Window`. `SetZoneReflection` works at runtime (play-mode test, §6.3). Intensities are linear (0.5) |
+| G14 hook | `_FR_GlassRTReflection` + `_FR_GlassRTWeight`. Keyword off = bit-identical (proved). Contract §8.1 |
 
-Three findings change how to read the audit's numbers:
+Findings that change how to read the audit:
 
-1. **Unity applies the reflection-intensity slider in gamma.** At runtime, URP's decode multiplier is
-   `GammaToLinear(intensity)`: 0.5 becomes 0.214, 0.25 becomes 0.051, and today's 0.3 is only 0.073
-   (`logs/reflection_test.txt`, the "decode" values and the measured 0.245 ratio against a predicted 0.238).
-   So "keep intensity ≤ 0.5" means at most 21 % of the captured radiance. The audit's "tune toward 0.7–1.0"
-   means 45–100 % linear.
-2. **Clear glass with the audit's values is nearly invisible in these rooms, even with the grime
-   maps**, as audit 05 predicted. The maps alone did not fix it. Two art-directed terms were added
-   to make it read (§3.3): grime that scatters room light from both sides, and a reflection floor on
-   glass only (`_ReflectionMin`, 0.6 linear on windows). Floors and walls keep the global ≤ 0.5.
-3. **WebGL's automatic format for an HDR cube is DXT1, which is LDR** (importer log), so lamp
-   reflections would clip at 1.0. The cubes now override WebGL to RGB9e5: HDR, 4 bytes per pixel,
-   supported by desktop and mobile browsers.
+1. **Unity applies both reflection-intensity knobs in gamma:**
+   - the Lighting slider: measured ratio 0.230 for a 0.735 → 0.368 halving, predicted 0.223
+     (`logs/reflection_test_fixpass.txt`);
+   - `ReflectionProbe.intensity`: 1 → 0.5 gives 0.216; gamma predicts 0.214, linear 0.5.
+
+   The audit's "≤ 0.5" meant half the captured light. In the run-2 code it was 0.214. Main's
+   `FrontRoomsLook.ReflectionIntensity` .3 is 0.073 linear.
+2. **A pane has two surfaces.** One-surface F0 .04 (run 2) reflected a third of what real glass does (§3.3 of 20). With
+   physical values the pane reflects ~8 % face-on and 14 % at 60°. Face-on it stays quiet in evenly lit rooms, as
+   real glass does. The outline cue (glazing stop) is map-side.
+3. **WebGL's automatic format for an HDR cube is DXT1 (LDR).** The cubes override WebGL to RGB9e5 (HDR, 4 B/px).
+   Whether it loads in Chrome/Safari is UNVERIFIED (no WebGL build).
 
 ---
 
@@ -45,357 +63,390 @@ Three findings change how to read the audit's numbers:
 
 | File | New / changed | Lines | What |
 |---|---|---|---|
-| `Assets/Resources/Rendering/FrontRoomsGlass.shader` | new | 412 | `FrontRooms/Glass` |
+| `Assets/Resources/Rendering/FrontRoomsGlass.shader` | new | 498 | `FrontRooms/Glass` |
 | `Assets/Resources/Rendering/FrontRoomsReflectionBlend.shader` | new | 78 | `Hidden/FrontRooms/ReflectionBlend`: cube crossfade, one face and mip per draw |
-| `Assets/Scripts/Rendering/FrontRoomsZoneReflection.cs` | new | 340 | runtime zone reflection (snap, fade, dip, retarget) |
-| `Assets/Scripts/Rendering/FrontRoomsZoneReflectionDriver.cs` | new | 11 | hidden `LateUpdate` tick, created on the first fade |
-| `Assets/Scripts/Rendering/FrontRoomsGlassPane.cs` | new | 55 | map helpers: `ImpactUV(pane, hitPoint)`, `SetCrack(renderer, crack, uv, seed, palm)`, material names |
-| `Assets/Scripts/Rendering/FrontRoomsLook.cs` | **changed** | 57 | `SetZoneReflection` calls `FrontRoomsZoneReflection.Set` (`:35`); `ApplyAmbient` ends with `FrontRoomsZoneReflection.Reapply()` (`:55`). Signature unchanged. |
-| `Assets/Editor/Rendering/FrontRoomsGlassSetup.cs` | new | 226 | materials + texture importers; menu *FrontRooms → Rendering → Set up glass materials*; batch `FrontRoomsGlassSetup.RunBatch` |
-| `Assets/Editor/Rendering/FrontRoomsReflectionCapture.cs` | new | 295 | cube capture in the real map; menu *… → Capture zone reflection cubemaps*; batch `RunBatch`, `RunImportersBatch` |
-| `Assets/Editor/Rendering/FrontRoomsGlassVerification.cs` | new | 655 | play-mode proof (`RunReflectionTestBatch`, run **without** `-quit`), window and prop look-dev |
-| `Assets/Editor/Rendering/FrontRoomsGlassCompileCheck.cs` | new | 79 | hook check + offline WebGL/Metal shader compile (`RunBatch`) |
-| `Assets/Editor/Rendering/FrontRoomsRenderSetup.cs` | **one line** | `:44` | `FrontRoomsGlassSetup.EnsureAll(); // GLASS HOOK (G1-G4) …`, added after `EnsureGlassMaterials();`. Nothing else in the file was touched. |
+| `Assets/Resources/Rendering/Reflections/Refl_{Level0,Office,Tall,DeadLamp}.exr` (+ .meta, folder .meta) | new | | 1.1–1.3 MB EXR each, recaptured 11:57 |
+| `Assets/Resources/Rendering/Reflections/capture_manifest.txt` (+ .meta) | new | | what the cubes were captured from |
+| `Assets/Scripts/Rendering/FrontRoomsZoneReflection.cs` | new | 391 | runtime zone reflection (snap, fade, dip, retarget), linear intensities, `_FR_ZoneReflNominal`, scene-load reset |
+| `Assets/Scripts/Rendering/FrontRoomsZoneReflectionDriver.cs` | new | 14 | hidden `LateUpdate` tick: capture step if set, else unscaled time |
+| `Assets/Scripts/Rendering/FrontRoomsGlassPane.cs` | new | 55 | map helpers: `ImpactUV`, `SetCrack`, material names |
+| `Assets/Scripts/Rendering/FrontRoomsLook.cs` | **hand merge** | 62 | main's 10:23 file (F5 constants and comment kept) + `FrontRoomsZoneReflection.Set(zone, blendSeconds);` in `SetZoneReflection` (`:40`) + `FrontRoomsZoneReflection.Reapply();` after `DynamicGI.UpdateEnvironment();` (`:60`) + comments. **Never copy the clone's pre-fix file over main** |
+| `Assets/Scripts/FrontRoomsRoomStream.cs` | **one line** (+1 comment) | `:351-352` | `if (Application.isPlaying) FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);` at the end of `Initialize`. Title rooms reflect the Level 0 cube until title cubes exist |
+| `Assets/Editor/Rendering/FrontRoomsRenderSetup.cs` | **one line** | `:44` | `FrontRoomsGlassSetup.EnsureAll(); // GLASS HOOK (G1-G4) …` after `EnsureGlassMaterials();` |
+| `Assets/Editor/Rendering/FrontRoomsGlassSetup.cs` | new | 257 | materials + importers; menu *FrontRooms → Rendering → Set up glass materials*; batch `RunBatch`; ends with `WarnIfStale()` |
+| `Assets/Editor/Rendering/FrontRoomsReflectionCapture.cs` | new | 438 | cube capture in the real map (panes as `Glass_Window`, RT weight 0), manifest, `WarnIfStale` menu |
+| `Assets/Editor/Rendering/FrontRoomsGlassVerification.cs` | new | 747 | play-mode proof (`RunReflectionTestBatch`, run **without** `-quit`), window/prop look-dev |
+| `Assets/Editor/Rendering/FrontRoomsGlassCompileCheck.cs` | new | 82 | hook-order check + offline WebGL/Metal compile, including the RT and probe keyword sets |
+| `Assets/Editor/Rendering/FrontRoomsGlassRTStripper.cs` | new | 27 | `IPreprocessShaders`: removes `_FR_GLASS_RT` variants of `FrontRooms/Glass` from WebGL builds only |
+| `Assets/Resources/Surfaces/Glass_Window.mat`, `Glass_Edge.mat`, `Glass_Shard.mat`, `Glass_ShardClear.mat` (+ .meta) | new | | |
+| `Assets/Resources/Surfaces/Prop_Glass.mat`, `Prop_BottleBlue.mat` | changed (GUID kept; .meta unchanged) | | on `FrontRooms/Glass` |
+| `Assets/Resources/Surfaces/Textures/GlassGrime_M.png`, `GlassSmear_N.png` (+ .meta) | new | | packed maps |
 | `Tools/lookdev/pack_glass_grime.py` | new | 73 | packs the CC0 scans |
-| `Assets/Resources/Surfaces/Textures/GlassGrime_M.png`, `GlassSmear_N.png` (+ .meta) | new | | packed maps (3.1 MB and 0.5 MB source PNG) |
-| `Assets/Resources/Surfaces/Glass_Window.mat`, `Glass_Edge.mat`, `Glass_Shard.mat` (+ .meta) | new | | |
-| `Assets/Resources/Surfaces/Prop_Glass.mat`, `Prop_BottleBlue.mat` | changed (GUID kept) | | now `FrontRooms/Glass` |
-| `Assets/Resources/Rendering/Reflections/Refl_{Level0,Office,Tall,DeadLamp}.exr` (+ .meta, folder .meta) | new | | 1.1–1.3 MB EXR each |
 
-`FrontRoomsLook.cs` and `FrontRoomsRenderSetup.cs` in the real project still match the files the clone
-started from (md5 checked 00:08), so both patches apply cleanly. To promote, copy every path above
-**with its `.meta`**. The shader and texture GUIDs are referenced by the materials.
+**Promotion.**
+- **`FrontRoomsLook.cs`:** main changed it at 10:23 (F5), so the old note "both patches apply cleanly" is **false**.
+  Copying the clone's pre-fix copy would have raised the ground ambient by 55 %. The clone now holds the merged file:
+  main's file plus the two calls. Promote by applying the two lines to main's file, not by copying.
+- **`FrontRoomsRenderSetup.cs` and `FrontRoomsRoomStream.cs`:** their only difference from main is the hook lines
+  (checked by diff at 12:1x).
+- **Not promoted:** `Assets/Editor/Audit/*` (the G10 harness, `G10/FrontRoomsGlassBaseline.shader`, the BEFORE
+  material copies).
+- Exact list with md5: `30_final.md` §4.
 
 ---
 
 ## 3. G1 — `FrontRooms/Glass`
 
-### 3.1 Render state and lighting
+### 3.1 Render state, lighting and variants
 
-- `Blend One OneMinusSrcAlpha`, `ZWrite Off`, `Cull [_Cull]` (Back) (`FrontRoomsGlass.shader:81-83`).
-  There is one pass, `UniversalForward`, and no ShadowCaster, DepthOnly or MotionVectors pass, so the
-  pane casts no shadow whatever the renderer's setting.
-- `#define _SURFACE_TYPE_TRANSPARENT 1` and `#define _ALPHAPREMULTIPLY_ON 1` (`:105-106`). These are
-  plain defines, not keywords, so they add no variants. With premultiply on, URP multiplies only the
-  diffuse by alpha (`BRDF.hlsl:71`, package `com.unity.render-pipelines.universal@37e0d4fc2503`). That
-  is "Preserve Specular": lamp highlights and the environment reflection stay at full strength.
-- Lighting is URP's own `UniversalFragmentPBR`, with the same `multi_compile` set as `FrontRooms/Surface`
-  except SSAO (transparent surfaces do not take it). It includes Forward+ (`_CLUSTER_LIGHT_LOOP`),
-  cookies, light layers and fog.
-- Fog is applied for premultiplied output: toward `fogColour × alpha`, not the full fog colour (`:401`).
-- SRP Batcher: every material property sits in one `UnityPerMaterial` cbuffer (`:110-139`, 200 bytes in
-  the compiled variant). Each texture has its own sampler (`:140-141`), as WebGL/GLES needs.
+- **Render state.** `Blend One OneMinusSrcAlpha`, `ZWrite Off`, `Cull [_Cull]` (Back) (`:91-93`). One pass,
+  `UniversalForward`; no ShadowCaster, DepthOnly or MotionVectors pass.
+- **Plain defines (no variants):** `_SURFACE_TYPE_TRANSPARENT`, `_ALPHAPREMULTIPLY_ON`, and since the fix pass
+  `_SPECULAR_SETUP` (`:125-127`). With premultiply, URP multiplies only the diffuse by alpha (`BRDF.hlsl:71`), which
+  is "Preserve Specular". With the specular setup, `InitializeBRDFData` uses `_PaneF0` for both the environment and the
+  lamp highlights.
+- **Lighting** is URP's `UniversalFragmentPBR`, with the `FrontRooms/Surface` keyword set minus SSAO. That includes
+  Forward+ (`_CLUSTER_LIGHT_LOOP`), cookies, light layers and fog.
+- **Ambient.** Per-pixel `SampleSH` (`:417`). The `EVALUATE_SH_MIXED/VERTEX` pragma and the `vertexSH` interpolator
+  were removed. They were filled but never read.
+- **Probe keywords (G7).** `multi_compile_fragment` for `_REFLECTION_PROBE_BLENDING`, `_BOX_PROJECTION` and `_ATLAS`
+  (`:113-115`), exactly as URP Lit (`Lit.shader:142-144`).
+  - Why not the critic's `#define _REFLECTION_PROBE_BLENDING 1`: it would force the cluster probe path even when the
+    URP asset has blending off (`FrontRooms_URP.asset:54` today). URP then requests per-object probes instead
+    (`UniversalRenderPipeline.cs:2092-2098`), so glass would read the wrong source.
+  - The keywords follow the asset like Lit, and URP strips them while no asset enables them
+    (`ShaderScriptableStripper.cs:578-585`).
+  - The critic's underlying point is right and verified: without the keyword, `GlobalIllumination.hlsl:34-35` defines
+    blending as 0, and Forward+ with blending on does not request per-object probes. So glass would have ignored G7's
+    room probes.
+- **G14 keyword.** `#pragma multi_compile_fragment _ _FR_GLASS_RT` (`:105`). It is a global keyword: the RT/planar
+  source enables it only for the camera it feeds.
+- **Fog** is applied for premultiplied output: toward fog colour × alpha (`:487`).
+- **SRP Batcher.** Every material property sits in one `UnityPerMaterial` cbuffer (`:131-164`, 220 bytes compiled).
+  Each texture has its own sampler (WebGL/GLES).
 
-### 3.2 Values (audit §4.2) and where they act
+### 3.2 Values and where they act
 
-| Input | Value | Shader |
+| Input | Window (`Glass_Window`) | Shader |
 |---|---|---|
-| Base | linear (.02, .025, .022) → `_DustColor` linear (.42, .40, .34) by dust | `:339-340` |
-| Alpha | `_AlphaFace` .08 + `_AlphaFresnel` .55 × Fresnel⁵ + `_DustAlpha` .25 × dust (+ .05 × smudge, cracks) | `:341` |
-| Metallic | 0 | |
-| Smoothness | .96 → `_SmudgeSmoothness` .62 by smudge; → .45 by dust × .6 | `:336-338` |
-| Normal | flat + `_RollStrength` .02 long-wave roll (period .37 m, phase per pane) + smear normal × `_SmudgeNormal` .05 | `:290`, `:313` |
-| Edge faces | `_AutoEdge`: the four thin faces of the box use `_EdgeColor` linear (.28, .42, .34), alpha .92, smoothness .6 | `:345-348` |
+| Reflectance | `_PaneF0` .08 (two surfaces), specular setup; URP's Pow4 Fresnel → 0.095 at 50°, 0.137 at 60°, 0.358 at 75° | `:423` |
+| Alpha | `_AlphaFace` .11 + `_AlphaFresnel` .89 × F⁵ (+ .25 × dust, + .05 × smudge, cracks). T = .89 face-on | `:393` |
+| Base | linear (.02, .025, .022) → `_DustColor` linear (.42, .40, .34) by dust | `:391` |
+| Smoothness | .96 → .62 by smudge; → .45 by dust × .6 | `:388-390` |
+| Normal | flat + .02 long-wave roll (period .37 m) + smear normal × .05 | `:334-337, 364-365` |
+| Reflection floor | `_ReflectionMin` 1.0 linear = the full captured light (physical: the cubes were captured under the game's own lamps); divided by the steady zone intensity `_FR_ZoneReflNominal` | `:258-263, 442-452` |
+| Grime scatter | `_Scatter` 1 (was 3) | `:431-432` |
+| Edge faces | `_AutoEdge`: linear (.28, .42, .34), alpha .92, smoothness .6 | `:397-401` |
+| RT receiver | `_RTReceive` 1 | `:161-163` |
 
-**Pane frame, so that any pane size works.** In the vertex stage, the thinnest scaled object axis is
-the pane normal. *v* is object up (unless the pane lies flat) and *u* is the remaining axis (`:197`).
-Grime is laid out in metres from the pane centre. This matches how the map builds panes, as a scaled
-unit cube with no rotation (`FrontRoomsMapWorld.cs:953-957` in the clone). A mesh modelled in metres
-sets `_PaneSize`.
+Props:
+- `Prop_Glass`: alpha .12 + .88 F⁵, smoothness .94, `_DustFilm` .12, `_Scatter` .5, `_ReflectionMin` 1, `_RTReceive` 0.
+- `Prop_BottleBlue`: sRGB (.36, .58, .80), alpha .30 + .70 F⁵, smoothness .90.
+- `Glass_ShardClear`: as `Prop_Glass` without the dust film and scatter.
 
-**Grime layout** (`_FR_GLASS_GRIME`, windows only, `:293-315`), with three samples of one RGBA map plus
-one normal sample:
+Setup code: `FrontRoomsGlassSetup.cs:84-142`.
 
-- dust: a thin film everywhere (0.14), dense in the bottom 14 cm, in the corners (12 cm) and along the
-  glazing stop (2 cm), broken up by mottling and specks;
-- smears: 0.80–1.65 m above `_FloorY` (full strength 0.95–1.45 m), in patches;
-- prints: within 22 cm of the side edges, 0.85–1.75 m high, thresholded so only a few show;
-- per-pane random offset, so neighbouring panes differ.
+**Pane frame (any pane size).** In the vertex stage the thinnest scaled object axis is the pane normal, *v* is object
+up and *u* the rest (`:235-243`). The map's pane is a scaled unit cube. A Y rotation is fine, because the axes come
+from the object matrix. A mesh modelled in metres sets `_PaneSize`.
 
-### 3.3 Two art-directed additions (not in the audit spec, needed to make the glass read)
+**Grime layout** (`_FR_GLASS_GRIME`, windows only, `:339-367`):
 
-The first look-dev ([02](images/02_window_old_vs_new.jpg), row "NEW glass") showed what audit 05
-predicted: with these values the pane disappears straight-on and at 50–60°. The debug view
-([03](images/03_window_close_masks.jpg), bottom left) confirms the masks are in the right places. They
-were just too faint to see. Two additions:
+- **Dust:**
+  - a thin film everywhere (.14);
+  - dense in the bottom 14 cm and in the corners (12 cm, weight .3);
+  - along the glazing stop (6 cm ramp, weight .12);
+  - broken up by mottling.
+- **Specks:** full strength at 0.8 m, gone by 2 m (`speckNear`, `:355-357`). Further out they read as marks on the
+  floor behind the pane, and the thresholded mip shimmers.
+- **Smears:** 0.80–1.65 m above `_FloorY`, in wider patches (`smoothstep(.35, .70)`, `:359`).
+- **Prints:** within 22 cm of the side edges, 0.85–1.75 m high.
+- **Per pane:** a random offset. **Per face:** an offset of ±0.53 m by the face sign (`:343`), so the two sides of a
+  pane differ.
 
-- **`_Scatter` (window: 3).** Dust, smudges and crack lines add the room's ambient light from *both*
-  sides of the pane as emission: `(dust + .6·smudge + 3·crack + 2·crush) × dustColour × ½(SH(n) + SH(−n))`
-  (`:380`). Dust on real glass is lit from both sides. Without this term it can only darken.
-- **`_ReflectionMin` (window: 0.6 linear; props: 0.45).** The global default reflection stays ≤ 0.5 on
-  the slider, which is 0.214 linear. On glass only, the shader tops the environment reflection up to
-  `_ReflectionMin`. It reads the current linear intensity from URP's `_GlossyEnvironmentCubeMap_HDR.x`
-  (`Input.hlsl:103`) and adds `(min / current − 1)` × the env-BRDF reflection (`:389-399`). It
-  self-adjusts: once the global intensity rises to 0.6 or more, it adds nothing. It skips
-  RGBM-encoded cubes (`.w ≠ 0`). Cost: one extra cube sample on glass pixels.
-- Also `_GrimeDebug` (`:403`) shows the masks: R dust, G smudge, B crack.
+### 3.3 Art-directed terms that remain
 
-The result reads as glass at 0.7 m (smear streaks and a dust haze) and still looks clear at 1.5 m. It
-is clearly less veiled than today's pane at 50° ([02](images/02_window_old_vs_new.jpg), rows 1 vs 3;
-[03](images/03_window_close_masks.jpg), top row against the no-pane reference). **Red must judge it.**
-These are look-dev frames in an edit-mode build of the map, not the G10 harness capture.
+- **`_Scatter` (window 1, props .5).** Dust and smudges add room light from both sides as emission (`:431-432`).
+  It is worth about 0.6–1.0 ΔY face-on (`20_verification.md` §4).
+- **`_DustFilm` (props .12).** An even dust film on kit glass. Kit meshes have no pane frame for the grime layout.
+  Without the film, clear glass over a dark interior vanishes (the run-2 hutch).
+- **`_ReflectionMin` is no longer art-directed:** 1.0 is the physical value. It exists only because the world's
+  default reflection is capped at 0.5 linear (frozen print, no parallax yet; §6.1).
+- `_GrimeDebug` (`:489`) shows the masks: R dust, G smudge, B crack.
 
-### 3.4 Crack and palm hooks (placeholder until G8's baked masks)
+### 3.4 Crack and palm hooks (placeholder until GD3's baked masks)
 
-`_Crack` (0–1) is the reach of 9–14 radial cracks from `_ImpactUV`. They meander slightly and differ in
-length per ray (seed `_CrackSeed`). Ring segments appear at `_Crack` 0.30, 0.55 and 0.80, plus a
-crushed spot at the impact. Each wedge between two cracks tilts by up to ±0.03, so the reflection breaks
-into facets (`CrackMask`, `:220`). `_Palm` (0–1) draws a hand smudge (heel, four fingers, thumb) at
-`_ImpactUV` (`PalmMask`, `:253`).
-
-Both are ALU only, behind a uniform `[branch]`, so a pane at 0 pays nothing. The lines are
-anti-aliased with the pixel footprint in metres (no derivatives inside the branch). One bug was found
-and fixed: the projection's `_m11` is negative when rendering into a flipped target, which made the
-cracks render as solid wedges. The code now uses `abs()`. Frames: [04](images/04_crack_palm_hooks.jpg).
-The palm reads only faintly. That matches the push stage in §3.5 of the audit, but it may need more
-strength once the shot exists.
-
-The map drives the hooks with `FrontRoomsGlassPane.SetCrack(paneRenderer, crack, FrontRoomsGlassPane.ImpactUV(pane, hit.point), seed, palm)`.
-That call uses a property block on that one renderer. The renderer leaves the SRP Batcher only while
-it is cracked.
+- **`_Crack` (0–1)** is the reach of 9–14 radial cracks from `_ImpactUV` (`CrackMask`, `:266`). Rings appear at .30 /
+  .55 / .80, with a crushed spot at the impact, and the wedges tilt by up to ±0.03.
+- **`_Palm` (0–1)** draws a hand smudge at `_ImpactUV` (`PalmMask`, `:299`).
+- Both are ALU only and sit behind a uniform branch.
+- The map drives them with `FrontRoomsGlassPane.SetCrack(renderer, crack, FrontRoomsGlassPane.ImpactUV(pane,
+  hit.point), seed, palm)`, which uses a property block on that one renderer.
+- GD3 plans to replace `CrackMask` with baked fracture meshes (`destruction/10_glass_destruction_plan.md` §4.2).
 
 ---
 
 ## 4. G2 — grime maps
 
-Sources: ambientCG, CC0 1.0, approved by Red on 2026-10-02 and listed in
-`Frontrooms3D/Tools/lookdev/cc0_src/SOURCES.txt`: Smear007, Fingerprints002, SurfaceImperfections001,
-007, 013 and 015 (`https://ambientcg.com/a/<name>`; the URLs come from SOURCES.txt and were not
-re-opened). No attribution is required. The 1K JPG zips were read from the real project's git-ignored
-`Tools/lookdev/cc0_src/ambientcg/` (read-only).
-
-`python Tools/lookdev/pack_glass_grime.py <cc0_src> Assets/Resources/Surfaces/Textures` stretches each
-channel between its 2nd and 99.5th percentiles:
+- **Sources:** ambientCG, CC0 1.0, approved by Red on 2026-10-02 and listed in
+  `Frontrooms3D/Tools/lookdev/cc0_src/SOURCES.txt`: Smear007, Fingerprints002, SurfaceImperfections001, 007, 013
+  and 015. URLs `https://ambientcg.com/a/<name>` are taken from SOURCES.txt and were not re-opened.
+- **Packing:** `python Tools/lookdev/pack_glass_grime.py <cc0_src> Assets/Resources/Surfaces/Textures` stretches each
+  channel between its 2nd and 99.5th percentiles.
 
 | Texture | Channels | Desktop import | WebGL override |
 |---|---|---|---|
-| `GlassGrime_M.png` 1024² RGBA, linear | R Smear007 opacity · G Fingerprints002 opacity · B max(SI007, 0.7·SI013) specks · A 0.6·SI015 + 0.4·SI001 mottling | BC7, 1024, mips, trilinear, aniso 4, repeat | DXT5, 512 (≈ 0.35 MB with mips) |
-| `GlassSmear_N.png` 512² | Smear007 NormalGL | normal map, BC7, 512 | DXT5, 256 (≈ 0.09 MB) |
-
-(Formats from `[FrontRoomsGlass]` lines in the setup log. WebGL sizes are computed, not measured in a
-build.)
-
----
+| `GlassGrime_M.png` 1024² RGBA, linear | R Smear007 opacity · G Fingerprints002 opacity · B max(SI007, 0.7·SI013) specks · A 0.6·SI015 + 0.4·SI001 mottling | BC7, 1024, mips, trilinear, aniso 4 | DXT5, 512 |
+| `GlassSmear_N.png` 512² | Smear007 NormalGL | normal map, BC7, 512 | DXT5, 256 |
 
 ## 5. G3, G4 — materials
 
-`FrontRoomsGlassSetup.EnsureAll()` writes all five materials in place (GUIDs kept). Colours are set as
-`Color.gamma` of the linear values, because material colours are sRGB and URP linearises them.
+`FrontRoomsGlassSetup.EnsureAll()` writes every material in place, keeping the GUIDs. Colours are `Color.gamma` of the
+linear values.
 
 | Material | Shader | Values |
 |---|---|---|
-| `Glass_Window` | FrontRooms/Glass + `_FR_GLASS_GRIME` | base lin (.02, .025, .022); alpha .08 + .55 F⁵; dust alpha .25; smoothness .96 → .62; roll .02 @ .37 m; smudge normal .05; dust/smear/prints 1; `_FloorY` 0; `_AutoEdge` on, edge lin (.28, .42, .34), α .92, smoothness .6; `_Scatter` 3; `_ReflectionMin` .6; queue 3000 |
-| `Glass_Edge` | URP Lit, opaque | base lin (.28, .42, .34), smoothness .6, metallic 0 |
-| `Glass_Shard` | URP Lit, opaque | base lin (.02, .025, .022), smoothness .95. Shard meshes need two material slots: faces `Glass_Shard`, edges `Glass_Edge`. URP Lit keeps its MotionVectors pass. |
-| `Prop_Glass` | FrontRooms/Glass, no grime | base lin (.02, .025, .022); alpha .10 + .55 F⁵; smoothness .94; roll 0; `_ReflectionMin` .45 |
-| `Prop_BottleBlue` | FrontRooms/Glass, no grime | base sRGB (.36, .58, .80) (unchanged hue); alpha .30 + .50 F⁵ (was a flat .42); smoothness .90; `_ReflectionMin` .45 |
+| `Glass_Window` | FrontRooms/Glass + `_FR_GLASS_GRIME` | §3.2 |
+| `Glass_Edge` | URP Lit, opaque | base lin (.28, .42, .34), smoothness .6 |
+| `Glass_Shard` | URP Lit, opaque | **base lin (.214, .162, .074) = 0.85 × the Level 0 carpet's mean albedo**, smoothness .95. The audit's near-black base read as black chips (97.6 % of shard pixels on Level 0 carpet). On Office carpet this base reads as pale chips, so other floors need their own instance (`30_final.md` §6). Shard meshes: faces `Glass_Shard`, edges `Glass_Edge` |
+| `Glass_ShardClear` | FrontRooms/Glass, no grime | clear shard faces for desktop debris; reads as glass on both carpets tested (shard/carpet 0.96–0.98) |
+| `Prop_Glass` | FrontRooms/Glass, no grime | §3.2 |
+| `Prop_BottleBlue` | FrontRooms/Glass, no grime | §3.2 |
 
-**G4: which option was taken.** Both props were moved onto the glass shader. The old generator
-`FrontRoomsRenderSetup.EnsureGlassMaterials` still runs first and still writes URP Lit with SrcAlpha.
-The hook then overrides it. `FrontRoomsGlassCompileCheck` ran exactly that order:
-`Prop_Glass = Universal Render Pipeline/Lit` after the old pass, and `FrontRooms/Glass`, no stray
-keywords, queue 3000 after the hook (`logs/compile_check.txt`). `EnsureGlassMaterials` and `GlassDefs`
-are now dead code. Delete them once the wallpaper workflow's edits to RenderSetup have landed (owner:
-visual).
+**G4.** The old generator `FrontRoomsRenderSetup.EnsureGlassMaterials` still runs first and writes URP Lit with
+SrcAlpha. The hook then overrides it. `FrontRoomsGlassCompileCheck` ran exactly that order
+(`logs/compile_check_fixpass.txt`). `EnsureGlassMaterials` and `GlassDefs` are dead code. Delete them once the
+wallpaper workflow's RenderSetup edits have landed (owner: visual).
 
-**Kit look** ([05](images/05_props_old_vs_new.jpg)): the cabinet, vending front and clock glass read
-clearer and darker. The interiors show through instead of a pale veil. The hutch doors now read as dark
-glass over a dark interior. The water-cooler bottle is a little more saturated. Nothing reads as broken,
-but Red should look at the hutch.
+**Kit look.** Run 3 ([g10r3_07](images/g10r3_07_props.jpg)):
+- the hutch's arched panes and the cabinet's shelves read as glass again;
+- the bottle reads as before;
+- the vending front is clearer;
+- the desk tumbler shows a faint rim.
+
+The run-2 sentence "the kit look holds" was wrong for the hutch.
 
 ---
 
 ## 6. G6 — zone reflection cubes and `SetZoneReflection`
 
-### 6.1 Capture (`FrontRoomsReflectionCapture.RunBatch`)
+### 6.1 Capture (`FrontRoomsReflectionCapture.RunBatch`, recaptured 2026-10-03 11:57)
 
-1. An edit-mode build of the shipped profile's map (seed 20261001, 25 chunks, 1,597 lamps) through the
-   map's own `BuildForCapture`.
-2. One cell is picked per zone type (`logs/reflection_capture.txt`):
+1. An edit-mode build of the shipped profile's map (seed 20261001, 25 chunks, 1,597 lamps) through the map's own
+   `BuildForCapture`. That path runs `FrontRoomsLook.ApplyAmbient`, which now uses main's F5 values.
+2. **Every built pane (11) is drawn as the game will draw it:** `Glass_Window`, 6 mm, no shadow, via a capture copy
+   with no floor (`SwapPanes`, `:147`). The old cyan `TransparentGlass` is no longer baked in. The RT weight and the
+   nominal intensity are forced to 0 during the bake (`:100-102`).
+3. One cell per zone type (`logs/reflection_capture_fixpass.txt`): Level0 (1, 4), Office (−5, 21), Tall (14, −15),
+   DeadLamp (1, 6). The lamps are lit with the map's own `TickFixtures`.
+4. A 256 px HDR cube is baked at eye height (1.62 m) with a Custom `ReflectionProbe` through
+   `Lightmapping.BakeReflectionProbe`. First bounce only, no post.
+5. Importer: Cube, specular convolution, 9 mips, BC6H 256 on desktop, RGB9e5 128 on WebGL.
+6. **`capture_manifest.txt`** (`:210`) records:
+   - the seed and the cells;
+   - the pane material and count (`Glass_Window x11`);
+   - the lens materials (**`Map / Level 0 lens, Troffer_Lens`**: Level 0 still has the map's own lens);
+   - the wallpaper print state (static paper);
+   - the ambient and fog constants;
+   - the Surface shader md5;
+   - the level profile.
 
-   | Cube | Cell | Why |
-   |---|---|---|
-   | `Refl_Level0` | (1, 4) | Level0/Standard, own lamp steady, 8 of 8 neighbours lit |
-   | `Refl_Office` | (−5, 21) | Office/Standard, steady, 8/8 lit |
-   | `Refl_Tall` | (14, −15) | Level0/Tall, steady, 4/7 lit |
-   | `Refl_DeadLamp` | (1, 6) | Level0/Standard, own lamp **dead** (mode 3), 8/8 neighbours lit |
+   `WarnIfStale()` (`:246`, menu *Check zone reflection cubes are current*, also run at the end of the glass setup)
+   warns when the ambient, fog, surface shader or profile differ.
 
-   Cells with anything within 0.45 m of the capture point are skipped.
-3. The lamps are lit as the game lights them with the player standing there. The tool calls the map's
-   own private `TickFixtures` (temperaments, the 16 m light radius, the nearest-9 m shadow set):
-   60–87 lamps on within 16 m, 7–11 of them shadowed.
-4. A 256 px HDR cube is baked at eye height (1.62 m) with a Custom `ReflectionProbe` that also renders
-   dynamic objects, through `Lightmapping.BakeReflectionProbe` (URP renders the faces; Unity writes the
-   EXR and convolves its mips). Settings: solid clear to the fog colour; reflections off inside the
-   capture (first bounce only); no post.
-5. Importer: Cube, Specular convolution, 9 mips, BC6H at 256 on desktop, **RGB9e5 at 128 on WebGL**
-   (§1 point 3; Unity 6.3 manual, *GPU texture formats reference*, lists RGB9e5 for desktop and mobile
-   browsers; BC6H falls back to RGBA Half on macOS browsers).
+**Recapture after:** the map's switch to `Glass_Window`; the Level 0 lens change to `Troffer_Lens` (F10, ×1.5 picked
+by the visual chat); any wallpaper print change; any `FrontRoomsLook` ambient change.
 
-Previews: the mirror spheres in [01](images/01_reflection_proof.jpg) (Level0: wallpaper and troffers;
-Office: grey carpet and windows; Tall: high lamps; DeadLamp: no lens overhead).
-
-**Caveat (wallpaper chat).** Each cube holds a frozen copy of the wallpaper print. The print will
-animate later, so reflection intensity on wall-facing glossy surfaces stays modest: ≤ 0.5 on the slider
-(0.214 linear) for everything, and 0.6 linear on window glass, where the print reflects at roughly 4 %
-(Fresnel) face-on.
-
-**Brittle point.** The capture tool reads `FrontRoomsMapWorld.built`, `BuiltChunk.fixtures` and
-`TickFixtures` by reflection. If the map chat renames them, the tool logs an error and captures
-nothing. The game is unaffected.
+**Caveat: frozen print (rewritten).** Each cube holds a frozen copy of the wallpaper print, and the print will animate
+later.
+- On window glass the frozen print shows at the pane's reflectance: about 8 % face-on, but **10–40 % at grazing
+  angles** (two-surface Fresnel: 0.109 at 50°, 0.157 at 60°, 0.385 at 75°). The earlier "≈ 4 % face-on" understated
+  it.
+- On walls and floors the world reflection is capped at 0.5 linear. At that level the cube is barely visible in
+  frames 01/34/35/37 (`20_verification.md` §5).
+- A live print in glass needs a live reflection source: the RT path (G14, Mac) or the planar (G15).
+- Everywhere else, either accept the frozen print or capture one cube per print state and crossfade them like the
+  zones (`FrontRoomsZoneReflection.Draw` already lerps two cubes).
 
 ### 6.2 Runtime (`FrontRoomsZoneReflection.cs`)
 
-- **How it reaches URP 17.** It sets `RenderSettings.defaultReflectionMode = Custom` and
-  `RenderSettings.customReflectionTexture = cube` (`customReflection` is deprecated in favour of
-  `customReflectionTexture` in this engine; found in `UnityEngine.CoreModule.dll` strings).
-  - With probe blending off (today, `FrontRooms_URP.asset:54`), Forward+ asks for per-object probe data
-    (`UniversalRenderPipeline.cs:2092-2098`), and renderers without a probe sample it as
-    `unity_SpecCube0` (`GlobalIllumination.hlsl:446`).
-  - With blending on (G7), URP binds it per camera as `_GlossyEnvironmentCubeMap` from
-    `ReflectionProbe.defaultTexture` (`UniversalRenderPipeline.cs:2201-2202`; used at
-    `GlobalIllumination.hlsl:409-415`).
-  - The test logs `ReflectionProbe.defaultTexture` switching to our texture at runtime.
-- **Blend mode (desktop).** One HDR cube render texture (RGB111110Float, 256 px, 9 mips, about 2.1 MB)
-  stays bound for the whole run. A zone change redraws it each frame as lerp(from, to) for every face
-  and mip, which is 54 tiny draws per frame and only while a fade runs. The mips are already convolved,
-  so lerping each mip is exact. Intensity lerps with it. A retarget in the middle of a fade first
-  freezes the current mix into a second render texture (allocated only then), so nothing pops.
-- **Dip mode (WebGL, or no HDR render texture).** Intensity fades to 0, the cube asset is swapped at the
-  midpoint, and intensity fades back. This touches only `RenderSettings`, so it does not depend on
-  render-to-cube support in the browser.
-- **API.** `SetZoneReflection(zone, blendSeconds = .5f)`:
-  - Calling it every frame with the same zone is a no-op (`FrontRoomsZoneReflection.cs:103`).
-  - The first call, any call outside Play mode, and `blendSeconds` 0 switch at once.
-  - `SetImmediate(zone)` always snaps (for captures and tests).
-  - Intensities: Level0 .5, Office .5, Tall .45, DeadLamp .5, clamped to `MaxIntensity` .5 (`:35-38`).
-  - `ApplyAmbient()` re-applies the zone, so the map can call the two in either order.
+- **How it reaches URP 17.** `RenderSettings.defaultReflectionMode = Custom` and `customReflectionTexture = cube`.
+  - With probe blending off (today), renderers without a probe sample it as `unity_SpecCube0`.
+  - With blending on (G7), URP binds it per camera as `_GlossyEnvironmentCubeMap`.
+- **Intensities are linear** fractions of the captured light:
+  - `ZoneLinear` {Level0 .5, Office .5, Tall .45, DeadLamp .5}, clamped to `MaxLinear` .5 (`:45-48`);
+  - the slider gets `LinearToGamma(linear)` (`:131`); fades lerp in linear;
+  - raise toward 1.0 linear once G7 box probes land, for the zones whose dead-lamp handling is right.
+- **`_FR_ZoneReflNominal`** (global): the steady linear intensity.
+  - Blend mode: the current value.
+  - Dip mode: the *from* value before the midpoint and the *to* value after (`:240, 252`).
+  - Reset to 0 on a scene load.
+  - The glass reflection floor divides by it (shader `:258-263`), so glass dips with the world instead of cancelling
+    the dip.
+  - With G7 probes, give every room probe `intensity = LinearToGamma(zone linear)`. Probe intensity is applied in
+    gamma (measured, §6.3), so the ratio stays valid.
+- **Blend mode (desktop).** One HDR cube render texture (RGB111110Float, 256 px, 9 mips, ~2.1 MB) stays bound. A zone
+  change redraws it each frame as lerp(from, to) for every face and mip (54 draws per frame, only while fading). A
+  retarget mid-fade freezes the current mix first, so nothing pops.
+- **Dip mode (WebGL, or no HDR render texture).** Intensity fades to 0, the cube is swapped at the midpoint, and
+  intensity fades back.
+- **Robustness (fix pass):**
+  - `ResetStatics` at `SubsystemRegistration` (`:90`): releases old RTs, `FlipY = !SystemInfo.graphicsUVStartsAtTop`.
+  - A Single scene load (R restart, `FrontRooms3DGame.cs:1567` in main) forgets the zone, so the run-start call snaps.
+  - `Application.quitting → Release` (fires when Play mode stops in the editor), so no HideAndDontSave RTs or driver
+    leak per Play session.
+  - A same-zone call re-applies if something rewrote `RenderSettings` (`:140-145`).
+  - The driver steps by `Time.captureDeltaTime` when a capture step is set, otherwise by unscaled time
+    (`FrontRoomsZoneReflectionDriver.cs:13`). So a fade finishes while paused (`timeScale` 0) and lasts its real
+    length in recordings.
+- **API.**
+  - `SetZoneReflection(zone, blendSeconds = .5f)`: the first call, any call outside Play mode, and `blendSeconds` 0
+    snap. A same-zone call is a no-op.
+  - `SetImmediate(zone)` always snaps.
+  - `ApplyAmbient()` re-applies the zone (`FrontRoomsLook.cs:60`), so the map can call the two in either order.
 
-### 6.3 Play-mode proof (`FrontRoomsGlassVerification.RunReflectionTestBatch`, Metal, M3 Max)
-
-Setup: an empty scene in Play mode, two metal spheres (mirror, and smoothness .6), no lights, black
-ambient, post off. Every pixel is the default reflection. Results from `logs/reflection_test.txt`
-(the last run, 23:59; identical to the two earlier runs); frames in
-[01](images/01_reflection_proof.jpg):
+### 6.3 Play-mode proof (`FrontRoomsGlassVerification.RunReflectionTestBatch`, Metal, M3 Max; `logs/reflection_test_fixpass.txt`, 12:09)
 
 | Check | Result |
 |---|---|
-| Before any call | mode Skybox, `defaultTexture` = Default-Skybox-Cubemap |
-| `SetZoneReflection(Level0)` (first call, snap) | mode Custom, `defaultTexture` = our render texture; image differs from the sky by 14.9/255 mean |
-| Same zone again | no fade started |
-| `SetZoneReflection(Office, .5)`: t = 0 | identical to Level0 (0.00/255) |
-| … t = 0.25 s | between the two (1.79/255 from A, 1.43/255 from B) |
-| … t = 0.67 s | fade finished; mirror mean (.212, .193, .147) vs Level0 (.223, .187, .093) |
-| Render-texture path vs the plain cube asset (same zone) | **0.04/255 mean, max 1/255** (orientation and HDR decode correct on Metal) |
-| Same, with the face rows flipped | 3.56/255, image upside down: rejected, `FlipY = false` |
-| Intensity 0.50 → 0.25 | sphere ratio 0.245 / 0.238; predicted `GammaToLinear` ratio 0.238. Decode x 0.214 → 0.051 |
-| `ApplyAmbient()` afterwards | identical (0.00/255): cube and intensity kept |
-| Dip mode, 0.25 s | near black (intensity 0.024), cube already swapped |
-| Dip mode, end | matches the render-texture path for DeadLamp (0.03/255) |
-| Retarget Office → Tall mid-fade | frame before = frame after the call (0.00/255); end = Tall snapped (0.00/255) |
+| Before any call | Skybox, `defaultTexture` = Default-Skybox-Cubemap |
+| First `SetZoneReflection(Level0)` | Custom, our render texture; 11.6 /255 from the sky |
+| Same zone again | no fade |
+| 0.5 s fade to Office | t = 0 identical to A (0.00 /255); t = 0.25 s between A and B; finished after 40 frames |
+| Render-texture path vs the plain cube asset | **0.06 /255, max 1** (orientation and HDR decode correct on Metal; FlipY true gives 5.67) |
+| Slider halved 0.735 → 0.368 | ratio 0.230 / 0.223 (predicted gamma 0.223) |
+| Linear intensities | Level0: slider 0.7354 = LinearToGamma(0.5), decode x 0.500, nominal 0.500; Tall: decode 0.450 |
+| `ApplyAmbient()` after | identical (0.00 /255) |
+| Dip mode | mid-dip mirror (0.031, 0.023, 0.008) vs end (0.226, 0.190, 0.092); dip end vs the RT path 0.04 /255 |
+| **Glass in the dip** (a `FrontRooms/Glass` sphere, `_ReflectionMin` 1) | dip / steady: world mirror 0.017, **glass 0.037**: glass now dips with the world. The old divisor would have scaled the glass by min/decode ≈ 0.6/0.002 = 300× at mid-dip, keeping the reflection while the cube swapped (computed from the old code, not re-measured) |
+| Retarget Office → Tall mid-fade | frame before = after (0.00); end = Tall snapped (0.00) |
+| Fade with `timeScale` 0 | finishes, both with the capture step (45 frames) and in wall time (0.70 s, no capture step) |
+| Same zone after `RenderSettings` was rewritten | back to Custom |
+| R restart (scene-load handler invoked) | `Active` false, nominal 0; the next call snaps |
+| `ReflectionProbe.intensity` 1 → 0.5 (Custom probe, Office cube) | ratio **0.216 / 0.214: gamma**, like the slider |
 
 ---
 
-## 7. WebGL notes, and the "full detail only where the player looks" question
+## 7. WebGL notes
 
-What this work costs, per the shader compile check (`logs/compile_check.txt`: GLES3x for
-`BuildTarget.WebGL`, 0 errors on every tested keyword set) and computed sizes:
-
-- **Per pane:** one transparent draw (SRP Batcher), no depth, shadow or motion pass. Fragment cost is
-  URP lighting + 3 grime samples + 1 normal + 1 extra cube sample (`_ReflectionMin`). The heaviest WebGL
-  variant uses 7 of 16 texture units. Cost scales with **pixels covered**, not with pane count: a pane
-  10 m away covers a few hundred pixels. So glass needs no LOD tier of its own until a browser profile
-  says otherwise (UNVERIFIED: nothing was measured in a browser).
-- **Overdraw:** one layer per pane (Cull Back on the closed box), two where windows line up.
-- **Crack/palm:** zero cost unless the property block sets them, and only on the held pane.
-- **Variants:** one new local keyword (`_FR_GLASS_GRIME`, `shader_feature_local_fragment`, so only used
-  combinations ship). The rest is URP's set, mirrored from `FrontRooms/Surface`. No new global keywords.
-- **Memory:**
+- **Per pane.** One transparent draw (SRP Batcher), no depth, shadow or motion pass. Fragment cost: URP lighting +
+  3 grime samples + 1 normal + 1 extra cube sample (the floor). The heaviest WebGL variant uses 7 of 16 texture
+  units. Cost scales with pixels covered.
+- **Variants.**
+  - One local keyword (`_FR_GLASS_GRIME`, `shader_feature_local_fragment`).
+  - The three probe keywords, as URP Lit. URP strips them per asset. Note that `FrontRooms_URP.asset:56` has the atlas
+    on, so `_REFLECTION_PROBE_ATLAS` variants may ship.
+  - `_FR_GLASS_RT`, stripped from WebGL builds by `FrontRoomsGlassRTStripper`.
+  - The removed SH pragma takes out up to 3× vertex variants on tiers whose URP asset picks vertex/mixed SH.
+  - **The real variant count in a WebGL build was not measured** (no WebGL build; the clone has one URP asset).
+    Run it once with URP's shader variant log on, before the WG budget is signed.
+- **Memory.**
   - WebGL: cubes 4 × 128 px RGB9e5 ≈ 4 × 0.52 MB; grime ≈ 0.44 MB.
-  - Desktop: cubes 4 × 0.52 MB BC6H, plus the 2.1 MB blend texture (and 2.1 MB more only after a
-    mid-fade retarget).
-  - The EXR sources are 1.1–1.3 MB each on disk. The built size per platform is UNVERIFIED (no build
-    was made).
-- **Reflections on the Web tier stay at step 0:** one global cube per zone type and no per-room probes
-  (G7 is desktop only, as the audit says). Never realtime probes or planar mirrors on WebGL.
-
-How this fits the WG3/WG4 rows (a detail manager that keeps full detail only where the player can see,
-without visible switches):
-
-- Zone reflections are already "one per visible zone": the map calls `SetZoneReflection` from the
-  player's cell and lamp state, and the 0.5 s fade hides the switch.
-- On WebGL the switch is a dip, not a crossfade. Keep `blendSeconds` ≥ 0.4 so the dip reads as a lamp
-  flicker rather than a pop. This is a design note, untested in a browser.
-- Per-room probes (G7) are where "only near rooms" matters. Enable them for the nearest 8–12 rooms
-  only, with the zone cube as the fallback. A probe that leaves the set then falls back to a cube that
-  is already shown.
-- Not verified here: the dip and blend paths in a real browser (the render-to-cube path is disabled on
-  WebGL on purpose); `FlipY` on GL-family targets (only relevant if someone enables the blend path on
-  WebGL); and frame time anywhere except this editor.
+  - Desktop: cubes 4 × 0.52 MB BC6H + the 2.1 MB blend texture.
+- **Web reflections:** one global cube per zone type, crossfaded by the dip. A Relay-only overlay (G16) is the one live
+  reflection the Web may get. It needs the stripper removed (`11_reflections_and_raytracing.md` §4.2).
+- **Not verified:** the dip and blend paths in a browser, RGB9e5 in Chrome/Safari, `FlipY` on D3D12/Vulkan (run
+  `RunReflectionTestBatch` there before the High tier ships on Windows), and frame time.
 
 ---
 
-## 8. Not done, and contracts for other chats
+## 8. Contracts for other chats
 
-**Map chat (G9; reads this, does not need this workflow):**
+### 8.1 G14 / planar track: the ONE reflection input
 
-- Load `Resources.Load<Material>("Surfaces/Glass_Window")` (`FrontRoomsGlassPane.Window`), and keep
-  `TransparentGlass` as the fallback.
-- Keep the pane a scaled unit cube with no rotation, or set `_PaneSize`.
-- Use a thickness of 6 mm and turn shadows off on the renderer.
-- The smear band assumes the floor is at world y = `_FloorY` (0). If the map root ever moves vertically,
-  set `_FloorY` on the material.
-- Call `FrontRoomsLook.ApplyAmbient()` and `SetZoneReflection(zone)` at run start, then on zone and
-  dead-lamp changes. Every frame is fine.
-- Drive the cracks with `FrontRoomsGlassPane.SetCrack` and `ImpactUV`.
+The shader side is done and proven (`20_verification.md` §8.2). The writer must follow this contract:
 
-**Not done:**
+1. **Texture `_FR_GlassRTReflection`** (global; RGBAHalf or RGBAFloat, screen-sized):
+   - **RGB** = the *unweighted* reflected radiance in linear HDR scene units, the same units as the camera colour
+     buffer before post. Apply **no Fresnel and no strength**: the shader applies `_PaneF0` + URP's Fresnel and fades
+     the input under smudges, dust, cracks and on the edge faces. With the thin-glass double image, RGB = the mean of
+     the front- and back-surface reflections.
+   - **A:**
+     - 0 = none;
+     - 0 < A ≤ 1 = coverage. This is the Relay-only overlay: the hook is then exactly lerp(cube, rt, A) inside the
+       Fresnel;
+     - A > 1 = 1 + the linear eye depth (m) of the glass surface the texel was traced for, coverage 1. A pane at
+       another depth (more than 0.02 m + 1 % of the depth away) keeps its own cube reflection. This stops the near
+       pane's reflection leaking onto a far pane, a vending front or a bottle seen through it.
+2. **`_FR_GlassRTWeight`** (global float): 0 does nothing. **And the global keyword `_FR_GLASS_RT`:**
+   - Enable it only while driving the glass. With it off, the output is bit-identical to the shader without the hook.
+     With it on and weight 0, only the last float bits differ (≤ 3.8e-6).
+   - Write the texture in a RenderGraph pass **at or before `RenderPassEvent.BeforeRenderingTransparents`**, inside
+     that camera's graph, with `SetGlobalTexture` / `SetGlobalFloat` and the keyword (for example
+     `GlobalKeyword.Create("_FR_GLASS_RT")` with the command buffer's `SetKeyword`).
+   - In `RenderPipelineManager.beginCameraRendering`, set weight 0 and the keyword off for every camera except the
+     ready main game camera, and also when the plugin is missing or not ready. This covers probe bakes, the
+     reflection capture tool (which already forces weight 0), planar cameras and scene views.
+   - Today's prototype must stop:
+     - baking `mix(0.15, 1, fresnel) * strength` into the colour (`FrontRoomsMetalGlassRT.mm:300` in main);
+     - writing alpha 1 (`:301`);
+     - compositing after post (`FrontRoomsMetalGlassRTRendererFeature.cs:17`).
+3. **Receivers only:** `_RTReceive` 1 on `Glass_Window`; 0 on `Prop_Glass`, `Prop_BottleBlue`, `Glass_ShardClear`
+   (`FrontRoomsGlassSetup.cs:104`, and `Reset` at `:171` sets 0).
+4. **Registration.** The shader samples at `GetNormalizedScreenSpaceUV(positionCS)`. The proof wrote a 2×2 texture with
+   only the top-left texel covered, and only the screen's top-left quadrant changed, at render scale 1 and 0.75.
+   **Acceptance test for the RT writer:** a screen-UV gradient written by the plugin must read back identically at the
+   four corners, at render scale 1 and 0.75. This checks G14's suspected vertical flip and its FOV-as-radians defect.
+5. **WebGL:** the stripper removes the keyword. When G16 (the Web overlay) lands, delete the stripper.
+
+### 8.2 Map chat (G9 / W1.4)
+
+- **Panes:**
+  - Load `Resources.Load<Material>("Surfaces/Glass_Window")` (`FrontRoomsGlassPane.Window`) for panes and
+    `Surfaces/Glass_Edge` for any separate edge or stop-side glass faces. Keep `TransparentGlass` only as a fallback.
+  - The pane is a scaled unit-cube mesh, **6 mm** thick (`GlassThickness` .03 → .006), **shadows off**, and Y rotation
+    only. A mesh modelled in metres sets `_PaneSize` on a material instance.
+  - W1.4's 1.391 × 1.642 slab as a child of the pane works if the slab itself is the scaled unit cube.
+  - Keep `FrontRoomsMetalGlassTarget` on whatever renderer is the visible glass.
+- **Glazing stop / frame** (audit §4.1): 18 × 12 mm stops on both faces and four sides. This is now the largest
+  missing cue (`20_verification.md` §9).
+- **The smear band** assumes the floor is at world y = `_FloorY` (0).
+- **Calls:**
+  - `FrontRoomsLook.ApplyAmbient()` (already in Awake in main; it changes nothing on screen since F5) and
+    `FrontRoomsLook.SetZoneReflection(zone)` at run start, then on zone and dead-lamp changes. Every frame is fine.
+  - Pick DeadLamp from the local light level, not from one cell's lamp (`20_verification.md` §6).
+- **Cracks:** `FrontRoomsGlassPane.SetCrack` / `ImpactUV` until GD3's meshes land.
+
+### 8.3 Not done
 
 | Item | Why / where |
 |---|---|
-| G5 `Kit_InteriorWindow` onto the glass shader | out of scope (queued after G1) |
-| G7 per-room probes | desktop tier; the shader already reads `_GlossyEnvironmentCubeMap_HDR`, which stays valid with blending on |
-| G8 fracture variants, G10 harness capture (seed 4242, frames 01/04/23/34/35 + dead lamp) | not run; the look-dev here is **not** the G10 sign-off |
-| Title-stream cubes (Lobby, Shift, Office, Run in red, Exit in cyan) | the fixed API has 4 zones; owner: RoomStream |
-| `FrontRoomsRenderSetup.RunBatch` end to end | not run (it rewrites ~86 materials and the URP asset in a clone shared with G11); the hook order was checked directly instead (§5) |
-| Promotion to `Frontrooms3D/` | not done by this workflow |
-
-**Risks:**
-
-- `_ReflectionMin` and `_Scatter` are art-directed numbers chosen from 5 look-dev frames. Red should
-  tune them in the G10 capture.
-- The prop materials now use a custom shader, so URP's material upgrader and inspector will not manage
-  them.
-- WebGL is UNVERIFIED in a browser (§7).
+| G5 `Kit_InteriorWindow` on the glass shader | queued |
+| G7 per-room probes | desktop tier. The shader is ready (probe keywords). Probes need `intensity = LinearToGamma(zone linear)`. Enable blending + box projection in the desktop URP asset |
+| G8 fracture variants, G12 staged fracture | in GD3 / superseded by GD3 |
+| Title-stream cubes (Lobby, Shift, Office, Run, Exit) | the RoomStream hook uses Level0 until they exist |
+| A WebGL build: variant count, RGB9e5 in Chrome/Safari | not run here |
+| `FlipY` on D3D12/Vulkan | not run (no Windows machine) |
+| Promotion to `Frontrooms3D/` | not done by this workflow (`30_final.md`) |
 
 ---
 
 ## 9. Sources and method
 
-- **Package source** (clone `Library/PackageCache`, URP `@37e0d4fc2503`, core `@04ab0eefa0c3`):
-  - `UniversalRenderPipeline.cs:2084-2098, 2189-2203`
-  - `ShaderLibrary/GlobalIllumination.hlsl:34-40, 286-455`
-  - `ShaderLibrary/BRDF.hlsl:65-72, 157`
-  - `ShaderLibrary/Input.hlsl:103-105`
-  - `ShaderLibrary/ShaderVariablesFunctions.hlsl:239-280, 452`
-  - `ShaderLibrary/Clustering.hlsl:9`
-  - `Shaders/Lit.shader` (ForwardLit pragmas)
-  - core `ShaderLibrary/Sampling/Sampling.hlsl:58-108` (cube face basis)
-  - core `ShaderLibrary/EntityLighting.hlsl:194`
+- **Package source** (clone `Library/PackageCache`, URP `@37e0d4fc2503`):
+  - `UniversalRenderPipeline.cs:2085-2098`
+  - `ShaderLibrary/GlobalIllumination.hlsl:34-40, 286-330, 420-455`
+  - `Shaders/Lit.shader:142-144`
+  - `Editor/ShaderScriptableStripper.cs:578-585`
+  - `Runtime/Data/UniversalRenderPipelineAsset.cs:1418-1425`
+  - `ShaderLibrary/BRDF.hlsl:65-72`
 - **Offline Unity 6000.3 docs** (`/Applications/Unity/Hub/Editor/6000.3.10f1/Documentation/en/`):
-  - `ScriptReference/RenderSettings-customReflection.html`
-  - `Lightmapping.BakeReflectionProbe.html`
-  - `ReflectionProbe-defaultTexture.html`
-  - `ReflectionProbe-defaultTextureHDRDecodeValues.html`
-  - `TextureImporter.GetAutomaticFormat.html`
-  - `ShaderData.Pass.CompileVariant.html`
-  - `Rendering.ShaderCompilerPlatform.html`
-  - `Manual/texture-formats-reference.html`
-  - `Manual/webgl-texture-compression.html`
-- **Web:** no web pages were read for this work.
-- **Runs** (logs in the scratchpad `glass_work/logs/`, results copied to `logs/` here):
-  - setup ×4, capture ×1, importers ×2;
-  - the play-mode proof ×3 (the first timed out after finishing all checks, because of a test-exit bug
-    that is now fixed);
-  - window look-dev ×4, prop look-dev ×1, compile check ×4.
-- **Full-resolution frames:** `<clone>/Verification/glass/*.png` (temporary).
+  - `ScriptReference/Rendering.RayTracingAccelerationStructure.html` (re-read 2026-10-03)
+  - `Manual/low-level-native-plugin-rendering-extensions.html` (read 2026-10-03)
+  - earlier: `RenderSettings-customReflection.html`, `Lightmapping.BakeReflectionProbe.html`,
+    `ReflectionProbe-defaultTexture*.html`, `TextureImporter.GetAutomaticFormat.html`,
+    `Manual/texture-formats-reference.html`, `Manual/webgl-texture-compression.html`
+- **Main, read-only** (12:0x):
+  - `Assets/Scripts/Rendering/FrontRoomsLook.cs` (md5 2e3ae3bb…, 10:23)
+  - `NativePlugin/FrontRoomsMetalGlassRT.mm:290-301`
+  - `Assets/Scripts/Rendering/FrontRoomsMetalGlassRTRendererFeature.cs:17`
+  - `FrontRooms3DGame.cs:280-296, 1567`
+  - `FrontRoomsMapWorld.cs` (diff against the clone)
+- **Web:** none this pass.
+- **Runs this pass** (clone; logs copied to `logs/`):
+  - hook proof ×3 (uniform branch, keyword vs today's shader, keyword vs the final shader);
+  - glass setup ×4;
+  - compile check;
+  - cube capture;
+  - G10 run 3 ×2 (the first had a contaminated BEFORE and was discarded);
+  - reflection play-mode test ×2 (the first exposed the unscaled-time driver racing the test's capture step; fixed).

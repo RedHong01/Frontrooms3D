@@ -1,0 +1,15 @@
+{
+  "columns": 4,
+  "rows": 2,
+  "slices": 8,
+  "sliceWidth": 2048,
+  "sliceHeight": 2048,
+  "tileMetres": [
+    0.75,
+    1.125
+  ],
+  "encoded": true,
+  "lut_sha1": "353e29eba14d68d93a86656c49df76754e79f93a",
+  "mips": "none (FrontRoomsPrintMips)",
+  "encoding": "R/G = print_encode(raw density, raw cream); B = 0 (phosphor reserved); A = 1; linear"
+}

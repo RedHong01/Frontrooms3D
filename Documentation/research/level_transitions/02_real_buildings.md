@@ -31,10 +31,10 @@ Where the rules apply in the current map (per 24 m chunk, mean over 1620 chunks,
 | Height step anywhere (any theme) | 10.7 | gypsum soffit/fascia face with corner bead; lay-in ceilings die into it on wall angle | §6, rb_21 C |
 | Theme border, solid wall | 2.3 | demising wall: two independent faces; fine as built, except at its two ends | §2, §4 |
 | Theme border, door | 1.4 | steel frame (2 in face) both sides; carpet change under the closed leaf; base stops at frame | §3, rb_20 A |
-| Theme border, open edge (no wall) | 0.9 | cased opening or portal: two pilasters + header + floor strip | §2, rb_20 B |
+| Theme border, open edge (no wall) | 0.9 | cased opening or portal: two pilasters + header + floor strip | §2, rb_20 C |
 | Theme border, arch | 0.4 | cased opening: jamb wrapped by ONE finish with corner beads, saddle in the throat | §3, rb_20 B |
 | Theme border, window | 0.3 | borrowed-light frame (steel), each face stops at the frame | §3 |
-| Flat seam (paper switches mid-plane) | 0.6 | never happens; real fix is a pilaster, a reveal, or moving the change to a frame | §4, rb_20 C |
+| Flat seam (paper switches mid-plane) | 0.6 | never happens; real fix is a pilaster, a reveal, or moving the change to a frame | §4, rb_20 D |
 | Seam hidden in an inside corner | 2.8 | normal and correct in real buildings (two rooms meet) | §4 |
 | Floor cut length | 4.6 m | carpet seam under door, reducer or saddle; never mid-room without a border | §5, rb_21 A |
 | Ceiling cut length | 2.7 m | header, gypsum band, or soffit; never two grids tee to tee | §6, rb_21 B |
@@ -78,10 +78,10 @@ What a real builder would never leave:
 - **Hollow metal frame.** Standard US steel frame profile: 2 in (51 mm) face, 5/8 in (16 mm) stop [S11]. "Slip-on drywall" knock-down frames go into finished drywall openings and wrap both faces; their throat is 1/8 in (3 mm) wider than the wall [S11]. Joints and screws stay visible on KD frames [S11]. USG's 1980 handbook lists steel frames "designed for installation after the walls are in place" [S4, p.37]. MasterFormat (pre-2004 numbers): 08110 Steel Doors and Frames.
 - **The frame is the stop for both faces.** Paper is trimmed tight to the frame face; paint is cut in to it; the base stops against it. One frame, painted one colour on both sides, ends two different finishes at once. This is the single most common transition in a 1990 office.
 - **Wood casing** (finish carpentry, 06200): 2-1/4 in (57 mm) wide, about 11/16 in (17 mm) thick, mitred at the head. Used on wood frames, in older or lower-cost interiors and in homes.
-- **Rated doors** carry a label on the hinge jamb and a closer; corridor doors were self-closing [S18].
+- **Rated doors** carry a label on the hinge jamb and a closer (practice); corridor openings were protected [S18].
 - **Cased opening without a door.** The drywall returns into the opening with metal corner bead on both arrises [S4, p.22: "protecting external corners"]. The jamb and head soffit get ONE finish, usually the paint of the more public side or a neutral paint; wallcovering stops at the corner bead. Metal trims are made for use "at window and door jambs, at internal angles and at intersections where panels abut other materials" [S5, p.23].
 - **Control joints** run "from door header to ceiling" in long partitions [S5, p.26]. A full-height frame counts as a control joint [S6]. Where they are missing, the classic crack runs diagonally from the frame head corner: a free, era-correct renovation mark.
-- **Floor at the door.** Carpet seams at doorways are centred under the door when it is closed, and seams never run perpendicular to a doorway [S2 §5.2; guide specs]. So the floor change line is the leaf line, not the wall centre and not a random line.
+- **Floor at the door.** "At doorways, center seams under the door in closed position" [S27, a state guide spec under section 09680 that cites CRI 104], and seams are "not perpendicular to doorway openings" [S2 §5.2]. So the floor change line is the leaf line, not the wall centre and not a random line.
 
 ### At FrontRooms scale (see `rb_20` A and B)
 | Element | Real | FrontRooms | Today in code |
@@ -111,7 +111,7 @@ Rule for arches (cased openings): jamb and head soffit painted, one colour, corn
 - **Wallcovering stock.** Commercial vinyl wallcovering came 52–54 in wide (1.32–1.37 m) in three duty types; Type II (medium, about 13 oz/yd²) for corridors (Federal spec CCC-W-408; revision D dated 1994) [S8, S9]. Joints are vertical only and double-cut [S10]. Residential rolls were narrower (about 0.53 or 0.69 m).
 - **Spec section numbers** of the period: 09250 Gypsum Board (beads, reveals, control joints), 09950 Wall Coverings [S10], 09900 Painting, 10260 Wall and Corner Guards.
 
-### At FrontRooms scale (see `rb_20` C and D)
+### At FrontRooms scale (see `rb_20` D)
 - **Flat seam fix, three options, best first:**
   1. Move the change to the nearest frame, corner or column (finish follows the room, Rule 2). Zero new geometry.
   2. A pilaster at the seam: 0.16 m wide, 0.05 m proud, full height, painted, on a 0.10 m base. Reads as a column wrap or the end of a demising wall.
@@ -127,7 +127,7 @@ Rule for arches (cased openings): jamb and head soffit painted, one colour, corn
 **Primary images:** `rb_02_interiors9006_p079_carpet_bands.jpg` (1990 fibre ad: an open office where a blue-grey field, a dark blue border band, a light pinstripe and a terracotta circulation band meet in straight seams; no strips, the change is drawn by bands). `rb_05_interiors9010_p049_carpet_three_formats.jpg` (1990: one loop carpet "in broadloom, 6-foot rolls … or … modular", sold because "it disguises the seams when installed"). `rb_04_interiors9006_p002_sheet_vinyl_inlay.jpg` (1990 sheet vinyl: colour changes by inlaid bands and a wood-look border). `rb_11` and `rb_12` (1990 vinyl tile and 1/8 in rubber floor, "asbestos-free").
 
 ### What the period did
-- **Carpet to carpet.** A seam, not a strip. CRI's installation standard (first issued 1982; revised 1984, 1986, 1988, 1991…) says: run seams the length of the area, along traffic, not across light, and "not perpendicular to doorway openings" [S2 §5.2]. At doorways the seam is centred under the closed door (guide specs citing CRI) [S2]. A colour change inside one room is made with an inlaid band or border (`rb_02`, `rb_01` stone border).
+- **Carpet to carpet.** A seam, not a strip. CRI's installation standard (first issued 1982; revised 1984, 1986, 1988, 1991…) says: run seams the length of the area, along traffic, not across light, and "not perpendicular to doorway openings" [S2 §5.2]. At doorways the seam is centred under the closed door [S27]. A colour change inside one room is made with an inlaid band or border (`rb_02`, `rb_01` stone border).
 - **Formats and module.** Broadloom mostly 12 ft wide (3.66 m), so seams fall every 3.66 m [S22]. 6 ft (1.83 m) rolls with attached cushion. Carpet tiles: 18 × 18 in (0.457 m) free-lay tiles from 1973, popular in 1980s open offices for access to wiring [S12]; 24 in and 50 cm tiles also existed.
 - **Carpet to hard floor.** "Where carpet transitions to other floor coverings, the carpet edges are required to be protected or covered with appropriate transition moldings" [S2 §5.3]. From 1991 the ADA standard required exposed carpet edges to be fastened and trimmed along their full length [S3, 4.5.3]. Level changes: up to 1/4 in (6 mm) vertical; 1/4–1/2 in (6–13 mm) bevelled no steeper than 1:2; more needs a ramp [S3, 4.5.2]. A vinyl or rubber reducer is about 1-5/8 to 2-3/8 in wide (41–60 mm), 1/8–1/4 in high (3–6 mm) [S23]. Metal carpet bars (aluminium or brass) were the other option.
 - **Thresholds and saddles.** CRI defines the threshold as "the raised material beneath a door", also called door sill or saddle [S2, definitions]. ADA limit: 1/2 in (13 mm) high, bevelled [S3]. Marble or aluminium saddles were usually cut to the jamb depth (practice).
@@ -254,6 +254,7 @@ Accessed 2026-10-03. Text sources were read, not downloaded as media. Licences: 
 | S24 | *Interiors* (Billboard Publications), June 1990 and October 1990, via USModernist Library | https://www.usmodernist.org/index-int.htm | rb_01–rb_12 | © publisher; on disk since 2026-10-02 (Red-approved download), research use only |
 | S25 | Building Technology Heritage Library (archive.org) | https://archive.org/details/buildingtechnologyheritagelibrary | catalogue candidates | per item |
 | S26 | Stainless corner shield 2 × 48 in (retail listing) | https://www.lowes.com/pd/Prime-Line-Stainless-Steel-Corner-Shield-with-Fasteners-2-x-48-in-6-Pack/5015069221 | corner guard size | © retailer |
+| S27 | Hawaii DAGS Technical Guide TG 09680 Carpet (v08.02) | https://publicworks.hawaii.gov/wp-content/uploads/2014/12/TG09680v0802summary.pdf | "At doorways, center seams under the door in closed position"; cites CRI 104-96 | public agency document |
 
 ### Image ledger (this folder)
 
@@ -273,3 +274,5 @@ Accessed 2026-10-03. Text sources were read, not downloaded as media. Licences: 
 | `rb_12_interiors9010_p020_rubber_flooring.jpg` | Interiors Oct 1990 p.20 | 1990 rubber floor, ".125 in", "asbestos-free" |
 | `rb_20_fr_scale_plan_details.jpg` | drawn for this file | K1–K3, K7–K10 in plan at FrontRooms scale |
 | `rb_21_fr_scale_section_details.jpg` | drawn for this file | K4–K6, K11–K15 in section/elevation |
+
+`rb_20` and `rb_21` are drawn by `harness/rb_details_sheet.swift.txt` (CoreGraphics; `swiftc -O` it, then run `./details <rb_20.jpg> <rb_21.jpg>`). Edit the numbers there if the kit changes.

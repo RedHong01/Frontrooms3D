@@ -76,14 +76,14 @@ def shell_profile():
     face band B -> face B wall (CCW)."""
     return wc.fillet([
         (wc.D_FACE, wc.SHELL_Z0),
-        (wc.D_FACE, wc.FACE_Z, R_OUT, 3),
-        (wc.D_LINING, wc.FACE_Z, R_OUT, 3),
+        (wc.D_FACE, wc.FACE_Z, R_OUT, 4),
+        (wc.D_LINING, wc.FACE_Z, R_OUT, 4),
         (wc.D_LINING, -wc.STOP_Z0, R_IN, 2),
-        (0.0, -wc.STOP_Z0, R_OUT, 3),
-        (0.0, -wc.STOP_Z1, R_OUT, 3),
+        (0.0, -wc.STOP_Z0, R_OUT, 4),
+        (0.0, -wc.STOP_Z1, R_OUT, 4),
         (wc.D_LINING, -wc.STOP_Z1, R_IN, 2),
-        (wc.D_LINING, -wc.FACE_Z, R_OUT, 3),
-        (wc.D_FACE, -wc.FACE_Z, R_OUT, 3),
+        (wc.D_LINING, -wc.FACE_Z, R_OUT, 4),
+        (wc.D_FACE, -wc.FACE_Z, R_OUT, 4),
         (wc.D_FACE, -wc.SHELL_Z0),
     ])
 
@@ -152,7 +152,7 @@ def build(kit):
         ang = rnd.uniform(0.0, 3.14159)
         sd = Matrix.Rotation(ang, 3, Vector(axis)) @ Vector(base)   # random slot angle, as fitted
         floor = 0.0009 if i in (5, 17, 26) else -0.0001       # three paint-filled slots
-        s = wc.slotted_oval_head(kit, c, axis, sd, STEEL, floor=floor, rows=3, cols=4, name="screw")
+        s = wc.slotted_oval_head(kit, c, axis, sd, STEEL, floor=floor, rows=3, cols=5, name="screw")
         wc.paint_wear(s, lambda X, Y, Z: (1.0, 0.7, 0.8))
         kit.lod1_drop(s)
         wc.lod2_drop(s)
