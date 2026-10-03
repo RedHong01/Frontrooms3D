@@ -1,0 +1,1034 @@
+// ROOM VISUALS CAPTURE (private clone only — never copied into the real project).
+// Documents every room type as it renders today, through the game's own
+// first-person camera (its URP data: post, grade, grain), 1920x1080, 4x MSAA.
+//   1. The live title stream (Lobby replicas) before Space.
+//   2. The start room after Space (the handoff) and its door into the map.
+//   3. Map rooms of seed-fixed run (Random.InitState(4242) before Space):
+//      Level 0 Low / Standard / Tall, Office, columns, zone borders, dead and
+//      failing lamps, a strip of the five lamp temperaments, a furniture pile.
+//   4. The five title-stream profiles (Lobby, Shift, Office, Run, Exit), built
+//      in Play Mode by FrontRoomsRoomStream.BuildEditorPreview (the same code
+//      the edit-mode preview uses) at world (4992, 0, 4992), far from the map.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsRoomVisualsCapture.RunBatch -logFile <f>
+// Output: <clone>/Verification/room_visuals/*.png, frames.txt, recipes.tsv, log.txt
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+[InitializeOnLoad]
+public static class FrontRoomsRoomVisualsCapture
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.RoomVis.Active";
+    const string DeadlineKey = "FrontRooms.RoomVis.Deadline";
+    const string DoneKey = "FrontRooms.RoomVis.Done";
+    const int W = 1920, H = 1080;
+    const float WideFov = 72f, DetailFov = 50f;
+    const int InitSeed = 4242;
+    static readonly Vector3 PreviewRoot = new Vector3(4992f, 0f, 4992f);
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly string[] ModeNames = { "steady", "stutter", "failing", "dead", "dim" };
+
+    static int waitUntilFrame = -1;
+    static bool finished;
+    static string outDir;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder frames = new StringBuilder();
+    static readonly StringBuilder recipes = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+    static RenderTexture rt;
+    static GridCoord origin;
+    static int runSeed;
+
+    static FrontRoomsRoomVisualsCapture()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    public static void RunBatch()
+    {
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1500f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "room_visuals");
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + " t=" + Time.time.ToString("0.000", CultureInfo.InvariantCulture) + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[RoomVis] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Flush()
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "frames.txt"), frames.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "recipes.tsv"), "file\tname\tspace\teye\tlook\tfov\tseed\tdetail\n" + recipes);
+        }
+        catch (Exception e) { Debug.LogError(e); }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        SessionState.SetBool(DoneKey, true);
+        Flush();
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) { stack.Push(Main()); Log("routine created"); }
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    // ---------------- reflection ----------------
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string V(Vector3 v) => "(" + v.x.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.y.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.z.ToString("0.00", CultureInfo.InvariantCulture) + ")";
+    static string F(float f) => f.ToString("0.###", CultureInfo.InvariantCulture);
+    static GridCoord Mul(GridCoord s, int k) => new GridCoord(s.x * k, s.y * k);
+
+    // ---------------- capture ----------------
+    static int shotIndex;
+    static string currentSpace = "world";
+    static Transform currentSpaceRoot;
+    static string currentDetail = "";
+
+    static void Capture(string name, string note, float fov)
+    {
+        if (rt == null)
+        {
+            rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "Room visuals capture" };
+            rt.Create();
+        }
+        var prevFov = cam.fieldOfView;
+        cam.fieldOfView = fov;
+        var prev = cam.targetTexture;
+        cam.targetTexture = rt;
+        cam.Render();
+        cam.Render();
+        cam.targetTexture = prev;
+        cam.fieldOfView = prevFov;
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        tex.Apply();
+        RenderTexture.active = active;
+        var file = (shotIndex < 10 ? "0" : "") + shotIndex + "_" + name + ".png";
+        shotIndex++;
+        File.WriteAllBytes(Path.Combine(OutDir, file), tex.EncodeToPNG());
+        UnityEngine.Object.Destroy(tex);
+        var p = cam.transform.position;
+        var fwd = cam.transform.forward;
+        var e = cam.transform.eulerAngles;
+        var pitch = e.x > 180f ? e.x - 360f : e.x;
+        var space = currentSpace;
+        Vector3 lp = p, lf = fwd;
+        if (currentSpaceRoot != null) { lp = currentSpaceRoot.InverseTransformPoint(p); lf = currentSpaceRoot.InverseTransformDirection(fwd); }
+        frames.AppendLine(file + " | cam world " + V(p) + " fwd " + V(fwd) + " yaw " + F(e.y) + " pitch " + F(-pitch) + " | " + space + " " + V(lp) + " fwd " + V(lf)
+            + " | vfov " + F(fov) + " far " + F(cam.farClipPlane) + " | " + note);
+        recipes.Append(file + "\t" + name + "\t" + space + "\t" + V(lp) + "\t" + V(lp + lf * 5f) + "\t" + F(fov) + "\t" + (runSeed != 0 ? runSeed.ToString() : "-") + "\t" + currentDetail + "\n");
+        Flush();
+        Log("captured " + file + " — " + note);
+    }
+
+    static void Place(Vector3 feet, Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false;
+        root.position = feet;
+        body.enabled = true;
+        Physics.SyncTransforms();
+        Look(lookAt);
+    }
+
+    static void Look(Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var eye = root.position + Vector3.up * ModuleUnits.PlayerEye;
+        var d = lookAt - eye;
+        var yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        var pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        Set(game, "yaw", yaw);
+        Set(game, "pitch", pitch);
+        root.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    static IEnumerator Settle(int extra = 20)
+    {
+        yield return 3;
+        var start = Time.frameCount;
+        while (!map.Settled && Time.frameCount - start < 1500) { Resume(); yield return 1; }
+        yield return extra;
+        Resume();
+    }
+
+    static void Resume()
+    {
+        if (game == null || Phase != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+    }
+
+    // ---------------- map queries ----------------
+    static readonly GridCoord[] Steps = { new GridCoord(0, 1), new GridCoord(1, 0), new GridCoord(0, -1), new GridCoord(-1, 0) };
+
+    static IEnumerable<GridCoord> CellsAround(GridCoord center, int radiusCells)
+    {
+        for (var r = 0; r <= radiusCells; r++)
+        for (var dy = -r; dy <= r; dy++)
+        for (var dx = -r; dx <= r; dx++)
+        {
+            if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
+            yield return new GridCoord(center.x + dx, center.y + dy);
+        }
+    }
+
+    static Vector3 Dir(GridCoord step) => (map.transform.TransformDirection(new Vector3(step.x, 0f, step.y))).normalized;
+
+    static bool FreeStanding(Vector3 feet)
+    {
+        var r = ModuleUnits.PlayerRadius;
+        var root = PlayerRoot;
+        foreach (var c in Physics.OverlapCapsule(feet + Vector3.up * (r + .15f), feet + Vector3.up * (ModuleUnits.PlayerHeight - r), r, ~0, QueryTriggerInteraction.Ignore))
+            if (root == null || !c.transform.IsChildOf(root)) return false;
+        return true;
+    }
+
+    static int StraightRun(GridCoord c, GridCoord step, int max = 12)
+    {
+        var n = 0;
+        var cur = c;
+        while (n < max)
+        {
+            var next = cur + step;
+            if (!map.IsBuilt(next) || map.PassageBetween(cur, next) != FrontRoomsMapWorld.Passage.Open) break;
+            cur = next;
+            n++;
+        }
+        return n;
+    }
+
+    static int OpenCount(GridCoord c)
+    {
+        var n = 0;
+        foreach (var s in Steps)
+            if (map.IsBuilt(c + s) && map.PassageBetween(c, c + s) == FrontRoomsMapWorld.Passage.Open) n++;
+        return n;
+    }
+
+    static string ZoneText(GridCoord c)
+    {
+        var z = map.ZoneOf(c);
+        return z.theme + "/" + z.height;
+    }
+
+    // Every fixture of every built chunk, with its cell.
+    static List<(object f, GridCoord cell, int mode)> Fixtures()
+    {
+        var list = new List<(object, GridCoord, int)>();
+        var built = Get(map, "built") as IDictionary;
+        foreach (DictionaryEntry e in built)
+            foreach (var f in (IEnumerable)Get(e.Value, "fixtures"))
+            {
+                var light = Get<Light>(f, "light");
+                if (light == null) continue;
+                list.Add((f, map.CellOf(light.transform.position), (int)Get(f, "mode")));
+            }
+        return list;
+    }
+
+    static Dictionary<GridCoord, (object f, int mode)> FixtureByCell()
+    {
+        var d = new Dictionary<GridCoord, (object, int)>();
+        foreach (var (f, cell, mode) in Fixtures()) d[cell] = (f, mode);
+        return d;
+    }
+
+    static float LampScore(Dictionary<GridCoord, (object f, int mode)> fx, GridCoord c)
+    {
+        if (!fx.TryGetValue(c, out var v)) return 0f;
+        switch (v.mode) { case 0: return 1f; case 1: return .9f; case 2: return .2f; case 3: return -1.5f; default: return .3f; }
+    }
+
+    static string LampsAround(Dictionary<GridCoord, (object f, int mode)> fx, GridCoord c, int radius)
+    {
+        var counts = new int[5];
+        foreach (var n in CellsAround(c, radius))
+            if (fx.TryGetValue(n, out var v) && v.mode >= 0 && v.mode < 5) counts[v.mode]++;
+        var own = fx.TryGetValue(c, out var o) ? ModeNames[Mathf.Clamp(o.mode, 0, 4)] : "none";
+        return "own lamp " + own + " · lamps within " + radius + " cells: steady " + counts[0] + ", stutter " + counts[1] + ", failing " + counts[2] + ", dead " + counts[3] + ", dim " + counts[4];
+    }
+
+    static bool DressingNear(Vector3 point, float radius)
+    {
+        foreach (Transform chunk in map.transform)
+        foreach (Transform t in chunk)
+            if (t.name == "office dressing")
+                foreach (var r in t.GetComponentsInChildren<Renderer>())
+                    if (Vector3.Distance(r.bounds.center, point) < radius) return true;
+        return false;
+    }
+
+    static void MapSpace(string detail)
+    {
+        currentSpace = "map-local";
+        currentSpaceRoot = map != null ? map.transform : null;
+        currentDetail = detail;
+    }
+
+    static string MapLocal(Vector3 world) => V(map.transform.InverseTransformPoint(world));
+
+    // ---------------- main ----------------
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
+        while ((game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        Time.captureDeltaTime = 1f / 60f;
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        Log("game found · phase " + Phase + " · quality " + QualitySettings.names[QualitySettings.GetQualityLevel()] + " · gfx " + SystemInfo.graphicsDeviceType + " " + SystemInfo.graphicsDeviceName
+            + " · URP asset " + (urp != null ? urp.name + " MSAA " + urp.msaaSampleCount + " HDR " + urp.supportsHDR + " scale " + urp.renderScale : "none")
+            + " · camera game vFOV " + F(cam.fieldOfView) + " allowHDR " + cam.allowHDR + " post " + cam.GetUniversalAdditionalCameraData().renderPostProcessing
+            + " · fog " + RenderSettings.fog + " " + RenderSettings.fogMode + " " + F(RenderSettings.fogDensity));
+
+        // ===== 1. The live title stream (Lobby replicas) =====
+        currentSpace = "world (title stream, centreline x 256.5)";
+        currentSpaceRoot = null;
+        currentDetail = "live title, no input";
+        var stream = Get<FrontRoomsRoomStream>(game, "roomStream");
+        while (Time.time < 1.0f) yield return 1;
+        Capture("title-lobby_title", "live title at t 1.0 s: stream room 0, its far door shut 4.8 m ahead (camera crawls at 1.15 m/s)", WideFov);
+        while (stream.FirstDoorProgress < .5f && Time.time < 8f) yield return 1;
+        Capture("title-lobby_doorway-opening", "live title: the first door half open (progress " + F(stream.FirstDoorProgress) + "), room 1 still dark", WideFov);
+        while (stream.FirstDoorProgress < 1f && Time.time < 10f) yield return 1;
+        var tOpen = Time.time;
+        while (Time.time - tOpen < 1.3f) yield return 1;
+        Capture("title-lobby_doorway", "live title: first door fully open 1.3 s ago, room 1's ballasts striking one by one", WideFov);
+
+        // ===== 2. Space: the handoff and the start room =====
+        UnityEngine.Random.InitState(InitSeed);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (!Get<bool>(game, "mapPlay")) { Log("FAILED: could not start a run"); yield break; }
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        runSeed = Get<int>(game, "runSeed");
+        var startDoorCell = (GridCoord)Get(game, "startDoorCell");
+        var startDoorPoint = Get<Vector3>(game, "startDoorPoint");
+        Log("run started · Random.InitState(" + InitSeed + ") → run seed " + runSeed + " · map root " + V(map.transform.position) + " · stream terminal room " + stream.TerminalSequence
+            + " · start door cell " + startDoorCell + " · start door point " + V(startDoorPoint) + " · tier " + map.GenerationTier);
+        var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+        Log("relay release delay " + tuning.releaseDelaySeconds + " s → held dormant (1e6) by the harness");
+        tuning.releaseDelaySeconds = 1e6f;
+        yield return 2;
+        MapSpace("start room right after Space; door held while the map builds");
+        Capture("start_wide", "handoff: the player stands where the title camera was, start door (terminal stream door) " + F(startDoorPoint.z - PlayerRoot.position.z) + " m ahead, held shut while the map builds behind it", WideFov);
+        // The stream door opens when the player is within 4 m of it (and the map behind it is built, or 3 s have passed): step up to it.
+        yield return 120;
+        Place(startDoorPoint - Vector3.forward * 3.4f, startDoorPoint + Vector3.forward * 4f + Vector3.up * 1.3f);
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 10f) { Resume(); yield return 1; }
+        Log("start door opened=" + Get<bool>(game, "startDoorOpened") + " " + F(Time.time - t0) + " s after the player stepped within 3.4 m");
+        yield return 90;
+        Resume();
+        MapSpace("start room, 3.4 m before the start door on the centreline");
+        Capture("start_doorway", "start door open (1.5 s after it began to swing): from the start room (Lobby replica) through the double door into the map's first cell " + startDoorCell + " (" + ZoneText(startDoorCell) + ")", WideFov);
+        Look(startDoorPoint + Vector3.up * 1.1f - Vector3.forward * 30f);
+        yield return 3;
+        Capture("start_back", "start room looking back down the stream rooms (the start area)", WideFov);
+
+        origin = startDoorCell + new GridCoord(0, 3);
+
+        // ===== 3. Map rooms =====
+        yield return MapRoom("map-l0-standard", z => z.theme == ZoneTheme.Level0 && z.height == ZoneHeight.Standard, false, false);
+        yield return MapRoom("map-l0-low", z => z.theme == ZoneTheme.Level0 && z.height == ZoneHeight.Low, false, false);
+        yield return MapRoom("map-l0-tall", z => z.theme == ZoneTheme.Level0 && z.height == ZoneHeight.Tall, true, false);
+        yield return Pile();
+        yield return MapRoom("map-office", z => z.theme == ZoneTheme.Office && z.height == ZoneHeight.Standard, false, true);
+        yield return Columns();
+        yield return Borders();
+        yield return DeadLamp();
+        yield return FailingLamp();
+        yield return LampStrip();
+
+        // ===== 4. The title stream's five profiles =====
+        yield return TitleProfiles();
+        Log("DONE · " + shotIndex + " frames");
+    }
+
+    // ---------------- map rooms ----------------
+    static IEnumerator MapRoom(string name, Func<ZoneInfo, bool> want, bool tall, bool office)
+    {
+        GridCoord? coarse = null;
+        foreach (var c in CellsAround(origin, 70))
+        {
+            if (map.InStartArea(c)) continue;
+            if (want(map.Cache.ZoneOf(c))) { coarse = c; break; }
+        }
+        if (!coarse.HasValue) { Log(name + ": no cell of that zone within 70 cells"); yield break; }
+        Place(map.CellCenter(coarse.Value), map.CellCenter(coarse.Value) + Vector3.forward * 5f + Vector3.up * 1.5f);
+        yield return Settle(30);
+        var here = map.CellOf(PlayerRoot.position);
+        var fx = FixtureByCell();
+        GridCoord best = here, bestStep = Steps[0];
+        var bestScore = float.MinValue;
+        foreach (var c in CellsAround(here, 12))
+        {
+            if (!map.IsBuilt(c) || map.InStartArea(c)) continue;
+            if (!want(map.ZoneOf(c))) continue;
+            if (!FreeStanding(map.CellCenter(c))) continue;
+            foreach (var s in Steps)
+            {
+                var run = StraightRun(c, s);
+                if (run < 2) continue;
+                if (!want(map.ZoneOf(c + s)) || !want(map.ZoneOf(c + s + s))) continue;
+                var score = Mathf.Min(run, 6) + .4f * OpenCount(c + s) + .4f * OpenCount(c + s + s)
+                    + LampScore(fx, c) + LampScore(fx, c + s) + LampScore(fx, c + s + s);
+                if (office && DressingNear(map.CellCenter(c + s + s), 5f)) score += 6f;
+                if (score > bestScore) { bestScore = score; best = c; bestStep = s; }
+            }
+        }
+        if (bestScore == float.MinValue) { Log(name + ": no free cell with a 2-cell view near " + here); yield break; }
+        var dir = Dir(bestStep);
+        var feet = map.CellCenter(best);
+        var back = feet - dir * 1.1f;
+        if (FreeStanding(back)) feet = back;
+        var look = map.CellCenter(best + Mul(bestStep, 3)) + Vector3.up * (tall ? 3.0f : 1.45f);
+        Place(feet, look);
+        yield return Settle(10);
+        yield return 3;
+        var detail = "seed " + runSeed + " · cell " + best + " (" + ZoneText(best) + ") · step " + bestStep + " · run " + StraightRun(best, bestStep) + " cells · " + LampsAround(fx, best, 3);
+        MapSpace(detail);
+        Capture(name + "_wide", name + " · " + detail + " · feet map-local " + MapLocal(feet) + " · score " + F(bestScore), WideFov);
+        yield return WallDetail(name + "_detail", feet, dir, detail);
+        if (tall)
+        {
+            var c0 = map.CellCenter(best + bestStep);
+            Place(map.CellCenter(best), c0 + Vector3.up * 5.2f + dir * 2.5f);
+            yield return 4;
+            Capture(name + "_ceiling", name + " · looking up at the 5.4 m ceiling and its troffers (tall lamps x1.6 intensity, range 12 m) · " + detail, DetailFov);
+        }
+    }
+
+    // An oblique view along the nearest plain wall (the shell's mesh collider: no door leaf, no pane): paper, the wall/floor junction, floor.
+    static IEnumerator WallDetail(string name, Vector3 fromFeet, Vector3 forward, string detail)
+    {
+        var eye = fromFeet + Vector3.up * 1.0f;
+        var hits = new List<RaycastHit>();
+        for (var k = 0; k < 16; k++)
+        {
+            var d = Quaternion.Euler(0f, k * 22.5f, 0f) * forward;
+            if (!Physics.Raycast(eye, d, out var hit, 6f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (!(hit.collider is MeshCollider) || !map.IsArchitecture(hit.collider) || Mathf.Abs(hit.normal.y) > .1f) continue;
+            hits.Add(hit);
+        }
+        hits.Sort((a, b) => a.distance.CompareTo(b.distance));
+        foreach (var best in hits)
+        {
+            var n = best.normal; n.y = 0f; n.Normalize();
+            var along = new Vector3(n.z, 0f, -n.x);
+            var p = best.point; p.y = 0f;
+            foreach (var sgn in new[] { 1f, -1f })
+            {
+                var a = along * sgn;
+                var feet = p + n * 1.25f - a * 1.0f;
+                if (!FreeStanding(feet)) continue;
+                // The stretch of wall in frame must be plain wall too (no door, window or opening in the first 2 m).
+                var plain = true;
+                foreach (var t in new[] { .2f, .9f, 1.6f })
+                {
+                    var probe = p + a * t + n * .5f + Vector3.up * 1.0f;
+                    if (!Physics.Raycast(probe, -n, out var h2, .8f, ~0, QueryTriggerInteraction.Ignore) || !(h2.collider is MeshCollider)) { plain = false; break; }
+                }
+                if (!plain) continue;
+                Place(feet, p + a * .9f + Vector3.up * .45f);
+                yield return 4;
+                Capture(name, name + " · oblique wall/floor finish, 1.25 m off the wall · " + detail, DetailFov);
+                yield break;
+            }
+        }
+        Log(name + ": no plain wall within 6 m of " + V(fromFeet) + " (" + hits.Count + " shell hits)");
+    }
+
+    // ---------------- furniture pile ----------------
+    static Transform NearestPile()
+    {
+        Transform pile = null;
+        var p = PlayerRoot.position;
+        foreach (Transform chunk in map.transform)
+        foreach (Transform t in chunk)
+            if (t.name.StartsWith("furniture pile", StringComparison.Ordinal) && (pile == null || Vector3.Distance(t.position, p) < Vector3.Distance(pile.position, p))) pile = t;
+        return pile;
+    }
+
+    static IEnumerator Pile()
+    {
+        var pile = NearestPile();
+        if (pile == null)
+        {
+            // Walk to Level 0 zones (tall first: piles are likelier there) until one has been built.
+            var tried = new HashSet<GridCoord>();
+            foreach (var wantTall in new[] { true, false })
+                foreach (var c in CellsAround(origin, 60))
+                {
+                    if (pile != null || tried.Count >= 10) break;
+                    if (map.InStartArea(c)) continue;
+                    var z = map.Cache.ZoneOf(c);
+                    if (z.theme != ZoneTheme.Level0 || (z.height == ZoneHeight.Tall) != wantTall || tried.Contains(z.id)) continue;
+                    tried.Add(z.id);
+                    Place(map.CellCenter(c), map.CellCenter(c) + Vector3.forward * 4f + Vector3.up * 1.5f);
+                    yield return Settle(10);
+                    pile = NearestPile();
+                    Log("pile search: zone " + z.id + " (" + z.height + ") → " + (pile != null ? pile.name : "none yet"));
+                }
+        }
+        if (pile == null) { Log("pile: none built in 10 Level 0 zones"); yield break; }
+        var bounds = new Bounds(pile.position, Vector3.zero);
+        foreach (var r in pile.GetComponentsInChildren<Renderer>()) bounds.Encapsulate(r.bounds);
+        var center = bounds.center; center.y = 0f;
+        var bestFeet = Vector3.zero;
+        var bestOpen = -1f;
+        for (var k = 0; k < 16; k++)
+        {
+            var d = Quaternion.Euler(0f, k * 22.5f, 0f) * Vector3.forward;
+            foreach (var dist in new[] { bounds.extents.magnitude + 2.5f, bounds.extents.magnitude + 1.6f })
+            {
+                var feet = center + d * dist;
+                if (!FreeStanding(feet)) continue;
+                var eye = feet + Vector3.up * 1.62f;
+                var target = center + Vector3.up * .8f;
+                if (Physics.Raycast(eye, target - eye, out var hit, Vector3.Distance(eye, target), ~0, QueryTriggerInteraction.Ignore) && map.IsArchitecture(hit.collider)) continue;
+                var open = 0f;
+                foreach (var a in new[] { -40f, 0f, 40f })
+                    open += Physics.Raycast(eye, Quaternion.Euler(0f, a, 0f) * d, out var h2, 12f, ~0, QueryTriggerInteraction.Ignore) ? h2.distance : 12f;
+                if (open > bestOpen) { bestOpen = open; bestFeet = feet; }
+                break;
+            }
+        }
+        if (bestOpen < 0f) { Log("pile: no clear view of " + pile.name); yield break; }
+        Place(bestFeet, center + Vector3.up * .8f);
+        yield return Settle(6);
+        var cell = map.CellOf(center);
+        var detail = "seed " + runSeed + " · " + pile.name + " · centre cell " + cell + " (" + ZoneText(cell) + ") · bounds " + V(bounds.size);
+        MapSpace(detail);
+        Capture("map-l0-pile_wide", "furniture pile · " + detail, WideFov);
+    }
+
+    // ---------------- columns ----------------
+    static IEnumerator Columns()
+    {
+        yield return Column("map-column-l0", ZoneTheme.Level0);
+        yield return Column("map-column-office", ZoneTheme.Office);
+    }
+
+    static List<(Vector3 pos, GridCoord cell, byte style)> Pillars(ZoneTheme theme)
+    {
+        var list = new List<(Vector3, GridCoord, byte)>();
+        var built = Get(map, "built") as IDictionary;
+        foreach (DictionaryEntry e in built)
+        {
+            var coord = (GridCoord)e.Key;
+            var data = map.Cache.Get(coord);
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var k = i + j * (MapGrid.ChunkCells + 1);
+                if (!data.pillar[k]) continue;
+                var cell = new GridCoord(coord.x * MapGrid.ChunkCells + i, coord.y * MapGrid.ChunkCells + j);
+                if (map.InStartArea(cell) || map.InStartArea(cell + new GridCoord(-1, -1))) continue;
+                if (map.ZoneOf(cell).theme != theme) continue;
+                list.Add((map.transform.TransformPoint(new Vector3(cell.x * MapGrid.CellSize, 0f, cell.y * MapGrid.CellSize)), cell, data.pillarStyle[k]));
+            }
+        }
+        return list;
+    }
+
+    static IEnumerator Column(string name, ZoneTheme theme)
+    {
+        var list = Pillars(theme);
+        if (list.Count == 0)
+        {
+            // Walk to a zone of that theme and look again.
+            GridCoord? coarse = null;
+            foreach (var c in CellsAround(origin, 70))
+                if (!map.InStartArea(c) && map.Cache.ZoneOf(c).theme == theme && (map.Cache.ZoneOf(c).height == ZoneHeight.Tall || theme == ZoneTheme.Office)) { coarse = c; break; }
+            if (coarse.HasValue)
+            {
+                Place(map.CellCenter(coarse.Value), map.CellCenter(coarse.Value) + Vector3.forward * 4f + Vector3.up * 1.5f);
+                yield return Settle(20);
+                list = Pillars(theme);
+            }
+        }
+        if (list.Count == 0) { Log(name + ": no " + theme + " column in the built chunks"); yield break; }
+        // Prefer Office columns with a bulkhead; then the nearest to the player.
+        var p = PlayerRoot.position;
+        list.Sort((a, b) =>
+        {
+            var ba = (a.style & (MapChunk.ColumnBeamEast | MapChunk.ColumnBeamNorth)) != 0 ? 0 : 1;
+            var bb = (b.style & (MapChunk.ColumnBeamEast | MapChunk.ColumnBeamNorth)) != 0 ? 0 : 1;
+            if (theme == ZoneTheme.Office && ba != bb) return ba.CompareTo(bb);
+            return Vector3.Distance(a.pos, p).CompareTo(Vector3.Distance(b.pos, p));
+        });
+        foreach (var (pos, cell, style) in list)
+        {
+            var w = (style & MapChunk.ColumnLarge) != 0 ? ModuleUnits.ColumnLarge : ModuleUnits.ColumnSmall;
+            var bestFeet = Vector3.zero;
+            var bestDir = Vector3.zero;
+            var bestOpen = -1f;
+            for (var k = 0; k < 8; k++)
+            {
+                var d = Quaternion.Euler(0f, k * 45f + 22.5f, 0f) * Vector3.forward;
+                foreach (var dist in new[] { 3.2f, 2.6f })
+                {
+                    var feet = pos + d * dist;
+                    if (!FreeStanding(feet)) continue;
+                    var eye = feet + Vector3.up * 1.5f;
+                    var target = pos + Vector3.up * 1.5f;
+                    if (!Physics.Raycast(eye, target - eye, out var hit, dist + 1f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                    if (Vector3.Distance(new Vector3(hit.point.x, 0f, hit.point.z), pos) > w * .75f + .05f) continue;
+                    var back = pos - d * (w * .5f + .05f) + Vector3.up * 1.5f;
+                    var open = Physics.Raycast(back, -d, out var h2, 15f, ~0, QueryTriggerInteraction.Ignore) ? h2.distance : 15f;
+                    if (open > bestOpen) { bestOpen = open; bestFeet = feet; bestDir = d; }
+                    break;
+                }
+            }
+            if (bestOpen < 0f) continue;
+            var detail = "seed " + runSeed + " · column at corner " + cell + " (" + ZoneText(cell) + ") · " + (w > .7f ? "large 0.9 m" : "small 0.6 m")
+                + ((style & MapChunk.ColumnBeamEast) != 0 ? " · bulkhead east" : "") + ((style & MapChunk.ColumnBeamNorth) != 0 ? " · bulkhead north" : "")
+                + " · open view behind it " + F(bestOpen) + " m";
+            MapSpace(detail);
+            Place(bestFeet, pos + Vector3.up * (theme == ZoneTheme.Office ? 1.9f : 1.45f));
+            yield return Settle(8);
+            Capture(name + "_wide", name + " · " + detail, WideFov);
+            var side = Quaternion.Euler(0f, 28f, 0f) * bestDir;
+            var dfeet = pos + side * (w * .5f + 1.25f);
+            if (!FreeStanding(dfeet)) { side = Quaternion.Euler(0f, -28f, 0f) * bestDir; dfeet = pos + side * (w * .5f + 1.25f); }
+            if (!FreeStanding(dfeet)) dfeet = pos + bestDir * (w * .5f + 1.25f);
+            Place(dfeet, pos + Vector3.up * (theme == ZoneTheme.Office ? 2.1f : .35f));
+            yield return 4;
+            Capture(name + "_detail", name + " · " + (theme == ZoneTheme.Office ? "column head and bulkhead" : "column base and cove") + " · " + detail, DetailFov);
+            yield break;
+        }
+        Log(name + ": no column with a clear view (" + list.Count + " candidates)");
+    }
+
+    // ---------------- zone borders ----------------
+    static IEnumerator Borders()
+    {
+        yield return Border("map-border-window", EdgeKind.Window, false);
+        yield return Border("map-border-door", EdgeKind.Door, false);
+        yield return Border("map-border-theme", EdgeKind.Open, true);
+    }
+
+    static IEnumerator Border(string name, EdgeKind kind, bool themeSeam)
+    {
+        (GridCoord a, GridCoord b)? found = null;
+        foreach (var c in CellsAround(origin, 70))
+        {
+            if (map.InStartArea(c)) continue;
+            foreach (var s in new[] { new GridCoord(1, 0), new GridCoord(0, 1) })
+            {
+                var n = c + s;
+                if (map.InStartArea(n)) continue;
+                var e = map.Cache.Edge(c, n);
+                var za = map.Cache.ZoneOf(c);
+                var zb = map.Cache.ZoneOf(n);
+                if (themeSeam)
+                {
+                    if ((e != EdgeKind.Open && e != EdgeKind.Arch) || za.theme == zb.theme || za.height != zb.height) continue;
+                    found = za.theme == ZoneTheme.Level0 ? (c, n) : (n, c);
+                }
+                else
+                {
+                    if (e != kind) continue;
+                    // View from the lower side into the taller (window) / from Standard into Low (door).
+                    if (kind == EdgeKind.Window) found = zb.height == ZoneHeight.Tall ? (c, n) : (n, c);
+                    else found = za.height == ZoneHeight.Standard ? (c, n) : (n, c);
+                }
+                break;
+            }
+            if (found.HasValue) break;
+        }
+        if (!found.HasValue) { Log(name + ": none within 70 cells"); yield break; }
+        var (ca, cb) = found.Value;
+        Place(map.CellCenter(ca), map.CellCenter(cb) + Vector3.up * 1.4f);
+        yield return Settle(20);
+        var cross = map.CrossingPoint(ca, cb);
+        var n2 = map.CellCenter(cb) - map.CellCenter(ca); n2.y = 0f; n2.Normalize();
+        var along = new Vector3(n2.z, 0f, -n2.x);
+        var detail = "seed " + runSeed + " · edge " + ca + " (" + ZoneText(ca) + ") → " + cb + " (" + ZoneText(cb) + ") · " + map.Cache.Edge(ca, cb);
+        MapSpace(detail);
+        Vector3? feetWide = null;
+        foreach (var d in new[] { 2.6f, 2.2f, 1.8f, 1.5f })
+            if (FreeStanding(cross - n2 * d)) { feetWide = cross - n2 * d; break; }
+        if (!feetWide.HasValue)
+        {
+            foreach (var off in new[] { .6f, -.6f })
+                foreach (var d in new[] { 2.4f, 1.8f })
+                    if (!feetWide.HasValue && FreeStanding(cross - n2 * d + along * off)) feetWide = cross - n2 * d + along * off;
+        }
+        if (!feetWide.HasValue) { Log(name + ": no free spot in front of " + detail); yield break; }
+        Place(feetWide.Value, cross + n2 * 3f + Vector3.up * (kind == EdgeKind.Window ? 1.35f : 1.3f));
+        yield return 6;
+        if (kind == EdgeKind.Door && !themeSeam)
+        {
+            var door = map.DoorBetween(ca, cb);
+            if (door == null) { Log(name + ": no door object"); yield break; }
+            if (door.open) { map.Use(door.leaf); yield return 60; }
+            Capture(name + "_wide", name + " · shut · " + detail, WideFov);
+            map.Use(door.leaf);
+            yield return 60;
+            Capture(name + "_open", name + " · opened by the harness (map.Use), 1 s later · " + detail, WideFov);
+            var hingePos = door.hinge.position; hingePos.y = 0f;
+            var latch = hingePos + door.hinge.forward * ModuleUnits.DoorWidth;
+            map.Use(door.leaf);
+            yield return 60;
+            var dfeet = cross - n2 * 1.3f + (latch - cross).normalized * .2f;
+            if (!FreeStanding(dfeet)) dfeet = cross - n2 * 1.4f;
+            Place(dfeet, latch + Vector3.up * 1.0f - (latch - cross).normalized * .15f);
+            yield return 4;
+            Capture(name + "_detail", name + " · latch jamb, leaf and frame, shut · " + detail, DetailFov);
+            yield break;
+        }
+        Capture(name + "_wide", name + " · " + detail, WideFov);
+        // Detail: the opening's frame and sill from close, at an angle.
+        foreach (var sgn in new[] { 1f, -1f })
+        {
+            var dfeet = cross - n2 * 1.15f + along * (sgn * .9f);
+            if (!FreeStanding(dfeet)) continue;
+            Place(dfeet, cross - along * (sgn * .55f) + Vector3.up * (kind == EdgeKind.Window ? .55f : 1.2f));
+            yield return 4;
+            Capture(name + "_detail", name + " · " + (kind == EdgeKind.Window ? "frame, sill and pane from 1.2 m at an angle" : "the seam where the two papers meet") + " · " + detail, DetailFov);
+            yield break;
+        }
+        Log(name + ": no free spot for the detail");
+    }
+
+    // ---------------- lamps ----------------
+    static float FailingLevel(float clock, float phase)
+    {
+        var t = clock + phase;
+        var wave = .5f + .5f * Mathf.Sin(t * 3.1f) * (.7f + .3f * Mathf.Sin(t * 1.27f));
+        var dropout = Mathf.PerlinNoise(t * 1.4f, phase) > .72f ? .05f : 1f;
+        return (.25f + .45f * wave) * dropout;
+    }
+
+    // Move a failing lamp's own clock to a moment its formula reaches (FrontRoomsMapWorld.Level, mode 2).
+    static float SetFailingClock(object f, Func<float, bool> want)
+    {
+        var clock = (float)Get(f, "clock");
+        var phase = (float)Get(f, "phase");
+        for (var k = 1; k < 60 * 600; k++)
+        {
+            var c = clock + k / 60f;
+            if (!want(FailingLevel(c, phase))) continue;
+            Set(f, "clock", c - 1f / 60f);
+            return c;
+        }
+        return -1f;
+    }
+
+    // Level 0 at Low/Standard height is preferred (the common case); the darker the lamps round it, the better.
+    static float LampSitePreference(GridCoord cell)
+    {
+        var z = map.ZoneOf(cell);
+        return (z.theme == ZoneTheme.Level0 ? 3f : 0f) + (z.height != ZoneHeight.Tall ? 4f : 0f);
+    }
+
+    static IEnumerator DeadLamp()
+    {
+        var all = Fixtures();
+        var fx = FixtureByCell();
+        object bestF = null;
+        GridCoord best = default, bestStep = Steps[0];
+        var bestScore = float.MinValue;
+        foreach (var (f, cell, mode) in all)
+        {
+            if (mode != 3 || map.InStartArea(cell)) continue;
+            var darkNear = 0f;
+            foreach (var n in CellsAround(cell, 1))
+                if (n != cell && fx.TryGetValue(n, out var v)) darkNear += v.mode == 3 ? 1f : v.mode == 4 ? .6f : v.mode == 2 ? .4f : -.5f;
+            foreach (var s in Steps)
+            {
+                var from = cell + Mul(s, -1);
+                if (!map.IsBuilt(from) || map.PassageBetween(from, cell) != FrontRoomsMapWorld.Passage.Open || !FreeStanding(map.CellCenter(from))) continue;
+                var run = StraightRun(cell, s);
+                if (run < 1) continue;
+                var score = LampSitePreference(cell) + darkNear * 1.5f + Mathf.Min(run, 4) * .4f;
+                if (score > bestScore) { bestScore = score; best = cell; bestStep = s; bestF = f; }
+            }
+        }
+        if (bestF == null) { Log("dead lamp: none with a view in the built chunks"); yield break; }
+        var dir = Dir(bestStep);
+        var from2 = best + Mul(bestStep, -1);
+        var feet = map.CellCenter(from2) - dir * .5f;
+        if (!FreeStanding(feet)) feet = map.CellCenter(from2);
+        Place(feet, map.CellCenter(best + Mul(bestStep, 2)) + Vector3.up * 1.55f);
+        yield return Settle(10);
+        for (var g = 0; g < 60 && (float)Get(bestF, "level") > .01f; g++) yield return 1;
+        var detail = "seed " + runSeed + " · dead lamp in cell " + best + " (" + ZoneText(best) + ") · camera one cell back, looking " + bestStep + " · " + LampsAround(fx, best, 1) + " · " + LampsAround(fx, best, 3);
+        MapSpace(detail);
+        Capture("map-dead-lamp_wide", "one cell before a dead lamp (mode 3, level " + F((float)Get(bestF, "level")) + "); its lens is at the top of the frame · " + detail, WideFov);
+        var lens = Get<Renderer>(bestF, "panel").transform.position;
+        var lf = new Vector3(lens.x, 0f, lens.z) - dir * 1.5f;
+        if (!FreeStanding(lf)) lf = new Vector3(lens.x, 0f, lens.z) + dir * 1.5f;
+        Place(lf, lens);
+        yield return 4;
+        Capture("map-dead-lamp_detail", "the dead troffer's lens from 1.5 m (emission held at 4%) · " + detail, DetailFov);
+    }
+
+    static IEnumerator FailingLamp()
+    {
+        var all = Fixtures();
+        var fx = FixtureByCell();
+        object bestF = null;
+        GridCoord best = default, bestStep = Steps[0];
+        var bestScore = float.MinValue;
+        foreach (var (f, cell, mode) in all)
+        {
+            if (mode != 2 || map.InStartArea(cell)) continue;
+            foreach (var s in Steps)
+            {
+                var from = cell + Mul(s, -1);
+                if (!map.IsBuilt(from) || map.PassageBetween(from, cell) != FrontRoomsMapWorld.Passage.Open || !FreeStanding(map.CellCenter(from))) continue;
+                var run = StraightRun(cell, s);
+                var others = 0f;
+                foreach (var n in CellsAround(cell, 1))
+                    if (n != cell && fx.TryGetValue(n, out var v)) others += v.mode == 0 || v.mode == 1 ? 1f : v.mode == 4 ? .4f : 0f;
+                var score = LampSitePreference(cell) + Mathf.Min(run, 4) * .5f - others * 1.2f;
+                if (score > bestScore) { bestScore = score; best = cell; bestStep = s; bestF = f; }
+            }
+        }
+        if (bestF == null) { Log("failing lamp: none with a view in the built chunks"); yield break; }
+        var dir = Dir(bestStep);
+        var feet = map.CellCenter(best + Mul(bestStep, -1)) - dir * .6f;
+        if (!FreeStanding(feet)) feet = map.CellCenter(best + Mul(bestStep, -1));
+        Place(feet, map.CellCenter(best + Mul(bestStep, 2)) + Vector3.up * 1.55f);
+        yield return Settle(10);
+        var detail = "seed " + runSeed + " · failing lamp in cell " + best + " (" + ZoneText(best) + ") · camera one cell back, looking " + bestStep + " · " + LampsAround(fx, best, 1);
+        MapSpace(detail);
+        var c1 = SetFailingClock(bestF, l => l >= .66f);
+        yield return 1;
+        Capture("map-failing-lamp_high", "failing ballast at a high moment: lamp clock " + F(c1) + " s, level " + F((float)Get(bestF, "level")) + ", light " + F(Get<Light>(bestF, "light").intensity) + " · " + detail, WideFov);
+        var c2 = SetFailingClock(bestF, l => l < .04f);
+        yield return 1;
+        Capture("map-failing-lamp_dropout", "same lamp in a dropout: lamp clock " + F(c2) + " s, level " + F((float)Get(bestF, "level")) + ", light " + F(Get<Light>(bestF, "light").intensity) + " · " + detail, WideFov);
+    }
+
+    // The lens of one lamp of each temperament, from 1.7 m below and to the side.
+    static IEnumerator LampStrip()
+    {
+        var all = Fixtures();
+        var p = PlayerRoot.position;
+        for (var mode = 0; mode < 5; mode++)
+        {
+            var candidates = all.FindAll(x => x.mode == mode && !map.InStartArea(x.cell));
+            candidates.Sort((a, b) =>
+            {
+                var za = map.ZoneOf(a.cell); var zb = map.ZoneOf(b.cell);
+                var pa = (za.theme == ZoneTheme.Level0 ? 0 : 2) + (za.height == ZoneHeight.Standard ? 0 : 1);
+                var pb = (zb.theme == ZoneTheme.Level0 ? 0 : 2) + (zb.height == ZoneHeight.Standard ? 0 : 1);
+                if (pa != pb) return pa.CompareTo(pb);
+                return Vector3.Distance(map.CellCenter(a.cell), p).CompareTo(Vector3.Distance(map.CellCenter(b.cell), p));
+            });
+            var done = false;
+            foreach (var (f, cell, _) in candidates)
+            {
+                var lens = Get<Renderer>(f, "panel").transform.position;
+                var under = new Vector3(lens.x, 0f, lens.z);
+                foreach (var s in Steps)
+                {
+                    var feet = under - Dir(s) * 1.7f;
+                    if (!FreeStanding(feet)) continue;
+                    var eye = feet + Vector3.up * 1.62f;
+                    if (Physics.Raycast(eye, lens - eye, out var hit, Vector3.Distance(eye, lens) - .08f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                    Place(feet, lens);
+                    yield return Settle(6);
+                    if (mode == 1)
+                    {
+                        // Start one of its stutters now (its own event, its own random length) and catch an off flash.
+                        for (var attempt = 0; attempt < 6; attempt++)
+                        {
+                            Set(f, "nextEvent", (float)Get(f, "clock"));
+                            Set(f, "eventEnd", 0f);
+                            yield return 1;
+                            var guard = 0;
+                            while ((float)Get(f, "level") > .1f && (float)Get(f, "clock") < (float)Get(f, "eventEnd") && guard++ < 60) yield return 1;
+                            if ((float)Get(f, "level") <= .1f) break;
+                        }
+                    }
+                    else if (mode == 2) { SetFailingClock(f, l => l > .42f && l < .48f); yield return 1; }
+                    else if (mode == 3) { for (var g = 0; g < 60 && (float)Get(f, "level") > .01f; g++) yield return 1; }
+                    var detail = "seed " + runSeed + " · " + ModeNames[mode] + " lamp in cell " + cell + " (" + ZoneText(cell) + ") · level at capture " + F((float)Get(f, "level"))
+                        + " · light " + (Get<Light>(f, "light").enabled ? F(Get<Light>(f, "light").intensity) : "off");
+                    MapSpace(detail);
+                    Capture("map-lamp-" + ModeNames[mode] + "_detail", "lamp temperament strip · " + detail, DetailFov);
+                    done = true;
+                    break;
+                }
+                if (done) break;
+            }
+            if (!done) Log("lamp strip: no " + ModeNames[mode] + " lamp with a clear view (" + candidates.Count + " candidates)");
+        }
+    }
+
+    // ---------------- title stream profiles ----------------
+    static IEnumerator TitleProfiles()
+    {
+        var go = new GameObject("ROOMVIS / title profiles (harness)");
+        go.transform.position = PreviewRoot;
+        var stream = go.AddComponent<FrontRoomsRoomStream>();
+        stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
+            FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
+            FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+        yield return 5;
+        var root = go.transform;
+        var lights = go.GetComponentsInChildren<Light>(true);
+        var sb = new StringBuilder();
+        foreach (Transform room in root)
+        {
+            int on = 0, dim = 0, off = 0, other = 0;
+            foreach (var l in room.GetComponentsInChildren<Light>(true))
+            {
+                if (!l.name.StartsWith("fluorescent", StringComparison.Ordinal)) { other++; continue; }
+                if (!l.enabled) off++; else if (l.intensity < 2f) dim++; else on++;
+            }
+            sb.Append(room.name + ": troffers lit " + on + ", unstable (40%) " + dim + ", dead " + off + ", other lights " + other + "; ");
+        }
+        Log("title profiles built at " + V(PreviewRoot) + " · " + lights.Length + " lights · " + sb);
+        currentSpace = "preview-local (root at world (4992, 0, 4992); room i spans z 12i..12i+12, centreline x 0)";
+        currentSpaceRoot = root;
+        var names = new[] { "title-lobby", "title-shift", "title-office", "title-run", "title-exit" };
+        for (var i = 0; i < names.Length; i++)
+        {
+            var z0 = i * FrontRoomsRoomStream.RoomLength;
+            var rule = (RoomRule)i;
+            currentDetail = "RoomStream.BuildEditorPreview sequence " + i + " (" + rule + "), doors open, lamps per ActivateRoomLightImmediately";
+            Shot(names[i] + "_wide", root, new Vector3(0f, 1.62f, z0 + .9f), new Vector3(0f, .85f, z0 + 12f), WideFov, rule + " · from the room's entry, looking down its 12 m length");
+            yield return 1;
+            if (rule == RoomRule.Office)
+                Shot(names[i] + "_detail", root, new Vector3(1.2f, 1.62f, z0 + 3.0f), new Vector3(5.0f, .6f, z0 + 6.0f), DetailFov, rule + " · right side low: carpet tiles, drywall, base and the kit's copier (the left side is blocked by a dressing column)");
+            else
+                Shot(names[i] + "_detail", root, new Vector3(-1.2f, 1.62f, z0 + 3.6f), new Vector3(-5.6f, .45f, z0 + 2.3f), DetailFov, rule + " · left wall low: paper, base, floor (and the outlet / rail / chairs where the profile has them)");
+            yield return 1;
+            if (i > 0)
+            {
+                Shot(names[i] + "_doorway", root, new Vector3(0f, 1.62f, z0 - 3.2f), new Vector3(0f, 1.25f, z0 + 6f), WideFov, rule + " · arrival: from the previous room (" + (RoomRule)(i - 1) + ") through the open double door");
+                yield return 1;
+            }
+            if (rule == RoomRule.Run)
+            {
+                Shot(names[i] + "_sign", root, new Vector3(.7f, 1.62f, z0 + 6.0f), new Vector3(0f, 2.36f, z0 + 3.4f), DetailFov, "Run · the hanging exit sign (battery fixture, red point light 3.6, range 9.5, soft shadows)");
+                yield return 1;
+                Shot(names[i] + "_props", root, new Vector3(.9f, 1.62f, z0 + 4.4f), new Vector3(3.4f, .55f, z0 + 7.3f), DetailFov, "Run · gurney and IV pole (primitive boxes and a cylinder)");
+                yield return 1;
+            }
+            if (rule == RoomRule.Exit)
+            {
+                Shot(names[i] + "_threshold", root, new Vector3(0f, 1.62f, z0 + 2.8f), new Vector3(0f, .05f, z0 + 5.9f), DetailFov, "Exit · the floor 'threshold marker' strip (2.8 x 0.12 m, wall paper material)");
+                yield return 1;
+            }
+        }
+    }
+
+    static void Shot(string name, Transform root, Vector3 eyeL, Vector3 lookL, float fov, string note)
+    {
+        var t = cam.transform;
+        var lp = t.localPosition;
+        var lr = t.localRotation;
+        var far = cam.farClipPlane;
+        var eye = root.TransformPoint(eyeL);
+        var look = root.TransformPoint(lookL);
+        t.SetPositionAndRotation(eye, Quaternion.LookRotation(look - eye));
+        cam.farClipPlane = 80f;
+        Capture(name, note + " · eye " + V(eyeL) + " look-at " + V(lookL), fov);
+        t.localPosition = lp;
+        t.localRotation = lr;
+        cam.farClipPlane = far;
+    }
+}

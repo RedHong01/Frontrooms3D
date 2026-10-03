@@ -1,0 +1,16 @@
+#!/bin/zsh
+# Usage: run_unity.sh <clone> <Class.Method> <logfile> [quit] [extra args...]
+# Waits until no other Unity instance has <clone> open, then runs. Never two Unity processes on one clone.
+P=$1; METHOD=$2; LOG=$3; QUIT=$4; shift 4 2>/dev/null
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  while ps -axo command | grep -v grep | grep -q -- "-projectPath $P "; do echo "$(date +%T) clone busy, waiting"; sleep 10; done
+  if [ "$QUIT" = "quit" ]; then
+    $U -batchmode -projectPath $P -executeMethod $METHOD -quit -logFile $LOG "$@"
+  else
+    $U -batchmode -projectPath $P -executeMethod $METHOD -logFile $LOG "$@"
+  fi
+  code=$?
+  if grep -q "another Unity instance is running" $LOG 2>/dev/null; then echo "$(date +%T) lock clash, retry"; sleep 15; continue; fi
+  echo "$(date +%T) exit $code"; exit $code
+done

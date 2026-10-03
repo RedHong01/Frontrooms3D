@@ -1,0 +1,247 @@
+// LEVEL TRANSITION CUT AUDIT: the title stream -> map handoff (private clones only; never copied into the real project).
+// Play mode, like the interaction audit / G10 harness: Random.InitState(4242) before Space (run seed 516574485), the game's own
+// title handoff, the game's own first-person camera (1920x1080, 4x MSAA, full post). The player is placed with playerRoot +
+// the game's yaw/pitch fields, so the game's rig puts the eye at 1.62 m.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsTransitionHandoff.RunBatch -logFile <f>   (no -quit)
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+[InitializeOnLoad]
+public static class FrontRoomsTransitionHandoff
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.Transitions.Active";
+    const string DeadlineKey = "FrontRooms.Transitions.Deadline";
+    const string DoneKey = "FrontRooms.Transitions.Done";
+    const int W = 1920, H = 1080;
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
+    static int waitUntilFrame = -1;
+    static bool finished;
+    static string outDir;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder frames = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D readTex;
+
+    static FrontRoomsTransitionHandoff()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    public static void RunBatch()
+    {
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 900f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "transitions", "handoff");
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + " t=" + Time.time.ToString("0.000", IC) + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[TransitionsHandoff] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "handoff_log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        Time.timeScale = 1f;
+        SessionState.SetBool(DoneKey, true);
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "handoff_log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "handoff_frames.txt"), frames.ToString());
+        }
+        catch (Exception e) { Debug.LogError(e); }
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) { stack.Push(Main()); Log("routine created"); }
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string V(Vector3 v) => "[" + v.x.ToString("0.###", IC) + ", " + v.y.ToString("0.###", IC) + ", " + v.z.ToString("0.###", IC) + "]";
+
+    static void Resume()
+    {
+        if (Phase != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+    }
+
+    static void Place(Vector3 feet, Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false;
+        root.position = feet;
+        body.enabled = true;
+        Physics.SyncTransforms();
+        var eye = root.position + Vector3.up * ModuleUnits.PlayerEye;
+        var d = lookAt - eye;
+        var yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        var pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        Set(game, "yaw", yaw);
+        Set(game, "pitch", pitch);
+        root.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    static void Render(string name, string note)
+    {
+        if (rt == null)
+        {
+            rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "Handoff capture" };
+            rt.Create();
+            readTex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        }
+        var prev = cam.targetTexture;
+        cam.targetTexture = rt;
+        cam.Render();
+        cam.Render();
+        cam.targetTexture = prev;
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        readTex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        readTex.Apply(false);
+        RenderTexture.active = active;
+        File.WriteAllBytes(Path.Combine(OutDir, name), readTex.EncodeToJPG(85));
+        var p = cam.transform.position;
+        frames.AppendLine(name + " | eyeWorld " + V(p) + " eyeMap " + V(map.transform.InverseTransformPoint(p)) + " fwd " + V(cam.transform.forward) + " | far " + cam.farClipPlane.ToString("0.0", IC) + " | " + note);
+        Log("captured " + name + " · " + note);
+        File.WriteAllText(Path.Combine(OutDir, "handoff_frames.txt"), frames.ToString());
+    }
+
+    static IEnumerator Shot(string name, Vector3 feet, Vector3 look, string note)
+    {
+        Place(feet, look);
+        Time.timeScale = 0f;
+        yield return 3;
+        Render(name, note);
+        Time.timeScale = 1f;
+    }
+
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        foreach (var old in Directory.GetFiles(OutDir, "*.jpg")) File.Delete(old);
+        while ((game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        while (Time.time < 2.0f) yield return 1;
+        UnityEngine.Random.InitState(4242);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (!Get<bool>(game, "mapPlay")) { Log("FAILED: could not start a run"); yield break; }
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        Log("run started · seed " + Get<int>(game, "runSeed") + " · map root " + V(map.transform.position));
+        var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+        tuning.releaseDelaySeconds = 1e6f;
+        // The terminal door opens by proximity (within 4 m) once the map round it is built: walk up to it.
+        var doorPoint0 = (Vector3)Get(game, "startDoorPoint");
+        Place(doorPoint0 + new Vector3(.4f, 0f, -2.6f), doorPoint0 + new Vector3(0f, 1.4f, 2f));
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 15f) { Resume(); yield return 1; }
+        Log("start door opened=" + Get<bool>(game, "startDoorOpened") + " after " + (Time.time - t0).ToString("0.00", IC) + " s");
+        yield return 90;
+        Time.captureDeltaTime = 1f / 60f;
+        Resume();
+        var doorPoint = (Vector3)Get(game, "startDoorPoint");
+        var doorCell = (GridCoord)Get(game, "startDoorCell");
+        var zone = map.ZoneOf(doorCell);
+        Log("door point " + V(doorPoint) + " door cell " + doorCell + " " + zone.theme + "/" + zone.height + " · map root " + V(map.transform.position));
+        var up = Vector3.up;
+        // Stream side: inside the terminal (Lobby) stream room, looking through the open double door into the map.
+        yield return Shot("handoff_1_stream_side.jpg", doorPoint + new Vector3(.9f, 0f, -3.4f), doorPoint + new Vector3(0f, 1.35f, 2.5f), "inside the terminal stream room, 3.4 m from the door, looking into the map");
+        yield return Shot("handoff_2_stream_side_oblique.jpg", doorPoint + new Vector3(-2.6f, 0f, -2.2f), doorPoint + new Vector3(.6f, 1.3f, .6f), "stream room, oblique on the door reveal and the map beyond");
+        // Map side: the door row (Standard Level 0 by MapRootFor), looking back at the stream's end wall and its door.
+        yield return Shot("handoff_3_map_side.jpg", doorPoint + new Vector3(.6f, 0f, 3.3f), doorPoint + new Vector3(0f, 1.35f, -2.5f), "map side, 3.3 m north of the door, looking back into the stream room");
+        yield return Shot("handoff_4_map_side_jamb.jpg", doorPoint + new Vector3(1.8f, 0f, 1.5f), doorPoint + new Vector3(-1.4f, 1.4f, 0f), "map side, oblique on the stream door's map-side reveal and the facade");
+        // Last (the door starts to shut beyond 4 m): the facade strip meeting the start area's side wall.
+        yield return Shot("handoff_5_facade_corner.jpg", doorPoint + new Vector3(-4.6f, 0f, 1.7f), doorPoint + new Vector3(-7.55f, 1.3f, 0f), "map side, the stream facade meeting the map wall at the start area's west edge");
+        yield return Shot("handoff_6_facade_corner_east.jpg", doorPoint + new Vector3(4.6f, 0f, 1.7f), doorPoint + new Vector3(7.55f, 1.3f, 0f), "map side, the facade meeting the map wall at the start area's east edge");
+        Log("DONE");
+    }
+}

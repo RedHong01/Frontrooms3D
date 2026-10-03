@@ -37,7 +37,7 @@ Figma: design file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section `FRONTROOMS �
 3. **The loop:** AWAY → (called) ARRIVE → INVESTIGATE → SEARCH or CHASE → WITHDRAW → grace → AWAY. Three new states, appended to `HunterState`: Away 7, Arrive 8, Withdraw 9.
 4. **What calls it:**
    - The building's alarm "panel": a run-wide **Attention** meter. Sprinting and doors fill it; walking does not.
-   - **Instant triggers:** glass, alarm doors, ringing phones and other trigger rooms you can read before you enter.
+   - **Instant triggers:** glass, alarm doors, detector and electrical rooms, glass floors: trigger rooms you can read before you enter.
 5. **Its own ears:** sound travels the map (walking distance plus door penalties), not straight lines. A sprint step is heard over about 30 cells instead of 465, and from a distance the Relay hears roughly where you were, not exactly.
 6. **Three warnings** (Red's staging, §7), each measured as walking distance from the Relay to the player:
    1. **Lights:** within 30 m, the lamps in *your* room flicker together in irregular bursts. The bursts come more often as it nears. The lamps settle when it goes.
@@ -183,7 +183,7 @@ Attention is a run-wide number from 0 to 100, kept in the hunter (关卡设计's
 | A door opens or shuts | +6 | today's `DoorMoved`, both ways |
 | A door shut while sprinting ("slam") | +15 | new: `DoorMoved` + sprinting |
 | Window broken | **call now** | `GlassBroken` |
-| Trigger room / alarm door / ringing phone | **call now**, or per ring | §4.2 |
+| Trigger room / alarm door | **call now** | §4.2 |
 
 **Decay.** −2 per second after 4 s without a gain.
 
@@ -215,13 +215,6 @@ This is Red's "entering certain rooms". The full list is in §9 (level design) a
 | Electrical room | "ELECTRICAL ROOM — AUTHORIZED PERSONNEL ONLY", transformer hum | stepping 1.5 m inside | the zone key, from tier 3 |
 | Glass floor (`Loud`) | glass across the first 1.2 m of the doorway | stepping past the strip | the shorter route |
 | Paging room (optional) | wall handset, speaker hiss | stepping 1.5 m inside | a key or desk |
-
----|---|---|
-| Window (all tall zones) | glass broken | the only way into a tall zone; fast |
-| Alarm door: push bar reading "EMERGENCY EXIT ONLY — ALARM WILL SOUND" | opening it | a shortcut across a zone border, no key needed |
-| Ringing phone (Office) | entering the room. The phone rings every 3 s (+8 each ring) until E picks it up | the room's key or desk; pick it up to silence it |
-| Smoke-detector room (red LED blinking, visible from the door) | entering it | a short cut through |
-| Electrical room ("AUTHORIZED PERSONNEL ONLY", transformer hum) | entering it | the zone key at higher tiers |
 
 ---
 
@@ -344,7 +337,12 @@ Agreed on 2026-10-03 by this chat, the wallpaper/phosphor chat (动画和动态�
 - **Print** (Relay wake reprint) = where it just walked.
 - **Ink** = where to go.
 
-A stage-1 burst briefly drops your cell below the ink's 0.55 gate, so the paper next to you gasps. The wallpaper chat adopts this as an intended beat: "when the lights flicker around you, the walls point". It is local to you, so it is not a position readout. The chase wave stays the LD's, on CHASE only.
+During a stage-1 burst, the paper beside you gasps, showing GROUND only, through the ink's **burst gate** (`research/wallpaper_motion/20_level_design_phosphor.md` rev 3, §7 "Stage-1 gasp").
+- **Why not the plain 0.55 gate:** the ink reads lamp level through a 0.35 s low-pass. A 0.3× Warn dip then bottoms out anywhere from about 0.66 to 0.42, depending on the dip's hold, so the plain gate would open erratically.
+- **What the burst gate does:** it finds a Warn burst (lamp lit at base, `LampLevel` below base, no ink Dip or Sag on the cell) and gives one smooth GROUND breath at ≤ 0.5 Hz per burst. The burst parameters in §7.1 stay as they are.
+- **Under Reduce Flashing** (a single dim to 0.6) there is no gasp, by design.
+
+The wallpaper chat treats the gasp as an intended beat: "when the lights flicker around you, the walls point". It is local to you, so it is not a position readout. The chase wave stays the LD's, on CHASE only.
 
 ---
 
@@ -387,11 +385,11 @@ No new loops are needed. What is needed is to make **shutting a door** a real es
 - the Ajar state from the door state machine. For the Relay an Ajar door counts as open: it pushes through in +0.4 s, and the push is audible.
 
 **Trigger rooms are a room-level field, not a marker.**
-- `ModuleTrigger { None, Alarm, Loud }` (append-only), with noise radius, one-shot or cooldown, and an arming delay. An optional device marker places the phone or pull station.
+- `ModuleTrigger { None, Alarm, Loud }` (append-only), with noise radius, one-shot or cooldown, and an arming delay. An optional device marker places the device (a pull station, a detector, a panel).
 - MapWorld registers trigger rectangles per built chunk. It checks only the current chunk when the player changes cell, fires once per room instance, and raises `RoomTriggered(kind, source, tag)`; the game forwards it to `relay.Summon`.
 - A deterministic `triggerChance` pass (new MapHash salt, by tier and height) can make generated rooms into triggers too.
 - `Loud` (glass-strewn floor) is one flag per cell. `Alarm` needs a wall spot without an opening for its device.
-- The visual chat must supply the readable props (ringing phone, pull station, copier, glass floor). Without them, "readable before entry" fails.
+- The visual chat must supply the readable props (push bar, detector, electrical panel, glass-floor decal). Without them, "readable before entry" fails.
 
 **Placement rules:**
 - **Trigger rooms:**
@@ -466,7 +464,7 @@ Rules the fiction adds:
 - Every trigger room is readable before entry from one 1990 object or sound. The ink never marks one, or it would become radar.
 - Dark is never cover: the lamps dim because it draws power.
 - The building-wide alarm is silent.
-  - A device's own local sound (a door horn chirp, a phone ring) is the player's feedback for what they did.
+  - A device's own local sound (a door horn chirp, a paging hiss) is the player's feedback for what they did.
   - Whether it plays is the sound chat's call (open question Q6).
 
 ---
@@ -509,7 +507,7 @@ Warning distances stay fixed across tiers: the tiers make the Relay better, neve
 | Lamp override v1 (shared with the phosphor ink): `SetLampOverride`, `LampFx { Dip, Sag, Warn }`, MIN stacking, `LampLevel`, `SetLampMode`, `FixtureChanged`, `LampDipped`; one `f.level *= f.mod` in both TickFixtures branches | map chat (logic), **游戏视觉** (look of the Warn burst) | bit-identical with no override, so the WebGL fixture tests hold |
 | Trigger rooms: `ModuleTrigger` room field, device marker, `RoomTriggered` event, `triggerChance` pass, Level Designer type picker | map chat; props from 游戏视觉 | §9 |
 | Sound events: `WarnStageChanged`, `LampDipped`, `TargetAcquired`, `Arrived`, `Withdrew`, `RoomTriggered`; `Spotting` property | map chat → **声音设计** | AUDIO_CONTRACT: events only, no new AudioSources. 声音设计 was not running on 2026-10-03, so this list is its hand-off |
-| Sounds: fixture buzz/tick on warning dips; Relay steps gated to stage ≥ 2 (occlusion = muffled); presence drone by stage; **the lock-on cue**; device sounds (door-alarm chirp, phone ring) | 声音设计 | new FMOD events or parameters |
+| Sounds: fixture buzz/tick on warning dips; Relay steps gated to stage ≥ 2 (occlusion = muffled); presence drone by stage; **the lock-on cue**; device sounds (door-alarm chirp, paging hiss) | 声音设计 | new FMOD events or parameters |
 | HUD: every Relay state off by default (assist only) | map chat | Red's decision, landed for distance/state on 2026-10-03; CHASE and BREAKING DOOR text too |
 | **Step 0: a baseline before any change.** A seeded route RNG and an **evading bot** (hides, shuts doors, sprints when chased), plus **quiet** (never sprints) and **noisy** modes. Report: state shares, time to first call, calls per minute with cause, chases per encounter, warning stage before each chase | map chat (offered; waits for Red) | `FrontRoomsMainScenePlaytest` report; run before and after |
 
@@ -543,7 +541,7 @@ Warning distances stay fixed across tiers: the tiers make the Relay better, neve
 2. **Attention vs. pure triggers:** keep the panel meter (sprints and doors add up), or let only instant triggers call it?
 3. **Stall rule:** stalling shortens grace instead of raising the tier, and tiers count 150 new cells. Agreed?
 4. **Spotting time:** about 0.5 s of "almost seen" plus the 0.6 s lock-on cue before the chase. Too generous?
-5. **Trigger set:** which of the alarm door, phone, smoke detector and electrical room go in first?
-6. **Device sounds:** with a silent building alarm, may a device's own local sound (door-alarm chirp, phone ring) still play?
+5. **Trigger set:** which of the alarm door, detector room, electrical room and glass floor go in first (the paging room is optional)?
+6. **Device sounds:** with a silent building alarm, may a device's own local sound (door-alarm chirp, paging hiss) still play?
 7. **Warning distances:** 30 m (lights) and 15 m (steps) of walking. Fixed for every tier?
 8. **Baseline first:** may the map chat add the seeded evading bot (no gameplay change) to measure today's pursuit before anything changes?

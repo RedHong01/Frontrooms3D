@@ -2,6 +2,19 @@
 
 Power-outlets workflow (N3), 2026-10-03. Read-only study of the real project; no file outside this folder was changed.
 
+**Revision 2 (11:50).**
+- Every file:line reference was re-checked against the project as of 11:45. No map, Office or RoomStream file has changed since revision 1. The newest is `FrontRoomsMapWorld.cs` at 09:49.
+- New since revision 1:
+  - the LOD convention, from the interactables spec that landed at 11:38 (§4.4);
+  - the glass RT pass's 256-renderer cap (§4.5);
+  - a correction: the Mac/Win players run Ultra, lodBias 2 (§4.4);
+  - the Office-zone share of wall faces (§4.1);
+  - the module lamp precedent for module outlet data (§2.3);
+  - the edge-of-ring rule for floating outlets (§3);
+  - an edit-mode submit hook for R3 (§4.5);
+  - an unreachable Exit branch in RoomStream (§5);
+  - the `Fixture` struct (§8.1).
+
 - All numbers come from the code, or from a census run in the private clone `scratchpad/proj_outlet`.
 - The census uses the game's own generator: 3 seeds × 49 chunks.
   - Data: `data/02_face_census.json`. Tool source: `data/02_face_census.cs.txt`.
@@ -33,15 +46,27 @@ Power-outlets workflow (N3), 2026-10-03. Read-only study of the real project; no
    - One GameObject per outlet breaks the ≤ 120-renderer room budget.
    - It also breaks the WebGL target of about 1,200 renderers alive.
    - Best fit: per-chunk instanced draws with exact distance LOD (R3). Second best: per-block combined meshes (R2).
-7. **The kit importer's LOD rule would cull an outlet at 2.4 m.**
-   - At the game FOV of 76° and the editor quality (lodBias 1.0), a 0.114 m plate switches off LOD0 at 0.73 m.
-   - The importer's 10 % / 3 % thresholds are tuned for furniture.
-   - Outlets need their own thresholds (LOD0 to ~2 m, LOD1 to ~5 m, LOD2 to ~12 m), or distance-based LOD (R3).
+7. **LOD: use the interactables convention. Until it is approved, outlets get no LODGroup.**
+   - The interactables spec (`research/interactables/10_spec.md` §1.8, §8 P-1) sets the convention:
+     - `<NAME>_LOD0/_LOD1/_LOD2` in one FBX;
+     - per-asset `LOD_DISTANCES = (d01, d12, dcull)` at lodBias 1 and FOV 76°, sent to the sidecar as `lodDistances`;
+     - the importer turns those distances into screen heights.
+   - That change (P-1) **needs visual-chat approval**. Until then, assets under 1.0 m ship with `LOD1 = None`: no LODGroup, never culled.
+   - The interim rule exists because today's importer would cull a 0.114 m plate at 2.4 m.
+   - The catch: GameObject outlets (R1) would then draw at every distance. The 12 m cull and the LOD switch should live in the outlet renderer (R3), which reads the same `_LOD0/1/2` meshes.
 8. **The title corridor's placeholder outlets have colliders.**
    - There are 3 per Lobby/Shift/Exit room variant, built by `Box`, which adds a BoxCollider.
    - Their centre is 0.32 m, only 2.5 mm above the 0.26 m baseboard top.
    - Office stream rooms use `FrontRoomsOfficeKit.Dress`. Run rooms have no outlets.
    - The same planner can serve the corridor with no contract, because RoomStream is visual-owned.
+9. **The glass RT pass would count GameObject outlets against its 256 cap.**
+   - `FrontRoomsMetalGlassRT` registers every enabled MeshRenderer within 18 m of the nearest glass target, up to 256 (`Assets/Scripts/Rendering/FrontRoomsMetalGlassRT.cs` 33–34, 145–157).
+   - The list is in InstanceID order, not distance order.
+   - At 1 outlet per 3.66 m, about 147 outlets lie within 18 m. With R1 they would take over half the cap and could push walls or doors out of the reflections.
+   - R3 draws are not renderers, so the RT pass never sees them. At 0.11 m, outlets do not need to be in reflections.
+10. **Office outlets are mostly in corridors.**
+    - 24 % of wall faces are in Office zones, but only 1.5 % face into dressed Office rooms.
+    - So Office outlet rules (denser outlets, data jacks) must run outside the dress step too. That is option B again.
 
 ---
 
@@ -104,7 +129,7 @@ Edges on the chunk's **east and north border belong to this chunk**. Its west an
 | Start point, direction | `start`, `along` (835, 839) | yes | chunk-local metres, on the cell line |
 | Face plane and normal | `across` (952); face = cell line ± `WallHalf` | yes (derive) | normal points into the cell the face serves |
 | Length | `MapGrid.CellSize` = 3 (950) | yes | plus 0.08 at extended corners |
-| Ceiling of that side | `MapGrid.CeilingHeight(zone.height)` (809–810) | wall height only (the taller side) | 2.4 / 2.9 / 5.4 |
+| Ceiling of that side | `MapGrid.CeilingHeight(data.height[index])` (810); `data.height` is the zone height (`FrontRoomsMap.cs` 568) | wall height only (the taller side) | 2.4 / 2.9 / 5.4 |
 | Theme of that side | `wallA` / `wallB` (829); `Cache.ZoneOf(cell).theme` | as a Material | two skins at theme borders |
 | Opening span | door / window centred; arch from `ArchOpening` | yes (`width`, `c`, `sill`, `openingTop`) | |
 | Trim | jamb and head boxes | yes | 0.07 face, 0.02 proud |
@@ -186,6 +211,11 @@ Edges on the chunk's **east and north border belong to this chunk**. Its west an
   - (a) a `ModuleOutlets outlets = Auto` field on `RoomModuleData`, with values Auto / None;
   - (b) pins as props of `Kit_Outlet*` kits, with a new "flush wall" snap: gap = `WallHalf` only, y from a sidecar `mount` anchor.
   - The planner reads `data.ModuleOf(room)` at chunk build time, so pins and None are known before the auto plan runs. No ordering problem with Dress.
+  - **Precedent: module lamps.** A module already authors one `ModuleLamp` per cell (`RoomModuleData.lamps`, line 111). The default is `Auto`, which "rolls it from the seed, as everywhere else" (comment, line 29).
+    - The stamp copies the lamps into the chunk's per-cell array `MapChunk.lamp` (`FrontRoomsRoomModuleStamp.cs` 96).
+    - `BuildFixture` then reads that array during the same cell loop (853).
+    - Lamps turn with the module (`RotatedOnce`, `FrontRoomsRoomModuleData.cs` 251).
+    - Module outlet data could take the same shape: an `Auto` default, stamped into a `MapChunk` field, read by the planner. For example, one value per room, or one per perimeter edge next to `south/north/west/east` (98).
 - **Stamp rules** (`FrontRoomsRoomModuleStamp.cs` 32–101): a module never changes a chunk-border edge. The map may reopen a module wall to reconnect the chunk (`Reconnect` 120–158). So outlets must be planned from the **final** chunk edges, which option B does, never from the module's authored edges.
 
 ---
@@ -205,13 +235,21 @@ Edges on the chunk's **east and north border belong to this chunk**. Its west an
   - Leave the revision **out** of the hash. Then a face that did not change keeps its outlet across a shift. A face whose context changed (room, module) re-plans anyway, out of sight.
 - **Start area.** Skip a face when its cell **or** the cell behind it is in the start area (`InStartArea` 483–484).
   - That covers every case `StartAreaEdge` rewrites.
+    - `StartAreaEdge` turns a raw edge between a map cell and a start-area cell into a plain Wall. The raw arrays do not show that, so skipping is simpler than copying the rule.
+    - The cost is a few outlets on the walls round the start area. The census does not model the start area.
   - The stream rooms' walls are RoomStream's own business (§5).
+- **Edge of the build ring.**
+  - Under option B, a chunk on the ring's west or south edge plans outlets on its west or south border wall. That wall is built by the neighbour outside the ring, so it does not exist yet. Those outlets would float.
+  - The player is always at least 2 chunks (48 m) from those faces, and outlets cull at 12 m. So they are never drawn.
+  - **Rule: the outlet cull distance must stay under 48 m.**
+  - R1 under the interim LOD rule (no LODGroup, never culled) would break this rule. It would draw specks at 48–80 m, out to the 80 m far plane (`FrontRooms3DGame.cs` 247).
 - **Unregister** (728–744) kills the chunk root and frees `chunk.meshes`. `RebuildChunk` (319–331) deactivates the root first.
   - Anything the planner installs under the chunk root is cleaned up for free.
   - That includes a MonoBehaviour, which gets OnDisable, and meshes, if added to `chunk.meshes`.
   - **No change to Unregister is needed.**
 - **Failure.** `Install` runs inside `Build`'s try, so a throw undoes the whole chunk like any other build error.
-- **Edit mode.** The Level Designer preview and the capture harness build maps in edit mode (`BuildForCapture` 523–535, `Release` 559–564). Whatever renders outlets must work without `Update`; see R3's caveat in §4.3.
+- **Edit mode.** The Level Designer preview and the capture harness build maps in edit mode (`BuildForCapture` 523–535, `Release` 559–564). Whatever renders outlets must work without `Update`; see R3's edit-mode row in §4.5.
+  - The Level Designer preview (`FrontRoomsModulePreview.cs` 5–19, `[ExecuteAlways]`) builds the **real** `FrontRoomsMapWorld` round the module (277, 297). So option B outlets appear in the designer's preview with no designer change.
 
 ---
 
@@ -230,6 +268,13 @@ Edges on the chunk's **east and north border belong to this chunk**. Its west an
 | Solid stretches ≥ 0.6 m | 7,035 | 7,217 | 7,337 | 147 |
 | Coplanar runs; mean length; runs crossing a chunk border | 4,273; 1.44; 70 | 4,374; 1.44; 63 | 4,471; 1.43; 78 | 89; 1.44 faces; **1.6 %** |
 | Face gathering via Cache (warm, editor) | 0.42 ms | 0.69 ms | 0.41 ms | upper bound |
+| Faces in Office zones (rooms and corridors) | 1,026 | 1,654 | 1,820 | **23.8 %** (16.7–28.5 %) |
+| Solid wall in Office zones, m | 2,491 | 4,034 | 4,405 | 74 m |
+| Dressable rooms / of which Office | 56 / 7 | 58 / 14 | 53 / 17 | 1.14 / 0.26 |
+
+- **Caveats.**
+  - The census runs the generator through `FrontRoomsMapCache`, not `FrontRoomsMapWorld`. So it has no start area; the start area removes a few cells near the origin in the title flow.
+  - "Dressable" means `RoomIntact` and `Uniform`. The census counts Office rooms by zone theme. It does not count Level 0 rooms whose module sets `fill = Office`, which `Dress` also furnishes with the Office kit (1547–1548).
 
 ### 4.2 What a density choice costs
 
@@ -256,6 +301,10 @@ Build radius 2 means 25 chunks are alive. A 12 m radius covers about 0.79 of a c
   - **Rule for outlets: no MaterialPropertyBlocks.** Make wear variants separate meshes or materials, or vertex colour.
 - `FrontRooms/Surface` has `multi_compile_instancing` in all four passes: Forward 110, ShadowCaster 279, DepthOnly 297, DepthNormals 313. **But 0 of the 86 materials in `Assets/Resources/Surfaces` enable instancing** (`m_EnableInstancingVariants: 0`).
   - `Graphics.RenderMeshInstanced` needs that flag. Turn it on for the outlet slot materials in `FrontRoomsRenderSetup` (visual-owned), or use instancing-enabled clones.
+  - The shader side is ready: it uses `UNITY_VERTEX_INPUT_INSTANCE_ID` (120, 132), `UNITY_SETUP_INSTANCE_ID` / `UNITY_TRANSFER_INSTANCE_ID` (139–140, 170).
+  - Kit slot materials (`Prop_*.mat`) use the same shader with `_FR_MESH_UV` on (96).
+  - **Per-instance variety comes free.** The macro wear is sampled in world space (8 m and 12.8 m, 189–198), so every outlet gets its own grime with no MaterialPropertyBlock.
+- **No other culling or batching tool is in use.** The scripts use no `CullingGroup`, no `Camera.layerCullDistances`, no static batching and no `CombineMeshes`. `TagManager.asset` has no custom layers. The only distance logic is the lamps' (`lightRadius`, `TickFixturesNear` 1256–1281).
 - Kit FBX meshes import with `isReadable = false` (`FrontRoomsKitImporter.cs` 33).
   - Runtime mesh combining (R2) needs readable outlet meshes, which takes an importer exception.
   - Instanced draws (R3) and GameObjects (R1) do not.
@@ -268,7 +317,16 @@ Build radius 2 means 25 chunks are alive. A 12 m radius covers about 0.79 of a c
   - cull at 3 % for props under 0.6 m, 2 % otherwise.
 - Unity's relative height is `size × 0.5 / (distance × tan(FOV/2)) × lodBias`.
   - Game camera FOV is 76° (`FrontRooms3DGame.cs` 247).
-  - Editor quality is level 3, High, lodBias 1.0 (`ProjectSettings/QualitySettings.asset` 7, 195). The build script also sets 3 (`Assets/Editor/FrontRooms3DBuild.cs` 146). The Standalone default would be Ultra, lodBias 2 (338, 301).
+  - lodBias differs by target:
+
+    | Target | Quality level | lodBias | Where it is set |
+    |---|---|---|---|
+    | Editor Play Mode (the desktop reference) | 3, High | 1 | `ProjectSettings/QualitySettings.asset` 7, 195 |
+    | Mac/Win player | 5, Ultra | 2 | per-platform default, 301 and 338 |
+    | WebGL player | 3, High | 1 | per-platform default, 339; `FrontRooms3DBuild.ApplyWebGLSettings` also calls `SetQualityLevel(3)` at 146 |
+
+  - Revision 1 said the build script sets level 3 for every build. That is wrong: line 146 is inside the WebGL path.
+  - The interactables spec reads it the same way: Standalone runs Ultra (`10_spec.md` 232).
 
 | For a 0.114 m single-gang plate | lodBias 1 | lodBias 2 |
 |---|---|---|
@@ -277,24 +335,45 @@ Build radius 2 means 25 chunks are alive. A 12 m radius covers about 0.79 of a c
 | Height needed for LOD0 to 2 m / LOD1 to 5 m / cull at 12 m | 3.66 % / 1.46 % / 0.61 % | half of these |
 
 - This is Unity's editor `LODUtility` formula. Verify it in-engine before relying on it.
-- Fix it per kit:
-  - Option 1: the importer reads an optional sidecar `lodHeights` array.
-  - Option 2: R3 does exact distance LOD, which is independent of lodBias and FOV.
-- The pipeline builds only LOD1 today: `kitlib.make_lod1` (714–760), a blind collapse-decimate read by `build_asset.py` 51–53.
-  - LOD2 needs a kitlib or build_asset change. **This needs visual-chat approval.**
-  - For a tiny hard-surface part, hand-built LOD1/LOD2 beats decimation. LOD2 could be a plate box with the face printed in its texture.
-  - The interactables spec (`research/interactables/10_spec.md`) **does not exist yet** (checked 2026-10-03 11:00). Its LOD convention is still open, so align with it when it lands.
+- The pipeline builds only LOD1 today: `kitlib.make_lod1` (714–760), a collapse-decimate named `<NAME>_LOD0` / `<NAME>_LOD1`, called by `build_asset.py` 51–53 when a module sets `LOD1`.
+
+**The convention to use: the interactables spec** (`research/interactables/10_spec.md`, written 11:38 today).
+- **Hero LOD0** (§1.8) must hold up at 0.3 m.
+  - Bevel every light-catching edge: ≥ 1.0 mm on hardware, with 2–3 segments.
+  - Curved parts ≤ 0.07 m across get ≥ 48 segments, so nothing facets at 0.3 m. The screw heads of a plate fall under this.
+- **Every module declares** `LOD1_RATIO`, `LOD2_RATIO` and `LOD_DISTANCES = (d01, d12, dcull)` in metres at lodBias 1 and FOV 76°. It also writes `kit.meta["lodDistances"]`, which `export()` copies into the sidecar.
+- **P-1** (§8, **needs visual-chat approval**) does three things:
+  - `make_lod1` becomes `make_lods(ratios)`, which writes `<NAME>_LOD0/1/2` into one FBX;
+  - parts can be dropped per level (`fr_lod{n}_drop`);
+  - the importer sets `screenRelativeTransitionHeight = group.size / (2 · d_i · tan 38°)` from `lodDistances`.
+- **Until P-1 lands:** assets under 1.0 m set `LOD1 = None`. They get no LODGroup and are never culled. An outlet plate falls under this rule.
+- **What it means for outlets.**
+  - R1 under the interim rule draws every outlet at every distance. That costs about 2 draws per outlet in the frustum, and it breaks the edge-of-ring rule in §3.
+  - R3 does not depend on P-1 for culling. It does its own exact distance cull, and later its LOD switch, the same on every lodBias.
+  - R3 reads the meshes by the P-1 names (`<NAME>_LOD0/1/2`), so the outlet module can declare `LOD_DISTANCES` today.
+  - Until P-1, R3 draws LOD0 out to `dcull`. That is a few hundred triangles per outlet, for about 65 outlets.
+- **Suggested outlet distances** (for the spec to confirm): d01 ≈ 2 m, d12 ≈ 5 m, dcull ≈ 12 m.
+  - As LODGroup heights for a 0.114 m plate, those are 3.66 % / 1.46 % / 0.61 % (table above).
+  - For a tiny hard-surface part, hand-built LOD1/LOD2 beats decimation. LOD2 could be a plate box with the face printed in its texture. P-1's per-level drop flags allow that.
+- **New material slots:** `kitlib.register_slot(...)` (132) adds one without editing kitlib. The importer remaps any slot that has a `Resources/Surfaces/<slot>.mat` (`FrontRoomsKitImporter.cs` 36–46). This is the interactables spec's P-4 route. An outlet's ivory or brown thermoplastic might need one; report it to the visual chat.
 
 ### 4.5 Three ways to render the plan
 
 | | R1: one kit GameObject per outlet | R2: combined meshes per 6 m block | R3: per-chunk instanced draws (recommended) |
 |---|---|---|---|
-| How | `FrontRoomsKitLibrary.Spawn(..., colliders: false)` with a LODGroup | Like the shell's `MeshBuilder`; meshes go in `chunk.meshes` | A component on the chunk root holds matrices per kit; a static manager issues `Graphics.RenderMeshInstanced` per (kit, LOD) for outlets within 12 m, binned by distance |
-| Renderers / draws | ~34–147 renderers per chunk; ~2 draws per visible outlet | ≤ (16 blocks × LODs × slots) per chunk; LOD per block, coarse | 0 renderers; ≤ about 3 LODs × ≤ 4 slots instanced draws per pass, for the whole map |
-| LOD / cull | LODGroup; needs per-kit thresholds (§4.4) | per block (6 m); needs its own distance switch | exact per outlet by distance; same on every quality level |
-| Edit mode, captures, Level Designer | works | works | needs a submit before `Camera.Render`, or an R1 fallback when `!Application.isPlaying` (UNVERIFIED) |
-| Needs | nothing new | readable meshes (importer exception) | instancing on the outlet materials |
-| WebGL | too many renderers | fine | fine; gate the radius per platform (WebGL-only, never lower desktop) |
+| How | `FrontRoomsKitLibrary.Spawn(..., colliders: false)` (no Collider: §8.3 test 2) | Like the shell's `MeshBuilder`; meshes go in `chunk.meshes` | A `FrontRoomsWallFixtureSet` on the chunk root holds matrices per (kit, LOD) and adds itself to a static registry in OnEnable, removing itself in OnDisable. A static submitter draws, for each camera, the outlets within 12 m with `Graphics.RenderMeshInstanced` |
+| Renderers alive (25 chunks) | 840–3,670 (§4.2) | ≤ 16 blocks × LODs × slots per chunk | **0** |
+| Draws | ~2 per outlet in the frustum (depth-normals + colour); never culled under the interim LOD rule | ~2 per block renderer in the frustum | ≤ kits × LODs × slots per pass for the whole map, for example 4 × 3 × 2 = 24 |
+| LOD / cull | LODGroup only after P-1; until then none (§4.4). Variant R1b: a dedicated layer plus `Camera.layerCullDistances` culls at 12 m without LODs, but needs a new TagManager layer and the game camera (map-owned `FrontRooms3DGame.cs` 247), and leaves every renderer alive | per block (6 m); needs its own distance switch | exact per outlet by camera distance; the same on every lodBias |
+| Glass RT, 256 cap (`FrontRoomsMetalGlassRT.cs` 33–34, 145–157) | ~60–150 outlets within 18 m of a window enter the list, in InstanceID order | a few block renderers | invisible to it |
+| Edit mode, captures, Level Designer | works | works | submit from `RenderPipelineManager.beginCameraRendering` with `RenderParams.camera` = that camera. That callback fires for the Scene view, the Game view, edit-mode `Camera.Render` captures and Play. **UNVERIFIED: test in the clone** |
+| Needs | nothing new | readable meshes (importer exception, `FrontRoomsKitImporter.cs` 33) | instancing on the outlet slot materials (§4.3) |
+| Material variety | no MaterialPropertyBlocks (SRP Batcher); variants as materials or meshes | same | same; world-space macro wear varies each instance for free |
+| WebGL | too many renderers (WebGL target ≈ 1,200 renderers alive) | fine | fine; gate the radius per platform (WebGL-only, never lower desktop) |
+
+- **R3 cost.** Gathering is per chunk: skip whole chunks whose bounds are over 12 m from the camera. That leaves about 4 chunks × ~83 outlets to test per camera per frame, which is well under 0.1 ms (ESTIMATE).
+- **Frustum culling.** `RenderParams.worldBounds` covers one call, so frustum culling is per call. Distance culling does most of the work.
+- **Pass coverage.** `RenderMeshInstanced` draws the material's passes like a normal renderer (DepthNormals for SSAO, Forward). Shadows stay off through `RenderParams.shadowCastingMode`.
 
 ---
 
@@ -318,6 +397,9 @@ Build radius 2 means 25 chunks are alive. A 12 m radius covers about 0.79 of a c
 - **Other variants.**
   - Office (1428–1439) calls the 5-argument `FrontRoomsOfficeKit.Dress` overload. That path places its own columns. A clear centre lane is passed as the only keep-clear strip.
   - **Run** (1440–1492) has no outlets. Its hospital look would want its own rule. Period detail for hospitals (for example, colour-coded emergency-branch receptacles) is UNVERIFIED and left to the research files.
+  - **Side finding: an unreachable branch.**
+    - The first branch already includes Exit (`rule == Lobby || Shift || Exit`, 1418). So the later `else if (rule == RoomRule.Exit)` (1493–1496) never runs, and its "exit threshold marker" is never built.
+    - This is harmless today. Fix it in the same visual-owned edit that replaces the placeholders: either drop the branch, or move Exit out of the first one.
 - **Hook.** In `BuildProfileProps`, replace the boxes with `FrontRoomsWallFixtures.Plan` over the slot's faces.
   - Side walls: 12 m each, as four 3 m faces, so the same per-face rule runs.
   - End-wall spans: 4.55 m each side of the door.
@@ -342,6 +424,8 @@ What the dress step can add that option B cannot, all inside `Office/` with no m
 - It then refines the outlets on its room's faces. To find them, it uses the `room` index or the faces whose plane lies on its floor rect's edges.
 - The reflection binding by parameter types (1439–1443) stays untouched.
 - In RoomStream's Office variant, `parent` is the variant's `props` object, where the stream installs its own set.
+- The look-dev hall calls `Dress` with no set. With no set, Dress does no refinement.
+- `floorXZ` and the faces are in the same frame: chunk-local metres, because `parent` is the chunk root.
 - **Ordering.** Outlets show unrefined for the few frames until their room is dressed. That is invisible: chunks build ≥ 24 m away, and outlets cull at 12 m. `RebuildChunk` dresses synchronously (330).
 
 ---

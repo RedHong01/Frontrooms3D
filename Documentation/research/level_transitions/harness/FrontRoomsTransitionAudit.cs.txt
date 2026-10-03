@@ -1,0 +1,1065 @@
+// LEVEL TRANSITION CUT AUDIT HARNESS (private clones only: proj_trans and its cp -Rc copies; never copied into the real project).
+//
+// What it does
+//   Edit mode, in the main scene (Assets/Scenes/FrontRooms3D.unity), so the frames get the game's RenderSettings
+//   (ambient, fog, reflection), its directional fill light and its post profile.
+//   The map is built the way the game builds it: FrontRoomsMapWorld.BuildForCapture with the level profile, generation
+//   seed = the run seed, 5 x 5 chunks round the player's chunk, rooms furnished, lamps ticked for the player's position
+//   (lights within lightRadius on, shadows within shadowRadius). The player stands where the camera stands.
+//   Map root (4992, 0, 4992) = 26 x the 192 m world period, so world-projected surfaces sit on the cells as at any game root.
+//   BuildForCapture applies FrontRoomsLook.ApplyAmbient; the harness puts the scene's own environment back afterwards
+//   (the embedded map never touches RenderSettings in the game).
+//   Camera: the scene's "First-person camera" (its URP data: post on), FOV 76 (vertical, as the game), near 0.06,
+//   far = map SightDistance (46 m), 1920x1080 sRGB, 4x MSAA, rendered twice, JPG q85. Lamps are frozen at clock 0
+//   (deterministic: the same frame every run).
+//
+// Entry points (Unity -batchmode -projectPath <clone> -executeMethod <method> -quit -logFile <log>; graphics on):
+//   FrontRoomsTransitionAudit.CountBatch     cut counts over 20 seeds x 81 chunks (no renders) -> Verification/transitions/counts
+//   FrontRoomsTransitionAudit.EvidenceBatch  counts + find and render cut instances -> Verification/transitions/evidence
+//   FrontRoomsTransitionAudit.ShotsBatch     the fixed comparison shots:
+//        -shots <shots.json> [-out <dir>] [-tag <tag>] [-only shot1,shot3] [-plan]
+//        writes <out>/<id>_<tag>.jpg (+ <id>_<tag>.txt with the pose and lamp state; <id>_plan.json with -plan).
+//   Variation agents: copy this file unchanged, change ONLY the code or assets under test, run ShotsBatch with -tag <variation>.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsTransitionAudit
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    public const int W = 1920, H = 1080;
+    public const float DefaultFov = 76f;
+    public static readonly Vector3 MapRoot = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+    // 516574485 = the run of Random.InitState(4242) before Space (audit, G10: Red's screenshot); 2554 and 20388 spawn in Office.
+    static readonly int[] CountSeeds = { 516574485, 2554, 20388, 20261001, 1, 7, 42, 99, 123, 777, 1001, 1990, 2026, 3141, 4242, 5555, 8080, 9001, 12345, 31337 };
+    static readonly int[] EvidenceSeeds = { 516574485, 2554, 20388 };
+    const int CountRadius = 4;      // chunks -4..4 round (0, 0): 81 chunks per seed
+    const int EvidenceRadius = 3;   // candidate search: chunks within 3 of the seed's centre chunk
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
+    static string ProjectRoot => Directory.GetParent(Application.dataPath).FullName;
+
+    static string Arg(string name, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return fallback;
+    }
+
+    static bool Flag(string name) => Environment.GetCommandLineArgs().Contains(name);
+
+    static string Dir(string path)
+    {
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    static readonly StringBuilder log = new StringBuilder();
+    static string logPath;
+
+    static void Log(string s)
+    {
+        log.AppendLine(s);
+        Debug.Log("[Transitions] " + s);
+        if (logPath != null) try { File.WriteAllText(logPath, log.ToString()); } catch { }
+    }
+
+    static string F(float v, string fmt = "0.00") => v.ToString(fmt, IC);
+    static string V(Vector3 v) => "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
+    static string J(Vector3 v) => "[" + F(v.x, "0.###") + ", " + F(v.y, "0.###") + ", " + F(v.z, "0.###") + "]";
+
+    // =====================================================================
+    // Map queries (pure generator: no scene needed)
+    // =====================================================================
+
+    sealed class Geo
+    {
+        public readonly FrontRoomsMapCache cache;
+        public readonly int seed;
+        public Geo(FrontRoomsLevelProfile profile, int seed)
+        {
+            this.seed = seed;
+            cache = new FrontRoomsMapCache(profile.Generation(seed), profile.ModuleData());
+        }
+        public ZoneInfo Z(GridCoord c) => cache.ZoneOf(c);
+        public ZoneTheme T(GridCoord c) => cache.ZoneOf(c).theme;
+        public ZoneHeight Ht(GridCoord c) => cache.ZoneOf(c).height;
+        public EdgeKind E(GridCoord a, GridCoord b) => cache.Edge(a, b);
+        /// <summary>Something is built on the edge (a wall piece of any kind).</summary>
+        public bool P(GridCoord a, GridCoord b) => cache.Edge(a, b) != EdgeKind.Open;
+        public string Name(GridCoord c) { var z = Z(c); return z.theme + "/" + z.height; }
+    }
+
+    static GridCoord G(int x, int y) => new GridCoord(x, y);
+
+    // ----- one corner post (cell-lattice point k): the 0.16 m square every wall end shares -----
+    // Returns 0 nothing, 1 a split end cap (each half one material, halves differ), 2 a z-fight (coplanar faces of two materials).
+    static int PostState(Geo g, GridCoord k, out Vector3 exposedDir, out string what)
+    {
+        exposedDir = Vector3.zero;
+        what = null;
+        var bestDir = Vector3.zero;
+        string bestWhat = null;
+        GridCoord SW = G(k.x - 1, k.y - 1), SE = G(k.x, k.y - 1), NW = G(k.x - 1, k.y), NE = k;
+        bool eS = g.P(SW, SE), eN = g.P(NW, NE), eW = g.P(SW, NW), eE = g.P(SE, NE);
+        var count = (eS ? 1 : 0) + (eN ? 1 : 0) + (eW ? 1 : 0) + (eE ? 1 : 0);
+        if (count == 0 || count == 4) return 0;
+        ZoneTheme tSW = g.T(SW), tSE = g.T(SE), tNW = g.T(NW), tNE = g.T(NE);
+        if (tSW == tSE && tSE == tNW && tNW == tNE) return 0;
+        var best = 0;
+        void Face(bool exposed, Vector3 dir, string name, (bool on, ZoneTheme t)[] h1, (bool on, ZoneTheme t)[] h2)
+        {
+            if (!exposed) return;
+            var s1 = h1.Where(x => x.on).Select(x => x.t).Distinct().ToList();
+            var s2 = h2.Where(x => x.on).Select(x => x.t).Distinct().ToList();
+            var state = s1.Count > 1 || s2.Count > 1 ? 2 : (s1.Count == 1 && s2.Count == 1 && s1[0] != s2[0]) ? 1 : 0;
+            if (state > best)
+            {
+                best = state;
+                bestDir = dir;
+                bestWhat = name + " face: halves [" + string.Join("+", s1) + "] | [" + string.Join("+", s2) + "]";
+            }
+        }
+        Face(!eE, Vector3.right, "+x", new[] { (eS, tSE), (eN, tNE), (eW, tSW) }, new[] { (eS, tSE), (eN, tNE), (eW, tNW) });
+        Face(!eW, Vector3.left, "-x", new[] { (eS, tSW), (eN, tNW), (eE, tSE) }, new[] { (eS, tSW), (eN, tNW), (eE, tNE) });
+        Face(!eN, Vector3.forward, "+z", new[] { (eW, tNW), (eE, tNE), (eS, tSW) }, new[] { (eW, tNW), (eE, tNE), (eS, tSE) });
+        Face(!eS, Vector3.back, "-z", new[] { (eW, tSW), (eE, tSE), (eN, tNW) }, new[] { (eW, tSW), (eE, tSE), (eN, tNE) });
+        exposedDir = bestDir;
+        what = bestWhat;
+        return best;
+    }
+
+    // ----- the edge after (a,b) on the same line, and the two faces' junction there -----
+    // east edge of a=(x,y): next = east edge of (x,y+1); north edge: next = north edge of (x+1,y).
+    // Yields (f1, f2, perpendicular present, side outward direction) for both faces.
+    static IEnumerable<(GridCoord f1, GridCoord f2, bool corner, Vector3 outward)> Junctions(Geo g, GridCoord a, GridCoord b, bool east)
+    {
+        GridCoord a2 = east ? G(a.x, a.y + 1) : G(a.x + 1, a.y);
+        GridCoord b2 = east ? G(b.x, b.y + 1) : G(b.x + 1, b.y);
+        if (!g.P(a2, b2)) yield break;
+        var n = east ? Vector3.right : Vector3.forward;
+        yield return (a, a2, g.P(a, a2), -n);
+        yield return (b, b2, g.P(b, b2), n);
+    }
+
+    // =====================================================================
+    // Counting
+    // =====================================================================
+
+    static Dictionary<string, double> CountChunk(Geo g, MapChunk data)
+    {
+        var c = new Dictionary<string, double>();
+        void Add(string k, double v) { c.TryGetValue(k, out var x); c[k] = x + v; }
+        const int n = MapGrid.ChunkCells;
+        for (var j = 0; j < n; j++)
+        for (var i = 0; i < n; i++)
+        {
+            var a = data.Cell(i, j);
+            var za = g.Z(a);
+            if (za.theme == ZoneTheme.Office) Add("cells_office", 1);
+            Add("cells_" + za.height, 1);
+            foreach (var east in new[] { true, false })
+            {
+                var b = east ? G(a.x + 1, a.y) : G(a.x, a.y + 1);
+                var kind = east ? data.east[MapGrid.LocalIndex(i, j)] : data.north[MapGrid.LocalIndex(i, j)];
+                var zb = g.Z(b);
+                var theme = za.theme != zb.theme;
+                var height = za.height != zb.height;
+                Add("edges", 1);
+                if (theme)
+                {
+                    Add("theme_border_edges", 1);
+                    switch (kind)
+                    {
+                        case EdgeKind.Open: Add("open_theme", 1); Add("floorcut_m", 3); Add("ceilingcut_m", 3); break;
+                        case EdgeKind.Arch: Add("arch_theme", 1); Add("floorcut_m", ModuleUnits.ArchMinWidth + ModuleUnits.ArchWidthSpread * .5f); break;
+                        case EdgeKind.Door: Add("door_theme", 1); Add("floorcut_m", ModuleUnits.DoorWidth); break;
+                        case EdgeKind.Window: Add("window_theme", 1); break;
+                        default: Add("wall_theme", 1); break;
+                    }
+                    if (height) Add("theme_and_height_edges", 1);
+                }
+                if (height)
+                {
+                    Add("height_border_edges", 1);
+                    var lo = (ZoneHeight)Math.Min((int)za.height, (int)zb.height);
+                    var hi = (ZoneHeight)Math.Max((int)za.height, (int)zb.height);
+                    var pair = lo + "-" + hi;
+                    if (kind == EdgeKind.Door || kind == EdgeKind.Window)
+                    {
+                        Add("step_opening_" + pair, 1);
+                        Add("step_opening_any", 1);
+                        if (!theme) Add(kind == EdgeKind.Door ? "door_height_only" : "window_height_only", 1);
+                    }
+                    else if (kind == EdgeKind.Wall) Add("step_wall_" + pair, 1);
+                    else Add("step_UNEXPECTED_" + kind + "_" + pair, 1);
+                }
+                if (kind == EdgeKind.Open) continue;
+                foreach (var (f1, f2, corner, _) in Junctions(g, a, b, east))
+                {
+                    if (g.T(f1) == g.T(f2)) continue;
+                    Add(corner ? "seam_inside_corner_hidden" : "seam_flat", 1);
+                }
+            }
+            var post = PostState(g, G(a.x + 1, a.y + 1), out _, out _);
+            if (post == 2) Add("post_zfight", 1);
+            else if (post == 1) Add("post_split_end", 1);
+        }
+        c["chunks"] = 1;
+        if (c.TryGetValue("theme_border_edges", out var tb) && tb > 0) c["chunk_has_theme_border"] = 1;
+        if (c.TryGetValue("height_border_edges", out var hb) && hb > 0) c["chunk_has_height_border"] = 1;
+        return c;
+    }
+
+    static readonly string[] CountOrder =
+    {
+        "chunks", "chunk_has_theme_border", "chunk_has_height_border", "cells_office", "cells_Low", "cells_Standard", "cells_Tall", "edges",
+        "theme_border_edges", "open_theme", "arch_theme", "door_theme", "window_theme", "wall_theme", "theme_and_height_edges",
+        "floorcut_m", "ceilingcut_m", "seam_flat", "seam_inside_corner_hidden", "post_zfight", "post_split_end",
+        "height_border_edges", "step_opening_any", "step_opening_Low-Standard", "step_opening_Standard-Tall", "step_opening_Low-Tall",
+        "door_height_only", "window_height_only", "step_wall_Low-Standard", "step_wall_Standard-Tall", "step_wall_Low-Tall",
+    };
+
+    public static void CountBatch()
+    {
+        var code = 0;
+        try
+        {
+            var outDir = Dir(Arg("-out", Path.Combine(ProjectRoot, "Verification", "transitions", "counts")));
+            logPath = Path.Combine(outDir, "count_log.txt");
+            Count(outDir);
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    static void Count(string outDir)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        Log("counting · profile " + AssetDatabase.GetAssetPath(profile) + " · modules " + profile.ModuleData().Count + " · " + CountSeeds.Length + " seeds x " + (2 * CountRadius + 1) * (2 * CountRadius + 1) + " chunks");
+        var perChunk = new List<Dictionary<string, double>>();
+        var perSeed = new List<(int seed, Dictionary<string, double> sum)>();
+        var csv = new StringBuilder("seed,chunk_x,chunk_y," + string.Join(",", CountOrder) + "\n");
+        foreach (var seed in CountSeeds)
+        {
+            var g = new Geo(profile, seed);
+            var sum = new Dictionary<string, double>();
+            for (var cy = -CountRadius; cy <= CountRadius; cy++)
+            for (var cx = -CountRadius; cx <= CountRadius; cx++)
+            {
+                var data = g.cache.Get(G(cx, cy));
+                var c = CountChunk(g, data);
+                perChunk.Add(c);
+                foreach (var kv in c) { sum.TryGetValue(kv.Key, out var x); sum[kv.Key] = x + kv.Value; }
+                csv.Append(seed).Append(',').Append(cx).Append(',').Append(cy);
+                foreach (var k in CountOrder) { c.TryGetValue(k, out var v); csv.Append(',').Append(v.ToString("0.##", IC)); }
+                csv.Append('\n');
+            }
+            perSeed.Add((seed, sum));
+        }
+        File.WriteAllText(Path.Combine(outDir, "counts_per_chunk.csv"), csv.ToString());
+        var keys = CountOrder.Concat(perChunk.SelectMany(d => d.Keys).Distinct().Where(k => !CountOrder.Contains(k)).OrderBy(k => k)).ToList();
+        var md = new StringBuilder();
+        md.AppendLine("| key | mean per chunk | sd | chunks with >= 1 | min seed mean | max seed mean | total |");
+        md.AppendLine("|---|---:|---:|---:|---:|---:|---:|");
+        foreach (var k in keys)
+        {
+            var vals = perChunk.Select(d => d.TryGetValue(k, out var v) ? v : 0).ToList();
+            var mean = vals.Average();
+            var sd = Math.Sqrt(vals.Select(v => (v - mean) * (v - mean)).Average());
+            var share = vals.Count(v => v > 0) / (double)vals.Count;
+            var seedMeans = perSeed.Select(p => (p.sum.TryGetValue(k, out var v) ? v : 0) / (p.sum.TryGetValue("chunks", out var ch) ? ch : 1)).ToList();
+            md.AppendLine("| " + k + " | " + mean.ToString("0.000", IC) + " | " + sd.ToString("0.00", IC) + " | " + (share * 100).ToString("0.0", IC) + " % | "
+                + seedMeans.Min().ToString("0.00", IC) + " | " + seedMeans.Max().ToString("0.00", IC) + " | " + vals.Sum().ToString("0.#", IC) + " |");
+        }
+        File.WriteAllText(Path.Combine(outDir, "counts.md"), md.ToString());
+        var seedTable = new StringBuilder("| seed | chunks | theme-border edges/chunk | open | arch | door | window | wall | flat seams | post z-fights | step openings |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n");
+        foreach (var (seed, sum) in perSeed)
+        {
+            double S(string k) => (sum.TryGetValue(k, out var v) ? v : 0) / sum["chunks"];
+            seedTable.AppendLine("| " + seed + " | " + sum["chunks"] + " | " + S("theme_border_edges").ToString("0.00", IC) + " | " + S("open_theme").ToString("0.00", IC) + " | " + S("arch_theme").ToString("0.00", IC)
+                + " | " + S("door_theme").ToString("0.00", IC) + " | " + S("window_theme").ToString("0.00", IC) + " | " + S("wall_theme").ToString("0.00", IC) + " | " + S("seam_flat").ToString("0.00", IC)
+                + " | " + S("post_zfight").ToString("0.00", IC) + " | " + S("step_opening_any").ToString("0.00", IC) + " |");
+        }
+        File.WriteAllText(Path.Combine(outDir, "counts_per_seed.md"), seedTable.ToString());
+        Log("counts written: " + perChunk.Count + " chunks");
+        Log(md.ToString());
+    }
+
+    // =====================================================================
+    // Building and rendering (edit mode, main scene)
+    // =====================================================================
+
+    sealed class Built
+    {
+        public int seed;
+        public GameObject root;
+        public FrontRoomsMapWorld world;
+        public FrontRoomsLevelProfile profile;
+        public Transform eye;
+        public GridCoord centreChunk;
+    }
+
+    sealed class Env
+    {
+        public AmbientMode mode; public Color light, sky, eq, ground; public float ambInt; public SphericalHarmonicsL2 probe;
+        public float reflInt; public DefaultReflectionMode reflMode; public Texture custom; public Material skybox;
+        public bool fog; public FogMode fogMode; public Color fogColor; public float fogDensity;
+    }
+
+    static Env SnapEnv() => new Env
+    {
+        mode = RenderSettings.ambientMode, light = RenderSettings.ambientLight, sky = RenderSettings.ambientSkyColor,
+        eq = RenderSettings.ambientEquatorColor, ground = RenderSettings.ambientGroundColor, ambInt = RenderSettings.ambientIntensity,
+        probe = RenderSettings.ambientProbe, reflInt = RenderSettings.reflectionIntensity, reflMode = RenderSettings.defaultReflectionMode,
+        custom = RenderSettings.customReflectionTexture, skybox = RenderSettings.skybox, fog = RenderSettings.fog,
+        fogMode = RenderSettings.fogMode, fogColor = RenderSettings.fogColor, fogDensity = RenderSettings.fogDensity,
+    };
+
+    static void RestoreEnv(Env e)
+    {
+        RenderSettings.ambientMode = e.mode;
+        RenderSettings.ambientLight = e.light;
+        RenderSettings.ambientSkyColor = e.sky;
+        RenderSettings.ambientEquatorColor = e.eq;
+        RenderSettings.ambientGroundColor = e.ground;
+        RenderSettings.ambientIntensity = e.ambInt;
+        RenderSettings.skybox = e.skybox;
+        RenderSettings.defaultReflectionMode = e.reflMode;
+        RenderSettings.customReflectionTexture = e.custom;
+        RenderSettings.reflectionIntensity = e.reflInt;
+        RenderSettings.fog = e.fog;
+        RenderSettings.fogMode = e.fogMode;
+        RenderSettings.fogColor = e.fogColor;
+        RenderSettings.fogDensity = e.fogDensity;
+        DynamicGI.UpdateEnvironment();
+    }
+
+    static Env sceneEnv;
+
+    static void OpenScene()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        sceneEnv = SnapEnv();
+        // The serialized Relay stands in the edit-mode preview rooms (5 km away from the map; hidden anyway).
+        var game = Object.FindFirstObjectByType<FrontRooms3DGame>();
+        var hunter = game != null ? game.transform.Find("Hunter") : null;
+        if (hunter != null) hunter.gameObject.SetActive(false);
+        Log("scene " + ScenePath + " · env " + EnvLine());
+    }
+
+    static string EnvLine() => "ambient " + RenderSettings.ambientMode + " sky " + RenderSettings.ambientSkyColor.ToString("F2") + " eq " + RenderSettings.ambientEquatorColor.ToString("F2")
+        + " gnd " + RenderSettings.ambientGroundColor.ToString("F2") + " fog " + RenderSettings.fog + " " + RenderSettings.fogMode + " " + F(RenderSettings.fogDensity, "0.000")
+        + " refl " + F(RenderSettings.reflectionIntensity);
+
+    static Built Build(int seed, Vector3 feetMap)
+    {
+        var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.generation = profile.Generation(seed);
+        var root = new GameObject("TRANSITIONS / map " + seed) { hideFlags = HideFlags.DontSave };
+        root.transform.position = MapRoot;
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = profile;
+        world.OverrideSpawn(new Vector3(feetMap.x, 0f, feetMap.z), 0f);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        world.BuildForCapture();
+        if (sceneEnv != null) RestoreEnv(sceneEnv);
+        var eye = root.transform.Find("CAPTURE / eye");
+        Physics.SyncTransforms();
+        var b = new Built { seed = seed, root = root, world = world, profile = profile, eye = eye, centreChunk = MapGrid.ChunkOf(FrontRoomsMapWorld.CellAt(feetMap)) };
+        Log("  built seed " + seed + " round chunk " + b.centreChunk + " (" + world.BuiltChunkCount + " chunks, failed " + world.FailedChunkCount + ") in " + watch.ElapsedMilliseconds + " ms");
+        return b;
+    }
+
+    static void Release(Built b)
+    {
+        if (b == null) return;
+        if (b.world != null) b.world.Release();
+        if (b.root != null) Object.DestroyImmediate(b.root);
+        if (b.profile != null) Object.DestroyImmediate(b.profile);
+    }
+
+    /// <summary>Stand the player at a map-space foot position: the lamps light, fade and shadow for it, as in the game.</summary>
+    static void StandAt(Built b, Vector3 feetMap)
+    {
+        if (b.eye != null) b.eye.localPosition = new Vector3(feetMap.x, 0f, feetMap.z);
+        b.world.TickFixturesForTools(0f);
+    }
+
+    static void OpenDoor(Built b, GridCoord from, GridCoord to)
+    {
+        if (b.world.DoorBetween(from, to) == null) { Log("    no door between " + from + " and " + to); return; }
+        b.world.TryOpenDoor(from, to);
+        for (var i = 0; i < 4; i++) b.world.TickDoorsForTools(1f);
+        Physics.SyncTransforms();
+    }
+
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D readTex;
+
+    static Camera SceneCamera()
+    {
+        if (cam != null) return cam;
+        foreach (var c in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (c.name == "First-person camera") { cam = c; break; }
+        if (cam == null)
+        {
+            cam = FrontRooms3DGame.CreateCamera(null);
+            cam.gameObject.hideFlags = HideFlags.DontSave;
+            Log("no scene camera: created one with FrontRooms3DGame.CreateCamera");
+        }
+        cam.gameObject.SetActive(true);
+        cam.enabled = true;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        Log("camera '" + cam.name + "' hdr " + cam.allowHDR + " msaa " + cam.allowMSAA + " · global volume " + (volume != null ? volume.sharedProfile.name : "MISSING"));
+        return cam;
+    }
+
+    static void EnsureRT()
+    {
+        if (rt != null) return;
+        rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "Transitions capture" };
+        rt.Create();
+        readTex = new Texture2D(W, H, TextureFormat.RGB24, false);
+    }
+
+    static Quaternion LookRot(Vector3 eyeMap, Vector3 targetMap, out float yaw, out float pitch)
+    {
+        var d = targetMap - eyeMap;
+        yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        return Quaternion.Euler(pitch, yaw, 0f);
+    }
+
+    static void Render(Built b, Vector3 eyeMap, float yaw, float pitch, float fov, string path)
+    {
+        EnsureRT();
+        var c = SceneCamera();
+        var t = c.transform;
+        var keepPos = t.position; var keepRot = t.rotation; var keepFov = c.fieldOfView; var keepNear = c.nearClipPlane; var keepFar = c.farClipPlane; var keepTarget = c.targetTexture;
+        t.SetPositionAndRotation(MapRoot + eyeMap, Quaternion.Euler(pitch, yaw, 0f));
+        c.fieldOfView = fov;
+        c.nearClipPlane = .06f;
+        c.farClipPlane = b != null ? b.world.SightDistance : 80f;
+        c.targetTexture = rt;
+        c.Render();
+        c.Render();
+        c.targetTexture = keepTarget;
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        readTex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        readTex.Apply(false);
+        RenderTexture.active = active;
+        File.WriteAllBytes(path, readTex.EncodeToJPG(85));
+        t.SetPositionAndRotation(keepPos, keepRot);
+        c.fieldOfView = keepFov; c.nearClipPlane = keepNear; c.farClipPlane = keepFar;
+    }
+
+    static string LampLine(Built b)
+    {
+        int total = 0, on = 0, shadowed = 0;
+        if (FI(b.world.GetType(), "built")?.GetValue(b.world) is IDictionary built)
+            foreach (DictionaryEntry e in built)
+                foreach (var f in (IEnumerable)FI(e.Value.GetType(), "fixtures").GetValue(e.Value))
+                {
+                    var l = (Light)FI(f.GetType(), "light").GetValue(f);
+                    total++;
+                    if (l != null && l.enabled) { on++; if (l.shadows != LightShadows.None) shadowed++; }
+                }
+        return "lamps " + total + ", lit " + on + ", shadowed " + shadowed;
+    }
+
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+
+    // ---------- clearance: the eye must stand in free space and see its target ----------
+    const int Mask = ~0;
+
+    static bool EyeFree(Vector3 eyeMap)
+    {
+        var w = MapRoot + eyeMap;
+        if (Physics.CheckSphere(w, .14f, Mask, QueryTriggerInteraction.Ignore)) return false;
+        var feet = new Vector3(w.x, .35f, w.z);
+        return !Physics.CheckCapsule(feet, w + Vector3.down * .25f, .22f, Mask, QueryTriggerInteraction.Ignore);
+    }
+
+    /// <summary>Share of the targets the eye sees (nothing hit before 0.25 m short of each).</summary>
+    static float Sees(Vector3 eyeMap, IList<Vector3> targetsMap)
+    {
+        var w = MapRoot + eyeMap;
+        var seen = 0;
+        foreach (var tm in targetsMap)
+        {
+            var t = MapRoot + tm;
+            var d = t - w;
+            var dist = d.magnitude;
+            if (!Physics.Raycast(w, d / dist, out var hit, dist, Mask, QueryTriggerInteraction.Ignore) || hit.distance >= dist - .25f) seen++;
+        }
+        return targetsMap.Count == 0 ? 1f : seen / (float)targetsMap.Count;
+    }
+
+    /// <summary>Try the eye at small offsets (metres back along -fwd, sideways along side) until it stands free and sees most targets.</summary>
+    static Vector3 Clear(Vector3 eyeMap, Vector3 fwd, Vector3 side, IList<Vector3> targets, out float seen)
+    {
+        var offsets = new (float back, float lat)[] { (0, 0), (0, .35f), (0, -.35f), (-.4f, 0), (.4f, 0), (-.4f, .35f), (-.4f, -.35f), (.4f, .35f), (.4f, -.35f), (0, .7f), (0, -.7f), (-.8f, 0), (.8f, 0) };
+        var bestEye = eyeMap;
+        seen = -1f;
+        foreach (var (back, lat) in offsets)
+        {
+            var e = eyeMap - fwd * back + side * lat;
+            if (!EyeFree(e)) continue;
+            var s = Sees(e, targets);
+            if (s > seen + .01f) { seen = s; bestEye = e; }
+            if (seen >= .99f) break;
+        }
+        if (seen < 0f) seen = 0f;
+        return bestEye;
+    }
+
+    // =====================================================================
+    // Evidence: find instances of every cut type and render them
+    // =====================================================================
+
+    sealed class Cand
+    {
+        public string type;
+        public int seed;
+        public GridCoord a, b;       // edge cells (a: Level 0 / low side when it matters)
+        public GridCoord k;          // corner (posts)
+        public Vector3 dir;          // posts: exposed face; seams: outward from the wall
+        public GridCoord f1, f2;     // seams: face cells
+        public float score;
+        public string note;
+        public GridCoord Anchor => type == "post" ? k : type == "seam" ? f1 : a;
+    }
+
+    sealed class View
+    {
+        public Cand cand;
+        public string label;        // A, B, W, F, C ...
+        public Vector3 eyeMap;
+        public Vector3 lookMap;
+        public Vector3 feetMap => new Vector3(eyeMap.x, 0f, eyeMap.z);
+        public Vector3 fwd, side;
+        public List<Vector3> targets = new List<Vector3>();
+        public float fov = DefaultFov;
+        public bool openDoor;
+    }
+
+    static Vector3 CellCentre(GridCoord c) => new Vector3((c.x + .5f) * MapGrid.CellSize, 0f, (c.y + .5f) * MapGrid.CellSize);
+
+    static Vector3 EdgeMid(GridCoord a, GridCoord b, out Vector3 n, out Vector3 t)
+    {
+        n = new Vector3(b.x - a.x, 0f, b.y - a.y);
+        t = Mathf.Abs(n.x) > .5f ? Vector3.forward : Vector3.right;
+        return CellCentre(a) + n * (MapGrid.CellSize * .5f);
+    }
+
+    static int StraightOpen(Geo g, GridCoord from, GridCoord step, int max)
+    {
+        var n = 0;
+        var cur = from;
+        while (n < max)
+        {
+            var next = cur + step;
+            var e = g.E(cur, next);
+            if (e != EdgeKind.Open && e != EdgeKind.Arch) break;
+            cur = next;
+            n++;
+        }
+        return n;
+    }
+
+    static List<Cand> FindCandidates(Geo g, GridCoord centre)
+    {
+        var list = new List<Cand>();
+        var o = MapGrid.ChunkOrigin(centre);
+        var r = EvidenceRadius * MapGrid.ChunkCells;
+        for (var y = o.y - r; y < o.y + MapGrid.ChunkCells + r; y++)
+        for (var x = o.x - r; x < o.x + MapGrid.ChunkCells + r; x++)
+        {
+            var a0 = G(x, y);
+            var za = g.Z(a0);
+            var dist = Mathf.Sqrt(Mathf.Pow(x - (o.x + 4), 2) + Mathf.Pow(y - (o.y + 4), 2));
+            foreach (var east in new[] { true, false })
+            {
+                var b0 = east ? G(x + 1, y) : G(x, y + 1);
+                var zb = g.Z(b0);
+                var kind = g.E(a0, b0);
+                var theme = za.theme != zb.theme;
+                var height = za.height != zb.height;
+                // a = the Level 0 side for theme borders, the lower side for height steps
+                var a = a0; var b = b0;
+                if (theme && za.theme == ZoneTheme.Office) { a = b0; b = a0; }
+                else if (!theme && height && za.height > zb.height) { a = b0; b = a0; }
+                var n = new GridCoord(b.x - a.x, b.y - a.y);
+                var t = east ? G(0, 1) : G(1, 0);
+                float Behind(GridCoord fromCell, GridCoord dirStep) => Mathf.Min(3, StraightOpen(g, fromCell, dirStep, 3));
+                if (theme)
+                {
+                    var lateral = 0f;
+                    foreach (var s in new[] { t, G(-t.x, -t.y) })
+                        if (g.P(a, a + s) && g.P(b, b + s)) lateral += 2f;
+                    var behind = Behind(a, G(-n.x, -n.y)) + Behind(b, n);
+                    string type = kind == EdgeKind.Open ? "open" : kind == EdgeKind.Arch ? "arch" : kind == EdgeKind.Door ? "door" : kind == EdgeKind.Window ? "window" : "wall";
+                    var score = (type == "open" ? lateral : 0f) + behind - dist * .02f;
+                    if (type == "wall") score = Behind(a, G(-n.x, -n.y)) + Behind(b, n) + (g.P(a, a + t) ? 0 : .5f) + (g.P(b, b + t) ? 0 : .5f) - dist * .02f;
+                    list.Add(new Cand { type = type, seed = g.seed, a = a, b = b, score = score, note = g.Name(a) + " | " + g.Name(b) + " · " + kind + (height ? " + height step" : "") });
+                }
+                else if (height && (kind == EdgeKind.Door || kind == EdgeKind.Window))
+                {
+                    var behind = Behind(a, G(-n.x, -n.y)) + Behind(b, n);
+                    list.Add(new Cand { type = "step", seed = g.seed, a = a, b = b, score = behind - dist * .02f + (kind == EdgeKind.Door ? .5f : 0f), note = g.Name(a) + " | " + g.Name(b) + " · " + kind });
+                }
+                if (kind != EdgeKind.Open)
+                    foreach (var (f1, f2, corner, outward) in Junctions(g, a0, b0, east))
+                    {
+                        if (corner || g.T(f1) == g.T(f2)) continue;
+                        // the cells in front of the two faces, away from the wall
+                        var outStep = G(Mathf.RoundToInt(outward.x), Mathf.RoundToInt(outward.z));
+                        var front = (g.P(f1, f1 + outStep) ? 0 : 1) + (g.P(f2, f2 + outStep) ? 0 : 1);
+                        var lf1 = f1; var lf2 = f2;
+                        if (g.T(f1) == ZoneTheme.Office) { lf1 = f2; lf2 = f1; }
+                        list.Add(new Cand { type = "seam", seed = g.seed, f1 = lf1, f2 = lf2, a = a0, b = b0, dir = outward, score = front - dist * .02f, note = g.Name(lf1) + " -> " + g.Name(lf2) + " along a " + kind + " line" });
+                    }
+            }
+            var k = G(x + 1, y + 1);
+            var post = PostState(g, k, out var exposed, out var what);
+            if (post == 2)
+            {
+                list.Add(new Cand { type = "post", seed = g.seed, k = k, dir = exposed, score = 1f - dist * .02f, note = what });
+            }
+            else if (post == 1)
+                list.Add(new Cand { type = "postsplit", seed = g.seed, k = k, dir = exposed, score = .5f - dist * .02f, note = what });
+        }
+        return list;
+    }
+
+    static readonly string[] EvidenceTypes = { "open", "arch", "door", "window", "wall", "seam", "post", "postsplit", "step" };
+
+    static List<View> ViewsFor(Cand c, Geo g)
+    {
+        var v = new List<View>();
+        var cs = MapGrid.CellSize;
+        View Mk(string label, Vector3 eye, Vector3 look, params Vector3[] targets)
+        {
+            var fwd = look - eye; fwd.y = 0f; fwd.Normalize();
+            var side = Vector3.Cross(Vector3.up, fwd);
+            var view = new View { cand = c, label = label, eyeMap = eye, lookMap = look, fwd = fwd, side = side };
+            view.targets.AddRange(targets.Length > 0 ? targets : new[] { look });
+            return view;
+        }
+        var up = Vector3.up;
+        var eyeY = ModuleUnits.PlayerEye;
+        switch (c.type)
+        {
+            case "open":
+            case "arch":
+            case "door":
+            case "window":
+            case "wall":
+            case "step":
+            {
+                var mid = EdgeMid(c.a, c.b, out var n, out var t);
+                var p = mid; // arch centre is fixed after the build (CrossingPoint)
+                var lat = c.type == "arch" ? .9f : c.type == "door" || c.type == "step" ? .35f : c.type == "wall" ? 1.0f : .3f;
+                var dA = c.type == "window" ? 2.0f : 2.4f;
+                var look = c.type == "wall" ? p + up * 1.3f : p + n * 1.2f + up * 1.25f;
+                var lookB = c.type == "wall" ? p + up * 1.3f : p - n * 1.2f + up * 1.25f;
+                if (c.type == "step") { look = p + n * 1.6f + up * 2.0f; lookB = p + up * 1.9f; }
+                v.Add(Mk("A", p - n * dA + t * lat + up * eyeY, look, p + up * 1.0f, p + up * 2.0f));
+                v.Add(Mk("B", p + n * dA + t * lat + up * eyeY, lookB, p + up * 1.0f, p + up * 2.0f));
+                var back = G(c.a.x - c.b.x, c.a.y - c.b.y);
+                var wide = Mathf.Max(3.2f, 1.5f + 3f * StraightOpen(g, c.a, back, 3) - .7f);
+                v.Add(Mk("W", p - n * wide + t * .6f + up * eyeY, p + n * 1.5f + up * 1.3f, p + up * 1.0f, p + up * 2.0f));
+                if (c.type == "open")
+                {
+                    v.Add(Mk("F", p - n * 1.5f + t * .2f + up * eyeY, p + n * .3f, p));
+                    v.Add(Mk("C", p - n * 1.7f + t * .2f + up * eyeY, p + n * .3f + up * 2.9f, p + up * 2.85f));
+                }
+                if (c.type == "step") v.Add(Mk("S", p + n * 3.4f - t * .4f + up * eyeY, p + up * 2.3f, p + up * 2.3f));
+                break;
+            }
+            case "seam":
+            {
+                // junction J on the wall line between f1 (Level 0) and f2 (Office); u runs from f1 to f2
+                var c1 = CellCentre(c.f1); var c2 = CellCentre(c.f2);
+                var u = (c2 - c1).normalized;
+                var o = c.dir;
+                var jPoint = (c1 + c2) * .5f - o * (cs * .5f);
+                var face = jPoint + o * ModuleUnits.WallHalf;
+                v.Add(Mk("A", jPoint + o * 1.7f - u * 2.3f + up * eyeY, face + up * 1.35f, face + up * .6f, face + up * 1.4f, face + up * 2.2f));
+                v.Add(Mk("B", jPoint + o * 1.7f + u * 2.3f + up * eyeY, face + up * 1.35f, face + up * .6f, face + up * 1.4f, face + up * 2.2f));
+                var uStep = G(Mathf.RoundToInt(-u.x), Mathf.RoundToInt(-u.z));
+                var wideU = Mathf.Max(3.0f, 1.5f + 3f * StraightOpen(g, c.f1, uStep, 2) - .7f);
+                v.Add(Mk("W", jPoint + o * 1.9f - u * wideU + up * eyeY, face + u * 1.0f + up * 1.3f, face + up * 1.4f));
+                v.Add(Mk("Z", jPoint + o * 1.0f - u * .9f + up * eyeY, face + up * 1.45f, face + up * 1.4f));
+                break;
+            }
+            case "post":
+            case "postsplit":
+            {
+                var kp = new Vector3(c.k.x * cs, 0f, c.k.y * cs);
+                var d = c.dir;
+                var s = Vector3.Cross(up, d);
+                var faceP = kp + d * ModuleUnits.WallHalf;
+                v.Add(Mk("A", kp + d * 2.0f + s * .7f + up * eyeY, faceP + up * 1.3f, faceP + up * .8f, faceP + up * 1.6f));
+                v.Add(Mk("B", kp + d * 2.0f - s * .7f + up * eyeY, faceP + up * 1.3f, faceP + up * .8f, faceP + up * 1.6f));
+                v.Add(Mk("Z", kp + d * 1.0f + s * .25f + up * eyeY, faceP + up * 1.5f, faceP + up * 1.5f));
+                break;
+            }
+        }
+        return v;
+    }
+
+    public static void EvidenceBatch()
+    {
+        var code = 0;
+        try
+        {
+            var outDir = Dir(Arg("-out", Path.Combine(ProjectRoot, "Verification", "transitions", "evidence")));
+            logPath = Path.Combine(outDir, "evidence_log.txt");
+            if (!Flag("-noCount")) Count(Dir(Path.Combine(outDir, "..", "counts")));
+            OpenScene();
+            Evidence(outDir);
+            StreamThresholds(outDir);
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    static GridCoord EvidenceCentre(int seed) => seed == 516574485 ? MapGrid.ChunkOf(G(264, 200)) : G(0, 0);
+
+    static void Evidence(string outDir)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var frames = new StringBuilder();
+        var perType = Mathf.Max(1, int.Parse(Arg("-perType", "3"), IC));
+        var all = new List<Cand>();
+        var geos = new Dictionary<int, Geo>();
+        foreach (var seed in EvidenceSeeds)
+        {
+            var g = new Geo(profile, seed);
+            geos[seed] = g;
+            var found = FindCandidates(g, EvidenceCentre(seed));
+            Log("seed " + seed + " centre chunk " + EvidenceCentre(seed) + ": " + string.Join(", ", EvidenceTypes.Select(t => t + " " + found.Count(c => c.type == t))));
+            all.AddRange(found);
+        }
+        // Per type: the best few, from different seeds first, never two at the same anchor.
+        var chosen = new List<Cand>();
+        foreach (var type in EvidenceTypes)
+        {
+            var pool = all.Where(c => c.type == type).OrderByDescending(c => c.score).ToList();
+            var picked = new List<Cand>();
+            foreach (var c in pool)
+            {
+                if (picked.Count >= perType) break;
+                if (picked.Any(p => p.seed == c.seed && Mathf.Abs(p.Anchor.x - c.Anchor.x) + Mathf.Abs(p.Anchor.y - c.Anchor.y) < 6)) continue;
+                if (picked.Count < Math.Min(perType, EvidenceSeeds.Length) && picked.Any(p => p.seed == c.seed) && pool.Any(o => o.seed != c.seed && !picked.Any(p => p.seed == o.seed))) continue;
+                picked.Add(c);
+            }
+            if (picked.Count < perType)
+                foreach (var c in pool)
+                {
+                    if (picked.Count >= perType) break;
+                    if (picked.Contains(c) || picked.Any(p => p.seed == c.seed && Mathf.Abs(p.Anchor.x - c.Anchor.x) + Mathf.Abs(p.Anchor.y - c.Anchor.y) < 6)) continue;
+                    picked.Add(c);
+                }
+            chosen.AddRange(picked);
+        }
+        Log("chosen instances: " + chosen.Count);
+
+        // The G10 reproduction: Red's screenshot, top-left frame (audit frame 01, Level 0 BEFORE).
+        {
+            var feet = new Vector3(793.5f, 0f, 601.5f);
+            var b = Build(516574485, feet);
+            StandAt(b, feet);
+            var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+            var path = Path.Combine(outDir, "g10_repro_01_rep_L0.jpg");
+            Render(b, eye, 0f, 1.15f, DefaultFov, path);
+            frames.AppendLine("g10_repro_01_rep_L0.jpg | seed 516574485 | eyeMap " + J(eye) + " yaw 0 pitch 1.15 fov 76 | eyeWorld " + J(MapRoot + eye) + " | " + LampLine(b) + " | Red's screenshot frame 01 (G10 BEFORE), map space");
+            Release(b);
+        }
+
+        var index = 0;
+        foreach (var c in chosen)
+        {
+            index++;
+            var views = ViewsFor(c, geos[c.seed]);
+            // One build per instance, centred on the chunk of its first view's eye.
+            var b = Build(c.seed, views[0].feetMap);
+            try
+            {
+                if (c.type == "arch" || c.type == "door" || c.type == "window" || c.type == "step" || c.type == "open" || c.type == "wall")
+                {
+                    // The real opening centre (arches sit off-centre): shift the views along the edge.
+                    var crossing = b.root.transform.InverseTransformPoint(b.world.CrossingPoint(c.a, c.b));
+                    var mid = EdgeMid(c.a, c.b, out _, out _);
+                    var shift = new Vector3(crossing.x - mid.x, 0f, crossing.z - mid.z);
+                    foreach (var vw in views)
+                    {
+                        vw.eyeMap += shift; vw.lookMap += shift;
+                        for (var i = 0; i < vw.targets.Count; i++) vw.targets[i] += shift;
+                    }
+                }
+                if ((c.type == "door" || c.type == "step") && b.world.DoorBetween(c.a, c.b) != null) OpenDoor(b, c.a, c.b);
+                foreach (var vw in views)
+                {
+                    var eye = Clear(vw.eyeMap, vw.fwd, vw.side, vw.targets, out var seen);
+                    var built = b.world.IsBuilt(FrontRoomsMapWorld.CellAt(eye));
+                    StandAt(b, eye);
+                    LookRot(eye, vw.lookMap, out var yaw, out var pitch);
+                    var name = "ev_" + c.type + "_" + index.ToString("00") + "_" + vw.label + ".jpg";
+                    Render(b, eye, yaw, pitch, vw.fov, Path.Combine(outDir, name));
+                    var cell = FrontRoomsMapWorld.CellAt(eye);
+                    frames.AppendLine(name + " | seed " + c.seed + " | " + c.type + " " + vw.label + " | cells a " + c.a + " b " + c.b + " k " + c.k + " f1 " + c.f1 + " f2 " + c.f2
+                        + " | eyeMap " + J(eye) + " yaw " + F(yaw, "0.0") + " pitch " + F(pitch, "0.0") + " fov " + F(vw.fov, "0") + " | eye cell " + cell + " " + b.world.ZoneOf(cell).theme + "/" + b.world.ZoneOf(cell).height
+                        + " | sees " + F(seen * 100f, "0") + " % | " + LampLine(b) + (built ? "" : " | EYE CELL NOT BUILT") + " | score " + F(c.score) + " | " + c.note);
+                }
+            }
+            catch (Exception e) { Log("  instance " + index + " " + c.type + " failed: " + e.Message); }
+            Release(b);
+            File.WriteAllText(Path.Combine(outDir, "frames.txt"), frames.ToString());
+        }
+        File.WriteAllText(Path.Combine(outDir, "frames.txt"), frames.ToString());
+        Log("evidence frames written: " + index + " instances");
+    }
+
+    /// <summary>Stream thresholds and the plan view only (no counts, no evidence frames). Optional -planSeed, -planCentre x,z, -planSize w,h (metres).</summary>
+    public static void ExtrasBatch()
+    {
+        var code = 0;
+        try
+        {
+            var outDir = Dir(Arg("-out", Path.Combine(ProjectRoot, "Verification", "transitions", "extras")));
+            logPath = Path.Combine(outDir, "extras_log.txt");
+            OpenScene();
+            StreamThresholds(outDir);
+            var seed = int.Parse(Arg("-planSeed", "516574485"), IC);
+            var c = Arg("-planCentre", "780,603").Split(',');
+            var sz = Arg("-planSize", "64,36").Split(',');
+            PlanView(seed, new Vector3(float.Parse(c[0], IC), 0f, float.Parse(c[1], IC)), float.Parse(sz[0], IC), float.Parse(sz[1], IC), Path.Combine(outDir, "plan_" + seed + ".jpg"));
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    /// <summary>
+    /// A top-down diagnostic of the built map (ceilings and lenses hidden, an extra even key light, no post, no fog):
+    /// map-space centre, width x depth in metres. Image right = +X, image up = +Z. Writes a .json of the cells in view.
+    /// </summary>
+    static void PlanView(int seed, Vector3 centreMap, float width, float depth, string path)
+    {
+        var b = Build(seed, centreMap);
+        StandAt(b, centreMap);
+        var hidden = new List<Renderer>();
+        var ceilings = new[] { FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.Room(RoomRule.Office, FrontRoomsSurfaces.Slot.Ceiling) };
+        foreach (var r in b.root.GetComponentsInChildren<Renderer>(true))
+            if (r.enabled && (ceilings.Contains(r.sharedMaterial) || r.name == "Lens")) { r.enabled = false; hidden.Add(r); }
+        var keyGo = new GameObject("TRANSITIONS / plan key") { hideFlags = HideFlags.DontSave };
+        var key = keyGo.AddComponent<Light>();
+        key.type = LightType.Directional;
+        key.intensity = 1.1f;
+        key.color = Color.white;
+        key.shadows = LightShadows.Soft;
+        keyGo.transform.rotation = Quaternion.Euler(62f, 35f, 0f);
+        var fog = RenderSettings.fog;
+        RenderSettings.fog = false;
+        var c = SceneCamera();
+        var data = c.GetUniversalAdditionalCameraData();
+        var post = data.renderPostProcessing;
+        var ortho = c.orthographic; var size = c.orthographicSize;
+        try
+        {
+            data.renderPostProcessing = false;
+            c.orthographic = true;
+            c.orthographicSize = depth * .5f;
+            EnsureRT();
+            var t = c.transform;
+            var keepPos = t.position; var keepRot = t.rotation; var keepFar = c.farClipPlane; var keepNear = c.nearClipPlane; var keepTarget = c.targetTexture;
+            t.SetPositionAndRotation(MapRoot + centreMap + Vector3.up * 40f, Quaternion.Euler(90f, 0f, 0f));
+            c.nearClipPlane = 1f;
+            c.farClipPlane = 60f;
+            c.targetTexture = rt;
+            c.Render();
+            c.Render();
+            c.targetTexture = keepTarget;
+            var active = RenderTexture.active;
+            RenderTexture.active = rt;
+            readTex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+            readTex.Apply(false);
+            RenderTexture.active = active;
+            File.WriteAllBytes(path, readTex.EncodeToJPG(85));
+            t.SetPositionAndRotation(keepPos, keepRot);
+            c.farClipPlane = keepFar; c.nearClipPlane = keepNear;
+            var cell = FrontRoomsMapWorld.CellAt(centreMap);
+            File.WriteAllText(Path.ChangeExtension(path, ".json"), "{\n  \"centreMap\": " + J(centreMap) + ", \"width\": " + F(width, "0.###") + ", \"depth\": " + F(depth, "0.###")
+                + ", \"note\": \"image right = +X, image up = +Z; pixel x = (X - (cx - width/2)) / width * 1920; pixel y = ((cz + depth/2) - Z) / depth * 1080\",\n  \"plan\": " + Plan(b, cell, Mathf.CeilToInt(width / 6f) + 1) + "}\n");
+            Log("plan view " + path + " · centre " + J(centreMap) + " · " + F(width) + " x " + F(depth) + " m");
+        }
+        finally
+        {
+            data.renderPostProcessing = post;
+            c.orthographic = ortho; c.orthographicSize = size;
+            RenderSettings.fog = fog;
+            Object.DestroyImmediate(keyGo);
+            foreach (var r in hidden) if (r != null) r.enabled = true;
+            Release(b);
+        }
+    }
+
+    // ---------- (i) RoomStream: the edit-mode preview rooms (Lobby, Shift, Office, Run, Exit; doors open, lamps on) ----------
+    static void StreamThresholds(string outDir)
+    {
+        var game = Object.FindFirstObjectByType<FrontRooms3DGame>();
+        if (game != null) { game.enabled = false; game.enabled = true; }
+        var hunter = game != null ? game.transform.Find("Hunter") : null;
+        if (hunter != null) hunter.gameObject.SetActive(false);
+        // The preview's objects are DontSave, which FindObjectsByType skips: walk the game's children instead.
+        var rooms = new List<Transform>();
+        if (game != null)
+            foreach (var t in game.GetComponentsInChildren<Transform>(true))
+                if (t.name.StartsWith("Profile ", StringComparison.Ordinal) && t.name.Contains(" / ")) rooms.Add(t);
+        rooms = rooms.OrderBy(t => t.name, StringComparer.Ordinal).ToList();
+        Log("stream preview rooms: " + string.Join(", ", rooms.Select(r => r.name + " " + V(r.position))));
+        var frames = new StringBuilder();
+        for (var i = 0; i + 1 < rooms.Count; i++)
+        {
+            var root = rooms[i];
+            var L = FrontRoomsRoomStream.RoomLength;
+            var shots = new[]
+            {
+                ("A", new Vector3(.9f, 1.62f, L - 3.6f), new Vector3(0f, 1.35f, L + 2.5f)),
+                ("B", new Vector3(-.9f, 1.62f, L + 3.6f), new Vector3(0f, 1.35f, L - 2.5f)),
+                ("J", new Vector3(2.4f, 1.62f, L + 1.4f), new Vector3(1.2f, 1.4f, L)),
+            };
+            foreach (var (label, eyeLocal, lookLocal) in shots)
+            {
+                var eyeW = root.TransformPoint(eyeLocal);
+                var lookW = root.TransformPoint(lookLocal);
+                LookRot(eyeW, lookW, out var yaw, out var pitch);
+                var name = "ev_stream_" + (i + 1).ToString("00") + "_" + label + ".jpg";
+                // Render takes map-space eyes; the preview is in world space at the scene origin.
+                Render(null, eyeW - MapRoot, yaw, pitch, DefaultFov, Path.Combine(outDir, name));
+                frames.AppendLine(name + " | " + root.name + " -> " + rooms[i + 1].name + " | " + label + " | eyeWorld " + J(eyeW) + " yaw " + F(yaw, "0.0") + " pitch " + F(pitch, "0.0"));
+            }
+        }
+        File.WriteAllText(Path.Combine(outDir, "frames_stream.txt"), frames.ToString());
+    }
+
+    // =====================================================================
+    // Fixed comparison shots (shots.json)
+    // =====================================================================
+
+    [Serializable]
+    public class ShotFile
+    {
+        public int version;
+        public float[] mapRoot;
+        public Shot[] shots;
+    }
+
+    [Serializable]
+    public class Shot
+    {
+        public string id;
+        public string title;
+        public int seed;
+        public float[] eyeMap;      // map space, metres; y = eye height 1.62
+        public float yaw;           // Unity euler Y, degrees
+        public float pitch;         // Unity euler X, degrees (positive looks down)
+        public float fov;           // vertical, degrees (game 76)
+        public int[] openDoors;     // flattened [ax, ay, bx, by, ...]: open the door between cells a and b, pushed from a
+    }
+
+    public static void ShotsBatch()
+    {
+        var code = 0;
+        try
+        {
+            var json = Arg("-shots", null);
+            if (json == null || !File.Exists(json)) throw new FileNotFoundException("-shots <shots.json> is required", json);
+            var tag = Arg("-tag", "before");
+            var outDir = Dir(Arg("-out", Path.Combine(ProjectRoot, "Verification", "transitions", "shots")));
+            logPath = Path.Combine(outDir, "shots_" + tag + "_log.txt");
+            var file = JsonUtility.FromJson<ShotFile>(File.ReadAllText(json));
+            if (file?.shots == null || file.shots.Length == 0) throw new Exception("no shots in " + json);
+            if (file.mapRoot != null && file.mapRoot.Length == 3 && (new Vector3(file.mapRoot[0], file.mapRoot[1], file.mapRoot[2]) - MapRoot).sqrMagnitude > 1e-4f)
+                throw new Exception("shots.json mapRoot " + string.Join(",", file.mapRoot) + " differs from the harness root " + V(MapRoot));
+            var only = Arg("-only", null)?.Split(',').Select(s => s.Trim()).ToList();
+            OpenScene();
+            foreach (var s in file.shots)
+            {
+                if (only != null && !only.Contains(s.id)) continue;
+                var eye = new Vector3(s.eyeMap[0], s.eyeMap[1], s.eyeMap[2]);
+                var feet = new Vector3(eye.x, 0f, eye.z);
+                var b = Build(s.seed, feet);
+                try
+                {
+                    if (s.openDoors != null)
+                        for (var i = 0; i + 3 < s.openDoors.Length; i += 4)
+                            OpenDoor(b, G(s.openDoors[i], s.openDoors[i + 1]), G(s.openDoors[i + 2], s.openDoors[i + 3]));
+                    StandAt(b, feet);
+                    var fov = s.fov > 1f ? s.fov : DefaultFov;
+                    var name = s.id + "_" + tag;
+                    Render(b, eye, s.yaw, s.pitch, fov, Path.Combine(outDir, name + ".jpg"));
+                    var cell = FrontRoomsMapWorld.CellAt(eye);
+                    var z = b.world.ZoneOf(cell);
+                    var line = name + ".jpg | " + s.title + " | seed " + s.seed + " | eyeMap " + J(eye) + " eyeWorld " + J(MapRoot + eye) + " yaw " + F(s.yaw, "0.##") + " pitch " + F(s.pitch, "0.##") + " fov " + F(fov, "0.#")
+                        + " | eye cell " + cell + " " + z.theme + "/" + z.height + " | " + LampLine(b) + " | " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", IC);
+                    File.WriteAllText(Path.Combine(outDir, name + ".txt"), line + "\n");
+                    Log(line);
+                    if (Flag("-plan")) File.WriteAllText(Path.Combine(outDir, s.id + "_plan.json"), Plan(b, cell, 6));
+                }
+                finally { Release(b); }
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    /// <summary>The cells round a cell: zone theme/height and the east/north edge kinds, for plan diagrams.</summary>
+    static string Plan(Built b, GridCoord centre, int r)
+    {
+        var cache = b.world.Cache;
+        var sb = new StringBuilder("{\n  \"centre\": [" + centre.x + ", " + centre.y + "],\n  \"cells\": [\n");
+        var first = true;
+        for (var y = centre.y - r; y <= centre.y + r; y++)
+        for (var x = centre.x - r; x <= centre.x + r; x++)
+        {
+            var c = G(x, y);
+            var z = cache.ZoneOf(c);
+            if (!first) sb.Append(",\n");
+            first = false;
+            sb.Append("    {\"x\": " + x + ", \"y\": " + y + ", \"theme\": \"" + z.theme + "\", \"height\": \"" + z.height + "\", \"zone\": [" + z.id.x + ", " + z.id.y
+                + "], \"east\": \"" + cache.Edge(c, G(x + 1, y)) + "\", \"north\": \"" + cache.Edge(c, G(x, y + 1)) + "\"}");
+        }
+        sb.Append("\n  ]\n}\n");
+        return sb.ToString();
+    }
+}
