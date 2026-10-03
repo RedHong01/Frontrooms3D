@@ -38,7 +38,7 @@ import interact_door_common as dc
 NAME = "Kit_ExitDevice_Crossbar"
 LOD1 = None
 LOD1_RATIO = 0.34
-LOD2_RATIO = 0.06
+LOD2_RATIO = 0.051
 LOD_DISTANCES = (2.0, 6.0, 25.0)
 SMOOTH_ANGLE = 35.0
 

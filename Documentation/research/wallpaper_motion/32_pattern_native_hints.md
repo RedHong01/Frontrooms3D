@@ -184,3 +184,62 @@ The visual chat is building the Red-approved placard with an InkShape glyph lege
 3. Glow: option A (the cream ink is phosphorescent) or B (no glow, 平面视觉's advice)?
 4. Keep the scratch-throughs, and redraw the placard legend as in §5b?
 5. After confirmation, I replace GN07–GN09 in Figma with pattern-native renders and loops, and hand §5 to the owners.
+
+## 9. Deep dive: the guide line (revision after Red's review, 2026-10-03)
+
+**Red:** the first prototype didn't link into a single guide line. It read as a scrambled pattern.
+
+**Why it failed:** every chevron turned at once, each at its own staggered height (the half-drop), and nothing was sequenced. The result had no alignment, no hierarchy and no direction of motion. Noise, not a line.
+
+### 9.1 The rules that make a line out of print elements (Gestalt)
+1. **One row only.** Only the elements on a single horizontal row change. Everything else on the wall stays exactly as printed, so the row reads as figure against an unchanged ground.
+2. **Exact alignment.** Every changed element sits at the same height, so the row reads as a line.
+3. **One shape, one direction.** Every changed element is the same piece turned the same way (similarity plus common orientation).
+4. **Continuity behind the stripes.**
+   - The stripes stay on top as the rails.
+   - Each turned arrow runs edge to edge across its own field (about 207 mm out of a 375 mm pitch), so the eye completes the line behind the stripes. This is amodal completion, the same as a dashed road line.
+   - The 平面视觉 rule holds: nothing crosses a stripe.
+5. **Sequenced motion (common fate).** Elements change one after another in the route direction, so the motion itself flows toward the exit.
+
+### 9.2 Geometry, measured from `hard_edge.py`
+- **The piece that turns** is the **grey band of the lower chevron** (64 mm), as in Red's mock.
+  - Turned, it is 211.6 mm wide against a 206.7 mm field: it fits edge to edge, with about 2.5 mm trimmed by each hairline.
+  - The lower chevron's cream band is absorbed, as in the mock.
+  - A whole stack (237–298 mm) and the motif-band arrows (184 mm in a 50 mm band) can't turn inside their own space, so they stay as printed.
+- **The guide height** is the unit-2 lower-chevron row:
+  - grey band centre at about **z 1.29 m** (apex 1.39 m);
+  - inside the 0.8–2.0 m eye band, just below eye level (1.62 m);
+  - constant on every route wall, so the line continues wall to wall and round corners, like a handrail.
+- **Alignment step:** unit 1's lower chevrons sit 562.5 mm lower (half-drop). Its field contents slip up by **exactly one half-drop (562.5 mm)**.
+  - This is a real paperhanging fault: a half-drop pattern hung as a straight match.
+  - It is quantized by the pattern's own step (平面视觉 rule 2).
+  - After the slip, every field on the wall has its lower chevron on one row.
+- **The line:** one grey arrow per field, at a 375 mm pitch, 8 per 3 m wall, about 55 % filled. At 10 m an arrow is about 14 px; the row still reads at 20 m as a broken horizontal band with a direction.
+
+### 9.3 Choreography (one change = three quantized beats)
+
+| Beat | What happens | When | Stagger |
+|---|---|---|---|
+| 0. Cue | The cell's lamp falters | — | — |
+| 1. Slip | Unit-1 field contents jump up one half-drop; the row aligns | Inside flicker 1's dark frame, or instant if unseen | 80 ms per roll, in the route direction |
+| 2. Turn 45° | The aligned grey bands snap to 45° | Flicker 2 | Same stagger |
+| 3. Turn 90° | They snap to 90°: the line is formed | Flicker 3 | Same stagger |
+| Hold | The line stays while the message holds (LD R10) | — | — |
+| Release | The same beats in reverse, unseen or in a gasp | — | — |
+
+- No tweens. Each beat is a snap, like a relay latching, so the motion stays "print-like" and never looks digital.
+- **First-dark beat:** the one time the three beats are seen in full.
+- **Chase wave:** the same beats travel at 8 m/s (about 94 ms per roll). The line draws itself ahead of the player toward the door.
+
+### 9.4 Per message
+- **FLOW:** the row on both side walls points along the route, giving two parallel lines like runway edge lights. On a T-junction end wall the row points toward the turn.
+- **HERE:** the rows either side of a door converge. Left of the door they point right, right of the door they point left, and the line ends at the trim.
+- **STOP:** the row's grey bands flatten (arm angle 55° → 0°, thickness kept) into a row of bars, a closed line like a road stop line, at the pocket mouth.
+- **Pressure:** the row is formed by the visible wave. Proposed doubling: the unit-1 knee-height row (about 0.73 m) turns too, giving two parallel lines.
+- **Forgery (T4+):** a row that forms in a lit, steady cell, in view, against the commit rule. Up close the band order is wrong.
+
+### 9.5 Next
+1. Rebuild the prototype to these rules: 4 rolls × the eye band, flickers visible, slip then two snaps in sequence.
+2. Then FLOW, HERE (door converge) and STOP loops.
+3. Replace GN07–GN09.
+4. Ask 平面视觉 to draw the three final states in Figma from the real geometry.

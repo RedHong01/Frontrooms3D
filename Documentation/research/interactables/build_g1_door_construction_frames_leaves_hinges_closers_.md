@@ -28,7 +28,7 @@ LOD0 and LOD1 are the sidecar numbers (`triangles`, `trianglesLod1`). LOD2 is no
 | `Kit_DoorCloser_Shoe` | `interact_door_closer_shoe.py` | 570 (500, +14.0 %) | none | 44 (40) | SteelBrown, Chrome |
 | `Kit_DoorLeaf_Ward` (P2) | `interact_door_leaf_ward.py` | 4,930 (5,000, −1.4 %) | 1,972 (1,800, +9.6 %) | 196 (180) | WoodLaminate, Aluminium, Chrome |
 | `Kit_DoorLeaf_SteelLite` (P2) | `interact_door_leaf_steel_lite.py` | 4,586 (5,200, −11.8 %) | 1,834 (1,900, −3.5 %) | 182 (200) | Door_Enamel, Aluminium, Chrome, Glass |
-| `Kit_ExitDevice_Crossbar` (P2) | `interact_exit_device.py` | 3,948 (3,500, +12.8 %) | none | ≈ 230 (200) | Aluminium, Chrome |
+| `Kit_ExitDevice_Crossbar` (P2) | `interact_exit_device.py` | 3,948 (3,500, +12.8 %) | none | 200 (200) | Aluminium, Chrome |
 
 Every count is inside ±15 % of §9.1. `interact_door_common.py` is the helper (no `NAME`, no `build`).
 
@@ -107,28 +107,40 @@ All door assets are in DOOR ROOT D (§1.2): origin at the hinge-jamb edge on the
 
 (a)–(d) run on the **exported FBX meshes** re-imported into Blender (`g1/verify_g1.py`), with a stand-in wall (|X| ≤ 0.08 round the 1.0 × 2.1 opening), the map's trims (0.07 × 0.20 jambs, 1.14 × 0.07 head) and a floor. Both handings are tested by mirroring X.
 
-### (a) T1 gap rays (0.5° direction grid, both handings)
-Every ray line crosses the wall centre plane X = 0. So rays are cast through sample points in the four perimeter gaps at X = 0, over a 0.5° grid of directions. Each segment runs from X −0.15 to X +0.15, with a hit anywhere counting as blocked.
-- Jambs: 101 azimuths (±25°; beyond ±7.8° the plan section proves the leaf body blocks) × 359 elevations.
-- Head and floor: 359 azimuths × 101 elevations.
+### (a) T1 gap rays (both handings)
+Every ray line crosses the wall centre plane X = 0. So rays are cast through sample points in the four perimeter gaps at X = 0, over a grid of directions. Each segment runs from X −0.15 to X +0.15, with a hit anywhere counting as blocked.
+- Jambs: azimuths ±25° (beyond ±7.8° the plan section proves the leaf body blocks) × all elevations.
+- Head and floor: all azimuths × elevations ±25°.
+- Wood LOD0 ran the full 0.5° grid with dense sampling at every hinge, the strike and the silencers.
+- Steel and both LOD1s ran a 1° grid with lighter sampling (`--lite`; every hinge edge and knuckle joint, the strike zone, the silencers). The machine was at load average ~700 from the other groups' renders.
 
 | Door | Hinge jamb | Latch jamb | Head | Floor |
 |---|---|---|---|---|
 | L0-F wood (LOD0) | 14,902,449 rays, **0 through** | 20,776,407, **0** | 2,610,648, **0** | 2,610,648 rays, 54,064 through, all at **elevation ≤ 1.5°** |
-| L0-K/OF-K steel (LOD0) | PENDING | PENDING | PENDING | PENDING |
+| L0-K / OF-K steel (LOD0) | 862,920, **0** | 1,138,320, **0** | 220,320, **0** | 220,320 rays, 5,400 through, all at **elevation ≤ 2.0°** |
+| wood LOD1 | 862,920, **0** | 1,138,320, **0** | 220,320, **0** | 5,428 through, ≤ 2.0° |
+| steel LOD1 | 862,920, **0** | 1,138,320, **0** | 220,320, **0** | 5,400 through, ≤ 2.0° |
 
 - **Jambs and head: zero see-through.** Every path is L-shaped through the stop, as §1.4 says.
-- **Floor:** the 3 mm gap over the saddle is see-through only for sightlines within 1.5° of horizontal. The saddle's flat runs 52 mm each side of the leaf, which tightens the spec's 3.9° estimate. From the 1.62 m eye that means standing ≥ 62 m away; from a 0.55 m duck, ≥ 21 m. The spec accepts this period-true ⅛" gap (§1.4); no sweep was added.
+- **Floor:** the 3 mm gap over the saddle is see-through only for sightlines within 1.5–2.0° of horizontal. The saddle's flat runs 52 mm each side of the leaf, which tightens the spec's 3.9° estimate; the steel saddle's 0.8 mm flutes allow the extra half degree. From the 1.62 m eye that means standing ≥ 46 m away; from a 0.55 m duck, ≥ 16 m. The spec accepts this period-true ⅛" gap (§1.4); no sweep was added.
+- **LOD1 stays gap-free.** The envelope parts are protected from kitlib's decimation.
 
 ### (b) T2 swing (0–95° in 1° steps, both handings, BVH overlap + nearest-distance)
-| Door | Overlapping triangle pairs | Min clearance: envelope (stop, linings, casing, saddle, wall) | Hinge (by design) |
-|---|---|---|---|
-| L0-F wood | **0** | **2.83 mm** | 0.10 mm (see below) |
-| steel | PENDING | PENDING | PENDING |
-| RN-F ward in steel frame | PENDING | PENDING | PENDING |
-| RN-K lite in steel frame | PENDING | PENDING | PENDING |
+| Door | Overlapping triangle pairs | Min clearance to the stops | Rest of the envelope (linings, casing, saddle, wall) | Silencers (by design) | Hinge (by design) |
+|---|---|---|---|---|---|
+| L0-F wood | **0** | **3.00 mm** | **2.83 mm** | — | 0.10 mm |
+| L0-K / OF-K steel | **0** | **3.04 mm** | **2.83 mm** | 0.50 mm at 0° | 0.10 mm |
+| RN-F ward in steel frame | **0** | **3.00 mm** | **2.83 mm** | 0.50 mm at 0° | 0.10 mm |
+| RN-K lite in steel frame | **0** | **3.04 mm** | **2.83 mm** | 0.50 mm at 0° | 0.10 mm |
+| wood LOD1 | 1,624, all at the hinge barrels | 3.00 mm | 2.73 mm | — | see below |
+| steel LOD1 | 4,869, all at the hinge barrels | 3.04 mm | 2.80 mm | 0.50 mm | see below |
 
-The 0.10 mm hinge figure is the leaf's S face passing the frame knuckles. A butt hinge's door face is tangent to the knuckle circle by construction. The knuckles are R 0.0074 (spec 0.0075), so it never touches: 0.1 mm, not coplanar, so no z-fight. The knuckle-to-knuckle end gaps are 0.4 mm.
+- The 2.83 mm envelope minimum is the leaf's hinge-mortise corner passing knuckle 1 at 93°.
+- The silencers stand 2.5 mm off the 3 mm stop gap and touch nothing, as on a real frame.
+
+- **Hinge at LOD0:** the 0.10 mm figure is the leaf's S face passing the frame knuckles. A butt hinge's door face is tangent to the knuckle circle by construction. The knuckles are R 0.0074 (spec 0.0075), so it never touches: 0.1 mm, not coplanar, so no z-fight. The knuckle-to-knuckle end gaps are 0.4 mm.
+- **Hinge at LOD1:** kitlib's collapse decimation is the only thing that may thin the knuckles, and it moves barrel vertices out to R 0.0077 (wood) / 0.0083 (steel). So at LOD1 the barrels cross the leaf face by up to 0.8 mm. That is render-only, never coplanar, and sub-pixel at LOD1 distances (today's importer switches a 2.2 m frame at ~14 m, or ~28 m on desktop Ultra).
+  - Option, a one-line change per module: `kit.lod1_drop()` the knuckles too. That removes the crossing, but the LOD1 counts then fall to about −30 % of §9.1.
 
 ### (c) Closer linkage (`g1/closer_check.py`)
 - **Analytic, 0–95° in 0.1° steps:** it always solves. The minimum reach margin is 57 mm (never near the straight-arm singularity). The elbow stays on the room side, at least **0.089 m** from the leaf's S plane, with **elbow X ≥ 0.222**; the requirement is ≥ 0.14.
@@ -155,20 +167,28 @@ The 0.10 mm hinge figure is the leaf's S face passing the frame knuckles. A butt
 ### (d) Casing encloses the map trims
 1,488 sample points just outside every exposed face of the trim stand-ins, 160 rays each, 5 m long:
 - wood: **0 visible** from the room (both handings);
-- steel: PENDING.
+- steel: **0 visible** (both handings).
 
-### (e) Renders (Cycles, scratchpad `interact_previews/G1/`)
-- **Both faces at 1.5 m:**
-  - `G1_wood_s15.png`, `G1_wood_p15.png`, `G1_steel_s15.png`, `G1_steel_p15.png`.
-- **Latch edge and knuckles at 0.3 m:**
-  - latch edge: `G1_wood_latch03.png` (faceplate, slotted screws, latch opening), `G1_steel_latch03.png` (armor front, two bolt openings, edge seam, fluted saddle);
-  - knuckles: `G1_wood_knuckle03.png`, `G1_steel_knuckle03.png`;
-  - head mitre: `G1_wood_head03.png`.
+### (e) Renders (Cycles, scratchpad `interact_previews/G1/`; all reviewed)
+- **Both faces at 1.5 m:** `G1_wood_s15.png`, `G1_wood_p15.png`, `G1_steel_s15.png`, `G1_steel_p15.png`, `G1_ward_s15.png`, `G1_ward_p15.png`, `G1_lite_s15.png`.
+- **Latch edge at 0.3 m:**
+  - `G1_wood_latch03.png`: faceplate, slotted screws, latch opening;
+  - `G1_steel_latch03.png`: armor front, two bolt openings, edge seam, fluted saddle.
+- **Knuckles at 0.3 m:**
+  - `G1_wood_knuckle03.png`, `G1_steel_knuckle03.png`;
+  - `G1_wood_hingeopen.png`, `G1_steel_hingeopen.png`: the door at 90°, both mortised hinge leaves, real slotted screws at random angles, knuckle joints, button tip.
+- **Other close-ups:** `G1_wood_head03.png` (casing mitre, quirk, back band), `G1_lite_lite03.png`.
 - **Open 45° and 95°:**
   - doors: `G1_wood_open45.png`, `G1_wood_open95.png`, `G1_steel_open45.png`, `G1_steel_open95.png`;
-  - closer: `G1_closer_Kit_DoorLeaf_Steel_00/45/95.png` and `_closeup.png`.
-- **P2:** `G1_exit_device_00.png`, `_60.png`, `_closeup.png`.
-- **Kit turntables:** `Kit_DoorFrame_Wood_a/b.png`.
+  - closer: `G1_closer_Kit_DoorLeaf_Steel_00.png`, `_45.png`, `_95.png` and `_closeup.png`.
+- **P2:** `G1_exit_device_00.png`, `G1_exit_device_60.png`, `G1_exit_device_closeup.png`.
+- **Kit turntables** (`build_asset.py`): `<Name>_a.png` and `<Name>_b.png` for all 11 assets.
+- **What the review changed:**
+  - the arm's bar top was coplanar with the elbow boss (a dark z-fight patch), so the bar is now 0.5 mm thinner each side;
+  - the exit-device cases got a cover seam;
+  - the closer body's front radius dropped to 6 mm, and its thread grooves were removed (budget);
+  - the lock nut was turned so its flats face up and down;
+  - both screw types are built directly, after a boolean version cost 97–171 triangles per screw.
 
 ---
 
@@ -188,7 +208,7 @@ The 0.10 mm hinge figure is the leaf's S face passing the frame knuckles. A butt
 9. **Ward D-pull projection read as 0.064 overall** (bar centre 0.0515 off the face), so it stays inside the 0.065 proud rule.
 10. **Exit device is one static mesh.** The bar's 12 mm push travel needs the bar as its own renderer (open item 5). `meta["motion"]` documents the travel.
 11. **Extra VARIANT `Kit_DoorLeaf_Steel_PaintedMetal`.** It is the spec's named fallback for `Door_Enamel`, usable today.
-12. **LOD1 ratio** is 0.37 on the steel frame and 0.36 on the veneer leaf (spec 0.40), so the LOD1 counts land on §9.1's LOD1 budgets. The frame and leaf envelopes (casing, lining, stop, saddle, slab, kick plates) are added to kitlib's `fr_lod_keep` group, so **LOD1 never shrinks the gap-closing outline**. LOD1 T1/T2 results: PENDING.
+12. **LOD1 ratio** is 0.37 on the steel frame and 0.36 on the veneer leaf (spec 0.40), so the LOD1 counts land on §9.1's LOD1 budgets. The frame and leaf envelopes (casing, lining, stop, saddle, slab, kick plates) are added to kitlib's `fr_lod_keep` group, so **LOD1 never shrinks the gap-closing outline**. LOD1 T1 is gap-free at every jamb and the head (§4 (a)).
 
 ---
 
@@ -206,7 +226,7 @@ The 0.10 mm hinge figure is the leaf's S face passing the frame knuckles. A butt
 - **Saddle flutes:** 3 mm wide.
 - **Closer:**
   - body cover seam 10 mm off the door; caps 11 mm with a 0.6 mm lip; spindle Ø 12.7 (½");
-  - arm bar 10 × 20→16 mm; hub Ø 30 × 16; elbow boss Ø 22;
+  - arm bar 9 × 20→16 mm (0.5 mm inside the 10 mm bosses); hub Ø 30 × 16; elbow boss Ø 22;
   - forearm tube Ø 16, rod Ø 12.7, nut 19 mm across flats; stud boss Ø 18;
   - shoe plate 30 × 40 × 4, ear R 11 × 6;
   - the arm lengths stay the spec's a = 0.240, b = 0.260 (UNVERIFIED against an LCN 4010 template).
@@ -230,4 +250,7 @@ The 0.10 mm hinge figure is the leaf's S face passing the frame knuckles. A butt
    - every G1 asset puts its dominant slot first (§7.3 item 2: submesh 0 = walnut / dark bronze / veneer / enamel / laminate / aluminium), so G14's submesh-0-only tracing shows the right material;
    - frames and leaves export `_LOD0` + `_LOD1`, so G14-K1 (register LOD0 only) applies to them;
    - mirrored doors are negative-scale instances (G14-K4).
-8. **Tags:** VARIANTS share the parent's sidecar meta. `Kit_DoorLeaf_Veneer_Oak` is therefore tagged `lobby` + `office`, and `Kit_DoorFrame_Steel_Alu` is tagged `frame_steel`. For sound (`doorType`), `meta["doorType"]` (wood / hollow_metal) and `meta["frameType"]` (wood / steel) are written; the Alu variant reports "steel".
+8. **`Door_Enamel` does not exist in Unity yet** (P-4). Until it does, the steel leaves render with the FBX's own almond material, or use `Kit_DoorLeaf_Steel_PaintedMetal`.
+9. **LOD1 hinge barrels** cross the leaf face by up to 0.8 mm (§4 (b)). Accepted as sub-pixel; the alternative is in §4 (b).
+10. **Spec §2.4's 45° elbow** reads (0.385, 0.101); the spec's own linkage gives (0.385, 0.109), and the arm's `meta["motion"]` carries the computed value.
+11. **Tags:** VARIANTS share the parent's sidecar meta. `Kit_DoorLeaf_Veneer_Oak` is therefore tagged `lobby` + `office`, and `Kit_DoorFrame_Steel_Alu` is tagged `frame_steel`. For sound (`doorType`), `meta["doorType"]` (wood / hollow_metal) and `meta["frameType"]` (wood / steel) are written; the Alu variant reports "steel".

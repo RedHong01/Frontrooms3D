@@ -54,12 +54,14 @@ def wear(P, N, edge, obj):
 def build(kit):
     rng = random.Random(41060)
     # bar: a rounded rectangle swept from inside the hub to inside the elbow boss
+    # (0.5 mm thinner than the hub and elbow boss at top and bottom, so no
+    # face is coplanar with a boss face)
     n = 9
-    path = [(0.010 + (A - 0.010) * i / (n - 1), 0.0, 0.0) for i in range(n)]
+    path = [(0.010 + (A - 0.004 - 0.010) * i / (n - 1), 0.0, 0.0) for i in range(n)]
 
     def sec(i):
         w = 0.020 + (0.016 - 0.020) * i / (n - 1)
-        return dc.rounded_rect(w, BAR_Y1 - BAR_Y0, 0.0028, 3, cx=0.0, cy=(BAR_Y0 + BAR_Y1) / 2)
+        return dc.rounded_rect(w, BAR_Y1 - BAR_Y0 - 0.001, 0.0028, 3, cx=0.0, cy=(BAR_Y0 + BAR_Y1) / 2)
     bar = dc.sweep_path(kit, path, sec, PAINT, "arm bar")
 
     # hub on the spindle, with a hex arm bolt and washer on top

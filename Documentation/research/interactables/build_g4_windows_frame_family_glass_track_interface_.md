@@ -1,6 +1,6 @@
 # G4 build note: windows (frame family + glass-track interface)
 
-Status: BUILT, 2026-10-03. Six assets plus one variant, exported into the private clone `proj_int` only (`proj_int/Assets/Resources/Props/Models/`). Nothing under the real project's `Assets/` was touched, and Unity was not run.
+Status: DONE, 2026-10-03. Six assets plus one variant, exported into the private clone `proj_int` only (`proj_int/Assets/Resources/Props/Models/`). Nothing under the real project's `Assets/` was touched, and Unity was not run.
 
 Spec: `10_spec.md` §5, §2.3 (ranch casing), §9.4, §10.0, §10.4. Detail: `06_period_windows.md` §3–§4. Sweep pattern: `assets/interior_window.py`.
 
@@ -12,17 +12,22 @@ Spec: `10_spec.md` §5, §2.3 (ranch casing), §9.4, §10.0, §10.4. Detail: `06
 
 | Asset | Module | Tris LOD0 / LOD1 (budget §9.4) | Slots (submesh order) | Unity bounds (window root) | Priority |
 |---|---|---|---|---|---|
-| `Kit_WindowFrame_Wood` | `interact_window_frame_wood.py` | **2,310 / 924** (2,600 / 1,000: −11 % / −8 %) | WoodWalnut, Rubber | X ±0.800, Y 0.2485–2.0765, Z ±0.121 | P1 |
-| `Kit_WindowFrame_Steel` | `interact_window_frame_steel.py` | **3,862 / 1,374** (3,600 / 1,300: +7 % / +6 %) | SteelBrown, Rubber | X ±0.775, Y 0.275–2.075, Z ±0.105 | P1 |
+| `Kit_WindowFrame_Wood` | `interact_window_frame_wood.py` | **2,322 / 1,044** (2,600 / 1,000: −11 % / +4 %) | WoodWalnut, Rubber | X ±0.800, Y 0.2485–2.0765, Z ±0.121 | P1 |
+| `Kit_WindowFrame_Steel` | `interact_window_frame_steel.py` | **3,862 / 1,438** (3,600 / 1,300: +7 % / +11 %) | SteelBrown, Rubber | X ±0.775, Y 0.275–2.075, Z ±0.105 | P1 |
 | `Kit_WindowFrame_Steel_Enamel` | VARIANT of the steel module | as steel | Door_Enamel, Rubber | as steel | P2 member, built now |
-| `Kit_MiniBlind_Raised` | `interact_mini_blind_raised.py` | **2,572 / 848** (2,400 / 800: +7 % / +6 %) | SteelAlmond, PlasticWhite | local X ±0.775, Y −1.055–+0.005, Z −0.0475–+0.0287 (window root: Y 1.14–2.200, Z 0.080–0.156) | P1 (option) |
-| `Kit_WindowFrame_Alu` | `interact_window_frame_alu.py` | **1,262 / 454** (2,800 / 1,000 ESTIMATE: −55 %) | Aluminium, Rubber | X ±0.775, Y 0.275–2.075, Z ±0.105 | P2 |
+| `Kit_MiniBlind_Raised` | `interact_mini_blind_raised.py` | **2,572 / 876** (2,400 / 800: +7 % / +10 %) | SteelAlmond, PlasticWhite | local X ±0.775, Y −1.055–+0.005, Z −0.0475–+0.0287 (window root: Y 1.14–2.200, Z 0.080–0.156) | P1 (option) |
+| `Kit_WindowFrame_Alu` | `interact_window_frame_alu.py` | **1,088 / 1,064** (2,800 / 1,000 ESTIMATE: −61 % / +6 %) | Aluminium, Rubber | X ±0.775, Y 0.275–2.075, Z ±0.105 | P2 |
 | `Kit_MiniBlind_Lowered` | `interact_mini_blind_lowered.py` | **6,376 / 1,594** (6,000 / 1,500: +6 % / +6 %) | SteelAlmond, PlasticWhite | local X ±1.20, Y −1.303–+0.005, Z −0.0475–+0.0287 | P2 (decor) |
 | — | `interact_window_common.py` | helper, no NAME | — | — | — |
 
-The three counts the task bounds (wood, steel, raised blind) are all inside ±15 %. The aluminium frame is far under its ESTIMATE. A clip-on extrusion has no fasteners, mouldings or hardware to spend triangles on, so I left the budget unused rather than pad it.
+The three LOD0 counts the task bounds (wood, steel, raised blind) are all inside ±15 %, and so is every LOD1 against §9.4's LOD1 column. The aluminium frame is far under its LOD0 ESTIMATE. A clip-on extrusion has no fasteners, mouldings or hardware to spend triangles on, so I left the budget unused rather than pad it.
 
-Every asset: `kit.no_collider()` (sidecar `noCollider: true`, `colliders: []`), no lights, `fr_wear` point colour attribute on every part (it survives the FBX round trip on LOD0 and LOD1 as a CORNER byte colour, checked by re-import), dominant slot first, `kit.meta["lodDistances"]` and `kit.meta["lodRatios"]`, and `fr_lod2_drop` on screws, tape/compound/gasket, setting blocks, slat slabs, ladder cords and sill guards. Frames: tags `interactable`, `window`, `frame_wood` / `frame_steel` / `frame_alu`; LOD distances 4 / 12 / none. Blinds: tags `interactable`, `window`, `blind` (+ `decor` on the lowered one); LOD distances 3 / 10 / 30.
+Every asset:
+- `kit.no_collider()` (sidecar `noCollider: true`, `colliders: []`) and no lights.
+- An `fr_wear` point colour attribute on every part. It survives the FBX round trip on LOD0 and LOD1 as a CORNER byte colour (checked by re-import).
+- The dominant slot first.
+- `kit.meta["lodDistances"]` and `kit.meta["lodRatios"]`.
+- `fr_lod2_drop` on screws, tape/compound/gasket, setting blocks, slat slabs, ladder cords and sill guards. Frames: tags `interactable`, `window`, `frame_wood` / `frame_steel` / `frame_alu`; LOD distances 4 / 12 / none. Blinds: tags `interactable`, `window`, `blind` (+ `decor` on the lowered one); LOD distances 3 / 10 / 30.
 
 ## 2. The glass-track interface (window root W, Unity metres)
 
@@ -48,7 +53,7 @@ Anchors (all 19 verified exact in every frame's exported JSON): `glass_slab`; `s
 
 ## 3. Self-checks (spec §10.4) — all pass
 
-Run by `scratchpad/g4/g4_check.py` on the LOD0 mesh, exactly as `build_asset.py` builds it. Results are in `scratchpad/g4/checks/*_check.json`.
+Run by `scratchpad/g4/g4_check.py` on the final build, exactly as `build_asset.py` builds it, **on LOD0 and again on LOD1** (`--lod1`). Results are in `scratchpad/g4/checks/*_check.json` and `*_LOD1_check.json`. The numbers are identical for both LODs of every frame.
 
 | Check | Wood | Steel | Alu | Raised blind |
 |---|---|---|---|---|
@@ -58,15 +63,25 @@ Run by `scratchpad/g4/g4_check.py` on the LOD0 mesh, exactly as `build_asset.py`
 | (c) clearances slab → frame | 0.5 mm per face, 3.5 mm at every edge | same | same | — |
 | (c) edge samples visible (13,664 per view set: 4 edges × 61 × 7 points, 8 azimuths), face A and face B, at 0° / 30° / 60° | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | — |
 | (c) first exposure | 62° | 62° | 61° (0.6 mm gasket lip) | — |
+| Same checks on the LOD1 mesh | all pass | all pass | all pass | (d) 0 |
 | (d) blind inside the opening volume (\|X\| < 0.70, Y < 2.0) | — | — | — | 0 vertices |
 | (e) lowest point over the opening | — | — | — | Y 2.003 (sill guards); bottom rail 2.006 |
 | Backface culling on the exported FBX (Workbench, culled): no visible face missing | yes | yes | — | — |
 
 Module-level asserts (they run on every build): the §2.3 casing rule (w ≥ 0.0215 on u ∈ [0.0015, 0.0735]), the clear zone, the envelope, the 30-screw count and spacing (≤ 9" centres), the blind's opening clearance and lowest point, and that the blind stays in front of the frame's head band (Z > 0.105 below Y 2.076).
 
-Two failures found and fixed on the way:
+Four failures found and fixed on the way:
 1. **Open mitre hairlines exposed the map trims.** The jamb trim's corner (X 0.70, Y 0.35 / 2.00) lies exactly on the 45° mitre plane, so any through-gap at a shell mitre shows it. Shell and casing mitres are now closed V-grooves: 0.3 × 0.3 mm on steel and alu, 0.2 mm on the wood casing, whose §2.3 round-over passes only 0.4 mm from that corner. Stops keep open 0.3–0.4 mm joints, because only the liner or soffit is behind them.
 2. **Ear-clipped concave mitre caps bridged the glass pocket.** `bmesh.ops.triangulate` produced triangles outside the polygon. Caps are now filled with `mathutils.geometry.tessellate_polygon` in profile space.
+3. **The LOD1 collapse opened see-through specks.** Two causes:
+   - it opened the open seam between the wood casing and liner, so dots of the trim behind showed along the reveal;
+   - dropping the tape at LOD1 left the empty pocket reading as a slot.
+
+   Fixes:
+   - the wood liner and both casings are now one welded sweep per side;
+   - stops and tape/compound/gasket are protected with kitlib's own `fr_lod_keep` vertex group (`lod_keep()`; no kitlib edit) and stay in LOD1;
+   - steel and the raised blind use a LOD1 ratio that needs no collapse at all.
+4. **Pinning every seam starved the collapse.** It then crushed the wood stool and warped the aluminium sill. Pinning is now opt-in (`sweep_side(pin=True)`) and used only on the aluminium shell, which has no other part to starve. The aluminium sill's wear stations were removed, because collapsed they shaded as long slivers. Re-checked by rendering every LOD1 (`*_LOD1_4m.png`, `*_LOD1_1m_close_lod1.png`) and by running (a)–(c) on LOD1.
 
 ## 4. Per-asset notes
 
@@ -77,7 +92,7 @@ Two failures found and fixed on the way:
 - **Screws.** Ø 7 mm, 1.5 mm dome, 0.8 mm slot, a random slot angle each, and three paint-filled slots. They are in the frame's paint (the 06 §3.2 LOD0 detail), so they share `Prop_SteelBrown`.
 - **Why the channel.** The screws sit on the face a real loose stop is screwed through, which faces the opening. A 1.5 mm dome on a flat stop face would break the sight line (check a), so the domes sit in the channel with their tops 0.1 mm behind the stop line.
 - **Tape and blocks.** Black tape on both faces, and two neoprene setting blocks.
-- **LOD1.** Screws, tape and blocks drop, and nothing needs decimating.
+- **LOD1 (0.38).** Screws and setting blocks drop, the tape stays, and nothing needs decimating.
 - **Variant.** `_Enamel` swaps `Prop_SteelBrown` → `Door_Enamel` (registered with an almond preview colour).
   - **Open:** `Resources/Surfaces/Door_Enamel.mat` does not exist yet (P-4).
   - Until it does, `FrontRoomsKitLibrary.ApplyMaterials` (`Assets/Scripts/Office/FrontRoomsKitLibrary.cs:215-239` in `proj_int`) keeps the FBX's embedded material. The importer only remaps a slot when the surface material exists (`Assets/Editor/Rendering/FrontRoomsKitImporter.cs:36-46`).
@@ -90,13 +105,14 @@ Two failures found and fixed on the way:
   - `_cull_*.png` (culled FBX).
 
 ### `Kit_WindowFrame_Wood` (Lobby)
-- **Casing.** The shared §2.3 ranch casing with back band and quirk on both faces, asserted, with V-hairline head mitres. The jamb casings land on the stool.
-- **Liners.** Walnut liners over the reveal.
+- **Casing.** The shared §2.3 ranch casing with back band and quirk on both faces, asserted, with V-hairline head mitres (0.2 mm). The jamb casings land on the stool.
+- **Liners.** Walnut liners over the reveal. Casing A, the liner and casing B are one welded sweep per side.
 - **Stool.** A through-stool with horns, X ±0.800, Z ±0.121, Y 0.3255–0.3505, with a 12.5 mm half-round nosing returned round the horn ends (10 segments). It is the climb-plant surface, gridded at 11 × 5 stations for the hand-grime wear at the centre.
 - **Apron.** On both faces, made from the casing profile, X ±0.7765, with returned ends.
 - **Stops.** 16 × 16 walnut stops with a 3 mm quirked ovolo and a 0.5 mm ease at the sight line.
 - **Compound and blocks.** A black compound line and two setting blocks.
 - **Grain.** `fr_grain` runs along each piece.
+- **LOD1 (0.45, 1,044 tris).** The setting blocks drop. The stops and compound are protected. The casing, stool and apron lose their wear stations and some arc segments.
 - **Deviation.** The apron runs Y 0.2485–0.3255, because the §2.3 profile is 77 mm wide (06 wrote Y 0.250 → 0.3255).
 - Renders:
   - `Kit_WindowFrame_Wood_faceA_1p5m.png`, `_faceB_1p5m.png`;
@@ -122,6 +138,7 @@ Two failures found and fixed on the way:
 
 ### `Kit_WindowFrame_Alu` (Exit, P2)
 - **Section.** A clear-anodised wrap section with a 6 × 2.5 mm shadow groove 40 mm from the opening edge (floor Z 0.1025, still clear of the trim face at 0.100). It has crisp 0.5 mm arrises and V-hairline mitres.
+- **LOD1 (0.60, 1,064 tris).** The shell's mitre rings and wall edges are pinned, and the beads and gaskets are protected, so LOD1 is close to LOD0. That is cheap enough at about 1,100 LOD0 triangles.
 - **Beads and gaskets.** 45° snap beads on both faces; black vinyl gasket wedges with a 0.6 mm lip; setting blocks.
 - Renders: `Kit_WindowFrame_Alu_faceA_1p5m.png`, `_faceB_1p5m.png`, `_corner_0p3m.png`, `_faceband_0p3m.png`.
 
@@ -134,7 +151,10 @@ Two failures found and fixed on the way:
 - `meta["decorOnly"]` says it must never go on a breakable window.
 - Renders: `Kit_MiniBlind_Lowered_lowered_2m.png`, `_slats_ladder_0p4m.png`, `_bottom_wand_0p5m.png`.
 
-All renders are in `scratchpad/interact_previews/G4/`. The kit's own turntables are there too (`<Asset>_a.png`, `_b.png`, made by `build_asset.py`). The close-ups are rendered in context: a wall with the opening, the map trims in red (they must never show), the 6 mm stand-in slab as real glass, a floor and a ceiling. Materials use the Unity surfaces' measured mean albedo (`10_spec.md` §7.3).
+All renders are in `scratchpad/interact_previews/G4/`.
+- The kit's own turntables (`<Asset>_a.png`, `_b.png`) come from the final `build_asset.py` run.
+- The in-context Cycles close-ups were rendered before the last three internal changes. Those changes are the welded wood liner, the removed alu sill stations and the steel setting blocks hidden in the pocket; none alters what LOD0 looks like.
+- `*_LOD1_*.png` and `*_LOD0cmp_*.png` are the LOD1 and LOD0 comparisons (Workbench, backface-culled, on the exported FBX). The close-ups are rendered in context: a wall with the opening, the map trims in red (they must never show), the 6 mm stand-in slab as real glass, a floor and a ceiling. Materials use the Unity surfaces' measured mean albedo (`10_spec.md` §7.3).
 
 ## 5. Red's ChatGPT ray-traced glass track (this run's relayed request), from the windows' side
 
@@ -161,4 +181,6 @@ This kit models no glass. The RT target belongs on the visible pane: the glass t
 5. **Hammered glass and wired glass:** glass-track or Red items (06 §6). The frames are unchanged by either.
 6. **Screw spacing:** the first and last screws on each side sit 51 mm from the stop-line corner (the spec numbers), 0.2 mm over the UH spec's "2 inches" (50.8 mm). I kept the spec values.
 7. **LOD2 and switch distances:** declared only. `kitlib` exports LOD1 today, and LOD2 waits for P-1. `fr_lod2_drop` is set on the parts listed above.
+   - For P-1's author: `make_lod1`'s global collapse opens seams between separate pieces and redistributes the reduction when vertices are protected.
+   - A per-part ratio, or a boundary-locked collapse, would let future modules skip the welding and pinning workarounds above.
 8. **Preview directory:** the computed task's build line said `interactables_prev/g3`, which looks copied from G3. I used `interact_previews/G4`, which the task's BUILD section names.

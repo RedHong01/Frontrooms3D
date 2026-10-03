@@ -142,6 +142,21 @@ The script is `scratchpad/g2work/selfcheck.py`; results are in `interact_preview
 
 **(e) Renders.** These are in `interact_previews/G2/selfcheck/`; see §5.
 
+**(f) Integration with G1's current exports.** These are `Kit_DoorLeaf_Steel` (3,930 tris) and `Kit_DoorFrame_Steel` (3,866) in the clone, as of 12:48; G1 may still iterate. The script is `g2work/g1_integration.py`; results are in `selfcheck/g1_integration.json`.
+- **Swing, 0–95° in 5° steps about the A2 axis**, with every locked-set part on both faces and the bolts retracted: **0 overlaps with G1's frame.**
+  - Minimum gap from the knob to the frame when shut: 35.8 mm (P face) and 51.1 mm (S face).
+- **When shut, these overlaps are hidden and expected:**
+  - The plug body runs 30 mm into G1's leaf, behind the escutcheon. G1's leaf has no bores, by §2.3.
+  - The bolt tails run into the leaf.
+  - The thrown bolts, the strike plate's back and the dust boxes run into the frame's lining and jamb.
+  - The escutcheon's back face is coplanar with the leaf face. It faces into the leaf, so it is always culled.
+- **Visible clash, needs G1:**
+  - G1's armor-front openings are 0.0135 × 0.031 and its bored faceplate opening is 0.011 × 0.021. Both are centred on the bolt, with 0.5 mm round the bolt.
+  - Neither opening includes the deadlatch plunger (X 0.008–0.013 mortise, 0.007–0.011 bored).
+  - So the plunger currently comes straight out of the solid plate.
+  - G1 should cut the openings in §4 item 6, or a second 0.006 × 0.019 slot beside each latch opening.
+- **Facade rule:** the extended latch intersects the frame or strike at leaf angles of 0–6°. Keep the latch retracted (t = 1) while the leaf moves within about 8° of shut; extend it only when the leaf is shut or past 8°. The Open and knob beats in §3.4 already retract it.
+
 ## 4. Deviations, interface notes and decisions for others
 
 1. **Never mirror the plug (deviation from §1.2's face rule).**
@@ -176,14 +191,27 @@ The script is `scratchpad/g2work/selfcheck.py`; results are in `interact_preview
    - Plug: + = cuts toward part +X, which is the hinge on `_s`. With the text-rule placement, negate on `_p` to keep "toward the hinge"; with `S_sign` = −1, flip again.
    - Knob and lever on `_p` (mirrored): negate the angle.
    - §3.4's turn direction is UNVERIFIED (`05` §9).
-8. **Segment counts below §1.8's "≥ 48 for parts ≤ 0.07 m".** These were lowered only where §9.2's budget forces it, and each is ≥ 8 px wide at 0.3 m:
+8. **Bevel sizes below §1.8's "≥ 1 mm on hardware".**
+   - The plates, roses, collar and deadbolt use 1 mm.
+   - The 1.6 mm strike plates use a 0.3 mm front chamfer.
+   - The latches use 0.4–0.5 mm rounds.
+   - A 1 mm bevel on a 1.6 mm plate, or on a 10–12.5 mm latch, would read as a different part.
+9. **Segment counts below §1.8's "≥ 48 for parts ≤ 0.07 m".** These were lowered only where §9.2's budget forces it, and each is ≥ 8 px wide at 0.3 m:
    - plug pins: 12 segments, Ø 2.9 mm, inside the dark keyway;
    - deadbolt inserts: 24 segments, Ø 3 mm;
    - mortise-strike screws: 32 segments;
    - bored-strike screws: 24 segments.
    - Roses, knob, collar and boss are 96 segments; the escutcheon and rose screws are 48.
-9. **Close-up previews.** `kitlib.preview` clamps the framing radius to 0.15 m, so its `_a`/`_b` stills show these parts as specks. The review images are the close-ups and the self-check renders (§5).
-10. **The shell's `_Brass` VARIANT** maps Chrome → Brass. That leaves two `Prop_Brass` submeshes, the housing and the core. This is harmless; the importer maps both.
+10. **Close-up previews.** `kitlib.preview` clamps the framing radius to 0.15 m, so its `_a`/`_b` stills show these parts as specks. The review images are the close-ups and the self-check renders (§5).
+11. **The shell's `_Brass` VARIANT** maps Chrome → Brass. That leaves two `Prop_Brass` submeshes, the housing and the core. This is harmless; the importer maps both.
+12. **`fr_wear` domain.**
+    - G2 paints the face-corner domain; G1, G3 and G4 paint the point domain.
+    - Corner keeps the dark cavity mask sharp at boolean rims. There, one vertex is shared by a black wall and a long face triangle, so a per-point value would smear the mask across the whole face.
+    - Both domains export as FBX vertex colours.
+13. **Shot suggestion for the map chat (pose P).**
+    - With the camera exactly on the face normal, a key held cuts-up is seen **edge-on** at 0°, a 2 mm brass line. It reads as a key only after the 90° turn (`e_poseP_key000.png` vs `_key090.png`).
+    - Swinging pose P about 12° toward the hinge, round the keyhole's vertical, shows the bow at insertion (`e_poseP_offset12_key000.png`).
+    - The alternative is a 10–15° key roll during the approach that settles to 0° before Insert.
 
 ## 5. Renders reviewed
 
