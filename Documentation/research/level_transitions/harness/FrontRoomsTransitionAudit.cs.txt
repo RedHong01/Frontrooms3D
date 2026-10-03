@@ -944,9 +944,22 @@ public static class FrontRoomsTransitionAudit
         var rooms = new List<Transform>();
         if (game != null)
             foreach (var t in game.GetComponentsInChildren<Transform>(true))
-                if (t.name.StartsWith("Profile ", StringComparison.Ordinal) && t.name.Contains(" / ")) rooms.Add(t);
+                if (t.name.StartsWith("Profile ", StringComparison.Ordinal) && t.name.Contains(" / ") && !t.name.StartsWith("Profile props", StringComparison.Ordinal)) rooms.Add(t);
         rooms = rooms.OrderBy(t => t.name, StringComparer.Ordinal).ToList();
         Log("stream preview rooms: " + string.Join(", ", rooms.Select(r => r.name + " " + V(r.position))));
+        // Play parity: in Play, RefreshRoomMaterials gives a door's "/ far side" reveals the NEXT room's paper
+        // (FrontRoomsRoomStream.SetFarSideReveals). The edit-mode preview rooms are not in the pool, so FindSequence
+        // returns null there and the reveals keep their own room's paper. Put the Play paper on them before rendering.
+        for (var i = 0; i + 1 < rooms.Count; i++)
+        {
+            var nextName = rooms[i + 1].name;
+            var nextRule = (RoomRule)Enum.Parse(typeof(RoomRule), nextName.Substring(nextName.LastIndexOf('/') + 1).Trim());
+            var paper = FrontRoomsSurfaces.Room(nextRule, FrontRoomsSurfaces.Slot.Wall);
+            var n = 0;
+            foreach (var r in rooms[i].GetComponentsInChildren<Renderer>(true))
+                if (r.gameObject.name.EndsWith("/ far side", StringComparison.Ordinal) && paper != null) { r.sharedMaterial = paper; n++; }
+            Log("  play parity: " + rooms[i].name + " far-side reveals -> " + nextRule + " paper (" + n + ")");
+        }
         var frames = new StringBuilder();
         for (var i = 0; i + 1 < rooms.Count; i++)
         {
@@ -957,6 +970,8 @@ public static class FrontRoomsTransitionAudit
                 ("A", new Vector3(.9f, 1.62f, L - 3.6f), new Vector3(0f, 1.35f, L + 2.5f)),
                 ("B", new Vector3(-.9f, 1.62f, L + 3.6f), new Vector3(0f, 1.35f, L - 2.5f)),
                 ("J", new Vector3(2.4f, 1.62f, L + 1.4f), new Vector3(1.2f, 1.4f, L)),
+                // the threshold floor: both rooms' floor slabs run 0.02 m past the door plane (coplanar 0.04 m overlap)
+                ("F", new Vector3(.5f, 1.62f, L - 1.7f), new Vector3(0f, 0f, L + .2f)),
             };
             foreach (var (label, eyeLocal, lookLocal) in shots)
             {

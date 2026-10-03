@@ -37,6 +37,20 @@ Status legend: **RUNNING** (a workflow is in progress) · **QUEUED** (next up) �
 
 ---
 
+## 0a. WINDOWS WITH REAL STRUCTURE — W1 (Red, 2026-10-02 23:5x; re-raised 2026-10-03 11:5x: "the windows are still just one pane of glass")
+
+Red: build the window's structure, not one pane; research what windows made sense in that era; put every new model (doors, windows, keys, locks) in the Figma Prop Kit. **Nothing is in the game yet.** The map still builds a 30 mm transparent cube with block-merged jamb trims and no stops.
+
+| Step | What | Status |
+|---|---|---|
+| W1.1 Research | `research/interactables/06_period_windows.md`. One family with four members, sharing the door frame grammar (casing/face band, lining, real 16 mm stops). **W-L0** "back-office light": stained walnut, through-stool with horns and apron on both faces, wood stops (Level 0/Lobby/Shift). **W-OF** "office borrowed light": dark-bronze pressed-steel SDI frame, integral stop on the hall face, removable stop with 30 oval-head screws on the office face (Office). **W-RN** "corridor wire light": W-OF in white enamel with polished wired glass (Run). **W-EX** "aluminium office front": clear-anodised wrap, bevelled snap beads, black gaskets (Exit). Glass 1/4" (6 mm) clear float in the stops; 1-inch aluminium mini-blinds as a variant | DONE |
+| W1.2 Spec | `research/interactables/10_spec.md` §5 + §9.4 + §10.4: `Kit_WindowFrame_Wood` (2,600 / 1,000 / 200 tris), `Kit_WindowFrame_Steel` (+ `_Enamel`) (3,600 / 1,300 / 220), `Kit_WindowFrame_Alu` (P2), `Kit_MiniBlind_Raised` / `_Lowered`, hero LOD0 + LOD1/LOD2, anchors, window-root frame | DONE |
+| W1.3 Models | Interactables workflow build group **G4**, then its in-engine render, critic, fix, and three-view stages | RUNNING (workflow interactables-kit, clone proj_int) |
+| W1.4 Map landing | **New workflow window-landing** (clone proj_win), running in parallel with W1.3. It writes a clone-only MapWorld patch: an unscaled `Window {a}-{b}` root, the frame per side theme (face A into the non-tall cell), the map's own window trims dropped for kit windows, a render-only 16 mm stop band, a visible 6 mm `Glass_Window` slab (1.391 × 1.642) 12 mm behind the stops as a child of the pane, and the pane collider unchanged. Placeholder frames until G4 lands, then the real kit. Tests: 100 seeds, climb, Relay sight and nav unchanged, no colliders in the opening. Before/after frames on both faces, a 0.3 m close-up and the broken state. The result is the exact contract diff for the map chat and the promotion list | RUNNING |
+| W1.5 Glass | The slab uses the glass track's `FrontRooms/Glass` (`Glass_Window`, fix pass running). The break stages come from GD3, which hooks onto the same slab and window root. Ray tracing (G14) targets the visible slab | depends on the glass track + GD3 |
+| W1.6 Figma | The interactables workflow's three-view stage → `research/interactables/threeview/index.json` → 平面视觉 places K46–K47 in PROP KIT 2324:852 and K48+ in "PROP KIT · THREE-VIEW + ERA · CONT." (x 16577, y ≈ 25500), in its format | after W1.3 |
+| W1.7 In game | The map chat applies the contract; the visual chat promotes the kit FBX/JSON plus the glass shader and materials | after W1.4 + W1.5 |
+
 ## 0b. New tasks from Red (2026-10-03 ~10:3x)
 
 | # | Task | Status |

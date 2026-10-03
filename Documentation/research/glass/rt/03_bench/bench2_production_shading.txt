@@ -1,0 +1,61 @@
+# rt_bench2, run 1 (threadgroup 8x8), 2026-10-03 ~11:55, Apple M3 Max, macOS 26.6.2; two other Unity batch processes were using the GPU
+threadgroup 8x8
+device=Apple M3 Max supportsRaytracing=1
+pipeline threadExecutionWidth=32 maxTotalThreadsPerThreadgroup=1024
+unique meshes=17 prop triangles total=160128 (avg 10008)
+BLAS batch build (17 meshes, 160140 tris) default: median 3.015 ms
+BLAS batch build preferFastBuild: median 2.048 ms
+BLAS batch build with refit usage: median 2.230 ms
+single BLAS 20480 tris: build 0.590 ms, refit 0.262 ms
+single BLAS 12 tris (box): build 0.153 ms
+BLAS memory: 13.57 MB built, 6.22 MB compacted (46%)
+vertex+index buffers: 2.77 MB
+scene: 2912 instances in a 96 m square
+TLAS rebuild 256 instances: median 0.262 ms (0.06 MB)
+TLAS rebuild 1024 instances: median 0.230 ms (0.24 MB)
+TLAS rebuild 1792 instances: median 0.303 ms (0.41 MB)
+TLAS rebuild 4096 instances: median 0.534 ms (0.94 MB)
+TLAS rebuild 16384 instances: median 1.974 ms (3.77 MB)
+full scene 2912 instances / 15.05 M instanced tris; nearest-256 1.38 M tris
+pass 0 TRACE A 1440p 25% bench-1 shading (ref), 1 spp                 0.716 ms  (1287 M reflection rays/s)
+pass 0 TRACE B 1440p 25% URP falloff + 4 nearest shadowed, 1 spp      0.804 ms  (1146 M reflection rays/s)
+pass 0 TRACE C 1440p 25% B + texture array albedo, 1 spp              0.860 ms  (1071 M reflection rays/s)
+pass 0 TRACE D 1440p 25% C, 2 spp                                     1.888 ms  (977 M reflection rays/s)
+pass 0 TRACE E 1440p 25% C, 4 spp (rotated grid)                      4.603 ms  (801 M reflection rays/s)
+pass 0 TRACE F 1440p 25% C, 8 nearest shadowed, 1 spp                 1.792 ms  (514 M reflection rays/s)
+pass 0 TRACE G 1080p 25% C, 1 spp                                     0.875 ms  (593 M reflection rays/s)
+pass 0 TRACE H 1080p 25% C, 4 spp                                     3.047 ms  (681 M reflection rays/s)
+pass 0 TRACE I 1080p 100% C, 1 spp                                    2.443 ms  (849 M reflection rays/s)
+pass 0 TRACE J 2160p 25% C, 1 spp                                     2.869 ms  (723 M reflection rays/s)
+pass 1 TRACE A 1440p 25% bench-1 shading (ref), 1 spp                 1.082 ms  (851 M reflection rays/s)
+pass 1 TRACE B 1440p 25% URP falloff + 4 nearest shadowed, 1 spp      1.116 ms  (826 M reflection rays/s)
+pass 1 TRACE C 1440p 25% B + texture array albedo, 1 spp              1.174 ms  (785 M reflection rays/s)
+pass 1 TRACE D 1440p 25% C, 2 spp                                     2.045 ms  (901 M reflection rays/s)
+pass 1 TRACE E 1440p 25% C, 4 spp (rotated grid)                      4.311 ms  (855 M reflection rays/s)
+pass 1 TRACE F 1440p 25% C, 8 nearest shadowed, 1 spp                 1.243 ms  (741 M reflection rays/s)
+pass 1 TRACE G 1080p 25% C, 1 spp                                     0.729 ms  (711 M reflection rays/s)
+pass 1 TRACE H 1080p 25% C, 4 spp                                     2.709 ms  (765 M reflection rays/s)
+pass 1 TRACE I 1080p 100% C, 1 spp                                    2.006 ms  (1034 M reflection rays/s)
+pass 1 TRACE J 2160p 25% C, 1 spp                                     2.616 ms  (793 M reflection rays/s)
+
+# rt_bench2, run 2 (TRACE lines only), ~11:57, same conditions
+pass 0 TRACE A 1440p 25% bench-1 shading (ref), 1 spp                 0.834 ms  (1106 M reflection rays/s)
+pass 0 TRACE B 1440p 25% URP falloff + 4 nearest shadowed, 1 spp      0.946 ms  (974 M reflection rays/s)
+pass 0 TRACE C 1440p 25% B + texture array albedo, 1 spp              1.128 ms  (817 M reflection rays/s)
+pass 0 TRACE D 1440p 25% C, 2 spp                                     3.133 ms  (588 M reflection rays/s)
+pass 0 TRACE E 1440p 25% C, 4 spp (rotated grid)                      5.389 ms  (684 M reflection rays/s)
+pass 0 TRACE F 1440p 25% C, 8 nearest shadowed, 1 spp                 1.791 ms  (514 M reflection rays/s)
+pass 0 TRACE G 1080p 25% C, 1 spp                                     0.866 ms  (598 M reflection rays/s)
+pass 0 TRACE H 1080p 25% C, 4 spp                                     2.833 ms  (732 M reflection rays/s)
+pass 0 TRACE I 1080p 100% C, 1 spp                                    2.298 ms  (902 M reflection rays/s)
+pass 0 TRACE J 2160p 25% C, 1 spp                                     3.480 ms  (596 M reflection rays/s)
+pass 1 TRACE A 1440p 25% bench-1 shading (ref), 1 spp                 1.110 ms  (830 M reflection rays/s)
+pass 1 TRACE B 1440p 25% URP falloff + 4 nearest shadowed, 1 spp      1.278 ms  (721 M reflection rays/s)
+pass 1 TRACE C 1440p 25% B + texture array albedo, 1 spp              1.358 ms  (679 M reflection rays/s)
+pass 1 TRACE D 1440p 25% C, 2 spp                                     2.632 ms  (700 M reflection rays/s)
+pass 1 TRACE E 1440p 25% C, 4 spp (rotated grid)                      4.852 ms  (760 M reflection rays/s)
+pass 1 TRACE F 1440p 25% C, 8 nearest shadowed, 1 spp                 1.439 ms  (641 M reflection rays/s)
+pass 1 TRACE G 1080p 25% C, 1 spp                                     0.886 ms  (585 M reflection rays/s)
+pass 1 TRACE H 1080p 25% C, 4 spp                                     2.864 ms  (724 M reflection rays/s)
+pass 1 TRACE I 1080p 100% C, 1 spp                                    1.572 ms  (1319 M reflection rays/s)
+pass 1 TRACE J 2160p 25% C, 1 spp                                     2.108 ms  (984 M reflection rays/s)

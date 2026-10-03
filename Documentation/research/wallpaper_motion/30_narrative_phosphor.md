@@ -478,10 +478,9 @@ EGRESS gives the difference a reason: life-safety guidance must never be mistake
 2. **Placard (LD Q10):** a framed evacuation plan on the map side of the start door. Yes or no?
 3. **Caught line:** `OCCUPANT ACCOUNTED FOR` under CAUGHT. Yes or no?
 4. **Strings:** A.11 freezes every string, including the M9 scratch lines. Change any before the print chat renders?
-5. **Media for the research page:** approve the download batch (§9.2)?
 
 ## 8. Not done / limits
-- **No Figma research frame yet.** It needs the media in §9.2 first, and the download approval is pending.
+- **Research page built 2026-10-03:** Figma section "FRONTROOMS · GLOW INK · NARRATIVE RESEARCH" (2471:3804) on page 2099:76, frames GN01–GN06. Media and ledger are in `Research/week02/phosphor-narrative/` (`SOURCES.md`).
 - **Unverified:**
   - the Haunted Mansion's original portrait mechanism;
   - the 1990-edition NFPA wording;
@@ -565,7 +564,7 @@ EGRESS gives the difference a reason: life-safety guidance must never be mistake
   - `research/hunter/03_gameplay_tech.md` §6
   - `Tools/print/patterns/hard_edge.py`
 
-### 9.2 Media for the research page (metadata checked 2026-10-03; download needs Red's approval)
+### 9.2 Media for the research page (downloaded 2026-10-03 after Red's approval; ledger `Research/week02/phosphor-narrative/SOURCES.md`)
 
 Target: `Research/week02/phosphor-narrative/` (`stills/`, `clips/`, `SOURCES.md`). Raw YouTube downloads stay in the session scratchpad.
 
