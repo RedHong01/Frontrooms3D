@@ -20,9 +20,13 @@ What lives here
 * RANCH_CASING (§2.3) and its hard rule (w >= 0.0215 for u in
   [0.0015, 0.0735]) and steel_jamb_section() (§2.3 pressed steel, 16 ga,
   1.5 mm inside bends).
-* Builders that take Unity coordinates: oriented boxes and cutters, a loft
-  along Y, the mitred U-sweep round the opening, a revolve about any Unity
-  axis, slotted screw heads, EXACT-boolean cuts.
+* Builders that take Unity coordinates: oriented boxes and cutters, lofts
+  along X / Y / Z, a path sweep, the mitred U-sweep round the opening, a
+  revolve about any Unity axis, slotted flat and oval screw heads (built
+  directly; a flat head's slot continues 1 mm into its plate by an EXACT
+  boolean), EXACT-boolean mortises and pockets.
+* The leaf section (§1.4 envelope, 3 deg lock-edge bevel, arrises, edge
+  seams), edge-plate mortises, and the envelope assertions.
 * hinge_half(): one 4-1/2" five-knuckle butt on the A2 axis, frame half
   (knuckles 1/3/5 + button tips + plate + screws) or leaf half (2/4).
 * finalize(): the per-part recipe that the G1 weighted-normal probe (task 0)
@@ -153,12 +157,15 @@ assert_casing_rule()
 # ----------------------------------------------------------- 2D helpers
 def fillet_polygon(points, radii, segs, closed=True):
     """Replace each corner i of a polyline by a circular arc of radius
-    radii[i] (0 = keep the corner) with ``segs`` segments."""
+    radii[i] (0 = keep the corner) with ``segs`` segments (an int, or a
+    list per corner)."""
     n = len(points)
     out = []
+    seglist = segs if isinstance(segs, (list, tuple)) else [segs] * n
     for i in range(n):
         p = Vector(points[i])
         r = radii[i]
+        segs = seglist[i]
         if r <= 0 or (not closed and i in (0, n - 1)):
             out.append(tuple(p))
             continue
@@ -367,6 +374,70 @@ def loft_z(kit, rings, slot, name, grain=None, cap=True):
     return _part(kit, bm, slot, name, grain)
 
 
+def loft_x(kit, rings, slot, name, grain=None, cap=True, cap_start=True, cap_end=True):
+    """Loft along Unity X: rings = [(X, [(Y, Z), ...]), ...] (part frames)."""
+    bm = bmesh.new()
+    vr = [[bm.verts.new(U(x, y, z)) for y, z in pts] for x, pts in rings]
+    n = len(vr[0])
+    for a, b in zip(vr, vr[1:]):
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+    if cap and cap_start:
+        bm.faces.new(vr[0])
+    if cap and cap_end:
+        bm.faces.new(list(reversed(vr[-1])))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return _part(kit, bm, slot, name, grain)
+
+
+def sweep_path(kit, path, section, slot, name, cap=True, up=(0, 1, 0)):
+    """Sweep a closed 2D section (u, v) along a 3D Unity polyline; u along
+    the path's side vector, v along its up vector (rotation-minimising
+    enough for gentle bends). section may be a callable(i) for tapering."""
+    pts = [Vector(p) for p in path]
+    bm = bmesh.new()
+    rings = []
+    upv = Vector(up)
+    for k, p in enumerate(pts):
+        if k == 0:
+            tg = (pts[1] - pts[0]).normalized()
+        elif k == len(pts) - 1:
+            tg = (pts[-1] - pts[-2]).normalized()
+        else:
+            tg = ((pts[k] - pts[k - 1]).normalized() + (pts[k + 1] - pts[k]).normalized()).normalized()
+        side = upv.cross(tg)
+        if side.length < 1e-6:
+            side = Vector((0, 0, 1)).cross(tg)
+        side.normalize()
+        vv = tg.cross(side).normalized()
+        sec = section(k) if callable(section) else section
+        rings.append([bm.verts.new(U(*(p + side * u + vv * v))) for u, v in sec])
+    n = len(rings[0])
+    for a, b in zip(rings, rings[1:]):
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+    if cap:
+        bm.faces.new(rings[0])
+        bm.faces.new(list(reversed(rings[-1])))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return _part(kit, bm, slot, name)
+
+
+def rounded_rect(w, h, r, segs, cx=0.0, cy=0.0):
+    """Closed rounded rectangle (u, v), counter-clockwise, r per corner
+    (scalar or 4-tuple: (-,-), (+,-), (+,+), (-,+))."""
+    rs = r if isinstance(r, (tuple, list)) else (r, r, r, r)
+    pts = [(cx - w / 2, cy - h / 2), (cx + w / 2, cy - h / 2), (cx + w / 2, cy + h / 2), (cx - w / 2, cy + h / 2)]
+    return fillet_polygon(pts, rs, segs, closed=True)
+
+
+def hexagon(af, cx=0.0, cy=0.0, phase=0.0):
+    r = af / math.sqrt(3)
+    return [(cx + r * math.cos(phase + math.pi / 3 * i), cy + r * math.sin(phase + math.pi / 3 * i)) for i in range(6)]
+
+
 def saddle_section(flutes=False):
     """§1.4 / §2.3 saddle in (X, Y): 0.152 wide, flat top +-0.052 at 0.012,
     1:2 bevels, 1 mm eased arrises. flutes=True: 12 longitudinal flutes,
@@ -473,45 +544,6 @@ def revolve(kit, profile, base, axis, segs, slot, name, phase=0.0, close_start=T
         bm.faces.new(list(reversed(rings[-1])))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     return _part(kit, bm, slot, name, grain)
-
-
-def screw_head(kit, centre, normal, slot, rng, kind="flat", d=0.0095, segs=None, proud=0.00015,
-               slot_w=None, host=None, notch=0.0010, name="screw"):
-    """A slotted screw head facing ``normal`` (Unity), seated on the surface
-    at ``centre``. kind "flat": a countersunk head flush with the surface
-    (0.15 mm proud, a 0.4 mm rim chamfer reads as the countersink ring);
-    the slot goes through the head and ``notch`` deep into ``host`` (the
-    plate it sits in), so it reads as a real 1 mm slot. kind "oval": a
-    raised oval head (dome ~0.18 d), slot cut into the dome. The slot angle
-    is random, as installers leave them."""
-    segs = segs or SCREW_SEGS
-    r = d / 2
-    slot_w = slot_w or max(0.0008, d * 0.13)
-    if kind == "flat":
-        prof = [(r, 0.0), (r - 0.0004, proud), (0.0, proud)]
-        top = proud
-        lo_z = -notch
-    else:
-        dome = d * 0.18
-        prof = [(r, 0.0), (r, 0.0001), (r * 0.82, 0.0001 + dome * 0.55), (r * 0.45, 0.0001 + dome * 0.92), (0.0, 0.0001 + dome)]
-        top = 0.0001 + dome
-        lo_z = top - max(0.0006, dome * 0.6)
-    n = Vector(normal).normalized()
-    obj = revolve(kit, prof, centre, n, segs, slot, name, phase=rng.uniform(0, math.pi))
-    a, e1, e2 = _frame_for_axis(n)
-    ang = rng.uniform(0, math.pi)
-    t = e1 * math.cos(ang) + e2 * math.sin(ang)
-    s = n.cross(t)
-    R = Matrix((t, s, n)).transposed()   # local x = t, y = s, z = n
-    hi_z = top + 0.0006
-    c = Vector(centre) + n * ((lo_z + hi_z) / 2)
-    cut(obj, [cutter(None, None, R=R, centre=c, half=(r * 1.25, slot_w / 2, (hi_z - lo_z) / 2))])
-    if host is not None and kind == "flat":
-        # the slot continues into the plate under the head: floor at -notch
-        c2 = Vector(centre) + n * ((-notch + 0.0003) / 2)
-        cut(host, [cutter(None, None, R=R, centre=c2, half=(r * 0.96, slot_w / 2, (notch + 0.0003) / 2))])
-    obj["fr_screw"] = True
-    return obj
 
 
 def _orient(bm, face, want):
@@ -775,13 +807,6 @@ def lod2_drop(obj):
 
 def anchor(kit, name, X, Y, Z):
     kit.anchor(name, U(X, Y, Z))
-
-
-def tri_count(objs):
-    n = 0
-    for o in objs:
-        n += sum(len(p.vertices) - 2 for p in o.data.polygons)
-    return n
 
 
 # ----------------------------------------------------------------- leaf

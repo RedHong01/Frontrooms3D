@@ -1,7 +1,12 @@
 seed 20261001: shell meshes identical 1454 (walls, floors, ceilings, columns, collision); trim meshes 72; window trim boxes removed 33 for 11 windows; other trim boxes (doors, coves) unchanged
+envelope Level0/kit: |X| <= 0.8000, Y 0.2485 .. 2.0765, |Z| <= 0.1210; meshes Kit_WindowFrame_Wood_LOD0, Kit_WindowFrame_Wood_LOD1; tris (all LODs) 3234
 seed 20261001: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 11 windows; blocked by something else (same as today) at 0
 seed 516574485: shell meshes identical 1459 (walls, floors, ceilings, columns, collision); trim meshes 91; window trim boxes removed 114 for 38 windows; other trim boxes (doors, coves) unchanged
+envelope Office/kit: |X| <= 0.7750, Y 0.2750 .. 2.0750, |Z| <= 0.1050; meshes Kit_WindowFrame_Steel_LOD0, Kit_WindowFrame_Steel_LOD1; tris (all LODs) 5212
+proud of Z 0.022 inside the wall cut (Office/intact): face A 0, face B 60 vertices, max |Z| 0.0224
+proud of Z 0.022 inside the wall cut (Office/after-break): face A 0, face B 60 vertices, max |Z| 0.0224
 seed 516574485: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 38 windows; blocked by something else (same as today) at 0
+proud of Z 0.022 inside the wall cut (Office/rebuilt): face A 0, face B 60 vertices, max |Z| 0.0224
 frame L0_today_A_1.6m.png  eye (5002.2500, 1.6200, 4993.4000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
 frame L0_today_B_1.6m.png  eye (5002.2500, 1.6200, 4996.6000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
 frame L0_today_A_head_corner_0.3m.png  eye (5003.0000, 1.8200, 4994.7400) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
@@ -48,16 +53,17 @@ frame OF_kit_A_screws_0.3m.png  eye (5019.2400, 1.2200, 5002.9200) fov 50 · edg
 frame OF_kit_A_oblique_1.2m.png  eye (5019.7500, 1.6200, 5001.4000) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
 frame OF_kit_broken_A.png  eye (5020.6000, 1.6200, 5002.2500) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
 windows checked: W-L0 366, W-OF 45 in 10 worlds
+frames: W-L0 kit 366 / placeholder 0; W-OF kit 45 / placeholder 0
 timing (edit mode, batch; see uptime load in the run notes):
-seed 20261001: 11 windows; BuildForCapture today 509 ms, kit 186 ms; frame tris added 4048
-seed 516574485: 38 windows; BuildForCapture today 182 ms, kit 173 ms; frame tris added 18128
-seed 4242: 69 windows; BuildForCapture today 206 ms, kit 265 ms; frame tris added 28944; render median (W-L0 room view) today 50.42 ms, kit 45.12 ms
-seed 1990: 21 windows; BuildForCapture today 247 ms, kit 219 ms; frame tris added 7728
-seed 7: 21 windows; BuildForCapture today 227 ms, kit 238 ms; frame tris added 11280
-seed 1955: 42 windows; BuildForCapture today 190 ms, kit 191 ms; frame tris added 15456
-seed 1993: 54 windows; BuildForCapture today 219 ms, kit 200 ms; frame tris added 28752
-seed 8086: 86 windows; BuildForCapture today 208 ms, kit 296 ms; frame tris added 34608
-seed 6502: 15 windows; BuildForCapture today 236 ms, kit 246 ms; frame tris added 9072
-seed 68000: 54 windows; BuildForCapture today 207 ms, kit 219 ms; frame tris added 19872
+seed 20261001: 11 windows; BuildForCapture today 533 ms, kit 290 ms; frame tris added 35574
+seed 516574485: 38 windows; BuildForCapture today 311 ms, kit 298 ms; frame tris added 136738
+seed 4242: 69 windows; BuildForCapture today 405 ms, kit 294 ms; frame tris added 235014; render median (W-L0 room view) today 55.68 ms, kit 52.61 ms
+seed 1990: 21 windows; BuildForCapture today 235 ms, kit 412 ms; frame tris added 67914
+seed 7: 21 windows; BuildForCapture today 341 ms, kit 250 ms; frame tris added 79782
+seed 1955: 42 windows; BuildForCapture today 393 ms, kit 290 ms; frame tris added 135828
+seed 1993: 54 windows; BuildForCapture today 360 ms, kit 264 ms; frame tris added 204306
+seed 8086: 86 windows; BuildForCapture today 284 ms, kit 350 ms; frame tris added 288014
+seed 6502: 15 windows; BuildForCapture today 287 ms, kit 347 ms; frame tris added 60378
+seed 68000: 54 windows; BuildForCapture today 386 ms, kit 445 ms; frame tris added 174636
 
-VERDICT PASS: 38949 passed, 0 failed
+VERDICT PASS: 38538 passed, 0 failed

@@ -16,9 +16,12 @@ maker's marks.
 Construction (window root W, Unity metres; see interact_window_common):
 * Ranch casing with back band on both faces, the shared §2.3 profile (77 mm
   x 25.5 mm; w >= 0.0215 over the trim zone, asserted), mitred at the head
-  with a closed 0.3 mm V hairline, the jamb casings landing on the stool.
-* Jamb and head liners (2 mm-class skins) at |X| 0.6995 / Y 1.9995 over the
-  bare reveal, Z +/-0.0795 between the casings.
+  with a closed 0.2 mm V hairline (the round-over passes 0.4 mm from the map
+  trim's corner, so a deeper V or an open joint would expose it), the jamb
+  casings landing on the stool.
+* Jamb and head liners at |X| 0.6995 / Y 1.9995 over the bare reveal, Z
+  +/-0.0795 between the casings, swept as ONE welded profile with both
+  casings per side (no casing/liner seam for the LOD1 collapse to open).
 * Through-stool with horns: X +/-0.800, Z +/-0.121, Y 0.3255-0.3505,
   half-round nosings returned round the horn ends. Its top IS the sill (Y
   0.3505, 0.5 mm over the map's bare wallpaper sill top). Climb plant here.
@@ -26,7 +29,8 @@ Construction (window root W, Unity metres; see interact_window_common):
   returned ends.
 * Glazing stops 16 x 16 on both faces, all four sides, Z +/-(0.006 ->
   0.022): square bead with a 3 mm quirked ovolo on the exposed arris, 0.5 mm
-  ease at the sight line, mitred with 0.3 mm joints.
+  ease at the sight line, mitred with 0.3 mm open joints (end grain shows;
+  behind them is the liner or stool, never the map trims).
 * Glazing compound line (Prop_Rubber), Z +/-(0.0035 -> 0.006), flush with the
   stop line; two neoprene setting blocks under the glass at X +/-0.35.
 * No glass, no pane, no teeth (glass-destruction track).
@@ -35,9 +39,12 @@ Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z (the map turns it toward the non-tall cell). Size
 1.60 x 1.828 (Y 0.2485-2.0765) x 0.242 m.
 
-Budget (§9.4): 2,600 / 1,000 / 200 tris; LOD1 now at 0.40 (compound and
-setting blocks drop, the rest collapses); LOD2 0.077 (fr_lod2_drop on the
-compound line, blocks and stops' ovolo detail is in the stop pieces, kept).
+Budget (§9.4): 2,600 / 1,000 / 200 tris; LOD1 now at 0.45 (setting blocks
+drop; stops and the compound are protected from the collapse, so the pocket
+edge stays clean; casing, stool and apron lose their wear stations and arc
+segments; checks a-c pass on LOD1 too); LOD2 0.077 (fr_lod2_drop on the
+compound line and the setting blocks; the ovolo is part of the stop sweep
+and collapses with it).
 LOD distances 4 / 12 / none. Slots: Prop_WoodWalnut (first = submesh 0, the
 RT bridge reads only that, §7.3), Prop_Rubber. Render-only: no collider.
 
@@ -52,7 +59,7 @@ import kitlib  # noqa: F401  (slots)
 import interact_window_common as wc
 
 NAME = "Kit_WindowFrame_Wood"
-LOD1_RATIO = 0.40
+LOD1_RATIO = 0.45
 LOD2_RATIO = 0.077
 LOD1 = LOD1_RATIO
 LOD_DISTANCES = (4.0, 12.0, None)
@@ -112,23 +119,17 @@ def stop_wear(X, Y, Z):
 
 def build(kit):
     # ---- walnut first (submesh 0)
+    # Casing A + liner + casing B as ONE welded profile per side: no seam
+    # between casing and liner for the LOD1 collapse to open onto the trims.
+    trim = wc.casing_dn("a", segs=5) + wc.casing_dn("b", segs=5)
     jamb_st = (0.0, 0.08, 0.35, 1.0)
-    for face in ("a", "b"):
-        prof = wc.casing_dn(face, segs=5)
-        for side in ("R", "L"):
-            p = wc.sweep_side(kit, side, prof, WALNUT, ("at", STOOL_Y1), ("vmitre", VGROOVE, VGROOVE), jamb_st,
-                              name="casing %s %s" % (face, side))
-            wc.paint_wear(wc.grain(p, "Y"), casing_wear)
-        p = wc.sweep_side(kit, "T", prof, WALNUT, ("vmitre", VGROOVE, VGROOVE), ("vmitre", VGROOVE, VGROOVE),
-                          name="casing %s T" % face)
-        wc.paint_wear(wc.grain(p, "X"), casing_wear)
-
-    liner = [(wc.D_LINING, wc.SHELL_Z0), (wc.D_LINING, -wc.SHELL_Z0)]
     for side in ("R", "L"):
-        p = wc.sweep_side(kit, side, liner, WALNUT, ("at", STOOL_Y1), ("mitre", 0.0), (0.0, 0.5, 1.0), name="liner " + side)
-        wc.paint_wear(wc.grain(p, "Y"))
-    p = wc.sweep_side(kit, "T", liner, WALNUT, ("mitre", 0.0), ("mitre", 0.0), name="liner T")
-    wc.paint_wear(wc.grain(p, "X"))
+        p = wc.sweep_side(kit, side, trim, WALNUT, ("at", STOOL_Y1), ("vmitre", VGROOVE, VGROOVE), jamb_st,
+                          name="casing+liner " + side)
+        wc.paint_wear(wc.grain(p, "Y"), casing_wear)
+    p = wc.sweep_side(kit, "T", trim, WALNUT, ("vmitre", VGROOVE, VGROOVE), ("vmitre", VGROOVE, VGROOVE),
+                      name="casing+liner T")
+    wc.paint_wear(wc.grain(p, "X"), casing_wear)
 
     xs = (0.04, 0.12, 0.25, 0.375, 0.5, 0.625, 0.75, 0.88, 0.96)
     zs = (0.1, 0.5, 0.9)
@@ -144,13 +145,13 @@ def build(kit):
         prof = sp if face == "a" else wc.mirror_b(sp)
         for part in wc.frame_ring(kit, prof, WALNUT, end=("mitre", STOP_JOINT), caps=True, name="stop " + face):
             wc.paint_wear(wc.grain(part, "Y" if part.name.endswith(("R", "L")) else "X"), stop_wear)
+            wc.lod_keep(part)
 
     # ---- black glazing compound and setting blocks
     for face in ("a", "b"):
         for part in wc.frame_ring(kit, wc.tape_dn(face), RUBBER, name="compound " + face):
             wc.paint_wear(part)
-            kit.lod1_drop(part)
-            wc.lod2_drop(part)
+            wc.lod2_drop(part)           # kept in LOD1 (see the steel frame)
     for x in (-0.35, 0.35):
         blk = wc.box_u(kit, (0.100, 0.0033, 0.0056), (x, wc.LINING_Y0 + 0.00165, 0.0), RUBBER, bevel=0.0, name="setting block")
         wc.paint_wear(blk)

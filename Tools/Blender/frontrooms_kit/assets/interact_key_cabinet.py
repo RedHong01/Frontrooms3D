@@ -205,6 +205,16 @@ def build(kit):
     kit.anchor("door_hinge", U(hx, Y0, hz))
     kit.anchor("door_hinge_dir", U(hx, Y0 + 0.10, hz))
     kit.anchor("body_centre", U(XB, YC, BD / 2))
+    # Hung pose recipe (solved by the G3 self-check with BVH overlap tests on
+    # the real meshes; the facade applies it, spec 10 §4.1 "hung"): the ring's
+    # hook_contact goes ringLiftM above key_hook, the ring turned
+    # Euler(0, -60, 0) from the host (its tangent 60 deg toward the room); the
+    # key hangs tip down from key_contact with its flat normal (+X) square to
+    # the room (30 deg of twist in its Ø 4.8 hole) and the tag hangs from
+    # tag_contact face to the room (30 deg in its Ø 5 hole on the 2.4 mm tab).
+    kit.meta["hungPose"] = {"ringYawDeg": -60.0, "ringLiftM": 0.0011, "keyTwistDeg": -30.0, "tagTwistDeg": -30.0,
+                            "key": "LookRotation(down, Cross(down, hostForward)): tip down, flats to the room",
+                            "tag": "LookRotation(hostForward, up): face to the room, hanging along -Y"}
     kit.no_collider()
     kit.tag("interactable", "key_host", "wall_decor")
     kc.lod_meta(kit, LOD_DISTANCES, BUDGET)

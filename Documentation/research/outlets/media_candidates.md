@@ -64,3 +64,8 @@ Status 2026-10-03. Nothing on this list has been downloaded. The visual chat wil
 - A **1980s photo of an ivory duplex on wallpaper** in a commercial interior, close enough to see the screw. It would be the hero look-dev reference. Leads: Library of Congress HABS interior photos; Commons "1980s office" categories.
 - A **pre-1991 Steelcase 9000 or Herman Miller brochure** showing the panel base with receptacles (`01_period_research.md` §11, question 2).
 - An **orange isolated-ground receptacle photographed before 1996** (an all-orange body) for §2.4.
+
+## Added by the spec (`10_spec.md` §8, 2026-10-03; not downloaded, source not found yet)
+
+- A **5-20R "T-slot" duplex face, straight on**, any era before the TR shutters (2008), to fix the arm size and direction of `Kit_OutletDuplex20` (§1.2 is ESTIMATE). Leads: Commons "NEMA 5-20" categories; the Arrow Hart J-2 sheet above (internal crop only).
+- A **side or section view of a thermoset 1-gang plate** (edge profile, back rim), or one real plate measured with calipers. It replaces every profile ESTIMATE in `10_spec.md` §1.2. A measured plate needs no download.

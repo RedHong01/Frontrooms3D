@@ -107,6 +107,8 @@ public static class FrontRoomsWindowLandingTests
     }
 
     static readonly List<GameObject> roots = new List<GameObject>();
+    static readonly HashSet<string> envelopes = new HashSet<string>();
+    static int lobbyKit, lobbyPlaceholder, officeKit, officePlaceholder;
     static readonly List<Object> owned = new List<Object>();
 
     static FrontRoomsMapWorld BuildWorld(int seed, bool kit, out double ms)
@@ -312,6 +314,7 @@ public static class FrontRoomsWindowLandingTests
         if (capOffice == null) CaptureOnly(seeds, ZoneTheme.Office, "OF");
         KitEnabled(true);
         Log("windows checked: W-L0 " + lobby + ", W-OF " + office + " in " + worlds + " worlds");
+        Log("frames: W-L0 kit " + lobbyKit + " / placeholder " + lobbyPlaceholder + "; W-OF kit " + officeKit + " / placeholder " + officePlaceholder);
         Check(lobby >= 1 && office >= 1, "coverage: both members seen (W-L0 " + lobby + ", W-OF " + office + ")");
         Log("timing (edit mode, batch; see uptime load in the run notes):\n" + timing);
         foreach (var o in owned) if (o != null) Object.DestroyImmediate(o);
@@ -418,9 +421,14 @@ public static class FrontRoomsWindowLandingTests
         bool InCut(Vector3 v) => Mathf.Abs(v.x) < FrontRoomsInteractableKit.LiningX - Eps && v.y > FrontRoomsInteractableKit.LiningSill + Eps && v.y < FrontRoomsInteractableKit.LiningHead - Eps;
         var stray = verts.Count(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + .0015f + Eps);
         Check(stray == 0, "stop-band: " + when + " " + info.Key + " " + stray + " vertices in the opening outside |Z| <= 0.0235");
-        var domes = verts.Count(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + Eps);
-        Check(domes == 0 || (info.theme == ZoneTheme.Office && verts.Where(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + Eps).All(v => v.z * (info.roomIsB ? 1f : -1f) > 0f && (Mathf.Abs(Mathf.Abs(v.x) - .6915f) < .0036f || Mathf.Abs(Mathf.Abs(v.y - 1.175f) - .8165f) < .0036f))),
-            "screw-domes: " + when + " " + info.Key + " " + domes + " vertices proud of the stop face are not screw heads");
+        // Anything proud of the stop face (screw domes, bend radii) stays over the 16 mm band, never over the clear opening.
+        var proud = verts.Where(v => InCut(v) && Mathf.Abs(v.z) > FrontRoomsInteractableKit.StopZOut + Eps).ToList();
+        var faceA = info.roomIsB ? 1f : -1f;
+        Check(proud.All(v => Mathf.Abs(v.x) >= FrontRoomsInteractableKit.StopX - Eps || v.y <= FrontRoomsInteractableKit.StopSill + Eps || v.y >= FrontRoomsInteractableKit.StopHead - Eps),
+            "proud-over-band: " + when + " " + info.Key + " " + proud.Count + " vertices proud of the stop face");
+        var proudKey = info.theme + "/" + when;
+        if (proud.Count > 0 && envelopes.Add("proud " + proudKey))
+            Log("proud of Z 0.022 inside the wall cut (" + proudKey + "): face A " + proud.Count(v => v.z * faceA > 0f) + ", face B " + proud.Count(v => v.z * faceA < 0f) + " vertices, max |Z| " + F(proud.Max(v => Mathf.Abs(v.z))));
     }
 
     static int CheckWindow(FrontRoomsMapWorld w, FrontRoomsMapWorld.Window win, Info info, int seed)
@@ -441,19 +449,22 @@ public static class FrontRoomsWindowLandingTests
         var tris = 0;
         if (frame != null)
         {
-            var mf = frame.GetComponent<MeshFilter>();
-            var mr = frame.GetComponent<MeshRenderer>();
-            var meshName = mf != null && mf.sharedMesh != null ? mf.sharedMesh.name : "";
-            var want = info.theme == ZoneTheme.Office ? "Steel" : "Wood";
-            Check(meshName.Contains(want), "member: " + tag + " room " + info.theme + " -> '" + meshName + "' (want " + want + ")");
-            var main = mr != null && mr.sharedMaterials.Length > 0 && mr.sharedMaterials[0] != null ? mr.sharedMaterials[0].name : "";
-            Check(main == (info.theme == ZoneTheme.Office ? "Prop_SteelBrown" : "Prop_WoodWalnut") && mr.sharedMaterials.Length == 2 && mr.sharedMaterials[1] != null && mr.sharedMaterials[1].name == "Prop_Rubber",
-                "slots: " + tag + " " + string.Join(",", mr.sharedMaterials.Select(m => m != null ? m.name : "null")));
-            Check(mr.shadowCastingMode == ShadowCastingMode.On, "frame-shadow: " + tag);
+            // The frame is the kit asset when its FBX is in Resources/Props/Models, else the facade's placeholder.
+            var renderers = frame.GetComponentsInChildren<MeshRenderer>(true);
+            var meshes = frame.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh != null).Select(f => f.sharedMesh.name).ToList();
+            var placeholder = meshes.Count == 1 && meshes[0].Contains("(placeholder)");
+            var kit = placeholder ? "placeholder" : "kit";
+            if (info.theme == ZoneTheme.Office) { if (placeholder) officePlaceholder++; else officeKit++; }
+            else { if (placeholder) lobbyPlaceholder++; else lobbyKit++; }
+            var mats = renderers.SelectMany(r => r.sharedMaterials).Select(m => m != null ? m.name : "null").Distinct().OrderBy(n => n).ToList();
+            var mainSlot = info.theme == ZoneTheme.Office ? "Prop_SteelBrown" : "Prop_WoodWalnut";
+            Check(mats.Contains(mainSlot) && mats.All(n => n == mainSlot || n == "Prop_Rubber") && (!placeholder || mats.Count == 2),
+                "member: " + tag + " room " + info.theme + " -> " + kit + " " + string.Join("+", meshes.Take(3)) + " slots " + string.Join(",", mats));
+            Check(renderers.Length > 0 && renderers.All(r => r.shadowCastingMode == ShadowCastingMode.On), "frame-shadow: " + tag + " " + kit);
             var toRoom = w.CellCenter(info.room) - root.position;
             toRoom.y = 0f;
             Check(Vector3.Dot(frame.forward, toRoom.normalized) > .9999f, "face-a: " + tag + " frame +Z " + V(frame.forward) + " toward room " + V(toRoom.normalized));
-            if (mf != null && mf.sharedMesh != null) tris = mf.sharedMesh.triangles.Length / 3;
+            foreach (var f in frame.GetComponentsInChildren<MeshFilter>(true)) if (f.sharedMesh != null) tris += f.sharedMesh.triangles.Length / 3;
             // Stops on both faces, all four sides: vertices in the band on each face and side.
             var verts = FrameVertices(root);
             // Stops on both faces, all four sides, mitred: band vertices (Z ±0.006..0.022) at the four sight-line corners
@@ -467,22 +478,29 @@ public static class FrontRoomsWindowLandingTests
                 {
                     var yIn = top ? FrontRoomsInteractableKit.StopHead : FrontRoomsInteractableKit.StopSill;
                     var yOut = top ? FrontRoomsInteractableKit.LiningHead : FrontRoomsInteractableKit.LiningSill;
-                    if (verts.Any(v => Band(v) && Mathf.Abs(v.x - sx * FrontRoomsInteractableKit.StopX) < Eps && Mathf.Abs(v.y - yIn) < Eps)) corners++;
-                    if (verts.Any(v => Band(v) && Mathf.Abs(v.x - sx * FrontRoomsInteractableKit.LiningX) < Eps && Mathf.Abs(v.y - yOut) < Eps)) corners++;
+                    // Exact (0.1 mm) for the placeholder; 0.5 mm for a kit model, whose 1.5 mm bend radii move the corner vertices.
+                    var ct = placeholder ? Eps : .0005f;
+                    if (verts.Any(v => Band(v) && Mathf.Abs(v.x - sx * FrontRoomsInteractableKit.StopX) < ct && Mathf.Abs(v.y - yIn) < ct)) corners++;
+                    // The outer ring corner exists as a vertex only on a separate bead; a formed (integral) steel stop runs on
+                    // into the soffit, so kit models are held to the sight-line corners alone.
+                    if (!placeholder || verts.Any(v => Band(v) && Mathf.Abs(v.x - sx * FrontRoomsInteractableKit.LiningX) < ct && Mathf.Abs(v.y - yOut) < ct)) corners++;
                 }
-                Check(corners == 8, "stops: " + tag + " face " + (zSign > 0 ? "A" : "B") + " " + corners + "/8 stop-ring corners at the spec's numbers");
+                Check(corners == 8, "stops: " + tag + " face " + (zSign > 0 ? "A" : "B") + " " + corners + "/8 stop-ring corners at the spec's numbers (" + kit + ")");
             }
             var maxZ = verts.Max(v => Mathf.Abs(v.z));
             var wantZ = info.theme == ZoneTheme.Office ? FrontRoomsInteractableKit.CasingZ : .121f;
-            Check(Mathf.Abs(maxZ - wantZ) < Eps, "depth: " + tag + " max |Z| " + F(maxZ) + " (want " + F(wantZ) + ")");
+            var tol = placeholder ? Eps : .002f;   // kit models: 2 mm (measured values are logged)
+            Check(Mathf.Abs(maxZ - wantZ) < tol, "depth: " + tag + " max |Z| " + F(maxZ) + " (want " + F(wantZ) + ")");
             var maxX = verts.Max(v => Mathf.Abs(v.x));
             var wantX = info.theme == ZoneTheme.Office ? FrontRoomsInteractableKit.FaceOuterX : .800f;
-            Check(Mathf.Abs(maxX - wantX) < Eps, "width: " + tag + " max |X| " + F(maxX) + " (want " + F(wantX) + ")");
+            Check(Mathf.Abs(maxX - wantX) < tol, "width: " + tag + " max |X| " + F(maxX) + " (want " + F(wantX) + ")");
             var maxY = verts.Max(v => v.y);
-            Check(Mathf.Abs(maxY - FrontRoomsInteractableKit.FaceHead) < Eps, "height: " + tag + " max Y " + F(maxY));
+            Check(Mathf.Abs(maxY - FrontRoomsInteractableKit.FaceHead) < tol, "height: " + tag + " max Y " + F(maxY));
             var minY = verts.Min(v => v.y);
             var wantMinY = info.theme == ZoneTheme.Office ? .2745f : .250f;
-            Check(Mathf.Abs(minY - wantMinY) < Eps, "bottom: " + tag + " min Y " + F(minY) + " (want " + F(wantMinY) + ")");
+            var envKey = info.theme + "/" + kit;
+            if (envelopes.Add(envKey)) Log("envelope " + envKey + ": |X| <= " + F(maxX) + ", Y " + F(minY) + " .. " + F(maxY) + ", |Z| <= " + F(maxZ) + "; meshes " + string.Join(", ", meshes) + "; tris (all LODs) " + tris);
+            Check(Mathf.Abs(minY - wantMinY) < tol, "bottom: " + tag + " min Y " + F(minY) + " (want " + F(wantMinY) + ")");
         }
         Check(root.GetComponentsInChildren<Collider>(true).Length == 0 && root.GetComponentsInChildren<Light>(true).Length == 0, "render-only: " + tag);
         ClearZone(root, info, "intact");

@@ -48,14 +48,14 @@ SCREW_Y = (0.085, -0.085)
 
 
 def build(kit):
-    plate, lip, boxes, screws = lc.build_strike(kit, HALF_LEN, OPENINGS, LIP_Y, SCREW_Y, screw_segs=48,
-                                                lip_steps=9, corner_k=4)
+    plate, lip, boxes, screws = lc.build_strike(kit, HALF_LEN, OPENINGS, LIP_Y, SCREW_Y, screw_segs=32,
+                                                corner_k=3, box_k=2)
     wear = lc.strike_wear(OPENINGS)
     lc.finish_part(plate, wear)
     lc.finish_part(lip, wear)
     lc.finish_part(boxes)
     for s in screws:
-        lc.finish_part(s, lambda p, n, slot: (1.0, 0.8, 1.0), lod2=True, delete_below=lc.STRIKE_PROUD)
+        lc.finish_part(s, lambda p, n, slot: (1.0, 0.8, 1.0), lod2=True, delete_below=lc.STRIKE_PROUD - 0.00028)
 
     kit.anchor("plate", lc.U(0.0, 0.0, 0.0))
     kit.anchor("latch_opening", lc.U(0.0, LATCH_Y, lc.STRIKE_PROUD))

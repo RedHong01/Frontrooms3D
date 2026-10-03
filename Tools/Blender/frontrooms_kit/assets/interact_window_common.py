@@ -39,6 +39,15 @@ mirror_b(face A profile).
 Wear (spec §1.8 W1/W2): every part gets the point colour attribute
 ``fr_wear``, white by default; a channel below 1 means more of it: R = hand
 grime, G = edge wear (paint or finish worn through), B = cavity grime.
+
+LOD1 (kitlib.make_lod1 collapses the joined mesh): an open seam between two
+pieces can open under the collapse and show the map trims, so (1) members
+that collapse weld what can be welded into one sweep (wood: casing A + liner
++ casing B per side); (2) stops, liners, tape and beads are protected with
+lod_keep(); (3) sweep_side(pin=True) pins a piece's end rings and wall edges,
+used only where nothing unpinned would be starved (alu shell); (4) steel and
+the raised blind set a LOD1 ratio that needs no collapse at all. The scratch
+check runs (a)-(c) on LOD1 too.
 """
 
 import math
@@ -305,7 +314,7 @@ def tess_2d(points2d):
 
 
 def sweep_side(kit, side, profile, slot, start=("mitre", 0.0), end=("mitre", 0.0), stations=(0.0, 1.0),
-               caps=(False, False), closed=False, name="sweep"):
+               caps=(False, False), closed=False, name="sweep", pin=False):
     """One side of a frame: ``profile`` (d, n) swept along ``side`` of the
     sight-line rectangle. End kinds:
       ("mitre", setback)   cut on the 45-degree corner plane, pulled back
@@ -318,7 +327,10 @@ def sweep_side(kit, side, profile, slot, start=("mitre", 0.0), end=("mitre", 0.0
       ("at", along)        cut square at that along-coordinate (Y on jambs, X
                            on head/sill).
     ``stations`` are length fractions between the ends (wear resolution).
-    ``caps`` close "mitre"/"at" ends with the profile polygon."""
+    ``caps`` close "mitre"/"at" ends with the profile polygon. ``pin`` puts
+    the end rings, groove shoulders and open edges in kitlib's fr_lod_keep
+    group (off by default: pinning a whole frame starves the LOD1 collapse
+    and it crushes the unpinned parts instead)."""
     bm = bmesh.new()
     ddir, adir = SIDES[side]
     vn = _vertex_normals(profile, closed)
@@ -369,15 +381,32 @@ def sweep_side(kit, side, profile, slot, start=("mitre", 0.0), end=("mitre", 0.0
             f.normal_update()
             if f.normal.dot(want) < 0:
                 f.normal_flip()
-    return kit._new_object(name, bm, slot, "metres", "xz")
+    pinned = set()
+    if pin:
+        for k in range(m):
+            pinned.update((grid[k][0], grid[k][-1]))
+            if start[0] == "vmitre":
+                pinned.add(grid[k][1])
+            if end[0] == "vmitre":
+                pinned.add(grid[k][-2])
+        if not closed:
+            pinned.update(grid[0])
+            pinned.update(grid[-1])
+    bm.verts.index_update()
+    ids = sorted(v.index for v in pinned)
+    obj = kit._new_object(name, bm, slot, "metres", "xz")
+    if ids:
+        obj.vertex_groups.new(name="fr_lod_keep").add(ids, 1.0, "REPLACE")
+    return obj
 
 
-def frame_ring(kit, profile, slot, end=("mitre", 0.0), caps=False, stations=None, name="ring", sides="RLTB", closed=False):
+def frame_ring(kit, profile, slot, end=("mitre", 0.0), caps=False, stations=None, name="ring", sides="RLTB", closed=False,
+               pin=False):
     """The same profile on several sides, mitred at the corners (see
     sweep_side for the end kinds)."""
     stations = stations or {}
     return [sweep_side(kit, s, profile, slot, end, end, stations.get(s, (0.0, 1.0)), (caps, caps), closed,
-                       name="%s %s" % (name, s)) for s in sides]
+                       name="%s %s" % (name, s), pin=pin) for s in sides]
 
 
 def extrude_x(kit, section, x0, x1, slot, stations=(0.0, 1.0), caps=(True, True), name="extrude", mapf=None):
@@ -541,6 +570,15 @@ def paint_wear(obj, fn=None):
             c = fn(-p.x, p.z, -p.y)
         attr.data[i].color = (c[0], c[1], c[2], 1.0)
     mesh.color_attributes.active_color = attr
+    return obj
+
+
+def lod_keep(obj):
+    """Protect a part from kitlib's LOD1 collapse (its own fr_lod_keep vertex
+    group, which finish() merges and make_lod1() honours): stops and liners
+    keep their edges instead of jagging into see-through specks."""
+    vg = obj.vertex_groups.get("fr_lod_keep") or obj.vertex_groups.new(name="fr_lod_keep")
+    vg.add([v.index for v in obj.data.vertices], 1.0, "REPLACE")
     return obj
 
 

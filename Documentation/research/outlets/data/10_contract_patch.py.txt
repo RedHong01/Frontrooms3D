@@ -1,0 +1,121 @@
+"""CLONE-ONLY patch (outlet workflow, 10_spec.md §4): the map chat's chosen hook.
+
+Stage 1: BuildEdge collects one WallFace per built face (both sides of every
+built edge); BuildInto calls FrontRoomsWallFixtures.Install once, after
+AddZoneGrades and before Furnish. The stopwatch lines marked PROBE are test
+instrumentation, not part of the contract request.
+
+  python3 10_contract_patch.py <clone>/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+"""
+import io
+import sys
+
+p = sys.argv[1]
+s = io.open(p, encoding="utf-8").read()
+
+
+def sub(old, new, count=1):
+    global s
+    n = s.count(old)
+    assert n == count, (n, old[:120])
+    s = s.replace(old, new)
+
+
+# (1) The per-chunk face list (reused, so no garbage per chunk).
+sub("    readonly List<GridCoord> scratch = new List<GridCoord>();\n",
+    "    readonly List<GridCoord> scratch = new List<GridCoord>();\n"
+    "    // Outlets (FrontRoomsWallFixtures): every wall face BuildEdge built for the chunk being built.\n"
+    "    readonly List<FrontRoomsWallFixtures.WallFace> wallFaces = new List<FrontRoomsWallFixtures.WallFace>();\n")
+
+# (2) BuildInto: clear the list before the cell loop.
+sub("        var collision = new MeshBuilder();\n        int BlockOf(",
+    "        var collision = new MeshBuilder();\n        wallFaces.Clear();\n        int BlockOf(")
+
+# (3) The two BuildEdge calls pass the chunk data and the list.
+sub("                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax));",
+    "                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),\n"
+    "                data, wallFaces);")
+sub("                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)));",
+    "                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),\n"
+    "                data, wallFaces);")
+
+# (4) Install once per chunk: after AddZoneGrades, before Furnish.
+sub("        AddZoneGrades(chunk, data);\n        Furnish(chunk, data);",
+    "        AddZoneGrades(chunk, data);\n"
+    "        var outletWatch = System.Diagnostics.Stopwatch.StartNew(); // PROBE\n"
+    "        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);\n"
+    "        OutletProbe.InstallMs += outletWatch.Elapsed.TotalMilliseconds; // PROBE\n"
+    "        Furnish(chunk, data);")
+
+# (5) BuildEdge: two optional parameters, and the collection at both exits.
+sub("        bool mayExtendStart = true, bool mayExtendEnd = true)\n    {\n        if (kind == EdgeKind.Open) return;",
+    "        bool mayExtendStart = true, bool mayExtendEnd = true,\n"
+    "        MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)\n"
+    "    {\n        if (kind == EdgeKind.Open) return;")
+sub("        if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }",
+    "        if (kind == EdgeKind.Wall)\n"
+    "        {\n"
+    "            Piece(0f, length, 0f, height, true, true);\n"
+    "            AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);\n"
+    "            return;\n"
+    "        }")
+sub("        if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);\n\n        if (kind == EdgeKind.Arch) return;",
+    "        if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);\n"
+    "        AddWallFaces(faces, faceData, kind, a, b, start, along, c - width * .5f, c + width * .5f, sill, openingTop);\n\n"
+    "        if (kind == EdgeKind.Arch) return;")
+
+# (6) The helper, next to BuildEdge.
+helper = '''    /// <summary>
+    /// Outlets: list both faces of an edge BuildEdge just built, for
+    /// FrontRoomsWallFixtures. Faces round the start area are left out. Side 0
+    /// faces into a (this chunk's cell), side 1 into b; b is in the next chunk
+    /// on the east and north border ("foreign": no room, seed-pure inputs only).
+    /// </summary>
+    void AddWallFaces(List<FrontRoomsWallFixtures.WallFace> faces, MapChunk data, EdgeKind kind, GridCoord a, GridCoord b,
+        Vector3 start, Vector3 along, float openFrom, float openTo, float openBottom, float openTop)
+    {
+        if (faces == null || data == null || InStartArea(a) || InStartArea(b)) return;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp(); // PROBE
+        var across = new Vector3(along.z, 0f, along.x);
+        var edge = EdgeId(a, b);
+        var o = data.Origin;
+        for (var side = 0; side < 2; side++)
+        {
+            var cell = side == 0 ? a : b;
+            var zone = Cache.ZoneOf(cell);
+            var normal = side == 0 ? -across : across;
+            int li = cell.x - o.x, lj = cell.y - o.y;
+            var own = li >= 0 && li < MapGrid.ChunkCells && lj >= 0 && lj < MapGrid.ChunkCells;
+            var room = -1;
+            if (own) for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(li, lj)) { room = r; break; }
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = start + normal * ModuleUnits.WallHalf, direction = along, length = MapGrid.CellSize, normal = normal,
+                kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
+                edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
+                zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
+                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
+            });
+        }
+        OutletProbe.CollectTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; // PROBE
+    }
+
+    /// <summary>The world edge id shared by both faces of a wall (outlets hash it with the face side).</summary>
+    public static long WallEdgeId(GridCoord a, GridCoord b) => EdgeId(a, b);
+
+'''
+sub("    static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));\n",
+    helper + "    static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));\n")
+
+# PROBE: counters (test instrumentation only).
+s = s.rstrip() + '''
+
+// PROBE (clone only): outlet contract timings.
+public static class OutletProbe
+{
+    public static double InstallMs;
+    public static long CollectTicks;
+}
+'''
+io.open(p, "w", encoding="utf-8").write(s)
+print("patched", p)

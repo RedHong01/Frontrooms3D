@@ -19,7 +19,8 @@ AUTHORED EXTENDED (spring rest). Motion: slide along part -Z by 0.019 (the
 knob's 40 deg retracts it). The plunger is part of this one rigid mesh and
 moves with the latch ("fixed" = it has no motion of its own).
 INTERFACE NOTE for G1 (Kit_DoorLeaf_Steel's armor front): the latch opening
-must clear X -0.0070 .. +0.0140 (latch plus plunger), Y 0.9215 .. 0.9515.
+must clear X -0.0070 .. +0.0140 (latch plus plunger), Y 0.9200 .. 0.9530
+(door root; self-check (d) passes with that opening).
 Anchors: bolt_axis (0, 0, 0); tip (0.0055, 0, 0.019); plunger
 (0.0105, 0, 0.0025); throw_dir (0, 0, 0.10).
 Budget (§9.2): LOD0 600 (asserted +-15 %), LOD1 220, LOD2 40; LOD
@@ -66,7 +67,7 @@ def build(kit):
     lc.common_meta(kit, {"type": "slide", "axis": [0, 0, -1], "travel": THROW, "rest": "extended",
                          "note": "spring latch; the knob's 40 deg retracts it 0.019; plunger rides along"},
                    LOD_DISTANCES, LOD1_RATIO, LOD2_RATIO, (BUDGET, 220, 40))
-    kit.meta["frontOpening"] = {"x": [-0.0070, 0.0140], "yHalf": 0.0150}
+    kit.meta["frontOpening"] = {"x": [-0.0070, 0.0140], "yHalf": 0.0165}
     kit.tag("latchbolt", "lock_moving", "bolt", "mortise")
     assert zb < 0.0, "the bevel must reach the -X face inside the front"
     assert abs(THROW - 0.019) < 1e-9 and abs(T - 0.0125) < 1e-9 and abs(H - 0.030) < 1e-9

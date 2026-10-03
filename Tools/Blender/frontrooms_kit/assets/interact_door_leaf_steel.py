@@ -97,8 +97,9 @@ def wear(P, N, edge, obj):
     return r, g, b
 
 
-def build(kit):
-    rng = random.Random(41040)
+def build_steel(kit, rng, extra=None, wear_fn=None):
+    """The hollow-metal leaf. ``extra(kit, slab, cuts)`` may add parts and
+    slab cutters before the cuts are applied (Kit_DoorLeaf_SteelLite)."""
 
     # 1. Slab (enamel first -> submesh 0).
     rings = dc.chamfer_rings(dc.LEAF_Y0, 1, section)
@@ -126,6 +127,9 @@ def build(kit):
     aw, ah, at, ay = ARMOR
     armor, mort = dc.edge_plate(kit, CHROME, ay, aw, ah, at, "armor front", bevel=0.0004)
     cuts.append(mort)
+    protect = [slab]
+    if extra is not None:
+        protect += list(extra(kit, slab, cuts) or [])
     dc.cut(slab, cuts)
     dc.cut(armor, [dc.edge_opening(LATCH_Y, *BOLT_OPENING), dc.edge_opening(DEADBOLT_Y, *BOLT_OPENING)])
     R, n = dc.latch_frame()
@@ -143,7 +147,7 @@ def build(kit):
             if p.get("fr_screw") or "web" in p.name:
                 kit.lod1_drop(p)
 
-    dc.finalize(kit, SMOOTH_ANGLE, wear, protect=[slab] + kicks)
+    dc.finalize(kit, SMOOTH_ANGLE, wear_fn or wear, protect=protect + kicks)
 
     # ---- checks ---------------------------------------------------------
     lo, hi = dc.assert_box([slab], (-dc.LEAF_X, dc.LEAF_Y0, dc.LEAF_Z_HINGE), (dc.LEAF_X, dc.LEAF_Y1, dc.LEAF_Z_LATCH_S), what="slab")
@@ -154,10 +158,19 @@ def build(kit):
         # push-face plate must clear the stops (Z 0.018 / 0.982) with the leaf shut
         if side < 0:
             assert klo[2] > dc.STOP_Z_H + 0.01 and khi[2] < dc.STOP_Z_L - 0.01
+    return slab
+
+
+def build(kit):
+    rng = random.Random(41040)
+    build_steel(kit, rng)
     blo, bhi = dc.bounds_unity(kit.parts)
     assert bhi[0] <= dc.AXIS_X + dc.KNUCKLE_R + 1e-4 and blo[0] >= -(dc.LEAF_X + KICK_T + 0.0015), "proud limit"
+    anchors(kit)
 
-    # ---- metadata -------------------------------------------------------
+
+def anchors(kit):
+    """Shared metadata (also used by Kit_DoorLeaf_SteelLite)."""
     for tag, sx in (("s", 1), ("p", -1)):
         dc.anchor(kit, "escutcheon_" + tag, sx * dc.LEAF_X, 0.968, 0.920)
         dc.anchor(kit, "sign_" + tag, sx * dc.LEAF_X, 1.524, 0.500)

@@ -151,7 +151,7 @@ def build(kit):
 
     # ---- checks: drop, width, slat clearance to the bottom rail
     lo, hi = wc.unity_bounds(kit)
-    assert abs((hi[1] - lo[1]) - DROP) < 0.003 and abs(hi[0] - HALF_W) < 0.001, (lo, hi)
+    assert DROP <= hi[1] - lo[1] <= DROP + 0.009 and abs(hi[0] - HALF_W) < 0.001, (lo, hi)   # + bracket top 5 mm, sill guards 3 mm
     assert edge_point(ycs[-1], 0.0125)[1] > rb.BOT_Y1 + BOT_DY + 0.002, "last slat touches the bottom rail"
     kit.anchor("blind_rail", UB(*rb.O))
     kit.anchor("wand_tip", UB(wx, w_bot - 0.012, wz))

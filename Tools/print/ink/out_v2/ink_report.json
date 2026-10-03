@@ -1,5 +1,5 @@
 {
-  "spec": "glow-ink EGRESS: strings = narrative A.11 (frozen 2026-10-03); typography v2 = 平面视觉 (2026-10-03). Layers 8/9 still v1 until 平面视觉's artwork arrives. Stamp label 'OCCUPANTS' until the narrative chat approves 'OCCUPANT LOAD'.",
+  "spec": "glow-ink EGRESS: strings = narrative A.11 (frozen 2026-10-03); typography v2 = 平面视觉 (2026-10-03). Layers 8/9 = 平面视觉's artwork (2026-10-03). Stamp label 'OCCUPANT LOAD' approved by the narrative chat 2026-10-03.",
   "type": [
     {
       "layer": 0,
@@ -10,15 +10,15 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        231.9
+        226.5
       ],
       "gaps_mm": [
-        18.1
+        23.5
       ],
       "fits": true,
       "mean": 0.905,
       "seam_xy": [
-        0.36,
+        0.37,
         0.0
       ],
       "min_mean_100mm": 0.88
@@ -32,10 +32,10 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        212.4
+        207.0
       ],
       "gaps_mm": [
-        37.6
+        43.0
       ],
       "fits": true,
       "mean": 0.91,
@@ -43,7 +43,7 @@
         0.41,
         0.0
       ],
-      "min_mean_100mm": 0.884
+      "min_mean_100mm": 0.885
     },
     {
       "layer": 2,
@@ -54,10 +54,10 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        71.2
+        70.2
       ],
       "gaps_mm": [
-        53.8
+        54.8
       ],
       "fits": true,
       "mean": 0.931,
@@ -76,10 +76,10 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        352.0
+        351.3
       ],
       "gaps_mm": [
-        23.0
+        23.7
       ],
       "fits": true,
       "mean": 0.904,
@@ -100,15 +100,15 @@
       ],
       "fits_120mm_bar": true,
       "widths_mm": [
-        67.9,
-        52.7
+        67.4,
+        51.7
       ],
       "mean": 0.918,
       "seam_xy": [
         0.33,
         0.0
       ],
-      "min_mean_100mm": 0.903
+      "min_mean_100mm": 0.902
     },
     {
       "layer": 5,
@@ -119,20 +119,20 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        269.1,
-        284.1
+        267.3,
+        281.9
       ],
       "gaps_mm": [
-        105.9,
-        90.9
+        107.7,
+        93.1
       ],
       "fits": true,
       "mean": 0.919,
       "seam_xy": [
         0.0,
-        0.23
+        0.24
       ],
-      "min_mean_100mm": 0.873
+      "min_mean_100mm": 0.872
     },
     {
       "layer": 6,
@@ -143,17 +143,17 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        113.9,
-        231.9
+        113.2,
+        226.5
       ],
       "gaps_mm": [
-        136.1,
-        18.1
+        136.8,
+        23.5
       ],
       "fits": true,
       "mean": 0.925,
       "seam_xy": [
-        0.24,
+        0.26,
         0.0
       ],
       "min_mean_100mm": 0.878
@@ -167,12 +167,12 @@
       "tracking_mm": 1.0,
       "cap_mm": 22,
       "widths_mm": [
-        176.7,
-        227.4
+        175.7,
+        225.5
       ],
       "gaps_mm": [
-        73.3,
-        22.6
+        74.3,
+        24.5
       ],
       "fits": true,
       "mean": 0.907,
@@ -185,69 +185,22 @@
     {
       "layer": 8,
       "mark": "M10 forged FLOW",
-      "orient": "horizontal",
-      "repeats": 3,
-      "tracking_mm": 0.97,
-      "hand": true,
+      "orient": "image",
+      "source": "layer8_forged_THIS_WAY_OUT.png",
+      "source_px": 4096,
       "mean": 0.923,
       "seam_xy": [
-        0.71,
-        0.0
+        0.4,
+        0.56
       ],
-      "min_mean_100mm": 0.874
+      "min_mean_100mm": 0.866
     },
     {
       "layer": 9,
       "mark": "M9 GROUND scratch",
       "orient": "cluster",
-      "items_bbox_mm": [
-        [
-          "IT ONLY GOES IN",
-          62,
-          113,
-          428,
-          173
-        ],
-        [
-          "SAME ROLL AGAIN",
-          92,
-          196,
-          441,
-          248
-        ],
-        [
-          "COUNTED 41 DOORS",
-          70,
-          282,
-          427,
-          327
-        ],
-        [
-          "R.M. 6/90",
-          447,
-          363,
-          597,
-          398
-        ],
-        [
-          "D.K. 11/90",
-          105,
-          435,
-          270,
-          469
-        ],
-        [
-          "TALLY 4x5+3",
-          465,
-          132,
-          660,
-          178
-        ]
-      ],
-      "allowed_image_y_mm": [
-        75,
-        675
-      ],
+      "source": "layer9_scratch_cluster.png",
+      "source_px": 4096,
       "mean": 0.022,
       "seam_xy": [
         0.0,
@@ -262,10 +215,10 @@
       "box_mm": [
         90,
         536,
-        441.7,
+        486.5,
         64
       ],
-      "box_right_mm": 531.7,
+      "box_right_mm": 576.5,
       "fits": true,
       "mean": 0.697,
       "seam_xy": [
@@ -279,10 +232,10 @@
       "box_mm": [
         90,
         536,
-        441.7,
+        486.5,
         64
       ],
-      "box_right_mm": 531.7,
+      "box_right_mm": 576.5,
       "fits": true,
       "mean": 0.697,
       "seam_xy": [
@@ -296,10 +249,10 @@
       "box_mm": [
         90,
         536,
-        441.7,
+        486.5,
         64
       ],
-      "box_right_mm": 531.7,
+      "box_right_mm": 576.5,
       "fits": true,
       "mean": 0.697,
       "seam_xy": [
@@ -313,10 +266,10 @@
       "box_mm": [
         90,
         536,
-        441.7,
+        486.5,
         64
       ],
-      "box_right_mm": 531.7,
+      "box_right_mm": 576.5,
       "fits": true,
       "mean": 0.697,
       "seam_xy": [
@@ -330,10 +283,10 @@
       "box_mm": [
         90,
         536,
-        441.7,
+        486.5,
         64
       ],
-      "box_right_mm": 531.7,
+      "box_right_mm": 576.5,
       "fits": true,
       "mean": 0.697,
       "seam_xy": [

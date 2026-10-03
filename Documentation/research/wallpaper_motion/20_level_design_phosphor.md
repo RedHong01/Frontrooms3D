@@ -594,7 +594,15 @@ The ink is never the only signal: doors and windows stay visible as geometry.
 This replaces Rev 1's separate asks (`LampLevel`, `LampMode`, `LampDip`, `KillLamp`, `PromoteLamp`) with one shared layer.
 - **Agreed by three chats:** the map chat (关卡设计), the wallpaper-print chat (this doc) and the Relay-pursuit chat (系统设计). The record is RELAY_PURSUIT_REDESIGN.md §7.4b.
 - **Who builds it and when:** the map chat, in `FrontRoomsMapWorld`, after its current audit work.
-- **Nothing exists yet.** The only runtime lamp controls today are the global `StartLampsNorth/South` holds (FrontRoomsMapWorld.cs:1238-1239).
+- **Built (2026-10-03, by the map chat; in main, uncommitted):** the lamp-override layer v1 exactly as specified below.
+  - `LampLevel` / `LampBaseLevel` return `NoLamp = −1` where no lamp is built.
+  - `LampModeOf` is pure and never generates a chunk.
+  - `SetLampMode` is persistent by cell: it survives chunk drop, rebuild and revisit shift. A live change starts a fresh lamp cycle, so a promoted lamp never fires on stale timers.
+  - `SetLampOverride(cell, LampFx {Dip, Sag, Warn}, multiplier, hold, env?)` returns a handle; `RemoveLampOverride` is available, and overrides stack by MIN.
+  - `FixtureChanged` fires at 0.15 / 0.55 / 0.8 with 0.02 hysteresis; `LampDipped` is also raised.
+  - Under ReduceFlashing, attack and release are floored at 0.5 s.
+  - Both tick paths are bit-identical when idle.
+  - Step 2 (`FrontRoomsWayfinding`) waits until phosphor is scheduled.
 - **Dropped:** the Relay-centred omen field (`SetLampField`), footfall dips, Herald and Restrike. They went after Red staged the warning (§7), and the Omen kind went with them.
 
 | Member (v1) | Meaning |
@@ -615,7 +623,9 @@ This replaces Rev 1's separate asks (`LampLevel`, `LampMode`, `LampDip`, `KillLa
 - **Live change.** Setting `f.mode` on a built fixture must also reset its `nextEvent` and `eventEnd` (:108-109). `Level()` reads them every frame, so otherwise a promoted lamp inherits the old mode's timers; a Steady lamp promoted to Dead, for example, keeps its build-time `nextEvent` (2–16 s, :1225). Once that has passed, the Dead branch (:1403-1410) fires at once and blinks to 0.8, instead of starting a fresh dead-blink cycle.
 - **Precedence.** It wins over the tier roll and over an authored module lamp (Steady to Dim), because it applies after both. It does nothing in start-area cells.
 - **Off module cells are out of reach.** A `ModuleLamp.Off` cell returns from `BuildFixture` before any fixture exists (:1176), so `SetLampMode` cannot revive or promote it unless that early return changes. The drought breaker only ever picks Steady cells, and Off cells are lampless anyway, so the ink does not need that change.
-- Open: should it survive a revisit shift?
+- **Answered (2026-10-03): yes, it survives a revisit shift** (kept by cell). This is what the ink wants:
+  - A killed lamp (first-dark beat) and a promoted lamp (drought breaker) behave as permanent facts of the building, like `brokenDoors`.
+  - Module-Off cells stay out of reach, as noted above.
 
 `LampModeOf` rules:
 - For a chunk the cache has not generated yet, it predicts at the current `GenerationTier`, with Auto lamps.

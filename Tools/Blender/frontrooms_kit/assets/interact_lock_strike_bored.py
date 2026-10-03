@@ -16,7 +16,7 @@ Anchors: plate (0, 0, 0); latch_opening (0, 0, 0.0002); lip_tip
 (-0.040, 0, 0.001); detach_dir (0, 0, 0.10).
 Motion: static; detaches on the Relay break ({"detach": true}).
 Budget (§9.2): LOD0 600 (asserted +-15 %), LOD1 250, LOD2 40; LOD distances
-1.5 / 4 / 12 m; no LOD1 export. Screws are 36-segment (Ø 8.5 mm = 25 px at
+1.5 / 4 / 12 m; no LOD1 export. Screws are 32-segment (Ø 8.5 mm = 25 px at
 0.3 m) to hold the 600 budget; fr_lod2_drop.
 Slots: Prop_Chrome (plate, first), Prop_PlasticBlack (dust box, slots).
 VARIANT _Brass.
@@ -39,14 +39,15 @@ SCREW_Y = (0.047, -0.047)
 
 
 def build(kit):
-    plate, lip, boxes, screws = lc.build_strike(kit, HALF_LEN, OPENINGS, LIP_Y, SCREW_Y, screw_segs=36,
-                                                lip_steps=6, corner_k=3)
+    plate, lip, boxes, screws = lc.build_strike(kit, HALF_LEN, OPENINGS, LIP_Y, SCREW_Y, screw_segs=24,
+                                                corner_k=2, box_k=1,
+                                                lip_xs=(-0.0157, -0.024, -0.030, -0.034, -0.037, -0.0392, -0.040))
     wear = lc.strike_wear(OPENINGS)
     lc.finish_part(plate, wear)
     lc.finish_part(lip, wear)
     lc.finish_part(boxes)
     for s in screws:
-        lc.finish_part(s, lambda p, n, slot: (1.0, 0.8, 1.0), lod2=True, delete_below=lc.STRIKE_PROUD)
+        lc.finish_part(s, lambda p, n, slot: (1.0, 0.8, 1.0), lod2=True, delete_below=lc.STRIKE_PROUD - 0.00028)
 
     kit.anchor("plate", lc.U(0.0, 0.0, 0.0))
     kit.anchor("latch_opening", lc.U(0.0, 0.0, lc.STRIKE_PROUD))

@@ -22,23 +22,24 @@ Construction (window root W, Unity metres; see interact_window_common):
   line face, then a 45-degree bevel up to a 4 mm foot on the soffit; mitred
   with 0.3 mm joints.
 * Black vinyl gasket wedges, Z +/-(0.0035 -> 0.006), flush with the stop line,
-  1 mm rounded lip; two setting blocks under the glass.
+  0.6 mm rounded lip; two setting blocks under the glass.
 * No glass, no pane, no teeth (glass-destruction track).
 
 Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z. Size 1.55 x 1.80 (Y 0.2745-2.075) x 0.21 m.
 
 Budget (§9.4): 2,800 / 1,000 / 200 tris (ESTIMATE). A clip-on extrusion has
-no fasteners or mouldings to spend that on, so it lands near 1,500; nothing is
-padded (see the G4 build note). LOD1 now at 0.36; LOD2 drops the gaskets and
-blocks. LOD distances 4 / 12 / none. Slots: Prop_Aluminium (first),
+no fasteners or mouldings to spend that on, so it lands near 1,100; nothing is
+padded (see the G4 build note). LOD1 now at 0.60 (beads, gaskets and the
+casing's mitre rings and wall edges protected from the collapse, so no seam
+opens, so LOD1 is close to LOD0: the setting blocks drop, little else); LOD2 drops the gaskets and blocks. LOD distances 4 / 12 / none. Slots: Prop_Aluminium (first),
 Prop_Rubber. Render-only: no collider.
 """
 
 import interact_window_common as wc
 
 NAME = "Kit_WindowFrame_Alu"
-LOD1_RATIO = 0.36
+LOD1_RATIO = 0.60
 LOD2_RATIO = 0.07
 LOD1 = LOD1_RATIO
 LOD_DISTANCES = (4.0, 12.0, None)
@@ -80,18 +81,18 @@ def shell_wear(X, Y, Z):
 
 
 def build(kit):
-    for part in wc.frame_ring(kit, shell_profile(), ALU, end=("vmitre", VGROOVE, VGROOVE),
-                              stations={"B": (0.0, 0.08, 0.5, 0.92, 1.0)}, name="casing"):
+    # No wear stations: on a pinned shell the LOD1 collapse turns them into long slivers that shade wavy.
+    for part in wc.frame_ring(kit, shell_profile(), ALU, end=("vmitre", VGROOVE, VGROOVE), name="casing",
+                              pin=True):   # mitres stay shut at LOD1
         wc.paint_wear(part, shell_wear)
     bead = bead_profile()
     for face in ("a", "b"):
         prof = bead if face == "a" else wc.mirror_b(bead)
         for part in wc.frame_ring(kit, prof, ALU, end=("mitre", BEAD_JOINT), caps=True, name="bead " + face):
-            wc.paint_wear(part)
+            wc.paint_wear(wc.lod_keep(part))
     for face in ("a", "b"):
-        for part in wc.frame_ring(kit, wc.tape_dn(face, lip=0.001), RUBBER, name="gasket " + face):
+        for part in wc.frame_ring(kit, wc.tape_dn(face, lip=0.0006), RUBBER, name="gasket " + face):
             wc.paint_wear(part)
-            kit.lod1_drop(part)
             wc.lod2_drop(part)
     for x in (-0.35, 0.35):
         blk = wc.box_u(kit, (0.100, 0.0033, 0.0056), (x, wc.LINING_Y0 + 0.00165, 0.0), RUBBER, bevel=0.0, name="setting block")

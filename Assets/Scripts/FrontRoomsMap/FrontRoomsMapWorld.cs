@@ -157,6 +157,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public float eventEnd;
         public float phase;
         public float level = 1f;
+        // The lamp-override layer: the lamp's cell, its level before overrides,
+        // and the band of its last reported level (FixtureChanged; -1 = none yet).
+        public GridCoord cell;
+        public float baseLevel = 1f;
+        public sbyte band = -1;
         // Near the start area (its light would reach through the stream rooms' walls): 1 north of the door line, 2 south of it.
         public byte startGroup;
         // WebGL (TickFixturesNearOnly): the light's position relative to its chunk
@@ -300,6 +305,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly HashSet<long> brokenWindows = new HashSet<long>();
     readonly HashSet<long> openDoors = new HashSet<long>();
     readonly HashSet<long> brokenDoors = new HashSet<long>();
+    // Lamp modes set at run time (SetLampMode): kept by cell like brokenDoors, so a dropped,
+    // rebuilt or shifted chunk comes back with them. Never in MapChunk.lamp (Shift regenerates it).
+    readonly Dictionary<GridCoord, ModuleLamp> lampModes = new Dictionary<GridCoord, ModuleLamp>();
+    // Built lamps by cell, and the active lamp overrides (all, and by cell).
+    readonly Dictionary<GridCoord, Fixture> fixtureByCell = new Dictionary<GridCoord, Fixture>();
+    readonly List<LampOverride> lampOverrides = new List<LampOverride>();
+    readonly Dictionary<GridCoord, List<LampOverride>> overridesByCell = new Dictionary<GridCoord, List<LampOverride>>();
+    int nextLampOverride;
     // Doors the Relay is breaking (by edge, so a rebuilt chunk's new Door reads the same).
     readonly HashSet<long> breakingDoors = new HashSet<long>();
     readonly Dictionary<Collider, Door> doorByCollider = new Dictionary<Collider, Door>();
@@ -800,6 +813,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>Forget a chunk's doors, windows and shell colliders, and free its meshes and objects.</summary>
     void Unregister(BuiltChunk chunk)
     {
+        foreach (var f in chunk.fixtures)
+            if (fixtureByCell.TryGetValue(f.cell, out var current) && current == f) fixtureByCell.Remove(f.cell);
         foreach (var door in chunk.doors)
         {
             movingDoors.Remove(door);
@@ -1295,7 +1310,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // A module can take a lamp out altogether.
         if (lamp == ModuleLamp.Off) return;
         var seed = Cache.Generator.Seed;
-        var fixture = new Fixture { rng = MapHash.Hash(seed, cell.x, cell.y, 211) | 1u };
+        var fixture = new Fixture { rng = MapHash.Hash(seed, cell.x, cell.y, 211) | 1u, cell = cell };
         var root = new GameObject("Fixture " + cell);
         root.transform.SetParent(chunk.root.transform, false);
         // The lens fills whole 0.6 m ceiling tiles: X [1.2, 1.8], Z [1.2, 2.4] of the cell.
@@ -1340,9 +1355,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         fixture.mode = (tierRules ?? new FrontRoomsTierRules()).At(tier).LampMode(roll);
         // A module's lamp: Steady..Dim map onto modes 0..4.
         if (lamp != ModuleLamp.Auto) fixture.mode = (int)lamp - 1;
+        // A mode set at run time wins over both (the rolls above are still drawn, so the rest stay put).
+        if (lampModes.TryGetValue(cell, out var set)) fixture.mode = (int)set - 1;
         fixture.phase = Rand(ref fixture.rng) * 50f;
         fixture.nextEvent = 2f + Rand(ref fixture.rng) * 14f;
         chunk.fixtures.Add(fixture);
+        fixtureByCell[cell] = fixture;
     }
 
     /// <summary>
@@ -1386,6 +1404,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     void TickFixtures(float dt)
     {
+        TickLampOverrides(dt);
         if (player == null) return;
         if (TickFixturesNearOnly) { TickFixturesNear(dt); return; }
         var p = player.position;
@@ -1393,7 +1412,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         foreach (var f in chunk.fixtures)
         {
             f.clock += dt;
-            f.level = Level(f);
+            f.level = LampTick(f);
             var lp = f.light.transform.position;
             var d = Vector2.Distance(new Vector2(lp.x, lp.z), new Vector2(p.x, p.z));
             var held = f.startGroup == 1 ? StartLampsNorth : f.startGroup == 2 ? StartLampsSouth : 1f;
@@ -1424,7 +1443,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             foreach (var f in chunk.fixtures)
             {
                 f.clock += dt;
-                f.level = Level(f);
+                f.level = LampTick(f);
                 var held = f.startGroup == 1 ? StartLampsNorth : f.startGroup == 2 ? StartLampsSouth : 1f;
                 var d = lightRadius;
                 if (!chunkFar) d = Vector2.Distance(new Vector2(root.x + f.offset.x, root.z + f.offset.z), new Vector2(p.x, p.z));
@@ -1531,6 +1550,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 return f.clock < f.eventEnd && !calm ? .8f : 0f;
             case 4:
                 return .42f + .03f * Mathf.Sin(t * 90f);
+            case 5:
+                // Killed at run time (SetLampMode Off): a dark lens, the troffer still there.
+                return 0f;
             default:
                 return .98f + .02f * Mathf.Sin(t * 110f);
         }
@@ -2522,22 +2544,214 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     /// <summary>
-    /// A lamp's temperament at a cell: the module's lamp where a module sets one, otherwise the Auto
-    /// roll with the odds of the tier its chunk was generated at, exactly as BuildFixture rolls it.
-    /// A pure function of the map, valid for cells not built yet (their chunk's data is generated
-    /// as the build would). Off where there is no lamp: a module's Off, or the start area.
+    /// A lamp's temperament at a cell, as BuildFixture decides it: a mode set
+    /// at run time (SetLampMode), else the module's lamp where a module sets
+    /// one, else the Auto roll at the odds of the tier its chunk was generated
+    /// at. Pure: valid for cells not built, and it never generates a chunk; for
+    /// one the cache has not generated yet it predicts at the current
+    /// GenerationTier with Auto lamps. Off where there is no lamp: a module's
+    /// Off (no fixture, so SetLampMode cannot reach it), or the start area.
     /// </summary>
-    public ModuleLamp LampModeOf(GridCoord cell)
+    public ModuleLamp LampModeOf(GridCoord cell) => LampModeOf(cell, true);
+
+    ModuleLamp LampModeOf(GridCoord cell, bool withSet)
     {
         if (Cache == null || InStartArea(cell)) return ModuleLamp.Off;
-        var data = Cache.Get(MapGrid.ChunkOf(cell));
-        var o = data.Origin;
-        var lamp = data.lamp[MapGrid.LocalIndex(cell.x - o.x, cell.y - o.y)];
+        var lamp = ModuleLamp.Auto;
+        var tier = GenerationTier;
+        if (Cache.TryGetGenerated(MapGrid.ChunkOf(cell), out var data))
+        {
+            var o = data.Origin;
+            lamp = data.lamp[MapGrid.LocalIndex(cell.x - o.x, cell.y - o.y)];
+            tier = data.tier;
+        }
+        if (lamp == ModuleLamp.Off) return ModuleLamp.Off;
+        if (withSet && lampModes.TryGetValue(cell, out var set)) return set;
         if (lamp != ModuleLamp.Auto) return lamp;
         var rng = MapHash.Hash(Cache.Generator.Seed, cell.x, cell.y, 211) | 1u;
         // Modes 0..4 (steady, stutter, failing, dead, dim) are ModuleLamp.Steady..Dim.
-        return (ModuleLamp)((tierRules ?? new FrontRoomsTierRules()).At(data.tier).LampMode(Rand(ref rng)) + 1);
+        return (ModuleLamp)((tierRules ?? new FrontRoomsTierRules()).At(tier).LampMode(Rand(ref rng)) + 1);
     }
+
+    // ---------- Lamp overrides (interface v1: the phosphor ink, the Relay warning) ----------
+    // Agreed 2026-10-03 by the map chat, the wallpaper-print chat and 系统设计
+    // (RELAY_PURSUIT_REDESIGN.md §7.4b; 20_level_design_phosphor.md §11.1 Step 1).
+    // Everything here works on the lamps' logical level (f.level), which the
+    // light, the lens, the hum and the tools all follow. With no override
+    // active, both tick paths are bit-identical to before.
+
+    /// <summary>What an override is for: Dip (first-dark dips, the chase wave), Sag (a power sag), Warn (the Relay warning's stage-1 bursts).</summary>
+    public enum LampFx { Dip, Sag, Warn }
+
+    /// <summary>How an override comes and goes: seconds to reach its multiplier, and to come back to 1.</summary>
+    public readonly struct LampEnvelope
+    {
+        public readonly float attack, release;
+        public LampEnvelope(float attack, float release) { this.attack = attack; this.release = release; }
+    }
+
+    /// <summary>Each kind's envelope when the caller passes none: Dip 0.3 / 1.2 s, Sag 0.6 / 1.5 s, Warn 0.08 / 0.2 s.</summary>
+    public static LampEnvelope DefaultEnvelope(LampFx kind) => kind switch
+    {
+        LampFx.Sag => new LampEnvelope(.6f, 1.5f),
+        LampFx.Warn => new LampEnvelope(.08f, .2f),
+        _ => new LampEnvelope(.3f, 1.2f),
+    };
+
+    /// <summary>With Reduce flashing on, no override attacks or releases faster than this.</summary>
+    public const float ReducedFlashingEnvelopeSeconds = .5f;
+
+    /// <summary>LampLevel / LampBaseLevel for a cell with no built lamp (not built, the start area, a module's Off).</summary>
+    public const float NoLamp = -1f;
+
+    /// <summary>A lamp's logical level crossed 0.15, 0.55 or 0.8 (the ink gate's edges, R10b's "invisible" line), by at least 0.02 so a shimmer at a line does not chatter: its cell and the new level. Never per frame.</summary>
+    public event Action<GridCoord, float> FixtureChanged;
+    /// <summary>An override started on a built lamp: its cell and the light's position, so the fixture can buzz or tick.</summary>
+    public event Action<GridCoord, Vector3> LampDipped;
+
+    sealed class LampOverride
+    {
+        public int id;
+        public GridCoord cell;
+        public LampFx kind;
+        public float multiplier, attack, hold, release, age, weight;
+        // Releasing (its hold ran out, or RemoveLampOverride): back to 1 from releaseFrom over the release.
+        public bool releasing;
+        public float releaseFrom, releaseAge;
+    }
+
+    /// <summary>A built lamp's logical level this frame, overrides included (0..1); NoLamp where there is none.</summary>
+    public float LampLevel(GridCoord cell) => fixtureByCell.TryGetValue(cell, out var f) ? f.level : NoLamp;
+
+    /// <summary>A built lamp's logical level this frame before any override (its own temperament); NoLamp where there is none.</summary>
+    public float LampBaseLevel(GridCoord cell) => fixtureByCell.TryGetValue(cell, out var f) ? f.baseLevel : NoLamp;
+
+    /// <summary>The overrides active now (tools and tests).</summary>
+    public int LampOverrideCount => lampOverrides.Count;
+
+    /// <summary>
+    /// Set a lamp's temperament for good (Auto goes back to the map's own):
+    /// the kill (Off: a dark lens, the troffer still there) or a promotion
+    /// (e.g. Failing). Kept by cell, so it survives a chunk drop, a rebuild
+    /// and a revisit shift; applied live to a built lamp, which starts a fresh
+    /// cycle of its new mode. Nothing in the start area, and nothing where a
+    /// module took the lamp out (there is no fixture to change).
+    /// </summary>
+    public void SetLampMode(GridCoord cell, ModuleLamp mode)
+    {
+        if (InStartArea(cell)) return;
+        if (mode == ModuleLamp.Auto) lampModes.Remove(cell);
+        else lampModes[cell] = mode;
+        if (!fixtureByCell.TryGetValue(cell, out var f)) return;
+        var next = (int)(mode == ModuleLamp.Auto ? LampModeOf(cell, false) : mode) - 1;
+        if (next == f.mode) return;
+        f.mode = next;
+        // Level() reads these timers: a promoted lamp must not inherit the old mode's (a Steady lamp
+        // turned Dead would blink at once on its old build-time event).
+        f.eventEnd = f.clock;
+        f.nextEvent = f.clock + 2f + Rand(ref f.rng) * 14f;
+    }
+
+    /// <summary>
+    /// A timed dip on one lamp: it eases to <paramref name="multiplier"/> of
+    /// its own level over the envelope's attack, holds for
+    /// <paramref name="hold"/> seconds (PositiveInfinity: until
+    /// RemoveLampOverride), and comes back over the release. Overlapping
+    /// overrides take the lowest multiplier, never the product. With Reduce
+    /// flashing on, attack and release are at least 0.5 s. The cell need not
+    /// be built (a lamp built during the override shows it); LampDipped fires
+    /// for a built one. No delay argument: callers schedule the call, and keep
+    /// any one lamp under 3 changes a second. Returns a handle (never 0).
+    /// </summary>
+    public int SetLampOverride(GridCoord cell, LampFx kind, float multiplier, float hold, LampEnvelope? envelope = null)
+    {
+        var e = envelope ?? DefaultEnvelope(kind);
+        var attack = Mathf.Max(e.attack, 1e-3f);
+        var release = Mathf.Max(e.release, 1e-3f);
+        if (FrontRoomsSettings.ReduceFlashing)
+        {
+            attack = Mathf.Max(attack, ReducedFlashingEnvelopeSeconds);
+            release = Mathf.Max(release, ReducedFlashingEnvelopeSeconds);
+        }
+        var o = new LampOverride
+        {
+            id = ++nextLampOverride, cell = cell, kind = kind, multiplier = Mathf.Clamp01(multiplier),
+            attack = attack, hold = Mathf.Max(0f, hold), release = release,
+        };
+        lampOverrides.Add(o);
+        if (!overridesByCell.TryGetValue(cell, out var list)) overridesByCell[cell] = list = new List<LampOverride>(2);
+        list.Add(o);
+        if (fixtureByCell.TryGetValue(cell, out var f)) LampDipped?.Invoke(cell, f.light.transform.position);
+        return o.id;
+    }
+
+    /// <summary>End an override early: it releases from where it is over its release time. Unknown or finished handles do nothing.</summary>
+    public void RemoveLampOverride(int handle)
+    {
+        foreach (var o in lampOverrides)
+        {
+            if (o.id != handle) continue;
+            if (!o.releasing) { o.releasing = true; o.releaseFrom = o.weight; o.releaseAge = 0f; }
+            return;
+        }
+    }
+
+    // Age every override (built or not): attack, hold, release; drop the finished ones.
+    void TickLampOverrides(float dt)
+    {
+        for (var i = lampOverrides.Count - 1; i >= 0; i--)
+        {
+            var o = lampOverrides[i];
+            if (!o.releasing)
+            {
+                o.age += dt;
+                if (o.age < o.attack) { o.weight = o.age / o.attack; continue; }
+                if (o.age < o.attack + o.hold) { o.weight = 1f; continue; }
+                o.releasing = true;
+                o.releaseFrom = 1f;
+                o.releaseAge = o.age - o.attack - o.hold;
+            }
+            else o.releaseAge += dt;
+            o.weight = o.releaseFrom * (1f - Mathf.Clamp01(o.releaseAge / o.release));
+            if (o.releaseAge < o.release) continue;
+            lampOverrides.RemoveAt(i);
+            if (overridesByCell.TryGetValue(o.cell, out var list) && list.Remove(o) && list.Count == 0) overridesByCell.Remove(o.cell);
+        }
+    }
+
+    // A lamp's level this frame: its temperament, times the lowest active
+    // override multiplier (none: exactly Level(f)). Reports band crossings.
+    float LampTick(Fixture f)
+    {
+        f.baseLevel = Level(f);
+        var level = f.baseLevel;
+        if (overridesByCell.Count > 0 && overridesByCell.TryGetValue(f.cell, out var list))
+        {
+            var lowest = 1f;
+            foreach (var o in list) lowest = Mathf.Min(lowest, 1f + (o.multiplier - 1f) * o.weight);
+            level *= lowest;
+        }
+        if (f.band < 0)
+        {
+            f.band = (sbyte)(level < LampBands[0] ? 0 : level < LampBands[1] ? 1 : level < LampBands[2] ? 2 : 3);
+            return level;
+        }
+        // A line counts as crossed once the level is past it by the hysteresis, so a lamp's shimmer at a line does not chatter.
+        var band = f.band;
+        while (band < 3 && level >= LampBands[band] + LampBandHysteresis) band++;
+        while (band > 0 && level < LampBands[band - 1] - LampBandHysteresis) band--;
+        if (band == f.band) return level;
+        f.band = band;
+        FixtureChanged?.Invoke(f.cell, level);
+        return level;
+    }
+
+    // FixtureChanged's lines (the ink gate's edges 0.15 / 0.55, R10b's "invisible" 0.8) and how far past one a level must go.
+    static readonly float[] LampBands = { .15f, .55f, .8f };
+    const float LampBandHysteresis = .02f;
+
+    /// <summary>Tools and tests: drop a built chunk as streaming does (it comes back with RebuildChunk).</summary>
+    public void DropChunkForTools(GridCoord coord) => Drop(coord);
 
     /// <summary>Every Relay entry of the built map (module markers), with its tag (null for none). The Relay prefers them when it appears.</summary>
     public void RelayEntries(List<(Vector3 pos, string tag)> into)

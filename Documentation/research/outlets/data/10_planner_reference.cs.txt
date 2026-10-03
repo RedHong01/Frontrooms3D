@@ -1,0 +1,686 @@
+// CLONE-ONLY REFERENCE (outlet workflow, spec 10_spec.md §3, 2026-10-03).
+// Stage 1 of the outlet sub-logic: a pure, deterministic plan of wall
+// fixtures (outlets, switches, jacks) over the wall faces the map built for
+// one chunk, plus column and floor fixtures from the chunk data. This file is
+// the reference the code task starts from; nothing here renders (the R3
+// renderer is the code task's).
+using System;
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+public static class FrontRoomsWallFixtures
+{
+    public const int RulesVersion = 1;
+
+    /// <summary>
+    /// One wall face the map actually built (both sides of every built edge).
+    /// Chunk-local metres, Y up. Filled by FrontRoomsMapWorld.BuildEdge.
+    /// </summary>
+    public struct WallFace
+    {
+        public Vector3 start;      // on the face plane (cell line + normal * WallHalf), floor level, at the edge's low end
+        public Vector3 direction;  // +X or +Z, unit
+        public float length;       // 3.0 on the map
+        public Vector3 normal;     // into the cell this face serves
+        public EdgeKind kind;      // Wall, Arch, Door, Window (Open is never listed)
+        public float openFrom, openTo;    // opening span along direction, metres from start (0, 0 for a Wall)
+        public float openBottom, openTop; // sill (window 0.35) and head of the opening
+        public long edgeId;        // FrontRoomsMapWorld.EdgeId(a, b): world, the same from both sides
+        public byte side;          // 0: faces into a (the west/south cell), 1: faces into b (the east/north cell)
+        public GridCoord cell;     // world cell this face serves
+        public bool foreign;       // that cell belongs to the next chunk (east/north border): planned from seed-pure inputs only
+        public int room;           // index into MapChunk.rooms (topmost rect holding the cell); -1 = corridor or foreign
+        public GridCoord zone;     // zone id of the served cell
+        public ZoneTheme theme;
+        public ZoneHeight height;
+        public float ceiling;      // ceiling height of the served cell
+        public bool zoneBorder;    // the cell behind is another zone
+        public float baseTop;      // top of a base trim on this face (map 0; title stream 0.26)
+    }
+
+    public enum FixtureKit : byte
+    {
+        None, Duplex, DuplexSteel, Duplex20, DuplexCracked, DuplexJumbo, DuplexScorched, Bare, Blank,
+        Toggle1, Toggle2, JackPhone, JackData, JackBNC, JackPhone4, HandyBox, FloorBox, FloorBox2,
+    }
+
+    public static readonly string[] KitNames =
+    {
+        null, "Kit_OutletDuplex", "Kit_OutletDuplex_Steel", "Kit_OutletDuplex20", "Kit_OutletDuplex_Cracked", "Kit_OutletDuplex_Jumbo",
+        "Kit_OutletDuplex_Scorched", "Kit_OutletBare", "Kit_OutletBlank", "Kit_OutletToggle1", "Kit_OutletToggle2", "Kit_JackPhone",
+        "Kit_JackData", "Kit_JackBNC", "Kit_JackPhone4Prong", "Kit_OutletHandyBox", "Kit_FloorBoxTombstone", "Kit_FloorBoxTombstone2",
+    };
+
+    public enum Finish : byte { Ivory, IvoryAged, Almond, White, Brown, Grey, Stainless, Orange, WallMatch }
+
+    [Flags]
+    public enum FixtureFlags : byte { None = 0, NoScrew = 1, GroundUp = 2, Horizontal = 4, OffHeight = 8, Companion = 16, Moved = 32, Forced = 64 }
+
+    public enum FixtureClass : byte
+    {
+        Level0Corridor, Level0Room, OfficeCorridor, OfficeRoom, Tall, Column, Floor,
+        StreamLobby, StreamShift, StreamOffice, StreamRun, StreamExit,
+    }
+
+    /// <summary>One planned fixture. Chunk-local metres.</summary>
+    public struct Fixture
+    {
+        public FixtureKit kit;
+        public Vector3 position;   // the kit origin: plate back centre on the face plane (floor contact for floor boxes)
+        public Vector3 normal;     // the kit front (Unity +Z, Blender -Y) points along this
+        public float roll;         // degrees about normal: crooked, ground-up (180), horizontal (90)
+        public float tilt;         // degrees about the plate's local X: top edge off the wall (not flush, missing screw)
+        public float screwRoll;    // degrees: the slot angle of every screw on the plate
+        public Finish plate, device;
+        public FixtureFlags flags;
+        public short face;         // index into the face list; -1 for column and floor fixtures
+        public FixtureClass cls;
+        public float along;        // metres from the face start (wall fixtures)
+    }
+
+    /// <summary>A volume no fixture may enter (module props, key spots, Relay entries). Chunk-local.</summary>
+    public struct KeepOut
+    {
+        public Rect xz;
+        public float y0, y1;
+    }
+
+    // ---------- Numbers (10_spec.md §2) ----------
+
+    public const float Step = .15f;              // along-wall grid
+    public const float EndMargin = .30f;         // plate centre from a face end (cell corner)
+    public const float ArchClear = .20f;         // plate centre from an arch edge
+    public const float BackToBack = .61f;        // opposite faces of one wall (UL 24 in)
+    public const float SameFaceGap = .30f;       // two fixtures on one face, centre to centre
+    public const float CompanionOffset = .30f;   // phone/data plate beside its receptacle
+    public const float PlateHalfW = .0349f, PlateHalfH = .05715f, JumboHalfH = .0667f;
+    public const float BaseClear = .03f;         // plate bottom above a base trim top
+    public const float SwitchHeight = 1.22f, SwitchFromOpening = .20f;
+    public const float RoomSideMin = 4.5f;       // a room side with this much solid wall gets at least one plate
+    public const int ChunkCap = 160;
+
+    struct ClassRule
+    {
+        public float spacing;            // metres of solid wall per receptacle (p = solid / spacing, max 1 per face)
+        public float h, hAlt, pAlt;      // centre heights per wall line
+        public int jitter;               // +- steps of 0.15 m per face
+        public float pOff;               // off-height receptacle (Level 0 uncanny)
+        public float pPhone, pData;      // companions (data only next to a phone)
+        public float pArchSwitch;        // switch beside an arch (room faces)
+        public float p20, pIG;           // 5-20R device; IG (orange) device
+        public float pSteel;             // stainless plate
+        public int cap;                  // per room
+        public bool wear, office;
+    }
+
+    static readonly ClassRule[] Rules = BuildRules();
+
+    static ClassRule[] BuildRules()
+    {
+        var r = new ClassRule[12];
+        r[(int)FixtureClass.Level0Corridor] = new ClassRule { spacing = 10.5f, h = .31f, hAlt = .41f, pAlt = .20f, jitter = 1, pOff = .04f, wear = true, cap = 99 };
+        r[(int)FixtureClass.Level0Room] = new ClassRule { spacing = 4.0f, h = .31f, hAlt = .41f, pAlt = .25f, jitter = 0, pOff = .04f, pPhone = .04f, pArchSwitch = .15f, wear = true, cap = 10 };
+        r[(int)FixtureClass.OfficeCorridor] = new ClassRule { spacing = 9.0f, h = .41f, hAlt = .46f, pAlt = .25f, jitter = 1, p20 = .20f, pSteel = .25f, wear = true, office = true, cap = 99 };
+        r[(int)FixtureClass.OfficeRoom] = new ClassRule { spacing = 3.3f, h = .41f, hAlt = .46f, pAlt = .25f, jitter = 1, pPhone = .50f, pData = .33f, pArchSwitch = .50f, p20 = .45f, pIG = .33f, wear = true, office = true, cap = 24 };
+        r[(int)FixtureClass.Tall] = new ClassRule { spacing = 7.5f, h = .31f, hAlt = .46f, pAlt = .40f, jitter = 1, pSteel = .30f, wear = true, cap = 99 };
+        r[(int)FixtureClass.StreamLobby] = new ClassRule { spacing = 6.0f, h = .38f, hAlt = .38f, jitter = 0, pPhone = .25f, pSteel = 1f, cap = 99 };
+        r[(int)FixtureClass.StreamShift] = new ClassRule { spacing = 4.0f, h = .38f, hAlt = .38f, jitter = 0, wear = true, cap = 99 };
+        r[(int)FixtureClass.StreamOffice] = new ClassRule { spacing = 3.3f, h = .41f, hAlt = .46f, pAlt = .25f, jitter = 1, pPhone = .5f, pData = .33f, p20 = .45f, pIG = .33f, wear = true, office = true, cap = 99 };
+        r[(int)FixtureClass.StreamRun] = new ClassRule { spacing = 6.0f, h = .46f, hAlt = .46f, jitter = 0, cap = 99 };
+        r[(int)FixtureClass.StreamExit] = new ClassRule { spacing = 12f, h = .38f, hAlt = .38f, jitter = 0, pSteel = 1f, cap = 99 };
+        return r;
+    }
+
+    // Salts: MapHash uses 11-73, the map 89, 97, 211, 223, 307. Outlets use 409 + 16 * field + side.
+    const int SaltBase = 409;
+    enum Field { Face, Line, Wear, Device, Companion, Switch, Column, Floor, Chunk, Forced, Move }
+
+    static uint FaceHash(int seed, in WallFace f, Field field) =>
+        MapHash.Hash(seed, unchecked((int)f.edgeId), unchecked((int)(f.edgeId >> 32)), SaltBase + 16 * (int)field + f.side);
+
+    /// <summary>One wall line (world cell line, orientation, side) per 24 m segment: one electrician's run.</summary>
+    static uint LineHash(int seed, in WallFace f)
+    {
+        var alongX = f.direction.x > .5f;
+        var line = alongX ? (f.side == 0 ? f.cell.y + 1 : f.cell.y) : (f.side == 0 ? f.cell.x + 1 : f.cell.x);
+        var segment = (alongX ? f.cell.x : f.cell.y) >> 3;
+        return MapHash.Hash(seed, line * 2 + (alongX ? 1 : 0), segment, SaltBase + 16 * (int)Field.Line + f.side);
+    }
+
+    static uint Sub(uint h, int k) => MapHash.Hash(unchecked((int)h), k, 0, 1);
+    static float U(uint h) => MapHash.Unit(h);
+    static float U(uint h, int k) => MapHash.Unit(Sub(h, k));
+
+    public static FixtureClass Classify(in WallFace f)
+    {
+        if (f.height == ZoneHeight.Tall) return FixtureClass.Tall;
+        var room = f.room >= 0 && !f.foreign;
+        if (f.theme == ZoneTheme.Office) return room ? FixtureClass.OfficeRoom : FixtureClass.OfficeCorridor;
+        return room ? FixtureClass.Level0Room : FixtureClass.Level0Corridor;
+    }
+
+    struct Gaps
+    {
+        public float a0, a1, b0, b1;
+        public int n;
+        public float Total => (n > 0 ? a1 - a0 : 0f) + (n > 1 ? b1 - b0 : 0f);
+        public bool Inside(float u) => (n > 0 && u >= a0 - 1e-4f && u <= a1 + 1e-4f) || (n > 1 && u >= b0 - 1e-4f && u <= b1 + 1e-4f);
+    }
+
+    /// <summary>Where a plate centre may go along the face: inside the end margins and clear of an arch.</summary>
+    static Gaps PlateGaps(in WallFace f)
+    {
+        var g = new Gaps();
+        float lo = EndMargin, hi = f.length - EndMargin;
+        if (hi < lo) return g;
+        if (f.kind == EdgeKind.Wall) { g.a0 = lo; g.a1 = hi; g.n = 1; return g; }
+        float x1 = Mathf.Min(hi, f.openFrom - ArchClear), y0 = Mathf.Max(lo, f.openTo + ArchClear);
+        if (x1 >= lo) { g.a0 = lo; g.a1 = x1; g.n = 1; }
+        if (hi >= y0)
+        {
+            if (g.n == 0) { g.a0 = y0; g.a1 = hi; } else { g.b0 = y0; g.b1 = hi; }
+            g.n++;
+        }
+        return g;
+    }
+
+    static float SolidLength(in WallFace f) => f.kind == EdgeKind.Wall ? f.length : Mathf.Max(0f, f.length - (f.openTo - f.openFrom));
+
+    /// <summary>The nearest point of the 0.15 m grid inside the gaps, within maxShift of u (ties go to the lower point).</summary>
+    static bool Snap(in Gaps g, float u, float maxShift, Func<float, bool> extra, out float result)
+    {
+        var k0 = Mathf.RoundToInt(u / Step);
+        var steps = Mathf.FloorToInt(maxShift / Step + 1e-4f);
+        for (var d = 0; d <= steps; d++)
+        for (var s = -1; s <= 1; s += 2)
+        {
+            if (d == 0 && s > 0) continue;
+            var c = (k0 + s * d) * Step;
+            if (Mathf.Abs(c - u) > maxShift + 1e-4f || !g.Inside(c) || (extra != null && !extra(c))) continue;
+            result = c;
+            return true;
+        }
+        result = u;
+        return false;
+    }
+
+    // Stats for the clone probe (not part of the spec API).
+    public static int StatMoved, StatDropped, StatForced, StatCapped, StatKeptOut;
+
+    /// <summary>
+    /// Pure and deterministic: the same inputs give the same list, in the same
+    /// order. No Unity objects, no UnityEngine.Random, no state between calls.
+    /// Hashes: seed + EdgeId + face side (+ the wall line), never the revision.
+    /// </summary>
+    public static void Plan(int seed, IReadOnlyList<WallFace> faces, MapChunk data, RectInt startArea,
+        IReadOnlyList<ZoneTheme> cellTheme, IReadOnlyList<bool> roomDressed, IReadOnlyList<KeepOut> keepOut, List<Fixture> into)
+    {
+        into.Clear();
+        var roomCount = new int[data != null ? data.rooms.Length : 0];
+        // 1. Receptacles, their companions, and arch switches, face by face. Foreign faces first and
+        //    outside the cap: their plan must not depend on this chunk's revision.
+        for (var i = 0; i < faces.Count; i++)
+            if (faces[i].foreign) PlanFace(seed, faces, i, Classify(faces[i]), into, roomCount, null);
+        for (var i = 0; i < faces.Count && into.Count < ChunkCap; i++)
+            if (!faces[i].foreign) PlanFace(seed, faces, i, Classify(faces[i]), into, roomCount, keepOut);
+        // 2. Every room side with enough solid wall gets at least one receptacle.
+        if (data != null) ForceRoomSides(seed, faces, into, roomCount, keepOut);
+        // 3. One lone switch per chunk at most (a switch with no door near it).
+        if (data != null) PlanLoneSwitch(seed, faces, data, into);
+        // 4. Opposite faces of one wall: side 0 yields to side 1 (side 1 may be a foreign, seed-pure face).
+        ResolveBackToBack(seed, faces, into);
+        // 5. Columns and floor boxes from the chunk data.
+        if (data != null)
+        {
+            PlanColumns(seed, data, startArea, cellTheme, into);
+            PlanFloorBoxes(seed, data, startArea, cellTheme, roomDressed, into);
+        }
+    }
+
+    /// <summary>The title stream (RoomStream): one class for every face, no chunk data.</summary>
+    public static void PlanLocal(int seed, IReadOnlyList<WallFace> faces, FixtureClass cls, List<Fixture> into)
+    {
+        into.Clear();
+        var none = new int[0];
+        for (var i = 0; i < faces.Count && into.Count < ChunkCap; i++) PlanFace(seed, faces, i, cls, into, none, null);
+        ResolveBackToBack(seed, faces, into);
+    }
+
+    static void PlanFace(int seed, IReadOnlyList<WallFace> faces, int index, FixtureClass cls, List<Fixture> into, int[] roomCount, IReadOnlyList<KeepOut> keepOut)
+    {
+        var f = faces[index];
+        if (f.kind != EdgeKind.Wall && f.kind != EdgeKind.Arch) return;   // never on Door or Window faces (binding)
+        var rule = Rules[(int)cls];
+        var gaps = PlateGaps(f);
+        if (gaps.n == 0) return;
+        var hF = FaceHash(seed, f, Field.Face);
+        var roomed = f.room >= 0 && !f.foreign && f.room < roomCount.Length;
+        var p = Mathf.Min(1f, SolidLength(f) / rule.spacing);
+        if (U(hF) < p && (!roomed || roomCount[f.room] < rule.cap))
+            AddReceptacle(seed, f, index, cls, rule, gaps, into, roomed ? roomCount : null, keepOut, FixtureFlags.None);
+        if (rule.pArchSwitch > 0f && f.kind == EdgeKind.Arch && roomed && U(FaceHash(seed, f, Field.Switch)) < rule.pArchSwitch && roomCount[f.room] < rule.cap)
+        {
+            var hS = FaceHash(seed, f, Field.Switch);
+            var first = (Sub(hS, 1) & 1) == 0;
+            for (var t = 0; t < 2; t++)
+            {
+                var left = first == (t == 0);
+                var u = left ? f.openFrom - SwitchFromOpening : f.openTo + SwitchFromOpening;
+                if (u < EndMargin || u > f.length - EndMargin) continue;
+                var kit = rule.office && U(hS, 2) < .3f ? FixtureKit.Toggle2 : FixtureKit.Toggle1;
+                var x = Make(f, index, cls, kit, u, SwitchHeight, PlateFinish(seed, f, rule), hS);
+                if (Blocked(x, f, keepOut)) continue;
+                x.device = x.plate == Finish.Stainless ? Finish.Ivory : DeviceFor(x.plate);
+                into.Add(x);
+                roomCount[f.room]++;
+                break;
+            }
+        }
+    }
+
+    static void AddReceptacle(int seed, in WallFace f, int index, FixtureClass cls, ClassRule rule, Gaps gaps, List<Fixture> into,
+        int[] roomCount, IReadOnlyList<KeepOut> keepOut, FixtureFlags extra)
+    {
+        var hF = FaceHash(seed, f, Field.Face);
+        var hL = LineHash(seed, f);
+        var anchorLow = (hL & 1u) == 0;
+        var u0 = EndMargin + Step * (Sub(hL, 1) % 3u);
+        var j = rule.jitter > 0 ? (int)(Sub(hF, 1) % (uint)(2 * rule.jitter + 1)) - rule.jitter : 0;
+        var u = anchorLow ? u0 + j * Step : f.length - (u0 + j * Step);
+        var start = into.Count;
+        if (!Snap(gaps, u, .60f, c => FarFromSameFace(into, index, c), out u)) return;
+        var y = U(hL, 2) < rule.pAlt ? rule.hAlt : rule.h;
+        var flags = extra;
+        if (rule.pOff > 0f && U(hF, 3) < rule.pOff)
+        {
+            flags |= FixtureFlags.OffHeight;
+            if (U(hF, 4) < .6f) y = .46f;
+            else { y = 1.07f; flags |= FixtureFlags.Horizontal; }
+        }
+        var plate = PlateFinish(seed, f, rule);
+        var hD = FaceHash(seed, f, Field.Device);
+        var kit = plate == Finish.Stainless ? FixtureKit.DuplexSteel : (U(hD) < rule.p20 ? FixtureKit.Duplex20 : FixtureKit.Duplex);
+        var device = DeviceFor(plate);
+        if (rule.pIG > 0f && U(hD, 1) < rule.pIG) { kit = plate == Finish.Stainless ? FixtureKit.DuplexSteel : FixtureKit.Duplex20; device = Finish.Orange; }
+        var x = Make(f, index, cls, kit, u, y, plate, hF);
+        x.device = device;
+        x.flags |= flags;
+        if ((flags & FixtureFlags.Horizontal) != 0) x.roll += 90f;
+        if (rule.wear) Wear(seed, f, rule, ref x);
+        else if (U(hF, 9) < .15f && IsDuplex(x.kit)) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }
+        x.position.y = Mathf.Max(x.position.y, f.baseTop + BaseClear + (x.kit == FixtureKit.DuplexJumbo ? JumboHalfH : PlateHalfH));
+        if (Blocked(x, f, keepOut)) { StatKeptOut++; return; }
+        into.Add(x);
+        // Companions: a phone plate beside about half the Office desk receptacles, a data plate beside a third of those.
+        var hC = FaceHash(seed, f, Field.Companion);
+        if ((flags & FixtureFlags.OffHeight) == 0 && rule.pPhone > 0f && U(hC) < rule.pPhone)
+        {
+            var dir = u < f.length * .5f ? 1f : -1f;
+            if (AddCompanion(f, index, cls, FixtureKit.JackPhone, u, dir, x.position.y, plate, hC, into, keepOut) && rule.pData > 0f && U(hC, 1) < rule.pData)
+            {
+                var zoneNet = (MapHash.Hash(seed, f.zone.x, f.zone.y, SaltBase + 16 * (int)Field.Companion + 7) & 1u) == 0 ? FixtureKit.JackData : FixtureKit.JackBNC;
+                AddCompanion(f, index, cls, zoneNet, into[into.Count - 1].along, dir, x.position.y, plate, Sub(hC, 2), into, keepOut);
+            }
+        }
+        if (roomCount != null) roomCount[f.room] += into.Count - start;
+    }
+
+    static bool AddCompanion(in WallFace f, int index, FixtureClass cls, FixtureKit kit, float from, float dir, float y, Finish plate, uint h,
+        List<Fixture> into, IReadOnlyList<KeepOut> keepOut)
+    {
+        var gaps = PlateGaps(f);
+        foreach (var d in new[] { dir, -dir })
+        {
+            var u = from + d * CompanionOffset;
+            if (!gaps.Inside(u) || !FarFromSameFace(into, index, u)) continue;
+            var x = Make(f, index, cls, kit, u, y, plate == Finish.Stainless ? Finish.Stainless : plate, h);
+            x.device = Finish.Ivory;
+            x.flags |= FixtureFlags.Companion;
+            if (Blocked(x, f, keepOut)) continue;
+            into.Add(x);
+            return true;
+        }
+        return false;
+    }
+
+    static bool IsDuplex(FixtureKit k) => k == FixtureKit.Duplex || k == FixtureKit.Duplex20 || k == FixtureKit.DuplexSteel || k == FixtureKit.DuplexCracked
+        || k == FixtureKit.DuplexJumbo || k == FixtureKit.DuplexScorched || k == FixtureKit.Bare;
+
+    static bool FarFromSameFace(List<Fixture> into, int face, float u)
+    {
+        for (var k = into.Count - 1; k >= 0; k--)
+            if (into[k].face == face && Mathf.Abs(into[k].along - u) < SameFaceGap - 1e-4f) return false;
+        return true;
+    }
+
+    static Fixture Make(in WallFace f, int index, FixtureClass cls, FixtureKit kit, float u, float y, Finish plate, uint h)
+    {
+        return new Fixture
+        {
+            kit = kit, position = f.start + f.direction * u + Vector3.up * y, normal = f.normal,
+            screwRoll = 180f * U(h, 11), plate = plate, device = DeviceFor(plate), face = (short)index, cls = cls, along = u,
+        };
+    }
+
+    static Finish DeviceFor(Finish plate)
+    {
+        switch (plate)
+        {
+            case Finish.White: return Finish.White;
+            case Finish.Brown: return Finish.Brown;
+            case Finish.Grey: return Finish.Grey;
+            default: return Finish.Ivory;
+        }
+    }
+
+    /// <summary>One colour per wall line (one electrician); stainless by class.</summary>
+    static Finish PlateFinish(int seed, in WallFace f, ClassRule rule)
+    {
+        var hL = LineHash(seed, f);
+        var pSteel = rule.pSteel * (f.zoneBorder && rule.office ? 2f : 1f);
+        if (pSteel > 0f && U(hL, 5) < pSteel) return Finish.Stainless;
+        var c = U(hL, 6);
+        if (f.height == ZoneHeight.Tall) return c < .40f ? Finish.Ivory : c < .70f ? Finish.Grey : Finish.Almond;
+        if (rule.office) return c < .55f ? Finish.Ivory : c < .90f ? Finish.Almond : Finish.White;
+        return c < .70f ? Finish.Ivory : c < .80f ? Finish.Almond : c < .90f ? Finish.White : Finish.Brown;
+    }
+
+    /// <summary>Independent wear flags (01 §8 rates: Level 0 / Office). One geometry variant at most.</summary>
+    static void Wear(int seed, in WallFace f, ClassRule rule, ref Fixture x)
+    {
+        var h = FaceHash(seed, f, Field.Wear);
+        var o = rule.office;
+        float Rate(float level0, float office) => o ? office : level0;
+        if (U(h, 1) < Rate(.10f, .08f)) x.roll += (U(h, 2) < .5f ? -1f : 1f) * (2f + 4f * U(h, 3));             // crooked 2-6 deg
+        if (U(h, 4) < Rate(.08f, .05f)) x.tilt = .5f + 1.0f * U(h, 5);                                          // not flush: top edge 1-3 mm out
+        if (U(h, 6) < Rate(.06f, .04f)) { x.flags |= FixtureFlags.NoScrew; x.tilt = Mathf.Max(x.tilt, .4f); }  // missing screw
+        if (IsDuplex(x.kit) && U(h, 7) < .15f) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }           // another electrician
+        if (x.plate == Finish.Ivory && U(h, 8) < Rate(.30f, .15f)) x.plate = Finish.IvoryAged;                  // grime / yellowing
+        if (x.plate != Finish.Stainless && U(h, 9) < Rate(.03f, .08f)) x.plate = Finish.WallMatch;              // papered or painted over
+        if (U(h, 10) < .05f) x.device = x.device == Finish.White ? Finish.Ivory : Finish.White;                 // mismatched device
+        var thermoset = x.plate != Finish.Stainless;
+        var g = U(h, 12);
+        // Geometry variants, one at most, in this order of precedence.
+        if (g < Rate(.03f, .01f)) x.kit = FixtureKit.Bare;
+        else if ((g -= Rate(.03f, .01f)) < Rate(.03f, .04f)) x.kit = FixtureKit.Blank;
+        else if ((g -= Rate(.03f, .04f)) < .02f && thermoset) x.kit = FixtureKit.DuplexScorched;
+        else if ((g -= .02f) < Rate(.05f, .03f) && thermoset && x.kit == FixtureKit.Duplex) x.kit = FixtureKit.DuplexJumbo;
+        else if ((g -= Rate(.05f, .03f)) < Rate(.05f, .03f) && thermoset && x.kit == FixtureKit.Duplex) x.kit = FixtureKit.DuplexCracked;
+        if (x.kit == FixtureKit.Bare) x.flags |= FixtureFlags.NoScrew;
+    }
+
+    static bool Blocked(in Fixture x, in WallFace f, IReadOnlyList<KeepOut> keepOut)
+    {
+        if (keepOut == null || keepOut.Count == 0) return false;
+        var a = x.position - f.direction * (PlateHalfW + .02f);
+        var b = x.position + f.direction * (PlateHalfW + .02f) + f.normal * .012f;
+        var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
+        foreach (var k in keepOut)
+            if (k.xz.Overlaps(r) && x.position.y + PlateHalfH > k.y0 && x.position.y - PlateHalfH < k.y1) return true;
+        return false;
+    }
+
+    static int DirIndex(Vector3 n) => n.x > .5f ? 0 : n.z > .5f ? 1 : n.x < -.5f ? 2 : 3;
+
+    static void ForceRoomSides(int seed, IReadOnlyList<WallFace> faces, List<Fixture> into, int[] roomCount, IReadOnlyList<KeepOut> keepOut)
+    {
+        // A room side = own faces of one room with the same normal on the same cell line.
+        var sides = new Dictionary<long, (float solid, int best, float bestGap, bool has)>();
+        for (var i = 0; i < faces.Count; i++)
+        {
+            var f = faces[i];
+            if (f.foreign || f.room < 0 || (f.kind != EdgeKind.Wall && f.kind != EdgeKind.Arch)) continue;
+            var key = SideKey(f);
+            sides.TryGetValue(key, out var s);
+            if (s.solid == 0f && s.best == 0) s.best = -1;
+            s.solid += SolidLength(f);
+            var gap = PlateGaps(f).Total;
+            if (gap > s.bestGap + 1e-4f) { s.bestGap = gap; s.best = i; }
+            sides[key] = s;
+        }
+        foreach (var x in into)
+            if (x.face >= 0 && (x.flags & FixtureFlags.Companion) == 0 && IsReceptacle(x.kit))
+            {
+                var f = faces[x.face];
+                if (f.foreign || f.room < 0) continue;
+                var key = SideKey(f);
+                if (sides.TryGetValue(key, out var s)) { s.has = true; sides[key] = s; }
+            }
+        var keys = new List<long>(sides.Keys);
+        keys.Sort();
+        foreach (var key in keys)
+        {
+            var s = sides[key];
+            if (s.has || s.solid < RoomSideMin || s.best < 0 || into.Count >= ChunkCap) continue;
+            var f = faces[s.best];
+            var cls = Classify(f);
+            var before = into.Count;
+            AddReceptacle(seed, f, s.best, cls, Rules[(int)cls], PlateGaps(f), into, roomCount.Length > f.room ? roomCount : null, keepOut, FixtureFlags.Forced);
+            if (into.Count > before) StatForced++;
+        }
+    }
+
+    static long SideKey(in WallFace f)
+    {
+        var alongX = f.direction.x > .5f;
+        var line = alongX ? (f.side == 0 ? f.cell.y + 1 : f.cell.y) : (f.side == 0 ? f.cell.x + 1 : f.cell.x);
+        return ((long)f.room << 40) ^ ((long)DirIndex(f.normal) << 36) ^ (uint)(line + (1 << 20));
+    }
+
+    static bool IsReceptacle(FixtureKit k) => IsDuplex(k) || k == FixtureKit.Blank || k == FixtureKit.HandyBox;
+
+    static void ResolveBackToBack(int seed, IReadOnlyList<WallFace> faces, List<Fixture> into)
+    {
+        var otherSide = new Dictionary<long, int>();
+        for (var i = 0; i < faces.Count; i++) if (faces[i].side == 1) otherSide[faces[i].edgeId] = i;
+        for (var k = 0; k < into.Count; k++)
+        {
+            var x = into[k];
+            if (x.face < 0 || faces[x.face].side != 0 || !otherSide.TryGetValue(faces[x.face].edgeId, out var twin)) continue;
+            bool Clear(float u)
+            {
+                foreach (var y in into) if (y.face == twin && Mathf.Abs(y.along - u) < BackToBack - 1e-4f) return false;
+                return true;
+            }
+            if (Clear(x.along)) continue;
+            var f = faces[x.face];
+            var self = k;
+            bool Ok(float u)
+            {
+                if (!Clear(u)) return false;
+                for (var m = 0; m < into.Count; m++) if (m != self && into[m].face == x.face && Mathf.Abs(into[m].along - u) < SameFaceGap - 1e-4f) return false;
+                return true;
+            }
+            if (Snap(PlateGaps(f), x.along, .90f, Ok, out var moved))
+            {
+                x.position += f.direction * (moved - x.along);
+                x.along = moved;
+                x.flags |= FixtureFlags.Moved;
+                into[k] = x;
+                StatMoved++;
+            }
+            else
+            {
+                into.RemoveAt(k);
+                k--;
+                StatDropped++;
+            }
+        }
+    }
+
+    static void PlanColumns(int seed, MapChunk data, RectInt startArea, IReadOnlyList<ZoneTheme> cellTheme, List<Fixture> into)
+    {
+        const int n = MapGrid.ChunkCells;
+        var o = data.Origin;
+        for (var j = 0; j < n && into.Count < ChunkCap; j++)
+        for (var i = 0; i < n && into.Count < ChunkCap; i++)
+        {
+            if (!data.pillar[i + j * (n + 1)]) continue;
+            if (InRect(startArea, o.x + i - 1, o.y + j - 1, 2)) continue;
+            var k = MapGrid.LocalIndex(i, j);
+            var theme = cellTheme != null && cellTheme.Count > k ? cellTheme[k] : ZoneTheme.Level0;
+            var tall = data.height[k] == ZoneHeight.Tall;
+            var h = MapHash.Hash(seed, o.x + i, o.y + j, SaltBase + 16 * (int)Field.Column);
+            var p = tall || theme == ZoneTheme.Office ? .33f : .12f;
+            if (U(h) >= p) continue;
+            var w = (data.pillarStyle[i + j * (n + 1)] & MapChunk.ColumnLarge) != 0 ? ModuleUnits.ColumnLarge : ModuleUnits.ColumnSmall;
+            var dir = (int)(Sub(h, 1) % 4u);
+            var normal = dir == 0 ? Vector3.right : dir == 1 ? Vector3.forward : dir == 2 ? Vector3.left : Vector3.back;
+            var y = tall ? .46f : theme == ZoneTheme.Office ? .41f : .31f;
+            var plate = tall ? (U(h, 2) < .5f ? Finish.Stainless : Finish.Grey) : theme == ZoneTheme.Office ? Finish.Almond : Finish.Ivory;
+            into.Add(new Fixture
+            {
+                kit = plate == Finish.Stainless ? FixtureKit.DuplexSteel : FixtureKit.Duplex,
+                position = new Vector3(i * MapGrid.CellSize, y, j * MapGrid.CellSize) + normal * (w * .5f),
+                normal = normal, screwRoll = 180f * U(h, 3), plate = plate, device = DeviceFor(plate), face = -1, cls = FixtureClass.Column,
+            });
+        }
+    }
+
+    static void PlanFloorBoxes(int seed, MapChunk data, RectInt startArea, IReadOnlyList<ZoneTheme> cellTheme, IReadOnlyList<bool> roomDressed, List<Fixture> into)
+    {
+        const int n = MapGrid.ChunkCells;
+        var o = data.Origin;
+        for (var j = 1; j < n && into.Count < ChunkCap; j++)
+        for (var i = 1; i < n && into.Count < ChunkCap; i++)
+        {
+            // Bay centres of the 6 m column grid (odd world corners), in open floor of 2 x 2 cells that no kit
+            // will furnish (corridor cells, or a room the dress step skips): "the desks have gone".
+            if (((o.x + i) & 1) == 0 || ((o.y + j) & 1) == 0) continue;
+            if (InRect(startArea, o.x + i - 1, o.y + j - 1, 2)) continue;
+            if (data.east[MapGrid.LocalIndex(i - 1, j - 1)] != EdgeKind.Open || data.east[MapGrid.LocalIndex(i - 1, j)] != EdgeKind.Open
+                || data.north[MapGrid.LocalIndex(i - 1, j - 1)] != EdgeKind.Open || data.north[MapGrid.LocalIndex(i, j - 1)] != EdgeKind.Open) continue;
+            var k = MapGrid.LocalIndex(i, j);
+            var theme = cellTheme != null && cellTheme.Count > k ? cellTheme[k] : ZoneTheme.Level0;
+            var height = data.height[k];
+            var ok = true;
+            for (var dj = -1; dj <= 0 && ok; dj++)
+            for (var di = -1; di <= 0 && ok; di++)
+            {
+                var c = MapGrid.LocalIndex(i + di, j + dj);
+                var room = RoomOf(data, i + di, j + dj);
+                var furnished = room >= 0 && (roomDressed == null || room >= roomDressed.Count || roomDressed[room]);
+                if (furnished || data.height[c] != height || (cellTheme != null && cellTheme[c] != theme)) ok = false;
+            }
+            if (!ok) continue;
+            var h = MapHash.Hash(seed, o.x + i, o.y + j, SaltBase + 16 * (int)Field.Floor);
+            var p = theme == ZoneTheme.Office ? .30f : height == ZoneHeight.Tall ? .10f : .04f;
+            if (U(h) >= p) continue;
+            var dx = ((int)(Sub(h, 1) % 3u) - 1) * ModuleUnits.Fine;
+            var dz = ((int)(Sub(h, 2) % 3u) - 1) * ModuleUnits.Fine;
+            var yaw = 90f * (Sub(h, 3) % 4u);
+            into.Add(new Fixture
+            {
+                kit = U(h, 4) < .2f ? FixtureKit.FloorBox2 : FixtureKit.FloorBox,
+                position = new Vector3(i * MapGrid.CellSize + dx, 0f, j * MapGrid.CellSize + dz),
+                normal = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward, plate = Finish.Stainless, device = Finish.Ivory,
+                screwRoll = 180f * U(h, 5), face = -1, cls = FixtureClass.Floor,
+            });
+        }
+    }
+
+    static void PlanLoneSwitch(int seed, IReadOnlyList<WallFace> faces, MapChunk data, List<Fixture> into)
+    {
+        var h = MapHash.Hash(seed, data.coord.x, data.coord.y, SaltBase + 16 * (int)Field.Chunk);
+        if (U(h) >= .25f || into.Count >= ChunkCap) return;
+        int best = -1;
+        uint bestKey = uint.MaxValue;
+        for (var i = 0; i < faces.Count; i++)
+        {
+            var f = faces[i];
+            if (f.foreign || f.kind != EdgeKind.Wall || Classify(f) != FixtureClass.Level0Corridor) continue;
+            var key = FaceHash(seed, f, Field.Switch);
+            if (key < bestKey) { bestKey = key; best = i; }
+        }
+        if (best < 0) return;
+        var g = faces[best];
+        var u = g.length * .5f + Step * 3 * ((int)(Sub(h, 1) % 3u) - 1);
+        var x = Make(g, best, FixtureClass.Level0Corridor, FixtureKit.Toggle1, u, SwitchHeight, Finish.Ivory, h);
+        into.Add(x);
+    }
+
+    static int RoomOf(MapChunk data, int i, int j)
+    {
+        for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(i, j)) return r;
+        return -1;
+    }
+
+    static bool InRect(RectInt r, int x, int y, int size) =>
+        r.width > 0 && r.height > 0 && x < r.xMax && x + size > r.xMin && y < r.yMax && y + size > r.yMin;
+
+    // ---------- Install (not pure: reads the kit library and the map; adds the per-chunk set) ----------
+
+    public static FrontRoomsWallFixtureSet Install(Transform chunkRoot, List<WallFace> faces, int seed, MapChunk data, RectInt startArea, List<Mesh> ownedMeshes)
+    {
+        var set = chunkRoot.gameObject.AddComponent<FrontRoomsWallFixtureSet>();
+        set.coord = data.coord;
+        set.faces = new List<WallFace>(faces);
+        var themes = new ZoneTheme[MapGrid.CellsPerChunk];
+        var world = chunkRoot.GetComponentInParent<FrontRoomsMapWorld>();
+        if (world != null && world.Cache != null)
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+                themes[MapGrid.LocalIndex(i, j)] = world.Cache.ZoneOf(data.Cell(i, j)).theme;
+        set.keepOut = KeepOuts(data);
+        // A room the dress step may furnish (the map's Furnish test): no floor boxes there in stage 1.
+        var dressed = new bool[data.rooms.Length];
+        for (var r = 0; r < dressed.Length; r++)
+        {
+            var module = data.ModuleOf(r);
+            var fillNone = module != null && module.fill == ModuleFill.None;
+            dressed[r] = !fillNone && data.RoomIntact(r) && (world == null || world.Cache == null || world.Cache.Generator.Uniform(data, data.rooms[r]));
+        }
+        Plan(seed, faces, data, startArea, themes, dressed, set.keepOut, set.fixtures);
+        return set;
+    }
+
+    /// <summary>Module props (any height up to 2.1 m), the key spot and the Relay entries: chunk-local volumes.</summary>
+    static List<KeepOut> KeepOuts(MapChunk data)
+    {
+        var list = new List<KeepOut>();
+        var cs = MapGrid.CellSize;
+        for (var r = 0; r < data.rooms.Length; r++)
+        {
+            var module = data.ModuleOf(r);
+            if (module == null) continue;
+            var room = data.rooms[r];
+            float ox = room.x * cs, oz = room.y * cs;
+            if (module.props != null)
+                foreach (var p in module.props)
+                {
+                    if (string.IsNullOrEmpty(p.kit) || p.y > 2.1f) continue;
+                    var f = FrontRoomsMapWorld.KitFootprint(p.kit);
+                    if (f == null) continue;
+                    RoomModuleData.Bounds(p, f, out var x0, out var z0, out var x1, out var z1);
+                    list.Add(new KeepOut { xz = Rect.MinMaxRect(ox + x0, oz + z0, ox + x1, oz + z1), y0 = p.y, y1 = p.y + (f.Length > 4 ? f[4] : 1f) });
+                }
+            if (module.markers != null)
+                foreach (var mk in module.markers)
+                    if (mk.kind == ModuleMarkerKind.RelayEntry)
+                        list.Add(new KeepOut { xz = new Rect(ox + mk.x - .8f, oz + mk.z - .8f, 1.6f, 1.6f), y0 = 0f, y1 = 2.1f });
+        }
+        if (data.hasKey && data.keySpot)
+            list.Add(new KeepOut { xz = new Rect(data.keyX - .6f, data.keyZ - .6f, 1.2f, 1.2f), y0 = 0f, y1 = 2.1f });
+        return list;
+    }
+}
+
+// ===== FILE SPLIT: Assets/Scripts/Office/FrontRoomsWallFixtureSet.cs =====
+// CLONE-ONLY REFERENCE (outlet workflow). The per-chunk record of planned
+// fixtures. The real one also feeds the R3 instanced renderer (10_spec.md §3.4).
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+[ExecuteAlways]
+public sealed class FrontRoomsWallFixtureSet : MonoBehaviour
+{
+    public static readonly HashSet<FrontRoomsWallFixtureSet> Registry = new HashSet<FrontRoomsWallFixtureSet>();
+    public GridCoord coord;
+    public List<FrontRoomsWallFixtures.WallFace> faces = new List<FrontRoomsWallFixtures.WallFace>();
+    public List<FrontRoomsWallFixtures.KeepOut> keepOut = new List<FrontRoomsWallFixtures.KeepOut>();
+    public readonly List<FrontRoomsWallFixtures.Fixture> fixtures = new List<FrontRoomsWallFixtures.Fixture>();
+    void OnEnable() => Registry.Add(this);
+    void OnDisable() => Registry.Remove(this);
+}

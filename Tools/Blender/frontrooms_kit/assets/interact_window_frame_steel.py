@@ -16,7 +16,8 @@ Construction (window root W, Unity metres; see interact_window_common):
   band X 0.6995 -> 0.775 at Z +/-0.105 on both faces, square return back to
   the wall, soffit at |X| 0.6995 / Y 1.9995 / Y 0.3505. 1.5 mm inside bend
   radii: convex arrises show R3.0 (1.5 + 1.5 mm sheet), concave R1.5. Four
-  pieces with 0.4 mm hairline mitre joints (end walls fill the joint).
+  pieces meeting on welded-and-ground mitres, each shown as a closed 0.3 x
+  0.3 mm V hairline (a through-gap would expose the map trims' corners).
 * Face B (hall): the integral formed stop, 16 x 16, Z -0.022 -> -0.006.
 * Face A (room): the loose channel stop, 16 x 16, Z 0.006 -> 0.022, with a
   formed 8.8 mm x 1.6 mm screw channel on its sight-line face and 30 slotted
@@ -24,9 +25,9 @@ Construction (window root W, Unity metres; see interact_window_common):
   sill at X -0.6325 ... 0.6325; 216 / 211 mm centres). The channel is what
   keeps the 1.5 mm domes behind the stop line (self-check a) while the
   screws stay on the face a real loose stop is screwed through.
-* 1.5 mm-class black glazing tape (Prop_Rubber), Z +/-(0.0035 -> 0.006),
-  flush with the stop line: the dark line at the sight line, and the part
-  that keeps the glass edge hidden at 60 degrees.
+* Black glazing tape (Prop_Rubber), Z +/-(0.0035 -> 0.006), flush with the
+  stop line: the dark line at the sight line, and the part that keeps the
+  glass edge hidden at 60 degrees. Two neoprene setting blocks at X +/-0.35.
 * No glass, no pane, no teeth: the glass-destruction track owns them; this
   asset is the pocket they fit (meta glassSlab, glassInterface, anchors).
 
@@ -34,9 +35,9 @@ Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z (the map turns it toward the non-tall cell). Size
 1.55 x 1.80 (Y 0.2745-2.075) x 0.21 m.
 
-Budget (§9.4): 3,600 / 1,300 / 220 tris; LOD1 now (0.36: the screws and the
-tape drop, nothing else decimates); LOD2 drops the screws and the tape
-(fr_lod2_drop). LOD distances 4 / 12 / none. Slots: Prop_SteelBrown (first =
+Budget (§9.4): 3,600 / 1,300 / 220 tris; LOD1 now (0.38: the screws and the
+setting blocks drop, nothing decimates; the tape stays so the pocket never
+reads as a slot); LOD2 drops the screws, tape and blocks (fr_lod2_drop). LOD distances 4 / 12 / none. Slots: Prop_SteelBrown (first =
 submesh 0 for the RT bridge, §7.3), Prop_Rubber. VARIANT
 Kit_WindowFrame_Steel_Enamel (W-RN, Run): Prop_SteelBrown -> Door_Enamel
 (fallback Painted_Metal in Unity). Render-only: no collider.
@@ -52,7 +53,7 @@ import kitlib
 import interact_window_common as wc
 
 NAME = "Kit_WindowFrame_Steel"
-LOD1_RATIO = 0.36
+LOD1_RATIO = 0.38
 LOD2_RATIO = 0.061
 LOD1 = LOD1_RATIO
 LOD_DISTANCES = (4.0, 12.0, None)
@@ -159,8 +160,13 @@ def build(kit):
     for face in ("a", "b"):
         for part in wc.frame_ring(kit, wc.tape_dn(face), RUBBER, name="glazing tape " + face):
             wc.paint_wear(part)
-            kit.lod1_drop(part)
-            wc.lod2_drop(part)
+            wc.lod2_drop(part)           # kept in LOD1: without it the empty pocket shows as a slot
+
+    for x in (-0.35, 0.35):                                # neoprene setting blocks under the glass (hidden)
+        blk = wc.box_u(kit, (0.100, 0.0033, 0.0056), (x, wc.LINING_Y0 + 0.00165, 0.0), RUBBER, bevel=0.0, name="setting block")
+        wc.paint_wear(blk)
+        kit.lod1_drop(blk)
+        wc.lod2_drop(blk)
 
     # ---- self-checks that need no ray casting (the rest: scratchpad g4_check.py)
     assert len(seats) == 30

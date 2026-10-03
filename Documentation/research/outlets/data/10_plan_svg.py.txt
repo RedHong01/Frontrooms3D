@@ -1,0 +1,118 @@
+"""Plan view of the stage-1 outlet plan (clone dump, seed 2554): 3 x 3 chunks."""
+import json
+import sys
+
+src, out = sys.argv[1], sys.argv[2]
+d = json.load(open(src))
+want = {(x, y) for x in (-1, 0, 1) for y in (-1, 0, 1)}
+chunks = [c for c in d["chunks"] if tuple(c["coord"]) in want]
+xs = [c["origin"][0] for c in chunks]
+zs = [c["origin"][1] for c in chunks]
+x0, x1, z0, z1 = min(xs), max(xs) + 24, min(zs), max(zs) + 24
+S = 26.0  # px per metre
+M = 60
+W = (x1 - x0) * S + 2 * M + 360
+H = (z1 - z0) * S + 2 * M + 70
+W = H = max(W, H)
+
+
+def P(x, z):
+    return M + (x - x0) * S, M + 50 + (z1 - z) * S
+
+
+CLS = {"Level0Corridor": "#b9b2a0", "Level0Room": "#c99a3d", "OfficeCorridor": "#7f97b0", "OfficeRoom": "#2f5f8f", "Tall": "#7a4f9a"}
+parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">' % (W, H, W, H),
+         '<rect width="100%" height="100%" fill="#f7f5f0"/>',
+         '<style>text{font-family:Helvetica,Arial,sans-serif;fill:#222}</style>',
+         '<text x="%d" y="34" font-size="22" font-weight="bold">Stage-1 outlet plan, seed %d, 3 x 3 chunks (72 x 72 m), clone run</text>' % (M, d["seed"])]
+# rooms
+for c in chunks:
+    ox, oz = c["origin"]
+    for r in c["rooms"]:
+        a = P(ox + r[0] * 3, oz + (r[1] + r[3]) * 3)
+        parts.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#e9dfc4" opacity="0.55"/>' % (a[0], a[1], r[2] * 3 * S, r[3] * 3 * S))
+# chunk borders
+for c in chunks:
+    ox, oz = c["origin"]
+    a = P(ox, oz + 24)
+    parts.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="none" stroke="#999" stroke-width="1" stroke-dasharray="6,5"/>' % (a[0], a[1], 24 * S, 24 * S))
+# faces
+for c in chunks:
+    ox, oz = c["origin"]
+    for f in c["faces"]:
+        sx, sz = f["s"][0] + ox, f["s"][1] + oz
+        dx, dz = f["d"][0], f["d"][1]
+        L = f["L"]
+        segs = [(0, L)]
+        if f["k"] in ("Arch", "Door", "Window"):
+            segs = [(0, f["o"][0]), (f["o"][1], L)]
+        col = CLS.get(f["cls"], "#888")
+        if f["k"] == "Door":
+            col = "#555"
+        if f["k"] == "Window":
+            col = "#4aa3c8"
+        for a, b in segs:
+            p, q = P(sx + dx * a, sz + dz * a), P(sx + dx * b, sz + dz * b)
+            dash = ' stroke-dasharray="3,3"' if f["foreign"] else ""
+            parts.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="2.6"%s/>' % (p[0], p[1], q[0], q[1], col, dash))
+# columns
+for c in chunks:
+    ox, oz = c["origin"]
+    for i, j, large in c["pillars"]:
+        w = 0.9 if large else 0.6
+        p = P(ox + i * 3 - w / 2, oz + j * 3 + w / 2)
+        parts.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#666"/>' % (p[0], p[1], w * S, w * S))
+# fixtures
+for c in chunks:
+    ox, oz = c["origin"]
+    for x in c["fixtures"]:
+        px, pz = x["p"][0] + ox + x["n"][0] * 0.35, x["p"][1] + oz + x["n"][1] * 0.35
+        cx, cy = P(px, pz)
+        k = x["kit"]
+        if k in ("FloorBox", "FloorBox2"):
+            parts.append('<rect x="%.1f" y="%.1f" width="9" height="9" fill="#9aa" stroke="#222" transform="rotate(45 %.1f %.1f)"/>' % (cx - 4.5, cy - 4.5, cx, cy))
+        elif k in ("Toggle1", "Toggle2"):
+            parts.append('<polygon points="%.1f,%.1f %.1f,%.1f %.1f,%.1f" fill="#d23" stroke="#222" stroke-width="0.8"/>' % (cx, cy - 6, cx - 5.5, cy + 4.5, cx + 5.5, cy + 4.5))
+        elif k == "JackPhone":
+            parts.append('<rect x="%.1f" y="%.1f" width="7" height="7" fill="#2a6bd1" stroke="#222" stroke-width="0.6"/>' % (cx - 3.5, cy - 3.5))
+        elif k in ("JackData", "JackBNC"):
+            parts.append('<rect x="%.1f" y="%.1f" width="7" height="7" fill="#2f9a4a" stroke="#222" stroke-width="0.6"/>' % (cx - 3.5, cy - 3.5))
+        else:
+            fill = "#e8641f" if x["device"] == "Orange" else ("#c9c9c9" if x["plate"] == "Stainless" else "#fff7dc")
+            ring = "#000" if x["cls"] != "Column" else "#a00"
+            parts.append('<circle cx="%.1f" cy="%.1f" r="4.2" fill="%s" stroke="%s" stroke-width="1.3"/>' % (cx, cy, fill, ring))
+# legend
+lx = M + (x1 - x0) * S + 30
+ly = M + 70
+items = [("line", "#b9b2a0", "Level 0 corridor wall"), ("line", "#c99a3d", "Level 0 room wall"), ("line", "#7f97b0", "Office corridor wall"),
+         ("line", "#2f5f8f", "Office room wall"), ("line", "#7a4f9a", "Tall hall wall"), ("dash", "#b9b2a0", "foreign face (into next chunk)"),
+         ("line", "#555", "door (no fixtures)"), ("line", "#4aa3c8", "window (no fixtures)"),
+         ("dot", "#fff7dc", "receptacle"), ("dot", "#c9c9c9", "receptacle, stainless"), ("dot", "#e8641f", "IG receptacle (orange)"),
+         ("sq", "#2a6bd1", "phone jack"), ("sq", "#2f9a4a", "data jack (IBM / BNC)"), ("tri", "#d23", "switch 1.22 m"),
+         ("dia", "#9aa", "floor box"), ("col", "#666", "column"), ("room", "#e9dfc4", "room rect")]
+for i, (kind, col, label) in enumerate(items):
+    y = ly + i * 30
+    if kind == "line":
+        parts.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="3"/>' % (lx, y, lx + 30, y, col))
+    elif kind == "dash":
+        parts.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="3" stroke-dasharray="3,3"/>' % (lx, y, lx + 30, y, col))
+    elif kind == "dot":
+        parts.append('<circle cx="%d" cy="%d" r="6" fill="%s" stroke="#000" stroke-width="1.3"/>' % (lx + 15, y, col))
+    elif kind == "sq":
+        parts.append('<rect x="%d" y="%d" width="11" height="11" fill="%s" stroke="#222"/>' % (lx + 10, y - 5, col))
+    elif kind == "tri":
+        parts.append('<polygon points="%d,%d %d,%d %d,%d" fill="%s" stroke="#222"/>' % (lx + 15, y - 7, lx + 9, y + 5, lx + 21, y + 5, col))
+    elif kind == "dia":
+        parts.append('<rect x="%d" y="%d" width="10" height="10" fill="%s" stroke="#222" transform="rotate(45 %d %d)"/>' % (lx + 10, y - 5, col, lx + 15, y))
+    elif kind == "col":
+        parts.append('<rect x="%d" y="%d" width="12" height="12" fill="%s"/>' % (lx + 9, y - 6, col))
+    else:
+        parts.append('<rect x="%d" y="%d" width="30" height="14" fill="%s"/>' % (lx, y - 7, col))
+    parts.append('<text x="%d" y="%d" font-size="17">%s</text>' % (lx + 42, y + 6, label))
+n = sum(len(c["fixtures"]) for c in chunks)
+parts.append('<text x="%d" y="%d" font-size="16">%d fixtures in these 9 chunks (%.1f per chunk)</text>' % (lx, ly + len(items) * 30 + 20, n, n / 9.0))
+parts.append('<text x="%d" y="%d" font-size="16">Markers sit 0.35 m off the wall, on the side they face.</text>' % (lx, ly + len(items) * 30 + 46))
+parts.append('<text x="%d" y="%d" font-size="16">Dashed squares: 24 m chunks.</text>' % (lx, ly + len(items) * 30 + 72))
+parts.append("</svg>")
+open(out, "w").write("\n".join(parts))
+print(out, W, H, n)

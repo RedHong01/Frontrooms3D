@@ -1,0 +1,370 @@
+// CLONE-ONLY probe v2 (outlet workflow, 10_spec.md §4.4, 2026-10-03). Tests the
+// map chat's chosen hook (faces collected in BuildEdge, one Install per chunk
+// after AddZoneGrades) and the stage-1 reference planner against the real map:
+//  1. faces: the BuildEdge list vs an independent walk over Cache.Edge (both
+//     sides of every edge the chunk builds: its cells' east and north edges);
+//  2. arch spans vs FrontRoomsMapWorld.CrossingPoint;
+//  3. every wall/column fixture sits on the shell collider at its height
+//     (raycast from 0.30 m in front); floor boxes on the floor;
+//  4. rules: nothing on Door/Window faces or in the start area; end margins;
+//     arch clearance; back-to-back >= 0.61 m; same-face gap;
+//  5. determinism: RebuildChunk gives identical faces and plans; a revisit
+//     shift of the chunk keeps every fixture on its foreign (border) faces;
+//  6. counts: fixtures per chunk, per kit and class, metres of wall per receptacle;
+//  7. cost: face collection and Install per chunk; no Collider under any set.
+// Run: OUTLET_PROBE_OUT=<json> Unity -batchmode -nographics -projectPath <clone> -executeMethod FrontRoomsOutletContractProbe.Run -logFile <log>
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+
+public static class FrontRoomsOutletContractProbe
+{
+    public static void Run()
+    {
+        var ok = true;
+        var outPath = Environment.GetEnvironmentVariable("OUTLET_PROBE_OUT") ?? "Temp/outlet_contract_probe.json";
+        var seedsEnv = Environment.GetEnvironmentVariable("OUTLET_PROBE_SEEDS");
+        var seeds = string.IsNullOrEmpty(seedsEnv) ? new[] { 0, 2554, 20388, 7, 424242 } : seedsEnv.Split(',').Select(int.Parse).ToArray();
+        var sb = new StringBuilder();
+        sb.Append("{\n \"seeds\": [\n");
+        var total = new Totals();
+        for (var si = 0; si < seeds.Length; si++)
+        {
+            var result = RunSeed(seeds[si], total, out var pass);
+            ok &= pass;
+            sb.Append(result).Append(si < seeds.Length - 1 ? ",\n" : "\n");
+        }
+        var stream = StreamSmoke(out var streamOk);
+        ok &= streamOk;
+        sb.Append(" ],\n \"totals\": ").Append(total.Json()).Append(",\n \"titleStream\": ").Append(stream).Append(",\n \"pass\": ").Append(ok ? "true" : "false").Append("\n}\n");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
+        File.WriteAllText(outPath, sb.ToString());
+        Debug.Log("[OutletProbe] " + (ok ? "PASS" : "FAIL") + "\n" + sb);
+        EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    sealed class Totals
+    {
+        public int chunks, faces, foreignFaces, fixtures;
+        public readonly Dictionary<string, int> byKit = new Dictionary<string, int>();
+        public readonly Dictionary<string, int> byClass = new Dictionary<string, int>();
+        public readonly Dictionary<string, float> solidByClass = new Dictionary<string, float>();
+        public readonly Dictionary<string, int> receptaclesByClass = new Dictionary<string, int>();
+        public int ig, companions, offHeight, horizontal, groundUp, noScrew, wallMatch, aged, moved, dropped, forced, keptOut, maxPerChunk;
+        public string Json()
+        {
+            string D<T>(Dictionary<string, T> d) => "{" + string.Join(", ", d.OrderBy(k => k.Key).Select(k => "\"" + k.Key + "\": " + Fmt(k.Value))) + "}";
+            var per = new Dictionary<string, float>();
+            foreach (var k in solidByClass.Keys)
+                per[k] = receptaclesByClass.TryGetValue(k, out var c) && c > 0 ? solidByClass[k] / c : -1f;
+            return "{\"chunks\": " + chunks + ", \"faces\": " + faces + ", \"foreignFaces\": " + foreignFaces + ", \"fixtures\": " + fixtures
+                + ", \"fixturesPerChunk\": " + Fmt((float)fixtures / Math.Max(1, chunks)) + ", \"maxPerChunk\": " + maxPerChunk
+                + ", \"byKit\": " + D(byKit) + ", \"byClass\": " + D(byClass) + ", \"solidMetresByClass\": " + D(solidByClass)
+                + ", \"receptaclesByClass\": " + D(receptaclesByClass) + ", \"metresPerReceptacle\": " + D(per)
+                + ", \"ig\": " + ig + ", \"companions\": " + companions + ", \"offHeight\": " + offHeight + ", \"horizontal\": " + horizontal
+                + ", \"groundUp\": " + groundUp + ", \"noScrew\": " + noScrew + ", \"wallMatch\": " + wallMatch + ", \"aged\": " + aged
+                + ", \"backToBackMoved\": " + moved + ", \"backToBackDropped\": " + dropped + ", \"roomSideForced\": " + forced + ", \"keptOut\": " + keptOut + "}";
+        }
+    }
+
+    /// <summary>The title stream room (RoomStream: 11.5 x 12 m, side-wall faces at x = +-5.62, baseboard top 0.26):
+    /// PlanLocal per room rule over 20 slot sequences. Checks heights clear the baseboard and nothing lands in the door.</summary>
+    static string StreamSmoke(out bool pass)
+    {
+        var faces = new List<F.WallFace>();
+        for (var s = 0; s < 2; s++)
+        for (var k = 0; k < 4; k++)
+        {
+            var x = s == 0 ? -5.62f : 5.62f;
+            faces.Add(new F.WallFace { start = new Vector3(x, 0f, k * 3f), direction = Vector3.forward, length = 3f, normal = s == 0 ? Vector3.right : Vector3.left,
+                kind = EdgeKind.Wall, edgeId = s * 16 + k, side = 0, room = 0, theme = ZoneTheme.Level0, height = ZoneHeight.Standard, ceiling = 2.9f, baseTop = .26f });
+        }
+        // Far end wall (z = 12, facing -Z): 4.42 m each side of the 2.4 m double door.
+        faces.Add(new F.WallFace { start = new Vector3(-5.62f, 0f, 12f), direction = Vector3.right, length = 11.24f, normal = Vector3.back, kind = EdgeKind.Door,
+            openFrom = 4.42f, openTo = 6.82f, openTop = 2.62f, edgeId = 99, room = 0, baseTop = .26f, ceiling = 2.9f });
+        var parts = new List<string>();
+        pass = true;
+        var list = new List<F.Fixture>();
+        foreach (var cls in new[] { F.FixtureClass.StreamLobby, F.FixtureClass.StreamShift, F.FixtureClass.StreamOffice, F.FixtureClass.StreamRun, F.FixtureClass.StreamExit })
+        {
+            int count = 0, low = 0, onDoor = 0;
+            var minY = 9f;
+            for (var seq = 0; seq < 20; seq++)
+            {
+                F.PlanLocal(7919 * seq + 104729, faces, cls, list);
+                count += list.Count;
+                foreach (var x in list)
+                {
+                    minY = Mathf.Min(minY, x.position.y);
+                    if (x.position.y - F.PlateHalfH < .26f + F.BaseClear - 1e-3f) low++;
+                    if (faces[x.face].kind == EdgeKind.Door) onDoor++;
+                }
+            }
+            pass &= low == 0 && onDoor == 0;
+            parts.Add("\"" + cls + "\": {\"perRoom\": " + Fmt(count / 20f) + ", \"minCentreY\": " + Fmt(minY) + ", \"belowBaseClear\": " + low + ", \"onDoor\": " + onDoor + "}");
+        }
+        return "{" + string.Join(", ", parts) + "}";
+    }
+
+    static string Fmt(object v) => v is float f ? f.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) : v.ToString();
+    static void Inc<T>(Dictionary<string, T> d, string k, T v, Func<T, T, T> add) => d[k] = d.TryGetValue(k, out var o) ? add(o, v) : v;
+
+    static string RunSeed(int seedOverride, Totals total, out bool pass)
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var root = new GameObject("OUTLET PROBE") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        var used = profile;
+        if (seedOverride != 0)
+        {
+            used = UnityEngine.Object.Instantiate(profile);
+            used.generation.seed = seedOverride;
+        }
+        world.Profile = used;
+        OutletProbe.InstallMs = 0;
+        OutletProbe.CollectTicks = 0;
+        F.StatMoved = F.StatDropped = F.StatForced = F.StatCapped = F.StatKeptOut = 0;
+        world.BuildForCapture();
+        Physics.SyncTransforms();
+        var collectMs = OutletProbe.CollectTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        var installMs = OutletProbe.InstallMs;
+        total.moved += F.StatMoved; total.dropped += F.StatDropped; total.forced += F.StatForced; total.keptOut += F.StatKeptOut;
+
+        var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+        int chunks = sets.Length, faces = 0, expected = 0, faceMismatch = 0, kindMismatch = 0, arches = 0, archMismatch = 0, startAreaFaces = 0, foreign = 0;
+        int fixtures = 0, onShell = 0, bad = 0, ruleBad = 0, onDoorWindow = 0, b2b = 0, sameFace = 0, collidersUnderSets = 0, inStart = 0;
+        float worstArch = 0f, worstHit = 0f;
+        var samples = new List<string>();
+        var cs = MapGrid.CellSize;
+        foreach (var set in sets)
+        {
+            var origin = MapGrid.ChunkOrigin(set.coord);
+            var chunkRoot = set.transform;
+            // 1. Independent walk: both sides of every east/north edge of this chunk's cells, round the start area left out.
+            var expectedKeys = new Dictionary<(long, int), EdgeKind>();
+            for (var j = 0; j < MapGrid.ChunkCells; j++)
+            for (var i = 0; i < MapGrid.ChunkCells; i++)
+            {
+                var a = new GridCoord(origin.x + i, origin.y + j);
+                foreach (var b in new[] { new GridCoord(a.x + 1, a.y), new GridCoord(a.x, a.y + 1) })
+                {
+                    if (world.InStartArea(a) || world.InStartArea(b)) continue;
+                    var kind = world.Cache.Edge(a, b);
+                    if (kind == EdgeKind.Open) continue;
+                    var id = FrontRoomsMapWorld.WallEdgeId(a, b);
+                    expectedKeys[(id, 0)] = kind;
+                    expectedKeys[(id, 1)] = kind;
+                }
+            }
+            expected += expectedKeys.Count;
+            var seen = new HashSet<(long, int)>();
+            foreach (var f in set.faces)
+            {
+                if (f.foreign) foreign++;
+                if (world.InStartArea(f.cell)) startAreaFaces++;
+                if (!expectedKeys.TryGetValue((f.edgeId, f.side), out var k)) { faceMismatch++; continue; }
+                if (k != f.kind) kindMismatch++;
+                if (!seen.Add((f.edgeId, f.side))) faceMismatch++;
+                // The face's cell must be on the side it says.
+                var local = new Vector2(f.start.x, f.start.z) - new Vector2(f.normal.x, f.normal.z) * ModuleUnits.WallHalf;
+                var probe = local + new Vector2(f.normal.x, f.normal.z) * 1.5f + new Vector2(f.direction.x, f.direction.z) * 1.5f;
+                var c = new GridCoord(origin.x + Mathf.FloorToInt(probe.x / cs), origin.y + Mathf.FloorToInt(probe.y / cs));
+                if (c != f.cell) faceMismatch++;
+            }
+            faceMismatch += expectedKeys.Count - seen.Count;
+            faces += set.faces.Count;
+
+            // 2. Arch spans against the map's crossing point.
+            foreach (var f in set.faces)
+            {
+                if (f.kind != EdgeKind.Arch) continue;
+                arches++;
+                var behind = new GridCoord(f.cell.x - Mathf.RoundToInt(f.normal.x), f.cell.y - Mathf.RoundToInt(f.normal.z));
+                var centreLocal = f.start - f.normal * ModuleUnits.WallHalf + f.direction * ((f.openFrom + f.openTo) * .5f);
+                var err = Vector3.Distance(chunkRoot.TransformPoint(centreLocal), world.CrossingPoint(f.cell, behind));
+                worstArch = Mathf.Max(worstArch, err);
+                if (err > 1e-3f) archMismatch++;
+            }
+
+            // 3-4. Geometry and rules per fixture.
+            for (var xi = 0; xi < set.fixtures.Count; xi++)
+            {
+                var x = set.fixtures[xi];
+                fixtures++;
+                var p = chunkRoot.TransformPoint(x.position);
+                var floor = x.cls == F.FixtureClass.Floor;
+                var n = floor ? Vector3.up : chunkRoot.TransformDirection(x.normal);
+                var hits = Physics.RaycastAll(p + n * .30f, -n, .40f, ~0, QueryTriggerInteraction.Ignore);
+                var shell = hits.Where(h => world.IsArchitecture(h.collider)).OrderBy(h => h.distance).ToArray();
+                if (shell.Length == 0 || Mathf.Abs(shell[0].distance - .30f) > .002f)
+                {
+                    bad++;
+                    if (samples.Count < 10) samples.Add("geom " + x.kit + " " + x.cls + " d=" + (shell.Length > 0 ? shell[0].distance.ToString("0.000") : "none"));
+                }
+                else { onShell++; worstHit = Mathf.Max(worstHit, Mathf.Abs(shell[0].distance - .30f)); }
+                var cellOf = new GridCoord(origin.x + Mathf.FloorToInt((x.position.x + x.normal.x * .1f) / cs), origin.y + Mathf.FloorToInt((x.position.z + x.normal.z * .1f) / cs));
+                if (world.InStartArea(cellOf)) inStart++;
+                if (x.face < 0) continue;
+                var f = set.faces[x.face];
+                if (f.kind == EdgeKind.Door || f.kind == EdgeKind.Window) onDoorWindow++;
+                var u = Vector3.Dot(x.position - f.start, f.direction);
+                var r = u < F.EndMargin - 1e-3f || u > f.length - F.EndMargin + 1e-3f
+                        || (f.kind == EdgeKind.Arch && u > f.openFrom - F.ArchClear + 1e-3f && u < f.openTo + F.ArchClear - 1e-3f)
+                        || Mathf.Abs(u - x.along) > 1e-3f;
+                if (r) { ruleBad++; if (samples.Count < 10) samples.Add("rule u=" + u.ToString("0.000") + " " + f.kind); }
+                for (var yi = xi + 1; yi < set.fixtures.Count; yi++)
+                {
+                    var y = set.fixtures[yi];
+                    if (y.face < 0) continue;
+                    var g = set.faces[y.face];
+                    if (g.edgeId == f.edgeId && g.side != f.side && Mathf.Abs(y.along - x.along) < F.BackToBack - 1e-3f) b2b++;
+                    if (y.face == x.face && Mathf.Abs(y.position.y - x.position.y) < .3f && Mathf.Abs(y.along - x.along) < F.SameFaceGap - 1e-3f) sameFace++;
+                }
+            }
+            collidersUnderSets += set.GetComponents<Collider>().Length;
+
+            // 6. Counts.
+            total.maxPerChunk = Math.Max(total.maxPerChunk, set.fixtures.Count);
+            foreach (var f in set.faces)
+            {
+                if (f.kind != EdgeKind.Wall && f.kind != EdgeKind.Arch) continue;
+                var solid = f.kind == EdgeKind.Wall ? f.length : f.length - (f.openTo - f.openFrom);
+                Inc(total.solidByClass, F.Classify(f).ToString(), solid, (a, b) => a + b);
+            }
+            foreach (var x in set.fixtures)
+            {
+                Inc(total.byKit, x.kit.ToString(), 1, (a, b) => a + b);
+                Inc(total.byClass, x.cls.ToString(), 1, (a, b) => a + b);
+                var receptacle = x.face >= 0 && (x.flags & F.FixtureFlags.Companion) == 0 && x.kit != F.FixtureKit.Toggle1 && x.kit != F.FixtureKit.Toggle2;
+                if (receptacle) Inc(total.receptaclesByClass, x.cls.ToString(), 1, (a, b) => a + b);
+                if (x.device == F.Finish.Orange) total.ig++;
+                if ((x.flags & F.FixtureFlags.Companion) != 0) total.companions++;
+                if ((x.flags & F.FixtureFlags.OffHeight) != 0) total.offHeight++;
+                if ((x.flags & F.FixtureFlags.Horizontal) != 0) total.horizontal++;
+                if ((x.flags & F.FixtureFlags.GroundUp) != 0) total.groundUp++;
+                if ((x.flags & F.FixtureFlags.NoScrew) != 0) total.noScrew++;
+                if (x.plate == F.Finish.WallMatch) total.wallMatch++;
+                if (x.plate == F.Finish.IvoryAged) total.aged++;
+            }
+        }
+        total.chunks += chunks; total.faces += faces; total.foreignFaces += foreign; total.fixtures += fixtures;
+
+        // Optional dump of every chunk (plan-view figure for the spec).
+        var dump = Environment.GetEnvironmentVariable("OUTLET_PROBE_DUMP");
+        if (!string.IsNullOrEmpty(dump) && !File.Exists(dump))
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            string V(Vector3 v) => "[" + v.x.ToString("0.###", inv) + "," + v.z.ToString("0.###", inv) + "," + v.y.ToString("0.###", inv) + "]";
+            var d = new StringBuilder("{\"seed\": " + used.generation.seed + ", \"chunks\": [\n");
+            for (var si = 0; si < sets.Length; si++)
+            {
+                var set = sets[si];
+                var o = MapGrid.ChunkOrigin(set.coord);
+                var data = world.Cache.Get(set.coord);
+                d.Append("{\"coord\": [").Append(set.coord.x).Append(",").Append(set.coord.y).Append("], \"origin\": [").Append(o.x * cs).Append(",").Append(o.y * cs).Append("], \"rooms\": [");
+                d.Append(string.Join(",", data.rooms.Select(r => "[" + r.x + "," + r.y + "," + r.w + "," + r.h + "]"))).Append("], \"pillars\": [");
+                var pil = new List<string>();
+                for (var k = 0; k < data.pillar.Length; k++) if (data.pillar[k]) pil.Add("[" + (k % 9) + "," + (k / 9) + "," + ((data.pillarStyle[k] & 1) != 0 ? 1 : 0) + "]");
+                d.Append(string.Join(",", pil)).Append("], \"faces\": [");
+                d.Append(string.Join(",", set.faces.Select(f => "{\"s\":" + V(f.start) + ",\"d\":" + V(f.direction) + ",\"n\":" + V(f.normal) + ",\"L\":" + f.length.ToString(inv)
+                    + ",\"k\":\"" + f.kind + "\",\"o\":[" + f.openFrom.ToString("0.###", inv) + "," + f.openTo.ToString("0.###", inv) + "],\"side\":" + f.side + ",\"foreign\":" + (f.foreign ? "true" : "false")
+                    + ",\"room\":" + f.room + ",\"cls\":\"" + F.Classify(f) + "\",\"theme\":\"" + f.theme + "\"}")));
+                d.Append("], \"fixtures\": [");
+                d.Append(string.Join(",", set.fixtures.Select(x => "{\"p\":" + V(x.position) + ",\"n\":" + V(x.normal) + ",\"kit\":\"" + x.kit + "\",\"cls\":\"" + x.cls + "\",\"flags\":" + (int)x.flags
+                    + ",\"plate\":\"" + x.plate + "\",\"device\":\"" + x.device + "\",\"face\":" + x.face + "}")));
+                d.Append("]}").Append(si < sets.Length - 1 ? ",\n" : "\n");
+            }
+            d.Append("]}\n");
+            File.WriteAllText(dump, d.ToString());
+        }
+
+        // 5a. Rebuild: identical faces and plans on three chunks; the registry stays right.
+        int rebuilt = 0, rebuildDiffs = 0;
+        var registryBefore = FrontRoomsWallFixtureSet.Registry.Count;
+        foreach (var set in sets.Skip(6).Take(3).ToArray())
+        {
+            var coord = set.coord;
+            var beforeFaces = Sig(set.faces);
+            var beforeFix = Sig(set.fixtures, null, set.faces);
+            world.RebuildChunk(coord);
+            var again = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).FirstOrDefault(s => s.coord == coord && s != set);
+            rebuilt++;
+            if (again == null || Sig(again.faces) != beforeFaces || Sig(again.fixtures, null, again.faces) != beforeFix) rebuildDiffs++;
+        }
+        var registryAfter = FrontRoomsWallFixtureSet.Registry.Count;
+
+        // 5b. Revisit shift: the chunk's foreign (border) faces keep every fixture; the inside may change.
+        int shifted = 0, foreignDiffs = 0, foreignFixturesCompared = 0, insideChanged = 0, insideBefore = 0;
+        foreach (var set in root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).Where(s => s.isActiveAndEnabled).Skip(10).Take(4).ToArray())
+        {
+            var coord = set.coord;
+            var beforeForeign = Sig(set.fixtures, f => f.foreign, set.faces);
+            var beforeInside = Sig(set.fixtures, f => !f.foreign, set.faces);
+            foreignFixturesCompared += set.fixtures.Count(x => x.face >= 0 && set.faces[x.face].foreign);
+            insideBefore++;
+            world.Cache.Shift(coord);
+            world.RebuildChunk(coord);
+            var again = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).FirstOrDefault(s => s.coord == coord && s.isActiveAndEnabled && s != set);
+            shifted++;
+            if (again == null) { foreignDiffs++; continue; }
+            // Faces on foreign cells come from seed-pure border edges: same faces, same fixtures.
+            if (Sig(again.fixtures, f => f.foreign, again.faces) != beforeForeign) foreignDiffs++;
+            if (Sig(again.fixtures, f => !f.foreign, again.faces) != beforeInside) insideChanged++;
+        }
+        world.Release();
+        UnityEngine.Object.DestroyImmediate(root);
+        var registryEnd = FrontRoomsWallFixtureSet.Registry.Count;
+
+        pass = faceMismatch == 0 && kindMismatch == 0 && archMismatch == 0 && bad == 0 && ruleBad == 0 && onDoorWindow == 0 && b2b == 0 && sameFace == 0
+               && rebuildDiffs == 0 && foreignDiffs == 0 && collidersUnderSets == 0 && registryAfter == registryBefore && registryEnd == 0
+               && startAreaFaces == 0 && inStart == 0;
+        var r2 = new StringBuilder();
+        r2.Append("  {\"seed\": ").Append(used.generation.seed).Append(", \"chunks\": ").Append(chunks)
+          .Append(", \"faces\": ").Append(faces).Append(", \"expectedFaces\": ").Append(expected).Append(", \"faceMismatches\": ").Append(faceMismatch)
+          .Append(", \"kindMismatches\": ").Append(kindMismatch).Append(", \"foreignFaces\": ").Append(foreign).Append(", \"startAreaFaces\": ").Append(startAreaFaces)
+          .Append(", \"arches\": ").Append(arches).Append(", \"archMismatches\": ").Append(archMismatch).Append(", \"worstArchErrM\": ").Append(worstArch.ToString("0.000000"))
+          .Append(", \"fixtures\": ").Append(fixtures).Append(", \"onShell\": ").Append(onShell).Append(", \"geometryBad\": ").Append(bad)
+          .Append(", \"worstHitErrM\": ").Append(worstHit.ToString("0.0000")).Append(", \"ruleBad\": ").Append(ruleBad)
+          .Append(", \"onDoorOrWindow\": ").Append(onDoorWindow).Append(", \"backToBackUnder0_61\": ").Append(b2b).Append(", \"sameFaceUnder0_30\": ").Append(sameFace)
+          .Append(", \"inStartArea\": ").Append(inStart)
+          .Append(", \"rebuilt\": ").Append(rebuilt).Append(", \"rebuildDiffs\": ").Append(rebuildDiffs)
+          .Append(", \"shifted\": ").Append(shifted).Append(", \"foreignFixturesCompared\": ").Append(foreignFixturesCompared).Append(", \"foreignDiffsAfterShift\": ").Append(foreignDiffs)
+          .Append(", \"insideChangedAfterShift\": ").Append(insideChanged).Append("/").Append(insideBefore)
+          .Append(", \"registryBefore\": ").Append(registryBefore).Append(", \"registryAfterRebuild\": ").Append(registryAfter).Append(", \"registryAfterDestroy\": ").Append(registryEnd)
+          .Append(", \"collidersUnderSets\": ").Append(collidersUnderSets)
+          .Append(", \"collectMsPerChunk\": ").Append((collectMs / Math.Max(1, chunks)).ToString("0.000"))
+          .Append(", \"installMsPerChunk\": ").Append((installMs / Math.Max(1, chunks)).ToString("0.000"))
+          .Append(", \"samples\": [").Append(string.Join(", ", samples.Select(s => "\"" + s + "\""))).Append("]")
+          .Append(", \"pass\": ").Append(pass ? "true" : "false").Append("}");
+        return r2.ToString();
+    }
+
+    static string Sig(List<F.WallFace> faces)
+    {
+        var sb = new StringBuilder();
+        foreach (var f in faces)
+            sb.Append(f.edgeId).Append(f.side).Append((int)f.kind).Append(f.start.ToString("F4")).Append(f.openFrom.ToString("F4")).Append(f.openTo.ToString("F4"))
+              .Append(f.room).Append(f.foreign).Append(f.zoneBorder).Append('|');
+        return sb.ToString();
+    }
+
+    static string Sig(List<F.Fixture> list, Func<F.WallFace, bool> where, List<F.WallFace> faces)
+    {
+        var rows = new List<string>();
+        foreach (var x in list)
+        {
+            if (where != null && (x.face < 0 || !where(faces[x.face]))) continue;
+            var key = x.face >= 0 ? faces[x.face].edgeId + ":" + faces[x.face].side : "-";
+            rows.Add(key + " " + x.kit + x.position.ToString("F5") + x.roll.ToString("F3") + x.tilt.ToString("F3") + x.plate + x.device + (int)x.flags);
+        }
+        if (where != null) rows.Sort(StringComparer.Ordinal);
+        return string.Join("|", rows);
+    }
+}

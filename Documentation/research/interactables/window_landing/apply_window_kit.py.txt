@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Apply the [WINDOW-KIT] blocks to a FrontRoomsMapWorld.cs (clone only). Anchored on content, so it survives line drift.
+usage: apply_window_kit.py <FrontRoomsMapWorld.cs>   (refuses a file that already has the blocks)"""
+import sys
+
+p = sys.argv[1]
+s = open(p).read()
+if "[WINDOW-KIT" in s:
+    sys.exit("already patched")
+
+
+def once(old, new):
+    global s
+    n = s.count(old)
+    if n != 1:
+        sys.exit("anchor found %d times: %r" % (n, old[:90]))
+    s = s.replace(old, new)
+
+
+# 1) Window: two render-only hooks.
+head = "    public sealed class Window\n    {\n"
+i = s.index(head)
+j = s.index("\n    }\n", i)
+s = s[:j] + """
+        // [WINDOW-KIT BEGIN] interactables/10_spec.md §5.4, §6.5 item 7. Render-only hooks, null without the window kit:
+        // root = the unscaled "Window {a}-{b}" (opening centre, wall line, floor, +Z into b) that holds the frame and
+        // outlives the pane (GD3's FrontRoomsGlassBreakable goes here); glass = the visible slab under the pane
+        // (crack hooks, ImpactUV, FrontRoomsMetalGlassTarget).
+        public Transform root;
+        public Renderer glass;
+        // [WINDOW-KIT END]""" + s[j:]
+
+# 2) The facade's two methods, resolved like the Office kit.
+once("""    static MethodInfo officeDress, officeDressOld, pileBuild;
+""", """    static MethodInfo officeDress, officeDressOld, pileBuild;
+    // [WINDOW-KIT BEGIN] the visual session's window kit (FrontRoomsInteractableKit.DressWindow / DressPane), when present.
+    static MethodInfo windowDress, paneDress;
+    static bool WindowKit { get { ResolveDressers(); return windowDress != null && paneDress != null; } }
+    // [WINDOW-KIT END]
+""")
+
+once("""            var pile = assembly.GetType("FrontRoomsFurniturePile");
+            if (pile != null && pileBuild == null)
+                pileBuild = pile.GetMethod("Build", BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Transform), typeof(Vector3), typeof(float), typeof(float), typeof(int) }, null);
+""", """            var pile = assembly.GetType("FrontRoomsFurniturePile");
+            if (pile != null && pileBuild == null)
+                pileBuild = pile.GetMethod("Build", BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Transform), typeof(Vector3), typeof(float), typeof(float), typeof(int) }, null);
+            // [WINDOW-KIT BEGIN] both calls or neither: without them windows build exactly as before (trims, visible pane cube).
+            var interactables = assembly.GetType("FrontRoomsInteractableKit");
+            if (interactables != null && windowDress == null)
+            {
+                windowDress = interactables.GetMethod("DressWindow", BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Transform), typeof(ZoneTheme), typeof(bool) }, null);
+                paneDress = interactables.GetMethod("DressPane", BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(GameObject), typeof(Material) }, null);
+            }
+            // [WINDOW-KIT END]
+""")
+
+# 3) No map trims on a kit window (doors keep theirs).
+once("""        if (kind == EdgeKind.Arch) return;
+
+        // Frame: two jambs and a head in the trim colour.
+        var trims = get(blockIndex, trim);
+        var frame = ModuleUnits.TrimFace;
+        var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;
+        foreach (var s in new[] { -1f, 1f })
+        {
+            var jc = start + along * (c + s * (width * .5f + frame * .5f)) + Vector3.up * ((sill + openingTop) * .5f);
+            trims.Box(jc, Abs(along * frame + across * jambDepth + Vector3.up * (openingTop - sill)), origin, 1f);
+        }
+        trims.Box(start + along * c + Vector3.up * (openingTop + frame * .5f), Abs(along * (width + frame * 2f) + across * jambDepth + Vector3.up * frame), origin, 1f);
+""", """        if (kind == EdgeKind.Arch) return;
+
+        // [WINDOW-KIT BEGIN] A window the kit dresses takes its frame from the kit (render-only casing, linings and the
+        // 16 mm stop band), so the map's jamb and head trims are left out of the block mesh for that window only.
+        // Doors (and arches, which have none) keep exactly the trims below.
+        var kitWindow = kind == EdgeKind.Window && WindowKit;
+        if (!kitWindow)
+        {
+        // [WINDOW-KIT END]
+        // Frame: two jambs and a head in the trim colour.
+        var trims = get(blockIndex, trim);
+        var frame = ModuleUnits.TrimFace;
+        var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;
+        foreach (var s in new[] { -1f, 1f })
+        {
+            var jc = start + along * (c + s * (width * .5f + frame * .5f)) + Vector3.up * ((sill + openingTop) * .5f);
+            trims.Box(jc, Abs(along * frame + across * jambDepth + Vector3.up * (openingTop - sill)), origin, 1f);
+        }
+        trims.Box(start + along * c + Vector3.up * (openingTop + frame * .5f), Abs(along * (width + frame * 2f) + across * jambDepth + Vector3.up * frame), origin, 1f);
+        // [WINDOW-KIT BEGIN]
+        }
+        // [WINDOW-KIT END]
+""")
+
+# 4) Root + frame before the broken-window return; slab on the pane; hooks on the Window.
+once("""        else
+        {
+            if (brokenWindows.Contains(edge)) return;
+            var pane = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pane.name = "Window pane " + a + "-" + b;
+            pane.transform.SetParent(chunk.root.transform, false);
+            pane.transform.localPosition = start + along * c + Vector3.up * ((sill + openingTop) * .5f);
+            pane.transform.localScale = Abs(along * width + across * ModuleUnits.GlassThickness + Vector3.up * (openingTop - sill));
+            pane.GetComponent<Renderer>().sharedMaterial = glass;
+            pane.AddComponent<FrontRoomsMetalGlassTarget>();
+            var window = new Window { pane = pane, edge = edge, position = openingCenter };
+""", """        else
+        {
+            // [WINDOW-KIT BEGIN] The window root and its frame, built before the broken-window return so a broken
+            // window keeps its frame and stops across rebuilds. The frame member follows the room side (the non-tall
+            // cell: a window always joins a Tall hall to a Low/Standard room): Level 0 -> wood W-L0, Office -> steel
+            // W-OF; its face A (kit +Z) looks into that room. Render-only: no collider, no light.
+            Transform windowRoot = null;
+            if (kitWindow)
+            {
+                windowRoot = new GameObject("Window " + a + "-" + b).transform;
+                windowRoot.SetParent(chunk.root.transform, false);
+                windowRoot.localPosition = start + along * c;
+                windowRoot.localRotation = Quaternion.LookRotation(across, Vector3.up);
+                var roomIsB = Cache.ZoneOf(a).height == ZoneHeight.Tall;
+                windowDress.Invoke(null, new object[] { windowRoot, Cache.ZoneOf(roomIsB ? b : a).theme, roomIsB });
+            }
+            // [WINDOW-KIT END]
+            if (brokenWindows.Contains(edge)) return;
+            var pane = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pane.name = "Window pane " + a + "-" + b;
+            pane.transform.SetParent(chunk.root.transform, false);
+            pane.transform.localPosition = start + along * c + Vector3.up * ((sill + openingTop) * .5f);
+            pane.transform.localScale = Abs(along * width + across * ModuleUnits.GlassThickness + Vector3.up * (openingTop - sill));
+            pane.GetComponent<Renderer>().sharedMaterial = glass;
+            // [WINDOW-KIT BEGIN] The pane cube keeps its name, collider and scale (gameplay); with the kit its renderer is
+            // disabled and the visible 6 mm slab (1.391 x 1.642, edges 12 mm behind the stops, Glass_Window) hangs from it,
+            // so Kill(pane) on break takes the glass too. The RT target moves to the slab: the RT path only registers
+            // enabled renderers.
+            var visibleGlass = kitWindow ? paneDress.Invoke(null, new object[] { pane, glass }) as Renderer : null;
+            if (visibleGlass == null) pane.AddComponent<FrontRoomsMetalGlassTarget>();
+            // [WINDOW-KIT END]
+            var window = new Window { pane = pane, edge = edge, position = openingCenter };
+            // [WINDOW-KIT BEGIN]
+            window.root = windowRoot;
+            window.glass = visibleGlass != null ? visibleGlass : pane.GetComponent<Renderer>();
+            // [WINDOW-KIT END]
+""")
+
+open(p, "w").write(s)
+print("patched", p)

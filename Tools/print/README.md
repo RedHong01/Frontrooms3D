@@ -39,6 +39,24 @@ Use a Python with numpy and Pillow; on this Mac that is `/usr/bin/python3`.
 
 **Keyframe order matters**: the order is the story. The driver blends only to the adjacent slice (K07 blends back to K00). Jumping to a non-adjacent slice is a hard cut, and it is only allowed while the change is masked (unseen, or during a lamp dropout).
 
+## Game textures: encoded 2048² slices (Red, 2026-10-03)
+
+This is the path the game uses. It supersedes the 1024×1536 sheet below.
+
+```bash
+/usr/bin/python3 Tools/print/print_tool.py build-print hard_edge --size 2048x2048
+```
+
+The command does the following:
+1. Renders the vector pattern at 2048×2048, one 0.75 × 1.125 m roll tile, 4× supersampled.
+2. Builds the 8 keyframes from the RAW density and cream values.
+3. Encodes each slice through the visual chat's `Tools/lookdev/print_encode_lut.json`: a bilinear lookup over [density][cream], done at the slice's own resolution. The encoding is binding for P0 parity.
+4. Writes `patterns/out/hard_edge/encoded/K00..K07.png`. These are linear RGBA, with R/G encoded, B = 0, A = 1, and no mips.
+
+After that, the visual chat's editor menu "FrontRooms/Rendering/Build Print Array" takes over. It builds `Assets/Resources/Print/FR_Print_HardEdge.asset` with the custom `FrontRoomsPrintMips`, and writes slice 0 as `_PrintTex`. The output is BC5, or R8G8 if BC5 fails its T1a/T2 check.
+
+`print_report.json` records the LUT sha1, a LUT node self-test (error 0), and per-slice means and seams. `raw/` holds the pre-encode frames.
+
 ## Chosen pattern: Hard edge (Red, 2026-10-03)
 
 Red picked the precise vector redesign **Hard edge** (Figma section 2407:852, frame WP03 2407:884, master component 2407:2209). Its generator `patterns/hard_edge.py` writes both the SVG and `patterns/out/hard_edge/K00.png`, the static frame 0 the visual chat imports as `_PrintTex`.
@@ -97,6 +115,30 @@ Do this only after the visual chat promotes P0 and Red agrees, while no other ch
 1. Copy `unity_staging/Assets/Scripts/Rendering/FrontRoomsPrintDriver.cs` and `unity_staging/Assets/Editor/Print/` into `Assets/`.
 2. Create `Assets/Resources/Print/`. Copy `out/FR_Print_HardEdge.print.json` first, then the `.png`, so the importer finds the sidecar on the first import.
 3. In Play mode, check that the `FrontRooms Print` object appears and the walls show frame 0, then a blend about every minute.
+
+## Glow-ink typography v2 (平面视觉, 2026-10-03)
+
+The ink typography is owned by 平面视觉; the strings are owned by the narrative chat. The v2 spec is `ink/egress_v2_typo.json`, rendered to `ink/out_v2/`:
+
+```bash
+/usr/bin/python3 Tools/print/ink_tool.py build Tools/print/ink/egress_v2_typo.json Tools/print/ink/out_v2
+```
+
+**Type rules:**
+- Heros Bold, 22 mm cap, with +1.0 mm tracking between characters.
+- Cap/em is measured from the font itself (0.729).
+- GPOS pair kerning comes from `otkern.py`, because this Pillow has no raqm.
+- Widths match 平面视觉's measurements to within 0.2 mm.
+
+**Layout:**
+- Slots of 750/n mm, each phrase flush at its slot origin, with no separators between phrases.
+- Some layers use two-line blocks.
+- Rows brick-offset by half a slot.
+- NO / EXIT at 32 / 16 mm.
+
+**Stamp:** an architect's title block at (90, 536) mm, with registers at the roll edges.
+
+**Layers 8 and 9** switch to 平面视觉's artwork when it arrives. Use `{"orient": "image", "path": ...}` with a 4096 px PNG.
 
 ## Glow-ink textures (spec v1.2, 2026-10-03; queued as Q2 in Documentation/VISUAL_CHAT_TASKS.md)
 

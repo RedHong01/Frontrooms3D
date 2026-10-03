@@ -49,6 +49,27 @@ None of the original period faces can ship. They are either commercial (ITC, Lin
 | Gill Sans Bold type (Home pull quotes ≈18/22 with ■■■■■ end mark) | Monotype; Office copy local only | `Cabin/Cabin-Bold`, `-SemiBold`, `-CondensedBold` | Humanist stand-in, not a clone |
 | Clarendon / slab (Interiors masthead, Waterbed City and Gallery Furniture TV) | commercial | `ZillaSlab/ZillaSlab-*` | Masthead caps tracked +200 to +400 |
 
+## Body copy (measured 2026-10-03; see the FINDINGS section "Body copy, measured")
+These rows replace the guessed body settings. Sizes are the printed point sizes; scale them to the texture or world unit, and keep the ratios.
+
+| Period face (where we saw it) | Original status | Use in the game | Settings / note |
+|---|---|---|---|
+| Helvetica Condensed (Sears catalogue copy, 1993) | Linotype | **Roboto Condensed** Regular, Bold (static cuts pending download). `TeXGyre/texgyreheroscn-*` is the closer clone if the Figma match doesn't matter | 8/9, tracking 0, justified, about 1 line in 9 hyphenated, 14p0 columns with 1p2 gutters. Bold only for the key letter, the item name, the catalogue number and the prices. Key letter + em space + run-in name. Items 6 pt apart. Notes 7/8 |
+| Italic old-style price figures, italic aside (Sears display price and headline) | ITC Garamond Light Italic type | **Cormorant Garamond Light Italic** (pending) | Old-style figures by default. Price ≈28 pt, raised $ and cents ≈13 pt, top-aligned. Headline aside 22 pt next to Archivo Black 20 pt |
+| Helvetica Oblique (Sears price labels) | Linotype | `Archivo/Archivo-Italic` | 8/8, two lines beside the price |
+| Cochin (Met Home body copy 1989–92) | Linotype; macOS only | **Cormorant Garamond Bold** for text, **Cormorant SC Bold** for the lead-in, **Cormorant Infant Bold** for the digits (lining) (all pending) | 9½/13, tracking +50 (Cochin is wider), ragged right, about 1 line in 4 hyphenated, 9p9½ columns with 1p5 gutters. No Th ligature: Cochin has none, and TMP doesn't apply ligatures anyway. Prices in parentheses without cents |
+| Trade Gothic Bold Condensed No. 20 / Condensed No. 18 (Met Home keywords and decks) | Linotype | `Oswald/` Medium for keywords, Light for decks | Keywords at body size with x-height 1.3× the serif's (8.2 pt Oswald beside 9½ pt Cormorant), no tracking. Decks +3 to +4 %, staggered |
+| Gill Sans SemiBold (Met Home editor's page) | Monotype; macOS/Office | `Cabin/Cabin-SemiBold` | ≈11/16, +50, justified, 2 columns |
+| Bodoni price lockup (Met Home "$278,311.00 / RICH AND FAMOUS") | Bauer/ITC Bodoni type | `BodoniModa/` Regular + `Oswald/` Medium caps on a reversed tab | Cents raised at about 42 % of the figure size. The tab's caps are spaced +34 % |
+
+**Static cuts still to add** (Google Fonts static TTFs, OFL; download pending Red's approval):
+- Roboto Condensed Regular, Bold and Italic;
+- Cormorant Garamond Light Italic and Bold;
+- Cormorant SC Bold;
+- Cormorant Infant Bold.
+
+The Mac has Roboto Condensed and Cormorant Garamond only as variable fonts, and Unity would import those at their default instance.
+
 ## Using them in Unity
 - **Legacy Text / TextMesh:** assign the imported Font.
 - **TextMeshPro:**

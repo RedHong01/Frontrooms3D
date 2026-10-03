@@ -531,6 +531,7 @@ EGRESS gives the difference a reason: life-safety guidance must never be mistake
 3. **Strings:** A.11 freezes every string, including the M9 scratch lines. Change any before the print chat renders?
 
 ## 8. Not done / limits
+- **Concept renders, 2026-10-03:** Figma GN07–GN09 in the same section. These are offline Blender renders, not the game shader; stills use type v2 and 平面视觉's layer 8. Files and ledger are in `Research/week02/phosphor-narrative/renders/` and `SOURCES.md`.
 - **Research page built 2026-10-03:** Figma section "FRONTROOMS · GLOW INK · NARRATIVE RESEARCH" (2471:3804) on page 2099:76, frames GN01–GN06. Media and ledger are in `Research/week02/phosphor-narrative/` (`SOURCES.md`).
 - **Unverified:**
   - the Haunted Mansion's original portrait mechanism;

@@ -18,6 +18,8 @@ rig's handing mirror.
 AUTHORED THROWN (the locked door's rest state): the end face is at Z +0.025.
 Motion: slide along part -Z by 0.025 to retract (end face flush with the
 front at 0); it stays retracted once DoorUnlocked fires.
+INTERFACE NOTE for G1 (the armor front): the deadbolt opening must clear
+X -0.0070 .. +0.0070, Y 0.9835 .. 1.0165 (door root).
 Anchors: bolt_axis (0, 0, 0); end_face (0, 0, 0.025); throw_dir (0, 0, 0.10).
 Budget (§9.2): LOD0 400 (asserted +-15 %), LOD1 150, LOD2 30; LOD distances
 1.0 / 3 / 8 m; no LOD1 export (part < 1 m). The insert dots are
@@ -68,6 +70,7 @@ def build(kit):
     lc.common_meta(kit, {"type": "slide", "axis": [0, 0, -1], "travel": THROW, "rest": "thrown",
                          "note": "authored thrown; slide -Z 0.025 to retract (0.08 s at the 0.86 commit)"},
                    LOD_DISTANCES, LOD1_RATIO, LOD2_RATIO, (BUDGET, 150, 30))
+    kit.meta["frontOpening"] = {"x": [-0.0070, 0.0070], "yHalf": 0.0165}
     kit.tag("deadbolt", "lock_moving", "bolt")
     assert abs(THROW - 0.025) < 1e-9 and abs(THROW - BACK - 0.045) < 1e-9
     lc.check(kit, BUDGET, (-BX / 2, -BY / 2, BACK), (BX / 2, BY / 2, THROW + 0.0001), tol=0.00005)

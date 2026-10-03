@@ -5,8 +5,8 @@ Real-world reference: the moulded plastic key identification tag sold in
 hardware stores since the 1960s (02 §8.2): a coloured body with a ring tab,
 a recessed label window and a typed paper insert held under a retaining lip.
 Body 0.057 x 0.029 x 0.0042 (Unity X x Y x Z, the hung orientation of §9.3),
-R 0.005 corners, 0.6 mm rounded edges; ring tab R 0.0055 round the Ø 0.005
-hole with 1.5 mm fillets; window 0.040 x 0.019 (R 1.5 mm corners), 0.8 mm
+R 0.005 corners, 0.6 mm rounded edges; a moulded ring tab, 2.4 mm thick (R
+0.0055 round the Ø 0.005 hole), so the tag can turn ~30 deg on the ring; window 0.040 x 0.019 (R 1.5 mm corners), 0.8 mm
 deep, 0.3 mm lip with a 0.6 mm undercut; the insert is one quad under it.
 
 Origin = THE RING HOLE (its swing pivot), hangs along -Y, front +Z, mid-plane
@@ -46,4 +46,5 @@ def build(kit):
     assert abs((hi[0] - lo[0]) - W) < 1e-4, ("width", lo, hi)
     assert abs(lo[1] - (Y_TOP - H)) < 1e-4 and abs(hi[1] - kc.TAB_R) < 1e-4, ("height", lo, hi)
     assert abs((hi[2] - lo[2]) - kc.TAG_T) < 1e-5, ("thickness", lo, hi)
+    assert abs(hi[1] - kc.TAB_R) < 1e-4, ("tab top", lo, hi)
     kc.check_budget(kit, BUDGET[0])

@@ -745,6 +745,9 @@ namespace FrontRooms.Map
         // Modules placed by hand (the Level Designer preview), per chunk.
         readonly Dictionary<GridCoord, List<(RoomModuleData module, int x, int y)>> placements = new Dictionary<GridCoord, List<(RoomModuleData, int, int)>>();
 
+        /// <summary>A chunk the cache already holds, without generating one.</summary>
+        public bool TryGetGenerated(GridCoord coord, out MapChunk chunk) => chunks.TryGetValue(coord, out chunk);
+
         public MapChunk Get(GridCoord coord)
         {
             if (chunks.TryGetValue(coord, out var chunk)) return chunk;

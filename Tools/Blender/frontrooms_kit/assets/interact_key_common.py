@@ -723,81 +723,31 @@ def disc_uv(kit, centre_U, radius, rect, slot, segs=32, name="disc"):
 TAG_T = 0.0042
 TAG_HOLE_D = 0.005
 TAB_R = 0.0055
-TAB_FILLET = 0.0015
+TAB_T = 0.0024                       # moulded ring tab, thinner than the body
+TAB_ROOT = 0.003                     # the tab roots 3 mm into the body
 TAG_EDGE = 0.0006
 WINDOW_DEPTH = 0.0008
 WINDOW_LIP = (0.0003, 0.0006)        # lip thickness, undercut
 INSERT_DEPTH = 0.00075               # insert face below the tag face
 
 
-def _fillet_line(R_t, y_line, rf):
-    """Right-hand fillet between the tab circle (origin, R_t) and the body top
-    line y = y_line (body below). Returns centre, tab tangent, line tangent."""
-    fy = y_line + rf
-    fx = math.sqrt((R_t + rf) ** 2 - fy ** 2)
-    k = R_t / (R_t + rf)
-    return (fx, fy), (fx * k, fy * k), (fx, y_line)
-
-
-def _fillet_circle(R_t, B, R_b, rf):
-    """Right-hand fillet between the tab circle and a body circle (centre B)."""
-    d1, d2 = R_t + rf, R_b + rf
-    by = B[1]
-    y = (d2 ** 2 - d1 ** 2 - by ** 2) / (-2 * by)
-    x = math.sqrt(d1 ** 2 - y ** 2)
-    k1 = R_t / d1
-    t_tab = (x * k1, y * k1)
-    k2 = R_b / d2
-    t_body = (B[0] + (x - B[0]) * k2, by + (y - by) * k2)
-    return (x, y), t_tab, t_body
-
-
-def _ang(c, p):
-    return math.degrees(math.atan2(p[1] - c[1], p[0] - c[0]))
-
-
-def tag_outline(body, tab_r=TAB_R, rf=TAB_FILLET, seg=6, tab_segs=14, fillet_segs=3, body_segs=26):
-    """Tag outline (Unity X, Y; hole at the origin; body hangs below), CCW.
-    body = ("rect", W, H, R, y_top) or ("round", D, y_top)."""
-    pts = []
-    if body[0] == "rect":
-        _, W, H, R, y_top = body
-        F, t_tab, t_line = _fillet_line(tab_r, y_top, rf)
-        Fl, t_tab_l, t_line_l = (-F[0], F[1]), (-t_tab[0], t_tab[1]), (-t_line[0], t_line[1])
-        y_bot = y_top - H
-        # start at the right fillet's line tangent, CCW: fillet (cw), tab arc, left fillet (cw), around the body
-        a0 = -90.0
-        a1 = _ang(F, t_tab) - 360.0
-        pts += arc(F[0], F[1], rf, a0, a1, fillet_segs)
-        pts += arc(0.0, 0.0, tab_r, _ang((0, 0), t_tab), 180.0 - _ang((0, 0), t_tab), tab_segs)
-        pts += arc(Fl[0], Fl[1], rf, _ang(Fl, t_tab_l), -90.0, fillet_segs)
-        hw = W / 2
-        for (cx, cy, s) in ((-hw + R, y_top - R, 90), (-hw + R, y_bot + R, 180), (hw - R, y_bot + R, 270), (hw - R, y_top - R, 0)):
-            pts += arc(cx, cy, R, s, s + 90, seg)
-    else:
-        _, D, y_top = body
-        R_b = D / 2
-        B = (0.0, y_top - R_b)
-        F, t_tab, t_body = _fillet_circle(tab_r, B, R_b, rf)
-        Fl, t_tab_l, t_body_l = (-F[0], F[1]), (-t_tab[0], t_tab[1]), (-t_body[0], t_body[1])
-        a_body_r = _ang(B, t_body)
-        a_body_l = _ang(B, t_body_l)
-        pts += arc(B[0], B[1], R_b, a_body_l, a_body_r + 360.0, body_segs)
-        pts += arc(F[0], F[1], rf, _ang(F, t_body), _ang(F, t_tab) - 360.0, fillet_segs)
-        pts += arc(0.0, 0.0, tab_r, _ang((0, 0), t_tab), 180.0 - _ang((0, 0), t_tab), tab_segs)
-        pts += arc(Fl[0], Fl[1], rf, _ang(Fl, t_tab_l), _ang(Fl, t_body_l), fillet_segs)
-    return dedupe(pts)
-
-
-def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_segs=16, window_segs=24):
+def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_segs=16, window_segs=24, body_segs=40):
     """Plastic key tag with a paper insert (era note R10). Unity part frame:
     origin = ring-hole centre (the swing pivot), hangs along -Y, front +Z,
-    mid-plane Z = 0. window = ("rect", w, h, r, centre_y) or ("round", d,
-    centre_y): the visible opening. crop = (crop_w, crop_h) of an atlas cell."""
+    mid-plane Z = 0. body = ("rect", W, H, R, y_top) or ("round", D, y_top).
+    window = ("rect", w, h, r, centre_y) or ("round", d, centre_y): the
+    visible opening. crop = (crop_w, crop_h) of an atlas cell.
+    The ring tab is moulded thinner than the body (TAB_T 2.4 mm against 4.2):
+    that is what lets a tag turn about 30 deg on a 1.6 x 1.8 mm split-ring wire
+    and hang face-on to the room (measured in the G3 hung-pose check)."""
     register_slots()
-    outline = tag_outline(body, seg=seg)
     to3 = lambda u, v, w: U(u, v, w)
-    hole = circle(0.0, 0.0, TAG_HOLE_D / 2, hole_segs)
+    if body[0] == "rect":
+        _, W, H, R, y_top = body
+        outline = rounded_rect(W, H, R, seg, 0.0, y_top - H / 2)
+    else:
+        _, D, y_top = body
+        outline = circle(0.0, y_top - D / 2, D / 2, body_segs, start=math.pi / 2)
     if window[0] == "rect":
         _, ww, wh, wr, wy = window
         wpoly = rounded_rect(ww, wh, wr, 3, 0.0, wy)
@@ -805,9 +755,13 @@ def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_
         _, wd, wy = window
         wpoly = circle(0.0, wy, wd / 2, window_segs)
     body_obj = slab(kit, outline, TAG_T, body_slot, to3, round_r=TAG_EDGE, round_segs=2,
-                    holes=[{"poly": hole, "chamfer": 0.0003}],
                     pockets=[{"poly": wpoly, "depth": WINDOW_DEPTH, "chamfer": 0.00012, "lip": WINDOW_LIP}],
                     name="tag body")
+    # Ring tab: a 2.4 mm stadium round the hole, rooted 3 mm into the body.
+    tab = [(TAB_R, y_top - TAB_ROOT)] + arc(0.0, 0.0, TAB_R, 0.0, 180.0, 14) + [(-TAB_R, y_top - TAB_ROOT)]
+    hole = circle(0.0, 0.0, TAG_HOLE_D / 2, hole_segs)
+    tab_obj = slab(kit, tab, TAB_T, body_slot, to3, round_r=0.0005, round_segs=2,
+                   holes=[{"poly": hole, "chamfer": 0.0003}], name="tag tab")
     # Insert: reaches under the lip (hidden), visible window on the crop.
     under = WINDOW_LIP[1]
     zi = TAG_T / 2 - INSERT_DEPTH
@@ -827,6 +781,7 @@ def build_tag(kit, body, window, crop, body_slot="Prop_PlasticRed", seg=5, hole_
         Y = p.z
         return (1.0, 0.92 if Y < -0.02 else 1.0, 1.0, 1.0)
     paint_wear(body_obj, grime)
+    paint_wear(tab_obj)
     paint_wear(ins)
     kit.anchor("hole", U(0, 0, 0))
     kit.anchor("hole_dir", U(0, 0, 0.10))

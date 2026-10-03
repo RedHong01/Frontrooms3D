@@ -45,6 +45,12 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     public static event Action<bool> Paused;
     /// <summary>The run's difficulty tier: 1 when a run starts, then each rise (level profile Tiers: every 4 new zones, or 2 minutes without one).</summary>
     public static event Action<int> TierChanged;
+    /// <summary>The player's stamina, 0..1 (5 s of sprint), for the sound layer's breath and run gait: read it, don't mirror the rule.</summary>
+    public static float PlayerStamina01 { get; private set; } = 1f;
+    /// <summary>Run dry and not yet one segment (1 s) back: no sprint until then.</summary>
+    public static bool PlayerWinded { get; private set; }
+    /// <summary>The sprint rule's answer this frame (Shift held, moving, stamina left, not winded).</summary>
+    public static bool PlayerSprinting { get; private set; }
 
     [SerializeField, Tooltip("The Level 0 maze's numbers: generation, run seed, streaming, light budget, dressing (Assets/Levels/FrontRoomsLevel0.asset). Empty: the code defaults.")]
     FrontRoomsLevelProfile levelProfile;
@@ -163,6 +169,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     const float StaminaSeconds = 5f, StaminaRecoverDelay = 1f, StaminaRecoverRate = 1f;
     const float EyeHeight = ModuleUnits.PlayerEye, Reach = 2.4f, GlassNoiseRadius = 40f;
     float stamina = StaminaSeconds, sinceSprint, fallSpeed;
+    // Run dry, the player is winded until one stamina segment (1 s) is back: holding Shift on an
+    // empty bar would otherwise flicker into one-frame sprints, each able to land a sprint step's noise.
+    bool winded;
     // Climbing through a broken window: the sill (0.35 m) is above the step
     // height and the opening (1.65 m) is lower than the player, so walking
     // into the frame vaults through it, ducking under the head.
@@ -599,6 +608,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         fallSpeed = 0f;
         climbTime = -1f;
         stamina = StaminaSeconds;
+        winded = false;
+        PlayerStamina01 = 1f;
+        PlayerWinded = PlayerSprinting = false;
         sinceSprint = 0f;
         glide = Vector3.forward * FrontRoomsRoomStream.TitleSpeed;
         mouseSettleFrames = 2;
@@ -919,17 +931,22 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         }
         var wish = playerRoot.right * local.x + playerRoot.forward * local.y;
         if (wish.sqrMagnitude > 1f) wish.Normalize();
-        var sprinting = sprintHeld && wish.sqrMagnitude > .01f && stamina > 0f;
+        var sprinting = sprintHeld && wish.sqrMagnitude > .01f && stamina > 0f && !winded;
         if (sprinting)
         {
             stamina = Mathf.Max(0f, stamina - dt);
             sinceSprint = 0f;
+            if (stamina <= 0f) winded = true;
         }
         else
         {
             sinceSprint += dt;
             if (sinceSprint > StaminaRecoverDelay) stamina = Mathf.Min(StaminaSeconds, stamina + StaminaRecoverRate * dt);
+            if (winded && stamina >= StaminaSeconds / staminaSegments.Length) winded = false;
         }
+        PlayerStamina01 = stamina / StaminaSeconds;
+        PlayerWinded = winded;
+        PlayerSprinting = sprinting;
         fallSpeed = playerBody.isGrounded ? -1f : fallSpeed - 9.81f * dt;
         var before = playerPos;
         if (climbTime >= 0f || TryStartClimb(wish)) Climb(dt);
@@ -1902,6 +1919,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture)); }
     void OnDestroy()
     {
+        PlayerStamina01 = 1f;
+        PlayerWinded = PlayerSprinting = false;
         if (phase == Phase.Paused) Paused?.Invoke(false);
         if (map != null) MapRunEnded?.Invoke();
     }

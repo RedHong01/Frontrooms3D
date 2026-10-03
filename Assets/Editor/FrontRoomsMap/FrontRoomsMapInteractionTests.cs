@@ -51,7 +51,13 @@ using UnityEngine;
 /// - P4 markers: a module key spot takes the zone key; the Relay appears at a
 ///   module Relay entry behind the player and raises Arrived with its tag;
 /// - P4 live tuning: ApplyLive moves the build radius; ReplaceModule rebuilds
-///   only the module's chunk.
+///   only the module's chunk;
+/// - lamp overrides v1, on the desktop and the WebGL tick path: idle lamps are
+///   untouched (LampLevel == LampBaseLevel); an override's attack, hold and
+///   release; overlapping overrides take the lowest multiplier; Reduce
+///   flashing slows the attack; LampDipped and FixtureChanged; SetLampMode
+///   kills and promotes live and survives a rebuild, a drop and a shift;
+///   LampModeOf never generates a chunk.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -111,6 +117,7 @@ public static class FrontRoomsMapInteractionTests
             KeySpot(roots, profiles);
             RelayEntry(roots, profiles);
             Live(roots, profiles);
+            Lamps(roots);
         }
         catch (Exception e)
         {
@@ -870,6 +877,151 @@ public static class FrontRoomsMapInteractionTests
                 world.DoorBrokenFrom -= OnBrokenFrom;
             }
         }
+    }
+
+    // ---------- Lamp overrides (interface v1) ----------
+
+    static void Lamps(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -44f, "MAP INTERACTION TEST / lamps");
+        world.BuildForCapture();
+        var nearOnly = FrontRoomsMapWorld.TickFixturesNearOnly;
+        var flashing = FrontRoomsSettings.ReduceFlashing;
+        var used = new HashSet<GridCoord>();
+        try
+        {
+            if (FrontRoomsSettings.ReduceFlashing) FrontRoomsSettings.SetReduceFlashing(false);
+            foreach (var webgl in new[] { false, true })
+            {
+                FrontRoomsMapWorld.TickFixturesNearOnly = webgl;
+                LampChecks(world, used, webgl ? "lamps (WebGL path): " : "lamps: ");
+            }
+        }
+        finally
+        {
+            FrontRoomsMapWorld.TickFixturesNearOnly = nearOnly;
+            if (FrontRoomsSettings.ReduceFlashing != flashing) FrontRoomsSettings.SetReduceFlashing(flashing);
+        }
+    }
+
+    static void LampTicks(FrontRoomsMapWorld world, float seconds)
+    {
+        for (var t = 0f; t < seconds - 1e-4f; t += Dt) world.TickFixturesForTools(Dt);
+    }
+
+    static float LampRatio(FrontRoomsMapWorld world, GridCoord c) => world.LampLevel(c) / Mathf.Max(world.LampBaseLevel(c), 1e-6f);
+
+    static void LampChecks(FrontRoomsMapWorld world, HashSet<GridCoord> used, string label)
+    {
+        // Steady lamps near the spawn, a fresh one for each check.
+        var mid = world.CellOf(world.SpawnWorldPosition);
+        var steady = new List<GridCoord>();
+        for (var y = mid.y - 10; y <= mid.y + 10; y++)
+        for (var x = mid.x - 10; x <= mid.x + 10; x++)
+        {
+            var c = new GridCoord(x, y);
+            if (used.Contains(c) || world.LampLevel(c) == FrontRoomsMapWorld.NoLamp || world.LampModeOf(c) != ModuleLamp.Steady) continue;
+            steady.Add(c);
+        }
+        if (steady.Count < 6) { Check(false, label + "only " + steady.Count + " steady lamps near the spawn"); return; }
+        foreach (var c in steady.Take(6)) used.Add(c);
+        GridCoord a = steady[0], b = steady[1], cc = steady[2], d = steady[3], e = steady[4];
+
+        // Idle: the override layer changes nothing.
+        LampTicks(world, .5f);
+        var idleWrong = 0;
+        foreach (var c in steady) if (world.LampLevel(c) != world.LampBaseLevel(c)) idleWrong++;
+        Check(world.LampOverrideCount == 0 && idleWrong == 0, label + "idle, every lamp's level is its own (" + idleWrong + " of " + steady.Count + " differ)");
+
+        // An override's envelope: Dip 0.3 s attack, 0.5 s hold, 1.2 s release.
+        int dipped = 0, changed = 0;
+        var dippedAt = Vector3.zero;
+        void OnDipped(GridCoord c, Vector3 p) { if (c == a) { dipped++; dippedAt = p; } }
+        void OnChanged(GridCoord c, float level) { if (c == a) changed++; }
+        world.LampDipped += OnDipped;
+        world.FixtureChanged += OnChanged;
+        world.SetLampOverride(a, FrontRoomsMapWorld.LampFx.Dip, .3f, .5f);
+        LampTicks(world, .15f);
+        var attack = LampRatio(world, a);
+        LampTicks(world, .35f);
+        var held = LampRatio(world, a);
+        LampTicks(world, .3f + 1.2f + .05f);
+        var after = LampRatio(world, a);
+        world.LampDipped -= OnDipped;
+        world.FixtureChanged -= OnChanged;
+        var flat = world.CellCenter(a) - dippedAt;
+        flat.y = 0f;
+        Check(attack > .55f && attack < .75f && Mathf.Abs(held - .3f) < 1e-4f && after == 1f && world.LampLevel(a) == world.LampBaseLevel(a) && world.LampOverrideCount == 0,
+            label + "a dip eases in (" + attack.ToString("0.00") + " at 0.15 s), holds at 0.30 (" + held.ToString("0.0000") + "), and is gone after its release (" + after.ToString("0.00") + ")");
+        // Down through 0.8 and 0.55, and back up through both: four crossings, no chatter from the shimmer.
+        Check(dipped == 1 && flat.magnitude < MapGrid.CellSize && changed == 4,
+            label + "LampDipped once at the lamp; FixtureChanged once per line crossed, down and back (" + changed + " of 4)");
+
+        // Stacking: the lowest multiplier, never the product; each releases on its own.
+        var sag = world.SetLampOverride(b, FrontRoomsMapWorld.LampFx.Sag, .5f, float.PositiveInfinity);
+        var dip = world.SetLampOverride(b, FrontRoomsMapWorld.LampFx.Dip, .3f, float.PositiveInfinity);
+        LampTicks(world, 1f);
+        var both = LampRatio(world, b);
+        world.RemoveLampOverride(dip);
+        LampTicks(world, 1.3f);
+        var sagOnly = LampRatio(world, b);
+        world.RemoveLampOverride(sag);
+        LampTicks(world, 1.6f);
+        Check(Mathf.Abs(both - .3f) < 1e-4f && Mathf.Abs(sagOnly - .5f) < 1e-4f && LampRatio(world, b) == 1f && world.LampOverrideCount == 0,
+            label + "overlapping overrides take the lowest (" + both.ToString("0.000") + ", not 0.15); removing one leaves the other (" + sagOnly.ToString("0.000") + "); both gone, back to 1");
+
+        // Reduce flashing: no attack faster than 0.5 s, even a warning's 0.08 s.
+        FrontRoomsSettings.SetReduceFlashing(true);
+        world.SetLampOverride(cc, FrontRoomsMapWorld.LampFx.Warn, .3f, .2f);
+        FrontRoomsSettings.SetReduceFlashing(false);
+        LampTicks(world, .1f);
+        var calm = LampRatio(world, cc);
+        LampTicks(world, 2f);
+        Check(calm > .8f && world.LampOverrideCount == 0, label + "with Reduce flashing a warning dip eases in over 0.5 s (" + calm.ToString("0.00") + " at 0.1 s, not 0.3)");
+
+        // A promotion starts a fresh cycle: a Steady lamp turned Dead does not blink on its old timer.
+        world.SetLampMode(e, ModuleLamp.Dead);
+        var blinks = 0;
+        for (var t = 0f; t < 1.9f; t += Dt)
+        {
+            world.TickFixturesForTools(Dt);
+            if (world.LampBaseLevel(e) > 0f) blinks++;
+        }
+        world.SetLampMode(e, ModuleLamp.Auto);
+        Check(blinks == 0 && world.LampModeOf(e) == ModuleLamp.Steady, label + "promoted to Dead, the lamp stays dark for its first 2 s (" + blinks + " lit frames)");
+
+        // The kill: a dark lens, kept through a rebuild, a drop and a shift; Auto brings the lamp back.
+        var chunk = MapGrid.ChunkOf(d);
+        world.SetLampMode(d, ModuleLamp.Off);
+        LampTicks(world, .05f);
+        var live = world.LampModeOf(d) == ModuleLamp.Off && world.LampBaseLevel(d) == 0f && world.LampLevel(d) == 0f;
+        world.RebuildChunk(chunk);
+        LampTicks(world, .05f);
+        var rebuilt = world.LampLevel(d) == 0f;
+        world.DropChunkForTools(chunk);
+        var dropped = world.LampLevel(d) == FrontRoomsMapWorld.NoLamp;
+        world.RebuildChunk(chunk);
+        LampTicks(world, .05f);
+        var back = world.LampLevel(d) == 0f;
+        world.SetLampMode(d, ModuleLamp.Auto);
+        LampTicks(world, .05f);
+        var revived = world.LampModeOf(d) == ModuleLamp.Steady && world.LampBaseLevel(d) > .9f;
+        Check(live && rebuilt && dropped && back && revived,
+            label + "SetLampMode Off: dark at once (" + live + "), after a rebuild (" + rebuilt + "), not there while dropped (" + dropped + "), dark again when rebuilt (" + back + "); Auto brings it back steady (" + revived + ")");
+        world.SetLampMode(d, ModuleLamp.Off);
+        world.Cache.Shift(chunk);
+        world.RebuildChunk(chunk);
+        LampTicks(world, .05f);
+        Check(world.LampModeOf(d) == ModuleLamp.Off && (world.LampLevel(d) == FrontRoomsMapWorld.NoLamp || world.LampLevel(d) == 0f),
+            label + "a killed lamp stays dark after a revisit shift");
+        world.SetLampMode(d, ModuleLamp.Auto);
+
+        // Pure: asking about a far, never-built cell generates nothing.
+        var generated = world.Cache.Built.Count();
+        var far = new GridCoord(mid.x + 4000, mid.y - 4000);
+        var farMode = world.LampModeOf(far);
+        Check(world.Cache.Built.Count() == generated && world.LampLevel(far) == FrontRoomsMapWorld.NoLamp && farMode != ModuleLamp.Auto,
+            label + "LampModeOf a far cell (" + farMode + ") generates no chunk (" + generated + " before and after)");
     }
 
     // ---------- P4: tiers ----------

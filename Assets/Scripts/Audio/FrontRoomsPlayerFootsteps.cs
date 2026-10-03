@@ -5,9 +5,9 @@ namespace FrontRooms.Audio
 {
     /// <summary>
     /// Player foot contacts from distance travelled, not a timer: the cadence
-    /// follows the real speed (wall slides, stamina drop, stopping). Also
-    /// mirrors the game's stamina rule (5 s sprint, recover after 1 s) to
-    /// drive the breath layer without reaching into the game's private state.
+    /// follows the real speed (wall slides, stamina drop, stopping). Sprinting
+    /// and stamina are read from the game's own rule (FrontRooms3DGame.PlayerSprinting /
+    /// PlayerStamina01 / PlayerWinded), so the breath and the run gait never drift from it.
     /// Shoes carry wetness: after a soaked patch the damp layers fade over
     /// ~30 s instead of switching off at the zone border.
     /// </summary>
@@ -15,7 +15,6 @@ namespace FrontRooms.Audio
     {
         const float WalkSpeed = 3.2f, RunSpeed = 5.5f;
         const float WalkStride = 1.45f, RunStride = 1.72f;
-        const float StaminaSeconds = 5f, RecoverDelay = 1f, RecoverRate = 1f;
         const float DefaultDampness = .4f, ShoeDryTime = 30f;
 
         public Func<Vector3, SoundIds.Surface> surfaceAt;
@@ -23,12 +22,13 @@ namespace FrontRooms.Audio
 
         CharacterController body;
         Vector3 last;
-        float distance, speed, stamina = StaminaSeconds, sinceSprint, shoe;
+        float distance, speed, shoe;
         bool wasMoving;
 
         public float Speed => speed;
-        public float Stamina01 => stamina / StaminaSeconds;
-        public bool Sprinting { get; private set; }
+        public float Stamina01 => FrontRooms3DGame.PlayerStamina01;
+        public bool Winded => FrontRooms3DGame.PlayerWinded;
+        public bool Sprinting => FrontRooms3DGame.PlayerSprinting;
 
         void Awake()
         {
@@ -49,13 +49,6 @@ namespace FrontRooms.Audio
 
             speed = Mathf.Lerp(speed, step / dt, 1f - Mathf.Exp(-dt * 12f));
             shoe *= Mathf.Exp(-dt / ShoeDryTime);
-            Sprinting = speed > 4.4f;
-            if (Sprinting) { stamina = Mathf.Max(0f, stamina - dt); sinceSprint = 0f; }
-            else
-            {
-                sinceSprint += dt;
-                if (sinceSprint > RecoverDelay) stamina = Mathf.Min(StaminaSeconds, stamina + RecoverRate * dt);
-            }
 
             var grounded = body == null || body.isGrounded;
             var moving = grounded && speed > .4f;

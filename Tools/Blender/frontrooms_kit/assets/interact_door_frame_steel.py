@@ -44,8 +44,8 @@ import sys
 import interact_door_common as dc
 
 NAME = "Kit_DoorFrame_Steel"
-LOD1 = 0.40
-LOD1_RATIO = 0.40
+LOD1 = 0.37
+LOD1_RATIO = 0.37
 LOD2_RATIO = 0.08
 LOD_DISTANCES = (4.0, 12.0, None)
 SMOOTH_ANGLE = 35.0

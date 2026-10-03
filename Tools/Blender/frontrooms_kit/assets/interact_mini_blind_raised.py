@@ -32,7 +32,7 @@ kit -Y = Unity +Z):
   Both hang beside the opening (|X| >= 0.715 > 0.70) in front of the jamb
   face band (Z 0.152 / 0.150 vs 0.105).
 
-Budget (§9.4): 2,400 / 800 / 120 tris; LOD1 now at 0.33 (1.55 m wide): the
+Budget (§9.4): 2,400 / 800 / 120 tris; LOD1 now at 0.35 (1.55 m wide): the
 slat slabs, ladder cords and small fittings drop and a plain stack block
 (hidden inside the slabs at LOD0) takes over; LOD2 also drops the cords.
 LOD distances 3 / 10 / 30. Slots: Prop_SteelAlmond (first), Prop_PlasticWhite
@@ -51,7 +51,7 @@ import kitlib  # noqa: F401
 import interact_window_common as wc
 
 NAME = "Kit_MiniBlind_Raised"
-LOD1_RATIO = 0.33
+LOD1_RATIO = 0.35
 LOD2_RATIO = 0.05
 LOD1 = LOD1_RATIO
 LOD_DISTANCES = (3.0, 10.0, 30.0)

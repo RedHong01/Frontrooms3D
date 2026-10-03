@@ -92,9 +92,30 @@ def glyph_run_mask(f, text, tracking_px):
     return glyph_run_mask_spaced(f, text, tracking_px, 0.0)
 
 
+_KERN = {}
+
+
+def kerner(f):
+    """GPOS pair kerning for a Pillow font (Pillow here has no raqm, so it can't kern)."""
+    path = f.path
+    if path not in _KERN:
+        import otkern
+        _KERN[path] = otkern.OTKern(path)
+    return _KERN[path]
+
+
 def glyph_run_mask_spaced(f, text, tracking_px, word_px):
-    """As glyph_run_mask, with `word_px` added to every space (word spacing)."""
-    adv = [f.getlength(ch) + tracking_px + (word_px if ch == " " else 0.0) for ch in text]
+    """As glyph_run_mask, with `word_px` added to every space (word spacing). Glyphs are
+    placed with the font's GPOS kerning, and tracking goes BETWEEN characters (n - 1),
+    which matches the designers' measured widths to 0.1 mm."""
+    k = kerner(f)
+    unit = f.size / k.upem
+    adv = []
+    for i, ch in enumerate(text):
+        a = f.getlength(ch) + (word_px if ch == " " else 0.0)
+        if i + 1 < len(text):
+            a += k.kern(ch, text[i + 1]) * unit + tracking_px
+        adv.append(a)
     asc, desc = f.getmetrics()
     # wide enough for the last glyph even when tracking is negative
     m = Image.new("L", (int(math.ceil(sum(adv) + f.size)) + 4, asc + desc + 4), 0)
@@ -333,7 +354,11 @@ def type_image(L, spec_dir):
 
 # ---------------------------------------------------------------- typography v2 (平面视觉)
 def text_mm(f, text, tracking_mm, s):
-    return (sum(f.getlength(ch) for ch in text) + tracking_mm * s * len(text)) / s
+    """Set width in mm: advances + GPOS kerning + tracking between characters."""
+    k = kerner(f)
+    unit = f.size / k.upem
+    kern = sum(k.kern(a, b) for a, b in zip(text, text[1:])) * unit
+    return (sum(f.getlength(ch) for ch in text) + kern + tracking_mm * s * (len(text) - 1)) / s
 
 
 def type_slots(L, common):
@@ -558,7 +583,7 @@ def build(spec_path, out):
 
 
 def preview(layers, spec, subs, path):
-    green = np.array([0.55, 1.0, 0.45], np.float32)
+    green = np.array([0.78, 0.95, 0.58], np.float32)   # pale yellow-green ZnS:Cu afterglow, not a screen green
     cell = 320
     tiles, names = [], []
     for L in spec["ink_type"]:

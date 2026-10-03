@@ -46,7 +46,7 @@ Corridor-local metres. +Z runs from the entrance to the goal. x = 0 is the corri
 | Trip line | z = 1.5 | arming ≥ 1.5 m inside |
 | Trip line → goal door face | **25.4 m = 4.6 s at sprint** | the sprint reaches the door with 0.4 s to spare |
 | Entrance | an arch 1.4 × 2.2 m centred (map arch range 1.1–1.8 × 2.2). C uses a held-open door pair instead (§4) | an inner-zone opening |
-| Goal | one door 1.0 × 2.1 m centred in the far wall, **RN-F** (free ward door) with a wired-glass vision lite (§1.4) | "shutting a door is the escape verb" |
+| Goal | one door 1.0 × 2.1 m centred in the far wall, **RN-X** (new free Run exit door: RN-F's wood-grain leaf, crossbar exit device, a latch, a wired-glass vision lite; §1.4) | "shutting a door is the escape verb"; it must latch so the Relay has to break it |
 | Beyond the goal | the next zone (Level 0 or Office) | the corridor ends on its way somewhere |
 | Lamp rhythm | pools every 6 m in A and B → **0.92 Hz** at sprint; C is continuous, door pairs every 9 m → 0.61 Hz | all under the 3 Hz line (`03` §5.3) |
 
@@ -66,7 +66,9 @@ Under **Reduce Flashing** every change uses ≥ 0.5 s attacks and releases, and 
 
 ### 1.4 Shared hardware and rules
 - **Door family** (`interactables/10_spec.md` D5): **RN-F** = the free Run door (wood-grain laminate leaf 0.174, stainless armor plate, push plate on the pull face, offset D-pull, closer, **no latch**), **RN-K** = the locked Run door (almond enamel steel leaf in a dark-bronze frame, "STAFF ONLY" plate). The FREE/LOCKED value rule holds: a wood leaf in a white Run wall reads 4.2 : 1 (0.174 vs 0.738).
-  - **New VARIANT needed (all three):** `Kit_DoorLeaf_Ward_Lite`, RN-F with a 0.25 × 0.75 m wired-glass vision lite, centred at 1.5 m. The goal door shows the next zone's light through it. That makes the goal emissive, so it reads past the 16 m lamp radius (and the 10 m WebGL radius).
+  - **RN-F cannot be the goal:** it has no latch, so a shut RN-F would not hold the Relay. Real fire exit doors must self-close and latch.
+  - **New member needed (all three): RN-X "Run exit".** Leaf `Kit_DoorLeaf_Ward_Lite` = RN-F's wood-grain laminate leaf (FREE value) with a 0.25 × 0.75 m wired-glass vision lite centred at 1.5 m; `Kit_DoorFrame_Steel`; `Kit_ExitDevice_Crossbar` on the push face (the corridor side, as EX-F); lever trim, bored latch and strike on the far face; closer. It opens away from the runner and latches when shut, so the Relay must break it (2.5 s at tier 1).
+  - The lite shows the next zone's light. That makes the goal emissive, so it reads past the 16 m lamp radius (and the 10 m WebGL radius).
   - The wired look needs `Glass_Wired` (glass track; not made yet). Prototypes use a stand-in (§7.3).
 - **EXIT sign:** `Kit_ExitSign` housing 0.330 × 0.200 × 0.060 (spec §2.4). Red letters only, 6 in (152 mm), on an off-white face. Face set in **TeX Gyre Heros Bold Condensed** (`Assets/Fonts/Period1990/TeXGyre/texgyreheroscn-bold.otf`), replacing today's Arial. "EXIT" has no enclosed counters, so a stamped stencil face needs no bridges. **No arrows** (the exit is straight ahead). No Light component on the wall sign in the WebGL tier.
 - **Era (1990, `22_era_lock.md`):** US English caps on signs, no brands, no printed date after 1990, nothing designed after 1993. No green running man (ISO; not US in 1990).
@@ -74,21 +76,21 @@ Under **Reduce Flashing** every change uses ≥ 0.5 s attacks and releases, and 
 - **Dark is never cover** (`30_narrative.md` §6): darkness sits in full-width bands between pools, never in pockets.
 - **Obstacles** read at **8 m** (1.5 s at sprint), never need a jump, and leave a lane ≥ 1.4 m.
 - **Footsteps:** every direction has a hard floor (VCT). FMOD has no hard-floor surface today (`SoundIds.Surface { Carpet, CarpetTile, Metal }`). CR-S1.
-- **Ambient and post:** the global trilight ambient (#333026 / #423D2B / #665C3D) and the global lift (+.035) make the Run room's blacks the highest of all rooms today (p5 0.027, `03` §6). Each direction carries **its own corridor ambient** and **its own local post volume** (`FrontRoomsPost_Run_<A|B|C>`, priority 2, blend 1.0 m, loaded by `FrontRoomsPostStack.EnsureZoneVolume`). The Office volume is priority 1, so Run wins inside the corridor.
+- **Ambient and post:** the global trilight ambient (#333026 / #423D2B / #665C3D) and the global lift (+.035) make the Run room's blacks the highest of all rooms today (p5 0.027, `03` §6). Each direction carries **its own corridor ambient** and **its own local post volume** (`FrontRoomsPost_Run_<A|B|C>`, priority 2, blend 1.0 m, loaded by `FrontRoomsPostStack.EnsureZoneVolume`, which sets priority 1, so the rig raises it to 2). The Office volume is priority 1, so Run wins inside the corridor.
 - **Fixtures are the visual chat's.** The module sets `ModuleLamp.Off` on all 9 cells (no map fixture), and a visual-chat rig, `FrontRoomsRunRig`, builds the corridor's lamps, signs and devices. It owns their culling (16 m desktop; WebGL tier 10 m, cap 31, per `webgl/02` §224).
 
 ---
 
 ## 2. Direction A · RED WARD — "the lights turn red"
 
-**Idea.** The wiki's Level ! made honest: a white hospital ward corridor at night, a hanging EXIT sign every 6 m (five times too many, the Backrooms' countable error), and when you trip it the tubes cut out and the corridor is left burning red. The only white light is the glass in the door you must reach.
+**Idea.** The wiki's Level ! made honest: a white hospital ward corridor at night, a hanging EXIT sign every 6 m (code only needs one within 30 m of every point; this is the Backrooms' countable error, a real object repeated too often), and when you trip it the tubes cut out and the corridor is left burning red. The only white light is the glass in the door you must reach.
 
 ### 2.1 Lighting
 | | Armed ("night ward") | Tripped |
 |---|---|---|
 | Troffers | 2'×4' prismatic, the stream fixture (pan `Painted_Metal` + `Troffer_Lens` + volumetric beam, density .012), one per cell at the cell centre + 0.3 m Z (map grammar). **Night switching:** cells 0, 2, 4, 6, 8 lit, cells 1, 3, 5, 7 off (lens glow 0.04). Lit: spot 162° / 96°, colour **(0.93, 0.96, 1.00)** cool white, intensity **3.5**, range 9 (SP). Steady | all off in **one cut** at t = 0 (level 1 → 0 over 0.08 s; lens glow decays with τ 0.12 s as phosphor afterglow, then 0.04) |
 | Hanging EXIT signs | 4 double-faced signs on two chrome rods at **z = 6, 12, 18, 24**, housing centre 2.42 m (bottom 2.32). Plus a wall `Kit_ExitSign` over the goal door (top 2.38). Faces `Run_ExitSign` (new period face), emission 3.2. Red light per sign: a downward spot (1.00, 0.13, 0.07), intensity **2.4**, range 6.5, 170° / 120°, soft shadows; plus an unshadowed point (same colour) 0.5, range 2.2 for the ceiling glow (SP) | unchanged: **steady**. Now the only fill |
-| Goal | the RN-F lite glows with the next zone's light (a lit room beyond; no extra Light needed) | the lite is the only white in the corridor. It is the brightest thing in view |
+| Goal | the RN-X lite glows with the next zone's light (a lit room beyond; no extra Light needed) | the lite is the only white in the corridor. It is the brightest thing in view |
 | Ambient (corridor only) | 0.6 × global | 0.15 × global, tinted (1.0, 0.35, 0.30): red bounce off white walls |
 | Post `FrontRoomsPost_Run_A` | lift (1, 1, 1, 0); white balance temperature 0 (cancels the global +9 so the red stays red, not orange); contrast +8; saturation 0; bloom threshold 1.0, intensity .70; vignette .30 (SP) | same |
 | Measured targets, tripped S1 (SP) | — | median Y 0.015–0.04 (ETB 0.002–0.004 is too dark to read obstacles); p95/p5 ≥ 5; saturated red 25–50 % of pixels; goal lite = the frame's brightest region |
@@ -128,7 +130,7 @@ Each obstacle sits under a sign (in a red pool), so it is lit when you reach it.
 - **Risks:** (1) for a protan player (about 1 in 50 men) red light looks dim, so A tripped reads as a dark corridor with one white door: still playable, because the cut is also a value drop; (2) a saturated-red field narrows what the eye can separate; obstacles get lit faces under the signs to compensate; (3) a new colour grammar: red light means "run" here and nowhere else.
 
 ### 2.6 Needs from the map chat (A)
-CR-1 to CR-5 (§8). Plus: 4 locked side doors as module-authored LOCKED door leaves on side walls that open nowhere (CR-6 option a), or as wall props that look locked (option b, no map change; the locked grammar must never lie, so they must never open).
+CR-1 to CR-6 (§8). Plus the 4 locked side doors: either LOCKED door edges authored by the module (the same `ModuleEdge.Door` kind as CR-6a, member RN-K, never unlockable), or wall props that look locked (no map change). Either way they never open, so the LOCKED grammar never lies.
 
 ### 2.7 Needs from the sound chat (A)
 - `Run.TubesOut`: one ballast/contactor clunk for the whole corridor, and the fixture hum dropping out together (4 nearest hum voices go to 0 with the Lights).
@@ -157,9 +159,9 @@ CR-1 to CR-5 (§8). Plus: 4 locked side doors as module-authored LOCKED door lea
 |---|---|---|
 | Ceiling fixtures | 4 ft two-lamp **wraparound**, prismatic acrylic, surface-mounted on the deck (`Kit_WrapFixture_4ft`, new: 1.22 × 0.25 × 0.08 m), one per cell at the cell centre + 0.3 m Z, axis along Z. Spot 162° / 96°, colour **(0.90, 0.95, 1.00)** (4100 K cool white), intensity **5.5**, range 10, one in three soft-shadowed (map rule). Steady; one stutter tube for life in cell 5 | mains drop: all 9 go 1 → 0 in **0.06 s** at t = 0 (contactor). Lens glow 0.03 |
 | Twin-head battery units | 4 units (`Kit_EmergencyTwinHead`, new hero asset): z = **3 (right), 9 (left), 15 (right), 21 (left)**, box centre 2.45 m. Off. A red "AC ON" neon pilot glows (emissive only) | at **t = 0.35 s** all heads come on together: filament rise 0 → 1 over 0.18 s, each unit 0–40 ms apart (independent transfer relays). Pilots go out |
-| Heads (desktop) | — | 8 spots. Each unit: one head aimed +Z, one aimed −Z, both pitched −30°, so the pools land **between** units at z ≈ 6, 12, 18, 24 and the floor under each unit stays dark (true to life). Exception: unit 21's +Z head is aimed at the goal door leaf (pitch −13°). Colour **(1.00, 0.84, 0.64)** (sealed-beam incandescent, ~2800 K), intensity **4.0** (SP, tune to the targets below), range 11, outer 50° / inner 20° (hard edge), soft shadows strength .95, cookie `Cookie_SealedBeam` (256 px: hot core, one faint ring, light lens fluting). Each head also gets the stream's additive volumetric beam frustum (2.5 m, density .02): visible cones in dusty air |
+| Heads (desktop) | — | 8 spots. Each unit: one head aimed +Z, one aimed −Z, both pitched −30°, so the pools land **between** units at z ≈ 6, 12 and 18 (two heads meet in each), unit 3's −Z head lights the threshold, and the floor under each unit stays dark (true to life). Exception: unit 21's +Z head is aimed at the goal door leaf (pitch −13°); its cone lights the floor from z ≈ 24 to the door. Colour **(1.00, 0.84, 0.64)** (sealed-beam incandescent, ~2800 K), intensity **4.0** (SP, tune to the targets below), range 11, outer 50° / inner 20° (hard edge), soft shadows strength .95, cookie `Cookie_SealedBeam` (256 px: hot core, one faint ring, light lens fluting). Each head also gets the stream's additive volumetric beam frustum (2.5 m, density .02): visible cones in dusty air |
 | EXIT signs | one flag-mounted double-faced sign on the right wall at z 13.5 (projects 0.35 m, bottom 2.32), facing down the corridor; one wall sign above the goal door. Emissive faces; desktop adds a point (1, .13, .07) 0.6, range 1.8 each | unchanged (on the emergency circuit) |
-| Goal | RN-F lite (next zone's light) | the door leaf sits in the hottest pool (unit 21's aimed head) and under the lit EXIT. Brightest object in the corridor |
+| Goal | RN-X lite (next zone's light) | the door leaf sits in the hottest pool (unit 21's aimed head) and under the lit EXIT. Brightest object in the corridor |
 | Ambient (corridor only) | 0.6 × global | **0.10 × global**, neutral |
 | Post `FrontRoomsPost_Run_B` | lift (1, 1, 1, −0.01); contrast +12; saturation −10; white balance temperature −6 (the warm-white pools read white against Level 0's yellow); post-exposure −0.1; bloom threshold 1.0, intensity .60; vignette .32 (SP) | same |
 | Measured targets, tripped S1 (SP) | armed median Y ≥ Level 0 Standard's (0.09) | pool-centre floor ≈ **0.25 ×** the armed floor at the same spot (real emergency light is 1/10–1/20 of normal; we keep it readable); gap floor ≥ **pool / 40** (the 40 : 1 code limit, `03` §4.2); p95/p5 ≥ 8 (Kane's back-of-house 8–9.5); saturated red 1–3 % |
@@ -191,7 +193,7 @@ CR-1 to CR-5 (§8). Plus: 4 locked side doors as module-authored LOCKED door lea
 | 1.0 | right | red pull station at 1.2 m (`Kit_PullStation`, new) and a 6 in red bell above it at 2.3 m (`Kit_FireBell`, new) | — |
 | 6.4 | right | a dolly of 8 grey steel folding chairs | 2.0 m |
 | 12.0 | left | janitor cart: grey plastic, yellow mop bucket and wringer, mop | 1.9 m |
-| 12.0 | left wall | semi-recessed extinguisher cabinet at 1.1 m (`Kit_ExtinguisherCabinet`, new) | — |
+| 10.2 | left wall | semi-recessed extinguisher cabinet at 1.1 m (`Kit_ExtinguisherCabinet`, new) | — |
 | 18.2 | right | two-wheel hand truck with 3 cartons, leaning on the wall | 2.0 m |
 
 Every obstacle sits **in a pool**, never in a gap. Nothing lies in the dark bands, so the bands never look like places to hide.
@@ -199,11 +201,11 @@ Every obstacle sits **in a pool**, never in a gap. Nothing lies in the dark band
 ### 3.5 At a sprint, and fairness
 - From outside (S2): the dark ceiling, the red sprinkler line, the projecting twin-heads in profile and the lit goal at the end, through the arch. The twin-heads are the readable object: "this corridor is on the alarm".
 - The 0.35 s black is one flash (down, then up), under WCAG's 3 per second.
-- **Relay read:** looking back, the heads aimed −Z face you; the Relay crosses the pools and is backlit by them as it passes through the gaps. Dark body against a lit pool behind: the Kane door-gap read (4.9–7.5 : 1, `03` §3.3).
+- **Relay read:** looking back, the heads aimed +Z face you; the Relay crosses the pools and is backlit by them as it passes through the gaps. Dark body against a lit pool behind: the Kane door-gap read (4.9–7.5 : 1, `03` §3.3).
 - **Risks:** (1) the global fill light and lift wash out the gaps unless the corridor ambient and local post land (§7.3); (2) the glare of a head aimed at the camera can hide a figure right in front of it (tune with the pitch, measure in C4).
 
 ### 3.6 Needs from the map chat (B)
-CR-1 to CR-5 only (§8). No moving parts, no new door types beyond the goal door.
+CR-1 to CR-6 only (§8; CR-6 is the goal door every direction needs). No moving parts, no other new door types.
 
 ### 3.7 Needs from the sound chat (B)
 - `Run.MainsDrop` (t = 0): a contactor drop-out clunk; every fixture hum stops at once.
@@ -232,10 +234,10 @@ CR-1 to CR-5 only (§8). No moving parts, no new door types beyond the goal door
 ### 4.1 Lighting
 | | Armed ("economy switching") | Tripped |
 |---|---|---|
-| Strips | 11 bare-lamp **8 ft two-lamp T12 strips** (`Kit_StripFixture_8ft`, new: white enamel channel 2.44 × 0.06 × 0.10 m, two bare tubes, no lens) end to end along the axis at 2.86 m. **Every other strip off** (strips 1, 3, 5, 7, 9, 11 on; the 1970s–80s energy-saving practice; tubes in place, grey). Strip 7 has one dead tube with orange cathode end-glow. Colour **(0.94, 0.97, 1.00)** cool white | the off strips strike in a **front from the entrance to the goal at 8 m/s** (the chase wave's speed): strip i starts at t = 0.1 + z_i / 8 s, one 60 ms flick to 30 % then a 0.2 s rise to 100 % (2 changes per strip). The lit strips step 0.9 → 1.0 |
-| Real lights (desktop) | one spot every 1.5 m (18), 165° / 120°, range 9, intensity **4.5** (SP); the 9 under lit strips on | all 18 on. Soft shadows on every third (6) |
-| Flashers | red incandescent beacons (`Kit_FlasherLamp`, new: Ø 0.10 m red glass dome on a 4 in box) centred over each door pair (corridor face) and over the goal, at 2.6 m. Off | **1 Hz, 50 % duty, all in sync**, from t = 0.3 s. **Emissive only, no Light** beyond a 0.8 m point at 0.3, so the flashing area stays tiny (WCAG red-flash rule). Steady under Reduce Flashing |
-| Goal | RN-F lite + wall EXIT + the goal flasher | the door is the **only large dark shape** in a white field (wood leaf 0.174 in a 0.8 wall), framed by the only red light. Rule 5 ("the door is the brightest thing") holds in its inverted form: most legible, not brightest. Said honestly |
+| Strips | 9 bare-lamp **8 ft two-lamp T12 strips** (`Kit_StripFixture_8ft`, new: white enamel channel 2.44 × 0.06 × 0.10 m, two bare tubes, no lens) on the axis at 2.86 m, **3 end to end per 9 m compartment** (7.32 m, centred; the cross walls at z 9 and 18 break the row). Numbered 1–9 from the entrance. **Every other strip off** (1, 3, 5, 7, 9 on; the 1970s–80s energy-saving practice; tubes in place, grey). Strip 7 has one dead tube with orange cathode end-glow. Colour **(0.94, 0.97, 1.00)** cool white | the off strips strike in a **front from the entrance to the goal at 8 m/s** (the chase wave's speed): strip i starts at t = 0.1 + z_i / 8 s, one 60 ms flick to 30 % then a 0.2 s rise to 100 % (2 changes per strip). The lit strips step 0.9 → 1.0 |
+| Real lights (desktop) | two spots per strip, 0.6 m either side of its centre (18), 165° / 120°, range 9, intensity **4.5** (SP); the 10 under lit strips on | all 18 on. Soft shadows on every third (6) |
+| Flashers | red incandescent beacons (`Kit_FlasherLamp`, new: Ø 0.10 m red glass dome on a 4 in box) centred on the approach (−Z) face of each pair's header (for the z 0 pair that is the Level 0 side) and over the goal, at 2.6 m. Off | **1 Hz, 50 % duty, all in sync**, from t = 0.3 s. **Emissive only, no Light** beyond a 0.8 m point at 0.3, so the flashing area stays tiny (WCAG red-flash rule). Steady under Reduce Flashing |
+| Goal | RN-X lite + wall EXIT + the goal flasher | the door is the **only large dark shape** in a white field (wood leaf 0.174 in a 0.8 wall), framed by the only red light. Rule 5 ("the door is the brightest thing") holds in its inverted form: most legible, not brightest. Said honestly |
 | Ambient (corridor only) | 1.0 × global | 1.2 × global (white bounce) |
 | Post `FrontRoomsPost_Run_C` | post-exposure +0.25; contrast +10; saturation −22; white balance temperature −10, tint +4 (cool, away from Level 0's warm green); lift (1, 1, 1, 0); highlights (1, 1, 1, −0.05) to keep white walls off the clip; bloom threshold 1.1, intensity .35; grain .20 (SP) | same |
 | Measured targets (SP) | armed S1 median Y ≈ 1.3 × Level 0 Standard's (0.09 → ~0.12) | tripped S1 median Y 0.30–0.40 (the A24 run, 0.35); p95/p5 ≥ 10; saturated red ≤ 0.5 % |
@@ -248,10 +250,10 @@ CR-1 to CR-5 only (§8). No moving parts, no new door types beyond the goal door
 
 ### 4.2 Doors (the signature)
 - **Pairs at z = 0 (the entrance), 9 and 18.** Each: an opening **2.24 × 2.1 m** (2 × 1.12 m leaves, the stream's leaf width) in a 0.16 m cross wall with a transom wall above 2.1 m and 0.30 m jambs; dark-bronze steel frame (`Kit_DoorFrame_Steel`, pair version).
-- **Leaves:** RN-F pair version (wood-grain laminate, no latch, push plates, kick plates), each with a 0.25 × 0.75 m wired lite at 1.15–1.90 m; regular-arm closer on each leaf (`Kit_DoorCloser_*`, existing spec).
+- **Leaves:** RN-F pair version (wood-grain laminate, **no latch**: cross-corridor smoke doors in health care need not latch, UNVERIFIED for the 1990 code; push plates, kick plates), each with a 0.25 × 0.75 m wired lite at 1.15–1.90 m; regular-arm closer on each leaf (`Kit_DoorCloser_*`, existing spec).
 - **Held open** at 90° (swinging toward +Z, the egress direction) by **magnetic holders** (`Kit_MagHolder`, new: grey box 0.10 × 0.10 × 0.08 m on a 0.28 m wall extension at 1.95 m; armature plate on the leaf's top corner).
 - **On the trip (t = 0):** all holders release together (one shared thunk per pair). Closer curve: 90° → 10° linearly over 3.0 s, then 10° → 0° over 1.0 s, eased (period closers sweep in 3–7 s). No latch: a shut leaf rests closed and pushes open.
-- From the trip line at a sprint you reach the z 9 pair at 1.4 s, when it is about 50° open: you push through a closing door. The z 0 pair shuts behind you.
+- From the trip line at a sprint you reach the z 9 pair at 1.4 s, when it is about 54° open: you push through a closing door. The z 0 pair shuts behind you.
 - Header plate on each pair, both faces: **"FIRE DOORS — DO NOT OBSTRUCT"** (red caps on white plastic).
 
 ### 4.3 Surfaces, ceiling, floor, colour
@@ -286,7 +288,7 @@ CR-1 to CR-5, plus **CR-7** (held door pairs inside the module, release on the t
 ### 4.8 Cost (C)
 | | Desktop | WebGL tier |
 |---|---|---|
-| Lights | armed 9, tripped 18 + 4 tiny flasher points = 22 | 9 (one per cell, intensity doubled when tripped); flashers emissive only |
+| Lights | armed 10, tripped 18 + 4 tiny flasher points = 22 | one per strip: armed 5, tripped 9 (intensity doubled); flashers emissive only |
 | Shadowed | 6 | 0 |
 | With the anteroom | ≤ 28 | ≤ 15 |
 | New assets | `Kit_StripFixture_8ft`, `Kit_MagHolder`, `Kit_FlasherLamp`, RN-F pair leaves with lites, pair frame, `Kit_FloorBurnisher`, `Kit_Wheelchair`, `Kit_PullStation`; `Run_GlazedTile`, `Run_Plaster`, border VCT | LOD1 |
@@ -309,7 +311,7 @@ CR-1 to CR-5, plus **CR-7** (held door pairs inside the module, release on the t
 | Canon / Red's Week 1 pitch | strongest | medium | weak |
 | Fits EGRESS | partly | best (its chase grammar in full) | good (holders = the lock-on cue) |
 | Photosafety | one cut, red steady | one 0.35 s black | strike front + 1 Hz tiny flashers |
-| Map asks | CR-1–5 (+ CR-6 decor doors) | CR-1–5 | CR-1–5, CR-7 (largest) |
+| Map asks | CR-1–6 (+ locked side doors) | CR-1–6 | CR-1–7 (largest) |
 | Desktop lights tripped / WebGL | 9 / 5 | 10 / 4 | 22 / 9 |
 | Visual days | 6–8 | 8–10 | 10–12 |
 
@@ -341,14 +343,14 @@ Nothing goes into Red's project. Each agent works in its own clone and writes on
 ### 7.2 Shared geometry
 - **Level 0 anteroom:** 3 × 2 cells, x −4.5…4.5, z −6…0, 2.9 m. `L0_Wallpaper` / `L0_Carpet` / `L0_Ceiling` (`FrontRoomsSurfaces.Room(RoomRule.Lobby, slot)`), walls 0.16 m on cell lines, `_CeilingHeight` 2.9 on wall renderers. Six map lamps, one per cell: lens 0.6 × 0.025 × 1.2 at the cell centre + 0.3 m Z, URP Lit albedo (1, .98, .92), smoothness .1, emission (1, .96, .84) × 2.6; spot 0.06 m below, 162° / 96°, (1, .96, .88), intensity 5, range 10; the two lamps nearest the arch cast soft shadows. This copies `FrontRoomsMapWorld.cs:1173-1227`.
 - **Corridor:** x −1.5…1.5, z 0…27, walls 0.16 m centred on x = ±1.5, z = 0 and z = 27. Arch in the z = 0 wall: x −0.7…0.7, height 2.2 (C: the door pair opening instead). A dark-bronze steel cased frame (`Prop_SteelBrown`, 0.05 m face) on the corridor side of the arch marks the finish change.
-- **Goal:** RN-F leaf 1.0 × 2.1 (built with the kit's door scripts if present in the clone, else a faithful blockout: laminate leaf, steel frame, push plate, D-pull, closer body) with a 0.25 × 0.75 m lite at 1.15–1.90 m, shut.
+- **Goal:** RN-X, 1.0 × 2.1 (built with the kit's door scripts if present in the clone, else a faithful blockout: wood-grain laminate leaf, dark-bronze steel frame, crossbar exit device on the corridor face at 1.0 m, kick plate, closer body) with a 0.25 × 0.75 m lite at 1.15–1.90 m, shut.
 - **Stub beyond the goal:** one Level 0 cell, z 27…30, one map lamp, so the lite and the 5 mm door gap show warm light.
 - **Relay proxy:** if the scene's current Relay (`Hunter` in `FrontRooms3D.unity`) can be instanced into the look-dev scene, use it. Otherwise a proxy: capsule body r 0.24, top 1.73 m; shoulder box 0.78 × 0.24 × 0.30 at 1.72 m; head sphere Ø 0.28 centred at 1.60 m, 0.12 m forward; body albedo **#2B2928** smoothness .25, head **#D8D4C8** smoothness .35; casts shadows. Say which was used.
 - **Wired glass stand-in** (until `Glass_Wired` exists): URP Lit transparent (.80, .85, .86, α .25), smoothness .9, plus an alpha-tested quad 2 mm behind it with a 12.5 mm square wire grid (0.6 mm lines, #6E6E6A).
 
 ### 7.3 Shared rendering rules
 - **Corridor ambient:** give corridor renderers `lightProbeUsage = CustomProvided` and an SH set through a MaterialPropertyBlock (`CopySHCoefficientArraysFrom`), scaled from the global trilight per state (A: 0.6 armed / 0.15 tinted (1, .35, .30) tripped; B: 0.6 / 0.10; C: 1.0 / 1.2). If URP ignores it in this version, fall back to a Light Probe Group with hand-set SH, and say so. Production would use a `_FR_AmbientScale` term in the Surface shader (a cost line, not for now).
-- **Local post:** create `Assets/Resources/Rendering/FrontRoomsPost_Run_<A|B|C>.asset` with the values in §2–4 and add it with `FrontRoomsPostStack.EnsureZoneVolume(root, "Run_<A|B|C>", corridor bounds, 1.0f)`, priority 2.
+- **Local post:** create `Assets/Resources/Rendering/FrontRoomsPost_Run_<A|B|C>.asset` with the values in §2–4 and add it with `FrontRoomsPostStack.EnsureZoneVolume(root, "Run_<A|B|C>", corridor bounds, 1.0f)`, then set its `priority` to 2 (the helper sets 1).
 - **States are deterministic:** a clone-only component `FrontRoomsRunLookdevRig` with `Evaluate(float t)` (t = seconds since the trip; t < 0 = armed) sets every light, emission, door angle and ambient from the tables above. No Play Mode, no random rolls.
 - **Signature asset at hero quality, the rest blockout.** The direction's signature object (A: the hanging EXIT sign; B: the twin-head unit; C: the magnet holder, the door pair and the strip fixture) is modelled in Blender in the clone (`<clone>/Tools/Blender/frontrooms_kit/assets/run_*.py`, kitlib conventions, LOD0) and imported with the clone's `FrontRoomsKitImporter`. Secondary props may be correct-size, correct-albedo blockouts. Say which is which.
 - **Sign faces:** generate the new period faces (EXIT, plates) with TeX Gyre Heros Bold Condensed / Bold from `Assets/Fonts/Period1990/TeXGyre/`. No Arial.
@@ -363,7 +365,7 @@ Nothing goes into Red's project. Each agent works in its own clone and writes on
 | **C1** chase | t = −0.5 s | (0, 1.62, 0.8) | (0, 1.30, 27.0) | stepping in |
 | **C2** chase | mid-change (A t = +0.10; B t = +0.20; C t = +0.90) | (0, 1.62, 1.5) | same | the light behaviour |
 | **C3** chase | t = +2.0 s | (0, 1.62, 12.5) (5.5 m/s × 2 s) | (0, 1.30, 27.0) | the goal mid-run |
-| **C4** chase | t = +4.0 s | (0, 1.62, 23.5), looking back | (0, 1.40, 0.0) | Relay proxy on the axis at z 11.5 (12 m behind), facing the camera: the silhouette test |
+| **C4** chase | t = +4.0 s | (0, 1.62, 23.5), looking back | (0, 1.40, 0.0) | Relay proxy on the axis at z 11.5 (12 m behind), facing the camera: the silhouette test (C: the z 18 pair is shut between them, so the read is through its lites) |
 
 S3 per direction:
 - **A:** eye (0.9, 1.62, 9.3) → the sign at (0, 2.42, 12.0), tripped. Shows the stencil face, rods, red spill on tiles and wall, the rail below.
@@ -401,7 +403,7 @@ Use `<scratchpad>/run_research/measure.py` (Y p5 / p50 / p95 / p99.5, contrast, 
 - **CR-3 · Finish override.** `public enum ModuleFinish : byte { Zone, Run }` (append-only), `public ModuleFinish finish = ModuleFinish.Zone;`. With `Run`, the map gives this module's shell the Run materials (the visual chat supplies them through `FrontRoomsSurfaces`), splits the south edge like a theme border, and skips Level 0 piles, columns (`ModuleColumns.None`) and the Office kit (`ModuleFill.None`).
 - **CR-4 · Lamps belong to the rig.** All 9 cells use `ModuleLamp.Off` (no map fixture, exists today). The visual chat's `FrontRoomsRunRig` builds the lights. The map exposes the module instance (cells, rotation, trigger state) to the rig when the chunk is built and dropped (`ChunkBuilt` / `ChunkDropped`, already requested by the wallpaper chat), and forwards `WarnStage` so the armed corridor can play the stage-1 warning on its own fixtures. The lamp-override layer (`LampFx` Dip / Sag / Warn) skips these cells.
 - **CR-5 · Placement.** As §9 of the pursuit redesign: one per 2–3 zones, ≥ 15 cells from the start door, not in the first zone, the arch on its own zone's side, ≥ 9 cells from any Relay entry, never at a dead end unless its goal door leads on.
-- **CR-6 · The goal door.** Red's decision 1 puts doors only on zone borders. Two ways: (a) let a module with `trigger != None` author `ModuleEdge.Door` (append-only) on its own perimeter, member RN-F; or (b) place the module so its north edge lies on a zone border, where the map makes the door anyway (member chosen as Run because the module says so). (a) needs Red's OK because it changes decision 1. Direction A's locked side doors use the same edge kind, or stay as non-opening props.
+- **CR-6 · The goal door.** Red's decision 1 puts doors only on zone borders. Two ways: (a) let a module with `trigger != None` author `ModuleEdge.Door` (append-only) on its own perimeter, member RN-X (latching); or (b) place the module so its north edge lies on a zone border, where the map makes the door anyway (member chosen as Run because the module says so). (a) needs Red's OK because it changes decision 1. Direction A's locked side doors use the same edge kind, or stay as non-opening props.
 - **CR-7 (C only) · Held door pairs.** `ModuleEdge.DoorPairHeld` (append-only) on inner edges: a 2.24 × 2.1 m pair, no latch, held open; on `RoomTriggered` the visual rig animates the close over 4 s; the map's door state machine treats each leaf as `Ajar` while closing and `Closed (unlatched)` after; the player pushes through on contact at walk or sprint without Use; the Relay pays +0.4 s per pair (as Ajar); the leaves block the Relay's sight except through the lites only if the glass track's sight rule allows (default: they block).
 
 **Sound chat (声音设计).**
@@ -410,7 +412,7 @@ Use `<scratchpad>/run_research/measure.py` (Y p5 / p50 / p95 / p99.5, contrast, 
 - **CR-S3 ·** the direction's events from §2.7 / §3.7 / §4.7, raised by `FrontRoomsRunRig` as C# events with positions (`RunStateChanged(state, pos)`, plus per-object events). Per `AUDIO_CONTRACT.md`, the visual side never touches audio files.
 - **CR-S4 ·** the rig's lights must not be picked up as "fixture hum" voices unless the sound chat wants them (today the hum follows the 4 nearest Lights registered by name).
 
-**Interactables track.** `Kit_DoorLeaf_Ward_Lite` (RN-F with a 0.25 × 0.75 m wired lite); for C, the RN-F pair version and `Kit_MagHolder`. **Glass track.** `Glass_Wired`.
+**Interactables track.** The RN-X member (`Kit_DoorLeaf_Ward_Lite` = RN-F's leaf with a 0.25 × 0.75 m wired lite, plus `Kit_ExitDevice_Crossbar`, latch and lever trim) for all three; for C, the RN-F pair version (no latch) and `Kit_MagHolder`. **Glass track.** `Glass_Wired`.
 
 ---
 

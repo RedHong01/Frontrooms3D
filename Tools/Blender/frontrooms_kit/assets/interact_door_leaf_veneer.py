@@ -42,8 +42,8 @@ from mathutils import Vector
 import interact_door_common as dc
 
 NAME = "Kit_DoorLeaf_Veneer"
-LOD1 = 0.40
-LOD1_RATIO = 0.40
+LOD1 = 0.36
+LOD1_RATIO = 0.36
 LOD2_RATIO = 0.05
 LOD_DISTANCES = (4.0, 12.0, None)
 SMOOTH_ANGLE = 35.0
@@ -81,45 +81,61 @@ def wear(P, N, edge, obj):
     return r, g, b
 
 
-def build(kit):
-    rng = random.Random(41030)
-
-    # 1. Slab (Door_Veneer first -> submesh 0): lofted section with the
+def build_leaf(kit, leaf_slot, hw_slot, rng, faceplate=True, extra=None, wear_fn=None, protect_extra=(), drop_plates_lod1=False):
+    """The veneer-type flush leaf: slab, hinge halves and (optionally) the
+    bored-latch faceplate. ``extra(kit, slab, cuts)`` may add parts and slab
+    cutters before the cuts are applied (used by Kit_DoorLeaf_Ward)."""
+    # 1. Slab (leaf slot first -> submesh 0): lofted section with the
     #    top/bottom arris rounds and the hand-wear transition on the latch stile.
     rings = dc.chamfer_rings(dc.LEAF_Y0, 1, lambda o: section(o))
     rings += [(WEAR_Y[0], section()), (WEAR_Y[1], section(wear=True)),
               (WEAR_Y[2], section(wear=True)), (WEAR_Y[3], section())]
     rings += list(reversed(dc.chamfer_rings(dc.LEAF_Y1, -1, lambda o: section(o))))
-    slab = dc.loft_y(kit, rings, VENEER, "slab", grain="z")
+    slab = dc.loft_y(kit, rings, leaf_slot, "slab", grain="z")
     cuts = dc.leaf_mortise_cutters()
+    protect = [slab]
+    if extra is not None:
+        protect += list(extra(kit, slab, cuts) or [])
 
     # 2. Bored-latch faceplate, mortised flush on the bevelled edge.
-    fw, fh, ft = FACEPLATE
-    plate, mort = dc.edge_plate(kit, BRASS, 1.000, fw, fh, ft, "latch faceplate", bevel=0.0002)
-    cuts.append(mort)
+    if faceplate:
+        fw, fh, ft = FACEPLATE
+        plate, mort = dc.edge_plate(kit, hw_slot, 1.000, fw, fh, ft, "latch faceplate", bevel=0.0002)
+        cuts.append(mort)
+        dc.cut(plate, [dc.edge_opening(1.000, *LATCH_OPENING)])
+        R, n = dc.latch_frame()
+        for dy in (-0.0215, 0.0215):
+            c = Vector((0.0, 1.000 + dy, dc.LEAF_Z_LATCH_MID))
+            s = dc.flat_head(kit, c, n, hw_slot, rng, d=0.0076, host=plate, notch=0.0009, name="faceplate screw")
+            kit.lod1_drop(s)
+            dc.lod2_drop(s)
+        dc.lod2_drop(plate)
+        if drop_plates_lod1:
+            kit.lod1_drop(plate)
     dc.cut(slab, cuts)
-    dc.cut(plate, [dc.edge_opening(1.000, *LATCH_OPENING)])
-    R, n = dc.latch_frame()
-    for dy in (-0.0215, 0.0215):
-        c = Vector((0.0, 1.000 + dy, dc.LEAF_Z_LATCH_MID))
-        s = dc.flat_head(kit, c, n, BRASS, rng, d=0.0076, host=plate, notch=0.0009, name="faceplate screw")
-        kit.lod1_drop(s)
-        dc.lod2_drop(s)
-    dc.lod2_drop(plate)
 
     # 3. Door halves of the three butts.
     for y0, _ in dc.HINGES:
-        for p in dc.hinge_half(kit, "leaf", y0, BRASS, rng):
+        for p in dc.hinge_half(kit, "leaf", y0, hw_slot, rng):
             dc.lod2_drop(p)
-            if p.get("fr_screw") or "web" in p.name:
+            if p.get("fr_screw") or "web" in p.name or (drop_plates_lod1 and "hinge leaf" in p.name):
                 kit.lod1_drop(p)
 
-    dc.finalize(kit, SMOOTH_ANGLE, wear, protect=[slab])
+    dc.finalize(kit, SMOOTH_ANGLE, wear_fn or wear, protect=protect + list(protect_extra))
 
     # ---- checks ---------------------------------------------------------
     lo, hi = dc.assert_box([slab], (-dc.LEAF_X, dc.LEAF_Y0, dc.LEAF_Z_HINGE), (dc.LEAF_X, dc.LEAF_Y1, dc.LEAF_Z_LATCH_S), what="slab")
     assert abs(hi[0] - dc.LEAF_X) < 1e-4 and abs(lo[1] - dc.LEAF_Y0) < 1e-4 and abs(hi[1] - dc.LEAF_Y1) < 1e-4
     assert abs(hi[2] - dc.LEAF_Z_LATCH_S) < 2e-4, "latch edge S %.4f" % hi[2]
+    return slab
+
+
+def build(kit):
+    rng = random.Random(41030)
+    # LOD1: the flush-mortised hinge leaves and faceplate are dropped (their
+    # 1.5-3.4 mm edge recesses are sub-pixel beyond 4 m), so the knuckles
+    # keep enough triangles instead of collapsing (kitlib protects thin parts).
+    build_leaf(kit, VENEER, BRASS, rng, drop_plates_lod1=True)
     blo, bhi = dc.bounds_unity(kit.parts)
     assert bhi[0] <= dc.AXIS_X + dc.KNUCKLE_R + 1e-4 and blo[0] >= -dc.LEAF_X - 1e-4, "nothing proud of the faces but the knuckles"
 

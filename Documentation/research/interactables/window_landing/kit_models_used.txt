@@ -1,0 +1,10 @@
+Kit_WindowFrame_Wood.fbx sha256 c04086fcfef0 built Oct  3 12:28:09 2026
+Kit_WindowFrame_Wood.json sha256 dac617c552e0 built Oct  3 12:28:09 2026
+Kit_WindowFrame_Steel.fbx sha256 6f6fc4160500 built Oct  3 12:27:33 2026
+Kit_WindowFrame_Steel.json sha256 f9ab885d34a7 built Oct  3 12:27:33 2026
+Kit_WindowFrame_Steel_Enamel.fbx sha256 350c19968cbb built Oct  3 12:27:33 2026
+Kit_WindowFrame_Steel_Enamel.json sha256 a347cf88cdb9 built Oct  3 12:27:33 2026
+Kit_WindowFrame_Alu.fbx sha256 1d046e819eda built Oct  3 12:29:17 2026
+Kit_WindowFrame_Alu.json sha256 2460637f86fd built Oct  3 12:29:17 2026
+Kit_MiniBlind_Raised.fbx sha256 2592b64eb7d9 built Oct  3 12:28:41 2026
+Kit_MiniBlind_Raised.json sha256 9fabebf69e74 built Oct  3 12:28:41 2026

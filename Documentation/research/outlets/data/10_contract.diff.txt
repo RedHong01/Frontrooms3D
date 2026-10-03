@@ -1,0 +1,84 @@
+321a322,323
+>     // Outlets (FrontRoomsWallFixtures): every wall face BuildEdge built for the chunk being built.
+>     readonly List<FrontRoomsWallFixtures.WallFace> wallFaces = new List<FrontRoomsWallFixtures.WallFace>();
+867a870
+>         wallFaces.Clear();
+911c914,915
+<                 !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax));
+---
+>                 !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
+>                 data, wallFaces);
+915c919,920
+<                 !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)));
+---
+>                 !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
+>                 data, wallFaces);
+955a961,963
+>         var outletWatch = System.Diagnostics.Stopwatch.StartNew(); // PROBE
+>         FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);
+>         OutletProbe.InstallMs += outletWatch.Elapsed.TotalMilliseconds; // PROBE
+1020c1028,1029
+<         bool mayExtendStart = true, bool mayExtendEnd = true)
+---
+>         bool mayExtendStart = true, bool mayExtendEnd = true,
+>         MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)
+1045c1054,1059
+<         if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }
+---
+>         if (kind == EdgeKind.Wall)
+>         {
+>             Piece(0f, length, 0f, height, true, true);
+>             AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);
+>             return;
+>         }
+1069a1084
+>         AddWallFaces(faces, faceData, kind, a, b, start, along, c - width * .5f, c + width * .5f, sill, openingTop);
+1131a1147,1180
+>         }
+>     }
+> 
+>     /// <summary>
+>     /// Outlets: list both faces of an edge BuildEdge just built, for
+>     /// FrontRoomsWallFixtures. Faces round the start area are left out. Side 0
+>     /// faces into a (this chunk's cell), side 1 into b; b is in the next chunk
+>     /// on the east and north border ("foreign": no room, seed-pure inputs only).
+>     /// </summary>
+>     void AddWallFaces(List<FrontRoomsWallFixtures.WallFace> faces, MapChunk data, EdgeKind kind, GridCoord a, GridCoord b,
+>         Vector3 start, Vector3 along, float openFrom, float openTo, float openBottom, float openTop)
+>     {
+>         if (faces == null || data == null || InStartArea(a) || InStartArea(b)) return;
+>         var t0 = System.Diagnostics.Stopwatch.GetTimestamp(); // PROBE
+>         var across = new Vector3(along.z, 0f, along.x);
+>         var edge = EdgeId(a, b);
+>         var o = data.Origin;
+>         for (var side = 0; side < 2; side++)
+>         {
+>             var cell = side == 0 ? a : b;
+>             var zone = Cache.ZoneOf(cell);
+>             var normal = side == 0 ? -across : across;
+>             int li = cell.x - o.x, lj = cell.y - o.y;
+>             var own = li >= 0 && li < MapGrid.ChunkCells && lj >= 0 && lj < MapGrid.ChunkCells;
+>             var room = -1;
+>             if (own) for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(li, lj)) { room = r; break; }
+>             faces.Add(new FrontRoomsWallFixtures.WallFace
+>             {
+>                 start = start + normal * ModuleUnits.WallHalf, direction = along, length = MapGrid.CellSize, normal = normal,
+>                 kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
+>                 edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
+>                 zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
+>                 zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
+>             });
+1132a1182
+>         OutletProbe.CollectTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; // PROBE
+1133a1184,1186
+> 
+>     /// <summary>The world edge id shared by both faces of a wall (outlets hash it with the face side).</summary>
+>     public static long WallEdgeId(GridCoord a, GridCoord b) => EdgeId(a, b);
+2641a2695,2701
+> 
+> // PROBE (clone only): outlet contract timings.
+> public static class OutletProbe
+> {
+>     public static double InstallMs;
+>     public static long CollectTicks;
+> }

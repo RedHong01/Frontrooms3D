@@ -22,8 +22,9 @@ What lives here
 * boolean(): EXACT boolean through a temporary cutter; slot=... transfers the
   cutter's material to the cut faces (dark cavities = Prop_PlasticBlack).
 * Slotted screw builders (oval head and flat countersunk head).
-* paint_wear(): the fr_wear colour attribute (spec §1.8 W2), on every part.
-  Encoding (1 = untouched): R = hand grime, G = edge wear, B = cavity.
+* paint_wear(): the fr_wear colour attribute (spec §1.8 W2), on every part
+  (BYTE_COLOR, face-corner domain). Encoding (1 = untouched):
+  R = hand grime, G = edge wear, B = cavity.
 * Meta helpers: motion, LOD distances and ratios, triangle and bounds checks.
 """
 
@@ -449,12 +450,14 @@ def boolean(kit, obj, cutter, op="DIFFERENCE", slot=None):
 def tidy(obj, delete_below=None, axis_z=None):
     """Triangulate n-gons (> 4 sides; concave-safe), optionally delete faces
     whose every vertex lies below Unity part Z ``delete_below`` (hidden
-    undersides), and drop loose geometry."""
+    undersides; dark slot faces are always kept), and drop loose geometry."""
     me = obj.data
     bm = bmesh.new()
     bm.from_mesh(me)
     if delete_below is not None:
-        doomed = [f for f in bm.faces if all(to_unity(v.co)[2] < delete_below for v in f.verts)]
+        dark = [i for i, m in enumerate(me.materials) if m is not None and m.name == DARK]
+        doomed = [f for f in bm.faces if f.material_index not in dark
+                  and all(to_unity(v.co)[2] < delete_below for v in f.verts)]
         if doomed:
             bmesh.ops.delete(bm, geom=doomed, context="FACES")
     big = [f for f in bm.faces if len(f.verts) > 4]
@@ -475,9 +478,14 @@ def tris(obj):
 
 # ------------------------------------------------------------------- wear
 def paint_wear(obj, fn=None):
-    """fr_wear colour attribute (BYTE_COLOR, face corners). fn(P, N, slot)
-    gets Unity part-space position and normal and the slot name and returns
-    (R hand grime, G edge wear, B cavity), 1 = untouched."""
+    """fr_wear colour attribute (BYTE_COLOR, FACE-CORNER domain). fn(P, N,
+    slot) gets the Unity part-space position, the face normal and the face's
+    slot name and returns (R hand grime, G edge wear, B cavity), 1 =
+    untouched. Faces in Prop_PlasticBlack (cavities) get B <= 0.35.
+    Corner, not point (G1/G3/G4 use point): boolean rims share vertices
+    between a dark cavity wall and a long face triangle, and a per-point
+    value would smear the cavity mask across the whole face. Both domains
+    export as FBX vertex colours."""
     me = obj.data
     attr = me.color_attributes.get("fr_wear")
     if attr is None:
@@ -488,12 +496,11 @@ def paint_wear(obj, fn=None):
         slot = names[poly.material_index] if poly.material_index < len(names) else ""
         for li in poly.loop_indices:
             p = to_unity(me.vertices[me.loops[li].vertex_index].co)
-            c = (1.0, 1.0, 1.0)
-            if fn is not None:
-                c = fn(p, n, slot)
+            c = fn(p, n, slot) if fn is not None else (1.0, 1.0, 1.0)
             if slot == DARK:
                 c = (c[0], c[1], min(c[2], 0.35))
-            attr.data[li].color_srgb = (max(0.0, min(1.0, c[0])), max(0.0, min(1.0, c[1])), max(0.0, min(1.0, c[2])), 1.0)
+            attr.data[li].color_srgb = (max(0.0, min(1.0, c[0])), max(0.0, min(1.0, c[1])),
+                                        max(0.0, min(1.0, c[2])), 1.0)
     me.color_attributes.active_color = attr
     return obj
 
@@ -547,14 +554,17 @@ def oval_screw(kit, cx, cy, zs, D=0.0070, dome=0.0012, slot_w=0.0008, slot_d=0.0
 def flat_screw(kit, cx, cy, zs, D=0.0095, proud=0.0001, slot_w=0.0009, slot_d=0.0007,
                ang=0.0, segs=48, slot=CHROME, name="flat screw"):
     """Flat countersunk slotted screw: the face sits ``proud`` above the
-    surface z = zs with a 0.15 mm edge chamfer; the cone below is deleted."""
+    surface z = zs (negative = just sunk) with a 0.15 mm edge chamfer; the
+    82-degree-ish cone below sits in a countersink(); its hidden bottom is
+    deleted by finish_part(delete_below=zs - 0.0003)."""
     r = D / 2
-    prof = [(0.0, zs - 0.0008), (r - 0.0008, zs - 0.0008), (r, zs - 0.00005),
-            (r, zs + proud - 0.00012), (r - 0.00015, zs + proud), (0.0, zs + proud)]
+    zf = zs + proud
+    prof = [(0.0, zs - 0.0008), (r - 0.0008, zs - 0.0008), (r, zf - 0.00025),
+            (r - 0.00015, zf), (0.0, zf)]
     m = Mesh()
     m.lathe(prof, segs, (cx, cy))
     obj = m.to_object(kit, name, slot)
-    boolean(kit, obj, _slot_cutter(cx, cy, zs + proud, slot_d, slot_w, D + 0.002, ang), slot=DARK)
+    boolean(kit, obj, _slot_cutter(cx, cy, zf, slot_d, slot_w, D + 0.002, ang), slot=DARK)
     return obj
 
 
@@ -577,7 +587,8 @@ LIP_X0, LIP_X1 = -0.016, -0.040
 LIP_CURL = 0.0008              # the lip end rises to Z +0.001 (<= 1 mm, §3.1)
 
 
-def build_strike(kit, half_len, openings, lip_y, screw_y, screw_segs=48, lip_steps=9, corner_k=4):
+def build_strike(kit, half_len, openings, lip_y, screw_y, screw_segs=48, corner_k=4, box_k=3,
+                 lip_xs=(-0.0157, -0.021, -0.026, -0.030, -0.033, -0.035, -0.0368, -0.0382, -0.0393, -0.040)):
     """A strike plate in the part frame of 10_spec §3.1: plate centre on the
     latch lining, front (+Z) facing the leaf edge, the curved lip toward part
     -X (= door +X, the swing side the latch arrives from). ``openings`` =
@@ -590,15 +601,16 @@ def build_strike(kit, half_len, openings, lip_y, screw_y, screw_segs=48, lip_ste
     plate = m.to_object(kit, "strike plate", CHROME)
     for y, hx, hy, depth in openings:
         c = Mesh()
-        c.prism(rounded_rect(0.0, y, hx, hy, 0.001, 3), zb - 0.002, zf + 0.002)
+        c.prism(rounded_rect(0.0, y, hx, hy, 0.001, box_k), zb - 0.002, zf + 0.002)
         boolean(kit, plate, c)
+    for sy in screw_y:      # countersink seats: the slotted heads sit in them, flush
+        boolean(kit, plate, countersink(0.0, sy, zf, 0.0085 / 2 + 0.00015, cone=0.0010, segs=screw_segs), slot=DARK)
     # Lip: a tongue off the -X edge round the latch opening, curling up
     # toward the leaf by LIP_CURL over its outer 14 mm (one piece with the
     # plate in reality; overlaps the plate edge by 0.3 mm here).
     y0, y1 = lip_y
     rc = 0.006
-    xs = [LIP_X0 + 0.0003] + [LIP_X0 + (LIP_X1 - LIP_X0) * i / (lip_steps - 1) for i in range(1, lip_steps)]
-    xs = sorted(set(xs + [LIP_X1 + rc]), reverse=True)
+    xs = sorted(set(list(lip_xs) + [LIP_X1 + rc]), reverse=True)
     sections = []
     for x in xs:
         dy = 0.0
@@ -615,8 +627,8 @@ def build_strike(kit, half_len, openings, lip_y, screw_y, screw_segs=48, lip_ste
     lip = lm.to_object(kit, "strike lip", CHROME)
     bm_ = Mesh()
     for y, hx, hy, depth in openings:
-        top = [bm_.add((x, yy, zb)) for x, yy in rounded_rect(0.0, y, hx, hy, 0.001, 3)]
-        bot = [bm_.add((x, yy, zb - depth)) for x, yy in rounded_rect(0.0, y, hx, hy, 0.001, 3)]
+        top = [bm_.add((x, yy, zb)) for x, yy in rounded_rect(0.0, y, hx, hy, 0.001, box_k)]
+        bot = [bm_.add((x, yy, zb - depth)) for x, yy in rounded_rect(0.0, y, hx, hy, 0.001, box_k)]
         n = len(top)
         for i in range(n):
             j = (i + 1) % n
@@ -625,7 +637,7 @@ def build_strike(kit, half_len, openings, lip_y, screw_y, screw_segs=48, lip_ste
     boxes = bm_.to_object(kit, "dust boxes", DARK, recalc=False)
     screws = []
     for sy, ang in zip(screw_y, (8.0, -23.0, 41.0, -5.0)):
-        s = flat_screw(kit, 0.0, sy, zf, D=0.0085, proud=0.0001, slot_w=0.0009, slot_d=0.0006, ang=ang,
+        s = flat_screw(kit, 0.0, sy, zf, D=0.0085, proud=-0.00005, slot_w=0.0009, slot_d=0.0006, ang=ang,
                        segs=screw_segs, name="strike screw")
         screws.append(s)
     return plate, lip, boxes, screws
