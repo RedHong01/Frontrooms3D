@@ -36,8 +36,17 @@ namespace FrontRooms.Audio
 
         public static void Note(string what) => Trace("note", what);
 
+        /// <summary>
+        /// Caption for a sound that is really playing (FMOD ready). The HUD shows it only when Settings ->
+        /// CAPTIONS is on, and adds the direction from the player's view when a source is given.
+        /// </summary>
+        public static void Caption(string text, Vector3? source = null, float seconds = 2.5f)
+        {
+            if (Ready) global::FrontRoomsCaptions.Post(text, source, seconds);
+        }
+
         /// <summary>Bumped with every change to the audio scripts, so a console line says which code is running.</summary>
-        public const string CodeVersion = "2026-10-03.4";
+        public const string CodeVersion = "2026-10-03.5";
 
         /// <summary>
         /// Which sound set is loaded: the audio code version plus the bank build time and short checksums of the

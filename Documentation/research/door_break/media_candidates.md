@@ -70,3 +70,16 @@ Status 2026-10-03. Nothing on this list has been downloaded. The visual chat wil
 - A bright, close capture of **Amnesia: The Dark Descent** door damage meshes (D1, D2) and the broken door.
 - **Battlefield 6** (2025) footage of a door or wall "degrading before it breaks" (EA's Labs article has none embedded in the text I read: https://www.ea.com/games/battlefield/battlefield-6/news/battlefield-labs-destruction).
 - A still of **Lady Dimitrescu ducking through a doorway** (Capcom trailer, 2021), as the squeezed giant's door-pose reference.
+
+
+## 10 — Design (`10_design.md`)
+
+**Already on disk (reuse, no request needed):** `scratchpad/creature_prev/giant_b/Giant_B_NightShift_door_a.png` and `_low_a.png` (Giant B's door and low poses, for Direction C's lead frame), `../interactables/proposal/media/kane_emg_0053_oak_door_lever.jpg` (A), `kane_emg_0125_door_six_bolts.jpg` and `a24_trailer_0139_dark_door_level0.jpg` (B), credited from `../interactables/proposal/media/SOURCES.md`.
+
+The directions' lead references are rows already listed above (A: `df01`, `df02`, `db05`, `df05`; B: `db01a–e`, `db02`; C: `db03` and the Lady Dimitrescu still). New wishes, not yet found (search with Red's approval):
+
+| Proposed filename | Page URL | Direct URL | Approx size | Licence | What it proves |
+|---|---|---|---|---|---|
+| `db10_dented_enamel_steel_door.jpg` | not yet found (search Wikimedia Commons: "dented steel door", "damaged metal door") | — | ~2–4 MB | prefer CC / PD | Paint cracking in rings and rays round a dent on a painted hollow-metal door: the "steel like glass" claim in `10_design.md` §2.3 (UNVERIFIED there) |
+| `db11_coating_impact_test_panel.jpg` | not yet found (search: falling-weight impact test of paint, ASTM D2794 test panel photo) | — | <1 MB | any; internal if © | Star cracking of a coating round an impact dent, measured |
+| `db12_bored_lockset_knocked_out.jpg` | not yet found (search: "knocked out lockset door hole", forcible-entry "through the lock") | — | <2 MB | prefer CC / PD | A wood door with its bored lockset driven out: the 54 mm hole Direction B relies on |

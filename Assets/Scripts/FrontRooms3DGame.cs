@@ -72,6 +72,10 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     Text roomMetaText, roomText, threatStateText, distanceText, contextText, overlayText, keyText, displaySettingsText;
     Image crosshairImage, keyImage;
     Text promptText;
+    // Captions (audit 2.11): lines above the hint card, outside the shot fade, only with Captions on.
+    GameObject captionPanel;
+    Text captionText;
+    CanvasGroup captionHudGroup;
     Image holdBarFill;
     GameObject holdBar;
     readonly Image[] staminaSegments = new Image[5];
@@ -608,6 +612,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         fallSpeed = 0f;
         climbTime = -1f;
         stamina = StaminaSeconds;
+        FrontRoomsCaptions.Clear();
         winded = false;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
@@ -1669,6 +1674,14 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         contextText = Text(contextPanel.transform, "Context", new Vector2(.5f, .5f), new Vector2(10, 0), new Vector2(820, 72), 24, TextAnchor.MiddleCenter);
         contextText.color = paper;
 
+        captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), new Vector2(0, 208), new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
+        captionHudGroup = captionPanel.AddComponent<CanvasGroup>();
+        captionText = Text(captionPanel.transform, "Captions", new Vector2(.5f, .5f), Vector2.zero, new Vector2(880, 110), 20, TextAnchor.MiddleCenter);
+        captionText.color = paper;
+        captionText.supportRichText = true;
+        captionText.lineSpacing = 1.15f;
+        captionPanel.SetActive(false);
+
         var crosshairObject = Panel(g.transform, "HUD / Crosshair", new Vector2(.5f, .5f), Vector2.zero, new Vector2(32, 32), Color.white);
         crosshairImage = crosshairObject.GetComponent<Image>();
         crosshairImage.sprite = LoadHudSprite("UI/HUD_Crosshair");
@@ -1805,6 +1818,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         {
             elapsed += dt;
             flashTime -= dt;
+            FrontRoomsCaptions.Tick(dt);
             for (var i = rattleJolts.Count - 1; i >= 0; i--)
             {
                 if (elapsed < rattleJolts[i].at) continue;
@@ -1862,6 +1876,30 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         }
         if (keyPanel != null) keyPanel.SetActive(showKey);
         if (contextPanel != null) contextPanel.SetActive(play && hint.Length > 0);
+        UpdateCaptions(play);
+    }
+
+    // Captions: one line per sound, with its direction from where the player looks, fading out at the end.
+    readonly System.Text.StringBuilder captionLines = new System.Text.StringBuilder();
+    void UpdateCaptions(bool play)
+    {
+        if (captionPanel == null) return;
+        var lines = FrontRoomsCaptions.Lines;
+        var show = play && FrontRoomsSettings.Captions && lines.Count > 0;
+        if (captionPanel.activeSelf != show) captionPanel.SetActive(show);
+        if (!show) return;
+        var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+        var forward = eye.rotation * Vector3.forward;
+        captionLines.Clear();
+        for (var i = 0; i < lines.Count; i++)
+        {
+            if (i > 0) captionLines.Append('\n');
+            var alpha = Mathf.RoundToInt(FrontRoomsCaptions.Alpha(lines[i]) * 255f);
+            captionLines.Append("<color=#F4F1E8").Append(alpha.ToString("X2")).Append('>')
+                .Append(FrontRoomsCaptions.Format(lines[i], eye.position, forward)).Append("</color>");
+        }
+        captionText.text = captionLines.ToString();
+        ((RectTransform)captionPanel.transform).sizeDelta = new Vector2(920f, 20f + 28f * lines.Count);
     }
 
     // The zone the key panel's label was written for (written again only when it changes).
@@ -1879,6 +1917,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (roomHudGroup != null) roomHudGroup.alpha = hud;
         if (threatHudGroup != null) threatHudGroup.alpha = hud;
         if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
+        if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
         if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
         if (keyHudGroup != null) keyHudGroup.alpha = hud;
     }

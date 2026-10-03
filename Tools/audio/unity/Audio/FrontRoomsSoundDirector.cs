@@ -497,8 +497,8 @@ namespace FrontRooms.Audio
                 if (progress < lastStressProgress) lastStressProgress = 0f;   // a resumed tap keeps its progress: no repeated cracks
             }
             if (windowStress.isValid()) windowStress.setParameterByID(stressProgressId, progress);
-            if (lastStressProgress < .35f && progress >= .35f) FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position);
-            if (lastStressProgress < .7f && progress >= .7f) FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position);
+            if (lastStressProgress < .35f && progress >= .35f) { FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position); Cap("[GLASS CRACKS]", position, 22f); }
+            if (lastStressProgress < .7f && progress >= .7f) { FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position); Cap("[GLASS CRACKS]", position, 22f); }
             lastStressProgress = progress;
         }
 
@@ -508,6 +508,7 @@ namespace FrontRooms.Audio
         {
             FrontRoomsFmod.Stop(ref windowStress, true);
             FrontRoomsFmod.OneShot(SoundIds.WindowShatter, position);
+            Cap("[GLASS SHATTERS]", position, 50f);
         }
 
         void OnDoorBroken(Vector3 position)
@@ -515,8 +516,15 @@ namespace FrontRooms.Audio
             // The leaf is off its hinges now: its motion is the break, not a door being opened.
             FrontRoomsDoorSound.MarkBroken(position);
             FrontRoomsFmod.OneShot(SoundIds.DoorBreak, position);
+            Cap("[DOOR BREAKS]", position, 40f);
             FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, position, SoundIds.Param.Impact, 1f);
             blowCount = 0;
+        }
+
+        /// <summary>Caption a sound only if the listener is within its audible range (captions follow what is heard).</summary>
+        void Cap(string text, Vector3 position, float range)
+        {
+            if (listener != null && Vector3.Distance(listener.position, position) <= range) FrontRoomsFmod.Caption(text, position);
         }
 
         void OnDoorLocked(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.DoorLocked, position);
@@ -536,6 +544,7 @@ namespace FrontRooms.Audio
             // A struck leaf jolts on its hinge: that is not someone opening the door.
             FrontRoomsDoorSound.Suppress(position, 1f);
             FrontRoomsFmod.OneShot(SoundIds.DoorBlow, position, SoundIds.Param.Damage, damage);
+            Cap("[DOOR BLOWS]", position, 36f);
         }
 
         void OnRelayState(HunterState state)
@@ -550,6 +559,7 @@ namespace FrontRooms.Audio
             {
                 relayRevealed = true;                                   // first move after release: heard before seen
                 FrontRoomsFmod.OneShot(SoundIds.RelayClicks, relay.Position + Vector3.up * 2f);
+                Cap("[CLICKING]", relay.Position + Vector3.up * 2f, 30f);
             }
             lastState = state;
         }

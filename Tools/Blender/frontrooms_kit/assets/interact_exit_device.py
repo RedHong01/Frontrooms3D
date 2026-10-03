@@ -7,7 +7,8 @@ Real-world reference: the classic US crossbar ("panic bar") exit device,
 1950s-1990 (the type before the flat touchpad bars took over): a round
 tube on pivoting arms inside two end cases, the latch case at the latch
 end driving the latch. Aluminium cases (US28) and a satin-chrome bar
-(US26D). No maker marks, no "PUSH" decal.
+(US26D). A cover seam runs round each case 20 mm off the door. No maker
+marks, no "PUSH" decal.
 
 Origin: PART frame: the latch-end case mount, i.e. the centre of the latch
 case's back face on the leaf's push face at door (-0.022, 1.000, 0.900).
@@ -52,8 +53,13 @@ def case_section(cx, o):
     w = CASE_W - 2 * max(o, 0.0)
     d = CASE_D - max(o, 0.0)
     rf = max(0.012 - 0.6 * max(o, 0.0), 0.004)
-    pts = [(cx - w / 2, 0.0), (cx + w / 2, 0.0), (cx + w / 2, d), (cx - w / 2, d)]
-    return dc.fillet_polygon(pts, [0.002, 0.002, rf, rf], [3, 3, 10, 10], closed=True)
+    g = 0.0006 if o <= 0.0 else 0.0          # cover seam, 20 mm off the door, on the flat sides only
+    zs = 0.020
+    pts = [(cx - w / 2, 0.0), (cx + w / 2, 0.0),
+           (cx + w / 2, zs - 0.0004), (cx + w / 2 - g, zs), (cx + w / 2, zs + 0.0004),
+           (cx + w / 2, d), (cx - w / 2, d),
+           (cx - w / 2, zs + 0.0004), (cx - w / 2 + g, zs), (cx - w / 2, zs - 0.0004)]
+    return dc.fillet_polygon(pts, [0.002, 0.002, 0, 0, 0, rf, rf, 0, 0, 0], [3, 3, 1, 1, 1, 10, 10, 1, 1, 1], closed=True)
 
 
 def end_case(kit, cx, name):

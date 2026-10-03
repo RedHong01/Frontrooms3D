@@ -5,7 +5,12 @@ Every file here is free to embed in the game: SIL OFL 1.1 (OFL.txt), GUST Font L
 
 These are game-safe stand-ins for the period faces found in the research
 (Helvetica, Futura, ITC Garamond, Goudy, Cheltenham, Avant Garde, Friz Quadrata,
-Cooper Black, Eurostile, Didot/Bodoni ...). Which file replaces which period face,
+Cooper Black, Eurostile, Didot/Bodoni ...).
+
+Body copy (measured 2026-10-03): RobotoCondensed = Sears catalogue copy (Helvetica
+Condensed 8/9); CormorantGaramond Bold + CormorantSC Bold + CormorantInfant Bold (digits) =
+Met Home body (Cochin 9.5/13, +50 tracking); CormorantGaramond LightItalic = italic
+old-style price figures. Which file replaces which period face,
 and the settings to use: Documentation/FONTS_PERIOD_1990.md
 
 Static cuts only: Unity imports a variable font at its default instance, so the

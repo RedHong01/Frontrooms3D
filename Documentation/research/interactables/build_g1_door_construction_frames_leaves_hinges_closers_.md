@@ -28,7 +28,7 @@ LOD0 and LOD1 are the sidecar numbers (`triangles`, `trianglesLod1`). LOD2 is no
 | `Kit_DoorCloser_Shoe` | `interact_door_closer_shoe.py` | 570 (500, +14.0 %) | none | 44 (40) | SteelBrown, Chrome |
 | `Kit_DoorLeaf_Ward` (P2) | `interact_door_leaf_ward.py` | 4,930 (5,000, −1.4 %) | 1,972 (1,800, +9.6 %) | 196 (180) | WoodLaminate, Aluminium, Chrome |
 | `Kit_DoorLeaf_SteelLite` (P2) | `interact_door_leaf_steel_lite.py` | 4,586 (5,200, −11.8 %) | 1,834 (1,900, −3.5 %) | 182 (200) | Door_Enamel, Aluminium, Chrome, Glass |
-| `Kit_ExitDevice_Crossbar` (P2) | `interact_exit_device.py` | 3,564 (3,500, +1.8 %) | none | 212 (200) | Aluminium, Chrome |
+| `Kit_ExitDevice_Crossbar` (P2) | `interact_exit_device.py` | 3,948 (3,500, +12.8 %) | none | ≈ 230 (200) | Aluminium, Chrome |
 
 Every count is inside ±15 % of §9.1. `interact_door_common.py` is the helper (no `NAME`, no `build`).
 
@@ -97,7 +97,7 @@ All door assets are in DOOR ROOT D (§1.2): origin at the hinge-jamb edge on the
   - 45° bevelled low-profile lite kits on both faces (19 mm face, 2.5 mm proud), six slotted screws on the S kit.
   - Asserted clear of the sign, escutcheon and latch stile. Anchor `lite_centre`. Gameplay flag in `meta["gameplayNote"]`.
 - **`Kit_ExitDevice_Crossbar`:** origin at the latch-end case mount, door (−0.022, 1.000, 0.900), placed on the P face with `Euler(0, −90, 0)` and scale (−1, 1, 1).
-  - Cases 75 × 120 × 95 at part X 0 and 0.800 (door Z 0.900 / 0.100), cast with R 12 front edges and bullnose ends.
+  - Cases 75 × 120 × 95 at part X 0 and 0.800 (door Z 0.900 / 0.100), cast with R 12 front edges, bullnose ends and a cover seam 20 mm off the door.
   - Ø 32 chrome bar, centre 70 mm off the face; chrome collars; four slotted cover screws.
   - 0.095 proud, asserted. Anchors `latch_case`, `hinge_case`, `bar_centre`, `push_point`.
 
@@ -148,6 +148,9 @@ The 0.10 mm hinge figure is the leaf's S face passing the frame knuckles. A butt
 | Forearm–frame | 11.0 mm |
 | Body–frame | 23 mm |
 | Shoe–leaf | 15 mm |
+
+### P2 swing with face hardware
+- **EX-F:** `Kit_ExitDevice_Crossbar` on the P face of `Kit_DoorLeaf_Veneer_Oak` (§1.2 face rule: `Euler(0, −90, 0)`, scale (−1, 1, 1)) in `Kit_DoorFrame_Steel_Alu`, 0–95°, both handings. **0 overlaps**; minimum 36.4 mm to the frame (at 5°); nothing within 50 mm of the wall (`g1/p2_check.py`).
 
 ### (d) Casing encloses the map trims
 1,488 sample points just outside every exposed face of the trim stand-ins, 160 rays each, 5 m long:

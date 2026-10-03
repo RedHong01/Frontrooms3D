@@ -68,6 +68,9 @@ namespace FrontRooms.Audio
             var damp = dampnessAt != null ? dampnessAt(position) : .4f;
             FrontRoomsFmod.OneShot(SoundIds.RelayFootstep, position,
                 SoundIds.Param.RelayGait, (float)gait, SoundIds.Param.Occlusion, occlusion, SoundIds.Param.Dampness, damp);
+            // Caption only steps the player can hear: about 25 m in the open, 14 m through walls.
+            if (listener != null && Vector3.Distance(listener.position, position) <= (occlusion > .5f ? 14f : 25f))
+                FrontRoomsFmod.Caption("[FOOTSTEPS]", position, 1.2f);
         }
 
         void UpdateOcclusion()
@@ -102,6 +105,7 @@ namespace FrontRooms.Audio
             if (FrontRoomsFmod.Finished(ref presence))
             {
                 presence = FrontRoomsFmod.Create(SoundIds.RelayPresence, transform.position);
+                FrontRoomsFmod.Caption("[LOW DRONE]", null, 3f);
                 if (!presence.isValid()) return;
                 if (!idsReady)
                 {
