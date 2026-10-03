@@ -1,0 +1,375 @@
+--- Frontrooms3D/NativePlugin/FrontRoomsMetalGlassRT.mm	2026-10-03 01:13:02
++++ proj_rt/NativePlugin/FrontRoomsMetalGlassRT.mm	2026-10-03 11:48:51
+@@ -15,6 +15,9 @@
+ #import <simd/simd.h>
+ 
+ #include <algorithm>
++#include <chrono>
++#include <pthread.h>
++// [RT PROBE INSTRUMENTATION — private clone only] timing/thread counters, see FRGlassRT_Stat.
+ #include <cstdint>
+ #include <cstring>
+ #include <mutex>
+@@ -98,6 +101,23 @@
+     float objectToWorld[3][4];
+ };
+ 
++// PROBE ABLATION bit 3 (s_DiagFlags & 8): the MSL InstanceInfo puts objectToWorld0 (a float4)
++// at a 16-byte boundary (offset 48, sizeof 96); GpuInstanceInfo above has it at 40 (sizeof 88).
++struct GpuInstanceInfoAligned
++{
++    uint64_t vertices;
++    uint64_t indices;
++    uint32_t vertexStride;
++    uint32_t positionOffset;
++    uint32_t indexSize;
++    uint32_t indexByteOffset;
++    uint32_t triangleCount;
++    uint32_t materialIndex;
++    uint32_t pad[2];
++    float objectToWorld[3][4];
++};
++static_assert(sizeof(GpuInstanceInfoAligned) == 96, "aligned instance info");
++
+ struct GpuMaterial
+ {
+     float baseColor[4];
+@@ -125,13 +145,59 @@
+ std::vector<InstanceDesc> s_Instances;
+ std::mutex s_StateMutex;
+ std::string s_LastError;
++
++// ---- RT PROBE INSTRUMENTATION (clone only; behaviour of the prototype is unchanged) ----
++enum ProbeStat
++{
++    kStatLastGpuMs = 0,      // GPU time of the last completed trace command buffer (GPUEndTime-GPUStartTime)
++    kStatTraceSubmitted,     // trace command buffers committed
++    kStatTraceCompleted,     // trace command buffers completed
++    kStatBlasCount,          // BLAS builds since ResetStats
++    kStatBlasCpuMs,          // wall time inside BuildBLAS incl. waitUntilCompleted (sum)
++    kStatBlasGpuMs,          // GPU time of BLAS builds (sum)
++    kStatBlasBytes,          // acceleration-structure bytes allocated for BLAS (sum)
++    kStatBlasTriangles,      // triangles in BLAS (sum)
++    kStatTlasCpuMs,          // wall time inside the last BuildTLAS incl. waitUntilCompleted
++    kStatTlasGpuMs,          // GPU time of the last TLAS build
++    kStatTlasInstances,      // instances in the last TLAS
++    kStatTlasBytes,          // bytes of the last TLAS
++    kStatRenderEventMainThread, // 1 if the last RenderEvent ran on the process main thread
++    kStatAddMeshMainThread,  // 1 if the last AddMesh ran on the process main thread
++    kStatUnityCmdStatus,     // MTLCommandBufferStatus of Unity's current command buffer at RenderEvent (-1 = not queried / nil)
++    kStatLastEncodeCpuMs,    // CPU time to encode+commit the trace in RenderEvent
++    kStatTraceErrors,        // trace command buffers that finished with an error
++    kStatMaxGpuMs,           // max trace GPU ms since ResetStats
++    kStatSumGpuMs,           // sum of trace GPU ms since ResetStats
++    kStatOutputPixelFormat,  // MTLPixelFormat of the output texture at the last RenderEvent
++    kStatOutputWidth,
++    kStatOutputHeight,
++    kStatRenderEventCalls,   // RenderEvent invocations (incl. early-outs)
++    kStatRenderEventSkipped, // RenderEvent early-outs (no output/TLAS/buffers)
++    kStatLastGpuStart,       // GPUStartTime of last trace (s, host clock)
++    kStatLastGpuEnd,
++    kStatPipelineValid,      // 1 once the trace pipeline compiled
++    kStatCompileMs,          // runtime MSL compile + pipeline creation time
++    kStatCount
++};
++std::mutex s_StatMutex;
++double s_Stat[kStatCount] = {};
++int s_DiagFlags = 0; // bit0: query Unity's current command buffer status in RenderEvent
+ 
++inline double NowMs()
++{
++    using namespace std::chrono;
++    return duration<double, std::milli>(steady_clock::now().time_since_epoch()).count();
++}
++inline void StatAdd(int id, double v) { std::lock_guard<std::mutex> l(s_StatMutex); s_Stat[id] += v; }
++inline void StatSet(int id, double v) { std::lock_guard<std::mutex> l(s_StatMutex); s_Stat[id] = v; }
++
+ // MSL is compiled at runtime because this source uses Metal's
+ // instance_acceleration_structure and intersector types, which cannot be
+ // represented by Unity's regular HLSL/compute path.
+ static const char* kTraceSource = R"MSL(
+ #include <metal_stdlib>
+ using namespace metal;
++using namespace metal::raytracing; // PROBE PATCH 1: the source did not compile without it
+ 
+ struct EventData
+ {
+@@ -270,8 +336,8 @@
+     primary.min_distance = 0.001f;
+     primary.max_distance = 10000.0f;
+ 
+-    auto intersector = intersector<triangle_data, instancing>();
+-    auto first = intersector.intersect(primary, scene);
++    intersector<triangle_data, instancing> isect; // PROBE PATCH 2: was "auto intersector = intersector<...>()", which does not compile
++    auto first = isect.intersect(primary, scene);
+     if (first.type != intersection_type::triangle) return;
+ 
+     constant InstanceInfo& firstInfo = instances[first.instance_id];
+@@ -288,7 +354,7 @@
+     reflected.min_distance = 0.001f;
+     reflected.max_distance = 10000.0f;
+ 
+-    auto second = intersector.intersect(reflected, scene);
++    auto second = isect.intersect(reflected, scene);
+     float3 color;
+     if (second.type == intersection_type::triangle)
+         color = ShadeHit(second, reflected, instances, materials);
+@@ -299,6 +365,18 @@
+     float fresnel = mix(0.04f, 1.0f, edge * edge * edge * edge * edge);
+     float strength = saturate(frame.glassStrength);
+     color *= mix(0.15f, 1.0f, fresnel) * strength;
++    if (frame.pad0 == 1u)
++    {
++        // PROBE DIAGNOSTIC (clone only, flag 32; pad0 is never read by the prototype):
++        // R = reflected-ray hit instance + 1 (0 = miss -> sky gradient), G = reflected hit distance (m),
++        // B = first-hit instance * 16 + first-hit primitive id (clamped to 15), A = 1.
++        bool hit2 = second.type == intersection_type::triangle;
++        output.write(float4(hit2 ? float(second.instance_id + 1u) : 0.0f,
++                            hit2 ? second.distance : 0.0f,
++                            float(first.instance_id * 16u + min(first.primitive_id, 15u)),
++                            1.0f), id);
++        return;
++    }
+     output.write(float4(color, 1.0f), id);
+ }
+ )MSL";
+@@ -313,9 +391,14 @@
+     SetError(message ? message.UTF8String : "unknown MetalGlassRT error");
+ }
+ 
++bool s_ProbeCompileFailed = false;
+ bool EnsureDevice()
+ {
+-    if (s_Device && s_Queue) return true;
++    // PROBE PATCH 3: the original returned here whenever device+queue were set, and
++    // OnGraphicsDeviceEvent sets both before calling EnsureDevice, so the trace
++    // pipeline was never compiled (s_TracePipeline stayed nil).
++    if (s_Device && s_Queue && s_TracePipeline) return true;
++    if (s_ProbeCompileFailed) return false;
+     if (!s_Metal)
+     {
+         SetError("Unity Metal interface is unavailable.");
+@@ -342,6 +425,8 @@
+     }
+ 
+     NSError* error = nil;
++    double probeCompileT0 = NowMs();
++    s_ProbeCompileFailed = true; // cleared on success below
+     NSString* source = [NSString stringWithUTF8String:kTraceSource];
+     id<MTLLibrary> library = [s_Device newLibraryWithSource:source
+                                                     options:nil
+@@ -364,6 +449,9 @@
+         SetError(error.localizedDescription);
+         return false;
+     }
++    s_ProbeCompileFailed = false;
++    StatSet(kStatPipelineValid, 1);
++    StatSet(kStatCompileMs, NowMs() - probeCompileT0);
+     return true;
+ }
+ 
+@@ -385,6 +473,7 @@
+       [MTLPrimitiveAccelerationStructureDescriptor descriptor];
+     descriptor.geometryDescriptors = @[geometry];
+ 
++    double probeT0 = NowMs();
+     MTLAccelerationStructureSizes sizes =
+       [s_Device accelerationStructureSizesWithDescriptor:descriptor];
+     id<MTLAccelerationStructure> blas =
+@@ -406,6 +495,11 @@
+     [encoder endEncoding];
+     [command commit];
+     [command waitUntilCompleted];
++    StatAdd(kStatBlasCount, 1);
++    StatAdd(kStatBlasCpuMs, NowMs() - probeT0);
++    StatAdd(kStatBlasGpuMs, (command.GPUEndTime - command.GPUStartTime) * 1000.0);
++    StatAdd(kStatBlasBytes, (double)sizes.accelerationStructureSize);
++    StatAdd(kStatBlasTriangles, (double)mesh.triangleCount);
+     if (command.status != MTLCommandBufferStatusCompleted)
+     {
+         SetError(command.error.localizedDescription);
+@@ -445,6 +539,7 @@
+     descriptor.instancedAccelerationStructures = blasArray;
+     descriptor.instanceCount = (NSUInteger)instances.size();
+ 
++    double probeT0 = NowMs();
+     MTLAccelerationStructureSizes sizes =
+       [s_Device accelerationStructureSizesWithDescriptor:descriptor];
+     id<MTLAccelerationStructure> tlas =
+@@ -475,7 +570,10 @@
+                                   source.objectToWorld[2][column]);
+         destinationEntry.options = MTLAccelerationStructureInstanceOptionOpaque;
+         destinationEntry.mask = 0xff;
+-        destinationEntry.accelerationStructureIndex = (NSUInteger)source.meshIndex;
++        // The original indexes instancedAccelerationStructures (built one entry PER INSTANCE
++        // above) with the MESH index, so instance i gets the BLAS of instance meshIndex_i.
++        // PROBE ABLATION bit 2 (s_DiagFlags & 4): use the per-instance slot i instead.
++        destinationEntry.accelerationStructureIndex = (s_DiagFlags & 4) ? (uint32_t)i : (NSUInteger)source.meshIndex;
+     }
+ 
+     descriptor.instanceDescriptorBuffer = descriptors;
+@@ -488,6 +586,10 @@
+     [encoder endEncoding];
+     [command commit];
+     [command waitUntilCompleted];
++    StatSet(kStatTlasCpuMs, NowMs() - probeT0);
++    StatSet(kStatTlasGpuMs, (command.GPUEndTime - command.GPUStartTime) * 1000.0);
++    StatSet(kStatTlasInstances, (double)instances.size());
++    StatSet(kStatTlasBytes, (double)sizes.accelerationStructureSize);
+     if (command.status != MTLCommandBufferStatusCompleted)
+     {
+         SetError(command.error.localizedDescription);
+@@ -514,6 +616,25 @@
+ 
+     s_InstanceDescriptorBuffer = descriptors;
+     s_TlasScratch = scratch;
++    if (s_DiagFlags & 8)
++    {
++        std::vector<GpuInstanceInfoAligned> aligned(gpuInstances.size());
++        for (size_t k = 0; k < gpuInstances.size(); k++)
++        {
++            const GpuInstanceInfo& g = gpuInstances[k];
++            GpuInstanceInfoAligned& a = aligned[k];
++            a = {};
++            a.vertices = g.vertices; a.indices = g.indices;
++            a.vertexStride = g.vertexStride; a.positionOffset = g.positionOffset;
++            a.indexSize = g.indexSize; a.indexByteOffset = g.indexByteOffset;
++            a.triangleCount = g.triangleCount; a.materialIndex = g.materialIndex;
++            std::memcpy(a.objectToWorld, g.objectToWorld, sizeof(a.objectToWorld));
++        }
++        s_InstanceInfoBuffer = [s_Device newBufferWithBytes:aligned.data()
++                                                       length:sizeof(GpuInstanceInfoAligned) * aligned.size()
++                                                      options:MTLResourceStorageModeShared];
++    }
++    else
+     s_InstanceInfoBuffer = [s_Device newBufferWithBytes:gpuInstances.data()
+                                                    length:sizeof(GpuInstanceInfo) * gpuInstances.size()
+                                                   options:MTLResourceStorageModeShared];
+@@ -583,15 +704,41 @@
+ void UNITY_INTERFACE_API RenderEvent(int eventId, void* data)
+ {
+     if (eventId != 1 || !data) return;
+-    if (!EnsureDevice()) return;
++    StatAdd(kStatRenderEventCalls, 1);
++    StatSet(kStatRenderEventMainThread, pthread_main_np() ? 1 : 0);
++    if (!EnsureDevice()) { StatAdd(kStatRenderEventSkipped, 1); return; }
++    double probeT0 = NowMs();
++    if (s_DiagFlags & 1)
++    {
++        id<MTLCommandBuffer> unityCb = s_Metal ? s_Metal->CurrentCommandBuffer() : nil;
++        StatSet(kStatUnityCmdStatus, unityCb ? (double)unityCb.status : -1.0);
++    }
+ 
+     EventData frame = *(const EventData*)data;
++    // PROBE ABLATION bit 4 (s_DiagFlags & 16): the C# side writes the vertical FOV in RADIANS into
++    // tanFovY; the kernel needs tan(fov/2). Convert here so alignment can be measured with the
++    // prototype's C# unchanged.
++    if (s_DiagFlags & 16) frame.tanFovY = tanf(frame.tanFovY * 0.5f);
++    // PROBE DIAGNOSTIC bit 5 (s_DiagFlags & 32): the kernel writes hit identities instead of colour.
++    // The C# side never writes pad0 (offset 92 of an uninitialised AllocHGlobal block), so set it here.
++    frame.pad0 = (s_DiagFlags & 32) ? 1u : 0u;
+     id<MTLTexture> output = s_OutputTexture;
+     if (!output || !s_Tlas || !s_InstanceInfoBuffer || !s_MaterialBuffer)
+     {
++        StatAdd(kStatRenderEventSkipped, 1);
+         SetError("The output, TLAS, or scene buffers are not ready.");
+         return;
+     }
++    if (!s_TracePipeline)
++    {
++        // PROBE PATCH 4: the original went on to setComputePipelineState:nil, which
++        // segfaults inside the AGX driver (run 2 crash).
++        StatAdd(kStatRenderEventSkipped, 1);
++        return;
++    }
++    StatSet(kStatOutputPixelFormat, (double)output.pixelFormat);
++    StatSet(kStatOutputWidth, (double)output.width);
++    StatSet(kStatOutputHeight, (double)output.height);
+     if (frame.width == 0 || frame.height == 0) return;
+ 
+     id<MTLCommandBuffer> command = [s_Queue commandBuffer];
+@@ -602,6 +749,17 @@
+     [encoder setBytes:&frame length:sizeof(EventData) atIndex:1];
+     [encoder setBuffer:s_InstanceInfoBuffer offset:0 atIndex:2];
+     [encoder setBuffer:s_MaterialBuffer offset:0 atIndex:3];
++    if (s_DiagFlags & 2)
++    {
++        // PROBE ABLATION bit 1: the original never declares residency for resources it reaches
++        // indirectly (BLASes referenced by the TLAS; vertex/index buffers read via gpuAddress).
++        for (const MeshRecord& mesh : s_Meshes)
++        {
++            if (mesh.blas) [encoder useResource:mesh.blas usage:MTLResourceUsageRead];
++            if (mesh.vertexBuffer) [encoder useResource:mesh.vertexBuffer usage:MTLResourceUsageRead];
++            if (mesh.indexBuffer) [encoder useResource:mesh.indexBuffer usage:MTLResourceUsageRead];
++        }
++    }
+ 
+     NSUInteger width = std::min<NSUInteger>(frame.width, output.width);
+     NSUInteger height = std::min<NSUInteger>(frame.height, output.height);
+@@ -611,7 +769,20 @@
+     MTLSize threads = MTLSizeMake(std::min(tw, width), std::min(th, height), 1);
+     [encoder dispatchThreads:grid threadsPerThreadgroup:threads];
+     [encoder endEncoding];
++    [command addCompletedHandler:^(id<MTLCommandBuffer> cb) {
++        double ms = (cb.GPUEndTime - cb.GPUStartTime) * 1000.0;
++        std::lock_guard<std::mutex> l(s_StatMutex);
++        s_Stat[kStatLastGpuMs] = ms;
++        s_Stat[kStatLastGpuStart] = cb.GPUStartTime;
++        s_Stat[kStatLastGpuEnd] = cb.GPUEndTime;
++        s_Stat[kStatTraceCompleted] += 1;
++        s_Stat[kStatSumGpuMs] += ms;
++        if (ms > s_Stat[kStatMaxGpuMs]) s_Stat[kStatMaxGpuMs] = ms;
++        if (cb.status != MTLCommandBufferStatusCompleted) s_Stat[kStatTraceErrors] += 1;
++    }];
+     [command commit];
++    StatAdd(kStatTraceSubmitted, 1);
++    StatSet(kStatLastEncodeCpuMs, NowMs() - probeT0);
+ }
+ 
+ } // namespace
+@@ -689,6 +860,7 @@
+         SetError("Invalid mesh buffer arguments.");
+         return -1;
+     }
++    StatSet(kStatAddMeshMainThread, pthread_main_np() ? 1 : 0);
+     std::lock_guard<std::mutex> lock(s_StateMutex);
+     if (s_Meshes.size() >= kMaxInstances)
+     {
+@@ -745,6 +917,37 @@
+     s_OutputTexture = texture ? (__bridge id<MTLTexture>)texture : nil;
+ }
+ 
++// ---- RT PROBE INSTRUMENTATION exports (clone only) ----
++UNITY_INTERFACE_EXPORT double UNITY_INTERFACE_API FRGlassRT_LastGpuMs()
++{
++    std::lock_guard<std::mutex> l(s_StatMutex);
++    return s_Stat[kStatLastGpuMs];
++}
++
++UNITY_INTERFACE_EXPORT double UNITY_INTERFACE_API FRGlassRT_Stat(int id)
++{
++    if (id < 0 || id >= kStatCount) return -1.0;
++    std::lock_guard<std::mutex> l(s_StatMutex);
++    return s_Stat[id];
++}
++
++UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_ResetStats()
++{
++    std::lock_guard<std::mutex> l(s_StatMutex);
++    for (int i = 0; i < kStatCount; i++) if (i != kStatPipelineValid && i != kStatCompileMs) s_Stat[i] = 0.0;
++    s_Stat[kStatUnityCmdStatus] = -1.0;
++}
++
++UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetDiagnostics(int flags)
++{
++    s_DiagFlags = flags;
++}
++
++UNITY_INTERFACE_EXPORT int UNITY_INTERFACE_API FRGlassRT_PluginLoadSeen()
++{
++    return s_Metal != nullptr ? 1 : 0;
++}
++
+ UNITY_INTERFACE_EXPORT UnityRenderingEventAndData UNITY_INTERFACE_API
+ FRGlassRT_GetRenderEventFunc()
+ {

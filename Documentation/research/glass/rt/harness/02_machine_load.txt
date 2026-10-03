@@ -1,0 +1,17 @@
+Sat Oct  3 11:51:54 PDT 2026
+69781       16:44   0.1 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath f4f23fb4-ea02-4d0c-8e8d-12b7921c1ff
+74901       09:06   0.0 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --dagfile=Library/Bee/Player0380ee45.dag --dagfilejson=Library/Bee/Player0380ee45.dag.json --profile=Library/Bee/backend3.traceevent
+74906       09:06 100.0 /Applications/Unity/Hub/Editor/6000.3.10f1/PlaybackEngines/WebGLSupport/BuildTools/Brotli/macos/brotli -o f4f23fb4-ea02-4d0c-8e8d-12b
+Sat Oct  3 11:53:38 PDT 2026
+69781       18:28   0.1 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath f4f23fb4-ea02-4d0c-8e8d-12b7921c1ff
+74901       10:50   0.0 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --dagfile=Library/Bee/Player0380ee45.dag --dagfilejson=Library/Bee/Player0380ee45.dag.json --profile=Library/Bee/backend3.traceevent
+74906       10:50  97.0 /Applications/Unity/Hub/Editor/6000.3.10f1/PlaybackEngines/WebGLSupport/BuildTools/Brotli/macos/brotli -o f4f23fb4-ea02-4d0c-8e8d-12b
+87379       00:54 106.5 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath 5656cffd-bc90-45f6-86a3-09b26549df8
+Sat Oct  3 11:58:11 PDT 2026
+90919       02:41  98.9 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath 5656cffd-bc90-45f6-86a3-09b26549df8
+92993       00:23 104.8 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath 5656cffd-bc90-45f6-86a3-09b26549df8
+93214       00:15 127.1 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath 5656cffd-bc90-45f6-86a3-09b26549df8
+93539       00:06 402.6 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath 5656cffd-bc90-45f6-86a3-09b26549df8
+Sat Oct  3 11:59:44 PDT 2026
+90919       04:14  99.8 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath /private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01
+94727       00:53 100.1 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath /private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01

@@ -316,6 +316,8 @@ Revision 2 had an ink halo around the Relay (the herald brown-out). It is **with
 
 ### A.11 Frozen ink content v1 (for `_FR_InkType` / `_FR_InkSubstance`)
 
+**Strings are frozen; typography is provisional.** Red, 2026-10-03: type is decided with 平面视觉, which is auditing every typographic parameter below (face, sizes, spacing, layout, lettering, stamp) against its visual system (keep / change / cut). Its changes land through the print chat's generator. The strings stay narrative's.
+
 Frozen 2026-10-03 so that the wallpaper-print chat can render without guessing. **Rendered the same day:** `Tools/print/ink/out/` (`ink_preview.png`, `ink_report.json`). Every layer is seamless, and strokes keep a mean ≥ 0.84 per 100 mm square. Two fit exceptions were approved: layers 5 and 7, noted in the table. Layer numbers follow `Tools/print/README.md` § "Planned: glow-ink textures". Red may rewrite any string before render; anything else needs a new revision of this section.
 
 **Common to every type layer:**

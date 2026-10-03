@@ -1,0 +1,697 @@
+#!/usr/bin/env python3
+"""Analyse the RT probe output (proj_rt/Verification/rt_probe) and build report images.
+
+Conventions: Unity readbacks (.f32, .u8) have row 0 at the BOTTOM; PNG frames have row 0 at the TOP.
+Everything is converted to top-first here.
+"""
+import json, os, sys, glob
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+SRC = sys.argv[1]
+OUT = sys.argv[2]
+os.makedirs(OUT, exist_ok=True)
+W, H = 1920, 1080
+MW, MH = 960, 540
+FONT = None
+for f in ["/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc"]:
+    if os.path.exists(f):
+        FONT = f
+        break
+
+
+def font(sz):
+    return ImageFont.truetype(FONT, sz) if FONT else ImageFont.load_default()
+
+
+def p(name):
+    return os.path.join(SRC, name)
+
+
+def load_png(name):
+    return np.asarray(Image.open(p(name)).convert("RGB")).astype(np.int16)
+
+
+def load_f32(name, w=W, h=H):
+    a = np.fromfile(p(name), dtype=np.float32)
+    if a.size != w * h * 4:
+        raise ValueError(f"{name}: {a.size} floats, expected {w*h*4}")
+    return np.flipud(a.reshape(h, w, 4))
+
+
+def load_u8(name, w=MW, h=MH):
+    return np.flipud(np.fromfile(p(name), dtype=np.uint8).reshape(h, w)) > 127
+
+
+def half(mask):
+    m = mask.reshape(MH, 2, MW, 2).mean(axis=(1, 3))
+    return m >= 0.5
+
+
+def iou(a, b):
+    u = np.logical_or(a, b).sum()
+    return float(np.logical_and(a, b).sum()) / float(u) if u else float("nan")
+
+
+def painted(on, off, thr=10):
+    return (np.abs(on - off).max(axis=2) > thr)
+
+
+def bbox(m):
+    ys, xs = np.nonzero(m)
+    if len(xs) == 0:
+        return None
+    return [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+
+
+def centroid(m):
+    ys, xs = np.nonzero(m)
+    if len(xs) == 0:
+        return None
+    return [round(float(xs.mean()), 1), round(float(ys.mean()), 1)]
+
+
+def edge(m):
+    e = np.zeros_like(m)
+    e[1:-1, 1:-1] = m[1:-1, 1:-1] & ~(m[:-2, 1:-1] & m[2:, 1:-1] & m[1:-1, :-2] & m[1:-1, 2:])
+    return e
+
+
+def thick(e, r=2):
+    out = e.copy()
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            out |= np.roll(np.roll(e, dy, axis=0), dx, axis=1)
+    return out
+
+
+def up2(m):
+    return np.repeat(np.repeat(m, 2, axis=0), 2, axis=1)
+
+
+def to_srgb(lin):
+    lin = np.clip(lin, 0, 1)
+    return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * np.power(lin, 1 / 2.4) - 0.055)
+
+
+def rt_image(rt, gain=1.0):
+    rgb = to_srgb(rt[..., :3] * gain)
+    a = rt[..., 3:4] > 0.5
+    img = np.where(a, rgb, 0.0)
+    return Image.fromarray((img * 255 + 0.5).astype(np.uint8))
+
+
+def label(img, text, sub=None):
+    img = img.copy()
+    d = ImageDraw.Draw(img)
+    fs = max(18, img.width // 40)
+    pad = fs // 3
+    tw = d.textlength(text, font=font(fs))
+    h = fs + 2 * pad + (int(fs * 0.8) + pad if sub else 0)
+    w2 = max(tw, d.textlength(sub, font=font(int(fs * 0.8))) if sub else 0)
+    d.rectangle([0, 0, w2 + 2 * pad, h], fill=(0, 0, 0))
+    d.text((pad, pad), text, fill=(255, 255, 255), font=font(fs))
+    if sub:
+        d.text((pad, pad + fs + pad // 2), sub, fill=(220, 220, 220), font=font(int(fs * 0.8)))
+    return img
+
+
+def overlay(base, layers):
+    """layers: list of (mask_fullres, rgb)"""
+    img = base.astype(np.uint8).copy()
+    for m, c in layers:
+        e = thick(edge(m), 2)
+        img[e] = c
+    return Image.fromarray(img)
+
+
+def sheet(images, cols, width=1600, gap=6):
+    rows = (len(images) + cols - 1) // cols
+    cw = (width - gap * (cols - 1)) // cols
+    ch = int(cw * images[0].height / images[0].width)
+    out = Image.new("RGB", (width, rows * ch + gap * (rows - 1)), (24, 24, 24))
+    for i, im in enumerate(images):
+        r, c = divmod(i, cols)
+        out.paste(im.resize((cw, ch), Image.LANCZOS), (c * (cw + gap), r * (ch + gap)))
+    return out
+
+
+def save_jpg(img, name):
+    if img.width > 1600:
+        img = img.resize((1600, int(img.height * 1600 / img.width)), Image.LANCZOS)
+    img.save(os.path.join(OUT, name), "JPEG", quality=85)
+    return name
+
+
+results = {}
+GREEN, RED, YELLOW, CYAN, MAGENTA = (40, 255, 40), (255, 40, 40), (255, 230, 0), (0, 230, 255), (255, 0, 255)
+
+import re
+views = sorted({os.path.basename(f)[: -len("_rt.f32")] for f in glob.glob(p("v*_rt.f32")) if re.match(r"^v\d_[a-z0-9_]+_rt\.f32$", os.path.basename(f)) and "_fovfix" not in f and "_diag" not in f})
+for v in views:
+    r = {}
+    rt = load_f32(v + "_rt.f32")
+    m_rt = rt[..., 3] > 0.5
+    m_rt_h = half(m_rt)
+    truth = load_u8(v + "_mask_truth.u8")
+    pred = load_u8(v + "_mask_predicted_bugfov.u8")
+    r["rt_px_full"] = int(m_rt.sum())
+    r["truth_px_half"] = int(truth.sum())
+    r["pred_px_half"] = int(pred.sum())
+    r["rt_px_half"] = int(m_rt_h.sum())
+    r["iou_rt_vs_truth"] = iou(m_rt_h, truth)
+    r["iou_rt_vs_pred_bugfov"] = iou(m_rt_h, pred)
+    r["iou_rt_vs_truth_flipV"] = iou(m_rt_h, np.flipud(truth))
+    r["iou_rt_vs_pred_flipV"] = iou(m_rt_h, np.flipud(pred))
+    r["bbox_truth_half"] = bbox(truth)
+    r["bbox_pred_half"] = bbox(pred)
+    r["bbox_rt_half"] = bbox(m_rt_h)
+    r["centroid_truth_half"] = centroid(truth)
+    r["centroid_rt_half"] = centroid(m_rt_h)
+    a_on, a_off = load_png(v + "_A_on.png"), load_png(v + "_A_off.png")
+    pm = painted(a_on, a_off)
+    r["painted_px_full"] = int(pm.sum())
+    pm_h = half(pm)
+    r["iou_painted_vs_rt"] = iou(pm_h, m_rt_h)
+    r["iou_painted_vs_rt_flipV"] = iou(pm_h, np.flipud(m_rt_h))
+    r["iou_painted_vs_truth"] = iou(pm_h, truth)
+    first = p(v + "_A_on_first_after_rescan.png")
+    if os.path.exists(first):
+        r["first_after_rescan_painted_px"] = int(painted(load_png(v + "_A_on_first_after_rescan.png"), a_off).sum())
+    t_full = up2(truth)
+    lum = lambda im: (0.2126 * im[..., 0] + 0.7152 * im[..., 1] + 0.0722 * im[..., 2])
+    r["pane_mean_srgb_off"] = round(float(lum(a_off)[t_full].mean()), 1) if t_full.any() else None
+    r["pane_mean_srgb_on"] = round(float(lum(a_on)[t_full].mean()), 1) if t_full.any() else None
+    rt_cov = rt[m_rt]
+    if len(rt_cov):
+        r["rt_mean_linear"] = [round(float(x), 4) for x in rt_cov[:, :3].mean(axis=0)]
+    results[v] = r
+
+    off = load_png(v + "_off.png")
+    on = load_png(v + "_on.png")
+    ov = overlay(a_off, [(t_full, GREEN), (up2(pred), YELLOW), (m_rt, RED)])
+    ov = label(ov, "outlines: green = pane (ray-cast, correct projection)", "yellow = pane under the prototype's projection (fov in radians) · red = RT result alpha")
+    tiles = [
+        label(Image.fromarray(off.astype(np.uint8)), "RT OFF (game look)"),
+        label(Image.fromarray(on.astype(np.uint8)), "RT ON (game look)"),
+        label(rt_image(rt, 4.0), "RT result texture x4 (linear->sRGB)", f"alpha>0.5 on {r['rt_px_full']} px"),
+        ov,
+    ]
+    save_jpg(sheet(tiles, 2), f"rt_{v}_sheet.jpg")
+    save_jpg(Image.fromarray(off.astype(np.uint8)), f"rt_{v}_off.jpg")
+    save_jpg(Image.fromarray(on.astype(np.uint8)), f"rt_{v}_on.jpg")
+    save_jpg(ov, f"rt_{v}_alignment.jpg")
+    save_jpg(rt_image(rt, 4.0), f"rt_{v}_result_x4.jpg")
+
+# ---- as-is (camera untagged: registration centred on an arbitrary pane) ----
+if os.path.exists(p("asis_v2_rt.f32")):
+    rt = load_f32("asis_v2_rt.f32")
+    m = rt[..., 3] > 0.5
+    r = {"rt_px": int(m.sum()), "bbox_full": bbox(m)}
+    if os.path.exists(p("v2_headon_centre_mask_truth.u8")):
+        truth = load_u8("v2_headon_centre_mask_truth.u8")
+        r["iou_vs_v2_truth"] = iou(half(m), truth)
+    on, off = load_png("asis_v2_on.png"), load_png("asis_v2_off.png")
+    r["painted_px"] = int(painted(on, off).sum())
+    results["asis_untagged"] = r
+    imgs = [label(Image.fromarray(off.astype(np.uint8)), "as-is: RT OFF"),
+            label(Image.fromarray(on.astype(np.uint8)), "as-is (Camera.main null): RT ON"),
+            label(rt_image(rt, 4.0), "as-is RT result x4", f"alpha>0.5 on {r['rt_px']} px")]
+    if os.path.exists(p("v2_headon_centre_mask_truth.u8")):
+        imgs.append(overlay(off, [(up2(load_u8("v2_headon_centre_mask_truth.u8")), GREEN), (m, RED)]))
+    save_jpg(sheet(imgs, 2), "rt_asis_untagged_sheet.jpg")
+
+# ---- ablation ----
+abl = sorted(int(os.path.basename(f)[4:-7]) for f in glob.glob(p("abl_*_rt.f32")))
+if abl:
+    truth = load_u8("abl_mask_truth.u8"); pred = load_u8("abl_mask_predicted_bugfov.u8")
+    r = {}
+    tiles = []
+    names = {0: "as committed (after compile/crash patches)", 2: "+ residency", 4: "+ per-instance BLAS index", 8: "+ aligned instance records", 12: "BLAS index + aligned records", 14: "all three", 30: "all three + FOV as tan(fov/2)"}
+    for f in abl:
+        rt = load_f32(f"abl_{f}_rt.f32")
+        m = rt[..., 3] > 0.5
+        mh = half(m)
+        cols = rt[m][:, :3]
+        r[str(f)] = {"rt_px": int(m.sum()), "iou_truth": iou(mh, truth), "iou_pred_bugfov": iou(mh, pred),
+                     "iou_truth_flipV": iou(mh, np.flipud(truth)), "iou_pred_flipV": iou(mh, np.flipud(pred)),
+                     "distinct_colours": int(len(np.unique(cols.round(4), axis=0))) if len(cols) else 0,
+                     "mean_linear": [round(float(x), 4) for x in cols.mean(axis=0)] if len(cols) else None}
+        fr = load_png(f"abl_{f}_on.png")
+        ov = overlay(fr, [(up2(truth), GREEN), (up2(pred), YELLOW)])
+        tiles.append(label(ov, f"flags {f}: {names.get(f, '')}", f"RT px {r[str(f)]['rt_px']} · IoU vs yellow {r[str(f)]['iou_pred_bugfov']:.2f} · vs green {r[str(f)]['iou_truth']:.2f}"))
+    results["ablation"] = r
+    save_jpg(sheet(tiles, 2), "rt_ablation_sheet.jpg")
+
+# ---- lag ----
+if os.path.exists(p("lag_rt_A.f32")):
+    r = {}
+    A = load_f32("lag_rt_A.f32")[..., 3] > 0.5
+    B = load_f32("lag_rt_after_single.f32")[..., 3] > 0.5
+    off = load_png("lag_B_off.png")
+    single = load_png("lag_B_on_single.png")
+    second = load_png("lag_B_on_second.png")
+    p1, p2 = painted(single, off), painted(second, off)
+    r["rtA_px"], r["rtB_px"] = int(A.sum()), int(B.sum())
+    r["iou_rtA_rtB"] = iou(A, B)
+    r["single_painted_px"], r["second_painted_px"] = int(p1.sum()), int(p2.sum())
+    r["iou_single_painted_vs_rtA"] = iou(p1, A)
+    r["iou_single_painted_vs_rtB"] = iou(p1, B)
+    r["iou_second_painted_vs_rtB"] = iou(p2, B)
+    r["iou_second_painted_vs_rtA"] = iou(p2, A)
+    results["lag"] = r
+    ov = overlay(single, [(A, CYAN), (B, RED), (p1, MAGENTA)])
+    save_jpg(label(ov, "lag test: first render at pose B", "cyan = trace at pose A · red = trace at pose B · magenta = pixels the composite changed"), "rt_lag_test.jpg")
+
+# ---- planar reference (v2) ----
+if os.path.exists(p("v2_planar_reference_mirrored.png")) and os.path.exists(p("v2_headon_centre_rt.f32")):
+    planar = load_png("v2_planar_reference_mirrored.png")
+    off = load_png("v2_headon_centre_off.png")
+    truth = up2(load_u8("v2_headon_centre_mask_truth.u8"))
+    ref = off.copy()
+    flipped = planar[:, ::-1]
+    ref[truth] = flipped[truth]
+    rt = load_f32("v2_headon_centre_fovfix_rt.f32" if os.path.exists(p("v2_headon_centre_fovfix_rt.f32")) else "v2_headon_centre_rt.f32")
+    rtimg = np.asarray(rt_image(rt, 1.0 / 0.184)).astype(np.int16)  # undo the head-on Fresnel weight (~0.184) for display
+    rtcomp = off.copy()
+    m = rt[..., 3] > 0.5
+    rtcomp[m] = rtimg[m]
+    ys, xs = np.nonzero(truth)
+    if len(xs):
+        x0, x1, y0, y1 = max(0, xs.min() - 120), min(W, xs.max() + 120), max(0, ys.min() - 80), min(H, ys.max() + 80)
+        a = label(Image.fromarray(ref[y0:y1, x0:x1].astype(np.uint8)), "reference: planar mirror camera", "full URP lighting, post, textures (100 % mirror)")
+        b = label(Image.fromarray(rtcomp[y0:y1, x0:x1].astype(np.uint8)), "prototype RT radiance, FOV corrected (/0.184 Fresnel weight)", "flat baseColor x fake sun N.L, blue sky on miss")
+        save_jpg(sheet([a, b], 2), "rt_v2_reference_vs_rt.jpg")
+
+# ---- relay ----
+for tag in ["relay_front", "relay_behind"]:
+    if not os.path.exists(p(tag + "_rt.f32")):
+        continue
+    r = {}
+    rt = load_f32(tag + "_rt.f32")
+    m = rt[..., 3] > 0.5
+    r["rt_px"] = int(m.sum())
+    if tag == "relay_front" and os.path.exists(p("relay_front_A_off.png")) and os.path.exists(p("v2_headon_centre_A_off.png")):
+        with_relay = load_png("relay_front_A_off.png")
+        no_relay = load_png("v2_headon_centre_A_off.png")
+        rel = painted(with_relay, no_relay, thr=40)
+        r["relay_silhouette_px_approx"] = int(rel.sum())
+        r["rt_glass_painted_over_relay_px"] = int((rel & m).sum())
+        on = load_png("relay_front_A_on.png")
+        ov = overlay(on, [(m, RED), (rel, CYAN)])
+        save_jpg(label(ov, "Relay between camera and pane, RT ON", "red = RT glass coverage · cyan = pixels changed by the Relay standing there"), "rt_relay_front_overlay.jpg")
+    results[tag] = r
+    imgs = []
+    for suf, lab in [("_off.png", "RT OFF"), ("_on.png", "RT ON")]:
+        if os.path.exists(p(tag + suf)):
+            imgs.append(label(Image.fromarray(load_png(tag + suf).astype(np.uint8)), tag.replace("_", " ") + " · " + lab))
+    imgs.append(label(rt_image(rt, 4.0), "RT result x4"))
+    if tag == "relay_behind" and os.path.exists(p("v2_planar_reference_mirrored.png")):
+        imgs.append(label(Image.fromarray(load_png("v2_planar_reference_mirrored.png")[:, ::-1].astype(np.uint8)), "planar mirror reference (no Relay at that time)"))
+    save_jpg(sheet(imgs, 2), f"rt_{tag}_sheet.jpg")
+
+# ---- ghost ----
+if os.path.exists(p("ghost_1_rt.f32")):
+    imgs = []
+    for f, lab in [("ghost_0_intact_on.png", "1. pane intact, RT ON"), ("ghost_1_broken_off.png", "2. pane broken, RT OFF (the game)"),
+                   ("ghost_1_broken_on.png", "3. pane broken, RT ON, before the next rescan"), ("ghost_2_rescanned_on.png", "4. after the next rescan")]:
+        if os.path.exists(p(f)):
+            imgs.append(label(Image.fromarray(load_png(f).astype(np.uint8)), lab))
+    save_jpg(sheet(imgs, 2), "rt_ghost_broken_pane.jpg")
+    g = load_f32("ghost_1_rt.f32")[..., 3] > 0.5
+    results["ghost"] = {"rt_px_after_break_before_rescan": int(g.sum()),
+                        "painted_px_after_break": int(painted(load_png("ghost_1_broken_on.png"), load_png("ghost_1_broken_off.png")).sum())}
+
+# ---- free run ----
+if os.path.exists(p("free_run_frames.tsv")):
+    rows = []
+    for line in open(p("free_run_frames.tsv")):
+        parts = line.rstrip("\n").split("\t")
+        d = {"i": int(parts[0])}
+        for kv in parts[1:]:
+            k, _, val = kv.partition(" ")
+            d[k] = val
+        rows.append(d)
+    cov = np.array([float(d["coverage"]) for d in rows])
+    reb = np.array([d["rebuiltThisFrame"] == "True" for d in rows])
+    iv = np.array([float(d["interval_ms"]) if d["interval_ms"] != "-" else np.nan for d in rows])
+    blank_after = [i for i in range(1, len(rows)) if cov[i] == 0 and cov[i - 1] > 0]
+    results["free_run"] = {"frames": len(rows), "rescans": int(reb.sum()), "blank_frames": len(blank_after),
+                           "blank_frame_indices": blank_after[:20], "rescan_indices": [int(i) for i in np.nonzero(reb)[0][:20]],
+                           "interval_median_ms": round(float(np.nanmedian(iv)), 2),
+                           "interval_rescan_median_ms": round(float(np.nanmedian(iv[reb])) if reb.any() else float("nan"), 2),
+                           "coverage_nonblank_median": round(float(np.median(cov[cov > 0])) if (cov > 0).any() else 0, 4)}
+    # small chart
+    cw, ch = 1600, 420
+    img = Image.new("RGB", (cw, ch), (250, 250, 248))
+    d = ImageDraw.Draw(img)
+    x0, y0, x1, y1 = 70, 40, cw - 20, ch - 60
+    d.line([x0, y1, x1, y1], fill=(120, 120, 120))
+    d.line([x0, y0, x0, y1], fill=(120, 120, 120))
+    n = len(rows)
+    mx = max(cov.max(), 1e-6)
+    pts = [(x0 + (x1 - x0) * i / max(1, n - 1), y1 - (y1 - y0) * cov[i] / mx) for i in range(n)]
+    for i in np.nonzero(reb)[0]:
+        xx = x0 + (x1 - x0) * i / max(1, n - 1)
+        d.line([xx, y0, xx, y1], fill=(200, 200, 196), width=2)
+    d.line(pts, fill=(40, 80, 200), width=2)
+    for i in blank_after:
+        d.ellipse([pts[i][0] - 6, pts[i][1] - 6, pts[i][0] + 6, pts[i][1] + 6], outline=(40, 40, 40), width=2)
+    d.text((x0, 8), "Share of the frame covered by RT glass, per rendered frame. Grey line = frame with a 1 s rescan; circle = RT output blank.", fill=(30, 30, 30), font=font(20))
+    d.text((x0, y1 + 12), f"frame 0 … {n-1}", fill=(60, 60, 60), font=font(18))
+    d.text((4, y0), f"{mx:.3f}", fill=(60, 60, 60), font=font(16))
+    d.text((24, y1 - 16), "0", fill=(60, 60, 60), font=font(16))
+    save_jpg(img, "rt_free_run_coverage.jpg")
+    if os.path.exists(p("free_run_blank_frame.png")):
+        save_jpg(label(Image.fromarray(load_png("free_run_blank_frame.png").astype(np.uint8)), "free run: first frame after a rescan (RT output blank)"), "rt_free_run_blank_frame.jpg")
+
+
+# ======================= run-6 additions =======================
+BLUE = (60, 140, 255)
+
+
+def erode(m, n=1):
+    e = m.copy()
+    for _ in range(n):
+        e2 = np.zeros_like(e)
+        e2[1:-1, 1:-1] = e[1:-1, 1:-1] & e[:-2, 1:-1] & e[2:, 1:-1] & e[1:-1, :-2] & e[1:-1, 2:]
+        e = e2
+    return e
+
+
+def lum(im):
+    return 0.2126 * im[..., 0] + 0.7152 * im[..., 1] + 0.0722 * im[..., 2]
+
+
+for v in views:
+    r = results[v]
+    rt = load_f32(v + "_rt.f32")
+    m_rt = rt[..., 3] > 0.5
+    truth = load_u8(v + "_mask_truth.u8")
+    t_full = up2(truth)
+    a_on, a_off = load_png(v + "_A_on.png"), load_png(v + "_A_off.png")
+    # composite = raw linear RT radiance written over the post-processed frame?
+    e = erode(m_rt, 1)
+    if e.any():
+        pred_srgb = 255 * to_srgb(rt[..., :3])
+        r["composite_mean_abs_diff_vs_255_srgb_rt"] = round(float(np.abs(a_on[e] - pred_srgb[e]).mean()), 3)
+        r["composite_mean_abs_diff_vs_255_rt_linear"] = round(float(np.abs(a_on[e] - 255 * np.clip(rt[..., :3], 0, 1)[e]).mean()), 2)
+        r["rt_region_luma_off"] = round(float(lum(a_off)[e].mean()), 1)
+        r["rt_region_luma_on"] = round(float(lum(a_on)[e].mean()), 1)
+    fx = v + "_fovfix_rt.f32"
+    if os.path.exists(p(fx)):
+        rf = load_f32(fx)
+        m_f = rf[..., 3] > 0.5
+        m_fh = half(m_f)
+        r["fovfix_rt_px_full"] = int(m_f.sum())
+        r["fovfix_iou_vs_truth"] = iou(m_fh, truth)
+        r["fovfix_iou_vs_truth_flipV"] = iou(m_fh, np.flipud(truth))
+        r["fovfix_centroid_half"] = centroid(m_fh)
+        r["fovfix_bbox_half"] = bbox(m_fh)
+        r["fovfix_truth_px_x4"] = int(truth.sum()) * 4
+        fon = load_png(v + "_fovfix_A_on.png")
+        pf = painted(fon, a_off)
+        r["fovfix_painted_px"] = int(pf.sum())
+        r["fovfix_iou_painted_vs_rt"] = iou(half(pf), m_fh)
+        r["fovfix_iou_painted_vs_rt_flipV"] = iou(half(pf), np.flipud(m_fh))
+        # pixels of the true pane the trace misses / pixels it paints outside the pane (full res)
+        r["fovfix_px_pane_not_traced"] = int((t_full & ~m_f).sum())
+        r["fovfix_px_traced_outside_pane"] = int((m_f & ~t_full).sum())
+        r["fovfix_rt_mean_linear"] = [round(float(x), 4) for x in rf[m_f][:, :3].mean(axis=0)] if m_f.any() else None
+        r["fovfix_rt_max_linear"] = round(float(rf[m_f][:, :3].max()), 4) if m_f.any() else None
+        ef = erode(m_f, 2)
+        if ef.any():
+            r["fovfix_pane_luma_off"] = round(float(lum(a_off)[ef].mean()), 1)
+            r["fovfix_pane_luma_on"] = round(float(lum(fon)[ef].mean()), 1)
+        off = load_png(v + "_off.png")
+        on = load_png(v + "_on.png")
+        fon_g = load_png(v + "_fovfix_on.png")
+        ov = overlay(a_off, [(t_full, GREEN), (up2(load_u8(v + "_mask_predicted_bugfov.u8")), YELLOW), (m_rt, RED), (m_f, BLUE)])
+        ov = label(ov, "green = pane (ray-cast truth) · red = prototype RT alpha", "yellow = pane under fov-in-radians projection · blue = RT alpha with FOV corrected")
+        tiles = [
+            label(Image.fromarray(off.astype(np.uint8)), "1. RT OFF (game look)"),
+            label(Image.fromarray(on.astype(np.uint8)), "2. RT ON, prototype as committed*", "*native compile/crash/layout/BLAS fixes only"),
+            label(Image.fromarray(fon_g.astype(np.uint8)), "3. RT ON, plus FOV corrected"),
+            label(rt_image(rf, 4.0), "4. RT result (FOV corrected) x4", f"alpha>0.5 on {int(m_f.sum())} px"),
+            ov,
+            label(Image.fromarray(a_off.astype(np.uint8)), "RT OFF, grain off (analysis frame)"),
+        ]
+        save_jpg(sheet(tiles[:5] + [tiles[5]], 2), f"rt_{v}_sheet6.jpg")
+        save_jpg(ov, f"rt_{v}_alignment6.jpg")
+
+# ---- relay body behind the player: does it appear in the reflection? (FOV corrected) ----
+if os.path.exists(p("relay_behind_fovfix_rt.f32")) and os.path.exists(p("v2_headon_centre_fovfix_rt.f32")):
+    a = load_f32("v2_headon_centre_fovfix_rt.f32")
+    b = load_f32("relay_behind_fovfix_rt.f32")
+    both = (a[..., 3] > .5) & (b[..., 3] > .5)
+    diff = both & (np.abs(a[..., :3] - b[..., :3]).max(axis=2) > 0.01)
+    results.setdefault("relay_behind", {})["reflection_px_changed_by_body_fovfix"] = int(diff.sum())
+    results["relay_behind"]["glass_px_fovfix"] = int(both.sum())
+    base = load_png("relay_behind_off.png")
+    tiles = [label(Image.fromarray(base.astype(np.uint8)), "Relay body 2 m behind the player, RT OFF"),
+             label(Image.fromarray(load_png("relay_behind_fovfix_on.png").astype(np.uint8)), "RT ON (FOV corrected)"),
+             label(rt_image(a, 4.0), "RT x4 without the body"),
+             label(rt_image(b, 4.0), "RT x4 with the body behind the player", f"{int(diff.sum())} glass px change")]
+    if os.path.exists(p("v2_planar_reference_mirrored.png")):
+        tiles.append(label(Image.fromarray(load_png("v2_planar_reference_mirrored.png")[:, ::-1].astype(np.uint8)), "planar mirror reference (no body)"))
+    save_jpg(sheet(tiles[:4], 2), "rt_relay_behind_sheet6.jpg")
+
+# ---- relay body moved without a rescan: glass painted over the body ----
+if os.path.exists(p("relay_moved_stale_rt.f32")) and os.path.exists(p("v2_headon_centre_A_off.png")):
+    clear = load_png("v2_headon_centre_A_off.png")
+    moved_off = load_png("relay_moved_A_off.png")
+    front_off = load_png("relay_front_A_off.png")
+    sil_moved = painted(moved_off, clear, thr=40)
+    sil_front = painted(front_off, clear, thr=40)
+    st = load_f32("relay_moved_stale_rt.f32")[..., 3] > 0.5
+    rs = load_f32("relay_moved_rescanned_rt.f32")[..., 3] > 0.5
+    fr = load_f32("relay_front_rt.f32")[..., 3] > 0.5
+    stale_on = load_png("relay_moved_stale_A_on.png")
+    painted_stale = painted(stale_on, moved_off)
+    rm = {"body_silhouette_px_moved": int(sil_moved.sum()), "body_silhouette_px_front": int(sil_front.sum()),
+          "rt_px_front_registered": int(fr.sum()), "rt_over_body_front_px": int((fr & sil_front).sum()),
+          "rt_px_stale": int(st.sum()), "rt_px_rescanned": int(rs.sum()),
+          "stale_rt_over_body_px": int((st & sil_moved).sum()), "rescanned_rt_over_body_px": int((rs & sil_moved).sum()),
+          "stale_composite_changed_over_body_px": int((painted_stale & sil_moved).sum()),
+          "glass_visible_but_not_traced_when_stale_px": int((rs & ~st).sum())}
+    results["relay_moved"] = rm
+    ov = overlay(stale_on, [(sil_moved, CYAN), (st, RED)])
+    tiles = [label(Image.fromarray(front_off.astype(np.uint8)), "1. body between camera and pane (registered), RT OFF"),
+             label(Image.fromarray(load_png("relay_front_A_on.png").astype(np.uint8)), "2. RT ON: glass only beside the body", f"{rm['rt_over_body_front_px']} RT px on the body"),
+             label(ov, "3. body moved 0.6 m, no rescan yet: RT ON", f"red = traced glass · cyan = body · {rm['stale_rt_over_body_px']} px of glass painted over the body"),
+             label(Image.fromarray(load_png("relay_moved_rescanned_A_on.png").astype(np.uint8)), "4. after the next rescan", f"{rm['rescanned_rt_over_body_px']} RT px on the body")]
+    save_jpg(sheet(tiles, 2), "rt_relay_moved_stale6.jpg")
+
+# ---- skinned occluder (never registered) ----
+if os.path.exists(p("skinned_rt.f32")):
+    none = load_png("skinned_none_A_off.png")
+    off = load_png("skinned_A_off.png")
+    sil = painted(off, none, thr=25)
+    m1 = load_f32("skinned_rt.f32")[..., 3] > 0.5
+    m2 = load_f32("skinned_fovfix_rt.f32")[..., 3] > 0.5 if os.path.exists(p("skinned_fovfix_rt.f32")) else None
+    on1 = load_png("skinned_A_on.png")
+    sk = {"occluder_silhouette_px": int(sil.sum()), "rt_px": int(m1.sum()), "rt_over_occluder_px": int((m1 & sil).sum()),
+          "composite_changed_over_occluder_px": int((painted(on1, off) & sil).sum())}
+    tiles = [label(Image.fromarray(off.astype(np.uint8)), "1. unregistered occluder (SkinnedMeshRenderer), RT OFF"),
+             label(overlay(on1, [(sil, CYAN), (m1, RED)]), "2. RT ON (prototype projection)", f"{sk['rt_over_occluder_px']} px of glass painted over the occluder")]
+    if m2 is not None:
+        on2 = load_png("skinned_fovfix_A_on.png")
+        sk["fovfix_rt_px"] = int(m2.sum())
+        sk["fovfix_rt_over_occluder_px"] = int((m2 & sil).sum())
+        sk["fovfix_composite_changed_over_occluder_px"] = int((painted(on2, off) & sil).sum())
+        tiles.append(label(Image.fromarray(on2.astype(np.uint8)), "3. RT ON, FOV corrected", f"{sk['fovfix_rt_over_occluder_px']} px of glass painted over the occluder"))
+        tiles.append(label(overlay(on2, [(sil, CYAN), (m2, RED)]), "4. cyan = occluder · red = traced glass (FOV corrected)"))
+    results["skinned_occluder"] = sk
+    save_jpg(sheet(tiles, 2), "rt_skinned_occluder6.jpg")
+
+
+
+# ======================= run-7 additions =======================
+import csv
+LOG = open(p("probe_log.txt")).read() if os.path.exists(p("probe_log.txt")) else ""
+broad = {}
+mm = re.search(r"PANE triangles \([^)]*\): ([0-9a-z: ]+)", LOG)
+if mm:
+    for tok in mm.group(1).split():
+        k, _, v = tok.partition(":")
+        broad[int(k)] = (v == "broad")
+results["pane_triangles"] = {str(k): ("broad" if v else "edge") for k, v in broad.items()}
+
+PALETTE = [(230, 190, 60), (120, 200, 255), (160, 110, 60), (90, 220, 120), (255, 140, 60), (200, 200, 200),
+           (150, 120, 255), (255, 90, 120), (60, 160, 160), (180, 220, 60)]
+MISS = (255, 0, 255)
+
+
+def read_instances(tag):
+    rows = {}
+    fn = p(tag + "_instances.tsv")
+    if not os.path.exists(fn):
+        return rows
+    with open(fn) as fh:
+        rd = csv.reader(fh, delimiter="\t")
+        next(rd, None)
+        for row in rd:
+            if not row or not row[0].isdigit():
+                continue
+            rows[int(row[0])] = {"renderer": row[1], "material": row[2] if len(row) > 2 else "", "glass": row[4] if len(row) > 4 else ""}
+    return rows
+
+
+def diag_analyse(tag, base_png=None, crop_mask=None, highlight=None):
+    fn = tag + "_diag_rt.f32"
+    if not os.path.exists(p(fn)):
+        return None, None
+    d = load_f32(fn)
+    inst = read_instances(tag)
+    g = d[..., 3] > 0.5
+    hit = np.rint(d[..., 0]).astype(np.int64)
+    first = np.rint(d[..., 2]).astype(np.int64)
+    dist = d[..., 1]
+    mats = {}
+    for i, row in inst.items():
+        mats[i + 1] = row["material"] or row["renderer"]
+    cat = np.full(hit.shape, "", dtype=object)
+    r = {"glass_px": int(g.sum()), "miss_px": int((g & (hit == 0)).sum())}
+    shares = {}
+    for h in np.unique(hit[g]):
+        name = "MISS (sky gradient)" if h == 0 else mats.get(int(h), f"instance {h-1}")
+        n = int((g & (hit == h)).sum())
+        shares[name] = shares.get(name, 0) + n
+    r["reflected_surface_share"] = {k: round(100.0 * v / max(1, r["glass_px"]), 2) for k, v in sorted(shares.items(), key=lambda kv: -kv[1])}
+    dd = dist[g & (hit > 0)]
+    if dd.size:
+        r["reflected_distance_m"] = {"p10": round(float(np.percentile(dd, 10)), 2), "median": round(float(np.median(dd)), 2), "p90": round(float(np.percentile(dd, 90)), 2), "max": round(float(dd.max()), 2)}
+    prim = first % 16
+    finst = first // 16
+    if broad:
+        edge = g & np.vectorize(lambda q: not broad.get(int(q), True))(prim)
+        r["first_hit_edge_face_px"] = int(edge.sum())
+    else:
+        edge = np.zeros_like(g)
+    r["first_hit_instances"] = {inst.get(int(k), {}).get("renderer", str(k)) + f" #{int(k)}": int((g & (finst == k)).sum()) for k in np.unique(finst[g])}
+    # image
+    base = load_png(base_png).astype(np.float32) * 0.45 if base_png else np.zeros((H, W, 3), np.float32)
+    img = base.copy()
+    order = [k for k in r["reflected_surface_share"].keys() if not k.startswith("MISS")]
+    colours = {}
+    for i, k in enumerate(order):
+        colours[k] = PALETTE[i % len(PALETTE)]
+    colours["MISS (sky gradient)"] = MISS
+    for h in np.unique(hit[g]):
+        name = "MISS (sky gradient)" if h == 0 else mats.get(int(h), f"instance {h-1}")
+        img[g & (hit == h)] = colours[name]
+    if highlight is not None:
+        img[highlight & g] = (255, 30, 30)
+    img[edge] = (255, 255, 0)
+    im = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
+    if crop_mask is not None and crop_mask.any():
+        ys, xs = np.nonzero(crop_mask)
+        x0, x1 = max(0, xs.min() - 80), min(W, xs.max() + 80)
+        y0, y1 = max(0, ys.min() - 60), min(H, ys.max() + 60)
+        im = im.crop((x0, y0, x1, y1))
+    return r, (im, colours)
+
+
+def legend_tile(width, height, title, r, colours):
+    im = Image.new("RGB", (width, height), (24, 24, 24))
+    dr = ImageDraw.Draw(im)
+    fs = 22
+    y = 12
+    dr.text((14, y), title, fill=(255, 255, 255), font=font(fs + 2)); y += fs + 16
+    for k, v in list(r["reflected_surface_share"].items())[:9]:
+        c = colours.get(k, (128, 128, 128))
+        dr.rectangle([14, y + 3, 34, y + 21], fill=c)
+        dr.text((44, y), f"{k}: {v:.1f} %", fill=(235, 235, 235), font=font(fs)); y += fs + 8
+    if "first_hit_edge_face_px" in r:
+        dr.rectangle([14, y + 3, 34, y + 21], fill=(255, 255, 0))
+        dr.text((44, y), f"first hit on a 30 mm edge face: {r['first_hit_edge_face_px']} px", fill=(235, 235, 235), font=font(fs)); y += fs + 8
+    if "reflected_distance_m" in r:
+        q = r["reflected_distance_m"]
+        dr.text((14, y + 6), f"reflected hit distance: median {q['median']} m (10-90 %: {q['p10']}-{q['p90']} m)", fill=(200, 200, 200), font=font(fs - 2))
+    return im
+
+
+diag_tiles = []
+for v in views:
+    t_full = up2(load_u8(v + "_mask_truth.u8"))
+    rr, pack = diag_analyse(v, base_png=v + "_A_off.png", crop_mask=t_full)
+    if rr is None:
+        continue
+    results[v]["diag"] = rr
+    im, colours = pack
+    diag_tiles.append(label(im, v, f"glass px {rr['glass_px']} · sky (miss) {100.0*rr['miss_px']/max(1,rr['glass_px']):.1f} %"))
+    leg = legend_tile(im.width, im.height, "reflected surface (what the ray hits)", rr, colours)
+    save_jpg(sheet([label(im, v + ": RT hit identities (FOV corrected)", "colour = material the reflection ray hits · magenta = miss -> blue sky · yellow = edge face"), leg], 2), f"rt_{v}_diag.jpg")
+
+# stream test
+st = {}
+stream_tags = ["stream_0_registered", "stream_1_edited_norescan", "stream_2_edited_rescanned", "stream_3_destroyed_norescan", "stream_4_destroyed_rescanned"]
+idx = {}
+mm = re.search(r"STREAM: slab .*? registered index (-?\d+)", LOG)
+slab0 = int(mm.group(1)) if mm else None
+tiles = []
+crop = up2(load_u8("v2_headon_centre_mask_truth.u8")) if os.path.exists(p("v2_headon_centre_mask_truth.u8")) else None
+for tag in stream_tags:
+    fn = tag + "_diag_rt.f32"
+    if not os.path.exists(p(fn)):
+        continue
+    d = load_f32(fn)
+    inst = read_instances(tag)
+    slab_ids = [i for i, row in inst.items() if row["renderer"].startswith("RTProbe / streamed slab") or (row["renderer"] == "(destroyed)")]
+    g = d[..., 3] > 0.5
+    hit = np.rint(d[..., 0]).astype(np.int64) - 1
+    m = np.zeros_like(g)
+    for sid in slab_ids:
+        m |= g & (hit == sid)
+    ys, xs = np.nonzero(m)
+    st[tag] = {"slab_px": int(m.sum()), "slab_ids": slab_ids, "centroid_xy_topdown": [round(float(xs.mean()), 1), round(float(ys.mean()), 1)] if len(xs) else None,
+               "bbox": bbox(m)}
+    rr, pack = diag_analyse(tag, base_png="v2_headon_centre_A_off.png", crop_mask=crop, highlight=m)
+    im, _ = pack
+    tiles.append(label(im, tag.replace("_", " "), f"red = reflection rays that hit the streamed slab: {int(m.sum())} px"))
+results["stream"] = st
+if tiles:
+    save_jpg(sheet(tiles + ([Image.new("RGB", tiles[0].size, (24, 24, 24))] if len(tiles) % 2 else []), 2), "rt_stream_test.jpg")
+
+# relay behind diag
+if os.path.exists(p("relay_behind_diag_rt.f32")):
+    rr, pack = diag_analyse("relay_behind", base_png="relay_behind_off.png", crop_mask=crop)
+    results.setdefault("relay_behind", {})["diag"] = rr
+
+
+# ---- run 8: Relay body occlusion with exact silhouettes (body hidden vs shown), FOV corrected ----
+if os.path.exists(p("relay_front_nobody_A_off.png")) and os.path.exists(p("relay_moved_nobody_A_off.png")):
+    def sil(a, b):
+        return painted(load_png(a), load_png(b), thr=12)
+    s_front = sil("relay_front_A_off.png", "relay_front_nobody_A_off.png")
+    s_moved = sil("relay_moved_A_off.png", "relay_moved_nobody_A_off.png")
+    fr = load_f32("relay_front_rt.f32")[..., 3] > 0.5
+    st = load_f32("relay_moved_stale_rt.f32")[..., 3] > 0.5
+    rs = load_f32("relay_moved_rescanned_rt.f32")[..., 3] > 0.5
+    truth = up2(load_u8("v2_headon_centre_mask_truth.u8"))
+    vis_front = truth & ~s_front
+    vis_moved = truth & ~s_moved
+    r8 = {"pane_px": int(truth.sum()), "body_over_pane_front_px": int((truth & s_front).sum()), "body_over_pane_moved_px": int((truth & s_moved).sum()),
+          "front_rt_px": int(fr.sum()), "front_rt_over_body_px": int((fr & s_front).sum()), "front_visible_glass_not_traced_px": int((vis_front & ~fr).sum()),
+          "stale_rt_px": int(st.sum()), "stale_rt_over_body_px": int((st & s_moved).sum()), "stale_visible_glass_not_traced_px": int((vis_moved & ~st).sum()),
+          "rescanned_rt_px": int(rs.sum()), "rescanned_rt_over_body_px": int((rs & s_moved).sum()), "rescanned_visible_glass_not_traced_px": int((vis_moved & ~rs).sum())}
+    results["relay_occlusion8"] = r8
+    def tile(on_png, rtm, silm, title, sub):
+        return label(overlay(load_png(on_png), [(silm, CYAN), (rtm, RED)]), title, sub)
+    tiles = [label(Image.fromarray(load_png("relay_front_A_off.png").astype(np.uint8)), "1. Relay body in front of half the pane, RT OFF"),
+             tile("relay_front_A_on.png", fr, s_front, "2. RT ON after a rescan (body registered)", f"glass painted over the body: {r8['front_rt_over_body_px']} px"),
+             tile("relay_moved_stale_A_on.png", st, s_moved, "3. body moved 0.7 m, no rescan yet", f"over the body: {r8['stale_rt_over_body_px']} px · visible glass left untraced: {r8['stale_visible_glass_not_traced_px']} px"),
+             tile("relay_moved_rescanned_A_on.png", rs, s_moved, "4. after the next rescan", f"over the body: {r8['rescanned_rt_over_body_px']} px")]
+    save_jpg(sheet(tiles, 2), "rt_relay_occlusion8.jpg")
+
+# ---- run 8: v2 at the prototype default radius 18 m ----
+if os.path.exists(p("v2_radius18_diag_rt.f32")):
+    t_full = up2(load_u8("v2_headon_centre_mask_truth.u8"))
+    rr, pack = diag_analyse("v2_radius18", base_png="v2_headon_centre_A_off.png", crop_mask=t_full)
+    results["v2_radius18_diag"] = rr
+    im, colours = pack
+    leg = legend_tile(im.width, im.height, "reflected surface, radius 18 m (cap 256)", rr, colours)
+    save_jpg(sheet([label(im, "v2 at the prototype default radius 18 m", "magenta = miss -> blue sky"), leg], 2), "rt_v2_radius18_diag.jpg")
+
+json.dump(results, open(os.path.join(OUT, "rt_probe_metrics.json"), "w"), indent=1, default=str)
+print(json.dumps(results, indent=1, default=str))

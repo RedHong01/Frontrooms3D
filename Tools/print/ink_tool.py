@@ -18,6 +18,11 @@ Substance: field 0.7, marks 0.4. Everything tiles seamlessly.
 Run with a Python that has numpy + Pillow (/usr/bin/python3 on this Mac):
   build <spec.json> <out_dir>      render, pack both arrays, write report + preview
 The spec file is the A.11 JSON block saved as-is (see ink/egress_v1.json).
+
+Artwork instead of generated type: give a layer {"orient": "image", "path": "x.png"}
+(type layers) or {"orient": "cluster", "path": "x.png"} (layer 9). The PNG covers
+750 x 750 mm, square, ideally 4096 px, black/opaque marks on transparent or white,
+already tiling. The value encoding and all checks are applied here.
 """
 import json
 import math
@@ -296,6 +301,24 @@ def type_scratch(L, rng):
     return cv, {"items_bbox_mm": placed, "allowed_image_y_mm": [round(y_lo), round((1 - v0) * TILE_MM)]}
 
 
+def type_image(L, spec_dir):
+    """Artwork supplied as a PNG (e.g. a Figma export of 平面视觉's SVG): 750 x 750 mm,
+    ideally 4096 px (4x supersampled), black or opaque marks on transparent/white.
+    Returns 1.0 = background, 0.0 = mark, like the other canvases before encoding."""
+    path = L["path"] if os.path.isabs(L["path"]) else os.path.join(spec_dir, L["path"])
+    im = Image.open(path)
+    if im.mode in ("RGBA", "LA") or "transparency" in im.info:
+        a = np.asarray(im.convert("RGBA"), np.float32)[..., 3] / 255.0
+        lum = np.asarray(im.convert("L"), np.float32) / 255.0
+        mark = a * (1.0 - lum)                     # opaque and dark = mark
+    else:
+        mark = 1.0 - np.asarray(im.convert("L"), np.float32) / 255.0
+    if mark.shape[0] != mark.shape[1]:
+        raise ValueError(f"{path}: artwork must be square (750 x 750 mm), got {mark.shape[1]}x{mark.shape[0]}")
+    m = Image.fromarray((np.clip(mark, 0, 1) * 255).astype(np.uint8), "L").resize((TYPE_PX, TYPE_PX), Image.BOX)
+    return 1.0 - np.asarray(m, np.float32) / 255.0, {"source": os.path.basename(path), "source_px": mark.shape[0]}
+
+
 def substance(T, sub, common):
     cv = Canvas(sub["tile_mm"][0], sub["tile_mm"][1], SUB_PX_MM, 255)
     s = cv.s
@@ -354,9 +377,15 @@ def build(spec_path, out):
         elif o == "pairs":
             cv, info = type_pairs(L, common)
             a = cv.result(TYPE_PX, TYPE_PX)
+        elif o == "cluster" and "path" in L:
+            bg, info = type_image(L, os.path.dirname(os.path.abspath(spec_path)))
+            a = 1.0 - bg                           # marks 1.0 on a 0 background
+            o = "cluster"
         elif o == "cluster":
             cv, info = type_scratch(L, np.random.default_rng(1990))
             a = cv.result(TYPE_PX, TYPE_PX)
+        elif o == "image":
+            a, info = type_image(L, os.path.dirname(os.path.abspath(spec_path)))
         else:
             raise ValueError(o)
         if o != "cluster":

@@ -1,0 +1,1514 @@
+// RT RUNTIME PROBE — private clone (proj_rt) only. NEVER copy into the real project.
+// Plays Assets/Scenes/FrontRooms3D.unity with the same start as the interaction-audit and
+// G11 harnesses (Random.InitState(4242) before the title start), finds a Level 0 window and
+// probes the Metal hardware-RT glass prototype (FrontRoomsMetalGlassRT*):
+//   - native capability vs SystemInfo.supportsRayTracing, plugin import settings;
+//   - whether the game itself creates the RT controller;
+//   - four views of one pane (head-on level gaze, head-on centred, 50 deg, steep), each with the
+//     RT feature OFF and ON, the RT result texture read back (raw float RGBA), and ray-cast masks
+//     of where the pane really is (correct projection) and where the prototype's projection puts it;
+//   - RebuildScene CPU time, BLAS/TLAS build counts and times, trace GPU time (instrumented clone
+//     plugin: FRGlassRT_Stat), frame time ON vs OFF;
+//   - first-frame-after-rescan blank, one-frame lag, broken-pane ghost, Relay in front of / behind
+//     the pane, second camera re-allocation, a planar mirror reference, a free-running 1 Hz rescan.
+// Output: <clone>/Verification/rt_probe (PNG frames, .f32 raw RT readbacks, .u8 masks, probe_log.txt).
+// Run: Unity -batchmode -projectPath <proj_rt> -executeMethod FrontRoomsGlassRTProbe.RunBatch -logFile <f>
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class FrontRoomsGlassRTProbe
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.RTProbe.Active";
+    const string DeadlineKey = "FrontRooms.RTProbe.Deadline";
+    const string DoneKey = "FrontRooms.RTProbe.Done";
+    const int W = 1920, H = 1080;
+    const int MW = 960, MH = 540; // ray-cast mask resolution (half)
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    const string Plugin = "FrontRoomsMetalGlassRT";
+    const string DylibPath = "Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib";
+    const string RendererPath = "Assets/Settings/FrontRooms_URP_Renderer.asset";
+
+    // Same plugin. The *Stat* exports exist only in the clone's instrumented build.
+    [DllImport(Plugin)] static extern int FRGlassRT_DeviceSupportsRaytracing();
+    [DllImport(Plugin)] static extern double FRGlassRT_Stat(int id);
+    [DllImport(Plugin)] static extern void FRGlassRT_ResetStats();
+    [DllImport(Plugin)] static extern void FRGlassRT_SetDiagnostics(int flags);
+    [DllImport(Plugin)] static extern int FRGlassRT_PluginLoadSeen();
+    [DllImport(Plugin)] static extern IntPtr FRGlassRT_LastError();
+
+    enum St
+    {
+        LastGpuMs, TraceSubmitted, TraceCompleted, BlasCount, BlasCpuMs, BlasGpuMs, BlasBytes, BlasTriangles,
+        TlasCpuMs, TlasGpuMs, TlasInstances, TlasBytes, RenderEventMainThread, AddMeshMainThread, UnityCmdStatus,
+        LastEncodeCpuMs, TraceErrors, MaxGpuMs, SumGpuMs, OutputPixelFormat, OutputWidth, OutputHeight,
+        RenderEventCalls, RenderEventSkipped, LastGpuStart, LastGpuEnd, PipelineValid, CompileMs
+    }
+
+    static double S(St s)
+    {
+        try { return FRGlassRT_Stat((int)s); }
+        catch (Exception) { return double.NaN; }
+    }
+
+    static string NativeError()
+    {
+        try
+        {
+            var p = FRGlassRT_LastError();
+            return p == IntPtr.Zero ? "" : Marshal.PtrToStringAnsi(p);
+        }
+        catch (Exception e) { return "(" + e.GetType().Name + ")"; }
+    }
+
+    // Ablation flags sent to the clone plugin: 2 = declare residency (useResource), 4 = per-instance BLAS index, 8 = 16-byte-aligned instance records. 1 = command-buffer status query.
+    static int diagBase = 0;
+    static void Diag(int flags) { diagBase = flags; FRGlassRT_SetDiagnostics(flags); }
+
+    static int waitUntilFrame = -1;
+    static bool finished;
+    static string outDir;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder frames = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D tiny, frameTex;
+    static FrontRoomsMetalGlassRTController ctrl;
+
+    static FrontRoomsGlassRTProbe()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    public static void RunBatch()
+    {
+        try { File.Delete(Path.Combine(OutDir, "probe_log_editor.txt")); } catch { }
+        Caps("editor, before play mode");
+        PluginInfo();
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1100f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "rt_probe");
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[RTProbe] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, EditorApplication.isPlaying ? "probe_log.txt" : "probe_log_editor.txt"), log.ToString()); } catch { }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        SessionState.SetBool(DoneKey, true);
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "probe_log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "frames.txt"), frames.ToString());
+        }
+        catch { }
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) { stack.Push(Main()); Log("routine created"); }
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            Log("EXCEPTION " + e);
+            Finish();
+        }
+    }
+
+    // ---------------- reflection helpers ----------------
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string V(Vector3 v) => "(" + v.x.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.y.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.z.ToString("0.00", CultureInfo.InvariantCulture) + ")";
+    static string F(double f) => f.ToString("0.00", CultureInfo.InvariantCulture);
+    static string F3(double f) => f.ToString("0.000", CultureInfo.InvariantCulture);
+
+    // ---------------- capability / import ----------------
+    static void Caps(string when)
+    {
+        string native, loadSeen, err;
+        try { native = FRGlassRT_DeviceSupportsRaytracing().ToString(); }
+        catch (Exception e) { native = "EXCEPTION " + e.GetType().Name + ": " + e.Message; }
+        try { loadSeen = FRGlassRT_PluginLoadSeen().ToString(); }
+        catch (Exception e) { loadSeen = "EXCEPTION " + e.GetType().Name; }
+        err = NativeError();
+        Log("CAPS (" + when + "): gfx " + SystemInfo.graphicsDeviceType + " · " + SystemInfo.graphicsDeviceName + " · " + SystemInfo.graphicsDeviceVersion
+            + " · OS " + SystemInfo.operatingSystem
+            + " · Unity SystemInfo.supportsRayTracing " + SystemInfo.supportsRayTracing
+            + " · supportsRayTracingShaders " + SystemInfo.supportsRayTracingShaders
+            + " · supportsInlineRayTracing " + SystemInfo.supportsInlineRayTracing
+            + " · NATIVE FRGlassRT_DeviceSupportsRaytracing " + native
+            + " · UnityPluginLoad seen (IUnityGraphicsMetalV2 present) " + loadSeen
+            + " · trace pipeline compiled " + S(St.PipelineValid) + " (MSL compile+pipeline " + F(S(St.CompileMs)) + " ms)"
+            + " · native last error \"" + err + "\""
+            + " · build target " + EditorUserBuildSettings.activeBuildTarget);
+    }
+
+    static void PluginInfo()
+    {
+        var imp = AssetImporter.GetAtPath(DylibPath) as PluginImporter;
+        if (imp == null) { Log("PLUGIN importer: NOT a PluginImporter (" + AssetImporter.GetAtPath(DylibPath) + ")"); return; }
+        string Safe(Func<string> f) { try { return f(); } catch (Exception e) { return "ERR " + e.GetType().Name; } }
+        Log("PLUGIN importer " + DylibPath + ": isNativePlugin " + imp.isNativePlugin
+            + " · anyPlatform " + Safe(() => imp.GetCompatibleWithAnyPlatform().ToString())
+            + " · editor " + Safe(() => imp.GetCompatibleWithEditor().ToString())
+            + " · StandaloneOSX " + Safe(() => imp.GetCompatibleWithPlatform(BuildTarget.StandaloneOSX).ToString())
+            + " · StandaloneWindows64 " + Safe(() => imp.GetCompatibleWithPlatform(BuildTarget.StandaloneWindows64).ToString())
+            + " · WebGL " + Safe(() => imp.GetCompatibleWithPlatform(BuildTarget.WebGL).ToString())
+            + " · editor CPU \"" + Safe(() => imp.GetEditorData("CPU")) + "\" OS \"" + Safe(() => imp.GetEditorData("OS")) + "\""
+            + " · OSX CPU \"" + Safe(() => imp.GetPlatformData(BuildTarget.StandaloneOSX, "CPU")) + "\""
+            + " · isPreloaded " + imp.isPreloaded);
+        var metaPath = DylibPath + ".meta";
+        try { Log("PLUGIN .meta on disk (" + new FileInfo(metaPath).Length + " bytes): " + File.ReadAllText(metaPath).Replace("\n", " | ")); } catch { }
+    }
+
+    // ---------------- capture helpers ----------------
+    static void RenderTo(Camera c, RenderTexture target)
+    {
+        var prev = c.targetTexture;
+        c.targetTexture = target;
+        c.Render();
+        c.targetTexture = prev;
+    }
+
+    static void Sync(RenderTexture target)
+    {
+        var active = RenderTexture.active;
+        RenderTexture.active = target;
+        tiny.ReadPixels(new Rect(0, 0, 1, 1), 0, 0);
+        tiny.Apply();
+        RenderTexture.active = active;
+    }
+
+    static void SaveFrame(string file, string note)
+    {
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        frameTex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        frameTex.Apply();
+        RenderTexture.active = active;
+        File.WriteAllBytes(Path.Combine(OutDir, file), frameTex.EncodeToPNG());
+        var t = cam.transform;
+        frames.AppendLine(file + " | frame " + Time.frameCount + " | cam " + V(t.position) + " fwd " + V(t.forward) + " up " + V(t.up) + " fov " + F(cam.fieldOfView) + " | " + note);
+        try { File.WriteAllText(Path.Combine(OutDir, "frames.txt"), frames.ToString()); } catch { }
+    }
+
+    static void Shot(string file, string note)
+    {
+        RenderTo(cam, rt);
+        SaveFrame(file, note);
+    }
+
+    static RenderTexture Result => ctrl != null ? Get<RenderTexture>(ctrl, "result") : null;
+
+    static float[] ReadResult(out int w, out int h, out int covered)
+    {
+        w = h = covered = 0;
+        var r = Result;
+        if (r == null) return null;
+        w = r.width; h = r.height;
+        var t = new Texture2D(w, h, TextureFormat.RGBAFloat, false, true);
+        var prev = RenderTexture.active;
+        RenderTexture.active = r;
+        t.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+        t.Apply(false);
+        RenderTexture.active = prev;
+        var data = t.GetRawTextureData<float>().ToArray();
+        Object.DestroyImmediate(t);
+        for (var i = 3; i < data.Length; i += 4) if (data[i] > .5f) covered++;
+        return data;
+    }
+
+    static void SaveF32(float[] d, string file)
+    {
+        if (d == null) return;
+        var bytes = new byte[d.Length * 4];
+        Buffer.BlockCopy(d, 0, bytes, 0, bytes.Length);
+        File.WriteAllBytes(Path.Combine(OutDir, file), bytes);
+    }
+
+    static string Stats(List<double> v)
+    {
+        if (v.Count == 0) return "no samples";
+        var s = v.OrderBy(x => x).ToList();
+        return "median " + F(s[s.Count / 2]) + " ms, min " + F(s[0]) + ", mean " + F(s.Average()) + ", max " + F(s[s.Count - 1]) + " (" + s.Count + ")";
+    }
+
+    static double Median(List<double> v) => v.Count == 0 ? double.NaN : v.OrderBy(x => x).ElementAt(v.Count / 2);
+
+    // ---------------- controller control ----------------
+    static void SetRT(bool on) => Set(ctrl, "ready", on);
+    static bool CtrlReady => ctrl != null && ctrl.IsReady;
+
+    // The controller's own focus rule: Camera.main, else the first FrontRoomsMetalGlassTarget found.
+    static string FocusInfo()
+    {
+        var targets = Object.FindObjectsByType<FrontRoomsMetalGlassTarget>(FindObjectsSortMode.None);
+        if (targets.Length == 0) return "no targets";
+        var main = Camera.main;
+        var focus = main != null ? main.transform.position : targets[0].transform.position;
+        FrontRoomsMetalGlassTarget nearest = null; var best = float.PositiveInfinity;
+        foreach (var tg in targets) { if (!tg.isActiveAndEnabled) continue; var d = (tg.transform.position - focus).sqrMagnitude; if (d < best) { best = d; nearest = tg; } }
+        return "Camera.main " + (main != null ? main.name : "NULL") + " · registration centre = " + (nearest != null ? nearest.name + " " + V(nearest.transform.position) + ", " + F(Vector3.Distance(nearest.transform.position, cam.transform.position)) + " m from the game camera" : "none");
+    }
+
+    static double Rebuild(string why)
+    {
+        FRGlassRT_ResetStats();
+        var sw = Stopwatch.StartNew();
+        Call(ctrl, "RebuildScene");
+        sw.Stop();
+        var regs = Get<List<Renderer>>(ctrl, "registeredRenderers");
+        var meshes = Get(ctrl, "meshIndices") as IDictionary;
+        var mats = Get(ctrl, "materialIndices") as IDictionary;
+        var blasCpu = S(St.BlasCpuMs);
+        var tlasCpu = S(St.TlasCpuMs);
+        Log(string.Format(CultureInfo.InvariantCulture,
+            "REBUILD ({0}) [ablation flags " + diagBase + " · " + FocusInfo() + "]: RebuildScene main-thread wall {1} ms · native BLAS builds {2} (CPU incl. waitUntilCompleted {3} ms, GPU {4} ms, {5} MB, {6} tris) · TLAS {7} instances CPU {8} ms GPU {9} ms ({10} KB) · managed part {11} ms · registered renderers {12} · unique meshes {13} · materials {14} · ready {15} · AddMesh on main thread {16} · native error \"{17}\"",
+            why, F(sw.Elapsed.TotalMilliseconds), S(St.BlasCount), F(blasCpu), F(S(St.BlasGpuMs)), F(S(St.BlasBytes) / 1048576.0), S(St.BlasTriangles),
+            S(St.TlasInstances), F(tlasCpu), F(S(St.TlasGpuMs)), F(S(St.TlasBytes) / 1024.0), F(sw.Elapsed.TotalMilliseconds - blasCpu - tlasCpu),
+            regs?.Count ?? -1, meshes?.Count ?? -1, mats?.Count ?? -1, Get(ctrl, "ready"), S(St.AddMeshMainThread), NativeError()));
+        return sw.Elapsed.TotalMilliseconds;
+    }
+
+    // ---------------- grain (analysis renders only) ----------------
+    static readonly Dictionary<FilmGrain, bool> grainOriginal = new Dictionary<FilmGrain, bool>();
+    static void Grain(bool on)
+    {
+        foreach (var v in Object.FindObjectsByType<Volume>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            var p = v.sharedProfile;
+            if (p == null || !p.TryGet<FilmGrain>(out var g)) continue;
+            if (!grainOriginal.ContainsKey(g)) grainOriginal[g] = g.active;
+            g.active = on && grainOriginal[g];
+        }
+    }
+
+    // ---------------- placement ----------------
+    static void Place(Vector3 feet, Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false;
+        root.position = feet;
+        body.enabled = true;
+        Physics.SyncTransforms();
+        Look(lookAt);
+    }
+
+    static void Look(Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var eye = root.position + Vector3.up * ModuleUnits.PlayerEye;
+        var d = lookAt - eye;
+        var yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        var pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        Set(game, "yaw", yaw);
+        Set(game, "pitch", pitch);
+        root.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    static void Resume()
+    {
+        if (Phase != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+    }
+
+    static IEnumerator Settle(int extra = 20)
+    {
+        yield return 3;
+        var start = Time.frameCount;
+        while (!map.Settled && Time.frameCount - start < 1500) yield return 1;
+        yield return extra;
+    }
+
+    static bool FreeStanding(Vector3 feet)
+    {
+        var r = ModuleUnits.PlayerRadius;
+        var root = PlayerRoot;
+        foreach (var c in Physics.OverlapCapsule(feet + Vector3.up * (r + .15f), feet + Vector3.up * (ModuleUnits.PlayerHeight - r), r, ~0, QueryTriggerInteraction.Ignore))
+            if (root == null || !c.transform.IsChildOf(root)) return false;
+        return true;
+    }
+
+    static bool SeesPane(Vector3 feet, Collider pane)
+    {
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var b = pane.bounds;
+        var pts = new List<Vector3> { b.center };
+        // inset corners of the pane's broad face
+        var t = pane.transform;
+        foreach (var sx in new[] { -.42f, .42f })
+        foreach (var sy in new[] { -.42f, .42f })
+            pts.Add(t.TransformPoint(new Vector3(sx, sy, 0f)));
+        foreach (var p in pts)
+        {
+            var d = p - eye;
+            if (!Physics.Raycast(eye, d.normalized, out var hit, d.magnitude + .2f, ~0, QueryTriggerInteraction.Ignore)) return false;
+            if (hit.collider != pane) return false;
+        }
+        return true;
+    }
+
+    static Collider WindowCollider(GridCoord a, GridCoord b)
+    {
+        var dict = Get(map, "windowByCollider") as IDictionary;
+        var p = map.CrossingPoint(a, b);
+        foreach (DictionaryEntry e in dict)
+        {
+            var pos = (Vector3)Get(e.Value, "position");
+            if ((new Vector2(pos.x - p.x, pos.z - p.z)).sqrMagnitude < .01f) return (Collider)e.Key;
+        }
+        return null;
+    }
+
+    static IEnumerable<GridCoord> CellsAround(GridCoord center, int radiusCells)
+    {
+        for (var r = 0; r <= radiusCells; r++)
+        for (var dy = -r; dy <= r; dy++)
+        for (var dx = -r; dx <= r; dx++)
+        {
+            if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
+            yield return new GridCoord(center.x + dx, center.y + dy);
+        }
+    }
+
+    // ---------------- ray-cast masks ----------------
+    // Pixel (x, y) with y = 0 at the BOTTOM (Unity texture/ReadPixels convention). A pixel is 255
+    // when the first collider along the ray through its centre is the pane. tanHalf is the value used
+    // for the vertical extent: Mathf.Tan(fov/2) is correct; fov in radians is what the prototype sends.
+    static byte[] RayMask(Collider target, float tanHalf, out int count)
+    {
+        var t = cam.transform;
+        var o = t.position; var r = t.right; var u = t.up; var f = t.forward;
+        var aspect = (float)W / H;
+        var m = new byte[MW * MH];
+        count = 0;
+        // The player's own colliders are not part of what the camera sees.
+        var own = PlayerRoot.GetComponentsInChildren<Collider>(true).Where(c => c.enabled).ToList();
+        foreach (var c in own) c.enabled = false;
+        Physics.SyncTransforms();
+        for (var y = 0; y < MH; y++)
+        {
+            var ndcY = ((y + .5f) / MH) * 2f - 1f;
+            for (var x = 0; x < MW; x++)
+            {
+                var ndcX = ((x + .5f) / MW) * 2f - 1f;
+                var dir = (f + r * (ndcX * tanHalf * aspect) + u * (ndcY * tanHalf)).normalized;
+                if (Physics.Raycast(o, dir, out var hit, 200f, ~0, QueryTriggerInteraction.Ignore) && hit.collider == target)
+                {
+                    m[y * MW + x] = 255;
+                    count++;
+                }
+            }
+        }
+        foreach (var c in own) c.enabled = true;
+        Physics.SyncTransforms();
+        return m;
+    }
+
+    // ---------------- view probe ----------------
+    struct View
+    {
+        public string name;
+        public Vector3 feet, look;
+        public string note;
+    }
+
+    static readonly List<string> summary = new List<string>();
+
+    static IEnumerator ProbeView(View v, Collider pane, Vector3 paneCenter, Vector3 dir)
+    {
+        Place(v.feet, v.look);
+        yield return 3;
+        Resume();
+        Place(v.feet, v.look);
+        yield return 2;
+        var t = cam.transform;
+        var toPane = paneCenter - t.position;
+        var incidence = Vector3.Angle(-toPane.normalized, -dir); // angle between view ray to pane centre and pane normal
+        Log("VIEW " + v.name + " — " + v.note + " · eye " + V(t.position) + " fwd " + V(t.forward) + " · distance to pane centre " + F(toPane.magnitude) + " m · incidence at pane centre " + F(incidence) + " deg");
+
+        // Ray-cast masks: where the pane is (correct projection) and where the prototype's projection puts it.
+        var tanTrue = Mathf.Tan(cam.fieldOfView * .5f * Mathf.Deg2Rad);
+        var tanSent = cam.fieldOfView * Mathf.Deg2Rad;
+        var sw = Stopwatch.StartNew();
+        var truth = RayMask(pane, tanTrue, out var nTruth);
+        var pred = RayMask(pane, tanSent, out var nPred);
+        File.WriteAllBytes(Path.Combine(OutDir, v.name + "_mask_truth.u8"), truth);
+        File.WriteAllBytes(Path.Combine(OutDir, v.name + "_mask_predicted_bugfov.u8"), pred);
+        Log("MASK " + v.name + ": camera fov " + F(cam.fieldOfView) + " deg · correct tan(fov/2) " + F3(tanTrue) + " · prototype sends fov in radians " + F3(tanSent)
+            + " (x" + F3(tanSent / tanTrue) + ") · pane pixels at " + MW + "x" + MH + ": correct " + nTruth + ", predicted-with-prototype-projection " + nPred + " (ray-casts " + F(sw.Elapsed.TotalMilliseconds) + " ms)");
+
+        // --- analysis renders (film grain off so ON/OFF differences are only the composite) ---
+        Grain(false);
+        SetRT(false);
+        Shot(v.name + "_A_off.png", "analysis, grain off, RT OFF");
+        var rebuildMs = Rebuild(v.name);
+        var regs = Get<List<Renderer>>(ctrl, "registeredRenderers");
+        var paneRegistered = regs != null && regs.Contains(pane.GetComponent<Renderer>());
+        FRGlassRT_ResetStats();
+        Shot(v.name + "_A_on_first_after_rescan.png", "analysis, grain off, RT ON, first render after RebuildScene");
+        var d0 = ReadResult(out var rw, out var rh, out var cov0);
+        Shot(v.name + "_A_on.png", "analysis, grain off, RT ON, second render");
+        var d1 = ReadResult(out rw, out rh, out var cov1);
+        SaveF32(d1, v.name + "_rt.f32");
+        Log("RT " + v.name + ": result texture " + rw + "x" + rh + " (native pixel format " + S(St.OutputPixelFormat) + ", " + S(St.OutputWidth) + "x" + S(St.OutputHeight) + ") · covered pixels (alpha>0.5): first render after rescan " + cov0 + ", second render " + cov1
+            + " · RenderEvent calls " + S(St.RenderEventCalls) + " (skipped " + S(St.RenderEventSkipped) + ") on main thread " + S(St.RenderEventMainThread)
+            + " · pane registered " + paneRegistered + " · native error \"" + NativeError() + "\"");
+        if (d1 != null)
+        {
+            double sr = 0, sg = 0, sb = 0, mx = 0; var n = 0;
+            for (var i = 0; i < d1.Length; i += 4)
+            {
+                if (d1[i + 3] <= .5f) continue;
+                sr += d1[i]; sg += d1[i + 1]; sb += d1[i + 2]; n++;
+                mx = Math.Max(mx, Math.Max(d1[i], Math.Max(d1[i + 1], d1[i + 2])));
+            }
+            if (n > 0) Log("RT " + v.name + " covered-pixel mean linear RGB (" + F3(sr / n) + ", " + F3(sg / n) + ", " + F3(sb / n) + ") max channel " + F3(mx));
+        }
+        Grain(true);
+
+        // --- presentation renders (game look, grain on) ---
+        SetRT(false);
+        Shot(v.name + "_off.png", "game look, RT OFF");
+        SetRT(true);
+        Shot(v.name + "_on.png", "game look, RT ON");
+
+        // --- GPU time of the trace (instrumented plugin) and frame time ON vs OFF ---
+        FRGlassRT_ResetStats();
+        var gpu = new List<double>();
+        var enc = new List<double>();
+        for (var i = 0; i < 24; i++)
+        {
+            var before = S(St.TraceCompleted);
+            RenderTo(cam, rt);
+            Sync(rt);
+            var spin = Stopwatch.StartNew();
+            while (S(St.TraceCompleted) <= before && spin.ElapsedMilliseconds < 200) System.Threading.Thread.Sleep(1);
+            if (i >= 4) { gpu.Add(S(St.LastGpuMs)); enc.Add(S(St.LastEncodeCpuMs)); }
+        }
+        Log("GPU " + v.name + " trace (1920x1080, 1 primary ray/pixel + 1 reflection ray per glass pixel): " + Stats(gpu) + " · encode+commit CPU " + Stats(enc) + " · trace errors " + S(St.TraceErrors) + " · completed " + S(St.TraceCompleted) + "/" + S(St.TraceSubmitted));
+
+        var off = new List<double>();
+        var on = new List<double>();
+        for (var rep = 0; rep < 2; rep++)
+        {
+            SetRT(false);
+            for (var i = 0; i < 14; i++) { var s0 = Stopwatch.StartNew(); RenderTo(cam, rt); Sync(rt); if (i >= 4) off.Add(s0.Elapsed.TotalMilliseconds); }
+            SetRT(true);
+            for (var i = 0; i < 14; i++) { var s0 = Stopwatch.StartNew(); RenderTo(cam, rt); Sync(rt); if (i >= 4) on.Add(s0.Elapsed.TotalMilliseconds); }
+        }
+        Log("FRAME " + v.name + " camera.Render+GPU sync: RT OFF " + Stats(off) + " · RT ON " + Stats(on) + " · delta of medians " + F(Median(on) - Median(off)) + " ms");
+
+        // --- the same view with ONLY the FOV corrected (clone plugin flag 16: tanFovY = tan(fov/2)) ---
+        var fixGpu = new List<double>();
+        var covFix = 0;
+        {
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            Grain(false);
+            SetRT(true);
+            Shot(v.name + "_fovfix_A_on.png", "analysis, grain off, RT ON, FOV corrected in the plugin (flag 16)");
+            var df = ReadResult(out _, out _, out covFix);
+            SaveF32(df, v.name + "_fovfix_rt.f32");
+            Grain(true);
+            Shot(v.name + "_fovfix_on.png", "game look, RT ON, FOV corrected in the plugin (flag 16)");
+            FRGlassRT_ResetStats();
+            for (var i = 0; i < 24; i++)
+            {
+                var before = S(St.TraceCompleted);
+                RenderTo(cam, rt);
+                Sync(rt);
+                var spin = Stopwatch.StartNew();
+                while (S(St.TraceCompleted) <= before && spin.ElapsedMilliseconds < 200) System.Threading.Thread.Sleep(1);
+                if (i >= 4) fixGpu.Add(S(St.LastGpuMs));
+            }
+            Log("FOVFIX " + v.name + ": RT covered px " + covFix + " (prototype projection " + cov1 + ", ray-cast truth " + nTruth + " at half res = ~" + (nTruth * 4) + " full res) · trace GPU " + Stats(fixGpu) + " · errors " + S(St.TraceErrors));
+            FRGlassRT_SetDiagnostics(diagBase);
+            RenderTo(cam, rt);
+            DiagRender(v.name, pane);
+        }
+        summary.Add(string.Format(CultureInfo.InvariantCulture, "{0}: incidence {1} deg, truth px {2}, predicted px {3}, RT covered px (full res) {4}, first-after-rescan {5}, rebuild {6} ms, trace GPU median {7} ms, frame OFF {8} / ON {9} ms, FOV-fixed covered px {10}, FOV-fixed trace GPU median {11} ms",
+            v.name, F(incidence), nTruth, nPred, cov1, cov0, F(rebuildMs), F(Median(gpu)), F(Median(off)), F(Median(on)), covFix, F(Median(fixGpu))));
+    }
+
+    // ---------------- scene coverage ----------------
+    static void Coverage(Collider pane, string tag)
+    {
+        var regs = new HashSet<Renderer>(Get<List<Renderer>>(ctrl, "registeredRenderers"));
+        var radius = Get<float>(ctrl, "registrationRadius");
+        var cap = Get<int>(ctrl, "maxInstances");
+        var targets = Object.FindObjectsByType<FrontRoomsMetalGlassTarget>(FindObjectsSortMode.None);
+        var focus = Camera.main != null ? Camera.main.transform.position : (targets.Length > 0 ? targets[0].transform.position : cam.transform.position);
+        FrontRoomsMetalGlassTarget nearest = null; var best = float.PositiveInfinity;
+        foreach (var tg in targets) { var d = (tg.transform.position - focus).sqrMagnitude; if (tg.isActiveAndEnabled && d < best) { best = d; nearest = tg; } }
+        var all = Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.InstanceID);
+        int within = 0, withinDropped = 0, glassFar = 0, multiSub = 0, badFormat = 0, noMat = 0;
+        long trisSkippedSub = 0;
+        var center = nearest != null ? nearest.transform.position : focus;
+        foreach (var r in all)
+        {
+            if (!r.enabled || r.sharedMaterial == null) { noMat++; continue; }
+            var mf = r.GetComponent<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null) continue;
+            var isGlass = r.GetComponent<FrontRoomsMetalGlassTarget>() != null;
+            var inR = (r.bounds.center - center).sqrMagnitude <= radius * radius;
+            if (inR) { within++; if (!regs.Contains(r)) withinDropped++; }
+            if (isGlass && !inR) glassFar++;
+            if (!regs.Contains(r)) continue;
+            var mesh = mf.sharedMesh;
+            if (mesh.subMeshCount > 1)
+            {
+                multiSub++;
+                for (var s = 1; s < mesh.subMeshCount; s++) trisSkippedSub += mesh.GetIndexCount(s) / 3;
+            }
+            if (mesh.GetVertexAttributeFormat(VertexAttribute.Position) != VertexAttributeFormat.Float32) badFormat++;
+        }
+        var skinned = Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None);
+        var skinnedNear = skinned.Count(s => s.enabled && (s.bounds.center - center).sqrMagnitude <= radius * radius);
+        var particles = Object.FindObjectsByType<ParticleSystemRenderer>(FindObjectsSortMode.None).Count(p => p.enabled && (p.bounds.center - center).sqrMagnitude <= radius * radius);
+        var lights = Object.FindObjectsByType<Light>(FindObjectsSortMode.None);
+        var litNear = lights.Count(l => l.enabled && l.intensity > 0f && (l.transform.position - center).sqrMagnitude <= radius * radius);
+        var paneReg = pane != null && regs.Contains(pane.GetComponent<Renderer>());
+        Log("COVERAGE (" + tag + "): nearest target " + (nearest != null ? nearest.name + " at " + V(nearest.transform.position) + (pane != null && nearest.gameObject == pane.gameObject ? " (= probed pane)" : " (NOT the probed pane)") : "none")
+            + " · probed pane registered " + paneReg
+            + " · MeshRenderers in scene " + all.Length + " · within " + radius + " m of it " + within + " · of those NOT registered " + withinDropped
+            + " · registered " + regs.Count + " (cap " + cap + ")"
+            + " · glass panes in scene " + targets.Length + " (registered regardless of distance; beyond radius " + glassFar + ")"
+            + " · registered multi-submesh renderers " + multiSub + " (" + trisSkippedSub + " triangles in submeshes 1+ never enter the BLAS)"
+            + " · non-Float32 positions " + badFormat
+            + " · SkinnedMeshRenderers within radius " + skinnedNear + " (of " + skinned.Length + ", never registered)"
+            + " · ParticleSystemRenderers within radius " + particles
+            + " · enabled lights within radius " + litNear + " (of " + lights.Length + " Light components; the trace uses none)");
+
+        // What the camera sees that the trace does not know about.
+        var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+        var missing = new List<string>();
+        var visible = 0;
+        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+        {
+            if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+            if ((cam.cullingMask & (1 << r.gameObject.layer)) == 0) continue;
+            if (!GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
+            visible++;
+            if (r is MeshRenderer mr && regs.Contains(mr)) continue;
+            missing.Add(r.GetType().Name + ":" + r.name);
+        }
+        Log("COVERAGE (" + tag + ") camera frustum: " + visible + " renderers, NOT in the RT scene " + missing.Count + ": " + string.Join(", ", missing.GroupBy(s => s).Select(g => g.Key + (g.Count() > 1 ? " x" + g.Count() : "")).Take(30)));
+    }
+
+    static void MaterialTable()
+    {
+        var dict = Get(ctrl, "materialIndices") as IDictionary;
+        var list = Get(ctrl, "materials") as IList;
+        if (dict == null || list == null) return;
+        var sb = new StringBuilder("MATERIALS sent to the trace (" + dict.Count + "):");
+        foreach (DictionaryEntry e in dict)
+        {
+            var m = (Material)e.Key;
+            var idx = (int)e.Value;
+            var desc = list[idx];
+            var bc = (Vector4)FI(desc.GetType(), "baseColor").GetValue(desc);
+            var flags = (uint)FI(desc.GetType(), "flags").GetValue(desc);
+            var tex = m.HasProperty("_BaseMap") ? m.GetTexture("_BaseMap") : null;
+            var emis = m.HasProperty("_EmissionColor") ? m.GetColor("_EmissionColor") : Color.black;
+            sb.Append(" | ").Append(m.name).Append(" [").Append(m.shader.name).Append("] baseColor(lin) ").Append(F3(bc.x)).Append(",").Append(F3(bc.y)).Append(",").Append(F3(bc.z))
+              .Append(" flags ").Append(flags).Append(" _BaseMap ").Append(tex != null ? tex.name : "none").Append(" _EmissionColor ").Append(F(emis.maxColorComponent));
+        }
+        Log(sb.ToString());
+    }
+
+    // ---------------- hit-identity diagnostic (clone plugin flag 32, run 7) ----------------
+    // The kernel writes R = reflected hit instance + 1 (0 = miss -> sky), G = reflected hit distance,
+    // B = first-hit instance * 16 + primitive, instead of colour. Always with the FOV corrected (flag 16).
+    static Dictionary<int, bool> paneBroadFace;
+    static void ClassifyPaneTriangles(Collider pane)
+    {
+        paneBroadFace = new Dictionary<int, bool>();
+        try
+        {
+            var mesh = pane.GetComponent<MeshFilter>().sharedMesh;
+            var tris = mesh.GetTriangles(0);
+            var verts = mesh.vertices;
+            var scale = pane.transform.lossyScale;
+            var thin = scale.x < scale.y && scale.x < scale.z ? 0 : scale.y < scale.z ? 1 : 2;
+            var sb = new StringBuilder();
+            for (var t = 0; t < tris.Length / 3; t++)
+            {
+                var n = Vector3.Cross(verts[tris[t * 3 + 1]] - verts[tris[t * 3]], verts[tris[t * 3 + 2]] - verts[tris[t * 3]]).normalized;
+                var broad = Mathf.Abs(n[thin]) > .9f;
+                paneBroadFace[t] = broad;
+                sb.Append(t).Append(broad ? ":broad " : ":edge ");
+            }
+            Log("PANE triangles (" + mesh.name + ", thin local axis " + "xyz"[thin] + " = " + F3(scale[thin]) + " m): " + sb);
+        }
+        catch (Exception e) { Log("PANE triangles: could not read the mesh (" + e.GetType().Name + ": " + e.Message + ")"); }
+    }
+
+    static void WriteInstances(string tag)
+    {
+        var regs = Get<List<Renderer>>(ctrl, "registeredRenderers");
+        var sb = new StringBuilder("index\trenderer\tmaterial\tshader\tglass\tlayer\tposition\n");
+        for (var i = 0; i < regs.Count; i++)
+        {
+            var r = regs[i];
+            if (r == null) { sb.Append(i).Append("\t(destroyed)\t\t\t\t\t\n"); continue; }
+            var m = r.sharedMaterial;
+            sb.Append(i).Append('\t').Append(r.name).Append('\t').Append(m != null ? m.name : "").Append('\t').Append(m != null ? m.shader.name : "")
+              .Append('\t').Append(r.GetComponent<FrontRoomsMetalGlassTarget>() != null ? 1 : 0).Append('\t').Append(r.gameObject.layer).Append('\t').Append(V(r.transform.position)).Append('\n');
+        }
+        File.WriteAllText(Path.Combine(OutDir, tag + "_instances.tsv"), sb.ToString());
+    }
+
+    static string Category(Renderer r)
+    {
+        if (r == null) return "(destroyed renderer)";
+        var m = r.sharedMaterial;
+        return (m != null ? m.name : "(no material)");
+    }
+
+    static float[] DiagRender(string tag, Collider pane, int extraFlags = 16)
+    {
+        FRGlassRT_SetDiagnostics(diagBase | extraFlags | 32);
+        RenderTo(cam, rt);
+        RenderTo(cam, rt);
+        var d = ReadResult(out _, out _, out var cov);
+        FRGlassRT_SetDiagnostics(diagBase);
+        RenderTo(cam, rt);
+        if (d == null) { Log("DIAG " + tag + ": no result texture"); return null; }
+        SaveF32(d, tag + "_diag_rt.f32");
+        WriteInstances(tag);
+        var regs = Get<List<Renderer>>(ctrl, "registeredRenderers");
+        var paneIdx = pane != null ? regs.IndexOf(pane.GetComponent<Renderer>()) : -1;
+        int glass = 0, miss = 0, onPane = 0, broad = 0, edge = 0, otherGlass = 0;
+        var hitCat = new Dictionary<string, int>();
+        var dist = new List<float>();
+        for (var i = 0; i < d.Length; i += 4)
+        {
+            if (d[i + 3] <= .5f) continue;
+            glass++;
+            var h = (int)Math.Round(d[i]);
+            if (h == 0) miss++;
+            else
+            {
+                var r = h - 1 < regs.Count ? regs[h - 1] : null;
+                var c = Category(r);
+                hitCat[c] = hitCat.TryGetValue(c, out var k) ? k + 1 : 1;
+                dist.Add(d[i + 1]);
+            }
+            var b = (int)Math.Round(d[i + 2]);
+            var inst = b / 16; var prim = b % 16;
+            if (inst == paneIdx)
+            {
+                onPane++;
+                if (paneBroadFace != null && paneBroadFace.TryGetValue(prim, out var isBroad)) { if (isBroad) broad++; else edge++; }
+            }
+            else otherGlass++;
+        }
+        dist.Sort();
+        var top = string.Join(", ", hitCat.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + " " + (100.0 * kv.Value / Math.Max(1, glass)).ToString("0.0", CultureInfo.InvariantCulture) + " %"));
+        Log("DIAG " + tag + " (FOV corrected, hit identities): glass px " + glass + " · reflection ray MISSED the RT scene (sky gradient) " + miss + " px = " + (100.0 * miss / Math.Max(1, glass)).ToString("0.0", CultureInfo.InvariantCulture) + " %"
+            + " · reflected surfaces: " + top
+            + " · reflected hit distance median " + (dist.Count > 0 ? F(dist[dist.Count / 2]) : "-") + " m (10th pct " + (dist.Count > 0 ? F(dist[dist.Count / 10]) : "-") + ", 90th " + (dist.Count > 0 ? F(dist[dist.Count * 9 / 10]) : "-") + ")"
+            + " · first hit on the probed pane " + onPane + " px (broad faces " + broad + ", 30 mm edge faces " + edge + ") · on other glass instances " + otherGlass + " px");
+        return d;
+    }
+
+    // Run 8: why do reflection rays miss (sky) inside a closed office? Walk the corridor behind the camera
+    // (the mirror axis) and report which renderer owns the ceiling / end wall there and whether it is registered.
+    static void MissCause(Vector3 paneCenter, Vector3 dir)
+    {
+        var regs = new HashSet<Renderer>(Get<List<Renderer>>(ctrl, "registeredRenderers"));
+        var radius = Get<float>(ctrl, "registrationRadius");
+        var eye = cam.transform.position;
+        var back = -new Vector3(dir.x, 0f, dir.z).normalized;
+        var all = Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Where(r => r.enabled && r.sharedMaterial != null).ToList();
+        var own = PlayerRoot.GetComponentsInChildren<Collider>(true).Where(c => c.enabled).ToList();
+        foreach (var c in own) c.enabled = false;
+        Physics.SyncTransforms();
+        var len = Physics.Raycast(eye, back, out var endHit, 80f, ~0, QueryTriggerInteraction.Ignore) ? endHit.distance : 80f;
+        var sb = new StringBuilder("MISS CAUSE (registration radius " + F(radius) + " m around the pane centre; rule: renderer.bounds.center within the radius): free space behind the eye along the mirror axis " + F(len) + " m");
+        string Owner(Vector3 pt, Func<Renderer, bool> filter)
+        {
+            var owners = all.Where(r => filter(r) && r.bounds.SqrDistance(pt) < .0025f).ToList();
+            if (owners.Count == 0) return "no renderer bounds contain it";
+            return string.Join(" + ", owners.Select(r => r.name + " [" + r.sharedMaterial.name + "] bounds centre " + V(r.bounds.center) + " size " + V(r.bounds.size)
+                + ", centre " + F(Vector3.Distance(r.bounds.center, paneCenter)) + " m from the pane, registered " + regs.Contains(r)));
+        }
+        foreach (var s in new[] { 1f, 3f, 5f, 8f, 11f, 14f, 18f, 22f, 26f, 30f })
+        {
+            if (s > len - .2f) break;
+            var floorPt = eye + back * s;
+            if (!Physics.Raycast(floorPt, Vector3.up, out var up, 10f, ~0, QueryTriggerInteraction.Ignore)) { sb.Append(" | " + F(s) + " m: no ceiling collider above"); continue; }
+            sb.Append(" | ceiling " + F(s) + " m behind the eye (y " + F(up.point.y) + ", " + F(Vector3.Distance(up.point, paneCenter)) + " m from the pane): " + Owner(up.point, r => r.sharedMaterial.name.Contains("Ceiling") || r.name.Contains("Ceiling")));
+        }
+        if (len < 80f) sb.Append(" | END WALL at " + F(len) + " m (" + F(Vector3.Distance(endHit.point, paneCenter)) + " m from the pane): " + Owner(endHit.point, r => true));
+        foreach (var c in own) c.enabled = true;
+        Physics.SyncTransforms();
+        Log(sb.ToString());
+    }
+
+    static int CountHits(float[] d, int instIndex, out double meanRow)
+    {
+        meanRow = double.NaN;
+        if (d == null || instIndex < 0) return 0;
+        var n = 0; double sy = 0;
+        for (var i = 0; i < d.Length; i += 4)
+        {
+            if (d[i + 3] <= .5f) continue;
+            if ((int)Math.Round(d[i]) - 1 != instIndex) continue;
+            n++; sy += (i / 4) / W;
+        }
+        if (n > 0) meanRow = sy / n;
+        return n;
+    }
+
+    // ---------------- main ----------------
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        Caps("play mode");
+        tiny = new Texture2D(1, 1, TextureFormat.RGB24, false);
+        frameTex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        foreach (var old in Directory.GetFiles(OutDir)) if (!old.EndsWith("probe_log_editor.txt")) File.Delete(old);
+        rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "RTProbe main" };
+        rt.Create();
+
+        while ((game = Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        while (Time.time < 2.0f) yield return 1;
+        Log("controller before the run starts: " + (FrontRoomsMetalGlassRTController.Instance != null ? "present" : "none"));
+        UnityEngine.Random.InitState(4242);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (!Get<bool>(game, "mapPlay")) { Log("FAILED: could not start a run"); yield break; }
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        Log("run started · seed " + Get<int>(game, "runSeed") + " · map standalone=" + Get(map, "standalone") + " · camera fov " + F(cam.fieldOfView) + " near " + F3(cam.nearClipPlane) + " far " + F(cam.farClipPlane)
+            + " · cameras in scene " + Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Length);
+        var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+        tuning.releaseDelaySeconds = 1e6f;
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 8f) { Resume(); yield return 1; }
+        yield return 30;
+        Time.captureDeltaTime = 1f / 60f;
+
+        var shipped = FrontRoomsMetalGlassRTController.Instance;
+        Log("GAME PATH: RT controller after the run started = " + (shipped != null ? "PRESENT" : "NONE (the game creates the map with CreateEmbedded, standalone=false; FrontRoomsMapWorld.Awake only calls Ensure() when standalone)")
+            + " · FrontRoomsMetalGlassTarget panes built so far " + Object.FindObjectsByType<FrontRoomsMetalGlassTarget>(FindObjectsSortMode.None).Length);
+
+        // Renderer feature state.
+        var rdata = AssetDatabase.LoadAssetAtPath<ScriptableRendererData>(RendererPath);
+        if (rdata != null)
+            foreach (var f in rdata.rendererFeatures)
+                Log("RENDERER FEATURE " + (f != null ? f.name + " (" + f.GetType().Name + ") active " + f.isActive + (f is FrontRoomsMetalGlassRTRendererFeature ? " · composite material " + (Get(f, "material") != null ? "OK" : "NULL") : "") : "null"));
+        Log("composite shader Shader.Find in editor: " + (Shader.Find("Hidden/FrontRooms/MetalGlassRTComposite") != null));
+
+        // Create the controller the way the standalone map does (harness-only for the game scene).
+        ctrl = FrontRoomsMetalGlassRTController.Ensure();
+        yield return 2;
+        Log("HARNESS created controller via Ensure(): nativeAvailable " + Get(ctrl, "nativeAvailable") + " · ready " + Get(ctrl, "ready") + " · IsReady " + ctrl.IsReady + " · native error \"" + NativeError() + "\"");
+        Caps("after Ensure()");
+        // Freeze the 1 s rescan: the probe calls RebuildScene itself (restored for the free-run test).
+        Set(ctrl, "nextScan", float.MaxValue);
+        Log("Camera.main = " + (Camera.main != null ? Camera.main.name : "NULL") + " · game camera tag \"" + cam.tag + "\"");
+
+        // Find a Level 0 window with all four views available.
+        var startDoorCell = (GridCoord)Get(game, "startDoorCell");
+        var origin = startDoorCell + new GridCoord(0, 3);
+        var windows = new List<(GridCoord a, GridCoord b)>();
+        foreach (var c in CellsAround(origin, 60))
+        {
+            if (map.InStartArea(c)) continue;
+            foreach (var s in new[] { new GridCoord(1, 0), new GridCoord(0, 1) })
+            {
+                var n = c + s;
+                if (map.InStartArea(n)) continue;
+                if (map.Cache.Edge(c, n) != EdgeKind.Window) continue;
+                if (map.Cache.ZoneOf(c).theme == ZoneTheme.Office || map.Cache.ZoneOf(n).theme == ZoneTheme.Office) continue;
+                windows.Add((c, n));
+            }
+            if (windows.Count >= 14) break;
+        }
+        Log("Level 0 window candidates " + windows.Count);
+
+        Collider pane = null; Vector3 paneCenter = default, dir = default, along = default, floorCross = default;
+        View headLevel = default, headCenter = default, a50 = default, steep = default;
+        GridCoord wa = default, wb = default;
+        foreach (var (a0, b0) in windows)
+        {
+            var cross = map.CrossingPoint(a0, b0);
+            var d = map.CellCenter(b0) - map.CellCenter(a0); d.y = 0f; d.Normalize();
+            var center = cross + Vector3.up * ((ModuleUnits.WindowSill + ModuleUnits.WindowTop) * .5f);
+            Place(cross - d * 1.5f, center);
+            yield return Settle(10);
+            Resume();
+            var col = WindowCollider(a0, b0);
+            if (col == null) { Log("window " + a0 + "-" + b0 + " not built; next"); continue; }
+            foreach (var sideSign in new[] { 1f, -1f })
+            {
+                var dd = d * sideSign;
+                var al = Vector3.Cross(Vector3.up, -dd).normalized;
+                var fHead = cross - dd * 1.5f;
+                if (!FreeStanding(fHead) || !SeesPane(fHead, col)) continue;
+                Vector3? f50 = null; Vector3? fSteep = null; float steepDeg = 0f;
+                foreach (var lat in new[] { 1f, -1f })
+                {
+                    var c50 = cross - (dd * Mathf.Cos(50f * Mathf.Deg2Rad) + al * lat * Mathf.Sin(50f * Mathf.Deg2Rad)) * 1.5f;
+                    if (f50 == null && FreeStanding(c50) && SeesPane(c50, col)) f50 = c50;
+                    foreach (var deg in new[] { 75f, 72f, 70f, 68f, 65f })
+                    {
+                        if (fSteep != null && steepDeg >= deg) break;
+                        var cs = cross - (dd * Mathf.Cos(deg * Mathf.Deg2Rad) + al * lat * Mathf.Sin(deg * Mathf.Deg2Rad)) * 1.5f;
+                        if (FreeStanding(cs) && SeesPane(cs, col)) { fSteep = cs; steepDeg = deg; break; }
+                    }
+                }
+                if (f50 == null || fSteep == null) { Log("window " + a0 + "-" + b0 + " side " + sideSign + ": 50 deg " + (f50 != null) + ", steep " + (fSteep != null) + "; next"); continue; }
+                pane = col; paneCenter = col.bounds.center; dir = dd; along = al; floorCross = cross; wa = a0; wb = b0;
+                var eyeH = Vector3.up * ModuleUnits.PlayerEye;
+                headLevel = new View { name = "v1_headon_level", feet = fHead, look = fHead + eyeH + dd * 3f, note = "head-on, 1.5 m, level gaze (pane sits low in frame: vertical-mirror test)" };
+                headCenter = new View { name = "v2_headon_centre", feet = fHead, look = paneCenter, note = "head-on, 1.5 m, looking at the pane centre" };
+                a50 = new View { name = "v3_angle50", feet = f50.Value, look = paneCenter, note = "50 deg off the normal, 1.5 m" };
+                steep = new View { name = "v4_steep" + Mathf.RoundToInt(steepDeg), feet = fSteep.Value, look = paneCenter, note = steepDeg + " deg off the normal, 1.5 m" };
+                break;
+            }
+            if (pane != null) break;
+        }
+        if (pane == null) { Log("NO usable Level 0 window"); yield break; }
+        Log("PANE " + pane.name + " · window " + wa + "→" + wb + " · zone " + map.ZoneOf(wa).theme + " · centre " + V(paneCenter) + " · size " + V(pane.transform.lossyScale) + " · mesh " + pane.GetComponent<MeshFilter>().sharedMesh.name
+            + " (" + pane.GetComponent<MeshFilter>().sharedMesh.vertexCount + " verts) · material " + pane.GetComponent<Renderer>().sharedMaterial.name + " [" + pane.GetComponent<Renderer>().sharedMaterial.shader.name + "]");
+        ClassifyPaneTriangles(pane);
+        {
+            var gm = pane.GetComponent<Renderer>().sharedMaterial;
+            string P(string n) => gm.HasProperty(n) ? (gm.GetFloat(n)).ToString("0.###", CultureInfo.InvariantCulture) : "-";
+            Log("PANE material " + gm.name + ": _Surface " + P("_Surface") + " · _Blend " + P("_Blend") + " · _BaseColor " + (gm.HasProperty("_BaseColor") ? gm.GetColor("_BaseColor").ToString() : "-") + " · _Smoothness " + P("_Smoothness") + " · _Metallic " + P("_Metallic")
+                + " · renderQueue " + gm.renderQueue + " · keywords [" + string.Join(" ", gm.shaderKeywords) + "]");
+        }
+        // A close head-on view where the pane fills the frame: worst case for the trace (2 rays per pixel).
+        View close = default; var haveClose = false;
+        foreach (var dist in new[] { .6f, .7f, .8f, .9f })
+        {
+            var fc = floorCross - dir * dist;
+            if (!FreeStanding(fc)) continue;
+            close = new View { name = "v5_close" + Mathf.RoundToInt(dist * 100), feet = fc, look = paneCenter, note = "head-on, " + dist.ToString("0.0", CultureInfo.InvariantCulture) + " m, pane fills the frame (GPU worst case: 2 rays per pixel)" };
+            haveClose = true;
+            break;
+        }
+        Log("CLOSE view " + (haveClose ? close.name : "none (no free-standing spot 0.6-0.9 m from the pane)") + " · game phase " + Phase);
+
+        // ---- the four views ----
+        Place(headCenter.feet, headCenter.look);
+        yield return Settle(10);
+        Resume();
+        Place(headCenter.feet, headCenter.look);
+        yield return 1;
+
+        // ---- AS-IS: the pass never runs because IsReady needs resultHandle, which only Record creates ----
+        {
+            Rebuild("as-is, gate not primed");
+            FRGlassRT_ResetStats();
+            RenderTo(cam, rt); RenderTo(cam, rt);
+            Log("AS-IS gate: after two camera renders IsReady " + ctrl.IsReady + " · result texture " + (Result != null ? "exists" : "null") + " · RenderEvent calls " + S(St.RenderEventCalls));
+            // Harness workaround 1 (clone runtime only, prototype source unchanged): create the result texture once.
+            if (S(St.PipelineValid) < 1) { Log("STOP: trace pipeline did not compile (\"" + NativeError() + "\"); priming the gate would crash the editor (run 2)."); yield break; }
+            Call(ctrl, "EnsureResult", W, H);
+            Log("HARNESS primed EnsureResult(" + W + ", " + H + ") → IsReady " + ctrl.IsReady);
+            Rebuild("as-is, gate primed, untagged camera");
+            Coverage(pane, "as-is untagged");
+            FRGlassRT_ResetStats();
+            Shot("asis_v2_on_first.png", "as-is (camera untagged), gate primed, first render after rescan");
+            Shot("asis_v2_on.png", "as-is (camera untagged), gate primed, RT ON");
+            var d = ReadResult(out _, out _, out var cov);
+            SaveF32(d, "asis_v2_rt.f32");
+            SetRT(false);
+            Shot("asis_v2_off.png", "as-is, RT OFF");
+            SetRT(true);
+            Log("AS-IS untagged: RT covered px " + cov + " · RenderEvent calls " + S(St.RenderEventCalls) + " · traces completed " + S(St.TraceCompleted) + " · last trace GPU " + F(S(St.LastGpuMs)) + " ms · native error \"" + NativeError() + "\"");
+            // Harness workaround 2: tag the game camera MainCamera, as the standalone walker does, so RebuildScene centres on the nearest pane.
+            cam.tag = "MainCamera";
+            Log("HARNESS tagged the game camera MainCamera → Camera.main " + (Camera.main != null ? Camera.main.name : "NULL"));
+            Rebuild("tagged camera");
+            Coverage(pane, "tagged, prototype default radius " + Get<float>(ctrl, "registrationRadius") + " m");
+            var regs = Get<List<Renderer>>(ctrl, "registeredRenderers");
+            var radiusTried = new List<float>();
+            foreach (var rad in new[] { 18f, 14f, 12f, 10f, 8f, 6f })
+            {
+                Set(ctrl, "registrationRadius", rad);
+                Rebuild("tagged camera, radius " + rad);
+                regs = Get<List<Renderer>>(ctrl, "registeredRenderers");
+                radiusTried.Add(rad);
+                if (regs.Contains(pane.GetComponent<Renderer>()) && regs.Count < Get<int>(ctrl, "maxInstances")) break;
+            }
+            Log("HARNESS registration radius → " + Get<float>(ctrl, "registrationRadius") + " m (tried " + string.Join(", ", radiusTried) + "): probed pane registered " + regs.Contains(pane.GetComponent<Renderer>()) + " · registered " + regs.Count);
+            Coverage(pane, "tagged");
+
+            // ---- ABLATION at the v2 view: which native defects explain the run-3 output ----
+            var truthV2 = RayMask(pane, Mathf.Tan(cam.fieldOfView * .5f * Mathf.Deg2Rad), out _);
+            File.WriteAllBytes(Path.Combine(OutDir, "abl_mask_truth.u8"), truthV2);
+            File.WriteAllBytes(Path.Combine(OutDir, "abl_mask_predicted_bugfov.u8"), RayMask(pane, cam.fieldOfView * Mathf.Deg2Rad, out _));
+            foreach (var flags in new[] { 0, 2, 4, 8, 12, 14, 30 })
+            {
+                Diag(flags);
+                Rebuild("ablation " + flags);
+                FRGlassRT_ResetStats();
+                RenderTo(cam, rt);
+                Shot("abl_" + flags + "_on.png", "ablation flags " + flags + " (2 = residency, 4 = per-instance BLAS index, 8 = aligned instance records, 16 = FOV as tan(fov/2))");
+                var dd = ReadResult(out _, out _, out var cc);
+                SaveF32(dd, "abl_" + flags + "_rt.f32");
+                double sr = 0, sg = 0, sb = 0, s2 = 0; var n = 0;
+                if (dd != null)
+                    for (var i = 0; i < dd.Length; i += 4)
+                    {
+                        if (dd[i + 3] <= .5f) continue;
+                        var l = .2126 * dd[i] + .7152 * dd[i + 1] + .0722 * dd[i + 2];
+                        sr += dd[i]; sg += dd[i + 1]; sb += dd[i + 2]; s2 += l * l; n++;
+                    }
+                var meanL = n > 0 ? (.2126 * sr + .7152 * sg + .0722 * sb) / n : 0;
+                Log("ABLATION flags " + flags + ": RT covered px " + cc + " · mean linear RGB " + (n > 0 ? F3(sr / n) + ", " + F3(sg / n) + ", " + F3(sb / n) : "-") + " · luminance std " + (n > 0 ? F3(Math.Sqrt(Math.Max(0, s2 / n - meanL * meanL))) : "-")
+                    + " · trace GPU " + F(S(St.LastGpuMs)) + " ms · errors " + S(St.TraceErrors) + " · native error \"" + NativeError() + "\"");
+            }
+            Diag(14);
+            Log("ABLATION: the rest of this run uses flags 14 (residency + per-instance BLAS index + 16-byte-aligned instance records) so alignment, FOV, mirror, lag and ghost can be measured on correct geometry.");
+        }
+        yield return ProbeView(headLevel, pane, paneCenter, dir);
+        Coverage(pane, "v1");
+        MaterialTable();
+        yield return ProbeView(headCenter, pane, paneCenter, dir);
+        MissCause(paneCenter, dir);
+        {
+            // The same view with the prototype's default 18 m radius (the 256 cap then truncates the list).
+            var keepRadius = Get<float>(ctrl, "registrationRadius");
+            Set(ctrl, "registrationRadius", 18f);
+            Rebuild("v2 at the prototype default radius 18 m");
+            Coverage(pane, "v2 radius 18");
+            DiagRender("v2_radius18", pane);
+            MissCause(paneCenter, dir);
+            Set(ctrl, "registrationRadius", keepRadius);
+            Rebuild("v2 back to radius " + keepRadius);
+            RenderTo(cam, rt);
+        }
+        yield return ProbeView(a50, pane, paneCenter, dir);
+
+        // ---- one-frame lag: move 0.35 m sideways after a valid trace, render once ----
+        {
+            var A = Result != null ? ReadResult(out _, out _, out var covA) : null;
+            SaveF32(A, "lag_rt_A.f32");
+            var feetB = a50.feet + along * .35f;
+            if (!FreeStanding(feetB)) feetB = a50.feet - along * .35f;
+            Place(feetB, paneCenter);
+            yield return 2;
+            Resume();
+            Place(feetB, paneCenter);
+            yield return 1;
+            Grain(false);
+            var truthB = RayMask(pane, Mathf.Tan(cam.fieldOfView * .5f * Mathf.Deg2Rad), out var nB);
+            var predB = RayMask(pane, cam.fieldOfView * Mathf.Deg2Rad, out var npB);
+            File.WriteAllBytes(Path.Combine(OutDir, "lag_B_mask_truth.u8"), truthB);
+            File.WriteAllBytes(Path.Combine(OutDir, "lag_B_mask_predicted_bugfov.u8"), predB);
+            SetRT(false);
+            Shot("lag_B_off.png", "lag test: pose B, RT OFF");
+            SetRT(true);
+            FRGlassRT_ResetStats();
+            Shot("lag_B_on_single.png", "lag test: first render at pose B (the result texture still holds pose A's trace)");
+            var B = ReadResult(out _, out _, out var covB);
+            SaveF32(B, "lag_rt_after_single.f32");
+            Shot("lag_B_on_second.png", "lag test: second render at pose B");
+            Log("LAG test: pose A " + V(a50.feet) + " → B " + V(feetB) + " · RT covered after the single render at B " + covB + " · RenderEvent main thread " + S(St.RenderEventMainThread));
+            // Unity command-buffer status at the plugin event (diagnostic flag; separate render).
+            FRGlassRT_SetDiagnostics(diagBase | 1);
+            RenderTo(cam, rt); Sync(rt);
+            Log("ORDER: MTLCommandBufferStatus of Unity's current command buffer when the plugin event ran = " + S(St.UnityCmdStatus) + " (0 NotEnqueued, 1 Enqueued, 2 Committed, 3 Scheduled; -1 nil). The plugin commits its own command buffer on the same queue.");
+            FRGlassRT_SetDiagnostics(diagBase);
+            Grain(true);
+        }
+
+        yield return ProbeView(steep, pane, paneCenter, dir);
+        if (haveClose) yield return ProbeView(close, pane, paneCenter, dir);
+        Log("after the views: game phase " + Phase);
+
+        // ---- planar mirror reference for the head-on centred view ----
+        Place(headCenter.feet, headCenter.look);
+        yield return 3;
+        Resume();
+        Place(headCenter.feet, headCenter.look);
+        yield return 1;
+        {
+            SetRT(false);
+            var n = -dir;
+            var plane = new Plane(n, paneCenter);
+            var go = new GameObject("RTProbe / planar reference");
+            var rc = go.AddComponent<Camera>();
+            rc.CopyFrom(cam);
+            rc.enabled = false;
+            var rcd = rc.GetUniversalAdditionalCameraData();
+            var camData = cam.GetUniversalAdditionalCameraData();
+            rcd.renderPostProcessing = camData.renderPostProcessing;
+            rcd.antialiasing = AntialiasingMode.None;
+            rcd.dithering = camData.dithering;
+            var camPos = cam.transform.position;
+            var mirroredPos = camPos - 2f * plane.GetDistanceToPoint(camPos) * n;
+            var f = cam.transform.forward; var u = cam.transform.up;
+            go.transform.SetPositionAndRotation(mirroredPos, Quaternion.LookRotation(f - 2f * Vector3.Dot(f, n) * n, u - 2f * Vector3.Dot(u, n) * n));
+            var w2c = rc.worldToCameraMatrix;
+            var pc = w2c.MultiplyPoint(paneCenter);
+            var nc = w2c.MultiplyVector(n).normalized;
+            rc.projectionMatrix = cam.projectionMatrix;
+            rc.projectionMatrix = rc.CalculateObliqueMatrix(new Vector4(nc.x, nc.y, nc.z, -Vector3.Dot(pc, nc)));
+            var prev = pane.GetComponent<Renderer>().enabled;
+            pane.GetComponent<Renderer>().enabled = false;
+            RenderTo(rc, rt);
+            RenderTo(rc, rt);
+            SaveFrame("v2_planar_reference_mirrored.png", "planar mirror camera for the v2 pane (U-mirrored, post on): what a correct reflection contains");
+            pane.GetComponent<Renderer>().enabled = prev;
+
+            // ---- second camera at another size: does the shared result texture re-allocate? ----
+            SetRT(true);
+            var half = new RenderTexture(W / 2, H / 2, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { name = "RTProbe half" };
+            half.Create();
+            rc.ResetProjectionMatrix();
+            var r0 = Result;
+            RenderTo(cam, rt);
+            var r1 = Result;
+            RenderTo(rc, half);
+            var r2 = Result;
+            RenderTo(cam, rt);
+            var r3 = Result;
+            Log("REALLOC: result texture after main " + (r1 == r0 ? "same" : "NEW") + " · after a 960x540 URP camera " + (r2 == r1 ? "same" : "NEW (" + (r2 != null ? r2.width + "x" + r2.height : "null") + ")") + " · after main again " + (r3 == r2 ? "same" : "NEW"));
+            var mainOnly = new List<double>();
+            var both = new List<double>();
+            for (var i = 0; i < 14; i++) { var s0 = Stopwatch.StartNew(); RenderTo(cam, rt); Sync(rt); if (i >= 4) mainOnly.Add(s0.Elapsed.TotalMilliseconds); }
+            for (var i = 0; i < 14; i++) { var s0 = Stopwatch.StartNew(); RenderTo(cam, rt); RenderTo(rc, half); Sync(rt); if (i >= 4) both.Add(s0.Elapsed.TotalMilliseconds); }
+            SetRT(false);
+            var bothOff = new List<double>();
+            for (var i = 0; i < 14; i++) { var s0 = Stopwatch.StartNew(); RenderTo(cam, rt); RenderTo(rc, half); Sync(rt); if (i >= 4) bothOff.Add(s0.Elapsed.TotalMilliseconds); }
+            SetRT(true);
+            Log("REALLOC timing: main only RT ON " + Stats(mainOnly) + " · main + 960x540 camera RT ON (result re-created twice per frame) " + Stats(both) + " · same two cameras RT OFF " + Stats(bothOff));
+            half.Release();
+            Object.Destroy(go);
+            // Restore a 1920x1080 result for the next tests.
+            RenderTo(cam, rt);
+        }
+
+        // ---- occluders. The live Relay stays dormant (it would catch the player at 0.7 m and freeze the
+        // game, which spoiled run 5). A static copy of its body (MeshRenderers only, no game logic) stands in. ----
+        var hunter = Get<Transform>(game, "hunter");
+        GameObject body = null;
+        if (hunter != null)
+        {
+            var rr = hunter.GetComponentsInChildren<MeshRenderer>(true);
+            body = new GameObject("RTProbe / Relay body copy");
+            foreach (var r in rr)
+            {
+                var activeUp = true;
+                for (var tr = r.transform; tr != null && tr != hunter; tr = tr.parent) if (!tr.gameObject.activeSelf) { activeUp = false; break; }
+                if (!activeUp || !r.enabled) continue;
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+                var part = new GameObject(r.name);
+                part.transform.SetPositionAndRotation(hunter.InverseTransformPoint(r.transform.position), Quaternion.Inverse(hunter.rotation) * r.transform.rotation);
+                part.transform.localScale = r.transform.lossyScale;
+                part.transform.SetParent(body.transform, false);
+                part.AddComponent<MeshFilter>().sharedMesh = mf.sharedMesh;
+                var pr = part.AddComponent<MeshRenderer>();
+                pr.sharedMaterials = r.sharedMaterials;
+                pr.shadowCastingMode = ShadowCastingMode.Off; // run 8: clean silhouettes (no cast shadow in the difference masks)
+            }
+            Log("RELAY body copy: " + body.transform.childCount + " MeshRenderer parts (of " + rr.Length + " in the rig) · live Relay released " + Get(game, "relay").GetType().GetProperty("Released").GetValue(Get(game, "relay")) + " · game phase " + Phase);
+
+            Vector3 Face(Vector3 at, Vector3 toward) { var d = toward - at; d.y = 0f; return d.sqrMagnitude > 1e-4f ? d.normalized : Vector3.forward; }
+            // (1) behind the player: should appear in the reflection.
+            var behindFeet = headCenter.feet - dir * 2.0f;
+            body.transform.SetPositionAndRotation(new Vector3(behindFeet.x, headCenter.feet.y, behindFeet.z), Quaternion.LookRotation(Face(behindFeet, headCenter.feet)));
+            Place(headCenter.feet, headCenter.look);
+            yield return 2;
+            Resume();
+            Place(headCenter.feet, headCenter.look);
+            Rebuild("Relay body 2 m behind the player");
+            var regs = new HashSet<Renderer>(Get<List<Renderer>>(ctrl, "registeredRenderers"));
+            Log("RELAY behind: body registered parts " + body.GetComponentsInChildren<MeshRenderer>().Count(m => regs.Contains(m)) + "/" + body.transform.childCount + " · game phase " + Phase);
+            Shot("relay_behind_on_first.png", "Relay body 2 m behind the player, RT ON (first render after rescan)");
+            Shot("relay_behind_on.png", "Relay body 2 m behind the player, RT ON");
+            SaveF32(ReadResult(out _, out _, out _), "relay_behind_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            Shot("relay_behind_fovfix_on.png", "Relay body 2 m behind the player, RT ON, FOV corrected (flag 16)");
+            SaveF32(ReadResult(out _, out _, out _), "relay_behind_fovfix_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase);
+            {
+                var dd = DiagRender("relay_behind", pane);
+                var regsNow = Get<List<Renderer>>(ctrl, "registeredRenderers");
+                var bodyPx = 0;
+                foreach (var mr in body.GetComponentsInChildren<MeshRenderer>()) bodyPx += CountHits(dd, regsNow.IndexOf(mr), out _);
+                Log("RELAY behind (FOV corrected): reflection pixels that show the Relay body " + bodyPx);
+            }
+            SetRT(false);
+            Shot("relay_behind_off.png", "Relay body 2 m behind the player, RT OFF");
+            SetRT(true);
+
+            // (2) between the camera and the pane, registered by a rescan: the re-traced primary ray sees it.
+            // Run 8: the body covers about half of the pane (0.45 m in front of it, 0.45 m to one side), every RT ON frame
+            // has the FOV corrected (flag 16) so occlusion is tested where the glass really is, and each OFF frame has a
+            // twin with the body hidden so the body's silhouette is an exact difference mask.
+            var bodyRenderers = body.GetComponentsInChildren<MeshRenderer>();
+            void BodyVisible(bool on) { foreach (var br in bodyRenderers) br.enabled = on; }
+            var frontFeet = floorCross - dir * .45f + along * .45f;
+            body.transform.SetPositionAndRotation(new Vector3(frontFeet.x, headCenter.feet.y, frontFeet.z), Quaternion.LookRotation(Face(frontFeet, headCenter.feet)));
+            yield return 2;
+            Rebuild("Relay body between camera and pane");
+            regs = new HashSet<Renderer>(Get<List<Renderer>>(ctrl, "registeredRenderers"));
+            Log("RELAY front: body at " + V(body.transform.position) + " · registered parts " + bodyRenderers.Count(m => regs.Contains(m)) + "/" + bodyRenderers.Length + " · game phase " + Phase);
+            Grain(false);
+            SetRT(false);
+            BodyVisible(false);
+            Shot("relay_front_nobody_A_off.png", "same pose, body hidden, RT OFF, grain off (silhouette reference)");
+            BodyVisible(true);
+            Shot("relay_front_A_off.png", "Relay body between camera and pane, RT OFF, grain off");
+            SetRT(true);
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            Shot("relay_front_A_on_first.png", "first after rescan (FOV corrected)");
+            Shot("relay_front_A_on.png", "Relay body between camera and pane, RT ON, FOV corrected, grain off");
+            SaveF32(ReadResult(out _, out _, out var covFront), "relay_front_rt.f32");
+            Grain(true);
+            Shot("relay_front_on.png", "Relay body between camera and pane, RT ON, FOV corrected (game look)");
+            FRGlassRT_SetDiagnostics(diagBase);
+            SetRT(false);
+            Shot("relay_front_off.png", "Relay body between camera and pane, RT OFF (game look)");
+            SetRT(true);
+
+            // (3) moved 0.7 m across the pane WITHOUT a rescan: the TLAS keeps the old pose until the next 1 s rescan.
+            var movedFeet = frontFeet - along * .7f;
+            body.transform.SetPositionAndRotation(new Vector3(movedFeet.x, headCenter.feet.y, movedFeet.z), Quaternion.LookRotation(Face(movedFeet, headCenter.feet)));
+            yield return 2;
+            Grain(false);
+            SetRT(false);
+            BodyVisible(false);
+            Shot("relay_moved_nobody_A_off.png", "moved pose, body hidden, RT OFF, grain off (silhouette reference)");
+            BodyVisible(true);
+            Shot("relay_moved_A_off.png", "Relay body moved 0.7 m across the pane, RT OFF, grain off");
+            SetRT(true);
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            Shot("relay_moved_stale_A_on.png", "Relay body moved 0.7 m, NO rescan yet (TLAS has the old pose), RT ON, FOV corrected, grain off");
+            SaveF32(ReadResult(out _, out _, out var covStale), "relay_moved_stale_rt.f32");
+            Rebuild("Relay body moved");
+            RenderTo(cam, rt);
+            Shot("relay_moved_rescanned_A_on.png", "Relay body moved, after the rescan, RT ON, FOV corrected, grain off");
+            SaveF32(ReadResult(out _, out _, out var covRescan), "relay_moved_rescanned_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase);
+            Grain(true);
+            Log("RELAY moved: body at " + V(body.transform.position) + " · RT glass px (FOV corrected) in front pose " + covFront + " · moved with stale TLAS " + covStale + " · after rescan " + covRescan + " · game phase " + Phase);
+            Object.Destroy(body);
+            body = null;
+            yield return 2;
+        }
+        else Log("RELAY rig not found");
+
+        // ---- an occluder the prototype never registers (a SkinnedMeshRenderer; the controller only collects
+        // MeshRenderers). The composite has no depth test, so glass behind it is painted over it. ----
+        {
+            Place(headCenter.feet, headCenter.look);
+            yield return 2;
+            Resume();
+            Place(headCenter.feet, headCenter.look);
+            Rebuild("before the skinned occluder");
+            RenderTo(cam, rt);
+            Grain(false);
+            SetRT(false);
+            Shot("skinned_none_A_off.png", "no occluder, RT OFF, grain off");
+            var occ = new GameObject("RTProbe / skinned occluder");
+            var smr = occ.AddComponent<SkinnedMeshRenderer>();
+            smr.sharedMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            var wallMat = Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Select(m => m.sharedMaterial).FirstOrDefault(m => m != null && m.name.StartsWith("Door_Veneer"))
+                          ?? Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Select(m => m.sharedMaterial).First(m => m != null && m.shader.name.Contains("Lit"));
+            smr.sharedMaterial = wallMat;
+            smr.updateWhenOffscreen = true;
+            occ.transform.SetPositionAndRotation(paneCenter - dir * .6f + along * .2f, Quaternion.LookRotation(dir));
+            occ.transform.localScale = new Vector3(.35f, .9f, .06f);
+            yield return 2;
+            Rebuild("skinned occluder present (never registered)");
+            var regs2 = new HashSet<Renderer>(Get<List<Renderer>>(ctrl, "registeredRenderers"));
+            Log("SKINNED occluder at " + V(occ.transform.position) + " · registered " + regs2.Contains(smr) + " · material " + wallMat.name + " · game phase " + Phase);
+            SetRT(false);
+            Shot("skinned_A_off.png", "SkinnedMeshRenderer between camera and pane, RT OFF, grain off");
+            SetRT(true);
+            RenderTo(cam, rt);
+            Shot("skinned_A_on.png", "SkinnedMeshRenderer between camera and pane, RT ON, grain off");
+            SaveF32(ReadResult(out _, out _, out var covSk), "skinned_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            RenderTo(cam, rt);
+            Shot("skinned_fovfix_A_on.png", "SkinnedMeshRenderer between camera and pane, RT ON, FOV corrected, grain off");
+            SaveF32(ReadResult(out _, out _, out var covSkFix), "skinned_fovfix_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase);
+            Grain(true);
+            Log("SKINNED occluder: RT covered px " + covSk + " (FOV corrected " + covSkFix + ")");
+            Object.Destroy(occ);
+            yield return 2;
+        }
+
+        // ---- free-running controller (1 s rescans, as in the standalone map) ----
+        Place(headCenter.feet, headCenter.look);
+        yield return 3;
+        Resume();
+        Place(headCenter.feet, headCenter.look);
+        Rebuild("before free run");
+        RenderTo(cam, rt);
+        {
+            Set(ctrl, "nextScan", 0f);
+            var small = new RenderTexture(240, 135, 0, RenderTextureFormat.ARGBFloat) { name = "RTProbe coverage" };
+            small.Create();
+            var smallTex = new Texture2D(240, 135, TextureFormat.RGBAFloat, false, true);
+            var sw = Stopwatch.StartNew();
+            double last = -1;
+            var lastBlas = S(St.BlasCount);
+            FRGlassRT_ResetStats();
+            lastBlas = 0;
+            var lines = new StringBuilder();
+            var prevCov = -1.0;
+            var savedBlink = 0;
+            var intervals = new List<double>();
+            var rebuildIntervals = new List<double>();
+            var blankFrames = 0; var rebuildFrames = 0;
+            var u0 = Time.unscaledTime;
+            for (var i = 0; i < 200; i++)
+            {
+                RenderTo(cam, rt);
+                var r = Result;
+                double cov = -1;
+                if (r != null)
+                {
+                    Graphics.Blit(r, small);
+                    var prevA = RenderTexture.active;
+                    RenderTexture.active = small;
+                    smallTex.ReadPixels(new Rect(0, 0, 240, 135), 0, 0);
+                    smallTex.Apply(false);
+                    RenderTexture.active = prevA;
+                    var px = smallTex.GetRawTextureData<float>();
+                    double sa = 0;
+                    for (var k = 3; k < px.Length; k += 4) sa += px[k];
+                    cov = sa / (240 * 135);
+                }
+                var now = sw.Elapsed.TotalMilliseconds;
+                var blas = S(St.BlasCount);
+                var rebuilt = blas > lastBlas;
+                if (rebuilt) rebuildFrames++;
+                lastBlas = blas;
+                if (last >= 0) { intervals.Add(now - last); if (rebuilt) rebuildIntervals.Add(now - last); }
+                if (cov == 0 && prevCov > 0)
+                {
+                    blankFrames++;
+                    if (savedBlink < 1) { SaveFrame("free_run_blank_frame.png", "free run frame " + i + ": first render after the 1 s rescan — RT coverage 0"); savedBlink++; }
+                }
+                lines.AppendLine(i + "\tframe " + Time.frameCount + "\tunscaled " + F3(Time.unscaledTime) + "\tinterval_ms " + (last >= 0 ? F(now - last) : "-") + "\tcoverage " + F3(cov) + "\trebuiltThisFrame " + rebuilt + "\tblasTotal " + blas);
+                prevCov = cov;
+                last = now;
+                yield return 1;
+            }
+            File.WriteAllText(Path.Combine(OutDir, "free_run_frames.tsv"), lines.ToString());
+            Log("FREE RUN 200 frames (one camera render per frame, rescan every " + Get(ctrl, "rescanSeconds") + " s of unscaled time; unscaled time advanced " + F3(Time.unscaledTime - u0) + " s): rescans " + rebuildFrames
+                + " · frames whose RT output was blank right after a rescan " + blankFrames + " · frame interval all " + Stats(intervals) + " · frames with a rescan " + Stats(rebuildIntervals)
+                + " · BLAS builds " + S(St.BlasCount) + " · BLAS CPU total " + F(S(St.BlasCpuMs)) + " ms");
+            Set(ctrl, "nextScan", float.MaxValue);
+            small.Release();
+        }
+
+        // ---- streamed mesh (suspect 6): a runtime Mesh like a chunk shell, edited in place, then destroyed,
+        // with and without a rescan. Geometry is identified with the hit-identity diagnostic (flag 32). ----
+        {
+            Place(headCenter.feet, headCenter.look);
+            yield return 2;
+            Resume();
+            Place(headCenter.feet, headCenter.look);
+            yield return 1;
+            var eye = cam.transform.position;
+            var back = -new Vector3(dir.x, 0f, dir.z).normalized;
+            var room = Physics.Raycast(eye, back, out var behindHit, 10f, ~0, QueryTriggerInteraction.Ignore) ? behindHit.distance : 10f;
+            var gap = Mathf.Clamp(room * .5f, .35f, 1.0f);
+            var src = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            var sm = new Mesh { name = "RTProbe streamed mesh" };
+            sm.SetVertices(src.vertices);
+            sm.SetNormals(src.normals);
+            sm.SetUVs(0, src.uv);
+            sm.SetTriangles(src.triangles, 0);
+            sm.RecalculateBounds();
+            var sgo = new GameObject("RTProbe / streamed slab");
+            sgo.AddComponent<MeshFilter>().sharedMesh = sm;
+            var smr2 = sgo.AddComponent<MeshRenderer>();
+            var smat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "RTProbe red slab" };
+            smat.SetColor("_BaseColor", new Color(1f, .12f, .08f));
+            smr2.sharedMaterial = smat;
+            sgo.transform.SetPositionAndRotation(new Vector3(eye.x, 0f, eye.z) + back * gap + Vector3.up * 1.25f, Quaternion.LookRotation(back));
+            sgo.transform.localScale = new Vector3(.8f, .6f, .04f);
+            yield return 2;
+            Rebuild("streamed slab registered");
+            var regsS = Get<List<Renderer>>(ctrl, "registeredRenderers");
+            var slabIdx = regsS.IndexOf(smr2);
+            var ptr0 = sm.GetNativeVertexBufferPtr(0);
+            Log("STREAM: slab " + V(sgo.transform.position) + " (" + F(gap) + " m behind the eye; free space behind the eye " + F(room) + " m) · registered index " + slabIdx + " · native vertex buffer " + ptr0);
+            var d0 = DiagRender("stream_0_registered", pane);
+            var n0 = CountHits(d0, slabIdx, out var y0);
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            Grain(false);
+            Shot("stream_0_registered_A_on.png", "streamed slab behind the camera, registered, RT ON (FOV corrected), grain off");
+            SaveF32(ReadResult(out _, out _, out _), "stream_0_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase);
+
+            // (1) edit the vertices in place, as a live rebuild or a moving fracture piece would, without a rescan
+            var vs = sm.vertices;
+            for (var i = 0; i < vs.Length; i++) vs[i] += new Vector3(0f, .5f / .6f, 0f); // +0.5 m in world space
+            sm.SetVertices(vs);
+            sm.RecalculateBounds();
+            sm.UploadMeshData(false);
+            yield return 1;
+            var ptr1 = sm.GetNativeVertexBufferPtr(0);
+            var d1 = DiagRender("stream_1_edited_norescan", pane);
+            var n1 = CountHits(d1, slabIdx, out var y1);
+            Rebuild("streamed slab edited, rescanned");
+            regsS = Get<List<Renderer>>(ctrl, "registeredRenderers");
+            var slabIdx2 = regsS.IndexOf(smr2);
+            var d2 = DiagRender("stream_2_edited_rescanned", pane);
+            var n2 = CountHits(d2, slabIdx2, out var y2);
+            Log("STREAM edit: vertex buffer " + ptr0 + " → " + ptr1 + (ptr0 == ptr1 ? " (same buffer, written in place)" : " (Unity REALLOCATED the buffer)")
+                + " · slab pixels in the reflection: registered " + n0 + " (mean row " + F(y0) + ") · moved +0.5 m, no rescan " + n1 + " (mean row " + F(y1) + ") · after the rescan " + n2 + " (mean row " + F(y2) + ")"
+                + " · trace errors " + S(St.TraceErrors) + " · native error \"" + NativeError() + "\"");
+
+            // (2) destroy the mesh and its object (what FreeMeshes/Kill do when a chunk streams out), no rescan
+            FRGlassRT_ResetStats();
+            Object.Destroy(sgo);
+            Object.Destroy(sm);
+            yield return 2;
+            var alive = sm != null;
+            var d3 = DiagRender("stream_3_destroyed_norescan", pane);
+            var n3 = CountHits(d3, slabIdx2, out var y3);
+            FRGlassRT_SetDiagnostics(diagBase | 16);
+            Shot("stream_3_destroyed_A_on.png", "streamed slab destroyed, no rescan yet, RT ON (FOV corrected), grain off");
+            SaveF32(ReadResult(out _, out _, out _), "stream_3_rt.f32");
+            FRGlassRT_SetDiagnostics(diagBase);
+            Log("STREAM destroy: Mesh object alive " + alive + " · slab pixels still in the reflection with no rescan " + n3 + " (mean row " + F(y3) + ") · traces completed " + S(St.TraceCompleted) + "/" + S(St.TraceSubmitted) + " · trace errors " + S(St.TraceErrors) + " · native error \"" + NativeError() + "\"");
+            Rebuild("after the streamed slab was destroyed");
+            var d4 = DiagRender("stream_4_destroyed_rescanned", pane);
+            Grain(true);
+            Object.Destroy(smat);
+        }
+
+        // ---- broken pane: the trace keeps painting glass until the next rescan ----
+        Place(headCenter.feet, headCenter.look);
+        yield return 2;
+        Resume();
+        Place(headCenter.feet, headCenter.look);
+        yield return 1;
+        Rebuild("before breaking the pane");
+        RenderTo(cam, rt);
+        Shot("ghost_0_intact_on.png", "pane intact, RT ON");
+        ReadResult(out _, out _, out var covIntact);
+        var broke = map.Hold(pane, 1.1f, out _);
+        yield return 2;
+        Resume();
+        Place(headCenter.feet, headCenter.look);
+        yield return 1;
+        Log("GHOST: Hold() broke the pane " + broke + " · pane object alive " + (pane != null));
+        Shot("ghost_1_broken_on.png", "pane broken (object destroyed), no rescan yet, RT ON");
+        var g1 = ReadResult(out _, out _, out var covBroken);
+        SaveF32(g1, "ghost_1_rt.f32");
+        SetRT(false);
+        Shot("ghost_1_broken_off.png", "pane broken, RT OFF (what the game shows)");
+        SetRT(true);
+        Rebuild("after the pane broke");
+        Coverage(null, "after break");
+        RenderTo(cam, rt);
+        Shot("ghost_2_rescanned_on.png", "after the next rescan, RT ON");
+        ReadResult(out _, out _, out var covAfter);
+        Log("GHOST coverage: intact " + covIntact + " px · broken, before rescan " + covBroken + " px · after rescan " + covAfter + " px");
+
+        // ---- summary ----
+        Log("SUMMARY\n  " + string.Join("\n  ", summary));
+        Log("DONE");
+    }
+}

@@ -1,0 +1,60 @@
+import sys, numpy as np
+from PIL import Image, ImageDraw, ImageFont
+src, out = sys.argv[1], sys.argv[2]
+rows = []
+for line in open(src):
+    parts = line.rstrip("\n").split("\t")
+    d = {"i": int(parts[0])}
+    for kv in parts[1:]:
+        k, _, v = kv.partition(" ")
+        d[k] = v
+    rows.append(d)
+iv = np.array([float(d["interval_ms"]) if d["interval_ms"] != "-" else np.nan for d in rows])
+cov = np.array([float(d["coverage"]) for d in rows]) * 100
+reb = np.array([d["rebuiltThisFrame"] == "True" for d in rows])
+S = 2
+W, H = 1600 * S, 760 * S
+SURF, INK, INK2, MUTED, GRID = (252, 252, 251), (11, 11, 11), (82, 81, 78), (140, 139, 134), (229, 228, 224)
+BLUE, ORANGE = (42, 120, 214), (235, 104, 52)
+F = "/System/Library/Fonts/Supplemental/Arial.ttf"; FB = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+f = lambda s, b=False: ImageFont.truetype(FB if b else F, s * S)
+im = Image.new("RGB", (W, H), SURF); d = ImageDraw.Draw(im)
+d.text((40 * S, 22 * S), "Standalone-map behaviour: 200 frames with the 1 s rescan running (run 7, 1920x1080, Editor batch)", fill=INK, font=f(26, True))
+d.text((40 * S, 58 * S), "Every rescan rebuilds all BLAS on the main thread (hitch), then the next trace is blank (flicker).", fill=INK2, font=f(20))
+# legend
+lx, ly = 40 * S, 92 * S
+d.line([lx, ly + 10 * S, lx + 28 * S, ly + 10 * S], fill=BLUE, width=3 * S); d.text((lx + 36 * S, ly), "every frame", fill=INK2, font=f(18))
+d.ellipse([lx + 170 * S, ly + 3 * S, lx + 184 * S, ly + 17 * S], fill=ORANGE, outline=SURF, width=2 * S); d.text((lx + 192 * S, ly), "frame with a rescan", fill=INK2, font=f(18))
+n = len(rows)
+def panel(y0, y1, vals, vmax, ticks, ylabel, fmt, marks_on):
+    x0, x1 = 120 * S, W - 40 * S
+    for t in ticks:
+        yy = y1 - (y1 - y0) * t / vmax
+        d.line([x0, yy, x1, yy], fill=GRID, width=1 * S)
+        d.text((x0 - 12 * S, yy), fmt(t), fill=MUTED, font=f(16), anchor="rm")
+    d.text((40 * S, y0 - 30 * S), ylabel, fill=INK, font=f(19, True))
+    pts = [(x0 + (x1 - x0) * i / (n - 1), y1 - (y1 - y0) * min(v, vmax) / vmax) for i, v in enumerate(vals) if not np.isnan(v)]
+    d.line(pts, fill=BLUE, width=2 * S, joint="curve")
+    for i in np.nonzero(marks_on)[0]:
+        if np.isnan(vals[i]): continue
+        x = x0 + (x1 - x0) * i / (n - 1); y = y1 - (y1 - y0) * min(vals[i], vmax) / vmax
+        r = 6 * S
+        d.ellipse([x - r, y - r, x + r, y + r], fill=ORANGE, outline=SURF, width=2 * S)
+    d.line([x0, y1, x1, y1], fill=MUTED, width=1 * S)
+    for t in range(0, n, 25):
+        x = x0 + (x1 - x0) * t / (n - 1)
+        d.text((x, y1 + 8 * S), str(t), fill=MUTED, font=f(15), anchor="mt")
+    return x0, x1
+# top: frame interval
+base = np.nanmedian(iv[~reb]); hit = np.nanmedian(iv[reb])
+x0, x1 = panel(170 * S, 420 * S, iv, 200, [0, 50, 100, 150, 200], "Frame time (ms): camera render + readback, Editor", lambda t: f"{t:.0f}", reb)
+yy = 420 * S - 250 * S * hit / 200
+d.text((x1 - 4 * S, 150 * S), f"median {base:.0f} ms without a rescan, {hit:.0f} ms with one (+{hit - base:.0f} ms)", fill=INK2, font=f(18), anchor="rs")
+# bottom: coverage
+blank = np.array([i > 0 and cov[i] == 0 and cov[i - 1] > 0 for i in range(n)])
+panel(520 * S, 680 * S, cov, 10, [0, 5, 10], "Share of the frame with traced glass (%)", lambda t: f"{t:.0f}", reb)
+d.text((x1 - 4 * S, 500 * S), f"{int(blank.sum())} of {int(reb.sum())} rescans leave the next RT output blank (coverage 0)", fill=INK2, font=f(18), anchor="rs")
+d.text(((x0 + x1) / 2, 712 * S), "frame index", fill=MUTED, font=f(16), anchor="mt")
+im = im.resize((W // S, H // S), Image.LANCZOS)
+im.save(out, "JPEG", quality=85)
+print(base, hit, blank.sum(), reb.sum())

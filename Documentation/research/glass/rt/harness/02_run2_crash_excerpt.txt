@@ -1,0 +1,33 @@
+	Native Crash Reporting
+=================================================================
+Got a segv while executing native code. This usually indicates
+a fatal error in the mono runtime or one of the native libraries 
+used by your application.
+=================================================================
+
+=================================================================
+	Native stacktrace:
+=================================================================
+	0x1701a1368 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Frameworks/libmonobdwgc-2.0.dylib : mono_dump_native_crash_info
+	0x1701635e8 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Frameworks/libmonobdwgc-2.0.dylib : mono_handle_native_crash
+	0x1700ebdf0 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Frameworks/libmonobdwgc-2.0.dylib : mono_sigsegv_signal_handler_debug
+	0x188329744 - /usr/lib/system/libsystem_platform.dylib : _sigtramp
+	0x1643e64e0 - /System/Library/Extensions/AGXMetalG15X_M1.bundle/Contents/MacOS/AGXMetalG15X_M1 : _ZN3AGX14ComputeContextINS_3G158EncodersENS1_7ClassesENS1_10ObjClassesENS1_15CommandEncodingENS1_28EncoderComputeServiceClassesEE17setPipelineCommonEPNS1_15ComputePipelineE
+	0x1643e64e0 - /System/Library/Extensions/AGXMetalG15X_M1.bundle/Contents/MacOS/AGXMetalG15X_M1 : _ZN3AGX14ComputeContextINS_3G158EncodersENS1_7ClassesENS1_10ObjClassesENS1_15CommandEncodingENS1_28EncoderComputeServiceClassesEE17setPipelineCommonEPNS1_15ComputePipelineE
+	0x1643f0a48 - /System/Library/Extensions/AGXMetalG15X_M1.bundle/Contents/MacOS/AGXMetalG15X_M1 : -[AGXG15XFamilyComputeContext setComputePipelineState:]
+	0x1716aa5e4 - <scratchpad>/proj_rt/Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib : _ZN12_GLOBAL__N_111RenderEventEiPv
+	0x103836fb8 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity : _ZN9GfxDevice42InsertCustomMarkerCallbackAndDataWithFlagsEPFviPvEi25CustomMarkerCallbackFlagsS0_m
+	0x1033cdf08 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity : _ZNK22RenderingCommandBuffer29ExecuteCommandBufferWithStateER17ShaderPassContextR15RenderNodeQueueP27RenderingCommandBufferStatej16ComputeQueueType
+	0x1033caf6c - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity : _ZNK22RenderingCommandBuffer20ExecuteCommandBufferER17ShaderPassContextR15RenderNodeQueuejPN4core6vectorINSt3__14pairIN9ShaderLab16FastPropertyNameEP13RenderTextureEENS4_9allocatorISC_Lm0EEEEE16ComputeQueueTypeSB_
+	0x10346e9bc - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity : _ZN23ScriptableRenderContext27ExecuteScriptableRenderLoopEv
+	0x374cbcb14 - Unknown
+	0x374cbca40 - Unknown
+	0x36d3f4164 - Unknown
+	0x36d3e05f8 - Unknown
+	0x36d3da484 - Unknown
+	0x36d3da148 - Unknown
+	0x36462fc78 - Unknown
+	0x364630084 - Unknown
+	0x1700ef0c4 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Frameworks/libmonobdwgc-2.0.dylib : mono_jit_runtime_invoke
+	0x170274b50 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Frameworks/libmonobdwgc-2.0.dylib : do_runtime_invoke
+	0x170274a90 - /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Frameworks/libmonobdwgc-2.0.dylib : mono_runtime_invoke

@@ -1,0 +1,8 @@
+fileFormatVersion: 2
+guid: 55d92e35e71ea4fd09e661e6ef309718
+folderAsset: yes
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

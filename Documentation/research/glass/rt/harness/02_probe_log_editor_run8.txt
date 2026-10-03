@@ -1,0 +1,3 @@
+[1] CAPS (editor, before play mode): gfx Metal · Apple M3 Max · Metal · OS Mac OS X 26.6.2 · Unity SystemInfo.supportsRayTracing False · supportsRayTracingShaders False · supportsInlineRayTracing False · NATIVE FRGlassRT_DeviceSupportsRaytracing 1 · UnityPluginLoad seen (IUnityGraphicsMetalV2 present) 1 · trace pipeline compiled 1 (MSL compile+pipeline 196.21 ms) · native last error "" · build target StandaloneOSX
+[1] PLUGIN importer Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib: isNativePlugin True · anyPlatform False · editor True · StandaloneOSX True · StandaloneWindows64 False · WebGL False · editor CPU "" OS "" · OSX CPU "AnyCPU" · isPreloaded False
+[1] PLUGIN .meta on disk (59 bytes): fileFormatVersion: 2 | guid: 9b3bca949509f45ffaec699963f56221

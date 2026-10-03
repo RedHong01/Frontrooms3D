@@ -17,12 +17,27 @@ bench in §2.0 (this Mac, editor). **ESTIMATE** = arithmetic or judgement. **UNV
 
 ## 0. Short answer (for Red)
 
-1. **Ray-traced reflections are not possible for FrontRooms as built.** URP has none. HDRP has them, but
-   only on Windows with DirectX 12 and an RTX 20+/RX 6000+ class card. On your M3 Max, Unity 6000.3.10f1
-   reports no ray-tracing support at all (measured: `supportsRayTracing`, `supportsRayTracingShaders`,
-   `supportsInlineRayTracing` all False on Metal). WebGL and WebGPU have no ray tracing, and Unity's software
-   ray-tracing library is excluded from Web builds. Moving to HDRP would cost the WebGL build and 3–5 weeks of
-   rewrites, and on your Mac it would still give you SSR, not ray tracing (§1, §2.6).
+> **Correction, 2026-10-03 (glass fix pass; `30_final.md`).** This report said ray tracing was "not possible" for
+> FrontRooms and "none possible on the Mac". That was wrong. It mixed up two things: Unity's own ray-tracing API
+> reports no support on Metal (still true, measured), and the Mac cannot trace rays at all (false). ChatGPT's
+> native Metal plugin (`NativePlugin/FrontRoomsMetalGlassRT.mm`, task row G14) uses the M3 Max's hardware ray
+> tracing directly, through Unity's documented native rendering plug-in route (Manual
+> `low-level-native-plugin-rendering-extensions.html`: `IUnityGraphics`, and `GL.IssuePluginEvent` calls the plug-in
+> on the render thread). The G14 review measured ~0.5 ms at 1080p for the trace (`rt/01–03`). The report also said
+> Windows ray tracing needs HDRP. That is wrong too: `RayTracingAccelerationStructure` is an engine API, not an HDRP
+> one. It "only applies when SystemInfo.supportsRayTracing is true", and it can be bound to compute shaders or
+> globally "for all shader stages (including vertex and fragment shaders)" (ScriptReference
+> `Rendering.RayTracingAccelerationStructure.html`, re-read 2026-10-03). So a URP render-graph pass on DX12 can
+> trace without HDRP (G14 P3). §1.4 also measured the compute backend working on the Mac and then dismissed it
+> without trying anything. The corrected points are 1, the §1 heading, §1.2, §1.5 and §4.1–4.3. The measurements
+> in §2 are unchanged.
+
+1. **Hardware ray tracing is possible on Red's Mac, through a native Metal plugin (the G14 prototype).**
+   Unity's own RT API reports none on Metal (measured: `supportsRayTracing`, `supportsRayTracingShaders`,
+   `supportsInlineRayTracing` all False on the M3 Max). On Windows, Unity's `RayTracingAccelerationStructure` /
+   `RayTracingShader` work in URP on DX12 without HDRP (G14 P3). There is never ray tracing on WebGL. The hard
+   part is shading the hits with the game's materials and lamps, not tracing the rays. Moving to HDRP is not
+   needed for any of this and would still cost the WebGL build and 3–5 weeks of rewrites (§2.6).
 2. **What ray tracing would have bought, we can get piece by piece:**
    - the room reflected with correct parallax: **zone cubes + box-projected room probes** (G6, G7). These cost
      no rendering, and the cubes work on the Web too;
@@ -48,9 +63,12 @@ All costs are from an editor bench on your Mac (§2.0). They are ratios, not pla
 
 ---
 
-## 1. Can FrontRooms have ray-traced reflections?
+## 1. Can FrontRooms have ray-traced reflections? (corrected 2026-10-03)
 
-**No, not as a feature of this project. There are three separate blockers, and any one of them is enough.**
+**Yes on desktop, but not through Unity's built-in features.** On the Mac it works through a native Metal plugin
+(G14). On Windows it works through Unity's engine RT API from a URP pass (DX12 + RT-capable GPU; G14 P3). It never
+works on WebGL. The three blockers below are real for *built-in* features only. The original text claimed that any
+one of them ruled ray tracing out; that was wrong.
 
 ### 1.1 URP has no ray-traced anything
 
@@ -66,7 +84,12 @@ All costs are from an editor bench on your Mac (§2.0). They are ratios, not pla
   built from compute shaders (`:30-43`). It gives bounce light, not reflections. Unity's thread on it says it
   targets 6.7 LTS (cited in `interaction_audit/03_rendering_quality.md` §8; not re-read).
 
-### 1.2 HDRP ray tracing does not run on Red's Mac, and never in a browser
+### 1.2 HDRP ray tracing does not run on Red's Mac, and never in a browser (but HDRP is not needed for RT)
+
+*Correction 2026-10-03:* this section is about HDRP's ready-made ray-traced effects only. Ray tracing as such does
+not need HDRP. On Windows DX12, `RayTracingAccelerationStructure` + `RayTracingShader` (or inline ray queries from
+compute/fragment shaders) can be driven from a URP render-graph pass. On the Mac, Metal's own ray tracing is reached
+through a native plugin. Neither is shown by the `SystemInfo` flags below, which describe Unity's API on Metal.
 
 - HDRP 17.3: "HDRP only supports ray tracing using the DirectX 12 API, so ray tracing only works in the Unity
   Editor or the Windows Unity Player when they render with DirectX 12", plus "specific console platforms"
@@ -120,14 +143,20 @@ All costs are from an editor bench on your Mac (§2.0). They are ratios, not pla
   This is a research project of several weeks for a desktop-only result, and it is impossible on WebGL. Not
   recommended this semester.
 
-### 1.5 What Red should take away
+### 1.5 What Red should take away (rewritten 2026-10-03)
 
-"Ray tracing" in FrontRooms would mean: switch to HDRP, lose the WebGL build, rewrite the surface shader, post
-stack and every runtime material, and then see the ray-traced result only on a Windows PC with an RTX/RX 6000
-card, not on the Mac he works on. The things that make the glass shots read as AAA (§4 of the audit: timing,
-debris, a real glass material, something to reflect) do not need ray tracing. What ray tracing would add over
-the plan below is mostly correct reflections of things behind the player. §2.4 gets that one effect, the
-Relay reflected in the window, for a small fraction of the cost.
+Ray tracing in FrontRooms means a **desktop-only reflection input to the glass shader**, not a pipeline switch:
+
+- on the Mac, the native Metal plugin (G14, being taken to production by the RT track);
+- on Windows DX12, Unity's own RT API from a URP pass (G14 P3);
+- on WebGL, nothing: the zone cube plus the Relay-only overlay (§4.1).
+
+No HDRP and no surface-shader rewrite are needed. The glass shader now has ONE optional input for any of them,
+`_FR_GlassRTReflection` + `_FR_GlassRTWeight` (`10_implementation.md` §8). At weight 0 the output is bit-identical
+to the shader without the input (proved, `20_verification.md` §0). The hard part is shading the hit: the game's
+textures, the lit troffer lenses, the lamps and the Relay. Tracing the rays is the easy part (~0.5 ms at 1080p in
+the G14 bench). A planar camera (§2.4) is still the right tool where RT is unavailable: on a Windows card without
+RT, and for the Relay-only overlay on the Web.
 
 ---
 
@@ -432,22 +461,33 @@ is holding. Everything else is a pre-captured cube, placed (box-projected) only 
 | The held window (glass) | G1 glass shader + probe + **Relay-only planar overlay** during the hold | G1 + probe + **full planar** during the hold: quarter→half res, shadows off, far 12 m, 15–30 Hz | full planar at half/full res with shadows, every frame, for the held window and any window a scripted shot frames |
 | Floors (VCT, damp carpet, gloss paint) | probe | probe; URP SSR after a move to Unity 6.7 | 6.7 SSR, or one planar for the floor plane (every map floor slab sits at the cell height, `FrontRoomsMapWorld.cs:723` in the clone), far ≤ 20 m |
 | Metal (hardware, rails, chrome) | probe | probe | probe |
-| Ray tracing | none possible | none possible on the Mac; Windows-DX12-only via HDRP (rejected, §2.6) | none in Unity. For stills only, the same Blender kit could be rendered in Cycles outside the game (whether Cycles uses the M3's ray-tracing hardware is UNVERIFIED) |
+| Ray tracing (corrected 2026-10-03) | none | Mac: Metal hardware RT through the native plugin (G14), into `_FR_GlassRTReflection`. Windows: DX12 RT through Unity's RT API in a URP pass (G14 P3). No RT-capable GPU: the held-pane planar (G15) feeds the same input | same as High, at full resolution |
 | Reflection cost, held window (from the bench, editor ratios) | ≈ 7% during holds only | 12–20% during holds only | not budgeted |
 | Reflection cost, normal play | ~0 render cost; per-pixel probe cost | ~0 render cost; per-pixel probe cost; atlas memory (measure) | — |
 
-### 4.2 What the glass shader (G1) needs from this report
+### 4.2 What the glass shader (G1) needs from this report (replaced 2026-10-03)
 
-Proposed inputs, so G1 can be written once for all tiers without new keywords (WebGL variant budget):
-- `_FR_PlanarTex` (global texture) and `_FR_PlanarWeight` (per material, default 0). The held pane gets a
-  second material, e.g. `Glass_Window_Held` (same shader, weight 1), swapped in for the hold, so no
-  `MaterialPropertyBlock` breaks SRP batching on the other panes.
-- `_FR_PlanarMode` (global float): 0 = full planar replaces the probe reflection, 1 = overlay (Relay-only,
-  composite with the texture's alpha over the probe reflection). A uniform branch, not a keyword.
-- The planar texture is sampled in screen space with the reflection-matrix camera (BoatAttack's construction),
-  distorted by the pane's normal map and blurred by the smudge roughness (sample a lower mip).
-- Crack stages (`_Crack`) should also break the planar image: each crack facet offsets the screen UV slightly,
-  which is where a planar beats a cube visually.
+The three planar inputs proposed here (`_FR_PlanarTex`, `_FR_PlanarWeight`, `_FR_PlanarMode`) are **withdrawn**.
+They would have been a second override input next to the RT one. The shader has ONE input for every live
+reflection source, RT or planar (`FrontRoomsGlass.shader`, the `[G14-HOOK]` blocks; contract in
+`10_implementation.md` §8):
+
+- `_FR_GlassRTReflection`: a global screen-space texture. RGB is the unweighted reflected radiance in linear HDR
+  scene units. A = 0 means none. 0 < A ≤ 1 means coverage. A > 1 means 1 + the eye depth of the glass surface the
+  texel belongs to (coverage 1).
+- `_FR_GlassRTWeight`: a global float. 0 leaves the output unchanged.
+- The hook computes `lerp(env, rt, A)` inside the shader's own Fresnel (`EnvironmentBRDFSpecular`). So:
+  - a full planar writes A = 1, or better A = 1 + the held pane's eye depth, so other glass ignores it;
+  - the Relay-only overlay writes A = the Relay's coverage. That is exactly an overlay over the cube, so
+    `_FR_PlanarMode` is not needed.
+- Only receivers take it: `_RTReceive` 1 on `Glass_Window`, 0 on props.
+- The hook is behind the global keyword `_FR_GLASS_RT`. The source writing the texture enables it for its own
+  camera.
+- `FrontRoomsGlassRTStripper` removes that keyword from WebGL builds today. When the Web overlay (G16) lands, delete
+  the stripper. The Web then pays one more glass fragment variant set.
+- Distortion by the pane's normal and crack facets: the planar/RT source renders with the pane's mean normal. The
+  shader's per-pixel normal already drives Fresnel and the roughness fade. Offsetting the screen UV by the crack
+  tilt is a later refinement (G8/GD3).
 
 ### 4.3 Contracts and rows this creates (proposals; nothing is filed)
 
@@ -456,9 +496,14 @@ Proposed inputs, so G1 can be written once for all tiers without new keywords (W
   hit point and `GlassCracked`.)
 - **Relay layer:** a dedicated layer for the Relay rig's renderers (TagManager change; ask Red). The map chat
   must keep the rig on it when it rebuilds or swaps the rig (the squeezed-giant rig swap).
-- **New visual rows (suggested):** G13 planar for the held pane (High/Cinematic), G14 Relay-only overlay (all
-  tiers), G15 floor SSR when the project moves to Unity 6.7 (desktop only), G16 Cinematic one-shot probe
-  re-capture at hero windows.
+- **New visual rows** (renumbered 2026-10-03, because G13 now means "dropped" and G14 means "Metal RT"; the row text
+  for `VISUAL_CHAT_TASKS.md` is in `30_final.md` §7, since this track does not edit that file):
+  - **G15** held-pane planar reflection, High tier without RT (Windows/Linux GPUs without RT, and the Mac when the
+    plugin is missing). It feeds `_FR_GlassRTReflection`.
+  - **G16** Relay-only planar overlay, Web tier. It feeds `_FR_GlassRTReflection` with A = coverage, and the stripper
+    is removed.
+  - **G17** floor SSR after a move to Unity 6.7 (desktop only).
+  - **G18** Cinematic one-shot probe re-capture at hero windows.
 - **WebGL plan (WG3/WG4):** add "lights + probes in view ≤ 32" and "≤ 1 extra camera, only during a hold" to the
   Web tier budget.
 
