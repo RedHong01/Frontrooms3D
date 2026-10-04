@@ -9,7 +9,7 @@ contains:
 - `FrontRoomsSliceGameMode.*`: the first Title → Playing → Paused/Caught slice
   with deterministic seed, key, door and Relay Listen → Chase state.
 
-The Windows workstation currently has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
+The migration target is Windows only (`Win64`). The Windows workstation currently has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
 has been compiled once. Epic has released UE5.8 (including the 5.8.3 hotfix),
 but UE5.8 is not installed in the local Epic manifest yet, so `EngineAssociation`
 stays at `5.6` until that editor is installed. Imported assets are present locally;
@@ -68,3 +68,15 @@ The current Windows batch run imported all 167 Unity texture files with zero
 errors and zero warnings. Generated `.uasset` files stay under the ignored
 `Migration/Unreal/Content` tree; the import settings retain direct Unity-side
 source paths so the same pass can be regenerated after switching to UE5.8.
+
+Run the migration smoke gate from PowerShell after each migration batch:
+
+```powershell
+.\Tools\UnrealMigration\smoke_test.ps1
+```
+
+It rechecks the Unity export contract and asset hashes, resolves the associated
+Windows editor, compiles `FrontRoomsEditor` for `Win64 Development`, runs the
+contract commandlet, then runs the in-editor state, deterministic hash and
+imported-asset commandlet. Each run writes a timestamped report under the
+ignored `Migration/Unreal/Saved/MigrationSmoke` directory.

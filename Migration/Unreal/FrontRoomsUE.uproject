@@ -3,6 +3,9 @@
   "EngineAssociation": "5.6",
   "Category": "Games",
   "Description": "FrontRooms deterministic Unity-to-Unreal migration slice",
+  "TargetPlatforms": [
+    "Win64"
+  ],
   "Modules": [
     {
       "Name": "FrontRooms",

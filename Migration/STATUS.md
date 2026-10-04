@@ -6,6 +6,7 @@ Contract schema: `1`
 
 Requested engine target: UE5.8.3. The workstation currently only has UE5.6;
 install UE5.8.3 before switching the project association and rerunning the build gates.
+Build target: Windows `Win64` only. Other target platforms are outside this migration.
 
 ## Completed in this worktree
 
@@ -27,6 +28,7 @@ install UE5.8.3 before switching the project association and rerunning the build
 - [x] Import one staged Office FBX through UE5.6 `ImportAssets` and verify static meshes/materials are generated.
 - [x] Batch-import all 123 Unity FBX files into local `/Game/FrontRooms/UnityImported` (0 errors; 76 bounds warnings queued for sidecar review).
 - [x] Batch-import all 167 Unity surface/lighting textures into local `/Game/FrontRooms/UnityImported/Textures` (0 errors, 0 warnings).
+- [x] Add a Windows-only smoke runner covering export/asset hashes, UE compile, contract commandlet, state transitions, deterministic hash vectors and imported asset coverage.
 
 ## Next implementation gates
 
