@@ -1,0 +1,3653 @@
+{
+  "schema": "frontrooms.unreal.asset-bridge",
+  "schemaVersion": 1,
+  "sourceRoot": "Assets",
+  "destinationRoot": "Migration/Unreal/Content/FrontRooms/UnitySource",
+  "files": [
+    {
+      "source": "Assets/Resources/Audio/door-creak.wav",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Audio/door-creak.wav",
+      "kind": "audio",
+      "bytes": 456256,
+      "sha256": "864dd8c1b216639d334847ceabcd16264e1a6ecacf6cc2353a14d458878eda56"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_F.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_F.svg",
+      "kind": "vector",
+      "bytes": 598,
+      "sha256": "f23314a0aa0979ddff3640fd302396a80c62e849c1c89a81640bfa5ec1e42e1a"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_M.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_M.svg",
+      "kind": "vector",
+      "bytes": 660,
+      "sha256": "2bb78b424746573fe4173c2ebbe1117cb095e5c0329c318a6d431a16a8c2cdeb"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_N.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_N.svg",
+      "kind": "vector",
+      "bytes": 541,
+      "sha256": "d8d78068fc9b395b1fd143dcf1548142d308948762c0a8ef48fff5d9062c05cd"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_O1.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_O1.svg",
+      "kind": "vector",
+      "bytes": 1149,
+      "sha256": "dd0b41c578a7a771fb11cba028a9c2ee2433e1e55ee6bcb4dddc1fb82fa0bd4a"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_O2.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_O2.svg",
+      "kind": "vector",
+      "bytes": 1152,
+      "sha256": "95be8fa02af86d7d12a4d39afba5cb85ab109fb6c220204a4b220eb42b4c711a"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_O3.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_O3.svg",
+      "kind": "vector",
+      "bytes": 1156,
+      "sha256": "fe2c3724bd696f900e7217c182e3dac1b38bbf1e173860f5d0ffbb5ea0303f99"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_R.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_R.svg",
+      "kind": "vector",
+      "bytes": 1109,
+      "sha256": "7506d23d93220fef5922025a1c9347c9e551725225695dd557e492b5b917bd13"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_R2.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_R2.svg",
+      "kind": "vector",
+      "bytes": 1095,
+      "sha256": "b85c40f00358bc7d00217b273cabe132e57e2dd6dfc3a9c970181f5fe8670394"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_S.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_S.svg",
+      "kind": "vector",
+      "bytes": 2017,
+      "sha256": "8f7a69d7b1aa9d2086d7b26bec5b9344e648c9d974c21b8f1ac591e0b96be04e"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsGlyph_T.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_T.svg",
+      "kind": "vector",
+      "bytes": 500,
+      "sha256": "d6f6b594284856e4ddf6fe6f1585310e5963d6514133e362efa3732aaca4b5bd"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsLogo_Left.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_Left.svg",
+      "kind": "vector",
+      "bytes": 8854,
+      "sha256": "ba0f8494560ba942e516994cc5bcc5999e9920c323607c49394fc8a2ef2ed529"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsLogo_S1.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_S1.svg",
+      "kind": "vector",
+      "bytes": 2561,
+      "sha256": "d1446077a1ab5b44b00536f672e7579c8e95f3e87b6d8b730a5ab9301081e351"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsLogo_S2.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_S2.svg",
+      "kind": "vector",
+      "bytes": 2561,
+      "sha256": "2894e5cbfd132a9d784b5ce3952c60b00ce8985080a4162c7c85e2b4167c6442"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsLogo_White.svg",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_White.svg",
+      "kind": "vector",
+      "bytes": 13279,
+      "sha256": "7f4726e9bbbc1db57ad2af8d5dc879811aee01f1746ae187745c846fe6a48228"
+    },
+    {
+      "source": "Assets/Resources/Brand/FrontRoomsLogo.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo.png",
+      "kind": "texture",
+      "bytes": 44682,
+      "sha256": "7cc54b44e8bd0369822a22d8bfd1d4a901148038ea7d33e509d5c28605699ea5"
+    },
+    {
+      "source": "Assets/Resources/Brand/WhiteLogoUI.shader",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Brand/WhiteLogoUI.shader",
+      "kind": "unity-material-source",
+      "bytes": 1631,
+      "sha256": "8ef2656f0661a64279c255b9e636e591b42b690689f18d39bd49dd615ae3cbca"
+    },
+    {
+      "source": "Assets/Resources/Fonts/Bayon-Regular.ttf",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Fonts/Bayon-Regular.ttf",
+      "kind": "font",
+      "bytes": 55132,
+      "sha256": "ffdeb7ad5ca1abd37631b0a637aaa1b2cd695f85e582f5c75ccce26bdaaf51b6"
+    },
+    {
+      "source": "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Fonts/IBMPlexMono-Regular.ttf",
+      "kind": "font",
+      "bytes": 135580,
+      "sha256": "6a3412f058c7d8dfd9170c41e85ade48e5156ecb89356110ca57a0a27734af46"
+    },
+    {
+      "source": "Assets/Resources/Fonts/SourceSerif4-Variable.ttf",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Fonts/SourceSerif4-Variable.ttf",
+      "kind": "font",
+      "bytes": 1209508,
+      "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeCopier.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeCopier.fbx",
+      "kind": "mesh",
+      "bytes": 46412,
+      "sha256": "ab1fff88dc46157b5a26fea9ceff9f74ed0139bddc973594a54045f0968ab7e4"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeCRTComputer.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeCRTComputer.fbx",
+      "kind": "mesh",
+      "bytes": 103372,
+      "sha256": "38e0c964bcf113fc03005341fdee0ba436ba65b92d755892e7562c910296203b"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeCubiclePanel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeCubiclePanel.fbx",
+      "kind": "mesh",
+      "bytes": 23276,
+      "sha256": "d56c2440aaf751a7c687bf354e891ba5cc76f6b9c2fc9fb75db108e0fa7f1e77"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeDesk.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeDesk.fbx",
+      "kind": "mesh",
+      "bytes": 79420,
+      "sha256": "ecc799579252c854d5a8ac466c93bb56afa736f5805bfaa3644ef0c45149ab9a"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeFilingCabinet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeFilingCabinet.fbx",
+      "kind": "mesh",
+      "bytes": 54076,
+      "sha256": "9b112df02d6ad6802194679ff1ee5e9371d225312a89b0b51e57df4b3388ea90"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficePillar.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficePillar.fbx",
+      "kind": "mesh",
+      "bytes": 23036,
+      "sha256": "d5152938ce9a7f89edaec59f9794b500d6552e509c5db469e23bc8846a7f733a"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeShelf.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeShelf.fbx",
+      "kind": "mesh",
+      "bytes": 39980,
+      "sha256": "5fb91fef6465b2b9958cbbce14b693f18b354715d0b5b5ca8feee4aad7be544b"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeTaskChair.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeTaskChair.fbx",
+      "kind": "mesh",
+      "bytes": 93676,
+      "sha256": "bd20b7f02b4496cf541e2262b513c4753b6787032ad0eb5c11d4fb1ca0ebf49e"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeVendingMachine.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeVendingMachine.fbx",
+      "kind": "mesh",
+      "bytes": 97900,
+      "sha256": "d6894dd71cf5a07f7a73c3e8acdb2aa12435b2018d37f37cb0ba5e170e5819e4"
+    },
+    {
+      "source": "Assets/Resources/Models/Office/OfficeWaterCooler.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Models/Office/OfficeWaterCooler.fbx",
+      "kind": "mesh",
+      "bytes": 39452,
+      "sha256": "2c651f36aa5cbb5076bfd6e443560dec94482a571b0c6abb6c072fa9a18c0101"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_BarStool.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_BarStool.fbx",
+      "kind": "mesh",
+      "bytes": 96172,
+      "sha256": "e97d3a38c6c2edae46a8fe76c50741a4806935321763c6d64fb79e72ef905867"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_BarStool.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_BarStool.json",
+      "kind": "sidecar",
+      "bytes": 1040,
+      "sha256": "427e4ac487d3ecdc4325982af52c5ec61bfe4039b7f394a1b2430f988a41def4"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_BergereChair.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_BergereChair.fbx",
+      "kind": "mesh",
+      "bytes": 555100,
+      "sha256": "d609e9309a20d4c65035f1edbb0163bd949ef4b5e47905c87dbd1a0a4499ca46"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_BergereChair.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_BergereChair.json",
+      "kind": "sidecar",
+      "bytes": 1014,
+      "sha256": "a6985fb3be4d33acfc67f5a5e5ef3ebcf58cc0dee901d24af8fafc0df570ecf7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Binders.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Binders.fbx",
+      "kind": "mesh",
+      "bytes": 27628,
+      "sha256": "b91e4da6ffc72b300508a804886dfe4b1dbb7b578bc06932154dcb49b742819c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Binders.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Binders.json",
+      "kind": "sidecar",
+      "bytes": 861,
+      "sha256": "f5c3429719a3686ba9aa1e8762d26e8e24e9df7d7501459d382ac43ef63a7772"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Bookcase.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Bookcase.fbx",
+      "kind": "mesh",
+      "bytes": 55772,
+      "sha256": "c0f7df715e3a9b374988db65bcb501dddd3a4fecdba4ac84259517365109268a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Bookcase.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Bookcase.json",
+      "kind": "sidecar",
+      "bytes": 1888,
+      "sha256": "524296e0058fe079dd9ff7fe09548d62c9acfb51da18963e9bc2c69b203df03e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ClubChair_Oatmeal.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ClubChair_Oatmeal.fbx",
+      "kind": "mesh",
+      "bytes": 339884,
+      "sha256": "bca362709d66e991caaaf14011255828f6e45ffce1553adaa1c06c4eb61c95fd"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ClubChair_Oatmeal.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ClubChair_Oatmeal.json",
+      "kind": "sidecar",
+      "bytes": 1253,
+      "sha256": "3466334ade94604a6656445d79a2abf883c2c07a706b9a72c36fcdf20f29e9f5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ClubChair.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ClubChair.fbx",
+      "kind": "mesh",
+      "bytes": 339884,
+      "sha256": "1fda19d8d5d57109fb74a10493caf5beee703d7fc52f3f05fef2d37b2a7d4cbe"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ClubChair.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ClubChair.json",
+      "kind": "sidecar",
+      "bytes": 1244,
+      "sha256": "e6a1c1112ad6f959ca15e34ae1b11bbe671fc07c3f1a7a60f544639de533b7e8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Copier.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Copier.fbx",
+      "kind": "mesh",
+      "bytes": 122556,
+      "sha256": "22fdc0e1fc79422207f0c393d05d33d26a83dda92d369267d63c03a87e9eb4e0"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Copier.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Copier.json",
+      "kind": "sidecar",
+      "bytes": 1571,
+      "sha256": "59054b8598cce47bc13d6131bfd4c98776207d8b9a7cd2b8481043527fb3ae93"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Crate.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Crate.fbx",
+      "kind": "mesh",
+      "bytes": 62860,
+      "sha256": "f5f775ee76133f15150e343a86fc67176dd1153094ae582e7c9d7d680a940fee"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Crate.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Crate.json",
+      "kind": "sidecar",
+      "bytes": 1022,
+      "sha256": "531e4cd3878a6a06c3ae2a042c178751ef5511588159eb1dc3eaf948059aebc7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Credenza.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Credenza.fbx",
+      "kind": "mesh",
+      "bytes": 82364,
+      "sha256": "7fda664944e7adad5826423fb759ed4d41722b14f749c0aeba98fee22b6e9d08"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Credenza.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Credenza.json",
+      "kind": "sidecar",
+      "bytes": 1056,
+      "sha256": "0fc1b4e85670a4753305b09a53295ad9d376547220a95b4b1f7896f7f71128d6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CRTMonitor.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CRTMonitor.fbx",
+      "kind": "mesh",
+      "bytes": 192060,
+      "sha256": "009dc2f3408381098cfe98573c81cd5315de428b33aef8bbd6de6461de8b52d0"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CRTMonitor.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CRTMonitor.json",
+      "kind": "sidecar",
+      "bytes": 1083,
+      "sha256": "271184110b89876e70c74e61ea2389ea0d0a0cc9ab7ec4d6ff2816488d6dd6d0"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CRTTV.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CRTTV.fbx",
+      "kind": "mesh",
+      "bytes": 102764,
+      "sha256": "a901fc63f5645eea78ee78aab981d45ce6727470f4a2624b52442d12336fcc7b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CRTTV.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CRTTV.json",
+      "kind": "sidecar",
+      "bytes": 1119,
+      "sha256": "e1721c1b83e35a988e38c1f36b5b31bc2c8bc4dd5b2f93d4ef889a8fe7ca550e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CubiclePanel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CubiclePanel.fbx",
+      "kind": "mesh",
+      "bytes": 31260,
+      "sha256": "4c7d23be71d3bf08d857a82892f6d679e68c7bb838f0f9990c0bb23ce5592aa6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CubiclePanel.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CubiclePanel.json",
+      "kind": "sidecar",
+      "bytes": 932,
+      "sha256": "afe60be7001c687c23f65c3b0e67f1ba170469e84714177f98a552819ea787e2"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CubiclePanelShort.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CubiclePanelShort.fbx",
+      "kind": "mesh",
+      "bytes": 31292,
+      "sha256": "958a869c3d99909f6277e08dac7a20fa2abfe6fad475474d4965b8f554dc7ef5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CubiclePanelShort.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CubiclePanelShort.json",
+      "kind": "sidecar",
+      "bytes": 751,
+      "sha256": "1276f2b7358f952c39dd7cba4ef8f8d2e091d7e971aebcfa5ea1e196d332a986"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CubiclePanelTall.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CubiclePanelTall.fbx",
+      "kind": "mesh",
+      "bytes": 31644,
+      "sha256": "10573b1b56a4b8b9876bd6542d8829a34273642723e43a930e7fe7c436337d82"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_CubiclePanelTall.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_CubiclePanelTall.json",
+      "kind": "sidecar",
+      "bytes": 935,
+      "sha256": "07c5d238d66f602b600d94abd5d5c6e8b11e11262e7fbe1be692ff2c8af87d14"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DeskPedestal.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DeskPedestal.fbx",
+      "kind": "mesh",
+      "bytes": 123532,
+      "sha256": "57fd36a704e66fd475c7409e150b098ae9c6e6d6f36c6c6912a5a48138f16130"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DeskPedestal.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DeskPedestal.json",
+      "kind": "sidecar",
+      "bytes": 1036,
+      "sha256": "2156b0953469c8168f7d75f816f84135e69943fdce8609a1253f7afebbc4e7ac"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DeskPhone.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DeskPhone.fbx",
+      "kind": "mesh",
+      "bytes": 56940,
+      "sha256": "683087d28c1e4b7e88d8b3133818839357f230f0b33beab8cf9a190962629264"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DeskPhone.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DeskPhone.json",
+      "kind": "sidecar",
+      "bytes": 1033,
+      "sha256": "4ac5886f23a069c40b867676d0fc799571a6b52f45ba36d46add3925fd643781"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DisplayCabinet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DisplayCabinet.fbx",
+      "kind": "mesh",
+      "bytes": 84908,
+      "sha256": "0e470c2aeff4886adef59f118c68b05160b77da665847b8517456a37620b7dc8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DisplayCabinet.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DisplayCabinet.json",
+      "kind": "sidecar",
+      "bytes": 1356,
+      "sha256": "c47a7b27e396e50bbd8313f9aa452998c7ffa6b590e21c36bff229735ff4b3fa"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Arm.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Arm.fbx",
+      "kind": "mesh",
+      "bytes": 59692,
+      "sha256": "8508ab8d5df309d2f9e0038893657460edc11e2138bc3dbdbc05868f200ea5ca"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Arm.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Arm.json",
+      "kind": "sidecar",
+      "bytes": 1557,
+      "sha256": "cf02672f6f772b4bdfce079d39875767ff4c1a85c6aca7c75cce43dc221ca975"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Body.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Body.fbx",
+      "kind": "mesh",
+      "bytes": 157084,
+      "sha256": "ad4674b0909b033beb4d16501418921ff387bc4c7982a27c8988038b7d0a0542"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Body.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Body.json",
+      "kind": "sidecar",
+      "bytes": 1413,
+      "sha256": "4b096d8465d0d66638f44b34b1e285db20ec23d4f31c2fdc13c0e43d2cd48470"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Forearm.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Forearm.fbx",
+      "kind": "mesh",
+      "bytes": 57116,
+      "sha256": "9bb2a292daa005698322d624fddef172780c10b60af865882a828ccd7505ccd8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Forearm.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Forearm.json",
+      "kind": "sidecar",
+      "bytes": 1209,
+      "sha256": "8fced6b5c7b73f444cc77aeff5ff627d04495e9cea0627a8e472866f75f2f298"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Shoe.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Shoe.fbx",
+      "kind": "mesh",
+      "bytes": 47900,
+      "sha256": "a98782c83b65a29bca03c1490a5f5148d1355f7329bc5a0521fe6e769b47c8d6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorCloser_Shoe.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorCloser_Shoe.json",
+      "kind": "sidecar",
+      "bytes": 1358,
+      "sha256": "b95ef0d41d7f237f440b0fc6e613f0cfa29ed28bef4665d54b91f31105003788"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.fbx",
+      "kind": "mesh",
+      "bytes": 275516,
+      "sha256": "b59661e07cb4be70d20713dc0585a06ae892d93216dec9f05662fcad873991a9"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.json",
+      "kind": "sidecar",
+      "bytes": 1771,
+      "sha256": "a8b13c8861110bf75aae0a867b39bf18f26329f2230b8f707eaebcac6c86a7b5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorFrame_Steel.fbx",
+      "kind": "mesh",
+      "bytes": 276572,
+      "sha256": "6389a5eac8113cc190867e1b66485ef5f31bfe11b4bf689dae163cdbe3c10f60"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorFrame_Steel.json",
+      "kind": "sidecar",
+      "bytes": 1768,
+      "sha256": "b22309037247e2f8a12b01fea46d70c14bdc46d811fee9c3ac0a13c5430094e8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorFrame_Wood.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorFrame_Wood.fbx",
+      "kind": "mesh",
+      "bytes": 245852,
+      "sha256": "d8972dcc0a6cb24586575fcd1d4447866658e802a30db6e07839cc49f2c42e2c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorFrame_Wood.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorFrame_Wood.json",
+      "kind": "sidecar",
+      "bytes": 1487,
+      "sha256": "c0912b0861a3dfc53f09676a258aae629cd94f848c57c9d04b3e6cb8a03c7954"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel_PaintedMetal.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Steel_PaintedMetal.fbx",
+      "kind": "mesh",
+      "bytes": 343852,
+      "sha256": "02dbcb9455f811b064a4ad529d706ae757a7b57956f0fcacd3bd205fccf6e743"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel_PaintedMetal.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Steel_PaintedMetal.json",
+      "kind": "sidecar",
+      "bytes": 2587,
+      "sha256": "d93bf40f185c76867a91cd9ba99a54c8b336a305be29c2446b68280227320982"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Steel.fbx",
+      "kind": "mesh",
+      "bytes": 343852,
+      "sha256": "a544a9152d7e7ac2772a1239006bcffed8df3d2411c610b7632b3e9062e5b74e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Steel.json",
+      "kind": "sidecar",
+      "bytes": 2572,
+      "sha256": "7faa8f78dd1c061d463c5463e1dc1209d9d3e73eb2caba992139578965087e4e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_SteelLite.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_SteelLite.fbx",
+      "kind": "mesh",
+      "bytes": 394060,
+      "sha256": "c6ce27c1d982a879a868e1f6770ede5ef297f550576c59a5f004569042b31cb7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_SteelLite.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_SteelLite.json",
+      "kind": "sidecar",
+      "bytes": 2830,
+      "sha256": "f4b0dd25f810bf10236501130c338ad0bb8691f1106ddbf2bf42d0a6c3fa0003"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer_Oak.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Veneer_Oak.fbx",
+      "kind": "mesh",
+      "bytes": 196348,
+      "sha256": "8813ca7b3f655c4fe3980b00bd98652c953fd0c2727da5750ee0d9565fd70e59"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer_Oak.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Veneer_Oak.json",
+      "kind": "sidecar",
+      "bytes": 1874,
+      "sha256": "2476d13f58ab3fd9c3513942517c7503a36e70c3ed4b02ae40be234024d3bea5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Veneer.fbx",
+      "kind": "mesh",
+      "bytes": 196348,
+      "sha256": "8d6a743451dd5d6028815bb72e1e3c04a933e23ba13491fedb4fb0278b7b588e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Veneer.json",
+      "kind": "sidecar",
+      "bytes": 1868,
+      "sha256": "d30d74673cbe2326f3029182edc7119aca8d3a94655985da5cb2e5b39f27b4ab"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Ward.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Ward.fbx",
+      "kind": "mesh",
+      "bytes": 413964,
+      "sha256": "7c9d23cf758c11035cc84f7c3c953a72bd99b4304c88f33ccebe398a9a11a113"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorLeaf_Ward.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorLeaf_Ward.json",
+      "kind": "sidecar",
+      "bytes": 1903,
+      "sha256": "51d507deb216e234ee4c05f192d32a6e5af6d8890f98a19af6c6afdb2a7b92b1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_Blue.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorNumberPlate_Blue.fbx",
+      "kind": "mesh",
+      "bytes": 28476,
+      "sha256": "3e1fb88f751e2aa6d32efec351bb099c2c91065847c08d6b61fb596179e22d45"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_Blue.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorNumberPlate_Blue.json",
+      "kind": "sidecar",
+      "bytes": 1324,
+      "sha256": "58d87264536556b0a1f30883f403ce9f25305693b344744ff247cd3166e6bd19"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_White.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorNumberPlate_White.fbx",
+      "kind": "mesh",
+      "bytes": 28476,
+      "sha256": "40c1c983f99dcdff44ce56f8b3c474c17c200ba6aa675a403a7a0a2829d00097"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_White.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorNumberPlate_White.json",
+      "kind": "sidecar",
+      "bytes": 1326,
+      "sha256": "c4479b6053522d0560bb1a5b427a3831248d09304df9055a1b6d7053ff7d8f75"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorNumberPlate.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorNumberPlate.fbx",
+      "kind": "mesh",
+      "bytes": 28476,
+      "sha256": "450cc9e91a363cc22969fa75c7cd8dee07004b9d1ff9a373ca9ef9fe08210ba4"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorNumberPlate.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorNumberPlate.json",
+      "kind": "sidecar",
+      "bytes": 1318,
+      "sha256": "9a423a0631dc8ac98f21d87dd6a140a487d62cc61c93757d182a90e25a75f7fb"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorSign.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorSign.fbx",
+      "kind": "mesh",
+      "bytes": 33404,
+      "sha256": "d78bd4241df4924646262777043bb7ebbcaf164a40d38d675cc39bde291d9fd8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorSign.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorSign.json",
+      "kind": "sidecar",
+      "bytes": 1298,
+      "sha256": "6d3d11e0ce2494f50b6387ffc1655c614dae91f003dd0c7fa2659b5869746bf3"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorwayStuds.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorwayStuds.fbx",
+      "kind": "mesh",
+      "bytes": 44236,
+      "sha256": "182b180c20fda49af30d4ecb192820b3c6e161ba0eae0a549665ef83e8e164b1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorwayStuds.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorwayStuds.json",
+      "kind": "sidecar",
+      "bytes": 1175,
+      "sha256": "6c8fc3d4350da19585b09d9dd5973b689864718dc3d1a293c8cce9faef33bf1a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorwayStuds140.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorwayStuds140.fbx",
+      "kind": "mesh",
+      "bytes": 44540,
+      "sha256": "a24cae0b0680ec922cfa1dd170ec1a15e35625369e8458b12d8d79dcf57337dc"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorwayStuds140.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorwayStuds140.json",
+      "kind": "sidecar",
+      "bytes": 1215,
+      "sha256": "6bf940b4e803300140a1f8767462a12557aca92d6dca9966583113f12c798046"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorwayStuds180.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorwayStuds180.fbx",
+      "kind": "mesh",
+      "bytes": 44220,
+      "sha256": "06ed8b187a40df6ceb47d6e96c17b3ff9dde418421ad73eec796601bf4c64a76"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DoorwayStuds180.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DoorwayStuds180.json",
+      "kind": "sidecar",
+      "bytes": 1175,
+      "sha256": "fc8038d7580760fcfbd5d9f2fe1971aedd3586b907e94f94b86b9eb71c104a1e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Dresser70s.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Dresser70s.fbx",
+      "kind": "mesh",
+      "bytes": 81900,
+      "sha256": "da471d0a7175a992de1c10f4cb55a0ce7a31534469a165feda1cac94f4ab8b86"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Dresser70s.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Dresser70s.json",
+      "kind": "sidecar",
+      "bytes": 1128,
+      "sha256": "27f27ca16d5109fe001465bf14f584d1b34defcf615f53ceaf0ad83298b2246c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DresserLow.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DresserLow.fbx",
+      "kind": "mesh",
+      "bytes": 154764,
+      "sha256": "92c9f0f448caf9f1ba0f574f98643f793471a98f1d2e58ca2b36c0f32308543b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_DresserLow.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_DresserLow.json",
+      "kind": "sidecar",
+      "bytes": 1058,
+      "sha256": "466281c1dfb57ac2d2c084497dd5fe82be18faff9649b65ea38423865a8de52f"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ExitDevice_Crossbar.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ExitDevice_Crossbar.fbx",
+      "kind": "mesh",
+      "bytes": 196428,
+      "sha256": "8d38caa118c5e59fdeec99a6c3b919d6c00360623afa3830c5e76ba8f0c32f85"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ExitDevice_Crossbar.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ExitDevice_Crossbar.json",
+      "kind": "sidecar",
+      "bytes": 1536,
+      "sha256": "3a1d56e348ff580e1c35bf09ff4c60fb8ea37fcfb21edf57ab9b9f9fede56ac8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ExitSign_Dead.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ExitSign_Dead.fbx",
+      "kind": "mesh",
+      "bytes": 58860,
+      "sha256": "20cb7b4674767097719dc3ac3ca7fb23680c7db3e640d775824167031d72f4f3"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ExitSign_Dead.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ExitSign_Dead.json",
+      "kind": "sidecar",
+      "bytes": 1227,
+      "sha256": "d2911118885e624be70dd16578caa49bca2c9094f3d3dd9e2cdc72eab1322b76"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ExitSign.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ExitSign.fbx",
+      "kind": "mesh",
+      "bytes": 58860,
+      "sha256": "8c81d265f8358df9fe94d1319a99336c14602493825d3201457b222dc270c48c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_ExitSign.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_ExitSign.json",
+      "kind": "sidecar",
+      "bytes": 1217,
+      "sha256": "e3e7cc02c73689e6333aa36db136c7f55726f079e104c6efc2992b09e00ffbb5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_FilingCabinet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_FilingCabinet.fbx",
+      "kind": "mesh",
+      "bytes": 73180,
+      "sha256": "5246d675c1e729db81b85db0323d2ef0b314fd6891104eea0f04cdca348df617"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_FilingCabinet.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_FilingCabinet.json",
+      "kind": "sidecar",
+      "bytes": 1409,
+      "sha256": "c9566b82a539a7c49c4576f956c437fc0036edf45738a3e49fd05b0c060ed3ce"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_HatStand.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_HatStand.fbx",
+      "kind": "mesh",
+      "bytes": 75180,
+      "sha256": "651810aa87d9dcd2f617a1f33061561c4941f1b9749b512e02aafa97a3eabe30"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_HatStand.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_HatStand.json",
+      "kind": "sidecar",
+      "bytes": 881,
+      "sha256": "ffd4b47c36e93ef975abaeb03d6b7f5cade846f8f7f3a1744dd3df0c228ff0e6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Hutch_Cherry.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Hutch_Cherry.fbx",
+      "kind": "mesh",
+      "bytes": 102044,
+      "sha256": "11032868a539c0be4f6f49ffd28f61f21c300f51bdb79bdeabd2e52fa6cd2c30"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Hutch_Cherry.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Hutch_Cherry.json",
+      "kind": "sidecar",
+      "bytes": 1249,
+      "sha256": "544b4691b859c5caab8076c6c6785b99fd0706f1c799c7d23bbc54c829c6949e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Hutch.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Hutch.fbx",
+      "kind": "mesh",
+      "bytes": 102044,
+      "sha256": "9e3b1ad5a8a29c9a914bc0efea3dc52b63ae09d0d894f7eb51e10c8ee111280c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Hutch.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Hutch.json",
+      "kind": "sidecar",
+      "bytes": 1241,
+      "sha256": "764aeb10ef4dbdd73986fa1795b3ea1a7dc269e35e3efafe5e52f3bcc007ebf4"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_InteriorWindow.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_InteriorWindow.fbx",
+      "kind": "mesh",
+      "bytes": 18380,
+      "sha256": "876fdd5328c2804627af4adf5fe69a553c1346bcfa1d792b2b26f4e8ecee1b57"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_InteriorWindow.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_InteriorWindow.json",
+      "kind": "sidecar",
+      "bytes": 659,
+      "sha256": "3f0d3de629120d8a2d719d5ff1c913dcde86d8957fefbd86bb16f536b8dc32b8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Key_Zone_Nickel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Key_Zone_Nickel.fbx",
+      "kind": "mesh",
+      "bytes": 62156,
+      "sha256": "50b70d5dd00e1a481c519978dd9f48717c29ea70cf449f4e2a6a410687986243"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Key_Zone_Nickel.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Key_Zone_Nickel.json",
+      "kind": "sidecar",
+      "bytes": 1668,
+      "sha256": "e2de600f792ff224e6401900c701346d1d0f2820b72d6b69db8a5740f7db89af"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Key_Zone.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Key_Zone.fbx",
+      "kind": "mesh",
+      "bytes": 62156,
+      "sha256": "4813389b7316be2ff65acb025fc3f3c68bc4ac56f1cce462528f713fce894ce4"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Key_Zone.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Key_Zone.json",
+      "kind": "sidecar",
+      "bytes": 1657,
+      "sha256": "96709c1f6fd9895d32662dd50070e3129032cc3f5cc928d1842114b31df79ef2"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Keyboard.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Keyboard.fbx",
+      "kind": "mesh",
+      "bytes": 48972,
+      "sha256": "781e8b2db20cec7e32f8cea30a97542c3b0ad2582214398725f7078829aca904"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Keyboard.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Keyboard.json",
+      "kind": "sidecar",
+      "bytes": 958,
+      "sha256": "dd1f46428233862e0d28305ab4bd2ac8a3f2c3a33e2b5d70461118ed715865b5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyCabinet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyCabinet.fbx",
+      "kind": "mesh",
+      "bytes": 161628,
+      "sha256": "3b39910f7219b8640c52c9ff00413245a0ea12d0295922e64e196bcd0c35610d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyCabinet.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyCabinet.json",
+      "kind": "sidecar",
+      "bytes": 3925,
+      "sha256": "631e19fe3b4b6f76a4bdff89e25bc4713a9fa34da7ab9c7663647c79ef654312"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyHook.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyHook.fbx",
+      "kind": "mesh",
+      "bytes": 27644,
+      "sha256": "d560b312c50c8ce438328adf2034aceeaa62f1a56f1a84c8b2bdf2c6ff8c476a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyHook.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyHook.json",
+      "kind": "sidecar",
+      "bytes": 1136,
+      "sha256": "ebb31c0975eeb4ec40a718617d010a3ef2c2f68fad46aa7a16cf37df90955ad0"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyHookBoard.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyHookBoard.fbx",
+      "kind": "mesh",
+      "bytes": 103900,
+      "sha256": "b0dd4a23034a000e9de550188570fdbe2b4f2f3ea4aca1e4f75df877925bd411"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyHookBoard.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyHookBoard.json",
+      "kind": "sidecar",
+      "bytes": 1946,
+      "sha256": "0133d20f0deebc41ba6ef88eda8e41e6e1cef20518f78e9eb42cd0a7575880da"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyRing.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyRing.fbx",
+      "kind": "mesh",
+      "bytes": 71388,
+      "sha256": "6ad60151bb9586c2a4b38a456132e343c1c26dbf7888c78a143912b793931309"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyRing.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyRing.json",
+      "kind": "sidecar",
+      "bytes": 1276,
+      "sha256": "d61b6ce686863d568580e32a000a5db8de52074918f1e7766f877a8743a3a10a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Long_Blue.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Long_Blue.fbx",
+      "kind": "mesh",
+      "bytes": 56460,
+      "sha256": "340459e94e7206bb99f996919ddd4e59fab26420aeb9b533cbef0d7c65114cac"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Long_Blue.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Long_Blue.json",
+      "kind": "sidecar",
+      "bytes": 1398,
+      "sha256": "69ca6be3b7375a561f5b6bb50d0c99b95cf0cae4a55d0ad7958d7a51f7ba74c0"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Long_White.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Long_White.fbx",
+      "kind": "mesh",
+      "bytes": 56460,
+      "sha256": "11611945cc228480ba7693558dc7127eb8d5d776522d81f1dfe87c3a2a7aae8c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Long_White.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Long_White.json",
+      "kind": "sidecar",
+      "bytes": 1400,
+      "sha256": "064bc7c0fb340bd8161642c28d73718445bc578c6c3a66704dd97f1c40f8b75d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Long.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Long.fbx",
+      "kind": "mesh",
+      "bytes": 56460,
+      "sha256": "4c7387167a82f767daee04c5d2ebcc8f4a102a9696709fd992411a8c1881adf9"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Long.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Long.json",
+      "kind": "sidecar",
+      "bytes": 1392,
+      "sha256": "747b4dcbf2f1ceb7dae5134f4739f58062f9361f6910b03bf3cb152e17061eb7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_Blue.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Rect_Blue.fbx",
+      "kind": "mesh",
+      "bytes": 56748,
+      "sha256": "87d019252dea1f18e83d55768f2672ce0c51284e944bd9b83834409be075e958"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_Blue.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Rect_Blue.json",
+      "kind": "sidecar",
+      "bytes": 1397,
+      "sha256": "779d958a46561096d7da903af3dcf1fb0cc5981f946abfa07ba4b2802b7478c8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_White.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Rect_White.fbx",
+      "kind": "mesh",
+      "bytes": 56748,
+      "sha256": "7aa5b018c7db5afb8e3bfbe9c34238fe6fa83c5e498676be93feb00ee29b217a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_White.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Rect_White.json",
+      "kind": "sidecar",
+      "bytes": 1399,
+      "sha256": "f27543dc4588f3316b343ec2c2407ee95e1291edb58ee7707bbc3c0b03ab7f24"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Rect.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Rect.fbx",
+      "kind": "mesh",
+      "bytes": 56748,
+      "sha256": "1455c909a3df7f61dd88c0d2b28646b28fcdae9d43ce49185c803e1e43647e85"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Rect.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Rect.json",
+      "kind": "sidecar",
+      "bytes": 1391,
+      "sha256": "4368678bc425488c7e75ddc71f2668630f13f9aa374142940223e6994bfd3555"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Round_Blue.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Round_Blue.fbx",
+      "kind": "mesh",
+      "bytes": 42972,
+      "sha256": "a4c7fb38705239ff7c972493b0c89af131e122d380e9af85eec9d6fbe7e3b22b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Round_Blue.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Round_Blue.json",
+      "kind": "sidecar",
+      "bytes": 1400,
+      "sha256": "7d5d7da2a38584b985c910eebfbd1f06b21f55bca58380a8fba84fa0d26576e1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Round_White.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Round_White.fbx",
+      "kind": "mesh",
+      "bytes": 42972,
+      "sha256": "8d5aa786dff328e3805cd99332b3e9d2eeabe5acc632b6a85152ed6b454e92bb"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Round_White.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Round_White.json",
+      "kind": "sidecar",
+      "bytes": 1402,
+      "sha256": "ae705374b728959c91ff842c1b59823953eb85839749c0b6ff8f5eb9091be0fa"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Round.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Round.fbx",
+      "kind": "mesh",
+      "bytes": 42972,
+      "sha256": "1f087e7591e2392643475898c7f95721985340c4806920af66b4a2dcdb2a47f9"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_KeyTag_Round.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_KeyTag_Round.json",
+      "kind": "sidecar",
+      "bytes": 1394,
+      "sha256": "bdcc06d2d923c62f55d6e8643e0eda76904dec195b4099352b785965ab718558"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_LadderChair.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_LadderChair.fbx",
+      "kind": "mesh",
+      "bytes": 121052,
+      "sha256": "970d7f4f1dd299e6d48cde365910f927fa621e6343e84fe5b5934b1291c3a297"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_LadderChair.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_LadderChair.json",
+      "kind": "sidecar",
+      "bytes": 1063,
+      "sha256": "c4e0d92aa61ccb7c6995637cc438e938f3b48c15b50147baf046d4519aa9a447"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_CylinderShell_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_CylinderShell_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 131196,
+      "sha256": "a2b42439bacd3a395c3709789519dcd825b4a77b280f11c44dbdd5edc4b2ab52"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_CylinderShell_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_CylinderShell_Brass.json",
+      "kind": "sidecar",
+      "bytes": 1235,
+      "sha256": "7bb9ef15ad3ca4aad4223bb0db36e9335a8addbae9cdb72a4e0261f3e528d5e7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_CylinderShell.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_CylinderShell.fbx",
+      "kind": "mesh",
+      "bytes": 132172,
+      "sha256": "ac5de3039e0d196966b4c41b8fca740135030eaa6e462cc4f1b36933d0aa65fb"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_CylinderShell.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_CylinderShell.json",
+      "kind": "sidecar",
+      "bytes": 1230,
+      "sha256": "8fbada974bfc013bd3e1aa96318b0fd7df4709d399f47b9797d89a63a6160910"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Deadbolt.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Deadbolt.fbx",
+      "kind": "mesh",
+      "bytes": 30652,
+      "sha256": "40a56a2c559a56b13ebbe4205f29d6c2798348ab1981df88fda0ff8da667bcdc"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Deadbolt.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Deadbolt.json",
+      "kind": "sidecar",
+      "bytes": 1369,
+      "sha256": "81a39c8814b6acb4c817e99b530b1f1cc515dae4f05ce4f19d2dc6036719c1b9"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Escutcheon_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Escutcheon_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 148364,
+      "sha256": "84a8654104218b06aaf15ddcf1d398d79825719568562d8e0008407c161d9aa2"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Escutcheon_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Escutcheon_Brass.json",
+      "kind": "sidecar",
+      "bytes": 1308,
+      "sha256": "0644e1b619c6627c703984403aa854733e07eca302761fb0d9a4ebabcc66b806"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Escutcheon.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Escutcheon.fbx",
+      "kind": "mesh",
+      "bytes": 148380,
+      "sha256": "0dd6826f17c23f5341c2b7fa233a8e26e466da5cb3426e663c8fe17082601583"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Escutcheon.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Escutcheon.json",
+      "kind": "sidecar",
+      "bytes": 1303,
+      "sha256": "a38502866c102b0a02213cf67e3a28b0c3c2078ca410bd4537678ebb7fbef589"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Knob_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Knob_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 232268,
+      "sha256": "f68d2aa5e79abab35330b5a79105d1cd5c2228957a6cc11e9b5781a33310df23"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Knob_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Knob_Brass.json",
+      "kind": "sidecar",
+      "bytes": 1255,
+      "sha256": "22402a1f9ee38e73a7c2c8c4b2b113caabedebaf75f36d9cc4ab767914035161"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Knob.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Knob.fbx",
+      "kind": "mesh",
+      "bytes": 232268,
+      "sha256": "881b102efdf3d14fae8f5650bd83631fa576b057becf2a27e5897f3a5829cffe"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Knob.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Knob.json",
+      "kind": "sidecar",
+      "bytes": 1250,
+      "sha256": "c4e5943e20087d1c22072af72b0d6e0254b7f4a386cdb558fb116484a7eb1017"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 39148,
+      "sha256": "d1b69bdde131cba0828f8d2820f5cdbe633c5c6fd898d063bea3438b21384359"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_Brass.json",
+      "kind": "sidecar",
+      "bytes": 1466,
+      "sha256": "9d7b4a2b0416d565178a19e85e22fb381b98a680fa918a0f04780aecf3d477e6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Latchbolt_Bored.fbx",
+      "kind": "mesh",
+      "bytes": 39148,
+      "sha256": "7b9a298c22214970492626420f27693d03153d8f6f2189188a45beb6d2a038f9"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Latchbolt_Bored.json",
+      "kind": "sidecar",
+      "bytes": 1461,
+      "sha256": "bea126f8b0ee935a32e4c7f4c8cd2b7a09b3d3378916722e2b5d95e601dff16b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Mortise.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Latchbolt_Mortise.fbx",
+      "kind": "mesh",
+      "bytes": 43916,
+      "sha256": "5194a0dfb7f39e10fe1324d41ed00ccd0549e858c9b7c95c8a98fa3633778d3c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Mortise.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Latchbolt_Mortise.json",
+      "kind": "sidecar",
+      "bytes": 1478,
+      "sha256": "5ed02e1cb3087f5c3588b58e782900626d662d309207739086fb148850354b7b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Lever_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Lever_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 186156,
+      "sha256": "0e821b0f81fc59b6249dea5bb7910fc910d24d4491a87d835551c200b4b8fca1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Lever_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Lever_Brass.json",
+      "kind": "sidecar",
+      "bytes": 1391,
+      "sha256": "6b5b3891295e3a1e47edc9982213578302a7c5685a54322ad533616d799c1ac6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Lever.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Lever.fbx",
+      "kind": "mesh",
+      "bytes": 186156,
+      "sha256": "61e24964ae813407778e4d37d715a633f0a6227ff42b06d2940396d8ca9b2afa"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Lever.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Lever.json",
+      "kind": "sidecar",
+      "bytes": 1386,
+      "sha256": "96740e4420a33b064324280781bf9ef25a7b1f14273f061e3d86a4c0283be688"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Plug.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Plug.fbx",
+      "kind": "mesh",
+      "bytes": 98092,
+      "sha256": "ead5c0a89984e51104378789617bf93e834855a86834545483d160e16f19396e"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Plug.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Plug.json",
+      "kind": "sidecar",
+      "bytes": 2964,
+      "sha256": "71961bf8156704488bb4d577a00d608d02c95a46adf4a98ddd235e5b3688fb72"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Rose_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Rose_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 134348,
+      "sha256": "a7bf6a3d2e55393146f1b4d57d0c70f2dc04180a24f4b46e0e72f457b6b08027"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Rose_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Rose_Brass.json",
+      "kind": "sidecar",
+      "bytes": 952,
+      "sha256": "232c0b401e74d1d8f234c7f46670d9e5a35fa493946ea47037f57dbac1a6db61"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Rose.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Rose.fbx",
+      "kind": "mesh",
+      "bytes": 134348,
+      "sha256": "cf6a648b92c996ce727b44db619ea010231d8a12182f73ac25b48d5e618267be"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_Rose.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_Rose.json",
+      "kind": "sidecar",
+      "bytes": 947,
+      "sha256": "281e1dc6323f4cb2863e72b32a84f2741c0f570bf07595effe13db473735f0f8"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored_Brass.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_StrikeBored_Brass.fbx",
+      "kind": "mesh",
+      "bytes": 47436,
+      "sha256": "1964510a2b39e32d028430b76d2a0d745984159a732e2df2b245aa3b88f7db9c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored_Brass.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_StrikeBored_Brass.json",
+      "kind": "sidecar",
+      "bytes": 1451,
+      "sha256": "b17200d361e071a469864c0adbeb96b9600dd42cb3f5060115b8266106163d1c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_StrikeBored.fbx",
+      "kind": "mesh",
+      "bytes": 47436,
+      "sha256": "f2de6a8ce7af89cb78b2268b8d641719034a95d7956e9d4147d0e0f10086aefb"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_StrikeBored.json",
+      "kind": "sidecar",
+      "bytes": 1446,
+      "sha256": "ba5862adc66a03b380d706b344df9759bf3a9cadde7be533b9adc26b861672bb"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_StrikeMortise.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_StrikeMortise.fbx",
+      "kind": "mesh",
+      "bytes": 59228,
+      "sha256": "eac59a8d0f17ce0579051d2a1a1260ad7f9d88cdc105f00543643257efda24a2"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Lock_StrikeMortise.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Lock_StrikeMortise.json",
+      "kind": "sidecar",
+      "bytes": 1633,
+      "sha256": "7c61e2fce0dfac75d26eddbe2b6ff5e3419944ad514d25d3b74b1369211b4cb9"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_MiniBlind_Lowered.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_MiniBlind_Lowered.fbx",
+      "kind": "mesh",
+      "bytes": 282396,
+      "sha256": "1e512983933baa0341f26d079bd3ab9d18daa9c8426f2fc3a8dea7f7c570672a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_MiniBlind_Lowered.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_MiniBlind_Lowered.json",
+      "kind": "sidecar",
+      "bytes": 1204,
+      "sha256": "3907e1c5407c1005aeb1826ff8c7196fae386c642f5914c3cc36f591ff274b3d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_MiniBlind_Raised.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_MiniBlind_Raised.fbx",
+      "kind": "mesh",
+      "bytes": 100652,
+      "sha256": "ffe0027a420d440d79e273df35bd42b6108bad1c2a89f6d0849afff2d818d3bf"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_MiniBlind_Raised.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_MiniBlind_Raised.json",
+      "kind": "sidecar",
+      "bytes": 1217,
+      "sha256": "35e43cdb462482b94c170fe9cc98144d343551f49fa1515a5d47b5bbb1359301"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Mouse.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Mouse.fbx",
+      "kind": "mesh",
+      "bytes": 27084,
+      "sha256": "a7dd203e0042ba7379d348be00d01465cca2dd31ff29b364176ab34228bb00df"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Mouse.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Mouse.json",
+      "kind": "sidecar",
+      "bytes": 704,
+      "sha256": "ae88920a6b398c77ea2030e1e78133196768bc1acaaa5ef5f38c32e5c5d0260d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Nightstand2.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Nightstand2.fbx",
+      "kind": "mesh",
+      "bytes": 80060,
+      "sha256": "548ba66b779dfda1cecf908a964aadb3d78de96ae80670c85e350e0039045cdd"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Nightstand2.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Nightstand2.json",
+      "kind": "sidecar",
+      "bytes": 1023,
+      "sha256": "577128900f4d3ebb9e01e8de753ab2b700da089713920425e312250b6aadde70"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_OfficeDesk.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_OfficeDesk.fbx",
+      "kind": "mesh",
+      "bytes": 87820,
+      "sha256": "8895d56b0dd1bfb892fed2922bb5d3355c6130a2b7feaa051784d9494a9ee20d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_OfficeDesk.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_OfficeDesk.json",
+      "kind": "sidecar",
+      "bytes": 1182,
+      "sha256": "89955a400ef00c5a0d435af3968b4c8a10fc4fece4f1f76b9ee2a68fea37d1bb"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Pallet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Pallet.fbx",
+      "kind": "mesh",
+      "bytes": 90044,
+      "sha256": "ce58062162d63d0d90ceb307b26201b14b97ebfcbd6077c0eb7b5dba64e28d09"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Pallet.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Pallet.json",
+      "kind": "sidecar",
+      "bytes": 977,
+      "sha256": "cd59b3f2f297c38e1d51476e98bab692b263f05392ea72417e8749dbbecd8d6a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PanelPost.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PanelPost.fbx",
+      "kind": "mesh",
+      "bytes": 16796,
+      "sha256": "723363ab8df284cf0283dc2e32b4e2744c6c2e5d2415755a01570e220af613bc"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PanelPost.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PanelPost.json",
+      "kind": "sidecar",
+      "bytes": 619,
+      "sha256": "0dddd594b95ece6569fc04f7171d3a49b85a75cf0fe54270c221f2ba70bf99a5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PanelPostTall.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PanelPostTall.fbx",
+      "kind": "mesh",
+      "bytes": 16796,
+      "sha256": "6ada950d3ab6a9dd567a5b2eec1b23e65d8339c25a8711512025ab0dd0ac33c1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PanelPostTall.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PanelPostTall.json",
+      "kind": "sidecar",
+      "bytes": 621,
+      "sha256": "cbbbc1e726eddcfe3560a15e705f5bb62c3040bb4245f6858fe6babe3a85c103"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PaperStack.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PaperStack.fbx",
+      "kind": "mesh",
+      "bytes": 27532,
+      "sha256": "83b6c4c6a01660f2a2c24cd1042d41c1b6c2a6abc7483566cb4f3d948f115fb1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PaperStack.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PaperStack.json",
+      "kind": "sidecar",
+      "bytes": 1036,
+      "sha256": "9878e072f0ac0581baa59bdb58cda0817f7fe46f1d0d028a8050bc951a11bdbf"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PCDesktop.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PCDesktop.fbx",
+      "kind": "mesh",
+      "bytes": 45996,
+      "sha256": "f0a21ff4478914f1df238120da9bef1b7034785ad97cc066da32884bae5cb813"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PCDesktop.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PCDesktop.json",
+      "kind": "sidecar",
+      "bytes": 1267,
+      "sha256": "aeae348e85b98b8868997390e334285cc86e5eb18597f7d76f799352d77a5286"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PlyCabinet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PlyCabinet.fbx",
+      "kind": "mesh",
+      "bytes": 26620,
+      "sha256": "55186ec612134a2727b17d30d66f9f18aec793efc1fade0f4d5af8dadf45c94c"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_PlyCabinet.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_PlyCabinet.json",
+      "kind": "sidecar",
+      "bytes": 1022,
+      "sha256": "8ad5cc3ab4787a90e68a19954d08a446b7d7e587d07a0dd975f3c9c322117d5b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Pouf.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Pouf.fbx",
+      "kind": "mesh",
+      "bytes": 52716,
+      "sha256": "47acc40775c8289c9a4c07023213612e541cab9f1d7fb395fe386212d8bda31d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Pouf.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Pouf.json",
+      "kind": "sidecar",
+      "bytes": 927,
+      "sha256": "b39ce89416ed30616383b656a7bdbd4d8c63525ec4b2934ae9d5d6e6fabcf316"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_QueenAnneArmchair.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_QueenAnneArmchair.fbx",
+      "kind": "mesh",
+      "bytes": 315100,
+      "sha256": "0756d17cecd6d27385f3aa562612cf0befc079f4c8f3115b55d3956b1afa7bfc"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_QueenAnneArmchair.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_QueenAnneArmchair.json",
+      "kind": "sidecar",
+      "bytes": 1146,
+      "sha256": "5b5ac08e2ab43911419a20970f183af2963dd7ffa2f54075f44b20ae96f873f5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_RollingCabinet.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_RollingCabinet.fbx",
+      "kind": "mesh",
+      "bytes": 71324,
+      "sha256": "3928004568554388972f515eb82deee8453dfefaa86f86f4e95bd71b9e8c9eee"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_RollingCabinet.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_RollingCabinet.json",
+      "kind": "sidecar",
+      "bytes": 1090,
+      "sha256": "c9a092190271a8ad5a091eeefe6529108f411df1f3766ec1af9f0f68286b90ad"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_SideTableTurned.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_SideTableTurned.fbx",
+      "kind": "mesh",
+      "bytes": 153308,
+      "sha256": "8811a23a953a5c930864612165d5524c35100a38e07af450351b41de971cc893"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_SideTableTurned.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_SideTableTurned.json",
+      "kind": "sidecar",
+      "bytes": 1150,
+      "sha256": "8464bf76f80b8953034a3982729719bd51f186293a8793b36e17a580fb4ed455"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Sofa3_Charcoal.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Sofa3_Charcoal.fbx",
+      "kind": "mesh",
+      "bytes": 379404,
+      "sha256": "c9816971ee5159758442ac436e3fd887e62e3ac8292cafde3f6d79da690b76d1"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Sofa3_Charcoal.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Sofa3_Charcoal.json",
+      "kind": "sidecar",
+      "bytes": 1292,
+      "sha256": "712fb718baf459b31de55f9ce15b998c324bbeff3eb5ab03160b6cf1a77f0607"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Sofa3_Floral.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Sofa3_Floral.fbx",
+      "kind": "mesh",
+      "bytes": 379404,
+      "sha256": "f81b771100b45812869039cc6f83291ebc819fc8804b37b887919da3abb5193f"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Sofa3_Floral.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Sofa3_Floral.json",
+      "kind": "sidecar",
+      "bytes": 1288,
+      "sha256": "7bc02da2f8f9c9bf111cbb7956e222c6d28185ef3d24a4f14968ac16759d0770"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Sofa3.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Sofa3.fbx",
+      "kind": "mesh",
+      "bytes": 379404,
+      "sha256": "7a7cf225ad5205ef77c5ea7d96e358f500798a1e808e33847dc5c1bc09179fa6"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Sofa3.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Sofa3.json",
+      "kind": "sidecar",
+      "bytes": 1280,
+      "sha256": "d1768f837ba4b7c27300e21cba7e2e54189224db52d817f213be456e1685fcf5"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_StepStool.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_StepStool.fbx",
+      "kind": "mesh",
+      "bytes": 66060,
+      "sha256": "b190849986708f5562200906aaec1faa897b584afb822e7cf78149bd8726bcb7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_StepStool.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_StepStool.json",
+      "kind": "sidecar",
+      "bytes": 1341,
+      "sha256": "ddf27ccde2352fd76027f763e7f632eb9091e41108d1bc4fd7fe492164437d76"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_TableLampPleated.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_TableLampPleated.fbx",
+      "kind": "mesh",
+      "bytes": 113228,
+      "sha256": "d7bae92e9537d41ed8bba6b751466298a86c66b5521184382136f4e4f03ddcdd"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_TableLampPleated.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_TableLampPleated.json",
+      "kind": "sidecar",
+      "bytes": 888,
+      "sha256": "1b0d673913a920a6f1995fe909a8674cd0a1624805dbbe8b9ca8da4ae0c97560"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_TaskChair.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_TaskChair.fbx",
+      "kind": "mesh",
+      "bytes": 323484,
+      "sha256": "99f5985a2857af69d125e892d1708126b333db52d8b28a6f941da235f233e890"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_TaskChair.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_TaskChair.json",
+      "kind": "sidecar",
+      "bytes": 1158,
+      "sha256": "43a6284c28c08ae39e8125ee44b426ddcad0d63145390b7b822fd57fc8c3572d"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Torchiere.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Torchiere.fbx",
+      "kind": "mesh",
+      "bytes": 55484,
+      "sha256": "1b6f420c4ef33d42588a220ebbcc8facb8f072ec20349f7db93279c369a28fef"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Torchiere.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Torchiere.json",
+      "kind": "sidecar",
+      "bytes": 899,
+      "sha256": "c03731d9dd1c2e66d57cd4679e9ce74b535a167a1f7734c36893e96e4457b230"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_TrashBin.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_TrashBin.fbx",
+      "kind": "mesh",
+      "bytes": 26124,
+      "sha256": "6d7dd1a3afc46b1edb42c38f44c1510c9c75a146cb7349ee2b9eef9c703c331b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_TrashBin.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_TrashBin.json",
+      "kind": "sidecar",
+      "bytes": 746,
+      "sha256": "8348b03517eb38a38e1972bcf78a8fd67b5c1ee7525f5194fc1a417ffd54dd02"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Urn.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Urn.fbx",
+      "kind": "mesh",
+      "bytes": 52172,
+      "sha256": "5b9aca015346a00849554d745ac713f7ab168e2a0c7e066d6e63547b80f51b19"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_Urn.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_Urn.json",
+      "kind": "sidecar",
+      "bytes": 812,
+      "sha256": "5d9c79d615f88bd5bf62b93c39fdbf71fedaf2651fe1d949fbd6072305b1a07f"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_VendingMachine.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_VendingMachine.fbx",
+      "kind": "mesh",
+      "bytes": 145420,
+      "sha256": "d377854cc8a19e48a4825c361074186eefccaa8cd43517603a6bc7a21d9ac5ef"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_VendingMachine.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_VendingMachine.json",
+      "kind": "sidecar",
+      "bytes": 1186,
+      "sha256": "27e48fe53bdf68b841b3428cef97413a30071ed91f2089581e4052aa15ba015b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WallClock.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WallClock.fbx",
+      "kind": "mesh",
+      "bytes": 30988,
+      "sha256": "d3edd2951df4121d963ff76c3e029b72e8b35415509f15f3e73125f1be42f294"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WallClock.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WallClock.json",
+      "kind": "sidecar",
+      "bytes": 777,
+      "sha256": "49aeb8d5642f93a6fe643c470a585f24e57876cf3a6e945eb9f519783b57d351"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WaterCooler.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WaterCooler.fbx",
+      "kind": "mesh",
+      "bytes": 150508,
+      "sha256": "95038931bb5b9dc444c5562a0c6bc2882e3f770336d30f75a6ba9a7e9b1683f7"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WaterCooler.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WaterCooler.json",
+      "kind": "sidecar",
+      "bytes": 1002,
+      "sha256": "c064f77b7fdd715a3480b5b8d32b4feed6c756748132a9cb9e8da133c4c764da"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Alu.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Alu.fbx",
+      "kind": "mesh",
+      "bytes": 161788,
+      "sha256": "4201735eddc1cc9bb75f0b4f1877708b260bcb3ff7d00fa4a4d251915948a5a2"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Alu.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Alu.json",
+      "kind": "sidecar",
+      "bytes": 2806,
+      "sha256": "3c716e466a69feb6922d05362fd74b3e9753bf3cf2fe76ba00e3cdec6b5a339b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel_Enamel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Steel_Enamel.fbx",
+      "kind": "mesh",
+      "bytes": 300204,
+      "sha256": "c8d5524c90d6787fad988c85733e912cee5977f115ac3838822c109ab171491b"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel_Enamel.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Steel_Enamel.json",
+      "kind": "sidecar",
+      "bytes": 2816,
+      "sha256": "8e573b4ab7c843cd3fef5e4b286bf0e2e991c5790e7ed17fab6a83f4dc831e8a"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Steel.fbx",
+      "kind": "mesh",
+      "bytes": 300220,
+      "sha256": "d1739b8b5721e8607eaf01250f78d7fec7349d9af70d186e4e6ec6ae743117f2"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Steel.json",
+      "kind": "sidecar",
+      "bytes": 2813,
+      "sha256": "ddb87f87ea596a7e23e795c75b59f6560b6d65a34575c318795c4f697fbd6549"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Wood.fbx",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Wood.fbx",
+      "kind": "mesh",
+      "bytes": 196988,
+      "sha256": "9af5b7047502d096a21bf6850aa78219feb204eaab8b90190388d0ceea582d42"
+    },
+    {
+      "source": "Assets/Resources/Props/Models/Kit_WindowFrame_Wood.json",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Props/Models/Kit_WindowFrame_Wood.json",
+      "kind": "sidecar",
+      "bytes": 2809,
+      "sha256": "6c29cf32694cc69b950c58de5b36a5aeaf539a83a14aa277d364c4a08f879faf"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Cove_Base.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Cove_Base.mat",
+      "kind": "unity-material-source",
+      "bytes": 1895,
+      "sha256": "ac49b196c30ddad58455698507d399484a62286aa3940faeca20bdcd892da770"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Door_Veneer.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Door_Veneer.mat",
+      "kind": "unity-material-source",
+      "bytes": 2070,
+      "sha256": "8a9c7f523f33e11af4c4267861ccf22395c024b2098d6c88924e731a28847c90"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Exit_Carpet.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Exit_Carpet.mat",
+      "kind": "unity-material-source",
+      "bytes": 2062,
+      "sha256": "45ac95b547b5990576cc8389ed31c2888e339b7dd500da4b9cebd891eca1e47e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Exit_Wallpaper.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Exit_Wallpaper.mat",
+      "kind": "unity-material-source",
+      "bytes": 2541,
+      "sha256": "dc2b7307764bf1a8e9c93f531b689b847a392783044486c392133da949b9b69e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Glass_Edge.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Glass_Edge.mat",
+      "kind": "unity-material-source",
+      "bytes": 3840,
+      "sha256": "3aadd097450c17d696b80e6a3853f88fbfa91fef26977319e511f5f8c5e01a75"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Glass_Shard.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Glass_Shard.mat",
+      "kind": "unity-material-source",
+      "bytes": 3845,
+      "sha256": "8a0319ad15cbf6397c457181da0344bfd59b66fc0550fd4a1c5cb765c35f223d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Glass_ShardClear.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Glass_ShardClear.mat",
+      "kind": "unity-material-source",
+      "bytes": 1801,
+      "sha256": "f41edd756f4b9cf7bff7d37672763c87a86c406347f9ed7de9d80a842146a13f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Glass_Window.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Glass_Window.mat",
+      "kind": "unity-material-source",
+      "bytes": 1950,
+      "sha256": "aa92fdaece217bf8e7c51b1e880395ced3300c12af42fb9c7d17994b01830e13"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/L0_Carpet_Shift.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/L0_Carpet_Shift.mat",
+      "kind": "unity-material-source",
+      "bytes": 2065,
+      "sha256": "66539c2a0654da653609317fd9b870f7a8fda6c55d0cc131987cb13a80eecafc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/L0_Carpet.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/L0_Carpet.mat",
+      "kind": "unity-material-source",
+      "bytes": 2052,
+      "sha256": "0f7820c32fc8e018c8b106f0f5fb1bf18787dcbd96820dc0bdb7dc33e8c225b6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/L0_Ceiling_Shift.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/L0_Ceiling_Shift.mat",
+      "kind": "unity-material-source",
+      "bytes": 2072,
+      "sha256": "d74167e51a9ab4509d62ea416c33e039eaf5e2c1e48d066c769e6e7050f27146"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/L0_Ceiling.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/L0_Ceiling.mat",
+      "kind": "unity-material-source",
+      "bytes": 2057,
+      "sha256": "395446f05e9d43850f3efa25d5bbddff4aa15f51d1bacf36791209d445657345"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/L0_Wallpaper_Shift.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/L0_Wallpaper_Shift.mat",
+      "kind": "unity-material-source",
+      "bytes": 2563,
+      "sha256": "9b453cc60359d2a449dfa39eb25a6bcf9a0843d62660b55aaf9760141e3ff939"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/L0_Wallpaper.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/L0_Wallpaper.mat",
+      "kind": "unity-material-source",
+      "bytes": 2549,
+      "sha256": "003e6a291cc585754ff97c0bd3848f7a1570972a3c3d1dc75c3b2a14909082fc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Office_BlackedGlass.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Office_BlackedGlass.mat",
+      "kind": "unity-material-source",
+      "bytes": 1907,
+      "sha256": "9c51a5b1232a141c9b2b3599f9420e022e25420014e36b20cbe2bf859c7ba865"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Office_Carpet.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Office_Carpet.mat",
+      "kind": "unity-material-source",
+      "bytes": 2061,
+      "sha256": "40ad3c351cc002346d6f01d2fbc2f80d6deacf47a9734fbf911cb31db9eca7b7"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Office_Ceiling.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Office_Ceiling.mat",
+      "kind": "unity-material-source",
+      "bytes": 2060,
+      "sha256": "a057a61608e6ae870aa38a3c2394e66971e5c5b29dc8efd2425cb091b3f38743"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Office_Fabric.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Office_Fabric.mat",
+      "kind": "unity-material-source",
+      "bytes": 2065,
+      "sha256": "b39b1d6260fe2e56f1c4e59ec71b2fa56ef66d44b4ab202a85b2d60c4c7e85b2"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Office_Louver.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Office_Louver.mat",
+      "kind": "unity-material-source",
+      "bytes": 2144,
+      "sha256": "1a40e9b9e32cc1a55e82aa54ede7867f7f7ea61e035ec468a83cc96d2866df5b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Office_Wall.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Office_Wall.mat",
+      "kind": "unity-material-source",
+      "bytes": 2060,
+      "sha256": "96a071b804c0de13e5cc7793132bcbbf8107b3e4c2b7b678a8c9111e62f190c3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Painted_Metal.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Painted_Metal.mat",
+      "kind": "unity-material-source",
+      "bytes": 2067,
+      "sha256": "8c903310e7dab58249fee396b536a20f581c1d542fc5337f58436aba5ac2f12a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Aluminium.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Aluminium.mat",
+      "kind": "unity-material-source",
+      "bytes": 2065,
+      "sha256": "76057792a36053b3e1aa0f1b9893bcb35177d62379d5e80a4d769d63a8faffb8"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Backer.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Backer.mat",
+      "kind": "unity-material-source",
+      "bytes": 2072,
+      "sha256": "783f71ce1cc85afdc382a1139ca1899c0b3dd378e6f9fc88261cf08f7c8c76a3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_BottleBlue.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_BottleBlue.mat",
+      "kind": "unity-material-source",
+      "bytes": 4717,
+      "sha256": "4a62288c1fbf197a6a8aa59f43fc4d4c859dc492a44a603b326eacc407ff33c8"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Brass.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Brass.mat",
+      "kind": "unity-material-source",
+      "bytes": 1911,
+      "sha256": "4d01b2ca163163e2ab51a24ac7b9b424c3002f7c0d6d8e7da43410fd92229e6b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_BulbLit.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_BulbLit.mat",
+      "kind": "unity-material-source",
+      "bytes": 1921,
+      "sha256": "6baa6666ae8db2456ea2530dc5ee4c52bb6878084e66290854bc54822d74481b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Cardboard.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Cardboard.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "e9b6c80774b047c751405d822a9bcc49f5fa81bf1672e390663e16dc2309cad1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Ceramic.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Ceramic.mat",
+      "kind": "unity-material-source",
+      "bytes": 1915,
+      "sha256": "4f467f2970e3f6fc885927384eb5c5f4c25c9935fcf3b21ccc3404b966bf2406"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_CeramicGlaze.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_CeramicGlaze.mat",
+      "kind": "unity-material-source",
+      "bytes": 1914,
+      "sha256": "b35abb9b7bad435586b2954480615816b2fc015a944705b355f30cbc28d1ad76"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Chipboard.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Chipboard.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "e79fdff8c62ae5bc6eb728fe5fce191252f89e7fafa6c333e180db1c455fbff0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Chrome.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Chrome.mat",
+      "kind": "unity-material-source",
+      "bytes": 1915,
+      "sha256": "e9af86744d7dfddad1621e17925e2fb53deb7906e9aeb2e44959ee116c7a7a97"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_CopierPanel.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_CopierPanel.mat",
+      "kind": "unity-material-source",
+      "bytes": 2067,
+      "sha256": "8706efa4d1433760467c39f094ae97a06df4750e689de6f68c949becf49912a3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricBeige.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricBeige.mat",
+      "kind": "unity-material-source",
+      "bytes": 2076,
+      "sha256": "999fee62ffb200c5e4ff7fd29d2746f42d328afddbe381cedbe5410e6a0aa667"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricChair.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricChair.mat",
+      "kind": "unity-material-source",
+      "bytes": 2076,
+      "sha256": "e7250295914f731060573868f2666ff5269ceced70a60a47e7e0e7320625d4a3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricCharcoal.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricCharcoal.mat",
+      "kind": "unity-material-source",
+      "bytes": 2079,
+      "sha256": "34611485e778de95600dd9ae53b850215c6cceb5c3e419d84a7ea64b34587bc6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricCubicle.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricCubicle.mat",
+      "kind": "unity-material-source",
+      "bytes": 2078,
+      "sha256": "342ed372b80325c1544ac61acae02eeef9685c851fca7aa2c83fa7c69093fc54"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricFloral.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricFloral.mat",
+      "kind": "unity-material-source",
+      "bytes": 2075,
+      "sha256": "5a0d3b21d83f2807fa4bc77342736d1fe4bbd096a748f407432e4c8ba03cab0d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricNavy.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricNavy.mat",
+      "kind": "unity-material-source",
+      "bytes": 2075,
+      "sha256": "6552613fe4ac90f5620c1fd5562d5ea8ad0969eb86d15ad98637baae2d9e6d7e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FabricTeal.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FabricTeal.mat",
+      "kind": "unity-material-source",
+      "bytes": 2075,
+      "sha256": "4855874d604e39215984360012d53df96856241cbef2ad5898696b9baeafe476"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_FoamPU.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_FoamPU.mat",
+      "kind": "unity-material-source",
+      "bytes": 1909,
+      "sha256": "23ef97f8fa35975d100bd8228260ab448b182fa9cdc232f8f77492057ec5016d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Glass.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Glass.mat",
+      "kind": "unity-material-source",
+      "bytes": 4751,
+      "sha256": "e7c3539d936ea532690023e83e0617a895b9132ba62233fa5e8af6cae1fa6550"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_GlassCRT.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_GlassCRT.mat",
+      "kind": "unity-material-source",
+      "bytes": 1917,
+      "sha256": "5ea334522a6145fe43147201928f3323d7e432817f2f0cdd36e540e68abc0a31"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Hardboard.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Hardboard.mat",
+      "kind": "unity-material-source",
+      "bytes": 2075,
+      "sha256": "f183587146a8d34ee29aa9bdab3b6181b05cfbf1e8fe0e54ced4af2528eaa25a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_KeyboardKeys.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_KeyboardKeys.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "d5bd8368fea70f3e9720b1f6f8192a4561cdfeeeba048f0a4003011477448951"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Label.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Label.mat",
+      "kind": "unity-material-source",
+      "bytes": 2003,
+      "sha256": "52814db9891d01940096a77b119dd949e419c3102f5eff9d3f06f952b38a7456"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LaminateBeige.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LaminateBeige.mat",
+      "kind": "unity-material-source",
+      "bytes": 1919,
+      "sha256": "1ea0d3d526f4991ed7b7d2e4c229e54c33659154639f12782f987d40e76b281c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LampShade.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LampShade.mat",
+      "kind": "unity-material-source",
+      "bytes": 1917,
+      "sha256": "be06246ea1ee4445980a6f854504a089f2047742479c934a0d4d9a094286651a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LampShadeLit.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LampShadeLit.mat",
+      "kind": "unity-material-source",
+      "bytes": 1934,
+      "sha256": "d8ce7a0705adccd2926336cdb1a965b4c13989aecd572911130a138aa574f71e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LCD.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LCD.mat",
+      "kind": "unity-material-source",
+      "bytes": 1904,
+      "sha256": "5924f9f8812b6b0e2245095a64b649ffd8eecd6985aaa971376c1410d1e9001b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LEDAmber.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LEDAmber.mat",
+      "kind": "unity-material-source",
+      "bytes": 1926,
+      "sha256": "4539907a77806f6d6041ff2f42e5684b723b8927225578d953fa9887f50ff60b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LEDGreen.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LEDGreen.mat",
+      "kind": "unity-material-source",
+      "bytes": 1927,
+      "sha256": "9de0d471c5053715da32a8ca46ba9da1d6ade4671109d6d4498004e3d1746267"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_LEDRed.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_LEDRed.mat",
+      "kind": "unity-material-source",
+      "bytes": 1926,
+      "sha256": "d680e327ef7925b882ec2f408d02df0a3bdeee8b899e39775d3cd49369c0b3c4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Paper.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Paper.mat",
+      "kind": "unity-material-source",
+      "bytes": 1912,
+      "sha256": "610948579fe2ad521f0b560b6827abbc823c15f62bea00ea26eb99709176fff9"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PhoneKeys.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PhoneKeys.mat",
+      "kind": "unity-material-source",
+      "bytes": 2065,
+      "sha256": "038e2037d6df9f6596cd41442dbd1fa213551865edd7a2db38d805c1017bb83e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PinePallet.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PinePallet.mat",
+      "kind": "unity-material-source",
+      "bytes": 2072,
+      "sha256": "54e847a90b73a805de7c2a249aca1e9f6a251d2c609805733d7d284a77f2065a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticBeige.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticBeige.mat",
+      "kind": "unity-material-source",
+      "bytes": 2069,
+      "sha256": "e4673a475620f4c169823f600d6a108e7cc384a712c4e7a6f2c91cef4a16ea0b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticBlack.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "71f801df608bb786d0df242a3e0469f0aae94813df34168cebed80a534b71d96"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticBlue.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticBlue.mat",
+      "kind": "unity-material-source",
+      "bytes": 1913,
+      "sha256": "5e61e59e3d288f783fe10209f995ef12a80398d6987abfc4727f1f4f8d9ad3db"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticGrey.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticGrey.mat",
+      "kind": "unity-material-source",
+      "bytes": 2070,
+      "sha256": "eca8b45b71e821e4ae5299532de171ed0606a76d8cdd38aa44aded09293b8cdf"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticPutty.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticPutty.mat",
+      "kind": "unity-material-source",
+      "bytes": 2079,
+      "sha256": "c9852b83585eabd40d940724cd14b8e8f833ee1d0693762c26719e5e2496ebfa"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticRed.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticRed.mat",
+      "kind": "unity-material-source",
+      "bytes": 1912,
+      "sha256": "fc64b203cb5720a11899695677006d1492ba99df5d036647ecf327745f673902"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PlasticWhite.mat",
+      "kind": "unity-material-source",
+      "bytes": 2069,
+      "sha256": "9b063ca50efe65992c8ee06c65c4b28e7c9fc5852d748973d8dbac02b89995b4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Plywood.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Plywood.mat",
+      "kind": "unity-material-source",
+      "bytes": 2070,
+      "sha256": "d58c7f8a7432f6846114972f09ce3e073da991f99d7d4a08a7803a6d518d8ee6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_PVCEdge.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_PVCEdge.mat",
+      "kind": "unity-material-source",
+      "bytes": 1909,
+      "sha256": "e787cbe95325d68be4e8b66752d3c14cfffd9b4a58e2ad59c10fa0e8d7a9290c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Rubber.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Rubber.mat",
+      "kind": "unity-material-source",
+      "bytes": 1912,
+      "sha256": "0e0926578890ff3fc7a806f6b6b117b5725bfb186e147f56bc5996dd01da5c66"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_ScreenCRT_On.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_ScreenCRT_On.mat",
+      "kind": "unity-material-source",
+      "bytes": 2086,
+      "sha256": "3542bd7cecf8045c8324dd4e39bde0079520cccdca039e45c4ffc2c935c36ce6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_ScreenCRT.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_ScreenCRT.mat",
+      "kind": "unity-material-source",
+      "bytes": 2007,
+      "sha256": "ba9ed1919fd3c9853596f1b06d4a85cd704151a70e852fd5fc4394c50fd9f240"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_SteelAlmond.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_SteelAlmond.mat",
+      "kind": "unity-material-source",
+      "bytes": 2077,
+      "sha256": "6e5c622604395f043ca96b309dbfffe1105bd59a48579de2a98dfb68926ff428"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_SteelBlack.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_SteelBlack.mat",
+      "kind": "unity-material-source",
+      "bytes": 2069,
+      "sha256": "218416453971054b82fbaf61b4ae2d8c5103bd89968d8ca77b62925f72f6dcde"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_SteelBrown.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_SteelBrown.mat",
+      "kind": "unity-material-source",
+      "bytes": 2069,
+      "sha256": "a44c59b5643581d80bb1635658200abedd88cc9c18d40ef5d9629de5c1019f62"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_SteelPutty.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_SteelPutty.mat",
+      "kind": "unity-material-source",
+      "bytes": 2067,
+      "sha256": "79309ca224f4383b83d8244fb845ff6acaab83614c3ea3e8e7798422b10d86cf"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_StencilBlack.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_StencilBlack.mat",
+      "kind": "unity-material-source",
+      "bytes": 3949,
+      "sha256": "e76032b7e65c1731d9043845b59c22dc988d22547a6dba32a56f9991e19555db"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Studs.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Studs.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "0d0af3c43e689d8cebb6aca631897bdae0d8bc2998d91359900b9f54ddece04a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_TapeBlue.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_TapeBlue.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "c2dc522f6a6cca950875261cf8d3e93ff9fc43ea3aff896fadb23f40d0c83f5a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_VelvetPink.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_VelvetPink.mat",
+      "kind": "unity-material-source",
+      "bytes": 2075,
+      "sha256": "6b03b5dc443a8baea57a61f5e5cb8d049dde03e2fa1153b0f657cc1f80f015e1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_VendingFront.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_VendingFront.mat",
+      "kind": "unity-material-source",
+      "bytes": 2086,
+      "sha256": "51accb8559c3e2e793fc997f4ba8f925c57cbba6ee437c430df347f680b2c4ea"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_VendingHeader.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_VendingHeader.mat",
+      "kind": "unity-material-source",
+      "bytes": 2086,
+      "sha256": "93f936857476e0b17f2666c88c20cad2688d7f4fad302fbccb939aef1698f9c1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_Vinyl.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_Vinyl.mat",
+      "kind": "unity-material-source",
+      "bytes": 2064,
+      "sha256": "9e875b54a9cd281b7bca93377d0152a02b260eadcb717bb878471426132abdbe"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodCherry.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodCherry.mat",
+      "kind": "unity-material-source",
+      "bytes": 2069,
+      "sha256": "5733e0bb2a43d94e1dd8cee4f5d7ccb4963779d951c5055f376da78912d6995f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodDark.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodDark.mat",
+      "kind": "unity-material-source",
+      "bytes": 2067,
+      "sha256": "dc60347860c06819d707590b96c376cdc6bfca34732e3bb1f225a4688a0149c0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodEbony.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodEbony.mat",
+      "kind": "unity-material-source",
+      "bytes": 2068,
+      "sha256": "7efeae35ef51af9b6d83deb3ac4cf32b6d23284c6cc3a8c946318aa0ceefba31"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodLaminate.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodLaminate.mat",
+      "kind": "unity-material-source",
+      "bytes": 2071,
+      "sha256": "69754cb5f300eae0874b9cf5bfa92a6b8f0d9cfcffbedd39e40ceed376d41a09"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodOak.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodOak.mat",
+      "kind": "unity-material-source",
+      "bytes": 2066,
+      "sha256": "a7ba32df169ebee10a072cfda491e2b53d0c94acc2bb3a6394e74b796f30233b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodTeak.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodTeak.mat",
+      "kind": "unity-material-source",
+      "bytes": 2067,
+      "sha256": "d609c697fafd73460d01043b5e33f4ea884f9f02decbdc809df5a8c23f48de16"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Prop_WoodWalnut.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Prop_WoodWalnut.mat",
+      "kind": "unity-material-source",
+      "bytes": 2073,
+      "sha256": "3757ac0f08ab5512e91299dc1bd5f3df75cee5b9ba9e80ea1774559bcbf86779"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Run_Ceiling.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Run_Ceiling.mat",
+      "kind": "unity-material-source",
+      "bytes": 2065,
+      "sha256": "ba282b2f132267e4d778cd987e5321431f41e07d08e2e00346273a5d2844efa0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Run_ExitSign.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Run_ExitSign.mat",
+      "kind": "unity-material-source",
+      "bytes": 2032,
+      "sha256": "4bec0b860c07f7c75bd1a8d9828bcc05b40ec56c9688f3c11d7d8a705fe8aebe"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Run_Floor.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Run_Floor.mat",
+      "kind": "unity-material-source",
+      "bytes": 2053,
+      "sha256": "c1a2615ffe7bdea71304afc8bbdab7eb013acae785595af06e23b9dab0f8fc5d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Run_Wall.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Run_Wall.mat",
+      "kind": "unity-material-source",
+      "bytes": 2061,
+      "sha256": "d204260ae446a3d86c43b6556e573755542135375dd36eeee51c47e595466c08"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Carpet_LoopPile_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Carpet_LoopPile_A.png",
+      "kind": "texture",
+      "bytes": 5856610,
+      "sha256": "fb2d199f63b4ff46d0bb6fe217954b413c6257cc6ede9e5e8648696cfc70caa6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Carpet_LoopPile_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Carpet_LoopPile_N.png",
+      "kind": "texture",
+      "bytes": 7213205,
+      "sha256": "446c3992d0203dd990e69e1a8fc6b42abc6377c468a45cb65f429bd1caeface7"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Carpet_LoopPile_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Carpet_LoopPile_S.png",
+      "kind": "texture",
+      "bytes": 4322528,
+      "sha256": "fbc5037787265f3f9194472b5b13c3338c035a00f057171b571524a89faae442"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Ceiling_Fissured_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Ceiling_Fissured_A.png",
+      "kind": "texture",
+      "bytes": 4020050,
+      "sha256": "2caafd9285b2a20972cbd9d103821afb3f266a85de28902822ce00feaa3718db"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Ceiling_Fissured_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Ceiling_Fissured_N.png",
+      "kind": "texture",
+      "bytes": 3810263,
+      "sha256": "6fb746f18b08cff9be2460c30243ceb71c23ff32c0efdb18387f0c1017c9ed14"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Ceiling_Fissured_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Ceiling_Fissured_S.png",
+      "kind": "texture",
+      "bytes": 1840237,
+      "sha256": "1e4c7d8d22478584bdac253f4b1ac24ccd5e2bb84706531719480d7762e1010f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/DoorVeneer_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/DoorVeneer_A.png",
+      "kind": "texture",
+      "bytes": 2015661,
+      "sha256": "2838d856693337970cd8d5f45141531863b4bfb77db5a107246df6dec5907deb"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/DoorVeneer_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/DoorVeneer_N.png",
+      "kind": "texture",
+      "bytes": 2519040,
+      "sha256": "4b7c7b3a5bd988fe8695dbb86cd9d21ec7f2e0ef738b8db261ff0cf46ec9b5f4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/DoorVeneer_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/DoorVeneer_S.png",
+      "kind": "texture",
+      "bytes": 131401,
+      "sha256": "49b03006048a62b14c73aa38e9d5efdf781bf2829a7f5593e665bc8ac3a13da5"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/GlassGrime_M.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/GlassGrime_M.png",
+      "kind": "texture",
+      "bytes": 3116990,
+      "sha256": "5b2b76ee82b64837da9c32cd84ca85a8329875d77c399df0a0700e275809cf90"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/GlassSmear_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/GlassSmear_N.png",
+      "kind": "texture",
+      "bytes": 496860,
+      "sha256": "6d3db3ea6bdcad92b586559792b235a9316d9238ba1aa42dfd7e111f087b6968"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/MacroWear_M.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/MacroWear_M.png",
+      "kind": "texture",
+      "bytes": 1546635,
+      "sha256": "27ab8c69dda8d1269ca421b123e690b58ad62aee5d4017750f2a1f7954a1a14c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_CarpetTile_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_CarpetTile_A.png",
+      "kind": "texture",
+      "bytes": 4482584,
+      "sha256": "18ab8a8f14b528a971f269e9d5d5c1cc7dfef55955244eae577f864bbd0c3f9f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_CarpetTile_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_CarpetTile_N.png",
+      "kind": "texture",
+      "bytes": 6732503,
+      "sha256": "4b9117119c39d1c5c68592a19b22c9a063526efe4194a75ecc9891897e404a1d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_CarpetTile_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_CarpetTile_S.png",
+      "kind": "texture",
+      "bytes": 4953633,
+      "sha256": "83720d26350a4e15773fefa23e41efff8d2c44c34eb3a2f09fc186db6681b96c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Ceiling2x2_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Ceiling2x2_A.png",
+      "kind": "texture",
+      "bytes": 3688763,
+      "sha256": "d5a8e61ea83e05d2168f43ed393e5cc543442225a157ca640773a6749a43a01a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Ceiling2x2_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Ceiling2x2_N.png",
+      "kind": "texture",
+      "bytes": 3665394,
+      "sha256": "acd5f8f8ca2205e2d96cc3ab9c1147ea3087e1c60c0e5c8ea40427623c3713f2"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Ceiling2x2_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Ceiling2x2_S.png",
+      "kind": "texture",
+      "bytes": 1687170,
+      "sha256": "d848e34cc79167fa9f0c821e9839b9e6e729ed24e7a94424fa5de93b8b7e613f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_CubicleFabric_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_CubicleFabric_A.png",
+      "kind": "texture",
+      "bytes": 881305,
+      "sha256": "88d01a4025c85ad8de9e4ae0cd143209f456abc6953340498a60423ddb94445b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_CubicleFabric_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_CubicleFabric_N.png",
+      "kind": "texture",
+      "bytes": 970200,
+      "sha256": "f20d9aa48cfae490318e718733c5294bd5617142df21d12d395c2278711ba2bf"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_CubicleFabric_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_CubicleFabric_S.png",
+      "kind": "texture",
+      "bytes": 564494,
+      "sha256": "4d7bcff4eb22995ffe8bde7a36ed49e9ba2b6913d8e80f5830998b7781a5c8a1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Drywall_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Drywall_A.png",
+      "kind": "texture",
+      "bytes": 568737,
+      "sha256": "d11d1179d8715964e7ebefaf46359006fe287631dfbeeccecc0171a267abed7f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Drywall_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Drywall_N.png",
+      "kind": "texture",
+      "bytes": 1087890,
+      "sha256": "bb5410cb0a927af675de28bd059967a34754b54f2db28babf962ea14487cd013"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Drywall_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Drywall_S.png",
+      "kind": "texture",
+      "bytes": 368227,
+      "sha256": "bf6907941683c526d0cdf82d5385cb29cd4609e30472516b8a35c6165a57d780"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Louver_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Louver_A.png",
+      "kind": "texture",
+      "bytes": 11850,
+      "sha256": "deb93801199f77c80d744fc994130916e41b195ebdbe4acdfc431f2ed2415a7e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Louver_E.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Louver_E.png",
+      "kind": "texture",
+      "bytes": 16625,
+      "sha256": "a8b1a9b640c4c14eb13a10af5feeedc5e7b11800d5e8b4a39e2c48095d6446a5"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Louver_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Louver_N.png",
+      "kind": "texture",
+      "bytes": 13737,
+      "sha256": "eda6a05342f55c3ac3fad8b6c9eef7e1e1c8d2eaeb6fe3da9d4916520e27b33a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Office_Louver_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Office_Louver_S.png",
+      "kind": "texture",
+      "bytes": 13195,
+      "sha256": "0c82e70716712533a2c855059d616a49517f810800c7a94d320fc32da0490929"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Metal_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Metal_A.png",
+      "kind": "texture",
+      "bytes": 259627,
+      "sha256": "f91d1bb73e3e68cde840acafa5e7091478b2a2f07e7064ffe0e14940cafc2110"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Metal_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Metal_N.png",
+      "kind": "texture",
+      "bytes": 10076,
+      "sha256": "9961a94b576649a3e0aa30f496d1a1891b8490974f09461cfc2b1c2d804ce5ed"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Metal_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Metal_S.png",
+      "kind": "texture",
+      "bytes": 253098,
+      "sha256": "7ac90c748471f3e2eae0e3abf53ed1d919276f87e73776287f6353d68a81ca58"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Vinyl_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Vinyl_A.png",
+      "kind": "texture",
+      "bytes": 214751,
+      "sha256": "fda8932da16d7e7ac1cc592e6f6c6ca9de617a9e335798fa69ab63ba01022446"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Vinyl_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Vinyl_N.png",
+      "kind": "texture",
+      "bytes": 42077,
+      "sha256": "279117ef169b584f87d91ce87078f6e4383bed049148a63fd7b58d41b62a0dd0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Vinyl_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Vinyl_S.png",
+      "kind": "texture",
+      "bytes": 51488,
+      "sha256": "1c12b876789edac353ac7bdcd1dc2194897610c6a37af51f70ff0737f35829cb"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Wood_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Wood_A.png",
+      "kind": "texture",
+      "bytes": 202722,
+      "sha256": "7f37d0eed4beaf4ac87c57309c1325ed73002a7c602bef60f8df7e5bbebc11d0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Wood_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Wood_N.png",
+      "kind": "texture",
+      "bytes": 8704,
+      "sha256": "4ecf269ec23626c6682f5ff68086e6a3673d69f43d4d3c75be3e7f11021e5062"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/OfficeFurniture_Wood_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/OfficeFurniture_Wood_S.png",
+      "kind": "texture",
+      "bytes": 205394,
+      "sha256": "3b10390f2522eda23bb953af119f6d03ddddaf34b9c1aa33179a9f5c265f9162"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/PaintedMetal_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/PaintedMetal_A.png",
+      "kind": "texture",
+      "bytes": 325698,
+      "sha256": "a36ac3e0474246e4107efc3ef1517f0f343d0ad74b7d1cf70632c3c67aa535b9"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/PaintedMetal_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/PaintedMetal_N.png",
+      "kind": "texture",
+      "bytes": 1390029,
+      "sha256": "12c8d65eef3e2694ab0cbeacaf15a2de2cbf6c91f7f7f7e97e0619b5cf72bff7"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/PaintedMetal_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/PaintedMetal_S.png",
+      "kind": "texture",
+      "bytes": 517585,
+      "sha256": "49a438be451a70e43837c007f6aac744baf22448c7b41b2d4961bf9f02274650"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Aluminium_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Aluminium_A.png",
+      "kind": "texture",
+      "bytes": 668359,
+      "sha256": "449531a791a5cac7b4fb93b46a9d567fca82981ddd620f5359ac4c424e1c2f1c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Aluminium_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Aluminium_N.png",
+      "kind": "texture",
+      "bytes": 720916,
+      "sha256": "7aa1296802fd57fe38176d644edf30f361ac2a9c39a1f8ca71dc9a1806b2d3a9"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Aluminium_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Aluminium_S.png",
+      "kind": "texture",
+      "bytes": 628344,
+      "sha256": "99a76095c36f32b2ea7d39db2c56be924aecdd0c58415723ae7b40c2ce84fc2e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Cardboard_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Cardboard_A.png",
+      "kind": "texture",
+      "bytes": 499697,
+      "sha256": "64ba3692a2dc5fc9040a95033302af04de469117b28f7f4d2bb9376143ae04e7"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Cardboard_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Cardboard_N.png",
+      "kind": "texture",
+      "bytes": 1101430,
+      "sha256": "3ee44252d64bad0142cf06a48a5bc61dd2142fc91e61a5aef78bab76e97c4da3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Cardboard_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Cardboard_S.png",
+      "kind": "texture",
+      "bytes": 377365,
+      "sha256": "eb2a7c282b9b8d3c44993b0c165a81607038cad4755472f165353ee4360964df"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Chipboard_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Chipboard_A.png",
+      "kind": "texture",
+      "bytes": 1862162,
+      "sha256": "39615d4964afa9356f2624ba0ecec15220c66bf34bc33b2ce90bf8f79b95ff92"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Chipboard_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Chipboard_N.png",
+      "kind": "texture",
+      "bytes": 2161263,
+      "sha256": "6531968cf8bc35c956b350d95167de7e55fd5e3b44f7714200d5d2e3163467b3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Chipboard_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Chipboard_S.png",
+      "kind": "texture",
+      "bytes": 396842,
+      "sha256": "f94e427c771b0e6070df23aa018d898444271cfd6df1e2866f4b215fc7ea6f37"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_CopierPanel_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_CopierPanel_A.png",
+      "kind": "texture",
+      "bytes": 67712,
+      "sha256": "cc577966888923f46b2249ccc440e8c113ecfa323c1970a3c0042e130867c3ab"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_CopierPanel_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_CopierPanel_N.png",
+      "kind": "texture",
+      "bytes": 52988,
+      "sha256": "3a156a89cf11affc97dd6288e1d8b41c4d06f8ad296e49c2403ab682d7caf658"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_CopierPanel_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_CopierPanel_S.png",
+      "kind": "texture",
+      "bytes": 32531,
+      "sha256": "b0447ce7ec8ada5eb99c47e5b3418f2de24c6dbc80f22882f93081659bd752b4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricBeige_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricBeige_A.png",
+      "kind": "texture",
+      "bytes": 2279709,
+      "sha256": "57815688217f4668696aa34aa5477b4ce5d966097ce1d0c4bc60ffcf22323e67"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricBeige_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricBeige_N.png",
+      "kind": "texture",
+      "bytes": 1944133,
+      "sha256": "40f3538d3e1d615a220b28447aeadbc69cdde84c65d2ff0768a52c50b29cc8bc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricBeige_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricBeige_S.png",
+      "kind": "texture",
+      "bytes": 1685417,
+      "sha256": "94571670dba6dfc5bca96bfb5cf9d47b6f5d7c4140121beaa44a27dab678260f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricChair_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricChair_A.png",
+      "kind": "texture",
+      "bytes": 1185937,
+      "sha256": "21022c237c244ebefa6eb20892a97fcc02ec813e0cd612976f209f127148df62"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricChair_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricChair_N.png",
+      "kind": "texture",
+      "bytes": 1954699,
+      "sha256": "da407e1e1e5bee287542f768d5009d5ac6deca02f01ec1cea393ff2d9fd944bc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricChair_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricChair_S.png",
+      "kind": "texture",
+      "bytes": 1765855,
+      "sha256": "dec5b26f3661ece80d5e08cf9a46b261750e5ff33e643685c3ec37ba7e78a861"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricCharcoal_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricCharcoal_A.png",
+      "kind": "texture",
+      "bytes": 1481269,
+      "sha256": "12a6be8ddbf4ff83de186363036a4f55e583f4a2ea82f9be435351d4fc8f868b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricCharcoal_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricCharcoal_N.png",
+      "kind": "texture",
+      "bytes": 1954699,
+      "sha256": "da407e1e1e5bee287542f768d5009d5ac6deca02f01ec1cea393ff2d9fd944bc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricCharcoal_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricCharcoal_S.png",
+      "kind": "texture",
+      "bytes": 1765855,
+      "sha256": "dec5b26f3661ece80d5e08cf9a46b261750e5ff33e643685c3ec37ba7e78a861"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricCubicle_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricCubicle_A.png",
+      "kind": "texture",
+      "bytes": 2030897,
+      "sha256": "4894bd2f37e5a088c43af732ef0c32748f5292b327ef9a53c4b0c59db89a70af"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricCubicle_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricCubicle_N.png",
+      "kind": "texture",
+      "bytes": 1944133,
+      "sha256": "40f3538d3e1d615a220b28447aeadbc69cdde84c65d2ff0768a52c50b29cc8bc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricCubicle_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricCubicle_S.png",
+      "kind": "texture",
+      "bytes": 1685417,
+      "sha256": "94571670dba6dfc5bca96bfb5cf9d47b6f5d7c4140121beaa44a27dab678260f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricFloral_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricFloral_A.png",
+      "kind": "texture",
+      "bytes": 11252207,
+      "sha256": "aa5e8246d53ff9eea95f20c8c8c6410a848dcb4f7772fa7b10a63c94a91e68e1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricFloral_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricFloral_N.png",
+      "kind": "texture",
+      "bytes": 7671002,
+      "sha256": "ac664cbc03a8cdd5cb9fe104d5881b5e3af0615e719a4acfdb952af08abb53b3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricFloral_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricFloral_S.png",
+      "kind": "texture",
+      "bytes": 6012825,
+      "sha256": "7de04734ab7a4561bb0d2d1f78861bbe199392de603fc5e90621091583722456"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricNavy_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricNavy_A.png",
+      "kind": "texture",
+      "bytes": 1394150,
+      "sha256": "92a70191707cd7058bc73d40bc6cd1a175374c06c110cb67112f6a782c2ebaff"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricNavy_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricNavy_N.png",
+      "kind": "texture",
+      "bytes": 1954699,
+      "sha256": "da407e1e1e5bee287542f768d5009d5ac6deca02f01ec1cea393ff2d9fd944bc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricNavy_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricNavy_S.png",
+      "kind": "texture",
+      "bytes": 1765855,
+      "sha256": "dec5b26f3661ece80d5e08cf9a46b261750e5ff33e643685c3ec37ba7e78a861"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricTeal_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricTeal_A.png",
+      "kind": "texture",
+      "bytes": 1690614,
+      "sha256": "2f518644f3931f337e3f4dc5d1f3208096cb14f60e207279ead876fb2498b422"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricTeal_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricTeal_N.png",
+      "kind": "texture",
+      "bytes": 1954699,
+      "sha256": "da407e1e1e5bee287542f768d5009d5ac6deca02f01ec1cea393ff2d9fd944bc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_FabricTeal_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_FabricTeal_S.png",
+      "kind": "texture",
+      "bytes": 1832269,
+      "sha256": "1130e07f99655a326356c01c6a97a0ca87ebdc76045136fcfd6a3729adaaf5a4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_KeyboardKeys_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_KeyboardKeys_A.png",
+      "kind": "texture",
+      "bytes": 506223,
+      "sha256": "525dae4e1eb34c5eb4bd40ebd315a0bcd4532a111ab0976045a7c5e4c233c10e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_KeyboardKeys_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_KeyboardKeys_N.png",
+      "kind": "texture",
+      "bytes": 51097,
+      "sha256": "a4d8ce77a36aab154522ee488f93ff2c820493c90cdc943371affc310f842801"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_KeyboardKeys_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_KeyboardKeys_S.png",
+      "kind": "texture",
+      "bytes": 23603,
+      "sha256": "4254e734b9029d5a2c09c214f25e5663a5c49d89f76c3a61c600fa23877f16d0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Label_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Label_A.png",
+      "kind": "texture",
+      "bytes": 290348,
+      "sha256": "4709743cf9aa2eb7d5e3d87aa8955eb9127218c9e8db1590ce68c2f376330942"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Label_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Label_S.png",
+      "kind": "texture",
+      "bytes": 5692,
+      "sha256": "23f4454e2bc1fb7361ddd0968b309d0751502b49b094d6fcbb96e3c383d200a9"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PhoneKeys_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PhoneKeys_A.png",
+      "kind": "texture",
+      "bytes": 23591,
+      "sha256": "34b135d53be72380e3dc972673c857a38c06aaf2795273c5f87d3405763ca58e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PhoneKeys_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PhoneKeys_N.png",
+      "kind": "texture",
+      "bytes": 61362,
+      "sha256": "dbf9d81e7df06e8f2a8080880d2f37588ead75b0ad3b69fe3a60de51a82cf494"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PhoneKeys_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PhoneKeys_S.png",
+      "kind": "texture",
+      "bytes": 15914,
+      "sha256": "c454bac59f2c13b616f0fd57ba6ebecba584f12d68f9c38e2b3c7918566a0e9a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PinePallet_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PinePallet_A.png",
+      "kind": "texture",
+      "bytes": 1132492,
+      "sha256": "e29b3f016fbee049b43263d306723433087aac30ae5aaabefa59cba97c1ac1e0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PinePallet_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PinePallet_N.png",
+      "kind": "texture",
+      "bytes": 1684249,
+      "sha256": "0e85d5d520d0aea437f464fab0fae2fbe92af2597b4d559391c4ed0fc9ba5af4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PinePallet_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PinePallet_S.png",
+      "kind": "texture",
+      "bytes": 638037,
+      "sha256": "d8156683f5ba189a2ec7f590fd818584ccb21d23d89afcf4669ce02970e39936"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticBeige_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticBeige_A.png",
+      "kind": "texture",
+      "bytes": 20343,
+      "sha256": "88d613e172393198a6b66431fa4f693bdd6017956083a7418593c5bc2f47a59f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticBeige_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticBeige_N.png",
+      "kind": "texture",
+      "bytes": 1959002,
+      "sha256": "fc0cc24e277dfd456be316e33754a81759c1db52dd2f79372cb860e32e15fd14"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticBeige_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticBeige_S.png",
+      "kind": "texture",
+      "bytes": 646309,
+      "sha256": "f898786e9884e9b1372ed1f1695b33047b744dc60a837160c82392bc3902a208"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticBlack_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticBlack_A.png",
+      "kind": "texture",
+      "bytes": 704950,
+      "sha256": "9670b227367f8441f368807adfb673ec584eab34da16d65a5506df412b11a690"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticBlack_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticBlack_N.png",
+      "kind": "texture",
+      "bytes": 1928767,
+      "sha256": "58bbe5b415702cf6593987e59fe13b901b258bfc9a4c09c3e0bb5925aa29396c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticBlack_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticBlack_S.png",
+      "kind": "texture",
+      "bytes": 660891,
+      "sha256": "99492ae3fa68039cc7222dc48f6356d6b5f57275fce31d581797cc752e9d56a9"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticGrey_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticGrey_A.png",
+      "kind": "texture",
+      "bytes": 775067,
+      "sha256": "5aa9974a4dc966f4233305ffc62502f33fe4cb3426ca6ec8828d7021a5e42bca"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticGrey_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticGrey_N.png",
+      "kind": "texture",
+      "bytes": 1984480,
+      "sha256": "633433303e2694453478964e9dbbbfff237d33f859d17f55d4322778095cb3b0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticGrey_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticGrey_S.png",
+      "kind": "texture",
+      "bytes": 484515,
+      "sha256": "8f5184f14b93ca0583c59634e1bcb9391f0c1a702a2af3c1e5708c923ca3a5bf"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticWhite_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticWhite_A.png",
+      "kind": "texture",
+      "bytes": 37144,
+      "sha256": "20e1a5fd66824b5a9d2ae7a56859168d444cac70f970a8ce00bf5553dd45843e"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticWhite_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticWhite_N.png",
+      "kind": "texture",
+      "bytes": 1959002,
+      "sha256": "fc0cc24e277dfd456be316e33754a81759c1db52dd2f79372cb860e32e15fd14"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_PlasticWhite_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_PlasticWhite_S.png",
+      "kind": "texture",
+      "bytes": 646309,
+      "sha256": "f898786e9884e9b1372ed1f1695b33047b744dc60a837160c82392bc3902a208"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Plywood_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Plywood_A.png",
+      "kind": "texture",
+      "bytes": 9899598,
+      "sha256": "e53e513fd8ee800834109e789972ce673b38177cdd7091cce131b0930274eee6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Plywood_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Plywood_N.png",
+      "kind": "texture",
+      "bytes": 5626442,
+      "sha256": "3dfb8076a5de387f797e654fbfd7d55e080f9eda3661e5f68a6b885e1d799a68"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Plywood_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Plywood_S.png",
+      "kind": "texture",
+      "bytes": 5691239,
+      "sha256": "e32d2c33e8832ef32cbd8b4c576a9395a9ccee4fc0640703606f44120b1d3463"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_ScreenCRT_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_ScreenCRT_A.png",
+      "kind": "texture",
+      "bytes": 151033,
+      "sha256": "0db52865f3c9863ed0d17c47172023cea61ae7d09dabf0e4b4271a24c9e4cdbe"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_ScreenCRT_E.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_ScreenCRT_E.png",
+      "kind": "texture",
+      "bytes": 136404,
+      "sha256": "72d6eb1f8d6c528603fb397675d0f1e2c7e98921a4e702ede614d01525845aba"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_ScreenCRT_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_ScreenCRT_S.png",
+      "kind": "texture",
+      "bytes": 37594,
+      "sha256": "095c3928a5d91cdb563c9316f724ae120bb13a3ee10d530340f82683982f54f8"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelBlack_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelBlack_A.png",
+      "kind": "texture",
+      "bytes": 1273126,
+      "sha256": "7b7877e9edc2ac4690a60b833b069fb45357166b8cb054ae898fd9a4c737f794"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelBlack_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelBlack_N.png",
+      "kind": "texture",
+      "bytes": 1762516,
+      "sha256": "de13d84c54425fd83e0b40d17cdffbf872842eb90c6cb4306ae3012f967ffa3a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelBlack_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelBlack_S.png",
+      "kind": "texture",
+      "bytes": 847417,
+      "sha256": "f23e41a55504e7eb3e9ffa5e163888a5b9192066e2f0fbf6f083d6d224dc55e2"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelBrown_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelBrown_A.png",
+      "kind": "texture",
+      "bytes": 1488808,
+      "sha256": "9c1c2e0c8485627f0f8e28750018645475d881e3d1d04fa1f603d846f3b8d263"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelBrown_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelBrown_N.png",
+      "kind": "texture",
+      "bytes": 1762516,
+      "sha256": "de13d84c54425fd83e0b40d17cdffbf872842eb90c6cb4306ae3012f967ffa3a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelBrown_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelBrown_S.png",
+      "kind": "texture",
+      "bytes": 847417,
+      "sha256": "f23e41a55504e7eb3e9ffa5e163888a5b9192066e2f0fbf6f083d6d224dc55e2"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelPutty_A.png",
+      "kind": "texture",
+      "bytes": 2126528,
+      "sha256": "4469d252d0485675e516e60b9f13bb3614805fe2d7f60bcfda1e8c68a7930447"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelPutty_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelPutty_N.png",
+      "kind": "texture",
+      "bytes": 1762516,
+      "sha256": "de13d84c54425fd83e0b40d17cdffbf872842eb90c6cb4306ae3012f967ffa3a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_SteelPutty_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_SteelPutty_S.png",
+      "kind": "texture",
+      "bytes": 847417,
+      "sha256": "f23e41a55504e7eb3e9ffa5e163888a5b9192066e2f0fbf6f083d6d224dc55e2"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_StencilBlack_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_StencilBlack_A.png",
+      "kind": "texture",
+      "bytes": 45015,
+      "sha256": "f88301bed6188c5633f83fef846a6e085e076944eba09c78a71b4a50140ad26f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Studs_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Studs_A.png",
+      "kind": "texture",
+      "bytes": 1222494,
+      "sha256": "dfa4598a34e7560a459738a562229ab5adefac93e5eb70cfa7d25c24025de80b"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Studs_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Studs_N.png",
+      "kind": "texture",
+      "bytes": 1159557,
+      "sha256": "4bb225a83d08c9ab8417f0155fb4e598762ab7277be540bf7f569026ba078539"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Studs_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Studs_S.png",
+      "kind": "texture",
+      "bytes": 678162,
+      "sha256": "a70141fca1fa825c74ddcb69101bf03efda873f702e1534e0eb9e227ab02d04c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_TapeBlue_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_TapeBlue_A.png",
+      "kind": "texture",
+      "bytes": 201298,
+      "sha256": "939f501255324d25f965a86508774eaa273c5f958c190af0cfee7bee412a21f4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_TapeBlue_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_TapeBlue_N.png",
+      "kind": "texture",
+      "bytes": 217766,
+      "sha256": "80e7ae7d637823243a839206e4f2ac6f229c2f8f6ed66d9009507fef909801b1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_TapeBlue_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_TapeBlue_S.png",
+      "kind": "texture",
+      "bytes": 160982,
+      "sha256": "0858f52145037d7e95389850e7daf9647754939719561c15a0afb77c63fd75ed"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VelvetPink_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VelvetPink_A.png",
+      "kind": "texture",
+      "bytes": 1698920,
+      "sha256": "01481a3fab3a14b733a6d57ee8ac251aaef9e92fa04de90dfd05c854edc8a298"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VelvetPink_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VelvetPink_N.png",
+      "kind": "texture",
+      "bytes": 1455425,
+      "sha256": "8774f481f51e3ff9f3b5f5732dc0c90fc46c361a3ce07c5cf242683a8734977a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VelvetPink_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VelvetPink_S.png",
+      "kind": "texture",
+      "bytes": 1590893,
+      "sha256": "4f9ae212e015b12e7729080309fc5d1caa5f1e870fb305e59e95d18e838fd5e8"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VendingFront_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VendingFront_A.png",
+      "kind": "texture",
+      "bytes": 757274,
+      "sha256": "2e1fb4515903f0554e431ea7782c32987eae4f47d2beb7b223bcdad18603fdb0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VendingFront_E.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VendingFront_E.png",
+      "kind": "texture",
+      "bytes": 564332,
+      "sha256": "0a893b1b4691e1300b52008af9d0c53f8f00457f6d7f5cba21ae39f5aece1195"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VendingFront_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VendingFront_S.png",
+      "kind": "texture",
+      "bytes": 483715,
+      "sha256": "f7d869343a7a4e5aa352346dc20f55ab5b74aa0dceec75688ff25731955d5f7c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VendingHeader_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VendingHeader_A.png",
+      "kind": "texture",
+      "bytes": 8734,
+      "sha256": "a1415491e1a692da2dc9371cd63915ba8ef0813e927805678c60b6196338a694"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VendingHeader_E.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VendingHeader_E.png",
+      "kind": "texture",
+      "bytes": 7372,
+      "sha256": "f16bf2c2702f84d3d817de371cbdf89a4b2c8c391f993f313987b05bb7c48647"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_VendingHeader_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_VendingHeader_S.png",
+      "kind": "texture",
+      "bytes": 611,
+      "sha256": "a1fd1ae8b476ddbf451c0efe6a71e8e945f047e54ab2616a0e6fc03dd69b51e7"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Vinyl_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Vinyl_A.png",
+      "kind": "texture",
+      "bytes": 855326,
+      "sha256": "e1960dd9f5338ddf3b6c5d5c87ca10019fa7899eadc8d6bbdbdad1a46c35fc3a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Vinyl_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Vinyl_N.png",
+      "kind": "texture",
+      "bytes": 1842380,
+      "sha256": "3750b344e2d2c8e36defb3f79cc02bbbd87953d1036e227e428bb8765d9cd619"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_Vinyl_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_Vinyl_S.png",
+      "kind": "texture",
+      "bytes": 774904,
+      "sha256": "b5cb152c845f8aacedf2b2ca1190ed73580223643d3b8bdb8349480bfe302fdc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodCherry_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodCherry_A.png",
+      "kind": "texture",
+      "bytes": 6934451,
+      "sha256": "bfed23fc6c78de81ffb62e892fc70cb7a8ddaef24f64eab3eb3140c7231ca576"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodCherry_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodCherry_N.png",
+      "kind": "texture",
+      "bytes": 1620029,
+      "sha256": "5347bc584fe90fca170038fc7c6a5dd9f96ea712ceeadef91ce7127324cb3ffc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodCherry_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodCherry_S.png",
+      "kind": "texture",
+      "bytes": 5019143,
+      "sha256": "457cb801763faa72bc0100c1b201b1857ca6750ecfedb44e3613f0cd13b68518"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodDark_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodDark_A.png",
+      "kind": "texture",
+      "bytes": 4904633,
+      "sha256": "74107e3a407990eaf43e783c53dc0d686d7cf91f60af6ba5bd57be961bd19cc6"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodDark_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodDark_N.png",
+      "kind": "texture",
+      "bytes": 3391683,
+      "sha256": "a1a8c29d2e252f5905abee3677a2257c3fb22991225ad69376aab22edb3928ea"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodDark_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodDark_S.png",
+      "kind": "texture",
+      "bytes": 3868466,
+      "sha256": "5763191622827fc25256a10b54a718259fe09a8621983547e4262cb3182b0b63"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodEbony_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodEbony_A.png",
+      "kind": "texture",
+      "bytes": 3837610,
+      "sha256": "e0af81176d2d00e79ae5215a69a95afc390c9755b1e055d8591e47e393c23968"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodEbony_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodEbony_N.png",
+      "kind": "texture",
+      "bytes": 3391683,
+      "sha256": "a1a8c29d2e252f5905abee3677a2257c3fb22991225ad69376aab22edb3928ea"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodEbony_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodEbony_S.png",
+      "kind": "texture",
+      "bytes": 3963907,
+      "sha256": "9eb482c26de62335d2bad7b982e36eec7f7947f6867548aad249f71b56c792dc"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodLaminate_A.png",
+      "kind": "texture",
+      "bytes": 3832584,
+      "sha256": "c25b847ebe169bff91b89dad7cc295dd8dcbd8ac0c702f3b9d71c9f237d80fc2"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodLaminate_N.png",
+      "kind": "texture",
+      "bytes": 1462082,
+      "sha256": "71edf0ae47370ca7382fa17bc74ac610a7d93a8ea16a348569846839765affd1"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodLaminate_S.png",
+      "kind": "texture",
+      "bytes": 4617410,
+      "sha256": "9f0e7fbc042b32bd428da39689cfc900603eef5c6733d4448ed78e429bbd2614"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodOak_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodOak_A.png",
+      "kind": "texture",
+      "bytes": 4453379,
+      "sha256": "1c139ecc65126ab951f71bdea35ee62739d05233d5fe0aee21c27f3b405de2c0"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodOak_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodOak_N.png",
+      "kind": "texture",
+      "bytes": 3437626,
+      "sha256": "3e07d04afade1d59997b6e699ce338c032e6eeaf9f20e519348042cb6e3ef581"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodOak_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodOak_S.png",
+      "kind": "texture",
+      "bytes": 4852635,
+      "sha256": "2139ef0e1eef7c5867e99072d11db6456f227a7d4349c5dd2b880baf2d7bacec"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodTeak_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodTeak_A.png",
+      "kind": "texture",
+      "bytes": 4952310,
+      "sha256": "d09d4dc5bfe096aeb02b5daecdd566242c6f978268baf5478e2f10b1b2d6d4f7"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodTeak_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodTeak_N.png",
+      "kind": "texture",
+      "bytes": 4205866,
+      "sha256": "bf5215766f54b6810a5b525eebfdbdb004c2176cde1ed4811babda8186ee6375"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodTeak_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodTeak_S.png",
+      "kind": "texture",
+      "bytes": 4968050,
+      "sha256": "4fd49a7d47ddf06dcbcfacc6188f7258ae18837f2db96e5ef07b8f6f19e50572"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodWalnut_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodWalnut_A.png",
+      "kind": "texture",
+      "bytes": 3581136,
+      "sha256": "8b3cfa9e0f8bc40538f6beed7584d1930bfc57b32e0b78e9cda85b967fe1e5a9"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodWalnut_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodWalnut_N.png",
+      "kind": "texture",
+      "bytes": 4276898,
+      "sha256": "a1be7ea02ac9d10e5cc07118a37df07e07318aa902a698c1cc95c3b53b7ba873"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Prop_WoodWalnut_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Prop_WoodWalnut_S.png",
+      "kind": "texture",
+      "bytes": 4044918,
+      "sha256": "58d9756282b96b3bd366bc4b7eb408156cf3cd3004373f9386c62290e69c0eb3"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_ExitSign_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_ExitSign_A.png",
+      "kind": "texture",
+      "bytes": 9264,
+      "sha256": "770eba5739ebf7500e22c6386002c4b0c7be9c63e8e8775c04ace3ef87d02d6f"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_ExitSign_E.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_ExitSign_E.png",
+      "kind": "texture",
+      "bytes": 9886,
+      "sha256": "22c383974de4d67b7c89ca6d6508720be4e75bdf99a62eea55b4f47a96d40742"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_HospitalWall_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_HospitalWall_A.png",
+      "kind": "texture",
+      "bytes": 161476,
+      "sha256": "69f2919fd02c9e984fba3207f79328a1279de3ff789a60ed07448da8262f9852"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_HospitalWall_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_HospitalWall_N.png",
+      "kind": "texture",
+      "bytes": 1612948,
+      "sha256": "8e1fea96b1126f2da6ce215c3eda7b116894f2575ede3b286b8d040afebb2818"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_HospitalWall_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_HospitalWall_S.png",
+      "kind": "texture",
+      "bytes": 550370,
+      "sha256": "693997cdac88e325b3d0570aa7d2ee44e094cfa7ef243e42f3a7f97d463cb45a"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_VCT_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_VCT_A.png",
+      "kind": "texture",
+      "bytes": 3657116,
+      "sha256": "6dba034960c9c068ae91599e10fae2e6fce0b6008ad27a9d00ad49ff0296e19c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_VCT_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_VCT_N.png",
+      "kind": "texture",
+      "bytes": 2549342,
+      "sha256": "b27419d749f7444778dd7811cecd5684006826942a075da344186eaba03d4c33"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Run_VCT_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Run_VCT_S.png",
+      "kind": "texture",
+      "bytes": 347108,
+      "sha256": "3ba4061f8ee171431a3c9918589865ba127b116a01c4ddb9b5b84effcb09b5e5"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/TrofferLens_A.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/TrofferLens_A.png",
+      "kind": "texture",
+      "bytes": 15231,
+      "sha256": "cf926a777eae7bff400d93a1ee494a7539ffffa263561ef1344ec0d14f430086"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/TrofferLens_E.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/TrofferLens_E.png",
+      "kind": "texture",
+      "bytes": 90446,
+      "sha256": "c4f28e90dcb5caf6bf395ac50a813a45466e2c5a1917e32cdb54dacff2245720"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/TrofferLens_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/TrofferLens_N.png",
+      "kind": "texture",
+      "bytes": 15440,
+      "sha256": "3167f15458edeb38293295bc9bd4a8855b0ca1658af0e91490d19728af3af61d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Wallpaper_Paper_M.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Wallpaper_Paper_M.png",
+      "kind": "texture",
+      "bytes": 4920023,
+      "sha256": "466b534947548b209f4f2bbc632bcf449dcb4cb1787268a509c87bd32666a40c"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Wallpaper_Paper_N.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Wallpaper_Paper_N.png",
+      "kind": "texture",
+      "bytes": 12151931,
+      "sha256": "53a44595fa56a8cba662c45dfb826216a2cf970534a1cafaa339ba46a8f05c3d"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Wallpaper_Paper_S.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Wallpaper_Paper_S.png",
+      "kind": "texture",
+      "bytes": 3593081,
+      "sha256": "69eb5dd2cc0e6b203ba4f4ce1ef1e41400ef5ac4773e4f5d8392661eb21bad90"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Textures/Wallpaper_Print_P.png",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Textures/Wallpaper_Print_P.png",
+      "kind": "texture",
+      "bytes": 363847,
+      "sha256": "af429a42db23b729834e2497baf2fad1cd3b0c4f8438f00f5491ab51f3e310c4"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Troffer_Lens_Cool.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Troffer_Lens_Cool.mat",
+      "kind": "unity-material-source",
+      "bytes": 2105,
+      "sha256": "b39cee4bbc9a5507c178c0d1034ac8cab7b97f8bd527aab9bcde8aad4ea32faa"
+    },
+    {
+      "source": "Assets/Resources/Surfaces/Troffer_Lens.mat",
+      "destination": "Content/FrontRooms/UnitySource/Resources/Surfaces/Troffer_Lens.mat",
+      "kind": "unity-material-source",
+      "bytes": 2084,
+      "sha256": "0a48641461cf5e27d736b3e3da630869f179922a00c703ef5366d15f453ad8a7"
+    },
+    {
+      "source": "Assets/StreamingAssets/FMOD/Ambience.bank",
+      "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Ambience.bank",
+      "kind": "fmod-bank",
+      "bytes": 567904,
+      "sha256": "5201221721dcd9489217101f13d5e18fc2a0fa5ea40a170e9bcfd199287884c2"
+    },
+    {
+      "source": "Assets/StreamingAssets/FMOD/Master.bank",
+      "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Master.bank",
+      "kind": "fmod-bank",
+      "bytes": 4702,
+      "sha256": "de9c5bf324562e5b196894dd7ef828be8ebcb7e3161eb35ca9811593088b1f44"
+    },
+    {
+      "source": "Assets/StreamingAssets/FMOD/Master.strings.bank",
+      "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Master.strings.bank",
+      "kind": "fmod-bank",
+      "bytes": 3490,
+      "sha256": "32a434357c759bb77b681c97a033e8fad5413f2c0bef7279e65adbae81a8282c"
+    },
+    {
+      "source": "Assets/StreamingAssets/FMOD/Music.bank",
+      "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Music.bank",
+      "kind": "fmod-bank",
+      "bytes": 1326,
+      "sha256": "c18422f7a5b7d38659a9d450c2588388bb195e0df717b5a92044f0e51e7ac118"
+    },
+    {
+      "source": "Assets/StreamingAssets/FMOD/SFX.bank",
+      "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/SFX.bank",
+      "kind": "fmod-bank",
+      "bytes": 914848,
+      "sha256": "d4c05e0d2f1ad395d43df4f7d6258faab6dd20964e49e137ced9b294a9bd9238"
+    },
+    {
+      "source": "Assets/StreamingAssets/FrontRooms_Ad_01.mp4",
+      "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FrontRooms_Ad_01.mp4",
+      "kind": "video",
+      "bytes": 66657,
+      "sha256": "765b8f2b28fed0b046cc6613286c8a9b0aa9a6a35755d2e65cc7c7072a68f674"
+    }
+  ],
+  "counts": {
+    "audio": 1,
+    "vector": 14,
+    "texture": 167,
+    "unity-material-source": 92,
+    "font": 3,
+    "mesh": 123,
+    "sidecar": 113,
+    "fmod-bank": 5,
+    "video": 1
+  },
+  "totalBytes": 334364668
+}

@@ -1,0 +1,19 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.6",
+  "Category": "Games",
+  "Description": "FrontRooms deterministic Unity-to-Unreal migration slice",
+  "Modules": [
+    {
+      "Name": "FrontRooms",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    { "Name": "EnhancedInput", "Enabled": true },
+    { "Name": "UMG", "Enabled": true },
+    { "Name": "Json", "Enabled": true },
+    { "Name": "JsonUtilities", "Enabled": true }
+  ]
+}

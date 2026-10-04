@@ -14,14 +14,20 @@ Contract schema: `1`
 - [x] Add source-backed regression tests for the exporter and hash oracle.
 - [x] Add the Unity Editor golden-chunk exporter for the three validation seeds.
 - [x] Export all 113 prop sidecars into a mesh/collider/anchor/LOD manifest.
+- [x] Add a UE5.6 project/module skeleton with contract USTRUCTs and a JSON importer.
+- [x] Add a first Title/Playing/Paused/Caught + key/door + Relay Listen→Chase runtime slice.
+- [x] Add a Windows Node export gate that runs without Python or Unreal Editor.
+- [x] Add a Unity-side asset bridge manifest and Windows staging script so UE can reuse existing FBX, textures, fonts, video and FMOD banks.
 
 ## Next implementation gates
 
 - [x] Compile the engine-independent C++ hash implementation against the Python oracle.
 - [x] Define engine-independent C++ grid/zone/chunk data shapes from the Unity contract.
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
-- [ ] Add the UE `UPrimaryDataAsset` importer for the profile/modules/sidecars.
-- [ ] Add the first UE runtime slice: fixed Title stream, one chunk, player movement, door, key and Relay Listen→Chase.
+- [ ] Compile `Migration/Unreal/FrontRoomsUE.uproject` in the locked team UE5 editor.
+- [ ] Promote the importer to an editor asset factory for profile/modules/sidecars.
+- [ ] Run `stage_unity_assets.ps1` after the UE content layout is approved, then configure FBX/material import presets.
+- [ ] Add the first UE world slice: one generated chunk, Character movement/sprint, and UMG HUD.
 - [ ] Add screenshot/input/audio traces before upgrading materials and lighting.
 
 The JSON contract is generated, so rerun the exporter after changing the Unity
