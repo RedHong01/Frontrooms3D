@@ -1,0 +1,9538 @@
+{
+ "schema": "frontrooms.kit-sheets.interactables/1",
+ "generated": "2026-10-03T17:49:16-07:00",
+ "by": "visual chat (游戏视觉), for 平面视觉's K-sheets",
+ "figma": {
+  "file": "0tCbAiVUlrPId3RWd9LRif",
+  "page": "2099:76",
+  "propKitSection": "2324:852 (平面视觉, read-only for us)",
+  "proposalSection": "2497:3804 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (ours)"
+ },
+ "source": {
+  "models": "private clone scratchpad/proj_int (render copy proj_3view_int); nothing is in the game's Assets yet",
+  "renderer": "Tools/three_view/FrontRoomsThreeView.cs + the interactables patch (FrontRoomsThreeView.interactables.cs.txt here)",
+  "manifest": "png/manifest.json"
+ },
+ "conventions": {
+  "oversample": 2,
+  "paddingPx": 16,
+  "pngPerSheetPx": "PNG px = 2 x sheet px; place each PNG at 50 % so the sheet reads at sheetPpm",
+  "sheetPpmLadder": [
+   8000,
+   4000,
+   2000,
+   1000,
+   500,
+   250,
+   125
+  ],
+  "sheetPpmNote": "Furniture rule unchanged (any side >= 0.75 m -> 250). New 4000 / 8000 steps for keys and lock parts under 0.1 m; the 44 existing sheets stop at 2000.",
+  "views": "third-angle: front = camera on +Z, side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
+  "viewYaw": "-90 on door frames, door leaves and keys: their show face is +X (door pull face; key flats), so they are turned to face the camera. Their front = the pull-face elevation with the hinge at image left; key tip at image right, cuts up. size_m / dims are in that turned frame (W = opening width).",
+  "groundLine": "The PNG bottom edge (less padding) is boundsMin.y, not the floor. aboveFloor_m > 0 means the piece is wall-mounted at that height (key hosts, windows); 0 = stands on the floor. Part-frame kits (lock parts, keys, tags, signs, closer parts) have negative boundsMin.y: they are drawn about their pivot, not on a floor.",
+  "swatchRule": "hex = sRGB of (mean of the _BaseMap in linear) x (_BaseColor converted sRGB->linear), from Resources/Surfaces/<slot>.mat in the clone. Slots already on the 44 sheets reuse those sheets' exact hex. P-4 slots (no Unity surface yet) show what Unity renders today (the FBX preview material) and carry targetHex from the spec.",
+  "eraAxis": {
+   "t0": 1950,
+   "t1": 2000,
+   "now": 1990,
+   "band": [
+    1985,
+    1993
+   ],
+   "chips": [
+    "Current stock",
+    "Second-hand",
+    "Timeless"
+   ]
+  }
+ },
+ "counts": {
+  "kits": 62,
+  "sheets": 36,
+  "newSheets": 35,
+  "pngs": 248,
+  "heroes": 0
+ },
+ "sheets": [
+  {
+   "order": 1,
+   "id": "doorframe_wood",
+   "title": "Wood door frame",
+   "family": "Doors · frames",
+   "lede": "Walnut ranch casing, applied wood stop and an oak saddle: the Lobby's older office doorway.",
+   "era": {
+    "span": [
+     1955,
+     1990
+    ],
+    "label": "1955–90",
+    "chip": "Second-hand",
+    "note": "Wood-cased openings with stain-grade casing are the older office fit-out (02 §2.2; film F09 'dark frame'). Ranch casing and back band, no plinth blocks (none in 1990 commercial work).",
+    "sources": [
+     "10_spec §2.3",
+     "02 §2.2"
+    ]
+   },
+   "members": [
+    "L0-F"
+   ],
+   "primary": "Kit_DoorFrame_Wood",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 1150 · D 210 · H 2175 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorFrame_Wood_top.png",
+    "front": "png/Kit_DoorFrame_Wood_front.png",
+    "side": "png/Kit_DoorFrame_Wood_side.png",
+    "persp": "png/Kit_DoorFrame_Wood_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_WoodWalnut",
+     "label": "Walnut",
+     "hex": "#4a3020",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_WoodOak",
+     "label": "Golden oak",
+     "hex": "#9a6a3a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3152,
+    "lod1": 1260,
+    "budget": [
+     2800,
+     1100,
+     250
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorFrame_Wood_top",
+    "front": "img:Kit_DoorFrame_Wood_front",
+    "side": "img:Kit_DoorFrame_Wood_side",
+    "persp": "img:Kit_DoorFrame_Wood_persp"
+   }
+  },
+  {
+   "order": 2,
+   "id": "doorframe_steel",
+   "title": "Steel door frame",
+   "family": "Doors · frames",
+   "lede": "Pressed 16-gauge steel in dark bronze with a formed 16 mm stop and three rubber silencers.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "The SDI hollow-metal frame: 2 in face, 5/8 in stop, 16 ga interior (SDI 111A). The form is unchanged from well before 1990. The _Alu variant gives the Exit its clear-anodised look.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §2.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-F",
+    "OF-K",
+    "RN-F",
+    "RN-K",
+    "EX-F (Alu)",
+    "EX-K (Alu)"
+   ],
+   "primary": "Kit_DoorFrame_Steel",
+   "variants": [
+    "Kit_DoorFrame_Steel_Alu"
+   ],
+   "parts": [],
+   "dims_label": "W 1150 · D 210 · H 2175 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorFrame_Steel_top.png",
+    "front": "png/Kit_DoorFrame_Steel_front.png",
+    "side": "png/Kit_DoorFrame_Steel_side.png",
+    "persp": "png/Kit_DoorFrame_Steel_persp.png"
+   },
+   "variantImages": {
+    "Kit_DoorFrame_Steel_Alu": "png/Kit_DoorFrame_Steel_Alu_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3866,
+    "lod1": 1430,
+    "budget": [
+     3600,
+     1300,
+     280
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorFrame_Steel_top",
+    "front": "img:Kit_DoorFrame_Steel_front",
+    "side": "img:Kit_DoorFrame_Steel_side",
+    "persp": "img:Kit_DoorFrame_Steel_persp"
+   }
+  },
+  {
+   "order": 3,
+   "id": "doorleaf_veneer",
+   "title": "Veneer door",
+   "family": "Doors · leaves",
+   "lede": "Flush 1-3/4 in veneer leaf with hardwood edge bands. No keyhole: a free door reads warm and dark.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "The flush stain-grade veneer door with a brass lever is the project's own film still F09 and IP canon. Oak variant (chrome butts) for the Office and Exit.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §1, §2.1"
+    ]
+   },
+   "members": [
+    "L0-F",
+    "OF-F (Oak)",
+    "EX-F (Oak)"
+   ],
+   "primary": "Kit_DoorLeaf_Veneer",
+   "variants": [
+    "Kit_DoorLeaf_Veneer_Oak"
+   ],
+   "parts": [],
+   "dims_label": "W 992 · D 59 · H 2080 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Veneer_top.png",
+    "front": "png/Kit_DoorLeaf_Veneer_front.png",
+    "side": "png/Kit_DoorLeaf_Veneer_side.png",
+    "persp": "png/Kit_DoorLeaf_Veneer_persp.png"
+   },
+   "variantImages": {
+    "Kit_DoorLeaf_Veneer_Oak": "png/Kit_DoorLeaf_Veneer_Oak_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Door_Veneer",
+     "label": "Door veneer",
+     "hex": "#9d6d3b",
+     "source": "Resources/Surfaces/Door_Veneer.mat: mean of Assets/Resources/Surfaces/Textures/DoorVeneer_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2464,
+    "lod1": 886,
+    "budget": [
+     2600,
+     900,
+     120
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorLeaf_Veneer_top",
+    "front": "img:Kit_DoorLeaf_Veneer_front",
+    "side": "img:Kit_DoorLeaf_Veneer_side",
+    "persp": "img:Kit_DoorLeaf_Veneer_persp"
+   }
+  },
+  {
+   "order": 4,
+   "id": "doorleaf_steel",
+   "title": "Steel door",
+   "family": "Doors · leaves",
+   "lede": "Flush hollow-metal leaf in almond enamel with stainless kick plates: the locked door reads pale from 20 m.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "Back-of-house rooms had painted hollow-metal doors (SDI 108 Level 2 for storage and utility). Almond enamel needs the new Door_Enamel surface (P-4); _PaintedMetal is the spec's working fallback.",
+    "sources": [
+     "10_spec §2.1, §2.3",
+     "02 §2.1",
+     "05 §6.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_DoorLeaf_Steel",
+   "variants": [
+    "Kit_DoorLeaf_Steel_PaintedMetal"
+   ],
+   "parts": [],
+   "dims_label": "W 992 · D 61 · H 2080 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Steel_top.png",
+    "front": "png/Kit_DoorLeaf_Steel_front.png",
+    "side": "png/Kit_DoorLeaf_Steel_side.png",
+    "persp": "png/Kit_DoorLeaf_Steel_persp.png"
+   },
+   "variantImages": {
+    "Kit_DoorLeaf_Steel_PaintedMetal": "png/Kit_DoorLeaf_Steel_PaintedMetal_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Door_Enamel",
+     "label": "Almond enamel",
+     "hex": "#cdc5b0",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Door_Enamel.mat yet; Unity binds _BaseColor #cdc5b0)",
+     "p4": true,
+     "targetHex": "#cdc5b0",
+     "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3930,
+    "lod1": 1572,
+    "budget": [
+     4200,
+     1500,
+     150
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorLeaf_Steel_top",
+    "front": "img:Kit_DoorLeaf_Steel_front",
+    "side": "img:Kit_DoorLeaf_Steel_side",
+    "persp": "img:Kit_DoorLeaf_Steel_persp"
+   }
+  },
+  {
+   "order": 5,
+   "id": "doorleaf_steellite",
+   "title": "Steel door with lite",
+   "family": "Doors · leaves",
+   "lede": "The steel leaf with a 4 x 25 in vision lite at 1.575 m: Red's see-through option for the Run.",
+   "era": {
+    "span": [
+     1955,
+     1992
+    ],
+    "label": "1955–92",
+    "chip": "Timeless",
+    "note": "Narrow vision lites sit 60-66 in up (02 §4.3). Wired glass was the fire-door glazing until US production stopped in 1992; the wired look needs Glass_Wired from the glass track.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §6.1",
+     "06 §2.4"
+    ]
+   },
+   "members": [
+    "RN-K (option)"
+   ],
+   "primary": "Kit_DoorLeaf_SteelLite",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 992 · D 61 · H 2080 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_SteelLite_top.png",
+    "front": "png/Kit_DoorLeaf_SteelLite_front.png",
+    "side": "png/Kit_DoorLeaf_SteelLite_side.png",
+    "persp": "png/Kit_DoorLeaf_SteelLite_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Door_Enamel",
+     "label": "Almond enamel",
+     "hex": "#cdc5b0",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Door_Enamel.mat yet; Unity binds _BaseColor #cdc5b0)",
+     "p4": true,
+     "targetHex": "#cdc5b0",
+     "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Glass",
+     "label": "Glass",
+     "hex": "#d1e0e0",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4586,
+    "lod1": 1834,
+    "budget": [
+     5200,
+     1900,
+     200
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorLeaf_SteelLite_top",
+    "front": "img:Kit_DoorLeaf_SteelLite_front",
+    "side": "img:Kit_DoorLeaf_SteelLite_side",
+    "persp": "img:Kit_DoorLeaf_SteelLite_persp"
+   }
+  },
+  {
+   "order": 6,
+   "id": "doorleaf_ward",
+   "title": "Ward door",
+   "family": "Doors · leaves",
+   "lede": "Wood-grain laminate with a stainless armor plate, push plate and offset D-pull: push and pull, no latch.",
+   "era": {
+    "span": [
+     1975,
+     2000
+    ],
+    "label": "1975–2000",
+    "chip": "Current stock",
+    "note": "A hospital-corridor door: laminate face, armor plate to 34 in on the push face, kick plate on the pull face. No latch, rose or strike.",
+    "sources": [
+     "10_spec §2.3",
+     "04 §5.3"
+    ]
+   },
+   "members": [
+    "RN-F"
+   ],
+   "primary": "Kit_DoorLeaf_Ward",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 992 · D 110 · H 2080 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Ward_top.png",
+    "front": "png/Kit_DoorLeaf_Ward_front.png",
+    "side": "png/Kit_DoorLeaf_Ward_side.png",
+    "persp": "png/Kit_DoorLeaf_Ward_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_WoodLaminate",
+     "label": "Wood laminate",
+     "hex": "#8e6e4c",
+     "source": "Resources/Surfaces/Prop_WoodLaminate.mat: mean of Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4930,
+    "lod1": 1972,
+    "budget": [
+     5000,
+     1800,
+     180
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorLeaf_Ward_top",
+    "front": "img:Kit_DoorLeaf_Ward_front",
+    "side": "img:Kit_DoorLeaf_Ward_side",
+    "persp": "img:Kit_DoorLeaf_Ward_persp"
+   }
+  },
+  {
+   "order": 7,
+   "id": "door_closer",
+   "title": "Surface closer",
+   "family": "Doors · hardware",
+   "lede": "A regular-arm surface closer on the pull face, two links to a shoe on the head. Possible only because doors now swing one way.",
+   "era": {
+    "span": [
+     1958,
+     2000
+    ],
+    "label": "1958–2000",
+    "chip": "Timeless",
+    "note": "Surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 series dates from 1958. Arm lengths come from the linkage solve (ESTIMATE, to check against a 4010 template).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §5.3"
+    ]
+   },
+   "members": [
+    "OF-F",
+    "OF-K",
+    "RN-F",
+    "RN-K",
+    "EX-F",
+    "EX-K"
+   ],
+   "primary": "Kit_DoorCloser_Body",
+   "variants": [],
+   "parts": [
+    "Kit_DoorCloser_Body",
+    "Kit_DoorCloser_Arm",
+    "Kit_DoorCloser_Forearm",
+    "Kit_DoorCloser_Shoe"
+   ],
+   "dims_label": "W 292 · D 51 · H 83 mm",
+   "sheetPpm": 2000,
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorCloser_Body_top.png",
+    "front": "png/Kit_DoorCloser_Body_front.png",
+    "side": "png/Kit_DoorCloser_Body_side.png",
+    "persp": "png/Kit_DoorCloser_Body_persp.png"
+   },
+   "variantImages": {
+    "Kit_DoorCloser_Arm": "png/Kit_DoorCloser_Arm_persp.png",
+    "Kit_DoorCloser_Forearm": "png/Kit_DoorCloser_Forearm_persp.png",
+    "Kit_DoorCloser_Shoe": "png/Kit_DoorCloser_Shoe_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3236,
+    "lod1": null,
+    "budget": [
+     3000,
+     1000,
+     150
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     20.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorCloser_Body_top",
+    "front": "img:Kit_DoorCloser_Body_front",
+    "side": "img:Kit_DoorCloser_Body_side",
+    "persp": "img:Kit_DoorCloser_Body_persp"
+   },
+   "partsDims": {
+    "Kit_DoorCloser_Body": "W 292 · D 51 · H 83 mm",
+    "Kit_DoorCloser_Arm": "W 266 · D 30 · H 21 mm",
+    "Kit_DoorCloser_Forearm": "W 280 · D 22 · H 50 mm",
+    "Kit_DoorCloser_Shoe": "W 30 · D 31 · H 40 mm"
+   },
+   "partsMaterials": {
+    "Kit_DoorCloser_Body": [
+     {
+      "slot": "Prop_SteelBrown",
+      "label": "Brown steel",
+      "hex": "#3b2e25",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     },
+     {
+      "slot": "Prop_Chrome",
+      "label": "Chrome",
+      "hex": "#d8d8d8",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     }
+    ],
+    "Kit_DoorCloser_Arm": [
+     {
+      "slot": "Prop_SteelBrown",
+      "label": "Brown steel",
+      "hex": "#3b2e25",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     }
+    ],
+    "Kit_DoorCloser_Forearm": [
+     {
+      "slot": "Prop_SteelBrown",
+      "label": "Brown steel",
+      "hex": "#3b2e25",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     },
+     {
+      "slot": "Prop_Chrome",
+      "label": "Chrome",
+      "hex": "#d8d8d8",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     }
+    ],
+    "Kit_DoorCloser_Shoe": [
+     {
+      "slot": "Prop_SteelBrown",
+      "label": "Brown steel",
+      "hex": "#3b2e25",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     },
+     {
+      "slot": "Prop_Chrome",
+      "label": "Chrome",
+      "hex": "#d8d8d8",
+      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     }
+    ]
+   }
+  },
+  {
+   "order": 8,
+   "id": "exit_crossbar",
+   "title": "Exit crossbar",
+   "family": "Doors · hardware",
+   "lede": "A rim crossbar exit device across the push face: the true Exit opens with a push.",
+   "era": {
+    "span": [
+     1950,
+     1995
+    ],
+    "label": "1950–95",
+    "chip": "Second-hand",
+    "note": "Tube crossbars on two end cases are the older exit-device form; touch-bar devices were taking over by 1990 (era note 'push bars on exits').",
+    "sources": [
+     "10_spec §2.4"
+    ]
+   },
+   "members": [
+    "EX-F"
+   ],
+   "primary": "Kit_ExitDevice_Crossbar",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 877 · D 95 · H 120 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_ExitDevice_Crossbar_top.png",
+    "front": "png/Kit_ExitDevice_Crossbar_front.png",
+    "side": "png/Kit_ExitDevice_Crossbar_side.png",
+    "persp": "png/Kit_ExitDevice_Crossbar_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3948,
+    "lod1": null,
+    "budget": [
+     3500,
+     1200,
+     200
+    ],
+    "lodDistances_m": [
+     2.0,
+     6.0,
+     25.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitDevice_Crossbar_top",
+    "front": "img:Kit_ExitDevice_Crossbar_front",
+    "side": "img:Kit_ExitDevice_Crossbar_side",
+    "persp": "img:Kit_ExitDevice_Crossbar_persp"
+   }
+  },
+  {
+   "order": 9,
+   "id": "door_sign",
+   "title": "Door sign",
+   "family": "Doors · signage",
+   "lede": "Two-ply engraved plate, ivory letters on dark brown at 60 in: EMPLOYEES ONLY, no Braille.",
+   "era": {
+    "span": [
+     1970,
+     1991
+    ],
+    "label": "1970–91",
+    "chip": "Current stock",
+    "note": "Engraved two-colour room signs at 60 in to centre (UFAS 1984 / ADAAG 1991). No Braille: the ADAAG requirement post-dates 1990. The lettering needs the Prop_SignEngraved atlas (P-4); without it the face renders as the preview colour.",
+    "sources": [
+     "10_spec §2.4",
+     "05 §6.2",
+     "02 §4.3"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K (STAFF ONLY)"
+   ],
+   "primary": "Kit_DoorSign",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 254 · D 4.3 · H 76 mm",
+   "sheetPpm": 4000,
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorSign_top.png",
+    "front": "png/Kit_DoorSign_front.png",
+    "side": "png/Kit_DoorSign_side.png",
+    "persp": "png/Kit_DoorSign_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_SignEngraved",
+     "label": "Engraved sign",
+     "hex": "#796961",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_SignEngraved.mat yet; Unity binds _BaseColor #796961)",
+     "p4": true,
+     "targetHex": "#30241e",
+     "note": "spec target: dark brown face sRGB 48/36/30 with ivory engraved letters (05 §6.2), 2 x 2 atlas (P-4)"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 664,
+    "lod1": null,
+    "budget": [
+     600,
+     200,
+     12
+    ],
+    "lodDistances_m": [
+     2.0,
+     6.0,
+     25.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorSign_top",
+    "front": "img:Kit_DoorSign_front",
+    "side": "img:Kit_DoorSign_side",
+    "persp": "img:Kit_DoorSign_persp"
+   }
+  },
+  {
+   "order": 10,
+   "id": "door_numberplate",
+   "title": "Zone number plate",
+   "family": "Doors · signage",
+   "lede": "An engraved plate beside the keyhole in the key tag's colour: the door shows the number of its key.",
+   "era": {
+    "span": [
+     1970,
+     2000
+    ],
+    "label": "1970–2000",
+    "chip": "Timeless",
+    "note": "A facility key system indexes keys by room code, so tag code = door code is the period system (02 §8.2). Digits come from the Prop_KeyTagNo atlas (P-4).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §8.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_DoorNumberPlate",
+   "variants": [
+    "Kit_DoorNumberPlate_Blue",
+    "Kit_DoorNumberPlate_White"
+   ],
+   "parts": [],
+   "dims_label": "W 100 · D 4.2 · H 50 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorNumberPlate_top.png",
+    "front": "png/Kit_DoorNumberPlate_front.png",
+    "side": "png/Kit_DoorNumberPlate_side.png",
+    "persp": "png/Kit_DoorNumberPlate_persp.png"
+   },
+   "variantImages": {
+    "Kit_DoorNumberPlate_Blue": "png/Kit_DoorNumberPlate_Blue_persp.png",
+    "Kit_DoorNumberPlate_White": "png/Kit_DoorNumberPlate_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 480,
+    "lod1": null,
+    "budget": [
+     500,
+     180,
+     12
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     15.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorNumberPlate_top",
+    "front": "img:Kit_DoorNumberPlate_front",
+    "side": "img:Kit_DoorNumberPlate_side",
+    "persp": "img:Kit_DoorNumberPlate_persp"
+   }
+  },
+  {
+   "order": 11,
+   "id": "exit_sign",
+   "title": "Exit sign",
+   "family": "Doors · signage",
+   "lede": "Stamped-steel EXIT sign with 6 in stencil letters over the push face; the dead variant is unlit.",
+   "era": {
+    "span": [
+     1970,
+     1995
+    ],
+    "label": "1970–95",
+    "chip": "Current stock",
+    "note": "A 1990 stamped-steel wall exit sign, emissive face only (no Light). Run_ExitSign_Dead is a new material (P-4); red or green letters is Red's call.",
+    "sources": [
+     "10_spec §2.4"
+    ]
+   },
+   "members": [
+    "EX-F (lit)",
+    "EX-K (dead)"
+   ],
+   "primary": "Kit_ExitSign",
+   "variants": [
+    "Kit_ExitSign_Dead"
+   ],
+   "parts": [],
+   "dims_label": "W 330 · D 60 · H 202 mm",
+   "sheetPpm": 2000,
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_ExitSign_top.png",
+    "front": "png/Kit_ExitSign_front.png",
+    "side": "png/Kit_ExitSign_side.png",
+    "persp": "png/Kit_ExitSign_persp.png"
+   },
+   "variantImages": {
+    "Kit_ExitSign_Dead": "png/Kit_ExitSign_Dead_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBlack",
+     "label": "Black steel",
+     "hex": "#1e1e1e",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Run_ExitSign",
+     "label": "Lit EXIT face",
+     "hex": "#dfc6bf",
+     "source": "Resources/Surfaces/Run_ExitSign.mat: mean of Assets/Resources/Surfaces/Textures/Run_ExitSign_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)",
+     "emissive": true
+    }
+   ],
+   "tris": {
+    "lod0": 1916,
+    "lod1": null,
+    "budget": [
+     2000,
+     700,
+     100
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     null
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_top",
+    "front": "img:Kit_ExitSign_front",
+    "side": "img:Kit_ExitSign_side",
+    "persp": "img:Kit_ExitSign_persp"
+   }
+  },
+  {
+   "order": 12,
+   "id": "lock_escutcheon",
+   "title": "Escutcheon",
+   "family": "Lock · mortise set",
+   "lede": "A tall satin-chrome plate: knob below, IC cylinder above. Plate plus dot reads as locked at 2-5 m.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "Mortise locks stayed 'widely installed in industrial, commercial, and institutional environments' (02 §4.4). US26D satin chrome; locked hardware stays chrome in every level.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.4, §10"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_Escutcheon",
+   "variants": [
+    "Kit_Lock_Escutcheon_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 57 · D 8.0 · H 203 mm",
+   "sheetPpm": 2000,
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Escutcheon_top.png",
+    "front": "png/Kit_Lock_Escutcheon_front.png",
+    "side": "png/Kit_Lock_Escutcheon_side.png",
+    "persp": "png/Kit_Lock_Escutcheon_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_Escutcheon_Brass": "png/Kit_Lock_Escutcheon_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3176,
+    "lod1": null,
+    "budget": [
+     3000,
+     1200,
+     200
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Escutcheon_top",
+    "front": "img:Kit_Lock_Escutcheon_front",
+    "side": "img:Kit_Lock_Escutcheon_side",
+    "persp": "img:Kit_Lock_Escutcheon_persp"
+   }
+  },
+  {
+   "order": 13,
+   "id": "lock_cylinder",
+   "title": "IC cylinder",
+   "family": "Lock · mortise set",
+   "lede": "An interchangeable-core figure-8 face, no brand: the keyhole the key shot frames.",
+   "era": {
+    "span": [
+     1925,
+     2000
+    ],
+    "label": "1925–2000",
+    "chip": "Timeless",
+    "note": "IC cores (Best type) since the 1920s. Core dimensions are an ESTIMATE, unverified against a real SFIC.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §13"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_CylinderShell",
+   "variants": [
+    "Kit_Lock_CylinderShell_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 44 · D 7.5 · H 44 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_CylinderShell_top.png",
+    "front": "png/Kit_Lock_CylinderShell_front.png",
+    "side": "png/Kit_Lock_CylinderShell_side.png",
+    "persp": "png/Kit_Lock_CylinderShell_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_CylinderShell_Brass": "png/Kit_Lock_CylinderShell_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2708,
+    "lod1": null,
+    "budget": [
+     2600,
+     1000,
+     150
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_CylinderShell_top",
+    "front": "img:Kit_Lock_CylinderShell_front",
+    "side": "img:Kit_Lock_CylinderShell_side",
+    "persp": "img:Kit_Lock_CylinderShell_persp"
+   }
+  },
+  {
+   "order": 14,
+   "id": "lock_plug",
+   "title": "Plug",
+   "family": "Lock · mortise set",
+   "lede": "The plug with an open keyway and six pin tips. It turns 90 degrees with the key, then back.",
+   "era": {
+    "span": [
+     1925,
+     2000
+    ],
+    "label": "1925–2000",
+    "chip": "Timeless",
+    "note": "US pins-up: the key goes in cuts uppermost (02 §4.2, forum-grade). One keyway profile is shared by the key and the plug (10 §3.2).",
+    "sources": [
+     "10_spec §3.1, §3.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_Plug",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 12 · D 30 · H 12 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Plug_top.png",
+    "front": "png/Kit_Lock_Plug_front.png",
+    "side": "png/Kit_Lock_Plug_side.png",
+    "persp": "png/Kit_Lock_Plug_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1884,
+    "lod1": null,
+    "budget": [
+     1800,
+     700,
+     80
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Plug_top",
+    "front": "img:Kit_Lock_Plug_front",
+    "side": "img:Kit_Lock_Plug_side",
+    "persp": "img:Kit_Lock_Plug_persp"
+   }
+  },
+  {
+   "order": 15,
+   "id": "lock_knob",
+   "title": "Knurled knob",
+   "family": "Lock · mortise set",
+   "lede": "A 54 mm ball knob with a knurled band, the 1984 touch mark for doors to hazardous rooms.",
+   "era": {
+    "span": [
+     1984,
+     1993
+    ],
+    "label": "1984–93",
+    "chip": "Current stock",
+    "note": "UFAS 1984 §4.29.3: a textured, e.g. knurled, knob marks doors to hazardous areas. Knobs still outsold levers 80:20 in the early 1990s; service doors kept them.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §3.1, §3.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_Knob",
+   "variants": [
+    "Kit_Lock_Knob_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 54 · D 63 · H 54 mm",
+   "sheetPpm": 4000,
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Knob_top.png",
+    "front": "png/Kit_Lock_Knob_front.png",
+    "side": "png/Kit_Lock_Knob_side.png",
+    "persp": "png/Kit_Lock_Knob_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_Knob_Brass": "png/Kit_Lock_Knob_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4608,
+    "lod1": null,
+    "budget": [
+     4500,
+     1800,
+     300
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Knob_top",
+    "front": "img:Kit_Lock_Knob_front",
+    "side": "img:Kit_Lock_Knob_side",
+    "persp": "img:Kit_Lock_Knob_persp"
+   }
+  },
+  {
+   "order": 16,
+   "id": "lock_deadbolt",
+   "title": "Deadbolt",
+   "family": "Lock · mortise set",
+   "lede": "A 25 mm deadbolt with two hardened-insert dots. The key throws it; it is what locks the door.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "Commercial deadbolts throw 1 in (02 §4.2). Keyed both faces is a game liberty: the key works from the side the player stands on.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_Deadbolt",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 12 · D 45 · H 30 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Deadbolt_top.png",
+    "front": "png/Kit_Lock_Deadbolt_front.png",
+    "side": "png/Kit_Lock_Deadbolt_side.png",
+    "persp": "png/Kit_Lock_Deadbolt_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 380,
+    "lod1": null,
+    "budget": [
+     400,
+     150,
+     30
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Deadbolt_top",
+    "front": "img:Kit_Lock_Deadbolt_front",
+    "side": "img:Kit_Lock_Deadbolt_side",
+    "persp": "img:Kit_Lock_Deadbolt_persp"
+   }
+  },
+  {
+   "order": 17,
+   "id": "lock_latch_mortise",
+   "title": "Mortise latchbolt",
+   "family": "Lock · mortise set",
+   "lede": "Deadlocking latchbolt, 19 mm throw, 30 degree bevel, with the auxiliary plunger beside it.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "A passage-function latch: either knob retracts it, the deadbolt does the locking (10 §3.1).",
+    "sources": [
+     "10_spec §3.1"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_Latchbolt_Mortise",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 19 · D 40 · H 30 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Latchbolt_Mortise_top.png",
+    "front": "png/Kit_Lock_Latchbolt_Mortise_front.png",
+    "side": "png/Kit_Lock_Latchbolt_Mortise_side.png",
+    "persp": "png/Kit_Lock_Latchbolt_Mortise_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 600,
+    "lod1": null,
+    "budget": [
+     600,
+     220,
+     40
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Latchbolt_Mortise_top",
+    "front": "img:Kit_Lock_Latchbolt_Mortise_front",
+    "side": "img:Kit_Lock_Latchbolt_Mortise_side",
+    "persp": "img:Kit_Lock_Latchbolt_Mortise_persp"
+   }
+  },
+  {
+   "order": 18,
+   "id": "lock_strike_mortise",
+   "title": "Mortise strike",
+   "family": "Lock · mortise set",
+   "lede": "Curved-lip strike with latch and deadbolt openings and dust boxes. It tears off when the Relay breaks the door.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "Strike in the lock's finish on the latch jamb, a separate render-only part so it can detach (audit §3.7).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §5.2"
+    ]
+   },
+   "members": [
+    "L0-K",
+    "OF-K",
+    "RN-K",
+    "EX-K"
+   ],
+   "primary": "Kit_Lock_StrikeMortise",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 56 · D 25 · H 200 mm",
+   "sheetPpm": 2000,
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_StrikeMortise_top.png",
+    "front": "png/Kit_Lock_StrikeMortise_front.png",
+    "side": "png/Kit_Lock_StrikeMortise_side.png",
+    "persp": "png/Kit_Lock_StrikeMortise_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 988,
+    "lod1": null,
+    "budget": [
+     900,
+     350,
+     60
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_StrikeMortise_top",
+    "front": "img:Kit_Lock_StrikeMortise_front",
+    "side": "img:Kit_Lock_StrikeMortise_side",
+    "persp": "img:Kit_Lock_StrikeMortise_persp"
+   }
+  },
+  {
+   "order": 19,
+   "id": "lock_rose",
+   "title": "Rose",
+   "family": "Lock · bored set",
+   "lede": "A 70 mm stepped rose under the lever: brass on the Lobby door, satin chrome elsewhere.",
+   "era": {
+    "span": [
+     1980,
+     2000
+    ],
+    "label": "1980–2000",
+    "chip": "Current stock",
+    "note": "Cylindrical (bored) locksets are the most common commercial lock (02 §4.1). Brass US3/US4 for the Lobby's free door, US26D chrome for the rest; chrome against brass is a 2-5 m cue.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.1, §10"
+    ]
+   },
+   "members": [
+    "L0-F (brass)",
+    "OF-F",
+    "EX-F"
+   ],
+   "primary": "Kit_Lock_Rose",
+   "variants": [
+    "Kit_Lock_Rose_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 70 · D 10 · H 70 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Rose_top.png",
+    "front": "png/Kit_Lock_Rose_front.png",
+    "side": "png/Kit_Lock_Rose_side.png",
+    "persp": "png/Kit_Lock_Rose_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_Rose_Brass": "png/Kit_Lock_Rose_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2728,
+    "lod1": null,
+    "budget": [
+     2400,
+     900,
+     120
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Rose_top",
+    "front": "img:Kit_Lock_Rose_front",
+    "side": "img:Kit_Lock_Rose_side",
+    "persp": "img:Kit_Lock_Rose_persp"
+   }
+  },
+  {
+   "order": 20,
+   "id": "lock_lever",
+   "title": "Lever",
+   "family": "Lock · bored set",
+   "lede": "A 121 mm commercial lever, 64 mm proud: free doors had the accessible handle a decade before the ADA.",
+   "era": {
+    "span": [
+     1980,
+     2000
+    ],
+    "label": "1980–2000",
+    "chip": "Current stock",
+    "note": "Levers were the accessible standard from ANSI A117.1-1980 and UFAS 1984; the ADA required them only for buildings occupied after 26 Jan 1993 (02 §3.1).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §3.1, §4.1"
+    ]
+   },
+   "members": [
+    "L0-F (brass)",
+    "OF-F",
+    "EX-F (S face)"
+   ],
+   "primary": "Kit_Lock_Lever",
+   "variants": [
+    "Kit_Lock_Lever_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 133 · D 54 · H 24 mm",
+   "sheetPpm": 4000,
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Lever_top.png",
+    "front": "png/Kit_Lock_Lever_front.png",
+    "side": "png/Kit_Lock_Lever_side.png",
+    "persp": "png/Kit_Lock_Lever_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_Lever_Brass": "png/Kit_Lock_Lever_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3974,
+    "lod1": null,
+    "budget": [
+     4000,
+     1600,
+     300
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     15.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Lever_top",
+    "front": "img:Kit_Lock_Lever_front",
+    "side": "img:Kit_Lock_Lever_side",
+    "persp": "img:Kit_Lock_Lever_persp"
+   }
+  },
+  {
+   "order": 21,
+   "id": "lock_latch_bored",
+   "title": "Bored latchbolt",
+   "family": "Lock · bored set",
+   "lede": "A 1/2 in throw latch with deadlatch plunger. The lever's 35 degrees pulls it in.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "1/2 in latch throw, 1-1/8 x 2-1/4 in faceplate (D Series pattern, 02 §4.1).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.1"
+    ]
+   },
+   "members": [
+    "L0-F (brass)",
+    "OF-F",
+    "EX-F"
+   ],
+   "primary": "Kit_Lock_Latchbolt_Bored",
+   "variants": [
+    "Kit_Lock_Latchbolt_Bored_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 16 · D 30 · H 20 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Latchbolt_Bored_top.png",
+    "front": "png/Kit_Lock_Latchbolt_Bored_front.png",
+    "side": "png/Kit_Lock_Latchbolt_Bored_side.png",
+    "persp": "png/Kit_Lock_Latchbolt_Bored_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_Latchbolt_Bored_Brass": "png/Kit_Lock_Latchbolt_Bored_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 476,
+    "lod1": null,
+    "budget": [
+     500,
+     200,
+     40
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_Latchbolt_Bored_top",
+    "front": "img:Kit_Lock_Latchbolt_Bored_front",
+    "side": "img:Kit_Lock_Latchbolt_Bored_side",
+    "persp": "img:Kit_Lock_Latchbolt_Bored_persp"
+   }
+  },
+  {
+   "order": 22,
+   "id": "lock_strike_bored",
+   "title": "Bored strike",
+   "family": "Lock · bored set",
+   "lede": "The ANSI 4-7/8 in curved-lip strike with one opening and a dust box.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "ANSI curved-lip strike 1-1/4 x 4-7/8 in (02 §5.2).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §5.2"
+    ]
+   },
+   "members": [
+    "L0-F (brass)",
+    "OF-F",
+    "EX-F"
+   ],
+   "primary": "Kit_Lock_StrikeBored",
+   "variants": [
+    "Kit_Lock_StrikeBored_Brass"
+   ],
+   "parts": [],
+   "dims_label": "W 56 · D 17 · H 124 mm",
+   "sheetPpm": 4000,
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_StrikeBored_top.png",
+    "front": "png/Kit_Lock_StrikeBored_front.png",
+    "side": "png/Kit_Lock_StrikeBored_side.png",
+    "persp": "png/Kit_Lock_StrikeBored_persp.png"
+   },
+   "variantImages": {
+    "Kit_Lock_StrikeBored_Brass": "png/Kit_Lock_StrikeBored_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 674,
+    "lod1": null,
+    "budget": [
+     600,
+     250,
+     40
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Lock_StrikeBored_top",
+    "front": "img:Kit_Lock_StrikeBored_front",
+    "side": "img:Kit_Lock_StrikeBored_side",
+    "persp": "img:Kit_Lock_StrikeBored_persp"
+   }
+  },
+  {
+   "order": 23,
+   "id": "key_zone",
+   "title": "Zone key",
+   "family": "Keys",
+   "lede": "A 58 mm cut brass duplicate, six cuts, a generic paddle bow. Nickel is the factory original.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "Factory keys were nickel silver ('two nickel silver keys per lock'); brass duplicates are the hardware-store copy, and brass reads under yellow light (02 §8.1). No maker's bow, no stamping in v1.",
+    "sources": [
+     "10_spec §3.3",
+     "02 §8.1"
+    ]
+   },
+   "members": [
+    "every zone key"
+   ],
+   "primary": "Kit_Key_Zone",
+   "variants": [
+    "Kit_Key_Zone_Nickel"
+   ],
+   "parts": [],
+   "dims_label": "W 58 · D 2.2 · H 26 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Key_Zone_top.png",
+    "front": "png/Kit_Key_Zone_front.png",
+    "side": "png/Kit_Key_Zone_side.png",
+    "persp": "png/Kit_Key_Zone_persp.png"
+   },
+   "variantImages": {
+    "Kit_Key_Zone_Nickel": "png/Kit_Key_Zone_Nickel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2184,
+    "lod1": null,
+    "budget": [
+     2400,
+     900,
+     150
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_Key_Zone_top",
+    "front": "img:Kit_Key_Zone_front",
+    "side": "img:Kit_Key_Zone_side",
+    "persp": "img:Kit_Key_Zone_persp"
+   }
+  },
+  {
+   "order": 24,
+   "id": "key_ring",
+   "title": "Split ring",
+   "family": "Keys",
+   "lede": "A flat-wire split ring, two turns, 25 mm: the key and the tag hang from it.",
+   "era": {
+    "span": [
+     1950,
+     2000
+    ],
+    "label": "1950–2000",
+    "chip": "Timeless",
+    "note": "Flat steel double coil, nickel-plated, Ø 25-32 mm (02 §8.2).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "members": [
+    "every zone key"
+   ],
+   "primary": "Kit_KeyRing",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 25 · D 1.8 · H 25 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyRing_top.png",
+    "front": "png/Kit_KeyRing_front.png",
+    "side": "png/Kit_KeyRing_side.png",
+    "persp": "png/Kit_KeyRing_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1972,
+    "lod1": null,
+    "budget": [
+     2000,
+     600,
+     96
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyRing_top",
+    "front": "img:Kit_KeyRing_front",
+    "side": "img:Kit_KeyRing_side",
+    "persp": "img:Kit_KeyRing_persp"
+   }
+  },
+  {
+   "order": 25,
+   "id": "key_tag_rect",
+   "title": "Key tag, square",
+   "family": "Keys · tags",
+   "lede": "A plastic tag with a paper insert and a typed number: shape and colour name the zone.",
+   "era": {
+    "span": [
+     1961,
+     2000
+    ],
+    "label": "1961–2000",
+    "chip": "Timeless",
+    "note": "Coloured plastic ID tags with a label window (Lucky Line, family owned since 1961; 02 §8.2). 3 shapes x red, blue, white = 9 identities. Numbers in Courier Prime need Prop_KeyTagNo (P-4).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2",
+     "03 §2.5"
+    ]
+   },
+   "members": [
+    "zone keys"
+   ],
+   "primary": "Kit_KeyTag_Rect",
+   "variants": [
+    "Kit_KeyTag_Rect_Blue",
+    "Kit_KeyTag_Rect_White"
+   ],
+   "parts": [],
+   "dims_label": "W 57 · D 4.2 · H 39 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Rect_top.png",
+    "front": "png/Kit_KeyTag_Rect_front.png",
+    "side": "png/Kit_KeyTag_Rect_side.png",
+    "persp": "png/Kit_KeyTag_Rect_persp.png"
+   },
+   "variantImages": {
+    "Kit_KeyTag_Rect_Blue": "png/Kit_KeyTag_Rect_Blue_persp.png",
+    "Kit_KeyTag_Rect_White": "png/Kit_KeyTag_Rect_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyTag_Rect_top",
+    "front": "img:Kit_KeyTag_Rect_front",
+    "side": "img:Kit_KeyTag_Rect_side",
+    "persp": "img:Kit_KeyTag_Rect_persp"
+   }
+  },
+  {
+   "order": 26,
+   "id": "key_tag_round",
+   "title": "Key tag, round",
+   "family": "Keys · tags",
+   "lede": "A 38 mm round tag with a 26 mm window, the second shape of the zone code.",
+   "era": {
+    "span": [
+     1961,
+     2000
+    ],
+    "label": "1961–2000",
+    "chip": "Timeless",
+    "note": "As the square tag (02 §8.2). The number insert is one quad on Prop_KeyTagNo.",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "members": [
+    "zone keys"
+   ],
+   "primary": "Kit_KeyTag_Round",
+   "variants": [
+    "Kit_KeyTag_Round_Blue",
+    "Kit_KeyTag_Round_White"
+   ],
+   "parts": [],
+   "dims_label": "W 38 · D 4.2 · H 48 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Round_top.png",
+    "front": "png/Kit_KeyTag_Round_front.png",
+    "side": "png/Kit_KeyTag_Round_side.png",
+    "persp": "png/Kit_KeyTag_Round_persp.png"
+   },
+   "variantImages": {
+    "Kit_KeyTag_Round_Blue": "png/Kit_KeyTag_Round_Blue_persp.png",
+    "Kit_KeyTag_Round_White": "png/Kit_KeyTag_Round_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1282,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyTag_Round_top",
+    "front": "img:Kit_KeyTag_Round_front",
+    "side": "img:Kit_KeyTag_Round_side",
+    "persp": "img:Kit_KeyTag_Round_persp"
+   }
+  },
+  {
+   "order": 27,
+   "id": "key_tag_long",
+   "title": "Key tag, valet",
+   "family": "Keys · tags",
+   "lede": "A 76 mm valet tag, the long third shape of the zone code.",
+   "era": {
+    "span": [
+     1961,
+     2000
+    ],
+    "label": "1961–2000",
+    "chip": "Timeless",
+    "note": "As the square tag (02 §8.2).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "members": [
+    "zone keys"
+   ],
+   "primary": "Kit_KeyTag_Long",
+   "variants": [
+    "Kit_KeyTag_Long_Blue",
+    "Kit_KeyTag_Long_White"
+   ],
+   "parts": [],
+   "dims_label": "W 76 · D 4.2 · H 32 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Long_top.png",
+    "front": "png/Kit_KeyTag_Long_front.png",
+    "side": "png/Kit_KeyTag_Long_side.png",
+    "persp": "png/Kit_KeyTag_Long_persp.png"
+   },
+   "variantImages": {
+    "Kit_KeyTag_Long_Blue": "png/Kit_KeyTag_Long_Blue_persp.png",
+    "Kit_KeyTag_Long_White": "png/Kit_KeyTag_Long_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyTag_Long_top",
+    "front": "img:Kit_KeyTag_Long_front",
+    "side": "img:Kit_KeyTag_Long_side",
+    "persp": "img:Kit_KeyTag_Long_persp"
+   }
+  },
+  {
+   "order": 28,
+   "id": "key_board",
+   "title": "Key board",
+   "family": "Keys · hosts",
+   "lede": "A dark painted board with eight brass cup hooks and paper number strips: the Lobby's key host.",
+   "era": {
+    "span": [
+     1950,
+     2000
+    ],
+    "label": "1950–2000",
+    "chip": "Timeless",
+    "note": "Hook boards with cup hooks in a grid were the everyday facility key store (02 §9, 03 §2.3). Spec name Kit_KeyBoard; shipped as Kit_KeyHookBoard because Kit_KeyBoard and Kit_Keyboard are one file on this Mac.",
+    "sources": [
+     "10_spec §4.2",
+     "02 §9",
+     "build_g3"
+    ]
+   },
+   "members": [
+    "Lobby"
+   ],
+   "primary": "Kit_KeyHookBoard",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 300 · D 44 · H 400 mm",
+   "sheetPpm": 1000,
+   "scaleBar": {
+    "label": "20 cm",
+    "metres": 0.2,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyHookBoard_top.png",
+    "front": "png/Kit_KeyHookBoard_front.png",
+    "side": "png/Kit_KeyHookBoard_side.png",
+    "persp": "png/Kit_KeyHookBoard_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_WoodDark",
+     "label": "Dark wood",
+     "hex": "#2d1c14",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 4392,
+    "lod1": null,
+    "budget": [
+     4000,
+     1400,
+     150
+    ],
+    "lodDistances_m": [
+     3.0,
+     8.0,
+     40.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyHookBoard_top",
+    "front": "img:Kit_KeyHookBoard_front",
+    "side": "img:Kit_KeyHookBoard_side",
+    "persp": "img:Kit_KeyHookBoard_persp"
+   }
+  },
+  {
+   "order": 29,
+   "id": "key_cabinet",
+   "title": "Key cabinet",
+   "family": "Keys · hosts",
+   "lede": "An almond steel wall cabinet with 24 hooks and an index card, its door swung flat to the wall.",
+   "era": {
+    "span": [
+     1950,
+     2000
+    ],
+    "label": "1950–2000",
+    "chip": "Timeless",
+    "note": "Telkee-type institution key cabinets (trademark filed 1928), no brand (02 §9). The Office's key host.",
+    "sources": [
+     "10_spec §4.2",
+     "02 §9"
+    ]
+   },
+   "members": [
+    "Office"
+   ],
+   "primary": "Kit_KeyCabinet",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 719 · D 84 · H 460 mm",
+   "sheetPpm": 1000,
+   "scaleBar": {
+    "label": "20 cm",
+    "metres": 0.2,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyCabinet_top.png",
+    "front": "png/Kit_KeyCabinet_front.png",
+    "side": "png/Kit_KeyCabinet_side.png",
+    "persp": "png/Kit_KeyCabinet_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_SteelAlmond",
+     "label": "Almond steel",
+     "hex": "#ad9c75",
+     "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 6804,
+    "lod1": null,
+    "budget": [
+     7000,
+     2400,
+     250
+    ],
+    "lodDistances_m": [
+     3.0,
+     8.0,
+     40.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyCabinet_top",
+    "front": "img:Kit_KeyCabinet_front",
+    "side": "img:Kit_KeyCabinet_side",
+    "persp": "img:Kit_KeyCabinet_persp"
+   }
+  },
+  {
+   "order": 30,
+   "id": "key_hook",
+   "title": "Key hook",
+   "family": "Keys · hosts",
+   "lede": "One brass cup hook in the wall, at 1.476 m: the procedural rooms' fallback host.",
+   "era": {
+    "span": [
+     1950,
+     2000
+    ],
+    "label": "1950–2000",
+    "chip": "Timeless",
+    "note": "A single key on a hook by a door (02 §9). At most one key in four, red or blue tag only (10 §4.2).",
+    "sources": [
+     "10_spec §4.2, §4.3",
+     "02 §9"
+    ]
+   },
+   "members": [
+    "any room"
+   ],
+   "primary": "Kit_KeyHook",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 6.8 · D 26 · H 14 mm",
+   "sheetPpm": 8000,
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyHook_top.png",
+    "front": "png/Kit_KeyHook_front.png",
+    "side": "png/Kit_KeyHook_side.png",
+    "persp": "png/Kit_KeyHook_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 530,
+    "lod1": null,
+    "budget": [
+     600,
+     200,
+     null
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_KeyHook_top",
+    "front": "img:Kit_KeyHook_front",
+    "side": "img:Kit_KeyHook_side",
+    "persp": "img:Kit_KeyHook_persp"
+   }
+  },
+  {
+   "order": 31,
+   "id": "window_wood",
+   "title": "Wood window",
+   "family": "Windows",
+   "lede": "A walnut back-office light with casing, horned stool and apron: older stock in the Lobby.",
+   "era": {
+    "span": [
+     1955,
+     1985
+    ],
+    "label": "1955–85",
+    "chip": "Second-hand",
+    "note": "Wood borrowed lights with stool, apron and casing belong to older buildings (NPS ITS 31's 'mahogany trim around openings'; 06 §2.1). Same casing profile as the wood door frame.",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.1, §3.1"
+    ]
+   },
+   "members": [
+    "W-L0"
+   ],
+   "primary": "Kit_WindowFrame_Wood",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 1600 · D 242 · H 1828 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Wood_top.png",
+    "front": "png/Kit_WindowFrame_Wood_front.png",
+    "side": "png/Kit_WindowFrame_Wood_side.png",
+    "persp": "png/Kit_WindowFrame_Wood_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_WoodWalnut",
+     "label": "Walnut",
+     "hex": "#4a3020",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2322,
+    "lod1": 1044,
+    "budget": [
+     2600,
+     1000,
+     200
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_WindowFrame_Wood_top",
+    "front": "img:Kit_WindowFrame_Wood_front",
+    "side": "img:Kit_WindowFrame_Wood_side",
+    "persp": "img:Kit_WindowFrame_Wood_persp"
+   }
+  },
+  {
+   "order": 32,
+   "id": "window_steel",
+   "title": "Steel window",
+   "family": "Windows",
+   "lede": "An SDI borrowed-light frame in bronze, 30 oval-head screws on the room-side stop.",
+   "era": {
+    "span": [
+     1955,
+     2000
+    ],
+    "label": "1955–2000",
+    "chip": "Timeless",
+    "note": "Pressed-steel borrowed-light frames: integral stop on the hall side, screwed removable stop on the room side at <= 9 in centres (SDI 111A; UH spec; 06 §2.2). The _Enamel variant is the Run's corridor light (Door_Enamel, P-4).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.2, §3.2, §3.3"
+    ]
+   },
+   "members": [
+    "W-OF",
+    "W-RN (Enamel)"
+   ],
+   "primary": "Kit_WindowFrame_Steel",
+   "variants": [
+    "Kit_WindowFrame_Steel_Enamel"
+   ],
+   "parts": [],
+   "dims_label": "W 1550 · D 210 · H 1800 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Steel_top.png",
+    "front": "png/Kit_WindowFrame_Steel_front.png",
+    "side": "png/Kit_WindowFrame_Steel_side.png",
+    "persp": "png/Kit_WindowFrame_Steel_persp.png"
+   },
+   "variantImages": {
+    "Kit_WindowFrame_Steel_Enamel": "png/Kit_WindowFrame_Steel_Enamel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3862,
+    "lod1": 1438,
+    "budget": [
+     3600,
+     1300,
+     220
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_WindowFrame_Steel_top",
+    "front": "img:Kit_WindowFrame_Steel_front",
+    "side": "img:Kit_WindowFrame_Steel_side",
+    "persp": "img:Kit_WindowFrame_Steel_persp"
+   }
+  },
+  {
+   "order": 33,
+   "id": "window_alu",
+   "title": "Aluminium window",
+   "family": "Windows",
+   "lede": "A clear-anodised aluminium office front with bevelled snap-in beads and a black vinyl gasket.",
+   "era": {
+    "span": [
+     1982,
+     2000
+    ],
+    "label": "1982–2000",
+    "chip": "Current stock",
+    "note": "Demountable aluminium partition glazing, US Gypsum patents US4463535 / US4443984 (filed 1981-82, granted 1984). Clear and bronze anodising were both ordinary by 1990 (06 §2.3).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.1, §2.3"
+    ]
+   },
+   "members": [
+    "W-EX"
+   ],
+   "primary": "Kit_WindowFrame_Alu",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 1550 · D 210 · H 1800 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Alu_top.png",
+    "front": "png/Kit_WindowFrame_Alu_front.png",
+    "side": "png/Kit_WindowFrame_Alu_side.png",
+    "persp": "png/Kit_WindowFrame_Alu_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1088,
+    "lod1": 1064,
+    "budget": [
+     2800,
+     1000,
+     200
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_WindowFrame_Alu_top",
+    "front": "img:Kit_WindowFrame_Alu_front",
+    "side": "img:Kit_WindowFrame_Alu_side",
+    "persp": "img:Kit_WindowFrame_Alu_persp"
+   }
+  },
+  {
+   "order": 34,
+   "id": "miniblind_raised",
+   "title": "Mini-blind, raised",
+   "family": "Windows",
+   "lede": "A 1-inch aluminium mini-blind, raised clear of the opening, almond slats.",
+   "era": {
+    "span": [
+     1975,
+     2000
+    ],
+    "label": "1975–2000",
+    "chip": "Current stock",
+    "note": "Mini-blinds were 70-80 % of the US window-covering market in 1981; the 1993 Sears catalogue sells Levolor 1-inch blinds in Almond (06 §2.5). Optional on Office windows by edge hash.",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.5"
+    ]
+   },
+   "members": [
+    "W-OF (option)"
+   ],
+   "primary": "Kit_MiniBlind_Raised",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 1550 · D 76 · H 1060 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_MiniBlind_Raised_top.png",
+    "front": "png/Kit_MiniBlind_Raised_front.png",
+    "side": "png/Kit_MiniBlind_Raised_side.png",
+    "persp": "png/Kit_MiniBlind_Raised_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_SteelAlmond",
+     "label": "Almond steel",
+     "hex": "#ad9c75",
+     "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2572,
+    "lod1": 876,
+    "budget": [
+     2400,
+     800,
+     120
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     30.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_MiniBlind_Raised_top",
+    "front": "img:Kit_MiniBlind_Raised_front",
+    "side": "img:Kit_MiniBlind_Raised_side",
+    "persp": "img:Kit_MiniBlind_Raised_persp"
+   }
+  },
+  {
+   "order": 35,
+   "id": "miniblind_lowered",
+   "title": "Mini-blind, lowered",
+   "family": "Windows",
+   "lede": "The same blind 2.40 m wide, lowered and half-tilted: decor for the dark interior window only.",
+   "era": {
+    "span": [
+     1975,
+     2000
+    ],
+    "label": "1975–2000",
+    "chip": "Current stock",
+    "note": "As the raised blind. Never on a breakable map window: it would hang in the climb opening (10 §5.1 rules).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.5"
+    ]
+   },
+   "members": [
+    "Kit_InteriorWindow (G5)"
+   ],
+   "primary": "Kit_MiniBlind_Lowered",
+   "variants": [],
+   "parts": [],
+   "dims_label": "W 2400 · D 76 · H 1308 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_MiniBlind_Lowered_top.png",
+    "front": "png/Kit_MiniBlind_Lowered_front.png",
+    "side": "png/Kit_MiniBlind_Lowered_side.png",
+    "persp": "png/Kit_MiniBlind_Lowered_persp.png"
+   },
+   "variantImages": {},
+   "materials": [
+    {
+     "slot": "Prop_SteelAlmond",
+     "label": "Almond steel",
+     "hex": "#ad9c75",
+     "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 6376,
+    "lod1": 1594,
+    "budget": [
+     6000,
+     1500,
+     200
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     30.0
+    ]
+   },
+   "figmaSlots": {
+    "top": "img:Kit_MiniBlind_Lowered_top",
+    "front": "img:Kit_MiniBlind_Lowered_front",
+    "side": "img:Kit_MiniBlind_Lowered_side",
+    "persp": "img:Kit_MiniBlind_Lowered_persp"
+   }
+  },
+  {
+   "order": 36,
+   "id": "doorway_studs",
+   "title": "Stud doorway",
+   "family": "Doors · existing",
+   "lede": "Raw 2x4 opening outlined in blue painter's tape, a 3M product from 1988.",
+   "era": {
+    "span": [
+     1950,
+     2000
+    ],
+    "label": "1950–2000",
+    "chip": "Timeless",
+    "note": "Unchanged since the 2026-10-02 sheets: the FBX files match the real project byte for byte. Already on K45 (2328:1258); re-rendered here only for completeness.",
+    "sources": [
+     "K45"
+    ]
+   },
+   "members": [
+    "renovation rooms"
+   ],
+   "primary": "Kit_DoorwayStuds",
+   "variants": [
+    "Kit_DoorwayStuds140",
+    "Kit_DoorwayStuds180"
+   ],
+   "parts": [],
+   "dims_label": "W 1252 · D 142 · H 2327 mm",
+   "sheetPpm": 250,
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorwayStuds_top.png",
+    "front": "png/Kit_DoorwayStuds_front.png",
+    "side": "png/Kit_DoorwayStuds_side.png",
+    "persp": "png/Kit_DoorwayStuds_persp.png"
+   },
+   "variantImages": {
+    "Kit_DoorwayStuds140": "png/Kit_DoorwayStuds140_persp.png",
+    "Kit_DoorwayStuds180": "png/Kit_DoorwayStuds180_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Studs",
+     "label": "Spruce studs",
+     "hex": "#c9ae83",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_TapeBlue",
+     "label": "Painter's tape",
+     "hex": "#2e86c1",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 438,
+    "lod1": 182,
+    "budget": null,
+    "lodDistances_m": null
+   },
+   "figmaSlots": {
+    "top": "img:Kit_DoorwayStuds_top",
+    "front": "img:Kit_DoorwayStuds_front",
+    "side": "img:Kit_DoorwayStuds_side",
+    "persp": "img:Kit_DoorwayStuds_persp"
+   },
+   "existingSheet": "K45 · Stud doorway (2328:1258)"
+  }
+ ],
+ "kits": {
+  "Kit_DoorFrame_Wood": {
+   "sheet": "doorframe_wood",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1150,
+    "D": 210,
+    "H": 2175
+   },
+   "dims_label": "W 1150 · D 210 · H 2175 mm",
+   "size_m": [
+    1.15,
+    2.175,
+    0.21
+   ],
+   "boundsMin": [
+    -1.075,
+    0,
+    -0.105
+   ],
+   "boundsMax": [
+    0.075,
+    2.175,
+    0.105
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     607,
+     1120
+    ],
+    "side": [
+     137,
+     1120
+    ],
+    "top": [
+     607,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorFrame_Wood_top.png",
+    "front": "png/Kit_DoorFrame_Wood_front.png",
+    "side": "png/Kit_DoorFrame_Wood_side.png",
+    "persp": "png/Kit_DoorFrame_Wood_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_WoodWalnut",
+     "label": "Walnut",
+     "hex": "#4a3020",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_WoodOak",
+     "label": "Golden oak",
+     "hex": "#9a6a3a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3152,
+    "lod1": 1260,
+    "budget": [
+     2800,
+     1100,
+     250
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_frame",
+    "lobby",
+    "frame_wood"
+   ],
+   "anchors": [
+    "strike",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "head_dust_a",
+    "head_dust_b",
+    "threshold"
+   ],
+   "family": "Doors · frames"
+  },
+  "Kit_DoorFrame_Steel": {
+   "sheet": "doorframe_steel",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1150,
+    "D": 210,
+    "H": 2175
+   },
+   "dims_label": "W 1150 · D 210 · H 2175 mm",
+   "size_m": [
+    1.15,
+    2.175,
+    0.21
+   ],
+   "boundsMin": [
+    -1.075,
+    0,
+    -0.105
+   ],
+   "boundsMax": [
+    0.075,
+    2.175,
+    0.105
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     607,
+     1120
+    ],
+    "side": [
+     137,
+     1120
+    ],
+    "top": [
+     607,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorFrame_Steel_top.png",
+    "front": "png/Kit_DoorFrame_Steel_front.png",
+    "side": "png/Kit_DoorFrame_Steel_side.png",
+    "persp": "png/Kit_DoorFrame_Steel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3866,
+    "lod1": 1430,
+    "budget": [
+     3600,
+     1300,
+     280
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_frame",
+    "office",
+    "lobby",
+    "frame_steel"
+   ],
+   "anchors": [
+    "strike",
+    "strike_bored",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "head_dust_a",
+    "head_dust_b",
+    "threshold",
+    "closer_shoe",
+    "exit_sign_p"
+   ],
+   "family": "Doors · frames"
+  },
+  "Kit_DoorFrame_Steel_Alu": {
+   "sheet": "doorframe_steel",
+   "role": "variant",
+   "dims_mm": {
+    "W": 1150,
+    "D": 210,
+    "H": 2175
+   },
+   "dims_label": "W 1150 · D 210 · H 2175 mm",
+   "size_m": [
+    1.15,
+    2.175,
+    0.21
+   ],
+   "boundsMin": [
+    -1.075,
+    0,
+    -0.105
+   ],
+   "boundsMax": [
+    0.075,
+    2.175,
+    0.105
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     607,
+     1120
+    ],
+    "side": [
+     137,
+     1120
+    ],
+    "top": [
+     607,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorFrame_Steel_Alu_top.png",
+    "front": "png/Kit_DoorFrame_Steel_Alu_front.png",
+    "side": "png/Kit_DoorFrame_Steel_Alu_side.png",
+    "persp": "png/Kit_DoorFrame_Steel_Alu_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3866,
+    "lod1": 1430,
+    "budget": [
+     3600,
+     1300,
+     280
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_frame",
+    "office",
+    "lobby",
+    "frame_steel"
+   ],
+   "anchors": [
+    "strike",
+    "strike_bored",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "head_dust_a",
+    "head_dust_b",
+    "threshold",
+    "closer_shoe",
+    "exit_sign_p"
+   ],
+   "family": "Doors · frames",
+   "variantOf": "Kit_DoorFrame_Steel",
+   "swap": [
+    "Prop_SteelBrown -> Prop_Aluminium"
+   ]
+  },
+  "Kit_DoorLeaf_Veneer": {
+   "sheet": "doorleaf_veneer",
+   "role": "primary",
+   "dims_mm": {
+    "W": 992,
+    "D": 59,
+    "H": 2080
+   },
+   "dims_label": "W 992 · D 59 · H 2080 mm",
+   "size_m": [
+    0.9925,
+    2.08,
+    0.0589
+   ],
+   "boundsMin": [
+    -0.995,
+    0.015,
+    -0.022
+   ],
+   "boundsMax": [
+    -0.0024,
+    2.095,
+    0.0369
+   ],
+   "aboveFloor_m": 0.015,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     529,
+     1072
+    ],
+    "side": [
+     62,
+     1072
+    ],
+    "top": [
+     529,
+     62
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Veneer_top.png",
+    "front": "png/Kit_DoorLeaf_Veneer_front.png",
+    "side": "png/Kit_DoorLeaf_Veneer_side.png",
+    "persp": "png/Kit_DoorLeaf_Veneer_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Door_Veneer",
+     "label": "Door veneer",
+     "hex": "#9d6d3b",
+     "source": "Resources/Surfaces/Door_Veneer.mat: mean of Assets/Resources/Surfaces/Textures/DoorVeneer_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2464,
+    "lod1": 886,
+    "budget": [
+     2600,
+     900,
+     120
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_leaf",
+    "lobby",
+    "office",
+    "door_type_wood"
+   ],
+   "anchors": [
+    "rose_s",
+    "rose_p",
+    "latchbolt",
+    "latchbolt_dir",
+    "latch_edge_bottom",
+    "latch_edge_top",
+    "damage_latch",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "closer_mount_s"
+   ],
+   "family": "Doors · leaves"
+  },
+  "Kit_DoorLeaf_Veneer_Oak": {
+   "sheet": "doorleaf_veneer",
+   "role": "variant",
+   "dims_mm": {
+    "W": 992,
+    "D": 59,
+    "H": 2080
+   },
+   "dims_label": "W 992 · D 59 · H 2080 mm",
+   "size_m": [
+    0.9925,
+    2.08,
+    0.0589
+   ],
+   "boundsMin": [
+    -0.995,
+    0.015,
+    -0.022
+   ],
+   "boundsMax": [
+    -0.0024,
+    2.095,
+    0.0369
+   ],
+   "aboveFloor_m": 0.015,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     529,
+     1072
+    ],
+    "side": [
+     62,
+     1072
+    ],
+    "top": [
+     529,
+     62
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Veneer_Oak_top.png",
+    "front": "png/Kit_DoorLeaf_Veneer_Oak_front.png",
+    "side": "png/Kit_DoorLeaf_Veneer_Oak_side.png",
+    "persp": "png/Kit_DoorLeaf_Veneer_Oak_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_WoodOak",
+     "label": "Golden oak",
+     "hex": "#9a6a3a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2464,
+    "lod1": 886,
+    "budget": [
+     2600,
+     900,
+     120
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_leaf",
+    "lobby",
+    "office",
+    "door_type_wood"
+   ],
+   "anchors": [
+    "rose_s",
+    "rose_p",
+    "latchbolt",
+    "latchbolt_dir",
+    "latch_edge_bottom",
+    "latch_edge_top",
+    "damage_latch",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "closer_mount_s"
+   ],
+   "family": "Doors · leaves",
+   "variantOf": "Kit_DoorLeaf_Veneer",
+   "swap": [
+    "Door_Veneer -> Prop_WoodOak",
+    "Prop_Brass -> Prop_Chrome"
+   ]
+  },
+  "Kit_DoorLeaf_Steel": {
+   "sheet": "doorleaf_steel",
+   "role": "primary",
+   "dims_mm": {
+    "W": 992,
+    "D": 61,
+    "H": 2080
+   },
+   "dims_label": "W 992 · D 61 · H 2080 mm",
+   "size_m": [
+    0.9925,
+    2.08,
+    0.0613
+   ],
+   "boundsMin": [
+    -0.995,
+    0.015,
+    -0.0244
+   ],
+   "boundsMax": [
+    -0.0024,
+    2.095,
+    0.0369
+   ],
+   "aboveFloor_m": 0.015,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     529,
+     1072
+    ],
+    "side": [
+     63,
+     1072
+    ],
+    "top": [
+     529,
+     63
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Steel_top.png",
+    "front": "png/Kit_DoorLeaf_Steel_front.png",
+    "side": "png/Kit_DoorLeaf_Steel_side.png",
+    "persp": "png/Kit_DoorLeaf_Steel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Door_Enamel",
+     "label": "Almond enamel",
+     "hex": "#cdc5b0",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Door_Enamel.mat yet; Unity binds _BaseColor #cdc5b0)",
+     "p4": true,
+     "targetHex": "#cdc5b0",
+     "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3930,
+    "lod1": 1572,
+    "budget": [
+     4200,
+     1500,
+     150
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_leaf",
+    "lobby",
+    "office",
+    "door_type_hollow_metal",
+    "locked"
+   ],
+   "anchors": [
+    "escutcheon_s",
+    "sign_s",
+    "tagplate_s",
+    "kick_s",
+    "escutcheon_p",
+    "sign_p",
+    "tagplate_p",
+    "kick_p",
+    "latchbolt",
+    "latchbolt_dir",
+    "deadbolt",
+    "deadbolt_dir",
+    "latch_edge_bottom",
+    "latch_edge_top",
+    "damage_latch",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "closer_mount_s"
+   ],
+   "family": "Doors · leaves"
+  },
+  "Kit_DoorLeaf_Steel_PaintedMetal": {
+   "sheet": "doorleaf_steel",
+   "role": "variant",
+   "dims_mm": {
+    "W": 992,
+    "D": 61,
+    "H": 2080
+   },
+   "dims_label": "W 992 · D 61 · H 2080 mm",
+   "size_m": [
+    0.9925,
+    2.08,
+    0.0613
+   ],
+   "boundsMin": [
+    -0.995,
+    0.015,
+    -0.0244
+   ],
+   "boundsMax": [
+    -0.0024,
+    2.095,
+    0.0369
+   ],
+   "aboveFloor_m": 0.015,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     529,
+     1072
+    ],
+    "side": [
+     63,
+     1072
+    ],
+    "top": [
+     529,
+     63
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Steel_PaintedMetal_top.png",
+    "front": "png/Kit_DoorLeaf_Steel_PaintedMetal_front.png",
+    "side": "png/Kit_DoorLeaf_Steel_PaintedMetal_side.png",
+    "persp": "png/Kit_DoorLeaf_Steel_PaintedMetal_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Painted_Metal",
+     "label": "Painted metal",
+     "hex": "#d3cdbd",
+     "source": "Resources/Surfaces/Painted_Metal.mat: mean of Assets/Resources/Surfaces/Textures/PaintedMetal_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3930,
+    "lod1": 1572,
+    "budget": [
+     4200,
+     1500,
+     150
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_leaf",
+    "lobby",
+    "office",
+    "door_type_hollow_metal",
+    "locked"
+   ],
+   "anchors": [
+    "escutcheon_s",
+    "sign_s",
+    "tagplate_s",
+    "kick_s",
+    "escutcheon_p",
+    "sign_p",
+    "tagplate_p",
+    "kick_p",
+    "latchbolt",
+    "latchbolt_dir",
+    "deadbolt",
+    "deadbolt_dir",
+    "latch_edge_bottom",
+    "latch_edge_top",
+    "damage_latch",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "closer_mount_s"
+   ],
+   "family": "Doors · leaves",
+   "variantOf": "Kit_DoorLeaf_Steel",
+   "swap": [
+    "Door_Enamel -> Painted_Metal"
+   ]
+  },
+  "Kit_DoorLeaf_SteelLite": {
+   "sheet": "doorleaf_steellite",
+   "role": "primary",
+   "dims_mm": {
+    "W": 992,
+    "D": 61,
+    "H": 2080
+   },
+   "dims_label": "W 992 · D 61 · H 2080 mm",
+   "size_m": [
+    0.9925,
+    2.08,
+    0.0614
+   ],
+   "boundsMin": [
+    -0.995,
+    0.015,
+    -0.0245
+   ],
+   "boundsMax": [
+    -0.0024,
+    2.095,
+    0.0369
+   ],
+   "aboveFloor_m": 0.015,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     529,
+     1072
+    ],
+    "side": [
+     63,
+     1072
+    ],
+    "top": [
+     529,
+     63
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_SteelLite_top.png",
+    "front": "png/Kit_DoorLeaf_SteelLite_front.png",
+    "side": "png/Kit_DoorLeaf_SteelLite_side.png",
+    "persp": "png/Kit_DoorLeaf_SteelLite_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Door_Enamel",
+     "label": "Almond enamel",
+     "hex": "#cdc5b0",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Door_Enamel.mat yet; Unity binds _BaseColor #cdc5b0)",
+     "p4": true,
+     "targetHex": "#cdc5b0",
+     "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Glass",
+     "label": "Glass",
+     "hex": "#d1e0e0",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4586,
+    "lod1": 1834,
+    "budget": [
+     5200,
+     1900,
+     200
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_leaf",
+    "lobby",
+    "office",
+    "door_type_hollow_metal",
+    "locked",
+    "lite",
+    "run"
+   ],
+   "anchors": [
+    "escutcheon_s",
+    "sign_s",
+    "tagplate_s",
+    "kick_s",
+    "escutcheon_p",
+    "sign_p",
+    "tagplate_p",
+    "kick_p",
+    "latchbolt",
+    "latchbolt_dir",
+    "deadbolt",
+    "deadbolt_dir",
+    "latch_edge_bottom",
+    "latch_edge_top",
+    "damage_latch",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "closer_mount_s",
+    "lite_centre"
+   ],
+   "family": "Doors · leaves"
+  },
+  "Kit_DoorLeaf_Ward": {
+   "sheet": "doorleaf_ward",
+   "role": "primary",
+   "dims_mm": {
+    "W": 992,
+    "D": 110,
+    "H": 2080
+   },
+   "dims_label": "W 992 · D 110 · H 2080 mm",
+   "size_m": [
+    0.9925,
+    2.08,
+    0.1104
+   ],
+   "boundsMin": [
+    -0.995,
+    0.015,
+    -0.0244
+   ],
+   "boundsMax": [
+    -0.0024,
+    2.095,
+    0.086
+   ],
+   "aboveFloor_m": 0.015,
+   "viewYaw": -90,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     529,
+     1072
+    ],
+    "side": [
+     88,
+     1072
+    ],
+    "top": [
+     529,
+     88
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorLeaf_Ward_top.png",
+    "front": "png/Kit_DoorLeaf_Ward_front.png",
+    "side": "png/Kit_DoorLeaf_Ward_side.png",
+    "persp": "png/Kit_DoorLeaf_Ward_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_WoodLaminate",
+     "label": "Wood laminate",
+     "hex": "#8e6e4c",
+     "source": "Resources/Surfaces/Prop_WoodLaminate.mat: mean of Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4930,
+    "lod1": 1972,
+    "budget": [
+     5000,
+     1800,
+     180
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     -1.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "door_leaf",
+    "run",
+    "door_type_wood",
+    "push_pull"
+   ],
+   "anchors": [
+    "kick_s",
+    "kick_p",
+    "pull_s",
+    "push_p",
+    "armor_p",
+    "latch_edge_bottom",
+    "latch_edge_top",
+    "damage_latch",
+    "hinge_axis",
+    "hinge_axis_dir",
+    "closer_mount_s"
+   ],
+   "family": "Doors · leaves"
+  },
+  "Kit_DoorCloser_Body": {
+   "sheet": "door_closer",
+   "role": "primary",
+   "dims_mm": {
+    "W": 292,
+    "D": 51,
+    "H": 83
+   },
+   "dims_label": "W 292 · D 51 · H 83 mm",
+   "size_m": [
+    0.2923,
+    0.0828,
+    0.0506
+   ],
+   "boundsMin": [
+    -0.147,
+    -0.0353,
+    0
+   ],
+   "boundsMax": [
+    0.1453,
+    0.0475,
+    0.0506
+   ],
+   "aboveFloor_m": -0.0353,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1202,
+     364
+    ],
+    "side": [
+     235,
+     364
+    ],
+    "top": [
+     1202,
+     235
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorCloser_Body_top.png",
+    "front": "png/Kit_DoorCloser_Body_front.png",
+    "side": "png/Kit_DoorCloser_Body_side.png",
+    "persp": "png/Kit_DoorCloser_Body_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3236,
+    "lod1": null,
+    "budget": [
+     3000,
+     1000,
+     150
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     20.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "closer",
+    "office"
+   ],
+   "anchors": [
+    "spindle",
+    "spindle_dir",
+    "mount"
+   ],
+   "motion": "static",
+   "family": "Doors · hardware"
+  },
+  "Kit_DoorCloser_Arm": {
+   "sheet": "door_closer",
+   "role": "part",
+   "dims_mm": {
+    "W": 266,
+    "D": 30,
+    "H": 21
+   },
+   "dims_label": "W 266 · D 30 · H 21 mm",
+   "size_m": [
+    0.266,
+    0.0212,
+    0.03
+   ],
+   "boundsMin": [
+    -0.015,
+    0,
+    -0.015
+   ],
+   "boundsMax": [
+    0.251,
+    0.0212,
+    0.015
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1096,
+     117
+    ],
+    "side": [
+     152,
+     117
+    ],
+    "top": [
+     1096,
+     152
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorCloser_Arm_top.png",
+    "front": "png/Kit_DoorCloser_Arm_front.png",
+    "side": "png/Kit_DoorCloser_Arm_side.png",
+    "persp": "png/Kit_DoorCloser_Arm_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1112,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     20.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "closer",
+    "office"
+   ],
+   "anchors": [
+    "spindle",
+    "elbow",
+    "elbow_top"
+   ],
+   "motion": "rotate",
+   "family": "Doors · hardware"
+  },
+  "Kit_DoorCloser_Forearm": {
+   "sheet": "door_closer",
+   "role": "part",
+   "dims_mm": {
+    "W": 280,
+    "D": 22,
+    "H": 50
+   },
+   "dims_label": "W 280 · D 22 · H 50 mm",
+   "size_m": [
+    0.2795,
+    0.05,
+    0.0219
+   ],
+   "boundsMin": [
+    -0.0105,
+    0,
+    -0.011
+   ],
+   "boundsMax": [
+    0.269,
+    0.05,
+    0.011
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1150,
+     232
+    ],
+    "side": [
+     120,
+     232
+    ],
+    "top": [
+     1150,
+     120
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorCloser_Forearm_top.png",
+    "front": "png/Kit_DoorCloser_Forearm_front.png",
+    "side": "png/Kit_DoorCloser_Forearm_side.png",
+    "persp": "png/Kit_DoorCloser_Forearm_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 940,
+    "lod1": null,
+    "budget": [
+     900,
+     300,
+     50
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     20.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "closer",
+    "office"
+   ],
+   "anchors": [
+    "elbow",
+    "shoe_end"
+   ],
+   "motion": "rotate",
+   "family": "Doors · hardware"
+  },
+  "Kit_DoorCloser_Shoe": {
+   "sheet": "door_closer",
+   "role": "part",
+   "dims_mm": {
+    "W": 30,
+    "D": 31,
+    "H": 40
+   },
+   "dims_label": "W 30 · D 31 · H 40 mm",
+   "size_m": [
+    0.03,
+    0.04,
+    0.031
+   ],
+   "boundsMin": [
+    -0.015,
+    -0.02,
+    -0.02
+   ],
+   "boundsMax": [
+    0.015,
+    0.02,
+    0.011
+   ],
+   "aboveFloor_m": -0.02,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     512,
+     672
+    ],
+    "side": [
+     528,
+     672
+    ],
+    "top": [
+     512,
+     528
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorCloser_Shoe_top.png",
+    "front": "png/Kit_DoorCloser_Shoe_front.png",
+    "side": "png/Kit_DoorCloser_Shoe_side.png",
+    "persp": "png/Kit_DoorCloser_Shoe_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 570,
+    "lod1": null,
+    "budget": [
+     500,
+     200,
+     40
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     20.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "closer",
+    "office"
+   ],
+   "anchors": [
+    "pivot",
+    "pivot_dir",
+    "mount"
+   ],
+   "motion": "static",
+   "family": "Doors · hardware"
+  },
+  "Kit_ExitDevice_Crossbar": {
+   "sheet": "exit_crossbar",
+   "role": "primary",
+   "dims_mm": {
+    "W": 877,
+    "D": 95,
+    "H": 120
+   },
+   "dims_label": "W 877 · D 95 · H 120 mm",
+   "size_m": [
+    0.8773,
+    0.12,
+    0.095
+   ],
+   "boundsMin": [
+    -0.0386,
+    -0.06,
+    0
+   ],
+   "boundsMax": [
+    0.8386,
+    0.06,
+    0.095
+   ],
+   "aboveFloor_m": -0.06,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     471,
+     92
+    ],
+    "side": [
+     80,
+     92
+    ],
+    "top": [
+     471,
+     80
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_ExitDevice_Crossbar_top.png",
+    "front": "png/Kit_ExitDevice_Crossbar_front.png",
+    "side": "png/Kit_ExitDevice_Crossbar_side.png",
+    "persp": "png/Kit_ExitDevice_Crossbar_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3948,
+    "lod1": null,
+    "budget": [
+     3500,
+     1200,
+     200
+    ],
+    "lodDistances_m": [
+     2.0,
+     6.0,
+     25.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door",
+    "exit_device",
+    "exit"
+   ],
+   "anchors": [
+    "latch_case",
+    "hinge_case",
+    "bar_centre",
+    "push_point"
+   ],
+   "motion": "static",
+   "family": "Doors · hardware"
+  },
+  "Kit_DoorSign": {
+   "sheet": "door_sign",
+   "role": "primary",
+   "dims_mm": {
+    "W": 254,
+    "D": 4.3,
+    "H": 76
+   },
+   "dims_label": "W 254 · D 4.3 · H 76 mm",
+   "size_m": [
+    0.254,
+    0.076,
+    0.0043
+   ],
+   "boundsMin": [
+    -0.127,
+    -0.038,
+    0
+   ],
+   "boundsMax": [
+    0.127,
+    0.038,
+    0.0043
+   ],
+   "aboveFloor_m": -0.038,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     2064,
+     640
+    ],
+    "side": [
+     67,
+     640
+    ],
+    "top": [
+     2064,
+     67
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorSign_top.png",
+    "front": "png/Kit_DoorSign_front.png",
+    "side": "png/Kit_DoorSign_side.png",
+    "persp": "png/Kit_DoorSign_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_SignEngraved",
+     "label": "Engraved sign",
+     "hex": "#796961",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_SignEngraved.mat yet; Unity binds _BaseColor #796961)",
+     "p4": true,
+     "targetHex": "#30241e",
+     "note": "spec target: dark brown face sRGB 48/36/30 with ivory engraved letters (05 §6.2), 2 x 2 atlas (P-4)"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 664,
+    "lod1": null,
+    "budget": [
+     600,
+     200,
+     12
+    ],
+    "lodDistances_m": [
+     2.0,
+     6.0,
+     25.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door_sign"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "face_dir"
+   ],
+   "family": "Doors · signage"
+  },
+  "Kit_DoorNumberPlate": {
+   "sheet": "door_numberplate",
+   "role": "primary",
+   "dims_mm": {
+    "W": 100,
+    "D": 4.2,
+    "H": 50
+   },
+   "dims_label": "W 100 · D 4.2 · H 50 mm",
+   "size_m": [
+    0.1,
+    0.05,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.05,
+    -0.025,
+    0
+   ],
+   "boundsMax": [
+    0.05,
+    0.025,
+    0.0042
+   ],
+   "aboveFloor_m": -0.025,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1632,
+     832
+    ],
+    "side": [
+     100,
+     832
+    ],
+    "top": [
+     1632,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorNumberPlate_top.png",
+    "front": "png/Kit_DoorNumberPlate_front.png",
+    "side": "png/Kit_DoorNumberPlate_side.png",
+    "persp": "png/Kit_DoorNumberPlate_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 480,
+    "lod1": null,
+    "budget": [
+     500,
+     180,
+     12
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door_sign",
+    "number_plate"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Doors · signage"
+  },
+  "Kit_DoorNumberPlate_Blue": {
+   "sheet": "door_numberplate",
+   "role": "variant",
+   "dims_mm": {
+    "W": 100,
+    "D": 4.2,
+    "H": 50
+   },
+   "dims_label": "W 100 · D 4.2 · H 50 mm",
+   "size_m": [
+    0.1,
+    0.05,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.05,
+    -0.025,
+    0
+   ],
+   "boundsMax": [
+    0.05,
+    0.025,
+    0.0042
+   ],
+   "aboveFloor_m": -0.025,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1632,
+     832
+    ],
+    "side": [
+     100,
+     832
+    ],
+    "top": [
+     1632,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorNumberPlate_Blue_top.png",
+    "front": "png/Kit_DoorNumberPlate_Blue_front.png",
+    "side": "png/Kit_DoorNumberPlate_Blue_side.png",
+    "persp": "png/Kit_DoorNumberPlate_Blue_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticBlue",
+     "label": "Blue plastic",
+     "hex": "#0f2973",
+     "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 480,
+    "lod1": null,
+    "budget": [
+     500,
+     180,
+     12
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door_sign",
+    "number_plate"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Doors · signage",
+   "variantOf": "Kit_DoorNumberPlate",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticBlue"
+   ]
+  },
+  "Kit_DoorNumberPlate_White": {
+   "sheet": "door_numberplate",
+   "role": "variant",
+   "dims_mm": {
+    "W": 100,
+    "D": 4.2,
+    "H": 50
+   },
+   "dims_label": "W 100 · D 4.2 · H 50 mm",
+   "size_m": [
+    0.1,
+    0.05,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.05,
+    -0.025,
+    0
+   ],
+   "boundsMax": [
+    0.05,
+    0.025,
+    0.0042
+   ],
+   "aboveFloor_m": -0.025,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1632,
+     832
+    ],
+    "side": [
+     100,
+     832
+    ],
+    "top": [
+     1632,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_DoorNumberPlate_White_top.png",
+    "front": "png/Kit_DoorNumberPlate_White_front.png",
+    "side": "png/Kit_DoorNumberPlate_White_side.png",
+    "persp": "png/Kit_DoorNumberPlate_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 480,
+    "lod1": null,
+    "budget": [
+     500,
+     180,
+     12
+    ],
+    "lodDistances_m": [
+     1.5,
+     5.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "door_sign",
+    "number_plate"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Doors · signage",
+   "variantOf": "Kit_DoorNumberPlate",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticWhite"
+   ]
+  },
+  "Kit_ExitSign": {
+   "sheet": "exit_sign",
+   "role": "primary",
+   "dims_mm": {
+    "W": 330,
+    "D": 60,
+    "H": 202
+   },
+   "dims_label": "W 330 · D 60 · H 202 mm",
+   "size_m": [
+    0.33,
+    0.2016,
+    0.0598
+   ],
+   "boundsMin": [
+    -0.165,
+    -0.1,
+    0
+   ],
+   "boundsMax": [
+    0.165,
+    0.1016,
+    0.0598
+   ],
+   "aboveFloor_m": -0.1,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1352,
+     839
+    ],
+    "side": [
+     272,
+     839
+    ],
+    "top": [
+     1352,
+     272
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_ExitSign_top.png",
+    "front": "png/Kit_ExitSign_front.png",
+    "side": "png/Kit_ExitSign_side.png",
+    "persp": "png/Kit_ExitSign_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBlack",
+     "label": "Black steel",
+     "hex": "#1e1e1e",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Run_ExitSign",
+     "label": "Lit EXIT face",
+     "hex": "#dfc6bf",
+     "source": "Resources/Surfaces/Run_ExitSign.mat: mean of Assets/Resources/Surfaces/Textures/Run_ExitSign_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)",
+     "emissive": true
+    }
+   ],
+   "tris": {
+    "lod0": 1916,
+    "lod1": null,
+    "budget": [
+     2000,
+     700,
+     100
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     null
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "exit_sign"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "face_dir"
+   ],
+   "family": "Doors · signage"
+  },
+  "Kit_ExitSign_Dead": {
+   "sheet": "exit_sign",
+   "role": "variant",
+   "dims_mm": {
+    "W": 330,
+    "D": 60,
+    "H": 202
+   },
+   "dims_label": "W 330 · D 60 · H 202 mm",
+   "size_m": [
+    0.33,
+    0.2016,
+    0.0598
+   ],
+   "boundsMin": [
+    -0.165,
+    -0.1,
+    0
+   ],
+   "boundsMax": [
+    0.165,
+    0.1016,
+    0.0598
+   ],
+   "aboveFloor_m": -0.1,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1352,
+     839
+    ],
+    "side": [
+     272,
+     839
+    ],
+    "top": [
+     1352,
+     272
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_ExitSign_Dead_top.png",
+    "front": "png/Kit_ExitSign_Dead_front.png",
+    "side": "png/Kit_ExitSign_Dead_side.png",
+    "persp": "png/Kit_ExitSign_Dead_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBlack",
+     "label": "Black steel",
+     "hex": "#1e1e1e",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Run_ExitSign_Dead",
+     "label": "Dead EXIT face",
+     "hex": "#cecbc7",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Run_ExitSign_Dead.mat yet; Unity binds _BaseColor #cecbc7)",
+     "p4": true,
+     "targetHex": "#9e9a92",
+     "note": "spec target: non-emissive copy of Run_ExitSign (P-4)"
+    }
+   ],
+   "tris": {
+    "lod0": 1916,
+    "lod1": null,
+    "budget": [
+     2000,
+     700,
+     100
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     null
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "exit_sign"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "face_dir"
+   ],
+   "family": "Doors · signage",
+   "variantOf": "Kit_ExitSign",
+   "swap": [
+    "Run_ExitSign -> Run_ExitSign_Dead"
+   ]
+  },
+  "Kit_Lock_Escutcheon": {
+   "sheet": "lock_escutcheon",
+   "role": "primary",
+   "dims_mm": {
+    "W": 57,
+    "D": 8.0,
+    "H": 203
+   },
+   "dims_label": "W 57 · D 8.0 · H 203 mm",
+   "size_m": [
+    0.0572,
+    0.2032,
+    0.008
+   ],
+   "boundsMin": [
+    -0.0286,
+    -0.1016,
+    0
+   ],
+   "boundsMax": [
+    0.0286,
+    0.1016,
+    0.008
+   ],
+   "aboveFloor_m": -0.1016,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     261,
+     845
+    ],
+    "side": [
+     64,
+     845
+    ],
+    "top": [
+     261,
+     64
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Escutcheon_top.png",
+    "front": "png/Kit_Lock_Escutcheon_front.png",
+    "side": "png/Kit_Lock_Escutcheon_side.png",
+    "persp": "png/Kit_Lock_Escutcheon_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3176,
+    "lod1": null,
+    "budget": [
+     3000,
+     1200,
+     200
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "escutcheon",
+    "lock_static"
+   ],
+   "anchors": [
+    "knob_pivot",
+    "cylinder",
+    "keyhole",
+    "keyhole_in",
+    "keyhole_up"
+   ],
+   "motion": "static",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_Escutcheon_Brass": {
+   "sheet": "lock_escutcheon",
+   "role": "variant",
+   "dims_mm": {
+    "W": 57,
+    "D": 8.0,
+    "H": 203
+   },
+   "dims_label": "W 57 · D 8.0 · H 203 mm",
+   "size_m": [
+    0.0572,
+    0.2032,
+    0.008
+   ],
+   "boundsMin": [
+    -0.0286,
+    -0.1016,
+    0
+   ],
+   "boundsMax": [
+    0.0286,
+    0.1016,
+    0.008
+   ],
+   "aboveFloor_m": -0.1016,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     261,
+     845
+    ],
+    "side": [
+     64,
+     845
+    ],
+    "top": [
+     261,
+     64
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Escutcheon_Brass_top.png",
+    "front": "png/Kit_Lock_Escutcheon_Brass_front.png",
+    "side": "png/Kit_Lock_Escutcheon_Brass_side.png",
+    "persp": "png/Kit_Lock_Escutcheon_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3176,
+    "lod1": null,
+    "budget": [
+     3000,
+     1200,
+     200
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "escutcheon",
+    "lock_static"
+   ],
+   "anchors": [
+    "knob_pivot",
+    "cylinder",
+    "keyhole",
+    "keyhole_in",
+    "keyhole_up"
+   ],
+   "motion": "static",
+   "family": "Lock · mortise set",
+   "variantOf": "Kit_Lock_Escutcheon",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Lock_CylinderShell": {
+   "sheet": "lock_cylinder",
+   "role": "primary",
+   "dims_mm": {
+    "W": 44,
+    "D": 7.5,
+    "H": 44
+   },
+   "dims_label": "W 44 · D 7.5 · H 44 mm",
+   "size_m": [
+    0.044,
+    0.044,
+    0.0075
+   ],
+   "boundsMin": [
+    -0.022,
+    -0.022,
+    -0.0075
+   ],
+   "boundsMax": [
+    0.022,
+    0.022,
+    0
+   ],
+   "aboveFloor_m": -0.022,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     736,
+     736
+    ],
+    "side": [
+     152,
+     736
+    ],
+    "top": [
+     736,
+     152
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_CylinderShell_top.png",
+    "front": "png/Kit_Lock_CylinderShell_front.png",
+    "side": "png/Kit_Lock_CylinderShell_side.png",
+    "persp": "png/Kit_Lock_CylinderShell_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2708,
+    "lod1": null,
+    "budget": [
+     2600,
+     1000,
+     150
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "cylinder",
+    "lock_static",
+    "ic_core"
+   ],
+   "anchors": [
+    "keyhole",
+    "keyhole_in",
+    "keyhole_up",
+    "collar_back"
+   ],
+   "motion": "static",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_CylinderShell_Brass": {
+   "sheet": "lock_cylinder",
+   "role": "variant",
+   "dims_mm": {
+    "W": 44,
+    "D": 7.5,
+    "H": 44
+   },
+   "dims_label": "W 44 · D 7.5 · H 44 mm",
+   "size_m": [
+    0.044,
+    0.044,
+    0.0075
+   ],
+   "boundsMin": [
+    -0.022,
+    -0.022,
+    -0.0075
+   ],
+   "boundsMax": [
+    0.022,
+    0.022,
+    0
+   ],
+   "aboveFloor_m": -0.022,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     736,
+     736
+    ],
+    "side": [
+     152,
+     736
+    ],
+    "top": [
+     736,
+     152
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_CylinderShell_Brass_top.png",
+    "front": "png/Kit_Lock_CylinderShell_Brass_front.png",
+    "side": "png/Kit_Lock_CylinderShell_Brass_side.png",
+    "persp": "png/Kit_Lock_CylinderShell_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2708,
+    "lod1": null,
+    "budget": [
+     2600,
+     1000,
+     150
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "cylinder",
+    "lock_static",
+    "ic_core"
+   ],
+   "anchors": [
+    "keyhole",
+    "keyhole_in",
+    "keyhole_up",
+    "collar_back"
+   ],
+   "motion": "static",
+   "family": "Lock · mortise set",
+   "variantOf": "Kit_Lock_CylinderShell",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Lock_Plug": {
+   "sheet": "lock_plug",
+   "role": "primary",
+   "dims_mm": {
+    "W": 12,
+    "D": 30,
+    "H": 12
+   },
+   "dims_label": "W 12 · D 30 · H 12 mm",
+   "size_m": [
+    0.0115,
+    0.0115,
+    0.03
+   ],
+   "boundsMin": [
+    -0.0058,
+    -0.0058,
+    -0.03
+   ],
+   "boundsMax": [
+    0.0058,
+    0.0058,
+    0
+   ],
+   "aboveFloor_m": -0.0058,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     216,
+     216
+    ],
+    "side": [
+     512,
+     216
+    ],
+    "top": [
+     216,
+     512
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Plug_top.png",
+    "front": "png/Kit_Lock_Plug_front.png",
+    "side": "png/Kit_Lock_Plug_side.png",
+    "persp": "png/Kit_Lock_Plug_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1884,
+    "lod1": null,
+    "budget": [
+     1800,
+     700,
+     80
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "plug",
+    "lock_moving"
+   ],
+   "anchors": [
+    "keyhole",
+    "keyhole_in",
+    "keyhole_up",
+    "pin_1",
+    "pin_2",
+    "pin_3",
+    "pin_4",
+    "pin_5",
+    "pin_6"
+   ],
+   "motion": "rotate",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_Knob": {
+   "sheet": "lock_knob",
+   "role": "primary",
+   "dims_mm": {
+    "W": 54,
+    "D": 63,
+    "H": 54
+   },
+   "dims_label": "W 54 · D 63 · H 54 mm",
+   "size_m": [
+    0.054,
+    0.054,
+    0.0628
+   ],
+   "boundsMin": [
+    -0.027,
+    -0.027,
+    0.0002
+   ],
+   "boundsMax": [
+    0.027,
+    0.027,
+    0.063
+   ],
+   "aboveFloor_m": -0.027,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     464,
+     464
+    ],
+    "side": [
+     535,
+     464
+    ],
+    "top": [
+     464,
+     535
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Knob_top.png",
+    "front": "png/Kit_Lock_Knob_front.png",
+    "side": "png/Kit_Lock_Knob_side.png",
+    "persp": "png/Kit_Lock_Knob_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4608,
+    "lod1": null,
+    "budget": [
+     4500,
+     1800,
+     300
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "knob",
+    "lock_moving",
+    "knurled"
+   ],
+   "anchors": [
+    "spindle",
+    "face",
+    "axis_out"
+   ],
+   "motion": "rotate",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_Knob_Brass": {
+   "sheet": "lock_knob",
+   "role": "variant",
+   "dims_mm": {
+    "W": 54,
+    "D": 63,
+    "H": 54
+   },
+   "dims_label": "W 54 · D 63 · H 54 mm",
+   "size_m": [
+    0.054,
+    0.054,
+    0.0628
+   ],
+   "boundsMin": [
+    -0.027,
+    -0.027,
+    0.0002
+   ],
+   "boundsMax": [
+    0.027,
+    0.027,
+    0.063
+   ],
+   "aboveFloor_m": -0.027,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     464,
+     464
+    ],
+    "side": [
+     535,
+     464
+    ],
+    "top": [
+     464,
+     535
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Knob_Brass_top.png",
+    "front": "png/Kit_Lock_Knob_Brass_front.png",
+    "side": "png/Kit_Lock_Knob_Brass_side.png",
+    "persp": "png/Kit_Lock_Knob_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 4608,
+    "lod1": null,
+    "budget": [
+     4500,
+     1800,
+     300
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "knob",
+    "lock_moving",
+    "knurled"
+   ],
+   "anchors": [
+    "spindle",
+    "face",
+    "axis_out"
+   ],
+   "motion": "rotate",
+   "family": "Lock · mortise set",
+   "variantOf": "Kit_Lock_Knob",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Lock_Deadbolt": {
+   "sheet": "lock_deadbolt",
+   "role": "primary",
+   "dims_mm": {
+    "W": 12,
+    "D": 45,
+    "H": 30
+   },
+   "dims_label": "W 12 · D 45 · H 30 mm",
+   "size_m": [
+    0.0125,
+    0.03,
+    0.0451
+   ],
+   "boundsMin": [
+    -0.0063,
+    -0.015,
+    -0.02
+   ],
+   "boundsMax": [
+    0.0063,
+    0.015,
+    0.0251
+   ],
+   "aboveFloor_m": -0.015,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     232,
+     512
+    ],
+    "side": [
+     754,
+     512
+    ],
+    "top": [
+     232,
+     754
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Deadbolt_top.png",
+    "front": "png/Kit_Lock_Deadbolt_front.png",
+    "side": "png/Kit_Lock_Deadbolt_side.png",
+    "persp": "png/Kit_Lock_Deadbolt_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 380,
+    "lod1": null,
+    "budget": [
+     400,
+     150,
+     30
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "deadbolt",
+    "lock_moving",
+    "bolt"
+   ],
+   "anchors": [
+    "bolt_axis",
+    "end_face",
+    "throw_dir"
+   ],
+   "motion": "slide",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_Latchbolt_Mortise": {
+   "sheet": "lock_latch_mortise",
+   "role": "primary",
+   "dims_mm": {
+    "W": 19,
+    "D": 40,
+    "H": 30
+   },
+   "dims_label": "W 19 · D 40 · H 30 mm",
+   "size_m": [
+    0.0193,
+    0.03,
+    0.04
+   ],
+   "boundsMin": [
+    -0.0063,
+    -0.015,
+    -0.021
+   ],
+   "boundsMax": [
+    0.013,
+    0.015,
+    0.019
+   ],
+   "aboveFloor_m": -0.015,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     340,
+     512
+    ],
+    "side": [
+     672,
+     512
+    ],
+    "top": [
+     340,
+     672
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Latchbolt_Mortise_top.png",
+    "front": "png/Kit_Lock_Latchbolt_Mortise_front.png",
+    "side": "png/Kit_Lock_Latchbolt_Mortise_side.png",
+    "persp": "png/Kit_Lock_Latchbolt_Mortise_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 600,
+    "lod1": null,
+    "budget": [
+     600,
+     220,
+     40
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "latchbolt",
+    "lock_moving",
+    "bolt",
+    "mortise"
+   ],
+   "anchors": [
+    "bolt_axis",
+    "tip",
+    "plunger",
+    "throw_dir"
+   ],
+   "motion": "slide",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_StrikeMortise": {
+   "sheet": "lock_strike_mortise",
+   "role": "primary",
+   "dims_mm": {
+    "W": 56,
+    "D": 25,
+    "H": 200
+   },
+   "dims_label": "W 56 · D 25 · H 200 mm",
+   "size_m": [
+    0.056,
+    0.2,
+    0.0254
+   ],
+   "boundsMin": [
+    -0.04,
+    -0.1,
+    -0.0244
+   ],
+   "boundsMax": [
+    0.016,
+    0.1,
+    0.001
+   ],
+   "aboveFloor_m": -0.1,
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     256,
+     832
+    ],
+    "side": [
+     134,
+     832
+    ],
+    "top": [
+     256,
+     134
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_StrikeMortise_top.png",
+    "front": "png/Kit_Lock_StrikeMortise_front.png",
+    "side": "png/Kit_Lock_StrikeMortise_side.png",
+    "persp": "png/Kit_Lock_StrikeMortise_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 988,
+    "lod1": null,
+    "budget": [
+     900,
+     350,
+     60
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "strike",
+    "lock_static",
+    "frame_part"
+   ],
+   "anchors": [
+    "plate",
+    "latch_opening",
+    "deadbolt_opening",
+    "lip_tip",
+    "detach_dir"
+   ],
+   "motion": "static",
+   "family": "Lock · mortise set"
+  },
+  "Kit_Lock_Rose": {
+   "sheet": "lock_rose",
+   "role": "primary",
+   "dims_mm": {
+    "W": 70,
+    "D": 10,
+    "H": 70
+   },
+   "dims_label": "W 70 · D 10 · H 70 mm",
+   "size_m": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "boundsMin": [
+    -0.035,
+    -0.035,
+    0
+   ],
+   "boundsMax": [
+    0.035,
+    0.035,
+    0.01
+   ],
+   "aboveFloor_m": -0.035,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1152,
+     1152
+    ],
+    "side": [
+     192,
+     1152
+    ],
+    "top": [
+     1152,
+     192
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Rose_top.png",
+    "front": "png/Kit_Lock_Rose_front.png",
+    "side": "png/Kit_Lock_Rose_side.png",
+    "persp": "png/Kit_Lock_Rose_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2728,
+    "lod1": null,
+    "budget": [
+     2400,
+     900,
+     120
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "rose",
+    "lock_static"
+   ],
+   "anchors": [
+    "spindle"
+   ],
+   "motion": "static",
+   "family": "Lock · bored set"
+  },
+  "Kit_Lock_Rose_Brass": {
+   "sheet": "lock_rose",
+   "role": "variant",
+   "dims_mm": {
+    "W": 70,
+    "D": 10,
+    "H": 70
+   },
+   "dims_label": "W 70 · D 10 · H 70 mm",
+   "size_m": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "boundsMin": [
+    -0.035,
+    -0.035,
+    0
+   ],
+   "boundsMax": [
+    0.035,
+    0.035,
+    0.01
+   ],
+   "aboveFloor_m": -0.035,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1152,
+     1152
+    ],
+    "side": [
+     192,
+     1152
+    ],
+    "top": [
+     1152,
+     192
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Rose_Brass_top.png",
+    "front": "png/Kit_Lock_Rose_Brass_front.png",
+    "side": "png/Kit_Lock_Rose_Brass_side.png",
+    "persp": "png/Kit_Lock_Rose_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2728,
+    "lod1": null,
+    "budget": [
+     2400,
+     900,
+     120
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "rose",
+    "lock_static"
+   ],
+   "anchors": [
+    "spindle"
+   ],
+   "motion": "static",
+   "family": "Lock · bored set",
+   "variantOf": "Kit_Lock_Rose",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Lock_Lever": {
+   "sheet": "lock_lever",
+   "role": "primary",
+   "dims_mm": {
+    "W": 133,
+    "D": 54,
+    "H": 24
+   },
+   "dims_label": "W 133 · D 54 · H 24 mm",
+   "size_m": [
+    0.133,
+    0.024,
+    0.0536
+   ],
+   "boundsMin": [
+    -0.012,
+    -0.012,
+    0.0004
+   ],
+   "boundsMax": [
+    0.121,
+    0.012,
+    0.054
+   ],
+   "aboveFloor_m": -0.012,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     1096,
+     224
+    ],
+    "side": [
+     461,
+     224
+    ],
+    "top": [
+     1096,
+     461
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Lever_top.png",
+    "front": "png/Kit_Lock_Lever_front.png",
+    "side": "png/Kit_Lock_Lever_side.png",
+    "persp": "png/Kit_Lock_Lever_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3974,
+    "lod1": null,
+    "budget": [
+     4000,
+     1600,
+     300
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "lever",
+    "lock_moving"
+   ],
+   "anchors": [
+    "spindle",
+    "grip_press",
+    "grip_end",
+    "axis_out"
+   ],
+   "motion": "rotate",
+   "family": "Lock · bored set"
+  },
+  "Kit_Lock_Lever_Brass": {
+   "sheet": "lock_lever",
+   "role": "variant",
+   "dims_mm": {
+    "W": 133,
+    "D": 54,
+    "H": 24
+   },
+   "dims_label": "W 133 · D 54 · H 24 mm",
+   "size_m": [
+    0.133,
+    0.024,
+    0.0536
+   ],
+   "boundsMin": [
+    -0.012,
+    -0.012,
+    0.0004
+   ],
+   "boundsMax": [
+    0.121,
+    0.012,
+    0.054
+   ],
+   "aboveFloor_m": -0.012,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     1096,
+     224
+    ],
+    "side": [
+     461,
+     224
+    ],
+    "top": [
+     1096,
+     461
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Lever_Brass_top.png",
+    "front": "png/Kit_Lock_Lever_Brass_front.png",
+    "side": "png/Kit_Lock_Lever_Brass_side.png",
+    "persp": "png/Kit_Lock_Lever_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3974,
+    "lod1": null,
+    "budget": [
+     4000,
+     1600,
+     300
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "lever",
+    "lock_moving"
+   ],
+   "anchors": [
+    "spindle",
+    "grip_press",
+    "grip_end",
+    "axis_out"
+   ],
+   "motion": "rotate",
+   "family": "Lock · bored set",
+   "variantOf": "Kit_Lock_Lever",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Lock_Latchbolt_Bored": {
+   "sheet": "lock_latch_bored",
+   "role": "primary",
+   "dims_mm": {
+    "W": 16,
+    "D": 30,
+    "H": 20
+   },
+   "dims_label": "W 16 · D 30 · H 20 mm",
+   "size_m": [
+    0.016,
+    0.02,
+    0.03
+   ],
+   "boundsMin": [
+    -0.005,
+    -0.01,
+    -0.017
+   ],
+   "boundsMax": [
+    0.011,
+    0.01,
+    0.013
+   ],
+   "aboveFloor_m": -0.01,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     288,
+     352
+    ],
+    "side": [
+     512,
+     352
+    ],
+    "top": [
+     288,
+     512
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Latchbolt_Bored_top.png",
+    "front": "png/Kit_Lock_Latchbolt_Bored_front.png",
+    "side": "png/Kit_Lock_Latchbolt_Bored_side.png",
+    "persp": "png/Kit_Lock_Latchbolt_Bored_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 476,
+    "lod1": null,
+    "budget": [
+     500,
+     200,
+     40
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "latchbolt",
+    "lock_moving",
+    "bolt",
+    "bored"
+   ],
+   "anchors": [
+    "bolt_axis",
+    "tip",
+    "plunger",
+    "throw_dir"
+   ],
+   "motion": "slide",
+   "family": "Lock · bored set"
+  },
+  "Kit_Lock_Latchbolt_Bored_Brass": {
+   "sheet": "lock_latch_bored",
+   "role": "variant",
+   "dims_mm": {
+    "W": 16,
+    "D": 30,
+    "H": 20
+   },
+   "dims_label": "W 16 · D 30 · H 20 mm",
+   "size_m": [
+    0.016,
+    0.02,
+    0.03
+   ],
+   "boundsMin": [
+    -0.005,
+    -0.01,
+    -0.017
+   ],
+   "boundsMax": [
+    0.011,
+    0.01,
+    0.013
+   ],
+   "aboveFloor_m": -0.01,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     288,
+     352
+    ],
+    "side": [
+     512,
+     352
+    ],
+    "top": [
+     288,
+     512
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_Latchbolt_Bored_Brass_top.png",
+    "front": "png/Kit_Lock_Latchbolt_Bored_Brass_front.png",
+    "side": "png/Kit_Lock_Latchbolt_Bored_Brass_side.png",
+    "persp": "png/Kit_Lock_Latchbolt_Bored_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 476,
+    "lod1": null,
+    "budget": [
+     500,
+     200,
+     40
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     8.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "latchbolt",
+    "lock_moving",
+    "bolt",
+    "bored"
+   ],
+   "anchors": [
+    "bolt_axis",
+    "tip",
+    "plunger",
+    "throw_dir"
+   ],
+   "motion": "slide",
+   "family": "Lock · bored set",
+   "variantOf": "Kit_Lock_Latchbolt_Bored",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Lock_StrikeBored": {
+   "sheet": "lock_strike_bored",
+   "role": "primary",
+   "dims_mm": {
+    "W": 56,
+    "D": 17,
+    "H": 124
+   },
+   "dims_label": "W 56 · D 17 · H 124 mm",
+   "size_m": [
+    0.056,
+    0.124,
+    0.0174
+   ],
+   "boundsMin": [
+    -0.04,
+    -0.062,
+    -0.0164
+   ],
+   "boundsMax": [
+    0.016,
+    0.062,
+    0.001
+   ],
+   "aboveFloor_m": -0.062,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     480,
+     1024
+    ],
+    "side": [
+     172,
+     1024
+    ],
+    "top": [
+     480,
+     172
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_StrikeBored_top.png",
+    "front": "png/Kit_Lock_StrikeBored_front.png",
+    "side": "png/Kit_Lock_StrikeBored_side.png",
+    "persp": "png/Kit_Lock_StrikeBored_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 674,
+    "lod1": null,
+    "budget": [
+     600,
+     250,
+     40
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "strike",
+    "lock_static",
+    "frame_part"
+   ],
+   "anchors": [
+    "plate",
+    "latch_opening",
+    "lip_tip",
+    "detach_dir"
+   ],
+   "motion": "static",
+   "family": "Lock · bored set"
+  },
+  "Kit_Lock_StrikeBored_Brass": {
+   "sheet": "lock_strike_bored",
+   "role": "variant",
+   "dims_mm": {
+    "W": 56,
+    "D": 17,
+    "H": 124
+   },
+   "dims_label": "W 56 · D 17 · H 124 mm",
+   "size_m": [
+    0.056,
+    0.124,
+    0.0174
+   ],
+   "boundsMin": [
+    -0.04,
+    -0.062,
+    -0.0164
+   ],
+   "boundsMax": [
+    0.016,
+    0.062,
+    0.001
+   ],
+   "aboveFloor_m": -0.062,
+   "viewYaw": 0,
+   "sheetPpm": 4000,
+   "pngPpm": 8000,
+   "px": {
+    "front": [
+     480,
+     1024
+    ],
+    "side": [
+     172,
+     1024
+    ],
+    "top": [
+     480,
+     172
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "5 cm",
+    "metres": 0.05,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Lock_StrikeBored_Brass_top.png",
+    "front": "png/Kit_Lock_StrikeBored_Brass_front.png",
+    "side": "png/Kit_Lock_StrikeBored_Brass_side.png",
+    "persp": "png/Kit_Lock_StrikeBored_Brass_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1a1a1a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 674,
+    "lod1": null,
+    "budget": [
+     600,
+     250,
+     40
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "lock_part",
+    "strike",
+    "lock_static",
+    "frame_part"
+   ],
+   "anchors": [
+    "plate",
+    "latch_opening",
+    "lip_tip",
+    "detach_dir"
+   ],
+   "motion": "static",
+   "family": "Lock · bored set",
+   "variantOf": "Kit_Lock_StrikeBored",
+   "swap": [
+    "Prop_Chrome -> Prop_Brass"
+   ]
+  },
+  "Kit_Key_Zone": {
+   "sheet": "key_zone",
+   "role": "primary",
+   "dims_mm": {
+    "W": 58,
+    "D": 2.2,
+    "H": 26
+   },
+   "dims_label": "W 58 · D 2.2 · H 26 mm",
+   "size_m": [
+    0.058,
+    0.026,
+    0.0022
+   ],
+   "boundsMin": [
+    -0.025,
+    -0.0125,
+    -0.0011
+   ],
+   "boundsMax": [
+    0.033,
+    0.0135,
+    0.0011
+   ],
+   "aboveFloor_m": -0.0125,
+   "viewYaw": -90,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     960,
+     448
+    ],
+    "side": [
+     68,
+     448
+    ],
+    "top": [
+     960,
+     68
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Key_Zone_top.png",
+    "front": "png/Kit_Key_Zone_front.png",
+    "side": "png/Kit_Key_Zone_side.png",
+    "persp": "png/Kit_Key_Zone_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2184,
+    "lod1": null,
+    "budget": [
+     2400,
+     900,
+     150
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key"
+   ],
+   "anchors": [
+    "shoulder",
+    "tip",
+    "insert_dir",
+    "cuts_up",
+    "grip",
+    "ring_hole",
+    "ring_hole_dir"
+   ],
+   "family": "Keys"
+  },
+  "Kit_Key_Zone_Nickel": {
+   "sheet": "key_zone",
+   "role": "variant",
+   "dims_mm": {
+    "W": 58,
+    "D": 2.2,
+    "H": 26
+   },
+   "dims_label": "W 58 · D 2.2 · H 26 mm",
+   "size_m": [
+    0.058,
+    0.026,
+    0.0022
+   ],
+   "boundsMin": [
+    -0.025,
+    -0.0125,
+    -0.0011
+   ],
+   "boundsMax": [
+    0.033,
+    0.0135,
+    0.0011
+   ],
+   "aboveFloor_m": -0.0125,
+   "viewYaw": -90,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     960,
+     448
+    ],
+    "side": [
+     68,
+     448
+    ],
+    "top": [
+     960,
+     68
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_Key_Zone_Nickel_top.png",
+    "front": "png/Kit_Key_Zone_Nickel_front.png",
+    "side": "png/Kit_Key_Zone_Nickel_side.png",
+    "persp": "png/Kit_Key_Zone_Nickel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2184,
+    "lod1": null,
+    "budget": [
+     2400,
+     900,
+     150
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key"
+   ],
+   "anchors": [
+    "shoulder",
+    "tip",
+    "insert_dir",
+    "cuts_up",
+    "grip",
+    "ring_hole",
+    "ring_hole_dir"
+   ],
+   "family": "Keys",
+   "variantOf": "Kit_Key_Zone",
+   "swap": [
+    "Prop_Brass -> Prop_Aluminium"
+   ]
+  },
+  "Kit_KeyRing": {
+   "sheet": "key_ring",
+   "role": "primary",
+   "dims_mm": {
+    "W": 25,
+    "D": 1.8,
+    "H": 25
+   },
+   "dims_label": "W 25 · D 1.8 · H 25 mm",
+   "size_m": [
+    0.025,
+    0.025,
+    0.0018
+   ],
+   "boundsMin": [
+    -0.0125,
+    -0.0234,
+    -0.0009
+   ],
+   "boundsMax": [
+    0.0125,
+    0.0016,
+    0.0009
+   ],
+   "aboveFloor_m": -0.0234,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     432,
+     432
+    ],
+    "side": [
+     61,
+     432
+    ],
+    "top": [
+     432,
+     61
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyRing_top.png",
+    "front": "png/Kit_KeyRing_front.png",
+    "side": "png/Kit_KeyRing_side.png",
+    "persp": "png/Kit_KeyRing_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1972,
+    "lod1": null,
+    "budget": [
+     2000,
+     600,
+     96
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     12.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_ring"
+   ],
+   "anchors": [
+    "hook_contact",
+    "key_contact",
+    "tag_contact",
+    "centre",
+    "normal_dir"
+   ],
+   "family": "Keys"
+  },
+  "Kit_KeyTag_Rect": {
+   "sheet": "key_tag_rect",
+   "role": "primary",
+   "dims_mm": {
+    "W": 57,
+    "D": 4.2,
+    "H": 39
+   },
+   "dims_label": "W 57 · D 4.2 · H 39 mm",
+   "size_m": [
+    0.057,
+    0.039,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.0285,
+    -0.0335,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.0285,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0335,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     944,
+     656
+    ],
+    "side": [
+     100,
+     656
+    ],
+    "top": [
+     944,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Rect_top.png",
+    "front": "png/Kit_KeyTag_Rect_front.png",
+    "side": "png/Kit_KeyTag_Rect_side.png",
+    "persp": "png/Kit_KeyTag_Rect_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags"
+  },
+  "Kit_KeyTag_Rect_Blue": {
+   "sheet": "key_tag_rect",
+   "role": "variant",
+   "dims_mm": {
+    "W": 57,
+    "D": 4.2,
+    "H": 39
+   },
+   "dims_label": "W 57 · D 4.2 · H 39 mm",
+   "size_m": [
+    0.057,
+    0.039,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.0285,
+    -0.0335,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.0285,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0335,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     944,
+     656
+    ],
+    "side": [
+     100,
+     656
+    ],
+    "top": [
+     944,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Rect_Blue_top.png",
+    "front": "png/Kit_KeyTag_Rect_Blue_front.png",
+    "side": "png/Kit_KeyTag_Rect_Blue_side.png",
+    "persp": "png/Kit_KeyTag_Rect_Blue_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticBlue",
+     "label": "Blue plastic",
+     "hex": "#0f2973",
+     "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags",
+   "variantOf": "Kit_KeyTag_Rect",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticBlue"
+   ]
+  },
+  "Kit_KeyTag_Rect_White": {
+   "sheet": "key_tag_rect",
+   "role": "variant",
+   "dims_mm": {
+    "W": 57,
+    "D": 4.2,
+    "H": 39
+   },
+   "dims_label": "W 57 · D 4.2 · H 39 mm",
+   "size_m": [
+    0.057,
+    0.039,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.0285,
+    -0.0335,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.0285,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0335,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     944,
+     656
+    ],
+    "side": [
+     100,
+     656
+    ],
+    "top": [
+     944,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Rect_White_top.png",
+    "front": "png/Kit_KeyTag_Rect_White_front.png",
+    "side": "png/Kit_KeyTag_Rect_White_side.png",
+    "persp": "png/Kit_KeyTag_Rect_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags",
+   "variantOf": "Kit_KeyTag_Rect",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticWhite"
+   ]
+  },
+  "Kit_KeyTag_Round": {
+   "sheet": "key_tag_round",
+   "role": "primary",
+   "dims_mm": {
+    "W": 38,
+    "D": 4.2,
+    "H": 48
+   },
+   "dims_label": "W 38 · D 4.2 · H 48 mm",
+   "size_m": [
+    0.038,
+    0.048,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.019,
+    -0.0425,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.019,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0425,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     640,
+     800
+    ],
+    "side": [
+     100,
+     800
+    ],
+    "top": [
+     640,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Round_top.png",
+    "front": "png/Kit_KeyTag_Round_front.png",
+    "side": "png/Kit_KeyTag_Round_side.png",
+    "persp": "png/Kit_KeyTag_Round_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1282,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags"
+  },
+  "Kit_KeyTag_Round_Blue": {
+   "sheet": "key_tag_round",
+   "role": "variant",
+   "dims_mm": {
+    "W": 38,
+    "D": 4.2,
+    "H": 48
+   },
+   "dims_label": "W 38 · D 4.2 · H 48 mm",
+   "size_m": [
+    0.038,
+    0.048,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.019,
+    -0.0425,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.019,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0425,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     640,
+     800
+    ],
+    "side": [
+     100,
+     800
+    ],
+    "top": [
+     640,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Round_Blue_top.png",
+    "front": "png/Kit_KeyTag_Round_Blue_front.png",
+    "side": "png/Kit_KeyTag_Round_Blue_side.png",
+    "persp": "png/Kit_KeyTag_Round_Blue_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticBlue",
+     "label": "Blue plastic",
+     "hex": "#0f2973",
+     "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1282,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags",
+   "variantOf": "Kit_KeyTag_Round",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticBlue"
+   ]
+  },
+  "Kit_KeyTag_Round_White": {
+   "sheet": "key_tag_round",
+   "role": "variant",
+   "dims_mm": {
+    "W": 38,
+    "D": 4.2,
+    "H": 48
+   },
+   "dims_label": "W 38 · D 4.2 · H 48 mm",
+   "size_m": [
+    0.038,
+    0.048,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.019,
+    -0.0425,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.019,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0425,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     640,
+     800
+    ],
+    "side": [
+     100,
+     800
+    ],
+    "top": [
+     640,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Round_White_top.png",
+    "front": "png/Kit_KeyTag_Round_White_front.png",
+    "side": "png/Kit_KeyTag_Round_White_side.png",
+    "persp": "png/Kit_KeyTag_Round_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1282,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags",
+   "variantOf": "Kit_KeyTag_Round",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticWhite"
+   ]
+  },
+  "Kit_KeyTag_Long": {
+   "sheet": "key_tag_long",
+   "role": "primary",
+   "dims_mm": {
+    "W": 76,
+    "D": 4.2,
+    "H": 32
+   },
+   "dims_label": "W 76 · D 4.2 · H 32 mm",
+   "size_m": [
+    0.076,
+    0.032,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.038,
+    -0.0265,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.038,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0265,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1248,
+     544
+    ],
+    "side": [
+     100,
+     544
+    ],
+    "top": [
+     1248,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Long_top.png",
+    "front": "png/Kit_KeyTag_Long_front.png",
+    "side": "png/Kit_KeyTag_Long_side.png",
+    "persp": "png/Kit_KeyTag_Long_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticRed",
+     "label": "Red plastic",
+     "hex": "#8c0f0d",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags"
+  },
+  "Kit_KeyTag_Long_Blue": {
+   "sheet": "key_tag_long",
+   "role": "variant",
+   "dims_mm": {
+    "W": 76,
+    "D": 4.2,
+    "H": 32
+   },
+   "dims_label": "W 76 · D 4.2 · H 32 mm",
+   "size_m": [
+    0.076,
+    0.032,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.038,
+    -0.0265,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.038,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0265,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1248,
+     544
+    ],
+    "side": [
+     100,
+     544
+    ],
+    "top": [
+     1248,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Long_Blue_top.png",
+    "front": "png/Kit_KeyTag_Long_Blue_front.png",
+    "side": "png/Kit_KeyTag_Long_Blue_side.png",
+    "persp": "png/Kit_KeyTag_Long_Blue_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticBlue",
+     "label": "Blue plastic",
+     "hex": "#0f2973",
+     "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags",
+   "variantOf": "Kit_KeyTag_Long",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticBlue"
+   ]
+  },
+  "Kit_KeyTag_Long_White": {
+   "sheet": "key_tag_long",
+   "role": "variant",
+   "dims_mm": {
+    "W": 76,
+    "D": 4.2,
+    "H": 32
+   },
+   "dims_label": "W 76 · D 4.2 · H 32 mm",
+   "size_m": [
+    0.076,
+    0.032,
+    0.0042
+   ],
+   "boundsMin": [
+    -0.038,
+    -0.0265,
+    -0.0021
+   ],
+   "boundsMax": [
+    0.038,
+    0.0055,
+    0.0021
+   ],
+   "aboveFloor_m": -0.0265,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     1248,
+     544
+    ],
+    "side": [
+     100,
+     544
+    ],
+    "top": [
+     1248,
+     100
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyTag_Long_White_top.png",
+    "front": "png/Kit_KeyTag_Long_White_front.png",
+    "side": "png/Kit_KeyTag_Long_White_side.png",
+    "persp": "png/Kit_KeyTag_Long_White_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 1038,
+    "lod1": null,
+    "budget": [
+     1200,
+     400,
+     60
+    ],
+    "lodDistances_m": [
+     1.0,
+     3.0,
+     15.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "key",
+    "key_tag"
+   ],
+   "anchors": [
+    "hole",
+    "hole_dir",
+    "face",
+    "number",
+    "face_dir"
+   ],
+   "family": "Keys · tags",
+   "variantOf": "Kit_KeyTag_Long",
+   "swap": [
+    "Prop_PlasticRed -> Prop_PlasticWhite"
+   ]
+  },
+  "Kit_KeyHookBoard": {
+   "sheet": "key_board",
+   "role": "primary",
+   "dims_mm": {
+    "W": 300,
+    "D": 44,
+    "H": 400
+   },
+   "dims_label": "W 300 · D 44 · H 400 mm",
+   "size_m": [
+    0.3,
+    0.4,
+    0.0436
+   ],
+   "boundsMin": [
+    -0.15,
+    1.25,
+    0
+   ],
+   "boundsMax": [
+    0.15,
+    1.65,
+    0.0436
+   ],
+   "aboveFloor_m": 1.25,
+   "viewYaw": 0,
+   "sheetPpm": 1000,
+   "pngPpm": 2000,
+   "px": {
+    "front": [
+     632,
+     832
+    ],
+    "side": [
+     120,
+     832
+    ],
+    "top": [
+     632,
+     120
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "20 cm",
+    "metres": 0.2,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyHookBoard_top.png",
+    "front": "png/Kit_KeyHookBoard_front.png",
+    "side": "png/Kit_KeyHookBoard_side.png",
+    "persp": "png/Kit_KeyHookBoard_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_WoodDark",
+     "label": "Dark wood",
+     "hex": "#2d1c14",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 4392,
+    "lod1": null,
+    "budget": [
+     4000,
+     1400,
+     150
+    ],
+    "lodDistances_m": [
+     3.0,
+     8.0,
+     40.0
+    ]
+   },
+   "placement": "Wall",
+   "tags": [
+    "interactable",
+    "key_host",
+    "wall_decor"
+   ],
+   "anchors": [
+    "hook_0",
+    "hook_1",
+    "hook_2",
+    "hook_3",
+    "hook_4",
+    "hook_5",
+    "hook_6",
+    "hook_7",
+    "key_hook"
+   ],
+   "specName": "Kit_KeyBoard",
+   "family": "Keys · hosts"
+  },
+  "Kit_KeyCabinet": {
+   "sheet": "key_cabinet",
+   "role": "primary",
+   "dims_mm": {
+    "W": 719,
+    "D": 84,
+    "H": 460
+   },
+   "dims_label": "W 719 · D 84 · H 460 mm",
+   "size_m": [
+    0.7188,
+    0.46,
+    0.0838
+   ],
+   "boundsMin": [
+    -0.3594,
+    1.24,
+    0
+   ],
+   "boundsMax": [
+    0.3594,
+    1.7,
+    0.0838
+   ],
+   "aboveFloor_m": 1.24,
+   "viewYaw": 0,
+   "sheetPpm": 1000,
+   "pngPpm": 2000,
+   "px": {
+    "front": [
+     1470,
+     952
+    ],
+    "side": [
+     200,
+     952
+    ],
+    "top": [
+     1470,
+     200
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "20 cm",
+    "metres": 0.2,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyCabinet_top.png",
+    "front": "png/Kit_KeyCabinet_front.png",
+    "side": "png/Kit_KeyCabinet_side.png",
+    "persp": "png/Kit_KeyCabinet_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelAlmond",
+     "label": "Almond steel",
+     "hex": "#ad9c75",
+     "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_KeyTagNo",
+     "label": "Typed numbers",
+     "hex": "#efece3",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_KeyTagNo.mat yet; Unity binds _BaseColor #efece3)",
+     "p4": true,
+     "targetHex": "#dcd8cc",
+     "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
+    }
+   ],
+   "tris": {
+    "lod0": 6804,
+    "lod1": null,
+    "budget": [
+     7000,
+     2400,
+     250
+    ],
+    "lodDistances_m": [
+     3.0,
+     8.0,
+     40.0
+    ]
+   },
+   "placement": "Wall",
+   "tags": [
+    "interactable",
+    "key_host",
+    "wall_decor"
+   ],
+   "anchors": [
+    "hook_r0_c0",
+    "hook_r0_c1",
+    "hook_r0_c2",
+    "hook_r0_c3",
+    "hook_r0_c4",
+    "hook_r0_c5",
+    "hook_r1_c0",
+    "hook_r1_c1",
+    "hook_r1_c2",
+    "hook_r1_c3",
+    "hook_r1_c4",
+    "hook_r1_c5",
+    "hook_r2_c0",
+    "hook_r2_c1",
+    "hook_r2_c2",
+    "hook_r2_c3",
+    "hook_r2_c4",
+    "hook_r2_c5",
+    "hook_r3_c0",
+    "hook_r3_c1",
+    "hook_r3_c2",
+    "hook_r3_c3",
+    "hook_r3_c4",
+    "hook_r3_c5",
+    "key_hook",
+    "door_hinge",
+    "door_hinge_dir",
+    "body_centre"
+   ],
+   "family": "Keys · hosts"
+  },
+  "Kit_KeyHook": {
+   "sheet": "key_hook",
+   "role": "primary",
+   "dims_mm": {
+    "W": 6.8,
+    "D": 26,
+    "H": 14
+   },
+   "dims_label": "W 6.8 · D 26 · H 14 mm",
+   "size_m": [
+    0.0068,
+    0.0144,
+    0.0257
+   ],
+   "boundsMin": [
+    -0.0034,
+    1.4711,
+    0
+   ],
+   "boundsMax": [
+    0.0034,
+    1.4855,
+    0.0257
+   ],
+   "aboveFloor_m": 1.4711,
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 16000,
+   "px": {
+    "front": [
+     141,
+     263
+    ],
+    "side": [
+     444,
+     263
+    ],
+    "top": [
+     141,
+     444
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "25 mm",
+    "metres": 0.025,
+    "sheetPx": 200
+   },
+   "images": {
+    "top": "png/Kit_KeyHook_top.png",
+    "front": "png/Kit_KeyHook_front.png",
+    "side": "png/Kit_KeyHook_side.png",
+    "persp": "png/Kit_KeyHook_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#b08a4a",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 530,
+    "lod1": null,
+    "budget": [
+     600,
+     200,
+     null
+    ],
+    "lodDistances_m": [
+     1.5,
+     4.0,
+     12.0
+    ]
+   },
+   "placement": "Wall",
+   "tags": [
+    "interactable",
+    "key_host",
+    "wall_decor"
+   ],
+   "anchors": [
+    "key_hook"
+   ],
+   "family": "Keys · hosts"
+  },
+  "Kit_WindowFrame_Wood": {
+   "sheet": "window_wood",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1600,
+    "D": 242,
+    "H": 1828
+   },
+   "dims_label": "W 1600 · D 242 · H 1828 mm",
+   "size_m": [
+    1.6,
+    1.828,
+    0.242
+   ],
+   "boundsMin": [
+    -0.8,
+    0.2485,
+    -0.121
+   ],
+   "boundsMax": [
+    0.8,
+    2.0765,
+    0.121
+   ],
+   "aboveFloor_m": 0.2485,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     832,
+     946
+    ],
+    "side": [
+     153,
+     946
+    ],
+    "top": [
+     832,
+     153
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Wood_top.png",
+    "front": "png/Kit_WindowFrame_Wood_front.png",
+    "side": "png/Kit_WindowFrame_Wood_side.png",
+    "persp": "png/Kit_WindowFrame_Wood_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_WoodWalnut",
+     "label": "Walnut",
+     "hex": "#4a3020",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2322,
+    "lod1": 1044,
+    "budget": [
+     2600,
+     1000,
+     200
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "window",
+    "frame_wood"
+   ],
+   "anchors": [
+    "glass_slab",
+    "stop_l",
+    "stop_r",
+    "stop_t",
+    "stop_b",
+    "pocket_l",
+    "pocket_r",
+    "pocket_t",
+    "pocket_b",
+    "tooth_band_l",
+    "tooth_band_r",
+    "tooth_band_t",
+    "tooth_band_b",
+    "face_a",
+    "sill_plant_a",
+    "sill_plant_b",
+    "floor_a",
+    "floor_b",
+    "blind_rail"
+   ],
+   "family": "Windows"
+  },
+  "Kit_WindowFrame_Steel": {
+   "sheet": "window_steel",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1550,
+    "D": 210,
+    "H": 1800
+   },
+   "dims_label": "W 1550 · D 210 · H 1800 mm",
+   "size_m": [
+    1.55,
+    1.8,
+    0.21
+   ],
+   "boundsMin": [
+    -0.775,
+    0.275,
+    -0.105
+   ],
+   "boundsMax": [
+    0.775,
+    2.075,
+    0.105
+   ],
+   "aboveFloor_m": 0.275,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     807,
+     932
+    ],
+    "side": [
+     137,
+     932
+    ],
+    "top": [
+     807,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Steel_top.png",
+    "front": "png/Kit_WindowFrame_Steel_front.png",
+    "side": "png/Kit_WindowFrame_Steel_side.png",
+    "persp": "png/Kit_WindowFrame_Steel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelBrown",
+     "label": "Brown steel",
+     "hex": "#3b2e25",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3862,
+    "lod1": 1438,
+    "budget": [
+     3600,
+     1300,
+     220
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "window",
+    "frame_steel"
+   ],
+   "anchors": [
+    "glass_slab",
+    "stop_l",
+    "stop_r",
+    "stop_t",
+    "stop_b",
+    "pocket_l",
+    "pocket_r",
+    "pocket_t",
+    "pocket_b",
+    "tooth_band_l",
+    "tooth_band_r",
+    "tooth_band_t",
+    "tooth_band_b",
+    "face_a",
+    "sill_plant_a",
+    "sill_plant_b",
+    "floor_a",
+    "floor_b",
+    "blind_rail"
+   ],
+   "family": "Windows"
+  },
+  "Kit_WindowFrame_Steel_Enamel": {
+   "sheet": "window_steel",
+   "role": "variant",
+   "dims_mm": {
+    "W": 1550,
+    "D": 210,
+    "H": 1800
+   },
+   "dims_label": "W 1550 · D 210 · H 1800 mm",
+   "size_m": [
+    1.55,
+    1.8,
+    0.21
+   ],
+   "boundsMin": [
+    -0.775,
+    0.275,
+    -0.105
+   ],
+   "boundsMax": [
+    0.775,
+    2.075,
+    0.105
+   ],
+   "aboveFloor_m": 0.275,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     807,
+     932
+    ],
+    "side": [
+     137,
+     932
+    ],
+    "top": [
+     807,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Steel_Enamel_top.png",
+    "front": "png/Kit_WindowFrame_Steel_Enamel_front.png",
+    "side": "png/Kit_WindowFrame_Steel_Enamel_side.png",
+    "persp": "png/Kit_WindowFrame_Steel_Enamel_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Door_Enamel",
+     "label": "Almond enamel",
+     "hex": "#cdc5af",
+     "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Door_Enamel.mat yet; Unity binds _BaseColor #cdc5af)",
+     "p4": true,
+     "targetHex": "#cdc5b0",
+     "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 3862,
+    "lod1": 1438,
+    "budget": [
+     3600,
+     1300,
+     220
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "window",
+    "frame_steel"
+   ],
+   "anchors": [
+    "glass_slab",
+    "stop_l",
+    "stop_r",
+    "stop_t",
+    "stop_b",
+    "pocket_l",
+    "pocket_r",
+    "pocket_t",
+    "pocket_b",
+    "tooth_band_l",
+    "tooth_band_r",
+    "tooth_band_t",
+    "tooth_band_b",
+    "face_a",
+    "sill_plant_a",
+    "sill_plant_b",
+    "floor_a",
+    "floor_b",
+    "blind_rail"
+   ],
+   "family": "Windows",
+   "variantOf": "Kit_WindowFrame_Steel",
+   "swap": [
+    "Prop_SteelBrown -> Door_Enamel"
+   ]
+  },
+  "Kit_WindowFrame_Alu": {
+   "sheet": "window_alu",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1550,
+    "D": 210,
+    "H": 1800
+   },
+   "dims_label": "W 1550 · D 210 · H 1800 mm",
+   "size_m": [
+    1.55,
+    1.8,
+    0.21
+   ],
+   "boundsMin": [
+    -0.775,
+    0.275,
+    -0.105
+   ],
+   "boundsMax": [
+    0.775,
+    2.075,
+    0.105
+   ],
+   "aboveFloor_m": 0.275,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     807,
+     932
+    ],
+    "side": [
+     137,
+     932
+    ],
+    "top": [
+     807,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_WindowFrame_Alu_top.png",
+    "front": "png/Kit_WindowFrame_Alu_front.png",
+    "side": "png/Kit_WindowFrame_Alu_side.png",
+    "persp": "png/Kit_WindowFrame_Alu_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Aluminium",
+     "label": "Aluminium",
+     "hex": "#b8b8b4",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_Rubber",
+     "label": "Rubber",
+     "hex": "#050505",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 1088,
+    "lod1": 1064,
+    "budget": [
+     2800,
+     1000,
+     200
+    ],
+    "lodDistances_m": [
+     4.0,
+     12.0,
+     null
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "window",
+    "frame_alu"
+   ],
+   "anchors": [
+    "glass_slab",
+    "stop_l",
+    "stop_r",
+    "stop_t",
+    "stop_b",
+    "pocket_l",
+    "pocket_r",
+    "pocket_t",
+    "pocket_b",
+    "tooth_band_l",
+    "tooth_band_r",
+    "tooth_band_t",
+    "tooth_band_b",
+    "face_a",
+    "sill_plant_a",
+    "sill_plant_b",
+    "floor_a",
+    "floor_b",
+    "blind_rail"
+   ],
+   "family": "Windows"
+  },
+  "Kit_MiniBlind_Raised": {
+   "sheet": "miniblind_raised",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1550,
+    "D": 76,
+    "H": 1060
+   },
+   "dims_label": "W 1550 · D 76 · H 1060 mm",
+   "size_m": [
+    1.55,
+    1.06,
+    0.0763
+   ],
+   "boundsMin": [
+    -0.775,
+    -1.055,
+    -0.0475
+   ],
+   "boundsMax": [
+    0.775,
+    0.005,
+    0.0288
+   ],
+   "aboveFloor_m": -1.055,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     807,
+     562
+    ],
+    "side": [
+     71,
+     562
+    ],
+    "top": [
+     807,
+     71
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_MiniBlind_Raised_top.png",
+    "front": "png/Kit_MiniBlind_Raised_front.png",
+    "side": "png/Kit_MiniBlind_Raised_side.png",
+    "persp": "png/Kit_MiniBlind_Raised_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelAlmond",
+     "label": "Almond steel",
+     "hex": "#ad9c75",
+     "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 2572,
+    "lod1": 876,
+    "budget": [
+     2400,
+     800,
+     120
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     30.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "window",
+    "blind"
+   ],
+   "anchors": [
+    "blind_rail",
+    "wand_tip",
+    "tassel",
+    "stack_bottom"
+   ],
+   "family": "Windows"
+  },
+  "Kit_MiniBlind_Lowered": {
+   "sheet": "miniblind_lowered",
+   "role": "primary",
+   "dims_mm": {
+    "W": 2400,
+    "D": 76,
+    "H": 1308
+   },
+   "dims_label": "W 2400 · D 76 · H 1308 mm",
+   "size_m": [
+    2.4,
+    1.308,
+    0.0763
+   ],
+   "boundsMin": [
+    -1.2,
+    -1.303,
+    -0.0475
+   ],
+   "boundsMax": [
+    1.2,
+    0.005,
+    0.0288
+   ],
+   "aboveFloor_m": -1.303,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     1232,
+     686
+    ],
+    "side": [
+     71,
+     686
+    ],
+    "top": [
+     1232,
+     71
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_MiniBlind_Lowered_top.png",
+    "front": "png/Kit_MiniBlind_Lowered_front.png",
+    "side": "png/Kit_MiniBlind_Lowered_side.png",
+    "persp": "png/Kit_MiniBlind_Lowered_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_SteelAlmond",
+     "label": "Almond steel",
+     "hex": "#ad9c75",
+     "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "slot": "Prop_PlasticWhite",
+     "label": "White plastic",
+     "hex": "#d9d5c8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 6376,
+    "lod1": 1594,
+    "budget": [
+     6000,
+     1500,
+     200
+    ],
+    "lodDistances_m": [
+     3.0,
+     10.0,
+     30.0
+    ]
+   },
+   "placement": "Floor",
+   "tags": [
+    "interactable",
+    "window",
+    "blind",
+    "decor"
+   ],
+   "anchors": [
+    "blind_rail",
+    "wand_tip",
+    "tassel",
+    "bottom_rail"
+   ],
+   "family": "Windows"
+  },
+  "Kit_DoorwayStuds": {
+   "sheet": "doorway_studs",
+   "role": "primary",
+   "dims_mm": {
+    "W": 1252,
+    "D": 142,
+    "H": 2327
+   },
+   "dims_label": "W 1252 · D 142 · H 2327 mm",
+   "size_m": [
+    1.2522,
+    2.327,
+    0.1416
+   ],
+   "boundsMin": [
+    -0.626,
+    0,
+    -0.07
+   ],
+   "boundsMax": [
+    0.6262,
+    2.327,
+    0.0716
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     659,
+     1196
+    ],
+    "side": [
+     103,
+     1196
+    ],
+    "top": [
+     659,
+     103
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorwayStuds_top.png",
+    "front": "png/Kit_DoorwayStuds_front.png",
+    "side": "png/Kit_DoorwayStuds_side.png",
+    "persp": "png/Kit_DoorwayStuds_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Studs",
+     "label": "Spruce studs",
+     "hex": "#c9ae83",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_TapeBlue",
+     "label": "Painter's tape",
+     "hex": "#2e86c1",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 438,
+    "lod1": 182,
+    "budget": null,
+    "lodDistances_m": null
+   },
+   "placement": "Wall",
+   "tags": [
+    "arch",
+    "wall_decor"
+   ],
+   "anchors": [
+    "opening",
+    "header",
+    "clear_corner_a",
+    "clear_corner_b"
+   ],
+   "family": "Doors · existing"
+  },
+  "Kit_DoorwayStuds140": {
+   "sheet": "doorway_studs",
+   "role": "variant",
+   "dims_mm": {
+    "W": 1552,
+    "D": 142,
+    "H": 2327
+   },
+   "dims_label": "W 1552 · D 142 · H 2327 mm",
+   "size_m": [
+    1.5522,
+    2.327,
+    0.1425
+   ],
+   "boundsMin": [
+    -0.776,
+    0,
+    -0.07
+   ],
+   "boundsMax": [
+    0.7762,
+    2.327,
+    0.0725
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     809,
+     1196
+    ],
+    "side": [
+     104,
+     1196
+    ],
+    "top": [
+     809,
+     104
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorwayStuds140_top.png",
+    "front": "png/Kit_DoorwayStuds140_front.png",
+    "side": "png/Kit_DoorwayStuds140_side.png",
+    "persp": "png/Kit_DoorwayStuds140_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Studs",
+     "label": "Spruce studs",
+     "hex": "#c9ae83",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_TapeBlue",
+     "label": "Painter's tape",
+     "hex": "#2e86c1",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 438,
+    "lod1": 182,
+    "budget": null,
+    "lodDistances_m": null
+   },
+   "placement": "Wall",
+   "tags": [
+    "arch",
+    "wall_decor"
+   ],
+   "anchors": [
+    "opening",
+    "header",
+    "clear_corner_a",
+    "clear_corner_b"
+   ],
+   "family": "Doors · existing",
+   "variantOf": "Kit_DoorwayStuds",
+   "swap": []
+  },
+  "Kit_DoorwayStuds180": {
+   "sheet": "doorway_studs",
+   "role": "variant",
+   "dims_mm": {
+    "W": 1952,
+    "D": 145,
+    "H": 2327
+   },
+   "dims_label": "W 1952 · D 145 · H 2327 mm",
+   "size_m": [
+    1.9523,
+    2.327,
+    0.1446
+   ],
+   "boundsMin": [
+    -0.976,
+    0,
+    -0.07
+   ],
+   "boundsMax": [
+    0.9763,
+    2.327,
+    0.0746
+   ],
+   "aboveFloor_m": 0,
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 500,
+   "px": {
+    "front": [
+     1009,
+     1196
+    ],
+    "side": [
+     105,
+     1196
+    ],
+    "top": [
+     1009,
+     105
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "1 m",
+    "metres": 1.0,
+    "sheetPx": 250
+   },
+   "images": {
+    "top": "png/Kit_DoorwayStuds180_top.png",
+    "front": "png/Kit_DoorwayStuds180_front.png",
+    "side": "png/Kit_DoorwayStuds180_side.png",
+    "persp": "png/Kit_DoorwayStuds180_persp.png"
+   },
+   "materials": [
+    {
+     "slot": "Prop_Studs",
+     "label": "Spruce studs",
+     "hex": "#c9ae83",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    },
+    {
+     "slot": "Prop_TapeBlue",
+     "label": "Painter's tape",
+     "hex": "#2e86c1",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "tris": {
+    "lod0": 438,
+    "lod1": 182,
+    "budget": null,
+    "lodDistances_m": null
+   },
+   "placement": "Wall",
+   "tags": [
+    "arch",
+    "wall_decor"
+   ],
+   "anchors": [
+    "opening",
+    "header",
+    "clear_corner_a",
+    "clear_corner_b"
+   ],
+   "family": "Doors · existing",
+   "variantOf": "Kit_DoorwayStuds",
+   "swap": []
+  }
+ },
+ "heroes": []
+}

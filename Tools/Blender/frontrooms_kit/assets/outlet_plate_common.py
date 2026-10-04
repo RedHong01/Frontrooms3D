@@ -151,9 +151,12 @@ SPEC_1_2 = {
 # Every number here is O2's reading of an ESTIMATE or of a gap in §1.2;
 # build_o2_switches_blanks_and_jacks.md lists them.
 R_FLOOR = 0.5            # profile rings inset past the corner radius keep a 0.5 corner (no mitre crease)
-CSK_SEGS = 64            # §1.1 >= 64 on the visible countersink rim
-BORE_SEGS = 32           # the cone bottom and the dark bore disc: hidden under the Ø6.6 head (2:1 bridge)
-BORE_D = 4.0             # #6 clearance bore at the cone bottom (dark disc); keeps the cone in front of the cavity face
+CSK_SEGS = 64            # §1.1 >= 64 on the visible countersink rim (Ø 7.4 at the field)
+SEAT_SEGS = 32           # the Ø 6.6 seat ring, hidden under the screw head rim (2:1 bridge)
+BORE_SEGS = 16           # the cone bottom and the dark bore disc (2:1 bridge)
+SEAT_DROP = 0.05         # "seat level with the field" read as O1 reads it: a 0.05 lip from Ø 7.4 to the
+                         # Ø 6.6 seat, then the 82-degree cone; anchors sit on the seat (= O1's seatH)
+BORE_D = 3.6             # #6 clearance bore at the cone bottom (dark disc), as O1
 FIELD_STEINER = 15.0     # interior field points every 15 mm: the 0.1 mm crown is held to 0.006 mm
 EDGE_WEAR_BAND = 1.5     # G = 0.9 on the outer 1.5 mm of every plate (rubbed edge)
 BOSS_CLEAR = 0.35        # switch face to plate opening (duplex uses 0.4; 0.35 leaves a 0.15 flat round the bat slot)
@@ -622,12 +625,14 @@ def thermoset_plate(kit, W, H, screws, openings, wear=None, name="plate", slot=T
         back_holes.append(bottom)
     dark = Mesh()
     seats = []
-    depth = (CSK_D / 2 - BORE_D / 2) / math.tan(math.radians(CSK_ANGLE / 2))
+    depth = (SCREW_HEAD_D / 2 - BORE_D / 2) / math.tan(math.radians(CSK_ANGLE / 2))
     for sx, sz in screws:
-        hs = hf(sx, sz)
+        hs = hf(sx, sz) - SEAT_DROP
         top = m.ring(circle(sx, sz, CSK_D / 2, CSK_SEGS), hf)
+        seat = m.ring(circle(sx, sz, SCREW_HEAD_D / 2, SEAT_SEGS), hs)
+        m.bridge_2to1(top, seat)                       # the lip the head rim lands on
         bot = m.ring(circle(sx, sz, BORE_D / 2, BORE_SEGS), hs - depth)
-        m.bridge_2to1(top, bot)
+        m.bridge_2to1(seat, bot)                       # 82-degree cone
         front_holes.append(top)
         dark.cap(dark.ring(circle(sx, sz, BORE_D / 2, BORE_SEGS), hs - depth))
         seats.append((sx, hs, sz))
@@ -664,10 +669,10 @@ def check_plate(info):
         tol = 0.05 if op.kind == "rrect" else max(0.05, op.d / 2 * (1 - math.cos(math.pi / op.segs)) * 2 + 1e-6)
         assert _close(max(xs) - min(xs), w, tol) and _close(max(zs) - min(zs), h, tol), "opening size"
         assert _close((max(xs) + min(xs)) / 2, op.cx) and _close((max(zs) + min(zs)) / 2, op.cz), "opening centre"
-    half = math.degrees(math.atan((CSK_D / 2 - BORE_D / 2) / info["csk_depth"]))
+    half = math.degrees(math.atan((SCREW_HEAD_D / 2 - BORE_D / 2) / info["csk_depth"]))
     assert _close(2 * half, CSK_ANGLE, 0.01), "countersink angle"
     for sx, sh, sz in info["seats"]:
-        assert _close(sh, info["hf"](sx, sz), 1e-6), "screw seat not level with the field"
+        assert _close(sh, info["hf"](sx, sz), 0.05 + 1e-6), "screw seat more than 0.05 off the field"
 
 
 # ----------------------------------------------------- LOD0 toggle device
@@ -863,7 +868,7 @@ def plate_lod1(kit, W, H, screws, openings, slot=TI, lods="1"):
         holes.append(top)
     d = Mesh()
     for sx, sz in screws:
-        hs = hf(sx, sz)
+        hs = hf(sx, sz) - SEAT_DROP
         top = m.ring(circle(sx, sz, CSK_D / 2, LOD1_SCREW_SEGS), hf)
         mid = m.ring(circle(sx, sz, SCREW_HEAD_D / 2, LOD1_SCREW_SEGS), hs - 0.35)
         m.bridge(top, mid)

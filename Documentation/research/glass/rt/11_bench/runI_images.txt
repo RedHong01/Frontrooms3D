@@ -1,0 +1,21 @@
+17:40  up 29 days, 21:48, 1 user, load averages: 411.85 431.72 423.69
+# rt_bench4 final images device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 412/432/424
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+wrote img_final_a_off.png
+wrote img_final_a_h2.png
+wrote img_final_a_s4.png
+wrote img_final_a_t2.png
+wrote img_final_g_off.png
+wrote img_final_g_h1.png
+wrote img_final_g_h2.png
+wrote img_final_g_d12.png
+wrote img_final_f_off.png
+wrote img_final_f_h2.png
+wrote img_final_d_off.png
+wrote img_final_d_h2.png
+wrote img_final_sheet.png
+# done load 420/433/424
+17:40  up 29 days, 21:48, 1 user, load averages: 420.19 432.62 424.15

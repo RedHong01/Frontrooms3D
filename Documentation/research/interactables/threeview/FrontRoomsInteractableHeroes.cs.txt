@@ -1,0 +1,724 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+/// <summary>
+/// Grouped hero shots of the interactables kit (doors, lock, keys, windows),
+/// composed from the kit FBX + sidecar anchors with the raw recipe of
+/// 10_spec.md §6.2 (S_sign = +1, doors closed, closer linkage solved for 0°).
+/// Same studio as FrontRoomsThreeView: key over the camera's upper-left
+/// shoulder with soft shadows, dim fill, flat 0.55 ambient, grey studio cube,
+/// no post, LOD0 only. Walls and floors use the levels' own surfaces.
+/// Each shot is written twice: &lt;name&gt;_alpha.png (transparent) and
+/// &lt;name&gt;.png (on the K-sheet hero panel colour #EEECE6).
+/// Batch: -executeMethod FrontRoomsInteractableHeroes.RunBatch -heroOut DIR
+/// (needs graphics). Render in a clone only.
+/// </summary>
+public static class FrontRoomsInteractableHeroes
+{
+    static readonly Color Ambient = new Color(.55f, .55f, .55f);
+    static readonly Color Panel = new Color(0xEE / 255f, 0xEC / 255f, 0xE6 / 255f);   // sRGB
+    const int MaxTarget = 10000;
+    static string outDir;
+    static Camera cam;
+    static Light key, fill;
+    static UniversalRenderPipelineAsset urp;
+    static readonly List<string> log = new List<string>();
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string probe = null, only = null;
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "-heroOut") outDir = args[i + 1];
+            if (args[i] == "-heroProbe") probe = args[i + 1];
+            if (args[i] == "-heroOnly") only = args[i + 1];
+        }
+        if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "heroes");
+        Directory.CreateDirectory(outDir);
+        if (AssetDatabase.IsValidFolder("Assets/Resources/Props/Models"))
+            AssetDatabase.ImportAsset("Assets/Resources/Props/Models", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        if (urp != null) { urp.shadowCascadeCount = 1; urp.mainLightShadowmapResolution = 8192; }
+        Studio();
+        var rig = new GameObject("HERO rig").transform;
+        key = MakeLight(rig, "key", 1f, LightShadows.Soft);
+        fill = MakeLight(rig, "fill", .3f, LightShadows.None);
+        var co = new GameObject("HERO camera");
+        cam = co.AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0, 0, 0, 0);
+        cam.allowHDR = false;
+        cam.allowMSAA = false;
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        data.antialiasing = AntialiasingMode.None;
+        data.renderShadows = true;
+        data.dithering = false;
+
+        if (!string.IsNullOrEmpty(probe)) Try("probe", () => Probe(probe.Split(',')));
+        bool Want(string n) => string.IsNullOrEmpty(only) || Array.IndexOf(only.Split(','), n) >= 0;
+        if (Want("doors")) Try("doors", Doors);
+        if (Want("lock")) Try("lock", LockExploded);
+        if (Want("keys")) Try("keys", Keys);
+        if (Want("windows")) Try("windows", Windows);
+        File.WriteAllText(Path.Combine(outDir, "heroes_log.txt"), string.Join("\n", log) + "\n");
+        Debug.Log("[Heroes] done: " + log.Count + " lines");
+    }
+
+    /// <summary>What Unity actually binds per renderer slot: the project surface or the FBX's own preview material.</summary>
+    static void Probe(string[] kits)
+    {
+        var sb = new StringBuilder("{\n");
+        var first = true;
+        foreach (var k in kits)
+        {
+            var go = FrontRoomsKitLibrary.Spawn(k, null, Vector3.zero, Quaternion.identity, Vector3.one, false, k);
+            if (go == null) continue;
+            var seen = new HashSet<string>();
+            var parts = new List<string>();
+            foreach (var r in go.GetComponentsInChildren<MeshRenderer>(true))
+                foreach (var m in r.sharedMaterials)
+                {
+                    if (m == null || !seen.Add(m.name)) continue;
+                    var c = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : (m.HasProperty("_Color") ? m.color : Color.white);
+                    var tex = m.HasProperty("_BaseMap") && m.GetTexture("_BaseMap") != null ? m.GetTexture("_BaseMap").name : "";
+                    var em = m.HasProperty("_EmissionColor") ? m.GetColor("_EmissionColor") : Color.black;
+                    var path = AssetDatabase.GetAssetPath(m);
+                    parts.Add(string.Format(CultureInfo.InvariantCulture,
+                        "   {{\"material\": \"{0}\", \"shader\": \"{1}\", \"asset\": \"{2}\", \"baseColor\": [{3:F4}, {4:F4}, {5:F4}], \"baseColorHex\": \"#{6}\", \"baseMap\": \"{7}\", \"emission\": [{8:F3}, {9:F3}, {10:F3}]}}",
+                        m.name, m.shader != null ? m.shader.name : "", path, c.r, c.g, c.b, ColorUtility.ToHtmlStringRGB(c), tex, em.r, em.g, em.b));
+                }
+            UnityEngine.Object.DestroyImmediate(go);
+            sb.Append(first ? "" : ",\n").Append(" \"").Append(k).Append("\": [\n").Append(string.Join(",\n", parts)).Append("\n ]");
+            first = false;
+        }
+        sb.Append("\n}\n");
+        File.WriteAllText(Path.Combine(outDir, "materials_probe.json"), sb.ToString());
+    }
+
+    static void Try(string name, Action a)
+    {
+        try { a(); }
+        catch (Exception e) { log.Add("FAILED " + name + ": " + e); Debug.LogException(e); }
+    }
+
+    // ------------------------------------------------------------------ studio
+
+    static void Studio()
+    {
+        RenderSettings.fog = false;
+        RenderSettings.skybox = null;
+        RenderSettings.ambientMode = AmbientMode.Flat;
+        RenderSettings.ambientLight = Ambient;
+        RenderSettings.ambientIntensity = 1f;
+        var cube = new Cubemap(16, TextureFormat.RGBA32, false) { name = "HERO studio" };
+        foreach (CubemapFace face in Enum.GetValues(typeof(CubemapFace)))
+        {
+            if (face == CubemapFace.Unknown) continue;
+            var c = face == CubemapFace.PositiveY ? new Color(.85f, .85f, .85f) : face == CubemapFace.NegativeY ? new Color(.22f, .22f, .22f) : new Color(.5f, .5f, .5f);
+            var px = new Color[256];
+            for (var i = 0; i < px.Length; i++) px[i] = c;
+            cube.SetPixels(px, face);
+        }
+        cube.Apply();
+        RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+        RenderSettings.customReflectionTexture = cube;
+        RenderSettings.reflectionIntensity = 1f;
+        DynamicGI.UpdateEnvironment();
+    }
+
+    static Light MakeLight(Transform parent, string name, float intensity, LightShadows shadows)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var l = go.AddComponent<Light>();
+        l.type = LightType.Directional;
+        l.color = Color.white;
+        l.intensity = intensity;
+        l.shadows = shadows;
+        l.shadowStrength = .75f;
+        l.shadowBias = .02f;
+        l.shadowNormalBias = .2f;
+        return l;
+    }
+
+    static bool keyFromRight;
+
+    static void PlaceRig(Quaternion camRot)
+    {
+        var keyFrom = new Vector3(keyFromRight ? .55f : -.55f, .7f, -.6f);
+        var fillFrom = new Vector3(.8f, .1f, -.55f);
+        key.transform.rotation = Quaternion.LookRotation(camRot * -keyFrom.normalized, camRot * Vector3.up);
+        fill.transform.rotation = Quaternion.LookRotation(camRot * -fillFrom.normalized, camRot * Vector3.up);
+    }
+
+    // ------------------------------------------------------------------ kit helpers
+
+    static Vector3 A(string kit, string anchor)
+    {
+        var info = FrontRoomsKitLibrary.GetInfo(kit);
+        if (info != null && info.TryAnchor(anchor, out var p)) return p;
+        throw new Exception(kit + " has no anchor " + anchor);
+    }
+
+    static GameObject S(string kit, Transform parent, Vector3 pos, Quaternion rot, Vector3? scale = null)
+    {
+        var go = FrontRoomsKitLibrary.Spawn(kit, parent, pos, rot, scale ?? Vector3.one, false, kit);
+        if (go == null) throw new Exception("no model " + kit);
+        foreach (var group in go.GetComponentsInChildren<LODGroup>())
+        {
+            var lods = group.GetLODs();
+            var keep = new HashSet<Renderer>();
+            if (lods.Length > 0) foreach (var r in lods[0].renderers) if (r != null) keep.Add(r);
+            for (var i = 1; i < lods.Length; i++)
+                foreach (var r in lods[i].renderers)
+                    if (r != null && !keep.Contains(r)) r.enabled = false;
+            group.enabled = false;
+        }
+        foreach (var r in go.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (r.name.IndexOf("_LOD", StringComparison.OrdinalIgnoreCase) >= 0 && r.name.IndexOf("_LOD0", StringComparison.OrdinalIgnoreCase) < 0) r.enabled = false;
+            if (r.enabled) r.shadowCastingMode = ShadowCastingMode.On;
+        }
+        return go;
+    }
+
+    static readonly Dictionary<string, Material> Mats = new Dictionary<string, Material>();
+    static Material Surface(string name)
+    {
+        if (Mats.TryGetValue(name, out var m) && m != null) return m;
+        m = Resources.Load<Material>("Surfaces/" + name);
+        if (m == null) { log.Add("missing surface " + name); m = new Material(Shader.Find("Universal Render Pipeline/Lit")); }
+        Mats[name] = m;
+        return m;
+    }
+
+    static Material Flat(string name, Color c, float smooth = .3f)
+    {
+        if (Mats.TryGetValue(name, out var m) && m != null) return m;
+        m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
+        m.SetColor("_BaseColor", c);
+        m.SetFloat("_Smoothness", smooth);
+        Mats[name] = m;
+        return m;
+    }
+
+    /// <summary>A box from min to max (parent-local) with a level surface.</summary>
+    static GameObject Box(Transform parent, string name, Vector3 min, Vector3 max, Material m)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = (min + max) * .5f;
+        go.transform.localScale = max - min;
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        r.shadowCastingMode = ShadowCastingMode.On;
+        return go;
+    }
+
+    /// <summary>A thin guide line (explode axis) between two parent-local points.</summary>
+    static void Guide(Transform parent, Vector3 a, Vector3 b, float d = .0005f)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.name = "guide";
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = (a + b) * .5f;
+        go.transform.localRotation = Quaternion.FromToRotation(Vector3.up, (b - a).normalized);
+        go.transform.localScale = new Vector3(d, (b - a).magnitude * .5f, d);
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = Flat("guide", new Color(.18f, .18f, .18f), .1f);
+        r.shadowCastingMode = ShadowCastingMode.Off;
+    }
+
+    static Bounds RenderedBounds(Transform root)
+    {
+        Bounds? b = null;
+        foreach (var r in root.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (!r.enabled || r.name == "guide") continue;
+            if (b == null) b = r.bounds; else { var x = b.Value; x.Encapsulate(r.bounds); b = x; }
+        }
+        return b ?? new Bounds(root.position, Vector3.one);
+    }
+
+    // ------------------------------------------------------------------ doors
+
+    sealed class DoorSpec
+    {
+        public string code, title, leaf, frame, finish, sign, plate, exitSign, wall, floor;
+        public bool locked, free, closer, crossbar;
+    }
+
+    static readonly DoorSpec[] DoorSet =
+    {
+        new DoorSpec { code = "L0-F", title = "Lobby free", leaf = "Kit_DoorLeaf_Veneer", frame = "Kit_DoorFrame_Wood", finish = "_Brass", free = true, wall = "L0_Wallpaper", floor = "L0_Carpet" },
+        new DoorSpec { code = "L0-K", title = "Lobby locked", leaf = "Kit_DoorLeaf_Steel", frame = "Kit_DoorFrame_Steel", locked = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate", wall = "L0_Wallpaper", floor = "L0_Carpet" },
+        new DoorSpec { code = "OF-F", title = "Office free", leaf = "Kit_DoorLeaf_Veneer_Oak", frame = "Kit_DoorFrame_Steel", finish = "", free = true, closer = true, wall = "Office_Wall", floor = "Office_Carpet" },
+        new DoorSpec { code = "OF-K", title = "Office locked", leaf = "Kit_DoorLeaf_Steel", frame = "Kit_DoorFrame_Steel", locked = true, closer = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate_Blue", wall = "Office_Wall", floor = "Office_Carpet" },
+        new DoorSpec { code = "RN-F", title = "Run free", leaf = "Kit_DoorLeaf_Ward", frame = "Kit_DoorFrame_Steel", closer = true, wall = "Run_Wall", floor = "Run_Floor" },
+        new DoorSpec { code = "RN-K", title = "Run locked", leaf = "Kit_DoorLeaf_Steel", frame = "Kit_DoorFrame_Steel", locked = true, closer = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate_White", wall = "Run_Wall", floor = "Run_Floor" },
+        new DoorSpec { code = "EX-F", title = "Exit free", leaf = "Kit_DoorLeaf_Veneer_Oak", frame = "Kit_DoorFrame_Steel_Alu", finish = "", free = true, closer = true, crossbar = true, exitSign = "Kit_ExitSign", wall = "Exit_Wallpaper", floor = "Exit_Carpet" },
+        new DoorSpec { code = "EX-K", title = "Exit locked", leaf = "Kit_DoorLeaf_Steel", frame = "Kit_DoorFrame_Steel_Alu", locked = true, closer = true, plate = "Kit_DoorNumberPlate", exitSign = "Kit_ExitSign_Dead", wall = "Exit_Wallpaper", floor = "Exit_Carpet" },
+    };
+
+    static readonly DoorSpec RunLite = new DoorSpec { code = "RN-K-lite", title = "Run locked, wired-lite option", leaf = "Kit_DoorLeaf_SteelLite", frame = "Kit_DoorFrame_Steel", locked = true, closer = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate_White", wall = "Run_Wall", floor = "Run_Floor" };
+
+    /// <summary>One door member in the door root frame D (10_spec §1.2, §6.2), S_sign = +1, closed.</summary>
+    static Transform BuildDoor(DoorSpec d, Transform parent, Vector3 pos, Quaternion rot, bool wall)
+    {
+        var root = new GameObject("DoorSet " + d.code).transform;
+        root.SetParent(parent, false);
+        root.localPosition = pos;
+        root.localRotation = rot;
+        if (wall)
+        {
+            var wm = Surface(d.wall);
+            Box(root, "wall hinge side", new Vector3(-.08f, 0f, -.5f), new Vector3(.08f, 2.4f, 0f), wm);
+            Box(root, "wall latch side", new Vector3(-.08f, 0f, 1f), new Vector3(.08f, 2.4f, 1.5f), wm);
+            Box(root, "wall head", new Vector3(-.08f, 2.1f, 0f), new Vector3(.08f, 2.4f, 1f), wm);
+            Box(root, "floor", new Vector3(-.9f, -.02f, -.5f), new Vector3(.9f, 0f, 1.5f), Surface(d.floor));
+        }
+        var frame = S(d.frame, root, Vector3.zero, Quaternion.identity);
+        var rig = new GameObject("Leaf rig").transform;
+        rig.SetParent(root, false);
+        S(d.leaf, rig, Vector3.zero, Quaternion.identity);
+        var rs = Quaternion.Euler(0f, 90f, 0f);
+        var rp = Quaternion.Euler(0f, -90f, 0f);
+        var mp = new Vector3(-1f, 1f, 1f);
+        Vector3 On(Vector3 at, Quaternion r, Vector3 m, Vector3 local) => at + r * Vector3.Scale(m, local);
+
+        if (d.free)
+        {
+            var rose = "Kit_Lock_Rose" + d.finish;
+            var lever = "Kit_Lock_Lever" + d.finish;
+            foreach (var f in new[] { "s", "p" })
+            {
+                // EX-F: the crossbar replaces the P-face trim (exit-device trim on S only).
+                if (d.crossbar && f == "p") continue;
+                var r = f == "s" ? rs : rp;
+                var m = f == "s" ? Vector3.one : mp;
+                var at = A(d.leaf, "rose_" + f);
+                S(rose, rig, at, r, m);
+                S(lever, rig, On(at, r, m, A(rose, "spindle")), r, m);
+            }
+            S("Kit_Lock_Latchbolt_Bored" + d.finish, rig, A(d.leaf, "latchbolt"), Quaternion.identity);
+            var strikeAt = d.frame == "Kit_DoorFrame_Wood" ? A(d.frame, "strike") : A(d.frame, "strike_bored");
+            S("Kit_Lock_StrikeBored" + d.finish, root, strikeAt, Quaternion.Euler(0f, 180f, 0f));
+        }
+        if (d.locked)
+        {
+            foreach (var f in new[] { "s", "p" })
+            {
+                var r = f == "s" ? rs : rp;
+                var m = f == "s" ? Vector3.one : mp;
+                var at = A(d.leaf, "escutcheon_" + f);
+                S("Kit_Lock_Escutcheon", rig, at, r, m);
+                S("Kit_Lock_Knob", rig, On(at, r, m, A("Kit_Lock_Escutcheon", "knob_pivot")), r, m);
+                var keyhole = On(at, r, m, A("Kit_Lock_Escutcheon", "keyhole"));
+                S("Kit_Lock_CylinderShell", rig, keyhole, r, m);
+                S("Kit_Lock_Plug", rig, keyhole, r, Vector3.one);   // never mirrored (sidecar note)
+                if (d.sign != null) S(d.sign, rig, A(d.leaf, "sign_" + f), r, Vector3.one);
+                if (d.plate != null) S(d.plate, rig, A(d.leaf, "tagplate_" + f), r, Vector3.one);
+            }
+            S("Kit_Lock_Deadbolt", rig, A(d.leaf, "deadbolt"), Quaternion.identity);
+            S("Kit_Lock_Latchbolt_Mortise", rig, A(d.leaf, "latchbolt"), Quaternion.identity);
+            S("Kit_Lock_StrikeMortise", root, A(d.frame, "strike"), Quaternion.Euler(0f, 180f, 0f));
+        }
+        if (d.closer)
+        {
+            var mount = A(d.leaf, "closer_mount_s");
+            S("Kit_DoorCloser_Body", rig, mount, rs);
+            var spindle = mount + rs * A("Kit_DoorCloser_Body", "spindle");
+            var shoeAt = A(d.frame, "closer_shoe");
+            S("Kit_DoorCloser_Shoe", root, shoeAt, rs);
+            var a = A("Kit_DoorCloser_Arm", "elbow").x;
+            var fe = A("Kit_DoorCloser_Forearm", "shoe_end");
+            var b = new Vector2(fe.x, fe.z).magnitude;
+            // Elbow: circle (spindle, a) ∩ circle (shoe pivot, b), the root farther from the leaf's S face (larger X).
+            var p0 = new Vector2(spindle.x, spindle.z);
+            var p1 = new Vector2(shoeAt.x, shoeAt.z);
+            var dist = Vector2.Distance(p0, p1);
+            var along = (a * a - b * b + dist * dist) / (2f * dist);
+            var h = Mathf.Sqrt(Mathf.Max(0f, a * a - along * along));
+            var dir = (p1 - p0) / dist;
+            var mid = p0 + dir * along;
+            var e1 = mid + new Vector2(-dir.y, dir.x) * h;
+            var e2 = mid - new Vector2(-dir.y, dir.x) * h;
+            var e = e1.x >= e2.x ? e1 : e2;
+            float Yaw(Vector2 from, Vector2 to) => Mathf.Atan2(-(to.y - from.y), to.x - from.x) * Mathf.Rad2Deg;
+            S("Kit_DoorCloser_Arm", rig, spindle, Quaternion.Euler(0f, Yaw(p0, e), 0f));
+            var elbow = new Vector3(e.x, spindle.y + A("Kit_DoorCloser_Arm", "elbow").y, e.y);
+            S("Kit_DoorCloser_Forearm", rig, elbow, Quaternion.Euler(0f, Yaw(e, p1), 0f));
+            log.Add(string.Format(CultureInfo.InvariantCulture, "{0} closer elbow plan ({1:F3}, {2:F3}) [spec 0°: (0.222, 0.341)]", d.code, e.x, e.y));
+        }
+        if (d.crossbar)
+            S("Kit_ExitDevice_Crossbar", rig, new Vector3(-.022f, 1f, .9f), rp, mp);
+        if (d.exitSign != null)
+            S(d.exitSign, root, A(d.frame, "exit_sign_p"), rp);
+        return root;
+    }
+
+    static void Doors()
+    {
+        var group = new GameObject("DOORS").transform;
+        // Lineup, pull (S) face toward the camera (world -Z): door root +X -> world -Z, opening +Z -> world +X.
+        var pull = Quaternion.Euler(0f, 90f, 0f);
+        var push = Quaternion.Euler(0f, -90f, 0f);
+        const float pitch = 2.2f;
+        for (var face = 0; face < 2; face++)
+        {
+            var row = new GameObject(face == 0 ? "lineup pull" : "lineup push").transform;
+            row.SetParent(group, false);
+            for (var i = 0; i < DoorSet.Length; i++)
+                BuildDoor(DoorSet[i], row, new Vector3(i * pitch + (face == 0 ? 0f : 1f), 0f, 0f), face == 0 ? pull : push, true);
+            var bounds = RenderedBounds(row);
+            ShootFront(face == 0 ? "doors_lineup_pull_face" : "doors_lineup_push_face", bounds, 4800, 1350, 14f, 6f);
+            UnityEngine.Object.DestroyImmediate(row.gameObject);
+        }
+        // One hero per member, 4:3, 3/4 from the front-left of each face.
+        foreach (var d in new List<DoorSpec>(DoorSet) { RunLite })
+            for (var face = 0; face < 2; face++)
+            {
+                var root = BuildDoor(d, group, Vector3.zero, face == 0 ? pull : push, true);
+                // Frame on the door frame + 0.15 m of wall, not the whole stub.
+                var frameBounds = new Bounds();
+                var first = true;
+                foreach (var r in root.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if (!r.enabled || r.name.StartsWith("wall") || r.name == "floor") continue;
+                    if (first) { frameBounds = r.bounds; first = false; } else frameBounds.Encapsulate(r.bounds);
+                }
+                frameBounds.Expand(new Vector3(.3f, .1f, .3f));
+                // Camera on the latch side of the shown face: pull face latch is image right, push face latch image left.
+                keyFromRight = face == 1;   // light from the open (latch) side, not across the recessed push face
+                ShootPersp("doorset_" + d.code + (face == 0 ? "_pull" : "_push"), frameBounds, 1600, 1200, face == 0 ? -30f : 30f, 12f, 30f, .92f);
+                keyFromRight = false;
+                UnityEngine.Object.DestroyImmediate(root.gameObject);
+            }
+        UnityEngine.Object.DestroyImmediate(group.gameObject);
+    }
+
+    // ------------------------------------------------------------------ lock
+
+    static void LockExploded()
+    {
+        // Part frame of the S-face escutcheon: +Z out of the door face, +Y up, +X toward the hinge, -X toward the latch edge.
+        var root = new GameObject("LOCK exploded").transform;
+        const string esc = "Kit_Lock_Escutcheon";
+        var keyhole = A(esc, "keyhole");
+        var knobAt = A(esc, "knob_pivot");
+        S(esc, root, Vector3.zero, Quaternion.identity);
+        var shellAt = keyhole + new Vector3(0f, 0f, .03f);
+        var plugAt = keyhole + new Vector3(0f, 0f, .065f);
+        var keyAt = keyhole + new Vector3(0f, 0f, .125f);
+        var knobOut = knobAt + new Vector3(0f, 0f, .045f);
+        S("Kit_Lock_CylinderShell", root, shellAt, Quaternion.identity);
+        S("Kit_Lock_Plug", root, plugAt, Quaternion.identity);
+        S("Kit_Key_Zone", root, keyAt, Quaternion.LookRotation(Vector3.back, Vector3.up));   // tip toward the plug, cuts up
+        S("Kit_Lock_Knob", root, knobOut, Quaternion.identity);
+        Guide(root, keyhole, keyAt + new Vector3(0f, 0f, .036f));
+        Guide(root, knobAt, knobOut);
+        // Edge parts on the leaf mid-plane (part z = -0.022), latch edge at part x = -(0.9939 - 0.920).
+        var edgeX = -(.9939f - .92f);
+        var mid = -.022f;
+        var dbHome = new Vector3(edgeX, 1.000f - .968f, mid);
+        var lbHome = new Vector3(edgeX, .9365f - .968f, mid);
+        var throwToLatch = Quaternion.Euler(0f, -90f, 0f);   // bolt +Z (throw) -> part -X
+        var dbOut = dbHome + new Vector3(-.03f, 0f, 0f);
+        var lbOut = lbHome + new Vector3(-.03f, 0f, 0f);
+        S("Kit_Lock_Deadbolt", root, dbOut, throwToLatch);
+        S("Kit_Lock_Latchbolt_Mortise", root, lbOut, throwToLatch);
+        var strikeHome = new Vector3(-(.998f - .92f), 0f, mid);
+        var strikeOut = strikeHome + new Vector3(-.075f, 0f, 0f);
+        S("Kit_Lock_StrikeMortise", root, strikeOut, Quaternion.Euler(0f, 90f, 0f));   // front faces the leaf edge (+X here)
+        Guide(root, new Vector3(dbHome.x + .02f, dbHome.y, mid), strikeOut + new Vector3(0f, dbHome.y, 0f));
+        Guide(root, new Vector3(lbHome.x + .02f, lbHome.y, mid), strikeOut + new Vector3(0f, lbHome.y, 0f));
+        var b = RenderedBounds(root);
+        ShootPersp("lock_exploded", b, 1600, 1200, 142f, 20f, 26f, .9f);   // camera on +Z, latch-edge (-X) side
+        // The same parts, front elevation (no perspective distortion) for the DW06 strip.
+        ShootFront("lock_exploded_front", b, 1600, 1200, 4f, 3f, true);
+        UnityEngine.Object.DestroyImmediate(root.gameObject);
+    }
+
+    // ------------------------------------------------------------------ keys
+
+    /// <summary>Hung pose (10_spec §4.1, sidecar hungPose; Unity port of g3/pose.py).</summary>
+    static void Hang(Transform parent, string host, Vector3 hook, string tag, string keyKit, float ringYaw, float lift, float keyTwist, float tagTwist)
+    {
+        var ringRot = Quaternion.Euler(0f, ringYaw, 0f);
+        var ringPos = hook + Vector3.up * lift - ringRot * A("Kit_KeyRing", "hook_contact");
+        S("Kit_KeyRing", parent, ringPos, ringRot);
+        var tX = Quaternion.Euler(0f, ringYaw + keyTwist, 0f) * Vector3.right;
+        var keyRot = Quaternion.LookRotation(Vector3.down, Vector3.Cross(Vector3.down, tX));
+        var keyPos = ringPos + ringRot * A("Kit_KeyRing", "key_contact") - keyRot * A(keyKit, "ring_hole");
+        S(keyKit, parent, keyPos, keyRot);
+        var gX = Quaternion.Euler(0f, ringYaw + tagTwist, 0f) * Vector3.right;
+        var tagRot = Quaternion.LookRotation(gX, Vector3.up);
+        var tagPos = ringPos + ringRot * A("Kit_KeyRing", "tag_contact") - tagRot * A(tag, "hole");
+        S(tag, parent, tagPos, tagRot);
+    }
+
+    static void Keys()
+    {
+        // 1. The Lobby key board on wallpaper with the zone key hung on its key_hook.
+        var root = new GameObject("KEYS board").transform;
+        Box(root, "wall", new Vector3(-1.5f, .6f, -.16f), new Vector3(1.5f, 2.4f, 0f), Surface("L0_Wallpaper"));
+        const string board = "Kit_KeyHookBoard";
+        S(board, root, Vector3.zero, Quaternion.identity);
+        var info = FrontRoomsKitLibrary.GetInfo(board);
+        Hang(root, board, A(board, "key_hook"), "Kit_KeyTag_Rect", "Kit_Key_Zone", -60f, .0012f, -30f, -30f);
+        var boardBounds = RenderedBounds(root);
+        boardBounds.SetMinMax(new Vector3(-.2f, 1.22f, -.01f), new Vector3(.2f, 1.68f, .06f));
+        ShootPersp("keys_board_hung", boardBounds, 1600, 1200, 152f, 8f, 30f, .95f);
+        // Close-up on the hung key, ring and tag.
+        var hook = A(board, "key_hook");
+        var close = new Bounds(hook + new Vector3(0f, -.04f, .01f), new Vector3(.09f, .11f, .05f));
+        ShootPersp("keys_board_hung_close", close, 1600, 1200, 152f, 8f, 30f, .95f);
+        UnityEngine.Object.DestroyImmediate(root.gameObject);
+
+        // 2. The same key on the single brass hook and in the Office key cabinet.
+        foreach (var host in new[] { "Kit_KeyHook", "Kit_KeyCabinet" })
+        {
+            var r = new GameObject("KEYS " + host).transform;
+            var wall = host == "Kit_KeyHook" ? "L0_Wallpaper" : "Office_Wall";
+            Box(r, "wall", new Vector3(-1.6f, .6f, -.16f), new Vector3(1.5f, 2.4f, 0f), Surface(wall));
+            S(host, r, Vector3.zero, Quaternion.identity);
+            Hang(r, host, A(host, "key_hook"), host == "Kit_KeyHook" ? "Kit_KeyTag_Round_Blue" : "Kit_KeyTag_Long_White", "Kit_Key_Zone", -60f, host == "Kit_KeyHook" ? .0014f : .0011f, -30f, -30f);
+            var hb = new Bounds();
+            if (host == "Kit_KeyHook") hb = new Bounds(A(host, "key_hook") + new Vector3(0f, -.035f, .01f), new Vector3(.10f, .12f, .05f));
+            else hb.SetMinMax(new Vector3(-.40f, 1.20f, -.01f), new Vector3(.40f, 1.74f, .10f));
+            ShootPersp("keys_" + (host == "Kit_KeyHook" ? "hook" : "cabinet") + "_hung", hb, 1600, 1200, 152f, 8f, 30f, .95f);
+            UnityEngine.Object.DestroyImmediate(r.gameObject);
+        }
+
+        // 3. Key parts lineup, front elevation, one scale: two keys, the ring, 3 shapes x 3 colours.
+        var parts = new GameObject("KEYS parts").transform;
+        // The camera looks -Z from +Z, so image right = world -X. Key yaw -90: flats (key X) face +Z, tip (+Z) -> world -X = image right.
+        var flatsFront = Quaternion.Euler(0f, -90f, 0f);
+        S("Kit_Key_Zone", parts, new Vector3(-.135f, .045f, 0f), flatsFront);
+        S("Kit_Key_Zone_Nickel", parts, new Vector3(-.135f, .005f, 0f), flatsFront);
+        S("Kit_KeyRing", parts, new Vector3(-.075f, .055f, 0f), Quaternion.identity);
+        string[] shapes = { "Kit_KeyTag_Rect", "Kit_KeyTag_Round", "Kit_KeyTag_Long" };
+        string[] colours = { "", "_Blue", "_White" };
+        float[] colX = { -.025f, .03f, .1f };   // rect, round, long (image right to left)
+        for (var s = 0; s < 3; s++)
+            for (var c = 0; c < 3; c++)
+                S(shapes[s] + colours[c], parts, new Vector3(colX[s], .075f - c * .055f, 0f), Quaternion.identity);
+        var pb = RenderedBounds(parts);
+        pb.Expand(new Vector3(.01f, .01f, 0f));
+        ShootOrtho("keys_parts_lineup_front", pb, 1704, 1268);
+        UnityEngine.Object.DestroyImmediate(parts.gameObject);
+    }
+
+    // ------------------------------------------------------------------ windows
+
+    sealed class WindowSpec { public string code, frame, wall, floor; public bool blind; }
+
+    static readonly WindowSpec[] WindowSet =
+    {
+        new WindowSpec { code = "W-L0", frame = "Kit_WindowFrame_Wood", wall = "L0_Wallpaper", floor = "L0_Carpet" },
+        new WindowSpec { code = "W-OF", frame = "Kit_WindowFrame_Steel", wall = "Office_Wall", floor = "Office_Carpet", blind = true },
+        new WindowSpec { code = "W-RN", frame = "Kit_WindowFrame_Steel_Enamel", wall = "Run_Wall", floor = "Run_Floor" },
+        new WindowSpec { code = "W-EX", frame = "Kit_WindowFrame_Alu", wall = "Exit_Wallpaper", floor = "Exit_Carpet" },
+    };
+
+    static Transform BuildWindow(WindowSpec w, Transform parent, Vector3 pos)
+    {
+        var root = new GameObject("WindowSet " + w.code).transform;
+        root.SetParent(parent, false);
+        root.localPosition = pos;
+        var wm = Surface(w.wall);
+        Box(root, "wall left", new Vector3(-1.15f, 0f, -.08f), new Vector3(-.7f, 2.4f, .08f), wm);
+        Box(root, "wall right", new Vector3(.7f, 0f, -.08f), new Vector3(1.15f, 2.4f, .08f), wm);
+        Box(root, "wall sill", new Vector3(-.7f, 0f, -.08f), new Vector3(.7f, .35f, .08f), wm);
+        Box(root, "wall head", new Vector3(-.7f, 2f, -.08f), new Vector3(.7f, 2.4f, .08f), wm);
+        Box(root, "floor", new Vector3(-1.15f, -.02f, -2.6f), new Vector3(1.15f, 0f, .9f), Surface(w.floor));
+        // The room behind face B: back wall and side walls, so the stand-in glass has something behind it.
+        Box(root, "room back", new Vector3(-1.15f, 0f, -2.76f), new Vector3(1.15f, 2.4f, -2.6f), wm);
+        Box(root, "room side l", new Vector3(-1.31f, 0f, -2.76f), new Vector3(-1.15f, 2.4f, -.08f), wm);
+        Box(root, "room side r", new Vector3(1.15f, 0f, -2.76f), new Vector3(1.31f, 2.4f, -.08f), wm);
+        Box(root, "room ceiling", new Vector3(-1.15f, 2.35f, -2.6f), new Vector3(1.15f, 2.4f, -.08f), Surface(w.wall.StartsWith("Office") ? "Office_Ceiling" : w.wall.StartsWith("Run") ? "Run_Ceiling" : "L0_Ceiling"));
+        S(w.frame, root, Vector3.zero, Quaternion.identity);
+        // Stand-in pane: the glass track's 6 mm slab (10_spec §5.4), Prop_Glass. Not part of the window kit.
+        var info = FrontRoomsKitLibrary.GetInfo(w.frame);
+        var slab = A(w.frame, "glass_slab");
+        var pane = Box(root, "pane (stand-in)", slab - new Vector3(1.391f, 1.642f, .006f) * .5f, slab + new Vector3(1.391f, 1.642f, .006f) * .5f, Surface("Prop_Glass"));
+        pane.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        if (w.blind) S("Kit_MiniBlind_Raised", root, A(w.frame, "blind_rail"), Quaternion.identity);
+        return root;
+    }
+
+    static void Windows()
+    {
+        var group = new GameObject("WINDOWS").transform;
+        var row = new GameObject("lineup").transform;
+        row.SetParent(group, false);
+        for (var i = 0; i < WindowSet.Length; i++) BuildWindow(WindowSet[i], row, new Vector3(i * 2.5f, 0f, 0f));
+        // Face A (+Z) toward the camera: the camera sits on +Z looking -Z.
+        ShootFront("windows_lineup_face_a", RenderedBounds(row), 4000, 1100, 9f, 6f, true);
+        UnityEngine.Object.DestroyImmediate(row.gameObject);
+        foreach (var w in WindowSet)
+        {
+            var root = BuildWindow(w, group, Vector3.zero);
+            var b = new Bounds(new Vector3(0f, 1.2f, 0f), new Vector3(1.9f, 2.1f, .3f));
+            ShootPersp("window_" + w.code + "_face_a", b, 1600, 1200, 180f - 30f, 10f, 30f, .95f);
+            UnityEngine.Object.DestroyImmediate(root.gameObject);
+        }
+        UnityEngine.Object.DestroyImmediate(group.gameObject);
+    }
+
+    // ------------------------------------------------------------------ cameras
+
+    /// <summary>Near-elevation: a long lens from the front (-Z looking +Z, or +Z looking -Z when fromPlusZ), slightly above.</summary>
+    static void ShootFront(string name, Bounds b, int w, int h, float fov, float pitch, bool fromPlusZ = false)
+    {
+        var yaw = fromPlusZ ? 180f : 0f;
+        var rot = Quaternion.Euler(pitch, yaw, 0f);
+        var pos = FitPerspective(b, rot, fov, (float)w / h, .94f);
+        Shoot(name, pos, rot, fov, w, h, b);
+    }
+
+    /// <summary>3/4 hero: camera yawed (degrees about Y from looking +Z) and pitched down.</summary>
+    static void ShootPersp(string name, Bounds b, int w, int h, float yaw, float pitch, float fov, float fillFrac)
+    {
+        var rot = Quaternion.Euler(pitch, yaw, 0f);
+        var pos = FitPerspective(b, rot, fov, (float)w / h, fillFrac);
+        Shoot(name, pos, rot, fov, w, h, b);
+    }
+
+    static void ShootOrtho(string name, Bounds b, int w, int h)
+    {
+        var rot = Quaternion.Euler(0f, 180f, 0f);   // camera on +Z looking -Z: the kit fronts
+        cam.orthographic = true;
+        var aspect = (float)w / h;
+        cam.orthographicSize = Mathf.Max(b.size.y * .5f, b.size.x * .5f / aspect) * 1.06f;
+        var pos = new Vector3(b.center.x, b.center.y, b.max.z + .5f);
+        cam.nearClipPlane = .01f;
+        cam.farClipPlane = b.size.z + 1f;
+        Render(name, pos, rot, w, h, b);
+        cam.orthographic = false;
+    }
+
+    static void Shoot(string name, Vector3 pos, Quaternion rot, float fov, int w, int h, Bounds b)
+    {
+        cam.orthographic = false;
+        cam.fieldOfView = fov;
+        var dist = (pos - b.center).magnitude;
+        cam.nearClipPlane = Mathf.Max(.005f, dist - b.extents.magnitude * 1.5f) * .5f;
+        cam.farClipPlane = dist + b.extents.magnitude * 3f + 1f;
+        Render(name, pos, rot, w, h, b);
+    }
+
+    static void Render(string name, Vector3 pos, Quaternion rot, int w, int h, Bounds b)
+    {
+        cam.transform.SetPositionAndRotation(pos, rot);
+        PlaceRig(rot);
+        if (urp != null)
+        {
+            var far = 0f;
+            for (var i = 0; i < 8; i++)
+                far = Mathf.Max(far, Vector3.Distance(pos, new Vector3((i & 1) == 0 ? b.min.x : b.max.x, (i & 2) == 0 ? b.min.y : b.max.y, (i & 4) == 0 ? b.min.z : b.max.z)));
+            urp.shadowDistance = Mathf.Clamp(far * 1.15f + .05f, .1f, 60f);
+        }
+        var ss = Mathf.Clamp(MaxTarget / Mathf.Max(w, h), 1, 3);
+        int sw = w * ss, sh = h * ss;
+        var rt = RenderTexture.GetTemporary(new RenderTextureDescriptor(sw, sh, RenderTextureFormat.ARGB32, 24) { msaaSamples = 1, sRGB = true });
+        cam.aspect = (float)w / h;
+        cam.targetTexture = rt;
+        cam.Render();
+        cam.Render();
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        var img = new Texture2D(sw, sh, TextureFormat.RGBA32, false);
+        img.ReadPixels(new Rect(0, 0, sw, sh), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        cam.targetTexture = null;
+        RenderTexture.ReleaseTemporary(rt);
+        var src = img.GetPixels32();
+        UnityEngine.Object.DestroyImmediate(img);
+        const bool keepsAlpha = true;   // URP keeps the transparent clear (checked on the three-views)
+
+        // Box-filter down in linear premultiplied space.
+        var lut = new float[256];
+        for (var i = 0; i < 256; i++) lut[i] = Mathf.GammaToLinearSpace(i / 255f);
+        var alpha = new Color[w * h];
+        var flat = new Color[w * h];
+        var panel = Panel.linear;
+        var n = 1f / (ss * ss);
+        for (var y = 0; y < h; y++)
+        for (var x = 0; x < w; x++)
+        {
+            float r = 0, g = 0, bl = 0, a = 0;
+            for (var dy = 0; dy < ss; dy++)
+            for (var dx = 0; dx < ss; dx++)
+            {
+                var c = src[(y * ss + dy) * sw + x * ss + dx];
+                var ca = keepsAlpha ? c.a / 255f : 1f;
+                r += lut[c.r] * ca; g += lut[c.g] * ca; bl += lut[c.b] * ca; a += ca;   // the clear is (0,0,0,0): premultiplied
+            }
+            r *= n; g *= n; bl *= n; a *= n;
+            var o = a < .002f ? new Color(0, 0, 0, 0) : new Color(Mathf.Clamp01(r / a), Mathf.Clamp01(g / a), Mathf.Clamp01(bl / a), 1f).gamma;
+            o.a = a < .002f ? 0f : a;
+            alpha[y * w + x] = o;
+            var f = new Color(r + panel.r * (1f - a), g + panel.g * (1f - a), bl + panel.b * (1f - a), 1f).gamma;
+            flat[y * w + x] = f;
+        }
+        Write(Path.Combine(outDir, name + "_alpha.png"), alpha, w, h);
+        Write(Path.Combine(outDir, name + ".png"), flat, w, h);
+        log.Add(string.Format(CultureInfo.InvariantCulture, "{0}: {1}x{2} ss{3} cam ({4:F3}, {5:F3}, {6:F3}) rot {7} fov {8:F1} bounds c{9} s{10}", name, w, h, ss, pos.x, pos.y, pos.z, rot.eulerAngles, cam.orthographic ? 0f : cam.fieldOfView, b.center.ToString("F3"), b.size.ToString("F3")));
+        Debug.Log("[Heroes] " + name);
+    }
+
+    static void Write(string path, Color[] px, int w, int h)
+    {
+        var t = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        t.SetPixels(px);
+        t.Apply();
+        File.WriteAllBytes(path, t.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(t);
+    }
+
+    static Vector3 FitPerspective(Bounds b, Quaternion rotation, float fov, float aspect, float fillFrac)
+    {
+        var t = Mathf.Tan(fov * .5f * Mathf.Deg2Rad) * fillFrac;
+        var tx = t * aspect;
+        var inverse = Quaternion.Inverse(rotation);
+        var target = b.center;
+        var distance = 0f;
+        for (var pass = 0; pass < 4; pass++)
+        {
+            distance = 0f;
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            for (var i = 0; i < 8; i++)
+            {
+                var corner = new Vector3((i & 1) == 0 ? b.min.x : b.max.x, (i & 2) == 0 ? b.min.y : b.max.y, (i & 4) == 0 ? b.min.z : b.max.z);
+                var local = inverse * (corner - target);
+                distance = Mathf.Max(distance, Mathf.Abs(local.x) / tx - local.z, Mathf.Abs(local.y) / t - local.z);
+            }
+            for (var i = 0; i < 8; i++)
+            {
+                var corner = new Vector3((i & 1) == 0 ? b.min.x : b.max.x, (i & 2) == 0 ? b.min.y : b.max.y, (i & 4) == 0 ? b.min.z : b.max.z);
+                var local = inverse * (corner - target);
+                var z = local.z + distance;
+                minX = Mathf.Min(minX, local.x / z); maxX = Mathf.Max(maxX, local.x / z);
+                minY = Mathf.Min(minY, local.y / z); maxY = Mathf.Max(maxY, local.y / z);
+            }
+            target += rotation * new Vector3((minX + maxX) * .5f * distance, (minY + maxY) * .5f * distance, 0f);
+        }
+        return target - rotation * Vector3.forward * distance;
+    }
+}

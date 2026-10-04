@@ -165,7 +165,7 @@ Scripts: `scratchpad/g2work/selfcheck2.py` (checks and renders) and `g2work/g1_i
 
 ## 5. Renders reviewed
 
-`scratchpad/interact_previews/G2/selfcheck_r2/` (run 2, final exports, correct slot materials, G3's exported key):
+`scratchpad/interact_previews/G2/selfcheck_r2/` (run 2, correct slot materials, G3's exported key). The locked-set images were rendered from the run 2 rebuild taken just before the degenerate cleanup; the cleanup only removes zero-area triangles, so they show the final shapes. The free-door images were rendered from the final exports (refined lever). The numeric checks in §3 were re-run on the final exports.
 - `e_poseP_key000.png`, `e_poseP_key090.png`, `e_poseP_nokey.png`: head-dip pose P on the S face. Camera 0.45 m out along the face normal and 0.37 m above `keyhole_s`, looking at it, vertical FOV 62°.
 - `e_poseP_pface_key000.png`, `e_poseP_pface_key090.png`: the same pose on the P face (mirrored escutcheon and knob, text-rule plug).
 - `e_poseP_offset12_key000.png`: the 12° shot suggestion.
@@ -174,7 +174,7 @@ Scripts: `scratchpad/g2work/selfcheck2.py` (checks and renders) and `g2work/g1_i
 - `e_locked_s_1p5m.png`, `e_locked_p_1p5m.png`: the locked set at 1.5 m, both faces.
 - `e_free_s_1m_brass.png`, `e_free_lever_0p3m.png`, `e_free_s_lever35.png`: the Lobby free set (brass VARIANTS), lever at rest and at 35°.
 
-Per-asset close-ups: `scratchpad/g2work/cu/` (run 1) and `g2work/cu2/` (run 2 lever bend). Kit stills: `interact_previews/G2/Kit_Lock_*_a/_b.png`.
+Per-asset close-ups: `scratchpad/g2work/cu/` (run 1; still valid for every part except the lever), `g2work/cu2/` (run 1 lever bend, before the refinement) and `g2work/cu4/lever_final_sheet.jpg` (final lever: front, bend, return). Kit stills (rebuilt in run 2): `interact_previews/G2/Kit_Lock_*_a/_b.png`.
 
 ## 6. ESTIMATE dimensions used
 

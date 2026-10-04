@@ -1,0 +1,45 @@
+{
+ "LIT  two 15-20 W lamps": {
+  "E": 0.616,
+  "X": 0.76,
+  "I": 1.0,
+  "T": 0.644
+ },
+ "HALF  lamp A out": {
+  "E": 0.096,
+  "X": 0.243,
+  "I": 0.887,
+  "T": 0.548
+ },
+ "LOOSE  lamp B drops (1 frame)": {
+  "E": 0.52,
+  "X": 0.529,
+  "I": 0.177,
+  "T": 0.132
+ },
+ "BATTERY  2 x 3.6 W, mains lost": {
+  "E": 0.204,
+  "X": 0.088,
+  "I": 0.106,
+  "T": 0.194
+ },
+ "DEAD  room lit, no lamps": {
+  "E": 0.0,
+  "X": 0.0,
+  "I": 0.0,
+  "T": 0.0
+ },
+ "LIT + both chevrons open": {
+  "E": 0.616,
+  "X": 0.76,
+  "I": 1.0,
+  "T": 0.644
+ },
+ "NISTIR4399_red_mean_rel_I": {
+  "E": 0.544,
+  "X": 0.651,
+  "I": 1.0,
+  "T": 0.531
+ },
+ "legend_width_mm": 292.25
+}

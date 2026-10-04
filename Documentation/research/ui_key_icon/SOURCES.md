@@ -65,3 +65,17 @@ Read date for every web source: **2026-10-03** (12:1x–12:3x local). No media w
 | W34 | Google Fonts, Material Symbols guide | https://developers.google.com/fonts/docs/material_symbols | read | CC BY 4.0 (Google docs) | optical size 20–48, grade reduces glare |
 | W35 | Lucide, design principles | https://lucide.dev/contribute/icons/design-principles | search | ISC | align to the pixel grid |
 | W36 | Material icon `vpn_key` (Flutter API) | https://api.flutter.dev/flutter/material/Icons/vpn_key-constant.html | search | BSD/Apache | the generic ring-and-teeth web key that today's glyph resembles |
+
+## Design stage (`02_design.md`, `design/`), 2026-10-03
+
+No new web sources and no downloads. Every image in `design/` is made by us from these inputs:
+
+| Input | Used for | Owner / licence |
+|---|---|---|
+| `Frontrooms3D/Documentation/research/room_visuals/images/room_map-l0-low_wide.jpg`, `room_map-l0-standard_wide.jpg`, `room_map-office_wide.jpg` | HUD backgrounds (lit low rooms, wallpaper and door, office), 1920 × 1080 in-engine captures | ours |
+| scratchpad `audit_run3_frames/59_door_key_open_t0000ms.png` (same run as `interaction_audit/images/`) | HUD background (dark cell at a door) and the locked-prompt crops | ours |
+| Orthographic Blender renders of the built G3 FBX: `Kit_Key_Zone`, `Kit_KeyRing`, `Kit_KeyTag_Rect/Round/Long`, `Kit_DoorNumberPlate` (scratchpad `keyicon_design/model/`, 20 px/mm) | the model panels on boards 02, 05, 06, 08 | ours |
+| `Tools/Blender/frontrooms_kit/assets/interact_key*.py`, `interact_door_number_plate.py` (read-only copies) | the outline numbers the icons are traced from (`geometry_mm.json`) | ours |
+| `Assets/Resources/Fonts/` Bayon, IBM Plex Mono, Source Serif 4; `Assets/Fonts/Period1990/CourierPrime/` | HUD type and the tag number in the composites and boards | OFL (project copies) |
+| `Assets/Resources/UI/HUD_Crosshair.png` | the 16 px crosshair dot in the composites | ours |
+| AIGA/DOT 1974 "Baggage Lockers" key (W29) | construction grammar of direction C (redrawn, not copied) | public domain |

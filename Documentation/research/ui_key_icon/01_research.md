@@ -10,6 +10,7 @@ Red's request (2026-10-03 ~12:05): merge the key icon's graphic design into the 
 - `SOURCES.md`: the ledger (URL, read date, licence) for every source cited here, and the on-disk media this report reuses.
 - `media_candidates.md`: real screenshots and photos we still want. Nothing is downloaded until Red approves the batch.
 - `figma_target.md`: where the KEY ICON block goes in Figma (written by the visual chat).
+- `02_design.md` + `design/`: the design stage (3 directions, states, zones, boards, drop-in), 2026-10-03.
 
 **Tags**
 - **[read]**: I read the page.

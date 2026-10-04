@@ -1,0 +1,162 @@
+17:37  up 29 days, 21:45, 1 user, load averages: 428.27 455.13 428.75
+# rt_bench4 runC timing device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 428/455/429
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# --- 1920x1080  load 430/455/429
+runC 1920x1080 p0 O_G1     trace med 8.911 [p10 2.835 p90 14.525]  filter 0.000  total 8.911 ms | recv 25.1% (glass 25.13% floor 0.0%) rays/recv 1.00 shadow/recv 2.33 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 430/455/429 | office level: glass only, 1 bounce (bench 3 G1 cross-check)
+runC 1920x1080 p0 O_QF1m   trace med 7.028 [p10 3.767 p90 24.283]  filter 5.614  total 12.642 ms | recv 53.5% (glass 25.64% floor 27.8%) rays/recv 1.02 shadow/recv 2.28 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 430/455/429 | office 6deg: glass+floor r0.3 mirror+iso blur (bench 3 QF1m)
+runC 1920x1080 p0 A_g2     trace med 1.069 [p10 0.140 p90 9.764]  filter 0.000  total 1.069 ms | recv 0.0% (glass 0.01% floor 0.0%) rays/recv 1.00 shadow/recv 0.00 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 430/455/429 | Run S1 tripped: glass receivers only (the lite), 2 bounces
+runC 1920x1080 p0 A_m2     trace med 1.432 [p10 0.523 p90 9.075]  filter 0.683  total 2.115 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 430/455/429 | Run S1: floor r0.2 mirror + iso a-trous blur, 2 bounces
+runC 1920x1080 p0 A_t2     trace med 1.950 [p10 0.607 p90 12.921]  filter 7.156  total 9.106 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 430/455/429 | Run S1: floor r0.2 mirror + oriented a-trous blur, 2 bounces
+runC 1920x1080 p0 A_h1     trace med 4.659 [p10 0.572 p90 7.547]  filter 2.156  total 6.815 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 430/455/429 | Run S1: floor r0.2 mirror + hw-aniso mip blur, 1 bounce
+runC 1920x1080 p0 A_h2     trace med 4.381 [p10 0.616 p90 13.004]  filter 2.996  total 7.378 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 430/455/429 | Run S1: floor r0.2 mirror + hw-aniso mip blur, 2 bounces
+runC 1920x1080 p0 A_h3c    trace med 3.588 [p10 0.654 p90 9.116]  filter 5.252  total 8.840 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 430/455/429 | Run S1: floor r0.2 mirror + hw-aniso, 3 bounces, cut-off 0.004
+runC 1920x1080 p0 A_h2u    trace med 2.191 [p10 0.642 p90 11.895]  filter 3.131  total 5.322 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.86 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.2 hw-aniso, 2 bounces, 8 shadowed + 2 layers
+runC 1920x1080 p0 A_ch2    trace med 0.834 [p10 0.563 p90 10.917]  filter 0.715  total 1.549 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 0.50 shadow/recv 0.91 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.2 checkerboard mirror + hw-aniso, 2 bounces
+runC 1920x1080 p0 A_s1     trace med 4.918 [p10 0.758 p90 8.812]  filter 2.885  total 7.803 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 0.99 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.2 1 GGX ray + iso filter, 2 bounces
+runC 1920x1080 p0 A_s2     trace med 3.141 [p10 1.330 p90 6.903]  filter 3.725  total 6.866 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.99 shadow/recv 3.57 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.2 2 GGX rays + iso filter, 2 bounces
+runC 1920x1080 p0 A_s4     trace med 4.386 [p10 2.629 p90 15.479]  filter 2.974  total 7.361 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 3.99 shadow/recv 7.09 2nd-bounce px: glass 0.0% floor 0.2%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.2 4 GGX rays + iso filter, 2 bounces
+runC 1920x1080 p0 A_h2_15  trace med 2.373 [p10 0.597 p90 14.616]  filter 3.694  total 6.066 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.15 (s0.85) mirror + hw-aniso, 2 bounces
+runC 1920x1080 p0 A_h2_25  trace med 1.217 [p10 0.602 p90 3.122]  filter 1.394  total 2.611 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.25 (s0.75) mirror + hw-aniso, 2 bounces
+runC 1920x1080 p0 A_s2_15  trace med 1.193 [p10 1.031 p90 1.473]  filter 0.557  total 1.750 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 2.00 shadow/recv 3.62 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.15 2 GGX rays + filter, 2 bounces
+runC 1920x1080 p0 A_s2_25  trace med 1.153 [p10 1.094 p90 1.209]  filter 0.499  total 1.652 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.98 shadow/recv 3.49 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run S1: floor r0.25 2 GGX rays + filter, 2 bounces
+runC 1920x1080 p0 B_h1     trace med 0.513 [p10 0.479 p90 0.539]  filter 0.332  total 0.845 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.02 shadow/recv 1.85 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run near goal tripped: hw-aniso, 1 bounce
+runC 1920x1080 p0 B_h2     trace med 0.514 [p10 0.472 p90 0.656]  filter 0.353  total 0.867 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.03 shadow/recv 1.87 2nd-bounce px: glass 26.4% floor 1.4%, 3rd 0.00% | load 428/454/429 | Run near goal tripped: hw-aniso, 2 bounces
+runC 1920x1080 p0 B_s4     trace med 2.487 [p10 2.343 p90 2.595]  filter 0.594  total 3.081 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 4.08 shadow/recv 7.27 2nd-bounce px: glass 26.4% floor 3.9%, 3rd 0.00% | load 428/454/429 | Run near goal tripped: 4 GGX rays + filter, 2 bounces
+runC 1920x1080 p0 C_h2     trace med 0.601 [p10 0.555 p90 0.660]  filter 0.351  total 0.951 ms | recv 17.6% (glass 0.01% floor 17.6%) rays/recv 1.00 shadow/recv 1.86 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run pitched 10deg: hw-aniso, 2 bounces
+runC 1920x1080 p0 C_ch2    trace med 0.576 [p10 0.552 p90 0.759]  filter 0.568  total 1.145 ms | recv 17.6% (glass 0.01% floor 17.6%) rays/recv 0.50 shadow/recv 0.93 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run pitched 10deg: checkerboard + hw-aniso, 2 bounces
+runC 1920x1080 p0 C_s2     trace med 1.395 [p10 1.250 p90 1.573]  filter 0.585  total 1.980 ms | recv 17.6% (glass 0.01% floor 17.6%) rays/recv 1.99 shadow/recv 3.67 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 428/454/429 | Run pitched 10deg: 2 GGX rays + filter, 2 bounces
+runC 1920x1080 p0 D_h2     trace med 1.829 [p10 1.050 p90 6.979]  filter 1.751  total 3.580 ms | recv 37.2% (glass 0.00% floor 37.2%) rays/recv 1.00 shadow/recv 3.18 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | stream Run room: hw-aniso, 2 bounces
+runC 1920x1080 p0 D_ch2    trace med 1.950 [p10 1.182 p90 8.132]  filter 2.361  total 4.310 ms | recv 37.2% (glass 0.00% floor 37.2%) rays/recv 0.50 shadow/recv 1.59 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | stream Run room: checkerboard + hw-aniso, 2 bounces
+runC 1920x1080 p0 D_s2     trace med 4.993 [p10 3.302 p90 15.972]  filter 3.724  total 8.717 ms | recv 37.2% (glass 0.00% floor 37.2%) rays/recv 1.98 shadow/recv 6.21 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | stream Run room: 2 GGX rays + filter, 2 bounces
+runC 1920x1080 p0 E_h1     trace med 0.655 [p10 0.567 p90 9.981]  filter 2.673  total 3.329 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.02 shadow/recv 3.21 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run near goal ARMED: hw-aniso, 1 bounce (lite shows the cube)
+runC 1920x1080 p0 E_h2     trace med 1.693 [p10 0.622 p90 13.233]  filter 4.731  total 6.425 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.03 shadow/recv 3.23 2nd-bounce px: glass 26.4% floor 1.4%, 3rd 0.00% | load 428/454/429 | Run near goal ARMED: hw-aniso, 2 bounces (lite reflects)
+runC 1920x1080 p0 E_h3c    trace med 2.005 [p10 0.711 p90 15.465]  filter 2.323  total 4.327 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.03 shadow/recv 3.23 2nd-bounce px: glass 26.4% floor 1.4%, 3rd 0.00% | load 428/454/429 | Run near goal ARMED: hw-aniso, 3 bounces, cut-off 0.004
+runC 1920x1080 p0 E_h1_15  trace med 3.299 [p10 0.645 p90 7.534]  filter 3.367  total 6.666 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.02 shadow/recv 3.21 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run near goal ARMED r0.15: hw-aniso, 1 bounce
+runC 1920x1080 p0 E_h2_15  trace med 1.032 [p10 0.666 p90 12.540]  filter 4.242  total 5.274 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.03 shadow/recv 3.23 2nd-bounce px: glass 26.4% floor 1.4%, 3rd 0.00% | load 428/454/429 | Run near goal ARMED r0.15: hw-aniso, 2 bounces
+runC 1920x1080 p0 G_h1     trace med 6.831 [p10 0.858 p90 14.105]  filter 6.505  total 13.336 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.02 shadow/recv 3.42 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 428/454/429 | Run 2.5 m from goal ARMED r0.15: hw-aniso, 1 bounce
+runC 1920x1080 p0 G_h2     trace med 5.495 [p10 1.583 p90 12.369]  filter 3.916  total 9.411 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.06 shadow/recv 3.49 2nd-bounce px: glass 37.2% floor 2.4%, 3rd 0.00% | load 428/454/429 | Run 2.5 m from goal ARMED r0.15: hw-aniso, 2 bounces
+runC 1920x1080 p0 G_h3c    trace med 1.514 [p10 0.839 p90 10.902]  filter 3.490  total 5.004 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.05 shadow/recv 3.48 2nd-bounce px: glass 37.2% floor 1.1%, 3rd 0.00% | load 428/454/429 | Run 2.5 m from goal ARMED r0.15: hw-aniso, 3 bounces, cut-off
+runC 1920x1080 p0 H_h1     trace med 1.918 [p10 0.734 p90 5.152]  filter 4.612  total 6.530 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.02 shadow/recv 1.67 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/454/429 | Run 2.5 m from goal TRIPPED r0.15: hw-aniso, 1 bounce
+runC 1920x1080 p0 H_h2     trace med 1.979 [p10 0.758 p90 8.544]  filter 4.976  total 6.956 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.06 shadow/recv 1.72 2nd-bounce px: glass 37.2% floor 2.4%, 3rd 0.00% | load 427/454/429 | Run 2.5 m from goal TRIPPED r0.15: hw-aniso, 2 bounces
+runC 1920x1080 p0 F_h2     trace med 2.420 [p10 0.683 p90 10.159]  filter 7.661  total 10.081 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 2.39 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/454/429 | Run S1 ARMED: hw-aniso, 2 bounces
+runC 1920x1080 p0 F_s4     trace med 9.079 [p10 3.700 p90 12.190]  filter 2.634  total 11.713 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 3.99 shadow/recv 9.33 2nd-bounce px: glass 0.0% floor 0.2%, 3rd 0.00% | load 427/454/429 | Run S1 ARMED: 4 GGX rays + filter, 2 bounces
+runC 1920x1080 p1 O_G1     trace med 5.336 [p10 1.184 p90 8.785]  filter 0.000  total 5.336 ms | load 427/454/429
+runC 1920x1080 p1 O_QF1m   trace med 9.913 [p10 5.578 p90 20.928]  filter 5.208  total 15.122 ms | load 427/454/429
+runC 1920x1080 p1 A_g2     trace med 0.187 [p10 0.166 p90 7.239]  filter 0.000  total 0.187 ms | load 427/454/429
+runC 1920x1080 p1 A_m2     trace med 1.557 [p10 0.591 p90 8.377]  filter 1.511  total 3.068 ms | load 427/454/429
+runC 1920x1080 p1 A_t2     trace med 1.505 [p10 0.624 p90 6.685]  filter 2.310  total 3.816 ms | load 427/454/429
+runC 1920x1080 p1 A_h1     trace med 1.347 [p10 0.621 p90 4.090]  filter 5.007  total 6.353 ms | load 427/454/429
+runC 1920x1080 p1 A_h2     trace med 0.502 [p10 0.480 p90 1.211]  filter 0.413  total 0.916 ms | load 427/454/429
+runC 1920x1080 p1 A_h3c    trace med 0.545 [p10 0.501 p90 1.205]  filter 2.339  total 2.884 ms | load 427/454/429
+runC 1920x1080 p1 A_h2u    trace med 0.492 [p10 0.482 p90 0.592]  filter 0.398  total 0.890 ms | load 427/454/429
+runC 1920x1080 p1 A_ch2    trace med 0.471 [p10 0.440 p90 0.553]  filter 0.512  total 0.982 ms | load 427/454/429
+runC 1920x1080 p1 A_s1     trace med 0.632 [p10 0.572 p90 0.664]  filter 0.492  total 1.124 ms | load 427/454/429
+runC 1920x1080 p1 A_s2     trace med 1.155 [p10 1.080 p90 1.198]  filter 0.484  total 1.640 ms | load 427/454/429
+runC 1920x1080 p1 A_s4     trace med 2.328 [p10 2.028 p90 11.190]  filter 0.502  total 2.830 ms | load 427/454/429
+runC 1920x1080 p1 A_h2_15  trace med 0.880 [p10 0.499 p90 3.914]  filter 1.510  total 2.391 ms | load 427/454/429
+runC 1920x1080 p1 A_h2_25  trace med 1.681 [p10 0.651 p90 5.990]  filter 6.092  total 7.773 ms | load 427/454/429
+runC 1920x1080 p1 A_s2_15  trace med 5.666 [p10 2.864 p90 13.586]  filter 7.142  total 12.807 ms | load 427/454/429
+runC 1920x1080 p1 A_s2_25  trace med 4.393 [p10 1.418 p90 13.583]  filter 6.492  total 10.885 ms | load 427/453/429
+runC 1920x1080 p1 B_h1     trace med 2.039 [p10 0.734 p90 13.573]  filter 1.692  total 3.731 ms | load 427/453/429
+runC 1920x1080 p1 B_h2     trace med 2.849 [p10 0.652 p90 10.483]  filter 2.050  total 4.899 ms | load 427/453/429
+runC 1920x1080 p1 B_s4     trace med 8.516 [p10 3.855 p90 18.864]  filter 4.151  total 12.666 ms | load 427/453/429
+runC 1920x1080 p1 C_h2     trace med 1.627 [p10 0.679 p90 2.165]  filter 2.247  total 3.874 ms | load 427/453/429
+runC 1920x1080 p1 C_ch2    trace med 0.832 [p10 0.656 p90 6.883]  filter 2.270  total 3.101 ms | load 427/453/429
+runC 1920x1080 p1 C_s2     trace med 5.752 [p10 1.833 p90 12.508]  filter 1.893  total 7.645 ms | load 427/453/429
+runC 1920x1080 p1 D_h2     trace med 9.897 [p10 2.625 p90 16.399]  filter 6.046  total 15.942 ms | load 427/453/429
+runC 1920x1080 p1 D_ch2    trace med 2.366 [p10 1.179 p90 10.093]  filter 3.655  total 6.021 ms | load 427/453/429
+runC 1920x1080 p1 D_s2     trace med 7.018 [p10 4.113 p90 12.254]  filter 3.945  total 10.963 ms | load 427/453/429
+runC 1920x1080 p1 E_h1     trace med 4.911 [p10 0.664 p90 13.233]  filter 8.405  total 13.316 ms | load 427/453/429
+runC 1920x1080 p1 E_h2     trace med 1.533 [p10 0.653 p90 10.576]  filter 2.341  total 3.875 ms | load 427/453/429
+runC 1920x1080 p1 E_h3c    trace med 0.853 [p10 0.654 p90 6.793]  filter 2.365  total 3.218 ms | load 427/453/429
+runC 1920x1080 p1 E_h1_15  trace med 1.668 [p10 0.712 p90 8.911]  filter 2.575  total 4.242 ms | load 427/453/429
+runC 1920x1080 p1 E_h2_15  trace med 0.756 [p10 0.644 p90 2.842]  filter 1.502  total 2.258 ms | load 427/453/429
+runC 1920x1080 p1 G_h1     trace med 1.543 [p10 0.842 p90 6.839]  filter 0.476  total 2.019 ms | load 427/453/429
+runC 1920x1080 p1 G_h2     trace med 0.922 [p10 0.763 p90 1.579]  filter 0.532  total 1.454 ms | load 427/453/429
+runC 1920x1080 p1 G_h3c    trace med 0.729 [p10 0.697 p90 0.842]  filter 0.358  total 1.087 ms | load 427/453/429
+runC 1920x1080 p1 H_h1     trace med 0.590 [p10 0.574 p90 0.635]  filter 0.338  total 0.928 ms | load 427/453/429
+runC 1920x1080 p1 H_h2     trace med 0.605 [p10 0.593 p90 0.619]  filter 0.342  total 0.947 ms | load 427/453/429
+runC 1920x1080 p1 F_h2     trace med 0.456 [p10 0.417 p90 0.485]  filter 0.334  total 0.790 ms | load 427/453/429
+runC 1920x1080 p1 F_s4     trace med 2.008 [p10 1.904 p90 2.167]  filter 0.481  total 2.489 ms | load 427/453/429
+# --- 2560x1440  load 427/453/429
+runC 2560x1440 p0 O_G1     trace med 7.948 [p10 5.323 p90 25.106]  filter 0.000  total 7.948 ms | recv 25.1% (glass 25.13% floor 0.0%) rays/recv 1.00 shadow/recv 2.33 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | office level: glass only, 1 bounce (bench 3 G1 cross-check)
+runC 2560x1440 p0 O_QF1m   trace med 13.237 [p10 5.672 p90 31.589]  filter 6.075  total 19.312 ms | recv 53.5% (glass 25.62% floor 27.8%) rays/recv 1.02 shadow/recv 2.28 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | office 6deg: glass+floor r0.3 mirror+iso blur (bench 3 QF1m)
+runC 2560x1440 p0 A_g2     trace med 0.512 [p10 0.275 p90 8.139]  filter 0.000  total 0.512 ms | recv 0.0% (glass 0.01% floor 0.0%) rays/recv 1.00 shadow/recv 0.00 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | Run S1 tripped: glass receivers only (the lite), 2 bounces
+runC 2560x1440 p0 A_m2     trace med 3.951 [p10 0.959 p90 15.679]  filter 3.942  total 7.893 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 mirror + iso a-trous blur, 2 bounces
+runC 2560x1440 p0 A_t2     trace med 3.850 [p10 0.926 p90 21.069]  filter 4.936  total 8.786 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 mirror + oriented a-trous blur, 2 bounces
+runC 2560x1440 p0 A_h1     trace med 5.205 [p10 0.947 p90 18.002]  filter 2.011  total 7.216 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 mirror + hw-aniso mip blur, 1 bounce
+runC 2560x1440 p0 A_h2     trace med 7.916 [p10 0.942 p90 20.109]  filter 5.004  total 12.920 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 mirror + hw-aniso mip blur, 2 bounces
+runC 2560x1440 p0 A_h3c    trace med 2.917 [p10 0.987 p90 23.292]  filter 2.802  total 5.719 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 mirror + hw-aniso, 3 bounces, cut-off 0.004
+runC 2560x1440 p0 A_h2u    trace med 1.661 [p10 0.922 p90 16.652]  filter 2.441  total 4.102 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.86 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 hw-aniso, 2 bounces, 8 shadowed + 2 layers
+runC 2560x1440 p0 A_ch2    trace med 1.461 [p10 0.786 p90 2.656]  filter 8.006  total 9.467 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 0.50 shadow/recv 0.91 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 checkerboard mirror + hw-aniso, 2 bounces
+runC 2560x1440 p0 A_s1     trace med 4.297 [p10 1.062 p90 14.879]  filter 8.323  total 12.620 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 0.99 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 1 GGX ray + iso filter, 2 bounces
+runC 2560x1440 p0 A_s2     trace med 2.674 [p10 1.564 p90 9.808]  filter 2.457  total 5.131 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.99 shadow/recv 3.57 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 2 GGX rays + iso filter, 2 bounces
+runC 2560x1440 p0 A_s4     trace med 4.353 [p10 3.733 p90 7.743]  filter 1.020  total 5.373 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 3.99 shadow/recv 7.09 2nd-bounce px: glass 0.0% floor 0.2%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.2 4 GGX rays + iso filter, 2 bounces
+runC 2560x1440 p0 A_h2_15  trace med 0.774 [p10 0.731 p90 0.821]  filter 0.581  total 1.356 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.15 (s0.85) mirror + hw-aniso, 2 bounces
+runC 2560x1440 p0 A_h2_25  trace med 0.738 [p10 0.724 p90 0.800]  filter 0.590  total 1.328 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 1.82 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.25 (s0.75) mirror + hw-aniso, 2 bounces
+runC 2560x1440 p0 A_s2_15  trace med 1.451 [p10 1.442 p90 1.546]  filter 0.831  total 2.282 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 2.00 shadow/recv 3.62 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.15 2 GGX rays + filter, 2 bounces
+runC 2560x1440 p0 A_s2_25  trace med 1.743 [p10 1.648 p90 1.933]  filter 0.905  total 2.648 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.98 shadow/recv 3.49 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run S1: floor r0.25 2 GGX rays + filter, 2 bounces
+runC 2560x1440 p0 B_h1     trace med 0.739 [p10 0.728 p90 0.805]  filter 0.606  total 1.345 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.02 shadow/recv 1.85 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | Run near goal tripped: hw-aniso, 1 bounce
+runC 2560x1440 p0 B_h2     trace med 0.782 [p10 0.744 p90 0.871]  filter 0.614  total 1.396 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.04 shadow/recv 1.87 2nd-bounce px: glass 27.3% floor 1.4%, 3rd 0.00% | load 427/453/429 | Run near goal tripped: hw-aniso, 2 bounces
+runC 2560x1440 p0 B_s4     trace med 4.095 [p10 3.908 p90 4.246]  filter 0.954  total 5.050 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 4.08 shadow/recv 7.27 2nd-bounce px: glass 27.3% floor 3.9%, 3rd 0.00% | load 427/453/429 | Run near goal tripped: 4 GGX rays + filter, 2 bounces
+runC 2560x1440 p0 C_h2     trace med 1.094 [p10 1.016 p90 1.140]  filter 0.630  total 1.724 ms | recv 17.6% (glass 0.01% floor 17.6%) rays/recv 1.00 shadow/recv 1.86 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | Run pitched 10deg: hw-aniso, 2 bounces
+runC 2560x1440 p0 C_ch2    trace med 0.849 [p10 0.832 p90 0.907]  filter 0.981  total 1.830 ms | recv 17.6% (glass 0.01% floor 17.6%) rays/recv 0.50 shadow/recv 0.93 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | Run pitched 10deg: checkerboard + hw-aniso, 2 bounces
+runC 2560x1440 p0 C_s2     trace med 2.464 [p10 2.335 p90 4.013]  filter 1.088  total 3.551 ms | recv 17.6% (glass 0.01% floor 17.6%) rays/recv 1.99 shadow/recv 3.67 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 427/453/429 | Run pitched 10deg: 2 GGX rays + filter, 2 bounces
+runC 2560x1440 p0 D_h2     trace med 1.900 [p10 1.710 p90 26.816]  filter 1.527  total 3.427 ms | recv 37.2% (glass 0.00% floor 37.2%) rays/recv 1.00 shadow/recv 3.18 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 427/453/429 | stream Run room: hw-aniso, 2 bounces
+runC 2560x1440 p0 D_ch2    trace med 10.663 [p10 2.186 p90 30.997]  filter 9.299  total 19.962 ms | recv 37.2% (glass 0.00% floor 37.2%) rays/recv 0.50 shadow/recv 1.59 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 426/452/429 | stream Run room: checkerboard + hw-aniso, 2 bounces
+runC 2560x1440 p0 D_s2     trace med 11.942 [p10 8.338 p90 31.553]  filter 11.155  total 23.097 ms | recv 37.2% (glass 0.00% floor 37.2%) rays/recv 1.98 shadow/recv 6.21 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 426/452/429 | stream Run room: 2 GGX rays + filter, 2 bounces
+runC 2560x1440 p0 E_h1     trace med 6.413 [p10 1.059 p90 19.710]  filter 8.700  total 15.113 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.02 shadow/recv 3.21 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 426/452/429 | Run near goal ARMED: hw-aniso, 1 bounce (lite shows the cube)
+runC 2560x1440 p0 E_h2     trace med 3.253 [p10 1.065 p90 15.178]  filter 4.083  total 7.337 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.04 shadow/recv 3.23 2nd-bounce px: glass 27.3% floor 1.4%, 3rd 0.00% | load 426/452/429 | Run near goal ARMED: hw-aniso, 2 bounces (lite reflects)
+runC 2560x1440 p0 E_h3c    trace med 2.780 [p10 1.178 p90 25.957]  filter 3.260  total 6.040 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.04 shadow/recv 3.23 2nd-bounce px: glass 27.3% floor 1.4%, 3rd 0.00% | load 426/452/429 | Run near goal ARMED: hw-aniso, 3 bounces, cut-off 0.004
+runC 2560x1440 p0 E_h1_15  trace med 11.069 [p10 0.928 p90 20.895]  filter 10.630  total 21.698 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.02 shadow/recv 3.21 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 426/452/429 | Run near goal ARMED r0.15: hw-aniso, 1 bounce
+runC 2560x1440 p0 E_h2_15  trace med 1.923 [p10 0.995 p90 13.180]  filter 3.455  total 5.378 ms | recv 15.2% (glass 0.18% floor 15.1%) rays/recv 1.04 shadow/recv 3.23 2nd-bounce px: glass 27.3% floor 1.4%, 3rd 0.00% | load 426/452/429 | Run near goal ARMED r0.15: hw-aniso, 2 bounces
+runC 2560x1440 p0 G_h1     trace med 9.906 [p10 1.388 p90 26.194]  filter 9.432  total 19.338 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.02 shadow/recv 3.42 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 426/452/429 | Run 2.5 m from goal ARMED r0.15: hw-aniso, 1 bounce
+runC 2560x1440 p0 G_h2     trace med 1.551 [p10 1.478 p90 17.108]  filter 4.461  total 6.012 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.06 shadow/recv 3.49 2nd-bounce px: glass 37.0% floor 2.4%, 3rd 0.00% | load 426/452/429 | Run 2.5 m from goal ARMED r0.15: hw-aniso, 2 bounces
+runC 2560x1440 p0 G_h3c    trace med 15.951 [p10 1.382 p90 22.211]  filter 4.467  total 20.418 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.05 shadow/recv 3.48 2nd-bounce px: glass 37.0% floor 1.2%, 3rd 0.00% | load 426/452/429 | Run 2.5 m from goal ARMED r0.15: hw-aniso, 3 bounces, cut-off
+runC 2560x1440 p0 H_h1     trace med 1.200 [p10 1.013 p90 3.626]  filter 1.926  total 3.126 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.02 shadow/recv 1.67 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.00% | load 426/452/429 | Run 2.5 m from goal TRIPPED r0.15: hw-aniso, 1 bounce
+runC 2560x1440 p0 H_h2     trace med 1.094 [p10 0.999 p90 1.329]  filter 1.104  total 2.198 ms | recv 20.3% (glass 0.87% floor 19.4%) rays/recv 1.06 shadow/recv 1.72 2nd-bounce px: glass 37.0% floor 2.4%, 3rd 0.00% | load 426/452/429 | Run 2.5 m from goal TRIPPED r0.15: hw-aniso, 2 bounces
+runC 2560x1440 p0 F_h2     trace med 0.687 [p10 0.643 p90 0.789]  filter 0.596  total 1.283 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 1.00 shadow/recv 2.39 2nd-bounce px: glass 0.0% floor 0.1%, 3rd 0.00% | load 426/452/429 | Run S1 ARMED: hw-aniso, 2 bounces
+runC 2560x1440 p0 F_s4     trace med 3.220 [p10 3.088 p90 3.463]  filter 0.862  total 4.081 ms | recv 12.0% (glass 0.01% floor 12.0%) rays/recv 3.99 shadow/recv 9.33 2nd-bounce px: glass 0.0% floor 0.2%, 3rd 0.00% | load 426/452/429 | Run S1 ARMED: 4 GGX rays + filter, 2 bounces
+runC 2560x1440 p1 O_G1     trace med 1.591 [p10 1.503 p90 2.009]  filter 0.000  total 1.591 ms | load 426/452/429
+runC 2560x1440 p1 O_QF1m   trace med 4.540 [p10 4.299 p90 4.652]  filter 1.365  total 5.905 ms | load 426/452/429
+runC 2560x1440 p1 A_g2     trace med 0.233 [p10 0.231 p90 0.234]  filter 0.000  total 0.233 ms | load 426/452/429
+runC 2560x1440 p1 A_m2     trace med 0.802 [p10 0.733 p90 0.895]  filter 0.850  total 1.652 ms | load 426/452/429
+runC 2560x1440 p1 A_t2     trace med 0.746 [p10 0.678 p90 0.823]  filter 0.884  total 1.630 ms | load 426/452/429
+runC 2560x1440 p1 A_h1     trace med 0.684 [p10 0.670 p90 0.732]  filter 0.572  total 1.256 ms | load 426/452/429
+runC 2560x1440 p1 A_h2     trace med 0.682 [p10 0.661 p90 0.707]  filter 0.595  total 1.277 ms | load 426/452/429
+runC 2560x1440 p1 A_h3c    trace med 0.676 [p10 0.649 p90 0.771]  filter 0.592  total 1.268 ms | load 426/452/429
+runC 2560x1440 p1 A_h2u    trace med 0.809 [p10 0.773 p90 3.659]  filter 0.611  total 1.420 ms | load 426/452/429
+runC 2560x1440 p1 A_ch2    trace med 1.895 [p10 0.909 p90 17.084]  filter 4.503  total 6.399 ms | load 426/452/429
+runC 2560x1440 p1 A_s1     trace med 4.879 [p10 1.272 p90 19.476]  filter 5.586  total 10.465 ms | load 421/451/428
+runC 2560x1440 p1 A_s2     trace med 3.779 [p10 2.255 p90 14.875]  filter 4.918  total 8.697 ms | load 421/451/428
+runC 2560x1440 p1 A_s4     trace med 8.268 [p10 4.281 p90 29.656]  filter 4.469  total 12.737 ms | load 421/451/428
+runC 2560x1440 p1 A_h2_15  trace med 9.619 [p10 2.378 p90 19.217]  filter 6.474  total 16.093 ms | load 421/451/428
+runC 2560x1440 p1 A_h2_25  trace med 2.169 [p10 0.983 p90 19.735]  filter 2.430  total 4.599 ms | load 421/451/428
+runC 2560x1440 p1 A_s2_15  trace med 3.378 [p10 2.034 p90 17.373]  filter 5.044  total 8.422 ms | load 421/451/428
+runC 2560x1440 p1 A_s2_25  trace med 6.185 [p10 2.312 p90 24.352]  filter 7.806  total 13.991 ms | load 421/451/428
+runC 2560x1440 p1 B_h1     trace med 1.658 [p10 1.020 p90 10.787]  filter 2.442  total 4.101 ms | load 421/451/428
+runC 2560x1440 p1 B_h2     trace med 2.836 [p10 1.044 p90 17.053]  filter 4.063  total 6.899 ms | load 421/451/428
+runC 2560x1440 p1 B_s4     trace med 5.820 [p10 5.029 p90 26.554]  filter 5.482  total 11.301 ms | load 421/451/428
+runC 2560x1440 p1 C_h2     trace med 2.147 [p10 1.440 p90 5.890]  filter 0.636  total 2.784 ms | load 421/451/428
+runC 2560x1440 p1 C_ch2    trace med 0.953 [p10 0.875 p90 0.975]  filter 0.959  total 1.912 ms | load 421/451/428
+runC 2560x1440 p1 C_s2     trace med 2.594 [p10 2.514 p90 4.784]  filter 1.188  total 3.782 ms | load 421/451/428
+runC 2560x1440 p1 D_h2     trace med 1.627 [p10 1.566 p90 2.612]  filter 0.686  total 2.313 ms | load 421/451/428
+runC 2560x1440 p1 D_ch2    trace med 1.503 [p10 1.425 p90 1.566]  filter 1.121  total 2.624 ms | load 421/451/428
+runC 2560x1440 p1 D_s2     trace med 4.335 [p10 4.011 p90 4.946]  filter 1.671  total 6.006 ms | load 421/451/428
+runC 2560x1440 p1 E_h1     trace med 0.759 [p10 0.730 p90 0.779]  filter 0.601  total 1.360 ms | load 421/451/428
+runC 2560x1440 p1 E_h2     trace med 0.793 [p10 0.774 p90 0.818]  filter 0.604  total 1.397 ms | load 421/451/428
+runC 2560x1440 p1 E_h3c    trace med 0.841 [p10 0.787 p90 0.863]  filter 0.602  total 1.442 ms | load 421/451/428
+runC 2560x1440 p1 E_h1_15  trace med 0.855 [p10 0.819 p90 0.952]  filter 0.619  total 1.474 ms | load 421/451/428
+runC 2560x1440 p1 E_h2_15  trace med 0.892 [p10 0.832 p90 0.969]  filter 0.621  total 1.513 ms | load 421/451/428
+runC 2560x1440 p1 G_h1     trace med 0.946 [p10 0.934 p90 0.953]  filter 0.622  total 1.569 ms | load 421/451/428
+runC 2560x1440 p1 G_h2     trace med 1.027 [p10 0.967 p90 1.095]  filter 0.635  total 1.661 ms | load 421/451/428
+runC 2560x1440 p1 G_h3c    trace med 4.149 [p10 1.423 p90 21.297]  filter 1.753  total 5.902 ms | load 421/451/428
+runC 2560x1440 p1 H_h1     trace med 6.057 [p10 1.245 p90 21.295]  filter 13.599  total 19.656 ms | load 417/449/428
+runC 2560x1440 p1 H_h2     trace med 2.184 [p10 1.305 p90 14.938]  filter 2.961  total 5.145 ms | load 417/449/428
+runC 2560x1440 p1 F_h2     trace med 2.329 [p10 0.902 p90 13.772]  filter 0.861  total 3.189 ms | load 417/449/428
+runC 2560x1440 p1 F_s4     trace med 6.270 [p10 4.332 p90 24.440]  filter 5.235  total 11.505 ms | load 417/449/428
+# done load 417/449/428
+17:38  up 29 days, 21:45, 1 user, load averages: 417.29 449.33 427.86

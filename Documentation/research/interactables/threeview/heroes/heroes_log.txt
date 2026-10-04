@@ -1,0 +1,62 @@
+OF-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+OF-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+RN-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+RN-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+EX-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+EX-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doors_lineup_pull_face: 4800x1350 ss2 cam (8.200, 3.468, -22.105) rot (6.00, 0.00, 0.00) fov 14.0 bounds c(8.200, 1.190, 0.000) s(17.400, 2.420, 1.800)
+OF-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+OF-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+RN-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+RN-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+EX-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+EX-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doors_lineup_push_face: 4800x1350 ss2 cam (8.200, 3.468, -22.105) rot (6.00, 0.00, 0.00) fov 14.0 bounds c(8.200, 1.190, 0.000) s(17.400, 2.420, 1.800)
+doorset_L0-F_pull: 1600x1200 ss3 cam (3.012, 2.083, -4.308) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, 0.000) s(1.450, 2.275, 0.510)
+doorset_L0-F_push: 1600x1200 ss3 cam (-3.012, 2.083, -4.308) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.000) s(1.450, 2.275, 0.510)
+doorset_L0-K_pull: 1600x1200 ss3 cam (3.012, 2.083, -4.308) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, 0.000) s(1.450, 2.275, 0.510)
+doorset_L0-K_push: 1600x1200 ss3 cam (-3.012, 2.083, -4.308) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.000) s(1.450, 2.275, 0.510)
+OF-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_OF-F_pull: 1600x1200 ss3 cam (3.034, 2.083, -4.431) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, -0.068) s(1.450, 2.275, 0.646)
+OF-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_OF-F_push: 1600x1200 ss3 cam (-3.034, 2.083, -4.295) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.068) s(1.450, 2.275, 0.646)
+OF-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_OF-K_pull: 1600x1200 ss3 cam (3.034, 2.083, -4.431) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, -0.068) s(1.450, 2.275, 0.646)
+OF-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_OF-K_push: 1600x1200 ss3 cam (-3.034, 2.083, -4.295) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.068) s(1.450, 2.275, 0.646)
+RN-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_RN-F_pull: 1600x1200 ss3 cam (3.034, 2.083, -4.431) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, -0.068) s(1.450, 2.275, 0.646)
+RN-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_RN-F_push: 1600x1200 ss3 cam (-3.034, 2.083, -4.295) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.068) s(1.450, 2.275, 0.646)
+RN-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_RN-K_pull: 1600x1200 ss3 cam (3.034, 2.083, -4.431) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, -0.068) s(1.450, 2.275, 0.646)
+RN-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_RN-K_push: 1600x1200 ss3 cam (-3.034, 2.083, -4.295) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.068) s(1.450, 2.275, 0.646)
+EX-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_EX-F_pull: 1600x1200 ss3 cam (3.239, 2.277, -4.774) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.191, -0.050) s(1.450, 2.482, 0.680)
+EX-F closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_EX-F_push: 1600x1200 ss3 cam (-3.239, 2.277, -4.674) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.191, 0.050) s(1.450, 2.482, 0.680)
+EX-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_EX-K_pull: 1600x1200 ss3 cam (3.239, 2.277, -4.774) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.191, -0.050) s(1.450, 2.482, 0.680)
+EX-K closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_EX-K_push: 1600x1200 ss3 cam (-3.239, 2.277, -4.674) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.191, 0.050) s(1.450, 2.482, 0.680)
+RN-K-lite closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_RN-K-lite_pull: 1600x1200 ss3 cam (3.034, 2.083, -4.431) rot (12.00, 330.00, 0.00) fov 30.0 bounds c(0.500, 1.088, -0.068) s(1.450, 2.275, 0.646)
+RN-K-lite closer elbow plan (0.222, 0.341) [spec 0°: (0.222, 0.341)]
+doorset_RN-K-lite_push: 1600x1200 ss3 cam (-3.034, 2.083, -4.295) rot (12.00, 30.00, 0.00) fov 30.0 bounds c(-0.500, 1.088, 0.068) s(1.450, 2.275, 0.646)
+lock_exploded: 1600x1200 ss3 cam (-0.479, 0.219, 0.589) rot (20.00, 142.00, 0.00) fov 26.0 bounds c(-0.074, 0.000, 0.065) s(0.206, 0.203, 0.206)
+lock_exploded_front: 1600x1200 ss3 cam (-0.074, 0.167, 3.315) rot (3.00, 180.00, 0.00) fov 4.0 bounds c(-0.074, 0.000, 0.065) s(0.206, 0.203, 0.206)
+keys_board_hung: target alpha is opaque; alpha output is not reliable
+keys_board_hung: 1600x1200 ss3 cam (-0.485, 1.583, 0.911) rot (8.00, 152.00, 0.00) fov 30.0 bounds c(0.000, 1.450, 0.025) s(0.400, 0.460, 0.070)
+keys_board_hung_close: target alpha is opaque; alpha output is not reliable
+keys_board_hung_close: 1600x1200 ss3 cam (-0.155, 1.412, 0.271) rot (8.00, 152.00, 0.00) fov 30.0 bounds c(-0.035, 1.380, 0.046) s(0.090, 0.110, 0.050)
+keys_hook_hung: target alpha is opaque; alpha output is not reliable
+keys_hook_hung: 1600x1200 ss3 cam (-0.130, 1.476, 0.272) rot (8.00, 152.00, 0.00) fov 30.0 bounds c(0.000, 1.441, 0.028) s(0.100, 0.120, 0.050)
+keys_cabinet_hung: target alpha is opaque; alpha output is not reliable
+keys_cabinet_hung: 1600x1200 ss3 cam (-0.636, 1.626, 1.152) rot (8.00, 152.00, 0.00) fov 30.0 bounds c(0.000, 1.470, 0.045) s(0.800, 0.540, 0.110)
+keys_parts_lineup_front: 1704x1268 ss3 cam (-0.011, 0.002, 0.502) rot (0.00, 180.00, 0.00) fov 0.0 bounds c(-0.011, 0.002, 0.000) s(0.308, 0.168, 0.004)
+windows_lineup_face_a: 4000x1100 ss2 cam (3.750, 3.144, 19.137) rot (6.00, 180.00, 0.00) fov 9.0 bounds c(3.750, 1.190, 0.150) s(9.800, 2.420, 1.500)
+window_W-L0_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window_W-OF_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window_W-RN_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window_W-EX_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
