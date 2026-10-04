@@ -21,8 +21,8 @@ $report = [ordered]@{
     engineVersion = $null
     projectAssociation = $null
     stages = @()
-    coverage = @("Unity export contract", "Unity asset SHA-256 integrity", "Unreal editor build", "Unreal contract commandlet", "deterministic hash/state transitions/imported asset load")
-    pendingCoverage = @("playable generated map", "movement/sprint", "HUD/input", "rendering/audio", "Complete and Relay Search transitions")
+    coverage = @("Unity export contract", "Unity asset SHA-256 integrity", "Unreal editor build", "Unreal contract commandlet", "deterministic hash/state transitions/movement input/imported asset load")
+    pendingCoverage = @("playable generated map", "live possessed movement trace", "HUD", "rendering/audio", "Complete and Relay Search transitions")
     error = $null
 }
 
@@ -94,11 +94,29 @@ try {
     $report.engineVersion = $engine.Version
     $report.projectAssociation = $engine.Association
     Write-Host "SMOKE using Unreal $($engine.Version) ($($engine.EditorCmd))"
+    # Keep UnrealBuildTool's generated environment cache inside the run directory.
+    # Shared machine caches can be owned by another Windows install context and
+    # are disposable; isolating this cache keeps the smoke gate reproducible.
+    # Keep the profile root short because UE's DerivedDataCache appends several
+    # nested segments and rejects paths longer than its cache-key budget.
+    $smokeUserProfile = Join-Path $Root ".smoke-profile"
+    $smokeLocalAppData = Join-Path $smokeUserProfile "AppData/Local"
+    $smokeRoamingAppData = Join-Path $smokeUserProfile "AppData/Roaming"
+    New-Item -ItemType Directory -Path $smokeLocalAppData, $smokeRoamingAppData -Force | Out-Null
+    $previousUserProfile = $env:USERPROFILE
+    $previousLocalAppData = $env:LOCALAPPDATA
+    $previousAppData = $env:APPDATA
+    $env:USERPROFILE = $smokeUserProfile
+    $env:LOCALAPPDATA = $smokeLocalAppData
+    $env:APPDATA = $smokeRoamingAppData
     # Use a fresh worker PowerShell for the .bat invocation; no cmd string interpolation.
     $worker = Join-Path $runDirectory "build.ps1"
     @'
 param([string]$BuildScript, [string]$Project)
-& $BuildScript FrontRoomsEditor Win64 Development $Project -NoHotReloadFromIDE
+# The sandbox cannot write C:\ProgramData\Epic\UnrealBuildAccelerator.
+# Keep this smoke gate local and deterministic; normal developer builds may
+# opt into UBA outside the gate.
+& $BuildScript FrontRoomsEditor Win64 Development $Project -NoHotReloadFromIDE -NoUBA
 exit $LASTEXITCODE
 '@ | Set-Content -LiteralPath $worker -Encoding UTF8
     $windowsPowerShell = (Get-Command powershell.exe -CommandType Application -ErrorAction Stop).Source
@@ -112,6 +130,9 @@ exit $LASTEXITCODE
     $report.error = $_.Exception.Message
     Write-Host "SMOKE FAILED: $($report.error)"
 } finally {
+    if ($null -ne $previousUserProfile) { $env:USERPROFILE = $previousUserProfile }
+    if ($null -ne $previousLocalAppData) { $env:LOCALAPPDATA = $previousLocalAppData }
+    if ($null -ne $previousAppData) { $env:APPDATA = $previousAppData }
     $report.finishedUtc = [DateTime]::UtcNow.ToString("o")
     Save-SmokeReport
     Write-Host "SMOKE report: $(Join-Path $runDirectory 'report.json')"

@@ -1,12 +1,15 @@
 #include "FrontRoomsSmokeCommandlet.h"
 
 #include "FrontRoomsSliceGameMode.h"
+#include "FrontRoomsSliceCharacter.h"
+#include "Camera/CameraComponent.h"
 #include "../../../UnrealCore/FrontRoomsMapHash.hpp"
 #include "Dom/JsonObject.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "EditorFramework/AssetImportData.h"
 #include "HAL/FileManager.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
@@ -208,6 +211,136 @@ bool CheckGameMode(FString& Error)
 
     UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke state gate passed (Title -> Playing <-> Paused, Relay Listen/Chase, key/door, Caught)"));
     UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke coverage gap: Complete and Relay Search have no current gameplay transition API; they remain intentionally untested"));
+    return true;
+}
+
+bool CheckHDRConfiguration(FString& Error)
+{
+    const TCHAR* RendererSection = TEXT("/Script/Engine.RendererSettings");
+    const TCHAR* CalibrationSection = TEXT("FrontRooms.HDR");
+    int32 AllowHDR = 0;
+    bool ExtendLuminance = false;
+    int32 AcesVersion = 0;
+    int32 UICompositeMode = 0;
+    float ExposureBias = 0.0f;
+    float PaperWhite = 0.0f;
+    float UILevel = 0.0f;
+    float UILuminance = 0.0f;
+    float SceneColorMultiplier = 0.0f;
+    int32 DisplayPeakNits = 0;
+    int32 PaperWhiteNits = 0;
+    int32 MidGrayNits = 0;
+    bool AllowSDRFallback = false;
+    float CalibrationExposureBias = 0.0f;
+    float WhiteBalanceTemperature = 0.0f;
+    float WhiteBalanceTint = 0.0f;
+    float Contrast = 0.0f;
+    float Saturation = 0.0f;
+    FConfigFile ProjectEngineDefaults;
+    ProjectEngineDefaults.Read(FPaths::ProjectConfigDir() / TEXT("DefaultEngine.ini"));
+
+    if (!GConfig->GetInt(RendererSection, TEXT("r.AllowHDR"), AllowHDR, GEngineIni) || AllowHDR != 1 ||
+        !GConfig->GetBool(RendererSection, TEXT("r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange"), ExtendLuminance, GEngineIni) || !ExtendLuminance ||
+        !GConfig->GetFloat(RendererSection, TEXT("r.DefaultFeature.AutoExposure.Bias"), ExposureBias, GEngineIni) || !FMath::IsNearlyZero(ExposureBias) ||
+        !GConfig->GetInt(RendererSection, TEXT("r.HDR.Aces.Version"), AcesVersion, GEngineIni) || AcesVersion != 1 ||
+        !GConfig->GetFloat(RendererSection, TEXT("r.HDR.Aces.SceneColorMultiplier"), SceneColorMultiplier, GEngineIni) || !FMath::IsNearlyEqual(SceneColorMultiplier, 1.0f) ||
+        !GConfig->GetFloat(RendererSection, TEXT("r.HDR.UI.Luminance"), UILuminance, GEngineIni) || !FMath::IsNearlyEqual(UILuminance, 300.0f) ||
+        !GConfig->GetFloat(RendererSection, TEXT("r.HDR.UI.Level"), UILevel, GEngineIni) || !FMath::IsNearlyEqual(UILevel, 1.0f) ||
+        !GConfig->GetInt(RendererSection, TEXT("r.HDR.UI.CompositeMode"), UICompositeMode, GEngineIni) || UICompositeMode != 1 ||
+        !ProjectEngineDefaults.GetInt(CalibrationSection, TEXT("DisplayPeakNits"), DisplayPeakNits) || DisplayPeakNits != 1000 ||
+        !ProjectEngineDefaults.GetInt(CalibrationSection, TEXT("PaperWhiteNits"), PaperWhiteNits) || PaperWhiteNits != 300 ||
+        !ProjectEngineDefaults.GetFloat(CalibrationSection, TEXT("MinNits"), PaperWhite) || !FMath::IsNearlyEqual(PaperWhite, 0.005f) ||
+        !ProjectEngineDefaults.GetInt(CalibrationSection, TEXT("MidGrayNits"), MidGrayNits) || MidGrayNits != 15 ||
+        !ProjectEngineDefaults.GetFloat(CalibrationSection, TEXT("ExposureBiasEV100"), CalibrationExposureBias) || !FMath::IsNearlyEqual(CalibrationExposureBias, 0.15f) ||
+        !ProjectEngineDefaults.GetFloat(CalibrationSection, TEXT("WhiteBalanceTemperature"), WhiteBalanceTemperature) || !FMath::IsNearlyEqual(WhiteBalanceTemperature, 9.0f) ||
+        !ProjectEngineDefaults.GetFloat(CalibrationSection, TEXT("WhiteBalanceTint"), WhiteBalanceTint) || !FMath::IsNearlyEqual(WhiteBalanceTint, -7.0f) ||
+        !ProjectEngineDefaults.GetFloat(CalibrationSection, TEXT("Contrast"), Contrast) || !FMath::IsNearlyEqual(Contrast, -6.0f) ||
+        !ProjectEngineDefaults.GetFloat(CalibrationSection, TEXT("Saturation"), Saturation) || !FMath::IsNearlyEqual(Saturation, -8.0f) ||
+        !ProjectEngineDefaults.GetBool(CalibrationSection, TEXT("AllowSDRFallback"), AllowSDRFallback) || !AllowSDRFallback)
+    {
+        Error = TEXT("HDR renderer/calibration values are missing or outside the FrontRooms baseline");
+        return false;
+    }
+
+    const FString UserSettingsPath = FPaths::ProjectConfigDir() / TEXT("DefaultGameUserSettings.ini");
+    FConfigFile UserSettingsDefaults;
+    UserSettingsDefaults.Read(UserSettingsPath);
+    const TCHAR* UserSettingsSection = TEXT("/Script/Engine.GameUserSettings");
+    bool UseHDRDisplayOutput = false;
+    int32 HDRDisplayOutputNits = 0;
+    float HDRPaperWhiteNits = 0.0f;
+    float HDRUILuminanceNits = 0.0f;
+    bool HDRUILuminanceSeparate = true;
+    if (!UserSettingsDefaults.GetBool(UserSettingsSection, TEXT("bUseHDRDisplayOutput"), UseHDRDisplayOutput) || !UseHDRDisplayOutput ||
+        !UserSettingsDefaults.GetInt(UserSettingsSection, TEXT("HDRDisplayOutputNits"), HDRDisplayOutputNits) || HDRDisplayOutputNits != DisplayPeakNits ||
+        !UserSettingsDefaults.GetFloat(UserSettingsSection, TEXT("HDRPaperWhiteNits"), HDRPaperWhiteNits) || !FMath::IsNearlyEqual(HDRPaperWhiteNits, static_cast<float>(PaperWhiteNits)) ||
+        !UserSettingsDefaults.GetFloat(UserSettingsSection, TEXT("HDRUILuminanceNits"), HDRUILuminanceNits) || !FMath::IsNearlyEqual(HDRUILuminanceNits, static_cast<float>(PaperWhiteNits)) ||
+        !UserSettingsDefaults.GetBool(UserSettingsSection, TEXT("bIsHDRUILuminanceSeparate"), HDRUILuminanceSeparate) || HDRUILuminanceSeparate)
+    {
+        Error = FString::Printf(TEXT("DefaultGameUserSettings.ini must request HDR at %d nits"), DisplayPeakNits);
+        return false;
+    }
+
+    PaperWhite = UILuminance;
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms HDR config gate passed: Windows HDR allowed, SDR fallback enabled, peak %d nits, paper white %.0f nits, mid-gray %d nits, exposure bias %.2f EV100"),
+        DisplayPeakNits, PaperWhite, MidGrayNits, CalibrationExposureBias);
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms HDR runtime note: hardware support and Windows display mode decide whether the swap chain is HDR; unsupported displays remain SDR"));
+    return true;
+}
+
+bool CheckMovement(FString& Error)
+{
+    AFrontRoomsSliceCharacter* Character = NewObject<AFrontRoomsSliceCharacter>();
+    if (Character == nullptr)
+    {
+        Error = TEXT("could not construct AFrontRoomsSliceCharacter");
+        return false;
+    }
+
+    if (Character->FrontRoomsCamera == nullptr)
+    {
+        Error = TEXT("movement slice camera was not created");
+        return false;
+    }
+    const FPostProcessSettings& Post = Character->FrontRoomsCamera->PostProcessSettings;
+    if (!Post.bOverride_AutoExposureBias || !FMath::IsNearlyEqual(Post.AutoExposureBias, 0.15f) ||
+        !Post.bOverride_WhiteTemp || !FMath::IsNearlyEqual(Post.WhiteTemp, 6500.0f) ||
+        !Post.bOverride_WhiteTint || !FMath::IsNearlyEqual(Post.WhiteTint, -0.07f) ||
+        !Post.bOverride_ColorSaturation || !Post.ColorSaturation.Equals(FVector4(0.92f, 0.92f, 0.92f, 1.0f), KINDA_SMALL_NUMBER) ||
+        !Post.bOverride_ColorContrast || !Post.ColorContrast.Equals(FVector4(0.94f, 0.94f, 0.94f, 1.0f), KINDA_SMALL_NUMBER))
+    {
+        Error = TEXT("camera HDR color grade does not match the Unity FrontRooms baseline");
+        return false;
+    }
+
+    if (!FMath::IsNearlyEqual(Character->GetCurrentMoveSpeed(), 300.0f) || Character->bSprinting)
+    {
+        Error = TEXT("movement slice did not start at 300 cm/s walking speed");
+        return false;
+    }
+
+    Character->MoveForward(1.0f);
+    Character->MoveRight(-0.5f);
+    if (!Character->LastMoveInput.Equals(FVector2D(1.0f, -0.5f), KINDA_SMALL_NUMBER))
+    {
+        Error = TEXT("movement axes were not recorded");
+        return false;
+    }
+
+    Character->StartSprint();
+    if (!Character->bSprinting || !FMath::IsNearlyEqual(Character->GetCurrentMoveSpeed(), 480.0f))
+    {
+        Error = TEXT("sprint did not raise movement speed to 480 cm/s");
+        return false;
+    }
+    Character->StopSprint();
+    if (Character->bSprinting || !FMath::IsNearlyEqual(Character->GetCurrentMoveSpeed(), 300.0f))
+    {
+        Error = TEXT("stopping sprint did not restore walking speed");
+        return false;
+    }
+
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke movement gate passed (WASD axes and sprint 300/480 cm/s)"));
     return true;
 }
 
@@ -427,6 +560,16 @@ int32 UFrontRoomsSmokeCommandlet::Main(const FString& Params)
     {
         UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke state gate failed: %s"), *Error);
         return 1;
+    }
+    if (!FrontRoomsSmokePrivate::CheckMovement(Error))
+    {
+        UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke movement gate failed: %s"), *Error);
+        return 4;
+    }
+    if (!FrontRoomsSmokePrivate::CheckHDRConfiguration(Error))
+    {
+        UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke HDR config gate failed: %s"), *Error);
+        return 5;
     }
     if (!FrontRoomsSmokePrivate::CheckMapHash(Error))
     {

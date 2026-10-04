@@ -8,14 +8,26 @@ contains:
 - `FrontRoomsContractImporter.*`: JSON contract and kit-manifest validation;
 - `FrontRoomsSliceGameMode.*`: the first Title → Playing → Paused/Caught slice
   with deterministic seed, key, door and Relay Listen → Chase state.
+- `FrontRoomsSliceCharacter.*`: Windows WASD movement with Shift sprint, wired
+  through `DefaultInput.ini` and selected as the GameMode default pawn.
+- The slice camera carries the Unity `FrontRoomsPost.asset` baseline: ACES,
+  +0.15 EV exposure, temperature +9, tint -7, contrast -6 and saturation -8.
 
 The migration target is Windows only (`Win64`). The Windows workstation currently has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
 has been compiled once. Epic has released UE5.8 (including the 5.8.3 hotfix),
 but UE5.8 is not installed in the local Epic manifest yet, so `EngineAssociation`
 stays at `5.6` until that editor is installed. Imported assets are present locally;
-the first playable map remains to be created. Open `FrontRoomsUE.uproject`
+the movement slice is ready to place in a map, while the generated map and HUD
+remain to be created. Open `FrontRoomsUE.uproject`
 and point an editor utility at `Migration/exports/frontrooms_contract.json` and
 `Migration/exports/kit_manifest.json`.
+
+HDR calibration is configured for Windows output in `Config/DefaultEngine.ini`
+and `Config/DefaultGameUserSettings.ini`: HDR is allowed with SDR fallback,
+the display peak is 1000 nits, and paper white is 300 nits. UE5.8 reads the
+native `HDRPaperWhiteNits` setting; UE5.6 keeps the same value in the migration
+calibration section and UI luminance CVar. HDR output still requires a supported
+Windows display/RHI and exclusive fullscreen at runtime.
 
 The compiled editor target also exposes a headless contract gate:
 
@@ -77,6 +89,6 @@ Run the migration smoke gate from PowerShell after each migration batch:
 
 It rechecks the Unity export contract and asset hashes, resolves the associated
 Windows editor, compiles `FrontRoomsEditor` for `Win64 Development`, runs the
-contract commandlet, then runs the in-editor state, deterministic hash and
-imported-asset commandlet. Each run writes a timestamped report under the
+contract commandlet, then runs the in-editor state, movement, deterministic hash
+and imported-asset commandlet. Each run writes a timestamped report under the
 ignored `Migration/Unreal/Saved/MigrationSmoke` directory.

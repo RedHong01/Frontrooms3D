@@ -102,5 +102,7 @@ Migration/Unreal/Intermediate/
 Migration/Unreal/Saved/
 Migration/Unreal/DerivedDataCache/
 Migration/Unreal/Content/
+.smoke-profile/
+.editor-profile/
 Migration/exports/unreal_import_settings.json
 Migration/exports/unreal_texture_import_settings.json

@@ -1,8 +1,11 @@
 #include "FrontRoomsSliceGameMode.h"
 
+#include "FrontRoomsSliceCharacter.h"
+
 AFrontRoomsSliceGameMode::AFrontRoomsSliceGameMode()
 {
     PrimaryActorTick.bCanEverTick = false;
+    DefaultPawnClass = AFrontRoomsSliceCharacter::StaticClass();
 }
 
 void AFrontRoomsSliceGameMode::BeginRun(int32 InSeed)

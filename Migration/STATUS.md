@@ -20,8 +20,10 @@ Build target: Windows `Win64` only. Other target platforms are outside this migr
 - [x] Export all 113 prop sidecars into a mesh/collider/anchor/LOD manifest.
 - [x] Add a UE5.6 project/module skeleton with contract USTRUCTs and a JSON importer.
 - [x] Add a first Title/Playing/Paused/Caught + key/door + Relay Listen→Chase runtime slice.
+- [x] Add the first Windows Character movement/sprint slice with asset-free WASD/Shift input mappings and smoke coverage.
 - [x] Add a Windows Node export gate that runs without Python or Unreal Editor.
 - [x] Add a Unity-side asset bridge manifest and Windows staging script so UE can reuse existing FBX, textures, fonts, video and FMOD banks.
+- [x] Establish the Windows HDR/ACES calibration baseline from Unity (1000 nit peak, 300 nit paper white, 0.15 EV exposure, warm/green grade) with smoke coverage.
 - [x] Compile `FrontRoomsEditor` with UE5.6 on Windows.
 - [x] Run the UE `FrontRoomsContract` commandlet against the generated contract and kit manifest.
 - [x] Stage and byte-count all 519 Unity source assets locally (123 FBX, 113 sidecars, 167 textures, 5 FMOD banks, video and fonts).
@@ -40,7 +42,7 @@ Build target: Windows `Win64` only. Other target platforms are outside this migr
 - [ ] Apply sidecar collision/LOD metadata to the imported meshes and resolve the 76 import bounds warnings.
 - [ ] Assign Unity A/N/S/E/M/P channel settings to the imported textures.
 - [ ] Run `stage_unity_assets.ps1` after the UE content layout is approved, then configure FBX/material import presets.
-- [ ] Add the first UE world slice: one generated chunk, Character movement/sprint, and UMG HUD.
+- [ ] Add the first UE world slice: one generated chunk and UMG HUD (Character movement/sprint and HDR camera baseline are now in place).
 - [ ] Add screenshot/input/audio traces before upgrading materials and lighting.
 
 The JSON contract is generated, so rerun the exporter after changing the Unity
