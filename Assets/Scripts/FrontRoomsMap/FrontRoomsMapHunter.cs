@@ -68,6 +68,8 @@ public sealed class FrontRoomsMapHunter
     const float WarnStage2Enter = 18f, WarnStage2Exit = 24f, WarnStage2Hold = 3f;
     const float PlayerFieldCap = 45f;
     const float SourceFieldCap = 90f;
+    const float PlayerSeesRelayPeriod = .1f;
+    const float PlayerFrustumHalfAngle = 60f;
 
     static readonly GridCoord[] Steps = { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
 
@@ -142,6 +144,7 @@ public sealed class FrontRoomsMapHunter
     int relayFieldRevision = -1;
     bool relayFieldReady;
     float warnEnterHold, warnExitHold;
+    float playerSeesRelayTimer;
 
     public HunterState State { get; private set; } = HunterState.Dormant;
     public float StateTime { get; private set; }
@@ -158,6 +161,8 @@ public sealed class FrontRoomsMapHunter
     public float WarningDistance { get; private set; } = float.PositiveInfinity;
     /// <summary>0, 1 or 2 according to the §9 hysteresis bands.</summary>
     public int WarnStage { get; private set; }
+    /// <summary>Player-side frustum plus two body-height rays, refreshed at 10 Hz for Step 1 consumers.</summary>
+    public bool PlayerSeesRelay { get; private set; }
     /// <summary>Path distance from the Relay's current cell to a cell, using the same edge costs as F.</summary>
     public float PathDistanceFromRelay(GridCoord cell)
     {
@@ -218,6 +223,8 @@ public sealed class FrontRoomsMapHunter
         if (State == HunterState.Dormant)
         {
             ResetWarningMetrics();
+            PlayerSeesRelay = false;
+            playerSeesRelayTimer = 0f;
             releaseTimer += dt;
             if (releaseTimer >= tuning.releaseDelaySeconds && Arrive(playerFeet, playerEye, playerForward)) SetState(HunterState.Listen);
             DoorSqueeze = 0f;
@@ -233,6 +240,12 @@ public sealed class FrontRoomsMapHunter
         PathOpeningCost = playerField.OpeningCostTo(myCell);
         WarningDistance = Mathf.Min(PathDistanceToPlayer, 3f * Vector3.Distance(position, playerFeet));
         UpdateWarnStage(dt, myCell);
+        playerSeesRelayTimer -= dt;
+        if (playerSeesRelayTimer <= 0f)
+        {
+            playerSeesRelayTimer = PlayerSeesRelayPeriod;
+            PlayerSeesRelay = ComputePlayerSeesRelay(playerEye, playerForward);
+        }
         // A tick that relays it below does not look, so it breaks the run of ticks that saw the player.
         var sawBefore = sawLastTick;
         sawLastTick = false;
@@ -344,6 +357,7 @@ public sealed class FrontRoomsMapHunter
         sweep.Clear();
         sweepIndex = 0;
         lookTimer = 0f;
+        playerSeesRelayTimer = 0f;
         DoorSqueeze = DoorSqueezeAt(position);
         SetState(HunterState.Search);
     }
@@ -1226,6 +1240,24 @@ public sealed class FrontRoomsMapHunter
         if (WarnStage == next) return;
         WarnStage = next;
         WarnStageChanged?.Invoke(next);
+    }
+
+    bool ComputePlayerSeesRelay(Vector3 playerEye, Vector3 playerForward)
+    {
+        if (!Released || world == null) return false;
+        var forward = Flat(playerForward);
+        var lower = position + Vector3.up * 1.6f;
+        var toLower = lower - playerEye;
+        var distance = toLower.magnitude;
+        if (distance < .01f || distance > world.SightDistance || forward.sqrMagnitude < 1e-6f) return false;
+        forward.Normalize();
+        var flatTo = Flat(toLower);
+        if (flatTo.sqrMagnitude < 1e-6f || Vector3.Dot(forward, flatTo.normalized) < Mathf.Cos(PlayerFrustumHalfAngle * Mathf.Deg2Rad)) return false;
+
+        // Both points must be clear. This avoids treating a shoulder-level
+        // glimpse through furniture or a low sill as full player-side sight.
+        var upper = position + Vector3.up * 1.95f;
+        return Visible(playerEye, lower) && Visible(playerEye, upper);
     }
 
     bool Sees(Vector3 playerEye)
