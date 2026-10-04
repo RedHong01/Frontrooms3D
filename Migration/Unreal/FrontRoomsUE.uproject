@@ -11,9 +11,6 @@
     }
   ],
   "Plugins": [
-    { "Name": "EnhancedInput", "Enabled": true },
-    { "Name": "UMG", "Enabled": true },
-    { "Name": "Json", "Enabled": true },
-    { "Name": "JsonUtilities", "Enabled": true }
+    { "Name": "EnhancedInput", "Enabled": true }
   ]
 }

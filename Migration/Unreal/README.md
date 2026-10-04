@@ -9,11 +9,18 @@ contains:
 - `FrontRoomsSliceGameMode.*`: the first Title → Playing → Paused/Caught slice
   with deterministic seed, key, door and Relay Listen → Chase state.
 
-The current machine does not expose `UnrealEditor`, so this source has not been
-claimed as compiled or packaged. After installing the team UE5 version, open
-`FrontRoomsUE.uproject`, compile the `FrontRooms` module, and point an editor
-utility at `Migration/exports/frontrooms_contract.json` and
+The Windows workstation has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
+has been compiled once. The project is still source-only until the editor
+creates the first map and imports the staged assets. Open `FrontRoomsUE.uproject`
+and point an editor utility at `Migration/exports/frontrooms_contract.json` and
 `Migration/exports/kit_manifest.json`.
+
+The compiled editor target also exposes a headless contract gate:
+
+```powershell
+& 'D:\UE_5.6\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
+  'Migration/Unreal/FrontRoomsUE.uproject' -run=FrontRoomsContract
+```
 
 Before opening Unreal, run the Windows-only export gate from the Unity project
 root:

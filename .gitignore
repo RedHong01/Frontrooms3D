@@ -95,3 +95,9 @@ Tools/lookdev/cc0_src/
 # Python migration-tool caches
 __pycache__/
 *.py[cod]
+
+# Unreal migration build products and local editor state
+Migration/Unreal/Binaries/
+Migration/Unreal/Intermediate/
+Migration/Unreal/Saved/
+Migration/Unreal/DerivedDataCache/
