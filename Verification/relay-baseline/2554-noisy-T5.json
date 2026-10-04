@@ -1,0 +1,237 @@
+{
+    "verdict": "PASS · baseline noisy T5 seed 2554 · ended by caught",
+    "mode": "noisy",
+    "seed": 2554,
+    "tier": 5,
+    "minutes": 4.0,
+    "playSeconds": 67.91669464111328,
+    "endedBy": "caught",
+    "caught": true,
+    "startHoldEndedAt": 8.000049591064454,
+    "startOnFixedFrame": true,
+    "releasedAt": 13.749961853027344,
+    "releaseStraightMetres": 29.650527954101564,
+    "releaseWalkMetres": 42.0,
+    "secondsAfterRelease": 54.16673278808594,
+    "stateShares": [
+        {
+            "state": "Dormant",
+            "seconds": 0.0,
+            "share": 0.0
+        },
+        {
+            "state": "Listen",
+            "seconds": 1.8166656494140626,
+            "share": 0.03353840112686157
+        },
+        {
+            "state": "Hunt",
+            "seconds": 44.5328254699707,
+            "share": 0.8221434950828552
+        },
+        {
+            "state": "Search",
+            "seconds": 0.8999997973442078,
+            "share": 0.016615360975265504
+        },
+        {
+            "state": "Chase",
+            "seconds": 3.7166638374328615,
+            "share": 0.06861525028944016
+        },
+        {
+            "state": "BreakDoor",
+            "seconds": 3.199997663497925,
+            "share": 0.059076808393001559
+        },
+        {
+            "state": "Wander",
+            "seconds": 0.0,
+            "share": 0.0
+        }
+    ],
+    "firstHuntAfterRelease": 1.8166389465332032,
+    "firstChaseAfterRelease": 21.133010864257814,
+    "hunts": 4,
+    "huntsPerMinute": 4.4307637214660648,
+    "huntsByCause": {
+        "sprint": 0,
+        "door": 1,
+        "glass": 0,
+        "otherNoise": 0,
+        "chaseLost": 2,
+        "other": 1
+    },
+    "huntRetargets": {
+        "sprint": 0,
+        "door": 7,
+        "glass": 0,
+        "otherNoise": 0
+    },
+    "callsByCause": {
+        "sprint": 0,
+        "door": 1,
+        "glass": 0,
+        "otherNoise": 0,
+        "wanderEncounter": 1,
+        "total": 2,
+        "perMinute": 2.2153818607330324
+    },
+    "chases": 2,
+    "chasesPerMinute": 2.2153818607330324,
+    "chasesLost": 1,
+    "chasesRelayed": 0,
+    "chasesCaught": 1,
+    "chasesOpenAtEnd": 0,
+    "wanderEncounters": 1,
+    "chaseMeanSeconds": 2.650209426879883,
+    "chaseMaxSeconds": 3.116619110107422,
+    "chaseLog": [
+        {
+            "startAt": 21.133010864257814,
+            "seconds": 3.116619110107422,
+            "straightAtStart": 7.712320804595947,
+            "from": "Hunt",
+            "noiseBefore": "door",
+            "end": "lost",
+            "evaded": false
+        },
+        {
+            "startAt": 51.96626281738281,
+            "seconds": 2.1837997436523439,
+            "straightAtStart": 11.942512512207032,
+            "from": "Hunt",
+            "noiseBefore": "none",
+            "end": "caught",
+            "evaded": false
+        }
+    ],
+    "catches": 1,
+    "noiseEmitted": {
+        "sprint": 0,
+        "door": 13,
+        "glass": 0,
+        "otherNoise": 0
+    },
+    "noiseHeard": {
+        "sprint": 0,
+        "door": 8,
+        "glass": 0,
+        "otherNoise": 0
+    },
+    "noiseOutOfRange": {
+        "sprint": 0,
+        "door": 4,
+        "glass": 0,
+        "otherNoise": 0
+    },
+    "noiseIgnoredByState": {
+        "sprint": 0,
+        "door": 1,
+        "glass": 0,
+        "otherNoise": 0
+    },
+    "relaysAfterRelease": 0,
+    "relaysA7a": 0,
+    "relaysA7b": 0,
+    "relayLog": [],
+    "doorsBroken": 2,
+    "doorsBrokenByState": [
+        {
+            "state": "Hunt",
+            "count": 1
+        },
+        {
+            "state": "Chase",
+            "count": 1
+        }
+    ],
+    "breakAttemptsByState": [
+        {
+            "state": "Hunt",
+            "count": 1
+        },
+        {
+            "state": "Chase",
+            "count": 1
+        }
+    ],
+    "glassBroken": 0,
+    "tierFinal": 5,
+    "tierLog": [
+        "0.0 s tier 5 (baseline, 0 zones)"
+    ],
+    "sampleSeconds": 0.25,
+    "fieldCapMetres": 60.0,
+    "samples": 271,
+    "onMapSamples": 216,
+    "dormantShare": 0.20295202732086183,
+    "fUnreachedShare": 0.14814814925193788,
+    "fBands": {
+        "le18": 0.1527777761220932,
+        "le30": 0.25462964177131655,
+        "from30to36": 0.1944444477558136,
+        "gt36": 0.5509259104728699
+    },
+    "wBands": {
+        "le18": 0.1527777761220932,
+        "le30": 0.25925925374031069,
+        "from30to36": 0.1944444477558136,
+        "gt36": 0.5462962985038757
+    },
+    "straightBands": {
+        "le18": 0.29629629850387576,
+        "le30": 0.7546296119689941,
+        "from30to36": 0.24537037312984467,
+        "gt36": 0.0
+    },
+    "wStage0": 0.6759259104728699,
+    "wStage1": 0.1527777761220932,
+    "wStage2": 0.17129629850387574,
+    "wStage0OfRun": 0.7416974306106567,
+    "bot": {
+        "distanceWalked": 194.177001953125,
+        "cellsVisited": 57,
+        "zonesVisited": 9,
+        "routes": 5,
+        "sprintBursts": 30,
+        "sprintSeconds": 16.233257293701173,
+        "windedSeconds": 2.016665458679199,
+        "sprintNoises": 0,
+        "sprintNoisesNotSprinting": 0,
+        "doorsOpened": 7,
+        "doorsShut": 6,
+        "doorToggles": 0,
+        "windowsTried": 0,
+        "windowsBroken": 0,
+        "evasionsAttempted": 0,
+        "evasionsSucceeded": 0,
+        "evasionsCaught": 0,
+        "zoneDoors": -1,
+        "zoneDoorsOpenAtStart": -1,
+        "edgeStalls": 0,
+        "notes": []
+    },
+    "errors": 0,
+    "errorLog": [],
+    "behaviourHash": "2b8fa01e7117d32f",
+    "perf": {
+        "frameClock": "real-time Stopwatch from frame to frame (from Space), frames unthrottled (targetFrameRate -1), game time on captureDeltaTime 1/60",
+        "frames": 4075,
+        "meanFrameMs": 1.7932350635528565,
+        "p50FrameMs": 1.0262999534606934,
+        "p95FrameMs": 1.916700005531311,
+        "p99FrameMs": 7.943999767303467,
+        "maxFrameMs": 351.2135009765625,
+        "loadAverageStart": "{ 17.58 14.29 12.76 }",
+        "loadAverageEnd": "{ 17.05 14.23 12.75 }",
+        "wallSeconds": 9.093082427978516,
+        "relayTickMaxMs": 4.940800189971924,
+        "pathFieldBuilds": 216,
+        "pathFieldMeanMs": 0.19262222945690156,
+        "pathFieldMaxMs": 0.287200003862381,
+        "pathFieldMeanVisited": 364.3888854980469,
+        "startDoorOpenedAt": 3.6333305835723879,
+        "mapSettledAt": 0.43333348631858828
+    }
+}

@@ -2,7 +2,7 @@
 
 From the visual chat (游戏视觉), 2026-10-03. Red asked for the new door models, the key models and the key UI to be documented in Figma. This folder is the model half: three-views, heroes and sheet data for every new interactable kit. The key UI is a separate hand-off (`research/ui_key_icon/03_figma.md`).
 
-**You place the sheets** (agreed, `VISUAL_CHAT_TASKS.md` R10 and W1.6). We do not edit PROP KIT 2324:852 or its continuation.
+**平面视觉 places the sheets** (agreed, `VISUAL_CHAT_TASKS.md` R10 and W1.6). The game-visual hand-off supplies the three-view PNGs and index; it does not edit the Prop Kit layout.
 
 ## 1. What is here
 
@@ -29,7 +29,7 @@ From the visual chat (游戏视觉), 2026-10-03. Red asked for the new door mode
 
 Suggested numbering follows `sheets[].order`: K46 = `doorframe_wood` … K80 = `miniblind_lowered`. Agreed placement:
 - K46 and K47 go in the two empty cells of 2324:852, at (4200, 13800) and (6240, 13800).
-- K48 onward go in your new section **"PROP KIT · THREE-VIEW + ERA (CONT.)"**, at x 16577, y ≈ 25500.
+- K48 onward go in the new section **"PROP KIT · THREE-VIEW + ERA (CONT.)"**, at x 16577, y 29300. The earlier y≈25500 area contains existing magazine samples and is reserved.
 
 | Family | Sheets (id → primary kit; variants or parts) |
 |---|---|
@@ -122,3 +122,11 @@ Extra fields you may use: `sheetPpm`, `scaleBar`, `tris` (LOD0/LOD1 and the spec
 2. Copy `FrontRoomsThreeView.interactables.cs.txt` to `<clone>/Assets/Editor/Rendering/FrontRoomsThreeView.cs`.
 3. Run `Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsThreeView.RunBatch -threeViewOut <dir> -threeViewOnly Kit_A -threeViewYaw Kit_A=-90 -quit` with graphics. Pass the yaw only for door frames, door leaves and keys.
 4. `upload_assets` with `nodeIds` = the existing `img:<Kit>_<view>` rectangles. Then re-run `tools/build_index.py` with `/usr/bin/python3`.
+
+## 11. Placement record
+
+平面视觉 placed the complete K46–K80 set in Figma on 2026-10-04, page `2099:76`, file `0tCbAiVUlrPId3RWd9LRif`:
+
+- K46 `2648:6094` and K47 `2648:6139` are in PROP KIT `2324:852` at local `(4200, 13800)` and `(6240, 13800)`.
+- K48–K80 are in CONT `2648:6093` at page `(16577, 29300)`, with the four-column grid from `kplan.json`.
+- All 164 primary and variant image slots were uploaded from `png/` and checked against the sheet grammar; runtime/model acceptance remains with the game-visual workflow.

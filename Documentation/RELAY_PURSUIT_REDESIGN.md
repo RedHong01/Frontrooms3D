@@ -1,6 +1,8 @@
 # Relay pursuit: audit and redesign (v2)
 
-Status: **proposal v2, 2026-10-03. Nothing of v2 is implemented.** Every number in §4–§12 is a starting point for playtest (**SP**) unless it is marked **fixed**. v2 replaces v1 (same day) wholesale; §15 lists what changed and why.
+Status: **proposal v2, 2026-10-03. Runtime v2 is not enabled.** On 2026-10-04 the systems pass landed an isolated, pure-C# pacing policy core (`Assets/Scripts/FrontRoomsMap/FrontRoomsRelayDirectorPolicy.cs`); it is not wired to the current timed-release hunter and does not count as runtime v2. Every number in §4–§12 is a starting point for playtest (**SP**) unless it is marked **fixed**. v2 replaces v1 (same day) wholesale; §15 lists what changed and why.
+
+**Systems landing 2026-10-04.** The policy core covers the director vocabulary and deterministic rules for `Arm`/first-run RELAX, Attention gains and decay, weighted call estimates, PENDING/drop handling, queued device calls, quiet-player sweep requests, Pressure, peak/cap → SUSTAIN → FADE, handoff budget, and `NotifyAway` → RESTORE/RELAX. It is deliberately an adapter seam: no old release/leash behavior, map navigation, sound implementation, lamp look, wallpaper, narrative, or mobile build was changed. Wiring waits for Step 0 and the map-owned path/Arrive contracts.
 
 Written by the chat 怪物追捕机制设计审计 (systems), with:
 - **关卡设计** (map / Relay code owner): level design, feasibility. Peer chapter `research/relay_pursuit/20_level_design.md`.
@@ -660,6 +662,10 @@ Total ≈ 35 working days across chats; the map chat's share ≈ 26 (v1 said 9�
 ## 14. Acceptance tests
 
 **Step 0 report** (per bot mode, T1 and T5; run before any change and after each step): warning-stage-0 share and Away share; time to first call; calls per minute by cause; PENDING seconds and dropped calls; queued triggers; encounter length and how it ended (search, peak, cap, lock-on cap, sanctuary, unbuilt, timeout); stage-1 share of on-map time; stage before every lock-on and every gate hold; chases per encounter; heard re-targets per encounter; chase-cap fires; catches; Withdraw time to Away; field CPU per rebuild.
+
+The editor-only harness lives in `Assets/Scripts/FrontRooms3DGame.Baseline.cs`; it does not alter the legacy hunter when no bot arguments are present. One case can be run from the project root with `Tools/relay_baseline_run.sh 2554 quiet 1 4`. The serial matrix is `Tools/relay_baseline_matrix.sh` (54 cases: seeds `2554 20388 7`, current nine modes, T1/T5); set `SEEDS`, `MODES`, or `TIERS` for a smoke subset. Reports are written to `Verification/relay-baseline/` and should be copied into an evidence folder before starting Step 1.
+
+**Step 0 evidence (2026-10-04):** the independent clean-clone matrix produced **52 PASS / 2 FAIL**; the two seed-7 `edgerunner` cases were rerun after the bot was made to clear one full door cell before selecting a lateral edge route, bringing the reconciled result to **54 PASS / 0 FAIL**. All 54 JSON reports are retained in `Verification/relay-baseline/`.
 
 | Test (SP) | Pass |
 |---|---|
