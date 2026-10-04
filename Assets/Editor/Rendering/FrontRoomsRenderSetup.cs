@@ -264,18 +264,33 @@ public static class FrontRoomsRenderSetup
         public string emission;      // emission texture stem
         public Color emissionColor = Color.black;
         public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile
+        // Print layer (wallpaper sandwich, FrontRooms/Surface _FR_PRINT). With print set, the
+        // texture stem is the PAPER: _BaseMap = <texture>_M (linear modulation), _N, _S paper-only;
+        // _PrintTex = <print> (frame 0, R density, G cream, linear). Colours come from the palette.
+        public string print;
+        public Color inkGround, inkMid, inkDeep, inkCream;
+        public float printAmount = 1f;
     }
+
+    // Level 0 print palettes (gen_surfaces.py LOBBY_PALETTE / COLD_PALETTE); Shift is the Lobby
+    // run under its own tint. One paper and one print serve all three wallpapers.
+    static Color Hex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.magenta;
+    static SurfaceDef LobbyPrint(SurfaceDef d) { d.texture = "Wallpaper_Paper"; d.print = "Wallpaper_Print_P"; d.inkGround = Hex("#D2C27C"); d.inkMid = Hex("#AC9A52"); d.inkDeep = Hex("#766A34"); d.inkCream = Hex("#E3D594"); return d; }
+    static SurfaceDef ColdPrint(SurfaceDef d) { d.texture = "Wallpaper_Paper"; d.print = "Wallpaper_Print_P"; d.inkGround = Hex("#AFC0B6"); d.inkMid = Hex("#87998F"); d.inkDeep = Hex("#56655E"); d.inkCream = Hex("#C5D3C9"); return d; }
 
     static readonly SurfaceDef[] SurfaceDefs =
     {
         // Level 0 family: Lobby, Shift (stained), Exit (cold print run).
-        new SurfaceDef { name = "L0_Wallpaper", texture = "Wallpaper_Chevron", tile = new Vector2(Roll, Roll * 1.5f), bump = .8f, macroTone = .45f, macroDirt = .3f, stain = .18f, floorGrime = .6f, ceilingGrime = .5f },
-        new SurfaceDef { name = "L0_Wallpaper_Shift", texture = "Wallpaper_Chevron", tile = new Vector2(Roll, Roll * 1.5f), tint = new Color(.9f, .88f, .8f), bump = .8f, macroTone = .6f, macroDirt = .45f, stain = .45f, floorGrime = .8f, ceilingGrime = .85f },
+        // Wallpaper = paper x print (P0 of research/wallpaper_motion). The pre-split one-layer
+        // textures (Wallpaper_Chevron, Wallpaper_Chevron_Cold) are test references only and live
+        // outside Resources (Assets/Editor/Rendering/PrintP0/Ref), so builds do not ship them.
+        LobbyPrint(new SurfaceDef { name = "L0_Wallpaper", tile = new Vector2(Roll, Roll * 1.5f), bump = .8f, macroTone = .45f, macroDirt = .3f, stain = .18f, floorGrime = .6f, ceilingGrime = .5f }),
+        LobbyPrint(new SurfaceDef { name = "L0_Wallpaper_Shift", tile = new Vector2(Roll, Roll * 1.5f), tint = new Color(.9f, .88f, .8f), bump = .8f, macroTone = .6f, macroDirt = .45f, stain = .45f, floorGrime = .8f, ceilingGrime = .85f }),
         new SurfaceDef { name = "L0_Carpet", texture = "Carpet_LoopPile", tile = Vector2.one, macroTone = .4f, macroDirt = .35f, wet = .55f },
         new SurfaceDef { name = "L0_Carpet_Shift", texture = "Carpet_LoopPile", tile = Vector2.one, tint = new Color(.92f, .9f, .84f), macroTone = .5f, macroDirt = .5f, wet = .85f },
         new SurfaceDef { name = "L0_Ceiling", texture = "Ceiling_Fissured", tile = new Vector2(FourFoot, FourFoot), macroTone = .25f, stain = .22f },
         new SurfaceDef { name = "L0_Ceiling_Shift", texture = "Ceiling_Fissured", tile = new Vector2(FourFoot, FourFoot), tint = new Color(.93f, .92f, .86f), macroTone = .45f, stain = .55f },
-        new SurfaceDef { name = "Exit_Wallpaper", texture = "Wallpaper_Chevron_Cold", tile = new Vector2(Roll, Roll * 1.5f), bump = .8f, macroTone = .35f, macroDirt = .2f, floorGrime = .4f, ceilingGrime = .2f, stainColor = new Color(.30f, .34f, .32f) },
+        ColdPrint(new SurfaceDef { name = "Exit_Wallpaper", tile = new Vector2(Roll, Roll * 1.5f), bump = .8f, macroTone = .35f, macroDirt = .2f, floorGrime = .4f, ceilingGrime = .2f, stainColor = new Color(.30f, .34f, .32f) }),
         new SurfaceDef { name = "Exit_Carpet", texture = "Carpet_LoopPile", tile = Vector2.one, tint = new Color(.66f, .72f, .74f), macroTone = .35f, wet = .3f },
 
         // Level 4 / Office.
@@ -447,7 +462,7 @@ public static class FrontRoomsRenderSetup
             m.shader = shader;
             if (d.texture != null)
             {
-                m.SetTexture("_BaseMap", Tex(d.texture + "_A"));
+                m.SetTexture("_BaseMap", Tex(d.texture + (d.print != null ? "_M" : "_A")));
                 m.SetTexture("_BumpMap", TexOptional(d.texture + "_N"));
                 m.SetTexture("_MaskMap", TexOptional(d.texture + "_S"));
             }
@@ -476,6 +491,7 @@ public static class FrontRoomsRenderSetup
             m.SetFloat("_CeilingHeight", d.ceilingHeight);
             m.SetFloat("_MeshUV", d.meshUV ? 1f : 0f);
             if (d.meshUV) m.EnableKeyword("_FR_MESH_UV"); else m.DisableKeyword("_FR_MESH_UV");
+            ApplyPrint(m, d);
             if (d.emission != null)
             {
                 // emission = "" glows the tint colour without a map (LEDs, lit shades).
@@ -492,6 +508,25 @@ public static class FrontRoomsRenderSetup
             }
             EditorUtility.SetDirty(m);
         }
+    }
+
+    /// <summary>
+    /// The print layer: keyword, frame 0 and palette, or all of it off. Every material gets the
+    /// properties written, so regeneration always leaves the keyword and values consistent.
+    /// </summary>
+    static void ApplyPrint(Material m, SurfaceDef d)
+    {
+        var on = d.print != null;
+        m.SetTexture("_PrintTex", on ? Tex(d.print) : null);
+        m.SetTextureScale("_PrintTex", Vector2.one);
+        m.SetTextureOffset("_PrintTex", Vector2.zero);
+        m.SetColor("_InkGround", on ? d.inkGround : Hex("#D2C27C"));
+        m.SetColor("_InkMid", on ? d.inkMid : Hex("#AC9A52"));
+        m.SetColor("_InkDeep", on ? d.inkDeep : Hex("#766A34"));
+        m.SetColor("_InkCream", on ? d.inkCream : Hex("#E3D594"));
+        m.SetFloat("_PrintAmount", d.printAmount);
+        m.SetFloat("_UsePrint", on ? 1f : 0f);
+        if (on) m.EnableKeyword("_FR_PRINT"); else m.DisableKeyword("_FR_PRINT");
     }
 
     /// <summary>
@@ -610,17 +645,41 @@ public static class FrontRoomsRenderSetup
 }
 
 /// <summary>
-/// Import rules for the generated surface textures: albedo/emission in sRGB,
-/// normals as normal maps, masks linear; full mip chain, trilinear and 16x
-/// anisotropy so floors and ceilings stay sharp at grazing angles.
+/// Import rules for the generated surface textures: albedo/emission (_A, _E) in
+/// sRGB, normals (_N) as normal maps, everything else linear: masks (_S), the
+/// macro wear and paper modulation (_M) and the wallpaper print frame (_P).
+/// Full mip chain, trilinear and 16x anisotropy, repeat, so floors, ceilings
+/// and the print stay sharp at grazing angles. The print frame (_P) is R8G8 on
+/// Standalone: two channels, lossless (R density, G cream; the file's B is the
+/// reserved phosphor channel and 0), half the RGBA32 that NPOT + mips falls back to,
+/// and its mips are rebuilt by FrontRoomsPrintMips (cream-weighted density).
+/// WebGL import settings belong to the WebGL track and are not touched here.
 /// </summary>
 public sealed class FrontRoomsSurfaceTextureImporter : AssetPostprocessor
 {
     void OnPreprocessTexture()
     {
         if (!assetPath.Replace('\\', '/').Contains("/Resources/Surfaces/Textures/")) return;
-        var importer = (TextureImporter)assetImporter;
-        var stem = Path.GetFileNameWithoutExtension(assetPath);
+        Configure((TextureImporter)assetImporter, Path.GetFileNameWithoutExtension(assetPath));
+    }
+
+    void OnPostprocessTexture(Texture2D texture)
+    {
+        if (!assetPath.Replace('\\', '/').Contains("/Resources/Surfaces/Textures/")) return;
+        if (Path.GetFileNameWithoutExtension(assetPath).EndsWith("_P")) FrontRoomsPrintMips.Apply(texture);
+    }
+
+    /// <summary>The import rules for one surface texture (also used for test references kept outside Resources).</summary>
+    internal static void Configure(TextureImporter importer, string stem)
+    {
+        if (stem.EndsWith("_P"))
+        {
+            var standalone = importer.GetPlatformTextureSettings("Standalone");
+            standalone.overridden = true;
+            standalone.maxTextureSize = 4096;
+            standalone.format = TextureImporterFormat.RG16;
+            importer.SetPlatformTextureSettings(standalone);
+        }
         importer.mipmapEnabled = true;
         importer.filterMode = FilterMode.Trilinear;
         importer.anisoLevel = 16;
@@ -638,5 +697,82 @@ public sealed class FrontRoomsSurfaceTextureImporter : AssetPostprocessor
             importer.textureType = TextureImporterType.Default;
             importer.sRGBTexture = stem.EndsWith("_A") || stem.EndsWith("_E");
         }
+    }
+}
+
+/// <summary>
+/// Mips for a wallpaper print (R density, G cream; FrontRooms/Surface _FR_PRINT): the
+/// "cream-weighted density" rule. The shader composes lerp(InkRamp(d), cream, 0.55 c) after
+/// the GPU has filtered d and c separately, so box mips of d and c brighten every footprint
+/// that mixes cream with ink (about +1.4 levels at mip 6, i.e. walls 16-30 m away). Here cream
+/// is box-filtered as usual and density is averaged with the weight (1 - 0.55 c):
+///     c' = box(c),   d' = box((1 - 0.55 c) d) / box(1 - 0.55 c).
+/// The composed colour of every mip texel is then the box average of the mip-0 colours, for
+/// any palette, wherever the footprint stays on one side of the ramp's mid stop (across it,
+/// one density cannot hold three ink weights; that residue is the ramp's own curvature).
+/// B (reserved phosphor) and A are box-filtered. The same rule must build every _FR_Print
+/// slice's mips (ApplySlice), or the static frame 0 and the live slices filter differently.
+/// </summary>
+public static class FrontRoomsPrintMips
+{
+    public const float CreamMix = .55f;   // FR_CREAM_MIX in FrontRoomsSurface.shader
+
+    /// <summary>The whole chain from mip 0 (row-major, linear values): index 0 is mip0 itself.</summary>
+    public static List<Color[]> Build(Color[] mip0, int width, int height, int mipCount)
+    {
+        var levels = new List<Color[]> { mip0 };
+        int n = width * height, w = width, h = height;
+        // Accumulators: weight (1 - 0.55 c), weighted density, cream, B, A.
+        var acc = new float[5][];
+        for (var k = 0; k < 5; k++) acc[k] = new float[n];
+        for (var i = 0; i < n; i++)
+        {
+            var c = mip0[i];
+            var wgt = 1f - CreamMix * c.g;
+            acc[0][i] = wgt; acc[1][i] = wgt * c.r; acc[2][i] = c.g; acc[3][i] = c.b; acc[4][i] = c.a;
+        }
+        for (var m = 1; m < mipCount; m++)
+        {
+            int tw = Math.Max(1, w >> 1), th = Math.Max(1, h >> 1);
+            var next = new float[5][];
+            for (var k = 0; k < 5; k++) next[k] = new float[tw * th];
+            for (var y = 0; y < th; y++)
+            {
+                int y0 = y * h / th, y1 = Math.Max(y0 + 1, (y + 1) * h / th);
+                for (var x = 0; x < tw; x++)
+                {
+                    int x0 = x * w / tw, x1 = Math.Max(x0 + 1, (x + 1) * w / tw);
+                    var inv = 1f / ((x1 - x0) * (y1 - y0));
+                    for (var k = 0; k < 5; k++)
+                    {
+                        var s = 0f;
+                        for (var yy = y0; yy < y1; yy++)
+                            for (var xx = x0; xx < x1; xx++) s += acc[k][yy * w + xx];
+                        next[k][y * tw + x] = s * inv;
+                    }
+                }
+            }
+            acc = next; w = tw; h = th;
+            var level = new Color[tw * th];
+            for (var i = 0; i < level.Length; i++)
+                level[i] = new Color(Mathf.Clamp01(acc[1][i] / Mathf.Max(1e-6f, acc[0][i])), acc[2][i], acc[3][i], acc[4][i]);
+            levels.Add(level);
+        }
+        return levels;
+    }
+
+    /// <summary>Rebuilds mips 1..n of an imported print (AssetPostprocessor.OnPostprocessTexture).</summary>
+    public static void Apply(Texture2D texture)
+    {
+        if (texture.mipmapCount < 2) return;
+        var levels = Build(texture.GetPixels(0), texture.width, texture.height, texture.mipmapCount);
+        for (var m = 1; m < levels.Count; m++) texture.SetPixels(levels[m], m);
+    }
+
+    /// <summary>Fills one _FR_Print slice (all mips) from its mip 0; call Apply(false) on the array afterwards.</summary>
+    public static void ApplySlice(Texture2DArray array, int slice, Color[] mip0)
+    {
+        var levels = Build(mip0, array.width, array.height, array.mipmapCount);
+        for (var m = 0; m < levels.Count; m++) array.SetPixels(levels[m], slice, m);
     }
 }

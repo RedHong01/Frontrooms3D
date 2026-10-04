@@ -685,11 +685,11 @@ def screw_pan(kit, fr, slot_deg=0.0, segs=32, slot=AL, head_d=6.6, head_h=1.9, s
     straps, set screws): fr origin = head centre on the surface, n out."""
     r = head_d / 2
     mb = MB()
-    prof = [(r, -0.25), (r, head_h * 0.42), (r - 0.35, head_h * 0.72), (r - 0.95, head_h * 0.93)]
+    prof = [(r, -0.25), (r, head_h * 0.45), (r - 0.5, head_h * 0.82)]
     rings = [mb.ring(fr, circle(rr, segs), c) for rr, c in prof]
     for a, b in zip(rings, rings[1:]):
         mb.band(a, b, slot)
-    top = mb.ring(fr, circle(r - 1.6, segs), head_h)
+    top = mb.ring(fr, circle(r - 1.45, segs), head_h)
     mb.band(rings[-1], top, slot)
     mb.cap(top, slot, front=True)
     mb.cap(rings[0], slot, front=False)
@@ -697,6 +697,14 @@ def screw_pan(kit, fr, slot_deg=0.0, segs=32, slot=AL, head_d=6.6, head_h=1.9, s
     boolean_cut(obj, _slot_cutter(fr, slot_deg, slot_w, head_h, slot_depth, head_d, slot))
     _delete_faces_below(obj, fr, -0.15)
     return obj
+
+
+def dome(mb, fr, r, h, segs, slot=AL):
+    """LOD screw head: a low dome of radius r, h proud (no slot)."""
+    a = mb.ring(fr, circle(r, segs), 0.0)
+    b = mb.ring(fr, circle(r * 0.62, segs), h * 0.8)
+    mb.band(a, b, slot)
+    mb.fan(b, mb.vert(fr, 0.0, 0.0, h), slot)
 
 
 def _delete_faces_below(obj, fr, c_mm):
@@ -904,27 +912,27 @@ def build_tombstone(kit, module, W, D, H, inset, rt, re, zc, sides, flange_r=8.0
     # LOD1 / LOD2 (hand-built; only when kitlib can export them) -------------
     if lods_enabled():
         mb = MB()
-        flange(mb, up_frame(0, 0, 0), W, D, flange_r, flange_t, 0.0, 0, per_corner=3)
-        back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, re, arc_segs=4, edge_segs=1)
+        flange(mb, up_frame(0, 0, 0), W, D, flange_r, flange_t, 0.8, 1, per_corner=4)
+        back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, re, arc_segs=8, edge_segs=3)
         rings = {"front": front_ring, "back": back_ring}
         for side in ("front", "back"):
             fr = frames[side]
             if side in sides:
-                holes = [hole_stack(mb, fr, fn, [(0.0, 0.0), (0.0, -2.0)], AL)[0]
-                         for fn in duplex_openings(sideways=True, pc=24)]
+                holes = [hole_stack(mb, fr, fn, [(0.3, 0.0), (0.0, -0.3), (0.0, -2.0)], AL)[0]
+                         for fn in duplex_openings(sideways=True, pc=32)]
                 mb.fill(rings[side], holes, AL, fr.n)
             else:
                 f = mb.face(rings[side], AL)
                 mb.orient([f], (0.0, 0.0, (zb + H) / 2 * MM))
         for side in sides:
             fr = frames[side]
-            duplex(mb, fr, 0.0, "lod1", sideways=True)
+            duplex(mb, fr, 0.0, "mid", sideways=True)
             backing(mb, fr, 2 * span_u + 3.0, 2 * span_v + 3.0, 3.0, -BACK_PLANE, per_corner=1)
-            mb.cap(mb.ring(fr, circle(3.3, 12), 0.4), AL)          # plain screw head
+            dome(mb, fr, 3.3, 0.9, 16)                              # screw head, no slot
         mb.to_part(kit, "lod1", "1")
         mb = MB()
         flange(mb, up_frame(0, 0, 0), W, D, flange_r, flange_t, 0.0, 0, per_corner=1)
-        back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, 0.0, arc_segs=1, edge_segs=0)
+        back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, re, arc_segs=2, edge_segs=1)
         for ring in (back_ring, front_ring):
             f = mb.face(ring, AL)
             mb.orient([f], (0.0, 0.0, (zb + H) / 2 * MM))

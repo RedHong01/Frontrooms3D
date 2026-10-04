@@ -77,9 +77,53 @@ public static class FrontRoomsShotTimings
         public const float LockedLabelSeconds = 1.5f;
     }
 
-    // ---- 3.5 Hold to break glass: HELD. The visual chat is redesigning the window break as a
-    // micro-cutscene with staged pre-fractured glass; its Glass class comes with that work. Until then
-    // the hold stays 1.0 s with the sound beats at 0.35 / 0.70 / 1.0 (FrontRoomsMapWorld.Hold).
+    // ---- 3.5 Hold to break glass: "Brace, strike, flinch" (replaces Glass). The visual chat's glass destruction
+    // plan (research/glass/destruction/10_glass_destruction_plan.md §3.5), decided by Red on 2026-10-03.
+    // Offsets are additive to BaseEye and are TARGETS: fwd/drop in metres; yaw + = away from the striking (right) side,
+    // roll + = toward the striking shoulder, pitch + = down. Hold progress drives t up to Shatter; real time after.
+    // Gameplay rays read BaseEye only, never the shot camera.
+    public static class GlassBreak
+    {
+        public const float HoldSeconds = 1.0f, Crack1 = .35f, Crack2 = .70f, Shatter = 1.0f; // sound chat's beats, unchanged
+        public const int   CrackRevealFrames = 1;                // cracks pop on the beat frame (replaces CrackReveal .06 s)
+        public const bool  ImpactFromAim = true;                 // fracture centred on the base-eye hit, chosen at E-down
+        public const float ImpactMinFromFrame = .2f;             // metres from the stop line
+        public const float Reach = 1.2f;                         // pane prompt range (the shared 2.4 m stays for the rest)
+        public const float StandDistance = .55f, StepInMaxForward = .65f, StepInMaxLateral = .25f, StepInSeconds = .20f;
+        public const float PoseIn = .25f, PoseFovDeg = -5f, PoseFov = .40f, LookCone = 5f, LookAtMaxYaw = 6f, LookAtMaxPitch = 8f;
+        public const float BraceFwd = .03f, BraceDrop = .06f, BraceDropAfterCrack2 = .08f, BraceYaw = 6f, BraceRoll = 2f;
+        public static readonly float[] WindupStart = { .20f, .49f, .84f }, StrikeStart = { .29f, .64f, .94f };
+        public static readonly float[] WindupFwd = { 0f, -.01f, -.02f }, WindupYaw = { 8f, 9f, 10f },
+                                       WindupRoll = { 3f, 3.5f, 4f }, WindupPitch = { -1f, -1.5f, -2f };
+        public static readonly float[] StrikeFwd = { .08f, .10f, .12f }, StrikeYaw = { 3f, 4f, 3f }, StrikeRoll = { 1f, 1f, .5f };
+        public static readonly float[] Recoil = { .025f, .03f, 0f }, ShakeDeg = { .5f, .7f, 1.5f }, ShakeDecay = { .15f, .18f, .30f };
+        public static readonly float[] ObjectStop = { .033f, .040f, .050f }; // glass only; the camera never stops
+        public const float RecoilOmega = 40f, ShakeNoiseHz = 16f;
+        public const float FollowThroughFwd = .16f, FollowThrough = .05f, ShatterFovPunchDeg = -3f, ShatterFovPunch = .05f;
+        public const float FlinchStart = 1.05f, FlinchEnd = 1.17f, FlinchFwd = .06f, FlinchDrop = .08f, FlinchYaw = 12f, FlinchRoll = 1f, FlinchPitch = 5f;
+        public const float LookEnd = 1.40f, LookDrop = .04f, LookPitch = 6f, ReleaseEnd = 1.65f;
+        public const float HardLockEnd = 1.10f, MoveSoftLockEnd = 1.30f, LookSoftLockEnd = 1.40f, LookBlendBack = .15f, SoftBreakLookDeg = 3f;
+        public const float CancelBlend = .20f, ChaseSkipBlend = .12f, ChaseDemoteScale = .5f, ClimbHandOff = .10f, CancelRelayDistance = 6f;
+        public const float Vignette = .08f, CaPulsePeak = .16f, CaPulse = .25f;                 // CA off with Reduce flashing
+        public const float ShardSlowMoScale = .6f, ShardSlowMo = .15f, ShardSlowMoRampEnd = .45f; // A/B switch, default OFF
+        public const float TapProgress = .35f, TapCooldown = .3f;                                 // tap mode: one tap = one strike
+        public const float ShardLandMin = .35f, ShardLandMax = .60f, SettleToStatic = 1.5f;       // unchanged from Glass
+
+        // Design 1 (the audit's first proposal), what a chase or the Relay's sight demotes the shot to, at ChaseDemoteScale:
+        // a lean toward the pane, a small FOV push, a jab and a shake on each strike.
+        public const float DemoteLeanFwd = .05f, DemoteFovDeg = -3f, DemoteJabFwd = .04f, DemoteJab = .12f;
+        public static readonly float[] DemoteShakeDeg = { .4f, .6f, 1.5f }, DemoteShakeDecay = { .12f, .12f, .25f };
+        // The strike's impulse on the pieces at the shatter (m/s along the base-eye forward at E-down; the plan's 2-4).
+        public const float ShatterImpulse = 3f;
+
+        /// <summary>
+        /// The stage a hold's progress has reached: 0 intact, 1 at Crack1, 2 at Crack2, 3 at the shatter. A
+        /// hair of tolerance, because a tap's credit is spent frame by frame and its float sum can end a
+        /// rounding step short of the beat it was banked to reach. The map and the shot both read it.
+        /// </summary>
+        public static int StageAt(float progress) =>
+            progress + 1e-4f >= Shatter ? 3 : progress + 1e-4f >= Crack2 ? 2 : progress + 1e-4f >= Crack1 ? 1 : 0;
+    }
 
     // ---- 3.6 Climb through the broken window (move locked, as today)
     public static class Climb

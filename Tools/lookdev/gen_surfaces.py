@@ -1,6 +1,7 @@
 """FrontRooms surface library v2: Level 0, Level 4 (Office), Level ! (Run), shared.
 
-Run: python gen_surfaces.py <outdir> <cc0 chevron png> [names...]
+Run: python gen_surfaces.py <outdir> <cc0 chevron png> [names...]   (numpy + Pillow only)
+  no names = every texture a material uses (ALL); test-only targets (EXTRA) run when named.
 Repeats (world metres) divide 256 so the stream's floating-origin rebase never
 shifts a pattern: wallpaper 256/373, carpet 1, ceiling/office/VCT 256/210, macro 8.
 """
@@ -33,7 +34,35 @@ def wrap_lines(dr, N, M, pts, width, fill=255):
 
 
 # ======================================================== Level 0 / Lobby / Shift / Exit
-def wallpaper(name="Wallpaper_Chevron", ground="#D2C27C", mid="#AC9A52", deep="#766A34", cream="#E3D594", keep_hue=.16):
+# The wallpaper is built from two independent layers
+# (Documentation/research/wallpaper_motion/10_synthesis.md §2-3):
+#   PRINT  the motion layer: R = continuous ink density, G = cream lift, linear,
+#          no paper and no light in it. Colour comes from the material palette
+#          (_InkGround/_InkMid/_InkDeep/_InkCream), never from the frame.
+#   PAPER  the static layer: fibre, mottling, tobacco blots, foxing and the roll
+#          seam as a per-texel affine modulation of the print colour, plus the
+#          paper-only normal and mask (no ink terms, with a linen emboss).
+# FrontRooms/Surface (_FR_PRINT) recombines them in linear light:
+#   albedo = print * alpha + tobacco * beta + gamma
+# wallpaper_fields() computes every term once. The legacy wallpaper() composes
+# them exactly as before (bit-identical Wallpaper_Chevron_*); it is kept for
+# the P0 T1 parity gate. wallpaper_print() / wallpaper_paper() write the split.
+# KEEP_HUE RULE: the legacy keep_hue chroma has the chevron's own shape (pink
+# stripes, slate bands). It goes into neither layer (in the paper it would
+# leave a chevron-shaped colour ghost once the print moves; print B is reserved
+# for the phosphor ink and A is kept free), so the split reproduces
+# wallpaper(keep_hue=0) and drops the source hue on purpose.
+LOBBY_PALETTE = dict(ground="#D2C27C", mid="#AC9A52", deep="#766A34", cream="#E3D594", keep_hue=.16)
+COLD_PALETTE = dict(ground="#AFC0B6", mid="#87998F", deep="#56655E", cream="#C5D3C9", keep_hue=.10)
+TOBACCO = "#7A5B2A"
+_FIELDS = None
+
+
+def wallpaper_fields():
+    """Every term of the wallpaper at 2048 x 3072 (one 0.75 x 1.125 m roll repeat), float32, sRGB-space values."""
+    global _FIELDS
+    if _FIELDS is not None:
+        return _FIELDS
     src = np.asarray(Image.open(REF).convert("RGB")).astype(np.float32) / 255
     src = src[:-1, :-1]  # the CC0 file repeats its first row/column at the far edge
     W, H = 2048, 3072
@@ -41,40 +70,443 @@ def wallpaper(name="Wallpaper_Chevron", ground="#D2C27C", mid="#AC9A52", deep="#
     pad = np.concatenate([pad, pad[:8]], 0)
     big = resize(pad, int(W * pad.shape[1] / src.shape[1]), int(H * pad.shape[0] / src.shape[0]))[:H, :W]
     lum = big @ np.array([.2126, .7152, .0722], np.float32)
-    ink = np.clip((0.92 - lum) / 0.35, 0, 1)
+    f = dict(W=W, H=H, big=big, lum=lum)
+    # print: continuous density (0 = ground coat, 1 = deepest ink) and cream lift
+    f["ink"] = np.clip((0.92 - lum) / 0.35, 0, 1)
+    f["cr"] = np.clip((lum - .90) / .06, 0, 1)
+    f["chroma"] = big - lum[..., None]          # source hue residual (pink vs grey inks), x keep_hue
+    # paper
+    f["fib"] = band(H, W, 180, 900, 11)
+    f["mot"] = spectral(H, W, 1.6, 12)
+    f["blot"] = band(H, W, 3, 14, 13)
+    f["tob"] = np.clip((f["blot"] - .64) / .25, 0, 1) * .08
+    fox = (np.random.default_rng(5).random((H, W)) > .99993).astype(np.float32)
+    f["fox"] = np.clip(blur(fox, 1.8) * 30, 0, 1)
+    x = np.arange(W)[None, :]
+    dd = np.minimum(x, W - x).astype(np.float32)
+    f["dd"] = dd
+    f["seam_shadow"] = np.exp(-(dd / 1.6) ** 2) * .20
+    f["seam_lift"] = np.exp(-((dd - 3.5) / 1.6) ** 2) * .04
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    weave = np.sin(xx * 2 * np.pi / (W / 640)) * np.sin(yy * 2 * np.pi / (H / 960))
+    f["weave"] = weave * (0.6 + 0.4 * band(H, W, 40, 200, 14))
+    _FIELDS = f
+    return f
+
+
+def wallpaper_legacy_col(ground, mid, deep, cream, keep_hue, f=None):
+    """Today's albedo (sRGB values, unclipped), composed exactly as the pre-split wallpaper()."""
+    f = f or wallpaper_fields()
+    big, lum, ink = f["big"], f["lum"], f["ink"]
     g, m, d = hexc(ground), hexc(mid), hexc(deep)
     t = ink[..., None]
     duo = np.where(t < .5, g + (m - g) * (t / .5), m + (d - m) * ((t - .5) / .5))
     col = duo + (big - lum[..., None]) * keep_hue
-    cr = np.clip((lum - .90) / .06, 0, 1)[..., None]
+    cr = f["cr"][..., None]
     col = col + (hexc(cream) - col) * cr * .55
-    fib = band(H, W, 180, 900, 11)
-    mot = spectral(H, W, 1.6, 12)
-    blot = band(H, W, 3, 14, 13)
+    mot, fib = f["mot"], f["fib"]
     col *= (0.97 + 0.06 * mot[..., None]) * (0.988 + 0.024 * fib[..., None])
-    tob = np.clip((blot - .64) / .25, 0, 1)[..., None] * .08
-    col = col * (1 - tob) + hexc("#7A5B2A") * tob
-    fox = (np.random.default_rng(5).random((H, W)) > .99993).astype(np.float32)
-    fox = np.clip(blur(fox, 1.8) * 30, 0, 1)
-    col *= (1 - .09 * fox[..., None])
-    x = np.arange(W)[None, :]
-    dd = np.minimum(x, W - x).astype(np.float32)
-    seam_shadow = np.exp(-(dd / 1.6) ** 2) * .20
-    seam_lift = np.exp(-((dd - 3.5) / 1.6) ** 2) * .04
-    col = col * (1 - seam_shadow[..., None]) + seam_lift[..., None]
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    weave = np.sin(xx * 2 * np.pi / (W / 640)) * np.sin(yy * 2 * np.pi / (H / 960))
-    weave = weave * (0.6 + 0.4 * band(H, W, 40, 200, 14))
-    height = .18 * weave + .9 * blur(ink, 1.2) + .40 * fib + .6 * np.exp(-((dd - 2) / 2.2) ** 2)
+    tob = f["tob"][..., None]
+    col = col * (1 - tob) + hexc(TOBACCO) * tob
+    col *= (1 - .09 * f["fox"][..., None])
+    col = col * (1 - f["seam_shadow"][..., None]) + f["seam_lift"][..., None]
+    return col
+
+
+def wallpaper(name="Wallpaper_Chevron", ground="#D2C27C", mid="#AC9A52", deep="#766A34", cream="#E3D594", keep_hue=.16):
+    """Legacy one-layer wallpaper (ink baked into albedo, normal and mask). Kept for the P0 T1 parity gate."""
+    f = wallpaper_fields()
+    col = wallpaper_legacy_col(ground, mid, deep, cream, keep_hue, f)
+    ink, fib, mot, dd = f["ink"], f["fib"], f["mot"], f["dd"]
+    height = .18 * f["weave"] + .9 * blur(ink, 1.2) + .40 * fib + .6 * np.exp(-((dd - 2) / 2.2) ** 2)
     n = normal_from_height(height, 1.0)
     smooth = .20 + .07 * blur(ink, 1.0) - .04 * mot + .03 * (1 - fib)
-    cav = 1 - .35 * seam_shadow / .20 - .10 * ink
+    cav = 1 - .35 * f["seam_shadow"] / .20 - .10 * ink
     write(name, col, n, mask(smooth, cav))
 
 
 def wallpaper_cold():
     # Exit / cold threshold: the same paper under a different print run.
-    wallpaper("Wallpaper_Chevron_Cold", ground="#AFC0B6", mid="#87998F", deep="#56655E", cream="#C5D3C9", keep_hue=.10)
+    wallpaper("Wallpaper_Chevron_Cold", **COLD_PALETTE)
+
+
+# ---------------------------------------------------------------- the split (P0)
+CREAM_MIX = .55            # shader: print = lerp(InkRamp(R), _InkCream, G * 0.55)
+# Paper texel decode, mirrored in FrontRoomsSurface.shader (FR_PAPER_SCALE / FR_PAPER_BIAS):
+#   (alpha, beta, gamma) = texel.rgb * PAPER_SCALE + PAPER_BIAS
+PAPER_SCALE = np.array([.70, .14, .02], np.float32)
+PAPER_BIAS = np.array([.46, -.001, -.004], np.float32)
+# One print serves every Level 0 palette; the fit weights Lobby (Lobby + Shift) over Exit.
+PRINT_FIT = (("lobby", LOBBY_PALETTE, 2.0), ("cold", COLD_PALETTE, 1.0))
+# Optional frame 0 from the print tools (Tools/print/patterns/out/<chosen>/K00.png, RGBA:
+# R raw density, G raw cream, B phosphor, A unused). Set it to replace the CC0-derived frame.
+# Both sources go through the same print_encode(), so nothing else changes (the paper does
+# not depend on the print).
+PRINT_FILE = os.environ.get("FR_PRINT_K00")
+# PRINT ENCODING (binding, shared with the print tools): a print texel's R and G are the
+# parameters of the SHADER's ramp, which runs in LINEAR light:
+#   colour = lerp(InkRamp_linear(R), _InkCream, G * 0.55)
+# Art made with today's meaning ("raw": the duotone and the cream lerp in sRGB values, as
+# wallpaper() and print_tool.py's preview shade them) must be converted with print_encode()
+# before it becomes a texel: _PrintTex here, every _FR_Print slice in the print tools. The
+# table is exported by the `print_encode_lut` target (print_encode_lut.json next to this
+# file). It keeps 0 / 0.5 / 1 density (ground / mid / deep) and zero cream fixed and bends
+# the values in between by up to ~0.03 density and ~0.1 cream.
+# PRINT MIPS (binding too): never plain box mips. Cream is box-filtered, density is averaged
+# with the weight (1 - 0.55 * cream):  d' = box((1 - .55c) d) / box(1 - .55c),  c' = box(c).
+# Unity applies it on import to every *_P texture (FrontRoomsPrintMips in
+# Assets/Editor/Rendering/FrontRoomsRenderSetup.cs); _FR_Print slices must be built with
+# FrontRoomsPrintMips.ApplySlice (or this rule), or the static frame 0 and the live slices
+# filter differently. See print_mips() below.
+
+
+def _ramp(t, g, m, d):
+    t = np.asarray(t, np.float32)[..., None]
+    return np.where(t < .5, g + (m - g) * (t * 2), m + (d - m) * (t * 2 - 1))
+
+
+def palette_srgb(pal):
+    return [hexc(pal[k]) for k in ("ground", "mid", "deep", "cream")]
+
+
+def palette_lin(pal):
+    """What the shader receives: Unity linearises material Color properties in Linear colour space."""
+    return [srgb_to_lin(c).astype(np.float32) for c in palette_srgb(pal)]
+
+
+def raw_print_from_lum(lum):
+    """Today's (raw) density and cream lift from the source luminance (as wallpaper() and print_tool.py)."""
+    return np.clip((0.92 - lum) / 0.35, 0, 1), np.clip((lum - .90) / .06, 0, 1)
+
+
+def print_srgb_raw(d, c, pal):
+    """Raw print colour (sRGB values): the duotone and the cream lerp in sRGB values, as today."""
+    g, m, dp, cr = palette_srgb(pal)
+    duo = _ramp(d, g, m, dp)
+    return duo + (cr - duo) * np.asarray(c, np.float32)[..., None] * CREAM_MIX
+
+
+def print_srgb_from_lum(lum, pal):
+    """Today's print colour without keep_hue (sRGB values). It depends on the source luminance only."""
+    return print_srgb_raw(*raw_print_from_lum(lum), pal)
+
+
+def print_lin(d, c, pal):
+    """The shader's print colour in linear light: lerp(InkRamp(d), _InkCream, c * 0.55)."""
+    g, m, dp, cr = palette_lin(pal)
+    r = _ramp(d, g, m, dp)
+    return r + (cr - r) * (np.asarray(c, np.float32)[..., None] * CREAM_MIX)
+
+
+_PRINT_ENC = None
+
+
+def _fit_1d(x, resid, iters=40):
+    """Gauss-Newton on one clipped 0..1 unknown per row; resid(x) -> (n, k) residuals."""
+    for _ in range(iters):
+        r = resid(x)
+        e = np.where(x < .5, 1e-3, -1e-3).astype(np.float32)
+        J = (resid(x + e) - r) / e[:, None]
+        x = np.clip(x - (J * r).sum(-1) / ((J * J).sum(-1) + 1e-6), 0, 1).astype(np.float32)
+    return x
+
+
+def print_encode_lut(nd=257, nc=65):
+    """(raw density grid, raw cream grid, density table, cream table): the print encoding.
+
+    Fitted by Gauss-Newton, jointly for the PRINT_FIT palettes with error in 8-bit sRGB units,
+    so the shader's linear-light colour print_lin(d, c) lands on the raw colour
+    print_srgb_raw(raw d, raw c), in two well-posed 1-D steps (a joint 2-D fit is ill-posed:
+    the cream and the ground are nearly the same hue, so it trades cream for lighter density
+    and G would lose its meaning):
+      density d = D(raw d), fitted with no cream; it does not depend on cream;
+      cream   c = C(raw d, raw c), fitted with d fixed; 0 wherever raw cream is 0.
+    Both are monotone. The grids include 0, 0.5 and 1 exactly (the ramp's stops and kink)."""
+    global _PRINT_ENC
+    if _PRINT_ENC is not None:
+        return _PRINT_ENC
+    gd = np.linspace(0, 1, nd).astype(np.float32)
+    gc = np.linspace(0, 1, nc).astype(np.float32)
+    zero = np.zeros_like(gd)
+    t0 = [(print_srgb_raw(gd, zero, p) * 255, np.float32(np.sqrt(w)), p) for _, p, w in PRINT_FIT]
+    d = _fit_1d(gd.copy(), lambda x: np.concatenate([w * (lin_to_srgb(print_lin(x, zero, p)) * 255 - t) for t, w, p in t0], -1))
+    D0, C0 = (a.ravel() for a in np.meshgrid(gd, gc, indexing="ij"))
+    dd = np.repeat(d, nc)
+    tc = [(print_srgb_raw(D0, C0, p) * 255, np.float32(np.sqrt(w)), p) for _, p, w in PRINT_FIT]
+    c = _fit_1d(C0.copy(), lambda x: np.concatenate([w * (lin_to_srgb(print_lin(dd, x, p)) * 255 - t) for t, w, p in tc], -1))
+    c = np.where(C0 > 0, c, 0).astype(np.float32)
+    _PRINT_ENC = (gd, gc, np.repeat(d[:, None], nc, 1), c.reshape(nd, nc))
+    return _PRINT_ENC
+
+
+def print_encode(d_raw, c_raw):
+    """Raw (density, cream) -> shader texel (density, cream): bilinear in the print_encode_lut table."""
+    gd, gc, td, tc = print_encode_lut()
+    d_raw = np.clip(np.asarray(d_raw, np.float64), 0, 1); c_raw = np.clip(np.asarray(c_raw, np.float64), 0, 1)
+    x = d_raw * (len(gd) - 1); y = c_raw * (len(gc) - 1)
+    i = np.minimum(np.floor(x).astype(int), len(gd) - 2); j = np.minimum(np.floor(y).astype(int), len(gc) - 2)
+    u = x - i; v = y - j
+    out = []
+    for t in (td, tc):
+        out.append(((t[i, j] * (1 - u) + t[i + 1, j] * u) * (1 - v) + (t[i, j + 1] * (1 - u) + t[i + 1, j + 1] * u) * v).astype(np.float32))
+    return out[0], out[1]
+
+
+def print_encode_lut_json(path=None):
+    """Write the encoding table for the print tools (they apply it to every _FR_Print slice)."""
+    import json
+    gd, gc, td, tc = print_encode_lut()
+    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "print_encode_lut.json")
+    doc = {"what": "FrontRooms wallpaper print encoding (gen_surfaces.py print_encode). Input: RAW density and cream "
+                   "(today's meaning: the duotone and the cream lerp in sRGB values). Output: the texel R (density) and "
+                   "G (cream) for _PrintTex and every _FR_Print slice; the shader ramps in linear light.",
+           "lookup": "bilinear: x = raw_density * (len(density_raw) - 1), y = raw_cream * (len(cream_raw) - 1); "
+                     "table[i][j] is indexed [density_raw][cream_raw]. B (phosphor) and A pass through unchanged.",
+           "order": "encode at the frame's own resolution, then resample (as the GPU filters encoded texels)",
+           "mips": "not plain box: c' = box(c), d' = box((1 - 0.55 c) d) / box(1 - 0.55 c) on the ENCODED values "
+                   "(FrontRoomsPrintMips in Assets/Editor/Rendering/FrontRoomsRenderSetup.cs; gen_surfaces.print_mips)",
+           "palettes_fitted": {k: {n: p[n] for n in ("ground", "mid", "deep", "cream")} for k, p, _ in PRINT_FIT},
+           "palette_weights": {k: w for k, _, w in PRINT_FIT},
+           "density_raw": [round(float(v), 6) for v in gd], "cream_raw": [round(float(v), 6) for v in gc],
+           "density": [[round(float(v), 5) for v in row] for row in td],
+           "cream": [[round(float(v), 5) for v in row] for row in tc]}
+    with open(path, "w") as fh:
+        json.dump(doc, fh, separators=(",", ":"))
+    print("wrote", path, flush=True)
+
+
+def _periodic_resize(a, w, h):
+    """Resize a seamless tile without breaking its wrap: resample a 3 x 3 tiling, keep the centre
+    (the same as print_tool.py resample_periodic)."""
+    if a.shape[1] == w and a.shape[0] == h:
+        return a.astype(np.float32)
+    big = np.tile(a.astype(np.float32), (3, 3))
+    r = np.asarray(Image.fromarray(big, "F").resize((w * 3, h * 3), Image.BICUBIC), np.float32)
+    return np.clip(r[h:2 * h, w:2 * w], 0, 1)
+
+
+def print_maps(f=None):
+    """Frame 0 at 2048 x 3072: (density, cream, phosphor) in 0..1, linear, ENCODED (print_encode).
+    The CC0 chevron and a FR_PRINT_K00 file take the same path: raw values -> print_encode."""
+    f = f or wallpaper_fields()
+    if PRINT_FILE:
+        k = np.asarray(Image.open(PRINT_FILE).convert("RGBA")).astype(np.float32) / 255
+        d, c = print_encode(k[..., 0], k[..., 1])                   # at the file's own resolution
+        return tuple(_periodic_resize(x, f["W"], f["H"]) for x in (d, c, k[..., 2]))
+    d, c = print_encode(*raw_print_from_lum(f["lum"]))
+    return d, c, np.zeros_like(d)
+
+
+def print_mips(d, c, levels=None):
+    """Reference implementation of the print mip rule (Unity: FrontRoomsPrintMips): list of (d, c)
+    per level from mip 0, 2 x 2 box steps (even sizes). Cream-weighted density keeps the composed
+    colour of every mip texel equal to the box average of the mip-0 colours, for any palette,
+    wherever the footprint stays on one side of the ramp's mid stop."""
+    down = lambda a: (a[0::2, 0::2] + a[1::2, 0::2] + a[0::2, 1::2] + a[1::2, 1::2]) / 4
+    wgt = 1 - CREAM_MIX * c
+    A, B, C = wgt.astype(np.float64), (wgt * d).astype(np.float64), c.astype(np.float64)
+    out = [(d, c)]
+    while (levels is None or len(out) < levels) and A.shape[0] % 2 == 0 and A.shape[1] % 2 == 0:
+        A, B, C = down(A), down(B), down(C)
+        out.append(((B / A).astype(np.float32), C.astype(np.float32)))
+    return out
+
+
+def paper_terms(f=None):
+    """Today's paper terms as one sRGB-space affine map of the print colour P (sRGB values):
+         col = P * a + TOBACCO * b + lift
+    (exactly the legacy composition with keep_hue = 0: mottle x fibre, tobacco blot lerp,
+    foxing, seam shadow and seam lift). Pattern-free: nothing here depends on the print."""
+    f = f or wallpaper_fields()
+    M = (0.97 + 0.06 * f["mot"]) * (0.988 + 0.024 * f["fib"])
+    FS = (1 - .09 * f["fox"]) * (1 - f["seam_shadow"])
+    a = M * (1 - f["tob"]) * FS
+    b = f["tob"] * FS
+    lift = np.broadcast_to(f["seam_lift"], a.shape)
+    return a.astype(np.float32), b.astype(np.float32), lift.astype(np.float32)
+
+
+def _paper_print_samples():
+    """Print colours the paper must work under: every PRINT_FIT palette, density 0..1, cream 0..1."""
+    dd = np.concatenate([np.linspace(0, 1, 41), np.zeros(8)]).astype(np.float32)
+    cc = np.concatenate([np.zeros(41), np.linspace(.125, 1, 8)]).astype(np.float32)
+    P = np.concatenate([print_lin(dd, cc, p) for _, p, _ in PRINT_FIT], 0)
+    w = np.concatenate([np.full(len(dd), wt, np.float32) for _, _, wt in PRINT_FIT])
+    return P.astype(np.float64), w.astype(np.float64)
+
+
+_PAPER_LUT = None
+
+
+def paper_lut(na=257, nb=19, nl=15):
+    """3-D table (a, b, lift) -> (alpha, beta, gamma) such that, in linear light,
+         print * alpha + tobacco * beta + gamma  ~=  lin(srgb(print) * a + TOBACCO * b + lift)
+    for every print colour of every PRINT_FIT palette (weighted least squares in 8-bit sRGB units)."""
+    global _PAPER_LUT
+    if _PAPER_LUT is not None:
+        return _PAPER_LUT
+    a, b, lift = paper_terms()
+    ga = np.linspace(float(a.min()) - 1e-3, float(a.max()) + 1e-3, na)
+    gb = np.linspace(0, float(b.max()) + 1e-4, nb)
+    gl = np.linspace(0, float(lift.max()) + 1e-4, nl)
+    Pl, pw = _paper_print_samples()                                  # (n, 3) linear prints
+    Ps = lin_to_srgb(Pl)
+    T = hexc(TOBACCO).astype(np.float64); Tl = srgb_to_lin(T)
+    A, B, Lf = np.meshgrid(ga, gb, gl, indexing="ij")
+    cells = np.stack([A.ravel(), B.ravel(), Lf.ravel()], -1)        # (C, 3)
+    X = np.stack([Pl.ravel(), np.tile(Tl, len(Pl)), np.ones(Pl.size)], -1)    # (n*3, 3)
+    tgt = np.clip(Ps.ravel()[None] * cells[:, :1] + np.tile(T, len(Pl))[None] * cells[:, 1:2] + cells[:, 2:3], 0, 1)
+    ylin = srgb_to_lin(tgt)                                          # (C, n*3)
+    slope = 1.055 / 2.4 * np.maximum(ylin, 1e-4) ** (1 / 2.4 - 1) * 255   # d sRGB8 / d linear
+    W = (slope ** 2) * np.repeat(pw, 3)[None]
+    AtA = np.einsum("cn,ni,nj->cij", W, X, X) + np.eye(3)[None] * 1e-9
+    Aty = np.einsum("cn,ni,cn->ci", W, X, ylin)
+    theta = np.linalg.solve(AtA, Aty[..., None])[..., 0]
+    _PAPER_LUT = (ga, gb, gl, theta.reshape(na, nb, nl, 3).astype(np.float32))
+    return _PAPER_LUT
+
+
+def _grid_index(g, x):
+    """Cell index and weight of x on the uniform grid g (x inside the grid)."""
+    t = (np.asarray(x, np.float64) - g[0]) / (g[1] - g[0])
+    i = np.clip(np.floor(t).astype(int), 0, len(g) - 2)
+    return i, t - i
+
+
+def paper_affine(f=None):
+    """Per-texel (alpha, beta, gamma), float32 (H, W, 3): trilinear in the paper_lut table
+    (numpy only; the (a, b, lift) grids are uniform)."""
+    ga, gb, gl, th = paper_lut()
+    a, b, lift = paper_terms(f)
+    th = th.astype(np.float64)
+    out = np.empty(a.shape + (3,), np.float32)
+    for r0 in range(0, a.shape[0], 512):
+        sl = slice(r0, r0 + 512)
+        (i, u), (j, v), (k, w) = _grid_index(ga, a[sl]), _grid_index(gb, b[sl]), _grid_index(gl, lift[sl])
+        u, v, w = u[..., None], v[..., None], w[..., None]
+        acc = 0
+        for di, wu in ((0, 1 - u), (1, u)):
+            for dj, wv in ((0, 1 - v), (1, v)):
+                for dk, ww in ((0, 1 - w), (1, w)):
+                    acc = acc + th[i + di, j + dj, k + dk] * (wu * wv * ww)
+        out[sl] = acc
+    return out
+
+
+def paper_encode(theta):
+    """(alpha, beta, gamma) -> texel 0..1 (the shader decodes texel * PAPER_SCALE + PAPER_BIAS)."""
+    t = (theta - PAPER_BIAS) / PAPER_SCALE
+    lo, hi = float(t.min()), float(t.max())
+    if lo < -.5 / 255 or hi > 1 + .5 / 255:
+        print(f"WARNING paper encoding clips: texel range {lo:.4f}..{hi:.4f}; widen PAPER_SCALE/PAPER_BIAS", flush=True)
+    return np.clip(t, 0, 1)
+
+
+def paper_decode(texel):
+    return texel * PAPER_SCALE + PAPER_BIAS
+
+
+def _wrap_rows(a, n):
+    """Periodic linear resample of axis 0 to n rows (keeps the tile seamless)."""
+    m = a.shape[0]
+    y = np.arange(n, dtype=np.float32) * m / n
+    i0 = np.floor(y).astype(int); t = (y - i0)[:, None]
+    return (a[i0 % m] * (1 - t) + a[(i0 + 1) % m] * t).astype(np.float32)
+
+
+TILE_M = (0.75, 1.125)     # one wallpaper repeat (x, y) in metres: RenderSetup Roll x 1.5 Roll
+
+
+def band_metric(H, W, lo, hi, seed):
+    """Periodic band-limited noise, ISOTROPIC in metres (gen_common.band counts cycles per tile
+    axis, so on the 0.75 x 1.125 m tile it is 1.5x stretched in y). lo..hi in cycles per metre,
+    log-gaussian like band() and hard-limited to [lo, hi]; the FFT bins are integer cycles per
+    tile, so the tile stays seamless."""
+    r = np.random.default_rng(seed)
+    F = np.fft.fft2(r.standard_normal((H, W)))
+    fy = np.fft.fftfreq(H)[:, None] * H / TILE_M[1]
+    fx = np.fft.fftfreq(W)[None, :] * W / TILE_M[0]
+    f = np.sqrt(fx * fx + fy * fy)
+    m = np.exp(-((np.log(np.maximum(f, 1e-3)) - np.log((lo * hi) ** .5)) ** 2) / (2 * (np.log(hi / lo) / 2.5) ** 2))
+    m *= (f >= lo) & (f <= hi)
+    n = np.real(np.fft.ifft2(F * m))
+    n -= n.min(); n /= max(1e-8, n.max())
+    return n.astype(np.float32)
+
+
+def linen_emboss(H, W):
+    """Period-plausible embossed linen (vinyl-coated wallcoverings of the 1970s-90s), 0..1,
+    every feature inside the 2-6 mm band of the research spec (§2):
+    plain weave: warp threads 8 px = 2.93 mm apart, weft 9.6 px = 3.52 mm; each thread has its
+    own slubs and goes over/under at alternate crossings. `coarse` = an isotropic 2-6 mm pebble
+    (167-500 cycles per metre) plus a sparse ~6 mm stipple (dots ~2.7 mm across). Integer
+    cycles per tile, so the tile stays seamless. Returns (linen, coarse)."""
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    nx, ny = W // 8, 320                                  # threads per tile (both even)
+    u = xx * nx / W; v = yy * ny / H
+    sx = _wrap_rows(band(64, nx, 3, 12, 142), H)          # (H, nx): slubs along each warp thread
+    sy = _wrap_rows(band(64, ny, 3, 12, 143), W).T        # (ny, W): slubs along each weft thread
+    ix = np.rint(u).astype(int) % nx; iy = np.rint(v).astype(int) % ny
+    wx = sx[np.arange(H)[:, None], ix]
+    wy = sy[iy, np.arange(W)[None, :]]
+    warp = (.5 + .5 * np.cos(2 * np.pi * u)) * (.75 + .5 * wx)
+    weft = (.5 + .5 * np.cos(2 * np.pi * v)) * (.75 + .5 * wy)
+    s = np.cos(np.pi * u) * np.cos(np.pi * v)            # sign (-1)^(i+j) at crossing (i, j)
+    over = .5 + .5 * np.sign(s) * np.sqrt(np.abs(s))
+    h = blur(np.maximum(warp * (.55 + .45 * over), weft * (.55 + .45 * (1 - over))), .6)
+    r = np.random.default_rng(141)
+    stip = blur((r.random((H, W)) > .9965).astype(np.float32), 3.2)
+    stip = stip / max(1e-6, float(stip.max()))
+    pebble = band_metric(H, W, 1 / .006, 1 / .002, 144)  # 6-2 mm, isotropic
+    coarse = .6 * pebble + .4 * stip
+    coarse = (coarse - coarse.min()) / max(1e-6, float(coarse.max() - coarse.min()))
+    return h.astype(np.float32), coarse.astype(np.float32)
+
+
+# Height weights (art call, Red). RMS normal tilt at mip 0/1/2/3 (strength 1):
+#   legacy with ink 6.1/3.0/1.8/1.3; ink-free, no emboss 5.7/2.2/0.7/0.3;
+#   this default (linen .25, coarse .6): 6.4/3.5/2.1/0.6.
+# A 2-6 mm emboss cannot keep today's 1.3 deg at mip 3 (~2 m head-on at 1080p): coarse 1.7
+# would, at 7.9/5.5/3.7/1.3 (rougher than today up close). Today's mip-3 relief is the
+# 37.5 mm chevron itself.
+EMBOSS_LINEN, EMBOSS_COARSE = .25, .60
+
+
+def paper_emboss_height(linen, coarse):
+    return EMBOSS_LINEN * linen + EMBOSS_COARSE * coarse
+
+
+def wallpaper_paper(name="Wallpaper_Paper"):
+    """The static paper: _M affine modulation (linear RGB: alpha, beta, gamma), _N paper-only
+    normal (no ink relief; weave, fibre, seam and the linen emboss), _S paper-only mask."""
+    f = wallpaper_fields()
+    theta = paper_affine(f)
+    save_rgb(f"{OUT}/{name}_M.png", paper_encode(theta))
+    fib, mot, dd = f["fib"], f["mot"], f["dd"]
+    linen, coarse = linen_emboss(f["H"], f["W"])
+    emb = EMBOSS_LINEN * linen + EMBOSS_COARSE * coarse
+    emb = (emb - emb.min()) / max(1e-6, float(emb.max() - emb.min()))
+    ink_mean_blur, ink_mean = float(blur(f["ink"], 1.0).mean()), float(f["ink"].mean())
+    height = .18 * f["weave"] + .40 * fib + .6 * np.exp(-((dd - 2) / 2.2) ** 2) + paper_emboss_height(linen, coarse)
+    n = normal_from_height(height, 1.0)
+    smooth = .20 + .07 * ink_mean_blur - .04 * mot + .03 * (1 - fib) + .03 * (emb - float(emb.mean()))
+    cav = 1 - .35 * f["seam_shadow"] / .20 - .10 * ink_mean - .06 * ((1 - emb) - float((1 - emb).mean()))
+    save_normal(f"{OUT}/{name}_N.png", n)
+    save_rgba(f"{OUT}/{name}_S.png", mask(smooth, np.broadcast_to(cav, smooth.shape)))
+
+
+def wallpaper_print(name="Wallpaper_Print_P"):
+    """Static frame 0 (_PrintTex): linear RGB, R density, G cream, B phosphor (reserved, 0)."""
+    d, c, ph = print_maps()
+    save_rgb(f"{OUT}/{name}.png", np.stack([d, c, ph], -1))
+
+
+def wallpaper_t1_reference():
+    """T1a references: the legacy albedo with keep_hue = 0 (same generator, same N/S as today).
+    Test-only; not used by any shipping material."""
+    f = wallpaper_fields()
+    for name, pal in (("Wallpaper_Chevron_NoHue", LOBBY_PALETTE), ("Wallpaper_Chevron_Cold_NoHue", COLD_PALETTE)):
+        save_rgb(f"{OUT}/{name}_A.png", wallpaper_legacy_col(**{**pal, "keep_hue": 0.0}, f=f))
 
 
 def carpet():
@@ -341,11 +773,19 @@ def macro():
     save_rgba(f"{OUT}/MacroWear_M.png", np.stack([R, G, B, A], -1))
 
 
-ALL = dict(wallpaper=wallpaper, wallpaper_cold=wallpaper_cold, carpet=carpet, ceiling=ceiling, lens=lens,
+# The default run: every texture a material uses (written to <outdir>, i.e. Resources).
+ALL = dict(wallpaper_paper=wallpaper_paper, wallpaper_print=wallpaper_print,
+           carpet=carpet, ceiling=ceiling, lens=lens,
            office_carpet=office_carpet, drywall=drywall, office_ceiling=office_ceiling, louver=louver, fabric=fabric,
            vct=vct, hospital_wall=hospital_wall, exit_sign=exit_sign, veneer=veneer, metal=painted_metal, macro=macro)
+# Run only when named. The legacy one-layer wallpapers and the T1 keep_hue = 0 references feed
+# the P0 parity test (FrontRoomsPrintP0Test); no material uses them, so write them OUTSIDE
+# Resources: <outdir> = Assets/Editor/Rendering/PrintP0/Ref. print_encode_lut writes
+# print_encode_lut.json next to this file (for the print tools).
+EXTRA = dict(wallpaper=wallpaper, wallpaper_cold=wallpaper_cold, wallpaper_t1_reference=wallpaper_t1_reference,
+             print_encode_lut=print_encode_lut_json)
 
 if __name__ == "__main__":
     for name in (sys.argv[3:] or ALL.keys()):
-        ALL[name]()
+        {**ALL, **EXTRA}[name]()
         print("done", name, flush=True)

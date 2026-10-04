@@ -1,0 +1,62 @@
+# Level transitions · 20 · Variation V5 Light lead: summary
+
+Date: 2026-10-03. Full report, numbers, diff and logs: `15_var_lightlead.md`. This page is the short version.
+Built and rendered in the private clone `proj_trans_lightlead` only. Red's project only received the files listed at the end.
+
+## Images
+
+- `images/v_lightlead_vs_before.jpg`: six rows, BEFORE | LIGHT LEAD | SOFT, for the four fixed shots and two extra shots.
+- `images/v_lightlead_shot1.jpg` .. `shot4.jpg`: the four fixed shots (same harness and cameras as `shot<k>_before.jpg`).
+- `images/v_lightlead_shot5.jpg`: extra, from a lit Level 0 cell through the dead border cell to the Office open edge on X = 798.
+- `images/v_lightlead_shot6.jpg`: extra, from the Office back through the shot1 arch into the dead cell and the warm Level 0 beyond.
+- Also: `var_lightlead_shot1-4.jpg` (same files), `var_lightlead_sheet.jpg` (4 rows, before | after), `var_lightlead_close_post.jpg` and `var_lightlead_close_arch.jpg` (close frames).
+
+## What was built
+
+- **Lamp colour per theme.** Office (0.90, 0.96, 1.00) at 6.0 (+9 %); Level 0 unchanged (1.00, 0.96, 0.88) at 5.0.
+- **Cool Office lens** `Troffer_Lens_Cool`: emission (1.989, 2.121, 2.210), same luminance (2.100) and textures as `Troffer_Lens`.
+- **Border rule** for Auto lamps: Level 0 cell with an open or arch crossing into Office -> dead; Level 0 cell with only door or window crossings -> dim; Office cell with any crossing -> steady.
+- **B0.** Corner posts: no two pieces of different finish overlap; the owner's outside skin wraps the post (per skin, a refinement found in iteration 1). Grime band: each face of a height-border wall in its own height block.
+- **Optional `lightlead_soft`** (all Level 0 border cells dim) rendered as a full 4-shot set.
+
+## Change list (clone)
+
+1. `FrontRoomsMapWorld.cs`: 8 hooks marked `// TRANSITION lightlead`, +111 / -13 lines: `lampColor`, theme values and lens, `light.color`, the border rule after the tier roll, neighbour lookup, per-side blocks, per-skin corner reach, post lookup.
+2. New: `Scripts/Rendering/Transitions/FrontRoomsTransitionKit.cs` (B0.1 rule, pure), `FrontRoomsTransitionLightLead.cs` (colours and border rule, pure).
+3. New: `Resources/Surfaces/Troffer_Lens_Cool.mat` (2.1 KB).
+4. Tools only: `Editor/Transitions/FrontRoomsLightLeadTools.cs`, `FrontRoomsLightLeadPostCounts.cs`.
+5. Harness and `shots.json` unchanged. Layout frozen: all `-plan` files identical to `logs/shot<k>_plan.json`. With `-transitionsOff` the frames are byte-identical to BEFORE.
+
+## Results
+
+| Shot | Lit lamps before -> after | Level 0 border walls (luma) | Office beyond (luma, blue/red) |
+|---|---|---|---|
+| shot1 | 84 -> 81 | 114 -> 43 (-62 %) | 72 -> 70, 0.98 -> 1.19 |
+| shot2 | 82 -> 77 | 107 -> 38 (-64 %) | 87 -> 83, 0.80 -> 0.97 |
+| shot3 | 83 -> 79 | Level 0 Low room 117 -> 104 (-10 %) | Office walls 71 -> 73, 0.85 -> 1.04 |
+| shot4 | 88 -> 86 | 114 -> 70 (-39 %) at (265,201) | 107 -> 106, 0.69 -> 0.82 |
+
+- The contrast flips: the Office is now 1.6x to 2.2x brighter than the Level 0 cell in front of it (before, it was darker).
+- Office areas next to a border are 1-7 % darker in absolute terms, because the dead Level 0 lamp no longer spills into them.
+- Rule per chunk (1620 chunks): 1.08 dead, 1.52 dim, 2.49 Office steady. 2.0 % of Level 0 cells forced dead, 2.8 % dim.
+
+## Costs measured (within 46 m of each eye)
+
+- Light lead itself: 0 triangles, 0 renderers, 0 draws, 0 MB textures, one 2.1 KB material. 2-5 fewer lit lights, 0-1 fewer shadowed.
+- B0: +1.0 to +1.4 % triangles (175,766 -> 177,890 in shot1), renderers -1 to +14 (two skins on height-border walls).
+- Draw-call proxy (renderers in the frustum): -5 to +1. Batch-mode `UnityStats` reads 0, so true draw counts need a Play capture.
+
+## What the real implementation needs
+
+- **Map chat:** `lampColor` in `ThemeMaterials` and `BuildFixture`; the border rule in `BuildFixture` after the Auto roll and before the module and `SetLampMode` overrides, **and the same rule in `LampModeOf`** (not through `SetLampMode`); B0.1 and B0.2 with a per-chunk post table; tests updated. Rebase on Red's 12:38 `FrontRoomsMapWorld.cs` (lamp interface v1).
+- **Visual chat:** `Troffer_Lens_Cool` as a `SurfaceDef` row in `FrontRoomsRenderSetup`; the colour values; a check of the Office post grade; optional dim-lens look.
+- **Others:** 系统设计 (Relay Warn), wallpaper chat (ink gate), sound chat (no hum at frameless borders).
+
+## Open issues
+
+1. The Relay's lamp warning (`LampFx.Warn`) cannot show in a dead cell. Flag for 系统设计: let Warn force a blink, use soft, or keep colour only.
+2. The phosphor ink gate opens fully in dead cells and partly in dim ones, so every frameless border becomes an ink site.
+3. Darkness at every frameless border becomes a tell. Soft halves it (-32 % instead of -62 %).
+4. V5 hides the split arch jambs and flat seams; it does not fix them. Pair with V1 Frame or V3 Neck.
+5. Dim cells read weakly in stills (the 0.42 lens still blooms); check in Play.
+6. Red decides: dead, soft or colour only.

@@ -26,3 +26,12 @@ The critic and fix stages review the design files and this hand-off, not Figma.
 3. **Every constant** from `composites.py`: row top 940, label baseline 958, full form from 914 at 48 high, the 4 px rule, glyph sizes, the KEY + numeral sizing against Bayon's cap height, spacing, colours, opacities as linear values (40 / 55 / 60 / 70 / 90 % etc.), and the states (other at 40 % / 70 %, used, missing hint), with their final values.
 
 Mark the file FINAL at the top only after the fix stage. The visual chat will then ping 平面视觉.
+
+## Two more inputs before 03_figma.md is written (平面视觉's type review, 2026-10-03 17:1x). The Figma stage does these first.
+1. **Integer font sizes.** The HUD uses Unity legacy `Text`, whose fontSize is an int.
+   - In `composites.py`, round every text size to the integer the game can render: Courier Prime Bold 24.63 → **25** (cap height 14.49 vs Bayon 14.28, accepted); Plex numerals 20.45 → **20**; round any other fractional size the same way.
+   - Re-render every PNG with the integer sizes, so Figma, the PNGs and the game match. Write the integer values in 03_figma.md.
+2. **@3x for the touch track.** The iOS/Android touch layout (`Documentation/TOUCH_CONTROLS.md`, the touch-controls chat) puts the key under the zone name at (78, 72), 22 pt tall. Phones are @3x.
+   - Export every key glyph at **@3x** (66 px tall) in addition to 1x/2x, and keep the SVG masters as the vector source.
+   - Do the same for the crosshair: add `HUD_Crosshair@3x.png` at 192 × 192 with a Ø96 px anti-aliased white dot, or point to an SVG. The desktop `Assets/Resources/UI/HUD_Crosshair.png` (64 × 64, Ø32) stays unchanged.
+   - Desktop output does not change. List the @3x files in 03_figma.md.

@@ -57,7 +57,12 @@ using UnityEngine;
 ///   release; overlapping overrides take the lowest multiplier; Reduce
 ///   flashing slows the attack; LampDipped and FixtureChanged; SetLampMode
 ///   kills and promotes live and survives a rebuild, a drop and a shift;
-///   LampModeOf never generates a chunk.
+///   LampModeOf never generates a chunk;
+/// - the glass break (the visual chat's contract): an unscaled window root
+///   facing cell b with the pane under it; the impact kept 0.2 m inside the
+///   glass and fixed once cracked; each crack once, never replayed; a release
+///   drops to the stage reached; the break record survives a rebuild; the
+///   shatter removes only the pane, with WindowShattered and GlassBroken.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -118,6 +123,7 @@ public static class FrontRoomsMapInteractionTests
             RelayEntry(roots, profiles);
             Live(roots, profiles);
             Lamps(roots);
+            Glass(roots);
         }
         catch (Exception e)
         {
@@ -1022,6 +1028,118 @@ public static class FrontRoomsMapInteractionTests
         var farMode = world.LampModeOf(far);
         Check(world.Cache.Built.Count() == generated && world.LampLevel(far) == FrontRoomsMapWorld.NoLamp && farMode != ModuleLamp.Auto,
             label + "LampModeOf a far cell (" + farMode + ") generates no chunk (" + generated + " before and after)");
+    }
+
+    // ---------- The glass break (map side of the visual chat's contract) ----------
+
+    static void Glass(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -45f, "MAP INTERACTION TEST / glass");
+        var built = new List<(FrontRoomsMapWorld.Window window, FrontRoomsMapWorld.GlassBreakRecord record)>();
+        var released = new List<FrontRoomsMapWorld.Window>();
+        world.WindowBuilt += (w, r) => built.Add((w, r));
+        world.WindowReleased += w => released.Add(w);
+        world.BuildForCapture();
+        var window = built.Select(x => x.window).FirstOrDefault(w => w.pane != null && w.stage == 0 && world.IsBuilt(w.a) && world.IsBuilt(w.b));
+        if (window == null) { Check(false, "glass: no intact window near the spawn"); return; }
+        var root = window.root;
+        var pane = window.pane.GetComponent<Collider>();
+        var intoB = world.CellCenter(window.b) - world.CellCenter(window.a);
+        intoB.y = 0f;
+        Check(root.name == "Window " + window.a + "-" + window.b && (root.lossyScale - Vector3.one).magnitude < 1e-4f && window.pane.transform.parent == root
+              && Vector3.Dot(root.forward, intoB.normalized) > .999f && (root.position - window.position).magnitude < 1e-4f
+              && Mathf.Abs(window.pane.transform.position.y - root.position.y - 1.175f) < 1e-3f,
+            "glass: an unscaled `Window {a}-{b}` root at the opening, +Z into b, the pane under it 1.175 m up");
+
+        int started = 0, startedSeed = 0, shattered = 0, broken = 0;
+        var cracks = new List<int>();
+        var impulse = Vector3.zero;
+        world.GlassHoldStarted += (w, at, seed) => { started++; startedSeed = seed; };
+        world.GlassCracked += (w, stage) => cracks.Add(stage);
+        world.WindowShattered += (w, at, push) => { shattered++; impulse = push; };
+        world.GlassBroken += _ => broken++;
+        var player = world.Player;
+        player.position = world.CellCenter(window.a);
+
+        // The box keeps its old world transform under the rotated root, for both wall directions.
+        Physics.SyncTransforms();
+        foreach (var vertical in new[] { false, true })
+        {
+            var w = built.Select(x => x.window).FirstOrDefault(x => x.pane != null && (x.a.x != x.b.x) == vertical);
+            if (w == null) { Check(false, "glass: no " + (vertical ? "east" : "north") + " window built"); continue; }
+            var size = w.pane.GetComponent<Collider>().bounds.size;
+            var expected = vertical ? new Vector3(ModuleUnits.GlassThickness, 1.65f, 1.4f) : new Vector3(1.4f, 1.65f, ModuleUnits.GlassThickness);
+            Check((size - expected).magnitude < 1e-3f && Mathf.Abs(w.pane.GetComponent<Collider>().bounds.center.y - 1.175f - w.root.position.y) < 1e-3f,
+                "glass: " + (vertical ? "an east" : "a north") + " edge's box is " + size.ToString("F3") + " (expected " + expected.ToString("F3") + "), centred 1.175 m up");
+        }
+
+        // E-down near a corner: the impact is kept 0.2 m inside the exposed glass; struck from a.
+        world.BeginGlassHold(pane, root.TransformPoint(new Vector3(.68f, .4f, 0f)), root.forward);
+        world.TryGetGlassBreak(window.edge, out var record);
+        Check(started == 1 && startedSeed == record.seed && Mathf.Abs(record.impact.x - .4835f) < 1e-3f && Mathf.Abs(record.impact.y - .5665f) < 1e-3f
+              && record.side == 1 && record.impactUV.x > .8f && record.impactUV.y < .2f,
+            "glass: E-down raises GlassHoldStarted with the seed; a corner hit is kept 0.2 m inside (" + record.impact.ToString("F3") + "), struck from a (side " + record.side + ")");
+        var p = 0f;
+        while (p < .5f) world.Hold(pane, Dt, out p);
+        world.ReleaseHold(pane);
+        var floor = window.hold;
+        // A later strike elsewhere: the cracks' centre stays.
+        world.BeginGlassHold(pane, root.TransformPoint(new Vector3(-.3f, 1.5f, 0f)), root.forward);
+        world.TryGetGlassBreak(window.edge, out var resumed);
+        while (p < .75f) world.Hold(pane, Dt, out p);
+        Check(cracks.Count == 2 && cracks[0] == 1 && cracks[1] == 2 && Mathf.Abs(floor - FrontRoomsShotTimings.GlassBreak.Crack1) < 1e-4f && resumed.impact == record.impact,
+            "glass: cracks 1 then 2, once each (" + string.Join(",", cracks) + "); a release drops to 0.35 (" + floor.ToString("0.00") + "); a resumed strike keeps the impact");
+
+        // A rebuild: the window goes and comes back cracked, from 0.70.
+        var chunk = MapGrid.ChunkOf(window.a);
+        world.RebuildChunk(chunk);
+        if (!released.Contains(window)) { chunk = MapGrid.ChunkOf(window.b); world.RebuildChunk(chunk); }
+        var again = built.LastOrDefault(x => x.window.edge == window.edge);
+        Check(released.Contains(window) && again.window != null && again.window != window && again.record.stage == 2 && again.window.stage == 2
+              && Mathf.Abs(again.window.hold - FrontRoomsShotTimings.GlassBreak.Crack2) < 1e-4f && again.record.impact == record.impact,
+            "glass: a rebuild raises WindowReleased, then WindowBuilt with the record (stage " + again.record.stage + "), resuming from 0.70");
+
+        // A tap's float sum a rounding step short of a beat still cracks (the stage tolerance); a strike from b says side −1.
+        var other = built.Select(x => x.window).FirstOrDefault(x => x.pane != null && x.stage == 0 && x != window && x.edge != window.edge && world.IsBuilt(x.a) && world.IsBuilt(x.b));
+        if (other != null)
+        {
+            var otherPane = other.pane.GetComponent<Collider>();
+            player.position = world.CellCenter(other.b);
+            world.BeginGlassHold(otherPane, other.root.position + Vector3.up * 1.2f, -other.root.forward);
+            var crackedBefore = cracks.Count;
+            world.Hold(otherPane, FrontRoomsShotTimings.GlassBreak.Crack1 - 1e-6f, out _);
+            world.TryGetGlassBreak(other.edge, out var otherRecord);
+            Check(cracks.Count == crackedBefore + 1 && other.stage == 1 && otherRecord.side == -1,
+                "glass: a hold one rounding step short of 0.35 still cracks once; struck from b, side −1 (" + otherRecord.side + ")");
+            world.ReleaseHold(otherPane);
+            cracks.RemoveRange(crackedBefore, cracks.Count - crackedBefore);
+            player.position = world.CellCenter(window.a);
+        }
+        else Check(false, "glass: no second intact window for the tolerance and side checks");
+
+        // A glass-kit handler that throws is logged and never breaks a build.
+        Action<FrontRoomsMapWorld.Window, FrontRoomsMapWorld.GlassBreakRecord> throwing = (w, r) => throw new InvalidOperationException("test: a broken glass kit");
+        world.WindowBuilt += throwing;
+        var builtBefore = built.Count;
+        world.RebuildChunk(chunk);
+        world.WindowBuilt -= throwing;
+        Check(world.IsBuilt(window.a) && world.IsBuilt(window.b) && built.Count > builtBefore,
+            "glass: a WindowBuilt handler that throws does not stop the chunk building (" + (built.Count - builtBefore) + " windows announced)");
+        // That rebuild replaced the window again: carry on with the newest one.
+        again = built.LastOrDefault(x => x.window.edge == window.edge);
+
+        // The shatter: only the pane goes; the root stays.
+        var w2 = again.window;
+        var pane2 = w2.pane.GetComponent<Collider>();
+        var gave = false;
+        for (var k = 0; k < 120 && !gave; k++) gave = world.Hold(pane2, Dt, out p);
+        Check(gave && shattered == 1 && broken == 1 && Mathf.Abs(impulse.magnitude - FrontRoomsShotTimings.GlassBreak.ShatterImpulse) < 1e-3f && w2.pane == null && w2.root != null
+              && w2.stage == 3 && world.PassageBetween(w2.a, w2.b) == FrontRoomsMapWorld.Passage.Open && cracks.Count == 2,
+            "glass: the shatter raises WindowShattered (impulse " + impulse.magnitude.ToString("0.0") + " m/s) and GlassBroken once, removes only the pane, the way opens; no crack replayed");
+        world.RebuildChunk(chunk);
+        var after = built.LastOrDefault(x => x.window.edge == window.edge);
+        Check(after.window != null && after.window != w2 && after.record.stage == 3 && after.window.pane == null && after.window.root != null,
+            "glass: rebuilt broken, the window keeps its root and record (stage 3) with no pane");
     }
 
     // ---------- P4: tiers ----------

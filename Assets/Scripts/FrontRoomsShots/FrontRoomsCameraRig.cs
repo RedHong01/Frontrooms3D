@@ -33,6 +33,8 @@ public struct ShotSpec
     public float blendIn, blendOut;
     /// <summary>A delta from the player's field of view (negative narrows), kept within MaxFovDeltaDeg.</summary>
     public float fovDelta;
+    /// <summary>A delta that changes during the shot (asked every frame, used instead of fovDelta when set).</summary>
+    public Func<float> fov;
     public bool lockMove, lockLook;
     /// <summary>While look is not locked, how far it may wander from the shot's heading (degrees; 0 = free).</summary>
     public float lookCone;
@@ -173,10 +175,15 @@ public sealed class FrontRoomsCameraRig
         handle.ending = true;
     }
 
-    /// <summary>End a shot early, blending back over <paramref name="blendOut"/> seconds.</summary>
+    /// <summary>End a shot early, blending back over <paramref name="blendOut"/> seconds. A shot already on its way out only ever goes faster.</summary>
     public void CancelShot(ShotHandle handle, float blendOut = .2f)
     {
-        if (handle == null || handle.ending) return;
+        if (handle == null) return;
+        if (handle.ending)
+        {
+            handle.blendOut = Mathf.Min(handle.blendOut, blendOut);
+            return;
+        }
         handle.Cancelled = true;
         handle.ending = true;
         handle.blendOut = Mathf.Min(handle.blendOut > 0f ? handle.blendOut : blendOut, blendOut);
@@ -315,7 +322,7 @@ public sealed class FrontRoomsCameraRig
                 position = Vector3.Lerp(position, target.position, pull);
                 rotation = Quaternion.Slerp(rotation, target.rotation, pull);
             }
-            fov += shot.spec.fovDelta * w * motion;
+            fov += (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
         }
 
         // Offsets: sine there and back, camera-local.

@@ -4,6 +4,8 @@ Date: 2026-10-03. Owner: visual chat, interactables proposal workflow.
 
 Red asked for this order: research first, then a Figma proposal, then he confirms, then we build. This plan is the slide-by-slide script for the Figma section. Nothing here lands in the game.
 
+> **Fix pass, 2026-10-03, about 17:00.** A review found 22 issues; the Figma section and this plan were corrected (`02_figma.md` §0 has every change and its verdict). The deck now has **13 slides**: DW12 "Later, and already set" is new, and **DW01 is hidden** until the RE8 media (C1, C2) arrive. This plan now matches the slides. Red's one-page guide is `03_for_red.md`.
+
 **Inputs, read in full:**
 - `../00_map_constraints.md`, `../01_inventory.md`, `../02_period_hardware.md`, `../03_readability_placement_shots.md`, `../04_door_re8_gap.md`, `../05_locked_door_type.md`, `../06_period_windows.md`, `../10_spec.md`;
 - `../images/`, `../harness/`;
@@ -47,7 +49,7 @@ Red asked for this order: research first, then a Figma proposal, then he confirm
 
 | Element | Value | Copy from |
 |---|---|---|
-| Running header | 5 slots at y 28, x 72 / 522 / 972 / 1422 / 1722: "Individual Game Project" · "FrontRooms · Doors + windows · proposal" · "Week 3 · Oct 3, 2026" · "Red Wang" · "NN / 12". IBM Plex Mono 13/16 (P1 Meta). Meta lives only here | 2331:881–885 |
+| Running header | 5 slots at y 28, x 72 / 522 / 972 / 1422 / 1722: "Individual Game Project" · "FrontRooms · Doors + windows · proposal" · "Week 3 · Oct 3, 2026" · "Red Wang" · "NN / 13". IBM Plex Mono 13/16 (P1 Meta). Meta lives only here | 2331:881–885 |
 | Title | x 72, y 139, h 80. Bayon 88/80 (P1 Title). No eyebrow above it | 2331:886 |
 | Lede | x 1272, y 173, 576 × 52 (2 lines). Source Serif 4 24/26 (P1 Body; stands in for ABC Arizona). Every lede below is ≤ 96 characters | 2354:1006 |
 | Statement | x 72, y 969, 1776 × 42. Source Serif 4 50/42 (P1 Statement). One line, ≤ 70 characters | 2354:1013 |
@@ -100,31 +102,32 @@ Crops are given in source pixels as (x0, y0, x1, y1). Every crop's aspect matche
 
 | Slide | Frame name | Title (Bayon 88) | What it argues |
 |---|---|---|---|
-| 01 / 12 | DW00 · Three boxes | THREE BOXES | Today the door, window and key are each one Unity cube. You can see through shut doors |
-| 02 / 12 | DW01 · What RE8 does | WHAT RE8 DOES | RE8's door is a deep, dark frame around a thick leaf. We copy the frame, not the castle |
-| 03 / 12 | DW02 · Stop behind every gap | A STOP BEHIND EVERY GAP | Red's Option A closes every slit. In-engine before and after |
-| 04 / 12 | DW03 · The store's own doors | THE STORE'S OWN DOORS | In the IP the door is plain wood. The locked door is the store's steel back door |
-| 05 / 12 | DW04 · Locked from 20 m | LOCKED, FROM 20 M | The tested pairing reads at 6, 12 and 20 m in three lights. The rejected ones do not |
-| 06 / 12 | DW05 · One frame eight doors | ONE FRAME, EIGHT DOORS | Each level has a free and a locked member. The grammar is shared |
-| 07 / 12 | DW06 · A lock that takes a key | A LOCK THAT TAKES A KEY | Mortise lock, separate moving parts, and the head-dip timing |
-| 08 / 12 | DW07 · A key on a hook | A KEY ON A HOOK | Key, ring and tag hang on a host. The host is what you find from afar |
-| 09 / 12 | DW08 · A window, not a pane | A WINDOW, NOT A PANE | A window family per level, with real stops, a stool and blinds |
-| 10 / 12 | DW09 · The glass sits in a pocket | THE GLASS SITS IN A POCKET | Section and fit. The opening and colliders stay as they are |
-| 11 / 12 | DW10 · What changes | WHAT CHANGES IN THE GAME | Who does what, budgets, and what stays the same |
-| 12 / 12 | DW11 · Your calls | YOUR CALLS | 8 real choices, each with a default, then phase 2 |
+| 01 / 13 | DW00 · Three boxes | THREE BOXES | Today the door, window and key are each one Unity cube. You can see through shut doors |
+| 02 / 13 | DW01 · What we take from RE8 (hidden until C1 + C2) | WHAT WE TAKE FROM RE8 | RE8 shows a deep, dark surround round a thick leaf. We take the frame, not the castle |
+| 03 / 13 | DW02 · Stop behind every gap | A STOP BEHIND EVERY GAP | Red's Option A closes every slit. In-engine before and after |
+| 04 / 13 | DW03 · The store's own doors | THE STORE'S OWN DOORS | In the IP the door is plain wood. The locked door is the store's steel back door |
+| 05 / 13 | DW04 · Locked from 20 m | LOCKED, FROM 20 M | The tested pairing reads at 6, 12 and 20 m in three lights. The rejected ones do not |
+| 06 / 13 | DW05 · One section eight doors | ONE SECTION, EIGHT DOORS | Each level has a free and a locked member. The section is shared; frame, leaf and lock vary |
+| 07 / 13 | DW06 · A lock that takes a key | A LOCK THAT TAKES A KEY | Mortise lock, separate moving parts, and the head-dip timing |
+| 08 / 13 | DW07 · A key on a hook | A KEY ON A HOOK | Key, ring and tag hang on a host. The host is what you find from afar |
+| 09 / 13 | DW08 · A window, not a pane | A WINDOW, NOT A PANE | A window family per level, with real stops, a stool and blinds |
+| 10 / 13 | DW09 · The glass sits in a pocket | THE GLASS SITS IN A POCKET | Section and fit. The opening and colliders stay as they are |
+| 11 / 13 | DW10 · What changes | WHAT CHANGES IN THE GAME | Who does what, budgets, and what stays the same |
+| 12 / 13 | DW11 · Your calls | YOUR CALLS | 8 calls that block phase 2, each with a default |
+| 13 / 13 | DW12 · Later and already set | LATER, AND ALREADY SET | 2 calls that can wait for Run and Exit, and 7 small defaults Red can see and veto |
 
 ---
 
 ## 3. Slides
 
-### DW00 · THREE BOXES (01 / 12)
+### DW00 · THREE BOXES (01 / 13)
 
-- **Lede:** "Door, window and key are each one Unity cube. No stop, no lock, nothing round the glass."
+- **Lede:** "Door, window and key are each one Unity cube. No stop, no lock, no bead or stool at the glass."
 - **Statement:** "A shut door still shows the next room."
 
 | Slot | x, y, w × h | Source | Crop | Chip |
 |---|---|---|---|---|
-| `media:dw00_slit` (hero) | 72, 232, 876 × 657 | `PM/ingame_door_gap_16_sideB_hinge_inline_darknear.png` (1920 × 1080) | (562, 0, 1362, 600) | yellow "SEE-THROUGH SLIT · 1.2 M" |
+| `media:dw00_slit` (hero) | 72, 232, 876 × 657 | `PM/ingame_door_gap_16_sideB_hinge_inline_darknear.png` (1920 × 1080) | (562, 0, 1362, 600) | yellow "SEE-THROUGH SLIT · 1.2 M · NEAR ROOM DIMMED" |
 | `media:dw00_swing_a` | 972, 232, 201 × 316 | `PM/ingame_door_gap_18_open_fromA_t0.13s.png` | (662, 0, 1349, 1080) | "PUSHED FROM A" |
 | `media:dw00_swing_b` | 1197, 232, 201 × 316 | `PM/ingame_door_gap_21_open_fromB_t0.13s.png` | (617, 0, 1304, 1080) | "PUSHED FROM B" |
 | `media:dw00_locked` | 1422, 232, 426 × 316 | `AUD/48_door_locked_before_hud.png` | (600, 273, 1320, 807). This keeps the prompt and drops the HUD title | "LOCKED = ONE LINE OF TEXT" |
@@ -140,28 +143,30 @@ Crops are given in source pixels as (x0, y0, x1, y1). Every crop's aspect matche
 - **Key.** An emissive yellow cube, 0.32 × 0.12 × 0.12 m, spinning 90°/s. It is picked up within 0.9 m horizontally (`01` §3.2–3.3; audit F10, F14).
 - **Window.** A cube, 1.4 × 1.65 × 0.03, alpha 0.28, with no stop and no sill (`01` §2.2; audit F3).
 
-### DW01 · WHAT RE8 DOES (02 / 12)
+### DW01 · WHAT WE TAKE FROM RE8 (02 / 13; hidden until C1 + C2 arrive)
 
-- **Lede:** "RE8 hangs a thick leaf in a deep, dark surround. Its gaps read as shadow lines, never light."
+- **Lede:** "RE8 shows a thick leaf in a deep, dark surround. Its gaps read as dark lines, never light."
 - **Statement:** "We copy the frame, not the castle."
 
 Layout: two RE8 references are stacked in columns 1–4. Six HR03-style rule blocks sit in columns 5–12 (2 columns × 3 rows).
 
 | Slot | x, y, w × h | Source | Chip |
 |---|---|---|---|
-| `ref:re8_steam_castle_hall` | 72, 232, 576 × 316 | C1 (Steam screenshot, 1920 × 1080; crop to 1.82 when it arrives: (0, 13, 1920, 1067)) | "RE8 · STEAM SCREENSHOT" |
-| `ref:re8_walkthrough_1-36-39` | 72, 572, 576 × 317 | C2 (walkthrough 1:36:38.9; same crop) | "RE8 · WALKTHROUGH · 1:36:39" |
+| `ref:re8_steam_castle_hall` | 72, 232, 576 × 316 | C1 (Steam screenshot, 1920 × 1080; crop to 1.82 when it arrives: (0, 13, 1920, 1067)) | "DEEP SURROUND, DARK EDGE LINES" |
+| `ref:re8_walkthrough_1-36-39` | 72, 572, 576 × 317 | C2 (walkthrough 1:36:38.9; same crop) | "HAND PUSHES, LEAF SWINGS AWAY · THIRD-PERSON CAMERA" |
 
 Rule blocks have no label line: head Bayon 88/80, body Serif 24/26. They sit at x 672 and 1272 (width 576), with heads at y 232 / 451 / 670 and bodies 88 px below each head.
 
 | Head | Body | What we build (`10` §1.4) |
 |---|---|---|
-| DEEP FRAME | "Casing on both faces, a lined reveal." | casing 75.5 mm, 25 mm proud; 2 mm lining |
-| THICK LEAF | "44 mm; its edge shows when it opens." | 44 mm leaf, 1.5 mm arrises, edge bands |
-| THRESHOLD | "A 12 mm saddle under the leaf." | saddle 0–0.012, 1:2 bevels |
-| PUSH, IT SWINGS | "Hardware at 1.0 m; the leaf swings away." | lock at Y 1.000, Z 0.920 |
-| DARK GAP LINE | "A 16 mm stop sits behind every gap." | stop 16 × 35.5 mm on the push side |
-| NOT COPIED | "Castle panels. Our 1990 door is flush." | flush 1955–93 commercial leaf |
+| DEEP FRAME | "RE8: a deep moulded surround. Ours: casing on both faces, a lined reveal." | casing 75.5 mm, 25 mm proud; 2 mm lining |
+| THICK LEAF | "RE8: the edge shows as it swings. Ours: a 44 mm leaf with edge bands." | 44 mm leaf, 1.5 mm arrises, edge bands |
+| THRESHOLD | "RE8: a dark threshold board. Ours: a 12 mm saddle under the leaf." | saddle 0–0.012, 1:2 bevels |
+| PUSH, IT SWINGS | "RE8: the hand pushes at the latch side; the leaf swings away. Ours: hardware at 1.0 m." | lock at Y 1.000, Z 0.920 |
+| DARK GAP LINE | "RE8: no light at the edges (how is unconfirmed). Ours: a 16 mm stop behind every gap." | stop 16 × 35.5 mm on the push side |
+| NOT COPIED | "RE8's raised panels belong to a castle. Our 1990 door is flush." | flush 1955–93 commercial leaf |
+
+The first build stated our numbers (44 mm, 12 mm, 1.0 m, 16 mm) as RE8 facts. RE8's stops, rebates and leaf sizes are UNVERIFIED (`04` §2.3, `10` §13 item 1), so every block now says what RE8 shows, then what we build.
 
 **Claims and sources:**
 - **V1 and V2 were seen by the research agent** (`04` §2.1). The Steam main-hall screenshot shows a deep surround, a dark perimeter and hinge plates. In the walkthrough frames at 1:36:37.5–1:36:40.4, the hand pushes at the latch stile and the leaf swings away.
@@ -170,9 +175,9 @@ Rule blocks have no label line: head Bayon 88/80, body Serif 24/26. They sit at 
 - **"Not copied":** RE8's raised panels belong to a château. The 1990 US commercial door is flush (`10` §2.1 "Why no panelled doors"; `02` §2.1). HR03 "Not ours to use" also rules out borrowed iconography (`05` §3).
 - **Media:** C1–C3 in `media_candidates.md`. Until Red approves, both slots are placeholders.
 
-### DW02 · A STOP BEHIND EVERY GAP (03 / 12)
+### DW02 · A STOP BEHIND EVERY GAP (03 / 13)
 
-- **Lede:** "Your Option A: one swing direction, a real 16 mm stop. Every gap now turns a corner."
+- **Lede:** "Your Option A: one swing direction, a real 16 mm stop. In the prototype every gap turns a corner."
 - **Statement:** "No straight line gets through, from either side."
 
 | Slot | x, y, w × h | Source | Crop | Chip |
@@ -180,8 +185,8 @@ Rule blocks have no label line: head Bayon 88/80, body Serif 24/26. They sit at 
 | `media:dw02_today` | 72, 232, 276 × 621 | `PM/ingame_door_gap2_12_today_sideB_hinge_inline.png` | (803, 0, 1123, 720). The slit is at x 962–964 | "TODAY · HINGE JAMB · 1.2 M" |
 | `media:dw02_option_a` | 372, 232, 276 × 621 | `PM/ingame_door_gap2_74_optionA_sideB_hinge_inline.png` (same camera) | (803, 0, 1123, 720) | yellow "OPTION A · PROTOTYPE" |
 | `diagram:dw02_jamb_section` | 672, 232, 576 × 657 | drawn (§4 D1) | — | — |
-| `media:dw02_leak` | 1272, 232, 576 × 316 | `PM/ingame_door_gap3_00_floor_leak.png` | (480, 380, 1440, 907) | "LIGHT LEAKS THROUGH THE LEAF" |
-| `media:dw02_proxy` | 1272, 572, 576 × 317 | `PM/ingame_door_gap3_01_floor_shadowproxy.png` | (480, 380, 1440, 907) | "+ SHADOW BOX IN THE LEAF" |
+| `media:dw02_leak` | 1272, 232, 576 × 316 | `PM/ingame_door_gap3_00_floor_leak.png` | (700, 560, 1220, 845), 2× on the threshold | "LIGHT LEAKS THROUGH THE LEAF · B PROTOTYPE" |
+| `media:dw02_proxy` | 1272, 572, 576 × 317 | `PM/ingame_door_gap3_01_floor_shadowproxy.png` | (700, 560, 1220, 845) | "+ SHADOW BOX IN THE LEAF · SAME FIX ON A" |
 
 **Claims and sources:**
 - **Red chose Option A** (`10` §0 D1; `VISUAL_CHAT_TASKS.md` W6): single-acting, with real 16 mm stops.
@@ -196,18 +201,20 @@ Rule blocks have no label line: head Bayon 88/80, body Serif 24/26. They sit at 
   - Light through walls from unshadowed lamps is audit F5, not a door fault. Say so if Red asks.
 - **Test T1** re-runs the ray harness on the real meshes, both handings and both faces (`10` §11). Phase 2 replaces the prototype frame with a T1 frame.
 
-### DW03 · THE STORE'S OWN DOORS (04 / 12)
+### DW03 · THE STORE'S OWN DOORS (04 / 13)
 
 - **Lede:** "In the film and in Kane's tapes the door is plain wood: flush leaf, dark frame, knob or lever."
-- **Statement:** "Free: the IP's wood door. Locked: the store's steel back door."
+- **Statement:** "Free: the IP's wood door. Locked: a 1990 steel back door, not seen in the film."
 
 | Slot | x, y, w × h | Source | Crop | Chip |
 |---|---|---|---|---|
-| `media:dw03_a24_door` (hero) | 72, 232, 876 × 657 | `PM/a24_trailer_0127_wood_door_knob.jpg` | (60, 21, 1441, 1057). The letterbox is cut off | yellow "A24 TRAILER · 1:27" |
-| `media:dw03_a24_dark_door` | 972, 232, 426 × 316 | `PM/a24_trailer_0139_dark_door_level0.jpg` | (100, 200, 1200, 1016) | "A24 TRAILER · 1:39" |
-| `media:dw03_kane_oak_door` | 1422, 232, 426 × 316 | `PM/kane_emg_0053_oak_door_lever.jpg` | (330, 310, 970, 786) | "KANE PIXELS · 0:53" |
-| `media:dw03_kane_bolts` | 972, 572, 426 × 317 | `PM/kane_emg_0125_door_six_bolts.jpg` | (330, 300, 970, 776) | "KANE PIXELS · 1:25" |
-| `media:dw03_blue_tape` | 1422, 572, 426 × 317 | `W2/kit-references/a24/a24_trailer_0115_blue_painters_tape.jpg` | (1100, 0, 1920, 610). Mostly tape and wall; only the edge of the actor's hair | "A24 TRAILER · 1:55" |
+| `media:dw03_a24_door` (hero) | 72, 232, 876 × 657 | `PM/a24_trailer_0127_wood_door_knob.jpg` | (60, 21, 1441, 1057). The letterbox is cut off | yellow "THE IP'S DOOR: WOOD, DARK FRAME, KNOB" |
+| `media:dw03_a24_dark_door` | 972, 232, 426 × 316 | `PM/a24_trailer_0139_dark_door_level0.jpg` | (100, 200, 1200, 1016) | "DARK DOOR = OPEN DOORWAY AT 12 M" |
+| `media:dw03_kane_oak_door` | 1422, 232, 426 × 316 | `PM/kane_emg_0053_oak_door_lever.jpg` | (330, 310, 970, 786) | "KANE: OAK LEAF, LEVER, WOOD CASING" |
+| `media:dw03_kane_bolts` | 972, 572, 426 × 317 | `PM/kane_emg_0125_door_six_bolts.jpg` | (330, 300, 970, 776) | "SIX BOLTS: 3–4 PX AT 12 M" |
+| `media:dw03_locked_mockup` (was the blue-tape still) | 1422, 572, 426 × 317 | `IMG/05_r3_close_L0lit_recommended.jpg` | (180, 120, 1150, 842): the wood door and the almond locked mock-up in game light | "LOCKED: ALMOND STEEL, DARK FRAME · MOCK-UP" |
+
+Chips state claims, not sources; times and credits live in `PM/SOURCES.md`. The blue-tape still left the slide; its point (blue marks openings, so it is not our lock colour) stays in the notes below.
 
 **What each frame proves** (speaker notes):
 - **1:27.** A flush brown wood leaf with a visible edge, a round knob and a dark casing. It swings open into Level 0. This is the IP's own door, and it matches the free door (`05` §3: `02_film_shots.md` F09 "plain wood-veneer interior door … dark frame, brass lever"; `03_ip_canon.md:187`).
@@ -237,10 +244,10 @@ Rule blocks have no label line: head Bayon 88/80, body Serif 24/26. They sit at 
   - storeroom door, 1960–2000; the plate is current in 1990.
 
 **Honesty notes:**
-- The A24 door at 1:27 has a **knob**. Our free door uses a **lever**, so the two types differ at 2–5 m (bar against dot). F09 and Kane 0:53 both show levers. If Red prefers the film's knob, the free/locked hardware cue weakens; value still carries the read beyond 6 m. This is in the DW11 notes, not on a slide.
+- The A24 door at 1:27 has a **knob**. Our free door uses a **lever**, so the two types differ at 2–5 m (bar against dot). F09 and Kane 0:53 both show levers. If Red prefers the film's knob, the free/locked hardware cue weakens; value still carries the read beyond 6 m. This is now a visible row on DW12 ("Also set").
 - **No IP frame shows a steel back door** (wanted: C7). The locked door is grounded in 1990 practice, not in a film frame.
 
-### DW04 · LOCKED, FROM 20 M (05 / 12)
+### DW04 · LOCKED, FROM 20 M (05 / 13)
 
 - **Lede:** "Mock-ups at real size in game light. Left: wood door. Centre: locked. Right: open doorway."
 - **Statement:** "The locked door is 2–3× brighter than the wood door, in every light."
@@ -254,7 +261,7 @@ The grid is 4 columns × 3 rows of 426 × 200 tiles: x = 72 / 522 / 972 / 1422, 
 
 | Row \ column | 6 m (x 72) | 12 m (x 522) | 20 m (x 972) | Rejected (x 1422) |
 |---|---|---|---|---|
-| Level 0 lit (y 232) | chip yellow "LEVEL 0 · 6 M" | chip "12 M" | chip "20 M" | P1, `IMG/05_r1_sheet_L0lit.jpg` (870, 60, 1510, 360). Chip "NO · SAME DOOR + DEADBOLT" |
+| Level 0 lit (y 232) | chip yellow "LEVEL 0 · 6 M" | chip "12 M" | chip "20 M" | P1, `IMG/05_r1_sheet_L0lit.jpg` (870, 60, 1510, 360). Chip "NO · WOOD DOOR + DEADBOLT ONLY" |
 | Level 0 dim (y 456) | chip "LEVEL 0 · DIM" | — | — | P3, `IMG/05_r1_sheet_L0dim.jpg` (870, 990, 1510, 1290). Chip "NO · DARK STEEL · DIM" |
 | Office grade (y 680) | chip "OFFICE GRADE" | — | — | P2p, `IMG/05_r2_sheet_Office.jpg` (1520, 990, 2160, 1290). Chip "NO · KIT PUTTY · 20 M" |
 
@@ -273,26 +280,28 @@ Slot names: `media:dw04_l0lit_6m`, `media:dw04_l0lit_12m`, … `media:dw04_offic
 - **Dark frame.** Without it the almond leaf bleeds into the pale Office wall (`05` §5.3 item 4; compare `05_r2_sheet_Office.jpg` rows 1 and 2).
 - **Mock-ups, not models.** There is no reflection probe, so the metals render dark (`05` §9 items 1 and 3). Test T6 re-runs this with the real kit and adds Run and Exit (`10` §11). Phase 2 swaps these tiles for T6 frames.
 
-### DW05 · ONE FRAME, EIGHT DOORS (06 / 12)
+### DW05 · ONE SECTION, EIGHT DOORS (06 / 13)
 
-- **Lede:** "Every door shares the frame, stop, saddle, hinges and lock height. Only the finishes change."
+- **Lede:** "Same 16 mm stop, 12 mm saddle, 44 mm leaf, hinges and 1.0 m hardware. Frame, leaf and lock vary."
 - **Statement:** "Lobby and Office ship first; Run and Exit wait for their map doors."
 
-Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
-- Row FREE: slot y 232, 426 × 240; text y 484, 426 × 52.
-- Row LOCKED: slot y 560, 426 × 240; text y 812, 426 × 52.
-- Text is Serif 24/26, 2 lines at most. Slots are 16:9 phase-2 renders; §6 has the camera.
+Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows, on the half-row grid. (`10` D5: 2 frame meshes, 3–4 leaves and two locksets, so "one frame" was wrong.)
+- Row FREE: slot y 232, 426 × 316.
+- Row LOCKED: slot y 572, 426 × 317.
+- No text under the slots (Red's rule). Each chip names the member and its materials. Slots take phase-2 renders at slot aspect; §6 has the camera.
 
-| Cell | Slot | Chip | Text | Kit assets in the render (`10` §2.1) |
-|---|---|---|---|---|
-| Lobby free (L0-F) | `img:DoorSet_L0-F_persp` | "LOBBY · FREE" | "Walnut casing, veneer leaf, brass lever." | `Kit_DoorFrame_Wood`, `Kit_DoorLeaf_Veneer`, `Kit_Lock_Rose_Brass` + `Kit_Lock_Lever_Brass` (both faces), `Kit_Lock_Latchbolt_Bored_Brass`, `Kit_Lock_StrikeBored_Brass` |
-| Office free (OF-F) | `img:DoorSet_OF-F_persp` | "OFFICE · FREE" | "Bronze steel frame, oak leaf, chrome lever, closer." | `Kit_DoorFrame_Steel`, `Kit_DoorLeaf_Veneer_Oak`, rose + lever (chrome), bored latch and strike, `Kit_DoorCloser_Body/Arm/Forearm/Shoe` |
-| Run free (RN-F, P2) | `img:DoorSet_RN-F_persp` | "RUN · FREE · P2" | "Laminate ward door: push plate and pull, no latch." | `Kit_DoorFrame_Steel`, `Kit_DoorLeaf_Ward`, closer |
-| Exit free (EX-F, P2) | `img:DoorSet_EX-F_persp` | "EXIT · FREE · P2" | "Aluminium frame, oak leaf, push bar, lit EXIT sign." | `Kit_DoorFrame_Steel_Alu`, `Kit_DoorLeaf_Veneer_Oak`, `Kit_ExitDevice_Crossbar`, rose + lever, closer, `Kit_ExitSign` |
-| Lobby locked (L0-K) | `img:DoorSet_L0-K_persp` | "LOBBY · LOCKED" | "Almond steel in a bronze frame, knob, kick plates, sign." | `Kit_DoorFrame_Steel`, `Kit_DoorLeaf_Steel`, the mortise set (escutcheon, knob, cylinder shell, plug, deadbolt, mortise latch, mortise strike; chrome), `Kit_DoorSign` "EMPLOYEES ONLY", `Kit_DoorNumberPlate` |
-| Office locked (OF-K) | `img:DoorSet_OF-K_persp` | "OFFICE · LOCKED" | "The same steel door, with a closer." | as L0-K, plus the closer |
-| Run locked (RN-K, P2) | `img:DoorSet_RN-K_persp` | "RUN · LOCKED · P2" | "Steel door, STAFF ONLY sign. Option: wired glass." | as OF-K; sign cell 1. Option: `Kit_DoorLeaf_SteelLite` |
-| Exit locked (EX-K, P2) | `img:DoorSet_EX-K_persp` | "EXIT · LOCKED · P2" | "Steel door, aluminium frame, dead EXIT sign." | `Kit_DoorFrame_Steel_Alu`, `Kit_DoorLeaf_Steel`, mortise set, `Kit_ExitSign_Dead`, number plate |
+| Cell | Slot | Chip (member · materials) | Kit assets in the render (`10` §2.1) |
+|---|---|---|---|
+| Lobby free (L0-F) | `img:DoorSet_L0-F_persp` | "LOBBY · FREE · WALNUT, VENEER, BRASS · WIP" | `Kit_DoorFrame_Wood`, `Kit_DoorLeaf_Veneer`, `Kit_Lock_Rose_Brass` + `Kit_Lock_Lever_Brass` (both faces), `Kit_Lock_Latchbolt_Bored_Brass`, `Kit_Lock_StrikeBored_Brass` |
+| Office free (OF-F) | `img:DoorSet_OF-F_persp` | "OFFICE · FREE · OAK LEAF, CLOSER · WIP" | `Kit_DoorFrame_Steel`, `Kit_DoorLeaf_Veneer_Oak`, rose + lever (chrome), bored latch and strike, `Kit_DoorCloser_Body/Arm/Forearm/Shoe` |
+| Run free (RN-F, P2) | `img:DoorSet_RN-F_persp` | "RUN · FREE · P2 · WARD DOOR, NO LATCH" | `Kit_DoorFrame_Steel`, `Kit_DoorLeaf_Ward`, closer |
+| Exit free (EX-F, P2) | `img:DoorSet_EX-F_persp` | "EXIT · FREE · P2 · PUSH BAR, LIT EXIT" | `Kit_DoorFrame_Steel_Alu`, `Kit_DoorLeaf_Veneer_Oak`, `Kit_ExitDevice_Crossbar`, rose + lever, closer, `Kit_ExitSign` |
+| Lobby locked (L0-K) | `img:DoorSet_L0-K_persp` | "LOBBY · LOCKED · ALMOND STEEL, KNOB · WIP" | `Kit_DoorFrame_Steel`, `Kit_DoorLeaf_Steel`, the mortise set (escutcheon, knob, cylinder shell, plug, deadbolt, mortise latch, mortise strike; chrome), `Kit_DoorSign` "EMPLOYEES ONLY", `Kit_DoorNumberPlate` |
+| Office locked (OF-K) | `img:DoorSet_OF-K_persp` | "OFFICE · LOCKED · PLUS A CLOSER · WIP" | as L0-K, plus the closer |
+| Run locked (RN-K, P2) | `img:DoorSet_RN-K_persp` | "RUN · LOCKED · P2 · STAFF ONLY SIGN" | as OF-K; sign cell 1. Option: `Kit_DoorLeaf_SteelLite` |
+| Exit locked (EX-K, P2) | `img:DoorSet_EX-K_persp` | "EXIT · LOCKED · P2 · DEAD EXIT SIGN" | `Kit_DoorFrame_Steel_Alu`, `Kit_DoorLeaf_Steel`, mortise set, `Kit_ExitSign_Dead`, number plate |
+
+"WIP" = a phase-1 Blender preview in the measured Unity colours (`10` §7.3), frame and leaf only (`PM/SOURCES.md`). Run and Exit stay placeholders: a preview would need the white Run wall and the cyan Exit light to say anything true.
 
 **Claims and sources:**
 - **Shared grammar** (`10` §2.1):
@@ -311,7 +320,7 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
   - **UNVERIFIED:** Run and Exit readability. The Run wall (0.74) sits above the almond leaf, so the bronze frame must draw the outline. Test T6 decides (`10` §2.2).
 - **Title-stream double doors** (2.4 m) would need a pair version: P3, not in this proposal (`10` §2.1).
 
-### DW06 · A LOCK THAT TAKES A KEY (07 / 12)
+### DW06 · A LOCK THAT TAKES A KEY (07 / 13)
 
 - **Lede:** "Key cylinder at 1.0 m, knob below, a deadbolt and a latch. Each moving part is its own model."
 - **Statement:** "Head dips, key goes in, turns 90°, bolt slides, door pops ajar."
@@ -320,24 +329,24 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
 
 | Slot | Crop | Chip |
 |---|---|---|
-| `media:dw06_dip_start` | (0, 10, 640, 370) | "MOCK-UP · START" |
+| `media:dw06_dip_start` | (0, 10, 640, 370) | "OLD MOCK-UP · KEY IN KNOB" |
 | `media:dw06_dip_mid` | (650, 10, 1290, 370) | "HEAD DIPS" |
 | `media:dw06_dip_pose_p` | (1300, 10, 1940, 370) | yellow "POSE P · 0.58 M" |
-| `media:dw06_dip_key_in` | (1950, 10, 2590, 370) | "KEY IN · 25 MM" |
-| `media:dw06_dip_turned` | (2600, 10, 3240, 370) | "TURNED 90°" |
+| `media:dw06_dip_key_in` | (1950, 10, 2590, 370) | "KEY IN" |
+| `media:dw06_dip_turned` | (2600, 10, 3240, 370) | "TURNED" |
 
-**Row 2, left (columns 1–8): eight part slots of 276 × 204.** They sit at x = 72 / 372 / 672 / 972 and y = 445 / 673. The chips carry the part and its motion.
+**Row 2, left (columns 1–8): eight part slots of 276 × 204.** They sit at x = 72 / 372 / 672 / 972 and y = 445 / 673. The chips name the part; the timeline alone carries the motion numbers (say it once).
 
 | Slot | Chip | Motion (`10` §3.1) |
 |---|---|---|
 | `img:Kit_Lock_Escutcheon_persp` | "ESCUTCHEON · FIXED" | static; 57 × 203 mm plate |
 | `img:Kit_Lock_CylinderShell_persp` | "CYLINDER · FIXED" | static; the IC figure-8 core face |
-| `img:Kit_Lock_Plug_persp` | "PLUG · TURNS 90°" | rotates 0 → 90° with the key |
-| `img:Kit_Lock_Knob_persp` | "KNOB · TURNS 40°" | ±40°; 54 mm ball with a knurled band; 65 mm proud |
-| `img:Kit_Lock_Deadbolt_persp` | "DEADBOLT · 25 MM" | slides 25 mm |
+| `img:Kit_Lock_Plug_persp` | "PLUG" | rotates 0 → 90° with the key |
+| `img:Kit_Lock_Knob_persp` | "KNOB" | ±40°; 54 mm ball with a knurled band; 65 mm proud |
+| `img:Kit_Lock_Deadbolt_persp` | "DEADBOLT" | slides 25 mm |
 | `img:Kit_Lock_Latchbolt_Mortise_persp` | "LATCH · 19 MM" | slides 19 mm |
 | `img:Kit_Lock_StrikeMortise_persp` | "STRIKE · TEARS OFF" | static; detaches on the Relay break |
-| `img:LockSet_Mortise_persp` | yellow "ASSEMBLED · POSE P" | the set on a steel leaf, seen from pose P with the key in |
+| `img:LockSet_Mortise_persp` | yellow "PROPOSED LOCK · POSE P · WIP" (phase 1: the G2 pose-P render, key in and turned) | the set on a steel leaf, seen from pose P with the key in |
 
 **Row 2, right (columns 9–12):** `diagram:dw06_unlock_timeline` at 1272, 445, 576 × 444 (§4 D2).
 
@@ -357,19 +366,19 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
   - The mock key and fob turn as one block. In the real shot the ring and tag hang under gravity (`05` §7).
 - **Choice for Red** (DW11, call 4): deadbolt plus knob, instead of `05`'s storeroom knob (`10` §12 item 6).
 
-### DW07 · A KEY ON A HOOK (08 / 12)
+### DW07 · A KEY ON A HOOK (08 / 13)
 
 - **Lede:** "Brass key, split ring, plastic tag with a typed number. Hung still, under a steady lamp."
-- **Statement:** "You spot the board from the doorway. The key is the reward."
+- **Statement:** "You spot the rack from the doorway. The key is the reward."
 
 **Row 1: four set renders, 426 × 316 each,** at y 232, x = 72 / 522 / 972 / 1422.
 
 | Slot | Chip | Render content (`10` §4) |
 |---|---|---|
-| `img:KeySet_Board_persp` | yellow "LOBBY · KEY BOARD" | `Kit_KeyBoard` with `Kit_KeyRing` + `Kit_Key_Zone` + `Kit_KeyTag_Rect` hung on `hook_6`; the other hooks empty |
+| `img:KeySet_Rack_persp` | yellow "LOBBY · KEY RACK" | `Kit_KeyRack` (renamed from `Kit_KeyBoard`, which is the same file as the computer keyboard `Kit_Keyboard` on macOS; `02_figma.md` §9) with `Kit_KeyRing` + `Kit_Key_Zone` + `Kit_KeyTag_Rect` hung on `hook_6`; the other hooks empty |
 | `img:KeySet_Cabinet_persp` | "OFFICE · KEY CABINET" | `Kit_KeyCabinet` (door open about 175°), key hung on `hook_r1_c4` |
 | `img:KeySet_Hook_persp` | "ONE HOOK · 1 KEY IN 4" | `Kit_KeyHook` at 1.476 m, with a red or blue tag only |
-| `img:KeySet_Desk_persp` | "DESK · TAG OVER THE EDGE" | key flat on a 0.74 m desk top, tag hanging over the front edge |
+| `img:KeySet_Desk_persp` | "DESK · KEY LIES FLAT · WIP" in phase 1 (the G3 flat-desk render); the final render keeps "TAG OVER THE EDGE" | key flat on a 0.74 m desk top, tag hanging over the front edge |
 
 **Row 2:**
 
@@ -377,14 +386,14 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
 |---|---|---|
 | `ref:henryford_tivoli_motel_key` | 72, 572, 426 × 317 | C8. Chip "THE HENRY FORD · MOTEL KEY 1955–80" |
 | `img:KeyParts_Lineup_front` | 522, 572, 426 × 317 | Key, ring, the 3 tag shapes × red / blue / white, and one door number plate with the same number. Chip "9 TAGS · SAME NUMBER ON THE DOOR" |
-| Distance numerals | 972–1848, y 572–889 | A Bayon 20 label "RECOGNISED UP TO, 1080P" at y 572. Three columns at x 972 / 1272 / 1572 (276 wide): a Bayon 88/80 numeral at y 612, then a Bayon 20 label at y 704. **"5 M"** / "KEY · 60 MM"; **"7 M"** / "LONG TAG · 76 MM"; **"26 M"** / "KEY BOARD · 0.30 M" |
+| Distance numerals | 972–1848, y 572–889 | A Bayon 20 label "RECOGNISED UP TO, 1080P" at y 572. Three columns at x 972 / 1272 / 1572 (276 wide): a Bayon 88/80 numeral at y 612, then a Bayon 20 label at y 704. **"5 M"** / "KEY · 58 MM"; **"7 M"** / "LONG TAG · 76 MM"; **"26 M"** / "KEY RACK · 0.30 M" |
 
 **Claims and sources:**
 - **Recognition distance** = 691 × size / (8 px) at 1080p with FOV 76°, by Johnson's criteria (`03` §1.1):
-  - a 60 mm key, 5.2 m;
+  - a 58 mm key, 5.0 m (the spec key, `10` D8);
   - the 76 mm long tag, 6.6 m;
   - the 57 mm rectangular tag, 4.9 m;
-  - a 0.30 m board, 25.9 m;
+  - a 0.30 m rack, 25.9 m;
   - a 0.36 m cabinet, 31 m.
 - **The key** (`10` §3.3): brass, 58 mm long, a 25 mm blade, and its origin at the shoulder on the turning axis. One bitting for every zone; the tag is the identity.
 - **Tags** (`10` §4.1):
@@ -394,15 +403,17 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
   - the locked door's number plate shows the same number and colour;
   - no yellow, orange or manila (`03` §1.2: "Put the yellow in the walls").
 - **Hosts** (`10` §4.2–4.3):
-  - board in the Lobby, cabinet in the Office, a single hook for at most 1 key in 4;
+  - rack in the Lobby, cabinet in the Office, a single hook for at most 1 key in 4;
   - hook heights 1.40–1.55 m;
   - `key_hook` within 0.55 m of floor you can stand on, against the 0.9 m pickup;
   - wired to the map's existing `KeySpot` marker and its `host` field (`FrontRoomsRoomModuleData.cs:66-78`).
 - **No spin, no emission.** The glint is the lamp's highlight on bevels of 0.4 mm and more. The key cell's lamp is forced Steady (`10` §4.3; `03` §1.4 P1–P6).
 
-### DW08 · A WINDOW, NOT A PANE (09 / 12)
+### DW08 · A WINDOW, NOT A PANE (09 / 13)
 
-- **Lede:** "Fixed interior windows, one per level. Same casing and 16 mm stops as the doors; 6 mm glass."
+- **Lede:** "One window per level, with the doors' casing and 16 mm stops, and a pocket for the glass track's pane."
+
+**Fix-pass layout:** Kane 3:08 leads (row 1, x 72), then wood, steel and aluminium (x 522 / 972 / 1422), each rendered in a wall with the stand-in glass. The white-steel placeholder moved to row 2, x 72. The pane itself belongs to the glass-destruction track (Red's decision vi).
 - **Statement:** "Wood in Level 0, bronze steel in the Office, like the doors."
 
 **Row 1: the four members, 426 × 316 each,** at y 232, x = 72 / 522 / 972 / 1422.
@@ -418,7 +429,7 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
 
 | Slot | x | Source | Crop | Chip |
 |---|---|---|---|---|
-| `media:dw08_kane_window` | 72 | `PM/kane_emg_0308_framed_window_1990.jpg` | (0, 0, 1310, 975). This keeps the whole window with its deep frame. The chip sits over the burnt-in VHS stamp and carries the same date | yellow "KANE PIXELS · 3:08 · 06/19/1990" |
+| `media:dw08_kane_window` | 72, row 1 | `PM/kane_emg_0308_framed_window_1990.jpg` | (0, 120, 1290, 1080). It starts below the burnt-in VHS stamp, so no part of the stamp shows | yellow "1990 CONTROL ROOM · WINDOW INTO LEVEL 0" |
 | `ref:sears1993_levolor_miniblinds` | 522 | C10 | — | "SEARS 1993 · 1-INCH BLINDS" |
 | `ref:us4463535_glass_stop` | 972 | C11 | — | "USG PATENT 1982 · GLASS STOP" |
 | `img:Kit_MiniBlind_Raised_persp` | 1422 | phase 2 | — | "OFFICE · RAISED BLIND" |
@@ -435,16 +446,18 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
 - **Family split** (`06` §3.0): wood = the building's own rooms, like the free door; steel = the fit-out, like the key door.
 - **Budgets** (`10` §9.4), LOD0 / 1 / 2: wood 2,600 / 1,000 / 200; steel 3,600 / 1,300 / 220; aluminium 2,800 / 1,000 / 200; raised blind 2,400 / 800 / 120.
 
-### DW09 · THE GLASS SITS IN A POCKET (10 / 12)
+### DW09 · THE GLASS SITS IN A POCKET (10 / 13)
 
-- **Lede:** "The opening stays 1.4 × 1.65 m and clear for the climb. All of this is render-only."
-- **Statement:** "The stops stand 16 mm into the opening. No collider moves."
+- **Lede:** "All render-only. The stops need a 16 mm band inside the 1.4 × 1.65 m opening; no collider moves."
+- **Statement:** "Real stops need 16 mm inside the opening: one OK from the map chat."
+
+The S1 band breaks `00`'s binding rule ("once the pane is gone, they must stay outside the 1.4 × (0.35–2.0) opening") until the map chat agrees (`10` §6.6 item 2). So the jamb diagram now shows S0 too: "If the map says no" (flat reveal, dark 12 mm line, the glass edge shows at an angle).
 
 | Slot | x, y, w × h | Content | Chip |
 |---|---|---|---|
 | `diagram:dw09_elevation` | 72, 232, 576 × 657 | §4 D3 | — |
 | `diagram:dw09_jamb_section` | 672, 232, 576 × 657 | §4 D4 | — |
-| `img:Kit_WindowFrame_Steel_close` | 1272, 232, 576 × 316 | Phase 2: a corner at 0.3 m with the stop screws, glazing tape and 6 mm stand-in glass (G4 self-check render f) | "OFFICE · 30 SCREWS · 0.3 M" |
+| `img:Kit_WindowFrame_Steel_close` | 1272, 232, 576 × 316 | Phase 2: a corner at 0.3 m with the stop screws, glazing tape and 6 mm stand-in glass (G4 self-check render f) | "OFFICE · SCREWED STOP · 0.3 M · WIP" (phase 1: two jamb screws at 0.3 m) |
 | `img:Kit_WindowFrame_Wood_close` | 1272, 572, 576 × 317 | Phase 2: the stool horn and apron at 0.3 m | "LOBBY · STOOL + APRON" |
 
 **Claims and sources:**
@@ -459,18 +472,20 @@ Cells are 4 columns (x 72 / 522 / 972 / 1422) × 2 rows.
 - **Out of this kit** (Red's decision vi): the pane, cracks, shards, teeth and floor glass belong to the glass-destruction track. This kit gives only the pocket and the interface (`10` §5.3–5.4).
   - The RT glass target moves from the disabled pane cube to the visible slab (`10` §7.4, task G14-K5).
 
-### DW10 · WHAT CHANGES IN THE GAME (11 / 12)
+### DW10 · WHAT CHANGES IN THE GAME (11 / 13)
 
-- **Lede:** "Every model is render-only. The colliders, names and events the game uses stay as they are."
-- **Statement:** "One thing changes play: each door now opens one way."
+- **Lede:** "Colliders and names stay; every model is render-only."
+- **Statement:** "Play changes three ways: doors open one way, some doors lock, keys hang on hooks."
 
 | Element | x, y, w × h | Content |
 |---|---|---|
 | `diagram:dw10_door_plan` | 72, 232, 876 × 657 | §4 D5 |
-| Rule block MAP | 972, 232, 876 wide | Head "MAP CHAT". Body: "One swing side per door, a step-back for pulls, the hinge moved 29.5 mm (collider stays). A lock flag per door, keys on hosts, a window root." |
-| Rule block VISUAL | 972, 388 | Head "VISUAL CHAT". Body: "32 models now, 6 more for Run and Exit: LOD0/1/2, no colliders, no lights. Three dress calls hand them to the map." |
+| Rule block MAP | 972, 232, 876 wide | Head "MAP CHAT". Body: "Doors open one way: a step-back, a pull event, the Relay breaks that way, hinge +29.5 mm. A lock flag, the lock point at the keyhole, keys on hosts." |
+| Rule block VISUAL | 972, 388 | Head "VISUAL CHAT". Body: "All 38 models built in a test copy, none in the game. No colliders, no lights. LOD1 and LOD2 wait for the LOD change." |
 | Rule block SOUND | 972, 544 | Head "SOUND CHAT". Body: "Wood and steel door sounds, a knob turn, the deadbolt at 0.86 s, a pull. Window frames say wood or steel for the climb." |
-| Budget numerals | x 972 / 1272 / 1572 (276 wide), y 724 | Bayon 88/80 numeral, then a Bayon 20 label 8 px below. **"41K"** / "TRIS · NEAREST LOCKED DOOR"; **"0.7K"** / "TRIS · ANY DOOR PAST 12 M"; **"0"** / "COLLIDERS OR LIGHTS ADDED" |
+| Budget numerals | x 972 / 1272 / 1572 (276 wide), y 724 | Bayon 88/80 numeral, then a Bayon 20 label 8 px below. **"41K"** / "TRIS · NEAREST LOCKED DOOR"; **"0.7K"** / "TRIS PAST 12 M / AFTER THE LOD CHANGE" (two lines); **"0"** / "COLLIDERS OR LIGHTS ADDED" |
+
+The first build's lede ("names and events stay as they are") and statement ("one thing changes play") were false against `10` §6.5: a new pull event, `LockPoint` at the keyhole (so `DoorUnlocked`'s point moves), new knob constants, a per-door lock flag, keys on hosts with the key cell's lamp held Steady, and the Relay breaking toward the swing side. The 0.7K figure needs P-1, which is now DW11 call 8.
 
 Rule blocks use head Bayon 88/80 + body 24/26, 2 lines, 156 px apart; they have no label line.
 
@@ -493,7 +508,7 @@ Rule blocks use head Bayon 88/80 + body 24/26, 2 lines, 156 px apart; they have 
   - the facade `FrontRoomsInteractableKit.DressDoor` / `DressWindow` / `DressKey`;
   - the render-only components `FrontRoomsDoorRig`, `FrontRoomsDoorCloserLinkage` and `FrontRoomsKeyAssembly`;
   - pipeline items that NEED APPROVAL: P-1 (LOD2 and switch distances), P-2 (weighted normals), P-3 (vertex-colour wear), P-4 (new surfaces `Door_Enamel`, `Prop_SignEngraved`, `Prop_KeyTagNo`, `Run_ExitSign_Dead`).
-  - **Asset count** (`10` §9): 38 assets. The 6 for Run and Exit are `Kit_DoorLeaf_Ward`, `Kit_DoorLeaf_SteelLite`, `Kit_ExitDevice_Crossbar`, `Kit_ExitSign`, `Kit_WindowFrame_Alu` and `Kit_MiniBlind_Lowered`, so 32 come first.
+  - **Asset count** (`10` §9): 38 assets. The 6 for Run and Exit are `Kit_DoorLeaf_Ward`, `Kit_DoorLeaf_SteelLite`, `Kit_ExitDevice_Crossbar`, `Kit_ExitSign`, `Kit_WindowFrame_Alu` and `Kit_MiniBlind_Lowered`, so 32 come first. All 38 are built in the private clone `proj_int` (as of 17:10 the key board's FBX there was overwritten by the computer keyboard restore: the name clash in `02_figma.md` §9).
 - **Sound chat** (`10` §12): `doorType` and `frame` tags, `Mechanism/Lock/KnobTurn` (NEW), `BoltRetract` kept at 0.86, a pull event, no `Unlatch` on the latchless Run ward doors.
 - **平面视觉** (not on the slide, in phase 2): the `Prop_KeyTagNo` and `Prop_SignEngraved` art, and the R10 three-views.
 - **Budgets** (`10` §9.2):
@@ -508,9 +523,9 @@ Rule blocks use head Bayon 88/80 + body 24/26, 2 lines, 156 px apart; they have 
   - no hazard names, no colliders and no Light components on kit parts;
   - event points at floor level.
 
-### DW11 · YOUR CALLS (12 / 12)
+### DW11 · YOUR CALLS (12 / 13)
 
-- **Lede:** "Each call has a default. Confirm or change them; phase 2 builds what you pick."
+- **Lede:** "Each call has a default. Confirm or change it. Phase 2 builds what you pick."
 - **Statement:** "Phase 2: rendered models in every slot, in-game tests, three-views."
 
 Eight blocks, in 2 columns (x 72 and 972, 876 wide) × 4 rows (y 232 / 404 / 576 / 748).
@@ -521,22 +536,15 @@ Eight blocks, in 2 columns (x 72 and 972, 876 wide) × 4 rows (y 232 / 404 / 576
 | # | Head (after "N · ") | Body (default first) | Source |
 |---|---|---|---|
 | 01 | WHICH DOORS LOCK | "Default: about 1 door in 3, fixed per seed. Or: only doors leading deeper, or only doors into Office." | `00` (`lockedDoorShare` ≈ 0.35); `05` §8 item 1 |
-| 02 | WHICH WAY THEY OPEN | "Default: into the taller room, where there is space to swing. Or: a hash per door." | `04` §6.3 item 1; `10` §6.5 item 1 |
-| 03 | PULLING A DOOR | "Default: you step back 0.45 m and it opens toward you. Or: it opens only partway, about 60°." | `04` §6.3 item 2 (step-back ≤ 0.35 s, spherecast-clamped; the 60° partial open when blocked) |
+| 02 | WHICH WAY THEY OPEN | "Default: into the Standard room (the bigger one), so escapes into Low rooms are pulls. Or: a hash per door." | `04` §6.3 item 1; `10` §6.5 item 1. The first wording ("taller room, where there is space to swing") mixed up ceiling height and floor space |
+| 03 | PULLING A DOOR | "Default: step back 0.45 m (60° if blocked). Cost: escaping from the swing side is slower. Or: a push-only rule." | `04` §6.3 item 2 and its "Gameplay consequences". The 60° open is the fallback inside the step-back, not an alternative |
 | 04 | THE LOCK | "Default: deadbolt + knob, the sliding bolt you asked for. Or: a storeroom knob with the key in the knob." | `10` §12 item 6, §0 D6 |
-| 05 | OPENED, THEN SHUT | "Default: it still looks locked but opens on E. Standing ajar is the only far cue." | `05` §8 item 2; `10` §12 item 5 |
-| 06 | A PEEK WINDOW | "Default: no glass in locked doors. Or: a wired-glass slot in Run doors; you see the Relay, it can't see you." | `05` §6.4; `10` §12 item 2 |
-| 07 | RUN AND EXIT | "Default: after Lobby and Office, EXIT letters red. Or: green letters to suit the cyan Exit." | `10` §2.4, §12 item 1 |
-| 08 | OFFICE BLINDS | "Default: raised 1-inch blinds on some Office windows, one bent slat each. Or: none." | `06` §3.2, §6; `10` §5.1, §12 item 3 |
+| 05 | OPENED, THEN SHUT | "Default: yes, it still looks locked but opens on E. Or: an unlocked door never shuts fully; it rests ajar at 10°." | `05` §8 item 2; `10` §12 item 5 |
+| 06 | LOBBY GLASS | "Default: clear, so you see the hall and the Relay through it. Or: hammered glass in some Lobby windows hides them." | `06` §3.1, §6 Red ask 3; `10` §12 item 4. It changes what the player sees through windows, so it is a call, not a quiet default |
+| 07 | OFFICE BLINDS | "Default: raised 1-inch blinds on some Office windows, one bent slat each. Or: all slats straight, or no blinds." | `06` §3.2, §6; `10` §5.1, §12 item 3 |
+| 08 | THE LOD CHANGE | "Default: approve it, so every model ships LOD0, 1 and 2. Or: small parts ship with no LODs and cost draw calls." | `10` §8 P-1, D13, §9.2. Red's highest-spec LOD0/1/2 order depends on it |
 
-**Defaults that stand unless Red objects** (speaker notes only; each is a real but small choice):
-- **Lobby glass:** clear, not hammered. Hammered glass would blur the hall and the Relay (`06` §3.1; `10` §12 item 4).
-- **Run windows:** plain glass with the normal break. Wired glass would need a two-stage break (`06` §3.3).
-- **Exit glass:** the same break. Tempered granules would be an optional tell (`06` §3.4).
-- **Free-door hardware:** a lever, although the A24 frame at 1:27 shows a knob (DW03 honesty note).
-- **"Item glint" accessibility option:** off by default (`03` P5).
-- **Sign text:** EMPLOYEES ONLY on both faces of Lobby and Office locked doors; STAFF ONLY on Run (`05` §6.2; `10` §2.4).
-- **Bent slat:** if Red says no, blinds stay but every slat is straight.
+**The smaller defaults and the two Run/Exit calls moved to DW12** (below). The first build kept them as speaker notes, which Figma frames do not have, so Red could not see or veto them.
 
 **What phase 2 adds** (for the statement and the notes):
 1. **Pre-renders** for every `img:` slot, from the built kit (§6).
@@ -548,6 +556,34 @@ Eight blocks, in 2 columns (x 72 and 972, 876 wide) × 4 rows (y 232 / 404 / 576
 3. **Three-views** of the new kit assets, handed to 平面视觉 for the PROP KIT · THREE-VIEW + ERA section (2324:852) in its K-slide format, with `_front` / `_side` / `_top` slots (`10` §10.5 item 4; R10).
 4. **The approved media batch** (`media_candidates.md`) dropped into the `ref:` slots.
 5. **Era table rows** in `22_era_lock.md` (`05` §4).
+
+### DW12 · LATER, AND ALREADY SET (13 / 13; new in the fix pass)
+
+- **Lede:** "Two calls can wait for Run and Exit. The rest are set unless you say so."
+- **Statement:** "None of this blocks phase 2; any line can still change."
+
+Left column (x 72, 876 wide): two call blocks as on DW11 (heads at y 252 / 416), then two slots of 426 × 317 at y 572.
+
+| # | Head (after "N · ") | Body | Source |
+|---|---|---|---|
+| 09 | A PEEK WINDOW | "Default: no glass in locked doors. Or: a wired-glass slot in Run doors; you see the Relay, it can’t see you." | `05` §6.4; `10` §12 item 2 |
+| 10 | EXIT LETTERS | "Default: red. Or: green, to suit the cyan Exit." | `10` §2.4, §12 item 1 |
+
+| Slot | x, y, w × h | Source | Chip |
+|---|---|---|---|
+| `media:dw12_peek_lite` | 72, 572, 426 × 317 | `IMG/05_r3_close_Office_recommended_lite.jpg` (600, 80, 1300, 601) | "PEEK WINDOW · OFFICE LIGHT · MOCK-UP" |
+| `img:Kit_ExitSign_persp` | 522, 572, 426 × 317 | phase 1: `WIP/G3/G3_exit_sign_close.png` (140, 0, 1484, 1000); phase 2: `Kit_ExitSign` lit and `_Dead` on a wall | "EXIT · RED LETTERS · WIP" |
+
+Right column (x 972): head "ALSO SET" (Bayon 88/80, y 252), then seven one-line rows (Serif 24/26, 44 px apart from y 340):
+1. "Run windows: plain glass. Wired glass would need a two-stage break." (`06` §3.3, §6 Red ask 4)
+2. "Exit windows break like the rest. A different break could be a tell." (`06` §3.4, §6 Red ask 5)
+3. "Free doors get a lever, though the film’s door at 1:27 has a knob." (the DW03 honesty note; value still carries the read past 6 m)
+4. "Locked doors say EMPLOYEES ONLY on both faces; STAFF ONLY in Run." (`05` §6.2; `10` §2.4)
+5. "Item glint option: off. Keys catch the lamp; they never glow." (`03` P5)
+6. "Ray-traced glass aims at the visible pane, never the hidden box." (`10` §7.4; task G14-K5. Without it every window drops out of the trace)
+7. "Bronze frames would reflect white in ray tracing until that is fixed." (`10` §7.3 item 3, a code read, UNVERIFIED; task G14-K3)
+
+The bent-slat fallback is inside DW11 call 7 ("all slats straight"). The steel-door honesty note is on DW03's statement.
 
 ---
 
@@ -643,7 +679,7 @@ All numbers are metres in the door or window root frame of `10` §1.2 / §5.1 un
 ## 6. Slot map (phase 2 fills these; phase 1 shows placeholders)
 
 **Render rules for phase 2:**
-- `_persp`: a 3/4 view from the swing (S) face at 1.62 m eye height, framed so the subject fills about 70 % of the slot height. Use the same light warm-grey studio ground as the PROP KIT section so the decks match. 16:9 for door sets; slot aspect for the rest.
+- `_persp`: a 3/4 view from the swing (S) face at 1.62 m eye height, framed so the subject fills about 70 % of the slot height. Use the same light warm-grey studio ground as the PROP KIT section so the decks match. slot aspect for every slot (door sets are 426 × 316 / 317 since the fix pass).
 - `_front`: an orthographic front view for the three-views.
 - `_close`: 0.3 m hero detail.
 
@@ -651,14 +687,14 @@ Door sets are built from the module FBXs with `10` §6.2's offsets, for the S fa
 
 | Slot | Slide | Size | Contents | Priority |
 |---|---|---|---|---|
-| `img:DoorSet_L0-F_persp` | DW05 | 426 × 240 | `10` §2.1 L0-F row | P1 |
-| `img:DoorSet_OF-F_persp` | DW05 | 426 × 240 | OF-F row | P1 |
-| `img:DoorSet_L0-K_persp` | DW05 | 426 × 240 | L0-K row | P1 |
-| `img:DoorSet_OF-K_persp` | DW05 | 426 × 240 | OF-K row | P1 |
-| `img:DoorSet_RN-F_persp` | DW05 | 426 × 240 | RN-F row | P2 |
-| `img:DoorSet_RN-K_persp` | DW05 | 426 × 240 | RN-K row | P2 |
-| `img:DoorSet_EX-F_persp` | DW05 | 426 × 240 | EX-F row | P2 |
-| `img:DoorSet_EX-K_persp` | DW05 | 426 × 240 | EX-K row | P2 |
+| `img:DoorSet_L0-F_persp` | DW05 | 426 × 316 | `10` §2.1 L0-F row | P1 |
+| `img:DoorSet_OF-F_persp` | DW05 | 426 × 316 | OF-F row | P1 |
+| `img:DoorSet_L0-K_persp` | DW05 | 426 × 317 | L0-K row | P1 |
+| `img:DoorSet_OF-K_persp` | DW05 | 426 × 317 | OF-K row | P1 |
+| `img:DoorSet_RN-F_persp` | DW05 | 426 × 316 | RN-F row | P2 |
+| `img:DoorSet_RN-K_persp` | DW05 | 426 × 317 | RN-K row | P2 |
+| `img:DoorSet_EX-F_persp` | DW05 | 426 × 316 | EX-F row | P2 |
+| `img:DoorSet_EX-K_persp` | DW05 | 426 × 317 | EX-K row | P2 |
 | `img:Kit_Lock_Escutcheon_persp` | DW06 | 276 × 204 | the asset alone | P1 |
 | `img:Kit_Lock_CylinderShell_persp` | DW06 | 276 × 204 | the asset; IC face toward the camera | P1 |
 | `img:Kit_Lock_Plug_persp` | DW06 | 276 × 204 | the asset; the keyway cavity visible | P1 |
@@ -667,7 +703,7 @@ Door sets are built from the module FBXs with `10` §6.2's offsets, for the S fa
 | `img:Kit_Lock_Latchbolt_Mortise_persp` | DW06 | 276 × 204 | the asset | P1 |
 | `img:Kit_Lock_StrikeMortise_persp` | DW06 | 276 × 204 | the asset | P1 |
 | `img:LockSet_Mortise_persp` | DW06 | 276 × 204 | escutcheon + shell + plug + knob on a `Kit_DoorLeaf_Steel` patch, key in, seen from pose P | P1 |
-| `img:KeySet_Board_persp` | DW07 | 426 × 316 | board + ring + key + rect tag on `hook_6` | P1 |
+| `img:KeySet_Rack_persp` | DW07 | 426 × 316 | `Kit_KeyRack` + ring + key + rect tag on `hook_6` | P1 |
 | `img:KeySet_Cabinet_persp` | DW07 | 426 × 316 | cabinet + hung key on `hook_r1_c4` | P1 |
 | `img:KeySet_Hook_persp` | DW07 | 426 × 316 | `Kit_KeyHook` + ring + key + red tag | P1 |
 | `img:KeySet_Desk_persp` | DW07 | 426 × 316 | key flat on a desk top, tag over the edge (an existing desk kit asset) | P1 |
@@ -679,6 +715,7 @@ Door sets are built from the module FBXs with `10` §6.2's offsets, for the S fa
 | `img:Kit_MiniBlind_Raised_persp` | DW08 | 426 × 317 | the blind over a steel frame | P1 (option) |
 | `img:Kit_WindowFrame_Steel_close` | DW09 | 576 × 316 | a corner at 0.3 m: screws, tape, glass edge | P1 |
 | `img:Kit_WindowFrame_Wood_close` | DW09 | 576 × 317 | stool horn + apron at 0.3 m | P1 |
+| `img:Kit_ExitSign_persp` | DW12 | 426 × 317 | `Kit_ExitSign` (lit) and `Kit_ExitSign_Dead` on a wall | P2 |
 | `ref:re8_steam_castle_hall` | DW01 | 576 × 316 | C1 | needs OK |
 | `ref:re8_walkthrough_1-36-39` | DW01 | 576 × 317 | C2 | needs OK |
 | `ref:henryford_tivoli_motel_key` | DW07 | 426 × 317 | C8 | needs OK |
@@ -712,8 +749,8 @@ The `_front` renders for the three-views (every P1 asset in `10` §9) go to 平�
 
 ## 8. Open points the builder should not paper over
 
-- **In phase 1, all 28 `img:` slots and all 5 `ref:` slots are placeholders.** DW05 is the emptiest slide (8 of 8). DW01 has no image until Red approves C1 and C2. That is expected. Do not fill them with lookalike images or AI art.
+- **After the fix pass, 14 `img:` slots hold WIP previews** in the measured colours (`02_figma.md` §5.2) and 15 are placeholders. All 5 `ref:` slots wait for Red's OK, and DW01 is hidden until C1 and C2 arrive. Do not fill slots with lookalike images or AI art.
 - **The shadow pair (DW02) shows the retired B prototype.** The point is the leaf's shadow, which is the same on A.
-- **The head-dip strip (DW06) shows the older knob-keyway mock-up.** Its chip says MOCK-UP.
+- **The head-dip strip (DW06) shows the older knob-keyway mock-up.** Its first chip says "OLD MOCK-UP · KEY IN KNOB", and DW06 now also shows the proposed lock (WIP).
 - **RE8's single swing and true stops are UNVERIFIED by a text source** (`04` §2.3). DW01 claims only what V1 and V2 show.
 - **Run and Exit readability is UNVERIFIED until T6** (`10` §2.2). Their cells stay marked P2.

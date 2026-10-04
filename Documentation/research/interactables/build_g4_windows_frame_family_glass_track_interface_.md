@@ -8,6 +8,38 @@ Spec: `10_spec.md` §5, §2.3 (ranch casing), §9.4, §10.0, §10.4. Detail: `06
 
 ---
 
+## 0. Second pass (2026-10-03 16:4x–17:xx, Red: "Try again")
+
+The first pass's files were all in place and had been consumed by the window landing (`window_landing/01_integration.md`, PASS 38,538 / 0). So this pass re-did the build and the verification from scratch on the final modules, and fixed what the review found.
+
+1. **Rebuilt all five modules** with `build_asset.py` into `proj_int` (log `scratchpad/g4/rebuild/build1.log`). Every triangle count matches §1, so the modules reproduce exactly.
+2. **Fixed: the two blind turntables were empty.** `Kit_MiniBlind_Raised_a/_b.png` and `Kit_MiniBlind_Lowered_a/_b.png` showed only the floor.
+   - Cause: kitlib's `preview()` stands every asset on a floor at Blender z = 0 (`kitlib.py:847-856`). The blinds' origin is the rail top (spec §9.4, origin P = `blind_rail`), so each blind hung under that floor.
+   - Fix: `interact_window_common.lift_preview(kit, lift)` wraps `preview()` on that one kit instance. It lifts the finished mesh for the two stills and then restores the mesh and the bounds. kitlib is not edited.
+   - `build_asset.py` previews after the FBX, the JSON and every variant are written (`build_asset.py:54-64`). Both blind JSONs are byte-identical before and after the fix (sha256 checked).
+3. **Re-ran every §10.4 check on the final build, on LOD0 and on LOD1** (`scratchpad/g4/g4_check2.py`, results in `scratchpad/g4/checks/`). One check is new:
+   - `fr_wear` coverage on the **joined** mesh. A part without the attribute would join with alpha 0, and black reads as fully worn.
+   - Result: 0 unpainted elements in every asset (table below).
+4. **Re-rendered every in-context close-up on the final build.** The first pass rendered some of them before its last three internal changes. Three screw shots are new:
+   - `Kit_WindowFrame_Steel_screwslot_0p12m.png`: one jamb screw, square to its seat. The dome, the saw cut and the formed channel all read.
+   - `_screwrow_0p3m.png`: the jamb stop at 0.3 m. At the real 216 mm centres only one screw fits in the frame, which is correct for the spec size (Ø 7 mm).
+   - `_headscrews_0p3m.png`: the head stop seen from below.
+5. **Anchors re-read from the exported JSON.** All 19 are exact (to 1e-6) in all four frame files. The blind anchors are as listed in §4.
+
+| Second-pass check (final build) | Wood | Steel | Alu | Raised blind | Lowered blind |
+|---|---|---|---|---|---|
+| Tris LOD0 / LOD1 | 2,322 / 1,044 | 3,862 / 1,438 | 1,088 / 1,064 | 2,572 / 876 | 6,376 / 1,594 |
+| (a) clear-zone vertices, LOD0 / LOD1 | 0 / 0 | 0 / 0 | ALU_A | — | — |
+| (b) rays escaping from 2,126 trim points, LOD0 / LOD1 | 0 / 0 | 0 / 0 | ALU_B | — | — |
+| (c) slab overlaps, LOD0 / LOD1 | 0 / 0 | 0 / 0 | ALU_C | — | — |
+| (c) edge samples visible at 0° / 30° / 60°, both faces, LOD0 and LOD1 | 0 | 0 | ALU_E | — | — |
+| (c) first exposure | 62° | 62° | ALU_F | — | — |
+| (d) vertices inside the opening volume | — | — | — | RB_D | — |
+| (e) lowest point over the opening | — | — | — | RB_E | — |
+| `fr_wear` unpainted elements | 0 | 0 | ALU_W | RB_W | LB_W |
+
+---
+
 ## 1. Assets
 
 | Asset | Module | Tris LOD0 / LOD1 (budget §9.4) | Slots (submesh order) | Unity bounds (window root) | Priority |
@@ -183,4 +215,9 @@ This kit models no glass. The RT target belongs on the visible pane: the glass t
 7. **LOD2 and switch distances:** declared only. `kitlib` exports LOD1 today, and LOD2 waits for P-1. `fr_lod2_drop` is set on the parts listed above.
    - For P-1's author: `make_lod1`'s global collapse opens seams between separate pieces and redistributes the reduction when vertices are protected.
    - A per-part ratio, or a boundary-locked collapse, would let future modules skip the welding and pinning workarounds above.
-8. **Preview directory:** the computed task's build line said `interactables_prev/g3`, which looks copied from G3. I used `interact_previews/G4`, which the task's BUILD section names.
+8. **Preview directory:** the computed task's build line said `interactables_prev/g3`, which looks copied from G3. I used `interact_previews/G4`, which the task's BUILD section names. (Same in the second pass.)
+9. **The S1 stop band still needs the map chat's yes.**
+   - `00_map_constraints.md` says glazing and frame "must stay outside the 1.4 × (0.35–2.0) opening" once the pane is gone.
+   - Every frame here puts 16 mm of render-only stop inside that edge, by design: spec §5.2, S1. The alternative, S0, loses the stops.
+   - Spec §6.6 item 2 asks for the clarification. The window landing measured no gameplay effect: the climb and the Relay probe pass at 411 / 411 windows. Until the map chat confirms, treat S1 as pending.
+10. **Kit turntables of hanging assets.** Any future asset whose origin sits above its geometry (blinds, signs hung from a rail) hits the same empty-turntable problem. `lift_preview()` is the module-side workaround. A kitlib option, such as a preview floor at the bounds minimum, would be the clean fix (NEEDS APPROVAL, visual chat).

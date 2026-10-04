@@ -11,7 +11,8 @@ Material:
   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _FR_PRINT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -24,11 +25,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 05e0bf94e7d86449a9acfb2c70708d60, type: 3}
+        m_Texture: {fileID: 2800000, guid: 7aaae96d9271141cdbfb72cb80cada03, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 4eda6d6c49f9b4d1b969f60a9a409f19, type: 3}
+        m_Texture: {fileID: 2800000, guid: b44f6f8d5018c4637921f38ca0848589, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
@@ -40,7 +41,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MaskMap:
-        m_Texture: {fileID: 2800000, guid: d7b95659c95a54fda8d58e53902b8471, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3dd3e135ef2da43499286842784d31dd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PrintTex:
+        m_Texture: {fileID: 2800000, guid: 49155c40a0d0f4cdcb40032c0217cbe0, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -57,13 +62,19 @@ Material:
     - _MeshUV: 0
     - _Metallic: 0
     - _OcclusionStrength: 0.8
+    - _PrintAmount: 1
     - _Smoothness: 1
     - _StainStrength: 0.45
     - _UseEmission: 0
+    - _UsePrint: 1
     - _WetStrength: 0
     m_Colors:
     - _BaseColor: {r: 0.9, g: 0.88, b: 0.8, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _InkCream: {r: 0.8901961, g: 0.8352941, b: 0.5803922, a: 1}
+    - _InkDeep: {r: 0.4627451, g: 0.41568628, b: 0.20392157, a: 1}
+    - _InkGround: {r: 0.8235294, g: 0.7607843, b: 0.4862745, a: 1}
+    - _InkMid: {r: 0.6745098, g: 0.6039216, b: 0.32156864, a: 1}
     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
     - _TileSize: {r: 0.75, g: 1.125, b: 0, a: 0}
   m_BuildTextureStacks: []

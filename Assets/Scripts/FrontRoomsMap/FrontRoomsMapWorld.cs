@@ -103,8 +103,24 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public event Action<GridCoord> KeyTaken;
     /// <summary>Every frame E is held on glass: the window's position and how far it is to breaking (0-1).</summary>
     public event Action<Vector3, float> GlassHold;
-    /// <summary>E was let go before the glass broke.</summary>
+    /// <summary>E was let go before the glass broke (or, in tap mode, a tap's credit ran out: the progress is kept).</summary>
     public event Action<Vector3> GlassHoldReleased;
+    /// <summary>
+    /// The glass break (visual chat's plan §4.4, Red 2026-10-03). E went down on
+    /// a pane: the window, the impact (the base-eye hit, kept 0.2 m inside the
+    /// exposed glass; fixed once the pane has cracked) and the break's seed.
+    /// </summary>
+    public event Action<Window, Vector3, int> GlassHoldStarted;
+    /// <summary>Every frame E is held on glass, with the window (GlassHold, kept for the sound layer, carries only its position).</summary>
+    public event Action<Window, float> WindowHeld;
+    /// <summary>The pane cracked further: stage 1 at 0.35, 2 at 0.70 of the hold. Once each; a resumed hold never replays one.</summary>
+    public event Action<Window, int> GlassCracked;
+    /// <summary>The pane gave (with GlassBroken): the window, the impact, and the strike's impulse on the pieces (base-eye forward at E-down × 3 m/s).</summary>
+    public event Action<Window, Vector3, Vector3> WindowShattered;
+    /// <summary>A window was built (broken ones too, with no pane): its break record, to restore the glass.</summary>
+    public event Action<Window, GlassBreakRecord> WindowBuilt;
+    /// <summary>A built window goes (its chunk dropped or rebuilt): clean up what hangs on its root.</summary>
+    public event Action<Window> WindowReleased;
     /// <summary>The player tried a door that needs this zone's key.</summary>
     public event Action<Vector3> DoorLocked;
     /// <summary>
@@ -214,13 +230,47 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     public sealed class Window
     {
+        /// <summary>The gameplay box `Window pane {a}-{b}` (its collider is what E aims at); null once broken.</summary>
         public GameObject pane;
+        /// <summary>`Window {a}-{b}`: unscaled, the opening's centre on the wall line at floor level, +Z into cell b. Built for broken windows too.</summary>
+        public Transform root;
+        public GridCoord a, b;
         public long edge;
         public Vector3 position;
         public float hold;
         // Pushed this frame or since the last pause (tap mode pauses between taps, keeping the progress).
         public bool pushing;
+        /// <summary>The break so far: 0 intact, 1 and 2 cracked, 3 shattered (also kept by edge, GlassBreakRecord).</summary>
+        public int stage;
+        // A hold under way (BeginGlassHold until a release or the shatter), and the strike's direction.
+        internal bool started;
+        internal Vector3 strike;
+        // WindowBuilt has gone out for it (so WindowReleased does too).
+        internal bool announced;
     }
+
+    /// <summary>
+    /// A window's break, kept by edge like the broken windows, so a dropped,
+    /// rebuilt or shifted chunk restores it. Stage 0 intact, 1 and 2 cracked,
+    /// 3 shattered. The seed comes from the map seed and the edge. The impact
+    /// is in the window root's frame (metres: x across, y up from the floor);
+    /// impactUV is the same point over the exposed glass (1.367 × 1.617 m from
+    /// x −0.6835, y 0.3665). Rotation (degrees) turns the crack pattern, from the
+    /// seed. Side is +1 when struck from cell a (the glass goes toward b, the
+    /// root's +Z), −1 from b. The impact is fixed once the pane has cracked.
+    /// </summary>
+    public struct GlassBreakRecord
+    {
+        public int stage;
+        public int seed;
+        public Vector2 impact;
+        public Vector2 impactUV;
+        public float rotation;
+        public int side;
+    }
+
+    // The exposed glass in the window root's frame (the visual chat's 16 mm stops hide the rest of the 1.4 × 1.65 box).
+    const float GlassExposedHalfWidth = .6835f, GlassExposedBottom = .3665f, GlassExposedTop = 1.9835f;
 
     sealed class BuiltChunk
     {
@@ -303,6 +353,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly HashSet<GridCoord> failedChunks = new HashSet<GridCoord>();
     readonly HashSet<GridCoord> keysHeld = new HashSet<GridCoord>();
     readonly HashSet<long> brokenWindows = new HashSet<long>();
+    // Window breaks by edge (stage, seed, impact): kept through drops, rebuilds and shifts.
+    readonly Dictionary<long, GlassBreakRecord> glassBreaks = new Dictionary<long, GlassBreakRecord>();
+    // The glass kit's component on each window root, when the visual chat's glass exists (found by reflection).
+    static Type glassBreakable;
+    static bool glassBreakableResolved;
     readonly HashSet<long> openDoors = new HashSet<long>();
     readonly HashSet<long> brokenDoors = new HashSet<long>();
     // Lamp modes set at run time (SetLampMode): kept by cell like brokenDoors, so a dropped,
@@ -827,6 +882,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 windowByCollider.Remove(c);
                 shellColliders.Remove(c);
             }
+        // The glass kit cleans up after the map's own bookkeeping, while the objects still exist.
+        foreach (var window in chunk.windows) RaiseWindowReleased(window);
         FreeMeshes(chunk);
         if (chunk.root != null) Kill(chunk.root);
     }
@@ -854,7 +911,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             built.Remove(coord);
             failedChunks.Add(coord);
             Debug.LogError("[FrontRoomsMap] Chunk " + coord + " failed to build and is left out until it leaves range: " + e);
+            return;
         }
+        // Announced once the chunk is registered, outside the guard round the build.
+        foreach (var window in chunk.windows) RaiseWindowBuilt(window);
     }
 
     void BuildInto(GridCoord coord, BuiltChunk chunk)
@@ -1133,18 +1193,76 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         else
         {
-            if (brokenWindows.Contains(edge)) return;
-            var pane = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            pane.name = "Window pane " + a + "-" + b;
-            pane.transform.SetParent(chunk.root.transform, false);
-            pane.transform.localPosition = start + along * c + Vector3.up * ((sill + openingTop) * .5f);
-            pane.transform.localScale = Abs(along * width + across * ModuleUnits.GlassThickness + Vector3.up * (openingTop - sill));
-            pane.GetComponent<Renderer>().sharedMaterial = glass;
-            pane.AddComponent<FrontRoomsMetalGlassTarget>();
-            var window = new Window { pane = pane, edge = edge, position = openingCenter };
+            // The window root: unscaled, at the opening's centre on the wall line at floor level, +Z into cell b.
+            var root = new GameObject("Window " + a + "-" + b).transform;
+            root.SetParent(chunk.root.transform, false);
+            root.localPosition = start + along * c;
+            var intoB = new Vector3(b.x - a.x, 0f, b.y - a.y);
+            root.localRotation = Quaternion.LookRotation(intoB, Vector3.up);
+            var window = new Window { root = root, a = a, b = b, edge = edge, position = openingCenter };
+            var record = GlassBreakOf(window);
+            window.stage = record.stage;
+            if (!brokenWindows.Contains(edge))
+            {
+                // The gameplay box, as before (world transform unchanged), now under the root.
+                var pane = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pane.name = "Window pane " + a + "-" + b;
+                pane.transform.SetParent(root, false);
+                pane.transform.localPosition = Vector3.up * ((sill + openingTop) * .5f);
+                pane.transform.localScale = new Vector3(width, openingTop - sill, ModuleUnits.GlassThickness);
+                pane.GetComponent<Renderer>().sharedMaterial = glass;
+                pane.AddComponent<FrontRoomsMetalGlassTarget>();
+                window.pane = pane;
+                // A cracked pane resumes from the stage it reached.
+                window.hold = StageFloor(window.stage);
+                windowByCollider[pane.GetComponent<Collider>()] = window;
+            }
+            // The visual chat's glass draws the slab and every stage on the root; the box keeps only its collider.
+            var breakable = GlassBreakableType();
+            if (breakable != null)
+            {
+                root.gameObject.AddComponent(breakable);
+                if (window.pane != null) window.pane.GetComponent<Renderer>().enabled = false;
+            }
             chunk.windows.Add(window);
-            windowByCollider[pane.GetComponent<Collider>()] = window;
         }
+    }
+
+    // The glass kit hears of windows one handler at a time: a handler that throws is logged and never
+    // breaks the map's own building or bookkeeping (that code is not the map's).
+    void RaiseWindowBuilt(Window window)
+    {
+        window.announced = true;
+        if (WindowBuilt == null) return;
+        var record = GlassBreakOf(window);
+        foreach (Action<Window, GlassBreakRecord> handler in WindowBuilt.GetInvocationList())
+        {
+            try { handler(window, record); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+    }
+
+    void RaiseWindowReleased(Window window)
+    {
+        if (!window.announced || WindowReleased == null) return;
+        window.announced = false;
+        foreach (Action<Window> handler in WindowReleased.GetInvocationList())
+        {
+            try { handler(window); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+    }
+
+    static Type GlassBreakableType()
+    {
+        if (glassBreakableResolved) return glassBreakable;
+        glassBreakableResolved = true;
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var type = assembly.GetType("FrontRoomsGlassBreakable");
+            if (type != null && typeof(Component).IsAssignableFrom(type)) { glassBreakable = type; break; }
+        }
+        return glassBreakable;
     }
 
     static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
@@ -2310,29 +2428,138 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return from >= bearing - half && bearing <= from ? from : to;
     }
 
+    /// <summary>Tools and tests: the nearest built, unbroken window to a point, outside the start area (null when none).</summary>
+    public Window NearestIntactWindowForTools(Vector3 near)
+    {
+        Window best = null;
+        var bestDistance = float.MaxValue;
+        foreach (var window in windowByCollider.Values)
+        {
+            if (window.pane == null || !IsBuilt(window.a) || !IsBuilt(window.b) || InStartArea(window.a) || InStartArea(window.b)) continue;
+            var d = (window.position - near).sqrMagnitude;
+            if (d < bestDistance) { bestDistance = d; best = window; }
+        }
+        return best;
+    }
+
+    /// <summary>A struck window's break record (stage, seed, impact, rotation, side); false for a window never struck (use GlassBreakRecordOf for its fresh record).</summary>
+    public bool TryGetGlassBreak(long edge, out GlassBreakRecord record) => glassBreaks.TryGetValue(edge, out record);
+
+    /// <summary>A window's break record: the stored one once struck, otherwise the fresh one WindowBuilt gave (its seed and rotation, stage 0 or 3).</summary>
+    public GlassBreakRecord GlassBreakRecordOf(Window window) => GlassBreakOf(window);
+
+    GlassBreakRecord GlassBreakOf(Window window)
+    {
+        if (glassBreaks.TryGetValue(window.edge, out var record)) return record;
+        var seed = (int)MapHash.Hash(Cache.Generator.Seed, window.a.x * 7919 + window.b.x, window.a.y * 7919 + window.b.y, 307);
+        return new GlassBreakRecord
+        {
+            stage = brokenWindows.Contains(window.edge) ? 3 : 0, seed = seed, impact = new Vector2(0f, (GlassExposedBottom + GlassExposedTop) * .5f),
+            impactUV = new Vector2(.5f, .5f), rotation = MapHash.Unit((uint)seed) * 360f, side = 1,
+        };
+    }
+
+    // Where a hold resumes after a release: the stage reached (cracks do not heal).
+    static float StageFloor(int stage) => stage >= 2 ? FrontRoomsShotTimings.GlassBreak.Crack2 : stage >= 1 ? FrontRoomsShotTimings.GlassBreak.Crack1 : 0f;
+
+    /// <summary>
+    /// E went down on a pane: the hold begins. The impact is
+    /// <paramref name="hitPoint"/> (the base-eye hit), kept 0.2 m inside the
+    /// exposed glass, while the pane is uncracked; once it has cracked the
+    /// cracks' own centre stays. <paramref name="strike"/> is the base-eye
+    /// forward (the pieces' impulse at the shatter). Raises GlassHoldStarted.
+    /// Returns the window, or null when the collider is not a pane.
+    /// </summary>
+    public Window BeginGlassHold(Collider c, Vector3 hitPoint, Vector3 strike)
+    {
+        if (c == null || !windowByCollider.TryGetValue(c, out var window)) return null;
+        var record = GlassBreakOf(window);
+        if (record.stage == 0)
+        {
+            var local = window.root.InverseTransformPoint(hitPoint);
+            var m = FrontRoomsShotTimings.GlassBreak.ImpactMinFromFrame;
+            var x = Mathf.Clamp(local.x, -GlassExposedHalfWidth + m, GlassExposedHalfWidth - m);
+            var y = Mathf.Clamp(local.y, GlassExposedBottom + m, GlassExposedTop - m);
+            record.impact = new Vector2(x, y);
+            record.impactUV = new Vector2((x + GlassExposedHalfWidth) / (2f * GlassExposedHalfWidth), (y - GlassExposedBottom) / (GlassExposedTop - GlassExposedBottom));
+        }
+        // The side of this strike (a pane cracked from one side can be finished from the other): it says where the glass goes.
+        var from = player != null ? player.position : hitPoint - strike;
+        record.side = window.root.InverseTransformPoint(from).z <= 0f ? 1 : -1;
+        glassBreaks[window.edge] = record;
+        window.started = true;
+        window.strike = strike.sqrMagnitude > 1e-6f ? strike.normalized : window.root.forward * record.side;
+        GlassHoldStarted?.Invoke(window, ImpactWorld(window, record), record.seed);
+        return window;
+    }
+
+    Vector3 ImpactWorld(Window window, GlassBreakRecord record) => window.root.TransformPoint(new Vector3(record.impact.x, record.impact.y, 0f));
+
+    /// <summary>The impact of a window's break, in world space (the base-eye hit at the first strike; the cracks' centre once cracked).</summary>
+    public Vector3 GlassImpact(Window window) => ImpactWorld(window, GlassBreakOf(window));
+
+    /// <summary>Hold progress on a window from the base-eye hit; returns true the frame the glass breaks. Begins the hold if E-down did not.</summary>
+    public bool Hold(Collider c, Vector3 hitPoint, float dt, out float progress)
+    {
+        progress = 0f;
+        if (c == null || !windowByCollider.TryGetValue(c, out var window)) return false;
+        if (!window.started)
+        {
+            var strike = player != null ? hitPoint - player.position : window.root.forward;
+            strike.y = 0f;
+            BeginGlassHold(c, hitPoint, strike);
+        }
+        return Hold(c, dt, out progress);
+    }
+
     /// <summary>Hold progress on a window; returns true the frame the glass breaks.</summary>
     public bool Hold(Collider c, float dt, out float progress)
     {
         progress = 0f;
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return false;
+        if (!window.started)
+        {
+            var strike = window.pane.transform.position - (player != null ? player.position : window.position - window.root.forward);
+            strike.y = 0f;
+            BeginGlassHold(c, window.pane.transform.position, strike);
+        }
         window.hold += dt;
         window.pushing = true;
-        progress = Mathf.Clamp01(window.hold / 1f);
+        progress = Mathf.Clamp01(window.hold / FrontRoomsShotTimings.GlassBreak.HoldSeconds);
         GlassHold?.Invoke(window.position, progress);
-        if (window.hold < 1f) return false;
+        WindowHeld?.Invoke(window, progress);
+        var record = GlassBreakOf(window);
+        var stage = FrontRoomsShotTimings.GlassBreak.StageAt(progress);
+        // Each crack once: a hold that jumps both beats in one frame still cracks twice, in order.
+        while (window.stage < Mathf.Min(stage, 2))
+        {
+            window.stage++;
+            record.stage = window.stage;
+            glassBreaks[window.edge] = record;
+            GlassCracked?.Invoke(window, window.stage);
+        }
+        if (stage < 3) return false;
+        window.stage = record.stage = 3;
+        glassBreaks[window.edge] = record;
+        window.started = window.pushing = false;
         brokenWindows.Add(window.edge);
         windowByCollider.Remove(c);
+        // Only the collider object goes: the root (and the glass hung on it) stays.
         Kill(window.pane);
+        window.pane = null;
         GlassBroken?.Invoke(window.position);
+        WindowShattered?.Invoke(window, ImpactWorld(window, record), window.strike * FrontRoomsShotTimings.GlassBreak.ShatterImpulse);
         return true;
     }
 
+    /// <summary>E let go (or the aim left the pane) before the break: the hold drops back to the stage reached, never below it.</summary>
     public void ReleaseHold(Collider c)
     {
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
         if (window.hold > 0f && window.pushing) GlassHoldReleased?.Invoke(window.position);
-        window.hold = 0f;
+        window.hold = StageFloor(window.stage);
         window.pushing = false;
+        window.started = false;
     }
 
     /// <summary>

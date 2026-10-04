@@ -69,3 +69,17 @@ Status 2026-10-03. Nothing on this list has been downloaded. The visual chat wil
 
 - A **5-20R "T-slot" duplex face, straight on**, any era before the TR shutters (2008), to fix the arm size and direction of `Kit_OutletDuplex20` (§1.2 is ESTIMATE). Leads: Commons "NEMA 5-20" categories; the Arrow Hart J-2 sheet above (internal crop only).
 - A **side or section view of a thermoset 1-gang plate** (edge profile, back rim), or one real plate measured with calipers. It replaces every profile ESTIMATE in `10_spec.md` §1.2. A measured plate needs no download.
+
+## Added by build group O3 (floor and surface boxes, 2026-10-03; not downloaded)
+
+These would replace the O3 ESTIMATES listed in `build_o3_floor_and_surface_boxes_p2_.md` §4. Manufacturer images are copyrighted: internal reference only.
+
+| Proposed filename | Page URL | Direct URL | Approx size | What it proves |
+|---|---|---|---|---|
+| `om_o3_01_tb_sfh40_tombstone.jpg` | https://www.gexpro.com/p/9246/thomas-betts/above-flr-svc-ftg-w-1-dplx-rcpt-/785991635041/sfh-40-rg (S29) | unknown (product image on the page) | ~50–150 KB | Front-view shape of the SFH-40 housing, the duplex orientation, the flange and the screw layout (O3 modelled a tombstone front with R 16 corners and a sideways duplex) |
+| `om_o3_02_tb_sfh50_back_to_back.jpg` | https://www.rexelusa.com/p/9202/thomas-betts/abv-flr-svc-ftg-2bk-bk-dplx-rcpt-/785991635607/sfh-50-2rg (S29) | unknown | ~50–150 KB | The back-to-back housing (O3: same casting, both faces) |
+| `om_o3_03_hubbell_sa6685g_spec.pdf` | https://hubbellcdn.com/specsheet/WIRING_SA6685G_spec.pdf (S29) | same | ~0.3–1 MB PDF | Dimensioned drawing of a period-type above-floor fitting (wall thickness, corner radii) |
+| `om_o3_04_handy_box_duplex_cover.jpg` | source not found yet (search: "handy box cover duplex receptacle 4-1/8 x 2-5/16") | unknown | ~100 KB | Cover size and overhang, the raised profile, and whether the screws are 2 ends + centre (O3 modelled all three) |
+| `om_o3_05_emt_offset_connector.jpg` | source not found yet (search: "1/2 in EMT set screw offset connector") | unknown | ~100 KB | The offset connector's S-neck and its offset (O3: 12.3 mm over 24 mm) |
+| `om_o3_06_emt_one_hole_strap.jpg` | source not found yet (search: "1/2 in EMT one hole strap") | unknown | ~100 KB | Strap length, width and foot (spec 30 x 22 x 22 is an ESTIMATE; real straps run longer) |
+| `om_o3_07_steelcase9000_powered_base.jpg` | https://www.steelcase.com/content/uploads/2015/01/series9000-178.pdf (S30) | same | 9.8 MB PDF | Receptacle position and bezel in the panel base cover (O3: one sideways duplex per face at x = +-0.30 m, 0.07 m high) |

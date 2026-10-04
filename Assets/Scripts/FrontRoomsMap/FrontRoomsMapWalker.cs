@@ -152,7 +152,7 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.E))
         {
-            if (world.Hold(aimed, dt, out holdProgress))
+            if (world.Hold(aimed, hit.point, dt, out holdProgress))
             {
                 Flash("GLASS BROKEN  ·  LOUDEST NOISE");
                 aimed = null;

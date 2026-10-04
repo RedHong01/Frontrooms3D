@@ -46,7 +46,7 @@ namespace FrontRooms.Audio
         }
 
         /// <summary>Bumped with every change to the audio scripts, so a console line says which code is running.</summary>
-        public const string CodeVersion = "2026-10-03.5";
+        public const string CodeVersion = "2026-10-03.6";
 
         /// <summary>
         /// Which sound set is loaded: the audio code version plus the bank build time and short checksums of the

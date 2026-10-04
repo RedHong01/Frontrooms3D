@@ -1,0 +1,78 @@
+"""Door previews re-rendered with the spec albedos (10 §7.3), for the proposal deck only.
+Reads FBX from proj_int (read-only); writes PNGs to dwfix/render/out.
+Blender -b --factory-startup --python spec_doors.py -- <shot> [...]   shots: l0f l0k ofk"""
+import sys, os, math
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bpy
+from mathutils import Vector, Matrix
+import scene_lib as S
+import kitlib
+
+def s2l(c):
+    c = c / 255.0
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+SPEC = {"Prop_SteelBrown": (58, 45, 36), "Prop_WoodWalnut": (73, 47, 31), "Door_Veneer": (157, 109, 59),
+        "Door_Enamel": (205, 197, 176), "Prop_WoodOak": (154, 106, 57), "Painted_Metal": (210, 205, 189),
+        "Prop_Aluminium": (184, 183, 180)}
+for k, rgb in SPEC.items():
+    _, rough, metal = kitlib.SLOTS.get(k, ((0, 0, 0), 0.5, 0.0))
+    kitlib.SLOTS[k] = (tuple(s2l(c) for c in rgb), rough, metal)
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+AX, AZ = S.AXIS
+C = Matrix(((-1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
+Ci = C.inverted()
+def Ry(deg):
+    a = math.radians(deg); c, s = math.cos(a), math.sin(a)
+    return Matrix(((c, 0, s, 0), (0, 1, 0, 0), (-s, 0, c, 0), (0, 0, 0, 1)))
+def T(v): return Matrix.Translation(Vector(v))
+def to_b(Mu): return C @ Mu @ Ci
+
+def door(frame_name, leaf_name, angle):
+    S.reset(); S.render_setup(samples=96)
+    fr = S.import_asset(frame_name); lf = S.import_asset(leaf_name)
+    S.set_materials(fr); S.set_materials(lf)
+    S.rot_about_axis(lf, angle)
+    S.wall_standin(); S.floor()
+    return fr, lf
+
+for shot in argv:
+    if shot == "l0f":      # same view as G1_wood_open95
+        door("Kit_DoorFrame_Wood", "Kit_DoorLeaf_Veneer", 95)
+        S.area_light((1.8, 2.6, 0.6), (0.3, 1, 0.5), 70, 1.5)
+        S.area_light((-1.2, 2.2, 0.5), (0, 1, 0.5), 25, 1.0, name="back")
+        S.camera((1.9, 1.62, 1.9), (0.3, 1.0, 0.3), fov=62, res=(1600, 900))
+    elif shot == "l0k":    # pull face at 1.5 m, as G1_steel_s15, wider frame
+        door("Kit_DoorFrame_Steel", "Kit_DoorLeaf_Steel", 0)
+        S.area_light((1.6, 2.6, 0.2), (0, 1, 0.5), 60, 1.5)
+        S.area_light((1.2, 1.4, 1.6), (0, 1, 0.5), 14, 1.0, name="fill")
+        S.camera((1.75, 1.62, 1.05), (0, 1.05, 0.5), fov=76, res=(1600, 900))
+    elif shot in ("ofk", "off"):    # closer on the steel frame (ofk: steel leaf; off: oak leaf)
+        S.reset(); S.render_setup(samples=96)
+        frame = S.import_asset("Kit_DoorFrame_Steel"); leaf = S.import_asset("Kit_DoorLeaf_Steel" if shot == "ofk" else "Kit_DoorLeaf_Veneer_Oak")
+        parts = {k: S.import_asset(n) for k, n in (("body", "Kit_DoorCloser_Body"), ("arm", "Kit_DoorCloser_Arm"),
+                                                   ("fore", "Kit_DoorCloser_Forearm"), ("shoe", "Kit_DoorCloser_Shoe"))}
+        for o in [frame, leaf, *parts.values()]:
+            S.set_materials(o)
+        S.wall_standin(trims=False); S.floor()
+        # closer geometry at 0 deg (closer_check.py place(0))
+        A, B = 0.240, 0.260; SP0 = (0.062, 0.520); F = (0.125, 0.100)
+        MOUNT = Vector((0.022, 2.0275, 0.545)); SHOE = Vector((0.125, 2.130, 0.100))
+        Sx, Sz = SP0
+        L = math.hypot(F[0] - Sx, F[1] - Sz); ex, ez = (F[0] - Sx) / L, (F[1] - Sz) / L
+        t = (A * A - B * B + L * L) / (2 * L); h = math.sqrt(max(A * A - t * t, 0.0))
+        px, pz = Sx + ex * t, Sz + ez * t
+        c1 = (px - ez * h, pz + ex * h); c2 = (px + ez * h, pz - ex * h)
+        def ld(p): return (p[0] - 0.022)
+        E = c1 if ld(c1) > ld(c2) else c2
+        phi_a = math.degrees(math.atan2(-(E[1] - Sz), E[0] - Sx))
+        phi_f = math.degrees(math.atan2(-(F[1] - E[1]), F[0] - E[0]))
+        parts["body"].matrix_world = to_b(T(MOUNT) @ Ry(90))
+        parts["arm"].matrix_world = to_b(T((Sx, 2.068, Sz)) @ Ry(phi_a))
+        parts["fore"].matrix_world = to_b(T((E[0], 2.080, E[1])) @ Ry(phi_f))
+        parts["shoe"].matrix_world = to_b(T(SHOE) @ Ry(90))
+        S.area_light((1.4, 2.35, 0.7), (0.2, 2.0, 0.4), 45, 1.2)
+        S.area_light((0.6, 1.2, -0.6), (0.2, 2.0, 0.4), 10, 0.8, name="fill")
+        S.camera((1.25, 1.62, 1.15), (0.10, 1.75, 0.45), fov=62, res=(1600, 900))
+    S.render(os.path.join(S.PREV, "spec_%s.png" % shot))

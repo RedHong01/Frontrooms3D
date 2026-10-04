@@ -6,7 +6,14 @@ Some files are marked "already on disk". The research agents fetched them as tex
 
 Sizes marked "est." are estimates.
 
-## RE8 (slide DW01; its two image slots are empty until these arrive)
+## Ask first: C1 and C2 (one request, about 1.3 MB in all)
+
+Slide DW01 ("What we take from RE8") answers Red's core request, and it is **hidden** until these two arrive: a research slide must lead with real material, and it has none yet. Ask for C1 and C2 at the top of the batch, fill DW01's two `ref:` slots, then unhide it (`02_figma.md` §2) before Red reviews the deck. If Red says no, DW01 stays hidden and its "RE8 shows … / ours …" rules live only in `01` and `04`.
+
+- **C1**: one official Steam screenshot, 1920 × 1080, about 0.4 MB.
+- **C2**: three walkthrough stills, about 0.3 MB each (the clip is optional). The footage uses a **third-person camera**, not RE8's default first-person view (`04` §2.1 V2); the slide's chip says so.
+
+## RE8 (slide DW01, hidden until these arrive)
 
 | # | Filename to save | Page URL | Direct URL / how | Size | What it proves |
 |---|---|---|---|---|---|
@@ -38,7 +45,7 @@ Sizes marked "est." are estimates.
 | C11 | `us4463535_sheet1.png` | US 4,463,535 (USG, filed 1982), glass stop for borrowed lights: https://patents.google.com/patent/US4463535A/en | ~0.3 MB est. | Interior glazing stops in the period. Public domain |
 | C12 | `us4443984_sheet1.png` | US 4,443,984 (filed 1981), aluminium casing wrapping drywall openings: https://patents.google.com/patent/US4443984 | ~0.3 MB est. | The W-EX look. Public domain |
 | C13 | `nps_its31_corridor.png` | NPS ITS 31: https://www.nps.gov/orgs/1739/upload/its-31-retaining-corridor-features.pdf. **Already on disk:** `scratchpad/win06/its-31-retaining-corridor-features.pdf` | 334 KB PDF | Corridor doors and glazed transoms. Public domain (US federal). Lower priority: these are hotel corridors |
-| C14 | `ggi_wired_glass.png` | General Glass wire glass sheet. **Already on disk:** `scratchpad/win06/ggi_wire.pdf` | 1.2 MB PDF | Only if Red picks wired glass for Run (DW11, call 6 and the notes there) |
+| C14 | `ggi_wired_glass.png` | General Glass wire glass sheet. **Already on disk:** `scratchpad/win06/ggi_wire.pdf` | 1.2 MB PDF | Only if Red picks wired glass for Run (DW12: call 9 and the "Run windows" row) |
 
 ## Not downloads (for the record)
 

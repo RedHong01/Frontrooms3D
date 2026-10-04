@@ -36,6 +36,17 @@ Shader "FrontRooms/Surface"
         _EmissionMap ("Emission", 2D) = "white" {}
         [HDR] _EmissionColor ("Emission colour", Color) = (0, 0, 0, 1)
 
+        // Print layer (wallpaper "sandwich", research/wallpaper_motion): with it on, the
+        // Albedo slot holds the PAPER modulation (linear, see FR_PAPER_*) and the colour
+        // comes from the print: frame 0 below, or the global _FR_Print flipbook.
+        [Toggle(_FR_PRINT)] _UsePrint ("Print layer (paper x print)", Float) = 0
+        _PrintTex ("Print frame 0 (R density, G cream; linear)", 2D) = "black" {}
+        _InkGround ("Ink ground", Color) = (0.8235, 0.7608, 0.4863, 1)
+        _InkMid ("Ink mid", Color) = (0.6745, 0.6039, 0.3216, 1)
+        _InkDeep ("Ink deep", Color) = (0.4627, 0.4157, 0.2039, 1)
+        _InkCream ("Ink cream", Color) = (0.8902, 0.8353, 0.5804, 1)
+        _PrintAmount ("Print amount", Range(0, 1)) = 1
+
         // Required by URP's shadow/depth passes.
         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
         [HideInInspector] _Cull ("__cull", Float) = 2
@@ -68,6 +79,13 @@ Shader "FrontRooms/Surface"
             float _CeilingHeight;
             half4 _EmissionColor;
             half _Cutoff;
+            // Print layer: in every pass (outside any #if) so the layout never changes.
+            float4 _PrintTex_ST;
+            half4 _InkGround;
+            half4 _InkMid;
+            half4 _InkDeep;
+            half4 _InkCream;
+            half _PrintAmount;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -95,6 +113,13 @@ Shader "FrontRooms/Surface"
             // architectural projection path.
             #pragma multi_compile_local _ _FR_MESH_UV
             #pragma shader_feature_local_fragment _EMISSION
+            // Wallpaper print layer (L0_Wallpaper, L0_Wallpaper_Shift, Exit_Wallpaper). Runtime
+            // on/off goes through _FR_PrintClock.w, never through this keyword.
+            #pragma shader_feature_local_fragment _FR_PRINT
+            // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
+            // shader_feature: no material enables it, so player builds strip it; the editor
+            // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
+            #pragma shader_feature_fragment _ _FR_DEBUG_VIEW
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -161,6 +186,173 @@ Shader "FrontRooms/Surface"
                 uvMetres = float2(dot(positionWS, t), dot(positionWS, b));
             }
 
+        #if defined(_FR_PRINT)
+            // ---------------------------------------------------------------- print layer
+            // The wallpaper is a sandwich: a static PAPER (_BaseMap = modulation, _BumpMap,
+            // _MaskMap) and a PRINT that may move. The print only ever reaches the albedo;
+            // normal, smoothness and cavity come from the paper alone, and with
+            // _Metallic = 0 URP's specular colour is the constant 0.04, so highlights
+            // cannot see the print.
+            //
+            // Globals, written by the print driver (never in Properties):
+            //   _FR_Print       Texture2DArray, one 0.75 x 1.125 m roll tile per slice,
+            //                   R = ink density, G = cream, both the parameters of the
+            //                   LINEAR-light ramp below (0 ground .5 mid 1 deep); art made
+            //                   with the sRGB-value duotone goes through print_encode
+            //                   (Tools/lookdev/gen_surfaces.py, print_encode_lut.json) first.
+            //                   B reserved (phosphor ink, unused here), A unused
+            //   _FR_PrintClock  x frame position [0, n), y n (whole slices), z per-roll phase
+            //                   (frames), w live mix (0 or unset = the material's static frame 0)
+            // WebGL2 guarantees 16 fragment sampler units and this variant binds 12 (+2 with
+            // light cookies, +1 with reflection-probe blending). Any further print map (phosphor
+            // mask, warp noise) must share a sampler or pack into _FR_Print B/A.
+            TEXTURE2D_ARRAY(_FR_Print);   SAMPLER(sampler_FR_Print);
+            float4 _FR_PrintClock;
+            // Per material: frame 0 in the same encoding (sRGB off).
+            TEXTURE2D(_PrintTex);         SAMPLER(sampler_PrintTex);
+
+            // Mip bias (render scale < 1, upscalers): URP (Core.hlsl) scales the gradients of
+            // SAMPLE_TEXTURE2D_GRAD by _GlobalMipBias.y but leaves SAMPLE_TEXTURE2D_ARRAY_GRAD
+            // alone, so the array fetches apply the same scale themselves. Both print fetches
+            // use gradients: with 16x aniso, Metal's LOD bias (what SAMPLE_TEXTURE2D uses) and
+            // the equivalent gradient scale pick different footprints (0.6 levels apart at
+            // render scale 0.5), and the static frame must match the live slices exactly.
+        #if defined(PLATFORM_SAMPLE_TEXTURE2D_GRAD)
+            #define FR_PRINT_GRAD_SCALE _GlobalMipBias.y
+        #else
+            #define FR_PRINT_GRAD_SCALE 1.0
+        #endif
+
+            // Paper texel decode: (alpha, beta, gamma) = texel.rgb * SCALE + BIAS, and
+            // albedo = print * alpha + tobacco * beta + gamma (linear light). Must match
+            // PAPER_SCALE / PAPER_BIAS / TOBACCO in Tools/lookdev/gen_surfaces.py.
+            #define FR_PAPER_SCALE half3(0.70h, 0.14h, 0.02h)
+            #define FR_PAPER_BIAS  half3(0.46h, -0.001h, -0.004h)
+            #define FR_TOBACCO_LIN half3(0.194618h, 0.104616h, 0.023153h)   // #7A5B2A
+            #define FR_CREAM_MIX   0.55h
+
+            float FRHash01(uint x)
+            {
+                x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16;
+                return (x & 0xffffu) / 65535.0;
+            }
+
+            // The print's UV for both print fetches, from the unwarped roll UV. The later
+            // _FR_PrintWarp (albedo only) hooks in here and adds its offset to rollUV.
+            float2 PrintUV(float2 rollUV)
+            {
+                return rollUV;
+            }
+
+            // Duotone ramp in linear light: ground -> mid -> deep.
+            half3 InkRamp(half t)
+            {
+                return t < 0.5h ? lerp(_InkGround.rgb, _InkMid.rgb, t * 2.0h)
+                                : lerp(_InkMid.rgb, _InkDeep.rgb, t * 2.0h - 1.0h);
+            }
+
+            // Ink (R density, G cream) at this roll position. uv is the material UV (metres /
+            // _TileSize); rollUV applies _PrintTex_ST once and is the print's own roll space:
+            // the roll strips (floor(rollUV.x)) and the fetches both use it. It is continuous
+            // across roll seams and the derivatives come from it, so roll lines never pick
+            // the wrong mip.
+            half2 PrintInk(float2 uv)
+            {
+                float2 rollUV = uv * _PrintTex_ST.xy + _PrintTex_ST.zw;
+                float2 puv = PrintUV(rollUV);
+                float2 dx = ddx(puv), dy = ddy(puv);
+                half2 ink = SAMPLE_TEXTURE2D_GRAD(_PrintTex, sampler_PrintTex, puv, dx, dy).rg;   // URP scales dx, dy by _GlobalMipBias.y
+                UNITY_BRANCH
+                if (_FR_PrintClock.w > 0.0)
+                {
+                    dx *= FR_PRINT_GRAD_SCALE; dy *= FR_PRINT_GRAD_SCALE;                           // the same scale for the array
+                    float n = max(floor(_FR_PrintClock.y), 1.0);          // whole slices only
+                    uint strip = (uint)(int)floor(rollUV.x) & 3u;         // & 3: every 3 m module looks the same
+                    float f = _FR_PrintClock.x + FRHash01(strip) * _FR_PrintClock.z;
+                    f -= n * floor(f / n);
+                    float i0 = min(floor(f), n - 1.0);
+                    float i1 = (i0 + 1.0 >= n) ? 0.0 : i0 + 1.0;
+                    half k = (half)saturate(f - i0);
+                    half2 a = SAMPLE_TEXTURE2D_ARRAY_GRAD(_FR_Print, sampler_FR_Print, puv, i0, dx, dy).rg;
+                    half2 b = SAMPLE_TEXTURE2D_ARRAY_GRAD(_FR_Print, sampler_FR_Print, puv, i1, dx, dy).rg;
+                    ink = lerp(ink, lerp(a, b, k), (half)saturate(_FR_PrintClock.w));
+                }
+                return ink;
+            }
+
+            half3 PrintAlbedo(float2 uv)
+            {
+                half3 paper = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv).rgb * FR_PAPER_SCALE + FR_PAPER_BIAS;
+                half2 ink = PrintInk(uv) * _PrintAmount;
+                half3 inkColour = lerp(InkRamp(ink.r), _InkCream.rgb, ink.g * FR_CREAM_MIX);
+                return inkColour * paper.x + FR_TOBACCO_LIN * paper.y + paper.z;
+            }
+        #endif
+
+        #if defined(_FR_DEBUG_VIEW)
+            // 1 specular only, 2 diffuse only, 3 wear masks (stain, floor grime, ceiling
+            // streaks), 4 wear masks (tone, dirt, damp), 5 albedo. 0 = normal shading.
+            float _FR_DebugView;
+
+            // UniversalFragmentPBR (URP 17.3 Lighting.hlsl) with one lobe removed AFTER
+            // InitializeBRDFData, so the BRDF still sees the real albedo (print included).
+            half4 FRDebugLobePBR(InputData inputData, SurfaceData surfaceData, bool specularOnly)
+            {
+                bool specularHighlightsOff = false;
+                BRDFData brdfData;
+                InitializeBRDFData(surfaceData, brdfData);
+                if (specularOnly) brdfData.diffuse = 0;
+                else { brdfData.specular = 0; brdfData.grazingTerm = 0; }
+                surfaceData.emission = 0;
+
+                BRDFData brdfDataClearCoat = CreateClearCoatBRDFData(surfaceData, brdfData);
+                half4 shadowMask = CalculateShadowMask(inputData);
+                AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+                uint meshRenderingLayers = GetMeshRenderingLayer();
+                Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+                MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI);
+                LightingData lightingData = CreateLightingData(inputData, surfaceData);
+                lightingData.giColor = GlobalIllumination(brdfData, brdfDataClearCoat, surfaceData.clearCoatMask,
+                                                          inputData.bakedGI, aoFactor.indirectAmbientOcclusion, inputData.positionWS,
+                                                          inputData.normalWS, inputData.viewDirectionWS, inputData.normalizedScreenSpaceUV);
+            #ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+            #endif
+                    lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat, mainLight,
+                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+            #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff);
+                }
+            #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff);
+                LIGHT_LOOP_END
+            #endif
+            #if defined(_ADDITIONAL_LIGHTS_VERTEX)
+                lightingData.vertexLightingColor += inputData.vertexLighting * brdfData.diffuse;
+            #endif
+                return CalculateFinalColor(lightingData, surfaceData.alpha);
+            }
+        #endif
+
             void Frag(Varyings input, out half4 outColor : SV_Target0
             #ifdef _WRITE_RENDERING_LAYERS
                 , out uint outRenderingLayers : SV_Target1
@@ -182,7 +374,12 @@ Shader "FrontRooms/Surface"
             #endif
                 float2 uv = metres / max(_TileSize.xy, 1e-3) * _BaseMap_ST.xy + _BaseMap_ST.zw;
 
+            #if defined(_FR_PRINT)
+                // Paper x print. Everything below (wear, stains, grime) sits over the ink.
+                half4 albedo = half4(PrintAlbedo(uv), 1.0h) * _BaseColor;
+            #else
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
+            #endif
                 half4 mask = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
                 half3 nTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv), _BumpScale);
 
@@ -222,6 +419,25 @@ Shader "FrontRooms/Surface"
                 albedo.rgb *= 1.0h - wall * (_FloorGrime * 0.35h * floorBand * (0.6h + 0.4h * m1.g));
                 albedo.rgb = lerp(albedo.rgb, albedo.rgb * _StainColor.rgb * 1.5h, wall * saturate(_CeilingGrime * (streak * 0.8h + ceilBand * 0.15h)));
 
+            #if defined(_FR_DEBUG_VIEW)
+                // Wear masks and albedo, unlit (the same expressions as above).
+                if (_FR_DebugView > 2.5)
+                {
+                    half3 dbg = albedo.rgb;
+                    if (_FR_DebugView < 3.5)
+                        dbg = half3(saturate((ring * 0.9h + pool * 0.35h) * _StainStrength),
+                                    wall * (_FloorGrime * 0.35h * floorBand * (0.6h + 0.4h * m1.g)),
+                                    wall * saturate(_CeilingGrime * (streak * 0.8h + ceilBand * 0.15h)));
+                    else if (_FR_DebugView < 4.5)
+                        dbg = half3(tone, dirt, wet);
+                    outColor = half4(dbg, 1);
+                #ifdef _WRITE_RENDERING_LAYERS
+                    outRenderingLayers = EncodeMeshRenderingLayer();
+                #endif
+                    return;
+                }
+            #endif
+
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;
                 inputData.positionCS = input.positionCS;
@@ -252,8 +468,16 @@ Shader "FrontRooms/Surface"
                 s.emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;
             #endif
 
+            #if defined(_FR_DEBUG_VIEW)
+                half4 color;
+                if (_FR_DebugView > 0.5)
+                    color = FRDebugLobePBR(inputData, s, _FR_DebugView < 1.5);   // one lobe, no fog
+                else
+                    color = half4(MixFog(UniversalFragmentPBR(inputData, s).rgb, inputData.fogCoord), 1);
+            #else
                 half4 color = UniversalFragmentPBR(inputData, s);
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
+            #endif
                 color.a = 1;
                 outColor = color;
             #ifdef _WRITE_RENDERING_LAYERS

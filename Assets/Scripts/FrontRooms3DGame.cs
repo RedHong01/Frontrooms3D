@@ -160,6 +160,11 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     float yaw, pitch, elapsed, stepTime, hunterStepTime, flashTime;
     // The player camera's layers: BaseEye for gameplay, shots and shakes for the picture (audit §6.4).
     FrontRoomsCameraRig rig;
+    // The glass break's shot ("Brace, strike, flinch") on the rig.
+    FrontRoomsGlassShot glassShot;
+    // The pane the glass shot belongs to (E on it is the shot's), and this frame's wish to move (before any lock).
+    Collider glassPane;
+    bool moveIntent;
     // Glass: a hold starts only on a fresh E-down on the pane; tap mode banks progress that drains in real time.
     bool glassArmed;
     float tapCredit, tapReadyAt;
@@ -607,6 +612,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         playerBody.skinWidth = .03f;
         rig = FrontRoomsCameraRig.Attach(playerRoot, cam, EyeHeight);
         rig.ResetLayers();
+        glassShot = new FrontRoomsGlassShot(rig);
         yaw = 0f;
         pitch = 0f;
         fallSpeed = 0f;
@@ -884,6 +890,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (map == null || playerBody == null) return;
         Vector2 local;
         bool sprintHeld;
+        var lookDegrees = 0f;
 #if UNITY_EDITOR
         if (autopilot) AutopilotSteer(dt, out local, out sprintHeld);
         else
@@ -891,10 +898,13 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         {
             if (mouseSettleFrames > 0) mouseSettleFrames--;
             // While a shot holds the look, mouse movement is dropped, not saved for later.
-            else if (rig == null || !rig.LookLocked)
+            else if ((rig == null || !rig.LookLocked) && (glassShot == null || !glassShot.LookLocked))
             {
-                yaw += Input.GetAxisRaw("Mouse X") * 2.1f;
-                pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * 2.1f, -75f, 75f);
+                var dx = Input.GetAxisRaw("Mouse X") * 2.1f;
+                var dy = Input.GetAxisRaw("Mouse Y") * 2.1f;
+                yaw += dx;
+                pitch = Mathf.Clamp(pitch - dy, -75f, 75f);
+                lookDegrees = Mathf.Abs(dx) + Mathf.Abs(dy);
             }
             // Keep the authored InputManager axes, but also read the physical
             // keys directly. This makes the standalone Mac/WebGL player robust
@@ -908,12 +918,22 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             local = new Vector2(horizontal, vertical);
             sprintHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         }
+        moveIntent = local.sqrMagnitude > .01f;
         if (rig != null)
         {
             rig.ClampLook(ref yaw, ref pitch);
             if (rig.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
             // S cancels a shot that allows it (Esc is pause and never cancels).
             if (rig.InShot && Input.GetKeyDown(KeyCode.S)) rig.Consume(ShotInput.Back);
+        }
+        if (glassShot != null)
+        {
+            // The glass shot: a demote (not a cancel) when the Relay sees or chases; asking to move (a key held,
+            // not only pressed) or a look ends its soft lock. The step-in moves the body on its own velocity.
+            var threat = relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase);
+            glassShot.Tick(dt, threat, moveIntent, lookDegrees);
+            glassShot.ClampLook(ref yaw, ref pitch);
+            if (glassShot.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
         }
         playerRoot.rotation = Quaternion.Euler(0f, yaw, 0f);
         if (rig != null) rig.SetBase(pitch);
@@ -923,15 +943,19 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (pullClear.HasValue)
         {
             pullClearTime += dt;
-            var toClear = pullClear.Value - playerRoot.position;
+            // A door pull steps at PullStepSpeed; the glass step-in follows a smoothstep from where it began.
+            var stepIn = FrontRoomsShotTimings.GlassBreak.StepInSeconds;
+            var target = pullIsGlass ? Vector3.Lerp(glassStepFrom, pullClear.Value, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(pullClearTime / stepIn))) : pullClear.Value;
+            var toClear = target - playerRoot.position;
             toClear.y = 0f;
             // Arrive exactly (the last step lands on the spot): the spot sits right at the leaf's reach, so stopping short leaves the body in its way.
-            if (toClear.magnitude < 1e-3f || pullClearTime > PullStepSeconds || (relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase))) pullClear = null;
+            var arrived = toClear.magnitude < 1e-3f && (!pullIsGlass || pullClearTime >= stepIn);
+            if (arrived || pullClearTime > PullStepSeconds || (relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase))) pullClear = null;
             else
             {
                 local = Vector2.zero;
                 sprintHeld = false;
-                stepVelocity = Vector3.ClampMagnitude(toClear / Mathf.Max(dt, 1e-4f), PullStepSpeed);
+                stepVelocity = Vector3.ClampMagnitude(toClear / Mathf.Max(dt, 1e-4f), pullIsGlass ? GlassStepMaxSpeed : PullStepSpeed);
             }
         }
         var wish = playerRoot.right * local.x + playerRoot.forward * local.y;
@@ -1070,6 +1094,21 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (Flat(clear - playerRoot.position).magnitude > PullStepSpeed * PullStepSeconds) return;
         pullClear = clear;
         pullClearTime = 0f;
+        pullIsGlass = false;
+    }
+
+    // The pull step's mover also carries the glass step-in; this says whose step it is, and where the step-in began.
+    bool pullIsGlass;
+    Vector3 glassStepFrom;
+    // The step-in's peak speed: its smoothstep over 0.2 s peaks at 1.5× the average of a 0.7 m step.
+    const float GlassStepMaxSpeed = 6f;
+
+    /// <summary>Let go of the glass: the shot blends back, and a step-in still under way stops where it is.</summary>
+    void ReleaseGlass()
+    {
+        if (glassShot == null || !glassShot.Active || glassShot.Shattered) return;
+        glassShot.Release();
+        if (pullIsGlass) pullClear = null;
     }
 
     /// <summary>Walking into a broken window's frame from up to 0.95 m away starts a climb through it.</summary>
@@ -1096,6 +1135,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             climbTo.y = feet.y;
             climbTime = 0f;
             FoleyFootstep(Flat(feet), FrontRoomsFoleyActor.Player, FrontRoomsFoleySurface.Carpet, false, .3f);
+            glassShot?.ClimbStarted();
             PlayerClimbed?.Invoke(center);
             return true;
         }
@@ -1120,6 +1160,49 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         else cam.transform.localPosition = new Vector3(0f, EyeHeight, 0f);
     }
 
+    // E from the keyboard, or from the autopilot's glass scenario (editor only).
+    bool EDown()
+    {
+#if UNITY_EDITOR
+        if (autoGlassActive) return autoEDown;
+#endif
+        return Input.GetKeyDown(KeyCode.E);
+    }
+
+    bool EHeld()
+    {
+#if UNITY_EDITOR
+        if (autoGlassActive) return autoEHeld;
+#endif
+        return Input.GetKey(KeyCode.E);
+    }
+
+    /// <summary>
+    /// E went down on a pane: the map begins the hold at the base-eye hit, the
+    /// glass shot starts (or resumes at the stage reached), and the body steps
+    /// in to stand 0.55 m from the pane (not at Camera motion off).
+    /// </summary>
+    void BeginGlass(Collider pane, Vector3 hitPoint, Pose eye)
+    {
+        var window = map.BeginGlassHold(pane, hitPoint, eye.rotation * Vector3.forward);
+        if (window == null || glassShot == null) return;
+        glassPane = pane;
+        var impact = map.GlassImpact(window);
+        var feet = playerRoot.position;
+        var inward = window.root.forward * Mathf.Sign(Vector3.Dot(window.root.forward, impact - feet));
+        glassShot.Begin(impact, inward, window.hold / FrontRoomsShotTimings.GlassBreak.HoldSeconds);
+        if (FrontRoomsSettings.CameraMotionScale <= 0f) return;
+        // A door pull's step clearing the leaf keeps the mover: the body stays put for this hold.
+        if (pullClear.HasValue && !pullIsGlass) return;
+        var stand = FrontRoomsGlassShot.StandPoint(feet, impact, inward);
+        if (Flat(stand - feet).sqrMagnitude < 1e-4f) return;
+        // The step-in rides the pull step's mover (swept by the controller), eased over GlassBreak.StepInSeconds.
+        pullClear = stand;
+        pullClearTime = 0f;
+        pullIsGlass = true;
+        glassStepFrom = feet;
+    }
+
     /// <summary>What the crosshair is on: E opens or shuts a door, holding E breaks glass.</summary>
     void UpdateAim(float dt)
     {
@@ -1129,23 +1212,31 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         aimedHold = false;
         // Gameplay aims from the base eye: shots, shakes and leans are picture only.
         var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+        var hitPoint = Vector3.zero;
         if (Physics.Raycast(new Ray(eye.position, eye.rotation * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
         {
             prompt = map.Describe(hit.collider, out aimedHold);
+            // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
+            if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
             // Tap mode: the pane breaks on repeated taps, so the prompt says so (the map's text is the hold prompt).
             if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = "TAP E  ·  BREAK GLASS";
             if (prompt != null) aimed = hit.collider;
+            hitPoint = hit.point;
         }
         if (previous != null && previous != aimed)
         {
             map.ReleaseHold(previous);
+            ReleaseGlass();
             glassArmed = false;
             tapCredit = 0f;
             // Every pane not aimed at has no progress (leaving one releases it), so the bar starts again.
             holdProgress = 0f;
         }
-        // During a shot E belongs to the shot (cancel, or a buffered push), never to what is aimed at.
-        var pressed = Input.GetKeyDown(KeyCode.E) && (rig == null || !rig.Consume(ShotInput.Use));
+        // During a shot E belongs to the shot (cancel, or a buffered push), never to what is aimed at; the
+        // glass shot's own pane keeps its E (the hold, or tap mode's next strike).
+        var eDown = EDown();
+        var glassOwnsE = glassShot != null && aimedHold && aimed == glassPane && !glassShot.Shattered && (glassShot.Active || glassShot.Blending);
+        var pressed = eDown && (glassOwnsE || rig == null || !rig.Consume(ShotInput.Use));
         if (aimed == null)
         {
             holdProgress = 0f;
@@ -1163,23 +1254,30 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             // Tap mode: each tap banks a third of the hold, spent in real time, so taps are never faster than holding.
             if (pressed && Time.time >= tapReadyAt)
             {
+                if (glassShot == null || !glassShot.Active || glassShot.Shattered || aimed != glassPane) BeginGlass(aimed, hitPoint, eye);
                 tapCredit += TapProgress;
                 tapReadyAt = Time.time + TapCooldown;
             }
             step = Mathf.Min(dt, tapCredit);
             tapCredit -= step;
+            // Between strikes a move key lets go of the pane (the shot holds the body otherwise).
+            if (step <= 0f && moveIntent) ReleaseGlass();
         }
         else
         {
             // A hold starts only on a fresh press on the pane, not an E still held from a door.
+            if (pressed && !glassArmed) BeginGlass(aimed, hitPoint, eye);
             if (pressed) glassArmed = true;
-            if (!Input.GetKey(KeyCode.E)) glassArmed = false;
+            if (!EHeld()) glassArmed = false;
             step = glassArmed ? dt : 0f;
         }
         if (step > 0f)
         {
-            if (map.Hold(aimed, step, out holdProgress))
+            var broke = map.Hold(aimed, hitPoint, step, out holdProgress);
+            glassShot?.Hold(holdProgress);
+            if (broke)
             {
+                glassShot?.Shatter();
                 aimed = null;
                 holdProgress = 0f;
                 glassArmed = false;
@@ -1190,6 +1288,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         else
         {
             map.ReleaseHold(aimed);
+            ReleaseGlass();
             holdProgress = 0f;
         }
     }
@@ -2061,6 +2160,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         public List<string> relayStates = new List<string>();
         public List<string> relayGhostLog = new List<string>();
         public List<string> frames = new List<string>();
+        // The glass scenario (-autopilotGlass): what it checked, ok or FAIL.
+        public bool glassScenario;
+        public List<string> glassChecks = new List<string>();
     }
 
     readonly List<string> autoFrameNames = new List<string>();
@@ -2073,6 +2175,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         var args = Environment.GetCommandLineArgs();
         for (var i = 0; i < args.Length - 1; i++)
             if (args[i] == "-autopilotSpaceAt" && float.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var at)) autoSpaceAt = Mathf.Max(.2f, at);
+        autoGlassWanted = Array.IndexOf(args, "-autopilotGlass") >= 0;
         autoOutDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "main-autopilot");
         Directory.CreateDirectory(autoOutDir);
         foreach (var old in Directory.GetFiles(autoOutDir, "*.png")) File.Delete(old);
@@ -2183,7 +2286,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
                 AutopilotLookAround("office");
             }
         }
-        if (autoPlayClock > .6f && autoPlayClock >= autoNextShot)
+        if (autoGlassWanted && !autoGlassDone) AutopilotGlass(dt);
+        if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive)
         {
             autoNextShot = autoPlayClock + 9f;
             AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_play_" + Mathf.RoundToInt(autoPlayClock) + "s");
@@ -2197,6 +2301,12 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     {
         local = Vector2.zero;
         sprint = false;
+        // The glass scenario stands still at the pane, then walks into the broken frame to climb.
+        if (autoGlassActive)
+        {
+            if (autoGlassStep == 4) local = new Vector2(0f, 1f);
+            return;
+        }
         // Out of the stream rooms first: down the centreline, through the door
         // and on past its open leaves into the cell ahead (always open, MapRootFor).
         if (inStartRooms || (map.CellOf(playerRoot.position) == startDoorCell && playerRoot.position.z < startDoorPoint.z + 2.2f))
@@ -2412,6 +2522,149 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         return count;
     }
 
+    // ---------- The glass scenario (-autopilotGlass) ----------
+    // Once the map has settled, the autopilot stands 0.9 m in front of the
+    // nearest intact pane (inside its keep-clear strip), aims at it and holds
+    // E through the same input path as a player. It checks that the glass
+    // shot starts, lands its three beats, steps the body in and moves the
+    // camera; that the window shatters (WindowShattered, the way open); that
+    // the camera is back on the eye after the shot; then walks into the frame
+    // and climbs through to the far cell. Frames at the beats go to
+    // Verification/main-autopilot. A failed check fails the run.
+    bool autoGlassWanted, autoGlassActive, autoGlassDone, autoEDown, autoEHeld;
+    int autoGlassStep, autoGlassBeats, autoGlassShatters, autoGlassClimbs, autoGlassCapture;
+    float autoGlassClock, autoGlassMaxOffset;
+    float[] autoGlassBeatStrength = new float[3];
+    FrontRoomsMapWorld.Window autoGlassWindow;
+    Vector3 autoGlassFeet;
+    readonly List<string> autoGlassChecks = new List<string>();
+    static readonly float[] AutoGlassCaptureAt = { .30f, .36f, .72f, 1.02f, 1.12f, 1.45f };
+
+    void AutoGlassCheck(bool ok, string what)
+    {
+        autoGlassChecks.Add((ok ? "ok   " : "FAIL ") + what);
+        Log("AUTOPILOT GLASS " + (ok ? "ok   " : "FAIL ") + what);
+    }
+
+    void AutoGlassBeat(int beat, float intensity)
+    {
+        if (!autoGlassActive) return;
+        autoGlassBeats++;
+        if (beat >= 1 && beat <= 3) autoGlassBeatStrength[beat - 1] = intensity;
+    }
+
+    void AutoGlassShattered(FrontRoomsMapWorld.Window w, Vector3 at, Vector3 impulse) { if (w == autoGlassWindow) autoGlassShatters++; }
+    void AutoGlassClimbed(Vector3 at) { if (autoGlassActive) autoGlassClimbs++; }
+
+    void AutoGlassEnd()
+    {
+        autoGlassActive = false;
+        autoGlassDone = true;
+        autoEDown = autoEHeld = false;
+        FrontRoomsGlassShot.Beat -= AutoGlassBeat;
+        map.WindowShattered -= AutoGlassShattered;
+        PlayerClimbed -= AutoGlassClimbed;
+        // Back to the walk: plan a fresh route from wherever the climb left it.
+        autoRouteIndex = autoRoute.Count;
+    }
+
+    void AutopilotGlass(float dt)
+    {
+        if (phase != Phase.Playing) return;
+        if (!autoGlassActive)
+        {
+            if (inStartRooms || autoSettledAt < 0f || autoPlayClock < 6f || climbTime >= 0f || pullClear.HasValue) return;
+            autoGlassWindow = map.NearestIntactWindowForTools(playerRoot.position);
+            if (autoGlassWindow == null)
+            {
+                if (autoPlayClock > 30f) { AutoGlassCheck(false, "glass: no intact window built within the map"); autoGlassDone = true; }
+                return;
+            }
+            // Stand on cell a's side, 0.9 m from the pane, facing it, aimed 1.3 m up.
+            var root = autoGlassWindow.root;
+            var feet = root.position - root.forward * .9f;
+            feet.y = playerRoot.position.y;
+            playerBody.enabled = false;
+            playerRoot.position = feet;
+            playerBody.enabled = true;
+            Physics.SyncTransforms();
+            yaw = Quaternion.LookRotation(root.forward, Vector3.up).eulerAngles.y;
+            pitch = Mathf.Atan2(EyeHeight - 1.3f, .9f) * Mathf.Rad2Deg;
+            FrontRoomsGlassShot.Beat += AutoGlassBeat;
+            map.WindowShattered += AutoGlassShattered;
+            PlayerClimbed += AutoGlassClimbed;
+            autoGlassActive = true;
+            autoGlassStep = 1;
+            autoGlassClock = 0f;
+            autoGlassCapture = 0;
+            Log("AUTOPILOT GLASS window " + autoGlassWindow.a + "-" + autoGlassWindow.b);
+            return;
+        }
+        autoGlassClock += dt;
+        switch (autoGlassStep)
+        {
+            case 1:
+                // One settling frame after the move, then E goes down on the pane.
+                if (autoGlassClock < .05f) return;
+                autoGlassFeet = playerRoot.position;
+                autoEDown = autoEHeld = true;
+                autoGlassStep = 2;
+                autoGlassClock = 0f;
+                return;
+            case 2:
+                autoEDown = false;
+                if (autoGlassClock < dt * 1.5f)
+                {
+                    AutoGlassCheck(glassShot != null && glassShot.Active && aimedHold, "glass: E on the pane from 0.9 m starts the shot");
+                    if (glassShot == null || !glassShot.Active) { AutoGlassEnd(); return; }
+                }
+                autoGlassMaxOffset = Mathf.Max(autoGlassMaxOffset, cam.transform.localPosition.magnitude);
+                while (autoGlassCapture < AutoGlassCaptureAt.Length && glassShot != null && glassShot.Clock >= AutoGlassCaptureAt[autoGlassCapture])
+                    AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_glass_t" + Mathf.RoundToInt(AutoGlassCaptureAt[autoGlassCapture++] * 100f).ToString("000"));
+                if (autoGlassShatters > 0)
+                {
+                    var stepped = Flat(playerRoot.position - autoGlassFeet).magnitude;
+                    var moving = FrontRoomsSettings.CameraMotionScale > 0f;
+                    AutoGlassCheck(autoGlassBeats == 3, "glass: three beats landed (" + autoGlassBeats + "; strengths " + string.Join("/", Array.ConvertAll(autoGlassBeatStrength, x => x.ToString("0.0"))) + ")");
+                    AutoGlassCheck(!moving || stepped > .25f, "glass: the body stepped in " + stepped.ToString("0.00") + " m toward the pane");
+                    AutoGlassCheck(!moving || autoGlassMaxOffset > .02f, "glass: the camera left the eye during the hold (" + autoGlassMaxOffset.ToString("0.000") + " m)");
+                    AutoGlassCheck(map.IsBrokenWindow(autoGlassWindow.a, autoGlassWindow.b) && map.PassageBetween(autoGlassWindow.a, autoGlassWindow.b) == FrontRoomsMapWorld.Passage.Open
+                        && autoGlassWindow.pane == null && autoGlassWindow.root != null, "glass: WindowShattered; the pane gone, the root kept, the way open");
+                    autoEHeld = false;
+                    autoGlassStep = 3;
+                    autoGlassClock = 0f;
+                }
+                else if (autoGlassClock > 3f)
+                {
+                    AutoGlassCheck(false, "glass: the pane never shattered (hold " + holdProgress.ToString("0.00") + ", aimed " + (aimed != null) + ")");
+                    AutoGlassEnd();
+                }
+                return;
+            case 3:
+                while (autoGlassCapture < AutoGlassCaptureAt.Length && glassShot != null && glassShot.Active && glassShot.Clock >= AutoGlassCaptureAt[autoGlassCapture])
+                    AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_glass_t" + Mathf.RoundToInt(AutoGlassCaptureAt[autoGlassCapture++] * 100f).ToString("000"));
+                if (autoGlassClock < .9f) return;
+                AutoGlassCheck(glassShot != null && !glassShot.Active && !glassShot.MoveLocked && (rig == null || !rig.InShot) && cam.transform.localPosition.magnitude < 1e-3f,
+                    "glass: the shot is over by 1.9 s and the camera is back on the eye (" + cam.transform.localPosition.magnitude.ToString("0.0000") + " m)");
+                autoGlassStep = 4;
+                autoGlassClock = 0f;
+                return;
+            case 4:
+                if (autoGlassClimbs > 0 && climbTime < 0f)
+                {
+                    var cell = map.CellOf(playerRoot.position);
+                    AutoGlassCheck(cell == autoGlassWindow.b, "glass: walked into the frame and climbed through to " + cell + " (far cell " + autoGlassWindow.b + ")");
+                    AutoGlassEnd();
+                }
+                else if (autoGlassClock > 3f)
+                {
+                    AutoGlassCheck(false, "glass: no climb through the broken frame within 3 s");
+                    AutoGlassEnd();
+                }
+                return;
+        }
+    }
+
     void AutopilotFinish(string reason)
     {
         if (autoFinished) return;
@@ -2458,9 +2711,13 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             relayStates = autoStates,
             relayGhostLog = autoGhostLog,
             frames = autoFrameNames,
+            glassScenario = autoGlassWanted,
+            glassChecks = autoGlassChecks,
         };
         var reached = mapPlay && autoDistance > 20f && autoCells.Count > 8;
-        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released ? "PASS" : "FAIL") + " · ended by " + reason;
+        if (autoGlassWanted && !autoGlassDone) AutoGlassCheck(false, "glass: the scenario did not finish (step " + autoGlassStep + ")");
+        var glassOk = !autoGlassWanted || autoGlassChecks.TrueForAll(c => c.StartsWith("ok"));
+        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk ? "PASS" : "FAIL") + " · ended by " + reason;
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));
         var done = Path.Combine(Directory.GetParent(Application.dataPath).FullName, AutopilotDoneFile);
         Directory.CreateDirectory(Path.GetDirectoryName(done));

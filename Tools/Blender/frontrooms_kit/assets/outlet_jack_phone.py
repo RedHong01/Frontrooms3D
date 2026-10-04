@@ -48,7 +48,7 @@ def build(kit):
     side = pc.check_jack(jack)
     if pc.HAS_LODS:
         pc.plate_lod1(kit, W, H, screws, [op])
-        pc.plate_lod2(kit, W, H)
+        pc.plate_lod2(kit, W, H, crown_fan=True)
         pc.jack_lod1(kit, 0.0, 0.0, info["hf"], op)
         fh = info["hf"](0.0, 0.0)
         pc.dark_rect(kit, 0.0, 0.0, ow / 2 - 1.2, oh / 2 - 1.5, fh + 0.3, "jack lod2", "2")

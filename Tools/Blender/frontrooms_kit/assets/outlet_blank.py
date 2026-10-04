@@ -43,5 +43,5 @@ def build(kit):
     info = pc.thermoset_plate(kit, W, H, screws, [])
     if pc.HAS_LODS:
         pc.plate_lod1(kit, W, H, screws, [])
-        pc.plate_lod2(kit, W, H)
+        pc.plate_lod2(kit, W, H, crown_fan=True)
     pc.end(kit, __import__(__name__), "outlet_receptacle", W, H, pc.PROUD_PLATE, info["seats"])

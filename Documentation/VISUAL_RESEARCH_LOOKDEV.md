@@ -146,3 +146,55 @@ All of these are editable in the Inspector.
   paper and the grade.
 - **Run's red light.** Level ! is lit red by two hanging battery exit signs per
   room; its ballasts are mostly dead.
+
+## 3. Wallpaper print layer (`_FR_PRINT`): binding contract
+
+Landed on 2026-10-03 (wallpaper P0, approved by Red with emboss weight 0.60). The
+Level 0 and Exit walls in §2 are now a "sandwich": a static paper that alone
+drives the lighting, and a print that only ever reaches the albedo. The visual
+chat owns the shader, `FrontRoomsRenderSetup` and `Tools/lookdev`. The wallpaper
+chat owns the print content, `Tools/print` and the clock driver. Change a line
+below only by agreement between the two.
+
+- **Materials.** `L0_Wallpaper`, `L0_Wallpaper_Shift` and `Exit_Wallpaper` use the
+  paper `Wallpaper_Paper_M/_N/_S` and the print `Wallpaper_Print_P`, with
+  `_FR_PRINT` on. `FrontRoomsRenderSetup` writes the keyword, `_UsePrint`,
+  `_PrintTex`, the palette and `_PrintAmount` on every material. Turn the print
+  on and off at runtime through `_FR_PrintClock.w`, never through the keyword.
+- **Paper.** `_BaseMap` is `_M` (linear): `(α, β, γ) = texel·(0.70, 0.14, 0.02) +
+  (0.46, −0.001, −0.004)` and albedo = `print·α + tobacco·β + γ`, with tobacco
+  #7A5B2A. `_N` and `_S` carry no ink: weave, fibre, seam and a linen + pebble
+  emboss (`EMBOSS_LINEN` 0.25, `EMBOSS_COARSE` 0.60). The print never writes the
+  normal, smoothness or cavity.
+- **Print encoding.** R = density and G = cream. Both are parameters of the
+  shader's LINEAR-light ramp (0 ground, 0.5 mid, 1 deep, then
+  `lerp(ramp, cream, 0.55·G)`), not raw ink. Art made with the sRGB-value
+  duotone goes through `print_encode` (`Tools/lookdev/gen_surfaces.py`, table
+  `Tools/lookdev/print_encode_lut.json`). Encode at the frame's own resolution,
+  then resample. B is reserved for the phosphor ink (0 in `_PrintTex`); A is
+  unused. One tile is one 0.75 × 1.125 m roll.
+- **Globals** (never in Properties):
+  - `_FR_Print`: a Texture2DArray, one roll tile per slice, in the same encoding;
+  - `_FR_PrintClock`: x = frame [0, n), y = n, z = per-roll phase in frames,
+    w = live mix (0 or unset = static frame 0).
+  - The roll strip is `floor(rollUV.x) & 3`.
+  - The palette and the amount are in UnityPerMaterial (`_InkGround`, `_InkMid`,
+    `_InkDeep`, `_InkCream`, `_PrintAmount`).
+- **Print mips.** These are not box mips. On the ENCODED values:
+  `c' = box(c)` and `d' = box((1 − 0.55c)·d) / box(1 − 0.55c)`.
+  - `FrontRoomsPrintMips.Apply` runs on import for `*_P` under
+    `Resources/Surfaces/Textures`.
+  - Every live slice must be built with `FrontRoomsPrintMips.ApplySlice`. The
+    mirrors are `gen_surfaces.print_mips` and the JSON's `"mips"` entry.
+  - Slices are delivered encoded and without mips.
+- **Sampler budget.** WebGL2 guarantees 16 fragment sampler units. The print
+  variant binds 12 (10 base, plus `_FR_Print` and `_PrintTex`). Light cookies
+  add 2 and reflection-probe blending adds 1, for 15. Any further print map must
+  share an existing sampler or pack into `_FR_Print` B/A.
+- **Import.** `_P` has a Standalone override to R8G8 (lossless, 16 MiB at
+  2048×3072 with mips). The WebGL tab is untouched. 2048×3072 is NPOT, so BC7 is
+  unavailable for every mipped wallpaper texture.
+- **Legacy and tests.** `Wallpaper_Chevron(_Cold)_A/_N/_S` and the two NoHue
+  references live in `Assets/Editor/Rendering/PrintP0/Ref/`: T1 only, never
+  shipped. The gates are under FrontRooms → Rendering → Print P0 gates
+  (`FrontRoomsPrintP0Test.RunBatch`).

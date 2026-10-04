@@ -411,6 +411,44 @@ class Mesh:
             self.cap(bot, flip=True)
         return bot, top
 
+    def face_out(self, idx, want):
+        """Add a polygon wound so its normal points along ``want`` (a
+        plate-frame direction (x, h, z)); used where winding by hand is
+        error-prone (side walls, slot walls)."""
+        P = [Vector((self.v[i][0], -self.v[i][1], self.v[i][2])) for i in idx]
+        n = (P[1] - P[0]).cross(P[2] - P[0])
+        w = Vector((want[0], -want[1], want[2]))
+        self.face(idx, flip=n.dot(w) < 0)
+
+    def strip(self, path, width, thick, caps=True):
+        """Flat strip (contact leaf) along a polyline in the (h, z) plane at
+        fixed x: path = [(x, h, z), ...]; width along x, thickness across the
+        path in (h, z). Returns the rings."""
+        rings = []
+        n_pts = len(path)
+        for k, (x, h, z) in enumerate(path):
+            a = path[max(k - 1, 0)]
+            b = path[min(k + 1, n_pts - 1)]
+            th, tz = b[1] - a[1], b[2] - a[2]
+            L = math.hypot(th, tz) or 1.0
+            nh, nz = -tz / L, th / L                 # normal in (h, z)
+            rings.append([self.add(x + sx * width / 2, h + st * thick / 2 * nh, z + st * thick / 2 * nz)
+                          for sx, st in ((1, -1), (1, 1), (-1, 1), (-1, -1))])
+        for r0, r1 in zip(rings, rings[1:]):
+            for i in range(4):
+                j = (i + 1) % 4
+                c0 = [self.v[q] for q in (r0[i], r0[j])]
+                mid = ((c0[0][0] + c0[1][0]) / 2, (c0[0][1] + c0[1][1]) / 2, (c0[0][2] + c0[1][2]) / 2)
+                cen = [sum(self.v[q][d] for q in r0) / 4 for d in range(3)]
+                self.face_out((r0[i], r0[j], r1[j], r1[i]), [mid[d] - cen[d] for d in range(3)])
+        if caps:
+            for r, sgn in ((rings[0], -1), (rings[-1], 1)):
+                k = 0 if sgn < 0 else n_pts - 1
+                a = path[max(k - 1, 0)] if sgn > 0 else path[0]
+                b = path[k] if sgn > 0 else path[1]
+                self.face_out(r, (0.0, sgn * (b[1] - a[1]), sgn * (b[2] - a[2])))
+        return rings
+
     def tris(self):
         return sum(len(f) - 2 for f in self.f)
 
@@ -846,15 +884,90 @@ def oct_outline(hw, hh, c):
     return [(hw, -hh + c), (hw, hh - c), (hw - c, hh), (-hw + c, hh), (-hw, hh - c), (-hw, -hh + c), (-hw + c, -hh), (hw - c, -hh)]
 
 
-def plate_lod2(kit, W, H, slot=TI, lods="2", bevel=3.0, top_h=FIELD_EDGE_H + 0.05):
+def plate_lod2(kit, W, H, slot=TI, lods="2", bevel=3.0, top_h=FIELD_EDGE_H + 0.05, crown_fan=False):
     """LOD2 (4-12 m): an 8-vertex rounded outline at full height with one
-    bevel ring to the wall."""
+    bevel ring to the wall. crown_fan: the top is a fan round a centre
+    vertex at the crown height (8 tris instead of 6)."""
     m = Mesh()
     base = m.ring(oct_outline(W / 2, H / 2, 1.2), 0.0)
     top = m.ring(oct_outline(W / 2 - bevel, H / 2 - bevel, 0.6), top_h)
     m.bridge(base, top)
-    m.cap(top)
+    if crown_fan:
+        m.fan(top, m.add(0.0, FIELD_CROWN_H, 0.0))
+    else:
+        m.cap(top)
     return [m.to_object(kit, "plate lod2", slot, lods=lods)]
+
+
+def rr_outline(cx, cz, hw, hh, r, segs, rmin=0.3):
+    """outline_fn(inset) for Mesh.body(): a rounded rectangle shrunk by
+    ``inset`` (negative grows it), corner radius r - inset (>= rmin)."""
+    return lambda o: rrect(cx, cz, hw - o, hh - o, max(r - o, rmin), segs)
+
+
+def convex_walk(base, top, side_insets, radius, segs):
+    """(inset, h) stations up a side wall and over a convex top edge of
+    ``radius``: [(side_inset, base), (side_inset, top - radius), ...round...,
+    (side_inset + radius, top)]."""
+    out = [(side_insets, base)]
+    for o, d in reversed(round_steps(radius, segs)):
+        out.append((side_insets + o, top - d))
+    return out
+
+
+def slotted_head(cx, cz, r, h0, h1, crown, slot_w, slot_d, segs, edge_pts=7, steiner=0.9):
+    """Slotted round screw head (one Mesh, for a part in its own slot):
+    side wall from h0 to the rim at h1, a domed top (``crown`` at the
+    centre) cut by a straight slot along x, ``slot_w`` wide and ``slot_d``
+    deep below the dome top (flat floor). Built from two D-shaped halves
+    (CDT with Steiner points for the dome), the two slot walls, the slot
+    floor, and a side band that drops to the floor at the slot ends."""
+    m = Mesh()
+    a0 = math.asin((slot_w / 2) / r)
+    floor = h1 + crown - slot_d
+    dome = lambda x, z: h1 + crown * max(0.0, 1 - (x * x + z * z) / (r * r))
+    ex = r * math.cos(a0)
+    n_arc = max(4, int(round(segs * (math.pi - 2 * a0) / (2 * math.pi))))
+    halves = []
+    for sgn in (1.0, -1.0):
+        # arc from the right slot point round to the left one (upper half),
+        # or from the left round to the right (lower half): CCW either way.
+        if sgn > 0:
+            arc = [(r * math.cos(a0 + (math.pi - 2 * a0) * k / n_arc), r * math.sin(a0 + (math.pi - 2 * a0) * k / n_arc)) for k in range(n_arc + 1)]
+        else:
+            arc = [(r * math.cos(math.pi + a0 + (math.pi - 2 * a0) * k / n_arc), r * math.sin(math.pi + a0 + (math.pi - 2 * a0) * k / n_arc)) for k in range(n_arc + 1)]
+        edge = [(lerp(arc[-1][0], arc[0][0], t / (edge_pts + 1)), arc[0][1]) for t in range(1, edge_pts + 1)]
+        loop_pts = [(cx + x, cz + z) for x, z in arc + edge]
+        loop = m.ring(loop_pts, lambda x, z: dome(x - cx, z - cz))
+        m.fill(loop, [], lambda x, z: dome(x - cx, z - cz), steiner=steiner)
+        halves.append((arc, edge, loop))
+        # slot wall under the straight edge: from the edge (dome) down to the floor
+        top_idx = [loop[len(arc) - 1]] + loop[len(arc):] + [loop[0]]
+        bot_idx = [m.add(m.v[i][0], floor, m.v[i][2]) for i in top_idx]
+        for k in range(len(top_idx) - 1):
+            m.face_out((top_idx[k], top_idx[k + 1], bot_idx[k + 1], bot_idx[k]), (0.0, 0.0, -sgn))
+        halves[-1] = (arc, edge, loop, bot_idx)
+    # slot floor (front-facing)
+    up_bot, lo_bot = halves[0][3], halves[1][3]
+    fl = [m.add(cx + ex, floor, cz - slot_w / 2), m.add(cx + ex, floor, cz + slot_w / 2),
+          m.add(cx - ex, floor, cz + slot_w / 2), m.add(cx - ex, floor, cz - slot_w / 2)]
+    m.face_out(fl, (0.0, 1.0, 0.0))
+    # side band: base ring at h0 under every rim point, plus the slot ends
+    def side(i_top, ang):
+        x, hh, z = m.v[i_top]
+        return m.add(x, h0, z)
+    for arc, edge, loop, bot in halves[:2]:
+        rim = loop[:len(arc)]
+        base = [m.add(m.v[i][0], h0, m.v[i][2]) for i in rim]
+        for k in range(len(rim) - 1):
+            p = m.v[rim[k]]
+            m.face_out((base[k], base[k + 1], rim[k + 1], rim[k]), (p[0] - cx, 0.0, p[2] - cz))
+    # slot ends: from h0 up to the floor
+    for sx in (1.0, -1.0):
+        z0, z1 = cz - slot_w / 2, cz + slot_w / 2
+        q = [m.add(cx + sx * ex, h0, z0), m.add(cx + sx * ex, h0, z1), m.add(cx + sx * ex, floor, z1), m.add(cx + sx * ex, floor, z0)]
+        m.face_out(q, (sx, 0.0, 0.0))
+    return m
 
 
 def dark_rect(kit, cx, cz, hw, hh, h, name, lods, slot=PB):
@@ -878,16 +991,20 @@ def toggle_lod1(kit, gx, gz, hf, lods="1"):
     top = m.ring(rrect(gx, gz, bw / 2, bh / 2, BOSS_R, 2), face_h)
     slot = m.ring(rrect(gx, gz, BAT_SLOT[0] / 2, BAT_SLOT[1] / 2, BAT_SLOT[2], 1), face_h)
     m.fill(top, [slot])
+    low = m.ring(rrect(gx, gz, bw / 2, bh / 2, BOSS_R, 2), face_h - 1.2)
+    m.bridge(low, top)                               # boss sides: no see-through gap at a slant
     boss = m.to_object(kit, "switch face lod1", NI, lods=lods)
     hole = dark_rect(kit, gx, gz, BAT_SLOT[0] / 2, BAT_SLOT[1] / 2, face_h - 0.5, "bat slot lod1", lods)
-    b = bat(gx, gz, pivot_h, BAT_ANGLE, segs=2)
+    b = bat(gx, gz, pivot_h, BAT_ANGLE, segs=3)
     return [boss, hole, b.to_object(kit, "toggle bat lod1", NI, lods=lods)]
 
 
 def toggle_lod2(kit, gx, gz, hf, lods="2"):
-    """Dark opening quad and the bat as a tapered 4-sided box."""
+    """The bat slot as one dark quad (not the whole opening: LOD1 shows
+    only the slot dark, so a full dark opening pops at 4 m) and the bat as
+    a tapered 4-sided box."""
     field = hf(gx, gz)
-    hole = dark_rect(kit, gx, gz, TOGGLE_OPENING[0] / 2 - 0.4, TOGGLE_OPENING[1] / 2 - 0.4, field + 0.05, "toggle opening lod2", lods)
+    hole = dark_rect(kit, gx, gz, BAT_SLOT[0] / 2, BAT_SLOT[1] / 2, FIELD_EDGE_H + 0.06, "bat slot lod2", lods)
     m = Mesh()
     th = math.radians(BAT_ANGLE)
     pivot = field - BAT_PIVOT_BEHIND

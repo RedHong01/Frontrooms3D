@@ -435,6 +435,7 @@ namespace FrontRooms.Audio
             // Hook the run first: whether FMOD has finished loading must never decide whether a run is heard.
             if (started) StartRoomTone();
             map.GlassHold += OnGlassHold;
+            map.GlassCracked += OnGlassCracked;
             map.GlassHoldReleased += OnGlassHoldReleased;
             map.GlassBroken += OnGlassBroken;
             map.DoorBroken += OnDoorBroken;
@@ -469,6 +470,7 @@ namespace FrontRooms.Audio
             if (map != null)
             {
                 map.GlassHold -= OnGlassHold;
+                map.GlassCracked -= OnGlassCracked;
                 map.GlassHoldReleased -= OnGlassHoldReleased;
                 map.GlassBroken -= OnGlassBroken;
                 map.DoorBroken -= OnDoorBroken;
@@ -497,8 +499,8 @@ namespace FrontRooms.Audio
                 if (progress < lastStressProgress) lastStressProgress = 0f;   // a resumed tap keeps its progress: no repeated cracks
             }
             if (windowStress.isValid()) windowStress.setParameterByID(stressProgressId, progress);
-            if (lastStressProgress < .35f && progress >= .35f) { FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position); Cap("[GLASS CRACKS]", position, 22f); }
-            if (lastStressProgress < .7f && progress >= .7f) { FrontRoomsFmod.OneShot(SoundIds.WindowCrack, position); Cap("[GLASS CRACKS]", position, 22f); }
+            // Cracks come from map.GlassCracked (once per stage per pane, never replayed on a resumed hold or a
+            // rebuilt cracked pane); the hold only drives the stress loop.
             lastStressProgress = progress;
         }
 
@@ -525,6 +527,13 @@ namespace FrontRooms.Audio
         void Cap(string text, Vector3 position, float range)
         {
             if (listener != null && Vector3.Distance(listener.position, position) <= range) FrontRoomsFmod.Caption(text, position);
+        }
+
+        void OnGlassCracked(FrontRoomsMapWorld.Window window, int stage)
+        {
+            if (window == null) return;
+            FrontRoomsFmod.OneShot(SoundIds.WindowCrack, window.position);
+            Cap("[GLASS CRACKS]", window.position, 22f);
         }
 
         void OnDoorLocked(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.DoorLocked, position);
