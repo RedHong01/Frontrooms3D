@@ -1,0 +1,309 @@
+
+// ==================================================================== b6 additions (not part of the game)
+// Appended after main's FRGlassRTShared.h + FrontRoomsGlassRT.metal (75cfdff) as one source string.
+// FR_MAXD (macro): max reflection depth. FR_FULL (macro): 1 = report 11's first layout (8 unpacked entries, the
+// see-through continuation pushed too), 0 = the revision: see-through in registers (G14's loop), a packed
+// reflection-only stack of FR_MAXD - 1 entries, lastGlass carried per entry.
+#ifndef FR_MAXD
+#define FR_MAXD 1
+#endif
+#ifndef FR_FULL
+#define FR_FULL 0
+#endif
+#define FR_CUTOFF 0.004f
+
+static inline uint FROctEncode(float3 n)
+{
+    n /= (abs(n.x) + abs(n.y) + abs(n.z));
+    float2 e = n.z >= 0.0f ? n.xy : (1.0f - abs(n.yx)) * select(float2(-1.0f), float2(1.0f), n.xy >= 0.0f);
+    int2 q = int2(round(clamp(e, -1.0f, 1.0f) * 32767.0f));
+    return (uint(q.x) & 0xffffu) | (uint(q.y) << 16);
+}
+static inline float3 FROctDecode(uint v)
+{
+    float2 e = float2(float(short(v & 0xffffu)), float(short(v >> 16))) / 32767.0f;
+    float3 n = float3(e, 1.0f - abs(e.x) - abs(e.y));
+    float t = saturate(-n.z);
+    n.xy += select(float2(t), float2(-t), n.xy >= 0.0f);
+    return normalize(n);
+}
+
+// Packed reflection branch: 28 B (origin 12, octahedral direction 4, half3 weight 6, half cone 2, meta 4).
+struct FRRefl
+{
+    packed_float3 o;
+    uint dirOct;
+    packed_half3 w;
+    half cone;
+    uint meta;          // bits 0-1 depth, 2-3 layers, 4-31 lastGlass + 1 (0 = none)
+};
+// Report 11's first layout (bench 3/4): unpacked, also used for see-through continuations.
+struct FRPE
+{
+    float3 o; float3 d; float3 w; float cone; uint depth, layers, lastGlass;
+};
+
+// The hit's indirect specular as FRShade adds it (cube x envSpec x occlusion), so a traced branch can replace it.
+static inline float3 FREnvSpecWeight(thread const FRPbrInput& p, float3 rayDir)
+{
+    float3 n = p.normal, v = -rayDir;
+    float oneMinusReflectivity = 0.96f - p.metallic * 0.96f;
+    float reflectivity = 1.0f - oneMinusReflectivity;
+    float3 specular = mix(float3(0.04f), p.albedo, p.metallic);
+    float perceptualRoughness = 1.0f - p.smoothness;
+    float roughness = max(perceptualRoughness * perceptualRoughness, FR_HALF_MIN_SQRT);
+    float roughness2 = max(roughness * roughness, FR_HALF_MIN);
+    float grazing = saturate(p.smoothness + reflectivity);
+    float fresnelTerm = FRPow4(1.0f - saturate(dot(n, v)));
+    return (1.0f / (roughness2 + 1.0f)) * mix(specular, float3(grazing), fresnelTerm) * p.occlusion;
+}
+
+static FRTraceResult FRTraceReflectionS(constant FRFrame& F, thread const FRScene& S, float3 origin, float3 dir,
+                                        float coneAtOrigin, float spread, float glassSmooth, float importance,
+                                        thread uint& shadowRays)
+{
+    FRTraceResult res;
+    res.radiance = float3(0.0f); res.hitDistance = 0.0f; res.instance = 0u; res.miss = false; res.layered = false;
+    FRIsect isect;
+    isect.assume_geometry_type(geometry_type::triangle);
+    isect.force_opacity(forced_opacity::opaque);
+    isect.accept_any_intersection(false);
+#if FR_FULL
+    FRPE st[8]; uint sp = 0;
+    { FRPE e; e.o = origin; e.d = dir; e.w = float3(1.0f); e.cone = coneAtOrigin; e.depth = 1u; e.layers = 0u; e.lastGlass = 0xffffffffu; st[sp++] = e; }
+    bool firstBranch = true;
+    for (uint guard = 0u; guard < 16u && sp > 0u; guard++)
+    {
+        FRPE e = st[--sp];
+        float3 o = e.o, d = e.d, T = e.w; float cone0 = e.cone; uint depth = e.depth, layers = e.layers, lastGlass = e.lastGlass;
+        ray r(o, d, 0.0f, F.camFwd.w);
+        FRHit hit = isect.intersect(r, S.tlas, FR_RAYMASK_REFLECTION);
+        bool primary = firstBranch; firstBranch = false;
+        if (hit.type == intersection_type::none)
+        {
+            if (primary && layers == 0u) { res.miss = true; return res; }
+            res.radiance += T * FREnvironment(F, S, d, 1.0f - glassSmooth) * F.envInfo.z;
+            continue;
+        }
+        FRInstance I = S.insts[hit.instance_id];
+        if (I.flags & FR_FLAG_GLASS)
+        {
+            float3 P = o + d * hit.distance;
+            if (hit.instance_id == lastGlass) { FRPE t = e; t.o = P + d * 1e-4f; if (sp < 8u) st[sp++] = t; continue; }
+            if (primary && res.hitDistance == 0.0f) res.hitDistance = hit.distance;
+            res.layered = true;
+            if (layers >= F.shadow.y) { res.radiance += T * FREnvironment(F, S, d, 1.0f - glassSmooth) * F.envInfo.z; continue; }
+            FRSurfaceHit gh = FRFetchHit(S, hit.instance_id, hit.geometry_id, hit.primitive_id, hit.triangle_barycentric_coord, d);
+            float c = abs(dot(d, gh.nGeo)); float f5 = FRPow4(1.0f - c) * (1.0f - c);
+            float Fr = 0.08f + 0.92f * f5; float transmit = 1.0f - (0.11f + 0.89f * f5);
+            float3 R = reflect(d, gh.nGeo);
+            if (depth < FR_MAXD && importance * FRLuma(T) * Fr > FR_CUTOFF && sp < 8u)
+            { FRPE t; t.o = gh.pos + gh.nGeo * F.thin.z; t.d = R; t.w = T * Fr; t.cone = cone0 + spread * hit.distance; t.depth = depth + 1u; t.layers = layers; t.lastGlass = 0xffffffffu; st[sp++] = t; }
+            else res.radiance += T * Fr * FREnvironment(F, S, R, 1.0f - glassSmooth) * F.envInfo.z;
+            if (sp < 8u) { FRPE t; t.o = P + d * 1e-4f; t.d = d; t.w = T * transmit; t.cone = cone0; t.depth = depth; t.layers = layers + 1u; t.lastGlass = hit.instance_id; st[sp++] = t; }
+            continue;
+        }
+        FRSurfaceHit h = FRFetchHit(S, hit.instance_id, hit.geometry_id, hit.primitive_id, hit.triangle_barycentric_coord, d);
+        float cone = cone0 + spread * hit.distance;
+        FRPbrInput p = FREvaluateMaterial(S, h, d, cone);
+        float3 c = FRShade(F, S, h, p, d, shadowRays);
+        float rgh = 1.0f - p.smoothness;
+        bool glossy = p.smoothness >= 0.75f;
+        float g = 1.0f - smoothstep(0.10f, 0.25f, rgh);
+        if (glossy && g > 0.0f && depth < FR_MAXD && sp < 8u)
+        {
+            float3 es = FREnvSpecWeight(p, d) * g;
+            float3 R = reflect(d, p.normal);
+            float3 Wb = T * es;
+            if (importance * FRLuma(Wb) > FR_CUTOFF)
+            {
+                c -= es * FREnvironment(F, S, R, rgh);
+                FRPE t; t.o = h.pos + h.nGeo * 0.002f; t.d = R; t.w = Wb; t.cone = cone; t.depth = depth + 1u; t.layers = layers; t.lastGlass = 0xffffffffu; st[sp++] = t;
+            }
+        }
+        res.radiance += T * c;
+        if (primary) { res.hitDistance = hit.distance; res.instance = hit.instance_id + 1u; }
+    }
+    return res;
+#else
+    FRRefl st[FR_MAXD > 1 ? FR_MAXD - 1 : 1];
+    uint sp = 0u;
+    float3 o = origin, d = dir, T = float3(1.0f);
+    float cone0 = coneAtOrigin, tMin = 0.0f;
+    uint depth = 1u, layers = 0u, lastGlass = 0xffffffffu;
+    bool primary = true;
+    for (uint guard = 0u; guard < (FR_MAXD > 1 ? 16u : 8u); guard++)
+    {
+        bool endBranch = false;
+        ray r(o, d, tMin, F.camFwd.w);
+        FRHit hit = isect.intersect(r, S.tlas, FR_RAYMASK_REFLECTION);
+        if (hit.type == intersection_type::none)
+        {
+            if (primary && layers == 0u) { res.miss = true; return res; }
+            res.radiance += T * FREnvironment(F, S, d, 1.0f - glassSmooth) * F.envInfo.z;
+            endBranch = true;
+        }
+        else
+        {
+            FRInstance I = S.insts[hit.instance_id];
+            if (I.flags & FR_FLAG_GLASS)
+            {
+                if (hit.instance_id != lastGlass)
+                {
+                    if (layers >= F.shadow.y)
+                    {
+                        res.radiance += T * FREnvironment(F, S, d, 1.0f - glassSmooth) * F.envInfo.z;
+                        if (primary) { res.layered = true; if (res.hitDistance == 0.0f) res.hitDistance = hit.distance; }
+                        endBranch = true;
+                    }
+                    else
+                    {
+                        FRSurfaceHit gh = FRFetchHit(S, hit.instance_id, hit.geometry_id, hit.primitive_id, hit.triangle_barycentric_coord, d);
+                        float c = abs(dot(d, gh.nGeo));
+                        float f5 = FRPow4(1.0f - c) * (1.0f - c);
+                        float Fr = 0.08f + 0.92f * f5;
+                        float transmit = 1.0f - (0.11f + 0.89f * f5);
+                        float3 R = reflect(d, gh.nGeo);
+#if FR_MAXD > 1
+                        if (depth < FR_MAXD && sp < FR_MAXD - 1 && importance * FRLuma(T) * Fr > FR_CUTOFF)
+                        {
+                            FRRefl e; e.o = gh.pos + gh.nGeo * F.thin.z; e.dirOct = FROctEncode(R); e.w = half3(T * Fr);
+                            e.cone = half(cone0 + spread * hit.distance); e.meta = (depth + 1u) | (layers << 2) | (0u << 4); st[sp++] = e;
+                        }
+                        else
+#endif
+                        res.radiance += T * Fr * FREnvironment(F, S, R, 1.0f - glassSmooth) * F.envInfo.z;
+                        T *= transmit;
+                        layers++;
+                        lastGlass = hit.instance_id;
+                        if (primary) { res.layered = true; if (res.hitDistance == 0.0f) res.hitDistance = hit.distance; }
+                    }
+                }
+                if (!endBranch) { tMin = hit.distance + 1e-4f; continue; }
+            }
+            else
+            {
+                FRSurfaceHit h = FRFetchHit(S, hit.instance_id, hit.geometry_id, hit.primitive_id, hit.triangle_barycentric_coord, d);
+                float cone = cone0 + spread * hit.distance;
+                FRPbrInput p = FREvaluateMaterial(S, h, d, cone);
+                float3 c = FRShade(F, S, h, p, d, shadowRays);
+#if FR_MAXD > 1
+                float rgh = 1.0f - p.smoothness;
+                float g = 1.0f - smoothstep(0.10f, 0.25f, rgh);
+                if (p.smoothness >= 0.75f && g > 0.0f && depth < FR_MAXD && sp < FR_MAXD - 1)
+                {
+                    float3 es = FREnvSpecWeight(p, d) * g;
+                    float3 Wb = T * es;
+                    if (importance * FRLuma(Wb) > FR_CUTOFF)
+                    {
+                        float3 R = reflect(d, p.normal);
+                        c -= es * FREnvironment(F, S, R, rgh);
+                        FRRefl e; e.o = h.pos + h.nGeo * 0.002f; e.dirOct = FROctEncode(R); e.w = half3(Wb);
+                        e.cone = half(cone); e.meta = (depth + 1u) | (layers << 2) | (0u << 4); st[sp++] = e;
+                    }
+                }
+#endif
+                res.radiance += T * c;
+                if (primary) { res.hitDistance = hit.distance; res.instance = hit.instance_id + 1u; }
+                endBranch = true;
+            }
+        }
+        if (endBranch)
+        {
+            if (sp == 0u) return res;
+            FRRefl e = st[--sp];
+            o = float3(e.o); d = FROctDecode(e.dirOct); T = float3(e.w); cone0 = float(e.cone);
+            depth = e.meta & 3u; layers = (e.meta >> 2) & 3u; lastGlass = (e.meta >> 4) == 0u ? 0xffffffffu : (e.meta >> 4) - 1u;
+            tMin = 0.0f; primary = false;
+        }
+    }
+    if (primary) res.miss = layers == 0u;
+    return res;
+#endif
+}
+
+static void FRTracePixelS(uint2 p, constant FRFrame& F, thread const FRScene& S,
+                          texture2d<float, access::read> gDepth, texture2d<float, access::read> gNormal,
+                          texture2d<float, access::write> rawOut, texture2d<float, access::write> auxOut, thread FRTraceCounts& c)
+{
+    float d = gDepth.read(p).x;
+    if (!(d > 0.0f)) { rawOut.write(float4(0.0f), p); auxOut.write(float4(0.0f), p); return; }
+    c.glass++;
+    float4 nrm = gNormal.read(p);
+    float3 n = normalize(nrm.xyz);
+    float glassSmooth = nrm.w;
+    float3 dirC = FRCameraRay(F, float2(p) + 0.5f);
+    float3 pos = F.camPos.xyz + dirC * (d / max(dot(dirC, F.camFwd.xyz), 1e-4f));
+    float3 dir = dirC;
+    if (dot(n, dir) > 0.0f) n = -n;
+    float3 r = reflect(dir, n);
+    float3 origin = pos + n * F.thin.z;
+    float t1 = distance(F.camPos.xyz, pos);
+    float spread = F.fog.z;
+    float cr = saturate(-dot(n, dir)); float importance = 0.04f + 0.96f * FRPow4(1.0f - cr) * (1.0f - cr);
+    FRTraceResult tr = FRTraceReflectionS(F, S, origin, r, spread * t1, spread, glassSmooth, importance, c.shadow);
+    if (tr.miss) { c.miss++; rawOut.write(float4(0.0f), p); auxOut.write(float4(0.0f, glassSmooth, 1.0f, 0.0f), p); return; }
+    c.hit++;
+    if (tr.layered) c.layer++;
+    float3 L = FRFogRemainder(F, tr.radiance, d, tr.hitDistance);
+    rawOut.write(float4(min(L, float3(60000.0f)), 1.0f + d), p);
+    auxOut.write(float4(tr.hitDistance, glassSmooth, tr.layered ? 2.0f : 0.0f, 0.0f), p);
+}
+
+kernel void fr_trace_s(uint2 gid [[thread_position_in_grid]],
+                       uint lane [[thread_index_in_simdgroup]],
+                       constant FRFrame& F [[buffer(0)]],
+                       instance_acceleration_structure tlas [[buffer(1)]],
+                       device const FRInstance* insts [[buffer(2)]],
+                       device const FRMeshGPU* meshes [[buffer(3)]],
+                       device const FRMaterial* mats [[buffer(4)]],
+                       device const FRTexSlot* texs [[buffer(5)]],
+                       device const FRLamp* lamps [[buffer(6)]],
+                       device atomic_uint* stats [[buffer(7)]],
+                       texture2d<float, access::read> gDepth [[texture(0)]],
+                       texture2d<float, access::read> gNormal [[texture(1)]],
+                       texture2d<float, access::write> rawOut [[texture(2)]],
+                       texture2d<float, access::write> auxOut [[texture(3)]],
+                       texturecube<float> env [[texture(4)]],
+                       texture2d<float, access::write> idOut [[texture(5)]])
+{
+    FRTraceCounts c = { 0u, 0u, 0u, 0u, 0u };
+    uint2 p = gid + F.rect.xy;
+    if (p.x < F.rect.z && p.y < F.rect.w)
+    {
+        FRScene S = { tlas, insts, meshes, mats, texs, lamps, env };
+        FRTracePixelS(p, F, S, gDepth, gNormal, rawOut, auxOut, c);
+    }
+    uint g = simd_sum(c.glass), h = simd_sum(c.hit), sh = simd_sum(c.shadow);
+    if (lane == 0u)
+    {
+        if (g) atomic_fetch_add_explicit(&stats[FR_STAT_GLASS_PX], g, memory_order_relaxed);
+        if (h) atomic_fetch_add_explicit(&stats[FR_STAT_HIT_PX], h, memory_order_relaxed);
+        if (sh) atomic_fetch_add_explicit(&stats[FR_STAT_SHADOW_RAYS], sh, memory_order_relaxed);
+    }
+}
+
+// G-buffer for the bench: receivers = instances whose class (b6 side table) is 1 (floor) or 2 (glass lite).
+kernel void b6_gbuffer(uint2 gid [[thread_position_in_grid]],
+                       constant FRFrame& F [[buffer(0)]],
+                       instance_acceleration_structure tlas [[buffer(1)]],
+                       device const FRInstance* insts [[buffer(2)]],
+                       device const FRMeshGPU* meshes [[buffer(3)]],
+                       device const uint* recvClass [[buffer(4)]],
+                       constant float& floorSmooth [[buffer(5)]],
+                       texture2d<float, access::write> gDepth [[texture(0)]],
+                       texture2d<float, access::write> gNormal [[texture(1)]],
+                       texturecube<float> env [[texture(4)]])
+{
+    if (gid.x >= uint(F.screen.x) || gid.y >= uint(F.screen.y)) return;
+    float3 dir = FRCameraRay(F, float2(gid) + 0.5f);
+    FRIsect isect; isect.assume_geometry_type(geometry_type::triangle); isect.force_opacity(forced_opacity::opaque);
+    ray r(F.camPos.xyz, dir, 0.01f, 80.0f);
+    FRHit hit = isect.intersect(r, tlas, FR_RAYMASK_PRIMARY);
+    if (hit.type == intersection_type::none || recvClass[hit.instance_id] == 0u) { gDepth.write(float4(0.0f), gid); gNormal.write(float4(0.0f), gid); return; }
+    FRScene S = { tlas, insts, meshes, nullptr, nullptr, nullptr, env };
+    FRSurfaceHit h = FRFetchHit(S, hit.instance_id, hit.geometry_id, hit.primitive_id, hit.triangle_barycentric_coord, dir);
+    float d = dot(h.pos - F.camPos.xyz, F.camFwd.xyz);
+    gDepth.write(float4(d), gid);
+    gNormal.write(float4(h.nGeo, recvClass[hit.instance_id] == 1u ? floorSmooth : 0.96f), gid);
+}

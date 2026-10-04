@@ -1,0 +1,25 @@
+== v5r3_timing2_L?.txt  (3 processes, load 8-9)
+  A_H   total min 1.335 med 1.429 | trace med 0.852 filter med 0.578 | floor 12.0% rays/recv 1.00
+  A_U2  total min 2.346 med 2.697 | trace med 2.109 filter med 0.578 | floor 12.0% rays/recv 1.99
+  A_U3  total min 3.173 med 3.728 | trace med 3.099 filter med 0.579 | floor 12.0% rays/recv 2.99
+  A_U4  total min 4.138 med 4.719 | trace med 4.132 filter med 0.582 | floor 12.0% rays/recv 3.99
+  B_H   total min 1.466 med 1.596 | trace med 0.991 filter med 0.591 | floor 15.1% rays/recv 1.04
+  B_U2  total min 2.851 med 3.110 | trace med 2.525 filter med 0.596 | floor 15.1% rays/recv 2.05
+  B_U3  total min 4.075 med 4.313 | trace med 3.721 filter med 0.598 | floor 15.1% rays/recv 3.07
+  C_H   total min 1.657 med 1.787 | trace med 1.186 filter med 0.597 | floor 17.6% rays/recv 1.00
+  C_U2  total min 3.271 med 3.653 | trace med 3.023 filter med 0.599 | floor 17.6% rays/recv 2.00
+  C_U3  total min 4.647 med 5.094 | trace med 4.491 filter med 0.602 | floor 17.6% rays/recv 2.99
+  D_H   total min 2.364 med 2.588 | trace med 1.883 filter med 0.684 | floor 37.2% rays/recv 1.00
+  D_U2  total min 5.172 med 5.879 | trace med 5.157 filter med 0.693 | floor 37.2% rays/recv 1.99
+  G_H   total min 1.723 med 1.872 | trace med 1.260 filter med 0.607 | floor 19.4% rays/recv 1.05
+  G_U2  total min 3.575 med 3.901 | trace med 3.289 filter med 0.612 | floor 19.4% rays/recv 2.04
+== v5r3_timing2_farfade_L?.txt  (2 processes, load 8-8)
+  A_U2  total min 2.329 med 2.678 | trace med 2.099 filter med 0.579 | floor 12.0% rays/recv 2.06
+  A_U3  total min 3.096 med 3.637 | trace med 3.046 filter med 0.579 | floor 12.0% rays/recv 3.03
+  A_U4  total min 3.829 med 4.583 | trace med 4.003 filter med 0.581 | floor 12.0% rays/recv 4.00
+  B_U2  total min 2.808 med 3.087 | trace med 2.499 filter med 0.592 | floor 15.1% rays/recv 2.05
+  B_U3  total min 3.908 med 4.261 | trace med 3.659 filter med 0.594 | floor 15.1% rays/recv 3.07
+  C_U2  total min 3.280 med 3.572 | trace med 2.974 filter med 0.599 | floor 17.6% rays/recv 2.03
+  C_U3  total min 4.507 med 5.063 | trace med 4.405 filter med 0.603 | floor 17.6% rays/recv 3.01
+  D_U2  total min 5.763 med 6.421 | trace med 5.723 filter med 0.688 | floor 37.2% rays/recv 2.23
+  G_U2  total min 3.646 med 3.864 | trace med 3.224 filter med 0.609 | floor 19.4% rays/recv 2.04

@@ -1,0 +1,256 @@
+{
+ "Kit_DoorCloser_Arm": [
+   {"material": "Prop_SteelBrown", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBrown.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBrown_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorCloser_Body": [
+   {"material": "Prop_SteelBrown", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBrown.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBrown_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorCloser_Forearm": [
+   {"material": "Prop_SteelBrown", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBrown.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBrown_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorCloser_Shoe": [
+   {"material": "Prop_SteelBrown", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBrown.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBrown_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorFrame_Steel": [
+   {"material": "Prop_SteelBrown", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBrown.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBrown_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Rubber", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Rubber.mat", "baseColor": [0.0200, 0.0200, 0.0200], "baseColorHex": "#050505", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorFrame_Steel_Alu": [
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Rubber", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Rubber.mat", "baseColor": [0.0200, 0.0200, 0.0200], "baseColorHex": "#050505", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorFrame_Wood": [
+   {"material": "Prop_WoodWalnut", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_WoodWalnut.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_WoodWalnut_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_WoodOak", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_WoodOak.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_WoodOak_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorLeaf_Steel": [
+   {"material": "Door_Enamel", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel.fbx", "baseColor": [0.8036, 0.7723, 0.6901], "baseColorHex": "#CDC5B0", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorLeaf_SteelLite": [
+   {"material": "Door_Enamel", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorLeaf_SteelLite.fbx", "baseColor": [0.8036, 0.7723, 0.6901], "baseColorHex": "#CDC5B0", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Glass", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Surfaces/Prop_Glass.mat", "baseColor": [0.8200, 0.8800, 0.8800], "baseColorHex": "#D1E0E0", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorLeaf_Steel_PaintedMetal": [
+   {"material": "Painted_Metal", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Painted_Metal.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "PaintedMetal_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorLeaf_Veneer": [
+   {"material": "Door_Veneer", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Door_Veneer.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "DoorVeneer_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorLeaf_Veneer_Oak": [
+   {"material": "Prop_WoodOak", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_WoodOak.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_WoodOak_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorLeaf_Ward": [
+   {"material": "Prop_WoodLaminate", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_WoodLaminate.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_WoodLaminate_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorNumberPlate": [
+   {"material": "Prop_PlasticRed", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticRed.mat", "baseColor": [0.5500, 0.0600, 0.0500], "baseColorHex": "#8C0F0D", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorNumberPlate.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorNumberPlate_Blue": [
+   {"material": "Prop_PlasticBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlue.mat", "baseColor": [0.0600, 0.1600, 0.4500], "baseColorHex": "#0F2973", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_Blue.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorNumberPlate_White": [
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_White.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorSign": [
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_SignEngraved", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorSign.fbx", "baseColor": [0.4731, 0.4100, 0.3811], "baseColorHex": "#796961", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorwayStuds": [
+   {"material": "Prop_Studs", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Studs.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Studs_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_TapeBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_TapeBlue.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_TapeBlue_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorwayStuds140": [
+   {"material": "Prop_Studs", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Studs.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Studs_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_TapeBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_TapeBlue.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_TapeBlue_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_DoorwayStuds180": [
+   {"material": "Prop_Studs", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Studs.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Studs_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_TapeBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_TapeBlue.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_TapeBlue_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_ExitDevice_Crossbar": [
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_ExitSign": [
+   {"material": "Prop_SteelBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBlack_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Run_ExitSign", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Run_ExitSign.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Run_ExitSign_A", "emission": [3.200, 3.200, 3.200]}
+ ],
+ "Kit_ExitSign_Dead": [
+   {"material": "Prop_SteelBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBlack_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Run_ExitSign_Dead", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_ExitSign_Dead.fbx", "baseColor": [0.8095, 0.7977, 0.7797], "baseColorHex": "#CECBC7", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyCabinet": [
+   {"material": "Prop_SteelAlmond", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelAlmond.mat", "baseColor": [1.0400, 0.9800, 0.8600], "baseColorHex": "#FFFADB", "baseMap": "Prop_SteelPutty_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyCabinet.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyHook": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyHookBoard": [
+   {"material": "Prop_WoodDark", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_WoodDark.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_WoodDark_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyHookBoard.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyRing": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Long": [
+   {"material": "Prop_PlasticRed", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticRed.mat", "baseColor": [0.5500, 0.0600, 0.0500], "baseColorHex": "#8C0F0D", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Long.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Long_Blue": [
+   {"material": "Prop_PlasticBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlue.mat", "baseColor": [0.0600, 0.1600, 0.4500], "baseColorHex": "#0F2973", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Long_Blue.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Long_White": [
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Long_White.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Rect": [
+   {"material": "Prop_PlasticRed", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticRed.mat", "baseColor": [0.5500, 0.0600, 0.0500], "baseColorHex": "#8C0F0D", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Rect.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Rect_Blue": [
+   {"material": "Prop_PlasticBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlue.mat", "baseColor": [0.0600, 0.1600, 0.4500], "baseColorHex": "#0F2973", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_Blue.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Rect_White": [
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_White.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Round": [
+   {"material": "Prop_PlasticRed", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticRed.mat", "baseColor": [0.5500, 0.0600, 0.0500], "baseColorHex": "#8C0F0D", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Round.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Round_Blue": [
+   {"material": "Prop_PlasticBlue", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlue.mat", "baseColor": [0.0600, 0.1600, 0.4500], "baseColorHex": "#0F2973", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Round_Blue.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_KeyTag_Round_White": [
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_KeyTagNo", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_KeyTag_Round_White.fbx", "baseColor": [0.9357, 0.9261, 0.8911], "baseColorHex": "#EFECE3", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Key_Zone": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Key_Zone_Nickel": [
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_CylinderShell": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_CylinderShell_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Deadbolt": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Escutcheon": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Escutcheon_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Knob": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Knob_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Latchbolt_Bored": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Latchbolt_Bored_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Latchbolt_Mortise": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Lever": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Lever_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Plug": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Rose": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_Rose_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_StrikeBored": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_StrikeBored_Brass": [
+   {"material": "Prop_Brass", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Brass.mat", "baseColor": [0.6900, 0.5410, 0.2900], "baseColorHex": "#B08A4A", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_Lock_StrikeMortise": [
+   {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticBlack", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticBlack_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_MiniBlind_Lowered": [
+   {"material": "Prop_SteelAlmond", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelAlmond.mat", "baseColor": [1.0400, 0.9800, 0.8600], "baseColorHex": "#FFFADB", "baseMap": "Prop_SteelPutty_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_MiniBlind_Raised": [
+   {"material": "Prop_SteelAlmond", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelAlmond.mat", "baseColor": [1.0400, 0.9800, 0.8600], "baseColorHex": "#FFFADB", "baseMap": "Prop_SteelPutty_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_PlasticWhite", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_PlasticWhite_A", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_WindowFrame_Alu": [
+   {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Rubber", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Rubber.mat", "baseColor": [0.0200, 0.0200, 0.0200], "baseColorHex": "#050505", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_WindowFrame_Steel": [
+   {"material": "Prop_SteelBrown", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_SteelBrown.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_SteelBrown_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Rubber", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Rubber.mat", "baseColor": [0.0200, 0.0200, 0.0200], "baseColorHex": "#050505", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_WindowFrame_Steel_Enamel": [
+   {"material": "Door_Enamel", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel_Enamel.fbx", "baseColor": [0.8036, 0.7736, 0.6872], "baseColorHex": "#CDC5AF", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Rubber", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Rubber.mat", "baseColor": [0.0200, 0.0200, 0.0200], "baseColorHex": "#050505", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ],
+ "Kit_WindowFrame_Wood": [
+   {"material": "Prop_WoodWalnut", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_WoodWalnut.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_WoodWalnut_A", "emission": [0.000, 0.000, 0.000]},
+   {"material": "Prop_Rubber", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Rubber.mat", "baseColor": [0.0200, 0.0200, 0.0200], "baseColorHex": "#050505", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+ ]
+}

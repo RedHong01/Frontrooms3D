@@ -1,0 +1,267 @@
+// rt_bench6.mm - G14b revision 1, issue 8: what does a reflection stack cost on top of MAIN's real kernel?
+// Not part of the game. Standalone Metal; no Unity. Compiles main's FRGlassRTShared.h + FrontRoomsGlassRT.metal
+// (commit 75cfdff, copied read-only into this folder) + b6_stack.metal as one source, Metal 3.0, fast math, as the
+// G14 plugin does (FrontRoomsMetalGlassRT.mm:177-179), and dispatches 8x8 threadgroups as the plugin does (:570).
+// Scene: bench 4's Run corridor (Direction B, tripped / armed), every instance an FR_KIND_SURFACE material (the heavy
+// FrontRooms/Surface hit path: base, mask, bump, 2 macro, emission samples), lens instances with EmissiveLens, the
+// RN-X lite as FR_FLAG_GLASS, the chrome crossbar metallic, + 3,000 far boxes for TLAS size. Receivers (the fr_trace
+// input): Run floor pixels (s 0.80, r 0.20) and the lite's pixels, one mirror ray each (P1b High's floor path).
+// Kernels timed, interleaved per rep:
+//   main  = main's fr_trace (FRTraceReflection, G14 P1, unmodified)
+//   s1/s2/s3 = fr_trace_s, see-through in registers + packed reflection-only stack of FR_MAXD - 1 entries
+//   f2/f3 = fr_trace_s, report 11's first layout: 8 unpacked entries, see-through pushed too
+// Build: xcrun clang++ -std=c++17 -fobjc-arc -O2 -framework Metal -framework Foundation rt_bench6.mm -o rt_bench6
+// Run:   ./rt_bench6 <tag> [view A|B|G] [tripped|armed]
+#import <Metal/Metal.h>
+#import <Foundation/Foundation.h>
+#include <simd/simd.h>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <cstdio>
+#include <cmath>
+#include <string>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include "main_FRGlassRTShared.h"
+
+static std::string loadStr() { double l[3] = {0, 0, 0}; getloadavg(l, 3); char b[64]; snprintf(b, sizeof b, "load %.0f/%.0f/%.0f", l[0], l[1], l[2]); return b; }
+static double pct(std::vector<double> v, double p) { std::sort(v.begin(), v.end()); return v[std::min(v.size() - 1, (size_t)(p * (v.size() - 1) + 0.5))]; }
+static std::string slurp(const char* p) { std::ifstream f(p); std::stringstream ss; ss << f.rdbuf(); return ss.str(); }
+
+struct BInst { float m[3][4]; float tint[3]; float rough; float emis[3]; uint32_t kind; };   // kind 0 opaque, 1 glass, 2 lens, 3 metal, 4 floor
+
+int main(int argc, char** argv) {
+  @autoreleasepool {
+    std::string tag = argc > 1 ? argv[1] : "b6";
+    char viewSel = argc > 2 ? argv[2][0] : 'A';
+    bool armed = argc > 3 && !strcmp(argv[3], "armed");
+    id<MTLDevice> dev = MTLCreateSystemDefaultDevice(); id<MTLCommandQueue> q = [dev newCommandQueue];
+    printf("# rt_bench6 %s view %c %s device=%s Apple9=%d  %s\n", tag.c_str(), viewSel, armed ? "armed" : "tripped", dev.name.UTF8String, (int)[dev supportsFamily:MTLGPUFamilyApple9], loadStr().c_str());
+
+    // ---------------------------------------------------------------- shaders (main's source + b6 additions)
+    std::string src = slurp("main_FRGlassRTShared.h") + "\n" + slurp("main_FrontRoomsGlassRT.metal") + "\n" + slurp("b6_stack.metal");
+    struct Var { const char* name; int maxd; int full; id<MTLComputePipelineState> pso; };
+    std::vector<Var> vars = {{"main", 1, 0, nil}, {"s1", 1, 0, nil}, {"s2", 2, 0, nil}, {"s3", 3, 0, nil}, {"f2", 2, 1, nil}, {"f3", 3, 1, nil}};
+    id<MTLComputePipelineState> psoG = nil;
+    for (auto& v : vars) {
+      MTLCompileOptions* o = [MTLCompileOptions new]; o.languageVersion = MTLLanguageVersion3_0; o.fastMathEnabled = YES;
+      o.preprocessorMacros = @{@"FR_MAXD": @(v.maxd), @"FR_FULL": @(v.full)};
+      NSError* e = nil; id<MTLLibrary> lib = [dev newLibraryWithSource:[NSString stringWithUTF8String:src.c_str()] options:o error:&e];
+      if (!lib) { printf("compile error (%s): %s\n", v.name, e.localizedDescription.UTF8String); return 1; }
+      id<MTLFunction> fn = [lib newFunctionWithName:!strcmp(v.name, "main") ? @"fr_trace" : @"fr_trace_s"];
+      v.pso = [dev newComputePipelineStateWithFunction:fn error:&e];
+      if (!v.pso) { printf("pso error %s\n", e.localizedDescription.UTF8String); return 1; }
+      if (!psoG) psoG = [dev newComputePipelineStateWithFunction:[lib newFunctionWithName:@"b6_gbuffer"] error:&e];
+      printf("# pso %-4s maxd %d full %d: maxTotalThreadsPerThreadgroup %lu, simd %lu, static threadgroup mem %lu\n", v.name, v.maxd, v.full,
+             (unsigned long)v.pso.maxTotalThreadsPerThreadgroup, (unsigned long)v.pso.threadExecutionWidth, (unsigned long)v.pso.staticThreadgroupMemoryLength);
+    }
+
+    // ---------------------------------------------------------------- the corridor (bench 4, Direction B)
+    std::vector<BInst> B; std::vector<FRLamp> lamps;
+    auto boxAB = [&](float x0, float y0, float z0, float x1, float y1, float z1, uint32_t kind, float rough, float r = .8f, float g = .8f, float b = .78f) -> BInst& {
+      BInst in{}; in.kind = kind; in.rough = rough; in.tint[0] = r; in.tint[1] = g; in.tint[2] = b;
+      in.m[0][0] = fabsf(x1 - x0); in.m[1][1] = fabsf(y1 - y0); in.m[2][2] = fabsf(z1 - z0);
+      in.m[0][3] = (x0 + x1) * .5f; in.m[1][3] = (y0 + y1) * .5f; in.m[2][3] = (z0 + z1) * .5f; B.push_back(in); return B.back(); };
+    auto emit = [](BInst& in, float r, float g, float b) { in.emis[0] = r; in.emis[1] = g; in.emis[2] = b; in.kind = 2; };
+    auto spot = [&](float x, float y, float z, float range, float fx, float fy, float fz, float outerFull, float innerFull, float r, float g, float b, float inten) {
+      FRLamp L{}; L.posInvRange2 = simd_make_float4(x, y, z, 1.f / (range * range));
+      float n = sqrtf(fx * fx + fy * fy + fz * fz); L.spotDir = simd_make_float4(-fx / n, -fy / n, -fz / n, (float)FR_LAMP_SPOT);
+      float co = cosf(outerFull * .5f * (float)M_PI / 180.f), ci = cosf(innerFull * .5f * (float)M_PI / 180.f); float inv = 1.f / std::max(ci - co, 0.001f);
+      L.atten = simd_make_float4(1.f / (range * range), 1.f, inv, -co * inv); L.color = simd_make_float4(r * inten, g * inten, b * inten, 1.f); lamps.push_back(L); };
+    auto point = [&](float x, float y, float z, float range, float r, float g, float b, float inten) {
+      FRLamp L{}; L.posInvRange2 = simd_make_float4(x, y, z, 1.f / (range * range)); L.spotDir = simd_make_float4(0, -1, 0, (float)FR_LAMP_POINT);
+      L.atten = simd_make_float4(1.f / (range * range), 1.f, 0.f, 1.f); L.color = simd_make_float4(r * inten, g * inten, b * inten, 1.f); lamps.push_back(L); };
+    const float W = 1.5f, Wi = 1.42f, L = 27.f, Hc = 2.9f;
+    boxAB(-W, -0.2f, 0, W, 0, L, 4, 0.2f, .80f, .80f, .78f);
+    for (float sx : {-1.f, 1.f}) { boxAB(sx * W - .08f, 0, 0, sx * W + .08f, 1.2f, L, 0, 0.42f, .40f, .44f, .40f); boxAB(sx * W - .08f, 1.2f, 0, sx * W + .08f, Hc, L, 0, 0.42f, 1.f, 1.f, .95f); }
+    boxAB(-W, Hc, 0, W, Hc + .2f, L, 0, 0.9f, .1f, .1f, .1f);
+    boxAB(-W, 0, -.08f, -0.7f, Hc, .08f, 0, 0.8f); boxAB(0.7f, 0, -.08f, W, Hc, .08f, 0, 0.8f); boxAB(-0.7f, 2.2f, -.08f, 0.7f, Hc, .08f, 0, 0.8f);
+    boxAB(-W, 0, L - .08f, -0.5f, Hc, L + .08f, 0, 0.8f); boxAB(0.5f, 0, L - .08f, W, Hc, L + .08f, 0, 0.8f); boxAB(-0.5f, 2.1f, L - .08f, 0.5f, Hc, L + .08f, 0, 0.8f);
+    const float zl0 = L - .07f, zl1 = L - .025f;
+    boxAB(-0.5f, 0, zl0, -0.125f, 2.1f, zl1, 0, 0.5f, .35f, .30f, .26f); boxAB(0.125f, 0, zl0, 0.5f, 2.1f, zl1, 0, 0.5f, .35f, .30f, .26f);
+    boxAB(-0.125f, 0, zl0, 0.125f, 1.15f, zl1, 0, 0.5f, .35f, .30f, .26f); boxAB(-0.125f, 1.90f, zl0, 0.125f, 2.1f, zl1, 0, 0.5f, .35f, .30f, .26f);
+    boxAB(-0.125f, 1.15f, (zl0 + zl1) * .5f - .003f, 0.125f, 1.90f, (zl0 + zl1) * .5f + .003f, 1, 0.04f);
+    boxAB(-0.45f, 0.97f, zl0 - .08f, 0.45f, 1.03f, zl0, 3, 0.15f, .85f, .85f, .83f);
+    boxAB(-W, -0.2f, L + .08f, W, 0, L + 3.1f, 0, 0.95f, .55f, .45f, .30f); boxAB(-W, Hc, L + .08f, W, Hc + .2f, L + 3.1f, 0, 0.9f, .95f, .95f, .9f);
+    boxAB(-W - .16f, 0, L + .08f, -W, Hc, L + 3.1f, 0, 0.8f, 1.f, .95f, .7f); boxAB(W, 0, L + .08f, W + .16f, Hc, L + 3.1f, 0, 0.8f, 1.f, .95f, .7f);
+    boxAB(-W, 0, L + 3.1f, W, Hc, L + 3.26f, 0, 0.8f, 1.f, .95f, .7f);
+    emit(boxAB(-0.3f, Hc - .03f, L + 1.0f, 0.3f, Hc - .005f, L + 2.2f, 2, 0.5f), 9.2f, 8.8f, 7.7f); spot(0, Hc - .1f, L + 1.6f, 10, 0, -1, 0, 162, 96, 1, .96f, .88f, 5);
+    boxAB(-4.5f, -0.2f, -6, 4.5f, 0, -.08f, 0, 0.95f, .55f, .45f, .30f); boxAB(-4.5f, Hc, -6, 4.5f, Hc + .2f, -.08f, 0, 0.9f, .95f, .95f, .9f);
+    boxAB(-4.66f, 0, -6, -4.5f, Hc, -.08f, 0, 0.8f, 1.f, .95f, .7f); boxAB(4.5f, 0, -6, 4.66f, Hc, -.08f, 0, 0.8f, 1.f, .95f, .7f);
+    boxAB(-4.5f, 0, -6.16f, 4.5f, Hc, -6, 0, 0.8f, 1.f, .95f, .7f); boxAB(-4.5f, 0, -.08f, -W, Hc, .08f, 0, 0.8f, 1.f, .95f, .7f); boxAB(W, 0, -.08f, 4.5f, Hc, .08f, 0, 0.8f, 1.f, .95f, .7f);
+    for (float x : {-3.f, 0.f, 3.f}) for (float z : {-4.5f, -1.5f}) { emit(boxAB(x - .3f, Hc - .03f, z + .3f - .6f, x + .3f, Hc - .005f, z + .3f + .6f, 2, .5f), 9.2f, 8.8f, 7.7f); spot(x, Hc - .1f, z + .3f, 10, 0, -1, 0, 162, 96, 1, .96f, .88f, 5); }
+    boxAB(0.50f, 2.57f, 0, 0.60f, 2.67f, L, 0, 0.6f, .40f, .04f, .03f); boxAB(-0.75f, 2.66f, 0, -0.45f, 2.74f, L, 0, 0.7f, .35f, .35f, .33f);
+    for (int c = 0; c < 9; c++) { float zc = c * 3 + 1.5f + .3f, e = armed ? 9.f : .03f; emit(boxAB(-0.125f, Hc - .08f, zc - .61f, 0.125f, Hc, zc + .61f, 2, .5f), e * .9f, e * .95f, e);
+      if (armed) spot(0, Hc - .12f, zc, 10, 0, -1, 0, 162, 96, .9f, .95f, 1.f, 5.5f); }
+    struct U4 { float z; float side; }; U4 units[4] = {{3, 1}, {9, -1}, {15, 1}, {21, -1}};
+    for (auto& u : units) { float xw = u.side * (Wi - .05f); boxAB(xw - .05f, 2.35f, u.z - .15f, xw + .05f, 2.55f, u.z + .15f, 0, .6f, .55f, .55f, .52f);
+      for (int dirz : {1, -1}) { float hx = u.side * (Wi - .14f), hy = 2.36f, hz = u.z + dirz * .11f; float pitch = (u.z == 21 && dirz == 1) ? 13.f : 30.f;
+        float sp = sinf(pitch * (float)M_PI / 180.f), cp = cosf(pitch * (float)M_PI / 180.f);
+        BInst& hd = boxAB(hx - .045f, hy - .045f, hz - .045f, hx + .045f, hy + .045f, hz + .045f, 0, .5f, .3f, .3f, .3f);
+        if (!armed) { emit(hd, 30.f, 25.2f, 19.2f); spot(hx, hy, hz + dirz * .05f, 11, 0, -sp, dirz * cp, 50, 20, 1, .84f, .64f, 4); } } }
+    auto exitSign = [&](float cx, float cy, float cz, bool fm, bool fp) {
+      boxAB(cx - .165f, cy - .10f, cz - .03f, cx + .165f, cy + .10f, cz + .03f, 0, .5f, .05f, .05f, .05f);
+      if (fm) emit(boxAB(cx - .15f, cy - .085f, cz - .032f, cx + .15f, cy + .085f, cz - .030f, 2, .5f), 3.2f, .42f, .22f);
+      if (fp) emit(boxAB(cx - .15f, cy - .085f, cz + .030f, cx + .15f, cy + .085f, cz + .032f, 2, .5f), 3.2f, .42f, .22f);
+      point(cx, cy - .2f, cz, 1.8f, 1, .13f, .07f, .6f); };
+    exitSign(Wi - .175f, 2.42f, 13.5f, true, true); exitSign(0, 2.30f, L - .11f, true, false);
+    boxAB(0.55f, 0, 6.1f, 1.35f, 1.0f, 6.7f, 0, .6f, .3f, .3f, .3f); boxAB(-1.35f, 0, 11.5f, -0.75f, 0.95f, 12.5f, 0, .5f, .45f, .45f, .44f);
+    boxAB(-1.10f, 0, 11.6f, -0.80f, 0.35f, 11.95f, 0, .4f, .8f, .65f, .05f); boxAB(0.95f, 0, 18.0f, 1.40f, 1.2f, 18.45f, 0, .6f, .32f, .26f, .18f);
+    size_t nScene = B.size();
+    { std::mt19937 rng(7); std::uniform_real_distribution<float> U(0, 1);   // 3,000 far boxes (TLAS size as the real map's)
+      for (int k = 0; k < 3000; k++) { float x = 400 + U(rng) * 96, z = -48 + U(rng) * 96, s = .5f + U(rng) * 2; boxAB(x, 0, z, x + s, s, z + s, 0, .7f); } }
+    printf("# scene: %zu corridor instances + %zu far, %zu lamps\n", nScene, B.size() - nScene, lamps.size());
+
+    // ---------------------------------------------------------------- one box mesh: 24 vertices, per-face normals and UVs
+    std::vector<float> pos; std::vector<FRVertexAttr> attr; std::vector<uint32_t> idx;
+    const float fn[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+    for (int f = 0; f < 6; f++) {
+      float n[3] = {fn[f][0], fn[f][1], fn[f][2]}; int a = f / 2; int u = (a + 1) % 3, v = (a + 2) % 3; uint32_t base = (uint32_t)attr.size();
+      for (int k = 0; k < 4; k++) { float c[3]; c[a] = .5f * n[a]; c[u] = (k == 1 || k == 2) ? .5f : -.5f; c[v] = (k >= 2) ? .5f : -.5f;
+        pos.insert(pos.end(), {c[0], c[1], c[2]}); attr.push_back({n[0], n[1], n[2], 0.f, c[u] + .5f, c[v] + .5f}); }
+      float e1[3] = {0, 0, 0}, e2[3] = {0, 0, 0}; e1[u] = 1; e2[v] = 1; float cr[3] = {e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]};
+      bool ccw = cr[0] * n[0] + cr[1] * n[1] + cr[2] * n[2] > 0;
+      if (ccw) idx.insert(idx.end(), {base, base + 1, base + 2, base, base + 2, base + 3}); else idx.insert(idx.end(), {base, base + 2, base + 1, base, base + 3, base + 2}); }
+    id<MTLBuffer> posB = [dev newBufferWithBytes:pos.data() length:pos.size() * 4 options:MTLResourceStorageModeShared];
+    id<MTLBuffer> attB = [dev newBufferWithBytes:attr.data() length:attr.size() * sizeof(FRVertexAttr) options:MTLResourceStorageModeShared];
+    id<MTLBuffer> idxB = [dev newBufferWithBytes:idx.data() length:idx.size() * 4 options:MTLResourceStorageModeShared];
+    uint32_t sub0 = 0; id<MTLBuffer> subB = [dev newBufferWithBytes:&sub0 length:4 options:MTLResourceStorageModeShared];
+    FRMeshGPU mg{}; mg.positions = posB.gpuAddress; mg.attrs = attB.gpuAddress; mg.indices = idxB.gpuAddress; mg.submeshStart = subB.gpuAddress;
+    mg.vertexCount = (uint32_t)attr.size(); mg.indexCount = (uint32_t)idx.size(); mg.submeshCount = 1;
+    id<MTLBuffer> meshB = [dev newBufferWithBytes:&mg length:sizeof(mg) options:MTLResourceStorageModeShared];
+    id<MTLAccelerationStructure> blas;
+    { auto g = [MTLAccelerationStructureTriangleGeometryDescriptor descriptor]; g.vertexBuffer = posB; g.vertexStride = 12; g.indexBuffer = idxB; g.indexType = MTLIndexTypeUInt32; g.triangleCount = idx.size() / 3; g.opaque = YES;
+      auto d = [MTLPrimitiveAccelerationStructureDescriptor descriptor]; d.geometryDescriptors = @[g]; auto sz = [dev accelerationStructureSizesWithDescriptor:d];
+      blas = [dev newAccelerationStructureWithSize:sz.accelerationStructureSize]; id<MTLBuffer> sc = [dev newBufferWithLength:sz.buildScratchBufferSize options:MTLResourceStorageModePrivate];
+      auto cb = [q commandBuffer]; auto e = [cb accelerationStructureCommandEncoder]; [e buildAccelerationStructure:blas descriptor:d scratchBuffer:sc scratchBufferOffset:0]; [e endEncoding]; [cb commit]; [cb waitUntilCompleted]; }
+
+    // ---------------------------------------------------------------- textures (bindless table): 0 white, 1 black, 2 flat normal, 3 grey, 4 floor albedo 1024, 5 wall albedo 1024
+    std::vector<id<MTLTexture>> texs;
+    auto mkTex = [&](uint32_t S, std::function<void(uint32_t, uint32_t, uint8_t*)> fill) {
+      auto d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:S height:S mipmapped:YES]; d.usage = MTLTextureUsageShaderRead; d.storageMode = MTLStorageModeShared;
+      id<MTLTexture> t = [dev newTextureWithDescriptor:d]; std::vector<uint8_t> px((size_t)S * S * 4); for (uint32_t y = 0; y < S; y++) for (uint32_t x = 0; x < S; x++) fill(x, y, &px[((size_t)y * S + x) * 4]);
+      [t replaceRegion:MTLRegionMake2D(0, 0, S, S) mipmapLevel:0 withBytes:px.data() bytesPerRow:S * 4];
+      if (S > 1) { auto d2 = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:S height:S mipmapped:YES]; d2.usage = MTLTextureUsageShaderRead; d2.storageMode = MTLStorageModePrivate;
+        id<MTLTexture> t2 = [dev newTextureWithDescriptor:d2]; auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder];
+        [bl copyFromTexture:t sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0) sourceSize:MTLSizeMake(S, S, 1) toTexture:t2 destinationSlice:0 destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+        [bl generateMipmapsForTexture:t2]; [bl endEncoding]; [cb commit]; [cb waitUntilCompleted]; t = t2; }
+      texs.push_back(t); };
+    mkTex(4, [](uint32_t, uint32_t, uint8_t* p) { p[0] = p[1] = p[2] = p[3] = 255; });
+    mkTex(4, [](uint32_t, uint32_t, uint8_t* p) { p[0] = p[1] = p[2] = 0; p[3] = 255; });
+    mkTex(4, [](uint32_t, uint32_t, uint8_t* p) { p[0] = 255; p[1] = 128; p[2] = 0; p[3] = 128; });
+    mkTex(4, [](uint32_t, uint32_t, uint8_t* p) { p[0] = p[1] = p[2] = 128; p[3] = 255; });
+    std::mt19937 tr(3); std::uniform_int_distribution<int> nz(-10, 10);
+    mkTex(1024, [&](uint32_t x, uint32_t y, uint8_t* p) { bool line = (x % 512) < 6 || (y % 512) < 6; int t = ((x / 512) + (y / 512)) & 1; int v = 190 - (t ? 22 : 0); if (line) v = v * 6 / 10; v += nz(tr); p[0] = p[1] = p[2] = (uint8_t)std::clamp(v, 0, 255); p[3] = 255; });
+    mkTex(1024, [&](uint32_t x, uint32_t y, uint8_t* p) { int v = 200 + nz(tr); p[0] = p[1] = p[2] = (uint8_t)std::clamp(v, 0, 255); p[3] = 255; });
+    std::vector<FRTexSlot> slots(texs.size()); for (size_t k = 0; k < texs.size(); k++) { MTLResourceID rid = texs[k].gpuResourceID; memcpy(&slots[k], &rid, 8); }
+    id<MTLBuffer> texB = [dev newBufferWithBytes:slots.data() length:slots.size() * sizeof(FRTexSlot) options:MTLResourceStorageModeShared];
+
+    // ---------------------------------------------------------------- instances, materials, receiver classes, TLAS
+    std::vector<FRInstance> I(B.size()); std::vector<FRMaterial> M(B.size()); std::vector<uint32_t> cls(B.size(), 0);
+    std::vector<MTLAccelerationStructureInstanceDescriptor> D(B.size());
+    for (size_t k = 0; k < B.size(); k++) {
+      const BInst& b = B[k]; FRInstance& in = I[k]; memset(&in, 0, sizeof in);
+      in.o2w0 = simd_make_float4(b.m[0][0], b.m[0][1], b.m[0][2], b.m[0][3]); in.o2w1 = simd_make_float4(b.m[1][0], b.m[1][1], b.m[1][2], b.m[1][3]); in.o2w2 = simd_make_float4(b.m[2][0], b.m[2][1], b.m[2][2], b.m[2][3]);
+      float sx = b.m[0][0], sy = b.m[1][1], sz = b.m[2][2];   // axis-aligned boxes: inverse is the reciprocal scale
+      in.w2o0 = simd_make_float4(1 / sx, 0, 0, -b.m[0][3] / sx); in.w2o1 = simd_make_float4(0, 1 / sy, 0, -b.m[1][3] / sy); in.w2o2 = simd_make_float4(0, 0, 1 / sz, -b.m[2][3] / sz);
+      in.meshSlot = 0; in.materialBase = (uint32_t)k; in.windowId = 0xffffffffu; in.flags = FR_FLAG_SURFACE_PLANAR;
+      FRMaterial& m = M[k]; memset(&m, 0, sizeof m);
+      m.baseColor = simd_make_float4(b.tint[0], b.tint[1], b.tint[2], 1); m.tile = simd_make_float4(.6f, .6f, 0, 0); m.baseST = simd_make_float4(1, 1, 0, 0);
+      m.p0 = simd_make_float4(1.f - b.rough, b.kind == 3 ? 1.f : 0.f, 0.f, 1.f); m.p2 = simd_make_float4(0.3f, 0.f, 2.9f, 0.f);
+      m.kind = FR_KIND_SURFACE; m.texBase = b.kind == 4 ? 4 : 5; m.texMask = 0; m.texBump = 2; m.texMacro = 3; m.texEmission = 0; m.texOcclusion = 0;
+      if (b.kind == 2) { in.flags |= FR_FLAG_EMISSIVE_LENS; in.emission = simd_make_float4(b.emis[0], b.emis[1], b.emis[2], 0); m.flags |= FR_MAT_EMISSION; }
+      if (b.kind == 1) { in.flags = FR_FLAG_GLASS; m.kind = FR_KIND_GLASS; m.baseColor = simd_make_float4(.9f, .95f, .93f, .1f); cls[k] = 2; }
+      if (b.kind == 4) cls[k] = 1;
+      memset(&D[k], 0, sizeof D[k]);
+      for (int c = 0; c < 4; c++) D[k].transformationMatrix.columns[c] = MTLPackedFloat3Make(b.m[0][c], b.m[1][c], b.m[2][c]);
+      D[k].options = MTLAccelerationStructureInstanceOptionOpaque; D[k].mask = b.kind == 1 ? FR_MASK_GLASS : FR_MASK_OPAQUE; D[k].accelerationStructureIndex = 0;
+    }
+    id<MTLBuffer> instB = [dev newBufferWithBytes:I.data() length:I.size() * sizeof(FRInstance) options:MTLResourceStorageModeShared];
+    id<MTLBuffer> matB = [dev newBufferWithBytes:M.data() length:M.size() * sizeof(FRMaterial) options:MTLResourceStorageModeShared];
+    id<MTLBuffer> clsB = [dev newBufferWithBytes:cls.data() length:cls.size() * 4 options:MTLResourceStorageModeShared];
+    id<MTLBuffer> lampB = [dev newBufferWithBytes:lamps.data() length:lamps.size() * sizeof(FRLamp) options:MTLResourceStorageModeShared];
+    id<MTLBuffer> descB = [dev newBufferWithBytes:D.data() length:D.size() * sizeof(D[0]) options:MTLResourceStorageModeShared];
+    id<MTLAccelerationStructure> tlas;
+    { auto td = [MTLInstanceAccelerationStructureDescriptor descriptor]; td.instancedAccelerationStructures = @[blas]; td.instanceCount = D.size(); td.instanceDescriptorBuffer = descB;
+      auto sz = [dev accelerationStructureSizesWithDescriptor:td]; tlas = [dev newAccelerationStructureWithSize:sz.accelerationStructureSize];
+      id<MTLBuffer> sc = [dev newBufferWithLength:sz.buildScratchBufferSize options:MTLResourceStorageModePrivate];
+      auto cb = [q commandBuffer]; auto e = [cb accelerationStructureCommandEncoder]; [e buildAccelerationStructure:tlas descriptor:td scratchBuffer:sc scratchBufferOffset:0]; [e endEncoding]; [cb commit]; [cb waitUntilCompleted]; }
+
+    // ---------------------------------------------------------------- environment: flat dim cube (fallback only; Run is closed)
+    id<MTLTexture> env;
+    { auto d = [MTLTextureDescriptor textureCubeDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float size:64 mipmapped:YES]; d.usage = MTLTextureUsageShaderRead; d.storageMode = MTLStorageModeShared; env = [dev newTextureWithDescriptor:d];
+      std::vector<__fp16> face(64 * 64 * 4); for (int fc = 0; fc < 6; fc++) { float v = fc == 2 ? .55f : (fc == 3 ? .12f : .28f); for (int i = 0; i < 64 * 64; i++) { face[i * 4] = v; face[i * 4 + 1] = v * .95f; face[i * 4 + 2] = v * .8f; face[i * 4 + 3] = 1; }
+        [env replaceRegion:MTLRegionMake2D(0, 0, 64, 64) mipmapLevel:0 slice:fc withBytes:face.data() bytesPerRow:64 * 8 bytesPerImage:0]; }
+      auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder]; [bl generateMipmapsForTexture:env]; [bl endEncoding]; [cb commit]; [cb waitUntilCompleted]; }
+
+    // ---------------------------------------------------------------- frame
+    const uint32_t Wd = 2560, Ht = 1440; const float tanH = tanf(38.f * (float)M_PI / 180.f), asp = (float)Wd / Ht;
+    float eye[3], tgt[3];
+    if (viewSel == 'G') { float e[3] = {0, 1.62f, 24.5f}, t[3] = {0, .60f, 27}; memcpy(eye, e, 12); memcpy(tgt, t, 12); }
+    else if (viewSel == 'B') { float e[3] = {0, 1.62f, 22.f}, t[3] = {0, .90f, 27}; memcpy(eye, e, 12); memcpy(tgt, t, 12); }
+    else { float e[3] = {0, 1.62f, 1.5f}, t[3] = {0, 1.30f, 27}; memcpy(eye, e, 12); memcpy(tgt, t, 12); }
+    simd_float3 E = simd_make_float3(eye[0], eye[1], eye[2]), fw = simd_normalize(simd_make_float3(tgt[0] - eye[0], tgt[1] - eye[1], tgt[2] - eye[2]));
+    simd_float3 rt = simd_normalize(simd_make_float3(fw.z, 0, -fw.x)), up = simd_cross(fw, rt);
+    FRFrame F; memset(&F, 0, sizeof F);
+    F.invViewProj.columns[0] = simd_make_float4(rt * (tanH * asp), 0); F.invViewProj.columns[1] = simd_make_float4(up * tanH, 0);
+    F.invViewProj.columns[2] = simd_make_float4(0, 0, 0, 0); F.invViewProj.columns[3] = simd_make_float4(E + fw, 1);
+    F.viewProj = matrix_identity_float4x4;
+    F.camPos = simd_make_float4(E, .06f); F.camFwd = simd_make_float4(fw, 30.f);
+    F.screen = simd_make_float4(Wd, Ht, 1.f / Wd, 1.f / Ht); F.rect = simd_make_uint4(0, 0, Wd, Ht);
+    F.fog = simd_make_float4(.014f / sqrtf(logf(2.f)), 1.f, 2.f * tanH / Ht, 0.f); F.fogColor = simd_make_float4(.16f, .15f, .11f, 0);
+    F.sh[0] = simd_make_float4(armed ? .036f : .012f, armed ? .036f : .012f, armed ? .036f : .012f, 0);
+    F.envDecode = simd_make_float4(.5f, 1.f, 0.f, 0.f); F.envInfo = simd_make_float4(6.f, 1.f, 1.f, (float)(env.mipmapLevelCount - 1));
+    F.thin = simd_make_float4(.006f, 1.5f, .002f, 0.f);
+    uint32_t quality = getenv("HIGH") ? 1 : 2;
+    F.counts = simd_make_uint4((uint32_t)lamps.size(), quality, FR_DEBUG_NONE, (uint32_t)I.size());
+    F.shadow = simd_make_uint4(quality == 2 ? 16 : 4, quality == 2 ? 2 : 1, 0, 0);
+    F.fill = simd_make_float4(0, 0, 0, -1);
+
+    // ---------------------------------------------------------------- targets
+    auto tex2 = [&](MTLPixelFormat pf) { auto d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf width:Wd height:Ht mipmapped:NO]; d.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite; d.storageMode = MTLStorageModeShared; return [dev newTextureWithDescriptor:d]; };
+    id<MTLTexture> gD = tex2(MTLPixelFormatR32Float), gN = tex2(MTLPixelFormatRGBA16Float), raw = tex2(MTLPixelFormatRGBA32Float), aux = tex2(MTLPixelFormatRGBA16Float), ids = tex2(MTLPixelFormatR32Float);
+    id<MTLBuffer> stats = [dev newBufferWithLength:64 options:MTLResourceStorageModeShared];
+    float floorSmooth = .80f;
+    auto useAll = [&](id<MTLComputeCommandEncoder> e) {
+      [e useResource:blas usage:MTLResourceUsageRead]; [e useResource:posB usage:MTLResourceUsageRead]; [e useResource:attB usage:MTLResourceUsageRead];
+      [e useResource:idxB usage:MTLResourceUsageRead]; [e useResource:subB usage:MTLResourceUsageRead]; for (auto t : texs) [e useResource:t usage:MTLResourceUsageRead]; };
+    { auto cb = [q commandBuffer]; auto e = [cb computeCommandEncoder]; [e setComputePipelineState:psoG];
+      [e setBytes:&F length:sizeof F atIndex:0]; [e setAccelerationStructure:tlas atBufferIndex:1]; [e setBuffer:instB offset:0 atIndex:2]; [e setBuffer:meshB offset:0 atIndex:3];
+      [e setBuffer:clsB offset:0 atIndex:4]; [e setBytes:&floorSmooth length:4 atIndex:5]; [e setTexture:gD atIndex:0]; [e setTexture:gN atIndex:1]; [e setTexture:env atIndex:4]; useAll(e);
+      [e dispatchThreads:MTLSizeMake(Wd, Ht, 1) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)]; [e endEncoding]; [cb commit]; [cb waitUntilCompleted]; }
+    { std::vector<float> d((size_t)Wd * Ht); [gD getBytes:d.data() bytesPerRow:Wd * 4 fromRegion:MTLRegionMake2D(0, 0, Wd, Ht) mipmapLevel:0];
+      size_t n = 0; for (float v : d) n += v > 0; printf("# receiver px (floor + lite): %.2f%% of the screen\n", 100.0 * n / d.size()); }
+
+    auto run = [&](id<MTLComputePipelineState> pso) {
+      memset(stats.contents, 0, 64);
+      auto cb = [q commandBuffer]; auto e = [cb computeCommandEncoder]; [e setComputePipelineState:pso];
+      [e setBytes:&F length:sizeof F atIndex:0]; [e setAccelerationStructure:tlas atBufferIndex:1]; [e setBuffer:instB offset:0 atIndex:2]; [e setBuffer:meshB offset:0 atIndex:3];
+      [e setBuffer:matB offset:0 atIndex:4]; [e setBuffer:texB offset:0 atIndex:5]; [e setBuffer:lampB offset:0 atIndex:6]; [e setBuffer:stats offset:0 atIndex:7];
+      [e setTexture:gD atIndex:0]; [e setTexture:gN atIndex:1]; [e setTexture:raw atIndex:2]; [e setTexture:aux atIndex:3]; [e setTexture:env atIndex:4]; [e setTexture:ids atIndex:5]; useAll(e);
+      [e dispatchThreads:MTLSizeMake(Wd, Ht, 1) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)]; [e endEncoding]; [cb commit]; [cb waitUntilCompleted];
+      if (cb.status != MTLCommandBufferStatusCompleted) { printf("command buffer failed: %s\n", cb.error.localizedDescription.UTF8String); exit(2); }
+      return (cb.GPUEndTime - cb.GPUStartTime) * 1000.0; };
+    auto grab = [&]() { std::vector<float> v((size_t)Wd * Ht * 4); [raw getBytes:v.data() bytesPerRow:Wd * 16 fromRegion:MTLRegionMake2D(0, 0, Wd, Ht) mipmapLevel:0]; return v; };
+
+    // ---------------------------------------------------------------- correctness: s1 must equal main bit for bit; depth effect
+    run(vars[0].pso); auto A = grab(); uint32_t sh0 = ((uint32_t*)stats.contents)[FR_STAT_SHADOW_RAYS];
+    for (size_t k = 1; k < vars.size(); k++) {
+      run(vars[k].pso); auto Bv = grab(); size_t diff = 0, n = 0; double maxRel = 0, sumAbs = 0;
+      for (size_t i = 0; i < A.size(); i += 4) { if (A[i + 3] <= 1.f) continue; n++; bool d = memcmp(&A[i], &Bv[i], 16) != 0; diff += d;
+        for (int c = 0; c < 3; c++) { double a = A[i + c], b = Bv[i + c]; sumAbs += fabs(a - b); maxRel = std::max(maxRel, fabs(a - b) / (fabs(a) + 1e-3)); } }
+      printf("# %-4s vs main: %zu of %zu traced px differ in any bit; mean |dL| %.5f, max rel %.3f\n", vars[k].name, diff, n, n ? sumAbs / (3 * n) : 0, maxRel);
+    }
+    printf("# main shadow rays per frame %u\n", sh0);
+
+    // ---------------------------------------------------------------- timing, interleaved
+    std::vector<std::vector<double>> T(vars.size());
+    for (int rep = 0; rep < 40; rep++) for (size_t k = 0; k < vars.size(); k++) { double t = run(vars[k].pso); if (rep >= 4) T[k].push_back(t); }
+    for (size_t k = 0; k < vars.size(); k++)
+      printf("%s b6 %c %s %s %ux%u %-4s min %.3f p25 %.3f med %.3f ms | ratio to main: min %.3f med %.3f | %s\n", tag.c_str(), viewSel, armed ? "armed" : "tripped", quality == 2 ? "Ultra-tree" : "High-tree", Wd, Ht, vars[k].name,
+             pct(T[k], 0), pct(T[k], .25), pct(T[k], .5), pct(T[k], 0) / pct(T[0], 0), pct(T[k], .5) / pct(T[0], .5), loadStr().c_str());
+    printf("# done %s\n", loadStr().c_str());
+  }
+  return 0;
+}

@@ -1,0 +1,24 @@
+ 7:03  up 30 days, 11:10, 1 user, load averages: 36.19 51.46 86.38
+# rt_bench6 r3gh5 view G armed device=Apple M3 Max Apple9=1  load 36/51/86
+# pso main maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f2   maxd 2 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f3   maxd 3 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 18 lamps
+# receiver px (floor + lite): 20.31% of the screen
+# s1   vs main: 0 of 745106 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# s3   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# f2   vs main: 29380 of 745106 traced px differ in any bit; mean |dL| 0.00429, max rel 2.295
+# f3   vs main: 29380 of 745106 traced px differ in any bit; mean |dL| 0.00429, max rel 2.295
+# main shadow rays per frame 1563053
+r3gh5 b6 G armed High-tree 2560x1440 main min 1.079 p25 1.301 med 1.360 ms | ratio to main: min 1.000 med 1.000 | load 39/52/86
+r3gh5 b6 G armed High-tree 2560x1440 s1   min 1.144 p25 1.222 med 1.304 ms | ratio to main: min 1.060 med 0.959 | load 39/52/86
+r3gh5 b6 G armed High-tree 2560x1440 s2   min 1.273 p25 1.416 med 1.450 ms | ratio to main: min 1.180 med 1.067 | load 39/52/86
+r3gh5 b6 G armed High-tree 2560x1440 s3   min 1.282 p25 1.431 med 1.474 ms | ratio to main: min 1.188 med 1.084 | load 39/52/86
+r3gh5 b6 G armed High-tree 2560x1440 f2   min 1.344 p25 1.383 med 1.551 ms | ratio to main: min 1.245 med 1.141 | load 39/52/86
+r3gh5 b6 G armed High-tree 2560x1440 f3   min 1.340 p25 1.431 med 1.551 ms | ratio to main: min 1.242 med 1.141 | load 39/52/86
+# done load 39/52/86
+ 7:03  up 30 days, 11:10, 1 user, load averages: 38.57 51.70 86.26

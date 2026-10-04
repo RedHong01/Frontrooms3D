@@ -1,0 +1,10 @@
+ 7:11  up 30 days, 11:18, 1 user, load averages: 10.45 17.43 52.79
+# --- timing2 2560x1440 interleaved, jitter 0, soft gate 0  load 10/17/53
+r3x timing2 2560x1440 A_h2  total min 1.254 p25 1.352 med 1.550 | trace med 0.955 filter med 0.587 | floor 12.0% glass 0.01% rays/recv 1.00 | load 10/17/53 | Run S1: floor r0.2 mirror + hw-a
+r3x timing2 2560x1440 A_H   total min 1.246 p25 1.369 med 1.552 | trace med 0.952 filter med 0.586 | floor 12.0% glass 0.01% rays/recv 1.00 | load 10/17/53 | S1 tripped: High
+r3x timing2 2560x1440 A_U3  total min 2.886 p25 3.418 med 3.987 | trace med 3.386 filter med 0.601 | floor 12.0% glass 0.01% rays/recv 2.99 | load 10/17/53 | S1 tripped: Ultra 3 rays
+# --- timing2 2560x1440 interleaved, jitter 0, soft gate 0  load 10/17/53
+r3y timing2 2560x1440 A_h2  total min 1.282 p25 1.357 med 1.427 | trace med 0.849 filter med 0.582 | floor 12.0% glass 0.01% rays/recv 1.00 | load 10/17/53 | Run S1: floor r0.2 mirror + hw-a
+r3y timing2 2560x1440 A_H   total min 1.310 p25 1.358 med 1.429 | trace med 0.848 filter med 0.587 | floor 12.0% glass 0.01% rays/recv 1.00 | load 10/17/53 | S1 tripped: High
+r3y timing2 2560x1440 A_U3  total min 2.989 p25 3.226 med 3.535 | trace med 2.941 filter med 0.592 | floor 12.0% glass 0.01% rays/recv 2.99 | load 10/17/53 | S1 tripped: Ultra 3 rays
+ 7:11  up 30 days, 11:18, 1 user, load averages: 10.45 17.43 52.79

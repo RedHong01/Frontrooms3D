@@ -118,8 +118,11 @@ def stool_wear(X, Y, Z):
 
 
 def stop_wear(X, Y, Z):
-    corner = abs(X) > 0.64 and (Y < 0.41 or Y > 1.94)
-    return (1.0, 0.75 if Y < 0.37 else 1.0, 0.65 if corner else 1.0)
+    """Stops have vertices only at their mitred ends, so a corner test smears
+    along the whole piece (pass 3 painted every stop B 0.65 that way).
+    Per-piece values: dust along the glazing line on every stop, finish
+    rubbed on the sill stops (Y < 0.37)."""
+    return (1.0, 0.75 if Y < 0.37 else 1.0, 0.8)
 
 
 def build(kit):

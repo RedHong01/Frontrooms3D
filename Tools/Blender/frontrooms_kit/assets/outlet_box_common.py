@@ -461,8 +461,14 @@ def face_515(mb, fr, level="hero", contact_slot=BR):
     return rings
 
 
-def face_lod2(mb, fr, slot=PB, lift=0.3):
-    """LOD2 face: a flat dark hexagon 0.3 mm proud of the field (spec §1.1)."""
+def face_lod2(mb, fr, slot=NI, lift=0.3):
+    """LOD2 face: a flat hexagon 0.3 mm proud of the field (spec §1.1 shape).
+    O3 draws it in the DEVICE colour, not dark: spec §1.1's dark 6-gons are
+    the "two dots" an ivory face makes on an ivory wall plate (DSC00161),
+    but on an aluminium housing the ivory face is the lighter patch, and its
+    slots (7 % of the face, 0.2-0.6 px at 6 m) cannot darken it. A dark
+    full-face hexagon popped from ivory to black at the 6 m switch (LOD
+    lineup, iteration 4)."""
     pts = [(FACE_D / 2 * math.cos(math.radians(60 * k)), FACE_D / 2 * 0.88 * math.sin(math.radians(60 * k))) for k in range(6)]
     ring = mb.ring(fr, pts, lift)
     return mb.cap(ring, slot, front=True)

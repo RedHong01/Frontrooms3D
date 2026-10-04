@@ -1,0 +1,105 @@
+ 7:58  up 30 days, 12:06, 1 user, load averages: 10.90 7.49 9.92
+
+=== A20: floor 12.0% of screen, glass 0.01% | cube c4 soft gate 1
+  reference own noise (1024 vs 1024 halves): floor px mean 1.58 p99 25 >=8 4.76% | rms 4.12 | 8x8 blocks mean 0.29 p99 3.6 max 13.4
+  conv  x128 vs 2048 ref, floor: px mean 2.30 p99 40 >=8 6.55% | rms 6.83 noise-corrected 6.51 (ref noise 2.06) | 8x8 blocks mean 0.71 p99 13.8 max 32.2
+  conv  x256 vs 2048 ref, floor: px mean 2.00 p99 37 >=8 6.03% | rms 5.61 noise-corrected 5.22 (ref noise 2.06) | 8x8 blocks mean 0.49 p99 7.9 max 17.2
+  conv  x512 vs 2048 ref, floor: px mean 1.70 p99 28 >=8 5.17% | rms 4.51 noise-corrected 4.02 (ref noise 2.06) | 8x8 blocks mean 0.34 p99 4.7 max 16.1
+  conv x1024 vs 2048 ref, floor: px mean 1.40 p99 22 >=8 4.40% | rms 3.52 noise-corrected 2.86 (ref noise 2.06) | 8x8 blocks mean 0.26 p99 3.3 max 15.6
+  RT OFF vs ref, floor: px mean 24.18 p99 144 >=8 56.81% | rms 36.48 noise-corrected 36.42 (ref noise 2.06) | 8x8 blocks mean 24.02 p99 141.4 max 187.7
+   high_k1 vs ref, floor: px mean 3.33 p99 46 >=8 8.95% | rms 7.11 noise-corrected 6.81 (ref noise 2.06) | 8x8 blocks mean 3.01 p99 37.4 max 105.6
+   high_k2 vs ref, floor: px mean 2.80 p99 47 >=8 7.21% | rms 6.43 noise-corrected 6.09 (ref noise 2.06) | 8x8 blocks mean 2.50 p99 36.7 max 94.6
+   high_k3 vs ref, floor: px mean 3.38 p99 69 >=8 8.43% | rms 8.20 noise-corrected 7.94 (ref noise 2.06) | 8x8 blocks mean 2.97 p99 65.8 max 108.5
+        u2 vs Ultra-tree ref, floor: px mean 2.37 p99 44 >=8 6.67% | rms 6.17 noise-corrected 5.81 (ref noise 2.06) | 8x8 blocks mean 1.96 p99 34.5 max 94.6 | re-seeded shimmer >=8 3.24% mean 1.23
+        u3 vs Ultra-tree ref, floor: px mean 2.33 p99 44 >=8 6.60% | rms 6.10 noise-corrected 5.74 (ref noise 2.06) | 8x8 blocks mean 1.92 p99 34.4 max 94.6 | re-seeded shimmer >=8 2.35% mean 1.06
+        u4 vs Ultra-tree ref, floor: px mean 2.28 p99 44 >=8 6.30% | rms 6.07 noise-corrected 5.71 (ref noise 2.06) | 8x8 blocks mean 1.87 p99 34.4 max 94.6 | re-seeded shimmer >=8 1.76% mean 0.95
+  glass: High k2 vs ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean nan p99 nan max nan
+  glass: Ultra u2 vs Ultra ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean nan p99 nan max nan
+  off ->      ref: floor px >= 8/255 56.8%, mean 24.18, p99 144, max 192
+  off ->  high_k2: floor px >= 8/255 57.5%, mean 24.66, p99 146, max 191
+  off ->       u3: floor px >= 8/255 56.7%, mean 24.04, p99 144, max 191
+  streak all: 65190 px (3.14% of screen), mean ref change 69.3/255 | high_k2 captured 1.00 recall 98.5% | u3 captured 0.98 recall 98.6%
+  streak red: 609 px (0.03% of screen), mean ref change 48.7/255 | high_k2 captured 0.86 recall 78.5% | u3 captured 0.86 recall 78.3%
+
+=== B20: floor 15.1% of screen, glass 0.18% | cube c4 soft gate 1
+  reference own noise (1024 vs 1024 halves): floor px mean 1.04 p99 14 >=8 3.23% | rms 1.77 | 8x8 blocks mean 0.21 p99 1.3 max 4.9
+  conv  x128 vs 2048 ref, floor: px mean 1.56 p99 19 >=8 5.06% | rms 3.20 noise-corrected 3.07 (ref noise 0.88) | 8x8 blocks mean 0.38 p99 3.1 max 6.7
+  conv  x256 vs 2048 ref, floor: px mean 1.29 p99 16 >=8 3.69% | rms 2.49 noise-corrected 2.32 (ref noise 0.88) | 8x8 blocks mean 0.29 p99 2.2 max 4.5
+  conv  x512 vs 2048 ref, floor: px mean 1.05 p99 13 >=8 2.92% | rms 1.87 noise-corrected 1.65 (ref noise 0.88) | 8x8 blocks mean 0.23 p99 1.6 max 3.1
+  conv x1024 vs 2048 ref, floor: px mean 0.88 p99 11 >=8 2.24% | rms 1.44 noise-corrected 1.14 (ref noise 0.88) | 8x8 blocks mean 0.18 p99 1.0 max 2.3
+  RT OFF vs ref, floor: px mean 16.68 p99 132 >=8 50.50% | rms 24.61 noise-corrected 24.59 (ref noise 0.88) | 8x8 blocks mean 16.45 p99 128.5 max 161.8
+   high_k1 vs ref, floor: px mean 2.42 p99 29 >=8 9.47% | rms 3.92 noise-corrected 3.82 (ref noise 0.88) | 8x8 blocks mean 2.32 p99 28.4 max 51.6
+   high_k2 vs ref, floor: px mean 1.94 p99 25 >=8 7.30% | rms 3.21 noise-corrected 3.09 (ref noise 0.88) | 8x8 blocks mean 1.81 p99 24.4 max 41.9
+   high_k3 vs ref, floor: px mean 2.02 p99 26 >=8 8.10% | rms 3.44 noise-corrected 3.32 (ref noise 0.88) | 8x8 blocks mean 1.87 p99 25.3 max 31.8
+        u2 vs Ultra-tree ref, floor: px mean 1.17 p99 13 >=8 2.85% | rms 2.12 noise-corrected 1.93 (ref noise 0.88) | 8x8 blocks mean 0.92 p99 11.0 max 66.9 | re-seeded shimmer >=8 3.41% mean 1.24
+        u3 vs Ultra-tree ref, floor: px mean 1.06 p99 11 >=8 2.25% | rms 1.84 noise-corrected 1.62 (ref noise 0.88) | 8x8 blocks mean 0.79 p99 9.2 max 59.6 | re-seeded shimmer >=8 2.42% mean 1.09
+        u4 vs Ultra-tree ref, floor: px mean 1.01 p99 10 >=8 2.08% | rms 1.68 noise-corrected 1.43 (ref noise 0.88) | 8x8 blocks mean 0.75 p99 7.8 max 53.9 | re-seeded shimmer >=8 2.41% mean 1.06
+  glass: High k2 vs ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean 0.00 p99 0.0 max 0.0
+  glass: Ultra u2 vs Ultra ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean 0.00 p99 0.0 max 0.0
+  off ->      ref: floor px >= 8/255 50.5%, mean 16.68, p99 132, max 163
+  off ->  high_k2: floor px >= 8/255 49.9%, mean 16.95, p99 132, max 163
+  off ->       u2: floor px >= 8/255 50.8%, mean 16.89, p99 132, max 164
+  streak all: 62139 px (3.00% of screen), mean ref change 51.7/255 | high_k2 captured 1.02 recall 97.1% | u2 captured 1.01 recall 99.9%
+  streak red: 8251 px (0.40% of screen), mean ref change 40.9/255 | high_k2 captured 1.14 recall 78.5% | u2 captured 1.06 recall 99.7%
+
+=== D20: floor 37.2% of screen, glass 0.00% | cube c4 soft gate 1
+  reference own noise (1024 vs 1024 halves): floor px mean 0.58 p99 3 >=8 0.00% | rms 0.69 | 8x8 blocks mean 0.09 p99 0.3 max 0.9
+  conv  x128 vs 2048 ref, floor: px mean 1.32 p99 9 >=8 1.95% | rms 1.79 noise-corrected 1.75 (ref noise 0.34) | 8x8 blocks mean 0.19 p99 1.0 max 2.7
+  conv  x256 vs 2048 ref, floor: px mean 0.92 p99 5 >=8 0.22% | rms 1.13 noise-corrected 1.08 (ref noise 0.34) | 8x8 blocks mean 0.14 p99 0.7 max 1.7
+  conv  x512 vs 2048 ref, floor: px mean 0.64 p99 3 >=8 0.01% | rms 0.77 noise-corrected 0.69 (ref noise 0.34) | 8x8 blocks mean 0.11 p99 0.4 max 1.6
+  conv x1024 vs 2048 ref, floor: px mean 0.50 p99 2 >=8 0.00% | rms 0.58 noise-corrected 0.46 (ref noise 0.34) | 8x8 blocks mean 0.09 p99 0.3 max 1.1
+  RT OFF vs ref, floor: px mean 17.15 p99 102 >=8 55.70% | rms 20.19 noise-corrected 20.19 (ref noise 0.34) | 8x8 blocks mean 17.03 p99 102.0 max 136.7
+   high_k1 vs ref, floor: px mean 4.75 p99 52 >=8 12.79% | rms 8.40 noise-corrected 8.39 (ref noise 0.34) | 8x8 blocks mean 4.60 p99 51.4 max 95.8
+   high_k2 vs ref, floor: px mean 3.36 p99 31 >=8 10.52% | rms 5.35 noise-corrected 5.34 (ref noise 0.34) | 8x8 blocks mean 3.23 p99 30.3 max 64.3
+   high_k3 vs ref, floor: px mean 3.40 p99 35 >=8 10.39% | rms 5.56 noise-corrected 5.55 (ref noise 0.34) | 8x8 blocks mean 3.29 p99 34.4 max 58.8
+        u2 vs Ultra-tree ref, floor: px mean 1.40 p99 8 >=8 1.28% | rms 1.67 noise-corrected 1.63 (ref noise 0.34) | 8x8 blocks mean 1.21 p99 7.6 max 15.7 | re-seeded shimmer >=8 1.88% mean 1.20
+        u3 vs Ultra-tree ref, floor: px mean 1.29 p99 7 >=8 0.97% | rms 1.53 noise-corrected 1.50 (ref noise 0.34) | 8x8 blocks mean 1.11 p99 6.9 max 13.3 | re-seeded shimmer >=8 1.20% mean 1.03
+        u4 vs Ultra-tree ref, floor: px mean 1.24 p99 7 >=8 0.70% | rms 1.46 noise-corrected 1.42 (ref noise 0.34) | 8x8 blocks mean 1.06 p99 6.5 max 14.6 | re-seeded shimmer >=8 0.69% mean 0.90
+  off ->      ref: floor px >= 8/255 55.7%, mean 17.15, p99 102, max 138
+  off ->  high_k2: floor px >= 8/255 53.0%, mean 16.53, p99 122, max 154
+  off ->       u2: floor px >= 8/255 56.3%, mean 17.06, p99 101, max 139
+  streak all: 162576 px (7.84% of screen), mean ref change 51.5/255 | high_k2 captured 0.98 recall 91.5% | u2 captured 0.99 recall 100.0%
+  streak red: none
+
+=== F20: floor 12.0% of screen, glass 0.01% | cube c4 soft gate 1
+  reference own noise (1024 vs 1024 halves): floor px mean 0.30 p99 2 >=8 0.14% | rms 0.51 | 8x8 blocks mean 0.06 p99 0.4 max 2.7
+  conv  x128 vs 2048 ref, floor: px mean 0.54 p99 5 >=8 0.44% | rms 1.00 noise-corrected 0.96 (ref noise 0.25) | 8x8 blocks mean 0.11 p99 0.9 max 4.0
+  conv  x256 vs 2048 ref, floor: px mean 0.41 p99 3 >=8 0.24% | rms 0.74 noise-corrected 0.70 (ref noise 0.25) | 8x8 blocks mean 0.08 p99 0.6 max 2.5
+  conv  x512 vs 2048 ref, floor: px mean 0.33 p99 3 >=8 0.18% | rms 0.59 noise-corrected 0.53 (ref noise 0.25) | 8x8 blocks mean 0.06 p99 0.5 max 2.2
+  conv x1024 vs 2048 ref, floor: px mean 0.26 p99 2 >=8 0.10% | rms 0.44 noise-corrected 0.36 (ref noise 0.25) | 8x8 blocks mean 0.05 p99 0.3 max 1.5
+  RT OFF vs ref, floor: px mean 3.92 p99 30 >=8 11.31% | rms 5.46 noise-corrected 5.45 (ref noise 0.25) | 8x8 blocks mean 3.82 p99 29.4 max 45.2
+   high_k1 vs ref, floor: px mean 1.52 p99 13 >=8 3.86% | rms 2.63 noise-corrected 2.62 (ref noise 0.25) | 8x8 blocks mean 1.30 p99 10.8 max 26.5
+   high_k2 vs ref, floor: px mean 1.18 p99 11 >=8 2.47% | rms 2.06 noise-corrected 2.04 (ref noise 0.25) | 8x8 blocks mean 0.99 p99 9.4 max 20.4
+   high_k3 vs ref, floor: px mean 1.50 p99 17 >=8 4.76% | rms 2.95 noise-corrected 2.94 (ref noise 0.25) | 8x8 blocks mean 1.33 p99 15.7 max 26.5
+        u2 vs Ultra-tree ref, floor: px mean 0.77 p99 10 >=8 1.86% | rms 1.62 noise-corrected 1.60 (ref noise 0.25) | 8x8 blocks mean 0.57 p99 8.5 max 20.4 | re-seeded shimmer >=8 0.00% mean 0.40
+        u3 vs Ultra-tree ref, floor: px mean 0.74 p99 10 >=8 1.86% | rms 1.61 noise-corrected 1.59 (ref noise 0.25) | 8x8 blocks mean 0.56 p99 8.5 max 20.4 | re-seeded shimmer >=8 0.00% mean 0.37
+        u4 vs Ultra-tree ref, floor: px mean 0.72 p99 10 >=8 1.88% | rms 1.61 noise-corrected 1.59 (ref noise 0.25) | 8x8 blocks mean 0.55 p99 8.5 max 20.4 | re-seeded shimmer >=8 0.00% mean 0.34
+  glass: High k2 vs ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean nan p99 nan max nan
+  glass: Ultra u2 vs Ultra ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean nan p99 nan max nan
+  off ->      ref: floor px >= 8/255 11.3%, mean 3.92, p99 30, max 71
+  off ->  high_k2: floor px >= 8/255 13.0%, mean 4.17, p99 31, max 63
+  off ->       u3: floor px >= 8/255 11.9%, mean 4.04, p99 32, max 64
+  streak all: 4212 px (0.20% of screen), mean ref change 35.0/255 | high_k2 captured 0.94 recall 99.2% | u3 captured 0.94 recall 99.2%
+  streak red: none
+
+=== G15: floor 19.4% of screen, glass 0.87% | cube c4 soft gate 1
+  reference own noise (1024 vs 1024 halves): floor px mean 0.09 p99 1 >=8 0.00% | rms 0.20 | 8x8 blocks mean 0.03 p99 0.1 max 0.3
+  conv  x128 vs 2048 ref, floor: px mean 0.16 p99 2 >=8 0.03% | rms 0.35 noise-corrected 0.33 (ref noise 0.10) | 8x8 blocks mean 0.04 p99 0.2 max 0.7
+  conv  x256 vs 2048 ref, floor: px mean 0.12 p99 1 >=8 0.01% | rms 0.26 noise-corrected 0.24 (ref noise 0.10) | 8x8 blocks mean 0.03 p99 0.2 max 0.5
+  conv  x512 vs 2048 ref, floor: px mean 0.10 p99 1 >=8 0.00% | rms 0.21 noise-corrected 0.19 (ref noise 0.10) | 8x8 blocks mean 0.03 p99 0.1 max 0.5
+  conv x1024 vs 2048 ref, floor: px mean 0.08 p99 1 >=8 0.00% | rms 0.18 noise-corrected 0.15 (ref noise 0.10) | 8x8 blocks mean 0.02 p99 0.1 max 0.3
+  RT OFF vs ref, floor: px mean 2.62 p99 16 >=8 9.02% | rms 3.76 noise-corrected 3.76 (ref noise 0.10) | 8x8 blocks mean 2.51 p99 16.1 max 26.1
+   high_k1 vs ref, floor: px mean 0.46 p99 7 >=8 0.74% | rms 1.02 noise-corrected 1.02 (ref noise 0.10) | 8x8 blocks mean 0.36 p99 6.6 max 19.7
+   high_k2 vs ref, floor: px mean 0.35 p99 5 >=8 0.26% | rms 0.72 noise-corrected 0.72 (ref noise 0.10) | 8x8 blocks mean 0.26 p99 4.7 max 11.2
+   high_k3 vs ref, floor: px mean 0.28 p99 4 >=8 0.09% | rms 0.56 noise-corrected 0.55 (ref noise 0.10) | 8x8 blocks mean 0.21 p99 3.6 max 8.1
+        u2 vs Ultra-tree ref, floor: px mean 0.20 p99 2 >=8 0.01% | rms 0.36 noise-corrected 0.35 (ref noise 0.10) | 8x8 blocks mean 0.12 p99 1.7 max 6.1 | re-seeded shimmer >=8 0.04% mean 0.25
+        u3 vs Ultra-tree ref, floor: px mean 0.17 p99 2 >=8 0.01% | rms 0.32 noise-corrected 0.31 (ref noise 0.10) | 8x8 blocks mean 0.10 p99 1.2 max 5.8 | re-seeded shimmer >=8 0.02% mean 0.21
+        u4 vs Ultra-tree ref, floor: px mean 0.15 p99 1 >=8 0.00% | rms 0.29 noise-corrected 0.27 (ref noise 0.10) | 8x8 blocks mean 0.09 p99 1.1 max 4.5 | re-seeded shimmer >=8 0.01% mean 0.19
+  glass: High k2 vs ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean 0.00 p99 0.0 max 0.0
+  glass: Ultra u2 vs Ultra ref px mean 0.00 p99 0 >=8 0.00% | rms 0.00 noise-corrected 0.00 (ref noise 0.00) | 8x8 blocks mean 0.00 p99 0.0 max 0.0
+  off ->      ref: floor px >= 8/255 9.0%, mean 2.62, p99 16, max 34
+  off ->  high_k2: floor px >= 8/255 9.3%, mean 2.70, p99 18, max 43
+  off ->       u2: floor px >= 8/255 9.1%, mean 2.61, p99 16, max 34
+  streak all: 766 px (0.04% of screen), mean ref change 25.9/255 | high_k2 captured 1.21 recall 100.0% | u2 captured 0.98 recall 100.0%
+  streak red: 47 px (0.00% of screen), mean ref change 27.0/255 | high_k2 captured 1.38 recall 100.0% | u2 captured 0.94 recall 100.0%
+ 7:58  up 30 days, 12:06, 1 user, load averages: 10.44 7.51 9.90

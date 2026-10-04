@@ -1,0 +1,24 @@
+ 6:44  up 30 days, 10:52, 1 user, load averages: 171.96 147.31 90.97
+# rt_bench6 r3b3 view B tripped device=Apple M3 Max Apple9=1  load 172/147/91
+# pso main maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f2   maxd 2 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f3   maxd 3 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 17 lamps
+# receiver px (floor + lite): 15.24% of the screen
+# s1   vs main: 0 of 559308 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00048, max rel 0.692
+# s3   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00048, max rel 0.692
+# f2   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00062, max rel 0.874
+# f3   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00062, max rel 0.874
+# main shadow rays per frame 391929
+r3b3 b6 B tripped Ultra-tree 2560x1440 main min 0.711 p25 0.775 med 0.960 ms | ratio to main: min 1.000 med 1.000 | load 172/147/91
+r3b3 b6 B tripped Ultra-tree 2560x1440 s1   min 0.688 p25 0.755 med 0.841 ms | ratio to main: min 0.966 med 0.876 | load 172/147/91
+r3b3 b6 B tripped Ultra-tree 2560x1440 s2   min 0.753 p25 0.833 med 0.905 ms | ratio to main: min 1.059 med 0.942 | load 172/147/91
+r3b3 b6 B tripped Ultra-tree 2560x1440 s3   min 0.755 p25 0.823 med 0.964 ms | ratio to main: min 1.060 med 1.004 | load 172/147/91
+r3b3 b6 B tripped Ultra-tree 2560x1440 f2   min 0.801 p25 0.892 med 1.002 ms | ratio to main: min 1.125 med 1.044 | load 172/147/91
+r3b3 b6 B tripped Ultra-tree 2560x1440 f3   min 0.809 p25 0.884 med 1.080 ms | ratio to main: min 1.137 med 1.125 | load 172/147/91
+# done load 172/147/91
+ 6:44  up 30 days, 10:52, 1 user, load averages: 171.96 147.31 90.97

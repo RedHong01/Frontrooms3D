@@ -7,6 +7,7 @@ Everything here was built and rendered in a private clone. Nothing in Red's proj
 ## 0. Short answer (for Red)
 
 - **In the game now (since 19:10, Codex).** B0 and the cool Office colour and lens are on by default; the dead/dim border rule is off unless `-lightleadBorders` or `-lightleadSoft` is passed. You have not picked a variation yet (§15).
+- **Rendered from main's code (§15.4, `images/var_lightlead_main_sheet.jpg`).** With the border rule on, main matches this prototype (same lamp counts; mean pixel difference under 0.7 of 255). As the game runs it today (colour only), the Office is cooler and 2-3 % brighter, but Level 0 is unchanged, so the cut is still in full light. The "approach through shadow" look needs the border rule on.
 - **Checked on a fresh copy of main:** all map tests pass as the game runs it (136/136 interaction, 28/28 lamp tick, 100/100 seeds). With the border rule switched on, one test fails: the lamp predictor `LampModeOf` creates map chunks it should only read. Fixed in the clone (136/136), as a contract patch for the map chat (§15.3 E1).
 
 - **The idea works as briefed.** At every frameless crossing (open edge, arch) the Level 0 cell goes dark. The Office beyond is lit in its own cool white. The surface cut now sits where the light changes, and mostly in shadow.
@@ -280,6 +281,7 @@ Added by the re-run: `images/var_lightlead_main_sheet.jpg` (the four shots from 
 9. (Re-run) B0 generates the ring of chunks round each build early (§15.3 E2). Map chat to decide.
 10. (Re-run) The colour lead is live although Red has not picked (§15.3 E3). Red or the codex-audit to decide.
 11. (Re-run) Play Mode acceptance in Red's editor is still owed: batch checks cannot show flicker in motion or the Relay warning.
+12. (Re-run) The game today runs colour only: Level 0 border cells keep full light, so the cut is not in shadow (§15.4). Red picks: colour only, soft, or dead (the border rule on).
 
 ## 14. Logs and reproduction
 
@@ -301,7 +303,7 @@ Clone: `SCR/proj_trans_lightlead` (SCR = `/private/tmp/claude-501/-Users-redwang
 
 Extra shot poses (map space, seed 516574485, FOV 76, eye 1.62): extra 1 eye (789.6, 604.5) yaw 90 pitch 2, cell (263,201) Level 0; extra 2 eye (793.8, 613.9) yaw 180 pitch 3, cell (264,204) Office.
 
-## 15. Re-run: the copy in Red's game (2026-10-03, 22:00-23:xx)
+## 15. Re-run: the copy in Red's game (2026-10-03 22:00-23:15; main renders finished 2026-10-04 06:35)
 
 **Why.** Red asked Codex (18:3x) to merge the clone work into the project. Codex committed this variation's files into main at 19:10 (`8ef5b64`; HEAD now `75cfdff`). Red (21:4x): "correct the errors and continue all unfinished work". This section checks that copy. I did not edit main's code: the map file is the map chat's (contract), and the `codex-audit` workflow merges fixes to Codex's copies through its sha1-checked script. My fixes are patches in `contracts/`.
 
@@ -357,7 +359,49 @@ The failing check: "LampModeOf a far cell generates no chunk".
 
 ### 15.4 The four fixed shots from main's code
 
-RENDER_RESULTS_PENDING
+Image: `images/var_lightlead_main_sheet.jpg` (4 rows; columns OFF | NOW | + BORDERS). Rendered 2026-10-04 06:27-06:35.
+
+**How.** Copy `SCR/proj_ll_main`. For these renders I put back main's own `FrontRoomsMapWorld.cs`, `FrontRoomsTransitionKit.cs` and `FrontRoomsTransitionLightLead.cs`, byte for byte from `75cfdff` (sha1 `3a3281ad`, `6ef32ddd`, `8f41b31e`). So the E1 and comment patches are NOT in these frames; the patched files are kept in `SCR/llm_tools/fixed_copies/`. Main's HEAD is now `d610d3a`. The three commits after `75cfdff` change only the Hunter, map tests and one blind import `.meta`, so the render code is the same. Harness md5 `76a624e3...` and `shots.json` unchanged. One Unity process per mode, one after the other.
+- The first try (2026-10-03 22:54 and 23:15) was cut off when the session ended: Unity was killed mid-render, before shot1 (off) and before shot4 (now). Those logs are kept as `SCR/llm_logs/r2/*_killed.log`; their frames were discarded.
+- This run: 4 modes x 4 shots = 16 frames, every process exit 0, no compile errors, no exceptions. All 16 `-plan` files are identical to `logs/shot<k>_plan.json` (layout frozen).
+
+**Lit lamps within 46 m of the eye** (from each `.txt`):
+
+| Shot | BEFORE | Main OFF | Main NOW | Main + BORDERS | Main + SOFT | Clone prototype (dead / soft) |
+|---|---:|---:|---:|---:|---:|---:|
+| shot1 | 84 | 84 | 84 | 81 (shadowed 8 -> 7) | 85 | 81 / 85 |
+| shot2 | 82 | 82 | 82 | 77 (shadowed 7 -> 6) | 83 | 77 / 83 |
+| shot3 | 83 | 83 | 83 | 79 | 83 | 79 / 83 |
+| shot4 | 88 | 88 | 88 | 86 | 89 | 86 / 89 |
+
+Main's border rule gives exactly the prototype's counts. NOW changes no lamp mode (as the mirror check in §15.2 found).
+
+**Main against the prototype (pixel check).**
+- Main OFF vs `shot<k>_before.jpg`: not byte-identical, because main has other work since the clone base (for example the Level 0 lens ×1.5 from 17:16). Mean pixel difference 0.12-0.77 of 255; mean luma within 0.2. Same picture.
+- Main + BORDERS vs the clone's `lightlead` frames: mean difference 0.13-0.67 of 255; mean luma within 0.2. **Main reproduces the prototype.**
+
+**Region luma** (Rec.709 on sRGB 0-255) and blue/red ratio, with `SCR/llm_tools/measure.py` (same boxes for every column; full table `SCR/llm_out/measure_r2.md`):
+
+| Region | BEFORE | Main NOW | Main + BORDERS | Main + SOFT |
+|---|---:|---:|---:|---:|
+| shot1 · Level 0 eye cell, left wall | 122, b/r 0.57 | 122 (0 %), 0.59 | 45 (-63 %), 0.63 | 82 (-33 %), 0.58 |
+| shot1 · Office through arch Z 609 | 75, b/r 1.01 | 77 (+3 %), 1.23 | 73 (-3 %), 1.25 | 75 (-1 %), 1.24 |
+| shot1 · Office through arch X 795 | 129, b/r 0.81 | 131 (+2 %), 0.95 | 121 (-6 %), 0.98 | 126 (-2 %), 0.97 |
+| shot2 · Level 0 cells 194-195, right wall | 111, b/r 0.52 | 111 (0 %), 0.55 | 39 (-65 %), 0.55 | 75 (-33 %), 0.52 |
+| shot2 · Office corridor past Z 588 | 87, b/r 0.80 | 89 (+2 %), 0.95 | 84 (-4 %), 0.97 | 86 (-1 %), 0.96 |
+| shot3 · Office walls | 95, b/r 0.83 | 97 (+2 %), 1.01 | 96 (+2 %), 1.01 | 96 (+2 %), 1.01 |
+| shot3 · Level 0 Low room through the door | 107, b/r 0.65 | 108 (0 %), 0.67 | 97 (-9 %), 0.67 | 97 (-9 %), 0.67 |
+| shot4 · wall round the far arch (264,202) | 120, b/r 0.49 | 120 (0 %), 0.50 | 70 (-41 %), 0.42 | 95 (-21 %), 0.45 |
+| shot4 · Level 0 wall by (265,201) | 118, b/r 0.49 | 118 (0 %), 0.51 | 69 (-41 %), 0.44 | 97 (-17 %), 0.47 |
+| shot4 · Office past X 798 | 109, b/r 0.69 | 111 (+2 %), 0.80 | 107 (-2 %), 0.82 | 110 (+1 %), 0.82 |
+
+(§3.2 measured with its own regions, so its absolute values differ a little: shot1 Level 0 wall BEFORE is 114 there, 122 here. Compare numbers inside one table only. The percentages agree: -62 % there, -63 % here.)
+
+**What it means.**
+1. **NOW (what the game runs) is colour only.** Every Office region turns cooler (b/r 0.69-1.01 -> 0.80-1.23) and 2-3 % brighter. Level 0 does not change (0 %). The Level 0 side stays brighter than the Office seen through the opening: shot1 122 vs 77, shot2 111 vs 89. So the cut is still in full light; only its colour step is larger. In the sheet, the NOW column looks almost like OFF, with bluer Office walls.
+2. **+ BORDERS is the look the brief and the Figma variation show.** Level 0 border walls drop 41-65 %. The Office ahead is 1.6x (shot1, arch Z 609: 73 vs 45) to 2.7x (shot1, arch X 795: 121 vs 45) brighter than the dark cell; shot2 2.2x (84 vs 39); shot4 1.6x (107 vs 69). The dead lens reads as a grey panel (shot2, shot4 top right).
+3. **+ SOFT does not flip the contrast.** Level 0 border walls drop 17-33 %. The Office ahead is 0.9x-1.2x the Level 0 cell (shot1 75 vs 82; shot2 86 vs 75; shot4 110 vs 97). It evens the two sides; it does not lead with light.
+4. So if Red wants "approach every border through shadow", the border rule must be switched on (default on, or per tier in the level profile), and the E1 patch must land first, or the map test fails (135/136, §15.3).
 
 ### 15.5 Logs (re-run)
 
@@ -366,8 +410,10 @@ RENDER_RESULTS_PENDING
 | Copy of main + interaction tests (default) | `SCR/llm_logs/interaction_default.log` | `SCR/proj_ll_main/Verification/` |
 | Checks, main's code: default, border rule | `SCR/llm_logs/checks_default.log`, `checks_borders.log` | `SCR/llm_checks/default_*`, `borders_*` |
 | Checks with the E1 fix: border, soft, default, off | `SCR/llm_logs/checks_*_fixed.log` | `SCR/llm_checks/*_fixed_*` (mirror reports `*_mirror.txt`) |
-| Fixed shots from main: off, default, border, soft | `SCR/llm_logs/shots_main_*.log` | `SCR/shots_main_*/` |
-| Region measurements | `SCR/llm_tools/measure.py` | this section |
+| Fixed shots from main: off, default, border, soft (2026-10-04 run; `render_main.sh`) | `SCR/llm_logs/shots_main_off.log`, `shots_main_default.log`, `shots_main_borders.log`, `shots_main_soft.log`; runner output `SCR/llm_logs/render_main_r2.out` | `SCR/shots_main_off/`, `shots_main_default/`, `shots_main_borders/`, `shots_main_soft/` |
+| Killed first try (2026-10-03) | `SCR/llm_logs/r2/shots_main_off_2254_killed.log`, `shots_main_default_2315_killed.log` | partial frames in `SCR/llm_logs/r2/shots_main_default_partial_2315/` (not used) |
+| Main sheet | `SCR/llm_tools/main_sheet.py` (uses `SCR/ll_sheets.py`) | `images/var_lightlead_main_sheet.jpg` |
+| Region measurements | `SCR/llm_tools/measure.py` | §15.4; `SCR/llm_out/measure_r2.md` |
 | Patches | `SCR/llm_tools/fix_lampmodeof.py`, `fix_comments.py` | `contracts/*.diff` |
 
 ## Appendix: full diff of `FrontRoomsMapWorld.cs` (clone base -> lightlead)

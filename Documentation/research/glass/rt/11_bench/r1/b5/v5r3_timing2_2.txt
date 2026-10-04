@@ -1,0 +1,30 @@
+ 6:44  up 30 days, 10:52, 1 user, load averages: 168.67 148.40 92.98
+# rt_bench4 r3t2 timing2 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 169/148/93
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# --- timing2 2560x1440 interleaved, jitter 0, soft gate 0  load 169/149/93
+r3t2 timing2 2560x1440 A_H   total min 1.769 p25 3.839 med 7.039 | trace med 2.598 filter med 1.936 | floor 12.0% glass 0.01% rays/recv 1.00 | load 172/150/95 | S1 tripped: High
+r3t2 timing2 2560x1440 A_U2  total min 3.426 p25 7.309 med 8.841 | trace med 5.106 filter med 2.525 | floor 12.0% glass 0.01% rays/recv 1.99 | load 172/150/95 | S1 tripped: Ultra 2 rays
+r3t2 timing2 2560x1440 A_U3  total min 5.072 p25 8.294 med 10.131 | trace med 6.446 filter med 3.897 | floor 12.0% glass 0.01% rays/recv 2.99 | load 172/150/95 | S1 tripped: Ultra 3 rays
+r3t2 timing2 2560x1440 A_U4  total min 5.799 p25 9.746 med 12.495 | trace med 8.753 filter med 5.624 | floor 12.0% glass 0.01% rays/recv 3.99 | load 172/150/95 | S1 tripped: Ultra 4 rays
+r3t2 timing2 2560x1440 B_H   total min 2.074 p25 2.839 med 5.616 | trace med 3.996 filter med 2.797 | floor 15.1% glass 0.18% rays/recv 1.04 | load 172/150/95 | near goal tripped: High
+r3t2 timing2 2560x1440 B_U2  total min 3.778 p25 6.433 med 8.369 | trace med 5.788 filter med 1.589 | floor 15.1% glass 0.18% rays/recv 2.05 | load 172/150/95 | near goal tripped: Ultra 2 rays
+r3t2 timing2 2560x1440 B_U3  total min 5.242 p25 8.009 med 11.562 | trace med 7.759 filter med 2.920 | floor 15.1% glass 0.18% rays/recv 3.06 | load 172/150/95 | near goal tripped: Ultra 3 rays
+r3t2 timing2 2560x1440 C_H   total min 2.367 p25 6.037 med 6.961 | trace med 3.889 filter med 3.410 | floor 17.6% glass 0.01% rays/recv 1.00 | load 172/150/95 | pitched 10 deg: High
+r3t2 timing2 2560x1440 C_U2  total min 4.330 p25 7.608 med 8.258 | trace med 6.061 filter med 2.908 | floor 17.6% glass 0.01% rays/recv 1.99 | load 172/150/95 | pitched 10 deg: Ultra 2 rays
+r3t2 timing2 2560x1440 C_U3  total min 6.572 p25 10.668 med 14.494 | trace med 9.639 filter med 4.060 | floor 17.6% glass 0.01% rays/recv 2.99 | load 172/150/95 | pitched 10 deg: Ultra 3 rays
+r3t2 timing2 2560x1440 D_H   total min 3.124 p25 5.190 med 8.305 | trace med 6.463 filter med 2.130 | floor 37.2% glass 0.00% rays/recv 1.00 | load 172/150/95 | stream Run room: High
+r3t2 timing2 2560x1440 D_U2  total min 7.642 p25 11.776 med 13.918 | trace med 10.846 filter med 2.848 | floor 37.2% glass 0.00% rays/recv 1.98 | load 172/150/95 | stream Run room: Ultra 2 rays
+r3t2 timing2 2560x1440 G_H   total min 2.188 p25 4.175 med 7.366 | trace med 3.665 filter med 3.883 | floor 19.4% glass 0.87% rays/recv 1.05 | load 172/150/95 | 2.5 m armed r0.15: High
+r3t2 timing2 2560x1440 G_U2  total min 4.411 p25 8.847 med 11.391 | trace med 8.107 filter med 2.563 | floor 19.4% glass 0.87% rays/recv 2.04 | load 172/150/95 | 2.5 m armed r0.15: Ultra 2 rays
+r3t2 timing2 2560x1440 A_h2  total min 1.820 p25 3.860 med 6.037 | trace med 3.303 filter med 2.484 | floor 12.0% glass 0.01% rays/recv 1.00 | load 172/150/95 | Run S1: floor r0.2 mirror + hw-aniso mip blur, 2 bounces
+# done load 172/150/95
+ 6:45  up 30 days, 10:53, 1 user, load averages: 171.81 150.06 94.54

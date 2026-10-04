@@ -1,0 +1,306 @@
+{
+ "cases": [
+  {
+   "band_mode": "band",
+   "file": "g00_Annealed6_s1820189501_x-0.4000_y0.9000_side+1_band.json",
+   "impact_root": [
+    -0.4,
+    0.9
+   ],
+   "pieces": 128,
+   "profile": "Annealed6",
+   "rotation_deg": 152.5665131,
+   "seed": 1820189501,
+   "sha256": "135e9871f8f13466309b3521b7b8a5955ec9bb3ae04d51d51d7df749f426c368",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g01_Annealed6_s1106464837_x+0.0000_y0.9000_side+1_band.json",
+   "impact_root": [
+    0.0,
+    0.9
+   ],
+   "pieces": 147,
+   "profile": "Annealed6",
+   "rotation_deg": 92.7428055,
+   "seed": 1106464837,
+   "sha256": "5080529c261d7d08dc26b482109d1bfc79c51511921a6b067ff3c769ca42856f",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g02_Annealed6_s1508157824_x+0.4000_y0.9000_side+1_band.json",
+   "impact_root": [
+    0.4,
+    0.9
+   ],
+   "pieces": 137,
+   "profile": "Annealed6",
+   "rotation_deg": 126.4123154,
+   "seed": 1508157824,
+   "sha256": "9cb8ee2835d2c87d5550199dbe70392e69ed9cdd9212ad457c2e8a77a75e264e",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g03_Annealed6_s2727719976_x-0.4000_y1.3000_side+1_band.json",
+   "impact_root": [
+    -0.4,
+    1.3
+   ],
+   "pieces": 150,
+   "profile": "Annealed6",
+   "rotation_deg": 228.6348419,
+   "seed": 2727719976,
+   "sha256": "c1f468a8067d83d2ace48b290d68a40569639354d9e920b0874468554abcd25f",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g04_Annealed6_s2000091388_x+0.0000_y1.3000_side+1_band.json",
+   "impact_root": [
+    0.0,
+    1.3
+   ],
+   "pieces": 123,
+   "profile": "Annealed6",
+   "rotation_deg": 167.6457062,
+   "seed": 2000091388,
+   "sha256": "80a0ac11770220b0b5746e618671f765b64350bbb6dc50dd633eac0094b0f917",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g05_Annealed6_s2942729777_x+0.4000_y1.3000_side+1_band.json",
+   "impact_root": [
+    0.4,
+    1.3
+   ],
+   "pieces": 136,
+   "profile": "Annealed6",
+   "rotation_deg": 246.6567535,
+   "seed": 2942729777,
+   "sha256": "c748f53a5bfe9925ff97b7f40d55709412fe7d10bc6cfe4917fe1f5ffef18cb7",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g06_Annealed6_s2984571525_x-0.4000_y1.6500_side+1_band.json",
+   "impact_root": [
+    -0.4,
+    1.65
+   ],
+   "pieces": 141,
+   "profile": "Annealed6",
+   "rotation_deg": 250.1638794,
+   "seed": 2984571525,
+   "sha256": "bffd20e6bc3c666fa00b9f46cc9241c7c36c8f481fffaed2c7e3f4d999bc4c38",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g07_Annealed6_s3634527256_x+0.0000_y1.6500_side+1_band.json",
+   "impact_root": [
+    0.0,
+    1.65
+   ],
+   "pieces": 148,
+   "profile": "Annealed6",
+   "rotation_deg": 304.6425476,
+   "seed": 3634527256,
+   "sha256": "d80ca2583581a6ed13999c28b11f1bdca62a206c590102fef0200239a9802df1",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g08_Annealed6_s1323404635_x+0.4000_y1.6500_side+1_band.json",
+   "impact_root": [
+    0.4,
+    1.65
+   ],
+   "pieces": 131,
+   "profile": "Annealed6",
+   "rotation_deg": 110.9264908,
+   "seed": 1323404635,
+   "sha256": "50bebbded11ef8cad540ba59e3c2357129f44cbf1891b33c2e297c0c87a2dcff",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g09_Annealed6_s4242_x+0.0000_y1.6200_side+1_band.json",
+   "impact_root": [
+    0.0,
+    1.62
+   ],
+   "pieces": 146,
+   "profile": "Annealed6",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "26f85da11dd71d1b7447fce1421e1547df8972415fe425d1c2a86dbcb749bef7",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g10_Annealed6_s4242_x+0.4000_y0.9000_side+1_band.json",
+   "impact_root": [
+    0.4,
+    0.9
+   ],
+   "pieces": 150,
+   "profile": "Annealed6",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "658f085b3514d71f6d222946f3f2ff859911631b028e7493a674b6ab12a84499",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g11_Annealed6_s4242_x-0.4835_y1.3000_side+1_band.json",
+   "impact_root": [
+    -0.4835,
+    1.3
+   ],
+   "pieces": 150,
+   "profile": "Annealed6",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "adcf23977599ec15982ec896f4bb457f2395db69ad23e2b42d17245ac5768a1f",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g12_Annealed6_s1990_x+0.0000_y1.6200_side-1_band.json",
+   "impact_root": [
+    0.0,
+    1.62
+   ],
+   "pieces": 133,
+   "profile": "Annealed6",
+   "rotation_deg": 199.0,
+   "seed": 1990,
+   "sha256": "8972f36f518e69001630703849b490578d8341cd0771306db64c4d8b0a73da04",
+   "side": -1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g13_Annealed6_s7_x+0.6000_y0.4000_side+1_band.json",
+   "impact_root": [
+    0.6,
+    0.4
+   ],
+   "pieces": 128,
+   "profile": "Annealed6",
+   "rotation_deg": 123.4,
+   "seed": 7,
+   "sha256": "835020088bb2be89d3e04a8f6d60ff20d47d7df3937ad97d423056f8c9001e83",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g14_Annealed6_s8_x-0.6000_y1.9500_side+1_band.json",
+   "impact_root": [
+    -0.6,
+    1.95
+   ],
+   "pieces": 139,
+   "profile": "Annealed6",
+   "rotation_deg": 301.7,
+   "seed": 8,
+   "sha256": "39d18fb1656708415eecd0fb3818c98990b9e3f253e56867498e21c76e089a14",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g15_Annealed6_WebGL_s4242_x+0.0000_y1.6200_side+1_band.json",
+   "impact_root": [
+    0.0,
+    1.62
+   ],
+   "pieces": 60,
+   "profile": "Annealed6_WebGL",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "263cc4f89f017825662b8464486c59fae36c69c7da9f571a1a701a30fa03317f",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g16_Annealed6_WebGL_s4242_x+0.4000_y0.9000_side+1_band.json",
+   "impact_root": [
+    0.4,
+    0.9
+   ],
+   "pieces": 58,
+   "profile": "Annealed6_WebGL",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "fc177505dab1218bcda6f366031cfb0eb58c9ac2cdb0ac832b1f415ca1b14a11",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g17_Annealed6_Cinematic_s4242_x+0.0000_y1.6200_side+1_band.json",
+   "impact_root": [
+    0.0,
+    1.62
+   ],
+   "pieces": 170,
+   "profile": "Annealed6_Cinematic",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "eecd39ca717a23c6680674142a77353668c29058c1f270228a7ed61c08798cc5",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "stop",
+   "file": "g18_Annealed6_s4242_x+0.4000_y0.9000_side+1_stop.json",
+   "impact_root": [
+    0.4,
+    0.9
+   ],
+   "pieces": 119,
+   "profile": "Annealed6",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "53c0c779b6ccfefa1eac796711c2cd39383eca2fd22abdd0f1ff11702e6ee9e5",
+   "side": 1,
+   "valid": true
+  },
+  {
+   "band_mode": "band",
+   "file": "g19_Tempered6_s4242_x+0.0000_y1.6200_side+1_band.json",
+   "impact_root": [
+    0.0,
+    1.62
+   ],
+   "pieces": 90,
+   "profile": "Tempered6",
+   "rotation_deg": 64.2,
+   "seed": 4242,
+   "sha256": "51f454fad06213ab40898f6fa0a25a105b4eec9846675b3940c31fe722759aa1",
+   "side": 1,
+   "valid": true
+  }
+ ],
+ "note": "Golden output of crack_graph_ref.py. The C# port must match every vertex within 0.1 mm (plan sec 5.2 step 3). sha256 is of the exact file bytes.",
+ "version": "frontrooms-glass-crackgraph-ref 1.3"
+}

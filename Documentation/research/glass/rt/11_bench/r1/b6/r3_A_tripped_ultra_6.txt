@@ -1,0 +1,24 @@
+ 7:03  up 30 days, 11:10, 1 user, load averages: 38.57 51.70 86.26
+# rt_bench6 r3a6 view A tripped device=Apple M3 Max Apple9=1  load 39/52/86
+# pso main maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f2   maxd 2 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f3   maxd 3 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 17 lamps
+# receiver px (floor + lite): 12.04% of the screen
+# s1   vs main: 0 of 443629 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# s3   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# f2   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# f3   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# main shadow rays per frame 85688
+r3a6 b6 A tripped Ultra-tree 2560x1440 main min 0.564 p25 0.610 med 0.657 ms | ratio to main: min 1.000 med 1.000 | load 39/52/86
+r3a6 b6 A tripped Ultra-tree 2560x1440 s1   min 0.559 p25 0.595 med 0.693 ms | ratio to main: min 0.991 med 1.054 | load 39/52/86
+r3a6 b6 A tripped Ultra-tree 2560x1440 s2   min 0.585 p25 0.657 med 0.734 ms | ratio to main: min 1.037 med 1.117 | load 39/52/86
+r3a6 b6 A tripped Ultra-tree 2560x1440 s3   min 0.590 p25 0.626 med 0.739 ms | ratio to main: min 1.046 med 1.124 | load 39/52/86
+r3a6 b6 A tripped Ultra-tree 2560x1440 f2   min 0.617 p25 0.660 med 0.748 ms | ratio to main: min 1.094 med 1.138 | load 39/52/86
+r3a6 b6 A tripped Ultra-tree 2560x1440 f3   min 0.628 p25 0.671 med 0.795 ms | ratio to main: min 1.114 med 1.211 | load 39/52/86
+# done load 39/52/86
+ 7:03  up 30 days, 11:10, 1 user, load averages: 38.57 51.70 86.26

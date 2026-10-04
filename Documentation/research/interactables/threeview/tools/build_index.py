@@ -143,6 +143,22 @@ def variant_diff(base, var):
         if b[i] != v[i]: diffs.append("%s -> %s" % (b[i], v[i]))
     return diffs
 
+# Open items a sheet should show or wait on (codex audit 10_review_kits.md, exit-sign workflow).
+PENDING = {
+    "key_board": "Name pending Red (codex audit F6): it ships as Kit_KeyHookBoard (spec name Kit_KeyBoard), but proposal/03_for_red.md calls it Kit_KeyRack. The sheet title 'Key board' holds either way; only the kit name and the img: layer names would change.",
+    "key_cabinet": "Rendered from the fixed build in proj_int (G3 pass 3: clean folded corners, codex audit F5). Main still holds the earlier FBX with inside-out lip corners until the interactables merge.",
+    "window_alu": "Rendered from proj_int's G4 pass-3/4 build: one mesh, 2,066 tris, wear stations on the sill and jambs, no LOD1. Main still holds the 1,088-tri LOD0/LOD1 build until the interactables merge.",
+    "window_steel": "Rendered from proj_int's G4 pass-3/4 build (1.1 mm screw slots, wall_decor tag). Main holds the 0.8 mm-slot build until the interactables merge; no visible change at sheet scale.",
+    "exit_sign": "The exit-sign workflow is re-modelling Kit_ExitSign and Kit_ExitSign_Dead under the same names and main's GUIDs. Re-render before placing if main's sidecar is newer than this index.",
+}
+OVERLAY = ["Kit_KeyCabinet", "Kit_WindowFrame_Wood", "Kit_WindowFrame_Steel", "Kit_WindowFrame_Steel_Enamel",
+           "Kit_WindowFrame_Alu", "Kit_MiniBlind_Raised", "Kit_MiniBlind_Lowered"]
+
+def icloud_copy(f):
+    # "name 2.png": iCloud conflict copies of older renders; not ours to delete (ICLOUD_NOSYNC_TASK.md), never indexed.
+    import re
+    return re.search(r" \d+\.(png|json)$", f) is not None
+
 kits, sheets = {}, []
 for order, s in enumerate(SHEETS, 1):
     primary = s["kits"][0]
@@ -181,6 +197,7 @@ for order, s in enumerate(SHEETS, 1):
         sheet["partsDims"] = {k: kits[k]["dims_label"] for k in rec_kits}
         sheet["partsMaterials"] = {k: kits[k]["materials"] for k in rec_kits}
     if s.get("existing"): sheet["existingSheet"] = s["existing"]
+    if s["id"] in PENDING: sheet["pending"] = PENDING[s["id"]]
     sheets.append(sheet)
     # INDEX_FORMAT fields on every kit record too (kit, title, lede, era, variants, images), so a
     # lookup by kit name alone has everything one K-sheet needs.

@@ -42,9 +42,14 @@ soffit) reach |Z| 0.0224 next to the soffit, 0.4 mm past the 0.022 stop
 face: a pressed stop has that radius; it is clear of the glass and the clear
 zone and is not an interface number.
 
-Budget (§9.4): 3,600 / 1,300 / 220 tris; LOD1 now (0.38: the screws and the
-setting blocks drop, nothing decimates; the tape stays so the pocket never
-reads as a slot); LOD2 drops the screws, tape and blocks (fr_lod2_drop).
+Budget (§9.4): 3,600 / 1,300 / 220 tris. Built: 4,054 / 1,458 (+12.6 % /
++12.2 %). Pass 4 gave the jambs wear stations (Y ~0.42 / 0.88 / 1.42: shin
+scuffs, the grab band) and paid for them by drawing the R3.0 arrises with 3
+segments instead of 4 (§1.8 asks for 2-3). LOD1 0.36 (the §9.4 value): the
+screws and setting blocks drop, then the collapse takes only the wear-station
+loops, which lie on the straight sweep and cost zero error (LOD1 surface
+within 0.001 mm of LOD0, measured); the tape stays, so the pocket never reads
+as a slot. LOD2 drops the screws, tape and blocks (fr_lod2_drop).
 LOD distances 4 / 12 / none. Sidecar placement "Wall" (wall_placement()).
 Slots: Prop_SteelBrown (first =
 submesh 0 for the RT bridge, §7.3), Prop_Rubber. VARIANT
@@ -56,13 +61,15 @@ before 1990 (SDI profiles, NPS ITS 31's corridor glazing); slotted oval-head
 screws are the period fastener (no Torx / tamper heads).
 """
 
+import math
+
 from mathutils import Matrix, Vector
 
 import kitlib
 import interact_window_common as wc
 
 NAME = "Kit_WindowFrame_Steel"
-LOD1_RATIO = 0.38
+LOD1_RATIO = 0.36                # §9.4 value; the collapse takes the zero-cost wear-station loops (pass 4)
 LOD2_RATIO = 0.061
 LOD1 = LOD1_RATIO
 LOD_DISTANCES = (4.0, 12.0, None)
@@ -75,6 +82,7 @@ kitlib.register_slot("Door_Enamel", (0.61, 0.56, 0.43), 0.45, 0.0)   # almond en
 VARIANTS = {"Kit_WindowFrame_Steel_Enamel": {STEEL: "Door_Enamel"}}
 
 R_OUT, R_IN = 0.003, 0.0015      # 16 ga: 1.5 mm inside radius -> 3.0 mm outer
+SEG_OUT = 3                      # segments on the R3.0 arrises (§1.8: 2-3); was 4, the saving pays for the jamb wear stations
 GROOVE_D, GROOVE_N0, GROOVE_N1 = 0.0016, 0.0096, 0.0184
 SCREW_N = 0.014                  # screw centre on the stop face (Z)
 SLOT_W = 0.0011                  # #6 oval head (head ~6.6-7 mm): slot 1.0-1.2 mm wide (ASME B18.6.3); was 0.8
@@ -87,14 +95,14 @@ def shell_profile():
     face band B -> face B wall (CCW)."""
     return wc.fillet([
         (wc.D_FACE, wc.SHELL_Z0),
-        (wc.D_FACE, wc.FACE_Z, R_OUT, 4),
-        (wc.D_LINING, wc.FACE_Z, R_OUT, 4),
+        (wc.D_FACE, wc.FACE_Z, R_OUT, SEG_OUT),
+        (wc.D_LINING, wc.FACE_Z, R_OUT, SEG_OUT),
         (wc.D_LINING, -wc.STOP_Z0, R_IN, 2),
-        (0.0, -wc.STOP_Z0, R_OUT, 4),
-        (0.0, -wc.STOP_Z1, R_OUT, 4),
+        (0.0, -wc.STOP_Z0, R_OUT, SEG_OUT),
+        (0.0, -wc.STOP_Z1, R_OUT, SEG_OUT),
         (wc.D_LINING, -wc.STOP_Z1, R_IN, 2),
-        (wc.D_LINING, -wc.FACE_Z, R_OUT, 4),
-        (wc.D_FACE, -wc.FACE_Z, R_OUT, 4),
+        (wc.D_LINING, -wc.FACE_Z, R_OUT, SEG_OUT),
+        (wc.D_FACE, -wc.FACE_Z, R_OUT, SEG_OUT),
         (wc.D_FACE, -wc.SHELL_Z0),
     ])
 
@@ -129,29 +137,46 @@ def screw_points():
     return out, jamb, rail
 
 
+# Wear stations (length fractions between the mitres). Pass 4: the jambs had
+# none, so their only vertices sat at the two ends: the sill's primer value
+# smeared up the whole jamb and the grab-height grime had no vertex to land
+# on. Jambs: ~Y 0.42 (end of the shin scuffs), ~0.88 and ~1.42 (the grab band).
+# Sill: ~X -0.62 / 0 / +0.62, so the climb-plant wear peaks at the centre.
+STATIONS = {"B": (0.0, 0.06, 0.5, 0.94, 1.0),
+            "R": (0.0, 0.06, 0.33, 0.64, 1.0),
+            "L": (0.0, 0.06, 0.33, 0.64, 1.0)}
+
+
 def shell_wear(X, Y, Z):
+    """R hand grime, G paint worn through to grey primer, B cavity grime (§1.8)."""
     r = g = b = 1.0
-    if Y < 0.40:
-        g = 0.55                                  # sill soffit and bottom corners worn to grey primer
+    if Y <= wc.SIGHT_Y0 + 1e-6:                   # sill piece (and the jamb mitre ends below it)
+        k = math.exp(-(X / 0.32) ** 2)            # the climb plant: palms, knees, boots at the centre
+        g = 0.85 - 0.4 * k
+        r = 1.0 - 0.3 * k
+    elif Y < 0.42:
+        g = 0.85                                  # shin scuffs low on the jambs
     elif Y > 1.95:
-        g = 0.85
-    if abs(abs(X) - 0.735) < 0.045 and 0.85 < Y < 1.45:
-        r = 0.8                                   # hand grime on the jamb face bands
+        g = 0.9                                   # head: light knocks only
+    if abs(X) > wc.SIGHT_X and 0.85 < Y < 1.45 and abs(Z) > 0.09:
+        r = 0.8                                   # hand grime on the jamb face bands (grab height)
     if abs(abs(Z) - wc.STOP_Z0) < 0.003 or abs(abs(Z) - wc.STOP_Z1) < 0.003:
         b = 0.65                                  # dirt in the stop / soffit corners
     return r, g, b
 
 
 def stop_wear(X, Y, Z):
-    near_corner = (abs(X) > 0.62 and (Y < 0.43 or Y > 1.92))
-    return (1.0, 0.6 if near_corner else 0.9, 0.7 if abs(Z - SCREW_N) < 0.005 else 1.0)
+    """The loose stop has vertices only at its two mitred ends, so anything
+    keyed to a corner smears along the whole piece (pass 3 painted every stop
+    G 0.6 that way). Per-piece values only: light handling wear from
+    reglazing, grime in the screw channel."""
+    return (1.0, 0.9, 0.7 if abs(Z - SCREW_N) < 0.005 else 1.0)
 
 
 def build(kit):
     # Dominant slot first (RT bridge reads submesh 0, spec §7.3 item 2).
     shell = shell_profile()
-    stations = {"B": (0.0, 0.06, 0.5, 0.94, 1.0)}          # sill: wear-to-primer gradient
-    for part in wc.frame_ring(kit, shell, STEEL, end=("vmitre", VGROOVE, VGROOVE), stations=stations, name="frame"):
+    for part in wc.frame_ring(kit, shell, STEEL, end=("vmitre", VGROOVE, VGROOVE), stations=STATIONS, name="frame"):
         wc.paint_wear(part, shell_wear)
     groove = loose_stop_profile()
     for part in wc.frame_ring(kit, groove, STEEL, end=("mitre", SETBACK), caps=True, name="loose stop"):

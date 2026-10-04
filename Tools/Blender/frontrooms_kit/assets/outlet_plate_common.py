@@ -396,11 +396,15 @@ class Mesh:
             u = s.cross(t).normalized()
             rings.append([self.add(*(p + (u * math.cos(2 * math.pi * i / segs) + s * math.sin(2 * math.pi * i / segs)) * radius))
                           for i in range(segs)])
+        # The rings turn counter-clockwise about t in (x, h, z); the plate
+        # frame is mirrored into Blender (h -> -y), so the windings are
+        # flipped to face out of the wire (2026-10-04: they faced in, and
+        # Unity's back-face culling showed the far inside of every wire).
         for a, b in zip(rings, rings[1:]):
-            self.bridge(a, b)
+            self.bridge(a, b, flip=True)
         if caps:
-            self.cap(list(reversed(rings[0])))
-            self.cap(rings[-1])
+            self.cap(rings[0])
+            self.cap(list(reversed(rings[-1])))
         return rings
 
     def box(self, x0, x1, h0, h1, z0, z1, skip_back=True):
@@ -516,9 +520,10 @@ class Mesh:
         bv = [bm.verts.new((x * MM, -h * MM, z * MM)) for x, h, z in self.v]
         for f in self.f:
             bm.faces.new([bv[i] for i in f])
-        big = [f for f in bm.faces if len(f.verts) > 4]
-        if big:
-            bmesh.ops.triangulate(bm, faces=big, quad_method="BEAUTY", ngon_method="BEAUTY")
+        if any(len(f.verts) > 4 for f in bm.faces):
+            refilled = triangulate_checked(bm)
+            if refilled:
+                print("[o2] %s: %d n-gon(s) re-filled by CDT (bmesh fold)" % (name, refilled))
         loose = [v for v in bm.verts if not v.link_faces]
         if loose:
             bmesh.ops.delete(bm, geom=loose, context="VERTS")
@@ -526,6 +531,90 @@ class Mesh:
         paint_wear(obj, wear)
         obj["fr_lods"] = lods
         return obj
+
+
+def _newell(co):
+    """Newell normal of a closed loop; its length is twice the area."""
+    n = Vector((0.0, 0.0, 0.0))
+    k = len(co)
+    for i in range(k):
+        a, b = co[i], co[(i + 1) % k]
+        n.x += (a.y - b.y) * (a.z + b.z)
+        n.y += (a.z - b.z) * (a.x + b.x)
+        n.z += (a.x - b.x) * (a.y + b.y)
+    return n
+
+
+def triangulate_checked(bm, min_verts=5):
+    """BEAUTY triangulation of the n-gons, then a check per n-gon: every
+    triangle faces the n-gon's way and the triangles add up to its area.
+    bmesh's polyfill + beauty can fold a concave n-gon with collinear
+    vertices (2026-10-04: the 6P cavity floor, a T with its notch, got one
+    triangle turned to the wall and one outside the outline: a see-through
+    hole once Unity culls back faces). Such n-gons are re-filled with a
+    constrained Delaunay triangulation of their own outline (no new
+    vertices, n - 2 triangles). Returns the number re-filled."""
+    lay = bm.faces.layers.int.new("o2_ngon")    # (a new layer invalidates older BMFace refs)
+    faces = [f for f in bm.faces if len(f.verts) >= min_verts]
+    loops = {}
+    for k, f in enumerate(faces):
+        f[lay] = k + 1
+        loops[k + 1] = list(f.verts)
+    bmesh.ops.triangulate(bm, faces=faces, quad_method="BEAUTY", ngon_method="BEAUTY")
+    groups = {}
+    for f in bm.faces:
+        if f[lay]:
+            groups.setdefault(f[lay], []).append(f)
+    refilled = 0
+    for k, tris in groups.items():
+        verts = loops[k]
+        co = [v.co.copy() for v in verts]
+        nrm = _newell(co)
+        area = nrm.length / 2
+        if area < 1e-14:
+            continue
+        nrm.normalize()
+        total, facing = 0.0, True
+        for t in tris:
+            a, b, c = (v.co for v in t.verts)
+            tn = (b - a).cross(c - a)
+            total += tn.length / 2
+            facing &= tn.dot(nrm) > 0
+        if facing and abs(total - area) <= 1e-4 * area:
+            continue
+        mat, smooth = tris[0].material_index, tris[0].smooth
+        for t in tris:
+            bm.faces.remove(t)
+        u = nrm.orthogonal().normalized()
+        w = nrm.cross(u)
+        p2 = [Vector((c.dot(u) / MM, c.dot(w) / MM)) for c in co]     # mm in the n-gon's plane
+        n = len(p2)
+        out = delaunay_2d_cdt(p2, [(i, (i + 1) % n) for i in range(n)], [], 0, 1e-7)
+        assert len(out[0]) == n, "triangulate_checked: CDT added or merged vertices"
+        poly = [(p.x, p.y) for p in p2]
+        made, new_area = 0, 0.0
+        for cf in out[2]:
+            ids = [out[3][i][0] for i in cf]
+            cx = sum(p2[i].x for i in ids) / 3
+            cy = sum(p2[i].y for i in ids) / 3
+            if not inside(poly, cx, cy):
+                continue
+            tv = [verts[i] for i in ids]
+            tn = (tv[1].co - tv[0].co).cross(tv[2].co - tv[0].co)
+            if tn.dot(nrm) < 0:
+                tv.reverse()
+            nf = bm.faces.new(tv)
+            nf.material_index, nf.smooth = mat, smooth
+            made += 1
+            new_area += tn.length / 2
+        assert made == n - 2 and abs(new_area - area) <= 1e-4 * area, \
+            "triangulate_checked: CDT fill failed (%d of %d triangles)" % (made, n - 2)
+        refilled += 1
+    if refilled:
+        for e in [e for e in bm.edges if not e.link_faces]:   # the folded diagonals
+            bm.edges.remove(e)
+    bm.faces.layers.int.remove(lay)
+    return refilled
 
 
 # ------------------------------------------------------------------- wear
@@ -676,6 +765,21 @@ def check_plate(info):
 
 
 # ----------------------------------------------------- LOD0 toggle device
+def gap_seal(d, inner, cx, cz, hw, hh):
+    """Dark gap floor at GAP_FLOOR_H from ``inner`` (a ring of ``d`` at
+    GAP_FLOOR_H round the device) out to a plain hw x hh rectangle under the
+    plate (the opening + 0.3), and a skirt on that rectangle up to 0.05 past
+    the plate's cavity face. Without the skirt a view 60-75 degrees off the
+    wall normal ran down the 0.35 mm device-to-opening gap, under the
+    opening wall and on to the wall under the plate, which Unity lights in
+    full (outlets cast no shadow). 2026-10-04. Floor n + 4 triangles,
+    skirt 8."""
+    outer = d.ring(rrect(cx, cz, hw, hh, 0.0, 0), GAP_FLOOR_H)
+    d.fill(outer, [inner])
+    top = d.ring(rrect(cx, cz, hw, hh, 0.0, 0), CAVITY_H + 0.05)
+    d.bridge(top, outer)                             # hole wall: faces in, toward the device
+
+
 def toggle_device(kit, gx, gz, hf, angle=BAT_ANGLE):
     """Switch face (NI) filling the plate opening with BOSS_CLEAR, 0.5 behind
     the field; a bat slot with a 0.15 chamfer; the bat handle (NI) pivoting
@@ -704,9 +808,7 @@ def toggle_device(kit, gx, gz, hf, angle=BAT_ANGLE):
     a = d.ring(outline, GAP_FLOOR_H)
     b = d.ring(outline, face_h - BOSS_ROUND - BOSS_NI_DEPTH)
     d.bridge(a, b)
-    gap_outer = d.ring(rrect(gx, gz, TOGGLE_OPENING[0] / 2 + 0.3, TOGGLE_OPENING[1] / 2 + 0.3,
-                             BOSS_R + BOSS_CLEAR + 0.3, BOSS_SEGS), GAP_FLOOR_H)
-    d.bridge(gap_outer, a)
+    gap_seal(d, a, gx, gz, TOGGLE_OPENING[0] / 2 + 0.3, TOGGLE_OPENING[1] / 2 + 0.3)
     s0 = d.ring(rrect(gx, gz, sw / 2, sh / 2, sr, BAT_SLOT_SEGS), face_h - SLOT_CHAMFER)
     s1 = d.ring(rrect(gx, gz, sw / 2, sh / 2, sr, BAT_SLOT_SEGS), slot_floor)
     d.bridge(s0, s1)
@@ -811,8 +913,7 @@ def jack_6p(kit, gx, gz, hf, opening):
     a = d.ring(outline, GAP_FLOOR_H)
     b = d.ring(outline, face_h - JACK_INSERT_ROUND - BOSS_NI_DEPTH)
     d.bridge(a, b)
-    gap_outer = d.ring(rrect(gx, gz, opening.w / 2 + 0.3, opening.h / 2 + 0.3, opening.r + 0.3, JACK_INSERT_SEGS), GAP_FLOOR_H)
-    d.bridge(gap_outer, a)
+    gap_seal(d, a, gx, gz, opening.w / 2 + 0.3, opening.h / 2 + 0.3)
     w0 = d.ring(cav, face_h - SLOT_CHAMFER)
     w1 = d.ring(cav, JACK_FLOOR_H)
     d.bridge(w0, w1)
@@ -1011,12 +1112,22 @@ def toggle_lod1(kit, gx, gz, hf, lods="1"):
     top = m.ring(rrect(gx, gz, bw / 2, bh / 2, BOSS_R, 2), face_h)
     slot = m.ring(rrect(gx, gz, BAT_SLOT[0] / 2, BAT_SLOT[1] / 2, BAT_SLOT[2], 1), face_h)
     m.fill(top, [slot])
-    low = m.ring(rrect(gx, gz, bw / 2, bh / 2, BOSS_R, 2), face_h - 1.2)
-    m.bridge(low, top)                               # boss sides: no see-through gap at a slant
+    # Slot walls down to the dark floor: without them a steep view slipped
+    # under the 0.5 mm rim and met the inside of the boss wall (a back face,
+    # culled in Unity: a see-through sliver). +16 tris per switch.
+    m.bridge(slot, m.ring(rrect(gx, gz, BAT_SLOT[0] / 2, BAT_SLOT[1] / 2, BAT_SLOT[2], 1), face_h - 0.5))
+    low = m.ring(rrect(gx, gz, bw / 2, bh / 2, BOSS_R, 2), GAP_FLOOR_H)
+    m.bridge(low, top)                               # boss sides down to the gap floor
     boss = m.to_object(kit, "switch face lod1", NI, lods=lods)
     hole = dark_rect(kit, gx, gz, BAT_SLOT[0] / 2, BAT_SLOT[1] / 2, face_h - 0.5, "bat slot lod1", lods)
+    # The gap floor and skirt as LOD0: LOD1 had none, so the wall showed
+    # through the 0.35 mm gap even head-on (2026-10-04).
+    g = Mesh()
+    gap_seal(g, g.ring(rrect(gx, gz, bw / 2, bh / 2, BOSS_R, 2), GAP_FLOOR_H), gx, gz,
+             TOGGLE_OPENING[0] / 2 + 0.3, TOGGLE_OPENING[1] / 2 + 0.3)
+    gap = g.to_object(kit, "switch gap lod1", PB, lods=lods)
     b = bat(gx, gz, pivot_h, BAT_ANGLE, segs=3)
-    return [boss, hole, b.to_object(kit, "toggle bat lod1", NI, lods=lods)]
+    return [boss, hole, gap, b.to_object(kit, "toggle bat lod1", NI, lods=lods)]
 
 
 def toggle_lod2(kit, gx, gz, hf, lods="2"):
@@ -1068,8 +1179,7 @@ def jack_lod1(kit, gx, gz, hf, opening, lods="1"):
     m.fill(r0, [mt])
     out = [m.to_object(kit, "jack insert lod1", NI, lods=lods)]
     g0 = d.ring(rrect(gx, gz, iw / 2, ih / 2, JACK_INSERT_R, segs), GAP_FLOOR_H)
-    g1 = d.ring(rrect(gx, gz, opening.w / 2 + 0.3, opening.h / 2 + 0.3, opening.r + 0.3, segs), GAP_FLOOR_H)
-    d.bridge(g1, g0)
+    gap_seal(d, g0, gx, gz, opening.w / 2 + 0.3, opening.h / 2 + 0.3)
     w0 = d.ring(cav, face_h - SLOT_CHAMFER)
     w1 = d.ring(cav, face_h - SLOT_CHAMFER - 0.5)
     d.bridge(w0, w1)

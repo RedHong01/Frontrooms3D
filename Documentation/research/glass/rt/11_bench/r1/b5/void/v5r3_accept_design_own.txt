@@ -1,0 +1,36 @@
+ 7:15  up 30 days, 11:23, 1 user, load averages: 11.87 12.04 40.24
+# rt_bench4 r3d accept device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 12/12/40
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# FARFADE: Ultra floor rays fade to High's mirror + k2 between pixel footprints 6.0 and 12.0 mm
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# captured cube scene 0 at (3.00, 1.60, 0.80), 256 px, GGX-prefiltered mips
+# captured cube scene 1 at (0.00, 1.50, 13.50), 256 px, GGX-prefiltered mips
+# captured cube scene 2 at (0.00, 1.50, 6.00), 256 px, GGX-prefiltered mips
+# captured cube scene 3 at (0.00, 1.50, 13.50), 256 px, GGX-prefiltered mips
+# CUBE=own: RT-off and every fallback use the scene's own captured cube (x 1), URP roughness->mip
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- accept 1920x1080, cube mode 1, jitter 0, soft gate 1  load 12/12/40
+r3d accept A20 glass px 0.01% | err vs own-tree ref: off 0.00 (p99 0, >=8 0.0%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[A_U3] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 0.0% (mean 0.00)  High 0.0% (mean 0.00)  Ultra 0.0% (mean 0.00) | load 12/12/40
+r3d accept A20 floor px 12.04% | err vs own-tree ref: off 6.47 (p99 75, >=8 20.0%)  High 3.09 (p99 63, >=8 6.03%)  Ultra[A_U3] 2.84 (p99 65, >=8 6.10%) | off->RT >=8: ref 20.0% (mean 6.47)  High 18.8% (mean 6.98)  Ultra 20.3% (mean 7.20) | load 12/12/40
+r3d accept A20 all  streak px 11740 (0.57% of screen, mean ref change 58.0/255): captured energy High 0.82 Ultra 0.82; recall (>= half the ref change) High 83.3% Ultra 86.0% | load 12/12/40
+r3d accept A20 red  streak px 1187 (0.06% of screen, mean ref change 43.8/255): captured energy High 1.02 Ultra 1.09; recall (>= half the ref change) High 60.7% Ultra 79.6% | load 12/12/40
+r3d accept B20 glass px 0.18% | err vs own-tree ref: off 2.50 (p99 58, >=8 2.2%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[B_U2] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 2.2% (mean 2.50)  High 2.2% (mean 2.50)  Ultra 2.2% (mean 2.50) | load 12/12/40
+r3d accept B20 floor px 15.06% | err vs own-tree ref: off 6.18 (p99 48, >=8 27.2%)  High 1.94 (p99 25, >=8 7.29%)  Ultra[B_U2] 1.17 (p99 13, >=8 2.85%) | off->RT >=8: ref 27.2% (mean 6.18)  High 19.8% (mean 5.39)  Ultra 27.0% (mean 6.41) | load 12/12/40
+r3d accept B20 all  streak px 11140 (0.54% of screen, mean ref change 40.1/255): captured energy High 1.01 Ultra 1.05; recall (>= half the ref change) High 67.3% Ultra 98.9% | load 12/12/40
+r3d accept B20 red  streak px 11052 (0.53% of screen, mean ref change 40.2/255): captured energy High 1.01 Ultra 1.05; recall (>= half the ref change) High 67.1% Ultra 99.0% | load 12/12/40
+r3d accept D20 floor px 37.15% | err vs own-tree ref: off 28.95 (p99 156, >=8 75.3%)  High 2.91 (p99 31, >=8 10.41%)  Ultra[D_H] 2.91 (p99 31, >=8 10.41%) | off->RT >=8: ref 75.3% (mean 28.95)  High 76.0% (mean 29.68)  Ultra 76.0% (mean 29.68) | load 12/12/40
+r3d accept D20 all  streak px 318411 (15.36% of screen, mean ref change 55.0/255): captured energy High 1.01 Ultra 1.01; recall (>= half the ref change) High 97.6% Ultra 97.6% | load 12/12/40
+r3d accept D20 red streak: none
+r3d accept F20 glass px 0.01% | err vs own-tree ref: off 0.00 (p99 0, >=8 0.0%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[F_U3] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 0.0% (mean 0.00)  High 0.0% (mean 0.00)  Ultra 0.0% (mean 0.00) | load 12/12/40
+r3d accept F20 floor px 12.04% | err vs own-tree ref: off 5.63 (p99 47, >=8 17.7%)  High 1.53 (p99 24, >=8 3.45%)  Ultra[F_U3] 1.10 (p99 23, >=8 3.15%) | off->RT >=8: ref 17.7% (mean 5.63)  High 17.9% (mean 5.29)  Ultra 17.2% (mean 5.13) | load 12/12/40
+r3d accept F20 all  streak px 13174 (0.64% of screen, mean ref change 36.9/255): captured energy High 0.76 Ultra 0.77; recall (>= half the ref change) High 83.5% Ultra 84.3% | load 12/12/40
+r3d accept F20 red  streak px 50 (0.00% of screen, mean ref change 27.4/255): captured energy High 0.53 Ultra 0.53; recall (>= half the ref change) High 72.0% Ultra 72.0% | load 12/12/40
+r3d accept G15 glass px 0.87% | err vs own-tree ref: off 5.83 (p99 119, >=8 5.2%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[G_U2] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 5.2% (mean 5.83)  High 5.2% (mean 5.83)  Ultra 5.2% (mean 5.83) | load 12/12/40
+r3d accept G15 floor px 19.42% | err vs own-tree ref: off 2.43 (p99 21, >=8 4.8%)  High 0.35 (p99 5, >=8 0.26%)  Ultra[G_U2] 0.20 (p99 2, >=8 0.01%) | off->RT >=8: ref 4.8% (mean 2.43)  High 4.9% (mean 2.46)  Ultra 4.9% (mean 2.43) | load 12/12/40
+r3d accept G15 all  streak px 1552 (0.07% of screen, mean ref change 26.1/255): captured energy High 1.10 Ultra 0.99; recall (>= half the ref change) High 100.0% Ultra 100.0% | load 12/12/40
+r3d accept G15 red streak: none
+# done load 12/12/40
+ 7:16  up 30 days, 11:23, 1 user, load averages: 11.66 11.99 39.89

@@ -1,0 +1,12 @@
+ 7:57  up 30 days, 12:05, 1 user, load averages: 5.40 5.87 9.48
+# rt_bench4 r4 dump device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 5/6/9
+r4 dump A20 done | load 11/7/10
+# rt_bench4 r4 dump device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 11/7/10
+r4 dump B20 done | load 13/7/10
+# rt_bench4 r4 dump device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 13/7/10
+r4 dump D20 done | load 11/7/10
+# rt_bench4 r4 dump device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 11/7/10
+r4 dump F20 done | load 11/7/10
+# rt_bench4 r4 dump device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 11/7/10
+r4 dump G15 done | load 11/7/10
+ 7:58  up 30 days, 12:06, 1 user, load averages: 10.90 7.49 9.92

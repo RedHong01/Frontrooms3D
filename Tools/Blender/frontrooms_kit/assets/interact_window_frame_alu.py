@@ -31,19 +31,20 @@ Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z. Size 1.55 x 1.80 (Y 0.275-2.075) x 0.21 m (the sill
 band is the head's 0.0755 face, so 0.3505 - 0.0755 = 0.275).
 
-Budget (§9.4): 2,800 / 1,000 / 200 tris. Built: 2,066 (-26 %, outside the
-§10.0 +/-15 % band; FLAGGED in the G4 build note). A clip-on extrusion has
-no fasteners or mouldings to spend more on; the wear stations are the only
-addition since pass 2 (1,088), and nothing is padded.
-NO LOD1 (LOD1 = None; §1.8 / §9.4 allow one on a >= 1 m asset but do not
-require it): with the beads, gaskets and the casing's mitre rings protected,
-the collapse could only remove the setting blocks, so the old LOD1 was 1,064
-tris = 98 % of LOD0. That LODGroup bought nothing and made the importer cull
-the frame at 2 % screen height (58.5 m, window_landing/02 §6 item 2) while
-the glass slab, which has no LOD, stays. lodRatios / lodDistances stay
-declared for P-1; LOD2 drops the gaskets and blocks (fr_lod2_drop). Slots:
-Prop_Aluminium (first), Prop_Rubber. Sidecar placement "Wall"
-(wall_placement()). Render-only: no collider.
+Budget (§9.4): 2,800 / 1,000 / 200 tris. Built: 2,190 / 1,050 (LOD0 -22 %,
+outside the §10.0 +/-15 % band; FLAGGED in the G4 build note; LOD1 +5 %).
+A clip-on extrusion has no fasteners or mouldings to spend more on; the wear
+stations (sill: the climb plant; jambs: the grab band, closed at ~Y 1.62 in
+pass 4) are the only additions since pass 2 (1,088), and nothing is padded.
+LOD1 (0.48, pass 4; §9.4 says "yes"): pass 3 had dropped it because the old
+LOD1 was 98 % of LOD0 (nothing left to collapse). The wear stations changed
+that: their loops lie on the straight sweep, so collapsing them costs zero
+error; the collapse takes them and the soffit dirt-line points and moves
+the surface by at most 0.06 mm (measured): LOD1 is the plain section again.
+Checks (a)-(c) pass on LOD1.
+LOD2 drops the gaskets and blocks (fr_lod2_drop). Slots: Prop_Aluminium
+(first), Prop_Rubber. Sidecar placement "Wall" (wall_placement()).
+Render-only: no collider.
 """
 
 import math
@@ -51,9 +52,9 @@ import math
 import interact_window_common as wc
 
 NAME = "Kit_WindowFrame_Alu"
-LOD1_RATIO = 0.60                 # declared for P-1 only
+LOD1_RATIO = 0.48                 # pass 4: the collapse takes the zero-cost wear-station loops (see the docstring)
 LOD2_RATIO = 0.07
-LOD1 = None                       # see the docstring: a 98 % LOD1 is pure cost
+LOD1 = LOD1_RATIO
 LOD_DISTANCES = (4.0, 12.0, None)
 SMOOTH_ANGLE = 30.0
 PREVIEW_WALL = (0.40, 0.55, 0.55)         # Exit: blue-green paper
@@ -96,8 +97,8 @@ def bead_profile():
 # plant (palms and boots go there every break); the jambs are where a climber
 # grabs. With no LOD1 there is no collapse to turn them into slivers.
 STATIONS = {"B": (0.0, 0.06, 0.19, 0.36, 0.5, 0.64, 0.81, 0.94, 1.0),     # X ~ -0.45 / -0.2 / 0 / 0.2 / 0.45
-            "R": (0.0, 0.08, 0.31, 0.485, 0.66, 1.0),                      # Y ~ 0.45 / 0.85 / 1.15 / 1.45
-            "L": (0.0, 0.08, 0.31, 0.485, 0.66, 1.0)}
+            "R": (0.0, 0.08, 0.31, 0.485, 0.66, 0.76, 1.0),                # Y ~ 0.45 / 0.85 / 1.15 / 1.45 / 1.62
+            "L": (0.0, 0.08, 0.31, 0.485, 0.66, 0.76, 1.0)}                # (1.62 ends the grab band; pass 3 faded it to the head)
 
 
 def shell_wear(X, Y, Z):

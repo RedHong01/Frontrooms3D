@@ -1,0 +1,721 @@
+// CLONE-ONLY capture harness (outlet workflow C1, 10_spec.md §7: T-R2 and R-4).
+//
+// T-R2: edit-mode Camera.Render (the game's URP path, post on, 1920x1080, 4x
+//   MSAA) of the map built with BuildForCapture at root (4992, 0, 4992), and of
+//   the title stream's edit-mode preview rooms. Every shot is rendered twice,
+//   with the R3 submitter on and off; the pixel difference round the plate's
+//   projected centre says whether the outlet drew. GameObject, Collider and
+//   Renderer counts are taken before the first and after the last render.
+// R-4: 8 dressed Office rooms and 8 Level 0 pile rooms (seeds 2554, 20388) at
+//   eye height (1.62 m) facing a wall plate behind furniture, plus 4 close-ups
+//   at 0.3 m; and, over every dressed room of both seeds, the three stage-2
+//   conditions of 10_spec.md §2.9 measured from the geometry.
+// Run (needs graphics): Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsOutletCapture.RunBatch -logFile <log>
+// Output: Verification/outlets/*.png and capture.json (OUTLET_CAPTURE_OUT overrides the folder).
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+using R = FrontRoomsWallFixtureRenderer;
+
+public static class FrontRoomsOutletCapture
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const int W = 1920, H = 1080;
+    static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+    static string outDir;
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D readA, readB;
+    static readonly List<string> shots = new List<string>();
+    static readonly StringBuilder log = new StringBuilder();
+    static int visibleShots, invisibleShots;
+
+    public static void RunBatch()
+    {
+        var ok = true;
+        try { ok = Capture(); }
+        catch (Exception e) { Debug.LogError("[OutletCapture] " + e); ok = false; }
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    static void Log(string s)
+    {
+        log.AppendLine(s);
+        Debug.Log("[OutletCapture] " + s);
+    }
+
+    static bool Capture()
+    {
+        outDir = Environment.GetEnvironmentVariable("OUTLET_CAPTURE_OUT");
+        if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "outlets");
+        Directory.CreateDirectory(outDir);
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        if (game != null)
+        {
+            // Rebuild the edit-mode preview so the stream rooms run InstallLocal with this code.
+            game.enabled = false;
+            game.enabled = true;
+            var hunter = game.transform.Find("Hunter");
+            if (hunter != null) hunter.gameObject.SetActive(false);
+        }
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+
+        var camObject = new GameObject("OUTLET CAPTURE / camera") { hideFlags = HideFlags.DontSave };
+        cam = camObject.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = FrontRoomsLook.FogColor;
+        cam.enabled = false;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = rt;
+        readA = new Texture2D(W, H, TextureFormat.RGB24, false);
+        readB = new Texture2D(W, H, TextureFormat.RGB24, false);
+
+        var json = new StringBuilder("{\n");
+        var countLines = new List<string>();
+        var allSame = true;
+
+        // ---- T-R2 (a): the title stream's edit-mode preview rooms (InstallLocal sets).
+        var streamSets = Resources.FindObjectsOfTypeAll<FrontRoomsWallFixtureSet>().Where(s => s.isLocal && !EditorUtility.IsPersistent(s)).ToArray();
+        var activeStream = FrontRoomsWallFixtureSet.Registry.Where(s => s != null && s.isLocal && s.fixtures.Count > 0).OrderBy(s => s.transform.position.z).ToArray();
+        json.Append(" \"streamSets\": ").Append(streamSets.Length).Append(", \"streamSetsActive\": ").Append(activeStream.Length).Append(",\n");
+        var streamShots = new List<string>();
+        var s0 = Counts();
+        var ids0 = Ids();
+        foreach (var set in activeStream.Take(5))
+        {
+            var rule = set.streamClass.ToString();
+            // A wall plate on a side wall, from the room's centre line, and the same plate at 0.3 m.
+            if (set.fixtures.Count == 0) continue;
+            Physics.SyncTransforms();
+            // A drawn side-wall plate the room camera can see (desks and panels of the Office dressing stand in front of some).
+            Vector3 RoomEye(int i)
+            {
+                var xp = set.transform.TransformPoint(set.fixtures[i].position);
+                var xn = set.transform.TransformDirection(set.fixtures[i].normal);
+                return xp + xn * 2.6f + Vector3.up * (1.62f - set.fixtures[i].position.y) + Vector3.Cross(Vector3.up, xn) * -1.2f;
+            }
+            bool Seen(int i)
+            {
+                var xp = set.transform.TransformPoint(set.fixtures[i].position) + set.transform.TransformDirection(set.fixtures[i].normal) * .02f;
+                var e = RoomEye(i);
+                return !Physics.Raycast(e, (xp - e).normalized, (xp - e).magnitude - .01f, ~0, QueryTriggerInteraction.Ignore);
+            }
+            var candidates = Enumerable.Range(0, set.fixtures.Count).Where(i => set.fixtures[i].face >= 0 && Mathf.Abs(set.fixtures[i].normal.x) > .5f && !set.Occluded(i))
+                .OrderBy(i => Seen(i) ? 0 : 1).ThenBy(i => Mathf.Abs(set.fixtures[i].position.z - 6f)).ToArray();
+            if (candidates.Length == 0) continue;
+            var xi = candidates[0];
+            var x = set.fixtures[xi];
+            var p = set.transform.TransformPoint(x.position);
+            var n = set.transform.TransformDirection(x.normal);
+            streamShots.Add(Shot("tr2_stream_" + rule + "_room", RoomEye(xi), p, set, xi, null));
+            streamShots.Add(Shot("tr2_stream_" + rule + "_0p3", p + n * .30f + Vector3.up * .03f, p, set, xi, null));
+        }
+        var s1 = Counts();
+        allSame &= s0.Same(s1);
+        countLines.Add("{\"part\": \"stream\", \"beforeShots\": " + s0.Json() + ", \"afterShots\": " + s1.Json() + ", \"newObjects\": " + NewObjects(ids0) + "}");
+        json.Append(" \"streamShots\": [").Append(string.Join(",\n  ", streamShots)).Append("],\n");
+
+        // ---- Map at 4992: T-R2 (b) and R-4, two seeds.
+        var r4Shots = new List<string>();
+        var tr2Shots = new List<string>();
+        var analysis = new List<string>();
+        var r4Office = 0;
+        var r4Pile = 0;
+        var closeUps = 0;
+        var seeds = new[] { 2554, 20388, 7, 424242, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 101, 202, 303, 404, 505, 20261001 };
+        foreach (var seed in seeds)
+        {
+            var primary = seed == 2554 || seed == 20388;
+            if (!primary && r4Pile >= 8) break;
+            var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+            profile.generation.seed = seed;
+            var root = new GameObject("OUTLET CAPTURE / map " + seed) { hideFlags = HideFlags.DontSave };
+            root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+            var world = root.AddComponent<FrontRoomsMapWorld>();
+            world.Profile = profile;
+            var eyeWorld = world.BuildForCapture();
+            Physics.SyncTransforms();
+            var eye = root.transform.Find("CAPTURE / eye");
+            var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+            Log("seed " + seed + ": " + sets.Length + " sets, " + sets.Sum(s => s.fixtures.Count) + " fixtures");
+            var m0 = Counts();
+            var mids0 = Ids();
+
+            // T-R2 (b): a Level 0 corridor duplex nearest the spawn, at 0.3 / 1.2 / 2.5 / 6 m (LOD0 + screws, LOD0, LOD1, LOD2).
+            var best = !primary ? default : Nearest(sets, eyeWorld, x => x.face >= 0 && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.DuplexSteel) && x.position.y < .5f, world);
+            if (best.set != null)
+            {
+                var x = best.set.fixtures[best.index];
+                var p = best.set.transform.TransformPoint(x.position);
+                var n = best.set.transform.TransformDirection(x.normal);
+                foreach (var d in new[] { .30f, 1.2f, 2.5f, 6f })
+                {
+                    var from = p + n * d + Vector3.up * (d < .5f ? .03f : Mathf.Min(1.62f - x.position.y, d * .6f));
+                    tr2Shots.Add(Shot("tr2_map" + seed + "_" + d.ToString("0.0", Inv).Replace('.', 'p') + "m", from, p, best.set, best.index, eye != null ? (Action<Vector3>)(c => Light(world, eye, c)) : null));
+                }
+            }
+
+            // R-4 analysis over every dressed room of this seed.
+            analysis.Add(Analyse(world, root, sets, seed));
+            if (cutCases < 2) CutShots(world, eye, sets, seed, r4Shots);
+            if (primary) Tr2Extras(world, eye, sets, seed, tr2Shots);
+
+            // R-4 shots: dressed Office rooms and pile rooms, a plate behind or beside furniture, from eye height.
+            foreach (var kind in new[] { "office dressing", "furniture pile" })
+            {
+                if (kind == "office dressing" && !primary) continue;
+                var roots = root.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith(kind, StringComparison.Ordinal)).ToArray();
+                var taken = 0;
+                foreach (var dress in roots)
+                {
+                    if (kind == "office dressing" ? taken >= 4 : r4Pile >= 8) break;
+                    Pick pick;
+                    Vector3 from = default;
+                    var found = false;
+                    if (kind == "furniture pile") { if (!PlateAcrossPile(world, sets, dress, root.transform.position.y, out pick, out from)) continue; found = true; }
+                    else pick = PlateBehindFurniture(world, sets, dress);
+                    if (pick.set == null) continue;
+                    var x = pick.set.fixtures[pick.index];
+                    var p = pick.set.transform.TransformPoint(x.position);
+                    var n = pick.set.transform.TransformDirection(x.normal);
+                    var side = Vector3.Cross(Vector3.up, n);
+                    if (!found)
+                    foreach (var back in new[] { 2.6f, 2.0f, 1.5f })
+                    foreach (var lateral in new[] { .9f, -.9f, 0f })
+                    {
+                        if (found) break;   // the first clear spot, farthest first
+                        var c = p + n * back + side * lateral;
+                        c.y = root.transform.position.y + ModuleUnits.PlayerEye;
+                        if (!Clear(world, c, p)) continue;
+                        from = c;
+                        found = true;
+                        break;
+                    }
+                    if (!found) { from = p + n * 1.5f; from.y = root.transform.position.y + ModuleUnits.PlayerEye; }
+                    var label = (kind == "office dressing" ? "r4_office_" : "r4_pile_") + seed + "_" + taken;
+                    r4Shots.Add(Shot(label, from, p, pick.set, pick.index, c => Light(world, eye, c)));
+                    if (kind == "office dressing") r4Office++; else r4Pile++;
+                    if (taken == 0 && (kind == "office dressing" ? closeUps < 2 : closeUps < 4))
+                    {
+                        r4Shots.Add(Shot(label + "_0p3", p + n * .30f + side * .05f + Vector3.up * .04f, p, pick.set, pick.index, c => Light(world, eye, c)));
+                        closeUps++;
+                    }
+                    taken++;
+                }
+            }
+            var m1 = Counts();
+            allSame &= m0.Same(m1);
+            countLines.Add("{\"part\": \"map " + seed + "\", \"beforeShots\": " + m0.Json() + ", \"afterShots\": " + m1.Json() + ", \"newObjects\": " + NewObjects(mids0) + "}");
+            world.Release();
+            UnityEngine.Object.DestroyImmediate(root);
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+        json.Append(" \"tr2MapShots\": [").Append(string.Join(",\n  ", tr2Shots)).Append("],\n");
+        json.Append(" \"r4Shots\": [").Append(string.Join(",\n  ", r4Shots)).Append("],\n");
+        json.Append(" \"r4OfficeShots\": ").Append(r4Office).Append(", \"r4PileShots\": ").Append(r4Pile).Append(", \"r4CloseUps\": ").Append(closeUps).Append(",\n");
+        json.Append(" \"r4Analysis\": [").Append(string.Join(",\n  ", analysis)).Append("],\n");
+        json.Append(" \"tr2VisibleShots\": ").Append(visibleShots).Append(", \"tr2InvisibleShots\": ").Append(invisibleShots).Append(",\n");
+        json.Append(" \"objectCounts\": [").Append(string.Join(",\n  ", countLines)).Append("],\n");
+        json.Append(" \"noObjectsAddedByRendering\": ").Append(allSame ? "true" : "false").Append("\n}\n");
+        File.WriteAllText(Path.Combine(outDir, "capture.json"), json.ToString());
+        File.WriteAllText(Path.Combine(outDir, "capture_log.txt"), log.ToString());
+        cam.targetTexture = null;
+        rt.Release();
+        UnityEngine.Object.DestroyImmediate(camObject);
+        Log("done: " + visibleShots + " shots drew outlets, " + invisibleShots + " did not");
+        return allSame && invisibleShots == 0 && visibleShots > 0;
+    }
+
+    // ------------------------------------------------------------------ shots
+
+    static void Light(FrontRoomsMapWorld world, Transform eye, Vector3 at)
+    {
+        if (eye == null) return;
+        eye.position = at;
+        world.TickFixturesForTools(.016f);
+    }
+
+    static bool Clear(FrontRoomsMapWorld world, Vector3 from, Vector3 to)
+    {
+        var d = to - from;
+        // Clear of geometry along the sight line (furniture may stand in front of the plate: that is the point),
+        // but the camera itself must stand in open air on the plate's side of the wall.
+        if (Physics.CheckSphere(from, .25f, ~0, QueryTriggerInteraction.Ignore)) return false;
+        foreach (var h in Physics.RaycastAll(from, d.normalized, d.magnitude - .05f, ~0, QueryTriggerInteraction.Ignore))
+            if (world.IsArchitecture(h.collider)) return false;
+        return true;
+    }
+
+    /// <summary>Render on and off; save the "on" frame; measure the difference round the plate.</summary>
+    static string Shot(string name, Vector3 from, Vector3 target, FrontRoomsWallFixtureSet set, int index, Action<Vector3> light)
+    {
+        light?.Invoke(from);
+        cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from, Vector3.up));
+        R.Enabled = false;
+        Render(readB);
+        R.Enabled = true;
+        R.ResetStats();
+        Render(readA);
+        var stats = R.Last;
+        var sp = cam.WorldToScreenPoint(target);
+        var dist = Vector3.Distance(from, target);
+        var platePx = .1143f / (2f * dist * Mathf.Tan(cam.fieldOfView * .5f * Mathf.Deg2Rad)) * H;
+        var half = Mathf.Clamp(Mathf.RoundToInt(platePx * .5f), 3, 300);
+        var a = readA.GetPixels32();
+        var b = readB.GetPixels32();
+        double sum = 0;
+        var count = 0;
+        var changed = 0;
+        int cx = Mathf.RoundToInt(sp.x), cy = Mathf.RoundToInt(sp.y);
+        for (var y = cy - half; y <= cy + half; y++)
+        for (var x = cx - half; x <= cx + half; x++)
+        {
+            if (x < 0 || y < 0 || x >= W || y >= H) continue;
+            var i = y * W + x;
+            var dd = Mathf.Abs(a[i].r - b[i].r) + Mathf.Abs(a[i].g - b[i].g) + Mathf.Abs(a[i].b - b[i].b);
+            sum += dd / 3.0;
+            if (dd > 24) changed++;
+            count++;
+        }
+        var mean = count > 0 ? sum / count : 0;
+        var inFront = sp.z > 0f && cx >= 0 && cy >= 0 && cx < W && cy < H;
+        var visible = inFront && (changed > 0 || mean > 2.0);
+        if (name.StartsWith("tr2_", StringComparison.Ordinal)) { if (visible) visibleShots++; else invisibleShots++; }
+        var path = Path.Combine(outDir, name + ".png");
+        File.WriteAllBytes(path, readA.EncodeToPNG());
+        File.WriteAllBytes(Path.Combine(outDir, name + "_off.png"), readB.EncodeToPNG());
+        shots.Add(name);
+        var x0 = set.fixtures[index];
+        Log(name + ": " + x0.kit + " " + x0.cls + " d=" + dist.ToString("0.00", Inv) + " m, plate " + platePx.ToString("0", Inv) + " px, diff " + mean.ToString("0.0", Inv) + " (" + changed + " px), " + StatsJson(stats));
+        return "{\"name\": \"" + name + "\", \"kit\": \"" + x0.kit + "\", \"cls\": \"" + x0.cls + "\", \"plate\": \"" + x0.plate + "\", \"distanceM\": " + dist.ToString("0.00", Inv)
+            + ", \"platePx\": " + platePx.ToString("0", Inv) + ", \"meanDiff\": " + mean.ToString("0.00", Inv) + ", \"changedPx\": " + changed + ", \"visible\": " + (visible ? "true" : "false")
+            + ", \"stats\": " + StatsJson(stats) + "}";
+    }
+
+    static void Render(Texture2D into)
+    {
+        // Twice: the first warms temporal post effects and shadows (as the look-dev capture does).
+        cam.Render();
+        cam.Render();
+        var previous = RenderTexture.active;
+        RenderTexture.active = rt;
+        into.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        into.Apply();
+        RenderTexture.active = previous;
+    }
+
+    static string StatsJson(R.FrameStats s) =>
+        "{\"cameras\": " + s.cameras + ", \"setsInReach\": " + s.setsInReach + ", \"fixtures\": " + s.fixturesDrawn + ", \"screws\": " + s.screwsDrawn
+        + ", \"lod0\": " + s.lod0 + ", \"lod1\": " + s.lod1 + ", \"lod2\": " + s.lod2 + ", \"instances\": " + s.instances + ", \"buckets\": " + s.buckets
+        + ", \"instancedCalls\": " + s.instancedCalls + ", \"singleCalls\": " + s.singleCalls + ", \"drawsPerPassWithP6\": " + s.callsWithInstancing
+        + ", \"forcedSingles\": " + s.forcedSingles + ", \"triangles\": " + s.triangles + ", \"submitMs\": " + s.submitMs.ToString("0.000", Inv) + "}";
+
+    // Scene objects only (DontSave included): a kit FBX prefab that Resources.Load brings in on its first draw is an
+    // asset, not an object the renderer made. Loaded assets are counted apart (assetGameObjects).
+    static HashSet<int> Ids() => new HashSet<int>(Resources.FindObjectsOfTypeAll<GameObject>().Where(g => !EditorUtility.IsPersistent(g)).Select(g => g.GetInstanceID()));
+
+    static string NewObjects(HashSet<int> before)
+    {
+        var added = Resources.FindObjectsOfTypeAll<GameObject>().Where(g => !EditorUtility.IsPersistent(g) && !before.Contains(g.GetInstanceID())).Select(g => (g.transform.parent != null ? g.transform.parent.name + "/" : "") + g.name).Take(20).ToArray();
+        return "[" + string.Join(", ", added.Select(a => "\"" + a.Replace("\"", "'") + "\"")) + "]";
+    }
+
+    /// <summary>T-R2 for the kits the Blender groups have built: a switch, a phone jack and a floor box, close.</summary>
+    static void Tr2Extras(FrontRoomsMapWorld world, Transform eye, FrontRoomsWallFixtureSet[] sets, int seed, List<string> shots)
+    {
+        foreach (var kit in new[] { F.FixtureKit.Toggle1, F.FixtureKit.JackPhone, F.FixtureKit.FloorBox })
+        {
+            Pick pick = default;
+            foreach (var s in sets)
+            {
+                for (var i = 0; i < s.fixtures.Count && pick.set == null; i++)
+                {
+                    var x = s.fixtures[i];
+                    if (x.kit != kit || (x.face >= 0 && s.faces[x.face].foreign) || s.Occluded(i)) continue;
+                    var p0 = s.transform.TransformPoint(x.position);
+                    var n0 = s.transform.TransformDirection(x.normal);
+                    var from0 = kit == F.FixtureKit.FloorBox ? p0 + n0 * .45f + Vector3.up * .35f : p0 + n0 * .45f + Vector3.up * .05f;
+                    if (!Clear(world, from0, p0 + n0 * .02f + (kit == F.FixtureKit.FloorBox ? Vector3.up * .03f : Vector3.zero))) continue;
+                    pick = new Pick { set = s, index = i };
+                }
+                if (pick.set != null) break;
+            }
+            if (pick.set == null) continue;
+            var x1 = pick.set.fixtures[pick.index];
+            var p = pick.set.transform.TransformPoint(x1.position);
+            var n = pick.set.transform.TransformDirection(x1.normal);
+            var target = kit == F.FixtureKit.FloorBox ? p + Vector3.up * .035f : p;
+            var from = kit == F.FixtureKit.FloorBox ? p + n * .45f + Vector3.up * .35f : p + n * .45f + Vector3.up * .05f + Vector3.Cross(Vector3.up, n) * .08f;
+            shots.Add(Shot("tr2_kit" + seed + "_" + kit, from, target, pick.set, pick.index, c => Light(world, eye, c)));
+        }
+    }
+
+    static int cutCases;
+
+    /// <summary>
+    /// R-4 evidence for stage 2 rule 1: a plate behind a wall unit, seen along the wall from beside the
+    /// unit at plate height, drawn (occlusion off, as stage 1 alone would) and hidden (stage 2 on).
+    /// </summary>
+    static void CutShots(FrontRoomsMapWorld world, Transform eye, FrontRoomsWallFixtureSet[] sets, int seed, List<string> list)
+    {
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count && cutCases < 2; i++)
+            {
+                if (!s.Occluded(i)) continue;
+                var x = s.fixtures[i];
+                var p = s.transform.TransformPoint(x.position);
+                var n = s.transform.TransformDirection(x.normal);
+                var side = Vector3.Cross(Vector3.up, n);
+                // The unit's box (world) that covers the plate, to stand the camera clear of its side.
+                float reach = .45f;
+                foreach (var o in sets)
+                    foreach (var b in o.occluders)
+                    {
+                        var m = o.transform.localToWorldMatrix;
+                        var c = m.MultiplyPoint3x4(b.center);
+                        var e = b.extents;
+                        var ext = new Vector3(Mathf.Abs(m.m00) * e.x + Mathf.Abs(m.m01) * e.y + Mathf.Abs(m.m02) * e.z, Mathf.Abs(m.m10) * e.x + Mathf.Abs(m.m11) * e.y + Mathf.Abs(m.m12) * e.z,
+                            Mathf.Abs(m.m20) * e.x + Mathf.Abs(m.m21) * e.y + Mathf.Abs(m.m22) * e.z);
+                        var wb = new Bounds(c, ext * 2f);
+                        if (!wb.Intersects(new Bounds(p + n * .005f, new Vector3(.08f, .12f, .08f)))) continue;
+                        reach = Mathf.Max(reach, Mathf.Abs(Vector3.Dot(wb.center - p, side)) + Mathf.Abs(Vector3.Dot(wb.extents, new Vector3(Mathf.Abs(side.x), 0f, Mathf.Abs(side.z)))) + .35f);
+                    }
+                var from = p + n * .20f + side * reach + Vector3.up * .10f;
+                if (Physics.CheckSphere(from, .04f, ~0, QueryTriggerInteraction.Ignore)) { from = p + n * .20f - side * reach + Vector3.up * .10f; if (Physics.CheckSphere(from, .04f, ~0, QueryTriggerInteraction.Ignore)) continue; }
+                var label = "r4_cut_" + seed + "_" + cutCases;
+                F.OcclusionEnabled = false;
+                list.Add(Shot(label + "_stage1", from, p + n * .004f, s, i, c => Light(world, eye, c)));
+                F.OcclusionEnabled = true;
+                list.Add(Shot(label + "_stage2", from, p + n * .004f, s, i, c => Light(world, eye, c)));
+                Log(label + ": " + x.kit + " " + x.cls + " y=" + x.position.y.ToString("0.00", Inv) + ", camera " + reach.ToString("0.00", Inv) + " m along the wall");
+                cutCases++;
+            }
+    }
+
+    // ------------------------------------------------------------------ counts
+
+    struct SceneCounts
+    {
+        public int gameObjects, colliders, renderers, propertyBlocks, sets, assetGameObjects;
+        public bool Same(SceneCounts o) => gameObjects == o.gameObjects && colliders == o.colliders && renderers == o.renderers && sets == o.sets;
+        public string Json() => "{\"gameObjects\": " + gameObjects + ", \"colliders\": " + colliders + ", \"renderers\": " + renderers + ", \"sets\": " + sets + ", \"assetGameObjects\": " + assetGameObjects + "}";
+    }
+
+    // Every loaded GameObject, Collider and Renderer (scene, DontSave and assets alike): rendering must add none.
+    static SceneCounts Counts() => new SceneCounts
+    {
+        gameObjects = Resources.FindObjectsOfTypeAll<GameObject>().Count(g => !EditorUtility.IsPersistent(g)),
+        colliders = Resources.FindObjectsOfTypeAll<Collider>().Count(c => !EditorUtility.IsPersistent(c)),
+        renderers = Resources.FindObjectsOfTypeAll<Renderer>().Count(r => !EditorUtility.IsPersistent(r)),
+        propertyBlocks = 0,
+        assetGameObjects = Resources.FindObjectsOfTypeAll<GameObject>().Count(g => EditorUtility.IsPersistent(g)),
+        sets = FrontRoomsWallFixtureSet.Registry.Count,
+    };
+
+    // ------------------------------------------------------------------ picking
+
+    struct Pick { public FrontRoomsWallFixtureSet set; public int index; }
+
+    static Pick Nearest(FrontRoomsWallFixtureSet[] sets, Vector3 at, Func<F.Fixture, bool> where, FrontRoomsMapWorld world)
+    {
+        var best = new Pick();
+        var bestD = float.MaxValue;
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                if (!where(x) || s.faces[x.face].foreign || s.Occluded(i)) continue;
+                var p = s.transform.TransformPoint(x.position);
+                var d = (p - at).sqrMagnitude;
+                if (d >= bestD) continue;
+                // Need open floor in front of it for the dolly.
+                var n = s.transform.TransformDirection(x.normal);
+                if (Physics.Raycast(p + n * .02f + Vector3.up * .1f, n, 6.2f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                bestD = d;
+                best = new Pick { set = s, index = i };
+            }
+        return best;
+    }
+
+    /// <summary>
+    /// R-4 for pile rooms: piles stand in the room centre with a 0.6 m ring, so no plate has the pile right in
+    /// front of it. Pick the room's wall plate that faces the pile (1-9 m in front of it, within the pile's
+    /// width), and a camera at eye height beyond the pile on the plate-pile line, in open air with no wall in
+    /// between: the plate is seen across (and partly behind) the pile, as a player crossing the room sees it.
+    /// </summary>
+    static bool PlateAcrossPile(FrontRoomsMapWorld world, FrontRoomsWallFixtureSet[] sets, Transform pile, float floorY, out Pick pick, out Vector3 from)
+    {
+        pick = default;
+        from = default;
+        var bounds = new Bounds(pile.position, Vector3.zero);
+        var any = false;
+        foreach (var r in pile.GetComponentsInChildren<Renderer>(true)) { if (!any) { bounds = r.bounds; any = true; } else bounds.Encapsulate(r.bounds); }
+        if (!any) return false;
+        var c = bounds.center;
+        var radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
+        var best = float.MaxValue;
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                if (x.face < 0 || x.position.y > 1.3f || s.Occluded(i)) continue;
+                var f = s.faces[x.face];
+                if (f.foreign || f.room < 0) continue;
+                var p = s.transform.TransformPoint(x.position);
+                var n = s.transform.TransformDirection(x.normal);
+                var toPile = c - p;
+                toPile.y = 0f;
+                var ahead = Vector3.Dot(toPile, n);
+                if (ahead < 1f || ahead > 9f) continue;
+                if ((toPile - n * ahead).magnitude > radius) continue;
+                var dir = toPile.normalized;
+                foreach (var extra in new[] { 1.2f, .8f, .5f })
+                {
+                    var cam = c + dir * (radius + extra);
+                    cam.y = floorY + ModuleUnits.PlayerEye;
+                    if (!Clear(world, cam, p)) continue;
+                    // Prefer plates the pile really stands in front of: a pile collider on the sight line.
+                    var across = false;
+                    var d = p - cam;
+                    foreach (var h in Physics.RaycastAll(cam, d.normalized, d.magnitude - .05f, ~0, QueryTriggerInteraction.Ignore))
+                        if (h.collider.transform.IsChildOf(pile)) across = true;
+                    var score = ahead + (across ? 0f : 100f);
+                    if (score < best) { best = score; pick = new Pick { set = s, index = i }; from = cam; }
+                    break;
+                }
+            }
+        return pick.set != null;
+    }
+
+    /// <summary>The wall plate of this dressed room with the most furniture in the 1.5 m in front of it.</summary>
+    static Pick PlateBehindFurniture(FrontRoomsMapWorld world, FrontRoomsWallFixtureSet[] sets, Transform dress)
+    {
+        var bounds = new Bounds(dress.position, Vector3.zero);
+        var any = false;
+        foreach (var r in dress.GetComponentsInChildren<Renderer>(true)) { if (!any) { bounds = r.bounds; any = true; } else bounds.Encapsulate(r.bounds); }
+        if (!any) return default;
+        bounds.Expand(new Vector3(1.2f, 0f, 1.2f));
+        var best = new Pick();
+        var bestScore = 0;
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                if (x.face < 0 || x.position.y > 1.3f || s.Occluded(i)) continue;
+                var f = s.faces[x.face];
+                if (f.foreign || f.room < 0) continue;
+                var p = s.transform.TransformPoint(x.position);
+                if (!bounds.Contains(new Vector3(p.x, bounds.center.y, p.z))) continue;
+                var n = s.transform.TransformDirection(x.normal);
+                var score = 0;
+                foreach (var c in Physics.OverlapBox(p + n * .75f + Vector3.up * (.6f - x.position.y), new Vector3(.6f, .6f, .75f), Quaternion.LookRotation(n), ~0, QueryTriggerInteraction.Ignore))
+                    if (!world.IsArchitecture(c) && c.transform.IsChildOf(dress)) score++;
+                if (score > bestScore) { bestScore = score; best = new Pick { set = s, index = i }; }
+            }
+        return best;
+    }
+
+    // ------------------------------------------------------------------ R-4 analysis (10_spec.md §2.9)
+
+    /// <summary>
+    /// The three stage-2 conditions, from geometry, over every dressed room of a seed:
+    /// (a) a plate cut by furniture: any furniture triangle inside the plate body (mesh-accurate, plate +
+    ///     7.5 mm proud, or 10.5 mm when tilted); (b) is left to the captures; (c) powered stations (a desk
+    ///     with a monitor): a power source within 2 m (wall receptacles, floor boxes, powered-panel
+    ///     receptacles), and whether one is in sight from the standing user position.
+    /// </summary>
+    static string Analyse(FrontRoomsMapWorld world, GameObject root, FrontRoomsWallFixtureSet[] sets, int seed)
+    {
+        var dressRoots = root.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("office dressing", StringComparison.Ordinal) || t.name.StartsWith("furniture pile", StringComparison.Ordinal)).ToArray();
+        var furniture = new List<MeshFilter>();
+        foreach (var d in dressRoots) furniture.AddRange(d.GetComponentsInChildren<MeshFilter>(true));
+        foreach (var t in root.GetComponentsInChildren<Transform>(true).Where(t => t.name == "module props")) furniture.AddRange(t.GetComponentsInChildren<MeshFilter>(true));
+        int platesChecked = 0, boundsCandidates = 0, meshCuts = 0, meshUnreadable = 0, hiddenPlates = 0, occludedPlates = 0, cutsOnOccluded = 0;
+        var cutSamples = new List<string>();
+        var minGap = float.MaxValue;
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                if (x.cls == F.FixtureClass.Floor) continue;
+                platesChecked++;
+                var occluded = s.Occluded(i);   // stage 2, rule 1: not drawn
+                if (occluded) occludedPlates++;
+                var m = s.transform.localToWorldMatrix * R.FixtureMatrix(x, .1143f);
+                var hw = x.kit == F.FixtureKit.Toggle2 ? .058f : x.kit == F.FixtureKit.DuplexJumbo ? .04445f : F.PlateHalfW;
+                var hh = x.kit == F.FixtureKit.DuplexJumbo ? F.JumboHalfH : F.PlateHalfH;
+                var proud = x.tilt != 0f ? .0105f : .0075f;
+                var centre = m.MultiplyPoint3x4(new Vector3(0f, 0f, proud * .5f));
+                var normal = m.MultiplyVector(Vector3.forward).normalized;
+                var toPlate = m.inverse;
+                var box = new Bounds(new Vector3(0f, 0f, proud * .5f), new Vector3(hw * 2f, hh * 2f, proud));
+                foreach (var mf in furniture)
+                {
+                    var r = mf.GetComponent<Renderer>();
+                    if (r == null || mf.sharedMesh == null || !r.bounds.Intersects(new Bounds(centre, new Vector3(.25f, .25f, .25f)))) continue;
+                    // Cheap: the piece's oriented mesh bounds.
+                    var lb = mf.sharedMesh.bounds;
+                    var toLocal = mf.transform.worldToLocalMatrix;
+                    var near = false;
+                    foreach (var cx in new[] { -hw, hw })
+                    foreach (var cy in new[] { -hh, hh })
+                    foreach (var cz in new[] { 0f, proud })
+                        if (lb.Contains(toLocal.MultiplyPoint3x4(m.MultiplyPoint3x4(new Vector3(cx, cy, cz))))) near = true;
+                    if (!near) continue;
+                    boundsCandidates++;
+                    // Exact: any triangle of the piece inside the plate body.
+                    var hit = TrianglesIntersect(mf, toPlate, box, out var readable);
+                    if (!readable) { meshUnreadable++; continue; }
+                    if (!hit) continue;
+                    if (occluded) { cutsOnOccluded++; continue; }
+                    meshCuts++;
+                    if (cutSamples.Count < 12) cutSamples.Add(PathOf(mf.transform) + " at " + x.kit + " y=" + x.position.y.ToString("0.00", Inv));
+                }
+                if (!occluded && Physics.Raycast(centre, normal, out var rh, .5f, ~0, QueryTriggerInteraction.Ignore) && !world.IsArchitecture(rh.collider))
+                {
+                    minGap = Mathf.Min(minGap, rh.distance + proud * .5f);
+                    if (rh.distance < .10f) hiddenPlates++;
+                }
+            }
+
+        // (c) Power sources: planned receptacles and floor boxes, plus the receptacles built into powered panels.
+        var sources = new List<(Vector3 point, bool drawn, string what)>();
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                var receptacle = x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.DuplexSteel || x.kit == F.FixtureKit.DuplexCracked
+                    || x.kit == F.FixtureKit.DuplexJumbo || x.kit == F.FixtureKit.DuplexScorched || x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2;
+                if (!receptacle || s.Occluded(i)) continue;
+                var p = s.transform.TransformPoint(x.position);
+                var n = s.transform.TransformDirection(x.normal);
+                sources.Add((x.cls == F.FixtureClass.Floor ? p + Vector3.up * .035f + n * .045f : p + n * .012f, R.DrawnKit(x.kit) != null, x.cls == F.FixtureClass.Floor ? "floor box" : "wall"));
+            }
+        var powered = FrontRoomsKitLibrary.GetInfo(F.PoweredPanelKit);
+        var poweredPanels = 0;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true).Where(t => t.name == "spine panel"))
+        {
+            var isPowered = t.GetComponentsInChildren<Transform>(true).Any(c => c.name.StartsWith(F.PoweredPanelKit, StringComparison.Ordinal))
+                || t.GetComponentsInChildren<MeshFilter>(true).Any(m => m.sharedMesh != null && m.sharedMesh.name.StartsWith(F.PoweredPanelKit, StringComparison.Ordinal));
+            if (!isPowered || powered == null) continue;
+            poweredPanels++;
+            foreach (var anchor in new[] { "receptacle_front", "receptacle_back" })
+                if (powered.TryAnchor(anchor, out var a))
+                    sources.Add((t.TransformPoint(a + new Vector3(0f, 0f, Mathf.Sign(a.z == 0f ? 1f : a.z) * .015f)), true, "panel"));
+        }
+        int stations = 0, within2 = 0, inSight = 0, wallRow = 0, wallRowWithin = 0, wallRowSight = 0, pod = 0, podWithin = 0, podSight = 0;
+        var bySource = new Dictionary<string, int>();
+        foreach (var st in root.GetComponentsInChildren<Transform>(true).Where(t => t.name == "workstation"))
+        {
+            var hasComputer = st.GetComponentsInChildren<Transform>(true).Any(t => t.name.StartsWith(FrontRoomsOfficeKit.Monitor, StringComparison.Ordinal));
+            if (!hasComputer) continue;
+            stations++;
+            var isRow = st.parent != null && st.parent.name.StartsWith("cubicle row", StringComparison.Ordinal);
+            if (isRow) wallRow++; else pod++;
+            var desk = st.TransformPoint(new Vector3(0f, 0f, .43f));
+            var standing = st.TransformPoint(new Vector3(0f, 1.62f, 1.25f));   // the user's place, standing, chair pushed back
+            bool any = false, seen = false;
+            string what = null;
+            foreach (var src in sources)
+            {
+                if (Vector2.Distance(new Vector2(desk.x, desk.z), new Vector2(src.point.x, src.point.z)) > 2f) continue;
+                any = true;
+                var dir = src.point - standing;
+                if (Physics.Raycast(standing, dir.normalized, dir.magnitude - .01f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                seen = true;
+                what = src.what;
+            }
+            if (any) { within2++; if (isRow) wallRowWithin++; else podWithin++; }
+            if (seen) { inSight++; if (isRow) wallRowSight++; else podSight++; bySource.TryGetValue(what, out var c); bySource[what] = c + 1; }
+        }
+        Log("R-4 seed " + seed + ": plates " + platesChecked + ", hidden by wall units " + occludedPlates + " (mesh cuts among them " + cutsOnOccluded + "), bounds candidates " + boundsCandidates + ", mesh cuts on drawn plates " + meshCuts + " (unreadable " + meshUnreadable + "), furniture < 0.10 m in front " + hiddenPlates
+            + ", stations " + stations + " (source within 2 m " + within2 + ", in sight " + inSight + "), powered panels " + poweredPanels);
+        return "{\"seed\": " + seed + ", \"dressedRooms\": " + dressRoots.Length + ", \"officeRooms\": " + dressRoots.Count(t => t.name.StartsWith("office dressing", StringComparison.Ordinal))
+            + ", \"pileRooms\": " + dressRoots.Count(t => t.name.StartsWith("furniture pile", StringComparison.Ordinal)) + ", \"furnitureMeshes\": " + furniture.Count
+            + ", \"platesChecked\": " + platesChecked + ", \"occludedPlates\": " + occludedPlates + ", \"cutsOnOccluded\": " + cutsOnOccluded
+            + ", \"boundsCandidates\": " + boundsCandidates + ", \"meshCuts\": " + meshCuts + ", \"meshUnreadable\": " + meshUnreadable
+            + ", \"cutSamples\": [" + string.Join(", ", cutSamples.Select(c => "\"" + c.Replace("\"", "'") + "\"")) + "]"
+            + ", \"platesWithFurnitureWithin0_10m\": " + hiddenPlates + ", \"nearestFurnitureInFrontM\": " + (minGap == float.MaxValue ? "null" : minGap.ToString("0.000", Inv))
+            + ", \"poweredPanels\": " + poweredPanels + ", \"poweredStations\": " + stations + ", \"sourceWithin2m\": " + within2 + ", \"sourceInSight\": " + inSight
+            + ", \"wallRowStations\": " + wallRow + ", \"wallRowWithin2m\": " + wallRowWithin + ", \"wallRowInSight\": " + wallRowSight
+            + ", \"podStations\": " + pod + ", \"podWithin2m\": " + podWithin + ", \"podInSight\": " + podSight
+            + ", \"inSightBySource\": {" + string.Join(", ", bySource.Select(kv => "\"" + kv.Key + "\": " + kv.Value)) + "}}";
+    }
+
+    /// <summary>Any triangle of the mesh inside the box (plate space). Mesh data is read through MeshDataArray (works on non-readable meshes in the editor).</summary>
+    static bool TrianglesIntersect(MeshFilter mf, Matrix4x4 toPlate, Bounds box, out bool readable)
+    {
+        readable = true;
+        var mesh = mf.sharedMesh;
+        Mesh.MeshDataArray data;
+        try { data = Mesh.AcquireReadOnlyMeshData(mesh); }
+        catch (Exception) { readable = false; return false; }
+        try
+        {
+            var md = data[0];
+            var verts = new Unity.Collections.NativeArray<Vector3>(md.vertexCount, Unity.Collections.Allocator.Temp);
+            md.GetVertices(verts);
+            var m = toPlate * mf.transform.localToWorldMatrix;
+            var pv = new Vector3[verts.Length];
+            for (var i = 0; i < verts.Length; i++) pv[i] = m.MultiplyPoint3x4(verts[i]);
+            verts.Dispose();
+            var c = box.center;
+            var e = box.extents;
+            for (var sm = 0; sm < md.subMeshCount; sm++)
+            {
+                var sub = md.GetSubMesh(sm);
+                var idx = new Unity.Collections.NativeArray<int>(sub.indexCount, Unity.Collections.Allocator.Temp);
+                md.GetIndices(idx, sm);
+                for (var t = 0; t + 2 < idx.Length; t += 3)
+                    if (TriBox(pv[idx[t]] - c, pv[idx[t + 1]] - c, pv[idx[t + 2]] - c, e)) { idx.Dispose(); return true; }
+                idx.Dispose();
+            }
+            return false;
+        }
+        catch (Exception) { readable = false; return false; }
+        finally { data.Dispose(); }
+    }
+
+    /// <summary>Triangle (relative to the box centre) against an axis-aligned box of half extents e: separating axis test.</summary>
+    static bool TriBox(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 e)
+    {
+        // Box axes.
+        if (Mathf.Max(v0.x, Mathf.Max(v1.x, v2.x)) < -e.x || Mathf.Min(v0.x, Mathf.Min(v1.x, v2.x)) > e.x) return false;
+        if (Mathf.Max(v0.y, Mathf.Max(v1.y, v2.y)) < -e.y || Mathf.Min(v0.y, Mathf.Min(v1.y, v2.y)) > e.y) return false;
+        if (Mathf.Max(v0.z, Mathf.Max(v1.z, v2.z)) < -e.z || Mathf.Min(v0.z, Mathf.Min(v1.z, v2.z)) > e.z) return false;
+        Vector3 f0 = v1 - v0, f1 = v2 - v1, f2 = v0 - v2;
+        // Triangle normal.
+        var n = Vector3.Cross(f0, f1);
+        var rN = e.x * Mathf.Abs(n.x) + e.y * Mathf.Abs(n.y) + e.z * Mathf.Abs(n.z);
+        if (Mathf.Abs(Vector3.Dot(n, v0)) > rN) return false;
+        // Nine edge cross products.
+        foreach (var f in new[] { f0, f1, f2 })
+        foreach (var a in new[] { Vector3.right, Vector3.up, Vector3.forward })
+        {
+            var axis = Vector3.Cross(a, f);
+            if (axis.sqrMagnitude < 1e-12f) continue;
+            float p0 = Vector3.Dot(v0, axis), p1 = Vector3.Dot(v1, axis), p2 = Vector3.Dot(v2, axis);
+            var r = e.x * Mathf.Abs(axis.x) + e.y * Mathf.Abs(axis.y) + e.z * Mathf.Abs(axis.z);
+            if (Mathf.Min(p0, Mathf.Min(p1, p2)) > r || Mathf.Max(p0, Mathf.Max(p1, p2)) < -r) return false;
+        }
+        return true;
+    }
+
+    static string PathOf(Transform t) => t.parent != null ? t.parent.name + "/" + t.name : t.name;
+}

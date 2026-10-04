@@ -1,0 +1,583 @@
+import sys
+p = sys.argv[1]; s = open(p).read()
+def rep(old, new, count=1):
+    global s
+    n = s.count(old)
+    assert n == count, (old[:90], n)
+    s = s.replace(old, new)
+
+# ---------------------------------------------------------------- header
+rep("// rt_bench4.mm - Run corridor extension of rt_bench3.mm (FrontRooms G14 P1b, report 11). Not part of the game.",
+"""// rt_bench5.mm - revision-1 bench for report 11 (G14b). = b4v/rt_bench4v.mm (the check's copy of rt_bench4.mm with the
+// captured cube, soft gate and stackless A/B) plus: main's real Refl_Level0 cube (x 0.5, URP roughness->mip, GGX
+// prefiltered mips), a Level 0 cube captured in the bench's own Level 0 anteroom, converged references (independent
+// 64-ray blocks up to 2048 rays), footprint-aware hashed jitter (Wyman & McGuire 2017) and a dolly test, interleaved
+// Ultra timing with the k = 1 mip blur, floor share vs pitch, acceptance metrics (error vs reference + streak capture).
+// rt_bench4.mm - Run corridor extension of rt_bench3.mm (FrontRooms G14 P1b, report 11). Not part of the game.""")
+
+# ---------------------------------------------------------------- MSL: URP roughness->mip mapping (pad1 bit 0)
+rep("""  constexpr sampler cs(filter::linear, mip_filter::linear);
+  return float3(env.sample(cs, d, level(lod)).rgb) * f.envScale;""",
+"""  constexpr sampler cs(filter::linear, mip_filter::linear);
+  if (f.pad1 & 1u) { float r = lod * 0.25f; lod = min(6.0f * r * (1.7f - 0.7f * r), float(env.get_num_mip_levels() - 1)); }   // URP PerceptualRoughnessToMipmapLevel (callers pass 4 r)
+  return float3(env.sample(cs, d, level(lod)).rgb) * f.envScale;""")
+
+# ---------------------------------------------------------------- MSL: world-anchored / footprint-aware jitter
+jit = r'''
+// ---- b5: jitter modes (Frame.pad1 bits 1-3): 0 screen hash (seeded), 1 world cell 1 cm, 2 footprint-aware hashed
+// (cell = pixel footprint along the view, two levels blended, Wyman & McGuire 2017 CDF fix), 3 same with the
+// geometric-mean footprint.
+static uint pcgh(uint v) { uint st = v * 747796405u + 2891336453u; uint w = ((st >> ((st >> 28u) + 4u)) ^ st) * 277803737u; return (w >> 22u) ^ w; }
+static float2 hash2i(int3 qi, uint s, int lvl) {
+  uint h = pcgh(uint(qi.x) * 73856093u ^ pcgh(uint(qi.y) * 19349663u ^ pcgh(uint(qi.z) * 83492791u ^ pcgh(s * 2654435761u + uint(lvl + 64)))));
+  uint h2 = pcgh(h ^ 0x9E3779B9u);
+  return float2(float(h >> 8) * (1.0f / 16777216.0f), float(h2 >> 8) * (1.0f / 16777216.0f));
+}
+static float wmCdf(float x, float t) {
+  float a = min(t, 1.0f - t);
+  if (a < 1e-4f) return x;
+  float c = (x < a) ? x * x / (2.0f * a * (1.0f - a)) : ((x < 1.0f - a) ? (x - 0.5f * a) / (1.0f - a) : 1.0f - (1.0f - x) * (1.0f - x) / (2.0f * a * (1.0f - a)));
+  return clamp(c, 1e-6f, 1.0f - 1e-6f);
+}
+static float2 jitterU(constant Frame& f, uint2 id, uint s, float3 P, float footprint) {
+  uint jm = (f.pad1 >> 1) & 7u;
+  if (jm == 0u) return rnd2(id, s, f.seed);
+  uint ss = s + f.seed * 1000u;
+  if (jm == 1u) return hash2i(int3(floor(P * 100.0f)), ss, 0);
+  float lg = log2(max(footprint, 1e-4f)); float l0 = floor(lg); float t = lg - l0;
+  float c0 = exp2(l0), c1 = exp2(l0 + 1.0f);
+  float2 h0 = hash2i(int3(floor(P / c0)), ss, int(l0)), h1 = hash2i(int3(floor(P / c1)), ss, int(l0) + 1);
+  float2 x = mix(h0, h1, t);
+  return float2(wmCdf(x.x, t), wmCdf(x.y, t));
+}
+'''
+rep("static float3 sampleVNDF(float3 Ve, float a, float2 u) {", jit + "static float3 sampleVNDF(float3 Ve, float a, float2 u) {")
+rep("      uint ns = max(f.floorSpp, 1u); float sumT = 0; float3 acc = 0;",
+    "      uint ns = max(f.floorSpp, 1u); float sumT = 0; float3 acc = 0;\n"
+    "      float cosv = max(dot(N, V), 0.05f); float fpl = f.pixelAngle * gp.w / cosv, fps = f.pixelAngle * gp.w;\n"
+    "      float fpx = (((f.pad1 >> 1) & 7u) == 3u) ? sqrt(fpl * fps) : fpl;", count=2)
+rep("float3 Hl = sampleVNDF(Vl, a, rnd2(id, s, f.seed));", "float3 Hl = sampleVNDF(Vl, a, jitterU(f, id, s, P, fpx));", count=2)
+
+# ---------------------------------------------------------------- MSL: GGX prefilter of cube mips (Unity "Specular" convolution stand-in) + lat-long preview
+pre = r'''
+// ---- b5: GGX-prefiltered cube mip (N = V = R), filtered importance sampling from the box-mipped source.
+static float3 faceDir(uint face, float u, float v) {
+  switch (face) { case 0: return float3(1, -v, -u); case 1: return float3(-1, -v, u); case 2: return float3(u, 1, v);
+                  case 3: return float3(u, -1, -v); case 4: return float3(u, -v, 1); default: return float3(-u, -v, -1); }
+}
+kernel void prefilterGGX(texturecube<half> src [[texture(0)]], texture2d_array<half, access::write> dst [[texture(1)]],
+                         constant float& rough [[buffer(0)]], uint3 id [[thread_position_in_grid]])
+{
+  uint NN = dst.get_width(); if (id.x >= NN || id.y >= NN || id.z >= 6u) return;
+  float u = 2.0f * (float(id.x) + .5f) / float(NN) - 1.0f, v = 2.0f * (float(id.y) + .5f) / float(NN) - 1.0f;
+  float3 Nn = normalize(faceDir(id.z, u, v));
+  float a = max(rough * rough, 1e-3f);
+  float3 T = normalize(cross(abs(Nn.y) < .99f ? float3(0, 1, 0) : float3(1, 0, 0), Nn)); float3 B = cross(Nn, T);
+  constexpr sampler cs(filter::linear, mip_filter::linear);
+  float srcW = float(src.get_width()); float omegaP = 4.0f * M_PI_F / (6.0f * srcW * srcW);
+  float3 acc = 0; float wsum = 0;
+  for (uint i = 0; i < 256u; i++) {
+    float2 xi = float2((float(i) + 0.5f) / 256.0f, float(reverse_bits(i)) * 2.3283064365386963e-10f);
+    float phi = 2 * M_PI_F * xi.y; float ct = sqrt((1 - xi.x) / (1 + (a * a - 1) * xi.x)); float st = sqrt(max(0.f, 1 - ct * ct));
+    float3 H = T * (st * cos(phi)) + B * (st * sin(phi)) + Nn * ct;
+    float3 L = 2 * dot(Nn, H) * H - Nn; float NL = dot(Nn, L);
+    if (NL <= 0) continue;
+    float d2 = ct * ct * (a * a - 1) + 1; float D = a * a / (M_PI_F * d2 * d2);
+    float omegaS = 1.0f / (256.0f * D * 0.25f + 1e-4f);
+    float lod = max(0.5f * log2(omegaS / omegaP) + 1.0f, 0.0f);
+    acc += float3(src.sample(cs, L, level(lod)).rgb) * NL; wsum += NL;
+  }
+  dst.write(half4(half3(acc / max(wsum, 1e-4f)), 1.0h), uint2(id.xy), id.z);
+}
+kernel void latlong(texturecube<half> src [[texture(0)]], texture2d<half, access::write> dst [[texture(1)]],
+                    constant float& lod [[buffer(0)]], uint2 id [[thread_position_in_grid]])
+{
+  uint W = dst.get_width(), H = dst.get_height(); if (id.x >= W || id.y >= H) return;
+  float phi = (float(id.x) + .5f) / float(W) * 2 * M_PI_F - M_PI_F, th = (float(id.y) + .5f) / float(H) * M_PI_F;
+  float3 d = float3(sin(th) * sin(phi), cos(th), sin(th) * cos(phi));   // x right, y up, z forward (phi 0 = +Z)
+  constexpr sampler cs(filter::linear, mip_filter::linear);
+  dst.write(src.sample(cs, d, level(lod)), id);
+}
+'''
+rep("// Checkerboard fill: floor pixels that did not trace", pre + "// Checkerboard fill: floor pixels that did not trace")
+
+# ---------------------------------------------------------------- host: PSOs
+rep('auto psoTNS = mk("reflTraceNS"), psoCap = mk("captureCube");',
+    'auto psoTNS = mk("reflTraceNS"), psoCap = mk("captureCube"), psoPre = mk("prefilterGGX"), psoLL = mk("latlong");')
+
+# ---------------------------------------------------------------- host: cube modes (replace the check's CUBE block)
+i0 = s.index('      const char* cm = getenv("CUBE");')
+i1 = s.index('      if (getenv("SOFTGATE")) printf')
+newcube = r'''      const char* cm = getenv("CUBE");
+      cubeMode = !cm ? 0 : (!strcmp(cm, "own") ? 1 : (!strcmp(cm, "office") ? 2 : (!strcmp(cm, "l0cap") ? 3 : (!strcmp(cm, "l0exr") ? 4 : 0))));
+      // GGX-prefilter a box-mipped cube into a new cube (mip m <- roughness r with URP's 6 r (1.7 - 0.7 r) = m)
+      auto prefilter = [&](id<MTLTexture> srcCube) {
+        NSUInteger N = srcCube.width, L = srcCube.mipmapLevelCount;
+        auto d = [MTLTextureDescriptor textureCubeDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float size:N mipmapped:YES];
+        d.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsagePixelFormatView; d.storageMode = MTLStorageModePrivate;
+        id<MTLTexture> out = [dev newTextureWithDescriptor:d];
+        auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder];
+        for (NSUInteger sl = 0; sl < 6; sl++) [bl copyFromTexture:srcCube sourceSlice:sl sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0) sourceSize:MTLSizeMake(N, N, 1) toTexture:out destinationSlice:sl destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+        [bl endEncoding];
+        for (NSUInteger m = 1; m < L; m++) {
+          float mm = (float)m; float r = mm >= 6.f ? 1.f : (10.2f - sqrtf(104.04f - 16.8f * mm)) / 8.4f;
+          id<MTLTexture> view = [out newTextureViewWithPixelFormat:MTLPixelFormatRGBA16Float textureType:MTLTextureType2DArray levels:NSMakeRange(m, 1) slices:NSMakeRange(0, 6)];
+          auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoPre];
+          [enc setTexture:srcCube atIndex:0]; [enc setTexture:view atIndex:1]; [enc setBytes:&r length:4 atIndex:0];
+          NSUInteger w = std::max<NSUInteger>(1, N >> m);
+          [enc dispatchThreads:MTLSizeMake(w, w, 6) threadsPerThreadgroup:MTLSizeMake(std::min<NSUInteger>(8, w), std::min<NSUInteger>(8, w), 1)]; [enc endEncoding];
+        }
+        [cb commit]; [cb waitUntilCompleted]; return out; };
+      auto boxMips = [&](id<MTLTexture> t) { auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder]; [bl generateMipmapsForTexture:t]; [bl endEncoding]; [cb commit]; [cb waitUntilCompleted]; };
+      auto capture = [&](int sc, float x, float y, float z) {
+        auto d = [MTLTextureDescriptor textureCubeDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float size:256 mipmapped:YES];
+        d.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite; d.storageMode = MTLStorageModePrivate; id<MTLTexture> cube = [dev newTextureWithDescriptor:d];
+        Targets tc = mkTargets(64, 64);
+        Cfg cc = {"CAP", "capture", sc, 0, RGF, 1, 1, 8, 8, 1, 1, .2f, 0.f, false};
+        envTex = flatEnv; FrameH f = frameFor(tc, cc, 1, 0);
+        f.camPos[0] = x; f.camPos[1] = y; f.camPos[2] = z; f.pixelAngle = 2.f / 256.f; f.pad1 = 0; f.envScale = scenes[sc].envScale;
+        const Scene& S = scenes[sc];
+        auto cb = [q commandBuffer]; auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoCap];
+        [enc setTexture:cube atIndex:0]; [enc setTexture:albTex atIndex:1]; [enc setTexture:flatEnv atIndex:2];
+        [enc setAccelerationStructure:S.tlas atBufferIndex:0]; [enc setBytes:&f length:sizeof(f) atIndex:1]; [enc setBuffer:S.gib offset:0 atIndex:2]; useRes(enc);
+        [enc dispatchThreads:MTLSizeMake(256, 256, 6) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted];
+        boxMips(cube); return prefilter(cube); };
+      // lat-long preview + cos-weighted mean luminance of mip 0 (units cross-check)
+      cubeMean = [&](id<MTLTexture> cube, const char* png, float scale) {
+        uint32_t W = 512, H = 256; auto d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float width:W height:H mipmapped:NO];
+        d.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead; d.storageMode = MTLStorageModeShared; id<MTLTexture> ll = [dev newTextureWithDescriptor:d];
+        float lod0 = 0; auto cb = [q commandBuffer]; auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoLL];
+        [enc setTexture:cube atIndex:0]; [enc setTexture:ll atIndex:1]; [enc setBytes:&lod0 length:4 atIndex:0];
+        [enc dispatchThreads:MTLSizeMake(W, H, 1) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted];
+        std::vector<__fp16> v((size_t)W * H * 4); [ll getBytes:v.data() bytesPerRow:W * 8 fromRegion:MTLRegionMake2D(0, 0, W, H) mipmapLevel:0];
+        double sum = 0, ws = 0, up = 0, upw = 0, dn = 0, dnw = 0;
+        std::vector<uint8_t> px((size_t)W * H * 4);
+        for (uint32_t y = 0; y < H; y++) { double th = (y + .5) / H * M_PI, w = sin(th);
+          for (uint32_t x = 0; x < W; x++) { size_t i = ((size_t)y * W + x) * 4; double l = 0.2126 * v[i] + 0.7152 * v[i + 1] + 0.0722 * v[i + 2];
+            sum += w * l; ws += w; if (th < M_PI / 4) { up += w * l; upw += w; } if (th > 3 * M_PI / 4) { dn += w * l; dnw += w; }
+            for (int c = 0; c < 3; c++) { float t = (float)v[i + c] * scale; t = t / (1 + t); px[i + c] = (uint8_t)std::min(255.f, 255.f * powf(t, 1 / 2.2f)); } px[i + 3] = 255; } }
+        if (png) writePngG(png, px, W, H);
+        printf("# cube %s: mean luminance (cos-weighted, mip 0) %.4f; up (theta<45) %.4f; down (theta>135) %.4f\n", png ? png : "-", sum / ws, up / upw, dn / dnw);
+        return sum / ws; };
+      if (cubeMode == 1 || cubeMode == 2) {
+        float capPts[4][3] = {{0, 0, 0}, {0, 1.5f, 13.5f}, {0, 1.5f, 6.0f}, {0, 1.5f, 13.5f}};
+        { const View& v0 = scenes[0].views[0]; capPts[0][0] = v0.eye[0]; capPts[0][1] = v0.eye[1]; capPts[0][2] = v0.eye[2]; }
+        for (int sc = 0; sc < 4; sc++) { capCube[sc] = capture(sc, capPts[sc][0], capPts[sc][1], capPts[sc][2]);
+          printf("# captured cube scene %d at (%.2f, %.2f, %.2f), 256 px, GGX-prefiltered mips\n", sc, capPts[sc][0], capPts[sc][1], capPts[sc][2]); }
+        envScaleOverride = 1.f; urpMip = true;
+        printf("# CUBE=%s: RT-off and every fallback use the %s captured cube (x 1), URP roughness->mip\n", cm, cubeMode == 1 ? "scene's own" : "office");
+      }
+      if (cubeMode == 3 || cubeMode == 4 || getenv("CUBEPREV")) {
+        id<MTLTexture> l0cap = capture(1, 0.f, 1.5f, -3.0f);
+        double mc = cubeMean(l0cap, "cube_l0cap_latlong.png", 1.f);
+        id<MTLTexture> l0exr = nil; double me = 0;
+        { // main's Refl_Level0.exr (75cfdff): a 6:1 horizontal strip, Unity face order +X -X +Y -Y +Z -Z
+          const char* path = getenv("L0EXR") ? getenv("L0EXR") : "Refl_Level0_main75cfdff.exr";
+          NSURL* url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path]];
+          CGImageSourceRef isrc = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
+          if (!isrc) { printf("cannot open %s\n", path); exit(4); }
+          CGImageRef im = CGImageSourceCreateImageAtIndex(isrc, 0, NULL);
+          size_t W = CGImageGetWidth(im), H = CGImageGetHeight(im), Fz = H;
+          CGColorSpaceRef lcs = CGColorSpaceCreateWithName(kCGColorSpaceExtendedLinearSRGB);
+          std::vector<float> fp(W * H * 4);
+          CGContextRef ctx = CGBitmapContextCreate(fp.data(), W, H, 32, W * 16, lcs, kCGImageAlphaPremultipliedLast | kCGBitmapFloatComponents | kCGBitmapByteOrder32Little);
+          CGContextDrawImage(ctx, CGRectMake(0, 0, W, H), im);
+          auto d = [MTLTextureDescriptor textureCubeDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float size:Fz mipmapped:YES];
+          d.usage = MTLTextureUsageShaderRead; d.storageMode = MTLStorageModeShared; id<MTLTexture> cube = [dev newTextureWithDescriptor:d];
+          const char* flip = getenv("EXRFLIP");   // orientation fix if the preview shows one (default none)
+          std::vector<__fp16> face(Fz * Fz * 4);
+          for (int fc = 0; fc < 6; fc++) {
+            for (size_t y = 0; y < Fz; y++) for (size_t x = 0; x < Fz; x++) {
+              size_t sx = x, sy = y; if (flip && strchr(flip, 'x')) sx = Fz - 1 - x; if (flip && strchr(flip, 'y')) sy = Fz - 1 - y;
+              const float* sp = &fp[(sy * W + fc * Fz + sx) * 4];
+              for (int c = 0; c < 3; c++) face[(y * Fz + x) * 4 + c] = (__fp16)std::max(0.f, sp[c]); face[(y * Fz + x) * 4 + 3] = 1; }
+            [cube replaceRegion:MTLRegionMake2D(0, 0, Fz, Fz) mipmapLevel:0 slice:fc withBytes:face.data() bytesPerRow:Fz * 8 bytesPerImage:0]; }
+          CGContextRelease(ctx); CGColorSpaceRelease(lcs); CGImageRelease(im); CFRelease(isrc);
+          boxMips(cube); l0exr = prefilter(cube);
+          printf("# loaded %s: %zux%zu strip, face %zu px\n", path, W, H, Fz);
+          me = cubeMean(l0exr, "cube_l0exr_latlong.png", 1.f);
+        }
+        printf("# units cross-check: main Refl_Level0 mean %.4f vs bench Level 0 anteroom capture mean %.4f (ratio %.2f)\n", me, mc, mc > 0 ? me / mc : 0);
+        mainCube = cubeMode == 3 ? l0cap : l0exr;
+        if (cubeMode == 3 || cubeMode == 4) { envScaleOverride = 0.5f; urpMip = true;
+          printf("# CUBE=%s: RT-off and every RT fallback use %s x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips\n", cm,
+                 cubeMode == 3 ? "the bench's Level 0 anteroom capture (scene 1 at (0, 1.5, -3))" : "main's Refl_Level0.exr"); }
+      }
+'''
+s = s[:i0] + newcube + s[i1:]
+
+# globals used above
+rep("    id<MTLTexture> envTex; bool useNS = false; float envScaleOverride = -1.f; int cubeMode = 0; id<MTLTexture> capCube[4] = {nil, nil, nil, nil}; id<MTLTexture> flatEnv = nil;\n",
+    "    id<MTLTexture> envTex; bool useNS = false; float envScaleOverride = -1.f; int cubeMode = 0; id<MTLTexture> capCube[4] = {nil, nil, nil, nil}; id<MTLTexture> flatEnv = nil;\n"
+    "    id<MTLTexture> mainCube = nil; bool urpMip = false; std::function<double(id<MTLTexture>, const char*, float)> cubeMean;\n"
+    "    uint32_t jitterMode = getenv(\"JITTER\") ? (uint32_t)atoi(getenv(\"JITTER\")) : 0u;\n")
+rep("#include <cstdlib>\n", "#include <cstdlib>\n#include <functional>\n#include <map>\n")
+# frameFor: cube selection + flags
+rep("      if (cubeMode == 1 && capCube[c.scene]) envTex = capCube[c.scene]; else if (cubeMode == 2 && capCube[0]) envTex = capCube[0]; else if (flatEnv) envTex = flatEnv;",
+    "      if (cubeMode == 1 && capCube[c.scene]) envTex = capCube[c.scene]; else if (cubeMode == 2 && capCube[0]) envTex = capCube[0];\n"
+    "      else if ((cubeMode == 3 || cubeMode == 4) && mainCube) envTex = mainCube; else if (flatEnv) envTex = flatEnv;\n"
+    "      f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1);")
+# writePng is defined later (after quality); provide an early global PNG writer for the cube previews
+rep("static std::string loadStr() {",
+"""static void writePngG(const std::string& path, std::vector<uint8_t>& px, uint32_t W, uint32_t H) {
+  CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+  CGContextRef ctx = CGBitmapContextCreate(px.data(), W, H, 8, W * 4, cs, kCGImageAlphaPremultipliedLast);
+  CGImageRef im = CGBitmapContextCreateImage(ctx);
+  CFURLRef url = CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8*)path.c_str(), path.size(), false);
+  CGImageDestinationRef dst = CGImageDestinationCreateWithURL(url, CFSTR("public.png"), 1, NULL);
+  CGImageDestinationAddImage(dst, im, NULL); CGImageDestinationFinalize(dst);
+  CFRelease(dst); CFRelease(url); CGImageRelease(im); CGContextRelease(ctx); CGColorSpaceRelease(cs);
+}
+static std::string loadStr() {""")
+
+# ---------------------------------------------------------------- new configs (design High / Ultra as revised)
+rep('      {"F_s4",  "Run S1 ARMED: 4 GGX rays + filter, 2 bounces",                       3, 0, RGF, 2, 1, 4, 4, 4, 0, .2f, 0.f, true},\n',
+'''      {"F_s4",  "Run S1 ARMED: 4 GGX rays + filter, 2 bounces",                       3, 0, RGF, 2, 1, 4, 4, 4, 0, .2f, 0.f, true},
+      // b5: the revised tiers. High = mirror + hw-aniso mip blur k 2, depth 2, 1 layer, cut-off 0.004.
+      // Ultra = n GGX rays + hw-aniso mip blur k 1, depth 3, 2 layers, 8 shadowed lamps, cut-off 0.004.
+      {"A_H",   "S1 tripped: High",                                                  1, 0, RGF, 2, 1, 4, 4, 1, 1, .2f, .004f, true, 2, 2.f},
+      {"A_U2",  "S1 tripped: Ultra 2 rays",                                          1, 0, RGF, 3, 2, 8, 4, 2, 0, .2f, .004f, true, 2, 1.f},
+      {"A_U3",  "S1 tripped: Ultra 3 rays",                                          1, 0, RGF, 3, 2, 8, 4, 3, 0, .2f, .004f, true, 2, 1.f},
+      {"A_U4",  "S1 tripped: Ultra 4 rays",                                          1, 0, RGF, 3, 2, 8, 4, 4, 0, .2f, .004f, true, 2, 1.f},
+      {"B_H",   "near goal tripped: High",                                           1, 1, RGF, 2, 1, 4, 4, 1, 1, .2f, .004f, true, 2, 2.f},
+      {"B_U2",  "near goal tripped: Ultra 2 rays",                                   1, 1, RGF, 3, 2, 8, 4, 2, 0, .2f, .004f, true, 2, 1.f},
+      {"B_U3",  "near goal tripped: Ultra 3 rays",                                   1, 1, RGF, 3, 2, 8, 4, 3, 0, .2f, .004f, true, 2, 1.f},
+      {"C_H",   "pitched 10 deg: High",                                              1, 2, RGF, 2, 1, 4, 4, 1, 1, .2f, .004f, true, 2, 2.f},
+      {"C_U2",  "pitched 10 deg: Ultra 2 rays",                                      1, 2, RGF, 3, 2, 8, 4, 2, 0, .2f, .004f, true, 2, 1.f},
+      {"C_U3",  "pitched 10 deg: Ultra 3 rays",                                      1, 2, RGF, 3, 2, 8, 4, 3, 0, .2f, .004f, true, 2, 1.f},
+      {"D_H",   "stream Run room: High",                                             2, 0, RGF, 2, 1, 4, 4, 1, 1, .2f, .004f, true, 2, 2.f},
+      {"D_U2",  "stream Run room: Ultra 2 rays",                                     2, 0, RGF, 3, 2, 8, 4, 2, 0, .2f, .004f, true, 2, 1.f},
+      {"F_H",   "S1 armed: High",                                                    3, 0, RGF, 2, 1, 4, 4, 1, 1, .2f, .004f, true, 2, 2.f},
+      {"F_U3",  "S1 armed: Ultra 3 rays",                                            3, 0, RGF, 3, 2, 8, 4, 3, 0, .2f, .004f, true, 2, 1.f},
+      {"G_H",   "2.5 m armed r0.15: High",                                           3, 3, RGF, 2, 1, 4, 4, 1, 1, .15f, .004f, true, 2, 2.f},
+      {"G_H1",  "2.5 m armed r0.15: High at depth 1",                                3, 3, RGF, 1, 1, 4, 4, 1, 1, .15f, .004f, true, 2, 2.f},
+      {"G_U2",  "2.5 m armed r0.15: Ultra 2 rays",                                   3, 3, RGF, 3, 2, 8, 4, 2, 0, .15f, .004f, true, 2, 1.f},
+''')
+
+# ---------------------------------------------------------------- new host modes (inserted before the check's stackab mode)
+modes = r'''
+    // ======================================================================== b5 modes
+    auto readF4 = [&](id<MTLTexture> tex, uint32_t W, uint32_t H) {
+      id<MTLBuffer> b = [dev newBufferWithLength:(NSUInteger)W * H * 16 options:MTLResourceStorageModeShared];
+      auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder];
+      [bl copyFromTexture:tex sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0) sourceSize:MTLSizeMake(W, H, 1) toBuffer:b destinationOffset:0 destinationBytesPerRow:W * 16 destinationBytesPerImage:(NSUInteger)W * H * 16];
+      [bl endEncoding]; [cb commit]; [cb waitUntilCompleted];
+      std::vector<float> v((size_t)W * H * 4); memcpy(v.data(), b.contents, v.size() * 4); return v; };
+    id<MTLTexture> refTex = mkTex(MTLPixelFormatRGBA16Float, 1920, 1080, true);
+    auto putRef = [&](const std::vector<float>& img) { std::vector<__fp16> h(img.size()); for (size_t i = 0; i < img.size(); i++) h[i] = (__fp16)std::min(img[i], 60000.f);
+      [refTex replaceRegion:MTLRegionMake2D(0, 0, 1920, 1080) mipmapLevel:0 withBytes:h.data() bytesPerRow:1920 * 8]; };
+    // reference: nPass independent blocks of 64 GGX rays (no filter), seeds 4 apart so the R2 index ranges never overlap
+    auto refBlocks = [&](Cfg base, int firstPass, int nPass, FrameH* fOut) {
+      Cfg c = base; c.spp = 64; c.mode = 0; c.filter = false;
+      std::vector<double> acc((size_t)ti.W * ti.H * 4, 0.0);
+      uint32_t savedJ = jitterMode; jitterMode = 0;
+      for (int k = 0; k < nPass; k++) { FrameH f = frameFor(ti, c, 1 + 4 * (uint32_t)(firstPass + k), 0); if (k == 0) runG(ti, c, f); runT(ti, c, f);
+        auto r = readHalf4(ti.refl, ti.W, ti.H); for (size_t i = 0; i < r.size(); i++) acc[i] += r[i]; if (fOut && k == 0) *fOut = f; }
+      jitterMode = savedJ;
+      std::vector<float> out(acc.size()); for (size_t i = 0; i < acc.size(); i++) out[i] = (float)(acc[i] / nPass); return out; };
+    auto refCached = [&](Cfg base, const char* key, int firstPass, int nPass) {
+      char fn[256]; snprintf(fn, sizeof fn, "refcache_%s_c%d_%s_p%d_n%d_sg%d.bin", key, cubeMode, base.id, firstPass, nPass, getenv("SOFTGATE") ? 1 : 0);
+      std::vector<float> v((size_t)ti.W * ti.H * 4);
+      if (FILE* fp = fopen(fn, "rb")) { size_t n = fread(v.data(), 4, v.size(), fp); fclose(fp); if (n == v.size()) return v; }
+      v = refBlocks(base, firstPass, nPass, nullptr);
+      if (FILE* fp = fopen(fn, "wb")) { fwrite(v.data(), 4, v.size(), fp); fclose(fp); }
+      return v; };
+    auto comp8 = [&](const Cfg& c, uint32_t seed, int which, const std::vector<float>* refImg) {
+      // which: 0 = RT off (cube), 1 = method (trace + its filter), 2 = reference image (refImg)
+      FrameH f = frameFor(ti, c, seed, 0); runG(ti, c, f);
+      if (which == 0) { runC(ti, f, ti.refl, 0); return grab8(ti); }
+      if (which == 2) { putRef(*refImg); runC(ti, f, refTex, 1); return grab8(ti); }
+      runT(ti, c, f); id<MTLTexture> src = ti.refl; if (c.filter) { runF(ti, f); src = ti.filt; } runC(ti, f, src, 1); return grab8(ti); };
+    auto clsOf = [&](const Cfg& c) { FrameH f = frameFor(ti, c, 1, 0); runG(ti, c, f); return readHalf4(ti.gNrm, ti.W, ti.H); };
+    auto lumLin = [&](const std::vector<float>& v, size_t i) { return 0.2126 * v[i * 4] + 0.7152 * v[i * 4 + 1] + 0.0722 * v[i * 4 + 2]; };
+    struct EStat { double mean; int p99; double ge2, ge4, ge8; size_t n; };
+    auto errStat = [&](const std::vector<uint8_t>& a, const std::vector<uint8_t>& b, const std::vector<float>& cls, int k) {
+      std::vector<int> d; double sum = 0; size_t g2 = 0, g4 = 0, g8 = 0;
+      for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { if ((int)(cls[i * 4 + 3] + .5f) != k) continue; int m = d8(a, b, i); d.push_back(m); sum += m; g2 += m >= 2; g4 += m >= 4; g8 += m >= 8; }
+      EStat e{0, 0, 0, 0, 0, d.size()}; if (d.empty()) return e; std::sort(d.begin(), d.end());
+      e.mean = sum / d.size(); e.p99 = d[(size_t)(0.99 * (d.size() - 1))]; e.ge2 = 100.0 * g2 / d.size(); e.ge4 = 100.0 * g4 / d.size(); e.ge8 = 100.0 * g8 / d.size(); return e; };
+
+    if (what == "conv") {
+      // Is the reference converged? Independent blocks: REF = passes 0-31 (2048 rays); R128 = 32-33, R256 = 34-37, R512 = 38-45, R1024 = 46-61.
+      printf("# --- conv 1920x1080: reference convergence, floor px, depth 2 (High tree), cube mode %d  %s\n", cubeMode, loadStr().c_str());
+      struct QR2 { const char* key; int scene; int view; float rough; };
+      for (QR2 qr : {QR2{"A20", 1, 0, 0.20f}, QR2{"B20", 1, 1, 0.20f}, QR2{"F20", 3, 0, 0.20f}, QR2{"D20", 2, 0, 0.20f}, QR2{"G15", 3, 3, 0.15f}}) {
+        Cfg ref = {"REF", "reference", qr.scene, qr.view, RGF, 2, 1, 4, 4, 64, 0, qr.rough, .004f, false};
+        auto R = refCached(ref, qr.key, 0, 32); auto cls = clsOf(ref);
+        auto R8 = comp8(ref, 1, 2, &R);
+        double meanRef = 0; size_t nf = 0; for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) if ((int)(cls[i * 4 + 3] + .5f) == 2) { meanRef += lumLin(R, i); nf++; } meanRef /= std::max<size_t>(nf, 1);
+        struct BK { int n, first, cnt; } bks[4] = {{128, 32, 2}, {256, 34, 4}, {512, 38, 8}, {1024, 46, 16}};
+        for (auto& bk : bks) {
+          auto X = refCached(ref, qr.key, bk.first, bk.cnt); auto X8 = comp8(ref, 1, 2, &X);
+          EStat e = errStat(X8, R8, cls, 2);
+          double se = 0, seC = 0; for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) if ((int)(cls[i * 4 + 3] + .5f) == 2) { double a = lumLin(X, i), r = lumLin(R, i); se += (a - r) * (a - r);
+            double ac = std::min(a, 4.0 * meanRef), rc = std::min(r, 4.0 * meanRef); seC += (ac - rc) * (ac - rc); }
+          printf("%s conv %s scene %d view %c r%.2f: %4d rays vs 2048-ray ref (independent): display mean %.3f/255 p99 %d >=2 %.2f%% >=4 %.2f%% >=8 %.3f%% | linear relRMSE %.3f, clamped at 4x mean %.3f | floor %.1f%% | %s\n",
+                 tag.c_str(), qr.key, qr.scene, 'A' + qr.view, qr.rough, bk.n, e.mean, e.p99, e.ge2, e.ge4, e.ge8, sqrt(se / nf) / meanRef, sqrt(seC / nf) / meanRef, 100.0 * nf / ((double)ti.W * ti.H), loadStr().c_str());
+          fflush(stdout);
+        }
+      }
+    }
+
+    if (what == "quality2") {
+      // Every method vs the converged 2048-ray reference (same tree: depth 2, 1 layer, cut-off 0.004), plus seed-to-seed shimmer.
+      printf("# --- quality2 1920x1080, floor px, vs 2048-ray reference, cube mode %d, jitter %u  %s\n", cubeMode, jitterMode, loadStr().c_str());
+      struct QR2 { const char* key; int scene; int view; float rough; };
+      for (QR2 qr : {QR2{"A15", 1, 0, 0.15f}, QR2{"A20", 1, 0, 0.20f}, QR2{"A25", 1, 0, 0.25f}, QR2{"B20", 1, 1, 0.20f}, QR2{"F20", 3, 0, 0.20f}, QR2{"D20", 2, 0, 0.20f}, QR2{"G15", 3, 3, 0.15f}}) {
+        Cfg ref = {"REF", "reference", qr.scene, qr.view, RGF, 2, 1, 4, 4, 64, 0, qr.rough, .004f, false};
+        auto R = refCached(ref, qr.key, 0, 32); auto cls = clsOf(ref); auto R8 = comp8(ref, 1, 2, &R);
+        double meanRef = 0; size_t nf = 0; for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) if ((int)(cls[i * 4 + 3] + .5f) == 2) { meanRef += lumLin(R, i); nf++; } meanRef /= std::max<size_t>(nf, 1);
+        auto Off8 = comp8(ref, 1, 0, nullptr); EStat eo = errStat(Off8, R8, cls, 2);
+        printf("%s quality2 %s r%.2f %-34s display err vs ref mean %.2f p99 %d >=8 %.2f%% | %s\n", tag.c_str(), qr.key, qr.rough, "RT OFF (cube only)", eo.mean, eo.p99, eo.ge8, loadStr().c_str());
+        struct QC { const char* name; uint32_t spp, mode; bool filter; uint32_t aniso; float k; };
+        std::vector<QC> qcs = {{"mirror, no blur", 1, 1, false, 0, 1.f}, {"High: mirror + hw-aniso k1", 1, 1, true, 2, 1.f}, {"High: mirror + hw-aniso k2", 1, 1, true, 2, 2.f},
+                               {"High: mirror + hw-aniso k3", 1, 1, true, 2, 3.f}, {"2 GGX + iso filter (11)", 2, 0, true, 0, 1.f}, {"4 GGX + iso filter (11)", 4, 0, true, 0, 1.f},
+                               {"Ultra: 2 GGX + hw-aniso k1", 2, 0, true, 2, 1.f}, {"Ultra: 3 GGX + hw-aniso k1", 3, 0, true, 2, 1.f}, {"Ultra: 4 GGX + hw-aniso k1", 4, 0, true, 2, 1.f}};
+        for (auto& qc : qcs) {
+          Cfg c = ref; c.spp = qc.spp; c.mode = qc.mode; c.filter = qc.filter; c.aniso = qc.aniso; c.blurK = qc.k;
+          std::vector<uint8_t> im8[2]; std::vector<float> lin[2];
+          for (int sd = 0; sd < 2; sd++) { FrameH f = frameFor(ti, c, 1 + sd * 7, 0); runG(ti, c, f); runT(ti, c, f); id<MTLTexture> src = ti.refl; if (c.filter) { runF(ti, f); src = ti.filt; }
+            lin[sd] = readHalf4(src, ti.W, ti.H); runC(ti, f, src, 1); im8[sd] = grab8(ti); }
+          EStat e = errStat(im8[0], R8, cls, 2), sh = errStat(im8[0], im8[1], cls, 2);
+          double se = 0; for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) if ((int)(cls[i * 4 + 3] + .5f) == 2) { double a = lumLin(lin[0], i), r = lumLin(R, i); se += (a - r) * (a - r); }
+          printf("%s quality2 %s r%.2f %-34s display err vs ref mean %.2f p99 %d >=8 %.2f%% | linear relRMSE %.3f | seed-to-seed mean %.2f >=8 %.2f%% | %s\n",
+                 tag.c_str(), qr.key, qr.rough, qc.name, e.mean, e.p99, e.ge8, sqrt(se / nf) / meanRef, sh.mean, sh.ge8, loadStr().c_str());
+          fflush(stdout);
+        }
+      }
+    }
+
+    if (what == "accept") {
+      // The acceptance derivation: per frame, RT off (the stated cube), High, Ultra (spp from the 0.40 budget), the 2048-ray reference.
+      // Streak capture: S = floor px where |ref - off| >= 24/255 (red: dR >= 24 and dR > 2 max(dG, dB)); captured = sum sign*(X - off) / sum |ref - off| on S;
+      // recall = share of S where X moves at least half as far as the reference.
+      printf("# --- accept 1920x1080, cube mode %d, jitter %u, soft gate %d  %s\n", cubeMode, jitterMode, getenv("SOFTGATE") ? 1 : 0, loadStr().c_str());
+      struct AC { const char* key; const char* hi; const char* ul; float rough; };
+      for (AC ac : {AC{"A20", "A_H", "A_U3", .2f}, AC{"B20", "B_H", "B_U2", .2f}, AC{"D20", "D_H", "D_H", .2f}, AC{"F20", "F_H", "F_U3", .2f}, AC{"G15", "G_H", "G_U2", .15f}}) {
+        Cfg hi = findCfg(ac.hi), ul = findCfg(ac.ul);
+        Cfg ref = hi; ref.spp = 64; ref.mode = 0; ref.filter = false; ref.id = "REF";        // High's tree (depth 2, 1 layer, 4 shadowed lamps)
+        Cfg refU = ul; refU.spp = 64; refU.mode = 0; refU.filter = false; refU.id = !strcmp(ac.ul, ac.hi) ? "REF" : "REFU";   // Ultra's tree (depth 3, 2 layers, 8 shadowed)
+        auto R = refCached(ref, ac.key, 0, 32); auto cls = clsOf(ref); auto R8 = comp8(ref, 1, 2, &R);
+        auto RU = refCached(refU, ac.key, 0, 32); auto RU8 = comp8(refU, 1, 2, &RU);
+        auto Off8 = comp8(hi, 1, 0, nullptr); auto H8 = comp8(hi, 1, 1, nullptr);
+        uint32_t sj = jitterMode; jitterMode = 2; auto U8 = comp8(ul, 1, 1, nullptr); jitterMode = sj;
+        for (int k = 1; k <= 2; k++) {
+          EStat eo = errStat(Off8, R8, cls, k), eh = errStat(H8, R8, cls, k), eu = errStat(U8, RU8, cls, k), dh = errStat(Off8, H8, cls, k), du = errStat(Off8, U8, cls, k), dr = errStat(Off8, R8, cls, k);
+          if (eo.n == 0) continue;
+          printf("%s accept %s %-5s px %.2f%% | err vs own-tree ref: off %.2f (p99 %d, >=8 %.1f%%)  High %.2f (p99 %d, >=8 %.2f%%)  Ultra[%s] %.2f (p99 %d, >=8 %.2f%%) | off->RT >=8: ref %.1f%% (mean %.2f)  High %.1f%% (mean %.2f)  Ultra %.1f%% (mean %.2f) | %s\n",
+                 tag.c_str(), ac.key, k == 1 ? "glass" : "floor", 100.0 * eo.n / ((double)ti.W * ti.H), eo.mean, eo.p99, eo.ge8, eh.mean, eh.p99, eh.ge8, ac.ul, eu.mean, eu.p99, eu.ge8,
+                 dr.ge8, dr.mean, dh.ge8, dh.mean, du.ge8, du.mean, loadStr().c_str());
+        }
+        // streaks on the floor
+        for (int red = 0; red <= 1; red++) {
+          double sumRef = 0, sumRefU = 0, capH = 0, capU = 0; size_t nS = 0, recH = 0, recU = 0;
+          for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) {
+            if ((int)(cls[i * 4 + 3] + .5f) != 2) continue;
+            int dR = (int)R8[i * 4] - Off8[i * 4], dG = (int)R8[i * 4 + 1] - Off8[i * 4 + 1], dB = (int)R8[i * 4 + 2] - Off8[i * 4 + 2];
+            int m = std::max({abs(dR), abs(dG), abs(dB)}); if (m < 24) continue;
+            if (red && !(dR >= 24 && dR > 2 * std::max(dG, dB))) continue;
+            int ch = (abs(dR) >= abs(dG) && abs(dR) >= abs(dB)) ? 0 : (abs(dG) >= abs(dB) ? 1 : 2);
+            double dref = (double)R8[i * 4 + ch] - Off8[i * 4 + ch], sg = dref >= 0 ? 1 : -1;
+            double drefU = (double)RU8[i * 4 + ch] - Off8[i * 4 + ch], sgU = drefU >= 0 ? 1 : -1;
+            double dh = (double)H8[i * 4 + ch] - Off8[i * 4 + ch], du = (double)U8[i * 4 + ch] - Off8[i * 4 + ch];
+            nS++; sumRef += fabs(dref); sumRefU += fabs(drefU); capH += sg * dh; capU += sgU * du; recH += sg * dh >= 0.5 * fabs(dref); recU += sgU * du >= 0.5 * fabs(drefU); }
+          if (nS == 0) { printf("%s accept %s %s streak: none\n", tag.c_str(), ac.key, red ? "red" : "all"); continue; }
+          printf("%s accept %s %s streak px %zu (%.2f%% of screen, mean ref change %.1f/255): captured energy High %.2f Ultra %.2f; recall (>= half the ref change) High %.1f%% Ultra %.1f%% | %s\n",
+                 tag.c_str(), ac.key, red ? "red " : "all ", nS, 100.0 * nS / ((double)ti.W * ti.H), sumRef / nS, capH / sumRef, capU / std::max(sumRefU, 1e-9), 100.0 * recH / nS, 100.0 * recU / nS, loadStr().c_str());
+        }
+        fflush(stdout);
+      }
+    }
+
+    if (what == "timing2") {
+      // Interleaved: every rep runs every config once (trace + its filter), so load swings hit all configs alike. 1440p.
+      std::vector<const char*> ids = {"A_H", "A_U2", "A_U3", "A_U4", "B_H", "B_U2", "B_U3", "C_H", "C_U2", "C_U3", "D_H", "D_U2", "G_H", "G_U2", "A_h2"};
+      if (argc > 3) { ids.clear(); for (int k = 3; k < argc; k++) ids.push_back(argv[k]); }
+      for (auto& rs : resList) {
+        if (getenv("RES1080") ? rs[0] != 1920 : rs[0] != 2560) continue;
+        Targets t = mkTargets(rs[0], rs[1]);
+        std::vector<Cfg> cs; std::vector<FrameH> fs; std::vector<std::vector<double>> tt(ids.size()), tf(ids.size());
+        for (auto id : ids) { cs.push_back(findCfg(id)); }
+        printf("# --- timing2 %ux%u interleaved, jitter %u, soft gate %d  %s\n", rs[0], rs[1], jitterMode, getenv("SOFTGATE") ? 1 : 0, loadStr().c_str());
+        for (int rep = 0; rep < 24; rep++) for (size_t k = 0; k < cs.size(); k++) {
+          FrameH f = frameFor(t, cs[k], 1, 0); runG(t, cs[k], f); double a = runT(t, cs[k], f); double b = cs[k].filter ? runF(t, f) : 0;
+          if (rep >= 3) { tt[k].push_back(a); tf[k].push_back(b); } }
+        for (size_t k = 0; k < cs.size(); k++) {
+          std::vector<double> tot; for (size_t j = 0; j < tt[k].size(); j++) tot.push_back(tt[k][j] + tf[k][j]);
+          double rf = 0, gf = 0, rpr = 0, spr = 0; { FrameH fg = frameFor(t, cs[k], 1, 0); runG(t, cs[k], fg); } stats(t, cs[k], rf, gf, rpr, spr);
+          printf("%s timing2 %ux%u %-5s total min %.3f p25 %.3f med %.3f | trace med %.3f filter med %.3f | floor %.1f%% glass %.2f%% rays/recv %.2f | %s | %s\n",
+                 tag.c_str(), rs[0], rs[1], cs[k].id, pct(tot, 0), pct(tot, .25), pct(tot, .5), pct(tt[k], .5), pct(tf[k], .5), 100 * lastFloorFrac, 100 * gf, rpr, loadStr().c_str(), cs[k].name);
+        }
+        fflush(stdout);
+      }
+    }
+
+    if (what == "share") {
+      // floor share vs look pitch at the S1 trip line (FrontRoomsCameraRig has no head bob; pitch comes from the mouse and the shake)
+      Targets t = mkTargets(1920, 1080);
+      printf("# --- share: Run S1 eye (0, 1.62, 1.5), yaw 0, floor share and Ultra spp = min(4, floor(0.40 / share))  %s\n", loadStr().c_str());
+      for (float p = -3.f; p <= 10.01f; p += 1.f) {
+        scenes[1].views.push_back({{0, 1.62f, 1.5f}, {0, 0, 0}, p, true}); int vi = (int)scenes[1].views.size() - 1;
+        Cfg c = findCfg("A_H"); c.view = vi; double rf = 0, gf = 0, rpr = 0, spr = 0; { FrameH fg = frameFor(t, c, 1, 0); runG(t, c, fg); } stats(t, c, rf, gf, rpr, spr);
+        double sh = lastFloorFrac; int spp = std::min(4, (int)floor(0.40 / std::max(sh, 1e-6)));
+        printf("share pitch %+5.1f deg: floor %.2f%% -> Ultra spp %d (continuous budget %.2f)\n", p, 100 * sh, spp, 0.40 / std::max(sh, 1e-6));
+        scenes[1].views.pop_back();
+      }
+    }
+
+    if (what == "dolly") {
+      // Grain under motion. 8 frames at 1 m/s and 60 fps (1/60 m per frame), forward dolly and sideways strafe, Run S1 tripped,
+      // Ultra 3 GGX rays + hw-aniso k1, depth 2. Per frame: E = method - reference (display luminance, signed; reference 512 rays).
+      // T = |E_k+1(x) - E_k(project_k(P(x)))| on floor px, bilinear in frame k: the part of the frame-to-frame change that is noise.
+      printf("# --- dolly 1920x1080 Run S1 tripped, Ultra 3 rays + hw-aniso k1, cube mode %d  %s\n", cubeMode, loadStr().c_str());
+      const int NF = 6;
+      auto lum8 = [&](const std::vector<uint8_t>& v, size_t i) { return 0.2126 * v[i * 4] + 0.7152 * v[i * 4 + 1] + 0.0722 * v[i * 4 + 2]; };
+      for (int motion = 0; motion < 2; motion++) {
+        std::vector<std::vector<float>> E(NF), Pw(NF), CL(NF); std::vector<FrameH> FH(NF);
+        struct JM { const char* name; uint32_t mode; bool reseed; };
+        std::vector<JM> jms = {{"screen hash, re-seeded per frame (11's bench)", 0, true}, {"screen hash, fixed seed", 0, false}, {"world 1 cm cells", 1, false},
+                               {"footprint-aware (long axis)", 2, false}, {"footprint-aware (geometric mean)", 3, false}};
+        // references first (shared by every mode): 8 blocks = 512 rays per frame
+        std::vector<std::vector<float>> REF8(NF);
+        for (int fr = 0; fr < NF; fr++) {
+          float off = fr / 60.f; View v = scenes[1].views[0]; if (motion == 0) { v.eye[2] += off; v.tgt[2] += off; } else { v.eye[0] += off; v.tgt[0] += off; }
+          scenes[1].views.push_back(v); int vi = (int)scenes[1].views.size() - 1;
+          Cfg ref = findCfg("A_U3"); ref.view = vi; ref.bounces = 2; ref.layers = 1; ref.spp = 64; ref.mode = 0; ref.filter = false;
+          char key[32]; snprintf(key, sizeof key, "dolly%d_%d", motion, fr);
+          auto R = refCached(ref, key, 0, 8); auto R8 = comp8(ref, 1, 2, &R);
+          FrameH f = frameFor(ti, ref, 1, 0); runG(ti, ref, f); FH[fr] = f;
+          Pw[fr] = readF4(ti.gPos, ti.W, ti.H); CL[fr] = readHalf4(ti.gNrm, ti.W, ti.H);
+          REF8[fr].resize((size_t)ti.W * ti.H); for (size_t i = 0; i < REF8[fr].size(); i++) REF8[fr][i] = (float)lum8(R8, i);
+          scenes[1].views.pop_back();
+        }
+        for (auto& jm : jms) {
+          uint32_t sj = jitterMode; jitterMode = jm.mode;
+          for (int fr = 0; fr < NF; fr++) {
+            float off = fr / 60.f; View v = scenes[1].views[0]; if (motion == 0) { v.eye[2] += off; v.tgt[2] += off; } else { v.eye[0] += off; v.tgt[0] += off; }
+            scenes[1].views.push_back(v); int vi = (int)scenes[1].views.size() - 1;
+            Cfg c = findCfg("A_U3"); c.view = vi; c.bounces = 2; c.layers = 1;
+            auto M8 = comp8(c, jm.reseed ? 1 + 4 * (uint32_t)fr : 1, 1, nullptr);
+            E[fr].resize((size_t)ti.W * ti.H); for (size_t i = 0; i < E[fr].size(); i++) E[fr][i] = (float)lum8(M8, i) - REF8[fr][i];
+            scenes[1].views.pop_back();
+          }
+          jitterMode = sj;
+          // band stats: horizontal distance from the eye along the floor
+          const float bands[5] = {0.f, 3.f, 6.f, 12.f, 1e9f}; double sT[4] = {0, 0, 0, 0}, sE[4] = {0, 0, 0, 0}; size_t nT[4] = {0, 0, 0, 0}, g8[4] = {0, 0, 0, 0};
+          for (int fr = 0; fr + 1 < NF; fr++) {
+            const FrameH& fk = FH[fr];
+            for (uint32_t y = 0; y < ti.H; y++) for (uint32_t x = 0; x < ti.W; x++) {
+              size_t i = (size_t)y * ti.W + x; if ((int)(CL[fr + 1][i * 4 + 3] + .5f) != 2) continue;
+              float P[3] = {Pw[fr + 1][i * 4], Pw[fr + 1][i * 4 + 1], Pw[fr + 1][i * 4 + 2]};
+              float vv[3] = {P[0] - fk.camPos[0], P[1] - fk.camPos[1], P[2] - fk.camPos[2]};
+              float z = vv[0] * fk.camFwd[0] + vv[1] * fk.camFwd[1] + vv[2] * fk.camFwd[2]; if (z < 1e-3f) continue;
+              float nx = (vv[0] * fk.camRight[0] + vv[1] * fk.camRight[1] + vv[2] * fk.camRight[2]) / (z * fk.tanHalf * fk.aspect);
+              float ny = -(vv[0] * fk.camUp[0] + vv[1] * fk.camUp[1] + vv[2] * fk.camUp[2]) / (z * fk.tanHalf);
+              float px = (nx * .5f + .5f) * ti.W - .5f, py = (ny * .5f + .5f) * ti.H - .5f;
+              int x0 = (int)floor(px), y0 = (int)floor(py); if (x0 < 0 || y0 < 0 || x0 + 1 >= (int)ti.W || y0 + 1 >= (int)ti.H) continue;
+              float ax = px - x0, ay = py - y0; size_t j00 = (size_t)y0 * ti.W + x0;
+              bool ok = true; for (size_t j : {j00, j00 + 1, j00 + ti.W, j00 + ti.W + 1}) if ((int)(CL[fr][j * 4 + 3] + .5f) != 2) ok = false; if (!ok) continue;
+              float ek = (1 - ax) * (1 - ay) * E[fr][j00] + ax * (1 - ay) * E[fr][j00 + 1] + (1 - ax) * ay * E[fr][j00 + ti.W] + ax * ay * E[fr][j00 + ti.W + 1];
+              float hd = sqrtf((P[0] - FH[fr + 1].camPos[0]) * (P[0] - FH[fr + 1].camPos[0]) + (P[2] - FH[fr + 1].camPos[2]) * (P[2] - FH[fr + 1].camPos[2]));
+              int b = 0; while (b < 3 && hd >= bands[b + 1]) b++;
+              double T = fabs(E[fr + 1][i] - ek); sT[b] += T; nT[b]++; g8[b] += T >= 8; sE[b] += fabs(E[fr + 1][i]); }
+          }
+          printf("%s dolly %s %-48s", tag.c_str(), motion == 0 ? "forward" : "strafe ", jm.name);
+          for (int b = 0; b < 4; b++) printf(" | %s m: T %.2f (>=8 %.2f%%) |E| %.2f", b == 0 ? "0-3" : b == 1 ? "3-6" : b == 2 ? "6-12" : "12+", nT[b] ? sT[b] / nT[b] : 0, nT[b] ? 100.0 * g8[b] / nT[b] : 0, nT[b] ? sE[b] / nT[b] : 0);
+          printf(" | %s\n", loadStr().c_str()); fflush(stdout);
+          if (motion == 0 && getenv("DOLLYIMG")) {   // T heatmap of the frame pair 2->3, x8, for the log
+            std::vector<uint8_t> img((size_t)ti.W * ti.H * 4, 0);
+            for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { float e = fabs(E[3][i] - E[2][i]); uint8_t c = (uint8_t)std::min(255.f, 8.f * e); img[i * 4] = c; img[i * 4 + 1] = c; img[i * 4 + 2] = c; img[i * 4 + 3] = 255; }
+            char fn[128]; snprintf(fn, sizeof fn, "dolly_%s_mode%u%s.png", tag.c_str(), jm.mode, jm.reseed ? "r" : ""); writePngG(fn, img, ti.W, ti.H); printf("wrote %s (screen-space |E3 - E2| x8, not reprojected)\n", fn); }
+        }
+      }
+    }
+
+    if (what == "img5") {
+      // Off (flat cube, as 11) | Off (stated cube) | High | Ultra | 2048-ray reference; S1 tripped and the stream room
+      struct Row { const char* key; const char* hi; const char* ul; };
+      std::vector<std::vector<uint8_t>> pics; std::vector<std::string> labs;
+      for (Row rw : {Row{"A20", "A_H", "A_U3"}, Row{"D20", "D_H", "D_U2"}}) {
+        Cfg hi = findCfg(rw.hi), ul = findCfg(rw.ul); Cfg ref = hi; ref.spp = 64; ref.mode = 0; ref.filter = false; ref.id = "REF";
+        auto R = refCached(ref, rw.key, 0, 32);
+        int cmSaved = cubeMode; float esSaved = envScaleOverride; bool umSaved = urpMip;
+        cubeMode = 0; envScaleOverride = -1.f; urpMip = false; auto offFlat = comp8(hi, 1, 0, nullptr);
+        cubeMode = cmSaved; envScaleOverride = esSaved; urpMip = umSaved;
+        auto off = comp8(hi, 1, 0, nullptr), H8 = comp8(hi, 1, 1, nullptr);
+        uint32_t sj = jitterMode; jitterMode = 2; auto U8 = comp8(ul, 1, 1, nullptr); jitterMode = sj; auto R8 = comp8(ref, 1, 2, &R);
+        const char* room = rw.key[0] == 'A' ? "S1 tripped" : "stream room";
+        pics.push_back(offFlat); labs.push_back(std::string(room) + ": OFF, flat cube (as 11)");
+        pics.push_back(off); labs.push_back(std::string(room) + ": OFF, main's Level 0 cube x0.5");
+        pics.push_back(H8); labs.push_back(std::string(room) + ": HIGH");
+        pics.push_back(U8); labs.push_back(std::string(room) + (rw.key[0] == 'A' ? ": ULTRA 3 rays" : ": ULTRA 2 rays"));
+        pics.push_back(R8); labs.push_back(std::string(room) + ": REFERENCE 2048 rays");
+        for (int k = 0; k < 5; k++) { char fn[96]; snprintf(fn, sizeof fn, "img5_%s_%s_%d.png", tag.c_str(), rw.key, k); writePngG(fn, pics[pics.size() - 5 + k], ti.W, ti.H); }
+      }
+      uint32_t cw = ti.W / 3, ch = ti.H / 3, SW = cw * 5, SH = ch * 2;
+      std::vector<uint8_t> sheet((size_t)SW * SH * 4, 0);
+      for (size_t k = 0; k < pics.size(); k++) { uint32_t ox = (k % 5) * cw, oy = (k / 5) * ch;
+        for (uint32_t y = 0; y < ch; y++) for (uint32_t x = 0; x < cw; x++) for (int c = 0; c < 4; c++) { int acc = 0;
+          for (int dy = 0; dy < 3; dy++) for (int dx = 0; dx < 3; dx++) acc += pics[k][((size_t)(3 * y + dy) * ti.W + 3 * x + dx) * 4 + c];
+          sheet[((size_t)(oy + y) * SW + ox + x) * 4 + c] = (uint8_t)(acc / 9); } }
+      CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+      CGContextRef ctx = CGBitmapContextCreate(sheet.data(), SW, SH, 8, SW * 4, cs, kCGImageAlphaPremultipliedLast);
+      CTFontRef font = CTFontCreateWithName(CFSTR("Helvetica-Bold"), 17, NULL);
+      for (size_t k = 0; k < labs.size(); k++) { uint32_t ox = (k % 5) * cw, oy = (k / 5) * ch;
+        CGContextSetRGBFillColor(ctx, 0, 0, 0, 0.65); CGContextFillRect(ctx, CGRectMake(ox, SH - oy - 28, cw, 28));
+        CFStringRef str = CFStringCreateWithCString(NULL, labs[k].c_str(), kCFStringEncodingUTF8);
+        CFStringRef keys[] = {kCTFontAttributeName, kCTForegroundColorFromContextAttributeName}; CFTypeRef vals[] = {font, kCFBooleanTrue};
+        CFDictionaryRef attr = CFDictionaryCreate(NULL, (const void**)keys, (const void**)vals, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        CFAttributedStringRef as = CFAttributedStringCreate(NULL, str, attr); CTLineRef line = CTLineCreateWithAttributedString(as);
+        CGContextSetRGBFillColor(ctx, 1, 1, 1, 1); CGContextSetTextPosition(ctx, ox + 8, SH - oy - 20); CTLineDraw(line, ctx);
+        CFRelease(line); CFRelease(as); CFRelease(attr); CFRelease(str); }
+      CGImageRef im = CGBitmapContextCreateImage(ctx); std::vector<uint8_t> out((size_t)SW * SH * 4);
+      CGContextRef c2 = CGBitmapContextCreate(out.data(), SW, SH, 8, SW * 4, cs, kCGImageAlphaPremultipliedLast); CGContextDrawImage(c2, CGRectMake(0, 0, SW, SH), im);
+      std::string path = "img5_" + tag + "_sheet.png"; writePngG(path, out, SW, SH); printf("wrote %s\n", path.c_str());
+      CGContextRelease(c2); CGImageRelease(im); CFRelease(font); CGContextRelease(ctx); CGColorSpaceRelease(cs);
+    }
+'''
+rep('    if (what == "stackab") {', modes + '    if (what == "stackab") {')
+open(p, 'w').write(s)
+print("patched b5")
+
+# ---------------------------------------------------------------- dump mode: 8-bit composites + masks for the numpy analysis (ana5.py)
+dump = r'''
+    if (what == "dump") {
+      // Per case: RT off, references (two independent 1024-ray halves of the High tree and of the Ultra tree),
+      // the 128/256/512/1024-ray blocks, High k1/k2/k3, Ultra 2/3/4 rays (k1, footprint jitter, seeds 1 and 8), masks.
+      const char* only = argc > 3 ? argv[3] : nullptr;
+      struct DC { const char* key; const char* hi; const char* ul; };
+      for (DC dc : {DC{"A20", "A_H", "A_U3"}, DC{"B20", "B_H", "B_U2"}, DC{"D20", "D_H", "D_U2"}, DC{"F20", "F_H", "F_U3"}, DC{"G15", "G_H", "G_U2"}}) {
+        if (only && strcmp(only, dc.key)) continue;
+        Cfg hi = findCfg(dc.hi), ul = findCfg(dc.ul);
+        Cfg ref = hi; ref.spp = 64; ref.mode = 0; ref.filter = false; ref.id = "REF";
+        Cfg refU = ul; refU.spp = 64; refU.mode = 0; refU.filter = false; refU.bounces = 3; refU.layers = 2; refU.s1 = 8; refU.id = "REFU";
+        char fn[160]; auto out = [&](const char* nm, std::vector<uint8_t> px) { snprintf(fn, sizeof fn, "d5_%s_c%d_sg%d_%s_%s.png", tag.c_str(), cubeMode, getenv("SOFTGATE") ? 1 : 0, dc.key, nm); writePngG(fn, px, ti.W, ti.H); };
+        auto cls = clsOf(ref);
+        std::vector<uint8_t> mk((size_t)ti.W * ti.H * 4, 0);
+        for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { int k = (int)(cls[i * 4 + 3] + .5f); mk[i * 4] = k == 2 ? 255 : 0; mk[i * 4 + 1] = k == 1 ? 255 : 0; mk[i * 4 + 3] = 255; }
+        out("mask", mk);
+        out("off", comp8(hi, 1, 0, nullptr));
+        auto Ra = refCached(ref, dc.key, 0, 16), Rb = refCached(ref, dc.key, 16, 16);
+        std::vector<float> R(Ra.size()); for (size_t i = 0; i < R.size(); i++) R[i] = .5f * (Ra[i] + Rb[i]);
+        out("ref", comp8(ref, 1, 2, &R)); out("refa", comp8(ref, 1, 2, &Ra)); out("refb", comp8(ref, 1, 2, &Rb));
+        struct BK { const char* nm; int first, cnt; } bks[4] = {{"x128", 32, 2}, {"x256", 34, 4}, {"x512", 38, 8}, {"x1024", 46, 16}};
+        for (auto& bk : bks) { auto X = refCached(ref, dc.key, bk.first, bk.cnt); out(bk.nm, comp8(ref, 1, 2, &X)); }
+        for (float k : {1.f, 2.f, 3.f}) { Cfg c = hi; c.blurK = k; char nm[16]; snprintf(nm, sizeof nm, "high_k%d", (int)k); out(nm, comp8(c, 1, 1, nullptr)); }
+        {
+          auto RUa = refCached(refU, dc.key, 0, 16), RUb = refCached(refU, dc.key, 16, 16);
+          std::vector<float> RU(RUa.size()); for (size_t i = 0; i < RU.size(); i++) RU[i] = .5f * (RUa[i] + RUb[i]);
+          out("refu", comp8(refU, 1, 2, &RU)); out("refua", comp8(refU, 1, 2, &RUa)); out("refub", comp8(refU, 1, 2, &RUb));
+        }
+        uint32_t sj = jitterMode; jitterMode = 2;
+        for (uint32_t n : {2u, 3u, 4u}) { Cfg c = ul; c.spp = n; c.mode = 0; c.aniso = 2; c.blurK = 1.f;
+          if (!strcmp(dc.ul, dc.hi)) { c.bounces = 3; c.layers = 2; c.s1 = 8; c.cutoff = .004f; }
+          char nm[16]; snprintf(nm, sizeof nm, "u%u", n); out(nm, comp8(c, 1, 1, nullptr));
+          snprintf(nm, sizeof nm, "u%u_seed8", n); out(nm, comp8(c, 8, 1, nullptr)); }
+        jitterMode = sj;
+        printf("%s dump %s done | %s\n", tag.c_str(), dc.key, loadStr().c_str()); fflush(stdout);
+      }
+    }
+'''
+rep('    if (what == "stackab") {', dump + '    if (what == "stackab") {')
+open(p, 'w').write(s)
+print("patched dump")

@@ -1,0 +1,36 @@
+ 6:46  up 30 days, 10:54, 1 user, load averages: 185.02 158.93 102.88
+# rt_bench4 r3 conv device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 185/159/103
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- conv 1920x1080: reference convergence, floor px, depth 2 (High tree), cube mode 4  load 189/160/104
+r3 conv A20 scene 1 view A r0.20:  128 rays vs 2048-ray ref (independent): display mean 2.296/255 p99 40 >=2 20.89% >=4 9.86% >=8 6.549% | linear relRMSE 1.759, clamped at 4x mean 0.490 | floor 12.0% | load 189/160/104
+r3 conv A20 scene 1 view A r0.20:  256 rays vs 2048-ray ref (independent): display mean 1.995/255 p99 37 >=2 19.64% >=4 9.61% >=8 6.032% | linear relRMSE 1.197, clamped at 4x mean 0.417 | floor 12.0% | load 189/160/104
+r3 conv A20 scene 1 view A r0.20:  512 rays vs 2048-ray ref (independent): display mean 1.702/255 p99 28 >=2 18.53% >=4 9.20% >=8 5.167% | linear relRMSE 0.813, clamped at 4x mean 0.350 | floor 12.0% | load 189/160/104
+r3 conv A20 scene 1 view A r0.20: 1024 rays vs 2048-ray ref (independent): display mean 1.405/255 p99 22 >=2 17.22% >=4 8.13% >=8 4.396% | linear relRMSE 0.536, clamped at 4x mean 0.271 | floor 12.0% | load 189/160/104
+r3 conv B20 scene 1 view B r0.20:  128 rays vs 2048-ray ref (independent): display mean 1.564/255 p99 19 >=2 20.51% >=4 11.60% >=8 5.059% | linear relRMSE 0.558, clamped at 4x mean 0.257 | floor 15.1% | load 189/160/104
+r3 conv B20 scene 1 view B r0.20:  256 rays vs 2048-ray ref (independent): display mean 1.290/255 p99 16 >=2 19.17% >=4 9.60% >=8 3.690% | linear relRMSE 0.345, clamped at 4x mean 0.199 | floor 15.1% | load 189/160/104
+r3 conv B20 scene 1 view B r0.20:  512 rays vs 2048-ray ref (independent): display mean 1.047/255 p99 13 >=2 16.78% >=4 7.46% >=8 2.921% | linear relRMSE 0.230, clamped at 4x mean 0.142 | floor 15.1% | load 189/160/104
+r3 conv B20 scene 1 view B r0.20: 1024 rays vs 2048-ray ref (independent): display mean 0.875/255 p99 11 >=2 14.39% >=4 6.52% >=8 2.242% | linear relRMSE 0.158, clamped at 4x mean 0.102 | floor 15.1% | load 190/161/104
+r3 conv F20 scene 3 view A r0.20:  128 rays vs 2048-ray ref (independent): display mean 0.538/255 p99 5 >=2 6.57% >=4 1.83% >=8 0.444% | linear relRMSE 0.289, clamped at 4x mean 0.141 | floor 12.0% | load 190/161/104
+r3 conv F20 scene 3 view A r0.20:  256 rays vs 2048-ray ref (independent): display mean 0.414/255 p99 3 >=2 3.90% >=4 0.93% >=8 0.243% | linear relRMSE 0.185, clamped at 4x mean 0.091 | floor 12.0% | load 190/161/104
+r3 conv F20 scene 3 view A r0.20:  512 rays vs 2048-ray ref (independent): display mean 0.327/255 p99 3 >=2 2.44% >=4 0.64% >=8 0.184% | linear relRMSE 0.126, clamped at 4x mean 0.063 | floor 12.0% | load 190/161/104
+r3 conv F20 scene 3 view A r0.20: 1024 rays vs 2048-ray ref (independent): display mean 0.258/255 p99 2 >=2 1.50% >=4 0.42% >=8 0.104% | linear relRMSE 0.082, clamped at 4x mean 0.044 | floor 12.0% | load 191/162/105
+r3 conv D20 scene 2 view A r0.20:  128 rays vs 2048-ray ref (independent): display mean 1.324/255 p99 9 >=2 24.90% >=4 10.95% >=8 1.952% | linear relRMSE 0.128, clamped at 4x mean 0.099 | floor 37.2% | load 191/162/105
+r3 conv D20 scene 2 view A r0.20:  256 rays vs 2048-ray ref (independent): display mean 0.921/255 p99 5 >=2 19.73% >=4 4.07% >=8 0.223% | linear relRMSE 0.076, clamped at 4x mean 0.060 | floor 37.2% | load 191/162/105
+r3 conv D20 scene 2 view A r0.20:  512 rays vs 2048-ray ref (independent): display mean 0.644/255 p99 3 >=2 10.83% >=4 0.97% >=8 0.014% | linear relRMSE 0.049, clamped at 4x mean 0.039 | floor 37.2% | load 191/162/105
+r3 conv D20 scene 2 view A r0.20: 1024 rays vs 2048-ray ref (independent): display mean 0.499/255 p99 2 >=2 4.88% >=4 0.17% >=8 0.000% | linear relRMSE 0.033, clamped at 4x mean 0.027 | floor 37.2% | load 200/164/106
+r3 conv G15 scene 3 view D r0.15:  128 rays vs 2048-ray ref (independent): display mean 0.158/255 p99 2 >=2 1.34% >=4 0.31% >=8 0.029% | linear relRMSE 0.167, clamped at 4x mean 0.106 | floor 19.4% | load 200/164/106
+r3 conv G15 scene 3 view D r0.15:  256 rays vs 2048-ray ref (independent): display mean 0.123/255 p99 1 >=2 0.84% >=4 0.08% >=8 0.006% | linear relRMSE 0.106, clamped at 4x mean 0.078 | floor 19.4% | load 200/164/106
+r3 conv G15 scene 3 view D r0.15:  512 rays vs 2048-ray ref (independent): display mean 0.096/255 p99 1 >=2 0.42% >=4 0.02% >=8 0.000% | linear relRMSE 0.073, clamped at 4x mean 0.058 | floor 19.4% | load 200/164/106
+r3 conv G15 scene 3 view D r0.15: 1024 rays vs 2048-ray ref (independent): display mean 0.079/255 p99 1 >=2 0.16% >=4 0.00% >=8 0.000% | linear relRMSE 0.052, clamped at 4x mean 0.044 | floor 19.4% | load 203/165/107
+# done load 203/165/107
+ 6:46  up 30 days, 10:54, 1 user, load averages: 203.02 165.14 106.74

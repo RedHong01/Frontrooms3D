@@ -1,0 +1,171 @@
+// The per-chunk (or per title-stream variant) record of planned wall
+// fixtures (research/outlets/10_spec.md §3.1). It lives on the chunk root, so
+// the map's Unregister and RebuildChunk free it with the chunk; it adds itself
+// to a static registry while enabled (a hidden stream variant drops out by
+// itself), and FrontRoomsWallFixtureRenderer draws every registered set.
+// No GameObject, Collider, Renderer, Mesh or MaterialPropertyBlock is made.
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+
+[ExecuteAlways]
+[DisallowMultipleComponent]
+[AddComponentMenu("")]
+public sealed class FrontRoomsWallFixtureSet : MonoBehaviour
+{
+    /// <summary>Every enabled set (the renderer draws these).</summary>
+    public static readonly List<FrontRoomsWallFixtureSet> Registry = new List<FrontRoomsWallFixtureSet>();
+
+    /// <summary>
+    /// Bumped whenever the occluders any enabled set holds change (a set with
+    /// occluders is enabled or disabled, or gets a new one). The renderer
+    /// re-tests its hidden fixtures when it changes.
+    /// </summary>
+    public static int OccluderVersion = 1;
+
+    public GridCoord coord;
+    /// <summary>A title-stream set (InstallLocal): no chunk data; every face has streamClass.</summary>
+    public bool isLocal;
+    public F.FixtureClass streamClass;
+    /// <summary>The planner seed this set was planned with (stage 2 rolls its finishes from it, like the plan).</summary>
+    public int seed;
+    [HideInInspector] public List<F.WallFace> faces = new List<F.WallFace>(160);
+    [HideInInspector] public List<F.KeepOut> keepOut = new List<F.KeepOut>(8);
+    [HideInInspector] public List<F.Fixture> fixtures = new List<F.Fixture>(64);
+    /// <summary>
+    /// Fixtures added after the plan: the Office kit's pod floor feeds (AddExtra) and its stage-2
+    /// receptacles beside wall rows (AddStage2). They sit at the end of <see cref="fixtures"/>, after the plan.
+    /// </summary>
+    public int extraCount;
+    /// <summary>
+    /// Stage 2, rule 1 (10_spec.md §2.9; ON since render check R-4, 20_code.md §5.5): boxes, in this
+    /// set's root space, of wall units a dresser stood against a wall. A wall fixture of ANY enabled set
+    /// whose plate volume meets one of them is not drawn (it is behind the unit, and the unit's rear
+    /// service parts may reach it). The plan itself is unchanged.
+    /// </summary>
+    [HideInInspector] public List<Bounds> occluders = new List<Bounds>();
+    /// <summary>The wall material a papered-over plate is drawn with, per face theme (the title stream uses one for both).</summary>
+    public Material wallMatchLevel0, wallMatchOffice;
+
+    // ---- Renderer cache (FrontRoomsWallFixtureRenderer; rebuilt when the plan, the root or the occluders change) ----
+    [System.NonSerialized] internal int changeCount = 1;
+    [System.NonSerialized] internal int cachedChange = -1;
+    [System.NonSerialized] internal int cachedLibrary = -1;
+    [System.NonSerialized] internal int cachedOccluders = -1;
+    [System.NonSerialized] internal Matrix4x4 cachedRoot;
+    [System.NonSerialized] internal Matrix4x4[] localMatrix;   // per fixture: kit origin in root space
+    [System.NonSerialized] internal Matrix4x4[] worldMatrix;   // per fixture
+    [System.NonSerialized] internal Vector3[] worldPosition;   // per fixture (plate centre for culling)
+    [System.NonSerialized] internal int[] recipe;              // per fixture x 3 LODs: recipe id or -1
+    [System.NonSerialized] internal byte[] lodSet;             // per fixture: index into the renderer's LOD distance sets
+    [System.NonSerialized] internal int[] screwFirst;          // per fixture: first screw matrix, count in screwCount
+    [System.NonSerialized] internal byte[] screwCount;
+    [System.NonSerialized] internal int[] screwRecipe;         // per fixture: screw recipe id or -1
+    [System.NonSerialized] internal Matrix4x4[] screwLocal;
+    [System.NonSerialized] internal Matrix4x4[] screwWorld;
+    [System.NonSerialized] internal Bounds worldBounds;
+    [System.NonSerialized] internal int liveCount;             // fixtures with at least one drawable LOD
+    [System.NonSerialized] internal int hiddenCount;           // fixtures not drawn because an occluder covers them
+    [System.NonSerialized] internal bool[] hidden;             // per fixture: behind a wall unit (stage 2, rule 1)
+
+    void OnEnable()
+    {
+        if (!Registry.Contains(this)) Registry.Add(this);
+        cachedChange = -1;
+        if (occluders.Count > 0) OccluderVersion++;
+    }
+
+    void OnDisable()
+    {
+        Registry.Remove(this);
+        if (occluders.Count > 0) OccluderVersion++;
+    }
+
+    /// <summary>Call after changing <see cref="fixtures"/> directly: the renderer rebuilds its cache.</summary>
+    public void MarkChanged() => changeCount++;
+
+    /// <summary>
+    /// Add a fixture placed outside the plan (the Office kit's pod floor feeds).
+    /// Position and normal are in this set's root space. The face is cleared (-1).
+    /// </summary>
+    public void AddExtra(in F.Fixture x)
+    {
+        var e = x;
+        e.face = -1;
+        fixtures.Add(e);
+        extraCount++;
+        MarkChanged();
+    }
+
+    /// <summary>
+    /// Add a fixture placed outside the plan, with its position and normal in
+    /// <paramref name="space"/> (for example a cubicle pod's transform).
+    /// </summary>
+    public void AddExtra(F.FixtureKit kit, Transform space, Vector3 position, Vector3 normal, F.Finish plate = F.Finish.Stainless,
+        F.Finish device = F.Finish.Ivory, F.FixtureClass cls = F.FixtureClass.Floor)
+    {
+        var p = space != null ? transform.InverseTransformPoint(space.TransformPoint(position)) : position;
+        var n = space != null ? transform.InverseTransformDirection(space.TransformDirection(normal)) : normal;
+        AddExtra(new F.Fixture { kit = kit, position = p, normal = n.normalized, plate = plate, device = device, cls = cls, face = -1 });
+    }
+
+    /// <summary>A stage-2 wall fixture (FrontRoomsWallFixtures.EnsureReceptacleNear): appended after the plan, keeping its face.</summary>
+    internal void AddStage2(in F.Fixture x)
+    {
+        fixtures.Add(x);
+        extraCount++;
+        MarkChanged();
+    }
+
+    /// <summary>
+    /// Stage 2, rule 1: a wall unit stands against a wall. <paramref name="localMin"/> and
+    /// <paramref name="localMax"/> are its box in <paramref name="piece"/>'s space (the kit sidecar's
+    /// bounds, which include rear cords and coils). Every wall fixture whose plate volume meets the box
+    /// is not drawn, in this set and in the neighbour chunk's set alike.
+    /// </summary>
+    public void AddOccluder(Transform piece, Vector3 localMin, Vector3 localMax)
+    {
+        if (piece == null) return;
+        var m = transform.worldToLocalMatrix * piece.localToWorldMatrix;
+        var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        var max = -min;
+        for (var k = 0; k < 8; k++)
+        {
+            var c = new Vector3((k & 1) == 0 ? localMin.x : localMax.x, (k & 2) == 0 ? localMin.y : localMax.y, (k & 4) == 0 ? localMin.z : localMax.z);
+            var p = m.MultiplyPoint3x4(c);
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+        }
+        var b = new Bounds();
+        b.SetMinMax(min, max);
+        occluders.Add(b);
+        OccluderVersion++;
+        MarkChanged();
+    }
+
+    /// <summary>True when fixture <paramref name="i"/> is not drawn because a wall unit covers it (stage 2, rule 1).</summary>
+    public bool Occluded(int i) => i >= 0 && i < fixtures.Count && F.IsOccluded(this, fixtures[i]);
+
+    /// <summary>World position of fixture i (debug views, the sound layer).</summary>
+    public Vector3 WorldPosition(int i) => transform.TransformPoint(fixtures[i].position);
+
+    /// <summary>
+    /// Append the world position of every drawn fixture of <paramref name="kit"/> (None: all) to
+    /// <paramref name="into"/>. Fixtures hidden behind a wall unit are left out.
+    /// </summary>
+    public void WorldPositions(List<Vector3> into, F.FixtureKit kit = F.FixtureKit.None)
+    {
+        var m = transform.localToWorldMatrix;
+        for (var i = 0; i < fixtures.Count; i++)
+            if ((kit == F.FixtureKit.None || fixtures[i].kit == kit) && !F.IsOccluded(this, fixtures[i]))
+                into.Add(m.MultiplyPoint3x4(fixtures[i].position));
+    }
+
+    /// <summary>The wall material for a papered-over fixture on face <paramref name="face"/>.</summary>
+    internal Material WallMatch(int face)
+    {
+        var theme = face >= 0 && face < faces.Count ? faces[face].theme : ZoneTheme.Level0;
+        return theme == ZoneTheme.Office ? wallMatchOffice : wallMatchLevel0;
+    }
+}

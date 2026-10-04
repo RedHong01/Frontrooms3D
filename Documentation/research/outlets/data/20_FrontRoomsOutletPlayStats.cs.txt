@@ -1,0 +1,96 @@
+// CLONE-ONLY play-mode recorder (outlet workflow C1). With OUTLET_PLAYSTATS=<json path>
+// it samples, while the main-scene autopilot plays, what the outlet layer costs and
+// adds: R3 draws per frame for the game cameras, instances, triangles, submit ms,
+// and the scene's renderer and collider counts (whole scene and under the map).
+// The file is rewritten at every sample, so the playtest's own exit loses nothing.
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+using R = FrontRoomsWallFixtureRenderer;
+
+[InitializeOnLoad]
+public static class FrontRoomsOutletPlayStats
+{
+    static readonly string OutPath = Environment.GetEnvironmentVariable("OUTLET_PLAYSTATS");
+    static double nextSample, nextCount;
+    static R.FrameStats lastAcc;
+    static int lastFrame;
+    static readonly StringBuilder rows = new StringBuilder();
+    static int samples;
+    static double maxSubmitPerFrame, sumSubmit, sumDraws, sumDrawsP6, sumInstances, sumTris, sumFrames;
+    static int maxDraws, maxDrawsP6, maxRenderers, maxColliders, maxMapRenderers, maxMapColliders, maxSets, maxFixtures;
+
+    static FrontRoomsOutletPlayStats()
+    {
+        if (string.IsNullOrEmpty(OutPath)) return;
+        EditorApplication.update += Tick;
+    }
+
+    static void Tick()
+    {
+        if (!EditorApplication.isPlaying) return;
+        var now = EditorApplication.timeSinceStartup;
+        if (now < nextSample) return;
+        nextSample = now + 1.0;
+        var acc = R.Accumulated;
+        var frames = Time.frameCount - lastFrame;
+        if (lastFrame > 0 && frames > 0)
+        {
+            var draws = acc.Calls - lastAcc.Calls;
+            var drawsP6 = acc.callsWithInstancing - lastAcc.callsWithInstancing;
+            var submit = acc.submitMs - lastAcc.submitMs;
+            var cams = Math.Max(1, acc.cameras - lastAcc.cameras);
+            sumFrames += frames;
+            sumDraws += draws;
+            sumDrawsP6 += drawsP6;
+            sumInstances += acc.instances - lastAcc.instances;
+            sumTris += acc.triangles - lastAcc.triangles;
+            sumSubmit += submit;
+            maxSubmitPerFrame = Math.Max(maxSubmitPerFrame, submit / frames);
+            maxDraws = Math.Max(maxDraws, (int)Math.Ceiling((double)draws / frames));
+            maxDrawsP6 = Math.Max(maxDrawsP6, (int)Math.Ceiling((double)drawsP6 / frames));
+            rows.Append(rows.Length > 0 ? ",\n  " : "  ").Append("{\"t\": ").Append(Time.realtimeSinceStartup.ToString("0.0", CultureInfo.InvariantCulture))
+                .Append(", \"frames\": ").Append(frames).Append(", \"camerasPerFrame\": ").Append(((double)cams / frames).ToString("0.00", CultureInfo.InvariantCulture))
+                .Append(", \"drawsPerFrame\": ").Append(((double)draws / frames).ToString("0.0", CultureInfo.InvariantCulture))
+                .Append(", \"drawsPerFrameWithP6\": ").Append(((double)drawsP6 / frames).ToString("0.0", CultureInfo.InvariantCulture))
+                .Append(", \"submitMsPerFrame\": ").Append((submit / frames).ToString("0.000", CultureInfo.InvariantCulture)).Append("}");
+        }
+        lastAcc = acc;
+        lastFrame = Time.frameCount;
+        samples++;
+        if (now >= nextCount)
+        {
+            nextCount = now + 5.0;
+            maxRenderers = Math.Max(maxRenderers, UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length);
+            maxColliders = Math.Max(maxColliders, UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length);
+            var map = UnityEngine.Object.FindFirstObjectByType<FrontRoomsMapWorld>();
+            if (map != null)
+            {
+                maxMapRenderers = Math.Max(maxMapRenderers, map.GetComponentsInChildren<Renderer>(false).Length);
+                maxMapColliders = Math.Max(maxMapColliders, map.GetComponentsInChildren<Collider>(false).Length);
+            }
+            maxSets = Math.Max(maxSets, FrontRoomsWallFixtureSet.Registry.Count);
+            maxFixtures = Math.Max(maxFixtures, FrontRoomsWallFixtureSet.Registry.Sum(s => s != null ? s.fixtures.Count : 0));
+        }
+        Write();
+    }
+
+    static void Write()
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var f = Math.Max(1.0, sumFrames);
+        var json = "{\n \"outletsSuppressed\": " + (FrontRoomsWallFixtures.Suppressed ? "true" : "false")
+            + ",\n \"frames\": " + sumFrames + ", \"meanDrawsPerFrame\": " + (sumDraws / f).ToString("0.0", inv) + ", \"maxDrawsPerFrame\": " + maxDraws
+            + ", \"meanDrawsPerFrameWithP6\": " + (sumDrawsP6 / f).ToString("0.0", inv) + ", \"maxDrawsPerFrameWithP6\": " + maxDrawsP6
+            + ", \"meanInstancesPerFrame\": " + (sumInstances / f).ToString("0.0", inv) + ", \"meanTrianglesPerFrame\": " + (sumTris / f).ToString("0", inv)
+            + ", \"meanSubmitMsPerFrame\": " + (sumSubmit / f).ToString("0.000", inv) + ", \"maxSubmitMsPerFrame\": " + maxSubmitPerFrame.ToString("0.000", inv)
+            + ",\n \"maxSceneRenderers\": " + maxRenderers + ", \"maxSceneColliders\": " + maxColliders + ", \"maxMapRenderers\": " + maxMapRenderers + ", \"maxMapColliders\": " + maxMapColliders
+            + ", \"maxSets\": " + maxSets + ", \"maxFixtures\": " + maxFixtures
+            + ",\n \"samples\": [\n" + rows + "\n ]\n}\n";
+        try { File.WriteAllText(OutPath, json); } catch (Exception) { }
+    }
+}

@@ -1,0 +1,17 @@
+// CLONE-ONLY test switch (outlet workflow, C1). With the environment variable
+// OUTLETS_OFF=1 the outlet hook adds nothing (FrontRoomsWallFixtures.Suppressed),
+// so any suite can be run as the "before the patch" baseline in the same clone.
+using System;
+using UnityEditor;
+using UnityEngine;
+
+[InitializeOnLoad]
+public static class FrontRoomsOutletTestSwitch
+{
+    static FrontRoomsOutletTestSwitch()
+    {
+        var off = Environment.GetEnvironmentVariable("OUTLETS_OFF");
+        FrontRoomsWallFixtures.Suppressed = off == "1";
+        if (FrontRoomsWallFixtures.Suppressed) Debug.Log("[OutletSwitch] OUTLETS_OFF=1: the outlet hook is suppressed for this run.");
+    }
+}

@@ -1,0 +1,29 @@
+ 7:07  up 30 days, 11:15, 1 user, load averages: 10.54 27.25 66.44
+# rt_bench4 r3 dolly device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 11/27/66
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# --- dolly 1920x1080 Run S1 tripped, Ultra 3 rays + hw-aniso k1, cube mode 4  load 11/27/66
+r3 dolly forward screen hash, re-seeded per frame (11's bench)    | 0-3 m: T 1.03 (>=8 1.48%) |E| 0.58 | 3-6 m: T 2.51 (>=8 6.89%) |E| 1.58 | 6-12 m: T 11.31 (>=8 37.80%) |E| 7.04 | 12+ m: T 9.08 (>=8 24.93%) |E| 6.29 | load 11/27/66
+r3 dolly forward screen hash, fixed seed                          | 0-3 m: T 0.34 (>=8 0.01%) |E| 0.52 | 3-6 m: T 0.85 (>=8 0.96%) |E| 1.57 | 6-12 m: T 1.98 (>=8 4.78%) |E| 8.43 | 12+ m: T 1.30 (>=8 2.82%) |E| 6.20 | load 11/27/66
+r3 dolly forward world 1 cm cells                                 | 0-3 m: T 0.45 (>=8 0.14%) |E| 0.39 | 3-6 m: T 1.42 (>=8 3.49%) |E| 1.18 | 6-12 m: T 7.95 (>=8 26.23%) |E| 6.53 | 12+ m: T 6.95 (>=8 21.11%) |E| 6.04 | load 11/27/66
+r3 dolly forward footprint-aware (long axis)                      | 0-3 m: T 0.48 (>=8 0.22%) |E| 0.36 | 3-6 m: T 1.51 (>=8 4.34%) |E| 1.34 | 6-12 m: T 5.39 (>=8 17.98%) |E| 7.12 | 12+ m: T 3.62 (>=8 8.81%) |E| 7.44 | load 11/27/66
+r3 dolly forward footprint-aware (geometric mean)                 | 0-3 m: T 0.45 (>=8 0.08%) |E| 0.32 | 3-6 m: T 1.57 (>=8 4.14%) |E| 1.27 | 6-12 m: T 7.59 (>=8 24.40%) |E| 6.63 | 12+ m: T 3.42 (>=8 9.69%) |E| 6.17 | load 11/27/66
+r3 dolly forward High: mirror + k2 (deterministic)                | 0-3 m: T 0.34 (>=8 0.01%) |E| 0.56 | 3-6 m: T 0.81 (>=8 0.92%) |E| 1.64 | 6-12 m: T 2.35 (>=8 6.99%) |E| 10.76 | 12+ m: T 1.05 (>=8 2.40%) |E| 9.75 | load 11/27/66
+r3 dolly forward Ultra hybrid: footprint jitter + far fade 6-12 mm | 0-3 m: T 0.48 (>=8 0.22%) |E| 0.36 | 3-6 m: T 1.38 (>=8 3.81%) |E| 1.29 | 6-12 m: T 2.69 (>=8 9.20%) |E| 9.80 | 12+ m: T 1.05 (>=8 2.40%) |E| 9.75 | load 11/27/66
+r3 dolly strafe  screen hash, re-seeded per frame (11's bench)    | 0-3 m: T 1.01 (>=8 1.29%) |E| 0.57 | 3-6 m: T 2.48 (>=8 6.51%) |E| 1.51 | 6-12 m: T 12.52 (>=8 40.35%) |E| 7.57 | 12+ m: T 8.97 (>=8 26.76%) |E| 6.19 | load 11/26/65
+r3 dolly strafe  screen hash, fixed seed                          | 0-3 m: T 0.38 (>=8 0.01%) |E| 0.54 | 3-6 m: T 1.09 (>=8 2.16%) |E| 1.40 | 6-12 m: T 5.31 (>=8 21.19%) |E| 8.04 | 12+ m: T 4.99 (>=8 16.54%) |E| 7.22 | load 11/26/65
+r3 dolly strafe  world 1 cm cells                                 | 0-3 m: T 0.46 (>=8 0.17%) |E| 0.38 | 3-6 m: T 1.52 (>=8 4.19%) |E| 1.23 | 6-12 m: T 7.50 (>=8 27.96%) |E| 7.05 | 12+ m: T 6.19 (>=8 22.12%) |E| 6.29 | load 11/26/65
+r3 dolly strafe  footprint-aware (long axis)                      | 0-3 m: T 0.42 (>=8 0.08%) |E| 0.33 | 3-6 m: T 1.42 (>=8 3.90%) |E| 1.17 | 6-12 m: T 6.28 (>=8 23.44%) |E| 7.16 | 12+ m: T 4.19 (>=8 13.76%) |E| 8.37 | load 11/26/65
+r3 dolly strafe  footprint-aware (geometric mean)                 | 0-3 m: T 0.45 (>=8 0.05%) |E| 0.33 | 3-6 m: T 1.34 (>=8 3.43%) |E| 1.16 | 6-12 m: T 6.56 (>=8 24.30%) |E| 6.56 | 12+ m: T 4.20 (>=8 14.72%) |E| 5.99 | load 11/26/65
+r3 dolly strafe  High: mirror + k2 (deterministic)                | 0-3 m: T 0.35 (>=8 0.01%) |E| 0.58 | 3-6 m: T 1.13 (>=8 2.65%) |E| 1.92 | 6-12 m: T 4.75 (>=8 19.48%) |E| 11.13 | 12+ m: T 3.16 (>=8 12.19%) |E| 9.69 | load 11/26/65
+r3 dolly strafe  Ultra hybrid: footprint jitter + far fade 6-12 mm | 0-3 m: T 0.42 (>=8 0.08%) |E| 0.33 | 3-6 m: T 1.34 (>=8 3.66%) |E| 1.17 | 6-12 m: T 4.70 (>=8 19.00%) |E| 10.34 | 12+ m: T 3.16 (>=8 12.19%) |E| 9.69 | load 11/26/65
+# done load 11/26/65
+ 7:07  up 30 days, 11:15, 1 user, load averages: 10.62 26.20 65.15

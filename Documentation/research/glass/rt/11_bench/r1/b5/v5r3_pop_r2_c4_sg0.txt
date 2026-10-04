@@ -1,0 +1,22 @@
+ 7:03  up 30 days, 11:11, 1 user, load averages: 29.08 48.26 83.82
+A20 pop u2->u3: floor px mean 0.93/255 p99 12 max 181 >=8 2.04% | 8x8 blocks mean 0.72 p99 10.7 max 68.4
+A20 pop u3->u4: floor px mean 0.72/255 p99 10 max 170 >=8 1.46% | 8x8 blocks mean 0.55 p99 9.3 max 72.7
+A20 seed change at u2: floor px mean 2.39/255 p99 40 >=8 6.37%
+A20 seed change at u3: floor px mean 2.14/255 p99 35 >=8 5.51%
+B20 pop u2->u3: floor px mean 0.56/255 p99 6 max 71 >=8 0.52% | 8x8 blocks mean 0.47 p99 5.2 max 43.0
+B20 pop u3->u4: floor px mean 0.41/255 p99 4 max 30 >=8 0.27% | 8x8 blocks mean 0.33 p99 3.9 max 14.8
+B20 seed change at u2: floor px mean 1.25/255 p99 13 >=8 3.43%
+B20 seed change at u3: floor px mean 1.09/255 p99 11 >=8 2.43%
+D20 pop u2->u3: floor px mean 0.76/255 p99 5 max 48 >=8 0.25% | 8x8 blocks mean 0.55 p99 4.3 max 9.8
+D20 pop u3->u4: floor px mean 0.56/255 p99 3 max 26 >=8 0.08% | 8x8 blocks mean 0.39 p99 2.8 max 8.4
+D20 seed change at u2: floor px mean 1.67/255 p99 11 >=8 3.10%
+D20 seed change at u3: floor px mean 1.41/255 p99 10 >=8 2.07%
+F20 pop u2->u3: floor px mean 0.33/255 p99 3 max 92 >=8 0.21% | 8x8 blocks mean 0.20 p99 2.4 max 24.4
+F20 pop u3->u4: floor px mean 0.26/255 p99 2 max 56 >=8 0.06% | 8x8 blocks mean 0.15 p99 1.7 max 8.3
+F20 seed change at u2: floor px mean 0.69/255 p99 7 >=8 0.83%
+F20 seed change at u3: floor px mean 0.62/255 p99 5 >=8 0.60%
+G15 pop u2->u3: floor px mean 0.11/255 p99 1 max 18 >=8 0.01% | 8x8 blocks mean 0.07 p99 0.9 max 5.7
+G15 pop u3->u4: floor px mean 0.08/255 p99 1 max 4 >=8 0.00% | 8x8 blocks mean 0.05 p99 0.6 max 2.6
+G15 seed change at u2: floor px mean 0.25/255 p99 3 >=8 0.04%
+G15 seed change at u3: floor px mean 0.22/255 p99 2 >=8 0.02%
+ 7:03  up 30 days, 11:11, 1 user, load averages: 29.08 48.26 83.82

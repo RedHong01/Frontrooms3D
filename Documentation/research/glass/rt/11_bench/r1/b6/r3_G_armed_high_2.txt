@@ -1,0 +1,24 @@
+ 6:44  up 30 days, 10:52, 1 user, load averages: 168.30 146.18 90.24
+# rt_bench6 r3gh2 view G armed device=Apple M3 Max Apple9=1  load 168/146/90
+# pso main maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f2   maxd 2 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f3   maxd 3 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 18 lamps
+# receiver px (floor + lite): 20.31% of the screen
+# s1   vs main: 0 of 745106 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# s3   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# f2   vs main: 29380 of 745106 traced px differ in any bit; mean |dL| 0.00429, max rel 2.295
+# f3   vs main: 29380 of 745106 traced px differ in any bit; mean |dL| 0.00429, max rel 2.295
+# main shadow rays per frame 1563053
+r3gh2 b6 G armed High-tree 2560x1440 main min 1.017 p25 1.355 med 1.549 ms | ratio to main: min 1.000 med 1.000 | load 172/147/91
+r3gh2 b6 G armed High-tree 2560x1440 s1   min 0.991 p25 1.303 med 1.409 ms | ratio to main: min 0.975 med 0.909 | load 172/147/91
+r3gh2 b6 G armed High-tree 2560x1440 s2   min 1.130 p25 1.460 med 1.542 ms | ratio to main: min 1.111 med 0.996 | load 172/147/91
+r3gh2 b6 G armed High-tree 2560x1440 s3   min 1.187 p25 1.507 med 1.578 ms | ratio to main: min 1.167 med 1.019 | load 172/147/91
+r3gh2 b6 G armed High-tree 2560x1440 f2   min 1.244 p25 1.551 med 1.608 ms | ratio to main: min 1.224 med 1.038 | load 172/147/91
+r3gh2 b6 G armed High-tree 2560x1440 f3   min 1.263 p25 1.546 med 1.726 ms | ratio to main: min 1.243 med 1.114 | load 172/147/91
+# done load 172/147/91
+ 6:44  up 30 days, 10:52, 1 user, load averages: 171.96 147.31 90.97

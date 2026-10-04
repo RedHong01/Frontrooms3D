@@ -1,0 +1,14 @@
+# r3_summary.py - bench 6 summary for report 11 (revision 1): per view, min of per-run minima and median of per-run
+# medians over the low-load runs 4-6 (3 processes each), ratios to main and between layouts at equal depth.
+import re, glob, statistics as st
+rows = {}
+for f in sorted(glob.glob("r3_*_[456].txt")):
+    view = re.match(r"r3_(.*)_\d\.txt", f).group(1)
+    for line in open(f):
+        m = re.search(r"2560x1440 (\S+)\s+min ([\d.]+) p25 [\d.]+ med ([\d.]+) ms.*load (\d+)/", line)
+        if m: rows.setdefault(view, {}).setdefault(m.group(1), []).append((float(m.group(2)), float(m.group(3)), int(m.group(4))))
+for view, ks in rows.items():
+    mn = {k: min(x[0] for x in v) for k, v in ks.items()}; md = {k: st.median([x[1] for x in v]) for k, v in ks.items()}
+    loads = sorted({x[2] for v in ks.values() for x in v})
+    print(f"{view:18s} load {loads[0]}-{loads[-1]} | " + " | ".join(f"{k} {mn[k]:.3f}/{md[k]:.3f}" for k in ["main", "s1", "s2", "s3", "f2", "f3"]))
+    print(f"{'':18s} ratio min/med: s1/main {mn['s1']/mn['main']:.3f}/{md['s1']/md['main']:.3f}  s2/main {mn['s2']/mn['main']:.3f}/{md['s2']/md['main']:.3f}  s3/main {mn['s3']/mn['main']:.3f}/{md['s3']/md['main']:.3f}  f2/s2 {mn['f2']/mn['s2']:.3f}/{md['f2']/md['s2']:.3f}  f3/s3 {mn['f3']/mn['s3']:.3f}/{md['f3']/md['s3']:.3f}")

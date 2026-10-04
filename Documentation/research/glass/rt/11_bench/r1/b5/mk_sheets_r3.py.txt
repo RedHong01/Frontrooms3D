@@ -1,0 +1,27 @@
+# mk_sheets_r3.py - verification images for report 11 revision 1 (G14b). Not part of the game.
+# 1) 11r1_dolly_sheet.jpg: screen-space |E3 - E2| x8 heatmaps (forward dolly, frame pair 2->3, error vs a 2048-ray
+#    reference per frame), Run S1 tripped, 1080p: re-seeded screen hash | 1 cm world cells | footprint-aware |
+#    footprint-aware + far fade (the design) | High (deterministic).
+# 2) 11r1_compare_sheet.jpg: img5_r3d_sheet.png (Off flat | Off main's Level 0 cube x0.5 | High | Ultra | 2048-ray ref).
+from PIL import Image, ImageDraw, ImageFont
+import sys
+out = sys.argv[1]
+items = [("dolly_r3m_mode0r.png", "RE-SEEDED EACH FRAME (BENCH 4)"), ("dolly_r3m_mode1.png", "WORLD 1 CM CELLS (11 AS WRITTEN)"),
+         ("dolly_r3m_mode2.png", "FOOTPRINT-AWARE CELLS"), ("dolly_r3m_mode2_hybrid.png", "FOOTPRINT + FAR FADE (DESIGN)"),
+         ("dolly_r3m_mode0_high.png", "HIGH: MIRROR + BLUR")]
+W, H = 960, 540
+sheet = Image.new("RGB", (W * 3, H * 2), (0, 0, 0))
+try: font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 26)
+except Exception: font = ImageFont.load_default()
+for k, (fn, lab) in enumerate(items):
+    im = Image.open(fn).convert("RGB").resize((W, H), Image.LANCZOS)
+    x, y = (k % 3) * W, (k // 3) * H
+    sheet.paste(im, (x, y))
+    d = ImageDraw.Draw(sheet); d.rectangle([x, y, x + W, y + 40], fill=(0, 0, 0)); d.text((x + 12, y + 7), lab, fill=(255, 255, 255), font=font)
+d = ImageDraw.Draw(sheet)
+d.text((2 * W + 20, H + 60), "Run S1 tripped, Ultra 3 rays, forward dolly 1 m/s.", fill=(220, 220, 220), font=font)
+d.text((2 * W + 20, H + 100), "Brightness = |error(frame 3) - error(frame 2)| x8, same pixel.", fill=(220, 220, 220), font=font)
+d.text((2 * W + 20, H + 140), "Black = still; white = crawling noise.", fill=(220, 220, 220), font=font)
+sheet.save(out + "/11r1_dolly_sheet.jpg", quality=85)
+Image.open("img5_r3d_sheet.png").convert("RGB").save(out + "/11r1_compare_sheet.jpg", quality=85)
+print("ok")

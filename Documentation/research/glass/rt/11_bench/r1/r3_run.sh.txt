@@ -1,0 +1,29 @@
+#!/bin/zsh
+# G14b revision 1 (round r3, 2026-10-04): timing first (load-sensitive), then quality. Every log line carries its load.
+B=/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/rt_bench2
+cd $B/b6
+for i in 1 2 3; do
+  (uptime; ./rt_bench6_r3 r3a$i A tripped; uptime) > r3_A_tripped_ultra_$i.txt 2>&1
+  (uptime; ./rt_bench6_r3 r3b$i B tripped; uptime) > r3_B_tripped_ultra_$i.txt 2>&1
+  (uptime; ./rt_bench6_r3 r3g$i G armed; uptime) > r3_G_armed_ultra_$i.txt 2>&1
+  (uptime; HIGH=1 ./rt_bench6_r3 r3ah$i A tripped; uptime) > r3_A_tripped_high_$i.txt 2>&1
+  (uptime; HIGH=1 ./rt_bench6_r3 r3gh$i G armed; uptime) > r3_G_armed_high_$i.txt 2>&1
+done
+echo b6done
+cd $B/b5
+for i in 1 2 3; do (uptime; CUBE=l0exr ./rt_bench5_r3 r3t$i timing2; uptime) > v5r3_timing2_$i.txt 2>&1; done
+echo t2done
+(uptime; ./rt_bench5_r3 r3 diff2; uptime) > v5r3_diff2_flat.txt 2>&1
+(uptime; CUBE=own ./rt_bench5_r3 r3 diff2; uptime) > v5r3_diff2_own.txt 2>&1
+(uptime; CUBE=l0exr ./rt_bench5_r3 r3 diff2; uptime) > v5r3_diff2_l0exr.txt 2>&1
+(uptime; CUBE=l0exr SOFTGATE=1 ./rt_bench5_r3 r3 diff2; uptime) > v5r3_diff2_l0exr_gate.txt 2>&1
+(uptime; SOFTGATE=1 ./rt_bench5_r3 r3 diff2; uptime) > v5r3_diff2_flat_gate.txt 2>&1
+echo d2done
+(uptime; CUBE=l0exr ./rt_bench5_r3 r3 accept; uptime) > v5r3_accept_l0exr.txt 2>&1
+(uptime; CUBE=l0exr SOFTGATE=1 ./rt_bench5_r3 r3 accept; uptime) > v5r3_accept_l0exr_gate.txt 2>&1
+echo acdone
+(uptime; CUBE=l0exr DOLLYIMG=1 ./rt_bench5_r3 r3 dolly; uptime) > v5r3_dolly_l0exr.txt 2>&1
+echo dydone
+(uptime; CUBE=l0exr ./rt_bench5_r3 r3 img5; uptime) > v5r3_img5_l0exr.txt 2>&1
+(uptime; CUBE=l0exr SOFTGATE=1 ./rt_bench5_r3 r3 conv; uptime) > v5r3_conv_l0exr_gate.txt 2>&1
+echo alldone

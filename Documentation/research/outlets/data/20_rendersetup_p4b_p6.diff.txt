@@ -1,0 +1,75 @@
+--- a/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs	2026-10-03 22:19:14
++++ b/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs	2026-10-03 22:19:16
+@@ -265,6 +265,7 @@
+         public string emission;      // emission texture stem
+         public Color emissionColor = Color.black;
+         public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile
++        public bool instancing;      // GPU instancing on (the outlet palette: FrontRoomsWallFixtureRenderer draws it with RenderMeshInstanced)
+         // Print layer (wallpaper sandwich, FrontRooms/Surface _FR_PRINT). With print set, the
+         // texture stem is the PAPER: _BaseMap = <texture>_M (linear modulation), _N, _S paper-only;
+         // _PrintTex = <print> (frame 0, R density, G cream, linear). Colours come from the palette.
+@@ -332,18 +333,27 @@
+         new SurfaceDef { name = "Prop_Chipboard", texture = "Prop_Chipboard", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.08f, macroDirt = 0.08f },
+         new SurfaceDef { name = "Prop_PinePallet", texture = "Prop_PinePallet", tile = new Vector2(1.4f, 1.4f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.15f, macroDirt = 0.2f },
+         new SurfaceDef { name = "Prop_Studs", texture = "Prop_Studs", tile = new Vector2(0.5f, 0.5f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.08f, macroDirt = 0.08f },
+-        new SurfaceDef { name = "Prop_LaminateBeige", tint = new Color(.71f, .64f, .51f), smooth = 0.43f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+-        new SurfaceDef { name = "Prop_PlasticBeige", texture = "Prop_PlasticBeige", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.1f, macroDirt = 0.1f },
++        new SurfaceDef { name = "Prop_LaminateBeige", tint = new Color(.71f, .64f, .51f), smooth = 0.43f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f, instancing = true },
++        new SurfaceDef { name = "Prop_PlasticBeige", texture = "Prop_PlasticBeige", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.1f, macroDirt = 0.1f, instancing = true },
+         new SurfaceDef { name = "Prop_PlasticWhite", texture = "Prop_PlasticWhite", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.1f, macroDirt = 0.1f },
+-        new SurfaceDef { name = "Prop_PlasticBlack", texture = "Prop_PlasticBlack", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.05f },
++        new SurfaceDef { name = "Prop_PlasticBlack", texture = "Prop_PlasticBlack", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.05f, instancing = true },
+         new SurfaceDef { name = "Prop_PlasticGrey", texture = "Prop_PlasticGrey", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.04f, macroDirt = 0.05f },
+         new SurfaceDef { name = "Prop_Rubber", tint = new Color(0.02f, 0.02f, 0.02f), smooth = 0.15f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+         new SurfaceDef { name = "Prop_SteelPutty", texture = "Prop_SteelPutty", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.1f, macroDirt = 0.1f },
+         new SurfaceDef { name = "Prop_SteelBrown", texture = "Prop_SteelBrown", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.06f, macroDirt = 0.08f },
+         new SurfaceDef { name = "Prop_SteelBlack", texture = "Prop_SteelBlack", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.04f, macroDirt = 0.06f },
+-        new SurfaceDef { name = "Prop_Aluminium", texture = "Prop_Aluminium", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 1.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.06f },
+-        new SurfaceDef { name = "Prop_Chrome", tint = new Color(0.847f, 0.847f, 0.847f), smooth = 0.85f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+-        new SurfaceDef { name = "Prop_Brass", tint = new Color(0.69f, 0.541f, 0.29f), smooth = 0.6f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
++        new SurfaceDef { name = "Prop_Aluminium", texture = "Prop_Aluminium", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 1.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.06f, instancing = true },
++        new SurfaceDef { name = "Prop_Chrome", tint = new Color(0.847f, 0.847f, 0.847f), smooth = 0.85f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f, instancing = true },
++        new SurfaceDef { name = "Prop_Brass", tint = new Color(0.69f, 0.541f, 0.29f), smooth = 0.6f, metallic = 1.0f, meshUV = true, macroTone = .05f, macroDirt = .06f, instancing = true },
++        // Outlet palette (research/outlets/10_spec.md §1.5, P-4b): tint-only thermoset and nylon slots,
++        // instanced (P-6). The plate colour is chosen per fixture by the renderer, so no extra FBX per colour.
++        // The world-space macro wear gives every plate its own grime. Tune the tints in look-dev L-1:
++        // under Level 0 light a plate reads about 11 % darker and warmer than the paper beside it.
++        new SurfaceDef { name = "Prop_ThermosetIvory", tint = new Color(.902f, .867f, .761f), smooth = .75f, meshUV = true, macroTone = .05f, macroDirt = .08f, instancing = true },   // #E6DDC2
++        new SurfaceDef { name = "Prop_ThermosetAged", tint = new Color(.804f, .749f, .596f), smooth = .60f, meshUV = true, macroTone = .08f, macroDirt = .14f, instancing = true },   // #CDBF98
++        new SurfaceDef { name = "Prop_ThermosetAlmond", tint = new Color(.890f, .843f, .745f), smooth = .70f, meshUV = true, macroTone = .05f, macroDirt = .08f, instancing = true },  // #E3D7BE
++        new SurfaceDef { name = "Prop_NylonIvory", tint = new Color(.886f, .851f, .749f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f, instancing = true },       // #E2D9BF
++        new SurfaceDef { name = "Prop_PlasticOrange", tint = new Color(.847f, .392f, .165f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f, instancing = true },    // #D8642A
+         new SurfaceDef { name = "Prop_FabricCubicle", texture = "Prop_FabricCubicle", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.12f, macroDirt = 0.12f },
+         new SurfaceDef { name = "Prop_FabricBeige", texture = "Prop_FabricBeige", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.08f, macroDirt = 0.08f },
+         new SurfaceDef { name = "Prop_FabricChair", texture = "Prop_FabricChair", tile = new Vector2(0.27f, 0.27f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.03f, macroDirt = 0.04f },
+@@ -358,17 +368,17 @@
+         new SurfaceDef { name = "Prop_TapeBlue", texture = "Prop_TapeBlue", tile = new Vector2(0.3f, 0.3f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.04f },
+         new SurfaceDef { name = "Prop_Paper", tint = new Color(0.863f, 0.847f, 0.8f), smooth = 0.24f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+         new SurfaceDef { name = "Prop_LampShade", tint = new Color(0.886f, 0.847f, 0.753f), smooth = 0.1f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
+-        new SurfaceDef { name = "Prop_Ceramic", tint = new Color(0.353f, 0.227f, 0.141f), smooth = 0.8f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
++        new SurfaceDef { name = "Prop_Ceramic", tint = new Color(0.353f, 0.227f, 0.141f), smooth = 0.8f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f, instancing = true },
+         // Round-1 requests: non-metallic finishes, coloured plastics, emissive
+         // indicators (emission without a map: emission = ""), and decal sets.
+         new SurfaceDef { name = "Prop_PVCEdge", tint = new Color(.10f, .07f, .05f), smooth = .55f, meshUV = true, macroTone = 0f, macroDirt = .05f },
+         new SurfaceDef { name = "Prop_Backer", texture = "Prop_Cardboard", tile = Vector2.one, meshUV = true, tint = new Color(.62f, .52f, .42f), macroTone = .1f, macroDirt = .1f },
+         new SurfaceDef { name = "Prop_SteelAlmond", texture = "Prop_SteelPutty", tile = Vector2.one, meshUV = true, tint = new Color(1.04f, .98f, .86f), macroTone = .1f, macroDirt = .1f },
+-        new SurfaceDef { name = "Prop_PlasticPutty", texture = "Prop_PlasticBeige", tile = Vector2.one, meshUV = true, tint = new Color(.82f, .80f, .74f), macroTone = .08f, macroDirt = .08f },
++        new SurfaceDef { name = "Prop_PlasticPutty", texture = "Prop_PlasticBeige", tile = Vector2.one, meshUV = true, tint = new Color(.82f, .80f, .74f), macroTone = .08f, macroDirt = .08f, instancing = true },
+         new SurfaceDef { name = "Prop_Hardboard", texture = "Prop_Chipboard", tile = Vector2.one, meshUV = true, tint = new Color(.55f, .40f, .30f), bump = .3f, macroTone = .1f, macroDirt = .1f },
+         new SurfaceDef { name = "Prop_PlasticRed", tint = new Color(.55f, .06f, .05f), smooth = .5f, meshUV = true, macroTone = 0f, macroDirt = .04f },
+         new SurfaceDef { name = "Prop_PlasticBlue", tint = new Color(.06f, .16f, .45f), smooth = .5f, meshUV = true, macroTone = 0f, macroDirt = .04f },
+-        new SurfaceDef { name = "Prop_CeramicGlaze", tint = new Color(.86f, .85f, .80f), smooth = .85f, meshUV = true, macroTone = 0f, macroDirt = .04f },
++        new SurfaceDef { name = "Prop_CeramicGlaze", tint = new Color(.86f, .85f, .80f), smooth = .85f, meshUV = true, macroTone = 0f, macroDirt = .04f, instancing = true },
+         new SurfaceDef { name = "Prop_FoamPU", tint = new Color(.03f, .03f, .03f), smooth = .25f, meshUV = true, macroTone = 0f, macroDirt = .03f },
+         new SurfaceDef { name = "Prop_LEDGreen", tint = new Color(.05f, .3f, .08f), smooth = .7f, meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "", emissionColor = new Color(.2f, 2.2f, .35f) },
+         new SurfaceDef { name = "Prop_LEDAmber", tint = new Color(.3f, .15f, .02f), smooth = .7f, meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "", emissionColor = new Color(2.2f, 1.1f, .1f) },
+@@ -493,6 +503,9 @@
+             m.SetFloat("_CeilingHeight", d.ceilingHeight);
+             m.SetFloat("_MeshUV", d.meshUV ? 1f : 0f);
+             if (d.meshUV) m.EnableKeyword("_FR_MESH_UV"); else m.DisableKeyword("_FR_MESH_UV");
++            // Instanced draws need the flag (the shader has multi_compile_instancing in all four passes);
++            // renderers keep using the SRP Batcher either way.
++            m.enableInstancing = d.instancing;
+             ApplyPrint(m, d);
+             if (d.emission != null)
+             {

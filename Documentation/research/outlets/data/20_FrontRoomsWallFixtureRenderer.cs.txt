@@ -1,0 +1,914 @@
+// R3: the wall-fixture renderer (research/outlets/10_spec.md §3.4).
+//
+// One static submitter on RenderPipelineManager.beginCameraRendering draws the
+// fixtures of every registered FrontRoomsWallFixtureSet for that camera:
+// distance-culled (12 m for plates at lodBias 1 and FOV 76°, never past 40 m),
+// a 0.1 m-sphere frustum test, a per-camera LOD pick (1.5 / 4 / 12 m, scaled by
+// tan(fov/2) / tan(38°) / lodBias so the switches behave like a LODGroup), and
+// buckets per (mesh, submesh, material) drawn with Graphics.RenderMeshInstanced
+// (Graphics.RenderMesh per instance for a material without instancing, which is
+// always the case for the wall-match material). Shadows off, no light or
+// reflection probes, the set's layer (Default in the game), camera motion vectors.
+//
+// Stage 2, rule 1: a wall fixture whose plate volume meets a wall unit's box
+// (FrontRoomsWallFixtureSet.AddOccluder, from the Office kit) is not drawn.
+//
+// It never creates a GameObject, a Collider, a Renderer or a
+// MaterialPropertyBlock, and never allocates a per-chunk mesh. Missing kits
+// fall back at draw time (Jumbo, Cracked, Scorched, Bare -> Duplex; HandyBox ->
+// Steel; Toggle2 -> Toggle1; data jacks and floor boxes -> nothing); a kit at
+// the end of the chain that is not built yet draws as a placeholder of the
+// spec's dimensions (a few static meshes shared by every chunk).
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using UnityEngine;
+using UnityEngine.Rendering;
+using F = FrontRoomsWallFixtures;
+
+#if UNITY_EDITOR
+[UnityEditor.InitializeOnLoad]
+#endif
+public static class FrontRoomsWallFixtureRenderer
+{
+    /// <summary>Tools and tests: draw nothing while false.</summary>
+    public static bool Enabled = true;
+
+    /// <summary>Tools and tests: cull, pick LODs and fill buckets as usual, count, but issue no draw.</summary>
+    public static bool DryRun;
+
+    /// <summary>Wall plates (10_spec.md D4): LOD0 to 1.5 m, LOD1 to 4 m, LOD2 to 12 m, at lodBias 1 and FOV 76°.</summary>
+    public const float PlateLod01 = 1.5f, PlateLod12 = 4f, PlateCull = 12f;
+    /// <summary>Never draw past this (world metres), whatever the lodBias: under the map's 48 m ring.</summary>
+    public const float MaxReach = 40f;
+    const float Tan38 = 0.78128563f;   // tan(76° / 2)
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    // WebGL track only (never lowers desktop): 8 m cull, no screws, papered plates drawn ivory.
+    static readonly float PlatformCullCap = 8f;
+    static readonly bool PlatformScrews = false;
+    static readonly bool PlatformWallMatch = false;
+#else
+    static readonly float PlatformCullCap = float.MaxValue;
+    static readonly bool PlatformScrews = true;
+    static readonly bool PlatformWallMatch = true;
+#endif
+
+    // ---------------------------------------------------------------- hook
+
+    static bool hooked;
+
+    static FrontRoomsWallFixtureRenderer()
+    {
+        Hook();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.projectChanged -= ClearCache;
+        UnityEditor.EditorApplication.projectChanged += ClearCache;
+#endif
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+    static void InitRuntime() => Hook();
+
+    static void Hook()
+    {
+        if (hooked) return;
+        hooked = true;
+        RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+        RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+    }
+
+    // ---------------------------------------------------------------- stats (tools and tests)
+
+    public struct FrameStats
+    {
+        public int cameras, setsInReach, fixturesDrawn, screwsDrawn, instances, instancedCalls, singleCalls, buckets;
+        /// <summary>Instances of buckets that are always drawn one by one (wall-match plates and their screws).</summary>
+        public int forcedSingles, forcedSingleBuckets;
+        /// <summary>Draws per pass if every palette material had instancing on (P-6): one per bucket flush, plus the forced singles.</summary>
+        public int callsWithInstancing;
+        public int lod0, lod1, lod2;
+        public long triangles;
+        public double submitMs;
+        public int Calls => instancedCalls + singleCalls;
+    }
+
+    /// <summary>The last camera this frame that drew (any type).</summary>
+    public static FrameStats Last;
+    /// <summary>Summed over every camera since ResetStats.</summary>
+    public static FrameStats Accumulated;
+
+    public static void ResetStats()
+    {
+        Last = default;
+        Accumulated = default;
+    }
+
+    // ---------------------------------------------------------------- kits
+
+    sealed class KitMeshes
+    {
+        public string name;
+        public bool placeholder;
+        public readonly Mesh[] lod = new Mesh[3];
+        public readonly string[][] slots = new string[3][];
+        public readonly Material[][] imported = new Material[3][];
+        public float plateH = .1143f;
+        public Vector3[] screws = Array.Empty<Vector3>();
+        public int lodSet;
+    }
+
+    struct LodSet
+    {
+        public float d01, d12, dcull, radius;
+    }
+
+    static readonly List<LodSet> LodSets = new List<LodSet>();
+    static float maxCull;
+
+    static int LodSetFor(float d01, float d12, float dcull, float radius)
+    {
+        dcull = Mathf.Min(dcull, PlatformCullCap);
+        d12 = Mathf.Min(d12, dcull);
+        d01 = Mathf.Min(d01, d12);
+        for (var i = 0; i < LodSets.Count; i++)
+        {
+            var s = LodSets[i];
+            if (s.d01 == d01 && s.d12 == d12 && s.dcull == dcull && s.radius == radius) return i;
+        }
+        LodSets.Add(new LodSet { d01 = d01, d12 = d12, dcull = dcull, radius = radius });
+        maxCull = Mathf.Max(maxCull, dcull);
+        return LodSets.Count - 1;
+    }
+
+    static readonly KitMeshes[] Kits = new KitMeshes[Enum.GetValues(typeof(F.FixtureKit)).Length];
+    static readonly bool[] KitResolved = new bool[Kits.Length];
+    static KitMeshes screwKit;
+    static bool screwResolved;
+    static int libraryVersion = 1;
+
+    /// <summary>Forget resolved kits, materials and recipes (kits or surfaces were re-imported). Every set rebuilds its cache.</summary>
+    public static void ClearCache()
+    {
+        Array.Clear(Kits, 0, Kits.Length);
+        Array.Clear(KitResolved, 0, KitResolved.Length);
+        screwKit = null;
+        screwResolved = false;
+        Materials.Clear();
+        Recipes.Clear();
+        RecipeIndex.Clear();
+        Buckets.Clear();
+        BucketIndex.Clear();
+        Touched.Clear();
+        LodSets.Clear();
+        maxCull = 0f;
+        F.ClearCaches();
+        libraryVersion++;
+    }
+
+    static F.FixtureKit Fallback(F.FixtureKit k)
+    {
+        switch (k)
+        {
+            case F.FixtureKit.DuplexJumbo:
+            case F.FixtureKit.DuplexCracked:
+            case F.FixtureKit.DuplexScorched:
+            case F.FixtureKit.Bare: return F.FixtureKit.Duplex;
+            case F.FixtureKit.HandyBox: return F.FixtureKit.DuplexSteel;
+            case F.FixtureKit.Toggle2: return F.FixtureKit.Toggle1;
+            default: return F.FixtureKit.None;
+        }
+    }
+
+    /// <summary>Kits that draw nothing until they are built (10_spec.md §1.4).</summary>
+    static bool NothingWhenMissing(F.FixtureKit k) =>
+        k == F.FixtureKit.JackData || k == F.FixtureKit.JackBNC || k == F.FixtureKit.JackPhone4 || k == F.FixtureKit.FloorBox || k == F.FixtureKit.FloorBox2;
+
+    /// <summary>The kit actually drawn for <paramref name="k"/> after the fallback chain ("placeholder:..." or null for nothing). Tools and tests.</summary>
+    public static string DrawnKit(F.FixtureKit k)
+    {
+        var km = KitFor(k);
+        return km?.name;
+    }
+
+    static KitMeshes KitFor(F.FixtureKit k)
+    {
+        var i = (int)k;
+        if (i <= 0 || i >= Kits.Length) return null;
+        if (KitResolved[i]) return Kits[i];
+        KitResolved[i] = true;
+        var name = F.KitNames[i];
+        KitMeshes km = null;
+        if (F.KitExists(name)) km = Load(name, k);
+        if (km == null)
+        {
+            var fb = Fallback(k);
+            if (fb != F.FixtureKit.None) km = KitFor(fb);
+            else if (!NothingWhenMissing(k)) km = Placeholder(k);
+        }
+        Kits[i] = km;
+        return km;
+    }
+
+    static KitMeshes ScrewKit()
+    {
+        if (screwResolved) return screwKit;
+        screwResolved = true;
+        screwKit = F.KitExists(F.ScrewKit) ? Load(F.ScrewKit, F.FixtureKit.None) : PlaceholderScrew();
+        return screwKit;
+    }
+
+    [Serializable]
+    sealed class Sidecar
+    {
+        public FrontRoomsKitLibrary.Anchor[] anchors;
+        public float[] lodDistances;
+        public OutletMeta outlet;
+        public float[] boundsMin, boundsMax;
+    }
+
+    [Serializable]
+    sealed class OutletMeta { public float plateW, plateH, proud; }
+
+    static KitMeshes Load(string name, F.FixtureKit k)
+    {
+        var model = Resources.Load<GameObject>(FrontRoomsKitLibrary.ModelFolder + name);
+        if (model == null) return null;
+        var km = new KitMeshes { name = name };
+        foreach (var filter in model.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (filter.sharedMesh == null) continue;
+            var n = filter.gameObject.name;
+            var level = n.EndsWith("_LOD1", StringComparison.Ordinal) ? 1 : n.EndsWith("_LOD2", StringComparison.Ordinal) ? 2 : 0;
+            if (km.lod[level] != null) continue;
+            km.lod[level] = filter.sharedMesh;
+            var renderer = filter.GetComponent<MeshRenderer>();
+            var mats = renderer != null ? renderer.sharedMaterials : Array.Empty<Material>();
+            km.imported[level] = mats;
+            km.slots[level] = new string[mats.Length];
+            for (var s = 0; s < mats.Length; s++) km.slots[level][s] = mats[s] != null ? mats[s].name.Replace(" (Instance)", string.Empty) : null;
+        }
+        if (km.lod[0] == null) return null;
+        for (var l = 1; l < 3; l++)
+            if (km.lod[l] == null) { km.lod[l] = km.lod[l - 1]; km.slots[l] = km.slots[l - 1]; km.imported[l] = km.imported[l - 1]; }
+        var text = Resources.Load<TextAsset>(FrontRoomsKitLibrary.ModelFolder + name);
+        Sidecar side = null;
+        if (text != null) { try { side = JsonUtility.FromJson<Sidecar>(text.text); } catch (Exception) { side = null; } }
+        var screws = new List<Vector3>(4);
+        if (side?.anchors != null)
+            for (var s = 0; s < 4; s++)
+                foreach (var a in side.anchors)
+                    if (a != null && a.name == "screw_" + s && a.pos != null && a.pos.Length >= 3) screws.Add(new Vector3(a.pos[0], a.pos[1], a.pos[2]));
+        km.screws = screws.ToArray();
+        if (side?.outlet != null && side.outlet.plateH > 0f) km.plateH = side.outlet.plateH > 1f ? side.outlet.plateH * .001f : side.outlet.plateH;
+        else if (side?.boundsMin != null && side.boundsMax != null && side.boundsMin.Length >= 2 && side.boundsMax.Length >= 2) km.plateH = side.boundsMax[1] - side.boundsMin[1];
+        var d = DefaultDistances(k);
+        // A sidecar value <= 0 means "no such level" (Kit_ConduitStrap writes -1 for its cull): keep the default there.
+        if (side?.lodDistances != null && side.lodDistances.Length >= 3)
+        {
+            if (side.lodDistances[0] > 0f) d.x = side.lodDistances[0];
+            if (side.lodDistances[1] > 0f) d.y = side.lodDistances[1];
+            if (side.lodDistances[2] > 0f) d.z = side.lodDistances[2];
+        }
+        km.lodSet = LodSetFor(d.x, d.y, d.z, Radius(k));
+        return km;
+    }
+
+    static Vector3 DefaultDistances(F.FixtureKit k)
+    {
+        switch (k)
+        {
+            case F.FixtureKit.FloorBox:
+            case F.FixtureKit.FloorBox2: return new Vector3(2f, 6f, 15f);
+            case F.FixtureKit.HandyBox: return new Vector3(2f, 6f, 20f);
+            default: return new Vector3(PlateLod01, PlateLod12, PlateCull);
+        }
+    }
+
+    static float Radius(F.FixtureKit k) => k == F.FixtureKit.FloorBox || k == F.FixtureKit.FloorBox2 ? .15f : k == F.FixtureKit.Toggle2 ? .12f : .1f;
+
+    // ---------------------------------------------------------------- placeholders (spec dimensions; shared, never per chunk)
+
+    const string SlotPlate = "Prop_ThermosetIvory", SlotDevice = "Prop_NylonIvory", SlotDark = "Prop_PlasticBlack", SlotSteel = "Prop_Aluminium";
+
+    sealed class BoxMesh
+    {
+        readonly List<Vector3> v = new List<Vector3>();
+        readonly List<Vector3> n = new List<Vector3>();
+        readonly List<Vector2> uv = new List<Vector2>();
+        readonly List<List<int>> sub = new List<List<int>>();
+
+        public void Box(int submesh, Vector3 min, Vector3 max)
+        {
+            while (sub.Count <= submesh) sub.Add(new List<int>());
+            var t = sub[submesh];
+            for (var axis = 0; axis < 3; axis++)
+            for (var sign = -1; sign <= 1; sign += 2)
+            {
+                if (axis == 2 && sign < 0) continue;   // no back face: it lies on the wall
+                var normal = Vector3.zero;
+                normal[axis] = sign;
+                int a1 = (axis + 1) % 3, a2 = (axis + 2) % 3;
+                var start = v.Count;
+                for (var c = 0; c < 4; c++)
+                {
+                    var p = Vector3.zero;
+                    p[axis] = sign > 0 ? max[axis] : min[axis];
+                    p[a1] = (c == 1 || c == 2) ? max[a1] : min[a1];
+                    p[a2] = (c >= 2) ? max[a2] : min[a2];
+                    v.Add(p);
+                    n.Add(normal);
+                    uv.Add(new Vector2(p[a1], p[a2]));
+                }
+                // Wind so the face points along its normal.
+                var flip = Vector3.Dot(Vector3.Cross(v[start + 1] - v[start], v[start + 3] - v[start]), normal) < 0f;
+                // Unity: a triangle (a, b, c) faces along Cross(b - a, c - a).
+                if (!flip) { t.Add(start); t.Add(start + 1); t.Add(start + 3); t.Add(start + 1); t.Add(start + 2); t.Add(start + 3); }
+                else { t.Add(start); t.Add(start + 3); t.Add(start + 1); t.Add(start + 1); t.Add(start + 3); t.Add(start + 2); }
+            }
+        }
+
+        public void Disc(int submesh, Vector3 centre, float radius, float height, int segments)
+        {
+            while (sub.Count <= submesh) sub.Add(new List<int>());
+            var t = sub[submesh];
+            var top = v.Count;
+            v.Add(centre + Vector3.forward * height); n.Add(Vector3.forward); uv.Add(Vector2.zero);
+            for (var s = 0; s < segments; s++)
+            {
+                var a = s * Mathf.PI * 2f / segments;
+                var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
+                v.Add(centre + dir * radius + Vector3.forward * height); n.Add(Vector3.forward); uv.Add(new Vector2(dir.x, dir.y) * radius);
+            }
+            for (var s = 0; s < segments; s++) { t.Add(top); t.Add(top + 1 + s); t.Add(top + 1 + (s + 1) % segments); }
+            var side = v.Count;
+            for (var s = 0; s < segments; s++)
+            {
+                var a = s * Mathf.PI * 2f / segments;
+                var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
+                v.Add(centre + dir * radius); n.Add(dir); uv.Add(new Vector2(a * radius, 0f));
+                v.Add(centre + dir * radius + Vector3.forward * height); n.Add(dir); uv.Add(new Vector2(a * radius, height));
+            }
+            for (var s = 0; s < segments; s++)
+            {
+                int a0 = side + 2 * s, a1 = side + 2 * ((s + 1) % segments);
+                t.Add(a0); t.Add(a1); t.Add(a0 + 1); t.Add(a1); t.Add(a1 + 1); t.Add(a0 + 1);
+            }
+        }
+
+        public Mesh ToMesh(string name)
+        {
+            var m = new Mesh { name = name, hideFlags = HideFlags.HideAndDontSave };
+            m.SetVertices(v);
+            m.SetNormals(n);
+            m.SetUVs(0, uv);
+            m.subMeshCount = sub.Count;
+            for (var s = 0; s < sub.Count; s++) m.SetTriangles(sub[s], s);
+            m.RecalculateBounds();
+            return m;
+        }
+    }
+
+    static KitMeshes Placeholder(F.FixtureKit k)
+    {
+        // Spec dimensions (10_spec.md §1.2-1.3), Unity space: X across, Y up, Z out of the wall; back on z = 0.
+        const float mm = .001f;
+        var steel = k == F.FixtureKit.DuplexSteel;
+        float w = (k == F.FixtureKit.Toggle2 ? 115.9f : 69.8f) * mm, h = 114.3f * mm;
+        var field = (steel ? 4.7f : 5.6f) * mm;
+        var b = new BoxMesh();
+        b.Box(0, new Vector3(-w * .5f, -h * .5f, 0f), new Vector3(w * .5f, h * .5f, field));
+        var screws = new List<Vector3>();
+        var slots = new List<string> { steel ? SlotSteel : SlotPlate };
+        switch (k)
+        {
+            case F.FixtureKit.Duplex:
+            case F.FixtureKit.Duplex20:
+            case F.FixtureKit.DuplexSteel:
+                foreach (var cy in new[] { 19.45f * mm, -19.45f * mm })
+                {
+                    // 5-15R face 32.5 wide (flats 27.8), 1 mm proud of the field; slots and ground hole as dark insets.
+                    b.Box(1, new Vector3(-16.25f * mm, cy - 13.9f * mm, field), new Vector3(16.25f * mm, cy + 13.9f * mm, field + 1f * mm));
+                    var top = field + 1.15f * mm;
+                    b.Box(2, new Vector3(-7.35f * mm, cy - 1.25f * mm, field + 1f * mm), new Vector3(-5.35f * mm, cy + 7.25f * mm, top));
+                    b.Box(2, new Vector3(5.35f * mm, cy - .5f * mm, field + 1f * mm), new Vector3(7.35f * mm, cy + 6.5f * mm, top));
+                    if (k == F.FixtureKit.Duplex20) b.Box(2, new Vector3(-13.75f * mm, cy + 2f * mm, field + 1f * mm), new Vector3(-7.35f * mm, cy + 4f * mm, top));
+                    b.Box(2, new Vector3(-2.5f * mm, cy - 11.4f * mm, field + 1f * mm), new Vector3(2.5f * mm, cy - 6.4f * mm, top));
+                }
+                slots.Add(SlotDevice);
+                slots.Add(SlotDark);
+                screws.Add(new Vector3(0f, 0f, field));
+                break;
+            case F.FixtureKit.Toggle1:
+            case F.FixtureKit.Toggle2:
+                foreach (var cx in k == F.FixtureKit.Toggle2 ? new[] { -23f * mm, 23f * mm } : new[] { 0f })
+                {
+                    b.Box(2, new Vector3(cx - 5.15f * mm, -11.9f * mm, field), new Vector3(cx + 5.15f * mm, 11.9f * mm, field + .15f * mm));
+                    b.Box(1, new Vector3(cx - 3.75f * mm, 0f, field), new Vector3(cx + 3.75f * mm, 9f * mm, field + 14f * mm));
+                    screws.Add(new Vector3(cx, 30.15f * mm, field));
+                    screws.Add(new Vector3(cx, -30.15f * mm, field));
+                }
+                slots.Add(SlotDevice);
+                slots.Add(SlotDark);
+                break;
+            case F.FixtureKit.JackPhone:
+                b.Box(1, new Vector3(-7f * mm, -6f * mm, field), new Vector3(7f * mm, 6f * mm, field + .15f * mm));
+                slots.Add(SlotDark);
+                screws.Add(new Vector3(0f, 41.65f * mm, field));
+                screws.Add(new Vector3(0f, -41.65f * mm, field));
+                break;
+            default:   // Blank (and any other plate without a kit yet)
+                screws.Add(new Vector3(0f, 41.65f * mm, field));
+                screws.Add(new Vector3(0f, -41.65f * mm, field));
+                break;
+        }
+        var mesh = b.ToMesh("placeholder " + F.KitNames[(int)k]);
+        var km = new KitMeshes { name = "placeholder:" + F.KitNames[(int)k], placeholder = true, plateH = h, screws = screws.ToArray() };
+        var slotArray = slots.ToArray();
+        for (var l = 0; l < 3; l++) { km.lod[l] = mesh; km.slots[l] = slotArray; km.imported[l] = new Material[slotArray.Length]; }
+        km.lodSet = LodSetFor(PlateLod01, PlateLod12, PlateCull, Radius(k));
+        Placeholders.Add(mesh);
+        return km;
+    }
+
+    static KitMeshes PlaceholderScrew()
+    {
+        // #6-32 oval head: 6.6 across, 1.0 crown, origin at the seat centre, front +Z.
+        var b = new BoxMesh();
+        b.Disc(0, Vector3.zero, .0033f, .001f, 16);
+        var mesh = b.ToMesh("placeholder " + F.ScrewKit);
+        Placeholders.Add(mesh);
+        var km = new KitMeshes { name = "placeholder:" + F.ScrewKit, placeholder = true };
+        for (var l = 0; l < 3; l++) { km.lod[l] = mesh; km.slots[l] = new[] { SlotPlate }; km.imported[l] = new Material[1]; }
+        km.lodSet = LodSetFor(PlateLod01, PlateLod12, PlateCull, .02f);
+        return km;
+    }
+
+    static readonly List<Mesh> Placeholders = new List<Mesh>();
+
+    // ---------------------------------------------------------------- materials
+
+    static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
+
+    static Material Surface(string name, string fallback = null)
+    {
+        var key = fallback == null ? name : name + "|" + fallback;
+        if (Materials.TryGetValue(key, out var m)) return m;
+        m = FrontRoomsSurfaces.TryGet(name);
+        if (m == null && fallback != null) m = FrontRoomsSurfaces.TryGet(fallback);
+        Materials[key] = m;
+        return m;
+    }
+
+    /// <summary>The palette (10_spec.md §1.5): the new thermoset slots with their fallbacks until P-4b is approved.</summary>
+    static Material PlateMaterial(F.Finish f, Material wall)
+    {
+        switch (f)
+        {
+            case F.Finish.IvoryAged: return Surface("Prop_ThermosetAged", "Prop_PlasticPutty");
+            case F.Finish.Almond: return Surface("Prop_ThermosetAlmond", "Prop_LaminateBeige");
+            case F.Finish.White: return Surface("Prop_CeramicGlaze");
+            case F.Finish.Brown: return Surface("Prop_Ceramic");
+            case F.Finish.Grey: return Surface("Prop_PlasticPutty");
+            case F.Finish.Stainless: return Surface("Prop_Aluminium");
+            case F.Finish.WallMatch: return PlatformWallMatch && wall != null ? wall : PlateMaterial(F.Finish.Ivory, null);
+            default: return Surface("Prop_ThermosetIvory", "Prop_PlasticBeige");
+        }
+    }
+
+    static Material DeviceMaterial(F.Finish f)
+    {
+        switch (f)
+        {
+            case F.Finish.White: return Surface("Prop_CeramicGlaze");
+            case F.Finish.Brown: return Surface("Prop_Ceramic");
+            case F.Finish.Grey: return Surface("Prop_PlasticPutty");
+            case F.Finish.Orange: return Surface("Prop_PlasticOrange") ?? DeviceMaterial(F.Finish.Ivory);
+            default: return Surface("Prop_NylonIvory", "Prop_PlasticPutty");
+        }
+    }
+
+    static Material SlotMaterial(string slot, Material imported, Material plate, Material device)
+    {
+        if (string.IsNullOrEmpty(slot)) return imported;
+        if (slot.StartsWith("Prop_Thermoset", StringComparison.Ordinal)) return plate;
+        if (slot == "Prop_NylonIvory" || slot == "Prop_PlasticOrange") return device;
+        return Surface(slot) ?? imported;
+    }
+
+    // ---------------------------------------------------------------- recipes and buckets
+
+    const int MaxBatch = 511;
+
+    sealed class Bucket
+    {
+        public Mesh mesh;
+        public int submesh;
+        public Material material;
+        public bool instanced;
+        public bool single;            // always one draw per instance (wall match)
+        public bool touched;           // listed in Touched this camera
+        public long trianglesPerInstance;
+        public Matrix4x4[] matrices = new Matrix4x4[32];   // grows to MaxBatch (511, the instanced-draw limit) on demand
+        public int count;
+        public Vector3 min, max;
+    }
+
+    readonly struct BucketKey : IEquatable<BucketKey>
+    {
+        readonly Mesh mesh;
+        readonly int submesh;
+        readonly Material material;
+        public BucketKey(Mesh mesh, int submesh, Material material) { this.mesh = mesh; this.submesh = submesh; this.material = material; }
+        public bool Equals(BucketKey o) => ReferenceEquals(mesh, o.mesh) && submesh == o.submesh && ReferenceEquals(material, o.material);
+        public override bool Equals(object obj) => obj is BucketKey o && Equals(o);
+        public override int GetHashCode() =>
+            (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(mesh) * 397) ^ (submesh * 31) ^ System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(material);
+    }
+
+    readonly struct RecipeKey : IEquatable<RecipeKey>
+    {
+        readonly KitMeshes kit;
+        readonly int lod;
+        readonly Material plate, device;
+        public RecipeKey(KitMeshes kit, int lod, Material plate, Material device) { this.kit = kit; this.lod = lod; this.plate = plate; this.device = device; }
+        public bool Equals(RecipeKey o) => ReferenceEquals(kit, o.kit) && lod == o.lod && ReferenceEquals(plate, o.plate) && ReferenceEquals(device, o.device);
+        public override bool Equals(object obj) => obj is RecipeKey o && Equals(o);
+        public override int GetHashCode() =>
+            (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(kit) * 397) ^ lod ^ (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(plate) * 31)
+            ^ System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(device);
+    }
+
+    static readonly List<Bucket> Buckets = new List<Bucket>();
+    static readonly Dictionary<BucketKey, int> BucketIndex = new Dictionary<BucketKey, int>();
+    static readonly List<int[]> Recipes = new List<int[]>();
+    static readonly Dictionary<RecipeKey, int> RecipeIndex = new Dictionary<RecipeKey, int>();
+    static readonly List<int> Touched = new List<int>(64);
+
+    static int BucketFor(Mesh mesh, int submesh, Material material, bool single)
+    {
+        var key = new BucketKey(mesh, submesh, material);
+        if (BucketIndex.TryGetValue(key, out var i)) return i;
+        Buckets.Add(new Bucket
+        {
+            mesh = mesh, submesh = submesh, material = material,
+            // A wall-match material (papered-over plates) is always drawn one by one, through the SRP Batcher,
+            // like the wall it matches; the palette instances once P-6 turns instancing on.
+            instanced = !single && material.enableInstancing && SystemInfo.supportsInstancing,
+            single = single,
+            trianglesPerInstance = (long)(mesh.GetIndexCount(submesh) / 3),
+        });
+        BucketIndex[key] = Buckets.Count - 1;
+        return Buckets.Count - 1;
+    }
+
+    static int RecipeFor(KitMeshes km, int lod, Material plate, Material device, bool wallMatch)
+    {
+        var key = new RecipeKey(km, lod, plate, device);
+        if (RecipeIndex.TryGetValue(key, out var r)) return r;
+        var mesh = km.lod[lod];
+        var entries = new List<int>(4);
+        for (var s = 0; s < mesh.subMeshCount; s++)
+        {
+            var slot = km.slots[lod] != null && s < km.slots[lod].Length ? km.slots[lod][s] : null;
+            var imported = km.imported[lod] != null && s < km.imported[lod].Length ? km.imported[lod][s] : null;
+            var material = SlotMaterial(slot, imported, plate, device);
+            if (material == null) continue;
+            entries.Add(BucketFor(mesh, s, material, wallMatch && ReferenceEquals(material, plate)));
+        }
+        Recipes.Add(entries.ToArray());
+        RecipeIndex[key] = Recipes.Count - 1;
+        return Recipes.Count - 1;
+    }
+
+    // ---------------------------------------------------------------- per-set cache
+
+    static void EnsureArrays(FrontRoomsWallFixtureSet set, int n, int screws)
+    {
+        if (set.localMatrix == null || set.localMatrix.Length < n)
+        {
+            var size = Mathf.NextPowerOfTwo(Mathf.Max(8, n));
+            set.localMatrix = new Matrix4x4[size];
+            set.worldMatrix = new Matrix4x4[size];
+            set.worldPosition = new Vector3[size];
+            set.recipe = new int[size * 3];
+            set.lodSet = new byte[size];
+            set.screwFirst = new int[size];
+            set.screwCount = new byte[size];
+            set.screwRecipe = new int[size];
+            set.hidden = new bool[size];
+        }
+        if (set.screwLocal == null || set.screwLocal.Length < screws)
+        {
+            var size = Mathf.NextPowerOfTwo(Mathf.Max(8, screws));
+            set.screwLocal = new Matrix4x4[size];
+            set.screwWorld = new Matrix4x4[size];
+        }
+    }
+
+    /// <summary>The kit origin's matrix in the set's root space: T(position) R(look at normal) R_z(roll), then the tilt about the plate's bottom edge.</summary>
+    public static Matrix4x4 FixtureMatrix(in F.Fixture x, float plateH)
+    {
+        var up = Mathf.Abs(x.normal.y) > .99f ? Vector3.forward : Vector3.up;
+        var rotation = Quaternion.LookRotation(x.normal, up) * Quaternion.Euler(0f, 0f, x.roll);
+        var m = Matrix4x4.TRS(x.position, rotation, Vector3.one);
+        if (x.tilt != 0f)
+        {
+            var half = plateH * .5f;
+            m = m * Matrix4x4.Translate(new Vector3(0f, -half, 0f)) * Matrix4x4.Rotate(Quaternion.Euler(x.tilt, 0f, 0f)) * Matrix4x4.Translate(new Vector3(0f, half, 0f));
+        }
+        return m;
+    }
+
+    static void Rebuild(FrontRoomsWallFixtureSet set)
+    {
+        var fixtures = set.fixtures;
+        var n = fixtures.Count;
+        var screwKm = ScrewKit();
+        var screws = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var km = KitFor(fixtures[i].kit);
+            if (km != null && (fixtures[i].flags & F.FixtureFlags.NoScrew) == 0) screws += km.screws.Length;
+        }
+        EnsureArrays(set, n, screws);
+        var live = 0;
+        var screw = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var x = fixtures[i];
+            var km = KitFor(x.kit);
+            set.screwFirst[i] = screw;
+            set.screwCount[i] = 0;
+            set.screwRecipe[i] = -1;
+            if (km == null)
+            {
+                set.recipe[i * 3] = set.recipe[i * 3 + 1] = set.recipe[i * 3 + 2] = -1;
+                set.localMatrix[i] = Matrix4x4.TRS(x.position, Quaternion.identity, Vector3.one);
+                continue;
+            }
+            var wallMatch = x.plate == F.Finish.WallMatch && PlatformWallMatch && set.WallMatch(x.face) != null;
+            var plate = PlateMaterial(x.plate, set.WallMatch(x.face));
+            var device = DeviceMaterial(x.device);
+            for (var l = 0; l < 3; l++) set.recipe[i * 3 + l] = plate != null ? RecipeFor(km, l, plate, device, wallMatch) : -1;
+            set.lodSet[i] = (byte)km.lodSet;
+            var local = FixtureMatrix(x, km.plateH);
+            set.localMatrix[i] = local;
+            live++;
+            if ((x.flags & F.FixtureFlags.NoScrew) != 0 || km.screws.Length == 0 || screwKm == null || plate == null) continue;
+            set.screwRecipe[i] = RecipeFor(screwKm, 0, plate, device, wallMatch);
+            var roll = Quaternion.Euler(0f, 0f, x.screwRoll);
+            for (var s = 0; s < km.screws.Length; s++) set.screwLocal[screw++] = local * Matrix4x4.TRS(km.screws[s], roll, Vector3.one);
+            set.screwCount[i] = (byte)km.screws.Length;
+        }
+        set.liveCount = live;
+        set.cachedChange = set.changeCount;
+        set.cachedLibrary = libraryVersion;
+    }
+
+    static readonly List<FrontRoomsWallFixtureSet> NearOccluders = new List<FrontRoomsWallFixtureSet>(8);
+
+    /// <summary>
+    /// Stage 2, rule 1: mark the fixtures a wall unit covers (FrontRoomsWallFixtures.IsOccluded), testing
+    /// only this set's occluders and those of sets whose occluders come near it. Runs after a rebuild, a
+    /// root move, or any change of OccluderVersion (a chunk with wall units loading or unloading); it does
+    /// not touch the matrices or recipes, so a neighbour streaming in costs a few box tests per set.
+    /// </summary>
+    static void RefreshOcclusion(FrontRoomsWallFixtureSet set)
+    {
+        var n = set.fixtures.Count;
+        NearOccluders.Clear();
+        var registry = FrontRoomsWallFixtureSet.Registry;
+        var reach = set.worldBounds;
+        reach.Expand(.4f);
+        for (var s = 0; s < registry.Count; s++)
+        {
+            var other = registry[s];
+            if (other == null || other == set || other.occluders.Count == 0) continue;
+            if (F.OccluderWorldBounds(other).Intersects(reach)) NearOccluders.Add(other);
+        }
+        var any = set.occluders.Count > 0 || NearOccluders.Count > 0;
+        var hidden = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var h = any && set.recipe[i * 3] >= 0 && F.IsOccludedBy(set, set.fixtures[i], NearOccluders);
+            set.hidden[i] = h;
+            if (h) hidden++;
+        }
+        set.hiddenCount = hidden;
+        set.cachedOccluders = FrontRoomsWallFixtureSet.OccluderVersion;
+        NearOccluders.Clear();
+    }
+
+    static void UpdateWorld(FrontRoomsWallFixtureSet set, in Matrix4x4 root)
+    {
+        var n = set.fixtures.Count;
+        var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        var max = -min;
+        for (var i = 0; i < n; i++)
+        {
+            var w = root * set.localMatrix[i];
+            set.worldMatrix[i] = w;
+            var p = new Vector3(w.m03, w.m13, w.m23);
+            set.worldPosition[i] = p;
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+            var c = set.screwCount[i];
+            for (var s = 0; s < c; s++) set.screwWorld[set.screwFirst[i] + s] = root * set.screwLocal[set.screwFirst[i] + s];
+        }
+        set.worldBounds = n > 0 ? new Bounds((min + max) * .5f, max - min + Vector3.one * .5f) : default;
+        set.cachedRoot = root;
+    }
+
+    static void Prepare(FrontRoomsWallFixtureSet set)
+    {
+        var rebuilt = false;
+        if (set.cachedChange != set.changeCount || set.cachedLibrary != libraryVersion || set.localMatrix == null)
+        {
+            Rebuild(set);
+            rebuilt = true;
+        }
+        var root = set.transform.localToWorldMatrix;
+        var moved = rebuilt || root != set.cachedRoot;
+        if (moved) UpdateWorld(set, root);
+        if (moved || set.cachedOccluders != FrontRoomsWallFixtureSet.OccluderVersion) RefreshOcclusion(set);
+    }
+
+    // ---------------------------------------------------------------- per camera
+
+    static readonly Plane[] Planes = new Plane[6];
+    static readonly List<int> Layers = new List<int>(2);
+    static int currentLayer;
+    static Camera current;
+    static FrameStats frame;
+
+    static void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera) => Submit(camera);
+
+    /// <summary>Submit the fixtures for <paramref name="camera"/> (the beginCameraRendering hook calls this; tools may too).</summary>
+    public static void Submit(Camera camera)
+    {
+        var registry = FrontRoomsWallFixtureSet.Registry;
+        if (!Enabled || camera == null || registry.Count == 0) return;
+        var type = camera.cameraType;
+        if (type == CameraType.Preview || type == CameraType.Reflection) return;
+        var t0 = Stopwatch.GetTimestamp();
+        // A submit that threw half-way leaves buckets listed: empty them first.
+        for (var t = 0; t < Touched.Count; t++) { var stale = Buckets[Touched[t]]; stale.count = 0; stale.touched = false; }
+        Touched.Clear();
+        frame = default;
+        frame.cameras = 1;
+        current = camera;
+
+        var lodScale = camera.orthographic ? 1f : Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad) / Tan38 / Mathf.Max(.01f, QualitySettings.lodBias);
+        var lodScale2 = lodScale * lodScale;
+        if (maxCull <= 0f) maxCull = PlateCull;
+        var reach = Mathf.Min(MaxReach, Mathf.Max(maxCull, PlateCull) / Mathf.Max(1e-3f, lodScale));
+        var reach2 = reach * reach;
+        GeometryUtility.CalculateFrustumPlanes(camera, Planes);
+        var eye = camera.transform.position;
+        var screws = PlatformScrews;
+
+        // Fixtures draw on their set's layer (Default in the game; tools that isolate a capture on its own
+        // layer move the chunk roots, and the outlets follow). A camera that does not see a layer gets
+        // nothing from it. Usually there is one layer; each gets its own flush.
+        Layers.Clear();
+        for (var si = 0; si < registry.Count; si++)
+        {
+            var set = registry[si];
+            if (set == null || !set.isActiveAndEnabled || set.fixtures.Count == 0) continue;
+            var layer = set.gameObject.layer;
+            if ((camera.cullingMask & (1 << layer)) != 0 && !Layers.Contains(layer)) Layers.Add(layer);
+        }
+        for (var li = 0; li < Layers.Count; li++)
+        {
+            currentLayer = Layers[li];
+            for (var si = 0; si < registry.Count; si++)
+            {
+                var set = registry[si];
+                if (set == null || !set.isActiveAndEnabled || set.fixtures.Count == 0 || set.gameObject.layer != currentLayer) continue;
+                Prepare(set);
+                if (set.liveCount == 0 || set.worldBounds.SqrDistance(eye) > reach2) continue;
+                frame.setsInReach++;
+                var n = set.fixtures.Count;
+                for (var i = 0; i < n; i++)
+                {
+                    var r0 = set.recipe[i * 3];
+                    if (r0 < 0 || set.hidden[i]) continue;
+                    var p = set.worldPosition[i];
+                    float dx = p.x - eye.x, dy = p.y - eye.y, dz = p.z - eye.z;
+                    var d2 = dx * dx + dy * dy + dz * dz;
+                    if (d2 > reach2) continue;
+                    var ls = LodSets[set.lodSet[i]];
+                    var s2 = d2 * lodScale2;
+                    if (s2 >= ls.dcull * ls.dcull) continue;
+                    if (!Visible(p, ls.radius)) continue;
+                    var lod = s2 < ls.d01 * ls.d01 ? 0 : s2 < ls.d12 * ls.d12 ? 1 : 2;
+                    if (lod == 0) frame.lod0++; else if (lod == 1) frame.lod1++; else frame.lod2++;
+                    var recipe = Recipes[set.recipe[i * 3 + lod]];
+                    for (var e = 0; e < recipe.Length; e++) Append(recipe[e], set.worldMatrix[i], p);
+                    frame.fixturesDrawn++;
+                    if (lod != 0 || !screws) continue;
+                    var sr = set.screwRecipe[i];
+                    if (sr < 0) continue;
+                    var screwEntries = Recipes[sr];
+                    var first = set.screwFirst[i];
+                    for (var s = 0; s < set.screwCount[i]; s++)
+                    {
+                        for (var e = 0; e < screwEntries.Length; e++) Append(screwEntries[e], set.screwWorld[first + s], p);
+                        frame.screwsDrawn++;
+                    }
+                }
+            }
+            for (var t = 0; t < Touched.Count; t++)
+            {
+                var b = Buckets[Touched[t]];
+                if (b.count > 0) Flush(b);
+                b.touched = false;
+                frame.buckets++;
+            }
+            Touched.Clear();
+        }
+        current = null;
+        frame.submitMs = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+        Last = frame;
+        Accumulated.cameras += frame.cameras;
+        Accumulated.setsInReach += frame.setsInReach;
+        Accumulated.fixturesDrawn += frame.fixturesDrawn;
+        Accumulated.screwsDrawn += frame.screwsDrawn;
+        Accumulated.instances += frame.instances;
+        Accumulated.instancedCalls += frame.instancedCalls;
+        Accumulated.singleCalls += frame.singleCalls;
+        Accumulated.buckets += frame.buckets;
+        Accumulated.forcedSingles += frame.forcedSingles;
+        Accumulated.forcedSingleBuckets += frame.forcedSingleBuckets;
+        Accumulated.callsWithInstancing += frame.callsWithInstancing;
+        Accumulated.lod0 += frame.lod0;
+        Accumulated.lod1 += frame.lod1;
+        Accumulated.lod2 += frame.lod2;
+        Accumulated.triangles += frame.triangles;
+        Accumulated.submitMs += frame.submitMs;
+    }
+
+    static bool Visible(Vector3 p, float radius)
+    {
+        for (var k = 0; k < 6; k++)
+            if (Planes[k].GetDistanceToPoint(p) < -radius) return false;
+        return true;
+    }
+
+    static void Append(int bucketIndex, in Matrix4x4 m, Vector3 p)
+    {
+        var b = Buckets[bucketIndex];
+        if (!b.touched)
+        {
+            b.touched = true;
+            Touched.Add(bucketIndex);
+        }
+        if (b.count == 0) b.min = b.max = p;
+        else
+        {
+            b.min = Vector3.Min(b.min, p);
+            b.max = Vector3.Max(b.max, p);
+        }
+        b.matrices[b.count++] = m;
+        if (b.count < b.matrices.Length) return;
+        if (b.matrices.Length < MaxBatch) Array.Resize(ref b.matrices, Mathf.Min(MaxBatch, b.matrices.Length * 2));
+        else Flush(b);
+    }
+
+    static void Flush(Bucket b)
+    {
+        var rp = new RenderParams(b.material)
+        {
+            camera = current,
+            layer = currentLayer,
+            shadowCastingMode = ShadowCastingMode.Off,
+            receiveShadows = true,
+            lightProbeUsage = LightProbeUsage.Off,
+            reflectionProbeUsage = ReflectionProbeUsage.Off,
+            motionVectorMode = MotionVectorGenerationMode.Camera,
+            worldBounds = new Bounds((b.min + b.max) * .5f, b.max - b.min + new Vector3(.4f, .4f, .4f)),
+        };
+        if (b.single) { frame.forcedSingles += b.count; frame.forcedSingleBuckets++; frame.callsWithInstancing += b.count; }
+        else frame.callsWithInstancing++;
+        if (b.instanced)
+        {
+            if (!DryRun) Graphics.RenderMeshInstanced(rp, b.mesh, b.submesh, b.matrices, b.count);
+            frame.instancedCalls++;
+        }
+        else
+        {
+            // Not instancing-enabled (the wall-match material always; the palette until P-6): one SRP-Batcher draw each.
+            for (var i = 0; i < b.count; i++)
+            {
+                var m = b.matrices[i];
+                rp.worldBounds = new Bounds(new Vector3(m.m03, m.m13, m.m23), new Vector3(.4f, .4f, .4f));
+                if (!DryRun) Graphics.RenderMesh(rp, b.mesh, b.submesh, m);
+                frame.singleCalls++;
+            }
+        }
+        frame.instances += b.count;
+        frame.triangles += b.trianglesPerInstance * b.count;
+        b.count = 0;
+    }
+}

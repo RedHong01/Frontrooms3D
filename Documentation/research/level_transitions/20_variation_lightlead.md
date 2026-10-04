@@ -12,7 +12,10 @@ Codex committed this variation into main at 19:10 (`8ef5b64`). Main runs B0 and 
 - **E3, process:** the colour lead is live without Red's pick. One line makes it opt-in, if Red wants that.
 - **E4-E6, small:** stale comments (patch `contracts/lightlead_comments_visual.diff`); the Office lens is now 0.67x the Level 0 lens (×1.5 since 17:16); the title stream's Office still has the warm lens.
 - **No code in main was edited.** Fixes go through the `codex-audit` workflow and the map chat.
-- **New image:** `images/var_lightlead_main_sheet.jpg`, the four fixed shots from main's code (off, as the game runs, border rule).
+- **New image:** `images/var_lightlead_main_sheet.jpg`, the four fixed shots from main's code (off, as the game runs, border rule). Rendered 2026-10-04 (the first try was killed when the session ended). Details: `15_var_lightlead.md` §15.4.
+- **Main matches the prototype.** With `-lightleadBorders`, lit lamps 81/77/79/86 (the same as the clone) and a mean pixel difference of 0.13-0.67 of 255. With `-lightleadSoft`, 85/83/83/89 (same as the clone). Layout frozen: all 16 plan files identical.
+- **As the game runs it today, it is colour only.** Office b/r 0.69-1.01 -> 0.80-1.23 and +2-3 % luma; Level 0 unchanged (0 %). The Level 0 cell is still brighter than the Office through the opening (shot1 122 vs 77), so the cut stays in full light. The border rule makes the Office 1.6x-2.7x brighter than the dark cell; soft only evens them (0.9x-1.2x).
+- **The two patches still apply** cleanly to Red's current files (`git apply --check`; nothing applied). Main HEAD is `d610d3a`; the render code has not changed since `75cfdff`.
 
 ## Images
 
@@ -70,4 +73,4 @@ Codex committed this variation into main at 19:10 (`8ef5b64`). Main runs B0 and 
 3. Darkness at every frameless border becomes a tell. Soft halves it (-32 % instead of -62 %).
 4. V5 hides the split arch jambs and flat seams; it does not fix them. Pair with V1 Frame or V3 Neck.
 5. Dim cells read weakly in stills (the 0.42 lens still blooms); check in Play.
-6. Red decides: dead, soft or colour only.
+6. Red decides: dead, soft or colour only. The game runs colour only today; the shadow lead in the Figma variation needs the border rule on, after the E1 patch.

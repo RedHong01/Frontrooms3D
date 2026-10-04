@@ -767,10 +767,12 @@ Total ≈ 35 working days across chats; the map chat's share ≈ 26 (v1 said 9�
 
 ## 16. Open questions for Red
 
+**Answered by Red, 2026-10-04:** Q2 = **yes** (the quiet-player sweep is in v2.0); Q8 = **yes** (run the Step 0 baseline first; 关卡设计 has the brief). The other six stay open.
+
 Lettered items are separate yes/no decisions.
 
 1. **Relax.** After each withdraw you get 100 s of guaranteed calm at tier 1 (60 s at tier 5): noise cannot call it. Glass and alarm devices still do, at once, because you chose to trip them. Keep 100 s? (yes, or a number from 60 to 120)
-2. **Quiet player** (needed before Step 0). After 240 s with no call at tier 1 (140 s at tier 5), the panel sends it to patrol a zone next to yours, in the direction you are heading, close enough that your lamps flicker but planned to stay out of footstep range. It is aimed at your area, never at your exact spot. (yes/no; if no, quiet players meet it only through devices, which get denser with the tier, and goal G8 is dropped)
+2. **Quiet player** — **answered yes (2026-10-04).** After 240 s with no call at tier 1 (140 s at tier 5), the panel sends it to patrol a zone next to yours, in the direction you are heading, close enough that your lamps flicker but planned to stay out of footstep range. It is aimed at your area, never at your exact spot. (yes/no; if no, quiet players meet it only through devices, which get denser with the tier, and goal G8 is dropped)
 3. **Cues outside the three stages** (each tells cause or stand-down, not position):
    a. the tripped device's own local sound;
    b. a dry ceiling latch tick when your noise calls it (with a buzz the first 3 times);
@@ -787,7 +789,7 @@ Lettered items are separate yes/no decisions.
    a. A quiet window pry (hold E on the sash latch, 4 s) on plain windows?
    b. Foil-taped windows that always alarm?
    c. Dead-circuit sanctuary rooms it will not enter (v2.1)?
-8. **Baseline first.** May the map chat add the seeded bots and run Step 0 (no gameplay change) before any of this lands?
+8. **Baseline first** — **answered yes (2026-10-04):** the map chat adds the seeded bots and runs Step 0 (no gameplay change) before any of this lands.
 
 ---
 

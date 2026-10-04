@@ -1,0 +1,83 @@
+# patch5b.py - revision-1 round r3 additions to rt_bench5.mm (report 11, G14b). Not part of the game.
+# FARFADE=lo,hi (pixel footprint across the view, mm = pixelAngle x eye distance x 1000): Ultra's GGX floor rays
+# cross-fade to High's mirror ray + k 2 blur as the footprint grows from lo to hi (the far floor, issue 9).
+# Dolly gains two modes: High (deterministic) and the Ultra far-fade hybrid.
+import sys
+p = sys.argv[1]; s = open(p).read()
+def rep(old, new, count=1):
+    global s
+    n = s.count(old)
+    assert n == count, (old[:100], n)
+    s = s.replace(old, new)
+
+rep("// rt_bench5.mm - revision-1 bench for report 11 (G14b).", "// rt_bench5b.mm = rt_bench5.mm + patch5b.py (FARFADE hybrid, High/hybrid dolly modes). rt_bench5.mm - revision-1 bench for report 11 (G14b).")
+
+# MSL helper: far-fade weight from Frame.pad2 (lo | hi << 16, units 0.1 mm)
+rep("static float3 sampleVNDF(float3 Ve, float a, float2 u) {",
+"""static float farW(constant Frame& f, float eyeDist) {
+  if (f.pad2 == 0u) return 0.0f;
+  float lo = float(f.pad2 & 0xffffu) * 1e-4f, hi = float(f.pad2 >> 16) * 1e-4f;   // metres
+  return smoothstep(lo, hi, f.pixelAngle * eyeDist);
+}
+static float3 sampleVNDF(float3 Ve, float a, float2 u) {""")
+
+# both trace kernels: hybrid
+old_loop = """      for (uint s = 0; s < ns; s++) {
+        float3 L; float w;
+        if (f.floorMode == 1u) { L = reflect(-V, N); w = schlick(0.04f, dot(N, V)); }"""
+assert s.count(old_loop) == 2
+s = s.replace("""      float a = max(f.floorRough * f.floorRough, 0.002f);
+      for (uint s = 0; s < ns; s++) {""", """      float a = max(f.floorRough * f.floorRough, 0.002f);
+      float wf = f.floorMode == 0u ? farW(f, gp.w) : 0.0f;
+      if (wf > 0.999f) ns = 0u;
+      for (uint s = 0; s < ns; s++) {""")
+assert s.count("float wf = f.floorMode == 0u ? farW(f, gp.w) : 0.0f;") == 2
+for tp in ["tracePath", "tracePathNS"]:
+    old = """        float t; float3 Ls = %s(f, insts, scene, alb, env, P + N * 0.002f, L, w, gp.w, rays, srays, t, maxDepth);
+        acc += w * Ls; sumT += t;
+      }
+      res = acc / float(ns); hitT = sumT / float(ns);""" % tp
+    new = """        float t; float3 Ls = %s(f, insts, scene, alb, env, P + N * 0.002f, L, w, gp.w, rays, srays, t, maxDepth);
+        acc += w * Ls; sumT += t;
+      }
+      res = ns > 0u ? acc / float(ns) : float3(0); hitT = ns > 0u ? sumT / float(ns) : 0.0f;
+      if (wf > 0.001f) {   // far fade: High's mirror ray, blended by the footprint weight
+        float3 Lm = reflect(-V, N); float wm = schlick(0.04f, dot(N, V)); float tm;
+        float3 Lr = %s(f, insts, scene, alb, env, P + N * 0.002f, Lm, wm, gp.w, rays, srays, tm, maxDepth);
+        res = mix(res, wm * Lr, wf); hitT = mix(hitT, tm, wf);
+      }""" % (tp, tp)
+    rep(old, new)
+
+# filter: k blends to 2 with the far weight
+rep("""  float rpx = f.blurK * a * hitT / ((gp.w + hitT) * f.pixelAngle);""",
+    """  float rpx = mix(f.blurK, 2.0f, f.floorMode == 0u ? farW(f, gp.w) : 0.0f) * a * hitT / ((gp.w + hitT) * f.pixelAngle);""", 2)
+
+# host: global far-fade value written into every frame
+rep("""    uint32_t jitterMode = getenv("JITTER") ? (uint32_t)atoi(getenv("JITTER")) : 0u;""",
+"""    uint32_t jitterMode = getenv("JITTER") ? (uint32_t)atoi(getenv("JITTER")) : 0u;
+    uint32_t farFade = 0u;   // pad2: lo | hi << 16 in 0.1 mm
+    if (const char* ff = getenv("FARFADE")) { float lo = 0, hi = 0; if (sscanf(ff, "%f,%f", &lo, &hi) == 2) farFade = (uint32_t)(lo * 10.f + .5f) | ((uint32_t)(hi * 10.f + .5f) << 16);
+      printf("# FARFADE: Ultra floor rays fade to High's mirror + k2 between pixel footprints %.1f and %.1f mm\\n", lo, hi); }""")
+rep("""      f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1);""",
+    """      f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1); f.pad2 = farFade;""")
+
+# dolly: High and hybrid modes
+rep("""        struct JM { const char* name; uint32_t mode; bool reseed; };""",
+    """        struct JM { const char* name; uint32_t mode; bool reseed; int kind = 0; };   // kind 1 = High, 2 = Ultra far-fade hybrid""")
+rep("""                               {"footprint-aware (long axis)", 2, false}, {"footprint-aware (geometric mean)", 3, false}};""",
+    """                               {"footprint-aware (long axis)", 2, false}, {"footprint-aware (geometric mean)", 3, false},
+                               {"High: mirror + k2 (deterministic)", 0, false, 1}, {"Ultra hybrid: footprint jitter + far fade 6-12 mm", 2, false, 2}};""")
+rep("""            Cfg c = findCfg("A_U3"); c.view = vi; c.bounces = 2; c.layers = 1;
+            auto M8 = comp8(c, jm.reseed ? 1 + 4 * (uint32_t)fr : 1, 1, nullptr);""",
+    """            Cfg c = findCfg(jm.kind == 1 ? "A_H" : "A_U3"); c.view = vi; c.bounces = 2; c.layers = 1;
+            uint32_t ffSaved = farFade; if (jm.kind == 2) farFade = 60u | (120u << 16);
+            auto M8 = comp8(c, jm.reseed ? 1 + 4 * (uint32_t)fr : 1, 1, nullptr);
+            farFade = ffSaved;""")
+open(p.replace("rt_bench5.mm", "rt_bench5b.mm") if p.endswith("rt_bench5.mm") else p, "w").write(s)
+print("patched", len(s))
+# (applied by sed after the first build) dolly reference size: DOLLYREF=<64-ray passes per frame> (default 8 = 512 rays)
+# (sed) OWNSCALE=<x>: scale of the scene-captured cube (CUBE=own/office), default 1
+# (sed) dolly heatmap names carry _high / _hybrid
+# (r4 fix, 07:5x) refBlocks forces farFade = 0 (the reference never fades); the cache name carries OWNSCALE.
+# Runs made before the fix with FARFADE set AND a freshly computed reference are void:
+#   v5r3_accept_design_own.txt, v5r3_accept_design_own05.txt (c1 references), the r4 dumps (c4 p0_n16/p16_n16 sg1).

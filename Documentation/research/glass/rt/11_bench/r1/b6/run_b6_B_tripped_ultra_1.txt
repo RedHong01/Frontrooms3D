@@ -1,0 +1,24 @@
+22:58  up 30 days,  3:06, 1 user, load averages: 797.81 974.03 855.61
+# rt_bench6 b6b1 view B tripped device=Apple M3 Max Apple9=1  load 798/974/856
+# pso main maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f2   maxd 2 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso f3   maxd 3 full 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 17 lamps
+# receiver px (floor + lite): 15.24% of the screen
+# s1   vs main: 0 of 559308 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00048, max rel 0.692
+# s3   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00048, max rel 0.692
+# f2   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00062, max rel 0.874
+# f3   vs main: 9616 of 559308 traced px differ in any bit; mean |dL| 0.00062, max rel 0.874
+# main shadow rays per frame 391929
+b6b1 b6 B tripped Ultra-tree 2560x1440 main min 0.731 p25 0.866 med 0.974 ms | ratio to main: min 1.000 med 1.000 | load 827/974/857
+b6b1 b6 B tripped Ultra-tree 2560x1440 s1   min 0.728 p25 0.830 med 0.878 ms | ratio to main: min 0.996 med 0.901 | load 827/974/857
+b6b1 b6 B tripped Ultra-tree 2560x1440 s2   min 0.757 p25 0.892 med 1.005 ms | ratio to main: min 1.035 med 1.031 | load 827/974/857
+b6b1 b6 B tripped Ultra-tree 2560x1440 s3   min 0.765 p25 0.896 med 0.935 ms | ratio to main: min 1.047 med 0.960 | load 827/974/857
+b6b1 b6 B tripped Ultra-tree 2560x1440 f2   min 0.792 p25 0.907 med 0.993 ms | ratio to main: min 1.083 med 1.019 | load 827/974/857
+b6b1 b6 B tripped Ultra-tree 2560x1440 f3   min 0.830 p25 0.972 med 1.079 ms | ratio to main: min 1.135 med 1.108 | load 827/974/857
+# done load 827/974/857
+22:58  up 30 days,  3:06, 1 user, load averages: 826.52 974.37 857.12

@@ -1,0 +1,20 @@
+#!/bin/zsh
+# G14b revision 1, round r3 part 2 (2026-10-04): timing at lower load, then the far-fade hybrid and the soft gate with a scene-captured cube.
+B=/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/rt_bench2
+cd $B/b6
+for i in 4 5 6; do
+  (uptime; ./rt_bench6_r3 r3a$i A tripped; uptime) > r3_A_tripped_ultra_$i.txt 2>&1
+  (uptime; ./rt_bench6_r3 r3b$i B tripped; uptime) > r3_B_tripped_ultra_$i.txt 2>&1
+  (uptime; ./rt_bench6_r3 r3g$i G armed; uptime) > r3_G_armed_ultra_$i.txt 2>&1
+  (uptime; HIGH=1 ./rt_bench6_r3 r3ah$i A tripped; uptime) > r3_A_tripped_high_$i.txt 2>&1
+  (uptime; HIGH=1 ./rt_bench6_r3 r3gh$i G armed; uptime) > r3_G_armed_high_$i.txt 2>&1
+done
+echo b6done
+cd $B/b5
+for i in 4 5 6; do (uptime; CUBE=l0exr JITTER=2 ./rt_bench5b r3t$i timing2 A_H A_U2 A_U3 A_U4 B_H B_U2 B_U3 C_H C_U2 C_U3 D_H D_U2 G_H G_U2; uptime) > v5r3_timing2_$i.txt 2>&1; done
+for i in 7 8 9; do (uptime; CUBE=l0exr JITTER=2 FARFADE=6,12 ./rt_bench5b r3f$i timing2 A_H A_U2 A_U3 A_U4 B_H B_U2 B_U3 C_H C_U2 C_U3 D_U2 G_U2; uptime) > v5r3_timing2_farfade_$i.txt 2>&1; done
+echo t2done
+(uptime; CUBE=l0exr DOLLYIMG=1 ./rt_bench5b r3 dolly; uptime) > v5r3_dolly_l0exr_b.txt 2>&1
+(uptime; CUBE=l0exr FARFADE=6,12 ./rt_bench5b r3ff accept; uptime) > v5r3_accept_l0exr_farfade.txt 2>&1
+(uptime; CUBE=own SOFTGATE=1 ./rt_bench5b r3 diff2; uptime) > v5r3_diff2_own_gate.txt 2>&1
+echo alldone

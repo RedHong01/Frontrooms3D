@@ -111,7 +111,10 @@ def build(kit):
     t.lathe(0.0, 0.0, [(INSUL_R, bf), (INSUL_R, bf + INSUL_H), (SOCKET[0], bf + INSUL_H)], 24)
     t.to_object(kit, "bnc insulator", pc.TI)
     b = pc.Mesh()
-    b.lathe(0.0, 0.0, [(SOCKET[0], bf + INSUL_H), (SOCKET[0] - 0.1, bf + INSUL_H + SOCKET[2]),
+    # The socket wall starts 0.1 inside the insulator: its 16-gon and the
+    # insulator's 24-gon hole do not share edges, so a socket that only met
+    # the insulator top left 0.01 mm slivers open onto culled back faces.
+    b.lathe(0.0, 0.0, [(SOCKET[0], bf + INSUL_H - 0.1), (SOCKET[0], bf + INSUL_H), (SOCKET[0] - 0.1, bf + INSUL_H + SOCKET[2]),
                        (SOCKET[1], bf + INSUL_H + SOCKET[2]), (SOCKET[1], bf - 0.8)], 16)
     b.to_object(kit, "bnc socket", pc.BR)
     if pc.HAS_LODS:

@@ -1,0 +1,42 @@
+"""PROPOSAL (NEEDS APPROVAL, visual chat): P-4b + P-6 for the outlet palette (research/outlets/10_spec.md §1.5, §6).
+Five tint-only SurfaceDefs and an instancing flag. Text-anchored; writes nothing unless every anchor matches once.
+  python3 20_rendersetup_patch.py <project>/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+"""
+import io, re, sys
+p = sys.argv[1]; s = io.open(p, encoding="utf-8").read()
+assert "Prop_ThermosetIvory" not in s, "already patched"
+def sub(a, b):
+    global s
+    assert s.count(a) == 1, (s.count(a), a[:100]); s = s.replace(a, b)
+def flag(name):
+    global s
+    pat = r'(        new SurfaceDef \{ name = "' + name + r'",[^\n]*?)( \},\n)'
+    assert len(re.findall(pat, s)) == 1, name
+    s = re.sub(pat, lambda m: m.group(1) + ", instancing = true" + m.group(2), s)
+sub("        public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile\n",
+    "        public Vector4 st = new Vector4(1, 1, 0, 0); // texture scale/offset after the metre tile\n"
+    "        public bool instancing;      // GPU instancing on (the outlet palette: FrontRoomsWallFixtureRenderer draws it with RenderMeshInstanced)\n")
+# P-6: the existing slots the outlet kits and their fallbacks use.
+for n in ["Prop_LaminateBeige", "Prop_PlasticBeige", "Prop_PlasticBlack", "Prop_Aluminium", "Prop_Chrome", "Prop_Brass",
+          "Prop_Ceramic", "Prop_PlasticPutty", "Prop_CeramicGlaze"]:
+    flag(n)
+# P-4b: five new tint-only slots, after Prop_Brass.
+m = re.search(r'        new SurfaceDef \{ name = "Prop_Brass",[^\n]*\n', s)
+assert m
+s = s[:m.end()] + (
+"        // Outlet palette (research/outlets/10_spec.md §1.5, P-4b): tint-only thermoset and nylon slots,\n"
+"        // instanced (P-6). The plate colour is chosen per fixture by the renderer, so no extra FBX per colour.\n"
+"        // The world-space macro wear gives every plate its own grime. Tune the tints in look-dev L-1:\n"
+"        // under Level 0 light a plate reads about 11 % darker and warmer than the paper beside it.\n"
+"        new SurfaceDef { name = \"Prop_ThermosetIvory\", tint = new Color(.902f, .867f, .761f), smooth = .75f, meshUV = true, macroTone = .05f, macroDirt = .08f, instancing = true },   // #E6DDC2\n"
+"        new SurfaceDef { name = \"Prop_ThermosetAged\", tint = new Color(.804f, .749f, .596f), smooth = .60f, meshUV = true, macroTone = .08f, macroDirt = .14f, instancing = true },   // #CDBF98\n"
+"        new SurfaceDef { name = \"Prop_ThermosetAlmond\", tint = new Color(.890f, .843f, .745f), smooth = .70f, meshUV = true, macroTone = .05f, macroDirt = .08f, instancing = true },  // #E3D7BE\n"
+"        new SurfaceDef { name = \"Prop_NylonIvory\", tint = new Color(.886f, .851f, .749f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f, instancing = true },       // #E2D9BF\n"
+"        new SurfaceDef { name = \"Prop_PlasticOrange\", tint = new Color(.847f, .392f, .165f), smooth = .55f, meshUV = true, macroTone = .03f, macroDirt = .06f, instancing = true },    // #D8642A\n"
+) + s[m.end():]
+sub("            if (d.meshUV) m.EnableKeyword(\"_FR_MESH_UV\"); else m.DisableKeyword(\"_FR_MESH_UV\");\n",
+    "            if (d.meshUV) m.EnableKeyword(\"_FR_MESH_UV\"); else m.DisableKeyword(\"_FR_MESH_UV\");\n"
+    "            // Instanced draws need the flag (the shader has multi_compile_instancing in all four passes);\n"
+    "            // renderers keep using the SRP Batcher either way.\n"
+    "            m.enableInstancing = d.instancing;\n")
+io.open(p, "w", encoding="utf-8").write(s); print("patched", p)

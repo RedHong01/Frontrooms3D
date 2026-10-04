@@ -1,0 +1,143 @@
+"""CONTRACT patch (outlet workflow C1; research/outlets/20_code.md section 4, 10_spec.md section 4.1).
+
+The map chat's chosen hook, stage 1:
+  - BuildEdge collects one WallFace per face it builds (both sides of every built edge);
+  - BuildInto calls FrontRoomsWallFixtures.Install once per chunk, after AddZoneGrades and before Furnish.
+
+It anchors on text, not line numbers, and works on both shapes of FrontRoomsMapWorld.cs seen on
+2026-10-03: the 12:38 file, and main 75cfdff (Codex's B0 corner-reach code, where BuildEdge
+gained `int blockA = -1, int blockB = -1` and both calls pass two more arguments).
+
+  python3 20_contract_patch.py <project>/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs           # the request
+  python3 20_contract_patch.py --probe <clone>/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs     # + clone-only timers
+
+The --probe lines (marked // PROBE) are test instrumentation for the clone, not part of the request.
+Nothing is written unless every anchor matches exactly once.
+"""
+import io
+import re
+import sys
+
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+probe = "--probe" in sys.argv
+p = args[0]
+s = io.open(p, encoding="utf-8").read()
+assert "FrontRoomsWallFixtures" not in s, "already patched"
+
+
+def sub(old, new, count=1):
+    global s
+    n = s.count(old)
+    assert n == count, (n, old[:140])
+    s = s.replace(old, new)
+
+
+def resub(pattern, repl, count=1):
+    global s
+    found = re.findall(pattern, s, flags=re.S)
+    assert len(found) == count, (len(found), pattern[:140])
+    s = re.sub(pattern, repl, s, flags=re.S)
+
+
+# (1) The per-chunk face list (a field, reused: no garbage per chunk).
+sub("    readonly List<GridCoord> scratch = new List<GridCoord>();\n",
+    "    readonly List<GridCoord> scratch = new List<GridCoord>();\n"
+    "    // Outlets (FrontRoomsWallFixtures): every wall face BuildEdge built for the chunk being built.\n"
+    "    readonly List<FrontRoomsWallFixtures.WallFace> wallFaces = new List<FrontRoomsWallFixtures.WallFace>();\n")
+
+# (2) BuildInto: clear the list before the cell loop.
+sub("        var collision = new MeshBuilder();\n",
+    "        var collision = new MeshBuilder();\n        wallFaces.Clear();\n")
+
+# (3) The two BuildEdge calls in BuildInto pass the chunk data and the list as two trailing arguments.
+for kind in ("eastKind", "northKind"):
+    resub(r"(            BuildEdge\(chunk, " + kind + r", [^;]*?)\);\n",
+          lambda m: m.group(1) + ",\n                data, wallFaces);\n")
+
+# (4) Install once per chunk: after AddZoneGrades, before Furnish (binding).
+if probe:
+    sub("        AddZoneGrades(chunk, data);\n        Furnish(chunk, data);",
+        "        AddZoneGrades(chunk, data);\n"
+        "        var outletWatch = System.Diagnostics.Stopwatch.StartNew(); // PROBE\n"
+        "        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);\n"
+        "        OutletProbe.InstallMs += outletWatch.Elapsed.TotalMilliseconds; // PROBE\n"
+        "        Furnish(chunk, data);")
+else:
+    sub("        AddZoneGrades(chunk, data);\n        Furnish(chunk, data);",
+        "        AddZoneGrades(chunk, data);\n"
+        "        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);\n"
+        "        Furnish(chunk, data);")
+
+# (5) BuildEdge: two optional parameters after the existing ones, and the collection at its two exits.
+resub(r"(        bool mayExtendStart = true, bool mayExtendEnd = true(?:, int blockA = -1, int blockB = -1)?)\)\n    \{\n        if \(kind == EdgeKind\.Open\) return;",
+      lambda m: m.group(1) + ",\n        MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)\n"
+                "    {\n        if (kind == EdgeKind.Open) return;")
+sub("        if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }",
+    "        if (kind == EdgeKind.Wall)\n"
+    "        {\n"
+    "            Piece(0f, length, 0f, height, true, true);\n"
+    "            AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);\n"
+    "            return;\n"
+    "        }")
+sub("        if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);\n\n        if (kind == EdgeKind.Arch) return;",
+    "        if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);\n"
+    "        AddWallFaces(faces, faceData, kind, a, b, start, along, c - width * .5f, c + width * .5f, sill, openingTop);\n\n"
+    "        if (kind == EdgeKind.Arch) return;")
+
+# (6) The helper, next to BuildEdge, and a public test accessor for the edge id.
+probe_start = "        var t0 = System.Diagnostics.Stopwatch.GetTimestamp(); // PROBE\n" if probe else ""
+probe_end = "        OutletProbe.CollectTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; // PROBE\n" if probe else ""
+helper = '''    /// <summary>
+    /// Outlets: list both faces of an edge BuildEdge just built, for
+    /// FrontRoomsWallFixtures. Faces round the start area are left out. Side 0
+    /// faces into a (this chunk's cell), side 1 into b; b is in the next chunk
+    /// on the east and north border ("foreign": no room, seed-pure inputs only).
+    /// Door and Window faces are listed with their kind; the planner puts nothing on them.
+    /// </summary>
+    void AddWallFaces(List<FrontRoomsWallFixtures.WallFace> faces, MapChunk data, EdgeKind kind, GridCoord a, GridCoord b,
+        Vector3 start, Vector3 along, float openFrom, float openTo, float openBottom, float openTop)
+    {
+        if (faces == null || data == null || InStartArea(a) || InStartArea(b)) return;
+''' + probe_start + '''        var across = new Vector3(along.z, 0f, along.x);
+        var edge = EdgeId(a, b);
+        var o = data.Origin;
+        for (var side = 0; side < 2; side++)
+        {
+            var cell = side == 0 ? a : b;
+            var zone = Cache.ZoneOf(cell);
+            var normal = side == 0 ? -across : across;
+            int li = cell.x - o.x, lj = cell.y - o.y;
+            var own = li >= 0 && li < MapGrid.ChunkCells && lj >= 0 && lj < MapGrid.ChunkCells;
+            var room = -1;
+            if (own) for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(li, lj)) { room = r; break; }
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = start + normal * ModuleUnits.WallHalf, direction = along, length = MapGrid.CellSize, normal = normal,
+                kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
+                edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
+                zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
+                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
+            });
+        }
+''' + probe_end + '''    }
+
+    /// <summary>The world edge id shared by both faces of a wall (outlets hash it with the face side).</summary>
+    public static long WallEdgeId(GridCoord a, GridCoord b) => EdgeId(a, b);
+
+'''
+sub("    static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));\n",
+    helper + "    static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));\n")
+
+if probe:
+    s = s.rstrip() + '''
+
+// PROBE (clone only): outlet contract timings.
+public static class OutletProbe
+{
+    public static double InstallMs;
+    public static long CollectTicks;
+}
+'''
+
+io.open(p, "w", encoding="utf-8").write(s)
+print("patched" + (" (with PROBE)" if probe else ""), p)

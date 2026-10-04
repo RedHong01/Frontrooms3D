@@ -1,0 +1,122 @@
+--- a/FrontRoomsMapWorld.cs	2026-10-03 22:09:56
++++ b/FrontRoomsMapWorld.cs	2026-10-03 22:09:58
+@@ -389,6 +389,8 @@
+     bool hasStartArea;
+     GridCoord startDoorCell;
+     readonly List<GridCoord> scratch = new List<GridCoord>();
++    // Outlets (FrontRoomsWallFixtures): every wall face BuildEdge built for the chunk being built.
++    readonly List<FrontRoomsWallFixtures.WallFace> wallFaces = new List<FrontRoomsWallFixtures.WallFace>();
+     readonly List<Door> movingDoors = new List<Door>();
+     Transform player;
+     MaterialPropertyBlock block;
+@@ -938,6 +940,7 @@
+             return builder;
+         }
+         var collision = new MeshBuilder();
++        wallFaces.Clear();
+         int BlockOf(int i, int j, float ceiling) => (i / BlockCells + j / BlockCells * blocks) * heights + HeightClass(ceiling);
+ 
+         void Solid(int blockIndex, Material material, Vector3 center, Vector3 size, float repeat)
+@@ -987,12 +990,14 @@
+                 eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
+                 !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
+                 !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
+-                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1);
++                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1,
++                data, wallFaces);
+             BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
+                 northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
+                 !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
+                 !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
+-                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1);
++                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1,
++                data, wallFaces);
+ 
+             if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
+             {
+@@ -1033,6 +1038,7 @@
+         }
+         RegisterRelayEntries(chunk, data);
+         AddZoneGrades(chunk, data);
++        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, hasStartArea ? startArea : default, chunk.meshes);
+         Furnish(chunk, data);
+         built[coord] = chunk;
+     }
+@@ -1134,7 +1140,8 @@
+     /// </summary>
+     void BuildEdge(BuiltChunk chunk, EdgeKind kind, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float height,
+         Material wallA, Material wallB, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
+-        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1)
++        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1,
++        MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)
+     {
+         if (kind == EdgeKind.Open) return;
+         var length = MapGrid.CellSize;
+@@ -1180,7 +1187,12 @@
+             Skin(sideB, wallB, fB, tB, 1f);
+         }
+ 
+-        if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }
++        if (kind == EdgeKind.Wall)
++        {
++            Piece(0f, length, 0f, height, true, true);
++            AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);
++            return;
++        }
+ 
+         float width, c, openingTop, sill = 0f;
+         if (kind == EdgeKind.Arch)
+@@ -1205,6 +1217,7 @@
+         Piece(c + width * .5f, length, 0f, height, false, true);
+         Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
+         if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
++        AddWallFaces(faces, faceData, kind, a, b, start, along, c - width * .5f, c + width * .5f, sill, openingTop);
+ 
+         if (kind == EdgeKind.Arch) return;
+ 
+@@ -1328,8 +1341,45 @@
+             if (type != null && typeof(Component).IsAssignableFrom(type)) { glassBreakable = type; break; }
+         }
+         return glassBreakable;
++    }
++
++    /// <summary>
++    /// Outlets: list both faces of an edge BuildEdge just built, for
++    /// FrontRoomsWallFixtures. Faces round the start area are left out. Side 0
++    /// faces into a (this chunk's cell), side 1 into b; b is in the next chunk
++    /// on the east and north border ("foreign": no room, seed-pure inputs only).
++    /// Door and Window faces are listed with their kind; the planner puts nothing on them.
++    /// </summary>
++    void AddWallFaces(List<FrontRoomsWallFixtures.WallFace> faces, MapChunk data, EdgeKind kind, GridCoord a, GridCoord b,
++        Vector3 start, Vector3 along, float openFrom, float openTo, float openBottom, float openTop)
++    {
++        if (faces == null || data == null || InStartArea(a) || InStartArea(b)) return;
++        var across = new Vector3(along.z, 0f, along.x);
++        var edge = EdgeId(a, b);
++        var o = data.Origin;
++        for (var side = 0; side < 2; side++)
++        {
++            var cell = side == 0 ? a : b;
++            var zone = Cache.ZoneOf(cell);
++            var normal = side == 0 ? -across : across;
++            int li = cell.x - o.x, lj = cell.y - o.y;
++            var own = li >= 0 && li < MapGrid.ChunkCells && lj >= 0 && lj < MapGrid.ChunkCells;
++            var room = -1;
++            if (own) for (var r = data.rooms.Length - 1; r >= 0; r--) if (data.rooms[r].Contains(li, lj)) { room = r; break; }
++            faces.Add(new FrontRoomsWallFixtures.WallFace
++            {
++                start = start + normal * ModuleUnits.WallHalf, direction = along, length = MapGrid.CellSize, normal = normal,
++                kind = kind, openFrom = openFrom, openTo = openTo, openBottom = openBottom, openTop = openTop,
++                edgeId = edge, side = (byte)side, cell = cell, foreign = !own, room = room,
++                zone = zone.id, theme = zone.theme, height = zone.height, ceiling = MapGrid.CeilingHeight(zone.height),
++                zoneBorder = Cache.ZoneOf(side == 0 ? b : a).id != zone.id, baseTop = 0f,
++            });
++        }
+     }
+ 
++    /// <summary>The world edge id shared by both faces of a wall (outlets hash it with the face side).</summary>
++    public static long WallEdgeId(GridCoord a, GridCoord b) => EdgeId(a, b);
++
+     static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
+ 
+     /// <summary>

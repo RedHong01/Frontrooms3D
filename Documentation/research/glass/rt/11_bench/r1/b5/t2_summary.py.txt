@@ -1,0 +1,11 @@
+# t2_summary.py - timing2 summary (report 11 revision 1): per config, min of minima and median of medians over runs.
+import re, sys, glob, statistics as st
+for pat in sys.argv[1:]:
+    rows = {}; loads = []
+    for f in sorted(glob.glob(pat)):
+        for line in open(f):
+            m = re.search(r"timing2 2560x1440 (\S+)\s+total min ([\d.]+) p25 [\d.]+ med ([\d.]+) \| trace med ([\d.]+) filter med ([\d.]+) \| floor ([\d.]+)% glass ([\d.]+)% rays/recv ([\d.]+) \| load (\d+)/", line)
+            if m: rows.setdefault(m.group(1), []).append([float(x) for x in m.groups()[1:8]]); loads.append(int(m.group(9)))
+    print(f"== {pat}  ({len(set(glob.glob(pat)))} processes, load {min(loads)}-{max(loads)})")
+    for k, v in rows.items():
+        print(f"  {k:5s} total min {min(x[0] for x in v):.3f} med {st.median([x[1] for x in v]):.3f} | trace med {st.median([x[2] for x in v]):.3f} filter med {st.median([x[3] for x in v]):.3f} | floor {v[0][4]:.1f}% rays/recv {v[0][6]:.2f}")

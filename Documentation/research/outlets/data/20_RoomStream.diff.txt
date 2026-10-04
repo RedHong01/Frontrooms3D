@@ -1,0 +1,99 @@
+diff --git a/Assets/Scripts/FrontRoomsRoomStream.cs b/Assets/Scripts/FrontRoomsRoomStream.cs
+index 16b0bcc..a282236 100644
+--- a/Assets/Scripts/FrontRoomsRoomStream.cs
++++ b/Assets/Scripts/FrontRoomsRoomStream.cs
+@@ -167,7 +167,6 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
+     Material runVinylMaterial;
+     Material runBedMaterial;
+     Material runRailMaterial;
+-    Material outletMaterial;
+     Material doorHardwareMaterial;
+     Material volumetricLightMaterial;
+     AudioClip doorCreakClip;
+@@ -1401,10 +1400,47 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
+         runVinylMaterial = FrontRoomsSurfaces.Lit("Run / teal vinyl seat", new Color(.20f, .36f, .35f), .42f);
+         runBedMaterial = FrontRoomsSurfaces.Lit("Run / mattress", new Color(.72f, .80f, .77f), .25f);
+         runRailMaterial = FrontRoomsSurfaces.Lit("Run / vinyl handrail", new Color(.72f, .68f, .58f), .48f);
+-        outletMaterial = FrontRoomsSurfaces.Lit("Level 0 / outlet plate", new Color(.82f, .78f, .66f), .35f);
+         doorHardwareMaterial = FrontRoomsSurfaces.Lit("Door / brushed steel", new Color(.64f, .63f, .60f), .62f, .9f);
+     }
+ 
++    // Wall faces of a stream room for the outlet planner, in room space (props root): the side walls'
++    // inner faces (x = +-5.62, four 3 m faces each) and the far end wall's two spans beside the
++    // double door (x +-1.2 ... +-5.62, on the reveal plane), all with the baseboard top at 0.26 m.
++    static readonly System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>[] streamFaces = new System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>[5];
++
++    /// <summary>The outlet planner's faces for one stream room variant (shared, read-only; tools and tests read them too).</summary>
++    public static System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace> StreamFaces(RoomRule rule)
++    {
++        var index = (int)rule;
++        if (streamFaces[index] != null) return streamFaces[index];
++        var faces = new System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>(10);
++        var theme = rule == RoomRule.Office ? FrontRooms.Map.ZoneTheme.Office : FrontRooms.Map.ZoneTheme.Level0;
++        var inner = RoomWidth * .5f - WallThickness * .5f;            // 5.62
++        const float faceLength = 3f;
++        var perSide = Mathf.RoundToInt(RoomLength / faceLength);     // 4
++        for (var side = 0; side < 2; side++)
++        for (var k = 0; k < perSide; k++)
++            faces.Add(new FrontRoomsWallFixtures.WallFace
++            {
++                start = new Vector3(side == 0 ? -inner : inner, 0f, k * faceLength), direction = Vector3.forward, length = faceLength,
++                normal = side == 0 ? Vector3.right : Vector3.left, kind = FrontRooms.Map.EdgeKind.Wall, edgeId = faces.Count, side = 0,
++                cell = new FrontRooms.Map.GridCoord(side == 0 ? -1 : 1, k), foreign = false, room = 0, zone = default, theme = theme,
++                height = FrontRooms.Map.ZoneHeight.Standard, ceiling = RoomHeight, zoneBorder = false, baseTop = .26f,
++            });
++        var endZ = RoomLength - DoorWallDepth * .5f - .002f;           // the door reveals' paper plane
++        var span = inner - DoorWidth * .5f;                            // 4.42
++        for (var side = 0; side < 2; side++)
++            faces.Add(new FrontRoomsWallFixtures.WallFace
++            {
++                start = new Vector3(side == 0 ? -inner : DoorWidth * .5f, 0f, endZ), direction = Vector3.right, length = span,
++                normal = Vector3.back, kind = FrontRooms.Map.EdgeKind.Wall, edgeId = faces.Count, side = 0,
++                cell = new FrontRooms.Map.GridCoord(side, 4), foreign = false, room = 0, zone = default, theme = theme,
++                height = FrontRooms.Map.ZoneHeight.Standard, ceiling = RoomHeight, zoneBorder = false, baseTop = .26f,
++            });
++        streamFaces[index] = faces;
++        return faces;
++    }
++
+     void BuildProfileProps(RoomSlot room)
+     {
+         EnsurePropMaterials();
+@@ -1417,17 +1453,13 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
+             room.profileVariants[ruleIndex] = props;
+             props.SetActive(rule == room.rule);
+             var roomWall = ProfileMaterial(profileWallMaterials, rule, wallMaterial);
+-            if (rule == RoomRule.Lobby || rule == RoomRule.Shift || rule == RoomRule.Exit)
+-            {
+-                // Level 0's scattered electrical outlets, low on the paper.
+-                var wallFace = RoomWidth * .5f - WallThickness * .5f - .006f;
+-                foreach (var (x, z) in new[] { (-wallFace, 2.3f), (wallFace, 5.8f), (-wallFace, 9.1f) })
+-                {
+-                    var outlet = Box(props.transform, "outlet plate", new Vector3(x, .32f, z), new Vector3(.012f, .115f, .07f), outletMaterial);
+-                    outlet.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+-                }
+-            }
+-            else if (rule == RoomRule.Office)
++            // Outlets, switches and jacks (FrontRoomsWallFixtures, research/outlets/10_spec.md §3.5): the
++            // same planner as the map, one class per RoomRule, over this room's wall faces. Render-only
++            // (no GameObject, no collider); seeded like the Office dressing, so a recycled slot keeps its
++            // plates. Installed before the Office kit, whose pods add their floor feeds to this set.
++            FrontRoomsWallFixtures.InstallLocal(props.transform, StreamFaces(rule), 7919 * room.sequence + 104729,
++                FrontRoomsWallFixtures.StreamClass(rule), roomWall);
++            if (rule == RoomRule.Office)
+             {
+                 // Level 4 from the Blender kit (FrontRoomsOfficeKit, the same
+                 // layout the maze uses). The centre lane between the two doors
+@@ -1494,7 +1526,11 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
+             }
+             else if (rule == RoomRule.Exit)
+             {
+-                Box(props.transform, "exit threshold marker", new Vector3(0f, .04f, 5.9f), new Vector3(2.8f, .03f, .12f), roomWall);
++                // Reachable again since the outlet change (Exit left the first branch). A 3 cm floor strip:
++                // drawn only, so it adds no collider to the room (nothing needs to hit it).
++                var marker = Box(props.transform, "exit threshold marker", new Vector3(0f, .04f, 5.9f), new Vector3(2.8f, .03f, .12f), roomWall);
++                var markerCollider = marker.GetComponent<Collider>();
++                if (Application.isPlaying) Destroy(markerCollider); else DestroyImmediate(markerCollider);
+             }
+         }
+     }

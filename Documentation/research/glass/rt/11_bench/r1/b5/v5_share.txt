@@ -1,0 +1,24 @@
+23:00  up 30 days,  3:08, 1 user, load averages: 892.70 956.31 863.76
+# rt_bench4 r1 share device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 893/956/864
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# --- share: Run S1 eye (0, 1.62, 1.5), yaw 0, floor share and Ultra spp = min(4, floor(0.40 / share))  load 887/954/864
+share pitch  -3.0 deg: floor 9.99% -> Ultra spp 4 (continuous budget 4.01)
+share pitch  -2.0 deg: floor 10.53% -> Ultra spp 3 (continuous budget 3.80)
+share pitch  -1.0 deg: floor 11.08% -> Ultra spp 3 (continuous budget 3.61)
+share pitch  +0.0 deg: floor 11.63% -> Ultra spp 3 (continuous budget 3.44)
+share pitch  +1.0 deg: floor 12.19% -> Ultra spp 3 (continuous budget 3.28)
+share pitch  +2.0 deg: floor 12.76% -> Ultra spp 3 (continuous budget 3.13)
+share pitch  +3.0 deg: floor 13.35% -> Ultra spp 2 (continuous budget 3.00)
+share pitch  +4.0 deg: floor 13.93% -> Ultra spp 2 (continuous budget 2.87)
+share pitch  +5.0 deg: floor 14.52% -> Ultra spp 2 (continuous budget 2.75)
+share pitch  +6.0 deg: floor 15.12% -> Ultra spp 2 (continuous budget 2.65)
+share pitch  +7.0 deg: floor 15.73% -> Ultra spp 2 (continuous budget 2.54)
+share pitch  +8.0 deg: floor 16.34% -> Ultra spp 2 (continuous budget 2.45)
+share pitch  +9.0 deg: floor 16.96% -> Ultra spp 2 (continuous budget 2.36)
+share pitch +10.0 deg: floor 17.59% -> Ultra spp 2 (continuous budget 2.27)
+# done load 887/954/864
+23:00  up 30 days,  3:08, 1 user, load averages: 887.12 954.10 863.52
