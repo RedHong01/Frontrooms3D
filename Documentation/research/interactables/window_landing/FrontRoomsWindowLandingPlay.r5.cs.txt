@@ -1,0 +1,353 @@
+// WINDOW LANDING · PLAY-MODE TEST, r3 (private clone proj_win only; never copied into the real project). 2026-10-03,
+// rebased on the map chat's window model (df4cb03) and contract r3. The real game: FrontRooms3D.unity in Play,
+// Random.InitState(4242) before Space, the title handoff, the embedded map. For one W-L0 and one W-OF window it checks,
+// through the game's own objects:
+//   the map's root holds the frame; the interim slab is lit (Glass_Window, the RT target) and the pane renderer is off;
+//   the game's own aim (UpdateAim) offers the glass prompt at 1.0 m and not at 1.6 m (GlassBreak.Reach 1.2 m);
+//   a cracked pane (Hold 0.5 s, stage 1) survives a chunk drop + rebuild in Play: pane back at stage 1, frame and slab back;
+//   Hold breaks it; the next frame the pane and the slab are gone and the frame stays (Destroy is deferred in Play);
+//   a chunk drop + rebuild in the same frame as the break's aftermath: next frame exactly one root for the edge, with
+//   its frame, no pane, the opening clear;
+//   the game's own climb carries the player through the framed opening to the far cell.
+// Frames: the game camera (its URP data, post on), 1920x1080, 4x MSAA: intact, broken, mid-climb.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsWindowLandingPlay.RunBatch -logFile <f>
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class FrontRoomsWindowLandingPlay
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.WindowLandingPlay.Active", DoneKey = "FrontRooms.WindowLandingPlay.Done", DeadlineKey = "FrontRooms.WindowLandingPlay.Deadline";
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    const string FrameLabel = "Window frame (kit)", GlassLabel = "Window glass";
+
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+    static int waitUntil = -1, passed, failed;
+    static bool finished;
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D tex;
+
+    static string OutDir
+    {
+        get
+        {
+            var d = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "window_play3");
+            Directory.CreateDirectory(d);
+            return d;
+        }
+    }
+
+    static FrontRoomsWindowLandingPlay()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    public static void RunBatch()
+    {
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 900f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static void Log(string s)
+    {
+        log.AppendLine("[" + Time.frameCount + "] " + s);
+        Debug.Log("[WindowLandingPlay] " + s);
+        try { File.WriteAllText(Path.Combine(OutDir, "play_log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Check(bool ok, string what)
+    {
+        if (ok) passed++; else failed++;
+        Log((ok ? "ok   " : "FAIL ") + what);
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        Log("VERDICT " + (failed == 0 && passed > 0 ? "PASS" : "FAIL") + ": " + passed + " passed, " + failed + " failed");
+        SessionState.SetBool(DoneKey, true);
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(failed == 0 && passed > 0 ? 0 : 3);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) stack.Push(Main());
+        if (Time.frameCount < waitUntil) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                if (top.Current is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntil = Time.frameCount + (top.Current is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            Check(false, "exception " + e);
+            Finish();
+        }
+    }
+
+    static object Get(object o, string n) => o.GetType().GetField(n, BF)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => o.GetType().GetField(n, BF).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string V(Vector3 v) => "(" + v.x.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.y.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.z.ToString("0.00", CultureInfo.InvariantCulture) + ")";
+
+    static void Place(Vector3 feet, Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var body = root.GetComponent<CharacterController>();
+        if (body != null) body.enabled = false;
+        root.position = feet;
+        if (body != null) body.enabled = true;
+        Physics.SyncTransforms();
+        var eye = feet + Vector3.up * ModuleUnits.PlayerEye;
+        var d = lookAt - eye;
+        var yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        var pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        Set(game, "yaw", yaw);
+        Set(game, "pitch", pitch);
+        root.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    static void Resume()
+    {
+        if (Get(game, "phase").ToString() != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+        Log("phase was Paused (focus) -> Playing");
+    }
+
+    static bool Free(Vector3 feet) => !Physics.OverlapCapsule(feet + Vector3.up * .4f, feet + Vector3.up * 1.4f, .3f, ~0, QueryTriggerInteraction.Ignore)
+        .Any(c => !c.transform.IsChildOf(PlayerRoot));
+
+    static void Capture(string name)
+    {
+        if (rt == null)
+        {
+            rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+            rt.Create();
+            tex = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
+        }
+        var prev = cam.targetTexture;
+        cam.targetTexture = rt;
+        cam.Render();
+        cam.Render();
+        cam.targetTexture = prev;
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        tex.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
+        tex.Apply(false);
+        RenderTexture.active = active;
+        File.WriteAllBytes(Path.Combine(OutDir, name + ".png"), tex.EncodeToPNG());
+        Log("frame " + name + ".png · eye " + V(cam.transform.position));
+    }
+
+    // The built chunk holding a window, and the window object for an edge (new objects after a rebuild).
+    static GridCoord ChunkOfWindow(long edge)
+    {
+        var built = (IDictionary)typeof(FrontRoomsMapWorld).GetField("built", BF).GetValue(map);
+        foreach (DictionaryEntry e in built)
+            foreach (FrontRoomsMapWorld.Window w in (IEnumerable)Get(e.Value, "windows"))
+                if (w.edge == edge) return (GridCoord)e.Key;
+        throw new InvalidOperationException("no built chunk holds edge " + edge);
+    }
+
+    static FrontRoomsMapWorld.Window WindowOf(long edge)
+    {
+        var built = (IDictionary)typeof(FrontRoomsMapWorld).GetField("built", BF).GetValue(map);
+        foreach (DictionaryEntry e in built)
+            foreach (FrontRoomsMapWorld.Window w in (IEnumerable)Get(e.Value, "windows"))
+                if (w.edge == edge) return w;
+        return null;
+    }
+
+    static void DropAndBuild(GridCoord chunk)
+    {
+        typeof(FrontRoomsMapWorld).GetMethod("Drop", BF).Invoke(map, new object[] { chunk });
+        typeof(FrontRoomsMapWorld).GetMethod("Build", BF, null, new[] { typeof(GridCoord) }, null).Invoke(map, new object[] { chunk });
+    }
+
+    static int RootsNamed(string name) => map.GetComponentsInChildren<Transform>(true).Count(t => t.name == name);
+
+    static Transform Slab(FrontRoomsMapWorld.Window w) => w.pane != null ? w.pane.transform.Find(GlassLabel) : null;
+
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        while ((game = Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        while (Time.time < 2f) yield return 1;
+        UnityEngine.Random.InitState(4242);
+        for (var i = 0; i < 60 && !Get<bool>(game, "mapPlay"); i++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        Check(Get<bool>(game, "mapPlay"), "run started (seed " + Get(game, "runSeed") + ")");
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        if (map == null) yield break;
+        Get<FrontRoomsHunterTuning>(game, "hunterTuning").releaseDelaySeconds = 1e6f;   // the Relay stays dormant
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 10f) { Resume(); yield return 1; }
+        var start = Time.frameCount;
+        while (!map.Settled && Time.frameCount - start < 1500) yield return 1;
+        Log("map root " + V(map.transform.position) + " · settled " + map.Settled + " · chunks " + map.BuiltChunkCount + " · glass prompt reach " + FrontRoomsShotTimings.GlassBreak.Reach + " m");
+        Time.captureDeltaTime = 1f / 60f;
+
+        var built = (IDictionary)typeof(FrontRoomsMapWorld).GetField("built", BF).GetValue(map);
+        var all = new List<FrontRoomsMapWorld.Window>();
+        foreach (DictionaryEntry e in built) all.AddRange(((IEnumerable)Get(e.Value, "windows")).Cast<FrontRoomsMapWorld.Window>());
+        var player = PlayerRoot.position;
+        Log("built windows " + all.Count + " (framed " + all.Count(w => w.root != null && w.root.Find(FrameLabel) != null) + ")");
+        Check(all.Count > 0 && all.All(w => w.root != null && w.root.Find(FrameLabel) != null), "every built window has its frame on the map's root");
+        foreach (var theme in new[] { ZoneTheme.Level0, ZoneTheme.Office })
+        {
+            FrontRoomsMapWorld.Window pick = null;
+            GridCoord room = default, hall = default;
+            foreach (var w in all.Where(w => w.root != null && w.pane != null).OrderBy(w => (w.position - player).sqrMagnitude))
+            {
+                var roomIsB = map.Cache.ZoneOf(w.a).height == ZoneHeight.Tall;
+                var r = roomIsB ? w.b : w.a;
+                if (map.Cache.ZoneOf(r).theme != theme || map.InStartArea(w.a) || map.InStartArea(w.b)) continue;
+                var toRoom = (map.CellCenter(r) - w.position).normalized;
+                toRoom.y = 0f;
+                if (!Free(w.position + toRoom * 1.7f) || !Free(w.position - toRoom * 1.2f)) continue;
+                pick = w; room = r; hall = roomIsB ? w.a : w.b;
+                break;
+            }
+            var tag = theme == ZoneTheme.Office ? "OF" : "L0";
+            if (pick == null) { Check(false, tag + ": no free-standing window in the built chunks"); continue; }
+            yield return Sequence(pick, room, hall, tag);
+        }
+    }
+
+    static IEnumerator Sequence(FrontRoomsMapWorld.Window w, GridCoord room, GridCoord hall, string tag)
+    {
+        var edge = w.edge;
+        var dir = map.CellCenter(hall) - map.CellCenter(room);
+        dir.y = 0f;
+        dir.Normalize();
+        var centre = w.position + Vector3.up * 1.175f;
+        Log(tag + ": window " + w.a + "-" + w.b + " at " + V(w.position) + " · room " + room + " → hall " + hall);
+
+        // In Play: the hierarchy (the map's root, the frame, the interim slab).
+        var frame = w.root.Find(FrameLabel);
+        var slab = Slab(w);
+        var sr = slab != null ? slab.GetComponent<MeshRenderer>() : null;
+        Check(frame != null && frame.GetComponentsInChildren<Collider>(true).Length == 0, tag + ": root '" + w.root.name + "' holds the render-only frame");
+        Check(!w.pane.GetComponent<MeshRenderer>().enabled && sr != null && sr.enabled && slab.GetComponent<FrontRoomsMetalGlassTarget>() != null
+            && sr.sharedMaterial != null && sr.sharedMaterial.name == "Glass_Window", tag + ": pane renderer off, interim slab on with Glass_Window and the RT target");
+
+        // The game's own aim: the glass prompt at 1.0 m, none at 1.6 m (GlassBreak.Reach 1.2 m).
+        Resume();
+        Place(w.position - dir * 1.0f, centre);
+        yield return 4;
+        var near = Get<string>(game, "prompt");
+        Check(near != null && near.Contains("BREAK GLASS"), tag + ": the game's aim at 1.0 m offers '" + near + "'");
+        Resume();
+        Place(w.position - dir * 1.6f, centre);
+        yield return 4;
+        var far = Get<string>(game, "prompt");
+        Check(far == null || !far.Contains("GLASS"), tag + ": at 1.6 m no glass prompt ('" + far + "')");
+        Resume();
+        Place(w.position - dir * 1.0f, centre);
+        yield return 4;
+        Capture(tag + "_play_intact");
+
+        // A cracked pane across a chunk rebuild in Play (stage 1, then drop + build in one frame).
+        var col = w.pane.GetComponent<Collider>();
+        map.Hold(col, .5f, out var progress);
+        map.ReleaseHold(col);
+        Check(w.stage == 1, tag + ": Hold 0.5 s cracks it to stage " + w.stage + " (progress " + progress.ToString("0.00", CultureInfo.InvariantCulture) + ")");
+        var chunk = ChunkOfWindow(edge);
+        DropAndBuild(chunk);
+        yield return 1;
+        var w2 = WindowOf(edge);
+        Check(w2 != null && w2.pane != null && w2.stage == 1 && w2.root.Find(FrameLabel) != null && Slab(w2) != null && RootsNamed(w2.root.name) == 1,
+            tag + ": after a drop + rebuild in Play the cracked pane is back at stage 1 with its frame and slab, one root (" + (w2 != null ? RootsNamed(w2.root.name) : -1) + ")");
+        if (w2 == null || w2.pane == null) yield break;
+        w = w2;
+
+        // Break (one Hold of 1 s).
+        col = w.pane.GetComponent<Collider>();
+        var broke = map.Hold(col, 1.01f, out _);
+        Check(broke, tag + ": Hold breaks it");
+        yield return 1;
+        Check(w.pane == null && w.root != null && w.root.Find(FrameLabel) != null && w.root.GetComponentsInChildren<Transform>(true).All(t => t.name != GlassLabel && !t.name.StartsWith("Window pane")),
+            tag + ": next frame the pane and the slab are gone, the frame stays");
+        Check(map.IsBrokenWindow(room, hall), tag + ": IsBrokenWindow");
+        yield return 4;
+        Capture(tag + "_play_broken");
+
+        // Drop + rebuild the chunk in Play after the break (the old chunk's Destroy is deferred to the end of the frame).
+        DropAndBuild(ChunkOfWindow(edge));
+        var sameFrame = RootsNamed("Window " + w.a + "-" + w.b);
+        yield return 1;
+        var w3 = WindowOf(edge);
+        var roots = RootsNamed("Window " + w.a + "-" + w.b);
+        var opening = Physics.OverlapBox(w3 != null ? w3.position + Vector3.up * 1.175f : Vector3.zero, new Vector3(.698f, .823f, .078f),
+            w3 != null ? w3.root.rotation : Quaternion.identity, 1 << 0, QueryTriggerInteraction.Ignore).Where(c => !c.transform.IsChildOf(PlayerRoot)).ToList();
+        Check(w3 != null && w3.pane == null && roots == 1 && w3.root.Find(FrameLabel) != null && opening.Count == 0 && map.IsBrokenWindow(room, hall),
+            tag + ": after a drop + rebuild in Play: roots in the build frame " + sameFrame + ", next frame " + roots + ", frame " + (w3 != null && w3.root.Find(FrameLabel) != null) + ", pane " + (w3 != null && w3.pane != null)
+            + ", colliders in the opening " + opening.Count);
+        if (w3 != null) w = w3;
+
+        // The game's climb: walk at the opening from 0.6 m.
+        Resume();
+        Place(w.position - dir * .6f + Vector3.up * .02f, centre + dir * 2f);
+        yield return 2;
+        var started = (bool)Call(game, "TryStartClimb", dir);
+        Check(started, tag + ": the game's TryStartClimb starts a climb through the framed opening");
+        for (var i = 0; i < 18; i++) yield return 1;
+        Capture(tag + "_play_climbing");
+        for (var i = 0; i < 40; i++) yield return 1;
+        var landed = map.CellOf(PlayerRoot.position);
+        Check(landed == hall && Get<float>(game, "climbTime") < 0f, tag + ": the player lands in the hall cell " + landed + " (want " + hall + ")");
+    }
+}

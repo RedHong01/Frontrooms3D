@@ -1,6 +1,6 @@
 {
  "schema": "frontrooms.kit-sheets.interactables/1",
- "generated": "2026-10-03T17:49:16-07:00",
+ "generated": "2026-10-04T08:28:40-07:00",
  "by": "visual chat (游戏视觉), for 平面视觉's K-sheets",
  "figma": {
   "file": "0tCbAiVUlrPId3RWd9LRif",
@@ -9,8 +9,18 @@
   "proposalSection": "2497:3804 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (ours)"
  },
  "source": {
-  "models": "private clone scratchpad/proj_int (render copy proj_3view_int); nothing is in the game's Assets yet",
-  "renderer": "Tools/three_view/FrontRoomsThreeView.cs + the interactables patch (FrontRoomsThreeView.interactables.cs.txt here)",
+  "models": "55 kits = Assets/Resources/Props/Models in the real project (main d610d3a), byte-identical to the build clone proj_int (Codex copied them in 8ef5b64, 2026-10-03 19:10). 7 kits = proj_int's verified finals, not in main yet (they replace Codex's copies at the interactables merge; main's .meta GUIDs kept): Kit_KeyCabinet, Kit_WindowFrame_Wood, Kit_WindowFrame_Steel, Kit_WindowFrame_Steel_Enamel, Kit_WindowFrame_Alu, Kit_MiniBlind_Raised, Kit_MiniBlind_Lowered. Why: G3 pass 3 fixed the cabinet's inside-out corners (codex audit F5); G4 pass 3/4 rebuilt the windows (alu 2,066 tris without LOD1 and with wear, 1.1 mm steel screw slots, wall_decor tag, lodDistances 0.0 for never cull). Wood frame and blinds: same geometry as main.",
+  "overlay": [
+   "Kit_KeyCabinet",
+   "Kit_WindowFrame_Wood",
+   "Kit_WindowFrame_Steel",
+   "Kit_WindowFrame_Steel_Enamel",
+   "Kit_WindowFrame_Alu",
+   "Kit_MiniBlind_Raised",
+   "Kit_MiniBlind_Lowered"
+  ],
+  "renderClone": "scratchpad/proj_3view_main = proj_audit + rsync of main's Assets/Packages/ProjectSettings (main d610d3a, working tree), the 7 proj_int finals copied over main's FBX/JSON (metas kept), plus the two editor scripts kept here as .cs.txt",
+  "renderer": "Tools/three_view/FrontRoomsThreeView.cs + the interactables patch (FrontRoomsThreeView.interactables.cs.txt here); heroes: FrontRoomsInteractableHeroes.cs.txt here",
   "manifest": "png/manifest.json"
  },
  "conventions": {
@@ -30,7 +40,7 @@
   "views": "third-angle: front = camera on +Z, side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
   "viewYaw": "-90 on door frames, door leaves and keys: their show face is +X (door pull face; key flats), so they are turned to face the camera. Their front = the pull-face elevation with the hinge at image left; key tip at image right, cuts up. size_m / dims are in that turned frame (W = opening width).",
   "groundLine": "The PNG bottom edge (less padding) is boundsMin.y, not the floor. aboveFloor_m > 0 means the piece is wall-mounted at that height (key hosts, windows); 0 = stands on the floor. Part-frame kits (lock parts, keys, tags, signs, closer parts) have negative boundsMin.y: they are drawn about their pivot, not on a floor.",
-  "swatchRule": "hex = sRGB of (mean of the _BaseMap in linear) x (_BaseColor converted sRGB->linear), from Resources/Surfaces/<slot>.mat in the clone. Slots already on the 44 sheets reuse those sheets' exact hex. P-4 slots (no Unity surface yet) show what Unity renders today (the FBX preview material) and carry targetHex from the spec.",
+  "swatchRule": "hex = sRGB of ( linear(mean of the _BaseMap's sRGB pixels, as texmean.py did for K01-K45) x linear(_BaseColor) ): the tint is converted sRGB->linear before the multiply, the product goes back to sRGB. Read from Resources/Surfaces/<slot>.mat in the render clone (= main). Slots already on the 45 sheets reuse those sheets' exact hex (it equals this rule). P-4 slots (no Unity surface in main yet) show what Unity renders today (the FBX preview material) and carry targetHex from the spec.",
   "eraAxis": {
    "t0": 1950,
    "t1": 2000,
@@ -51,22 +61,33 @@
   "sheets": 36,
   "newSheets": 35,
   "pngs": 248,
-  "heroes": 0
+  "heroes": 32,
+  "groupHeroes": 4,
+  "proposalSlots": 26
  },
  "sheets": [
   {
    "order": 1,
    "id": "doorframe_wood",
+   "kit": "Kit_DoorFrame_Wood",
    "title": "Wood door frame",
    "family": "Doors · frames",
    "lede": "Walnut ranch casing, applied wood stop and an oak saddle: the Lobby's older office doorway.",
+   "dims_mm": {
+    "w": 1150,
+    "d": 210,
+    "h": 2175
+   },
    "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Period",
+    "chip": "Second-hand",
+    "spanLabel": "1955–90",
     "span": [
      1955,
      1990
     ],
-    "label": "1955–90",
-    "chip": "Second-hand",
     "note": "Wood-cased openings with stain-grade casing are the older office fit-out (02 §2.2; film F09 'dark frame'). Ranch casing and back band, no plinth blocks (none in 1990 commercial work).",
     "sources": [
      "10_spec §2.3",
@@ -95,18 +116,21 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_WoodWalnut",
      "slot": "Prop_WoodWalnut",
      "label": "Walnut",
      "hex": "#4a3020",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_WoodOak",
      "slot": "Prop_WoodOak",
      "label": "Golden oak",
      "hex": "#9a6a3a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -137,16 +161,25 @@
   {
    "order": 2,
    "id": "doorframe_steel",
+   "kit": "Kit_DoorFrame_Steel",
    "title": "Steel door frame",
    "family": "Doors · frames",
    "lede": "Pressed 16-gauge steel in dark bronze with a formed 16 mm stop and three rubber silencers.",
+   "dims_mm": {
+    "w": 1150,
+    "d": 210,
+    "h": 2175
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "The SDI hollow-metal frame: 2 in face, 5/8 in stop, 16 ga interior (SDI 111A). The form is unchanged from well before 1990. The _Alu variant gives the Exit its clear-anodised look.",
     "sources": [
      "10_spec §2.3",
@@ -185,24 +218,28 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
@@ -233,16 +270,25 @@
   {
    "order": 3,
    "id": "doorleaf_veneer",
+   "kit": "Kit_DoorLeaf_Veneer",
    "title": "Veneer door",
    "family": "Doors · leaves",
    "lede": "Flush 1-3/4 in veneer leaf with hardwood edge bands. No keyhole: a free door reads warm and dark.",
+   "dims_mm": {
+    "w": 992,
+    "d": 59,
+    "h": 2080
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "The flush stain-grade veneer door with a brass lever is the project's own film still F09 and IP canon. Oak variant (chrome butts) for the Office and Exit.",
     "sources": [
      "10_spec §2.3",
@@ -277,12 +323,14 @@
    },
    "materials": [
     {
+     "name": "Door_Veneer",
      "slot": "Door_Veneer",
      "label": "Door veneer",
      "hex": "#9d6d3b",
      "source": "Resources/Surfaces/Door_Veneer.mat: mean of Assets/Resources/Surfaces/Textures/DoorVeneer_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -313,16 +361,25 @@
   {
    "order": 4,
    "id": "doorleaf_steel",
+   "kit": "Kit_DoorLeaf_Steel",
    "title": "Steel door",
    "family": "Doors · leaves",
    "lede": "Flush hollow-metal leaf in almond enamel with stainless kick plates: the locked door reads pale from 20 m.",
+   "dims_mm": {
+    "w": 992,
+    "d": 61,
+    "h": 2080
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "Back-of-house rooms had painted hollow-metal doors (SDI 108 Level 2 for storage and utility). Almond enamel needs the new Door_Enamel surface (P-4); _PaintedMetal is the spec's working fallback.",
     "sources": [
      "10_spec §2.1, §2.3",
@@ -359,6 +416,7 @@
    },
    "materials": [
     {
+     "name": "Door_Enamel",
      "slot": "Door_Enamel",
      "label": "Almond enamel",
      "hex": "#cdc5b0",
@@ -368,12 +426,14 @@
      "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -404,16 +464,25 @@
   {
    "order": 5,
    "id": "doorleaf_steellite",
+   "kit": "Kit_DoorLeaf_SteelLite",
    "title": "Steel door with lite",
    "family": "Doors · leaves",
    "lede": "The steel leaf with a 4 x 25 in vision lite at 1.575 m: Red's see-through option for the Run.",
+   "dims_mm": {
+    "w": 992,
+    "d": 61,
+    "h": 2080
+   },
    "era": {
+    "from": 1955,
+    "to": 1992,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–92",
     "span": [
      1955,
      1992
     ],
-    "label": "1955–92",
-    "chip": "Timeless",
     "note": "Narrow vision lites sit 60-66 in up (02 §4.3). Wired glass was the fire-door glazing until US production stopped in 1992; the wired look needs Glass_Wired from the glass track.",
     "sources": [
      "10_spec §2.3",
@@ -443,6 +512,7 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Door_Enamel",
      "slot": "Door_Enamel",
      "label": "Almond enamel",
      "hex": "#cdc5b0",
@@ -452,22 +522,26 @@
      "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Glass",
      "slot": "Prop_Glass",
      "label": "Glass",
      "hex": "#d1e0e0",
-     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule",
+     "note": "Main's Prop_Glass.mat is now on FrontRooms/Glass (glass-track overwrite, Codex 8ef5b64): _BaseColor #272c29 at low alpha, so a flat swatch means little. The hex kept here is the K-sheets' glass swatch, for consistency with K01-K45."
     }
    ],
    "tris": {
@@ -494,16 +568,25 @@
   {
    "order": 6,
    "id": "doorleaf_ward",
+   "kit": "Kit_DoorLeaf_Ward",
    "title": "Ward door",
    "family": "Doors · leaves",
    "lede": "Wood-grain laminate with a stainless armor plate, push plate and offset D-pull: push and pull, no latch.",
+   "dims_mm": {
+    "w": 992,
+    "d": 110,
+    "h": 2080
+   },
    "era": {
+    "from": 1975,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1975–2000",
     "span": [
      1975,
      2000
     ],
-    "label": "1975–2000",
-    "chip": "Current stock",
     "note": "A hospital-corridor door: laminate face, armor plate to 34 in on the push face, kick plate on the pull face. No latch, rose or strike.",
     "sources": [
      "10_spec §2.3",
@@ -532,18 +615,21 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_WoodLaminate",
      "slot": "Prop_WoodLaminate",
      "label": "Wood laminate",
      "hex": "#8e6e4c",
      "source": "Resources/Surfaces/Prop_WoodLaminate.mat: mean of Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -574,16 +660,25 @@
   {
    "order": 7,
    "id": "door_closer",
+   "kit": "Kit_DoorCloser_Body",
    "title": "Surface closer",
    "family": "Doors · hardware",
    "lede": "A regular-arm surface closer on the pull face, two links to a shoe on the head. Possible only because doors now swing one way.",
+   "dims_mm": {
+    "w": 292,
+    "d": 51,
+    "h": 83
+   },
    "era": {
+    "from": 1958,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1958–2000",
     "span": [
      1958,
      2000
     ],
-    "label": "1958–2000",
-    "chip": "Timeless",
     "note": "Surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 series dates from 1958. Arm lengths come from the linkage solve (ESTIMATE, to check against a 4010 template).",
     "sources": [
      "10_spec §2.4",
@@ -626,12 +721,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -667,12 +764,14 @@
    "partsMaterials": {
     "Kit_DoorCloser_Body": [
      {
+      "name": "Prop_SteelBrown",
       "slot": "Prop_SteelBrown",
       "label": "Brown steel",
       "hex": "#3b2e25",
       "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
      },
      {
+      "name": "Prop_Chrome",
       "slot": "Prop_Chrome",
       "label": "Chrome",
       "hex": "#d8d8d8",
@@ -681,6 +780,7 @@
     ],
     "Kit_DoorCloser_Arm": [
      {
+      "name": "Prop_SteelBrown",
       "slot": "Prop_SteelBrown",
       "label": "Brown steel",
       "hex": "#3b2e25",
@@ -689,12 +789,14 @@
     ],
     "Kit_DoorCloser_Forearm": [
      {
+      "name": "Prop_SteelBrown",
       "slot": "Prop_SteelBrown",
       "label": "Brown steel",
       "hex": "#3b2e25",
       "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
      },
      {
+      "name": "Prop_Chrome",
       "slot": "Prop_Chrome",
       "label": "Chrome",
       "hex": "#d8d8d8",
@@ -703,12 +805,14 @@
     ],
     "Kit_DoorCloser_Shoe": [
      {
+      "name": "Prop_SteelBrown",
       "slot": "Prop_SteelBrown",
       "label": "Brown steel",
       "hex": "#3b2e25",
       "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
      },
      {
+      "name": "Prop_Chrome",
       "slot": "Prop_Chrome",
       "label": "Chrome",
       "hex": "#d8d8d8",
@@ -720,16 +824,25 @@
   {
    "order": 8,
    "id": "exit_crossbar",
+   "kit": "Kit_ExitDevice_Crossbar",
    "title": "Exit crossbar",
    "family": "Doors · hardware",
    "lede": "A rim crossbar exit device across the push face: the true Exit opens with a push.",
+   "dims_mm": {
+    "w": 877,
+    "d": 95,
+    "h": 120
+   },
    "era": {
+    "from": 1950,
+    "to": 1995,
+    "label": "Period",
+    "chip": "Second-hand",
+    "spanLabel": "1950–95",
     "span": [
      1950,
      1995
     ],
-    "label": "1950–95",
-    "chip": "Second-hand",
     "note": "Tube crossbars on two end cases are the older exit-device form; touch-bar devices were taking over by 1990 (era note 'push bars on exits').",
     "sources": [
      "10_spec §2.4"
@@ -757,12 +870,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -793,17 +908,26 @@
   {
    "order": 9,
    "id": "door_sign",
+   "kit": "Kit_DoorSign",
    "title": "Door sign",
    "family": "Doors · signage",
    "lede": "Two-ply engraved plate, ivory letters on dark brown at 60 in: EMPLOYEES ONLY, no Braille.",
+   "dims_mm": {
+    "w": 254,
+    "d": 4.3,
+    "h": 76
+   },
    "era": {
+    "from": 1970,
+    "to": 1991,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1970–91",
     "span": [
      1970,
      1991
     ],
-    "label": "1970–91",
-    "chip": "Current stock",
-    "note": "Engraved two-colour room signs at 60 in to centre (UFAS 1984 / ADAAG 1991). No Braille: the ADAAG requirement post-dates 1990. The lettering needs the Prop_SignEngraved atlas (P-4); without it the face renders as the preview colour.",
+    "note": "Engraved two-colour room signs at 60 in to centre (UFAS 1984 / ADAAG 1991). No Braille: the ADAAG requirement post-dates 1990. The lettering needs the Prop_SignEngraved atlas (P-4); until then the face renders as a blank light grey-brown preview (#796961), not the dark brown target.",
     "sources": [
      "10_spec §2.4",
      "05 §6.2",
@@ -834,27 +958,31 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_SignEngraved",
      "slot": "Prop_SignEngraved",
      "label": "Engraved sign",
      "hex": "#796961",
      "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_SignEngraved.mat yet; Unity binds _BaseColor #796961)",
      "p4": true,
      "targetHex": "#30241e",
-     "note": "spec target: dark brown face sRGB 48/36/30 with ivory engraved letters (05 §6.2), 2 x 2 atlas (P-4)"
+     "note": "spec target: dark brown face sRGB 48/36/30 with ivory engraved letters (05 §6.2), 2 x 2 atlas (P-4). The FBX preview renders much lighter (#796961) because interact_key_common.py:218 passes the sRGB values 0.19/0.14/0.12 as a linear colour"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -885,16 +1013,25 @@
   {
    "order": 10,
    "id": "door_numberplate",
+   "kit": "Kit_DoorNumberPlate",
    "title": "Zone number plate",
    "family": "Doors · signage",
    "lede": "An engraved plate beside the keyhole in the key tag's colour: the door shows the number of its key.",
+   "dims_mm": {
+    "w": 100,
+    "d": 4.2,
+    "h": 50
+   },
    "era": {
+    "from": 1970,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1970–2000",
     "span": [
      1970,
      2000
     ],
-    "label": "1970–2000",
-    "chip": "Timeless",
     "note": "A facility key system indexes keys by room code, so tag code = door code is the period system (02 §8.2). Digits come from the Prop_KeyTagNo atlas (P-4).",
     "sources": [
      "10_spec §2.4",
@@ -932,12 +1069,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -947,6 +1086,7 @@
      "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -977,16 +1117,25 @@
   {
    "order": 11,
    "id": "exit_sign",
+   "kit": "Kit_ExitSign",
    "title": "Exit sign",
    "family": "Doors · signage",
    "lede": "Stamped-steel EXIT sign with 6 in stencil letters over the push face; the dead variant is unlit.",
+   "dims_mm": {
+    "w": 330,
+    "d": 60,
+    "h": 202
+   },
    "era": {
+    "from": 1970,
+    "to": 1995,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1970–95",
     "span": [
      1970,
      1995
     ],
-    "label": "1970–95",
-    "chip": "Current stock",
     "note": "A 1990 stamped-steel wall exit sign, emissive face only (no Light). Run_ExitSign_Dead is a new material (P-4); red or green letters is Red's call.",
     "sources": [
      "10_spec §2.4"
@@ -1019,12 +1168,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBlack",
      "slot": "Prop_SteelBlack",
      "label": "Black steel",
      "hex": "#1e1e1e",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Run_ExitSign",
      "slot": "Run_ExitSign",
      "label": "Lit EXIT face",
      "hex": "#dfc6bf",
@@ -1051,21 +1202,31 @@
     "front": "img:Kit_ExitSign_front",
     "side": "img:Kit_ExitSign_side",
     "persp": "img:Kit_ExitSign_persp"
-   }
+   },
+   "pending": "The exit-sign workflow is re-modelling Kit_ExitSign and Kit_ExitSign_Dead under the same names and main's GUIDs. Re-render before placing if main's sidecar is newer than this index."
   },
   {
    "order": 12,
    "id": "lock_escutcheon",
+   "kit": "Kit_Lock_Escutcheon",
    "title": "Escutcheon",
    "family": "Lock · mortise set",
    "lede": "A tall satin-chrome plate: knob below, IC cylinder above. Plate plus dot reads as locked at 2-5 m.",
+   "dims_mm": {
+    "w": 57,
+    "d": 8.0,
+    "h": 203
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "Mortise locks stayed 'widely installed in industrial, commercial, and institutional environments' (02 §4.4). US26D satin chrome; locked hardware stays chrome in every level.",
     "sources": [
      "10_spec §3.1",
@@ -1101,12 +1262,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -1137,16 +1300,25 @@
   {
    "order": 13,
    "id": "lock_cylinder",
+   "kit": "Kit_Lock_CylinderShell",
    "title": "IC cylinder",
    "family": "Lock · mortise set",
    "lede": "An interchangeable-core figure-8 face, no brand: the keyhole the key shot frames.",
+   "dims_mm": {
+    "w": 44,
+    "d": 7.5,
+    "h": 44
+   },
    "era": {
+    "from": 1925,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1925–2000",
     "span": [
      1925,
      2000
     ],
-    "label": "1925–2000",
-    "chip": "Timeless",
     "note": "IC cores (Best type) since the 1920s. Core dimensions are an ESTIMATE, unverified against a real SFIC.",
     "sources": [
      "10_spec §3.1",
@@ -1182,18 +1354,21 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -1224,16 +1399,25 @@
   {
    "order": 14,
    "id": "lock_plug",
+   "kit": "Kit_Lock_Plug",
    "title": "Plug",
    "family": "Lock · mortise set",
    "lede": "The plug with an open keyway and six pin tips. It turns 90 degrees with the key, then back.",
+   "dims_mm": {
+    "w": 12,
+    "d": 30,
+    "h": 12
+   },
    "era": {
+    "from": 1925,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1925–2000",
     "span": [
      1925,
      2000
     ],
-    "label": "1925–2000",
-    "chip": "Timeless",
     "note": "US pins-up: the key goes in cuts uppermost (02 §4.2, forum-grade). One keyway profile is shared by the key and the plug (10 §3.2).",
     "sources": [
      "10_spec §3.1, §3.2"
@@ -1264,12 +1448,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -1300,16 +1486,25 @@
   {
    "order": 15,
    "id": "lock_knob",
+   "kit": "Kit_Lock_Knob",
    "title": "Knurled knob",
    "family": "Lock · mortise set",
    "lede": "A 54 mm ball knob with a knurled band, the 1984 touch mark for doors to hazardous rooms.",
+   "dims_mm": {
+    "w": 54,
+    "d": 63,
+    "h": 54
+   },
    "era": {
+    "from": 1984,
+    "to": 1993,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1984–93",
     "span": [
      1984,
      1993
     ],
-    "label": "1984–93",
-    "chip": "Current stock",
     "note": "UFAS 1984 §4.29.3: a textured, e.g. knurled, knob marks doors to hazardous areas. Knobs still outsold levers 80:20 in the early 1990s; service doors kept them.",
     "sources": [
      "10_spec §3.1",
@@ -1345,6 +1540,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -1375,16 +1571,25 @@
   {
    "order": 16,
    "id": "lock_deadbolt",
+   "kit": "Kit_Lock_Deadbolt",
    "title": "Deadbolt",
    "family": "Lock · mortise set",
    "lede": "A 25 mm deadbolt with two hardened-insert dots. The key throws it; it is what locks the door.",
+   "dims_mm": {
+    "w": 12,
+    "d": 45,
+    "h": 30
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "Commercial deadbolts throw 1 in (02 §4.2). Keyed both faces is a game liberty: the key works from the side the player stands on.",
     "sources": [
      "10_spec §3.1",
@@ -1416,12 +1621,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
@@ -1452,16 +1659,25 @@
   {
    "order": 17,
    "id": "lock_latch_mortise",
+   "kit": "Kit_Lock_Latchbolt_Mortise",
    "title": "Mortise latchbolt",
    "family": "Lock · mortise set",
    "lede": "Deadlocking latchbolt, 19 mm throw, 30 degree bevel, with the auxiliary plunger beside it.",
+   "dims_mm": {
+    "w": 19,
+    "d": 40,
+    "h": 30
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "A passage-function latch: either knob retracts it, the deadbolt does the locking (10 §3.1).",
     "sources": [
      "10_spec §3.1"
@@ -1492,6 +1708,7 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -1522,16 +1739,25 @@
   {
    "order": 18,
    "id": "lock_strike_mortise",
+   "kit": "Kit_Lock_StrikeMortise",
    "title": "Mortise strike",
    "family": "Lock · mortise set",
    "lede": "Curved-lip strike with latch and deadbolt openings and dust boxes. It tears off when the Relay breaks the door.",
+   "dims_mm": {
+    "w": 56,
+    "d": 25,
+    "h": 200
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "Strike in the lock's finish on the latch jamb, a separate render-only part so it can detach (audit §3.7).",
     "sources": [
      "10_spec §3.1",
@@ -1563,12 +1789,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -1599,16 +1827,25 @@
   {
    "order": 19,
    "id": "lock_rose",
+   "kit": "Kit_Lock_Rose",
    "title": "Rose",
    "family": "Lock · bored set",
    "lede": "A 70 mm stepped rose under the lever: brass on the Lobby door, satin chrome elsewhere.",
+   "dims_mm": {
+    "w": 70,
+    "d": 10,
+    "h": 70
+   },
    "era": {
+    "from": 1980,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1980–2000",
     "span": [
      1980,
      2000
     ],
-    "label": "1980–2000",
-    "chip": "Current stock",
     "note": "Cylindrical (bored) locksets are the most common commercial lock (02 §4.1). Brass US3/US4 for the Lobby's free door, US26D chrome for the rest; chrome against brass is a 2-5 m cue.",
     "sources": [
      "10_spec §3.1",
@@ -1643,12 +1880,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -1679,16 +1918,25 @@
   {
    "order": 20,
    "id": "lock_lever",
+   "kit": "Kit_Lock_Lever",
    "title": "Lever",
    "family": "Lock · bored set",
    "lede": "A 121 mm commercial lever, 64 mm proud: free doors had the accessible handle a decade before the ADA.",
+   "dims_mm": {
+    "w": 133,
+    "d": 54,
+    "h": 24
+   },
    "era": {
+    "from": 1980,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1980–2000",
     "span": [
      1980,
      2000
     ],
-    "label": "1980–2000",
-    "chip": "Current stock",
     "note": "Levers were the accessible standard from ANSI A117.1-1980 and UFAS 1984; the ADA required them only for buildings occupied after 26 Jan 1993 (02 §3.1).",
     "sources": [
      "10_spec §3.1",
@@ -1723,6 +1971,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -1753,16 +2002,25 @@
   {
    "order": 21,
    "id": "lock_latch_bored",
+   "kit": "Kit_Lock_Latchbolt_Bored",
    "title": "Bored latchbolt",
    "family": "Lock · bored set",
    "lede": "A 1/2 in throw latch with deadlatch plunger. The lever's 35 degrees pulls it in.",
+   "dims_mm": {
+    "w": 16,
+    "d": 30,
+    "h": 20
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "1/2 in latch throw, 1-1/8 x 2-1/4 in faceplate (D Series pattern, 02 §4.1).",
     "sources": [
      "10_spec §3.1",
@@ -1797,6 +2055,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -1827,16 +2086,25 @@
   {
    "order": 22,
    "id": "lock_strike_bored",
+   "kit": "Kit_Lock_StrikeBored",
    "title": "Bored strike",
    "family": "Lock · bored set",
    "lede": "The ANSI 4-7/8 in curved-lip strike with one opening and a dust box.",
+   "dims_mm": {
+    "w": 56,
+    "d": 17,
+    "h": 124
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "ANSI curved-lip strike 1-1/4 x 4-7/8 in (02 §5.2).",
     "sources": [
      "10_spec §3.1",
@@ -1871,12 +2139,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -1907,16 +2177,25 @@
   {
    "order": 23,
    "id": "key_zone",
+   "kit": "Kit_Key_Zone",
    "title": "Zone key",
    "family": "Keys",
    "lede": "A 58 mm cut brass duplicate, six cuts, a generic paddle bow. Nickel is the factory original.",
+   "dims_mm": {
+    "w": 58,
+    "d": 2.2,
+    "h": 26
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "Factory keys were nickel silver ('two nickel silver keys per lock'); brass duplicates are the hardware-store copy, and brass reads under yellow light (02 §8.1). No maker's bow, no stamping in v1.",
     "sources": [
      "10_spec §3.3",
@@ -1949,6 +2228,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -1979,16 +2259,25 @@
   {
    "order": 24,
    "id": "key_ring",
+   "kit": "Kit_KeyRing",
    "title": "Split ring",
    "family": "Keys",
    "lede": "A flat-wire split ring, two turns, 25 mm: the key and the tag hang from it.",
+   "dims_mm": {
+    "w": 25,
+    "d": 1.8,
+    "h": 25
+   },
    "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
     "span": [
      1950,
      2000
     ],
-    "label": "1950–2000",
-    "chip": "Timeless",
     "note": "Flat steel double coil, nickel-plated, Ø 25-32 mm (02 §8.2).",
     "sources": [
      "10_spec §4.1",
@@ -2017,6 +2306,7 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -2047,16 +2337,25 @@
   {
    "order": 25,
    "id": "key_tag_rect",
+   "kit": "Kit_KeyTag_Rect",
    "title": "Key tag, square",
    "family": "Keys · tags",
    "lede": "A plastic tag with a paper insert and a typed number: shape and colour name the zone.",
+   "dims_mm": {
+    "w": 57,
+    "d": 4.2,
+    "h": 39
+   },
    "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
     "span": [
      1961,
      2000
     ],
-    "label": "1961–2000",
-    "chip": "Timeless",
     "note": "Coloured plastic ID tags with a label window (Lucky Line, family owned since 1961; 02 §8.2). 3 shapes x red, blue, white = 9 identities. Numbers in Courier Prime need Prop_KeyTagNo (P-4).",
     "sources": [
      "10_spec §4.1",
@@ -2092,12 +2391,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -2131,16 +2432,25 @@
   {
    "order": 26,
    "id": "key_tag_round",
+   "kit": "Kit_KeyTag_Round",
    "title": "Key tag, round",
    "family": "Keys · tags",
    "lede": "A 38 mm round tag with a 26 mm window, the second shape of the zone code.",
+   "dims_mm": {
+    "w": 38,
+    "d": 4.2,
+    "h": 48
+   },
    "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
     "span": [
      1961,
      2000
     ],
-    "label": "1961–2000",
-    "chip": "Timeless",
     "note": "As the square tag (02 §8.2). The number insert is one quad on Prop_KeyTagNo.",
     "sources": [
      "10_spec §4.1",
@@ -2175,12 +2485,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -2214,16 +2526,25 @@
   {
    "order": 27,
    "id": "key_tag_long",
+   "kit": "Kit_KeyTag_Long",
    "title": "Key tag, valet",
    "family": "Keys · tags",
    "lede": "A 76 mm valet tag, the long third shape of the zone code.",
+   "dims_mm": {
+    "w": 76,
+    "d": 4.2,
+    "h": 32
+   },
    "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
     "span": [
      1961,
      2000
     ],
-    "label": "1961–2000",
-    "chip": "Timeless",
     "note": "As the square tag (02 §8.2).",
     "sources": [
      "10_spec §4.1",
@@ -2258,12 +2579,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -2297,16 +2620,25 @@
   {
    "order": 28,
    "id": "key_board",
+   "kit": "Kit_KeyHookBoard",
    "title": "Key board",
    "family": "Keys · hosts",
    "lede": "A dark painted board with eight brass cup hooks and paper number strips: the Lobby's key host.",
+   "dims_mm": {
+    "w": 300,
+    "d": 44,
+    "h": 400
+   },
    "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
     "span": [
      1950,
      2000
     ],
-    "label": "1950–2000",
-    "chip": "Timeless",
     "note": "Hook boards with cup hooks in a grid were the everyday facility key store (02 §9, 03 §2.3). Spec name Kit_KeyBoard; shipped as Kit_KeyHookBoard because Kit_KeyBoard and Kit_Keyboard are one file on this Mac.",
     "sources": [
      "10_spec §4.2",
@@ -2336,18 +2668,21 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_WoodDark",
      "slot": "Prop_WoodDark",
      "label": "Dark wood",
      "hex": "#2d1c14",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -2376,21 +2711,31 @@
     "front": "img:Kit_KeyHookBoard_front",
     "side": "img:Kit_KeyHookBoard_side",
     "persp": "img:Kit_KeyHookBoard_persp"
-   }
+   },
+   "pending": "Name pending Red (codex audit F6): it ships as Kit_KeyHookBoard (spec name Kit_KeyBoard), but proposal/03_for_red.md calls it Kit_KeyRack. The sheet title 'Key board' holds either way; only the kit name and the img: layer names would change."
   },
   {
    "order": 29,
    "id": "key_cabinet",
+   "kit": "Kit_KeyCabinet",
    "title": "Key cabinet",
    "family": "Keys · hosts",
    "lede": "An almond steel wall cabinet with 24 hooks and an index card, its door swung flat to the wall.",
+   "dims_mm": {
+    "w": 719,
+    "d": 84,
+    "h": 460
+   },
    "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
     "span": [
      1950,
      2000
     ],
-    "label": "1950–2000",
-    "chip": "Timeless",
     "note": "Telkee-type institution key cabinets (trademark filed 1928), no brand (02 §9). The Office's key host.",
     "sources": [
      "10_spec §4.2",
@@ -2419,24 +2764,28 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_SteelAlmond",
      "slot": "Prop_SteelAlmond",
      "label": "Almond steel",
      "hex": "#ad9c75",
      "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -2465,21 +2814,31 @@
     "front": "img:Kit_KeyCabinet_front",
     "side": "img:Kit_KeyCabinet_side",
     "persp": "img:Kit_KeyCabinet_persp"
-   }
+   },
+   "pending": "Rendered from the fixed build in proj_int (G3 pass 3: clean folded corners, codex audit F5). Main still holds the earlier FBX with inside-out lip corners until the interactables merge."
   },
   {
    "order": 30,
    "id": "key_hook",
+   "kit": "Kit_KeyHook",
    "title": "Key hook",
    "family": "Keys · hosts",
    "lede": "One brass cup hook in the wall, at 1.476 m: the procedural rooms' fallback host.",
+   "dims_mm": {
+    "w": 6.8,
+    "d": 26,
+    "h": 14
+   },
    "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
     "span": [
      1950,
      2000
     ],
-    "label": "1950–2000",
-    "chip": "Timeless",
     "note": "A single key on a hook by a door (02 §9). At most one key in four, red or blue tag only (10 §4.2).",
     "sources": [
      "10_spec §4.2, §4.3",
@@ -2508,6 +2867,7 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -2538,16 +2898,25 @@
   {
    "order": 31,
    "id": "window_wood",
+   "kit": "Kit_WindowFrame_Wood",
    "title": "Wood window",
    "family": "Windows",
    "lede": "A walnut back-office light with casing, horned stool and apron: older stock in the Lobby.",
+   "dims_mm": {
+    "w": 1600,
+    "d": 242,
+    "h": 1828
+   },
    "era": {
+    "from": 1955,
+    "to": 1985,
+    "label": "Period",
+    "chip": "Second-hand",
+    "spanLabel": "1955–85",
     "span": [
      1955,
      1985
     ],
-    "label": "1955–85",
-    "chip": "Second-hand",
     "note": "Wood borrowed lights with stool, apron and casing belong to older buildings (NPS ITS 31's 'mahogany trim around openings'; 06 §2.1). Same casing profile as the wood door frame.",
     "sources": [
      "10_spec §5.1",
@@ -2576,12 +2945,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_WoodWalnut",
      "slot": "Prop_WoodWalnut",
      "label": "Walnut",
      "hex": "#4a3020",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -2599,7 +2970,7 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
    "figmaSlots": {
@@ -2612,16 +2983,25 @@
   {
    "order": 32,
    "id": "window_steel",
+   "kit": "Kit_WindowFrame_Steel",
    "title": "Steel window",
    "family": "Windows",
    "lede": "An SDI borrowed-light frame in bronze, 30 oval-head screws on the room-side stop.",
+   "dims_mm": {
+    "w": 1550,
+    "d": 210,
+    "h": 1800
+   },
    "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
     "span": [
      1955,
      2000
     ],
-    "label": "1955–2000",
-    "chip": "Timeless",
     "note": "Pressed-steel borrowed-light frames: integral stop on the hall side, screwed removable stop on the room side at <= 9 in centres (SDI 111A; UH spec; 06 §2.2). The _Enamel variant is the Run's corridor light (Door_Enamel, P-4).",
     "sources": [
      "10_spec §5.1",
@@ -2655,12 +3035,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -2678,7 +3060,7 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
    "figmaSlots": {
@@ -2686,21 +3068,31 @@
     "front": "img:Kit_WindowFrame_Steel_front",
     "side": "img:Kit_WindowFrame_Steel_side",
     "persp": "img:Kit_WindowFrame_Steel_persp"
-   }
+   },
+   "pending": "Rendered from proj_int's G4 pass-3/4 build (1.1 mm screw slots, wall_decor tag). Main holds the 0.8 mm-slot build until the interactables merge; no visible change at sheet scale."
   },
   {
    "order": 33,
    "id": "window_alu",
+   "kit": "Kit_WindowFrame_Alu",
    "title": "Aluminium window",
    "family": "Windows",
    "lede": "A clear-anodised aluminium office front with bevelled snap-in beads and a black vinyl gasket.",
+   "dims_mm": {
+    "w": 1550,
+    "d": 210,
+    "h": 1800
+   },
    "era": {
+    "from": 1982,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1982–2000",
     "span": [
      1982,
      2000
     ],
-    "label": "1982–2000",
-    "chip": "Current stock",
     "note": "Demountable aluminium partition glazing, US Gypsum patents US4463535 / US4443984 (filed 1981-82, granted 1984). Clear and bronze anodising were both ordinary by 1990 (06 §2.3).",
     "sources": [
      "10_spec §5.1",
@@ -2729,12 +3121,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -2742,8 +3136,8 @@
     }
    ],
    "tris": {
-    "lod0": 1088,
-    "lod1": 1064,
+    "lod0": 2066,
+    "lod1": null,
     "budget": [
      2800,
      1000,
@@ -2752,7 +3146,7 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
    "figmaSlots": {
@@ -2760,21 +3154,31 @@
     "front": "img:Kit_WindowFrame_Alu_front",
     "side": "img:Kit_WindowFrame_Alu_side",
     "persp": "img:Kit_WindowFrame_Alu_persp"
-   }
+   },
+   "pending": "Rendered from proj_int's G4 pass-3/4 build: one mesh, 2,066 tris, wear stations on the sill and jambs, no LOD1. Main still holds the 1,088-tri LOD0/LOD1 build until the interactables merge."
   },
   {
    "order": 34,
    "id": "miniblind_raised",
+   "kit": "Kit_MiniBlind_Raised",
    "title": "Mini-blind, raised",
    "family": "Windows",
    "lede": "A 1-inch aluminium mini-blind, raised clear of the opening, almond slats.",
+   "dims_mm": {
+    "w": 1550,
+    "d": 76,
+    "h": 1060
+   },
    "era": {
+    "from": 1975,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1975–2000",
     "span": [
      1975,
      2000
     ],
-    "label": "1975–2000",
-    "chip": "Current stock",
     "note": "Mini-blinds were 70-80 % of the US window-covering market in 1981; the 1993 Sears catalogue sells Levolor 1-inch blinds in Almond (06 §2.5). Optional on Office windows by edge hash.",
     "sources": [
      "10_spec §5.1",
@@ -2803,12 +3207,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_SteelAlmond",
      "slot": "Prop_SteelAlmond",
      "label": "Almond steel",
      "hex": "#ad9c75",
      "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
@@ -2839,16 +3245,25 @@
   {
    "order": 35,
    "id": "miniblind_lowered",
+   "kit": "Kit_MiniBlind_Lowered",
    "title": "Mini-blind, lowered",
    "family": "Windows",
    "lede": "The same blind 2.40 m wide, lowered and half-tilted: decor for the dark interior window only.",
+   "dims_mm": {
+    "w": 2400,
+    "d": 76,
+    "h": 1308
+   },
    "era": {
+    "from": 1975,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1975–2000",
     "span": [
      1975,
      2000
     ],
-    "label": "1975–2000",
-    "chip": "Current stock",
     "note": "As the raised blind. Never on a breakable map window: it would hang in the climb opening (10 §5.1 rules).",
     "sources": [
      "10_spec §5.1",
@@ -2877,12 +3292,14 @@
    "variantImages": {},
    "materials": [
     {
+     "name": "Prop_SteelAlmond",
      "slot": "Prop_SteelAlmond",
      "label": "Almond steel",
      "hex": "#ad9c75",
      "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
@@ -2913,16 +3330,25 @@
   {
    "order": 36,
    "id": "doorway_studs",
+   "kit": "Kit_DoorwayStuds",
    "title": "Stud doorway",
    "family": "Doors · existing",
    "lede": "Raw 2x4 opening outlined in blue painter's tape, a 3M product from 1988.",
+   "dims_mm": {
+    "w": 1252,
+    "d": 142,
+    "h": 2327
+   },
    "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
     "span": [
      1950,
      2000
     ],
-    "label": "1950–2000",
-    "chip": "Timeless",
     "note": "Unchanged since the 2026-10-02 sheets: the FBX files match the real project byte for byte. Already on K45 (2328:1258); re-rendered here only for completeness.",
     "sources": [
      "K45"
@@ -2956,12 +3382,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Studs",
      "slot": "Prop_Studs",
      "label": "Spruce studs",
      "hex": "#c9ae83",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_TapeBlue",
      "slot": "Prop_TapeBlue",
      "label": "Painter's tape",
      "hex": "#2e86c1",
@@ -2988,9 +3416,9 @@
    "sheet": "doorframe_wood",
    "role": "primary",
    "dims_mm": {
-    "W": 1150,
-    "D": 210,
-    "H": 2175
+    "w": 1150,
+    "d": 210,
+    "h": 2175
    },
    "dims_label": "W 1150 · D 210 · H 2175 mm",
    "size_m": [
@@ -3043,18 +3471,21 @@
    },
    "materials": [
     {
+     "name": "Prop_WoodWalnut",
      "slot": "Prop_WoodWalnut",
      "label": "Walnut",
      "hex": "#4a3020",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_WoodOak",
      "slot": "Prop_WoodOak",
      "label": "Golden oak",
      "hex": "#9a6a3a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -3091,15 +3522,35 @@
     "head_dust_b",
     "threshold"
    ],
-   "family": "Doors · frames"
+   "family": "Doors · frames",
+   "kit": "Kit_DoorFrame_Wood",
+   "title": "Wood door frame",
+   "lede": "Walnut ranch casing, applied wood stop and an oak saddle: the Lobby's older office doorway.",
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Period",
+    "chip": "Second-hand",
+    "spanLabel": "1955–90",
+    "span": [
+     1955,
+     1990
+    ],
+    "note": "Wood-cased openings with stain-grade casing are the older office fit-out (02 §2.2; film F09 'dark frame'). Ranch casing and back band, no plinth blocks (none in 1990 commercial work).",
+    "sources": [
+     "10_spec §2.3",
+     "02 §2.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorFrame_Steel": {
    "sheet": "doorframe_steel",
    "role": "primary",
    "dims_mm": {
-    "W": 1150,
-    "D": 210,
-    "H": 2175
+    "w": 1150,
+    "d": 210,
+    "h": 2175
    },
    "dims_label": "W 1150 · D 210 · H 2175 mm",
    "size_m": [
@@ -3152,24 +3603,28 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
@@ -3210,15 +3665,37 @@
     "closer_shoe",
     "exit_sign_p"
    ],
-   "family": "Doors · frames"
+   "family": "Doors · frames",
+   "kit": "Kit_DoorFrame_Steel",
+   "title": "Steel door frame",
+   "lede": "Pressed 16-gauge steel in dark bronze with a formed 16 mm stop and three rubber silencers.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "The SDI hollow-metal frame: 2 in face, 5/8 in stop, 16 ga interior (SDI 111A). The form is unchanged from well before 1990. The _Alu variant gives the Exit its clear-anodised look.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §2.2"
+    ]
+   },
+   "variants": [
+    "Kit_DoorFrame_Steel_Alu"
+   ]
   },
   "Kit_DoorFrame_Steel_Alu": {
    "sheet": "doorframe_steel",
    "role": "variant",
    "dims_mm": {
-    "W": 1150,
-    "D": 210,
-    "H": 2175
+    "w": 1150,
+    "d": 210,
+    "h": 2175
    },
    "dims_label": "W 1150 · D 210 · H 2175 mm",
    "size_m": [
@@ -3271,18 +3748,21 @@
    },
    "materials": [
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -3327,15 +3807,35 @@
    "variantOf": "Kit_DoorFrame_Steel",
    "swap": [
     "Prop_SteelBrown -> Prop_Aluminium"
-   ]
+   ],
+   "kit": "Kit_DoorFrame_Steel_Alu",
+   "title": "Steel door frame · Alu",
+   "lede": "Pressed 16-gauge steel in dark bronze with a formed 16 mm stop and three rubber silencers.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "The SDI hollow-metal frame: 2 in face, 5/8 in stop, 16 ga interior (SDI 111A). The form is unchanged from well before 1990. The _Alu variant gives the Exit its clear-anodised look.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §2.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorLeaf_Veneer": {
    "sheet": "doorleaf_veneer",
    "role": "primary",
    "dims_mm": {
-    "W": 992,
-    "D": 59,
-    "H": 2080
+    "w": 992,
+    "d": 59,
+    "h": 2080
    },
    "dims_label": "W 992 · D 59 · H 2080 mm",
    "size_m": [
@@ -3388,12 +3888,14 @@
    },
    "materials": [
     {
+     "name": "Door_Veneer",
      "slot": "Door_Veneer",
      "label": "Door veneer",
      "hex": "#9d6d3b",
      "source": "Resources/Surfaces/Door_Veneer.mat: mean of Assets/Resources/Surfaces/Textures/DoorVeneer_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -3435,15 +3937,37 @@
     "hinge_axis_dir",
     "closer_mount_s"
    ],
-   "family": "Doors · leaves"
+   "family": "Doors · leaves",
+   "kit": "Kit_DoorLeaf_Veneer",
+   "title": "Veneer door",
+   "lede": "Flush 1-3/4 in veneer leaf with hardwood edge bands. No keyhole: a free door reads warm and dark.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "The flush stain-grade veneer door with a brass lever is the project's own film still F09 and IP canon. Oak variant (chrome butts) for the Office and Exit.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §1, §2.1"
+    ]
+   },
+   "variants": [
+    "Kit_DoorLeaf_Veneer_Oak"
+   ]
   },
   "Kit_DoorLeaf_Veneer_Oak": {
    "sheet": "doorleaf_veneer",
    "role": "variant",
    "dims_mm": {
-    "W": 992,
-    "D": 59,
-    "H": 2080
+    "w": 992,
+    "d": 59,
+    "h": 2080
    },
    "dims_label": "W 992 · D 59 · H 2080 mm",
    "size_m": [
@@ -3496,12 +4020,14 @@
    },
    "materials": [
     {
+     "name": "Prop_WoodOak",
      "slot": "Prop_WoodOak",
      "label": "Golden oak",
      "hex": "#9a6a3a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -3548,15 +4074,35 @@
    "swap": [
     "Door_Veneer -> Prop_WoodOak",
     "Prop_Brass -> Prop_Chrome"
-   ]
+   ],
+   "kit": "Kit_DoorLeaf_Veneer_Oak",
+   "title": "Veneer door · Oak",
+   "lede": "Flush 1-3/4 in veneer leaf with hardwood edge bands. No keyhole: a free door reads warm and dark.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "The flush stain-grade veneer door with a brass lever is the project's own film still F09 and IP canon. Oak variant (chrome butts) for the Office and Exit.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §1, §2.1"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorLeaf_Steel": {
    "sheet": "doorleaf_steel",
    "role": "primary",
    "dims_mm": {
-    "W": 992,
-    "D": 61,
-    "H": 2080
+    "w": 992,
+    "d": 61,
+    "h": 2080
    },
    "dims_label": "W 992 · D 61 · H 2080 mm",
    "size_m": [
@@ -3609,6 +4155,7 @@
    },
    "materials": [
     {
+     "name": "Door_Enamel",
      "slot": "Door_Enamel",
      "label": "Almond enamel",
      "hex": "#cdc5b0",
@@ -3618,12 +4165,14 @@
      "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -3674,15 +4223,38 @@
     "hinge_axis_dir",
     "closer_mount_s"
    ],
-   "family": "Doors · leaves"
+   "family": "Doors · leaves",
+   "kit": "Kit_DoorLeaf_Steel",
+   "title": "Steel door",
+   "lede": "Flush hollow-metal leaf in almond enamel with stainless kick plates: the locked door reads pale from 20 m.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Back-of-house rooms had painted hollow-metal doors (SDI 108 Level 2 for storage and utility). Almond enamel needs the new Door_Enamel surface (P-4); _PaintedMetal is the spec's working fallback.",
+    "sources": [
+     "10_spec §2.1, §2.3",
+     "02 §2.1",
+     "05 §6.2"
+    ]
+   },
+   "variants": [
+    "Kit_DoorLeaf_Steel_PaintedMetal"
+   ]
   },
   "Kit_DoorLeaf_Steel_PaintedMetal": {
    "sheet": "doorleaf_steel",
    "role": "variant",
    "dims_mm": {
-    "W": 992,
-    "D": 61,
-    "H": 2080
+    "w": 992,
+    "d": 61,
+    "h": 2080
    },
    "dims_label": "W 992 · D 61 · H 2080 mm",
    "size_m": [
@@ -3735,18 +4307,21 @@
    },
    "materials": [
     {
+     "name": "Painted_Metal",
      "slot": "Painted_Metal",
      "label": "Painted metal",
      "hex": "#d3cdbd",
      "source": "Resources/Surfaces/Painted_Metal.mat: mean of Assets/Resources/Surfaces/Textures/PaintedMetal_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -3801,15 +4376,36 @@
    "variantOf": "Kit_DoorLeaf_Steel",
    "swap": [
     "Door_Enamel -> Painted_Metal"
-   ]
+   ],
+   "kit": "Kit_DoorLeaf_Steel_PaintedMetal",
+   "title": "Steel door · PaintedMetal",
+   "lede": "Flush hollow-metal leaf in almond enamel with stainless kick plates: the locked door reads pale from 20 m.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Back-of-house rooms had painted hollow-metal doors (SDI 108 Level 2 for storage and utility). Almond enamel needs the new Door_Enamel surface (P-4); _PaintedMetal is the spec's working fallback.",
+    "sources": [
+     "10_spec §2.1, §2.3",
+     "02 §2.1",
+     "05 §6.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorLeaf_SteelLite": {
    "sheet": "doorleaf_steellite",
    "role": "primary",
    "dims_mm": {
-    "W": 992,
-    "D": 61,
-    "H": 2080
+    "w": 992,
+    "d": 61,
+    "h": 2080
    },
    "dims_label": "W 992 · D 61 · H 2080 mm",
    "size_m": [
@@ -3862,6 +4458,7 @@
    },
    "materials": [
     {
+     "name": "Door_Enamel",
      "slot": "Door_Enamel",
      "label": "Almond enamel",
      "hex": "#cdc5b0",
@@ -3871,22 +4468,26 @@
      "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Glass",
      "slot": "Prop_Glass",
      "label": "Glass",
      "hex": "#d1e0e0",
-     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule",
+     "note": "Main's Prop_Glass.mat is now on FrontRooms/Glass (glass-track overwrite, Codex 8ef5b64): _BaseColor #272c29 at low alpha, so a flat swatch means little. The hex kept here is the K-sheets' glass swatch, for consistency with K01-K45."
     }
    ],
    "tris": {
@@ -3936,15 +4537,36 @@
     "closer_mount_s",
     "lite_centre"
    ],
-   "family": "Doors · leaves"
+   "family": "Doors · leaves",
+   "kit": "Kit_DoorLeaf_SteelLite",
+   "title": "Steel door with lite",
+   "lede": "The steel leaf with a 4 x 25 in vision lite at 1.575 m: Red's see-through option for the Run.",
+   "era": {
+    "from": 1955,
+    "to": 1992,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–92",
+    "span": [
+     1955,
+     1992
+    ],
+    "note": "Narrow vision lites sit 60-66 in up (02 §4.3). Wired glass was the fire-door glazing until US production stopped in 1992; the wired look needs Glass_Wired from the glass track.",
+    "sources": [
+     "10_spec §2.3",
+     "02 §6.1",
+     "06 §2.4"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorLeaf_Ward": {
    "sheet": "doorleaf_ward",
    "role": "primary",
    "dims_mm": {
-    "W": 992,
-    "D": 110,
-    "H": 2080
+    "w": 992,
+    "d": 110,
+    "h": 2080
    },
    "dims_label": "W 992 · D 110 · H 2080 mm",
    "size_m": [
@@ -3997,18 +4619,21 @@
    },
    "materials": [
     {
+     "name": "Prop_WoodLaminate",
      "slot": "Prop_WoodLaminate",
      "label": "Wood laminate",
      "hex": "#8e6e4c",
      "source": "Resources/Surfaces/Prop_WoodLaminate.mat: mean of Assets/Resources/Surfaces/Textures/Prop_WoodLaminate_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4051,15 +4676,35 @@
     "hinge_axis_dir",
     "closer_mount_s"
    ],
-   "family": "Doors · leaves"
+   "family": "Doors · leaves",
+   "kit": "Kit_DoorLeaf_Ward",
+   "title": "Ward door",
+   "lede": "Wood-grain laminate with a stainless armor plate, push plate and offset D-pull: push and pull, no latch.",
+   "era": {
+    "from": 1975,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1975–2000",
+    "span": [
+     1975,
+     2000
+    ],
+    "note": "A hospital-corridor door: laminate face, armor plate to 34 in on the push face, kick plate on the pull face. No latch, rose or strike.",
+    "sources": [
+     "10_spec §2.3",
+     "04 §5.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorCloser_Body": {
    "sheet": "door_closer",
    "role": "primary",
    "dims_mm": {
-    "W": 292,
-    "D": 51,
-    "H": 83
+    "w": 292,
+    "d": 51,
+    "h": 83
    },
    "dims_label": "W 292 · D 51 · H 83 mm",
    "size_m": [
@@ -4112,12 +4757,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4151,15 +4798,35 @@
     "mount"
    ],
    "motion": "static",
-   "family": "Doors · hardware"
+   "family": "Doors · hardware",
+   "kit": "Kit_DoorCloser_Body",
+   "title": "Surface closer",
+   "lede": "A regular-arm surface closer on the pull face, two links to a shoe on the head. Possible only because doors now swing one way.",
+   "era": {
+    "from": 1958,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1958–2000",
+    "span": [
+     1958,
+     2000
+    ],
+    "note": "Surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 series dates from 1958. Arm lengths come from the linkage solve (ESTIMATE, to check against a 4010 template).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §5.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorCloser_Arm": {
    "sheet": "door_closer",
    "role": "part",
    "dims_mm": {
-    "W": 266,
-    "D": 30,
-    "H": 21
+    "w": 266,
+    "d": 30,
+    "h": 21
    },
    "dims_label": "W 266 · D 30 · H 21 mm",
    "size_m": [
@@ -4212,6 +4879,7 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
@@ -4245,15 +4913,35 @@
     "elbow_top"
    ],
    "motion": "rotate",
-   "family": "Doors · hardware"
+   "family": "Doors · hardware",
+   "kit": "Kit_DoorCloser_Arm",
+   "title": "Surface closer · Arm",
+   "lede": "A regular-arm surface closer on the pull face, two links to a shoe on the head. Possible only because doors now swing one way.",
+   "era": {
+    "from": 1958,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1958–2000",
+    "span": [
+     1958,
+     2000
+    ],
+    "note": "Surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 series dates from 1958. Arm lengths come from the linkage solve (ESTIMATE, to check against a 4010 template).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §5.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorCloser_Forearm": {
    "sheet": "door_closer",
    "role": "part",
    "dims_mm": {
-    "W": 280,
-    "D": 22,
-    "H": 50
+    "w": 280,
+    "d": 22,
+    "h": 50
    },
    "dims_label": "W 280 · D 22 · H 50 mm",
    "size_m": [
@@ -4306,12 +4994,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4344,15 +5034,35 @@
     "shoe_end"
    ],
    "motion": "rotate",
-   "family": "Doors · hardware"
+   "family": "Doors · hardware",
+   "kit": "Kit_DoorCloser_Forearm",
+   "title": "Surface closer · Forearm",
+   "lede": "A regular-arm surface closer on the pull face, two links to a shoe on the head. Possible only because doors now swing one way.",
+   "era": {
+    "from": 1958,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1958–2000",
+    "span": [
+     1958,
+     2000
+    ],
+    "note": "Surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 series dates from 1958. Arm lengths come from the linkage solve (ESTIMATE, to check against a 4010 template).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §5.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorCloser_Shoe": {
    "sheet": "door_closer",
    "role": "part",
    "dims_mm": {
-    "W": 30,
-    "D": 31,
-    "H": 40
+    "w": 30,
+    "d": 31,
+    "h": 40
    },
    "dims_label": "W 30 · D 31 · H 40 mm",
    "size_m": [
@@ -4405,12 +5115,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4444,15 +5156,35 @@
     "mount"
    ],
    "motion": "static",
-   "family": "Doors · hardware"
+   "family": "Doors · hardware",
+   "kit": "Kit_DoorCloser_Shoe",
+   "title": "Surface closer · Shoe",
+   "lede": "A regular-arm surface closer on the pull face, two links to a shoe on the head. Possible only because doors now swing one way.",
+   "era": {
+    "from": 1958,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1958–2000",
+    "span": [
+     1958,
+     2000
+    ],
+    "note": "Surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 series dates from 1958. Arm lengths come from the linkage solve (ESTIMATE, to check against a 4010 template).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §5.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_ExitDevice_Crossbar": {
    "sheet": "exit_crossbar",
    "role": "primary",
    "dims_mm": {
-    "W": 877,
-    "D": 95,
-    "H": 120
+    "w": 877,
+    "d": 95,
+    "h": 120
    },
    "dims_label": "W 877 · D 95 · H 120 mm",
    "size_m": [
@@ -4505,12 +5237,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4545,15 +5279,34 @@
     "push_point"
    ],
    "motion": "static",
-   "family": "Doors · hardware"
+   "family": "Doors · hardware",
+   "kit": "Kit_ExitDevice_Crossbar",
+   "title": "Exit crossbar",
+   "lede": "A rim crossbar exit device across the push face: the true Exit opens with a push.",
+   "era": {
+    "from": 1950,
+    "to": 1995,
+    "label": "Period",
+    "chip": "Second-hand",
+    "spanLabel": "1950–95",
+    "span": [
+     1950,
+     1995
+    ],
+    "note": "Tube crossbars on two end cases are the older exit-device form; touch-bar devices were taking over by 1990 (era note 'push bars on exits').",
+    "sources": [
+     "10_spec §2.4"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorSign": {
    "sheet": "door_sign",
    "role": "primary",
    "dims_mm": {
-    "W": 254,
-    "D": 4.3,
-    "H": 76
+    "w": 254,
+    "d": 4.3,
+    "h": 76
    },
    "dims_label": "W 254 · D 4.3 · H 76 mm",
    "size_m": [
@@ -4606,27 +5359,31 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_SignEngraved",
      "slot": "Prop_SignEngraved",
      "label": "Engraved sign",
      "hex": "#796961",
      "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Prop_SignEngraved.mat yet; Unity binds _BaseColor #796961)",
      "p4": true,
      "targetHex": "#30241e",
-     "note": "spec target: dark brown face sRGB 48/36/30 with ivory engraved letters (05 §6.2), 2 x 2 atlas (P-4)"
+     "note": "spec target: dark brown face sRGB 48/36/30 with ivory engraved letters (05 §6.2), 2 x 2 atlas (P-4). The FBX preview renders much lighter (#796961) because interact_key_common.py:218 passes the sRGB values 0.19/0.14/0.12 as a linear colour"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4657,15 +5414,36 @@
     "face",
     "face_dir"
    ],
-   "family": "Doors · signage"
+   "family": "Doors · signage",
+   "kit": "Kit_DoorSign",
+   "title": "Door sign",
+   "lede": "Two-ply engraved plate, ivory letters on dark brown at 60 in: EMPLOYEES ONLY, no Braille.",
+   "era": {
+    "from": 1970,
+    "to": 1991,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1970–91",
+    "span": [
+     1970,
+     1991
+    ],
+    "note": "Engraved two-colour room signs at 60 in to centre (UFAS 1984 / ADAAG 1991). No Braille: the ADAAG requirement post-dates 1990. The lettering needs the Prop_SignEngraved atlas (P-4); until then the face renders as a blank light grey-brown preview (#796961), not the dark brown target.",
+    "sources": [
+     "10_spec §2.4",
+     "05 §6.2",
+     "02 §4.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorNumberPlate": {
    "sheet": "door_numberplate",
    "role": "primary",
    "dims_mm": {
-    "W": 100,
-    "D": 4.2,
-    "H": 50
+    "w": 100,
+    "d": 4.2,
+    "h": 50
    },
    "dims_label": "W 100 · D 4.2 · H 50 mm",
    "size_m": [
@@ -4718,12 +5496,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -4733,6 +5513,7 @@
      "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4765,15 +5546,38 @@
     "number",
     "face_dir"
    ],
-   "family": "Doors · signage"
+   "family": "Doors · signage",
+   "kit": "Kit_DoorNumberPlate",
+   "title": "Zone number plate",
+   "lede": "An engraved plate beside the keyhole in the key tag's colour: the door shows the number of its key.",
+   "era": {
+    "from": 1970,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1970–2000",
+    "span": [
+     1970,
+     2000
+    ],
+    "note": "A facility key system indexes keys by room code, so tag code = door code is the period system (02 §8.2). Digits come from the Prop_KeyTagNo atlas (P-4).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §8.2"
+    ]
+   },
+   "variants": [
+    "Kit_DoorNumberPlate_Blue",
+    "Kit_DoorNumberPlate_White"
+   ]
   },
   "Kit_DoorNumberPlate_Blue": {
    "sheet": "door_numberplate",
    "role": "variant",
    "dims_mm": {
-    "W": 100,
-    "D": 4.2,
-    "H": 50
+    "w": 100,
+    "d": 4.2,
+    "h": 50
    },
    "dims_label": "W 100 · D 4.2 · H 50 mm",
    "size_m": [
@@ -4826,12 +5630,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticBlue",
      "slot": "Prop_PlasticBlue",
      "label": "Blue plastic",
      "hex": "#0f2973",
      "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -4841,6 +5647,7 @@
      "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4877,15 +5684,35 @@
    "variantOf": "Kit_DoorNumberPlate",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticBlue"
-   ]
+   ],
+   "kit": "Kit_DoorNumberPlate_Blue",
+   "title": "Zone number plate · Blue",
+   "lede": "An engraved plate beside the keyhole in the key tag's colour: the door shows the number of its key.",
+   "era": {
+    "from": 1970,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1970–2000",
+    "span": [
+     1970,
+     2000
+    ],
+    "note": "A facility key system indexes keys by room code, so tag code = door code is the period system (02 §8.2). Digits come from the Prop_KeyTagNo atlas (P-4).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorNumberPlate_White": {
    "sheet": "door_numberplate",
    "role": "variant",
    "dims_mm": {
-    "W": 100,
-    "D": 4.2,
-    "H": 50
+    "w": 100,
+    "d": 4.2,
+    "h": 50
    },
    "dims_label": "W 100 · D 4.2 · H 50 mm",
    "size_m": [
@@ -4938,12 +5765,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -4953,6 +5782,7 @@
      "note": "spec target: 10 x 10 atlas of typed numbers 00-99 in Courier Prime on paper (P-4); fallback Prop_Paper, blank"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -4989,15 +5819,35 @@
    "variantOf": "Kit_DoorNumberPlate",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticWhite"
-   ]
+   ],
+   "kit": "Kit_DoorNumberPlate_White",
+   "title": "Zone number plate · White",
+   "lede": "An engraved plate beside the keyhole in the key tag's colour: the door shows the number of its key.",
+   "era": {
+    "from": 1970,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1970–2000",
+    "span": [
+     1970,
+     2000
+    ],
+    "note": "A facility key system indexes keys by room code, so tag code = door code is the period system (02 §8.2). Digits come from the Prop_KeyTagNo atlas (P-4).",
+    "sources": [
+     "10_spec §2.4",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_ExitSign": {
    "sheet": "exit_sign",
    "role": "primary",
    "dims_mm": {
-    "W": 330,
-    "D": 60,
-    "H": 202
+    "w": 330,
+    "d": 60,
+    "h": 202
    },
    "dims_label": "W 330 · D 60 · H 202 mm",
    "size_m": [
@@ -5050,12 +5900,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBlack",
      "slot": "Prop_SteelBlack",
      "label": "Black steel",
      "hex": "#1e1e1e",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Run_ExitSign",
      "slot": "Run_ExitSign",
      "label": "Lit EXIT face",
      "hex": "#dfc6bf",
@@ -5087,15 +5939,36 @@
     "face",
     "face_dir"
    ],
-   "family": "Doors · signage"
+   "family": "Doors · signage",
+   "kit": "Kit_ExitSign",
+   "title": "Exit sign",
+   "lede": "Stamped-steel EXIT sign with 6 in stencil letters over the push face; the dead variant is unlit.",
+   "era": {
+    "from": 1970,
+    "to": 1995,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1970–95",
+    "span": [
+     1970,
+     1995
+    ],
+    "note": "A 1990 stamped-steel wall exit sign, emissive face only (no Light). Run_ExitSign_Dead is a new material (P-4); red or green letters is Red's call.",
+    "sources": [
+     "10_spec §2.4"
+    ]
+   },
+   "variants": [
+    "Kit_ExitSign_Dead"
+   ]
   },
   "Kit_ExitSign_Dead": {
    "sheet": "exit_sign",
    "role": "variant",
    "dims_mm": {
-    "W": 330,
-    "D": 60,
-    "H": 202
+    "w": 330,
+    "d": 60,
+    "h": 202
    },
    "dims_label": "W 330 · D 60 · H 202 mm",
    "size_m": [
@@ -5148,19 +6021,21 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBlack",
      "slot": "Prop_SteelBlack",
      "label": "Black steel",
      "hex": "#1e1e1e",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Run_ExitSign_Dead",
      "slot": "Run_ExitSign_Dead",
      "label": "Dead EXIT face",
      "hex": "#cecbc7",
      "source": "rendered: the FBX's own preview material (no Resources/Surfaces/Run_ExitSign_Dead.mat yet; Unity binds _BaseColor #cecbc7)",
      "p4": true,
-     "targetHex": "#9e9a92",
-     "note": "spec target: non-emissive copy of Run_ExitSign (P-4)"
+     "targetHex": "#dfc6bf",
+     "note": "spec target: a non-emissive copy of Run_ExitSign (its albedo #dfc6bf with the red letters, emission off), new material (P-4)"
     }
    ],
    "tris": {
@@ -5191,15 +6066,34 @@
    "variantOf": "Kit_ExitSign",
    "swap": [
     "Run_ExitSign -> Run_ExitSign_Dead"
-   ]
+   ],
+   "kit": "Kit_ExitSign_Dead",
+   "title": "Exit sign · Dead",
+   "lede": "Stamped-steel EXIT sign with 6 in stencil letters over the push face; the dead variant is unlit.",
+   "era": {
+    "from": 1970,
+    "to": 1995,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1970–95",
+    "span": [
+     1970,
+     1995
+    ],
+    "note": "A 1990 stamped-steel wall exit sign, emissive face only (no Light). Run_ExitSign_Dead is a new material (P-4); red or green letters is Red's call.",
+    "sources": [
+     "10_spec §2.4"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Escutcheon": {
    "sheet": "lock_escutcheon",
    "role": "primary",
    "dims_mm": {
-    "W": 57,
-    "D": 8.0,
-    "H": 203
+    "w": 57,
+    "d": 8.0,
+    "h": 203
    },
    "dims_label": "W 57 · D 8.0 · H 203 mm",
    "size_m": [
@@ -5252,12 +6146,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -5293,15 +6189,37 @@
     "keyhole_up"
    ],
    "motion": "static",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_Escutcheon",
+   "title": "Escutcheon",
+   "lede": "A tall satin-chrome plate: knob below, IC cylinder above. Plate plus dot reads as locked at 2-5 m.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Mortise locks stayed 'widely installed in industrial, commercial, and institutional environments' (02 §4.4). US26D satin chrome; locked hardware stays chrome in every level.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.4, §10"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_Escutcheon_Brass"
+   ]
   },
   "Kit_Lock_Escutcheon_Brass": {
    "sheet": "lock_escutcheon",
    "role": "variant",
    "dims_mm": {
-    "W": 57,
-    "D": 8.0,
-    "H": 203
+    "w": 57,
+    "d": 8.0,
+    "h": 203
    },
    "dims_label": "W 57 · D 8.0 · H 203 mm",
    "size_m": [
@@ -5354,12 +6272,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -5399,15 +6319,35 @@
    "variantOf": "Kit_Lock_Escutcheon",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_Escutcheon_Brass",
+   "title": "Escutcheon · Brass",
+   "lede": "A tall satin-chrome plate: knob below, IC cylinder above. Plate plus dot reads as locked at 2-5 m.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Mortise locks stayed 'widely installed in industrial, commercial, and institutional environments' (02 §4.4). US26D satin chrome; locked hardware stays chrome in every level.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.4, §10"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_CylinderShell": {
    "sheet": "lock_cylinder",
    "role": "primary",
    "dims_mm": {
-    "W": 44,
-    "D": 7.5,
-    "H": 44
+    "w": 44,
+    "d": 7.5,
+    "h": 44
    },
    "dims_label": "W 44 · D 7.5 · H 44 mm",
    "size_m": [
@@ -5460,18 +6400,21 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -5507,15 +6450,37 @@
     "collar_back"
    ],
    "motion": "static",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_CylinderShell",
+   "title": "IC cylinder",
+   "lede": "An interchangeable-core figure-8 face, no brand: the keyhole the key shot frames.",
+   "era": {
+    "from": 1925,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1925–2000",
+    "span": [
+     1925,
+     2000
+    ],
+    "note": "IC cores (Best type) since the 1920s. Core dimensions are an ESTIMATE, unverified against a real SFIC.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §13"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_CylinderShell_Brass"
+   ]
   },
   "Kit_Lock_CylinderShell_Brass": {
    "sheet": "lock_cylinder",
    "role": "variant",
    "dims_mm": {
-    "W": 44,
-    "D": 7.5,
-    "H": 44
+    "w": 44,
+    "d": 7.5,
+    "h": 44
    },
    "dims_label": "W 44 · D 7.5 · H 44 mm",
    "size_m": [
@@ -5568,12 +6533,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -5613,15 +6580,35 @@
    "variantOf": "Kit_Lock_CylinderShell",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_CylinderShell_Brass",
+   "title": "IC cylinder · Brass",
+   "lede": "An interchangeable-core figure-8 face, no brand: the keyhole the key shot frames.",
+   "era": {
+    "from": 1925,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1925–2000",
+    "span": [
+     1925,
+     2000
+    ],
+    "note": "IC cores (Best type) since the 1920s. Core dimensions are an ESTIMATE, unverified against a real SFIC.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §13"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Plug": {
    "sheet": "lock_plug",
    "role": "primary",
    "dims_mm": {
-    "W": 12,
-    "D": 30,
-    "H": 12
+    "w": 12,
+    "d": 30,
+    "h": 12
    },
    "dims_label": "W 12 · D 30 · H 12 mm",
    "size_m": [
@@ -5674,12 +6661,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -5719,15 +6708,34 @@
     "pin_6"
    ],
    "motion": "rotate",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_Plug",
+   "title": "Plug",
+   "lede": "The plug with an open keyway and six pin tips. It turns 90 degrees with the key, then back.",
+   "era": {
+    "from": 1925,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1925–2000",
+    "span": [
+     1925,
+     2000
+    ],
+    "note": "US pins-up: the key goes in cuts uppermost (02 §4.2, forum-grade). One keyway profile is shared by the key and the plug (10 §3.2).",
+    "sources": [
+     "10_spec §3.1, §3.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Knob": {
    "sheet": "lock_knob",
    "role": "primary",
    "dims_mm": {
-    "W": 54,
-    "D": 63,
-    "H": 54
+    "w": 54,
+    "d": 63,
+    "h": 54
    },
    "dims_label": "W 54 · D 63 · H 54 mm",
    "size_m": [
@@ -5780,6 +6788,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -5814,15 +6823,37 @@
     "axis_out"
    ],
    "motion": "rotate",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_Knob",
+   "title": "Knurled knob",
+   "lede": "A 54 mm ball knob with a knurled band, the 1984 touch mark for doors to hazardous rooms.",
+   "era": {
+    "from": 1984,
+    "to": 1993,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1984–93",
+    "span": [
+     1984,
+     1993
+    ],
+    "note": "UFAS 1984 §4.29.3: a textured, e.g. knurled, knob marks doors to hazardous areas. Knobs still outsold levers 80:20 in the early 1990s; service doors kept them.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §3.1, §3.2"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_Knob_Brass"
+   ]
   },
   "Kit_Lock_Knob_Brass": {
    "sheet": "lock_knob",
    "role": "variant",
    "dims_mm": {
-    "W": 54,
-    "D": 63,
-    "H": 54
+    "w": 54,
+    "d": 63,
+    "h": 54
    },
    "dims_label": "W 54 · D 63 · H 54 mm",
    "size_m": [
@@ -5875,6 +6906,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -5913,15 +6945,35 @@
    "variantOf": "Kit_Lock_Knob",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_Knob_Brass",
+   "title": "Knurled knob · Brass",
+   "lede": "A 54 mm ball knob with a knurled band, the 1984 touch mark for doors to hazardous rooms.",
+   "era": {
+    "from": 1984,
+    "to": 1993,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1984–93",
+    "span": [
+     1984,
+     1993
+    ],
+    "note": "UFAS 1984 §4.29.3: a textured, e.g. knurled, knob marks doors to hazardous areas. Knobs still outsold levers 80:20 in the early 1990s; service doors kept them.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §3.1, §3.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Deadbolt": {
    "sheet": "lock_deadbolt",
    "role": "primary",
    "dims_mm": {
-    "W": 12,
-    "D": 45,
-    "H": 30
+    "w": 12,
+    "d": 45,
+    "h": 30
    },
    "dims_label": "W 12 · D 45 · H 30 mm",
    "size_m": [
@@ -5974,12 +7026,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
@@ -6014,15 +7068,35 @@
     "throw_dir"
    ],
    "motion": "slide",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_Deadbolt",
+   "title": "Deadbolt",
+   "lede": "A 25 mm deadbolt with two hardened-insert dots. The key throws it; it is what locks the door.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Commercial deadbolts throw 1 in (02 §4.2). Keyed both faces is a game liberty: the key works from the side the player stands on.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Latchbolt_Mortise": {
    "sheet": "lock_latch_mortise",
    "role": "primary",
    "dims_mm": {
-    "W": 19,
-    "D": 40,
-    "H": 30
+    "w": 19,
+    "d": 40,
+    "h": 30
    },
    "dims_label": "W 19 · D 40 · H 30 mm",
    "size_m": [
@@ -6075,6 +7149,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -6111,15 +7186,34 @@
     "throw_dir"
    ],
    "motion": "slide",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_Latchbolt_Mortise",
+   "title": "Mortise latchbolt",
+   "lede": "Deadlocking latchbolt, 19 mm throw, 30 degree bevel, with the auxiliary plunger beside it.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "A passage-function latch: either knob retracts it, the deadbolt does the locking (10 §3.1).",
+    "sources": [
+     "10_spec §3.1"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_StrikeMortise": {
    "sheet": "lock_strike_mortise",
    "role": "primary",
    "dims_mm": {
-    "W": 56,
-    "D": 25,
-    "H": 200
+    "w": 56,
+    "d": 25,
+    "h": 200
    },
    "dims_label": "W 56 · D 25 · H 200 mm",
    "size_m": [
@@ -6172,12 +7266,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -6214,15 +7310,35 @@
     "detach_dir"
    ],
    "motion": "static",
-   "family": "Lock · mortise set"
+   "family": "Lock · mortise set",
+   "kit": "Kit_Lock_StrikeMortise",
+   "title": "Mortise strike",
+   "lede": "Curved-lip strike with latch and deadbolt openings and dust boxes. It tears off when the Relay breaks the door.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Strike in the lock's finish on the latch jamb, a separate render-only part so it can detach (audit §3.7).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §5.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Rose": {
    "sheet": "lock_rose",
    "role": "primary",
    "dims_mm": {
-    "W": 70,
-    "D": 10,
-    "H": 70
+    "w": 70,
+    "d": 10,
+    "h": 70
    },
    "dims_label": "W 70 · D 10 · H 70 mm",
    "size_m": [
@@ -6275,12 +7391,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -6312,15 +7430,37 @@
     "spindle"
    ],
    "motion": "static",
-   "family": "Lock · bored set"
+   "family": "Lock · bored set",
+   "kit": "Kit_Lock_Rose",
+   "title": "Rose",
+   "lede": "A 70 mm stepped rose under the lever: brass on the Lobby door, satin chrome elsewhere.",
+   "era": {
+    "from": 1980,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1980–2000",
+    "span": [
+     1980,
+     2000
+    ],
+    "note": "Cylindrical (bored) locksets are the most common commercial lock (02 §4.1). Brass US3/US4 for the Lobby's free door, US26D chrome for the rest; chrome against brass is a 2-5 m cue.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.1, §10"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_Rose_Brass"
+   ]
   },
   "Kit_Lock_Rose_Brass": {
    "sheet": "lock_rose",
    "role": "variant",
    "dims_mm": {
-    "W": 70,
-    "D": 10,
-    "H": 70
+    "w": 70,
+    "d": 10,
+    "h": 70
    },
    "dims_label": "W 70 · D 10 · H 70 mm",
    "size_m": [
@@ -6373,12 +7513,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -6414,15 +7556,35 @@
    "variantOf": "Kit_Lock_Rose",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_Rose_Brass",
+   "title": "Rose · Brass",
+   "lede": "A 70 mm stepped rose under the lever: brass on the Lobby door, satin chrome elsewhere.",
+   "era": {
+    "from": 1980,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1980–2000",
+    "span": [
+     1980,
+     2000
+    ],
+    "note": "Cylindrical (bored) locksets are the most common commercial lock (02 §4.1). Brass US3/US4 for the Lobby's free door, US26D chrome for the rest; chrome against brass is a 2-5 m cue.",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.1, §10"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Lever": {
    "sheet": "lock_lever",
    "role": "primary",
    "dims_mm": {
-    "W": 133,
-    "D": 54,
-    "H": 24
+    "w": 133,
+    "d": 54,
+    "h": 24
    },
    "dims_label": "W 133 · D 54 · H 24 mm",
    "size_m": [
@@ -6475,6 +7637,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -6509,15 +7672,37 @@
     "axis_out"
    ],
    "motion": "rotate",
-   "family": "Lock · bored set"
+   "family": "Lock · bored set",
+   "kit": "Kit_Lock_Lever",
+   "title": "Lever",
+   "lede": "A 121 mm commercial lever, 64 mm proud: free doors had the accessible handle a decade before the ADA.",
+   "era": {
+    "from": 1980,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1980–2000",
+    "span": [
+     1980,
+     2000
+    ],
+    "note": "Levers were the accessible standard from ANSI A117.1-1980 and UFAS 1984; the ADA required them only for buildings occupied after 26 Jan 1993 (02 §3.1).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §3.1, §4.1"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_Lever_Brass"
+   ]
   },
   "Kit_Lock_Lever_Brass": {
    "sheet": "lock_lever",
    "role": "variant",
    "dims_mm": {
-    "W": 133,
-    "D": 54,
-    "H": 24
+    "w": 133,
+    "d": 54,
+    "h": 24
    },
    "dims_label": "W 133 · D 54 · H 24 mm",
    "size_m": [
@@ -6570,6 +7755,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -6608,15 +7794,35 @@
    "variantOf": "Kit_Lock_Lever",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_Lever_Brass",
+   "title": "Lever · Brass",
+   "lede": "A 121 mm commercial lever, 64 mm proud: free doors had the accessible handle a decade before the ADA.",
+   "era": {
+    "from": 1980,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1980–2000",
+    "span": [
+     1980,
+     2000
+    ],
+    "note": "Levers were the accessible standard from ANSI A117.1-1980 and UFAS 1984; the ADA required them only for buildings occupied after 26 Jan 1993 (02 §3.1).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §3.1, §4.1"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_Latchbolt_Bored": {
    "sheet": "lock_latch_bored",
    "role": "primary",
    "dims_mm": {
-    "W": 16,
-    "D": 30,
-    "H": 20
+    "w": 16,
+    "d": 30,
+    "h": 20
    },
    "dims_label": "W 16 · D 30 · H 20 mm",
    "size_m": [
@@ -6669,6 +7875,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -6705,15 +7912,37 @@
     "throw_dir"
    ],
    "motion": "slide",
-   "family": "Lock · bored set"
+   "family": "Lock · bored set",
+   "kit": "Kit_Lock_Latchbolt_Bored",
+   "title": "Bored latchbolt",
+   "lede": "A 1/2 in throw latch with deadlatch plunger. The lever's 35 degrees pulls it in.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "1/2 in latch throw, 1-1/8 x 2-1/4 in faceplate (D Series pattern, 02 §4.1).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.1"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_Latchbolt_Bored_Brass"
+   ]
   },
   "Kit_Lock_Latchbolt_Bored_Brass": {
    "sheet": "lock_latch_bored",
    "role": "variant",
    "dims_mm": {
-    "W": 16,
-    "D": 30,
-    "H": 20
+    "w": 16,
+    "d": 30,
+    "h": 20
    },
    "dims_label": "W 16 · D 30 · H 20 mm",
    "size_m": [
@@ -6766,6 +7995,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -6806,15 +8036,35 @@
    "variantOf": "Kit_Lock_Latchbolt_Bored",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_Latchbolt_Bored_Brass",
+   "title": "Bored latchbolt · Brass",
+   "lede": "A 1/2 in throw latch with deadlatch plunger. The lever's 35 degrees pulls it in.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "1/2 in latch throw, 1-1/8 x 2-1/4 in faceplate (D Series pattern, 02 §4.1).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §4.1"
+    ]
+   },
+   "variants": []
   },
   "Kit_Lock_StrikeBored": {
    "sheet": "lock_strike_bored",
    "role": "primary",
    "dims_mm": {
-    "W": 56,
-    "D": 17,
-    "H": 124
+    "w": 56,
+    "d": 17,
+    "h": 124
    },
    "dims_label": "W 56 · D 17 · H 124 mm",
    "size_m": [
@@ -6867,12 +8117,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -6908,15 +8160,37 @@
     "detach_dir"
    ],
    "motion": "static",
-   "family": "Lock · bored set"
+   "family": "Lock · bored set",
+   "kit": "Kit_Lock_StrikeBored",
+   "title": "Bored strike",
+   "lede": "The ANSI 4-7/8 in curved-lip strike with one opening and a dust box.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "ANSI curved-lip strike 1-1/4 x 4-7/8 in (02 §5.2).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §5.2"
+    ]
+   },
+   "variants": [
+    "Kit_Lock_StrikeBored_Brass"
+   ]
   },
   "Kit_Lock_StrikeBored_Brass": {
    "sheet": "lock_strike_bored",
    "role": "variant",
    "dims_mm": {
-    "W": 56,
-    "D": 17,
-    "H": 124
+    "w": 56,
+    "d": 17,
+    "h": 124
    },
    "dims_label": "W 56 · D 17 · H 124 mm",
    "size_m": [
@@ -6969,12 +8243,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_PlasticBlack",
      "slot": "Prop_PlasticBlack",
      "label": "Black plastic",
      "hex": "#1a1a1a",
@@ -7014,15 +8290,35 @@
    "variantOf": "Kit_Lock_StrikeBored",
    "swap": [
     "Prop_Chrome -> Prop_Brass"
-   ]
+   ],
+   "kit": "Kit_Lock_StrikeBored_Brass",
+   "title": "Bored strike · Brass",
+   "lede": "The ANSI 4-7/8 in curved-lip strike with one opening and a dust box.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "ANSI curved-lip strike 1-1/4 x 4-7/8 in (02 §5.2).",
+    "sources": [
+     "10_spec §3.1",
+     "02 §5.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_Key_Zone": {
    "sheet": "key_zone",
    "role": "primary",
    "dims_mm": {
-    "W": 58,
-    "D": 2.2,
-    "H": 26
+    "w": 58,
+    "d": 2.2,
+    "h": 26
    },
    "dims_label": "W 58 · D 2.2 · H 26 mm",
    "size_m": [
@@ -7075,6 +8371,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -7109,15 +8406,37 @@
     "ring_hole",
     "ring_hole_dir"
    ],
-   "family": "Keys"
+   "family": "Keys",
+   "kit": "Kit_Key_Zone",
+   "title": "Zone key",
+   "lede": "A 58 mm cut brass duplicate, six cuts, a generic paddle bow. Nickel is the factory original.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Factory keys were nickel silver ('two nickel silver keys per lock'); brass duplicates are the hardware-store copy, and brass reads under yellow light (02 §8.1). No maker's bow, no stamping in v1.",
+    "sources": [
+     "10_spec §3.3",
+     "02 §8.1"
+    ]
+   },
+   "variants": [
+    "Kit_Key_Zone_Nickel"
+   ]
   },
   "Kit_Key_Zone_Nickel": {
    "sheet": "key_zone",
    "role": "variant",
    "dims_mm": {
-    "W": 58,
-    "D": 2.2,
-    "H": 26
+    "w": 58,
+    "d": 2.2,
+    "h": 26
    },
    "dims_label": "W 58 · D 2.2 · H 26 mm",
    "size_m": [
@@ -7170,6 +8489,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
@@ -7208,15 +8528,35 @@
    "variantOf": "Kit_Key_Zone",
    "swap": [
     "Prop_Brass -> Prop_Aluminium"
-   ]
+   ],
+   "kit": "Kit_Key_Zone_Nickel",
+   "title": "Zone key · Nickel",
+   "lede": "A 58 mm cut brass duplicate, six cuts, a generic paddle bow. Nickel is the factory original.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Factory keys were nickel silver ('two nickel silver keys per lock'); brass duplicates are the hardware-store copy, and brass reads under yellow light (02 §8.1). No maker's bow, no stamping in v1.",
+    "sources": [
+     "10_spec §3.3",
+     "02 §8.1"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyRing": {
    "sheet": "key_ring",
    "role": "primary",
    "dims_mm": {
-    "W": 25,
-    "D": 1.8,
-    "H": 25
+    "w": 25,
+    "d": 1.8,
+    "h": 25
    },
    "dims_label": "W 25 · D 1.8 · H 25 mm",
    "size_m": [
@@ -7269,6 +8609,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
@@ -7302,15 +8643,35 @@
     "centre",
     "normal_dir"
    ],
-   "family": "Keys"
+   "family": "Keys",
+   "kit": "Kit_KeyRing",
+   "title": "Split ring",
+   "lede": "A flat-wire split ring, two turns, 25 mm: the key and the tag hang from it.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "Flat steel double coil, nickel-plated, Ø 25-32 mm (02 §8.2).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyTag_Rect": {
    "sheet": "key_tag_rect",
    "role": "primary",
    "dims_mm": {
-    "W": 57,
-    "D": 4.2,
-    "H": 39
+    "w": 57,
+    "d": 4.2,
+    "h": 39
    },
    "dims_label": "W 57 · D 4.2 · H 39 mm",
    "size_m": [
@@ -7363,12 +8724,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -7405,15 +8768,39 @@
     "number",
     "face_dir"
    ],
-   "family": "Keys · tags"
+   "family": "Keys · tags",
+   "kit": "Kit_KeyTag_Rect",
+   "title": "Key tag, square",
+   "lede": "A plastic tag with a paper insert and a typed number: shape and colour name the zone.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "Coloured plastic ID tags with a label window (Lucky Line, family owned since 1961; 02 §8.2). 3 shapes x red, blue, white = 9 identities. Numbers in Courier Prime need Prop_KeyTagNo (P-4).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2",
+     "03 §2.5"
+    ]
+   },
+   "variants": [
+    "Kit_KeyTag_Rect_Blue",
+    "Kit_KeyTag_Rect_White"
+   ]
   },
   "Kit_KeyTag_Rect_Blue": {
    "sheet": "key_tag_rect",
    "role": "variant",
    "dims_mm": {
-    "W": 57,
-    "D": 4.2,
-    "H": 39
+    "w": 57,
+    "d": 4.2,
+    "h": 39
    },
    "dims_label": "W 57 · D 4.2 · H 39 mm",
    "size_m": [
@@ -7466,12 +8853,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticBlue",
      "slot": "Prop_PlasticBlue",
      "label": "Blue plastic",
      "hex": "#0f2973",
      "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -7512,15 +8901,36 @@
    "variantOf": "Kit_KeyTag_Rect",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticBlue"
-   ]
+   ],
+   "kit": "Kit_KeyTag_Rect_Blue",
+   "title": "Key tag, square · Blue",
+   "lede": "A plastic tag with a paper insert and a typed number: shape and colour name the zone.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "Coloured plastic ID tags with a label window (Lucky Line, family owned since 1961; 02 §8.2). 3 shapes x red, blue, white = 9 identities. Numbers in Courier Prime need Prop_KeyTagNo (P-4).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2",
+     "03 §2.5"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyTag_Rect_White": {
    "sheet": "key_tag_rect",
    "role": "variant",
    "dims_mm": {
-    "W": 57,
-    "D": 4.2,
-    "H": 39
+    "w": 57,
+    "d": 4.2,
+    "h": 39
    },
    "dims_label": "W 57 · D 4.2 · H 39 mm",
    "size_m": [
@@ -7573,12 +8983,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -7619,15 +9031,36 @@
    "variantOf": "Kit_KeyTag_Rect",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticWhite"
-   ]
+   ],
+   "kit": "Kit_KeyTag_Rect_White",
+   "title": "Key tag, square · White",
+   "lede": "A plastic tag with a paper insert and a typed number: shape and colour name the zone.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "Coloured plastic ID tags with a label window (Lucky Line, family owned since 1961; 02 §8.2). 3 shapes x red, blue, white = 9 identities. Numbers in Courier Prime need Prop_KeyTagNo (P-4).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2",
+     "03 §2.5"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyTag_Round": {
    "sheet": "key_tag_round",
    "role": "primary",
    "dims_mm": {
-    "W": 38,
-    "D": 4.2,
-    "H": 48
+    "w": 38,
+    "d": 4.2,
+    "h": 48
    },
    "dims_label": "W 38 · D 4.2 · H 48 mm",
    "size_m": [
@@ -7680,12 +9113,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -7722,15 +9157,38 @@
     "number",
     "face_dir"
    ],
-   "family": "Keys · tags"
+   "family": "Keys · tags",
+   "kit": "Kit_KeyTag_Round",
+   "title": "Key tag, round",
+   "lede": "A 38 mm round tag with a 26 mm window, the second shape of the zone code.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "As the square tag (02 §8.2). The number insert is one quad on Prop_KeyTagNo.",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": [
+    "Kit_KeyTag_Round_Blue",
+    "Kit_KeyTag_Round_White"
+   ]
   },
   "Kit_KeyTag_Round_Blue": {
    "sheet": "key_tag_round",
    "role": "variant",
    "dims_mm": {
-    "W": 38,
-    "D": 4.2,
-    "H": 48
+    "w": 38,
+    "d": 4.2,
+    "h": 48
    },
    "dims_label": "W 38 · D 4.2 · H 48 mm",
    "size_m": [
@@ -7783,12 +9241,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticBlue",
      "slot": "Prop_PlasticBlue",
      "label": "Blue plastic",
      "hex": "#0f2973",
      "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -7829,15 +9289,35 @@
    "variantOf": "Kit_KeyTag_Round",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticBlue"
-   ]
+   ],
+   "kit": "Kit_KeyTag_Round_Blue",
+   "title": "Key tag, round · Blue",
+   "lede": "A 38 mm round tag with a 26 mm window, the second shape of the zone code.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "As the square tag (02 §8.2). The number insert is one quad on Prop_KeyTagNo.",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyTag_Round_White": {
    "sheet": "key_tag_round",
    "role": "variant",
    "dims_mm": {
-    "W": 38,
-    "D": 4.2,
-    "H": 48
+    "w": 38,
+    "d": 4.2,
+    "h": 48
    },
    "dims_label": "W 38 · D 4.2 · H 48 mm",
    "size_m": [
@@ -7890,12 +9370,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -7936,15 +9418,35 @@
    "variantOf": "Kit_KeyTag_Round",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticWhite"
-   ]
+   ],
+   "kit": "Kit_KeyTag_Round_White",
+   "title": "Key tag, round · White",
+   "lede": "A 38 mm round tag with a 26 mm window, the second shape of the zone code.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "As the square tag (02 §8.2). The number insert is one quad on Prop_KeyTagNo.",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyTag_Long": {
    "sheet": "key_tag_long",
    "role": "primary",
    "dims_mm": {
-    "W": 76,
-    "D": 4.2,
-    "H": 32
+    "w": 76,
+    "d": 4.2,
+    "h": 32
    },
    "dims_label": "W 76 · D 4.2 · H 32 mm",
    "size_m": [
@@ -7997,12 +9499,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticRed",
      "slot": "Prop_PlasticRed",
      "label": "Red plastic",
      "hex": "#8c0f0d",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -8039,15 +9543,38 @@
     "number",
     "face_dir"
    ],
-   "family": "Keys · tags"
+   "family": "Keys · tags",
+   "kit": "Kit_KeyTag_Long",
+   "title": "Key tag, valet",
+   "lede": "A 76 mm valet tag, the long third shape of the zone code.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "As the square tag (02 §8.2).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": [
+    "Kit_KeyTag_Long_Blue",
+    "Kit_KeyTag_Long_White"
+   ]
   },
   "Kit_KeyTag_Long_Blue": {
    "sheet": "key_tag_long",
    "role": "variant",
    "dims_mm": {
-    "W": 76,
-    "D": 4.2,
-    "H": 32
+    "w": 76,
+    "d": 4.2,
+    "h": 32
    },
    "dims_label": "W 76 · D 4.2 · H 32 mm",
    "size_m": [
@@ -8100,12 +9627,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticBlue",
      "slot": "Prop_PlasticBlue",
      "label": "Blue plastic",
      "hex": "#0f2973",
      "source": "Resources/Surfaces/Prop_PlasticBlue.mat: mean of no _BaseMap (white) x _BaseColor [0.06, 0.16, 0.45] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -8146,15 +9675,35 @@
    "variantOf": "Kit_KeyTag_Long",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticBlue"
-   ]
+   ],
+   "kit": "Kit_KeyTag_Long_Blue",
+   "title": "Key tag, valet · Blue",
+   "lede": "A 76 mm valet tag, the long third shape of the zone code.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "As the square tag (02 §8.2).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyTag_Long_White": {
    "sheet": "key_tag_long",
    "role": "variant",
    "dims_mm": {
-    "W": 76,
-    "D": 4.2,
-    "H": 32
+    "w": 76,
+    "d": 4.2,
+    "h": 32
    },
    "dims_label": "W 76 · D 4.2 · H 32 mm",
    "size_m": [
@@ -8207,12 +9756,14 @@
    },
    "materials": [
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -8253,15 +9804,35 @@
    "variantOf": "Kit_KeyTag_Long",
    "swap": [
     "Prop_PlasticRed -> Prop_PlasticWhite"
-   ]
+   ],
+   "kit": "Kit_KeyTag_Long_White",
+   "title": "Key tag, valet · White",
+   "lede": "A 76 mm valet tag, the long third shape of the zone code.",
+   "era": {
+    "from": 1961,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1961–2000",
+    "span": [
+     1961,
+     2000
+    ],
+    "note": "As the square tag (02 §8.2).",
+    "sources": [
+     "10_spec §4.1",
+     "02 §8.2"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyHookBoard": {
    "sheet": "key_board",
    "role": "primary",
    "dims_mm": {
-    "W": 300,
-    "D": 44,
-    "H": 400
+    "w": 300,
+    "d": 44,
+    "h": 400
    },
    "dims_label": "W 300 · D 44 · H 400 mm",
    "size_m": [
@@ -8314,18 +9885,21 @@
    },
    "materials": [
     {
+     "name": "Prop_WoodDark",
      "slot": "Prop_WoodDark",
      "label": "Dark wood",
      "hex": "#2d1c14",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -8367,15 +9941,36 @@
     "key_hook"
    ],
    "specName": "Kit_KeyBoard",
-   "family": "Keys · hosts"
+   "family": "Keys · hosts",
+   "kit": "Kit_KeyHookBoard",
+   "title": "Key board",
+   "lede": "A dark painted board with eight brass cup hooks and paper number strips: the Lobby's key host.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "Hook boards with cup hooks in a grid were the everyday facility key store (02 §9, 03 §2.3). Spec name Kit_KeyBoard; shipped as Kit_KeyHookBoard because Kit_KeyBoard and Kit_Keyboard are one file on this Mac.",
+    "sources": [
+     "10_spec §4.2",
+     "02 §9",
+     "build_g3"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyCabinet": {
    "sheet": "key_cabinet",
    "role": "primary",
    "dims_mm": {
-    "W": 719,
-    "D": 84,
-    "H": 460
+    "w": 719,
+    "d": 84,
+    "h": 460
    },
    "dims_label": "W 719 · D 84 · H 460 mm",
    "size_m": [
@@ -8428,24 +10023,28 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelAlmond",
      "slot": "Prop_SteelAlmond",
      "label": "Almond steel",
      "hex": "#ad9c75",
      "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Chrome",
      "slot": "Prop_Chrome",
      "label": "Chrome",
      "hex": "#d8d8d8",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_KeyTagNo",
      "slot": "Prop_KeyTagNo",
      "label": "Typed numbers",
      "hex": "#efece3",
@@ -8505,15 +10104,35 @@
     "door_hinge_dir",
     "body_centre"
    ],
-   "family": "Keys · hosts"
+   "family": "Keys · hosts",
+   "kit": "Kit_KeyCabinet",
+   "title": "Key cabinet",
+   "lede": "An almond steel wall cabinet with 24 hooks and an index card, its door swung flat to the wall.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "Telkee-type institution key cabinets (trademark filed 1928), no brand (02 §9). The Office's key host.",
+    "sources": [
+     "10_spec §4.2",
+     "02 §9"
+    ]
+   },
+   "variants": []
   },
   "Kit_KeyHook": {
    "sheet": "key_hook",
    "role": "primary",
    "dims_mm": {
-    "W": 6.8,
-    "D": 26,
-    "H": 14
+    "w": 6.8,
+    "d": 26,
+    "h": 14
    },
    "dims_label": "W 6.8 · D 26 · H 14 mm",
    "size_m": [
@@ -8566,6 +10185,7 @@
    },
    "materials": [
     {
+     "name": "Prop_Brass",
      "slot": "Prop_Brass",
      "label": "Brass",
      "hex": "#b08a4a",
@@ -8595,15 +10215,35 @@
    "anchors": [
     "key_hook"
    ],
-   "family": "Keys · hosts"
+   "family": "Keys · hosts",
+   "kit": "Kit_KeyHook",
+   "title": "Key hook",
+   "lede": "One brass cup hook in the wall, at 1.476 m: the procedural rooms' fallback host.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "A single key on a hook by a door (02 §9). At most one key in four, red or blue tag only (10 §4.2).",
+    "sources": [
+     "10_spec §4.2, §4.3",
+     "02 §9"
+    ]
+   },
+   "variants": []
   },
   "Kit_WindowFrame_Wood": {
    "sheet": "window_wood",
    "role": "primary",
    "dims_mm": {
-    "W": 1600,
-    "D": 242,
-    "H": 1828
+    "w": 1600,
+    "d": 242,
+    "h": 1828
    },
    "dims_label": "W 1600 · D 242 · H 1828 mm",
    "size_m": [
@@ -8656,12 +10296,14 @@
    },
    "materials": [
     {
+     "name": "Prop_WoodWalnut",
      "slot": "Prop_WoodWalnut",
      "label": "Walnut",
      "hex": "#4a3020",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -8679,14 +10321,15 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
-   "placement": "Floor",
+   "placement": "Wall",
    "tags": [
     "interactable",
     "window",
-    "frame_wood"
+    "frame_wood",
+    "wall_decor"
    ],
    "anchors": [
     "glass_slab",
@@ -8709,15 +10352,35 @@
     "floor_b",
     "blind_rail"
    ],
-   "family": "Windows"
+   "family": "Windows",
+   "kit": "Kit_WindowFrame_Wood",
+   "title": "Wood window",
+   "lede": "A walnut back-office light with casing, horned stool and apron: older stock in the Lobby.",
+   "era": {
+    "from": 1955,
+    "to": 1985,
+    "label": "Period",
+    "chip": "Second-hand",
+    "spanLabel": "1955–85",
+    "span": [
+     1955,
+     1985
+    ],
+    "note": "Wood borrowed lights with stool, apron and casing belong to older buildings (NPS ITS 31's 'mahogany trim around openings'; 06 §2.1). Same casing profile as the wood door frame.",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.1, §3.1"
+    ]
+   },
+   "variants": []
   },
   "Kit_WindowFrame_Steel": {
    "sheet": "window_steel",
    "role": "primary",
    "dims_mm": {
-    "W": 1550,
-    "D": 210,
-    "H": 1800
+    "w": 1550,
+    "d": 210,
+    "h": 1800
    },
    "dims_label": "W 1550 · D 210 · H 1800 mm",
    "size_m": [
@@ -8770,12 +10433,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelBrown",
      "slot": "Prop_SteelBrown",
      "label": "Brown steel",
      "hex": "#3b2e25",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -8793,14 +10458,15 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
-   "placement": "Floor",
+   "placement": "Wall",
    "tags": [
     "interactable",
     "window",
-    "frame_steel"
+    "frame_steel",
+    "wall_decor"
    ],
    "anchors": [
     "glass_slab",
@@ -8823,15 +10489,37 @@
     "floor_b",
     "blind_rail"
    ],
-   "family": "Windows"
+   "family": "Windows",
+   "kit": "Kit_WindowFrame_Steel",
+   "title": "Steel window",
+   "lede": "An SDI borrowed-light frame in bronze, 30 oval-head screws on the room-side stop.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Pressed-steel borrowed-light frames: integral stop on the hall side, screwed removable stop on the room side at <= 9 in centres (SDI 111A; UH spec; 06 §2.2). The _Enamel variant is the Run's corridor light (Door_Enamel, P-4).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.2, §3.2, §3.3"
+    ]
+   },
+   "variants": [
+    "Kit_WindowFrame_Steel_Enamel"
+   ]
   },
   "Kit_WindowFrame_Steel_Enamel": {
    "sheet": "window_steel",
    "role": "variant",
    "dims_mm": {
-    "W": 1550,
-    "D": 210,
-    "H": 1800
+    "w": 1550,
+    "d": 210,
+    "h": 1800
    },
    "dims_label": "W 1550 · D 210 · H 1800 mm",
    "size_m": [
@@ -8884,6 +10572,7 @@
    },
    "materials": [
     {
+     "name": "Door_Enamel",
      "slot": "Door_Enamel",
      "label": "Almond enamel",
      "hex": "#cdc5af",
@@ -8893,6 +10582,7 @@
      "note": "spec target: almond enamel sRGB 205/197/176 (05 §6.2), new surface Door_Enamel (P-4); fallback Painted_Metal"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -8910,14 +10600,15 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
-   "placement": "Floor",
+   "placement": "Wall",
    "tags": [
     "interactable",
     "window",
-    "frame_steel"
+    "frame_steel",
+    "wall_decor"
    ],
    "anchors": [
     "glass_slab",
@@ -8944,15 +10635,35 @@
    "variantOf": "Kit_WindowFrame_Steel",
    "swap": [
     "Prop_SteelBrown -> Door_Enamel"
-   ]
+   ],
+   "kit": "Kit_WindowFrame_Steel_Enamel",
+   "title": "Steel window · Enamel",
+   "lede": "An SDI borrowed-light frame in bronze, 30 oval-head screws on the room-side stop.",
+   "era": {
+    "from": 1955,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1955–2000",
+    "span": [
+     1955,
+     2000
+    ],
+    "note": "Pressed-steel borrowed-light frames: integral stop on the hall side, screwed removable stop on the room side at <= 9 in centres (SDI 111A; UH spec; 06 §2.2). The _Enamel variant is the Run's corridor light (Door_Enamel, P-4).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.2, §3.2, §3.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_WindowFrame_Alu": {
    "sheet": "window_alu",
    "role": "primary",
    "dims_mm": {
-    "W": 1550,
-    "D": 210,
-    "H": 1800
+    "w": 1550,
+    "d": 210,
+    "h": 1800
    },
    "dims_label": "W 1550 · D 210 · H 1800 mm",
    "size_m": [
@@ -9005,12 +10716,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Aluminium",
      "slot": "Prop_Aluminium",
      "label": "Aluminium",
      "hex": "#b8b8b4",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_Rubber",
      "slot": "Prop_Rubber",
      "label": "Rubber",
      "hex": "#050505",
@@ -9018,8 +10731,8 @@
     }
    ],
    "tris": {
-    "lod0": 1088,
-    "lod1": 1064,
+    "lod0": 2066,
+    "lod1": null,
     "budget": [
      2800,
      1000,
@@ -9028,14 +10741,15 @@
     "lodDistances_m": [
      4.0,
      12.0,
-     null
+     0.0
     ]
    },
-   "placement": "Floor",
+   "placement": "Wall",
    "tags": [
     "interactable",
     "window",
-    "frame_alu"
+    "frame_alu",
+    "wall_decor"
    ],
    "anchors": [
     "glass_slab",
@@ -9058,15 +10772,35 @@
     "floor_b",
     "blind_rail"
    ],
-   "family": "Windows"
+   "family": "Windows",
+   "kit": "Kit_WindowFrame_Alu",
+   "title": "Aluminium window",
+   "lede": "A clear-anodised aluminium office front with bevelled snap-in beads and a black vinyl gasket.",
+   "era": {
+    "from": 1982,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1982–2000",
+    "span": [
+     1982,
+     2000
+    ],
+    "note": "Demountable aluminium partition glazing, US Gypsum patents US4463535 / US4443984 (filed 1981-82, granted 1984). Clear and bronze anodising were both ordinary by 1990 (06 §2.3).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.1, §2.3"
+    ]
+   },
+   "variants": []
   },
   "Kit_MiniBlind_Raised": {
    "sheet": "miniblind_raised",
    "role": "primary",
    "dims_mm": {
-    "W": 1550,
-    "D": 76,
-    "H": 1060
+    "w": 1550,
+    "d": 76,
+    "h": 1060
    },
    "dims_label": "W 1550 · D 76 · H 1060 mm",
    "size_m": [
@@ -9119,12 +10853,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelAlmond",
      "slot": "Prop_SteelAlmond",
      "label": "Almond steel",
      "hex": "#ad9c75",
      "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
@@ -9145,11 +10881,12 @@
      30.0
     ]
    },
-   "placement": "Floor",
+   "placement": "Wall",
    "tags": [
     "interactable",
     "window",
-    "blind"
+    "blind",
+    "wall_decor"
    ],
    "anchors": [
     "blind_rail",
@@ -9157,15 +10894,35 @@
     "tassel",
     "stack_bottom"
    ],
-   "family": "Windows"
+   "family": "Windows",
+   "kit": "Kit_MiniBlind_Raised",
+   "title": "Mini-blind, raised",
+   "lede": "A 1-inch aluminium mini-blind, raised clear of the opening, almond slats.",
+   "era": {
+    "from": 1975,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1975–2000",
+    "span": [
+     1975,
+     2000
+    ],
+    "note": "Mini-blinds were 70-80 % of the US window-covering market in 1981; the 1993 Sears catalogue sells Levolor 1-inch blinds in Almond (06 §2.5). Optional on Office windows by edge hash.",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.5"
+    ]
+   },
+   "variants": []
   },
   "Kit_MiniBlind_Lowered": {
    "sheet": "miniblind_lowered",
    "role": "primary",
    "dims_mm": {
-    "W": 2400,
-    "D": 76,
-    "H": 1308
+    "w": 2400,
+    "d": 76,
+    "h": 1308
    },
    "dims_label": "W 2400 · D 76 · H 1308 mm",
    "size_m": [
@@ -9218,12 +10975,14 @@
    },
    "materials": [
     {
+     "name": "Prop_SteelAlmond",
      "slot": "Prop_SteelAlmond",
      "label": "Almond steel",
      "hex": "#ad9c75",
      "source": "Resources/Surfaces/Prop_SteelAlmond.mat: mean of Assets/Resources/Surfaces/Textures/Prop_SteelPutty_A.png x _BaseColor [1.04, 0.98, 0.86] (tint sRGB->linear, product -> sRGB)"
     },
     {
+     "name": "Prop_PlasticWhite",
      "slot": "Prop_PlasticWhite",
      "label": "White plastic",
      "hex": "#d9d5c8",
@@ -9244,12 +11003,13 @@
      30.0
     ]
    },
-   "placement": "Floor",
+   "placement": "Wall",
    "tags": [
     "interactable",
     "window",
     "blind",
-    "decor"
+    "decor",
+    "wall_decor"
    ],
    "anchors": [
     "blind_rail",
@@ -9257,15 +11017,35 @@
     "tassel",
     "bottom_rail"
    ],
-   "family": "Windows"
+   "family": "Windows",
+   "kit": "Kit_MiniBlind_Lowered",
+   "title": "Mini-blind, lowered",
+   "lede": "The same blind 2.40 m wide, lowered and half-tilted: decor for the dark interior window only.",
+   "era": {
+    "from": 1975,
+    "to": 2000,
+    "label": "Period",
+    "chip": "Current stock",
+    "spanLabel": "1975–2000",
+    "span": [
+     1975,
+     2000
+    ],
+    "note": "As the raised blind. Never on a breakable map window: it would hang in the climb opening (10 §5.1 rules).",
+    "sources": [
+     "10_spec §5.1",
+     "06 §2.5"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorwayStuds": {
    "sheet": "doorway_studs",
    "role": "primary",
    "dims_mm": {
-    "W": 1252,
-    "D": 142,
-    "H": 2327
+    "w": 1252,
+    "d": 142,
+    "h": 2327
    },
    "dims_label": "W 1252 · D 142 · H 2327 mm",
    "size_m": [
@@ -9318,12 +11098,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Studs",
      "slot": "Prop_Studs",
      "label": "Spruce studs",
      "hex": "#c9ae83",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_TapeBlue",
      "slot": "Prop_TapeBlue",
      "label": "Painter's tape",
      "hex": "#2e86c1",
@@ -9347,15 +11129,37 @@
     "clear_corner_a",
     "clear_corner_b"
    ],
-   "family": "Doors · existing"
+   "family": "Doors · existing",
+   "kit": "Kit_DoorwayStuds",
+   "title": "Stud doorway",
+   "lede": "Raw 2x4 opening outlined in blue painter's tape, a 3M product from 1988.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "Unchanged since the 2026-10-02 sheets: the FBX files match the real project byte for byte. Already on K45 (2328:1258); re-rendered here only for completeness.",
+    "sources": [
+     "K45"
+    ]
+   },
+   "variants": [
+    "Kit_DoorwayStuds140",
+    "Kit_DoorwayStuds180"
+   ]
   },
   "Kit_DoorwayStuds140": {
    "sheet": "doorway_studs",
    "role": "variant",
    "dims_mm": {
-    "W": 1552,
-    "D": 142,
-    "H": 2327
+    "w": 1552,
+    "d": 142,
+    "h": 2327
    },
    "dims_label": "W 1552 · D 142 · H 2327 mm",
    "size_m": [
@@ -9408,12 +11212,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Studs",
      "slot": "Prop_Studs",
      "label": "Spruce studs",
      "hex": "#c9ae83",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_TapeBlue",
      "slot": "Prop_TapeBlue",
      "label": "Painter's tape",
      "hex": "#2e86c1",
@@ -9439,15 +11245,34 @@
    ],
    "family": "Doors · existing",
    "variantOf": "Kit_DoorwayStuds",
-   "swap": []
+   "swap": [],
+   "kit": "Kit_DoorwayStuds140",
+   "title": "Stud doorway · 140",
+   "lede": "Raw 2x4 opening outlined in blue painter's tape, a 3M product from 1988.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "Unchanged since the 2026-10-02 sheets: the FBX files match the real project byte for byte. Already on K45 (2328:1258); re-rendered here only for completeness.",
+    "sources": [
+     "K45"
+    ]
+   },
+   "variants": []
   },
   "Kit_DoorwayStuds180": {
    "sheet": "doorway_studs",
    "role": "variant",
    "dims_mm": {
-    "W": 1952,
-    "D": 145,
-    "H": 2327
+    "w": 1952,
+    "d": 145,
+    "h": 2327
    },
    "dims_label": "W 1952 · D 145 · H 2327 mm",
    "size_m": [
@@ -9500,12 +11325,14 @@
    },
    "materials": [
     {
+     "name": "Prop_Studs",
      "slot": "Prop_Studs",
      "label": "Spruce studs",
      "hex": "#c9ae83",
      "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
     },
     {
+     "name": "Prop_TapeBlue",
      "slot": "Prop_TapeBlue",
      "label": "Painter's tape",
      "hex": "#2e86c1",
@@ -9531,8 +11358,760 @@
    ],
    "family": "Doors · existing",
    "variantOf": "Kit_DoorwayStuds",
-   "swap": []
+   "swap": [],
+   "kit": "Kit_DoorwayStuds180",
+   "title": "Stud doorway · 180",
+   "lede": "Raw 2x4 opening outlined in blue painter's tape, a 3M product from 1988.",
+   "era": {
+    "from": 1950,
+    "to": 2000,
+    "label": "Timeless",
+    "chip": "Timeless",
+    "spanLabel": "1950–2000",
+    "span": [
+     1950,
+     2000
+    ],
+    "note": "Unchanged since the 2026-10-02 sheets: the FBX files match the real project byte for byte. Already on K45 (2328:1258); re-rendered here only for completeness.",
+    "sources": [
+     "K45"
+    ]
+   },
+   "variants": []
   }
  },
- "heroes": []
+ "heroes": [
+  {
+   "file": "heroes/doors_lineup_pull_face.png",
+   "alpha": "heroes/doors_lineup_pull_face_alpha.png",
+   "group": "doors",
+   "groupHero": true,
+   "px": [
+    4800,
+    1350
+   ],
+   "note": "The 8-door family, pull (S) face, left to right L0-F, L0-K, OF-F, OF-K, RN-F, RN-K, EX-F, EX-K, each in its level's wall and floor surface. Closers show on this face.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doors_lineup_push_face.png",
+   "alpha": "heroes/doors_lineup_push_face_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    4800,
+    1350
+   ],
+   "note": "The same 8 doors from the push (P) face: stops, kick plates, the EX-F crossbar and the EXIT signs over the push face.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_EX-F_pull.png",
+   "alpha": "heroes/doorset_EX-F_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member EX-F, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_EX-F_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_EX-F_push.png",
+   "alpha": "heroes/doorset_EX-F_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member EX-F, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_EX-K_pull.png",
+   "alpha": "heroes/doorset_EX-K_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member EX-K, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_EX-K_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_EX-K_push.png",
+   "alpha": "heroes/doorset_EX-K_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member EX-K, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_L0-F_pull.png",
+   "alpha": "heroes/doorset_L0-F_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member L0-F, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_L0-F_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_L0-F_push.png",
+   "alpha": "heroes/doorset_L0-F_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member L0-F, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_L0-K_pull.png",
+   "alpha": "heroes/doorset_L0-K_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member L0-K, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_L0-K_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_L0-K_push.png",
+   "alpha": "heroes/doorset_L0-K_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member L0-K, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_OF-F_pull.png",
+   "alpha": "heroes/doorset_OF-F_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member OF-F, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_OF-F_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_OF-F_push.png",
+   "alpha": "heroes/doorset_OF-F_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member OF-F, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_OF-K_pull.png",
+   "alpha": "heroes/doorset_OF-K_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member OF-K, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_OF-K_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_OF-K_push.png",
+   "alpha": "heroes/doorset_OF-K_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member OF-K, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_RN-F_pull.png",
+   "alpha": "heroes/doorset_RN-F_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member RN-F, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_RN-F_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_RN-F_push.png",
+   "alpha": "heroes/doorset_RN-F_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member RN-F, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_RN-K-lite_pull.png",
+   "alpha": "heroes/doorset_RN-K-lite_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member RN-K-lite, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_RN-K-lite_push.png",
+   "alpha": "heroes/doorset_RN-K-lite_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member RN-K-lite, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/doorset_RN-K_pull.png",
+   "alpha": "heroes/doorset_RN-K_pull_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member RN-K, pull face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": [
+    "img:DoorSet_RN-K_persp"
+   ]
+  },
+  {
+   "file": "heroes/doorset_RN-K_push.png",
+   "alpha": "heroes/doorset_RN-K_push_alpha.png",
+   "group": "doors",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Door member RN-K, push face, 3/4 from the latch side, in its wall.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/keys_board_hung.png",
+   "alpha": null,
+   "group": "keys",
+   "groupHero": true,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Zone key, split ring and red square tag hung on the key board's key_hook (hung pose: ring yaw -60, key/tag twist -30), on Level 0 wallpaper. Wall fills the frame, so there is no transparent copy.",
+   "proposalSlots": [
+    "img:KeySet_Rack_persp"
+   ]
+  },
+  {
+   "file": "heroes/keys_board_hung_close.png",
+   "alpha": null,
+   "group": "keys",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Close-up of the hung key, ring and tag. Wall fills the frame, so there is no transparent copy.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/keys_cabinet_hung.png",
+   "alpha": null,
+   "group": "keys",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "The same assembly in the Office key cabinet (white valet tag). Wall fills the frame, so there is no transparent copy.",
+   "proposalSlots": [
+    "img:KeySet_Cabinet_persp"
+   ]
+  },
+  {
+   "file": "heroes/keys_hook_hung.png",
+   "alpha": null,
+   "group": "keys",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "The same assembly on the single brass hook (blue round tag). Wall fills the frame, so there is no transparent copy.",
+   "proposalSlots": [
+    "img:KeySet_Hook_persp"
+   ]
+  },
+  {
+   "file": "heroes/keys_parts_lineup_front.png",
+   "alpha": "heroes/keys_parts_lineup_front_alpha.png",
+   "group": "keys",
+   "groupHero": false,
+   "px": [
+    1704,
+    1268
+   ],
+   "note": "Key parts at one scale, front: brass and nickel keys, split ring, 3 tag shapes x red/blue/white. For img:KeyParts_Lineup_front (DW07).",
+   "proposalSlots": [
+    "img:KeyParts_Lineup_front"
+   ]
+  },
+  {
+   "file": "heroes/lock_exploded.png",
+   "alpha": "heroes/lock_exploded_alpha.png",
+   "group": "lock",
+   "groupHero": true,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Mortise lock exploded on its axes: escutcheon, IC cylinder shell, plug, key (cuts up, tip toward the plug), knurled knob; deadbolt, latchbolt and strike pulled out toward the latch edge.",
+   "proposalSlots": [
+    "img:LockSet_Mortise_persp"
+   ]
+  },
+  {
+   "file": "heroes/lock_exploded_front.png",
+   "alpha": "heroes/lock_exploded_front_alpha.png",
+   "group": "lock",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "The same exploded lock, near-elevation.",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/window_W-EX_face_a.png",
+   "alpha": "heroes/window_W-EX_face_a_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Window member W-EX from face A, 3/4, in its wall with a room box behind and the Glass_Window pane.",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Alu_persp"
+   ]
+  },
+  {
+   "file": "heroes/window_W-L0_face_a.png",
+   "alpha": "heroes/window_W-L0_face_a_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Window member W-L0 from face A, 3/4, in its wall with a room box behind and the Glass_Window pane.",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Wood_persp"
+   ]
+  },
+  {
+   "file": "heroes/window_W-OF_face_a.png",
+   "alpha": "heroes/window_W-OF_face_a_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Window member W-OF from face A, 3/4, in its wall with a room box behind and the Glass_Window pane.",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Steel_persp"
+   ]
+  },
+  {
+   "file": "heroes/window_W-RN_face_a.png",
+   "alpha": "heroes/window_W-RN_face_a_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Window member W-RN from face A, 3/4, in its wall with a room box behind and the Glass_Window pane.",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Steel_Enamel_persp"
+   ]
+  },
+  {
+   "file": "heroes/windows_lineup_face_a.png",
+   "alpha": "heroes/windows_lineup_face_a_alpha.png",
+   "group": "windows",
+   "groupHero": true,
+   "px": [
+    4000,
+    1100
+   ],
+   "note": "The window family from face A, left to right W-L0 wood, W-OF steel + raised mini-blind, W-RN enamel steel, W-EX aluminium, each in its level's wall with a room box behind. The pane is the 6 mm slab drawn with main's Glass_Window (the glass track's material, as FrontRoomsInteractableKit.Window.cs uses it); it is not part of the window kit.",
+   "proposalSlots": []
+  }
+ ],
+ "proposalSlots": [
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_L0-F_persp",
+   "node": "2501:3804",
+   "source": "heroes/doorset_L0-F_pull.png",
+   "flat": "heroes/slots/DoorSet_L0-F_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (Blender spec render)"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_OF-F_persp",
+   "node": "2501:3815",
+   "source": "heroes/doorset_OF-F_pull.png",
+   "flat": "heroes/slots/DoorSet_OF-F_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (Blender spec render)"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_RN-F_persp",
+   "node": "2501:3820",
+   "source": "heroes/doorset_RN-F_pull.png",
+   "flat": "heroes/slots/DoorSet_RN-F_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3821, keep chip 2501:3822"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_EX-F_persp",
+   "node": "2501:3825",
+   "source": "heroes/doorset_EX-F_pull.png",
+   "flat": "heroes/slots/DoorSet_EX-F_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3826, keep chip 2501:3827"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_L0-K_persp",
+   "node": "2501:3830",
+   "source": "heroes/doorset_L0-K_pull.png",
+   "flat": "heroes/slots/DoorSet_L0-K_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "replaces WIP (Blender spec render)"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_OF-K_persp",
+   "node": "2501:3835",
+   "source": "heroes/doorset_OF-K_pull.png",
+   "flat": "heroes/slots/DoorSet_OF-K_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "replaces WIP (Blender spec render)"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_RN-K_persp",
+   "node": "2501:3840",
+   "source": "heroes/doorset_RN-K_pull.png",
+   "flat": "heroes/slots/DoorSet_RN-K_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3841, keep chip 2501:3842"
+  },
+  {
+   "slide": "DW05",
+   "slot": "img:DoorSet_EX-K_persp",
+   "node": "2501:3845",
+   "source": "heroes/doorset_EX-K_pull.png",
+   "flat": "heroes/slots/DoorSet_EX-K_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3846, keep chip 2501:3847"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_Escutcheon_persp",
+   "node": "2501:3865",
+   "source": "png/Kit_Lock_Escutcheon_persp.png",
+   "flat": "heroes/slots/Kit_Lock_Escutcheon_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3866"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_CylinderShell_persp",
+   "node": "2501:3869",
+   "source": "png/Kit_Lock_CylinderShell_persp.png",
+   "flat": "heroes/slots/Kit_Lock_CylinderShell_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3870"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_Plug_persp",
+   "node": "2501:3873",
+   "source": "png/Kit_Lock_Plug_persp.png",
+   "flat": "heroes/slots/Kit_Lock_Plug_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3874"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_Knob_persp",
+   "node": "2501:3877",
+   "source": "png/Kit_Lock_Knob_persp.png",
+   "flat": "heroes/slots/Kit_Lock_Knob_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3878"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_Deadbolt_persp",
+   "node": "2501:3881",
+   "source": "png/Kit_Lock_Deadbolt_persp.png",
+   "flat": "heroes/slots/Kit_Lock_Deadbolt_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3882"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_Latchbolt_Mortise_persp",
+   "node": "2501:3885",
+   "source": "png/Kit_Lock_Latchbolt_Mortise_persp.png",
+   "flat": "heroes/slots/Kit_Lock_Latchbolt_Mortise_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3886"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:Kit_Lock_StrikeMortise_persp",
+   "node": "2501:3889",
+   "source": "png/Kit_Lock_StrikeMortise_persp.png",
+   "flat": "heroes/slots/Kit_Lock_StrikeMortise_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2501:3890"
+  },
+  {
+   "slide": "DW06",
+   "slot": "img:LockSet_Mortise_persp",
+   "node": "2501:3893",
+   "source": "heroes/lock_exploded.png",
+   "flat": "heroes/slots/LockSet_Mortise_persp.png",
+   "slotPx": [
+    276,
+    204
+   ],
+   "action": "OPTIONAL: today it holds the G2 pose-P render (key in, turned), which says something else; swap only if the slide wants the exploded view"
+  },
+  {
+   "slide": "DW07",
+   "slot": "img:KeySet_Rack_persp",
+   "node": "2503:4468",
+   "source": "heroes/keys_board_hung.png",
+   "flat": "heroes/slots/KeySet_Rack_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2507:3804, keep chip 2503:4469"
+  },
+  {
+   "slide": "DW07",
+   "slot": "img:KeySet_Cabinet_persp",
+   "node": "2503:4477",
+   "source": "heroes/keys_cabinet_hung.png",
+   "flat": "heroes/slots/KeySet_Cabinet_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (G3 stand-in colours)"
+  },
+  {
+   "slide": "DW07",
+   "slot": "img:KeySet_Hook_persp",
+   "node": "2503:4480",
+   "source": "heroes/keys_hook_hung.png",
+   "flat": "heroes/slots/KeySet_Hook_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (G3 stand-in colours)"
+  },
+  {
+   "slide": "DW07",
+   "slot": "img:KeyParts_Lineup_front",
+   "node": "2503:4491",
+   "source": "heroes/keys_parts_lineup_front.png",
+   "flat": "heroes/slots/KeyParts_Lineup_front.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2503:4492"
+  },
+  {
+   "slide": "DW08",
+   "slot": "img:Kit_WindowFrame_Wood_persp",
+   "node": "2503:4502",
+   "source": "heroes/window_W-L0_face_a.png",
+   "flat": "heroes/slots/Kit_WindowFrame_Wood_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (Blender look-dev)"
+  },
+  {
+   "slide": "DW08",
+   "slot": "img:Kit_WindowFrame_Steel_persp",
+   "node": "2503:4505",
+   "source": "heroes/window_W-OF_face_a.png",
+   "flat": "heroes/slots/Kit_WindowFrame_Steel_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (Blender look-dev)"
+  },
+  {
+   "slide": "DW08",
+   "slot": "img:Kit_WindowFrame_Steel_Enamel_persp",
+   "node": "2503:4508",
+   "source": "heroes/window_W-RN_face_a.png",
+   "flat": "heroes/slots/Kit_WindowFrame_Steel_Enamel_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2503:4509"
+  },
+  {
+   "slide": "DW08",
+   "slot": "img:Kit_WindowFrame_Alu_persp",
+   "node": "2503:4512",
+   "source": "heroes/window_W-EX_face_a.png",
+   "flat": "heroes/slots/Kit_WindowFrame_Alu_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (Blender look-dev)"
+  },
+  {
+   "slide": "DW08",
+   "slot": "img:Kit_MiniBlind_Raised_persp",
+   "node": "2503:4526",
+   "source": "png/Kit_MiniBlind_Raised_persp.png",
+   "flat": "heroes/slots/Kit_MiniBlind_Raised_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "fills PHASE 2 placeholder; delete text 2503:4527"
+  },
+  {
+   "slide": "DW12",
+   "slot": "img:Kit_ExitSign_persp",
+   "node": "2534:5912",
+   "source": "png/Kit_ExitSign_persp.png",
+   "flat": "heroes/slots/Kit_ExitSign_persp.png",
+   "slotPx": [
+    426,
+    317
+   ],
+   "action": "replaces WIP; HOLD if the exit-sign workflow has re-modelled Kit_ExitSign since (it is running)"
+  }
+ ]
 }

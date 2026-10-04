@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Window landing r5 frames -> JPG (q85). before = proj_win kitoff (the map's look before the kit: trims + 30 mm pane cube),
+after = proj_win kit (main + contract r5 R1 R2 T + facade r5 + importer LOD fix + Prop_Putty). One BEFORE|AFTER pair per camera,
+the single AFTER frame for the hero views, the shadow diagnosis sheet, the putty crop and the Play frames."""
+import os, shutil, sys
+from PIL import Image, ImageDraw, ImageFont, ImageStat
+S = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad"
+BASE = S + "/proj_win/Verification/window_tf4/frames_kitoff"
+KIT = S + "/proj_win/Verification/window_tf4/frames_kit"
+PLAY = S + "/proj_win/Verification/window_play3"
+DOC = sys.argv[1]
+font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Courier New Bold.ttf", 26)
+lum = lambda im: ImageStat.Stat(im.convert("L")).mean[0]
+HERO_SINGLE = {"L0_A_front_1.5m", "L0_B_front_1.5m", "OF_A_front_1.5m", "OF_B_front_1.5m", "L0_A_close_stop_0.3m_insp", "OF_B_close_head_0.3m"}
+names = sorted(n for n in set(os.listdir(BASE)) | set(os.listdir(KIT)) if n.endswith(".png"))
+for n in names:
+    stem = n[:-4]
+    ib = Image.open(os.path.join(BASE, n)).convert("RGB") if os.path.exists(os.path.join(BASE, n)) else None
+    ik = Image.open(os.path.join(KIT, n)).convert("RGB") if os.path.exists(os.path.join(KIT, n)) else None
+    if ik and (stem in HERO_SINGLE or ib is None): ik.save(os.path.join(DOC, f"r5_{stem}_after.jpg"), quality=85)
+    if ib and ik:
+        w, h = 960, 540
+        sheet = Image.new("RGB", (w * 2 + 8, h), (20, 20, 18))
+        sheet.paste(ib.resize((w, h), Image.LANCZOS), (0, 0)); sheet.paste(ik.resize((w, h), Image.LANCZOS), (w + 8, 0))
+        d = ImageDraw.Draw(sheet)
+        for x, t in ((12, "BEFORE"), (w + 20, "AFTER")):
+            d.rectangle([x - 6, 8, x + 16 * len(t) + 8, 44], fill=(0, 0, 0)); d.text((x, 12), t, fill=(235, 235, 225), font=font)
+        sheet.save(os.path.join(DOC, f"r5_{stem}_pair.jpg"), quality=85)
+    print(f"{stem:44s} luma before {lum(ib) if ib else -1:6.1f}  after {lum(ik) if ik else -1:6.1f}")
+for n in sorted(os.listdir(PLAY)):
+    if n.endswith(".png"):
+        Image.open(os.path.join(PLAY, n)).convert("RGB").save(os.path.join(DOC, "r5_play_" + n[:-4] + ".jpg"), quality=85)
+shutil.copy(S + "/win_r5/diag/OF_B_head_shadow_diag_sheet.png", os.path.join(DOC, "r5_OF_B_close_head_0.3m_shadow_diag_sheet.png"))
+Image.open(S + "/win_r5/diag/putty_pair_crop.png").convert("RGB").save(os.path.join(DOC, "r5_L0_A_close_stop_0.3m_insp_rubber_vs_putty.jpg"), quality=88)
+print(len(names), "cameras")

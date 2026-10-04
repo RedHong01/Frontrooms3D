@@ -1,0 +1,32 @@
+--- a/Assets/Editor/Rendering/FrontRoomsKitImporter.cs
++++ b/Assets/Editor/Rendering/FrontRoomsKitImporter.cs
+@@ -11,6 +11,9 @@
+ /// </summary>
+ sealed class FrontRoomsKitImporter : AssetPostprocessor
+ {
++    // 2: the last LOD level takes the sidecar's cull distance (window landing r4). A new version re-imports the kits.
++    public override uint GetVersion() => 2;
++
+     const string Folder = "Assets/Resources/Props/Models/";
+     const string CreatureFolder = "Assets/Resources/Creatures/";
+     const string SurfaceFolder = "Assets/Resources/Surfaces/";
+@@ -78,12 +81,16 @@
+             // Sidecars use metres at the reference vertical FOV (76 degrees):
+             // screenHeight = size / (2 d tan(38 degrees)). Zero means no cull.
+             var tanHalfFov = Mathf.Tan(38f * Mathf.Deg2Rad);
+-            for (var i = 0; i < lods.Length; i++)
++            var last = lods.Length - 1;
++            for (var i = 0; i <= last; i++)
+             {
+-                var distance = authored.lodDistances[i];
++                // The sidecar lists (d01, d12, dcull). The LAST level's height is the cull, so it takes the sidecar's
++                // last entry (dcull; -1, 0 or null = never), also when the FBX has fewer levels than the sidecar lists
++                // (LOD2 is not exported until P-1). Reading index i there culled every LOD0/LOD1 kit at d12 (12 m).
++                var distance = i == last ? authored.lodDistances[authored.lodDistances.Length - 1] : authored.lodDistances[i];
+                 lods[i].screenRelativeTransitionHeight = distance > 0f
+                     ? group.size / (2f * distance * tanHalfFov)
+-                    : i == lods.Length - 1 ? 0f : lods[i].screenRelativeTransitionHeight;
++                    : i == last ? 0f : lods[i].screenRelativeTransitionHeight;
+             }
+             group.SetLODs(lods);
+             group.fadeMode = LODFadeMode.None;

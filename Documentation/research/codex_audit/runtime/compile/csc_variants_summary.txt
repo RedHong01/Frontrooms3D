@@ -1,0 +1,6 @@
+Assembly-CSharp editor_mac: exit 0 · 0 errors · 0 warnings
+Assembly-CSharp editor_win: exit 0 · 0 errors · 0 warnings
+Assembly-CSharp player_mac: exit 0 · 0 errors · 0 warnings
+Assembly-CSharp player_webgl: exit 0 · 0 errors · 0 warnings
+Assembly-CSharp-Editor editor_mac: exit 0 · 0 errors · 0 warnings
+Assembly-CSharp-Editor editor_win: exit 0 · 0 errors · 0 warnings

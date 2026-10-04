@@ -1,0 +1,16 @@
+{
+    "verdict": "PASS: 9 passed, 0 failed",
+    "passed": 9,
+    "failed": 0,
+    "checks": [
+        "ok   off: a posted caption does not show",
+        "ok   three lines at most, the oldest dropped ([B],[C],[D])",
+        "ok   the same text refreshes its line, moves it to the bottom and takes the new place ([C],[D],[B], 1.00 s left)",
+        "ok   a line fades over its last 0.3 s (0.33 with 0.1 s left), a fresh one is opaque",
+        "ok   lines expire when their time is up ([B])",
+        "ok   direction from the player's view: ahead, left, right, behind, none within 1.5 m",
+        "ok   the direction follows where the player looks (+Z is LEFT when facing +X: LEFT)",
+        "ok   drawn with the direction inside the brackets ([DOOR BLOWS  ·  LEFT]); no place, no direction",
+        "ok   turning captions off clears the lines"
+    ]
+}

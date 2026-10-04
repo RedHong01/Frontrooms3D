@@ -1,0 +1,159 @@
+variant kit · patched (r4) True · trims skipped (T) False · facade True · started 06:41:49 · 6:41  up 30 days, 10:49, 1 user, load averages: 215.29 137.91 76.51
+pane prompt reach (FrontRoomsShotTimings.GlassBreak.Reach) 1.20 m; game ray reach 2.4 m; near-plane half-diagonal 0.0956 m
+window kit DressWindow found (kit on)
+game constants: ClimbSeconds 0.6, ClimbLift 0.35, ClimbDuck 0.55, Reach 2.4; GlassBreak.Reach 1.20
+seed 20261001: 11 windows (W-L0 11, W-OF 0; on chunk borders 0, inside chunks 11), 25 chunks
+per window W-L0: renderers 1 submeshes 2 shadowRenderers 1 shadowSubmeshes 2 transparent 0 lights 0 tris 2322 lod1Renderers 1 lod1Tris 1044
+seed 20261001: LOD0 tris per room (dressing + frames): max Office 60646 / 120000, max other 11610 / 60000, rooms over budget 0; frames counted on both sides: max Office 60646, max other 20898, over 0; most frame tris in one room: (1, -2)/-: dressing 0 + 5 frames 11610 = 11610
+envelope W-L0 (kit): |X| <= 0.8000, Y 0.2485 .. 2.0765, |Z| <= 0.1210; meshes Kit_WindowFrame_Wood_LOD0, Kit_WindowFrame_Wood_LOD1
+seed 20261001: before the break, E rays hitting the pane first 792 (within the 1.2 m prompt reach 308), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 352, visible 0
+seed 20261001: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 20261001: after the break, opening clear (default layer) 11/11, (all layers) 11/11; climb corridor clear 11/11; Relay sight lines open 352, blocked by other things 0; climbs started 198/198, min eye-to-frame clearance 0.244 m
+seed 20261001: rebuilt after the break: panes back 0, roots + frames back 11, opening clear 11/11
+seed 20261001: revisit shift of 3 chunks: broken windows still windows 8 (ok 8; border 0, interior 8), gone to another edge kind 3 (clean 3; interior 3), new windows 4 (intact + framed 4)
+seed 20261001: determinism, second world: 25/25 chunk signatures identical
+seed 516574485: 38 windows (W-L0 31, W-OF 7; on chunk borders 4, inside chunks 34), 25 chunks
+per window W-OF: renderers 1 submeshes 2 shadowRenderers 1 shadowSubmeshes 2 transparent 0 lights 0 tris 3862 lod1Renderers 1 lod1Tris 1438
+seed 516574485: LOD0 tris per room (dressing + frames): max Office 15448 / 120000, max other 37632 / 60000, rooms over budget 0; frames counted on both sides: max Office 27034, max other 37632, over 0; most frame tris in one room: (2, 1)/-: dressing 0 + 7 frames 19334 = 19334
+envelope W-OF (kit): |X| <= 0.7750, Y 0.2750 .. 2.0750, |Z| <= 0.1050; meshes Kit_WindowFrame_Steel_LOD0, Kit_WindowFrame_Steel_LOD1
+seed 516574485: before the break, E rays hitting the pane first 2736 (within the 1.2 m prompt reach 1064), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1216, visible 0
+seed 516574485: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 516574485: after the break, opening clear (default layer) 38/38, (all layers) 38/38; climb corridor clear 38/38; Relay sight lines open 1216, blocked by other things 0; climbs started 684/684, min eye-to-frame clearance 0.244 m
+seed 516574485: rebuilt after the break: panes back 0, roots + frames back 38, opening clear 38/38
+seed 516574485: revisit shift of 7 chunks: broken windows still windows 26 (ok 26; border 4, interior 22), gone to another edge kind 12 (clean 12; interior 12), new windows 13 (intact + framed 13)
+seed 516574485: determinism, second world: 25/25 chunk signatures identical
+seed 4242: 69 windows (W-L0 63, W-OF 6; on chunk borders 6, inside chunks 63), 25 chunks
+seed 4242: LOD0 tris per room (dressing + frames): max Office 54140 / 120000, max other 46712 / 60000, rooms over budget 0; frames counted on both sides: max Office 54140, max other 46712, over 0; most frame tris in one room: (1, 2)/-: dressing 0 + 5 frames 14690 = 14690
+seed 4242: before the break, E rays hitting the pane first 4968 (within the 1.2 m prompt reach 1932), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 2208, visible 0
+seed 4242: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 4242: after the break, opening clear (default layer) 69/69, (all layers) 69/69; climb corridor clear 69/69; Relay sight lines open 2208, blocked by other things 0; climbs started 1242/1242, min eye-to-frame clearance 0.244 m
+seed 4242: rebuilt after the break: panes back 0, roots + frames back 69, opening clear 69/69
+seed 4242: revisit shift of 15 chunks: broken windows still windows 43 (ok 43; border 6, interior 37), gone to another edge kind 26 (clean 26; interior 26), new windows 23 (intact + framed 23)
+seed 4242: determinism, second world: 25/25 chunk signatures identical
+seed 1990: 21 windows (W-L0 21, W-OF 0; on chunk borders 3, inside chunks 18), 25 chunks
+seed 1990: LOD0 tris per room (dressing + frames): max Office 54620 / 120000, max other 16254 / 60000, rooms over budget 0; frames counted on both sides: max Office 54620, max other 39474, over 0; most frame tris in one room: (2, -1)/0: dressing 0 + 7 frames 16254 = 16254
+seed 1990: before the break, E rays hitting the pane first 1512 (within the 1.2 m prompt reach 588), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 672, visible 0
+seed 1990: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 1990: after the break, opening clear (default layer) 21/21, (all layers) 21/21; climb corridor clear 21/21; Relay sight lines open 672, blocked by other things 0; climbs started 378/378, min eye-to-frame clearance 0.244 m
+seed 1990: rebuilt after the break: panes back 0, roots + frames back 21, opening clear 21/21
+seed 1990: revisit shift of 2 chunks: broken windows still windows 14 (ok 14; border 3, interior 11), gone to another edge kind 7 (clean 7; interior 7), new windows 5 (intact + framed 5)
+seed 1990: determinism, second world: 25/25 chunk signatures identical
+seed 7: 21 windows (W-L0 15, W-OF 6; on chunk borders 2, inside chunks 19), 25 chunks
+seed 7: LOD0 tris per room (dressing + frames): max Office 59410 / 120000, max other 9288 / 60000, rooms over budget 0; frames counted on both sides: max Office 59410, max other 20898, over 0; most frame tris in one room: (-1, 1)/- (Office): dressing 0 + 6 frames 17012 = 17012
+seed 7: before the break, E rays hitting the pane first 1512 (within the 1.2 m prompt reach 588), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 672, visible 0
+seed 7: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 7: after the break, opening clear (default layer) 21/21, (all layers) 21/21; climb corridor clear 21/21; Relay sight lines open 672, blocked by other things 0; climbs started 378/378, min eye-to-frame clearance 0.244 m
+seed 7: rebuilt after the break: panes back 0, roots + frames back 21, opening clear 21/21
+seed 7: revisit shift of 3 chunks: broken windows still windows 14 (ok 14; border 2, interior 12), gone to another edge kind 7 (clean 7; interior 7), new windows 4 (intact + framed 4)
+seed 7: determinism, second world: 25/25 chunk signatures identical
+seed 1955: 42 windows (W-L0 42, W-OF 0; on chunk borders 6, inside chunks 36), 25 chunks
+seed 1955: LOD0 tris per room (dressing + frames): max Office 13942 / 120000, max other 18576 / 60000, rooms over budget 0; frames counted on both sides: max Office 13942, max other 39474, over 0; most frame tris in one room: (-1, 0)/-: dressing 0 + 8 frames 18576 = 18576
+seed 1955: before the break, E rays hitting the pane first 3024 (within the 1.2 m prompt reach 1176), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1344, visible 0
+seed 1955: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 1955: after the break, opening clear (default layer) 42/42, (all layers) 42/42; climb corridor clear 42/42; Relay sight lines open 1344, blocked by other things 0; climbs started 756/756, min eye-to-frame clearance 0.244 m
+seed 1955: rebuilt after the break: panes back 0, roots + frames back 42, opening clear 42/42
+seed 1955: revisit shift of 8 chunks: broken windows still windows 33 (ok 33; border 6, interior 27), gone to another edge kind 9 (clean 9; interior 9), new windows 19 (intact + framed 19)
+seed 1955: determinism, second world: 25/25 chunk signatures identical
+seed 1993: 54 windows (W-L0 39, W-OF 15; on chunk borders 4, inside chunks 50), 25 chunks
+seed 1993: LOD0 tris per room (dressing + frames): max Office 60206 / 120000, max other 23196 / 60000, rooms over budget 0; frames counted on both sides: max Office 60206, max other 46392, over 0; most frame tris in one room: (-2, 1)/-: dressing 0 + 8 frames 23196 = 23196
+seed 1993: before the break, E rays hitting the pane first 3888 (within the 1.2 m prompt reach 1512), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1728, visible 0
+seed 1993: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 1993: after the break, opening clear (default layer) 54/54, (all layers) 54/54; climb corridor clear 54/54; Relay sight lines open 1728, blocked by other things 0; climbs started 972/972, min eye-to-frame clearance 0.244 m
+seed 1993: rebuilt after the break: panes back 0, roots + frames back 54, opening clear 54/54
+seed 1993: revisit shift of 8 chunks: broken windows still windows 37 (ok 37; border 4, interior 33), gone to another edge kind 17 (clean 17; interior 17), new windows 17 (intact + framed 17)
+seed 1993: determinism, second world: 25/25 chunk signatures identical
+seed 8086: 86 windows (W-L0 81, W-OF 5; on chunk borders 12, inside chunks 74), 25 chunks
+seed 8086: LOD0 tris per room (dressing + frames): max Office 13150 / 120000, max other 20898 / 60000, rooms over budget 0; frames counted on both sides: max Office 26300, max other 37886, over 0; most frame tris in one room: (1, -2)/-: dressing 0 + 9 frames 20898 = 20898
+seed 8086: before the break, E rays hitting the pane first 6192 (within the 1.2 m prompt reach 2408), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 2752, visible 0
+seed 8086: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 8086: after the break, opening clear (default layer) 86/86, (all layers) 86/86; climb corridor clear 86/86; Relay sight lines open 2752, blocked by other things 0; climbs started 1548/1548, min eye-to-frame clearance 0.244 m
+seed 8086: rebuilt after the break: panes back 0, roots + frames back 86, opening clear 86/86
+seed 8086: revisit shift of 14 chunks: broken windows still windows 56 (ok 56; border 12, interior 44), gone to another edge kind 30 (clean 30; interior 30), new windows 26 (intact + framed 26)
+seed 8086: determinism, second world: 25/25 chunk signatures identical
+seed 6502: 15 windows (W-L0 9, W-OF 6; on chunk borders 2, inside chunks 13), 25 chunks
+seed 6502: LOD0 tris per room (dressing + frames): max Office 85556 / 120000, max other 19310 / 60000, rooms over budget 0; frames counted on both sides: max Office 85556, max other 47126, over 0; most frame tris in one room: (-2, 2)/0: dressing 0 + 5 frames 19310 = 19310
+seed 6502: before the break, E rays hitting the pane first 1080 (within the 1.2 m prompt reach 420), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 480, visible 0
+seed 6502: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 6502: after the break, opening clear (default layer) 15/15, (all layers) 15/15; climb corridor clear 15/15; Relay sight lines open 480, blocked by other things 0; climbs started 270/270, min eye-to-frame clearance 0.244 m
+seed 6502: rebuilt after the break: panes back 0, roots + frames back 15, opening clear 15/15
+seed 6502: revisit shift of 2 chunks: broken windows still windows 9 (ok 9; border 2, interior 7), gone to another edge kind 6 (clean 6; interior 6), new windows 4 (intact + framed 4)
+seed 6502: determinism, second world: 25/25 chunk signatures identical
+seed 68000: 54 windows (W-L0 54, W-OF 0; on chunk borders 6, inside chunks 48), 25 chunks
+seed 68000: LOD0 tris per room (dressing + frames): max Office 0 / 120000, max other 13932 / 60000, rooms over budget 0; frames counted on both sides: max Office 0, max other 32508, over 0; most frame tris in one room: (-2, 0)/0: dressing 0 + 6 frames 13932 = 13932
+seed 68000: before the break, E rays hitting the pane first 3888 (within the 1.2 m prompt reach 1512), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1728, visible 0
+seed 68000: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 68000: after the break, opening clear (default layer) 54/54, (all layers) 54/54; climb corridor clear 54/54; Relay sight lines open 1728, blocked by other things 0; climbs started 972/972, min eye-to-frame clearance 0.244 m
+seed 68000: rebuilt after the break: panes back 0, roots + frames back 54, opening clear 54/54
+seed 68000: revisit shift of 12 chunks: broken windows still windows 43 (ok 43; border 6, interior 37), gone to another edge kind 11 (clean 11; interior 11), new windows 20 (intact + framed 20)
+seed 68000: determinism, second world: 25/25 chunk signatures identical
+windows checked: 411 (W-L0 366, W-OF 45; on chunk borders 45, inside chunks 366) in 10 seeds
+timing (edit mode, batch; machine load in the header/footer lines):
+seed 20261001: 11 windows, BuildForCapture 331 ms
+seed 516574485: 38 windows, BuildForCapture 256 ms
+seed 4242: 69 windows, BuildForCapture 622 ms
+seed 1990: 21 windows, BuildForCapture 404 ms
+seed 7: 21 windows, BuildForCapture 412 ms
+seed 1955: 42 windows, BuildForCapture 428 ms
+seed 1993: 54 windows, BuildForCapture 426 ms
+seed 8086: 86 windows, BuildForCapture 392 ms
+seed 6502: 15 windows, BuildForCapture 448 ms
+seed 68000: 54 windows, BuildForCapture 286 ms
+
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+window kit DressWindow found -> disabled (kit off)
+window kit DressWindow found (kit on)
+bench (load 6:42  up 30 days, 10:50, 1 user, load averages: 180.46 138.81 79.96):
+W-L0 frame only (broken window): median 0.023 ms, p90 0.025 ms per DressWindow (40 calls)
+W-L0 frame + interim slab: median 0.054 ms, p90 0.056 ms per DressWindow (40 calls)
+W-OF frame only (broken window): median 0.021 ms, p90 0.023 ms per DressWindow (40 calls)
+W-OF frame + interim slab: median 0.053 ms, p90 0.055 ms per DressWindow (40 calls)
+chunk (0, 2) (9 windows): Build median 7.96 ms today, 8.24 ms with frames
+chunk (0, 1) (8 windows): Build median 9.47 ms today, 9.97 ms with frames
+chunk (0, 0) (7 windows): Build median 7.82 ms today, 8.47 ms with frames
+
+suite FrontRoomsMapVerification.RunBatch: no exception · 7.9 s · report map-verification-latest.json · 6:42  up 30 days, 10:50, 1 user, load averages: 179.06 139.21 80.44
+suite FrontRoomsRelayNavTest.RunBatch: no exception · 1.2 s · report relay-nav-test.json · 6:42  up 30 days, 10:50, 1 user, load averages: 178.33 139.72 80.97
+suite FrontRoomsMapInteractionTests.RunBatch: no exception · 15.5 s · report map-interaction-tests.json · 6:42  up 30 days, 10:50, 1 user, load averages: 168.44 139.57 81.95
+suite FrontRoomsGlassShotTests.RunBatch: no exception · 0.0 s · report glass-shot-tests.json · 6:42  up 30 days, 10:50, 1 user, load averages: 168.44 139.57 81.95
+suite FrontRoomsLevelDesignerTests.RunBatch: no exception · 9.4 s · report level-designer-tests.json · 6:43  up 30 days, 10:50, 1 user, load averages: 173.80 141.67 83.37
+suite FrontRoomsFixtureTickTests.RunBatch: no exception · 3.8 s · report fixture-tick-tests.json · 6:43  up 30 days, 10:50, 1 user, load averages: 173.80 141.67 83.37
+suite FrontRoomsCameraRigTests.RunBatch: no exception · 0.0 s · report camera-rig-tests.json · 6:43  up 30 days, 10:50, 1 user, load averages: 173.80 141.67 83.37
+suite FrontRoomsCaptionsTests.RunBatch: no exception · 0.0 s · report captions-tests.json · 6:43  up 30 days, 10:50, 1 user, load averages: 173.80 141.67 83.37
+VERDICT kit PASS: 20412 passed, 0 failed
+ended 06:43:09 · 6:43  up 30 days, 10:50, 1 user, load averages: 173.80 141.67 83.37

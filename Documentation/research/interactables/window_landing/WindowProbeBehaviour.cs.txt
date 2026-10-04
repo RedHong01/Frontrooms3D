@@ -1,0 +1,45 @@
+// WINDOW LANDING · autopilot probe behaviour (private clone only; never promoted). See FrontRoomsWindowAutopilotProbe.cs.
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+
+public sealed class WindowProbeBehaviour : MonoBehaviour
+{
+    public string tag_ = "run";
+    FrontRoomsMapWorld map;
+    readonly StringBuilder sb = new StringBuilder();
+    readonly List<(int frame, float t, float ms, string work)> rows = new List<(int, float, float, string)>();
+    float lastWrite;
+
+    void LateUpdate()
+    {
+        if (map == null) map = FindFirstObjectByType<FrontRoomsMapWorld>();
+        var work = map != null ? map.WorkInFrame(Time.frameCount) : "";
+        rows.Add((Time.frameCount, Time.realtimeSinceStartup, Time.unscaledDeltaTime * 1000f, work));
+        if (Time.realtimeSinceStartup - lastWrite > 2f) { lastWrite = Time.realtimeSinceStartup; Write(); }
+    }
+
+    void OnDisable() => Write();
+
+    void Write()
+    {
+        try
+        {
+            var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "window_autopilot");
+            Directory.CreateDirectory(dir);
+            sb.Clear();
+            var frames = map != null ? map.GetComponentsInChildren<Transform>(true).Count(t => t.name == "Window frame (kit)") : -1;
+            var windows = map != null ? map.GetComponentsInChildren<Transform>(true).Count(t => t.name.StartsWith("Window (") || (t.name.StartsWith("Window ") && !t.name.StartsWith("Window pane") && !t.name.StartsWith("Window frame") && !t.name.StartsWith("Window glass"))) : -1;
+            sb.AppendLine("tag " + tag_ + " · frames " + rows.Count + " · window roots now " + windows + " · kit frames now " + frames + " · " + DateTime.Now.ToString("HH:mm:ss"));
+            foreach (var r in rows)
+                if (r.work.Length > 0 || r.ms > 33f)
+                    sb.AppendLine(r.frame + "\t" + r.t.ToString("0.000", CultureInfo.InvariantCulture) + "\t" + r.ms.ToString("0.0", CultureInfo.InvariantCulture) + "\t" + r.work);
+            File.WriteAllText(Path.Combine(dir, tag_ + "_work.txt"), sb.ToString());
+        }
+        catch (Exception e) { Debug.LogWarning("[WindowProbe] write failed: " + e.Message); }
+    }
+}

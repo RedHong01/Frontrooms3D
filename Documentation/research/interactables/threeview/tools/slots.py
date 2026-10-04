@@ -37,7 +37,13 @@ for slide, slot, node, rel, action, w, h in SLOTS:
         x0, y0, x1, y1 = 0, 0, W, H     # opaque scene: keep the framing
     aspect = w / h
     cw, ch = x1 - x0, y1 - y0
-    if cw / ch < aspect:
+    if a.min() >= 250:
+        # Opaque scene (the wall fills the frame): trim to the slot's aspect, centred, so no panel bars show.
+        if cw / ch > aspect:
+            t = cw - int(round(ch * aspect)); x0 += t // 2; x1 -= t - t // 2
+        else:
+            t = ch - int(round(cw / aspect)); y0 += t // 2; y1 -= t - t // 2
+    elif cw / ch < aspect:
         g = int(round(ch * aspect)) - cw; x0 -= g // 2; x1 += g - g // 2
     else:
         g = int(round(cw / aspect)) - ch; y0 -= g // 2; y1 += g - g // 2

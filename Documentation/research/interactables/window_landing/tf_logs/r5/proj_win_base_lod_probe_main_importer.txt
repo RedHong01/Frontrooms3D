@@ -1,0 +1,6 @@
+importer FrontRoomsKitImporter.GetVersion 0 · kit FBX force-reimported now · 23:14:04 · 23:14  up 30 days,  3:21, 1 user, load averages: 834.59 873.00 878.84
+Kit_WindowFrame_Wood: size 1.828 m; heights 0.2925 / 0.0975; High (lodBias 1.0): LOD0->1 4.0 m / cull 12.0 m; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull 24.0 m
+Kit_WindowFrame_Steel: size 1.800 m; heights 0.2880 / 0.0960; High (lodBias 1.0): LOD0->1 4.0 m / cull 12.0 m; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull 24.0 m
+Kit_WindowFrame_Steel_Enamel: size 1.800 m; heights 0.2880 / 0.0960; High (lodBias 1.0): LOD0->1 4.0 m / cull 12.0 m; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull 24.0 m
+Kit_MiniBlind_Raised: size 1.550 m; heights 0.3307 / 0.0992; High (lodBias 1.0): LOD0->1 3.0 m / cull 10.0 m; Ultra (lodBias 2.0): LOD0->1 6.0 m / cull 20.0 m
+Kit_DoorFrame_Wood: size 2.175 m; heights 0.3480 / 0.1160; High (lodBias 1.0): LOD0->1 4.0 m / cull 12.0 m; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull 24.0 m

@@ -574,10 +574,10 @@ cd ../b6 && ./rt_bench6 <tag> A|B|G tripped|armed [HIGH=1]         # stack cost 
 
 ### 5.4 Verification log
 
-Logged in `Documentation/VERIFICATION_LOG.md` §3 and placed in the Figma section FRONTROOMS · VISUAL VERIFICATION LOG (slide ids in that index):
-- **VL082** · G14b · Run floor bench 4 · DONE — `11_run_floor_detail.jpg`, `11_run_floor_sheet.jpg`.
-- **VL083** · G14b · The Off cube on a waxed floor · FINDING — `11r1_compare_sheet.jpg`.
-- **VL084** · G14b · Ultra grain under motion · FINDING — `11r1_dolly_sheet.jpg`.
+Logged in `Documentation/VERIFICATION_LOG.md` §3 and placed on 2026-10-04 in the Figma section FRONTROOMS · VISUAL VERIFICATION LOG (`2595:6093`, grown to 22 rows):
+- **VL082** · G14b · Run floor bench 4 · DONE — slide `2626:6093` — `11_run_floor_detail.jpg`, `11_run_floor_sheet.jpg`.
+- **VL083** · G14b · The Off cube on a waxed floor · FINDING — slide `2626:6109` — `11r1_compare_sheet.jpg`.
+- **VL084** · G14b · Ultra grain under motion · FINDING — slide `2626:6118` — `11r1_dolly_sheet.jpg`.
 
 ---
 
@@ -635,7 +635,7 @@ Logged in `Documentation/VERIFICATION_LOG.md` §3 and placed in the Figma sectio
 | s2 | MSAA fringe with a 1× prepass | **Fixed.** Hook checks the 4 neighbours with a depth-gradient tolerance on a tag mismatch (§2.6.2); gate B14 |
 | s3 | Transmission term | **Fixed.** G14's `Fr = 0.08 + 0.92·F⁵` and `1 − (0.11 + 0.89·F⁵)` (`.metal:467-468`) used throughout §2.5 |
 | s4 | `lastGlass` vs facing rule | **Fixed.** `lastGlass` in each stack entry (28-bit field); facing rule first, `lastGlass` as the same-face guard; cabinet glass must be closed 6 mm boxes; map panes already are (`MapWorld.cs:1271`) (§2.5, §3.1) |
-| s5 | Bench-4 images missing from the verification log | **Fixed.** VL082 (bench 4), VL083, VL084 (revision images) added to the index (§5.4) |
+| s5 | Bench-4 images missing from the verification log | **Fixed.** VL082 (bench 4), VL083, VL084 (revision images) added to the index and placed in Figma (slides `2626:6093`, `2626:6109`, `2626:6118`; §5.4) |
 | s6 | "Ultra 3.0–3.7 MEASURED" included an interpolated figure; A_s* used the iso filter | **Fixed.** Every Ultra row is now measured with the design's mip blur (k 1 → 2) at load 8–9: 3 rays in S1 3.73 ms (§2.10). Bench 4's A_s* (iso filter) are no longer quoted for Ultra |
 | s7 | 128-ray reference probably firefly-limited | **Fixed.** See issue 3: 2048-ray reference, block-mean acceptance |
 | s8 | "Cheap now" asks must merge on top of main | **Fixed.** §2.13 is now a delta to main: `FRFrame` grows 496 → 528 B (no spare float4 today), `FRTraceReflection` keeps its layer loop and gains a reflection-only stack |

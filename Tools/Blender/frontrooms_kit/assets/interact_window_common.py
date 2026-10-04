@@ -43,11 +43,13 @@ grime, G = edge wear (paint or finish worn through), B = cavity grime.
 LOD1 (kitlib.make_lod1 collapses the joined mesh): an open seam between two
 pieces can open under the collapse and show the map trims, so (1) members
 that collapse weld what can be welded into one sweep (wood: casing A + liner
-+ casing B per side); (2) stops, liners, tape and beads are protected with
-lod_keep(); (3) sweep_side(pin=True) pins a piece's end rings and wall edges,
-used only where nothing unpinned would be starved (alu shell); (4) steel and
-the raised blind set a LOD1 ratio that needs no collapse at all. The scratch
-check runs (a)-(c) on LOD1 too.
++ casing B per side); (2) the wood stops are protected with lod_keep();
+(3) sweep_side(pin=True) can pin a piece's end rings and wall edges (no
+member uses it now: pinning starved the collapse); (4) steel and alu (pass 4)
+set a LOD1 ratio the collapse can reach by removing only the wear-station
+loops, which lie on the straight sweep and cost zero error (LOD1 within
+0.001 mm / 0.06 mm of LOD0); the raised blind needs no collapse at all. The
+scratch check runs (a)-(c) on LOD1 too.
 """
 
 import math

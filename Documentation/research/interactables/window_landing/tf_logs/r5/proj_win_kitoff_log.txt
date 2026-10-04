@@ -1,0 +1,170 @@
+variant kitoff · patched (r4) True · trims skipped (T) True · facade True · started 06:40:43 · 6:40  up 30 days, 10:48, 1 user, load averages: 213.31 118.25 65.18
+pane prompt reach (FrontRoomsShotTimings.GlassBreak.Reach) 1.20 m; game ray reach 2.4 m; near-plane half-diagonal 0.0956 m
+window kit DressWindow found -> disabled (kit off)
+game constants: ClimbSeconds 0.6, ClimbLift 0.35, ClimbDuck 0.55, Reach 2.4; GlassBreak.Reach 1.20
+seed 20261001: 11 windows (W-L0 11, W-OF 0; on chunk borders 0, inside chunks 11), 25 chunks
+seed 20261001: LOD0 tris per room (dressing): max Office 60646 / 120000, max other 9196 / 60000, rooms over budget 0
+seed 20261001: before the break, E rays hitting the pane first 792 (within the 1.2 m prompt reach 308), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 352, visible 0
+seed 20261001: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 20261001: after the break, opening clear (default layer) 11/11, (all layers) 11/11; climb corridor clear 11/11; Relay sight lines open 352, blocked by other things 0; climbs started 198/198, min eye-to-frame clearance 0.244 m
+seed 20261001: rebuilt after the break: panes back 0, roots back 11, opening clear 11/11
+seed 20261001: revisit shift of 3 chunks: broken windows still windows 8 (ok 8; border 0, interior 8), gone to another edge kind 3 (clean 3; interior 3), new windows 4 (intact 4)
+seed 20261001: determinism, second world: 25/25 chunk signatures identical
+seed 516574485: 38 windows (W-L0 31, W-OF 7; on chunk borders 4, inside chunks 34), 25 chunks
+seed 516574485: LOD0 tris per room (dressing): max Office 14730 / 120000, max other 37632 / 60000, rooms over budget 0
+seed 516574485: before the break, E rays hitting the pane first 2736 (within the 1.2 m prompt reach 1064), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1216, visible 0
+seed 516574485: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 516574485: after the break, opening clear (default layer) 38/38, (all layers) 38/38; climb corridor clear 38/38; Relay sight lines open 1216, blocked by other things 0; climbs started 684/684, min eye-to-frame clearance 0.244 m
+seed 516574485: rebuilt after the break: panes back 0, roots back 38, opening clear 38/38
+seed 516574485: revisit shift of 7 chunks: broken windows still windows 26 (ok 26; border 4, interior 22), gone to another edge kind 12 (clean 12; interior 12), new windows 13 (intact 13)
+seed 516574485: determinism, second world: 25/25 chunk signatures identical
+seed 4242: 69 windows (W-L0 63, W-OF 6; on chunk borders 6, inside chunks 63), 25 chunks
+seed 4242: LOD0 tris per room (dressing): max Office 54140 / 120000, max other 46712 / 60000, rooms over budget 0
+seed 4242: before the break, E rays hitting the pane first 4968 (within the 1.2 m prompt reach 1932), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 2208, visible 0
+seed 4242: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 4242: after the break, opening clear (default layer) 69/69, (all layers) 69/69; climb corridor clear 69/69; Relay sight lines open 2208, blocked by other things 0; climbs started 1242/1242, min eye-to-frame clearance 0.244 m
+seed 4242: rebuilt after the break: panes back 0, roots back 69, opening clear 69/69
+seed 4242: revisit shift of 15 chunks: broken windows still windows 43 (ok 43; border 6, interior 37), gone to another edge kind 26 (clean 26; interior 26), new windows 23 (intact 23)
+seed 4242: determinism, second world: 25/25 chunk signatures identical
+seed 1990: 21 windows (W-L0 21, W-OF 0; on chunk borders 3, inside chunks 18), 25 chunks
+seed 1990: LOD0 tris per room (dressing): max Office 54620 / 120000, max other 2658 / 60000, rooms over budget 0
+seed 1990: before the break, E rays hitting the pane first 1512 (within the 1.2 m prompt reach 588), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 672, visible 0
+seed 1990: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 1990: after the break, opening clear (default layer) 21/21, (all layers) 21/21; climb corridor clear 21/21; Relay sight lines open 672, blocked by other things 0; climbs started 378/378, min eye-to-frame clearance 0.244 m
+seed 1990: rebuilt after the break: panes back 0, roots back 21, opening clear 21/21
+seed 1990: revisit shift of 2 chunks: broken windows still windows 14 (ok 14; border 3, interior 11), gone to another edge kind 7 (clean 7; interior 7), new windows 5 (intact 5)
+seed 1990: determinism, second world: 25/25 chunk signatures identical
+seed 7: 21 windows (W-L0 15, W-OF 6; on chunk borders 2, inside chunks 19), 25 chunks
+seed 7: LOD0 tris per room (dressing): max Office 59410 / 120000, max other 9196 / 60000, rooms over budget 0
+seed 7: before the break, E rays hitting the pane first 1512 (within the 1.2 m prompt reach 588), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 672, visible 0
+seed 7: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 7: after the break, opening clear (default layer) 21/21, (all layers) 21/21; climb corridor clear 21/21; Relay sight lines open 672, blocked by other things 0; climbs started 378/378, min eye-to-frame clearance 0.244 m
+seed 7: rebuilt after the break: panes back 0, roots back 21, opening clear 21/21
+seed 7: revisit shift of 3 chunks: broken windows still windows 14 (ok 14; border 2, interior 12), gone to another edge kind 7 (clean 7; interior 7), new windows 4 (intact 4)
+seed 7: determinism, second world: 25/25 chunk signatures identical
+seed 1955: 42 windows (W-L0 42, W-OF 0; on chunk borders 6, inside chunks 36), 25 chunks
+seed 1955: LOD0 tris per room (dressing): max Office 13942 / 120000, max other 9196 / 60000, rooms over budget 0
+seed 1955: before the break, E rays hitting the pane first 3024 (within the 1.2 m prompt reach 1176), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1344, visible 0
+seed 1955: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 1955: after the break, opening clear (default layer) 42/42, (all layers) 42/42; climb corridor clear 42/42; Relay sight lines open 1344, blocked by other things 0; climbs started 756/756, min eye-to-frame clearance 0.244 m
+seed 1955: rebuilt after the break: panes back 0, roots back 42, opening clear 42/42
+seed 1955: revisit shift of 8 chunks: broken windows still windows 33 (ok 33; border 6, interior 27), gone to another edge kind 9 (clean 9; interior 9), new windows 19 (intact 19)
+seed 1955: determinism, second world: 25/25 chunk signatures identical
+seed 1993: 54 windows (W-L0 39, W-OF 15; on chunk borders 4, inside chunks 50), 25 chunks
+seed 1993: LOD0 tris per room (dressing): max Office 60206 / 120000, max other 2658 / 60000, rooms over budget 0
+seed 1993: before the break, E rays hitting the pane first 3888 (within the 1.2 m prompt reach 1512), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1728, visible 0
+seed 1993: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 1993: after the break, opening clear (default layer) 54/54, (all layers) 54/54; climb corridor clear 54/54; Relay sight lines open 1728, blocked by other things 0; climbs started 972/972, min eye-to-frame clearance 0.244 m
+seed 1993: rebuilt after the break: panes back 0, roots back 54, opening clear 54/54
+seed 1993: revisit shift of 8 chunks: broken windows still windows 37 (ok 37; border 4, interior 33), gone to another edge kind 17 (clean 17; interior 17), new windows 17 (intact 17)
+seed 1993: determinism, second world: 25/25 chunk signatures identical
+seed 8086: 86 windows (W-L0 81, W-OF 5; on chunk borders 12, inside chunks 74), 25 chunks
+seed 8086: LOD0 tris per room (dressing): max Office 3438 / 120000, max other 2658 / 60000, rooms over budget 0
+seed 8086: before the break, E rays hitting the pane first 6192 (within the 1.2 m prompt reach 2408), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 2752, visible 0
+seed 8086: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 8086: after the break, opening clear (default layer) 86/86, (all layers) 86/86; climb corridor clear 86/86; Relay sight lines open 2752, blocked by other things 0; climbs started 1548/1548, min eye-to-frame clearance 0.244 m
+seed 8086: rebuilt after the break: panes back 0, roots back 86, opening clear 86/86
+seed 8086: revisit shift of 14 chunks: broken windows still windows 56 (ok 56; border 12, interior 44), gone to another edge kind 30 (clean 30; interior 30), new windows 26 (intact 26)
+seed 8086: determinism, second world: 25/25 chunk signatures identical
+seed 6502: 15 windows (W-L0 9, W-OF 6; on chunk borders 2, inside chunks 13), 25 chunks
+seed 6502: LOD0 tris per room (dressing): max Office 85556 / 120000, max other 9196 / 60000, rooms over budget 0
+seed 6502: before the break, E rays hitting the pane first 1080 (within the 1.2 m prompt reach 420), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 480, visible 0
+seed 6502: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 6502: after the break, opening clear (default layer) 15/15, (all layers) 15/15; climb corridor clear 15/15; Relay sight lines open 480, blocked by other things 0; climbs started 270/270, min eye-to-frame clearance 0.244 m
+seed 6502: rebuilt after the break: panes back 0, roots back 15, opening clear 15/15
+seed 6502: revisit shift of 2 chunks: broken windows still windows 9 (ok 9; border 2, interior 7), gone to another edge kind 6 (clean 6; interior 6), new windows 4 (intact 4)
+seed 6502: determinism, second world: 25/25 chunk signatures identical
+seed 68000: 54 windows (W-L0 54, W-OF 0; on chunk borders 6, inside chunks 48), 25 chunks
+seed 68000: LOD0 tris per room (dressing): max Office 0 / 120000, max other 2658 / 60000, rooms over budget 0
+seed 68000: before the break, E rays hitting the pane first 3888 (within the 1.2 m prompt reach 1512), blocked before the window (furniture) 0; Relay sight lines blocked by the pane 1728, visible 0
+seed 68000: determinism, chunk rebuild: 25/25 chunk signatures identical
+seed 68000: after the break, opening clear (default layer) 54/54, (all layers) 54/54; climb corridor clear 54/54; Relay sight lines open 1728, blocked by other things 0; climbs started 972/972, min eye-to-frame clearance 0.244 m
+seed 68000: rebuilt after the break: panes back 0, roots back 54, opening clear 54/54
+seed 68000: revisit shift of 12 chunks: broken windows still windows 43 (ok 43; border 6, interior 37), gone to another edge kind 11 (clean 11; interior 11), new windows 20 (intact 20)
+seed 68000: determinism, second world: 25/25 chunk signatures identical
+windows checked: 411 (W-L0 366, W-OF 45; on chunk borders 45, inside chunks 366) in 10 seeds
+timing (edit mode, batch; machine load in the header/footer lines):
+seed 20261001: 11 windows, BuildForCapture 831 ms
+seed 516574485: 38 windows, BuildForCapture 818 ms
+seed 4242: 69 windows, BuildForCapture 542 ms
+seed 1990: 21 windows, BuildForCapture 522 ms
+seed 7: 21 windows, BuildForCapture 763 ms
+seed 1955: 42 windows, BuildForCapture 806 ms
+seed 1993: 54 windows, BuildForCapture 488 ms
+seed 8086: 86 windows, BuildForCapture 551 ms
+seed 6502: 15 windows, BuildForCapture 451 ms
+seed 68000: 54 windows, BuildForCapture 457 ms
+
+L0 hero: seed 4242 edge 21474836459 (2, -11)-(3, -11) room (2, -11) Steady / hall (3, -11) Steady · hall depth 11.92 m
+capture camera: FrontRoomsGlassRTCamera removed (RT off for captures)
+frame L0_A_front_1.5m.png · eye (4999.500, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (2 with shadows)
+frame L0_A_front_1.5m_insp.png · eye (4999.500, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (2 with shadows)
+frame L0_A_front_3m.png · eye (4998.000, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 10 lit within 6 m (2 with shadows)
+frame L0_A_45deg_2.4m.png · eye (4999.300, 1.620, 4962.200) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 10 lit within 6 m (2 with shadows)
+frame L0_B_front_1.5m.png · eye (5002.500, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (3 with shadows)
+frame L0_B_front_1.5m_insp.png · eye (5002.500, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (3 with shadows)
+frame L0_B_front_3m.png · eye (5004.000, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame L0_B_45deg_2.4m.png · eye (5002.700, 1.620, 4958.800) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 8 lit within 6 m (2 with shadows)
+frame L0_A_close_sill_0.3m.png · eye (5000.780, 0.640, 4960.100) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 8 lit within 6 m (2 with shadows)
+frame L0_A_close_sill_0.3m_insp.png · eye (5000.780, 0.640, 4960.100) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 8 lit within 6 m (2 with shadows)
+frame L0_A_close_horn_0.3m.png · eye (5000.680, 0.560, 4959.550) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 7 lit within 6 m (2 with shadows)
+frame L0_A_close_horn_0.3m_insp.png · eye (5000.680, 0.560, 4959.550) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 7 lit within 6 m (2 with shadows)
+frame L0_A_close_stop_0.3m.png · eye (5000.840, 1.250, 4960.070) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (2 with shadows)
+frame L0_A_close_stop_0.3m_insp.png · eye (5000.840, 1.250, 4960.070) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (2 with shadows)
+frame L0_B_close_sill_0.3m.png · eye (5001.220, 0.640, 4960.100) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 7 lit within 6 m (2 with shadows)
+frame L0_B_close_sill_0.3m_insp.png · eye (5001.220, 0.640, 4960.100) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 7 lit within 6 m (2 with shadows)
+frame L0_B_close_head_0.3m.png · eye (5001.220, 1.800, 4960.000) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 10 lit within 6 m (3 with shadows)
+frame L0_B_close_head_0.3m_insp.png · eye (5001.220, 1.800, 4960.000) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 10 lit within 6 m (3 with shadows)
+frame L0_hall_tall_5.0m.png · eye (5006.000, 1.620, 4959.900) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 8 lit within 6 m (5 with shadows)
+measure L0 A_front_3m: renderers 857 submeshes 861 tris 27693 transparent 20 shadowCasters 459 framesLOD0 0 framesLOD1 0 framesCulled 0
+measure L0 B_front_3m: renderers 789 submeshes 797 tris 27758 transparent 7 shadowCasters 435 framesLOD0 0 framesLOD1 0 framesCulled 0
+measure L0 hall_tall_5.0m: renderers 921 submeshes 929 tris 31754 transparent 9 shadowCasters 508 framesLOD0 0 framesLOD1 0 framesCulled 0
+frame L0_broken_A_front_1.5m.png · eye (4999.500, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (2 with shadows)
+frame L0_broken_A_45deg_2.4m.png · eye (4999.300, 1.620, 4962.200) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 10 lit within 6 m (2 with shadows)
+frame L0_broken_B_front_1.5m.png · eye (5002.500, 1.620, 4960.500) fov 76 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 9 lit within 6 m (3 with shadows)
+frame L0_broken_A_close_sill_0.3m.png · eye (5000.780, 0.640, 4960.100) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 8 lit within 6 m (2 with shadows)
+frame L0_broken_A_close_sill_0.3m_insp.png · eye (5000.780, 0.640, 4960.100) fov 50 · W-L0 edge 21474836459 (2, -11)-(3, -11) room (2, -11) · line of sight - · lamps 8 lit within 6 m (2 with shadows)
+L0 dead-lamp: seed 4242 edge 43 (0, 21)-(1, 21) room (0, 21) Dead / hall Steady
+frame L0_deadlamp_A_front_2m.png · eye (4993.000, 1.620, 5056.800) fov 76 · W-L0 edge 43 (0, 21)-(1, 21) room (0, 21) · line of sight - · lamps 9 lit within 6 m (2 with shadows)
+frame L0_deadlamp_B_45deg_2.1m.png · eye (4996.500, 1.620, 5055.000) fov 76 · W-L0 edge 43 (0, 21)-(1, 21) room (0, 21) · line of sight - · lamps 7 lit within 6 m (2 with shadows)
+OF hero: seed 1993 edge 90194313200 (10, -8)-(10, -7) room (10, -8) Steady / hall (10, -7) Steady · hall depth 12.00 m
+frame OF_A_front_1.5m.png · eye (5023.500, 1.620, 4969.500) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (4 with shadows)
+frame OF_A_front_1.5m_insp.png · eye (5023.500, 1.620, 4969.500) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (4 with shadows)
+frame OF_A_front_3m.png · eye (5023.500, 1.620, 4968.000) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (6 with shadows)
+frame OF_A_45deg_2.4m.png · eye (5021.800, 1.620, 4969.300) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 13 lit within 6 m (6 with shadows)
+frame OF_B_front_1.5m.png · eye (5023.500, 1.620, 4972.500) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (5 with shadows)
+frame OF_B_front_1.5m_insp.png · eye (5023.500, 1.620, 4972.500) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (5 with shadows)
+frame OF_B_front_3m.png · eye (5023.500, 1.620, 4974.000) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (5 with shadows)
+frame OF_B_45deg_2.4m.png · eye (5025.200, 1.620, 4972.700) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (5 with shadows)
+frame OF_A_close_sill_0.3m.png · eye (5023.900, 0.640, 4970.780) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_A_close_sill_0.3m_insp.png · eye (5023.900, 0.640, 4970.780) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_A_close_corner_0.3m.png · eye (5023.940, 0.660, 4970.700) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_A_close_corner_0.3m_insp.png · eye (5023.940, 0.660, 4970.700) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_A_close_screws_0.3m.png · eye (5023.930, 1.175, 4970.840) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (5 with shadows)
+frame OF_A_close_screws_0.3m_insp.png · eye (5023.930, 1.175, 4970.840) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (5 with shadows)
+frame OF_B_close_sill_0.3m.png · eye (5023.900, 0.640, 4971.220) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_B_close_sill_0.3m_insp.png · eye (5023.900, 0.640, 4971.220) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_B_close_head_0.3m.png · eye (5024.000, 1.800, 4971.220) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 11 lit within 6 m (5 with shadows)
+frame OF_B_close_head_0.3m_insp.png · eye (5024.000, 1.800, 4971.220) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 11 lit within 6 m (5 with shadows)
+frame OF_hall_tall_5.0m.png · eye (5024.100, 1.620, 4976.000) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+measure OF A_front_3m: renderers 1427 submeshes 1453 tris 51542 transparent 33 shadowCasters 796 framesLOD0 0 framesLOD1 0 framesCulled 0
+measure OF B_front_3m: renderers 357 submeshes 424 tris 30328 transparent 5 shadowCasters 214 framesLOD0 0 framesLOD1 0 framesCulled 0
+measure OF hall_tall_5.0m: renderers 411 submeshes 478 tris 31960 transparent 6 shadowCasters 238 framesLOD0 0 framesLOD1 0 framesCulled 0
+frame OF_broken_A_front_1.5m.png · eye (5023.500, 1.620, 4969.500) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (4 with shadows)
+frame OF_broken_A_45deg_2.4m.png · eye (5021.800, 1.620, 4969.300) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 13 lit within 6 m (6 with shadows)
+frame OF_broken_B_front_1.5m.png · eye (5023.500, 1.620, 4972.500) fov 76 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 10 lit within 6 m (5 with shadows)
+frame OF_broken_A_close_sill_0.3m.png · eye (5023.900, 0.640, 4970.780) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+frame OF_broken_A_close_sill_0.3m_insp.png · eye (5023.900, 0.640, 4970.780) fov 50 · W-OF edge 90194313200 (10, -8)-(10, -7) room (10, -8) · line of sight - · lamps 9 lit within 6 m (4 with shadows)
+OF dead-lamp: seed 101 edge -17179869179 (-2, 2)-(-1, 2) room (-2, 2) Dead / hall Steady
+frame OF_deadlamp_A_front_2m.png · eye (4987.000, 1.620, 4999.800) fov 76 · W-OF edge -17179869179 (-2, 2)-(-1, 2) room (-2, 2) · line of sight - · lamps 8 lit within 6 m (3 with shadows)
+frame OF_deadlamp_B_45deg_2.1m.png · eye (4990.500, 1.620, 4998.000) fov 76 · W-OF edge -17179869179 (-2, 2)-(-1, 2) room (-2, 2) · line of sight - · lamps 8 lit within 6 m (1 with shadows)
+suite FrontRoomsMapVerification.RunBatch: no exception · 8.1 s · report map-verification-latest.json · 6:43  up 30 days, 10:50, 1 user, load averages: 171.69 140.72 82.69
+suite FrontRoomsRelayNavTest.RunBatch: no exception · 1.1 s · report relay-nav-test.json · 6:43  up 30 days, 10:50, 1 user, load averages: 171.69 140.72 82.69
+suite FrontRoomsMapInteractionTests.RunBatch: no exception · 11.2 s · report map-interaction-tests.json · 6:43  up 30 days, 10:51, 1 user, load averages: 164.31 140.68 83.70
+suite FrontRoomsGlassShotTests.RunBatch: no exception · 0.0 s · report glass-shot-tests.json · 6:43  up 30 days, 10:51, 1 user, load averages: 164.31 140.68 83.70
+suite FrontRoomsLevelDesignerTests.RunBatch: no exception · 5.1 s · report level-designer-tests.json · 6:43  up 30 days, 10:51, 1 user, load averages: 166.20 141.47 84.31
+suite FrontRoomsFixtureTickTests.RunBatch: no exception · 4.7 s · report fixture-tick-tests.json · 6:43  up 30 days, 10:51, 1 user, load averages: 165.39 141.71 84.73
+suite FrontRoomsCameraRigTests.RunBatch: no exception · 0.0 s · report camera-rig-tests.json · 6:43  up 30 days, 10:51, 1 user, load averages: 165.39 141.71 84.73
+suite FrontRoomsCaptionsTests.RunBatch: no exception · 0.0 s · report captions-tests.json · 6:43  up 30 days, 10:51, 1 user, load averages: 165.39 141.71 84.73
+VERDICT kitoff PASS: 8913 passed, 0 failed
+ended 06:43:26 · 6:43  up 30 days, 10:51, 1 user, load averages: 165.39 141.71 84.73

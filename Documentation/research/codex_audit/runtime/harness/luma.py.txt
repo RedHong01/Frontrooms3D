@@ -1,0 +1,16 @@
+import sys,subprocess,struct,os,tempfile
+def luma(path):
+    tmp=tempfile.mktemp(suffix='.bmp')
+    subprocess.run(['sips','-s','format','bmp','-Z','400',path,'--out',tmp],capture_output=True)
+    b=open(tmp,'rb').read(); os.remove(tmp)
+    off=struct.unpack_from('<I',b,10)[0]; w,h=struct.unpack_from('<ii',b,18); bpp=struct.unpack_from('<H',b,28)[0]
+    h=abs(h); step=bpp//8; row=(w*step+3)&~3
+    tot=0;mx=0;n=0
+    for y in range(h):
+        base=off+y*row
+        for x in range(0,w*step,step):
+            bl,g,r=b[base+x],b[base+x+1],b[base+x+2]
+            l=0.2126*r+0.7152*g+0.0722*bl; tot+=l; mx=max(mx,l); n+=1
+    return tot/n,mx
+for p in sys.argv[1:]:
+    m,mx=luma(p); print(f"{p}\tmean {m:6.1f}\tmax {mx:5.0f}")

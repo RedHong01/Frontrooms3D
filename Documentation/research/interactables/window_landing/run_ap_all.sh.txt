@@ -1,0 +1,13 @@
+#!/bin/zsh
+SP=/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad
+C=proj_win
+for spec in "kit 2554" "off 2554" "kit 20388" "off 20388"; do
+  set -- ${=spec}; K=$1; S=$2; T=ap_${K}_$S
+  extra=(); [ $K = off ] && extra=(-windowKitOff)
+  rm -f $SP/$C/Verification/main-autopilot/report.json
+  $SP/win_r5/run_u.sh $C FrontRoomsMainScenePlaytest.RunBatch $T -autopilotSeed $S -windowProbeTag $T $extra
+  mkdir -p $SP/win_r5/autopilot/$T
+  cp $SP/$C/Verification/main-autopilot/report.json $SP/win_r5/autopilot/$T/ 2>/dev/null
+  cp $SP/$C/Verification/window_autopilot/${T}_work.txt $SP/win_r5/autopilot/$T/ 2>/dev/null
+done
+echo ALLDONE >> $SP/win_r5/logs/runs_load.txt

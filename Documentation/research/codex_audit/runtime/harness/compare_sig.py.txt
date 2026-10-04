@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Compare map signatures (FrontRoomsCxSuites) between the Codex clone and the pre-Codex base.
+Usage: compare_sig.py <cx Verification/cx_audit> <base Verification/cx_audit> <out.txt>"""
+import sys, os, collections, re
+
+cx, base, out = sys.argv[1], sys.argv[2], sys.argv[3]
+
+def load(d):
+    rows = {}
+    with open(os.path.join(d, 'map_signatures.tsv')) as f:
+        next(f)
+        for line in f:
+            seed, _, chunk, kind, count, h = line.rstrip('\n').split('\t')
+            rows[(seed, chunk, kind)] = (int(count), h)
+    return rows
+
+a, b = load(cx), load(base)
+lines = []
+seeds = sorted({k[0] for k in a} | {k[0] for k in b}, key=lambda s: int(s))
+tot = collections.Counter(); diff = collections.Counter(); onlya = onlyb = 0
+per_seed = []
+for s in seeds:
+    c = collections.Counter(); n = collections.Counter()
+    for kind in ('renderers', 'lights', 'colliders'):
+        keys = {k for k in a if k[0] == s and k[2] == kind} | {k for k in b if k[0] == s and k[2] == kind}
+        for k in keys:
+            n[kind] += 1; tot[kind] += 1
+            if k not in a or k not in b:
+                c[kind] += 1; diff[kind] += 1
+                if k not in a: onlyb += 1
+                else: onlya += 1
+            elif a[k][1] != b[k][1]:
+                c[kind] += 1; diff[kind] += 1
+    per_seed.append(f"seed {s}: chunks {n['renderers']} · differ: renderers {c['renderers']}, lights {c['lights']}, colliders {c['colliders']}")
+lines.append(f"TOTAL over {len(seeds)} seeds: renderers {diff['renderers']}/{tot['renderers']} chunks differ, lights {diff['lights']}/{tot['lights']}, colliders {diff['colliders']}/{tot['colliders']} (chunk only in cx {onlya}, only in base {onlyb})")
+lines += per_seed
+
+# detail: first seeds, line-level diff by category
+da, db = os.path.join(cx, 'sig_detail'), os.path.join(base, 'sig_detail')
+cat = collections.Counter(); examples = collections.defaultdict(list)
+def norm_name(p):
+    return re.sub(r'\d+', '#', p.split('|')[0])
+if os.path.isdir(da) and os.path.isdir(db):
+    for fn in sorted(set(os.listdir(da)) | set(os.listdir(db))):
+        la = set(open(os.path.join(da, fn)).read().splitlines()) if os.path.exists(os.path.join(da, fn)) else set()
+        lb = set(open(os.path.join(db, fn)).read().splitlines()) if os.path.exists(os.path.join(db, fn)) else set()
+        for x in sorted(la - lb):
+            k = 'cx+ ' + x[0] + ' ' + norm_name(x[2:])
+            cat[k] += 1
+            if len(examples[k]) < 2: examples[k].append(fn + ': ' + x[:300])
+        for x in sorted(lb - la):
+            k = 'base- ' + x[0] + ' ' + norm_name(x[2:])
+            cat[k] += 1
+            if len(examples[k]) < 2: examples[k].append(fn + ': ' + x[:300])
+    lines.append('')
+    lines.append('line-level differences in the first seeds (R renderer, L light, C collider; names with digits folded):')
+    for k, v in cat.most_common(60):
+        lines.append(f'  {v:6d}  {k}')
+        for e in examples[k]: lines.append('          e.g. ' + e)
+open(out, 'w').write('\n'.join(lines) + '\n')
+print('\n'.join(lines[:40]))

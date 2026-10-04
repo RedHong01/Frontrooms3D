@@ -1,0 +1,15 @@
+# codex-audit glass-look F1 (2026-10-04): proof only. The loop change below equals window-landing r4's
+# <scratchpad>/win_r4/FrontRoomsKitImporter.lodcull.diff, which ALSO adds 'GetVersion() => 2' so every machine re-imports the kits once.
+# Land r4's patch, not this one. Tested in clone proj_cx_glass: frames/doors never cull, blinds 30 m, control unchanged.
+--- FrontRoomsKitImporter.main.cs	2026-10-04 08:16:53
++++ proj_cx_glass/Assets/Editor/Rendering/FrontRoomsKitImporter.cs	2026-10-04 08:16:53
+@@ -80,7 +80,8 @@
+             var tanHalfFov = Mathf.Tan(38f * Mathf.Deg2Rad);
+             for (var i = 0; i < lods.Length; i++)
+             {
+-                var distance = authored.lodDistances[i];
++                // Sidecars hold [d01, d12, ..., dcull]: the last LOD present culls at dcull (LOD2 may not be exported yet).
++                var distance = i == lods.Length - 1 ? authored.lodDistances[authored.lodDistances.Length - 1] : authored.lodDistances[i];
+                 lods[i].screenRelativeTransitionHeight = distance > 0f
+                     ? group.size / (2f * distance * tanHalfFov)
+                     : i == lods.Length - 1 ? 0f : lods[i].screenRelativeTransitionHeight;

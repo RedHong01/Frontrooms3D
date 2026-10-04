@@ -278,7 +278,7 @@ for slide, slot, node, src, action, w, h in PROPOSAL_SLOTS:
 
 if os.path.isdir(heroes_dir):
     for f in sorted(os.listdir(heroes_dir)):
-        if not f.endswith(".png") or f.endswith("_alpha.png"): continue
+        if not f.endswith(".png") or f.endswith("_alpha.png") or icloud_copy(f): continue
         name = f[:-4]
         note = HERO_NOTES.get(name)
         if note is None and name.startswith("doorset_"):
@@ -306,8 +306,9 @@ index = dict(
     by="visual chat (游戏视觉), for 平面视觉's K-sheets",
     figma=dict(file="0tCbAiVUlrPId3RWd9LRif", page="2099:76", propKitSection="2324:852 (平面视觉, read-only for us)",
                proposalSection="2497:3804 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (ours)"),
-    source=dict(models="Assets/Resources/Props/Models in the real project (main %s). Codex copied the 62 kits from the private clone proj_int in commit 8ef5b64 (2026-10-03 19:10); every FBX and sidecar is byte-identical to proj_int except the 4 window frames' and 2 mini-blinds' sidecars, where main says placement \"Wall\" (proj_int: \"Floor\"); geometry is the same." % MAIN_HEAD,
-                renderClone="scratchpad/proj_3view_main = proj_audit + rsync of main's Assets/Packages/ProjectSettings (main %s, working tree), plus the two editor scripts kept here as .cs.txt" % MAIN_HEAD,
+    source=dict(models="55 kits = Assets/Resources/Props/Models in the real project (main %s), byte-identical to the build clone proj_int (Codex copied them in 8ef5b64, 2026-10-03 19:10). 7 kits = proj_int's verified finals, not in main yet (they replace Codex's copies at the interactables merge; main's .meta GUIDs kept): %s. Why: G3 pass 3 fixed the cabinet's inside-out corners (codex audit F5); G4 pass 3/4 rebuilt the windows (alu 2,066 tris without LOD1 and with wear, 1.1 mm steel screw slots, wall_decor tag, lodDistances 0.0 for never cull). Wood frame and blinds: same geometry as main." % (MAIN_HEAD, ", ".join(OVERLAY)),
+                overlay=OVERLAY,
+                renderClone="scratchpad/proj_3view_main = proj_audit + rsync of main's Assets/Packages/ProjectSettings (main %s, working tree), the 7 proj_int finals copied over main's FBX/JSON (metas kept), plus the two editor scripts kept here as .cs.txt" % MAIN_HEAD,
                 renderer="Tools/three_view/FrontRoomsThreeView.cs + the interactables patch (FrontRoomsThreeView.interactables.cs.txt here); heroes: FrontRoomsInteractableHeroes.cs.txt here",
                 manifest="png/manifest.json"),
     conventions=dict(
@@ -322,7 +323,7 @@ index = dict(
         eraAxis=dict(t0=1950, t1=2000, now=1990, band=[1985, 1993], chips=["Current stock", "Second-hand", "Timeless"]),
     ),
     counts=dict(kits=len(kits), sheets=len(sheets), newSheets=len([s for s in sheets if "existingSheet" not in s]),
-                pngs=len([f for f in os.listdir(ROOT + "/png") if f.endswith(".png")]), heroes=len(heroes),
+                pngs=len([f for f in os.listdir(ROOT + "/png") if f.endswith(".png") and not icloud_copy(f)]), heroes=len(heroes),
                 groupHeroes=len([h for h in heroes if h["groupHero"]]), proposalSlots=len(proposal_slots)),
     sheets=sheets,
     kits=kits,

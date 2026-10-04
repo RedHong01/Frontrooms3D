@@ -1,0 +1,526 @@
+// CODEX AUDIT · RUNTIME TRACK · PLAY RUN (private clones only; never copied into the real project).
+// Plays Assets/Scenes/FrontRooms3D.unity in batch Play Mode with graphics, on FrontRooms3DGame's own editor-only
+// autopilot (title → Space at 1.8 s → out of the stream room → breadth-first walks through the map, doors opened on
+// the way). On top of the autopilot this harness:
+//   - renders the game camera EVERY frame into a 1600x900 target (as the Game view would; in batch mode nothing
+//     renders by itself), so every URP pass and renderer feature (Forward+, G14 trace, glass) records every frame;
+//   - keeps going for -cxSeconds (default 120) seconds of map play: when the Relay catches the player it presses R
+//     the way the game does (static restart + LoadScene), which also tears the whole map down and builds a new one;
+//   - logs every warning / error / exception / assert with its stack (console.txt) and counts them by message;
+//   - samples once per map second: chunks built, chunk roots destroyed, G14 status, its chunk records and live
+//     instances, the camera's visible receivers and trace weight (stats.tsv);
+//   - saves a JPG of the game view every 20 s of map play and at the end.
+// Game time is fixed at 60 Hz (Time.captureDeltaTime), so a run is the same length whatever the machine load.
+// Args: -cxLabel name  -cxSeconds 120  -cxSeed 516574485 (0 = random)  -cxRelayDelay s (optional)
+//       plus the game's own: -frGlassRT off|high|ultra, -transitionsOff, -autopilotSpaceAt s.
+// Output: <clone>/Verification/cx_audit/play_<label>/
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+
+[InitializeOnLoad]
+public static class FrontRoomsCxPlayRun
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.CxPlay.Active";
+    const string DeadlineKey = "FrontRooms.CxPlay.Deadline";
+    const string DoneKey = "FrontRooms.CxPlay.Done";
+    const BindingFlags IF = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    const BindingFlags SF = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+    const int W = 1600, H = 900;
+
+    static string label, outDir;
+    static float targetSeconds = 120f, relayDelay = -1f, restartAt = -1f;
+    static bool forcedRestartDone;
+    static readonly StringBuilder console = new StringBuilder();
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder stats = new StringBuilder("map_s\tframe\tphase\tchunks_built\tcache_generated\tchunk_roots_destroyed\tglassrt_chunks\tglassrt_live\tglassrt_watch\tvisible_receivers\ttrace_weight\tlast_seq\trt_main_ms\trt_main_ms_max\trt_gpu_ms\trt_glass_px\trt_hit_px\trt_meshes\tstatus\n");
+    static readonly Dictionary<string, int> byMessage = new Dictionary<string, int>();
+    static readonly Dictionary<string, string> firstStack = new Dictionary<string, string>();
+    static readonly Dictionary<string, float> firstAt = new Dictionary<string, float>();
+    static int warnings, errors, exceptions, asserts;
+    static readonly object gate = new object();
+
+    static FrontRooms3DGame game;
+    static Camera cam;
+    static RenderTexture rt;
+    static int lastRenderedFrame = -1, framesRendered;
+    static float mapSeconds, nextSample, nextShot = 0.5f, caughtFor;
+    static int restarts, rootsDestroyed, shots, maxChunks;
+    static readonly HashSet<int> liveRoots = new HashSet<int>();
+    static bool finished, relayHeld, started;
+    static string phaseName = "-";
+    static int mainFrame, mainThreadId = -1;   // Time.frameCount read on the main thread (log callbacks also arrive on FMOD / job threads)
+
+    static FrontRoomsCxPlayRun()
+    {
+        if (!SessionState.GetBool(ActiveKey, false)) return;
+        ReadArgs();
+        Application.logMessageReceivedThreaded += OnLog;
+        EditorApplication.update += Tick;
+    }
+
+    static string Arg(string name)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return null;
+    }
+
+    static void ReadArgs()
+    {
+        label = Arg("-cxLabel") ?? "run";
+        if (float.TryParse(Arg("-cxSeconds"), NumberStyles.Float, CultureInfo.InvariantCulture, out var s)) targetSeconds = s;
+        if (float.TryParse(Arg("-cxRelayDelay"), NumberStyles.Float, CultureInfo.InvariantCulture, out var d)) relayDelay = d;
+        if (float.TryParse(Arg("-cxRestartAt"), NumberStyles.Float, CultureInfo.InvariantCulture, out var ra)) restartAt = ra;
+        outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "cx_audit", "play_" + label);
+        Directory.CreateDirectory(outDir);
+    }
+
+    public static void RunBatch()
+    {
+        ReadArgs();
+        foreach (var f in Directory.GetFiles(outDir)) File.Delete(f);
+        if (Environment.GetCommandLineArgs().Contains("-cxSigFirst")) FrontRoomsCxSuites.SignaturesNoExit();
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var seed = 516574485;
+        if (int.TryParse(Arg("-cxSeed"), out var s)) seed = s;
+        SessionState.SetBool(FrontRooms3DGame.AutopilotKey, true);
+        SessionState.SetInt(FrontRooms3DGame.AutopilotSeedKey, seed);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.EraseBool(DoneKey);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1500f);
+        Application.logMessageReceivedThreaded -= OnLog;
+        Application.logMessageReceivedThreaded += OnLog;
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        Log("RunBatch · label " + label + " · seed " + seed + " · seconds " + targetSeconds + " · relayDelay " + relayDelay + " · args " + string.Join(" ", Environment.GetCommandLineArgs().SkipWhile(a => a != "-executeMethod")));
+        EditorApplication.EnterPlaymode();
+    }
+
+    static void OnLog(string condition, string stack, LogType type)
+    {
+        if (type == LogType.Log) return;
+        lock (gate)
+        {
+            if (type == LogType.Warning) warnings++;
+            else if (type == LogType.Exception) exceptions++;
+            else if (type == LogType.Assert) asserts++;
+            else errors++;
+            var first = (condition ?? "").Split('\n')[0];
+            if (first.Length > 220) first = first.Substring(0, 220);
+            var key = type + ": " + first;
+            byMessage[key] = byMessage.TryGetValue(key, out var n) ? n + 1 : 1;
+            if (!firstStack.ContainsKey(key)) { firstStack[key] = stack; firstAt[key] = mapSeconds; }
+            if (console.Length < 4_000_000)
+            {
+                console.Append("--- [map ").Append(mapSeconds.ToString("0.00", CultureInfo.InvariantCulture)).Append(" s, frame ").Append(mainFrame).Append(", ").Append(System.Threading.Thread.CurrentThread.ManagedThreadId == mainThreadId ? "main" : "thread " + System.Threading.Thread.CurrentThread.ManagedThreadId).Append(", ").Append(phaseName).Append("] ").Append(type).Append(": ").AppendLine(condition);
+                if (type != LogType.Warning && !string.IsNullOrEmpty(stack)) console.AppendLine(stack.TrimEnd());
+            }
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture) + " [frame " + Time.frameCount + " map " + mapSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s] " + s;
+        log.AppendLine(line);
+        Debug.Log("[CxPlay] " + line);
+        try { File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString()); } catch { }
+    }
+
+    static object Get(object o, string n)
+    {
+        for (var t = o.GetType(); t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, IF);
+            if (f != null) return f.GetValue(o);
+        }
+        return null;
+    }
+
+    static object GetStatic(Type t, string n) => t?.GetField(n, SF)?.GetValue(null);
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT (wall clock)"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            SessionState.EraseBool(FrontRooms3DGame.AutopilotKey);
+            SessionState.EraseInt(FrontRooms3DGame.AutopilotSeedKey);
+            Log("exit");
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        try { Step(); }
+        catch (Exception e) { Log("HARNESS EXCEPTION " + e); }
+    }
+
+    static void Step()
+    {
+        mainFrame = Time.frameCount;
+        if (mainThreadId < 0) mainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        if (!started)
+        {
+            started = true;
+            Time.captureDeltaTime = 1f / 60f;
+            Log("play started · gfx " + SystemInfo.graphicsDeviceType + " " + SystemInfo.graphicsDeviceName + " · quality " + QualitySettings.names[QualitySettings.GetQualityLevel()]
+                + " · URP " + (GraphicsSettings.currentRenderPipeline != null ? GraphicsSettings.currentRenderPipeline.name : "none"));
+        }
+        if (game == null)
+        {
+            game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+            if (game == null) return;
+            cam = Get(game, "cam") as Camera;
+            Log("game found (restart " + restarts + ") · cam " + (cam != null ? cam.name : "null"));
+        }
+        if (cam == null) cam = Get(game, "cam") as Camera;
+        if (Time.frameCount == lastRenderedFrame) return;
+        lastRenderedFrame = Time.frameCount;
+
+        var phase = Get(game, "phase")?.ToString() ?? "?";
+        phaseName = phase;
+        var mapPlay = Get(game, "mapPlay") is bool b && b;
+        var map = Get(game, "map") as FrontRoomsMapWorld;
+
+        if (mapPlay && relayDelay >= 0f && !relayHeld && Get(game, "hunterTuning") is FrontRoomsHunterTuning tuning)
+        {
+            tuning.releaseDelaySeconds = relayDelay;
+            relayHeld = true;
+            Log("Relay release delay set to " + relayDelay + " s");
+        }
+
+        // the game view: one render per frame
+        if (cam != null)
+        {
+            if (rt == null)
+            {
+                rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 1, name = "CX play view" };
+                rt.Create();
+            }
+            var prev = cam.targetTexture;
+            cam.targetTexture = rt;
+            cam.Render();
+            cam.targetTexture = prev;
+            framesRendered++;
+            if (mapPlay) SampleRtFrame();
+        }
+
+        if (mapPlay && phase != "Title") mapSeconds += Time.deltaTime;
+
+        // chunk roots destroyed since the last frame
+        if (map != null)
+        {
+            maxChunks = Mathf.Max(maxChunks, map.BuiltChunkCount);
+            var now = new HashSet<int>();
+            foreach (Transform c in map.transform) now.Add(c.GetInstanceID());
+            foreach (var id in liveRoots) if (!now.Contains(id)) rootsDestroyed++;
+            liveRoots.Clear();
+            foreach (var id in now) liveRoots.Add(id);
+        }
+        else if (liveRoots.Count > 0) { rootsDestroyed += liveRoots.Count; liveRoots.Clear(); }
+
+        if (mapSeconds >= nextSample)
+        {
+            nextSample = Mathf.Floor(mapSeconds) + 1f;
+            Sample(phase, map);
+        }
+        if (mapPlay && mapSeconds >= nextShot) { nextShot += 20f; Shot("map_" + Mathf.RoundToInt(mapSeconds).ToString("000") + "s"); }
+
+        if (restartAt >= 0f && !forcedRestartDone && mapSeconds >= restartAt)
+        {
+            forcedRestartDone = true;
+            restarts++;
+            Log("FORCED R RESTART at map " + mapSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s (static restart + LoadScene, the game's R path)");
+            typeof(FrontRooms3DGame).GetField("restart", SF)?.SetValue(null, true);
+            game = null; cam = null; relayHeld = false;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            return;
+        }
+        if (phase == "Caught")
+        {
+            caughtFor += Time.deltaTime;
+            if (caughtFor > 1.5f)
+            {
+                caughtFor = 0f;
+                restarts++;
+                Log("CAUGHT → restart " + restarts + " (R: static restart + LoadScene, as the game does)");
+                Shot("caught_" + restarts);
+                typeof(FrontRooms3DGame).GetField("restart", SF)?.SetValue(null, true);
+                game = null; cam = null; relayHeld = false;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                return;
+            }
+        }
+        else caughtFor = 0f;
+
+        if (mapSeconds >= targetSeconds)
+        {
+            Shot("end");
+            Finish();
+        }
+    }
+
+    // Renderers that would draw pink: no material, no shader, an unsupported shader or Unity's error shader.
+    static readonly Dictionary<string, string> badMaterials = new Dictionary<string, string>();
+    static void ScanBadMaterials()
+    {
+        foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+        {
+            if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+            foreach (var m in r.sharedMaterials)
+            {
+                string why = null;
+                if (m == null) why = "null material";
+                else if (m.shader == null) why = "material " + m.name + " has no shader";
+                else if (m.shader.name == "Hidden/InternalErrorShader") why = "material " + m.name + " uses Hidden/InternalErrorShader";
+                else if (!m.shader.isSupported) why = "material " + m.name + " shader " + m.shader.name + " not supported";
+                if (why == null) continue;
+                var path = r.name; for (var t = r.transform.parent; t != null; t = t.parent) path = t.name + "/" + path;
+                var key = why + " · " + System.Text.RegularExpressions.Regex.Replace(path, @"-?\d+", "#");
+                if (!badMaterials.ContainsKey(key)) { badMaterials[key] = path; Log("BAD MATERIAL " + why + " · " + path + " · at " + r.bounds.center); CloseUp(r, "bad_" + badMaterials.Count); }
+            }
+        }
+    }
+
+    // A close-up of one renderer through a copy of the game camera (same URP data), so the game camera is untouched.
+    static void CloseUp(Renderer r, string name)
+    {
+        if (cam == null || r == null) return;
+        var go = new GameObject("CX close-up camera");
+        try
+        {
+            var c = go.AddComponent<Camera>();
+            c.CopyFrom(cam);
+            var b = r.bounds;
+            var dir = (cam.transform.position - b.center); dir.y = 0f;
+            if (dir.sqrMagnitude < 1e-4f) dir = Vector3.forward;
+            go.transform.position = b.center + dir.normalized * 1.1f + Vector3.up * .45f;
+            go.transform.LookAt(b.center);
+            c.fieldOfView = 50f;
+            var target = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 1 };
+            target.Create();
+            c.targetTexture = target;
+            c.Render();
+            var active = RenderTexture.active;
+            RenderTexture.active = target;
+            var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+            tex.Apply();
+            RenderTexture.active = active;
+            File.WriteAllBytes(Path.Combine(outDir, "closeup_" + name + ".jpg"), tex.EncodeToJPG(85));
+            UnityEngine.Object.DestroyImmediate(tex);
+            c.targetTexture = null;
+            target.Release();
+            UnityEngine.Object.DestroyImmediate(target);
+        }
+        catch (Exception e) { Log("close-up threw " + e.GetType().Name + ": " + e.Message); }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
+    static void Sample(string phase, FrontRoomsMapWorld map)
+    {
+        try { ScanBadMaterials(); } catch (Exception e) { Log("bad-material scan threw " + e.GetType().Name); }
+        var sys = typeof(FrontRooms3DGame).Assembly.GetType("FrontRoomsGlassRTSystem");
+        var chunks = GetStatic(sys, "chunks") as ICollection;
+        var watch = GetStatic(sys, "watch") as ICollection;
+        var live = GetStatic(sys, "liveCount");
+        var status = SafeStatus();
+        var stateType = typeof(FrontRooms3DGame).Assembly.GetType("FrontRoomsGlassRTCamera");
+        object camState = null;
+        if (cam != null && stateType != null) camState = cam.GetComponent(stateType);
+        string vis = "-", weight = "-", seq = "-";
+        if (camState != null)
+        {
+            vis = Get(camState, "lastVisibleReceivers")?.ToString() ?? "-";
+            weight = Get(camState, "lastWeight") is float wv ? wv.ToString("0.##", CultureInfo.InvariantCulture) : "-";
+            seq = Get(camState, "lastSeq")?.ToString() ?? "-";
+        }
+        stats.Append(mapSeconds.ToString("0.0", CultureInfo.InvariantCulture)).Append('\t').Append(Time.frameCount).Append('\t').Append(phase).Append('\t')
+             .Append(map != null ? map.BuiltChunkCount : -1).Append('\t').Append(map != null && map.Cache != null ? map.Cache.Count : -1).Append('\t').Append(rootsDestroyed).Append('\t')
+             .Append(chunks != null ? chunks.Count : -1).Append('\t').Append(live ?? -1).Append('\t').Append(watch != null ? watch.Count : -1).Append('\t')
+             .Append(vis).Append('\t').Append(weight).Append('\t').Append(seq).Append('\t').Append(RtStatCols()).Append('\t').Append(status).Append('\n');
+        try { File.WriteAllText(Path.Combine(outDir, "stats.tsv"), stats.ToString()); } catch { }
+    }
+
+    // G14's own counters for this frame (FrontRoomsGlassRT.TryGetStats): main-thread ms of the last BuildFrame, its session max,
+    // GPU ms, glass pixels and hit pixels of the last trace, meshes resident.
+    static string RtStatCols()
+    {
+        try
+        {
+            var api = typeof(FrontRooms3DGame).Assembly.GetType("FrontRoomsGlassRT");
+            var m = api?.GetMethod("TryGetStats", BindingFlags.Static | BindingFlags.Public);
+            if (m == null) return "-\t-\t-\t-\t-\t-";
+            var args = new object[1];
+            if (!(bool)m.Invoke(null, args)) return "x\tx\tx\tx\tx\tx";
+            var o = args[0];
+            string F(string n) { var f = o.GetType().GetField(n); var v = f?.GetValue(o); return v is float x ? x.ToString("0.000", CultureInfo.InvariantCulture) : v?.ToString() ?? "?"; }
+            return F("mainThreadMs") + "\t" + F("mainThreadMsMax") + "\t" + F("gpuMsTotal") + "\t" + F("glassPixels") + "\t" + F("hitPixels") + "\t" + F("meshes");
+        }
+        catch (Exception e) { return "err " + e.GetType().Name + "\t-\t-\t-\t-\t-"; }
+    }
+
+    static readonly List<float> rtMainMs = new List<float>(8192), rtGpuMs = new List<float>(8192);
+    static int rtGlassFrames;
+    static MethodInfo rtStatsMethod;
+    static bool rtStatsLooked;
+    static void SampleRtFrame()
+    {
+        try
+        {
+            if (!rtStatsLooked) { rtStatsLooked = true; rtStatsMethod = typeof(FrontRooms3DGame).Assembly.GetType("FrontRoomsGlassRT")?.GetMethod("TryGetStats", BindingFlags.Static | BindingFlags.Public); }
+            if (rtStatsMethod == null) return;
+            var args = new object[1];
+            if (!(bool)rtStatsMethod.Invoke(null, args)) return;
+            var o = args[0];
+            float Fl(string n) { var v = o.GetType().GetField(n)?.GetValue(o); return v is float x ? x : v is int i ? i : 0f; }
+            rtMainMs.Add(Fl("mainThreadMs"));
+            rtGpuMs.Add(Fl("gpuMsTotal"));
+            if (Fl("glassPixels") > 0f) rtGlassFrames++;
+        }
+        catch { }
+    }
+
+    static string Pct(List<float> v)
+    {
+        if (v.Count == 0) return "no samples";
+        var a = v.ToArray(); Array.Sort(a);
+        float P(float q) => a[Mathf.Clamp(Mathf.RoundToInt(q * (a.Length - 1)), 0, a.Length - 1)];
+        return "n " + a.Length + " · mean " + a.Average().ToString("0.000", CultureInfo.InvariantCulture) + " · p50 " + P(.5f).ToString("0.000", CultureInfo.InvariantCulture)
+               + " · p95 " + P(.95f).ToString("0.000", CultureInfo.InvariantCulture) + " · p99 " + P(.99f).ToString("0.000", CultureInfo.InvariantCulture) + " · max " + a[a.Length - 1].ToString("0.000", CultureInfo.InvariantCulture);
+    }
+
+    static void Shot(string name)
+    {
+        if (cam == null) return;
+        var target = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 1 };
+        target.Create();
+        var prev = cam.targetTexture;
+        cam.targetTexture = target;
+        cam.Render();
+        cam.targetTexture = prev;
+        var active = RenderTexture.active;
+        RenderTexture.active = target;
+        var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        tex.Apply();
+        RenderTexture.active = active;
+        File.WriteAllBytes(Path.Combine(outDir, (shots < 10 ? "0" : "") + shots + "_" + name + ".jpg"), tex.EncodeToJPG(85));
+        UnityEngine.Object.DestroyImmediate(tex);
+        target.Release();
+        UnityEngine.Object.DestroyImmediate(target);
+        shots++;
+    }
+
+    // G14 coverage at the end: renderers on the prepass bits and whether their material has the FRGlassRTPrepass pass.
+    static string Coverage()
+    {
+        var sb = new StringBuilder();
+        int bit30 = 0, bit30WithPass = 0, bit29 = 0, glassWindow = 0;
+        var shaders = new Dictionary<string, int>();
+        foreach (var r in UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+        {
+            var m = r.sharedMaterial;
+            if (m != null && m.name.StartsWith("Glass_Window", StringComparison.Ordinal)) glassWindow++;
+            if ((r.renderingLayerMask & (1u << 30)) != 0)
+            {
+                bit30++;
+                if (m != null && m.FindPass("FRGlassRTPrepass") >= 0) bit30WithPass++;
+                var k = m != null ? m.name + " (" + m.shader.name + ", passes " + m.passCount + ")" : "null";
+                shaders[k] = shaders.TryGetValue(k, out var n) ? n + 1 : 1;
+            }
+            if ((r.renderingLayerMask & (1u << 29)) != 0) bit29++;
+        }
+        sb.Append("renderers with Glass_Window* material ").Append(glassWindow).Append(" · on prepass bit 30 ").Append(bit30).Append(" (material has FRGlassRTPrepass pass: ").Append(bit30WithPass)
+          .Append(") · on override bit 29 ").Append(bit29);
+        foreach (var kv in shaders) sb.Append("\n    bit 30: ").Append(kv.Value).Append(" × ").Append(kv.Key);
+        return sb.ToString();
+    }
+
+    static void Finish()
+    {
+        if (finished) return;
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        SessionState.SetBool(DoneKey, true);
+        string coverage;
+        try { coverage = Coverage(); } catch (Exception e) { coverage = "coverage threw " + e; }
+        string rtStats = "-";
+        try
+        {
+            var api = typeof(FrontRooms3DGame).Assembly.GetType("FrontRoomsGlassRT");
+            var m = api?.GetMethod("TryGetStats", BindingFlags.Static | BindingFlags.Public);
+            if (m == null) rtStats = "FrontRoomsGlassRT absent (pre-G14 project)";
+            else
+            {
+                var args = new object[1];
+                if ((bool)m.Invoke(null, args))
+                {
+                    var o = args[0];
+                    string F(string n) { var f = o.GetType().GetField(n); var v = f?.GetValue(o); return v is float x ? x.ToString("0.00", CultureInfo.InvariantCulture) : v?.ToString() ?? "?"; }
+                    rtStats = "tlas " + F("tlasInstances") + " · candidates " + F("candidates") + " · meshes " + F("meshes") + " (pending " + F("meshesPending") + ") · receiversVisible " + F("receiversVisible")
+                              + " · glassPixels " + F("glassPixels") + " · hitPixels " + F("hitPixels") + " · gpuMsTotal " + F("gpuMsTotal") + " · mainThreadMs " + F("mainThreadMs") + " (max " + F("mainThreadMsMax")
+                              + ") · traceEvents " + F("traceEvents") + " · commandBufferErrors " + F("commandBufferErrors") + " · residency " + F("residency")
+                              + " · blasBytes " + F("blasBytes") + " · geometryBytes " + F("geometryBytes") + " · targetBytes " + F("targetBytes") + " · blasBuiltTotal " + F("blasBuiltTotal") + " · gpuMsFrame " + F("gpuMsFrame") + " · encodeMs " + F("encodeMs") + " (max " + F("encodeMsMax") + ")";
+                }
+                else rtStats = "TryGetStats false (no traced frame)";
+            }
+        }
+        catch (Exception e) { rtStats = "TryGetStats threw " + e.GetType().Name + ": " + e.Message; }
+        var sb = new StringBuilder();
+        lock (gate)
+        {
+            sb.AppendLine("label " + label);
+            sb.AppendLine("map seconds " + mapSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " · frames rendered " + framesRendered + " · restarts after caught " + restarts + " · chunk roots destroyed " + rootsDestroyed + " · max chunks built " + maxChunks);
+            sb.AppendLine("console: " + warnings + " warnings, " + errors + " errors, " + exceptions + " exceptions, " + asserts + " asserts");
+            sb.AppendLine("G14 status: " + SafeStatus() + " · quality " + SafeQuality());
+            sb.AppendLine("G14 stats: " + rtStats);
+            sb.AppendLine("G14 coverage: " + coverage);
+            sb.AppendLine("renderers that would draw pink (null / missing / unsupported / error shader): " + badMaterials.Count + (badMaterials.Count > 0 ? " · " + string.Join(" ; ", badMaterials.Keys) : ""));
+            sb.AppendLine("G14 per map frame, main-thread ms of BuildFrame: " + Pct(rtMainMs));
+            sb.AppendLine("G14 per map frame, GPU ms: " + Pct(rtGpuMs) + " · frames with glass pixels > 0: " + rtGlassFrames);
+            sb.AppendLine();
+            sb.AppendLine("messages (count · first at map s · message):");
+            foreach (var kv in byMessage.OrderByDescending(k => k.Value))
+                sb.AppendLine("  " + kv.Value + " · " + firstAt[kv.Key].ToString("0.0", CultureInfo.InvariantCulture) + " s · " + kv.Key);
+            sb.AppendLine();
+            sb.AppendLine("first stack of each error / exception:");
+            foreach (var kv in firstStack)
+                if (!kv.Key.StartsWith("Warning", StringComparison.Ordinal)) sb.AppendLine("=== " + kv.Key + "\n" + (kv.Value ?? "").TrimEnd() + "\n");
+        }
+        try
+        {
+            File.WriteAllText(Path.Combine(outDir, "summary.txt"), sb.ToString());
+            File.WriteAllText(Path.Combine(outDir, "console.txt"), console.ToString());
+            File.WriteAllText(Path.Combine(outDir, "stats.tsv"), stats.ToString());
+        }
+        catch { }
+        Log("FINISH\n" + sb);
+    }
+
+    static object ApiProp(string n)
+    {
+        var api = typeof(FrontRooms3DGame).Assembly.GetType("FrontRoomsGlassRT");
+        return api?.GetProperty(n, BindingFlags.Static | BindingFlags.Public)?.GetValue(null);
+    }
+    static string SafeStatus() { try { return ApiProp("Status")?.ToString() ?? "FrontRoomsGlassRT absent"; } catch (Exception e) { return "threw " + (e.InnerException ?? e).GetType().Name; } }
+    static string SafeQuality() { try { return ApiProp("Quality")?.ToString() ?? "-"; } catch (Exception e) { return "threw " + (e.InnerException ?? e).GetType().Name; } }
+}

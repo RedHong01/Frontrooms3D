@@ -43,10 +43,11 @@ Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z (the map turns it toward the non-tall cell). Size
 1.60 x 1.828 (Y 0.2485-2.0765) x 0.242 m.
 
-Budget (§9.4): 2,600 / 1,000 / 200 tris; LOD1 now at 0.45 (setting blocks
-drop; stops and the compound are protected from the collapse, so the pocket
-edge stays clean; casing, stool and apron lose their wear stations and arc
-segments; checks a-c pass on LOD1 too); LOD2 0.077 (fr_lod2_drop on the
+Budget (§9.4): 2,600 / 1,000 / 200 tris; built 2,322 / 1,044. LOD1 at 0.45
+(setting blocks drop; the stops are protected from the collapse (lod_keep),
+so the pocket edge stays clean; casing, stool and apron lose their wear
+stations and some arc segments, moving the surface by at most 0.25 mm,
+measured in pass 4; checks a-c pass on LOD1 too); LOD2 0.077 (fr_lod2_drop on the
 compound line and the setting blocks; the ovolo is part of the stop sweep
 and collapses with it).
 LOD distances 4 / 12 / none. Sidecar placement "Wall" (wall_placement()).

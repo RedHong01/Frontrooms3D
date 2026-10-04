@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Window kit contract r4 (window_landing/03_contract_map.md): applies the [WINDOW-KIT] blocks to
+Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs by content anchors, so it survives line drift.
+
+Base: the real file at main 75cfdff (sha256 4144008eb0ca...). That file already holds Codex's direct call
+`FrontRoomsInteractableKit.DressWindow(this, window, record)` in RaiseWindowBuilt (commit 8ef5b64, 19:10), wrapped in
+try/catch with Debug.LogException per window. r4 keeps that call site and its one stable signature.
+
+Hunks:
+  R1  RaiseWindowBuilt: the call goes through DressWindowFrame (guarded, logged ONCE, a warning like the Office kit's)
+  R2  the pane gets FrontRoomsMetalGlassTarget only while no FrontRoomsGlassBreakable exists (hygiene: with the
+      breakable the pane renderer is hidden and G14 skips it; the breakable's slab is the glass)
+  T   OPTIONAL (--trims): a window's jamb/head trims are built only when no frame was hung. The frame is hung in
+      BuildEdge (guarded, before the trims), so RaiseWindowBuilt no longer calls it. Doors are unchanged.
+
+usage: apply_window_kit_r4.py <FrontRoomsMapWorld.cs> [--trims] [--out <path>]
+Refuses a file that already has [WINDOW-KIT blocks, and any anchor found other than exactly once (writes nothing).
+"""
+import sys
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        print(__doc__); sys.exit(2)
+    path = args[0]
+    trims = '--trims' in args
+    out = args[args.index('--out') + 1] if '--out' in args else path
+    s = open(path, encoding='utf-8').read()
+    if '[WINDOW-KIT' in s:
+        print('refused: the file already has [WINDOW-KIT] blocks'); sys.exit(1)
+    edits = []
+
+    def rep(name, old, new):
+        n = s.count(old)
+        if n != 1:
+            print('anchor %s found %d times: %r' % (name, n, old[:140])); sys.exit(1)
+        edits.append((name, old, new))
+
+    # R1 (+T): the call site in RaiseWindowBuilt
+    old_r1 = ('        var record = GlassBreakOf(window);\n'
+              '        try { FrontRoomsInteractableKit.DressWindow(this, window, record); }\n'
+              '        catch (Exception e) { Debug.LogException(e); }\n'
+              '        if (WindowBuilt == null) return;\n')
+    if trims:
+        new_r1 = ('        var record = GlassBreakOf(window);\n'
+                  '        // [WINDOW-KIT] (T) the visual chat\'s frame was hung in BuildEdge, before the trims.\n'
+                  '        if (WindowBuilt == null) return;\n')
+    else:
+        new_r1 = ('        var record = GlassBreakOf(window);\n'
+                  '        // [WINDOW-KIT BEGIN] the visual chat\'s frame on the root: render-only, broken windows too, outside Build\'s guard.\n'
+                  '        DressWindowFrame(window, record);\n'
+                  '        // [WINDOW-KIT END]\n'
+                  '        if (WindowBuilt == null) return;\n')
+    rep('R1', old_r1, new_r1)
+
+    # R1: the guarded helper, before GlassBreakableType
+    old_h = '    static Type GlassBreakableType()\n'
+    rep('R1h', old_h,
+        '    // [WINDOW-KIT BEGIN] The visual chat\'s window frame (Office/FrontRoomsInteractableKit.Window.cs). A throw is caught\n'
+        '    // here, never by Build\'s guard (that would leave the whole chunk out: floor, walls, doors, key), and logged once;\n'
+        '    // that window then keeps the map\'s trims and pane as today. Returns true when a frame was hung.\n'
+        '    static bool windowFrameFailureLogged;\n'
+        '\n'
+        '    bool DressWindowFrame(Window window, GlassBreakRecord record)\n'
+        '    {\n'
+        '        try { return FrontRoomsInteractableKit.DressWindow(this, window, record); }\n'
+        '        catch (Exception e)\n'
+        '        {\n'
+        '            if (!windowFrameFailureLogged)\n'
+        '            {\n'
+        '                windowFrameFailureLogged = true;\n'
+        '                Debug.LogWarning("[FrontRoomsMap] Window frame " + window.a + "-" + window.b + " failed; it keeps the map\'s trims and pane (logged once): " + e);\n'
+        '            }\n'
+        '            return false;\n'
+        '        }\n'
+        '    }\n'
+        '    // [WINDOW-KIT END]\n'
+        '\n' + old_h)
+
+    # R2: RT hint on the pane only without the breakable
+    rep('R2', '                pane.GetComponent<Renderer>().sharedMaterial = glass;\n'
+              '                pane.AddComponent<FrontRoomsMetalGlassTarget>();\n',
+        '                pane.GetComponent<Renderer>().sharedMaterial = glass;\n'
+        '                // [WINDOW-KIT BEGIN] the RT hint marks the visible glass: the pane only while no FrontRoomsGlassBreakable\n'
+        '                // exists (with it the pane renderer is hidden below, and the breakable\'s slab is the glass).\n'
+        '                if (GlassBreakableType() == null) pane.AddComponent<FrontRoomsMetalGlassTarget>();\n'
+        '                // [WINDOW-KIT END]\n')
+
+    if trims:
+        # T1: the trims become a local function; doors build them as today
+        old_t1 = ('        // Frame: two jambs and a head in the trim colour.\n'
+                  '        var trims = get(blockIndex, trim);\n'
+                  '        var frame = ModuleUnits.TrimFace;\n'
+                  '        var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;\n'
+                  '        foreach (var s in new[] { -1f, 1f })\n'
+                  '        {\n'
+                  '            var jc = start + along * (c + s * (width * .5f + frame * .5f)) + Vector3.up * ((sill + openingTop) * .5f);\n'
+                  '            trims.Box(jc, Abs(along * frame + across * jambDepth + Vector3.up * (openingTop - sill)), origin, 1f);\n'
+                  '        }\n'
+                  '        trims.Box(start + along * c + Vector3.up * (openingTop + frame * .5f), Abs(along * (width + frame * 2f) + across * jambDepth + Vector3.up * frame), origin, 1f);\n')
+        rep('T1', old_t1,
+            '        // Frame: two jambs and a head in the trim colour.\n'
+            '        // [WINDOW-KIT BEGIN] (T) a window\'s trims wait until the visual chat\'s frame has been tried (window branch).\n'
+            '        void FrameTrims()\n'
+            '        {\n'
+            '        // [WINDOW-KIT END]\n'
+            + old_t1.split('\n', 1)[1] +
+            '        // [WINDOW-KIT BEGIN]\n'
+            '        }\n'
+            '        if (kind != EdgeKind.Window) FrameTrims();\n'
+            '        // [WINDOW-KIT END]\n')
+        # T2: the window branch dresses first, then the trims only if no frame was hung
+        old_t2 = ('                if (window.pane != null) window.pane.GetComponent<Renderer>().enabled = false;\n'
+                  '            }\n'
+                  '            chunk.windows.Add(window);\n')
+        rep('T2', old_t2,
+            '                if (window.pane != null) window.pane.GetComponent<Renderer>().enabled = false;\n'
+            '            }\n'
+            '            // [WINDOW-KIT BEGIN] (T) the visual chat\'s frame on the root (render-only, broken windows too, guarded);\n'
+            '            // the map\'s own trims only when no frame was hung.\n'
+            '            if (!DressWindowFrame(window, record)) FrameTrims();\n'
+            '            // [WINDOW-KIT END]\n'
+            '            chunk.windows.Add(window);\n')
+
+    for name, old, new in edits:
+        s = s.replace(old, new, 1)
+    open(out, 'w', encoding='utf-8').write(s)
+    print('applied %s to %s' % (', '.join(n for n, _, _ in edits), out))
+
+
+if __name__ == '__main__':
+    main()

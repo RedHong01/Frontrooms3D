@@ -1,0 +1,100 @@
+== window TF r5 cross-variant comparison ==
+off: sections chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, roomtris 92, shell 15071, shelltrim 965, shift 10, sight-post 411, sight-pre 411
+offT: sections chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, framepick 4, measure 6, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, roomtris 92, shell 15071, shelltrim 965, shift 10, sight-post 411, sight-pre 411
+kitR: sections bench 7, chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, roomtris 212, shell 15071, shelltrim 965, shift 10, sight-post 411, sight-pre 411, windowcount 411
+kitT: sections bench 7, chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, framepick 4, measure 6, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, roomtris 212, shell 15071, shelltrim 692, shift 10, sight-post 411, sight-pre 411, windowcount 411
+thrT: sections shell 4555, shelltrim 301, throwhalf-trims 75
+thrR: sections shell 4555, shelltrim 301, throwhalf-trims 75
+
+-- T is inert without a frame: offT (T, kit disabled) must equal off (no T, kit disabled) in everything --
+count                    off    vs offT  : 10 identical, 0 different (of 10)
+eray-pre                 off    vs offT  : 411 identical, 0 different (of 411)
+sight-pre                off    vs offT  : 411 identical, 0 different (of 411)
+overlap-pre-cut          off    vs offT  : 411 identical, 0 different (of 411)
+eray-post                off    vs offT  : 411 identical, 0 different (of 411)
+sight-post               off    vs offT  : 411 identical, 0 different (of 411)
+overlap-post-cut         off    vs offT  : 411 identical, 0 different (of 411)
+overlap-post-corridor    off    vs offT  : 411 identical, 0 different (of 411)
+climb                    off    vs offT  : 411 identical, 0 different (of 411)
+shell                    off    vs offT  : 15071 identical, 0 different (of 15071)
+chunkvis                 off    vs offT  : 250 identical, 0 different (of 250)
+chunkcount               off    vs offT  : 250 identical, 0 different (of 250)
+shift                    off    vs offT  : 10 identical, 0 different (of 10)
+
+-- R1/R2 keep the map's trims: kitR shell must equal off shell --
+shell                    off    vs kitR  : 15071 identical, 0 different (of 15071)
+
+-- gameplay: the kit (either shape) must not change any ray, overlap or climb --
+count                    off    vs kitR  : 10 identical, 0 different (of 10)
+eray-pre                 off    vs kitR  : 411 identical, 0 different (of 411)
+sight-pre                off    vs kitR  : 411 identical, 0 different (of 411)
+overlap-pre-cut          off    vs kitR  : 411 identical, 0 different (of 411)
+eray-post                off    vs kitR  : 411 identical, 0 different (of 411)
+sight-post               off    vs kitR  : 411 identical, 0 different (of 411)
+overlap-post-cut         off    vs kitR  : 411 identical, 0 different (of 411)
+overlap-post-corridor    off    vs kitR  : 411 identical, 0 different (of 411)
+climb                    off    vs kitR  : 411 identical, 0 different (of 411)
+count                    off    vs kitT  : 10 identical, 0 different (of 10)
+eray-pre                 off    vs kitT  : 411 identical, 0 different (of 411)
+sight-pre                off    vs kitT  : 411 identical, 0 different (of 411)
+overlap-pre-cut          off    vs kitT  : 411 identical, 0 different (of 411)
+eray-post                off    vs kitT  : 411 identical, 0 different (of 411)
+sight-post               off    vs kitT  : 411 identical, 0 different (of 411)
+overlap-post-cut         off    vs kitT  : 411 identical, 0 different (of 411)
+overlap-post-corridor    off    vs kitT  : 411 identical, 0 different (of 411)
+climb                    off    vs kitT  : 411 identical, 0 different (of 411)
+
+-- forced throw (every window): the map keeps its trims and pane: thrT shell equals off shell --
+shell                    off    vs thrT  : 4555 identical, 10516 different (of 15071)
+    e.g. ('1955', '(-1, -1)/Block 0 · 2.4 m/L0_Carpet')
+      off: 24 cc26b8fba9a463b2
+      thrT: None
+    e.g. ('1955', '(-1, -1)/Block 0 · 2.4 m/L0_Ceiling')
+      off: 24 68ca884a9141883c
+      thrT: None
+    e.g. ('1955', '(-1, -1)/Block 0 · 2.4 m/L0_Wallpaper')
+      off: 144 607f0a8bd867565b
+      thrT: None
+    e.g. ('1955', '(-1, -1)/Block 0 · 5.4 m/L0_Carpet')
+      off: 72 582c9e92619cf1ad
+      thrT: None
+shell                    off    vs thrR  : 4555 identical, 10516 different (of 15071)
+    e.g. ('1955', '(-1, -1)/Block 0 · 2.4 m/L0_Carpet')
+      off: 24 cc26b8fba9a463b2
+      thrR: None
+    e.g. ('1955', '(-1, -1)/Block 0 · 2.4 m/L0_Ceiling')
+      off: 24 68ca884a9141883c
+      thrR: None
+    e.g. ('1955', '(-1, -1)/Block 0 · 2.4 m/L0_Wallpaper')
+      off: 144 607f0a8bd867565b
+      thrR: None
+    e.g. ('1955', '(-1, -1)/Block 0 · 5.4 m/L0_Carpet')
+      off: 72 582c9e92619cf1ad
+      thrR: None
+
+-- T shell: differs from off only in trim meshes --
+shell                    off    vs kitT  : 15071 identical, 0 different, 0 expected differences (of 15071)
+    differing shell meshes by kind: {}; meshes only in kitT: 0
+    trim vertices removed in total: 0 (= 0.00 boxes of 24 vertices)
+    windows in these seeds: 411; 3 trim boxes each = 1233 boxes
+
+-- per-chunk counts: kitR minus off --
+chunks 250, with windows 0
+
+-- per-chunk counts: kitT minus off --
+chunks 250, with windows 0
+
+-- frame picks --
+framepick                off    vs kitT  : 0 identical, 4 different (of 4)
+    e.g. ('101', 'OF dead')
+      off: None
+      kitT: edge -17179869179 (-2, 2)-(-1, 2)
+    e.g. ('1993', 'OF hero')
+      off: None
+      kitT: edge 90194313200 (10, -8)-(10, -7)
+    e.g. ('4242', 'L0 dead')
+      off: None
+      kitT: edge 43 (0, 21)-(1, 21)
+    e.g. ('4242', 'L0 hero')
+      off: None
+      kitT: edge 21474836459 (2, -11)-(3, -11)

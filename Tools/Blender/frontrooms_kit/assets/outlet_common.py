@@ -1187,6 +1187,22 @@ def screw_head(R=SCREW_D / 2, crown=SCREW_CROWN, slot_w=SCREW_SLOT[0], slot_d=SC
 LOD1_CORNER_SEGS = 4
 LOD1_ARC_K = 11        # 24-point faces and openings (spec 1.1 table)
 LOD1_CSK_SEGS = 12
+# LOD2 faces (round 8). Each face is a device-coloured 6-gon (712 mm^2, the
+# 5-15R face) with one dark "dot" over the slot cluster: the "two dots" of
+# DSC00161. The dot is AREA-MATCHED to LOD0: a face disc averages 1.250
+# (linear, troffer light) at LOD0 and must at LOD2 too. Round 7 drew no face
+# and a 527 mm^2 dark 6-gon: 0.629 (-50 %), a dark pop at 4 m, and the IG
+# orange / Steel ivory faces vanished. 6-gon points are (a cos t, b sin t).
+LOD2_FACE_AB = (16.6, 16.5)   # x +-16.6, z +-14.3 (the flats); 2.598 a b = 712 mm^2
+LOD2_DOT_AB = (5.2, 7.6)      # x +-5.2, z +-6.6; 2.598 a b = 103 mm^2 (slots + gap ring)
+LOD2_DOT_DZ = -1.9            # slot cluster centroid below the face centre
+LOD2_DOT_UP = 0.3             # the dot stands 0.3 in front of the face 6-gon
+
+
+def lod2_hex(ab, cx, cz):
+    """A LOD2 6-gon outline, CCW in (x, z)."""
+    a, b = ab
+    return [(cx + a * math.cos(math.radians(t)), cz + b * math.sin(math.radians(t))) for t in (0, 60, 120, 180, 240, 300)]
 
 
 def lod1_plate(W, H, R, profile2, field_h, crown, open_z=(OPEN_Z, -OPEN_Z), slot_body=NI, crack=None, chip=None,
@@ -1277,10 +1293,11 @@ def lod1_device(info1, face_top, gap_h, t20=False):
 
 def lod2_plate(W, H, field_h, crown, face_top, chamfer=2.0, open_z=(OPEN_Z, -OPEN_Z)):
     """LOD2 (4-12 m): an 8-point rounded outline at full height (fan to a
-    crowned centre), one bevel ring to the wall, the faces as two flat dark
-    6-gons 0.3 mm proud (fans)."""
+    crowned centre), one bevel ring to the wall; each device face as a flat
+    6-gon in the device slot 0.3 mm proud of the crown, with an area-matched
+    dark dot 0.3 mm in front of it (round 8). Returns plate, face, dark."""
     hw, hh = W / 2, H / 2
-    p, dark = Mesh(), Mesh()
+    p, face, dark = Mesh(), Mesh(), Mesh()
 
     def octo(hw_, hh_, c):
         return [(hw_, -hh_ + c), (hw_, hh_ - c), (hw_ - c, hh_), (-hw_ + c, hh_), (-hw_, hh_ - c),
@@ -1290,12 +1307,12 @@ def lod2_plate(W, H, field_h, crown, face_top, chamfer=2.0, open_z=(OPEN_Z, -OPE
     p.bridge(base, top)
     centre = p.add(0.0, crown, 0.0)
     p.fan(top, centre)
+    face_h = max(face_top - 0.7, crown + 0.3)
     for oz in open_z:
-        hexa = dark.ring([(15.6 * math.cos(math.radians(a)), oz + 13.0 * math.sin(math.radians(a)))
-                          for a in (0, 60, 120, 180, 240, 300)], max(face_top - 0.7, crown + 0.3))
-        c = dark.add(0.0, max(face_top - 0.7, crown + 0.3), oz)
-        dark.fan(hexa, c)
-    return p, dark
+        face.fill(face.ring(lod2_hex(LOD2_FACE_AB, 0.0, oz), face_h))
+        dark.fill(dark.ring(lod2_hex(LOD2_DOT_AB, 0.0, oz + LOD2_DOT_DZ), face_h + LOD2_DOT_UP))
+    assert face_h + LOD2_DOT_UP <= face_top + 1e-6, "LOD2 dot proud of the face"
+    return p, face, dark
 
 
 # ------------------------------------------------------------------- meta
@@ -1513,7 +1530,8 @@ def build_lod_parts(kit, kind, info, face_top, gap_h, t20, crack, chip):
     dk = Mesh()
     dk.v, dk.f = d1.v + k1.v, d1.f + [tuple(i + len(d1.v) for i in f) for f in k1.f]
     dk.to_object(kit, "dark LOD1", PB, wear=wear_cavity, lods="1")
-    p2, d2 = lod2_plate(W, H, edge_h, crown, face_top)
+    p2, f2, d2 = lod2_plate(W, H, edge_h, crown, face_top)
     p2.to_object(kit, "plate LOD2", plate_slot, lods="2")
-    d2.to_object(kit, "faces LOD2", PB, lods="2")
+    f2.to_object(kit, "faces LOD2", NI, lods="2")
+    d2.to_object(kit, "dots LOD2", PB, lods="2")
     return [total_tris(kit, "1"), total_tris(kit, "2")]

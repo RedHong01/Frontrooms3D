@@ -1,0 +1,72 @@
+Red's ~/Library/Logs/Unity/Editor-prev.log (read-only), session ending 2026-10-03 20:01
+Legend: P = play-mode domain reload, S = [FrontRooms3D] START, C = 'Collection was modified' (GlassRT DropChunk), R = 'Render Graph Execution error', Z = ZBinningJob InvalidOperationException
+counts: C 85 · Z 253 · R 338 (R = C + Z: True)
+groups starting with C: 85 · Z per group: {3: 84, 1: 1}
+Z runs NOT preceded by a C: 0
+first C at line 11173 · last C 39148 · first Z 11260 · last Z 39235
+event lines (first 40):
+  539 P
+  5761 P
+  10943 S
+  11136 R
+  11173 C
+  11223 R
+  11260 Z
+  11305 R
+  11342 Z
+  11387 R
+  11424 Z
+  11469 R
+  11506 C
+  11556 R
+  11593 Z
+  11640 R
+  11677 Z
+  11723 R
+  11760 Z
+  11805 R
+  11842 C
+  11892 R
+  11929 Z
+  11974 R
+  12011 Z
+  12056 R
+  12093 Z
+  12138 R
+  12175 C
+  12225 R
+  12262 Z
+  12307 R
+  12344 Z
+  12389 R
+  12426 Z
+  12471 R
+  12508 C
+  12558 R
+  12595 Z
+  12640 R
+InvalidOperationException: Collection was modified; enumeration operation may not execute.
+  at System.Collections.Generic.Dictionary`2+ValueCollection+Enumerator[TKey,TValue].MoveNext () [0x00013] in <c5eeda5e65d44b388e164c6c5cfe0702>:0 
+  at FrontRoomsGlassRTSystem.DropChunk (FrontRoomsGlassRTSystem+ChunkRec c) [0x0001f] in /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs:988 
+  at FrontRoomsGlassRTSystem.DiffChunks (System.Single now) [0x0018c] in /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs:982 
+  at FrontRoomsGlassRTSystem.UpdateScene (System.Boolean force) [0x000bb] in /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs:899 
+  at FrontRoomsGlassRTSystem.BuildFrame (UnityEngine.Camera cam, FrontRoomsGlassRTCamera state, System.Int32 width, System.Int32 height, UnityEngine.Matrix4x4 view, UnityEngine.Matrix4x4 gpuProjFlipped, System.Boolean forceScene) [0x0003c] in /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontroo
+  at FrontRoomsMetalGlassRTRendererFeature+TracePass.RecordRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ContextContainer frameData) [0x0009b] in /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Scripts/Rendering/FrontRoomsMet
+  at UnityEngine.Rendering.Universal.ScriptableRenderer.RecordCustomRenderGraphPassesInEventRange (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.Universal.RenderPassEvent eventStart, UnityEngine.Rendering.Universal.RenderPassEvent eventEnd) [0x0002c] in ./Library/PackageCache/com.unity.re
+  at UnityEngine.Rendering.Universal.ScriptableRenderer.RecordCustomRenderGraphPasses (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.Universal.RenderPassEvent startInjectionPoint, UnityEngine.Rendering.Universal.RenderPassEvent endInjectionPoint) [0x00007] in ./Library/PackageCache/com.un
+  at UnityEngine.Rendering.Universal.ScriptableRenderer.RecordCustomRenderGraphPasses (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.Universal.RenderPassEvent injectionPoint) [0x00000] in ./Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503/Runtime/ScriptableRenderer.c
+  at UnityEngine.Rendering.Universal.UniversalRenderer.OnMainRendering (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context, UnityEngine.Rendering.Universal.UniversalRenderer+RenderPassInputSummary& renderPassInputs, System.Boolean requiresPrepass, System.Boolean
+  at UnityEngine.Rendering.Universal.UniversalRenderer.OnRecordRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context) [0x001ea] in ./Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503/Runtime/UniversalRendererRenderGraph.cs:651 
+  at UnityEngine.Rendering.Universal.ScriptableRenderer.RecordRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context) [0x0004c] in ./Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503/Runtime/ScriptableRenderer.cs:1259 
+  at UnityEngine.Rendering.Universal.UniversalRenderPipeline.RecordAndExecuteRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context, UnityEngine.Rendering.Universal.ScriptableRenderer renderer, UnityEngine.Rendering.CommandBuffer cmd, UnityEngine.Camera
+UnityEngine.DebugLogHandler:Internal_LogException_Injected(Exception, IntPtr)
+...
+InvalidOperationException: The previously scheduled job ZBinningJob writes to the Unity.Collections.NativeArray`1[System.UInt32] ZBinningJob.bins. You must call JobHandle.Complete() on the job ZBinningJob, before you can write to the Unity.Collections.NativeArray`1[System.UInt32] safely.
+  at (wrapper managed-to-native) Unity.Collections.LowLevel.Unsafe.AtomicSafetyHandle.CheckWriteAndThrowNoEarlyOut_Injected(Unity.Collections.LowLevel.Unsafe.AtomicSafetyHandle&)
+  at Unity.Collections.LowLevel.Unsafe.AtomicSafetyHandle.CheckWriteAndThrowNoEarlyOut (Unity.Collections.LowLevel.Unsafe.AtomicSafetyHandle handle) [0x00000] in <4990d45a15a2497e80e991eed7064d73>:0 
+  at Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility.GetUnsafePtr[T] (Unity.Collections.NativeArray`1[T] nativeArray) [0x00001] in /Users/bokken/build/output/unity/unity/Runtime/Export/NativeArray/NativeArray.cs:1202 
+  at UnityEngine.Rendering.Universal.Internal.ForwardLights.PreSetup (UnityEngine.Rendering.Universal.UniversalRenderingData renderingData, UnityEngine.Rendering.Universal.UniversalCameraData cameraData, UnityEngine.Rendering.Universal.UniversalLightData lightData) [0x00075] in ./Library/PackageCache/com.unity.render-pipelines.u
+  at UnityEngine.Rendering.Universal.UniversalRenderer.OnBeforeRendering (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph) [0x0003d] in ./Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503/Runtime/UniversalRendererRenderGraph.cs:741 
+  at UnityEngine.Rendering.Universal.UniversalRenderer.OnRecordRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context) [0x001dc] in ./Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503/Runtime/UniversalRendererRenderGraph.cs:647 
+  at UnityEngine.Rendering.Universal.ScriptableRenderer.RecordRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context) [0x0004c] in ./Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503/Runtime/ScriptableRenderer.cs:1259 
+  at UnityEngine.Rendering.Universal.UniversalRenderPipeline.RecordAndExecuteRenderGraph (UnityEngine.Rendering.RenderGraphModule.RenderGraph renderGraph, UnityEngine.Rendering.ScriptableRenderContext context, UnityEngine.Rendering.Universal.ScriptableRenderer renderer, UnityEngine.Rendering.CommandBuffer cmd, UnityEngine.Camera

@@ -1,0 +1,51 @@
+// WINDOW LANDING · autopilot probe (private clone only; never promoted). 2026-10-03.
+// Rides along FrontRoomsMainScenePlaytest (the map's own §8 acceptance) and records, every frame of Play:
+//   - the frame time and what the map did in it (FrontRoomsMapWorld.WorkInFrame: chunk builds and room dresses, with ms);
+//   - at the end, the per-chunk Build ms list and the window frames present.
+// Command line:
+//   -windowKitOff   FrontRoomsInteractableKit.DisableWindowDressForTools = true (the map's look before the kit)
+//   -windowProbeTag <tag>   output Verification/window_autopilot/<tag>_work.txt (default "run")
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsMainScenePlaytest.RunBatch -autopilotSeed 2554
+//      [-windowKitOff] -windowProbeTag <tag> -logFile <f>
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+[InitializeOnLoad]
+public static class FrontRoomsWindowAutopilotProbe
+{
+    static FrontRoomsWindowAutopilotProbe()
+    {
+        var args = Environment.GetCommandLineArgs();
+        if (Array.IndexOf(args, "-windowKitOff") >= 0)
+        {
+            var t = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("FrontRoomsInteractableKit")).FirstOrDefault(x => x != null);
+            var p = t?.GetProperty("DisableWindowDressForTools");
+            if (p != null) p.SetValue(null, true);
+            Debug.Log("[WindowProbe] window kit " + (p != null ? "DISABLED" : "toggle not found"));
+        }
+        EditorApplication.playModeStateChanged -= OnPlayMode;
+        EditorApplication.playModeStateChanged += OnPlayMode;
+    }
+
+    static string Tag()
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-windowProbeTag") return args[i + 1];
+        return "run";
+    }
+
+    static void OnPlayMode(PlayModeStateChange s)
+    {
+        if (s != PlayModeStateChange.EnteredPlayMode) return;
+        if (!Application.isBatchMode && Array.IndexOf(Environment.GetCommandLineArgs(), "-windowProbeTag") < 0) return;
+        var go = new GameObject("WINDOW PROBE") { hideFlags = HideFlags.HideAndDontSave };
+        UnityEngine.Object.DontDestroyOnLoad(go);
+        go.AddComponent<WindowProbeBehaviour>().tag_ = Tag();
+    }
+}

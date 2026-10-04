@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Window TF r5: trims, throw and cost comparisons that tf_compare_r5.py (r4 layout) does not cover.
+off = proj_win_base kitoff, kitR = proj_win_base kit (R1 R2), kitT = proj_win kit (R1 R2 T), thrT/thrR = kitthrow."""
+import collections
+S = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad"
+P = {"off": "/proj_win_base/Verification/window_tf4/kitoff_sig.tsv", "offT": "/proj_win/Verification/window_tf4/kitoff_sig.tsv",
+     "kitR": "/proj_win_base/Verification/window_tf4/kit_sig.tsv", "kitT": "/proj_win/Verification/window_tf4/kit_sig.tsv",
+     "thrT": "/proj_win/Verification/window_tf4/kitthrow_sig.tsv", "thrR": "/proj_win_base/Verification/window_tf4/kitthrow_sig.tsv"}
+def load(p):
+    d = collections.defaultdict(dict)
+    for line in open(S + p, encoding="utf-8"):
+        t = line.rstrip("\n").split("\t")
+        if len(t) >= 4: d[t[1]][(t[0], t[2])] = "\t".join(t[3:])
+    return d
+V = {k: load(p) for k, p in P.items()}
+out = []
+def say(s=""): out.append(s); print(s)
+def cmp(sec, a, b, subset=False):
+    A, B = V[a].get(sec, {}), V[b].get(sec, {})
+    keys = sorted(set(B) if subset else set(A) | set(B))
+    diff = [k for k in keys if A.get(k) != B.get(k)]
+    say(f"{sec:14s} {a:5s} vs {b:5s}: {len(keys) - len(diff)} identical, {len(diff)} different (of {len(keys)})" + (" [keys of " + b + "]" if subset else ""))
+    return diff
+say("== window TF r5: trims, throw, cost ==")
+say("-- R1+R2 keep every map trim: off vs kitR --")
+cmp("shelltrim", "off", "kitR")
+say("-- forced throw keeps every trim (thr runs seeds 4242, 7, 1993 only) --")
+cmp("shell", "off", "thrT", True); cmp("shelltrim", "off", "thrT", True)
+cmp("shell", "off", "thrR", True); cmp("shelltrim", "off", "thrR", True)
+say("-- T: only the window trims go; doors keep theirs --")
+d = cmp("shelltrim", "off", "kitT")
+gone = sum(int(V["off"]["shelltrim"][k].split()[0]) - (int(V["kitT"]["shelltrim"][k].split()[0]) if k in V["kitT"]["shelltrim"] else 0) for k in d)
+def num(s):
+    t = s.split(); o = {}
+    for k_, v_ in zip(t[0::2], t[1::2]):
+        try: o[k_] = int(v_)
+        except ValueError: pass
+    return o
+cc = {k: (num(V["off"]["chunkcount"][k]), num(V["kitT"]["chunkcount"].get(k, ""))) for k in V["off"]["chunkcount"]}
+nwin = sum(a.get("windows", 0) for a, b in cc.values())
+tb_off = sum(a.get("trimBoxes", 0) for a, b in cc.values()); tb_T = sum(b.get("trimBoxes", 0) for a, b in cc.values())
+say(f"   trim vertices removed {gone} = {gone/24:.0f} boxes of 24; windows {nwin} x 3 = {3*nwin}; trimBoxes off {tb_off} -> kitT {tb_T}")
+for kv in ["kitR", "kitT"]:
+    say(f"-- per chunk with windows: {kv} minus off (static content in the chunk; LOD and frustum culling not applied) --")
+    rows = []
+    for k in V["off"]["chunkcount"]:
+        a, b = num(V["off"]["chunkcount"][k]), num(V[kv]["chunkcount"].get(k, ""))
+        if a.get("windows", 0) > 0: rows.append((k, a, b))
+    say(f"   chunks with windows {len(rows)} of {len(V['off']['chunkcount'])}")
+    for f in ["frames", "trimBoxes", "renderers", "submeshes", "shadowRenderers", "shadowSubmeshes", "transparent", "lights", "tris", "lod1Tris"]:
+        vals = sorted(b.get(f, 0) - a.get(f, 0) for k, a, b in rows)
+        if vals: say(f"   {f:16s} min {vals[0]:+d} median {vals[len(vals)//2]:+d} max {vals[-1]:+d} total {sum(vals):+d}")
+    w = max(rows, key=lambda r: r[2].get("tris", 0) - r[1].get("tris", 0))
+    say(f"   worst chunk {w[0]}: windows {w[1]['windows']}, tris {w[1]['tris']} -> {w[2]['tris']}, renderers {w[1]['renderers']} -> {w[2]['renderers']}, shadow renderers {w[1]['shadowRenderers']} -> {w[2]['shadowRenderers']}")
+say("-- view measures (offT before / kitT after, the same cameras) --")
+for k in sorted(V["kitT"].get("measure", {})):
+    say(f"   {k[1]:18s} before: {V['offT'].get('measure', {}).get(k, '-')}")
+    say(f"   {'':18s} after:  {V['kitT']['measure'][k]}")
+open(S + "/win_r5/compare_out_b.txt", "w").write(chr(10).join(out) + chr(10))

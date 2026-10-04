@@ -1,0 +1,26 @@
+import json,sys,os
+a,b=sys.argv[1],sys.argv[2]
+for f in sorted(set(os.listdir(a))|set(os.listdir(b))):
+    if not f.endswith('.json'): continue
+    def load(d):
+        p=os.path.join(d,f)
+        return json.load(open(p)) if os.path.exists(p) else None
+    x,y=load(a),load(b)
+    def summ(d):
+        if d is None: return 'missing'
+        return f"passed {d.get('passed')} failed {d.get('failed')} " + (str(d.get('verdict',''))[:70])
+    print(f"{f:36s} BASE {summ(x)}\n{'':36s} CX   {summ(y)}")
+    if x and y and isinstance(x.get('checks'),list) and isinstance(y.get('checks'),list):
+        def names(d):
+            out={}
+            for c in d['checks']:
+                if isinstance(c,dict):
+                    n=c.get('name') or c.get('check') or c.get('id') or json.dumps(c)[:60]
+                    out[n]=c.get('passed', c.get('ok', c.get('pass')))
+            return out
+        nx,ny=names(x),names(y)
+        only_b=[k for k in nx if k not in ny]; only_c=[k for k in ny if k not in nx]
+        changed=[k for k in nx if k in ny and nx[k]!=ny[k]]
+        if only_b: print('   only in base:',only_b[:10])
+        if only_c: print('   only in cx:  ',only_c[:20])
+        if changed: print('   changed:',changed[:10])

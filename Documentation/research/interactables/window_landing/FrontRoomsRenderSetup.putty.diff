@@ -1,0 +1,12 @@
+--- a/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
++++ b/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+@@ -338,6 +338,9 @@
+         new SurfaceDef { name = "Prop_PlasticBlack", texture = "Prop_PlasticBlack", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0f, macroDirt = 0.05f },
+         new SurfaceDef { name = "Prop_PlasticGrey", texture = "Prop_PlasticGrey", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.04f, macroDirt = 0.05f },
+         new SurfaceDef { name = "Prop_Rubber", tint = new Color(0.02f, 0.02f, 0.02f), smooth = 0.15f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .06f },
++        // W-L0 glazing (window landing r5): period wood-stop glazing sat in tan bedding compound / putty, not a black
++        // gasket (art review A10). Only the window facade swaps it in, on the walnut member; steel and alu keep Prop_Rubber.
++        new SurfaceDef { name = "Prop_Putty", tint = new Color(0.588f, 0.549f, 0.463f), smooth = 0.3f, metallic = 0.0f, meshUV = true, macroTone = .05f, macroDirt = .1f },
+         new SurfaceDef { name = "Prop_SteelPutty", texture = "Prop_SteelPutty", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.1f, macroDirt = 0.1f },
+         new SurfaceDef { name = "Prop_SteelBrown", texture = "Prop_SteelBrown", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.06f, macroDirt = 0.08f },
+         new SurfaceDef { name = "Prop_SteelBlack", texture = "Prop_SteelBlack", tile = new Vector2(1.0f, 1.0f), meshUV = true, metallic = 0.0f, bump = 1.0f, macroTone = 0.04f, macroDirt = 0.06f },

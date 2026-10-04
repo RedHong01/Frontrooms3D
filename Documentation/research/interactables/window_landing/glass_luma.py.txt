@@ -1,0 +1,20 @@
+from PIL import Image
+import numpy as np
+S="/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad"
+K=S+"/win_r5/frames_kit_rubber_0700/"; O=S+"/proj_win/Verification/window_tf4/frames_kitoff/"
+def L(p): return np.asarray(Image.open(p).convert("L"),dtype=np.float32)
+for m in ["L0","OF"]:
+    for side in ["A_front_1.5m","B_front_1.5m"]:
+        bk=side.replace("_front","_front")
+        res=[]
+        for tag,D in [("kit",K),("today",O)]:
+            a=L(D+f"{m}_{side}.png"); b=L(D+f"{m}_broken_{side}.png")
+            d=np.abs(a-b)
+            mask=d>1.5
+            ys,xs=np.where(mask)
+            # opening box = bounding box of pixels that change (glass), trimmed 5 %
+            if len(xs)==0: res.append(f"{tag}: no change"); continue
+            x0,x1=np.percentile(xs,[5,95]).astype(int); y0,y1=np.percentile(ys,[5,95]).astype(int)
+            box=d[y0:y1,x0:x1]
+            res.append(f"{tag}: mean |intact-broken| {box.mean():.1f} luma over box x {x0}-{x1} y {y0}-{y1}")
+        print(m, side, " | ".join(res))

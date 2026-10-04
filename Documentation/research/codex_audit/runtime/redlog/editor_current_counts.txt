@@ -1,0 +1,1 @@
+Red's current Editor.log (    6028 lines, session from 2026-10-03 23:53, code = d610d3a): Collection-modified 0, ZBinningJob 0, Render Graph Execution error 0, warning CS 0, error CS 0; START lines: 1

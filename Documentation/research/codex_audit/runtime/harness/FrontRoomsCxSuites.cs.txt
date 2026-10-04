@@ -1,0 +1,369 @@
+// CODEX AUDIT · RUNTIME TRACK (private clones proj_cx / proj_cx_base only; never copied into the real project).
+// 1. Runs the project's own edit-mode suites in one editor session (as the window-landing harness did), each in
+//    try/catch, and copies every JSON report to Verification/cx_audit/suites/. Every warning / error / exception
+//    logged while a suite runs is kept with its stack in suites_console.txt.
+// 2. Map signatures: 20 seeds, each built with BuildForCapture at (4992, 0, 4992) (a multiple of 192 m), then a
+//    per-chunk signature of renderers (mesh vertex hash, materials, bounds), lights (colour, intensity, range,
+//    shadows, enabled) and colliders (type, bounds, mesh hash). Each seed is built twice (determinism) and every
+//    chunk is rebuilt once in place (drop + build, determinism of chunk teardown). The signature TSV is compared
+//    across clones by a script.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsCxSuites.RunBatch -logFile <f>  (no -quit)
+//      -cxOnly suites|signatures to run one part.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsCxSuites
+{
+    const BindingFlags SF = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+    const BindingFlags IF = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    static readonly Vector3 RootPosition = new Vector3(4992f, 0f, 4992f);
+    static readonly int[] Seeds =
+    {
+        20261001, 20261002, 20261003, 20261004, 20261005, 20261006, 20261007, 20261008, 20261009, 20261010,
+        516574485, 4242, 1990, 7, 1955, 1993, 8086, 6502, 68000, 2554,
+    };
+
+    static string Root => Directory.GetParent(Application.dataPath).FullName;
+    static string outDir;
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null) { outDir = Path.Combine(Root, "Verification", "cx_audit"); Directory.CreateDirectory(outDir); }
+            return outDir;
+        }
+    }
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder console = new StringBuilder();
+    static string current = "-";
+    static readonly Dictionary<string, int[]> counts = new Dictionary<string, int[]>();   // suite -> warn, error, exception
+
+    static void OnLog(string condition, string stack, LogType type)
+    {
+        if (type == LogType.Log) return;
+        if (!counts.TryGetValue(current, out var c)) counts[current] = c = new int[3];
+        if (type == LogType.Warning) c[0]++;
+        else if (type == LogType.Exception) c[2]++;
+        else c[1]++;
+        console.Append('[').Append(current).Append("] ").Append(type).Append(": ").AppendLine(condition);
+        if (type != LogType.Warning && !string.IsNullOrEmpty(stack)) console.AppendLine(stack.TrimEnd()).AppendLine();
+    }
+
+    static void Log(string s)
+    {
+        log.AppendLine(DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture) + " " + s);
+        Debug.Log("[CxSuites] " + s);
+        Flush();
+    }
+
+    static void Flush()
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "suites_log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "suites_console.txt"), console.ToString());
+        }
+        catch { }
+    }
+
+    static string Arg(string name)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return null;
+    }
+
+    public static void RunBatch()
+    {
+        var code = 0;
+        Application.logMessageReceived += OnLog;
+        try
+        {
+            var only = Arg("-cxOnly");
+            Log("start · Unity " + Application.unityVersion + " · gfx " + SystemInfo.graphicsDeviceType + " · project " + Root + " · only " + (only ?? "all"));
+            if (only == null || only == "suites") RunSuites();
+            if (only == null || only == "signatures") Signatures();
+        }
+        catch (Exception e)
+        {
+            Log("HARNESS EXCEPTION " + e);
+            code = 2;
+        }
+        finally
+        {
+            current = "-";
+            foreach (var kv in counts) Log("console · " + kv.Key + ": " + kv.Value[0] + " warnings, " + kv.Value[1] + " errors, " + kv.Value[2] + " exceptions");
+            Application.logMessageReceived -= OnLog;
+            Flush();
+        }
+        if (Application.isBatchMode) EditorApplication.Exit(code);
+    }
+
+    /// <summary>Signatures only, without exiting (the play run calls it first with -cxSigFirst).</summary>
+    public static void SignaturesNoExit()
+    {
+        Application.logMessageReceived += OnLog;
+        try { Log("signatures only · gfx " + SystemInfo.graphicsDeviceType + " · project " + Root); Signatures(); }
+        catch (Exception e) { Log("HARNESS EXCEPTION " + e); }
+        finally { Application.logMessageReceived -= OnLog; current = "-"; Flush(); }
+    }
+
+    // ------------------------------------------------------------------ suites
+    static void RunSuites()
+    {
+        var dir = Path.Combine(OutDir, "suites");
+        Directory.CreateDirectory(dir);
+        var suites = new[]
+        {
+            ("FrontRoomsMapVerification", "RunBatch", "map-verification-latest.json"),
+            ("FrontRoomsRelayNavTest", "RunBatch", "relay-nav-test.json"),
+            ("FrontRoomsMapInteractionTests", "RunBatch", "map-interaction-tests.json"),
+            ("FrontRoomsLevelDesignerTests", "RunBatch", "level-designer-tests.json"),
+            ("FrontRoomsFixtureTickTests", "RunBatch", "fixture-tick-tests.json"),
+            ("FrontRoomsCameraRigTests", "RunBatch", "camera-rig-tests.json"),
+            ("FrontRoomsCaptionsTests", "RunBatch", "captions-tests.json"),
+            ("FrontRoomsGlassShotTests", "RunBatch", "glass-shot-tests.json"),
+            ("FrontRoomsStreamVerification", "Run", "stream-verification-latest.json"),
+            ("FrontRoomsGlassCompileCheck", "RunBatch", "glass/compile_check.txt"),
+        };
+        foreach (var (typeName, method, report) in suites)
+        {
+            current = typeName;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var type = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(typeName)).FirstOrDefault(t => t != null);
+            if (type == null) { Log("suite " + typeName + ": NOT FOUND in this project"); continue; }
+            var reportPath = Path.Combine(Root, "Verification", report);
+            if (File.Exists(reportPath)) File.Delete(reportPath);
+            var sw = Stopwatch.StartNew();
+            string outcome;
+            try
+            {
+                var m = type.GetMethod(method, SF);
+                var ret = m.Invoke(null, null);
+                outcome = "no exception" + (ret is string s ? " · returned: " + s : "");
+            }
+            catch (TargetInvocationException e)
+            {
+                outcome = "THREW " + e.InnerException?.GetType().Name + ": " + e.InnerException?.Message;
+                console.AppendLine("[" + typeName + "] THREW " + e.InnerException).AppendLine();
+            }
+            catch (Exception e)
+            {
+                outcome = "HARNESS " + e.GetType().Name + ": " + e.Message;
+            }
+            sw.Stop();
+            var copied = File.Exists(reportPath);
+            if (copied) File.Copy(reportPath, Path.Combine(dir, Path.GetFileName(report)), true);
+            var c = counts.TryGetValue(typeName, out var cc) ? cc : new int[3];
+            Log("suite " + typeName + "." + method + ": " + outcome + " · " + sw.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s · report " + (copied ? report : "missing")
+                + " · console " + c[0] + " warnings, " + c[1] + " errors, " + c[2] + " exceptions");
+        }
+        current = "-";
+    }
+
+    // ------------------------------------------------------------------ map signatures
+    static StreamWriter sig;
+    static readonly List<Object> owned = new List<Object>();
+
+    static void Signatures()
+    {
+        current = "signatures";
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var path = Path.Combine(OutDir, "map_signatures.tsv");
+        using (sig = new StreamWriter(path, false, new UTF8Encoding(false)))
+        {
+            sig.WriteLine("seed\tpass\tchunk\tkind\tcount\thash");
+            var detFail = 0; var rebuildFail = 0;
+            foreach (var seed in Seeds)
+            {
+                var sw = Stopwatch.StartNew();
+                var w1 = BuildWorld(seed);
+                var a = ChunkSignatures(w1);
+                var themes = ThemeCounts(w1);
+                // determinism of chunk teardown: drop + rebuild every chunk in place, then compare
+                var rebuilt = 0; var rebuildDiff = new List<string>();
+                foreach (var coord in Chunks(w1).Select(x => x.coord).ToList())
+                {
+                    w1.RebuildChunk(coord);
+                    rebuilt++;
+                }
+                w1.TickFixturesForTools(0f);
+                Physics.SyncTransforms();   // collider bounds of the rebuilt chunks (run 1 compared stale bounds)
+                var r = ChunkSignatures(w1, "_rebuilt");
+                foreach (var k in a.Keys.Union(r.Keys))
+                    if (!a.TryGetValue(k, out var x) || !r.TryGetValue(k, out var y) || x.hash != y.hash) rebuildDiff.Add(k);
+                Free(w1);
+                // determinism of a second world
+                var w2 = BuildWorld(seed);
+                var b = ChunkSignatures(w2);
+                Free(w2);
+                var diff = a.Keys.Union(b.Keys).Where(k => !a.TryGetValue(k, out var x) || !b.TryGetValue(k, out var y) || x.hash != y.hash).ToList();
+                foreach (var kv in a.OrderBy(k => k.Key, StringComparer.Ordinal)) sig.WriteLine(seed + "\t1\t" + kv.Key + "\t" + kv.Value.count + "\t" + kv.Value.hash);
+                if (diff.Count > 0) detFail++;
+                if (rebuildDiff.Count > 0) rebuildFail++;
+                if (a.Count == 0) throw new Exception("seed " + seed + ": no chunk signatures (BuiltChunk.root not read)");
+                Log("seed " + seed + ": " + a.Count / 3 + " chunks (" + themes + ") · second world: " + (diff.Count == 0 ? "identical" : diff.Count + " signatures differ: " + string.Join(", ", diff.Take(8)))
+                    + " · drop+rebuild of " + rebuilt + " chunks: " + (rebuildDiff.Count == 0 ? "identical" : rebuildDiff.Count + " signatures differ: " + string.Join(", ", rebuildDiff.Take(8)))
+                    + " · " + sw.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s");
+                sig.Flush();
+            }
+            Log("signatures: " + Seeds.Length + " seeds · second-world determinism failures " + detFail + " · rebuild determinism failures " + rebuildFail + " · " + path);
+        }
+        foreach (var o in owned) if (o != null) Object.DestroyImmediate(o);
+        owned.Clear();
+        current = "-";
+    }
+
+    static FrontRoomsMapWorld BuildWorld(int seed)
+    {
+        var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.generation.seed = seed;
+        owned.Add(profile);
+        var root = new GameObject("CX SIG / seed " + seed) { hideFlags = HideFlags.DontSave };
+        root.transform.position = RootPosition;
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = profile;
+        world.BuildForCapture();
+        world.TickFixturesForTools(0f);
+        Physics.SyncTransforms();
+        return world;
+    }
+
+    static void Free(FrontRoomsMapWorld w)
+    {
+        if (w == null) return;
+        var go = w.gameObject;
+        w.Release();
+        Object.DestroyImmediate(go);
+        Physics.SyncTransforms();
+    }
+
+    static List<(GridCoord coord, Transform root)> Chunks(FrontRoomsMapWorld w)
+    {
+        var list = new List<(GridCoord, Transform)>();
+        var built = typeof(FrontRoomsMapWorld).GetField("built", IF).GetValue(w) as IDictionary;
+        foreach (DictionaryEntry e in built)
+        {
+            var rv = e.Value.GetType().GetField("root", IF)?.GetValue(e.Value);
+            var root = rv is GameObject g ? g.transform : rv as Transform;
+            list.Add(((GridCoord)e.Key, root));
+        }
+        return list;
+    }
+
+    static string ThemeCounts(FrontRoomsMapWorld w)
+    {
+        int l0 = 0, of = 0;
+        foreach (var (coord, _) in Chunks(w))
+        {
+            var cell = new GridCoord(coord.x * MapGrid.ChunkCells + MapGrid.ChunkCells / 2, coord.y * MapGrid.ChunkCells + MapGrid.ChunkCells / 2);
+            if (w.Cache.ZoneOf(cell).theme == ZoneTheme.Office) of++; else l0++;
+        }
+        return "centre cell Level 0 " + l0 + ", Office " + of;
+    }
+
+    static string R(float v, float q) => Mathf.RoundToInt(v / q).ToString(CultureInfo.InvariantCulture);
+    static string RV(Vector3 v, float q) => R(v.x, q) + "," + R(v.y, q) + "," + R(v.z, q);
+
+    static readonly Dictionary<int, string> meshHash = new Dictionary<int, string>();
+    static string MeshHash(Mesh m)
+    {
+        if (m == null) return "null";
+        if (meshHash.TryGetValue(m.GetInstanceID(), out var h)) return h;
+        var sb = new StringBuilder();
+        sb.Append(m.vertexCount).Append('/').Append(m.subMeshCount).Append('/');
+        if (m.isReadable)
+        {
+            var v = m.vertices;
+            long acc = 17;
+            for (var i = 0; i < v.Length; i++) acc = acc * 31 + Mathf.RoundToInt(v[i].x * 1e4f) * 7 + Mathf.RoundToInt(v[i].y * 1e4f) * 13 + Mathf.RoundToInt(v[i].z * 1e4f) * 19;
+            sb.Append(acc);
+            for (var s = 0; s < m.subMeshCount; s++) sb.Append('/').Append(m.GetIndexCount(s));
+        }
+        else sb.Append(RV(m.bounds.center, .001f)).Append(RV(m.bounds.size, .001f));
+        h = sb.ToString();
+        meshHash[m.GetInstanceID()] = h;
+        return h;
+    }
+
+    static string HPath(Transform t, Transform root)
+    {
+        var parts = new List<string>();
+        for (; t != null && t != root; t = t.parent) parts.Add(t.name);
+        parts.Reverse();
+        return string.Join("/", parts);
+    }
+
+    static Dictionary<string, (int count, string hash)> ChunkSignatures(FrontRoomsMapWorld w, string tag = "")
+    {
+        meshHash.Clear();
+        var result = new Dictionary<string, (int, string)>();
+        foreach (var (coord, root) in Chunks(w))
+        {
+            if (root == null) continue;
+            var key = coord.x + "_" + coord.y;
+            var rl = new List<string>();
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var mf = r.GetComponent<MeshFilter>();
+                var mats = string.Join("+", r.sharedMaterials.Select(m => m == null ? "null" : m.name + "@" + (m.shader != null ? m.shader.name : "?")));
+                rl.Add(HPath(r.transform, root) + "|" + (mf != null ? MeshHash(mf.sharedMesh) : r.GetType().Name) + "|" + mats + "|" + RV(r.bounds.center - w.transform.position, .001f) + "|" + RV(r.bounds.size, .001f) + "|" + r.enabled + "|" + r.shadowCastingMode);
+            }
+            var ll = new List<string>();
+            foreach (var l in root.GetComponentsInChildren<Light>(true))
+                ll.Add(HPath(l.transform, root) + "|" + l.type + "|" + RV(l.transform.position - w.transform.position, .001f) + "|" + R(l.color.r, .001f) + "," + R(l.color.g, .001f) + "," + R(l.color.b, .001f)
+                       + "|" + R(l.intensity, .001f) + "|" + R(l.range, .001f) + "|" + R(l.spotAngle, .01f) + "|" + l.shadows + "|" + l.enabled);
+            var cl = new List<string>();
+            foreach (var c in root.GetComponentsInChildren<Collider>(true))
+                cl.Add(HPath(c.transform, root) + "|" + c.GetType().Name + "|" + c.isTrigger + "|" + c.enabled + "|" + c.gameObject.layer + "|" + RV(c.bounds.center - w.transform.position, .001f) + "|" + RV(c.bounds.size, .001f)
+                       + (c is MeshCollider mc ? "|" + MeshHash(mc.sharedMesh) : ""));
+            rl.Sort(StringComparer.Ordinal); ll.Sort(StringComparer.Ordinal); cl.Sort(StringComparer.Ordinal);
+            result[key + "\trenderers"] = (rl.Count, Hash(rl));
+            result[key + "\tlights"] = (ll.Count, Hash(ll));
+            result[key + "\tcolliders"] = (cl.Count, Hash(cl));
+            DumpDetail(w, key + tag, rl, ll, cl);
+        }
+        return result;
+    }
+
+    // The full lines of the first seed's chunks, so a script can say exactly what differs between two clones.
+    static readonly HashSet<string> dumped = new HashSet<string>();
+    static void DumpDetail(FrontRoomsMapWorld w, string key, List<string> rl, List<string> ll, List<string> cl)
+    {
+        var seed = w.Seed;
+        if (Array.IndexOf(Seeds, seed) > 3) return;   // the first 4 seeds in full
+        var id = seed + "_" + key;
+        if (!dumped.Add(id)) return;
+        var dir = System.IO.Path.Combine(OutDir, "sig_detail");
+        Directory.CreateDirectory(dir);
+        var sb = new StringBuilder();
+        foreach (var x in rl) sb.Append("R\t").AppendLine(x);
+        foreach (var x in ll) sb.Append("L\t").AppendLine(x);
+        foreach (var x in cl) sb.Append("C\t").AppendLine(x);
+        File.WriteAllText(System.IO.Path.Combine(dir, id + ".txt"), sb.ToString());
+    }
+
+    static string Hash(List<string> lines)
+    {
+        using (var sha = SHA1.Create())
+        {
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", lines)));
+            return BitConverter.ToString(bytes, 0, 8).Replace("-", "").ToLowerInvariant();
+        }
+    }
+}

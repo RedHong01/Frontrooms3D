@@ -1,0 +1,108 @@
+// CODEX AUDIT · RUNTIME TRACK · EXTRAS (private clones only; never copied into the real project).
+//  1. Chunk data generated vs chunks built, 20 seeds, BuildForCapture at (4992, 0, 4992); in a project with
+//     FrontRoomsTransitionKit the build is repeated with B0 off (the static flag), so the count difference is B0's.
+//     MapCache.Get generates a chunk at the tier current at that moment (FrontRoomsMap.cs), so every chunk generated
+//     ahead of its build has its tier fixed early.
+//  2. LOD thresholds of every Kit_* model with a LODGroup, as imported in this Library: the distance (metres, at the
+//     game's vertical FOV 76) where each LOD ends, next to the sidecar's lodDistances.
+// Run: Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsCxExtras.RunBatch -logFile <f>
+// Output: <clone>/Verification/cx_audit/extras.txt
+using System;
+using System.Collections;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsCxExtras
+{
+    static readonly int[] Seeds =
+    {
+        20261001, 20261002, 20261003, 20261004, 20261005, 20261006, 20261007, 20261008, 20261009, 20261010,
+        516574485, 4242, 1990, 7, 1955, 1993, 8086, 6502, 68000, 2554,
+    };
+    static readonly StringBuilder sb = new StringBuilder();
+    static string Out => Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "cx_audit", "extras.txt");
+
+    static void W(string s)
+    {
+        sb.AppendLine(s);
+        Debug.Log("[CxExtras] " + s);
+        Directory.CreateDirectory(Path.GetDirectoryName(Out));
+        File.WriteAllText(Out, sb.ToString());
+    }
+
+    public static void RunBatch()
+    {
+        try
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            Generation();
+            Lods();
+            if (Environment.GetCommandLineArgs().Contains("-cxSigToo")) FrontRoomsCxSuites.SignaturesNoExit();
+        }
+        catch (Exception e) { W("EXCEPTION " + e); }
+        if (Application.isBatchMode) EditorApplication.Exit(0);
+    }
+
+    static void Generation()
+    {
+        var b0Field = typeof(FrontRoomsMapWorld).Assembly.GetType("FrontRoomsTransitionKit")?.GetField("B0", BindingFlags.Static | BindingFlags.Public);
+        W("1. chunk data generated vs built · FrontRoomsTransitionKit " + (b0Field != null ? "present, B0 = " + b0Field.GetValue(null) : "absent (pre-Codex)"));
+        W("seed\tB0\tbuilt\tgenerated\tgenerated_not_built");
+        int sumOn = 0, sumOff = 0, sumBuilt = 0;
+        foreach (var seed in Seeds)
+        {
+            foreach (var b0 in b0Field != null ? new[] { true, false } : new[] { false })
+            {
+                b0Field?.SetValue(null, b0);
+                var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+                profile.hideFlags = HideFlags.DontSave;
+                profile.generation.seed = seed;
+                var root = new GameObject("CX GEN / " + seed) { hideFlags = HideFlags.DontSave };
+                root.transform.position = new Vector3(4992f, 0f, 4992f);
+                var world = root.AddComponent<FrontRoomsMapWorld>();
+                world.Profile = profile;
+                world.BuildForCapture();
+                var built = world.BuiltChunkCount;
+                var generated = world.Cache.Count;
+                W(seed + "\t" + (b0Field == null ? "n/a" : b0 ? "on" : "off") + "\t" + built + "\t" + generated + "\t" + (generated - built));
+                if (b0Field == null || !b0) sumOff += generated; else sumOn += generated;
+                if (b0Field == null || !b0) sumBuilt += built;
+                world.Release();
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(profile);
+            }
+        }
+        b0Field?.SetValue(null, true);
+        W("sum over " + Seeds.Length + " seeds: built " + sumBuilt + " · generated with B0 off (or pre-Codex) " + sumOff + (b0Field != null ? " · with B0 on " + sumOn : ""));
+    }
+
+    static void Lods()
+    {
+        W("");
+        W("2. kit LODs as imported (vertical FOV 76: distance = size / (2 h tan 38))");
+        W("asset\tsize_m\tlod_end_heights\tlod_end_distances_m\tsidecar_lodDistances");
+        var tan = Mathf.Tan(38f * Mathf.Deg2Rad);
+        foreach (var path in AssetDatabase.FindAssets("Kit_ t:Model", new[] { "Assets/Resources/Props/Models" }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p, StringComparer.Ordinal))
+        {
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var g = go != null ? go.GetComponent<LODGroup>() : null;
+            if (g == null) continue;
+            var lods = g.GetLODs();
+            var h = string.Join(", ", lods.Select(l => l.screenRelativeTransitionHeight.ToString("0.0000", CultureInfo.InvariantCulture)));
+            var d = string.Join(", ", lods.Select(l => l.screenRelativeTransitionHeight > 0f ? (g.size / (2f * l.screenRelativeTransitionHeight * tan)).ToString("0.0", CultureInfo.InvariantCulture) : "never"));
+            var side = Path.ChangeExtension(path, ".json");
+            var raw = File.Exists(side) ? File.ReadAllText(side) : "";
+            var i = raw.IndexOf("\"lodDistances\"", StringComparison.Ordinal);
+            var authored = i >= 0 ? raw.Substring(i, Math.Min(60, raw.Length - i)).Split(']')[0] + "]" : "-";
+            W(Path.GetFileNameWithoutExtension(path) + "\t" + g.size.ToString("0.000", CultureInfo.InvariantCulture) + "\t" + h + "\t" + d + "\t" + authored.Replace("\n", "").Replace(" ", ""));
+        }
+    }
+}

@@ -1,0 +1,10 @@
+#!/bin/zsh
+# usage: run_u.sh <clone> <method> <tag> [extra unity args...]
+SP=/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad
+C=$1; M=$2; T=$3; shift 3
+L=$SP/win_r5/logs/$T.log
+echo "$T start $(date +%H:%M:%S) $(uptime)" >> $SP/win_r5/logs/runs_load.txt
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath $SP/$C -executeMethod $M -logFile $L "$@"
+rc=$?
+echo "$T end $(date +%H:%M:%S) rc=$rc $(uptime)" >> $SP/win_r5/logs/runs_load.txt
+exit $rc
