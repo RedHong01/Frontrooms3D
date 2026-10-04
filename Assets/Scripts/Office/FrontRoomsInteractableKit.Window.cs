@@ -8,8 +8,8 @@ using Object = UnityEngine.Object;
 /// <summary>
 /// The window part of the interactables kit facade (Documentation/research/interactables/10_spec.md §5 and §6.1;
 /// 06_period_windows.md §3-§4; window_landing/03_contract_map.md). Owned by the visual session. The map calls
-/// DressWindow through reflection, the way it calls FrontRoomsOfficeKit, so the map builds as today when this file is
-/// absent. Rebased 2026-10-03 on the map chat's window model (commit df4cb03): the map owns the root
+/// DressWindow after its glass-break hook, behind a local exception guard, so a render-only kit failure leaves the
+/// map's window trims and pane intact. Rebased 2026-10-03 on the map chat's window model (commit df4cb03): the map owns the root
 /// "Window {a}-{b}" (unscaled, opening centre on the wall line at floor level, +Z into cell b), the gameplay pane under
 /// it, GlassBreakRecord, WindowBuilt / WindowReleased and the FrontRoomsGlassBreakable hook.
 ///
