@@ -1,6 +1,6 @@
 # Touch controls · iOS + Android
 
-Status: **design proposal, 2026-10-03** (interaction-design chat "iOS 和 Android 触控设计"). Nothing is implemented. Red asked for research, a touch UI in the desktop UI's design language, and a design plan in Figma.
+Status: **design + first T0/T1 implementation, 2026-10-04** (interaction-design chat "iOS 和 Android 触控设计"). The input facade and first runtime touch surface now exist in `Assets/Scripts/Input/`; device validation, menus, haptics, gyro, and mobile exports remain outstanding. The execution baseline and current build readiness audit are tracked in [MOBILE_BUILD_PLAN.md](MOBILE_BUILD_PLAN.md).
 
 - Figma: file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section **FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID** (`2528:5403`) at x 33937, y 2000.
   - Slides TC01–TC13 (1920×1080, P1 deck system).

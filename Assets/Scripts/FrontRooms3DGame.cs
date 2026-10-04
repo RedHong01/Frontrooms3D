@@ -26,7 +26,7 @@ using UiLengthUnit = UnityEngine.UIElements.LengthUnit;
 // at its next shut door, and the generated Level 0 maze (FrontRoomsMapWorld)
 // lies behind that door. There the serialized Relay hunts them
 // (FrontRoomsMapHunter).
-public sealed class FrontRooms3DGame : MonoBehaviour
+public sealed partial class FrontRooms3DGame : MonoBehaviour
 {
     enum Phase { Title, Playing, Paused, Caught }
     Phase phase;
@@ -710,6 +710,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         MapRunStarted?.Invoke(map, relay);
         map.GenerationTier = tier;
         TierChanged?.Invoke(tier);
+        AutopilotRunStarted();
         Log("START · in place in stream room " + terminal + " · maze seed " + runSeed + " behind its door, map root " + map.transform.position + ", door cell " + startDoorCell
             + " · " + watch.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture) + " ms (map " + createMs.ToString("0.0", CultureInfo.InvariantCulture) + ", placing " + placeMs.ToString("0.0", CultureInfo.InvariantCulture) + ")");
     }
@@ -890,14 +891,22 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     {
         // Under FMOD the sound layer plays the door (AUDIO_CONTRACT.md).
         if (!FrontRooms.Audio.FrontRoomsFmod.Ready) Sound(doorClip, Flat(p), .8f);
+#if UNITY_EDITOR
+        AutopilotNoise(AutoCauseDoor, p, hunterTuning.doorNoiseRadius);
+#else
         relay?.Noise(p, hunterTuning.doorNoiseRadius);
+#endif
         Event("door", Flat(p).ToString());
     }
 
     void OnGlassBroken(Vector3 p)
     {
         FoleyDoorBreak(Flat(p));
+#if UNITY_EDITOR
+        AutopilotNoise(AutoCauseGlass, p, GlassNoiseRadius);
+#else
         relay?.Noise(p, GlassNoiseRadius);
+#endif
         Flash("GLASS BROKEN  /  WALK INTO THE FRAME TO CLIMB THROUGH");
         Event("glass", Flat(p).ToString());
     }
@@ -917,6 +926,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         Vector2 local;
         bool sprintHeld;
         var lookDegrees = 0f;
+        var input = FrontRoomsInput.ReadFrame();
 #if UNITY_EDITOR
         if (autopilot) AutopilotSteer(dt, out local, out sprintHeld);
         else
@@ -926,23 +936,14 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             // While a shot holds the look, mouse movement is dropped, not saved for later.
             else if ((rig == null || !rig.LookLocked) && (glassShot == null || !glassShot.LookLocked))
             {
-                var dx = Input.GetAxisRaw("Mouse X") * 2.1f;
-                var dy = Input.GetAxisRaw("Mouse Y") * 2.1f;
+                var dx = input.Look.x;
+                var dy = input.Look.y;
                 yaw += dx;
                 pitch = Mathf.Clamp(pitch - dy, -75f, 75f);
                 lookDegrees = Mathf.Abs(dx) + Mathf.Abs(dy);
             }
-            // Keep the authored InputManager axes, but also read the physical
-            // keys directly. This makes the standalone Mac/WebGL player robust
-            // when a platform starts with the new input backend.
-            var horizontal = Input.GetAxisRaw("Horizontal");
-            var vertical = Input.GetAxisRaw("Vertical");
-            if (Mathf.Abs(horizontal) < .01f)
-                horizontal = (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f);
-            if (Mathf.Abs(vertical) < .01f)
-                vertical = (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f);
-            local = new Vector2(horizontal, vertical);
-            sprintHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            local = input.Move;
+            sprintHeld = input.SprintHeld;
         }
         moveIntent = local.sqrMagnitude > .01f;
         if (rig != null)
@@ -950,7 +951,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             rig.ClampLook(ref yaw, ref pitch);
             if (rig.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
             // S cancels a shot that allows it (Esc is pause and never cancels).
-            if (rig.InShot && Input.GetKeyDown(KeyCode.S)) rig.Consume(ShotInput.Back);
+            if (rig.InShot && input.ShotBackDown) rig.Consume(ShotInput.Back);
         }
         if (glassShot != null)
         {
@@ -1015,7 +1016,11 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             {
                 stepTime = 0f;
                 FoleyFootstep(playerPos, FrontRoomsFoleyActor.Player, FrontRoomsFoleySurface.Carpet, sprinting, sprinting ? .48f : .15f);
+#if UNITY_EDITOR
+                if (sprinting) AutopilotNoise(AutoCauseSprint, playerRoot.position, hunterTuning.sprintNoiseRadius);
+#else
                 if (sprinting) relay?.Noise(playerRoot.position, hunterTuning.sprintNoiseRadius);
+#endif
             }
         }
         UpdateStartRooms(dt);
@@ -1043,6 +1048,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         }
         UpdateAim(dt);
 #if UNITY_EDITOR
+        if (autoBaseline) AutoBaseBeforeRelayTick();
         var tickWatch = autopilot ? System.Diagnostics.Stopwatch.StartNew() : null;
 #endif
         // Dormant until the door back to the stream rooms has shut behind the
@@ -1190,17 +1196,17 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     bool EDown()
     {
 #if UNITY_EDITOR
-        if (autoGlassActive) return autoEDown;
+        if (autoGlassActive || autoBaseline) return autoEDown;
 #endif
-        return Input.GetKeyDown(KeyCode.E);
+        return FrontRoomsInput.UseDown;
     }
 
     bool EHeld()
     {
 #if UNITY_EDITOR
-        if (autoGlassActive) return autoEHeld;
+        if (autoGlassActive || autoBaseline) return autoEHeld;
 #endif
-        return Input.GetKey(KeyCode.E);
+        return FrontRoomsInput.UseHeld;
     }
 
     /// <summary>
@@ -1690,6 +1696,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             if (!displaySettingsOpen) overlayText.text = PauseText();
         }
         UpdateDisplaySettingsText();
+        UpdateMobileTouchMenu();
     }
 
     void ConfigureLogoMotion(Texture2D texture)
@@ -1870,6 +1877,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         logoOutline.effectColor = new Color(1f, .86f, .34f, 0f);
         LoadBrandLogo();
         UpdateDisplaySettingsText();
+        EnsureMobileTouchLayer();
     }
     void SetPhase(Phase p)
     {
@@ -1915,6 +1923,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (playing && wasPaused) mouseSettleFrames = 2;
         if (p == Phase.Caught)
             overlayText.text = "<size=88><b>CAUGHT</b></size>\n\n<size=24>" + Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
+        UpdateMobileTouchMenu();
     }
     void OnApplicationFocus(bool focused)
     {
@@ -1923,16 +1932,25 @@ public sealed class FrontRooms3DGame : MonoBehaviour
 #endif
         if (!focused && phase == Phase.Playing) SetPhase(Phase.Paused);
     }
+
+    void OnApplicationPause(bool paused)
+    {
+#if UNITY_EDITOR
+        if (autopilot) return;
+#endif
+        if (paused && phase == Phase.Playing) SetPhase(Phase.Paused);
+    }
     void Update()
     {
         if (!Application.isPlaying) return;
-        if (phase == Phase.Title && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))) RequestTitleStart();
-        else if (phase == Phase.Paused && Input.GetKeyDown(KeyCode.O)) ToggleDisplaySettings();
-        else if (Input.GetKeyDown(KeyCode.Escape) && displaySettingsOpen) ToggleDisplaySettings();
+        var input = FrontRoomsInput.ReadFrame();
+        if (phase == Phase.Title && input.StartDown) RequestTitleStart();
+        else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
+        else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
         else if (displaySettingsOpen) HandleSettingsKeys();
-        else if (Input.GetKeyDown(KeyCode.Escape) && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
+        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
         // R restarts from the pause or caught card, never while the settings panel is open.
-        if (!displaySettingsOpen && Input.GetKeyDown(KeyCode.R) && phase != Phase.Playing && phase != Phase.Title) { restart = true; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
+        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title) { restart = true; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
         var dt = Mathf.Min(Time.deltaTime, .1f);
 #if UNITY_EDITOR
         if (autopilot) AutopilotTick(dt);
@@ -1983,6 +2001,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             holdBar.SetActive(play && holdProgress > 0f);
             holdBarFill.rectTransform.sizeDelta = new Vector2(120f * holdProgress, 4f);
         }
+        UpdateMobileTouchPrompt();
         var tired = play && stamina < StaminaSeconds - .01f;
         for (var i = 0; i < staminaSegments.Length; i++)
         {
@@ -2083,6 +2102,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     void Event(string kind, string detail) { events.Add(elapsed.ToString("0.000", CultureInfo.InvariantCulture) + "," + kind + ",\"" + detail.Replace("\"", "\"\"") + "\"," + RelayDistance().ToString("0.00", CultureInfo.InvariantCulture)); }
     void OnDestroy()
     {
+#if UNITY_EDITOR
+        AutoBaseRestoreTime();
+#endif
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
         if (phase == Phase.Paused) Paused?.Invoke(false);
@@ -2199,6 +2221,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         autopilotSeed = UnityEditor.SessionState.GetInt(AutopilotSeedKey, 0);
         if (!autopilot) return;
         var args = Environment.GetCommandLineArgs();
+        AutoBaseStart(args);
         for (var i = 0; i < args.Length - 1; i++)
             if (args[i] == "-autopilotSpaceAt" && float.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var at)) autoSpaceAt = Mathf.Max(.2f, at);
         autoGlassWanted = Array.IndexOf(args, "-autopilotGlass") >= 0;
@@ -2212,6 +2235,9 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     void AutopilotLog(string condition, string stack, LogType type)
     {
         if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert) return;
+        // A fresh batch clone can emit Unity's own empty SearchDatabase index exception before Play.
+        // It is editor infrastructure, not a level or gameplay failure, so keep it out of the baseline verdict.
+        if (stack != null && stack.Contains("UnityEditor.Search.SearchDatabase")) return;
         autoErrors++;
         if (autoErrorLog.Count < 20) autoErrorLog.Add(type + ": " + condition);
     }
@@ -2221,6 +2247,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (autoFinished) return;
         autoClock += dt;
         autoFrames++;
+        if (autoBaseline) AutoBaseFrame();
         // Streaming and dressing hitches, from the frame Space is pressed: the
         // map now builds while the player is in the stream room, in view.
         // Frames right after an autopilot capture carry its PNG encode, not the game's cost.
@@ -2260,6 +2287,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             return;
         }
         autoPlayClock += dt;
+        if (autoBaseline) AutoBaseTick(dt);
         if (playerRoot != null)
         {
             var flat = Flat(playerRoot.position);
@@ -2319,7 +2347,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_play_" + Mathf.RoundToInt(autoPlayClock) + "s");
         }
         if (phase == Phase.Caught) AutopilotFinish("caught");
-        else if (autoPlayClock >= AutopilotPlaySeconds) AutopilotFinish("time");
+        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : AutopilotPlaySeconds)) AutopilotFinish("time");
     }
 
     /// <summary>Walk the current route; plan a new far route when it ends or the walk stalls.</summary>
@@ -2335,7 +2363,10 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         }
         // Out of the stream rooms first: down the centreline, through the door
         // and on past its open leaves into the cell ahead (always open, MapRootFor).
-        if (inStartRooms || (map.CellOf(playerRoot.position) == startDoorCell && playerRoot.position.z < startDoorPoint.z + 2.2f))
+        // The edge-runner needs to clear the door cell before choosing a lateral edge route;
+        // seed 7 otherwise starts the route against the south wall and never releases the Relay.
+        var startExitDepth = autoBaseline && autoBot == AutoBot.EdgeRunner ? 3.8f : 2.2f;
+        if (inStartRooms || (map.CellOf(playerRoot.position) == startDoorCell && playerRoot.position.z < startDoorPoint.z + startExitDepth))
         {
             var aim = map.CellCenter(startDoorCell) + Vector3.forward * 1.2f - playerRoot.position;
             aim.y = 0f;
@@ -2343,6 +2374,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             yaw = Mathf.MoveTowardsAngle(yaw, aimYaw, 300f * dt);
             pitch = Mathf.MoveTowards(pitch, 0f, 60f * dt);
             local = new Vector2(0f, 1f);
+            if (autoBaseline && Flat(startDoorPoint - playerRoot.position).magnitude < AutoStartStandOff && !AutoBotMayLeave()) local = Vector2.zero;
             return;
         }
         var here = map.CellOf(playerRoot.position);
@@ -2352,6 +2384,11 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             if ((playerRoot.position - autoLastPosition).magnitude < .4f) autoRouteIndex = autoRoute.Count;
             autoLastPosition = playerRoot.position;
             autoStuckClock = 0f;
+        }
+        if (autoBaseline)
+        {
+            AutoBotSteer(dt, here, out local, out sprint);
+            return;
         }
         if (autoRouteIndex >= autoRoute.Count) AutopilotPlan(here);
         if (autoRouteIndex >= autoRoute.Count) return;
@@ -2744,6 +2781,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         if (autoGlassWanted && !autoGlassDone) AutoGlassCheck(false, "glass: the scenario did not finish (step " + autoGlassStep + ")");
         var glassOk = !autoGlassWanted || autoGlassChecks.TrueForAll(c => c.StartsWith("ok"));
         report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk ? "PASS" : "FAIL") + " · ended by " + reason;
+        if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));
         var done = Path.Combine(Directory.GetParent(Application.dataPath).FullName, AutopilotDoneFile);
         Directory.CreateDirectory(Path.GetDirectoryName(done));

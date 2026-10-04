@@ -671,7 +671,8 @@ public static class FrontRoomsOfficeKit
                 var pc = FrontRoomsKitLibrary.GetInfo(PC);
                 monitorY += pc != null && pc.TrySupport("top", out var pcCentre, out _) ? pcCentre.y : .13f;
             }
-            FrontRoomsKitLibrary.Spawn(Monitor, station, new Vector3(monitorX, monitorY, deskZ - .1f), rng.Range(-9f, 9f));
+            var monitorObject = FrontRoomsKitLibrary.Spawn(Monitor, station, new Vector3(monitorX, monitorY, deskZ - .1f), rng.Range(-9f, 9f));
+            FrontRoomsScreenVideo.Attach(monitorObject);
             FrontRoomsKitLibrary.Spawn(Keyboard, station, new Vector3(monitorX + rng.Range(-.04f, .04f), top, deskZ + .2f), rng.Range(-6f, 6f), null, false);
             FrontRoomsKitLibrary.Spawn(Mouse, station, new Vector3(monitorX + .3f, top, deskZ + .22f), rng.Range(-30f, 30f), null, false);
             if (rng.Chance(.6f)) FrontRoomsKitLibrary.Spawn(Paper, station, new Vector3(-side * stationW * .3f, top, deskZ + rng.Range(-.12f, .12f)), rng.Range(-25f, 25f), null, false);

@@ -1,0 +1,6 @@
+Relay Pursuit v2 Step 0 baseline evidence
+
+54 cases: seeds 2554, 20388, 7; modes quiet/noisy/evader03/evader06/staller/shiftholder/doorspammer/edgerunner/closedzone; tiers T1/T5.
+Result: 52 PASS / 2 FAIL in the initial matrix; after the start-exit-depth fix, the two seed-7 edgerunner cases were rerun and the reconciled result is 54 PASS / 0 FAIL.
+Unity: 6000.3.10f1; fixed captureDeltaTime 1/60; reports generated in an independent clean clone.
+The seed 7 edgerunner T1/T5 reports include the start-exit-depth fix in FrontRooms3DGame.cs.
