@@ -9,8 +9,10 @@ contains:
 - `FrontRoomsSliceGameMode.*`: the first Title → Playing → Paused/Caught slice
   with deterministic seed, key, door and Relay Listen → Chase state.
 
-The Windows workstation has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
-has been compiled once. The project is still source-only until the editor
+The Windows workstation currently has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
+has been compiled once. Epic has released UE5.8 (including the 5.8.3 hotfix),
+but UE5.8 is not installed in the local Epic manifest yet, so `EngineAssociation`
+stays at `5.6` until that editor is installed. The project is still source-only until the editor
 creates the first map and imports the staged assets. Open `FrontRoomsUE.uproject`
 and point an editor utility at `Migration/exports/frontrooms_contract.json` and
 `Migration/exports/kit_manifest.json`.
@@ -55,3 +57,14 @@ configuration because it contains absolute source paths. The resulting
 regenerated from the bridge. The Windows batch run completed all 123 FBX files
 with zero import errors; UE reported 76 bounds warnings that remain for the
 sidecar collision/LOD pass.
+
+Surface and lighting textures can be imported with the matching batch command:
+
+```powershell
+.\Tools\UnrealMigration\import_unity_textures.ps1
+```
+
+The current Windows batch run imported all 167 Unity texture files with zero
+errors and zero warnings. Generated `.uasset` files stay under the ignored
+`Migration/Unreal/Content` tree; the import settings retain direct Unity-side
+source paths so the same pass can be regenerated after switching to UE5.8.

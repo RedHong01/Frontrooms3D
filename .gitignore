@@ -103,3 +103,4 @@ Migration/Unreal/Saved/
 Migration/Unreal/DerivedDataCache/
 Migration/Unreal/Content/
 Migration/exports/unreal_import_settings.json
+Migration/exports/unreal_texture_import_settings.json

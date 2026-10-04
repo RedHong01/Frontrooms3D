@@ -23,6 +23,7 @@ Contract schema: `1`
 - [x] Stage and byte-count all 519 Unity source assets locally (123 FBX, 113 sidecars, 167 textures, 5 FMOD banks, video and fonts).
 - [x] Import one staged Office FBX through UE5.6 `ImportAssets` and verify static meshes/materials are generated.
 - [x] Batch-import all 123 Unity FBX files into local `/Game/FrontRooms/UnityImported` (0 errors; 76 bounds warnings queued for sidecar review).
+- [x] Batch-import all 167 Unity surface/lighting textures into local `/Game/FrontRooms/UnityImported/Textures` (0 errors, 0 warnings).
 
 ## Next implementation gates
 
@@ -30,8 +31,9 @@ Contract schema: `1`
 - [x] Define engine-independent C++ grid/zone/chunk data shapes from the Unity contract.
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
 - [ ] Promote the importer to an editor asset factory for profile/modules/sidecars.
-- [ ] Import the staged 123 FBX meshes and source textures into UE Content with explicit units, axes, LOD and collision presets.
+- [x] Import the staged 123 FBX meshes and source textures into UE Content with explicit units, axes, LOD and collision presets (raw Unity import complete; preset assignment remains).
 - [ ] Apply sidecar collision/LOD metadata to the imported meshes and resolve the 76 import bounds warnings.
+- [ ] Assign Unity A/N/S/E/M/P channel settings to the imported textures.
 - [ ] Run `stage_unity_assets.ps1` after the UE content layout is approved, then configure FBX/material import presets.
 - [ ] Add the first UE world slice: one generated chunk, Character movement/sprint, and UMG HUD.
 - [ ] Add screenshot/input/audio traces before upgrading materials and lighting.
