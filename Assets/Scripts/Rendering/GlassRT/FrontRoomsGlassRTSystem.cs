@@ -53,7 +53,6 @@ static class FrontRoomsGlassRTSystem
     static int caps;
     static IntPtr eventFunc;
     static FrontRoomsGlassRTQuality? qualityOverride;
-    static bool loggedOn;
 
     public static IntPtr EventFunc => eventFunc;
 
@@ -1525,7 +1524,7 @@ static class FrontRoomsGlassRTSystem
         meshById.Clear(); meshByKey.Clear(); materialBlockSingle.Clear(); materialBlockMulti.Clear(); textureSlot.Clear(); cubePtr.Clear();
         tickets.Clear(); cameras.Clear();
         nextMaterial = 0; nextTexture = 4; liveCount = 0; map = null; mapRoot = null; relayRoot = null; dirLight = null;
-        lastSceneFrame = -1; nextMapSearch = 0f; nextDirSearch = 0f; started = false; loggedOn = false; warnedMarker = false;
+        lastSceneFrame = -1; nextMapSearch = 0f; nextDirSearch = 0f; started = false; warnedMarker = false;
         nextMeshKey = 0; meshesUploadedCPU = meshesUploadedGPU = meshUploadFailures = 0;
     }
 }

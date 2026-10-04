@@ -484,10 +484,6 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         CreateCache();
         block = new MaterialPropertyBlock();
         BuildMaterials();
-        // Desktop Metal RT is an additive glass reflection path. It is
-        // capability-gated and remains inert on WebGL/unsupported devices.
-        if (standalone && Application.isPlaying)
-            FrontRoomsMetalGlassRTController.Ensure();
         if (!standalone || !Application.isPlaying) return;
         ApplyRenderSettings();
         Begin(FrontRoomsMapWalker.Spawn(this, SpawnWorldPosition, transform.eulerAngles.y + spawnYaw).transform);
