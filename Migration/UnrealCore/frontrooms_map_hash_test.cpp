@@ -1,4 +1,5 @@
 #include "FrontRoomsMapHash.hpp"
+#include "FrontRoomsMapData.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -24,6 +25,18 @@ void expect_u32(std::uint32_t actual, std::uint32_t expected, const char* label)
 }  // namespace
 
 int main() {
+    using frontrooms::migration::EdgeKind;
+    using frontrooms::migration::LocalIndex;
+    using frontrooms::migration::MapConstants;
+    using frontrooms::migration::ZoneHeight;
+    expect(MapConstants::ChunkCells == 8, "chunk cell count");
+    expect(MapConstants::CellsPerChunk == 64, "chunk cell total");
+    expect(MapConstants::CeilingMeters(ZoneHeight::Low) == 2.4f, "low ceiling");
+    expect(MapConstants::CeilingMeters(ZoneHeight::Standard) == 2.9f, "standard ceiling");
+    expect(MapConstants::CeilingMeters(ZoneHeight::Tall) == 5.4f, "tall ceiling");
+    expect(LocalIndex(7, 7) == 63, "local cell indexing");
+    expect(static_cast<std::uint8_t>(EdgeKind::Window) == 4, "edge enum contract");
+
     expect_u32(MapHash::Mix(0x00000000u), 0x00000000u, "Mix(0)");
     expect_u32(MapHash::Mix(0x00000001u), 0x688990c0u, "Mix(1)");
     expect_u32(MapHash::Mix(0x12345678u), 0xf5e71c96u, "Mix(0x12345678)");

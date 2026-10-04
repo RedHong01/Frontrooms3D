@@ -13,10 +13,12 @@ Contract schema: `1`
 - [x] Add the Python `MapHash`/xorshift oracle with Unity-derived golden vectors.
 - [x] Add source-backed regression tests for the exporter and hash oracle.
 - [x] Add the Unity Editor golden-chunk exporter for the three validation seeds.
+- [x] Export all 113 prop sidecars into a mesh/collider/anchor/LOD manifest.
 
 ## Next implementation gates
 
 - [x] Compile the engine-independent C++ hash implementation against the Python oracle.
+- [x] Define engine-independent C++ grid/zone/chunk data shapes from the Unity contract.
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
 - [ ] Add the UE `UPrimaryDataAsset` importer for the profile/modules/sidecars.
 - [ ] Add the first UE runtime slice: fixed Title stream, one chunk, player movement, door, key and Relay Listen→Chase.

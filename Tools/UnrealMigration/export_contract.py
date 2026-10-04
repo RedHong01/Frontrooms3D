@@ -252,7 +252,12 @@ def build_contract(repo: Path) -> dict[str, Any]:
     scene_settings = repo / "ProjectSettings/EditorBuildSettings.asset"
     enabled_scenes = []
     if scene_settings.exists():
-        enabled_scenes = re.findall(r"path: (Assets/Scenes/[^,]+\.unity)", scene_settings.read_text(encoding="utf-8"))
+        scene_lines = scene_settings.read_text(encoding="utf-8").splitlines()
+        for index, line in enumerate(scene_lines[:-1]):
+            enabled = re.match(r"\s*- enabled:\s*(\d+)", line)
+            path = re.match(r"\s*path:\s*(Assets/Scenes/[^\r\n]+\.unity)\s*$", scene_lines[index + 1])
+            if enabled and path and int(enabled.group(1)) == 1:
+                enabled_scenes.append(path.group(1))
     source_files = [
         "Assets/Scripts/FrontRoomsMap/FrontRoomsMap.cs",
         "Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs",
