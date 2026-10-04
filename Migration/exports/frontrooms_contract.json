@@ -7,7 +7,7 @@
     ".blend": 2,
     ".blend1": 1,
     ".br": 4,
-    ".cs": 184,
+    ".cs": 195,
     ".dll": 21,
     ".dylib": 1,
     ".exr": 4,
@@ -23,11 +23,13 @@
     ".md": 8,
     ".mid": 1,
     ".mm": 1,
+    ".mp4": 1,
     ".otf": 24,
     ".plist": 13,
     ".png": 290,
     ".po": 2,
     ".py": 176,
+    ".sh": 2,
     ".shader": 8,
     ".so": 25,
     ".svg": 21,
@@ -1062,7 +1064,7 @@
   "schemaVersion": 1,
   "source": {
     "gitBranch": "unreal-migration",
-    "gitHead": "70644f00038f01d12d154d66bbae952b618c4113",
+    "gitHead": "6fde84eaaefa2c769a8e8c57ed47817f36139f7c",
     "sourceHashes": {
       "Assets/Scripts/Audio/FrontRoomsSoundIds.cs": "fbde6aaff31aebde43f2320cfba2ac2606b2b137832d04c8f183b93e9411efde",
       "Assets/Scripts/FrontRoomsMap/FrontRoomsLevelProfile.cs": "0f779f31a704b0805277f8a4ef29820f6c0deab26f815334378c37c5ed107ca1",
@@ -1071,7 +1073,7 @@
       "Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs": "4144008eb0ca487e36c0bc166cbe4d232ad486245fab825491f9893fb855bf3a",
       "Assets/Scripts/FrontRoomsMap/FrontRoomsRoomModuleData.cs": "9fad43a6f3505b33f8f934f2df242cd6c6030ab957f211bb4fd4905a1f8b554d"
     },
-    "unityManifestSha256": "061f3c875ea614d25ccee8fcb2cb49958f8321957241983ebf2697259ab1eb71",
+    "unityManifestSha256": "8f376574369ccfcccc3801c00ecd4b9fc3cdc104a15e97c0e3794ef293211765",
     "unityVersion": "6000.3.10f1",
     "unityVersionWithRevision": "6000.3.10f1 (e35f0c77bd8e)"
   },
