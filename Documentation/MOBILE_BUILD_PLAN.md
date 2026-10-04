@@ -7,7 +7,7 @@
 ## 目前的工程基线
 
 - 权威工程是 `Frontrooms3D/`，Unity `6000.3.10f1`，URP `17.3.0`；启动场景只有 `Assets/Scenes/FrontRooms3D.unity`。
-- 现有构建脚本只有 macOS、Windows、WebGL。没有 iOS Xcode 导出、Android APK/AAB 或移动端构建入口。
+- `Assets/Editor/FrontRoomsMobileBuild.cs` 已新增独立的 iOS Xcode、Android APK/AAB 和 profile validation 入口；真实导出仍未执行。
 - `FrontRooms3DGame` 的移动核心读取已切到 `FrontRoomsInput.FrameSnapshot`（移动、视角、冲刺、USE、暂停、开始、重试、shot-back）；设置行触控已直接复用 `FrontRoomsSettings`。
 - HUD 仍在运行时创建为 Screen Space Overlay；新增的 `FrontRoomsTouchControls` + `FrontRoomsTouchControlsView` 会在移动运行时创建独立 Touch Canvas、safe-area、浮动摇杆、冲刺 socket、USE 视觉/88 hit、Pause 视觉/44 hit，以及 Title/Pause/Settings/Caught 菜单命中区。
 - Android API 33+ predictive Back bridge、旧设备 Escape fallback、暂停/设置/恢复映射已接入；重启确认、设置行点击和 Caught 重试已走同一触控状态机。
@@ -83,17 +83,17 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 ### T2 · 菜单、设置和触控状态（第一版已接入，待设备回归）
 
-把 Title/Pause/Settings/Caught 从键盘专属路径变成可点击 chip 与 row。当前已接入 Title start、Pause restart/settings、Settings 六行、Caught try-again、Android Back 和 Pause restart confirm/cancel；Settings 的值变更复用已有 `FrontRoomsSettings` 状态。controls size 80–140%、opacity、left-handed、look speed、invert、gyro、stick（Floating / Fixed）、Sprint（Socket / Button）仍需补齐。任何触控控件在 pointer down/up/cancel、pause、应用失焦和场景重载时都要释放对应 touch id。
+把 Title/Pause/Settings/Caught 从键盘专属路径变成可点击 chip 与 row。当前已接入 Title start、Pause restart/settings、9 行触控偏好、Caught try-again、Android Back 和 Pause restart confirm/cancel；设置值复用 `FrontRoomsSettings`，并即时刷新当前 touch layer。Gyro 已有 Off/While Touching/Always 第一版，layout editor 和设备回归仍待做。任何触控控件在 pointer down/up/cancel、pause、应用失焦和场景重载时都要释放对应 touch id。
 
 ### T3 · haptics、gyro 和移动质量层（haptics 第一版已接入）
 
-新增 iOS/Android 条件编译的 haptic adapter，已覆盖 sprint engage、USE pressed/released、glass progress/break、caught 和菜单确认；当前使用 `Handheld.Vibrate()` 基线并保留语义事件总线，原生 Core Haptics / Android `performHapticFeedback`、gameplay/control 两个开关和设备强度校准仍待做。Gyro 默认关闭，开启后与右侧 drag look 叠加时要有确定的优先级。Camera Motion、Reduce Flashing 和 captions/relay readout 都必须在移动设备上可关闭或降级。
+新增 iOS/Android 条件编译的 haptic adapter，已覆盖 sprint engage、USE pressed/released、glass progress/break、caught 和菜单确认；当前使用 `Handheld.Vibrate()` 基线并保留语义事件总线，原生 Core Haptics / Android `performHapticFeedback`、gameplay/control 两个开关和设备强度校准仍待做。Gyro 已接入 Off/While Touching/Always 第一版，当前系数仍需设备校准。Camera Motion、Reduce Flashing 和 captions/relay readout 都必须在移动设备上可关闭或降级。
 
 质量层先建立 Mobile 级别：关闭 macOS-only glass RT，验证标准 URP glass fallback、HDR、MSAA、反射、灯光 tick、纹理尺寸和 shader variant；移动默认应从较低的 MSAA、阴影图集/距离、灯光数量和 SSAO 档位开始，再用设备 profile 决定是否提升。构建时显式选择 iPhone Metal，Android 先 Vulkan、必要时 GLES3 fallback，并检查日志中没有 RT dylib/PInvoke 加载。目标设备先锁定近期 iPhone（Metal）与 Android arm64（Vulkan，必要时 GLES3 fallback）。
 
-### T4 · 构建和真机验证
+### T4 · 构建和真机验证（导出入口已接入，待运行）
 
-新增独立的 `FrontRoomsMobileBuild` Editor 入口，分别导出 iOS Xcode 工程和 Android APK/AAB；不要改写现有 Mac/WebGL 构建 profile。构建脚本负责设置版本号、application identifier、横屏方向、安全区相关 PlayerSettings、IL2CPP、Android API 36、纹理压缩和 mobile quality tier，但不把个人签名、keystore 或 provisioning profile 写入仓库。当前项目 Unity 是 `6000.3.10f1`，Figma 计划写的是 `6000.3.13+`；升级前要先在独立分支导入、编译和验证场景/插件。
+独立的 `FrontRoomsMobileBuild` Editor 入口已加入，分别导出 iOS Xcode 工程和 Android APK/AAB；不要改写现有 Mac/WebGL 构建 profile。入口负责设置版本号、application identifier、横屏 autorotate flags、IL2CPP、Android API 36、ARM64、Vulkan/GLES3 和 ASTC，但不把个人签名、keystore 或 provisioning profile 写入仓库。真实导出前要先在独立分支验证当前 Unity `6000.3.10f1` 与 Figma 计划中的 `6000.3.13+` 差异。
 
 建议的第一批发布验证顺序：
 
@@ -114,7 +114,7 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
 | Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 第一版代码已接线；Device Simulator/实机回归待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
-| Build | Xcode export、APK/AAB、包版本/identifier/图标正确 | 未开始 |
+| Build | Xcode export、APK/AAB、包版本/identifier/图标正确 | 独立入口已编译；真实导出与包验收待做 |
 | Store/TestFlight | 仅在签名、隐私、图标、启动图和设备验收完成后决定 | 未开始 |
 
 ## 需要先定下的六个产品决定
@@ -130,4 +130,4 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 ## 下一步
 
-下一步是用 Device Simulator 校准 safe-area 与 hit rect，再补齐触控设置和原生 haptics/gyro，最后新增独立 iOS/Android 导出入口。每一阶段都要留下对应的 Play Mode/设备截图和日志，再推进下一层。
+下一步是用 Device Simulator 校准 safe-area 与 hit rect，再补原生 haptics/gyro，运行 iOS Xcode 与 Android Debug 导出，最后在真实设备留下截图、手势日志和 FMOD/性能记录。每一阶段都要留下对应证据，再推进下一层。

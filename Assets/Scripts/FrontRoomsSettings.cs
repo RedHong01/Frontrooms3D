@@ -22,6 +22,7 @@ public static class FrontRoomsSettings
     const string TouchFloatingStickKey = "FrontRooms.Touch.FloatingStick";
     const string TouchSprintSocketKey = "FrontRooms.Touch.SprintSocket";
     const string TouchHapticsKey = "FrontRooms.Touch.Haptics";
+    const string TouchGyroKey = "FrontRooms.Touch.Gyro";
 
     /// <summary>Camera motion in shots and shakes: 0 (off: takeovers play in place, look stays free), 50 or 100.</summary>
     public static int CameraMotionPercent { get; private set; } = 100;
@@ -44,6 +45,8 @@ public static class FrontRoomsSettings
     public static bool TouchFloatingStick { get; private set; } = true;
     public static bool TouchSprintSocket { get; private set; } = true;
     public static bool TouchHaptics { get; private set; } = true;
+    /// <summary>0 off, 1 while a look/use finger is down, 2 always.</summary>
+    public static int TouchGyroMode { get; private set; }
 
     /// <summary>Raised after any setting changes.</summary>
     public static event Action Changed;
@@ -63,6 +66,7 @@ public static class FrontRoomsSettings
         TouchFloatingStick = PlayerPrefs.GetInt(TouchFloatingStickKey, 1) != 0;
         TouchSprintSocket = PlayerPrefs.GetInt(TouchSprintSocketKey, 1) != 0;
         TouchHaptics = PlayerPrefs.GetInt(TouchHapticsKey, 1) != 0;
+        TouchGyroMode = Mathf.Clamp(PlayerPrefs.GetInt(TouchGyroKey, 0), 0, 2);
         FrontRoomsMobileHaptics.Enabled = TouchHaptics;
     }
 
@@ -111,6 +115,12 @@ public static class FrontRoomsSettings
         TouchHaptics = on;
         FrontRoomsMobileHaptics.Enabled = on;
         Save(TouchHapticsKey, on ? 1 : 0);
+    }
+
+    public static void StepTouchGyro(int direction)
+    {
+        TouchGyroMode = (TouchGyroMode + (direction > 1 ? 1 : direction >= 0 ? 1 : -1) + 3) % 3;
+        Save(TouchGyroKey, TouchGyroMode);
     }
 
     static int Snap(int percent) => percent <= 25 ? 0 : percent < 75 ? 50 : 100;

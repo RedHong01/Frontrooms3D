@@ -21,14 +21,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Image moveKnob;
     Image sprintSocket;
     Image useButton;
+    Text useButtonLabel;
     Image useRing;
     Image pauseButton;
     Image sprintButton;
+    Text sprintButtonLabel;
     Image restartCancelButton;
     Image[] menuButtons = new Image[4];
     Text[] menuButtonLabels = new Text[4];
-    Image[] settingsRowButtons = new Image[8];
-    Text[] settingsRowLabels = new Text[8];
+    Image[] settingsRowButtons = new Image[9];
+    Text[] settingsRowLabels = new Text[9];
     RectTransform useHitArea;
     RectTransform pauseHitArea;
     RectTransform startHitArea;
@@ -37,7 +39,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     RectTransform caughtRestartHitArea;
     RectTransform restartCancelHitArea;
     RectTransform sprintButtonHitArea;
-    RectTransform[] settingsRowHitAreas = new RectTransform[8];
+    RectTransform[] settingsRowHitAreas = new RectTransform[9];
     Sprite circle;
     Rect lastSafe;
     Vector2Int lastSize;
@@ -72,6 +74,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         opacity = Mathf.Clamp01(FrontRoomsSettings.TouchOpacityPercent / 100f);
         if (safeRoot != null)
             safeRoot.localScale = Vector3.one * (FrontRoomsSettings.TouchControlsScalePercent / 100f);
+        // Left-handed changes move the right/left action cluster even when
+        // the display itself did not resize.
+        lastSafe = new Rect();
+        lastSize = Vector2Int.zero;
         ApplyImageAlpha(moveBase, opacity);
         ApplyImageAlpha(moveKnob, opacity + .12f);
         ApplyImageAlpha(sprintSocket, opacity + .06f);
@@ -121,6 +127,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         sprintSocket = Circle("Touch / Sprint socket", SprintDiameter, new Color(.956f, .875f, .231f, opacity + .06f));
         sprintButton = Circle("Touch / Sprint button", 64f, new Color(.956f, .875f, .231f, opacity + .1f));
         useButton = Circle("Touch / USE", UseDiameter, new Color(.956f, .875f, .231f, opacity + .1f));
+        useButtonLabel = ButtonLabel(useButton, "USE", 12);
+        sprintButtonLabel = ButtonLabel(sprintButton, "SPRINT", 10);
         useRing = Ring("Touch / USE hold ring", 92f, new Color(.956f, .875f, .231f, .85f));
         pauseButton = Circle("Touch / Pause", 32f, new Color(1f, 1f, 1f, opacity + .06f));
 
@@ -167,6 +175,24 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         image.raycastTarget = false;
         image.rectTransform.sizeDelta = new Vector2(diameter, diameter);
         return image;
+    }
+
+    Text ButtonLabel(Image button, string value, int size)
+    {
+        var textObject = new GameObject(button.name + " label", typeof(RectTransform), typeof(Text));
+        textObject.transform.SetParent(button.transform, false);
+        var text = textObject.GetComponent<Text>();
+        text.font = Resources.Load<Font>("Fonts/Bayon-Regular") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.text = value;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.fontSize = size;
+        text.fontStyle = FontStyle.Bold;
+        text.color = Color.white;
+        text.raycastTarget = false;
+        text.rectTransform.anchorMin = Vector2.zero;
+        text.rectTransform.anchorMax = Vector2.one;
+        text.rectTransform.offsetMin = text.rectTransform.offsetMax = Vector2.zero;
+        return text;
     }
 
     RectTransform HitArea(string name, float diameter)
@@ -222,7 +248,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var textObject = new GameObject(name + " label", typeof(RectTransform), typeof(Text));
         textObject.transform.SetParent(go.transform, false);
         var text = textObject.GetComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.font = Resources.Load<Font>("Fonts/Bayon-Regular") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
         text.text = label;
         text.alignment = TextAnchor.MiddleCenter;
         text.fontSize = 18;
@@ -247,8 +273,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     void BuildSettingsRows()
     {
-        const int rowCount = 8;
-        var labels = new[] { "TOUCH SIZE", "TOUCH OPACITY", "HANDEDNESS", "LOOK SPEED", "INVERT LOOK", "STICK", "SPRINT", "HAPTICS" };
+        const int rowCount = 9;
+        var labels = new[] { "TOUCH SIZE", "TOUCH OPACITY", "HANDEDNESS", "LOOK SPEED", "INVERT LOOK", "STICK", "SPRINT", "HAPTICS", "GYRO LOOK" };
         for (var i = 0; i < rowCount; i++)
         {
             // The settings card is 920x720 in the existing HUD. Keep each
@@ -262,7 +288,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             var labelObject = new GameObject("Touch / Settings row " + i + " label", typeof(RectTransform), typeof(Text));
             labelObject.transform.SetParent(row, false);
             var label = labelObject.GetComponent<Text>();
-            label.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            label.font = Resources.Load<Font>("Fonts/IBMPlexMono-Regular") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
             label.text = labels[i];
             label.fontSize = 15;
             label.fontStyle = FontStyle.Bold;
@@ -359,10 +385,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         var playing = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing;
         useButton.gameObject.SetActive(playing && controls.CurrentUsePrompt.Visible);
+        useButtonLabel.gameObject.SetActive(playing && controls.CurrentUsePrompt.Visible);
         useRing.gameObject.SetActive(playing && controls.CurrentUsePrompt.Visible && controls.CurrentUsePrompt.Hold);
         useRing.fillAmount = Mathf.Clamp01(controls.CurrentUsePrompt.Progress);
         useHitArea.gameObject.SetActive(playing && controls.CurrentUsePrompt.Visible);
         sprintButton.gameObject.SetActive(playing && !controls.SprintSocketMode);
+        sprintButtonLabel.gameObject.SetActive(playing && !controls.SprintSocketMode);
         sprintButtonHitArea.gameObject.SetActive(playing && !controls.SprintSocketMode);
         pauseButton.gameObject.SetActive(playing || controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused || controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings);
         pauseHitArea.gameObject.SetActive(pauseButton.gameObject.activeSelf);
@@ -402,7 +430,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             SetScreenPosition(moveKnob.rectTransform, thumb);
             SetScreenPosition(sprintSocket.rectTransform, origin + Vector2.up * SprintOffset);
         }
-        useButton.color = new Color(.956f, .875f, .231f, opacity + (controls.UseHeld ? .22f : .1f));
+        var prompt = controls.CurrentUsePrompt;
+        useButtonLabel.text = MobileUseLabel(prompt);
+        useButtonLabel.color = prompt.Locked ? new Color(1f, 1f, 1f, .6f) : Color.white;
+        useButton.color = prompt.Locked
+            ? new Color(.55f, .55f, .55f, opacity + .05f)
+            : new Color(.956f, .875f, .231f, opacity + (controls.UseHeld ? .22f : .1f));
         sprintSocket.color = new Color(.956f, .875f, .231f, opacity + (controls.SprintSocketLatched ? .22f : .06f));
         sprintButton.color = new Color(.956f, .875f, .231f, opacity + (controls.SprintSocketLatched ? .22f : .1f));
     }
@@ -419,8 +452,21 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case 5: return "STICK   " + (FrontRoomsSettings.TouchFloatingStick ? "FLOATING" : "FIXED");
             case 6: return "SPRINT   " + (FrontRoomsSettings.TouchSprintSocket ? "SOCKET" : "BUTTON");
             case 7: return "HAPTICS   " + (FrontRoomsSettings.TouchHaptics ? "ON" : "OFF");
+            case 8: return "GYRO LOOK   " + (FrontRoomsSettings.TouchGyroMode == 0 ? "OFF" : FrontRoomsSettings.TouchGyroMode == 1 ? "WHILE TOUCHING" : "ALWAYS");
             default: return string.Empty;
         }
+    }
+
+    static string MobileUseLabel(FrontRoomsTouchControls.UsePrompt prompt)
+    {
+        if (!prompt.Visible) return string.Empty;
+        if (prompt.Locked || prompt.Kind == FrontRoomsTouchControls.UseKind.Locked) return "LOCKED";
+        if (prompt.Hold) return prompt.TapMode ? "TAP" : "HOLD";
+        var label = prompt.Label ?? string.Empty;
+        if (label.IndexOf("OPEN", StringComparison.OrdinalIgnoreCase) >= 0) return "OPEN";
+        if (label.IndexOf("SHUT", StringComparison.OrdinalIgnoreCase) >= 0) return "SHUT";
+        if (label.IndexOf("TAKE", StringComparison.OrdinalIgnoreCase) >= 0) return "TAKE";
+        return "USE";
     }
 
     void SetScreenPosition(RectTransform rect, Vector2 screenPosition)

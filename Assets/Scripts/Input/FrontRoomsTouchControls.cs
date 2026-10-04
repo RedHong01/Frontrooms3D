@@ -144,10 +144,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     [Header("Look and taps")]
     // EnhancedTouch reports screen points. A 200 pt thumb sweep should turn
-    // roughly 24 degrees by default; the settings layer can expose this as
-    // the 1–10 LOOK SPEED row later.
+    // roughly 24 degrees by default; the touch settings layer scales this
+    // through the LOOK SPEED row.
     [SerializeField, Min(0.01f)] float lookSensitivity = 0.12f;
     [SerializeField] bool invertLook;
+    [SerializeField, Range(0, 2)] int gyroMode;
     [SerializeField, Min(0f)] float tapMoveThreshold = 12f;
     [SerializeField, Min(0f)] float tapMaxSeconds = 0.2f;
     [SerializeField] bool winded;
@@ -283,6 +284,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             EnhancedTouchSupport.Enable();
             enhancedTouchOwner = true;
         }
+        EnableGyroIfNeeded();
 #endif
         UpdateSafeArea(true);
     }
@@ -409,6 +411,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public void SetControlsScale(float value) => controlsScale = Mathf.Clamp(value, 0.8f, 1.4f);
     public void SetLookSensitivity(float value) => lookSensitivity = Mathf.Clamp(value, 0.01f, 0.5f);
     public void SetInvertLook(bool value) => invertLook = value;
+    public void SetGyroMode(int value)
+    {
+        gyroMode = Mathf.Clamp(value, 0, 2);
+#if UNITY_IOS || UNITY_ANDROID
+        EnableGyroIfNeeded();
+#endif
+    }
     public void SetFloatingStick(bool value)
     {
         if (floatingStick == value) return;
@@ -436,6 +445,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         SetLeftHanded(FrontRoomsSettings.TouchLeftHanded);
         SetLookSensitivity(.12f * FrontRoomsSettings.TouchLookSpeedPercent / 100f);
         SetInvertLook(FrontRoomsSettings.TouchInvertLook);
+        SetGyroMode(FrontRoomsSettings.TouchGyroMode);
         floatingStick = FrontRoomsSettings.TouchFloatingStick;
         sprintSocketMode = FrontRoomsSettings.TouchSprintSocket;
         FrontRoomsMobileHaptics.Enabled = FrontRoomsSettings.TouchHaptics;
@@ -732,8 +742,35 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
         if (moveTouchActive)
             CurrentFrame.Move = CalculateMove();
+        AddGyroLook();
         CurrentFrame.SprintHeld = sprintLatched && !winded;
         CurrentFrame.UseHeld = useTouchId >= 0;
+    }
+
+    void AddGyroLook()
+    {
+        if (gyroMode <= 0)
+            return;
+        var touching = lookTouchId >= 0 || useTouchId >= 0;
+        if (gyroMode == 1 && !touching)
+            return;
+        var gyro = UnityEngine.InputSystem.Gyroscope.current;
+        if (gyro == null)
+            return;
+        var angular = gyro.angularVelocity.ReadValue();
+        // Angular velocity is rad/s; the scalar keeps the first pass close to
+        // drag look and intentionally leaves device calibration for T3.
+        var delta = new Vector2(angular.y, invertLook ? angular.x : -angular.x)
+            * Mathf.Rad2Deg * Time.unscaledDeltaTime * .55f;
+        CurrentFrame.LookDelta += delta;
+    }
+
+    void EnableGyroIfNeeded()
+    {
+        if (gyroMode <= 0) return;
+        var gyro = UnityEngine.InputSystem.Gyroscope.current;
+        if (gyro != null && !gyro.enabled)
+            UnityEngine.InputSystem.InputSystem.EnableDevice(gyro);
     }
 
     void BeginTouch(int id, Vector2 position)

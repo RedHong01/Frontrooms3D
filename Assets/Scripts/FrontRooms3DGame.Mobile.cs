@@ -90,7 +90,7 @@ public sealed partial class FrontRooms3DGame
         // Mobile settings are deliberately a compact touch-only list. Keep
         // desktop's keyboard rows independent so the existing HUD layout does
         // not acquire tiny, hard-to-hit controls.
-        if (index < 0 || index >= 8)
+        if (index < 0 || index >= 9)
             return;
         switch (index)
         {
@@ -102,6 +102,7 @@ public sealed partial class FrontRooms3DGame
             case 5: FrontRoomsSettings.SetTouchFloatingStick(!FrontRoomsSettings.TouchFloatingStick); break;
             case 6: FrontRoomsSettings.SetTouchSprintSocket(!FrontRoomsSettings.TouchSprintSocket); break;
             case 7: FrontRoomsSettings.SetTouchHaptics(!FrontRoomsSettings.TouchHaptics); break;
+            case 8: FrontRoomsSettings.StepTouchGyro(2); break;
         }
         mobileTouch?.ApplySavedSettings();
         UpdateDisplaySettingsText();

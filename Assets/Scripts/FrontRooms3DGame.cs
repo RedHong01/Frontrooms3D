@@ -711,7 +711,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         MapRunStarted?.Invoke(map, relay);
         map.GenerationTier = tier;
         TierChanged?.Invoke(tier);
+#if UNITY_EDITOR
         AutopilotRunStarted();
+#endif
         Log("START · in place in stream room " + terminal + " · maze seed " + runSeed + " behind its door, map root " + map.transform.position + ", door cell " + startDoorCell
             + " · " + watch.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture) + " ms (map " + createMs.ToString("0.0", CultureInfo.InvariantCulture) + ", placing " + placeMs.ToString("0.0", CultureInfo.InvariantCulture) + ")");
     }
@@ -1643,6 +1645,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void UpdateDisplaySettingsText()
     {
         if (displaySettingsText == null) return;
+        // The mobile canvas owns the eight larger touch preference rows. Keep
+        // the legacy desktop text panel as a quiet title/instruction layer so
+        // its six keyboard rows do not sit underneath those touch targets.
+        if (Application.isMobilePlatform)
+        {
+            displaySettingsText.text = "<size=30><b>TOUCH SETTINGS</b></size>\n\n<size=16>TAP A ROW TO CHANGE    BACK TO CLOSE</size>";
+            return;
+        }
         var rows = SettingsRows();
         settingsIndex = (settingsIndex % rows.Length + rows.Length) % rows.Length;
         var text = new System.Text.StringBuilder("<size=30><b>SETTINGS</b></size>\n");
