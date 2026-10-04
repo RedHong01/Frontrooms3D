@@ -105,6 +105,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         public bool StartPressed;
         public bool RestartPressed;
         public bool SettingsPressed;
+        public bool RestartCancelPressed;
         public bool ShotBack;
         public int SettingsRow;
     }
@@ -122,6 +123,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     [SerializeField] RectTransform pauseHitArea;
     [SerializeField] RectTransform startHitArea;
     [SerializeField] RectTransform restartHitArea;
+    [SerializeField] RectTransform caughtRestartHitArea;
+    [SerializeField] RectTransform restartCancelHitArea;
     [SerializeField] RectTransform settingsHitArea;
     [SerializeField] List<SettingsRowBinding> settingsRows = new List<SettingsRowBinding>();
     [SerializeField, Min(0.5f)] float controlsScale = 1f;
@@ -152,6 +155,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public UnityEvent onRestartPressed = new UnityEvent();
     public UnityEvent onSettingsPressed = new UnityEvent();
     public UnityEvent<int> onSettingsRowPressed = new UnityEvent<int>();
+    public UnityEvent onRestartCancelPressed = new UnityEvent();
     public UnityEvent onUsePressed = new UnityEvent();
     public UnityEvent onUseReleased = new UnityEvent();
 
@@ -167,6 +171,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public event Action SettingsRequested;
     /// <summary>Raised by a settings row. The index is the binding's Index.</summary>
     public event Action<int> SettingsRowRequested;
+    /// <summary>Raised when a pending pause restart is canceled.</summary>
+    public event Action RestartCancelRequested;
     /// <summary>Raised on a fresh USE press (E down equivalent).</summary>
     public event Action UsePressed;
     /// <summary>Raised when the USE finger is lifted/canceled.</summary>
@@ -197,10 +203,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public bool StartPressedThisFrame => CurrentFrame.StartPressed;
     public bool RestartPressedThisFrame => CurrentFrame.RestartPressed;
     public bool SettingsPressedThisFrame => CurrentFrame.SettingsPressed;
+    public bool RestartCancelPressedThisFrame => CurrentFrame.RestartCancelPressed;
     /// <summary>Edge pulse produced when the move thumb is pulled back (S equivalent).</summary>
     public bool ShotBackPressedThisFrame => CurrentFrame.ShotBack;
     public int SettingsRowPressedThisFrame => CurrentFrame.SettingsRow;
     public bool SprintSocketLatched => sprintLatched;
+    public bool RestartConfirmationOpen { get; private set; }
     public float SprintSocketProgress => sprintSocketProgress;
     public Vector2 StickOriginScreenPosition => stickOrigin;
     public Vector2 StickThumbScreenPosition => stickThumb;
@@ -221,7 +229,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         Start,
         Restart,
         Settings,
-        SettingsRow
+        SettingsRow,
+        RestartCancel
     }
 
     struct TouchState
@@ -346,6 +355,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             StartPressed = false,
             RestartPressed = false,
             SettingsPressed = false,
+            RestartCancelPressed = false,
             ShotBack = false,
             SettingsRow = -1
         };
@@ -425,7 +435,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public void SetPauseHitArea(RectTransform area) => pauseHitArea = area;
     public void SetStartHitArea(RectTransform area) => startHitArea = area;
     public void SetRestartHitArea(RectTransform area) => restartHitArea = area;
+    public void SetCaughtRestartHitArea(RectTransform area) => caughtRestartHitArea = area;
+    public void SetRestartCancelHitArea(RectTransform area) => restartCancelHitArea = area;
     public void SetSettingsHitArea(RectTransform area) => settingsHitArea = area;
+
+    public void SetRestartConfirmation(bool open)
+    {
+        RestartConfirmationOpen = open;
+        if (open)
+            SetMenuState(MenuState.Paused);
+    }
 
     public void BindSettingsRow(int index, RectTransform hitArea)
     {
@@ -470,10 +489,19 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     void InvokeSettingsRow(int index)
     {
-        CurrentFrame.SettingsPressed = true;
+        // A row tap has its own indexed callback. Do not also publish the
+        // generic Settings edge: FrontRooms3DGame uses that edge to toggle
+        // the settings panel, while a row tap must keep the panel open.
         CurrentFrame.SettingsRow = index;
         SettingsRowRequested?.Invoke(index);
         onSettingsRowPressed?.Invoke(index);
+    }
+
+    void InvokeRestartCancel()
+    {
+        CurrentFrame.RestartCancelPressed = true;
+        RestartCancelRequested?.Invoke();
+        onRestartCancelPressed?.Invoke();
     }
 
     void InvokeUsePressed()
@@ -542,7 +570,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         return startHitArea != null ? Contains(startHitArea, position) : DefaultStartRect().Contains(position);
     }
 
-    bool IsRestartHit(Vector2 position) => Contains(restartHitArea, position);
+    bool IsRestartHit(Vector2 position)
+    {
+        var area = menuState == MenuState.Caught && caughtRestartHitArea != null
+            ? caughtRestartHitArea
+            : restartHitArea;
+        return Contains(area, position);
+    }
     bool IsSettingsHit(Vector2 position) => Contains(settingsHitArea, position);
 
     bool IsSettingsRowHit(Vector2 position, out int index)

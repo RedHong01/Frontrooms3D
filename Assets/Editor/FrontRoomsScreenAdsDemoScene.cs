@@ -8,6 +8,15 @@ using UnityEngine.SceneManagement;
 public static class FrontRoomsScreenAdsDemoScene
 {
     public const string ScenePath = "Assets/Scenes/FrontRoomsScreenAdsDemo.unity";
+    const string CreateRequestPath = "Assets/Editor/.create_screen_ads_demo";
+
+    [InitializeOnLoadMethod]
+    static void CreateIfRequested()
+    {
+        if (!File.Exists(CreateRequestPath)) return;
+        File.Delete(CreateRequestPath);
+        EditorApplication.delayCall += CreateScene;
+    }
 
     [MenuItem("FrontRooms 3D/Create Screen Ads Demo Scene")]
     public static void CreateScene()
@@ -109,6 +118,7 @@ public static class FrontRoomsScreenAdsDemoScene
         label.text = "FRONTROOMS  /  SCREEN ADS\n1990 MEDIA TEST BAY";
         label.anchor = TextAnchor.MiddleCenter;
         label.alignment = TextAlignment.Center;
+        label.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
         label.fontSize = 48;
         label.characterSize = .035f;
         label.color = new Color(1f, .87f, .28f);

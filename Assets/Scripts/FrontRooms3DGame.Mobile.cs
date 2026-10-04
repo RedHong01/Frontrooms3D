@@ -5,6 +5,7 @@ using UnityEngine;
 public sealed partial class FrontRooms3DGame
 {
     FrontRoomsTouchControls mobileTouch;
+    bool mobileTouchEventsBound;
 
     void EnsureMobileTouchLayer()
     {
@@ -13,7 +14,27 @@ public sealed partial class FrontRooms3DGame
         if (mobileTouch == null) mobileTouch = gameObject.AddComponent<FrontRoomsTouchControls>();
         if (GetComponent<FrontRoomsTouchControlsView>() == null)
             gameObject.AddComponent<FrontRoomsTouchControlsView>();
+        if (!mobileTouchEventsBound)
+        {
+            // Settings rows are the one menu action that is not represented by
+            // a scalar Input facade edge. The touch layer sends the row index
+            // directly; keyboard navigation continues through HandleSettingsKeys.
+            mobileTouch.SettingsRowRequested += HandleMobileSettingsRow;
+            mobileTouchEventsBound = true;
+        }
         UpdateMobileTouchMenu();
+    }
+
+    void HandleMobileSettingsRow(int index)
+    {
+        if (phase != Phase.Paused || !displaySettingsOpen)
+            return;
+        var rows = SettingsRows();
+        if (index < 0 || index >= rows.Length)
+            return;
+        settingsIndex = index;
+        rows[index].step(2);
+        UpdateDisplaySettingsText();
     }
 
     void UpdateMobileTouchMenu()
