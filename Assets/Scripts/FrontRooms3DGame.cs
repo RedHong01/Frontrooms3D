@@ -113,7 +113,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     [SerializeField, Tooltip("Optional room prefab/template copied into each streamed title room.")]
     GameObject streamedRoomTemplate;
     float titleLogoAlpha;
-    float logoMotionElapsed;
+    // The trailing-S relay's clock, 0..1 (AdvanceLogoRelay).
+    float logoRelayProgress;
     // The wordmark fades out over the first moments of play instead of vanishing.
     bool logoFading;
     const float LogoExitSeconds = .55f;
@@ -430,7 +431,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             foley == null ? null : foley.Doors.travel,
             ProfileMaterials(wallMats), ProfileMaterials(floorMats), ProfileMaterials(ceilingMats));
         titleLogoAlpha = 0f;
-        logoMotionElapsed = 0f;
+        logoRelayProgress = 0f;
         logoFading = false;
         mapPlay = false;
         if (cam != null) cam.transform.rotation = Quaternion.identity;
@@ -442,8 +443,8 @@ public sealed class FrontRooms3DGame : MonoBehaviour
         roomStream.Tick(dt);
         // Historical title clock: the complete wordmark stays present while
         // the first streamed door drives the two trailing-S relays.
-        logoMotionElapsed += dt;
         titleLogoAlpha = roomStream.LogoVisibility;
+        AdvanceLogoRelay(dt);
         UpdateLogoMotion();
     }
 
@@ -454,7 +455,25 @@ public sealed class FrontRooms3DGame : MonoBehaviour
     {
         titleLogoAlpha = Mathf.MoveTowards(titleLogoAlpha, 0f, dt / LogoExitSeconds);
         if (titleLogoAlpha <= 0f) logoFading = false;
+        AdvanceLogoRelay(dt);
         UpdateLogoMotion();
+    }
+
+    /// <summary>
+    /// The relay follows the first streamed door, but never over a partly
+    /// revealed mark. UI Toolkit applies opacity to each element, not to the
+    /// lockup as a group, so while the wordmark fades in its solid S cannot
+    /// hide the two S stacked under it: they show through it, and move at a
+    /// fraction of their own gradient (2993e80 tied the relay to the door, which
+    /// opens at about 26–49% of the 4 s fade). The clock holds until the
+    /// reveal is complete, then catches up with the door at the door's own
+    /// pace. Once started it finishes, even while play fades the mark out.
+    /// </summary>
+    void AdvanceLogoRelay(float dt)
+    {
+        if (roomStream == null) return;
+        if (titleLogoAlpha < 1f && logoRelayProgress <= 0f) return;
+        logoRelayProgress = Mathf.MoveTowards(logoRelayProgress, roomStream.FirstDoorProgress, dt / FrontRoomsRoomStream.DoorOpenSeconds);
     }
 
     void UpdateLogoMotion()
@@ -467,14 +486,15 @@ public sealed class FrontRooms3DGame : MonoBehaviour
 
             // Historical 11:53 title motion: the complete wordmark is
             // stationary and the two afterimage S forms relay from the final
-            // S as the first streamed door opens. The later per-letter wipe is
-            // intentionally disabled; room/gameplay systems are unchanged.
-            var doorProgress = roomStream == null ? 0f : roomStream.FirstDoorProgress;
+            // S as the first streamed door opens (on the guarded clock of
+            // AdvanceLogoRelay). The later per-letter wipe is intentionally
+            // disabled; room/gameplay systems are unchanged.
+            var relayClock = logoRelayProgress;
             var s1End = logoMotionVariation == LogoMotionVariation.FullLockup ? .66f : LogoS1SettleAt;
             var s2Start = logoMotionVariation == LogoMotionVariation.FullLockup ? .70f : LogoS2StartAt;
-            var vectorS1T = Mathf.Clamp01(doorProgress / s1End);
+            var vectorS1T = Mathf.Clamp01(relayClock / s1End);
             vectorS1T = vectorS1T * vectorS1T * (3f - 2f * vectorS1T);
-            var vectorS2T = Mathf.Clamp01((doorProgress - s2Start) / (1f - s2Start));
+            var vectorS2T = Mathf.Clamp01((relayClock - s2Start) / (1f - s2Start));
             vectorS2T = vectorS2T * vectorS2T * (3f - 2f * vectorS2T);
             // VectorImage assets are imported at their painted bounds (about
             // 78px wide), so their CSS left value is already the visible
@@ -492,7 +512,7 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             // first-S position at the handoff, not from a second, tighter
             // offset. This keeps the two trailing glyphs evenly tracked.
             var vectorS2StartX = Mathf.Lerp(798f, 842f, s2StartS1T);
-            var vectorS2X = doorProgress < s2Start
+            var vectorS2X = relayClock < s2Start
                 ? vectorS1X
                 : Mathf.Lerp(vectorS2StartX, 880f, vectorS2T);
             vectorLogoS1Image.style.left = new UiLength(vectorS1X, UiLengthUnit.Pixel);
@@ -502,8 +522,14 @@ public sealed class FrontRooms3DGame : MonoBehaviour
             // player handoff fades it out (UpdateLogoFade).
             var vectorAlpha = Mathf.Clamp01(titleLogoAlpha);
             vectorLogoLeftImage.style.opacity = vectorAlpha;
-            vectorLogoS1Image.style.opacity = vectorAlpha;
-            vectorLogoS2Image.style.opacity = vectorAlpha;
+            // Relay visibility of the last good relay (2ffb0d8): the two S
+            // stay hidden while they sit under the solid S, the near S shows
+            // once it starts to peel away, and the far S fades in as it leaves
+            // the near S's moving position. Each keeps its own SVG gradient.
+            var relayNearAlpha = relayClock > 0f ? 1f : 0f;
+            var relayFarAlpha = Mathf.Clamp01((relayClock - s2Start) / .12f);
+            vectorLogoS1Image.style.opacity = vectorAlpha * relayNearAlpha;
+            vectorLogoS2Image.style.opacity = vectorAlpha * relayFarAlpha;
             return;
         }
         if (logoMotionRoot == null || logoLeftImage == null || logoSlideImage == null) return;
