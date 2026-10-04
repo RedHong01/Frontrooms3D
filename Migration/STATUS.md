@@ -13,6 +13,7 @@ Contract schema: `1`
 - [x] Add the Python `MapHash`/xorshift oracle with Unity-derived golden vectors.
 - [x] Add source-backed regression tests for the exporter and hash oracle.
 - [x] Add the Unity Editor golden-chunk exporter for the three validation seeds.
+- [x] Export all 113 prop sidecars into a mesh/collider/anchor/LOD manifest.
 
 ## Next implementation gates
 
