@@ -46,7 +46,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
     const float TransitionSpeed = 6.2f;
     const float TransitionFinalSpeed = 1.2f;
     const float TransitionAccelerationSeconds = .36f;
-    const float DoorOpenSeconds = .9f;
+    public const float DoorOpenSeconds = .9f;
     const float RecycleDistance = 8f;
     // A multiple of every world-projected period (0.75, 1, 1.2, 8, 12.8 m).
     const float RebaseThreshold = 192f;
