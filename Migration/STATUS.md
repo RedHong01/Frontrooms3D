@@ -12,11 +12,12 @@ Contract schema: `1`
 - [x] Record the 31 FMOD events, 5 buses and 19 parameters.
 - [x] Add the Python `MapHash`/xorshift oracle with Unity-derived golden vectors.
 - [x] Add source-backed regression tests for the exporter and hash oracle.
+- [x] Add the Unity Editor golden-chunk exporter for the three validation seeds.
 
 ## Next implementation gates
 
 - [x] Compile the engine-independent C++ hash implementation against the Python oracle.
-- [ ] Export per-seed chunk JSON from the Unity runtime or a trusted batch commandlet.
+- [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
 - [ ] Add the UE `UPrimaryDataAsset` importer for the profile/modules/sidecars.
 - [ ] Add the first UE runtime slice: fixed Title stream, one chunk, player movement, door, key and Relay Listen→Chase.
 - [ ] Add screenshot/input/audio traces before upgrading materials and lighting.
