@@ -985,7 +985,9 @@ static class FrontRoomsGlassRTSystem
 
     static void DropChunk(ChunkRec c)
     {
-        foreach (var i in c.byRenderer.Values) RemoveInst(i);
+        // RemoveInst also unregisters the instance from this dictionary. Iterate
+        // over a snapshot so chunk teardown cannot mutate the active enumerator.
+        foreach (var i in new List<Inst>(c.byRenderer.Values)) RemoveInst(i);
         c.byRenderer.Clear();
         c.lights.Clear();
         c.root = null;
