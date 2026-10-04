@@ -1,6 +1,6 @@
 # 04 — Window landing: promotion list and order (r5)
 
-Status: r5, 2026-10-04 08:50. Nothing here is promoted. It lands only after Red confirms the doors + windows proposal (`05_for_red.md`). Then each owner lands its own items.
+Status: r5, 2026-10-04 08:50; visual continuation 2026-10-04 09:40. The importer-only fix is now landed in `663e858`; the remaining window facade, map contract and G4 asset promotion still wait for Red's doors + windows proposal (`05_for_red.md`). Then each owner lands its own items.
 
 This replaces r4 (yesterday 22:45), `01` §6 and `02` §7.
 
@@ -16,7 +16,7 @@ The window landing is **already live** in Red's project. Codex copied our unfini
 | The direct call `FrontRoomsInteractableKit.DressWindow(this, window, record)` in `FrontRoomsMapWorld.RaiseWindowBuilt` (lines 1296–1301) | Codex (not the map chat, not us) | works; the map chat accepts the call site. It logs one error per failing window and ignores the return value, so the map's trims stay under every frame (`03` §2, §4) |
 | `Kit_WindowFrame_Wood`, `_Steel`, `_Steel_Enamel`, `_Alu`, `Kit_MiniBlind_Raised`, `_Lowered` FBX + JSON + metas | G4's 16:45 builds; Codex changed `"placement"` to `"Wall"` in the 6 JSONs | the frames are live. G4 pass 3 (22:0x–23:xx) has newer files in `proj_int` (§2 item 6) |
 | Glass G1/G3 (`FrontRooms/Glass`, `Glass_Window`, `Glass_Edge`, `Glass_Shard`, grime textures) | glass track | live; the facade's interim slab uses `Glass_Window` |
-| `Assets/Editor/Rendering/FrontRoomsKitImporter.cs`: sidecar `lodDistances` → LOD heights | Codex | **bug**: the last LOD takes d12, so every kit frame is culled at 12 m at its next import (§2 item 2) |
+| `Assets/Editor/Rendering/FrontRoomsKitImporter.cs`: sidecar `lodDistances` → LOD heights | Codex | **FIX LANDED (`663e858`)**: the last imported LOD now takes the sidecar's final cull entry; `GetVersion() => 2` schedules re-import. Static sidecar checks pass; actual FBX re-import/readout is still pending in the open Editor (§2 item 2) |
 
 **So the order below is not "add the windows". It is "correct what is live, then finish it".**
 
