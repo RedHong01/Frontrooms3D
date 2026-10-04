@@ -31,9 +31,10 @@ Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z. Size 1.55 x 1.80 (Y 0.275-2.075) x 0.21 m (the sill
 band is the head's 0.0755 face, so 0.3505 - 0.0755 = 0.275).
 
-Budget (§9.4): 2,800 / 1,000 / 200 tris. A clip-on extrusion has no
-fasteners or mouldings to spend that on, so it lands near 1,100 (-61 %,
-outside the §10.0 +/-15 % band; FLAGGED in the G4 build note, not padded).
+Budget (§9.4): 2,800 / 1,000 / 200 tris. Built: 2,066 (-26 %, outside the
+§10.0 +/-15 % band; FLAGGED in the G4 build note). A clip-on extrusion has
+no fasteners or mouldings to spend more on; the wear stations are the only
+addition since pass 2 (1,088), and nothing is padded.
 NO LOD1 (LOD1 = None; §1.8 / §9.4 allow one on a >= 1 m asset but do not
 require it): with the beads, gaskets and the casing's mitre rings protected,
 the collapse could only remove the setting blocks, so the old LOD1 was 1,064

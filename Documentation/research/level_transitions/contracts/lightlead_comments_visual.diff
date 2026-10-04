@@ -1,0 +1,30 @@
+--- a/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionKit.cs
++++ b/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionKit.cs
+@@ -2,9 +2,10 @@
+ using System.Linq;
+ 
+ /// <summary>
+-/// Level transitions (pre-render clone, variation "lightlead"): the
+-/// visual-owned stand-in for the transition kit. Pure functions only; the map
+-/// calls them from a few hooks marked "// TRANSITION lightlead".
++/// Level transitions (N1): the visual-owned transition kit. Pure functions
++/// only; the map calls them from the hooks marked "N1/B0" in
++/// FrontRoomsMapWorld. In the game since 2026-10-03 (B0 on by default;
++/// -transitionsOff or -b0Off turn it off).
+ ///
+ /// B0.1 corner ownership. At a cell corner (the 0.16 x 0.16 m post square)
+ /// where pieces of different face finish meet, no two pieces may overlap in
+--- a/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionLightLead.cs
++++ b/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionLightLead.cs
+@@ -3,7 +3,10 @@
+ using UnityEngine;
+ 
+ /// <summary>
+-/// V5 Light lead (pre-render clone): the light changes first.
++/// N1 / V5 Light lead: the light changes first. In the game since 2026-10-03:
++/// the lamp colour and cool Office lens are on by default; the border rule is
++/// opt-in (-lightleadBorders, or -lightleadSoft for dim instead of dead) until
++/// Red's pick. -transitionsOff or -lightleadOff turn the whole layer off.
+ ///  - Lamp look per theme (the visual chat's numbers; the map carries them in
+ ///    ThemeMaterials): Level 0 warm (1.00, 0.96, 0.88) at 5.0, Office cool white
+ ///    (0.90, 0.96, 1.00) at 6.0 (+9 %), Office lens Troffer_Lens_Cool.

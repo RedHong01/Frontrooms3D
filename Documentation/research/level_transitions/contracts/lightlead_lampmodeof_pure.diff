@@ -1,0 +1,44 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -1556,17 +1556,30 @@
+     readonly ZoneTheme[] borderThemes = new ZoneTheme[4];
+     readonly EdgeKind[] borderKinds = new EdgeKind[4];
+ 
+-    ZoneTheme[] BorderThemes(GridCoord cell, EdgeKind[] kinds)
++    // N1/V5 fix 2026-10-03: generatedOnly reads edges without generating a chunk (LampModeOf is
++    // pure); an edge whose chunk is not generated yet reads as Wall. BuildFixture generated every
++    // neighbour of a built lamp, so the two agree on built lamps.
++    ZoneTheme[] BorderThemes(GridCoord cell, EdgeKind[] kinds, bool generatedOnly = false)
+     {
+         for (var k = 0; k < 4; k++)
+         {
+             var n = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+             borderThemes[k] = Cache.ZoneOf(n).theme;
+-            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : Cache.Edge(cell, n);
++            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : generatedOnly ? GeneratedEdge(cell, n) : Cache.Edge(cell, n);
+         }
+         return borderThemes;
+     }
+ 
++    // Cache.Edge for a generated chunk only (Wall where the owning chunk is not generated).
++    EdgeKind GeneratedEdge(GridCoord a, GridCoord b)
++    {
++        if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
++        if (!Cache.TryGetGenerated(MapGrid.ChunkOf(a), out var data)) return EdgeKind.Wall;
++        var o = data.Origin;
++        var index = MapGrid.LocalIndex(a.x - o.x, a.y - o.y);
++        return b.x > a.x ? data.east[index] : data.north[index];
++    }
++
+     /// <summary>
+     /// Map lamps near the start area, held dark by the game while the stream
+     /// rooms can be seen: a lamp with no shadow lights straight through the
+@@ -2885,7 +2898,7 @@
+         // Modes 0..4 (steady, stutter, failing, dead, dim) are ModuleLamp.Steady..Dim.
+         var rolled = (tierRules ?? new FrontRoomsTierRules()).At(tier).LampMode(Rand(ref rng));
+         if (FrontRoomsTransitionLightLead.On && FrontRoomsTransitionLightLead.Borders)
+-            rolled = FrontRoomsTransitionLightLead.BorderMode(rolled, Cache.ZoneOf(cell).theme, BorderThemes(cell, borderKinds), borderKinds);
++            rolled = FrontRoomsTransitionLightLead.BorderMode(rolled, Cache.ZoneOf(cell).theme, BorderThemes(cell, borderKinds, true), borderKinds);
+         return (ModuleLamp)(rolled + 1);
+     }
+ 

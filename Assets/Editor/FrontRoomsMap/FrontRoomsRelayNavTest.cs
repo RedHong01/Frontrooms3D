@@ -18,6 +18,8 @@ using UnityEngine;
 /// way round; and that hunts end on their goal, or beside a covered one.
 /// Doors are single-acting: breaking a door from its swing side it never
 /// stands in the leaf's sweep, and every door it breaks ends on its swing side.
+/// Losing sight in a chase, it follows the player through a door only when
+/// it saw them go through it (the door rule, seen and unseen; see DoorRule).
 /// Writes Verification/relay-nav-test.json.
 /// Headless: -executeMethod FrontRoomsRelayNavTest.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -262,11 +264,13 @@ public static class FrontRoomsRelayNavTest
             && report.furnitureFramesNotGhosting == 0 && report.arrived >= report.trials * .95f
             && report.breakStanceInSweepFrames == 0 && report.brokenLeavesOffSwingSide == 0
             // Both break paths ran: some doors from the swing side (the rip), some from the stop side (the burst).
-            && report.breaksFromSwingSide > 0 && report.breaksFromSwingSide < report.doorBreaks;
+            && report.breaksFromSwingSide > 0 && report.breaksFromSwingSide < report.doorBreaks
+            // The door rule ran both ways and held (a case with no fitting door is a failure, not a pass).
+            && report.doorRule != null && report.doorRule.StartsWith("PASS");
         report.verdict = (pass ? "PASS" : "FAIL") + " · " + report.arrived + "/" + report.trials + " hunts arrived, " + report.ghosts + " pass-throughs, "
             + report.wallFrames + " frames in architecture, " + report.furnitureFramesNotGhosting + " frames in furniture outside a pass-through, " + report.exceptions + " exceptions; "
             + report.doorBreaks + " doors broken (" + report.breaksFromSwingSide + " from the swing side), " + report.breakStanceInSweepFrames + " frames breaking inside a sweep, "
-            + report.brokenLeavesOffSwingSide + " broken leaves off their swing side";
+            + report.brokenLeavesOffSwingSide + " broken leaves off their swing side; door rule " + (report.doorRule == null ? "not run" : report.doorRule.Split(' ')[0]);
         var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-nav-test.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, JsonUtility.ToJson(report, true));
@@ -292,37 +296,55 @@ public static class FrontRoomsRelayNavTest
     }
 
     /// <summary>
-    /// The door rule: chasing, the Relay is right behind the player as they go
-    /// through a door and vanish deep beyond it. It must follow into the cell
-    /// behind the door, search there, never come near where the player really
-    /// went, and give up (Listen or Wander) afterwards.
+    /// The door rule: chasing, the Relay follows the player through a door only
+    /// when it saw them go through it in its last second of sight.
+    /// Seen: straight behind the player, it watches them go through the door
+    /// and on into the open cell beyond, then they vanish deep beyond. It must
+    /// start its search in the cell behind the door (not the one beyond, where
+    /// it last saw them).
+    /// Unseen: round a corner from the player, it sees them only on the near
+    /// side; they go through the door out of its sight and vanish. It must
+    /// start its search where it last saw them, on the near side.
+    /// Either way it must never come near where the player really went, and
+    /// give up (Listen or Wander) afterwards. A case with no fitting door near
+    /// the spawn fails the rule.
     /// </summary>
     static string DoorRule(FrontRoomsMapWorld world, List<GridCoord> cells, Collider playerCollider, Transform player, System.Random rng, Report report)
     {
+        var seen = DoorCase(world, cells, playerCollider, player, rng, report, true);
+        var unseen = DoorCase(world, cells, playerCollider, player, rng, report, false);
+        return (seen.StartsWith("PASS") && unseen.StartsWith("PASS") ? "PASS" : "FAIL") + " · seen: " + seen + " · unseen: " + unseen;
+    }
+
+    static string DoorCase(FrontRoomsMapWorld world, List<GridCoord> cells, Collider playerCollider, Transform player, System.Random rng, Report report, bool watched)
+    {
         var steps = new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
+        bool Open(GridCoord p, GridCoord q) => world.IsBuilt(q) && world.PassageBetween(p, q) == FrontRoomsMapWorld.Passage.Open;
+        var label = watched ? "door rule, seen: " : "door rule, unseen: ";
         foreach (var a in cells)
         foreach (var s in steps)
+        foreach (var side in watched ? new[] { 0 } : new[] { 1, -1 })
         {
             var b = a + s;
             if (!world.IsBuilt(b) || world.Cache.Edge(a, b) != EdgeKind.Door) continue;
-            // The Relay starts two open cells behind the player, on the near side (far enough not to catch them at once).
-            var c = default(GridCoord);
-            var found = false;
-            foreach (var t in steps)
+            // Seen: the Relay starts two open cells straight behind the player (far enough not to catch them at once),
+            // and the player runs on into an open cell straight beyond the door, so it last sees them past the door's cell.
+            // Unseen: it starts two open cells to the side of the player's cell, round the corner from the door.
+            GridCoord start, beyond = b;
+            if (watched)
             {
-                var n = a + t;
-                if (n == b || !world.IsBuilt(n) || world.PassageBetween(a, n) != FrontRoomsMapWorld.Passage.Open) continue;
-                foreach (var u in steps)
-                {
-                    var m = n + u;
-                    if (m == a || m == b || !world.IsBuilt(m) || world.PassageBetween(n, m) != FrontRoomsMapWorld.Passage.Open) continue;
-                    c = m;
-                    found = true;
-                    break;
-                }
-                if (found) break;
+                var n = new GridCoord(a.x - s.x, a.y - s.y);
+                start = new GridCoord(n.x - s.x, n.y - s.y);
+                beyond = b + s;
+                // No second door on the run past it (an open or broken one the blind hunts left would be a second watched crossing).
+                if (!Open(a, n) || !Open(n, start) || !Open(b, beyond) || world.Cache.Edge(b, beyond) == EdgeKind.Door) continue;
             }
-            if (!found) continue;
+            else
+            {
+                var n = new GridCoord(a.x + side * s.y, a.y + side * s.x);
+                start = new GridCoord(n.x + side * s.y, n.y + side * s.x);
+                if (!Open(a, n) || !Open(n, start)) continue;
+            }
             // Somewhere far beyond the door for the player to vanish to.
             var far = Reachable(world, b, rng, 8, 12);
             if (far == b) continue;
@@ -330,43 +352,73 @@ public static class FrontRoomsRelayNavTest
             world.TryOpenDoor(a, b);
             for (var k = 0; k < 60; k++) world.TickDoorsForTools(Dt);
             Physics.SyncTransforms();
+            if (world.PassageBetween(a, b) != FrontRoomsMapWorld.Passage.Open) continue;
+            // The player keeps to the line through the middle of the opening (doorways sit off-centre): 1.5 m short of it
+            // in a, 1.5 m past it in b, 4.5 m past it in the cell beyond.
+            var mouth = world.CrossingPoint(a, b);
+            var across = world.CellCenter(b) - world.CellCenter(a);
+            across.y = 0f;
+            across.Normalize();
+            Vector3 Out(float metres)
+            {
+                var p = mouth + across * metres;
+                p.y = world.CellCenter(a).y;
+                return p;
+            }
             var tuning = new FrontRoomsHunterTuning();
             var hunter = new FrontRoomsMapHunter(world, tuning, playerCollider, null, 11);
-            hunter.DebugPlace(world.CellCenter(c));
+            hunter.DebugPlace(watched ? Out(-7.5f) : world.CellCenter(start));
             var eye = Vector3.up * ModuleUnits.PlayerEye;
+            var sightEnds = watched ? 1.3f : 1f;
+            int frames = 0, seenFrames = 0;
             var minToFar = float.MaxValue;
-            var reachedDoorRoom = false;
-            var searched = false;
+            var searchFrom = (GridCoord?)null;
+            var hunting = false;
             var gaveUp = false;
             var sawChase = false;
             var caught = false;
+            var fits = true;
             hunter.Caught += () => caught = true;
             for (var t = 0f; t < 40f; t += Dt)
             {
                 Vector3 feet;
-                if (t < .6f) feet = world.CellCenter(a);           // in view, near side
-                else if (t < 1.0f) feet = world.CellCenter(b);     // through the door
-                else feet = world.CellCenter(far);                 // gone, deep beyond
+                if (t < .6f) feet = Out(-1.5f);                   // in view, near side
+                else if (t < 1f) feet = Out(1.5f);                // through the door
+                else if (t < sightEnds) feet = Out(4.5f);         // on into the cell beyond, still in view (seen only)
+                else feet = world.CellCenter(far);                // gone, deep beyond
                 player.position = feet;
                 Physics.SyncTransforms();
                 hunter.Tick(Dt, feet, feet + eye, Vector3.forward);
                 world.TickDoorsForTools(Dt);
+                // What it saw is the setup, not the rule: seen, in sight the whole way through the door and beyond;
+                // unseen, in sight on the near side only. A door whose furniture or corner gets this wrong is no test.
+                if (t < sightEnds)
+                {
+                    frames++;
+                    if (hunter.SeesPlayer) seenFrames++;
+                    if (!watched && t >= .6f && hunter.SeesPlayer) { fits = false; break; }
+                    continue;
+                }
+                if (watched ? seenFrames < frames : seenFrames == 0) { fits = false; break; }
                 if (hunter.State == HunterState.Chase) sawChase = true;
-                if (t > 1f) minToFar = Mathf.Min(minToFar, Flat(hunter.Position - world.CellCenter(far)));
-                var here = world.CellOf(hunter.Position);
-                if (here == b) reachedDoorRoom = true;
-                if (hunter.State == HunterState.Search && reachedDoorRoom) searched = true;
-                if (searched && (hunter.State == HunterState.Listen || hunter.State == HunterState.Wander)) { gaveUp = true; break; }
+                minToFar = Mathf.Min(minToFar, Flat(hunter.Position - world.CellCenter(far)));
+                if (hunter.State == HunterState.Hunt) hunting = true;
+                else if (hunting && searchFrom == null && hunter.State == HunterState.Search) searchFrom = world.CellOf(hunter.Position);
+                if (searchFrom != null && (hunter.State == HunterState.Listen || hunter.State == HunterState.Wander)) { gaveUp = true; break; }
             }
-            var pass = sawChase && reachedDoorRoom && searched && gaveUp && minToFar > 2f * MapGrid.CellSize && !caught;
+            if (!fits) continue;
+            var expected = watched ? b : a;
+            var pass = sawChase && searchFrom == expected && gaveUp && minToFar > 2f * MapGrid.CellSize && !caught;
+            var result = "door " + a + "→" + b + ", the Relay from " + start + ", the player in sight " + seenFrames + "/" + frames + " frames"
+                + (watched ? " through to " + beyond : ", on the near side only") + ", search began in " + (searchFrom?.ToString() ?? "nowhere") + " (expected " + expected + ")"
+                + ", player vanished to " + far + ", closest approach " + minToFar.ToString("F1") + " m";
             if (!pass)
-            {
-                report.exceptions++; // counts as a failure
-                report.failures.Add("door rule: caught " + caught + ", chase " + sawChase + ", reached the room behind the door " + reachedDoorRoom + ", searched " + searched + ", gave up " + gaveUp + ", closest to the player's real spot " + minToFar.ToString("F1") + " m");
-            }
-            return (pass ? "PASS" : "FAIL") + " · door " + a + "→" + b + ", player vanished to " + far + ", closest approach " + minToFar.ToString("F1") + " m";
+                report.failures.Add(label + "caught " + caught + ", chase " + sawChase + ", gave up " + gaveUp + "; " + result);
+            return (pass ? "PASS" : "FAIL") + " · " + result;
         }
-        return "SKIPPED · no door with an open cell behind it near the spawn";
+        report.failures.Add(label + "SKIPPED, no fitting door near the spawn");
+        return watched ? "SKIPPED · no door with two open cells straight behind it, one straight beyond, and the player in sight throughout"
+            : "SKIPPED · no door with two open cells to the side of its near cell and the player in sight on the near side only";
     }
 
     /// <summary>A cell reachable from start in between minSteps and maxSteps, through open edges and doors (not glass).</summary>

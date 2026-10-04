@@ -58,6 +58,7 @@ HOLE_FLOOR = 11.0
 CBORE_R, CBORE_D = 3.5, 1.5   # cover-screw counterbore
 HEAD = (2.75, 0.8, 0.35, 0.7, 0.65)   # r, cylinder height, crown, slot w, slot depth
 HEAD_SEGS = 32
+LOD2_CHAMFER = 2.5          # LOD2 front-edge chamfer (LOD0/LOD1: a 4.0 round)
 
 
 def walk():
@@ -133,8 +134,11 @@ def lod1(kit):
 def lod2(kit):
     m = pc.Mesh()
     r0 = m.ring(pc.oct_outline(SIZE / 2, SIZE / 2, 3.0), 0.0)
-    r1 = m.ring(pc.oct_outline(SIZE / 2 - 0.5, SIZE / 2 - 0.5, 3.0), HEIGHT - TOP_ROUND)
-    r2 = m.ring(pc.oct_outline(SIZE / 2 - 0.5 - TOP_ROUND, SIZE / 2 - 0.5 - TOP_ROUND, 1.5), HEIGHT)
+    # A 2.5 mm chamfer, not the full 4.0 round: one flat 45-degree facet
+    # mirrors an overhead troffer as a bright band that LOD1's 2-step round
+    # does not show (seen at the 4 m switch); the smaller facet halves it.
+    r1 = m.ring(pc.oct_outline(SIZE / 2 - 0.5, SIZE / 2 - 0.5, 3.0), HEIGHT - LOD2_CHAMFER)
+    r2 = m.ring(pc.oct_outline(SIZE / 2 - 0.5 - LOD2_CHAMFER, SIZE / 2 - 0.5 - LOD2_CHAMFER, 1.5), HEIGHT)
     m.chain([r0, r1, r2])
     m.cap(r2)
     return [m.to_object(kit, "block lod2", pc.CE, lods="2")]

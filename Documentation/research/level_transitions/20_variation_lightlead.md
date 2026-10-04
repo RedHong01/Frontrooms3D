@@ -3,6 +3,17 @@
 Date: 2026-10-03. Full report, numbers, diff and logs: `15_var_lightlead.md`. This page is the short version.
 Built and rendered in the private clone `proj_trans_lightlead` only. Red's project only received the files listed at the end.
 
+## Re-run (2026-10-03 night): the copy in Red's game
+
+Codex committed this variation into main at 19:10 (`8ef5b64`). Main runs B0 and the cool Office colour and lens by default; the dead/dim border rule only runs with `-lightleadBorders` or `-lightleadSoft`. Red has not picked. Full check: `15_var_lightlead.md` §15.
+- **Tests on a fresh copy of main, as the game runs it:** 136/136 map interaction, 28/28 lamp tick, 100/100 seeds; `LampModeOf` matches all 1597 built lamps; Office 281/281 lamps cool, Level 0 1316/1316 warm.
+- **E1, bug:** with the border rule on, `LampModeOf` generates chunks it should only read (135/136). Fix verified in the clone (136/136, 0 mismatches). Patch for the map chat: `contracts/lightlead_lampmodeof_pure.diff`.
+- **E2, side effect:** B0 reads the edges of the ring of chunks round every build, so it generates them early (47 chunks of data instead of 28 for a 25-chunk build). Their tier is fixed one chunk early. Map chat to decide.
+- **E3, process:** the colour lead is live without Red's pick. One line makes it opt-in, if Red wants that.
+- **E4-E6, small:** stale comments (patch `contracts/lightlead_comments_visual.diff`); the Office lens is now 0.67x the Level 0 lens (×1.5 since 17:16); the title stream's Office still has the warm lens.
+- **No code in main was edited.** Fixes go through the `codex-audit` workflow and the map chat.
+- **New image:** `images/var_lightlead_main_sheet.jpg`, the four fixed shots from main's code (off, as the game runs, border rule).
+
 ## Images
 
 - `images/v_lightlead_vs_before.jpg`: six rows, BEFORE | LIGHT LEAD | SOFT, for the four fixed shots and two extra shots.

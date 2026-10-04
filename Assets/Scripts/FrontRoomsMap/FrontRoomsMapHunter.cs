@@ -13,12 +13,14 @@ using UnityEngine;
 ///   random reachable places (Listen → Wander), keeping to shut doors;
 /// - it chases only once it sees the player (a ray at eye height). A noise it
 ///   hears it walks to and searches (Hunt), without running;
-/// - losing sight in a chase, it goes where it last saw the player; if it was
-///   right behind them as they went through a door, it follows into the room
-///   behind that door. Either way it then searches that room (a few spots,
+/// - losing sight in a chase, it goes where it last saw the player; if it saw
+///   them go through a door in its last second of sight, it follows into the
+///   room behind that door. Either way it then searches that room (a few spots,
 ///   listening at each) and gives up, unless it hears or sees them again;
 /// - it paths through built cells with a breadth-first search, breaks shut
-///   doors on a hunt or a chase, and cannot pass unbroken glass;
+///   doors on a hunt or a chase, and cannot pass unbroken glass. A wander or
+///   a search never breaks a door: one shut across its way it walks round,
+///   and with no way round that leg is over;
 /// - if the chase leaves it too far behind, it relays itself closer, unseen;
 /// - it has a body (<see cref="ModuleUnits.RelayRadius"/>): it walks straight
 ///   while the way is clear and plans a detour on a 0.25 m grid around the
@@ -58,6 +60,8 @@ public sealed class FrontRoomsMapHunter
     const float SearchPace = .7f;
     // The long-range relay only once it has neither seen nor heard the player for this long.
     const float LeashQuietSeconds = 45f;
+    // Losing sight, it follows through a door it saw the player go through at most this long before it last saw them.
+    const float SeenDoorSeconds = 1f;
 
     static readonly GridCoord[] Steps = { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
 
@@ -87,12 +91,16 @@ public sealed class FrontRoomsMapHunter
     readonly bool[] nodeClosed = new bool[MaxRegionNodes];
     Vector3 position, lastSeen, goal;
     int pathIndex;
+    // Whether the current plan may go through shut doors (a hunt or a chase breaks them). Its replans keep the same rule.
+    bool planThroughDoors = true;
     float releaseTimer, lostTime, replanTimer, leashTimer;
     int blowsStruck;
-    // What it knows: when it last saw or heard the player, and the last door the player went through.
+    // What it knows: when it last saw or heard the player, and the last door it saw the player go through.
     float clock, lastSeenTime = float.MinValue, lastContactTime;
-    GridCoord playerCellBefore, doorInto;
-    bool trackingPlayerCell;
+    // The player's cell when it last saw them, and whether that was on the tick before this one:
+    // a crossing counts only between two ticks in a row that saw them, so it never learns where they went unseen.
+    GridCoord seenCell, doorInto;
+    bool sawLastTick;
     float doorTime = float.MinValue;
     // The room it is searching: spots to look from, in order.
     readonly List<GridCoord> sweep = new List<GridCoord>();
@@ -182,15 +190,9 @@ public sealed class FrontRoomsMapHunter
         clock += dt;
         var playerCell = world.CellOf(playerFeet);
         var myCell = world.CellOf(position);
-        // The door the player last went through. It only acts on it when it was right behind them.
-        if (trackingPlayerCell && playerCell != playerCellBefore && Mathf.Abs(playerCell.x - playerCellBefore.x) + Mathf.Abs(playerCell.y - playerCellBefore.y) == 1
-            && world.Cache.Edge(playerCellBefore, playerCell) == EdgeKind.Door)
-        {
-            doorInto = playerCell;
-            doorTime = clock;
-        }
-        playerCellBefore = playerCell;
-        trackingPlayerCell = true;
+        // A tick that relays it below does not look, so it breaks the run of ticks that saw the player.
+        var sawBefore = sawLastTick;
+        sawLastTick = false;
 
         // Never let the chase run off the built map, and never trail so far
         // behind that the player forgets it: relay closer, out of sight.
@@ -205,8 +207,17 @@ public sealed class FrontRoomsMapHunter
         if (leashTimer <= 0f) leashTimer = LeashCheckSeconds;
 
         SeesPlayer = Sees(playerEye);
+        sawLastTick = SeesPlayer;
         if (SeesPlayer)
         {
+            // A door it watched the player go through: seen on one side last tick and on the other now.
+            if (sawBefore && Mathf.Abs(playerCell.x - seenCell.x) + Mathf.Abs(playerCell.y - seenCell.y) == 1
+                && world.Cache.Edge(seenCell, playerCell) == EdgeKind.Door)
+            {
+                doorInto = playerCell;
+                doorTime = clock;
+            }
+            seenCell = playerCell;
             ListenPoint = null;
             lastSeen = playerFeet;
             lastSeenTime = lastContactTime = clock;
@@ -281,6 +292,8 @@ public sealed class FrontRoomsMapHunter
     public void DebugPlace(Vector3 feet)
     {
         position = feet;
+        // Placed, it has not been watching: no run of seen ticks carries over.
+        sawLastTick = false;
         path.Clear();
         pathIndex = 0;
         StopBreaking();
@@ -303,14 +316,15 @@ public sealed class FrontRoomsMapHunter
     }
 
     /// <summary>
-    /// Sight lost in a chase. If the player went through a door around the
-    /// moment it lost them, it was right behind: it follows into the room
+    /// Sight lost in a chase. If it saw the player go through a door in its
+    /// last second of sight, it was right behind: it follows into the room
     /// behind that door. Otherwise it goes where it last saw them. It searches
-    /// there and no further (BeginSearch).
+    /// there and no further (BeginSearch). Only what it saw counts: a door the
+    /// player goes through out of its sight reaches it only as a noise.
     /// </summary>
     void LoseTrack()
     {
-        if (doorTime >= lastSeenTime - 1f && clock - doorTime < tuning.lostSightSeconds + 1.5f)
+        if (doorTime >= lastSeenTime - SeenDoorSeconds)
         {
             HuntToward(doorInto, world.CellCenter(doorInto));
             return;
@@ -363,8 +377,13 @@ public sealed class FrontRoomsMapHunter
         }
         if (sweepPlanned != sweepIndex)
         {
-            Plan(myCell, sweep[sweepIndex], world.CellCenter(sweep[sweepIndex]), false);
             sweepPlanned = sweepIndex;
+            // A spot that open ways no longer reach (a door shut since it chose them) is skipped, never walked at.
+            if (!Plan(myCell, sweep[sweepIndex], world.CellCenter(sweep[sweepIndex]), false))
+            {
+                sweepIndex++;
+                return;
+            }
         }
         if (Follow(tuning.huntSpeed * SearchPace, dt) || Stalled(dt))
         {
@@ -497,7 +516,7 @@ public sealed class FrontRoomsMapHunter
     /// Breadth-first search over built cells. Doors count as passable (the
     /// Relay breaks them); unbroken glass and walls do not.
     /// </summary>
-    /// <param name="throughDoors">Shut doors count as passable (it breaks them); off for wandering.</param>
+    /// <param name="throughDoors">Shut doors count as passable (it breaks them); off for wandering and searching.</param>
     void Search(GridCoord start, int maxDepth, bool throughDoors)
     {
         cameFrom.Clear();
@@ -530,19 +549,34 @@ public sealed class FrontRoomsMapHunter
         return depth.TryGetValue(to, out var d) ? d : int.MaxValue;
     }
 
-    void Plan(GridCoord from, GridCoord to, Vector3 finalPoint, bool throughDoors = true)
+    /// <summary>Plan the cells to walk to <paramref name="to"/>. False when no route reaches it (the path is left empty); from == to is a route of no steps.</summary>
+    bool Plan(GridCoord from, GridCoord to, Vector3 finalPoint, bool throughDoors = true)
     {
         goal = finalPoint;
+        planThroughDoors = throughDoors;
         path.Clear();
         pathIndex = 0;
-        if (from == to) return;
+        if (from == to) return true;
         Search(from, 64, throughDoors);
-        if (!depth.ContainsKey(to)) return;
+        if (!depth.ContainsKey(to)) return false;
         for (var c = to; c != from; c = cameFrom[c]) path.Add(c);
         path.Reverse();
+        return true;
     }
 
-    /// <summary>Walk the planned path. Returns true once the goal is reached.</summary>
+    /// <summary>
+    /// Plan again from where it stands to the same goal, by the same door rule
+    /// as the plan it replaces. False when a plan that keeps to shut doors has
+    /// no way left: that leg is over. A plan through doors never ends here; with
+    /// no route it walks straight at the goal, as before.
+    /// </summary>
+    bool Replan(GridCoord here) => Plan(here, path[path.Count - 1], goal, planThroughDoors) || planThroughDoors;
+
+    /// <summary>
+    /// Walk the planned path. Returns true once the goal is reached, or when a
+    /// wander or search leg (a plan that keeps to shut doors) finds a door
+    /// shut across its way and no way round it.
+    /// </summary>
     bool Follow(float speed, float dt)
     {
         if (pathIndex >= path.Count) return MoveDirect(goal, speed, dt, true);
@@ -563,19 +597,20 @@ public sealed class FrontRoomsMapHunter
         if (Mathf.Abs(here.x - next.x) + Mathf.Abs(here.y - next.y) != 1)
         {
             // A detour or a pass-through left it off its path: plan again from where it stands.
-            Plan(here, path[path.Count - 1], goal);
-            return false;
+            return !Replan(here);
         }
         var passage = world.PassageBetween(here, next);
         if (passage == FrontRoomsMapWorld.Passage.ClosedDoor)
         {
+            // A wander or a search never breaks a door: one shut across its way since
+            // it planned (the player shut it) it walks round, or the leg is over.
+            if (!planThroughDoors) return !Replan(here);
             // Walk up to the door on this side, then break it down.
             var door = world.DoorBetween(here, next);
             if (door == null)
             {
                 // The chunk that owns this door was dropped under the path: plan again over what is built.
-                Plan(here, path[path.Count - 1], goal);
-                return false;
+                return !Replan(here);
             }
             if (door.broken)
             {
@@ -600,8 +635,7 @@ public sealed class FrontRoomsMapHunter
         if (passage != FrontRoomsMapWorld.Passage.Open)
         {
             // The map changed under the path (a wall where a door was): plan again.
-            Plan(here, path[path.Count - 1], goal);
-            return false;
+            return !Replan(here);
         }
         // Cross at the opening itself (doorways sit off-centre), aiming a
         // little past the edge so the next step starts inside the next cell.
@@ -976,10 +1010,11 @@ public sealed class FrontRoomsMapHunter
     void TickBreak(float dt)
     {
         // Opened under it (it was already swinging when the break began): nothing to break, walk on through.
+        // Either way it goes back to what it was doing when it began (a hunt or a chase: nothing else breaks doors).
         if (breakingDoor != null && !breakingDoor.broken && world.PassageBetween(breakingDoor.a, breakingDoor.b) == FrontRoomsMapWorld.Passage.Open)
         {
             StopBreaking();
-            SetState(resumeState == HunterState.Chase ? HunterState.Chase : HunterState.Hunt);
+            SetState(resumeState);
             return;
         }
         // Blows every 0.5 s from 0.5 s in (0, 1, ... BlowCount - 2); the last one
@@ -1001,7 +1036,7 @@ public sealed class FrontRoomsMapHunter
             breakingDoor = null;
         }
         if (StateTime + TimeSlack < BreakSeconds + DoorFallSeconds) return;
-        SetState(resumeState == HunterState.Chase ? HunterState.Chase : HunterState.Hunt);
+        SetState(resumeState);
     }
 
     /// <summary>How far into an open or broken door's opening a point is: 1 on the door line, 0 from 0.6 m out or beside the 1.0 m opening.</summary>

@@ -1,6 +1,6 @@
 # Build G3: keys, tags, hosts and door signage
 
-Status: BUILT and checked (2026-10-03). Third pass 22:0x–22:4x, after Codex copied G3 into main: one model fix (the key cabinet), the cut-off checks finished, main compared file by file. §0 is this pass; §1–§7 are the second run (16:4x–17:5x), updated where this pass changed them.
+Status: BUILT and checked (2026-10-03). Third pass 22:0x–23:0x, after Codex copied G3 into main: one model fix (the key cabinet), the cut-off checks finished, main compared file by file. §0 is this pass; §1–§7 are the second run (16:4x–17:5x), updated where this pass changed them.
 Spec: `10_spec.md` §2.4, §3.2, §3.3, §4, §9.3, §10.0, §10.3.
 
 - Built into the private clone only: `scratchpad/proj_int/Assets/Resources/Props/Models/`.
@@ -34,14 +34,19 @@ Spec: `10_spec.md` §2.4, §3.2, §3.3, §4, §9.3, §10.0, §10.3.
 
 ### 0.3 What to promote (main is the base)
 
-- **Only `Kit_KeyCabinet.fbx` changed.** Copy `scratchpad/proj_int/Assets/Resources/Props/Models/Kit_KeyCabinet.fbx` (22:16) over main's. **Keep main's `Kit_KeyCabinet.fbx.meta`** (GUID `13c85fe1e557741c982832fc03970bc8`). Its JSON is byte-identical to main's, so leave it.
+- **Only `Kit_KeyCabinet.fbx` changed.** Copy `scratchpad/proj_int/Assets/Resources/Props/Models/Kit_KeyCabinet.fbx` (22:15, sha1 `6f35795b…`) over main's (sha1 `f7e570c7…`). **Keep main's `Kit_KeyCabinet.fbx.meta`** (GUID `13c85fe1e557741c982832fc03970bc8`). Its JSON is byte-identical to main's, so leave it.
 - The other 41 G3 files in main are this workflow's final versions. Leave them and their metas as they are.
-- **Module files changed in main's `Tools/`** (G3's own files, made by this workflow earlier today): `interact_key_common.py` (adds `rrect_sweep` and `_bridge_rings`) and `interact_key_cabinet.py` (uses it). No other file in `Tools/` was touched.
+- **Module files changed in main's `Tools/`** (G3's own files, made by this workflow earlier today): `interact_key_common.py` (adds `rrect_sweep` and `_bridge_rings`) and `interact_key_cabinet.py` (uses it). Red's commit `03c43ed` (22:48) already holds both. Blender also rewrote their `.pyc` caches in `assets/__pycache__/` (tracked in git) when it imported them; that is the normal build by-product. No other file in `Tools/` was touched.
 - `proj_int` was **not** re-synced from main. G4 was building into it while this pass ran, and the G3 files in it equal main's (md5, 22:0x). G3 needs no Unity file from main, because the builds use main's own `kitlib.py` and `build_asset.py` (the scripts run from main's `Tools/`).
 
 ### 0.4 Codex audit
 
-- `research/codex_audit/20_findings.md` did not exist when this pass ended (checked 22:4x; see the final line of this note). `00_main_state.md` §3.3 asks the interactables workflow to "finish G2/G3, the renders and the critics" and "merge the verified FBX/JSON over Codex's copies and keep main's metas". §0.3 does that for G3.
+- `research/codex_audit/20_findings.md` did not exist when this pass ended (checked 22:58). `00_main_state.md` §3.3 asks the interactables workflow to "finish G2/G3, the renders and the critics" and "merge the verified FBX/JSON over Codex's copies and keep main's metas". §0.3 does that for G3.
+- The audit's kit review (`codex_audit/10_review_kits.md`, 22:54) lists three G3 items:
+  - **F4** (the four slots with no material in main, §0.1): owed to P-4. The audit says **not** to add placeholder materials in main. G3 adds none.
+  - **F5** (`Kit_KeyCabinet` in main is the faulty build): fixed in this pass; promote as §0.3 says. The audit measured the same thing: main's FBX sha1 `f7e570c7…`, the fix `6f35795b…` (160,748 B), JSON byte-identical.
+  - **F6** (`Kit_KeyHookBoard` vs `Kit_KeyRack`): Red's call (§7 item 12).
+  - It also confirms what §0.1 says: no duplicate GUIDs, `Kit_Keyboard` unchanged, every G3 LOD0 within ±15 % of §9, `noCollider` on all, and the `null` third entry in the exit signs' `lodDistances` (§9.3 "—") reads as 0 = never cull. The exit sign now passes to the exit-sign workflow, so G3 leaves that `null` as it is.
 - **Audit item "Name clash: `Kit_ExitSign*`"** (§3.3). The exit-sign workflow (`research/exit_sign/`) is researching the period sign (NFPA 101 1988 6 in letters, UL 924 (1989), stencil faces) and names further assets after it (`Kit_ExitSign_Hanging`, `_HangingFlush`, `_End`, `research/exit_sign/tools/make_diagrams.py:262-266`). G3's `Kit_ExitSign`/`_Dead` is a P2 placeholder that reuses the Run level's face (§7 item 6). **Recommendation: one owner.** The exit-sign workflow takes over `Kit_ExitSign`, `Kit_ExitSign_Dead` and `interact_exit_sign.py`, builds over main's files and keeps main's metas. G3 makes no more changes to them. Main's current copies stay valid until it does.
 
 ## 1. Blocking finding: `Kit_KeyBoard` overwrote `Kit_Keyboard`
@@ -158,7 +163,7 @@ All within ±15 % of §9.3. Every module asserts its envelope, anchors and budge
 
 1. **`Kit_KeyBoard` → `Kit_KeyHookBoard`** (§1). Spec, map KeySpot `host` values and facade must follow.
 2. **Ring section is a 4-sided flat bar, not 8-sided.** At 128 segments per turn, 8 sides would be 4,096 triangles, twice the budget, and the extra corners are 0.1 mm rounds, sub-pixel at 0.3 m.
-3. **Cut 6 is inside the tip bevel** (spec conflict, also reported by G2). At Z 0.023 the bevel is already at Y 0.00282, below cut 6's floor (0.00364), so the blade shows 5 cuts and pin 6 floats 0.82 mm above the bevel. The numbers stay identical to G2's. Fix in the spec if wanted: start the bevel at Z ≥ 0.0234, or move the cuts 1.5 mm toward the shoulder (both groups must change together).
+3. **Cut 6 is inside the tip bevel** (spec conflict, also reported by G2). At Z 0.023 the bevel is already at Y 0.00282, 0.82 mm below cut 6's floor (0.00364), so the blade shows 5 cuts and pin 6 hangs about 1.0 mm above the blade (T8b: 1.01 mm). The numbers stay identical to G2's. Fix in the spec if wanted: start the bevel at Z ≥ 0.0234, or move the cuts 1.5 mm toward the shoulder (both groups must change together).
 4. **Sign lettering is 17 mm caps, tracking +20, not 19 mm / +40.** Measured with the font file (`texgyreheros-bold.otf`): "EMPLOYEES ONLY" at 19 mm caps and +40 tracking is 0.255 m wide, wider than the 0.252 face inside the bevel; at 19 mm with no tracking it is 0.242 m, leaving 5 mm margins. At 17 mm / +20 it is 0.2225 m with 15 mm margins. The same cap height is used on all three texts (STAFF ONLY 0.151 m, STORAGE 0.118 m).
 5. **Number plate is not "two-ply engraved".** Engraved digits would need a second number atlas; the plate uses the tag construction with the typed `Prop_KeyTagNo` insert, as §10.3 asks ("digits quad on Prop_KeyTagNo").
 6. **Exit sign letters are 0.10 m, not 6 in,** because the face reuses the Run level's `Run_ExitSign` texture. A 6 in legend needs its own face texture (Red's colour call, §2.4, is still open).
@@ -171,3 +176,20 @@ All within ±15 % of §9.3. Every module asserts its envelope, anchors and budge
 13. **G3 part assets show up in the Level Designer palette as Floor props.** kitlib sets `placement` from tags only (`kitlib.py:820-821`), so the key, ring, tags, sign, number plate and exit sign get "Floor", and the palette lists every kit by placement (`FrontRoomsModuleEditing.cs`, `PaletteKits`). Dropped from the palette they would sit at their part origin on the floor. The G1/G2 part assets have the same problem. A fix needs a kitlib or palette change (for example a `part` tag that the palette skips); this workflow may not make it. The three wall hosts are correctly "Wall".
 14. **FBX tangent warning** ("polygons with more than 4 vertices, cannot compute/export tangent space") on most G3 meshes (cap n-gons). Harmless: the importer recomputes MikkTSpace tangents (`FrontRoomsKitImporter.cs`, `importTangents = CalculateMikk`).
 15. **`Kit_ExitSign` ownership** moves to the exit-sign workflow (§0.4).
+
+## 8. Verification images (Figma log, `VERIFICATION_LOG.md` rows VL069–VL074)
+
+Images saved as JPG q85 in `research/interactables/images/g3/`. Slides placed in **FRONTROOMS · VISUAL VERIFICATION LOG** (section `2595:6093`, page `2099:76`), which this pass grew to 19 rows (bounds below checked clear first).
+
+| VL | Slide | Check | Verdict | Images (slot order) |
+|---|---|---|---|---|
+| VL069 | `2605:6099` | Key seated in the lock (T8) | PASS | `G3_T8_key_in_plug_0deg`, `G3_T8_section`, `G3_key_side`, `G3_T8_key_in_plug_90deg` |
+| VL070 | `2605:6119` | Hung key on the key board | PASS | `G3_hung_0.35m_fov62`, `G3_hung_threading`, `G3_hung_2m`, `G3_hung_6m` |
+| VL071 | `2605:6139` | Key lying flat on a desk | PASS | `G3_flat_desk_close_v2`, `G3_flat_desk_standing` |
+| VL072 | `2605:6153` | Key cabinet corner notches | FAIL→FIXED | `G3_cabinet_corner_before_after_pair`, `G3_cabinet_34_v2` |
+| VL073 | `2605:6169` | Wall hosts for the key | PASS | `G3_board_34`, `G3_cabinet_34_v3`, `G3_keyhook_close`, `G3_cabinet_labels_close` |
+| VL074 | `2605:6189` | Door sign, plate, exit sign | FLAG | `G3_signage_door_1.5m`, `G3_sign_corner_close`, `G3_numberplate_close`, `G3_exit_sign_close`, `G3_exit_signs_2.6m` |
+
+Not logged: the kit's own turntable previews (`Kit_*_a/_b.png`, raw previews), `G3_T8_face.png` (blank, §0.2 item 2), `G3_flat_desk_close.png` (old pose), and the scratch views in `scratchpad/g3/view/`.
+
+On the flat pose (VL071): the ring stands steep (30° off the hole axis) because a 0.9 mm wire through a Ø 4.8 hole in a 2.2 mm bow can lean at most about 60° off the hole axis, and the desk stops the loop from passing under the bow. A flatter ring would need the bow lifted about 25°. The facade can use either. The search scores the smallest key tilt first and then the lowest ring, so it picked the key nearly flat (6°); it does not simulate gravity.

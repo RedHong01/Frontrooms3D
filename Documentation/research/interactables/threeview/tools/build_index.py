@@ -96,6 +96,10 @@ def materials(kit):
             if target:
                 entry["targetHex"] = target[0]
                 entry["note"] = target[1]
+        if slot == "Prop_Glass":
+            entry["note"] = ("Main's Prop_Glass.mat is now on FrontRooms/Glass (glass-track overwrite, Codex 8ef5b64): "
+                             "_BaseColor #272c29 at low alpha, so a flat swatch means little. The hex kept here is the "
+                             "K-sheets' glass swatch, for consistency with K01-K45.")
         out.append(entry)
     return out
 
@@ -204,7 +208,7 @@ HERO_NOTES = {
     "keys_hook_hung": "The same assembly on the single brass hook (blue round tag).",
     "keys_cabinet_hung": "The same assembly in the Office key cabinet (white valet tag).",
     "keys_parts_lineup_front": "Key parts at one scale, front: brass and nickel keys, split ring, 3 tag shapes x red/blue/white. For img:KeyParts_Lineup_front (DW07).",
-    "windows_lineup_face_a": "The window family from face A, left to right W-L0 wood, W-OF steel + raised mini-blind, W-RN enamel steel, W-EX aluminium, each in its level's wall. The pane is a stand-in (Prop_Glass slab); the glass track owns the real one.",
+    "windows_lineup_face_a": "The window family from face A, left to right W-L0 wood, W-OF steel + raised mini-blind, W-RN enamel steel, W-EX aluminium, each in its level's wall with a room box behind. The pane is the 6 mm slab drawn with main's Glass_Window (the glass track's material, as FrontRoomsInteractableKit.Window.cs uses it); it is not part of the window kit.",
 }
 HERO_NOTES.update(json.load(open(heroes_dir + "/hero_notes.json")) if os.path.exists(heroes_dir + "/hero_notes.json") else {})
 # The four grouped heroes the proposal asked for (one per family).
@@ -264,7 +268,7 @@ if os.path.isdir(heroes_dir):
             code = name[len("doorset_"):].rsplit("_", 1)
             note = "Door member %s, %s face, 3/4 from the latch side, in its wall." % (code[0], code[1])
         if note is None and name.startswith("window_"):
-            note = "Window member %s from face A, 3/4, in its wall with the stand-in pane." % name.split("_")[1]
+            note = "Window member %s from face A, 3/4, in its wall with a room box behind and the Glass_Window pane." % name.split("_")[1]
         slots = [p["slot"] for p in proposal_slots if p["source"] == "heroes/" + f]
         alpha = "heroes/" + name + "_alpha.png"
         opaque_scene = name.startswith("keys_") and name != "keys_parts_lineup_front"

@@ -26,7 +26,9 @@ What lives here
   with holes, slits and Steiner points. Rings are CCW in (x, z); faces are
   wound so CCW in (x, z) faces the front (+h).
 * thermoset_plate(): the section 1.2 edge profile swept round a 12-segment
-  corner outline, the crowned field, 0.5 mm 3-segment opening rounds, the
+  corner outline (inner rings 10/8/4 as their radius shrinks, joined by
+  Mesh.zip), the crowned field, 64-per-circle openings with 0.5 mm
+  3-segment rounds, the
   82-degree countersink with its seat level with the field, the hollow back
   (1.6 rim on the wall, cavity face 3.5). Optional crack (a stepped V split
   from the screw hole to the edge) and corner chip (bisected facets).

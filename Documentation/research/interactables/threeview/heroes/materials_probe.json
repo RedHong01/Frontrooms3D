@@ -39,7 +39,7 @@
    {"material": "Door_Enamel", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Props/Models/Kit_DoorLeaf_SteelLite.fbx", "baseColor": [0.8036, 0.7723, 0.6901], "baseColorHex": "#CDC5B0", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
    {"material": "Prop_Aluminium", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Aluminium.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "Prop_Aluminium_A", "emission": [0.000, 0.000, 0.000]},
    {"material": "Prop_Chrome", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Prop_Chrome.mat", "baseColor": [0.8470, 0.8470, 0.8470], "baseColorHex": "#D8D8D8", "baseMap": "", "emission": [0.000, 0.000, 0.000]},
-   {"material": "Prop_Glass", "shader": "Universal Render Pipeline/Lit", "asset": "Assets/Resources/Surfaces/Prop_Glass.mat", "baseColor": [0.8200, 0.8800, 0.8800], "baseColorHex": "#D1E0E0", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
+   {"material": "Prop_Glass", "shader": "FrontRooms/Glass", "asset": "Assets/Resources/Surfaces/Prop_Glass.mat", "baseColor": [0.1517, 0.1718, 0.1601], "baseColorHex": "#272C29", "baseMap": "", "emission": [0.000, 0.000, 0.000]}
  ],
  "Kit_DoorLeaf_Steel_PaintedMetal": [
    {"material": "Painted_Metal", "shader": "FrontRooms/Surface", "asset": "Assets/Resources/Surfaces/Painted_Metal.mat", "baseColor": [1.0000, 1.0000, 1.0000], "baseColorHex": "#FFFFFF", "baseMap": "PaintedMetal_A", "emission": [0.000, 0.000, 0.000]},

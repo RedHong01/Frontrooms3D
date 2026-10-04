@@ -38,6 +38,14 @@ using UnityEngine;
 ///   the hinge never turns more than 40° in a frame, even at 4 fps;
 /// - a break the Relay leaves: a door opened under it is not broken, the mark
 ///   clears and it walks through; placed away mid-break, the mark clears;
+/// - a wander or a search never breaks a door: one the player shuts across
+///   the leg stays shut and unbroken (no DoorBlow), and the Relay never turns
+///   to Hunt or BreakDoor; with a way round it walks round to the leg's end,
+///   with none the leg is over at the door;
+/// - losing sight, the Relay follows the player through a door only when it
+///   saw them go through it in its last second of sight; one they went
+///   through unseen it never learns of, and one it saw over a second before
+///   it lost them it lets go: either way it goes where it last saw them;
 /// - the game's pull step (PullStepSpeed for at most PullStepSeconds) gets the
 ///   player clear before the leaf moves; a player beside the hinge, past the
 ///   open leaf, is not moved and never touched;
@@ -112,6 +120,8 @@ public static class FrontRoomsMapInteractionTests
             SingleActing(roots);
             RelayBreaks(roots);
             RelayBreakAborts(roots);
+            RelayKeepsShutDoors(roots);
+            RelayLosesTrack(roots);
             Keys(roots, profiles, 1.1f);
             Keys(roots, profiles, 0f);
             Columns(roots, profiles);
@@ -883,6 +893,326 @@ public static class FrontRoomsMapInteractionTests
                 world.DoorBrokenFrom -= OnBrokenFrom;
             }
         }
+    }
+
+    // ---------- The Relay never breaks a door on a wander or a search ----------
+
+    static void RelayKeepsShutDoors(List<GameObject> roots)
+    {
+        // Out of the leaf's sweep, so the shutting leaf never stops on its body.
+        var reachRelay = ModuleUnits.DoorWidth - ModuleUnits.DoorLeafGap * .5f + ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.RelayRadius;
+        // A world each, so a door broken on one leg (were the rule to fail) cannot spoil the next. With no way round
+        // the shut door the leg is over; with one (open passages only, as a wander or a search walks) it walks round.
+        foreach (var (leg, round, period) in new[] { (HunterState.Wander, false, -46f), (HunterState.Search, false, -48f), (HunterState.Wander, true, -49f) })
+        {
+            var label = "relay keeps a door shut across its " + (leg == HunterState.Wander ? "wander" : "search") + (round ? " (a way round)" : " (no way round)") + ": ";
+            var world = World(roots, FrontRoomsLevelProfiles.Resolve(), period, "MAP INTERACTION TEST / keeps shut doors on a " + leg + (round ? ", a way round" : ""));
+            world.BuildForCapture();
+            var player = new GameObject("test player").transform;
+            player.SetParent(world.transform, false);
+            var body = player.gameObject.AddComponent<CapsuleCollider>();
+            body.height = ModuleUnits.PlayerHeight;
+            body.radius = ModuleUnits.PlayerRadius;
+            body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+            // No way round: its near cell outside the carved rooms, so a search there looks round through the open door (in a
+            // room it keeps to the room), and nothing joins the two sides within the planner's 64 cells but the door.
+            // A way round: the map shuts its rooms with doors, so open passages alone seldom join a door's two sides. Other
+            // doors that do, within 10 cells, are opened first, so the walk round keeps to open passages as a wander does.
+            GridCoord a = default, b = default, c = default;
+            var found = false;
+            if (round)
+            {
+                var tried = new HashSet<long>();
+                while (!found && FindDoor(world, out a, out b, out c, (d, near) => !tried.Contains(d.edge) && RouteRound(world, near, d.a == near ? d.b : d.a, null)))
+                {
+                    tried.Add(world.DoorBetween(a, b).edge);
+                    var route = new List<(GridCoord, GridCoord)>();
+                    RouteRound(world, a, b, route);
+                    foreach (var (p, q) in route) world.TryOpenDoor(p, q);
+                    for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+                    // A locked door on the route stays shut: the next door.
+                    found = OpenWalk(world, a, b, 10) > 0;
+                }
+            }
+            else found = FindDoor(world, out a, out b, out c, (d, near) => !InRoom(world, near) && OpenWalk(world, near, d.a == near ? d.b : d.a, 64) < 0);
+            if (!found)
+            {
+                Check(false, label + "no closed door " + (round ? "with a way round it within 10 cells" : "outside a room with no way round it") + " and an open cell behind it near the spawn");
+                continue;
+            }
+            var door = world.DoorBetween(a, b);
+            FrontRoomsMapHunter hunter = null;
+            var shutting = false;
+            var seed = 0;
+            GridCoord from = a, to = b;
+            // Where a leg goes is the rng's pick: try seeds (odd, so each is its own rng) until one leaves its start cell
+            // through the open door. A wander starts on either side in turn: one side may be a pocket with nowhere 6 cells off.
+            for (var i = 0; i < 32 && !shutting; i++)
+            {
+                seed = 2 * i + 1;
+                from = leg == HunterState.Wander && i % 2 == 1 ? b : a;
+                to = from == a ? b : a;
+                hunter = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 0f }, body, null, seed);
+                if (!door.open)
+                {
+                    world.TryOpenDoor(a, b);
+                    for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+                }
+                player.position = world.CellCenter(c);
+                Physics.SyncTransforms();
+                // Placed with nothing to search, it listens, then wanders; a noise where it stands makes it search round there.
+                hunter.DebugPlace(world.CellCenter(from));
+                if (leg == HunterState.Search) hunter.Noise(world.CellCenter(from), 1000f);
+                for (var t = 0f; t < 12f && !shutting; t += Dt)
+                {
+                    hunter.Tick(Dt, player.position, player.position + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                    world.TickDoorsForTools(Dt);
+                    Physics.SyncTransforms();
+                    var plan = Plan(door, hunter.Position);
+                    shutting = hunter.State == leg && world.CellOf(hunter.Position) == from && hunter.DebugSteering.Contains("next " + to)
+                        && (plan.y < -ModuleUnits.RelayRadius || Flat(hunter.Position - door.hinge.position) > reachRelay);
+                    // A wander that set off another way is no use: the next seed.
+                    if (!shutting && hunter.State == HunterState.Wander && leg == HunterState.Wander && world.CellOf(hunter.Position) != from) break;
+                }
+            }
+            if (!shutting)
+            {
+                Check(false, label + "no " + leg + " leg went through the open door " + a + "→" + b + " in 32 tries");
+                continue;
+            }
+            // The player shuts it in front of the Relay (from the stop side) before its next step.
+            ShutAndLatch(world, door, world.Player, body);
+            var latched = !door.open && door.angle == 0f && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.ClosedDoor;
+            var blows = 0;
+            var states = new List<HunterState>();
+            hunter.DoorBlow += _ => blows++;
+            hunter.StateChanged += s => states.Add(s);
+            var walkedRound = false;
+            // The first state change after the shut (a wander's end), when and where.
+            var changeAt = -1f;
+            var changeCell = from;
+            for (var t = 0f; t < (round ? 60f : 20f); t += Dt)
+            {
+                hunter.Tick(Dt, player.position, player.position + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (world.CellOf(hunter.Position) == to) walkedRound = true;
+                if (changeAt < 0f && states.Count > 0)
+                {
+                    changeAt = t;
+                    changeCell = world.CellOf(hunter.Position);
+                }
+            }
+            var kept = latched && blows == 0 && hunter.DoorsBroken == 0 && !door.broken && !door.open
+                && !states.Contains(HunterState.Hunt) && !states.Contains(HunterState.BreakDoor);
+            // A way round: the wander goes on round the shut door to its end (6 cells or more off), so it ends away from the door's
+            // cell; ending the leg at the door, or stalling there, would end it in that cell. No way round: it never gets past the
+            // door, and a wander is over at once, where it stands.
+            var wanderOver = states.Count > 0 && states[0] == HunterState.Listen;
+            var ended = round ? wanderOver && changeCell != from
+                : !walkedRound && (leg != HunterState.Wander || (wanderOver && changeCell == from && changeAt < .5f));
+            Check(kept && ended,
+                label + "seed " + seed + ", the door " + from + "→" + to + " shut mid-leg stays shut and unbroken (" + hunter.DoorsBroken + " breaks, " + blows + " blows); then "
+                + (states.Count > 0 ? string.Join(" → ", states) : "no state change")
+                + (round ? "; the wander ended in " + changeCell + " after " + changeAt.ToString("0.00") + " s"
+                    + (changeCell == from ? " (at the door)" : " (walked round" + (walkedRound ? ", through " + to : "") + ")")
+                    : leg == HunterState.Wander ? "; the wander ended in " + changeCell + " after " + changeAt.ToString("0.00") + " s" + (walkedRound ? "; it got into " + to : "")
+                    : walkedRound ? "; it got into " + to : "; it never got past the door"));
+        }
+    }
+
+    /// <summary>Cells of walking from a to b over open passages only (no shut door: a wander's or a search's rule), up to maxDepth; -1 when b is out of reach.</summary>
+    static int OpenWalk(FrontRoomsMapWorld world, GridCoord a, GridCoord b, int maxDepth)
+    {
+        var depth = new Dictionary<GridCoord, int> { [a] = 0 };
+        var queue = new Queue<GridCoord>();
+        queue.Enqueue(a);
+        while (queue.Count > 0)
+        {
+            var cell = queue.Dequeue();
+            if (cell == b) return depth[cell];
+            if (depth[cell] >= maxDepth) continue;
+            foreach (var s in Steps)
+            {
+                var n = cell + s;
+                if (depth.ContainsKey(n) || !world.IsBuilt(n) || world.PassageBetween(cell, n) != FrontRoomsMapWorld.Passage.Open) continue;
+                depth[n] = depth[cell] + 1;
+                queue.Enqueue(n);
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// A route of at most 10 cells from a to b that keeps off the edge between them, through open passages and other
+    /// built shut doors (not glass or walls). The shut doors on it go into <paramref name="doors"/>. False when there is none.
+    /// </summary>
+    static bool RouteRound(FrontRoomsMapWorld world, GridCoord a, GridCoord b, List<(GridCoord, GridCoord)> doors)
+    {
+        var cameFrom = new Dictionary<GridCoord, GridCoord>();
+        var depth = new Dictionary<GridCoord, int> { [a] = 0 };
+        var queue = new Queue<GridCoord>();
+        queue.Enqueue(a);
+        while (queue.Count > 0 && !depth.ContainsKey(b))
+        {
+            var cell = queue.Dequeue();
+            if (depth[cell] >= 10) continue;
+            foreach (var s in Steps)
+            {
+                var n = cell + s;
+                if (depth.ContainsKey(n) || !world.IsBuilt(n) || (cell == a && n == b)) continue;
+                var p = world.PassageBetween(cell, n);
+                if (p != FrontRoomsMapWorld.Passage.Open && (p != FrontRoomsMapWorld.Passage.ClosedDoor || world.DoorBetween(cell, n) == null)) continue;
+                depth[n] = depth[cell] + 1;
+                cameFrom[n] = cell;
+                queue.Enqueue(n);
+            }
+        }
+        if (!depth.ContainsKey(b)) return false;
+        if (doors != null)
+            for (var n = b; n != a; n = cameFrom[n])
+                if (world.PassageBetween(cameFrom[n], n) == FrontRoomsMapWorld.Passage.ClosedDoor) doors.Add((cameFrom[n], n));
+        return true;
+    }
+
+    /// <summary>True when a cell lies in an intact carved room (or module) of its chunk: a search there keeps to that room.</summary>
+    static bool InRoom(FrontRoomsMapWorld world, GridCoord cell)
+    {
+        var chunk = world.Cache.Get(MapGrid.ChunkOf(cell));
+        var o = chunk.Origin;
+        for (var r = 0; r < chunk.rooms.Length; r++)
+            if (chunk.RoomIntact(r) && chunk.rooms[r].Contains(cell.x - o.x, cell.y - o.y)) return true;
+        return false;
+    }
+
+    // ---------- Losing sight: it follows only a door it saw the player go through ----------
+
+    static void RelayLosesTrack(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -47f, "MAP INTERACTION TEST / loses track");
+        world.BuildForCapture();
+        var player = new GameObject("test player").transform;
+        player.SetParent(world.transform, false);
+        var body = player.gameObject.AddComponent<CapsuleCollider>();
+        body.height = ModuleUnits.PlayerHeight;
+        body.radius = ModuleUnits.PlayerRadius;
+        body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
+        // Open cells straight on from the door on both sides (c behind a, e beyond b), so from c it sees through the open door into e.
+        if (!FindDoor(world, out var a, out var b, out var c, (d, near) =>
+            {
+                var far = d.a == near ? d.b : d.a;
+                var beyond = new GridCoord(2 * far.x - near.x, 2 * far.y - near.y);
+                return world.IsBuilt(beyond) && world.PassageBetween(far, beyond) == FrontRoomsMapWorld.Passage.Open;
+            }))
+        {
+            Check(false, "lose track: no closed door with open cells straight on from it on both sides near the spawn");
+            return;
+        }
+        var e = new GridCoord(2 * b.x - a.x, 2 * b.y - a.y);
+        var door = world.DoorBetween(a, b);
+        // A second door well out of its sight (over 24 m off), for the player to go through unseen.
+        FrontRoomsMapWorld.Door away = null;
+        foreach (var d in Doors(world).Values)
+        {
+            var candidate = world.DoorBetween(d.a, d.b);
+            if (candidate == null || candidate == door || !world.IsBuilt(d.a) || !world.IsBuilt(d.b)) continue;
+            if (Flat(world.CellCenter(d.a) - world.CellCenter(a)) <= 24f || Flat(world.CellCenter(d.b) - world.CellCenter(a)) <= 24f) continue;
+            away = candidate;
+            break;
+        }
+        if (away == null) { Check(false, "lose track: no second door over 24 m from " + a); return; }
+        world.TryOpenDoor(a, b);
+        for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+        if (world.PassageBetween(a, b) != FrontRoomsMapWorld.Passage.Open) { Check(false, "lose track: the door " + a + "→" + b + " did not open"); return; }
+
+        // Points on the line through the middle of the opening, square to the wall: negative in a and c, positive in b and e.
+        var mouth = world.CrossingPoint(a, b);
+        var across = world.CellCenter(b) - world.CellCenter(a);
+        across.y = 0f;
+        across.Normalize();
+        Vector3 Out(float metres)
+        {
+            var p = mouth + across * metres;
+            p.y = world.CellCenter(a).y;
+            return p;
+        }
+        var gone = world.CellCenter(away.b);
+
+        // The player at a point for some frames: the frames on which the Relay saw them.
+        int Stand(FrontRoomsMapHunter hunter, Vector3 feet, int frames)
+        {
+            var seen = 0;
+            player.position = feet;
+            Physics.SyncTransforms();
+            for (var k = 0; k < frames; k++)
+            {
+                hunter.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (hunter.SeesPlayer) seen++;
+            }
+            return seen;
+        }
+
+        // The player gone: where the Relay begins its search once it has lost track (null if it never does).
+        Vector3? SearchAfter(FrontRoomsMapHunter hunter)
+        {
+            player.position = gone;
+            Physics.SyncTransforms();
+            var hunting = false;
+            for (var t = 0f; t < 15f; t += Dt)
+            {
+                hunter.Tick(Dt, gone, gone + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (hunter.State == HunterState.Hunt) hunting = true;
+                else if (hunting && hunter.State == HunterState.Search) return hunter.Position;
+            }
+            return null;
+        }
+
+        var tuning = new FrontRoomsHunterTuning { sightRange = 12f, lostSightSeconds = 1.5f };
+        // Unseen: in sight in a, then out of it and through the far door. It goes where it last saw them, not through that door.
+        var unseen = new FrontRoomsMapHunter(world, tuning, body, null, 3);
+        unseen.DebugPlace(Out(-4.5f));
+        var seenInA = Stand(unseen, Out(-1f), 6);
+        var seenAway = Stand(unseen, world.CellCenter(away.a), 6) + Stand(unseen, world.CellCenter(away.b), 6);
+        var at = SearchAfter(unseen);
+        Check(seenInA == 6 && seenAway == 0 && at.HasValue && world.CellOf(at.Value) == a && Flat(at.Value - Out(-1f)) < 1f,
+            "lose track: the player went through " + away.a + "→" + away.b + " out of its sight (seen " + seenInA + "/6 frames in " + a + ", " + seenAway + "/12 there): it searches from "
+            + (at.HasValue ? world.CellOf(at.Value).ToString() : "nowhere") + ", where it last saw them (expected " + a + ")");
+
+        // Seen (the control): in a, through the door into b and on into e, all in sight 0.1 s each, then gone. It follows through the door it saw them take.
+        var watched = new FrontRoomsMapHunter(world, tuning, body, null, 3);
+        watched.DebugPlace(Out(-4.5f));
+        var seenAll = Stand(watched, Out(-1f), 6) + Stand(watched, Out(1f), 6) + Stand(watched, Out(4.5f), 6);
+        var at2 = SearchAfter(watched);
+        Check(seenAll == 18 && at2.HasValue && world.CellOf(at2.Value) == b,
+            "lose track (control): it saw the player go through " + a + "→" + b + " and on into " + e + " (" + seenAll + "/18 frames in sight) 0.2 s before it lost them: it follows through the door and searches from "
+            + (at2.HasValue ? world.CellOf(at2.Value).ToString() : "nowhere") + " (expected " + b + ")");
+
+        // Seen too long before (the control stretched): through the door in sight, 1.2 s in sight in b, on into e, then gone. Its
+        // last sight comes 1.28 s after the crossing, past the 1.0 s, so it goes where it last saw them. A slow chase, so it
+        // stays well short of the player while they stand in b.
+        var stale = new FrontRoomsMapHunter(world, new FrontRoomsHunterTuning { sightRange = 12f, lostSightSeconds = 1.5f, chaseSpeed = 1f }, body, null, 3);
+        stale.DebugPlace(Out(-4.5f));
+        var seenStale = Stand(stale, Out(-1f), 6) + Stand(stale, Out(1f), 72) + Stand(stale, Out(4.5f), 6);
+        var at3 = SearchAfter(stale);
+        Check(seenStale == 84 && at3.HasValue && world.CellOf(at3.Value) == e && Flat(at3.Value - Out(4.5f)) < 1f,
+            "lose track (stale): it saw the player go through " + a + "→" + b + ", then 1.2 s in " + b + " and on into " + e + " (" + seenStale + "/84 frames in sight), 1.28 s after the crossing: it searches from "
+            + (at3.HasValue ? world.CellOf(at3.Value).ToString() : "nowhere") + ", where it last saw them (expected " + e + ")");
+
+        // A gap in its sight: seen in a, out of sight for a moment, then seen in b and on into e. It saw them on each side of the door
+        // but never watched the crossing (no two ticks in a row), so it goes where it last saw them, not through the door.
+        var gap = new FrontRoomsMapHunter(world, tuning, body, null, 3);
+        gap.DebugPlace(Out(-4.5f));
+        var seenBefore = Stand(gap, Out(-1f), 6);
+        var seenInGap = Stand(gap, world.CellCenter(away.a), 3);
+        var seenAfter = Stand(gap, Out(1f), 3) + Stand(gap, Out(4.5f), 6);
+        var at4 = SearchAfter(gap);
+        Check(seenBefore == 6 && seenInGap == 0 && seenAfter == 9 && at4.HasValue && world.CellOf(at4.Value) == e && Flat(at4.Value - Out(4.5f)) < 1f,
+            "lose track (gap): seen in " + a + " (" + seenBefore + "/6), unseen for 3 frames (" + seenInGap + "/3), then seen in " + b + " and " + e + " (" + seenAfter + "/9): it never watched the crossing, so it searches from "
+            + (at4.HasValue ? world.CellOf(at4.Value).ToString() : "nowhere") + ", where it last saw them (expected " + e + ")");
     }
 
     // ---------- Lamp overrides (interface v1) ----------

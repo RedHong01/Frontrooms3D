@@ -725,9 +725,13 @@ def _pb_is_cavity(p, n, slot):
     return slot == PB
 
 
-def paint_wear(obj, fn=None, cavity=_pb_is_cavity):
+def paint_wear(obj, fn=None, cavity=_pb_is_cavity, face_fn=None):
     """fr_wear colour attribute (BYTE_COLOR, CORNER). fn(P_unity_mm,
     N_unity, slot) -> (R grime, G edge wear, B cavity); 1 = untouched.
+    fn is evaluated per corner (smooth falloffs). face_fn(P, N, slot) has the
+    same form but is evaluated ONCE per face at the face centre, so a rule
+    for a narrow band (a lip, a collar) cannot leak along a large quad that
+    merely shares a vertex with the band; the two are combined by minimum.
     cavity(P, N, slot) -> True caps B at 0.35 (default: every PlasticBlack
     face, i.e. slots and holes). Kits whose PlasticBlack is an OUTER surface
     (the panel's base rail, a bezel) pass their own test, or None."""
@@ -739,10 +743,14 @@ def paint_wear(obj, fn=None, cavity=_pb_is_cavity):
     for poly in me.polygons:
         n = to_unity((rot @ poly.normal).normalized())
         slot = names[poly.material_index] if poly.material_index < len(names) else ""
+        cf = (1.0, 1.0, 1.0)
+        if face_fn is not None:
+            cf = face_fn(tuple(x / MM for x in to_unity(mw @ poly.center)), n, slot)
         for li in poly.loop_indices:
             pw = mw @ me.vertices[me.loops[li].vertex_index].co
             p = tuple(x / MM for x in to_unity(pw))
             c = fn(p, n, slot) if fn is not None else (1.0, 1.0, 1.0)
+            c = (min(c[0], cf[0]), min(c[1], cf[1]), min(c[2], cf[2]))
             if cavity is not None and cavity(p, n, slot):
                 c = (c[0], c[1], min(c[2], 0.35))
             attr.data[li].color_srgb = (max(0.0, min(1.0, c[0])), max(0.0, min(1.0, c[1])), max(0.0, min(1.0, c[2])), 1.0)
@@ -750,7 +758,7 @@ def paint_wear(obj, fn=None, cavity=_pb_is_cavity):
     return obj
 
 
-def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True, cavity=_pb_is_cavity):
+def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True, cavity=_pb_is_cavity, face_fn=None):
     """Per-part recipe (interactables G1 probe): apply modifiers ->
     weld -> triangulate n-gons -> shade smooth -> sharp by angle -> paint
     fr_wear -> WEIGHTED_NORMAL (applied by kit.finish())."""
@@ -771,7 +779,7 @@ def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True, cavity=
         me = obj.data
         me.shade_smooth()
         me.set_sharp_from_angle(angle=math.radians(smooth_angle))
-        paint_wear(obj, wear_fn, cavity)
+        paint_wear(obj, wear_fn, cavity, face_fn)
         if weighted:
             m = obj.modifiers.new("wn", "WEIGHTED_NORMAL")
             m.mode = "FACE_AREA"

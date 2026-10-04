@@ -96,16 +96,21 @@ def build(kit):
     base_z = zs1 - TUBE_IN                       # conduit_base
     cover = B.front_frame(0, -BOX_D * MM, 0)
 
-    def wear(p, n, slot):
+    def wear(p, n, slot):                        # per corner: smooth falloff
         x, y, z = p                              # Unity mm
-        r, g = 1.0, 1.0
+        r = 1.0
         if n[2] > 0.9 and z > BOX_D + 1.0 and abs(x) < 16.65 + 9 and abs(y) < 33.75 + 9:
             r = 0.85                             # fingers round the faces
+        return (r, 1.0, 1.0)
+
+    def wear_face(p, n, slot):                   # per face (face centre): narrow bands
+        x, y, z = p
+        g = 1.0
         if slot == AL and BOX_D - 0.1 < z < BOX_D + FIELD and n[2] < 0.85:
             g = 0.8                              # cover lip and pressed ramp
         if slot == AL and zh0 - 0.1 < y < zn0 + 0.1 and abs(n[1]) < 0.9:
             g = 0.85                             # hex collar flats
-        return (r, g, 1.0)
+        return (1.0, g, 1.0)
 
     # LOD0 --------------------------------------------------------------------
     mb = B.MB()                                  # galvanized box (dominant slot first)
@@ -202,7 +207,7 @@ def build(kit):
         B.sweep(mb, [path[0], path[3], (0.0, -B.E_AXIS * MM, zs1 * MM)], [SOCKET_R * MM] * 3, 8, AL)
         mb.to_part(kit, "lod2", "2")
 
-    B.finalize(kit, SMOOTH_ANGLE, wear)
+    B.finalize(kit, SMOOTH_ANGLE, wear, face_fn=wear_face)
 
     faces = B.face_centres(cover, FIELD, False)
     kit.anchor("conduit_base", (0.0, 0.0, base_z * MM))

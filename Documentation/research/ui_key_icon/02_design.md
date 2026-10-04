@@ -21,9 +21,9 @@ All paths are under `design/`.
 |---|---|
 | 10 review boards, 1920 × 1080, deck grammar | `01_overview.png` … `10_recommendation.png` |
 | Vector masters (33) | `svg/` — 1x units, one `<path>` per layer, named layers |
-| PNG renders (66), real alpha | `png/<name>@1x.png`, `png/<name>@2x.png` |
+| PNG renders (99), real alpha | `png/<name>@1x.png`, `@2x.png`, `@3x.png` (@3x added in the Figma stage for the touch track) |
 | HUD composites on game frames (188) | `hud/` — `<dir>_held_<bg>_<1x/2x>.png`, `<dir>_state_<state>_<bg>_1x.png`, `<dir>_zone_…`, `label_…`, `<dir>_fullframe_<bg>.jpg`; resume pass: `live_code_<bg>_1x.png` (main's live glyph + today's label) and `cmp_<live/dropin/target>_wallpaper_1x.png` (the three steps on one frame) |
-| **Drop-in (recommended, NOT installed)** | `dropin/slot_40x22/` and `dropin/slot_49x22/` (§6) |
+| **Drop-in (recommended, NOT installed)** | `dropin/slot_40x22/` and `dropin/slot_49x22/` (§6), each now with `HUD_KeyGlyph@3x.png`; `dropin/crosshair/` (touch @3x crosshair + SVG) |
 | Verification image (resume) | `../images/08_main_fbx_vs_trace.png`: the trace source render, main's FBX outline, and the 15 px where they differ (red) |
 
 Board list:
@@ -316,3 +316,16 @@ Still open for the Figma hand-off stage (not this stage, per `figma_target.md`):
 - (c) SVG masters: **none changed.**
 
 Verification images from this pass: `images/08_main_fbx_vs_trace.png` (main FBX vs trace, verdict PASS), `design/04_A_label.png` and `design/10_recommendation.png` (re-rendered). The Figma VISUAL VERIFICATION LOG section is not on the canvas yet (`VERIFICATION_LOG.md`: section id —), so they are listed here and in the run report.
+
+---
+
+## 11. Figma stage update (2026-10-03 23:0x)
+
+The Figma stage built no key-HUD block (平面视觉 owns it, `2532:4038`). It wrote the hand-off `03_figma.md` and changed only these:
+- **Whole type sizes** (Unity legacy `Text` takes an int): Courier Prime Bold 24.63 → 25, Plex Mono numerals 20.45 → 20. 113 of 188 HUD crops and the 10 boards were re-rendered. §3 above is updated.
+- **@3x** for the touch track: `png/*@3x.png` (33), `dropin/slot_*/HUD_KeyGlyph@3x.png`, `dropin/crosshair/HUD_Crosshair@3x.png` (192 × 192, Ø 96) + `HUD_Crosshair.svg`.
+- **Dark background** copied to `design/bg/` (it lived only in the scratchpad).
+- SVG masters: unchanged.
+- Verification: VL075–VL077 in the Figma VISUAL VERIFICATION LOG.
+- **Open:** the missing-state outlines A_L, A_S and C clip half their stroke at the glyph box (`03_figma.md` §10.1).
+

@@ -2,8 +2,12 @@
 
 Date: 2026-10-03. Variation key `lightlead` (plan `10_transition_plan.md` §3 V5, §7.5).
 Everything here was built and rendered in a private clone. Nothing in Red's project changed except the files listed in §12. No downloads and no Figma writes.
+**Updated 2026-10-03 night (re-run after Codex's merge): §15 checks the copy of this work that Codex put into Red's game at 19:10. One bug, one side effect and four smaller errors; patches are ready, nothing in main was edited.**
 
 ## 0. Short answer (for Red)
+
+- **In the game now (since 19:10, Codex).** B0 and the cool Office colour and lens are on by default; the dead/dim border rule is off unless `-lightleadBorders` or `-lightleadSoft` is passed. You have not picked a variation yet (§15).
+- **Checked on a fresh copy of main:** all map tests pass as the game runs it (136/136 interaction, 28/28 lamp tick, 100/100 seeds). With the border rule switched on, one test fails: the lamp predictor `LampModeOf` creates map chunks it should only read. Fixed in the clone (136/136), as a contract patch for the map chat (§15.3 E1).
 
 - **The idea works as briefed.** At every frameless crossing (open edge, arch) the Level 0 cell goes dark. The Office beyond is lit in its own cool white. The surface cut now sits where the light changes, and mostly in shadow.
 - **Contrast flips.** Before, the Level 0 side was *brighter* than the Office seen through the opening (shot1: Office 72 vs Level 0 114 luma). After, the Office is 1.6x to 2.2x brighter than the dark Level 0 cell (shot1: 70 vs 43; shot2: 83 vs 38).
@@ -149,6 +153,7 @@ Own stats method (`FrontRoomsLightLeadTools.Stats`), same builds and poses as th
 - **Texture memory added: 0 MB.** The cool lens shares the `TrofferLens` textures. New asset: one 2.1 KB material.
 - **Draw calls:** `UnityStats` reads 0 in batch mode, so I report renderers inside the shot frustum as the proxy. Change: -5 to +1.
 - **Build time** per 25-chunk build: 190-356 ms with light lead + B0 vs 189-317 ms with everything off (same session). Within noise. B0.1 does four `Cache.Edge` lookups per wall end; the real version should precompute a post table per chunk.
+- **Correction (re-run):** `Cache.Edge` is not a pure read. It calls `Cache.Get`, which generates a chunk that is not cached yet. B0.1's post lookups reach into the ring of chunks round every built chunk, so a 25-chunk build generates 47 chunks of data with B0 on and 28 with it off. Those ring chunks get their tier fixed one ring early. See §15.3 E2.
 - **WebGL:** nothing new per frame. `TickFixturesNear` is untouched; fewer lit lamps near borders.
 
 ## 4. Draft contract (map-file diff against the clone base)
@@ -165,6 +170,8 @@ Base: `proj_trans` `FrontRoomsMapWorld.cs` md5 `e5204f9c7a7e07f9fa6d584915e6297e
 | H6 | `BuildInto` | passes each skin's block (`BlockOf` with that side's ceiling) to `BuildEdge` (B0.2) |
 | H7 | `BuildEdge` | per-skin reach at each corner from the kit (B0.1); two skins when blocks or reaches differ |
 | H8 | new `CornerReach`, `PostPieceAt` | the four pieces round a post, as `BuildInto` builds them (start-area rules included) |
+
+**Superseded (re-run):** Codex put H1-H8 and the `LampModeOf` mirror into Red's file at 19:10 (main md5 `a152e6bbcd129d727ddcac973cb98964`, commit `75cfdff`). The mirror as written breaks `LampModeOf`'s purity; see §15.3 E1 for the fix. The text below is the original recommendation.
 
 **Rebase on Red's current file.** Red's `FrontRoomsMapWorld.cs` (read only, mtime 12:38 today, md5 `a05546db9f10dc23aa9b241bca2ce23e`) already has lamp interface v1: `SetLampMode`, `lampModes`, `LampModeOf`, `LampFx`. Recommendation for the real version:
 - Put the border rule in `BuildFixture` **after the Auto roll and before the module and `SetLampMode` overrides**, as here. A run-time `SetLampMode` must still win.
@@ -238,23 +245,27 @@ Media: none downloaded. The stills this variation needs are already listed in `m
 
 ## 11. What the real implementation needs
 
+Status after Codex's merge (re-run): **[in main]** = already in Red's project since 19:10; **[owed]** = still to do.
+
 **Map chat (contract):**
-1. `ThemeMaterials.lampColor` and its use in `BuildFixture` (H1, H3), rebased on Red's 12:38 file.
-2. The border rule in `BuildFixture` after the Auto roll, before the module and `SetLampMode` overrides, **and the same rule in `LampModeOf`** (§4). Auto lamps only.
-3. B0.1 and B0.2 (H6-H8), ideally with a per-chunk post table instead of four `Cache.Edge` calls per wall end.
-4. Tests: lamp-mode distribution and `LampModeOf` tests must include the rule; a B0 test that no two wall boxes of different finish overlap in any post square.
-5. A switch in the level profile (off / soft / dead) if Red wants the strength per tier.
+1. **[in main]** `ThemeMaterials.lampColor` and its use in `BuildFixture` (H1, H3).
+2. **[in main, behind `Borders`]** The border rule in `BuildFixture` after the Auto roll, before the module and `SetLampMode` overrides, and the same rule in `LampModeOf`. **[owed]** The `LampModeOf` side must read edges without generating chunks (§15.3 E1, patch ready).
+3. **[in main]** B0.1 and B0.2 (H6-H8). **[owed]** A per-chunk post table, or another way to read the ring's edges without generating chunks (§15.3 E2).
+4. **[owed]** Tests: `LampModeOf` = built mode for every built lamp with the rule on (the clone check in §15.2 does this); a B0 test that no two wall boxes of different finish overlap in any post square.
+5. **[owed]** A switch in the level profile (off / soft / dead) if Red wants the strength per tier.
 
 **Visual chat:**
-1. `Troffer_Lens_Cool` as a `SurfaceDef` row in `FrontRoomsRenderSetup` (emission (1.989, 2.121, 2.210), texture `TrofferLens`).
-2. The colour and intensity values (the lamp look), then a check of the Office post grade (`FrontRoomsPost_Office`) so its white balance does not cancel the cool shift.
+1. **[in main]** `Troffer_Lens_Cool` as a `SurfaceDef` row in `FrontRoomsRenderSetup` (emission (1.989, 2.121, 2.210), texture `TrofferLens`).
+2. **[in main]** The colour and intensity values. **[owed]** A check of the Office post grade (`FrontRoomsPost_Office`, Red's hand-tuned profile) in Play, and the lens level against the Level 0 lens ×1.5 (§15.3 E5).
 3. Optional: a dim-lens look (the 0.42 lens still blooms near white, so dim cells read weaker than they are).
+4. **[owed]** The title stream's Office rooms still use the warm `Troffer_Lens` under a cool light (§15.3 E6).
 
 **Others:** 系统设计 (Relay Warn in dead cells), wallpaper chat (ink gate at border cells), sound chat (no hum at frameless borders).
 
 ## 12. Outputs in Red's project
 
 Only these, all under this folder: `15_var_lightlead.md`, `20_variation_lightlead.md`, and in `images/`: `var_lightlead_shot1-4.jpg`, `var_lightlead_sheet.jpg`, `var_lightlead_close_post.jpg`, `var_lightlead_close_arch.jpg`, `v_lightlead_shot1-6.jpg`, `v_lightlead_vs_before.jpg`.
+Added by the re-run: `images/var_lightlead_main_sheet.jpg` (the four shots from main's code), `contracts/lightlead_lampmodeof_pure.diff` (map-owned fix, for the map chat) and `contracts/lightlead_comments_visual.diff` (visual-owned, comments only). No code in main was edited.
 
 ## 13. Open issues
 
@@ -265,6 +276,10 @@ Only these, all under this folder: `15_var_lightlead.md`, `20_variation_lightlea
 5. Free wall ends (cut E, 0.17 per chunk) keep their split cap; B0 does not cover them.
 6. Dim cells read weakly in stills; check them in motion in Play.
 7. True draw-call counts need a Play-mode frame capture (batch mode gives none).
+8. (Re-run) `LampModeOf` generates chunks with the border rule on (§15.3 E1). Map chat; patch ready.
+9. (Re-run) B0 generates the ring of chunks round each build early (§15.3 E2). Map chat to decide.
+10. (Re-run) The colour lead is live although Red has not picked (§15.3 E3). Red or the codex-audit to decide.
+11. (Re-run) Play Mode acceptance in Red's editor is still owed: batch checks cannot show flicker in motion or the Relay warning.
 
 ## 14. Logs and reproduction
 
@@ -285,6 +300,75 @@ Clone: `SCR/proj_trans_lightlead` (SCR = `/private/tmp/claude-501/-Users-redwang
 | Sheets | `SCR/ll_sheets.py` | `SCR/ll_out/` |
 
 Extra shot poses (map space, seed 516574485, FOV 76, eye 1.62): extra 1 eye (789.6, 604.5) yaw 90 pitch 2, cell (263,201) Level 0; extra 2 eye (793.8, 613.9) yaw 180 pitch 3, cell (264,204) Office.
+
+## 15. Re-run: the copy in Red's game (2026-10-03, 22:00-23:xx)
+
+**Why.** Red asked Codex (18:3x) to merge the clone work into the project. Codex committed this variation's files into main at 19:10 (`8ef5b64`; HEAD now `75cfdff`). Red (21:4x): "correct the errors and continue all unfinished work". This section checks that copy. I did not edit main's code: the map file is the map chat's (contract), and the `codex-audit` workflow merges fixes to Codex's copies through its sha1-checked script. My fixes are patches in `contracts/`.
+
+### 15.1 What is in main, against this prototype
+
+| Part | This prototype (`proj_trans_lightlead`) | Main (`75cfdff`) |
+|---|---|---|
+| `FrontRoomsTransitionKit.cs` (B0.1 rule) | md5 `7a8c8af1...` | identical; GUID `b215858f...` |
+| `FrontRoomsTransitionLightLead.cs` | border rule on whenever the variation is on | same, plus a `Borders` gate: the rule runs only with `-lightleadBorders` or `-lightleadSoft` |
+| `Troffer_Lens_Cool.mat` | made by a clone tool | identical, plus the `SurfaceDef` row in `FrontRoomsRenderSetup` (what §11 asked) |
+| `FrontRoomsMapWorld.cs` | hooks H1-H8, `// TRANSITION lightlead` | the same code as 9 hunks marked `N1/...`, plus the `LampModeOf` mirror (behind `Borders`) |
+
+So Red's game runs today with **B0 on, the Office cool white (0.90, 0.96, 1.00) at 6.0 with the cool lens on, and the dead/dim border rule off**. That is the plan's provisional pick (§8 "V5's colour only"), but Red has not picked yet.
+
+### 15.2 Tests on a fresh copy of main
+
+Copy: `SCR/proj_ll_main` = main `75cfdff` (Assets, Packages, ProjectSettings rsynced; Library from a warm clone) plus the frozen harness (`FrontRoomsTransitionAudit.cs` md5 `76a624e3...`, unchanged) and a clone-only check runner (`Editor/Transitions/FrontRoomsLLMainChecks.cs`). The runner adds a **mirror check**: it builds 25 chunks and compares `LampModeOf(cell)` with the mode of every built lamp, and counts the lamp colour and lens per theme.
+
+| Mode (flags) | Mirror: 1597 lamps | Lamp look | Map interaction | Lamp tick | Map data, 100 seeds |
+|---|---|---|---|---|---|
+| Off (`-transitionsOff`) | 0 mismatches | Office 0/281 cool | 136/136 | 28/28 | not run |
+| **As the game runs it** (no flags) | 0 mismatches; rule changes 0 lamps | Office 281/281 cool light and cool lens; Level 0 1316/1316 warm | **136/136** | **28/28** | **100/100** |
+| Border rule (`-lightleadBorders`), main's code | — | same | **135/136 FAIL** | 28/28 | 100/100 |
+| Border rule, with the E1 fix | 0 mismatches; 33 dead, 31 dim, 25 steady | same | 136/136 | 28/28 | 100/100 |
+| Soft (`-lightleadSoft`), with the E1 fix | 0 mismatches; 0 dead, 66 dim, 25 steady | same | 136/136 | 28/28 | not run |
+
+The failing check: "LampModeOf a far cell generates no chunk".
+
+### 15.3 Errors found (and what I did)
+
+**E1 · Bug (map-owned; only with the border rule on).** `LampModeOf` is documented as pure ("never generates a chunk"). Its border mirror calls `BorderThemes`, which calls `Cache.Edge`, and `Cache.Edge` calls `Cache.Get`, which **generates** any chunk that is not cached. Asking about a far cell therefore creates up to five chunks of data and fixes their tier at today's `GenerationTier`. The map test catches it (135/136). The same bug is in this prototype; my §4 asked for the mirror without this caveat.
+- Fix: `BorderThemes(cell, kinds, generatedOnly: true)` from `LampModeOf`, through a new `GeneratedEdge` that uses `Cache.TryGetGenerated` and reads Wall when the chunk is not generated. `BuildFixture` keeps `Cache.Edge`. Every built lamp's neighbours were generated when it was built, so the two still agree: 0 mismatches over 1597 lamps, in both border modes.
+- Verified: 136/136, 28/28, 100/100 (table above).
+- Patch: `contracts/lightlead_lampmodeof_pure.diff` (+16 / -3 lines in `FrontRoomsMapWorld.cs`; base sha1 `3a3281ad87afc4d184342d1e065ddf0f11618371`). For the map chat via `codex-audit`. Not applied.
+
+**E2 · Side effect (map-owned; on by default).** B0.1 reads the four wall pieces round each corner post with `Cache.Edge`. At a chunk's edge those pieces belong to the neighbour chunks, so every build generates the whole ring round it. Measured on the same 25-chunk build: **47 chunks of data with B0 on, 28 with `-transitionsOff`** (+19). Effects:
+- the ring chunks get their tier fixed when their neighbour is built, one chunk (24 m) earlier than before; when `GenerationTier` rises, those chunks keep the older tier;
+- a little more generation work per build (the build-time difference was within noise, §3.5);
+- no test fails, and the map data check passes 100/100.
+- Options for the map chat: accept and document it, or give B0 a read that never generates (a per-chunk post table filled when both sides are generated). I did not change it.
+
+**E3 · Process (visual-owned files; on by default).** Red's rule for this task was "I confirm before you implement". The colour lead is live in the game although Red has not picked (the audit notes the same, `codex_audit/00_main_state.md` §3.5). B0 is different: it is a bug fix Red asked Codex about (the corner seam), so on by default is fair.
+- If Red wants the game as it was until the pick: in `FrontRoomsTransitionLightLead.cs`, make `On` opt-in (for example `On = HasArg("-lightleadOn") || HasArg("-lightleadBorders") || HasArg("-lightleadSoft")`, still false with `-transitionsOff`). One line, no map change.
+- If Red keeps it: nothing to do. I left it as it is.
+
+**E4 · Stale comments (visual-owned).** Both transition files in main still say "pre-render clone" and point to hooks marked `// TRANSITION lightlead`, which main does not have. Patch: `contracts/lightlead_comments_visual.diff` (comments only; compiled in the copy). Not applied.
+
+**E5 · Look, worth a check (visual).** Since 17:16 the Level 0 lens is `Troffer_Lens` ×1.5 (luminance 3.15). The cool Office lens keeps `Troffer_Lens`'s luminance (2.10), as briefed. So the Office lens is now 0.67x the Level 0 lens (it was 0.84x in the clone base), while the Office lamp is 9 % brighter. The renders (§15.4) show whether it reads. If Red wants the lenses level: cool lens emission ×1.5 = (2.98, 3.18, 3.32).
+
+**E6 · Small mismatch (visual, RoomStream).** The title stream's Office rooms already use a cool light (0.93, 0.96, 1.00) but the warm `Troffer_Lens`. The map's Office now has the cool lens. After Red's pick, the stream's Office lens should follow (`FrontRoomsRoomStream.cs` line 1540).
+
+**Not an error.** The map chat's note says the light lead "changes `LampModeOf` and the mode `BuildFixture` uses". With the default flags it changes neither: the mirror check counts 0 changed lamps. Only the colour and lens change.
+
+### 15.4 The four fixed shots from main's code
+
+RENDER_RESULTS_PENDING
+
+### 15.5 Logs (re-run)
+
+| Step | Log | Output |
+|---|---|---|
+| Copy of main + interaction tests (default) | `SCR/llm_logs/interaction_default.log` | `SCR/proj_ll_main/Verification/` |
+| Checks, main's code: default, border rule | `SCR/llm_logs/checks_default.log`, `checks_borders.log` | `SCR/llm_checks/default_*`, `borders_*` |
+| Checks with the E1 fix: border, soft, default, off | `SCR/llm_logs/checks_*_fixed.log` | `SCR/llm_checks/*_fixed_*` (mirror reports `*_mirror.txt`) |
+| Fixed shots from main: off, default, border, soft | `SCR/llm_logs/shots_main_*.log` | `SCR/shots_main_*/` |
+| Region measurements | `SCR/llm_tools/measure.py` | this section |
+| Patches | `SCR/llm_tools/fix_lampmodeof.py`, `fix_comments.py` | `contracts/*.diff` |
 
 ## Appendix: full diff of `FrontRoomsMapWorld.cs` (clone base -> lightlead)
 
