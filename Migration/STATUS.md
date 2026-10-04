@@ -21,6 +21,8 @@ Contract schema: `1`
 - [x] Compile `FrontRoomsEditor` with UE5.6 on Windows.
 - [x] Run the UE `FrontRoomsContract` commandlet against the generated contract and kit manifest.
 - [x] Stage and byte-count all 519 Unity source assets locally (123 FBX, 113 sidecars, 167 textures, 5 FMOD banks, video and fonts).
+- [x] Import one staged Office FBX through UE5.6 `ImportAssets` and verify static meshes/materials are generated.
+- [x] Batch-import all 123 Unity FBX files into local `/Game/FrontRooms/UnityImported` (0 errors; 76 bounds warnings queued for sidecar review).
 
 ## Next implementation gates
 
@@ -29,6 +31,7 @@ Contract schema: `1`
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
 - [ ] Promote the importer to an editor asset factory for profile/modules/sidecars.
 - [ ] Import the staged 123 FBX meshes and source textures into UE Content with explicit units, axes, LOD and collision presets.
+- [ ] Apply sidecar collision/LOD metadata to the imported meshes and resolve the 76 import bounds warnings.
 - [ ] Run `stage_unity_assets.ps1` after the UE content layout is approved, then configure FBX/material import presets.
 - [ ] Add the first UE world slice: one generated chunk, Character movement/sprint, and UMG HUD.
 - [ ] Add screenshot/input/audio traces before upgrading materials and lighting.

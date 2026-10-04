@@ -42,3 +42,16 @@ The bridge preserves the Unity-relative source path and SHA-256 for every
 FBX (123 kit/office meshes), sidecar, surface texture/material, font, logo, FMOD bank and video. Visual
 upgrades stay out of this stage; import presets and material replacements are a
 later gate after the source assets are present in UE.
+
+To rebuild the Unreal static meshes from the staged Unity FBX files:
+
+```powershell
+.\Tools\UnrealMigration\import_unity_fbx.ps1
+```
+
+The generated `Migration/exports/unreal_import_settings.json` is machine-local
+configuration because it contains absolute source paths. The resulting
+`.uasset` files stay local under the ignored UE `Content` directory and can be
+regenerated from the bridge. The Windows batch run completed all 123 FBX files
+with zero import errors; UE reported 76 bounds warnings that remain for the
+sidecar collision/LOD pass.
