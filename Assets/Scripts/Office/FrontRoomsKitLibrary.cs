@@ -56,6 +56,7 @@ public static class FrontRoomsKitLibrary
         public string placement;          // Floor | Wall | DeskTop | Ceiling
         public float service;             // clear depth needed in front (wall units)
         public float minCeiling;          // ceiling height the piece needs
+        public float[] lodDistances;      // authored switch distances; 0 means never cull
 
         public Vector3 Min => V(boundsMin);
         public Vector3 Max => V(boundsMax);

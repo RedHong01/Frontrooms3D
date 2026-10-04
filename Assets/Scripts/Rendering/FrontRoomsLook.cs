@@ -19,6 +19,9 @@ public static class FrontRoomsLook
     public static readonly Color AmbientGround = new Color(.40f, .36f, .24f);
     public static readonly Color FogColor = new Color(.16f, .15f, .11f);
     public const float FogDensity = .014f;
+    // The scene's slider value. Unity applies this slider in gamma: .3 is a decode of
+    // GammaToLinear(.3) = 0.073 of the captured light. Once SetZoneReflection has run, the
+    // zone's own intensity replaces it (FrontRoomsZoneReflection, stored in linear).
     public const float ReflectionIntensity = .3f;
 
     /// <summary>Which reflection cubemap the world uses (glass, VCT, metal): the player's zone,
@@ -28,11 +31,13 @@ public static class FrontRoomsLook
     /// <summary>
     /// Switch the default reflection to the zone's cubemap, crossfading over blendSeconds.
     /// Safe to call every frame with the same value. The map calls it at run start and
-    /// on zone / dead-lamp changes. STUB: no-op until the glass work lands the cubemaps
-    /// (Documentation/VISUAL_CHAT_TASKS.md G6); the signature is final.
+    /// on zone / dead-lamp changes. The first call (and any call outside Play mode or with
+    /// blendSeconds 0) switches at once. Cubes: Resources/Rendering/Reflections/Refl_*
+    /// (FrontRoomsZoneReflection; Documentation/VISUAL_CHAT_TASKS.md G6).
     /// </summary>
     public static void SetZoneReflection(ReflectionZone zone, float blendSeconds = .5f)
     {
+        FrontRoomsZoneReflection.Set(zone, blendSeconds);
     }
 
     public static void ApplyAmbient()
@@ -51,5 +56,7 @@ public static class FrontRoomsLook
         // URP lights with the ambient probe (SH), which is only rebuilt from
         // these colours on a bake or here; without it the change is invisible.
         DynamicGI.UpdateEnvironment();
+        // Keep the zone reflection (cube and intensity) if SetZoneReflection ran first.
+        FrontRoomsZoneReflection.Reapply();
     }
 }

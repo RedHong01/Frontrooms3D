@@ -71,5 +71,6 @@ public static class FrontRoomsPostStack
         data.renderShadows = true;
         data.antialiasing = AntialiasingMode.None; // the pipeline's 4x MSAA keeps the grain sharp
         data.dithering = true;
+        FrontRoomsGlassRT.OptIn(camera);   // desktop macOS: this camera may trace glass reflections (no-op elsewhere)
     }
 }

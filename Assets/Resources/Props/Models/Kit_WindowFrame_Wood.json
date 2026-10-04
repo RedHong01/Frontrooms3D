@@ -1,0 +1,244 @@
+{
+ "name": "Kit_WindowFrame_Wood",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "glass_slab",
+   "pos": [
+    0.0,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "stop_l",
+   "pos": [
+    -0.6835,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "stop_r",
+   "pos": [
+    0.6835,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "stop_t",
+   "pos": [
+    0.0,
+    1.9835,
+    0.0
+   ]
+  },
+  {
+   "name": "stop_b",
+   "pos": [
+    0.0,
+    0.3665,
+    0.0
+   ]
+  },
+  {
+   "name": "pocket_l",
+   "pos": [
+    -0.6955,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "pocket_r",
+   "pos": [
+    0.6955,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "pocket_t",
+   "pos": [
+    0.0,
+    1.996,
+    0.0
+   ]
+  },
+  {
+   "name": "pocket_b",
+   "pos": [
+    0.0,
+    0.354,
+    0.0
+   ]
+  },
+  {
+   "name": "tooth_band_l",
+   "pos": [
+    -0.6,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "tooth_band_r",
+   "pos": [
+    0.6,
+    1.175,
+    0.0
+   ]
+  },
+  {
+   "name": "tooth_band_t",
+   "pos": [
+    0.0,
+    1.9,
+    0.0
+   ]
+  },
+  {
+   "name": "tooth_band_b",
+   "pos": [
+    0.0,
+    0.39,
+    0.0
+   ]
+  },
+  {
+   "name": "face_a",
+   "pos": [
+    0.0,
+    1.175,
+    0.105
+   ]
+  },
+  {
+   "name": "sill_plant_a",
+   "pos": [
+    0.0,
+    0.3505,
+    0.05
+   ]
+  },
+  {
+   "name": "sill_plant_b",
+   "pos": [
+    0.0,
+    0.3505,
+    -0.05
+   ]
+  },
+  {
+   "name": "floor_a",
+   "pos": [
+    0.0,
+    0.0,
+    0.45
+   ]
+  },
+  {
+   "name": "floor_b",
+   "pos": [
+    0.0,
+    0.0,
+    -0.45
+   ]
+  },
+  {
+   "name": "blind_rail",
+   "pos": [
+    0.0,
+    2.195,
+    0.1275
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "window",
+  "frame_wood"
+ ],
+ "glassSlab": [
+  1.391,
+  1.642,
+  0.006
+ ],
+ "glassInterface": {
+  "sightLine": {
+   "x": 0.6835,
+   "yBottom": 0.3665,
+   "yTop": 1.9835
+  },
+  "glassEdge": {
+   "x": 0.6955,
+   "yBottom": 0.354,
+   "yTop": 1.996,
+   "z": 0.003
+  },
+  "bite": {
+   "jamb": 0.012,
+   "head": 0.0125,
+   "sill": 0.0125
+  },
+  "liningFace": {
+   "x": 0.6995,
+   "yBottom": 0.3505,
+   "yTop": 1.9995
+  },
+  "stopZ": [
+   0.006,
+   0.022
+  ],
+  "tapeZ": [
+   0.0035,
+   0.006
+  ],
+  "toothBand": {
+   "x": 0.6,
+   "yBottom": 0.39,
+   "yTop": 1.9
+  },
+  "paneUV": "u = X + 0.6955, v = Y - 0.354 (pane-space metres)"
+ },
+ "lodDistances": [
+  4.0,
+  12.0,
+  null
+ ],
+ "lodRatios": [
+  0.45,
+  0.077
+ ],
+ "noCollider": true,
+ "boundsMin": [
+  -0.800000011920929,
+  0.2485000044107437,
+  -0.12099999934434891
+ ],
+ "boundsMax": [
+  0.800000011920929,
+  2.0764999389648438,
+  0.12099999934434891
+ ],
+ "triangles": 2322,
+ "slots": [
+  "Prop_WoodWalnut",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 1044,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.600000023841858,
+  0.24199999868869781
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 2.126
+}

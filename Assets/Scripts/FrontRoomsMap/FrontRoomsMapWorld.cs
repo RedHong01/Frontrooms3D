@@ -345,6 +345,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         public Material wall, floor, ceiling, lens;
         public float lampIntensity;
+        // N1/V5 lightlead: the tube colour belongs to the room theme.
+        public Color lampColor = new Color(1f, .96f, .88f);
     }
 
     readonly Dictionary<GridCoord, BuiltChunk> built = new Dictionary<GridCoord, BuiltChunk>();
@@ -980,14 +982,21 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // A wall's ends reach half a thickness past its corner, except into the start area.
             // The start area's side walls also stop on the door line, where the stream room's end wall closes the corner.
             var startSide = InStartArea(cell) != InStartArea(east);
+            // N1/B0.2: a height-border wall face is assigned to its own block so the
+            // grime band uses that side's ceiling height. -1 keeps the edge's block.
+            var sideBlocks = FrontRoomsTransitionKit.B0 && !InStartArea(cell);
+            var eastSide = sideBlocks && !InStartArea(east);
+            var northSide = sideBlocks && !InStartArea(north);
             BuildEdge(chunk, eastKind, cell, east, new Vector3((i + 1) * cs, 0f, j * cs), Vector3.forward,
                 eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
                 !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
-                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax));
+                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
+                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1);
             BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
                 northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
                 !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
-                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)));
+                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
+                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1);
 
             if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
             {
@@ -1084,6 +1093,43 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
 
+    // N1/B0.1: describe the four wall pieces around a lattice corner and ask
+    // the pure transition rule how each skin owns the 0.16 m post.
+    readonly FrontRoomsTransitionKit.PostPiece[] postPieces = new FrontRoomsTransitionKit.PostPiece[4];
+
+    void CornerReach(GridCoord k, int role, out int reachA, out int reachB)
+    {
+        GridCoord sw = new GridCoord(k.x - 1, k.y - 1), se = new GridCoord(k.x, k.y - 1), nw = new GridCoord(k.x - 1, k.y), ne = k;
+        postPieces[FrontRoomsTransitionKit.South] = PostPieceAt(sw, se, false);
+        postPieces[FrontRoomsTransitionKit.North] = PostPieceAt(nw, ne, false);
+        postPieces[FrontRoomsTransitionKit.West] = PostPieceAt(sw, nw, true);
+        postPieces[FrontRoomsTransitionKit.East] = PostPieceAt(se, ne, true);
+        FrontRoomsTransitionKit.CornerReach(postPieces, role, out reachA, out reachB);
+    }
+
+    FrontRoomsTransitionKit.PostPiece PostPieceAt(GridCoord a, GridCoord b, bool northward)
+    {
+        var za = Cache.ZoneOf(a);
+        var zb = Cache.ZoneOf(b);
+        var ha = MapGrid.CeilingHeight(za.height);
+        var hb = MapGrid.CeilingHeight(zb.height);
+        var h = Mathf.Max(ha, hb);
+        Material wa = Theme(za.theme).wall, wb = Theme(zb.theme).wall;
+        var kind = StartAreaEdge(Cache.Edge(a, b), a, b, northward, ref h, ref wa, ref wb);
+        if (kind == EdgeKind.Open) return default;
+        var startEdge = InStartArea(a) || InStartArea(b);
+        var ca = HeightClass(startEdge ? h : ha);
+        var cb = HeightClass(startEdge ? h : hb);
+        return new FrontRoomsTransitionKit.PostPiece
+        {
+            present = true,
+            finishA = ((long)wa.GetInstanceID() << 4) | (long)ca,
+            finishB = ((long)wb.GetInstanceID() << 4) | (long)cb,
+            officeA = wa == office.wall,
+            officeB = wb == office.wall,
+        };
+    }
+
     /// <summary>
     /// One 3 m edge from <paramref name="start"/> along <paramref name="along"/>.
     /// Where the two sides are different themes the wall is split in two
@@ -1092,29 +1138,50 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     void BuildEdge(BuiltChunk chunk, EdgeKind kind, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float height,
         Material wallA, Material wallB, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
-        bool mayExtendStart = true, bool mayExtendEnd = true)
+        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1)
     {
         if (kind == EdgeKind.Open) return;
         var length = MapGrid.CellSize;
         // Positive "across" points from cell a into cell b.
         var across = new Vector3(along.z, 0f, along.x);
+        var sideA = blockA >= 0 ? blockA : blockIndex;
+        var sideB = blockB >= 0 ? blockB : blockIndex;
+        var startA = WallThickness * .5f;
+        var startB = startA;
+        var endA = startA;
+        var endB = startA;
+        if (FrontRoomsTransitionKit.B0)
+        {
+            var alongX = along.x > .5f;
+            CornerReach(alongX ? new GridCoord(a.x, a.y + 1) : new GridCoord(a.x + 1, a.y), alongX ? FrontRoomsTransitionKit.East : FrontRoomsTransitionKit.North, out var sa, out var sb);
+            CornerReach(new GridCoord(a.x + 1, a.y + 1), alongX ? FrontRoomsTransitionKit.West : FrontRoomsTransitionKit.South, out var ea, out var eb);
+            startA *= sa; startB *= sb; endA *= ea; endB *= eb;
+        }
         void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd)
         {
             if (from > 0f || !mayExtendStart) extendStart = false;
             if (to < length || !mayExtendEnd) extendEnd = false;
-            var f = from - (extendStart ? WallThickness * .5f : 0f);
-            var t = to + (extendEnd ? WallThickness * .5f : 0f);
-            if (t - f < .05f || top - bottom < .05f) return;
-            var center = start + along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f);
-            if (wallA == wallB)
+            if (top - bottom < .05f) return;
+            var fA = from - (extendStart ? startA : 0f);
+            var tA = to + (extendEnd ? endA : 0f);
+            var fB = from - (extendStart ? startB : 0f);
+            var tB = to + (extendEnd ? endB : 0f);
+            if (wallA == wallB && sideA == sideB && fA == fB && tA == tB)
             {
-                var size = along * (t - f) + across * WallThickness + Vector3.up * (top - bottom);
+                if (tA - fA < .05f) return;
+                var center = start + along * ((fA + tA) * .5f) + Vector3.up * ((bottom + top) * .5f);
+                var size = along * (tA - fA) + across * WallThickness + Vector3.up * (top - bottom);
                 solid(blockIndex, wallA, center, Abs(size), WallpaperRepeat);
                 return;
             }
-            var half = along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom);
-            solid(blockIndex, wallA, center - across * (WallThickness * .25f), Abs(half), WallpaperRepeat);
-            solid(blockIndex, wallB, center + across * (WallThickness * .25f), Abs(half), WallpaperRepeat);
+            void Skin(int block, Material material, float f, float t, float side)
+            {
+                if (t - f < .05f) return;
+                var center = start + along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f) + across * (WallThickness * .25f * side);
+                solid(block, material, center, Abs(along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom)), WallpaperRepeat);
+            }
+            Skin(sideA, wallA, fA, tA, -1f);
+            Skin(sideB, wallB, fB, tB, 1f);
         }
 
         if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }
@@ -1233,8 +1300,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     void RaiseWindowBuilt(Window window)
     {
         window.announced = true;
-        if (WindowBuilt == null) return;
         var record = GlassBreakOf(window);
+        try { FrontRoomsInteractableKit.DressWindow(this, window, record); }
+        catch (Exception e) { Debug.LogException(e); }
+        if (WindowBuilt == null) return;
         foreach (Action<Window, GlassBreakRecord> handler in WindowBuilt.GetInvocationList())
         {
             try { handler(window, record); }
@@ -1454,7 +1523,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         light.type = LightType.Spot;
         light.spotAngle = 162f;
         light.innerSpotAngle = 96f;
-        light.color = new Color(1f, .96f, .88f);
+        light.color = theme.lampColor;
         light.range = height > 4f ? 12f : 10f;
         light.shadows = LightShadows.None;
         light.shadowStrength = .92f;
@@ -1471,6 +1540,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var roll = Rand(ref fixture.rng);
         // The odds come from the tier the chunk was generated at (tier 1: 62 % steady, 20 stutter, 10 failing, 5 dead, 3 dim).
         fixture.mode = (tierRules ?? new FrontRoomsTierRules()).At(tier).LampMode(roll);
+        if (lamp == ModuleLamp.Auto && FrontRoomsTransitionLightLead.On && FrontRoomsTransitionLightLead.Borders)
+        {
+            var rolled = fixture.mode;
+            var self = Cache.ZoneOf(cell).theme;
+            fixture.mode = FrontRoomsTransitionLightLead.BorderMode(rolled, self, BorderThemes(cell, borderKinds), borderKinds);
+            FrontRoomsTransitionLightLead.Record(cell, self, rolled, fixture.mode);
+        }
         // A module's lamp: Steady..Dim map onto modes 0..4.
         if (lamp != ModuleLamp.Auto) fixture.mode = (int)lamp - 1;
         // A mode set at run time wins over both (the rolls above are still drawn, so the rest stay put).
@@ -1479,6 +1555,20 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         fixture.nextEvent = 2f + Rand(ref fixture.rng) * 14f;
         chunk.fixtures.Add(fixture);
         fixtureByCell[cell] = fixture;
+    }
+
+    readonly ZoneTheme[] borderThemes = new ZoneTheme[4];
+    readonly EdgeKind[] borderKinds = new EdgeKind[4];
+
+    ZoneTheme[] BorderThemes(GridCoord cell, EdgeKind[] kinds)
+    {
+        for (var k = 0; k < 4; k++)
+        {
+            var n = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+            borderThemes[k] = Cache.ZoneOf(n).theme;
+            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : Cache.Edge(cell, n);
+        }
+        return borderThemes;
     }
 
     /// <summary>
@@ -2797,7 +2887,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (lamp != ModuleLamp.Auto) return lamp;
         var rng = MapHash.Hash(Cache.Generator.Seed, cell.x, cell.y, 211) | 1u;
         // Modes 0..4 (steady, stutter, failing, dead, dim) are ModuleLamp.Steady..Dim.
-        return (ModuleLamp)((tierRules ?? new FrontRoomsTierRules()).At(tier).LampMode(Rand(ref rng)) + 1);
+        var rolled = (tierRules ?? new FrontRoomsTierRules()).At(tier).LampMode(Rand(ref rng));
+        if (FrontRoomsTransitionLightLead.On && FrontRoomsTransitionLightLead.Borders)
+            rolled = FrontRoomsTransitionLightLead.BorderMode(rolled, Cache.ZoneOf(cell).theme, BorderThemes(cell, borderKinds), borderKinds);
+        return (ModuleLamp)(rolled + 1);
     }
 
     // ---------- Lamp overrides (interface v1: the phosphor ink, the Relay warning) ----------
@@ -3056,6 +3149,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (office.wall == null) office.wall = level0.wall;
         if (office.floor == null) office.floor = level0.floor;
         if (office.ceiling == null) office.ceiling = level0.ceiling;
+        // N1/V5 lightlead: colour and cool lens are an optional visual layer;
+        // command-line flags keep the baseline available for comparison.
+        if (FrontRoomsTransitionLightLead.On)
+        {
+            level0.lampColor = FrontRoomsTransitionLightLead.Level0Color;
+            level0.lampIntensity = FrontRoomsTransitionLightLead.Level0Intensity;
+            office.lampColor = FrontRoomsTransitionLightLead.OfficeColor;
+            office.lampIntensity = FrontRoomsTransitionLightLead.OfficeIntensity;
+            var coolLens = FrontRoomsTransitionLightLead.OfficeLens;
+            if (coolLens != null && coolLens.HasProperty("_EmissionColor")) office.lens = coolLens;
+        }
         trim = FrontRoomsSurfaces.CoveBase ?? Own(FrontRoomsSurfaces.Lit("Map test / frame", new Color(.55f, .50f, .36f), .2f));
         doorLeaf = FrontRoomsSurfaces.DoorVeneer ?? Own(FrontRoomsSurfaces.Lit("Map test / door", new Color(.72f, .66f, .50f), .25f));
         keyGlow = Own(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f));

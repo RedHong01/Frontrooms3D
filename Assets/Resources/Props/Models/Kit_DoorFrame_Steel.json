@@ -1,0 +1,131 @@
+{
+ "name": "Kit_DoorFrame_Steel",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "strike",
+   "pos": [
+    0.0,
+    0.968,
+    0.998
+   ]
+  },
+  {
+   "name": "strike_bored",
+   "pos": [
+    0.0,
+    1.0,
+    0.998
+   ]
+  },
+  {
+   "name": "hinge_axis",
+   "pos": [
+    0.0295,
+    0.0,
+    0.0098
+   ]
+  },
+  {
+   "name": "hinge_axis_dir",
+   "pos": [
+    0.0295,
+    0.1,
+    0.0098
+   ]
+  },
+  {
+   "name": "head_dust_a",
+   "pos": [
+    0.0,
+    2.098,
+    0.05
+   ]
+  },
+  {
+   "name": "head_dust_b",
+   "pos": [
+    0.0,
+    2.098,
+    0.95
+   ]
+  },
+  {
+   "name": "threshold",
+   "pos": [
+    0.0,
+    0.012,
+    0.5
+   ]
+  },
+  {
+   "name": "closer_shoe",
+   "pos": [
+    0.125,
+    2.13,
+    0.1
+   ]
+  },
+  {
+   "name": "exit_sign_p",
+   "pos": [
+    -0.08,
+    2.28,
+    0.5
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "door_frame",
+  "office",
+  "lobby",
+  "frame_steel"
+ ],
+ "noCollider": true,
+ "frameType": "steel",
+ "doorRoot": "D: origin hinge-jamb edge, wall centre line, floor; +Z along opening; +X swing (pull) face",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.37,
+  0.08
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.10499999672174454,
+  0.0,
+  -0.07500000298023224
+ ],
+ "boundsMax": [
+  0.10499999672174454,
+  2.174999952316284,
+  1.0750000476837158
+ ],
+ "triangles": 3866,
+ "slots": [
+  "Prop_SteelBrown",
+  "Prop_Rubber",
+  "Prop_Chrome",
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 1430,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.5000000223517418
+ ],
+ "footprintSize": [
+  0.20999999344348907,
+  1.150000050663948
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.225
+}

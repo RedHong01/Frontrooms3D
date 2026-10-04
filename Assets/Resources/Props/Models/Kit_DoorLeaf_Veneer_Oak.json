@@ -1,0 +1,137 @@
+{
+ "name": "Kit_DoorLeaf_Veneer_Oak",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "rose_s",
+   "pos": [
+    0.022,
+    1.0,
+    0.92
+   ]
+  },
+  {
+   "name": "rose_p",
+   "pos": [
+    -0.022,
+    1.0,
+    0.92
+   ]
+  },
+  {
+   "name": "latchbolt",
+   "pos": [
+    0.0,
+    1.0,
+    0.9939
+   ]
+  },
+  {
+   "name": "latchbolt_dir",
+   "pos": [
+    0.0,
+    1.0,
+    1.0939
+   ]
+  },
+  {
+   "name": "latch_edge_bottom",
+   "pos": [
+    0.0,
+    0.015,
+    0.9939
+   ]
+  },
+  {
+   "name": "latch_edge_top",
+   "pos": [
+    0.0,
+    2.095,
+    0.9939
+   ]
+  },
+  {
+   "name": "damage_latch",
+   "pos": [
+    0.0,
+    1.1,
+    0.9939
+   ]
+  },
+  {
+   "name": "hinge_axis",
+   "pos": [
+    0.0295,
+    0.0,
+    0.0098
+   ]
+  },
+  {
+   "name": "hinge_axis_dir",
+   "pos": [
+    0.0295,
+    0.1,
+    0.0098
+   ]
+  },
+  {
+   "name": "closer_mount_s",
+   "pos": [
+    0.022,
+    2.0275,
+    0.545
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "door_leaf",
+  "lobby",
+  "office",
+  "door_type_wood"
+ ],
+ "noCollider": true,
+ "doorType": "wood",
+ "doorRoot": "D (closed pose): origin hinge-jamb edge, wall centre line, floor; leaf rig rotates about hinge_axis",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.36,
+  0.05
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.02199999988079071,
+  0.014999999664723873,
+  0.0024356329813599586
+ ],
+ "boundsMax": [
+  0.03686436638236046,
+  2.0950000286102295,
+  0.994967520236969
+ ],
+ "triangles": 2464,
+ "slots": [
+  "Prop_WoodOak",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 886,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.007432183250784874,
+  0.4987015766091645
+ ],
+ "footprintSize": [
+  0.05886436626315117,
+  0.992531887255609
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.145
+}

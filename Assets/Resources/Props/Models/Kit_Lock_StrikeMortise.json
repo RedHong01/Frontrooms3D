@@ -1,0 +1,116 @@
+{
+ "name": "Kit_Lock_StrikeMortise",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "plate",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "latch_opening",
+   "pos": [
+    0.0,
+    -0.0315,
+    0.0002
+   ]
+  },
+  {
+   "name": "deadbolt_opening",
+   "pos": [
+    0.0,
+    0.032,
+    0.0002
+   ]
+  },
+  {
+   "name": "lip_tip",
+   "pos": [
+    -0.04,
+    -0.0315,
+    0.001
+   ]
+  },
+  {
+   "name": "detach_dir",
+   "pos": [
+    0.0,
+    0.0,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "lock_part",
+  "strike",
+  "lock_static",
+  "frame_part"
+ ],
+ "noCollider": true,
+ "motion": {
+  "type": "static",
+  "detach": true,
+  "note": "frame child; detaches as a rigid render-only part on the Relay's last blow"
+ },
+ "lodDistances": [
+  1.5,
+  4.0,
+  12.0
+ ],
+ "lodRatios": [
+  0.39,
+  0.067
+ ],
+ "lodBudget": [
+  900,
+  350,
+  60
+ ],
+ "partFrame": "origin = pivot/mount; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.2)",
+ "openings": [
+  {
+   "y": -0.0315,
+   "halfX": 0.0075,
+   "halfY": 0.0165,
+   "boxDepth": 0.015
+  },
+  {
+   "y": 0.032,
+   "halfX": 0.0075,
+   "halfY": 0.0165,
+   "boxDepth": 0.023
+  }
+ ],
+ "boundsMin": [
+  -0.03999999910593033,
+  -0.10000000149011612,
+  -0.024399999529123306
+ ],
+ "boundsMax": [
+  0.01600000075995922,
+  0.10000000149011612,
+  0.0010000000474974513
+ ],
+ "triangles": 988,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_PlasticBlack"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.011999999172985554,
+  -0.011699999740812927
+ ],
+ "footprintSize": [
+  0.05599999986588955,
+  0.025399999576620758
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.15
+}

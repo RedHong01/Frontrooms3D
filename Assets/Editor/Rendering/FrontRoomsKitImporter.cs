@@ -71,6 +71,24 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
         if (group == null) return;
         var lods = group.GetLODs();
         if (lods.Length < 2) return;
+        var sidecar = Path.ChangeExtension(assetPath, ".json");
+        var authored = File.Exists(sidecar) ? JsonUtility.FromJson<FrontRoomsKitLibrary.Info>(File.ReadAllText(sidecar)) : null;
+        if (authored?.lodDistances != null && authored.lodDistances.Length >= lods.Length)
+        {
+            // Sidecars use metres at the reference vertical FOV (76 degrees):
+            // screenHeight = size / (2 d tan(38 degrees)). Zero means no cull.
+            var tanHalfFov = Mathf.Tan(38f * Mathf.Deg2Rad);
+            for (var i = 0; i < lods.Length; i++)
+            {
+                var distance = authored.lodDistances[i];
+                lods[i].screenRelativeTransitionHeight = distance > 0f
+                    ? group.size / (2f * distance * tanHalfFov)
+                    : i == lods.Length - 1 ? 0f : lods[i].screenRelativeTransitionHeight;
+            }
+            group.SetLODs(lods);
+            group.fadeMode = LODFadeMode.None;
+            return;
+        }
         var size = group.size;
         lods[0].screenRelativeTransitionHeight = .10f;
         lods[1].screenRelativeTransitionHeight = size < .6f ? .03f : .02f;

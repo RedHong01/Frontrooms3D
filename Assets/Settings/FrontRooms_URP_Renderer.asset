@@ -94,3 +94,4 @@ MonoBehaviour:
   m_Name: FrontRooms Metal Glass RT
   m_EditorClassIdentifier: Assembly-CSharp::FrontRoomsMetalGlassRTRendererFeature
   m_Active: 1
+  prepassShader: {fileID: 4800000, guid: 9e07ae8a4fd2140a88b08079efa47be5, type: 3}

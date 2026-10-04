@@ -1,0 +1,113 @@
+{
+ "name": "Kit_DoorCloser_Arm",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "spindle",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "elbow",
+   "pos": [
+    0.24,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "elbow_top",
+   "pos": [
+    0.24,
+    0.012,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "closer",
+  "office"
+ ],
+ "motion": {
+  "type": "rotate",
+  "axis": [
+   0,
+   1,
+   0
+  ],
+  "pivot": "origin (spindle)",
+  "solver": "FrontRoomsDoorCloserLinkage",
+  "aim": "part +X -> solved elbow",
+  "a": 0.24,
+  "b": 0.26,
+  "spindleDoor": [
+   0.062,
+   2.068,
+   0.52
+  ],
+  "shoePivotDoor": [
+   0.125,
+   2.13,
+   0.1
+  ],
+  "elbowRoot": "the circle-circle root farther from the leaf's S-face plane",
+  "elbowDoorAt": {
+   "0": [
+    0.222,
+    0.341
+   ],
+   "45": [
+    0.385,
+    0.109
+   ],
+   "95": [
+    0.297,
+    -0.095
+   ]
+  }
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  20.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.33,
+  0.05
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.014999999664723873,
+  0.0,
+  -0.014999999664723873
+ ],
+ "boundsMax": [
+  0.25099998712539673,
+  0.021199999377131462,
+  0.014999999664723873
+ ],
+ "triangles": 1112,
+ "slots": [
+  "Prop_SteelBrown"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.11799999373033643,
+  -0.0
+ ],
+ "footprintSize": [
+  0.2659999867901206,
+  0.029999999329447746
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.071
+}

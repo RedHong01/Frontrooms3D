@@ -1,0 +1,107 @@
+{
+ "name": "Kit_KeyTag_Rect",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hole",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "hole_dir",
+   "pos": [
+    0,
+    0,
+    0.1
+   ]
+  },
+  {
+   "name": "face",
+   "pos": [
+    0,
+    -0.019,
+    0.0013499999999999999
+   ]
+  },
+  {
+   "name": "number",
+   "pos": [
+    0,
+    -0.019,
+    0.0013499999999999999
+   ]
+  },
+  {
+   "name": "face_dir",
+   "pos": [
+    0,
+    -0.019,
+    0.10135000000000001
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "key",
+  "key_tag"
+ ],
+ "noCollider": true,
+ "numberAtlas": {
+  "slot": "Prop_KeyTagNo",
+  "fallback": "Prop_Paper",
+  "cols": 10,
+  "rows": 10,
+  "defaultCell": 0,
+  "crop": [
+   0.648,
+   0.308
+  ],
+  "setCell": "_BaseMap_ST = (1, 1, (n % 10) / 10, -(n // 10) / 10)"
+ },
+ "lodDistances": [
+  1.0,
+  3.0,
+  15.0
+ ],
+ "lodBudget": [
+  1200,
+  400,
+  60
+ ],
+ "lodRatios": [
+  0.3333,
+  0.05
+ ],
+ "trianglesCheck": 1038,
+ "boundsMin": [
+  -0.02850000001490116,
+  -0.03350000083446503,
+  -0.002099999925121665
+ ],
+ "boundsMax": [
+  0.02850000001490116,
+  0.005499999970197678,
+  0.002099999925121665
+ ],
+ "triangles": 1038,
+ "slots": [
+  "Prop_PlasticRed",
+  "Prop_KeyTagNo"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.05700000002980232,
+  0.00419999985024333
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.055
+}

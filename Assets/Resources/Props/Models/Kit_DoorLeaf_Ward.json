@@ -1,0 +1,146 @@
+{
+ "name": "Kit_DoorLeaf_Ward",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "kick_s",
+   "pos": [
+    0.0226,
+    0.145,
+    0.5
+   ]
+  },
+  {
+   "name": "kick_p",
+   "pos": [
+    -0.0226,
+    0.145,
+    0.5
+   ]
+  },
+  {
+   "name": "pull_s",
+   "pos": [
+    0.022,
+    1.0,
+    0.92
+   ]
+  },
+  {
+   "name": "push_p",
+   "pos": [
+    -0.022,
+    1.053,
+    0.871
+   ]
+  },
+  {
+   "name": "armor_p",
+   "pos": [
+    -0.0226,
+    0.4245,
+    0.5
+   ]
+  },
+  {
+   "name": "latch_edge_bottom",
+   "pos": [
+    0.0,
+    0.015,
+    0.9939
+   ]
+  },
+  {
+   "name": "latch_edge_top",
+   "pos": [
+    0.0,
+    2.095,
+    0.9939
+   ]
+  },
+  {
+   "name": "damage_latch",
+   "pos": [
+    0.0,
+    1.1,
+    0.9939
+   ]
+  },
+  {
+   "name": "hinge_axis",
+   "pos": [
+    0.0295,
+    0.0,
+    0.0098
+   ]
+  },
+  {
+   "name": "hinge_axis_dir",
+   "pos": [
+    0.0295,
+    0.1,
+    0.0098
+   ]
+  },
+  {
+   "name": "closer_mount_s",
+   "pos": [
+    0.022,
+    2.0275,
+    0.545
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "door_leaf",
+  "run",
+  "door_type_wood",
+  "push_pull"
+ ],
+ "noCollider": true,
+ "doorType": "wood",
+ "latch": "none (push/pull; no Unlatch beat)",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.4,
+  0.04
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.024396080523729324,
+  0.014999999664723873,
+  0.0024356329813599586
+ ],
+ "boundsMax": [
+  0.0859614685177803,
+  2.0950000286102295,
+  0.994967520236969
+ ],
+ "triangles": 4930,
+ "slots": [
+  "Prop_WoodLaminate",
+  "Prop_Aluminium",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 1972,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.03078269399702549,
+  0.4987015766091645
+ ],
+ "footprintSize": [
+  0.11035754904150963,
+  0.992531887255609
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.145
+}

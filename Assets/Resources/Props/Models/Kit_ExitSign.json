@@ -1,0 +1,99 @@
+{
+ "name": "Kit_ExitSign",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "back",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "face",
+   "pos": [
+    0,
+    0,
+    0.052099999999999994
+   ]
+  },
+  {
+   "name": "face_dir",
+   "pos": [
+    0,
+    0,
+    0.1521
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "exit_sign"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  10.0,
+  null
+ ],
+ "lodBudget": [
+  2000,
+  700,
+  100
+ ],
+ "lodRatios": [
+  0.35,
+  0.05
+ ],
+ "face": {
+  "slot": "Run_ExitSign",
+  "deadSlot": "Run_ExitSign_Dead",
+  "textureRegion": [
+   0.165,
+   0.1441,
+   0.845,
+   0.9069
+  ],
+  "materialTile": [
+   0.36,
+   0.18
+  ],
+  "materialST": [
+   -1,
+   1,
+   1,
+   0
+  ],
+  "letterHeightM": 0.096
+ },
+ "trianglesCheck": 1916,
+ "boundsMin": [
+  -0.16500000655651093,
+  -0.10000000149011612,
+  -0.0
+ ],
+ "boundsMax": [
+  0.16500000655651093,
+  0.10159999877214432,
+  0.05983543023467064
+ ],
+ "triangles": 1916,
+ "slots": [
+  "Prop_SteelBlack",
+  "Run_ExitSign"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.02991771511733532
+ ],
+ "footprintSize": [
+  0.33000001311302185,
+  0.05983543023467064
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.152
+}

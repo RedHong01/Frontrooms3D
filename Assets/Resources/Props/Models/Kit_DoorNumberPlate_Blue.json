@@ -1,0 +1,100 @@
+{
+ "name": "Kit_DoorNumberPlate_Blue",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "back",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "face",
+   "pos": [
+    0,
+    0,
+    0.0024500000000000004
+   ]
+  },
+  {
+   "name": "number",
+   "pos": [
+    0,
+    0,
+    0.0024500000000000004
+   ]
+  },
+  {
+   "name": "face_dir",
+   "pos": [
+    0,
+    0,
+    0.10245
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door_sign",
+  "number_plate"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  15.0
+ ],
+ "lodBudget": [
+  500,
+  180,
+  12
+ ],
+ "lodRatios": [
+  0.36,
+  0.024
+ ],
+ "numberAtlas": {
+  "slot": "Prop_KeyTagNo",
+  "fallback": "Prop_Paper",
+  "cols": 10,
+  "rows": 10,
+  "defaultCell": 0,
+  "crop": [
+   0.618,
+   0.3
+  ],
+  "setCell": "_BaseMap_ST = (1, 1, (n % 10) / 10, -(n // 10) / 10)"
+ },
+ "trianglesCheck": 480,
+ "boundsMin": [
+  -0.05000000074505806,
+  -0.02500000037252903,
+  -0.0
+ ],
+ "boundsMax": [
+  0.05000000074505806,
+  0.02500000037252903,
+  0.004236855544149876
+ ],
+ "triangles": 480,
+ "slots": [
+  "Prop_PlasticBlue",
+  "Prop_KeyTagNo",
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.002118427772074938
+ ],
+ "footprintSize": [
+  0.10000000149011612,
+  0.004236855544149876
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.075
+}

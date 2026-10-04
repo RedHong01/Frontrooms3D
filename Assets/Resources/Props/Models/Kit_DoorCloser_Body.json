@@ -1,0 +1,104 @@
+{
+ "name": "Kit_DoorCloser_Body",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "spindle",
+   "pos": [
+    0.025,
+    0.0405,
+    0.04
+   ]
+  },
+  {
+   "name": "spindle_dir",
+   "pos": [
+    0.025,
+    0.1405,
+    0.04
+   ]
+  },
+  {
+   "name": "mount",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "closer",
+  "office"
+ ],
+ "motion": {
+  "type": "static",
+  "parent": "Leaf rig",
+  "placeAt": "leaf anchor closer_mount_s",
+  "localRotation": [
+   0,
+   90,
+   0
+  ],
+  "face": "s"
+ },
+ "doorRoot": {
+  "spindle": [
+   0.062,
+   2.068,
+   0.52
+  ],
+  "bodyMin": [
+   0.022,
+   1.995,
+   0.4
+  ],
+  "bodyMax": [
+   0.072,
+   2.06,
+   0.69
+  ]
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  20.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.33,
+  0.05
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.1469999998807907,
+  -0.03529999777674675,
+  -2.067536142291715e-10
+ ],
+ "boundsMax": [
+  0.1453000009059906,
+  0.04749999940395355,
+  0.050599999725818634
+ ],
+ "triangles": 3236,
+ "slots": [
+  "Prop_SteelBrown",
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0008499994874000549,
+  0.02529999975953251
+ ],
+ "footprintSize": [
+  0.2923000007867813,
+  0.05059999993257225
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.097
+}

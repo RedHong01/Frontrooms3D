@@ -1,0 +1,328 @@
+{
+ "name": "Kit_KeyCabinet",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hook_r0_c0",
+   "pos": [
+    -0.0494,
+    1.64,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r0_c1",
+   "pos": [
+    -0.1014,
+    1.64,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r0_c2",
+   "pos": [
+    -0.1534,
+    1.64,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r0_c3",
+   "pos": [
+    -0.2054,
+    1.64,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r0_c4",
+   "pos": [
+    -0.2574,
+    1.64,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r0_c5",
+   "pos": [
+    -0.3094,
+    1.64,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r1_c0",
+   "pos": [
+    -0.0494,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r1_c1",
+   "pos": [
+    -0.1014,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r1_c2",
+   "pos": [
+    -0.1534,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r1_c3",
+   "pos": [
+    -0.2054,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r1_c4",
+   "pos": [
+    -0.2574,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r1_c5",
+   "pos": [
+    -0.3094,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r2_c0",
+   "pos": [
+    -0.0494,
+    1.43,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r2_c1",
+   "pos": [
+    -0.1014,
+    1.43,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r2_c2",
+   "pos": [
+    -0.1534,
+    1.43,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r2_c3",
+   "pos": [
+    -0.2054,
+    1.43,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r2_c4",
+   "pos": [
+    -0.2574,
+    1.43,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r2_c5",
+   "pos": [
+    -0.3094,
+    1.43,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r3_c0",
+   "pos": [
+    -0.0494,
+    1.325,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r3_c1",
+   "pos": [
+    -0.1014,
+    1.325,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r3_c2",
+   "pos": [
+    -0.1534,
+    1.325,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r3_c3",
+   "pos": [
+    -0.2054,
+    1.325,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r3_c4",
+   "pos": [
+    -0.2574,
+    1.325,
+    0.0228
+   ]
+  },
+  {
+   "name": "hook_r3_c5",
+   "pos": [
+    -0.3094,
+    1.325,
+    0.0228
+   ]
+  },
+  {
+   "name": "key_hook",
+   "pos": [
+    -0.2574,
+    1.535,
+    0.0228
+   ]
+  },
+  {
+   "name": "door_hinge",
+   "pos": [
+    0.0025999999999999895,
+    1.24,
+    0.081
+   ]
+  },
+  {
+   "name": "door_hinge_dir",
+   "pos": [
+    0.0025999999999999895,
+    1.34,
+    0.081
+   ]
+  },
+  {
+   "name": "body_centre",
+   "pos": [
+    -0.1794,
+    1.47,
+    0.04
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "key_host",
+  "wall_decor"
+ ],
+ "hungPose": {
+  "ringYawDeg": -60.0,
+  "ringLiftM": 0.0011,
+  "keyTwistDeg": -30.0,
+  "tagTwistDeg": -30.0,
+  "key": "LookRotation(down, Cross(down, hostForward)): tip down, flats to the room",
+  "tag": "LookRotation(hostForward, up): face to the room, hanging along -Y"
+ },
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  40.0
+ ],
+ "lodBudget": [
+  7000,
+  2400,
+  250
+ ],
+ "lodRatios": [
+  0.3429,
+  0.0357
+ ],
+ "keyHostDefault": "hook_r1_c4",
+ "doorOpenDeg": 189.68,
+ "numberLabels": {
+  "slot": "Prop_KeyTagNo",
+  "fallback": "Prop_Paper",
+  "cells": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24
+  ],
+  "order": "hook_r{r}_c{c} -> r * 6 + c + 1",
+  "indexCardUV": [
+   0.02,
+   0.866,
+   0.1336,
+   0.934
+  ]
+ },
+ "trianglesCheck": 6804,
+ "boundsMin": [
+  -0.3594000041484833,
+  1.2400000095367432,
+  -0.0
+ ],
+ "boundsMax": [
+  0.3594422936439514,
+  1.7000000476837158,
+  0.08380000293254852
+ ],
+ "triangles": 6804,
+ "slots": [
+  "Prop_SteelAlmond",
+  "Prop_PlasticWhite",
+  "Prop_Chrome",
+  "Prop_KeyTagNo"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  2.1144747734069824e-05,
+  0.04190000146627426
+ ],
+ "footprintSize": [
+  0.7188422977924347,
+  0.08380000293254852
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.75
+}

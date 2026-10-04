@@ -1,0 +1,92 @@
+{
+ "name": "Kit_Lock_Knob_Brass",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "spindle",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "face",
+   "pos": [
+    0.0,
+    0.0,
+    0.063
+   ]
+  },
+  {
+   "name": "axis_out",
+   "pos": [
+    0.0,
+    0.0,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "lock_part",
+  "knob",
+  "lock_moving",
+  "knurled"
+ ],
+ "noCollider": true,
+ "motion": {
+  "type": "rotate",
+  "axis": [
+   0,
+   0,
+   1
+  ],
+  "min": -40,
+  "max": 40,
+  "rest": 0,
+  "note": "retracts the mortise latch (0.019) at 40 deg; spring return"
+ },
+ "lodDistances": [
+  1.5,
+  4.0,
+  12.0
+ ],
+ "lodRatios": [
+  0.4,
+  0.067
+ ],
+ "lodBudget": [
+  4500,
+  1800,
+  300
+ ],
+ "partFrame": "origin = pivot/mount; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.2)",
+ "boundsMin": [
+  -0.027000000700354576,
+  -0.027000000700354576,
+  0.00019999999494757503
+ ],
+ "boundsMax": [
+  0.027000000700354576,
+  0.027000000700354576,
+  0.06300000101327896
+ ],
+ "triangles": 4608,
+ "slots": [
+  "Prop_Brass"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.03160000050411327
+ ],
+ "footprintSize": [
+  0.05400000140070915,
+  0.06280000101833139
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.077
+}

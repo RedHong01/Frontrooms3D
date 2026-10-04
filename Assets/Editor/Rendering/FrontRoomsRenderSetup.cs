@@ -41,6 +41,7 @@ public static class FrontRoomsRenderSetup
         EnsurePost();
         EnsureSurfaces();
         EnsureGlassMaterials();
+        FrontRoomsGlassSetup.EnsureAll(); // GLASS HOOK (G1-G4): glass materials and Prop_Glass/Prop_BottleBlue use FrontRooms/Glass.
         EnsureCutoutMaterials();
         EnsureOfficePost();
         ConvertSceneMaterials();
@@ -313,6 +314,7 @@ public static class FrontRoomsRenderSetup
         new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.12f, 2.62f), meshUV = true, macroTone = .15f, macroDirt = .1f },
         new SurfaceDef { name = "Painted_Metal", texture = "PaintedMetal", tile = Vector2.one, meshUV = true, macroTone = .15f, macroDirt = .15f },
         new SurfaceDef { name = "Troffer_Lens", texture = "TrofferLens", tile = new Vector2(FourFoot * .5f, FourFoot), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "TrofferLens", emissionColor = new Color(2.2f, 2.1f, 1.8f) },
+        new SurfaceDef { name = "Troffer_Lens_Cool", texture = "TrofferLens", tile = new Vector2(FourFoot * .5f, FourFoot), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "TrofferLens", emissionColor = new Color(1.989f, 2.121f, 2.210f) },
         new SurfaceDef { name = "Cove_Base", tint = new Color(.23f, .19f, .14f), smooth = .38f, macroTone = .2f },
 
         // Prop kit slots (Tools/Blender/frontrooms_kit): CC0 scans packed by

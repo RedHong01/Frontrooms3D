@@ -1,0 +1,100 @@
+{
+ "name": "Kit_DoorCloser_Shoe",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "pivot",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "pivot_dir",
+   "pos": [
+    0.0,
+    -0.1,
+    0.0
+   ]
+  },
+  {
+   "name": "mount",
+   "pos": [
+    0.0,
+    0.0,
+    -0.02
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "closer",
+  "office"
+ ],
+ "motion": {
+  "type": "static",
+  "parent": "Door frame (kit)",
+  "placeAt": "frame anchor closer_shoe",
+  "localRotation": [
+   0,
+   90,
+   0
+  ],
+  "face": "s",
+  "pivotAxis": [
+   0,
+   1,
+   0
+  ]
+ },
+ "doorRoot": {
+  "pivot": [
+   0.125,
+   2.13,
+   0.1
+  ],
+  "plateBack": 0.105
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  20.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.4,
+  0.08
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.014999999664723873,
+  -0.019999999552965164,
+  -0.019999999552965164
+ ],
+ "boundsMax": [
+  0.014999999664723873,
+  0.019999999552965164,
+  0.010999999940395355
+ ],
+ "triangles": 570,
+ "slots": [
+  "Prop_SteelBrown",
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0044999998062849045
+ ],
+ "footprintSize": [
+  0.029999999329447746,
+  0.03099999949336052
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.07
+}

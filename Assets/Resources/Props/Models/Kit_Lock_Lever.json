@@ -1,0 +1,99 @@
+{
+ "name": "Kit_Lock_Lever",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "spindle",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "grip_press",
+   "pos": [
+    0.07,
+    0.0,
+    0.054
+   ]
+  },
+  {
+   "name": "grip_end",
+   "pos": [
+    0.121,
+    0.0,
+    0.033
+   ]
+  },
+  {
+   "name": "axis_out",
+   "pos": [
+    0.0,
+    0.0,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "lock_part",
+  "lever",
+  "lock_moving"
+ ],
+ "noCollider": true,
+ "motion": {
+  "type": "rotate",
+  "axis": [
+   0,
+   0,
+   -1
+  ],
+  "min": 0,
+  "max": 35,
+  "rest": 0,
+  "note": "+angle = grip end down (-Y); retracts the bored latch 0.013; spring back. Negate on mirrored (_p) placements."
+ },
+ "lodDistances": [
+  1.5,
+  4.0,
+  15.0
+ ],
+ "lodRatios": [
+  0.4,
+  0.075
+ ],
+ "lodBudget": [
+  4000,
+  1600,
+  300
+ ],
+ "partFrame": "origin = pivot/mount; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.2)",
+ "boundsMin": [
+  -0.012000000104308128,
+  -0.012000000104308128,
+  0.00039999998989515007
+ ],
+ "boundsMax": [
+  0.12099999934434891,
+  0.012000000104308128,
+  0.05400000140070915
+ ],
+ "triangles": 3974,
+ "slots": [
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.05449999962002039,
+  0.02720000069530215
+ ],
+ "footprintSize": [
+  0.13299999944865704,
+  0.053600001410814
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.062
+}

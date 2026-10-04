@@ -1,0 +1,95 @@
+{
+ "name": "Kit_DoorSign",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "back",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "face",
+   "pos": [
+    0,
+    0,
+    0.003
+   ]
+  },
+  {
+   "name": "face_dir",
+   "pos": [
+    0,
+    0,
+    0.10300000000000001
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door_sign"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  25.0
+ ],
+ "lodBudget": [
+  600,
+  200,
+  12
+ ],
+ "lodRatios": [
+  0.3333,
+  0.02
+ ],
+ "signAtlas": {
+  "slot": "Prop_SignEngraved",
+  "cols": 2,
+  "rows": 2,
+  "cells": [
+   "EMPLOYEES ONLY",
+   "STAFF ONLY",
+   "STORAGE",
+   "spare"
+  ],
+  "defaultCell": 0,
+  "setCell": "_BaseMap_ST = (1, 1, (n % 2) / 2, -(n // 2) / 2)",
+  "capHeightMm": 17,
+  "font": "TeX Gyre Heros Bold"
+ },
+ "trianglesCheck": 664,
+ "boundsMin": [
+  -0.12700000405311584,
+  -0.03799999877810478,
+  -0.0
+ ],
+ "boundsMax": [
+  0.12700000405311584,
+  0.03799999877810478,
+  0.00433713523671031
+ ],
+ "triangles": 664,
+ "slots": [
+  "Prop_PlasticBlack",
+  "Prop_PlasticWhite",
+  "Prop_SignEngraved",
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.002168567618355155
+ ],
+ "footprintSize": [
+  0.2540000081062317,
+  0.00433713523671031
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.088
+}

@@ -1,0 +1,113 @@
+{
+ "name": "Kit_ExitDevice_Crossbar",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "latch_case",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "hinge_case",
+   "pos": [
+    0.8,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "bar_centre",
+   "pos": [
+    0.4,
+    0.0,
+    0.07
+   ]
+  },
+  {
+   "name": "push_point",
+   "pos": [
+    0.4,
+    0.0,
+    0.08600000000000001
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "exit_device",
+  "exit"
+ ],
+ "motion": {
+  "type": "static",
+  "parent": "Leaf rig",
+  "placeAtDoor": [
+   -0.022,
+   1.0,
+   0.9
+  ],
+  "localRotation": [
+   0,
+   -90,
+   0
+  ],
+  "localScale": [
+   -1,
+   1,
+   1
+  ],
+  "face": "p",
+  "barTravel": {
+   "axis": [
+    0,
+    0,
+    -1
+   ],
+   "travel": 0.012,
+   "note": "needs the bar as a separate renderer (not in v1)"
+  }
+ },
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  6.0,
+  25.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.34,
+  0.051
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.03862608224153519,
+  -0.05999999865889549,
+  -1.3783574281944766e-10
+ ],
+ "boundsMax": [
+  0.8386260271072388,
+  0.05999999865889549,
+  0.0949999988079071
+ ],
+ "triangles": 3948,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.3999999724328518,
+  0.04749999933503568
+ ],
+ "footprintSize": [
+  0.877252109348774,
+  0.09499999894574285
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.11
+}

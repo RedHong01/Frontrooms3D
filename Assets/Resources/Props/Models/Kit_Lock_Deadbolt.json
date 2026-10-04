@@ -1,0 +1,99 @@
+{
+ "name": "Kit_Lock_Deadbolt",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "bolt_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "end_face",
+   "pos": [
+    0.0,
+    0.0,
+    0.025
+   ]
+  },
+  {
+   "name": "throw_dir",
+   "pos": [
+    0.0,
+    0.0,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "lock_part",
+  "deadbolt",
+  "lock_moving",
+  "bolt"
+ ],
+ "noCollider": true,
+ "motion": {
+  "type": "slide",
+  "axis": [
+   0,
+   0,
+   -1
+  ],
+  "travel": 0.025,
+  "rest": "thrown",
+  "note": "authored thrown; slide -Z 0.025 to retract (0.08 s at the 0.86 commit)"
+ },
+ "lodDistances": [
+  1.0,
+  3.0,
+  8.0
+ ],
+ "lodRatios": [
+  0.375,
+  0.075
+ ],
+ "lodBudget": [
+  400,
+  150,
+  30
+ ],
+ "partFrame": "origin = pivot/mount; front = Unity +Z (kit -Y); +Y up (10_spec \u00a71.2)",
+ "frontOpening": {
+  "x": [
+   -0.007,
+   0.007
+  ],
+  "yHalf": 0.0165
+ },
+ "boundsMin": [
+  -0.0062500000931322575,
+  -0.014999999664723873,
+  -0.019999999552965164
+ ],
+ "boundsMax": [
+  0.0062500000931322575,
+  0.014999999664723873,
+  0.025100000202655792
+ ],
+ "triangles": 380,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_Aluminium"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.002550000324845314
+ ],
+ "footprintSize": [
+  0.012500000186264515,
+  0.045099999755620956
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.065
+}

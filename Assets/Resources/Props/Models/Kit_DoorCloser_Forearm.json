@@ -1,0 +1,82 @@
+{
+ "name": "Kit_DoorCloser_Forearm",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "elbow",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "shoe_end",
+   "pos": [
+    0.26,
+    0.05,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "closer",
+  "office"
+ ],
+ "motion": {
+  "type": "rotate",
+  "axis": [
+   0,
+   1,
+   0
+  ],
+  "pivot": "origin (elbow)",
+  "solver": "FrontRoomsDoorCloserLinkage",
+  "aim": "part +X (plan) -> shoe pivot",
+  "b": 0.26,
+  "rise": 0.05,
+  "underRodDoorY": 2.1105
+ },
+ "noCollider": true,
+ "lodDistances": [
+  1.5,
+  5.0,
+  20.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.33,
+  0.06
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.010499999858438969,
+  0.0,
+  -0.010969654656946659
+ ],
+ "boundsMax": [
+  0.26899999380111694,
+  0.05000000074505806,
+  0.010969654656946659
+ ],
+ "triangles": 940,
+ "slots": [
+  "Prop_SteelBrown",
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.129249996971339,
+  -0.0
+ ],
+ "footprintSize": [
+  0.2794999936595559,
+  0.021939309313893318
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.1
+}

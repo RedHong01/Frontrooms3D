@@ -348,6 +348,8 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         currentSequence = 0;
         maxExposure = MaxRooms;
         initialized = true;
+        // GLASS G6 HOOK: no title-stream cubes yet, so the title rooms reflect the Level 0 cube, not Unity's default sky.
+        if (Application.isPlaying) FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
     }
 
     /// <summary>

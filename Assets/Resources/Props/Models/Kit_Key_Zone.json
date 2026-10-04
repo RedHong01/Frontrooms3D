@@ -1,0 +1,139 @@
+{
+ "name": "Kit_Key_Zone",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "shoulder",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "tip",
+   "pos": [
+    0,
+    0,
+    0.025
+   ]
+  },
+  {
+   "name": "insert_dir",
+   "pos": [
+    0,
+    0,
+    0.1
+   ]
+  },
+  {
+   "name": "cuts_up",
+   "pos": [
+    0,
+    0.1,
+    0
+   ]
+  },
+  {
+   "name": "grip",
+   "pos": [
+    0,
+    0.0005,
+    -0.018
+   ]
+  },
+  {
+   "name": "ring_hole",
+   "pos": [
+    0,
+    0.0005,
+    -0.0265
+   ]
+  },
+  {
+   "name": "ring_hole_dir",
+   "pos": [
+    0.1,
+    0.0005,
+    -0.0265
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "key"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.0,
+  3.0,
+  12.0
+ ],
+ "lodBudget": [
+  2400,
+  900,
+  150
+ ],
+ "lodRatios": [
+  0.375,
+  0.0625
+ ],
+ "keyFrame": {
+  "origin": "shoulder on the turning axis",
+  "insert": "+Z",
+  "cutsUp": "+Y",
+  "flatNormal": "X"
+ },
+ "bitting": {
+  "cutZ": [
+   0.004,
+   0.0078,
+   0.0116,
+   0.0154,
+   0.0192,
+   0.023
+  ],
+  "steps": [
+   2,
+   4,
+   1,
+   5,
+   3,
+   2
+  ],
+  "step": 0.00038,
+  "base": 0.0002,
+  "flat": 0.0008,
+  "flankDegFromVertical": 50.0,
+  "tipBevelZ": 0.0215,
+  "tipY": 0.0005
+ },
+ "trianglesCheck": 2184,
+ "boundsMin": [
+  -0.0010999999940395355,
+  -0.012500000186264515,
+  -0.032999999821186066
+ ],
+ "boundsMax": [
+  0.0010999999940395355,
+  0.013500000350177288,
+  0.02500000037252903
+ ],
+ "triangles": 2184,
+ "slots": [
+  "Prop_Brass"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.003999999724328518
+ ],
+ "footprintSize": [
+  0.002199999988079071,
+  0.058000000193715096
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.064
+}

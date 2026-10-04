@@ -1,0 +1,105 @@
+{
+ "name": "Kit_KeyRing",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hook_contact",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "key_contact",
+   "pos": [
+    -0.004,
+    -0.0215,
+    0
+   ]
+  },
+  {
+   "name": "tag_contact",
+   "pos": [
+    0.004,
+    -0.0213,
+    0
+   ]
+  },
+  {
+   "name": "centre",
+   "pos": [
+    0,
+    -0.0109,
+    0
+   ]
+  },
+  {
+   "name": "normal_dir",
+   "pos": [
+    0,
+    -0.0109,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "key",
+  "key_ring"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  1.0,
+  3.0,
+  12.0
+ ],
+ "lodBudget": [
+  2000,
+  600,
+  96
+ ],
+ "lodRatios": [
+  0.3,
+  0.048
+ ],
+ "ring": {
+  "outsideD": 0.025,
+  "insideD": 0.0218,
+  "wire": [
+   0.0016,
+   0.0009
+  ],
+  "turns": 2,
+  "segmentsPerTurn": 128,
+  "splitDeg": 35.0
+ },
+ "trianglesCheck": 1972,
+ "boundsMin": [
+  -0.012497025541961193,
+  -0.02339702472090721,
+  -0.0008999999845400453
+ ],
+ "boundsMax": [
+  0.012497025541961193,
+  0.0015970254316926003,
+  0.0008999999845400453
+ ],
+ "triangles": 1972,
+ "slots": [
+  "Prop_Chrome"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.024994051083922386,
+  0.0017999999690800905
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.052
+}

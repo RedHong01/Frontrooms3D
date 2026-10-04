@@ -1,0 +1,220 @@
+{
+ "name": "Kit_DoorLeaf_SteelLite",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "escutcheon_s",
+   "pos": [
+    0.022,
+    0.968,
+    0.92
+   ]
+  },
+  {
+   "name": "sign_s",
+   "pos": [
+    0.022,
+    1.524,
+    0.5
+   ]
+  },
+  {
+   "name": "tagplate_s",
+   "pos": [
+    0.022,
+    1.0,
+    0.79
+   ]
+  },
+  {
+   "name": "kick_s",
+   "pos": [
+    0.0226,
+    0.145,
+    0.5
+   ]
+  },
+  {
+   "name": "escutcheon_p",
+   "pos": [
+    -0.022,
+    0.968,
+    0.92
+   ]
+  },
+  {
+   "name": "sign_p",
+   "pos": [
+    -0.022,
+    1.524,
+    0.5
+   ]
+  },
+  {
+   "name": "tagplate_p",
+   "pos": [
+    -0.022,
+    1.0,
+    0.79
+   ]
+  },
+  {
+   "name": "kick_p",
+   "pos": [
+    -0.0226,
+    0.145,
+    0.5
+   ]
+  },
+  {
+   "name": "latchbolt",
+   "pos": [
+    0.0,
+    0.9365,
+    0.9939
+   ]
+  },
+  {
+   "name": "latchbolt_dir",
+   "pos": [
+    0.0,
+    0.9365,
+    1.0939
+   ]
+  },
+  {
+   "name": "deadbolt",
+   "pos": [
+    0.0,
+    1.0,
+    0.9939
+   ]
+  },
+  {
+   "name": "deadbolt_dir",
+   "pos": [
+    0.0,
+    1.0,
+    1.0939
+   ]
+  },
+  {
+   "name": "latch_edge_bottom",
+   "pos": [
+    0.0,
+    0.015,
+    0.9939
+   ]
+  },
+  {
+   "name": "latch_edge_top",
+   "pos": [
+    0.0,
+    2.095,
+    0.9939
+   ]
+  },
+  {
+   "name": "damage_latch",
+   "pos": [
+    0.0,
+    1.1,
+    0.9939
+   ]
+  },
+  {
+   "name": "hinge_axis",
+   "pos": [
+    0.0295,
+    0.0,
+    0.0098
+   ]
+  },
+  {
+   "name": "hinge_axis_dir",
+   "pos": [
+    0.0295,
+    0.1,
+    0.0098
+   ]
+  },
+  {
+   "name": "closer_mount_s",
+   "pos": [
+    0.022,
+    2.0275,
+    0.545
+   ]
+  },
+  {
+   "name": "lite_centre",
+   "pos": [
+    0.0,
+    1.575,
+    0.755
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "door_leaf",
+  "lobby",
+  "office",
+  "door_type_hollow_metal",
+  "locked",
+  "lite",
+  "run"
+ ],
+ "noCollider": true,
+ "doorType": "hollow_metal",
+ "doorRoot": "D (closed pose): origin hinge-jamb edge, wall centre line, floor; leaf rig rotates about hinge_axis",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.4,
+  0.04
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "glassSlab": [
+  0.119,
+  0.652,
+  0.006
+ ],
+ "gameplayNote": "see-through lite; the Relay's sight stops at the leaf collider (02 6.1)",
+ "boundsMin": [
+  -0.02449999935925007,
+  0.014999999664723873,
+  0.0024356329813599586
+ ],
+ "boundsMax": [
+  0.03686436638236046,
+  2.0950000286102295,
+  0.994967520236969
+ ],
+ "triangles": 4586,
+ "slots": [
+  "Door_Enamel",
+  "Prop_Aluminium",
+  "Prop_Chrome",
+  "Prop_Glass"
+ ],
+ "trianglesLod1": 1834,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.006182183511555195,
+  0.4987015766091645
+ ],
+ "footprintSize": [
+  0.06136436574161053,
+  0.992531887255609
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.145
+}
