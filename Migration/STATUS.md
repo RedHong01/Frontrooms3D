@@ -18,14 +18,17 @@ Contract schema: `1`
 - [x] Add a first Title/Playing/Paused/Caught + key/door + Relay Listen→Chase runtime slice.
 - [x] Add a Windows Node export gate that runs without Python or Unreal Editor.
 - [x] Add a Unity-side asset bridge manifest and Windows staging script so UE can reuse existing FBX, textures, fonts, video and FMOD banks.
+- [x] Compile `FrontRoomsEditor` with UE5.6 on Windows.
+- [x] Run the UE `FrontRoomsContract` commandlet against the generated contract and kit manifest.
+- [x] Stage and byte-count all 519 Unity source assets locally (123 FBX, 113 sidecars, 167 textures, 5 FMOD banks, video and fonts).
 
 ## Next implementation gates
 
 - [x] Compile the engine-independent C++ hash implementation against the Python oracle.
 - [x] Define engine-independent C++ grid/zone/chunk data shapes from the Unity contract.
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
-- [ ] Compile `Migration/Unreal/FrontRoomsUE.uproject` in the locked team UE5 editor.
 - [ ] Promote the importer to an editor asset factory for profile/modules/sidecars.
+- [ ] Import the staged 123 FBX meshes and source textures into UE Content with explicit units, axes, LOD and collision presets.
 - [ ] Run `stage_unity_assets.ps1` after the UE content layout is approved, then configure FBX/material import presets.
 - [ ] Add the first UE world slice: one generated chunk, Character movement/sprint, and UMG HUD.
 - [ ] Add screenshot/input/audio traces before upgrading materials and lighting.
