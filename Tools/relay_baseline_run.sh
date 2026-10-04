@@ -1,12 +1,23 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # Run one Relay Pursuit v2 Step 0 baseline case.
 # Usage: relay_baseline_run.sh <seed> <mode> <tier> [minutes]
 # The game stays on the legacy hunter; this only drives the editor-only bot.
 
 set -u
 
-ROOT="${0:A:h:h}"
-UNITY="${UNITY:-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+UNITY="${UNITY:-${UNITY_PATH:-}}"
+if [[ -z "$UNITY" ]]; then
+  case "${OSTYPE:-}" in
+    darwin*) UNITY="/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity" ;;
+    msys*|cygwin*|win32*)
+      echo "Set UNITY_PATH (or UNITY) to the Unity 6000.3.10f1 executable on Windows." >&2
+      exit 2
+      ;;
+    *) UNITY="Unity" ;;
+  esac
+fi
 SEED="${1:-}"
 MODE="${2:-}"
 TIER="${3:-}"
@@ -17,13 +28,17 @@ case "$MODE" in
   *) echo "usage: $0 <seed> <mode> <tier> [minutes]" >&2; exit 2 ;;
 esac
 
-if [[ ! -d "$ROOT/Assets" || ! -x "$UNITY" ]]; then
+if [[ ! -d "$ROOT/Assets" ]]; then
   echo "Unity project or editor not found: $ROOT / $UNITY" >&2
+  exit 2
+fi
+if [[ "$UNITY" == */* && ! -x "$UNITY" ]] || [[ "$UNITY" != */* ]] && ! command -v "$UNITY" >/dev/null 2>&1; then
+  echo "Unity editor not found: $UNITY" >&2
   exit 2
 fi
 
 # A baseline must own the project editor because it enters Play Mode.
-if pgrep -f "[Uu]nity.*-[pP]roject[Pp]ath[ =]$ROOT([ /]|$)" >/dev/null 2>&1; then
+if command -v pgrep >/dev/null 2>&1 && pgrep -f "[Uu]nity.*-[pP]roject[Pp]ath[ =]$ROOT([ /]|$)" >/dev/null 2>&1; then
   echo "busy: a Unity editor already has $ROOT open" >&2
   exit 2
 fi

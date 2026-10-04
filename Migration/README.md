@@ -3,6 +3,11 @@
 This directory is the migration-side source of truth that can be maintained
 before the Unreal Editor is installed.
 
+Read [`UNITY_UNREAL_SYNC_POLICY.md`](UNITY_UNREAL_SYNC_POLICY.md) before
+changing either side. Every Unity-side change must have a corresponding Unreal
+assessment, implementation or explicit no-change record, regenerated contract
+outputs, and verification status.
+
 ## Current artifacts
 
 - `exports/frontrooms_contract.json` is generated from the committed Unity

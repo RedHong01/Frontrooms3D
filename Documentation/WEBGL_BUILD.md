@@ -3,10 +3,16 @@
 The reproducible browser build is exposed in Unity under **FrontRooms 3D → Build WebGL** and from batch mode:
 
 ```sh
-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity \
-  -projectPath /Users/redwang/Developer/Frontrooms3D \
+"${UNITY_PATH}" \
+  -projectPath "${PROJECT_PATH}" \
   -executeMethod FrontRooms3DBuild.BuildWebGL -quit -batchmode
 ```
+
+Set `UNITY_PATH` to the Unity executable for the current OS and `PROJECT_PATH`
+to this checkout. For macOS the executable is usually
+`/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity`;
+on Windows use the matching `Unity.exe` path. Keep the Editor version at
+`6000.3.10f1` on both machines.
 
 The build script applies the WebGL profile before creating `Builds/WebGL`:
 

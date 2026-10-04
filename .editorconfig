@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+[*.{py,js,ts,sh,swift,mm,m,h,cpp,c,hlsl,shader,compute,cginc}]
+indent_style = space
+indent_size = 4
+
+[*.{json,jsonc,yml,yaml,asmdef,asmref,inputactions,meta,asset,unity,prefab,mat,anim,controller,playable,md,txt}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab

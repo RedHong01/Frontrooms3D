@@ -4,7 +4,7 @@ This is a first-person experiment built from the FrontRooms functional question:
 
 ## Run
 
-Open `Builds/Mac/FrontRooms3D.app` and press **Space**. The build was compiled with Unity **6000.3.10f1** as a macOS universal player. The working project is this folder. An editable copy is also included at the sibling Frontrooms3D/ folder in the assignment directory.
+Open `Builds/Mac/FrontRooms3D.app` and press **Space**. The build was compiled with Unity **6000.3.10f1** for macOS. The optional native Metal glass enhancement currently targets Apple Silicon; Intel Macs use the URP fallback unless a universal native plugin is supplied. The working project is this folder. An editable copy is also included at the sibling Frontrooms3D/ folder in the assignment directory.
 
 **WASD** moves, mouse looks, **Shift** runs, and **hold E** reads a note or breaks glass. Walk over the key, then hold E while aiming at the yellow door. **Esc** pauses; **Tab** opens the note journal; **R** retries after a result.
 
@@ -18,7 +18,9 @@ The original design guidance is the [FrontRooms deck](https://www.figma.com/deck
 
 ## Edit the Unity project
 
-Open this folder in Unity Hub with Unity 6000.3.10f1 and open Assets/Scenes/FrontRooms3D.unity. The scene contains a bootstrap object and a serialized, editable greybox preview, so walls, lights and materials are visible in the Scene view. The title stream is runtime-only and does not replace that playable layout. Edit Assets/Scripts/FrontRoomsLevel.cs to change rooms, openings, keys and exits; edit Assets/Scripts/FrontRooms3DGame.cs for first-person/HUD behavior; and edit Assets/Scripts/FrontRoomsRoomStream.cs or assign its optional room template to tune the streamed title/arrival rooms. Build commands preserve an existing scene, so editor changes survive a build. The assignment-folder copy contains the same source plus LEVEL_DESIGN_GUIDE.md.
+Open this folder in Unity Hub with Unity 6000.3.10f1 and open Assets/Scenes/FrontRooms3D.unity. The scene contains a bootstrap object and a serialized, editable greybox preview, so walls, lights and materials are visible in the Scene view. The title stream is runtime-only and does not replace that playable layout. Edit Assets/Scripts/FrontRoomsMap/FrontRoomsLevelProfile.cs to change authored room profiles, openings, keys and exits; edit Assets/Scripts/FrontRooms3DGame.cs for first-person/HUD behavior; and edit Assets/Scripts/FrontRoomsRoomStream.cs or assign its optional room template to tune the streamed title/arrival rooms. Build commands preserve an existing scene, so editor changes survive a build. The assignment-folder copy contains the same source plus LEVEL_DESIGN_GUIDE.md.
+
+For desktop builds, use **FrontRooms 3D → Cloud Build macOS** or **FrontRooms 3D → Cloud Build Windows**. Those entries apply the same standalone settings and preserve the authored URP pipeline on both operating systems. See [Documentation/CROSS_PLATFORM_DEVELOPMENT.md](Documentation/CROSS_PLATFORM_DEVELOPMENT.md) before switching machines.
 
 ## WebGL build
 

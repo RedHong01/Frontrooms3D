@@ -58,8 +58,9 @@ public static class FrontRooms3DBuild
     public static void BuildMac()
     {
         FrontRoomsStreamVerification.Run();
-        GraphicsSettings.defaultRenderPipeline = null;
-        QualitySettings.renderPipeline = null;
+        // Keep the project-authored URP assignments. Clearing them here made
+        // the legacy macOS menu build differ from the Windows/cloud builder.
+        QualitySettings.SetQualityLevel(3, true);
         PlayerSettings.productName = "FrontRooms3D"; PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0"; PlayerSettings.fullScreenMode = FullScreenMode.Windowed;

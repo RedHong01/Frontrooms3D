@@ -11,6 +11,8 @@ Git HEAD：`70644f0`（与 `origin/main` 同步；工作树另有未提交改动
 
 你已选择 **桌面优先（macOS/Windows）**，并要求 **行为等价，同时利用 Unreal 把视觉升级到更高纹理和电影质感**。因此目标不是逐像素复刻 URP，而是把玩法、节奏、可读性、状态时序和交互保持在 golden baseline 内，再用 UE 的材质、灯光、反射、雾和后期建立更高规格的画面。建议建立独立的 UE5 项目，用 **C++ 保留确定性核心，Blueprint/UMG/Data Asset 负责编辑和表现**。Unity 工程继续作为行为基线，直到 UE 版完成逐层验收。当前机器没有发现 Unreal Editor/UnrealEditor 可执行文件，只有 `/Applications/Epic Games Launcher.app`，因此本轮完成的是源审计、迁移规格和验收契约；没有虚构一个已经导入或打包成功的 Unreal 项目。
 
+迁移期间的硬规则是：**任何 Unity side 的更新都必须同步评估并更新 Unreal side。** Unity 的 C#、数据资产、JSON sidecar、地图常量、输入、音频、材质合同、资产、验证报告和文档都属于同步范围；Unreal 可以在表现层升级为电影质感，但不能悄悄分叉行为、数据、碰撞、状态时序或事件触发。详细流程见 `Migration/UNITY_UNREAL_SYNC_POLICY.md`。
+
 “完整迁移”必须先锁定发行目标：UE 适合 Windows/macOS/Linux 桌面和移动端；现有 WebGL 不能直接作为 UE 的同一目标继续交付。若浏览器版本是硬要求，应保留 Unity WebGL 或另做 WebGPU/Pixel Streaming 路线，不应把它写成 UE WebGL 已完成。
 
 ## 1. 审计边界和当前状态
@@ -186,6 +188,8 @@ URP Forward+、HDR/MSAA、fog、post、zone cubemap、Surface/Glass/Reflection/V
 | macOS/WebGL build scripts | UE packaging/automation | WebGL 需保留 Unity 或另做浏览器路线 |
 
 ## 5. 分阶段完整迁移路线
+
+每个阶段都必须遵守 Unity → Contract Export → Unreal → 双端验证的同步闭环。Unity 侧新改动如果没有对应 Unreal 记录，状态只能是 `Pending Unreal Sync`，不能进入新的 golden baseline。
 
 ### P0：冻结和基线（必须先做）
 

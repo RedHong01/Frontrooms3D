@@ -133,7 +133,10 @@ public static class FrontRoomsStreamVerification
         Check(report, "A player who stops after the release is caught", VerifyStandingStill);
         Check(report, "A sprinting player escapes", VerifySprintingRun);
 
-        var output = Path.GetFullPath("Verification/stream-verification-latest.json");
+        var projectRoot = Directory.GetParent(Application.dataPath)?.FullName;
+        if (string.IsNullOrWhiteSpace(projectRoot))
+            throw new InvalidOperationException("Could not resolve the Unity project root from Application.dataPath");
+        var output = Path.Combine(projectRoot, "Verification", "stream-verification-latest.json");
         Directory.CreateDirectory(Path.GetDirectoryName(output));
         File.WriteAllText(output, JsonUtility.ToJson(report, true));
         Debug.Log(string.Format("[FrontRoomsStreamVerification] {0} passed, {1} failed. {2}", report.passed, report.failed, output));

@@ -3,6 +3,7 @@ using FMOD.Studio;
 using FMODUnity;
 using FrontRooms.Map;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace FrontRooms.Audio
@@ -596,7 +597,9 @@ namespace FrontRooms.Audio
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             if (webUnlocked || !RuntimeManager.IsInitialized) return;
-            if (Input.anyKeyDown || Input.GetMouseButtonDown(0))
+            var keyboardPressed = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
+            var mousePressed = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+            if (keyboardPressed || mousePressed)
             {
                 RuntimeManager.CoreSystem.mixerSuspend();
                 RuntimeManager.CoreSystem.mixerResume();
