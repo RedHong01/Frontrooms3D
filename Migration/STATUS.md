@@ -17,6 +17,7 @@ Contract schema: `1`
 ## Next implementation gates
 
 - [x] Compile the engine-independent C++ hash implementation against the Python oracle.
+- [x] Define engine-independent C++ grid/zone/chunk data shapes from the Unity contract.
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
 - [ ] Add the UE `UPrimaryDataAsset` importer for the profile/modules/sidecars.
 - [ ] Add the first UE runtime slice: fixed Title stream, one chunk, player movement, door, key and Relay Listen→Chase.
