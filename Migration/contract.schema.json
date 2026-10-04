@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frontrooms.local/schema/unreal-migration-contract-1.json",
+  "title": "FrontRooms Unreal migration contract",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "source",
+    "constants",
+    "validationSeeds",
+    "buildScenes",
+    "levelProfile",
+    "modules",
+    "assetInventory",
+    "audio"
+  ],
+  "properties": {
+    "schema": { "const": "frontrooms.unreal.migration.contract" },
+    "schemaVersion": { "const": 1 },
+    "source": {
+      "type": "object",
+      "required": ["gitHead", "unityVersion", "sourceHashes"],
+      "properties": {
+        "gitHead": { "type": ["string", "null"] },
+        "gitBranch": { "type": ["string", "null"] },
+        "unityVersion": { "type": ["string", "null"] },
+        "unityVersionWithRevision": { "type": ["string", "null"] },
+        "unityManifestSha256": { "type": ["string", "null"] },
+        "sourceHashes": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "constants": {
+      "type": "object",
+      "required": ["cellSizeMeters", "chunkCells", "chunkSizeMeters", "worldRebaseThresholdMeters", "ceilingMeters"],
+      "properties": {
+        "cellSizeMeters": { "const": 3 },
+        "chunkCells": { "const": 8 },
+        "chunkSizeMeters": { "const": 24 },
+        "worldRebaseThresholdMeters": { "const": 192 },
+        "ceilingMeters": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "validationSeeds": { "type": "array", "items": { "type": "integer" }, "minItems": 3 },
+    "buildScenes": { "type": "array", "items": { "type": "string" } },
+    "levelProfile": { "type": ["object", "null"] },
+    "modules": { "type": "array", "items": { "type": "object" }, "minItems": 4 },
+    "assetInventory": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "audio": {
+      "type": "object",
+      "required": ["eventCount", "eventPaths", "busCount", "busPaths", "parameterCount", "parameters"],
+      "properties": {
+        "eventCount": { "const": 31 },
+        "eventPaths": { "type": "array", "minItems": 31, "items": { "type": "string", "pattern": "^event:/" } },
+        "busCount": { "const": 5 },
+        "busPaths": { "type": "array", "minItems": 5, "items": { "type": "string", "pattern": "^bus:/" } },
+        "parameterCount": { "const": 19 },
+        "parameters": { "type": "array", "minItems": 19, "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
