@@ -339,10 +339,12 @@ Shader "FrontRooms/Glass"
                 float k = TWO_PI / max(_RollPeriod, 0.05);
                 float ph = input.misc.y * TWO_PI;
                 half roll = _RollStrength;
+            // [G14-HOOK-BEGIN] RT-only roll attenuation; baseline keeps the original roll value.
             #if defined(_FR_GLASS_RT)
                 // [G14 G-3] with a traced (true-parallax) reflection the roll is scaled down; same factor in FRGlassRTPrepass
                 if (_FR_GlassRTWeight > 0.0 && _RTReceive > 0.5) roll *= (half)_FR_GlassRTRollScale;
             #endif
+            // [G14-HOOK-END]
                 tilt.x += roll * cos(m.x * k + ph);
                 tilt.y += 0.5h * roll * cos(dot(m, float2(0.31, 0.95)) * k * 0.37 + ph * 1.7);
 
@@ -506,6 +508,7 @@ Shader "FrontRooms/Glass"
             ENDHLSL
         }
 
+        // [G14-HOOK-BEGIN] prepass is stripped from the keyword-off baseline used by the proof harness.
         // [G14 G-1] FRGlassRTPrepass: drawn ONLY by the RT renderer feature (desktop macOS, rendering-layer bit 30 on
         // registered receivers) into GlassDepth (R32F linear eye depth) + GlassNormal (RGBA16F final world normal with
         // roll x _FR_GlassRTRollScale, smudge, palm and crack facets; perceptual smoothness). ZWrite into the feature's
@@ -745,6 +748,7 @@ Shader "FrontRooms/Glass"
             }
             ENDHLSL
         }
+        // [G14-HOOK-END]
     }
     FallBack "Hidden/Universal Render Pipeline/FallbackError"
 }
