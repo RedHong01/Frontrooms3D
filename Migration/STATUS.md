@@ -4,6 +4,9 @@ Branch: `unreal-migration`
 Unity baseline: `6000.3.10f1` / URP `17.3.0`  
 Contract schema: `1`
 
+Requested engine target: UE5.8.3. The workstation currently only has UE5.6;
+install UE5.8.3 before switching the project association and rerunning the build gates.
+
 ## Completed in this worktree
 
 - [x] Copy the audit into the Git worktree.
@@ -31,7 +34,7 @@ Contract schema: `1`
 - [x] Define engine-independent C++ grid/zone/chunk data shapes from the Unity contract.
 - [ ] Run the golden-chunk exporter in Unity and review the per-seed JSON.
 - [ ] Promote the importer to an editor asset factory for profile/modules/sidecars.
-- [x] Import the staged 123 FBX meshes and source textures into UE Content with explicit units, axes, LOD and collision presets (raw Unity import complete; preset assignment remains).
+- [ ] Verify units and axes and configure LOD/collision presets for the imported 123 FBX meshes.
 - [ ] Apply sidecar collision/LOD metadata to the imported meshes and resolve the 76 import bounds warnings.
 - [ ] Assign Unity A/N/S/E/M/P channel settings to the imported textures.
 - [ ] Run `stage_unity_assets.ps1` after the UE content layout is approved, then configure FBX/material import presets.

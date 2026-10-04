@@ -12,8 +12,8 @@ contains:
 The Windows workstation currently has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
 has been compiled once. Epic has released UE5.8 (including the 5.8.3 hotfix),
 but UE5.8 is not installed in the local Epic manifest yet, so `EngineAssociation`
-stays at `5.6` until that editor is installed. The project is still source-only until the editor
-creates the first map and imports the staged assets. Open `FrontRoomsUE.uproject`
+stays at `5.6` until that editor is installed. Imported assets are present locally;
+the first playable map remains to be created. Open `FrontRoomsUE.uproject`
 and point an editor utility at `Migration/exports/frontrooms_contract.json` and
 `Migration/exports/kit_manifest.json`.
 
