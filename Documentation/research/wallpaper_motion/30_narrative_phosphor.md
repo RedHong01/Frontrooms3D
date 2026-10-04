@@ -78,7 +78,7 @@ Both are fetched only inside the glow mask. Every layer must meet three rules:
 | Fresh dark is bright; starved dark (a dead cell among dead neighbours) is blank (LD R2) | It needs light to charge: "no light in, no light out" |
 | Only wallpaper carries it: no Office drywall, doors, start area or title stream rooms (LD R3) | Base-building paper only. Office is tenant fit-out; the front rooms are off the plan |
 | Calm routes lead to the nearest door or window into an **unvisited zone**. They ignore the Relay and never lead back (LD R5) | It knows the building, not the monster, and leads away from evacuated compartments |
-| Pressure routes appear **on CHASE only**, pointing to doors away from the Relay. The wave runs ahead from the Relay's cell at 8 m/s (LD R6, §4; Red: Q3) | Full alarm from the zone of origin |
+| Pressure routes appear **on CHASE only**, pointing to doors away from the Relay. The wave runs outward from the player's room set at 8 m/s (LD Rev 4; relay v2) | Full alarm around the occupant |
 | Truthful before T4. From T4 only FLOW is forged, and a forgery glows under a lit lamp (LD R9; Red: ON) | The other occupant forges it, and only says "go" |
 | A message never changes in view (LD R10) | Changes happen unseen, under light, or at a sag or wave front |
 | **Dark is never cover.** The Relay's sight is a 12 m ray with no light term (LD R13) | No line, mark or prop may imply that darkness, low light or tall halls hide you |
@@ -198,7 +198,7 @@ The underprint is the building's power-failure exit guidance. It is honest about
 - Egress leads away from the compartment you occupy. A compartment you have left counts as evacuated, so the plan never sends you back.
 
 **Chase** (the wave fires on CHASE only).
-- When the Relay commits to a chase, a silent alarm spreads from its cell, the zone of origin.
+- When the Relay commits to a chase, a silent alarm spreads outward **from your room set**: the building alarms around its occupant (relay v2 / LD Rev 4: the wave never starts at the Relay's cell).
 - The lamps drop to emergency level so the paper can be read. **The dark is for the paper, not for you.**
 - The plan switches to ALARM ROUTE: doors you can shut, putting a compartment between you and the origin.
 - It does not know the Relay breaks doors in 2.5 s.
@@ -238,8 +238,7 @@ The underprint is the building's power-failure exit guidance. It is honest about
 | Unseen jumps | The building re-papers, and the plan is redrawn underneath: one act, two layers |
 | Slips in a lamp's gasp | The décor moves at night (Gilman). The plan holds still where it is speaking (no slips under messages, LD R11) |
 | Crawl at scripted beats (GROUND only) | The paper settling during a self-test |
-| Chase wave reprint | The alarm redraws the plan from the zone of origin |
-| Relay wake reprint | Facilities follows it and re-papers where it walked |
+| Chase wave reprint | The alarm redraws the plan outward from your compartment |
 | Subliminal drift | The building breathing |
 
 ### A.5 LD §12 slots
@@ -249,7 +248,7 @@ The underprint is the building's power-failure exit guidance. It is honest about
 | What it is, who printed it | A 1990 contract-mill phosphor egress underprint, base-building only |
 | Why NEW thresholds, never back | Drawn to the current plan; leads away from compartments already evacuated |
 | Why it needs light; why dark clusters are blank | The pigment must be charged: "no light in, no light out" |
-| Why it reacts to the chase | A silent alarm from the zone of origin, with alarm routing to doors you can shut |
+| Why it reacts to the chase | A silent alarm spreading from your compartment, with routing to doors you can shut (the Relay may open doors and leave them ajar; an ajar door can still be shut) |
 | Help or herding | Both. A perfect evacuator with nowhere to send you |
 | Content up close | US life-safety sign type (TeX Gyre Heros Bold, as a stand-in for Helvetica) and roll stamps |
 | Glyph names | WAY ON / EXIT / NO EXIT / OUT OF SERVICE / ALARM ROUTE |
@@ -475,7 +474,8 @@ A framed evacuation plan on the map side of the start door. Ownership:
 | On the plan | `YOU ARE HERE` (start room); `EXIT` (the door); beyond the door a blank area marked `SEE SHEET A-3` |
 | Legend head (glows) | `IN POWER FAILURE` |
 | Legend rows (glow) | chevrons `WAY ON` · two bars `EXIT` · closed bars `NO EXIT` |
-| Footer (printed) | `IN CASE OF FIRE DO NOT USE ELEVATORS` (standard US wording; there are no elevators) |
+| Footer (printed) | `IN CASE OF FIRE: WALK, DO NOT RUN.` / `CLOSE DOORS BEHIND YOU.` (relay v2 §10: it teaches walking and doors. Wording 待核) |
+| Secondary line (optional, layout permitting) | `IN CASE OF FIRE, USE STAIRS UNLESS OTHERWISE INSTRUCTED` (NYC code wording in force by 1990; there are no stairs either). Footer wording verified, `relay_pursuit/30_narrative.md` §7 |
 
 - The sheet is A-2, so the walls' first stamp, A-3, is "the next sheet".
 - No glyph on the placard may differ from the wall grammar.
@@ -712,7 +712,7 @@ Everyone the place has kept is behind the front pattern. In the dark, they show 
 | Slips in a lamp's gasp | Gilman's night movement. They stay still where they are pointing (LD R11) |
 | Crawl at scripted beats | Creeping (GROUND only) |
 | Chase wave reprint | Them fleeing ahead of it |
-| Relay wake reprint | The paper flinching where it walked |
+| Relay wake reprint (removed in relay v2) | — |
 | Subliminal drift | Breathing |
 
 ### B.5 LD §12 slots
@@ -848,7 +848,7 @@ People fell in before you. They found out the paper glows when scratched, so the
 | Slips in a lamp's gasp | The paper settling. Copied marks never slip (LD R11) |
 | Crawl | Re-papering in progress |
 | Chase wave reprint | The building rushing the RUN marks forward |
-| Relay wake reprint | It papers over the marks where it walked |
+| Relay wake reprint (removed in relay v2) | — |
 | Subliminal drift | — |
 
 ### C.5 LD §12 slots
@@ -980,7 +980,7 @@ The ink is a drag line: the course of a hunt, laid out ahead of the hounds. You 
 | Slips in a lamp's gasp | The huntsman's hand at work. The line never slips (LD R11) |
 | Crawl | The line being laid |
 | Chase wave reprint | The view: the field gallops out from the hound's cell |
-| Relay wake reprint | The hound's tracks |
+| Relay wake reprint (removed in relay v2) | — |
 | Subliminal drift | — |
 
 ### D.5 LD §12 slots

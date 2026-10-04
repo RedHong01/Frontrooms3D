@@ -216,7 +216,15 @@ The visual chat is building the Red-approved placard with an InkShape glyph lege
   - After the slip, every field on the wall has its lower chevron on one row.
 - **The line:** one grey arrow per field, at a 375 mm pitch, 8 per 3 m wall, about 55 % filled. At 10 m an arrow is about 14 px; the row still reads at 20 m as a broken horizontal band with a direction.
 
-### 9.3 Choreography (one change = three quantized beats)
+### 9.3 Choreography (revised: two quantized beats)
+
+**Prototype finding (2026-10-03):** a 45° intermediate, clipped by the field hairlines, reads as a stray "7" shape. It is cut. The change is now two beats: **align**, then **turn**.
+- **Beat 1, flicker 1:** unit-1 field contents jump up one half-drop, and the whole wall snaps from half-drop to straight match. The aligned grid is already a cue.
+- **Beat 2, flicker 2:** the guide row's grey bands snap to 90° (or flatten, for STOP).
+
+The rest of this subsection is the earlier three-beat draft, kept for reference.
+
+#### Earlier draft (three beats)
 
 | Beat | What happens | When | Stagger |
 |---|---|---|---|
@@ -229,7 +237,7 @@ The visual chat is building the Red-approved placard with an InkShape glyph lege
 
 - No tweens. Each beat is a snap, like a relay latching, so the motion stays "print-like" and never looks digital.
 - **First-dark beat:** the one time the three beats are seen in full.
-- **Chase wave:** the same beats travel at 8 m/s (about 94 ms per roll). The line draws itself ahead of the player toward the door.
+- **Chase wave:** the same beats travel at 8 m/s (about 94 ms per roll), outward **from the player's room set** (relay v2 / LD Rev 4). The line draws itself ahead of the player toward the door.
 
 ### 9.4 Per message
 - **FLOW:** the row on both side walls points along the route, giving two parallel lines like runway edge lights. On a T-junction end wall the row points toward the turn.
@@ -239,7 +247,7 @@ The visual chat is building the Red-approved placard with an InkShape glyph lege
 - **Forgery (T4+):** a row that forms in a lit, steady cell, in view, against the commit rule. Up close the band order is wrong.
 
 ### 9.5 Next
-1. Rebuild the prototype to these rules: 4 rolls × the eye band, flickers visible, slip then two snaps in sequence.
+1. **Done.** Two-beat loops built on 平面视觉's cue-state geometry (Figma 2528:3900, `Tools/print/ink/art_from_graphic/cue_states/`): FLOW, HERE (door converge) and STOP.
 2. Then FLOW, HERE (door converge) and STOP loops.
-3. Replace GN07–GN09.
+3. **Done:** Figma GN07–GN09 replaced (The way on / The way out / No way on). GN06's column A now shows the FLOW cue.
 4. Ask 平面视觉 to draw the three final states in Figma from the real geometry.

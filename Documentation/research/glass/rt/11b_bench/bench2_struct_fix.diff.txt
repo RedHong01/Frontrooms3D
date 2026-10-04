@@ -1,0 +1,4 @@
+25c25
+< struct GpuInst { uint64_t vb, ib; uint32_t tcount, flags; float m0[4], m1[4], m2[4]; float emis[4]; };
+---
+> struct alignas(16) GpuInst { uint64_t vb, ib; uint32_t tcount, flags; uint32_t pad[2]; float m0[4], m1[4], m2[4]; float emis[4]; }; static_assert(sizeof(GpuInst) == 96, "layout");

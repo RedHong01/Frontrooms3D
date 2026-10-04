@@ -460,6 +460,10 @@ def tidy(obj, delete_below=None, axis_z=None):
                   and all(to_unity(v.co)[2] < delete_below for v in f.verts)]
         if doomed:
             bmesh.ops.delete(bm, geom=doomed, context="FACES")
+    # EXACT booleans and the lever's union leave zero-area triangles and
+    # sub-micron slivers along coincident rims: collapse them (1 um; the
+    # smallest real feature in G2 is the 0.05 mm pin-chamber clearance).
+    bmesh.ops.dissolve_degenerate(bm, dist=DEGENERATE_DIST, edges=bm.edges[:])
     big = [f for f in bm.faces if len(f.verts) > 4]
     if big:
         bmesh.ops.triangulate(bm, faces=big, quad_method="BEAUTY", ngon_method="BEAUTY")
@@ -470,6 +474,9 @@ def tidy(obj, delete_below=None, axis_z=None):
     bm.free()
     me.update()
     return obj
+
+
+DEGENERATE_DIST = 1e-6
 
 
 def tris(obj):
@@ -506,7 +513,14 @@ def paint_wear(obj, fn=None):
 
 
 def lod2_drop(obj):
+    """Spec §1.8 / §10.0: obj["fr_lod2_drop"] = True. The custom property is
+    lost in finish()'s join, so the part is ALSO put in an "fr_lod2_drop"
+    vertex group (all its vertices), which survives the join the same way
+    kitlib's own fr_lod1_drop bookkeeping does. FBX does not export
+    unskinned vertex groups, so this changes nothing in Unity today."""
     obj["fr_lod2_drop"] = True
+    vg = obj.vertex_groups.get("fr_lod2_drop") or obj.vertex_groups.new(name="fr_lod2_drop")
+    vg.add([v.index for v in obj.data.vertices], 1.0, "REPLACE")
     return obj
 
 

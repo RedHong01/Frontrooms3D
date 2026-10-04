@@ -6,8 +6,9 @@ decades; no brand here): a 1 mm sheet-steel box 0.36 x 0.46 x 0.08 with a
 rolled 9 mm front lip, a light hook panel inside with 4 rows x 6 plated wire
 hooks on formed hook strips, a pan door 0.36 x 0.46 x 0.019 on a full-height
 piano hinge, a cam lock with an interchangeable-core figure-8 face (the same
-language as the doors, era note R10), and a 3" x 5" index card in a formed
-holder on the inside of the door.
+language as the doors, era note R10), a typed number label beside every
+hook (01-24, read left to right, top row first, as on a numbered hook bar),
+and a 3" x 5" index card in a formed holder on the inside of the door.
 
 Pose: the door is hinged on the LEFT as seen from the room (Unity +X) and
 swung past 180 deg until its cam lock rests on the wall (about 188 deg from
@@ -25,7 +26,10 @@ door_hinge (+ door_hinge_dir, the hinge axis), body_centre.
 Budget §9.3: 7,000 / 2,400 / 250 tris, LOD 3 / 8 / 40 m; 0.72 m wide, so no
 LOD1 until P-1. Slots (dominant first): Prop_SteelAlmond (body, door,
 strips), Prop_PlasticWhite (hook panel), Prop_Chrome (hooks, lock, screws),
-Prop_Paper (index card, blank). Tags interactable, key_host, wall_decor.
+Prop_KeyTagNo (the 24 hook labels, cells 01-24, and the index card, which
+maps to a blank paper band of the atlas between rows 0 and 1 so it stays
+blank; NEW slot, fallback Prop_Paper - that keeps the asset at 4 slots).
+Tags interactable, key_host, wall_decor.
 """
 
 import math
@@ -38,7 +42,12 @@ LOD1_RATIO, LOD2_RATIO = 2400 / 7000, 250 / 7000
 LOD_DISTANCES = (3.0, 8.0, 40.0)
 BUDGET = (7000, 2400, 250)
 
-STEEL, PANEL, CHROME, PAPER = "Prop_SteelAlmond", "Prop_PlasticWhite", "Prop_Chrome", "Prop_Paper"
+STEEL, PANEL, CHROME = "Prop_SteelAlmond", "Prop_PlasticWhite", "Prop_Chrome"
+PAPER = kc.KEYTAGNO                 # labels + index card (fallback Prop_Paper)
+LABEL = (0.011, 0.006)              # typed hook label, beside each hook on the strip
+LABEL_DX = 0.0092                   # label centre, toward the viewer's right (Unity -X) of the hook axis
+LABEL_CROP = (0.568, 0.31)          # 4.6 mm digits on a 6 mm label
+CARD_UV = (0.020, 0.866, 0.1336, 0.934)   # blank paper band between atlas rows 0 and 1 (digits span 0.38-0.62 of a cell)
 BW, BH, BD = 0.36, 0.46, 0.080
 Y0, Y1 = 1.24, 1.70
 YC = (Y0 + Y1) / 2
@@ -94,6 +103,7 @@ def door_point(s, y, t):
 
 
 def build(kit):
+    kc.register_slots()
     # ---------------------------------------------------------- body shell
     path = kc.rounded_rect(BW, BH, 0.002, 2, XB, YC)
     r = 0.0015
@@ -152,6 +162,18 @@ def build(kit):
     for o in hook_objs:
         if "shoulder" in o.name:
             kc.drop2(o)
+    # typed number labels beside the hooks (01-24, top row first, left to right from the room)
+    labels = []
+    lw, lh = LABEL
+    zl = STRIP_Z + 0.00015
+    for (ri, ci), hp in sorted(hooks.items()):
+        n = ri * len(COLS) + ci + 1
+        lx, ly = XB + COLS[ci] - LABEL_DX, ROWS[ri] - HOOK_WIRE
+        u0, v0, u1, v1 = kc.number_cell_rect(n, LABEL_CROP[0], LABEL_CROP[1])
+        q = kc.quad_uv(kit, [(lx + lw / 2, ly - lh / 2, zl), (lx - lw / 2, ly - lh / 2, zl),
+                             (lx - lw / 2, ly + lh / 2, zl), (lx + lw / 2, ly + lh / 2, zl)],
+                       [(u0, v0), (u1, v0), (u1, v1), (u0, v1)], kc.KEYTAGNO, name="hook label")
+        labels.append(q)
     # cam lock through the door, 22 mm in from the free edge, mid height
     ls, ly = LOCK_S, YC
     out_axis = door_point(ls, ly, 1.0)
@@ -183,7 +205,8 @@ def build(kit):
                             door_point(hs - 0.0635, hy - 0.038, DOOR_T - SHEET - 0.0021),
                             door_point(hs - 0.0635, hy + 0.038, DOOR_T - SHEET - 0.0021),
                             door_point(hs + 0.0635, hy + 0.038, DOOR_T - SHEET - 0.0021)],
-                      [(0, 0), (1, 0), (1, 1), (0, 1)], PAPER, name="index card")
+                      [(CARD_UV[0], CARD_UV[1]), (CARD_UV[2], CARD_UV[1]), (CARD_UV[2], CARD_UV[3]), (CARD_UV[0], CARD_UV[3])],
+                      PAPER, name="index card")
     # ------------------------------------------------------------ wear
     def door_grime(p):
         X = -p.x
@@ -220,6 +243,8 @@ def build(kit):
     kc.lod_meta(kit, LOD_DISTANCES, BUDGET)
     kit.meta["keyHostDefault"] = "hook_r1_c4"
     kit.meta["doorOpenDeg"] = round(PSI, 2)
+    kit.meta["numberLabels"] = {"slot": kc.KEYTAGNO, "fallback": kc.KEYTAGNO_FALLBACK, "cells": list(range(1, 25)),
+                                "order": "hook_r{r}_c{c} -> r * 6 + c + 1", "indexCardUV": list(CARD_UV)}
 
     lo, hi = kc.eval_bounds_unity(kit)
     assert abs(lo[1] - Y0) < 2e-4 and abs(hi[1] - Y1) < 2e-4, ("heights", lo, hi)
@@ -227,4 +252,10 @@ def build(kit):
     assert abs(lo[0] + hi[0]) < 0.006, ("centred", lo, hi)
     for hp in hooks.values():
         assert 1.30 <= hp[1] <= 1.66 and hp[2] < BD, hp
+    # labels sit on the strip face, clear of the hook collar (R 2.1 mm) and inside the 14 mm strip
+    assert LABEL_DX - LABEL[0] / 2 > 0.0021 + 0.0005, "label clear of the hook collar"
+    assert -HOOK_WIRE - LABEL[1] / 2 >= 0.002 - 0.007 + 0.0003 and -HOOK_WIRE + LABEL[1] / 2 <= 0.002 + 0.007 - 0.0003, "label on the strip"
+    assert COLS[-1] - LABEL_DX - LABEL[0] / 2 > -(BW - 0.03) / 2, "last label on the strip"
+    # the card UV band holds no digits: atlas rows 0/1 ink spans cell v 0.38-0.62
+    assert CARD_UV[1] > 0.85 + 0.012 and CARD_UV[3] < 0.95 - 0.012
     kc.check_budget(kit, BUDGET[0])

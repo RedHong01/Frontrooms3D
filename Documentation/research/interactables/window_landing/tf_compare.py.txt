@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""Compare the window TF signatures across variants: base (real, unpatched), kitoff (patch, hooks null), kit (patch + facade)."""
+import collections
+import re
+import sys
+
+S = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad"
+paths = {
+    "base": S + "/proj_win_base/Verification/window_tf/base_sig.tsv",
+    "kitoff": S + "/proj_win/Verification/window_tf/kitoff_sig.tsv",
+    "kit": S + "/proj_win/Verification/window_tf/kit_sig.tsv",
+}
+
+
+def load(p):
+    d = collections.defaultdict(dict)
+    try:
+        for line in open(p, encoding="utf-8"):
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 4:
+                continue
+            seed, sec, key, val = parts[0], parts[1], parts[2], "\t".join(parts[3:])
+            d[sec][(seed, key)] = val
+    except FileNotFoundError:
+        print("missing", p)
+    return d
+
+
+V = {k: load(p) for k, p in paths.items()}
+out = []
+
+
+def say(s=""):
+    out.append(s)
+    print(s)
+
+
+def compare(sec, a, b, allow=None):
+    A, B = V[a].get(sec, {}), V[b].get(sec, {})
+    keys = sorted(set(A) | set(B))
+    same = diff = 0
+    allowed = 0
+    examples = []
+    for k in keys:
+        x, y = A.get(k), B.get(k)
+        if x == y:
+            same += 1
+        elif allow and allow(k, x, y):
+            allowed += 1
+        else:
+            diff += 1
+            if len(examples) < 4:
+                examples.append((k, x, y))
+    say(f"{sec:24s} {a:6s} vs {b:6s}: {same} identical, {diff} different" + (f", {allowed} expected differences" if allow else "") + f" (of {len(keys)})")
+    for k, x, y in examples:
+        say(f"    e.g. {k}\n      {a}: {str(x)[:300]}\n      {b}: {str(y)[:300]}")
+    return same, diff, allowed
+
+
+say("== window TF cross-variant comparison ==")
+for v in V:
+    say(f"{v}: sections " + ", ".join(f"{s} {len(V[v][s])}" for s in sorted(V[v])))
+say()
+say("-- 'both or neither': the patch with the facade hooks null must equal the real unpatched map --")
+for sec in ["count", "shell", "chunkvis", "eray-pre", "sight-pre", "overlap-pre-cut", "eray-post", "sight-post", "overlap-post-cut", "overlap-post-corridor", "climb", "chunkcount"]:
+    compare(sec, "base", "kitoff")
+say()
+say("-- gameplay: the kit must not change any ray, overlap or climb --")
+for sec in ["count", "eray-pre", "sight-pre", "overlap-pre-cut", "eray-post", "sight-post", "overlap-post-cut", "overlap-post-corridor", "climb"]:
+    compare(sec, "base", "kit")
+say()
+say("-- shell: the kit differs from today only in the trim meshes (window jambs and heads left out) --")
+compare("shell", "base", "kit", allow=lambda k, x, y: k[1].endswith("/Cove_Base") or "Cove" in k[1] or "Trim" in k[1])
+# vertex delta in trim meshes: changed meshes and meshes that vanished (a block whose trims were all window trims)
+B_, K_ = V["base"].get("shell", {}), V["kit"].get("shell", {})
+removed_v = 0
+kinds = collections.Counter()
+for k, x in B_.items():
+    y = K_.get(k)
+    if y == x:
+        continue
+    kinds[k[1].split("/")[-1] + (" (gone)" if y is None else " (changed)")] += 1
+    removed_v += int(x.split()[0]) - (int(y.split()[0]) if y else 0)
+added = [k for k in K_ if k not in B_]
+say(f"    differing shell meshes by kind: {dict(kinds)}; meshes only in kit: {len(added)}")
+say(f"    trim vertices removed in total: {removed_v} (= {removed_v / 24:.2f} boxes of 24 vertices)")
+nwin = sum(int(v) for (seed, key), v in V["kit"].get("count", {}).items())
+say(f"    windows in these seeds: {nwin}; 3 trim boxes each = {3 * nwin} boxes")
+say()
+say("-- whole-chunk render/collider signatures: chunks without windows must be identical --")
+cnt = V["base"].get("chunkcount", {})
+win_chunks = {k for k, v in cnt.items() if not re.search(r"winL0 0 winOF 0 ", v)}
+compare("chunkvis", "base", "kit", allow=lambda k, x, y: k in win_chunks)
+say()
+say("-- per-chunk counts: kit minus base --")
+def num(s):
+    t = s.split()
+    out = {}
+    for k_, v_ in zip(t[0::2], t[1::2]):
+        try: out[k_] = int(v_)
+        except ValueError: pass
+    return out
+deltas = []
+for k, x in sorted(V["base"].get("chunkcount", {}).items()):
+    y = V["kit"].get("chunkcount", {}).get(k)
+    if y is None:
+        continue
+    a, b = num(x), num(y)
+    d = {f: b[f] - a[f] for f in a}
+    deltas.append((k, a, b, d))
+withw = [t for t in deltas if t[1]["winL0"] + t[1]["winOF"] > 0]
+say(f"chunks {len(deltas)}, with windows {len(withw)}")
+if withw:
+    for f in ["renderers", "submeshes", "shadowRenderers", "shadowSubmeshes", "transparent", "lights", "tris", "lod1Renderers", "lod1Tris"]:
+        vals = [t[3][f] for t in withw]
+        say(f"  {f:16s} added per chunk with windows: min {min(vals)}, median {sorted(vals)[len(vals)//2]}, max {max(vals)}, total {sum(vals)}")
+    worst = max(withw, key=lambda t: t[3]["tris"])
+    say(f"  worst chunk {worst[0]}: windows L0 {worst[1]['winL0']} OF {worst[1]['winOF']}; base tris {worst[1]['tris']} -> kit {worst[2]['tris']} (+{worst[3]['tris']}, {100*worst[3]['tris']/max(1,worst[1]['tris']):.1f} %); "
+        f"renderers {worst[1]['renderers']} -> {worst[2]['renderers']}; submeshes {worst[1]['submeshes']} -> {worst[2]['submeshes']}; shadow submeshes {worst[1]['shadowSubmeshes']} -> {worst[2]['shadowSubmeshes']}")
+    wmax = max(withw, key=lambda t: t[1]["winL0"] + t[1]["winOF"])
+    say(f"  most windows in one chunk {wmax[0]}: L0 {wmax[1]['winL0']} OF {wmax[1]['winOF']}; +{wmax[3]['renderers']} renderers, +{wmax[3]['submeshes']} submeshes, +{wmax[3]['shadowSubmeshes']} shadow submeshes, +{wmax[3]['tris']} tris ({100*wmax[3]['tris']/max(1,wmax[1]['tris']):.1f} %)")
+    tot_b = sum(t[1]["tris"] for t in deltas)
+    tot_k = sum(t[2]["tris"] for t in deltas)
+    say(f"  all chunks: tris {tot_b} -> {tot_k} (+{100*(tot_k-tot_b)/max(1,tot_b):.1f} %); renderers {sum(t[1]['renderers'] for t in deltas)} -> {sum(t[2]['renderers'] for t in deltas)}; submeshes {sum(t[1]['submeshes'] for t in deltas)} -> {sum(t[2]['submeshes'] for t in deltas)}")
+    # per window, from the per-chunk deltas
+    for f in ["renderers", "submeshes", "shadowSubmeshes", "transparent"]:
+        per = collections.Counter(t[3][f] - (t[1]["winL0"] + t[1]["winOF"]) * 0 for t in withw)
+    ratio = [(t[3]["renderers"], t[1]["winL0"] + t[1]["winOF"]) for t in withw]
+    say("  renderers added / windows per chunk: " + ", ".join(sorted({f"{r}/{n}" for r, n in ratio}))[:400])
+    # Draw calls added per chunk (forward: one per LOD0 submesh, plus one per shadow-casting submesh per shadowed light that sees it)
+    dd = [t[3]["submeshes"] for t in withw]
+    ds = [t[3]["shadowSubmeshes"] for t in withw]
+    say(f"  colour-pass draws added per chunk with windows (LOD0 submeshes): min {min(dd)}, median {sorted(dd)[len(dd)//2]}, max {max(dd)}; per window {sum(dd)/max(1,sum(t[1]['winL0']+t[1]['winOF'] for t in withw)):.2f}")
+    say(f"  shadow-caster submeshes added per chunk with windows: min {min(ds)}, median {sorted(ds)[len(ds)//2]}, max {max(ds)} (x shadowed lamps in range)")
+say()
+wc = V["kit"].get("windowcount", {})
+if wc:
+    by = collections.defaultdict(list)
+    for (seed, key), v in wc.items():
+        m = v.split()[0]
+        by[m].append(num(" ".join(v.split()[1:])))
+    for m, lst in sorted(by.items()):
+        bud = {"W-L0": (2600, 1000), "W-OF": (3600, 1300)}[m]
+        l0 = max(x['tris'] for x in lst); l1 = max(x['lod1Tris'] for x in lst)
+        say(f"budget {m}: LOD0 {l0} vs {bud[0]} ({100*(l0-bud[0])/bud[0]:+.1f} %), LOD1 {l1} vs {bud[1]} ({100*(l1-bud[1])/bud[1]:+.1f} %); limit +-15 % (spec 11 T7)")
+        say(f"per window {m}: {len(lst)} windows; LOD0 tris {sorted({x['tris'] for x in lst})}, LOD1 tris {sorted({x['lod1Tris'] for x in lst})}, renderers {sorted({x['renderers'] for x in lst})}, submeshes {sorted({x['submeshes'] for x in lst})}, shadow submeshes {sorted({x['shadowSubmeshes'] for x in lst})}, lights {sorted({x['lights'] for x in lst})}")
+say()
+say("-- frame picks (same windows in base and kit) --")
+compare("framepick", "base", "kit")
+say()
+say("-- measured views: frustum counts with active LODs (base -> kit) --")
+mb, mk = V["base"].get("measure", {}), V["kit"].get("measure", {})
+for k in sorted(set(mb) | set(mk)):
+    x, y = mb.get(k), mk.get(k)
+    if not x or not y:
+        say(f"  {k[1]}: base {x} | kit {y}")
+        continue
+    A, B = num(x), num(y)
+    fa = lambda f: f"{f} {A.get(f)} -> {B.get(f)} ({B.get(f, 0) - A.get(f, 0):+d})"
+    say(f"  {k[1]:22s} " + "; ".join(fa(f) for f in ["renderers", "submeshes", "tris", "transparent", "shadowCasters"]) + f"; frames LOD0 {B.get('framesLOD0')} LOD1 {B.get('framesLOD1')}; render ms {x.split()[-1]} -> {y.split()[-1]} (re-measure)")
+open(S + "/win_tf/r2/compare_out.txt", "w").write("\n".join(out) + "\n")

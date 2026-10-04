@@ -1,0 +1,12 @@
+kit_tf start 16:51:40 16:51  up 29 days, 20:59, 1 user, load averages: 274.78 133.77 66.82
+base_tf start 16:51:40 16:51  up 29 days, 20:59, 1 user, load averages: 274.78 133.77 66.82
+base_tf end 16:53:30 exit 0 16:53  up 29 days, 21:01, 1 user, load averages: 391.56 221.55 109.61
+kit_tf end 16:53:46 exit 0 16:53  up 29 days, 21:01, 1 user, load averages: 377.74 226.79 113.43
+landing_edit start 16:53:55 16:53  up 29 days, 21:01, 1 user, load averages: 365.54 229.14 115.59
+landing_edit end 16:55:34 exit 0 16:55  up 29 days, 21:03, 1 user, load averages: 371.27 266.95 142.71
+landing_play start 16:55:34 16:55  up 29 days, 21:03, 1 user, load averages: 371.27 266.95 142.71
+landing_play end 16:56:49 exit 0 16:56  up 29 days, 21:04, 1 user, load averages: 400.27 299.77 165.69
+kit_tf_b start 16:57:35 16:57  up 29 days, 21:05, 1 user, load averages: 392.44 311.61 176.94
+base_tf_b start 16:57:35 16:57  up 29 days, 21:05, 1 user, load averages: 392.44 311.61 176.94
+base_tf_b end 17:00:21 exit 0 17:00  up 29 days, 21:08, 1 user, load averages: 443.92 362.67 221.36
+kit_tf_b end 17:01:22 exit 0 17:01  up 29 days, 21:09, 1 user, load averages: 459.08 381.74 238.12

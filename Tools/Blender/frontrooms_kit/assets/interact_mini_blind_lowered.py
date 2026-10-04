@@ -161,3 +161,6 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "blind", "decor")
+    # Hangs 1.303 m below its rail-top origin: lift it onto kitlib's
+    # turntable floor for the two preview stills only (after export).
+    wc.lift_preview(kit, -lo[1] + 0.005)

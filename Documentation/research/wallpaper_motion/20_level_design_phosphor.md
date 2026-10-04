@@ -10,6 +10,15 @@
 - BREACH: doors become single-acting next, and the map chat is adding a break-direction event beside `DoorBroken` (§4).
 - Changed SP values, each marked inline: the R6 arch bonus, the power-sag spacing and the border-dusk odds. Corrected derived figures: the chase-wave lead and the Dim-cell G (§4), and when the late lies arrive (§5). Also new: §15 Q13 (visibility).
 
+**Revision 4 (2026-10-03).** This revision follows Relay pursuit v2 (Documentation/RELAY_PURSUIT_REDESIGN.md §9.2, §13 step 11):
+- the stage-0 lamp invariant;
+- the explicit Warn burst, and the burst gate retuned to it;
+- the wake reprint removed;
+- the chase wave centred on the player's room set;
+- the Relay can open doors (Ajar).
+
+**Pending redirect (not yet confirmed by Red):** Red asked for the hint to be carried by the wallpaper's OWN pattern elements turning or deforming (Figma 2502:4565), not by overlay glyphs. The narrative chat is writing that analysis. The overlay-glyph rendering here (InkShape, _FR_InkType) is on hold. The timing and commit rules are expected to carry over.
+
 **Revision 3 (2026-10-03).** This revision fixes what the Rev 2 verifier found and folds in Red's and the other chats' decisions. After Rev 3's own verifier pass (160 cites checked, all decisions confirmed), seven remaining findings were fixed by hand: three stale cites (:1126, :117, the narrative doc's §5), the burst-gate rationale (dip hold decides, so the plain gate is erratic rather than never open), the promoted-lamp timer example, the systems-chat §7.5 correction, and Q8 added to the open list.
 - **What was re-checked:** every file:line the verifier flagged, every one added here, and every cite into a file that changed after Rev 2 was saved. They were checked against the code and docs as they stood at about 11:00 on 2026-10-03. The other cites point into files that have not changed since the Rev 2 verifier checked them.
 - **Citations fixed:**
@@ -114,7 +123,7 @@ Decisions it adds:
 6. **Pressure target. It is used only while the Relay is in Chase** (Red, Q3 answered 2026-10-03; this fixes the radar leak). Proposed: a new system hooked to `relay.StateChanged` (FrontRoomsMapHunter.cs:149; the game already subscribes at FrontRooms3DGame.cs:617).
    - When the Relay is relayed, `Arrived(Vector3, string)` fires (FrontRoomsMapHunter.cs:153, raised in `Appear` at :465). Its cell jumps, so `Arrived` also rebuilds the pressure field and restarts the trail samples below (§4).
    - **Target.** An unbroken door, open or player-shut (and not locked when `doorsNeedKeys` is on), whose far cell is farther from the Relay by breadth-first search than its near cell.
-     - The Relay never shuts doors. It only breaks them, and a broken door stays open (FrontRoomsMapWorld.cs:1147-1156). Only the player opens or shuts doors (`Use` → `SetDoor`, :1822-1834).
+     - The Relay never shuts doors. Since Relay pursuit v2 it can OPEN doors, leaving them Ajar, and it can still break them; a broken door stays open (FrontRoomsMapWorld.cs:1147-1156). Only the player shuts doors (`Use` → `SetDoor`, :1822-1834). An Ajar door counts as open here: it is a valid pressure target because the player can shut it.
      - The Relay-distance BFS is the ink's own. It runs from `world.CellOf(relay.Position)` over the public `PassageBetween` (:1121), `IsBuilt` (:633) and `DoorBetween` (:1144), because the hunter's own `Search`/`depth` are private (FrontRoomsMapHunter.cs:494-520).
    - **Route costs (SP):**
      - +6 per cell within 2 steps of the Relay;
@@ -323,7 +332,10 @@ Visibility thresholds (SP):
 - **Spacing from waves.** *Changed in Rev 2:* no sag starts within 30 s after a wave starts. That is the low end of the synthesis's 30–45 s subliminal-only window after a wave (10_synthesis.md:168). The old "never within 30 s of a wave" could not hold before a wave, because the wave fires on an unpredictable Chase. A wave that starts during a sag replaces the sag.
 - **Never in Office.** No sag while the player stands in an Office zone. The check is `map.ZoneOf(map.CellOf(playerRoot.position)).theme == ZoneTheme.Office`, already used at FrontRooms3DGame.cs:1876. Also none while `inStartRooms`.
 - **Never over a warning** (Rev 3, proposed). No sag starts while `WarnStage` ≥ 1, so a sag is never mistaken for, or hides, the stage-1 flicker in the player's room.
-- **Shape:** a breadth-first search over `PassageBetween`, 4 cells around the player. That is up to 12 m of walking distance, not a 12 m circle. Lamps dip through `SetLampOverride(cell, LampFx.Sag, 0.35, hold 4 s)`, using Sag's default envelope (proposed for the per-kind table: attack 0.6 s, release 1.5 s).
+- **Shape:** a breadth-first search over `PassageBetween`, 4 cells around the player. That is up to 12 m of walking distance, not a 12 m circle. Lamps dip through `SetLampOverride(cell, LampFx.Sag, 0.35, hold 4 s, env: attack 1.6 s, release 1.5 s)`. The envelope is passed explicitly (Rev 4).
+- **Stage-0 invariant (RELAY v2 §9.2):** at stage 0, no two lamps of the player's room set may start an override within 0.2 s of each other with an attack under 1.5 s.
+- Sags run at stage 0, so their attack is 1.6 s and they meet the invariant for any number of lamps at once.
+- The landed Dip/Sag defaults are not used here.
 - All messages in the radius commit at dip start. It is a snapshot, never a trail.
 - **Needs:** a sag scheduler, a last-wave timestamp, and the per-run-tier intervals of §6.
 
@@ -333,14 +345,15 @@ Visibility thresholds (SP):
   - Under the staged warning, the stage-3 lock-on cue plays first and CHASE begins when it ends. The stage-1 flicker stops at stage 3, so the wave takes over the player's lamps on CHASE and the two never overlap (RELAY_PURSUIT_REDESIGN.md §7).
   - It also fires only if the cooldown has passed (90 s at T0 = run tier 1, SP).
   - Subscribe through `FrontRooms3DGame.MapRunStarted` (FrontRooms3DGame.cs:39).
-- **The front.** It starts at the Relay's cell (`world.CellOf(relay.Position)`) and runs at 8 m/s (SP), which is 0.375 s per 3 m cell (FrontRoomsMap.cs:52), over built cells (`IsBuilt`). It reaches 10 cells beyond the player (SP).
+- **The front.** *Changed in Rev 4 (RELAY v2 §9.2):* it starts at the **player's room set**, never at the Relay's cell. It runs outward at 8 m/s (SP), which is 0.375 s per 3 m cell (FrontRoomsMap.cs:52), over built cells (`IsBuilt`), and reaches 10 cells from the player (SP). The pressure messages it commits still use the Relay-distance BFS for direction (doors leading away from the Relay), but the lamps never reveal where the Relay is.
   - It crosses only edges where `PassageBetween` is Open. Never use `MapGrid.Passable` here, because it lets the front through unbroken glass.
   - It waits 0.5 s (a free tuning value) at a `Passage.ClosedDoor`.
   - That uneven door cost makes it a time-ordered expansion (Dijkstra-style or bucketed), not a plain BFS.
-- **Lamps.** Each lamp dips through `SetLampOverride(cell, LampFx.Dip, 0.3, hold 2.5 s)`, called as the front arrives, using Dip's default envelope (proposed for the per-kind table: attack 0.3 s, release 1.2 s). There is no `delay` argument: the wave schedules the calls itself. Pressure messages commit as the front arrives. Under `ReduceFlashing` the wave becomes a static sag (§9).
+- **Lamps.** Each lamp dips through `SetLampOverride(cell, LampFx.Dip, 0.3, hold 2.5 s, env: attack 0.3 s, release 1.2 s)`, called as the front arrives. The envelope is passed explicitly (Rev 4).
+  - The wave fires only on CHASE (stage 3), so the stage-0 invariant does not apply.
+  - Even so, the front reaches one lamp per cell at least 0.375 s apart, which is more than 0.2 s. There is no `delay` argument: the wave schedules the calls itself. Pressure messages commit as the front arrives. Under `ReduceFlashing` the wave becomes a static sag (§9).
 - **Speed.** 8 m/s outruns the 5.5 m/s sprint (FrontRooms3DGame.cs:153) and the run-tier-5 Relay (4.2 × 1.29 ≈ 5.4 m/s).
-- **Lead (Rev 2, corrected).** The front gains only 2.5 m/s on a sprinter. After the 5 s of stamina (:155) it is at most about 12.5 m ahead, and less after door delays, because it starts at the Relay's cell behind the player. Rev 1's "about 20 m of dim, readable corridor ahead" did not follow from these numbers.
-  - Open (playtest), if 20 m is needed: start the front 7–8 m ahead of the player; raise its speed to about 9.5 m/s; or count the lamps' dim hold (0.3 + 2.5 + 1.2 s) as the readable window.
+- **Lead (Rev 4).** The front now starts at the player, so the corridor ahead dims at once and the Rev 2 lead problem is gone. At 8 m/s against a 5.5 m/s sprint, the front is about 12.5 m ahead after 5 s and keeps widening, up to the 10-cell reach.
   - Also open: count the 10-cell reach from the player's current cell, not from their cell at wave start. A sprinter covers 27.5 m in 5 s.
 - The same front also carries the visible print reprint, which needs the R2 print layer in main (§11.4).
 - A door break takes 2.5 s only at run tier 1. The tier multiplier (1 → 0.52) brings it to about 1.3 s at tier 5 (FrontRoomsHunter.cs:21; FrontRoomsLevelProfile.cs:166-170).
@@ -465,8 +478,16 @@ The physics, gate and grammar never change, so what the player learns stays true
 | Leash and relay (FrontRoomsMapHunter.cs:191-199, 396-425) | Relays raise `Arrived(Vector3, string)` (:153, :465). That ends an EAR hold, rebuilds the pressure field and restarts the trail samples (R6). The pursuit redesign would replace the leash teleport with a handoff (RELAY_PURSUIT_REDESIGN.md §8.2), and `Arrived` stays the signal. The OMEN wave is withdrawn (Rev 3; §14). |
 | Keys glow yellow already (FrontRoomsMapWorld.cs:1972, 2069) | With `doorsNeedKeys` off, a key is just another calm target. With it on, the key comes first. |
 | The HUD shows Relay state text (CHASE and BREAKING DOOR included) and distance only with the Relay Readout assist, which is off by default (FrontRooms3DGame.cs:1594-1600, 1619) | Done per R14 (2026-10-03); Red answered Q1 in full. Without that change the ink would add no tension. |
-| **Staged warning** (Red, 2026-10-03; proposed, owned by 系统设计: Documentation/RELAY_PURSUIT_REDESIGN.md §7). Distances are walking distance, Relay to player. Stage 1, within about 30 m: the **player's** room lamps flicker through `LampFx.Warn`, in bursts of 2–4 dips at multiplier 0.3–0.65, ≤ 3 changes/s. Under `ReduceFlashing` that becomes a single slow dim to 0.6. Stage 2: muffled footsteps. Stage 3, on sight: a clear but non-jarring lock-on cue, then Chase. **Nothing dims around the Relay.** | **No halo and no radar.** The ink never marks the Relay's cell or its approach; Rev 2's Relay-centred lamp ideas are dropped. **Stage 1 is an intended beat: "when the lights flicker around you, the walls point."** The paper beside the player may gasp **GROUND only**. It is local to the player, so it is not a position readout, and it never strobes. The stage-1 flicker stops at stage 3, and the chase wave takes over on CHASE (§4). Stage 2 adds nothing to the ink. |
-| Stage-1 gasp: how it works (Rev 3, proposed, SP) | **Why it needs its own gate.** R1's Ls low-pass (τ 0.35 s) swallows a Warn burst: With 0.3× dips (0.08 s attack, 0.2 s release), the minimum Ls depends on each dip's hold, which the caller sets. Simulated: hold 0 gives ≈ 0.66; hold 0.06 s gives ≈ 0.55; hold 0.1–0.2 s gives 0.42–0.48. So the plain gate (Ls < 0.55) would show some bursts and miss others, as a flicker of its own. One envelope per burst makes the gasp deterministic and smooth. **Detecting a burst.** A cell is in a Warn burst when its own lamp is lit (`LampBaseLevel` ≥ 0.55), `LampLevel` is below it, and the ink has put no Dip or Sag of its own on that cell. Warn is the only other override kind, so no new interface member is needed. **The gasp.** For such cells the gate reads the burst's deepest level through one smooth envelope per burst (rise 0.3 s, fall 1.0 s, SP), so each burst gives a single breath, at ≤ 0.5 Hz. A 0.3× burst on a full-charge cell gives GROUND G ≈ 0.25. A burst at 0.45× or shallower stays below Beacon. **GROUND only.** These cells pack GROUND and keep their committed message for later. Cells already dark from their own temperament keep showing their message as before. **Reduce Flashing.** The single dim to 0.6 never passes the gate, so there is no gasp. |
+| **Staged warning** (Red, 2026-10-03; proposed, owned by 系统设计: Documentation/RELAY_PURSUIT_REDESIGN.md §7). Distances are walking distance, Relay to player. Stage 1, within about 30 m: the **player's** room lamps flicker through `LampFx.Warn`.
+- **Burst (RELAY v2, Rev 4):** 2–3 dips to 0.55–0.70 × base, with envelope attack 0.10 s, hold 0.06–0.15 s and release 0.22 s, spaced 0.55 s apart.
+- **Quiet gap:** then 3–6.5 s of quiet, or 2.5–4 s at stage 2.
+- During a burst the room set's lamps are held at `SetLampMode(Steady)`, so ambient stutter doesn't show through.
+- Under `ReduceFlashing` the burst becomes a single slow dim to 0.6. Stage 2: muffled footsteps. Stage 3, on sight: a clear but non-jarring lock-on cue, then Chase. **Nothing dims around the Relay.** | **No halo and no radar.** The ink never marks the Relay's cell or its approach; Rev 2's Relay-centred lamp ideas are dropped. **Stage 1 is an intended beat: "when the lights flicker around you, the walls point."** The paper beside the player may gasp **GROUND only**. It is local to the player, so it is not a position readout, and it never strobes. The stage-1 flicker stops at stage 3, and the chase wave takes over on CHASE (§4). Stage 2 adds nothing to the ink. |
+| Stage-1 gasp: how it works (Rev 3, proposed, SP) | **Why it needs its own gate (Rev 4, re-simulated for the v2 burst).** R1's Ls low-pass (τ 0.35 s) swallows the v2 burst entirely. Over 2–3 dips at 0.55–0.70× with holds of 0.06–0.15 s, the minimum Ls stays between 0.68 and 0.84, so the plain gate (Ls < 0.55) never opens. The burst gate is the only path to a gasp. **Detecting a burst.** A cell is in a Warn burst when its own lamp is lit (`LampBaseLevel` ≥ 0.55), `LampLevel` is below it, and the ink has put no Dip or Sag of its own on that cell. Warn is the only other override kind, so no new interface member is needed. **The gasp (retuned in Rev 4).** For such cells the gate reads the burst's deepest raw level d (a multiple of base) through one smooth envelope per burst (rise 0.3 s, fall 1.0 s, SP), so each burst gives a single breath at ≤ 0.5 Hz.
+- Its strength is `smoothstep(0.72, 0.52, d)` × charge × the GROUND cap (G ≤ 0.25).
+- So a 0.70× burst gives a barely visible breath (G ≈ 0.02), a 0.62× burst a soft one (≈ 0.14), and a 0.55× burst the full G ≈ 0.24 on a full-charge cell.
+- It always stays below Beacon.
+- During a burst the lamps are held Steady, so ambient stutter adds nothing. **GROUND only.** These cells pack GROUND and keep their committed message for later. Cells already dark from their own temperament keep showing their message as before. **Reduce Flashing.** The single dim to 0.6 never passes the gate, so there is no gasp. |
 | Tall halls have no speed term | The ink never treats tall halls as safe. |
 
 ## 8. Interaction with the moving visible print
@@ -484,7 +505,7 @@ The physics, gate and grammar never change, so what the player learns stays true
 4. **Slow crawl** at scripted beats only uses cells showing GROUND. Moving ink never carries a message.
 5. **Chase wave.** One time-ordered front at 8 m/s carries three things in lockstep: the visible reprint, the lamp dip and the pressure commit.
    - The 192 m rebase caveat (10_synthesis.md:144) does not apply, because the ink is off in the stream rooms.
-6. **Relay wake.** Keep the synthesis's visible wake reprint (10_synthesis.md:145). It gives the two-layer deck line "the print shows where it walked; the ink shows where to go". Pressure routes add +2 on wake cells, so the two rarely overlap. With the staged warning the split becomes three-way (RELAY_PURSUIT_REDESIGN.md §7.5): lamps tell you how close it is to you, the print shows where it just walked, and the ink shows where to go.
+6. **Relay wake: REMOVED (Rev 4, RELAY v2 §9.2).** There is no wake reprint and no reprint at stage 0. The +2 pressure cost on wake cells is dropped too. The split is now two-way: the lamps (staged warning) say how close it is to you, and the ink says where to go.
 7. **Subliminal drift** (≤ 1-2 mm/s, ±0.3% scale) moves the substance too, because it is sampled with the warped print UV. That is imperceptible and fine. The shape mask and the type frame are world-fixed.
 8. **Per-roll phase** `strip & 3` (10_synthesis.md:80, 193): every FLOW wall looks the same in every on-route cell. The deliberate beat is that this cell points, not that it looks unique.
 

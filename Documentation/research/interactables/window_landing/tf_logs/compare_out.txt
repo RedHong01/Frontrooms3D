@@ -1,0 +1,72 @@
+== window TF cross-variant comparison ==
+base: sections chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, framepick 4, measure 6, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, shell 15759, sight-post 411, sight-pre 411
+kitoff: sections chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, shell 15759, sight-post 411, sight-pre 411
+kit: sections chunkcount 250, chunkvis 250, climb 411, count 10, eray-post 411, eray-pre 411, framepick 4, measure 6, overlap-post-corridor 411, overlap-post-cut 411, overlap-pre-cut 411, shell 15486, sight-post 411, sight-pre 411, windowcount 411
+
+-- 'both or neither': the patch with the facade hooks null must equal the real unpatched map --
+count                    base   vs kitoff: 10 identical, 0 different (of 10)
+shell                    base   vs kitoff: 15759 identical, 0 different (of 15759)
+chunkvis                 base   vs kitoff: 250 identical, 0 different (of 250)
+eray-pre                 base   vs kitoff: 411 identical, 0 different (of 411)
+sight-pre                base   vs kitoff: 411 identical, 0 different (of 411)
+overlap-pre-cut          base   vs kitoff: 411 identical, 0 different (of 411)
+eray-post                base   vs kitoff: 411 identical, 0 different (of 411)
+sight-post               base   vs kitoff: 411 identical, 0 different (of 411)
+overlap-post-cut         base   vs kitoff: 411 identical, 0 different (of 411)
+overlap-post-corridor    base   vs kitoff: 411 identical, 0 different (of 411)
+climb                    base   vs kitoff: 411 identical, 0 different (of 411)
+chunkcount               base   vs kitoff: 250 identical, 0 different (of 250)
+
+-- gameplay: the kit must not change any ray, overlap or climb --
+count                    base   vs kit   : 10 identical, 0 different (of 10)
+eray-pre                 base   vs kit   : 411 identical, 0 different (of 411)
+sight-pre                base   vs kit   : 411 identical, 0 different (of 411)
+overlap-pre-cut          base   vs kit   : 411 identical, 0 different (of 411)
+eray-post                base   vs kit   : 411 identical, 0 different (of 411)
+sight-post               base   vs kit   : 411 identical, 0 different (of 411)
+overlap-post-cut         base   vs kit   : 411 identical, 0 different (of 411)
+overlap-post-corridor    base   vs kit   : 411 identical, 0 different (of 411)
+climb                    base   vs kit   : 411 identical, 0 different (of 411)
+
+-- shell: the kit differs from today only in the trim meshes (window jambs and heads left out) --
+shell                    base   vs kit   : 15486 identical, 0 different, 273 expected differences (of 15759)
+    differing shell meshes by kind: {'Cove_Base (gone)': 273}; meshes only in kit: 0
+    trim vertices removed in total: 29592 (= 1233.00 boxes of 24 vertices)
+    windows in these seeds: 411; 3 trim boxes each = 1233 boxes
+
+-- whole-chunk render/collider signatures: chunks without windows must be identical --
+chunkvis                 base   vs kit   : 176 identical, 0 different, 74 expected differences (of 250)
+
+-- per-chunk counts: kit minus base --
+chunks 250, with windows 74
+  renderers        added per chunk with windows: min 0, median 2, max 6, total 138
+  submeshes        added per chunk with windows: min 1, median 7, max 19, total 549
+  shadowRenderers  added per chunk with windows: min -10, median -4, max -1, total -273
+  shadowSubmeshes  added per chunk with windows: min 0, median 2, max 6, total 138
+  transparent      added per chunk with windows: min 0, median 0, max 0, total 0
+  lights           added per chunk with windows: min 0, median 0, max 0, total 0
+  tris             added per chunk with windows: min 2286, median 12970, max 33592, total 1008846
+  lod1Renderers    added per chunk with windows: min 1, median 5, max 13, total 411
+  lod1Tris         added per chunk with windows: min 1044, median 5614, max 14360, total 446814
+  worst chunk ('7', '(-1, 1)'): windows L0 8 OF 4; base tris 4632 -> kit 38224 (+33592, 725.2 %); renderers 163 -> 165; submeshes 163 -> 177; shadow submeshes 99 -> 101
+  most windows in one chunk ('1990', '(2, -1)'): L0 13 OF 0; +6 renderers, +19 submeshes, +6 shadow submeshes, +29718 tris (737.1 %)
+  all chunks: tris 2177984 -> 3186830 (+46.3 %); renderers 34037 -> 34175; submeshes 35874 -> 36423
+  renderers added / windows per chunk: 0/1, 0/2, 0/3, 0/4, 0/5, 1/2, 1/3, 1/4, 1/5, 1/6, 1/7, 2/10, 2/12, 2/3, 2/4, 2/5, 2/6, 2/7, 2/8, 3/10, 3/6, 3/7, 3/8, 3/9, 4/10, 4/11, 4/12, 4/13, 4/8, 4/9, 6/12, 6/13
+  colour-pass draws added per chunk with windows (LOD0 submeshes): min 1, median 7, max 19; per window 1.34
+  shadow-caster submeshes added per chunk with windows: min 0, median 2, max 6 (x shadowed lamps in range)
+
+budget W-L0: LOD0 2322 vs 2600 (-10.7 %), LOD1 1044 vs 1000 (+4.4 %); limit +-15 % (spec 11 T7)
+per window W-L0: 366 windows; LOD0 tris [2322], LOD1 tris [1044], renderers [1], submeshes [2], shadow submeshes [2], lights [0]
+budget W-OF: LOD0 3862 vs 3600 (+7.3 %), LOD1 1438 vs 1300 (+10.6 %); limit +-15 % (spec 11 T7)
+per window W-OF: 45 windows; LOD0 tris [3862], LOD1 tris [1438], renderers [1], submeshes [2], shadow submeshes [2], lights [0]
+
+-- frame picks (same windows in base and kit) --
+framepick                base   vs kit   : 4 identical, 0 different (of 4)
+
+-- measured views: frustum counts with active LODs (base -> kit) --
+  L0 A_front_3m          renderers 841 -> 841 (+0); submeshes 845 -> 860 (+15); tris 25821 -> 45873 (+20052); transparent 20 -> 20 (+0); shadowCasters 443 -> 423 (-20); frames LOD0 4 LOD1 11; render ms 23.82 -> 24.32 (re-measure)
+  L0 B_front_3m          renderers 777 -> 778 (+1); submeshes 785 -> 791 (+6); tris 26042 -> 33602 (+7560); transparent 7 -> 7 (+0); shadowCasters 423 -> 419 (-4); frames LOD0 2 LOD1 3; render ms 22.53 -> 23.97 (re-measure)
+  L0 hall_tall_5.0m      renderers 908 -> 910 (+2); submeshes 916 -> 925 (+9); tris 29678 -> 39254 (+9576); transparent 9 -> 9 (+0); shadowCasters 495 -> 490 (-5); frames LOD0 2 LOD1 5; render ms 25.68 -> 26.96 (re-measure)
+  OF A_front_3m          renderers 1414 -> 1411 (-3); submeshes 1440 -> 1457 (+17); tris 48914 -> 78732 (+29818); transparent 33 -> 33 (+0); shadowCasters 783 -> 747 (-36); frames LOD0 4 LOD1 16; render ms 36.72 -> 36.29 (re-measure)
+  OF B_front_3m          renderers 357 -> 358 (+1); submeshes 424 -> 428 (+4); tris 30292 -> 40194 (+9902); transparent 5 -> 5 (+0); shadowCasters 214 -> 212 (-2); frames LOD0 3 LOD1 0; render ms 16.38 -> 15.93 (re-measure)
+  OF hall_tall_5.0m      renderers 411 -> 412 (+1); submeshes 478 -> 483 (+5); tris 31948 -> 44100 (+12152); transparent 6 -> 6 (+0); shadowCasters 238 -> 235 (-3); frames LOD0 4 LOD1 0; render ms 23.85 -> 17.21 (re-measure)

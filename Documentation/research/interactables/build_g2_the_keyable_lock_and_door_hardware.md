@@ -1,6 +1,6 @@
 # G2 build note: the keyable lock and door hardware
 
-Status: built 2026-10-03 into the private clone `proj_int` only. Nothing under `Assets/` of the real project was touched, and Unity was not run. Spec: `10_spec.md` §3, §1.2, §2.1, §6.4, §9.2, §10.0, §10.2.
+Status: built 2026-10-03 into the private clone `proj_int` only. **Run 2 (16:4x, "try again") in progress:** rebuilt, topology cleaned, self-check re-run with corrected render materials and with G3's exported key; see §8 when it lands. Nothing under `Assets/` of the real project was touched, and Unity was not run. Spec: `10_spec.md` §3, §1.2, §2.1, §6.4, §9.2, §10.0, §10.2.
 
 **What was built**
 - 11 assets and 7 VARIANTS = 18 FBX files with JSON sidecars.
@@ -224,7 +224,7 @@ The script is `scratchpad/g2work/selfcheck.py`; results are in `interact_preview
 
 Per-asset close-ups are in `scratchpad/g2work/cu/`. The standard kit stills are in `interact_previews/G2/`.
 
-(Render review notes: see the update below.)
+(Render review notes: §8.)
 
 ## 6. ESTIMATE dimensions used
 

@@ -27,7 +27,8 @@ pushes); grip_end (0.121, 0, 0.033); axis_out (0, 0, 0.10).
 Budget (§9.2): LOD0 4,000 (asserted +-15 %), LOD1 1,600, LOD2 300; LOD
 distances 1.5 / 4 / 15 m; no LOD1 export (part < 1 m).
 Slots: Prop_Chrome. VARIANT _Brass. 96-segment hub; the grip root is a
-half-turned cap (48 steps) welded to a 26-point swept section.
+half-turned cap (48 steps) welded to a 30-point swept section
+(16 steps round the return bend).
 """
 
 import math
@@ -51,7 +52,8 @@ BEND_R = 0.014
 STRAIGHT_END = GRIP_LEN - SEC_D / 2 - BEND_R      # 0.100
 RETURN_END = 0.026
 END_R = 0.006
-CORNER_K = 5
+CORNER_K = 6                    # run 2: 5 -> 6 (the section corners carry the highlight)
+BEND_STEPS = 16                 # run 2: 12 -> 16 (the return bend is the 0.3 m silhouette)
 ROOT_STEPS = 48
 
 
@@ -108,8 +110,8 @@ def _arm():
     for x in (0.0, STRAIGHT_END * 0.33, STRAIGHT_END * 0.66, STRAIGHT_END):
         frames.append(((x, GRIP_Z), (0.0, 1.0), 1.0))
     cz = GRIP_Z - BEND_R
-    for i in range(1, 13):
-        ph = math.radians(90.0 - 90.0 * i / 12)
+    for i in range(1, BEND_STEPS + 1):
+        ph = math.radians(90.0 - 90.0 * i / BEND_STEPS)
         frames.append(((STRAIGHT_END + BEND_R * math.cos(ph), cz + BEND_R * math.sin(ph)),
                        (math.cos(ph), math.sin(ph)), 1.0))
     xr = STRAIGHT_END + BEND_R

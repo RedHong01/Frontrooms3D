@@ -215,3 +215,6 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "blind")
+    # The blind hangs 1.055 m below its rail-top origin: lift it onto the
+    # turntable floor for kitlib's two preview stills only (after export).
+    wc.lift_preview(kit, (O[1] - WAND_Y0) + 0.005)

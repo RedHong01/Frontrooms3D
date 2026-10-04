@@ -13,29 +13,40 @@ counter-clockwise as seen from +n, so band(back_ring, front_ring) faces out
 of a solid and band(upper_ring, lower_ring) faces into a hole.
 
 WHAT LIVES HERE
-* §1.2 numbers (5-15R face, duplex openings, screw seat) and their asserts.
-* Outline generators (mm, CCW): round-with-flats, rounded rectangles,
-  chamfered slot rectangles, the U ground hole, circles, hexagons.
+* §1.2 numbers (5-15R face, duplex openings, countersink) and their asserts.
+* Outline generators (mm, CCW): round-with-flats (fixed vertex count, so
+  grown/inset rings always band), rounded rectangles, chamfered slot
+  rectangles, the U ground hole, circles, hexagons.
 * MB: a small bmesh builder (rings, bands, caps, hole fills with
   triangle_fill, outward orientation, multi-slot parts).
 * face_515(): one receptacle face at hero / mid / lod1 detail; face_lod2().
-* opening_plate(): a plate or cover with openings, edge profile and
-  countersunk screw seats; profile_stack() for any monotone edge profile.
-* tombstone_body(): the cast floor-fitting housing (arched top, rounded ends).
-* sweep(): round sections along a path (EMT connector body, conduit).
-* Slotted screws (oval head and flat head; EXACT boolean slot).
+* tomb_body() + build_tombstone(): the cast floor fitting (both SFH sizes).
+* flange(), sweep() (EMT tube, connector neck), slotted screws (oval head
+  for countersinks, pan head for sheet metal; EXACT boolean slot).
 * finalize(): the per-part recipe the interactables G1 probe proved survives
-  kitlib.finish() and FBX (apply modifiers -> triangulate n-gons -> shade
-  smooth -> sharp by angle -> paint fr_wear -> WEIGHTED_NORMAL modifier).
+  kitlib.finish() and FBX (apply modifiers -> weld -> triangulate n-gons ->
+  shade smooth -> sharp by angle -> paint fr_wear -> WEIGHTED_NORMAL).
 * paint_wear(): fr_wear colour attribute (BYTE_COLOR, face corner):
   R = hand grime, G = edge wear, B = cavity, 1 = untouched; PlasticBlack
   faces get B <= 0.35.
-* LOD helpers: hand-built LOD parts carry obj["fr_lods"] ("0", "1", "2",
-  or a mix); LOD1/LOD2 parts are built ONLY when kitlib.Kit.make_lods exists
-  (spec §1.1, P-1/P-1b). Until then every FBX holds LOD0 only.
+* box_meta(): sidecar fields, tags and the triangle / envelope asserts.
+* LOD: hand-built LOD parts carry obj["fr_lods"] ("0", "1", "2" or a mix);
+  LOD1/LOD2 parts are built ONLY when kitlib.Kit.make_lods exists (spec
+  §1.1, P-1/P-1b). Until then every FBX holds LOD0 only.
 
-SEGMENT COUNTS. Hero curved outlines use PC_HERO segments per full circle
-(spec §1.1: >= 64). Where a budget forces fewer, the module says so and the
+SHARED O3 NUMBERS (ESTIMATES that became numbers; see the build note)
+* E_AXIS = 11.5 mm: the EMT axis stands this far off the wall face (the
+  tube's back is 2.55 mm off the wall; the strap is 22 mm proud; the
+  connector socket just clears the wall). Conduit, strap and the handy
+  box's offset connector all use it, so a tile placed at conduit_base lines
+  up with the socket exactly.
+* Screws on O3 kits are BAKED into the mesh (LOD0 parts), not drawn by R3
+  from screw_k anchors: the back face of Kit_FloorBoxTombstone2 and the
+  plain GameObject spawns of the Office pods could not show R3 screws.
+
+SEGMENT COUNTS. Hero curved outlines (device faces, openings, ground holes,
+countersinks) use PC_HERO = 64 per full circle (spec §1.1). Screw heads
+and tubes use fewer where the budget forces it; each module says so and the
 build note gives the chord error at 0.3 m (FOV 76, 1080p = 2.30 px/mm).
 """
 
@@ -54,8 +65,14 @@ NI = "Prop_NylonIvory"     # device nylon (NEW tint-only slot, P-4b)
 PB = "Prop_PlasticBlack"   # slots, cavities
 BR = "Prop_Brass"          # contacts
 
+
+def _hex(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+
+
 # P-4b: #E2D9BF, smoothness 0.55 -> roughness 0.45 (preview colour only).
-kitlib.register_slot(NI, (0x E2 / 255.0 if False else 226 / 255.0, 217 / 255.0, 191 / 255.0), 0.45, 0.0)
+kitlib.register_slot(NI, _hex("#E2D9BF"), 0.45, 0.0)
 
 # ----------------------------------------------------------- §1.2 numbers (mm)
 FACE_D = 32.5            # 5-15R face: round with flats
@@ -74,12 +91,12 @@ CONTACT_T = 0.4          # brass leaf thickness
 CONTACT_DEPTH = 3.0      # leaves start this far below the face top
 MOUTH_CHAMFER = 0.15     # slot mouth chamfer (1 segment)
 FACE_EDGE_R = 0.6        # device-face edge round (3 segments)
+OPEN_EDGE_R = 0.5        # opening edge round (3 segments)
 SCREW_SEAT_D = 6.6       # #6-32 oval head
 SCREW_CROWN = 1.0
 SCREW_SLOT_W, SCREW_SLOT_DEPTH = 0.8, 0.6
 CSK_D = 7.4              # countersink diameter at the field, 82 deg
 CSK_HALF_ANGLE = 41.0
-YOKE_HALF = 41.65        # 2-screw plates: screws at +-41.65 (3-9/32 in ears)
 
 # ESTIMATES that became numbers in this helper (reported in the build note).
 GROUND_SIDE = 2.0        # U hole: straight sides 2.0 above the round's centre
@@ -87,6 +104,8 @@ GROUND_CORNER_R = 0.5    # U hole: top corner radius
 SLOT_CORNER = 0.25       # blade slot corner chamfer (moulded slots are not sharp)
 CONTACT_H = 2.5          # leaf height along the slot depth
 PC_HERO = 64             # segments per full circle at hero detail (spec §1.1)
+E_AXIS = 11.5            # EMT axis off the wall face
+EMT_OD = 17.9            # 1/2 in EMT outside diameter (0.706 in)
 
 
 def _close(a, b, tol=0.05):
@@ -102,6 +121,7 @@ assert GROUND_V + GROUND_SIDE < NEUTRAL[3] - NEUTRAL[1] / 2, "ground hole below 
 assert NEUTRAL[1] > HOT[1], "neutral slot is the longer one"
 assert _close(2 * DUPLEX_HALF, 38.9), "duplex pitch 1-17/32 in"
 assert FACE_PROUD <= 1.5
+assert _close(NEUTRAL[0], 2.0) and _close(NEUTRAL[1], 8.5) and _close(HOT[1], 7.0) and _close(GROUND_D, 5.0)
 
 
 # ------------------------------------------------------------------ frames
@@ -118,6 +138,7 @@ class Frame:
         return Frame(self.p(a, b, c), self.u, self.v, self.n)
 
     def rot(self, deg):
+        """Turn u and v by ``deg`` counter-clockwise about n."""
         r = math.radians(deg)
         u = self.u * math.cos(r) + self.v * math.sin(r)
         v = -self.u * math.sin(r) + self.v * math.cos(r)
@@ -135,7 +156,7 @@ def back_frame(x, y, z):
 
 
 def up_frame(x, y, z):
-    """Facing +Z (floor-box flange screws, connector hubs)."""
+    """Facing +Z (flanges, connector hubs)."""
     return Frame((x, y, z), (1, 0, 0), (0, 1, 0), (0, 0, 1))
 
 
@@ -150,10 +171,17 @@ def _rot2(pts, deg, cu=0.0, cv=0.0):
     return [(cu + x * c - y * s, cv + x * s + y * c) for x, y in pts]
 
 
-def round_flats(R, F, pc=PC_HERO):
-    """Circle of radius R clipped by flats at v = +-F; CCW from the right arc."""
+def flats_n(R, F, pc):
+    """Arc segment count of a round-with-flats outline (fixed per feature)."""
     th = math.asin(min(1.0, F / R))
-    n = max(2, int(math.ceil(2 * th / (2 * math.pi / pc) - 1e-6)))
+    return max(2, int(math.ceil(2 * th / (2 * math.pi / pc) - 1e-6)))
+
+
+def round_flats(R, F, n):
+    """Circle of radius R clipped by flats at v = +-F; CCW from the right arc.
+    ``n`` segments per arc (use flats_n of the NOMINAL size so grown and
+    inset rings keep the same vertex count)."""
+    th = math.asin(min(1.0, F / R))
     pts = []
     for k in range(n + 1):
         a = -th + 2 * th * k / n
@@ -166,7 +194,7 @@ def round_flats(R, F, pc=PC_HERO):
 
 def rrect(w, h, r, per_corner=8, cu=0.0, cv=0.0):
     """Rounded rectangle, CCW, corners from bottom-right."""
-    r = max(min(r, w / 2 - 1e-4, h / 2 - 1e-4), 1e-4)
+    r = max(min(r, w / 2 - 1e-3, h / 2 - 1e-3), 0.05)
     pts = []
     for x, y, a0 in ((w / 2 - r, -h / 2 + r, -90), (w / 2 - r, h / 2 - r, 0),
                      (-w / 2 + r, h / 2 - r, 90), (-w / 2 + r, -h / 2 + r, 180)):
@@ -210,15 +238,15 @@ def circle(r, segs, cu=0.0, cv=0.0, phase=0.0):
             for k in range(segs)]
 
 
-def hexagon(af, cu=0.0, cv=0.0, d=0.0):
-    """Hexagon with across-flats ``af`` shrunk by d, flats left/right."""
-    r = (af / 2 - d) / math.cos(math.pi / 6)
-    return circle(r, 6, cu, cv, phase=0.0)
+def hexagon(af, cu=0.0, cv=0.0):
+    """Hexagon with across-flats ``af``; vertices on +-u, flats facing +-v."""
+    return circle(af / 2 / math.cos(math.pi / 6), 6, cu, cv, phase=0.0)
 
 
 def opening_fn(cu, cv, rot=0.0, pc=PC_HERO):
     """Duplex opening outline grown by e, centred (cu, cv), rotated rot deg."""
-    return lambda e: _rot2(round_flats(OPEN_D / 2 + e, OPEN_FLAT + e, pc), rot, cu, cv)
+    n = flats_n(OPEN_D / 2, OPEN_FLAT, pc)
+    return lambda e: _rot2(round_flats(OPEN_D / 2 + e, OPEN_FLAT + e, n), rot, cu, cv)
 
 
 # ------------------------------------------------------------- mesh builder
@@ -247,7 +275,7 @@ class MB:
 
     def band(self, ra, rb, slot, closed=True):
         n = len(ra)
-        assert n == len(rb), "ring sizes differ"
+        assert n == len(rb), "ring sizes differ (%d vs %d)" % (n, len(rb))
         out = []
         for i in range(n if closed else n - 1):
             j = (i + 1) % n
@@ -271,6 +299,7 @@ class MB:
                 edges.append(e)
         res = bmesh.ops.triangle_fill(self.bm, use_beauty=True, use_dissolve=False, edges=edges)
         faces = [g for g in res["geom"] if isinstance(g, bmesh.types.BMFace)]
+        normal = Vector(normal)
         for f in faces:
             f.material_index = self.mi(slot)
             f.normal_update()
@@ -287,7 +316,7 @@ class MB:
 
     def box(self, fr, u0, u1, v0, v1, c0, c1, slot, faces="all"):
         """Axis box in a frame (mm). faces: 'all' or a string of sides to
-        keep, out of 'udlrfb' (up, down, left, right, front, back)."""
+        keep, out of 'udlrfb' (up, down, left, right, front = c1, back = c0)."""
         P = {}
         for iu, a in enumerate((u0, u1)):
             for iv, b in enumerate((v0, v1)):
@@ -361,8 +390,12 @@ FACE_LEVELS = {
     # pc: segments per circle; rr/rs: edge round radius/segments; ch: slot
     # mouth chamfer; depth: slot depth; semi/corner: U-hole segments;
     # sc: blade slot corner chamfer; contacts: brass leaves.
-    "hero": dict(pc=PC_HERO, rr=FACE_EDGE_R, rs=3, ch=MOUTH_CHAMFER, depth=SLOT_DEPTH, semi=24, corner=2,
+    "hero": dict(pc=PC_HERO, rr=FACE_EDGE_R, rs=3, ch=MOUTH_CHAMFER, depth=SLOT_DEPTH, semi=32, corner=2,
                  sc=SLOT_CORNER, contacts=True),
+    # Hero at 48 per circle (ground U 24 per half circle): for kits whose
+    # budget cannot hold four 64-segment faces (Kit_FloorBoxTombstone2).
+    "hero48": dict(pc=48, rr=FACE_EDGE_R, rs=3, ch=MOUTH_CHAMFER, depth=SLOT_DEPTH, semi=24, corner=2,
+                   sc=SLOT_CORNER, contacts=True),
     # Furniture-base duplex (panel rail, seen from >= 1 m): 32 per circle,
     # a 1-segment edge, 3 mm slots, no contacts.
     "mid": dict(pc=32, rr=0.4, rs=1, ch=0.0, depth=3.0, semi=10, corner=1, sc=0.0, contacts=False),
@@ -377,7 +410,8 @@ def face_515(mb, fr, level="hero", contact_slot=BR):
     field; its side wall starts at the device back plane (c = -BACK_PLANE)."""
     L = FACE_LEVELS[level]
     pc, rr, rs = L["pc"], L["rr"], L["rs"]
-    outline = lambda d: round_flats(FACE_D / 2 - d, FACE_FLAT - d, pc)
+    n = flats_n(FACE_D / 2, FACE_FLAT, pc)
+    outline = lambda d: round_flats(FACE_D / 2 - d, FACE_FLAT - d, n)
     prof = [(0.0, -BACK_PLANE)]
     if rs:
         prof.append((0.0, FACE_PROUD - rr))
@@ -388,20 +422,18 @@ def face_515(mb, fr, level="hero", contact_slot=BR):
     top_c = FACE_PROUD
     floor_c = FACE_PROUD - L["depth"]
     holes = []
-    # Blade slots (black walls, chamfered NI mouth).
+    # Blade slots (black walls, chamfered NI mouth; the duplicate ring at the
+    # chamfer foot is welded by finalize()).
     for w, h, u0, v0 in (NEUTRAL, HOT):
         fn = lambda e, w=w, h=h, u0=u0, v0=v0: slot_rect(w + 2 * e, h + 2 * e, u0, v0, L["sc"] + (e * 0.4 if L["sc"] else 0))
         if L["ch"]:
             rs_ = hole_stack(mb, fr, fn, [(L["ch"], top_c), (0.0, top_c - L["ch"])], NI)
             walls = hole_stack(mb, fr, fn, [(0.0, top_c - L["ch"]), (0.0, floor_c)], PB)
-            # weld the duplicate ring (same positions) by reusing: simpler to
-            # merge later with remove_doubles in finalize().
-            mb.cap(walls[-1], PB, front=True)
             holes.append(rs_[0])
         else:
             walls = hole_stack(mb, fr, fn, [(0.0, top_c), (0.0, floor_c)], PB)
-            mb.cap(walls[-1], PB, front=True)
             holes.append(walls[0])
+        mb.cap(walls[-1], PB, front=True)
     # Ground hole.
     gfn = lambda e: ground_u(e, L["semi"], L["corner"])
     if L["ch"]:
@@ -436,24 +468,31 @@ def face_lod2(mb, fr, slot=PB, lift=0.3):
     return mb.cap(ring, slot, front=True)
 
 
+def _face_frames(plate_fr, field_c, sideways):
+    out = []
+    for s in (1, -1):
+        if sideways:
+            out.append(plate_fr.at(s * DUPLEX_HALF, 0.0, field_c).rot(90.0))
+        else:
+            out.append(plate_fr.at(0.0, s * DUPLEX_HALF, field_c))
+    return out
+
+
 def duplex(mb, plate_fr, field_c, level="hero", sideways=False, contact_slot=BR):
     """Two faces on a plate frame (u right, v up), field at c = field_c.
     Sideways turns the device 90 deg CCW (ground holes point to +u)."""
-    for s in (1, -1):
-        if sideways:
-            fr = plate_fr.at(s * DUPLEX_HALF, 0.0, field_c).rot(90.0)
-        else:
-            fr = plate_fr.at(0.0, s * DUPLEX_HALF, field_c)
+    for fr in _face_frames(plate_fr, field_c, sideways):
         face_515(mb, fr, level, contact_slot)
 
 
 def duplex_lod2(mb, plate_fr, field_c, sideways=False):
-    for s in (1, -1):
-        if sideways:
-            fr = plate_fr.at(s * DUPLEX_HALF, 0.0, field_c).rot(90.0)
-        else:
-            fr = plate_fr.at(0.0, s * DUPLEX_HALF, field_c)
+    for fr in _face_frames(plate_fr, field_c, sideways):
         face_lod2(mb, fr)
+
+
+def face_centres(plate_fr, field_c, sideways):
+    """Blender points of the two face tops (anchors for P3 plug props)."""
+    return [fr.p(0.0, 0.0, FACE_PROUD) for fr in _face_frames(plate_fr, field_c, sideways)]
 
 
 def duplex_openings(sideways=False, pc=PC_HERO):
@@ -462,35 +501,10 @@ def duplex_openings(sideways=False, pc=PC_HERO):
     return [opening_fn(0.0, s * DUPLEX_HALF, 0.0, pc) for s in (1, -1)]
 
 
-# ------------------------------------------------------------------- plates
-def opening_plate(mb, fr, outline, t, edge, openings, mouth=(0.5, 3), csk=(), csk_segs=32, slot=AL,
-                  back=False, field_holes=()):
-    """Plate/cover. fr origin = plate centre on its BACK plane (c = 0), n out.
-    outline(d) -> CCW outline inset d. edge = [(d, c), ...] profile from the
-    back edge to the field (the last entry's c is the field height). openings:
-    fns(e) -> outline grown by e. mouth = (radius, segments) of the opening
-    edge round (0 = sharp). csk: screw centres (u, v) with 82 deg
-    countersinks of CSK_D at the field (seat level with the field)."""
-    rings = profile_stack(mb, fr, outline, edge, slot)
-    field = edge[-1][1]
-    holes = []
-    for fn in openings:
-        r, segs = mouth
-        prof = mouth_profile(r, segs, field, 0.0) if r > 0 else [(0.0, field), (0.0, 0.0)]
-        hr = hole_stack(mb, fr, fn, prof, slot)
-        holes.append(hr[0])
-    for cu, cv in csk:
-        depth = min(1.0, field - 0.2)
-        top = mb.ring(fr, circle(CSK_D / 2, csk_segs, cu, cv), field)
-        bot = mb.ring(fr, circle(CSK_D / 2 - depth * math.tan(math.radians(CSK_HALF_ANGLE)), csk_segs, cu, cv), field - depth)
-        mb.band(top, bot, slot)
-        mb.cap(bot, slot, front=True)
-        holes.append(top)
-    holes += list(field_holes)
-    mb.fill(rings[-1], holes, slot, fr.n)
-    if back:
-        mb.cap(rings[0], slot, front=False)
-    return rings
+def duplex_span(sideways):
+    """Half extents (u, v) of the two openings together."""
+    a, b = OPEN_D / 2, OPEN_FLAT
+    return (DUPLEX_HALF + b, a) if sideways else (a, DUPLEX_HALF + b)
 
 
 def backing(mb, fr, w, h, r, c, slot=NI, per_corner=4):
@@ -499,45 +513,62 @@ def backing(mb, fr, w, h, r, c, slot=NI, per_corner=4):
     return mb.cap(ring, slot, front=True)
 
 
+def countersink(mb, fr, cu, cv, field, slot=AL, segs=PC_HERO, depth=1.0):
+    """82 deg countersink of CSK_D at the field, ``depth`` deep, floor capped.
+    Returns the top ring (a hole for the surrounding fill)."""
+    top = mb.ring(fr, circle(CSK_D / 2, segs, cu, cv), field)
+    bot = mb.ring(fr, circle(CSK_D / 2 - depth * math.tan(math.radians(CSK_HALF_ANGLE)), segs, cu, cv), field - depth)
+    mb.band(top, bot, slot)
+    mb.cap(bot, slot, front=True)
+    return top
+
+
 # ----------------------------------------------------------------- housings
-def tombstone_body(mb, W, D, H, z0, zs, r_end=4.0, end_segs=4, arch_segs=32, slot=AL):
-    """Cast floor-fitting housing in kit metres via mm: width W (x), depth D
-    (y), top at H, sitting on z0. Front and back walls vertical up to the
-    spring line zs, then an elliptical arch over the top (tangent to the
-    walls). The x ends are rounded with r_end. Bottom open (it sits on the
-    flange)."""
-    hw, hd, b0 = W / 2, D / 2, H - zs
+def tomb_outline(hw, H, zb, rt, d, arc_segs):
+    """Front-view tombstone outline inset by d: an open path (x, z) from the
+    bottom-left up over the two rounded top corners (radius rt) to the
+    bottom-right. zb is the (hidden) foot inside the flange."""
+    r = max(rt - d, 0.05)
+    pts = [(-(hw - d), zb)]
+    for k in range(arc_segs + 1):
+        a = math.radians(180.0 - 90.0 * k / arc_segs)
+        pts.append((-(hw - rt) + r * math.cos(a), (H - rt) + r * math.sin(a)))
+    for k in range(arc_segs + 1):
+        a = math.radians(90.0 - 90.0 * k / arc_segs)
+        pts.append(((hw - rt) + r * math.cos(a), (H - rt) + r * math.sin(a)))
+    pts.append(((hw - d), zb))
+    return pts
 
-    def prof(d):
-        a, b = hd - d, b0 - d
-        pts = [(-a, z0)]
-        for k in range(arch_segs + 1):
-            th = math.pi - math.pi * k / arch_segs
-            pts.append((a * math.cos(th), zs + b * math.sin(th)))
-        pts.append((a, z0))
-        return pts
 
+def tomb_body(mb, hw, hd, H, zb, rt, re, arc_segs, edge_segs, slot=AL):
+    """Cast floor-fitting housing (mm): the front view is a tombstone (flat
+    sides, rounded top corners rt), extruded front to back (|y| <= hd) with
+    every front and back edge rounded by re (edge_segs). Bottom open (it
+    stands in the flange). Returns (back_ring, front_ring): the open paths
+    bounding the flat back and front faces (close them for fills)."""
     stations = []
-    for k in range(end_segs, -1, -1):
-        phi = math.radians(90.0 * k / end_segs)
-        stations.append((-(hw - r_end + r_end * math.sin(phi)), r_end * (1 - math.cos(phi))))
-    for k in range(0, end_segs + 1):
-        phi = math.radians(90.0 * k / end_segs)
-        stations.append(((hw - r_end + r_end * math.sin(phi)), r_end * (1 - math.cos(phi))))
-    if end_segs == 0:
-        stations = [(-hw, 0.0), (hw, 0.0)]
-    rings = [[mb.bm.verts.new((x * MM, y * MM, z * MM)) for y, z in prof(d)] for x, d in stations]
+    if edge_segs:
+        for k in range(edge_segs + 1):
+            phi = math.radians(90.0 * k / edge_segs)
+            stations.append((re - re * math.sin(phi), (hd - re) + re * math.cos(phi)))
+        for k in range(edge_segs, -1, -1):
+            phi = math.radians(90.0 * k / edge_segs)
+            stations.append((re - re * math.sin(phi), -(hd - re) - re * math.cos(phi)))
+    else:
+        stations = [(0.0, hd), (0.0, -hd)]
+    rings = []
+    for d, y in stations:
+        rings.append([mb.bm.verts.new((x * MM, y * MM, z * MM)) for x, z in tomb_outline(hw, H, zb, rt, d, arc_segs)])
     faces = []
-    for ra, rb in zip(rings, rings[1:]):
-        faces += mb.band(ra, rb, slot, closed=False)
-    faces.append(mb.face(rings[0], slot))
-    faces.append(mb.face(rings[-1], slot))
-    mb.orient(faces, (0.0, 0.0, (z0 + zs) / 2 * MM))
-    return rings
+    for a, b in zip(rings, rings[1:]):
+        faces += mb.band(a, b, slot, closed=False)
+    mb.orient(faces, (0.0, 0.0, (zb + H) / 2 * MM))
+    return rings[0], rings[-1]
 
 
-def flange(mb, fr, w, h, r, t, edge_r, edge_segs, per_corner=6, slot=AL, field_holes_fn=None):
-    """Base flange on the carpet: fr origin = floor contact centre, n = +Z."""
+def flange(mb, fr, w, h, r, t, edge_r, edge_segs, per_corner=6, slot=AL):
+    """Base flange on the carpet: fr origin = floor contact centre, n = +Z.
+    Bottom open (it lies on the floor)."""
     outline = lambda d: rrect(w - 2 * d, h - 2 * d, r - d, per_corner)
     prof = [(0.0, 0.0)]
     if edge_segs:
@@ -546,13 +577,12 @@ def flange(mb, fr, w, h, r, t, edge_r, edge_segs, per_corner=6, slot=AL, field_h
     else:
         prof.append((0.0, t))
     rings = profile_stack(mb, fr, outline, prof, slot)
-    holes = field_holes_fn(mb) if field_holes_fn else []
-    mb.fill(rings[-1], holes, slot, fr.n)
+    mb.fill(rings[-1], [], slot, fr.n)
     return rings
 
 
 # -------------------------------------------------------------------- sweep
-def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0, 1)):
+def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0, 1), phase=0.0):
     """Round sections along a polyline (Blender metres) with a radius per
     point (metres). Rings are CCW about the local tangent, so bands face out.
     Returns the rings."""
@@ -578,15 +608,11 @@ def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0
         prev_side = side
         ring = []
         for i in range(segs):
-            a = 2 * math.pi * i / segs
+            a = phase + 2 * math.pi * i / segs
             ring.append(mb.bm.verts.new(p + (side * math.cos(a) + up * math.sin(a)) * radii[k]))
         rings.append(ring)
-    faces = []
     for a, b in zip(rings, rings[1:]):
-        faces += mb.band(a, b, slot)
-    # Orientation: (side, up, t) right-handed -> ring CCW about +t -> bands out.
-    for f, (k) in zip(faces, range(len(faces))):
-        pass
+        mb.band(a, b, slot)
     if cap_start:
         mb.face(list(reversed(rings[0])), slot)
     if cap_end:
@@ -622,9 +648,18 @@ def boolean_cut(obj, cutter_mb_fn, name="cutter"):
     return obj
 
 
+def _slot_cutter(fr, deg, width, top, depth, reach, slot):
+    f2 = fr.rot(deg)
+
+    def cutter(cmb):
+        cmb.box(f2, -reach, reach, -width / 2, width / 2, top - depth, top + 1.0, slot)
+    return cutter
+
+
 def screw_oval(kit, fr, slot_deg=0.0, segs=48, slot=AL, name="screw", lods="0"):
-    """#6-32 oval head: seat (Ø6.6) level with the field (c = 0), crown 1.0
-    proud, slot 0.8 x 0.6 across the head at slot_deg. fr origin = seat centre."""
+    """#6-32 oval head for a countersink: seat (Ø6.6) level with the field
+    (c = 0), crown 1.0 proud, slot 0.8 x 0.6 across the head at slot_deg.
+    fr origin = seat centre."""
     Rs = ((SCREW_SEAT_D / 2) ** 2 + SCREW_CROWN ** 2) / (2 * SCREW_CROWN)
     cz = SCREW_CROWN - Rs
     mb = MB()
@@ -639,37 +674,28 @@ def screw_oval(kit, fr, slot_deg=0.0, segs=48, slot=AL, name="screw", lods="0"):
     mb.fan(rings[-1], apex, slot)
     mb.cap(rings[0], slot, front=False)
     obj = mb.to_part(kit, name, lods)
-    f2 = fr.rot(slot_deg)
-    sw, sd = SCREW_SLOT_W, SCREW_SLOT_DEPTH
-
-    def cutter(cmb):
-        cmb.box(f2, -SCREW_SEAT_D, SCREW_SEAT_D, -sw / 2, sw / 2, SCREW_CROWN - sd, SCREW_CROWN + 1.0, slot)
-
-    boolean_cut(obj, cutter)
+    boolean_cut(obj, _slot_cutter(fr, slot_deg, SCREW_SLOT_W, SCREW_CROWN, SCREW_SLOT_DEPTH, SCREW_SEAT_D, slot))
     _delete_faces_below(obj, fr, -0.3)
     return obj
 
 
-def screw_flat(kit, fr, slot_deg=0.0, segs=32, slot=AL, head_d=7.0, name="flat screw", lods="0"):
-    """Flat countersunk head seated flush (0.12 proud, 0.15 chamfer), slot
-    1.0 x 0.8. fr origin = head centre on the surface, n out."""
-    mb = MB()
+def screw_pan(kit, fr, slot_deg=0.0, segs=32, slot=AL, head_d=6.6, head_h=1.9, slot_w=0.9, slot_depth=0.8,
+              name="pan screw", lods="0"):
+    """Slotted pan/binding head sitting ON a flat surface (sheet covers,
+    straps, set screws): fr origin = head centre on the surface, n out."""
     r = head_d / 2
-    rings = [mb.ring(fr, circle(r - 0.6, segs), -1.0),
-             mb.ring(fr, circle(r, segs), -0.05),
-             mb.ring(fr, circle(r - 0.15, segs), 0.12)]
+    mb = MB()
+    prof = [(r, -0.25), (r, head_h * 0.42), (r - 0.35, head_h * 0.72), (r - 0.95, head_h * 0.93)]
+    rings = [mb.ring(fr, circle(rr, segs), c) for rr, c in prof]
     for a, b in zip(rings, rings[1:]):
         mb.band(a, b, slot)
-    mb.cap(rings[-1], slot, front=True)
+    top = mb.ring(fr, circle(r - 1.6, segs), head_h)
+    mb.band(rings[-1], top, slot)
+    mb.cap(top, slot, front=True)
     mb.cap(rings[0], slot, front=False)
     obj = mb.to_part(kit, name, lods)
-    f2 = fr.rot(slot_deg)
-
-    def cutter(cmb):
-        cmb.box(f2, -head_d, head_d, -0.5, 0.5, 0.12 - 0.8, 1.0, slot)
-
-    boolean_cut(obj, cutter)
-    _delete_faces_below(obj, fr, -0.5)
+    boolean_cut(obj, _slot_cutter(fr, slot_deg, slot_w, head_h, slot_depth, head_d, slot))
+    _delete_faces_below(obj, fr, -0.15)
     return obj
 
 
@@ -688,18 +714,19 @@ def _delete_faces_below(obj, fr, c_mm):
 
 # -------------------------------------------------------------- wear / final
 def paint_wear(obj, fn=None):
-    """fr_wear colour attribute (BYTE_COLOR, CORNER). fn(P_unity, N_unity,
-    slot) -> (R grime, G edge wear, B cavity); 1 = untouched."""
+    """fr_wear colour attribute (BYTE_COLOR, CORNER). fn(P_unity_mm,
+    N_unity, slot) -> (R grime, G edge wear, B cavity); 1 = untouched."""
     me = obj.data
     attr = me.color_attributes.get("fr_wear") or me.color_attributes.new("fr_wear", "BYTE_COLOR", "CORNER")
-    names = [m.name if m is not None else "" for m in me.materials]
+    names = [m.name.split(".")[0] if m is not None else "" for m in me.materials]
     mw = obj.matrix_world
     rot = mw.to_3x3()
     for poly in me.polygons:
         n = to_unity((rot @ poly.normal).normalized())
         slot = names[poly.material_index] if poly.material_index < len(names) else ""
         for li in poly.loop_indices:
-            p = to_unity(mw @ me.vertices[me.loops[li].vertex_index].co)
+            pw = mw @ me.vertices[me.loops[li].vertex_index].co
+            p = tuple(x / MM for x in to_unity(pw))
             c = fn(p, n, slot) if fn is not None else (1.0, 1.0, 1.0)
             if slot == PB:
                 c = (c[0], c[1], min(c[2], 0.35))
@@ -710,7 +737,7 @@ def paint_wear(obj, fn=None):
 
 def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True):
     """Per-part recipe (interactables G1 probe): apply modifiers ->
-    triangulate n-gons -> weld -> shade smooth -> sharp by angle -> paint
+    weld -> triangulate n-gons -> shade smooth -> sharp by angle -> paint
     fr_wear -> WEIGHTED_NORMAL (applied by kit.finish())."""
     for obj in list(parts if parts is not None else kit.parts):
         bpy.ops.object.select_all(action="DESELECT")
@@ -747,24 +774,180 @@ def lods_enabled():
     return hasattr(kitlib.Kit, "make_lods")
 
 
-def lod_meta(kit, module, extra=None):
-    d = list(getattr(module, "LOD_DISTANCES", (None, None, None)))
-    kit.meta["lodDistances"] = [(-1.0 if x is None else float(x)) for x in d]
-    kit.meta["lodRatios"] = [1.0, float(getattr(module, "LOD1_RATIO", 0) or 0), float(getattr(module, "LOD2_RATIO", 0) or 0)]
-    kit.meta["lodBudget"] = list(getattr(module, "BUDGET", ()))
-    kit.meta["lodHandBuilt"] = True
-    kit.meta["lodNote"] = ("lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76. LOD1/LOD2 are hand-built part sets "
-                           "(obj fr_lods) and are exported only after P-1/P-1b; until then the FBX holds LOD0.")
-    if extra:
-        kit.meta.update(extra)
+def lod_parts(kit, level):
+    return [o for o in kit.parts if str(level) in str(o.get("fr_lods", "0"))]
 
 
 def lod_tris(kit):
     """Triangles per LOD membership (after finalize)."""
-    out = {"0": 0, "1": 0, "2": 0}
-    for obj in kit.parts:
-        m = str(obj.get("fr_lods", "0"))
-        for k in out:
-            if k in m:
-                out[k] += tris(obj)
-    return out
+    return {k: sum(tris(o) for o in lod_parts(kit, k)) for k in ("0", "1", "2")}
+
+
+def bounds_mm(objs):
+    lo = [1e9] * 3
+    hi = [-1e9] * 3
+    for o in objs:
+        mw = o.matrix_world
+        for v in o.data.vertices:
+            p = mw @ v.co
+            for i in range(3):
+                lo[i] = min(lo[i], p[i] / MM)
+                hi[i] = max(hi[i], p[i] / MM)
+    return lo, hi
+
+
+def lod_meta(kit, module):
+    d = list(getattr(module, "LOD_DISTANCES", (None, None, None)))
+    kit.meta["lodDistances"] = [(-1.0 if x is None else float(x)) for x in d]
+    kit.meta["lodRatios"] = [float(getattr(module, "LOD1_RATIO", 0) or 0), float(getattr(module, "LOD2_RATIO", 0) or 0)]
+    kit.meta["lodBudget"] = list(getattr(module, "BUDGET", ()))
+    kit.meta["lodHandBuilt"] = True
+
+
+def box_meta(kit, module, family, plate_w, plate_h, wall=True, extra_tags=(), outlet_extra=None):
+    """Sidecar meta (§1.1): no collider, tags, LOD fields and the outlet
+    dict for R3. Asserts LOD0 triangles within +-15 % of BUDGET (and LOD1 /
+    LOD2 when those parts were built) and that nothing of a wall kit lies
+    behind the wall plane. Returns (LOD0 tris, lo_mm, hi_mm) in Blender mm."""
+    kit.no_collider()
+    kit.tag("outlet", family, *(("wall_flush",) if wall else ()), *extra_tags)
+    lod_meta(kit, module)
+    lod0 = lod_parts(kit, 0)
+    lo, hi = bounds_mm(lod0)
+    out = {"plateW": round(plate_w * MM, 5), "plateH": round(plate_h * MM, 5),
+           "proud": round((-lo[1] if wall else hi[2]) * MM, 5), "screws": 0, "screwsBaked": True,
+           "family": family, "plateSlot": AL, "deviceSlot": NI}
+    if outlet_extra:
+        out.update(outlet_extra)
+    kit.meta["outlet"] = out
+    kit.meta["partFrame"] = ("origin = wall-face point (Blender y = 0 = wall plane); front = Unity +Z (kit -Y); +Y up"
+                             if wall else "origin = floor contact centre (z = 0); front = Unity +Z (kit -Y); +Y up")
+    budget = getattr(module, "BUDGET")
+    counts = lod_tris(kit)
+    print("[o3] %s LOD0 %d tris (budget %d, %+.1f %%); bounds mm x %.2f..%.2f y %.2f..%.2f z %.2f..%.2f" % (
+        kit.name, counts["0"], budget[0], 100.0 * (counts["0"] - budget[0]) / budget[0],
+        lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]))
+    for o in lod0:
+        print("[o3]    %-26s %5d tris  %s" % (o.name, tris(o), ",".join(m.name for m in o.data.materials)))
+    assert abs(counts["0"] - budget[0]) <= 0.15 * budget[0], "%s: LOD0 %d tris vs budget %d" % (kit.name, counts["0"], budget[0])
+    for lv in (1, 2):
+        if lods_enabled() and len(budget) > lv and budget[lv] and lod_parts(kit, lv):
+            n = counts[str(lv)]
+            print("[o3] %s LOD%d %d tris (budget %d, %+.1f %%)" % (kit.name, lv, n, budget[lv], 100.0 * (n - budget[lv]) / budget[lv]))
+            assert abs(n - budget[lv]) <= 0.15 * budget[lv], "%s: LOD%d %d tris vs budget %d" % (kit.name, lv, n, budget[lv])
+    if wall:
+        assert lo[1] <= 1e-6 and hi[1] <= 1e-3, "%s: geometry behind the wall plane (%.3f mm)" % (kit.name, hi[1])
+    for o in kit.parts:
+        assert o.data.color_attributes.get("fr_wear") is not None, "%s: part %s has no fr_wear" % (kit.name, o.name)
+    return counts["0"], lo, hi
+
+
+# ------------------------------------------------------- floor fitting builder
+def build_tombstone(kit, module, W, D, H, inset, rt, re, zc, sides, flange_r=8.0, flange_t=2.0,
+                    level="hero", pc_open=PC_HERO, csk_segs=PC_HERO, screw_segs=48, arc_segs=10, edge_segs=3):
+    """SFH-type above-floor fitting (mm): flange W x D x flange_t on the
+    carpet, a cast tombstone housing inset by ``inset`` up to H, one sideways
+    duplex per entry of ``sides`` ("front" = kit -Y = Unity +Z, "back").
+    Origin = floor contact centre. Returns the anchors written."""
+    hw, hd = W / 2 - inset, D / 2 - inset
+    zb = 1.0                                  # housing foot, hidden in the flange
+    span_u, span_v = duplex_span(True)
+
+    def wear(p, n, slot):
+        x, y, z = p                           # Unity mm: x right-left, y up, z front
+        r, g = 1.0, 1.0
+        if abs(n[2]) > 0.9 and abs(x) < span_u + 9 and abs(y - zc) < span_v + 9 and abs(z) > hd - 0.5:
+            r = 0.85                          # hands round the receptacle faces
+        if slot == AL and 0.25 < n[1] < 0.97 and y > flange_t + 0.5:
+            g = 0.8                           # scuffed shoulders and top edges
+        if slot == AL and y <= flange_t + 0.01 and 0.2 < n[1] < 0.98:
+            g = 0.7                           # flange edge (shoes, vacuum)
+        return (r, g, 1.0)
+
+    # LOD0 ------------------------------------------------------------------
+    mb = MB()                                  # dominant slot first (AL)
+    flange(mb, up_frame(0, 0, 0), W, D, flange_r, flange_t, 0.8, 2, per_corner=6)
+    mb.to_part(kit, "flange", "0")
+
+    mb = MB()
+    back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, re, arc_segs=arc_segs, edge_segs=edge_segs)
+    frames = {"front": front_frame(0, -hd * MM, zc * MM), "back": back_frame(0, hd * MM, zc * MM)}
+    rings = {"front": front_ring, "back": back_ring}
+    wall = 3.0                                # cast wall behind the openings
+    for side in ("front", "back"):
+        fr = frames[side]
+        if side in sides:
+            holes = [hole_stack(mb, fr, fn, mouth_profile(OPEN_EDGE_R, 3, 0.0, -wall), AL)[0]
+                     for fn in duplex_openings(sideways=True, pc=pc_open)]
+            holes.append(countersink(mb, fr, 0.0, 0.0, 0.0, segs=csk_segs))
+            mb.fill(rings[side], holes, AL, fr.n)
+        else:
+            f = mb.face(rings[side], AL)
+            mb.orient([f], (0.0, 0.0, (zb + H) / 2 * MM))
+    mb.to_part(kit, "housing", "0")
+
+    anchors = {}
+    slot_angles = {"front": 37.0, "back": 112.0}
+    for side in sides:
+        fr = frames[side]
+        mb = MB()
+        duplex(mb, fr, 0.0, level, sideways=True)
+        backing(mb, fr, 2 * span_u + 3.0, 2 * span_v + 3.0, 3.0, -BACK_PLANE)
+        mb.to_part(kit, "device_" + side, "0")
+        screw_oval(kit, fr, slot_angles[side], segs=screw_segs, name="screw_" + side)
+        a, b = face_centres(fr, 0.0, True)
+        sfx = "" if side == "front" else "_back"
+        anchors["cord_in" + sfx] = tuple(fr.p(0.0, 0.0, FACE_PROUD))
+        anchors["face_a" + sfx] = tuple(a)
+        anchors["face_b" + sfx] = tuple(b)
+
+    # LOD1 / LOD2 (hand-built; only when kitlib can export them) -------------
+    if lods_enabled():
+        mb = MB()
+        flange(mb, up_frame(0, 0, 0), W, D, flange_r, flange_t, 0.0, 0, per_corner=3)
+        back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, re, arc_segs=4, edge_segs=1)
+        rings = {"front": front_ring, "back": back_ring}
+        for side in ("front", "back"):
+            fr = frames[side]
+            if side in sides:
+                holes = [hole_stack(mb, fr, fn, [(0.0, 0.0), (0.0, -2.0)], AL)[0]
+                         for fn in duplex_openings(sideways=True, pc=24)]
+                mb.fill(rings[side], holes, AL, fr.n)
+            else:
+                f = mb.face(rings[side], AL)
+                mb.orient([f], (0.0, 0.0, (zb + H) / 2 * MM))
+        for side in sides:
+            fr = frames[side]
+            duplex(mb, fr, 0.0, "lod1", sideways=True)
+            backing(mb, fr, 2 * span_u + 3.0, 2 * span_v + 3.0, 3.0, -BACK_PLANE, per_corner=1)
+            mb.cap(mb.ring(fr, circle(3.3, 12), 0.4), AL)          # plain screw head
+        mb.to_part(kit, "lod1", "1")
+        mb = MB()
+        flange(mb, up_frame(0, 0, 0), W, D, flange_r, flange_t, 0.0, 0, per_corner=1)
+        back_ring, front_ring = tomb_body(mb, hw, hd, H, zb, rt, 0.0, arc_segs=1, edge_segs=0)
+        for ring in (back_ring, front_ring):
+            f = mb.face(ring, AL)
+            mb.orient([f], (0.0, 0.0, (zb + H) / 2 * MM))
+        for side in sides:
+            duplex_lod2(mb, frames[side], 0.0, sideways=True)
+        mb.to_part(kit, "lod2", "2")
+
+    finalize(kit, getattr(module, "SMOOTH_ANGLE", 35.0), wear)
+    for name, pos in anchors.items():
+        kit.anchor(name, pos)
+    return anchors
+
+
+def assert_tombstone(kit, W, D, H, flange_t, lo, hi, tol=1.0):
+    """Self-check (a)/(b): envelope within tol mm, origin at the floor
+    contact, flange thickness."""
+    span = (hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2])
+    assert abs(span[0] - W) <= tol and abs(span[1] - D) <= tol and abs(span[2] - H) <= tol, \
+        "%s envelope %.2f x %.2f x %.2f vs %s x %s x %s" % (kit.name, span[0], span[2], span[1], W, H, D)
+    assert abs(lo[2]) < 1e-3, "%s: lowest point %.4f mm, origin must be the floor contact" % (kit.name, lo[2])
+    assert abs(lo[0] + hi[0]) < 0.05 and abs(lo[1] + hi[1]) < 0.05, "%s: not centred on the origin" % kit.name
+    fl = [o for o in kit.parts if o.name.startswith("flange") and "0" in str(o.get("fr_lods", "0"))][0]
+    flo, fhi = bounds_mm([fl])
+    assert abs(fhi[2] - flange_t) < 1e-3 and abs(flo[2]) < 1e-3, "%s: flange %.3f mm" % (kit.name, fhi[2] - flo[2])
+    print("[o3] %s envelope W %.2f x H %.2f x D %.2f mm (spec %s x %s x %s); flange %.2f mm; z min %.4f" % (
+        kit.name, span[0], span[2], span[1], W, H, D, fhi[2] - flo[2], lo[2]))

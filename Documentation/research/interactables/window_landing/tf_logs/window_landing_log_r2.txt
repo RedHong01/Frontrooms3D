@@ -1,0 +1,69 @@
+seed 20261001: shell meshes identical 1454 (walls, floors, ceilings, columns, collision); trim meshes 72; window trim boxes removed 33 for 11 windows; other trim boxes (doors, coves) unchanged
+envelope Level0/kit: |X| <= 0.8000, Y 0.2485 .. 2.0765, |Z| <= 0.1210; meshes Kit_WindowFrame_Wood_LOD0, Kit_WindowFrame_Wood_LOD1; tris (all LODs) 3366
+seed 20261001: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 11 windows; blocked by something else (same as today) at 0
+seed 516574485: shell meshes identical 1459 (walls, floors, ceilings, columns, collision); trim meshes 91; window trim boxes removed 114 for 38 windows; other trim boxes (doors, coves) unchanged
+envelope Office/kit: |X| <= 0.7750, Y 0.2750 .. 2.0750, |Z| <= 0.1050; meshes Kit_WindowFrame_Steel_LOD0, Kit_WindowFrame_Steel_LOD1; tris (all LODs) 5300
+proud of Z 0.022 inside the wall cut (Office/intact): face A 0, face B 60 vertices, max |Z| 0.0224
+proud of Z 0.022 inside the wall cut (Office/after-break): face A 0, face B 60 vertices, max |Z| 0.0224
+seed 516574485: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 38 windows; blocked by something else (same as today) at 0
+proud of Z 0.022 inside the wall cut (Office/rebuilt): face A 0, face B 60 vertices, max |Z| 0.0224
+frame L0_today_A_1.6m.png  eye (5002.2500, 1.6200, 4993.4000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_today_B_1.6m.png  eye (5002.2500, 1.6200, 4996.6000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_today_A_head_corner_0.3m.png  eye (5003.0000, 1.8200, 4994.7400) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_today_A_sill_0.4m.png  eye (5002.8600, 0.7200, 4994.6000) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_today_B_head_corner_0.3m.png  eye (5003.0000, 1.8200, 4995.2600) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_today_A_oblique_1.2m.png  eye (5001.4000, 1.6200, 4994.2500) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+seed 4242: shell meshes identical 1491 (walls, floors, ceilings, columns, collision); trim meshes 94; window trim boxes removed 207 for 69 windows; other trim boxes (doors, coves) unchanged
+frame L0_kit_A_1.6m.png  eye (5002.2500, 1.6200, 4993.4000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_kit_B_1.6m.png  eye (5002.2500, 1.6200, 4996.6000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_kit_A_head_corner_0.3m.png  eye (5003.0000, 1.8200, 4994.7400) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_kit_A_sill_0.4m.png  eye (5002.8600, 0.7200, 4994.6000) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_kit_B_head_corner_0.3m.png  eye (5003.0000, 1.8200, 4995.2600) fov 50 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_kit_A_oblique_1.2m.png  eye (5001.4000, 1.6200, 4994.2500) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+frame L0_kit_broken_A.png  eye (5002.2500, 1.6200, 4993.4000) fov 76 · edge 25769803776 (3, 0)-(3, 1) room (3, 0) Level0
+seed 4242: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 69 windows; blocked by something else (same as today) at 0
+seed 1990: shell meshes identical 1451 (walls, floors, ceilings, columns, collision); trim meshes 83; window trim boxes removed 63 for 21 windows; other trim boxes (doors, coves) unchanged
+seed 1990: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 21 windows; blocked by something else (same as today) at 0
+seed 7: shell meshes identical 1495 (walls, floors, ceilings, columns, collision); trim meshes 105; window trim boxes removed 63 for 21 windows; other trim boxes (doors, coves) unchanged
+seed 7: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 21 windows; blocked by something else (same as today) at 0
+seed 1955: shell meshes identical 1519 (walls, floors, ceilings, columns, collision); trim meshes 105; window trim boxes removed 126 for 42 windows; other trim boxes (doors, coves) unchanged
+seed 1955: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 42 windows; blocked by something else (same as today) at 0
+seed 1993: shell meshes identical 1490 (walls, floors, ceilings, columns, collision); trim meshes 102; window trim boxes removed 162 for 54 windows; other trim boxes (doors, coves) unchanged
+seed 1993: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 54 windows; blocked by something else (same as today) at 0
+seed 8086: shell meshes identical 1506 (walls, floors, ceilings, columns, collision); trim meshes 115; window trim boxes removed 258 for 86 windows; other trim boxes (doors, coves) unchanged
+seed 8086: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 86 windows; blocked by something else (same as today) at 0
+seed 6502: shell meshes identical 1491 (walls, floors, ceilings, columns, collision); trim meshes 88; window trim boxes removed 45 for 15 windows; other trim boxes (doors, coves) unchanged
+seed 6502: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 15 windows; blocked by something else (same as today) at 0
+seed 68000: shell meshes identical 1438 (walls, floors, ceilings, columns, collision); trim meshes 110; window trim boxes removed 162 for 54 windows; other trim boxes (doors, coves) unchanged
+seed 68000: after the break the Relay probe (r 0.3, 0.4-1.95 m) passes both ways at 54 windows; blocked by something else (same as today) at 0
+frames for OF: no window with a steady lamp on both sides; using seed 2600 edge 68719476743 (room lamp mode 0)
+frame OF_today_A_1.6m.png  eye (5020.6000, 1.6200, 5002.2500) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_today_B_1.6m.png  eye (5017.4000, 1.6200, 5002.2500) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_today_A_head_corner_0.3m.png  eye (5019.2600, 1.8200, 5003.0000) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_today_A_sill_0.4m.png  eye (5019.4000, 0.7200, 5002.8600) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_today_B_head_corner_0.3m.png  eye (5018.7400, 1.8200, 5003.0000) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_today_A_screws_0.3m.png  eye (5019.2400, 1.2200, 5002.9200) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_today_A_oblique_1.2m.png  eye (5019.7500, 1.6200, 5001.4000) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_A_1.6m.png  eye (5020.6000, 1.6200, 5002.2500) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_B_1.6m.png  eye (5017.4000, 1.6200, 5002.2500) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_A_head_corner_0.3m.png  eye (5019.2600, 1.8200, 5003.0000) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_A_sill_0.4m.png  eye (5019.4000, 0.7200, 5002.8600) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_B_head_corner_0.3m.png  eye (5018.7400, 1.8200, 5003.0000) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_A_screws_0.3m.png  eye (5019.2400, 1.2200, 5002.9200) fov 50 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_A_oblique_1.2m.png  eye (5019.7500, 1.6200, 5001.4000) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+frame OF_kit_broken_A.png  eye (5020.6000, 1.6200, 5002.2500) fov 76 · edge 68719476743 (8, 3)-(9, 3) room (9, 3) Office
+windows checked: W-L0 366, W-OF 45 in 10 worlds
+frames: W-L0 kit 366 / placeholder 0; W-OF kit 45 / placeholder 0
+timing (edit mode, batch; see uptime load in the run notes):
+seed 20261001: 11 windows; BuildForCapture today 305 ms, kit 227 ms; frame tris added 37026
+seed 516574485: 38 windows; BuildForCapture today 246 ms, kit 280 ms; frame tris added 141446
+seed 4242: 69 windows; BuildForCapture today 254 ms, kit 236 ms; frame tris added 243858; render median (W-L0 room view) today 34.34 ms, kit 34.89 ms
+seed 1990: 21 windows; BuildForCapture today 442 ms, kit 378 ms; frame tris added 70686
+seed 7: 21 windows; BuildForCapture today 547 ms, kit 375 ms; frame tris added 82290
+seed 1955: 42 windows; BuildForCapture today 413 ms, kit 449 ms; frame tris added 141372
+seed 1993: 54 windows; BuildForCapture today 373 ms, kit 392 ms; frame tris added 210774
+seed 8086: 86 windows; BuildForCapture today 167 ms, kit 154 ms; frame tris added 299146
+seed 6502: 15 windows; BuildForCapture today 162 ms, kit 180 ms; frame tris added 62094
+seed 68000: 54 windows; BuildForCapture today 151 ms, kit 175 ms; frame tris added 181764
+
+VERDICT PASS: 38538 passed, 0 failed

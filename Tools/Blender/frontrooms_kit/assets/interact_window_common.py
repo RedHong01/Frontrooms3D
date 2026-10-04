@@ -628,3 +628,30 @@ def assert_envelope(kit, lo_want, hi_want, tol=0.0006):
 
 def rng(seed):
     return random.Random(seed)
+
+
+def lift_preview(kit, lift):
+    """kitlib's turntable (Kit.preview) stands every asset on a floor at
+    Blender z = 0. A blind's origin is its rail top (spec §9.4: origin P =
+    `blind_rail`), so the whole blind hangs below that floor and the stills
+    showed nothing but floor. This wraps preview() on THIS kit instance only
+    (kitlib is not edited): for the two stills it lifts the finished mesh by
+    ``lift`` m and shifts the bounds the camera frames, then restores both.
+    build_asset.py calls preview() after the FBX, the JSON and every variant
+    are written, so the exported asset and its sidecar never see the lift."""
+    original = kit.preview
+
+    def preview(png_base, samples=48):
+        obj = kit.object
+        lo, hi = list(kit.meta["boundsMin"]), list(kit.meta["boundsMax"])
+        obj.location.z += lift
+        kit.meta["boundsMin"] = [lo[0], lo[1], lo[2] + lift]
+        kit.meta["boundsMax"] = [hi[0], hi[1], hi[2] + lift]
+        try:
+            original(png_base, samples)
+        finally:
+            obj.location.z -= lift
+            kit.meta["boundsMin"], kit.meta["boundsMax"] = lo, hi
+
+    kit.preview = preview
+    return kit

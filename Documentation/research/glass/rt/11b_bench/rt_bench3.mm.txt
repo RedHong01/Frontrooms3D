@@ -1,0 +1,781 @@
+// rt_bench3.mm - multi-bounce / glossy-receiver extension of rt_bench2.mm (FrontRooms G14, report 11b).
+// Not part of the game. Standalone Metal on Apple silicon; no Unity.
+// Same synthetic office as bench 1/2 (2,912 instances, 16 m x 16 cells of 6 m), plus:
+//   - floor slabs flagged as a glossy floor (VCT-like, F0 0.04, roughness parameter),
+//   - glass: the held/window pane in front of the camera (25 % of the screen), random interior glass
+//     partitions (30 % of cells) and a glass cabinet, all thin 6 mm boxes with the two-surface pane Fresnel,
+//   - a G-buffer pass (stand-in for the raster prepass; untimed) that classifies receivers:
+//     1 = glass receiver, 2 = glossy-floor receiver, 3 = glossy floor that is not a receiver,
+//   - a trace kernel with an explicit ray stack: Fresnel-weighted continuation on glass (reflect + transmit)
+//     and on glossy floors (reflect), max bounce depth 1..3, optional importance cut-off,
+//     URP-style lamps + nearest-N shadow rays + texture-array albedo + GGX lamp highlights at every hit,
+//     zone-cube stand-in (cube texture) on misses and at the last bounce,
+//   - glossy receivers: 1..N GGX VNDF rays per pixel (or one mirror ray), then a 2-pass edge-aware
+//     a-trous filter whose radius follows the GGX lobe footprint (BFV-style {roughness, hit distance}),
+//   - image-error metrics against a 128-ray reference and between two noise seeds (frame-to-frame shimmer
+//     without TAA), ray counts per receiver pixel, and debug images.
+// Revision 2 (report 11b, second attempt): a pitched camera view (view 1) so glass + glossy floor cover 50-60 %
+// of the screen; recursion gated by the hit's roughness (recurseMaxRough); 1- or 2-pass filter; counters for the
+// share of receiver pixels that actually spawn a second-bounce ray; image-difference metrics (8-bit, after the
+// tonemap) between bounce counts; quality at roughness 0.2 / 0.3 / 0.4.
+// Build: xcrun clang++ -std=c++17 -fobjc-arc -O2 -framework Metal -framework Foundation -framework CoreGraphics
+//        -framework ImageIO -framework CoreText -framework CoreFoundation rt_bench3.mm -o rt_bench3
+// Run:   ./rt_bench3 <runTag> [timing|quality|images|all]
+#import <Metal/Metal.h>
+#import <Foundation/Foundation.h>
+#import <CoreGraphics/CoreGraphics.h>
+#import <ImageIO/ImageIO.h>
+#import <CoreText/CoreText.h>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <cstdio>
+#include <cmath>
+#include <string>
+#include <functional>
+#include <cstdlib>
+
+struct Mesh { id<MTLBuffer> vb, ib; uint32_t vcount, tcount; id<MTLAccelerationStructure> blas; size_t blasSize = 0; };
+struct Inst { int mesh; float m[3][4]; uint32_t flags; float rough; };
+struct alignas(16) GpuInst { uint64_t vb, ib; uint32_t tcount, flags; uint32_t pad[2]; float m0[4], m1[4], m2[4]; float emis[4]; };
+static_assert(sizeof(GpuInst) == 96, "must match the MSL struct (float4 is 16-byte aligned)");
+enum : uint32_t { F_LENS = 1, F_GLASS = 2, F_FLOOR = 4, F_FACING = 8 };   // F_FACING: host-only, TLAS mask 0x04
+
+static id<MTLDevice> dev; static id<MTLCommandQueue> q;
+static double gpuMs(id<MTLCommandBuffer> cb) { return (cb.GPUEndTime - cb.GPUStartTime) * 1000.0; }
+static double pct(std::vector<double> v, double p) { std::sort(v.begin(), v.end()); return v[std::min(v.size() - 1, (size_t)(p * (v.size() - 1) + 0.5))]; }
+static std::string loadStr() { double l[3] = {0, 0, 0}; getloadavg(l, 3); char b[64]; snprintf(b, sizeof b, "load %.0f/%.0f/%.0f", l[0], l[1], l[2]); return b; }
+
+static Mesh makeMesh(const std::vector<float>& pos, const std::vector<uint32_t>& idx) {
+  Mesh m; m.vcount = (uint32_t)pos.size() / 3; m.tcount = (uint32_t)idx.size() / 3;
+  m.vb = [dev newBufferWithBytes:pos.data() length:pos.size() * 4 options:MTLResourceStorageModeShared];
+  m.ib = [dev newBufferWithBytes:idx.data() length:idx.size() * 4 options:MTLResourceStorageModeShared];
+  return m;
+}
+static Mesh boxMesh() {
+  std::vector<float> p = {-.5f,-.5f,-.5f, .5f,-.5f,-.5f, .5f,.5f,-.5f, -.5f,.5f,-.5f, -.5f,-.5f,.5f, .5f,-.5f,.5f, .5f,.5f,.5f, -.5f,.5f,.5f};
+  std::vector<uint32_t> i = {0,2,1,0,3,2, 4,5,6,4,6,7, 0,1,5,0,5,4, 3,7,6,3,6,2, 0,4,7,0,7,3, 1,2,6,1,6,5};
+  return makeMesh(p, i);
+}
+static Mesh blobMesh(int lat, int lon, uint32_t seed) {
+  std::mt19937 rng(seed); std::uniform_real_distribution<float> u(.85f, 1.15f);
+  std::vector<float> p; std::vector<uint32_t> i;
+  for (int a = 0; a <= lat; a++) for (int b = 0; b <= lon; b++) {
+    float th = M_PI * a / lat, ph = 2 * M_PI * b / lon, r = .5f * u(rng);
+    p.push_back(r * sinf(th) * cosf(ph)); p.push_back(r * cosf(th)); p.push_back(r * sinf(th) * sinf(ph));
+  }
+  for (int a = 0; a < lat; a++) for (int b = 0; b < lon; b++) {
+    uint32_t v0 = a * (lon + 1) + b, v1 = v0 + 1, v2 = v0 + lon + 1, v3 = v2 + 1;
+    i.insert(i.end(), {v0, v2, v1, v1, v2, v3});
+  }
+  return makeMesh(p, i);
+}
+static MTLPrimitiveAccelerationStructureDescriptor* blasDesc(const Mesh& m) {
+  auto g = [MTLAccelerationStructureTriangleGeometryDescriptor descriptor];
+  g.vertexBuffer = m.vb; g.vertexStride = 12; g.indexBuffer = m.ib; g.indexType = MTLIndexTypeUInt32;
+  g.triangleCount = m.tcount; g.opaque = YES;
+  auto d = [MTLPrimitiveAccelerationStructureDescriptor descriptor]; d.geometryDescriptors = @[g]; return d;
+}
+static void buildBlas(std::vector<Mesh>& meshes) {
+  auto cb = [q commandBuffer]; auto enc = [cb accelerationStructureCommandEncoder];
+  std::vector<id<MTLBuffer>> scratch;
+  for (auto& m : meshes) {
+    auto d = blasDesc(m); auto s = [dev accelerationStructureSizesWithDescriptor:d];
+    m.blas = [dev newAccelerationStructureWithSize:s.accelerationStructureSize]; m.blasSize = s.accelerationStructureSize;
+    id<MTLBuffer> sc = [dev newBufferWithLength:std::max<NSUInteger>(s.buildScratchBufferSize, 16) options:MTLResourceStorageModePrivate];
+    scratch.push_back(sc);
+    [enc buildAccelerationStructure:m.blas descriptor:d scratchBuffer:sc scratchBufferOffset:0];
+  }
+  [enc endEncoding]; [cb commit]; [cb waitUntilCompleted];
+}
+
+static const char* kSrc = R"MSL(
+#include <metal_stdlib>
+using namespace metal;
+using namespace raytracing;
+struct GpuInst { device const float* vb; device const uint* ib; uint tcount; uint flags; float4 m0, m1, m2; float4 emis; };
+struct Frame {
+  float4 camPos, camRight, camUp, camFwd;
+  float tanHalf, aspect; uint w, h;
+  uint lightCount, shadow1, shadow2, maxBounces;
+  uint maxLayers, floorSpp, floorMode, receivers;
+  float floorRough, cutoff, pixelAngle, maxDist;
+  uint seed, stats, floorGlossy, compMode;
+  float recurseMaxRough; uint filterPasses; uint rayMask, pad1;
+  float4 lights[64];
+};
+constant uint F_LENS = 1u, F_GLASS = 2u, F_FLOOR = 4u;
+static float3 xf(constant GpuInst& g, float3 p) { float4 h = float4(p, 1); return float3(dot(g.m0, h), dot(g.m1, h), dot(g.m2, h)); }
+static float3 triNormal(constant GpuInst& g, uint p) {
+  float3 a = xf(g, float3(g.vb[g.ib[p*3]*3], g.vb[g.ib[p*3]*3+1], g.vb[g.ib[p*3]*3+2]));
+  float3 b = xf(g, float3(g.vb[g.ib[p*3+1]*3], g.vb[g.ib[p*3+1]*3+1], g.vb[g.ib[p*3+1]*3+2]));
+  float3 e = xf(g, float3(g.vb[g.ib[p*3+2]*3], g.vb[g.ib[p*3+2]*3+1], g.vb[g.ib[p*3+2]*3+2]));
+  return normalize(cross(b - a, e - a));
+}
+static float schlick(float f0, float c) { float m = 1 - saturate(c); float m2 = m * m; return f0 + (1 - f0) * m2 * m2 * m; }
+static float paneF(float c) { return schlick(0.08f, c); }       // two-surface 6 mm pane (03 s5.1)
+static float G1(float nl, float a) { float a2 = a * a; return 2 * nl / (nl + sqrt(a2 + (1 - a2) * nl * nl)); }
+static float3 envS(texturecube<half> env, float3 d, float lod) {
+  constexpr sampler cs(filter::linear, mip_filter::linear);
+  return float3(env.sample(cs, d, level(lod)).rgb);
+}
+static float3 shadeHit(constant Frame& f, constant GpuInst* insts, instance_acceleration_structure scene,
+                       texture2d_array<half> alb, uint inst, float3 P, float3 n, float3 rd, float cone,
+                       uint nShadow, float rough, thread uint& srays)
+{
+  constexpr sampler smp(filter::linear, mip_filter::linear, address::repeat);
+  constant GpuInst& g = insts[inst];
+  float3 an = abs(n);
+  float2 uv = an.y > .5f ? P.xz : (an.x > .5f ? P.zy : P.xy);
+  uv /= 0.6f;
+  float lod = log2(max(cone / (0.6f / 1024.f), 1e-4f) / max(abs(dot(n, rd)), 0.2f));
+  uint layer = (g.flags & F_FLOOR) ? 0u : (an.y > .5f ? 1u : 2u + (inst & 5u));
+  float3 albedo = float3(alb.sample(smp, uv, layer, level(lod)).rgb);
+  float a = max(rough * rough, 0.02f), a2 = a * a;
+  float3 V = -rd; float NV = saturate(dot(n, V)) + 1e-4f;
+  float3 L = 0; uint shadowed = 0;
+  intersector<instancing> sh; sh.accept_any_intersection(true); sh.assume_geometry_type(geometry_type::triangle);
+  for (uint k = 0; k < f.lightCount; k++) {
+    float3 tl = f.lights[k].xyz - P; float d2 = dot(tl, tl); float3 ld = tl * rsqrt(d2);
+    float ndl = dot(n, ld); float r2 = f.lights[k].w * f.lights[k].w;
+    if (ndl <= 0 || d2 > r2) continue;
+    float fr = d2 / r2; float sm = saturate(1 - fr * fr); float att = sm * sm / max(d2, 1e-4f);
+    float spot = saturate((ld.y - 0.156f) / (0.669f - 0.156f)); att *= spot * spot;   // troffer cone, pointing down
+    if (att <= 1e-4f) continue;
+    float vis = 1;
+    if (shadowed < nShadow) {
+      shadowed++; srays++;
+      ray s; s.origin = P + n * 0.002f; s.direction = ld; s.min_distance = 0.001f; s.max_distance = sqrt(d2) - 0.01f;
+      vis = sh.intersect(s, scene, 0x01u).type == intersection_type::none ? 1.f : 0.f;   // glass casts no shadow
+    }
+    float3 H = normalize(ld + V); float NH = saturate(dot(n, H));
+    float dd = NH * NH * (a2 - 1) + 1; float D = a2 / (M_PI_F * dd * dd);
+    float k2 = a * 0.5f; float G = (ndl / (ndl * (1 - k2) + k2)) * (NV / (NV * (1 - k2) + k2));
+    float spec = D * G * 0.04f / (4 * NV * ndl + 1e-4f);
+    L += ndl * vis * att * 5.0f * (albedo * 0.318f + spec);
+  }
+  return L + albedo * 0.06f + g.emis.rgb;          // + ambient SH stand-in + lens emission
+}
+struct PE { float3 o; float3 d; float w; float trav; uint depth; uint layers; };
+// Explicit-stack ray tree. Returns radiance arriving along d at o (no receiver Fresnel).
+static float3 tracePath(constant Frame& f, constant GpuInst* insts, instance_acceleration_structure scene,
+                        texture2d_array<half> alb, texturecube<half> env, float3 o, float3 d, float importance,
+                        float coneStart, thread uint& rays, thread uint& srays, thread float& firstT, thread uint& maxDepth)
+{
+  PE st[8]; int sp = 0;
+  PE e0; e0.o = o; e0.d = d; e0.w = 1; e0.trav = coneStart; e0.depth = 1; e0.layers = 0; st[sp++] = e0;
+  float3 L = 0; firstT = -1;
+  intersector<triangle_data, instancing> isect; isect.assume_geometry_type(geometry_type::triangle);
+  uint budget = 16;
+  while (sp > 0 && budget > 0) {
+    PE e = st[--sp]; budget--; rays++; maxDepth = max(maxDepth, e.depth);
+    ray r; r.origin = e.o; r.direction = e.d; r.min_distance = 0.0005f; r.max_distance = f.maxDist;
+    auto hit = isect.intersect(r, scene, f.rayMask);
+    if (hit.type != intersection_type::triangle) { L += e.w * envS(env, e.d, 0); if (firstT < 0) firstT = f.maxDist; continue; }
+    if (firstT < 0) firstT = hit.distance;
+    constant GpuInst& g = insts[hit.instance_id];
+    float3 n = triNormal(g, hit.primitive_id); bool entering = dot(n, e.d) < 0; if (!entering) n = -n;
+    float3 P = e.o + e.d * hit.distance;
+    float trav = e.trav + hit.distance;
+    float c = saturate(-dot(n, e.d));
+    if ((g.flags & F_GLASS) && !entering) {               // back face of the same 6 mm pane: the pane Fresnel covers both surfaces
+      if (sp < 8) { PE t = e; t.o = P + e.d * 0.002f; t.trav = trav; st[sp++] = t; } else L += e.w * envS(env, e.d, 0);
+      continue;
+    }
+    if (g.flags & F_GLASS) {
+      float Fp = paneF(c); float3 R = reflect(e.d, n);
+      float wt = e.w * (1 - Fp) * 0.9f;                    // see-through continuation (not a bounce)
+      if (e.layers < f.maxLayers && sp < 8) { PE t; t.o = P + e.d * 0.002f; t.d = e.d; t.w = wt; t.trav = trav; t.depth = e.depth; t.layers = e.layers + 1; st[sp++] = t; }
+      else L += wt * envS(env, e.d, 0);
+      float wr = e.w * Fp;                                  // reflection of the pane: a bounce
+      if (e.depth < f.maxBounces && importance * wr > f.cutoff && sp < 8) { PE t; t.o = P + n * 0.002f; t.d = R; t.w = wr; t.trav = trav; t.depth = e.depth + 1; t.layers = e.layers; st[sp++] = t; }
+      else L += wr * envS(env, R, 0);
+      continue;
+    }
+    bool glossy = (g.flags & F_FLOOR) != 0 && f.floorGlossy != 0 && n.y > 0.9f;
+    float rough = glossy ? f.floorRough : g.emis.w;
+    float3 Ld = shadeHit(f, insts, scene, alb, hit.instance_id, P, n, e.d, trav * f.pixelAngle,
+                         e.depth == 1 ? f.shadow1 : f.shadow2, rough, srays);
+    if (glossy) {
+      float Fs = schlick(0.04f, c); float3 R = reflect(e.d, n);
+      L += e.w * (1 - Fs) * Ld;
+      float wr = e.w * Fs;
+      if (e.depth < f.maxBounces && rough <= f.recurseMaxRough && importance * wr > f.cutoff && sp < 8) { PE t; t.o = P + n * 0.002f; t.d = R; t.w = wr; t.trav = trav; t.depth = e.depth + 1; t.layers = e.layers; st[sp++] = t; }
+      else L += wr * envS(env, R, 4.0f * rough);
+    } else L += e.w * Ld;
+  }
+  return L;
+}
+static float2 rnd2(uint2 p, uint s, uint seed) {
+  float i1 = fract(52.9829189f * fract(0.06711056f * float(p.x) + 0.00583715f * float(p.y)));
+  float i2 = fract(52.9829189f * fract(0.06711056f * float(p.x + 37u) + 0.00583715f * float(p.y + 113u)));
+  float2 r2 = fract(float2(0.7548776662f, 0.5698402910f) * float(s + seed * 17u + 1u));
+  return fract(float2(i1, i2) + r2);
+}
+static float3 sampleVNDF(float3 Ve, float a, float2 u) {             // Heitz 2018, local frame z = normal
+  float3 Vh = normalize(float3(a * Ve.x, a * Ve.y, Ve.z));
+  float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+  float3 T1 = lensq > 0 ? float3(-Vh.y, Vh.x, 0) * rsqrt(lensq) : float3(1, 0, 0);
+  float3 T2 = cross(Vh, T1);
+  float r = sqrt(u.x), phi = 2 * M_PI_F * u.y;
+  float t1 = r * cos(phi), t2 = r * sin(phi);
+  float s = 0.5f * (1 + Vh.z); t2 = (1 - s) * sqrt(1 - t1 * t1) + s * t2;
+  float3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.f, 1 - t1 * t1 - t2 * t2)) * Vh;
+  return normalize(float3(a * Nh.x, a * Nh.y, max(0.f, Nh.z)));
+}
+kernel void gbuffer(texture2d<float, access::write> gPos [[texture(0)]], texture2d<half, access::write> gNrm [[texture(1)]],
+                    texture2d<half, access::write> base [[texture(2)]], texture2d_array<half> alb [[texture(3)]],
+                    texturecube<half> env [[texture(4)]], instance_acceleration_structure scene [[buffer(0)]],
+                    constant Frame& f [[buffer(1)]], constant GpuInst* insts [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+{
+  if (id.x >= f.w || id.y >= f.h) return;
+  float2 ndc = (float2(id) + .5f) / float2(f.w, f.h) * 2 - 1;
+  float3 d = normalize(f.camFwd.xyz + f.camRight.xyz * ndc.x * f.tanHalf * f.aspect - f.camUp.xyz * ndc.y * f.tanHalf);
+  ray r; r.origin = f.camPos.xyz; r.direction = d; r.min_distance = 0.01f; r.max_distance = 60.f;
+  intersector<triangle_data, instancing> isect; isect.assume_geometry_type(geometry_type::triangle);
+  float3 thr = 1, basec = 0, rP = 0, rN = 0; float rD = 0, trav = 0; uint cls = 0; uint dummy = 0;
+  bool first = true;
+  for (int layer = 0; layer < 8; layer++) {
+    auto hit = isect.intersect(r, scene, f.rayMask);
+    if (hit.type != intersection_type::triangle) { basec += thr * envS(env, r.direction, 0); break; }
+    constant GpuInst& g = insts[hit.instance_id];
+    float3 n = triNormal(g, hit.primitive_id); bool entering = dot(n, r.direction) < 0; if (!entering) n = -n;
+    float3 P = r.origin + r.direction * hit.distance; trav += hit.distance;
+    if ((g.flags & F_GLASS) && !entering) { r.origin = P + r.direction * 0.002f; continue; }   // back face of a thin pane
+    bool wasFirst = first; first = false;
+    if (g.flags & F_GLASS) {
+      if (wasFirst) { cls = (f.receivers & 1u) ? 1u : 4u; rP = P; rN = n; rD = trav; }
+      thr *= (1 - paneF(saturate(-dot(n, r.direction)))) * 0.9f; r.origin = P + r.direction * 0.002f; continue;
+    }
+    bool glossy = (g.flags & F_FLOOR) != 0 && f.floorGlossy != 0 && n.y > 0.9f;
+    if (wasFirst && glossy) { cls = (f.receivers & 2u) ? 2u : 3u; rP = P; rN = n; rD = trav; }
+    basec += thr * shadeHit(f, insts, scene, alb, hit.instance_id, P, n, r.direction, trav * f.pixelAngle, 8u,
+                            glossy ? f.floorRough : g.emis.w, dummy);
+    break;
+  }
+  gPos.write(float4(rP, rD), id); gNrm.write(half4(half3(rN), half(cls)), id); base.write(half4(half3(basec), 1), id);
+}
+kernel void reflTrace(texture2d<half, access::write> out [[texture(0)]], texture2d<half, access::write> hitTex [[texture(1)]],
+                      texture2d<float, access::read> gPos [[texture(2)]], texture2d<half, access::read> gNrm [[texture(3)]],
+                      texture2d_array<half> alb [[texture(4)]], texturecube<half> env [[texture(5)]],
+                      instance_acceleration_structure scene [[buffer(0)]], constant Frame& f [[buffer(1)]],
+                      constant GpuInst* insts [[buffer(2)]], device atomic_uint* counters [[buffer(3)]],
+                      uint2 id [[thread_position_in_grid]])
+{
+  if (id.x >= f.w || id.y >= f.h) return;
+  float4 gn = float4(gNrm.read(id)); uint cls = uint(gn.w + 0.5f);
+  uint rays = 0, srays = 0, maxDepth = 0; float3 res = 0; float hitT = 0;
+  if (cls == 1u || cls == 2u) {
+    float4 gp = gPos.read(id);
+    float3 P = gp.xyz, N = normalize(gn.xyz), V = normalize(f.camPos.xyz - P);
+    if (cls == 1u) {
+      float t; res = tracePath(f, insts, scene, alb, env, P + N * 0.002f, reflect(-V, N), paneF(dot(N, V)), gp.w, rays, srays, t, maxDepth); hitT = t;
+    } else {
+      uint ns = max(f.floorSpp, 1u); float sumT = 0; float3 acc = 0;
+      float3 T = normalize(cross(abs(N.x) < .9f ? float3(1, 0, 0) : float3(0, 1, 0), N)); float3 B = cross(N, T);
+      float3 Vl = float3(dot(V, T), dot(V, B), dot(V, N));
+      float a = max(f.floorRough * f.floorRough, 0.002f);
+      for (uint s = 0; s < ns; s++) {
+        float3 L; float w;
+        if (f.floorMode == 1u) { L = reflect(-V, N); w = schlick(0.04f, dot(N, V)); }
+        else {
+          float3 Hl = sampleVNDF(Vl, a, rnd2(id, s, f.seed)); float3 H = normalize(T * Hl.x + B * Hl.y + N * Hl.z);
+          L = reflect(-V, H); float NL = dot(N, L);
+          if (NL <= 0) continue;
+          w = schlick(0.04f, dot(V, H)) * G1(NL, a);
+        }
+        float t; float3 Ls = tracePath(f, insts, scene, alb, env, P + N * 0.002f, L, w, gp.w, rays, srays, t, maxDepth);
+        acc += w * Ls; sumT += t;
+      }
+      res = acc / float(ns); hitT = sumT / float(ns);
+    }
+  }
+  out.write(half4(half3(min(res, 60000.f)), 1), id);
+  hitTex.write(half4(half(hitT)), id);
+  if (f.stats != 0u) {
+    uint px = (cls == 1u || cls == 2u) ? 1u : 0u;
+    uint a = simd_sum(px), b = simd_sum(rays), c = simd_sum(srays), g1 = simd_sum(cls == 1u ? 1u : 0u);
+    uint rg = simd_sum((cls == 1u && maxDepth >= 2u) ? 1u : 0u), rf = simd_sum((cls == 2u && maxDepth >= 2u) ? 1u : 0u);
+    uint r3 = simd_sum((px == 1u && maxDepth >= 3u) ? 1u : 0u);
+    if (simd_is_first()) {
+      atomic_fetch_add_explicit(&counters[0], a, memory_order_relaxed); atomic_fetch_add_explicit(&counters[1], b, memory_order_relaxed);
+      atomic_fetch_add_explicit(&counters[2], c, memory_order_relaxed); atomic_fetch_add_explicit(&counters[3], g1, memory_order_relaxed);
+      atomic_fetch_add_explicit(&counters[4], rg, memory_order_relaxed); atomic_fetch_add_explicit(&counters[5], rf, memory_order_relaxed);
+      atomic_fetch_add_explicit(&counters[6], r3, memory_order_relaxed);
+    }
+  }
+}
+// Edge-aware a-trous pass (5x5 B3 taps) on glossy-floor receivers only; radius from the GGX lobe footprint.
+kernel void atrous(texture2d<half, access::read> inTex [[texture(0)]], texture2d<half, access::write> outTex [[texture(1)]],
+                   texture2d<float, access::read> gPos [[texture(2)]], texture2d<half, access::read> gNrm [[texture(3)]],
+                   texture2d<half, access::read> hitTex [[texture(4)]], constant Frame& f [[buffer(1)]],
+                   constant uint& passIdx [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+{
+  if (id.x >= f.w || id.y >= f.h) return;
+  half4 c = inTex.read(id); float4 gn = float4(gNrm.read(id));
+  if (uint(gn.w + .5f) != 2u) { outTex.write(c, id); return; }
+  float4 gp = gPos.read(id); float3 N = gn.xyz; float hitT = float(hitTex.read(id).x);
+  float a = f.floorRough * f.floorRough;
+  float rpx = clamp(a * hitT / ((gp.w + hitT) * f.pixelAngle), 0.f, 48.f);
+  if (rpx < 0.75f) { outTex.write(c, id); return; }
+  int stride;
+  if (f.filterPasses == 1u) stride = max(1, int(rpx / 4.f + .5f));
+  else { int s0 = max(1, int(rpx / 8.f + .5f)); stride = passIdx == 0u ? s0 : 3 * s0; }
+  const float h[3] = {0.375f, 0.25f, 0.0625f};
+  float3 sum = 0; float wsum = 0;
+  for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) {
+    int2 qi = int2(id) + int2(dx, dy) * stride;
+    if (qi.x < 0 || qi.y < 0 || qi.x >= int(f.w) || qi.y >= int(f.h)) continue;
+    uint2 qq = uint2(qi);
+    float4 qn = float4(gNrm.read(qq));
+    if (uint(qn.w + .5f) != 2u) continue;
+    float3 qp = gPos.read(qq).xyz;
+    float wz = exp(-abs(dot(N, qp - gp.xyz)) / (0.01f + 0.01f * gp.w));
+    float wn = pow(saturate(dot(N, qn.xyz)), 32.f);
+    float w = h[abs(dx)] * h[abs(dy)] * wz * wn;
+    sum += w * float3(inTex.read(qq).rgb); wsum += w;
+  }
+  outTex.write(half4(half3(sum / max(wsum, 1e-6f)), 1), id);
+}
+// Debug composite: compMode 0 = RT off (zone cube on every reflector), 1 = traced glass + traced floor (where receivers)
+kernel void composite(texture2d<half, access::read> base [[texture(0)]], texture2d<half, access::read> refl [[texture(1)]],
+                      texture2d<float, access::read> gPos [[texture(2)]], texture2d<half, access::read> gNrm [[texture(3)]],
+                      texturecube<half> env [[texture(4)]], texture2d<half, access::write> img [[texture(5)]],
+                      constant Frame& f [[buffer(1)]], uint2 id [[thread_position_in_grid]])
+{
+  if (id.x >= f.w || id.y >= f.h) return;
+  float3 b = float3(base.read(id).rgb); float4 gn = float4(gNrm.read(id)); uint cls = uint(gn.w + .5f);
+  float3 col = b;
+  if (cls != 0u) {
+    float3 P = gPos.read(id).xyz, N = gn.xyz, V = normalize(f.camPos.xyz - P), R = reflect(-V, N);
+    bool traced = f.compMode >= 1u && (cls == 1u || cls == 2u);
+    float3 rr = traced ? float3(refl.read(id).rgb) : float3(0);
+    if (cls == 1u || cls == 4u) col = (f.compMode == 2u ? b * 0.05f : b) + paneF(dot(N, V)) * (traced ? rr : envS(env, R, 0));   // 2 = dark room beyond the pane
+    else { float Fs = schlick(0.04f, dot(N, V)); col = b * (1 - Fs) + (traced ? rr : Fs * envS(env, R, 4.0f * f.floorRough)); }
+  }
+  col *= 1.6f;                                            // exposure
+  col = saturate((col * (2.51f * col + 0.03f)) / (col * (2.43f * col + 0.59f) + 0.14f));   // ACES fit
+  img.write(half4(half3(pow(col, 1.f / 2.2f)), 1), id);
+}
+)MSL";
+
+struct FrameH {
+  float camPos[4], camRight[4], camUp[4], camFwd[4];
+  float tanHalf, aspect; uint32_t w, h;
+  uint32_t lightCount, shadow1, shadow2, maxBounces;
+  uint32_t maxLayers, floorSpp, floorMode, receivers;
+  float floorRough, cutoff, pixelAngle, maxDist;
+  uint32_t seed, stats, floorGlossy, compMode;
+  float recurseMaxRough; uint32_t filterPasses, rayMask, pad1;
+  float lights[64][4];
+};
+struct Cfg { const char* id; const char* name; uint32_t receivers, bounces, layers, s1, s2, spp, mode; float rough, cutoff; bool filter; uint32_t floorGlossy;
+             uint32_t view = 0; float recMax = 1.f; uint32_t fpasses = 2; uint32_t facing = 0; };
+
+int main(int argc, char** argv) {
+  @autoreleasepool {
+    std::string tag = argc > 1 ? argv[1] : "run"; std::string what = argc > 2 ? argv[2] : "all";
+    dev = MTLCreateSystemDefaultDevice(); q = [dev newCommandQueue];
+    printf("# rt_bench3 %s  device=%s supportsRaytracing=%d Apple9=%d  %s\n", tag.c_str(), dev.name.UTF8String, (int)dev.supportsRaytracing,
+           (int)[dev supportsFamily:MTLGPUFamilyApple9], loadStr().c_str());
+    NSError* err = nil;
+    auto lib = [dev newLibraryWithSource:[NSString stringWithUTF8String:kSrc] options:nil error:&err];
+    if (!lib) { printf("compile error %s\n", err.localizedDescription.UTF8String); return 1; }
+    auto mk = [&](const char* n) { id<MTLComputePipelineState> p = [dev newComputePipelineStateWithFunction:[lib newFunctionWithName:[NSString stringWithUTF8String:n]] error:nil]; if (!p) { printf("pso %s failed\n", n); exit(1); } return p; };
+    auto psoG = mk("gbuffer"), psoT = mk("reflTrace"), psoF = mk("atrous"), psoC = mk("composite");
+
+    // ---- meshes (identical to bench 1/2)
+    std::vector<Mesh> meshes; meshes.push_back(boxMesh());
+    int propDims[16][2] = {{32,32},{32,40},{40,48},{40,64},{48,64},{48,80},{56,80},{64,80},{64,96},{64,112},{72,112},{72,128},{80,128},{80,128},{64,64},{40,40}};
+    for (int k = 0; k < 16; k++) meshes.push_back(blobMesh(propDims[k][0], propDims[k][1], 100 + k));
+    buildBlas(meshes);
+
+    // ---- scene: bench 1/2 office (same RNG sequence) + glossy-floor flags + glass
+    const float camX = 3.f, camY = 1.6f, camZ = 0.8f;
+    std::mt19937 rng(7); std::uniform_real_distribution<float> U(0, 1);
+    auto put = [&](std::vector<Inst>& v, int mesh, float x, float y, float z, float sx, float sy, float sz, float rotY, uint32_t flags, float rough) {
+      Inst in{}; in.mesh = mesh; in.flags = flags; in.rough = rough; float c = cosf(rotY), s = sinf(rotY);
+      in.m[0][0] = c * sx; in.m[0][1] = 0; in.m[0][2] = s * sz; in.m[0][3] = x;
+      in.m[1][0] = 0; in.m[1][1] = sy; in.m[1][2] = 0; in.m[1][3] = y;
+      in.m[2][0] = -s * sx; in.m[2][1] = 0; in.m[2][2] = c * sz; in.m[2][3] = z; v.push_back(in);
+    };
+    std::vector<Inst> all; int cells = 16; float cell = 6;
+    std::vector<std::pair<float,float>> lensPos;
+    for (int cx = 0; cx < cells; cx++) for (int cz = 0; cz < cells; cz++) {
+      float x = (cx - cells / 2 + .5f) * cell, z = (cz - cells / 2 + .5f) * cell;
+      put(all, 0, x, -.1f, z, cell, .2f, cell, 0, F_FLOOR, 0.9f);
+      put(all, 0, x, 3.0f, z, cell, .2f, cell, 0, 0, 0.9f);
+      if (U(rng) < .7f) put(all, 0, x + cell * .5f, 1.45f, z, .15f, 2.9f, cell, 0, 0, 0.8f);
+      if (U(rng) < .7f) put(all, 0, x, 1.45f, z + cell * .5f, cell, 2.9f, .15f, 0, 0, 0.8f);
+      put(all, 0, x - 1.2f, 2.88f, z, .6f, .025f, 1.2f, 0, F_LENS, 0.5f);
+      put(all, 0, x + 1.2f, 2.88f, z, .6f, .025f, 1.2f, 0, F_LENS, 0.5f);
+      lensPos.push_back({x - 1.2f, z}); lensPos.push_back({x + 1.2f, z});
+      for (int k = 0; k < 6; k++) { float s = .5f + U(rng) * 1.0f; put(all, 1 + (int)(U(rng) * 16) % 16, x + (U(rng) - .5f) * 5, s * .5f, z + (U(rng) - .5f) * 5, s, s, s, U(rng) * 6.28f, 0, 0.7f); }
+    }
+    // keep the camera's own view clear (props between the camera and the held pane, or on the camera)
+    all.erase(std::remove_if(all.begin(), all.end(), [&](const Inst& in) {
+      if (in.mesh == 0) return false; float dx = in.m[0][3] - camX, dz = in.m[2][3] - camZ;
+      return fabsf(dx) < 1.8f && dz > -1.0f && dz < 2.2f; }), all.end());
+    // remove a wall that would sit in the camera's cell between the camera and the pane (none expected at z = 0.8)
+    std::mt19937 rng2(11); std::uniform_real_distribution<float> U2(0, 1);
+    int partitions = 0;
+    for (int cx = 0; cx < cells; cx++) for (int cz = 0; cz < cells; cz++) {
+      float x = (cx - cells / 2 + .5f) * cell, z = (cz - cells / 2 + .5f) * cell;
+      if (U2(rng2) < .3f) { float rot = U2(rng2) < .5f ? 0.f : (float)M_PI_2; float ox = (U2(rng2) - .5f) * 2, oz = (U2(rng2) - .5f) * 2;
+        if (fabsf(x + ox - camX) < 2.5f && fabsf(z + oz - camZ) < 2.5f) continue;   // not on top of the camera
+        put(all, 0, x + ox, 1.5f, z + oz, 2.4f, 1.6f, 0.006f, rot, F_GLASS, 0.05f); partitions++; }
+    }
+    // a glass display cabinet ahead-right of the camera with an object inside (the Control shot)
+    put(all, 0, camX + 1.7f, 0.95f, camZ + 3.6f, 0.9f, 1.9f, 0.45f, 0, F_GLASS, 0.05f);
+    put(all, 5, camX + 1.7f, 1.0f, camZ + 3.6f, 0.35f, 0.35f, 0.35f, 0.4f, 0, 0.6f);
+    // the held / window pane: 1.5 m ahead, exactly the centre 25 % of a 16:9 76-degree view
+    const float tanHalf = tanf(38.f * M_PI / 180.f), aspect = 16.f / 9.f;
+    float paneH = 1.5f * tanHalf, paneW = paneH * aspect;   // full extents for 50 % x 50 %
+    put(all, 0, camX, camY, camZ + 1.5f + 0.003f, paneW, paneH, 0.006f, 0, F_GLASS, 0.05f);
+    // optional facing glass wall 0.5 m behind the camera (two windows facing each other); only rays with mask 0x04 see it
+    put(all, 0, camX, 1.45f, camZ - 0.5f, 5.0f, 2.8f, 0.006f, 0, F_GLASS | F_FACING, 0.05f);
+    size_t sceneTris = 0; for (auto& in : all) sceneTris += meshes[in.mesh].tcount;
+    printf("# scene: %zu instances (%d glass partitions + cabinet + pane), %.2f M instanced tris\n", all.size(), partitions, sceneTris / 1e6);
+
+    // ---- TLAS (masks: 0x02 glass, 0x01 everything else)
+    id<MTLBuffer> descBuf = [dev newBufferWithLength:sizeof(MTLAccelerationStructureInstanceDescriptor) * all.size() options:MTLResourceStorageModeShared];
+    { auto* d = (MTLAccelerationStructureInstanceDescriptor*)descBuf.contents;
+      for (size_t k = 0; k < all.size(); k++) { memset(&d[k], 0, sizeof(d[k]));
+        for (int c = 0; c < 4; c++) d[k].transformationMatrix.columns[c] = MTLPackedFloat3Make(all[k].m[0][c], all[k].m[1][c], all[k].m[2][c]);
+        d[k].options = MTLAccelerationStructureInstanceOptionOpaque; d[k].mask = (all[k].flags & F_FACING) ? 0x04 : ((all[k].flags & F_GLASS) ? 0x02 : 0x01);
+        d[k].accelerationStructureIndex = (uint32_t)all[k].mesh; } }
+    NSMutableArray* arr = [NSMutableArray array]; for (auto& m : meshes) [arr addObject:m.blas];
+    auto td = [MTLInstanceAccelerationStructureDescriptor descriptor];
+    td.instancedAccelerationStructures = arr; td.instanceCount = all.size(); td.instanceDescriptorBuffer = descBuf;
+    td.instanceDescriptorStride = sizeof(MTLAccelerationStructureInstanceDescriptor);
+    auto tsz = [dev accelerationStructureSizesWithDescriptor:td];
+    id<MTLAccelerationStructure> tlas = [dev newAccelerationStructureWithSize:tsz.accelerationStructureSize];
+    { id<MTLBuffer> sc = [dev newBufferWithLength:std::max<NSUInteger>(tsz.buildScratchBufferSize, 16) options:MTLResourceStorageModePrivate];
+      auto cb = [q commandBuffer]; auto enc = [cb accelerationStructureCommandEncoder];
+      [enc buildAccelerationStructure:tlas descriptor:td scratchBuffer:sc scratchBufferOffset:0]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted]; }
+    std::vector<GpuInst> gi(all.size());
+    for (size_t k = 0; k < all.size(); k++) { auto& m = meshes[all[k].mesh]; gi[k].vb = m.vb.gpuAddress; gi[k].ib = m.ib.gpuAddress; gi[k].tcount = m.tcount; gi[k].flags = all[k].flags;
+      float e = (all[k].flags & F_LENS) ? 8.f : 0.f; gi[k].emis[0] = e; gi[k].emis[1] = e * .96f; gi[k].emis[2] = e * .84f; gi[k].emis[3] = all[k].rough;
+      for (int c = 0; c < 4; c++) { gi[k].m0[c] = all[k].m[0][c]; gi[k].m1[c] = all[k].m[1][c]; gi[k].m2[c] = all[k].m[2][c]; } }
+    id<MTLBuffer> gib = [dev newBufferWithBytes:gi.data() length:sizeof(GpuInst) * gi.size() options:MTLResourceStorageModeShared];
+    id<MTLBuffer> counters = [dev newBufferWithLength:64 options:MTLResourceStorageModeShared];
+
+    // ---- albedo array (8 layers 1024^2 RGBA8, procedural tiles: 0 VCT floor, 1 ceiling tile, 2.. walls/props) + mips
+    id<MTLTexture> albTex;
+    { auto d = [MTLTextureDescriptor new]; d.textureType = MTLTextureType2DArray; d.pixelFormat = MTLPixelFormatRGBA8Unorm;
+      d.width = 1024; d.height = 1024; d.arrayLength = 8; d.mipmapLevelCount = 11; d.usage = MTLTextureUsageShaderRead; d.storageMode = MTLStorageModePrivate;
+      albTex = [dev newTextureWithDescriptor:d];
+      std::vector<uint32_t> px(1024 * 1024); std::mt19937 tr(3); std::uniform_int_distribution<int> nz(-10, 10);
+      id<MTLBuffer> up = [dev newBufferWithLength:px.size() * 4 options:MTLResourceStorageModeShared];
+      const int base[8][3] = {{150,146,138},{205,203,196},{176,168,150},{160,150,128},{120,128,138},{150,120,100},{170,170,160},{110,100,90}};
+      for (int layer = 0; layer < 8; layer++) {
+        for (int y = 0; y < 1024; y++) for (int x = 0; x < 1024; x++) {
+          bool line = (x % 512) < 6 || (y % 512) < 6; int tile = ((x / 512) + (y / 512)) & 1;
+          int r = base[layer][0], g = base[layer][1], b = base[layer][2];
+          if (layer == 0 && tile) { r -= 22; g -= 22; b -= 20; }
+          if (line) { r = r * 6 / 10; g = g * 6 / 10; b = b * 6 / 10; }
+          int n = nz(tr); r = std::clamp(r + n, 0, 255); g = std::clamp(g + n, 0, 255); b = std::clamp(b + n, 0, 255);
+          px[y * 1024 + x] = 0xff000000u | (b << 16) | (g << 8) | r; }
+        memcpy(up.contents, px.data(), px.size() * 4);
+        auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder];
+        [bl copyFromBuffer:up sourceOffset:0 sourceBytesPerRow:4096 sourceBytesPerImage:4096 * 1024 sourceSize:MTLSizeMake(1024, 1024, 1) toTexture:albTex destinationSlice:layer destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+        [bl endEncoding]; [cb commit]; [cb waitUntilCompleted];
+      }
+      auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder]; [bl generateMipmapsForTexture:albTex]; [bl endEncoding]; [cb commit]; [cb waitUntilCompleted];
+    }
+    // ---- zone-cube stand-in: 64^2 RGBA16F cube with mips (warm, darker below)
+    id<MTLTexture> envTex;
+    { auto d = [MTLTextureDescriptor textureCubeDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float size:64 mipmapped:YES];
+      d.usage = MTLTextureUsageShaderRead; d.storageMode = MTLStorageModeShared; envTex = [dev newTextureWithDescriptor:d];
+      std::vector<__fp16> face(64 * 64 * 4);
+      for (int fc = 0; fc < 6; fc++) { float v = fc == 2 ? 0.55f : (fc == 3 ? 0.12f : 0.28f);
+        for (int i = 0; i < 64 * 64; i++) { face[i * 4] = v * 1.0f; face[i * 4 + 1] = v * 0.95f; face[i * 4 + 2] = v * 0.8f; face[i * 4 + 3] = 1; }
+        [envTex replaceRegion:MTLRegionMake2D(0, 0, 64, 64) mipmapLevel:0 slice:fc withBytes:face.data() bytesPerRow:64 * 8 bytesPerImage:0]; }
+      auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder]; [bl generateMipmapsForTexture:envTex]; [bl endEncoding]; [cb commit]; [cb waitUntilCompleted]; }
+
+    // ---- lights: the 32 lens positions nearest the camera (troffers, y 2.8, range 10 m)
+    std::sort(lensPos.begin(), lensPos.end(), [&](auto& a, auto& b) { return (a.first - camX) * (a.first - camX) + (a.second - camZ) * (a.second - camZ) < (b.first - camX) * (b.first - camX) + (b.second - camZ) * (b.second - camZ); });
+
+    struct Targets { uint32_t W, H; id<MTLTexture> gPos, gNrm, base, refl, hit, tmp, filt, img; };
+    auto mkTex = [&](MTLPixelFormat pf, uint32_t W, uint32_t H, bool shared = false) {
+      auto d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf width:W height:H mipmapped:NO];
+      d.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead; d.storageMode = shared ? MTLStorageModeShared : MTLStorageModePrivate;
+      return [dev newTextureWithDescriptor:d]; };
+    auto mkTargets = [&](uint32_t W, uint32_t H) { Targets t; t.W = W; t.H = H;
+      t.gPos = mkTex(MTLPixelFormatRGBA32Float, W, H); t.gNrm = mkTex(MTLPixelFormatRGBA16Float, W, H); t.base = mkTex(MTLPixelFormatRGBA16Float, W, H);
+      t.refl = mkTex(MTLPixelFormatRGBA16Float, W, H); t.hit = mkTex(MTLPixelFormatR16Float, W, H); t.tmp = mkTex(MTLPixelFormatRGBA16Float, W, H);
+      t.filt = mkTex(MTLPixelFormatRGBA16Float, W, H); t.img = mkTex(MTLPixelFormatRGBA8Unorm, W, H, true); return t; };
+    auto frameFor = [&](const Targets& t, const Cfg& c, uint32_t seed, uint32_t stats) {
+      FrameH f{}; f.camPos[0] = camX; f.camPos[1] = camY; f.camPos[2] = camZ; f.camRight[0] = 1;
+      { float p = c.view == 1 ? 14.f * (float)M_PI / 180.f : (c.view == 2 ? 6.f * (float)M_PI / 180.f : 0.f);   // view 1: 14 deg down, view 2: 6 deg down
+        f.camUp[1] = cosf(p); f.camUp[2] = sinf(p); f.camFwd[1] = -sinf(p); f.camFwd[2] = cosf(p); }
+      f.recurseMaxRough = c.recMax; f.filterPasses = c.fpasses; f.rayMask = c.facing ? 0x07u : 0x03u;
+      f.tanHalf = tanHalf; f.aspect = (float)t.W / t.H; f.w = t.W; f.h = t.H;
+      f.lightCount = 32; f.shadow1 = c.s1; f.shadow2 = c.s2; f.maxBounces = c.bounces; f.maxLayers = c.layers; f.floorSpp = c.spp; f.floorMode = c.mode;
+      f.receivers = c.receivers; f.floorRough = c.rough; f.cutoff = c.cutoff; f.pixelAngle = 2.f * tanHalf / t.H; f.maxDist = 30.f;
+      f.seed = seed; f.stats = stats; f.floorGlossy = c.floorGlossy; f.compMode = 1;
+      for (int k = 0; k < 32; k++) { f.lights[k][0] = lensPos[k].first; f.lights[k][1] = 2.8f; f.lights[k][2] = lensPos[k].second; f.lights[k][3] = 10.f; }
+      return f; };
+    auto useRes = [&](id<MTLComputeCommandEncoder> enc) { for (auto& m : meshes) { [enc useResource:m.blas usage:MTLResourceUsageRead]; [enc useResource:m.vb usage:MTLResourceUsageRead]; [enc useResource:m.ib usage:MTLResourceUsageRead]; } };
+    auto grid = [&](const Targets& t) { return MTLSizeMake(t.W, t.H, 1); };
+    MTLSize tg = MTLSizeMake(8, 8, 1);
+    auto runG = [&](const Targets& t, const FrameH& f) {
+      auto cb = [q commandBuffer]; auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoG];
+      [enc setTexture:t.gPos atIndex:0]; [enc setTexture:t.gNrm atIndex:1]; [enc setTexture:t.base atIndex:2]; [enc setTexture:albTex atIndex:3]; [enc setTexture:envTex atIndex:4];
+      [enc setAccelerationStructure:tlas atBufferIndex:0]; [enc setBytes:&f length:sizeof(f) atIndex:1]; [enc setBuffer:gib offset:0 atIndex:2]; useRes(enc);
+      [enc dispatchThreads:grid(t) threadsPerThreadgroup:tg]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted]; return gpuMs(cb); };
+    auto runT = [&](const Targets& t, const FrameH& f) {
+      auto cb = [q commandBuffer]; auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoT];
+      [enc setTexture:t.refl atIndex:0]; [enc setTexture:t.hit atIndex:1]; [enc setTexture:t.gPos atIndex:2]; [enc setTexture:t.gNrm atIndex:3];
+      [enc setTexture:albTex atIndex:4]; [enc setTexture:envTex atIndex:5];
+      [enc setAccelerationStructure:tlas atBufferIndex:0]; [enc setBytes:&f length:sizeof(f) atIndex:1]; [enc setBuffer:gib offset:0 atIndex:2]; [enc setBuffer:counters offset:0 atIndex:3]; useRes(enc);
+      [enc dispatchThreads:grid(t) threadsPerThreadgroup:tg]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted];
+      if (cb.status != MTLCommandBufferStatusCompleted) { printf("trace failed: %s\n", cb.error.localizedDescription.UTF8String); exit(2); }
+      return gpuMs(cb); };
+    auto runF = [&](const Targets& t, const FrameH& f) {
+      auto cb = [q commandBuffer]; auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoF];
+      [enc setTexture:t.gPos atIndex:2]; [enc setTexture:t.gNrm atIndex:3]; [enc setTexture:t.hit atIndex:4]; [enc setBytes:&f length:sizeof(f) atIndex:1];
+      uint32_t p0 = 0, p1 = 1;
+      if (f.filterPasses == 1) {
+        [enc setTexture:t.refl atIndex:0]; [enc setTexture:t.filt atIndex:1]; [enc setBytes:&p0 length:4 atIndex:2]; [enc dispatchThreads:grid(t) threadsPerThreadgroup:tg];
+      } else {
+      [enc setTexture:t.refl atIndex:0]; [enc setTexture:t.tmp atIndex:1]; [enc setBytes:&p0 length:4 atIndex:2]; [enc dispatchThreads:grid(t) threadsPerThreadgroup:tg];
+      [enc memoryBarrierWithScope:MTLBarrierScopeTextures];
+      [enc setTexture:t.tmp atIndex:0]; [enc setTexture:t.filt atIndex:1]; [enc setBytes:&p1 length:4 atIndex:2]; [enc dispatchThreads:grid(t) threadsPerThreadgroup:tg];
+      }
+      [enc endEncoding]; [cb commit]; [cb waitUntilCompleted]; return gpuMs(cb); };
+    auto runC = [&](const Targets& t, FrameH f, id<MTLTexture> refl, uint32_t mode) {
+      f.compMode = mode; auto cb = [q commandBuffer]; auto enc = [cb computeCommandEncoder]; [enc setComputePipelineState:psoC];
+      [enc setTexture:t.base atIndex:0]; [enc setTexture:refl atIndex:1]; [enc setTexture:t.gPos atIndex:2]; [enc setTexture:t.gNrm atIndex:3];
+      [enc setTexture:envTex atIndex:4]; [enc setTexture:t.img atIndex:5]; [enc setBytes:&f length:sizeof(f) atIndex:1];
+      [enc dispatchThreads:grid(t) threadsPerThreadgroup:tg]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted]; };
+    auto readHalf4 = [&](id<MTLTexture> tex, uint32_t W, uint32_t H) {
+      id<MTLBuffer> b = [dev newBufferWithLength:(NSUInteger)W * H * 8 options:MTLResourceStorageModeShared];
+      auto cb = [q commandBuffer]; auto bl = [cb blitCommandEncoder];
+      [bl copyFromTexture:tex sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0) sourceSize:MTLSizeMake(W, H, 1) toBuffer:b destinationOffset:0 destinationBytesPerRow:W * 8 destinationBytesPerImage:(NSUInteger)W * H * 8];
+      [bl endEncoding]; [cb commit]; [cb waitUntilCompleted];
+      std::vector<float> v((size_t)W * H * 4); const __fp16* p = (const __fp16*)b.contents; for (size_t i = 0; i < v.size(); i++) v[i] = (float)p[i]; return v; };
+    double lastRecG = 0, lastRecF = 0, lastRec3 = 0;   // share of glass / floor receiver px that spawned a 2nd bounce; share of all receivers reaching a 3rd
+    auto stats = [&](const Targets& t, const Cfg& c, double& recvFrac, double& glassFrac, double& raysPerRecv, double& shadowPerRecv) {
+      memset(counters.contents, 0, 64); FrameH f = frameFor(t, c, 1, 1); runT(t, f);
+      uint32_t* cc = (uint32_t*)counters.contents; double px = (double)t.W * t.H;
+      recvFrac = cc[0] / px; glassFrac = cc[3] / px; raysPerRecv = cc[0] ? (double)cc[1] / cc[0] : 0; shadowPerRecv = cc[0] ? (double)cc[2] / cc[0] : 0;
+      lastRecG = cc[3] ? (double)cc[4] / cc[3] : 0; lastRecF = (cc[0] > cc[3]) ? (double)cc[5] / (cc[0] - cc[3]) : 0; lastRec3 = cc[0] ? (double)cc[6] / cc[0] : 0; };
+
+    const uint32_t RG = 1, RGF = 3;
+    std::vector<Cfg> cfgs = {
+      // id      name                                                                 rec bnc lay s1 s2 spp mode rough cut   filt glossyFloor view recMax fpasses
+      {"G1",   "level: glass only, 1 bounce (G14 design), VCT floor r0.3 in the world", RG, 1, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0},
+      {"G2",   "level: glass only, 2 bounces (recurse on every glossy hit)",          RG, 2, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0},
+      {"G2s",  "level: glass only, 2 bounces, recurse only on hits r<=0.2",          RG, 2, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0, .2f},
+      {"G2c",  "level: glass only, 2 bounces, importance cut-off 0.004",             RG, 2, 1, 4, 4, 1, 0, .3f, .004f, false, 1, 0},
+      {"G2n",  "level: glass only, 2 bounces, no shadow rays at bounce 2",           RG, 2, 1, 4, 0, 1, 0, .3f, 0.f,  false, 1, 0},
+      {"G3",   "level: glass only, 3 bounces",                                       RG, 3, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0},
+      {"G3u",  "level: glass only, 3 bounces, 2 glass layers",                      RG, 3, 2, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0},
+      {"G1k",  "level: glass only, 1 bounce, carpet floors (Level 0 / Office)",      RG, 1, 1, 4, 4, 1, 0, .3f, 0.f,  false, 0, 0},
+      {"G2k",  "level: glass only, 2 bounces, carpet floors (Level 0 / Office)",     RG, 2, 1, 4, 4, 1, 0, .3f, 0.f,  false, 0, 0},
+      {"GF1",  "level, facing glass wall behind camera: 1 bounce",                 RG, 1, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0, 1.f, 2, 1},
+      {"GF2",  "level, facing glass wall: 2 bounces",                              RG, 2, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0, 1.f, 2, 1},
+      {"GF3",  "level, facing glass wall: 3 bounces",                              RG, 3, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0, 1.f, 2, 1},
+      {"GF3c", "level, facing glass wall: 3 bounces, importance cut-off 0.004",    RG, 3, 1, 4, 4, 1, 0, .3f, .004f, false, 1, 0, 1.f, 2, 1},
+      {"GF3u", "level, facing glass wall: 3 bounces, 2 glass layers",             RG, 3, 2, 4, 4, 1, 0, .3f, 0.f,  false, 1, 0, 1.f, 2, 1},
+      {"P1",   "pitched: glass only, 1 bounce (G14 design)",                         RG, 1, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 1},
+      {"P2",   "pitched: glass only, 2 bounces",                                     RG, 2, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 1},
+      {"PF1r", "pitched: glass+floor r0.3, 1 bounce, floor 1 GGX ray, no filter",    RGF, 1, 1, 4, 4, 1, 0, .3f, 0.f, false, 1, 1},
+      {"PF1f1","pitched: glass+floor r0.3, 1 bounce, 1 GGX ray + 1-pass filter",     RGF, 1, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 1, 1.f, 1},
+      {"PF1f", "pitched: glass+floor r0.3, 1 bounce, 1 GGX ray + 2-pass filter",     RGF, 1, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 1},
+      {"PF1s2","pitched: glass+floor r0.3, 1 bounce, 2 GGX rays + filter",           RGF, 1, 1, 4, 4, 2, 0, .3f, 0.f, true,  1, 1},
+      {"PF1s4","pitched: glass+floor r0.3, 1 bounce, 4 GGX rays + filter",           RGF, 1, 1, 4, 4, 4, 0, .3f, 0.f, true,  1, 1},
+      {"PF1m", "pitched: glass+floor r0.3, 1 bounce, mirror ray + lobe blur",        RGF, 1, 1, 4, 4, 1, 1, .3f, 0.f, true,  1, 1},
+      {"PF2f", "pitched: glass+floor r0.3, 2 bounces, 1 GGX ray + filter",           RGF, 2, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 1},
+      {"PF2s", "pitched: glass+floor r0.3, 2 bounces (recurse r<=0.2), 1 GGX+filter", RGF, 2, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 1, .2f},
+      {"PF2s4","pitched: glass+floor r0.3, 2 bounces, 4 GGX rays + filter",          RGF, 2, 1, 4, 4, 4, 0, .3f, 0.f, true,  1, 1},
+      {"PF2m", "pitched: glass+floor r0.3, 2 bounces, mirror ray + lobe blur",       RGF, 2, 1, 4, 4, 1, 1, .3f, 0.f, true,  1, 1},
+      {"PF3f", "pitched: glass+floor r0.3, 3 bounces, 1 GGX ray + filter",           RGF, 3, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 1},
+      {"PF3m", "pitched: glass+floor r0.3, 3 bounces, mirror ray + lobe blur",       RGF, 3, 1, 4, 4, 1, 1, .3f, 0.f, true,  1, 1},
+      {"PR2",  "pitched: glass+floor r0.2, 1 bounce, 1 GGX ray + filter",            RGF, 1, 1, 4, 4, 1, 0, .2f, 0.f, true,  1, 1},
+      {"PR2s2","pitched: glass+floor r0.2, 1 bounce, 2 GGX rays + filter",           RGF, 1, 1, 4, 4, 2, 0, .2f, 0.f, true,  1, 1},
+      {"PR2s4","pitched: glass+floor r0.2, 1 bounce, 4 GGX rays + filter",           RGF, 1, 1, 4, 4, 4, 0, .2f, 0.f, true,  1, 1},
+      {"PR4",  "pitched: glass+floor r0.4, 1 bounce, 1 GGX ray + filter",            RGF, 1, 1, 4, 4, 1, 0, .4f, 0.f, true,  1, 1},
+      {"PR4s2","pitched: glass+floor r0.4, 1 bounce, 2 GGX rays + filter",           RGF, 1, 1, 4, 4, 2, 0, .4f, 0.f, true,  1, 1},
+      {"PR4s4","pitched: glass+floor r0.4, 1 bounce, 4 GGX rays + filter",           RGF, 1, 1, 4, 4, 4, 0, .4f, 0.f, true,  1, 1},
+      {"Q1",   "6deg: glass only, 1 bounce (G14 design)",                            RG, 1, 1, 4, 4, 1, 0, .3f, 0.f,  false, 1, 2},
+      {"QF1f", "6deg: glass+floor r0.3, 1 bounce, 1 GGX ray + filter",               RGF, 1, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 2},
+      {"QF1s2","6deg: glass+floor r0.3, 1 bounce, 2 GGX rays + filter",              RGF, 1, 1, 4, 4, 2, 0, .3f, 0.f, true,  1, 2},
+      {"QF1s4","6deg: glass+floor r0.3, 1 bounce, 4 GGX rays + filter",              RGF, 1, 1, 4, 4, 4, 0, .3f, 0.f, true,  1, 2},
+      {"QF1m", "6deg: glass+floor r0.3, 1 bounce, mirror ray + lobe blur",           RGF, 1, 1, 4, 4, 1, 1, .3f, 0.f, true,  1, 2},
+      {"QF2f", "6deg: glass+floor r0.3, 2 bounces, 1 GGX ray + filter",              RGF, 2, 1, 4, 4, 1, 0, .3f, 0.f, true,  1, 2},
+      {"QF2m", "6deg: glass+floor r0.3, 2 bounces, mirror ray + lobe blur",          RGF, 2, 1, 4, 4, 1, 1, .3f, 0.f, true,  1, 2},
+    };
+    auto findCfg = [&](const char* cid) { for (auto& c : cfgs) if (!strcmp(c.id, cid)) return c; printf("no cfg %s\n", cid); exit(3); return cfgs[0]; };
+    uint32_t resList[2][2] = {{1920, 1080}, {2560, 1440}};
+
+    if (what == "timing" || what == "all") {
+      for (auto& rs : resList) {
+        Targets t = mkTargets(rs[0], rs[1]);
+        printf("# --- %ux%u  %s\n", rs[0], rs[1], loadStr().c_str());
+        for (int pass = 0; pass < 2; pass++) {
+          for (auto& c : cfgs) {
+            if (argc > 3 && strncmp(c.id, argv[3], strlen(argv[3])) != 0) continue;
+            FrameH f = frameFor(t, c, 1, 0); runG(t, f);
+            std::vector<double> tt, tf;
+            for (int rep = 0; rep < 14; rep++) { double a = runT(t, f); double b = c.filter ? runF(t, f) : 0; if (rep >= 3) { tt.push_back(a); tf.push_back(b); } }
+            double rf = 0, gf = 0, rpr = 0, spr = 0; if (pass == 0) stats(t, c, rf, gf, rpr, spr);
+            if (pass == 0)
+              printf("%s %ux%u p%d %-5s trace med %.3f [p10 %.3f p90 %.3f]  filter %.3f  total %.3f ms | recv %.1f%% (glass %.1f%%) rays/recv %.2f shadow/recv %.2f 2nd-bounce px: glass %.1f%% floor %.1f%%, 3rd %.1f%% | %s | %s\n",
+                     tag.c_str(), rs[0], rs[1], pass, c.id, pct(tt, .5), pct(tt, .1), pct(tt, .9), pct(tf, .5), pct(tt, .5) + pct(tf, .5), 100 * rf, 100 * gf, rpr, spr,
+                     100 * lastRecG, 100 * lastRecF, 100 * lastRec3, loadStr().c_str(), c.name);
+            else
+              printf("%s %ux%u p%d %-5s trace med %.3f [p10 %.3f p90 %.3f]  filter %.3f  total %.3f ms | %s\n",
+                     tag.c_str(), rs[0], rs[1], pass, c.id, pct(tt, .5), pct(tt, .1), pct(tt, .9), pct(tf, .5), pct(tt, .5) + pct(tf, .5), loadStr().c_str());
+            fflush(stdout);
+          }
+        }
+      }
+    }
+
+    if (what == "quality" || what == "all") {
+      // Image error of the glossy-floor term vs a 128-ray reference (same bounce count), 1080p, pitched view, floor pixels only.
+      Targets t = mkTargets(1920, 1080);
+      printf("# --- quality 1920x1080 pitched view, floor receivers  %s\n", loadStr().c_str());
+      struct QR { float rough; uint32_t bnc; };
+      for (QR qr : {QR{0.2f, 1}, QR{0.3f, 1}, QR{0.4f, 1}, QR{0.3f, 2}}) {
+        Cfg ref = {"REF", "reference", RGF, qr.bnc, 1, 4, 4, 128, 0, qr.rough, 0.f, false, 1, 1};
+        FrameH fr = frameFor(t, ref, 99, 0); runG(t, fr); runT(t, fr);
+        auto R = readHalf4(t.refl, t.W, t.H); auto G = readHalf4(t.gNrm, t.W, t.H);
+        auto grab8 = [&]() { std::vector<uint8_t> px((size_t)t.W * t.H * 4);
+          [t.img getBytes:px.data() bytesPerRow:t.W * 4 fromRegion:MTLRegionMake2D(0, 0, t.W, t.H) mipmapLevel:0]; return px; };
+        runC(t, fr, t.refl, 1); auto ref8 = grab8();
+        auto d8 = [&](const std::vector<uint8_t>& x, const std::vector<uint8_t>& y, size_t i) { int m = 0; for (int ch = 0; ch < 3; ch++) m = std::max(m, abs((int)x[i * 4 + ch] - (int)y[i * 4 + ch])); return m; };
+        std::vector<size_t> idx; double meanRef = 0;
+        for (size_t i = 0; i < (size_t)t.W * t.H; i++) if ((int)(G[i * 4 + 3] + .5f) == 2) { idx.push_back(i); }
+        auto lum = [&](const std::vector<float>& v, size_t i) { return 0.2126 * v[i * 4] + 0.7152 * v[i * 4 + 1] + 0.0722 * v[i * 4 + 2]; };
+        for (auto i : idx) meanRef += lum(R, i); meanRef /= std::max<size_t>(idx.size(), 1);
+        struct QC { const char* name; uint32_t spp, mode; bool filter; uint32_t fp; };
+        std::vector<QC> qcs = {{"1 GGX ray, raw", 1, 0, false, 2}, {"1 GGX ray + 1-pass filter", 1, 0, true, 1}, {"1 GGX ray + 2-pass filter", 1, 0, true, 2},
+                               {"2 GGX rays, raw", 2, 0, false, 2}, {"2 GGX rays + filter", 2, 0, true, 2},
+                               {"4 GGX rays, raw", 4, 0, false, 2}, {"4 GGX rays + filter", 4, 0, true, 2}, {"8 GGX rays + filter", 8, 0, true, 2},
+                               {"mirror ray + lobe blur", 1, 1, true, 2}};
+        for (auto& qc : qcs) {
+          Cfg c = ref; c.spp = qc.spp; c.mode = qc.mode; c.filter = qc.filter; c.fpasses = qc.fp;
+          std::vector<float> img[2]; std::vector<uint8_t> im8[2];
+          for (int s = 0; s < 2; s++) { FrameH f = frameFor(t, c, 1 + s * 7, 0); runT(t, f); if (qc.filter) runF(t, f); img[s] = readHalf4(qc.filter ? t.filt : t.refl, t.W, t.H);
+            runC(t, f, qc.filter ? t.filt : t.refl, 1); im8[s] = grab8(); }
+          double e8 = 0, f8 = 0; size_t e4 = 0, f2 = 0, f8n = 0; std::vector<int> ev;
+          for (auto i : idx) { int e = d8(im8[0], ref8, i), q = d8(im8[0], im8[1], i); e8 += e; f8 += q; e4 += e >= 4; f2 += q >= 2; f8n += q >= 8; ev.push_back(e); }
+          std::sort(ev.begin(), ev.end());
+          double se = 0, fl = 0;
+          for (auto i : idx) { double a = lum(img[0], i), b = lum(img[1], i), r = lum(R, i); se += (a - r) * (a - r); fl += fabs(a - b); }
+          double rmse = sqrt(se / idx.size()) / meanRef, flick = fl / idx.size() / meanRef;
+          printf("%s quality rough %.2f bounces %u %-26s linear: relRMSE vs 128-ray ref %.3f, frame-to-frame %.3f | 8-bit display: err vs ref mean %.2f p99 %d >=4: %.1f%%; frame-to-frame mean %.2f >=2: %.1f%% >=8: %.1f%%  (floor px %.1f%% of screen, mean ref Y %.4f) | %s\n",
+                 tag.c_str(), qr.rough, qr.bnc, qc.name, rmse, flick, e8 / idx.size(), ev[(size_t)(0.99 * (ev.size() - 1))], 100.0 * e4 / idx.size(),
+                 f8 / idx.size(), 100.0 * f2 / idx.size(), 100.0 * f8n / idx.size(), 100.0 * idx.size() / ((double)t.W * t.H), meanRef, loadStr().c_str());
+          fflush(stdout);
+        }
+      }
+    }
+
+    // ---- final 8-bit images (after the composite's exposure + ACES fit + sRGB) for diffs and figures, 1080p
+    Targets ti = mkTargets(1920, 1080);
+    auto render = [&](const char* cid, uint32_t comp, std::vector<float>* clsOut) {
+      Cfg c = findCfg(cid); FrameH f = frameFor(ti, c, 1, 0); runG(ti, f); runT(ti, f);
+      id<MTLTexture> src = ti.refl; if (c.filter && comp == 1) { runF(ti, f); src = ti.filt; }
+      runC(ti, f, src, comp);
+      std::vector<uint8_t> px((size_t)ti.W * ti.H * 4);
+      [ti.img getBytes:px.data() bytesPerRow:ti.W * 4 fromRegion:MTLRegionMake2D(0, 0, ti.W, ti.H) mipmapLevel:0];
+      if (clsOut) *clsOut = readHalf4(ti.gNrm, ti.W, ti.H);
+      return px; };
+    auto writePng = [&](const std::string& path, std::vector<uint8_t>& px, uint32_t W, uint32_t H) {
+      CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+      CGContextRef ctx = CGBitmapContextCreate(px.data(), W, H, 8, W * 4, cs, kCGImageAlphaPremultipliedLast);
+      CGImageRef im = CGBitmapContextCreateImage(ctx);
+      CFURLRef url = CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8*)path.c_str(), path.size(), false);
+      CGImageDestinationRef dst = CGImageDestinationCreateWithURL(url, CFSTR("public.png"), 1, NULL);
+      CGImageDestinationAddImage(dst, im, NULL); CGImageDestinationFinalize(dst);
+      CFRelease(dst); CFRelease(url); CGImageRelease(im); CGContextRelease(ctx); CGColorSpaceRelease(cs); };
+
+    if (what == "diff" || what == "all") {
+      // How visible is the extra bounce? Max-channel |delta| in 8-bit display values, per receiver class.
+      printf("# --- 8-bit difference between bounce counts, 1920x1080  %s\n", loadStr().c_str());
+      struct DP { const char* a; const char* b; uint32_t mode; };
+      std::vector<DP> pairs = {{"G1", "G2", 1}, {"G2", "G3", 1}, {"G2s", "G2", 1}, {"G1k", "G2k", 1}, {"GF1", "GF2", 1}, {"GF2", "GF3", 1}, {"P1", "P2", 1},
+                               {"PF1m", "PF2m", 1}, {"PF2m", "PF3m", 1}, {"PF1f", "PF2f", 1}, {"PF2s", "PF2f", 1},
+                               {"G1", "G2", 2}, {"G2", "G3", 2}, {"GF1", "GF2", 2}, {"GF2", "GF3", 2}, {"P1", "PF1m", 2}};
+      for (auto& dp : pairs) {
+        const char* pr[2] = {dp.a, dp.b};
+        std::vector<float> cls; auto a = render(pr[0], dp.mode, nullptr); auto b = render(pr[1], dp.mode, &cls);
+        for (int k = 1; k <= 2; k++) {
+          std::vector<int> d; double sum = 0;
+          for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) {
+            if ((int)(cls[i * 4 + 3] + .5f) != k) continue;
+            int m = 0; for (int ch = 0; ch < 3; ch++) m = std::max(m, abs((int)a[i * 4 + ch] - (int)b[i * 4 + ch]));
+            d.push_back(m); sum += m; }
+          if (d.empty()) continue;
+          size_t n2 = 0, n8 = 0, n24 = 0; for (int v : d) { n2 += v >= 2; n8 += v >= 8; n24 += v >= 24; }
+          std::sort(d.begin(), d.end());
+          printf("diff%s %-5s vs %-5s %s px %6.2f%% of screen: mean |d| %.2f/255, p99 %d, max %d; >=2: %.1f%%  >=8: %.1f%%  >=24: %.1f%% | %s\n",
+                 dp.mode == 2 ? "[dark beyond]" : "", pr[0], pr[1], k == 1 ? "glass" : "floor", 100.0 * d.size() / ((double)ti.W * ti.H), sum / d.size(), d[(size_t)(0.99 * (d.size() - 1))], d.back(),
+                 100.0 * n2 / d.size(), 100.0 * n8 / d.size(), 100.0 * n24 / d.size(), loadStr().c_str());
+        }
+        fflush(stdout);
+      }
+    }
+
+    if (what == "images" || what == "all") {
+      struct Shot { const char* file; const char* label; const char* cfg; uint32_t comp; const char* diffWith; };
+      std::vector<Shot> shots = {
+        {"g1",    "G14 design: glass, 1 bounce",                 "G1",    1, nullptr},
+        {"g2",    "glass, 2 bounces",                            "G2",    1, nullptr},
+        {"g2mg1", "difference 2 vs 1 bounce, x8",                "G2",    1, "G1"},
+        {"gf3",   "glass wall behind camera, 3 bounces",         "GF3",   1, nullptr},
+        {"gf1",   "glass wall behind camera, 1 bounce",          "GF1",   1, nullptr},
+        {"gf3mgf1","difference 3 vs 1 bounce (glass wall), x8",  "GF3",   1, "GF1"},
+        {"poff",  "pitched, RT off (zone cube)",                 "PF1m",  0, nullptr},
+        {"pf2m",  "glass + floor receivers, 2 bounces",          "PF2m",  1, nullptr},
+        {"pf1r",  "floor r0.3: 1 GGX ray, no filter",            "PF1r",  1, nullptr},
+        {"pf1f",  "floor r0.3: 1 GGX ray + filter",              "PF1f",  1, nullptr},
+        {"pf1s4", "floor r0.3: 4 GGX rays + filter",             "PF1s4", 1, nullptr},
+        {"pf1m",  "floor r0.3: mirror ray + lobe blur",          "PF1m",  1, nullptr},
+      };
+      std::vector<std::vector<uint8_t>> pics; std::vector<std::string> labels;
+      for (auto& s : shots) {
+        auto px = render(s.cfg, s.comp, nullptr);
+        if (s.diffWith) { auto o = render(s.diffWith, 1, nullptr);
+          for (size_t i = 0; i < px.size(); i += 4) for (int ch = 0; ch < 3; ch++) px[i + ch] = (uint8_t)std::min(255, 8 * abs((int)px[i + ch] - (int)o[i + ch])); }
+        std::string path = "img_" + tag + "_" + s.file + ".png"; writePng(path, px, ti.W, ti.H);
+        pics.push_back(px); labels.push_back(s.label); printf("wrote %s\n", path.c_str());
+      }
+      uint32_t cw = ti.W / 2, ch = ti.H / 2, SW = cw * 4, SH = ch * 3;
+      std::vector<uint8_t> sheet((size_t)SW * SH * 4, 0);
+      for (size_t k = 0; k < pics.size() && k < 12; k++) {
+        uint32_t ox = (k % 4) * cw, oy = (k / 4) * ch;
+        for (uint32_t y = 0; y < ch; y++) for (uint32_t x = 0; x < cw; x++) for (int c = 0; c < 4; c++) {
+          int acc = 0; for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) acc += pics[k][((size_t)(2 * y + dy) * ti.W + 2 * x + dx) * 4 + c];
+          sheet[((size_t)(oy + y) * SW + ox + x) * 4 + c] = (uint8_t)(acc / 4); }
+      }
+      CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+      CGContextRef ctx = CGBitmapContextCreate(sheet.data(), SW, SH, 8, SW * 4, cs, kCGImageAlphaPremultipliedLast);
+      CTFontRef font = CTFontCreateWithName(CFSTR("Helvetica-Bold"), 26, NULL);
+      for (size_t k = 0; k < labels.size() && k < 12; k++) {
+        uint32_t ox = (k % 4) * cw, oy = (k / 4) * ch;
+        CGContextSetRGBFillColor(ctx, 0, 0, 0, 0.65); CGContextFillRect(ctx, CGRectMake(ox, SH - oy - 40, cw, 40));
+        char lab[160]; snprintf(lab, sizeof lab, "%zu  %s", k + 1, labels[k].c_str());
+        CFStringRef str = CFStringCreateWithCString(NULL, lab, kCFStringEncodingUTF8);
+        CFStringRef keys[] = {kCTFontAttributeName, kCTForegroundColorFromContextAttributeName}; CFTypeRef vals[] = {font, kCFBooleanTrue};
+        CFDictionaryRef attr = CFDictionaryCreate(NULL, (const void**)keys, (const void**)vals, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        CFAttributedStringRef as = CFAttributedStringCreate(NULL, str, attr); CTLineRef line = CTLineCreateWithAttributedString(as);
+        CGContextSetRGBFillColor(ctx, 1, 1, 1, 1); CGContextSetTextPosition(ctx, ox + 12, SH - oy - 30); CTLineDraw(line, ctx);
+        CFRelease(line); CFRelease(as); CFRelease(attr); CFRelease(str);
+      }
+      CGImageRef im = CGBitmapContextCreateImage(ctx);
+      std::string path = "img_" + tag + "_sheet.png";
+      CFURLRef url = CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8*)path.c_str(), path.size(), false);
+      CGImageDestinationRef dst = CGImageDestinationCreateWithURL(url, CFSTR("public.png"), 1, NULL);
+      CGImageDestinationAddImage(dst, im, NULL); CGImageDestinationFinalize(dst);
+      CFRelease(dst); CFRelease(url); CGImageRelease(im); CFRelease(font); CGContextRelease(ctx); CGColorSpaceRelease(cs);
+      printf("wrote %s\n", path.c_str());
+    }
+    printf("# done %s\n", loadStr().c_str());
+  }
+  return 0;
+}

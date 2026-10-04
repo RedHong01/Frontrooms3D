@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Run 2 frames -> JPG. Every before (base, today) and after (kit) frame at full size, plus a before|after pair per camera.
+usage: frames_out.py <outdir>. Prints mean luminance per frame (catches black or blown frames)."""
+import os, sys
+from PIL import Image, ImageDraw, ImageFont, ImageStat
+
+S = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad"
+BASE = S + "/proj_win_base/Verification/window_tf/frames_base"
+KIT = S + "/proj_win/Verification/window_tf/frames_kit"
+DOC = sys.argv[1]
+PREFIX = "tf_"
+os.makedirs(DOC, exist_ok=True)
+names = sorted(n for n in set(os.listdir(BASE)) | set(os.listdir(KIT)) if n.endswith(".png"))
+font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Courier New Bold.ttf", 26)
+lum = lambda im: ImageStat.Stat(im.convert("L")).mean[0]
+for n in names:
+    stem = n[:-4]
+    ib = Image.open(os.path.join(BASE, n)).convert("RGB") if os.path.exists(os.path.join(BASE, n)) else None
+    ik = Image.open(os.path.join(KIT, n)).convert("RGB") if os.path.exists(os.path.join(KIT, n)) else None
+    if ib: ib.save(os.path.join(DOC, f"{PREFIX}{stem}_before.jpg"), quality=85)
+    if ik: ik.save(os.path.join(DOC, f"{PREFIX}{stem}_after.jpg"), quality=85)
+    if ib and ik:
+        w, h = 960, 540
+        sheet = Image.new("RGB", (w * 2 + 8, h), (20, 20, 18))
+        sheet.paste(ib.resize((w, h), Image.LANCZOS), (0, 0))
+        sheet.paste(ik.resize((w, h), Image.LANCZOS), (w + 8, 0))
+        d = ImageDraw.Draw(sheet)
+        for x, t in ((12, "BEFORE"), (w + 20, "AFTER")):
+            d.rectangle([x - 6, 8, x + 16 * len(t) + 8, 44], fill=(0, 0, 0))
+            d.text((x, 12), t, fill=(235, 235, 225), font=font)
+        sheet.save(os.path.join(DOC, f"{PREFIX}{stem}_pair.jpg"), quality=85)
+    print(f"{stem:40s} luma before {lum(ib) if ib else -1:6.1f}  after {lum(ik) if ik else -1:6.1f}")
+print(len(names), "cameras")

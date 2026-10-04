@@ -1,0 +1,37 @@
+Sat Oct  3 17:04:29 PDT 2026
+17:04  up 29 days, 21:12, 1 user, load averages: 324.44 376.61 266.64
+# rt_bench3 runE  device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 324/377/267
+# scene: 2991 instances (77 glass partitions + cabinet + pane), 15.04 M instanced tris
+# --- 1920x1080  load 324/377/267
+runE 1920x1080 p0 Q1    trace med 1.164 [p10 1.013 p90 1.243]  filter 0.000  total 1.164 ms | recv 25.6% (glass 25.6%) rays/recv 1.00 shadow/recv 2.14 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass only, 1 bounce (G14 design)
+runE 1920x1080 p0 QF1f  trace med 3.232 [p10 3.110 p90 3.472]  filter 0.893  total 4.126 ms | recv 53.5% (glass 25.6%) rays/recv 1.01 shadow/recv 2.12 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, 1 GGX ray + filter
+runE 1920x1080 p0 QF1s2 trace med 6.645 [p10 6.280 p90 6.818]  filter 0.883  total 7.528 ms | recv 53.5% (glass 25.6%) rays/recv 1.54 shadow/recv 3.15 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, 2 GGX rays + filter
+runE 1920x1080 p0 QF1s4 trace med 13.165 [p10 12.524 p90 14.896]  filter 0.958  total 14.122 ms | recv 53.5% (glass 25.6%) rays/recv 2.62 shadow/recv 5.30 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, 4 GGX rays + filter
+runE 1920x1080 p0 QF1m  trace med 2.949 [p10 2.785 p90 3.304]  filter 0.822  total 3.771 ms | recv 53.5% (glass 25.6%) rays/recv 1.02 shadow/recv 2.20 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, mirror ray + lobe blur
+runE 1920x1080 p0 QF2f  trace med 4.744 [p10 4.393 p90 5.160]  filter 1.002  total 5.746 ms | recv 53.5% (glass 25.6%) rays/recv 1.10 shadow/recv 2.43 2nd-bounce px: glass 17.1% floor 2.2%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 2 bounces, 1 GGX ray + filter
+runE 1920x1080 p0 QF2m  trace med 3.080 [p10 2.998 p90 3.786]  filter 0.787  total 3.867 ms | recv 53.5% (glass 25.6%) rays/recv 1.12 shadow/recv 2.50 2nd-bounce px: glass 17.1% floor 2.3%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 2 bounces, mirror ray + lobe blur
+runE 1920x1080 p1 Q1    trace med 1.023 [p10 0.986 p90 1.320]  filter 0.000  total 1.023 ms | load 324/377/267
+runE 1920x1080 p1 QF1f  trace med 3.983 [p10 3.875 p90 4.309]  filter 1.003  total 4.986 ms | load 324/377/267
+runE 1920x1080 p1 QF1s2 trace med 7.038 [p10 6.501 p90 7.596]  filter 0.898  total 7.936 ms | load 324/377/267
+runE 1920x1080 p1 QF1s4 trace med 12.951 [p10 11.916 p90 13.889]  filter 0.898  total 13.849 ms | load 324/377/267
+runE 1920x1080 p1 QF1m  trace med 2.563 [p10 2.538 p90 2.724]  filter 0.782  total 3.345 ms | load 324/377/267
+runE 1920x1080 p1 QF2f  trace med 4.373 [p10 4.279 p90 4.720]  filter 0.991  total 5.364 ms | load 324/377/267
+runE 1920x1080 p1 QF2m  trace med 2.942 [p10 2.844 p90 3.101]  filter 0.794  total 3.737 ms | load 324/377/267
+# --- 2560x1440  load 324/377/267
+runE 2560x1440 p0 Q1    trace med 1.629 [p10 1.490 p90 2.175]  filter 0.000  total 1.629 ms | recv 25.6% (glass 25.6%) rays/recv 1.00 shadow/recv 2.14 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass only, 1 bounce (G14 design)
+runE 2560x1440 p0 QF1f  trace med 7.014 [p10 6.389 p90 7.159]  filter 1.667  total 8.680 ms | recv 53.5% (glass 25.6%) rays/recv 1.01 shadow/recv 2.12 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, 1 GGX ray + filter
+runE 2560x1440 p0 QF1s2 trace med 11.906 [p10 11.547 p90 12.104]  filter 1.652  total 13.558 ms | recv 53.5% (glass 25.6%) rays/recv 1.54 shadow/recv 3.15 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, 2 GGX rays + filter
+runE 2560x1440 p0 QF1s4 trace med 22.177 [p10 21.850 p90 23.087]  filter 1.525  total 23.702 ms | recv 53.5% (glass 25.6%) rays/recv 2.62 shadow/recv 5.30 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, 4 GGX rays + filter
+runE 2560x1440 p0 QF1m  trace med 4.571 [p10 4.157 p90 4.851]  filter 1.364  total 5.935 ms | recv 53.5% (glass 25.6%) rays/recv 1.02 shadow/recv 2.20 2nd-bounce px: glass 0.0% floor 0.0%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 1 bounce, mirror ray + lobe blur
+runE 2560x1440 p0 QF2f  trace med 7.571 [p10 7.382 p90 7.762]  filter 1.747  total 9.318 ms | recv 53.5% (glass 25.6%) rays/recv 1.10 shadow/recv 2.43 2nd-bounce px: glass 17.0% floor 2.2%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 2 bounces, 1 GGX ray + filter
+runE 2560x1440 p0 QF2m  trace med 5.053 [p10 4.860 p90 5.440]  filter 1.342  total 6.394 ms | recv 53.5% (glass 25.6%) rays/recv 1.12 shadow/recv 2.50 2nd-bounce px: glass 17.0% floor 2.4%, 3rd 0.0% | load 324/377/267 | 6deg: glass+floor r0.3, 2 bounces, mirror ray + lobe blur
+runE 2560x1440 p1 Q1    trace med 1.700 [p10 1.639 p90 1.978]  filter 0.000  total 1.700 ms | load 324/377/267
+runE 2560x1440 p1 QF1f  trace med 6.536 [p10 6.444 p90 6.734]  filter 1.671  total 8.207 ms | load 324/377/267
+runE 2560x1440 p1 QF1s2 trace med 11.342 [p10 10.972 p90 11.702]  filter 1.650  total 12.992 ms | load 321/375/267
+runE 2560x1440 p1 QF1s4 trace med 21.036 [p10 19.790 p90 21.505]  filter 1.487  total 22.523 ms | load 321/375/267
+runE 2560x1440 p1 QF1m  trace med 4.246 [p10 3.933 p90 4.692]  filter 1.335  total 5.582 ms | load 321/375/267
+runE 2560x1440 p1 QF2f  trace med 7.671 [p10 7.490 p90 7.818]  filter 1.707  total 9.377 ms | load 321/375/267
+runE 2560x1440 p1 QF2m  trace med 5.435 [p10 5.359 p90 5.581]  filter 1.430  total 6.865 ms | load 321/375/267
+# done load 321/375/267
+Sat Oct  3 17:04:35 PDT 2026
+17:04  up 29 days, 21:12, 1 user, load averages: 321.28 375.09 266.75

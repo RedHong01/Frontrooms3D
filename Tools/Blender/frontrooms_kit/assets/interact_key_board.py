@@ -21,6 +21,14 @@ Budget §9.3: 4,000 / 1,400 / 150 tris, LOD 3 / 8 / 40 m; 0.40 m tall, so no
 LOD1 until P-1. Slots: Prop_WoodDark (board, lum 0.014), Prop_Brass (hooks,
 screws), Prop_KeyTagNo (strips, cells 01-08 via uv_rect; NEW slot, fallback
 Prop_Paper). Tags interactable, key_host, wall_decor. Render-only.
+
+NAME: the spec calls this asset Kit_KeyBoard (§4.2, §9.3). That name differs
+from the existing desk keyboard Kit_Keyboard (assets/keyboard.py) only in
+case: on the default case-insensitive macOS volume Kit_KeyBoard.fbx/.json
+OVERWRITE Kit_Keyboard.fbx/.json (it happened in the private clone on the
+first G3 build), and Unity's Resources.Load is not case-safe either. So the
+asset ships as Kit_KeyHookBoard; the map's KeySpot ``host`` value and the
+facade must use that name (sidecar meta specName records the spec's name).
 """
 
 import math
@@ -28,7 +36,7 @@ import math
 import interact_key_common as kc
 from interact_key_common import U
 
-NAME = "Kit_KeyBoard"
+NAME = "Kit_KeyHookBoard"          # spec name Kit_KeyBoard collides with Kit_Keyboard (see docstring)
 LOD1_RATIO, LOD2_RATIO = 1400 / 4000, 150 / 4000
 LOD_DISTANCES = (3.0, 8.0, 40.0)
 BUDGET = (4000, 1400, 150)
@@ -109,6 +117,7 @@ def build(kit):
     kit.tag("interactable", "key_host", "wall_decor")
     kc.lod_meta(kit, LOD_DISTANCES, BUDGET)
     kit.meta["keyHostDefault"] = "hook_6"
+    kit.meta["specName"] = "Kit_KeyBoard"
     kit.meta["numberStrips"] = {"slot": kc.KEYTAGNO, "fallback": kc.KEYTAGNO_FALLBACK, "cells": list(range(1, 9))}
 
     lo, hi = kc.eval_bounds_unity(kit)

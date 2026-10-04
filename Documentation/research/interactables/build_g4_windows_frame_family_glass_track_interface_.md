@@ -1,6 +1,6 @@
 # G4 build note: windows (frame family + glass-track interface)
 
-Status: DONE, 2026-10-03. Six assets plus one variant, exported into the private clone `proj_int` only (`proj_int/Assets/Resources/Props/Models/`). Nothing under the real project's `Assets/` was touched, and Unity was not run.
+Status: DONE, 2026-10-03; re-verified in a second pass at 16:4x the same day (Red: "Try again", see §0). Six assets plus one variant, exported into the private clone `proj_int` only (`proj_int/Assets/Resources/Props/Models/`). Nothing under the real project's `Assets/` was touched, and Unity was not run.
 
 Spec: `10_spec.md` §5, §2.3 (ranch casing), §9.4, §10.0, §10.4. Detail: `06_period_windows.md` §3–§4. Sweep pattern: `assets/interior_window.py`.
 
@@ -156,7 +156,7 @@ All renders are in `scratchpad/interact_previews/G4/`.
 - The in-context Cycles close-ups were rendered before the last three internal changes. Those changes are the welded wood liner, the removed alu sill stations and the steel setting blocks hidden in the pocket; none alters what LOD0 looks like.
 - `*_LOD1_*.png` and `*_LOD0cmp_*.png` are the LOD1 and LOD0 comparisons (Workbench, backface-culled, on the exported FBX). The close-ups are rendered in context: a wall with the opening, the map trims in red (they must never show), the 6 mm stand-in slab as real glass, a floor and a ceiling. Materials use the Unity surfaces' measured mean albedo (`10_spec.md` §7.3).
 
-## 5. Red's ChatGPT ray-traced glass track (this run's relayed request), from the windows' side
+## 5. The ray-traced glass track (spec §7), from the windows' side
 
 The track is `10_spec.md` §7: a native Metal plugin with its own BLAS/TLAS, `G14` in the visual queue. I re-read the controller (`Assets/Scripts/Rendering/FrontRoomsMetalGlassRT.cs`, real project, read-only) and confirmed the three registration rules that touch these assets:
 

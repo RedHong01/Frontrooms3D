@@ -1,0 +1,30 @@
+[118] ok   run started (seed 516574485)
+[700] map root (-576.00, 0.00, -576.00) · settled True · chunks 25
+[700] built windows 18
+[700] L0: window at (271.50, 0.00, 45.00) · room (282, 206) → hall (282, 207)
+[708] ok   L0: root 'Window (282, 206)-(282, 207)' holds the render-only frame
+[708] ok   L0: pane renderer off, slab on with Glass_Window and the RT target
+[708] ok   L0: the game's aim ray hits the pane collider · prompt 'HOLD E  ·  BREAK GLASS'
+[708] frame L0_play_intact.png · eye (271.50, 1.62, 43.80)
+[708] ok   L0: Hold breaks it
+[709] ok   L0: next frame the pane and the slab are gone, the frame stays
+[709] ok   L0: IsBrokenWindow
+[713] frame L0_play_broken.png · eye (271.50, 1.62, 43.80)
+[715] L0: phase Playing before the climb
+[715] ok   L0: the game's TryStartClimb starts a climb through the framed opening
+[733] frame L0_play_climbing.png · eye (271.50, 1.44, 45.08)
+[773] ok   L0: the player lands in the hall cell (282, 207) (want (282, 207))
+[773] OF: window at (268.50, 0.00, 45.00) · room (281, 206) → hall (281, 207)
+[781] ok   OF: root 'Window (281, 206)-(281, 207)' holds the render-only frame
+[781] ok   OF: pane renderer off, slab on with Glass_Window and the RT target
+[781] ok   OF: the game's aim ray hits the pane collider · prompt 'HOLD E  ·  BREAK GLASS'
+[781] frame OF_play_intact.png · eye (268.50, 1.62, 43.80)
+[781] ok   OF: Hold breaks it
+[782] ok   OF: next frame the pane and the slab are gone, the frame stays
+[782] ok   OF: IsBrokenWindow
+[786] frame OF_play_broken.png · eye (268.50, 1.62, 43.80)
+[788] OF: phase Playing before the climb
+[788] ok   OF: the game's TryStartClimb starts a climb through the framed opening
+[806] frame OF_play_climbing.png · eye (268.50, 1.44, 45.08)
+[846] ok   OF: the player lands in the hall cell (281, 207) (want (281, 207))
+[846] VERDICT PASS: 17 passed, 0 failed

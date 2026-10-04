@@ -9,7 +9,7 @@ Written by the chat 怪物追捕机制设计审计 (systems), with:
 
 Peer chapters are **out of date** against v2. `20_level_design.md` still has the per-Relay-cell field cache, the Omen/Dip/Sag reach rows, `CopyPathAhead`, the herald, the 30-cell Summon rule and "window = the only way into a tall zone". `30_narrative.md` still has "leaves the way it came", the EAR GROUND glow, the ALARM ROUTE ink, "the lamps dim because it draws power", and foil on the frame. Both owners update them (§13).
 
-Figma: design file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section `FRONTROOMS · RELAY PURSUIT · AUDIT + REDESIGN` (2441:3804) at x 7897, y 26369, frames RP01–RP10 (2441:3805 … 2441:3883). **To be updated to v2**: the loop diagram (RP03), the warning ladder (RP05) and the tier table (RP09) show v1 values. Diagram data: `research/relay_pursuit/sim/` (v1 measurements; see §2.3 for what they are and are not).
+Figma: design file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section `FRONTROOMS · RELAY PURSUIT · AUDIT + REDESIGN` (2441:3804) at x 7897, y 26369, frames RP01–RP10 (2441:3805 … 2441:3883). **Updated to v2 on 2026-10-03**: every frame, with new diagrams from `research/relay_pursuit/sim/mksvg_v2.py` (octile path field, the W bands, the v2 approach timeline, the ±60° cone, the v2 Attention curve and pacing). The audit numbers keep the caveats in §2.3.
 
 **Red's brief (2026-10-03).** Right now the player has no room to explore the Backrooms and has to keep running. Pursuit should follow a logic:
 - the Relay starts tracking the player's sound only after something calls it, such as entering certain rooms or breaking glass;
@@ -38,7 +38,10 @@ Figma: design file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section `FRONTROOMS �
 >
 >   The hunter side (WarnStage, PathDistanceToPlayer, TargetAcquired) and the Warn scheduler wait for Red.
 > - **The empty-stamina Shift leak is fixed:** a dry player is winded until 1 s of stamina is back.
-> - The v1 doc is kept as `RELAY_PURSUIT_REDESIGN.v1.md`. The Figma section 2441:3804 still shows v1.
+> - The v1 doc is kept as `RELAY_PURSUIT_REDESIGN.v1.md`.
+> - **In progress (Red's go, 2026-10-03):** 关卡设计 is fixing two bugs ahead of v2: wandering and searching legs no longer break doors or turn into Hunt (`Follow` keeps `throughDoors`, `TickBreak` resumes its origin), and LoseTrack follows only a door crossing it saw.
+
+> - **Wallpaper hints are being redirected (Red, via the wallpaper and narrative chats):** the hint becomes the wallpaper pattern's own elements turning, not overlay glyphs (`research/wallpaper_motion/32_pattern_native_hints.md`). The timing and commit rules for the ink in §7 and §9 carry over; the glyph wording will follow that doc.
 
 ## 1. Summary
 
@@ -133,7 +136,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 | v1 tier-1 cycle times and G1 targets (60 % / 35 % calm) | Design estimates | Predictions. No simulation. |
 | "A warning burst touches ≤ 20 fixtures" | An estimate | Checked against large carved rooms or tall halls. |
 | "Nav test 60/60", "map 100/100" | Last known results | Re-run for this doc. |
-| Fire-alarm facts (verification, pre-alarm, door-holder release, coded chimes, glass-break detectors, ALARM WILL SOUND bars) | The narrative chapter's research, marked 待核 there | Verified. v1 §10 stated parts as fact; v2 marks them 待核. |
+| Fire-alarm facts (verification, pre-alarm, door-holder release, coded chimes, glass-break detectors, ALARM WILL SOUND bars) | The narrative chapter's research, now checked (`30_narrative.md` §7, with URLs) | Verified for 1990: door-holders released on alarm, alarm verification, amber TROUBLE lamps, coded chimes, window foil and sash reed switches, combined fire and burglary panels, alarm push-bar exits, shock and acoustic glass-break detectors. Not verified: pre-alarm on US panels in 1990 (the concept exists from 1985), the exact wordings 'ALARM WILL SOUND' and 'WALK, DO NOT RUN' before 1990, and that foil was silver. The door-holder 'thunk' is a Foley choice: the magnet only lets go, and the sound comes from the closer and latch. |
 
 ### 2.4 What changed in the code today (after the brief)
 
@@ -424,7 +427,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 - **Your room** (v1 §7.1, kept): the intact carved or module room you stand in; otherwise a BFS over Open edges, depth ≤ 2, ≤ 9 cells, arches and doors as walls. Start rooms excluded. Recomputed on a cell change.
 - **Never at the Relay:** remove from the set every lamp within 2 cells of the Relay's cell or in the Relay's room. Asserted.
 - **Live lamps:** lamps in the set within `lightRadius` (16 m) whose mode is lit. Fewer than 2 → widen within the zone over Open and Arch edges (depth 3, ≤ 12 cells) → else **audio only**. Inside a sanctuary: audio only (its circuit is dead).
-- **Built on the landed layer, unchanged:** each dip is `SetLampOverride(cell, Warn, m, hold, envelope 0.10 / 0.22 s)` with base × MIN stacking (the caller passes the envelope; `DefaultEnvelope` stays). To stop an ambient stutter showing through, the burst set's lamps are put to `SetLampMode(cell, Steady)` from the first burst and restored to their own mode in the first quiet slot after stage 0. The ink's burst gate keeps working (it reads `LampLevel` below `LampBaseLevel` with no ink override).
+- **Built on the landed layer, unchanged:** each dip is `SetLampOverride(cell, Warn, m, hold, envelope 0.10 / 0.22 s)` with base × MIN stacking (the caller passes the envelope; `DefaultEnvelope` stays). To stop an ambient stutter showing through, the burst set's lamps are put to `SetLampMode(cell, Steady)` from the first burst and restored to their own mode in the first quiet slot after stage 0. The ink's burst gate keeps working: it detects a Warn burst as `LampLevel` below `LampBaseLevel` with no ink override. Under the v2 burst, the 0.55 low-pass gate would never open (Ls stays 0.68–0.84), so the wallpaper chat retuned it by burst depth in `20_level_design_phosphor.md` rev 4: G ≈ 0.02 at 0.70×, 0.14 at 0.62×, 0.24 at 0.55×. That is one GROUND breath per burst, at ≤ 0.5 Hz. Its stage-0 power sags use attack 1.6 s / release 1.5 s, and its chase-wave dips 0.3 / 1.2 s, explicitly and on CHASE only.
 - **Burst:** every live lamp dips together, ±40 ms jitter from its cell hash.
   - Stage 1: 2–3 dips; stage 2: 2 dips. Each dip to 0.55–0.70 × base (visual chat may go to 0.45): attack 0.10 s, hold 0.06–0.15 s, release 0.22 s (≤ 0.47 s), dips start 0.55 s apart (longer than a dip, so they never merge). Burst ≤ 1.6 s (stage 1), ≤ 1.05 s (stage 2).
   - **Quiet gap after a burst ends:** stage 1 3–6.5 s; stage 2 2.5–4 s; random each time. First burst 0.3–1.0 s after stage 1 starts; one burst on entering stage 2 if ≥ 2.5 s since the last ended.
@@ -433,7 +436,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 - **Ambient flicker** stays single-lamp, unsynced, with no HumBed change.
 - **Invariant (test):** at stage 0, no Warn override is ever active and `WarnBurst` never fires; no two lamps of the room set start an override within 0.2 s of each other with an attack under 1.5 s. The ink's player-centred Sag and pressure-wave Dips must meet this (attack ≥ 1.5 s, or ≤ 1 lamp of the room set): the landed Dip default (0.3 s) does not, so the wallpaper chat passes its own envelope. An appended event `LampOverrideStarted(cell, pos, LampFx)` lets the sound chat buzz only for the right kind; `LampDipped` stays.
 - **The wake reprint** ("where it just walked", v1 §7.5) is out of v2: no reprint at stage 0 (wallpaper chat).
-- **Fiction:** pre-alarm, the panel switches your compartment to emergency power and tests it (待核). "It draws power" is dropped.
+- **Fiction:** pre-alarm (a concept since 1985; whether 1990 US panels had it is unverified): the panel switches your compartment to emergency power and tests it. "It draws power" is dropped.
 
 ### 9.3 Stage 2: its steps
 
@@ -445,7 +448,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 
 ### 9.4 Stage 3 and the cue sheet
 
-- **Lock-on cue** (fired by `TargetAcquired`, never by `OnRelayState`): a magnetic door-holder release thunk plus **one damped chime strike** (待核). 0.6 s, attack ≥ 15 ms, peak 3–6 dB above room tone, from the ceiling over you. The **only tonal chime in the game.**
+- **Lock-on cue** (fired by `TargetAcquired`, never by `OnRelayState`): a magnetic door-holder release plus **one damped chime strike**. Door-holders released on alarm and coded chimes are both verified for 1990; the release 'thunk' itself is a Foley choice (the magnet only lets go; the closer and latch make the sound). 0.6 s, attack ≥ 15 ms, peak 3–6 dB above room tone, from the ceiling over you. The **only tonal chime in the game.**
 - At lock-on: no new bursts; the current one finishes. The chase wave takes the lamps at chase start, **centred on the player's room set, never the Relay's cell** (v1 30_narrative §2 said "from its cell"; that breaks §3.1). Lamps never snap to steady as a "found" signal.
 - Chase bed and heartbeat start at `StateChanged(Chase)` and fade over 3 s at LoseTrack. No Lost stinger.
 - **RESTORE** (Q3c): only on a true Away, only if stage ≥ 1 was felt. **Audio only:** the HumBed returns to normal pitch and +3 dB over 1.5 s (the ballast recovering). No clunk, no lamp change.
@@ -512,10 +515,10 @@ Player-facing text never uses the word "relay" for panel sounds. Captions feed t
 - **Windows** (two targets, two inputs):
   - The **pane**: "HOLD E · BREAK GLASS", 1.0 s as today: an instant call.
   - The **sash latch** (its own collider on the meeting rail): "HOLD E · PRY SASH (quiet)", 4 s, 8 m, +8, leaves it open for good. Progress banks between holds; in TAP TO BREAK mode taps bank pry progress. Plain windows only.
-  - **Foiled windows:** silver foil tape on the glass perimeter (detects breakage) and a magnetic contact on the sash (detects opening), both 待核. Prompt on the latch: "HOLD E · PRY SASH · ALARMED". Any way through calls.
+  - **Foiled windows:** foil tape on the glass perimeter (detects breakage) and a magnetic reed contact on the sash (detects opening). Both are verified as common by 1987; that the foil was silver is not. Prompt on the latch: "HOLD E · PRY SASH · ALARMED". Any way through calls.
   - **Plain-window rule:** every tall–neighbour border with windows keeps ≥ 1 plain window; every tall zone keeps ≥ min(2, window count) plain. Foil is a pure function of the edge hash and the **tall zone's stored tier** (a window border always has exactly one tall side): rank the tall zone's window edges by hash and keep the lowest ones plain. Validator: identical across rebuild and revisit shift.
 - **Stamina:** adopt the landed winded rule (empty → winded until 1.0 s of stamina is back, i.e. 1 s delay plus 1 s at 1/s); a held Shift resumes the sprint then (no fresh press). `stepTime` resets when a sprint starts; a sprint step needs ≥ 0.5 m of movement since the last.
-- **Teaching walking:** a 1990 placard in the start rooms and at sanctuaries, "IN CASE OF FIRE: WALK, DO NOT RUN. CLOSE DOORS BEHIND YOU." (wording 待核). CalmHint: "Walking is quiet. Running and slammed doors are heard." for 10 s at Armed, and once at the first noise call. After the first RESTORE, once: "It's gone. Walk, and it may not come back." Pause card: WALK quiet · SHIFT run (heard) · E door (ease quiet, slam when running) · HOLD E latch: pry (quiet, slow) · HOLD E glass: break (calls it) · STAND STILL: harder to see. The warnings are explained once in the pause-card legend, never live.
+- **Teaching walking:** the footer of the evacuation plan Red approved at the **start door, map side** (narrative A.12, 平面视觉 layout T24; the start rooms are the title stream and carry no signs), "IN CASE OF FIRE: WALK, DO NOT RUN. / CLOSE DOORS BEHIND YOU." (standard US wording; the exact pre-1990 text of "WALK, DO NOT RUN" is unverified), with a copy at sanctuaries. CalmHint: "Walking is quiet. Running and slammed doors are heard." for 10 s at Armed, and once at the first noise call. After the first RESTORE, once: "It's gone. Walk, and it may not come back." Pause card: WALK quiet · SHIFT run (heard) · E door (ease quiet, slam when running) · HOLD E latch: pry (quiet, slow) · HOLD E glass: break (calls it) · STAND STILL: harder to see. The warnings are explained once in the pause-card legend, never live.
 - **Sanctuaries, "dead circuit" rooms** (v2.1; Q7c):
   - Props: an amber TROUBLE lamp, a detector hanging by its wires, a bell with no clapper, an OUT OF SERVICE tag, and an entrance placard "ALARM CIRCUIT OUT OF SERVICE · NO DETECTION IN THIS ROOM". One-time hint on first entry: "Dead circuit. It won't come in here."
   - ≤ 12 cells, one entrance, ≈ 1 per 3–4 zones at every tier, never a trigger room or next to one, ≥ 15 cells from the start, never the only place a key lies. **Placed by coordinate and stable through revisit shifts** (a shift may re-dress furniture, never add, remove or move it). Same for trigger rooms.
@@ -619,9 +622,9 @@ Steps are ordered so the game always has a working Relay between landings. A scr
 | 7 | 关卡设计 (logic) + 游戏视觉 (look) | Lamps on the landed layer: room set, Relay exclusion, live-lamp count in `lightRadius`, widening, burst scheduler with explicit envelope, `SetLampMode(Steady)` suspension, `WarnBurst`, `LampOverrideStarted`; per-room-set and per-fixture limiters; mode 1 and 2 rewrite; stored first-generation tier per chunk and zone; T5 odds cap; 60 Hz test | 2.5 + look |
 | 8 | 关卡设计 | Level content v2.0: validator rules first (articulation point, keys, alarm door, plain windows per border and zone, ≥ 2 entries per zone ≥ 10 cells apart, cover measure); foiled windows in the budget; Red's first trigger room (Q6) with `RoomTriggered` → director; auto entries | 2.5 |
 | 9 | 声音设计 | **Audio clean-up and new cues** (below). Verify with `fmod_check contract` and a traced autopilot run | 4 |
-| 10 | 游戏视觉 | Warn burst look (default, REDUCE FLASHING); props: start-room placard, foil on glass perimeter and sash contact, sash latch, ceiling detector with red-banded base and ALARM ZONE card, push-bar alarm door, electrical-room sign, glass-floor decal, non-detector tier hardware, dead-circuit kit (v2.1) | 3 |
+| 10 | 游戏视觉 | Warn burst look (default, REDUCE FLASHING); props: the evacuation-plan footer at the start door (map side), foil on glass perimeter and sash contact, sash latch, ceiling detector with red-banded base and ALARM ZONE card, push-bar alarm door, electrical-room sign, glass-floor decal, non-detector tier hardware, dead-circuit kit (v2.1) | 3 |
 | 11 | wallpaper chat | Ink Dip and Sag meet the stage-0 invariant (own envelope ≥ 1.5 s or ≤ 1 lamp of the room set); burst gate re-checked on the explicit Warn envelope; wake reprint out of v2; `20_level_design_phosphor.md` Warn table matched to §9.2 (2–3 dips at 0.55–0.70, not 2–4 at 0.3–0.65); note that the Relay now OPENs doors (its "the Relay never shuts doors" line still holds) | 1 |
-| 12 | narrative chat | One stage-1 reading; withdraw wording; EAR GROUND and ALARM ROUTE out; chase wave centred on the player; check the 待核 items (door-holder release, chime, pre-alarm on 1990 panels, window foil and contacts, placard wording, dead-circuit TROUBLE lamp); update `30_narrative.md` | 0.5 |
+| 12 | narrative chat | One stage-1 reading; withdraw wording; EAR GROUND and ALARM ROUTE out; chase wave centred on the player; checked the 待核 items (done 2026-10-03; see §2.3); update `30_narrative.md` | 0.5 |
 | 13 | 关卡设计 + 声音设计 | Settings and assists: Warn sag under REDUCE FLASHING; LAMPS STILL; cue volume slider; caption classes; Visual sound cues (if Q3e); lock-on rumble or vignette | 1.5 |
 | 14 | 关卡设计 | v2.1 after Red's answers: sanctuaries (module type, never-enter cells, watch, dry-clock pause, shift-stable placement); remaining trigger kinds by tier with the rising budget; chase 4.6 at T4–T5 only if G5 at T5 still passes | 3 |
 | 15 | 关卡设计 | Docs: this file into `Documentation/RELAY_PURSUIT_REDESIGN.md`; `20_level_design.md` (player-rooted octile field, no omen or herald, one 20-cell handoff, zone-local validator, windows no longer forced calls); Figma section 2441:3804 to v2 | 0.5 |
@@ -828,6 +831,6 @@ All marked [verified] were fetched by the research pass; [unverified] were seen 
 | Switchblade Gaming, Lethal Company monster sounds | https://www.switchbladegaming.com/co-op-games/lethal-company-monster-sounds/ | verified, low authority (consulted, not leaned on) |
 | Isla, *Third Eye Crime: Building a Stealth Game Around Occupancy Maps*, AIIDE 2013 | https://ojs.aaai.org/index.php/AIIDE/article/view/12663 | abstract only: unverified body (consulted, not leaned on) |
 
-Fire-alarm facts used in the fiction (alarm verification, pre-alarm on 1990 panels, magnetic door-holder release, coded and supervisory chimes, window foil and sash contacts, ALARM WILL SOUND bars, the placard wording, dead-circuit TROUBLE lamps) are **待核** until the narrative chat checks them (§13 step 12).
+Fire-alarm facts used in the fiction were checked by the narrative chat on 2026-10-03 (`research/relay_pursuit/30_narrative.md` §7, each with a URL). §2.3 lists which hold for 1990 and which stay unverified (pre-alarm on 1990 US panels, the exact ALARM WILL SOUND and WALK, DO NOT RUN wordings, silver foil). The door-holder 'thunk' is a Foley choice, not a historical sound.
 
 Project sources: `relay_v2_brief.md` §A–§H and `wf1.json` (workflow wf_4f02221c-e1c); `Documentation/AUDIO_CONTRACT.md`; `Documentation/DISPLAY_SETTINGS.md`; git `aba5f77` (12:26) and `ef061ae` (12:56), 2026-10-03; `research/relay_pursuit/20_level_design.md` and `30_narrative.md` (out of date, see header); `research/wallpaper_motion/20_level_design_phosphor.md`.
