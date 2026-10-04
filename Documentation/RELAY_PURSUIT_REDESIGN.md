@@ -4,6 +4,8 @@ Status: **proposal v2, 2026-10-03. Runtime v2 is not enabled.** On 2026-10-04 th
 
 **Systems landing 2026-10-04.** The policy core covers the director vocabulary and deterministic rules for `Arm`/first-run RELAX, Attention gains and decay, weighted call estimates, PENDING/drop handling, queued device calls, quiet-player sweep requests, Pressure, peak/cap → SUSTAIN → FADE, handoff budget, and `NotifyAway` → RESTORE/RELAX. It is deliberately an adapter seam: no old release/leash behavior, map navigation, sound implementation, lamp look, wallpaper, narrative, or mobile build was changed. Wiring waits for Step 0 and the map-owned path/Arrive contracts.
 
+**Level-design Step 1 landing 2026-10-04.** `FrontRoomsMapPathField` now supplies the player-rooted 45 m octile field, opening costs, bounded source fields, Relay-rooted estimates, `WarningDistance`, hysteretic `WarnStage`, and the 10 Hz `PlayerSeesRelay` hook. These values are measurement-only: no v2 director, lamp, audio, sight-lock, or movement behavior is enabled. The field invalidates on player-cell, streaming-topology, and door/window edge-state changes. Step 0 remains the only reconciled runtime evidence (54/54 PASS); Step 1 runtime acceptance is still pending the Unity compile/test pass.
+
 Written by the chat 怪物追捕机制设计审计 (systems), with:
 - **关卡设计** (map / Relay code owner): level design, feasibility. Peer chapter `research/relay_pursuit/20_level_design.md`.
 - **Design the narrative of the phosphor wallpaper print** (narrative): fiction. Peer chapter `research/relay_pursuit/30_narrative.md`.
@@ -38,7 +40,7 @@ Figma: design file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section `FRONTROOMS �
 >   - `LampDipped` and `FixtureChanged` (0.02 hysteresis);
 >   - WebGL parity 28/28, MapInteractionTests 126/126.
 >
->   The hunter side (WarnStage, PathDistanceToPlayer, TargetAcquired) and the Warn scheduler wait for Red.
+>   The hunter side's Step 1 measurements (`WarnStage`, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `PlayerSeesRelay`) are now landed. `TargetAcquired` and the Warn scheduler still wait for the v2 director/sight slices.
 > - **The empty-stamina Shift leak is fixed:** a dry player is winded until 1 s of stamina is back.
 > - The v1 doc is kept as `RELAY_PURSUIT_REDESIGN.v1.md`.
 > - **Two Relay bugs fixed ahead of v2** (Red's go; landed in main 2026-10-03 ~22:53, uncommitted for Red to commit; by 关卡设计):
