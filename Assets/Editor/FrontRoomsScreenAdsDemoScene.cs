@@ -53,7 +53,7 @@ public static class FrontRoomsScreenAdsDemoScene
             {
                 var serialized = new SerializedObject(screen);
                 serialized.FindProperty("visibleDistance").floatValue = 16f;
-                serialized.FindProperty("interactionDistance").floatValue = 2.8f;
+                serialized.FindProperty("interactionDistance").floatValue = 3.2f;
                 serialized.FindProperty("startsPowered").boolValue = true;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             }
@@ -76,7 +76,7 @@ public static class FrontRoomsScreenAdsDemoScene
     {
         var cameraObject = new GameObject("Screen Ads Demo Camera");
         cameraObject.transform.SetParent(parent, false);
-        cameraObject.transform.localPosition = new Vector3(0f, 1.18f, 3.55f);
+        cameraObject.transform.localPosition = new Vector3(0f, 1.18f, 2.4f);
         cameraObject.transform.LookAt(new Vector3(0f, .82f, .19f));
         cameraObject.tag = "MainCamera";
         var camera = cameraObject.AddComponent<Camera>();

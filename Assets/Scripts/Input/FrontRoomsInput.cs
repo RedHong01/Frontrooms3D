@@ -229,12 +229,12 @@ public static class FrontRoomsInput
         // arrow keys as the old map-test walker did.
         moveAction = gameplay.AddAction("Move", InputActionType.Value);
         moveAction.expectedControlType = "Vector2";
-        moveAction.AddCompositeBinding("2DVector", "WASD")
+        moveAction.AddCompositeBinding("2DVector")
             .With("Up", "<Keyboard>/w")
             .With("Down", "<Keyboard>/s")
             .With("Left", "<Keyboard>/a")
             .With("Right", "<Keyboard>/d");
-        moveAction.AddCompositeBinding("2DVector", "Arrows")
+        moveAction.AddCompositeBinding("2DVector")
             .With("Up", "<Keyboard>/upArrow")
             .With("Down", "<Keyboard>/downArrow")
             .With("Left", "<Keyboard>/leftArrow")

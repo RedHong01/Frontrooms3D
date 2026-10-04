@@ -125,6 +125,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     [SerializeField] RectTransform restartHitArea;
     [SerializeField] RectTransform caughtRestartHitArea;
     [SerializeField] RectTransform restartCancelHitArea;
+    [SerializeField] RectTransform sprintButtonHitArea;
     [SerializeField] RectTransform settingsHitArea;
     [SerializeField] List<SettingsRowBinding> settingsRows = new List<SettingsRowBinding>();
     [SerializeField, Min(0.5f)] float controlsScale = 1f;
@@ -133,6 +134,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     [Header("Floating stick")]
     [SerializeField] bool floatingStick = true;
+    [SerializeField] bool sprintSocketMode = true;
     [SerializeField, Min(1f)] float stickRadius = 60f;
     [SerializeField, Min(0f)] float stickDeadZone = 8f;
     [SerializeField, Min(1f)] float sprintSocketOffset = 92f;
@@ -145,6 +147,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     // roughly 24 degrees by default; the settings layer can expose this as
     // the 1–10 LOOK SPEED row later.
     [SerializeField, Min(0.01f)] float lookSensitivity = 0.12f;
+    [SerializeField] bool invertLook;
     [SerializeField, Min(0f)] float tapMoveThreshold = 12f;
     [SerializeField, Min(0f)] float tapMaxSeconds = 0.2f;
     [SerializeField] bool winded;
@@ -187,6 +190,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public MenuState CurrentMenuState => menuState;
     public bool FloatingStick => floatingStick;
     public bool LeftHanded => leftHanded;
+    public bool SprintSocketMode => sprintSocketMode;
     public Rect SafeAreaPixels { get; private set; }
     public UsePrompt CurrentUsePrompt { get; private set; } = UsePrompt.Hidden;
     public FrameState CurrentFrame { get; private set; } = new FrameState { SettingsRow = -1 };
@@ -214,6 +218,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public Vector2 StickThumbScreenPosition => stickThumb;
     public RectTransform UseHitArea => useHitArea;
     public RectTransform PauseHitArea => pauseHitArea;
+    public RectTransform SprintButtonHitArea => sprintButtonHitArea;
 
     /// <summary>Optional provider for a HUD/game loop that wants to refresh the prompt itself.</summary>
     public Func<UsePrompt> UsePromptProvider { get; set; }
@@ -230,7 +235,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         Restart,
         Settings,
         SettingsRow,
-        RestartCancel
+        RestartCancel,
+        SprintButton
     }
 
     struct TouchState
@@ -257,6 +263,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     int moveTouchId = -1;
     int lookTouchId = -1;
     int useTouchId = -1;
+    int sprintButtonTouchId = -1;
     Vector2 stickOrigin;
     Vector2 stickThumb;
     bool shotBackArmed;
@@ -264,6 +271,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     void Awake()
     {
+        ApplySavedSettings();
         UpdateSafeArea(true);
     }
 
@@ -399,6 +407,39 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     }
 
     public void SetControlsScale(float value) => controlsScale = Mathf.Clamp(value, 0.8f, 1.4f);
+    public void SetLookSensitivity(float value) => lookSensitivity = Mathf.Clamp(value, 0.01f, 0.5f);
+    public void SetInvertLook(bool value) => invertLook = value;
+    public void SetFloatingStick(bool value)
+    {
+        if (floatingStick == value) return;
+        floatingStick = value;
+#if UNITY_IOS || UNITY_ANDROID
+        ClearTouchState();
+#endif
+    }
+    public void SetSprintSocketMode(bool value)
+    {
+        if (sprintSocketMode == value) return;
+        sprintSocketMode = value;
+        SetSprintLatched(false);
+        sprintSocketProgress = 0f;
+#if UNITY_IOS || UNITY_ANDROID
+        ClearTouchState();
+#endif
+    }
+    public void SetSprintButtonHitArea(RectTransform area) => sprintButtonHitArea = area;
+
+    /// <summary>Applies the persisted mobile controls preferences after settings load.</summary>
+    public void ApplySavedSettings()
+    {
+        SetControlsScale(FrontRoomsSettings.TouchControlsScalePercent / 100f);
+        SetLeftHanded(FrontRoomsSettings.TouchLeftHanded);
+        SetLookSensitivity(.12f * FrontRoomsSettings.TouchLookSpeedPercent / 100f);
+        SetInvertLook(FrontRoomsSettings.TouchInvertLook);
+        floatingStick = FrontRoomsSettings.TouchFloatingStick;
+        sprintSocketMode = FrontRoomsSettings.TouchSprintSocket;
+        FrontRoomsMobileHaptics.Enabled = FrontRoomsSettings.TouchHaptics;
+    }
     public void SetWinded(bool value)
     {
         if (winded == value)
@@ -419,7 +460,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             return;
 
         CurrentUsePrompt = prompt;
-        if (usePromptWasVisible && !prompt.Visible)
+        // A target can disappear or become locked while the finger is still
+        // down (for example when a door closes or a glass shot completes).
+        // Release the virtual USE edge immediately so a stale hold cannot
+        // leak into the next aim target.
+        if (usePromptWasVisible && (!prompt.Visible || !prompt.AllowsPress))
         {
 #if UNITY_IOS || UNITY_ANDROID
             if (useTouchId >= 0)
@@ -508,6 +553,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         CurrentFrame.UsePressed = true;
         CurrentFrame.UseHeld = true;
+        FrontRoomsMobileInteractionEvents.UsePressed();
         UsePressed?.Invoke();
         onUsePressed?.Invoke();
     }
@@ -516,6 +562,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         CurrentFrame.UseReleased = true;
         CurrentFrame.UseHeld = false;
+        FrontRoomsMobileInteractionEvents.UseReleased();
         UseReleased?.Invoke();
         onUseReleased?.Invoke();
     }
@@ -527,6 +574,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         sprintLatched = value;
         sprintSocketProgress = value ? 1f : 0f;
         CurrentFrame.SprintHeld = sprintLatched && !winded;
+        FrontRoomsMobileInteractionEvents.SprintLatched(value);
         SprintLatchChanged?.Invoke(value);
     }
 
@@ -565,6 +613,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         return useHitArea != null ? Contains(useHitArea, position) : DefaultUseRect().Contains(position);
     }
 
+    bool IsSprintButtonHit(Vector2 position)
+    {
+        if (sprintButtonHitArea != null)
+            return Contains(sprintButtonHitArea, position);
+        var size = 72f * controlsScale;
+        var x = leftHanded ? SafeAreaPixels.xMax - 134f * controlsScale : SafeAreaPixels.xMin + 134f * controlsScale;
+        var y = SafeAreaPixels.yMin + SafeAreaPixels.height * .35f + sprintSocketOffset * controlsScale;
+        return new Rect(x - size * .5f, y - size * .5f, size, size).Contains(position);
+    }
+
     bool IsStartHit(Vector2 position)
     {
         return startHitArea != null ? Contains(startHitArea, position) : DefaultStartRect().Contains(position);
@@ -577,6 +635,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             : restartHitArea;
         return Contains(area, position);
     }
+    bool IsRestartCancelHit(Vector2 position) => Contains(restartCancelHitArea, position);
     bool IsSettingsHit(Vector2 position) => Contains(settingsHitArea, position);
 
     bool IsSettingsRowHit(Vector2 position, out int index)
@@ -724,6 +783,15 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 useTouchId = id;
                 InvokeUsePressed();
                 break;
+            case TouchRole.SprintButton:
+                if (sprintButtonTouchId >= 0 || winded)
+                {
+                    touches.Remove(id);
+                    return;
+                }
+                sprintButtonTouchId = id;
+                SetSprintLatched(true);
+                break;
             case TouchRole.Pause:
                 InvokePause();
                 touches.Remove(id);
@@ -744,6 +812,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 InvokeSettingsRow(rowIndex);
                 touches.Remove(id);
                 break;
+            case TouchRole.RestartCancel:
+                InvokeRestartCancel();
+                touches.Remove(id);
+                break;
         }
     }
 
@@ -755,6 +827,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case MenuState.Title:
                 return IsStartHit(position) ? TouchRole.Start : TouchRole.None;
             case MenuState.Paused:
+                if (RestartConfirmationOpen)
+                {
+                    if (IsRestartHit(position)) return TouchRole.Restart;
+                    if (IsRestartCancelHit(position)) return TouchRole.RestartCancel;
+                    return TouchRole.None;
+                }
                 if (IsSettingsHit(position)) return TouchRole.Settings;
                 if (IsRestartHit(position)) return TouchRole.Restart;
                 if (IsPauseHit(position)) return TouchRole.Pause;
@@ -769,6 +847,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case MenuState.Playing:
                 if (IsPauseHit(position)) return TouchRole.Pause;
                 if (CurrentUsePrompt.Visible && IsUseHit(position)) return TouchRole.Use;
+                if (!sprintSocketMode && IsSprintButtonHit(position)) return TouchRole.SprintButton;
                 if (IsMoveStart(position) && moveTouchId < 0) return TouchRole.Move;
                 if (IsLookStart(position) && lookTouchId < 0) return TouchRole.Look;
                 return TouchRole.None;
@@ -784,7 +863,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case TouchRole.Move:
                 stickThumb = position;
                 var moveOffset = position - stickOrigin;
-                UpdateSprintLatch(moveOffset);
+                if (sprintSocketMode)
+                    UpdateSprintLatch(moveOffset);
                 var pullingBack = moveOffset.y < -stickDeadZone;
                 if (pullingBack && !shotBackArmed)
                 {
@@ -798,7 +878,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 break;
             case TouchRole.Look:
             case TouchRole.Use:
-                CurrentFrame.LookDelta += delta * lookSensitivity;
+                CurrentFrame.LookDelta += new Vector2(delta.x, invertLook ? -delta.y : delta.y) * lookSensitivity;
+                break;
+            case TouchRole.SprintButton:
                 break;
         }
     }
@@ -834,6 +916,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     InvokeUseReleased();
                 }
                 break;
+            case TouchRole.SprintButton:
+                if (sprintButtonTouchId == id)
+                {
+                    sprintButtonTouchId = -1;
+                    SetSprintLatched(false);
+                }
+                break;
         }
     }
 
@@ -855,6 +944,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         moveTouchId = -1;
         lookTouchId = -1;
         useTouchId = -1;
+        sprintButtonTouchId = -1;
         moveTouchActive = false;
         stickThumb = stickOrigin;
         shotBackArmed = false;

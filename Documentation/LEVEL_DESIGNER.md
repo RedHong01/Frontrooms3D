@@ -78,4 +78,4 @@ A module the level profile lists (`Assets/Levels/FrontRoomsLevel0.asset` → *Ro
 
 ## Next
 
-- **P4** done: gameplay markers (key spot, Relay entry) and edits rebuilding the running map in Play. Still to come: tiers from DP08 (module tier and the Relay's hearing per tier).
+- **P4** done: gameplay markers (key spot, Relay entry) and edits rebuilding the running map in Play. **Pursuit Step 1** now supplies the player-rooted 45 m path field and data-only warning bands (`PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `WarnStage`); it does not change presentation or movement. Still to come: tiers from DP08 (module tier and the Relay's hearing per tier).

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Video;
 
 /// <summary>
@@ -137,7 +138,7 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         }
 
         focusedScreen = next;
-        if (focusedScreen != null && FrontRoomsInput.UseDown)
+        if (focusedScreen != null && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
             focusedScreen.TogglePower();
     }
 
@@ -192,8 +193,11 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         };
         mesh.uv = new[]
         {
-            new Vector2(0f, 0f), new Vector2(1f, 0f),
-            new Vector2(1f, 1f), new Vector2(0f, 1f)
+            // VideoPlayer's RenderTexture is authored from the opposite
+            // horizontal convention to this CRT face, so flip U here rather
+            // than mirroring the source creative itself.
+            new Vector2(1f, 0f), new Vector2(0f, 0f),
+            new Vector2(0f, 1f), new Vector2(1f, 1f)
         };
         mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
         mesh.RecalculateBounds();
@@ -266,6 +270,7 @@ public sealed class FrontRoomsScreenAdBank : MonoBehaviour
             player.skipOnDrop = true;
             player.renderMode = VideoRenderMode.RenderTexture;
             player.aspectRatio = VideoAspectRatio.FitInside;
+            player.audioOutputMode = VideoAudioOutputMode.None;
             player.prepareCompleted += OnPrepared;
             player.errorReceived += OnError;
         }

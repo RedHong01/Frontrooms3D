@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Lightweight first-person rig used only by FrontRoomsScreenAdsDemo.unity.
@@ -27,9 +28,19 @@ public sealed class FrontRoomsScreenAdsDemoRig : MonoBehaviour
 
     void Update()
     {
-        var input = FrontRoomsInput.Snapshot;
-        yaw += input.Look.x * lookSensitivity;
-        pitch = Mathf.Clamp(pitch - input.Look.y * lookSensitivity, -65f, 65f);
+        var keyboard = Keyboard.current;
+        var mouse = Mouse.current;
+        var move = Vector2.zero;
+        if (keyboard != null)
+        {
+            if (keyboard.wKey.isPressed) move.y += 1f;
+            if (keyboard.sKey.isPressed) move.y -= 1f;
+            if (keyboard.dKey.isPressed) move.x += 1f;
+            if (keyboard.aKey.isPressed) move.x -= 1f;
+        }
+        var look = mouse != null ? mouse.delta.ReadValue() : Vector2.zero;
+        yaw += look.x * lookSensitivity;
+        pitch = Mathf.Clamp(pitch - look.y * lookSensitivity, -65f, 65f);
         transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
 
         var forward = transform.forward;
@@ -38,8 +49,9 @@ public sealed class FrontRoomsScreenAdsDemoRig : MonoBehaviour
         var right = transform.right;
         right.y = 0f;
         right.Normalize();
-        var speed = moveSpeed * (input.SprintHeld ? sprintMultiplier : 1f);
-        var delta = (forward * input.Move.y + right * input.Move.x) * speed * Time.unscaledDeltaTime;
+        var sprintHeld = keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+        var speed = moveSpeed * (sprintHeld ? sprintMultiplier : 1f);
+        var delta = (forward * move.y + right * move.x) * speed * Time.unscaledDeltaTime;
         var position = transform.position + delta;
         position.x = Mathf.Clamp(position.x, xBounds.x, xBounds.y);
         position.y = Mathf.Clamp(position.y, minHeight, maxHeight);

@@ -172,7 +172,7 @@ MonoBehaviour:
   screenAnchor: {x: 0, y: 0.248, z: 0.194}
   screenSize: {x: 0.28, y: 0.19}
   visibleDistance: 16
-  interactionDistance: 2.8
+  interactionDistance: 3.2
   startsPowered: 1
 --- !u!65 &12822389
 BoxCollider:
@@ -510,7 +510,7 @@ MonoBehaviour:
   screenAnchor: {x: 0, y: 0.248, z: 0.194}
   screenSize: {x: 0.28, y: 0.19}
   visibleDistance: 16
-  interactionDistance: 2.8
+  interactionDistance: 3.2
   startsPowered: 1
 --- !u!65 &443826941
 BoxCollider:
@@ -915,7 +915,7 @@ MonoBehaviour:
   screenAnchor: {x: 0, y: 0.248, z: 0.194}
   screenSize: {x: 0.28, y: 0.19}
   visibleDistance: 16
-  interactionDistance: 2.8
+  interactionDistance: 3.2
   startsPowered: 1
 --- !u!65 &799656056
 BoxCollider:
@@ -1099,7 +1099,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 888579812}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: 1.95, z: -0.48}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1979,7 +1979,7 @@ Transform:
   m_GameObject: {fileID: 1687380818}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.9985763, z: -0.053342503, w: 0}
-  m_LocalPosition: {x: 0, y: 1.18, z: 3.55}
+  m_LocalPosition: {x: 0, y: 1.18, z: 2.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

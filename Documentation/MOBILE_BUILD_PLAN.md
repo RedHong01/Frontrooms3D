@@ -1,6 +1,6 @@
 # FrontRooms3D · iPhone / Android build plan
 
-状态：T0/T1 代码已开始，2026-10-04。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；移动设备验收和 iPhone/Android build 仍未完成。
+状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入，2026-10-04。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；移动设备验收和 iPhone/Android build 仍未完成。
 
 设计来源：Figma 文件 `0tCbAiVUlrPId3RWd9LRif`，节点 `2528:5403`（`FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID · 1920×1080`）。关键子节点：`2530:5061`（screen masters）、`2530:3828`（Touch / Stick）、`2530:3854`（Touch / Use）、`2528:5439`（Thumb map）、`2528:5446`（Same size in the eye）、`2528:5488`（Build plan）。
 
@@ -8,8 +8,10 @@
 
 - 权威工程是 `Frontrooms3D/`，Unity `6000.3.10f1`，URP `17.3.0`；启动场景只有 `Assets/Scenes/FrontRooms3D.unity`。
 - 现有构建脚本只有 macOS、Windows、WebGL。没有 iOS Xcode 导出、Android APK/AAB 或移动端构建入口。
-- `FrontRooms3DGame` 的移动核心读取已切到 `FrontRoomsInput.FrameSnapshot`（移动、视角、冲刺、USE、暂停、开始、重试、shot-back）；设置行的桌面快捷键仍保留，菜单触控 row 属于后续 T2。
-- HUD 仍在运行时创建为 Screen Space Overlay；新增的 `FrontRoomsTouchControls` + `FrontRoomsTouchControlsView` 会在移动运行时创建独立 Touch Canvas、safe-area、浮动摇杆、冲刺 socket、USE 视觉/88 hit、Pause 视觉/44 hit。
+- `FrontRooms3DGame` 的移动核心读取已切到 `FrontRoomsInput.FrameSnapshot`（移动、视角、冲刺、USE、暂停、开始、重试、shot-back）；设置行触控已直接复用 `FrontRoomsSettings`。
+- HUD 仍在运行时创建为 Screen Space Overlay；新增的 `FrontRoomsTouchControls` + `FrontRoomsTouchControlsView` 会在移动运行时创建独立 Touch Canvas、safe-area、浮动摇杆、冲刺 socket、USE 视觉/88 hit、Pause 视觉/44 hit，以及 Title/Pause/Settings/Caught 菜单命中区。
+- Android API 33+ predictive Back bridge、旧设备 Escape fallback、暂停/设置/恢复映射已接入；重启确认、设置行点击和 Caught 重试已走同一触控状态机。
+- `FrontRoomsMobileHaptics` / `FrontRoomsMobileInteractionEvents` 已接入 USE、冲刺、玻璃、被捕获和菜单语义事件；当前实现是 `Handheld.Vibrate()` 粗粒度基线，原生 Core Haptics / Android `performHapticFeedback` 与设备强度校准仍待做。
 - `activeInputHandler: 2` 目前是 Both；Figma 计划要求先建立新的 Input System facade，且 Android 不应继续依赖 Both。
 - iOS/Android 播放模块已安装。iOS 目标版本目前为 15.0；Android 最低 SDK 为 25，Target SDK 仍为 0；两端 application identifier、图标、签名/keystore 和商店元数据尚未配置。
 - FMOD 已包含 iOS 静态库和 Android 多架构库；移动 FMOD banks、加载时序和真机输出仍未验证。
@@ -75,17 +77,17 @@ facade 底层使用 Unity Input System actions；桌面、Windows 和 WebGL 绑�
 - `Screen.safeArea` 驱动的顶部 HUD、底部 hint/caption 和 hit rect；
 - `CanvasScaler` 在 phone/tablet 上以 Figma 的 1× pt 规格校准，而不是把 1920×1080 直接缩放后假定等价。
 
-当前 `Assets/Scripts/Input/FrontRoomsTouchControls.cs` 使用 EnhancedTouch touch-id 状态机，`FrontRoomsTouchControlsView.cs` 创建运行时控件视觉，并由 `FrontRooms3DGame.Mobile.cs` 同步阶段与准星 USE 状态。T1 先在 Unity Device Simulator 做布局检查，再在真实 iPhone/Android 上验证双指同时移动和视角；当前尚无设备截图或手势日志。
+当前 `Assets/Scripts/Input/FrontRoomsTouchControls.cs` 使用 EnhancedTouch touch-id 状态机，`FrontRoomsTouchControlsView.cs` 创建运行时控件视觉，并由 `FrontRooms3DGame.Mobile.cs` 同步阶段、准星 USE、菜单和 Back 状态。T1 先在 Unity Device Simulator 做布局检查，再在真实 iPhone/Android 上验证双指同时移动和视角；当前尚无设备截图或手势日志。
 
 Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predictive-back 支持或最小 Java bridge 注册 `OnBackInvokedCallback`，只派发 `BackPressed` 给 pause 状态机。
 
-### T2 · 菜单、设置和触控状态
+### T2 · 菜单、设置和触控状态（第一版已接入，待设备回归）
 
-把 Title/Pause/Settings/Caught 从键盘专属路径变成可点击 chip 与 row。Settings 的值变更必须复用已有 `FrontRoomsSettings` 状态，且支持 controls size 80–140%、opacity、left-handed、look speed、invert、gyro、break-glass tap/hold。任何触控控件在 pointer down/up/cancel、pause、应用失焦和场景重载时都要释放对应 touch id。
+把 Title/Pause/Settings/Caught 从键盘专属路径变成可点击 chip 与 row。当前已接入 Title start、Pause restart/settings、Settings 六行、Caught try-again、Android Back 和 Pause restart confirm/cancel；Settings 的值变更复用已有 `FrontRoomsSettings` 状态。controls size 80–140%、opacity、left-handed、look speed、invert、gyro、stick（Floating / Fixed）、Sprint（Socket / Button）仍需补齐。任何触控控件在 pointer down/up/cancel、pause、应用失焦和场景重载时都要释放对应 touch id。
 
-### T3 · haptics、gyro 和移动质量层
+### T3 · haptics、gyro 和移动质量层（haptics 第一版已接入）
 
-新增 iOS/Android 条件编译的 haptic adapter，至少覆盖 sprint engage、USE pressed、glass progress/break、caught；将 gameplay/control haptics 两个开关接入设置。Gyro 默认关闭，开启后与右侧 drag look 叠加时要有确定的优先级。Camera Motion、Reduce Flashing 和 captions/relay readout 都必须在移动设备上可关闭或降级。
+新增 iOS/Android 条件编译的 haptic adapter，已覆盖 sprint engage、USE pressed/released、glass progress/break、caught 和菜单确认；当前使用 `Handheld.Vibrate()` 基线并保留语义事件总线，原生 Core Haptics / Android `performHapticFeedback`、gameplay/control 两个开关和设备强度校准仍待做。Gyro 默认关闭，开启后与右侧 drag look 叠加时要有确定的优先级。Camera Motion、Reduce Flashing 和 captions/relay readout 都必须在移动设备上可关闭或降级。
 
 质量层先建立 Mobile 级别：关闭 macOS-only glass RT，验证标准 URP glass fallback、HDR、MSAA、反射、灯光 tick、纹理尺寸和 shader variant；移动默认应从较低的 MSAA、阴影图集/距离、灯光数量和 SSAO 档位开始，再用设备 profile 决定是否提升。构建时显式选择 iPhone Metal，Android 先 Vulkan、必要时 GLES3 fallback，并检查日志中没有 RT dylib/PInvoke 加载。目标设备先锁定近期 iPhone（Metal）与 Android arm64（Vulkan，必要时 GLES3 fallback）。
 
@@ -108,9 +110,9 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | --- | --- | --- |
 | 输入 facade | 桌面/WASM/autopilot 与基线行为一致，脚本化输入检查通过 | 代码已接线；完整回归待做 |
 | Touch / Stick | Calm、Walk、Sprint、Winded 四态；双指移动+look；socket latch 正确释放 | 第一版代码；设备待测 |
-| Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | prompt/USE 状态已接线；hold ring/haptics 待做 |
+| Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | prompt/USE/hold ring 已接线；原生 haptics 与设备回归待做 |
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
-| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause | Title/Pause/back 基础路径；Settings/Caught chips 待 T2 |
+| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 第一版代码已接线；Device Simulator/实机回归待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
 | Build | Xcode export、APK/AAB、包版本/identifier/图标正确 | 未开始 |
 | Store/TestFlight | 仅在签名、隐私、图标、启动图和设备验收完成后决定 | 未开始 |
@@ -128,4 +130,4 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 ## 下一步
 
-下一步是用 Device Simulator 校准 safe-area 与 hit rect，再补 T2 菜单触控、T3 haptics/触控设置，最后新增独立 iOS/Android 导出入口。每一阶段都要留下对应的 Play Mode/设备截图和日志，再推进下一层。
+下一步是用 Device Simulator 校准 safe-area 与 hit rect，再补齐触控设置和原生 haptics/gyro，最后新增独立 iOS/Android 导出入口。每一阶段都要留下对应的 Play Mode/设备截图和日志，再推进下一层。

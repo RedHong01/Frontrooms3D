@@ -562,6 +562,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void RequestTitleStart()
     {
         if (mapPlay || roomStream == null || cam == null) return;
+        FrontRoomsMobileInteractionEvents.MenuConfirmed();
         StartRunInPlace();
     }
 
@@ -901,6 +902,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void OnGlassBroken(Vector3 p)
     {
+        FrontRoomsMobileInteractionEvents.GlassShattered();
         FoleyDoorBreak(Flat(p));
 #if UNITY_EDITOR
         AutopilotNoise(AutoCauseGlass, p, GlassNoiseRadius);
@@ -1218,6 +1220,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         var window = map.BeginGlassHold(pane, hitPoint, eye.rotation * Vector3.forward);
         if (window == null || glassShot == null) return;
+        mobileLastGlassBeat = 0f;
+        FrontRoomsMobileInteractionEvents.GlassHoldStarted();
         glassPane = pane;
         var impact = map.GlassImpact(window);
         var feet = playerRoot.position;
@@ -1307,6 +1311,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             var broke = map.Hold(aimed, hitPoint, step, out holdProgress);
             glassShot?.Hold(holdProgress);
+            EmitMobileGlassBeat(holdProgress);
             if (broke)
             {
                 glassShot?.Shatter();
@@ -1950,7 +1955,22 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         else if (displaySettingsOpen) HandleSettingsKeys();
         else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
         // R restarts from the pause or caught card, never while the settings panel is open.
-        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title) { restart = true; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
+        // Touch restart gets one confirmation step because it is easy to hit while
+        // reaching for the pause card; desktop keyboard and the caught retry chip
+        // retain their immediate restart behavior.
+        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title)
+        {
+            if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
+            {
+                if (mobileRestartConfirmOpen) ConfirmMobileRestart();
+                else RequestMobileRestartConfirmation();
+            }
+            else
+            {
+                restart = true;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+        }
         var dt = Mathf.Min(Time.deltaTime, .1f);
 #if UNITY_EDITOR
         if (autopilot) AutopilotTick(dt);
@@ -2105,6 +2125,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         AutoBaseRestoreTime();
 #endif
+        if (mobileTouch != null)
+        {
+            mobileTouch.SettingsRowRequested -= HandleMobileSettingsRow;
+            mobileTouch.RestartCancelRequested -= CancelMobileRestartConfirmation;
+            mobileTouch.LookTapped -= HandleMobileLookTap;
+        }
+        if (mobileBackBridge != null)
+            FrontRoomsMobileBackBridge.BackPressed -= HandleMobileBack;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
         if (phase == Phase.Paused) Paused?.Invoke(false);
@@ -2114,7 +2142,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void End()
     {
         if (phase != Phase.Playing) return;
-        SetPhase(Phase.Caught); Sound(caughtClip, playerPos); Event("outcome", "caught");
+        SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
         Log(phase + " · " + elapsed.ToString("0.0") + " s");
