@@ -11,6 +11,10 @@ using UnityEngine;
 /// </summary>
 sealed class FrontRoomsKitImporter : AssetPostprocessor
 {
+    // The sidecar's final distance is the cull threshold. Bump the importer
+    // version so existing kit FBX assets are re-imported with this mapping.
+    public override uint GetVersion() => 2;
+
     const string Folder = "Assets/Resources/Props/Models/";
     const string CreatureFolder = "Assets/Resources/Creatures/";
     const string SurfaceFolder = "Assets/Resources/Surfaces/";
@@ -78,12 +82,17 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
             // Sidecars use metres at the reference vertical FOV (76 degrees):
             // screenHeight = size / (2 d tan(38 degrees)). Zero means no cull.
             var tanHalfFov = Mathf.Tan(38f * Mathf.Deg2Rad);
-            for (var i = 0; i < lods.Length; i++)
+            var last = lods.Length - 1;
+            for (var i = 0; i <= last; i++)
             {
-                var distance = authored.lodDistances[i];
+                // Sidecars list d01, d12, dcull. When the FBX has only LOD0
+                // and LOD1, the last imported level still owns dcull.
+                var distance = i == last
+                    ? authored.lodDistances[authored.lodDistances.Length - 1]
+                    : authored.lodDistances[i];
                 lods[i].screenRelativeTransitionHeight = distance > 0f
                     ? group.size / (2f * distance * tanHalfFov)
-                    : i == lods.Length - 1 ? 0f : lods[i].screenRelativeTransitionHeight;
+                    : i == last ? 0f : lods[i].screenRelativeTransitionHeight;
             }
             group.SetLODs(lods);
             group.fadeMode = LODFadeMode.None;
