@@ -91,3 +91,7 @@ Builds/.BuildStaging/
 
 # Raw CC0 downloads (repacked into Assets/ by the importers)
 Tools/lookdev/cc0_src/
+
+# Python migration-tool caches
+__pycache__/
+*.py[cod]
