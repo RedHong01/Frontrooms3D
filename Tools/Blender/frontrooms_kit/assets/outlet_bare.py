@@ -19,7 +19,9 @@ Size: 61.9 x 106.7 mm on the wall (box cut-out width x strap length),
 
 Game read (no hole can be cut in the map wall, spec 8 item 7): a dark (PB)
 sheet 0.3 mm in front of the wall fills the ragged cut-out, so the box
-interior reads as a void instead of wallpaper. The terminal screws and
+interior reads as a void instead of wallpaper; a torn lip 0.5-1.3 mm wide
+(device ivory, the pale paper core) slopes from the cut edge down onto the
+paper, so the edge reads torn rather than as a grey card. The terminal screws and
 their clamp plates sit far enough forward (axis 1.5 mm behind the wall
 plane) that their front 2 mm show as brass and silver glints in the gap
 between the device and the box. Everything else behind the wall plane is
@@ -63,6 +65,8 @@ BOX_FRONT = 1.0
 BOX_BACK = -35.0
 CUT_GAP = 4.0                  # mean ragged gap round the box (3-5 mm)
 GAP_H = 0.3
+LIP_W = (0.5, 1.3)             # torn paper / gypsum lip width range (mm), round 5
+LIP_H = (0.08, 0.34)           # lip height: outer edge on the wall, inner edge at the cut
 TERM = {"R": 3.6, "crown": 0.9, "side": 1.2, "slot": (1.0, 0.7), "axis_h": -1.5, "z": oc.OPEN_Z}
 ARC_DEG_BARE = 5.625           # the faces are the hero here: 64 per circle
 
@@ -93,6 +97,21 @@ def ragged_outline(hw, hh, n=60, seed=7):
         d = math.hypot(x, z)
         pts.append((x + x / d * tear, z + z / d * tear))
     return pts
+
+
+def torn_lip(cut, seed=11):
+    """The torn paper / gypsum lip: each cut point pushed outward (radially,
+    as ragged_outline jitters) by a deterministic width in LIP_W."""
+    out = []
+    n = len(cut)
+    for k, (x, z) in enumerate(cut):
+        hsh = math.sin(k * 7.137 + seed * 3.71) * 24634.6345
+        j = hsh - math.floor(hsh)
+        w = LIP_W[0] + (LIP_W[1] - LIP_W[0]) * (0.5 + 0.3 * math.sin(k * 2.3 + 1.0) + 0.2 * (2 * j - 1))
+        d = math.hypot(x, z)
+        out.append((x + x / d * w, z + z / d * w))
+    assert n == len(out)
+    return out
 
 
 def strap_outline():
@@ -196,6 +215,10 @@ def build(kit):
     # the ragged dark gap: one sheet 0.3 mm in front of the wall
     cut = ragged_outline(ohw + CUT_GAP, ohh + CUT_GAP)
     pb.fill(pb.ring(cut, GAP_H))
+    # torn lip round the cut-out: the pale paper core between the print and
+    # the dark gap (reads "torn", not "a grey card"; device ivory slot)
+    lip = torn_lip(cut)
+    ni.bridge(ni.ring(lip, LIP_H[0]), ni.ring(cut, LIP_H[1]))
     # checks
     for mm_, nm in ((ni, "device"), (al, "steel"), (pb, "dark"), (br, "brass")):
         assert mm_.hmax() <= FACE_TOP + 1e-6, "%s proud %.2f" % (nm, mm_.hmax())
@@ -209,7 +232,13 @@ def build(kit):
     sx = [p[0] for p in so]
     sz = [p[1] for p in so]
     assert abs(max(sx) - min(sx) - STRAP_W) < 0.05 and abs(max(sz) - min(sz) - STRAP_L) < 0.05, "strap envelope"
-    wear_ni = oc.wear_device
+    ohw_, ohh_ = BOX_IN[0] / 2 + BOX_T, BOX_IN[1] / 2 + BOX_T
+
+    def wear_ni(p, n):
+        x, h, z = p
+        if 0.0 < h < 0.5 and (abs(x) > ohw_ or abs(z) > ohh_):
+            return (1.0, 0.6, 1.0)        # torn lip: fresh, rough edge
+        return oc.wear_device(p, n)
     ni.to_object(kit, "device", oc.NI, wear=wear_ni, lods="0")
     al.to_object(kit, "strap box screws", oc.AL, wear=lambda p, n: (1.0, 0.9 if p[1] > STRAP_FRONT - 0.01 else 1.0, 1.0), lods="0")
     pb.to_object(kit, "slots gap", oc.PB, wear=oc.wear_cavity, lods="0")
@@ -225,9 +254,9 @@ def build(kit):
     cw = max(p[0] for p in cut) - min(p[0] for p in cut)
     oc.common_meta(kit, __import__(__name__), cw, STRAP_L, FACE_TOP, {
         "kind": "bare", "behind": -BOX_BACK * oc.MM, "screws": 0, "faces": "5-15R", "groundDown": True,
-        "deviceSlot": oc.NI, "plateSlot": None, "gapSheetH": GAP_H * oc.MM,
+        "baseDeviceSlot": oc.NI, "basePlateSlot": None, "gapSheetH": GAP_H * oc.MM,
         "note": "drop the dark gap sheet if a real hole is ever cut in the wall"})
-    oc.tri_check(NAME + " LOD0", counts[0], BUDGET[0])
+    oc.lod_check(NAME, counts, BUDGET)
     kit.meta["trianglesByLod"] = counts
 
 

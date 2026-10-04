@@ -27,7 +27,8 @@ kit -Y = Unity +Z):
   block. Ladder cords loop out of the stack front at the 4 ladders.
 * Bottom rail 38 x 29, Y 2.006-2.035, plastic end caps, 2 sill guards.
   Lowest point over the opening: Y 2.003 (>= 2.000, self-check e).
-* Tilt wand: 9 mm hex, X +0.72, from the tilter hook to Y 1.14. Lift cords
+* Tilt wand: hex, 7.8 mm across flats (9 mm across corners; spec "Ø 8 mm
+  hex"), X +0.72, from the tilter hook to Y 1.14. Lift cords
   (1.4 mm, two) from the cord lock at X +0.74 to a tassel ending at Y 1.20.
   Both hang beside the opening (|X| >= 0.715 > 0.70) in front of the jamb
   face band (Z 0.152 / 0.150 vs 0.105).
@@ -36,7 +37,8 @@ Budget (§9.4): 2,400 / 800 / 120 tris; LOD1 now at 0.35 (1.55 m wide): the
 slat slabs, ladder cords and small fittings drop and a plain stack block
 (hidden inside the slabs at LOD0) takes over; LOD2 also drops the cords.
 LOD distances 3 / 10 / 30. Slots: Prop_SteelAlmond (first), Prop_PlasticWhite
-(wand, cords, tassel, spacers, sill guards). Render-only: no collider.
+(wand, cords, tassel, spacers, sill guards). Sidecar placement "Wall"
+(wall_placement()). Render-only: no collider.
 
 Era: 1" metal mini-blinds, almond baked enamel, wand tilt and cord lift are
 exactly 1980s-1990 office stock (cordless and 2" faux-wood came later).
@@ -215,6 +217,7 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "blind")
+    wc.wall_placement(kit)
     # The blind hangs 1.055 m below its rail-top origin: lift it onto the
     # turntable floor for kitlib's two preview stills only (after export).
     wc.lift_preview(kit, (O[1] - WAND_Y0) + 0.005)

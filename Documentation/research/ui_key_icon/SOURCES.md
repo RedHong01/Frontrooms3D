@@ -13,6 +13,7 @@ Read date for every web source: **2026-10-03** (12:1x–12:3x local). No media w
 | `05_model_kit_key_zone_side.jpg` | `Kit_Key_Zone` side view (nickel above, brass below) | visual chat's G3 preview `interact_previews/G3/G3_key_side.png` | ours |
 | `06_model_key_tags_front.jpg` | ring and the three tag shapes with typed numbers | G3 preview `G3_tags_front.png` | ours |
 | `07_model_kit_key_zone_34.jpg` | `Kit_Key_Zone` 3/4 view | G3 preview `G3_key_34.png` | ours |
+| `08_main_fbx_vs_trace.png` | verification (2026-10-03 22:0x): left, the 20 px/mm side render the icon was traced from; middle, main's `Kit_Key_Zone.fbx` outline rasterised in the same frame; right, both overlaid, the 15 differing px in red (IoU 0.99996) | scratchpad `keyicon_resume/verify_main_fbx.py` (Blender 4.3, numpy) on main's FBX (`8ef5b64`) + `keyicon_design/model/key_side.png` | ours |
 
 ## Reused media already on disk (credit from their own ledgers)
 

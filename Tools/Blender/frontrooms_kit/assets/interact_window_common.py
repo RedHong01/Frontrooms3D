@@ -143,8 +143,27 @@ def interface_anchors(kit, blind=True):
 
 
 def lod_meta(kit, lod1_ratio, lod2_ratio, distances):
-    kit.meta["lodDistances"] = list(distances)
+    """(d01, d12, dcull) in metres (spec §1.8). "None" (no cull) is written as
+    0.0, the sentinel FrontRoomsKitLibrary.Info.lodDistances documents ("0
+    means never cull") and FrontRoomsKitImporter honours (distance <= 0 on
+    the last LOD -> no cull); a JSON null in a float[] is not a value
+    JsonUtility is documented to accept (G1's door sidecars use -1.0, which
+    the importer treats the same way)."""
+    kit.meta["lodDistances"] = [0.0 if d is None else float(d) for d in distances]
     kit.meta["lodRatios"] = [lod1_ratio, lod2_ratio]
+
+
+def wall_placement(kit):
+    """Sidecar ``placement: "Wall"`` (service 0), the main project's
+    convention for these kits. kitlib.export() derives placement only from
+    tags ("wall_decor" -> Wall, kitlib.py:820), so the tag is the one way to
+    get it without editing kitlib. Without it every G4 sidecar says "Floor",
+    the Level Designer palette offers window frames and blinds as floor
+    furniture (window_landing/02_tests_frames.md §6 item 3), and the main
+    project had to hand-patch the six JSONs at promotion (2026-10-03 19:xx),
+    which any rebuild would silently revert. Runtime code never reads
+    placement or this tag (only the editor palette and the map tests do)."""
+    kit.tag("wall_decor")
 
 
 # ---------------------------------------------------------------- profiles

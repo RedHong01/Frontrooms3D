@@ -10,7 +10,8 @@ second-hand work alike).
 
 Construction (mm, Blender: x right, y out of the wall = negative, z up):
 * Box: rounded-corner drawn shell 54.0 x 101.6 (corner R 6), 47.6 deep,
-  back on the wall plane y = 0 (nothing behind it).
+  back on the wall plane y = 0 (nothing behind it). One unused 1/2 in
+  knockout slug (Ø 22.2, 0.3 proud) centred on each long side.
 * Cover: 0.8 mm sheet, 55.0 x 102.6 (0.5 mm lip over the box; real covers
   run ~58.7 x 104.8, trimmed to keep the spec envelope), corner R 6.5,
   a 2.2 mm flat rim, then a pressed ramp to a field 2.8 mm above the box
@@ -67,6 +68,17 @@ NECK_R, NECK_L = 9.5, 24.0                                 # ESTIMATE
 SOCKET_R, SOCKET_L = 11.3, 18.0                            # ESTIMATE
 TUBE_IN = 4.0                                              # tile starts this far inside the socket
 INNER_R = B.EMT_OD / 2 - 0.1                               # socket lip inner radius (under the tube skin)
+KO_R, KO_PROUD, KO_SEGS = 11.1, 0.3, 20                    # 1/2 in knockout slug (7/8 in hole); proud ESTIMATE
+
+
+def knockout(mb, fr, segs=KO_SEGS):
+    """Unused 1/2 in knockout on a box side: the punched slug (Ø 22.2) stands
+    KO_PROUD out of the side, so its sheared rim catches the light. fr origin
+    = slug centre on the side plane, n out of the box."""
+    r0 = mb.ring(fr, B.circle(KO_R, segs), 0.0)
+    r1 = mb.ring(fr, B.circle(KO_R, segs), KO_PROUD)
+    mb.band(r0, r1, AL)
+    mb.cap(r1, AL, front=True)
 
 
 def _connector_axis(t):
@@ -146,6 +158,12 @@ def build(kit):
     mb.to_part(kit, "connector", "0")
     B.screw_pan(kit, boss.at(0.0, 0.0, 3.6), 47.0, segs=16, head_d=5.6, head_h=1.5, slot_w=0.8, slot_depth=0.6,
                 name="set_screw")
+
+    # Unused knockouts, one centred on each long side (x = +-27, mid-depth).
+    mb = B.MB()
+    knockout(mb, B.Frame((BOX_W / 2 * MM, KO_Y * MM, 0.0), (0, 1, 0), (0, 0, 1), (1, 0, 0)))
+    knockout(mb, B.Frame((-BOX_W / 2 * MM, KO_Y * MM, 0.0), (0, -1, 0), (0, 0, 1), (-1, 0, 0)))
+    mb.to_part(kit, "knockouts", "0")
 
     # LOD1 / LOD2 (hand-built; only when kitlib can export them) ----------------
     if B.lods_enabled():

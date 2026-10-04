@@ -151,11 +151,17 @@ SPEC_1_2 = {
 # --------------------------------------------- O1 design numbers (ESTIMATE)
 # Each is O1's reading of an ESTIMATE or of a gap in 1.2; the build report
 # (build_o1_receptacles_wall_plates_with_duplex_devices.md) lists them.
-ARC_DEG = 7.0          # opening / face arcs: one segment per 7.0 deg (17 per arc,
-                       # 36 verts per outline; sagitta 0.031 mm = 0.09 px at 0.3 m)
+ARC_DEG = 360.0 / 64   # opening / face arcs at 64 segments per circle (spec 1.1):
+                       # 22 per arc, 46 verts per outline (round 5 had 7.0 deg = 51/circle)
 CSK_SEGS = 40          # countersink rings (sagitta 0.011 mm; hidden under the 64-seg head)
 GROUND_SEGS = 16       # ground U semicircle (sagitta 0.012 mm = 0.04 px at 0.3 m)
 R_FLOOR = 0.5          # corner radius kept by profile rings inset past CORNER_R
+# Corner segments per profile ring (outline first). The outline (r 2.0) keeps
+# the spec's 12; the inner rings, whose radius shrinks to 0.5, keep about the
+# same chord (<= 0.26 mm): 12/12/10/8/4/4/4 for r 2.0/1.85/1.55/1.05/0.5/0.5/0.5.
+# Rings of different counts are joined by Mesh.zip (structural points in step).
+CORNER_SEGS_RINGS = (12, 12, 10, 8, 4, 4, 4)
+SS_CORNER_SEGS_RINGS = (12, 12, 12, 6, 4)   # stainless: r 1.0/1.0/0.8/0.3/0.3
 SS_R_FLOOR = 0.3
 SEAT_DROP = 0.05       # seat ring 0.05 below the field: the 0.4 mm countersink lip reads
 BORE_D = 3.6           # #6 clearance bore at the cone bottom (dark cap)
@@ -191,32 +197,45 @@ def assert_shared_numbers():
 
 
 # ------------------------------------------------------------------ outlines
-def rrect(hw, hh, r, segs, cols=None):
+def rrect(hw, hh, r, segs, cols=None, params=False):
     """CCW rounded rectangle centred at 0. The cyclic list begins on the right
     edge (just above the bottom-right arc). cols = {"R": [z..], "L": [z..],
     "T": [x..], "B": [x..]} adds points on the straight edges; give the same
-    values to every ring and the rings stay in step."""
+    values to every ring and the rings stay in step. params=True also
+    returns (params, span): every column point and arc end gets an integer
+    parameter, arc interiors fractions, so rings with different ``segs``
+    can be zipped (Mesh.zip)."""
     cols = cols or {}
     r = max(0.02, min(r, hw - 0.01, hh - 0.01))
-    pts = []
+    pts, prm = [], []
+    p = [0.0]
+
+    def col(pt):
+        p[0] += 1.0
+        pts.append(pt)
+        prm.append(p[0])
 
     def arc(cx, cz, a0):
         for k in range(segs + 1):
             a = math.radians(a0 + 90.0 * k / segs)
             pts.append((cx + r * math.cos(a), cz + r * math.sin(a)))
+            prm.append(p[0] + 1.0 + k / segs)
+        p[0] += 2.0
 
     for z in sorted(cols.get("R", ())):
-        pts.append((hw, z))
+        col((hw, z))
     arc(hw - r, hh - r, 0.0)
     for x in sorted(cols.get("T", ()), reverse=True):
-        pts.append((x, hh))
+        col((x, hh))
     arc(-hw + r, hh - r, 90.0)
     for z in sorted(cols.get("L", ()), reverse=True):
-        pts.append((-hw, z))
+        col((-hw, z))
     arc(-hw + r, -hh + r, 180.0)
     for x in sorted(cols.get("B", ())):
-        pts.append((x, -hh))
+        col((x, -hh))
     arc(hw - r, -hh + r, 270.0)
+    if params:
+        return pts, prm, p[0]
     return pts
 
 
@@ -356,6 +375,23 @@ class Mesh:
         for i in range(n if closed else n - 1):
             j = (i + 1) % n
             self.face((a[i], a[j], b[j], b[i]), flip)
+
+    def zip(self, a, pa, b, pb, span):
+        """Bridge two closed rings with different vertex counts whose
+        structural points share parameters (rrect(params=True)). Wound as
+        bridge(a, b); n_a + n_b triangles."""
+        na, nb = len(a), len(b)
+        assert abs(pa[0] - pb[0]) < 1e-9, "zip: rings start out of step"
+        i = j = 0
+        while i < na or j < nb:
+            ta = (pa[i + 1] if i + 1 < na else pa[0] + span) if i < na else 1e18
+            tb = (pb[j + 1] if j + 1 < nb else pb[0] + span) if j < nb else 1e18
+            if ta <= tb + 1e-9:
+                self.face((a[i % na], a[(i + 1) % na], b[j % nb]))
+                i += 1
+            else:
+                self.face((a[i % na], b[(j + 1) % nb], b[j % nb]))
+                j += 1
 
     def fan(self, ring, apex, flip=False):
         n = len(ring)
@@ -628,6 +664,24 @@ class Chip:
         self.floor_in = floor_in
         self.floor_out = floor_out
         self.floor_d = floor_d
+        # The bisect zone: the plate rings get extra columns ZONE mm from the
+        # corner on both edges, and only faces wholly inside the zone are cut,
+        # so the facet cuts never run along the whole edge band (a cut through
+        # a long smooth-shaded band shows as a shading line, round 5).
+        self.zone = reach + 1.5
+
+    def cols(self, hw, hh, cols=None):
+        """Ring columns that close the bisect zone (stay in step on every ring)."""
+        cols = {k: list(v) for k, v in (cols or {}).items()}
+        sx, sz = self.corner
+        cols.setdefault("B" if sz < 0 else "T", []).append(sx * (hw - self.zone))
+        cols.setdefault("L" if sx < 0 else "R", []).append(sz * (hh - self.zone))
+        return cols
+
+    def steiner(self, hw, hh):
+        """Field points that keep the field triangles at the corner small."""
+        sx, sz = self.corner
+        return [(sx * (hw - self.zone + 1.0), sz * (hh - self.zone + 1.0))]
 
     def local(self, x, z, hw, hh):
         sx, sz = self.corner
@@ -642,7 +696,7 @@ class Chip:
 
 
 def thermoset_plate(W=PLATE_W, H=PLATE_H, R=CORNER_R, profile=PROFILE, crown=FIELD_CROWN,
-                    open_z=(OPEN_Z, -OPEN_Z), csk=((0.0, 0.0),), crack=None, steiner=STEINER):
+                    open_z=(OPEN_Z, -OPEN_Z), csk=((0.0, 0.0),), crack=None, steiner=STEINER, chip=None):
     """LOD0 thermoset plate as a Mesh, plus a dict of rings the device needs.
     profile = ((inset, h), ...) from the outline to the field edge."""
     hw, hh = W / 2, H / 2
@@ -654,13 +708,18 @@ def thermoset_plate(W=PLATE_W, H=PLATE_H, R=CORNER_R, profile=PROFILE, crown=FIE
         ze = crack.z_exit
         w2 = Crack.WIDTH / 2
         cols = {"R": [ze + w2, ze, ze - w2, ze - Crack.FALL]}
-    # Edge profile rings (12 segments per corner; inner rings keep R_FLOOR).
-    rings = []
-    for d, h in profile:
-        pts = rrect(hw - d, hh - d, max(R - d, R_FLOOR), CORNER_SEGS, cols)
+    if chip is not None:
+        cols = chip.cols(hw, hh, cols)
+    # Edge profile rings (12 segments per corner on the outline, fewer on the
+    # small inner radii: CORNER_SEGS_RINGS; inner rings keep R_FLOOR).
+    assert len(profile) == len(CORNER_SEGS_RINGS) and CORNER_SEGS_RINGS[0] == CORNER_SEGS
+    rings, prms = [], []
+    for (d, h), segs in zip(profile, CORNER_SEGS_RINGS):
+        pts, prm, span = rrect(hw - d, hh - d, max(R - d, R_FLOOR), segs, cols, params=True)
         rings.append(m.ring(pts, h))
-    for a, b in zip(rings, rings[1:]):
-        m.bridge(a, b)
+        prms.append(prm)
+    for k in range(len(rings) - 1):
+        m.zip(rings[k], prms[k], rings[k + 1], prms[k + 1], span)
     field_ring = rings[-1]
     # Openings: the 0.5 mm 3-segment round from the field to the vertical
     # tangent (the device gap starts below it).
@@ -738,6 +797,8 @@ def thermoset_plate(W=PLATE_W, H=PLATE_H, R=CORNER_R, profile=PROFILE, crown=FIE
                 x = 3.7 + (hw - fin - 3.7) * t
                 z = _poly_z(crack.path, x)
                 cand.append((x, z + off))
+    if chip is not None:
+        cand += chip.steiner(hw, hh)
     for x, z in cand:
         if not inside(outer_xz, x, z) or any(inside(p, x, z) for p in holes_xz):
             continue
@@ -859,7 +920,7 @@ def chip_bmesh(bm, info, chip):
         for f in bm.faces:
             if f.normal.y >= -0.02:          # front-ish faces only (plate +h = Blender -y)
                 continue
-            if any(max(uvw(v.co)[:2]) <= reach for v in f.verts):
+            if all(max(uvw(v.co)[:2]) <= chip.zone + 1e-4 for v in f.verts):
                 faces.append(f)
         edges = list({e for f in faces for e in f.edges})
         verts = list({v for f in faces for v in f.verts})
@@ -919,11 +980,14 @@ def stainless_plate(W=PLATE_W, H=PLATE_H, open_z=(OPEN_Z, -OPEN_Z), csk=((0.0, 0
     for j in range(SS_EDGE_SEGS + 1):
         ph = math.radians(90.0 - 90.0 * j / SS_EDGE_SEGS)   # 90 (side) -> 0 (top)
         prof.append((SS_EDGE_R - SS_EDGE_R * math.sin(ph), rc + SS_EDGE_R * math.cos(ph)))
-    rings = []
-    for d, h in prof:
-        rings.append(m.ring(rrect(hw - d, hh - d, max(SS_CORNER_R - d, SS_R_FLOOR), CORNER_SEGS), h))
-    for a, b in zip(rings, rings[1:]):
-        m.bridge(a, b)
+    assert len(prof) == len(SS_CORNER_SEGS_RINGS) and SS_CORNER_SEGS_RINGS[0] == CORNER_SEGS
+    rings, prms = [], []
+    for (d, h), segs in zip(prof, SS_CORNER_SEGS_RINGS):
+        pts, prm, span = rrect(hw - d, hh - d, max(SS_CORNER_R - d, SS_R_FLOOR), segs, params=True)
+        rings.append(m.ring(pts, h))
+        prms.append(prm)
+    for k in range(len(rings) - 1):
+        m.zip(rings[k], prms[k], rings[k + 1], prms[k + 1], span)
     field_ring = rings[-1]
     hfn = lambda x, z: SS_FIELD   # noqa: E731
     k = arc_k(OPEN_D / 2, OPEN_FLAT)
@@ -1135,6 +1199,8 @@ def lod1_plate(W, H, R, profile2, field_h, crown, open_z=(OPEN_Z, -OPEN_Z), slot
     cols = None
     if crack is not None:
         cols = {"R": [crack.z_exit, crack.z_exit - Crack.FALL]}
+    if chip is not None:
+        cols = chip.cols(hw, hh, cols)
     rings = [p.ring(rrect(hw - d, hh - d, max(R - d, R_FLOOR if not steel else SS_R_FLOOR), LOD1_CORNER_SEGS, cols), h)
              for d, h in profile2]
     for a, b in zip(rings, rings[1:]):
@@ -1249,6 +1315,24 @@ def tri_check(name, tris, budget, tol=0.15):
     assert lo <= tris <= hi, "%s: %d tris outside %d +-15%% (%d..%d)" % (name, tris, budget, lo, hi)
 
 
+def lod_check(name, counts, budget):
+    """LOD0 always; LOD1/LOD2 when their part sets were built (P-1/P-1b)."""
+    for level, tris in enumerate(counts):
+        if level < len(budget):
+            tri_check("%s LOD%d" % (name, level), tris, budget[level])
+
+
+# kitlib exports material VARIANTS with the base module's meta, so the
+# "outlet" block names the BASE slots. A variant's real materials are its
+# sidecar "slots" list: _Brown maps both ivory slots to Prop_Ceramic, which
+# the FBX exporter merges into ONE submesh (3 submeshes, checked round 5);
+# _IG maps Prop_NylonIvory to Prop_PlasticOrange. R3 maps by material name
+# (Prop_Thermoset* = plate palette, Prop_NylonIvory / Prop_PlasticOrange =
+# device palette), never by submesh index.
+SLOT_NOTE = ("base slots; a VARIANT's real materials are in 'slots' (_Brown: plate and device share one "
+             "Prop_Ceramic submesh; _IG: device Prop_PlasticOrange). Map by material name, not by index.")
+
+
 def check_plate(m, info, W, H, depth, label):
     xs = [v[0] for v in m.v]
     zs = [v[2] for v in m.v]
@@ -1341,7 +1425,7 @@ def build_duplex(kit, module, kind="thermoset", t20=False, crack=None, chip=None
         plate_slot = AL
         open_bottom_h = SS_FIELD - SS_OPEN_ROUND
     else:
-        m, info = thermoset_plate(W, H, R, prof, crown, crack=crack)
+        m, info = thermoset_plate(W, H, R, prof, crown, crack=crack, chip=chip)
         plate_slot = TI
         open_bottom_h = None
     check_plate(m, info, W, H, crown, label)
@@ -1398,8 +1482,8 @@ def build_duplex(kit, module, kind="thermoset", t20=False, crack=None, chip=None
     common_meta(kit, module, W, H, face_top, {
         "kind": kind, "fieldH": round(crown * MM, 6), "seatH": round(info["csk"][0]["seat_h"] * MM, 6),
         "screws": len(info["csk"]), "faces": "5-20R" if t20 else "5-15R", "groundDown": True,
-        "deviceSlot": NI, "plateSlot": plate_slot})
-    tri_check(label + " LOD0", lod_counts[0], module.BUDGET[0])
+        "basePlateSlot": plate_slot, "baseDeviceSlot": NI, "slotNote": SLOT_NOTE})
+    lod_check(label, lod_counts, module.BUDGET)
     kit.meta["trianglesByLod"] = lod_counts
     return info
 
@@ -1412,7 +1496,7 @@ def build_lod_parts(kit, kind, info, face_top, gap_h, t20, crack, chip):
         prof2 = ((0.0, 0.0), (0.2, SS_FIELD - 0.75), (SS_EDGE_R, SS_FIELD))
     else:
         prof2 = ((0.0, 0.0), (prof[3][0], prof[3][1]), (prof[-1][0], prof[-1][1]))
-    p1, d1, _b, i1 = lod1_plate(W, H, R, prof2, edge_h, crown, crack=crack, steel=steel)
+    p1, d1, _b, i1 = lod1_plate(W, H, R, prof2, edge_h, crown, crack=crack, chip=chip, steel=steel)
     hook1 = None
     if chip is not None:
         info1 = {"hw": W / 2, "hh": H / 2}

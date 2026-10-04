@@ -12,7 +12,7 @@ The backlog collected on 2026-10-03 covers everything since 2026-10-02: 68 check
 |---|---|
 | Figma file | `0tCbAiVUlrPId3RWd9LRif` ("Undergoing Game Projects") |
 | Page | `2099:76` |
-| Section | **FRONTROOMS · VISUAL VERIFICATION LOG**. Not on the canvas yet (read-only check of page 2099:76, 2026-10-03 ~18:4x). The first placing workflow creates it and writes its node id here: `section id: —` |
+| Section | **FRONTROOMS · VISUAL VERIFICATION LOG**, `section id: 2595:6093`, created 2026-10-03 at x 77337, y 2000, 8,280 × 22,400 (18 rows of 4: VL000–VL071). Slides are being placed now |
 | Proposed origin | **x 77337, y 2000**: the next slot in the y 2000 row, right of HUD KEY · UI VARIATIONS (2532:4038, x 68657–76937), on the row's 8,680 pitch. Confirm with the bounds check in §1.4 first |
 | Slide grammar source | FRONTROOMS · HUNTER · EARLY VISUAL PROPOSALS (`2331:852`), measured 2026-10-03 |
 | `$SP` in paths | `/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad` |
@@ -45,9 +45,10 @@ A **verification image** is any image made to answer a visual question, for exam
 
 - Save every image under `Frontrooms3D/Documentation/research/<area>/images/`. Use JPG q85 at ≤ 1920 px wide for frames and sheets. Use PNG for heatmaps, masks, UI and anything compared pixel for pixel.
 - Clones and the scratchpad (`$SP`) are temporary. If an image only exists there, copy it into the area's `images/` folder before you log it, and log the copy's path.
-- 29 backlog images in 10 rows (R2, F2, F5) still point at `$SP`. The placing workflow copies them to `research/verification_log/media/` first and updates the paths.
+- The 29 backlog images in 10 rows (R2, F2, F5) that only lived in `$SP` were copied to `research/verification_log/media/` on 2026-10-03; §3 points at the copies.
 - Upload limit: 10 MB per image (`upload_assets`). Every backlog image fits; the largest is 7.8 MB.
-- An image under 200 px (a HUD sprite) is upscaled by a whole number with nearest-neighbour before upload, and its chip says the factor (`×8`).
+- An image under 200 px (a HUD sprite) is upscaled by a whole number with nearest-neighbour before upload, and its chip says the factor (`×20`). If it carries alpha, put a dark `backing` rectangle (#2B2921) under its slot so the alpha reads.
+- Upload copies (over 4 MB, or longer than 4,096 px, or upscaled sprites) are made in `$SP/vlog_upload/` as JPG q90 / PNG; the index keeps the original path.
 
 ### 1.3 Pick the images and write the row first
 
@@ -79,13 +80,13 @@ A **verification image** is any image made to answer a visual question, for exam
    - the new rectangle must clear all of them by ≥ 400 px. If it does not, step right by 8,680 until it does;
    - x 16577 below y 23865 belongs to 平面视觉;
    - then write the section id into the table at the top of this file.
-4. **Section size:** width 8,280. Height = rows × 1,240 + 80, where rows = ceil(slides / 4).
+4. **Section size:** width 8,280. Height = rows × 1,240 + 80, where rows = ceil((highest VL number + 1) / 4). Today: 18 rows, 22,400 high, room for VL000–VL071.
    - Grow the height when a new row starts.
    - Before growing, re-check the bounds below the section.
-5. **Slide cell from the number** (4 across, as in the Hunter section):
-   - col = (n − 1) mod 4, row = floor((n − 1) / 4);
+5. **Slide cell from the number** (4 across, as in the Hunter section). VL000 is the cover and takes the first cell:
+   - col = n mod 4, row = floor(n / 4);
    - frame x = 120 + col × 2,040, y = 160 + row × 1,240 (section-relative).
-   - Example: VL001 sits at (120, 160) and VL005 at (120, 1400).
+   - Example: VL000 sits at (120, 160), VL001 at (2160, 160) and VL004 at (120, 1400). VL072 starts row 19: grow the section first.
 6. **Never edit, move or restyle another chat's section or slide.** Only this section and its slides belong to the visual chat.
 
 ### 1.5 Slide grammar (from Hunter 2331:852; numbers in px)
@@ -98,7 +99,7 @@ A **verification image** is any image made to answer a visual question, for exam
 |---|---|---|---|---|
 | Running header | P1/Header/Meta (`S:e15151982bb3e6d485ad51045c6714f087f0c2eb,`) | IBM Plex Mono Regular | 13 / 16 | y 28, h 16 |
 | Title | P1/Display/Title (`S:4cc59baf3230acd570aeedd2f3163c738d822402,`) | Bayon | 88 / 80, −1 % | x 72, y 139, one line, ends before x 1248 |
-| Lede | P1/Text/Body (`S:60138e985390dcae06a002de377d05c5808fc81c,`) | Source Serif 4 | 24 / 26, −1 % | x 1272, y 173, w 576, ≤ 2 lines |
+| Lede | P1/Text/Body (`S:60138e985390dcae06a002de377d05c5808fc81c,`) | Source Serif 4 | 24 / 26, −1 % | x 1272, w 576, ≤ 2 lines, bottom on y 225 (a 1-line lede sits at y 199) |
 | Chip label | P1/Display/Label (`S:44581afa083a5f9b8da214be893def6dc2449af1,`) | Bayon, UPPER | 20 / 20, +3 % | chip padding 10 / 7, at image x + 16, y + 16 |
 | Statement | P1/Text/Statement (`S:8ea64620976dfe88c39216b12a4fa8d0d71a53be,`) | Source Serif 4 | 50 / 42, −2 % | x 72, y 969, w 1776, one line |
 
@@ -111,7 +112,8 @@ A **verification image** is any image made to answer a visual question, for exam
 | 972 | the meta line `<date> · <task> · <check> · <verdict>`, e.g. `Oct 3, 2026 · G10 · The milky veil is gone · PASS`. One line, ≤ 90 characters, ends before x 1698 |
 | 1722 | `VL<nnn>` (in the page-number slot) |
 
-- **Media band:** y 232–889 (657 high). The slots are plain rectangles, corner radius 0, named `img:<file stem>` (the file name without its extension; stems are unique in the backlog).
+- **Media band:** y 232–889 (657 high), x 72–1848. The slots are plain rectangles, corner radius 0, named `img:<file stem>` (the file name without its extension; stems are unique in the backlog).
+- **Slots take the image's own aspect ratio** (no letterbox, no crop), so a chip always sits on the picture. The backlog build (2026-10-03, `$SP/vlog_place/layout2.py`) packs each slide's images as justified rows and columns inside the band with 24 px gutters, anchored at (72, 232), the most telling image largest, logged order kept unless a reorder clearly avoids a tiny slot. The table below gives the default boxes when you size by hand; fit the image inside its box and anchor it top-left.
 
 | Images | Slots (x, y, w × h) |
 |---|---|
@@ -123,7 +125,10 @@ A **verification image** is any image made to answer a visual question, for exam
 | 6 | (72 / 522 / 972 / 1422, 232, 426 × 316) · (72, 572, 876 × 317) · (972, 572, 876 × 317) |
 
 - **Scale mode:** `FIT` for sheets, pairs, heatmaps, charts, crops and anything whose edges are evidence. `FILL` only for a single frame whose crop keeps every bit of the evidence. **Never crop the evidence.**
-- **Chips:** optional, 1–4 words, at the image's top-left corner (+16, +16).
+- **Chips:** optional, 1–4 words, at the image's top-left corner (+16, +16), with two exceptions:
+  - in-game frames whose HUD prints the level label top-left take the chip bottom-right (−16, −16);
+  - BEFORE | AFTER pairs with labels baked in take the view chip bottom-left (+16, −16).
+  - No chip on sheets and composites that carry their own labels.
   - Use them for what tells two images apart: `BEFORE`, `AFTER`, `1.5 M`, `RUN 3`, `×1.5`.
   - Dark chip (#0A0A0A, white text) on light images; yellow chip (#F4DF3B, #0A0A0A text) on dark images.
 - **No captions under images and no source footers.** File stems live in the layer names; paths, numbers and sources live in this file.
@@ -157,7 +162,7 @@ When a later run changes the verdict, add a new row and a new slide. Do not rewr
    - call it with `fileKey` `0tCbAiVUlrPId3RWd9LRif`, `currentPageId` `2099:76`, `count` = the number of images, `nodeIds` = the slot ids in the same order, and `scaleMode` per §1.5;
    - **POST every returned URL** before you call `upload_assets` again: `curl -sS -X POST -H 'Content-Type: image/jpeg' --data-binary @"<absolute path>" "<url>"` (use `image/png` for PNG);
    - at most 60 URLs per call;
-   - one call per slide keeps a failed upload easy to redo.
+   - one call per slide keeps a failed upload easy to redo; for a backlog, one call per 8 slides (≤ 60 URLs) is fine. Check afterwards that every `img:` slot holds an IMAGE fill.
 3. **Check once:**
    - take one `screenshot()` of the frame;
    - confirm every slot holds its image, nothing is cropped that matters, and no text is clipped or overlapping;

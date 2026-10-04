@@ -75,9 +75,11 @@ def build(kit):
     sheet = pc.sheet_quad(kit, "012")
     # ---- LOD1 / LOD2 (hand-built; only once kitlib can export them)
     if pc.lods_on():
-        l1, b = pc.base_strip(kit, pc.profile_lod1(), False, "frame lod1", "1")
+        pts, nrm = pc.profile_n(1)
+        l1, b = pc.base_strip(kit, pts, False, "frame lod1", "1", nrm)
         builders.append((l1.name, b))
-        l2, b = pc.base_strip(kit, pc.profile_lod2(), False, "frame lod2", "2")
+        pts, nrm = pc.profile_n(2)
+        l2, b = pc.base_strip(kit, pts, False, "frame lod2", "2", nrm)
         builders.append((l2.name, b))
     kc.wear_all(kit)
     pc.finalize(kit)

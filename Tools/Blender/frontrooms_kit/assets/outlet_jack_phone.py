@@ -48,10 +48,9 @@ def build(kit):
     side = pc.check_jack(jack)
     if pc.HAS_LODS:
         pc.plate_lod1(kit, W, H, screws, [op])
-        pc.plate_lod2(kit, W, H, crown_fan=True)
+        pc.plate_lod2(kit, W, H, crown_fan=True, screws=screws)
         pc.jack_lod1(kit, 0.0, 0.0, info["hf"], op)
-        fh = info["hf"](0.0, 0.0)
-        pc.dark_rect(kit, 0.0, 0.0, ow / 2 - 1.2, oh / 2 - 1.5, fh + 0.3, "jack lod2", "2")
+        pc.jack_lod2(kit, 0.0, 0.0, info["hf"], op)
     print("[o2] %s 6P cavity %.2f x %.2f, plug 9.85 clearance %.3f a side, floor %.2f mm in front of the wall, depth %.2f (spec 12)" % (
         kit.name, pc.JACK_CAVITY[0], pc.JACK_CAVITY[1], side, jack["floor_h"], jack["face_h"] - jack["floor_h"]))
     pc.end(kit, sys.modules[__name__], "outlet_jack", W, H, pc.PROUD_PLATE, info["seats"],

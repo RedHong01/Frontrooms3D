@@ -190,7 +190,7 @@ def build(kit):
     contacts(kit)
     if pc.HAS_LODS:
         pc.plate_lod1(kit, W, H, screws, [])
-        pc.plate_lod2(kit, W, H, crown_fan=True)
+        pc.plate_lod2(kit, W, H, crown_fan=True, screws=screws)
         lod1(kit, f0)
         lod2(kit, f0)
     pc.end(kit, sys.modules[__name__], "outlet_jack", W, H, pc.PROUD_DATA, info["seats"],

@@ -2,6 +2,11 @@
 
 Status: DONE 2026-10-03 (research only). Nothing in the game, the Unity project or Figma was changed. No media was downloaded.
 
+**Update 2026-10-03 22:0x (resume check against main `75cfdff`; details in `02_design.md` §10):**
+- The white box is gone in main: the visual chat merged the fixed-alpha glyph at 17:22 (`df4cb03`). The live glyph is still the generic ring key, so points (2)–(4) of the first answer below still stand.
+- The HUD key code is unchanged but now sits at `FrontRooms3DGame.cs` lines 1828–1838 (build) and 1995–2002 (update). The line numbers in §2 below are from 12:1x.
+- `Kit_Key_Zone.fbx`, its tags, ring and the door plate are now in main (Codex, `8ef5b64`). Their outlines match the renders used here.
+
 Red's request (2026-10-03 ~12:05): merge the key icon's graphic design into the UI design, research it, and make it echo the key model.
 
 **Files in this folder**
@@ -58,7 +63,7 @@ All values are from `Assets/Scripts/FrontRooms3DGame.cs`, read 2026-10-03 12:1x 
 
 Texture import of `HUD_KeyGlyph.png` (`.meta`): Sprite, bilinear, no mipmaps, **compression Normal**. `UI_SHARPNESS.md` imports the brand PNG uncompressed "for clean alpha edges"; the glyph should get the same.
 
-**The white box.** The PNG's alpha was flattened (task `F2` in `VISUAL_CHAT_TASKS.md`). A fixed-alpha copy is in the scratchpad (`hud/HUD_KeyGlyph.png`), waiting on Red. `images/03_runtime_key_panel_x4.png` shows the box at 4×, cropped from audit frame 58.
+**The white box.** The PNG's alpha was flattened (task `F2` in `VISUAL_CHAT_TASKS.md`). A fixed-alpha copy is in the scratchpad (`hud/HUD_KeyGlyph.png`), waiting on Red. (Update: merged into main at 17:22, `df4cb03`; the box is gone, the shape is unchanged.) `images/03_runtime_key_panel_x4.png` shows the box at 4×, cropped from audit frame 58.
 - The colour fringe in that crop is **not** in the game. The audit harness switched the overlay canvas to Screen Space Camera for its `_hud` frames, so the post stack (chromatic aberration 0.06, grain, vignette) hit the HUD (`interaction_audit/05_in_engine_evidence.md` lines 78–81). In the game the overlay has no post.
 
 **The crosshair** is now a plain white dot, 16 px at 1080p (Red's call, `F2`). The key icon should match its colour logic: white/paper, no yellow.

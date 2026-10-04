@@ -18,6 +18,8 @@ Construction (window root W, Unity metres; see interact_window_common):
   from the opening edge (X 0.740-0.746), square return to the wall, soffit at
   |X| 0.6995 / Y 1.9995 / Y 0.3505 across the full depth. Crisp 0.5 mm
   arrises (extruded, not pressed). Mitred with a closed 0.3 mm V hairline.
+  Wear stations on the sill (the climb plant: palms, rubbed arrises, boot
+  scuffs) and at grab height on the jambs.
 * Snap-in beads 16 x 16 on both faces, Z +/-(0.006 -> 0.022): a 4 mm sight-
   line face, then a 45-degree bevel up to a 4 mm foot on the soffit; mitred
   with 0.3 mm joints.
@@ -26,22 +28,31 @@ Construction (window root W, Unity metres; see interact_window_common):
 * No glass, no pane, no teeth (glass-destruction track).
 
 Origin = window root (opening centre, wall centre line, floor). Front = face
-A = kit -Y = Unity +Z. Size 1.55 x 1.80 (Y 0.2745-2.075) x 0.21 m.
+A = kit -Y = Unity +Z. Size 1.55 x 1.80 (Y 0.275-2.075) x 0.21 m (the sill
+band is the head's 0.0755 face, so 0.3505 - 0.0755 = 0.275).
 
-Budget (§9.4): 2,800 / 1,000 / 200 tris (ESTIMATE). A clip-on extrusion has
-no fasteners or mouldings to spend that on, so it lands near 1,100; nothing is
-padded (see the G4 build note). LOD1 now at 0.60 (beads, gaskets and the
-casing's mitre rings and wall edges protected from the collapse, so no seam
-opens, so LOD1 is close to LOD0: the setting blocks drop, little else); LOD2 drops the gaskets and blocks. LOD distances 4 / 12 / none. Slots: Prop_Aluminium (first),
-Prop_Rubber. Render-only: no collider.
+Budget (§9.4): 2,800 / 1,000 / 200 tris. A clip-on extrusion has no
+fasteners or mouldings to spend that on, so it lands near 1,100 (-61 %,
+outside the §10.0 +/-15 % band; FLAGGED in the G4 build note, not padded).
+NO LOD1 (LOD1 = None; §1.8 / §9.4 allow one on a >= 1 m asset but do not
+require it): with the beads, gaskets and the casing's mitre rings protected,
+the collapse could only remove the setting blocks, so the old LOD1 was 1,064
+tris = 98 % of LOD0. That LODGroup bought nothing and made the importer cull
+the frame at 2 % screen height (58.5 m, window_landing/02 §6 item 2) while
+the glass slab, which has no LOD, stays. lodRatios / lodDistances stay
+declared for P-1; LOD2 drops the gaskets and blocks (fr_lod2_drop). Slots:
+Prop_Aluminium (first), Prop_Rubber. Sidecar placement "Wall"
+(wall_placement()). Render-only: no collider.
 """
+
+import math
 
 import interact_window_common as wc
 
 NAME = "Kit_WindowFrame_Alu"
-LOD1_RATIO = 0.60
+LOD1_RATIO = 0.60                 # declared for P-1 only
 LOD2_RATIO = 0.07
-LOD1 = LOD1_RATIO
+LOD1 = None                       # see the docstring: a 98 % LOD1 is pure cost
 LOD_DISTANCES = (4.0, 12.0, None)
 SMOOTH_ANGLE = 30.0
 PREVIEW_WALL = (0.40, 0.55, 0.55)         # Exit: blue-green paper
@@ -63,12 +74,16 @@ def face_band(_unused=1):
     return pts
 
 
+SOFFIT_LINE = 0.0225                # soffit vertices just outside the beads (Z 0.022): the dirt line at the bead foot
+
+
 def shell_profile():
     """Face A band -> soffit -> face B band (CCW); face B mirrors face A with
-    each corner keeping its radius."""
+    each corner keeping its radius. Two plain soffit points at Z +/-0.0225
+    give the wear its bead-foot dirt line."""
     a = face_band(1)
     b = [(p[0], -p[1]) + tuple(p[2:]) for p in reversed(a)]
-    return wc.fillet(a + b)
+    return wc.fillet(a + [(wc.D_LINING, SOFFIT_LINE), (wc.D_LINING, -SOFFIT_LINE)] + b)
 
 
 def bead_profile():
@@ -76,20 +91,42 @@ def bead_profile():
                       (0.0, wc.STOP_Z0, 0.0004, 2), (wc.D_LINING, wc.STOP_Z0)])
 
 
+# Wear stations (length fractions between the mitres). The sill is the climb
+# plant (palms and boots go there every break); the jambs are where a climber
+# grabs. With no LOD1 there is no collapse to turn them into slivers.
+STATIONS = {"B": (0.0, 0.06, 0.19, 0.36, 0.5, 0.64, 0.81, 0.94, 1.0),     # X ~ -0.45 / -0.2 / 0 / 0.2 / 0.45
+            "R": (0.0, 0.08, 0.31, 0.485, 0.66, 1.0),                      # Y ~ 0.45 / 0.85 / 1.15 / 1.45
+            "L": (0.0, 0.08, 0.31, 0.485, 0.66, 1.0)}
+
+
 def shell_wear(X, Y, Z):
-    return (0.85 if (Y < 0.40 and abs(Z) > 0.09) else 1.0, 0.7 if Y < 0.36 else 1.0, 1.0)
+    """R hand grime, G anodise scuffed through, B cavity grime (§1.8)."""
+    ax, az = abs(X), abs(Z)
+    r = g = b = 1.0
+    if Y < wc.SIGHT_Y0:                                       # sill: the climb plant
+        k = math.exp(-(X / 0.32) ** 2)
+        if Y > 0.335:
+            r = 1.0 - 0.35 * k                                # palms on the sill top and its arrises
+            if az > 0.095:
+                g = 1.0 - 0.45 * k                            # anodise rubbed off the arrises
+        elif Y < 0.30:
+            g = 0.85                                          # boot scuffs low on the sill band
+    elif ax > wc.SIGHT_X and 0.80 < Y < 1.50 and az > 0.09 and ax < 0.745:
+        r = 0.8                                               # hand grime on the jamb face bands
+    if 0.1015 < az < 0.1035 or az < SOFFIT_LINE + 0.001:
+        b = 0.72                                              # shadow-groove floor; dirt at the bead foot
+    return r, g, b
 
 
 def build(kit):
-    # No wear stations: on a pinned shell the LOD1 collapse turns them into long slivers that shade wavy.
-    for part in wc.frame_ring(kit, shell_profile(), ALU, end=("vmitre", VGROOVE, VGROOVE), name="casing",
-                              pin=True):   # mitres stay shut at LOD1
+    for part in wc.frame_ring(kit, shell_profile(), ALU, end=("vmitre", VGROOVE, VGROOVE), stations=STATIONS,
+                              name="casing"):
         wc.paint_wear(part, shell_wear)
     bead = bead_profile()
     for face in ("a", "b"):
         prof = bead if face == "a" else wc.mirror_b(bead)
         for part in wc.frame_ring(kit, prof, ALU, end=("mitre", BEAD_JOINT), caps=True, name="bead " + face):
-            wc.paint_wear(wc.lod_keep(part))
+            wc.paint_wear(part)
     for face in ("a", "b"):
         for part in wc.frame_ring(kit, wc.tape_dn(face, lip=0.0006), RUBBER, name="gasket " + face):
             wc.paint_wear(part)
@@ -97,7 +134,6 @@ def build(kit):
     for x in (-0.35, 0.35):
         blk = wc.box_u(kit, (0.100, 0.0033, 0.0056), (x, wc.LINING_Y0 + 0.00165, 0.0), RUBBER, bevel=0.0, name="setting block")
         wc.paint_wear(blk)
-        kit.lod1_drop(blk)
         wc.lod2_drop(blk)
 
     wc.assert_clear_zone(kit)
@@ -107,3 +143,4 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "frame_alu")
+    wc.wall_placement(kit)

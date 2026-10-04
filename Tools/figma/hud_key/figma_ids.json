@@ -1,0 +1,71 @@
+{
+ "section": "2532:4038",
+ "src": "2532:4039",
+ "bg": {
+  "lit": [
+   "2532:4040",
+   "a41d01274bf715aa56823d570c9a9e91b45f2b34"
+  ],
+  "wallpaper": [
+   "2532:4041",
+   "5c31743066e772c474df4fbcc10954c88d225664"
+  ],
+  "office": [
+   "2532:4042",
+   "f85ede326236955944a6af07c96372a8c8df9402"
+  ],
+  "dark": [
+   "2532:4043",
+   "69cc01fe511de32c5885119966f5f81e69308471"
+  ]
+ },
+ "crosshair": [
+  "2532:4044",
+  "18255bb2151932fa8f2707e272719f4e9d0a77aa"
+ ],
+ "lib": {
+  "frame": "2579:4775",
+  "sets": {
+   "A": "2579:4809",
+   "Achip": "2579:4810",
+   "B": "2579:4811",
+   "C": "2579:4812"
+  },
+  "crosshair": "2579:4813",
+  "map": {
+   "A_L_missing": "2579:4779",
+   "A_S_missing": "2579:4784",
+   "A_L_held": "2579:4785",
+   "A_L_muted": "2579:4790",
+   "A_S_muted": "2579:4793",
+   "A_S_held": "2579:4799",
+   "Achip_long_red_held": "2579:4777",
+   "Achip_round_red_held": "2579:4778",
+   "Achip_rect_red_held": "2579:4781",
+   "Achip_round_blue_held": "2579:4783",
+   "Achip_rect_red_muted": "2579:4788",
+   "Achip_rect_blue_held": "2579:4792",
+   "Achip_round_white_held": "2579:4797",
+   "Achip_long_white_held": "2579:4798",
+   "Achip_long_blue_held": "2579:4804",
+   "Achip_rect_white_held": "2579:4805",
+   "B_rect_red_held": "2579:4780",
+   "B_long_blue_held": "2579:4782",
+   "B_rect_red_muted": "2579:4789",
+   "B_rect_blue_held": "2579:4791",
+   "B_rect_white_held": "2579:4795",
+   "B_long_white_held": "2579:4800",
+   "B_rect_red_missing": "2579:4801",
+   "B_round_blue_held": "2579:4802",
+   "B_round_white_held": "2579:4803",
+   "B_round_red_held": "2579:4806",
+   "B_long_red_held": "2579:4808",
+   "C_dark_missing": "2579:4776",
+   "C_red_held": "2579:4786",
+   "C_white_held": "2579:4787",
+   "C_dark_held": "2579:4794",
+   "C_blue_held": "2579:4796",
+   "C_dark_muted": "2579:4807"
+  }
+ }
+}

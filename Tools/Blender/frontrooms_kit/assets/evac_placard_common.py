@@ -126,35 +126,62 @@ def _arc(c, r, a0, a1, n):
              c[1] + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
 
 
-def profile_lod0():
-    """§2.3 rail section, LOD0 (48 points): hinge-V upper half, outer side,
-    bullnose (16), face (20), lip nose (3 + 5 = 8; 0 deg and -90 deg exact),
-    hidden underside. The base strip carries the V's lower half."""
+def _arc_n(c, r, a0, a1, n):
+    """Arc points and their TRUE outward normals (radial, convex arcs)."""
+    out = []
+    for i in range(n + 1):
+        a = math.radians(a0 + (a1 - a0) * i / n)
+        out.append(((c[0] + r * math.cos(a), c[1] + r * math.sin(a)), (math.cos(a), math.sin(a))))
+    return out
+
+
+def profile_n(level):
+    """The rail section at an LOD as (points, normals). normals[i] is the TRUE
+    outward surface normal of the §2.3 curve at that point (unit (nu, nw)), or
+    None at a real corner (the hinge V, the hidden underside), where the faces
+    keep their own flat normals. Every LOD shades from the same analytic curve,
+    so the bullnose/face highlight is the same at LOD0, LOD1 and LOD2 (round 2:
+    the round-1 LOD1 shaded its 5-segment face differently and popped at 2 m).
+
+    LOD0 (48 points): hinge-V upper half, outer side, bullnose (16), face (20),
+    lip nose (3 + 5 = 8; 0 and -90 deg exact), hidden underside; the base strip
+    carries the V's lower half.
+    LOD1 (14 points): outer side 2 (from the wall: no hinge seam, 0.4 mm is
+    0.2 px at 2 m), bullnose 4, face 5, nose 2, underside 1.
+    LOD2 (4 points): (0, 0), (0, 9.0), (6.0, 13.5), (25.4, 5.55), each with
+    the normal of the true curve it stands for (the last one the face's at the lip)."""
     R, c, ang = face_arc()
-    pts = [(HINGE_DEPTH, (HINGE_LO + HINGE_HI) / 2), (0.0, HINGE_HI), (0.0, BULL_C[1])]
-    pts += _arc(BULL_C, BULL_R, 180.0, 90.0, BULL_SEGS)[1:]
-    pts += _arc(c, R, 90.0, ang, FACE_SEGS)[1:]
-    pts += _arc(NOSE_C, NOSE_R, ang, 0.0, 3)[1:]
-    pts += _arc(NOSE_C, NOSE_R, 0.0, -90.0, NOSE_SEGS - 3)[1:]
-    pts.append(UNDER_END)
-    return pts
+    if level == 0:
+        pn = [((HINGE_DEPTH, (HINGE_LO + HINGE_HI) / 2), None), ((0.0, HINGE_HI), None), ((0.0, BULL_C[1]), (-1.0, 0.0))]
+        pn += _arc_n(BULL_C, BULL_R, 180.0, 90.0, BULL_SEGS)[1:]
+        pn += _arc_n(c, R, 90.0, ang, FACE_SEGS)[1:]
+        pn += _arc_n(NOSE_C, NOSE_R, ang, 0.0, 3)[1:]
+        pn += _arc_n(NOSE_C, NOSE_R, 0.0, -90.0, NOSE_SEGS - 3)[1:]
+        pn.append((UNDER_END, None))
+    elif level == 1:
+        pn = [((0.0, 0.0), None), ((0.0, BULL_C[1]), (-1.0, 0.0))]
+        pn += _arc_n(BULL_C, BULL_R, 180.0, 90.0, 4)[1:]
+        pn += _arc_n(c, R, 90.0, ang, 5)[1:]
+        pn += [((NOSE_C[0] + NOSE_R, NOSE_C[1]), (1.0, 0.0)), ((NOSE_C[0], NOSE_C[1] - NOSE_R), (0.0, -1.0)), (UNDER_END, None)]
+    else:
+        a9 = math.asin((9.0 - BULL_C[1]) / BULL_R)                        # the bullnose point at w = 9.0
+        crown = (6.0 - c[0]) / R                                           # the face arc at u = 6.0
+        pn = [((0.0, 0.0), None), ((0.0, 9.0), (-math.cos(a9), math.sin(a9))),
+              ((6.0, DEPTH), (crown, math.sqrt(1.0 - crown * crown))),
+              ((FACE_W, LENS_TOP), (math.cos(math.radians(ang)), math.sin(math.radians(ang))))]
+    return [p for p, _ in pn], [n for _, n in pn]
+
+
+def profile_lod0():
+    return profile_n(0)[0]
 
 
 def profile_lod1():
-    """§2.4 LOD1: 14 points (outer side 2, bullnose 4, face 5, nose 2,
-    underside 1). The outer side runs from the wall (no hinge seam: 0.4 mm is
-    0.2 px at 2 m), so LOD1 needs no separate base strip."""
-    R, c, ang = face_arc()
-    pts = [(0.0, 0.0), (0.0, BULL_C[1])]
-    pts += _arc(BULL_C, BULL_R, 180.0, 90.0, 4)[1:]
-    pts += _arc(c, R, 90.0, ang, 5)[1:]
-    pts += [(NOSE_C[0] + NOSE_R, NOSE_C[1]), (NOSE_C[0], NOSE_C[1] - NOSE_R), UNDER_END]
-    return pts
+    return profile_n(1)[0]
 
 
 def profile_lod2():
-    """§2.4 LOD2: 4 points."""
-    return [(0.0, 0.0), (0.0, 9.0), (6.0, DEPTH), (FACE_W, LENS_TOP)]
+    return profile_n(2)[0]
 
 
 BASE_PROFILE = [(0.0, 0.0), (0.0, HINGE_LO), (HINGE_DEPTH, (HINGE_LO + HINGE_HI) / 2),
@@ -219,18 +246,29 @@ def bl_dir(d):
     return v
 
 
+# Per-object loop-normal tables from Builder.object(), consumed by finalize():
+# {object name: [None | {vertex index: Blender-space unit normal}]}, indexed by
+# the face attribute "fr_nid".
+NORMALS = {}
+NID = "fr_nid"
+
+
 class Builder:
-    """Faces with an explicit outward direction each (Unity), flipped to match."""
+    """Faces with an explicit outward direction each (Unity), flipped to match.
+    A face may carry per-vertex TRUE surface normals (Unity directions); its
+    other vertices, and faces without them, keep the flat face normal."""
 
     def __init__(self):
         self.bm = bmesh.new()
+        self.nid = self.bm.faces.layers.int.new(NID)
+        self.table = [None]                     # 0 = flat
         self.flips = 0
         self.worst = 1.0
 
     def vert(self, p_mm):
         return self.bm.verts.new(bl(p_mm))
 
-    def face(self, verts, outward_unity):
+    def face(self, verts, outward_unity, normals=None):
         f = self.bm.faces.new(verts)
         f.normal_update()
         want = bl_dir(outward_unity)
@@ -240,6 +278,9 @@ class Builder:
             self.flips += 1
             d = -d
         self.worst = min(self.worst, d)
+        if normals is not None and any(n is not None for n in normals):
+            self.table.append({v: bl_dir(n) for v, n in zip(verts, normals) if n is not None})
+            f[self.nid] = len(self.table) - 1
         return f
 
     def object(self, kit, name, slot, lods, uv="metres"):
@@ -247,8 +288,11 @@ class Builder:
         tri = [f for f in bm.faces if len(f.verts) > 4]
         if tri:
             bmesh.ops.triangulate(bm, faces=tri, quad_method="BEAUTY", ngon_method="BEAUTY")
+        bm.verts.index_update()
+        table = [None if e is None else {v.index: n for v, n in e.items()} for e in self.table]
         obj = kit._new_object(name, bm, slot, uv, "xz")      # no recalc: faces are oriented already
         obj["fr_lods"] = lods
+        NORMALS[obj.name] = table
         return obj
 
 
@@ -265,8 +309,14 @@ def rail_lod0(kit, side, extra_s=(), wear=None):
     cut at 45 deg (mitre) and chamfered 0.25 x 45 deg on every visible edge
     (the section's hinge apex and hidden underside end stay square), closed
     by the hidden inner face and two end caps: a watertight solid.
-    extra_s: extra section rings (mm along the rail) for wear paint."""
-    prof = profile_lod0()
+    extra_s: extra section rings (mm along the rail) for wear paint. The
+    profile bands carry the curve's true normals (profile_n); the chamfers and
+    end caps stay flat. The ring where a chamfer meets the profile band is
+    doubled (coincident vertices, no crack): near the lip the chamfer meets the
+    band at under SMOOTH_ANGLE, and kitlib.finish() re-marks sharp edges by
+    angle, so a shared ring merged the band's true normals into the chamfer's
+    fan (round 2a: a light band along every rail just above the lip)."""
+    prof, true_n = profile_n(0)
     n = len(prof)
     closed_normals = vertex_normals(prof, closed=True)          # incl. the hidden closing edge
     inset = []
@@ -285,38 +335,45 @@ def rail_lod0(kit, side, extra_s=(), wear=None):
     sets.append(("cham", +1))
     sets.append(("end", +1))
     for kind, arg in sets:
-        ring = []
+        pts = []
         for i in range(n):
             if kind == "end":
                 q = inset[i]
-                s = arg * mitre_s(side, q[0])
-                ring.append(b.vert(side_point(side, q[0], q[1], s)))
+                pts.append(side_point(side, q[0], q[1], arg * mitre_s(side, q[0])))
             elif kind == "cham":
                 p = prof[i]
-                s = arg * (mitre_s(side, p[0]) - MITRE_CHAMFER * math.sqrt(2.0))
-                ring.append(b.vert(side_point(side, p[0], p[1], s)))
+                pts.append(side_point(side, p[0], p[1], arg * (mitre_s(side, p[0]) - MITRE_CHAMFER * math.sqrt(2.0))))
             else:
                 p = prof[i]
-                ring.append(b.vert(side_point(side, p[0], p[1], arg)))
-        rings.append((kind, arg, ring))
+                pts.append(side_point(side, p[0], p[1], arg))
+        ring = [b.vert(q) for q in pts]
+        chamfer_side = [b.vert(q) for q in pts] if kind == "cham" else ring
+        rings.append((kind, arg, ring, chamfer_side))
     _, t, _, _ = SIDES[side]
     for k in range(len(rings) - 1):
-        kind_a, arg_a, ra = rings[k]
-        kind_b, arg_b, rb = rings[k + 1]
+        kind_a, arg_a, ra, ra_c = rings[k]
+        kind_b, arg_b, rb, rb_c = rings[k + 1]
         end_dir = None
         if kind_a == "end":
             end_dir = (-t[0], -t[1], 0.0)
+            rb = rb_c
         elif kind_b == "end":
             end_dir = (t[0], t[1], 0.0)
+            ra = ra_c
         for i in range(n):
             j = (i + 1) % n
             nn = side_normal(side, seg_n[i])
+            normals = None
             if end_dir is not None:
                 nn = (nn[0] + end_dir[0], nn[1] + end_dir[1], nn[2] + end_dir[2])
-            b.face((ra[i], ra[j], rb[j], rb[i]), nn)
+            elif j != 0:                                   # a profile band (not the hidden closing face)
+                ni = None if true_n[i] is None else side_normal(side, true_n[i])
+                nj = None if true_n[j] is None else side_normal(side, true_n[j])
+                normals = (ni, nj, nj, ni)
+            b.face((ra[i], ra[j], rb[j], rb[i]), nn, normals)
     # End caps in the mitre planes.
     nside, _, _, _ = SIDES[side]
-    for kind, arg, ring in (rings[0], rings[-1]):
+    for kind, arg, ring, _ in (rings[0], rings[-1]):
         out = (arg * t[0] - nside[0], arg * t[1] - nside[1], 0.0)
         b.face(list(ring), out)
     obj = b.object(kit, "rail %s" % side, ALU, "0")
@@ -324,24 +381,37 @@ def rail_lod0(kit, side, extra_s=(), wear=None):
     return obj, b
 
 
-def base_strip(kit, profile, closed, name, lods):
+def base_strip(kit, profile, closed, name, lods, true_n=None):
     """A section swept once round the frame rectangle with 45 deg corners
-    (inset u at corner (sx, sy) = (sx (A - u), sy (B - u)))."""
+    (inset u at corner (sx, sy) = (sx (A - u), sy (B - u))). true_n: the
+    curve's normal per profile point (None = flat there), as profile_n.
+
+    Each side is its own strip (its corner vertices are not shared with the
+    next side's), so the 45 deg mitre stays a crisp line in every LOD: on the
+    sloped face the two sides meet at only about 30 deg, under SMOOTH_ANGLE, and
+    kitlib.finish() re-marks sharp edges by angle, so shared corner vertices
+    would merge both sides' normals into one fan (round 1's LOD1 "pillow"
+    corners). Coincident vertices, so no crack."""
     n = len(profile)
     corners = [(1, 1), (-1, 1), (-1, -1), (1, -1)]     # CCW seen from the front... in Unity plan
     b = Builder()
-    rings = []
-    for (u, w) in profile:
-        rings.append([b.vert((sx * (A_HALF - u), sy * (B_HALF - u), w)) for sx, sy in corners])
     sides_between = ["top", "left", "bottom", "right"]   # corner k -> k+1
     segs = n if closed else n - 1
-    for i in range(segs):
-        j = (i + 1) % n
-        nuw = left_normal(profile[i], profile[j])
-        for k in range(4):
-            m = (k + 1) % 4
-            out = side_normal(sides_between[k], nuw)
-            b.face((rings[i][k], rings[i][m], rings[j][m], rings[j][k]), out)
+    for k in range(4):
+        m = (k + 1) % 4
+        side = sides_between[k]
+        ck, cm = corners[k], corners[m]
+        ring_k = [b.vert((ck[0] * (A_HALF - u), ck[1] * (B_HALF - u), w)) for u, w in profile]
+        ring_m = [b.vert((cm[0] * (A_HALF - u), cm[1] * (B_HALF - u), w)) for u, w in profile]
+        for i in range(segs):
+            j = (i + 1) % n
+            out = side_normal(side, left_normal(profile[i], profile[j]))
+            normals = None
+            if true_n is not None:
+                ni = None if true_n[i] is None else side_normal(side, true_n[i])
+                nj = None if true_n[j] is None else side_normal(side, true_n[j])
+                normals = (ni, ni, nj, nj)
+            b.face((ring_k[i], ring_m[i], ring_m[j], ring_k[j]), out, normals)
     return b.object(kit, name, ALU, lods), b
 
 
@@ -373,14 +443,29 @@ def lens_box(kit):
 
 # ---------------------------------------------------------------- normals
 def finalize(kit, parts=None):
-    """The interactables G1 recipe that survives kitlib.finish() and the FBX
-    round trip: shade smooth -> sharp by SMOOTH_ANGLE -> WEIGHTED_NORMAL
-    (face area, weight 50, keep sharp). finish() applies the modifier, joins
-    and re-marks sharp edges with the same angle."""
+    """Normals that survive kitlib.finish() and the FBX round trip (the
+    interactables G1 order: shade smooth -> sharp by SMOOTH_ANGLE -> custom
+    normals; finish() joins and re-marks sharp edges with the same angle, so
+    the custom-normal fans are unchanged). Builder parts get their TRUE curve
+    normals (round 2); any other part (the sheet quad) the G1 WEIGHTED_NORMAL."""
     for obj in parts or kit.parts:
         me = obj.data
         me.shade_smooth()
         me.set_sharp_from_angle(angle=math.radians(SMOOTH_ANGLE))
+        table = NORMALS.pop(obj.name, None)
+        attr = me.attributes.get(NID)
+        if table is not None and attr is not None:
+            loops = [None] * len(me.loops)
+            for poly in me.polygons:
+                entry = table[attr.data[poly.index].value]
+                for li in poly.loop_indices:
+                    nrm = entry.get(me.loops[li].vertex_index) if entry else None
+                    loops[li] = tuple(nrm) if nrm is not None else tuple(poly.normal)
+            me.normals_split_custom_set(loops)
+            me.attributes.remove(me.attributes[NID])
+            continue
+        if attr is not None:
+            me.attributes.remove(attr)
         mod = obj.modifiers.new("wn", "WEIGHTED_NORMAL")
         mod.mode = "FACE_AREA"
         mod.weight = 50

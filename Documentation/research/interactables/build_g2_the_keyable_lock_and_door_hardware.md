@@ -1,6 +1,8 @@
 # G2 build note: the keyable lock and door hardware
 
-Status: built 2026-10-03 into the private clone `proj_int` only. Run 1 (12:0x–13:1x) built every asset; its self-check renders were cut off and three of them showed the wrong materials (§8.1). **Run 2 (16:4x–17:xx, "try again")** rebuilt everything, cleaned the topology, refined the lever, re-ran the whole self-check against the final exports and G3's exported key, and finished the renders. Nothing under `Assets/` of the real project was touched, and Unity was not run. Spec: `10_spec.md` §3, §1.2, §2.1, §6.4, §9.2, §10.0, §10.2.
+Status: built 2026-10-03 into the private clone `proj_int` only. Run 1 (12:0x–13:1x) built every asset; its self-check renders were cut off and three of them showed the wrong materials (§8.1). **Run 2 (16:4x–17:54, "try again")** rebuilt everything, cleaned the topology, refined the lever, re-ran the whole self-check against the final exports and G3's exported key, and rendered all but one frame before the 17:54 usage limit. **Run 3 (21:5x–22:1x, after Codex's 19:10 commits)** checked what Codex put into main, re-ran the self-check, rendered the missing frame and copied the check images into `images/` (§9, §10). This workflow did not touch anything under `Assets/` of the real project and did not run Unity. Spec: `10_spec.md` §3, §1.2, §2.1, §6.4, §9.2, §10.0, §10.2.
+
+**Run 3 in one line:** main already holds G2's final exports, byte for byte. There is nothing to correct and no merge to do. Every self-check still passes. The cut-off frame `e_free_s_lever35` is now rendered (§9).
 
 **What was built**
 - 11 assets and 7 VARIANTS = 18 FBX files with JSON sidecars, in `scratchpad/proj_int/Assets/Resources/Props/Models/Kit_Lock_*`.
@@ -172,7 +174,7 @@ Scripts: `scratchpad/g2work/selfcheck2.py` (checks and renders) and `g2work/g1_i
 - `e_ic_face_0p3m.png`, `e_ic_face_zoom.png`: the IC face at 0.3 m.
 - `e_knob_knurl_0p3m.png`, `e_knob_knurl_zoom.png`: the knurl at 0.3 m.
 - `e_locked_s_1p5m.png`, `e_locked_p_1p5m.png`: the locked set at 1.5 m, both faces.
-- `e_free_s_1m_brass.png`, `e_free_lever_0p3m.png`, `e_free_s_lever35.png`: the Lobby free set (brass VARIANTS), lever at rest and at 35°.
+- `e_free_s_1m_brass.png`, `e_free_lever_0p3m.png`, `e_free_s_lever35.png`: the Lobby free set (brass VARIANTS), lever at rest and at 35°. Run 2 was cut off at sample 9/64 of `e_free_s_lever35`; run 3 rendered it at 22:02 (§9).
 
 Per-asset close-ups: `scratchpad/g2work/cu/` (run 1; still valid for every part except the lever), `g2work/cu2/` (run 1 lever bend, before the refinement) and `g2work/cu4/lever_final_sheet.jpg` (final lever: front, bend, return). Kit stills (rebuilt in run 2): `interact_previews/G2/Kit_Lock_*_a/_b.png`.
 
@@ -217,3 +219,57 @@ Run 1's self-check renders mapped materials by exact slot name. Blender renames 
 3. **Facade (visual chat):** never mirror the plug (§4 item 1); keep the latch retracted within 8° of shut (§3 (f)); negate angles on mirrored placements (§4 item 7); the mortise strike on every steel frame works for the bored latch (§3 (d)).
 4. **Pipeline (NEEDS APPROVAL, §8 P-1):** LOD1/LOD2 export and the `fr_lod2_drop` read. Until then, no LODGroup on any G2 part.
 5. **In-engine:** T4 (mirrored door) and T5 (head dip) need a capture by the visual chat. Not done here (no Unity in this workflow).
+
+## 9. Run 3 (2026-10-03 21:5x–22:1x): resume after the usage limit, and the Codex check
+
+### 9.1 What run 2 left half-done
+- Every module and every export was finished: the modules are dated 12:07–16:56, the FBX/JSON files 17:08–17:23, and `g2work/build_final.log` passes every assert.
+- The numeric self-check on the final exports had finished at 17:27 (`g2work/sc2_final_norender.log`).
+- Only the last render, `e_free_s_lever35`, was cut off, at sample 9/64 (`g2work/sc2_free.log`). The build note already listed it, but the file did not exist.
+
+### 9.2 What Codex put into main, and whether it is right
+- **Codex's commit `8ef5b64` (19:10)** added 72 G2 files to main's `Assets/Resources/Props/Models/`: 18 FBX, 18 JSON and their 36 `.meta` files.
+- **The FBX and JSON files are byte-identical to run 2's final exports in `proj_int`.** The comparison used `cmp` against main's current files, so no re-sync was needed. There is no G2 diff to merge, and nothing to correct.
+- **The `.meta` files come from Codex's Unity import:**
+  - each path has one GUID, and no GUID is duplicated across the model folder;
+  - every material remap resolves to `Assets/Resources/Surfaces/Prop_{Chrome,Brass,PlasticBlack,Aluminium}.mat`;
+  - each `_Brass` VARIANT maps to `Prop_Brass`, as built.
+- **The G2 modules in `Tools/Blender/frontrooms_kit/assets/` are unchanged since run 2.** Codex did not touch them; the last commit to them is Red's 17:09 auto-commit. `kitlib.py` and `build_asset.py` are unchanged since 2026-10-02.
+- **No code in main uses `Kit_Lock_*` yet**, so the parts are inert:
+  - the furniture pile takes only sidecars with a `pile` block (`FrontRoomsFurniturePile.cs:147`);
+  - the test helpers that pick "Floor" or "DeskTop" kits need parts larger than 0.3 m, or a `DeskTop` placement (`FrontRoomsMapInteractionTests.cs:1509`, `:1514`);
+  - so the default `placement: "Floor"` that kitlib writes, which every other interactable shares, cannot pull a lock part into dressing.
+- **Codex's importer change does not affect G2 today.** It reads `lodDistances` (`FrontRoomsKitImporter.cs:76-89`, `FrontRoomsKitLibrary.cs:59`).
+  - It returns before that read when the FBX has no LODGroup, or fewer than 2 LODs (`:71`, `:73`). Every G2 export is LOD0 only.
+  - G2's sidecars already carry `lodDistances` as three floats (LOD0→1, LOD1→2, cull), for example `[1.5, 4.0, 12.0]`. That matches the `float[]` field, and its meaning matches §9.2's "beyond 12 m only frame, leaf and proxy remain".
+  - **One note for P-1 (§8.4 item 4):** the importer converts metres to screen height at a 76° reference vertical FOV (`:80`). §9.2 does not name a FOV. When LOD1/LOD2 export lands, check the switch distances at the game's real FOV.
+- **Codex audit:** `Documentation/research/codex_audit/` does not exist yet. I checked at 21:5x and again at 22:0x, so there are no confirmed findings for this workflow to resolve. If the audit later lists a G2 finding, the inputs are §9.2 above and `selfcheck_r2/selfcheck.json`.
+- **Outside G2 (report only; not reverted):** while this run worked, another workflow was editing the `outlet_*` modules in the same `assets/` folder (uncommitted in main). G2 did not touch them.
+
+### 9.3 Self-check re-run (final exports = main's files)
+- `selfcheck2.py -- only=e_free_s_lever35` (log `g2work/sc3_lever35.log`) re-ran every numeric check (a)–(d), including T8 with G3's `Kit_Key_Zone`, which is unchanged since 16:45 and identical in main. **The results are identical, line for line, to the 17:27 run** (§3).
+- G1's `Kit_DoorFrame_Steel` (12:59) and `Kit_DoorLeaf_Steel` (13:02) are unchanged and identical in main, so §3 (f) still holds. G1's plunger openings (§4 item 6) are still not cut.
+- **New render:** `e_free_s_lever35.png` (22:02). The lever is down 35° about the spindle, the grip still points at the hinge, the bored latch is retracted at the edge, and nothing clips the rose. PASS.
+
+### 9.4 Re-review of the renders (run 3)
+- **Pose P, key at 90° (`e_poseP_key090`):** keyhole, collar, escutcheon and knob are central; the bow faces the camera. PASS.
+- **IC face (`e_ic_face_zoom`):** the brass figure-8 core, its dark groove, the control-lug notch, the keyway's two ward ribs, a pin dome at the top of the slot and the chrome collar all read. PASS.
+- **Knurl (`e_knob_knurl_zoom`):** 72 flutes with crisp crests, the crown chamfer and the domed face. The band's ledges read at 0.3 m. PASS.
+- **Locked set at 1.5 m and free set (brass) at 1 m / 0.3 m:** clean silhouettes and no shading faults. PASS.
+- No form change was needed, so the models were not rebuilt. Rebuilding would only change FBX bytes and force a needless re-import in main.
+
+## 10. Verification frames (for the Figma VERIFICATION LOG)
+
+**The Figma section `FRONTROOMS · VISUAL VERIFICATION LOG` is not on the canvas yet.** `VERIFICATION_LOG.md` still says `section id: —`. So, following the rule, the frames are listed here.
+- This workflow may only write report files, so it did not edit `VERIFICATION_LOG.md` or claim VL numbers.
+- The placing workflow should add these four rows with the next free numbers (VL069 or later), task **D1.4**.
+- The images are JPG q85 copies at ≤ 1920 px, in `Documentation/research/interactables/images/`. The PNG originals are in `$SP/interact_previews/G2/selfcheck_r2/`.
+
+| Proposed check (title) | Verdict | Question | Statement | Images, in slot order | Date |
+|---|---|---|---|---|---|
+| Head-dip key shot, lock models | PASS (FLAG: key edge-on at 0°) | Does pose P frame the real lock with the key at 0° and 90°, on both faces? | Keyway central on both faces; the key reads only after the turn. | `g2_e_poseP_key090.jpg` (large), `g2_e_poseP_key000.jpg`, `g2_e_poseP_pface_key000.jpg`, `g2_e_poseP_pface_key090.jpg`, `g2_e_poseP_offset12_key000.jpg` | 2026-10-03 16:53–17:05 |
+| IC face and knurl at 0.3 m | PASS | Do the cylinder face and the knob knurl hold up at 0.3 m? | IC figure-8, keyway wards and 72-flute knurl all read. | `g2_e_ic_face_zoom.jpg` (large), `g2_e_ic_face_0p3m.jpg`, `g2_e_knob_knurl_zoom.jpg`, `g2_e_knob_knurl_0p3m.jpg` | 2026-10-03 17:12–17:27 |
+| Locked lockset, both faces | PASS | Does the locked set read as one lockset from 1.5 m on both faces? | Both faces read; 0 overlaps, knob 0.065 proud. | `g2_e_locked_s_1p5m.jpg`, `g2_e_locked_p_1p5m.jpg`, `g2_e_poseP_nokey.jpg` | 2026-10-03 17:08–17:40 |
+| Free door lever set (brass) | PASS | Does the Lobby lever set read, and does the lever clear the rose at 35°? | Lever clears the rose at 35°: 0 overlaps, 0.4 mm gap. | `g2_e_free_s_1m_brass.jpg`, `g2_e_free_lever_0p3m.jpg`, `g2_e_free_s_lever35.jpg`, `g2_lever_final_sheet.jpg` | 2026-10-03 17:45–22:02 |
+
+Notes behind the verdicts: §3 (a)–(d) and §9.3 (`selfcheck_r2/selfcheck.json`); the shot note is in §4 item 12.

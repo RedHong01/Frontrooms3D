@@ -22,7 +22,8 @@ plane, the same convention as the raised blind's `blind_rail`; front = kit
 
 Budget (§9.4): 6,000 / 1,500 / 200; LOD1 now at 0.25 (ladders, rungs and
 fittings drop; slats and rails collapse). LOD distances 3 / 10 / 30. Slots:
-Prop_SteelAlmond (first), Prop_PlasticWhite. Render-only, no collider.
+Prop_SteelAlmond (first), Prop_PlasticWhite. Sidecar placement "Wall"
+(wall_placement()). Render-only, no collider.
 G5 also asks for Kit_InteriorWindow_Bronze; that is G5's file, not this one.
 """
 
@@ -161,6 +162,7 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "blind", "decor")
+    wc.wall_placement(kit)
     # Hangs 1.303 m below its rail-top origin: lift it onto kitlib's
     # turntable floor for the two preview stills only (after export).
     wc.lift_preview(kit, -lo[1] + 0.005)

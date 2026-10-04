@@ -721,9 +721,16 @@ def _delete_faces_below(obj, fr, c_mm):
 
 
 # -------------------------------------------------------------- wear / final
-def paint_wear(obj, fn=None):
+def _pb_is_cavity(p, n, slot):
+    return slot == PB
+
+
+def paint_wear(obj, fn=None, cavity=_pb_is_cavity):
     """fr_wear colour attribute (BYTE_COLOR, CORNER). fn(P_unity_mm,
-    N_unity, slot) -> (R grime, G edge wear, B cavity); 1 = untouched."""
+    N_unity, slot) -> (R grime, G edge wear, B cavity); 1 = untouched.
+    cavity(P, N, slot) -> True caps B at 0.35 (default: every PlasticBlack
+    face, i.e. slots and holes). Kits whose PlasticBlack is an OUTER surface
+    (the panel's base rail, a bezel) pass their own test, or None."""
     me = obj.data
     attr = me.color_attributes.get("fr_wear") or me.color_attributes.new("fr_wear", "BYTE_COLOR", "CORNER")
     names = [m.name.split(".")[0] if m is not None else "" for m in me.materials]
@@ -736,14 +743,14 @@ def paint_wear(obj, fn=None):
             pw = mw @ me.vertices[me.loops[li].vertex_index].co
             p = tuple(x / MM for x in to_unity(pw))
             c = fn(p, n, slot) if fn is not None else (1.0, 1.0, 1.0)
-            if slot == PB:
+            if cavity is not None and cavity(p, n, slot):
                 c = (c[0], c[1], min(c[2], 0.35))
             attr.data[li].color_srgb = (max(0.0, min(1.0, c[0])), max(0.0, min(1.0, c[1])), max(0.0, min(1.0, c[2])), 1.0)
     me.color_attributes.active_color = attr
     return obj
 
 
-def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True):
+def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True, cavity=_pb_is_cavity):
     """Per-part recipe (interactables G1 probe): apply modifiers ->
     weld -> triangulate n-gons -> shade smooth -> sharp by angle -> paint
     fr_wear -> WEIGHTED_NORMAL (applied by kit.finish())."""
@@ -764,7 +771,7 @@ def finalize(kit, smooth_angle, wear_fn=None, parts=None, weighted=True):
         me = obj.data
         me.shade_smooth()
         me.set_sharp_from_angle(angle=math.radians(smooth_angle))
-        paint_wear(obj, wear_fn)
+        paint_wear(obj, wear_fn, cavity)
         if weighted:
             m = obj.modifiers.new("wn", "WEIGHTED_NORMAL")
             m.mode = "FACE_AREA"
@@ -822,9 +829,10 @@ def box_meta(kit, module, family, plate_w, plate_h, wall=True, extra_tags=(), ou
     lod_meta(kit, module)
     lod0 = lod_parts(kit, 0)
     lo, hi = bounds_mm(lod0)
+    used = {m.name.split(".")[0] for o in lod0 for m in o.data.materials if m is not None}
     out = {"plateW": round(plate_w * MM, 5), "plateH": round(plate_h * MM, 5),
            "proud": round((-lo[1] if wall else hi[2]) * MM, 5), "screws": 0, "screwsBaked": True,
-           "family": family, "plateSlot": AL, "deviceSlot": NI}
+           "family": family, "plateSlot": AL, "deviceSlot": NI if NI in used else None}
     if outlet_extra:
         out.update(outlet_extra)
     kit.meta["outlet"] = out

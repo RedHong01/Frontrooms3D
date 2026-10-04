@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <title>FrontRooms HUD crosshair</title>
+  <desc>The 32 x 32 HUD / Crosshair rect in 1x units. A plain white dot, diameter 16 (Red, 2026-10-03). Desktop sprite: 64 x 64 PNG, dot 32. Touch @3x sprite: 192 x 192 PNG, dot 96.</desc>
+  <circle id="dot" cx="16" cy="16" r="8" fill="#FFFFFF"/>
+</svg>

@@ -59,7 +59,7 @@ def toggle_plate(kit, module, gangs):
         assert c["opening"] >= 0.5 and c["slot"] >= 0.5, "bat clearance %r" % c
     if pc.HAS_LODS:
         pc.plate_lod1(kit, W, H, screws, openings)
-        pc.plate_lod2(kit, W, H, crown_fan=True)
+        pc.plate_lod2(kit, W, H, crown_fan=True, screws=screws)
         for gx in gangs:
             pc.toggle_lod1(kit, gx, 0.0, info["hf"])
             pc.toggle_lod2(kit, gx, 0.0, info["hf"])

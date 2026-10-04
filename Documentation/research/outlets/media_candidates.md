@@ -83,3 +83,15 @@ These would replace the O3 ESTIMATES listed in `build_o3_floor_and_surface_boxes
 | `om_o3_05_emt_offset_connector.jpg` | source not found yet (search: "1/2 in EMT set screw offset connector") | unknown | ~100 KB | The offset connector's S-neck and its offset (O3: 12.3 mm over 24 mm) |
 | `om_o3_06_emt_one_hole_strap.jpg` | source not found yet (search: "1/2 in EMT one hole strap") | unknown | ~100 KB | Strap length, width and foot (spec 30 x 22 x 22 is an ESTIMATE; real straps run longer) |
 | `om_o3_07_steelcase9000_powered_base.jpg` | https://www.steelcase.com/content/uploads/2015/01/series9000-178.pdf (S30) | same | 9.8 MB PDF | Receptacle position and bezel in the panel base cover (O3: one sideways duplex per face at x = +-0.30 m, 0.07 m high) |
+
+## Added by build group O2 (switches, blanks and jacks, 2026-10-03; not downloaded)
+
+These would check the O2 ESTIMATES listed in `build_o2_switches_blanks_and_jacks.md` §5. The two most useful are already above: **om07** (square 404A jack: the prong-hole pattern of `Kit_JackPhone4Prong` is a reading) and **om08** (IBM Data Connector: the face layout of `Kit_JackData` is a reading). The rows below are search leads only: I have not opened the images, so check each for era (no TR marks, no RJ45, no logos) before asking for it.
+
+| Proposed filename | Page URL | Direct URL | Approx size | What it proves |
+|---|---|---|---|---|
+| `om_o2_01_commons_toggle_switches_wiring.jpg` | https://commons.wikimedia.org/wiki/File:Three_light_switches_with_exposed_wiring.jpg | unknown | unknown | If it shows toggles: bat length and taper against the plate (O2: 17 mm bat, base 7.5 x 5.0, tip 6.0 x 4.0, 32 deg up) |
+| `om_o2_02_commons_electric_switches_category.jpg` | https://commons.wikimedia.org/wiki/Category:Electric_switches | pick one straight-on ivory toggle plate, pre-1991 look | ~0.2-2 MB | A front view of a toggle plate at hero distance: opening size round the bat, screw spacing, the bat-slot width in the switch face (O2: 8.6 x 9.0) |
+| `om_o2_03_commons_photo_rj11.jpg` | https://commons.wikimedia.org/wiki/File:Photo-RJ11.jpg | unknown | unknown | A 6P jack face: cavity proportion, latch-notch size and the contact wires (O2: cavity 9.9 x 6.8, notch 3.2 x 2.0, 4 wires at 1.0 pitch) |
+| `om_o2_04_commons_telephone_sockets_category.jpg` | https://commons.wikimedia.org/wiki/Category:Telephone_sockets | pick one US flush 1-gang modular plate | ~0.2-2 MB | The insert size inside the plate opening (O2: opening 14.0 x 12.0, insert 13.4 x 11.4, set 0.3 behind the field) |
+| `om_o2_05_bnc_wall_plate_1980s.jpg` | source not found yet (search: "BNC bulkhead wall plate 10BASE2 thinnet faceplate") | unknown | ~100 KB | Nut, washer and bayonet proportions on a 1-gang plate (O2: 1/2 in hex nut 2.4 thick, washer 13.5, sleeve 9.5, 18 mm proud) |

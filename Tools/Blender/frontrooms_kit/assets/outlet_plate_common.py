@@ -861,10 +861,14 @@ def plate_lod1(kit, W, H, screws, openings, slot=TI, lods="1"):
     m.chain(rings)
     holes = []
     for op in openings:
+        # The LOD0 0.5 round as a 2-step round (as O1's LOD1 openings), then
+        # a plain wall down to the cavity-face height.
         lo = Opening(op.kind, op.cx, op.cz, op.w, op.h, op.r, op.d, segs=2 if op.kind == "rrect" else 24)
-        top = m.ring(lo.outline(0.0), hf)
-        bot = m.ring(lo.outline(0.0), hf(op.cx, op.cz) - 1.2)
-        m.bridge(top, bot)
+        top = m.ring(lo.outline(0.35), hf)
+        mid = m.ring(lo.outline(0.1), lambda x, z: hf(x, z) - 0.25)
+        low = m.ring(lo.outline(0.0), lambda x, z: hf(x, z) - 0.6)
+        bot = m.ring(lo.outline(0.0), CAVITY_H)
+        m.chain([top, mid, low, bot])
         holes.append(top)
     d = Mesh()
     for sx, sz in screws:
@@ -878,7 +882,9 @@ def plate_lod1(kit, W, H, screws, openings, slot=TI, lods="1"):
         holes.append(top)
         sl = rrect(sx, sz, SCREW_HEAD_D / 2 - 0.5, 0.4, 0.05, 0)
         d.cap(d.ring(sl, hs + SCREW_CROWN * 0.55))
-    m.fill(rings[-1], holes)
+    # Crown points as LOD0 (every 15 mm): without them the 0.1 mm crown
+    # flattens and the field's shading steps at the 1.5 m switch.
+    m.fill(rings[-1], holes, hf, steiner=FIELD_STEINER)
     out = [m.to_object(kit, "plate lod1", slot, lods=lods)]
     if screws:
         out.append(d.to_object(kit, "screw slots lod1", PB, lods=lods))
@@ -889,10 +895,12 @@ def oct_outline(hw, hh, c):
     return [(hw, -hh + c), (hw, hh - c), (hw - c, hh), (-hw + c, hh), (-hw, hh - c), (-hw, -hh + c), (-hw + c, -hh), (hw - c, -hh)]
 
 
-def plate_lod2(kit, W, H, slot=TI, lods="2", bevel=3.0, top_h=FIELD_EDGE_H + 0.05, crown_fan=False):
+def plate_lod2(kit, W, H, slot=TI, lods="2", bevel=3.0, top_h=FIELD_EDGE_H + 0.05, crown_fan=False, screws=()):
     """LOD2 (4-12 m): an 8-vertex rounded outline at full height with one
     bevel ring to the wall. crown_fan: the top is a fan round a centre
-    vertex at the crown height (8 tris instead of 6)."""
+    vertex at the crown height (8 tris instead of 6). screws: one dark
+    slot quad per screw (2 tris), the same slot LOD1 shows, so the screw
+    line does not vanish at the 4 m switch."""
     m = Mesh()
     base = m.ring(oct_outline(W / 2, H / 2, 1.2), 0.0)
     top = m.ring(oct_outline(W / 2 - bevel, H / 2 - bevel, 0.6), top_h)
@@ -901,7 +909,14 @@ def plate_lod2(kit, W, H, slot=TI, lods="2", bevel=3.0, top_h=FIELD_EDGE_H + 0.0
         m.fan(top, m.add(0.0, FIELD_CROWN_H, 0.0))
     else:
         m.cap(top)
-    return [m.to_object(kit, "plate lod2", slot, lods=lods)]
+    out = [m.to_object(kit, "plate lod2", slot, lods=lods)]
+    if screws:
+        d = Mesh()
+        hf = crown(W, H)
+        for sx, sz in screws:
+            d.cap(d.ring(rrect(sx, sz, SCREW_HEAD_D / 2 - 0.5, 0.4, 0.05, 0), hf(sx, sz) + SCREW_CROWN * 0.55))
+        out.append(d.to_object(kit, "screw slots lod2", PB, lods=lods))
+    return out
 
 
 def rr_outline(cx, cz, hw, hh, r, segs, rmin=0.3):
@@ -1027,18 +1042,59 @@ def toggle_lod2(kit, gx, gz, hf, lods="2"):
 
 
 def jack_lod1(kit, gx, gz, hf, opening, lods="1"):
-    """6P jack at LOD1: the insert face as a flat ring and the cavity as a
-    0.5 mm-deep black inset (§1.1 table: no contacts)."""
+    """6P jack at LOD1 (§1.1 table: 24-point faces, 0.5 mm-deep black
+    insets, no contacts): the insert with a 1-step round and its side down
+    to a dark gap floor (as LOD0, so the opening keeps its dark outline at
+    a slant); the cavity with its latch notch and mouth chamfer as a
+    0.5 mm-deep black inset."""
     face_h = hf(gx, gz) - JACK_FACE_BEHIND
     iw, ih = opening.w - 2 * JACK_INSERT_CLEAR, opening.h - 2 * JACK_INSERT_CLEAR
     cw, ch = JACK_CAVITY
+    nw, nh = LATCH_NOTCH
     zt = gz + JACK_CAVITY_TOP_Z
-    m = Mesh()
-    top = m.ring(rrect(gx, gz, iw / 2, ih / 2, JACK_INSERT_R, 1), face_h)
-    cav = m.ring(rrect(gx, (zt + zt - ch - LATCH_NOTCH[1]) / 2, cw / 2, (ch + LATCH_NOTCH[1]) / 2, 0.0, 0), face_h)
-    m.fill(top, [cav])
+    zb = zt - ch
+    cav = [(gx - cw / 2, zb), (gx - nw / 2, zb), (gx - nw / 2, zb - nh), (gx + nw / 2, zb - nh),
+           (gx + nw / 2, zb), (gx + cw / 2, zb), (gx + cw / 2, zt), (gx - cw / 2, zt)]
+    m, d = Mesh(), Mesh()
+    segs = 4
+    r0 = m.ring(rrect(gx, gz, iw / 2 - JACK_INSERT_ROUND, ih / 2 - JACK_INSERT_ROUND, JACK_INSERT_R - JACK_INSERT_ROUND, segs), face_h)
+    r1 = m.ring(rrect(gx, gz, iw / 2, ih / 2, JACK_INSERT_R, segs), face_h - JACK_INSERT_ROUND)
+    m.bridge(r1, r0)                                 # island: lower ring first
+    side = m.ring(rrect(gx, gz, iw / 2, ih / 2, JACK_INSERT_R, segs), GAP_FLOOR_H)
+    m.bridge(side, r1)
+    mt = m.ring(offset_poly(cav, SLOT_CHAMFER), face_h)
+    mb = m.ring(cav, face_h - SLOT_CHAMFER)
+    m.bridge(mt, mb)
+    m.fill(r0, [mt])
     out = [m.to_object(kit, "jack insert lod1", NI, lods=lods)]
-    out.append(dark_rect(kit, gx, (zt + zt - ch - LATCH_NOTCH[1]) / 2, cw / 2, (ch + LATCH_NOTCH[1]) / 2, face_h - 0.5, "jack cavity lod1", lods))
+    g0 = d.ring(rrect(gx, gz, iw / 2, ih / 2, JACK_INSERT_R, segs), GAP_FLOOR_H)
+    g1 = d.ring(rrect(gx, gz, opening.w / 2 + 0.3, opening.h / 2 + 0.3, opening.r + 0.3, segs), GAP_FLOOR_H)
+    d.bridge(g1, g0)
+    w0 = d.ring(cav, face_h - SLOT_CHAMFER)
+    w1 = d.ring(cav, face_h - SLOT_CHAMFER - 0.5)
+    d.bridge(w0, w1)
+    d.cap(w1)
+    out.append(d.to_object(kit, "jack cavity lod1", PB, lods=lods))
+    return out
+
+
+def jack_lod2(kit, gx, gz, hf, opening, lods="2"):
+    """6P jack at LOD2: the insert as one nylon quad just proud of the
+    field (its matte patch is what reads at 4-12 m) and the cavity with
+    its notch as one dark 8-gon on it."""
+    cw, ch = JACK_CAVITY
+    nw, nh = LATCH_NOTCH
+    zt = gz + JACK_CAVITY_TOP_Z
+    zb = zt - ch
+    top = FIELD_CROWN_H + 0.05
+    iw, ih = opening.w - 2 * JACK_INSERT_CLEAR, opening.h - 2 * JACK_INSERT_CLEAR
+    out = [dark_rect(kit, gx, gz, iw / 2, ih / 2, top, "jack insert lod2", lods, slot=NI)]
+    cav = [(gx - cw / 2, zb), (gx - nw / 2, zb), (gx - nw / 2, zb - nh), (gx + nw / 2, zb - nh),
+           (gx + nw / 2, zb), (gx + cw / 2, zb), (gx + cw / 2, zt), (gx - cw / 2, zt)]
+    m = Mesh()
+    ring = m.ring(cav, top + 0.05)
+    m.fill(ring, [])
+    out.append(m.to_object(kit, "jack cavity lod2", PB, lods=lods))
     return out
 
 
@@ -1118,6 +1174,11 @@ def finish_meta(kit, module, family, W, H, proud_limit, seats, top_z=None, extra
             for o in parts:
                 print("[o2]    %-26s %5d tris  %s" % (o.name, tris_of([o]), o.data.materials[0].name))
     assert abs(n0 - budget[0]) <= 0.15 * budget[0], "%s: LOD0 %d tris vs budget %d" % (kit.name, n0, budget[0])
+    for lv in (1, 2):          # hand-built levels exist only with make_lods (or the review tool's forced build)
+        parts = lod_parts(kit, lv)
+        if parts:
+            n = tris_of(parts)
+            assert abs(n - budget[lv]) <= 0.15 * budget[lv], "%s: LOD%d %d tris vs budget %d" % (kit.name, lv, n, budget[lv])
     assert proud <= proud_limit + 1e-6, "%s: proud %.2f > %.1f" % (kit.name, proud, proud_limit)
     assert lo[1] >= -1e-6, "%s: geometry behind the wall plane (%.3f mm)" % (kit.name, lo[1])
     assert _close(hi[0] - lo[0], W, 0.05) and _close(hi[2] - lo[2], H, 0.05), \

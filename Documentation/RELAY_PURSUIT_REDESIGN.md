@@ -119,6 +119,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 | Chase starts at full speed with no "it saw me" beat | MapHunter.cs:208-212, :248-249 | Players move pre-emptively. |
 | TIER and zone count on the HUD; stall rises have no in-world sign | Game.cs:1845 *wt*, :911-917 | "Keep moving". |
 | Backtracking shows worse lamps; ambient ticks are false alarms | MapWorld.cs:1221; SoundDirector.cs:358-374 | Lamps mean nothing. |
+| After the LoseTrack fix (Red's go, 2026-10-03), a door shut during the 1.5 s of chase without sight is not heard, because `Noise()` ignores Chase. The old real-cell door tracking used to hide this | MapHunter.cs `Noise` (State == Chase) | A shut door in that window goes unnoticed. v2 §7 covers it: in Chase without sight it hears, and only moves the last known point. |
 
 ### 2.3 Measurements: what each number is and is not
 

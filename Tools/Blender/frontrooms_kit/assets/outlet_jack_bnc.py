@@ -21,7 +21,7 @@ Slots: Prop_ThermosetIvory (plate and the white insulator), Prop_Chrome
 screw bores), Prop_Brass (centre socket). Render-only.
 
 Segments: the round chrome parts use 36 (the hex nut needs a multiple of 6
-with the corners on samples; 36 also gives the Ø 9.6 sleeve a 0.018 mm
+with the corners on samples; 36 also gives the Ø 9.5 sleeve a 0.018 mm
 chord error = 0.05 px at 0.3 m), not the 64 of §1.1: 64 would put LOD0 at
 about 3,100 tris, past the +15 % budget.
 
@@ -47,7 +47,7 @@ SEGS = 36
 WASHER_R, WASHER_T = 6.75, 0.6          # flat washer OD 13.5
 NUT_AF, NUT_T = 12.7, 2.4               # 1/2 in hex nut
 NUT_FACE_R = 6.05                       # chamfer circle on the nut face (0.95 AF/2)
-SLEEVE_R = 4.8                          # Ø 9.6 bayonet sleeve (spec Ø 9.5 bayonet)
+SLEEVE_R = 4.75                         # Ø 9.5 bayonet sleeve (spec §1.3)
 THREAD_R = 4.75                         # 3/8-32 thread showing in front of the nut
 BORE_R = 4.15
 FRONT = 18.0

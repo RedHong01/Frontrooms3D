@@ -2,6 +2,11 @@
 
 Status: DESIGN DONE 2026-10-03 (second run). Nothing was installed in the game. The Unity project, `FrontRooms3DGame.cs`, the map files and Figma were **not** changed. No media was downloaded.
 
+**Resume check 2026-10-03 22:0x** (after the 17:54 usage stop and Codex's commits into main at 19:10–19:41): every input was re-checked against main at `75cfdff`. The design still holds. Three things changed and are fixed here (§10):
+- Main's `HUD_KeyGlyph.png` already has real alpha (visual chat, 17:22). It is still the generic ring key. Boards 04 and 10 now show it as "today".
+- The HUD key code moved down about 125 lines. The line numbers in §7 are updated.
+- Codex put `Kit_Key_Zone.fbx` (and the tags, ring and door plate) into main. Its side outline is the same as the one the icon is traced from (IoU 0.99996).
+
 Brief: `01_research.md` §6. Red's ask: merge the key icon into the UI design and make it echo the key model.
 
 **Recommendation: A · Cut key.** It is `Kit_Key_Zone`'s own outline in one paper colour. Ship it today in the current 40 × 22 slot (no code change). Then move to 49 × 22 and the label "KEY" + zone number in Courier Prime Bold (a contract request). The tag chip is an option once zones have tag data. B suits 2x screens. C is not used.
@@ -17,8 +22,9 @@ All paths are under `design/`.
 | 10 review boards, 1920 × 1080, deck grammar | `01_overview.png` … `10_recommendation.png` |
 | Vector masters (33) | `svg/` — 1x units, one `<path>` per layer, named layers |
 | PNG renders (66), real alpha | `png/<name>@1x.png`, `png/<name>@2x.png` |
-| HUD composites on game frames (182) | `hud/` — `<dir>_held_<bg>_<1x/2x>.png`, `<dir>_state_<state>_<bg>_1x.png`, `<dir>_zone_…`, `label_…`, `<dir>_fullframe_<bg>.jpg` |
+| HUD composites on game frames (188) | `hud/` — `<dir>_held_<bg>_<1x/2x>.png`, `<dir>_state_<state>_<bg>_1x.png`, `<dir>_zone_…`, `label_…`, `<dir>_fullframe_<bg>.jpg`; resume pass: `live_code_<bg>_1x.png` (main's live glyph + today's label) and `cmp_<live/dropin/target>_wallpaper_1x.png` (the three steps on one frame) |
 | **Drop-in (recommended, NOT installed)** | `dropin/slot_40x22/` and `dropin/slot_49x22/` (§6) |
+| Verification image (resume) | `../images/08_main_fbx_vs_trace.png`: the trace source render, main's FBX outline, and the 15 px where they differ (red) |
 
 Board list:
 
@@ -27,13 +33,13 @@ Board list:
 | 01 | Overview | A, B, C as vectors + the same HUD row on a lit and a dark frame |
 | 02 | A · traced | model render → trace overlay → vector master at one scale; 1x / 2x on lit and dark; 1x pixels × 8 |
 | 03 | A · in the HUD | 4 game frames at 1:1, 2x crops, 4 states × lit / dark |
-| 04 | A · label | "LEVEL 0 KEY" today vs "KEY 14" in Bayon, Plex Mono, Courier Prime Bold; today's code label |
+| 04 | A · label | "LEVEL 0 KEY" (today's default text) vs "KEY 14" in Bayon, Plex Mono, Courier Prime Bold; today's code label with the glyph live in main |
 | 05 | A · option · tag chip | the three tag models vs the chips; 3 shapes × 3 colours in the HUD |
 | 06 | B · key on its tag | model assembly (key + ring + tag, one scale) vs vector; 3 × 3 zone grid; 1x / 2x |
-| 07 | B · in the HUD | as 03, full 48 px form |
+| 07 | B · in the HUD | as 03, full 48 px form (2x crops shown at 72 % so the meta line is not cut) |
 | 08 | C · sign plate | model key + door number plate vs vector on its pixel grid; plates in 4 colours |
 | 09 | C · in the HUD | as 03 |
-| 10 | Recommended | full 1080p frame, target row, drop-in row, drop-in files, contract request |
+| 10 | Recommended | full 1080p frame; three steps on one frame (main today → drop-in → target); drop-in files; contract request |
 
 Scripts (scratchpad, re-runnable with Blender's Python 3.11 + numpy):
 - `keyicon_design/design.py`: SVG + PNG for all directions.
@@ -41,6 +47,7 @@ Scripts (scratchpad, re-runnable with Blender's Python 3.11 + numpy):
 - `boards.py`: the boards (HTML → headless Chrome).
 - `iconlib.py`: rasteriser, PNG io and a TrueType reader for the real HUD fonts.
 - `geometry_mm.json`: the key, tag and plate outlines dumped from read-only copies of the G3 Blender modules.
+- Resume pass: `composites_live.py` (crops with main's live glyph) and `keyicon_resume/verify_main_fbx.py` + `bounds_main.py` (main's FBX against the trace).
 
 ---
 
@@ -52,6 +59,17 @@ Scripts (scratchpad, re-runnable with Blender's Python 3.11 + numpy):
 - A 25 × 8.6 mm blade with 6 cuts on top (0.58–2.1 mm deep) and a tip bevel from 21.5 mm.
 
 **The renders.** The model renders on boards 02, 05, 06 and 08 are orthographic Blender renders of the built FBX at a known scale (20 px/mm): key side view, the three tags, the ring and the door number plate. The icon is drawn from the same outline numbers, so the trace overlay on board 02 lines up exactly.
+
+**Checked against main (22:0x).** Codex copied the built kit into main (`8ef5b64`, from `proj_int`, built 16:45). I rasterised main's `Kit_Key_Zone.fbx` in the same side view and compared it with the render the icon was traced from (`images/08_main_fbx_vs_trace.png`):
+
+| File in main | Result |
+|---|---|
+| `Kit_Key_Zone.fbx` | 58.0 × 26.0 × 2.2 mm, 2,184 tris. IoU **0.99996**: 15 px of 374,705 differ, all on the anti-aliased edge |
+| `Kit_Key_Zone_Nickel.fbx` | same outline, IoU 0.99997 |
+| `Kit_KeyTag_Rect / Round / Long`, `Kit_KeyRing`, `Kit_DoorNumberPlate` | bounds identical to the renders on boards 05, 06, 08 (to 0.01 mm) |
+| `interact_key*.py`, `interact_door_number_plate.py` | unchanged since 12:56 (`ef061ae`) |
+
+So the echo holds in main. The interactables rebuild (G2/G3) was not finished. If it changes the key outline later, re-dump `geometry_mm.json` and re-run `design.py`, `composites.py` and `boards.py`: the icon is built from those numbers.
 
 **View.** Side view, tip right, cuts up. This is how the key enters the lock in the unlock shot (`10_spec.md` §3.4). The tip points at the label.
 
@@ -153,10 +171,10 @@ Scripts (scratchpad, re-runnable with Blender's Python 3.11 + numpy):
 | Option | Result |
 |---|---|
 | all Bayon | "KEY I4": ambiguous |
-| Bayon KEY + Plex Mono 20.5 px | readable, but the Regular cut is too light next to Bayon |
-| **Bayon KEY + Courier Prime Bold 24.6 px** | readable; the same face as the typed tag insert (`Prop_KeyTagNo`), so the label quotes the tag. **Recommended.** |
+| Bayon KEY + Plex Mono 20 px | readable, but the Regular cut is too light next to Bayon |
+| **Bayon KEY + Courier Prime Bold 25 px** | readable; the same face as the typed tag insert (`Prop_KeyTagNo`), so the label quotes the tag. **Recommended.** |
 
-- Sizes are matched to Bayon 20's cap height (14.3 px). In Unity, use font size 25.
+- Sizes are matched to Bayon 20's cap height (14.28 px), then rounded to whole sizes, because Unity's legacy `Text` only takes an int `fontSize` (Figma stage, 2026-10-03): Courier Prime Bold **25** (cap 14.49 px), Plex Mono **20** (cap 13.96 px). The composites and boards use these sizes.
 - Unity's legacy `Text` cannot switch fonts inside one string. The number needs its own Text element.
 - `UiFont()` gives Bayon to every element whose name contains "Key". So the number element needs another name or an explicit font.
 - Courier Prime is in `Assets/Fonts/Period1990/`, not in `Resources/`. The HUD needs a reference to it.
@@ -171,13 +189,13 @@ Rule: brightness says how much the key matters **here**.
 
 | State | Today in code | Design |
 |---|---|---|
-| **Held, this zone** | panel shown (`map.HasKeyFor(zone.id)`) | paper glyph + "KEY 14" |
+| **Held, this zone** | panel shown (`map.HasKeyFor(zone.id)`); glyph = the generic ring key, real alpha since 17:22 | paper glyph + "KEY 14" |
 | **Held, other zone** | panel hidden | glyph at 40 %, label muted `#BDBAB0` at 70 %, meta Plex Mono 13 "NOT THIS ZONE" (B: "OPENS ZONE 14 ONLY", no yellow rule) |
 | **No key** | panel hidden; door prompt "LOCKED  ·  NEEDS THIS ZONE'S KEY" (Bayon) | panel stays hidden. At a locked door the prompt shows the **outline** key (1.25 px stroke, paper 70 %) + "LOCKED" (muted Bayon) + Plex Mono "NEEDS KEY 14", as in Figma UI06. B and the chip option use A's outline in the prompt: their 48 px or coloured glyphs are too heavy beside the crosshair. |
 | **Used** | no such state: keys are never spent (`keysHeld` is a set; a held zone key opens every door of that zone) | muted glyph + muted label + "DOOR OPENED". Only needed if keys become single-use (RE2R's check-mark idea). Otherwise keep "held". |
 
 Also drawn: the today label vs the target label on the same frames (board 04), and full 1080p frames with the real room typography for every direction (`hud/*_fullframe_*.jpg`):
-- room meta: "ZONE 06  /  TIER 1  /  STANDARD  2.9 M" (format from `FrontRooms3DGame.cs` line ~1845);
+- room meta: "ZONE 06  /  TIER 1  /  STANDARD  2.9 M" (format from `FrontRooms3DGame.cs` line ~1970 in main at `75cfdff`);
 - room names: from `ZoneName()`;
 - the crosshair: today's 16 px dot (`HUD_Crosshair.png`, 64 px sprite in a 32 px rect).
 
@@ -202,7 +220,7 @@ Also drawn: the today label vs the target label on the same frames (board 04), a
 
 | Folder | File | Size | Use |
 |---|---|---|---|
-| `dropin/slot_40x22/` | `HUD_KeyGlyph.png` | 80 × 44 | replace `Assets/Resources/UI/HUD_KeyGlyph.png` **today**; draws in the existing 40 × 22 rect, no code change |
+| `dropin/slot_40x22/` | `HUD_KeyGlyph.png` | 80 × 44 | replace `Assets/Resources/UI/HUD_KeyGlyph.png` **today**; draws in the existing 40 × 22 rect, no code change. Main's file already has real alpha (visual chat F2, 17:22, commit `df4cb03`), but it is still the generic ring key: this file changes the shape to our key (board 10, bottom row) |
 | | `HUD_KeyGlyph@1x.png` | 40 × 22 | the exact 1080p pixels (reference) |
 | | `HUD_KeyGlyph.svg` | 40 × 22 | vector master |
 | `dropin/slot_49x22/` | `HUD_KeyGlyph.png` | 98 × 44 | **after** the contract change (rect 49 × 22) |
@@ -225,13 +243,13 @@ Import settings for the PNG:
 
 The sprite is made in code by `LoadHudSprite()` from the whole texture, so the PNG's size sets nothing but resolution.
 
-Owner: `Resources/UI/HUD_KeyGlyph.png` is the visual chat's file. Red reviews Figma first; only then does anything get copied in.
+Owner: `Resources/UI/HUD_KeyGlyph.png` is the visual chat's file. Red reviews Figma first; only then does anything get copied in. When it lands: overwrite the PNG only and keep main's `.meta` (GUID `eb266a1345aeb45f69bf39f9c6d34fb4`); change only its import fields (compression None, max size 128).
 
 ---
 
 ## 7. Contract request for the map chat (exact proposal; not applied)
 
-`Assets/Scripts/FrontRooms3DGame.cs`, `BuildHud()` (around lines 1703–1712) and `UpdateMapPlay` (around 1870–1877):
+`Assets/Scripts/FrontRooms3DGame.cs` in main at `75cfdff`: `BuildHud()` key panel at lines 1828–1838, `UpdateMapPlay` key update at 1995–2002, `KeyLabel()` at 2035, room meta at 1970. (Codex's commits changed only the title logo code in this file, so the key code is the same; it sits about 125 lines lower than when the research read it.)
 1. `Key glyph` size `new Vector2(40, 22)` → `new Vector2(49, 22)`. `Key label` position `new Vector2(54, 0)` → `new Vector2(63, 0)`. Panel `HUD / Key` width 147 → wide enough for the label (≥ 200 for "KEY 14", ≥ 300 for today's zone-name label).
 2. When zones have a fixed tag number: add a second Text after `Key label` for the number:
    - Courier Prime Bold, size 25, paper;
@@ -241,11 +259,11 @@ Owner: `Resources/UI/HUD_KeyGlyph.png` is the visual chat's file. Red reviews Fi
    - `KeyLabel(zone)` → "KEY" + the number.
 3. Map data (`FrontRoomsMap.cs` `ZoneInfo`): a fixed tag number (00–99), tag colour (red / blue / white) and tag shape (rect / round / long) per zone. Use the same source that dresses the 3D key, its tag and the door number plate, so the HUD can never disagree with the world. Decide what the room meta's "ZONE nn" (a visit counter today) shows next to it.
 4. Optional states:
-   - "other zone": show the panel muted when `KeysHeld > 0` and `!HasKeyFor(zone.id)`.
-   - Locked prompt: `Describe()` "LOCKED  ·  NEEDS THIS ZONE'S KEY" → "LOCKED" + a meta line "NEEDS KEY nn", with the outline glyph (an Image beside the prompt Text).
+   - "other zone": show the panel muted when `KeysHeld > 0` and `!HasKeyFor(zone.id)` (`FrontRoomsMapWorld.cs` lines 57 and 790).
+   - Locked prompt: `Describe()` (`FrontRoomsMapWorld.cs` line 2160) "LOCKED  ·  NEEDS THIS ZONE'S KEY" → "LOCKED" + a meta line "NEEDS KEY nn", with the outline glyph (an Image beside the prompt Text).
 5. Tag chip (option): an Image left of the key glyph. One rim sprite per shape + one fill sprite tinted with the zone colour. Label x moves by chip width + 4.
 
-Dependency: the in-game key is still a placeholder cube (`SpawnKey`: 0.32 × 0.12 × 0.12 m, `keyGlow` material). The icon echoes `Kit_Key_Zone`. The echo only works in play once the kit key replaces the cube.
+Dependency: the in-game key is still a placeholder cube (`FrontRoomsMapWorld.cs` `SpawnKey`, line 2804: 0.32 × 0.12 × 0.12 m, `keyGlow` material; re-checked in main at 22:0x). `Kit_Key_Zone.fbx` is now in main, but nothing spawns it yet. The icon echoes `Kit_Key_Zone`. The echo only works in play once the kit key replaces the cube.
 
 ---
 
@@ -269,4 +287,32 @@ Dependency: the in-game key is still a placeholder cube (`SpawnKey`: 0.32 × 0.1
 2. Label: "KEY 14" with the number in Courier Prime Bold, once zones have numbers? Until then, keep the zone-name label?
 3. Tag chip in the HUD: yes or no?
 4. States: show "other zone" muted, or keep the panel hidden as today? Do keys stay valid (no "used" state)?
-5. Drop-in: may the visual chat copy `dropin/slot_40x22/HUD_KeyGlyph.png` into `Resources/UI` now (fixes the white box, no code change)?
+5. Drop-in: may the visual chat copy `dropin/slot_40x22/HUD_KeyGlyph.png` into `Resources/UI` now? The white box is already gone in main; this changes the generic ring key into our traced key. No code change.
+
+---
+
+## 10. Resume check against main (2026-10-03 22:0x)
+
+The workflow stopped at 17:54 while board 10 was being written. Codex then committed into main (19:10–19:41). What I checked, and what it means for this design:
+
+| Item | Main now | Effect here |
+|---|---|---|
+| Partial work in `design/` | all 10 boards, 33 SVG, 66 PNG, 182 HUD crops, 6 drop-in files were complete. Checked after this pass: 253 PNG (CRC + full inflate), 35 SVG (XML parse), 23 JPG (end marker), 0 bad; drop-in alpha corners 0, one RGB value, 2x→1x alpha error 0.04 % mean | nothing redone |
+| `Assets/Resources/UI/HUD_KeyGlyph.png` | the generic ring key with real alpha since 17:22 (`df4cb03`, visual chat F2). Codex did not touch it. Import still Compression Normal | "today" was shown as our key on board 04 and only in words on board 10. **Fixed:** board 04 "TODAY IN CODE" and board 10's bottom row now use main's real file (`hud/live_code_*`, `hud/cmp_*`). §6 and question 5 updated |
+| `FrontRooms3DGame.cs` | Codex range touched only the title logo relay (`a7b0dbb`). HUD key code, fonts, sizes and colours unchanged | line numbers in §4 and §7 updated |
+| `Kit_Key_Zone` (+ `_Nickel`), tags, ring, door plate FBX | in main since `8ef5b64` (from `proj_int`) | same outline as the trace (§1): the echo holds |
+| `interact_key*.py` | unchanged since 12:56 | none |
+| HUD fonts (`Resources/Fonts`, `Fonts/Period1990`) | unchanged | none |
+| In-game key / `ZoneInfo` | still the placeholder cube; `ZoneInfo` still has no tag number, colour or shape | §7 items 3 and dependency still stand |
+| Codex audit (`research/codex_audit/20_findings.md`) | the folder exists since 22:14 but is still empty (no `00_main_state.md`, no `20_findings.md`, no `contracts/`) | no finding to resolve for this workflow yet; the next stage re-checks before it finishes |
+| Board 07 | its 2x crops cut the meta line ("OPENS DOORS OUT OF TH…") | **Fixed:** shown at 72 % and labelled so |
+| Board 04 | "TODAY · LEVEL 0 KEY" looked like a glyph label | renamed "LEVEL 0 KEY · TODAY'S DEFAULT TEXT" |
+
+Still open for the Figma hand-off stage (not this stage, per `figma_target.md`): integer font sizes in `composites.py` (Courier Prime Bold 25, Plex numerals 20) with a re-render, and the @3x exports for the touch track.
+
+**For 平面视觉's re-sync** (`figma_target.md` update 22:0x: they built section 2532:4038 from our 17:09 SVGs, 17:10 `composites.py` and 17:16 PNGs; `Tools/figma/hud_key/`):
+- (a) Constants: **none changed.** `composites.py` was not edited (entry points, names and output stems are as they synced).
+- (b) Files: **6 added** in `design/hud/`, all made by a new, separate script `composites_live.py` (so their `plan.py` does not see them): `live_code_lit_1x.png`, `live_code_dark_1x.png`, `live_code_wallpaper_1x.png`, `cmp_live_wallpaper_1x.png`, `cmp_dropin_wallpaper_1x.png`, `cmp_target_wallpaper_1x.png`. The `live_*` and `cmp_live_*` crops use main's live `Assets/Resources/UI/HUD_KeyGlyph.png`, which is not one of our SVG masters; a twin would need that PNG as an image fill. `cmp_dropin_*` uses `dropin/slot_40x22/HUD_KeyGlyph@1x.png` (= `png/A_S_held@1x.png`, same bytes). Same layout constants as `composites.py` (row top 940, label baseline 958, glyph at x 72, label 14 px after it; crop box x 40–440 × y 920–980 for `live_code_*`, x 40–640 × y 880–1000 for `cmp_*`). Changed: boards 04, 07 and 10 (not part of their sync). Added: `images/08_main_fbx_vs_trace.png`. Removed: none.
+- (c) SVG masters: **none changed.**
+
+Verification images from this pass: `images/08_main_fbx_vs_trace.png` (main FBX vs trace, verdict PASS), `design/04_A_label.png` and `design/10_recommendation.png` (re-rendered). The Figma VISUAL VERIFICATION LOG section is not on the canvas yet (`VERIFICATION_LOG.md`: section id —), so they are listed here and in the run report.

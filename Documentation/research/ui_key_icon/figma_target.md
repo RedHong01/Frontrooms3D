@@ -35,3 +35,26 @@ Mark the file FINAL at the top only after the fix stage. The visual chat will th
    - Export every key glyph at **@3x** (66 px tall) in addition to 1x/2x, and keep the SVG masters as the vector source.
    - Do the same for the crosshair: add `HUD_Crosshair@3x.png` at 192 × 192 with a Ø96 px anti-aliased white dot, or point to an SVG. The desktop `Assets/Resources/UI/HUD_Crosshair.png` (64 × 64, Ø32) stays unchanged.
    - Desktop output does not change. List the @3x files in 03_figma.md.
+
+## UPDATE 2026-10-03 22:0x: 平面视觉 has BUILT the Figma block. Read this before the figma / critic / fix stages.
+
+- **Section:** 2532:4038 "FRONTROOMS · HUD KEY · UI VARIATIONS (平面视觉)" at (68657, 2000), 8280 × 11920. Do NOT build or edit anything in Figma for the key HUD.
+- **Pages KV01–KV10:**
+  - KV01: 5 glyphs ×3.
+  - KV02: 4 rooms.
+  - KV03/KV04: lit/dark, 4 states.
+  - KV05: B tags.
+  - KV06: chip + C plate.
+  - KV07: number type.
+  - KV08–KV10: 2x.
+- **Library KV-LIB 2579:4775:** the 33 SVG masters as components in four variant sets: A 2579:4809, chip 2579:4810, B 2579:4811, C 2579:4812. The crosshair is 2579:4813.
+- **Twins and screens:** 114 twins, one per 1x PNG in `design/hud/` with the same name, plus 20 full 1080p screens.
+- **Their match check:** twins differ from our PNGs by 0.2–0.5/255 per channel; screens are within 1 px. The zone name is outlined at opsz 20 and is 3 px wider from kerning.
+- **Built from:** the 17:09 SVGs, the 17:10 `composites.py` (still Courier 24.63 / Plex 20.45) and the 17:16 PNGs, with recommended direction A · cut key.
+- **Sync:** `Frontrooms3D/Tools/figma/hud_key/` (README). Their `plan.py` runs our `composites.py` in record-only mode (it never writes our folder).
+- **What we must keep:** `composites.py`'s entry points, constant names and output file names (`design/hud/*.png` stems) stay stable, so their re-sync keeps working. If any must change, say so explicitly.
+- **When 03_figma.md is FINAL (integer sizes 25/20, @3x, FINAL mark), list for 平面视觉:**
+  - (a) every changed constant, with old → new;
+  - (b) every changed, added or removed file;
+  - (c) whether any SVG master changed.
+  The visual chat relays this list to them and they re-run the sync.

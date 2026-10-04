@@ -32,7 +32,11 @@ Construction (window root W, Unity metres; see interact_window_common):
   ease at the sight line, mitred with 0.3 mm open joints (end grain shows;
   behind them is the liner or stool, never the map trims).
 * Glazing compound line (Prop_Rubber), Z +/-(0.0035 -> 0.006), flush with the
-  stop line; two neoprene setting blocks under the glass at X +/-0.35.
+  stop line; two neoprene setting blocks under the glass at X +/-0.35. Period
+  wood-stop glazing was bedded in compound or putty, not a black gasket: the
+  main project's facade (FrontRoomsInteractableKit.Window.cs, WindowParts.
+  Frame) swaps this submesh to Resources/Surfaces/Prop_Putty for W-L0 once
+  that surface exists; the mesh keeps Prop_Rubber as §5.1 specifies.
 * No glass, no pane, no teeth (glass-destruction track).
 
 Origin = window root (opening centre, wall centre line, floor). Front = face
@@ -45,7 +49,8 @@ edge stays clean; casing, stool and apron lose their wear stations and arc
 segments; checks a-c pass on LOD1 too); LOD2 0.077 (fr_lod2_drop on the
 compound line and the setting blocks; the ovolo is part of the stop sweep
 and collapses with it).
-LOD distances 4 / 12 / none. Slots: Prop_WoodWalnut (first = submesh 0, the
+LOD distances 4 / 12 / none. Sidecar placement "Wall" (wall_placement()).
+Slots: Prop_WoodWalnut (first = submesh 0, the
 RT bridge reads only that, §7.3), Prop_Rubber. Render-only: no collider.
 
 Era: stool-and-apron trim with ranch casing is 1955-85 back-office stock; a
@@ -166,3 +171,4 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "frame_wood")
+    wc.wall_placement(kit)

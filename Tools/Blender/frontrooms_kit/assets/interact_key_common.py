@@ -669,9 +669,33 @@ def profile_sweep(kit, path, profile, slot, to3, name="moulding", cap_first=Fals
     pairs (inset > 0 = toward the inside of the path, w = height). One ring
     per profile point, bridged in order: frames, folded edges, housings."""
     path = ccw(path)
+    return _bridge_rings(kit, [(offset_poly(path, inset), w) for inset, w in profile], slot, to3, name,
+                         cap_first, cap_last, uv)
+
+
+def rrect_sweep(kit, w, h, r, seg, cx, cy, profile, slot, to3, name="moulding", cap_first=False, cap_last=False,
+                uv="metres", r_min=0.0003):
+    """profile_sweep for a rounded rectangle whose profile reaches further in
+    than the corner radius (folded sheet lips, pan doors). offset_poly moves
+    each arc vertex along its own normal, so an inset > r folds the corner
+    arc through its centre and the corner faces turn inside out (black
+    corner notches). Here every ring is rebuilt as the exact offset curve:
+    a rounded rectangle (w - 2 inset) x (h - 2 inset) with radius r - inset,
+    never below r_min (the inside bend radius of the fold). Same vertex count
+    on every ring, so the bridging is unchanged."""
+    polys = []
+    for inset, ww in profile:
+        rr = max(r - inset, r_min)
+        polys.append((rounded_rect(w - 2 * inset, h - 2 * inset, rr, seg, cx, cy), ww))
+    n0 = len(polys[0][0])
+    assert all(len(p) == n0 for p, _ in polys), "rrect_sweep: ring sizes differ"
+    return _bridge_rings(kit, polys, slot, to3, name, cap_first, cap_last, uv)
+
+
+def _bridge_rings(kit, polys, slot, to3, name, cap_first, cap_last, uv):
     bm = bmesh.new()
-    rings = [[bm.verts.new(to3(u, v, w)) for u, v in offset_poly(path, inset)] for inset, w in profile]
-    n = len(path)
+    rings = [[bm.verts.new(to3(u, v, w)) for u, v in poly] for poly, w in polys]
+    n = len(polys[0][0])
     for a, b in zip(rings, rings[1:]):
         for i in range(n):
             j = (i + 1) % n

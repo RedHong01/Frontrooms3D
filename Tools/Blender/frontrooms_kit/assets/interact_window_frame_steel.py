@@ -21,8 +21,9 @@ Construction (window root W, Unity metres; see interact_window_common):
 * Face B (hall): the integral formed stop, 16 x 16, Z -0.022 -> -0.006.
 * Face A (room): the loose channel stop, 16 x 16, Z 0.006 -> 0.022, with a
   formed 8.8 mm x 1.6 mm screw channel on its sight-line face and 30 slotted
-  oval-head screws in it (8 per jamb at Y 0.4175 ... 1.9325, 7 on head and
-  sill at X -0.6325 ... 0.6325; 216 / 211 mm centres). The channel is what
+  oval-head screws in it (Ø 7 mm, 1.5 mm dome, 1.1 mm slot; 8 per jamb at
+  Y 0.4175 ... 1.9325, 7 on head and sill at X -0.6325 ... 0.6325; 216 /
+  211 mm centres). The channel is what
   keeps the 1.5 mm domes behind the stop line (self-check a) while the
   screws stay on the face a real loose stop is screwed through.
 * Black glazing tape (Prop_Rubber), Z +/-(0.0035 -> 0.006), flush with the
@@ -33,11 +34,19 @@ Construction (window root W, Unity metres; see interact_window_common):
 
 Origin = window root (opening centre, wall centre line, floor). Front = face
 A = kit -Y = Unity +Z (the map turns it toward the non-tall cell). Size
-1.55 x 1.80 (Y 0.2745-2.075) x 0.21 m.
+1.55 x 1.80 (Y 0.275-2.075) x 0.21 m. The sill band is the same 0.0755 face
+as the head, so its bottom is 0.3505 - 0.0755 = 0.275 (the §5.2 table's
+0.2745 is 0.5 mm deeper than the swept section; not a glass number).
+The face-B stop's root bends (1.5 mm inside radius where the stop meets the
+soffit) reach |Z| 0.0224 next to the soffit, 0.4 mm past the 0.022 stop
+face: a pressed stop has that radius; it is clear of the glass and the clear
+zone and is not an interface number.
 
 Budget (§9.4): 3,600 / 1,300 / 220 tris; LOD1 now (0.38: the screws and the
 setting blocks drop, nothing decimates; the tape stays so the pocket never
-reads as a slot); LOD2 drops the screws, tape and blocks (fr_lod2_drop). LOD distances 4 / 12 / none. Slots: Prop_SteelBrown (first =
+reads as a slot); LOD2 drops the screws, tape and blocks (fr_lod2_drop).
+LOD distances 4 / 12 / none. Sidecar placement "Wall" (wall_placement()).
+Slots: Prop_SteelBrown (first =
 submesh 0 for the RT bridge, §7.3), Prop_Rubber. VARIANT
 Kit_WindowFrame_Steel_Enamel (W-RN, Run): Prop_SteelBrown -> Door_Enamel
 (fallback Painted_Metal in Unity). Render-only: no collider.
@@ -68,6 +77,7 @@ VARIANTS = {"Kit_WindowFrame_Steel_Enamel": {STEEL: "Door_Enamel"}}
 R_OUT, R_IN = 0.003, 0.0015      # 16 ga: 1.5 mm inside radius -> 3.0 mm outer
 GROOVE_D, GROOVE_N0, GROOVE_N1 = 0.0016, 0.0096, 0.0184
 SCREW_N = 0.014                  # screw centre on the stop face (Z)
+SLOT_W = 0.0011                  # #6 oval head (head ~6.6-7 mm): slot 1.0-1.2 mm wide (ASME B18.6.3); was 0.8
 SETBACK = 0.0002                 # loose stop: 0.4 mm mitre joint, end walls show the soffit behind
 VGROOVE = 0.0003                 # frame: welded-and-ground mitre, a closed 0.3 x 0.3 mm V hairline
 
@@ -153,7 +163,7 @@ def build(kit):
         ang = rnd.uniform(0.0, 3.14159)
         sd = Matrix.Rotation(ang, 3, Vector(axis)) @ Vector(base)   # random slot angle, as fitted
         floor = 0.0009 if i in (5, 17, 26) else -0.0001       # three paint-filled slots
-        s = wc.slotted_oval_head(kit, c, axis, sd, STEEL, floor=floor, rows=3, cols=5, name="screw")
+        s = wc.slotted_oval_head(kit, c, axis, sd, STEEL, w=SLOT_W, floor=floor, rows=3, cols=5, name="screw")
         wc.paint_wear(s, lambda X, Y, Z: (1.0, 0.7, 0.8))
         kit.lod1_drop(s)
         wc.lod2_drop(s)
@@ -178,3 +188,4 @@ def build(kit):
     wc.lod_meta(kit, LOD1_RATIO, LOD2_RATIO, LOD_DISTANCES)
     kit.no_collider()
     kit.tag("interactable", "window", "frame_steel")
+    wc.wall_placement(kit)

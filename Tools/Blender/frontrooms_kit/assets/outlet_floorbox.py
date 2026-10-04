@@ -49,7 +49,8 @@ FLANGE_T = 2.0
 def build(kit):
     import sys
     module = sys.modules[__name__]
-    B.build_tombstone(kit, module, W, D, H, INSET, TOP_R, EDGE_R, ZC, ("front",), flange_t=FLANGE_T)
+    # Screw at 64 segments (spec §1.1 "screw heads >= 64"); the budget holds it.
+    B.build_tombstone(kit, module, W, D, H, INSET, TOP_R, EDGE_R, ZC, ("front",), flange_t=FLANGE_T, screw_segs=64)
     _, lo, hi = B.box_meta(kit, module, "outlet_floor", W, H, wall=False,
                            outlet_extra={"footprint": [W * B.MM, D * B.MM], "duplexCentreHeight": ZC * B.MM})
     B.assert_tombstone(kit, W, D, H, FLANGE_T, lo, hi)

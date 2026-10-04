@@ -105,7 +105,6 @@ def door_point(s, y, t):
 def build(kit):
     kc.register_slots()
     # ---------------------------------------------------------- body shell
-    path = kc.rounded_rect(BW, BH, 0.002, 2, XB, YC)
     r = 0.0015
     prof = [(0.0, 0.0), (0.0, BD - r)]
     for i in range(1, 3):
@@ -113,7 +112,8 @@ def build(kit):
         prof.append((r * (1 - math.cos(a)), BD - r + r * math.sin(a)))
     prof += [(LIP - 0.0005, BD), (LIP, BD - 0.0005), (LIP - 0.0005, BD - SHEET), (0.002, BD - SHEET),
              (SHEET, BD - 0.002), (SHEET, SHEET)]
-    shell = kc.profile_sweep(kit, path, prof, STEEL, lambda u, v, w: U(u, v, w), name="body shell")
+    # rrect_sweep: the 9 mm lip reaches past the 2 mm corner radius (exact offset corners, no fold-over)
+    shell = kc.rrect_sweep(kit, BW, BH, 0.002, 2, XB, YC, prof, STEEL, lambda u, v, w: U(u, v, w), name="body shell")
     back = kit.box(kc.U_size(BW - 0.004, BH - 0.004, SHEET), U(XB, YC, SHEET / 2), STEEL, bevel=0, name="body back")
     # hook strips (formed steel) - still the dominant slot
     strips = []
@@ -121,7 +121,6 @@ def build(kit):
         strips.append(kit.box(kc.U_size(BW - 0.03, 0.014, 0.0015), U(XB, y + 0.002, STRIP_Z - 0.00075), STEEL,
                               bevel=0.0004, segments=1, name="hook strip"))
     # door pan (SteelAlmond, part of the dominant slot)
-    dpath = kc.rounded_rect(BW, BH, 0.002, 2, (BW + 0.002) / 2 + 0.001, YC)
     rd = 0.0015
     dprof = [(0.003, DOOR_T)]
     for i in range(0, 3):
@@ -133,11 +132,11 @@ def build(kit):
     for p in dprof:
         if not dprof_clean or (abs(p[0] - dprof_clean[-1][0]) > 1e-7 or abs(p[1] - dprof_clean[-1][1]) > 1e-7):
             dprof_clean.append(p)
-    door = kc.profile_sweep(kit, dpath, dprof_clean, STEEL, door_to3, name="door pan", cap_first=True, cap_last=True)
+    door = kc.rrect_sweep(kit, BW, BH, 0.002, 2, (BW + 0.002) / 2 + 0.001, YC, dprof_clean, STEEL, door_to3,
+                          name="door pan", cap_first=True, cap_last=True)
     # card holder frame (formed steel) on the inside of the door
     hs, hy = (BW + 0.002) / 2 + 0.001, 1.600
-    hpath = kc.rounded_rect(0.137, 0.085, 0.002, 2, hs, hy)
-    holder = kc.profile_sweep(kit, hpath, [(0.0, DOOR_T - SHEET), (0.0, DOOR_T - SHEET - 0.0025), (0.002, DOOR_T - SHEET - 0.003),
+    holder = kc.rrect_sweep(kit, 0.137, 0.085, 0.002, 2, hs, hy, [(0.0, DOOR_T - SHEET), (0.0, DOOR_T - SHEET - 0.0025), (0.002, DOOR_T - SHEET - 0.003),
                                            (0.0055, DOOR_T - SHEET - 0.003), (0.0055, DOOR_T - SHEET - 0.0012)],
                               STEEL, door_to3, name="card holder")
     # piano hinge: barrel + the two leaves (painted with the body)

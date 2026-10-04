@@ -81,15 +81,25 @@ def receptacle(kit, fr, name):
 def build(kit):
     build_panel(kit, 1.524, H)
     panel_parts = list(kit.parts)
-    for obj in panel_parts:                    # fr_wear on the panel's own parts (white)
-        B.paint_wear(obj, None)
+    for obj in panel_parts:                    # fr_wear on the panel's own parts: all white
+        B.paint_wear(obj, None, cavity=None)   # (its PlasticBlack base rail is an outer surface)
     units = [receptacle(kit, B.front_frame(UNIT_X * MM, -RAIL_FACE * MM, RAIL_Z * MM), "receptacle_front"),
              receptacle(kit, B.back_frame(-UNIT_X * MM, RAIL_FACE * MM, RAIL_Z * MM), "receptacle_back")]
 
-    def wear(p, n, slot):
-        return (1.0, 0.85, 1.0) if slot == PB and abs(n[2]) < 0.9 else (1.0, 1.0, 1.0)   # bezel edges
+    def inside_insert(p):
+        # Unity mm: the units sit at x = -/+UNIT_X, y = RAIL_Z.
+        return abs(abs(p[0]) - UNIT_X) < INSERT[0] / 2 - 0.5 and abs(p[1] - RAIL_Z) < INSERT[1] / 2 - 0.5
 
-    B.finalize(kit, SMOOTH_ANGLE, wear, parts=units, weighted=False)
+    def wear(p, n, slot):
+        # Edge wear on the bezel's sides and step (not on the slot walls).
+        return (1.0, 0.85, 1.0) if slot == PB and abs(n[2]) < 0.9 and not inside_insert(p) else (1.0, 1.0, 1.0)
+
+    def cavity(p, n, slot):
+        # Only the slot walls and floors are cavities (PlasticBlack inside the
+        # ivory insert); the bezel round the insert is an outer surface.
+        return slot == PB and inside_insert(p)
+
+    B.finalize(kit, SMOOTH_ANGLE, wear, parts=units, weighted=False, cavity=cavity)
     for obj in units:
         ws_lod1_drop(obj)
         kit.lod1_drop(obj)

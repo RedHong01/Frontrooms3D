@@ -117,7 +117,7 @@ def lod1(kit):
     holes = []
     d = pc.Mesh()
     for x, z, r in HOLES:
-        hr = m.lathe(x, z, [(r, HEIGHT), (r, HEIGHT - 1.0)], 8)
+        hr = m.lathe(x, z, [(r + HOLE_CHAMFER, HEIGHT), (r, HEIGHT - HOLE_CHAMFER), (r, HEIGHT - 1.0)], 8)   # the chamfer catches light at 1.5-4 m
         holes.append(hr[0])
         d.cap(d.ring(pc.circle(x, z, r, 8), HEIGHT - 1.0))
     cb = m.lathe(0.0, 0.0, [(CBORE_R, HEIGHT), (CBORE_R, HEIGHT - CBORE_D)], 12)
