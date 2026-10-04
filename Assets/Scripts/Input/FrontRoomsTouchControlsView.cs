@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,8 +23,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Image useButton;
     Image useRing;
     Image pauseButton;
+    Image[] menuButtons = new Image[4];
+    Text[] menuButtonLabels = new Text[4];
+    Image[] settingsRowButtons = new Image[6];
     RectTransform useHitArea;
     RectTransform pauseHitArea;
+    RectTransform startHitArea;
+    RectTransform restartHitArea;
+    RectTransform settingsHitArea;
+    RectTransform caughtRestartHitArea;
+    RectTransform[] settingsRowHitAreas = new RectTransform[6];
     Sprite circle;
     Rect lastSafe;
     Vector2Int lastSize;
@@ -33,6 +42,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     const float SprintDiameter = 40f;
     const float UseDiameter = 72f;
     const float SprintOffset = 92f;
+    const float MenuButtonWidth = 250f;
+    const float MenuButtonHeight = 58f;
 
     bool ShouldShow => Application.isMobilePlatform || (Application.isEditor && showInEditor);
 
@@ -79,6 +90,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // the separate 88/44 pt accessibility hit boxes.
         useHitArea = HitArea("Touch / USE hit", 88f);
         pauseHitArea = HitArea("Touch / Pause hit", 44f);
+        startHitArea = FullArea("Touch / Start hit");
+        restartHitArea = MenuHitArea("Touch / Restart hit", new Vector2(-146f, -230f), new Vector2(250f, 58f));
+        settingsHitArea = MenuHitArea("Touch / Settings hit", new Vector2(146f, -230f), new Vector2(250f, 58f));
+        caughtRestartHitArea = MenuHitArea("Touch / Caught restart hit", new Vector2(0f, -230f), new Vector2(360f, 72f));
+        BuildMenuButtons();
+        BuildSettingsRows();
 
         moveBase.gameObject.SetActive(false);
         moveKnob.gameObject.SetActive(false);
@@ -87,6 +104,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
         controls.SetUseHitArea(useHitArea);
         controls.SetPauseHitArea(pauseHitArea);
+        controls.SetStartHitArea(startHitArea);
+        controls.SetRestartHitArea(restartHitArea);
+        controls.SetSettingsHitArea(settingsHitArea);
+        // The caught card uses the same restart callback, but has its own
+        // target so it can be positioned independently from the pause card.
+        controls.SetCaughtRestartHitArea(caughtRestartHitArea);
+        for (var i = 0; i < settingsRowHitAreas.Length; i++)
+            controls.BindSettingsRow(i, settingsRowHitAreas[i]);
     }
 
     Image Circle(string name, float diameter, Color color)
@@ -108,6 +133,89 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var rect = go.GetComponent<RectTransform>();
         rect.sizeDelta = new Vector2(diameter, diameter);
         return rect;
+    }
+
+    RectTransform FullArea(string name)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(safeRoot, false);
+        var rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        return rect;
+    }
+
+    RectTransform MenuHitArea(string name, Vector2 position, Vector2 size)
+    {
+        var rect = HitArea(name, 1f);
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+        return rect;
+    }
+
+    void BuildMenuButtons()
+    {
+        menuButtons[0] = MenuButton("Touch / RESTART", "RESTART", new Vector2(-146f, -230f));
+        menuButtons[1] = MenuButton("Touch / SETTINGS", "SETTINGS", new Vector2(146f, -230f));
+        menuButtons[2] = MenuButton("Touch / TRY AGAIN", "TRY AGAIN", new Vector2(0f, -230f));
+        menuButtons[3] = MenuButton("Touch / TAP TO START", "TAP TO START", new Vector2(0f, -330f));
+    }
+
+    Image MenuButton(string name, string label, Vector2 position)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(safeRoot, false);
+        var image = go.GetComponent<Image>();
+        image.color = new Color(1f, 1f, 1f, .07f);
+        image.raycastTarget = false;
+        var rect = image.rectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = new Vector2(MenuButtonWidth, MenuButtonHeight);
+        var textObject = new GameObject(name + " label", typeof(RectTransform), typeof(Text));
+        textObject.transform.SetParent(go.transform, false);
+        var text = textObject.GetComponent<Text>();
+        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.text = label;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.fontSize = 18;
+        text.fontStyle = FontStyle.Bold;
+        text.color = new Color(1f, 1f, 1f, .9f);
+        text.raycastTarget = false;
+        var textRect = text.rectTransform;
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = textRect.offsetMax = Vector2.zero;
+        menuButtonLabels[ArrayIndexForMenuButton(name)] = text;
+        return image;
+    }
+
+    int ArrayIndexForMenuButton(string name)
+    {
+        if (name.IndexOf("SETTINGS", StringComparison.Ordinal) >= 0) return 1;
+        if (name.IndexOf("TRY AGAIN", StringComparison.Ordinal) >= 0) return 2;
+        if (name.IndexOf("TAP TO START", StringComparison.Ordinal) >= 0) return 3;
+        return 0;
+    }
+
+    void BuildSettingsRows()
+    {
+        const int rowCount = 6;
+        for (var i = 0; i < rowCount; i++)
+        {
+            // The settings card is 920x720 in the existing HUD. Keep each
+            // target wider than the text line so a thumb can hit either the
+            // label or value without requiring pixel precision.
+            var row = MenuHitArea("Touch / Settings row " + i, new Vector2(0f, 192f - i * 58f), new Vector2(760f, 52f));
+            settingsRowHitAreas[i] = row;
+            settingsRowButtons[i] = row.gameObject.AddComponent<Image>();
+            settingsRowButtons[i].color = new Color(.956f, .875f, .231f, .035f);
+            settingsRowButtons[i].raycastTarget = false;
+        }
     }
 
     Image Ring(string name, float diameter, Color color)
@@ -193,6 +301,24 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         useHitArea.gameObject.SetActive(playing && controls.CurrentUsePrompt.Visible);
         pauseButton.gameObject.SetActive(playing || controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused || controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings);
         pauseHitArea.gameObject.SetActive(pauseButton.gameObject.activeSelf);
+
+        var title = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Title;
+        var paused = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused;
+        var settings = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings;
+        var caught = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Caught;
+        startHitArea.gameObject.SetActive(title);
+        restartHitArea.gameObject.SetActive(paused && !settings);
+        settingsHitArea.gameObject.SetActive(paused && !settings);
+        caughtRestartHitArea.gameObject.SetActive(caught);
+        menuButtons[0].gameObject.SetActive(paused && !settings);
+        menuButtons[1].gameObject.SetActive(paused && !settings);
+        menuButtons[2].gameObject.SetActive(caught);
+        menuButtons[3].gameObject.SetActive(title);
+        for (var i = 0; i < settingsRowHitAreas.Length; i++)
+        {
+            settingsRowHitAreas[i].gameObject.SetActive(settings);
+            settingsRowButtons[i].gameObject.SetActive(settings);
+        }
 
         var origin = controls.StickOriginScreenPosition;
         var thumb = controls.StickThumbScreenPosition;
