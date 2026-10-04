@@ -339,10 +339,25 @@ Shader "FrontRooms/Glass"
                 float k = TWO_PI / max(_RollPeriod, 0.05);
                 float ph = input.misc.y * TWO_PI;
                 half roll = _RollStrength;
-            // [G14-HOOK-BEGIN] RT-only roll attenuation; baseline keeps the original roll value.
+            // [G14-HOOK-BEGIN] RT-only roll attenuation; only traced coverage changes the normal.
             #if defined(_FR_GLASS_RT)
-                // [G14 G-3] with a traced (true-parallax) reflection the roll is scaled down; same factor in FRGlassRTPrepass
-                if (_FR_GlassRTWeight > 0.0 && _RTReceive > 0.5) roll *= (half)_FR_GlassRTRollScale;
+                // [G14 G-3] A stale/empty/depth-mismatched RT texel must leave today's pane unchanged.
+                // Sample the same screen-space coverage used by the reflection resolve so P2/P3/P5 do not
+                // attenuate the roll outside the receiver's traced pixels.
+                half rtRollCoverage = 0.0h;
+                if (_FR_GlassRTWeight > 0.0 && _RTReceive > 0.5)
+                {
+                    half4 rtRoll = (half4)SAMPLE_TEXTURE2D_LOD(_FR_GlassRTReflection, sampler_FR_GlassRTReflection,
+                                                                GetNormalizedScreenSpaceUV(input.positionCS), 0);
+                    rtRollCoverage = saturate(rtRoll.a);
+                    if (rtRoll.a > 1.0h)
+                    {
+                        float tagDepth = (float)rtRoll.a - 1.0;
+                        float myDepth = -TransformWorldToView(input.positionWS).z;
+                        rtRollCoverage = abs(tagDepth - myDepth) <= 0.02 + 0.01 * myDepth ? 1.0h : 0.0h;
+                    }
+                }
+                roll *= lerp(1.0h, (half)_FR_GlassRTRollScale, rtRollCoverage);
             #endif
             // [G14-HOOK-END]
                 tilt.x += roll * cos(m.x * k + ph);
