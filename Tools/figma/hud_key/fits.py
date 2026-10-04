@@ -1,24 +1,47 @@
-"""Add Figma (sRGB) opacities to a recorded plan so each crop matches the linear-light
-composite on its own background. Usage: fits.py plan.json out.json"""
+"""Add Figma (sRGB) opacities to a recorded plan.
+
+Usage: ``fits.py plan.json out.json``.  The optional Figma helper module is
+provided outside this repository; set ``FRONTROOMS_ICONLIB_ROOT`` to its
+directory on each machine instead of relying on a private temp path.
+"""
 import json, math, os, re, sys
+from pathlib import Path
 import numpy as np
 from PIL import Image
-KD = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/keyicon_design"
-sys.path.insert(0, KD)
-import iconlib as L
-PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
-DES = os.path.join(PROJ, "Documentation/research/ui_key_icon/design")
-RV = os.path.join(PROJ, "Documentation/research/room_visuals/images")
+HERE = Path(__file__).resolve().parent
+PROJ = Path(os.environ.get("FRONTROOMS_PROJECT_ROOT", HERE.parents[2])).resolve()
+ICONLIB_ROOT = os.environ.get("FRONTROOMS_ICONLIB_ROOT")
+if ICONLIB_ROOT:
+    sys.path.insert(0, ICONLIB_ROOT)
+try:
+    import iconlib as L
+except ImportError as exc:
+    raise SystemExit(
+        "fits.py needs the external iconlib helper. Set FRONTROOMS_ICONLIB_ROOT "
+        "to the folder containing iconlib.py on this machine."
+    ) from exc
+DES = PROJ / "Documentation" / "research" / "ui_key_icon" / "design"
+RV = PROJ / "Documentation" / "research" / "room_visuals" / "images"
+SCRATCH_ROOT = Path(os.environ["FRONTROOMS_FIGMA_SCRATCH_ROOT"]) if os.environ.get("FRONTROOMS_FIGMA_SCRATCH_ROOT") else None
 BGS = {"lit": os.path.join(RV, "room_map-l0-low_wide.jpg"), "wallpaper": os.path.join(RV, "room_map-l0-standard_wide.jpg"),
        "office": os.path.join(RV, "room_map-office_wide.jpg"),
-       "dark": "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/audit_run3_frames/59_door_key_open_t0000ms.png"}
+       "dark": str(SCRATCH_ROOT / "audit_run3_frames" / "59_door_key_open_t0000ms.png") if SCRATCH_ROOT else None}
 FONTS = {"BAYON": "Assets/Resources/Fonts/Bayon-Regular.ttf", "MONO": "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf",
          "SERIF": "Assets/Resources/Fonts/SourceSerif4-Variable.ttf", "COURIER_B": "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Bold.ttf"}
-FONTS = {k: L.Font(os.path.join(PROJ, v)) for k, v in FONTS.items()}
+FONTS = {k: L.Font(str(PROJ / v)) for k, v in FONTS.items()}
 lin = lambda c: np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
 srgb = lambda c: np.where(c <= 0.0031308, c * 12.92, 1.055 * np.clip(c, 0, None) ** (1 / 2.4) - 0.055)
 hexrgb = lambda h: np.array([int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4)])
-BG = {k: np.asarray(Image.open(p).convert("RGB"), dtype=np.float64) / 255.0 for k, p in BGS.items()}
+BG = {}
+for key, path in BGS.items():
+    if path is None:
+        continue
+    if not os.path.isfile(path):
+        raise FileNotFoundError(
+            "missing background '{}': {}. Set FRONTROOMS_FIGMA_SCRATCH_ROOT if this is the dark audit frame."
+            .format(key, path)
+        )
+    BG[key] = np.asarray(Image.open(path).convert("RGB"), dtype=np.float64) / 255.0
 
 
 def svg_layers(name):

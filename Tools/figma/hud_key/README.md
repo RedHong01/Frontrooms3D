@@ -44,15 +44,15 @@ Direction A (cut key) is the recommended one; see `ui_key_icon/02_design.md`.
 
 ## Re-sync after the game-visual chat changes the SVGs or constants
 
-1. Run `python3 plan.py plan.json`. It runs their `composites.py` with recording stubs and never writes to their folders.
+1. Set `FRONTROOMS_ICONLIB_ROOT` to the external `keyicon_design/` folder, then run `python3 plan.py plan.json`. It runs their `composites.py` with recording stubs and never writes to their folders.
 2. Run `python3 fits.py plan.json plan_fit.json`.
 3. Run `python3 layout.py plan_fit.json layout.json`.
 4. Changed SVGs: re-import them with `upload_assets` (multipart, filename = layer name). Then swap them into the KV-LIB variant sets, or rebuild the sets.
 5. Changed crops: rebuild the affected twins with `crops.js` (`prelude.js` + DATA). The board instances follow automatically.
 
 **Dependencies:**
-- `/usr/bin/python3` with numpy and PIL.
-- The game-visual chat's `keyicon_design/` (composites.py, iconlib.py). Its absolute path is set at the top of plan.py and fits.py.
+- Python with numpy and PIL.
+- The game-visual chat's `keyicon_design/` (composites.py, iconlib.py), supplied through `FRONTROOMS_ICONLIB_ROOT`.
 
 **Figma IDs:** `figma_ids.json` (backgrounds, library and components) and `twin_ids.json` (twin name → component ID).
 

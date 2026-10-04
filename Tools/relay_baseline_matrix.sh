@@ -1,23 +1,24 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # Serial Step 0 baseline matrix from RELAY_PURSUIT_REDESIGN.md §13/§14.
 # Default: 3 seeds × 9 current bot modes × T1/T5 = 54 cases.
 # Override SEEDS, TIERS, or MODES with space-separated values for a smaller smoke run.
 
 set -u
 
-ROOT="${0:A:h:h}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 RUN="$ROOT/Tools/relay_baseline_run.sh"
-SEEDS=(${=SEEDS:-2554 20388 7})
-TIERS=(${=TIERS:-1 5})
-MODES=(${=MODES:-quiet noisy evader03 evader06 staller shiftholder doorspammer edgerunner closedzone})
+read -r -a SEEDS <<< "${SEEDS:-2554 20388 7}"
+read -r -a TIERS <<< "${TIERS:-1 5}"
+read -r -a MODES <<< "${MODES:-quiet noisy evader03 evader06 staller shiftholder doorspammer edgerunner closedzone}"
 
-TOTAL=$(( ${#SEEDS} * ${#TIERS} * ${#MODES} ))
+TOTAL=$(( ${#SEEDS[@]} * ${#TIERS[@]} * ${#MODES[@]} ))
 PASS=0
 FAIL=0
 INDEX=0
-for seed in $SEEDS; do
-  for tier in $TIERS; do
-    for mode in $MODES; do
+for seed in "${SEEDS[@]}"; do
+  for tier in "${TIERS[@]}"; do
+    for mode in "${MODES[@]}"; do
       INDEX=$((INDEX + 1))
       echo "[$INDEX/$TOTAL] seed=$seed mode=$mode tier=$tier"
       if [[ "$mode" == staller ]]; then

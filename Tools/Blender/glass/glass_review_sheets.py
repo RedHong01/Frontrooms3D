@@ -21,13 +21,18 @@ import argparse
 import json
 import math
 import os
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-FONT_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "..", "Assets", "Resources", "Fonts"))   # Tools/Blender/glass
-if not os.path.isdir(FONT_DIR):
-    FONT_DIR = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Resources/Fonts"
+HERE = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(os.environ.get("FRONTROOMS_PROJECT_ROOT", HERE.parents[2])).resolve()
+FONT_DIR = PROJECT_ROOT / "Assets" / "Resources" / "Fonts"
+if not FONT_DIR.is_dir():
+    raise FileNotFoundError(
+        "FrontRooms fonts were not found at {}. Set FRONTROOMS_PROJECT_ROOT to the Unity project root."
+        .format(FONT_DIR)
+    )
 MONO = os.path.join(FONT_DIR, "IBMPlexMono-Regular.ttf")
 TITLE = os.path.join(FONT_DIR, "Bayon-Regular.ttf")
 SERIF = os.path.join(FONT_DIR, "SourceSerif4-Variable.ttf")

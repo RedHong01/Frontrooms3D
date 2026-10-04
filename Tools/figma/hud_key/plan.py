@@ -7,12 +7,18 @@ size, colour and opacity. Nothing is written to their folders.
 Usage: /usr/bin/python3 plan.py <out.json>
 """
 import json, os, struct, sys, types
+from pathlib import Path
 OUTPATH = sys.argv[1] if len(sys.argv) > 1 else "plan.json"
-KD = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/keyicon_design"
-sys.path.insert(0, KD)
-src = open(os.path.join(KD, "composites.py")).read()
+KD_VALUE = os.environ.get("FRONTROOMS_ICONLIB_ROOT")
+if not KD_VALUE:
+    raise SystemExit("plan.py needs the external keyicon_design folder; set FRONTROOMS_ICONLIB_ROOT")
+KD = Path(KD_VALUE).expanduser().resolve()
+if not (KD / "composites.py").is_file():
+    raise SystemExit("FRONTROOMS_ICONLIB_ROOT must contain composites.py: " + str(KD))
+sys.path.insert(0, str(KD))
+src = (KD / "composites.py").read_text(encoding="utf-8")
 head, main = src.split('if __name__ == "__main__":', 1)
-ns = {"__name__": "composites_rec", "__file__": os.path.join(KD, "composites.py")}
+ns = {"__name__": "composites_rec", "__file__": str(KD / "composites.py")}
 exec(compile(head, "composites.py", "exec"), ns)
 L = ns["L"]
 FONTS = {}

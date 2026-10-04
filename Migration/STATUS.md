@@ -8,6 +8,21 @@ Requested engine target: UE5.8.3. The workstation currently only has UE5.6;
 install UE5.8.3 before switching the project association and rerunning the build gates.
 Build target: Windows `Win64` only. Other target platforms are outside this migration.
 
+## Synchronization rule
+
+**Any Unity-side update must be assessed and synchronized on the Unreal side in
+the same work item.** Track it as `Unity Changed` → `Contract Exported` →
+`Unreal Updated` → `Unity/Unreal Verified`. Until the last state passes, mark
+the item `Pending Unreal Sync`; never silently advance only one implementation.
+
+Full policy: `Migration/UNITY_UNREAL_SYNC_POLICY.md`.
+
+## Current synchronization record
+
+| Work item | Unity Changed | Contract Exported | Unreal Updated | Unity/Unreal Verified |
+|---|---|---|---|---|
+| Initial map/data migration slice | Baseline recorded; later Unity changes remain tracked separately | Profile, 4 modules, 113 sidecars, FMOD and MapHash exported | Python/C++ MapHash, C++ data shapes and Unity golden-chunk exporter added | Python/C++ checks pass; Unity Editor chunk export pending |
+
 ## Completed in this worktree
 
 - [x] Copy the audit into the Git worktree.

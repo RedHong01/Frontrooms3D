@@ -5,7 +5,8 @@ import ImageIO
 import UniformTypeIdentifiers
 // EVACUATION PLAN placard, 432 x 279 mm (17 x 11 in landscape). Outputs: print (lit), glow mask, dark preview, lit preview. Units mm, y down.
 let W = 432.0, H = 279.0
-let FONT = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Fonts/Period1990/TeXGyre/"
+let projectRoot = ProcessInfo.processInfo.environment["FRONTROOMS_PROJECT_ROOT"] ?? FileManager.default.currentDirectoryPath
+let FONT = URL(fileURLWithPath: projectRoot).appendingPathComponent("Assets/Fonts/Period1990/TeXGyre/").path + "/"
 func font(_ file: String) -> CTFontDescriptor { (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: FONT + file) as CFURL) as! [CTFontDescriptor])[0] }
 let BOLD = font("texgyreheros-bold.otf"), REG = font("texgyreheros-regular.otf")
 let capR = CTFontGetCapHeight(CTFontCreateWithFontDescriptor(BOLD, 100, nil)) / 100

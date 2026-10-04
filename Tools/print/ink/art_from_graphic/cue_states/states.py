@@ -1,7 +1,10 @@
 # Pattern-native cue states for WP03 hard_edge (32_pattern_native_hints.md §9): baseline, FLOW, HERE, STOP.
 import sys, math, os
-P='/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/print/patterns'
-sys.path.insert(0, P)
+from pathlib import Path
+
+PROJECT_ROOT = Path(os.environ.get("FRONTROOMS_PROJECT_ROOT", Path(__file__).resolve().parents[5])).resolve()
+P = PROJECT_ROOT / 'Tools' / 'print' / 'patterns'
+sys.path.insert(0, str(P))
 import hard_edge as he
 from PIL import Image, ImageDraw
 OUT=sys.argv[1]
