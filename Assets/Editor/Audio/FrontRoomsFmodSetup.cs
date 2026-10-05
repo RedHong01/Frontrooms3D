@@ -83,8 +83,8 @@ public static class FrontRoomsFmodSetup
         settings.AutomaticSampleLoading = false;
         EditorUtility.SetDirty(settings);
         AssetDatabase.SaveAssets();
-        EnsureSourceBanks();
-        EventManager.RefreshBanks();
+        // Do not refresh the editor cache here: it must retain serialized event identities
+        // that are not present in the intentionally older checked-in bank set.
         Debug.Log("[FrontRoomsAudio] FMOD for Unity now reads verified banks from " + TrackedBankPath);
     }
 
