@@ -321,6 +321,9 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
         terminalLocked = false;
         TerminalDoorHeld = false;
 
+        if (FrontRoomsMobilePerformance.Active)
+            volumetricDensity = 0f;
+
         EnsureVolumetricLightMaterial();
 
         var cameraZ = streamCamera == null ? 0f : streamCamera.transform.position.z;
@@ -1108,7 +1111,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
                 // The centre column casts soft shadows: contact darkness under
                 // furniture, behind door leaves and in the corners. The side
                 // columns only fill, which keeps the shadow atlas at 4 maps a room.
-                light.shadows = fixtureIndex < FixtureZ.Length ? LightShadows.Soft : LightShadows.None;
+                light.shadows = !FrontRoomsMobilePerformance.Active && fixtureIndex < FixtureZ.Length ? LightShadows.Soft : LightShadows.None;
                 light.shadowStrength = .92f;
                 light.shadowNearPlane = .1f;
                 light.bounceIntensity = diffuseCoefficient;
@@ -1488,7 +1491,7 @@ public sealed class FrontRoomsRoomStream : MonoBehaviour
                     red.color = new Color(1f, .10f, .06f);
                     red.intensity = 3.6f;
                     red.range = 9.5f;
-                    red.shadows = LightShadows.Soft;
+                    red.shadows = FrontRoomsMobilePerformance.Active ? LightShadows.None : LightShadows.Soft;
                     red.shadowStrength = .85f;
                 }
             }

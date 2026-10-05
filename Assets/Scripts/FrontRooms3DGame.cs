@@ -316,7 +316,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var fill = new GameObject("Soft ambient direction").AddComponent<Light>();
         fill.transform.SetParent(parent);
         fill.type = LightType.Directional; fill.intensity = .22f; fill.color = C("D6D3B4");
-        fill.shadows = LightShadows.Soft;
+        fill.shadows = FrontRoomsMobilePerformance.Active ? LightShadows.None : LightShadows.Soft;
         fill.shadowStrength = .18f;
         fill.shadowBias = .045f;
         fill.shadowNormalBias = .28f;
@@ -337,6 +337,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!Application.isPlaying) return;
 
         Application.targetFrameRate = 60;
+        FrontRoomsMobilePerformance.Apply();
         // Full-resolution textures; MSAA, HDR and shadows come from the URP
         // pipeline asset (Assets/Settings/FrontRooms_URP).
         QualitySettings.globalTextureMipmapLimit = 0;
@@ -620,6 +621,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         startDoorHeldFor = 0f;
         var rearCell = map.CellOf(new Vector3(centerX, 0f, rearZ + MapGrid.CellSize * .5f));
         map.SetStartArea(new RectInt(startDoorCell.x - StartAreaHalfCells, rearCell.y, StartAreaHalfCells * 2 + 1, startDoorCell.y - rearCell.y), startDoorCell);
+        FrontRoomsMobilePerformance.ApplyMapBudget(map);
         // The facade ends inside the start area's side walls (centred on the cell lines), not on their faces.
         roomStream.EndStreamAt(terminal, (StartAreaHalfCells + .5f) * MapGrid.CellSize + ModuleUnits.WallHalf - .01f);
         roomStream.TerminalDoorHeld = true;

@@ -1644,7 +1644,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// beyond lightRadius skips the distance test altogether. The desktop path
     /// below is unchanged.
     /// </summary>
-    public static bool TickFixturesNearOnly { get; set; } = Application.platform == RuntimePlatform.WebGLPlayer;
+    public static bool TickFixturesNearOnly { get; set; } =
+        Application.platform == RuntimePlatform.WebGLPlayer || Application.platform == RuntimePlatform.IPhonePlayer;
+
+    /// <summary>
+    /// Tightens the live lamp/shadow radius for mobile without changing the
+    /// authored level asset or desktop builds. Call before Begin so the first
+    /// streamed chunk uses the same budget as later ticks.
+    /// </summary>
+    public void ApplyMobileLightBudget(float maxLightRadius, float maxShadowRadius)
+    {
+        lightRadius = Mathf.Min(lightRadius, Mathf.Max(1f, maxLightRadius));
+        shadowRadius = Mathf.Min(shadowRadius, Mathf.Max(0f, maxShadowRadius), lightRadius);
+    }
 
     const float FarEmissionStep = .05f;
     static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -1667,7 +1679,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var on = fade > 0f && f.level > .01f;
             if (f.light.enabled != on) f.light.enabled = on;
             if (on) f.light.intensity = f.baseIntensity * f.level * fade;
-            var shadows = f.castsShadow && on && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
+            var shadows = !FrontRoomsMobilePerformance.Active && f.castsShadow && on && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
             if (f.light.shadows != shadows) f.light.shadows = shadows;
             f.panel.GetPropertyBlock(block);
             block.SetColor("_EmissionColor", f.emission * Mathf.Max(.04f, f.level * held));
@@ -1702,7 +1714,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 {
                     // Lit: the same per-frame updates as the desktop path.
                     f.light.intensity = f.baseIntensity * f.level * fade;
-                    var shadows = f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
+                    var shadows = !FrontRoomsMobilePerformance.Active && f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
                     if (f.shadowMode != shadows) { f.light.shadows = shadows; f.shadowMode = shadows; }
                     WriteEmission(f, factor);
                     continue;
