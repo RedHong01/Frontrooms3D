@@ -14,7 +14,7 @@ using UnityEngine.Rendering.Universal;
 /// stack, and one editable material asset per room surface. Re-running it
 /// updates the generated values in place and keeps every asset GUID, so it is
 /// safe to run after changing a texture or a number below.
-/// Menu: FrontRooms → Rendering → Set up URP, post and surfaces.
+/// Menu: FrontRoomsss → Rendering → Set up URP, post and surfaces.
 /// Batch: -executeMethod FrontRoomsRenderSetup.RunBatch
 /// </summary>
 public static class FrontRoomsRenderSetup

@@ -33,7 +33,7 @@ using UnityEngine.Rendering;
 /// RECAPTURE after: FrontRoomsLook ambient changes; the map switching panes to Glass_Window;
 /// the Level 0 lens change to Troffer_Lens (audit 1.5 / F10); any wallpaper print change.
 /// WarnIfStale() (called by FrontRoomsGlassSetup) compares the manifest with the project.
-/// Menu: FrontRooms → Rendering → Capture zone reflection cubemaps
+/// Menu: FrontRoomsss → Rendering → Capture zone reflection cubemaps
 /// Batch: -executeMethod FrontRoomsReflectionCapture.RunBatch
 /// </summary>
 public static class FrontRoomsReflectionCapture

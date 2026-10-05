@@ -15,7 +15,7 @@ public static class FrontRoomsFmodSetup
     const string StudioProject = "FMOD/FrontRooms/FrontRooms.fspro";
     const string BankPath = "FMOD/FrontRooms/Build";
 
-    [MenuItem("FrontRooms/Audio/Configure FMOD (FrontRooms project)")]
+    [MenuItem("FrontRooms/Audio/Configure FMOD (FrontRoomsss project)")]
     public static void Configure()
     {
         // Fresh installs ship the editor's logging library (fmodstudioL) in a staging

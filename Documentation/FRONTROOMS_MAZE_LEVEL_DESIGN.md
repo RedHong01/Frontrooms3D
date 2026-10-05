@@ -1,4 +1,4 @@
-# FRONTROOMS / Level 0 maze design
+# FRONTROOMSSS / Level 0 maze design
 
 ## Intent
 
@@ -25,4 +25,4 @@ The reference description for Level 0 treats it as a labyrinth that changes as t
 
 ## Current implementation
 
-`Assets/Scripts/FrontRoomsMaze/FrontRoomsMazeGenerator.cs` is the deterministic data generator. `FrontRoomsMazePreview` and the **FrontRooms → Maze → Build or refresh editor preview** menu create an editable low-poly labyrinth in the Unity scene without generating a build. `FrontRoomsMazeSpec` remains renderer-agnostic so the 3D prototype can evolve its presentation without changing the route data.
+`Assets/Scripts/FrontRoomsMaze/FrontRoomsMazeGenerator.cs` is the deterministic data generator. `FrontRoomsMazePreview` and the **FrontRoomsss → Maze → Build or refresh editor preview** menu create an editable low-poly labyrinth in the Unity scene without generating a build. `FrontRoomsMazeSpec` remains renderer-agnostic so the 3D prototype can evolve its presentation without changing the route data.

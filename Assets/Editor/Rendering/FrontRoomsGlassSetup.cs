@@ -20,7 +20,7 @@ using UnityEngine.Rendering;
 /// ambientCG scans by Tools/lookdev/pack_glass_grime.py; this sets their importers.
 /// FrontRoomsRenderSetup.SetUp calls EnsureAll after its own glass pass (one-line hook),
 /// so re-running the URP setup keeps these.
-/// Menu: FrontRooms → Rendering → Set up glass materials
+/// Menu: FrontRoomsss → Rendering → Set up glass materials
 /// Batch: -executeMethod FrontRoomsGlassSetup.RunBatch
 /// </summary>
 public static class FrontRoomsGlassSetup

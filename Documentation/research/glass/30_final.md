@@ -172,9 +172,9 @@ files.
 `G10/G10Before_*.mat`), anything under `Verification/`.
 
 **After promoting:**
-1. In Unity, run *FrontRooms → Rendering → Set up glass materials*. It rewrites the materials in place and ends with
+1. In Unity, run *FrontRoomsss → Rendering → Set up glass materials*. It rewrites the materials in place and ends with
    the cube staleness check.
-2. Run *FrontRooms → Rendering → Check zone reflection cubes are current*.
+2. Run *FrontRoomsss → Rendering → Check zone reflection cubes are current*.
 3. Recapture the cubes (*Capture zone reflection cubemaps*) once the map uses `Glass_Window` and the Level 0
    `Troffer_Lens` ×1.5 has landed (§6).
 

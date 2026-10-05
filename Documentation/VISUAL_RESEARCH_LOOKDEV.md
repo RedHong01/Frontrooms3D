@@ -72,7 +72,7 @@ replaced.
   shadow atlas.
 - **SSAO:** depth-normals source, 0.45 m radius, for contact darkness in
   corners, under furniture and at door gaps.
-- **Setup:** one menu item, **FrontRooms → Rendering → Set up URP, post and
+- **Setup:** one menu item, **FrontRoomsss → Rendering → Set up URP, post and
   surfaces** (or `-executeMethod FrontRoomsRenderSetup.RunBatch`). It creates
   `Assets/Settings/FrontRooms_URP*.asset`, the post profile and every surface
   material, and moves inline Standard materials to URP Lit. It is safe to
@@ -196,5 +196,5 @@ below only by agreement between the two.
   unavailable for every mipped wallpaper texture.
 - **Legacy and tests.** `Wallpaper_Chevron(_Cold)_A/_N/_S` and the two NoHue
   references live in `Assets/Editor/Rendering/PrintP0/Ref/`: T1 only, never
-  shipped. The gates are under FrontRooms → Rendering → Print P0 gates
+  shipped. The gates are under FrontRoomsss → Rendering → Print P0 gates
   (`FrontRoomsPrintP0Test.RunBatch`).

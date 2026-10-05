@@ -12,7 +12,7 @@ using WallSide = FrontRoomsModuleEditing.WallSide;
 /// The Level Designer: the preview scene on the left (Scene or Game view),
 /// the Level Designer window docked beside the Inspector on the right
 /// (FrontRoomsLevelDesignerWindow; a module's own Inspector edits it too).
-/// Menu: FrontRooms → Level Designer.
+/// Menu: FrontRoomsss → Level Designer.
 /// Headless: -executeMethod FrontRoomsLevelDesigner.SetupBatch -quit creates the
 /// scene and the sample modules; ResetSamples puts the samples back as
 /// shipped (no dialog in batch, the assets and their GUIDs kept);

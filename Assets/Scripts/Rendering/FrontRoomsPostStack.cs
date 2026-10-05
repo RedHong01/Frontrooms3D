@@ -17,7 +17,7 @@ public static class FrontRoomsPostStack
         var profile = Resources.Load<VolumeProfile>("Rendering/FrontRoomsPost");
         if (profile == null)
         {
-            Debug.LogWarning("[FrontRooms3D] Post profile is missing. Run FrontRooms → Rendering → Set up URP, post and surfaces.");
+            Debug.LogWarning("[FrontRooms3D] Post profile is missing. Run FrontRoomsss → Rendering → Set up URP, post and surfaces.");
             return null;
         }
         var existing = parent == null ? GameObject.Find(VolumeName) : parent.Find(VolumeName)?.gameObject;

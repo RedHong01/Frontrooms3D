@@ -73,7 +73,7 @@ Findings that change how to read the audit:
 | `Assets/Scripts/Rendering/FrontRoomsLook.cs` | **hand merge** | 62 | main's 10:23 file (F5 constants and comment kept) + `FrontRoomsZoneReflection.Set(zone, blendSeconds);` in `SetZoneReflection` (`:40`) + `FrontRoomsZoneReflection.Reapply();` after `DynamicGI.UpdateEnvironment();` (`:60`) + comments. **Never copy the clone's pre-fix file over main** |
 | `Assets/Scripts/FrontRoomsRoomStream.cs` | **one line** (+1 comment) | `:351-352` | `if (Application.isPlaying) FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);` at the end of `Initialize`. Title rooms reflect the Level 0 cube until title cubes exist |
 | `Assets/Editor/Rendering/FrontRoomsRenderSetup.cs` | **one line** | `:44` | `FrontRoomsGlassSetup.EnsureAll(); // GLASS HOOK (G1-G4) …` after `EnsureGlassMaterials();` |
-| `Assets/Editor/Rendering/FrontRoomsGlassSetup.cs` | new | 257 | materials + importers; menu *FrontRooms → Rendering → Set up glass materials*; batch `RunBatch`; ends with `WarnIfStale()` |
+| `Assets/Editor/Rendering/FrontRoomsGlassSetup.cs` | new | 257 | materials + importers; menu *FrontRoomsss → Rendering → Set up glass materials*; batch `RunBatch`; ends with `WarnIfStale()` |
 | `Assets/Editor/Rendering/FrontRoomsReflectionCapture.cs` | new | 438 | cube capture in the real map (panes as `Glass_Window`, RT weight 0), manifest, `WarnIfStale` menu |
 | `Assets/Editor/Rendering/FrontRoomsGlassVerification.cs` | new | 747 | play-mode proof (`RunReflectionTestBatch`, run **without** `-quit`), window/prop look-dev |
 | `Assets/Editor/Rendering/FrontRoomsGlassCompileCheck.cs` | new | 82 | hook-order check + offline WebGL/Metal compile, including the RT and probe keyword sets |

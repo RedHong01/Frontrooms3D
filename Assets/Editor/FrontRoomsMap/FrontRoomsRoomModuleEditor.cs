@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// The Inspector of a room module: a plan of the room (north up) where clicks
 /// edit it, the props and their placement, the gameplay markers, the
-/// module's settings, and its checks. The Level Designer window (FrontRooms → Level Designer → Window)
+/// module's settings, and its checks. The Level Designer window (FrontRoomsss → Level Designer → Window)
 /// draws the same plan and sections (FrontRoomsModulePlanView,
 /// FrontRoomsModuleGUI) beside its module list and kit palette; the preview
 /// scene rebuilds after every edit made in either.

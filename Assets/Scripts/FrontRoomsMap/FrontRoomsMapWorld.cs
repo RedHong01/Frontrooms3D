@@ -3100,7 +3100,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// The map uses the game's URP surfaces (Resources/Surfaces): Level 0
     /// chevron paper, loop-pile carpet and 2'x4' ceiling grid; the Office
     /// zones use the office drywall, carpet tiles and 2'x2' grid. All are
-    /// projected in world metres by FrontRooms/Surface. Run FrontRooms →
+    /// projected in world metres by FrontRooms/Surface. Run FrontRoomsss →
     /// Rendering → Set up URP, post and surfaces once if they are missing.
     /// </summary>
     // The shared troffer lens's emission, scaled for the map to the flat lens's mean luminance (see BuildMaterials).

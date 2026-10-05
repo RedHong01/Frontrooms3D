@@ -12,7 +12,7 @@
 
 ## Editor harness
 
-Use **FrontRooms → Race Slice → Verify 100 seeds** to write `Verification/race-slice-latest.json` in the project root. For a batch run:
+Use **FrontRoomsss → Race Slice → Verify 100 seeds** to write `Verification/race-slice-latest.json` in the project root. For a batch run:
 
 ```text
 Unity -batchmode -projectPath <project> -executeMethod FrontRoomsRaceVerification.RunBatch -race-count 100 -race-seed 324508639 -quit

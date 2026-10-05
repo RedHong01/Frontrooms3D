@@ -711,7 +711,7 @@ Everything happens in the private clone `scratchpad/proj_placard` (create it as 
 | Task | Owner | Output |
 |---|---|---|
 | **B1 Blender** | visual | `evac_placard_common.py`, `evac_placard.py`, `evac_placard_lens.py`. Written in the clone; added to the real `Tools/Blender/frontrooms_kit/assets/` only if the task allows. FBX, sidecars, previews; all §2.8 asserts pass |
-| **B2 Unity materials** | visual | §3: the pack script, the RenderSetup rows, the importer rule, then *FrontRooms → Rendering → Set up* in the clone |
+| **B2 Unity materials** | visual | §3: the pack script, the RenderSetup rows, the importer rule, then *FrontRoomsss → Rendering → Set up* in the clone |
 | **B3 Code** | visual | §4.9 and §5.3: `FrontRoomsPhosphor`, `FrontRoomsPlacardGlow`, `FrontRoomsPlacard` + `FrontRoomsPlacardMount`, the one-line `Prepare` call in `EndStreamAt`. In the clone, the contract patch §5.4 is applied **only to test**; it is promoted by the map chat |
 | **B4 Lookdev** | visual | the captures below. A three-view for 平面视觉 (front 1:2; section A-A through a rail at 4:1 with the §2.2 numbers; side), rendered with the artwork on the sheet via `Tools/three_view` |
 

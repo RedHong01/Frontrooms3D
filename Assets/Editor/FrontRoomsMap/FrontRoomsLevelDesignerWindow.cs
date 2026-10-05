@@ -11,7 +11,7 @@ using UnityEngine;
 /// preview's seed and turn, and whether the generator may use it. Kits are placed by clicking
 /// one to arm it and then clicking in the plan, or by dragging one into the
 /// plan or onto the floor in the Scene view (FrontRoomsDesignerSceneTools).
-/// FrontRooms → Level Designer → Window, or Open.
+/// FrontRoomsss → Level Designer → Window, or Open.
 /// </summary>
 public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
 {
@@ -440,7 +440,7 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
         var profile = FrontRoomsLevelProfiles.Resolve();
         if (!EditorUtility.IsPersistent(profile))
         {
-            EditorGUILayout.HelpBox("No level profile asset yet: FrontRooms → Map → Select level profile creates one.", MessageType.Info);
+            EditorGUILayout.HelpBox("No level profile asset yet: FrontRoomsss → Map → Select level profile creates one.", MessageType.Info);
             return;
         }
         using (new EditorGUI.DisabledScope(true))
