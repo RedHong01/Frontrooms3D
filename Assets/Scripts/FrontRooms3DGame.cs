@@ -316,7 +316,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var fill = new GameObject("Soft ambient direction").AddComponent<Light>();
         fill.transform.SetParent(parent);
         fill.type = LightType.Directional; fill.intensity = .22f; fill.color = C("D6D3B4");
-        fill.shadows = FrontRoomsMobilePerformance.Active ? LightShadows.None : LightShadows.Soft;
+        fill.shadows = LightShadows.Soft;
         fill.shadowStrength = .18f;
         fill.shadowBias = .045f;
         fill.shadowNormalBias = .28f;

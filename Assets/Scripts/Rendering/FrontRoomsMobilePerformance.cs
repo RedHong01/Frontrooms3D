@@ -41,7 +41,7 @@ public static class FrontRoomsMobilePerformance
         pipeline.mainLightShadowmapResolution = Mathf.Min(pipeline.mainLightShadowmapResolution, 1024);
         pipeline.additionalLightsShadowmapResolution = Mathf.Min(pipeline.additionalLightsShadowmapResolution, 1024);
         Debug.Log("[FrontRoomsMobilePerformance] iPhone profile active: renderScale "
-            + RenderScale.ToString("0.00") + ", MSAA 2x, SSAO on, fixture shadows off, shadow distance 24m.");
+            + RenderScale.ToString("0.00") + ", MSAA 2x, SSAO on, fixture shadows on, shadow distance 24m.");
     }
 
     public static void ApplyMapBudget(FrontRoomsMapWorld map)

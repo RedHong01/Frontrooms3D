@@ -1679,7 +1679,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var on = fade > 0f && f.level > .01f;
             if (f.light.enabled != on) f.light.enabled = on;
             if (on) f.light.intensity = f.baseIntensity * f.level * fade;
-            var shadows = !FrontRoomsMobilePerformance.Active && f.castsShadow && on && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
+            var shadows = f.castsShadow && on && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
             if (f.light.shadows != shadows) f.light.shadows = shadows;
             f.panel.GetPropertyBlock(block);
             block.SetColor("_EmissionColor", f.emission * Mathf.Max(.04f, f.level * held));
@@ -1714,7 +1714,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 {
                     // Lit: the same per-frame updates as the desktop path.
                     f.light.intensity = f.baseIntensity * f.level * fade;
-                    var shadows = !FrontRoomsMobilePerformance.Active && f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
+                    var shadows = f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
                     if (f.shadowMode != shadows) { f.light.shadows = shadows; f.shadowMode = shadows; }
                     WriteEmission(f, factor);
                     continue;
