@@ -37,6 +37,7 @@ $previousUbaRoot = $env:UBA_ROOT
 $previousUebpEngineSavedFolder = $env:uebp_EngineSavedFolder
 $previousUebpLogFolder = $env:uebp_LogFolder
 $previousUebpFinalLogFolder = $env:uebp_FinalLogFolder
+$previousPath = $env:PATH
 $env:USERPROFILE = $profile
 $env:LOCALAPPDATA = $local
 $env:APPDATA = $roaming
@@ -48,12 +49,33 @@ $env:UBA_ROOT = $ubaRoot
 # the disposable workspace profile used by this migration gate.
 $automationSaved = Join-Path $profile "AutomationTool/Saved"
 $automationLogs = Join-Path $profile "AutomationTool/Logs"
-New-Item -ItemType Directory -Path $automationSaved, $automationLogs -Force | Out-Null
+$shaderWorkingDir = Join-Path $profile "ShaderWorkingDir"
+New-Item -ItemType Directory -Path $automationSaved, $automationLogs, $shaderWorkingDir -Force | Out-Null
 $env:uebp_EngineSavedFolder = $automationSaved
 $env:uebp_LogFolder = $automationLogs
 $env:uebp_FinalLogFolder = $automationLogs
+# Link.exe invokes the Windows SDK manifest tool by name. Some installed UE
+# toolchains do not add the SDK bin directory to the child UBA environment,
+# which surfaces as LNK1158 even though the SDK is installed. Add the newest
+# x64 SDK bin directory explicitly for this build process.
+$windowsKitBin = Get-ChildItem -LiteralPath "C:\Program Files (x86)\Windows Kits\10\bin" -Directory -ErrorAction SilentlyContinue |
+    Where-Object { Test-Path (Join-Path $_.FullName "x64\mt.exe") } |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+if ($windowsKitBin) { $env:PATH = (Join-Path $windowsKitBin.FullName "x64") + ";" + $env:PATH }
 
 try {
+    # Build the game and editor targets through Build.bat with UBA disabled.
+    # RunUAT's -NoUba switch does not propagate to the nested UBT invocation
+    # in UE5.8, while the direct build path is deterministic and avoids a
+    # machine-specific UBA child environment missing mt.exe.
+    foreach ($target in @("FrontRoomsEditor", "FrontRooms")) {
+        $buildArgs = @($target, "Win64", $Configuration, $project, "-NoHotReloadFromIDE", "-NoUBA")
+        Write-Host "WINDOWS BUILD compile: $target"
+        & $engine.BuildScript @buildArgs
+        if ($LASTEXITCODE -ne 0) { throw "UnrealBuildTool failed for $target with exit code $LASTEXITCODE" }
+    }
+
     $args = @(
         "BuildCookRun",
         "-project=$project",
@@ -62,7 +84,7 @@ try {
         "-unattended",
         "-platform=Win64",
         "-clientconfig=$Configuration",
-        "-build",
+        "-skipbuild",
         "-stage",
         "-pak",
         "-archive",
@@ -71,7 +93,7 @@ try {
         # UE 5.8's cooker otherwise re-enables Zen from the engine default
         # even when ProjectPackagingSettings disables it. Keep this explicit so
         # the Win64 package can be built without a local Zen service.
-        "-AdditionalCookerOptions=-SkipZenStore"
+        "-AdditionalCookerOptions=`"-SkipZenStore -ShaderWorkingDir=$shaderWorkingDir`""
     )
     if ($SkipCook) { $args += "-skipcook" } else { $args += "-cook" }
     Write-Host "WINDOWS BUILD using Unreal $($engine.Version)"
@@ -90,4 +112,5 @@ try {
     if ($null -ne $previousUebpEngineSavedFolder) { $env:uebp_EngineSavedFolder = $previousUebpEngineSavedFolder } else { Remove-Item Env:uebp_EngineSavedFolder -ErrorAction SilentlyContinue }
     if ($null -ne $previousUebpLogFolder) { $env:uebp_LogFolder = $previousUebpLogFolder } else { Remove-Item Env:uebp_LogFolder -ErrorAction SilentlyContinue }
     if ($null -ne $previousUebpFinalLogFolder) { $env:uebp_FinalLogFolder = $previousUebpFinalLogFolder } else { Remove-Item Env:uebp_FinalLogFolder -ErrorAction SilentlyContinue }
+    if ($null -ne $previousPath) { $env:PATH = $previousPath }
 }

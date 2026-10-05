@@ -66,5 +66,11 @@ LogCsvProfiler: Metadata set : raytracing="1"
 ## 已知限制
 
 - 当前 smoke 使用 Null RHI 验证数据、输入、HUD、HDR 和资产合同，因此不会证明真实 GPU 的 DXR 性能。
+- 旧编辑器日志还提示多个导入材质需要保存 Nanite usage flag；这属于材质资产保存/导入门，不改变 DXR 配置。若 PIE 或包体仍出现灰面，先完成材质 Nanite usage factory，再判断光照问题。
 - 本机的旧编辑器进程在修改配置时已经打开；在新的编辑器进程启动前，旧窗口继续显示旧光追状态是正常的。
 - 这是 Win64-only 配置；不要把 Mac/Linux/移动端 shader format 加回项目的 `TargetPlatforms` 或 Windows cook 命令。
+
+
+## Commandlet 配置读取证据
+
+UE5.8.3 commandlet 日志 `Migration/Unreal/Saved/Logs/rt-contract-dx12.log` 的 `LogConfig` 记录了 `r.DynamicGlobalIlluminationMethod:1`、`r.ReflectionMethod:1`、`r.RayTracing:1`、`r.Lumen.HardwareRayTracing:1`、`r.RayTracing.RayTracingProxies.ProjectEnabled:1`、`r.RayTracing.Shadows:0` 和 `r.Shadow.Virtual.Enable:1`；同一进程报告 `FrontRooms contract passed`，退出码为 0。

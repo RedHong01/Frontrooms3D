@@ -487,6 +487,23 @@ bool CheckPossessedMovement(FString& Error)
     TestWorld->InitializeActorsForPlay(URL);
     TestWorld->BeginPlay();
 
+    // Exercise the same start-resolution hook used by PIE/standalone before
+    // constructing the explicit commandlet local player.  This guards against
+    // regressing to the old StartPlay-too-late path where the HUD appeared but
+    // no pawn/camera was ever spawned.
+    AFrontRoomsSliceGameMode* RuntimeMode = TestWorld->GetAuthGameMode<AFrontRoomsSliceGameMode>();
+    AActor* ResolvedPlayerStart = RuntimeMode != nullptr
+        ? RuntimeMode->FindPlayerStart(nullptr, TEXT(""))
+        : nullptr;
+    if (ResolvedPlayerStart == nullptr)
+    {
+        CleanupWorld();
+        Error = TEXT("live movement trace could not resolve the runtime PlayerStart");
+        return false;
+    }
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke player-start gate passed: %s at %s"),
+        *ResolvedPlayerStart->GetName(), *ResolvedPlayerStart->GetActorLocation().ToCompactString());
+
     // CreateLocalPlayer() assumes a viewport exists and emits an ensure in a
     // headless commandlet.  Build the same local-player/controller pair
     // explicitly; SetPlayer() performs the normal local-controller setup and

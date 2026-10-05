@@ -21,7 +21,7 @@ $report = [ordered]@{
     engineVersion = $null
     projectAssociation = $null
     stages = @()
-    coverage = @("Unity export contract", "Unity deterministic golden chunk exports", "Unity asset SHA-256 integrity", "Windows A/N/S/E/M/P material factory and asset audit", "Win64 DX12/SM6 Nanite project configuration", "Unreal editor build", "Unreal contract commandlet", "Unity sidecar collision/anchor/scale/axis/LOD import", "sidecar asset factory applies collision/LOD/anchor metadata", "deterministic hash/state transitions/movement input/imported asset load", "live possessed movement trace", "Relay Search/Complete transitions and key/door/window interactions", "saved playable runtime map", "HDR calibration", "native HUD and audio event seam", "Win64 FMOD bank contract and rendered event playback")
+    coverage = @("Unity export contract", "Unity deterministic golden chunk exports", "Unity asset SHA-256 integrity", "Windows A/N/S/E/M/P material factory and asset audit", "Win64 DX12/SM6 Nanite + Lumen hardware RT + VSM project configuration", "Unreal editor build", "Unreal contract commandlet", "Unity sidecar collision/anchor/scale/axis/LOD import", "sidecar asset factory applies collision/LOD/anchor metadata", "deterministic hash/state transitions/movement input/imported asset load", "PIE/standalone PlayerStart and pawn spawn", "live possessed movement trace", "Relay Search/Complete transitions and key/door/window interactions", "saved playable runtime map", "HDR calibration", "native HUD and audio event seam", "Win64 FMOD bank contract and rendered event playback")
     pendingCoverage = @("FMOD bank regeneration for three missing StreamOpen/StreamClose/StreamLock events")
     error = $null
 }
@@ -170,3 +170,4 @@ exit $LASTEXITCODE
 }
 if ($report.status -ne "passed") { exit 1 }
 Write-Host "FrontRooms migration smoke passed (Unreal $($report.engineVersion))."
+
