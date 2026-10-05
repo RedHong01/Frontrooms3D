@@ -62,6 +62,14 @@ public sealed class FrontRoomsMapHunter
     const float LeashQuietSeconds = 45f;
     // Losing sight, it follows through a door it saw the player go through at most this long before it last saw them.
     const float SeenDoorSeconds = 1f;
+    // Step 1 warning bands. Holds are deliberately data-only: the caller can
+    // decide how a stage is presented without the level field driving lamps or audio.
+    const float WarnStage1Enter = 30f, WarnStage1Exit = 36f, WarnStage1Hold = 4f;
+    const float WarnStage2Enter = 18f, WarnStage2Exit = 24f, WarnStage2Hold = 3f;
+    const float PlayerFieldCap = 45f;
+    const float SourceFieldCap = 90f;
+    const float PlayerSeesRelayPeriod = .1f;
+    const float PlayerFrustumHalfAngle = 60f;
 
     static readonly GridCoord[] Steps = { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
 
@@ -126,6 +134,17 @@ public sealed class FrontRoomsMapHunter
     HunterState resumeState;
     bool caught;
     uint rng;
+    readonly FrontRoomsMapPathField playerField = new FrontRoomsMapPathField(PlayerFieldCap);
+    readonly FrontRoomsMapPathField sourceField = new FrontRoomsMapPathField(SourceFieldCap);
+    readonly FrontRoomsMapPathField relayField = new FrontRoomsMapPathField(PlayerFieldCap);
+    GridCoord playerFieldRoot;
+    int playerFieldRevision = -1;
+    bool playerFieldReady;
+    GridCoord relayFieldRoot;
+    int relayFieldRevision = -1;
+    bool relayFieldReady;
+    float warnEnterHold, warnExitHold;
+    float playerSeesRelayTimer;
 
     public HunterState State { get; private set; } = HunterState.Dormant;
     public float StateTime { get; private set; }
@@ -134,6 +153,28 @@ public sealed class FrontRoomsMapHunter
     public bool Moving { get; private set; }
     public bool Released => State != HunterState.Dormant;
     public bool SeesPlayer { get; private set; }
+    /// <summary>Player-rooted v2 §7 field distance to the Relay, in metres.</summary>
+    public float PathDistanceToPlayer { get; private set; } = float.PositiveInfinity;
+    /// <summary>Door/window opening cost on the shortest path represented by PathDistanceToPlayer.</summary>
+    public float PathOpeningCost { get; private set; } = float.PositiveInfinity;
+    /// <summary>Warning distance W = min(F, three times the straight-line 3D distance).</summary>
+    public float WarningDistance { get; private set; } = float.PositiveInfinity;
+    /// <summary>0, 1 or 2 according to the §9 hysteresis bands.</summary>
+    public int WarnStage { get; private set; }
+    /// <summary>Player-side frustum plus two body-height rays, refreshed at 10 Hz for Step 1 consumers.</summary>
+    public bool PlayerSeesRelay { get; private set; }
+    /// <summary>Path distance from the Relay's current cell to a cell, using the same edge costs as F.</summary>
+    public float PathDistanceFromRelay(GridCoord cell)
+    {
+        EnsureRelayField();
+        return relayField.DistanceTo(cell);
+    }
+    /// <summary>Opening cost on the Relay-rooted shortest path to a cell.</summary>
+    public float PathOpeningCostFromRelay(GridCoord cell)
+    {
+        EnsureRelayField();
+        return relayField.OpeningCostTo(cell);
+    }
     public int DoorsBroken { get; private set; }
     /// <summary>The last noise it heard (where its head turns while it listens or searches); null once it sees the player or relays.</summary>
     public Vector3? ListenPoint { get; private set; }
@@ -163,6 +204,7 @@ public sealed class FrontRoomsMapHunter
     public event Action Caught;
     /// <summary>It appeared (released, or relayed): its feet, and the Relay entry's tag ("vent", "doorway", ...) or null for an unmarked cell.</summary>
     public event Action<Vector3, string> Arrived;
+    public event Action<int> WarnStageChanged;
 
     public FrontRoomsMapHunter(FrontRoomsMapWorld world, FrontRoomsHunterTuning tuning, Collider playerCollider, Transform rig, int seed)
     {
@@ -180,6 +222,9 @@ public sealed class FrontRoomsMapHunter
         if (caught || world == null) return;
         if (State == HunterState.Dormant)
         {
+            ResetWarningMetrics();
+            PlayerSeesRelay = false;
+            playerSeesRelayTimer = 0f;
             releaseTimer += dt;
             if (releaseTimer >= tuning.releaseDelaySeconds && Arrive(playerFeet, playerEye, playerForward)) SetState(HunterState.Listen);
             DoorSqueeze = 0f;
@@ -190,6 +235,17 @@ public sealed class FrontRoomsMapHunter
         clock += dt;
         var playerCell = world.CellOf(playerFeet);
         var myCell = world.CellOf(position);
+        EnsurePlayerField(playerCell);
+        PathDistanceToPlayer = playerField.DistanceTo(myCell);
+        PathOpeningCost = playerField.OpeningCostTo(myCell);
+        WarningDistance = Mathf.Min(PathDistanceToPlayer, 3f * Vector3.Distance(position, playerFeet));
+        UpdateWarnStage(dt, myCell);
+        playerSeesRelayTimer -= dt;
+        if (playerSeesRelayTimer <= 0f)
+        {
+            playerSeesRelayTimer = PlayerSeesRelayPeriod;
+            PlayerSeesRelay = ComputePlayerSeesRelay(playerEye, playerForward);
+        }
         // A tick that relays it below does not look, so it breaks the run of ticks that saw the player.
         var sawBefore = sawLastTick;
         sawLastTick = false;
@@ -301,6 +357,7 @@ public sealed class FrontRoomsMapHunter
         sweep.Clear();
         sweepIndex = 0;
         lookTimer = 0f;
+        playerSeesRelayTimer = 0f;
         DoorSqueeze = DoorSqueezeAt(position);
         SetState(HunterState.Search);
     }
@@ -309,10 +366,30 @@ public sealed class FrontRoomsMapHunter
     public void Noise(Vector3 source, float radius)
     {
         if (!Released || State == HunterState.Chase || State == HunterState.BreakDoor) return;
-        if (Flat(position - source).magnitude > radius * tuning.hearing) return;
+        var hearingRadius = Mathf.Max(0f, radius * tuning.hearing);
+        var sourceCell = world.CellOf(source);
+        var myCell = world.CellOf(position);
+        float distance;
+        if (hearingRadius > SourceFieldCap)
+        {
+            // Very large-radius tool probes are intentionally broad; the
+            // normal gameplay radii stay inside the one-off field's bound.
+            distance = 0f;
+        }
+        else if (playerFieldReady && sourceCell == playerFieldRoot && playerFieldRevision == world.PassageRevision && hearingRadius <= PlayerFieldCap)
+        {
+            distance = playerField.DistanceTo(myCell);
+        }
+        else
+        {
+            TrySourceEdge(source, sourceCell, out var edgeCell);
+            sourceField.Build(world, sourceCell, edgeCell);
+            distance = sourceField.DistanceTo(myCell);
+        }
+        if (distance > hearingRadius) return;
         ListenPoint = source;
         lastContactTime = clock;
-        HuntToward(world.CellOf(source), source);
+        HuntToward(sourceCell, source);
     }
 
     /// <summary>
@@ -1057,6 +1134,130 @@ public sealed class FrontRoomsMapHunter
             best = Mathf.Max(best, 1f - Mathf.Abs(across) / SqueezeReach);
         }
         return Mathf.Clamp01(best);
+    }
+
+    void EnsurePlayerField(GridCoord playerCell)
+    {
+        var revision = world.PassageRevision;
+        if (playerFieldReady && playerFieldRoot == playerCell && playerFieldRevision == revision) return;
+        playerField.Build(world, playerCell);
+        playerFieldRoot = playerCell;
+        playerFieldRevision = revision;
+        playerFieldReady = true;
+    }
+
+    void EnsureRelayField()
+    {
+        var root = world.CellOf(position);
+        var revision = world.PassageRevision;
+        if (relayFieldReady && relayFieldRoot == root && relayFieldRevision == revision) return;
+        relayField.Build(world, root);
+        relayFieldRoot = root;
+        relayFieldRevision = revision;
+        relayFieldReady = true;
+    }
+
+    bool TrySourceEdge(Vector3 source, GridCoord sourceCell, out GridCoord? edgeCell)
+    {
+        edgeCell = null;
+        if (!world.IsBuilt(sourceCell)) return false;
+        var best = float.PositiveInfinity;
+        foreach (var step in Steps)
+        {
+            var next = new GridCoord(sourceCell.x + step.x, sourceCell.y + step.y);
+            if (!world.IsBuilt(next)) continue;
+            var edge = world.Cache.Edge(sourceCell, next);
+            if (edge != EdgeKind.Door && edge != EdgeKind.Window) continue;
+            var d = Flat(world.CrossingPoint(sourceCell, next) - source).sqrMagnitude;
+            if (d < best)
+            {
+                best = d;
+                edgeCell = next;
+            }
+        }
+        return edgeCell.HasValue;
+    }
+
+    void ResetWarningMetrics()
+    {
+        PathDistanceToPlayer = float.PositiveInfinity;
+        PathOpeningCost = float.PositiveInfinity;
+        WarningDistance = float.PositiveInfinity;
+        warnEnterHold = 0f;
+        warnExitHold = 0f;
+        SetWarnStage(0);
+    }
+
+    void UpdateWarnStage(float dt, GridCoord myCell)
+    {
+        if (!Released || !world.IsBuilt(myCell) || float.IsPositiveInfinity(WarningDistance))
+        {
+            warnEnterHold = 0f;
+            warnExitHold = 0f;
+            SetWarnStage(0);
+            return;
+        }
+
+        switch (WarnStage)
+        {
+            case 0:
+                warnExitHold = 0f;
+                warnEnterHold = WarningDistance <= WarnStage1Enter ? warnEnterHold + dt : 0f;
+                if (warnEnterHold >= WarnStage1Hold) SetWarnStage(1);
+                break;
+            case 1:
+                warnEnterHold = WarningDistance <= WarnStage2Enter ? warnEnterHold + dt : 0f;
+                if (warnEnterHold >= WarnStage2Hold)
+                {
+                    warnEnterHold = 0f;
+                    warnExitHold = 0f;
+                    SetWarnStage(2);
+                    break;
+                }
+                warnExitHold = WarningDistance > WarnStage1Exit ? warnExitHold + dt : 0f;
+                if (warnExitHold >= WarnStage1Hold)
+                {
+                    warnEnterHold = 0f;
+                    warnExitHold = 0f;
+                    SetWarnStage(0);
+                }
+                break;
+            default:
+                warnEnterHold = 0f;
+                warnExitHold = WarningDistance > WarnStage2Exit ? warnExitHold + dt : 0f;
+                if (warnExitHold >= WarnStage2Hold)
+                {
+                    warnExitHold = 0f;
+                    SetWarnStage(1);
+                }
+                break;
+        }
+    }
+
+    void SetWarnStage(int next)
+    {
+        next = Mathf.Clamp(next, 0, 2);
+        if (WarnStage == next) return;
+        WarnStage = next;
+        WarnStageChanged?.Invoke(next);
+    }
+
+    bool ComputePlayerSeesRelay(Vector3 playerEye, Vector3 playerForward)
+    {
+        if (!Released || world == null) return false;
+        var forward = Flat(playerForward);
+        var lower = position + Vector3.up * 1.6f;
+        var toLower = lower - playerEye;
+        var distance = toLower.magnitude;
+        if (distance < .01f || distance > world.SightDistance || forward.sqrMagnitude < 1e-6f) return false;
+        forward.Normalize();
+        var flatTo = Flat(toLower);
+        if (flatTo.sqrMagnitude < 1e-6f || Vector3.Dot(forward, flatTo.normalized) < Mathf.Cos(PlayerFrustumHalfAngle * Mathf.Deg2Rad)) return false;
+
+        // Both points must be clear. This avoids treating a shoulder-level
+        // glimpse through furniture or a low sill as full player-side sight.
+        var upper = position + Vector3.up * 1.95f;
+        return Visible(playerEye, lower) && Visible(playerEye, upper);
     }
 
     bool Sees(Vector3 playerEye)

@@ -100,12 +100,6 @@ public sealed class FrontRoomsMobileBackBridge : MonoBehaviour
 
     void OnEnable()
     {
-#if UNITY_ANDROID || UNITY_IOS
-        // Keep the process alive when Android hands us a Back edge. The game
-        // owns the resulting pause/resume decision.
-        if (Application.isMobilePlatform)
-            Application.backButtonLeavesApp = false;
-#endif
         TryRegisterPredictiveBack();
     }
 

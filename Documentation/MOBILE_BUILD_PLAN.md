@@ -1,17 +1,19 @@
 # FrontRoomsss · iPhone / Android build plan
 
-状态：T0/T1 代码已开始，2026-10-04。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；移动设备验收和 iPhone/Android build 仍未完成。
+状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；`FrontRoomsss` 的 Figma 对齐版已生成 iPhone Xcode、分发归档并上传 TestFlight `0.1.0 (2)`，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 交互验收、测试组配置和 App Store Connect processing 结果仍待完成。
 
 设计来源：Figma 文件 `0tCbAiVUlrPId3RWd9LRif`，节点 `2528:5403`（`FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID · 1920×1080`）。关键子节点：`2530:5061`（screen masters）、`2530:3828`（Touch / Stick）、`2530:3854`（Touch / Use）、`2528:5439`（Thumb map）、`2528:5446`（Same size in the eye）、`2528:5488`（Build plan）。
 
 ## 目前的工程基线
 
 - 权威工程是 `FRONTROOMSSS/`，Unity `6000.3.10f1`，URP `17.3.0`；启动场景只有 `Assets/Scenes/FrontRooms3D.unity`。
-- 现有构建脚本只有 macOS、Windows、WebGL。没有 iOS Xcode 导出、Android APK/AAB 或移动端构建入口。
-- `FrontRooms3DGame` 的移动核心读取已切到 `FrontRoomsInput.FrameSnapshot`（移动、视角、冲刺、USE、暂停、开始、重试、shot-back）；设置行的桌面快捷键仍保留，菜单触控 row 属于后续 T2。
-- HUD 仍在运行时创建为 Screen Space Overlay；新增的 `FrontRoomsTouchControls` + `FrontRoomsTouchControlsView` 会在移动运行时创建独立 Touch Canvas、safe-area、浮动摇杆、冲刺 socket、USE 视觉/88 hit、Pause 视觉/44 hit。
+- `Assets/Editor/FrontRoomsMobileBuild.cs` 已新增独立的 iOS Xcode、Android APK/AAB 和 profile validation 入口；本轮只执行了 iOS 导出，Android 入口暂不执行。
+- `FrontRooms3DGame` 的移动核心读取已切到 `FrontRoomsInput.FrameSnapshot`（移动、视角、冲刺、USE、暂停、开始、重试、shot-back）；设置行触控已直接复用 `FrontRoomsSettings`。
+- HUD 仍在运行时创建为 Screen Space Overlay；新增的 `FrontRoomsTouchControls` + `FrontRoomsTouchControlsView` 会在移动运行时创建独立 Touch Canvas、safe-area、浮动摇杆、冲刺 socket、USE 视觉/88 hit、Pause 视觉/44 hit，以及 Title/Pause/Settings/Caught 菜单命中区。
+- Android API 33+ predictive Back bridge、旧设备 Escape fallback、暂停/设置/恢复映射已接入；重启确认、设置行点击和 Caught 重试已走同一触控状态机。
+- `FrontRoomsMobileHaptics` / `FrontRoomsMobileInteractionEvents` 已接入 USE、冲刺、玻璃、被捕获和菜单语义事件；当前实现是 `Handheld.Vibrate()` 粗粒度基线，原生 Core Haptics / Android `performHapticFeedback` 与设备强度校准仍待做。
 - `activeInputHandler: 2` 目前是 Both；Figma 计划要求先建立新的 Input System facade，且 Android 不应继续依赖 Both。
-- iOS/Android 播放模块已安装。iOS 目标版本目前为 15.0；Android 最低 SDK 为 25，Target SDK 仍为 0；两端 application identifier、图标、签名/keystore 和商店元数据尚未配置。
+- iOS/Android 播放模块已安装。iOS 目标版本为 15.0；本轮已把 iPhone application identifier 写入工程并导出 Xcode。Android 最低 SDK 为 25、Target SDK 仍为 0，Android application/签名设置暂不处理。
 - FMOD 已包含 iOS 静态库和 Android 多架构库；移动 FMOD banks、加载时序和真机输出仍未验证。
 - FMOD 的 iOS/Android plugin libraries 虽然在 `Assets/Plugins/FMOD/platforms/`，但 `FMODStudioSettings.asset` 当前没有启用 PlatformAndroid/PlatformIOS，FMOD Studio 工程的已构建平台仍是 Desktop；移动 banks 需要单独生成并验证。
 - 自定义 Metal glass RT 只针对 macOS Metal；iOS/Android 必须走可接受的玻璃 fallback。不能把桌面 RT 的存在当作移动端已支持。
@@ -75,32 +77,47 @@ facade 底层使用 Unity Input System actions；桌面、Windows 和 WebGL 绑�
 - `Screen.safeArea` 驱动的顶部 HUD、底部 hint/caption 和 hit rect；
 - `CanvasScaler` 在 phone/tablet 上以 Figma 的 1× pt 规格校准，而不是把 1920×1080 直接缩放后假定等价。
 
-当前 `Assets/Scripts/Input/FrontRoomsTouchControls.cs` 使用 EnhancedTouch touch-id 状态机，`FrontRoomsTouchControlsView.cs` 创建运行时控件视觉，并由 `FrontRooms3DGame.Mobile.cs` 同步阶段与准星 USE 状态。T1 先在 Unity Device Simulator 做布局检查，再在真实 iPhone/Android 上验证双指同时移动和视角；当前尚无设备截图或手势日志。
+当前 `Assets/Scripts/Input/FrontRoomsTouchControls.cs` 使用 EnhancedTouch touch-id 状态机，`FrontRoomsTouchControlsView.cs` 创建运行时控件视觉，并由 `FrontRooms3DGame.Mobile.cs` 同步阶段、准星 USE、菜单和 Back 状态。T1 先在 Unity Device Simulator 做布局检查，再在真实 iPhone/Android 上验证双指同时移动和视角；当前尚无设备截图或手势日志。
 
 Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predictive-back 支持或最小 Java bridge 注册 `OnBackInvokedCallback`，只派发 `BackPressed` 给 pause 状态机。
 
-### T2 · 菜单、设置和触控状态
+### T2 · 菜单、设置和触控状态（第一版已接入，待设备回归）
 
-把 Title/Pause/Settings/Caught 从键盘专属路径变成可点击 chip 与 row。Settings 的值变更必须复用已有 `FrontRoomsSettings` 状态，且支持 controls size 80–140%、opacity、left-handed、look speed、invert、gyro、break-glass tap/hold。任何触控控件在 pointer down/up/cancel、pause、应用失焦和场景重载时都要释放对应 touch id。
+把 Title/Pause/Settings/Caught 从键盘专属路径变成可点击 chip 与 row。当前已接入 Title start、Pause restart/settings、9 行触控偏好、Caught try-again、Android Back 和 Pause restart confirm/cancel；设置值复用 `FrontRoomsSettings`，并即时刷新当前 touch layer。Gyro 已有 Off/While Touching/Always 第一版，layout editor 和设备回归仍待做。任何触控控件在 pointer down/up/cancel、pause、应用失焦和场景重载时都要释放对应 touch id。
 
-### T3 · haptics、gyro 和移动质量层
+### T3 · haptics、gyro 和移动质量层（haptics 第一版已接入）
 
-新增 iOS/Android 条件编译的 haptic adapter，至少覆盖 sprint engage、USE pressed、glass progress/break、caught；将 gameplay/control haptics 两个开关接入设置。Gyro 默认关闭，开启后与右侧 drag look 叠加时要有确定的优先级。Camera Motion、Reduce Flashing 和 captions/relay readout 都必须在移动设备上可关闭或降级。
+新增 iOS/Android 条件编译的 haptic adapter，已覆盖 sprint engage、USE pressed/released、glass progress/break、caught 和菜单确认；当前使用 `Handheld.Vibrate()` 基线并保留语义事件总线，原生 Core Haptics / Android `performHapticFeedback`、gameplay/control 两个开关和设备强度校准仍待做。Gyro 已接入 Off/While Touching/Always 第一版，当前系数仍需设备校准。Camera Motion、Reduce Flashing 和 captions/relay readout 都必须在移动设备上可关闭或降级。
 
 质量层先建立 Mobile 级别：关闭 macOS-only glass RT，验证标准 URP glass fallback、HDR、MSAA、反射、灯光 tick、纹理尺寸和 shader variant；移动默认应从较低的 MSAA、阴影图集/距离、灯光数量和 SSAO 档位开始，再用设备 profile 决定是否提升。构建时显式选择 iPhone Metal，Android 先 Vulkan、必要时 GLES3 fallback，并检查日志中没有 RT dylib/PInvoke 加载。目标设备先锁定近期 iPhone（Metal）与 Android arm64（Vulkan，必要时 GLES3 fallback）。
 
-### T4 · 构建和真机验证
+### T4 · 构建和真机验证（iPhone 导出完成，设备阶段待做）
 
-新增独立的 `FrontRoomsMobileBuild` Editor 入口，分别导出 iOS Xcode 工程和 Android APK/AAB；不要改写现有 Mac/WebGL 构建 profile。构建脚本负责设置版本号、application identifier、横屏方向、安全区相关 PlayerSettings、IL2CPP、Android API 36、纹理压缩和 mobile quality tier，但不把个人签名、keystore 或 provisioning profile 写入仓库。当前项目 Unity 是 `6000.3.10f1`，Figma 计划写的是 `6000.3.13+`；升级前要先在独立分支导入、编译和验证场景/插件。
+独立的 `FrontRoomsMobileBuild` Editor 入口已加入，分别导出 iOS Xcode 工程和 Android APK/AAB；不要改写现有 Mac/WebGL 构建 profile。入口负责设置版本号、application identifier、横屏 autorotate flags、IL2CPP、Metal 和 iOS 15.0，但不把个人签名或 provisioning profile 写入仓库。Android API/ABI/Gradle 入口保留在代码中，本轮不执行。
+
+2026-10-04 的 iPhone 导出与 TestFlight 证据：
+
+- Unity `FrontRoomsss > Mobile > Export iOS Xcode` 成功，`BuildResult.Succeeded`；输出为 `Builds/Mobile/iOS/FrontRoomsss`，BuildReport 字节数为 1,543,922,906。
+- 最新 Figma 对齐版使用 marketing version `0.1.0`、iOS build `2`；`xcodebuild -exportArchive` 使用 Cloud Managed Apple Distribution 完成分发签名，并返回 `Upload succeeded`。IPA 已上传到 App Store Connect，Apple 端 processing / TestFlight 可见性仍需等待其服务器完成。
+- 同一份源码的开发签名 Debug build 已安装并启动在已连接的 iPhone（UDID `00008140-0008392C2112801C`），可直接进行 safe-area、触控和动效实机检查。
+- `xcodebuild -list` 成功，工程包含 `Unity-iPhone`、`UnityFramework`、`GameAssembly` 和测试 target；`-showBuildSettings` 确认 `SDKROOT=iphoneos27.0`、`PRODUCT_BUNDLE_IDENTIFIER=com.redwang.frontrooms3d`、`IPHONEOS_DEPLOYMENT_TARGET=15.0`、`SUPPORTED_PLATFORMS=iphoneos`、`TARGETED_DEVICE_FAMILY=1,2`。
+- 单独的无签名 device 编译 `xcodebuild -scheme Unity-iPhone -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -jobs 1` 返回 0，并生成 `/tmp/frontrooms3d-ios-final-20261004/Build/Products/Debug-iphoneos/FrontRooms3D.app`；这证明导出的工程可编译到 iPhone 目标，但不是可安装的签名包。
+- 首次上传验证发现导出工程缺少 1024×1024 App Store icon；`FrontRoomsMobileBuild` 现在从 `Assets/Resources/Brand/FrontRoomsAppIcon1024.png` 补入 `ios-marketing` 槽位，新的 Release archive 已通过图标校验。仍会报告 Burst 静态库和 Run Script 的非阻塞警告。
+- Unity BuildReport 的 `totalErrors=21512` 与最终 `BuildResult.Succeeded` 不一致；Unity 日志没有对应的 C# 或 Build Failed 行，因此把它保留为导出诊断，不能把它描述成“零警告/零错误构建”。
+- FMOD CLI diagnostic 已通过，但当前 `FMOD/FrontRooms/Metadata/Platform/` 只有 `Desktop`；尝试以 `iOS` 构建时返回 `Unknown platform name "iOS"`，所以 Xcode 工程里的 FMOD bank 仍只是 Desktop bank，不能视为 iPhone 音频已完成。需要在 FMOD Studio 中添加 Apple/iOS 平台、重新生成 mobile banks，再回到真机验证加载和播放。
 
 建议的第一批发布验证顺序：
 
-1. iOS Debug Xcode export → 一台真实 iPhone 横屏运行；
-2. Android arm64 Debug APK → 一台 20:9 真机横屏运行；
-3. iOS Release/TestFlight candidate 与 Android AAB；
-4. 再决定是否提交商店。
+1. 在 Xcode 选择开发 Team/provisioning，安装到一台真实 iPhone 并横屏运行；
+2. 记录 safe area、双指移动+视角、USE hold/tap、Pause/Settings/Caught、Gyro 和 haptic 行为；
+3. 生成 iOS Release/TestFlight candidate，补齐隐私/签名和 FMOD iOS banks；
+4. Android arm64 Debug APK/AAB 留到 Android 阶段再处理。
 
 每个平台都记录 BuildReport、包大小、启动时间、首个 room 的内存峰值、稳定帧率、触控状态截图和 FMOD/haptic 日志。没有设备运行记录时，只能称为导出成功，不能称为 mobile build 完成。
+
+### Bundle ID correction · 2026-10-04
+
+当前源工程的 Bundle ID 已统一为 `com.redwang.frontrooms3d`，SKU 目标同为 `com.redwang.frontrooms3d`。上面的上传记录属于此前的 `com.redwang.frontrooms3d` App Store Connect 记录；由于该记录已经上传过构建，不能直接改 Bundle ID 或 SKU。新 ID 需要新的 App Store Connect 记录，且同名 `FrontRoomsss` 仍被旧记录占用。
 
 ## 验收矩阵
 
@@ -108,12 +125,12 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | --- | --- | --- |
 | 输入 facade | 桌面/WASM/autopilot 与基线行为一致，脚本化输入检查通过 | 代码已接线；完整回归待做 |
 | Touch / Stick | Calm、Walk、Sprint、Winded 四态；双指移动+look；socket latch 正确释放 | 第一版代码；设备待测 |
-| Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | prompt/USE 状态已接线；hold ring/haptics 待做 |
+| Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | prompt/USE/hold ring 已接线；原生 haptics 与设备回归待做 |
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
-| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause | Title/Pause/back 基础路径；Settings/Caught chips 待 T2 |
+| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 第一版代码已接线；Device Simulator/实机回归待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
-| Build | Xcode export、APK/AAB、包版本/identifier/图标正确 | 未开始 |
-| Store/TestFlight | 仅在签名、隐私、图标、启动图和设备验收完成后决定 | 未开始 |
+| Build | Xcode export、包版本/identifier/横屏、Release archive、分发签名 | iOS Xcode 导出、Release archive、Cloud Managed Distribution 签名和开发签名 iPhone 安装已通过；FMOD/触控运行时验收待做；Android 暂缓 |
+| Store/TestFlight | `FrontRoomsss` App record 已由 Xcode 创建；`0.1.0 (2)` 已上传，等待 App Store Connect processing；测试组和真实 iPhone 验收仍待做 |
 
 ## 需要先定下的六个产品决定
 
@@ -128,4 +145,4 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 ## 下一步
 
-下一步是用 Device Simulator 校准 safe-area 与 hit rect，再补 T2 菜单触控、T3 haptics/触控设置，最后新增独立 iOS/Android 导出入口。每一阶段都要留下对应的 Play Mode/设备截图和日志，再推进下一层。
+下一步是把 Xcode 工程配置开发 Team 后安装到真实 iPhone，校准 safe-area 与 hit rect，再补原生 Core Haptics、gyro 和 FMOD iOS banks，最后留下截图、手势日志和性能记录。Android 保持暂停，待 iPhone 验收完成后再开阶段。

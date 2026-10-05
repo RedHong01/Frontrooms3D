@@ -4,6 +4,8 @@ Status: **proposal v2, 2026-10-03. Runtime v2 is not enabled.** On 2026-10-04 th
 
 **Systems landing 2026-10-04.** The policy core covers the director vocabulary and deterministic rules for `Arm`/first-run RELAX, Attention gains and decay, weighted call estimates, PENDING/drop handling, queued device calls, quiet-player sweep requests, Pressure, peak/cap → SUSTAIN → FADE, handoff budget, and `NotifyAway` → RESTORE/RELAX. It is deliberately an adapter seam: no old release/leash behavior, map navigation, sound implementation, lamp look, wallpaper, narrative, or mobile build was changed. Wiring waits for Step 0 and the map-owned path/Arrive contracts.
 
+**Level-design Step 1 landing 2026-10-04.** `FrontRoomsMapPathField` now supplies the player-rooted 45 m octile field, opening costs, bounded source fields, Relay-rooted estimates, `WarningDistance`, hysteretic `WarnStage`, and the 10 Hz `PlayerSeesRelay` hook. These values are measurement-only: no v2 director, lamp, audio, sight-lock, or movement behavior is enabled. The field invalidates on player-cell, streaming-topology, and door/window edge-state changes. Step 0 remains the only reconciled runtime evidence (54/54 PASS); Step 1 runtime acceptance is still pending the Unity compile/test pass.
+
 Written by the chat 怪物追捕机制设计审计 (systems), with:
 - **关卡设计** (map / Relay code owner): level design, feasibility. Peer chapter `research/relay_pursuit/20_level_design.md`.
 - **Design the narrative of the phosphor wallpaper print** (narrative): fiction. Peer chapter `research/relay_pursuit/30_narrative.md`.
@@ -38,7 +40,7 @@ Figma: design file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section `FRONTROOMS �
 >   - `LampDipped` and `FixtureChanged` (0.02 hysteresis);
 >   - WebGL parity 28/28, MapInteractionTests 126/126.
 >
->   The hunter side (WarnStage, PathDistanceToPlayer, TargetAcquired) and the Warn scheduler wait for Red.
+>   The hunter side's Step 1 measurements (`WarnStage`, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `PlayerSeesRelay`) are now landed. `TargetAcquired` and the Warn scheduler still wait for the v2 director/sight slices.
 > - **The empty-stamina Shift leak is fixed:** a dry player is winded until 1 s of stamina is back.
 > - The v1 doc is kept as `RELAY_PURSUIT_REDESIGN.v1.md`.
 > - **Two Relay bugs fixed ahead of v2** (Red's go; landed in main 2026-10-03 ~22:53, uncommitted for Red to commit; by 关卡设计):
@@ -152,7 +154,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 - **`aba5f77` (12:26):** `FrontRoomsSettings` with **REDUCE FLASHING** and **CAPTIONS** rows; hunter, game, world and nav-test edits.
 - **`ef061ae` (12:56): lamp override interface v1 has landed** in `FrontRoomsMapWorld`: `LampFx { Dip, Sag, Warn }`, `SetLampOverride(cell, kind, multiplier, hold, envelope?)`, `RemoveLampOverride`, `LampLevel`, `LampBaseLevel`, `SetLampMode`, `FixtureChanged`, `LampDipped` (fires on **every** override start). Level = temperament × the **lowest** active multiplier. Default envelopes Dip 0.3/1.2 s, Sag 0.6/1.5 s, Warn 0.08/0.2 s; with Reduce Flashing no attack or release is under 0.5 s. Nothing raises an override yet. AUDIO_CONTRACT lists these as "in main". The same commit added the **winded** stamina rule (above) and 154 lines of interaction tests.
 - **Working tree, uncommitted:** `FrontRoomsCaptions.cs` (untracked) and a caption panel in `FrontRooms3DGame.cs`: up to three lines, each tagged AHEAD / LEFT / RIGHT / BEHIND from the player's view. Another session owns this; check before touching Game.cs.
-- None of `WarnStage`, `TargetAcquired`, `Attention`, `Summon` or the director exist.
+- Step 1's measurement hooks (`WarnStage`, `WarnStageChanged`, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `PlayerSeesRelay`) now exist in `FrontRoomsMapHunter`; they are not consumed by v2 behavior. `TargetAcquired`, `Attention`, `Summon` and the director remain absent.
 
 ### 2.5 What already works and is kept
 
@@ -622,7 +624,7 @@ Steps are ordered so the game always has a working Relay between landings. A scr
 | # | Owner | Change | Days (SP) |
 |---|---|---|---|
 | 0 | 关卡设计 | **Step 0 baseline, no gameplay change** (after Red's yes on Q8, and Q2 asked first). Seeded route RNG. Bot modes: quiet, noisy, evader (reaction 0.3 / 0.6 s), staller, follower, shift-holder, door-spammer, relax-sprinter, build-edge runner, closed-zone (shuts its zone's doors, then sprints), sanctuary-camper (v2.1). Each at T1 and T5. Report (§14). Profile the path field on desktop and WebGL | 1.5 |
-| 1 | 关卡设计 | Path field F (octile, own storage, rebuilt on cell or edge change), W, one-off source and Relay-rooted fields, `PathDistanceToPlayer`, `PathOpeningCost`; `WarnStage` computed and logged, not yet used. `PlayerSeesRelay` (10 Hz) | 2 |
+| 1 | 关卡设计 | **Landed measurement slice:** path field F (octile, own storage, rebuilt on cell or edge change), W, one-off source and Relay-rooted fields, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `WarnStage`/`WarnStageChanged`, and `PlayerSeesRelay` (10 Hz). Event/log consumers and runtime warning use remain later slices. | 2 |
 | 2 | 关卡设计 (+ 声音设计 ping) | Behind the define: `FrontRoomsRelayDirector` (phases incl. PENDING, Attention with `Disturb(kind, point, source)`, Pressure, budgets and caps, RELAX, first-run grace, queued trigger, `Called`/`Restore`, the dry clock and the sweep if Q2 = yes); `HunterState` Away 7, Arrive 8, Withdraw 9; `Arm`/`Dispatch`/`Sweep`/`SendAway`; Armed/OnMap/Released alias; Arrive hard and soft rules, PENDING fallback, step-in re-check, `Arrived` at step-in; handoff; OPEN/BREAK/WALL door licences, `Follow` keeps `throughDoors`, `TickBreak` resumes its origin; Withdraw exits, fallback, timeout; both leashes deleted. Tier columns in `FrontRoomsTierRules`; legacy fields kept `[HideInInspector]`; scene re-serialized (check Codex first); glass into tuning. Autopilot: a debug Summon 20 s after Armed; PASS = reached OnMap at least once | 4 |
 | 3 | 关卡设计 | Hearing: sense links, error, side-correct estimate, margin, re-target limit, repeats, BreakDoor queue, half-range Withdraw hearing, walking loudness T3+; `DebugPlace(feet, facing)` resets. Sight: `LookYaw`, cones, touch (Open passage + capsule), meter with freeze and drain, per-lock-on G3 gate and its look fallback, fixed hold, ramp, lose meter, 24 m exit, chase-cap backstop, cautious look and full search, catch rules. Nav door-rule rewrite; interaction tests updated (release → call-driven Arrive; tier checks) | 3.5 |
 | 4 | 关卡设计 | Flip the define after Step-0 bots, nav, map 100/100 and fixture parity pass. Remove v1 paths in a later clean-up | 0.5 |

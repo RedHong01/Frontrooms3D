@@ -1,6 +1,6 @@
 # Touch controls · iOS + Android
 
-Status: **design + first T0/T1 implementation, 2026-10-04** (interaction-design chat "iOS 和 Android 触控设计"). The input facade and first runtime touch surface now exist in `Assets/Scripts/Input/`; device validation, menus, haptics, gyro, and mobile exports remain outstanding. The execution baseline and current build readiness audit are tracked in [MOBILE_BUILD_PLAN.md](MOBILE_BUILD_PLAN.md).
+Status: **design + first T0/T1/T2 implementation, 2026-10-04** (interaction-design chat "iOS 和 Android 触控设计"). The input facade, runtime touch surface, menu rows, restart confirmation, Android Back bridge, and semantic haptic baseline now exist in `Assets/Scripts/Input/`; device validation, native haptics, gyro, and mobile exports remain outstanding. The execution baseline and current build readiness audit are tracked in [MOBILE_BUILD_PLAN.md](MOBILE_BUILD_PLAN.md).
 
 - Figma: file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section **FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID** (`2528:5403`) at x 33937, y 2000.
   - Slides TC01–TC13 (1920×1080, P1 deck system).
@@ -34,7 +34,7 @@ Status: **design + first T0/T1 implementation, 2026-10-04** (interaction-design 
 | Esc | Pause | Pause button top-right; Android back (target API 36 no longer delivers `onBackPressed`/`KEYCODE_BACK`: register a predictive-back `OnBackInvokedCallback`, test how Unity surfaces it); app losing focus (already `OnApplicationFocus`). |
 | O | Settings | SETTINGS chip on the pause screen; rows are tappable. |
 | R | Restart | TRY AGAIN chip on the caught screen; RESTART on the pause screen asks to confirm (XAG 115: no one-tap destructive actions). |
-| Space / Return | Start | Tap anywhere on the title; a TAP TO START chip fades in after ~3 s idle (touch only). |
+| Space / Return | Start | Tap anywhere on the title; a text-only TAP TO START prompt sits below the logo and fades out with the title when play begins (touch only). |
 | H, T (settings shortcuts) | — | Not needed: rows are tappable. |
 
 A finger that starts on USE may keep dragging to look (so the dot can stay on a pane while holding). A finger that starts in the look zone never presses USE (presses register on touch-down only).
@@ -125,18 +125,18 @@ iOS: Apple's official `Apple.CoreHaptics` Unity plug-in (AHAP), checking `suppor
 
 Ownership (agreed with 声音设计, 2026-10-03): this touch layer owns the haptic patterns and any AHAP files. Haptics fire from the **same game events** the sound listens to (DoorLatched, the rattle jolts, GlassCracked / GlassBroken, PlayerSprinting / PlayerWinded, Caught, the lock-on cue when it exists), never from FMOD/audio callbacks. Where a haptic must land on an audio transient (e.g. the crack's swap frame), 声音 documents the event time in AUDIO_CONTRACT.
 
-## 8. Implementation plan (not started)
+## 8. Implementation status and remaining work
 
-- **T0 Facade** — **Android blocker:** Unity 6.3 does not support Active Input Handling = *Both* on Android (the project is on Both). So the facade is built on **Input System actions** with today's desktop bindings, and the project switches to *Input System Package (New)* — a desktop-wide change that must feel identical (autopilot + Red's hands-on check); open question 8. `Assets/Scripts/Input/FrontRoomsInput.cs` (static): `Move`, `LookDelta`, `SprintHeld`, `UsePressed/UseHeld`, `BackPressed` (shot cancel), `PausePressed`, `StartPressed`, settings navigation. On desktop it returns exactly today's `Input.*` reads. `FrontRooms3DGame` (owned by 关卡设计) swaps its direct reads for the facade; acceptance = autopilot seeds 2554/20388 identical. Hooks as of 2026-10-03 (from 关卡设计; ping before editing, it keeps these names stable):
+- **T0 Facade** — **implemented first pass:** Unity Input System actions preserve the desktop keyboard/mouse contract, while mobile replaces the per-frame snapshot through `FrontRoomsInput.SetVirtualSnapshot`; `activeInputHandler: 2` remains for compatibility and full autopilot parity is still a regression check.
   - E goes through `EDown()` / `EHeld()` (which also carry an editor-only autopilot override): the facade goes inside those two, override untouched.
   - Stick input must land in `local`: the glass shot reads `moveIntent` (local.sqrMagnitude > .01) before any lock, so any stick movement ends the glass soft lock (1.10–1.30 s) and lets go of the pane between tap-mode strikes — intended.
   - S is read twice: as movement and as `rig.Consume(ShotInput.Back)` during a shot (cancel after 0.2 s). Pull-back on the stick feeds both; the coming door shots (unlock push-in) use the same cancel.
   - Touch look feeds the same place as the mouse: yaw/pitch (mouse ×2.1) and `lookDegrees` (|dx|+|dy| per frame), which ends the glass soft lock past 3°.
   - `FrontRoomsSettings.TapToBreak` may default ON for touch (open question 7).
-- **T1 Touch layer** — `FrontRoomsTouchControls` (EnhancedTouch, finger ownership by touch-down zone, floating stick, look curve, USE bound to `UpdateAim`'s `aimed/aimedHold`, pause, safe area).
-- **T2 Menus** — chips, tappable settings rows, tap to start; prompt strings swap the "E" token for the touch glyph (strings from `MapWorld.Describe`, owned by 关卡设计).
-- **T3** — haptics, TOUCH settings, layout editor.
-- **T4** — `FrontRooms3DBuild.BuildIOS/BuildAndroid` (landscape only, IL2CPP ARM64; iOS: defer **bottom-edge** system gestures during play only and leave `hideHomeButton` off, since hiding it disables deferral; Android: Unity ≥ 6000.3.13f1 for GameActivity 4.4 or the Activity entry point, target API 36 (required since 31 Aug 2026), immersive transient bars, `Application.targetFrameRate = 60` because Unity's mobile default is 30), mobile quality level + URP asset (visual/WebGL chats), device test on Red's iPad + a phone — **Unity's Device Simulator fakes only one finger and no gyro**, so two-thumb input is only tested on devices (iPhone with Dynamic Island, iPad 11", a 20:9 Android at API 36). FMOD (声音, ping when T4 starts): a Mobile platform in the generated Studio project with mobile encoding, FMOD for Unity's iOS/Android entries pointed at the Mobile bank folder, desktop settings untouched, init + captured run verified on device or simulator.
+- **T1 Touch layer** — **implemented first pass:** `FrontRoomsTouchControls` uses EnhancedTouch finger ownership by touch-down zone, floating/fixed stick, socket/button sprint, right-side look, contextual USE, tap-on-world interaction, pause and safe area.
+- **T2 Menus** — **implemented first pass:** Title/Pause/Settings/Caught chips and rows, restart confirmation/cancel, tap to start and Android Back bridge. Touch preferences persist through `FrontRoomsSettings` and apply immediately to the current layer.
+- **T3** — **baseline implemented:** semantic haptic bus with `Handheld.Vibrate()`, haptics setting, touch preference rows, and Off/While Touching/Always gyro look. Native Core Haptics/Android primitives, mobile render tier and device calibration remain.
+- **T4** — **export entry implemented, not exported:** `Assets/Editor/FrontRoomsMobileBuild.cs` provides iOS Xcode, Android APK/AAB and profile validation menus (landscape flags, IL2CPP, ARM64, API 36, Vulkan/GLES3, ASTC). Device Simulator fakes only one finger and no gyro, so two-thumb and haptics evidence must come from devices. FMOD mobile banks and quality/performance evidence remain.
 
 ## 9. Open decisions for Red
 

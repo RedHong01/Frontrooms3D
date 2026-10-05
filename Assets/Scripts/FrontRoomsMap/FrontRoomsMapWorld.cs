@@ -65,6 +65,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public int BuiltChunkCount => built.Count;
     public int BuildRadius => settings != null ? buildRadius : Mathf.Max(1, Profile.buildRadius);
     public Color FogColor => FrontRoomsLook.FogColor;
+    /// <summary>Topology revision for level-design path fields; streaming and edge-state changes advance it.</summary>
+    public int PassageRevision { get; private set; }
     /// <summary>Camera far plane: just short of the first chunk that may not be built yet.</summary>
     public float SightDistance => BuildRadius * MapGrid.ChunkSize - 2f;
 
@@ -408,6 +410,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
     readonly Queue<DressJob> dressQueue = new Queue<DressJob>();
 
+    void TouchPassageRevision()
+    {
+        PassageRevision = PassageRevision == int.MaxValue ? 1 : PassageRevision + 1;
+    }
+
     void OnEnable() => FrontRoomsLevelProfile.Changed += OnProfileChanged;
 
     void OnDisable() => FrontRoomsLevelProfile.Changed -= OnProfileChanged;
@@ -467,6 +474,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (old.root != null) old.root.SetActive(false);
             Unregister(old);
             built.Remove(coord);
+            TouchPassageRevision();
         }
         failedChunks.Remove(coord);
         Build(coord);
@@ -787,6 +795,38 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>True for the leaf of a door that is open, opening or broken.</summary>
     public bool IsOpenDoorLeaf(Collider c) => c != null && doorByCollider.TryGetValue(c, out var door) && door.open;
 
+    /// <summary>
+    /// The v2 §7 cost of crossing a side-by-side edge. This stays separate
+    /// from PassageBetween so an opening in motion can measure as Ajar (+4)
+    /// before it is wide enough to pass (+0).
+    /// </summary>
+    public float OpeningCostBetween(GridCoord a, GridCoord b)
+    {
+        if (Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y) != 1) return float.PositiveInfinity;
+        if (InStartArea(a) || InStartArea(b)) return float.PositiveInfinity;
+        switch (Cache.Edge(a, b))
+        {
+            case EdgeKind.Open:
+            case EdgeKind.Arch:
+                return 0f;
+            case EdgeKind.Door:
+            {
+                var id = EdgeId(a, b);
+                if (brokenDoors.Contains(id)) return 0f;
+                if (doorByEdge.TryGetValue(id, out var door))
+                {
+                    if (door.broken || door.angle >= DoorPassableDegrees) return 0f;
+                    return door.open ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
+                }
+                return openDoors.Contains(id) ? FrontRoomsMapPathField.AjarOpening : FrontRoomsMapPathField.ShutOpening;
+            }
+            case EdgeKind.Window:
+                return brokenWindows.Contains(EdgeId(a, b)) ? 0f : FrontRoomsMapPathField.ShutOpening;
+            default:
+                return float.PositiveInfinity;
+        }
+    }
+
     public bool HasKeyFor(GridCoord zone) => keysHeld.Contains(zone);
 
     void Update()
@@ -861,6 +901,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         Unregister(chunk);
         built.Remove(coord);
         droppedAt[coord] = Time.time;
+        TouchPassageRevision();
     }
 
     /// <summary>Forget a chunk's doors, windows and shell colliders, and free its meshes and objects.</summary>
@@ -913,6 +954,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         // Announced once the chunk is registered, outside the guard round the build.
         foreach (var window in chunk.windows) RaiseWindowBuilt(window);
+        TouchPassageRevision();
     }
 
     void BuildInto(GridCoord coord, BuiltChunk chunk)
@@ -1466,6 +1508,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.from = door.angle;
         door.clock = 0f;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        TouchPassageRevision();
         DoorBroken?.Invoke(door.position);
         DoorBrokenFrom?.Invoke(door, from, fromSwingSide);
     }
@@ -2334,6 +2377,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.wait = (door.angle <= LatchedDegrees ? FrontRoomsShotTimings.Open.SwingStart : 0f) + (door.pull ? DoorPullBeatSeconds : 0f);
         door.motion = DoorMotion.Lever;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        TouchPassageRevision();
         DoorHandleTurned?.Invoke(door, LockPoint(door, from));
         if (door.pull)
         {
@@ -2366,6 +2410,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         door.motion = DoorMotion.Shut;
         door.shutPhase = InverseSmoothstep(Mathf.Clamp01(door.angle / ModuleUnits.DoorSwingDegrees));
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        TouchPassageRevision();
         DoorMoved?.Invoke(door.position);
     }
 
@@ -2630,6 +2675,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         window.started = window.pushing = false;
         brokenWindows.Add(window.edge);
         windowByCollider.Remove(c);
+        TouchPassageRevision();
         // Only the collider object goes: the root (and the glass hung on it) stays.
         Kill(window.pane);
         window.pane = null;
@@ -2695,6 +2741,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // One frame of a door's swing. False once the leaf has come to rest.
     bool TickSwing(Door door, float dt)
     {
+        var wasPassable = door.angle >= DoorPassableDegrees;
         float target;
         var done = false;
         switch (door.motion)
@@ -2756,6 +2803,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         var allowed = LimitByBodies(door, door.angle, target);
         var blocked = Mathf.Abs(allowed - target) > 1e-3f;
         door.angle = Mathf.Clamp(allowed, door.angle - DoorMaxStepDegrees, door.angle + DoorMaxStepDegrees);
+        if (wasPassable != (door.angle >= DoorPassableDegrees)) TouchPassageRevision();
         PoseDoor(door);
         if (blocked)
         {

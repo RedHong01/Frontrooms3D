@@ -70,6 +70,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     AudioClip playerStepClip, playerRunStepClip, hunterStepClip, doorClip, bangClip, caughtClip;
     FrontRoomsFoley foley;
     Text roomMetaText, roomText, threatStateText, distanceText, contextText, overlayText, keyText, displaySettingsText;
+    Text mobilePauseTitle, mobilePauseRows, mobileCaughtTitle, mobileCaughtStats;
     Image crosshairImage, keyImage;
     Text promptText;
     // Captions (audit 2.11): lines above the hint card, outside the shot fade, only with Captions on.
@@ -105,6 +106,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool displaySettingsOpen;
     Font monoFont, bayonFont, serifFont;
     GameObject overlay, roomPanel, threatPanel, contextPanel, displaySettingsPanel;
+    Canvas hudCanvas;
+    Rect lastMobileHudSafeArea;
+    Vector2Int lastMobileHudScreenSize;
     CanvasGroup roomHudGroup, threatHudGroup, contextHudGroup, crosshairHudGroup, keyHudGroup;
     Image overlayImage;
     Outline logoOutline;
@@ -454,7 +458,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void UpdateLogoFade(float dt)
     {
         titleLogoAlpha = Mathf.MoveTowards(titleLogoAlpha, 0f, dt / LogoExitSeconds);
-        if (titleLogoAlpha <= 0f) logoFading = false;
+        if (titleLogoAlpha <= 0f)
+        {
+            logoFading = false;
+            // On mobile the title logo shares the transparent overlay with
+            // the title prompt. Keep that overlay alive for the 0.55 s fade,
+            // then release it so the playing HUD is the only owner of the
+            // screen. Without this, SetPhase(Playing) disables the parent
+            // immediately and the title appears to pop out instead of fading.
+            if (Application.isMobilePlatform && phase == Phase.Playing && overlay != null)
+                overlay.SetActive(false);
+        }
         AdvanceLogoRelay(dt);
         UpdateLogoMotion();
     }
@@ -562,6 +576,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void RequestTitleStart()
     {
         if (mapPlay || roomStream == null || cam == null) return;
+        FrontRoomsMobileInteractionEvents.MenuConfirmed();
         StartRunInPlace();
     }
 
@@ -710,7 +725,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         MapRunStarted?.Invoke(map, relay);
         map.GenerationTier = tier;
         TierChanged?.Invoke(tier);
+#if UNITY_EDITOR
         AutopilotRunStarted();
+#endif
         Log("START · in place in stream room " + terminal + " · maze seed " + runSeed + " behind its door, map root " + map.transform.position + ", door cell " + startDoorCell
             + " · " + watch.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture) + " ms (map " + createMs.ToString("0.0", CultureInfo.InvariantCulture) + ", placing " + placeMs.ToString("0.0", CultureInfo.InvariantCulture) + ")");
     }
@@ -901,6 +918,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void OnGlassBroken(Vector3 p)
     {
+        FrontRoomsMobileInteractionEvents.GlassShattered();
         FoleyDoorBreak(Flat(p));
 #if UNITY_EDITOR
         AutopilotNoise(AutoCauseGlass, p, GlassNoiseRadius);
@@ -1218,6 +1236,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         var window = map.BeginGlassHold(pane, hitPoint, eye.rotation * Vector3.forward);
         if (window == null || glassShot == null) return;
+        mobileLastGlassBeat = 0f;
+        FrontRoomsMobileInteractionEvents.GlassHoldStarted();
         glassPane = pane;
         var impact = map.GlassImpact(window);
         var feet = playerRoot.position;
@@ -1307,6 +1327,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         {
             var broke = map.Hold(aimed, hitPoint, step, out holdProgress);
             glassShot?.Hold(holdProgress);
+            EmitMobileGlassBeat(holdProgress);
             if (broke)
             {
                 glassShot?.Shatter();
@@ -1526,7 +1547,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         settings.clearColor = false;
         settings.clearDepthStencil = false;
         settings.scaleMode = UiPanelScaleMode.ScaleWithScreenSize;
-        settings.referenceResolution = new Vector2Int(1920, 1080);
+        settings.referenceResolution = Application.isMobilePlatform
+            ? new Vector2Int(874, 402)
+            : new Vector2Int(1920, 1080);
         settings.screenMatchMode = UiPanelScreenMatchMode.MatchWidthOrHeight;
         settings.match = .5f;
         settings.sortingOrder = 100;
@@ -1544,7 +1567,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         vectorLogoRoot.style.top = UiLength.Percent(50);
         vectorLogoRoot.style.width = 965f; vectorLogoRoot.style.height = 192f;
         vectorLogoRoot.style.marginLeft = -482.5f; vectorLogoRoot.style.marginTop = -96f;
-        vectorLogoRoot.style.scale = new UnityEngine.UIElements.Scale(new Vector3(LogoScale, LogoScale, 1f));
+        var logoScale = Application.isMobilePlatform ? 540f / 965f : LogoScale;
+        vectorLogoRoot.style.scale = new UnityEngine.UIElements.Scale(new Vector3(logoScale, logoScale, 1f));
         vectorLogoRoot.style.overflow = UiOverflow.Hidden;
         vectorLogoRoot.pickingMode = UiPickingMode.Ignore;
         panel.Add(vectorLogoRoot);
@@ -1638,6 +1662,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void UpdateDisplaySettingsText()
     {
         if (displaySettingsText == null) return;
+        // The mobile canvas owns the eight larger touch preference rows. Keep
+        // the legacy desktop text panel as a quiet title/instruction layer so
+        // its six keyboard rows do not sit underneath those touch targets.
+        if (Application.isMobilePlatform)
+        {
+            displaySettingsText.text = "<size=30><b>TOUCH SETTINGS</b></size>\n\n<size=16>TAP A ROW TO CHANGE    BACK TO CLOSE</size>";
+            return;
+        }
         var rows = SettingsRows();
         settingsIndex = (settingsIndex % rows.Length + rows.Length) % rows.Length;
         var text = new System.Text.StringBuilder("<size=30><b>SETTINGS</b></size>\n");
@@ -1681,19 +1713,31 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
 
     /// <summary>The pause card, following the input settings.</summary>
-    string PauseText() => "<size=88><b>PAUSED</b></size>\n\n<size=13>WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  DOOR    "
-        + (FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E") + "  BREAK GLASS\nR  RESTART    O  SETTINGS</size>\n\n<color=#F4DF3B><size=20>ESC  RESUME</size></color>";
+    string PauseText()
+    {
+        if (Application.isMobilePlatform)
+            return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK       SOCKET · SPRINT\nUSE · DOOR       HOLD USE · BREAK GLASS</size>";
+        return "<size=88><b>PAUSED</b></size>\n\n<size=13>WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  DOOR    "
+            + (FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E") + "  BREAK GLASS\nR  RESTART    O  SETTINGS</size>\n\n<color=#F4DF3B><size=20>ESC  RESUME</size></color>";
+    }
 
     void ToggleDisplaySettings()
     {
         if (phase != Phase.Paused || displaySettingsPanel == null) return;
         displaySettingsOpen = !displaySettingsOpen;
-        displaySettingsPanel.SetActive(displaySettingsOpen);
+        if (!Application.isMobilePlatform)
+            displaySettingsPanel.SetActive(displaySettingsOpen);
         if (overlayText != null)
         {
-            overlayText.enabled = !displaySettingsOpen;
+            overlayText.enabled = !Application.isMobilePlatform && !displaySettingsOpen;
             // Back on the pause card: its instructions follow the input setting just changed.
             if (!displaySettingsOpen) overlayText.text = PauseText();
+        }
+        if (Application.isMobilePlatform)
+        {
+            var showPauseCopy = !displaySettingsOpen;
+            if (mobilePauseTitle != null) mobilePauseTitle.gameObject.SetActive(showPauseCopy);
+            if (mobilePauseRows != null) mobilePauseRows.gameObject.SetActive(showPauseCopy);
         }
         UpdateDisplaySettingsText();
         UpdateMobileTouchMenu();
@@ -1713,7 +1757,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (rootRect == null) return;
         rootRect.anchorMin = rootRect.anchorMax = new Vector2(.5f, .5f);
         rootRect.pivot = new Vector2(.5f, .5f);
-        rootRect.anchoredPosition = Vector2.zero;
+        rootRect.anchoredPosition = Application.isMobilePlatform ? new Vector2(0f, 14f) : Vector2.zero;
         rootRect.sizeDelta = new Vector2(texture.width, texture.height);
         logoMotionRoot.localScale = Vector3.one * LogoScale;
 
@@ -1772,8 +1816,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
     void BuildHud()
     {
+        var mobileHud = Application.isMobilePlatform;
         var g = new GameObject("Minimal HUD"); var c = g.AddComponent<Canvas>(); c.renderMode = RenderMode.ScreenSpaceOverlay; c.pixelPerfect = true;
-        var scale = g.AddComponent<CanvasScaler>(); scale.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scale.referenceResolution = new Vector2(1920, 1080); scale.matchWidthOrHeight = .5f;
+        hudCanvas = c;
+        var scale = g.AddComponent<CanvasScaler>(); scale.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scale.referenceResolution = mobileHud ? new Vector2(874f, 402f) : new Vector2(1920, 1080); scale.matchWidthOrHeight = .5f;
         var media = new Color(.078f, .078f, .078f, .9f);
         var paper = C("F4F1E8");
         var accent = C("F4DF3B");
@@ -1781,63 +1827,65 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // The play HUD follows the 72px outer margin and 24px internal rhythm from UI_SYSTEM.
         // Room and threat are direct typography overlays. Their cards obscured the
         // environment and allowed long room names to bleed past the top-left edge.
-        roomPanel = TypographyGroup(g.transform, "Room typography", new Vector2(0, 1), new Vector2(72, -72), new Vector2(505, 144));
+        roomPanel = TypographyGroup(g.transform, "Room typography", new Vector2(0, 1), mobileHud ? new Vector2(78, -16) : new Vector2(72, -72), mobileHud ? new Vector2(360, 40) : new Vector2(505, 144));
         roomHudGroup = roomPanel.AddComponent<CanvasGroup>();
-        roomMetaText = Text(roomPanel.transform, "Room meta", new Vector2(0, 1), new Vector2(24, -18), new Vector2(660, 22), 13, TextAnchor.UpperLeft);
+        if (mobileHud) Rule(roomPanel.transform, "Mobile zone rule", new Vector2(0, 1), new Vector2(1.5f, 0f), new Vector2(3f, 40f), accent);
+        roomMetaText = Text(roomPanel.transform, "Room meta", new Vector2(0, 1), mobileHud ? new Vector2(13, 0) : new Vector2(24, -18), mobileHud ? new Vector2(347, 16) : new Vector2(660, 22), mobileHud ? 11 : 13, TextAnchor.UpperLeft);
         roomMetaText.color = C("BDBAB0");
-        roomText = Text(roomPanel.transform, "Room", new Vector2(0, 1), new Vector2(24, -44), new Vector2(505, 72), 50, TextAnchor.UpperLeft);
+        roomText = Text(roomPanel.transform, "Room", new Vector2(0, 1), mobileHud ? new Vector2(13, -18) : new Vector2(24, -44), mobileHud ? new Vector2(347, 28) : new Vector2(505, 72), mobileHud ? 26 : 50, TextAnchor.UpperLeft);
         roomText.color = paper;
         roomText.horizontalOverflow = HorizontalWrapMode.Overflow;
         roomText.verticalOverflow = VerticalWrapMode.Overflow;
 
-        threatPanel = TypographyGroup(g.transform, "Threat typography", Vector2.one, new Vector2(-72, -72), new Vector2(720, 144));
+        threatPanel = TypographyGroup(g.transform, "Threat typography", Vector2.one, mobileHud ? new Vector2(-78, -16) : new Vector2(-72, -72), mobileHud ? new Vector2(360, 40) : new Vector2(720, 144));
         threatHudGroup = threatPanel.AddComponent<CanvasGroup>();
-        threatStateText = Text(threatPanel.transform, "Threat state", new Vector2(1, 1), new Vector2(-24, -18), new Vector2(660, 34), 20, TextAnchor.UpperRight);
+        threatStateText = Text(threatPanel.transform, "Threat state", new Vector2(1, 1), mobileHud ? new Vector2(0, 0) : new Vector2(-24, -18), mobileHud ? new Vector2(360, 18) : new Vector2(660, 34), mobileHud ? 11 : 20, TextAnchor.UpperRight);
         threatStateText.color = accent; threatStateText.fontStyle = FontStyle.Bold;
         threatStateText.horizontalOverflow = HorizontalWrapMode.Overflow;
         threatStateText.verticalOverflow = VerticalWrapMode.Truncate;
-        distanceText = Text(threatPanel.transform, "Distance", new Vector2(1, 1), new Vector2(-24, -57), new Vector2(660, 24), 13, TextAnchor.UpperRight);
+        distanceText = Text(threatPanel.transform, "Distance", new Vector2(1, 1), mobileHud ? new Vector2(0, -18) : new Vector2(-24, -57), mobileHud ? new Vector2(360, 18) : new Vector2(660, 24), mobileHud ? 11 : 13, TextAnchor.UpperRight);
         distanceText.color = C("BDBAB0");
         distanceText.horizontalOverflow = HorizontalWrapMode.Overflow;
         distanceText.verticalOverflow = VerticalWrapMode.Truncate;
 
-        contextPanel = Panel(g.transform, "Context panel", new Vector2(.5f, 0), new Vector2(0, 72), new Vector2(920, 120), media);
+        contextPanel = Panel(g.transform, "Context panel", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 31) : new Vector2(0, 72), mobileHud ? new Vector2(452, 60) : new Vector2(920, 120), media);
         contextHudGroup = contextPanel.AddComponent<CanvasGroup>();
-        contextText = Text(contextPanel.transform, "Context", new Vector2(.5f, .5f), new Vector2(10, 0), new Vector2(820, 72), 24, TextAnchor.MiddleCenter);
+        if (mobileHud) Rule(contextPanel.transform, "Mobile hint rule", new Vector2(0, .5f), new Vector2(15f, 0f), new Vector2(3f, 32f), accent);
+        contextText = Text(contextPanel.transform, "Context", new Vector2(.5f, .5f), new Vector2(10, 0), mobileHud ? new Vector2(410, 52) : new Vector2(820, 72), mobileHud ? 17 : 24, TextAnchor.MiddleCenter);
         contextText.color = paper;
 
-        captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), new Vector2(0, 208), new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
+        captionPanel = Panel(g.transform, "HUD / Captions", new Vector2(.5f, 0), mobileHud ? new Vector2(0, 33) : new Vector2(0, 208), mobileHud ? new Vector2(214, 36) : new Vector2(920, 50), new Color(.078f, .078f, .078f, .75f));
         captionHudGroup = captionPanel.AddComponent<CanvasGroup>();
-        captionText = Text(captionPanel.transform, "Captions", new Vector2(.5f, .5f), Vector2.zero, new Vector2(880, 110), 20, TextAnchor.MiddleCenter);
+        captionText = Text(captionPanel.transform, "Captions", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(200, 32) : new Vector2(880, 110), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
         captionText.color = paper;
         captionText.supportRichText = true;
         captionText.lineSpacing = 1.15f;
         captionPanel.SetActive(false);
 
-        var crosshairObject = Panel(g.transform, "HUD / Crosshair", new Vector2(.5f, .5f), Vector2.zero, new Vector2(32, 32), Color.white);
+        var crosshairObject = Panel(g.transform, "HUD / Crosshair", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(24, 24) : new Vector2(32, 32), Color.white);
         crosshairImage = crosshairObject.GetComponent<Image>();
         crosshairImage.sprite = LoadHudSprite("UI/HUD_Crosshair");
         crosshairImage.preserveAspect = true;
         crosshairHudGroup = crosshairObject.AddComponent<CanvasGroup>();
         // Prompt, hold ring and stamina sit under the crosshair and share its fade.
-        promptText = Text(crosshairObject.transform, "Key prompt", new Vector2(.5f, .5f), new Vector2(0f, -44f), new Vector2(720f, 26f), 20, TextAnchor.MiddleCenter);
+        promptText = Text(crosshairObject.transform, "Key prompt", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -26f : -44f), mobileHud ? new Vector2(360f, 26f) : new Vector2(720f, 26f), mobileHud ? 17 : 20, TextAnchor.MiddleCenter);
         promptText.color = paper;
         promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
-        holdBar = Panel(crosshairObject.transform, "Hold bar", new Vector2(.5f, .5f), new Vector2(0f, -68f), new Vector2(120f, 4f), new Color(1f, 1f, 1f, .25f));
+        holdBar = Panel(crosshairObject.transform, "Hold bar", new Vector2(.5f, .5f), new Vector2(0f, mobileHud ? -48.5f : -68f), new Vector2(120f, 4f), new Color(1f, 1f, 1f, .25f));
         holdBarFill = Panel(holdBar.transform, "Hold bar fill", new Vector2(0f, .5f), Vector2.zero, new Vector2(0f, 4f), accent).GetComponent<Image>();
         holdBar.SetActive(false);
         for (var i = 0; i < staminaSegments.Length; i++)
         {
-            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, -92f), new Vector2(24f, 6f), accent).GetComponent<Image>();
+            staminaSegments[i] = Panel(crosshairObject.transform, "Stamina " + (i + 1), new Vector2(.5f, .5f), new Vector2(-60f + i * 30f, mobileHud ? -23.5f : -92f), new Vector2(24f, 5f), accent).GetComponent<Image>();
             staminaSegments[i].enabled = false;
         }
 
-        keyPanel = TypographyGroup(g.transform, "HUD / Key", new Vector2(0, 0), new Vector2(72, 118), new Vector2(147, 22));
+        keyPanel = TypographyGroup(g.transform, "HUD / Key", new Vector2(0, 1), mobileHud ? new Vector2(78, -72) : new Vector2(72, 118), mobileHud ? new Vector2(150, 22) : new Vector2(147, 22));
         keyHudGroup = keyPanel.AddComponent<CanvasGroup>();
         keyImage = Panel(keyPanel.transform, "Key glyph", new Vector2(0, 0), Vector2.zero, new Vector2(40, 22), Color.white).GetComponent<Image>();
         keyImage.sprite = LoadHudSprite("UI/HUD_KeyGlyph");
         keyImage.preserveAspect = true;
-        keyText = Text(keyPanel.transform, "Key label", new Vector2(0, 0), new Vector2(54, 0), new Vector2(110, 22), 20, TextAnchor.MiddleLeft);
+        keyText = Text(keyPanel.transform, "Key label", new Vector2(0, 0), new Vector2(54, 0), new Vector2(110, 22), mobileHud ? 11 : 20, TextAnchor.MiddleLeft);
         keyText.color = paper;
         keyText.text = "LEVEL 0 KEY";
         keyText.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -1845,9 +1893,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         gameplayHudAlpha = 0f;
         ApplyGameplayHudAlpha();
 
-        displaySettingsPanel = Panel(g.transform, "Display settings", new Vector2(.5f, .5f), Vector2.zero, new Vector2(920, 720), new Color(.055f, .055f, .05f, .97f));
+        displaySettingsPanel = Panel(g.transform, "Display settings", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(742, 369) : new Vector2(920, 720), new Color(.055f, .055f, .05f, .97f));
         Rule(displaySettingsPanel.transform, "Display settings accent", new Vector2(0, .5f), new Vector2(28, 0), new Vector2(4, 320), accent);
-        displaySettingsText = Text(displaySettingsPanel.transform, "Display settings text", new Vector2(.5f, .5f), new Vector2(18, 0), new Vector2(760, 660), 24, TextAnchor.MiddleCenter);
+        displaySettingsText = Text(displaySettingsPanel.transform, "Display settings text", new Vector2(.5f, .5f), new Vector2(18, 0), mobileHud ? new Vector2(690, 330) : new Vector2(760, 660), mobileHud ? 17 : 24, TextAnchor.MiddleCenter);
         displaySettingsText.color = paper;
         displaySettingsPanel.SetActive(false);
         overlay = new GameObject("Menu"); overlay.transform.SetParent(g.transform, false); var image = overlay.AddComponent<Image>(); overlayImage = image;
@@ -1855,9 +1903,29 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // the room remains visible behind it while the mark fades in.
         image.color = new Color(.93f, .92f, .88f, .98f);
         var rt = image.rectTransform; rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero;
-        overlayText = Text(overlay.transform, "Menu text", new Vector2(.5f, .5f), Vector2.zero, new Vector2(1440, 760), 20, TextAnchor.MiddleCenter);
+        overlayText = Text(overlay.transform, "Menu text", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(742, 320) : new Vector2(1440, 760), mobileHud ? 16 : 20, TextAnchor.MiddleCenter);
         overlayText.color = C("0A0A0A");
-        overlayText.rectTransform.anchoredPosition = new Vector2(0f, -170f);
+        overlayText.rectTransform.anchoredPosition = mobileHud ? Vector2.zero : new Vector2(0f, -170f);
+        if (mobileHud)
+        {
+            mobilePauseTitle = Text(overlay.transform, "Mobile pause title", new Vector2(.5f, .5f), new Vector2(0f, 127f), new Vector2(600f, 44f), 48, TextAnchor.MiddleCenter);
+            mobilePauseTitle.font = bayonFont;
+            mobilePauseTitle.color = C("0A0A0A");
+            mobilePauseRows = Text(overlay.transform, "Mobile pause rows", new Vector2(.5f, .5f), new Vector2(0f, 21f), new Vector2(600f, 60f), 11, TextAnchor.UpperCenter);
+            mobilePauseRows.font = monoFont;
+            mobilePauseRows.color = C("0A0A0A");
+            mobilePauseRows.lineSpacing = 1.25f;
+            mobileCaughtTitle = Text(overlay.transform, "Mobile caught title", new Vector2(.5f, .5f), new Vector2(0f, 127f), new Vector2(600f, 44f), 48, TextAnchor.MiddleCenter);
+            mobileCaughtTitle.font = bayonFont;
+            mobileCaughtTitle.color = C("0A0A0A");
+            mobileCaughtStats = Text(overlay.transform, "Mobile caught stats", new Vector2(.5f, .5f), new Vector2(0f, 36f), new Vector2(720f, 40f), 17, TextAnchor.MiddleCenter);
+            mobileCaughtStats.font = monoFont;
+            mobileCaughtStats.color = C("0A0A0A");
+            mobilePauseTitle.gameObject.SetActive(false);
+            mobilePauseRows.gameObject.SetActive(false);
+            mobileCaughtTitle.gameObject.SetActive(false);
+            mobileCaughtStats.gameObject.SetActive(false);
+        }
         // Keep the settings card inside the pause overlay so its dark surface
         // renders above the light pause wash.  It is still created with the
         // same canvas-scale coordinates, then normalized after reparenting.
@@ -1868,16 +1936,102 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             settingsRect.anchorMin = settingsRect.anchorMax = new Vector2(.5f, .5f);
             settingsRect.pivot = new Vector2(.5f, .5f);
             settingsRect.anchoredPosition = Vector2.zero;
-            settingsRect.sizeDelta = new Vector2(920f, 720f);
+            settingsRect.sizeDelta = mobileHud ? new Vector2(742f, 369f) : new Vector2(920f, 720f);
         }
-        logoImage = Panel(overlay.transform, "FrontRooms brand logo", new Vector2(.5f, .5f), Vector2.zero, new Vector2(965f, 192f), Color.white).GetComponent<Image>();
+        logoImage = Panel(overlay.transform, "FrontRooms brand logo", new Vector2(.5f, .5f), Vector2.zero, mobileHud ? new Vector2(540f, 107.44f) : new Vector2(965f, 192f), Color.white).GetComponent<Image>();
         logoImage.raycastTarget = false;
+        if (mobileHud) logoImage.rectTransform.anchoredPosition = new Vector2(0f, 14f);
         logoOutline = logoImage.gameObject.AddComponent<Outline>();
         logoOutline.effectDistance = new Vector2(2f, -2f);
         logoOutline.effectColor = new Color(1f, .86f, .34f, 0f);
         LoadBrandLogo();
         UpdateDisplaySettingsText();
         EnsureMobileTouchLayer();
+        ApplyMobileSafeAreaLayout(true);
+    }
+
+    void ApplyMobileSafeAreaLayout(bool force = false)
+    {
+        if (!Application.isMobilePlatform || hudCanvas == null)
+            return;
+
+        var area = Screen.safeArea;
+        var screen = new Vector2Int(Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
+        if (area.width <= 0f || area.height <= 0f)
+            area = new Rect(0f, 0f, screen.x, screen.y);
+        if (!force && area == lastMobileHudSafeArea && screen == lastMobileHudScreenSize)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        area = Screen.safeArea;
+        if (area.width <= 0f || area.height <= 0f)
+            area = new Rect(0f, 0f, screen.x, screen.y);
+        lastMobileHudSafeArea = area;
+        lastMobileHudScreenSize = screen;
+
+        // Keep the authored 874x402 Figma frame as the coordinate system. The
+        // live safe rectangle only clamps a static frame when a device has a
+        // larger inset; it must not replace the 62/21 pt Figma margins on a
+        // device whose hardware inset happens to be smaller.
+        var pixelsPerPoint = Mathf.Max(.01f, hudCanvas.scaleFactor);
+        var safeMinX = area.xMin / pixelsPerPoint;
+        var safeMaxX = area.xMax / pixelsPerPoint;
+        var safeMinY = area.yMin / pixelsPerPoint;
+        var safeMaxY = area.yMax / pixelsPerPoint;
+        const float frameWidth = 874f;
+        const float frameHeight = 402f;
+        var topInset = Mathf.Max(0f, frameHeight - safeMaxY);
+        var leftX = Mathf.Max(78f, safeMinX);
+        var keyTop = Mathf.Max(72f, topInset);
+        var rightEdge = Mathf.Min(796f, safeMaxX);
+        var bottomHint = Mathf.Max(31f, safeMinY);
+        // Captions are a separate accessibility rail and sit above the 60 pt
+        // hint card. The old 33 pt anchor overlapped that card by design only
+        // on the desktop canvas; on the phone it made two dark surfaces share
+        // the same pixels and broke the Figma vertical rhythm.
+        var bottomCaption = Mathf.Max(Application.isMobilePlatform ? 99f : 33f, safeMinY);
+        var centerX = Mathf.Clamp(frameWidth * .5f, safeMinX, safeMaxX);
+        var centerY = Mathf.Clamp(frameHeight * .5f, safeMinY, safeMaxY);
+        var logoCenterY = Mathf.Clamp(frameHeight * .5f + 14f, safeMinY + 54f, safeMaxY - 54f);
+
+        SetMobileAnchor(roomPanel != null ? roomPanel.transform : null, Vector2.zero, new Vector2(0f, 1f), new Vector2(leftX, -Mathf.Max(16f, topInset)));
+        SetMobileAnchor(keyPanel != null ? keyPanel.transform : null, Vector2.zero, new Vector2(0f, 1f), new Vector2(leftX, -keyTop));
+        SetMobileAnchor(threatPanel != null ? threatPanel.transform : null, Vector2.right, new Vector2(1f, 1f), new Vector2(rightEdge - frameWidth, -Mathf.Max(16f, topInset)));
+        SetMobileAnchor(contextPanel != null ? contextPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomHint));
+        SetMobileAnchor(captionPanel != null ? captionPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomCaption));
+        SetMobileAnchor(crosshairImage != null ? crosshairImage.transform.parent as RectTransform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
+        SetMobileAnchor(displaySettingsPanel != null ? displaySettingsPanel.transform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
+        SetMobileAnchor(overlayText, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
+        SetMobileAnchor(logoImage, new Vector2(centerX / frameWidth, logoCenterY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
+        SetMobileAnchor(logoMotionRoot, new Vector2(centerX / frameWidth, logoCenterY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);
+        SetMobileAnchor(mobilePauseTitle, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), new Vector2(0f, 127f));
+        SetMobileAnchor(mobilePauseRows, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), new Vector2(0f, 21f));
+        SetMobileAnchor(mobileCaughtTitle, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), new Vector2(0f, 127f));
+        SetMobileAnchor(mobileCaughtStats, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), new Vector2(0f, 41f));
+        if (vectorLogoRoot != null)
+        {
+            vectorLogoRoot.style.left = UiLength.Percent(centerX / frameWidth * 100f);
+            vectorLogoRoot.style.top = UiLength.Percent((1f - logoCenterY / frameHeight) * 100f);
+            vectorLogoRoot.style.marginLeft = -482.5f;
+            vectorLogoRoot.style.marginTop = -96f;
+            var logoScale = 540f / 965f;
+            vectorLogoRoot.style.scale = new UnityEngine.UIElements.Scale(new Vector3(logoScale, logoScale, 1f));
+        }
+    }
+
+    static void SetMobileAnchor(Component target, Vector2 anchor, Vector2 pivot, Vector2 position)
+    {
+        if (target == null) return;
+        var rect = target as RectTransform ?? target.GetComponent<RectTransform>();
+        SetMobileAnchor(rect, anchor, pivot, position);
+    }
+
+    static void SetMobileAnchor(RectTransform rect, Vector2 anchor, Vector2 pivot, Vector2 position)
+    {
+        if (rect == null) return;
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.pivot = pivot;
+        rect.anchoredPosition = position;
     }
     void SetPhase(Phase p)
     {
@@ -1892,8 +2046,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             displaySettingsOpen = false;
             if (displaySettingsPanel != null) displaySettingsPanel.SetActive(false);
         }
-        overlay.SetActive(!playing); if (crosshairImage != null) crosshairImage.enabled = playing;
-        if (overlayImage != null) overlayImage.color = p == Phase.Title ? new Color(0f, 0f, 0f, 0f) : new Color(.93f, .92f, .88f, .98f);
+        // Mobile keeps the transparent overlay alive while the authored logo
+        // is leaving. This is the only frame in which the title layer and the
+        // playing HUD overlap; all title children are non-raycast targets.
+        var keepMobileTitleFade = Application.isMobilePlatform && playing && logoFading;
+        overlay.SetActive(!playing || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
+        if (overlayImage != null) overlayImage.color = p == Phase.Title || Application.isMobilePlatform
+            ? new Color(0f, 0f, 0f, 0f)
+            : new Color(.93f, .92f, .88f, .98f);
         if (logoImage != null)
         {
             logoImage.enabled = p == Phase.Title && logoMotionRoot == null && !vectorLogoActive;
@@ -1912,17 +2072,35 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (contextPanel != null) contextPanel.SetActive(false);
         ApplyGameplayHudAlpha();
         Cursor.lockState = playing ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !playing;
-        if (p == Phase.Title)
+        if (overlayText != null)
         {
-            overlayText.text = "";
-            overlayText.enabled = false;
+            overlayText.enabled = !Application.isMobilePlatform && p != Phase.Title && !displaySettingsOpen;
+            if (p == Phase.Title) overlayText.text = "";
+            else if (p == Phase.Paused) overlayText.text = PauseText();
         }
-        else overlayText.enabled = true;
-        if (p == Phase.Paused) overlayText.text = PauseText();
+        if (Application.isMobilePlatform)
+        {
+            var showPauseCopy = p == Phase.Paused && !displaySettingsOpen;
+            if (mobilePauseTitle != null) mobilePauseTitle.gameObject.SetActive(showPauseCopy);
+            if (mobilePauseRows != null) mobilePauseRows.gameObject.SetActive(showPauseCopy);
+            if (mobileCaughtTitle != null) mobileCaughtTitle.gameObject.SetActive(p == Phase.Caught);
+            if (mobileCaughtStats != null) mobileCaughtStats.gameObject.SetActive(p == Phase.Caught);
+            if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
+            if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK        SOCKET · SPRINT\nUSE · DOOR        HOLD USE · BREAK GLASS";
+        }
         // Re-locking the cursor can report one large mouse jump: ignore the first frames back.
         if (playing && wasPaused) mouseSettleFrames = 2;
         if (p == Phase.Caught)
-            overlayText.text = "<size=88><b>CAUGHT</b></size>\n\n<size=24>" + Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
+        {
+            var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
+            if (Application.isMobilePlatform)
+            {
+                if (mobileCaughtTitle != null) mobileCaughtTitle.text = "CAUGHT";
+                if (mobileCaughtStats != null) mobileCaughtStats.text = caughtStats;
+            }
+            else if (overlayText != null)
+                overlayText.text = "<size=88><b>CAUGHT</b></size>\n\n<size=24>" + caughtStats + "</size>\n\n<color=#F4DF3B><size=20>R  TRY AGAIN</size></color>";
+        }
         UpdateMobileTouchMenu();
     }
     void OnApplicationFocus(bool focused)
@@ -1943,6 +2121,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void Update()
     {
         if (!Application.isPlaying) return;
+        ApplyMobileSafeAreaLayout();
         var input = FrontRoomsInput.ReadFrame();
         if (phase == Phase.Title && input.StartDown) RequestTitleStart();
         else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
@@ -1950,7 +2129,22 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         else if (displaySettingsOpen) HandleSettingsKeys();
         else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
         // R restarts from the pause or caught card, never while the settings panel is open.
-        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title) { restart = true; SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
+        // Touch restart gets one confirmation step because it is easy to hit while
+        // reaching for the pause card; desktop keyboard and the caught retry chip
+        // retain their immediate restart behavior.
+        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title)
+        {
+            if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
+            {
+                if (mobileRestartConfirmOpen) ConfirmMobileRestart();
+                else RequestMobileRestartConfirmation();
+            }
+            else
+            {
+                restart = true;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+        }
         var dt = Mathf.Min(Time.deltaTime, .1f);
 #if UNITY_EDITOR
         if (autopilot) AutopilotTick(dt);
@@ -2043,7 +2237,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 .Append(FrontRoomsCaptions.Format(lines[i], eye.position, forward)).Append("</color>");
         }
         captionText.text = captionLines.ToString();
-        ((RectTransform)captionPanel.transform).sizeDelta = new Vector2(920f, 20f + 28f * lines.Count);
+        var captionWidth = Application.isMobilePlatform ? 214f : 920f;
+        var captionHeight = Application.isMobilePlatform ? 20f + 20f * Mathf.Min(lines.Count, 2) : 20f + 28f * lines.Count;
+        ((RectTransform)captionPanel.transform).sizeDelta = new Vector2(captionWidth, captionHeight);
+        captionText.rectTransform.sizeDelta = Application.isMobilePlatform
+            ? new Vector2(captionWidth - 14f, captionHeight - 4f)
+            : new Vector2(880f, captionHeight + 60f);
     }
 
     // The zone the key panel's label was written for (written again only when it changes).
@@ -2105,6 +2304,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         AutoBaseRestoreTime();
 #endif
+        if (mobileTouch != null)
+        {
+            mobileTouch.SettingsRowRequested -= HandleMobileSettingsRow;
+            mobileTouch.RestartCancelRequested -= CancelMobileRestartConfirmation;
+            mobileTouch.LookTapped -= HandleMobileLookTap;
+        }
+        if (mobileBackBridge != null)
+            FrontRoomsMobileBackBridge.BackPressed -= HandleMobileBack;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
         if (phase == Phase.Paused) Paused?.Invoke(false);
@@ -2114,7 +2321,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void End()
     {
         if (phase != Phase.Playing) return;
-        SetPhase(Phase.Caught); Sound(caughtClip, playerPos); Event("outcome", "caught");
+        SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
         Log(phase + " · " + elapsed.ToString("0.0") + " s");
