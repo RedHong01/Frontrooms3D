@@ -20,7 +20,7 @@ public static class FrontRoomsMapVerification
     const int SeedCount = 100;
     const int RadiusChunks = 4;
 
-    [MenuItem("FrontRooms/Map/Verify 100 seeds")]
+    [MenuItem("FrontRoomsss/Map/Verify 100 seeds")]
     public static void Verify() => Run(false);
 
     public static void RunBatch() => Run(true);

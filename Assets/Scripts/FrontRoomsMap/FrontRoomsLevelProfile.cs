@@ -43,7 +43,7 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public FrontRoomsRoomModule[] modules = new FrontRoomsRoomModule[0];
 
     [Header("Difficulty tiers (DP08 proposal)")]
-    [Tooltip("The run's tier rises every Zones Per Tier new zones, or after Stall Seconds without one. Each row scales the Relay's tuning (on the FrontRooms 3D object) and sets the lamp odds and module tier of chunks generated at that tier. Edits apply at once, also during Play.")]
+    [Tooltip("The run's tier rises every Zones Per Tier new zones, or after Stall Seconds without one. Each row scales the Relay's tuning (on the FrontRoomsss object) and sets the lamp odds and module tier of chunks generated at that tier. Edits apply at once, also during Play.")]
     public FrontRoomsTierRules tiers = new FrontRoomsTierRules();
 
     [Header("Dressing")]

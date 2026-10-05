@@ -42,7 +42,7 @@ public static class FrontRoomsLevelProfiles
         return profile;
     }
 
-    [MenuItem("FrontRooms/Map/Select level profile")]
+    [MenuItem("FrontRoomsss/Map/Select level profile")]
     public static void Select()
     {
         var profile = EnsureAsset();
@@ -50,7 +50,7 @@ public static class FrontRoomsLevelProfiles
         EditorGUIUtility.PingObject(profile);
     }
 
-    [MenuItem("FrontRooms/Map/Assign level profile to main scene")]
+    [MenuItem("FrontRoomsss/Map/Assign level profile to main scene")]
     public static void AssignToMainScene()
     {
         if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;

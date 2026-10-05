@@ -48,13 +48,13 @@ are watching. The maze lies behind that corridor's next shut door.
    - **Catch:** under 0.7 m while it sees the player.
    - **Body:** r 0.3 m, tested from 0.4 to 1.95 m. It walks straight while the body fits and otherwise plans a detour on a 0.25 m grid round furniture, columns and open door leaves. With no way round furniture it passes through it on a route that still keeps out of walls. A hunt that ends inside furniture stops beside it. A door it breaks goes to the door's own swing side.
 6. **Difficulty tiers** (DP08 proposal; level profile *Difficulty tiers*). The run starts at tier 1 and rises every 4 new zones (zones 5–8 are tier 2, and so on), or after 120 s without a new zone, up to 5. `FrontRooms3DGame.TierChanged(int)` reports each rise; the HUD meta line and the Caught stats show the tier.
-   - **The Relay** runs on a copy of the base tuning (the FrontRooms 3D object) scaled by the tier's row, rebuilt every frame: tier 5 is chase × 1.29 (5.4 m/s), hearing × 1.6, break time × 0.52 (1.3 s, so 3 blows instead of 5), search × 1.6. A break keeps the length it started with.
+   - **The Relay** runs on a copy of the base tuning (the FrontRoomsss object) scaled by the tier's row, rebuilt every frame: tier 5 is chase × 1.29 (5.4 m/s), hearing × 1.6, break time × 0.52 (1.3 s, so 3 blows instead of 5), search × 1.6. A break keeps the length it started with.
    - **The map:** a chunk takes the run's tier when it is first generated and keeps it, so rebuilding it is identical; a revisit shift takes the tier of its time. The tier raises the chunk's module tier (`moduleTier + tier − 1`) and shifts its Auto lamps toward failing and dead (tier 1: 62 % steady, 20 stutter, 10 failing, 5 dead, 3 dim; tier 5: 40 / 25 / 18 / 12 / 5). Zone heights, tall shares and key distance are not tiered: zones span many chunks, so a tier there would make neighbours disagree.
 7. **Caught.** The result shows time, tier, zones crossed, keys taken and doors it broke. R restarts: same title, new maze (or the same one if `runSeed` is set).
 
 ## Level profile
 
-Every tunable number of the level is one asset, `Assets/Levels/FrontRoomsLevel0.asset` (`FrontRoomsLevelProfile`; **FrontRoomsss → Map → Select level profile**). The `FrontRooms 3D` object's `Level Profile` field points at it; the test scene, the debug window and the 100-seed check resolve the same asset.
+Every tunable number of the level is one asset, `Assets/Levels/FrontRoomsLevel0.asset` (`FrontRoomsLevelProfile`; **FrontRoomsss → Map → Select level profile**). The `FrontRoomsss` object's `Level Profile` field points at it; the test scene, the debug window and the 100-seed check resolve the same asset.
 
 - `generation`: zone shares, maze and room grammar, exits, pillars, Office share (`MapSettings`). Its seed is the preview seed for the tools.
 - Run: `runSeed` (0 = new maze each run), `buildRadius` (1–3), `chunksPerFrame`, `shiftAfterSeconds`, `doorsNeedKeys`.
@@ -134,7 +134,7 @@ Agreed on 2026-10-03 by the map chat, the wallpaper-print chat and 系统设计 
 ## Live tuning (Play)
 
 - **Level profile:** edits during Play apply at once to the running map: build radius and chunks per frame (the far plane follows), shift delay, light and shadow radius, keys, Office dressing and pile chance (for rooms furnished from then on), and the tier table (on the next frame). Generation numbers and the module list apply on the next run: changing them under a running map would move what the player has seen.
-- **Relay tuning** (FrontRooms 3D object): the base, read every frame through the tier.
+- **Relay tuning** (FrontRoomsss object): the base, read every frame through the tier.
 - **Level Designer preview:** in Play, a module edit rebuilds only the room's chunk and keeps the walker where it stands (`FrontRoomsMapWorld.ReplaceModule`); a new size, height, theme or seed rebuilds everything.
 
 ## Editor tools

@@ -39,7 +39,7 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
     string pressedKit;
     Vector2 pressedAt;
 
-    [MenuItem("FrontRooms/Level Designer/Window", priority = 1)]
+    [MenuItem("FrontRoomsss/Level Designer/Window", priority = 1)]
     public static void OpenWindow() => ShowFor(null);
 
     /// <summary>Open or focus the window, docked beside the Inspector when one is open, on <paramref name="target"/> (null: the one it had).</summary>

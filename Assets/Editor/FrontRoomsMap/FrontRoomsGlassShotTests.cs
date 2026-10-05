@@ -37,7 +37,7 @@ public static class FrontRoomsGlassShotTests
         report.checks.Add((ok ? "ok   " : "FAIL ") + what);
     }
 
-    [MenuItem("FrontRooms/Map/Test glass shot")]
+    [MenuItem("FrontRoomsss/Map/Test glass shot")]
     public static void Run() => Execute(false);
 
     public static void RunBatch() => Execute(true);

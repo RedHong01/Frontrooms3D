@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public enum HunterState { Dormant, Listen, Hunt, Search, Chase, BreakDoor, Wander }
 
-/// <summary>Designer-facing numbers for the Relay. Edit them on the FrontRooms 3D object.</summary>
+/// <summary>Designer-facing numbers for the Relay. Edit them on the FrontRoomsss object.</summary>
 [Serializable]
 public sealed class FrontRoomsHunterTuning
 {

@@ -38,7 +38,7 @@ public static class FrontRoomsFixtureTickTests
         report.checks.Add((ok ? "ok   " : "FAIL ") + what);
     }
 
-    [MenuItem("FrontRooms/Map/Test lamp tick (WebGL near-only)")]
+    [MenuItem("FrontRoomsss/Map/Test lamp tick (WebGL near-only)")]
     public static void Run() => Execute(false);
 
     public static void RunBatch() => Execute(true);

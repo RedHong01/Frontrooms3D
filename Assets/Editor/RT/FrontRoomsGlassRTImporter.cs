@@ -52,7 +52,7 @@ public sealed class FrontRoomsGlassRTImporter : AssetPostprocessor
         return sb.ToString();
     }
 
-    [MenuItem("FrontRooms/Rendering/G14 RT: pin plugin import + prepass shader")]
+    [MenuItem("FrontRoomsss/Rendering/G14 RT: pin plugin import + prepass shader")]
     public static void Apply()
     {
         var log = new StringBuilder();

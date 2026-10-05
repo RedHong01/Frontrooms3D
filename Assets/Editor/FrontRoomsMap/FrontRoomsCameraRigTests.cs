@@ -37,7 +37,7 @@ public static class FrontRoomsCameraRigTests
         report.checks.Add((ok ? "ok   " : "FAIL ") + what);
     }
 
-    [MenuItem("FrontRooms/Map/Test camera rig")]
+    [MenuItem("FrontRoomsss/Map/Test camera rig")]
     public static void Run() => Execute(false);
 
     public static void RunBatch() => Execute(true);

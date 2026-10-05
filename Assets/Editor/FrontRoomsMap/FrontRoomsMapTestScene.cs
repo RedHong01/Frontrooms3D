@@ -16,7 +16,7 @@ public static class FrontRoomsMapTestScene
 {
     public const string ScenePath = "Assets/Scenes/FrontRoomsMapTest.unity";
 
-    [MenuItem("FrontRooms/Map/Open walkable test scene")]
+    [MenuItem("FrontRoomsss/Map/Open walkable test scene")]
     public static void Open()
     {
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
@@ -61,7 +61,7 @@ public static class FrontRoomsMapTestScene
 
     static string CaptureFolder => Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification");
 
-    [MenuItem("FrontRooms/Map/Capture test views")]
+    [MenuItem("FrontRoomsss/Map/Capture test views")]
     public static void Capture() => CaptureInTempScene();
 
     public static void CaptureBatch() => CaptureViews(CaptureFolder, Vector3.zero);

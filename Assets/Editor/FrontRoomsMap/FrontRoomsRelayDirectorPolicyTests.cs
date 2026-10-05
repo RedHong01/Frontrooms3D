@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public static class FrontRoomsRelayDirectorPolicyTests
 {
-    [MenuItem("FrontRooms/Map/Test Relay director policy")]
+    [MenuItem("FrontRoomsss/Map/Test Relay director policy")]
     public static void Run()
     {
         var checks = 0;

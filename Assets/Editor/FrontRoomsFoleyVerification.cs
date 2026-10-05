@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>Smoke test for the data-driven Foley banks and door layer set.</summary>
 public static class FrontRoomsFoleyVerification
 {
-    [MenuItem("FrontRooms/Audio/Verify Foley banks")]
+    [MenuItem("FrontRoomsss/Audio/Verify Foley banks")]
     public static void Run()
     {
         var hinge = Resources.Load<AudioClip>("Audio/door-creak");

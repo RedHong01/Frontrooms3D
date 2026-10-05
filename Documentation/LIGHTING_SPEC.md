@@ -1,4 +1,4 @@
-# FrontRooms 3D lighting specification
+# FrontRoomsss lighting specification
 
 The first-person prototype uses contrast and distance to make the rooms feel occupied by real fluorescent fixtures. The editor scene stores the generated lights, so each object can be tuned without changing the gameplay script.
 

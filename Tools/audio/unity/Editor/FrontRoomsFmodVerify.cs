@@ -53,7 +53,7 @@ public static class FrontRoomsFmodVerify
     static readonly string[] Globals = { SoundIds.Param.Tension, SoundIds.Param.Zone, SoundIds.Param.Tier };
     static readonly string[] Buses = { SoundIds.BusAmbience, SoundIds.BusSfx, SoundIds.BusMusic, SoundIds.BusSubjective };
 
-    [MenuItem("FrontRooms/Audio/Verify FMOD banks against code")]
+    [MenuItem("FrontRoomsss/Audio/Verify FMOD banks against code")]
     public static bool Verify()
     {
         var failures = new List<string>();

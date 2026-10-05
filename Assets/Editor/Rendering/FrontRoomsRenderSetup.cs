@@ -32,7 +32,7 @@ public static class FrontRoomsRenderSetup
     const float Roll = .75f;             // one wallpaper roll width
     const float FourFoot = 1.2f;         // ceiling sheet of 2 x 0.6 m tiles / 2 x 0.6 m carpet tiles / 4 x 0.3 m VCT
 
-    [MenuItem("FrontRooms/Rendering/Set up URP, post and surfaces")]
+    [MenuItem("FrontRoomsss/Rendering/Set up URP, post and surfaces")]
     public static void SetUp()
     {
         Directory.CreateDirectory(SettingsDir);

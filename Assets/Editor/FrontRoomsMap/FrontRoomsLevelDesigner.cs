@@ -22,7 +22,7 @@ public static class FrontRoomsLevelDesigner
 {
     public const string ScenePath = "Assets/Scenes/FrontRoomsLevelDesigner.unity";
 
-    [MenuItem("FrontRooms/Level Designer/Open", priority = 0)]
+    [MenuItem("FrontRoomsss/Level Designer/Open", priority = 0)]
     public static void OpenMenu() => Open(Selection.activeObject as FrontRoomsRoomModule ?? Modules().FirstOrDefault());
 
     /// <summary>Open the preview scene on a module, with the Level Designer window on it as the right-hand panel.</summary>
@@ -74,7 +74,7 @@ public static class FrontRoomsLevelDesigner
         view.Repaint();
     }
 
-    [MenuItem("FrontRooms/Level Designer/New room module", priority = 2)]
+    [MenuItem("FrontRoomsss/Level Designer/New room module", priority = 2)]
     public static void NewModule()
     {
         var module = CreateModule();
@@ -129,7 +129,7 @@ public static class FrontRoomsLevelDesigner
     }
 
     /// <summary>Create the sample modules that are missing. Existing ones (and edits to them) are left alone.</summary>
-    [MenuItem("FrontRooms/Level Designer/Create sample modules", priority = 20)]
+    [MenuItem("FrontRoomsss/Level Designer/Create sample modules", priority = 20)]
     public static void CreateSamples()
     {
         EnsureFolder();
@@ -149,7 +149,7 @@ public static class FrontRoomsLevelDesigner
     }
 
     /// <summary>Put the sample modules back as shipped (asks first in the editor; keeps their assets, so links survive).</summary>
-    [MenuItem("FrontRooms/Level Designer/Reset sample modules", priority = 21)]
+    [MenuItem("FrontRoomsss/Level Designer/Reset sample modules", priority = 21)]
     public static void ResetSamples()
     {
         if (!Application.isBatchMode && !EditorUtility.DisplayDialog("Reset sample modules", "Put the four sample modules back as shipped? Edits to them are lost.", "Reset", "Cancel")) return;

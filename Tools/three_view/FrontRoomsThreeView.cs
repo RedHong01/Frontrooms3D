@@ -49,7 +49,7 @@ public static class FrontRoomsThreeView
 
     enum View { Front, Side, Top, Persp }
 
-    [MenuItem("FrontRooms/Rendering/Capture prop kit three-views")]
+    [MenuItem("FrontRoomsss/Rendering/Capture prop kit three-views")]
     public static void Capture() => Run(null, null);
 
     public static void RunBatch()

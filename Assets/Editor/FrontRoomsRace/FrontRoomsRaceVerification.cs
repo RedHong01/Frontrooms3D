@@ -14,7 +14,7 @@ public static class FrontRoomsRaceVerification
     private const int DefaultSeedCount = 100;
     private const int DefaultSeed = 0x13579BDF;
 
-    [MenuItem("FrontRooms/Race Slice/Verify 100 seeds")]
+    [MenuItem("FrontRoomsss/Race Slice/Verify 100 seeds")]
     public static void Verify100Seeds()
     {
         var report = BuildReport(DefaultSeedCount, DefaultSeed);
@@ -22,7 +22,7 @@ public static class FrontRoomsRaceVerification
         Debug.Log("[FrontRoomsRace] " + (report.passed ? "PASS" : "FAIL") + " · " + path);
     }
 
-    [MenuItem("FrontRooms/Race Slice/Generate seed 324508639")]
+    [MenuItem("FrontRoomsss/Race Slice/Generate seed 324508639")]
     public static void GenerateExampleSeed()
     {
         var report = BuildReport(1, DefaultSeed);

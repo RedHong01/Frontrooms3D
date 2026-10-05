@@ -66,7 +66,7 @@ public static class FrontRoomsReflectionCapture
         public bool found;
     }
 
-    [MenuItem("FrontRooms/Rendering/Capture zone reflection cubemaps")]
+    [MenuItem("FrontRoomsss/Rendering/Capture zone reflection cubemaps")]
     public static void Capture() => Run();
 
     public static void RunBatch() => Run();
@@ -242,7 +242,7 @@ public static class FrontRoomsReflectionCapture
     }
 
     /// <summary>Log a warning when the project no longer matches what the cubes were captured from.</summary>
-    [MenuItem("FrontRooms/Rendering/Check zone reflection cubes are current")]
+    [MenuItem("FrontRoomsss/Rendering/Check zone reflection cubes are current")]
     public static void WarnIfStale()
     {
         var full = Path.Combine(Directory.GetParent(Application.dataPath).FullName, ManifestPath);

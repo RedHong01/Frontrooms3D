@@ -2,7 +2,7 @@
 08:09:18 [frame 1 map 0.0 s] game found (restart 0) · cam First-person camera
 08:11:09 [frame 4207 map 68.3 s] CAUGHT → restart 1 (R: static restart + LoadScene, as the game does)
 08:11:10 [frame 4208 map 68.3 s] game found (restart 1) · cam First-person camera
-08:11:12 [frame 4247 map 69.0 s] BAD MATERIAL null material · FrontRooms 3D/Level 0 map/Chunk (9, 2) · revision 0/Key · zone (9, 2) · at (232.50, 1.05, 67.50)
+08:11:12 [frame 4247 map 69.0 s] BAD MATERIAL null material · FrontRoomsss/Level 0 map/Chunk (9, 2) · revision 0/Key · zone (9, 2) · at (232.50, 1.05, 67.50)
 08:13:27 [frame 7307 map 120.0 s] FINISH
 label cx_rton4
 map seconds 120.0 · frames rendered 7307 · restarts after caught 1 · chunk roots destroyed 125 · max chunks built 25

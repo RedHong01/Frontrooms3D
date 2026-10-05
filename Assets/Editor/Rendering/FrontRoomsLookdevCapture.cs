@@ -14,7 +14,7 @@ public static class FrontRoomsLookdevCapture
 {
     const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
 
-    [MenuItem("FrontRooms/Rendering/Capture look-dev frames")]
+    [MenuItem("FrontRoomsss/Rendering/Capture look-dev frames")]
     public static void Capture()
     {
         var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();

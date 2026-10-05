@@ -119,7 +119,7 @@ public static class FrontRoomsStreamVerification
         }
     }
 
-    [MenuItem("FrontRooms 3D/Verify room stream")]
+    [MenuItem("FrontRoomsss/Verify room stream")]
     public static void Run()
     {
         var report = new VerificationReport

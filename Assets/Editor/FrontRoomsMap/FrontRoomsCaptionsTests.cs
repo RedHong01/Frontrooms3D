@@ -31,7 +31,7 @@ public static class FrontRoomsCaptionsTests
         report.checks.Add((ok ? "ok   " : "FAIL ") + what);
     }
 
-    [MenuItem("FrontRooms/Map/Test captions")]
+    [MenuItem("FrontRoomsss/Map/Test captions")]
     public static void Run() => Execute(false);
 
     public static void RunBatch() => Execute(true);

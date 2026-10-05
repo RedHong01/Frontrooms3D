@@ -35,7 +35,7 @@ public sealed class FrontRoomsMapDebugWindow : EditorWindow
     bool hasHover;
     string status = "";
 
-    [MenuItem("FrontRooms/Map/Debug map")]
+    [MenuItem("FrontRoomsss/Map/Debug map")]
     public static void Open()
     {
         var window = GetWindow<FrontRoomsMapDebugWindow>("FrontRooms map");

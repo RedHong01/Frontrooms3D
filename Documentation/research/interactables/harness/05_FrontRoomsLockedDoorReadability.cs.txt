@@ -33,7 +33,7 @@ public static class FrontRoomsLockedDoorReadability
 
     static Material veneer, trim, brass, chrome, enamel, bronze, signDark, signLight, glassDark, glassObscure, steelKick;
 
-    [MenuItem("FrontRooms/Rendering/Locked door readability (private)")]
+    [MenuItem("FrontRoomsss/Rendering/Locked door readability (private)")]
     public static void Capture() => Run();
 
     public static void RunBatch() { foreach (var a in Environment.GetCommandLineArgs()) if (a == "-round2") { Candidates = Round2; outName = "locked_door_readability_r2"; } else if (a == "-round3") { Candidates = Round3; outName = "locked_door_readability_r3"; dips = true; } Run(); }

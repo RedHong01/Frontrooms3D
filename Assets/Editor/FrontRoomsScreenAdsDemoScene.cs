@@ -18,7 +18,7 @@ public static class FrontRoomsScreenAdsDemoScene
         EditorApplication.delayCall += CreateScene;
     }
 
-    [MenuItem("FrontRooms 3D/Create Screen Ads Demo Scene")]
+    [MenuItem("FrontRoomsss/Create Screen Ads Demo Scene")]
     public static void CreateScene()
     {
         Directory.CreateDirectory("Assets/Scenes");
@@ -115,7 +115,7 @@ public static class FrontRoomsScreenAdsDemoScene
         labelObject.transform.SetParent(parent, false);
         labelObject.transform.localPosition = new Vector3(0f, 1.95f, -.48f);
         var label = labelObject.AddComponent<TextMesh>();
-        label.text = "FRONTROOMS  /  SCREEN ADS\n1990 MEDIA TEST BAY";
+        label.text = "FRONTROOMSSS  /  SCREEN ADS\n1990 MEDIA TEST BAY";
         label.anchor = TextAnchor.MiddleCenter;
         label.alignment = TextAlignment.Center;
         label.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);

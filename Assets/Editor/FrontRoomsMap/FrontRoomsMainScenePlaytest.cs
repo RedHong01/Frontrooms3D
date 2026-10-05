@@ -27,7 +27,7 @@ public static class FrontRoomsMainScenePlaytest
         if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Watch;
     }
 
-    [MenuItem("FrontRooms/Map/Play main scene on autopilot")]
+    [MenuItem("FrontRoomsss/Map/Play main scene on autopilot")]
     public static void Run()
     {
         if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;

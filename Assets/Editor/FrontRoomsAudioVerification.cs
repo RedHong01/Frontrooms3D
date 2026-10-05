@@ -35,7 +35,7 @@ public static class FrontRoomsAudioVerification
         public string wav;
     }
 
-    [MenuItem("FrontRooms/Audio/Verify + export footstep WAVs")]
+    [MenuItem("FrontRoomsss/Audio/Verify + export footstep WAVs")]
     public static void VerifyAndExport()
     {
         Run();

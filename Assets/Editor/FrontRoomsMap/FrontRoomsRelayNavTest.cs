@@ -52,7 +52,7 @@ public static class FrontRoomsRelayNavTest
         public List<string> failures = new List<string>();
     }
 
-    [MenuItem("FrontRooms/Map/Test Relay navigation")]
+    [MenuItem("FrontRoomsss/Map/Test Relay navigation")]
     public static void Run() => Execute(false);
 
     public static void RunBatch() => Execute(true);

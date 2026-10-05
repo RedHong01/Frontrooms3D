@@ -53,7 +53,7 @@ public static class FrontRoomsGlassSetup
     // behind it (transmission .89 face-on, about .86 at 50° and .69 at 75°).
     public const float PaneF0 = .08f;
 
-    [MenuItem("FrontRooms/Rendering/Set up glass materials")]
+    [MenuItem("FrontRoomsss/Rendering/Set up glass materials")]
     public static void SetUp()
     {
         EnsureAll();

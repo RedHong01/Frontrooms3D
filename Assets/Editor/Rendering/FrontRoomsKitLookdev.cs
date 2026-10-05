@@ -29,7 +29,7 @@ public static class FrontRoomsKitLookdev
 
     struct Shot { public string name; public Vector3 position; public Vector3 euler; public float fov; }
 
-    [MenuItem("FrontRooms/Rendering/Capture office kit look-dev")]
+    [MenuItem("FrontRoomsss/Rendering/Capture office kit look-dev")]
     public static void Capture() => Run(1, null);
 
     public static void RunBatch()

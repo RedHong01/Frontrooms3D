@@ -49,7 +49,7 @@ public static class FrontRoomsPrintP0Test
     static readonly int DebugViewId = Shader.PropertyToID("_FR_DebugView");
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    [MenuItem("FrontRooms/Rendering/Print P0 gates (T1, T2, raking, invariance)")]
+    [MenuItem("FrontRoomsss/Rendering/Print P0 gates (T1, T2, raking, invariance)")]
     public static void Run() => RunInternal();
 
     /// <summary>Batch entry: reimports the print first (its mips come from the importer's

@@ -16,7 +16,7 @@ public static class FrontRoomsUnrealChunkExporter
     const string ProfilePath = "Assets/Levels/FrontRoomsLevel0.asset";
     static readonly int[] GoldenSeeds = { 2554, 20388, 20261001 };
 
-    [MenuItem("FrontRooms/Migration/Export Unreal golden chunks")]
+    [MenuItem("FrontRoomsss/Migration/Export Unreal golden chunks")]
     public static void ExportGoldenChunksMenu()
     {
         ExportGoldenChunks(GoldenSeeds, 1);

@@ -94,7 +94,7 @@ public static class FrontRoomsMapInteractionTests
         report.checks.Add((ok ? "ok   " : "FAIL ") + what);
     }
 
-    [MenuItem("FrontRooms/Map/Test map interactions")]
+    [MenuItem("FrontRoomsss/Map/Test map interactions")]
     public static void Run() => Execute(false);
 
     public static void RunBatch() => Execute(true);

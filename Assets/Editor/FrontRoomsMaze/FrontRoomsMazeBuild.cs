@@ -8,7 +8,7 @@ public static class FrontRoomsMazeBuild
 {
     const string RootName = "EDITOR_PREVIEW / Level 0 maze";
 
-    [MenuItem("FrontRooms/Maze/Build or refresh editor preview")]
+    [MenuItem("FrontRoomsss/Maze/Build or refresh editor preview")]
     public static void BuildPreview()
     {
         var game = Object.FindFirstObjectByType<FrontRooms3DGame>();
@@ -30,7 +30,7 @@ public static class FrontRoomsMazeBuild
         Debug.Log("[FrontRoomsMaze] Built seed " + preview.seed + " · " + preview.spec.validation.reachableCells + "/" + preview.spec.validation.totalCells + " cells reachable · " + report);
     }
 
-    [MenuItem("FrontRooms/Maze/Verify 25 seeds")]
+    [MenuItem("FrontRoomsss/Maze/Verify 25 seeds")]
     public static void VerifySeeds()
     {
         var failures = 0;
