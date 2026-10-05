@@ -100,7 +100,7 @@ public static class FrontRoomsCloudBuild
         // it for a pre-URP artifact; current builds must reflect the source state.
         PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
-        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
+        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontroomsss");
         PlayerSettings.bundleVersion = "0.1.0";
         PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
         PlayerSettings.defaultScreenWidth = 1920;
@@ -115,7 +115,7 @@ public static class FrontRoomsCloudBuild
     {
         PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
-        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontrooms3d");
+        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontroomsss");
         PlayerSettings.bundleVersion = "0.1.0";
         PlayerSettings.defaultScreenWidth = 1280;
         PlayerSettings.defaultScreenHeight = 720;

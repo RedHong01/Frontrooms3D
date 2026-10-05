@@ -437,6 +437,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 #endif
     }
     public void SetSprintButtonHitArea(RectTransform area) => sprintButtonHitArea = area;
+    public void SetUICanvas(Canvas value) => uiCanvas = value;
 
     /// <summary>Applies the persisted mobile controls preferences after settings load.</summary>
     public void ApplySavedSettings()
@@ -598,16 +599,18 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     Rect DefaultPauseRect()
     {
-        var size = 44f * controlsScale;
-        var margin = 8f * controlsScale;
-        return new Rect(SafeAreaPixels.xMax - margin - size, SafeAreaPixels.yMax - margin - size, size, size);
+        var point = LogicalPoint;
+        var size = 44f * point * controlsScale;
+        var center = FigmaSafePoint(784f, 22f * controlsScale, true, 224f);
+        return new Rect(center.x - size * .5f, center.y - size * .5f, size, size);
     }
 
     Rect DefaultUseRect()
     {
-        var size = 88f * controlsScale;
-        var x = leftHanded ? SafeAreaPixels.xMin + 134f * controlsScale : SafeAreaPixels.xMax - 134f * controlsScale;
-        var y = SafeAreaPixels.yMin + SafeAreaPixels.height * 0.35f;
+        var point = LogicalPoint;
+        var size = 88f * point * controlsScale;
+        var x = FigmaSafePoint(leftHanded ? 134f : 740f, 44f * controlsScale).x;
+        var y = FigmaSafePoint(740f, 44f * controlsScale, true).y;
         return new Rect(x - size * .5f, y - size * .5f, size, size);
     }
 
@@ -627,9 +630,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         if (sprintButtonHitArea != null)
             return Contains(sprintButtonHitArea, position);
-        var size = 72f * controlsScale;
-        var x = leftHanded ? SafeAreaPixels.xMax - 134f * controlsScale : SafeAreaPixels.xMin + 134f * controlsScale;
-        var y = SafeAreaPixels.yMin + SafeAreaPixels.height * .35f + sprintSocketOffset * controlsScale;
+        var point = LogicalPoint;
+        var size = 72f * point * controlsScale;
+        var x = FigmaSafePoint(leftHanded ? 134f : 740f, 36f * controlsScale).x;
+        var y = FigmaSafePoint(740f, 36f * controlsScale, true, 92f).y;
         return new Rect(x - size * .5f, y - size * .5f, size, size).Contains(position);
     }
 
@@ -1033,9 +1037,30 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     Vector2 GetFixedStickOrigin()
     {
-        var x = leftHanded ? SafeAreaPixels.xMax - 150f * controlsScale : SafeAreaPixels.xMin + 150f * controlsScale;
-        var y = SafeAreaPixels.yMin + 112f * controlsScale;
-        return new Vector2(x, y);
+        // The fixed-stick origin is expressed in the same full-frame Figma
+        // coordinates as the visual ring: x=150, bottom offset=123. The
+        // previous 150pt safe-area offset placed it at x=212 on iPhone.
+        return FigmaSafePoint(leftHanded ? 724f : 150f, 60f * controlsScale, true);
+    }
+
+    // SafeAreaPixels is expressed in physical screen pixels while the Figma
+    // geometry and CanvasScaler reference are points. Keep fallback hit tests
+    // on the same logical grid as the visual view on Retina iPhones.
+    float LogicalPoint => uiCanvas != null && uiCanvas.scaleFactor > .01f
+        ? uiCanvas.scaleFactor
+        : Mathf.Max(1f, Screen.width / 874f);
+
+    Vector2 FigmaSafePoint(float x, float radius, bool bottomOrigin = false, float yOffset = 0f)
+    {
+        var point = LogicalPoint;
+        var safeMinX = SafeAreaPixels.xMin / point;
+        var safeMaxX = SafeAreaPixels.xMax / point;
+        var safeMinY = SafeAreaPixels.yMin / point;
+        var safeMaxY = SafeAreaPixels.yMax / point;
+        var logicalX = Mathf.Clamp(x, safeMinX + radius, safeMaxX - radius);
+        var logicalY = bottomOrigin ? 144f + yOffset : 140f;
+        logicalY = Mathf.Clamp(logicalY, safeMinY + radius, safeMaxY - radius);
+        return new Vector2(logicalX * point, logicalY * point);
     }
 #endif
 }

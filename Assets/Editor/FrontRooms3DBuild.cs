@@ -61,7 +61,7 @@ public static class FrontRooms3DBuild
         GraphicsSettings.defaultRenderPipeline = null;
         QualitySettings.renderPipeline = null;
         PlayerSettings.productName = "FRONTROOMSSS"; PlayerSettings.companyName = "Red Wang";
-        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
+        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontroomsss");
         PlayerSettings.bundleVersion = "0.1.0"; PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
         // Match the Canvas reference resolution so the title and HUD are not downsampled on launch.
         PlayerSettings.defaultScreenWidth = 1920; PlayerSettings.defaultScreenHeight = 1080;
@@ -107,7 +107,7 @@ public static class FrontRooms3DBuild
     {
         PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
-        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontrooms3d");
+        PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontroomsss");
         PlayerSettings.bundleVersion = "0.1.0";
         PlayerSettings.defaultScreenWidth = 1280;
         PlayerSettings.defaultScreenHeight = 720;

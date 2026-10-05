@@ -34,7 +34,7 @@ Status: **design + first T0/T1/T2 implementation, 2026-10-04** (interaction-desi
 | Esc | Pause | Pause button top-right; Android back (target API 36 no longer delivers `onBackPressed`/`KEYCODE_BACK`: register a predictive-back `OnBackInvokedCallback`, test how Unity surfaces it); app losing focus (already `OnApplicationFocus`). |
 | O | Settings | SETTINGS chip on the pause screen; rows are tappable. |
 | R | Restart | TRY AGAIN chip on the caught screen; RESTART on the pause screen asks to confirm (XAG 115: no one-tap destructive actions). |
-| Space / Return | Start | Tap anywhere on the title; a TAP TO START chip fades in after ~3 s idle (touch only). |
+| Space / Return | Start | Tap anywhere on the title; a text-only TAP TO START prompt sits below the logo and fades out with the title when play begins (touch only). |
 | H, T (settings shortcuts) | — | Not needed: rows are tappable. |
 
 A finger that starts on USE may keep dragging to look (so the dot can stay on a pane while holding). A finger that starts in the look zone never presses USE (presses register on touch-down only).

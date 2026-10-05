@@ -13,7 +13,7 @@ using UnityEngine.Rendering;
 public static class FrontRoomsMobileBuild
 {
     const string Scene = "Assets/Scenes/FrontRooms3D.unity";
-    const string Identifier = "com.redwang.frontrooms3d";
+    const string Identifier = "com.redwang.frontroomsss";
     const string Version = "0.1.0";
     const string IOSBuildNumber = "1";
     const string OutputEnvironment = "FRONTROOMS_MOBILE_OUTPUT";

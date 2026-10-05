@@ -1,6 +1,6 @@
-# FrontRooms3D · iPhone / Android build plan
+# FRONTROOMSSS · iPhone / Android build plan
 
-状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；iPhone Xcode 导出和无签名 device 编译已于 2026-10-04 完成，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 设备验收、签名安装和商店包仍未完成。
+状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；`FRONTROOMSSS` 的 iPhone Xcode 导出、分发归档和 TestFlight 上传已于 2026-10-04 完成，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 设备验收、测试组配置和 App Store Connect 处理结果仍待完成。
 
 设计来源：Figma 文件 `0tCbAiVUlrPId3RWd9LRif`，节点 `2528:5403`（`FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID · 1920×1080`）。关键子节点：`2530:5061`（screen masters）、`2530:3828`（Touch / Stick）、`2530:3854`（Touch / Use）、`2528:5439`（Thumb map）、`2528:5446`（Same size in the eye）、`2528:5488`（Build plan）。
 
@@ -97,10 +97,10 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 2026-10-04 的 iPhone 导出证据：
 
-- Unity `FrontRooms 3D > Mobile > Export iOS Xcode` 成功，`BuildResult.Succeeded`；输出为 `Builds/Mobile/iOS/FrontRooms3D`，BuildReport 字节数为 1,543,346,630。
+- Unity `FrontRooms 3D > Mobile > Export iOS Xcode` 成功，`BuildResult.Succeeded`；输出为 `Builds/Mobile/iOS/FRONTROOMSSS`，BuildReport 字节数为 1,543,922,906。
 - `xcodebuild -list` 成功，工程包含 `Unity-iPhone`、`UnityFramework`、`GameAssembly` 和测试 target；`-showBuildSettings` 确认 `SDKROOT=iphoneos27.0`、`PRODUCT_BUNDLE_IDENTIFIER=com.redwang.frontrooms3d`、`IPHONEOS_DEPLOYMENT_TARGET=15.0`、`SUPPORTED_PLATFORMS=iphoneos`、`TARGETED_DEVICE_FAMILY=1,2`。
 - 单独的无签名 device 编译 `xcodebuild -scheme Unity-iPhone -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -jobs 1` 返回 0，并生成 `/tmp/frontrooms3d-ios-final-20261004/Build/Products/Debug-iphoneos/FrontRooms3D.app`；这证明导出的工程可编译到 iPhone 目标，但不是可安装的签名包。
-- 编译仍报告 Burst 静态库的 platform load command 警告、Run Script 每次执行警告，以及缺少 1024×1024 App Store icon 警告。它们不阻止内部 Debug 编译，但在 TestFlight/商店包前必须处理。
+- 首次上传验证发现导出工程缺少 1024×1024 App Store icon；`FrontRoomsMobileBuild` 现在从 `Assets/Resources/Brand/FrontRoomsAppIcon1024.png` 补入 `ios-marketing` 槽位，新的 Release archive 已通过图标校验。仍会报告 Burst 静态库和 Run Script 的非阻塞警告。
 - Unity BuildReport 的 `totalErrors=21512` 与最终 `BuildResult.Succeeded` 不一致；Unity 日志没有对应的 C# 或 Build Failed 行，因此把它保留为导出诊断，不能把它描述成“零警告/零错误构建”。
 - FMOD CLI diagnostic 已通过，但当前 `FMOD/FrontRooms/Metadata/Platform/` 只有 `Desktop`；尝试以 `iOS` 构建时返回 `Unknown platform name "iOS"`，所以 Xcode 工程里的 FMOD bank 仍只是 Desktop bank，不能视为 iPhone 音频已完成。需要在 FMOD Studio 中添加 Apple/iOS 平台、重新生成 mobile banks，再回到真机验证加载和播放。
 
@@ -108,10 +108,14 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 1. 在 Xcode 选择开发 Team/provisioning，安装到一台真实 iPhone 并横屏运行；
 2. 记录 safe area、双指移动+视角、USE hold/tap、Pause/Settings/Caught、Gyro 和 haptic 行为；
-3. 生成 iOS Release/TestFlight candidate，补齐 1024×1024 icon、隐私/签名和 FMOD iOS banks；
+3. 生成 iOS Release/TestFlight candidate，补齐隐私/签名和 FMOD iOS banks；
 4. Android arm64 Debug APK/AAB 留到 Android 阶段再处理。
 
 每个平台都记录 BuildReport、包大小、启动时间、首个 room 的内存峰值、稳定帧率、触控状态截图和 FMOD/haptic 日志。没有设备运行记录时，只能称为导出成功，不能称为 mobile build 完成。
+
+### Bundle ID correction · 2026-10-04
+
+当前源工程的 Bundle ID 已统一为 `com.redwang.frontroomsss`，SKU 目标同为 `com.redwang.frontroomsss`。上面的上传记录属于此前的 `com.redwang.frontrooms3d` App Store Connect 记录；由于该记录已经上传过构建，不能直接改 Bundle ID 或 SKU。新 ID 需要新的 App Store Connect 记录，且同名 `FRONTROOMSSS` 仍被旧记录占用。
 
 ## 验收矩阵
 
@@ -123,8 +127,8 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
 | Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 第一版代码已接线；Device Simulator/实机回归待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
-| Build | Xcode export、包版本/identifier/横屏、无签名 device 编译 | iOS Xcode 导出和无签名编译已通过；签名安装、icon 和真机验收待做；Android 暂缓 |
-| Store/TestFlight | 仅在签名、隐私、图标、启动图和设备验收完成后决定 | 未开始 |
+| Build | Xcode export、包版本/identifier/横屏、Release archive、分发签名 | iOS Xcode 导出、Release archive 和 Cloud Managed Distribution 签名已通过；真实 iPhone 安装和 FMOD/触控验收待做；Android 暂缓 |
+| Store/TestFlight | `FRONTROOMSSS` App record 已由 Xcode 创建；`0.1.0 (1)` 已上传，等待 App Store Connect 处理；测试组和真实 iPhone 验收仍待做 |
 
 ## 需要先定下的六个产品决定
 

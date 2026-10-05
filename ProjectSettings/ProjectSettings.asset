@@ -166,9 +166,9 @@ PlayerSettings:
   androidMaxAspectRatio: 2.4
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Standalone: com.redwang.frontrooms3d
-    WebGL: com.redwang.frontrooms3d
-    iPhone: com.redwang.frontrooms3d
+    Standalone: com.redwang.frontroomsss
+    WebGL: com.redwang.frontroomsss
+    iPhone: com.redwang.frontroomsss
   buildNumber:
     Standalone: 0
     VisionOS: 0

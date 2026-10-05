@@ -17,6 +17,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     FrontRoomsTouchControls controls;
     Canvas canvas;
     RectTransform safeRoot;
+    RectTransform controlsRoot;
     Image moveBase;
     Image moveKnob;
     Image sprintSocket;
@@ -36,6 +37,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Text[] menuButtonLabels = new Text[5];
     Image[] settingsRowButtons = new Image[9];
     Text[] settingsRowLabels = new Text[9];
+    Text[] settingsRowValueLabels = new Text[9];
     RectTransform useHitArea;
     RectTransform pauseHitArea;
     RectTransform startHitArea;
@@ -110,8 +112,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (controls != null)
             controls.ApplySavedSettings();
         opacity = Mathf.Clamp01(FrontRoomsSettings.TouchOpacityPercent / 100f);
-        if (safeRoot != null)
-            safeRoot.localScale = Vector3.one * (FrontRoomsSettings.TouchControlsScalePercent / 100f);
+        if (controlsRoot != null)
+            controlsRoot.localScale = Vector3.one * (FrontRoomsSettings.TouchControlsScalePercent / 100f);
         // Left-handed changes move the right/left action cluster even when
         // the display itself did not resize.
         lastSafe = new Rect();
@@ -151,6 +153,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         canvas = root.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 490;
+        controls.SetUICanvas(canvas);
         var scaler = root.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         // Figma's mobile masters are authored at 874x402 pt. Keeping this as
@@ -159,9 +162,21 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         scaler.referenceResolution = new Vector2(PhoneWidth, PhoneHeight);
         scaler.matchWidthOrHeight = .5f;
 
-        var safe = new GameObject("Safe Area", typeof(RectTransform));
+        // Keep the Figma phone master as the logical full-frame coordinate
+        // space. Figma's 874x402 artwork already places every visible element
+        // inside the iPhone safe area (62pt side insets / 21pt bottom inset).
+        // A safe-area-sized parent would apply those insets a second time and
+        // push the menu wash, settings card, and chips out of alignment.
+        var safe = new GameObject("Phone Frame", typeof(RectTransform));
         safe.transform.SetParent(root.transform, false);
         safeRoot = safe.GetComponent<RectTransform>();
+        var controlsObject = new GameObject("Touch Controls", typeof(RectTransform));
+        controlsObject.transform.SetParent(safeRoot, false);
+        controlsRoot = controlsObject.GetComponent<RectTransform>();
+        controlsRoot.anchorMin = Vector2.zero;
+        controlsRoot.anchorMax = Vector2.one;
+        controlsRoot.offsetMin = controlsRoot.offsetMax = Vector2.zero;
+        controlsRoot.localScale = Vector3.one * (FrontRoomsSettings.TouchControlsScalePercent / 100f);
         circle = CreateCircleSprite();
         ring = CreateRingSprite();
         solid = CreateSolidSprite();
@@ -190,13 +205,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
         // The visible glyphs follow the Figma sizes; their touch targets keep
         // the separate 88/44 pt accessibility hit boxes.
-        useHitArea = HitArea("Touch / USE hit", 88f);
-        pauseHitArea = HitArea("Touch / Pause hit", 44f);
+        useHitArea = ControlHitArea("Touch / USE hit", 88f);
+        pauseHitArea = ControlHitArea("Touch / Pause hit", 44f);
         startHitArea = FullArea("Touch / Start hit");
         restartHitArea = MenuHitArea("Touch / Restart hit", new Vector2(95.5f, -89f), new Vector2(88f, 44f));
         settingsHitArea = MenuHitArea("Touch / Settings hit", new Vector2(-1.5f, -89f), new Vector2(92f, 44f));
         restartCancelHitArea = MenuHitArea("Touch / Restart cancel hit", new Vector2(95.5f, -89f), new Vector2(88f, 44f));
-        sprintButtonHitArea = HitArea("Touch / Sprint button hit", 88f);
+        sprintButtonHitArea = ControlHitArea("Touch / Sprint button hit", 88f);
         caughtRestartHitArea = MenuHitArea("Touch / Caught restart hit", new Vector2(0f, -89f), new Vector2(100f, 44f));
         BuildMenuButtons();
         restartCancelButton = MenuButton("Touch / CANCEL RESTART", "CANCEL", new Vector2(0f, -89f));
@@ -225,7 +240,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     Image Circle(string name, float diameter, Color color)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        go.transform.SetParent(safeRoot, false);
+        go.transform.SetParent(controlsRoot, false);
         var image = go.GetComponent<Image>();
         image.sprite = circle;
         image.color = color;
@@ -259,6 +274,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         text.alignment = TextAnchor.MiddleCenter;
         text.fontSize = size;
         text.fontStyle = FontStyle.Normal;
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
         text.color = Color.white;
         text.raycastTarget = false;
         text.rectTransform.anchorMin = Vector2.zero;
@@ -271,6 +288,15 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(safeRoot, false);
+        var rect = go.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(diameter, diameter);
+        return rect;
+    }
+
+    RectTransform ControlHitArea(string name, float diameter)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(controlsRoot, false);
         var rect = go.GetComponent<RectTransform>();
         rect.sizeDelta = new Vector2(diameter, diameter);
         return rect;
@@ -311,7 +337,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var go = new GameObject(name, typeof(RectTransform), typeof(Image));
         go.transform.SetParent(safeRoot, false);
         var image = go.GetComponent<Image>();
-        image.color = new Color(.956f, .875f, .231f, 1f);
+        var titlePrompt = name.IndexOf("TAP TO START", StringComparison.Ordinal) >= 0;
+        // The title prompt is deliberately a text-only affordance. Its full
+        // screen hit area remains in the touch state machine, while the old
+        // yellow chip is removed to match the Figma title skeleton.
+        image.color = titlePrompt
+            ? new Color(1f, 1f, 1f, 0f)
+            : new Color(.956f, .875f, .231f, 1f);
         image.raycastTarget = false;
         var rect = image.rectTransform;
         rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
@@ -326,7 +358,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         text.alignment = TextAnchor.MiddleCenter;
         text.fontSize = 17;
         text.fontStyle = FontStyle.Normal;
-        text.color = new Color(.039f, .039f, .039f, .95f);
+        text.color = titlePrompt
+            ? new Color(.957f, .945f, .910f, .95f)
+            : new Color(.039f, .039f, .039f, .95f);
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
         text.raycastTarget = false;
         var textRect = text.rectTransform;
         textRect.anchorMin = Vector2.zero;
@@ -356,6 +392,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         labelText.alignment = TextAnchor.MiddleCenter;
         labelText.fontSize = 17;
         labelText.fontStyle = FontStyle.Normal;
+        labelText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        labelText.verticalOverflow = VerticalWrapMode.Overflow;
         labelText.color = new Color(.039f, .039f, .039f, .95f);
         labelText.raycastTarget = false;
         labelText.rectTransform.anchorMin = Vector2.zero;
@@ -414,13 +452,29 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             label.rectTransform.offsetMin = new Vector2(22f, 0f);
             label.rectTransform.offsetMax = Vector2.zero;
             settingsRowLabels[i] = label;
+
+            var valueObject = new GameObject("Touch / Settings row " + i + " value", typeof(RectTransform), typeof(Text));
+            valueObject.transform.SetParent(row, false);
+            var value = valueObject.GetComponent<Text>();
+            value.font = Resources.Load<Font>("Fonts/IBMPlexMono-Regular") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+            value.text = MobileSettingValue(i);
+            value.fontSize = 17;
+            value.fontStyle = FontStyle.Normal;
+            value.alignment = TextAnchor.MiddleRight;
+            value.color = new Color(.956f, .945f, .91f, 1f);
+            value.raycastTarget = false;
+            value.rectTransform.anchorMin = new Vector2(.4f, 0f);
+            value.rectTransform.anchorMax = new Vector2(1f, 1f);
+            value.rectTransform.offsetMin = Vector2.zero;
+            value.rectTransform.offsetMax = new Vector2(-22f, 0f);
+            settingsRowValueLabels[i] = value;
         }
     }
 
     Image Ring(string name, float diameter, Color color)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        go.transform.SetParent(safeRoot, false);
+        go.transform.SetParent(controlsRoot, false);
         var image = go.GetComponent<Image>();
         image.sprite = CreateRingSprite();
         image.type = Image.Type.Filled;
@@ -505,24 +559,33 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var area = Screen.safeArea;
         var size = new Vector2Int(Screen.width, Screen.height);
         if (area == lastSafe && size == lastSize) return;
+        Canvas.ForceUpdateCanvases();
+        area = Screen.safeArea;
+        size = new Vector2Int(Screen.width, Screen.height);
         lastSafe = area;
         lastSize = size;
-        var screen = new Vector2(Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
-        safeRoot.anchorMin = new Vector2(area.xMin / screen.x, area.yMin / screen.y);
-        safeRoot.anchorMax = new Vector2(area.xMax / screen.x, area.yMax / screen.y);
+        // Children use the full 874x402 Figma frame. Safe-area pixels are
+        // still used for the two dynamic action clusters below, but the
+        // parent itself must not be inset a second time.
+        safeRoot.anchorMin = Vector2.zero;
+        safeRoot.anchorMax = Vector2.one;
         safeRoot.offsetMin = safeRoot.offsetMax = Vector2.zero;
 
-        // Figma phone master: USE centre x=740, y=140 from the bottom on an
-        // 874x402 canvas (safe L/R=62, B=21). Convert logical points back to
-        // screen pixels through the active CanvasScaler so Retina devices keep
-        // the same physical point geometry.
+        // Keep the authored Figma centers first, then clamp the hit bounds to
+        // the live safe rectangle. Using `safeRight - 72` directly changes the
+        // visual grid on devices whose inset is 44 pt instead of Figma's 62 pt.
+        // The CanvasScaler converts the logical points back to physical pixels.
         var pixelsPerPoint = Mathf.Max(.01f, canvas.scaleFactor);
-        var actionX = controls.LeftHanded
-            ? area.xMin + 72f * pixelsPerPoint
-            : area.xMax - 72f * pixelsPerPoint;
-        var actionY = area.yMin + 119f * pixelsPerPoint;
-        var pauseX = area.xMax - 28f * pixelsPerPoint;
-        var pauseY = area.yMax - 34f * pixelsPerPoint;
+        var safeMinX = area.xMin / pixelsPerPoint;
+        var safeMaxX = area.xMax / pixelsPerPoint;
+        var safeMinY = area.yMin / pixelsPerPoint;
+        var safeMaxY = area.yMax / pixelsPerPoint;
+        var actionTargetX = controls.LeftHanded ? 134f : 740f;
+        var actionTargetY = 140f;
+        var actionX = Mathf.Clamp(actionTargetX, safeMinX + 44f, safeMaxX - 44f) * pixelsPerPoint;
+        var actionY = Mathf.Clamp(actionTargetY, safeMinY + 44f, safeMaxY - 44f) * pixelsPerPoint;
+        var pauseX = Mathf.Clamp(784f, safeMinX + 22f, safeMaxX - 22f) * pixelsPerPoint;
+        var pauseY = Mathf.Clamp(368f, safeMinY + 22f, safeMaxY - 22f) * pixelsPerPoint;
         SetScreenPosition(useButton.rectTransform, new Vector2(actionX, actionY));
         SetScreenPosition(useRing.rectTransform, new Vector2(actionX, actionY));
         SetScreenPosition(useHitArea, new Vector2(actionX, actionY));
@@ -605,7 +668,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         for (var i = 0; i < settingsRowHitAreas.Length; i++)
         {
             if (settingsRowLabels[i] != null)
-                settingsRowLabels[i].text = MobileSettingLabel(i);
+                settingsRowLabels[i].text = MobileSettingName(i);
+            if (settingsRowValueLabels[i] != null)
+                settingsRowValueLabels[i].text = MobileSettingValue(i);
         }
 
         useButton.gameObject.SetActive(useTarget > 0f || useAlpha > .01f);
@@ -718,6 +783,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             rowImage.gameObject.SetActive(rowProgress > .001f || settingsBackdropAlpha > .001f);
             SetImageAlpha(rowImage, (.035f + opacity * .08f) * rowProgress);
             SetTextAlpha(settingsRowLabels[row], rowProgress);
+            SetTextAlpha(settingsRowValueLabels[row], rowProgress);
         }
 
         if (useAlpha <= .001f) { useButton.gameObject.SetActive(false); useButtonLabel.gameObject.SetActive(false); useRing.gameObject.SetActive(false); }
@@ -760,19 +826,36 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         text.color = c;
     }
 
-    string MobileSettingLabel(int index)
+    string MobileSettingName(int index)
     {
         switch (index)
         {
-            case 0: return "TOUCH SIZE   " + FrontRoomsSettings.TouchControlsScalePercent + "%";
-            case 1: return "TOUCH OPACITY   " + FrontRoomsSettings.TouchOpacityPercent + "%";
-            case 2: return "HANDEDNESS   " + (FrontRoomsSettings.TouchLeftHanded ? "LEFT" : "RIGHT");
-            case 3: return "LOOK SPEED   " + FrontRoomsSettings.TouchLookSpeedPercent + "%";
-            case 4: return "INVERT LOOK   " + (FrontRoomsSettings.TouchInvertLook ? "ON" : "OFF");
-            case 5: return "STICK   " + (FrontRoomsSettings.TouchFloatingStick ? "FLOATING" : "FIXED");
-            case 6: return "SPRINT   " + (FrontRoomsSettings.TouchSprintSocket ? "SOCKET" : "BUTTON");
-            case 7: return "HAPTICS   " + (FrontRoomsSettings.TouchHaptics ? "ON" : "OFF");
-            case 8: return "GYRO LOOK   " + (FrontRoomsSettings.TouchGyroMode == 0 ? "OFF" : FrontRoomsSettings.TouchGyroMode == 1 ? "WHILE TOUCHING" : "ALWAYS");
+            case 0: return "TOUCH SIZE";
+            case 1: return "TOUCH OPACITY";
+            case 2: return "HANDEDNESS";
+            case 3: return "LOOK SPEED";
+            case 4: return "INVERT LOOK";
+            case 5: return "STICK";
+            case 6: return "SPRINT";
+            case 7: return "HAPTICS";
+            case 8: return "GYRO LOOK";
+            default: return string.Empty;
+        }
+    }
+
+    string MobileSettingValue(int index)
+    {
+        switch (index)
+        {
+            case 0: return FrontRoomsSettings.TouchControlsScalePercent + "%";
+            case 1: return FrontRoomsSettings.TouchOpacityPercent + "%";
+            case 2: return FrontRoomsSettings.TouchLeftHanded ? "LEFT" : "RIGHT";
+            case 3: return FrontRoomsSettings.TouchLookSpeedPercent + "%";
+            case 4: return FrontRoomsSettings.TouchInvertLook ? "ON" : "OFF";
+            case 5: return FrontRoomsSettings.TouchFloatingStick ? "FLOATING" : "FIXED";
+            case 6: return FrontRoomsSettings.TouchSprintSocket ? "SOCKET" : "BUTTON";
+            case 7: return FrontRoomsSettings.TouchHaptics ? "ON" : "OFF";
+            case 8: return FrontRoomsSettings.TouchGyroMode == 0 ? "OFF" : FrontRoomsSettings.TouchGyroMode == 1 ? "WHILE TOUCHING" : "ALWAYS";
             default: return string.Empty;
         }
     }
@@ -792,7 +875,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void SetScreenPosition(RectTransform rect, Vector2 screenPosition)
     {
         if (rect == null || safeRoot == null) return;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(safeRoot, screenPosition, canvas.worldCamera, out var local);
+        var parent = rect.parent as RectTransform ?? safeRoot;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPosition, canvas.worldCamera, out var local);
         rect.anchoredPosition = local;
     }
 }
