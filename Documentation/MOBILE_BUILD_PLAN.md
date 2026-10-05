@@ -91,7 +91,7 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 质量层先建立 Mobile 级别：关闭 macOS-only glass RT，验证标准 URP glass fallback、HDR、MSAA、反射、灯光 tick、纹理尺寸和 shader variant；移动默认应从较低的 MSAA、阴影图集/距离、灯光数量和 SSAO 档位开始，再用设备 profile 决定是否提升。构建时显式选择 iPhone Metal，Android 先 Vulkan、必要时 GLES3 fallback，并检查日志中没有 RT dylib/PInvoke 加载。目标设备先锁定近期 iPhone（Metal）与 Android arm64（Vulkan，必要时 GLES3 fallback）。
 
-### T4 · 构建和真机验证（iPhone 导出完成，设备阶段待做）
+### T4 · 构建和真机验证（iPhone 导出与 build 3 真机安装完成，运行时回归待做）
 
 独立的 `FrontRoomsMobileBuild` Editor 入口已加入，分别导出 iOS Xcode 工程和 Android APK/AAB；不要改写现有 Mac/WebGL 构建 profile。入口负责设置版本号、application identifier、横屏 autorotate flags、IL2CPP、Metal 和 iOS 15.0，但不把个人签名或 provisioning profile 写入仓库。Android API/ABI/Gradle 入口保留在代码中，本轮不执行。
 
@@ -99,7 +99,7 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 - Unity `FrontRooms 3D > Mobile > Export iOS Xcode` 成功，`BuildResult.Succeeded`；输出为 `Builds/Mobile/iOS/FRONTROOMSSS`，BuildReport 字节数为 1,543,922,906。
 - 最新 Figma 对齐版使用 marketing version `0.1.0`、iOS build `3`；`xcodebuild -exportArchive` 使用 Cloud Managed Apple Distribution 完成分发签名，并返回 `Upload succeeded`。IPA 已上传到 App Store Connect，Apple 端 processing / TestFlight 可见性仍需等待其服务器完成。
-- 同一份源码的开发签名 Debug build 已安装并启动在已连接的 iPhone（UDID `00008140-0008392C2112801C`），可直接进行 safe-area、触控和动效实机检查。
+- build 3 的开发签名 Debug app 已安装并启动在已连接的 iPhone（UDID `00008140-0008392C2112801C`）；旧 bundle `com.redwang.frontrooms3d` 已卸载，当前设备只保留 `com.redwang.frontroomsss`，可直接进行 safe-area、触控和动效实机检查。
 - `xcodebuild -list` 成功，工程包含 `Unity-iPhone`、`UnityFramework`、`GameAssembly` 和测试 target；`-showBuildSettings` 确认 `SDKROOT=iphoneos27.0`、`PRODUCT_BUNDLE_IDENTIFIER=com.redwang.frontroomsss`、`IPHONEOS_DEPLOYMENT_TARGET=15.0`、`SUPPORTED_PLATFORMS=iphoneos`、`TARGETED_DEVICE_FAMILY=1,2`。
 - 单独的无签名 device 编译 `xcodebuild -scheme Unity-iPhone -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -jobs 1` 返回 0，并生成 `/tmp/frontrooms3d-ios-final-20261004/Build/Products/Debug-iphoneos/FrontRooms3D.app`；这证明导出的工程可编译到 iPhone 目标，但不是可安装的签名包。
 - 首次上传验证发现导出工程虽然补入了 1024×1024 App Store icon，但 iPhone 120/180pt slot 仍是 Unity 默认立方体；build 3 的 `FrontRoomsMobileBuild` 从 `Assets/Resources/Brand/FrontRoomsAppIcon1024.png` 生成并复制 120、180、76、152、167、1024 全部 slot，IPA 和真机 app 的 `AppIcon60x60@2x` 已抽取核对为 Figma SSS 图标。仍会报告 Burst 静态库和 Run Script 的非阻塞警告。
