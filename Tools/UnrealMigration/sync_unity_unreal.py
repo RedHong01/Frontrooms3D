@@ -166,6 +166,8 @@ def artifact_records(repo: Path) -> list[dict[str, Any]]:
         "Migration/exports/unreal_import_settings.json",
         "Migration/exports/unreal_texture_import_settings.json",
         "Migration/exports/unreal_material_profiles.json",
+        "Migration/exports/unreal_material_factory.json",
+        "Migration/exports/unreal_audio_import_settings.json",
         "Migration/contract.schema.json",
     )
     result: list[dict[str, Any]] = []

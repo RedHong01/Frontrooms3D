@@ -32691,16 +32691,41 @@
       "sha256": "4cca525e816d0f9f7bb736a20dc5fbcd02faa3a5b3c31fbefbf0ae9d3b495883"
     },
     {
+      "bytes": 547878,
+      "path": "Migration/exports/unreal_material_factory.json",
+      "sha256": "18793ca72c019297239b105bf784cab65ac74a63d01b37a5e0d1162cbef62111"
+    },
+    {
+      "bytes": 2742,
+      "path": "Migration/exports/unreal_audio_import_settings.json",
+      "sha256": "b9446c9fd2cc339c90950dc298f770ab17187edbeae9c0700f2747c2b28084e9"
+    },
+    {
       "bytes": 2632,
       "path": "Migration/contract.schema.json",
       "sha256": "c46ac73cf2ea7895552f95f4b5b24084a7d0371710315d668d477085aaa25945"
+    },
+    {
+      "bytes": 132956,
+      "path": "Migration/exports/unity_chunks/seed-20261001.json",
+      "sha256": "0dfd7fbc4c48b7ba425e28b18d2615589137d67db2f45c564498d271c796d634"
+    },
+    {
+      "bytes": 132568,
+      "path": "Migration/exports/unity_chunks/seed-20388.json",
+      "sha256": "726f2d626c408e0ea9ad449587cabb144daa553d02c3b9dee9d41c8aae7133f1"
+    },
+    {
+      "bytes": 132600,
+      "path": "Migration/exports/unity_chunks/seed-2554.json",
+      "sha256": "bc9e7cd7412c35d6f5dce9bc4da7930b76a1855a1efb5fdc3786d5257757089c"
     }
   ],
   "schema": "frontrooms.unreal.unity-sync-manifest",
   "schemaVersion": 1,
   "source": {
     "gitBranch": "unreal-migration",
-    "gitHead": "1d0a7ef81184c0249acca8e4491e06e5ea59a5e6",
+    "gitHead": "e9b81948992127434b7fe4cec84407840c8f9689",
     "unityVersion": "6000.3.10f1"
   },
   "sourceRoots": [
@@ -32714,7 +32739,7 @@
   ],
   "unreal": {
     "project": "Migration/Unreal/FrontRoomsUE.uproject",
-    "projectSha256": "f51be639e9cf76f2dab52b6f58ab627b55362edd84eb6b1e34d26dcfcaabab70",
+    "projectSha256": "4388dcae4641b5d784fc0dd4678fde4144924ce0e871f65f169df5f266363c02",
     "requiredTargetPlatforms": [
       "Win64"
     ],

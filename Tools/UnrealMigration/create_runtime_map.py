@@ -40,7 +40,13 @@ def main():
     actor.set_editor_property("seed", 20261001)
     # Unreal Python strips the C++ boolean `b` prefix from reflected names.
     actor.set_editor_property("generate_on_begin_play", True)
-    actor.build_map()
+    # Rebuild deliberately so a changed Unity contract or imported asset set
+    # is reflected in the saved review map. Packaged Win64 runs then reuse
+    # these serialized components without rebuilding them.
+    if hasattr(actor, "rebuild_map"):
+        actor.rebuild_map()
+    else:
+        actor.build_map()
     unreal.EditorLevelLibrary.save_current_level()
     unreal.log("FrontRooms runtime map saved: {}".format(MAP_PATH))
 

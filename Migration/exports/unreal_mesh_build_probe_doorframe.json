@@ -1,0 +1,14 @@
+{
+  "schema":"frontrooms.unreal.mesh-build-probe",
+  "schemaVersion":1,
+  "engineVersion":"5.8.3-58210709+++UE5+Release-5.8",
+  "targetPlatforms":["Win64"],
+  "sourceAsset":"/Game/FrontRooms/UnityImported/Props/Kit_DoorFrame_Steel/Kit_DoorFrame_Steel_LOD0.Kit_DoorFrame_Steel_LOD0",
+  "sourcePackage":"../../../../Frontrooms3D/Migration/Unreal/Content/FrontRooms/UnityImported/Props/Kit_DoorFrame_Steel/Kit_DoorFrame_Steel_LOD0.uasset",
+  "sourceSha1":"8725F1B0B7A8147215946FD3B0E837AA586E2319",
+  "lods":[
+    {"lod":0,"before":{"recomputeNormals":true,"recomputeTangents":true,"useMikkTSpace":true,"removeDegenerates":false,"weightedNormals":true},"probe":{"recomputeNormals":true,"recomputeTangents":true,"useMikkTSpace":true,"removeDegenerates":true,"weightedNormals":true},"meshDescriptionBounds":{"min":[-10.500000,-7.500000,-0.000000],"max":[10.500000,107.500008,217.500000]},"renderBounds":{"origin":[0.000000,50.000004,108.750000],"extent":[10.500000,57.500004,108.750000],"sphereRadius":123.437653},"buildErrors":["ProbeMesh 拥有一些近零的切线，其可能诱发问题。（容差为 1E-4）","ProbeMesh 拥有一些近零的副法线，其可能诱发问题。（容差为 1E-4）"]}
+  ],
+  "sourceModified":false,
+  "status":"passed"
+}

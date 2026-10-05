@@ -41,15 +41,24 @@ python3 Tools/UnrealMigration/export_kit_manifest.py
 node Tools/UnrealMigration/export_asset_bridge.mjs
 node Tools/UnrealMigration/export_unreal_import_settings.mjs
 node Tools/UnrealMigration/export_unreal_texture_settings.mjs
+# Unity 6000.x editor (Mac): export the authoritative deterministic chunks.
+"/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity" \
+  -batchmode -nographics -quit -projectPath . \
+  -executeMethod FrontRoomsUnrealChunkExporter.ExportGoldenChunksCommandLine \
+  -frontRoomsExportRadius 1 -frontRoomsExportSeeds 2554,20388,20261001 \
+  -logFile Migration/exports/unity_chunks/golden_export.log
+python3 Tools/UnrealMigration/validate_golden_chunks.py --root .
 python3 Tools/UnrealMigration/sync_unity_unreal.py --update
 ```
 
 提交 `Migration/exports/frontrooms_contract.json`、`kit_manifest.json`、
-`asset_bridge.json` 和 `unity_sync_manifest.json`。`unity_sync_report.json`
-是本机诊断文件，默认被忽略。Windows 侧收到 Mac 的提交后运行：
+`asset_bridge.json`、`unity_chunks/seed-*.json`、`unity_golden_chunk_validation.json`
+和 `unity_sync_manifest.json`。`unity_sync_report.json` 是本机诊断文件，
+默认被忽略。Windows 侧收到 Mac 的提交后运行：
 
 ```powershell
 & "$env:UE_PYTHON" Tools/UnrealMigration/sync_unity_unreal.py --check
+& "$env:UE_PYTHON" Tools/UnrealMigration/validate_golden_chunks.py --root .
 & .\Tools\UnrealMigration\smoke_test.ps1
 ```
 

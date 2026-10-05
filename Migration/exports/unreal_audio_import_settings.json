@@ -1,0 +1,76 @@
+{
+  "ImportGroups": [
+    {
+      "GroupName": "FrontRooms_Audio_Unity_door-creak",
+      "Filenames": [
+        "D:\\Frontrooms3D\\Assets\\Resources\\Audio\\door-creak.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/Unity/door-creak",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Ambience_amb_air_hall_loop",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Ambience\\amb_air_hall_loop.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Ambience/amb_air_hall_loop",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Door_door_stream_swing_01",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Door\\door_stream_swing_01.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Door/door_stream_swing_01",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Door_door_latch_soft_01",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Door\\door_latch_soft_01.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Door/door_latch_soft_01",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Foley_plr_key_pickup_01",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Foley\\plr_key_pickup_01.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Foley/plr_key_pickup_01",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Foley_plr_step_any_run_cloth_01",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Foley\\plr_step_any_run_cloth_01.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Foley/plr_step_any_run_cloth_01",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Relay_rly_step_carpet_walk_body_01",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Relay\\rly_step_carpet_walk_body_01.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Relay/rly_step_carpet_walk_body_01",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    },
+    {
+      "GroupName": "FrontRooms_Audio_FMOD_Window_win_shatter_01",
+      "Filenames": [
+        "D:\\Frontrooms3D\\AudioSource\\FMOD_Library\\Window\\win_shatter_01.wav"
+      ],
+      "DestinationPath": "/Game/FrontRooms/Audio/FMOD/Window/win_shatter_01",
+      "bReplaceExisting": true,
+      "bSkipReadOnly": false
+    }
+  ]
+}

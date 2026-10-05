@@ -101,8 +101,20 @@ Migration/Unreal/Binaries/
 Migration/Unreal/Intermediate/
 Migration/Unreal/Saved/
 Migration/Unreal/DerivedDataCache/
-Migration/Unreal/Content/
+# Imported Unity .uassets remain reproducible and ignored. Keep the small
+# generated runtime map versioned so a fresh Windows checkout opens the same
+# inspectable scene.
+Migration/Unreal/Content/*
+!Migration/Unreal/Content/FrontRooms/
+Migration/Unreal/Content/FrontRooms/*
+!Migration/Unreal/Content/FrontRooms/Maps/
+!Migration/Unreal/Content/FrontRooms/Maps/FrontRoomsRuntime.umap
+!Migration/Unreal/Content/FrontRooms/Audio/
+!Migration/Unreal/Content/FrontRooms/Audio/FMOD/
+!Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/
+!Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/*.bank
 .smoke-profile/
+.material-profile/
 .uba-root/
 .editor-profile/
 Migration/exports/unreal_import_settings.json
@@ -112,3 +124,8 @@ Migration/exports/unreal_asset_audit.json
 
 # FMOD generated analysis/cache data; FMOD regenerates this from the source banks.
 FMOD/FrontRooms/.cache/
+
+.probe-profile/
+.ue58-profile/
+
+.play-debug-profile/

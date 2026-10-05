@@ -24,17 +24,34 @@ New-Item -ItemType Directory -Path $Output -Force | Out-Null
 # Keep editor and UAT caches inside the repository's disposable profile. This
 # also makes the gate usable when the caller has no write access to the default
 # Unreal user cache directories.
-$profile = Join-Path $Root ".editor-profile"
+$profile = Join-Path $Root ".ue58-profile"
 $local = Join-Path $profile "AppData/Local"
 $roaming = Join-Path $profile "AppData/Roaming"
+$ubaRoot = Join-Path $profile "UBA"
 New-Item -ItemType Directory -Path $local, $roaming -Force | Out-Null
+$null = New-Item -ItemType Directory -Path $ubaRoot -Force
 $previousUserProfile = $env:USERPROFILE
 $previousLocalAppData = $env:LOCALAPPDATA
 $previousAppData = $env:APPDATA
+$previousUbaRoot = $env:UBA_ROOT
+$previousUebpEngineSavedFolder = $env:uebp_EngineSavedFolder
+$previousUebpLogFolder = $env:uebp_LogFolder
+$previousUebpFinalLogFolder = $env:uebp_FinalLogFolder
 $env:USERPROFILE = $profile
 $env:LOCALAPPDATA = $local
 $env:APPDATA = $roaming
 $env:HOME = $profile
+$env:UBA_ROOT = $ubaRoot
+# Installed UE builds resolve AutomationTool's commandlet logs under the
+# engine directory by default. That directory is read-only for a normal
+# developer account, so redirect both the commandlet scratch area and logs to
+# the disposable workspace profile used by this migration gate.
+$automationSaved = Join-Path $profile "AutomationTool/Saved"
+$automationLogs = Join-Path $profile "AutomationTool/Logs"
+New-Item -ItemType Directory -Path $automationSaved, $automationLogs -Force | Out-Null
+$env:uebp_EngineSavedFolder = $automationSaved
+$env:uebp_LogFolder = $automationLogs
+$env:uebp_FinalLogFolder = $automationLogs
 
 try {
     $args = @(
@@ -50,9 +67,13 @@ try {
         "-pak",
         "-archive",
         "-archivedirectory=$Output",
-        "-NoUba"
+        "-NoUba",
+        # UE 5.8's cooker otherwise re-enables Zen from the engine default
+        # even when ProjectPackagingSettings disables it. Keep this explicit so
+        # the Win64 package can be built without a local Zen service.
+        "-AdditionalCookerOptions=-SkipZenStore"
     )
-    if (-not $SkipCook) { $args += "-cook" }
+    if ($SkipCook) { $args += "-skipcook" } else { $args += "-cook" }
     Write-Host "WINDOWS BUILD using Unreal $($engine.Version)"
     Write-Host "WINDOWS BUILD output: $Output"
     & $uat @args
@@ -65,4 +86,8 @@ try {
     if ($null -ne $previousUserProfile) { $env:USERPROFILE = $previousUserProfile }
     if ($null -ne $previousLocalAppData) { $env:LOCALAPPDATA = $previousLocalAppData }
     if ($null -ne $previousAppData) { $env:APPDATA = $previousAppData }
+    if ($null -ne $previousUbaRoot) { $env:UBA_ROOT = $previousUbaRoot } else { Remove-Item Env:UBA_ROOT -ErrorAction SilentlyContinue }
+    if ($null -ne $previousUebpEngineSavedFolder) { $env:uebp_EngineSavedFolder = $previousUebpEngineSavedFolder } else { Remove-Item Env:uebp_EngineSavedFolder -ErrorAction SilentlyContinue }
+    if ($null -ne $previousUebpLogFolder) { $env:uebp_LogFolder = $previousUebpLogFolder } else { Remove-Item Env:uebp_LogFolder -ErrorAction SilentlyContinue }
+    if ($null -ne $previousUebpFinalLogFolder) { $env:uebp_FinalLogFolder = $previousUebpFinalLogFolder } else { Remove-Item Env:uebp_FinalLogFolder -ErrorAction SilentlyContinue }
 }

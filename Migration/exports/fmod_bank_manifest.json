@@ -1,0 +1,192 @@
+{
+  "schema": "frontrooms.fmod.win64",
+  "schemaVersion": 1,
+  "target": "Win64",
+  "runtime": {
+    "path": "Assets/Plugins/FMOD/platforms/win/lib/x86_64/fmodstudio.dll",
+    "bytes": 3278336,
+    "sha256": "a3ef8653da204696d1114f6c7cb58f10d53ec4132aef4505315aebf1b2f94382"
+  },
+  "banks": [
+    {
+      "name": "Master.bank",
+      "path": "Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/Master.bank",
+      "bytes": 4702,
+      "sha256": "de9c5bf324562e5b196894dd7ef828be8ebcb7e3161eb35ca9811593088b1f44"
+    },
+    {
+      "name": "Master.strings.bank",
+      "path": "Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/Master.strings.bank",
+      "bytes": 3490,
+      "sha256": "32a434357c759bb77b681c97a033e8fad5413f2c0bef7279e65adbae81a8282c"
+    },
+    {
+      "name": "Ambience.bank",
+      "path": "Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/Ambience.bank",
+      "bytes": 567904,
+      "sha256": "5201221721dcd9489217101f13d5e18fc2a0fa5ea40a170e9bcfd199287884c2"
+    },
+    {
+      "name": "SFX.bank",
+      "path": "Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/SFX.bank",
+      "bytes": 914848,
+      "sha256": "d4c05e0d2f1ad395d43df4f7d6258faab6dd20964e49e137ced9b294a9bd9238"
+    },
+    {
+      "name": "Music.bank",
+      "path": "Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks/Music.bank",
+      "bytes": 1326,
+      "sha256": "c18422f7a5b7d38659a9d450c2588388bb195e0df717b5a92044f0e51e7ac118"
+    }
+  ],
+  "unitySourceBanks": [
+    {
+      "name": "Master.bank",
+      "path": "Assets/StreamingAssets/FMOD/Master.bank",
+      "bytes": 4702,
+      "sha256": "de9c5bf324562e5b196894dd7ef828be8ebcb7e3161eb35ca9811593088b1f44"
+    },
+    {
+      "name": "Master.strings.bank",
+      "path": "Assets/StreamingAssets/FMOD/Master.strings.bank",
+      "bytes": 3490,
+      "sha256": "32a434357c759bb77b681c97a033e8fad5413f2c0bef7279e65adbae81a8282c"
+    },
+    {
+      "name": "Ambience.bank",
+      "path": "Assets/StreamingAssets/FMOD/Ambience.bank",
+      "bytes": 567904,
+      "sha256": "5201221721dcd9489217101f13d5e18fc2a0fa5ea40a170e9bcfd199287884c2"
+    },
+    {
+      "name": "SFX.bank",
+      "path": "Assets/StreamingAssets/FMOD/SFX.bank",
+      "bytes": 914848,
+      "sha256": "d4c05e0d2f1ad395d43df4f7d6258faab6dd20964e49e137ced9b294a9bd9238"
+    },
+    {
+      "name": "Music.bank",
+      "path": "Assets/StreamingAssets/FMOD/Music.bank",
+      "bytes": 1326,
+      "sha256": "c18422f7a5b7d38659a9d450c2588388bb195e0df717b5a92044f0e51e7ac118"
+    }
+  ],
+  "unitySourceHashMismatches": [],
+  "source": {
+    "project": "FMOD/FrontRooms/FrontRooms.fspro",
+    "projectBytes": 90,
+    "projectSha256": "c957339989f6abfe081df25d139d1fc4809dcb5f446a2fb5a5f4d52e0688332b",
+    "projectObjectCount": 0,
+    "projectHasNoObjects": true,
+    "metadataEventFiles": 31,
+    "metadataStatus": "metadata-only",
+    "expectedEvents": [
+      "event:/Ambience/AirBed",
+      "event:/Ambience/Fixture",
+      "event:/Ambience/FixtureEvent",
+      "event:/Ambience/HumBed",
+      "event:/Foley/Player/Cloth",
+      "event:/Foley/Player/Footstep",
+      "event:/Foley/Player/KeyPickup",
+      "event:/Mechanism/Door/AutoOperator",
+      "event:/Mechanism/Door/Blow",
+      "event:/Mechanism/Door/Break",
+      "event:/Mechanism/Door/Handle",
+      "event:/Mechanism/Door/LatchStrike",
+      "event:/Mechanism/Door/Locked",
+      "event:/Mechanism/Door/StopLimit",
+      "event:/Mechanism/Door/StopMid",
+      "event:/Mechanism/Door/StreamClose",
+      "event:/Mechanism/Door/StreamLock",
+      "event:/Mechanism/Door/StreamOpen",
+      "event:/Mechanism/Door/Swing",
+      "event:/Mechanism/Door/Unlatch",
+      "event:/Mechanism/Window/Crack",
+      "event:/Mechanism/Window/Shatter",
+      "event:/Mechanism/Window/Stress",
+      "event:/Music/Title",
+      "event:/Relay/Clicks",
+      "event:/Relay/Footstep",
+      "event:/Relay/Presence",
+      "event:/Relay/Stinger",
+      "event:/Subjective/Breath",
+      "event:/Subjective/Heartbeat",
+      "event:/Subjective/Tinnitus"
+    ],
+    "metadataEvents": [
+      "event:/Ambience/AirBed",
+      "event:/Ambience/Fixture",
+      "event:/Ambience/FixtureEvent",
+      "event:/Ambience/HumBed",
+      "event:/Foley/Player/Cloth",
+      "event:/Foley/Player/Footstep",
+      "event:/Foley/Player/KeyPickup",
+      "event:/Mechanism/Door/AutoOperator",
+      "event:/Mechanism/Door/Blow",
+      "event:/Mechanism/Door/Break",
+      "event:/Mechanism/Door/Handle",
+      "event:/Mechanism/Door/LatchStrike",
+      "event:/Mechanism/Door/Locked",
+      "event:/Mechanism/Door/StopLimit",
+      "event:/Mechanism/Door/StopMid",
+      "event:/Mechanism/Door/StreamClose",
+      "event:/Mechanism/Door/StreamLock",
+      "event:/Mechanism/Door/StreamOpen",
+      "event:/Mechanism/Door/Swing",
+      "event:/Mechanism/Door/Unlatch",
+      "event:/Mechanism/Window/Crack",
+      "event:/Mechanism/Window/Shatter",
+      "event:/Mechanism/Window/Stress",
+      "event:/Music/Title",
+      "event:/Relay/Clicks",
+      "event:/Relay/Footstep",
+      "event:/Relay/Presence",
+      "event:/Relay/Stinger",
+      "event:/Subjective/Breath",
+      "event:/Subjective/Heartbeat",
+      "event:/Subjective/Tinnitus"
+    ],
+    "metadataEventPathMismatches": []
+  },
+  "contract": {
+    "expectedEventCount": 31,
+    "resolvedEventCount": 28,
+    "missingEvents": [
+      "event:/Mechanism/Door/StreamClose",
+      "event:/Mechanism/Door/StreamLock",
+      "event:/Mechanism/Door/StreamOpen"
+    ],
+    "runtimeEventCount": 28,
+    "runtimeEvents": [
+      "event:/Ambience/AirBed",
+      "event:/Ambience/Fixture",
+      "event:/Ambience/FixtureEvent",
+      "event:/Ambience/HumBed",
+      "event:/Foley/Player/Cloth",
+      "event:/Foley/Player/Footstep",
+      "event:/Foley/Player/KeyPickup",
+      "event:/Mechanism/Door/AutoOperator",
+      "event:/Mechanism/Door/Blow",
+      "event:/Mechanism/Door/Break",
+      "event:/Mechanism/Door/Handle",
+      "event:/Mechanism/Door/LatchStrike",
+      "event:/Mechanism/Door/Locked",
+      "event:/Mechanism/Door/StopLimit",
+      "event:/Mechanism/Door/StopMid",
+      "event:/Mechanism/Door/Swing",
+      "event:/Mechanism/Door/Unlatch",
+      "event:/Mechanism/Window/Crack",
+      "event:/Mechanism/Window/Shatter",
+      "event:/Mechanism/Window/Stress",
+      "event:/Music/Title",
+      "event:/Relay/Clicks",
+      "event:/Relay/Footstep",
+      "event:/Relay/Presence",
+      "event:/Relay/Stinger",
+      "event:/Subjective/Breath",
+      "event:/Subjective/Heartbeat",
+      "event:/Subjective/Tinnitus"
+    ],
+    "status": "source-bank-drift"
+  }
+}

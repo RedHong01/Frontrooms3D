@@ -51,6 +51,18 @@ public:
     UFUNCTION(BlueprintPure, Category = "FrontRooms|Movement")
     float GetCurrentMoveSpeed() const;
 
+    UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run")
+    void BeginRunPressed();
+
+    UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run")
+    void TogglePausePressed();
+
+    UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run")
+    void InteractPressed();
+
+    UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run")
+    void PickupKeyPressed();
+
 protected:
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 

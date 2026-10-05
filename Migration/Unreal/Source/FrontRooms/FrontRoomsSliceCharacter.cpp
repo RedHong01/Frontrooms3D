@@ -1,5 +1,7 @@
 #include "FrontRoomsSliceCharacter.h"
 
+#include "FrontRoomsSliceGameMode.h"
+
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -42,6 +44,10 @@ void AFrontRoomsSliceCharacter::SetupPlayerInputComponent(UInputComponent* Playe
     PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &AFrontRoomsSliceCharacter::MoveRight);
     PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Pressed, this, &AFrontRoomsSliceCharacter::StartSprint);
     PlayerInputComponent->BindAction(TEXT("Sprint"), IE_Released, this, &AFrontRoomsSliceCharacter::StopSprint);
+    PlayerInputComponent->BindAction(TEXT("BeginRun"), IE_Pressed, this, &AFrontRoomsSliceCharacter::BeginRunPressed);
+    PlayerInputComponent->BindAction(TEXT("TogglePause"), IE_Pressed, this, &AFrontRoomsSliceCharacter::TogglePausePressed);
+    PlayerInputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AFrontRoomsSliceCharacter::InteractPressed);
+    PlayerInputComponent->BindAction(TEXT("PickupKey"), IE_Pressed, this, &AFrontRoomsSliceCharacter::PickupKeyPressed);
 }
 
 void AFrontRoomsSliceCharacter::MoveForward(float Value)
@@ -72,6 +78,38 @@ void AFrontRoomsSliceCharacter::StopSprint()
 {
     bSprinting = false;
     RefreshMoveSpeed();
+}
+
+void AFrontRoomsSliceCharacter::BeginRunPressed()
+{
+    if (AFrontRoomsSliceGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<AFrontRoomsSliceGameMode>() : nullptr)
+    {
+        Mode->BeginRun(Mode->Seed);
+    }
+}
+
+void AFrontRoomsSliceCharacter::TogglePausePressed()
+{
+    if (AFrontRoomsSliceGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<AFrontRoomsSliceGameMode>() : nullptr)
+    {
+        Mode->TogglePause();
+    }
+}
+
+void AFrontRoomsSliceCharacter::InteractPressed()
+{
+    if (AFrontRoomsSliceGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<AFrontRoomsSliceGameMode>() : nullptr)
+    {
+        Mode->TryInteractDoor();
+    }
+}
+
+void AFrontRoomsSliceCharacter::PickupKeyPressed()
+{
+    if (AFrontRoomsSliceGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<AFrontRoomsSliceGameMode>() : nullptr)
+    {
+        Mode->PickupKey();
+    }
 }
 
 float AFrontRoomsSliceCharacter::GetCurrentMoveSpeed() const

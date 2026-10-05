@@ -1,0 +1,254 @@
+{
+  "schema": "frontrooms.unity.golden-chunk-validation",
+  "schemaVersion": 1,
+  "status": "passed",
+  "unityVersion": "6000.3.10f1",
+  "contract": {
+    "schema": "frontrooms.unreal.migration.contract",
+    "schemaVersion": 1,
+    "validationSeeds": [
+      2554,
+      20388,
+      20261001
+    ],
+    "cellSizeMeters": 3.0,
+    "chunkCells": 8,
+    "chunkSizeMeters": 24.0
+  },
+  "export": {
+    "radius": 1,
+    "seedFiles": [
+      {
+        "path": "Migration/exports/unity_chunks/seed-2554.json",
+        "bytes": 132600,
+        "sha256": "bc9e7cd7412c35d6f5dce9bc4da7930b76a1855a1efb5fdc3786d5257757089c",
+        "chunkCount": 9,
+        "chunks": [
+          {
+            "x": -1,
+            "y": -1,
+            "rooms": 1,
+            "hasKey": false
+          },
+          {
+            "x": 0,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": -1,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": -1,
+            "y": 1,
+            "rooms": 3,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          }
+        ]
+      },
+      {
+        "path": "Migration/exports/unity_chunks/seed-20388.json",
+        "bytes": 132568,
+        "sha256": "726f2d626c408e0ea9ad449587cabb144daa553d02c3b9dee9d41c8aae7133f1",
+        "chunkCount": 9,
+        "chunks": [
+          {
+            "x": -1,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": -1,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": -1,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          }
+        ]
+      },
+      {
+        "path": "Migration/exports/unity_chunks/seed-20261001.json",
+        "bytes": 132956,
+        "sha256": "0dfd7fbc4c48b7ba425e28b18d2615589137d67db2f45c564498d271c796d634",
+        "chunkCount": 9,
+        "chunks": [
+          {
+            "x": -1,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": -1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": -1,
+            "y": 0,
+            "rooms": 3,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": -1,
+            "y": 1,
+            "rooms": 3,
+            "hasKey": true
+          },
+          {
+            "x": 0,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "rooms": 2,
+            "hasKey": true
+          }
+        ]
+      }
+    ]
+  },
+  "mapHashVectors": [
+    {
+      "seed": 2554,
+      "a": 0,
+      "b": 0,
+      "salt": 11,
+      "revision": 0,
+      "expected": "0xCD2545A4",
+      "actual": "0xCD2545A4"
+    },
+    {
+      "seed": 20261001,
+      "a": -3,
+      "b": 7,
+      "salt": 23,
+      "revision": 0,
+      "expected": "0x529C7D25",
+      "actual": "0x529C7D25"
+    },
+    {
+      "seed": -1,
+      "a": -2147483648,
+      "b": 2147483647,
+      "salt": 73,
+      "revision": 3,
+      "expected": "0x9F18A844",
+      "actual": "0x9F18A844"
+    },
+    {
+      "seed": 20388,
+      "a": 16,
+      "b": 10,
+      "salt": 53,
+      "revision": 2,
+      "expected": "0x4C534946",
+      "actual": "0x4C534946"
+    }
+  ],
+  "checks": [
+    "per-seed JSON parsed",
+    "contract seeds/constants match",
+    "9 chunks per seed cover [-1,1]\u00b2",
+    "chunk arrays/enums/room bounds valid",
+    "Unity/Unreal MapHash vectors match"
+  ]
+}

@@ -21,8 +21,8 @@ $report = [ordered]@{
     engineVersion = $null
     projectAssociation = $null
     stages = @()
-    coverage = @("Unity export contract", "Unity asset SHA-256 integrity", "Windows asset/material/sidecar audit", "Unreal editor build", "Unreal contract commandlet", "deterministic hash/state transitions/movement input/imported asset load")
-    pendingCoverage = @("playable generated map", "live possessed movement trace", "HUD", "rendering/audio", "Complete and Relay Search transitions")
+    coverage = @("Unity export contract", "Unity deterministic golden chunk exports", "Unity asset SHA-256 integrity", "Windows A/N/S/E/M/P material factory and asset audit", "Win64 DX12/SM6 Nanite project configuration", "Unreal editor build", "Unreal contract commandlet", "Unity sidecar collision/anchor/scale/axis/LOD import", "sidecar asset factory applies collision/LOD/anchor metadata", "deterministic hash/state transitions/movement input/imported asset load", "live possessed movement trace", "Relay Search/Complete transitions and key/door/window interactions", "saved playable runtime map", "HDR calibration", "native HUD and audio event seam", "Win64 FMOD bank contract and rendered event playback")
+    pendingCoverage = @("FMOD bank regeneration for three missing StreamOpen/StreamClose/StreamLock events")
     error = $null
 }
 
@@ -72,7 +72,15 @@ function Invoke-SmokeStage([string]$Name, [string]$Executable, [string[]]$Argume
             throw "$Name failed with exit code $($process.ExitCode); see $logPath"
         }
         if ($Name -eq "contract" -and $output -notmatch 'FrontRooms contract passed:') { throw "Contract success marker missing; see $logPath" }
+        if ($Name -eq "sidecars" -and $output -notmatch 'FrontRooms sidecars passed: 113 Unity prop contracts imported and validated') { throw "Sidecar success marker missing; see $logPath" }
+        if ($Name -eq "sidecars" -and $output -notmatch 'FrontRooms sidecar asset factory passed: 113/113 assets, 55 box colliders, 59 LOD values, 490 anchors') { throw "Sidecar asset factory success marker missing; see $logPath" }
+        if ($Name -eq "runtime-assets" -and $output -notmatch 'FrontRooms smoke live movement trace passed: possessed=true') { throw "Live possessed movement success marker missing; see $logPath" }
+        if ($Name -eq "runtime-assets" -and $output -notmatch 'FrontRooms FMOD Win64 runtime ready: 5 banks loaded') { throw "Native FMOD runtime success marker missing; see $logPath" }
+        if ($Name -eq "runtime-assets" -and $output -notmatch 'FrontRooms FMOD playback: event:/Foley/Player/KeyPickup') { throw "Native FMOD playback marker missing; see $logPath" }
+        if ($Name -eq "material-assets" -and $output -notmatch 'FrontRooms material factory passed: 167/167 textures, changed=\d+, errors=0') { throw "Material asset factory success marker missing; see $logPath" }
         if ($Name -eq "runtime-assets" -and $output -notmatch 'FrontRooms smoke passed') { throw "Smoke success marker missing; see $logPath" }
+        if ($Name -eq "fmod-banks" -and $output -notmatch 'FrontRooms FMOD bank probe passed: 5 banks loaded, 28 events resolved, rendered playback') { throw "FMOD bank probe success marker missing; see $logPath" }
+        if ($Name -eq "fmod-banks" -and $output -notmatch 'event:/Mechanism/Door/StreamOpen.*event:/Mechanism/Door/StreamClose.*event:/Mechanism/Door/StreamLock') { throw "FMOD source/bank drift marker missing; see $logPath" }
         $stage.status = "passed"
         Write-Host "SMOKE $Name passed"
     } catch {
@@ -89,6 +97,7 @@ function Invoke-SmokeStage([string]$Name, [string]$Executable, [string[]]$Argume
 try {
     $node = (Get-Command node -ErrorAction Stop).Source
     Invoke-SmokeStage "exports" $node @((Join-Path $Root "Tools/UnrealMigration/validate_exports.mjs"), $Root)
+    Invoke-SmokeStage "nanite-config" $node @((Join-Path $Root "Tools/UnrealMigration/validate_nanite_config.mjs"), $Root)
     Invoke-SmokeStage "source-assets" $node @((Join-Path $Root "Tools/UnrealMigration/test_asset_bridge.mjs"), $Root)
     $windowsPowerShell = (Get-Command powershell.exe -CommandType Application -ErrorAction Stop).Source
     Invoke-SmokeStage "asset-audit" $windowsPowerShell @("-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "Tools/UnrealMigration/audit_unreal_assets.ps1"), "-Root", $Root)
@@ -96,6 +105,13 @@ try {
     $report.engineVersion = $engine.Version
     $report.projectAssociation = $engine.Association
     Write-Host "SMOKE using Unreal $($engine.Version) ($($engine.EditorCmd))"
+    # Editor-Cmd.exe lives in Engine/Binaries/Win64; resolve the UE root before
+    # locating the bundled Python runtime used by the FMOD bank probe.
+    $engineRoot = Split-Path (Split-Path (Split-Path $engine.EditorCmd -Parent) -Parent) -Parent
+    $fmodPython = Join-Path $engineRoot "Binaries/ThirdParty/Python3/Win64/python.exe"
+    Invoke-SmokeStage "golden-chunks" $fmodPython @((Join-Path $Root "Tools/UnrealMigration/validate_golden_chunks.py"), "--root", $Root, "--report", (Join-Path $runDirectory "unity-golden-chunk-validation.json"))
+    $fmodRender = Join-Path $runDirectory "fmod-footstep.wav"
+    Invoke-SmokeStage "fmod-banks" $fmodPython @((Join-Path $Root "Tools/audio/fmod_bank_probe.py"), "--root", $Root, "--write-manifest", "--render", $fmodRender, "--allow-missing-event", "event:/Mechanism/Door/StreamOpen", "--allow-missing-event", "event:/Mechanism/Door/StreamClose", "--allow-missing-event", "event:/Mechanism/Door/StreamLock")
     # Keep UnrealBuildTool's generated environment cache inside the run directory.
     # Shared machine caches can be owned by another Windows install context and
     # are disposable; isolating this cache keeps the smoke gate reproducible.
@@ -129,8 +145,14 @@ param([string]$BuildScript, [string]$Project)
 exit $LASTEXITCODE
 '@ | Set-Content -LiteralPath $worker -Encoding UTF8
     Invoke-SmokeStage "build" $windowsPowerShell @("-NoProfile", "-NonInteractive", "-File", $worker, "-BuildScript", $engine.BuildScript, "-Project", $project)
-    $commonArgs = @($project, "-unattended", "-nop4", "-nosplash", "-nullrhi", "-stdout", "-UTF8Output")
+    $commonArgs = @($project, "-unattended", "-nop4", "-nosplash", "-nullrhi", "-NoZenStore", "-stdout", "-UTF8Output")
     Invoke-SmokeStage "contract" $engine.EditorCmd ($commonArgs + @("-run=FrontRoomsContract", "-abslog=$(Join-Path $runDirectory 'contract-engine.log')"))
+    $materialManifest = Join-Path $Root "Migration/exports/unreal_material_factory.json"
+    $materialReport = Join-Path $runDirectory "material-assets-report.json"
+    Invoke-SmokeStage "material-assets" $engine.EditorCmd ($commonArgs + @("-run=FrontRoomsMaterialFactory", "-Manifest=$materialManifest", "-Report=$materialReport", "-abslog=$(Join-Path $runDirectory 'material-assets-engine.log')"))
+    $sidecarReport = Join-Path $runDirectory "sidecar-report.json"
+    $sidecarDirectory = Join-Path $Root "Assets/Resources/Props/Models"
+    Invoke-SmokeStage "sidecars" $engine.EditorCmd ($commonArgs + @("-run=FrontRoomsSidecar", "-ApplyToAssets", "-Sidecars=$sidecarDirectory", "-Report=$sidecarReport", "-abslog=$(Join-Path $runDirectory 'sidecar-engine.log')"))
     Invoke-SmokeStage "runtime-assets" $engine.EditorCmd ($commonArgs + @("-run=FrontRoomsSmoke", "-abslog=$(Join-Path $runDirectory 'smoke-engine.log')"))
     $report.status = "passed"
 } catch {

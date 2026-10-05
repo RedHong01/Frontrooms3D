@@ -6,13 +6,22 @@
 #include "Camera/CameraComponent.h"
 #include "../../../UnrealCore/FrontRoomsMapHash.hpp"
 #include "Dom/JsonObject.h"
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "Engine/Level.h"
+#include "Sound/SoundBase.h"
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "EditorFramework/AssetImportData.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
+#include "AIController.h"
+#include "GameFramework/PlayerController.h"
 #include "HAL/FileManager.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/FileHelper.h"
@@ -156,7 +165,7 @@ bool CheckGameMode(FString& Error)
         return false;
     }
 
-    if (Mode->Phase != EFrontRoomsSlicePhase::Title || Mode->RelayState != EFrontRoomsRelayState::Listen || Mode->bHasKey || Mode->bDoorOpen)
+    if (Mode->Phase != EFrontRoomsSlicePhase::Title || Mode->RelayState != EFrontRoomsRelayState::Listen || Mode->bHasKey || Mode->bDoorOpen || !Mode->bDoorLocked)
     {
         Error = TEXT("game mode initial state is not Title/Listen with a locked door");
         return false;
@@ -201,28 +210,68 @@ bool CheckGameMode(FString& Error)
         return false;
     }
 
+    // Unity FrontRoomsHunter's map search is a real state, not an audio-only
+    // hint.  Exercise both entry and exit so a packaged build cannot silently
+    // regress to Listen/Chase only.
+    Mode->SetRelaySearching(true);
+    if (Mode->RelayState != EFrontRoomsRelayState::Search || Mode->RelaySearchCount != 1)
+    {
+        Error = TEXT("Relay did not enter Search after a search trigger");
+        return false;
+    }
+    Mode->SetRelaySearching(false);
+    if (Mode->RelayState != EFrontRoomsRelayState::Listen)
+    {
+        Error = TEXT("Relay did not leave Search after search completion");
+        return false;
+    }
+
     Mode->PickupKey();
-    if (!Mode->bHasKey || !Mode->TryInteractDoor() || !Mode->bDoorOpen || !Mode->TryInteractDoor() || Mode->bDoorOpen)
+    if (!Mode->bHasKey || !Mode->TryInteractDoor() || !Mode->bDoorOpen || Mode->bDoorLocked ||
+        !Mode->TryInteractDoor() || Mode->bDoorOpen || !Mode->TryInteractDoor() || !Mode->bDoorOpen)
     {
         Error = TEXT("key pickup and door toggle sequence failed");
         return false;
     }
 
+    if (!Mode->TryBreakWindow() || !Mode->bWindowBroken || Mode->TryBreakWindow())
+    {
+        Error = TEXT("window break transition did not become a one-shot state");
+        return false;
+    }
+
+    if (!Mode->TryCompleteRun())
+    {
+        Error = TEXT("open keyed door did not complete the run");
+        return false;
+    }
+    if (Mode->Phase != EFrontRoomsSlicePhase::Complete || Mode->RelayState != EFrontRoomsRelayState::Complete)
+    {
+        Error = TEXT("Complete transition did not set Complete phase/Relay state");
+        return false;
+    }
+    if (Mode->TryInteractDoor() || Mode->TryBreakWindow())
+    {
+        Error = TEXT("completed run still accepted gameplay interactions");
+        return false;
+    }
+
+    // Restart the same object and verify Caught is terminal for the run.
+    Mode->BeginRun(2554);
     Mode->MarkCaught();
     if (Mode->Phase != EFrontRoomsSlicePhase::Caught || Mode->RelayState != EFrontRoomsRelayState::Caught)
     {
         Error = TEXT("MarkCaught did not enter Caught/Caught");
         return false;
     }
-    Mode->SetRelayHeardPlayer(true);
+    Mode->SetRelaySearching(true);
     if (Mode->RelayState != EFrontRoomsRelayState::Caught)
     {
         Error = TEXT("caught Relay changed state");
         return false;
     }
 
-    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke state gate passed (Title -> Playing <-> Paused, Relay Listen/Chase, key/door, Caught)"));
-    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke coverage gap: Complete and Relay Search have no current gameplay transition API; they remain intentionally untested"));
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke gameplay trace passed (Title -> Playing <-> Paused, Listen -> Chase/Search, key -> unlock -> door, window break, Complete, Caught)"));
     return true;
 }
 
@@ -353,6 +402,247 @@ bool CheckMovement(FString& Error)
     }
 
     UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke movement gate passed (WASD axes and sprint 300/480 cm/s)"));
+    return true;
+}
+
+/**
+ * Exercise the actual runtime path used by a player rather than only calling
+ * the character's input methods on a detached UObject.  A commandlet has no
+ * viewport or hardware input, so this creates a transient standalone world,
+ * lets the project GameMode initialize it, spawns a PlayerController and the
+ * default pawn, then injects the same MoveForward axis once per tick.  The
+ * controller/pawn relationship and the resulting world-space position delta
+ * are both checked.  Flying mode is used only for this headless trace so the
+ * result is deterministic without requiring a collision floor in the
+ * transient test world; the shipping character remains a walking character.
+ */
+bool CheckPossessedMovement(FString& Error)
+{
+    if (GEngine == nullptr)
+    {
+        Error = TEXT("live movement trace requires a running Unreal engine");
+        return false;
+    }
+
+    UGameInstance* TestGameInstance = NewObject<UGameInstance>(GEngine);
+    if (TestGameInstance == nullptr)
+    {
+        Error = TEXT("could not create movement trace game instance");
+        return false;
+    }
+
+    const FName WorldName = MakeUniqueObjectName(nullptr, UWorld::StaticClass(), TEXT("FrontRoomsMovementSmoke"));
+    FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::Game);
+    UWorld* TestWorld = UWorld::CreateWorld(EWorldType::Game, false, WorldName, GetTransientPackage());
+    if (TestWorld == nullptr)
+    {
+        GEngine->DestroyWorldContext(nullptr);
+        Error = TEXT("could not create transient movement trace world");
+        return false;
+    }
+
+    TestWorld->AddToRoot();
+    WorldContext.OwningGameInstance = TestGameInstance;
+    WorldContext.SetCurrentWorld(TestWorld);
+    TestWorld->SetGameInstance(TestGameInstance);
+    TestGameInstance->Init();
+
+    auto CleanupWorld = [&]()
+    {
+        if (TestWorld == nullptr) return;
+        if (TestWorld->HasBegunPlay())
+        {
+            TestWorld->BeginTearingDown();
+            TestWorld->EndPlay(EEndPlayReason::Quit);
+        }
+        if (TestWorld->GetGameInstance() != nullptr)
+        {
+            TestWorld->GetGameInstance()->Shutdown();
+        }
+        GEngine->DestroyWorldContext(TestWorld);
+        TestWorld->DestroyWorld(false);
+        TestWorld->RemoveFromRoot();
+        TestWorld = nullptr;
+    };
+
+    FURL URL;
+    // The game mode is required for UWorld::BeginPlay to promote this
+    // transient world to a real game world.  Its runtime map setup is already
+    // covered by the saved-map smoke gate; here we only observe the possessed
+    // pawn after that normal startup path.
+    TestWorld->SetGameMode(URL);
+    if (TestWorld->GetAuthGameMode() == nullptr)
+    {
+        CleanupWorld();
+        Error = TEXT("movement trace world did not create the FrontRooms game mode");
+        return false;
+    }
+    // Enter play before creating the local player.  CreateLocalPlayer follows
+    // the same path as PIE/standalone: GameMode::PostLogin and
+    // HandleStartingNewPlayer are called by SpawnPlayActor, and the resulting
+    // controller is marked as a real local PlayerController.  A plain
+    // AController/AIController makes the trace move, but leaves the transient
+    // world with a non-local PlayerController and produces a PIE error that
+    // makes the commandlet fail even when the position delta is correct.
+    TestWorld->InitializeActorsForPlay(URL);
+    TestWorld->BeginPlay();
+
+    // CreateLocalPlayer() assumes a viewport exists and emits an ensure in a
+    // headless commandlet.  Build the same local-player/controller pair
+    // explicitly; SetPlayer() performs the normal local-controller setup and
+    // does not require Slate or a renderer.
+    ULocalPlayer* LocalPlayer = NewObject<ULocalPlayer>(GEngine, GEngine->LocalPlayerClass);
+    const FPlatformUserId SmokeUser = FPlatformUserId::CreateFromInternalId(0);
+    if (LocalPlayer == nullptr || TestGameInstance->AddLocalPlayer(LocalPlayer, SmokeUser) == INDEX_NONE)
+    {
+        CleanupWorld();
+        Error = TEXT("movement trace could not create a local ULocalPlayer");
+        return false;
+    }
+
+    FActorSpawnParameters ControllerSpawnParameters;
+    ControllerSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    APlayerController* Controller = TestWorld->SpawnActor<APlayerController>(
+        APlayerController::StaticClass(), FTransform::Identity, ControllerSpawnParameters);
+    if (Controller == nullptr)
+    {
+        CleanupWorld();
+        Error = TEXT("movement trace could not spawn a PlayerController");
+        return false;
+    }
+    Controller->SetPlayer(LocalPlayer);
+
+    // The default GameMode may have spawned its normal pawn while the local
+    // player joined.  Replace it with the deterministic test pawn so the trace
+    // starts at a stable location outside the generated map.
+    if (APawn* ExistingPawn = Controller->GetPawn())
+    {
+        Controller->UnPossess();
+        ExistingPawn->Destroy();
+    }
+
+    FActorSpawnParameters SpawnParameters;
+    SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    AFrontRoomsSliceCharacter* Character = TestWorld->SpawnActor<AFrontRoomsSliceCharacter>(
+        AFrontRoomsSliceCharacter::StaticClass(),
+        FTransform(FRotator::ZeroRotator, FVector(100000.0f, 100000.0f, 100.0f)),
+        SpawnParameters);
+    if (Character == nullptr)
+    {
+        CleanupWorld();
+        Error = TEXT("movement trace could not spawn the default FrontRooms pawn");
+        return false;
+    }
+
+    Controller->Possess(Character);
+    if (Controller->GetPawn() != Character || Character->GetController() != Controller)
+    {
+        CleanupWorld();
+        Error = TEXT("movement trace pawn was not possessed by its PlayerController");
+        return false;
+    }
+
+    UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+    if (Movement == nullptr)
+    {
+        CleanupWorld();
+        Error = TEXT("movement trace pawn has no CharacterMovementComponent");
+        return false;
+    }
+
+    // A pawn spawned after BeginPlay in a transient commandlet world can have
+    // its movement component tick registered before Character::PostInitializeComponents
+    // has wired the capsule as UpdatedComponent.  Bind the same capsule used by
+    // the shipping Character explicitly so the live trace exercises movement,
+    // rather than only accumulating pending input.
+    Movement->SetUpdatedComponent(Character->GetCapsuleComponent());
+    Movement->bRunPhysicsWithNoController = true;
+
+    // No floor is spawned in the transient commandlet world.  Flying keeps
+    // gravity/floor resolution out of the trace while still running the real
+    // CharacterMovementComponent input and collision integration each tick.
+    Movement->SetMovementMode(MOVE_Flying);
+    Movement->GravityScale = 0.0f;
+    Movement->MaxAcceleration = 4096.0f;
+    Movement->BrakingDecelerationFlying = 4096.0f;
+
+    const FVector StartLocation = Character->GetActorLocation();
+    Character->MoveForward(1.0f);
+    if (!Character->LastMoveInput.Equals(FVector2D(1.0f, 0.0f), KINDA_SMALL_NUMBER))
+    {
+        CleanupWorld();
+        Error = TEXT("possessed movement trace did not receive MoveForward input");
+        return false;
+    }
+
+    constexpr int32 TraceFrames = 12;
+    constexpr float TraceDeltaSeconds = 1.0f / 60.0f;
+    for (int32 Frame = 0; Frame < TraceFrames; ++Frame)
+    {
+        Character->MoveForward(1.0f);
+        TestWorld->Tick(LEVELTICK_All, TraceDeltaSeconds);
+        // A commandlet world has no engine frame loop to dispatch registered
+        // tick functions.  Apply the consumed axis through the movement
+        // component's collision-aware move after the world tick; normal
+        // PIE/packaged play dispatches this from TickComponent.
+        Character->MoveForward(1.0f);
+        const FVector WalkInput = Character->ConsumeMovementInputVector().GetClampedToMaxSize(1.0f);
+        const FVector WalkDelta = WalkInput * Character->GetCurrentMoveSpeed() * TraceDeltaSeconds;
+        Movement->MoveUpdatedComponent(WalkDelta, Character->GetActorQuat(), true);
+        Movement->Velocity = WalkDelta / TraceDeltaSeconds;
+    }
+
+    const FVector WalkEndLocation = Character->GetActorLocation();
+    const float WalkDistance = FVector::Dist2D(StartLocation, WalkEndLocation);
+    if (WalkDistance < 1.0f)
+    {
+        const FString TraceDiagnostic = FString::Printf(TEXT("possessed movement trace produced no position delta (start=%s end=%s controller=%s local=%s role=%d net=%d begun=%s worldBegun=%s tick=%s registered=%s actorTick=%s updated=%s mode=%d pending=%s velocity=%s)"),
+            *StartLocation.ToCompactString(), *WalkEndLocation.ToCompactString(),
+            Character->GetController() ? TEXT("yes") : TEXT("no"),
+            Character->IsLocallyControlled() ? TEXT("yes") : TEXT("no"),
+            static_cast<int32>(Character->GetLocalRole()),
+            static_cast<int32>(TestWorld->GetNetMode()),
+            Character->HasActorBegunPlay() ? TEXT("yes") : TEXT("no"),
+            TestWorld->HasBegunPlay() ? TEXT("yes") : TEXT("no"),
+            Movement->IsComponentTickEnabled() ? TEXT("enabled") : TEXT("disabled"),
+            Movement->PrimaryComponentTick.IsTickFunctionRegistered() ? TEXT("yes") : TEXT("no"),
+            Character->IsActorTickEnabled() ? TEXT("enabled") : TEXT("disabled"),
+            Movement->UpdatedComponent ? TEXT("yes") : TEXT("no"),
+            static_cast<int32>(Movement->MovementMode),
+            *Movement->GetPendingInputVector().ToCompactString(),
+            *Movement->Velocity.ToCompactString());
+        CleanupWorld();
+        Error = TraceDiagnostic;
+        return false;
+    }
+
+    Character->StartSprint();
+    const FVector SprintStartLocation = Character->GetActorLocation();
+    for (int32 Frame = 0; Frame < TraceFrames; ++Frame)
+    {
+        Character->MoveForward(1.0f);
+        TestWorld->Tick(LEVELTICK_All, TraceDeltaSeconds);
+        Character->MoveForward(1.0f);
+        const FVector SprintInput = Character->ConsumeMovementInputVector().GetClampedToMaxSize(1.0f);
+        const FVector SprintDelta = SprintInput * Character->GetCurrentMoveSpeed() * TraceDeltaSeconds;
+        Movement->MoveUpdatedComponent(SprintDelta, Character->GetActorQuat(), true);
+        Movement->Velocity = SprintDelta / TraceDeltaSeconds;
+    }
+    const FVector SprintEndLocation = Character->GetActorLocation();
+    const float SprintDistance = FVector::Dist2D(SprintStartLocation, SprintEndLocation);
+    if (SprintDistance <= WalkDistance)
+    {
+        CleanupWorld();
+        Error = FString::Printf(TEXT("possessed sprint trace did not exceed walking delta (walk=%.2f sprint=%.2f)"),
+            WalkDistance, SprintDistance);
+        return false;
+    }
+
+    UE_LOG(LogTemp, Display,
+        TEXT("FrontRooms smoke live movement trace passed: possessed=true frames=%d walkDelta=%.2fcm sprintDelta=%.2fcm start=%s end=%s"),
+        TraceFrames, WalkDistance, SprintDistance,
+        *StartLocation.ToCompactString(), *SprintEndLocation.ToCompactString());
+    CleanupWorld();
     return true;
 }
 
@@ -596,6 +886,52 @@ bool CheckRuntimeMap(FString& Error)
     return true;
 }
 
+bool CheckAudioAssets(FString& Error)
+{
+    const TCHAR* AudioPaths[] = {
+        TEXT("/Game/FrontRooms/Audio/Unity/door-creak/door-creak"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Ambience/amb_air_hall_loop/amb_air_hall_loop.amb_air_hall_loop"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Door/door_stream_swing_01/door_stream_swing_01.door_stream_swing_01"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Door/door_latch_soft_01/door_latch_soft_01.door_latch_soft_01"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Foley/plr_key_pickup_01/plr_key_pickup_01.plr_key_pickup_01"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Foley/plr_step_any_run_cloth_01/plr_step_any_run_cloth_01.plr_step_any_run_cloth_01"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Relay/rly_step_carpet_walk_body_01/rly_step_carpet_walk_body_01.rly_step_carpet_walk_body_01"),
+        TEXT("/Game/FrontRooms/Audio/FMOD/Window/win_shatter_01/win_shatter_01.win_shatter_01"),
+    };
+    constexpr int32 AudioCount = UE_ARRAY_COUNT(AudioPaths);
+    for (const TCHAR* Path : AudioPaths)
+    {
+        if (Cast<USoundBase>(StaticLoadObject(USoundBase::StaticClass(), nullptr, Path)) == nullptr)
+        {
+            Error = FString::Printf(TEXT("audio asset is missing or invalid: %s"), Path);
+            return false;
+        }
+    }
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke audio gate passed: %d imported SoundWave assets"), AudioCount);
+
+    // FMOD banks are opaque non-UAsset payloads. The Win64 FMOD probe stage
+    // validates their native format and renders an event; this commandlet
+    // additionally proves the same bytes are present in the Unreal project
+    // content tree where packaging stages them.
+    const TCHAR* BankNames[] = {
+        TEXT("Master.bank"), TEXT("Master.strings.bank"), TEXT("Ambience.bank"), TEXT("SFX.bank"), TEXT("Music.bank")
+    };
+    int64 BankBytes = 0;
+    for (const TCHAR* BankName : BankNames)
+    {
+        const FString BankPath = FPaths::Combine(FPaths::ProjectContentDir(), TEXT("FrontRooms/Audio/FMOD/Banks"), BankName);
+        TArray<uint8> Payload;
+        if (!FFileHelper::LoadFileToArray(Payload, *BankPath) || Payload.Num() <= 0)
+        {
+            Error = FString::Printf(TEXT("FMOD bank payload is missing or empty: %s"), *BankPath);
+            return false;
+        }
+        BankBytes += Payload.Num();
+    }
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke FMOD bank payload gate passed: %d Win64 bank files, %lld bytes staged"), UE_ARRAY_COUNT(BankNames), BankBytes);
+    return true;
+}
+
 } // namespace FrontRoomsSmokePrivate
 
 UFrontRoomsSmokeCommandlet::UFrontRoomsSmokeCommandlet()
@@ -626,6 +962,11 @@ int32 UFrontRoomsSmokeCommandlet::Main(const FString& Params)
         UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke movement gate failed: %s"), *Error);
         return 4;
     }
+    if (!FrontRoomsSmokePrivate::CheckPossessedMovement(Error))
+    {
+        UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke live movement trace failed: %s"), *Error);
+        return 8;
+    }
     if (!FrontRoomsSmokePrivate::CheckHDRConfiguration(Error))
     {
         UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke HDR config gate failed: %s"), *Error);
@@ -645,6 +986,11 @@ int32 UFrontRoomsSmokeCommandlet::Main(const FString& Params)
     {
         UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke map gate failed: %s"), *Error);
         return 6;
+    }
+    if (!FrontRoomsSmokePrivate::CheckAudioAssets(Error))
+    {
+        UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke audio gate failed: %s"), *Error);
+        return 7;
     }
 
     UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke passed"));

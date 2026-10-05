@@ -54,6 +54,7 @@ void AFrontRoomsRuntimeMap::BuildMap()
     // canonical scene. Do not duplicate them when the packaged world starts.
     if (GeneratedComponents.Num() > 0)
     {
+        ResolveGameplayComponents();
         bBuilt = true;
         UE_LOG(LogTemp, Display, TEXT("FrontRooms runtime map reused saved components: modules=%d components=%d"),
             GeneratedModuleCount, GeneratedComponents.Num());
@@ -81,15 +82,35 @@ void AFrontRoomsRuntimeMap::BuildMap()
     AddProp(MeshAssetPath(TEXT("Kit_LadderChair"), TEXT("Kit_LadderChair_LOD0")), TEXT("WaitingChairB"), FVector(240.0f, 690.0f, 0.0f), 180.0f, FVector(0.75f));
     AddProp(MeshAssetPath(TEXT("Kit_LadderChair"), TEXT("Kit_LadderChair_LOD0")), TEXT("WaitingChairC"), FVector(360.0f, 690.0f, 0.0f), 180.0f, FVector(0.75f));
     AddProp(MeshAssetPath(TEXT("Kit_SideTableTurned"), TEXT("Kit_SideTableTurned_LOD0")), TEXT("WaitingSideTable"), FVector(520.0f, 690.0f, 0.0f), 180.0f, FVector(0.75f));
+    AddProp(MeshAssetPath(TEXT("Kit_WallClock"), TEXT("Kit_WallClock")), TEXT("WaitingWallClock"), FVector(450.0f, 210.0f, 210.0f), 180.0f, FVector(0.75f));
+    AddProp(MeshAssetPath(TEXT("Kit_Torchiere"), TEXT("Kit_Torchiere_LOD0")), TEXT("WaitingTorchiere"), FVector(29.1f, 600.0f, 0.0f), 90.0f, FVector(0.75f));
     AddProp(MeshAssetPath(TEXT("Kit_Bookcase"), TEXT("Kit_Bookcase_LOD0")), TEXT("StorageBookcase"), FVector(-780.0f, 450.0f, 0.0f), 90.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_PlyCabinet"), TEXT("Kit_PlyCabinet")), TEXT("StorageCabinet"), FVector(-760.0f, 620.0f, 0.0f), 90.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_Crate"), TEXT("Kit_Crate_LOD0")), TEXT("StorageCrate"), FVector(-760.0f, 150.0f, 0.0f), 12.0f, FVector(0.9f));
+    AddProp(MeshAssetPath(TEXT("Kit_Pallet"), TEXT("Kit_Pallet_LOD0")), TEXT("StoragePallet"), FVector(-760.0f, 540.0f, 0.0f), 0.0f, FVector(0.9f));
     AddProp(MeshAssetPath(TEXT("Kit_OfficeDesk"), TEXT("Kit_OfficeDesk_LOD0")), TEXT("OfficeDeskA"), FVector(270.0f, 1550.0f, 0.0f), 180.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_TaskChair"), TEXT("Kit_TaskChair_LOD0")), TEXT("OfficeChairA"), FVector(270.0f, 1250.0f, 0.0f), 0.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_Copier"), TEXT("Kit_Copier_LOD0")), TEXT("OfficeCopier"), FVector(120.0f, 1320.0f, 0.0f), 90.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_WaterCooler"), TEXT("Kit_WaterCooler_LOD0")), TEXT("OfficeWaterCooler"), FVector(80.0f, 2050.0f, 0.0f), 90.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_FilingCabinet"), TEXT("Kit_FilingCabinet_LOD0")), TEXT("OfficeFilingCabinet"), FVector(400.0f, 2250.0f, 0.0f), 180.0f, FVector(0.8f));
     AddProp(MeshAssetPath(TEXT("Kit_DoorLeaf_Steel"), TEXT("Kit_DoorLeaf_Steel_LOD0")), TEXT("OfficeDoor"), FVector(600.0f, 1200.0f, 0.0f), 90.0f, FVector(0.9f));
+
+    // Explicit gameplay affordances mirror the Unity map's first keyed-door
+    // route.  They remain native components so the packaged Windows build
+    // can drive collision/visibility without a Blueprint dependency.
+    GameplayDoor = AddBox(TEXT("GameplayDoor"), FVector(750.0f, 450.0f, 110.0f), FVector(18.0f, 120.0f, 220.0f));
+    GameplayWindow = AddBox(TEXT("GameplayWindow"), FVector(2250.0f, 1510.0f, 170.0f), FVector(18.0f, 150.0f, 150.0f), false);
+    GameplayKey = AddBox(TEXT("GameplayKey"), FVector(620.0f, 620.0f, 112.0f), FVector(8.0f, 28.0f, 4.0f), false);
+    if (GameplayWindow != nullptr)
+    {
+        GameplayWindow->SetVisibility(true);
+        GameplayWindow->SetHiddenInGame(false);
+    }
+    if (GameplayKey != nullptr)
+    {
+        GameplayKey->SetVisibility(true);
+        GameplayKey->SetHiddenInGame(false);
+    }
 
     // Structural columns in the tall hall on the authored 6 m grid.
     for (int32 X = 0; X <= 2; ++X)
@@ -150,6 +171,26 @@ void AFrontRoomsRuntimeMap::BuildMap()
         GeneratedModuleCount, GeneratedComponents.Num(), *PlayerSpawnLocation.ToString());
 }
 
+void AFrontRoomsRuntimeMap::RebuildMap()
+{
+    for (UActorComponent* Component : GeneratedComponents)
+    {
+        if (Component != nullptr)
+        {
+            Component->DestroyComponent();
+        }
+    }
+    GeneratedComponents.Empty();
+    GameplayDoor = nullptr;
+    GameplayWindow = nullptr;
+    GameplayKey = nullptr;
+    bGameplayDoorOpen = false;
+    bGameplayWindowBroken = false;
+    GeneratedModuleCount = 0;
+    bBuilt = false;
+    BuildMap();
+}
+
 void AFrontRoomsRuntimeMap::BuildModuleShell(const FName& ModuleName, const FVector& Origin,
     const FVector2D& SizeMeters, float CeilingMeters, bool bOffice, bool bTall)
 {
@@ -185,10 +226,10 @@ void AFrontRoomsRuntimeMap::BuildModuleShell(const FName& ModuleName, const FVec
     ++GeneratedModuleCount;
 }
 
-void AFrontRoomsRuntimeMap::AddBox(const FName& Name, const FVector& RelativeLocation, const FVector& SizeCm, bool bCollision)
+UStaticMeshComponent* AFrontRoomsRuntimeMap::AddBox(const FName& Name, const FVector& RelativeLocation, const FVector& SizeCm, bool bCollision)
 {
     UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if (Cube == nullptr) return;
+    if (Cube == nullptr) return nullptr;
     UStaticMeshComponent* Mesh = NewObject<UStaticMeshComponent>(this, Name);
     Mesh->SetupAttachment(SceneRoot);
     Mesh->SetStaticMesh(Cube);
@@ -200,6 +241,64 @@ void AFrontRoomsRuntimeMap::AddBox(const FName& Name, const FVector& RelativeLoc
     AddInstanceComponent(Mesh);
     GeneratedComponents.Add(Mesh);
     Mesh->RegisterComponent();
+    return Mesh;
+}
+
+void AFrontRoomsRuntimeMap::ResolveGameplayComponents()
+{
+    for (UActorComponent* Component : GeneratedComponents)
+    {
+        if (UStaticMeshComponent* Mesh = Cast<UStaticMeshComponent>(Component))
+        {
+            const FName Name = Mesh->GetFName();
+            if (Name == TEXT("GameplayDoor")) GameplayDoor = Mesh;
+            else if (Name == TEXT("GameplayWindow")) GameplayWindow = Mesh;
+            else if (Name == TEXT("GameplayKey")) GameplayKey = Mesh;
+        }
+    }
+    if (GameplayDoor != nullptr)
+    {
+        GameplayDoor->SetCollisionEnabled(bGameplayDoorOpen ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+        GameplayDoor->SetVisibility(true);
+    }
+    if (GameplayWindow != nullptr)
+    {
+        GameplayWindow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        GameplayWindow->SetVisibility(!bGameplayWindowBroken);
+        GameplayWindow->SetHiddenInGame(bGameplayWindowBroken);
+    }
+}
+
+void AFrontRoomsRuntimeMap::SetGameplayDoorOpen(bool bOpen)
+{
+    bGameplayDoorOpen = bOpen;
+    if (GameplayDoor == nullptr) ResolveGameplayComponents();
+    if (GameplayDoor == nullptr) return;
+    GameplayDoor->SetCollisionEnabled(bOpen ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
+    GameplayDoor->SetVisibility(true);
+    GameplayDoor->SetHiddenInGame(false);
+    UE_LOG(LogTemp, Display, TEXT("FRONTROOMS_TRACE map=door state=%s"), bOpen ? TEXT("open") : TEXT("closed"));
+}
+
+void AFrontRoomsRuntimeMap::SetGameplayWindowBroken(bool bBroken)
+{
+    bGameplayWindowBroken = bBroken;
+    if (GameplayWindow == nullptr) ResolveGameplayComponents();
+    if (GameplayWindow == nullptr) return;
+    GameplayWindow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    GameplayWindow->SetVisibility(!bBroken);
+    GameplayWindow->SetHiddenInGame(bBroken);
+    UE_LOG(LogTemp, Display, TEXT("FRONTROOMS_TRACE map=window state=%s"), bBroken ? TEXT("broken") : TEXT("intact"));
+}
+
+void AFrontRoomsRuntimeMap::SetGameplayKeyVisible(bool bVisible)
+{
+    if (GameplayKey == nullptr) ResolveGameplayComponents();
+    if (GameplayKey == nullptr) return;
+    GameplayKey->SetVisibility(bVisible);
+    GameplayKey->SetHiddenInGame(!bVisible);
+    GameplayKey->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    UE_LOG(LogTemp, Display, TEXT("FRONTROOMS_TRACE map=key state=%s"), bVisible ? TEXT("available") : TEXT("picked-up"));
 }
 
 void AFrontRoomsRuntimeMap::AddPointLight(const FName& Name, const FVector& RelativeLocation, const FLinearColor& Color,
