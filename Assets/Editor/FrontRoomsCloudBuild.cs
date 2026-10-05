@@ -83,6 +83,10 @@ public static class FrontRoomsCloudBuild
 
     static void Verify()
     {
+        // FMOD's source Build directory is ignored by Git. Restore the tracked
+        // verified banks before switching targets so FMOD's automatic refresh
+        // and build preprocessor never run against an empty source path.
+        FrontRoomsFmodSetup.EnsureSourceBanks();
         FrontRoomsStreamVerification.Run();
         if (!File.Exists(Scene)) throw new FileNotFoundException("Build scene is missing", Scene);
     }

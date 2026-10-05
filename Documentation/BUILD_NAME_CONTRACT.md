@@ -27,3 +27,5 @@ A full-text scan will still find a small set of deliberate legacy tokens. They a
 - historical research, logs, and verification evidence that records the pre-rename checkout.
 
 These tokens stay stable so serialized scenes, asset GUIDs, installed-app updates, FMOD discovery, and Unreal reflection continue to resolve. Build outputs, editor menus, generated labels, active documentation, and project display metadata use `FrontRoomsss`.
+
+The checked-in FMOD banks under `Assets/StreamingAssets/FMOD` are the build input for this branch. FMOD source-project auto-refresh is disabled because the checked-in `FMOD/FrontRooms/FrontRooms.fspro` is a metadata source without a generated `Build` directory; this keeps the existing bank GUIDs and event cache intact and prevents a build-time refresh error. Re-enable source-project refresh only after generating and validating a complete FMOD bank set in FMOD Studio.
