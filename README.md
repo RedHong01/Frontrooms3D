@@ -1,4 +1,4 @@
-# FrontRooms 3D — First-person MVP
+# FrontRoomsss — First-person MVP
 
 This is a first-person experiment built from the FrontRooms functional question: how much information is worth the seconds it costs to collect? It is a 3D greybox prototype inspired by the first-person pressure of Dark Deception and Escape the Backrooms.
 

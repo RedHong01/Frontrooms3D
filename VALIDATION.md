@@ -1,4 +1,4 @@
-# FrontRooms 3D validation
+# FrontRoomsss validation
 
 - Unity: 6000.3.10f1.
 - macOS build: `Builds/Mac/FrontRoomsss.app`, build log reports `Succeeded` with `0` errors.

@@ -1,4 +1,4 @@
-# FrontRooms Unreal migration slice
+# FrontRoomsss Unreal migration slice
 
 `FrontRoomsss.uproject` is the first Unreal-side source tree. It is intentionally
 kept beside the Unity project until a fixed UE5 editor is installed. The module
