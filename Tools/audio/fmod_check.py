@@ -18,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 LIBFILE = os.path.join(ROOT, "Assets", "Plugins", "FMOD", "platforms", "mac", "lib", "fmodstudio.bundle", "Contents",
                        "MacOS", "fmodstudio")
-BANKS = os.path.join(ROOT, "FMOD", "FrontRooms", "Build", "Desktop")
+BANKS = os.path.join(ROOT, "Assets", "StreamingAssets", "FMOD")
 VERSION = 0x00020315
 OUT_NOSOUND, OUT_WAVWRITER_NRT, SPEAKER_STEREO, STUDIO_SYNC_UPDATE = 2, 5, 3, 0x4
 
