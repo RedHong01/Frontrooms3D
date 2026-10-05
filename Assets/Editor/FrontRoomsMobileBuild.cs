@@ -86,6 +86,7 @@ public static class FrontRoomsMobileBuild
 
         var paths = new[]
         {
+            Scene,
             profilePath,
             "Assets/Levels/Modules/L0_WaitingRoom_4x3.asset",
             "Assets/Levels/Modules/Low_Storage_2x3.asset",
@@ -101,7 +102,11 @@ public static class FrontRoomsMobileBuild
     static void Build(BuildTarget target, string output, bool appBundle, bool simulator = false)
     {
         RequireScene();
-        ReserializeMobileLevelAssets();
+        // Keep asset reserialization in a separate Unity invocation. Running
+        // ForceReserializeAssets and BuildPipeline in the same process makes
+        // Unity 6 register both the editor and player Assembly-CSharp type
+        // trees; the first (stale) tree can then be embedded in the player.
+        // The explicit menu command remains available for the one-time pass.
         var previousAppBundle = EditorUserBuildSettings.buildAppBundle;
         var previousIOSSdk = target == BuildTarget.iOS ? PlayerSettings.iOS.sdkVersion : default(iOSSdkVersion);
         var previousIOSSimulatorArchitecture = target == BuildTarget.iOS
@@ -112,6 +117,7 @@ public static class FrontRoomsMobileBuild
         ApplyCommonProfile(target);
         if (target == BuildTarget.iOS) ApplyIOSProfile(simulator);
         else if (target == BuildTarget.Android) ApplyAndroidProfile();
+        PruneStaleTypeDatabases();
         try
         {
             if (target == BuildTarget.Android)
@@ -144,6 +150,15 @@ public static class FrontRoomsMobileBuild
                 PlayerSettings.iOS.simulatorSdkArchitecture = previousIOSSimulatorArchitecture;
             }
         }
+    }
+
+    static void PruneStaleTypeDatabases()
+    {
+        var root = Path.Combine("Library", "BuildPlayerData");
+        if (!Directory.Exists(root)) return;
+        foreach (var path in Directory.GetFiles(root, "TypeDb-All*.json", SearchOption.AllDirectories))
+            File.Delete(path);
+        Debug.Log("[FrontRoomsMobileBuild] Cleared cached TypeDb files before BuildPipeline");
     }
 
     static void EnsureIOSAppStoreIcon(string output)
