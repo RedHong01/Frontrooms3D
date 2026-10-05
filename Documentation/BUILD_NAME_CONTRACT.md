@@ -15,3 +15,15 @@ Unity scene paths, C# type names, serialized GUIDs, and the application identifi
 Those are linkage identities; changing them would invalidate serialized references, installed-app updates, or Unreal reflection/build products.
 
 Generated Mac, WebGL, iPhone, Android, Windows, and Unreal packages must be regenerated from the source branch. Do not rename files inside an existing bundle or mix old WebGL hashed files with a new export.
+
+## Compatibility allowlist
+
+A full-text scan will still find a small set of deliberate legacy tokens. They are linkage keys, not product names: 
+
+- `Assets/Scenes/FrontRooms3D.unity` and its `.meta` GUID;
+- `FrontRooms3DGame`, other C# type/namespace names, and Unity serialized script references;
+- `FrontRooms/...` shader, resource, FMOD source/bank, and Input paths;
+- `com.redwang.frontrooms3d` and the UE `FrontRooms` module/`/Script/FrontRooms.*` reflection paths;
+- historical research, logs, and verification evidence that records the pre-rename checkout.
+
+These tokens stay stable so serialized scenes, asset GUIDs, installed-app updates, FMOD discovery, and Unreal reflection continue to resolve. Build outputs, editor menus, generated labels, active documentation, and project display metadata use `FrontRoomsss`.
