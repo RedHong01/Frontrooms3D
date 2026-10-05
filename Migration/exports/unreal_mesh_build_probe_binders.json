@@ -1,0 +1,14 @@
+{
+  "schema":"frontrooms.unreal.mesh-build-probe",
+  "schemaVersion":1,
+  "engineVersion":"5.8.3-58210709+++UE5+Release-5.8",
+  "targetPlatforms":["Win64"],
+  "sourceAsset":"/Game/FrontRooms/UnityImported/Props/Kit_Binders/Kit_Binders.Kit_Binders",
+  "sourcePackage":"../../../../Frontrooms3D/Migration/Unreal/Content/FrontRooms/UnityImported/Props/Kit_Binders/Kit_Binders.uasset",
+  "sourceSha1":"6F291ACCB0633B0A956E7205DBB8ED873BD1BC11",
+  "lods":[
+    {"lod":0,"before":{"recomputeNormals":true,"recomputeTangents":true,"useMikkTSpace":true,"removeDegenerates":false,"weightedNormals":true},"probe":{"recomputeNormals":true,"recomputeTangents":true,"useMikkTSpace":true,"removeDegenerates":true,"weightedNormals":true},"meshDescriptionBounds":{"min":[-15.197842,-13.900000,-0.000000],"max":[15.137521,14.023890,29.425133]},"renderBounds":{"origin":[-0.030160,0.061945,14.712566],"extent":[15.167681,13.961945,14.712566],"sphereRadius":25.153353},"buildErrors":[]}
+  ],
+  "sourceModified":false,
+  "status":"passed"
+}
