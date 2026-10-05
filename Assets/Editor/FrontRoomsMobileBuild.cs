@@ -17,7 +17,7 @@ public static class FrontRoomsMobileBuild
     const string Version = "0.1.0";
     // Increment for each App Store Connect/TestFlight upload while keeping
     // the Figma-aligned public version at 0.1.0.
-    const string IOSBuildNumber = "2";
+    const string IOSBuildNumber = "3";
     const string OutputEnvironment = "FRONTROOMS_MOBILE_OUTPUT";
 
     static string OutputRoot
@@ -148,15 +148,32 @@ public static class FrontRoomsMobileBuild
 
     static void EnsureIOSAppStoreIcon(string output)
     {
-        var source = Path.Combine("Assets", "Resources", "Brand", "FrontRoomsAppIcon1024.png");
+        var iconRoot = Path.Combine("Assets", "Resources", "Brand");
         var iconDirectory = Path.Combine(output, "Unity-iPhone", "Images.xcassets", "AppIcon.appiconset");
-        var destination = Path.Combine(iconDirectory, "Icon-1024.png");
         var contentsPath = Path.Combine(iconDirectory, "Contents.json");
-        if (!File.Exists(source) || !File.Exists(contentsPath))
-            throw new FileNotFoundException("iOS App Store icon source or asset catalog is missing", source);
+        var iconSources = new[]
+        {
+            new { source = Path.Combine(iconRoot, "FrontRoomsAppIcon120.png"), destination = "Icon-iPhone-120.png" },
+            new { source = Path.Combine(iconRoot, "FrontRoomsAppIcon180.png"), destination = "Icon-iPhone-180.png" },
+            new { source = Path.Combine(iconRoot, "FrontRoomsAppIcon76.png"), destination = "Icon-iPad-76.png" },
+            new { source = Path.Combine(iconRoot, "FrontRoomsAppIcon152.png"), destination = "Icon-iPad-152.png" },
+            new { source = Path.Combine(iconRoot, "FrontRoomsAppIcon167.png"), destination = "Icon-iPad-167.png" },
+            new { source = Path.Combine(iconRoot, "FrontRoomsAppIcon1024.png"), destination = "Icon-1024.png" }
+        };
+
+        if (!File.Exists(contentsPath))
+            throw new FileNotFoundException("iOS App Store icon asset catalog is missing", contentsPath);
+
+        foreach (var icon in iconSources)
+        {
+            if (!File.Exists(icon.source))
+                throw new FileNotFoundException("iOS App Store icon source is missing", icon.source);
+        }
 
         Directory.CreateDirectory(iconDirectory);
-        File.Copy(source, destination, true);
+        foreach (var icon in iconSources)
+            File.Copy(icon.source, Path.Combine(iconDirectory, icon.destination), true);
+
         var contents = File.ReadAllText(contentsPath);
         if (!contents.Contains("\"filename\" : \"Icon-1024.png\"") &&
             !contents.Contains("\"filename\": \"Icon-1024.png\""))
@@ -175,7 +192,7 @@ public static class FrontRoomsMobileBuild
             }
             File.WriteAllText(contentsPath, contents);
         }
-        Debug.Log("[FrontRoomsMobileBuild] iOS App Store icon ensured: " + destination);
+        Debug.Log("[FrontRoomsMobileBuild] Figma SSS icon applied to all iOS asset slots: " + iconDirectory);
     }
 
     static void RequireScene()

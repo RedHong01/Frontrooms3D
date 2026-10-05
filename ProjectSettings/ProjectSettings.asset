@@ -168,10 +168,11 @@ PlayerSettings:
   applicationIdentifier:
     Standalone: com.redwang.frontrooms3d
     WebGL: com.redwang.frontrooms3d
+    iPhone: com.redwang.frontrooms3d
   buildNumber:
     Standalone: 0
     VisionOS: 0
-    iPhone: 2
+    iPhone: 3
     tvOS: 0
   overrideDefaultApplicationIdentifier: 1
   AndroidBundleVersionCode: 1
