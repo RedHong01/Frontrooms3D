@@ -1,6 +1,6 @@
 # FRONTROOMSSS · iPhone / Android build plan
 
-状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；`FRONTROOMSSS` 的 iPhone Xcode 导出、分发归档和 TestFlight 上传已于 2026-10-04 完成，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 设备验收、测试组配置和 App Store Connect 处理结果仍待完成。
+状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；`FRONTROOMSSS` 的 Figma 对齐版已生成 iPhone Xcode、分发归档并上传 TestFlight `0.1.0 (2)`，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 交互验收、测试组配置和 App Store Connect processing 结果仍待完成。
 
 设计来源：Figma 文件 `0tCbAiVUlrPId3RWd9LRif`，节点 `2528:5403`（`FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID · 1920×1080`）。关键子节点：`2530:5061`（screen masters）、`2530:3828`（Touch / Stick）、`2530:3854`（Touch / Use）、`2528:5439`（Thumb map）、`2528:5446`（Same size in the eye）、`2528:5488`（Build plan）。
 
@@ -95,10 +95,12 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 
 独立的 `FrontRoomsMobileBuild` Editor 入口已加入，分别导出 iOS Xcode 工程和 Android APK/AAB；不要改写现有 Mac/WebGL 构建 profile。入口负责设置版本号、application identifier、横屏 autorotate flags、IL2CPP、Metal 和 iOS 15.0，但不把个人签名或 provisioning profile 写入仓库。Android API/ABI/Gradle 入口保留在代码中，本轮不执行。
 
-2026-10-04 的 iPhone 导出证据：
+2026-10-04 的 iPhone 导出与 TestFlight 证据：
 
 - Unity `FrontRooms 3D > Mobile > Export iOS Xcode` 成功，`BuildResult.Succeeded`；输出为 `Builds/Mobile/iOS/FRONTROOMSSS`，BuildReport 字节数为 1,543,922,906。
-- `xcodebuild -list` 成功，工程包含 `Unity-iPhone`、`UnityFramework`、`GameAssembly` 和测试 target；`-showBuildSettings` 确认 `SDKROOT=iphoneos27.0`、`PRODUCT_BUNDLE_IDENTIFIER=com.redwang.frontrooms3d`、`IPHONEOS_DEPLOYMENT_TARGET=15.0`、`SUPPORTED_PLATFORMS=iphoneos`、`TARGETED_DEVICE_FAMILY=1,2`。
+- 最新 Figma 对齐版使用 marketing version `0.1.0`、iOS build `2`；`xcodebuild -exportArchive` 使用 Cloud Managed Apple Distribution 完成分发签名，并返回 `Upload succeeded`。IPA 已上传到 App Store Connect，Apple 端 processing / TestFlight 可见性仍需等待其服务器完成。
+- 同一份源码的开发签名 Debug build 已安装并启动在已连接的 iPhone（UDID `00008140-0008392C2112801C`），可直接进行 safe-area、触控和动效实机检查。
+- `xcodebuild -list` 成功，工程包含 `Unity-iPhone`、`UnityFramework`、`GameAssembly` 和测试 target；`-showBuildSettings` 确认 `SDKROOT=iphoneos27.0`、`PRODUCT_BUNDLE_IDENTIFIER=com.redwang.frontroomsss`、`IPHONEOS_DEPLOYMENT_TARGET=15.0`、`SUPPORTED_PLATFORMS=iphoneos`、`TARGETED_DEVICE_FAMILY=1,2`。
 - 单独的无签名 device 编译 `xcodebuild -scheme Unity-iPhone -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -jobs 1` 返回 0，并生成 `/tmp/frontrooms3d-ios-final-20261004/Build/Products/Debug-iphoneos/FrontRooms3D.app`；这证明导出的工程可编译到 iPhone 目标，但不是可安装的签名包。
 - 首次上传验证发现导出工程缺少 1024×1024 App Store icon；`FrontRoomsMobileBuild` 现在从 `Assets/Resources/Brand/FrontRoomsAppIcon1024.png` 补入 `ios-marketing` 槽位，新的 Release archive 已通过图标校验。仍会报告 Burst 静态库和 Run Script 的非阻塞警告。
 - Unity BuildReport 的 `totalErrors=21512` 与最终 `BuildResult.Succeeded` 不一致；Unity 日志没有对应的 C# 或 Build Failed 行，因此把它保留为导出诊断，不能把它描述成“零警告/零错误构建”。
@@ -127,8 +129,8 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
 | Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 第一版代码已接线；Device Simulator/实机回归待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
-| Build | Xcode export、包版本/identifier/横屏、Release archive、分发签名 | iOS Xcode 导出、Release archive 和 Cloud Managed Distribution 签名已通过；真实 iPhone 安装和 FMOD/触控验收待做；Android 暂缓 |
-| Store/TestFlight | `FRONTROOMSSS` App record 已由 Xcode 创建；`0.1.0 (1)` 已上传，等待 App Store Connect 处理；测试组和真实 iPhone 验收仍待做 |
+| Build | Xcode export、包版本/identifier/横屏、Release archive、分发签名 | iOS Xcode 导出、Release archive、Cloud Managed Distribution 签名和开发签名 iPhone 安装已通过；FMOD/触控运行时验收待做；Android 暂缓 |
+| Store/TestFlight | `FRONTROOMSSS` App record 已由 Xcode 创建；`0.1.0 (2)` 已上传，等待 App Store Connect processing；测试组和真实 iPhone 验收仍待做 |
 
 ## 需要先定下的六个产品决定
 
