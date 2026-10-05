@@ -200,7 +200,7 @@ URP Forward+、HDR/MSAA、fog、post、zone cubemap、Surface/Glass/Reflection/V
 
 ### P1：UE 空项目和数据层
 
-1. 安装并锁定团队 UE5 版本；建立独立 `FrontRoomsUE.uproject`，不覆盖 Unity。
+1. 安装并锁定团队 UE5 版本；建立独立 `FrontRoomsss.uproject`，不覆盖 Unity。
 2. 创建 `Source/FrontRooms` C++ 模块、`Content/FrontRooms/{Core,Maps,Modules,Props,Materials,UI,Audio,FX}` 目录。
 3. 写 JSON 导出器：`FrontRoomsLevelProfile`、四个 `RoomModuleData`、114 个 sidecar、Race spec、设置和运行时常量。
 4. 写 UE Data Asset importer，建立 asset name → mesh/material/collider/anchor/support 的显式索引。

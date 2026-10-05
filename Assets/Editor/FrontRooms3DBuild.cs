@@ -54,14 +54,14 @@ public static class FrontRooms3DBuild
     {
         if (!File.Exists(Scene)) CreateScene();
     }
-    [MenuItem("FrontRooms 3D/Build macOS")]
+    [MenuItem("FrontRoomsss/Build macOS")]
     public static void BuildMac()
     {
         FrontRoomsStreamVerification.Run();
         // Keep the project-authored URP assignments. Clearing them here made
         // the legacy macOS menu build differ from the Windows/cloud builder.
         QualitySettings.SetQualityLevel(3, true);
-        PlayerSettings.productName = "FrontRooms3D"; PlayerSettings.companyName = "Red Wang";
+        PlayerSettings.productName = "FrontRoomsss"; PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0"; PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
         // Match the Canvas reference resolution so the title and HUD are not downsampled on launch.
@@ -69,7 +69,7 @@ public static class FrontRooms3DBuild
         PlayerSettings.resizableWindow = true; PlayerSettings.runInBackground = true;
         PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         EnsureSceneExists();
-        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] {Scene}, locationPathName = "Builds/Mac/FrontRooms3D.app", target = BuildTarget.StandaloneOSX, options = BuildOptions.None });
+        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] {Scene}, locationPathName = "Builds/Mac/FrontRoomsss.app", target = BuildTarget.StandaloneOSX, options = BuildOptions.None });
         Debug.Log("[FrontRooms3DBuild] " + report.summary.result + " errors=" + report.summary.totalErrors + " bytes=" + report.summary.totalSize);
         if (report.summary.result != BuildResult.Succeeded) throw new Exception("3D build failed");
     }
@@ -79,7 +79,7 @@ public static class FrontRooms3DBuild
     /// server-only compression headers so the output can be hosted on GitHub
     /// Pages or any static file server without additional configuration.
     /// </summary>
-    [MenuItem("FrontRooms 3D/Build WebGL")]
+    [MenuItem("FrontRoomsss/Build WebGL")]
     public static void BuildWebGL()
     {
         FrontRoomsStreamVerification.Run();
@@ -106,7 +106,7 @@ public static class FrontRooms3DBuild
 
     static void ApplyWebGLSettings()
     {
-        PlayerSettings.productName = "FrontRooms3D";
+        PlayerSettings.productName = "FrontRoomsss";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0";

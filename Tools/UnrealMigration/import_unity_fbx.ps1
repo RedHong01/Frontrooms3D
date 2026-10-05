@@ -5,7 +5,7 @@ param(
 )
 
 $Root = (Resolve-Path $Root).Path
-$project = Join-Path $Root "Migration/Unreal/FrontRoomsUE.uproject"
+$project = Join-Path $Root "Migration/Unreal/FrontRoomsss.uproject"
 $settings = Join-Path $Root "Migration/exports/unreal_import_settings.json"
 if (-not (Test-Path -LiteralPath $UnrealEditorCmd)) { throw "UnrealEditor-Cmd not found: $UnrealEditorCmd" }
 if (-not (Test-Path -LiteralPath $project)) { throw "Unreal project not found: $project" }
