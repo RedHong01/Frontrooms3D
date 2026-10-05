@@ -4,7 +4,7 @@ This is a first-person experiment built from the FrontRooms functional question:
 
 ## Run
 
-Open `Builds/Mac/FrontRoomsss.app` and press **Space**. The build was compiled with Unity **6000.3.10f1** for macOS. The optional native Metal glass enhancement currently targets Apple Silicon; Intel Macs use the URP fallback unless a universal native plugin is supplied. The working project is this folder. An editable copy is also included at the sibling Frontrooms3D/ folder in the assignment directory.
+Open `Builds/Mac/FrontRoomsss.app` and press **Space**. The build was compiled with Unity **6000.3.10f1** for macOS. The optional native Metal glass enhancement currently targets Apple Silicon; Intel Macs use the URP fallback unless a universal native plugin is supplied. The working project is this folder. An editable copy is also included at the sibling FRONTROOMSSS/ folder in the assignment directory.
 
 **WASD** moves, mouse looks, **Shift** runs, and **hold E** reads a note or breaks glass. Walk over the key, then hold E while aiming at the yellow door. **Esc** pauses; **Tab** opens the note journal; **R** retries after a result.
 

@@ -1,4 +1,4 @@
-# FrontRooms3D · iPhone / Android build plan
+# FrontRoomsss · iPhone / Android build plan
 
 状态：T0/T1 代码已开始，2026-10-04。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；移动设备验收和 iPhone/Android build 仍未完成。
 
@@ -6,7 +6,7 @@
 
 ## 目前的工程基线
 
-- 权威工程是 `Frontrooms3D/`，Unity `6000.3.10f1`，URP `17.3.0`；启动场景只有 `Assets/Scenes/FrontRooms3D.unity`。
+- 权威工程是 `FRONTROOMSSS/`，Unity `6000.3.10f1`，URP `17.3.0`；启动场景只有 `Assets/Scenes/FrontRooms3D.unity`。
 - 现有构建脚本只有 macOS、Windows、WebGL。没有 iOS Xcode 导出、Android APK/AAB 或移动端构建入口。
 - `FrontRooms3DGame` 的移动核心读取已切到 `FrontRoomsInput.FrameSnapshot`（移动、视角、冲刺、USE、暂停、开始、重试、shot-back）；设置行的桌面快捷键仍保留，菜单触控 row 属于后续 T2。
 - HUD 仍在运行时创建为 Screen Space Overlay；新增的 `FrontRoomsTouchControls` + `FrontRoomsTouchControlsView` 会在移动运行时创建独立 Touch Canvas、safe-area、浮动摇杆、冲刺 socket、USE 视觉/88 hit、Pause 视觉/44 hit。

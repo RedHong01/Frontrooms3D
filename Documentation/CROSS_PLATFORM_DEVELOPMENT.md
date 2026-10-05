@@ -6,7 +6,7 @@ systems, and keep Unity's serialized assets from producing line-ending noise.
 
 ## One checkout per machine
 
-`Frontrooms3D/` is the Git repository. A GitHub Desktop **linked worktree** is
+`FRONTROOMSSS/` is the Git repository. A GitHub Desktop **linked worktree** is
 local to the computer that created it; it is not copied by `git clone`. On a
 new machine, clone the remote repository and check out the remote branch:
 
