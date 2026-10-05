@@ -36,10 +36,13 @@ MonoBehaviour:
     tallRoomMin: 5
     tallRoomMax: 7
     borderOpening: 0.15
-    lowPillar: 0
-    standardPillar: 0
-    tallPillar: 0.06
+    columnMinRoomCells: 3
+    level0ColumnRooms: 0.25
+    officeColumnRooms: 0.75
+    tallColumnHalls: 0.7
     officeShare: 0.3
+    moduleChance: 0.3
+    moduleTier: 0
   runSeed: 0
   buildRadius: 2
   chunksPerFrame: 1
@@ -52,5 +55,49 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7970eac7f87914162937d8767042418e, type: 2}
   - {fileID: 11400000, guid: 9d904919031224c88a8ee73f76e98147, type: 2}
   - {fileID: 11400000, guid: ebabc4fdf51ef462aa8d50937adf6519, type: 2}
+  tiers:
+    zonesPerTier: 4
+    stallSeconds: 120
+    tiers:
+    - chaseSpeed: 1
+      hearing: 1
+      breakDoor: 1
+      search: 1
+      lampSteady: 0.62
+      lampStutter: 0.2
+      lampFailing: 0.1
+      lampDead: 0.05
+    - chaseSpeed: 1.07
+      hearing: 1.15
+      breakDoor: 0.88
+      search: 1.15
+      lampSteady: 0.57
+      lampStutter: 0.21
+      lampFailing: 0.12
+      lampDead: 0.06
+    - chaseSpeed: 1.14
+      hearing: 1.3
+      breakDoor: 0.76
+      search: 1.3
+      lampSteady: 0.52
+      lampStutter: 0.22
+      lampFailing: 0.14
+      lampDead: 0.08
+    - chaseSpeed: 1.21
+      hearing: 1.45
+      breakDoor: 0.64
+      search: 1.45
+      lampSteady: 0.46
+      lampStutter: 0.24
+      lampFailing: 0.16
+      lampDead: 0.1
+    - chaseSpeed: 1.29
+      hearing: 1.6
+      breakDoor: 0.52
+      search: 1.6
+      lampSteady: 0.4
+      lampStutter: 0.25
+      lampFailing: 0.18
+      lampDead: 0.12
   dressOffices: 1
   pileChance: 0.35

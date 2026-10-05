@@ -60,7 +60,7 @@ public static class FrontRooms3DBuild
         FrontRoomsStreamVerification.Run();
         GraphicsSettings.defaultRenderPipeline = null;
         QualitySettings.renderPipeline = null;
-        PlayerSettings.productName = "FrontRooms3D"; PlayerSettings.companyName = "Red Wang";
+        PlayerSettings.productName = "FRONTROOMSSS"; PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0"; PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
         // Match the Canvas reference resolution so the title and HUD are not downsampled on launch.
@@ -68,7 +68,7 @@ public static class FrontRooms3DBuild
         PlayerSettings.resizableWindow = true; PlayerSettings.runInBackground = true;
         PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         EnsureSceneExists();
-        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] {Scene}, locationPathName = "Builds/Mac/FrontRooms3D.app", target = BuildTarget.StandaloneOSX, options = BuildOptions.None });
+        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] {Scene}, locationPathName = "Builds/Mac/FRONTROOMSSS.app", target = BuildTarget.StandaloneOSX, options = BuildOptions.None });
         Debug.Log("[FrontRooms3DBuild] " + report.summary.result + " errors=" + report.summary.totalErrors + " bytes=" + report.summary.totalSize);
         if (report.summary.result != BuildResult.Succeeded) throw new Exception("3D build failed");
     }
@@ -105,7 +105,7 @@ public static class FrontRooms3DBuild
 
     static void ApplyWebGLSettings()
     {
-        PlayerSettings.productName = "FrontRooms3D";
+        PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0";

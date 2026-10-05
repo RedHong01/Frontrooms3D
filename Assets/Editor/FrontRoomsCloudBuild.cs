@@ -17,7 +17,7 @@ public static class FrontRoomsCloudBuild
         get
         {
             var value = Environment.GetEnvironmentVariable("FRONTROOMS_CLOUD_OUTPUT");
-            return string.IsNullOrWhiteSpace(value) ? Path.Combine(Path.GetTempPath(), "FrontRooms3D-cloud") : value;
+            return string.IsNullOrWhiteSpace(value) ? Path.Combine(Path.GetTempPath(), "FRONTROOMSSS-cloud") : value;
         }
     }
 
@@ -27,7 +27,7 @@ public static class FrontRoomsCloudBuild
         Verify();
         SwitchTarget(BuildTarget.StandaloneOSX);
         ApplyStandaloneSettings();
-        var output = Path.Combine(Root, "Mac", "FrontRooms3D.app");
+        var output = Path.Combine(Root, "Mac", "FRONTROOMSSS.app");
         Directory.CreateDirectory(Path.GetDirectoryName(output));
         Build(output, BuildTarget.StandaloneOSX, "macOS");
     }
@@ -38,7 +38,7 @@ public static class FrontRoomsCloudBuild
         Verify();
         SwitchTarget(BuildTarget.StandaloneWindows64);
         ApplyStandaloneSettings();
-        var output = Path.Combine(Root, "Windows", "FrontRooms3D.exe");
+        var output = Path.Combine(Root, "Windows", "FRONTROOMSSS.exe");
         Directory.CreateDirectory(Path.GetDirectoryName(output));
         Build(output, BuildTarget.StandaloneWindows64, "Windows");
     }
@@ -98,7 +98,7 @@ public static class FrontRoomsCloudBuild
     {
         // Preserve the authored URP pipeline. The older build entry point cleared
         // it for a pre-URP artifact; current builds must reflect the source state.
-        PlayerSettings.productName = "FrontRooms3D";
+        PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0";
@@ -113,7 +113,7 @@ public static class FrontRoomsCloudBuild
 
     static void ApplyWebGLSettings()
     {
-        PlayerSettings.productName = "FrontRooms3D";
+        PlayerSettings.productName = "FRONTROOMSSS";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0";
