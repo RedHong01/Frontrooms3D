@@ -13,7 +13,7 @@ using UnityEngine;
 /// </summary>
 public static class FrontRoomsFmodVerify
 {
-    const string BankFolder = "FMOD/FrontRooms/Build/Desktop";
+    const string BankFolder = "Assets/StreamingAssets/FMOD";
 
     static readonly Dictionary<string, string[]> Contract = new Dictionary<string, string[]>
     {

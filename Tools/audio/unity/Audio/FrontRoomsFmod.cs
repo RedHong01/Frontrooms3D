@@ -62,8 +62,10 @@ namespace FrontRooms.Audio
             try
             {
                 var folder = Application.isEditor
-                    ? System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, Settings.Instance.SourceBankPath, "Desktop")
+                    ? System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, Settings.Instance.SourceBankPath)
                     : System.IO.Path.Combine(Application.streamingAssetsPath, "FMOD");
+                if (Application.isEditor && Settings.Instance.HasPlatforms)
+                    folder = System.IO.Path.Combine(folder, "Desktop");
                 var sfx = System.IO.Path.Combine(folder, "SFX.bank");
                 var amb = System.IO.Path.Combine(folder, "Ambience.bank");
                 return "code " + CodeVersion + ", banks built " + System.IO.File.GetLastWriteTime(sfx).ToString("yyyy-MM-dd HH:mm:ss") +
