@@ -15,13 +15,13 @@ The existing desktop/WebGL measurement report is used only to order the work: it
 `FrontRoomsMobilePerformance.Apply()` runs only when `Application.platform == RuntimePlatform.IPhonePlayer` and applies: 
 
 - URP render scale `0.82` with 2x MSAA; HDR and the authored post grade remain enabled.
-- SSAO renderer feature disabled; the authored wall/fixture materials remain unchanged.
+- SSAO remains enabled at the user's request so wall corners and contact shading stay visible.
 - Main shadow distance capped at 24 m and shadow-map resolutions capped at 1024.
 - Fixture/ambient light shadows disabled on iPhone; distant fixture updates use the near-only path.
 - Map light radius capped at 12 m and shadow radius at 5 m.
 - Stream volumetric beams disabled on iPhone.
 
-The profile is runtime-only and leaves the desktop asset values intact.
+The profile is runtime-only and leaves the desktop asset values intact. Because SSAO remains enabled, the final iPhone frame time must be checked on the device after the other savings are applied.
 
 ## Acceptance sequence
 
