@@ -15,6 +15,7 @@ public static class FrontRoomsFmodSetup
 {
     const string StudioProject = "FMOD/FrontRooms/FrontRooms.fspro";
     const string BankPath = "FMOD/FrontRooms/Build";
+    const string TrackedBankPath = "Assets/StreamingAssets/FMOD";
     static readonly string[] RequiredBanks = { "Master.bank", "Master.strings.bank", "Ambience.bank", "Music.bank", "SFX.bank" };
 
     /// <summary>
@@ -60,7 +61,7 @@ public static class FrontRoomsFmodSetup
         return true;
     }
 
-    [MenuItem("FrontRoomsss/Audio/Configure FMOD (FrontRoomsss project)")]
+    [MenuItem("FrontRoomsss/Audio/Configure FMOD (verified banks)")]
     public static void Configure()
     {
         // Fresh installs ship the editor's logging library (fmodstudioL) in a staging
@@ -69,11 +70,12 @@ public static class FrontRoomsFmodSetup
         AssetDatabase.Refresh();
 
         var settings = Settings.Instance;
-        settings.HasSourceProject = true;
+        // The checked-in .fspro is metadata-only. Keep its stable path for Studio work,
+        // but configure Unity against the five verified banks that ship with this branch.
+        settings.HasSourceProject = false;
+        settings.HasPlatforms = false;
         settings.SourceProjectPath = StudioProject;
-        // The settings inspector derives this from the project path; setting the path from code
-        // does not, and with it empty FMOD for Unity finds no banks and loads nothing at runtime.
-        settings.SourceBankPath = BankPath;
+        settings.SourceBankPath = TrackedBankPath;
         settings.ImportType = ImportType.StreamingAssets;
         settings.TargetSubFolder = "FMOD";
         settings.BankLoadType = BankLoadType.All;
@@ -83,7 +85,7 @@ public static class FrontRoomsFmodSetup
         AssetDatabase.SaveAssets();
         EnsureSourceBanks();
         EventManager.RefreshBanks();
-        Debug.Log("[FrontRoomsAudio] FMOD for Unity now reads " + StudioProject);
+        Debug.Log("[FrontRoomsAudio] FMOD for Unity now reads verified banks from " + TrackedBankPath);
     }
 
     public static void RunBatch()
