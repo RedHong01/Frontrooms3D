@@ -26,6 +26,44 @@ Unity `Frontrooms3D/` 是行为、数据和验收合同的权威源。Unreal 是
 5. 更新 `Migration/STATUS.md` 和本文件的同步记录，附 Unity commit、Unreal commit、生成物路径和验证命令。
 6. 在同步完成前，Unity 改动保持 `Pending Unreal Sync`；它不能被选为“已迁移”的新 golden baseline。
 
+## Mac / Windows 协作约定
+
+Mac 开发者只需要维护 Unity 源工程并生成可提交的同步快照；Unreal
+编辑器和 Win64 打包固定在 Windows 上执行。仓库路径永远使用 `/` 分隔符，
+导出物不能写入绝对路径，也不能把 `Library/`、`Temp/`、Unreal
+`Binaries/`、`Intermediate/` 或 `Saved/` 当成同步输入。
+
+在 Mac 上（Unity 工程根目录）运行：
+
+```bash
+python3 Tools/UnrealMigration/export_contract.py
+python3 Tools/UnrealMigration/export_kit_manifest.py
+node Tools/UnrealMigration/export_asset_bridge.mjs
+node Tools/UnrealMigration/export_unreal_import_settings.mjs
+node Tools/UnrealMigration/export_unreal_texture_settings.mjs
+python3 Tools/UnrealMigration/sync_unity_unreal.py --update
+```
+
+提交 `Migration/exports/frontrooms_contract.json`、`kit_manifest.json`、
+`asset_bridge.json` 和 `unity_sync_manifest.json`。`unity_sync_report.json`
+是本机诊断文件，默认被忽略。Windows 侧收到 Mac 的提交后运行：
+
+```powershell
+& "$env:UE_PYTHON" Tools/UnrealMigration/sync_unity_unreal.py --check
+& .\Tools\UnrealMigration\smoke_test.ps1
+```
+
+`UE_PYTHON` 可以指向 UE 安装自带的 Python；若系统已有 Python，直接用
+`python` 也可以。`--check` 会比较 Unity 源文件和所有迁移生成物的 SHA-256，
+列出新增、删除和修改，并确认 Unreal 项目的 `TargetPlatforms` 仍然只有
+`Win64`。有任何差异时状态必须保持 `Pending Unreal Sync`，直到 Windows
+侧重新生成或更新对应 Unreal 实现并通过 smoke test。
+
+这个快照不要求 Mac 安装 Unreal。它保留 Unity 版本、Git revision、GUID
+sidecar、场景、脚本、模型、纹理、字体、音频、视频、FMOD 和项目设置的
+内容哈希，因此 Mac 上的 Unity 改动能在 Windows 上被确定地识别；实际
+Unreal 导入、编辑器验证和 Windows build 仍由 Windows 工作项完成。
+
 ## 允许的视觉升级边界
 
 Unreal 可以使用更高分辨率纹理、Nanite、Lumen、体积雾、Control Rig、硬件 RT 和更精细的后期。此类升级必须保持以下合同不变：

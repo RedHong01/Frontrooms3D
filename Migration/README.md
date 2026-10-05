@@ -12,6 +12,11 @@ outputs, and verification status.
 
 - `exports/frontrooms_contract.json` is generated from the committed Unity
   source by `Tools/UnrealMigration/export_contract.py`.
+- `exports/unity_sync_manifest.json` is the cross-platform Unity→Unreal
+  snapshot. It records repository-relative SHA-256 identities for Unity
+  source/data/assets and the generated migration inputs; use
+  `Tools/UnrealMigration/sync_unity_unreal.py --check` on Windows before
+  importing or building.
 - `contract.schema.json` describes the stable top-level shape consumed by the
   future Unreal DataAsset importer.
 - `UnrealCore/` contains engine-independent C++ contracts that can be checked

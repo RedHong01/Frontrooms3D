@@ -21,7 +21,7 @@ $report = [ordered]@{
     engineVersion = $null
     projectAssociation = $null
     stages = @()
-    coverage = @("Unity export contract", "Unity asset SHA-256 integrity", "Unreal editor build", "Unreal contract commandlet", "deterministic hash/state transitions/movement input/imported asset load")
+    coverage = @("Unity export contract", "Unity asset SHA-256 integrity", "Windows asset/material/sidecar audit", "Unreal editor build", "Unreal contract commandlet", "deterministic hash/state transitions/movement input/imported asset load")
     pendingCoverage = @("playable generated map", "live possessed movement trace", "HUD", "rendering/audio", "Complete and Relay Search transitions")
     error = $null
 }
@@ -90,6 +90,8 @@ try {
     $node = (Get-Command node -ErrorAction Stop).Source
     Invoke-SmokeStage "exports" $node @((Join-Path $Root "Tools/UnrealMigration/validate_exports.mjs"), $Root)
     Invoke-SmokeStage "source-assets" $node @((Join-Path $Root "Tools/UnrealMigration/test_asset_bridge.mjs"), $Root)
+    $windowsPowerShell = (Get-Command powershell.exe -CommandType Application -ErrorAction Stop).Source
+    Invoke-SmokeStage "asset-audit" $windowsPowerShell @("-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "Tools/UnrealMigration/audit_unreal_assets.ps1"), "-Root", $Root)
     $engine = & (Join-Path $PSScriptRoot "resolve_unreal_engine.ps1") -Root $Root -UnrealEditorCmd $UnrealEditorCmd
     $report.engineVersion = $engine.Version
     $report.projectAssociation = $engine.Association
@@ -102,13 +104,20 @@ try {
     $smokeUserProfile = Join-Path $Root ".smoke-profile"
     $smokeLocalAppData = Join-Path $smokeUserProfile "AppData/Local"
     $smokeRoamingAppData = Join-Path $smokeUserProfile "AppData/Roaming"
+    # UE5.8 keeps the UBA executor available even with -NoUBA (the flag
+    # disables detouring but does not remove the executor). Point its storage
+    # at the workspace so the Windows smoke gate never touches C:\ProgramData.
+    $smokeUbaRoot = Join-Path $Root ".smoke-profile/UBA"
+    New-Item -ItemType Directory -Path $smokeUbaRoot -Force | Out-Null
     New-Item -ItemType Directory -Path $smokeLocalAppData, $smokeRoamingAppData -Force | Out-Null
     $previousUserProfile = $env:USERPROFILE
     $previousLocalAppData = $env:LOCALAPPDATA
     $previousAppData = $env:APPDATA
+    $previousUbaRoot = $env:UBA_ROOT
     $env:USERPROFILE = $smokeUserProfile
     $env:LOCALAPPDATA = $smokeLocalAppData
     $env:APPDATA = $smokeRoamingAppData
+    $env:UBA_ROOT = $smokeUbaRoot
     # Use a fresh worker PowerShell for the .bat invocation; no cmd string interpolation.
     $worker = Join-Path $runDirectory "build.ps1"
     @'
@@ -119,7 +128,6 @@ param([string]$BuildScript, [string]$Project)
 & $BuildScript FrontRoomsEditor Win64 Development $Project -NoHotReloadFromIDE -NoUBA
 exit $LASTEXITCODE
 '@ | Set-Content -LiteralPath $worker -Encoding UTF8
-    $windowsPowerShell = (Get-Command powershell.exe -CommandType Application -ErrorAction Stop).Source
     Invoke-SmokeStage "build" $windowsPowerShell @("-NoProfile", "-NonInteractive", "-File", $worker, "-BuildScript", $engine.BuildScript, "-Project", $project)
     $commonArgs = @($project, "-unattended", "-nop4", "-nosplash", "-nullrhi", "-stdout", "-UTF8Output")
     Invoke-SmokeStage "contract" $engine.EditorCmd ($commonArgs + @("-run=FrontRoomsContract", "-abslog=$(Join-Path $runDirectory 'contract-engine.log')"))
@@ -133,6 +141,7 @@ exit $LASTEXITCODE
     if ($null -ne $previousUserProfile) { $env:USERPROFILE = $previousUserProfile }
     if ($null -ne $previousLocalAppData) { $env:LOCALAPPDATA = $previousLocalAppData }
     if ($null -ne $previousAppData) { $env:APPDATA = $previousAppData }
+    if ($null -ne $previousUbaRoot) { $env:UBA_ROOT = $previousUbaRoot } else { Remove-Item Env:UBA_ROOT -ErrorAction SilentlyContinue }
     $report.finishedUtc = [DateTime]::UtcNow.ToString("o")
     Save-SmokeReport
     Write-Host "SMOKE report: $(Join-Path $runDirectory 'report.json')"

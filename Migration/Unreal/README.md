@@ -13,12 +13,15 @@ contains:
 - The slice camera carries the Unity `FrontRoomsPost.asset` baseline: ACES,
   +0.15 EV exposure, temperature +9, tint -7, contrast -6 and saturation -8.
 
-The migration target is Windows only (`Win64`). The Windows workstation currently has UE5.6 at `D:\UE_5.6`; the `FrontRoomsEditor` target
-has been compiled once. Epic has released UE5.8 (including the 5.8.3 hotfix),
-but UE5.8 is not installed in the local Epic manifest yet, so `EngineAssociation`
-stays at `5.6` until that editor is installed. Imported assets are present locally;
-the movement slice is ready to place in a map, while the generated map and HUD
-remain to be created. Open `FrontRoomsUE.uproject`
+The migration target is Windows only (`Win64`). The Windows workstation now has
+UE5.8.3 at `D:\UE_5.8`, and `EngineAssociation` is `5.8`. The `FrontRoomsEditor`
+target has been rebuilt successfully with UE5.8.3. Imported assets are present locally;
+and the first authored map is saved at
+`Content/FrontRooms/Maps/FrontRoomsRuntime.umap`. Open `FrontRoomsUE.uproject`
+to inspect its four deterministic modules, Unity props, collision, and HDR lighting;
+the map is also configured as the editor and game startup map. The map generator
+can be regenerated with `Tools/UnrealMigration/generate_frontrooms_map.py` after
+the PythonScriptPlugin is enabled.
 and point an editor utility at `Migration/exports/frontrooms_contract.json` and
 `Migration/exports/kit_manifest.json`.
 
@@ -32,7 +35,7 @@ Windows display/RHI and exclusive fullscreen at runtime.
 The compiled editor target also exposes a headless contract gate:
 
 ```powershell
-& 'D:\UE_5.6\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
+& 'D:\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
   'Migration/Unreal/FrontRoomsUE.uproject' -run=FrontRoomsContract
 ```
 
@@ -67,8 +70,8 @@ The generated `Migration/exports/unreal_import_settings.json` is machine-local
 configuration because it contains absolute source paths. The resulting
 `.uasset` files stay local under the ignored UE `Content` directory and can be
 regenerated from the bridge. The Windows batch run completed all 123 FBX files
-with zero import errors; UE reported 76 bounds warnings that remain for the
-sidecar collision/LOD pass.
+with zero import errors; importer bounds/tangent warnings remain for the
+sidecar collision/LOD pass (the current local log reports 108 warning lines).
 
 Surface and lighting textures can be imported with the matching batch command:
 
@@ -80,6 +83,14 @@ The current Windows batch run imported all 167 Unity texture files with zero
 errors and zero warnings. Generated `.uasset` files stay under the ignored
 `Migration/Unreal/Content` tree; the import settings retain direct Unity-side
 source paths so the same pass can be regenerated after switching to UE5.8.
+
+Unity URP surface values are exported to
+`Migration/exports/unreal_material_profiles.json` (91 profiles with source
+SHA-256 values). The Windows asset audit checks those profiles together with
+all 123 FBX packages, 167 textures, 113 sidecars and staged audio/video/font
+inputs. Run the full repeatable pass with
+`Tools/UnrealMigration/run_unreal_asset_pipeline.ps1` before opening a new
+editor session.
 
 Run the migration smoke gate from PowerShell after each migration batch:
 

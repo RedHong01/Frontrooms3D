@@ -2,11 +2,16 @@
 
 #include "FrontRoomsSliceGameMode.h"
 #include "FrontRoomsSliceCharacter.h"
+#include "FrontRoomsRuntimeMap.h"
 #include "Camera/CameraComponent.h"
 #include "../../../UnrealCore/FrontRoomsMapHash.hpp"
 #include "Dom/JsonObject.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
+#include "Engine/World.h"
+#include "Engine/Level.h"
+#include "Components/PointLightComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "EditorFramework/AssetImportData.h"
 #include "HAL/FileManager.h"
 #include "Misc/ConfigCacheIni.h"
@@ -131,8 +136,15 @@ bool GetImportSources(const UObject* Asset, TArray<FString>& Sources)
         return false;
     }
 
+#if WITH_EDITOR
+    // The import-data source list is an editor-only validation detail. The
+    // commandlet runs in the editor target; the packaged game target keeps
+    // this helper compiled without editor-only AssetImportData APIs.
     Sources = ImportData->ExtractFilenames();
     return Sources.Num() > 0;
+#else
+    return false;
+#endif
 }
 
 bool CheckGameMode(FString& Error)
@@ -446,11 +458,13 @@ bool CheckImportedAssets(const FString& BridgePath, FString& Error)
             if (UStaticMesh* Mesh = Cast<UStaticMesh>(Object))
             {
                 ++Counts.StaticMeshes;
+#if WITH_EDITORONLY_DATA
                 if (Mesh->GetNumSourceModels() <= 0)
                 {
                     Error = FString::Printf(TEXT("static mesh has no source model: %s"), *Mesh->GetPathName());
                     return;
                 }
+#endif
                 TArray<FString> Sources;
                 if (!GetImportSources(Mesh, Sources))
                 {
@@ -536,6 +550,52 @@ bool CheckImportedAssets(const FString& BridgePath, FString& Error)
     return true;
 }
 
+bool CheckRuntimeMap(FString& Error)
+{
+    const TCHAR* MapPath = TEXT("/Game/FrontRooms/Maps/FrontRoomsRuntime");
+    UWorld* Map = LoadObject<UWorld>(nullptr, MapPath);
+    if (Map == nullptr || Map->PersistentLevel == nullptr)
+    {
+        Error = FString::Printf(TEXT("runtime map package is missing or could not be loaded: %s"), MapPath);
+        return false;
+    }
+
+    AFrontRoomsRuntimeMap* RuntimeMap = nullptr;
+    for (AActor* Actor : Map->PersistentLevel->Actors)
+    {
+        if (AFrontRoomsRuntimeMap* Candidate = Cast<AFrontRoomsRuntimeMap>(Actor))
+        {
+            RuntimeMap = Candidate;
+            break;
+        }
+    }
+    if (RuntimeMap == nullptr)
+    {
+        Error = TEXT("runtime map level has no AFrontRoomsRuntimeMap actor");
+        return false;
+    }
+
+    TArray<UActorComponent*> Components;
+    RuntimeMap->GetComponents(Components);
+    int32 StaticMeshComponents = 0;
+    int32 PointLights = 0;
+    for (UActorComponent* Component : Components)
+    {
+        if (Component->IsA<UStaticMeshComponent>()) ++StaticMeshComponents;
+        if (Component->IsA<UPointLightComponent>()) ++PointLights;
+    }
+    if (RuntimeMap->GeneratedModuleCount != 4 || StaticMeshComponents < 40 || PointLights < 20)
+    {
+        Error = FString::Printf(TEXT("runtime map generated content incomplete: modules=%d staticMeshes=%d pointLights=%d"),
+            RuntimeMap->GeneratedModuleCount, StaticMeshComponents, PointLights);
+        return false;
+    }
+
+    UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke map gate passed: /Game/FrontRooms/Maps/FrontRoomsRuntime, modules=%d, static meshes=%d, point lights=%d"),
+        RuntimeMap->GeneratedModuleCount, StaticMeshComponents, PointLights);
+    return true;
+}
+
 } // namespace FrontRoomsSmokePrivate
 
 UFrontRoomsSmokeCommandlet::UFrontRoomsSmokeCommandlet()
@@ -580,6 +640,11 @@ int32 UFrontRoomsSmokeCommandlet::Main(const FString& Params)
     {
         UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke asset gate failed: %s"), *Error);
         return 2;
+    }
+    if (!FrontRoomsSmokePrivate::CheckRuntimeMap(Error))
+    {
+        UE_LOG(LogTemp, Error, TEXT("FrontRooms smoke map gate failed: %s"), *Error);
+        return 6;
     }
 
     UE_LOG(LogTemp, Display, TEXT("FrontRooms smoke passed"));

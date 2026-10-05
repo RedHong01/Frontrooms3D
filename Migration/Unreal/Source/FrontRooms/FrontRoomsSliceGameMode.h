@@ -31,6 +31,9 @@ class FRONTROOMS_API AFrontRoomsSliceGameMode : public AGameModeBase
 public:
     AFrontRoomsSliceGameMode();
 
+    virtual void StartPlay() override;
+    virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+
     UPROPERTY(BlueprintReadOnly, Category = "FrontRooms|Run") int32 Seed = 2554;
     UPROPERTY(BlueprintReadOnly, Category = "FrontRooms|Run") EFrontRoomsSlicePhase Phase = EFrontRoomsSlicePhase::Title;
     UPROPERTY(BlueprintReadOnly, Category = "FrontRooms|Run") EFrontRoomsRelayState RelayState = EFrontRoomsRelayState::Listen;
@@ -43,4 +46,13 @@ public:
     UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run") void PickupKey();
     UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run") void SetRelayHeardPlayer(bool bHeard);
     UFUNCTION(BlueprintCallable, Category = "FrontRooms|Run") void MarkCaught();
+
+private:
+    UPROPERTY()
+    TObjectPtr<class AFrontRoomsRuntimeMap> RuntimeMap;
+
+    UPROPERTY()
+    TObjectPtr<class APlayerStart> RuntimePlayerStart;
+
+    void EnsureRuntimeWorld();
 };

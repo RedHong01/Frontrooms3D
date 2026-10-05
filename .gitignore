@@ -103,9 +103,12 @@ Migration/Unreal/Saved/
 Migration/Unreal/DerivedDataCache/
 Migration/Unreal/Content/
 .smoke-profile/
+.uba-root/
 .editor-profile/
 Migration/exports/unreal_import_settings.json
 Migration/exports/unreal_texture_import_settings.json
+Migration/exports/unity_sync_report.json
+Migration/exports/unreal_asset_audit.json
 
 # FMOD generated analysis/cache data; FMOD regenerates this from the source banks.
 FMOD/FrontRooms/.cache/

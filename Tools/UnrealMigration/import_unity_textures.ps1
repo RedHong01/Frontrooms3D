@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot "../..")),
-    [string]$UnrealEditorCmd = "D:\UE_5.6\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+    [string]$UnrealEditorCmd = "D:\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 )
 
 $Root = (Resolve-Path $Root).Path

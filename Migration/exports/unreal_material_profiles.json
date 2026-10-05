@@ -1,0 +1,6419 @@
+{
+  "schema": "frontrooms.unreal.material-profiles",
+  "schemaVersion": 1,
+  "sourceRoot": "Assets/Resources/Surfaces",
+  "profiles": [
+    {
+      "name": "Cove_Base",
+      "source": "Assets/Resources/Surfaces/Cove_Base.mat",
+      "sourceSha256": "ac49b196c30ddad58455698507d399484a62286aa3940faeca20bdcd892da770",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.2,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.38,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.23,
+          0.19,
+          0.14,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Door_Veneer",
+      "source": "Assets/Resources/Surfaces/Door_Veneer.mat",
+      "sourceSha256": "8a9c7f523f33e11af4c4267861ccf22395c024b2098d6c88924e731a28847c90",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.15,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.12,
+          2.62,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "2b2dde326d1074437baf2be8de382ca4",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "5bc598f722c364cc8b7ff14751be81e3",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "10b8018a968c84276abc2c8c5a8f6fc4",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Exit_Carpet",
+      "source": "Assets/Resources/Surfaces/Exit_Carpet.mat",
+      "sourceSha256": "45ac95b547b5990576cc8389ed31c2888e339b7dd500da4b9cebd891eca1e47e",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.35,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0.3
+      },
+      "colors": {
+        "_BaseColor": [
+          0.66,
+          0.72,
+          0.74,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "2074e2a0b158b4888aac7480dc97cff1",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "0ad2623aa6c3a4307aac86d567f01521",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "518e3711a722e4225bfc4132a0529aa7",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Exit_Wallpaper",
+      "source": "Assets/Resources/Surfaces/Exit_Wallpaper.mat",
+      "sourceSha256": "dc2b7307764bf1a8e9c93f531b689b847a392783044486c392133da949b9b69e",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.8,
+        "_CeilingGrime": 0.2,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0.4,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.35,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_PrintAmount": 1,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_UsePrint": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_InkCream": [
+          0.77254903,
+          0.827451,
+          0.7882353,
+          1
+        ],
+        "_InkDeep": [
+          0.3372549,
+          0.39607844,
+          0.36862746,
+          1
+        ],
+        "_InkGround": [
+          0.6862745,
+          0.7529412,
+          0.7137255,
+          1
+        ],
+        "_InkMid": [
+          0.5294118,
+          0.6,
+          0.56078434,
+          1
+        ],
+        "_StainColor": [
+          0.3,
+          0.34,
+          0.32,
+          1
+        ],
+        "_TileSize": [
+          0.75,
+          1.125,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "7aaae96d9271141cdbfb72cb80cada03",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "b44f6f8d5018c4637921f38ca0848589",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "3dd3e135ef2da43499286842784d31dd",
+          "type": 3
+        },
+        "_PrintTex": {
+          "fileId": 2800000,
+          "guid": "49155c40a0d0f4cdcb40032c0217cbe0",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion",
+      "source": "Assets/Resources/Surfaces/Glass_Edge.mat",
+      "sourceSha256": "3aadd097450c17d696b80e6a3853f88fbfa91fef26977319e511f5f8c5e01a75",
+      "shaderGuid": "933532a4fcc9baf4fa0491de14d08ed7",
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.005,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.6,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_WorkflowMode": 1,
+        "_XRMotionVectorsPass": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          0.56572837,
+          0.6799757,
+          0.6180314,
+          1
+        ],
+        "_Color": [
+          0.5657283,
+          0.6799757,
+          0.6180314,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      },
+      "textures": {}
+    },
+    {
+      "name": "m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion",
+      "source": "Assets/Resources/Surfaces/Glass_Shard.mat",
+      "sourceSha256": "8a0319ad15cbf6397c457181da0344bfd59b66fc0550fd4a1c5cb765c35f223d",
+      "shaderGuid": "933532a4fcc9baf4fa0491de14d08ed7",
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaToMask": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.005,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.95,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_WorkflowMode": 1,
+        "_XRMotionVectorsPass": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          0.49995553,
+          0.4391783,
+          0.3015324,
+          1
+        ],
+        "_Color": [
+          0.49995548,
+          0.43917826,
+          0.30153233,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      },
+      "textures": {}
+    },
+    {
+      "name": "Glass_ShardClear",
+      "source": "Assets/Resources/Surfaces/Glass_ShardClear.mat",
+      "sourceSha256": "f41edd756f4b9cf7bff7d37672763c87a86c406347f9ed7de9d80a842146a13f",
+      "shaderGuid": "13d6ede322bfb428b87e9878b8586c28",
+      "floats": {
+        "_AlphaFace": 0.12,
+        "_AlphaFresnel": 0.88,
+        "_AutoEdge": 0,
+        "_Crack": 0,
+        "_CrackSeed": 0,
+        "_Cull": 2,
+        "_Dust": 1,
+        "_DustAlpha": 0.25,
+        "_DustFilm": 0,
+        "_EdgeAlpha": 0.92,
+        "_EdgeSmoothness": 0.6,
+        "_FloorY": 0,
+        "_Grime": 0,
+        "_GrimeDebug": 0,
+        "_Metallic": 0,
+        "_Palm": 0,
+        "_PaneF0": 0.08,
+        "_Prints": 1,
+        "_RTReceive": 0,
+        "_ReflectionMin": 1,
+        "_RollPeriod": 0.37,
+        "_RollStrength": 0,
+        "_Scatter": 0,
+        "_Smear": 1,
+        "_Smoothness": 0.94,
+        "_SmudgeNormal": 0.05,
+        "_SmudgeSmoothness": 0.62
+      },
+      "colors": {
+        "_BaseColor": [
+          0.15170369,
+          0.17184407,
+          0.1600776,
+          1
+        ],
+        "_DustColor": [
+          0.68,
+          0.66499996,
+          0.618,
+          1
+        ],
+        "_EdgeColor": [
+          0.566,
+          0.68,
+          0.618,
+          1
+        ],
+        "_ImpactUV": [
+          0.5,
+          0.5,
+          0,
+          0
+        ],
+        "_PaneSize": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "textures": {}
+    },
+    {
+      "name": "Glass_Window",
+      "source": "Assets/Resources/Surfaces/Glass_Window.mat",
+      "sourceSha256": "aa92fdaece217bf8e7c51b1e880395ced3300c12af42fb9c7d17994b01830e13",
+      "shaderGuid": "13d6ede322bfb428b87e9878b8586c28",
+      "floats": {
+        "_AlphaFace": 0.11,
+        "_AlphaFresnel": 0.89,
+        "_AutoEdge": 1,
+        "_Crack": 0,
+        "_CrackSeed": 0,
+        "_Cull": 2,
+        "_Dust": 1,
+        "_DustAlpha": 0.25,
+        "_DustFilm": 0,
+        "_EdgeAlpha": 0.92,
+        "_EdgeSmoothness": 0.6,
+        "_FloorY": 0,
+        "_Grime": 1,
+        "_GrimeDebug": 0,
+        "_Metallic": 0,
+        "_Palm": 0,
+        "_PaneF0": 0.08,
+        "_Prints": 1,
+        "_RTReceive": 1,
+        "_ReflectionMin": 1,
+        "_RollPeriod": 0.37,
+        "_RollStrength": 0.02,
+        "_Scatter": 1,
+        "_Smear": 1,
+        "_Smoothness": 0.96,
+        "_SmudgeNormal": 0.05,
+        "_SmudgeSmoothness": 0.62
+      },
+      "colors": {
+        "_BaseColor": [
+          0.15170369,
+          0.17184407,
+          0.1600776,
+          1
+        ],
+        "_DustColor": [
+          0.6799757,
+          0.66518503,
+          0.6180314,
+          1
+        ],
+        "_EdgeColor": [
+          0.56572837,
+          0.6799757,
+          0.6180314,
+          1
+        ],
+        "_ImpactUV": [
+          0.5,
+          0.5,
+          0,
+          0
+        ],
+        "_PaneSize": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_GrimeMap": {
+          "fileId": 2800000,
+          "guid": "ef13994b75808460fa82d76c15d7121d",
+          "type": 3
+        },
+        "_SmearNormal": {
+          "fileId": 2800000,
+          "guid": "ca7f1ffdc48474cc9b63e74f104a2f90",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "L0_Carpet",
+      "source": "Assets/Resources/Surfaces/L0_Carpet.mat",
+      "sourceSha256": "0f7820c32fc8e018c8b106f0f5fb1bf18787dcbd96820dc0bdb7dc33e8c225b6",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.35,
+        "_MacroTone": 0.4,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0.55
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "2074e2a0b158b4888aac7480dc97cff1",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "0ad2623aa6c3a4307aac86d567f01521",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "518e3711a722e4225bfc4132a0529aa7",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "L0_Carpet_Shift",
+      "source": "Assets/Resources/Surfaces/L0_Carpet_Shift.mat",
+      "sourceSha256": "66539c2a0654da653609317fd9b870f7a8fda6c55d0cc131987cb13a80eecafc",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.5,
+        "_MacroTone": 0.5,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0.85
+      },
+      "colors": {
+        "_BaseColor": [
+          0.92,
+          0.9,
+          0.84,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "2074e2a0b158b4888aac7480dc97cff1",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "0ad2623aa6c3a4307aac86d567f01521",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "518e3711a722e4225bfc4132a0529aa7",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "L0_Ceiling",
+      "source": "Assets/Resources/Surfaces/L0_Ceiling.mat",
+      "sourceSha256": "395446f05e9d43850f3efa25d5bbddff4aa15f51d1bacf36791209d445657345",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.25,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0.22,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "932d839ba4836417ab6383b155e80499",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "597eab198343242e9883be79eb0d5644",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "edf06a41034064198bceae1533be1572",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "L0_Ceiling_Shift",
+      "source": "Assets/Resources/Surfaces/L0_Ceiling_Shift.mat",
+      "sourceSha256": "d74167e51a9ab4509d62ea416c33e039eaf5e2c1e48d066c769e6e7050f27146",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.45,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0.55,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.93,
+          0.92,
+          0.86,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "932d839ba4836417ab6383b155e80499",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "597eab198343242e9883be79eb0d5644",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "edf06a41034064198bceae1533be1572",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "L0_Wallpaper",
+      "source": "Assets/Resources/Surfaces/L0_Wallpaper.mat",
+      "sourceSha256": "003e6a291cc585754ff97c0bd3848f7a1570972a3c3d1dc75c3b2a14909082fc",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.8,
+        "_CeilingGrime": 0.5,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0.6,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.3,
+        "_MacroTone": 0.45,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_PrintAmount": 1,
+        "_Smoothness": 1,
+        "_StainStrength": 0.18,
+        "_UseEmission": 0,
+        "_UsePrint": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_InkCream": [
+          0.8901961,
+          0.8352941,
+          0.5803922,
+          1
+        ],
+        "_InkDeep": [
+          0.4627451,
+          0.41568628,
+          0.20392157,
+          1
+        ],
+        "_InkGround": [
+          0.8235294,
+          0.7607843,
+          0.4862745,
+          1
+        ],
+        "_InkMid": [
+          0.6745098,
+          0.6039216,
+          0.32156864,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.75,
+          1.125,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "7aaae96d9271141cdbfb72cb80cada03",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "b44f6f8d5018c4637921f38ca0848589",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "3dd3e135ef2da43499286842784d31dd",
+          "type": 3
+        },
+        "_PrintTex": {
+          "fileId": 2800000,
+          "guid": "49155c40a0d0f4cdcb40032c0217cbe0",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "L0_Wallpaper_Shift",
+      "source": "Assets/Resources/Surfaces/L0_Wallpaper_Shift.mat",
+      "sourceSha256": "9b453cc60359d2a449dfa39eb25a6bcf9a0843d62660b55aaf9760141e3ff939",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.8,
+        "_CeilingGrime": 0.85,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0.8,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.45,
+        "_MacroTone": 0.6,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_PrintAmount": 1,
+        "_Smoothness": 1,
+        "_StainStrength": 0.45,
+        "_UseEmission": 0,
+        "_UsePrint": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.9,
+          0.88,
+          0.8,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_InkCream": [
+          0.8901961,
+          0.8352941,
+          0.5803922,
+          1
+        ],
+        "_InkDeep": [
+          0.4627451,
+          0.41568628,
+          0.20392157,
+          1
+        ],
+        "_InkGround": [
+          0.8235294,
+          0.7607843,
+          0.4862745,
+          1
+        ],
+        "_InkMid": [
+          0.6745098,
+          0.6039216,
+          0.32156864,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.75,
+          1.125,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "7aaae96d9271141cdbfb72cb80cada03",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "b44f6f8d5018c4637921f38ca0848589",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "3dd3e135ef2da43499286842784d31dd",
+          "type": 3
+        },
+        "_PrintTex": {
+          "fileId": 2800000,
+          "guid": "49155c40a0d0f4cdcb40032c0217cbe0",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Office_BlackedGlass",
+      "source": "Assets/Resources/Surfaces/Office_BlackedGlass.mat",
+      "sourceSha256": "9c51a5b1232a141c9b2b3599f9420e022e25420014e36b20cbe2bf859c7ba865",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.1,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.95,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.018,
+          0.02,
+          0.022,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Office_Carpet",
+      "source": "Assets/Resources/Surfaces/Office_Carpet.mat",
+      "sourceSha256": "40ad3c351cc002346d6f01d2fbc2f80d6deacf47a9734fbf911cb31db9eca7b7",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.8,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.3,
+        "_MacroTone": 0.3,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0.15
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "34750d07d93f74f1e97759169a361d8b",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "d6d79c8e4d10642eeb0c5f581427c2db",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "2eb35497d6da242aea866bee0dd705e4",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Office_Ceiling",
+      "source": "Assets/Resources/Surfaces/Office_Ceiling.mat",
+      "sourceSha256": "a057a61608e6ae870aa38a3c2394e66971e5c5b29dc8efd2425cb091b3f38743",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.25,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0.3,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "72f337efd439b4de48cd8a6110006604",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "5112e66fea11a4fbaa15b962d31829aa",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "566e5adce13de4d2fb768bb7d710165a",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Office_Fabric",
+      "source": "Assets/Resources/Surfaces/Office_Fabric.mat",
+      "sourceSha256": "b39b1d6260fe2e56f1c4e59ec71b2fa56ef66d44b4ab202a85b2d60c4c7e85b2",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.2,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "ad2d2fcca6d7e41b5a80d2940b8d50c6",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "06ee4be2243ed4bae85aa8134cd20e12",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "03ebc81b33b254369ae326ca2e726c4f",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Office_Louver",
+      "source": "Assets/Resources/Surfaces/Office_Louver.mat",
+      "sourceSha256": "1a40e9b9e32cc1a55e82aa54ede7867f7f7ea61e035ec468a83cc96d2866df5b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0.85,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1.6,
+          1.55,
+          1.4,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.6,
+          0.6,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "4c5cf3357e4ed40b8ab900ced7369216",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "4e3733b055cbd4fc18f9a657bf0796aa",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "707e641f70f494055ba6d516d98380e3",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "ad0aadc4ce6a14beca2c84e5858d95c0",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Office_Wall",
+      "source": "Assets/Resources/Surfaces/Office_Wall.mat",
+      "sourceSha256": "96a071b804c0de13e5cc7793132bcbbf8107b3e4c2b7b678a8c9111e62f190c3",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.8,
+        "_CeilingGrime": 0.2,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0.4,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.3,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "a6a6c3435ddc8442eb581f3d5949f9fc",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "112bfd46391af4253acab5af299f707f",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "4ed026ab707894a0dbe3a1d0192c77b9",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Painted_Metal",
+      "source": "Assets/Resources/Surfaces/Painted_Metal.mat",
+      "sourceSha256": "8c903310e7dab58249fee396b536a20f581c1d542fc5337f58436aba5ac2f12a",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.15,
+        "_MacroTone": 0.15,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "4ba1a3dc71f374536869477ba1527956",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "c21754d41a0c940be9afe46cab781edc",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "259e8b4c705ab49dd9e7c8ad4e7fc8a7",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Aluminium",
+      "source": "Assets/Resources/Surfaces/Prop_Aluminium.mat",
+      "sourceSha256": "76057792a36053b3e1aa0f1b9893bcb35177d62379d5e80a4d769d63a8faffb8",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 1,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "09bb35243a17d4576a22104233ae0f79",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "4e9443cee36b9451cad9db002d66cce5",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "9e17839d40d6746009fe32dc60d67ace",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Backer",
+      "source": "Assets/Resources/Surfaces/Prop_Backer.mat",
+      "sourceSha256": "783f71ce1cc85afdc382a1139ca1899c0b3dd378e6f9fc88261cf08f7c8c76a3",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.1,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.62,
+          0.52,
+          0.42,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "3721ee087dffd41bfac8fa4ecd9a94e0",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "6d51d4d289ef14db594c04df73c10a91",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "ed731c260cb4840a4afa6330ea3bfc06",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_BottleBlue",
+      "source": "Assets/Resources/Surfaces/Prop_BottleBlue.mat",
+      "sourceSha256": "4a62288c1fbf197a6a8aa59f43fc4d4c859dc492a44a603b326eacc407ff33c8",
+      "shaderGuid": "13d6ede322bfb428b87e9878b8586c28",
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaFace": 0.3,
+        "_AlphaFresnel": 0.7,
+        "_AlphaToMask": 0,
+        "_AutoEdge": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Crack": 0,
+        "_CrackSeed": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 10,
+        "_DstBlendAlpha": 10,
+        "_Dust": 1,
+        "_DustAlpha": 0.25,
+        "_DustFilm": 0,
+        "_EdgeAlpha": 0.92,
+        "_EdgeSmoothness": 0.6,
+        "_EnvironmentReflections": 1,
+        "_FloorY": 0,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Grime": 0,
+        "_GrimeDebug": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Palm": 0,
+        "_PaneF0": 0.08,
+        "_Parallax": 0.005,
+        "_Prints": 1,
+        "_QueueOffset": 0,
+        "_RTReceive": 0,
+        "_ReceiveShadows": 1,
+        "_ReflectionMin": 1,
+        "_RollPeriod": 0.37,
+        "_RollStrength": 0,
+        "_Scatter": 0,
+        "_Smear": 1,
+        "_Smoothness": 0.9,
+        "_SmoothnessTextureChannel": 0,
+        "_SmudgeNormal": 0.05,
+        "_SmudgeSmoothness": 0.62,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 5,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 1,
+        "_WorkflowMode": 1,
+        "_XRMotionVectorsPass": 1,
+        "_ZWrite": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.36,
+          0.58,
+          0.8,
+          1
+        ],
+        "_Color": [
+          0.35999998,
+          0.58,
+          0.8,
+          1
+        ],
+        "_DustColor": [
+          0.68,
+          0.66499996,
+          0.618,
+          1
+        ],
+        "_EdgeColor": [
+          0.566,
+          0.68,
+          0.618,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_ImpactUV": [
+          0.5,
+          0.5,
+          0,
+          0
+        ],
+        "_PaneSize": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      },
+      "textures": {}
+    },
+    {
+      "name": "Prop_Brass",
+      "source": "Assets/Resources/Surfaces/Prop_Brass.mat",
+      "sourceSha256": "4d01b2ca163163e2ab51a24ac7b9b424c3002f7c0d6d8e7da43410fd92229e6b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 1,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.6,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.69,
+          0.541,
+          0.29,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_BulbLit",
+      "source": "Assets/Resources/Surfaces/Prop_BulbLit.mat",
+      "sourceSha256": "6baa6666ae8db2456ea2530dc5ee4c52bb6878084e66290854bc54822d74481b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.3,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          0.95,
+          0.85,
+          1
+        ],
+        "_EmissionColor": [
+          4,
+          3.5,
+          2.6,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Cardboard",
+      "source": "Assets/Resources/Surfaces/Prop_Cardboard.mat",
+      "sourceSha256": "e9b6c80774b047c751405d822a9bcc49f5fa81bf1672e390663e16dc2309cad1",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.15,
+        "_MacroTone": 0.15,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "3721ee087dffd41bfac8fa4ecd9a94e0",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "6d51d4d289ef14db594c04df73c10a91",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "ed731c260cb4840a4afa6330ea3bfc06",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Ceramic",
+      "source": "Assets/Resources/Surfaces/Prop_Ceramic.mat",
+      "sourceSha256": "4f467f2970e3f6fc885927384eb5c5f4c25c9935fcf3b21ccc3404b966bf2406",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.8,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.353,
+          0.227,
+          0.141,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_CeramicGlaze",
+      "source": "Assets/Resources/Surfaces/Prop_CeramicGlaze.mat",
+      "sourceSha256": "b35abb9b7bad435586b2954480615816b2fc015a944705b355f30cbc28d1ad76",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.85,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.86,
+          0.85,
+          0.8,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Chipboard",
+      "source": "Assets/Resources/Surfaces/Prop_Chipboard.mat",
+      "sourceSha256": "e79fdff8c62ae5bc6eb728fe5fce191252f89e7fafa6c333e180db1c455fbff0",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "823bfac72b8ee4e5590b9a941a50a514",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "79001676ca8e740fd9a7f87487af6e55",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "bbda0772aa7a1416abf582720e5ccbf1",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Chrome",
+      "source": "Assets/Resources/Surfaces/Prop_Chrome.mat",
+      "sourceSha256": "e9af86744d7dfddad1621e17925e2fb53deb7906e9aeb2e44959ee116c7a7a97",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 1,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.85,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.847,
+          0.847,
+          0.847,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_CopierPanel",
+      "source": "Assets/Resources/Surfaces/Prop_CopierPanel.mat",
+      "sourceSha256": "8706efa4d1433760467c39f094ae97a06df4750e689de6f68c949becf49912a3",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.05,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "314cab2e5339b453a883105e70f5d2b2",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "a44a7b169c1a648e48318222c324b9f8",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "f51c7036e2a0b45e6b97546992d7e6e4",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricBeige",
+      "source": "Assets/Resources/Surfaces/Prop_FabricBeige.mat",
+      "sourceSha256": "999fee62ffb200c5e4ff7fd29d2746f42d328afddbe381cedbe5410e6a0aa667",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.27,
+          0.27,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "5c227a7ad5dad4f768dc7eae2d5effa1",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "4370819a57b9d46faadedf0591edc223",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "eaa35680e7dd048119a48cf04ef697b4",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricChair",
+      "source": "Assets/Resources/Surfaces/Prop_FabricChair.mat",
+      "sourceSha256": "e7250295914f731060573868f2666ff5269ceced70a60a47e7e0e7320625d4a3",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0.03,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.27,
+          0.27,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "c4b40b117861b4984835be31d23b4288",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "8dc9201222dbd4814b8a562b481da388",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "cbe2e8c674263415082b53e0ec4d8c4c",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricCharcoal",
+      "source": "Assets/Resources/Surfaces/Prop_FabricCharcoal.mat",
+      "sourceSha256": "34611485e778de95600dd9ae53b850215c6cceb5c3e419d84a7ea64b34587bc6",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.27,
+          0.27,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "c6308b271e7d641f1a21b8f5330b5b0b",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "53385237db6b54a81b6d4b89f6a36b94",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "652ffcdf8b9e74988a4485588cd145c0",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricCubicle",
+      "source": "Assets/Resources/Surfaces/Prop_FabricCubicle.mat",
+      "sourceSha256": "342ed372b80325c1544ac61acae02eeef9685c851fca7aa2c83fa7c69093fc54",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.12,
+        "_MacroTone": 0.12,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.27,
+          0.27,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "12dc07090f6484c6ba6d1e97139d45b8",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "7ca418ea8d10749918382de6d1ec75f7",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "05c2e4637815548a09d70913e69b36f7",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricFloral",
+      "source": "Assets/Resources/Surfaces/Prop_FabricFloral.mat",
+      "sourceSha256": "5a0d3b21d83f2807fa4bc77342736d1fe4bbd096a748f407432e4c8ba03cab0d",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.5,
+          0.5,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "cd69b753c52bf4a65a83fd00787831bd",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "06db2e2823f19424599e02de04d98aa4",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "bd73424bd641c40758c0648407dd849f",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricNavy",
+      "source": "Assets/Resources/Surfaces/Prop_FabricNavy.mat",
+      "sourceSha256": "6552613fe4ac90f5620c1fd5562d5ea8ad0969eb86d15ad98637baae2d9e6d7e",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.27,
+          0.27,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "54b4c535ab3024f6182d880565888843",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "14615e4ab010a4386a14f9fea60bffc2",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "7e39ae79f5aa34e87ba2ca4eeb4619a4",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FabricTeal",
+      "source": "Assets/Resources/Surfaces/Prop_FabricTeal.mat",
+      "sourceSha256": "4855874d604e39215984360012d53df96856241cbef2ad5898696b9baeafe476",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.27,
+          0.27,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "305e4dfa7e2be4e04a83af70b12b7db9",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "aa3dba307646946bf87e5bb3c5134b7e",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "bd0c6d5cca0d844069d8e69923af8168",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_FoamPU",
+      "source": "Assets/Resources/Surfaces/Prop_FoamPU.mat",
+      "sourceSha256": "23ef97f8fa35975d100bd8228260ab448b182fa9cdc232f8f77492057ec5016d",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.03,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.25,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.03,
+          0.03,
+          0.03,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Glass",
+      "source": "Assets/Resources/Surfaces/Prop_Glass.mat",
+      "sourceSha256": "e7c3539d936ea532690023e83e0617a895b9132ba62233fa5e8af6cae1fa6550",
+      "shaderGuid": "13d6ede322bfb428b87e9878b8586c28",
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 0,
+        "_AlphaFace": 0.12,
+        "_AlphaFresnel": 0.88,
+        "_AlphaToMask": 0,
+        "_AutoEdge": 0,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Crack": 0,
+        "_CrackSeed": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 10,
+        "_DstBlendAlpha": 10,
+        "_Dust": 1,
+        "_DustAlpha": 0.25,
+        "_DustFilm": 0.12,
+        "_EdgeAlpha": 0.92,
+        "_EdgeSmoothness": 0.6,
+        "_EnvironmentReflections": 1,
+        "_FloorY": 0,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Grime": 0,
+        "_GrimeDebug": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Palm": 0,
+        "_PaneF0": 0.08,
+        "_Parallax": 0.005,
+        "_Prints": 1,
+        "_QueueOffset": 0,
+        "_RTReceive": 0,
+        "_ReceiveShadows": 1,
+        "_ReflectionMin": 1,
+        "_RollPeriod": 0.37,
+        "_RollStrength": 0,
+        "_Scatter": 0.5,
+        "_Smear": 1,
+        "_Smoothness": 0.94,
+        "_SmoothnessTextureChannel": 0,
+        "_SmudgeNormal": 0.05,
+        "_SmudgeSmoothness": 0.62,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 5,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 1,
+        "_WorkflowMode": 1,
+        "_XRMotionVectorsPass": 1,
+        "_ZWrite": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.15170369,
+          0.17184407,
+          0.1600776,
+          1
+        ],
+        "_Color": [
+          0.15170366,
+          0.17184404,
+          0.16007757,
+          1
+        ],
+        "_DustColor": [
+          0.68,
+          0.66499996,
+          0.618,
+          1
+        ],
+        "_EdgeColor": [
+          0.566,
+          0.68,
+          0.618,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_ImpactUV": [
+          0.5,
+          0.5,
+          0,
+          0
+        ],
+        "_PaneSize": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      },
+      "textures": {}
+    },
+    {
+      "name": "Prop_GlassCRT",
+      "source": "Assets/Resources/Surfaces/Prop_GlassCRT.mat",
+      "sourceSha256": "5ea334522a6145fe43147201928f3323d7e432817f2f0cdd36e540e68abc0a31",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.84,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.059,
+          0.078,
+          0.071,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Hardboard",
+      "source": "Assets/Resources/Surfaces/Prop_Hardboard.mat",
+      "sourceSha256": "f183587146a8d34ee29aa9bdab3b6181b05cfbf1e8fe0e54ced4af2528eaa25a",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.3,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.1,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.55,
+          0.4,
+          0.3,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "823bfac72b8ee4e5590b9a941a50a514",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "79001676ca8e740fd9a7f87487af6e55",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "bbda0772aa7a1416abf582720e5ccbf1",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_KeyboardKeys",
+      "source": "Assets/Resources/Surfaces/Prop_KeyboardKeys.mat",
+      "sourceSha256": "d5bd8368fea70f3e9720b1f6f8192a4561cdfeeeba048f0a4003011477448951",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.05,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "6eefe0392f84b4fb690747eb6c55e461",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "54720bea2f4fe433996bd9f765243d02",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "aa73bf1eaf90544319feabd2914025c2",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LCD",
+      "source": "Assets/Resources/Surfaces/Prop_LCD.mat",
+      "sourceSha256": "5924f9f8812b6b0e2245095a64b649ffd8eecd6985aaa971376c1410d1e9001b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.03,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.6,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.45,
+          0.5,
+          0.38,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LEDAmber",
+      "source": "Assets/Resources/Surfaces/Prop_LEDAmber.mat",
+      "sourceSha256": "4539907a77806f6d6041ff2f42e5684b723b8927225578d953fa9887f50ff60b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.7,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.3,
+          0.15,
+          0.02,
+          1
+        ],
+        "_EmissionColor": [
+          2.2,
+          1.1,
+          0.1,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LEDGreen",
+      "source": "Assets/Resources/Surfaces/Prop_LEDGreen.mat",
+      "sourceSha256": "9de0d471c5053715da32a8ca46ba9da1d6ade4671109d6d4498004e3d1746267",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.7,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.05,
+          0.3,
+          0.08,
+          1
+        ],
+        "_EmissionColor": [
+          0.2,
+          2.2,
+          0.35,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LEDRed",
+      "source": "Assets/Resources/Surfaces/Prop_LEDRed.mat",
+      "sourceSha256": "d680e327ef7925b882ec2f408d02df0a3bdeee8b899e39775d3cd49369c0b3c4",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.7,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.3,
+          0.03,
+          0.02,
+          1
+        ],
+        "_EmissionColor": [
+          2.2,
+          0.12,
+          0.08,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Label",
+      "source": "Assets/Resources/Surfaces/Prop_Label.mat",
+      "sourceSha256": "52814db9891d01940096a77b119dd949e419c3102f5eff9d3f06f952b38a7456",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "b7799e92f8678408399d320c36a39cc7",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "529a1215f4593467ea6e3edbecb92646",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LaminateBeige",
+      "source": "Assets/Resources/Surfaces/Prop_LaminateBeige.mat",
+      "sourceSha256": "1ea0d3d526f4991ed7b7d2e4c229e54c33659154639f12782f987d40e76b281c",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.43,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.71,
+          0.64,
+          0.51,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LampShade",
+      "source": "Assets/Resources/Surfaces/Prop_LampShade.mat",
+      "sourceSha256": "be06246ea1ee4445980a6f854504a089f2047742479c934a0d4d9a094286651a",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.886,
+          0.847,
+          0.753,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_LampShadeLit",
+      "source": "Assets/Resources/Surfaces/Prop_LampShadeLit.mat",
+      "sourceSha256": "d8ce7a0705adccd2926336cdb1a965b4c13989aecd572911130a138aa574f71e",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.05,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.95,
+          0.88,
+          0.7,
+          1
+        ],
+        "_EmissionColor": [
+          1.4,
+          1.1,
+          0.65,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PVCEdge",
+      "source": "Assets/Resources/Surfaces/Prop_PVCEdge.mat",
+      "sourceSha256": "e787cbe95325d68be4e8b66752d3c14cfffd9b4a58e2ad59c10fa0e8d7a9290c",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.05,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.55,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.1,
+          0.07,
+          0.05,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Paper",
+      "source": "Assets/Resources/Surfaces/Prop_Paper.mat",
+      "sourceSha256": "610948579fe2ad521f0b560b6827abbc823c15f62bea00ea26eb99709176fff9",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.24,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.863,
+          0.847,
+          0.8,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PhoneKeys",
+      "source": "Assets/Resources/Surfaces/Prop_PhoneKeys.mat",
+      "sourceSha256": "038e2037d6df9f6596cd41442dbd1fa213551865edd7a2db38d805c1017bb83e",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "077fed4ded5ca4b8cbecbd05308b8b18",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "2ee4d72bba14a4d178c6f32526bfe3bc",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "35d4692539e3344c096d1b9310691cec",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PinePallet",
+      "source": "Assets/Resources/Surfaces/Prop_PinePallet.mat",
+      "sourceSha256": "54e847a90b73a805de7c2a249aca1e9f6a251d2c609805733d7d284a77f2065a",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.15,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.4,
+          1.4,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "37f8252cb02ad41928fe251ed7d3f04d",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "cb2b854f516c8499fb337071806b410e",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "96d11c4c33c7d4ae09fee1a7b3a1ffdb",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticBeige",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticBeige.mat",
+      "sourceSha256": "e4673a475620f4c169823f600d6a108e7cc384a712c4e7a6f2c91cef4a16ea0b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.1,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "12e1076a032014fadb0290d895dd8768",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "d70f7eba7da934604ae2a32e19f7dcb9",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "476299ae160854e0887d4593eb0eb9ed",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticBlack",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticBlack.mat",
+      "sourceSha256": "71f801df608bb786d0df242a3e0469f0aae94813df34168cebed80a534b71d96",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.05,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "b2bcd7a01ebf9486d8f2a315725489de",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "6bc303b103aa14b3dbc8b69082bc4c37",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "008722d380bb54a2dbac0581ac371fcc",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticBlue",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticBlue.mat",
+      "sourceSha256": "5e61e59e3d288f783fe10209f995ef12a80398d6987abfc4727f1f4f8d9ad3db",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.5,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.06,
+          0.16,
+          0.45,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticGrey",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticGrey.mat",
+      "sourceSha256": "eca8b45b71e821e4ae5299532de171ed0606a76d8cdd38aa44aded09293b8cdf",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.05,
+        "_MacroTone": 0.04,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "c4961d8db49bf431f802a9869704c900",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "6a11f1f642aff4391a188f279de72036",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "6f8ec144b27894800bd5c5a0d2fdbde9",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticPutty",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticPutty.mat",
+      "sourceSha256": "c9852b83585eabd40d940724cd14b8e8f833ee1d0693762c26719e5e2496ebfa",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.82,
+          0.8,
+          0.74,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "12e1076a032014fadb0290d895dd8768",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "d70f7eba7da934604ae2a32e19f7dcb9",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "476299ae160854e0887d4593eb0eb9ed",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticRed",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticRed.mat",
+      "sourceSha256": "fc64b203cb5720a11899695677006d1492ba99df5d036647ecf327745f673902",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.5,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.55,
+          0.06,
+          0.05,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_PlasticWhite",
+      "source": "Assets/Resources/Surfaces/Prop_PlasticWhite.mat",
+      "sourceSha256": "9b063ca50efe65992c8ee06c65c4b28e7c9fc5852d748973d8dbac02b89995b4",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.1,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "aaf8f7911dc0f47c987194ddaa4694e4",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "a5ab3cf4ce1784064a109631a00d9c26",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "b60e99bb46a504488bc5f05b179b9c14",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Plywood",
+      "source": "Assets/Resources/Surfaces/Prop_Plywood.mat",
+      "sourceSha256": "d58c7f8a7432f6846114972f09ce3e073da991f99d7d4a08a7803a6d518d8ee6",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.5,
+          0.5,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "014241441590f476b99842d5d5af9226",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "946da47cd48ef43fc89fcaf99dc719b5",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "07d95cafdb06f4fa28edc520242088be",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Rubber",
+      "source": "Assets/Resources/Surfaces/Prop_Rubber.mat",
+      "sourceSha256": "0e0926578890ff3fc7a806f6b6b117b5725bfb186e147f56bc5996dd01da5c66",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.05,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 0.15,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          0.02,
+          0.02,
+          0.02,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_ScreenCRT",
+      "source": "Assets/Resources/Surfaces/Prop_ScreenCRT.mat",
+      "sourceSha256": "ba9ed1919fd3c9853596f1b06d4a85cd704151a70e852fd5fc4394c50fd9f240",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "0f0ac488d7deb4885acf5e6f46466459",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "810881e6f01ec4b80b445c9c17c403a6",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_ScreenCRT_On",
+      "source": "Assets/Resources/Surfaces/Prop_ScreenCRT_On.mat",
+      "sourceSha256": "3542bd7cecf8045c8324dd4e39bde0079520cccdca039e45c4ffc2c935c36ce6",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1.3,
+          1.15,
+          0.9,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "0f0ac488d7deb4885acf5e6f46466459",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "cb78ee6d4e1ce45b7a6e6a2561b4fc3d",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "810881e6f01ec4b80b445c9c17c403a6",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_SteelAlmond",
+      "source": "Assets/Resources/Surfaces/Prop_SteelAlmond.mat",
+      "sourceSha256": "6e5c622604395f043ca96b309dbfffe1105bd59a48579de2a98dfb68926ff428",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.1,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1.04,
+          0.98,
+          0.86,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "ef4e2ef8906df454e9bde93763ecc4d7",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "42ce11426385a4207aaf41586803a6b0",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "1500eeebe0e69444799c0728c4341224",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_SteelBlack",
+      "source": "Assets/Resources/Surfaces/Prop_SteelBlack.mat",
+      "sourceSha256": "218416453971054b82fbaf61b4ae2d8c5103bd89968d8ca77b62925f72f6dcde",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.06,
+        "_MacroTone": 0.04,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "288860988864f4ca19fc73d1e8470aa4",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "d583a09d7accc4a5f922e4051c13098b",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "11aae8a5b4b734bb7b4ceda93264f30d",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_SteelBrown",
+      "source": "Assets/Resources/Surfaces/Prop_SteelBrown.mat",
+      "sourceSha256": "a44c59b5643581d80bb1635658200abedd88cc9c18d40ef5d9629de5c1019f62",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.06,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "7272f2c8603fa4a10adf17217b251e7e",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "2f544823eeef940388765b3082a29a3f",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "bba2f45c3d39144a0a6af33a53cdf1fe",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_SteelPutty",
+      "source": "Assets/Resources/Surfaces/Prop_SteelPutty.mat",
+      "sourceSha256": "79309ca224f4383b83d8244fb845ff6acaab83614c3ea3e8e7798422b10d86cf",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.1,
+        "_MacroTone": 0.1,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "ef4e2ef8906df454e9bde93763ecc4d7",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "42ce11426385a4207aaf41586803a6b0",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "1500eeebe0e69444799c0728c4341224",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion",
+      "source": "Assets/Resources/Surfaces/Prop_StencilBlack.mat",
+      "sourceSha256": "e76032b7e65c1731d9043845b59c22dc988d22547a6dba32a56f9991e19555db",
+      "shaderGuid": "933532a4fcc9baf4fa0491de14d08ed7",
+      "floats": {
+        "_AddPrecomputedVelocity": 0,
+        "_AlphaClip": 1,
+        "_AlphaToMask": 1,
+        "_Blend": 0,
+        "_BlendModePreserveSpecular": 1,
+        "_BumpScale": 1,
+        "_ClearCoatMask": 0,
+        "_ClearCoatSmoothness": 0,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_DetailAlbedoMapScale": 1,
+        "_DetailNormalMapScale": 1,
+        "_DstBlend": 0,
+        "_DstBlendAlpha": 0,
+        "_EnvironmentReflections": 1,
+        "_GlossMapScale": 0,
+        "_Glossiness": 0,
+        "_GlossyReflections": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 1,
+        "_Parallax": 0.005,
+        "_QueueOffset": 0,
+        "_ReceiveShadows": 1,
+        "_Smoothness": 0.2,
+        "_SmoothnessTextureChannel": 0,
+        "_SpecularHighlights": 1,
+        "_SrcBlend": 1,
+        "_SrcBlendAlpha": 1,
+        "_Surface": 0,
+        "_WorkflowMode": 1,
+        "_XRMotionVectorsPass": 1,
+        "_ZWrite": 1
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_Color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_SpecColor": [
+          0.19999996,
+          0.19999996,
+          0.19999996,
+          1
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "df52543e72e0b4e1b9b816275db69138",
+          "type": 3
+        },
+        "_MainTex": {
+          "fileId": 2800000,
+          "guid": "df52543e72e0b4e1b9b816275db69138",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Studs",
+      "source": "Assets/Resources/Surfaces/Prop_Studs.mat",
+      "sourceSha256": "0d0af3c43e689d8cebb6aca631897bdae0d8bc2998d91359900b9f54ddece04a",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.5,
+          0.5,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "41a65125fc7d74089b527c1d484113c2",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "0b0fb388503a047cc84c72cd68baf233",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "0d06d96f2ceb147549e0adea76981f9f",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_TapeBlue",
+      "source": "Assets/Resources/Surfaces/Prop_TapeBlue.mat",
+      "sourceSha256": "c2dc522f6a6cca950875261cf8d3e93ff9fc43ea3aff896fadb23f40d0c83f5a",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.3,
+          0.3,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "2bc62734eaeb0453fbfa338533f67e26",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "5cce8afcf580a43adbbbdda45b16b535",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "bb8492f532e2144b2bbf182c40b44a08",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_VelvetPink",
+      "source": "Assets/Resources/Surfaces/Prop_VelvetPink.mat",
+      "sourceSha256": "6b03b5dc443a8baea57a61f5e5cb8d049dde03e2fa1153b0f657cc1f80f015e1",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.28,
+          0.28,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "3d6d09bba669548db954061f8a49f3fb",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "41963a751d3814decbccf640c4b522cb",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "b2d91bb3cc27d41fe9bd0f3c12cf955a",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_VendingFront",
+      "source": "Assets/Resources/Surfaces/Prop_VendingFront.mat",
+      "sourceSha256": "51accb8559c3e2e793fc997f4ba8f925c57cbba6ee437c430df347f680b2c4ea",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1.5,
+          1.45,
+          1.3,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "c0aa68ddc089c494d93e17d9306cfefa",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "a643595e04acf4b408b1024c12af5c54",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "fbce7f8df78a54f4e927966e6157bcf2",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_VendingHeader",
+      "source": "Assets/Resources/Surfaces/Prop_VendingHeader.mat",
+      "sourceSha256": "93f936857476e0b17f2666c88c20cad2688d7f4fad302fbccb939aef1698f9c1",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1.6,
+          1.5,
+          1.4,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "5d3652fdcfba84a8db3eb4909391ce3e",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "2ae20f390f2eb4821b4e3463fcc55e0b",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "1a27784405d09442fa95ddd92aecb7c9",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_Vinyl",
+      "source": "Assets/Resources/Surfaces/Prop_Vinyl.mat",
+      "sourceSha256": "9e875b54a9cd281b7bca93377d0152a02b260eadcb717bb878471426132abdbe",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.04,
+        "_MacroTone": 0.03,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "7ba3a4a1ff3074ac6b20e32de78d7946",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "bd17a764f591e40dbaa68a4d708fa48b",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "a6042614b72a94baaa3de6587d13f73f",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodCherry",
+      "source": "Assets/Resources/Surfaces/Prop_WoodCherry.mat",
+      "sourceSha256": "5733e0bb2a43d94e1dd8cee4f5d7ccb4963779d951c5055f376da78912d6995f",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "3c6a4fdfba0f843b586340ddf2633a6a",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "8ea92aa191b3f47d58d0ab89965af426",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "dc78b94c7fb594855963d6c5494ef7e9",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodDark",
+      "source": "Assets/Resources/Surfaces/Prop_WoodDark.mat",
+      "sourceSha256": "dc60347860c06819d707590b96c376cdc6bfca34732e3bb1f225a4688a0149c0",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          2,
+          2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "acff97f004f6a475bba923056904baad",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "ce7858f19d79a4fd0b09249911625d4a",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "c440004213e994b2f8f77a9670474c32",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodEbony",
+      "source": "Assets/Resources/Surfaces/Prop_WoodEbony.mat",
+      "sourceSha256": "7efeae35ef51af9b6d83deb3ac4cf32b6d23284c6cc3a8c946318aa0ceefba31",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          2,
+          2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "f1165505e77a04167bf44133592d66fc",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "df40027107c1c40088a967b6225ec69c",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "5e16e2c3d04bd4b39aad98d1f7205e38",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodLaminate",
+      "source": "Assets/Resources/Surfaces/Prop_WoodLaminate.mat",
+      "sourceSha256": "69754cb5f300eae0874b9cf5bfa92a6b8f0d9cfcffbedd39e40ceed376d41a09",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "7a2293c864a3149f786c669cadd288c8",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "f98f4c7745b354e2ca1f9e578a661ad6",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "b7f934935b6ec490f932d89113940e4b",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodOak",
+      "source": "Assets/Resources/Surfaces/Prop_WoodOak.mat",
+      "sourceSha256": "a7ba32df169ebee10a072cfda491e2b53d0c94acc2bb3a6394e74b796f30233b",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "cc918ba0525ee42a8ac974dff49e6a5a",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "f7a8da8e63a24447f906d64921b8030c",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "8c4e5add8044d45d1980438deedc8437",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodTeak",
+      "source": "Assets/Resources/Surfaces/Prop_WoodTeak.mat",
+      "sourceSha256": "d609c697fafd73460d01043b5e33f4ea884f9f02decbdc809df5a8c23f48de16",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "b233763c43eec4d83b1e1203f16df88a",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "b2045c9f348874c70a51f8aa06e174a3",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "299effe66cee64056925801ebb1ee165",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Prop_WoodWalnut",
+      "source": "Assets/Resources/Surfaces/Prop_WoodWalnut.mat",
+      "sourceSha256": "3757ac0f08ab5512e91299dc1bd5f3df75cee5b9ba9e80ea1774559bcbf86779",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.08,
+        "_MacroTone": 0.08,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.8,
+          1.8,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "fedc7107581084cacb94fc7a8b2033ae",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "f4957060f381a4932ac578a091ac418b",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "03606d91d7c92447b8d9a40bc99e8fee",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Run_Ceiling",
+      "source": "Assets/Resources/Surfaces/Run_Ceiling.mat",
+      "sourceSha256": "ba282b2f132267e4d778cd987e5321431f41e07d08e2e00346273a5d2844efa0",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.2,
+        "_MacroTone": 0.2,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0.2,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1.04,
+          1.04,
+          1.04,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "72f337efd439b4de48cd8a6110006604",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "5112e66fea11a4fbaa15b962d31829aa",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "566e5adce13de4d2fb768bb7d710165a",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Run_ExitSign",
+      "source": "Assets/Resources/Surfaces/Run_ExitSign.mat",
+      "sourceSha256": "4bec0b860c07f7c75bd1a8d9828bcc05b40ec56c9688f3c11d7d8a705fe8aebe",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          3.2,
+          3.2,
+          3.2,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.36,
+          0.18,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "a59680d747f89469bb27230fc437684f",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "d42223b027861437186eba7d720fb66a",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Run_Floor",
+      "source": "Assets/Resources/Surfaces/Run_Floor.mat",
+      "sourceSha256": "c1a2615ffe7bdea71304afc8bbdab7eb013acae785595af06e23b9dab0f8fc5d",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.35,
+        "_MacroTone": 0.2,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "01fcb36ebed784bca8002bce617c9a6e",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "d4eb3b80d4a724483864941fb5a787ea",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "b43d1f233cab44f5eaf79f5d03db1aba",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Run_Wall",
+      "source": "Assets/Resources/Surfaces/Run_Wall.mat",
+      "sourceSha256": "d204260ae446a3d86c43b6556e573755542135375dd36eeee51c47e595466c08",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 0.6,
+        "_CeilingGrime": 0.15,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0.45,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0.25,
+        "_MacroTone": 0.25,
+        "_MeshUV": 0,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 0,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          1.2,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "fa330d977d7b44c7db50cd4a26575ece",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "6422d1e95ffda4d339be4ff052ce5c9f",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        },
+        "_MaskMap": {
+          "fileId": 2800000,
+          "guid": "b56dbca2d06bf4691a8e285c16c2c81a",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Troffer_Lens",
+      "source": "Assets/Resources/Surfaces/Troffer_Lens.mat",
+      "sourceSha256": "0a48641461cf5e27d736b3e3da630869f179922a00c703ef5366d15f453ad8a7",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          2.2,
+          2.1,
+          1.8,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.6,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "e6e4b3b3c2983435289c3faacbaec7e0",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "cb2d7a5a9ccf84905ac79fcb72458e9c",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "19b4b044af5b646308763b29f10210f8",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    },
+    {
+      "name": "Troffer_Lens_Cool",
+      "source": "Assets/Resources/Surfaces/Troffer_Lens_Cool.mat",
+      "sourceSha256": "b39cee4bbc9a5507c178c0d1034ac8cab7b97f8bd527aab9bcde8aad4ea32faa",
+      "shaderGuid": "38dd6d7df75f84369b8237ac8848106c",
+      "floats": {
+        "_BumpScale": 1,
+        "_CeilingGrime": 0,
+        "_CeilingHeight": 2.9,
+        "_Cull": 2,
+        "_Cutoff": 0.5,
+        "_FloorGrime": 0,
+        "_FloorGrimeHeight": 0.35,
+        "_MacroDirt": 0,
+        "_MacroTone": 0,
+        "_MeshUV": 1,
+        "_Metallic": 0,
+        "_OcclusionStrength": 0.8,
+        "_Smoothness": 1,
+        "_StainStrength": 0,
+        "_UseEmission": 1,
+        "_WetStrength": 0
+      },
+      "colors": {
+        "_BaseColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "_EmissionColor": [
+          1.9888183,
+          2.121406,
+          2.209798,
+          1
+        ],
+        "_StainColor": [
+          0.42,
+          0.31,
+          0.16,
+          1
+        ],
+        "_TileSize": [
+          0.6,
+          1.2,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "_BaseMap": {
+          "fileId": 2800000,
+          "guid": "e6e4b3b3c2983435289c3faacbaec7e0",
+          "type": 3
+        },
+        "_BumpMap": {
+          "fileId": 2800000,
+          "guid": "cb2d7a5a9ccf84905ac79fcb72458e9c",
+          "type": 3
+        },
+        "_EmissionMap": {
+          "fileId": 2800000,
+          "guid": "19b4b044af5b646308763b29f10210f8",
+          "type": 3
+        },
+        "_MacroMap": {
+          "fileId": 2800000,
+          "guid": "f777b2e3dd7d240d390e2b2cd59cbb9e",
+          "type": 3
+        }
+      }
+    }
+  ],
+  "notes": {
+    "baseColor": "Use sRGB texture/color for Base Color",
+    "normal": "Use linear normal texture with UE's normal-map compression",
+    "smoothness": "Unity Smoothness maps to UE Roughness as 1 - Smoothness",
+    "metallic": "Unity Metallic maps to UE Metallic",
+    "emission": "Unity emission color/texture maps to UE Emissive Color"
+  }
+}
