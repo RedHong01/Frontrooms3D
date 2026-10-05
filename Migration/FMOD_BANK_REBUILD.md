@@ -1,13 +1,15 @@
 # FMOD Win64 bank rebuild
 
-The Win64 bank payload currently staged in Unreal is byte-for-byte identical to
-`Assets/StreamingAssets/FMOD`.  The native probe loads all five banks and starts
-a real event instance, but resolves 28 of the 31 Unity events.  The missing
-paths are `event:/Mechanism/Door/StreamOpen`, `StreamClose`, and `StreamLock`.
-The source project file is a 90-byte empty `<objects />` root; its authored
+The regenerated Desktop bank payload is now byte-for-byte identical across
+`Assets/StreamingAssets/FMOD` and the Unreal staging directory. The Mac FMOD
+2.3.15 runtime probe loads all five banks, starts a real event instance, and
+resolves all 31 Unity events, including `StreamOpen`, `StreamClose`, and
+`StreamLock`. A Win64 probe is still required before the migration gate can be
+closed.
+The source project file is an 88-byte empty `<objects />` root; its authored
 event data is present as 31 files under `FMOD/FrontRooms/Metadata/Event`.  This
-is why the Windows machine can verify the drift but cannot rebuild the banks:
-FMOD Studio's `fmodstudiocl` is not part of the Unity plugin or Unreal install.
+Windows can verify the bank payload but cannot rebuild it because FMOD Studio's
+`fmodstudiocl` is not part of the Unity plugin or Unreal install.
 
 ## Build on the Unity/Mac side
 
@@ -73,6 +75,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools\UnrealMigration\bu
 
 `Migration/exports/fmod_bank_manifest.json` records the runtime DLL hash, all
 five bank hashes, the 31 metadata-backed expected paths, the event paths
-actually found in the loaded banks, and the missing set.  A manifest with
+actually found in the loaded banks, and the missing set. The checked-in record
+currently uses the macOS runtime and is a preparation artifact; Windows must
+rewrite it with the Win64 DLL. A manifest with
 `contract.status = "source-bank-drift"` is an explicit incomplete gate; it must
 not be treated as a complete FMOD migration.

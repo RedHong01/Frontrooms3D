@@ -13,10 +13,10 @@
       "sha256": "26d7a39531627a4b61e78d9d7cbb79d5694583f1f2fc32158053875c974a2481"
     },
     {
-      "bytes": 13241,
+      "bytes": 13226,
       "kind": "texture-or-vector",
       "path": "Assets/Brand/FrontRoomsLogo.svg",
-      "sha256": "922f6874d3cf2604371b7dc19f26f962e4424e19e11a518b560fe26487fbb1b0"
+      "sha256": "8d3b1653445bb9462f1037b8bf9103397456acd2ffdbd1cc757fd59d91cfaca6"
     },
     {
       "bytes": 1229,
@@ -73,10 +73,10 @@
       "sha256": "f776db8fad2e9ec83d67b80925384a7d6ad2384322c95e3ddeeff11cac7c12b3"
     },
     {
-      "bytes": 7916,
+      "bytes": 7913,
       "kind": "unity-code",
       "path": "Assets/Editor/FrontRooms3DBuild.cs",
-      "sha256": "f09b90984db03a813b68af9bc86b96a58a1f0012fa60d12aeb213feab6bb18a5"
+      "sha256": "84389402b5f6ba1a44ad44348159c79776b89a8012dc6407a006b7ba9855ff28"
     },
     {
       "bytes": 59,
@@ -97,10 +97,10 @@
       "sha256": "b3813c40b326a3cb151b47f2c1882742b9ef9e201e954c4a8bedac48af1654b6"
     },
     {
-      "bytes": 8267,
+      "bytes": 8263,
       "kind": "unity-code",
       "path": "Assets/Editor/FrontRoomsCloudBuild.cs",
-      "sha256": "86f9f4f29c5eb69aebd9244d557b67aebb2dfb43e722ac5ec9887fe896ec1fd2"
+      "sha256": "5409e72fb90b050446fc2876db0af56476e15409e07fdf4282165506a8461429"
     },
     {
       "bytes": 59,
@@ -415,10 +415,10 @@
       "sha256": "ad22440d521a1d38da444188e7d7a06815c39653c257c26cda601b7268807001"
     },
     {
-      "bytes": 7045,
+      "bytes": 7044,
       "kind": "unity-code",
       "path": "Assets/Editor/FrontRoomsScreenAdsDemoScene.cs",
-      "sha256": "e0b2323f136b733c91d9642df76197872ae119ed92908b3905c49c0dfd31eb2f"
+      "sha256": "84a152a81be649ee55426527575f483fa15ac66f01a921cbb5c8468d54b5a58e"
     },
     {
       "bytes": 59,
@@ -427,10 +427,10 @@
       "sha256": "c604ac4165f707594705288fc5ed334ab2de65f80da8f506021459d4c617c513"
     },
     {
-      "bytes": 13178,
+      "bytes": 13177,
       "kind": "unity-code",
       "path": "Assets/Editor/FrontRoomsStreamVerification.cs",
-      "sha256": "a98bc4a29eb154688a139bb9ccb242dfc8dd4ac1c6fc33a1c7145868b1debe01"
+      "sha256": "61bd3ff900c80c7483e7047c119fe7a552c45244437b8ced2ef731f6061b1b19"
     },
     {
       "bytes": 59,
@@ -4051,10 +4051,10 @@
       "sha256": "80d9e3f9d64808aa1ce1581bd18bcf70e8d525013d88196f022d2fbb6787c4c1"
     },
     {
-      "bytes": 1036,
+      "bytes": 1000,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/fmod_haptics.bundle/Contents/Info.plist",
-      "sha256": "88182c13c019b9866d5c3d326201aebb40d3f07a7320c4f4990a26e61a2bbef2"
+      "sha256": "2f5f653c7ebb3763b126b440c0a6cb3c7918faadecf6c4c6b176fb26191b3147"
     },
     {
       "bytes": 172,
@@ -4075,10 +4075,10 @@
       "sha256": "aa4f99932a5b0a4e849036f73505ab66360c7cba35f7075cbd37014c06aa273e"
     },
     {
-      "bytes": 2315,
+      "bytes": 2200,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/fmod_haptics.bundle/Contents/_CodeSignature/CodeResources",
-      "sha256": "a006159ca0dd46d72df853d4b12892fb9bf38798049b71c7d7866c576ad972e8"
+      "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b"
     },
     {
       "bytes": 1221,
@@ -4093,10 +4093,10 @@
       "sha256": "31dd5dae5d417337a218e8063cfb8c9e21f21deaabbbf254f1a98a2bbe2f749a"
     },
     {
-      "bytes": 1032,
+      "bytes": 996,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/fmodstudio.bundle/Contents/Info.plist",
-      "sha256": "133e9ed4f15f55cd48f6bb4a7d6c90f70cb9b61fbc918e19e4d7084e15ef3104"
+      "sha256": "bc4c67f71b92fa0d026dd07f76f616bbc8b95b380d29b3524e6727ca81de7cc8"
     },
     {
       "bytes": 192,
@@ -4117,10 +4117,10 @@
       "sha256": "259e6f59e8fe161a0487c1f0fa53375ea846f5fccdb458adabccfdfdf4d3eabe"
     },
     {
-      "bytes": 2315,
+      "bytes": 2200,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/fmodstudio.bundle/Contents/_CodeSignature/CodeResources",
-      "sha256": "a006159ca0dd46d72df853d4b12892fb9bf38798049b71c7d7866c576ad972e8"
+      "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b"
     },
     {
       "bytes": 575,
@@ -4135,10 +4135,10 @@
       "sha256": "8756140dbab04327ae11f1b7dbc9cf135145a6ab639910f2620e795a18c66086"
     },
     {
-      "bytes": 1034,
+      "bytes": 998,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/fmodstudioL.bundle/Contents/Info.plist",
-      "sha256": "f13e274cb00f7435bb371146e790701234a1dc6c397fcb5617c69b2a99e9ed5e"
+      "sha256": "a54ce4787216cfac2fbd0614f78aef3218e8773c9d9872586f3b9bfa951e0c48"
     },
     {
       "bytes": 172,
@@ -4159,10 +4159,10 @@
       "sha256": "d0c069075ee596f123b84731ac9d7f6ac5d267b7254d81772b9aa7bc0af51f58"
     },
     {
-      "bytes": 2315,
+      "bytes": 2200,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/fmodstudioL.bundle/Contents/_CodeSignature/CodeResources",
-      "sha256": "a006159ca0dd46d72df853d4b12892fb9bf38798049b71c7d7866c576ad972e8"
+      "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b"
     },
     {
       "bytes": 1045,
@@ -4177,10 +4177,10 @@
       "sha256": "b0faa5028f802a35cd5e93ae98385a7f0f57bfa49f6ca8264453c7e1c07afa25"
     },
     {
-      "bytes": 1040,
+      "bytes": 1004,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/resonanceaudio.bundle/Contents/Info.plist",
-      "sha256": "57b143ef988def63ab3a7a0be027919f5717c1a260427b3cbfa0e200a1e2cedc"
+      "sha256": "0c318a7dc343425ee97c57ee03af2cea16d34729ab4e2db626a64e96f8d21e74"
     },
     {
       "bytes": 192,
@@ -4201,10 +4201,10 @@
       "sha256": "7e642bdbc36dc4f1e3f2dfad33880799f0620afd0acac77ad6867fd5b6809fe6"
     },
     {
-      "bytes": 2315,
+      "bytes": 2200,
       "kind": "unity-source-asset",
       "path": "Assets/Plugins/FMOD/platforms/mac/lib/resonanceaudio.bundle/Contents/_CodeSignature/CodeResources",
-      "sha256": "a006159ca0dd46d72df853d4b12892fb9bf38798049b71c7d7866c576ad972e8"
+      "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b"
     },
     {
       "bytes": 172,
@@ -5527,10 +5527,10 @@
       "sha256": "cac5aa348efcdb001129c002464aa84bef46659ce89694b10cedc5f546866801"
     },
     {
-      "bytes": 598,
+      "bytes": 595,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_F.svg",
-      "sha256": "f23314a0aa0979ddff3640fd302396a80c62e849c1c89a81640bfa5ec1e42e1a"
+      "sha256": "109e12ed8c78a080c2909a0ea3b3a12f3574661661b55aeb2893b86610722f8d"
     },
     {
       "bytes": 1229,
@@ -5539,10 +5539,10 @@
       "sha256": "dfed4df23e4611c7563c14bcec8a1d1670c71a142bdb4a09077c81a4a401e4b2"
     },
     {
-      "bytes": 660,
+      "bytes": 657,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_M.svg",
-      "sha256": "2bb78b424746573fe4173c2ebbe1117cb095e5c0329c318a6d431a16a8c2cdeb"
+      "sha256": "63a089184dcdb621b9afa3c9d9e0c61e88fe6b35cf638ea71702f69b37e2fdc3"
     },
     {
       "bytes": 1229,
@@ -5551,10 +5551,10 @@
       "sha256": "9487193639d7b0b25ae1b718fd72f6ecb98ad30edb24b60898ce4271b976e57e"
     },
     {
-      "bytes": 541,
+      "bytes": 538,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_N.svg",
-      "sha256": "d8d78068fc9b395b1fd143dcf1548142d308948762c0a8ef48fff5d9062c05cd"
+      "sha256": "d6876286406761a0cd362ccb1f364c195d82442c3409e5fc08316dd323a71c1c"
     },
     {
       "bytes": 1229,
@@ -5563,10 +5563,10 @@
       "sha256": "680a5308f71e2c067ee5fa201da7c9032a51f347dfcda4b827db00c954afd9f8"
     },
     {
-      "bytes": 1149,
+      "bytes": 1146,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_O1.svg",
-      "sha256": "dd0b41c578a7a771fb11cba028a9c2ee2433e1e55ee6bcb4dddc1fb82fa0bd4a"
+      "sha256": "6909efd41a12f196d2fef2d8f3415e3bc1a5b4787d96695a9a7b27b29e5eca64"
     },
     {
       "bytes": 1229,
@@ -5575,10 +5575,10 @@
       "sha256": "c339232276ba1bde0e72f1505c7f009765c007397d92b3526149f0819de73271"
     },
     {
-      "bytes": 1152,
+      "bytes": 1149,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_O2.svg",
-      "sha256": "95be8fa02af86d7d12a4d39afba5cb85ab109fb6c220204a4b220eb42b4c711a"
+      "sha256": "8ccad50c58965919b959a71aa5408329d227e60ca4007a8206e61af103cd84e6"
     },
     {
       "bytes": 1229,
@@ -5587,10 +5587,10 @@
       "sha256": "30577b3d5608997c66ce00cf3c47507d8199934f697ddba79508b5bdab959b50"
     },
     {
-      "bytes": 1156,
+      "bytes": 1153,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_O3.svg",
-      "sha256": "fe2c3724bd696f900e7217c182e3dac1b38bbf1e173860f5d0ffbb5ea0303f99"
+      "sha256": "d54224ff5982da30a4e2cc3f8ed1c8dc3e423637956decbf4991864eb47f90d1"
     },
     {
       "bytes": 1229,
@@ -5599,10 +5599,10 @@
       "sha256": "3e92d256e305dfac1167bce11eaab090d4423e6ab32e0663de937f41745929ff"
     },
     {
-      "bytes": 1109,
+      "bytes": 1106,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_R.svg",
-      "sha256": "7506d23d93220fef5922025a1c9347c9e551725225695dd557e492b5b917bd13"
+      "sha256": "5a8ce60c866965c2a2ac4cc9619f4519b80f7e9fc76e85a45971a115b3993fbd"
     },
     {
       "bytes": 1229,
@@ -5611,10 +5611,10 @@
       "sha256": "489b915625ee54506a311bf6373e904149aa13be3aa739551d905ebc614a1e21"
     },
     {
-      "bytes": 1095,
+      "bytes": 1092,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_R2.svg",
-      "sha256": "b85c40f00358bc7d00217b273cabe132e57e2dd6dfc3a9c970181f5fe8670394"
+      "sha256": "075095c368858a558437d724c6281dd7dcc7012789db795db4f4b7bde9e4ab32"
     },
     {
       "bytes": 1229,
@@ -5623,10 +5623,10 @@
       "sha256": "cb30481b095dcf7d0bd65813aa405928fe99917bb7bb41d026c9a8eb8f14087b"
     },
     {
-      "bytes": 2017,
+      "bytes": 2014,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_S.svg",
-      "sha256": "8f7a69d7b1aa9d2086d7b26bec5b9344e648c9d974c21b8f1ac591e0b96be04e"
+      "sha256": "4f2b8b9b96e9b9208c2f5dcbe4e4288cf57998635e1bb036c911b32b739c49e7"
     },
     {
       "bytes": 1229,
@@ -5635,10 +5635,10 @@
       "sha256": "8bf7e1bedd99be4dee89d86a20176bf62c3fe4ba7d750551c087f69d8e850836"
     },
     {
-      "bytes": 500,
+      "bytes": 497,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsGlyph_T.svg",
-      "sha256": "d6f6b594284856e4ddf6fe6f1585310e5963d6514133e362efa3732aaca4b5bd"
+      "sha256": "91471905a2bbf0d0e7ca14cd5c3f620a613b864d3a4e98d58bb18004baf1225a"
     },
     {
       "bytes": 1229,
@@ -5659,10 +5659,10 @@
       "sha256": "8c578d6558ec86c066d87324c0d7c7a56150ccdb36af319b045f33ba70ccd435"
     },
     {
-      "bytes": 8854,
+      "bytes": 8851,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsLogo_Left.svg",
-      "sha256": "ba0f8494560ba942e516994cc5bcc5999e9920c323607c49394fc8a2ef2ed529"
+      "sha256": "dbeacd9acd29427f8ca948f361530fe4ca67c0c1670b20710f11706e3faab71b"
     },
     {
       "bytes": 1229,
@@ -5671,10 +5671,10 @@
       "sha256": "e4fdab9e868825185aa8b4532158481d0c60ded7eb168a28d5f525d68aa39a4d"
     },
     {
-      "bytes": 2561,
+      "bytes": 2548,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsLogo_S1.svg",
-      "sha256": "d1446077a1ab5b44b00536f672e7579c8e95f3e87b6d8b730a5ab9301081e351"
+      "sha256": "b2103aaaac6031d935707b7e08896c982b414442f96095895e2cac36bd9223bc"
     },
     {
       "bytes": 1229,
@@ -5683,10 +5683,10 @@
       "sha256": "04a6c7c560f57e3408104429becac73b77f1187c1feea8a6ad6a192e94895c03"
     },
     {
-      "bytes": 2561,
+      "bytes": 2548,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsLogo_S2.svg",
-      "sha256": "2894e5cbfd132a9d784b5ce3952c60b00ce8985080a4162c7c85e2b4167c6442"
+      "sha256": "1316357425ef52349fcf953c2ac1074d3b57219dc83069e8c4af65240ca2a292"
     },
     {
       "bytes": 1229,
@@ -5695,10 +5695,10 @@
       "sha256": "0f736fffc15c3262d77239881a203fe13b175226b5eabfa98e19ee0a6aa987f7"
     },
     {
-      "bytes": 13279,
+      "bytes": 13264,
       "kind": "texture-or-vector",
       "path": "Assets/Resources/Brand/FrontRoomsLogo_White.svg",
-      "sha256": "7f4726e9bbbc1db57ad2af8d5dc879811aee01f1746ae187745c846fe6a48228"
+      "sha256": "3cf6710c6b30519ee90c6a71c15c2aef5dab200c3b6ba32e7adffeaac00a82cc"
     },
     {
       "bytes": 1229,
@@ -12931,10 +12931,10 @@
       "sha256": "63a0b87de7b704fca5f7bb751199fa20cd0582bd395c010fa5fa82baff70954b"
     },
     {
-      "bytes": 567904,
+      "bytes": 568288,
       "kind": "audio-or-video",
       "path": "Assets/StreamingAssets/FMOD/Ambience.bank",
-      "sha256": "5201221721dcd9489217101f13d5e18fc2a0fa5ea40a170e9bcfd199287884c2"
+      "sha256": "d74131026b94771ec4594021100a3419f3aca0598c4a7476b8df5000af8fd6cd"
     },
     {
       "bytes": 170,
@@ -12946,7 +12946,7 @@
       "bytes": 4702,
       "kind": "audio-or-video",
       "path": "Assets/StreamingAssets/FMOD/Master.bank",
-      "sha256": "de9c5bf324562e5b196894dd7ef828be8ebcb7e3161eb35ca9811593088b1f44"
+      "sha256": "c9d28bfd4a59a2c7b375bb8395ec068d0ddb3c156a204c7e49c558d0427fcb60"
     },
     {
       "bytes": 170,
@@ -12955,10 +12955,10 @@
       "sha256": "cb9dc4317a27a87b89a67961a23930124056257c875ca82cfb8a6d8aef4edaa2"
     },
     {
-      "bytes": 3490,
+      "bytes": 3668,
       "kind": "audio-or-video",
       "path": "Assets/StreamingAssets/FMOD/Master.strings.bank",
-      "sha256": "32a434357c759bb77b681c97a033e8fad5413f2c0bef7279e65adbae81a8282c"
+      "sha256": "31e181d55fe54877857d027cca270bab4bf5bd4bca7a4606fe3d3df9a09088bf"
     },
     {
       "bytes": 170,
@@ -12970,7 +12970,7 @@
       "bytes": 1326,
       "kind": "audio-or-video",
       "path": "Assets/StreamingAssets/FMOD/Music.bank",
-      "sha256": "c18422f7a5b7d38659a9d450c2588388bb195e0df717b5a92044f0e51e7ac118"
+      "sha256": "979d0d3a2fc5d85e33af786bb0d1c17fe1e899646b7722fda1547eee7f83f734"
     },
     {
       "bytes": 170,
@@ -12979,10 +12979,10 @@
       "sha256": "5021f7e2b0a8b0133ae7cb0cee64f0794fc2a9b88850e4493ea6c8c63a3b3ddd"
     },
     {
-      "bytes": 914848,
+      "bytes": 998112,
       "kind": "audio-or-video",
       "path": "Assets/StreamingAssets/FMOD/SFX.bank",
-      "sha256": "d4c05e0d2f1ad395d43df4f7d6258faab6dd20964e49e137ced9b294a9bd9238"
+      "sha256": "a70eb8c1a9345d11c13bc9d90b6cec8f5c3b53fd7339adeee0023577fe60fbd3"
     },
     {
       "bytes": 170,
@@ -15337,10 +15337,10 @@
       "sha256": "06daf3b401dfb831c9eac43cab05c33d43a12d34fe725afb25f86bbd2bbf8c43"
     },
     {
-      "bytes": 4848,
+      "bytes": 4846,
       "kind": "design-contract",
       "path": "Documentation/CROSS_PLATFORM_DEVELOPMENT.md",
-      "sha256": "212ca8727ae7b4e315eb4eee169cf20baab83a0adbc063792d65510e8cdba11c"
+      "sha256": "ae18f82d35c29ed028dc06b6adb65d48a4b82235327f103f1271545b068276ed"
     },
     {
       "bytes": 2387,
@@ -15397,10 +15397,10 @@
       "sha256": "08c4ff91d377738c77111a8876d07cbb43b6ff66349ad20c55d375e9c3aa4e36"
     },
     {
-      "bytes": 2397,
+      "bytes": 2396,
       "kind": "design-contract",
       "path": "Documentation/LIGHTING_SPEC.md",
-      "sha256": "61ac3be75b932cc7dc306c0aca0c414275877edacaefe03faec831e035f72acb"
+      "sha256": "6ad32042e62cea584ec04cde26bd3ddb406903a7e9417dc7b0bc790776df4198"
     },
     {
       "bytes": 30598,
@@ -15412,7 +15412,7 @@
       "bytes": 13294,
       "kind": "design-contract",
       "path": "Documentation/MOBILE_BUILD_PLAN.md",
-      "sha256": "8a300bb63691e4d4e474cb012e7b06e16560cefe2c47cafcb826787a2168e5de"
+      "sha256": "dbe7850819e245240947ca56e42b9b38466c227aa06657b6585a0590b85bacd3"
     },
     {
       "bytes": 6146,
@@ -15487,16 +15487,16 @@
       "sha256": "2930742ec4103d244a8b04e73cfe4e77fb671afc05df357f5604a4134b70fc93"
     },
     {
-      "bytes": 1009,
+      "bytes": 1008,
       "kind": "design-contract",
       "path": "Documentation/UNITY_EDITOR_WORKFLOW.md",
-      "sha256": "971b85849defdda90c36d37fcbc668d976efedf07b2d30b629bd951cebf1c497"
+      "sha256": "3d9c3de0845bf7754cc529c791ea3ad2762c2c0be5a90eb1976e60c0ed1779e0"
     },
     {
       "bytes": 25270,
       "kind": "design-contract",
       "path": "Documentation/UNREAL_MIGRATION_AUDIT.md",
-      "sha256": "ea9a119562dee73552d566c337ece579c376e426236bb697fd1148a740f9eeed"
+      "sha256": "7c6fc85253d7cb09db8996f3dbcd887481b27f7b39455a0eea8b3075d444411b"
     },
     {
       "bytes": 88783,
@@ -15523,28 +15523,28 @@
       "sha256": "b5db8ec2b04d143ee3898bf5813de663ade74f3a6a097c1d53eb64eca81b4766"
     },
     {
-      "bytes": 2119,
+      "bytes": 2118,
       "kind": "design-contract",
       "path": "Documentation/WEBGL_BUILD.md",
-      "sha256": "cfee7f104bad5cc00b6e6a5577c1cbc6824811d209b72a4a8f7d9e0eb33bea33"
+      "sha256": "a4f777fa4b9e6d599556307bb9e8cc0d90382cdf7f6d5ab985bd5a2c568adace"
     },
     {
-      "bytes": 8192,
+      "bytes": 8026,
       "kind": "design-contract",
       "path": "Documentation/ga.html",
-      "sha256": "714906c26d474cec9a18b9e2adeb36a0c1a848a019b82e4b1b91233158ea8b5b"
+      "sha256": "0c3989e875953683dee185c490ef00fc97a3d3e825edc266c7cf2cf8edce1e4f"
     },
     {
-      "bytes": 244492,
+      "bytes": 242234,
       "kind": "design-contract",
       "path": "Documentation/ip.html",
-      "sha256": "e1407f342e2d568339240fd315d46f3dac712115974365bdaa96ba8d20536ae7"
+      "sha256": "0aadd5cf2e50a8f588430016476e997e807a1e1d0f8d2ce00ba8e6c5e59933c3"
     },
     {
-      "bytes": 217200,
+      "bytes": 217145,
       "kind": "design-contract",
       "path": "Documentation/it.html",
-      "sha256": "412983bc83678e972c53da73adcda83a07de0244669697069e4b75330dd6dbfa"
+      "sha256": "d2acef7cac11814c74eb02a76892aa0ec2118d535a05a0cecf73e0d4ec6c981c"
     },
     {
       "bytes": 2243,
@@ -15553,16 +15553,16 @@
       "sha256": "fd0778dbcf9d45f9e15c77aedd7bc0eef22e50f09f3c71195f5c8a59667211be"
     },
     {
-      "bytes": 114550,
+      "bytes": 112803,
       "kind": "design-contract",
       "path": "Documentation/pb.html",
-      "sha256": "d9e42b76ba0204138fb59c411ea8110c13684f087e014f1e714d5e0336396e20"
+      "sha256": "afc79101cac776e291136202f2a791cca2c1feb0dfeb7fddc9197a1a84ced869"
     },
     {
-      "bytes": 100833,
+      "bytes": 100493,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/00_files.tsv",
-      "sha256": "c4244bd14b7a87059e844d03a54c3148f38fca308f92ed4df135eb395c248c3f"
+      "sha256": "8a4524fff667275d6bcda05ff383c6c580f43cb311e1cb9a5cd5ba14834eb018"
     },
     {
       "bytes": 22933,
@@ -15595,10 +15595,10 @@
       "sha256": "1a82a518fbe985ce3cbe09705fb4463c953a84d79d39acb933441aae243bba6c"
     },
     {
-      "bytes": 1214,
+      "bytes": 1199,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/F1_kit_importer_lod.diff",
-      "sha256": "cca430c6d5eb5dd58f9b5a868f08d1c08f07721e67fdb00852426dc92f13aa54"
+      "sha256": "b7f37b8ad8e1804bf6c755289297aa90b726990bac7ea8e65e2a0f0d635db814"
     },
     {
       "bytes": 1262,
@@ -15847,10 +15847,10 @@
       "sha256": "cf84903c2fa4b93306c7b6e455f632aa5345701884ec30ce7606c76194a0011d"
     },
     {
-      "bytes": 8364,
+      "bytes": 8242,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/base/stats.tsv",
-      "sha256": "940874eca5516bc1c96d50f6d7c7131c17d871296373d460c78bc3e1876194ea"
+      "sha256": "bf7210791f08292f550e0864dc3148f6f126e3cc8931e59e8bdaa806d7cf6950"
     },
     {
       "bytes": 5192,
@@ -15913,10 +15913,10 @@
       "sha256": "5b9522e6d9c163a623637f257a6b83eb5cf773a520768c4278e30276db6c73a8"
     },
     {
-      "bytes": 9881,
+      "bytes": 9759,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/base2/stats.tsv",
-      "sha256": "d6238c5c536e60aadcce730e1471318c4d78811aa0cb6967f222454c073c915b"
+      "sha256": "4c0675eab8132cd50706a75ec70606fc1225f6d914af8a79755a52aa5f5eac7f"
     },
     {
       "bytes": 5602,
@@ -16003,10 +16003,10 @@
       "sha256": "3fe1328ac9a9c4ca0770a4879d5c2d0bcb3309cd2db9ae0cdbff65206e5ee96e"
     },
     {
-      "bytes": 8160,
+      "bytes": 8038,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/cx_rtoff/stats.tsv",
-      "sha256": "50488390d03d3293e9f5891707cb9955e14ddfdd76c013663c10bb9bff6da482"
+      "sha256": "d517555dcd6ce90b2843be1a62c6eb1984955556644ecb130f0a40b86a53513c"
     },
     {
       "bytes": 5570,
@@ -16081,10 +16081,10 @@
       "sha256": "3a181101c829ed4b88043280758183c4b86bba1450e3a8105abb3ab23ae4a2d4"
     },
     {
-      "bytes": 20450,
+      "bytes": 20328,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/cx_rton/stats.tsv",
-      "sha256": "a9216dadf8aad5e9538d80d3b19b545b348de1205a76a991097d65c34a5c02a4"
+      "sha256": "3dd9dcd109a7dd1b1ed8bc4c7b7642c2dbc1152703a9db208a17f46ca31b778c"
     },
     {
       "bytes": 5586,
@@ -16147,10 +16147,10 @@
       "sha256": "5d2ad93bdbecc0609d46b268cd08287fa917d2051740e9ab575c923e32683575"
     },
     {
-      "bytes": 23779,
+      "bytes": 23657,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/cx_rton2/stats.tsv",
-      "sha256": "1a7986f9ee84905358401cbfdf1f288f92570b790ba84323f6192b2a44338b38"
+      "sha256": "6ddbcafc4be4e4d6a89f206c84059b898331d04bbea88763c5ae5823d2d2a3e2"
     },
     {
       "bytes": 5961,
@@ -16213,10 +16213,10 @@
       "sha256": "5cb10924feabafb573e1b7e1a51d5aa91ba0153982337028fefede6c43e9eb5c"
     },
     {
-      "bytes": 23767,
+      "bytes": 23645,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/cx_rton3/stats.tsv",
-      "sha256": "a8b5f83419da4c8d6cabebef21cd4879c7749e4d991aa73a1cfc97466df63965"
+      "sha256": "f6c9f3e8e1a914d294e641e9cfaf71191a476b3be659b6e5214b33927e0860c6"
     },
     {
       "bytes": 5981,
@@ -16285,10 +16285,10 @@
       "sha256": "74fb055d0febbddc7008037e5ec8dfe6ac39331ab5a6bffbd18ecfe4aa1ea33b"
     },
     {
-      "bytes": 24161,
+      "bytes": 24039,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/cx_rton4/stats.tsv",
-      "sha256": "8900d79ee963b176d17f4f85add5d9f085b361c90d2b2bd1d5d57eaf9458078a"
+      "sha256": "6e5d5b5ba2c931b64a862c430246b6b1b84cfab8bca0e315b8fdb724e56893da"
     },
     {
       "bytes": 6431,
@@ -16351,10 +16351,10 @@
       "sha256": "f04552d0a74c767762b4a945b048d0df194d7cd0ade4db3cae9c7259f774c715"
     },
     {
-      "bytes": 20169,
+      "bytes": 20047,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/repro_guard/stats.tsv",
-      "sha256": "8a6cebfd051c7b6671ef3f2e92be64cfdf7b32cf721d3af1a17a29d57dc3ef52"
+      "sha256": "bf83cbea788d4d415e873f78fdfe6dbc1b9a8861e6af96592fb6e768a0b45510"
     },
     {
       "bytes": 7836,
@@ -16417,10 +16417,10 @@
       "sha256": "555ed2d1a20443ea133f1e2ffcba47299d91f3ee0b6a6cb52c1a4f9a1b1c033c"
     },
     {
-      "bytes": 20771,
+      "bytes": 20649,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/play/repro_olddrop/stats.tsv",
-      "sha256": "248fcc951e96c1ead301939a9cee0125b1a7db4bd57da523bf87a57501921a91"
+      "sha256": "26dcc115f3042a392609954861c8b76c0ea1a530278b3342b6c4baace18d0d4f"
     },
     {
       "bytes": 14429,
@@ -16483,10 +16483,10 @@
       "sha256": "30432cd2eeb83e21b2f5028f270a42ebc4d296715d51e7b08233f2a67ec90ea2"
     },
     {
-      "bytes": 66191,
+      "bytes": 64690,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/suites/base/map_signatures.tsv",
-      "sha256": "7fcc036a50b330b0de1ddb7637cf9369e17b4868d4e910b6f68cf95517a3e7c3"
+      "sha256": "bea04b18ab3ac1554e559b8b4c52e279a858ad184860375f7cbe9661365ef349"
     },
     {
       "bytes": 818,
@@ -16561,10 +16561,10 @@
       "sha256": "a513214eb924b5f1635b41969bed7a65034e25aa6b30875d7452ad11fd8c99a9"
     },
     {
-      "bytes": 66191,
+      "bytes": 64690,
       "kind": "design-contract",
       "path": "Documentation/research/codex_audit/runtime/suites/cx/map_signatures.tsv",
-      "sha256": "34bbe38568c29ac441792e9b4f040e1e06dad0f31f110befc14a6866d3bc5849"
+      "sha256": "6bd9d5942f012a2e76606de56e163e487e0052332579cd76241fc9755e7a9b59"
     },
     {
       "bytes": 1200,
@@ -16675,10 +16675,10 @@
       "sha256": "255823184f3b499573f5127b9748a6ece513fbcd393bc7558992ebcf30593188"
     },
     {
-      "bytes": 14256,
+      "bytes": 13952,
       "kind": "design-contract",
       "path": "Documentation/research/exit_sign/tools/make_diagrams.py",
-      "sha256": "bb78fa2734895bfffc0912b4a305d436cc0c9448c6f9af12a03d74e1a5d242c2"
+      "sha256": "6b7bf2e48d0eddaedf9e97d0269c76b66a6fe8252f9d7bea72f058305dab3af5"
     },
     {
       "bytes": 33983,
@@ -16723,10 +16723,10 @@
       "sha256": "bd6ee1f74c2843e3faa020bdfb018a203a45995fe12264dd8ca99bc4c1ea4f28"
     },
     {
-      "bytes": 9676,
+      "bytes": 9444,
       "kind": "design-contract",
       "path": "Documentation/research/glass/destruction/04_proto/stamp_proto_voronoi.py",
-      "sha256": "b0ae4a86af0836c1b6ddb9593b8e7a221ef283605afb7518f5e161ea304e5eff"
+      "sha256": "96b5b0c13c0de86bfeeb148f45c1db9cfa6a3c98e70e6d85a39cc0db3ebc7896"
     },
     {
       "bytes": 1008,
@@ -16735,10 +16735,10 @@
       "sha256": "1c42853df721ceb320fad270acf153006270bf6a4635d244e57273d371a79645"
     },
     {
-      "bytes": 13144,
+      "bytes": 12870,
       "kind": "design-contract",
       "path": "Documentation/research/glass/destruction/04_proto/web_proto_crack_graph.py",
-      "sha256": "749bfb4f1f89af6e621f2caba7fcc4fe92cfe566231491918a39638bbf2ff7c9"
+      "sha256": "a1ade95120afcf345c3720c20bfb10493368299186fb467393248034880f4955"
     },
     {
       "bytes": 1912,
@@ -16801,22 +16801,22 @@
       "sha256": "5b327397c4fb4409ecefd841278c334a659e2ecb98b201f20e4185093ab489a6"
     },
     {
-      "bytes": 8868,
+      "bytes": 8717,
       "kind": "design-contract",
       "path": "Documentation/research/glass/g10_harness/g10_sheets.py",
-      "sha256": "b4ecd2e64e652f27b3560ec27221366738f8cf05d4c69ffbf4e3c77b9c70d454"
+      "sha256": "28e95f0d1b086d1fdab752e23f4c10fdd2843377ae0b6356301c2306210190ab"
     },
     {
-      "bytes": 10148,
+      "bytes": 9972,
       "kind": "design-contract",
       "path": "Documentation/research/glass/g10_harness/g10r3_sheets.py",
-      "sha256": "3895ce5fe8d2be8e6b3ecac7a17f431c46fa5f5a2278007ee9b239f8810525e2"
+      "sha256": "179c99af7824b2e4b7f89186b2fd84a6811b48d95fd44873ea0b71b7dd298f2c"
     },
     {
-      "bytes": 834,
+      "bytes": 817,
       "kind": "design-contract",
       "path": "Documentation/research/glass/g10_harness/make_baseline.py",
-      "sha256": "e777df566c68ecd2515e46cfa1bb015ac750edc63d0df549891946ce9254297b"
+      "sha256": "48defd9baf12439abccb5d640f8ea457b393b4ee824c83e1f3b78ac2048f7361"
     },
     {
       "bytes": 1076,
@@ -22033,40 +22033,40 @@
       "sha256": "b946c7ed07c5a3e8037ec02007c360daecc37d7ef49b60e9a4be9a83be8996c6"
     },
     {
-      "bytes": 24669,
+      "bytes": 24335,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/threeview/tools/build_index.py",
-      "sha256": "555d7d4ad8a9ec10edcaa0a2d5faa1517e5f7ff8391ea4a5981ce9e639209c5f"
+      "sha256": "60bc8063f80c8e801243289a80fd3e95c381227656fb1c1a136364adc7e8321b"
     },
     {
-      "bytes": 1082,
+      "bytes": 1060,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/threeview/tools/contact.py",
-      "sha256": "dfe182e9479b6d3f7f31e47ee1ea98d51aa7d47a885b325f631038ec506fd05c"
+      "sha256": "b349bb8528a22f23fe12ac002b997feb211584fba462b6c61cea69bbd0e70d8c"
     },
     {
-      "bytes": 1621,
+      "bytes": 1582,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/threeview/tools/postcrop.py",
-      "sha256": "57493b482e5b4d397419d76accf05575cc0cddbc8398a38bb65fca96d55d3656"
+      "sha256": "2c63903976b6dfbb91c4540421a0bf7308807661a66d5908fa4b45b25dc65680"
     },
     {
-      "bytes": 21709,
+      "bytes": 21458,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/threeview/tools/sheets_meta.py",
-      "sha256": "3dfcaa573ba554b82c4275f7f96acbff75530ee58a64a90281a72e7cc629e20a"
+      "sha256": "22529e5bbc0a2af6ed0b6a51c6844505a40847c49dcd73f9fe68c61009dea386"
     },
     {
-      "bytes": 2986,
+      "bytes": 2924,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/threeview/tools/slots.py",
-      "sha256": "1ce6f38c571fc7f6c00be3ae5450950951d7fd1b1ffe1be295fb71c746b89f3a"
+      "sha256": "7d9b559572f12f2e670236ae582905f1ea5be1f0eb48cee661abc574294d89f4"
     },
     {
-      "bytes": 2677,
+      "bytes": 2623,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/threeview/tools/swatch.py",
-      "sha256": "afa5c9d0a9b4896f15aa56a4e271702e2f2ba81280bea3eb4904978e6ac5bbbe"
+      "sha256": "54f31fff92af0f7ee92e3842527898dc8d2d8bb9b5ecad70e255971b6caad46b"
     },
     {
       "bytes": 21129,
@@ -22105,46 +22105,46 @@
       "sha256": "9f70d2e70a774cb12af052271621e02e3d967f83f6b5863448aaf5270c812473"
     },
     {
-      "bytes": 6122,
+      "bytes": 6042,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsInteractableKit.Window.r4.diff",
-      "sha256": "c84b95b56981c2a6fff5012e4f07ff959ae7407b302f42aaf232bcc597352542"
+      "sha256": "4af5187fa40dee9faf520a4d09b3be1240ddcef6bcbaddc9ec4980eb1253b222"
     },
     {
-      "bytes": 1939,
+      "bytes": 1907,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsKitImporter.lodcull.diff",
-      "sha256": "9677badbb90ce3b36ccd82b0b21053c4b4dbba8b9b01e9aabb324f52a81cef1b"
+      "sha256": "4f521d0e11b6a24e4a54648a034ea5dffe7e876b7dfb2ba85cc84205e7a2be5e"
     },
     {
-      "bytes": 6575,
+      "bytes": 6465,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsMapWorld.window-kit.diff",
-      "sha256": "34dc5209f89a266d87f782097d945c0978597e5858edd8c30bb357b849b070ea"
+      "sha256": "8f8657234d36ca9fbd642943d03ee79468412a80868237246f9eee12f85145e3"
     },
     {
-      "bytes": 4293,
+      "bytes": 4207,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsMapWorld.window-kit.r4-all.diff",
-      "sha256": "21716a58e515cc01a304ef67144c0ae46a4b7df362fbfb796ec12bf7e33c33b9"
+      "sha256": "913c29bafd4b3e37e5c6595c1ae86a52954f082b9af0a27b3ee1e3ec07256497"
     },
     {
-      "bytes": 2273,
+      "bytes": 2227,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsMapWorld.window-kit.r4-trims.diff",
-      "sha256": "80e372a2f8a8a568f77509bbcf98d4b8243335d8809544c632ef284079f90bb8"
+      "sha256": "176425917a702bf2e05e9bef5f4a68b5faea17edfd1d48eddd28a164eed4a897"
     },
     {
-      "bytes": 2796,
+      "bytes": 2741,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsMapWorld.window-kit.r4.diff",
-      "sha256": "9a242c88d2d3d0d5860f05ce475d9c5c090905322f1cad38a6073e347954c0dd"
+      "sha256": "1b03b9d69e52b47b8a452f454a31677ec452ae1e52c2f45b4599d6efeaf897b6"
     },
     {
-      "bytes": 1726,
+      "bytes": 1714,
       "kind": "design-contract",
       "path": "Documentation/research/interactables/window_landing/FrontRoomsRenderSetup.putty.diff",
-      "sha256": "c339d6df3458f4fc0e5390beb32d65272f8bf05ddb9b4edb2cd39d48c020f85b"
+      "sha256": "ab3e0827309fd74d63d2b18de4f303e9d5c2df135a36c071ef3d47fa8b3ed98d"
     },
     {
       "bytes": 2377,
@@ -24589,16 +24589,16 @@
       "sha256": "0b742058aecb4fed7dfaae0792d8097dfb0f1a223db944326b61b8107c731e50"
     },
     {
-      "bytes": 1682,
+      "bytes": 1652,
       "kind": "design-contract",
       "path": "Documentation/research/level_transitions/contracts/lightlead_comments_visual.diff",
-      "sha256": "02990d3767ce7ec51fe22c340e9812f3f82f62195a0e05b791965fdb908595f2"
+      "sha256": "485bfcf8c1248f01fcde834a1e4942e17f52cf6a4abeb4f725baa34e09001a9e"
     },
     {
-      "bytes": 2609,
+      "bytes": 2565,
       "kind": "design-contract",
       "path": "Documentation/research/level_transitions/contracts/lightlead_lampmodeof_pure.diff",
-      "sha256": "741d598bd0d168af263fb68f8da69bfba78cf207722c5818027245652fbd8863"
+      "sha256": "4fa5b9c7f255590212c319a32353b01a8422262607675c138a2494e41842f507"
     },
     {
       "bytes": 57479,
@@ -26113,70 +26113,70 @@
       "sha256": "bba549249a41f67c0191229c202e6a7a5a6f8a515efe1e5e70492da32b257933"
     },
     {
-      "bytes": 8876,
+      "bytes": 8683,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/figdata.py",
-      "sha256": "da4def2df4acece3f29fb6b340f3fbc55a57ca1997a4a23196b436811c1cc9a1"
+      "sha256": "57aa343215483d58d604bb1af5be5263d04977a0e4bb6a29f837600f17bf0ba4"
     },
     {
-      "bytes": 2796,
+      "bytes": 2747,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/hearing_stats.py",
-      "sha256": "4bb94f3ad040de872ad66f065b50da2d1586948d2ed89147cb552ad48a0d1638"
+      "sha256": "64b0bc7345b4af6f64415aed91868f4010443b2a15b8e3ee88180e7057e009b5"
     },
     {
-      "bytes": 7089,
+      "bytes": 6931,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/mapgen.py",
-      "sha256": "9335037c53c5cf933b4c05b13b84bc26fb98c75bcb98fcd8bb366357a1b98213"
+      "sha256": "3e82b973166a9c2e442281cca93c6d39da24f92c1edfae0347078daa52709e59"
     },
     {
-      "bytes": 12938,
+      "bytes": 12698,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/mksvg_rest.py",
-      "sha256": "a094dc98df30f647e9be3d245d528a9fde9174245bd2e8ed1cf4f372e1a514b8"
+      "sha256": "caf007e4102d162b4419b814586bc0ce367c1f01fe00b3b35ad97b8f3043bcda"
     },
     {
-      "bytes": 1720,
+      "bytes": 1692,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/mksvg_rp02.py",
-      "sha256": "65fe418d5ab9f1ecb855254b59b011b02500210be333fc2c2c4a4eb11f334b3a"
+      "sha256": "9683e7bacd1c86f2f05f0b8f8361090f3325131f94e8c5c46203cdf1276169b9"
     },
     {
-      "bytes": 2435,
+      "bytes": 2395,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/mksvg_rp04.py",
-      "sha256": "43404ae75d89a3fc2873fa0b292b08004ba4477fb2ceddd72e12e05adb38ef3f"
+      "sha256": "917d9ce31f8ad1d98baf6ce6e44d49462ecbec34cac5aafc79fac0a9e80fa9c3"
     },
     {
-      "bytes": 15723,
+      "bytes": 15481,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/mksvg_v2.py",
-      "sha256": "03c376b84f673bf60a4c9b9cc2129fd9b37392d1b569f2afc02d4c8c272196a5"
+      "sha256": "5591ad880d0b8241d87afb8c5c6a0fb513f2dcc1533354e9c49059b8354a1d1b"
     },
     {
-      "bytes": 1110,
+      "bytes": 1087,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/new_hearing.py",
-      "sha256": "237831b14af79bbc608539b4f2c711fe31453b1ed2f820fe7ec40d6d298d26d7"
+      "sha256": "df2b886ce2d1e480c72ab3568e5ecf9ac133f0a79114dd965a23257dfdbf1401"
     },
     {
-      "bytes": 1352,
+      "bytes": 1323,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/region_pick.py",
-      "sha256": "90d106ff71aea5b13f45fd9fc946524e38dc2706a510b4eb6a80fbc8cdbfaf6e"
+      "sha256": "814514a3dd9cae3ac07202fd053f5abd3f535bcf8f82daaad00d22f2534487fa"
     },
     {
-      "bytes": 11305,
+      "bytes": 11296,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/svg/rp02_new.svg",
-      "sha256": "7b5315d428a2c03701ec3b2b02ab38549c20cfb4731fd7fb3467865535e1e3f0"
+      "sha256": "dab8701dfbebae1fb560d3e0ec89db814c581a9e5a3e8261f6aa914d6cf62c64"
     },
     {
-      "bytes": 29106,
+      "bytes": 29095,
       "kind": "design-contract",
       "path": "Documentation/research/relay_pursuit/sim/svg/rp02_old.svg",
-      "sha256": "46c02ac022acb8cc4443a41d06de5dcd6e542cbd22c4f3de87bdeaa8b1b5b001"
+      "sha256": "d30d1dd8492c714d97968b7fe0b460185f06dd57673f27f6b354478cf57bf2c3"
     },
     {
       "bytes": 11275,
@@ -26287,16 +26287,16 @@
       "sha256": "2eb7555506ccce7540b03917b08ebb20e259c76d16637d142b5d7fc786a9c968"
     },
     {
-      "bytes": 2400,
+      "bytes": 2334,
       "kind": "design-contract",
       "path": "Documentation/research/room_visuals/harness/export_room_captures.py",
-      "sha256": "945b7248ddd6eba61a708a266485fdaee283301c173d0eabce3b04ab5835128e"
+      "sha256": "485b6568eb2384a62ae07910650d4b512f92436180db0802c97e6b4855add7d8"
     },
     {
-      "bytes": 849,
+      "bytes": 834,
       "kind": "design-contract",
       "path": "Documentation/research/room_visuals/harness/luma_room_captures.py",
-      "sha256": "200dfb1e3f5124777ed3a3b90f8c9eb0536cb95c19bb6c042ed6be9712571d5b"
+      "sha256": "0b6d84d2c3c07c43291d87c464ed9353ce74f97ceb4955cfa643881f54f9e48f"
     },
     {
       "bytes": 24969,
@@ -26317,10 +26317,10 @@
       "sha256": "300f790489fa5fdda4be4d8eb8c0a70b247c6267485349a9e20adae934ed4b0f"
     },
     {
-      "bytes": 17273,
+      "bytes": 17207,
       "kind": "design-contract",
       "path": "Documentation/research/room_visuals/harness/room_capture_recipes.tsv",
-      "sha256": "22038ad0e68032647ce0eaec67d7c4a449f5505bafb19f6dc79143682b38e24f"
+      "sha256": "ba04927d66321880ae9366da79d73f7908274090ef77b4dc86e98ce195251862"
     },
     {
       "bytes": 571320,
@@ -26857,10 +26857,10 @@
       "sha256": "e1887fc5c667134e208cf7d826ca24d56e6db726c067aad66c37e6033902ccef"
     },
     {
-      "bytes": 37651,
+      "bytes": 37462,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/03_variants.tsv",
-      "sha256": "8525029e43146a889290752d4dcbf51265c40dbc96dacbaefbd36f4e46ea100a"
+      "sha256": "4e5be74efa2e82a4404283f4ff3670c4bd94ae3faaddd41db548fbab4b0c24db"
     },
     {
       "bytes": 12246,
@@ -26935,10 +26935,10 @@
       "sha256": "ad3bc876604104493bd72375ea92961147624c3068048c33bb285365539199c4"
     },
     {
-      "bytes": 425,
+      "bytes": 419,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/dropin/crosshair/HUD_Crosshair.svg",
-      "sha256": "0c9e18e84bbddce83502ccde879604e3d6d74ae81f3c2ee8c1ab558458798d92"
+      "sha256": "ba7a183c81f898ce24d669370b21aca543838a7d8caa3626f2989048ddf90aba"
     },
     {
       "bytes": 1465,
@@ -26953,10 +26953,10 @@
       "sha256": "0613719fd7d9977e8435ec0a98669c8ed4d5c909d2289035edb7babeba18feb8"
     },
     {
-      "bytes": 2532,
+      "bytes": 2527,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/dropin/slot_40x22/HUD_KeyGlyph.svg",
-      "sha256": "4877ca1bb774de2d94e5bc7c13d4e996210565372f4fed38455434b90de5c8c9"
+      "sha256": "e3e67dc47fb8d15fad594cfac77c996a0eefc50a55c183e7b717fabab61d137f"
     },
     {
       "bytes": 293,
@@ -26977,10 +26977,10 @@
       "sha256": "8ddba80204b9eb5f941c92d86d99eb69430a58942432d36e91a0ac58a958bb85"
     },
     {
-      "bytes": 2542,
+      "bytes": 2537,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/dropin/slot_49x22/HUD_KeyGlyph.svg",
-      "sha256": "f2137d236b02fc7f6aa150f8a097e1f39d3688323334caf3042d9642a6cc9286"
+      "sha256": "35fd8b35eb31739fb1f81d78a7cbe74dff6e2e5ff0b09522791ceae35c951470"
     },
     {
       "bytes": 349,
@@ -28771,202 +28771,202 @@
       "sha256": "d424ee016063e3352cf27eeba7c7f5902c863aba97e1f1479fe6fd20f215e772"
     },
     {
-      "bytes": 2542,
+      "bytes": 2537,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/A_L_held.svg",
-      "sha256": "f2137d236b02fc7f6aa150f8a097e1f39d3688323334caf3042d9642a6cc9286"
+      "sha256": "35fd8b35eb31739fb1f81d78a7cbe74dff6e2e5ff0b09522791ceae35c951470"
     },
     {
-      "bytes": 2551,
+      "bytes": 2546,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/A_L_missing.svg",
-      "sha256": "c714c9758b459bd8238ebb8e4814402fe4a44bbbb9fc82237dc36d8864df58bb"
+      "sha256": "924896f611e225d550ad3b09f8a6a7e650a4105ee0cc9e2ec47524889f80c9af"
     },
     {
-      "bytes": 2471,
+      "bytes": 2466,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/A_L_muted.svg",
-      "sha256": "bb2f3d97725eac14f5556ecef79546ebbb08537604b8f007f526de2b76af46a6"
+      "sha256": "8f65ff9cc8470ca9b19444e3d26caae5e0f34a36598b9a1892e0585fbd616c06"
     },
     {
-      "bytes": 2532,
+      "bytes": 2527,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/A_S_held.svg",
-      "sha256": "4877ca1bb774de2d94e5bc7c13d4e996210565372f4fed38455434b90de5c8c9"
+      "sha256": "e3e67dc47fb8d15fad594cfac77c996a0eefc50a55c183e7b717fabab61d137f"
     },
     {
-      "bytes": 2541,
+      "bytes": 2536,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/A_S_missing.svg",
-      "sha256": "5d73eb51eae20a1a9dcb3ff20309a4adae50c06b79dee46d154466437d00d330"
+      "sha256": "3d48a644a8f24f28e8a77085edbe5a0da7ade5b09a4e6f1157cfe9f4a42e4918"
     },
     {
-      "bytes": 2461,
+      "bytes": 2456,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/A_S_muted.svg",
-      "sha256": "aa228b2b5f8c21c3d6df95d370c840fe5cc38f5d1679d198375c2b32d6cf137a"
+      "sha256": "c25c7e699a098c88e9f51d5f2187c06ea767b031ff3943b44c94d242e2a5946c"
     },
     {
-      "bytes": 5112,
+      "bytes": 5104,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_long_blue_held.svg",
-      "sha256": "abe0244b4ec737f98976eb3f678253cfc80751341e655be3c9f1d79b6e2d90db"
+      "sha256": "9ad5cc31ba4a30000eb6c9c2755b1bf3f084ddaea796e2d02ea9c5e819aff4c9"
     },
     {
-      "bytes": 5110,
+      "bytes": 5102,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_long_red_held.svg",
-      "sha256": "2b1b04ca78a3f630931ffaf0df2d8aab21ebf0be90e96aef20e228a235cf10c8"
+      "sha256": "196159c62655e78613dd8ebb9b144ec1bf907dd381ad5889030e3cff0f977236"
     },
     {
-      "bytes": 5114,
+      "bytes": 5106,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_long_white_held.svg",
-      "sha256": "568a57b3af90ec990bb44a10205263a45a441e72b77dbf3b96ffb742967a03af"
+      "sha256": "fe726dadb5a1842d7483e7c0143b1b0dc52be2c944cea68bbbc70ef8801822f0"
     },
     {
-      "bytes": 5070,
+      "bytes": 5062,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_rect_blue_held.svg",
-      "sha256": "8603f6a9ab4feb635f6bfd297aa18a095ed377e4578fa1b487b19bf04460a091"
+      "sha256": "f9e62c33b866087f3c23423ad5f7448e2f1a5e2a91b87d459963e60028e7948b"
     },
     {
-      "bytes": 5068,
+      "bytes": 5060,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_rect_red_held.svg",
-      "sha256": "fe64bf16c1e63797498014aeb0bed0067f2789e52310482b7090b50a231332ba"
+      "sha256": "9995672ce5bab73547b05965baf3331e6247d21ccf5696b381cee1e87f37b6ed"
     },
     {
-      "bytes": 5001,
+      "bytes": 4993,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_rect_red_muted.svg",
-      "sha256": "a31c489c0a9dd289e7fc30bbcc1e1389d9f4b5f45eee763644eb409cde9f3aa0"
+      "sha256": "b3c71fa4f0802b38c7534e7f258d0ab1bf905072ae91a29e421fa84167b5d0da"
     },
     {
-      "bytes": 5072,
+      "bytes": 5064,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_rect_white_held.svg",
-      "sha256": "747e3b28be2e8eda0ae2bb3020264d5099836abdc9b46c8657e32a3d9b56a340"
+      "sha256": "cc360a44a6a2e572c45ae885d4b3006906b8aecdaeb708e2f504723806b53574"
     },
     {
-      "bytes": 6463,
+      "bytes": 6455,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_round_blue_held.svg",
-      "sha256": "08924b40ac052edbee919b0920d8adf8a02ddd23734d128969dc818d13cfd188"
+      "sha256": "e7fa71bb3b1025fefa2092e019a38d7f54e39de214c34b3f0224de01ecfa4a10"
     },
     {
-      "bytes": 6461,
+      "bytes": 6453,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_round_red_held.svg",
-      "sha256": "0d78a6532ab12b08ee9cd5e738ee0836fb3b02bf02826bef165edd3f186fe4ee"
+      "sha256": "36bd062ff6a844b4c8ab2d8e615162bc4d53bff55683f4ca05fe243a19624808"
     },
     {
-      "bytes": 6465,
+      "bytes": 6457,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/Achip_round_white_held.svg",
-      "sha256": "c4e9db1e5cddf6780223e27c0758ba388c0ebe259d2b62c9975a6729c38979d9"
+      "sha256": "689871ecca025353a0bcc1a0565142654725f24c748d7e29a06119a4aed55d66"
     },
     {
-      "bytes": 14341,
+      "bytes": 14329,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_long_blue_held.svg",
-      "sha256": "01865c5011f9ecfef1c23083fe72b19e05ca7694f17a71e02d1c75f65d52d535"
+      "sha256": "e7f878826673a23a18ebb7a64c7e626bbe883b667ced1ebf6817bb811c8eaa88"
     },
     {
-      "bytes": 14339,
+      "bytes": 14327,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_long_red_held.svg",
-      "sha256": "15cef61dcd23883cfa22e899d1b3de2511a2514cd9d6c96e85435f7314813aa3"
+      "sha256": "90708bf5fa0ed8dd77c849bdda86a4ac97e30c3910116fb86179b14b1da4571f"
     },
     {
-      "bytes": 14343,
+      "bytes": 14331,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_long_white_held.svg",
-      "sha256": "d9d1374a3c241738357fb4c35a577b254832aa5b3962cc4f721aad9d8887fc01"
+      "sha256": "aeeec6251216854f5cbd8c6c63c4d3a3e0d73a0d5ad3720728bfb1be6b2d969d"
     },
     {
-      "bytes": 11587,
+      "bytes": 11575,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_rect_blue_held.svg",
-      "sha256": "0eb07f72afb5974a7e0dd7e96183a813d9c300475f3a9149250df3b8304fb7a3"
+      "sha256": "fbe3a59a1cb15b63010fe6b708185b4cf82c73f878f67ac9ba13309dfc2e8bf3"
     },
     {
-      "bytes": 11585,
+      "bytes": 11573,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_rect_red_held.svg",
-      "sha256": "1fad7df32c3614b707568df931fd8958e9798e39c828b5fcccc730218eba6871"
+      "sha256": "cb3c39f028251058c3dd7352fe6641957e647690faf28cb8d692762c944f8b53"
     },
     {
-      "bytes": 3723,
+      "bytes": 3718,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_rect_red_missing.svg",
-      "sha256": "4fab5a1d3354221bfe0b055da9a2d4f032d61d8c87763a889da1e5606c633e8d"
+      "sha256": "32cb536cb4276410a34e34d65533513ee404906f575531dd0ef5bbc75b3a6643"
     },
     {
-      "bytes": 11505,
+      "bytes": 11493,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_rect_red_muted.svg",
-      "sha256": "f04413787265dd5e7d43ed203ba92fd769791bf53683d23b45e50c5a436a8a4b"
+      "sha256": "9e26f7d42d33784743a1903c5e2a62b01e8ea5aad2e95bd7c2fe1ed7360bf785"
     },
     {
-      "bytes": 11589,
+      "bytes": 11577,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_rect_white_held.svg",
-      "sha256": "e47909176a3a930d78a660e5f70886f236e1229a9aa184bf2971e0ac0dcd6bb7"
+      "sha256": "7ab3fd47d2c6c5779b293b52d1136ce117cfa9e563d221ad5df4dabf12439ac6"
     },
     {
-      "bytes": 15188,
+      "bytes": 15176,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_round_blue_held.svg",
-      "sha256": "dbf92d6f1b3b0e8476767f88622e353c764d712ecb21612739fd17be113c8f25"
+      "sha256": "8b675cde27b67ff3da28bbb1eab2651b1c821c6fec33eb8dea92e020f197020a"
     },
     {
-      "bytes": 15186,
+      "bytes": 15174,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_round_red_held.svg",
-      "sha256": "8f7ce5851294fd9901bb86a14526fec89fe93f96b900707a5503b087e52a506c"
+      "sha256": "d420e8847ae58856bc78b38106f64289047e9f8816b210a52f6472c438aa8fff"
     },
     {
-      "bytes": 15190,
+      "bytes": 15178,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/B_round_white_held.svg",
-      "sha256": "0b64fd608f12be593772a293f4ec22d1618081e4f941151de89ce02128b6f8b6"
+      "sha256": "ec6b9089803b7a6a362955e3864ae424756e4b3650ff69c292982a84cb5395f1"
     },
     {
-      "bytes": 2960,
+      "bytes": 2954,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/C_blue_held.svg",
-      "sha256": "801426f6d1cfa227b7da52f8f9cfad4c097d2bd466558dd0ec437d3201a42bdc"
+      "sha256": "b90c8ee1886289e47f0f560716ac17b709809440e54f43a46484dbf6ed0d5cbc"
     },
     {
-      "bytes": 2974,
+      "bytes": 2968,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/C_dark_held.svg",
-      "sha256": "2180bc09dabd21ee896669c8ab833c9d13724ef74e9978e82f11f961b3745b1a"
+      "sha256": "e486ded74a0b0e70977bd17ae1b3032a4f8de5e1f1b9bf20edcddd0bdd1f4b50"
     },
     {
-      "bytes": 2962,
+      "bytes": 2956,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/C_dark_missing.svg",
-      "sha256": "8f7cbf06cdc1698b8937dfa5c9556df035fdb25196aa5fb14fd0221b4fe25d86"
+      "sha256": "d77ef81c0c2d9f78ead88349373e4582f16d07b47b26ca6cf3bf476b128c0d30"
     },
     {
-      "bytes": 2888,
+      "bytes": 2882,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/C_dark_muted.svg",
-      "sha256": "73bc7cd273cf79b744cd8f07be24e5d761cfafd98962d719ef0fa5b22abb3609"
+      "sha256": "56da010e2f446bc445d872c7c36ca8121da9ab1368047194067c18d041350139"
     },
     {
-      "bytes": 2958,
+      "bytes": 2952,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/C_red_held.svg",
-      "sha256": "1112ea30473c227e7aa4e8402f3c5a6f885da877dceb398976935a148233918e"
+      "sha256": "aa21c3a24a800d098143099865e65bf1e6b9c5554b93696a71b893631cf99769"
     },
     {
-      "bytes": 2962,
+      "bytes": 2956,
       "kind": "design-contract",
       "path": "Documentation/research/ui_key_icon/design/svg/C_white_held.svg",
-      "sha256": "38cddd714440e8fbd956dc3b9d5a8c5759809a871b91f47851129200e32e4e9f"
+      "sha256": "ac2612cf63de9ff3e111c495a7853acb3cbd41802009240f0813a6f4080ea7a6"
     },
     {
       "bytes": 5063,
@@ -29255,6 +29255,24 @@
       "kind": "design-contract",
       "path": "Documentation/research/wallpaper_motion/agent_reports.json",
       "sha256": "b8b8e8cecc8f9d268cb06d4c9ad74ded6e460f3001c38241fd0376ad2107c69e"
+    },
+    {
+      "bytes": 179,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/.user/Metadata/Asset/{e161d707-1ebb-4d2a-b75c-c4993a269a35}.user.xml",
+      "sha256": "a8862f7e654666427707f252c618bd1dc3832724762c977ddaffc1c91cea2ce8"
+    },
+    {
+      "bytes": 429,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/.user/Metadata/Mixer.user.xml",
+      "sha256": "abda36ebfa492fc5ddbd128b77b13c10341ea14081039208ca61d91cdb05946e"
+    },
+    {
+      "bytes": 728,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/.user/Metadata/Workspace.user.xml",
+      "sha256": "0f53c3f0b19524818ae68b013cc1740fb004e8f6c419a90a393d94d2da2b2b67"
     },
     {
       "bytes": 48044,
@@ -30595,1894 +30613,1894 @@
       "sha256": "6a42c534b1734ff02ac212c4c335e7bd404c832f52d9ca0e8ecacb2b344bca1d"
     },
     {
-      "bytes": 90,
+      "bytes": 88,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/FrontRooms.fspro",
-      "sha256": "c957339989f6abfe081df25d139d1fc4809dcb5f446a2fb5a5f4d52e0688332b"
+      "sha256": "11ce29b579a0d8eb6eb54fd5dc73c4fb9f043291229d139de42b81299ca25f04"
     },
     {
-      "bytes": 183,
+      "bytes": 179,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Asset/{e161d707-1ebb-4d2a-b75c-c4993a269a35}.xml",
-      "sha256": "49eff0013be1dc509651d13a7d9f1a115aded02774b4c39bbaac1f87807789e4"
-    },
-    {
-      "bytes": 633,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{017977c8-f947-4311-9721-2e0e754fd7f0}.xml",
-      "sha256": "6d388350cd3746f5d25e2505a57ba0abaff9d41f9394d5829cf476836a4ac665"
-    },
-    {
-      "bytes": 647,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0251a869-d287-4adb-b7b1-7162cb01b29c}.xml",
-      "sha256": "d8c10c887626fa8e4cb2069000f0ca2fb455e426441b1afd454c81682fcb0234"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{029d89f3-4038-4bbf-8d4d-6f66a8ef4dbe}.xml",
-      "sha256": "8fdd994760fa7d7105addce69e9684794a20b8e6949debc3a2b40ca79d6dbc16"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{04d35cea-9926-4f45-be49-2934c21750ab}.xml",
-      "sha256": "d6ae9f37438a9f3d51f2795f10cbae65b8d639a52f8bd5fb3be4dc387eb7a565"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{05664c9e-408a-471e-bc17-219b5ddbd26f}.xml",
-      "sha256": "49305ee51a1e9c2a3c063a8afc241dc00522c4163c90ff0283ea077ddcf38322"
-    },
-    {
-      "bytes": 636,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{05da564e-c937-4eb3-a82c-c0a5932aa35a}.xml",
-      "sha256": "b42a2cf9adc9d870fb23de97c4a6c51f6766a87f6098991dd9b02c586098e293"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{071f7edb-dd83-4ffe-a3d0-1a0b5ce70185}.xml",
-      "sha256": "c1f470171440bb02295f043ba61827102ac8e7138c54a8681b348d4c44ed8184"
-    },
-    {
-      "bytes": 621,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0936340b-0734-4138-833d-94cf6a6b8093}.xml",
-      "sha256": "26569cdb018e8b7faf0c462572af7e21236f5346f10376c2ebd9bbd7a45c992b"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0a7740d2-1de7-4355-8bc0-b23f28ffe156}.xml",
-      "sha256": "487d85a94049b4c5f12c2bc77e424a4e9b0208f15e794340cacb7853198c8202"
-    },
-    {
-      "bytes": 702,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0b0ad628-7bfe-4adf-91b2-7f1f5c868db6}.xml",
-      "sha256": "2dff45319235a56389bcaf98d7e217d8f9e171b3153e54c51c9efbe566c3edc3"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{10c69c44-6dd9-4e7a-befe-e196f13fd317}.xml",
-      "sha256": "b2efa88b2fd050964c5d3a7c4ac28ae4441494ef80943b5603c507e5ca12f76f"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{10fb24fd-b369-4c2f-ad47-1c98e452f578}.xml",
-      "sha256": "824b8e64efa8d0f97f1091668c1e4e7a290964b307e6c8cfa8328c635d9af55a"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1201f86a-31e7-4cab-8715-490ce5ea5299}.xml",
-      "sha256": "25063ba0dec1ebe4577c654d8d73ab088ba69bcbf74ba609f1c339fff89c335b"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{12831fa6-7f4e-4626-b2c1-e159de3f489b}.xml",
-      "sha256": "43ba6250d24a501fd939966c5a6bc3cf48455d0b43aa3ae5ee05050d87bb5283"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{138cde91-02c4-4994-a5de-2d64653883b0}.xml",
-      "sha256": "20611df1cf7ede8954965992476af97bf35544a7763d3f970284b34ed7741ab1"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{14634a6b-0755-4bc2-9c7d-6f86bf6f7ac8}.xml",
-      "sha256": "52a2d2d68efe66c7a695cd874861781aafe3dc721b455f519e9c99e831c9a2bf"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1630ce40-f566-4fb6-bbe3-836bda9d3e3b}.xml",
-      "sha256": "638716d1209d6356b082fdf41e4b00011415ecb3a600f7b065a4990e4f4fcebc"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{178a6f72-5c76-4794-a3d0-dbbc05686aa2}.xml",
-      "sha256": "376596530af203a176c9fedeb447cbbb66316de9f442ec97eb042c20cb7a96cf"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1935668a-c20e-4221-afc6-fc5ccb243f5a}.xml",
-      "sha256": "5d55eac86263ec47890ecdfd156c90a7f1c01c05ba90339bf0d27f3d2e4711c0"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1a03e8c5-764f-4d54-8b9c-1a01ac74fa41}.xml",
-      "sha256": "897363c9c615d5324b1f18a264e40439fc3c5fa576638254d35f9a0523ad71f6"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1b58d106-7c53-4e11-b6ed-b432476817ee}.xml",
-      "sha256": "2d0f141106630a09ab3bfb21824781b41dd77aab6977c9890cdcb4d36b0535a4"
-    },
-    {
-      "bytes": 647,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1bc24b14-1edd-46fe-8fa0-1e0022f2ee2f}.xml",
-      "sha256": "9fb80425bee8b723197225fc3b6ed367c5483384e250dd095af5f248c75cc5f8"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1c3166fa-22bb-4903-b96f-30198587f14d}.xml",
-      "sha256": "6611f360d90f7c13cc8f8d881f147b83b096b565df50531c03b5bf6d77a67277"
-    },
-    {
-      "bytes": 642,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{21706087-4d7e-4ecf-acea-aa4a5ddd006f}.xml",
-      "sha256": "6d670129b1d2e11f42d52ddca464adb6525329ea1efb4c1a6eed505002c5aed5"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{21ef0ce5-53b1-4fc3-a3fd-618165747670}.xml",
-      "sha256": "492496a1823b88a6218e1f56fffc546a7f7dd2d9ed7a683442006f014517bd04"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{251e77d1-0267-4e36-a2c2-c5e013998467}.xml",
-      "sha256": "faac799c95ed30963038caede223657e12523ac5b5ab14224bf656835589f10d"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{257bb5b6-d156-4375-b1d1-04f9a96dd500}.xml",
-      "sha256": "fa2cb7c55f090208855f2eefc6875bedb6cce4918b49fa8afd4821d424c83cb7"
-    },
-    {
-      "bytes": 642,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{258797a1-43d1-48d8-8d3b-24f0842e6e51}.xml",
-      "sha256": "d6102743863fa5813a2411fa67a0e9b4bee32c12ae1d822c109f38f44da1729e"
-    },
-    {
-      "bytes": 702,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{28cbeb23-9b5e-4abb-8399-7a8689c81540}.xml",
-      "sha256": "59ca77ac027d31ccd7caeb451e91981b52302491621885bf74429dfc67f82708"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2b356e4c-fd72-4aee-ab89-73c0b075a35b}.xml",
-      "sha256": "1ad07726da79f23560ff011148b8007ea92bf3ea10115d5c69548238910db942"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2cdcac4d-58c7-4e4a-aa59-77771fd6809e}.xml",
-      "sha256": "3855d6797a872435b875004a6eb413636b02c1a4e7f86cff7bc535612a414cf0"
-    },
-    {
-      "bytes": 647,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2e3ed272-2a6e-49df-a255-8912e3335d1a}.xml",
-      "sha256": "1d72e6563a61d7798d2a678af684019ec70c41764afc3a0d5fbd47470e54420c"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2e87082a-41f3-4877-bb69-36aaf668b429}.xml",
-      "sha256": "6205fd98cb0afc3e77f2c7bce17e940b1f1c16ae9ebdc70c4b8ad6f012c5084b"
-    },
-    {
-      "bytes": 638,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2e9bc805-ba66-40ff-8d53-91acdc17f468}.xml",
-      "sha256": "7bd446b7e0be674055df01ccd31f88ca5111af3e5ba2a711aefcb6b67fa251f7"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2f6b3d8e-14c8-4a22-a525-884cd55f6e69}.xml",
-      "sha256": "9d9a0e995b897f89284d5ce34f95c8560e23bf14abf6fa3363304ec9032fae03"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3181f256-9b97-4232-a947-aa996a53d6cb}.xml",
-      "sha256": "cd5bfa54d267b6f32fa0d5b11ad4a4e89e1129e8b81b8b3287d66a0f4d25cbc6"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3554c8f1-b3d9-4f92-b1b4-d500700fcba2}.xml",
-      "sha256": "8182ccde9a9c002cbda08a91ed199574ccff7386bff0ea80b413099e9812e99b"
-    },
-    {
-      "bytes": 641,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35720665-e3a8-4dad-aa05-0ab17ff5e339}.xml",
-      "sha256": "7c834e3577e306a0a558f5103fea17f8089c0c530ffe96beea72f2311a143b08"
-    },
-    {
-      "bytes": 636,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3581fc1b-7a4c-431b-89ef-72d48292fbbe}.xml",
-      "sha256": "d39677d4fc717bed50aee4cb2d749dc9423389dba94a659b7d7d5ada9d214744"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35d2e32d-fa91-41b8-a86d-599f9305de8a}.xml",
-      "sha256": "3f7c61c7c9ab179cd354db1af2ae06bc113093ecda7dbb05c3574249f5251719"
-    },
-    {
-      "bytes": 630,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35d3b58d-35ab-4f88-86e5-91f3ea65d037}.xml",
-      "sha256": "403c9620cbe3cc2cb0f0646890d5096c39c314c76e7f77b10b0292a3aec5aabf"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35ea8687-189d-4ca8-8a51-6a16a3c6db94}.xml",
-      "sha256": "0321eca09e70aadfcdbebf0cf5a8d74f177d75d80b9eaea45cba326c8ea1660e"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{378a625a-8f82-4510-9d24-f17d69c921c3}.xml",
-      "sha256": "f3d7f2ecdcab21072fb12909cc700db31b39d9ed357525575a1429aeeceee7af"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{38053e7d-72f7-460b-bd92-3bb024a48a10}.xml",
-      "sha256": "0f3822f7a4b279340429599b2bca3769aef65a49fc92bf1e798a47a1eb39f73c"
-    },
-    {
-      "bytes": 617,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{395e3894-c16e-40e9-928b-9d931b1234cf}.xml",
-      "sha256": "1b857baa2101d08ab94df8bad786d5c8bc88f9e218334261394c6ebf2cf0867d"
-    },
-    {
-      "bytes": 630,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3966eaee-45c8-4241-bb73-d1a571747cc5}.xml",
-      "sha256": "025bafb1b4e6c9213a5dc6590a4566828f74c52ac881fb77f45b99014ee38f25"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3a901946-8849-4975-916e-9afba9d686c9}.xml",
-      "sha256": "bd6c62fff9143443789dd1bb37f0b02f6a614cab497d21644a3031982892c1ae"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3b84d596-c6a6-4508-9828-e220bb8afc0a}.xml",
-      "sha256": "2f6e1566c6ef0bc2d5bfe104615c7e1179e46bd08a8e465214e2298528f6c4ab"
-    },
-    {
-      "bytes": 647,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3bceff42-92ae-4770-bc46-22a0f7bd88c4}.xml",
-      "sha256": "78f4a1b29a6ce482a63525b5a1038c648db1f6dd90298f8046c47332d49d7cdc"
-    },
-    {
-      "bytes": 633,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3c51ef5b-ddfe-4c13-a7b0-a5fcf339977d}.xml",
-      "sha256": "445311e550ff532ca3a89784bdb27e05af8c61ad9700cf6971f40214a5fefa75"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3d3ea5f7-1a56-43f1-a027-a5212c58b9b5}.xml",
-      "sha256": "974049789aac09facf2f47d00da6bd2158d5cf27cbb4702762b5129d4719272c"
-    },
-    {
-      "bytes": 637,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3e3c08eb-4728-4bff-b29c-62b0660cbcc3}.xml",
-      "sha256": "d3d5a96fb51805a66e380f6b24f20620a75d0d44a198a389a7deb65f320719a8"
-    },
-    {
-      "bytes": 656,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3ea61ddf-72b8-49c0-b4e4-355fea15a677}.xml",
-      "sha256": "2936cd4afd010b6834c40867c18e3ba8be684f3972761063d0eeeedd895c1e9f"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{402b3ed2-9e1d-4962-bd06-5eacee2ad242}.xml",
-      "sha256": "b36677e8b232b0f699fbb99f88c52aea6d7ff1725bb6a50b74781e3cf430cbb5"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{40ab9872-5553-4e12-bf2e-3c4bb7634b8f}.xml",
-      "sha256": "8503db5e60833f03edabb7942dc8c2f482644b361f1098b6398d8e26c1e88d36"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4180ab26-014d-4ef3-b3ce-2f63b5f328cc}.xml",
-      "sha256": "25dc2b51971f2425dbc5940e7748da08318f8d9971ac655227de2b6aee2020c6"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{41c90ba7-c6fd-4ab9-a651-c06a96e7c3e0}.xml",
-      "sha256": "d84c7475d1f19b07ac2e5f88feaf982e1b2b3e1035913defbf8f8d3e752db182"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4219b1f0-42ce-4472-b748-2fffdaee9d26}.xml",
-      "sha256": "908410975d3e8c8bff308197aaae990ea77f90c9f35e3dd875b7176fd85e0f88"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{44dbb3c7-5341-4bcf-850d-8755d49384b0}.xml",
-      "sha256": "2386e3a26ce3e998c2a85f428f7a9d09adef3bd3535c3cbe1700497eeb59e9a6"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{45cf5385-66a6-4e5b-888b-65750641f88f}.xml",
-      "sha256": "c0b0da0f7d550088a96c4b0cfb422b7e627956669e7ee0da09da089476205463"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{45d4a48d-b45a-43cd-add0-5775151ced57}.xml",
-      "sha256": "0e3303bbb1c18a4c956631fcad421401595d0a24f5e3257fda06b56933086771"
-    },
-    {
-      "bytes": 648,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{46120d54-3d4b-4fc2-9d18-70947369a0c9}.xml",
-      "sha256": "75c4aa7122ca654d0377f0050c8d52eca5b934c1085486381d6ce94494743cc0"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4683ed33-07d7-4343-a820-d5d67cef5589}.xml",
-      "sha256": "6332b0833582b51e2c56a2173b6dda8712764d17795f12e95d8cd5db5529ead3"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{47ac11eb-1c24-4a12-9e36-00487fa7a792}.xml",
-      "sha256": "ece76c1de35911a0ff05307def6d66f3eead76e02f955a5e02825bfc7c81eeea"
-    },
-    {
-      "bytes": 637,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4a485e33-0e6c-467b-9237-09a99733a82d}.xml",
-      "sha256": "9862b25aab4662b12c4f33f4f28285c594e138d56125d40cf23880f680a9000f"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4aa6887d-9756-4b57-98be-33322182d83a}.xml",
-      "sha256": "913cdc5bedfd5bc63c0b192a3a1002f3a05dfe401e892fe853d661682b47966c"
-    },
-    {
-      "bytes": 645,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4d50e191-cda3-4124-b664-c00f077af068}.xml",
-      "sha256": "ff62bf28a0476fd794de37c606c10b5e8a26779b09795b8e1085967033f9004c"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4d59b07e-6955-4aa7-90dc-9d405c2e248d}.xml",
-      "sha256": "3bbbe4f43eae7edd984fcb0cef5262519a226dc6c3f55720557c970ffbe3076a"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4dc08879-6ec0-4716-a9eb-3ee949c46930}.xml",
-      "sha256": "4e34ff142337d01ed2ef45bcfd4854f8810cc6c1ab009401fec93a0827597fe7"
-    },
-    {
-      "bytes": 656,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4e905d25-80ac-456f-8c33-ea3cccdde6a7}.xml",
-      "sha256": "05fea45ac5c6cb0a93b7af2cccf1c904e61820ec6d23ebf87c220ba3f9f76bd2"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4f1c3de2-e157-4f60-bf51-af26ff9bfec0}.xml",
-      "sha256": "a35b7f01d334c798e6114282f733cdffb80df56972e2d40bc29f49a91033e7fe"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4f5d16ea-1b6b-49f0-99f9-5c69bd60a5c5}.xml",
-      "sha256": "90f983ffc6d7ba4830816ae85a19d007c556cb7bc46e7028b85bfa5293a397f4"
+      "sha256": "a8862f7e654666427707f252c618bd1dc3832724762c977ddaffc1c91cea2ce8"
     },
     {
       "bytes": 613,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4fab0f72-71a4-414b-ba6d-593f9a65c912}.xml",
-      "sha256": "a2901b66704275da6216287ecc2f59deeeab51a8f814a4386e66bafce23a09f3"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{017977c8-f947-4311-9721-2e0e754fd7f0}.xml",
+      "sha256": "5618ff70dd82959aa3f4960f5f18cba8248ce9616bf9c867c6eb4c9a6001c019"
     },
     {
-      "bytes": 652,
+      "bytes": 627,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4fb1e86c-88dd-4b99-ad21-358445a57a01}.xml",
-      "sha256": "2d4755cf2f1aeaefaa263d41a5d0303ab3e81f26e88339e8711cab6f9dad3052"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{50010996-dac9-496d-a59d-19edb15b0c02}.xml",
-      "sha256": "20a3e6e9e72f3c8e850b2cbf5d7160db1c0429889e91e2ad4d62822ce11bb538"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5030d95a-b603-424d-89f5-f40986d94a47}.xml",
-      "sha256": "cb9daa82e9073687df04e337aec27d1555690d517ad057fd8f33a10b0951ade6"
-    },
-    {
-      "bytes": 648,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5140e658-92cd-43d4-8e7b-24bddcd79e49}.xml",
-      "sha256": "8530ac7be6099298bd8d8006a1517a63f20ea8c5fa13e0f9594707e08eb9cc4f"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{532ddc54-20d7-43fe-96bf-6f310b6c0ed9}.xml",
-      "sha256": "8f1f37dcd4c0a4894417e1e05b91635ee23f18155a5fcadb69fd0141a6324b04"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5333b5e5-1cb2-4ecf-a790-1d147f2ce47b}.xml",
-      "sha256": "38cc7baf68eedf59790d2a2b4268d45643dafc3c05b3457980b151951a3b5ec1"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{533ff9ab-cdf3-4ffa-b6d8-898236e57218}.xml",
-      "sha256": "4c46a9e26c0a5a3df17635a5d645d4f7e9904664e6e7874af1f7c82113040096"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{544be62c-3739-49d5-a6ee-e2f1e72468e6}.xml",
-      "sha256": "adee10ff35000aa8b352e4e78296f09560043f64112ad9e9fb42b65bf9d79f5d"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{545724bf-59eb-47b4-9d54-8df9099c0ef2}.xml",
-      "sha256": "b9c55d18e894c9691eacec4f467f73682901c38be1fb695d86eb3fd6a1ce1265"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{54901bca-946f-4129-b4c6-bd1d948d3c6e}.xml",
-      "sha256": "710af6fc9d39adaed584a61d2123b3e5654b019bc2116f5cbb1b4da207701217"
-    },
-    {
-      "bytes": 634,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{54b6b1a3-637c-4c36-9456-bd6300f010fc}.xml",
-      "sha256": "3ccd9524036382c1cbc52d763accfc94f3230b1a7e611a03067806944044c05e"
-    },
-    {
-      "bytes": 623,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{562fe879-6dcb-4ff5-9918-865646eab332}.xml",
-      "sha256": "bbea97e51f4c34a5df9bc8d2f9f59b72783a72bce4d885e4c4d2abe7774ecd74"
-    },
-    {
-      "bytes": 618,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5a9f31b7-462b-48ab-a6e9-54b1627a69b1}.xml",
-      "sha256": "cf93296ccaaff2077e9ec6af4a4229872872235429380fe099bfe5cc36298ef6"
-    },
-    {
-      "bytes": 642,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5b438e8e-fb3e-43d1-b19b-41f851f44c65}.xml",
-      "sha256": "cdf30487b71b786a11ad108717400a3f54963c386c7bfde5ad1b600b47a8e48c"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5b8acdfd-d3a2-49db-8170-98b8762fddc3}.xml",
-      "sha256": "6d7a0c37aa51135ba0ba643979dfd8f714e35cf806c1ddd1efb8e0cd47ed149d"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5c270020-8579-4244-8b0f-368a6cc1d27f}.xml",
-      "sha256": "ed6eecc4e7a2e60d58e8264258bb290416b17bcb35e339e342f4dbfa0cbb4f7d"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5cf629bb-9aa5-4f5e-8719-5bdb3b50dd58}.xml",
-      "sha256": "dd1cbf90f6be38c3343efbdda028c8f73d153b1019f5546e3582540241e747dd"
-    },
-    {
-      "bytes": 621,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5d146b51-23a3-4802-8905-bbde94673656}.xml",
-      "sha256": "77ee3a5d546df2473d90ac9a4a45c1c00f9af0c98637d1dea942f725fefa4944"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5db59037-569c-46b3-a629-f2e3b91d2721}.xml",
-      "sha256": "acf1fa96a8541d338735f5b1bbd8057b04770df12b38fb6a553ca342bb8faa96"
-    },
-    {
-      "bytes": 630,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5ee9a182-f48e-494f-a853-f6865f8b5c87}.xml",
-      "sha256": "ac7cbd540c3c09a60dfd045b9e5e1b9601269ab9ff36e78f3385241bbc5128a7"
-    },
-    {
-      "bytes": 641,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5fd70a37-d32d-43ec-9e6a-903e0ba34159}.xml",
-      "sha256": "9e793d27d2f982a75a0f31bde5324193799b1a58af4794e1ae95e684f998e40a"
-    },
-    {
-      "bytes": 633,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{60d61986-53f6-4a09-b9b6-95f2a00ce599}.xml",
-      "sha256": "269005fc7cae85a6a5e6b66ee3438622043b032311b71c4b5d4a4946cfdc248b"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{62e5bc15-d05c-4ee7-b27a-ca90fd5ca3f3}.xml",
-      "sha256": "14678a92b6e90f97f10d0e1fb9e5d22e84880d473669694d674f1dbc87e59baa"
-    },
-    {
-      "bytes": 636,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{62e71b71-05be-41fe-a6ed-fc110ce0468e}.xml",
-      "sha256": "552f008101129132df02c42471c602e812098db82dd1ebc50dbe736aa827e8ed"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6665b100-2da3-4055-9e53-c7dc8dbd9871}.xml",
-      "sha256": "58701b545f7ae36badf0fb14d13876d625d4ac28768e057dc0d9b85ff85b9aa1"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0251a869-d287-4adb-b7b1-7162cb01b29c}.xml",
+      "sha256": "da8c8f51dcf5df33e780078078532420975c489f62045135219966e7a097ec82"
     },
     {
       "bytes": 624,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{69436a28-5183-48e0-a51c-ebfcbebb618b}.xml",
-      "sha256": "7374b611d05ee5e1c97a41ba7907d5740cc6e074dc6e1ece90c24a2b0e3df758"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{029d89f3-4038-4bbf-8d4d-6f66a8ef4dbe}.xml",
+      "sha256": "8af9082a21498e1ee8a61d3ce026bc4524cceb30980699ef5b9f746d78be9dd7"
     },
     {
-      "bytes": 653,
+      "bytes": 626,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6a25192a-18be-4608-920a-74ad41b7128b}.xml",
-      "sha256": "03d9e5dd2cb70136ca90db0028cc5bb7cd8ff1b41b43e3ebe78e4404edb8ee6f"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6aac2eb4-a126-4894-ba37-4a623db9add0}.xml",
-      "sha256": "3e506de406b27ac99e52701581c4e08ef4cf3c339be3e555213790bd3863fd58"
-    },
-    {
-      "bytes": 642,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6ae64402-a7c0-4b5e-8f37-6cc3ca9940ef}.xml",
-      "sha256": "104b2ff0ad162d6b443fd13bbd7d452ee83785e58ce50c0514d5d5288a3c9b0a"
-    },
-    {
-      "bytes": 647,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6c022e48-b0e2-4e74-9d08-ed71d29de132}.xml",
-      "sha256": "bdaad5633382b3ee86630bfa75fdf676aa6a8cb18a0e4d8d94b13bb0b9550617"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6c98ea7c-d94f-447b-b7d4-6fe1a1380828}.xml",
-      "sha256": "699d1fad3a87fdb71d41d44591ba8a5aa5d45fc71f61b352bbf448079f82fbbd"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6cd8072e-2d53-4d19-b367-4ee6f4ecae03}.xml",
-      "sha256": "269528a2dd9e0c4b3a0e33af331363888972b124576ee528e6c18750b5da174c"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6f9b079a-65ab-4fe2-8289-05f939ff16f9}.xml",
-      "sha256": "eac319822f377c2ff9a011be780b8cab44ee9b72f591a152f43ee70b67b74305"
-    },
-    {
-      "bytes": 633,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6fcc49db-b3b3-4476-8656-3f9f1efca62a}.xml",
-      "sha256": "65399eadc181332a753bdea3a1d9f68eafae479f834173892b4b386af6d0a998"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{70a35cc1-804f-4ee6-bba4-b17daf0b06e9}.xml",
-      "sha256": "ba0b7ba1ae13e8f7b376b4e9156187380fd103bd08f9ee4045ad6934aceeadda"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{72e6f741-4c4a-4324-97f0-a87b811d58a1}.xml",
-      "sha256": "5fd766548b21a93390f8a2c4512fc935749bce46929fcc8be486141ffac656af"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{748e0c35-f450-4b3a-b164-d513335ebc0a}.xml",
-      "sha256": "1321435b20c7cecd9092b09dfa35c2040aa08ba6d1c329343916cfe5d7e3ffcd"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7732dfd1-b485-4e4a-a395-ab473ec0398c}.xml",
-      "sha256": "4aa7c9c387b6f8834cd1d38ebbc79eb2104e186f160e28c69ca8af1348f66cf8"
-    },
-    {
-      "bytes": 656,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{774b04e7-e055-4f5b-8f72-9a7181d92e07}.xml",
-      "sha256": "5afd827c99b2b22d921c0da81908e3539820950a3fd1ad972783f5fc25c1866f"
-    },
-    {
-      "bytes": 650,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{77b7f343-4ca4-4201-ad6f-4cedd84ea328}.xml",
-      "sha256": "70169a4099b765ef8647bd0ba5395edc410bca91d8115cf27bb86e0464a8d7f1"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{79f476b1-c0be-402d-b898-982bfcd2ad06}.xml",
-      "sha256": "679b28866fe011fca0ccb3f1a3b64b5ff79ed301c6ddfa9d86a2eae045dfb585"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{04d35cea-9926-4f45-be49-2934c21750ab}.xml",
+      "sha256": "ae803bc08eeb5a1282dd42e4c6778bf571b358bf05626421a3b2efd482c54d8b"
     },
     {
       "bytes": 623,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7a4c39cb-a70a-4402-a54c-5993275f180d}.xml",
-      "sha256": "e7fd385caf2d31e605d750d8bff406c064eb679bd07818d811727f0b02f57db3"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{05664c9e-408a-471e-bc17-219b5ddbd26f}.xml",
+      "sha256": "977ea28e96bb94553d748d3da7abe5a68177e27c839899312fa1187320366a25"
+    },
+    {
+      "bytes": 616,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{05da564e-c937-4eb3-a82c-c0a5932aa35a}.xml",
+      "sha256": "6f0f56883cab97eb8deeb703911efb0412cd4ee9392ee36c4e88a246695b4dcf"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{071f7edb-dd83-4ffe-a3d0-1a0b5ce70185}.xml",
+      "sha256": "c5a5f5c925c43d9caf49ad80988236ed16e13ff4bfa9f4af18334d4ea2179593"
+    },
+    {
+      "bytes": 601,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0936340b-0734-4138-833d-94cf6a6b8093}.xml",
+      "sha256": "e8bd1199aacb91ae815a2d8bcb6d9a512c747d147ebf85a30d33d3db4564e167"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0a7740d2-1de7-4355-8bc0-b23f28ffe156}.xml",
+      "sha256": "79197c3ef9b6408f52437f9812e3efc775351a5ba9382d781c77e799115d45d6"
+    },
+    {
+      "bytes": 679,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{0b0ad628-7bfe-4adf-91b2-7f1f5c868db6}.xml",
+      "sha256": "62ddda5e49e6122911193720cbaf77ea66a377afca8353c919474ea2f0f0663a"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{10c69c44-6dd9-4e7a-befe-e196f13fd317}.xml",
+      "sha256": "d52a3bfdede7f5bb5a2d51b4e3be00809a28124d7a76c2e1c823f2267e4e6156"
+    },
+    {
+      "bytes": 623,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{10fb24fd-b369-4c2f-ad47-1c98e452f578}.xml",
+      "sha256": "f3daea0cea0d5a7be9f3bae63587ea2289c1f9a419dd35735d8364ee0496c8ba"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1201f86a-31e7-4cab-8715-490ce5ea5299}.xml",
+      "sha256": "817e6525d2178e70836c9c2f2e4a5706b9be1304d0ce5acf7fa05f3778a52f1f"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{12831fa6-7f4e-4626-b2c1-e159de3f489b}.xml",
+      "sha256": "c0b7f2c87f3d706df35ba59c50fd802ba46281dae4eff2eefba2537627456383"
     },
     {
       "bytes": 632,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7af62112-4186-4453-a5e5-c3f514f98cf4}.xml",
-      "sha256": "80996dc5cdf353756e18dd92dc70c0ba9796604806b3adfaa06fdd4cd8874075"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{138cde91-02c4-4994-a5de-2d64653883b0}.xml",
+      "sha256": "bb115fe7035446af38bccf378e5421a23fb020b12a8963ef0e59efba6c606716"
     },
     {
-      "bytes": 644,
+      "bytes": 634,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7bd5d193-5351-457b-91aa-8ee8d4153632}.xml",
-      "sha256": "b1ab12be649158ad795fc77a5d8068d34edb917618a388c880531b56e3bda9ca"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{14634a6b-0755-4bc2-9c7d-6f86bf6f7ac8}.xml",
+      "sha256": "f7b1cea6bef49e9e10cc1ba80d3ffb7e0a6c1f316eef99d178729713bbf8e39c"
     },
     {
-      "bytes": 652,
+      "bytes": 615,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7cdbc572-f0c0-458f-a6ed-f6f60cb903c3}.xml",
-      "sha256": "53963b895a9af1ab2bb1475463cbb5673b51da24e867bf02d23a31000e2e7dac"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1630ce40-f566-4fb6-bbe3-836bda9d3e3b}.xml",
+      "sha256": "5c14633466cff690451fb455e086eda551973732583f6d72be09edde9325c42b"
     },
     {
-      "bytes": 641,
+      "bytes": 632,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7e16c4c9-7a05-4927-bbcd-f4ff621f3a7b}.xml",
-      "sha256": "7cdbceacf60952e1b70b948c1b7ffe7ca500096ff401497d7efd732370a9c3ba"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{178a6f72-5c76-4794-a3d0-dbbc05686aa2}.xml",
+      "sha256": "a8dfd0468447fd095d1cea713f731fde751df8a07138971397c565a4b7e33a4e"
     },
     {
-      "bytes": 619,
+      "bytes": 635,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7fee61ef-6a6b-4964-9edc-858b366404e5}.xml",
-      "sha256": "9365be8010f3fc45ab9f10f5b2028119feb62c791e2c60fff54dc1f029a822b9"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1935668a-c20e-4221-afc6-fc5ccb243f5a}.xml",
+      "sha256": "9be8681b21bfec96d11bbb67815d61e173b48b05446bd55ea544ec9378322d1f"
     },
     {
-      "bytes": 641,
+      "bytes": 632,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{81e2c626-c1a2-4dcc-94bd-fccc9036eeba}.xml",
-      "sha256": "8db172b023452112f107d1cd9c4ca6dd70886925aa4bcaf9785b3eac340a3ae3"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1a03e8c5-764f-4d54-8b9c-1a01ac74fa41}.xml",
+      "sha256": "d4af2152b2bfe3d002826811cd92a056d69cca0d12ab53f62aa175e1dcb3f33d"
     },
     {
-      "bytes": 646,
+      "bytes": 635,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8290e5d5-8365-4c0c-9bc6-c248d999543c}.xml",
-      "sha256": "04fe4ca45479f1d383e9afcc506be00557b9ef5fb89665459bd4600764d2af99"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1b58d106-7c53-4e11-b6ed-b432476817ee}.xml",
+      "sha256": "f8a2a1c690939b47f9358185e7149ca61e37226b122e5736ac5de081bd00628c"
     },
     {
-      "bytes": 644,
+      "bytes": 627,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8426c390-cc5a-4edb-941d-3e1affa85175}.xml",
-      "sha256": "018e144060c5a718d2624e762136ed2cc9789a065e4f95f17df346a6d96a45f2"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1bc24b14-1edd-46fe-8fa0-1e0022f2ee2f}.xml",
+      "sha256": "175af7cc648c2e28cc85993cb3dbbd0af20d51fed5cc5707de447568b82b14e4"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{1c3166fa-22bb-4903-b96f-30198587f14d}.xml",
+      "sha256": "b53d804c96744a2d3337df9fad049ff98c9597e9755fc0fe757d82e359aa9495"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{21706087-4d7e-4ecf-acea-aa4a5ddd006f}.xml",
+      "sha256": "a0e408b846d53840b576c161095e24bebc7c7ed3eb3d61be9265f9f59a7bbfd4"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{21ef0ce5-53b1-4fc3-a3fd-618165747670}.xml",
+      "sha256": "fbcd21a7038746f16bed999577f07b4a157885cf46099eb135289f45095cc689"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{251e77d1-0267-4e36-a2c2-c5e013998467}.xml",
+      "sha256": "51ee0142c8998a5acae0de40c47a59d9e0fbecfe69eac2f908379a62571c5043"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{257bb5b6-d156-4375-b1d1-04f9a96dd500}.xml",
+      "sha256": "341451149deb26919b0ab1132958828a3369d961e75290637b785c6b7f0eb022"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{258797a1-43d1-48d8-8d3b-24f0842e6e51}.xml",
+      "sha256": "fab0e0078bd8ad9d92de37b9e8b28e0adf02b48c3ac2d00f6cde8ac8f800936a"
+    },
+    {
+      "bytes": 679,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{28cbeb23-9b5e-4abb-8399-7a8689c81540}.xml",
+      "sha256": "ef627572df77c987ba4e59fddc2a38fd32afe7648c49095f3fb7c9462ffec833"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2b356e4c-fd72-4aee-ab89-73c0b075a35b}.xml",
+      "sha256": "e5751ee90c22984bd2b926a4236e421b20cdf09de167a1af1f82ff7c7089c5e1"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2cdcac4d-58c7-4e4a-aa59-77771fd6809e}.xml",
+      "sha256": "1fc15ecc73284497417b43674f8bd3fcae09cc0ced504a6563ee6efdb7486c7d"
+    },
+    {
+      "bytes": 627,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2e3ed272-2a6e-49df-a255-8912e3335d1a}.xml",
+      "sha256": "96230cc0123843e54095ab5180cbaa7da2003dd3d62742edf35184831c8a99bd"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2e87082a-41f3-4877-bb69-36aaf668b429}.xml",
+      "sha256": "64e7c925eadf65eb8c662bb24ace0cabe7ab9a8be643e52df934615cfd4c3d73"
+    },
+    {
+      "bytes": 618,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2e9bc805-ba66-40ff-8d53-91acdc17f468}.xml",
+      "sha256": "159fc29198940237642571d13015d1e5a35561b803127d8fc1bb4703baea3eef"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{2f6b3d8e-14c8-4a22-a525-884cd55f6e69}.xml",
+      "sha256": "5b49b209349cfb63e3aac42eafcdd64ff17a7b56fd278945b8bf5a0898b2de79"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3181f256-9b97-4232-a947-aa996a53d6cb}.xml",
+      "sha256": "9622a622b9f506d5d2e09772d87553d142b745a5701f7204b5487464206f9e5e"
     },
     {
       "bytes": 624,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8435b2c8-6efb-4f5e-8db9-58d79f4d8efd}.xml",
-      "sha256": "2688ce8041ea56b537adb8ac1e72a07faf66d7852235f5b8e7c0b9d39d303c31"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3554c8f1-b3d9-4f92-b1b4-d500700fcba2}.xml",
+      "sha256": "781c5783e4756a84f63e3dd5caea2dc96d7cca4d7299248c8dfa3bfd316b23c7"
     },
     {
-      "bytes": 655,
+      "bytes": 621,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35720665-e3a8-4dad-aa05-0ab17ff5e339}.xml",
+      "sha256": "92ec99f2adff556bf97a8fcd7b8955250015371115a4933ac1405a79ade65f06"
+    },
+    {
+      "bytes": 616,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3581fc1b-7a4c-431b-89ef-72d48292fbbe}.xml",
+      "sha256": "a75945b3127ab120f1fcc85f28da49cab0521d952cdaa434868818d9ce9d908e"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35d2e32d-fa91-41b8-a86d-599f9305de8a}.xml",
+      "sha256": "374c616c7e15f63d5f4c8b72939bebb85763bd137e96f2591c4eab50cba90997"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35d3b58d-35ab-4f88-86e5-91f3ea65d037}.xml",
+      "sha256": "4743f1d8f3a8a027f194a8c3262bb29a6523e07a0d7231ef8f67b990fea00745"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{35ea8687-189d-4ca8-8a51-6a16a3c6db94}.xml",
+      "sha256": "501bf4df92f3ed19ec8af11a7522df3ef0e2df4e67a556821155be456c7dca9b"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{378a625a-8f82-4510-9d24-f17d69c921c3}.xml",
+      "sha256": "8a0f6b2f939c19de9d720c935c022364732e5a978c9b9a404e6d36e7ac0c3b39"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{38053e7d-72f7-460b-bd92-3bb024a48a10}.xml",
+      "sha256": "8a3953adb6d2e7d0bf66c0d037e0f4b0dc3a7f4aef1d1395628ad49ce55f09eb"
+    },
+    {
+      "bytes": 597,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{395e3894-c16e-40e9-928b-9d931b1234cf}.xml",
+      "sha256": "6875ee0bfad0cf71d7551fc8015208ef086bf9fc7e03393ab6690f98f1f32f57"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3966eaee-45c8-4241-bb73-d1a571747cc5}.xml",
+      "sha256": "0872bbda9bbf5e73542ba69fbffb7f799e76ed0150eb57ee80cfa0228b5f2431"
+    },
+    {
+      "bytes": 623,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3a901946-8849-4975-916e-9afba9d686c9}.xml",
+      "sha256": "e4106d2aa0fa5dd10dd0f830e97d3eaa959f174edfb52da873031b8189591ce4"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3b84d596-c6a6-4508-9828-e220bb8afc0a}.xml",
+      "sha256": "95cb8cdc92a6cfa3334553628fe8c2e753768973200eac4fdaff6c9229788cbd"
+    },
+    {
+      "bytes": 627,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3bceff42-92ae-4770-bc46-22a0f7bd88c4}.xml",
+      "sha256": "56c735b1f5249c18c144e6b35ba931bcac3886b6958be4715c5a562291cf9736"
+    },
+    {
+      "bytes": 613,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3c51ef5b-ddfe-4c13-a7b0-a5fcf339977d}.xml",
+      "sha256": "a9cef4b7eebae2ce691cd0f67ee872e53b80aad839cc68b62742403cba71f87e"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3d3ea5f7-1a56-43f1-a027-a5212c58b9b5}.xml",
+      "sha256": "bf8026e2e3de518b8ceff6f338d6e24798e5afe825833c1f0dc56a105fae67b8"
+    },
+    {
+      "bytes": 617,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3e3c08eb-4728-4bff-b29c-62b0660cbcc3}.xml",
+      "sha256": "ed75030bdb42c07ec324ab0f46936938d95dd9a3ccd22771cd2c3c62704f7f40"
+    },
+    {
+      "bytes": 636,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{3ea61ddf-72b8-49c0-b4e4-355fea15a677}.xml",
+      "sha256": "7f593f81b713c46416dc52ddc56ea74f908354858943e6294c45fa87c28d2f9f"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{402b3ed2-9e1d-4962-bd06-5eacee2ad242}.xml",
+      "sha256": "80e35aa42cb4311b9478093b4c69083d31f721888509a2df2f3006034d077cbb"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{40ab9872-5553-4e12-bf2e-3c4bb7634b8f}.xml",
+      "sha256": "cccb6a5312851f2ca016903256944d6f7c02571545a2201b240fb0553245522c"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4180ab26-014d-4ef3-b3ce-2f63b5f328cc}.xml",
+      "sha256": "4ef94a00bc25ef5b5a75ed1f5360c7fd6e63b2e628d6a936dd6ce22145ff115b"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{41c90ba7-c6fd-4ab9-a651-c06a96e7c3e0}.xml",
+      "sha256": "caf80d7a1ff9f9a6a1c8ca9ba73e277fdf0696e5e519694ee1bdd1a91375e802"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4219b1f0-42ce-4472-b748-2fffdaee9d26}.xml",
+      "sha256": "5b5f580c28620bf077049ea6312d12e612f0327e2c97a7e9de813dd6f408b62f"
+    },
+    {
+      "bytes": 623,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{44dbb3c7-5341-4bcf-850d-8755d49384b0}.xml",
+      "sha256": "beb37727539ac0630f164cf1250359cf4d5eb42697b56bcfec225af50729a7da"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{45cf5385-66a6-4e5b-888b-65750641f88f}.xml",
+      "sha256": "05ad5cec1414c4d23f64b8f858aeb731b70c51f65578cd7ba5863267933368b0"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{45d4a48d-b45a-43cd-add0-5775151ced57}.xml",
+      "sha256": "eecf495e8fc46b01fa9629e885cdd4fa282665e7f2ccaa85f1c28f35f95c36b5"
+    },
+    {
+      "bytes": 628,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{46120d54-3d4b-4fc2-9d18-70947369a0c9}.xml",
+      "sha256": "6aa8657b172553d112f2308e49d52d20f931cd9c3dad61a382fc914fe1be7c8f"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4683ed33-07d7-4343-a820-d5d67cef5589}.xml",
+      "sha256": "4d881d661ec629218d54ec55d533e609bb20d1b0d51c37e9c9855913ee09347c"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{47ac11eb-1c24-4a12-9e36-00487fa7a792}.xml",
+      "sha256": "abb11f2a78bfe8dfe502a5fc87105eaa8cb39c867c991f2ca8a8c55d2ca032b8"
+    },
+    {
+      "bytes": 617,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4a485e33-0e6c-467b-9237-09a99733a82d}.xml",
+      "sha256": "f11d21b9f906aa47845077fda491dd37eb34b232e61a0e1e4f00a913ec5dbea9"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4aa6887d-9756-4b57-98be-33322182d83a}.xml",
+      "sha256": "1d895ba7423fa2c5e59be3eef1016a23355174d343c2da1ee06cd15b7d11591a"
+    },
+    {
+      "bytes": 625,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4d50e191-cda3-4124-b664-c00f077af068}.xml",
+      "sha256": "a44160d26bd954e1c9831310133fd494be93709d327e0d0ed5360f454dd03788"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4d59b07e-6955-4aa7-90dc-9d405c2e248d}.xml",
+      "sha256": "f6a005cc1e9e22bdf8c614dc36d6b2825ca741760bb3d9358a30c072676b9969"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4dc08879-6ec0-4716-a9eb-3ee949c46930}.xml",
+      "sha256": "ce335d83fb26645600bdecc7e33253d17ea87848107e3acbccfc6cfd921cff9e"
+    },
+    {
+      "bytes": 636,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4e905d25-80ac-456f-8c33-ea3cccdde6a7}.xml",
+      "sha256": "4511981c1100fe127c1ee18947aedd1c46f2cb858c848981e42e12dda4eda790"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4f1c3de2-e157-4f60-bf51-af26ff9bfec0}.xml",
+      "sha256": "dc39df32b04872fc2d0afc2c71728d0093e50672ad265ef1fc69f074e7858722"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4f5d16ea-1b6b-49f0-99f9-5c69bd60a5c5}.xml",
+      "sha256": "c774d686f23d02b04408a11e4949cf6f7f65ecbb22a9d30d828f184d5bd40101"
+    },
+    {
+      "bytes": 593,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4fab0f72-71a4-414b-ba6d-593f9a65c912}.xml",
+      "sha256": "a70ea50b2835fdc35c6a553f8eb3e7d08489dcaf0a5c5c230140eeb3eeb123bc"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{4fb1e86c-88dd-4b99-ad21-358445a57a01}.xml",
+      "sha256": "b895c827877c9798511e627bee303455848cbd86f8ca3ffcebd97d6ead471c17"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{50010996-dac9-496d-a59d-19edb15b0c02}.xml",
+      "sha256": "035e3f71847dc679bfca978594de8f2c827f43cf40b6fbd473a862ba3a4a59fc"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5030d95a-b603-424d-89f5-f40986d94a47}.xml",
+      "sha256": "7bcda4625404d20840c5c64ddf34afb44241df204d8c235b584a0b73df0a113b"
+    },
+    {
+      "bytes": 628,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5140e658-92cd-43d4-8e7b-24bddcd79e49}.xml",
+      "sha256": "5d59c66c4cab97b759c37e26f56e3475a7cd65feb3fa258b18348940c3032fef"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{532ddc54-20d7-43fe-96bf-6f310b6c0ed9}.xml",
+      "sha256": "dfeb6742da707858d0f8e7c84c91ad0e4d820cf767b5bb330154bb5ee62c43ec"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5333b5e5-1cb2-4ecf-a790-1d147f2ce47b}.xml",
+      "sha256": "854980c7641f2bdbf80a2d3adddb8dbdb56c5d39bc93fadc3cc928bf02d5fa0b"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{533ff9ab-cdf3-4ffa-b6d8-898236e57218}.xml",
+      "sha256": "a9a52bfa4a456896984aa4c178d69328e2b64c0728edfbcad56267e9b04045e1"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{544be62c-3739-49d5-a6ee-e2f1e72468e6}.xml",
+      "sha256": "6dcb7d21317340fd226489bb8f8900bd26ff5f25cc09fd5121eb05b2fab8dedf"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{545724bf-59eb-47b4-9d54-8df9099c0ef2}.xml",
+      "sha256": "d678b99b5f29d5ee5dddac3de22045a51b7ea23addfc8aba48e94ec31eb884ec"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{54901bca-946f-4129-b4c6-bd1d948d3c6e}.xml",
+      "sha256": "e47b61201bb39da5c5e04f35a482e0dc6094fd77aca972b469e3050f71411e36"
+    },
+    {
+      "bytes": 614,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{54b6b1a3-637c-4c36-9456-bd6300f010fc}.xml",
+      "sha256": "c14ec21a5b38ba9c80b8c132031d74e25b82c7296f8c38e3bf653fe47691f948"
+    },
+    {
+      "bytes": 603,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{562fe879-6dcb-4ff5-9918-865646eab332}.xml",
+      "sha256": "26879a0bc629c4e616d80dfd6ee46db9632f2a24bd572b3b96eb5f599657e1f1"
+    },
+    {
+      "bytes": 598,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5a9f31b7-462b-48ab-a6e9-54b1627a69b1}.xml",
+      "sha256": "68306e7e8e077d369d32d85be28c302ee41f9b938a1bf9cb60ffd1c345c88dfc"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5b438e8e-fb3e-43d1-b19b-41f851f44c65}.xml",
+      "sha256": "c50a2cd9b7355cf16f78acca816b96de9fb9a1412e7112be5b5ea1b3dc8dd73c"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5b8acdfd-d3a2-49db-8170-98b8762fddc3}.xml",
+      "sha256": "942964d6e1ffc11972fd0d042a7f9e58a789881398a3e91e2b43e7e8ed13bc0e"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5c270020-8579-4244-8b0f-368a6cc1d27f}.xml",
+      "sha256": "0dbac09d81fdb9a60a540c440c244998e90b5eb88e2159bffd80c63e2b93cf77"
+    },
+    {
+      "bytes": 615,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5cf629bb-9aa5-4f5e-8719-5bdb3b50dd58}.xml",
+      "sha256": "606f2e03d5a176f47ff3ba3a6168236e8ac387a7a2c3e6dd0f4bbf43e846e067"
+    },
+    {
+      "bytes": 601,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5d146b51-23a3-4802-8905-bbde94673656}.xml",
+      "sha256": "15d03ca5598e4001fa62a97de7c109f5f696eca3c8a7864d1ddba170ee26f5f5"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5db59037-569c-46b3-a629-f2e3b91d2721}.xml",
+      "sha256": "ae3dfe953e5b43c8e3434a42c67aaa540834200cf4215750122b02e1d7719898"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5ee9a182-f48e-494f-a853-f6865f8b5c87}.xml",
+      "sha256": "686fdf5a1b2fda92c121c7270d57a88ea70c01dd40632e8d936e6a6e90b76bac"
+    },
+    {
+      "bytes": 621,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{5fd70a37-d32d-43ec-9e6a-903e0ba34159}.xml",
+      "sha256": "414d06db8a1bdf2626c9b409834d7e842abce7769de410f387842241d68e97f7"
+    },
+    {
+      "bytes": 613,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{60d61986-53f6-4a09-b9b6-95f2a00ce599}.xml",
+      "sha256": "e0a3ef944498aff626602e561afa131d33c83d38daa9ce0e6b2684969daa3f06"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{62e5bc15-d05c-4ee7-b27a-ca90fd5ca3f3}.xml",
+      "sha256": "ed45374025602325c380cbb7d8825852f03145a8e1a2f32ceded72ae0811c9dd"
+    },
+    {
+      "bytes": 616,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{62e71b71-05be-41fe-a6ed-fc110ce0468e}.xml",
+      "sha256": "ebdb6bc92e6abe718985e1968146c2fe81a45fd372960639612df59a17ac13b6"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6665b100-2da3-4055-9e53-c7dc8dbd9871}.xml",
+      "sha256": "c3ba47a7aa9d786b47902bb9daae717550e6187990013e50bfddbbb939286475"
+    },
+    {
+      "bytes": 604,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{69436a28-5183-48e0-a51c-ebfcbebb618b}.xml",
+      "sha256": "636a659204f3e2bc3a4d6edc83330351a836a0e574f3d5c7f6816f215703dbca"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6a25192a-18be-4608-920a-74ad41b7128b}.xml",
+      "sha256": "5ccd16b0e695e0dd70bbff0f1db5e72df4d7de28f82d4c969d227f36fda77cd1"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6aac2eb4-a126-4894-ba37-4a623db9add0}.xml",
+      "sha256": "fc106acb705e2f1a75e253a9cf077f7e6c1213e27482c6d13d14ea3e29a4b69c"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6ae64402-a7c0-4b5e-8f37-6cc3ca9940ef}.xml",
+      "sha256": "38936cc69950f9cadd5267e1aa2d9cbac2b786fe78f509e4b9ea1de21affb8cd"
+    },
+    {
+      "bytes": 627,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6c022e48-b0e2-4e74-9d08-ed71d29de132}.xml",
+      "sha256": "5799a893d1064acff0e8a5bb7660d124cad43558465d27d0f128dbdf0b4bfcbf"
+    },
+    {
+      "bytes": 623,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6c98ea7c-d94f-447b-b7d4-6fe1a1380828}.xml",
+      "sha256": "c46eddaaef3e3ddd6397c667170938e1f594b9e5ce7d0ac7f57b0df36bdf765a"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6cd8072e-2d53-4d19-b367-4ee6f4ecae03}.xml",
+      "sha256": "ee1ce0178353bb5dab96a20422d2dece7f486fada93e3a9ec33b68b581ab8901"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6f9b079a-65ab-4fe2-8289-05f939ff16f9}.xml",
+      "sha256": "1fd3f23008d72bcaf66726725169e019e9e873efc8aef5439dceb836fae6328c"
+    },
+    {
+      "bytes": 613,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{6fcc49db-b3b3-4476-8656-3f9f1efca62a}.xml",
+      "sha256": "298796058d0bf8103d202652a54a2fb51e7e6e114de2398c3c4644064387b1c1"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{70a35cc1-804f-4ee6-bba4-b17daf0b06e9}.xml",
+      "sha256": "28bfbfc95e7fcdd1b992497138101c83c634cfff7eea8b0b918e4ad0594dbe75"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{72e6f741-4c4a-4324-97f0-a87b811d58a1}.xml",
+      "sha256": "a2c6d1e2734d9d32d7e0872f98523fe11c60829beeac3fdeff99a0b5700d5f59"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{748e0c35-f450-4b3a-b164-d513335ebc0a}.xml",
+      "sha256": "97b056bafbc4299b5105d2ea1e822ebb52b5c0e55964927dd9d620efb7a57488"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7732dfd1-b485-4e4a-a395-ab473ec0398c}.xml",
+      "sha256": "9cf8b781ba23499a207680e43d1b30c64f6edebc43939bfdc344011fc0e75f1c"
+    },
+    {
+      "bytes": 636,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{774b04e7-e055-4f5b-8f72-9a7181d92e07}.xml",
+      "sha256": "c1426a7dbe1c3253bba81cf2642b8f113accbe2d30a402abc259c28d3d5b8302"
+    },
+    {
+      "bytes": 630,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{77b7f343-4ca4-4201-ad6f-4cedd84ea328}.xml",
+      "sha256": "12da87c0eaf8628f77351701fd516b08f6bc0584c2a8d80bb51fd766f3f0341c"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{79f476b1-c0be-402d-b898-982bfcd2ad06}.xml",
+      "sha256": "3228fc14c2a797c4c09a8800e256da6d2a97569f209e1e1cc87081382f6fc12d"
+    },
+    {
+      "bytes": 603,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7a4c39cb-a70a-4402-a54c-5993275f180d}.xml",
+      "sha256": "e0e902a2b2f3bede816ce1ea58407be58734666f383649ac7b20fbb13e5afc4e"
+    },
+    {
+      "bytes": 612,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7af62112-4186-4453-a5e5-c3f514f98cf4}.xml",
+      "sha256": "1af0e7a5105310303b0f273027b77e347266dfc68b1969876ea6f5eca872d3a1"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7bd5d193-5351-457b-91aa-8ee8d4153632}.xml",
+      "sha256": "38528ef2a955922e9636c04f24572486cdbb832d6887bebb7dc3f98f1120a485"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7cdbc572-f0c0-458f-a6ed-f6f60cb903c3}.xml",
+      "sha256": "af3a7ee5c202e856e9c564314e89d244d7fd62d0de5874260033559228e1af51"
+    },
+    {
+      "bytes": 621,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7e16c4c9-7a05-4927-bbcd-f4ff621f3a7b}.xml",
+      "sha256": "20122b232776369edb9b1f858749d74650fb6fdb606e51ee79f6b6e85854f162"
+    },
+    {
+      "bytes": 599,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{7fee61ef-6a6b-4964-9edc-858b366404e5}.xml",
+      "sha256": "44f4993614291df31b6e2a26a5d2eced08e113edb123378056204d7f1498b3e4"
+    },
+    {
+      "bytes": 621,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{81e2c626-c1a2-4dcc-94bd-fccc9036eeba}.xml",
+      "sha256": "908783631b51becc5ff89228096751602b0101dc4e1e7d37d75b5afb78baa1cf"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8290e5d5-8365-4c0c-9bc6-c248d999543c}.xml",
+      "sha256": "be003de859562e8f9efb53ac0b46ad8885bd155bea8e248f82821b3f254d915a"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8426c390-cc5a-4edb-941d-3e1affa85175}.xml",
+      "sha256": "d92c1168507d2fcd5a7db1ab85f7c44aa505a38fd2040d1fd2a34b2c2fd1ea78"
+    },
+    {
+      "bytes": 604,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8435b2c8-6efb-4f5e-8db9-58d79f4d8efd}.xml",
+      "sha256": "10c0e10762616c35da067a1f57070048fc1283395324c698f874213eae44cf0f"
+    },
+    {
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{84849088-186a-431a-8de6-31dd11f67f3b}.xml",
-      "sha256": "fe9d44a7ea06cc82a25dbbe1e1a193e85ef9bc7e3d9e103fb8d2b81bbc3279de"
+      "sha256": "5081f08dab529dbd56ede8744e18de197a169fcf947b0468f0a0b0ffe3b2b136"
     },
     {
-      "bytes": 652,
+      "bytes": 632,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{86687ebb-ca09-4868-864b-81ef6ef4585f}.xml",
-      "sha256": "1bc96b7bb9d14831b7709c1434d853b06474090124c5293afbbeeabb11f5844a"
+      "sha256": "924a5b34197df141709c63361d10d9fbdf6ce7f3253c4b5108e1252a974de542"
     },
     {
-      "bytes": 654,
+      "bytes": 634,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{87a556b1-0125-4087-88e3-d62949a87d9e}.xml",
-      "sha256": "de26e4d8dc5e9a7f24d15395ba497c15b27432dfa406e4b900751c7b3c6370fa"
+      "sha256": "e7710d883998890dc9d2234f696bfcc99805faed85d611b6c5ed9fae57593145"
     },
     {
-      "bytes": 650,
+      "bytes": 630,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8a1a099b-80e2-48d3-8ffb-03bde13d14db}.xml",
-      "sha256": "daa18c975af894221f586e66f0cedffe17f1b75a1d7a2677136900c8ef556b79"
+      "sha256": "b51e8e11bea03da574115e839eb090d24ed4f07bddfc1aa365f4ee9ab7e27a2b"
     },
     {
-      "bytes": 639,
+      "bytes": 619,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8a7f8178-544d-44ec-8779-87187f587753}.xml",
-      "sha256": "55245f44b5ea39fa0e0f2f96fbc64a811101b9f6ad5700381e2719404805bde1"
+      "sha256": "38a39443974145fbbef093bebc2f37b95e2ed5f3b224ace01d27c3fd77b83e24"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8c0b843b-77b0-48c2-b48b-666a5dbdfcf2}.xml",
-      "sha256": "6574e1c91238f48d22a8e691fbb7ea706797ce62380c85fea658c6925d017f9c"
+      "sha256": "c08aa06923f1ea0e1ba029a62032789a6eeaa10e5b96016e4fe60a5c8d6d40fe"
     },
     {
-      "bytes": 654,
+      "bytes": 634,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8ce899bf-d982-4238-8233-25f915bf83e3}.xml",
-      "sha256": "a57db4a5aa4507d2789793f6d3315fa868377b74bbcf52d3c5f7aa52f86aa310"
+      "sha256": "840466524701c9ae16690c40f3918c499bc81f2489ee2737174f398b18ce6c0c"
     },
     {
-      "bytes": 634,
+      "bytes": 614,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8db4221c-4dd3-473e-b90f-cf1daf79060f}.xml",
-      "sha256": "bdda210ee66c5e15e8d76b246b17bc6706da0b26cbc471af87dfdfb3dc9e31cb"
+      "sha256": "b248b230c9e9f171b78cc88e536f96f4ead74a22e400b396015a69875d25f679"
     },
     {
-      "bytes": 633,
+      "bytes": 613,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8e0ebe8c-c636-4727-ac47-71f74f27424a}.xml",
-      "sha256": "89ca6001eed6281f9d75c5caaf026ae52adb3c066a1fc9348562809e710af0f5"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8e76d88a-dcdc-4798-9149-e9bdd40cbca9}.xml",
-      "sha256": "7cd15cd228f25d6068495adeae2d897facb8112d0954df32bbc92f52ad7f8e6c"
-    },
-    {
-      "bytes": 636,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8f2a58e7-f6b1-4d5a-8f83-bfc47fd9ad28}.xml",
-      "sha256": "d4f34aa3c423400dc5aaedb942a18d7429294002cd386782686e94b31f7c2427"
+      "sha256": "37264cf41201f76de4c82bf58d2ebf4fa1b94630c9008375859023f41d41efcc"
     },
     {
       "bytes": 623,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8f72643e-8b28-410d-9db8-ee03935d1bae}.xml",
-      "sha256": "b5a935805223dabd2b34c8767869ddeb297707d6ea2912e42eb76c0bbd941788"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8e76d88a-dcdc-4798-9149-e9bdd40cbca9}.xml",
+      "sha256": "8cc70779f7e5dc3acf57c5f51d955b97bd0ddf3731542afb7f49501b9b1a2fe9"
     },
     {
-      "bytes": 647,
+      "bytes": 616,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8f2a58e7-f6b1-4d5a-8f83-bfc47fd9ad28}.xml",
+      "sha256": "794a42dd56947f91e9a875a829c65bd6ce92a39140b313f8ac1036a4f79a211f"
+    },
+    {
+      "bytes": 603,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{8f72643e-8b28-410d-9db8-ee03935d1bae}.xml",
+      "sha256": "309640f347118e3439397cfae7ddd9063cdbc09eb05b67afe0f48fab53d59d90"
+    },
+    {
+      "bytes": 627,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{8ff17148-2c7e-4964-8c20-098b62be7530}.xml",
-      "sha256": "38f680d4490db2e07c6db0fc5d93bb14909b3744b278d9cec930755af1bf9456"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{931d37f8-1832-457a-a634-7f1159123e9d}.xml",
-      "sha256": "6293b4541fcbf1135a65c86f55b5af03e9273e903c6bd4c74f49b8fd6a0f053f"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{938b7a64-1595-4386-ac14-345bf4e09b0a}.xml",
-      "sha256": "5e0b1767efc59171b841d8a0a22d9e1403f43f550cb16970458eb6ce639c433a"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{93a4c016-e68c-41b9-957e-137f2c1f5da6}.xml",
-      "sha256": "2bc123a9822def560d3428bb4a9d739ab1f5fd6792decd52014dbf400d5289b7"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{949f882a-478c-406b-891d-18f2b87683f9}.xml",
-      "sha256": "889032e79eade030bc86319ab739603cf66e00e960ff9d5b89515131483d6e46"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9628ad41-5ea6-4f98-acef-ff1c38190938}.xml",
-      "sha256": "4687dd72f795e601c945fe054d0d858518d51f9ff4328bb9fd206fe63e5530f9"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9676464f-3de8-4dd6-a97c-3d329d04844a}.xml",
-      "sha256": "0af1cf0d0608dde076c8f6c66c2953d0b7a135569fcbd061edcac214227ea09b"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{968ffee4-1a6b-4e29-9fe8-419f8067cdd8}.xml",
-      "sha256": "65a2d997d8421c329c767626d03a297fe8ca2bc9008516c10a4023ec2123faaa"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9a02bf61-4522-4cbf-80ee-f84c37b68573}.xml",
-      "sha256": "ae9f43cef627e40b0b58910480721a491ae3133487c8ce932789e11be2d2a89b"
-    },
-    {
-      "bytes": 630,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9aacf7cb-3ef2-4498-a47e-5a315ca3380e}.xml",
-      "sha256": "d547f6ca24ce65d0614f9b8f9faf8e7622aa2c703111cf9b12fd72d1c4c169bf"
-    },
-    {
-      "bytes": 636,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9c971b5d-9291-4ae5-8fba-77ebbc4319c9}.xml",
-      "sha256": "a205022cade27b50986fb4f259425cfdbfd44f1b9d86d19f03aebb6bf87a5180"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9ca9b4ae-9d14-4b41-a36c-faa2603e5514}.xml",
-      "sha256": "7124a8749660366f03fbf5b856eed82e780fe46f9f7a580d69d7d4039b3c0dc7"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9e032714-390e-4694-ae1b-cca88cefd6a4}.xml",
-      "sha256": "4345ec284b958e8c9b0cfffa7a7ec7974cfaa8a849026d4d96f079b3248acbfb"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9fda8071-27ed-4ae1-a2df-fa73b5895b21}.xml",
-      "sha256": "0c8fc17ef9f8a5e6021eda48adc0ad5acda7e0ce4d11fb01da4eb0f573ec36b6"
-    },
-    {
-      "bytes": 621,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a0e33117-d706-4068-a83f-298abb1db35e}.xml",
-      "sha256": "8b3239e749a76caefc54d6c67349d3b308bbe805ebb3f63b3d416e5417747132"
-    },
-    {
-      "bytes": 642,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a1474abb-1679-421d-9b28-e934e2dfe509}.xml",
-      "sha256": "9cd0af6eb5ce24ee777efe177bcc286ca6fd9ca80b3411dd37d0c7bd1a00499a"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a2a05daf-c91b-4ea8-a7dc-072e50064b48}.xml",
-      "sha256": "ad30909677c0fe944e1a1234ae1295a105c9b2f5116b9828e45ae83f0a6ac3e2"
-    },
-    {
-      "bytes": 645,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a38b44f3-0673-45a9-97ea-4009efae44b6}.xml",
-      "sha256": "9facb84b3ffd46326f6415433be98426d1c4a273e6a2f963ae8823baf3f05a0f"
-    },
-    {
-      "bytes": 648,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a591fce9-1d44-44fc-aac6-443a8c08230a}.xml",
-      "sha256": "5dc590cab4c8abe2f9d26d4324fa39de43891aabeef2e4e0810d59cffa3367f5"
-    },
-    {
-      "bytes": 653,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a59d704f-4e15-471a-b7d3-ef7558802ca8}.xml",
-      "sha256": "00ba40c552626ea75d852295042b9f3b9f3290199e75b1716d9d328c72824677"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a652f2c3-5c73-42d4-a5ed-0a24f3062b0e}.xml",
-      "sha256": "4ed011609c9471e54bd0ae84c734c67777e1116f7e22a77ebfeadfb1f3344d43"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{aa418a29-e0b3-48e6-ac95-16b233422240}.xml",
-      "sha256": "3a80f766958cdbddb8f43b530dc441828d57254914871425932d0dc01b0ff8d3"
-    },
-    {
-      "bytes": 638,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{ab0881f7-fdc2-42cf-a2a2-ae6c71055099}.xml",
-      "sha256": "1af4c74b3be76800b1476401323d2fe5d0c0e8995fd9a0b4bc25898f2510b0f0"
-    },
-    {
-      "bytes": 650,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{abe4d805-f611-4bb5-9d4d-5bd5eaa2043c}.xml",
-      "sha256": "6116cd348cce4a4036b033911b1467db72224323050e62df87d79600053d0587"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{addded66-0bbb-4f3a-8f47-7ec7eeb3ae0a}.xml",
-      "sha256": "09768f5cde3425c290887f3726ab9e78dd07f44f01ffefaaaafb47977c2135c2"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{af8f3dcf-a8fa-4589-aa58-c43c0d7f4f20}.xml",
-      "sha256": "50e35029cb3db4650513364070b6c03c1678c7b0021f384934c52eae07ddca5e"
+      "sha256": "cb43aeee84783fb36835f7882b87f763fe879356d810799c1971a6633f5f219b"
     },
     {
       "bytes": 633,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b22a2521-bad8-42fe-aded-92ea9818796f}.xml",
-      "sha256": "bd57d6122ba7a4a87af311e3109df015067c90e777a085d0707a18d2ccec63dd"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{931d37f8-1832-457a-a634-7f1159123e9d}.xml",
+      "sha256": "9e5d1730ae8e831bff768cef6545ce460c44f1f59fe764d0a497c59257321800"
     },
     {
-      "bytes": 646,
+      "bytes": 633,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b2373fe5-44a0-4d89-a7cf-630626a680d7}.xml",
-      "sha256": "21a8b0bd8271eb627434cb3621b68a2a11ccc88743cc13311ddb634442369d0e"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b481c4db-1703-43a7-8677-d1ed663bd04b}.xml",
-      "sha256": "a02b2cb5efa67db5a0554610982415265ca0a3341d27b3f42229115e3156e9ef"
-    },
-    {
-      "bytes": 656,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b61e598b-6099-440e-ac45-f26028aa9659}.xml",
-      "sha256": "c3fe376e54ee1f1f9737aa6fbc4d3f1bc84a6583e724a592efbaefc9918ab150"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b783f8a0-71b8-4f99-a079-6b92715c7dc9}.xml",
-      "sha256": "3795fce3e832d6157a53ba030c22ef09d2513da1bc94681f0b2dfc36c04fb56e"
-    },
-    {
-      "bytes": 639,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b8df9502-5fb4-47d6-8c90-fdd84e78ac38}.xml",
-      "sha256": "e55cdf815ec8e7bf3abcf7f1ae83eb668f2d0a802c576a1c4b98bbd8dfaca8c3"
-    },
-    {
-      "bytes": 645,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bb08752b-431e-49d4-8dbe-944ab3346ded}.xml",
-      "sha256": "bdc5a51f3b7cdb6b7b8c0eb891d5849260d96b16a93807f3bd625b62c29d87cd"
-    },
-    {
-      "bytes": 635,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bcb2e106-d4f7-4c8a-8004-374834611941}.xml",
-      "sha256": "b638497ff15033901fa710ba536f3588b37c367c40bbd62f4944e7f378350237"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{938b7a64-1595-4386-ac14-345bf4e09b0a}.xml",
+      "sha256": "e9ccc00d25b8767367eca06135c83345e42f8487b96d8c57a8a6687b04437eae"
     },
     {
       "bytes": 634,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{be157df7-f53e-4b52-9953-be2187b5ae3a}.xml",
-      "sha256": "e6645a3d18aa0df512ae8eb64110c0a8e119581ebe7f09fbffdc4edebe40ed35"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bf2f4831-4103-4896-93be-2c0bd03f6cd8}.xml",
-      "sha256": "553926797c70f9174fc154fbb2e8f3100983e6832a37f7eda62121d80a24ed74"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bf8c9efd-704a-42fd-a56c-1f497b0f31e0}.xml",
-      "sha256": "a3812ae36d9a9f9eaa328d8a6b63875cea571cf58d1a6e4ad9f4a4e865319c9a"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c1abdc22-b3c1-444c-a84b-d705bb261095}.xml",
-      "sha256": "1bb460c1dc951e24cb6932be4c90eb7710d0d34900fcc492797d2a61e5c09e39"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{93a4c016-e68c-41b9-957e-137f2c1f5da6}.xml",
+      "sha256": "6f7205a0130ec26e46f7366a9f389c6ca29c5a3609c56c535fe92951b2983bfa"
     },
     {
       "bytes": 635,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c2d438f3-3b1c-4d63-a624-cf1c131ff547}.xml",
-      "sha256": "80a97e538bb4b288563c24166f1a939a6e4c063efe4ddf40e972aaa20a4c0dce"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{949f882a-478c-406b-891d-18f2b87683f9}.xml",
+      "sha256": "05b412a9dd4c118bae699590ef0c920578a4bc25a25b25611395d62055ac016e"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9628ad41-5ea6-4f98-acef-ff1c38190938}.xml",
+      "sha256": "50055be8fcf1910f908bfe56bfb0eb027732c6e9d4c0d58453822c690aa0f534"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9676464f-3de8-4dd6-a97c-3d329d04844a}.xml",
+      "sha256": "6d36af28602b92514b97224d618546da78db4f0d9a53691079b7b19475636df3"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{968ffee4-1a6b-4e29-9fe8-419f8067cdd8}.xml",
+      "sha256": "50ce11a5a90135b177b9e495f0d239c5cd7bb7be2aa92d6f089b9a903e979b0c"
+    },
+    {
+      "bytes": 615,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9a02bf61-4522-4cbf-80ee-f84c37b68573}.xml",
+      "sha256": "15470cc168fa184d606dcb59b9de4eb03b757240d500fbbe128e5025fb237941"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9aacf7cb-3ef2-4498-a47e-5a315ca3380e}.xml",
+      "sha256": "c2c6e899c52ea6d4c7882a8abc73c7795b257805643ff8f46265c9956c3888f7"
+    },
+    {
+      "bytes": 616,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9c971b5d-9291-4ae5-8fba-77ebbc4319c9}.xml",
+      "sha256": "c781d4a7a4612a1dafae6735ab48ac9df7de6a48e8f203423513b39ba775efe8"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9ca9b4ae-9d14-4b41-a36c-faa2603e5514}.xml",
+      "sha256": "5964f3a3bcab097bee700a717377e36f1aea4f74ac9def716d00030fd0714583"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9e032714-390e-4694-ae1b-cca88cefd6a4}.xml",
+      "sha256": "dc8059241d7c1c8f7f204f978921b45d4bbebcc86c830b50607e674be60ffd06"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{9fda8071-27ed-4ae1-a2df-fa73b5895b21}.xml",
+      "sha256": "2417d44a4f655bcdf565aa609babce7df690f18e70532b0507f968ba442d937a"
+    },
+    {
+      "bytes": 601,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a0e33117-d706-4068-a83f-298abb1db35e}.xml",
+      "sha256": "78df2acb2117aa51dc51fa6c30a3a20690bb9b3c09017cecf1caccc9a9707c04"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a1474abb-1679-421d-9b28-e934e2dfe509}.xml",
+      "sha256": "24d14d845081c5b1b8f3e8fab1a1635d7e856fa76a1b94eb85035f9f7911b65d"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a2a05daf-c91b-4ea8-a7dc-072e50064b48}.xml",
+      "sha256": "2621f73e009f5c36b2704eb5dfd51d61191d7244a26d06a2b136cfacca06b495"
+    },
+    {
+      "bytes": 625,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a38b44f3-0673-45a9-97ea-4009efae44b6}.xml",
+      "sha256": "605146cab98e5d71aad929a471e84fc344178e7a85502dcb521009e3d04b3655"
+    },
+    {
+      "bytes": 628,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a591fce9-1d44-44fc-aac6-443a8c08230a}.xml",
+      "sha256": "41585b9164073073fe7b8bf5fe2b6121cb82f5e84248a3e7f1f3d58147c1d8a4"
+    },
+    {
+      "bytes": 633,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a59d704f-4e15-471a-b7d3-ef7558802ca8}.xml",
+      "sha256": "84cce78913ed18cbc9c197d66b459d4722e5112272262e87033f65635db06315"
+    },
+    {
+      "bytes": 615,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{a652f2c3-5c73-42d4-a5ed-0a24f3062b0e}.xml",
+      "sha256": "3c7facd6ff1faeb5500f81c6fdb83998cf3c0011ff57d83562b1ba0d2d6d9347"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{aa418a29-e0b3-48e6-ac95-16b233422240}.xml",
+      "sha256": "e8ba1ea0e05af593f078d4c27e1756ab4355abf0bd592ef30bab28b572797a03"
+    },
+    {
+      "bytes": 618,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{ab0881f7-fdc2-42cf-a2a2-ae6c71055099}.xml",
+      "sha256": "d52c1fb00db1633bcd6d5cf102b00154251a6c5df026736731578628bb78aeba"
     },
     {
       "bytes": 630,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c304e608-cbe2-4b57-b108-2bd8e6d2f18e}.xml",
-      "sha256": "502bcddb2707532eec6a514582dee07688b372aa4482675ebfcc80548cbb4b3c"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{abe4d805-f611-4bb5-9d4d-5bd5eaa2043c}.xml",
+      "sha256": "27b9d30eca20dc32ebd714a8650d9793d44cc0ff78ae7f89d3092797300ad8f4"
     },
     {
-      "bytes": 642,
+      "bytes": 615,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c418dc44-d833-4e6f-ac7c-5bac3d38fc7e}.xml",
-      "sha256": "04185b3003ae47244c9ea8c697da71ee48ab6d4f8ccd749f207df8ebc6df9628"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{addded66-0bbb-4f3a-8f47-7ec7eeb3ae0a}.xml",
+      "sha256": "81f77c695f5e7aec347ba49e63db7c242c8404e65adcd815727b47e88356ab9f"
     },
     {
-      "bytes": 641,
+      "bytes": 615,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c73d7cd6-8eec-47bd-a66b-063320436230}.xml",
-      "sha256": "60116284395fe57ff5199f3218d646579de13170db318682b05f5829fccdacc9"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{af8f3dcf-a8fa-4589-aa58-c43c0d7f4f20}.xml",
+      "sha256": "48aef987296a8ec9b04814a20088806af9ee6dac9c555253200ca369a4f70dc2"
     },
     {
-      "bytes": 648,
+      "bytes": 613,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c9baf31c-3ec8-403b-9b13-51e11da275fc}.xml",
-      "sha256": "5add29510b629fbeae98504f775b07f5c7d1b9b522f9d7075639b944e749a915"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b22a2521-bad8-42fe-aded-92ea9818796f}.xml",
+      "sha256": "1a21e188a6809776d7e72e2adb50631f824b7eb7819168ae81638b2ad004bd58"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b2373fe5-44a0-4d89-a7cf-630626a680d7}.xml",
+      "sha256": "a8ea7b980eaf3ecd04ad384206ed7a2fe4f90a45467a53338c362519f3ddc61e"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b481c4db-1703-43a7-8677-d1ed663bd04b}.xml",
+      "sha256": "d8271d3a368406c694b702bd64de945088af41046ec49502c1fdd0bce416c51e"
     },
     {
       "bytes": 636,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cbd11783-00bf-461f-a823-83a9bac90650}.xml",
-      "sha256": "0af30a2bbd2d4a8ca539e4b1837a484062dc410fdc2833353b0bc863512b9c5e"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b61e598b-6099-440e-ac45-f26028aa9659}.xml",
+      "sha256": "245a54fbab82ce363f1fcf2f65dc608d49606ea3b6aaf84920448ce1acd5be27"
     },
     {
-      "bytes": 647,
+      "bytes": 626,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cc593567-b2fc-4444-99cf-6d08dfefd09d}.xml",
-      "sha256": "b6b68778728f3d81e0c62fa779393964a14190f3553094343555328f89b13ece"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b783f8a0-71b8-4f99-a079-6b92715c7dc9}.xml",
+      "sha256": "7b3ebf3dd0f60dfc51d327aac0c40d2dc3bc359449905374b4064b7cb6929b70"
     },
     {
-      "bytes": 642,
+      "bytes": 619,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cceafe81-84fe-4660-b99f-f56f80970c9d}.xml",
-      "sha256": "94a837c7d3342e0dba97c6fc9d6852edc2b9fc78a31bdd421d4d2d080222bb55"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{b8df9502-5fb4-47d6-8c90-fdd84e78ac38}.xml",
+      "sha256": "93f75c6a67064a7c1dc951772d85aa1f9b68e4e254d6719aae71c37c10c5d9b1"
     },
     {
-      "bytes": 652,
+      "bytes": 625,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cfde0582-f133-495d-b1e3-08d1071639f3}.xml",
-      "sha256": "ec25e3bd00f6a9d36439e5cd709bb90314c0ac6482797a65bc6d4c9388f6d921"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bb08752b-431e-49d4-8dbe-944ab3346ded}.xml",
+      "sha256": "991474183416c0add0a0c22b9a522bb2f862a26bb6175114a199c203499d7bfe"
     },
     {
-      "bytes": 646,
+      "bytes": 615,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{d29079f6-a927-410a-8209-82e4d9162c99}.xml",
-      "sha256": "9d8da36a8cbdd057dd59039dd9797c0a754787c95c5f5be8dbfc6bb01f0720c8"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bcb2e106-d4f7-4c8a-8004-374834611941}.xml",
+      "sha256": "d494e2534ce77484531c05255044fe79edf8eef13179b1b0d851e5d6b4f17ec8"
     },
     {
-      "bytes": 652,
+      "bytes": 614,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{d41969ce-bbc3-4b17-9611-7fb1d21e01b7}.xml",
-      "sha256": "b9a9baad12cf8cc5444af85f7dd9f98608b626ccb8c4785a2aa4ef62b3026846"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{be157df7-f53e-4b52-9953-be2187b5ae3a}.xml",
+      "sha256": "0775e03468f9383b49caf0baf108dac5fde3441c5ef48a06ad9392445c2ad635"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bf2f4831-4103-4896-93be-2c0bd03f6cd8}.xml",
+      "sha256": "b0b91cc228b12aa3f155c179d73e7a96d1d60ba6bc3aa98cbd7ceb3547736abb"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{bf8c9efd-704a-42fd-a56c-1f497b0f31e0}.xml",
+      "sha256": "6f7f720c3e3a738769539328923bd777ad9e30056139a9703b221965d9aee248"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c1abdc22-b3c1-444c-a84b-d705bb261095}.xml",
+      "sha256": "6b0aee5d420327b9f1c851c30e76dd9bab316a0212492e61ae0221cc8b63a420"
+    },
+    {
+      "bytes": 615,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c2d438f3-3b1c-4d63-a624-cf1c131ff547}.xml",
+      "sha256": "36d4e3280f15b172949daa8f4640b8aec13806d9a51f5a7b1b21089310f12e64"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c304e608-cbe2-4b57-b108-2bd8e6d2f18e}.xml",
+      "sha256": "e1f2eb29658ceddb4ff4ef6f05978d70b92862fc79f7952e0026032068fe029a"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c418dc44-d833-4e6f-ac7c-5bac3d38fc7e}.xml",
+      "sha256": "7ca2aac26823aca44fac9570ad24192fee24085c7405a3b1ff93c8232be36f8f"
     },
     {
       "bytes": 621,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{d5db8f3a-8c78-41d9-a051-12fdfb1f3993}.xml",
-      "sha256": "82dee1842ba582d357228c8efb050187dba937157c8d7a3eaae1d34cde6c43dd"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c73d7cd6-8eec-47bd-a66b-063320436230}.xml",
+      "sha256": "5533f42114e0ee4e63f935dd729cacdf1bb13933ebfcd83112139f743f6504b0"
     },
     {
-      "bytes": 653,
+      "bytes": 628,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{c9baf31c-3ec8-403b-9b13-51e11da275fc}.xml",
+      "sha256": "ac409844107a65d32d67a16312781936232c121d139787e6bf17a5bcc3bfe437"
+    },
+    {
+      "bytes": 616,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cbd11783-00bf-461f-a823-83a9bac90650}.xml",
+      "sha256": "bbe9eb085c144ebc3bae0e9d1e67feee10d04a7b117a6e7a18b98af536e9ab95"
+    },
+    {
+      "bytes": 627,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cc593567-b2fc-4444-99cf-6d08dfefd09d}.xml",
+      "sha256": "543471061781c8e9d9e40d727323e2e0c0da41a529e3d82a6aa0106f667f680a"
+    },
+    {
+      "bytes": 622,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cceafe81-84fe-4660-b99f-f56f80970c9d}.xml",
+      "sha256": "9a26675b8e593e03f3572b14d3708d2bd5fbeb91464ba6c752fb91161a2af927"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{cfde0582-f133-495d-b1e3-08d1071639f3}.xml",
+      "sha256": "1c5da35677cd62a91cf6adead16dc8f6cf899036a6e21245cd25d4d4e131d3f8"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{d29079f6-a927-410a-8209-82e4d9162c99}.xml",
+      "sha256": "1131fe9917ee3745bf22a415f10f9ba6b422eba703eb8005694d065184fb09c1"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{d41969ce-bbc3-4b17-9611-7fb1d21e01b7}.xml",
+      "sha256": "c023f2337d3d6c2cdd129ab79194de5ec9b00e8de517b50d8962d6f046795144"
+    },
+    {
+      "bytes": 601,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{d5db8f3a-8c78-41d9-a051-12fdfb1f3993}.xml",
+      "sha256": "f0a75d794db8ea1e13b96c15818ab845e8e7e246ea0a0e4826b651f203abb191"
+    },
+    {
+      "bytes": 633,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{d68bfa55-2e11-4592-8d2e-27e5646b073a}.xml",
-      "sha256": "61b1f04d6ec84df28d236c2b03154338f45153da6559b23709d1ca00216d749f"
+      "sha256": "3aae683b5103d1f0886252b40434332fe29d51f1319aa05d2d7c025bff0c313b"
     },
     {
-      "bytes": 644,
+      "bytes": 624,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{d75e8d0f-6482-4607-8321-0e8d2f432f48}.xml",
-      "sha256": "4600e578bc8de28a13fa101e030d1b30f9168cb1434406e17c14f96162258000"
+      "sha256": "5c8c65fc63f65bb453a33164e4485e1ba2d3245bf4a5027a5078a596ee795b8e"
     },
     {
-      "bytes": 644,
+      "bytes": 624,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{d78d46ff-5778-458d-954c-6d762a37b87d}.xml",
-      "sha256": "f43f5889c3791f7d1d3de9c7f062861825da2ea9c2c88870e93ac5782ad81e50"
+      "sha256": "468c848482898616301dc4a5c49313c53e9296ae06941325d60cf5cc1d31c4f2"
     },
     {
-      "bytes": 644,
+      "bytes": 624,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{d9782c31-92f7-41b8-94cd-a1c5889d015d}.xml",
-      "sha256": "cb683f660786776353fe274068308d66b234cab2e513204d703449c29d9b679a"
+      "sha256": "cd94491f7cff001e99f9f62f7a221a0218c322178a643dfa0789dba7b406a647"
     },
     {
-      "bytes": 652,
+      "bytes": 632,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{da585bc6-ccae-4647-966f-c2b0e0d00ace}.xml",
-      "sha256": "a33144852d0b91db538c40d0a44bb3e837fba945daec4897a7445a666e23d09f"
+      "sha256": "477a4f5b3cf59b2013bf7e205e66eb53c6ea7d939141981d206b9dea465cb3f0"
     },
     {
-      "bytes": 636,
+      "bytes": 616,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{db1bc0e7-63b8-484d-8cbe-aa345152649e}.xml",
-      "sha256": "efaee39d5d59a7878e602d9542f533c27d980c230f98943dfeafbac09b189727"
+      "sha256": "1422c684f6eb241b0ec0b4b4251cf589f7c4e9100e66aeabde87fdb5e3812fa6"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{db4cc45c-d01a-4143-b620-50ff3c350855}.xml",
-      "sha256": "b97df5974c52b9c11c419df1a3410ee8e66ae6359c72e65562f591a7dce8f1e1"
+      "sha256": "166d351f427903d45c1548ed42ae68e2677c7522e8b440d051925ea07ce5c9c4"
     },
     {
-      "bytes": 653,
+      "bytes": 633,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{dc7f9080-494d-4894-8667-9d2a2c33d4c6}.xml",
-      "sha256": "dfcbb8bef1e1397fad43d282b0fb7aadd1426b8187064cda3be89a412e371d27"
+      "sha256": "d2a86a4378834340779fa7e995ffce8929f73075a729cf62a50a885b5ec008ac"
     },
     {
-      "bytes": 639,
+      "bytes": 619,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{de8b78ec-59c5-4191-bc19-25c50742276f}.xml",
-      "sha256": "3a24edf76c82caf3401e4be2d0d741a9bd9e5b77517242591464ae0c704765d1"
-    },
-    {
-      "bytes": 643,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{df82f7e5-f343-4d1d-8e25-0144ca32688a}.xml",
-      "sha256": "2b4184253f2e73060078f4146119ed879ed6028b79443136c2221b24a1e78f48"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{dfb898e4-cb05-444c-b00a-f3071c451227}.xml",
-      "sha256": "ab7971667405d29f854e73f946c1c6d1b8df38cb3eecc6d1a73a5170ed82e42f"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e0bc5673-47d0-45d6-bdb8-8469137e215d}.xml",
-      "sha256": "7d62a441f60c36b4282d84bcfb907ac27cd75c09a2964e752aaac32a47419c39"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e0f13316-f69b-41e7-89de-4f6b389fe141}.xml",
-      "sha256": "2d3e3e8905f135325989980460ca08376b45d8ceba5e9398d5507910d2153463"
-    },
-    {
-      "bytes": 644,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e36dd5fd-2974-430c-9d5b-436a4bcc3dbf}.xml",
-      "sha256": "d965e44afc820e528e3477580f08ce2bcdcd81ad80661b9d60005c5383bcb3fb"
-    },
-    {
-      "bytes": 630,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e50c0d34-fb98-4ea2-9b8d-516b40300851}.xml",
-      "sha256": "687b01780659e9091d6a92ddb97cf4389ea9676cf6577435a39433bf43cd6fc2"
-    },
-    {
-      "bytes": 654,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e5189693-a732-49d1-bc14-ea67837ffda8}.xml",
-      "sha256": "446defbe87b2ac76fd0b771649461eb6acc4c0dc5221c04908e2518c169fec6e"
-    },
-    {
-      "bytes": 655,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e708b28b-c802-4940-ab16-e58a066c4263}.xml",
-      "sha256": "47e1fa6daca82763d4751a0816009d604a5edf2af0b200dfd1be7303ad87e66c"
-    },
-    {
-      "bytes": 646,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e7d12ebb-fc0c-41ff-a40d-f83fa6ccfd58}.xml",
-      "sha256": "168a71abcf6a8108d38edf188705babcdde656ef526832759779ca1629bd1d6a"
-    },
-    {
-      "bytes": 630,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e9229485-18c4-4fe6-9aed-9ee2755cd7fa}.xml",
-      "sha256": "f78a219618e43b949f99f85a7002874e0ff6593f4afc86efe2d6de3e1c43d8e2"
-    },
-    {
-      "bytes": 652,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{ec064b59-2986-4dab-82cf-c746048ae228}.xml",
-      "sha256": "1a9ac1163dc97fb5b1d9e60e0c9860c1dac3807eb037dfc5bb0273396e484f32"
+      "sha256": "e9fc32df0148a255cbc1e18d03a8ceecd3c683815e64bb50ac3750fad5da865e"
     },
     {
       "bytes": 623,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/AudioFile/{ed90408d-23e6-4696-acf7-9aff9995048e}.xml",
-      "sha256": "967ece8c71d9a031159e6a1b94be0edcb100f3408f506361534c940b9288eda9"
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{df82f7e5-f343-4d1d-8e25-0144ca32688a}.xml",
+      "sha256": "752dd11ba5549b09573e744893584926634b170bd108cd1ac3208936c7940246"
     },
     {
-      "bytes": 654,
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{dfb898e4-cb05-444c-b00a-f3071c451227}.xml",
+      "sha256": "630b3e1cc5dc98060ef2be84d686b1dee10aa9827ba580c283079143d406dfa7"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e0bc5673-47d0-45d6-bdb8-8469137e215d}.xml",
+      "sha256": "122f08aeabbff6208bf3b3f2782037cee69898ca459d0594c315720490508a40"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e0f13316-f69b-41e7-89de-4f6b389fe141}.xml",
+      "sha256": "b984023c9408a37417619b966ef89becc7d9e6aeb4899bf2fd78bc54d863978d"
+    },
+    {
+      "bytes": 624,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e36dd5fd-2974-430c-9d5b-436a4bcc3dbf}.xml",
+      "sha256": "9fa8230515d180955293b4fdf8b7896bfa4617b8c11d6b126240904ce3394d03"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e50c0d34-fb98-4ea2-9b8d-516b40300851}.xml",
+      "sha256": "0a309484ee062cfce3fab90afedfdd9a65241b42dc911ddd79c5f71a0bf131e8"
+    },
+    {
+      "bytes": 634,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e5189693-a732-49d1-bc14-ea67837ffda8}.xml",
+      "sha256": "961272848ef49785372ddc1c9db52c8d3234ba25432f2c7e2c22aa789f5f458f"
+    },
+    {
+      "bytes": 635,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e708b28b-c802-4940-ab16-e58a066c4263}.xml",
+      "sha256": "720b9b5e0ab4692276711605af44c3157a1af19111c19afa993a2877b940132b"
+    },
+    {
+      "bytes": 626,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e7d12ebb-fc0c-41ff-a40d-f83fa6ccfd58}.xml",
+      "sha256": "d92cc7ed4bf6eedbf82a0911a53be62c58467a8b4b7cfb66440affe2665ee5ee"
+    },
+    {
+      "bytes": 610,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{e9229485-18c4-4fe6-9aed-9ee2755cd7fa}.xml",
+      "sha256": "c26e427f1c5dda5c91a8605adc8f21068ef8b11e0d35d121aa4739a8b9c53789"
+    },
+    {
+      "bytes": 632,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{ec064b59-2986-4dab-82cf-c746048ae228}.xml",
+      "sha256": "310e5bfeb01a2a28ebd4a5b3662f9bc6219ece9ad654312b7fb71f542663b126"
+    },
+    {
+      "bytes": 603,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/AudioFile/{ed90408d-23e6-4696-acf7-9aff9995048e}.xml",
+      "sha256": "fba2fbdaf1d5eb32aefafa7e946ab2dd77b7fb76069a7970a060f4b30954cf96"
+    },
+    {
+      "bytes": 634,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{eda4eeae-8e8c-45fe-ae2b-41dcb3f2a14d}.xml",
-      "sha256": "ec4f8495e47c3e301f34189ae3cee361b8ef505299616790a1abb7b37c5a8a6c"
+      "sha256": "e3c6816babbc3b8d0de2a58ec05b230f2c4e27fcaae87a8d2bd156ba6a26a099"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{edeeeb41-bade-44d8-b41d-1edd18ca9079}.xml",
-      "sha256": "8bbb639b14325a5ecf6d1fa4a0030d010aa6b1102dd22a6fd5d68dae46ff08a7"
+      "sha256": "0162ddea6e5a76bd7b31f44b5b69ad8155e5e04d6dd4ab7ffd82b2b4cfb86f5c"
     },
     {
-      "bytes": 644,
+      "bytes": 624,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{ee30fc0b-70f6-40e7-a429-9550f46ba9a4}.xml",
-      "sha256": "35bb7fea58501e3e1d4836e8efe3ea0db6863bad8335150f08bd02be44d429a6"
+      "sha256": "ed87eacb3a42b3e744a84d564eedba9429a06c886eefd3625dcc23d8537cd7a9"
     },
     {
-      "bytes": 644,
+      "bytes": 624,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f145bc6b-a169-4daf-b911-9fecdd948fc8}.xml",
-      "sha256": "d81d2ff860f90e1a6024e912747112fa4984a900336f6edd6b36c5ea7d841797"
+      "sha256": "975be8e448610da0c6d997f93c34ecee557aa8375814ba5bd57647d1ef9a97bd"
     },
     {
-      "bytes": 647,
+      "bytes": 627,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f5f3a99b-446e-4c35-9305-58bbb5efebe7}.xml",
-      "sha256": "cbc2dc6c67d8fc031e5c938e4c99e888eaf24f78430cc6773e79ee82bce69b90"
+      "sha256": "84ab16c2ae7e92b1e1775d0c875f1db20d12f3e64351627ac63eef7d848eeff3"
     },
     {
-      "bytes": 650,
+      "bytes": 630,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f6c3c098-ff49-401d-9414-e72562018592}.xml",
-      "sha256": "ed679e84e32b7ebe5b679281af05f1d52b3c6759aa249e19f545dd3d95327c67"
+      "sha256": "00d6ded81a616b34b430daba5af0e41acb4ad76524b7a58539003df5c0476219"
     },
     {
-      "bytes": 651,
+      "bytes": 631,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f7bb055a-c047-41f7-b5e6-3700c77b9d41}.xml",
-      "sha256": "9f0832e409e953510307614bad9ac461dc42ce9f34f47c5c199b9f9dd8959231"
+      "sha256": "ae0c6ff6bab741be39dabcb6715b862a1e8ae050dd29ba076051fa7428006893"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f82d7a81-516a-4102-be40-46cb04d4b2d2}.xml",
-      "sha256": "573cf84a1519862080da2bdb7440dfbd7a275fb4fa0daa7fb3965f1d586e1dec"
+      "sha256": "1e82c03ecfde992e037d87da415ad1fceb831f6f998eed81af97116e3d8d6cdf"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f893fa89-8abe-4ed1-9a86-f3ae50d95955}.xml",
-      "sha256": "af9026e95cbc25008876b4385b3db790bc0ea94ac140d34574556f30be93faa8"
+      "sha256": "975627daabe3cc545afa4e9928f825f68b5ba06edf604e00e61ffc48744a11f5"
     },
     {
-      "bytes": 654,
+      "bytes": 634,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{f984757f-4e1d-46c6-923f-c7e34d4d5cf7}.xml",
-      "sha256": "025a9dd9c574e051ff7088a0325595b37dd7b9383580ebfc102c55098968a6e8"
+      "sha256": "1bd94a1889a3c90e0c710a14dd0d4f3f0e0f87b7f458fb453853c25b21c4f1c9"
     },
     {
-      "bytes": 646,
+      "bytes": 626,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{fa4b35b6-a547-477b-95c2-c979e95c85b3}.xml",
-      "sha256": "db80ef02a6f672bc8292dbaa8ffa328ff3c7cc1ef501f760285ff389e720c40e"
+      "sha256": "ed421764f01818decbd2f872c83714d978b981e44e69d01a4af33c16dfae569c"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{fc37152c-f12f-45ef-a00e-0c48cf14411d}.xml",
-      "sha256": "70d3fe2c0fa4e3b9ff7bd28b595f1ce8eb9663717c52a4a9f97964624ee3a7e5"
+      "sha256": "69aef770a58ad9ac75dba1a7aea340e6b6ba3e8b2b3a5ab2cbe7f517db8881dd"
     },
     {
-      "bytes": 643,
+      "bytes": 623,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{fc44789f-f731-4057-9c3f-a42dc506a11b}.xml",
-      "sha256": "feb4944b68c863496a2290e277e461d2b3b09c1648730997a94487c8cb992299"
+      "sha256": "17b5bb1de4186f73e4e583689eee1d450edb5889e9334361007745c9939dbd6e"
     },
     {
-      "bytes": 644,
+      "bytes": 624,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{fd4fbcc4-8d26-460f-a561-400024253edb}.xml",
-      "sha256": "cd3bb07bc0a07705054f8ec3b5bebd2452cd2719ce3c20cd0578c3f56339853e"
+      "sha256": "51572b8c2459bf99bfcf4098970b9b7ee3ffdb48f8c9cd1f9124bca5778dee4c"
     },
     {
-      "bytes": 655,
+      "bytes": 635,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{fd6e7a51-849d-443b-a4f7-2441874d084d}.xml",
-      "sha256": "cf1e0cec5dad973e49af0f0b6e3185f064e33b7616fbc3f46f22465dba8641d5"
+      "sha256": "bcc8915863f6b61d6d2d9423dce44acdea93d5a87c097a8f936e53fdccaca465"
     },
     {
-      "bytes": 653,
+      "bytes": 633,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/AudioFile/{ffceb6a0-c30c-4ace-a4ad-ec13a9e7b35d}.xml",
-      "sha256": "138b2844aa8b3b14b4c35747ed3135cde48da251652b34d51915be44a6ef99aa"
+      "sha256": "468531f7be2a2c71052ce6cd7c5ede4ef7fd39cc0fc071660b232fd6016cd60b"
     },
     {
-      "bytes": 365,
+      "bytes": 354,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Bank/{4a7c0b8b-11f0-4283-97c5-5c59769a4f06}.xml",
-      "sha256": "7318f6e0d2d5e962d32c8a94fc62df666aecbfafba63d5f8ebfe331ea857ef15"
+      "sha256": "a5e8cdaab7710282f1d053f413902c8e8927761fe795422f4587fa69b626afc1"
     },
     {
-      "bytes": 370,
+      "bytes": 359,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Bank/{c4084710-4e5e-4509-a8d7-5a5e28865d28}.xml",
-      "sha256": "e799249f008a424064a86b1ed531985e6a2a885b441c707cc2720ff7adefe8cd"
+      "sha256": "5f019a2618ad89a46596266d071df29c0c673e9f0c96b8d42e8b2dd3d92c74cd"
     },
     {
-      "bytes": 441,
+      "bytes": 427,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Bank/{cf784ce8-a9a0-4410-b13f-3c13fe85ba7a}.xml",
-      "sha256": "f57af299d65082bbba33426cce3ee8dfacaabc45bc4e99107eae7494e13f5b40"
+      "sha256": "6a0961508d70a1837bc945054e7f84c2d1479e23c41b4d4afd22e4f0bc2ff255"
+    },
+    {
+      "bytes": 356,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Bank/{d2897b57-169d-45f9-9a91-b02ae5b04645}.xml",
+      "sha256": "2cd487a39ae971c9492e846c948ac1ec344de5841914252466ee5904402d3d80"
+    },
+    {
+      "bytes": 178,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/BankFolder/{46085bdc-5924-41fc-99e9-869685efc6fa}.xml",
+      "sha256": "4edf1260c4935fbaf1c88c157b129265d8e5d4751ab1fd005ec1bf33034132a5"
+    },
+    {
+      "bytes": 186,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/EffectPresetFolder/{1377c76c-1c13-4d64-ab83-c00140094c8e}.xml",
+      "sha256": "5161c2030f331723914f16d0f760feeea064ce70022ff0a0dbc7e5003b6cb878"
+    },
+    {
+      "bytes": 559,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/EncodingSetting/{dbf56463-1560-480e-9f54-a2364f4c861c}.xml",
+      "sha256": "8f68bf308594f563a59d321ea0ea6484b6129069859fbd59c6e6375ef2620514"
+    },
+    {
+      "bytes": 35430,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{020949d3-51b2-42da-a1fa-b5c92f3ac0af}.xml",
+      "sha256": "c9dae480eb818f0ddb3540f273ee36fe78671811a8235968beac3323755fc761"
+    },
+    {
+      "bytes": 7287,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{10e9585b-ceda-4df1-8db7-c9a7043f84b4}.xml",
+      "sha256": "1117658e6971f17c7d334ca550af43a0e9de41b644f97ecb309f491ce6c96879"
+    },
+    {
+      "bytes": 19245,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{252bdb04-4c04-4642-9b95-ddc66ed20e76}.xml",
+      "sha256": "b4682c1ba55c91bf73040a779204c8529a29a85955a4a7d81bb5dc76ce55a3d9"
+    },
+    {
+      "bytes": 18301,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{3084c9ac-85dc-4c3e-96d1-10f233c3cb2c}.xml",
+      "sha256": "640710aba5cfc26f2b1747da4dfcace6420f69d004d708fa957e875e1f66973b"
+    },
+    {
+      "bytes": 6179,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{3cb5b211-00bf-4db1-9661-ddbcf45eeb29}.xml",
+      "sha256": "93a2accbc0626d1ee2d16312c68b6f50cb614bfb567f18ad6aefc498d84cdac5"
+    },
+    {
+      "bytes": 5413,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{3e9c16ea-fa50-459e-9439-35c8d571a40d}.xml",
+      "sha256": "ca5da1eb0125bb5e8b3a8ae11d53b2fb0027164fadb8cfd6293c00972c0d97e8"
+    },
+    {
+      "bytes": 13230,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{4751ab24-ff66-4744-a476-e5a469cfc8a0}.xml",
+      "sha256": "1823b87f12588c9f96a4dbbef167c40e51e631ba4c4fb344f4a503762eb73441"
+    },
+    {
+      "bytes": 80314,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{49cc1322-1497-490d-8e7a-2fb3586012ca}.xml",
+      "sha256": "26040d36254554902d283db40165f59f67f1316c56b191ec5a037d997a315e61"
+    },
+    {
+      "bytes": 10781,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{4c71999e-7eb3-4e8f-a63e-3f2ad40e9313}.xml",
+      "sha256": "2bd35aa6d64d3cd080d142cfa65100e11b63792a6aa17f8b7b8a27c8f9dced6f"
+    },
+    {
+      "bytes": 7259,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{561de12a-29ac-42ba-8cd3-50fe2d437e44}.xml",
+      "sha256": "051eefe2e72f828aebad6747a5ac970afae923991cc13c60aed0dfd010b14193"
+    },
+    {
+      "bytes": 13225,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{571301dc-86c7-41a7-ac6b-4079f08077ae}.xml",
+      "sha256": "b02ed489b656f7ae055befba65bc784589bdfd5067bfce26ae0d41da19fb4cb3"
+    },
+    {
+      "bytes": 7066,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{577f4445-36cd-41a6-bdd3-4f1735eecc74}.xml",
+      "sha256": "00fa0e17cdb01cd07f1f3eab662788d9b8f3d201f6c0195ae92b16262711f6ae"
+    },
+    {
+      "bytes": 13194,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{5b89e529-901c-44e8-a0e3-c5b09097404d}.xml",
+      "sha256": "14b15ff28a9b38545ccb4a2993a4a93449658acd37f3658a45ceed85cb927753"
+    },
+    {
+      "bytes": 8605,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{5c7c9fa0-d5d3-4971-adf6-613629d0aa1a}.xml",
+      "sha256": "20dd3c30a2bd6563787c14b68542b7dc414d831dd633383481be2a5c24d721a4"
+    },
+    {
+      "bytes": 13688,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{6523555d-b17d-49b6-b15d-930d35feec13}.xml",
+      "sha256": "8a3150ff34c36087b978c9aa8def19d407646d27a47f4536b51b84e0d6737e4a"
+    },
+    {
+      "bytes": 9810,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{6bc5042d-3b5b-4ae7-89fe-4efec39c94b4}.xml",
+      "sha256": "0a82ad01239baaa897931385134e32c1f856569bea9498f38e03c99e052021da"
+    },
+    {
+      "bytes": 8743,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{6c85e813-cb0d-4e9b-bed3-b1ead1e3690e}.xml",
+      "sha256": "2801cf3463428e450219d8b78860bc327023d9f320ea122a1d2b2ba0bc20b052"
+    },
+    {
+      "bytes": 8081,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{730f68a7-db16-4c8f-8f66-88292ba13544}.xml",
+      "sha256": "c330780ae7f8acd3fcec87fa5aaf73780946132aac698710008172bee139fa0c"
+    },
+    {
+      "bytes": 15692,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{73314453-dc45-46f4-a144-7db5a1df3ea9}.xml",
+      "sha256": "e1b5fdaf6ca1ab4a13acc8ac8cf7212ce0c155d0a0aa974abfcac3f74aa6fc75"
+    },
+    {
+      "bytes": 7117,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{7550f559-f69f-45db-8f6f-5b0d7f508613}.xml",
+      "sha256": "33b9569d296f152c89f0a0651e945e4e2b4fd878d9ee44256a294277651953cc"
+    },
+    {
+      "bytes": 12745,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{7725641c-f1cc-484b-ad46-030e2b7a41fa}.xml",
+      "sha256": "cb0f334da190da6356b666a2be8dd5570e43869ee312a5918acd543e7a347d67"
+    },
+    {
+      "bytes": 6614,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{7d18b2a5-7a8a-4942-971b-5097b92ad614}.xml",
+      "sha256": "6f5aac22b30876d8958de2c7a92d618e4431d68afb4d125169990ce161de188d"
+    },
+    {
+      "bytes": 12940,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{83daf12b-519b-46de-844d-f86675edd94b}.xml",
+      "sha256": "e0d7f44bcb2970d797608a23f93a82e299fd12b2d89fac6404c4eb633d4fa8c2"
+    },
+    {
+      "bytes": 6935,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{883cdd06-55d3-4f87-8633-592bbfb92abf}.xml",
+      "sha256": "b2c39520f8dcf5da7a292ecb139be338f2779d7669023715ace14db77423a9b8"
+    },
+    {
+      "bytes": 12474,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{9b6b5994-e600-4ee2-9f10-2debcd93e8d2}.xml",
+      "sha256": "00609eee265e0092e1500a46eb2910e57e2f836c7757877f83627cc39e3cdd23"
+    },
+    {
+      "bytes": 10850,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{9dbd3eff-0f15-4839-a101-26dc00537c17}.xml",
+      "sha256": "355b1f675a3da5c0fad95430292a1a9dafcb9f59f782cb0807e94680eeb081a9"
+    },
+    {
+      "bytes": 7680,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{9e63df5b-1df2-4864-82fc-9431ebbec38f}.xml",
+      "sha256": "f6d34571a1ad612e217a246eea016bc228532dab50dc92d98fe42a11b546aebb"
+    },
+    {
+      "bytes": 6980,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{a2ad4038-3890-41f5-b00b-da0c9ada36ee}.xml",
+      "sha256": "656d4d1ba54cf98a82638a813d1541d411b5efe4d2a6a2276efe45552ef14a15"
+    },
+    {
+      "bytes": 18427,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{b3763241-3947-4216-b2e8-46558bbdcbc3}.xml",
+      "sha256": "ff73c7c8afd9d72d221f13fd9956479a6dd0a25c67e28d32d828b49f0babaa5d"
+    },
+    {
+      "bytes": 7323,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{b7626403-628b-4bec-8fb2-c12294a84de7}.xml",
+      "sha256": "b1847ce24ce054bd41aad6e97eff8cc6e16d14cd2fd618b50ba84a3d9e02ecb1"
+    },
+    {
+      "bytes": 16156,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/Event/{da83c1d1-7952-411f-9403-6a6e9ce341c4}.xml",
+      "sha256": "90f751c5619e3b4155fd690450f87a24efafe037e993afd6a98124625b36a5c7"
+    },
+    {
+      "bytes": 252,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/EventFolder/{0909d183-ac78-468d-830a-658e1a94bdaf}.xml",
+      "sha256": "f4e048b490c36c37b9f8c112c4b1ecd0dd71705f350258e729616dab56d86223"
     },
     {
       "bytes": 367,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Bank/{d2897b57-169d-45f9-9a91-b02ae5b04645}.xml",
-      "sha256": "6541612f3e0844844ebefe5d3f356f5c2ad9117a9a442a23dc65b0fbb6ed3f81"
-    },
-    {
-      "bytes": 182,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/BankFolder/{46085bdc-5924-41fc-99e9-869685efc6fa}.xml",
-      "sha256": "36037da9917f92c19c5576d331a01e02a66f3a00df6d95849951ed5a5157eebe"
-    },
-    {
-      "bytes": 190,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/EffectPresetFolder/{1377c76c-1c13-4d64-ab83-c00140094c8e}.xml",
-      "sha256": "e45cde822d25b1297bfc1fc8496a1b9445b52a189f81b438c4d1c70f532c88af"
-    },
-    {
-      "bytes": 576,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/EncodingSetting/{dbf56463-1560-480e-9f54-a2364f4c861c}.xml",
-      "sha256": "491bf133f3b3c8995d4651bd3efbab53e6558b7e4e63a631db4e51edfe7eaf7f"
-    },
-    {
-      "bytes": 36350,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{020949d3-51b2-42da-a1fa-b5c92f3ac0af}.xml",
-      "sha256": "162e59dca840779020b337d84af74ef9fa44551e70d91d4835a4f45ee0d81db1"
-    },
-    {
-      "bytes": 7471,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{10e9585b-ceda-4df1-8db7-c9a7043f84b4}.xml",
-      "sha256": "e67dc729a816d35420ea58494f3714192ed11693b84dead669e99e6bd9499ad7"
-    },
-    {
-      "bytes": 19748,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{252bdb04-4c04-4642-9b95-ddc66ed20e76}.xml",
-      "sha256": "1f9eb7164902b83d56c467e4321bfe067c5a15693a9d5d32d42cbf2ffc307bb5"
-    },
-    {
-      "bytes": 18778,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{3084c9ac-85dc-4c3e-96d1-10f233c3cb2c}.xml",
-      "sha256": "a90f5b10b52a6b35ab340da7b2cf6b4668599b87f7d25100f5d535873f01125a"
-    },
-    {
-      "bytes": 6334,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{3cb5b211-00bf-4db1-9661-ddbcf45eeb29}.xml",
-      "sha256": "b3b66af61550379edcc5a0290c5226d152ee1e178be7fd0b6e59ab21bc9e540b"
-    },
-    {
-      "bytes": 5547,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{3e9c16ea-fa50-459e-9439-35c8d571a40d}.xml",
-      "sha256": "74d2695145d36b71d5969b4ccc2bcee16db93a86d09034f93dba4d7388538394"
-    },
-    {
-      "bytes": 13601,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{4751ab24-ff66-4744-a476-e5a469cfc8a0}.xml",
-      "sha256": "4ef342182fac0d24ce3126ea10d401a32a84848bb052b94665cc7ec6123246c2"
-    },
-    {
-      "bytes": 82399,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{49cc1322-1497-490d-8e7a-2fb3586012ca}.xml",
-      "sha256": "63f2bb7fed9afcd037c83998cdfb33d07d59cd2136463ff6d95e92193a7c22f3"
-    },
-    {
-      "bytes": 11080,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{4c71999e-7eb3-4e8f-a63e-3f2ad40e9313}.xml",
-      "sha256": "2cd6ec67d9697279815f67cc458ab3b1ecba2bf78ea55338872dacf91da0c374"
-    },
-    {
-      "bytes": 7436,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{561de12a-29ac-42ba-8cd3-50fe2d437e44}.xml",
-      "sha256": "56dbdd067fd9819aeee2889ed935fcb7c74a9960b5b7936cbefb12b2593fa06f"
-    },
-    {
-      "bytes": 13565,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{571301dc-86c7-41a7-ac6b-4079f08077ae}.xml",
-      "sha256": "04abcc9dbf602d6beacf5f9946d9695f43fb09f1102c6b63d95c17e43ad203c1"
-    },
-    {
-      "bytes": 7247,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{577f4445-36cd-41a6-bdd3-4f1735eecc74}.xml",
-      "sha256": "a5a6f64d69715ac3be3abb00b132f335d51fb8cdaeac9d7795c5d364fbeb2d8d"
-    },
-    {
-      "bytes": 13555,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{5b89e529-901c-44e8-a0e3-c5b09097404d}.xml",
-      "sha256": "8f319725bc0e4f71ffc7219bb43967298137a2035c58f5df059a51b1823e2ae8"
-    },
-    {
-      "bytes": 8818,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{5c7c9fa0-d5d3-4971-adf6-613629d0aa1a}.xml",
-      "sha256": "bec445f1a869a04883ee1661eefac174e17a194cf932202790ed625837f78cfc"
-    },
-    {
-      "bytes": 14045,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{6523555d-b17d-49b6-b15d-930d35feec13}.xml",
-      "sha256": "6b289545ec618217faff349ff9494320ea3fee692717e818b4702aa09a4176d2"
-    },
-    {
-      "bytes": 10076,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{6bc5042d-3b5b-4ae7-89fe-4efec39c94b4}.xml",
-      "sha256": "71a0336a3e01978f502f8dda1be3eec5cce4742a8685459b4fdde8cb4b918762"
-    },
-    {
-      "bytes": 8963,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{6c85e813-cb0d-4e9b-bed3-b1ead1e3690e}.xml",
-      "sha256": "cff3e9b40febb45287c975767d70f55d8d293b9e3ffdee69224a6d8d8fdb8d6c"
-    },
-    {
-      "bytes": 8289,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{730f68a7-db16-4c8f-8f66-88292ba13544}.xml",
-      "sha256": "a0b4faee3e465b6606b3f3a35476efd4b5720d34e78c0c6e9806be617d2923a0"
-    },
-    {
-      "bytes": 16126,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{73314453-dc45-46f4-a144-7db5a1df3ea9}.xml",
-      "sha256": "7d910faf70a116ba21ca698d5841313619942dbf505a52819fa9480d190c82ea"
-    },
-    {
-      "bytes": 7301,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{7550f559-f69f-45db-8f6f-5b0d7f508613}.xml",
-      "sha256": "7189335e532b14ea8911882c1bcf763af1181981288d9d009ca25aa121afa0f6"
-    },
-    {
-      "bytes": 13069,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{7725641c-f1cc-484b-ad46-030e2b7a41fa}.xml",
-      "sha256": "2ec3707d7200af52596f3fcaae8b2ce33b29c96d127c3f5356096ec3bc042e1c"
-    },
-    {
-      "bytes": 6781,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{7d18b2a5-7a8a-4942-971b-5097b92ad614}.xml",
-      "sha256": "656f7808cbbbbc142a07e2111c3cea1116b8880c38fafa7a329533003626359a"
-    },
-    {
-      "bytes": 13292,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{83daf12b-519b-46de-844d-f86675edd94b}.xml",
-      "sha256": "a876bb391968719c967b16b3e7677ef45dc492a3b23d85d68d0b35a31d6eb31b"
-    },
-    {
-      "bytes": 7113,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{883cdd06-55d3-4f87-8633-592bbfb92abf}.xml",
-      "sha256": "38f83356d30753a894d093fbbaf1dd2de2333236bc2298d2912d8346b630252f"
-    },
-    {
-      "bytes": 12814,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{9b6b5994-e600-4ee2-9f10-2debcd93e8d2}.xml",
-      "sha256": "10cfad71f28f3e95f04f1512a9afbd94b87230e4c6146a68d27a87e337c847e4"
-    },
-    {
-      "bytes": 11139,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{9dbd3eff-0f15-4839-a101-26dc00537c17}.xml",
-      "sha256": "79cf9b046dea86a4e53aa3ae9fc236447eaafafe96d0772ada3ca351f57714c6"
-    },
-    {
-      "bytes": 7876,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{9e63df5b-1df2-4864-82fc-9431ebbec38f}.xml",
-      "sha256": "5d25bc9c0b6663596b0e08774f66acfd15255d0dd4e34d85915c6c64dce21bd8"
-    },
-    {
-      "bytes": 7156,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{a2ad4038-3890-41f5-b00b-da0c9ada36ee}.xml",
-      "sha256": "0581abd61e7d2ee3fb8c0a57dae91be5986cdf812f8e7c0e2ef03fb603258f0b"
-    },
-    {
-      "bytes": 18912,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{b3763241-3947-4216-b2e8-46558bbdcbc3}.xml",
-      "sha256": "dcf20e68a1d9cd08dbcc6ef54ee2354aad8e96257132a55ffaae8b7d830568ee"
-    },
-    {
-      "bytes": 7513,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{b7626403-628b-4bec-8fb2-c12294a84de7}.xml",
-      "sha256": "252dc609c3d179129d576a13ee669655f38ff2918f9c34ebee406f663d1b7b5f"
-    },
-    {
-      "bytes": 16566,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/Event/{da83c1d1-7952-411f-9403-6a6e9ce341c4}.xml",
-      "sha256": "8a46106cc5aceac2144d90e48da430e1d251dff4f3ddf9398628ccc0235b5be6"
-    },
-    {
-      "bytes": 260,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/EventFolder/{0909d183-ac78-468d-830a-658e1a94bdaf}.xml",
-      "sha256": "2e1e409d817179fcf0ac94ceed32c2bc6b73236d5a9f721593ddcb0e8699bbf4"
-    },
-    {
-      "bytes": 378,
-      "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{17bb5769-be4f-40a2-b212-95ba471e2ac0}.xml",
-      "sha256": "b24c6f3363cea72be9f4c7e5030fec8d5250002ab167c10333f1530a8c45173a"
+      "sha256": "51f63b584102ef19cf33c3a4496ab7920b9b3b3d2d9af470e088b55f364f99f9"
     },
     {
-      "bytes": 374,
+      "bytes": 363,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{1e656c80-3793-422e-8347-91bce35c70ad}.xml",
-      "sha256": "ae6ab38ed2ee953d0cf2907d73413a0c3a26a9551bcec9b233f06064ae604a26"
+      "sha256": "5887180d8b569c28cfa341829c0a3c8bee2c553edac42f5abf25044dd43b8007"
     },
     {
-      "bytes": 375,
+      "bytes": 364,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{4bf1ece6-8153-4918-8029-f3e2d049083c}.xml",
-      "sha256": "3f761249f278dba533f405e5537e6ca832d9fca2e799369a0948ee920ffab3a6"
+      "sha256": "933c392ca82b8ca9d1b2d6a6a5c85827e3075b11f76ae7d3d2558dd031a2c530"
     },
     {
-      "bytes": 374,
+      "bytes": 363,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{4cd4dffb-6ddb-40ff-a7a7-d421ef72fdbc}.xml",
-      "sha256": "c913abcbffe1bbd0cfaa908f0928335ad35b517e4e9a91db84e2045a716c6b54"
+      "sha256": "662c96da4d81bfb43b973c170a439b3710a1eeaaef8e6500223fc824543280d1"
     },
     {
-      "bytes": 377,
+      "bytes": 366,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{52a69f7e-cb76-40ea-93a2-81eb687083d8}.xml",
-      "sha256": "bd3ae5b1c3a5f7b07e78b0e6b30651cd82b1cb631542d22a12d8c25572e9bb7c"
+      "sha256": "534fca8f71f43b13ae4cf6c36400a2f97c9fad77d9181276aab00c5bd23772da"
     },
     {
-      "bytes": 379,
+      "bytes": 368,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{5b20a53b-9676-4bbe-ac1d-801802e68509}.xml",
-      "sha256": "a1a979fbd8788151da355dc214a65494b00ce8dec5ae4f644276e7b071b2bb6f"
+      "sha256": "c6b43e80dfbd274f21c335ceb571fae368dbae63cc857dc6ee9b9d90df8cd459"
     },
     {
-      "bytes": 374,
+      "bytes": 363,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{742667c7-ca34-4624-a514-110f8a262b9c}.xml",
-      "sha256": "004d5c519e4c5ad5635de9a873cdece8548f3875226d3f8d347498cc19fb2c86"
+      "sha256": "65eb2be31e0fd021b47fd1a872e0354a92c844e338353b7744b20c6a6a2ff839"
     },
     {
-      "bytes": 373,
+      "bytes": 362,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{ce48cab0-6976-404f-bc29-c9260e595ddf}.xml",
-      "sha256": "60e19de909e5b43c381cdad4f9da277e8d002f7262d308ae66c736571c01e46a"
+      "sha256": "0de97be52971bbe88daa18705d06012410655ffdcd8e71c65607447674e9f9fd"
     },
     {
-      "bytes": 375,
+      "bytes": 364,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/EventFolder/{ee785aef-2eeb-4731-b648-b8bea2076555}.xml",
-      "sha256": "1b66d73a8b5a1feb8ea6c57398c77f45649886c2b19ac9b38af0d3739500a8bc"
+      "sha256": "6a059587f081ae51328c51e0d1a93cf3e20a46cc5b6a9e57824a417e7c34870f"
     },
     {
-      "bytes": 1410,
+      "bytes": 1374,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{1718cf0b-6f36-4335-b7a0-66996b0d5d27}.xml",
-      "sha256": "c2a61084fc88d9d6b168a4bc15247bfa9ece4386e9456524c276a155cbce50c5"
+      "sha256": "224214070ddbf0f371f61945b1a4d9ee449a630f30c63faf3725cfc98bc830f6"
     },
     {
-      "bytes": 1415,
+      "bytes": 1379,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{1a52c532-d82f-401c-b0b0-ca80b4d00f0d}.xml",
-      "sha256": "681eed04faa95512a7ea910326e644bc7bcbd557e8f30c049229a3266ebe1b83"
+      "sha256": "f7849fdf7b662fb22c0b56b345358000cc4fc1ce00011cb762c3bd6f82a1d17e"
     },
     {
-      "bytes": 1183,
+      "bytes": 1153,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{1ef856ce-8df3-4e63-b763-f920f9020858}.xml",
-      "sha256": "89cfbfaf7fbd559e7524608cc8e2016df6129c673260e065d8248dd67bfed425"
+      "sha256": "61ab899054b35b9c9304877d5c05ebd45ceb2c1867f510bdb82af448e8961dd2"
     },
     {
-      "bytes": 1476,
+      "bytes": 1437,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{4141024a-dc51-4ab1-b7dd-e981f3868dac}.xml",
-      "sha256": "5ababeb8daf17afe23b8ddfdbcefb15cddc902f2756f3b77334e53318dbd5b74"
+      "sha256": "58ed966c8ce869c6996d04f4fd65ec2caf07f566a526cc436e2cf67c845b92fa"
     },
     {
-      "bytes": 994,
+      "bytes": 970,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{51b88d27-b5db-4fb7-a994-47b8f0b7994a}.xml",
-      "sha256": "a9ffcd56ec4b60d16c3c986c64ae23c516817a40c33e6aa84e64bf3d7ab4fa07"
+      "sha256": "889b8697bba18eef2137dd711fa4505683753a4b115222edef961607649ded81"
     },
     {
-      "bytes": 1181,
+      "bytes": 1151,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{620b1427-303e-4650-bc57-a924e0f63e7c}.xml",
-      "sha256": "604298bb83f0b333ffb46e7782fa670fdcb800db1c503a5759e8ca9c9104fd1b"
+      "sha256": "3912b6aa873d4bb7727eb8901fe7e931277e437330770294c6f8132e6b01336e"
     },
     {
-      "bytes": 1116,
+      "bytes": 1089,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{6a6d63a5-26cd-42aa-8e80-f52ba243e492}.xml",
-      "sha256": "2ccc32cadc6cc8366c1967f5a053a4ab8dbf5945bb4c564d02862379ffc48ac4"
+      "sha256": "2711db4fce9cba7f1af0d5779579581b4072fb339f4029ed4576a0188cb81bb3"
     },
     {
-      "bytes": 1188,
+      "bytes": 1158,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{b80b6978-f9ab-4855-aa46-1951819dc2c2}.xml",
-      "sha256": "1ae080105a53162d005d29574dea1935ef6d5af146fe4b926d3b5d1f40a4fe97"
+      "sha256": "dc3f53b260653fef4b60ccf7306d7a83d468b169c3619ad1a7c43dc713fd88db"
     },
     {
-      "bytes": 1059,
+      "bytes": 1032,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{be8f0110-cffe-422f-860e-315e04f7c0fc}.xml",
-      "sha256": "1cd82104ebaea474a127beaee0873caeaac7f873630b145c24e41f5c12dd46aa"
+      "sha256": "b688ad07f51b687774790fcd1a5e995bc0245a002f3beb6887e529bcccab0fc8"
     },
     {
-      "bytes": 1180,
+      "bytes": 1150,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Group/{e7360b86-5a67-4d3a-937f-5488f3830c30}.xml",
-      "sha256": "6f16129656895f9051962304923e00c89a37a67cf8cec6fb5787d6fbdc906633"
+      "sha256": "d657a5f608d292f6f358c3e0f277c06d5e99618592b2dc50353ca735a7e6f209"
     },
     {
-      "bytes": 1316,
+      "bytes": 1282,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Master.xml",
-      "sha256": "578cadab87656183fff00c8bfb567e0d7689e8a05d8a5374fed5a77564e3a81b"
+      "sha256": "ea61e01151914100c77b1568db885078b226ad3e30dbfc401c43a3bb76ce36ed"
     },
     {
-      "bytes": 432,
+      "bytes": 421,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Mixer.xml",
-      "sha256": "9215118bcc5ce5335833ff579101111b89ae144427066aa67dffe609f732cc42"
+      "sha256": "72579b59d1b2eb460a785a8b664ebc8bb57909ac74af01147a225bf6c9d9f0fc"
     },
     {
-      "bytes": 584,
+      "bytes": 569,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{2c281759-dd8c-42b2-a784-73268b33bd62}.xml",
-      "sha256": "9415272228c7adb57b2369b53f05318aa847cc44a5bc114619325cc6dad341f4"
-    },
-    {
-      "bytes": 682,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{512efbca-82f7-44d0-ae72-8c0346989855}.xml",
-      "sha256": "c6280b43d430a0568ec372e4966e16740c367d7ead1d0f61d3a85abc37d81c54"
-    },
-    {
-      "bytes": 582,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{51a9dfe5-8cc5-4c3d-8272-17c01637c910}.xml",
-      "sha256": "d106944f0f3f7f5bb2377c1f1e909a5511bb25eda7b8e4050dcfe87e4ebbbfb6"
-    },
-    {
-      "bytes": 885,
-      "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{54ab1008-9982-4290-be94-7c33d7227fb0}.xml",
-      "sha256": "72ca15cd08a72325f44233e1bb40b2216ac3a8f09eb433a562e6ea757579852d"
+      "sha256": "9e5bff8ab9b6bc4baa1f4ccb766bfe81d0638ad6ab3f8c9a9f8588de761d5491"
     },
     {
       "bytes": 663,
       "kind": "fmod-source",
-      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{56428e63-678f-4b71-bc86-2ad36a4ab9a6}.xml",
-      "sha256": "dba33f292067250cd6451325619102c617167102c81ddcfac78edc994a5cf2fa"
+      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{512efbca-82f7-44d0-ae72-8c0346989855}.xml",
+      "sha256": "c789078b861112bc9b9f13af96b60a86bd522b7ef6707cde5baf18078069fe85"
     },
     {
-      "bytes": 861,
+      "bytes": 567,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{51a9dfe5-8cc5-4c3d-8272-17c01637c910}.xml",
+      "sha256": "1e8e558442c373d53953c57235447b38d7aef28ab07194b1129a568dc118031d"
+    },
+    {
+      "bytes": 857,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{54ab1008-9982-4290-be94-7c33d7227fb0}.xml",
+      "sha256": "a1adaf5c050167c3ffca1ef85d5f6d18dd3c7d5c39fc943d68d511969449c5f7"
+    },
+    {
+      "bytes": 644,
+      "kind": "fmod-source",
+      "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{56428e63-678f-4b71-bc86-2ad36a4ab9a6}.xml",
+      "sha256": "15fe6208133a22680eedfb55dcc71e2b8f49e7f800b0d78ef5d8d1a0a130d010"
+    },
+    {
+      "bytes": 834,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{5ae94244-67d5-4e61-8197-7c672dc07e44}.xml",
-      "sha256": "f86c7e23252442f4c10eb0ae7d8c2ab228906ac216840fc2b4a3380a69634e59"
+      "sha256": "d18b5338336676dd1417a9a11b37821cfaedce4ad38365fa61f7316c36113feb"
     },
     {
-      "bytes": 662,
+      "bytes": 643,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{887cce9d-961e-4c81-95e8-1c8400897ce8}.xml",
-      "sha256": "3e1a3ec216688e799221558fb2dc3414530815e8819e19fcede719b9c2af232e"
+      "sha256": "ae8517af1d936194f68c787a1a68c5c8405a1c46fa8dfc257a303546af090a21"
     },
     {
-      "bytes": 830,
+      "bytes": 804,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{92d207bd-569d-4085-bec7-ed6c4567e2e4}.xml",
-      "sha256": "314d2e682e9d98e3d08b978799b609a8c8264b0eb686fdcd03247c7ca5df1927"
+      "sha256": "6fb6639bbf729997240cab5e3c549a8fe65ae4c45c42db94c728bf9214f20ef7"
     },
     {
-      "bytes": 856,
+      "bytes": 829,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{aad4144e-c717-4473-96ec-349370ccd57d}.xml",
-      "sha256": "15ce8fcad2b205068f615aab450fd222e023c6339650125df909dd91dd6a1d11"
+      "sha256": "97c5ea4ece529c6b869d7a379e0edb8bd5bf8326bb2391fe3a012e03b4149aff"
     },
     {
-      "bytes": 864,
+      "bytes": 837,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{b1742db4-8bb6-46cc-b649-e18ace156cc2}.xml",
-      "sha256": "60320f3b84ecd633d502636453a26f4763bfbbadc2a13755bb3e3c91bc78fae7"
+      "sha256": "f2964bc0368497589468117609bcfe2afce8a8d3899d105f1a9147db31cb9df9"
     },
     {
-      "bytes": 582,
+      "bytes": 567,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{c4157c86-a783-4335-8f87-56256cf0c796}.xml",
-      "sha256": "49c4f8fe99b185c88e3dab7d74cf1d840fa902c18ba741c39c5843e609913495"
+      "sha256": "844a06801597411c6a09dc5cb87c9a0bf82f0400537c069ccbe4532d028943e3"
     },
     {
-      "bytes": 584,
+      "bytes": 569,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{c76cff8c-c63a-4447-883b-7f9fc4329b3b}.xml",
-      "sha256": "001de61a271c753f54e4c28510a1b2199e81a01ccb0baed599062b7a5083d101"
+      "sha256": "6133643f984b2371b1d371926a9519fedf7b95d6bc75364f727565833dde7303"
     },
     {
-      "bytes": 795,
+      "bytes": 770,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{cf5f55ef-0315-4c96-8864-1cc91b83022a}.xml",
-      "sha256": "03261982eedd6cdfc4cef0ee5712a45da43110d65c1cd9a8c068553faaa8ece7"
+      "sha256": "2397e87b1446819f5fc398cbf2c243b912d6f9abf17743cb1a58900ca184ac0d"
     },
     {
-      "bytes": 851,
+      "bytes": 824,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{d342a071-5727-4b38-b728-e5d0c08af83b}.xml",
-      "sha256": "ae8cb85da38df8c91b71b7b92f9fdb386f0b960b7c4499b94180b1f71d94c537"
+      "sha256": "55f287f695b2fa52acba7f457fd558419814560d0b912ee77e8c429c7248b607"
     },
     {
-      "bytes": 661,
+      "bytes": 642,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{db1cfc8e-861b-466c-bf66-28a06ee0398f}.xml",
-      "sha256": "17406e4ecfab900e1f57945a3538842316b31fe84328d1506daea0813158bdd3"
+      "sha256": "aaf41471851a4351a78a1d25c7a5a00443b93cbdc88d924403bcae6cf8745927"
     },
     {
-      "bytes": 591,
+      "bytes": 576,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{dbd9b829-58da-4f47-8cc2-7e0e5ddd7154}.xml",
-      "sha256": "2d226845583a9ed029b894d15decd5318b2e5974dafaaeb372cf9bcc531db169"
+      "sha256": "fe3206830f777cf42d7f80251b706c00e5c2ca5d24e7af517c05f65e2f96acc2"
     },
     {
-      "bytes": 1020,
+      "bytes": 986,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{e6c0c04d-84e4-4b0f-87ac-9764a03ced81}.xml",
-      "sha256": "96e944aafe6abc882633e7cf73fc73e08dacd966698f40ce017e9abd83daea29"
+      "sha256": "7937246577952637daeffd65c23b9a44e822974acaf0841489ca60e1f3a38a80"
     },
     {
-      "bytes": 585,
+      "bytes": 570,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{eb142ac8-0a02-4ad1-93ee-18fe02586f30}.xml",
-      "sha256": "b15a10fb5aac4539f0334b727413de64e8079f104ba8311870832fdb423f8821"
+      "sha256": "a2ced32547a8a3127fedc2037b6b44c2dc9ac2ed540138563121571ebb872f9a"
     },
     {
-      "bytes": 585,
+      "bytes": 570,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPreset/{f8f5e0af-2125-4d73-934c-ded0ca85f5ff}.xml",
-      "sha256": "3fe6dea78aeba4c0ca52947ac68321bd21a912096ef504940d8924eebe3db2d4"
+      "sha256": "83a21c78b6a2183b4d6cbc9e3455905fc3f0d664ab51b5de04a6b5a4c0eea694"
     },
     {
-      "bytes": 193,
+      "bytes": 189,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ParameterPresetFolder/{ec392971-797d-45c0-a935-5395b25ee4d3}.xml",
-      "sha256": "3bb4ea5949909d2c1f3200b08cfafc0c69da78e36203dc08e5341d340a3f0071"
+      "sha256": "64c6ac2f4b42c54fbd6b519ca353c49b13241ed4d1724e52b7699e253848a6d9"
     },
     {
-      "bytes": 469,
+      "bytes": 452,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Platform/{7e0fc873-b6ad-43c1-aaec-f7af966eef2d}.xml",
-      "sha256": "9fffafbfba2ea165fea32120c16c55d8587bb0cc683dc51e41eec89e03ea8e47"
+      "sha256": "ec58b582f54be18efb6bfd7c345d039e1bb4d3059cb270743812843c9b0e0017"
     },
     {
-      "bytes": 187,
+      "bytes": 183,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/ProfilerFolder/{d0185ce6-d472-4e9d-b97a-148fca892d10}.xml",
-      "sha256": "3efedc9aa753ac8fcd318144d29dfe59f77697a1d7eef3dcf2376d4710dc2c3b"
+      "sha256": "2a8a088a75c1d3b8d064178125d6fb95cf2092b39be0810618afbea2099765e5"
     },
     {
-      "bytes": 5069,
+      "bytes": 4927,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Return/{43dde876-41da-4127-ac94-419e5cd6de44}.xml",
-      "sha256": "343834b5ebee644d11886826ee7a18e5085c88146a39813f3753831837c884b4"
+      "sha256": "0617ff12c84204ee89a318693acb56339eb67e370884152d4dd52f2e7cec4a60"
     },
     {
-      "bytes": 185,
+      "bytes": 181,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/SandboxFolder/{96117c86-5e44-4c8d-9ea8-78d91a151abe}.xml",
-      "sha256": "b926e77919e9d9cfba0eb09793b16d74f82984b33b8741f81464966a0948286f"
+      "sha256": "26cd4108fef0443f00a0832863143e6b64434a44745bc33f44033405121f044e"
     },
     {
-      "bytes": 308,
+      "bytes": 300,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/SnapshotGroup/{ffb9e248-db6a-438e-bbd2-28f99bd810e0}.xml",
-      "sha256": "e8481d2b7797eed4680cf66156116a3890c66010c90dcb12bbfdcf9565ed76ac"
+      "sha256": "e0daae5a97cb7c488b9210fc31f968816070183f18061297f7262f6a54faf8c3"
     },
     {
-      "bytes": 258,
+      "bytes": 250,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Tags.xml",
-      "sha256": "f5e059e7ce1e0b6cda39c90d0240dbc1c2cefb5e0d9ebf1dea13cea3cee05fd6"
+      "sha256": "f5f95f6c06b3c2a81b3b62d13c337743b7967b1b867f39cd44206cece99c8368"
     },
     {
-      "bytes": 377,
+      "bytes": 366,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/VCA/{238450c7-864b-488e-8651-983fde96d698}.xml",
-      "sha256": "dbf98ebd33c38c358fef9b47b4217c90ea49fafee7af1e02f8325314df897730"
+      "sha256": "3f07a51c1737dc5fd0022b0046d8d336954eded658cda89474859d6595de9c39"
     },
     {
-      "bytes": 372,
+      "bytes": 361,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/VCA/{849ce498-0f7c-4812-a52a-51e53e57bf1a}.xml",
-      "sha256": "1b957e40029fe05f09105b4aabc161aafbbdac9c56c3b820aecd646eb26700fe"
+      "sha256": "618bdfd36df87cb7679eff77da28d53675ad31937aff5dda76a9b3a8eca900e6"
     },
     {
-      "bytes": 374,
+      "bytes": 363,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/VCA/{be7d2bc8-3a22-4114-93a7-9f856a34f4f1}.xml",
-      "sha256": "234a93e5c87166afdcc1217180ac884eb428a3173c66863ba611b249dab562fe"
+      "sha256": "2bf5f59170abfa1c6154755d918e990c6bca18c64d77ac0777328047a2038934"
     },
     {
-      "bytes": 1505,
+      "bytes": 1470,
       "kind": "fmod-source",
       "path": "FMOD/FrontRooms/Metadata/Workspace.xml",
-      "sha256": "f96ff30449def6ba9062af147242e83a5d40ea36411ef00aa26e2febed1d1f67"
+      "sha256": "010fc101d8542bb5545d5fb6d25c4e76d2a6df551ef91ecf01cff079c07a81b9"
     },
     {
       "bytes": 506,
@@ -32584,7 +32602,7 @@
       "bytes": 25860,
       "kind": "unity-project-settings",
       "path": "ProjectSettings/ProjectSettings.asset",
-      "sha256": "a8da663c86e6cb3038c2c45d325bcac3f79c9da5c280c39a3ce649e2e1cba8d4"
+      "sha256": "edd7c8331f7bb051c497ba0d2102548f21f14d5505b02fb762e99fe916b73b07"
     },
     {
       "bytes": 85,
@@ -32661,9 +32679,9 @@
   ],
   "generatedArtifacts": [
     {
-      "bytes": 21097,
+      "bytes": 21129,
       "path": "Migration/exports/frontrooms_contract.json",
-      "sha256": "35046f7a530f6ed80d8d3dca69faaa7e4f78ce401b8b9d1139eab310b991b06e"
+      "sha256": "f277c91f3a98004ea11159aed0527b5ca7be4c4ddc021a9bfd92b9d6375e6b21"
     },
     {
       "bytes": 252173,
@@ -32673,17 +32691,17 @@
     {
       "bytes": 164443,
       "path": "Migration/exports/asset_bridge.json",
-      "sha256": "8c0dd342865e35623835352d5687d3b37f6cf93288145f94ddf81e751645aa94"
+      "sha256": "71f8639602de32c4f6f9f4d826d0011d380fa5a16d7f64d31a2e82018b466117"
     },
     {
-      "bytes": 40368,
+      "bytes": 55497,
       "path": "Migration/exports/unreal_import_settings.json",
-      "sha256": "bb9a0b9ea809c1bd4364c801dc2104c198cda393e8351920388be29682056248"
+      "sha256": "6acda0e7b9aa111087ddb4719b8d022b4c80b9fe85b7f1450047da4c19de69d5"
     },
     {
-      "bytes": 15244,
+      "bytes": 35785,
       "path": "Migration/exports/unreal_texture_import_settings.json",
-      "sha256": "d2cc49dc52f9718c6268a0fcd7778129eb20dd90fffaeb6175f77250b2f6189b"
+      "sha256": "51d2cf2a89406a3a45a31a8bdd8a94d30e88dcc0fc7cdefb468ef8f8f24b53b8"
     },
     {
       "bytes": 148591,
@@ -32701,9 +32719,14 @@
       "sha256": "b9446c9fd2cc339c90950dc298f770ab17187edbeae9c0700f2747c2b28084e9"
     },
     {
-      "bytes": 2632,
+      "bytes": 2634,
       "path": "Migration/contract.schema.json",
-      "sha256": "c46ac73cf2ea7895552f95f4b5b24084a7d0371710315d668d477085aaa25945"
+      "sha256": "e0c50a5fc6a870258dfcf8478e39312388e2c35f4f4c14f8bb29b62881b30615"
+    },
+    {
+      "bytes": 40364,
+      "path": "Migration/exports/unity_chunks/golden_export.log",
+      "sha256": "324ec7590e828e3803836013446221c88dea004cc4e40a7793c33ef5575625e1"
     },
     {
       "bytes": 132956,
@@ -32725,7 +32748,7 @@
   "schemaVersion": 1,
   "source": {
     "gitBranch": "unreal-migration",
-    "gitHead": "e9b81948992127434b7fe4cec84407840c8f9689",
+    "gitHead": "88af1d7a5fc0252db2abdd3f7fb3cf38f2649248",
     "unityVersion": "6000.3.10f1"
   },
   "sourceRoots": [
@@ -32739,7 +32762,7 @@
   ],
   "unreal": {
     "project": "Migration/Unreal/FrontRoomsss.uproject",
-    "projectSha256": "4388dcae4641b5d784fc0dd4678fde4144924ce0e871f65f169df5f266363c02",
+    "projectSha256": "001b52e89cee287fd6476b3c3491e0c575b13590efefde69c2141ceaf70aec11",
     "requiredTargetPlatforms": [
       "Win64"
     ],

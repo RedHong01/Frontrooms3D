@@ -6,8 +6,8 @@
 
 - Unity：`6000.3.10f1`，URP `17.3.0`。
 - Unreal：`5.8.3`，目标平台只有 `Win64`。
-- Unity golden chunks 已由 Windows 上的 Unity 6000.3.10f1 导出并验证：seed `2554`、`20388`、`20261001`，每个半径 1、9 个 chunk。
-- 当前完整 Windows smoke 已通过，但 FMOD 仍是显式的 source-bank drift：运行时解析 `28/31` 个事件。
+- Unity golden chunks 已在当前 Unity 6000.3.10f1 checkout 重新导出并验证：seed `2554`、`20388`、`20261001`，每个半径 1、9 个 chunk，4 个共享 MapHash vectors 通过。
+- FMOD Desktop banks 已由匹配的 Mac FMOD Studio CLI 重建；Unity StreamingAssets 与 Unreal 暂存五个 bank 的 SHA-256 一致，macOS runtime probe 已解析 `31/31` 个事件。Windows strict probe、smoke 和 package 仍需重跑。
 - 所有当前源侧待修项都必须在 Windows 复验通过后才可以从 `Migration/STATUS.md` 的 pending gate 中移除。
 
 ## 0. Windows `dotnet.exe` 弹窗的边界
@@ -33,7 +33,7 @@ DX12，目标 shader format 为 `PCD3D_SM6`，并启用 `r.Nanite.ProjectEnabled
 Windows Unreal 工程配置，Mac 端不要改成 Metal 或把 Mac 加入目标平台；如果 Mac 端
 提交了 Unity 网格变化，Windows 端重启编辑器后再检查 Nanite 资产和 shader cook。
 
-## 1. 必须修复：FMOD 三个缺失事件
+## 1. 已在 Mac 重建：FMOD 三个缺失事件；等待 Windows 验收
 
 当前缺失的事件路径是：
 
@@ -45,10 +45,10 @@ event:/Mechanism/Door/StreamLock
 
 Windows 证据：
 
-- `FMOD/FrontRooms/FrontRooms.fspro` 只有 90 字节 `<objects />` 根节点，序列化对象数为 0。
+- `FMOD/FrontRooms/FrontRooms.fspro` 只有 88 字节 `<objects />` 根节点，序列化对象数为 0。
 - `FMOD/FrontRooms/Metadata/Event` 有 31 个事件 XML，C# 契约与 Metadata 路径差异为 0。
 - `Assets/StreamingAssets/FMOD` 与 Unreal 暂存的五个 bank 当前 SHA-256 完全一致。
-- `Migration/exports/fmod_bank_manifest.json` 的状态是 `source-bank-drift`，不是完成状态。
+- `Migration/exports/fmod_bank_manifest.json` 当前是 Mac runtime 的 `matched` 预检记录；它不是 Win64 最终证据，Windows probe 必须用 Win64 DLL 重写。
 
 在有匹配版本的 FMOD Studio/CLI 的 Mac 机器上，从仓库根目录执行：
 
@@ -67,6 +67,11 @@ for bank in Master.bank Master.strings.bank Ambience.bank SFX.bank Music.bank; d
 done
 python3 Tools/UnrealMigration/sync_unity_unreal.py --update
 ```
+
+本次 Mac 预检使用 FMOD Studio `2.03.15` build `168126`，五个 bank 已在
+`Assets/StreamingAssets/FMOD` 与 `Migration/Unreal/Content/FrontRooms/Audio/FMOD/Banks`
+之间逐项比对，并通过 `31/31` event probe。不要把 macOS runtime 路径写成最终 Win64
+验收；Windows 端必须再次运行严格 probe 并更新 manifest。
 
 不要手工编辑 bank 二进制、复制其他平台 bank，或把 Unity `.meta` 文件复制到 Unreal。把新的 bank hash 随 Unity 源变更提交。
 

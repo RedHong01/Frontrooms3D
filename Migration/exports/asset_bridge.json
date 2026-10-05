@@ -15,99 +15,99 @@
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_F.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_F.svg",
       "kind": "vector",
-      "bytes": 598,
-      "sha256": "f23314a0aa0979ddff3640fd302396a80c62e849c1c89a81640bfa5ec1e42e1a"
+      "bytes": 595,
+      "sha256": "109e12ed8c78a080c2909a0ea3b3a12f3574661661b55aeb2893b86610722f8d"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_M.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_M.svg",
       "kind": "vector",
-      "bytes": 660,
-      "sha256": "2bb78b424746573fe4173c2ebbe1117cb095e5c0329c318a6d431a16a8c2cdeb"
+      "bytes": 657,
+      "sha256": "63a089184dcdb621b9afa3c9d9e0c61e88fe6b35cf638ea71702f69b37e2fdc3"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_N.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_N.svg",
       "kind": "vector",
-      "bytes": 541,
-      "sha256": "d8d78068fc9b395b1fd143dcf1548142d308948762c0a8ef48fff5d9062c05cd"
+      "bytes": 538,
+      "sha256": "d6876286406761a0cd362ccb1f364c195d82442c3409e5fc08316dd323a71c1c"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_O1.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_O1.svg",
       "kind": "vector",
-      "bytes": 1149,
-      "sha256": "dd0b41c578a7a771fb11cba028a9c2ee2433e1e55ee6bcb4dddc1fb82fa0bd4a"
+      "bytes": 1146,
+      "sha256": "6909efd41a12f196d2fef2d8f3415e3bc1a5b4787d96695a9a7b27b29e5eca64"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_O2.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_O2.svg",
       "kind": "vector",
-      "bytes": 1152,
-      "sha256": "95be8fa02af86d7d12a4d39afba5cb85ab109fb6c220204a4b220eb42b4c711a"
+      "bytes": 1149,
+      "sha256": "8ccad50c58965919b959a71aa5408329d227e60ca4007a8206e61af103cd84e6"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_O3.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_O3.svg",
       "kind": "vector",
-      "bytes": 1156,
-      "sha256": "fe2c3724bd696f900e7217c182e3dac1b38bbf1e173860f5d0ffbb5ea0303f99"
+      "bytes": 1153,
+      "sha256": "d54224ff5982da30a4e2cc3f8ed1c8dc3e423637956decbf4991864eb47f90d1"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_R.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_R.svg",
       "kind": "vector",
-      "bytes": 1109,
-      "sha256": "7506d23d93220fef5922025a1c9347c9e551725225695dd557e492b5b917bd13"
+      "bytes": 1106,
+      "sha256": "5a8ce60c866965c2a2ac4cc9619f4519b80f7e9fc76e85a45971a115b3993fbd"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_R2.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_R2.svg",
       "kind": "vector",
-      "bytes": 1095,
-      "sha256": "b85c40f00358bc7d00217b273cabe132e57e2dd6dfc3a9c970181f5fe8670394"
+      "bytes": 1092,
+      "sha256": "075095c368858a558437d724c6281dd7dcc7012789db795db4f4b7bde9e4ab32"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_S.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_S.svg",
       "kind": "vector",
-      "bytes": 2017,
-      "sha256": "8f7a69d7b1aa9d2086d7b26bec5b9344e648c9d974c21b8f1ac591e0b96be04e"
+      "bytes": 2014,
+      "sha256": "4f2b8b9b96e9b9208c2f5dcbe4e4288cf57998635e1bb036c911b32b739c49e7"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsGlyph_T.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsGlyph_T.svg",
       "kind": "vector",
-      "bytes": 500,
-      "sha256": "d6f6b594284856e4ddf6fe6f1585310e5963d6514133e362efa3732aaca4b5bd"
+      "bytes": 497,
+      "sha256": "91471905a2bbf0d0e7ca14cd5c3f620a613b864d3a4e98d58bb18004baf1225a"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsLogo_Left.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_Left.svg",
       "kind": "vector",
-      "bytes": 8854,
-      "sha256": "ba0f8494560ba942e516994cc5bcc5999e9920c323607c49394fc8a2ef2ed529"
+      "bytes": 8851,
+      "sha256": "dbeacd9acd29427f8ca948f361530fe4ca67c0c1670b20710f11706e3faab71b"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsLogo_S1.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_S1.svg",
       "kind": "vector",
-      "bytes": 2561,
-      "sha256": "d1446077a1ab5b44b00536f672e7579c8e95f3e87b6d8b730a5ab9301081e351"
+      "bytes": 2548,
+      "sha256": "b2103aaaac6031d935707b7e08896c982b414442f96095895e2cac36bd9223bc"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsLogo_S2.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_S2.svg",
       "kind": "vector",
-      "bytes": 2561,
-      "sha256": "2894e5cbfd132a9d784b5ce3952c60b00ce8985080a4162c7c85e2b4167c6442"
+      "bytes": 2548,
+      "sha256": "1316357425ef52349fcf953c2ac1074d3b57219dc83069e8c4af65240ca2a292"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsLogo_White.svg",
       "destination": "Content/FrontRooms/UnitySource/Resources/Brand/FrontRoomsLogo_White.svg",
       "kind": "vector",
-      "bytes": 13279,
-      "sha256": "7f4726e9bbbc1db57ad2af8d5dc879811aee01f1746ae187745c846fe6a48228"
+      "bytes": 13264,
+      "sha256": "3cf6710c6b30519ee90c6a71c15c2aef5dab200c3b6ba32e7adffeaac00a82cc"
     },
     {
       "source": "Assets/Resources/Brand/FrontRoomsLogo.png",
@@ -3599,36 +3599,36 @@
       "source": "Assets/StreamingAssets/FMOD/Ambience.bank",
       "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Ambience.bank",
       "kind": "fmod-bank",
-      "bytes": 567904,
-      "sha256": "5201221721dcd9489217101f13d5e18fc2a0fa5ea40a170e9bcfd199287884c2"
+      "bytes": 568288,
+      "sha256": "d74131026b94771ec4594021100a3419f3aca0598c4a7476b8df5000af8fd6cd"
     },
     {
       "source": "Assets/StreamingAssets/FMOD/Master.bank",
       "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Master.bank",
       "kind": "fmod-bank",
       "bytes": 4702,
-      "sha256": "de9c5bf324562e5b196894dd7ef828be8ebcb7e3161eb35ca9811593088b1f44"
+      "sha256": "c9d28bfd4a59a2c7b375bb8395ec068d0ddb3c156a204c7e49c558d0427fcb60"
     },
     {
       "source": "Assets/StreamingAssets/FMOD/Master.strings.bank",
       "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Master.strings.bank",
       "kind": "fmod-bank",
-      "bytes": 3490,
-      "sha256": "32a434357c759bb77b681c97a033e8fad5413f2c0bef7279e65adbae81a8282c"
+      "bytes": 3668,
+      "sha256": "31e181d55fe54877857d027cca270bab4bf5bd4bca7a4606fe3d3df9a09088bf"
     },
     {
       "source": "Assets/StreamingAssets/FMOD/Music.bank",
       "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/Music.bank",
       "kind": "fmod-bank",
       "bytes": 1326,
-      "sha256": "c18422f7a5b7d38659a9d450c2588388bb195e0df717b5a92044f0e51e7ac118"
+      "sha256": "979d0d3a2fc5d85e33af786bb0d1c17fe1e899646b7722fda1547eee7f83f734"
     },
     {
       "source": "Assets/StreamingAssets/FMOD/SFX.bank",
       "destination": "Content/FrontRooms/UnitySource/StreamingAssets/FMOD/SFX.bank",
       "kind": "fmod-bank",
-      "bytes": 914848,
-      "sha256": "d4c05e0d2f1ad395d43df4f7d6258faab6dd20964e49e137ced9b294a9bd9238"
+      "bytes": 998112,
+      "sha256": "a70eb8c1a9345d11c13bc9d90b6cec8f5c3b53fd7339adeee0023577fe60fbd3"
     },
     {
       "source": "Assets/StreamingAssets/FrontRooms_Ad_01.mp4",
@@ -3649,5 +3649,5 @@
     "fmod-bank": 5,
     "video": 1
   },
-  "totalBytes": 334364668
+  "totalBytes": 334448420
 }

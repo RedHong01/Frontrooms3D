@@ -52,11 +52,12 @@ Full policy: `Migration/UNITY_UNREAL_SYNC_POLICY.md`.
 - [x] Add `audit_unreal_assets.ps1` and run it from the Windows smoke gate (123/123 FBX packages, 167/167 textures, 113/113 sidecars, 10/10 audio/video/font/bank files).
 - [x] Add the repeatable Windows `run_unreal_asset_pipeline.ps1` pass for Unity staging, material-profile export, FBX/texture import and audit.
 - [x] Export and import the first Unity/FMOD WAV slice as eight UE SoundWave assets; keep them as a fallback behind the stable audio seam.
-- [x] Stage the Unity Win64 `fmodstudio.dll` and five opaque bank files, load them dynamically from Unreal, resolve the Unity event contract, and verify native event Start/Update plus a real FMOD WAV render in smoke (5 banks, 28/31 events currently resolve).
+- [x] Stage the Unity Win64 `fmodstudio.dll` and five opaque bank files, load them dynamically from Unreal, resolve the Unity event contract, and verify native event Start/Update plus a real FMOD WAV render in smoke. The prior Win64 probe recorded the three stale Stream* events as explicit source-bank drift; the regenerated payload is awaiting the strict Win64 re-probe.
 - [x] Add the UE sidecar importer/commandlet for all 113 prop contracts (55 collider boxes, 490 anchors, 59 LOD records) with a report and smoke stage.
 - [x] Promote the sidecar importer to a repeatable UE 5.8 editor asset factory: 113/113 imported prop meshes updated with 55 box colliders, 59 LOD values and 490 anchor metadata entries.
 - [x] Complete the native Relay Listen → Chase → Search → Listen loop, key/door/window interactions, Complete/Caught states and trace coverage.
-- [x] Add a native Win64 FMOD adapter that dynamically loads the Unity-shipped `fmodstudio.dll`, stages all five banks, and plays the migrated door/key/relay/window event paths; the external probe renders a real WAV and reports the three missing Stream* bank events as explicit source/bank drift.
+- [x] Add a native Win64 FMOD adapter that dynamically loads the Unity-shipped `fmodstudio.dll`, stages all five banks, and plays the migrated door/key/relay/window event paths; the external probe renders a real WAV. The Mac-side rebuild now supplies all 31 contract events, while Win64 acceptance remains pending.
+- [x] Rebuild the five Desktop FMOD banks with the matching Mac FMOD Studio CLI (`2.03.15`, build `168126`), copy identical hashes to Unity StreamingAssets and the Unreal staging directory, and verify `31/31` events plus a rendered event instance with the macOS runtime. The staged hashes and Mac runtime path are recorded in `Migration/exports/fmod_bank_manifest.json`; Windows must regenerate this manifest with the Win64 DLL.
 - [x] Add and pass a live possessed-character movement trace (WASD input, walking delta and sprint delta) in the UE 5.8 commandlet world.
 - [x] Add a Windows-only smoke runner covering export/asset hashes, UE compile, contract commandlet, state transitions, deterministic hash vectors and imported asset coverage.
 - [x] Full smoke passed on UE 5.8.3 at `Migration/Unreal/Saved/MigrationSmoke/20261005T041821599Z/report.json`; all stages passed, including the DX12/SM6 Nanite configuration gate, golden chunks, material-assets, sidecars, live possession movement, HDR and FMOD playback.
@@ -82,7 +83,7 @@ Full policy: `Migration/UNITY_UNREAL_SYNC_POLICY.md`.
 ## Explicit remaining source gates
 
 - [ ] Resolve the 108 remaining FBX importer bounds/tangent warnings with source-specific reimport settings; authored sidecar collision/LOD metadata is already applied and smoke-gated. Current evidence is recorded in `Migration/exports/unreal_mesh_build_probe_binders.json` and `Migration/exports/unreal_mesh_build_probe_doorframe.json`: the representative bounds warning is fixed on the transient `Kit_Binders` build, while `Kit_DoorFrame_Steel_LOD0` still emits near-zero tangent/bi-normal diagnostics after normal/tangent recomputation. Keep this gate pending until each affected source asset is re-exported or receives a reviewed per-asset exception.
-- [ ] Regenerate the Unity FMOD banks when the source project is available so `event:/Mechanism/Door/StreamOpen`, `StreamClose`, and `StreamLock` are present. The current Win64 probe keeps these three gaps visible instead of treating stale banks as complete; source-side and Windows-side commands are recorded in [`Migration/FMOD_BANK_REBUILD.md`](FMOD_BANK_REBUILD.md).
+- [ ] Complete Windows acceptance for the regenerated Unity FMOD banks so `event:/Mechanism/Door/StreamOpen`, `StreamClose`, and `StreamLock` resolve through the Win64 DLL. The Mac rebuild and `31/31` macOS probe are complete; rerun the strict Windows probe, asset pipeline, smoke and package gates before closing this item. Source-side and Windows-side commands are recorded in [`Migration/FMOD_BANK_REBUILD.md`](FMOD_BANK_REBUILD.md).
 
 The Unity golden-chunk source gate is complete on Windows with Unity
 `6000.3.10f1`: the exporter produced three radius-1 JSON snapshots (9 chunks
@@ -96,10 +97,12 @@ The editor launcher `Tools/UnrealMigration/open_unreal_editor.ps1` uses the UE5.
 Mac-side source repairs and their Windows acceptance commands are recorded in
 [`MAC_SIDE_REPAIR_QUEUE.md`](MAC_SIDE_REPAIR_QUEUE.md).
 
-The current [`fmod_bank_manifest.json`](exports/fmod_bank_manifest.json) is a
-strict source/bank drift record: the 90-byte `.fspro` has zero serialized
-objects, its Metadata folder has 31 event files, the staged Unity and Unreal
-bank hashes match, and the Win64 runtime resolves 28/31 events. The missing
-set is exactly `StreamOpen`, `StreamClose`, and `StreamLock`.
+The current [`fmod_bank_manifest.json`](exports/fmod_bank_manifest.json) is the
+Mac-side rebuild record: the 88-byte `.fspro` has zero serialized objects, its
+Metadata folder has 31 event files, the staged Unity and Unreal bank hashes
+match, and the matching macOS FMOD runtime resolves 31/31 events. The manifest
+runtime path is intentionally macOS evidence; the Windows acceptance step must
+run the same probe with `Assets/Plugins/FMOD/platforms/win/lib/x86_64/fmodstudio.dll`
+and rewrite the manifest before this gate is complete.
 The JSON contract is generated, so rerun the exporter after changing the Unity
 source. Do not hand-edit `Migration/exports/frontrooms_contract.json`.
