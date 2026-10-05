@@ -1,6 +1,6 @@
 # WebGL build profile
 
-The reproducible browser build is exposed in Unity under **FrontRooms 3D → Build WebGL** and from batch mode:
+The reproducible browser build is exposed in Unity under **FrontRoomsss → Build WebGL** and from batch mode:
 
 ```sh
 "${UNITY_PATH}" \

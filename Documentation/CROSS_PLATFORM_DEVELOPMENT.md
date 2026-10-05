@@ -58,9 +58,9 @@ the project baseline; do not clear them in a build script.
 
 For desktop builds, use the matching menu entries:
 
-- **FrontRooms 3D → Cloud Build macOS** writes a macOS build to the configured
+- **FrontRoomsss → Cloud Build macOS** writes a macOS build to the configured
   `FRONTROOMS_CLOUD_OUTPUT` directory (or the system temp directory).
-- **FrontRooms 3D → Cloud Build Windows** writes a Windows 64-bit build to the
+- **FrontRoomsss → Cloud Build Windows** writes a Windows 64-bit build to the
   same output root.
 
 These entries share product, scene, quality and URP settings. The legacy

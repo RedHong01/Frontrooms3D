@@ -18,7 +18,7 @@ public static class FrontRoomsScreenAdsDemoScene
         EditorApplication.delayCall += CreateScene;
     }
 
-    [MenuItem("FrontRooms 3D/Create Screen Ads Demo Scene")]
+    [MenuItem("FrontRoomsss/Create Screen Ads Demo Scene")]
     public static void CreateScene()
     {
         Directory.CreateDirectory("Assets/Scenes");

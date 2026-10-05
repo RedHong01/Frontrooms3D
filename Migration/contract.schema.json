@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://frontrooms.local/schema/unreal-migration-contract-1.json",
-  "title": "FrontRooms Unreal migration contract",
+  "title": "FrontRoomsss Unreal migration contract",
   "type": "object",
   "required": [
     "schema",

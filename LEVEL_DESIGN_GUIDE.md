@@ -16,6 +16,6 @@ The 3D presentation is generated in Assets/Scripts/FrontRooms3DGame.cs, inside B
 
 ## Reset and build
 
-Use FrontRooms 3D → Create Scene to regenerate a clean bootstrap scene. Press Play and then Space to enter the first-person run. Use FrontRooms 3D → Cloud Build macOS or Cloud Build Windows to export a player for the target machine.
+Use FrontRoomsss → Create Scene to regenerate a clean bootstrap scene. Press Play and then Space to enter the first-person run. Use FrontRoomsss → Cloud Build macOS or Cloud Build Windows to export a player for the target machine.
 
 This MVP is deliberately code-authored so a route can be changed quickly. A later pass can move the room data into a ScriptableObject or prefab scene once the 2D/3D comparison answers the current design question.

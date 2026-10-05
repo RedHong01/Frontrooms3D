@@ -1,4 +1,4 @@
-# FrontRooms3D · iPhone / Android build plan
+# FrontRoomsss · iPhone / Android build plan
 
 状态：T0/T1 代码已开始，2026-10-04。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；移动设备验收和 iPhone/Android build 仍未完成。
 

@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$project = Join-Path $Root "Migration/Unreal/FrontRoomsUE.uproject"
+$project = Join-Path $Root "Migration/Unreal/FrontRoomsss.uproject"
 $association = (Get-Content -Raw -LiteralPath $project | ConvertFrom-Json).EngineAssociation
 $candidates = @()
 if ($UnrealEditorCmd) {

@@ -7,7 +7,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path -LiteralPath $Root).Path
-$project = Join-Path $Root "Migration/Unreal/FrontRoomsUE.uproject"
+$project = Join-Path $Root "Migration/Unreal/FrontRoomsss.uproject"
 $savedRoot = Join-Path $Root "Migration/Unreal/Saved/MigrationSmoke"
 $runId = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
 $runDirectory = Join-Path $savedRoot $runId

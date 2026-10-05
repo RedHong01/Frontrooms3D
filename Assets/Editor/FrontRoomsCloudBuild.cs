@@ -17,33 +17,33 @@ public static class FrontRoomsCloudBuild
         get
         {
             var value = Environment.GetEnvironmentVariable("FRONTROOMS_CLOUD_OUTPUT");
-            return string.IsNullOrWhiteSpace(value) ? Path.Combine(Path.GetTempPath(), "FrontRooms3D-cloud") : value;
+            return string.IsNullOrWhiteSpace(value) ? Path.Combine(Path.GetTempPath(), "FrontRoomsss-cloud") : value;
         }
     }
 
-    [MenuItem("FrontRooms 3D/Cloud Build macOS")]
+    [MenuItem("FrontRoomsss/Cloud Build macOS")]
     public static void BuildMac()
     {
         Verify();
         SwitchTarget(BuildTarget.StandaloneOSX);
         ApplyStandaloneSettings();
-        var output = Path.Combine(Root, "Mac", "FrontRooms3D.app");
+        var output = Path.Combine(Root, "Mac", "FrontRoomsss.app");
         Directory.CreateDirectory(Path.GetDirectoryName(output));
         Build(output, BuildTarget.StandaloneOSX, "macOS");
     }
 
-    [MenuItem("FrontRooms 3D/Cloud Build Windows")]
+    [MenuItem("FrontRoomsss/Cloud Build Windows")]
     public static void BuildWindows()
     {
         Verify();
         SwitchTarget(BuildTarget.StandaloneWindows64);
         ApplyStandaloneSettings();
-        var output = Path.Combine(Root, "Windows", "FrontRooms3D.exe");
+        var output = Path.Combine(Root, "Windows", "FrontRoomsss.exe");
         Directory.CreateDirectory(Path.GetDirectoryName(output));
         Build(output, BuildTarget.StandaloneWindows64, "Windows");
     }
 
-    [MenuItem("FrontRooms 3D/Cloud Build WebGL")]
+    [MenuItem("FrontRoomsss/Cloud Build WebGL")]
     public static void BuildWebGL()
     {
         Verify();
@@ -61,7 +61,7 @@ public static class FrontRoomsCloudBuild
     // as the fallback where the browser has no WebGPU, written to its own folder
     // so the two can be measured side by side. The graphics API list goes back
     // to automatic afterwards, so the project is never left on the test backend.
-    [MenuItem("FrontRooms 3D/Cloud Build WebGL (WebGPU test)")]
+    [MenuItem("FrontRoomsss/Cloud Build WebGL (WebGPU test)")]
     public static void BuildWebGLWebGPU()
     {
         Verify();
@@ -98,7 +98,7 @@ public static class FrontRoomsCloudBuild
     {
         // Preserve the authored URP pipeline. The older build entry point cleared
         // it for a pre-URP artifact; current builds must reflect the source state.
-        PlayerSettings.productName = "FrontRooms3D";
+        PlayerSettings.productName = "FrontRoomsss";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0";
@@ -113,7 +113,7 @@ public static class FrontRoomsCloudBuild
 
     static void ApplyWebGLSettings()
     {
-        PlayerSettings.productName = "FrontRooms3D";
+        PlayerSettings.productName = "FrontRoomsss";
         PlayerSettings.companyName = "Red Wang";
         PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.WebGL, "com.redwang.frontrooms3d");
         PlayerSettings.bundleVersion = "0.1.0";

@@ -1,6 +1,6 @@
-# FrontRooms Unreal migration slice
+# FrontRoomsss Unreal migration slice
 
-`FrontRoomsUE.uproject` is the first Unreal-side source tree. It is intentionally
+`FrontRoomsss.uproject` is the first Unreal-side source tree. It is intentionally
 kept beside the Unity project until a fixed UE5 editor is installed. The module
 contains:
 
@@ -13,7 +13,7 @@ The migration target is Windows only (`Win64`). The Windows workstation currentl
 has been compiled once. Epic has released UE5.8 (including the 5.8.3 hotfix),
 but UE5.8 is not installed in the local Epic manifest yet, so `EngineAssociation`
 stays at `5.6` until that editor is installed. Imported assets are present locally;
-the first playable map remains to be created. Open `FrontRoomsUE.uproject`
+the first playable map remains to be created. Open `FrontRoomsss.uproject`
 and point an editor utility at `Migration/exports/frontrooms_contract.json` and
 `Migration/exports/kit_manifest.json`.
 
@@ -21,7 +21,7 @@ The compiled editor target also exposes a headless contract gate:
 
 ```powershell
 & 'D:\UE_5.6\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
-  'Migration/Unreal/FrontRoomsUE.uproject' -run=FrontRoomsContract
+  'Migration/Unreal/FrontRoomsss.uproject' -run=FrontRoomsContract
 ```
 
 Before opening Unreal, run the Windows-only export gate from the Unity project
