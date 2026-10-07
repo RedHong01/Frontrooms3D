@@ -262,8 +262,10 @@ def build(kit):
 
 def build_lods(kit, k, towers, cut):
     """LOD1: 24-point faces with a 2-step edge and 0.5 mm slot insets, a
-    coarse strap, box edge and gap; LOD2: the strap as a quad, the faces as
-    two dark 6-gons, the box edge as an 8-point ring on the dark gap."""
+    coarse strap, box edge and gap; LOD2: the strap as a quad, each face as
+    a device-coloured 6-gon with the shared area-matched dark dot over its
+    slot cluster (outlet_common LOD2_*; round 8), the box edge as an 8-point
+    ring on the dark gap."""
     ni, al, pb, br_ = oc.Mesh(), oc.Mesh(), oc.Mesh(), oc.Mesh()
     k1 = oc.LOD1_ARC_K
     for oz in zs_():
@@ -333,11 +335,11 @@ def build_lods(kit, k, towers, cut):
     ni2, al2, pb2 = oc.Mesh(), oc.Mesh(), oc.Mesh()
     q = al2.ring(oc.rect(0.0, 0.0, STRAP_W, STRAP_L), STRAP_FRONT)
     al2.fill(q)
+    # Round 8: the face 6-gon sits LOD2_DOT_UP below the face top so the dot
+    # lands exactly on it (was a 164 mm^2 dot 0.3 mm proud of the 8.0 limit).
     for oz in zs_():
-        hexa = ni2.ring([(16.0 * math.cos(math.radians(a)), oz + 13.6 * math.sin(math.radians(a))) for a in (0, 60, 120, 180, 240, 300)], FACE_TOP)
-        ni2.fill(hexa)
-        dk = pb2.ring([(9.0 * math.cos(math.radians(a)), oz - 2.0 + 7.0 * math.sin(math.radians(a))) for a in (0, 60, 120, 180, 240, 300)], FACE_TOP + 0.3)
-        pb2.fill(dk)
+        ni2.fill(ni2.ring(oc.lod2_hex(oc.LOD2_FACE_AB, 0.0, oz), FACE_TOP - oc.LOD2_DOT_UP))
+        pb2.fill(pb2.ring(oc.lod2_hex(oc.LOD2_DOT_AB, 0.0, oz + oc.LOD2_DOT_DZ), FACE_TOP))
     ring8 = [(ohw, -ohh + 3), (ohw, ohh - 3), (ohw - 3, ohh), (-ohw + 3, ohh), (-ohw, ohh - 3), (-ohw, -ohh + 3), (-ohw + 3, -ohh), (ohw - 3, -ohh)]
     o8 = al2.ring(ring8, BOX_FRONT)
     i8 = al2.ring([(x * 0.94, z * 0.96) for x, z in ring8], BOX_FRONT)

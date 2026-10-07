@@ -61,27 +61,41 @@ poly([(rx + rw - 2, dy), (rx + rw - 6.5, dy - 2.6), (rx + rw - 6.5, dy + 2.6)], 
 let nx = rx + 8, ny = ry + rh + 32
 circle(nx, ny, 6, 0.35); poly([(nx, ny - 6), (nx - 2.6, ny + 2), (nx, ny), (nx + 2.6, ny + 2)], ink: .print); _ = text("N", nx, ny - 8.5, cap: 3.2, center: true)
 _ = text("SCALE: 3/16\" = 1'-0\"", nx + 12, ny + 1.5, cap: 2.8, bold: false, track: 0.2)
-// legend (glow ink): head + three rows, InkShape silhouettes at 1/15
-let lx = 300.0, k15 = 1.0 / 15.0
-_ = text("IN POWER FAILURE", lx, 62, cap: 5.2, track: 0.4, ink: .phos)
-// row 1: FLOW chevrons, 400 mm tall, 100 mm stroke, arms 32.5 deg, pitch 375 mm
-let ch = 400 * k15, cw = 100 * k15, ang = 32.5 * Double.pi / 180, armX = (ch / 2) / tan(ang)
-for i in 0..<2 { let x0 = lx + Double(i) * 375 * k15, y0 = 76.0
-  poly([(x0, y0), (x0 + cw / sin(ang) * 0.55, y0), (x0 + armX + cw / sin(ang) * 0.55, y0 + ch / 2), (x0 + cw / sin(ang) * 0.55, y0 + ch), (x0, y0 + ch), (x0 + armX, y0 + ch / 2)], ink: .phos) }
-_ = text("WAY ON", lx + 62, 76 + ch / 2 + 2.6, cap: 5.2, track: 0.3, ink: .phos)
-// row 2: HERE, two 100 x 900 mm bars beside a door (door outline printed)
-let by = 116.0, bw = 100 * k15, bh = 900 * k15, gap = 1020 * k15
-rect(lx, by, bw, bh, ink: .phos); rect(lx + bw + gap + 2, by, bw, bh, ink: .phos)
-stroke([(lx + bw + 1, by + bh), (lx + bw + 1, by + 3), (lx + bw + gap + 1, by + 3), (lx + bw + gap + 1, by + bh)], 0.3, dash: [1.5, 1.2])
-_ = text("EXIT", lx + 2 * bw + gap + 9, by + bh / 2 + 2.6, cap: 5.2, track: 0.3, ink: .phos)
-// row 3: STOP, 2 horizontal bars 600 x 120 mm, one per half roll (375 mm)
-let sy = 196.0
-rect(lx, sy, 600 * k15, 120 * k15, ink: .phos); rect(lx, sy + 375 * k15, 600 * k15, 120 * k15, ink: .phos)
-_ = text("NO EXIT", lx + 600 * k15 + 9, sy + 375 * k15 / 2 + 6.5, cap: 5.2, track: 0.3, ink: .phos)
-_ = text("SYMBOLS SHOWN AT 1/15 SIZE", lx, 236, cap: 2.4, bold: false, track: 0.2)
-// footer band (printed red) + title block (printed)
+// legend (32_pattern_native_hints.md §5b, 2026-10-07): WP03's own elements, not overlay glyphs.
+// Swatches of the paper at 1/25 from legend_swatches.py (the cue-state geometry): as printed, then the
+// three changed states, printed in the paper's own inks. The legend glows as in A.12: the head, the labels and
+// each changed band (a phosphor overprint on the placard, independent of the wall's §8 option A/B).
+var MODE = "lit"
+func loadPNG(_ p: String) -> CGImage { let s = CGImageSourceCreateWithURL(URL(fileURLWithPath: p) as CFURL, nil)!; return CGImageSourceCreateImageAtIndex(s, 0, nil)! }
+let LEG = CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "legend"
+func swatch(_ name: String, _ x: Double, _ y: Double, _ w: Double, _ h: Double) {
+  let rgb = loadPNG(LEG + "/" + name + ".png"), cue = loadPNG(LEG + "/" + name + "_cue.png"), glows = name != "baseline"
+  let r = CGRect(x: x, y: y, width: w, height: h)
+  items.append(Item(draw: { c, _ in
+    c.saveGState(); c.translateBy(x: 0, y: y + h); c.scaleBy(x: 1, y: -1)          // images draw y-up
+    let rr = CGRect(x: x, y: 0, width: w, height: h)
+    switch MODE {
+    case "lit": c.interpolationQuality = .high; c.draw(rgb, in: rr)
+    case "glow": if glows { c.draw(cue, in: rr) }
+    default: if glows { c.clip(to: rr, mask: cue); c.setFillColor(red: 0.78, green: 0.97, blue: 0.69, alpha: 1); c.fill(rr) }   // dark: the changed band glows
+    }
+    c.restoreGState() }, ink: .phos))
+  items.append(Item(draw: { c, _ in c.setLineWidth(0.3); c.stroke(r) }, ink: .print)) }   // printed keyline
+let lx = 300.0, sw = 45.0, shh = 30.0, lab = lx + sw + 6
+swatch("baseline", lx, 50, sw, shh)
+_ = text("AS PRINTED", lab, 50 + shh / 2 + 2.1, cap: 4.2, track: 0.3)
+_ = text("IN POWER FAILURE", lx, 96, cap: 5.2, track: 0.4, ink: .phos)
+swatch("flow", lx, 104, sw, shh)
+_ = text("WAY ON", lab, 104 + shh / 2 + 2.6, cap: 5.2, track: 0.3, ink: .phos)
+swatch("here", lx, 144, 88, shh)
+_ = text("EXIT", lx + 88 + 6, 144 + shh / 2 + 2.6, cap: 5.2, track: 0.3, ink: .phos)
+swatch("stop", lx, 184, sw, shh)
+_ = text("NO EXIT", lab, 184 + shh / 2 + 2.6, cap: 5.2, track: 0.3, ink: .phos)
+_ = text("WALLCOVERING SHOWN AT 1/25 SIZE", lx, 224, cap: 2.4, bold: false, track: 0.2)
+// footer band (printed red), two lines (A.12, relay v2 §10: it teaches walking and doors) + title block (printed)
 rect(20, 243, 268, 16, ink: .red)
-_ = text("IN CASE OF FIRE DO NOT USE ELEVATORS", 154, 254.2, cap: 5.4, track: 0.5, ink: .white, center: true)
+_ = text("IN CASE OF FIRE: WALK, DO NOT RUN.", 154, 249.6, cap: 4.4, track: 0.4, ink: .white, center: true)
+_ = text("CLOSE DOORS BEHIND YOU.", 154, 256.4, cap: 4.4, track: 0.4, ink: .white, center: true)
 let tb = [("LEVEL 0", 0.0), ("SHEET A-2 OF 4", 0.0), ("PRINTED 03/90", 0.0)]
 var cx = 300.0; let ty = 243.0, th = 16.0, cap = 3.6, pad = 3.0, rule = 0.6
 var cells: [(Double, Double)] = []
@@ -90,6 +104,7 @@ stroke([(300, ty), (cx, ty), (cx, ty + th), (300, ty + th)], rule, close: true)
 for (i, (x, w)) in cells.enumerated() { if i > 0 { stroke([(x, ty), (x, ty + th)], rule) }; _ = text(tb[i].0, x + pad, ty + th / 2 + cap / 2, cap: cap, track: 0.15); _ = w }
 // ---------------- render
 func render(_ path: String, pxPerMM: Double, mode: String) {
+  MODE = mode
   let pw = Int(W * pxPerMM), ph = Int(H * pxPerMM)
   let c = CGContext(data: nil, width: pw, height: ph, bitsPerComponent: 8, bytesPerRow: pw * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
   c.translateBy(x: 0, y: CGFloat(ph)); c.scaleBy(x: pxPerMM, y: -pxPerMM)

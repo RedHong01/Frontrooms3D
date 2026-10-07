@@ -128,5 +128,11 @@ Extra fields you may use: `sheetPpm`, `scaleBar`, `tris` (LOD0/LOD1 and the spec
 平面视觉 placed the complete K46–K80 set in Figma on 2026-10-04, page `2099:76`, file `0tCbAiVUlrPId3RWd9LRif`:
 
 - K46 `2648:6094` and K47 `2648:6139` are in PROP KIT `2324:852` at local `(4200, 13800)` and `(6240, 13800)`.
-- K48–K80 are in CONT `2648:6093` at page `(16577, 29300)`, with the four-column grid from `kplan.json`.
+- K48–K80 are inside PROP KIT `2324:852` (8280 × 26200, K00–K80), with the four-column grid from `kplan.json`. The CONT section `2648:6093` no longer exists; someone merged it into 2324:852 (平面视觉, 2026-10-07). Formatting fixes from 平面视觉 on 2026-10-07:
+  - header "Week 3 · Oct 4, 2026";
+  - era axis 1950/2000;
+  - era labels right-aligned at x 1824;
+  - K49/K52 ledes cut to 2 lines;
+  - variant thumbnails raised above their white frames;
+  - page totals 81.
 - All 164 primary and variant image slots were uploaded from `png/` and checked against the sheet grammar; runtime/model acceptance remains with the game-visual workflow.

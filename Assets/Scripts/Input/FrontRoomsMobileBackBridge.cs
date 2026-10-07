@@ -51,7 +51,7 @@ public sealed class FrontRoomsMobileBackBridge : MonoBehaviour
 
 #if UNITY_ANDROID && !UNITY_EDITOR
     AndroidJavaObject dispatcher;
-    AndroidJavaObject callback;
+    AndroidJavaProxy callback;
 
     sealed class BackInvokedCallback : AndroidJavaProxy
     {
@@ -133,7 +133,7 @@ public sealed class FrontRoomsMobileBackBridge : MonoBehaviour
 
     bool ShouldUseEscapeFallback()
     {
-        if (Application.isMobilePlatform)
+        if (FrontRoomsHandheld.Active)
             return mobileEscapeFallback && !PredictiveBackRegistered;
         return Application.isEditor && editorEscapeFallback;
     }

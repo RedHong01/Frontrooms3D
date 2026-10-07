@@ -22,6 +22,7 @@ public static class FrontRoomsSettings
     const string TouchFloatingStickKey = "FrontRooms.Touch.FloatingStick";
     const string TouchSprintSocketKey = "FrontRooms.Touch.SprintSocket";
     const string TouchHapticsKey = "FrontRooms.Touch.Haptics";
+    const string TouchHapticsControlsKey = "FrontRooms.Touch.HapticsControls";
     const string TouchGyroKey = "FrontRooms.Touch.Gyro";
 
     /// <summary>Camera motion in shots and shakes: 0 (off: takeovers play in place, look stays free), 50 or 100.</summary>
@@ -44,7 +45,10 @@ public static class FrontRoomsSettings
     public static bool TouchInvertLook { get; private set; }
     public static bool TouchFloatingStick { get; private set; } = true;
     public static bool TouchSprintSocket { get; private set; } = true;
+    /// <summary>Gameplay haptics (doors, glass, the Relay's lock-on, caught).</summary>
     public static bool TouchHaptics { get; private set; } = true;
+    /// <summary>Control haptics (the sprint socket latching, USE and button presses); a separate switch, like Alien: Isolation's.</summary>
+    public static bool TouchHapticsControls { get; private set; } = true;
     /// <summary>0 off, 1 while a look/use finger is down, 2 always.</summary>
     public static int TouchGyroMode { get; private set; }
 
@@ -53,7 +57,8 @@ public static class FrontRoomsSettings
 
     public static void Load()
     {
-        CameraMotionPercent = Snap(PlayerPrefs.GetInt(CameraMotionKey, 100));
+        // First launch on a handheld with the OS Reduce Motion switch on starts CAMERA MOTION at off (desktop always starts at 100).
+        CameraMotionPercent = Snap(PlayerPrefs.GetInt(CameraMotionKey, FrontRoomsHandheld.Active && FrontRoomsHandheld.OsReduceMotion ? 0 : 100));
         ReduceFlashing = PlayerPrefs.GetInt(ReduceFlashingKey, 0) != 0;
         TapToBreak = PlayerPrefs.GetInt(TapToBreakKey, 0) != 0;
         Captions = PlayerPrefs.GetInt(CaptionsKey, 0) != 0;
@@ -66,8 +71,10 @@ public static class FrontRoomsSettings
         TouchFloatingStick = PlayerPrefs.GetInt(TouchFloatingStickKey, 1) != 0;
         TouchSprintSocket = PlayerPrefs.GetInt(TouchSprintSocketKey, 1) != 0;
         TouchHaptics = PlayerPrefs.GetInt(TouchHapticsKey, 1) != 0;
+        TouchHapticsControls = PlayerPrefs.GetInt(TouchHapticsControlsKey, 1) != 0;
         TouchGyroMode = Mathf.Clamp(PlayerPrefs.GetInt(TouchGyroKey, 0), 0, 2);
-        FrontRoomsMobileHaptics.Enabled = TouchHaptics;
+        FrontRoomsMobileHaptics.GameplayEnabled = TouchHaptics;
+        FrontRoomsMobileHaptics.ControlsEnabled = TouchHapticsControls;
     }
 
     /// <summary>The next camera motion step (off, 50 %, 100 %): −1 / +1 stop at the ends, 2 cycles (100 % → off).</summary>
@@ -113,8 +120,15 @@ public static class FrontRoomsSettings
     public static void SetTouchHaptics(bool on)
     {
         TouchHaptics = on;
-        FrontRoomsMobileHaptics.Enabled = on;
+        FrontRoomsMobileHaptics.GameplayEnabled = on;
         Save(TouchHapticsKey, on ? 1 : 0);
+    }
+
+    public static void SetTouchHapticsControls(bool on)
+    {
+        TouchHapticsControls = on;
+        FrontRoomsMobileHaptics.ControlsEnabled = on;
+        Save(TouchHapticsControlsKey, on ? 1 : 0);
     }
 
     public static void StepTouchGyro(int direction)

@@ -466,7 +466,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // then release it so the playing HUD is the only owner of the
             // screen. Without this, SetPhase(Playing) disables the parent
             // immediately and the title appears to pop out instead of fading.
-            if (Application.isMobilePlatform && phase == Phase.Playing && overlay != null)
+            if (FrontRoomsHandheld.Active && phase == Phase.Playing && overlay != null)
                 overlay.SetActive(false);
         }
         AdvanceLogoRelay(dt);
@@ -1547,7 +1547,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         settings.clearColor = false;
         settings.clearDepthStencil = false;
         settings.scaleMode = UiPanelScaleMode.ScaleWithScreenSize;
-        settings.referenceResolution = Application.isMobilePlatform
+        settings.referenceResolution = FrontRoomsHandheld.Active
             ? new Vector2Int(874, 402)
             : new Vector2Int(1920, 1080);
         settings.screenMatchMode = UiPanelScreenMatchMode.MatchWidthOrHeight;
@@ -1567,7 +1567,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         vectorLogoRoot.style.top = UiLength.Percent(50);
         vectorLogoRoot.style.width = 965f; vectorLogoRoot.style.height = 192f;
         vectorLogoRoot.style.marginLeft = -482.5f; vectorLogoRoot.style.marginTop = -96f;
-        var logoScale = Application.isMobilePlatform ? 540f / 965f : LogoScale;
+        var logoScale = FrontRoomsHandheld.Active ? 540f / 965f : LogoScale;
         vectorLogoRoot.style.scale = new UnityEngine.UIElements.Scale(new Vector3(logoScale, logoScale, 1f));
         vectorLogoRoot.style.overflow = UiOverflow.Hidden;
         vectorLogoRoot.pickingMode = UiPickingMode.Ignore;
@@ -1665,7 +1665,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // The mobile canvas owns the eight larger touch preference rows. Keep
         // the legacy desktop text panel as a quiet title/instruction layer so
         // its six keyboard rows do not sit underneath those touch targets.
-        if (Application.isMobilePlatform)
+        if (FrontRoomsHandheld.Active)
         {
             displaySettingsText.text = "<size=30><b>TOUCH SETTINGS</b></size>\n\n<size=16>TAP A ROW TO CHANGE    BACK TO CLOSE</size>";
             return;
@@ -1715,7 +1715,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// <summary>The pause card, following the input settings.</summary>
     string PauseText()
     {
-        if (Application.isMobilePlatform)
+        if (FrontRoomsHandheld.Active)
             return "<size=48>PAUSED</size>\n\n<size=11>MOVE       DRAG · LOOK       SOCKET · SPRINT\nUSE · DOOR       HOLD USE · BREAK GLASS</size>";
         return "<size=88><b>PAUSED</b></size>\n\n<size=13>WASD  MOVE    MOUSE  LOOK    SHIFT  SPRINT    E  DOOR    "
             + (FrontRoomsSettings.TapToBreak ? "TAP E" : "HOLD E") + "  BREAK GLASS\nR  RESTART    O  SETTINGS</size>\n\n<color=#F4DF3B><size=20>ESC  RESUME</size></color>";
@@ -1725,15 +1725,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         if (phase != Phase.Paused || displaySettingsPanel == null) return;
         displaySettingsOpen = !displaySettingsOpen;
-        if (!Application.isMobilePlatform)
+        if (!FrontRoomsHandheld.Active)
             displaySettingsPanel.SetActive(displaySettingsOpen);
         if (overlayText != null)
         {
-            overlayText.enabled = !Application.isMobilePlatform && !displaySettingsOpen;
+            overlayText.enabled = !FrontRoomsHandheld.Active && !displaySettingsOpen;
             // Back on the pause card: its instructions follow the input setting just changed.
             if (!displaySettingsOpen) overlayText.text = PauseText();
         }
-        if (Application.isMobilePlatform)
+        if (FrontRoomsHandheld.Active)
         {
             var showPauseCopy = !displaySettingsOpen;
             if (mobilePauseTitle != null) mobilePauseTitle.gameObject.SetActive(showPauseCopy);
@@ -1757,7 +1757,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (rootRect == null) return;
         rootRect.anchorMin = rootRect.anchorMax = new Vector2(.5f, .5f);
         rootRect.pivot = new Vector2(.5f, .5f);
-        rootRect.anchoredPosition = Application.isMobilePlatform ? new Vector2(0f, 14f) : Vector2.zero;
+        rootRect.anchoredPosition = FrontRoomsHandheld.Active ? new Vector2(0f, 14f) : Vector2.zero;
         rootRect.sizeDelta = new Vector2(texture.width, texture.height);
         logoMotionRoot.localScale = Vector3.one * LogoScale;
 
@@ -1816,7 +1816,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
     void BuildHud()
     {
-        var mobileHud = Application.isMobilePlatform;
+        var mobileHud = FrontRoomsHandheld.Active;
         var g = new GameObject("Minimal HUD"); var c = g.AddComponent<Canvas>(); c.renderMode = RenderMode.ScreenSpaceOverlay; c.pixelPerfect = true;
         hudCanvas = c;
         var scale = g.AddComponent<CanvasScaler>(); scale.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scale.referenceResolution = mobileHud ? new Vector2(874f, 402f) : new Vector2(1920, 1080); scale.matchWidthOrHeight = .5f;
@@ -1952,18 +1952,19 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void ApplyMobileSafeAreaLayout(bool force = false)
     {
-        if (!Application.isMobilePlatform || hudCanvas == null)
+        if (!FrontRoomsHandheld.Active || hudCanvas == null)
             return;
 
-        var area = Screen.safeArea;
-        var screen = new Vector2Int(Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
+        var area = FrontRoomsHandheld.SafeAreaPixels;
+        var screenPixels = FrontRoomsHandheld.ScreenPixels;
+        var screen = new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(screenPixels.x)), Mathf.Max(1, Mathf.RoundToInt(screenPixels.y)));
         if (area.width <= 0f || area.height <= 0f)
             area = new Rect(0f, 0f, screen.x, screen.y);
         if (!force && area == lastMobileHudSafeArea && screen == lastMobileHudScreenSize)
             return;
 
         Canvas.ForceUpdateCanvases();
-        area = Screen.safeArea;
+        area = FrontRoomsHandheld.SafeAreaPixels;
         if (area.width <= 0f || area.height <= 0f)
             area = new Rect(0f, 0f, screen.x, screen.y);
         lastMobileHudSafeArea = area;
@@ -1989,7 +1990,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // hint card. The old 33 pt anchor overlapped that card by design only
         // on the desktop canvas; on the phone it made two dark surfaces share
         // the same pixels and broke the Figma vertical rhythm.
-        var bottomCaption = Mathf.Max(Application.isMobilePlatform ? 99f : 33f, safeMinY);
+        var bottomCaption = Mathf.Max(FrontRoomsHandheld.Active ? 99f : 33f, safeMinY);
         var centerX = Mathf.Clamp(frameWidth * .5f, safeMinX, safeMaxX);
         var centerY = Mathf.Clamp(frameHeight * .5f, safeMinY, safeMaxY);
         var logoCenterY = Mathf.Clamp(frameHeight * .5f + 14f, safeMinY + 54f, safeMaxY - 54f);
@@ -2049,9 +2050,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // Mobile keeps the transparent overlay alive while the authored logo
         // is leaving. This is the only frame in which the title layer and the
         // playing HUD overlap; all title children are non-raycast targets.
-        var keepMobileTitleFade = Application.isMobilePlatform && playing && logoFading;
+        var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
         overlay.SetActive(!playing || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
-        if (overlayImage != null) overlayImage.color = p == Phase.Title || Application.isMobilePlatform
+        if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
             ? new Color(0f, 0f, 0f, 0f)
             : new Color(.93f, .92f, .88f, .98f);
         if (logoImage != null)
@@ -2074,11 +2075,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         Cursor.lockState = playing ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !playing;
         if (overlayText != null)
         {
-            overlayText.enabled = !Application.isMobilePlatform && p != Phase.Title && !displaySettingsOpen;
+            overlayText.enabled = !FrontRoomsHandheld.Active && p != Phase.Title && !displaySettingsOpen;
             if (p == Phase.Title) overlayText.text = "";
             else if (p == Phase.Paused) overlayText.text = PauseText();
         }
-        if (Application.isMobilePlatform)
+        if (FrontRoomsHandheld.Active)
         {
             var showPauseCopy = p == Phase.Paused && !displaySettingsOpen;
             if (mobilePauseTitle != null) mobilePauseTitle.gameObject.SetActive(showPauseCopy);
@@ -2093,7 +2094,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (p == Phase.Caught)
         {
             var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
-            if (Application.isMobilePlatform)
+            if (FrontRoomsHandheld.Active)
             {
                 if (mobileCaughtTitle != null) mobileCaughtTitle.text = "CAUGHT";
                 if (mobileCaughtStats != null) mobileCaughtStats.text = caughtStats;
@@ -2187,9 +2188,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
         if (crosshairImage != null) crosshairImage.enabled = play;
         // The hint card is timed: the first-run hint, then only flashes.
-        var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : elapsed < CalmHintSeconds ? CalmHint : "";
+        var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : elapsed < CalmHintSeconds ? CurrentCalmHint : "";
         contextText.text = play ? hint : "";
-        if (promptText != null) promptText.text = play && prompt != null ? prompt : "";
+        if (promptText != null) promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
         if (holdBar != null)
         {
             holdBar.SetActive(play && holdProgress > 0f);
@@ -2237,10 +2238,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 .Append(FrontRoomsCaptions.Format(lines[i], eye.position, forward)).Append("</color>");
         }
         captionText.text = captionLines.ToString();
-        var captionWidth = Application.isMobilePlatform ? 214f : 920f;
-        var captionHeight = Application.isMobilePlatform ? 20f + 20f * Mathf.Min(lines.Count, 2) : 20f + 28f * lines.Count;
+        var captionWidth = FrontRoomsHandheld.Active ? 214f : 920f;
+        var captionHeight = FrontRoomsHandheld.Active ? 20f + 20f * Mathf.Min(lines.Count, 2) : 20f + 28f * lines.Count;
         ((RectTransform)captionPanel.transform).sizeDelta = new Vector2(captionWidth, captionHeight);
-        captionText.rectTransform.sizeDelta = Application.isMobilePlatform
+        captionText.rectTransform.sizeDelta = FrontRoomsHandheld.Active
             ? new Vector2(captionWidth - 14f, captionHeight - 4f)
             : new Vector2(880f, captionHeight + 60f);
     }
@@ -2316,6 +2317,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         PlayerWinded = PlayerSprinting = false;
         if (phase == Phase.Paused) Paused?.Invoke(false);
         if (map != null) MapRunEnded?.Invoke();
+        OnDestroyMobile();
     }
 
     void End()
