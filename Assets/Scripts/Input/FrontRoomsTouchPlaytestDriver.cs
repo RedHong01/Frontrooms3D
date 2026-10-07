@@ -69,6 +69,16 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     static readonly BindingFlags Any = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static;
 
+    void Awake()
+    {
+        // Game time steps 1/60 per frame (captureDeltaTime) but unscaled time is wall time, which the
+        // slow captures stretch: the touch layer's clock steps with the frames instead.
+        var frame0 = Time.frameCount;
+        var clock0 = Time.unscaledTime;
+        FrontRoomsTouchMotion.EditorStep = Step;
+        FrontRoomsTouchMotion.EditorClock = () => clock0 + (Time.frameCount - frame0) * Step;
+    }
+
     IEnumerator Start()
     {
         outDir = UnityEditor.SessionState.GetString(OutKey, "Verification/touch-playtest");
@@ -82,28 +92,36 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         harnessInputSettings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
         InputSystem.settings = harnessInputSettings;
         screen = InputSystem.AddDevice<Touchscreen>("FrontRooms Playtest Touchscreen");
-        FrontRoomsMobileHaptics.Played += (c, s, i) => haptics.Add(F(Time.unscaledTime - t0) + "," + c + "," + s + "," + F(i));
-        t0 = Time.unscaledTime;
+        FrontRoomsMobileHaptics.Played += OnHaptic;
+        t0 = FrontRoomsTouchMotion.Now;
         Note("profile", FrontRoomsHandheld.ForcedProfile.Name + " " + FrontRoomsHandheld.ScreenPixels + " @" + F(FrontRoomsHandheld.PointScale));
 
-        var scenario = Scenario();
-        while (true)
+        // Nested steps (Tap, Capture, Drag…) run inline on this stack, so an exception anywhere fails the
+        // run with its message instead of stalling a child coroutine until the timeout.
+        var stack = new Stack<IEnumerator>();
+        stack.Push(Scenario());
+        while (stack.Count > 0)
         {
             object current;
             try
             {
-                if (!scenario.MoveNext()) break;
-                current = scenario.Current;
+                var top = stack.Peek();
+                if (!top.MoveNext()) { stack.Pop(); continue; }
+                current = top.Current;
             }
             catch (Exception e)
             {
                 Check("scenario ran without exception", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace.Split('\n')[0]);
                 break;
             }
+            if (current is IEnumerator nested) { stack.Push(nested); continue; }
             yield return current;
         }
         Finish();
     }
+
+    void OnHaptic(FrontRoomsMobileHaptics.Channel channel, FrontRoomsMobileHaptics.Style style, float intensity) =>
+        haptics.Add(F(FrontRoomsTouchMotion.Now - t0) + "," + channel + "," + style + "," + F(intensity));
 
     IEnumerator Scenario()
     {
@@ -127,6 +145,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Capture("02_calm_ghost_stick");
 
         var L = controls.Layout;
+        var spawn = PlayerRoot.position;
+        var spawnYaw = GetFloat("yaw");
         Note("layout", "rest " + V(L.StickRest) + " use " + V(L.UseCenter) + " pause " + V(L.PauseCenter) + " frame " + V(L.Frame));
 
         // ---------------------------------------------------------------- stick
@@ -183,6 +203,43 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         }
         Check("release: stick lets go", !controls.StickTouched, "");
 
+        // --------------------------------------------------------------- winded
+        // Keep the thumb in the socket until the 5 s of stamina run dry: the stick says WINDED, sprint stops
+        // (the desktop's Shift-on-an-empty-bar rule), then comes back by itself once a segment refills.
+        Send(2, origin, InputTouchPhase.Began);
+        yield return Frames(.1f);
+        yield return Drag(2, origin, socket, .15f);
+        var windedAt = -1;
+        for (var i = 0; i < 480 && windedAt < 0; i++)
+        {
+            yield return null;
+            if (FrontRooms3DGame.PlayerWinded) windedAt = i;
+        }
+        Check("winded: the sprint runs dry", windedAt >= 0, windedAt >= 0 ? F(windedAt * Step) + " s more" : "never");
+        for (var i = 0; i < 16; i++)
+        {
+            yield return null;
+            if (i == 0 || i == 5 || i == 10 || i == 15) yield return Capture("07w_winded_f" + i.ToString("00"));
+        }
+        Check("winded: the stick says WINDED and sprint stops", controls.Winded && !FrontRoomsInput.Snapshot.SprintHeld && !FrontRooms3DGame.PlayerSprinting, "winded " + controls.Winded);
+        Check("winded: soft double haptic", haptics.FindAll(h => h.Contains("Controls,Soft")).Count >= 2, "");
+        var recovered = -1;
+        for (var i = 0; i < 300 && recovered < 0; i++)
+        {
+            yield return null;
+            if (!FrontRooms3DGame.PlayerWinded) recovered = i;
+        }
+        Check("winded: breath back after about 2 s", recovered >= 0, recovered >= 0 ? F(recovered * Step) + " s" : "never");
+        // The socket refused the thumb while winded; still held up, it re-arms (150 ms) like a held Shift.
+        yield return Frames(.3f);
+        Check("winded: a thumb still in the socket sprints again", controls.SprintLatched && FrontRoomsInput.Snapshot.SprintHeld, "latched " + controls.SprintLatched);
+        yield return Capture("07x_sprint_again");
+        Send(2, socket, InputTouchPhase.Ended);
+        yield return Frames(.4f);
+        // Back to the spawn point: the long sprint ends against a wall, and the next steps need room to walk.
+        Teleport(spawn, spawnYaw, 0f);
+        yield return Frames(.2f);
+
         // ----------------------------------------------------------------- look
         var yaw0 = GetFloat("yaw");
         yield return Swipe(3, new Vector2(620f, 180f), new Vector2(720f, 180f), .25f);
@@ -208,9 +265,12 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(.4f);
 
         // ------------------------------------------------------------ pause etc
-        yield return TapWithFrames(L.PauseCenter, 6, "08_pause", new[] { 1, 4, 8, 12, 18, 30 });
+        var chipY = new float[40];
+        yield return TapWithFrames(L.PauseCenter, 6, "08_pause", new[] { 1, 4, 8, 12, 18, 30 }, i => chipY[i] = NodeY("Chip RESUME"));
         Check("pause button pauses", Phase() == "Paused", Phase());
         Check("touch layer shows the pause card", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Paused, controls.CurrentMenuState.ToString());
+        // RESUME waits 160 ms, then rises 12 pt over 260 ms: still low at f08, nearly home at f18, home at f30.
+        Check("motion: the chips rise into place", chipY[8] < chipY[18] - .5f && chipY[18] <= chipY[30] + .01f, "f08 " + F(chipY[8]) + " f18 " + F(chipY[18]) + " f30 " + F(chipY[30]));
         yield return ChipTap(FrontRoomsTouchControls.Button.Settings, "09_settings", new[] { 1, 4, 8, 14, 24 });
         Check("SETTINGS opens the settings card", GetBool("displaySettingsOpen") && controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Settings, "");
         yield return Frames(.4f);
@@ -247,8 +307,28 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("RESUME returns to play", Phase() == "Playing", Phase());
         yield return Frames(.4f);
 
+        // -------------------------------------------------------- Android back
+        // The bridge's own queue (as the predictive-back callback fills it): one step back each time.
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        yield return Frames(.1f);
+        Check("back: pauses the run", Phase() == "Paused", Phase());
+        yield return ChipTap(FrontRoomsTouchControls.Button.Settings, null, null);
+        yield return Frames(.3f);
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        yield return Frames(.1f);
+        Check("back: closes settings first", !GetBool("displaySettingsOpen") && Phase() == "Paused", "");
+        yield return ChipTap(FrontRoomsTouchControls.Button.Restart, null, null);
+        yield return Frames(.2f);
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        yield return Frames(.1f);
+        Check("back: cancels the restart question", !controls.RestartConfirmationOpen && Phase() == "Paused", "");
+        FrontRoomsMobileBackBridge.SimulateBackPressed();
+        yield return Frames(.1f);
+        Check("back: resumes", Phase() == "Playing", Phase());
+        yield return Frames(.4f);
+
         // ------------------------------------------------------------- USE: door
-        if (StandAt(col => Describe(col, out var hold) is string d && !hold && d.Contains("OPEN DOOR"), 1.4f, out var door))
+        if (StandAt(MapColliders("doorByCollider"), col => Describe(col, out var hold) is string d && !hold && d.Contains("OPEN DOOR"), 1.4f, out var door))
         {
             for (var i = 0; i < 16; i++)
             {
@@ -266,30 +346,78 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             Check("USE opens the door", after != before, before + " → " + after);
             Check("USE press played a control haptic", haptics.Exists(h => h.Contains("Controls,Rigid")), "");
             yield return Capture("18_door_opened_use_says_shut");
+
+            // Tap the door itself (HIG: tap the object): a quick still touch on the look side, within reach.
+            if (TapPointOn(door, out var onDoor))
+            {
+                var heard = haptics.Count;
+                yield return Tap(onDoor, 15);
+                yield return Frames(1.6f);
+                var shut = Describe(door, out _);
+                Check("tapping the door itself shuts it", shut != null && shut.Contains("OPEN DOOR"), after + " → " + shut);
+                Check("door: the latch is felt as it shuts", haptics.FindIndex(heard, h => h.Contains("Gameplay,Light")) >= 0, string.Join(" | ", haptics.GetRange(heard, haptics.Count - heard)));
+                yield return Capture("18b_door_tapped_shut");
+            }
+            else Check("door leaf on screen to tap", false, "no tap point on " + door.name);
         }
-        else Check("found a door to test USE", false, "no OPEN DOOR within 30 m");
+        else Check("found a door to test USE", false, "no OPEN DOOR on the map");
+
+        // ------------------------------------------------------- USE: locked door
+        // The shipped profile has doorsNeedKeys off, so no door is locked: switch keys on for this step only
+        // (runtime field on this run's map; the profile asset is untouched) and put it back afterwards.
+        var keysField = Map.GetType().GetField("doorsNeedKeys", Any);
+        var keysWere = keysField != null && (bool)keysField.GetValue(Map);
+        if (keysField != null && !keysWere) { keysField.SetValue(Map, true); Note("locked", "doorsNeedKeys forced on for this step"); }
+        if (StandAt(MapColliders("doorByCollider"), col => Describe(col, out var hold) is string d && d.StartsWith("LOCKED"), 1.4f, out var locked))
+        {
+            yield return Frames(.35f);
+            Check("USE says LOCKED", controls.CurrentUsePrompt.Visible && controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Locked, controls.CurrentUsePrompt.Kind.ToString());
+            var heard = haptics.Count;
+            Send(16, L.UseCenter, InputTouchPhase.Began);
+            for (var i = 0; i < 16; i++)
+            {
+                yield return null;
+                if (i == 2 || i == 5 || i == 8 || i == 12) yield return Capture("18c_locked_shake_f" + i.ToString("00"));
+            }
+            Send(16, L.UseCenter, InputTouchPhase.Ended);
+            yield return Frames(.8f);
+            Check("locked: still shut", Describe(locked, out _)?.StartsWith("LOCKED") == true, "");
+            Check("locked: the rattle is felt twice", haptics.GetRange(heard, haptics.Count - heard).FindAll(h => h.Contains("Gameplay,Rigid")).Count >= 2, string.Join(" | ", haptics.GetRange(heard, haptics.Count - heard)));
+        }
+        else Note("locked", "no locked door on the map (skipped)");
+        if (keysField != null && !keysWere) keysField.SetValue(Map, false);
 
         // ------------------------------------------------------------ USE: glass
-        if (StandAt(col => Describe(col, out var hold) != null && hold, .95f, out var pane))
+        // Stand as the desktop autopilot's glass scenario does: 0.9 m in front of the nearest intact pane,
+        // facing it, aimed 1.3 m up (an oblique stand lets the glass shot's step-in swing the aim off the pane).
+        var window = Map.NearestIntactWindowForTools(PlayerRoot.position);
+        if (window != null && window.root != null && window.pane != null)
         {
+            var root = window.root;
+            var feet = root.position - root.forward * .9f;
+            feet.y = PlayerRoot.position.y;
+            Teleport(feet, Quaternion.LookRotation(root.forward, Vector3.up).eulerAngles.y, Mathf.Atan2(FrontRooms.Map.ModuleUnits.PlayerEye - 1.3f, .9f) * Mathf.Rad2Deg);
+            Note("stand", "window " + window.a + "-" + window.b + " at 0.9 m, facing it");
             yield return Frames(.35f);
             Check("USE turns into BREAK on glass", controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Hold, controls.CurrentUsePrompt.Kind.ToString());
             yield return Capture("19_glass_ready");
+            var heard = haptics.Count;
             Send(10, L.UseCenter, InputTouchPhase.Began);
-            var broke = false;
-            for (var i = 0; i < 120 && !broke; i++)
+            var brokeAt = -1;
+            for (var i = 0; i < 150 && brokeAt < 0; i++)
             {
                 yield return null;
                 if (i == 18 || i == 36 || i == 50) yield return Capture("20_glass_hold_f" + i.ToString("000"));
-                broke = pane == null || Describe(pane, out _) == null;
+                if (window.pane == null) brokeAt = i;
             }
             Send(10, L.UseCenter, InputTouchPhase.Ended);
-            Check("holding USE breaks the glass", broke, "");
-            Check("glass: rising buzz and a heavy hit", haptics.Exists(h => h.Contains("Gameplay,Light")) && haptics.Exists(h => h.Contains("Gameplay,Heavy")), "");
+            Check("holding USE breaks the glass", brokeAt >= 0, brokeAt >= 0 ? F(brokeAt * Step) + " s" : "progress " + F(controls.CurrentUsePrompt.Progress));
+            var felt = haptics.GetRange(heard, haptics.Count - heard);
+            Check("glass: rising buzz, two cracks and a heavy hit", felt.Exists(h => h.Contains("Gameplay,Light")) && felt.FindAll(h => h.Contains("Gameplay,Medium")).Count >= 2 && felt.Exists(h => h.Contains("Gameplay,Heavy")), string.Join(" | ", felt.GetRange(Mathf.Max(0, felt.Count - 6), Mathf.Min(6, felt.Count))));
             yield return Frames(.6f);
             yield return Capture("21_glass_broken");
         }
-        else Note("glass", "no pane within 30 m (skipped)");
+        else Note("glass", "no intact window on the map (skipped)");
 
         // ------------------------------------------------------------- caught
         game.GetType().GetMethod("End", Any).Invoke(game, null);
@@ -326,8 +454,10 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return WaitFor(() => Phase() == "Playing", 8f, "second run starts");
         if (aborted) yield break;
         yield return Frames(2f);
-        yield return TapWithFrames(controls.Layout.PauseCenter, 13, "23_reduced_pause", new[] { 1, 4, 8 });
-        Check("reduce motion: the card is in place by 0.13 s (no slide)", Phase() == "Paused", "");
+        var reducedY = new float[40];
+        yield return TapWithFrames(controls.Layout.PauseCenter, 13, "23_reduced_pause", new[] { 1, 4, 8, 30 }, i => reducedY[i] = NodeY("Chip RESUME"));
+        Check("reduce motion: paused", Phase() == "Paused", Phase());
+        Check("reduce motion: the chips fade in place (no rise)", Mathf.Abs(reducedY[4] - reducedY[30]) < .01f && Mathf.Abs(reducedY[8] - reducedY[30]) < .01f, "f04 " + F(reducedY[4]) + " f30 " + F(reducedY[30]));
         FrontRoomsHandheld.EditorReduceMotion = false;
     }
 
@@ -348,18 +478,20 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     }
 
     /// <summary>Stands the player in front of the nearest collider that <paramref name="want"/> accepts, looking at it.</summary>
-    bool StandAt(Func<Collider, bool> want, float distance, out Collider target)
+    bool StandAt(IEnumerable<Collider> candidates, Func<Collider, bool> want, float distance, out Collider target)
     {
         target = null;
         var feet = PlayerRoot.position;
-        var best = float.MaxValue;
-        foreach (var c in Physics.OverlapSphere(feet, 30f, ~0, QueryTriggerInteraction.Ignore))
-        {
-            if (!want(c)) continue;
-            var d = (c.bounds.center - feet).sqrMagnitude;
-            if (d < best) { best = d; target = c; }
-        }
-        if (target == null) return false;
+        var found = new List<Collider>();
+        foreach (var c in candidates) if (c != null && c.enabled && c.gameObject.activeInHierarchy && want(c)) found.Add(c);
+        found.Sort((a, b) => (a.bounds.center - feet).sqrMagnitude.CompareTo((b.bounds.center - feet).sqrMagnitude));
+        for (var n = 0; n < found.Count && n < 40; n++)
+            if (PlaceAt(found[n], distance, feet)) { target = found[n]; return true; }
+        return false;
+    }
+
+    bool PlaceAt(Collider target, float distance, Vector3 feet)
+    {
         var center = target.bounds.center;
         var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
         for (var k = 0; k < 16; k++)
@@ -377,10 +509,66 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             var pitch = Mathf.Atan2(-to.y, new Vector2(to.x, to.z).magnitude) * Mathf.Rad2Deg;
             game.GetType().GetField("yaw", Any).SetValue(game, yaw);
             game.GetType().GetField("pitch", Any).SetValue(game, pitch);
-            Note("stand", target.name + " at " + F(distance) + " m");
+            Note("stand", target.name + " at " + F(distance) + " m, " + F((spot - feet).magnitude) + " m from where the player was");
             return true;
         }
         return false;
+    }
+
+    void Teleport(Vector3 feet, float yaw, float pitch)
+    {
+        var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
+        body.enabled = false;
+        PlayerRoot.position = feet;
+        body.enabled = true;
+        Physics.SyncTransforms();
+        game.GetType().GetField("yaw", Any).SetValue(game, yaw);
+        game.GetType().GetField("pitch", Any).SetValue(game, pitch);
+    }
+
+    /// <summary>The map's own registry of doors or windows (reflection: the harness reads, never changes, it).</summary>
+    IEnumerable<Collider> MapColliders(string field)
+    {
+        var map = Map;
+        var dict = map == null ? null : map.GetType().GetField(field, Any)?.GetValue(map) as IDictionary;
+        var list = new List<Collider>();
+        if (dict != null) foreach (var key in dict.Keys) if (key is Collider c && c != null) list.Add(c);
+        return list;
+    }
+
+    /// <summary>A point (pt) on <paramref name="c"/> in the look zone, clear of USE, whose ray hits it within reach.</summary>
+    bool TapPointOn(Collider c, out Vector2 points)
+    {
+        points = default;
+        var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        var L = controls.Layout;
+        var b = c.bounds;
+        for (var iy = 1; iy <= 3; iy++)
+        for (var ix = 0; ix <= 4; ix++)
+        for (var iz = 0; iz <= 4; iz++)
+        {
+            var w = new Vector3(Mathf.Lerp(b.min.x, b.max.x, ix / 4f), Mathf.Lerp(b.min.y, b.max.y, iy / 4f), Mathf.Lerp(b.min.z, b.max.z, iz / 4f));
+            var v = cam.WorldToViewportPoint(w);
+            if (v.z <= 0f || v.x < .05f || v.x > .95f || v.y < .1f || v.y > .9f) continue;
+            var p = new Vector2(v.x * L.Frame.x, v.y * L.Frame.y);
+            if (!L.InLookZone(p) || FrontRoomsTouchLayout.Contains(L.UseCenter, L.UseHitRadius + 6f, p)) continue;
+            if (!Physics.Raycast(cam.ViewportPointToRay(new Vector3(v.x, v.y, 0f)), out var hit, 2.4f, ~0, QueryTriggerInteraction.Ignore) || hit.collider != c) continue;
+            points = p;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>The y of a touch-layer node, by name (motion checks).</summary>
+    float NodeY(string name)
+    {
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (canvas.name != "Handheld touch UI") continue;
+            foreach (var t in canvas.GetComponentsInChildren<RectTransform>(true))
+                if (t.name == name) return t.anchoredPosition.y;
+        }
+        return float.NaN;
     }
 
     void Send(int id, Vector2 points, InputTouchPhase phase)
@@ -400,7 +588,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return null;
     }
 
-    IEnumerator TapWithFrames(Vector2 p, int id, string prefix, int[] at)
+    IEnumerator TapWithFrames(Vector2 p, int id, string prefix, int[] at, Action<int> onFrame = null)
     {
         Send(id, p, InputTouchPhase.Began);
         yield return null;
@@ -411,6 +599,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         for (var i = 0; i <= last; i++)
         {
             yield return null;
+            onFrame?.Invoke(i);
             if (Array.IndexOf(at, i) >= 0) yield return Capture(prefix + "_f" + i.ToString("00"));
         }
     }
@@ -512,6 +701,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var w = uiTarget.width;
         var h = uiTarget.height;
         var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        if (cam == null) cam = Camera.main;
         var scene = RenderTexture.GetTemporary(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
         var prev = cam.targetTexture;
         cam.targetTexture = scene;
@@ -628,6 +818,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
 
     void RestoreInput()
     {
+        FrontRoomsTouchMotion.EditorClock = null;
+        FrontRoomsMobileHaptics.Played -= OnHaptic;
         if (screen != null && screen.added) InputSystem.RemoveDevice(screen);
         screen = null;
         if (savedInputSettings != null) InputSystem.settings = savedInputSettings;

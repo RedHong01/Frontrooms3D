@@ -296,7 +296,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         if (menuState == state) return;
         menuState = state;
-        menuStateSince = Time.unscaledTime;
+        menuStateSince = FrontRoomsTouchMotion.Now;
         if (state != MenuState.Paused) RestartConfirmationOpen = false;
         if (state == MenuState.Settings) { SettingsScroll = 0f; scrollVelocity = 0f; }
         ClearTouchState();
@@ -372,7 +372,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             if (!SprintLatched)
             {
                 var inSocket = (offset - socket).sqrMagnitude <= L.SocketCatchRadius * L.SocketCatchRadius;
-                SocketArm = inSocket ? Mathf.MoveTowards(SocketArm, 1f, Time.unscaledDeltaTime / SocketDwellSeconds) : 0f;
+                SocketArm = inSocket ? Mathf.MoveTowards(SocketArm, 1f, FrontRoomsTouchMotion.Delta / SocketDwellSeconds) : 0f;
                 if (SocketArm >= 1f) SetSprintLatched(true);
             }
             else if (offset.y <= 0f)
@@ -470,8 +470,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         foreach (var f in fingers.Values) if (f.Role == Role.Scroll) return;
 #endif
         if (Mathf.Abs(scrollVelocity) < 1f) { scrollVelocity = 0f; return; }
-        SettingsScroll = Mathf.Clamp(SettingsScroll + scrollVelocity * Time.unscaledDeltaTime, 0f, SettingsScrollMax);
-        scrollVelocity *= Mathf.Exp(-Time.unscaledDeltaTime / .22f);
+        SettingsScroll = Mathf.Clamp(SettingsScroll + scrollVelocity * FrontRoomsTouchMotion.Delta, 0f, SettingsScrollMax);
+        scrollVelocity *= Mathf.Exp(-FrontRoomsTouchMotion.Delta / .22f);
     }
 
     /// <summary>The touch column's area that scrolls (below its header), in points.</summary>
@@ -591,7 +591,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     {
         foreach (var b in MenuButtons)
         {
-            if (b == Button.TryAgain && Time.unscaledTime - menuStateSince < TryAgainDelay) continue;
+            if (b == Button.TryAgain && FrontRoomsTouchMotion.Now - menuStateSince < TryAgainDelay) continue;
             if (!TryGetChip(b, out var center, out var size)) continue;
             var hit = new Vector2(size.x + 12f, Mathf.Max(FrontRoomsTouchLayout.ChipHitHeight, size.y + 4f));
             if (FrontRoomsTouchLayout.Contains(center, hit, p)) return b;
@@ -660,9 +660,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 
     void Begin(int id, Vector2 p)
     {
-        LastTouchTime = Time.unscaledTime;
+        LastTouchTime = FrontRoomsTouchMotion.Now;
         var L = Layout;
-        var f = new Finger { Start = p, Last = p, StartTime = Time.unscaledTime, Row = -1 };
+        var f = new Finger { Start = p, Last = p, StartTime = FrontRoomsTouchMotion.Now, Row = -1 };
         switch (menuState)
         {
             case MenuState.Title:
@@ -766,7 +766,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 break;
             case Role.Scroll:
                 SettingsScroll = Mathf.Clamp(f.ScrollStart + (p.y - f.Start.y), 0f, SettingsScrollMax);
-                scrollVelocity = Time.unscaledDeltaTime > 0f ? delta.y / Time.unscaledDeltaTime : 0f;
+                scrollVelocity = FrontRoomsTouchMotion.Delta > 0f ? delta.y / FrontRoomsTouchMotion.Delta : 0f;
                 break;
         }
     }
@@ -803,7 +803,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (lookId == id)
                 {
                     lookId = -1;
-                    var quick = Time.unscaledTime - f.StartTime <= TapMaxSeconds;
+                    var quick = FrontRoomsTouchMotion.Now - f.StartTime <= TapMaxSeconds;
                     if (!cancelled && quick && !f.Moved && (p - f.Start).sqrMagnitude <= TapSlop * TapSlop)
                     {
                         var frame = Layout.Frame;
@@ -873,7 +873,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (gyro == null || !gyro.enabled) return;
         var w = gyro.angularVelocity.ReadValue();
         // rad/s about the device axes, landscape: turning the phone left/right is the y axis, tilting it is x.
-        var degrees = new Vector2(-w.y, invertLook ? -w.x : w.x) * Mathf.Rad2Deg * Time.unscaledDeltaTime;
+        var degrees = new Vector2(-w.y, invertLook ? -w.x : w.x) * Mathf.Rad2Deg * FrontRoomsTouchMotion.Delta;
         frameLook += degrees;
     }
 

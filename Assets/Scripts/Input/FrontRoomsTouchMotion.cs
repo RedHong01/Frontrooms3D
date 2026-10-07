@@ -31,8 +31,41 @@ public static class FrontRoomsTouchMotion
         return 1f + (s + 1f) * u * u * u + s * u * u;
     }
 
-    /// <summary>The clock every touch animation reads.</summary>
-    public static float Now => Time.unscaledTime;
+    /// <summary>
+    /// The clock every touch animation, timer and guard reads: unscaled, so menus
+    /// still move while the game is paused.
+    /// </summary>
+    public static float Now
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (EditorClock != null) return EditorClock();
+#endif
+            return Time.unscaledTime;
+        }
+    }
+
+    /// <summary>This frame's step on <see cref="Now"/>.</summary>
+    public static float Delta
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (EditorClock != null) return EditorStep;
+#endif
+            return Time.unscaledDeltaTime;
+        }
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Set by the touch playtest: Time.captureDeltaTime steps game time but not unscaled
+    /// time, so the harness steps this clock with its captured frames instead.
+    /// </summary>
+    public static System.Func<float> EditorClock;
+    public static float EditorStep;
+#endif
 
     /// <summary>
     /// A float that animates from where it is toward a target over a fixed

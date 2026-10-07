@@ -57,7 +57,7 @@ public static class FrontRoomsMobileHaptics
     {
         if (!FrontRoomsHandheld.Active) return;
         if (channel == Channel.Gameplay ? !GameplayEnabled : !ControlsEnabled) return;
-        var now = Time.unscaledTime;
+        var now = FrontRoomsTouchMotion.Now;
         var i = (int)channel;
         if (now - lastPulse[i] < MinimumInterval) return;
         lastPulse[i] = now;
@@ -180,7 +180,7 @@ public static class FrontRoomsMobileHaptics
                 DontDestroyOnLoad(go);
                 instance = go.AddComponent<Runner>();
             }
-            var now = Time.unscaledTime;
+            var now = FrontRoomsTouchMotion.Now;
             foreach (var b in beats) instance.queue.Add((now + Mathf.Max(0f, b.Delay), channel, b));
         }
 
@@ -191,7 +191,7 @@ public static class FrontRoomsMobileHaptics
 
         void Update()
         {
-            var now = Time.unscaledTime;
+            var now = FrontRoomsTouchMotion.Now;
             for (var i = queue.Count - 1; i >= 0; i--)
             {
                 if (queue[i].at > now) continue;

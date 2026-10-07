@@ -2,6 +2,8 @@
 
 Status: DONE, 2026-10-03 17:10 (run 2, "try again"). All work ran in private clones. Nothing under `Frontrooms3D/Assets` was changed. The only files written in the real project are in this folder.
 
+> **Superseded in part (2026-10-07, r6).** §7 ("the contract diff needs no change") is wrong since the map chat's 17:16 window model: see `03_contract_map.md` (contract r6) and `04_promotion.md`. §6 item 2 is corrected in place. The tests were re-run on main `279c144` with the r6 harness (`FrontRoomsWindowTF.r5.cs.txt`; logs in `tf_logs/r6/`).
+
 Inputs: `01_integration.md` (the patch, the facade, the contract diff), `../10_spec.md` §5, §9.4, §11, `../00_map_constraints.md`.
 
 ---
@@ -311,7 +313,7 @@ None of these blocks the landing. Each one has an owner.
 2. **The frames switch LOD later than the spec says, and vanish at 58.5 m** (visual chat: `Assets/Editor/Rendering/FrontRoomsKitImporter.cs:75-76`).
    - The importer sets 0.10 / 0.02 screen height for every kit. For a 1.828 m frame at 76° that is LOD0 → LOD1 at 11.7 m and culled at 58.5 m.
    - The kit JSON asks for `lodDistances` [4, 12, none]. For the frames that means 0.292 / 0.098, and no cull.
-   - The culling matters: the glass slab has no LOD, so past 58.5 m in a long hall a window shows glass with no frame.
+   - ~~The culling matters: the glass slab has no LOD, so past 58.5 m in a long hall a window shows glass with no frame.~~ **Corrected 2026-10-07:** at the shipped `buildRadius` 2 the far plane is `SightDistance` = 2 × 24 − 2 = 46 m (`FrontRoomsMapWorld.cs:71`), so a 58.5 m cull never shows. It could only show if `buildRadius` were raised live to 3 or more. The real cost item was the late LOD0 → LOD1 switch (11.7 m against the spec's 4 m): a triangle and draw item, not a visual bug. Main's importer fix (`663e858`) now gives 4 m and no cull (`04_promotion.md` §2).
 3. **The Level Designer palette offers the window frames as floor furniture** (G4 / map chat).
    - The window and blind JSONs carry `"placement": "Floor"`. So once they are in `Resources/Props/Models`, the palette grows from 54 to 59 kits ("43 floor").
    - Fix either side: G4 writes a non-palette placement for interactables, or `FrontRoomsModuleEditing.PaletteKits` skips kits tagged `interactable`. Doors, locks and keys will need the same.
@@ -326,7 +328,7 @@ None of these blocks the landing. Each one has an owner.
 
 The order stays as in `01` §6: facade → glass G1/G3 → kit FBX + JSON → the `[WINDOW-KIT]` diff (map chat).
 
-- **The contract diff needs no change.** `FrontRoomsMapWorld.window-kit.diff` applies to today's real file (sha `f733a6d11ded`) as of 17:07.
+- ~~**The contract diff needs no change.**~~ **Out of date since 17:16 that day:** the map chat's window model (its own `Window.root`, the breakable hook, `GlassBreakRecord`, the events) broke this diff. Use `03_contract_map.md` (r6).
 - **Before item 3** (kit FBX + JSON): take G4's final build. Fix `placement` in the JSONs (finding 3). Decide the LOD importer change (finding 2).
 - **Do not promote** `Assets/Editor/Audit/FrontRoomsWindowTF.cs` or the other `FrontRoomsWindowLanding*` harnesses. They are clone-only; copies are here as `.cs.txt`.
 

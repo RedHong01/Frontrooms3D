@@ -579,7 +579,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // The hold ring sits outside the thumb, so the progress stays visible under a pressing thumb.
         var hold = visible && prompt.Hold;
         holdTrackAlpha.To(hold ? 1f : 0f, Dur(.12f), Ease.OutCubic);
-        holdShown = Mathf.MoveTowards(holdShown, hold ? prompt.Progress : 0f, Time.unscaledDeltaTime / .06f);
+        holdShown = Mathf.MoveTowards(holdShown, hold ? prompt.Progress : 0f, FrontRoomsTouchMotion.Delta / .06f);
         holdTrack.color = WithAlpha(Paper, .3f * holdTrackAlpha);
         holdArc.color = WithAlpha(Accent, holdTrackAlpha);
         holdArc.fillAmount = holdShown;
@@ -801,7 +801,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var confirm = controls.RestartConfirmationOpen;
         var entered = state != lastState;
         var confirmChanged = confirm != lastConfirm;
-        var now = Time.unscaledTime;
+        var now = FrontRoomsTouchMotion.Now;
 
         // The wash: the desktop pause wash, over the room.
         var washed = state == FrontRoomsTouchControls.MenuState.Paused || state == FrontRoomsTouchControls.MenuState.Settings || state == FrontRoomsTouchControls.MenuState.Caught;
@@ -942,7 +942,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     void StartCaught()
     {
-        caughtStart = Time.unscaledTime;
+        caughtStart = FrontRoomsTouchMotion.Now;
         var stats = controls.Host != null ? controls.Host.CaughtStats : default;
         caughtTargets[0] = stats.Seconds;
         caughtTargets[1] = stats.Zones;

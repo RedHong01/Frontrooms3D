@@ -97,9 +97,12 @@ SCREW_X, SCREW_Y, SCREW_W = 150.0, 145.9, 1.2
 # Artwork (§2.5, §3.3): the packed texture adds one edge row top and bottom.
 TEX_ROWS = 1676
 UV_V0, UV_V1 = 1.0 / TEX_ROWS, (TEX_ROWS - 1.0) / TEX_ROWS
-# Glow-mask bounding box, measured on placard_glow_mask.png (R > 8): sheet
-# x 300.0-407.0 mm, y 56.5-229.0 mm from the top-left.
-LEGEND_BOX = (300.0, 407.0, 56.5, 229.0)
+# Glow-mask bounding box, measured on placard_glow_mask.png (R > 8), sheet mm
+# from the top-left. Art v2 (2026-10-07, md5 c7e22e2f...: the IN POWER FAILURE
+# head, the labels and each swatch's turned or flattened band) spans x 300.33-
+# 410.67, y 90.50-201.83 (px 1802-2464 x 543-1211). v1 (InkShape glyphs) was
+# x 300.0-407.0, y 56.5-229.0. Only the legend_centre anchor reads this.
+LEGEND_BOX = (1802 / 6.0, 2464 / 6.0, 543 / 6.0, 1211 / 6.0)
 # LODs (§2.7): switch distances at lodBias 1, FOV 76; triangle budgets.
 LOD_DISTANCES = (2.0, 6.0, 30.0)
 BUDGET = (1600, 120, 28)

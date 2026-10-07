@@ -2,6 +2,8 @@
 
 Status: DONE, 2026-10-03 12:35. The windows now have real structure, but only in a private clone (`scratchpad/proj_win`). Nothing under `Frontrooms3D/Assets` was changed. The only files written in the real project are in this folder.
 
+> **Superseded in part (2026-10-07, r6).** §2 (the `[WINDOW-KIT]` diff, `FrontRoomsMapWorld.window-kit.diff`, `apply_window_kit.py.txt`) and §6 (promotion) are replaced by `03_contract_map.md` and `04_promotion.md`. The old diff does not apply to main and clashes with the map chat's window model (critic E1). §2.2 was also wrong: the Office kit runs in the room-dress queue under a per-room try/catch, so an unguarded facade call inside `BuildInto` would have dropped a whole chunk on a throw (critic E2). Main now calls the facade outside `Build`'s guard, and contract R1 logs a failure once.
+
 Red: "build the window's real structure, not one pane of glass" (re-raised 2026-10-03: "the windows are still just one pane of glass").
 
 Design inputs: `../06_period_windows.md`; `../10_spec.md` §5, §9.4, §10.4. Binding: `../00_map_constraints.md`.

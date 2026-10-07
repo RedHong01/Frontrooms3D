@@ -263,9 +263,9 @@ def build(kit):
 def build_lods(kit, k, towers, cut):
     """LOD1: 24-point faces with a 2-step edge and 0.5 mm slot insets, a
     coarse strap, box edge and gap; LOD2: the strap as a quad, each face as
-    a device-coloured 6-gon with the shared area-matched dark dot over its
-    slot cluster (outlet_common LOD2_*; round 8), the box edge as an 8-point
-    ring on the dark gap."""
+    a device-coloured 6-gon prism with the shared area-matched dark dot over
+    its slot cluster (outlet_common LOD2_*; rounds 8-9), the box edge as an
+    8-point ring on the dark gap."""
     ni, al, pb, br_ = oc.Mesh(), oc.Mesh(), oc.Mesh(), oc.Mesh()
     k1 = oc.LOD1_ARC_K
     for oz in zs_():
@@ -335,17 +335,21 @@ def build_lods(kit, k, towers, cut):
     ni2, al2, pb2 = oc.Mesh(), oc.Mesh(), oc.Mesh()
     q = al2.ring(oc.rect(0.0, 0.0, STRAP_W, STRAP_L), STRAP_FRONT)
     al2.fill(q)
-    # Round 8: the face 6-gon sits LOD2_DOT_UP below the face top so the dot
-    # lands exactly on it (was a 164 mm^2 dot 0.3 mm proud of the 8.0 limit).
+    # Round 8/9: each face is a 6-gon PRISM (top LOD2_DOT_UP below the face
+    # top, sides down to the strap) with the shared area-matched dark dot on
+    # top. With no plate round it, the bare tower's lit side walls are part of
+    # its read: a flat 6-gon alone measured -21 % on the face (r9m). The box
+    # edge's 1 mm outer wall (sub-pixel beyond 4 m) pays for the sides.
     for oz in zs_():
-        ni2.fill(ni2.ring(oc.lod2_hex(oc.LOD2_FACE_AB, 0.0, oz), FACE_TOP - oc.LOD2_DOT_UP))
+        hx = oc.lod2_hex(oc.LOD2_FACE_AB, 0.0, oz)
+        top = ni2.ring(hx, FACE_TOP - oc.LOD2_DOT_UP)
+        ni2.bridge(ni2.ring(hx, STRAP_FRONT), top)
+        ni2.fill(top)
         pb2.fill(pb2.ring(oc.lod2_hex(oc.LOD2_DOT_AB, 0.0, oz + oc.LOD2_DOT_DZ), FACE_TOP))
     ring8 = [(ohw, -ohh + 3), (ohw, ohh - 3), (ohw - 3, ohh), (-ohw + 3, ohh), (-ohw, ohh - 3), (-ohw, -ohh + 3), (-ohw + 3, -ohh), (ohw - 3, -ohh)]
     o8 = al2.ring(ring8, BOX_FRONT)
     i8 = al2.ring([(x * 0.94, z * 0.96) for x, z in ring8], BOX_FRONT)
     al2.bridge(i8, o8, flip=True)
-    o8w = al2.ring(ring8, 0.0)
-    al2.bridge(o8w, o8)
     pb2.fill(pb2.ring(cut[::6], GAP_H))
     ni2.to_object(kit, "faces LOD2", oc.NI, lods="2")
     al2.to_object(kit, "steel LOD2", oc.AL, lods="2")
