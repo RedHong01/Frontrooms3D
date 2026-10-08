@@ -1,0 +1,18 @@
+import bpy, sys, math
+p = sys.argv[sys.argv.index("--") + 1]
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.import_scene.fbx(filepath=p)
+o = [x for x in bpy.data.objects if x.type == "MESH"][0]
+me = o.data
+ny = max(abs(l.normal[1]) for l in me.loops)   # mesh-local Y = Unity Y = tube axis
+cx = sum(v.co.x for v in me.vertices) / len(me.vertices)
+cz = sum(v.co.z for v in me.vertices) / len(me.vertices)
+print("[emt] axis at local x %.5f z %.5f" % (cx, cz))
+rad = []
+for l in me.loops:
+    v = me.vertices[l.vertex_index].co
+    r = math.hypot(v.x - cx, v.z - cz)
+    n = l.normal
+    rad.append(((v.x - cx) * n.x + (v.z - cz) * n.z) / max(r, 1e-9))
+ys = [v.co.y for v in me.vertices]
+print("[emt] loops %d  max|n.axis| %.2e  min radial dot %.6f  y %.4f..%.4f  rings %d" % (len(me.loops), ny, min(rad), min(ys), max(ys), len(set(round(y, 5) for y in ys))))

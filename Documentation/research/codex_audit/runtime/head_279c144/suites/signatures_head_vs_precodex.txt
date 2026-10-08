@@ -1,0 +1,164 @@
+TOTAL over 20 seeds: renderers 492/500 chunks differ, lights 238/500, colliders 491/500 (chunk only in cx 0, only in base 0)
+seed 7: chunks 25 · differ: renderers 25, lights 13, colliders 25
+seed 1955: chunks 25 · differ: renderers 25, lights 12, colliders 25
+seed 1990: chunks 25 · differ: renderers 24, lights 8, colliders 24
+seed 1993: chunks 25 · differ: renderers 24, lights 14, colliders 24
+seed 2554: chunks 25 · differ: renderers 25, lights 21, colliders 25
+seed 4242: chunks 25 · differ: renderers 25, lights 9, colliders 25
+seed 6502: chunks 25 · differ: renderers 23, lights 14, colliders 23
+seed 8086: chunks 25 · differ: renderers 25, lights 6, colliders 25
+seed 68000: chunks 25 · differ: renderers 25, lights 2, colliders 25
+seed 20261001: chunks 25 · differ: renderers 23, lights 12, colliders 23
+seed 20261002: chunks 25 · differ: renderers 25, lights 17, colliders 25
+seed 20261003: chunks 25 · differ: renderers 25, lights 16, colliders 25
+seed 20261004: chunks 25 · differ: renderers 25, lights 15, colliders 25
+seed 20261005: chunks 25 · differ: renderers 25, lights 17, colliders 25
+seed 20261006: chunks 25 · differ: renderers 25, lights 13, colliders 25
+seed 20261007: chunks 25 · differ: renderers 25, lights 13, colliders 25
+seed 20261008: chunks 25 · differ: renderers 24, lights 9, colliders 24
+seed 20261009: chunks 25 · differ: renderers 25, lights 5, colliders 25
+seed 20261010: chunks 25 · differ: renderers 25, lights 11, colliders 25
+seed 516574485: chunks 25 · differ: renderers 24, lights 11, colliders 23
+
+line-level differences in the first seeds (R renderer, L light, C collider; names with digits folded):
+     934  cx+ R Block # · #.# m/L#_Wallpaper
+          e.g. 20261001_-1_-1.txt: R	Block 1 · 2.4 m/L0_Wallpaper|144/1/-5048477606376892271/216|L0_Wallpaper@FrontRooms/Surface|-13500,1200,-20920|3160,2400,6000|True|On
+          e.g. 20261001_-1_-1.txt: R	Block 12 · 2.4 m/L0_Wallpaper|192/1/-3115712602038658031/288|L0_Wallpaper@FrontRooms/Surface|-21040,1450,-3000|6080,2900,6000|True|On
+     881  base- R Block # · #.# m/L#_Wallpaper
+          e.g. 20261001_-1_-1.txt: R	Block 1 · 2.4 m/L0_Wallpaper|144/1/8810993172278913169/216|L0_Wallpaper@FrontRooms/Surface|-13500,1200,-21000|3160,2400,6160|True|On
+          e.g. 20261001_-1_-1.txt: R	Block 12 · 2.9 m/L0_Wallpaper|288/1/-29316098861253359/432|L0_Wallpaper@FrontRooms/Surface|-21000,1450,-3000|6160,2900,6160|True|On
+     541  cx+ L Fixture (#, #)/Light
+          e.g. 20261001_0_0.txt: L	Fixture (5, 7)/Light|Spot|16500,2840,22800|900,960,1000|5780|10000|16200|None|True
+          e.g. 20261001_0_0.txt: L	Fixture (6, 0)/Light|Spot|19500,2840,1800|900,960,1000|5694|10000|16200|None|True
+     541  cx+ R Fixture (#, #)/Lens
+          e.g. 20261001_0_0.txt: R	Fixture (5, 7)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|16500,2880,22800|600,25,1200|True|Off
+          e.g. 20261001_0_0.txt: R	Fixture (6, 0)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|19500,2880,1800|600,25,1200|True|Off
+     541  base- L Fixture (#, #)/Light
+          e.g. 20261001_0_0.txt: L	Fixture (5, 7)/Light|Spot|16500,2840,22800|1000,960,880|5298|10000|16200|None|True
+          e.g. 20261001_0_0.txt: L	Fixture (6, 0)/Light|Spot|19500,2840,1800|1000,960,880|5220|10000|16200|None|True
+     541  base- R Fixture (#, #)/Lens
+          e.g. 20261001_0_0.txt: R	Fixture (5, 7)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|16500,2880,22800|600,25,1200|True|Off
+          e.g. 20261001_0_0.txt: R	Fixture (6, 0)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|19500,2880,1800|600,25,1200|True|Off
+     441  cx+ L Fixture (-#, #)/Light
+          e.g. 20261001_-1_1.txt: L	Fixture (-1, 15)/Light|Spot|-1500,2840,46800|900,960,1000|1000|10000|16200|None|False
+          e.g. 20261001_-1_2.txt: L	Fixture (-1, 16)/Light|Spot|-1500,2840,49800|900,960,1000|1000|10000|16200|None|False
+     441  cx+ R Fixture (-#, #)/Lens
+          e.g. 20261001_-1_1.txt: R	Fixture (-1, 15)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|-1500,2880,46800|600,25,1200|True|Off
+          e.g. 20261001_-1_2.txt: R	Fixture (-1, 16)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|-1500,2880,49800|600,25,1200|True|Off
+     441  base- L Fixture (-#, #)/Light
+          e.g. 20261001_-1_1.txt: L	Fixture (-1, 15)/Light|Spot|-1500,2840,46800|1000,960,880|1000|10000|16200|None|False
+          e.g. 20261001_-1_2.txt: L	Fixture (-1, 16)/Light|Spot|-1500,2840,49800|1000,960,880|1000|10000|16200|None|False
+     441  base- R Fixture (-#, #)/Lens
+          e.g. 20261001_-1_1.txt: R	Fixture (-1, 15)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|-1500,2880,46800|600,25,1200|True|Off
+          e.g. 20261001_-1_2.txt: R	Fixture (-1, 16)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|-1500,2880,49800|600,25,1200|True|Off
+     357  cx+ L Fixture (-#, -#)/Light
+          e.g. 20261002_-1_-1.txt: L	Fixture (-1, -4)/Light|Spot|-1500,2840,-10200|900,960,1000|1000|10000|16200|None|False
+          e.g. 20261002_-1_-1.txt: L	Fixture (-1, -5)/Light|Spot|-1500,2840,-13200|900,960,1000|1000|10000|16200|None|False
+     357  cx+ R Fixture (-#, -#)/Lens
+          e.g. 20261002_-1_-1.txt: R	Fixture (-1, -4)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|-1500,2880,-10200|600,25,1200|True|Off
+          e.g. 20261002_-1_-1.txt: R	Fixture (-1, -5)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|-1500,2880,-13200|600,25,1200|True|Off
+     357  base- L Fixture (-#, -#)/Light
+          e.g. 20261002_-1_-1.txt: L	Fixture (-1, -4)/Light|Spot|-1500,2840,-10200|1000,960,880|1000|10000|16200|None|False
+          e.g. 20261002_-1_-1.txt: L	Fixture (-1, -5)/Light|Spot|-1500,2840,-13200|1000,960,880|1000|10000|16200|None|False
+     357  base- R Fixture (-#, -#)/Lens
+          e.g. 20261002_-1_-1.txt: R	Fixture (-1, -4)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|-1500,2880,-10200|600,25,1200|True|Off
+          e.g. 20261002_-1_-1.txt: R	Fixture (-1, -5)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|-1500,2880,-13200|600,25,1200|True|Off
+     337  base- R Block # · #.# m/Office_Wall
+          e.g. 20261001_-1_1.txt: R	Block 11 · 2.9 m/Office_Wall|144/1/-7033970650466484719/216|Office_Wall@FrontRooms/Surface|40,1450,39000|80,2900,6160|True|On
+          e.g. 20261001_-1_1.txt: R	Block 14 · 2.9 m/Office_Wall|72/1/-6959912800870411503/108|Office_Wall@FrontRooms/Surface|-7500,1450,48040|3160,2900,80|True|On
+     321  cx+ R Block # · #.# m/Office_Wall
+          e.g. 20261001_-1_1.txt: R	Block 11 · 2.9 m/Office_Wall|144/1/-7482303643587250671/216|Office_Wall@FrontRooms/Surface|40,1450,39040|80,2900,5920|True|On
+          e.g. 20261001_-1_1.txt: R	Block 14 · 2.9 m/Office_Wall|72/1/7838646019839800081/108|Office_Wall@FrontRooms/Surface|-7500,1450,48040|3000,2900,80|True|On
+     207  cx+ L Fixture (#, -#)/Light
+          e.g. 20261001_0_-1.txt: L	Fixture (1, -1)/Light|Spot|4500,2840,-1200|900,960,1000|1000|10000|16200|None|False
+          e.g. 20261001_0_-1.txt: L	Fixture (1, -2)/Light|Spot|4500,2840,-4200|900,960,1000|1000|10000|16200|None|False
+     207  cx+ R Fixture (#, -#)/Lens
+          e.g. 20261001_0_-1.txt: R	Fixture (1, -1)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|4500,2880,-1200|600,25,1200|True|Off
+          e.g. 20261001_0_-1.txt: R	Fixture (1, -2)/Lens|24/1/8666353298571990289/36|Troffer_Lens_Cool@FrontRooms/Surface|4500,2880,-4200|600,25,1200|True|Off
+     207  base- L Fixture (#, -#)/Light
+          e.g. 20261001_0_-1.txt: L	Fixture (1, -1)/Light|Spot|4500,2840,-1200|1000,960,880|1000|10000|16200|None|False
+          e.g. 20261001_0_-1.txt: L	Fixture (1, -2)/Light|Spot|4500,2840,-4200|1000,960,880|1000|10000|16200|None|False
+     207  base- R Fixture (#, -#)/Lens
+          e.g. 20261001_0_-1.txt: R	Fixture (1, -1)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|4500,2880,-1200|600,25,1200|True|Off
+          e.g. 20261001_0_-1.txt: R	Fixture (1, -2)/Lens|24/1/8666353298571990289/36|Troffer_Lens@FrontRooms/Surface|4500,2880,-4200|600,25,1200|True|Off
+      98  cx+ C Collision
+          e.g. 20261001_-1_-1.txt: C	Collision|MeshCollider|False|True|0|-12000,1430,-11960|24160,3260,24080|6792/1/-2320243734765303727/10188
+          e.g. 20261001_-1_-2.txt: C	Collision|MeshCollider|False|True|0|-12000,1430,-36000|24160,3260,24160|7464/1/8174780575554972817/11196
+      98  base- C Collision
+          e.g. 20261001_-1_-1.txt: C	Collision|MeshCollider|False|True|0|-12000,1430,-12000|24160,3260,24160|6216/1/8612931166787263569/9324
+          e.g. 20261001_-1_-2.txt: C	Collision|MeshCollider|False|True|0|-12000,1430,-36000|24160,3260,24160|6480/1/-6380477630562585711/9720
+      72  cx+ R Window (#, #)-(#, #)/Window frame (kit)/Kit_WindowFrame_Wood_LOD#
+          e.g. 20261002_1_0.txt: R	Window (13, 7)-(14, 7)/Window frame (kit)/Kit_WindowFrame_Wood_LOD0|2466/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|42000,1162,22500|242,1828,1600|True|On
+          e.g. 20261002_1_0.txt: R	Window (13, 7)-(14, 7)/Window frame (kit)/Kit_WindowFrame_Wood_LOD1|1582/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|42000,1162,22500|242,1828,1600|True|On
+      54  cx+ R Window (#, -#)-(#, -#)/Window frame (kit)/Kit_WindowFrame_Wood_LOD#
+          e.g. 20261001_0_-2.txt: R	Window (4, -16)-(5, -16)/Window frame (kit)/Kit_WindowFrame_Wood_LOD0|2466/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|15000,1162,-46500|242,1828,1600|True|On
+          e.g. 20261001_0_-2.txt: R	Window (4, -16)-(5, -16)/Window frame (kit)/Kit_WindowFrame_Wood_LOD1|1582/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|15000,1162,-46500|242,1828,1600|True|On
+      50  cx+ R Window (-#, #)-(-#, #)/Window frame (kit)/Kit_WindowFrame_Wood_LOD#
+          e.g. 20261002_-1_0.txt: R	Window (-5, 6)-(-5, 7)/Window frame (kit)/Kit_WindowFrame_Wood_LOD0|2466/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|-13500,1162,21000|1600,1828,242|True|On
+          e.g. 20261002_-1_0.txt: R	Window (-5, 6)-(-5, 7)/Window frame (kit)/Kit_WindowFrame_Wood_LOD1|1582/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|-13500,1162,21000|1600,1828,242|True|On
+      50  cx+ R Window (#, #)-(#, #)/Window pane (#, #)-(#, #)/Window glass
+          e.g. 20261002_1_0.txt: R	Window (13, 7)-(14, 7)/Window pane (13, 7)-(14, 7)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|42000,1175,22500|6,1642,1391|True|Off
+          e.g. 20261002_1_0.txt: R	Window (14, 7)-(15, 7)/Window pane (14, 7)-(15, 7)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|45000,1175,22500|6,1642,1391|True|Off
+      50  cx+ R Window (#, #)-(#, #)/Window pane (#, #)-(#, #)
+          e.g. 20261002_1_0.txt: R	Window (13, 7)-(14, 7)/Window pane (13, 7)-(14, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|42000,1175,22500|30,1650,1400|False|On
+          e.g. 20261002_1_0.txt: R	Window (14, 7)-(15, 7)/Window pane (14, 7)-(15, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|45000,1175,22500|30,1650,1400|False|On
+      50  base- R Window (#, #)-(#, #)/Window pane (#, #)-(#, #)
+          e.g. 20261002_1_0.txt: R	Window (13, 7)-(14, 7)/Window pane (13, 7)-(14, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|42000,1175,22500|30,1650,1400|True|On
+          e.g. 20261002_1_0.txt: R	Window (14, 7)-(15, 7)/Window pane (14, 7)-(15, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|45000,1175,22500|30,1650,1400|True|On
+      40  cx+ R office dressing/Kit_WaterCooler/Kit_WaterCooler_LOD#
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_WaterCooler/Kit_WaterCooler_LOD0|3179/4/-41,669,-21408,1338,381|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_BottleBlue@FrontRooms/Glass|-8748,669,57665|381,1338,408|True|On
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_WaterCooler/Kit_WaterCooler_LOD1|1728/4/-42,670,-21406,1339,381|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_BottleBlue@FrontRooms/Glass|-8748,670,57666|381,1339,406|True|On
+      40  base- R office dressing/Kit_WaterCooler/Kit_WaterCooler_LOD#
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_WaterCooler/Kit_WaterCooler_LOD0|3179/4/-41,669,-21408,1338,381|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_BottleBlue@Universal Render Pipeline/Lit|-8748,669,57665|381,1338,408|True|On
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_WaterCooler/Kit_WaterCooler_LOD1|1728/4/-42,670,-21406,1339,381|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_BottleBlue@Universal Render Pipeline/Lit|-8748,670,57666|381,1339,406|True|On
+      38  cx+ R office dressing/Kit_VendingMachine/Kit_VendingMachine_LOD#
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_VendingMachine/Kit_VendingMachine_LOD0|3786/3/2,915,10910,1830,917|Prop_SteelBlack@FrontRooms/Surface+Prop_Glass@FrontRooms/Glass+Prop_VendingFront@FrontRooms/Surface|-8460,915,58335|917,1830,910|True|On
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_VendingMachine/Kit_VendingMachine_LOD1|2032/3/2,914,10909,1827,917|Prop_SteelBlack@FrontRooms/Surface+Prop_Glass@FrontRooms/Glass+Prop_VendingFront@FrontRooms/Surface|-8460,914,58335|917,1827,909|True|On
+      38  base- R office dressing/Kit_VendingMachine/Kit_VendingMachine_LOD#
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_VendingMachine/Kit_VendingMachine_LOD0|3786/3/2,915,10910,1830,917|Prop_SteelBlack@FrontRooms/Surface+Prop_Glass@Universal Render Pipeline/Lit+Prop_VendingFront@FrontRooms/Surface|-8460,915,58335|917,1830,910|True|On
+          e.g. 20261001_-1_2.txt: R	office dressing/Kit_VendingMachine/Kit_VendingMachine_LOD1|2032/3/2,914,10909,1827,917|Prop_SteelBlack@FrontRooms/Surface+Prop_Glass@Universal Render Pipeline/Lit+Prop_VendingFront@FrontRooms/Surface|-8460,914,58335|917,1827,909|True|On
+      34  cx+ R Window (#, -#)-(#, -#)/Window pane (#, -#)-(#, -#)/Window glass
+          e.g. 20261001_0_-2.txt: R	Window (4, -16)-(5, -16)/Window pane (4, -16)-(5, -16)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|15000,1175,-46500|6,1642,1391|True|Off
+          e.g. 20261001_0_-2.txt: R	Window (5, -16)-(5, -15)/Window pane (5, -16)-(5, -15)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|16500,1175,-45000|1391,1642,6|True|Off
+      34  cx+ R Window (#, -#)-(#, -#)/Window pane (#, -#)-(#, -#)
+          e.g. 20261001_0_-2.txt: R	Window (4, -16)-(5, -16)/Window pane (4, -16)-(5, -16)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|15000,1175,-46500|30,1650,1400|False|On
+          e.g. 20261001_0_-2.txt: R	Window (5, -16)-(5, -15)/Window pane (5, -16)-(5, -15)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|16500,1175,-45000|1400,1650,30|False|On
+      34  base- R Window (#, -#)-(#, -#)/Window pane (#, -#)-(#, -#)
+          e.g. 20261001_0_-2.txt: R	Window (4, -16)-(5, -16)/Window pane (4, -16)-(5, -16)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|15000,1175,-46500|30,1650,1400|True|On
+          e.g. 20261001_0_-2.txt: R	Window (5, -16)-(5, -15)/Window pane (5, -16)-(5, -15)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|16500,1175,-45000|1400,1650,30|True|On
+      32  cx+ R Window (-#, #)-(-#, #)/Window pane (-#, #)-(-#, #)/Window glass
+          e.g. 20261002_-1_0.txt: R	Window (-5, 6)-(-5, 7)/Window pane (-5, 6)-(-5, 7)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|-13500,1175,21000|1391,1642,6|True|Off
+          e.g. 20261002_-1_0.txt: R	Window (-5, 7)-(-4, 7)/Window pane (-5, 7)-(-4, 7)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|-12000,1175,22500|6,1642,1391|True|Off
+      32  cx+ R Window (-#, #)-(-#, #)/Window pane (-#, #)-(-#, #)
+          e.g. 20261002_-1_0.txt: R	Window (-5, 6)-(-5, 7)/Window pane (-5, 6)-(-5, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-13500,1175,21000|1400,1650,30|False|On
+          e.g. 20261002_-1_0.txt: R	Window (-5, 7)-(-4, 7)/Window pane (-5, 7)-(-4, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-12000,1175,22500|30,1650,1400|False|On
+      32  base- R Window (-#, #)-(-#, #)/Window pane (-#, #)-(-#, #)
+          e.g. 20261002_-1_0.txt: R	Window (-5, 6)-(-5, 7)/Window pane (-5, 6)-(-5, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-13500,1175,21000|1400,1650,30|True|On
+          e.g. 20261002_-1_0.txt: R	Window (-5, 7)-(-4, 7)/Window pane (-5, 7)-(-4, 7)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-12000,1175,22500|30,1650,1400|True|On
+      28  cx+ R Window (#, #)-(#, #)/Window frame (kit)/Kit_WindowFrame_Steel_LOD#
+          e.g. 20261002_1_1.txt: R	Window (15, 14)-(15, 15)/Window frame (kit)/Kit_WindowFrame_Steel_LOD0|4304/2/0,1175,01550,1800,210|Prop_SteelBrown@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|46500,1175,45000|1550,1800,210|True|On
+          e.g. 20261002_1_1.txt: R	Window (15, 14)-(15, 15)/Window frame (kit)/Kit_WindowFrame_Steel_LOD1|1638/2/0,1175,01550,1800,210|Prop_SteelBrown@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|46500,1175,45000|1550,1800,210|True|On
+      14  cx+ R Window (-#, #)-(-#, #)/Window frame (kit)/Kit_WindowFrame_Steel_LOD#
+          e.g. 20261002_-2_0.txt: R	Window (-14, 7)-(-14, 8)/Window frame (kit)/Kit_WindowFrame_Steel_LOD0|4304/2/0,1175,01550,1800,210|Prop_SteelBrown@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|-40500,1175,24000|1550,1800,210|True|On
+          e.g. 20261002_-2_0.txt: R	Window (-14, 7)-(-14, 8)/Window frame (kit)/Kit_WindowFrame_Steel_LOD1|1638/2/0,1175,01550,1800,210|Prop_SteelBrown@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|-40500,1175,24000|1550,1800,210|True|On
+      14  cx+ R Window (#, -#)-(#, -#)/Window frame (kit)/Kit_WindowFrame_Steel_LOD#
+          e.g. 20261002_0_-2.txt: R	Window (0, -14)-(1, -14)/Window frame (kit)/Kit_WindowFrame_Steel_LOD0|4304/2/0,1175,01550,1800,210|Prop_SteelBrown@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|3000,1175,-40500|210,1800,1550|True|On
+          e.g. 20261002_0_-2.txt: R	Window (0, -14)-(1, -14)/Window frame (kit)/Kit_WindowFrame_Steel_LOD1|1638/2/0,1175,01550,1800,210|Prop_SteelBrown@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|3000,1175,-40500|210,1800,1550|True|On
+       6  cx+ R Window (-#, -#)-(-#, -#)/Window frame (kit)/Kit_WindowFrame_Wood_LOD#
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-14, -16)/Window frame (kit)/Kit_WindowFrame_Wood_LOD0|2466/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|-42000,1162,-46500|242,1828,1600|True|On
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-14, -16)/Window frame (kit)/Kit_WindowFrame_Wood_LOD1|1582/2/0,1162,01600,1828,242|Prop_WoodWalnut@FrontRooms/Surface+Prop_Rubber@FrontRooms/Surface|-42000,1162,-46500|242,1828,1600|True|On
+       5  cx+ R module props/Kit_WallClock
+          e.g. 20261001_-1_0.txt: R	module props/Kit_WallClock|580/4/0,0,25320,320,50|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_Glass@FrontRooms/Glass|-10500,2100,6135|320,320,50|True|On
+          e.g. 20261001_0_2.txt: R	module props/Kit_WallClock|580/4/0,0,25320,320,50|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_Glass@FrontRooms/Glass|10500,2100,60135|320,320,50|True|On
+       5  base- R module props/Kit_WallClock
+          e.g. 20261001_-1_0.txt: R	module props/Kit_WallClock|580/4/0,0,25320,320,50|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_Glass@Universal Render Pipeline/Lit|-10500,2100,6135|320,320,50|True|On
+          e.g. 20261001_0_2.txt: R	module props/Kit_WallClock|580/4/0,0,25320,320,50|Prop_PlasticBlack@FrontRooms/Surface+Prop_PlasticWhite@FrontRooms/Surface+Prop_PlasticRed@FrontRooms/Surface+Prop_Glass@Universal Render Pipeline/Lit|10500,2100,60135|320,320,50|True|On
+       3  cx+ R Window (-#, -#)-(-#, -#)/Window pane (-#, -#)-(-#, -#)/Window glass
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-14, -16)/Window pane (-15, -16)-(-14, -16)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|-42000,1175,-46500|6,1642,1391|True|Off
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-15, -15)/Window pane (-15, -16)-(-15, -15)/Window glass|24/1/-6368364786532573583/36|Glass_Window@FrontRooms/Glass|-43500,1175,-45000|1391,1642,6|True|Off
+       3  cx+ R Window (-#, -#)-(-#, -#)/Window pane (-#, -#)-(-#, -#)
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-14, -16)/Window pane (-15, -16)-(-14, -16)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-42000,1175,-46500|30,1650,1400|False|On
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-15, -15)/Window pane (-15, -16)-(-15, -15)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-43500,1175,-45000|1400,1650,30|False|On
+       3  base- R Window (-#, -#)-(-#, -#)/Window pane (-#, -#)-(-#, -#)
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-14, -16)/Window pane (-15, -16)-(-14, -16)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-42000,1175,-46500|30,1650,1400|True|On
+          e.g. 20261003_-2_-2.txt: R	Window (-15, -16)-(-15, -15)/Window pane (-15, -16)-(-15, -15)|24/1/-6368364786532573583/36|Map test / glass@Universal Render Pipeline/Lit|-43500,1175,-45000|1400,1650,30|True|On

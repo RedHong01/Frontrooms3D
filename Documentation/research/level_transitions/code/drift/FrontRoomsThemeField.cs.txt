@@ -1,0 +1,221 @@
+using System;
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+/// <summary>
+/// Level transitions · V4 Drift (clone-only pre-render, 2026-10-03; visual-owned).
+///
+/// The theme field: one texel per map cell over the built window. Each texel holds
+/// the signed distance in metres from the cell centre to the nearest cell of the
+/// other theme, minus 1.5, so 0 lies on the shared cell line. Negative in Level 0,
+/// positive in Office, clamped to +-6. Stored as RHalf, bilinear, clamped, and bound
+/// as a global with its mapping, the drift width W and the run seed. FrontRooms/Surface
+/// reads it at each unit's centre (keyword _FR_DRIFT): pOffice = smoothstep(-W, W, s).
+///
+/// The map raises ChunkBuilt / ChunkReleased / MapReleased (the draft contract); this
+/// class listens and rebuilds the texture. The same field and hash run on the CPU for
+/// the map's lining choices and for the stats tools, so CPU and GPU agree.
+/// </summary>
+public static class FrontRoomsThemeField
+{
+    public const float Clamp = 6f;
+    public const float LineOffset = 1.5f;
+    const int SearchCells = 3;
+
+    /// <summary>W in metres (-driftW on the command line; default 4.5).</summary>
+    public static float Width = ArgFloat("-driftW", 4.5f);
+    /// <summary>-noDrift turns the whole variation off (field, shader mix, B0 and linings), to prove the hooks are inert.</summary>
+    public static bool Enabled = !HasArg("-noDrift");
+
+    static readonly int FieldId = Shader.PropertyToID("_FR_ThemeField");
+    static readonly int FieldStId = Shader.PropertyToID("_FR_ThemeFieldST");
+    static readonly int OriginId = Shader.PropertyToID("_FR_MapOrigin");
+    static readonly int WidthId = Shader.PropertyToID("_FR_DriftWidth");
+    static readonly int SeedId = Shader.PropertyToID("_FR_DriftSeed");
+
+    sealed class State
+    {
+        public readonly HashSet<GridCoord> chunks = new HashSet<GridCoord>();
+        public readonly Dictionary<GridCoord, float> cells = new Dictionary<GridCoord, float>();
+        public Texture2D texture;
+        public RectInt window;
+    }
+
+    static readonly Dictionary<FrontRoomsMapWorld, State> states = new Dictionary<FrontRoomsMapWorld, State>();
+    static bool hooked;
+
+#if UNITY_EDITOR
+    [UnityEditor.InitializeOnLoadMethod]
+#endif
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    public static void Hook()
+    {
+        if (hooked) return;
+        hooked = true;
+        FrontRoomsMapWorld.ChunkBuilt += OnChunkBuilt;
+        FrontRoomsMapWorld.ChunkReleased += OnChunkReleased;
+        FrontRoomsMapWorld.MapReleased += OnMapReleased;
+        Shader.SetGlobalFloat(WidthId, 0f);
+    }
+
+    static State StateOf(FrontRoomsMapWorld world)
+    {
+        if (!states.TryGetValue(world, out var s)) states[world] = s = new State();
+        return s;
+    }
+
+    static void OnChunkBuilt(FrontRoomsMapWorld world, GridCoord chunk)
+    {
+        if (!Enabled || world == null) return;
+        var s = StateOf(world);
+        s.chunks.Add(chunk);
+        Rebuild(world, s);
+    }
+
+    static void OnChunkReleased(FrontRoomsMapWorld world, GridCoord chunk)
+    {
+        if (world == null || !states.TryGetValue(world, out var s)) return;
+        s.chunks.Remove(chunk);
+        if (s.chunks.Count > 0) Rebuild(world, s);
+    }
+
+    static void OnMapReleased(FrontRoomsMapWorld world)
+    {
+        if (world == null || !states.TryGetValue(world, out var s)) return;
+        if (s.texture != null) { if (Application.isPlaying) UnityEngine.Object.Destroy(s.texture); else UnityEngine.Object.DestroyImmediate(s.texture); }
+        states.Remove(world);
+        Shader.SetGlobalFloat(WidthId, 0f);
+    }
+
+    /// <summary>Bytes held by the field texture of this map (0 when none).</summary>
+    public static long TextureBytes(FrontRoomsMapWorld world) =>
+        world != null && states.TryGetValue(world, out var s) && s.texture != null ? (long)s.texture.width * s.texture.height * 2 : 0;
+
+    public static RectInt Window(FrontRoomsMapWorld world) => world != null && states.TryGetValue(world, out var s) ? s.window : default;
+
+    static void Rebuild(FrontRoomsMapWorld world, State s)
+    {
+        int x0 = int.MaxValue, y0 = int.MaxValue, x1 = int.MinValue, y1 = int.MinValue;
+        foreach (var c in s.chunks)
+        {
+            x0 = Mathf.Min(x0, c.x); y0 = Mathf.Min(y0, c.y);
+            x1 = Mathf.Max(x1, c.x); y1 = Mathf.Max(y1, c.y);
+        }
+        const int n = MapGrid.ChunkCells;
+        var window = new RectInt(x0 * n, y0 * n, (x1 - x0 + 1) * n, (y1 - y0 + 1) * n);
+        if (s.texture == null || s.texture.width != window.width || s.texture.height != window.height)
+        {
+            if (s.texture != null) { if (Application.isPlaying) UnityEngine.Object.Destroy(s.texture); else UnityEngine.Object.DestroyImmediate(s.texture); }
+            s.texture = new Texture2D(window.width, window.height, TextureFormat.RHalf, false, true)
+            {
+                name = "FrontRooms theme field",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                anisoLevel = 0,
+                hideFlags = HideFlags.DontSave,
+            };
+        }
+        s.window = window;
+        var data = new ushort[window.width * window.height];
+        for (var y = 0; y < window.height; y++)
+        for (var x = 0; x < window.width; x++)
+            data[x + y * window.width] = Mathf.FloatToHalf(CellValue(world, new GridCoord(window.x + x, window.y + y)));
+        s.texture.SetPixelData(data, 0);
+        s.texture.Apply(false, false);
+        Bind(world, s);
+    }
+
+    static void Bind(FrontRoomsMapWorld world, State s)
+    {
+        var cs = MapGrid.CellSize;
+        var w = s.window.width * cs;
+        var h = s.window.height * cs;
+        Shader.SetGlobalTexture(FieldId, s.texture);
+        Shader.SetGlobalVector(FieldStId, new Vector4(1f / w, 1f / h, -s.window.x * cs / w, -s.window.y * cs / h));
+        Shader.SetGlobalVector(OriginId, world.transform.position);
+        Shader.SetGlobalFloat(WidthId, Enabled ? Width : 0f);
+        Shader.SetGlobalFloat(SeedId, SeedFold(world.Seed));
+        Shader.SetGlobalFloat("_FR_DriftDebug", ArgFloat("-driftDebug", 0f));
+    }
+
+    public static int SeedFold(int seed) => (int)(((uint)seed ^ ((uint)seed >> 16)) & 0xFFFFu);
+
+    /// <summary>
+    /// The field value of a cell: metres from its centre to the nearest cell centre of
+    /// the other theme, minus 1.5 (so the bilinear field is 0 on the shared line),
+    /// negative in Level 0. Bounded search (3 cells), clamped to +-6.
+    /// </summary>
+    public static float CellValue(FrontRoomsMapWorld world, GridCoord cell)
+    {
+        var s = StateOf(world);
+        if (s.cells.TryGetValue(cell, out var v)) return v;
+        var own = world.ZoneOf(cell).theme;
+        var best = float.MaxValue;
+        for (var dy = -SearchCells; dy <= SearchCells; dy++)
+        for (var dx = -SearchCells; dx <= SearchCells; dx++)
+        {
+            if (dx == 0 && dy == 0) continue;
+            var d2 = dx * dx + dy * dy;
+            if (d2 >= best) continue;
+            if (world.ZoneOf(new GridCoord(cell.x + dx, cell.y + dy)).theme != own) best = d2;
+        }
+        var dist = best == float.MaxValue ? float.MaxValue : Mathf.Sqrt(best) * MapGrid.CellSize;
+        var m = Mathf.Min(Clamp, dist - LineOffset);
+        v = own == ZoneTheme.Office ? m : -m;
+        s.cells[cell] = v;
+        return v;
+    }
+
+    /// <summary>The field at a map-space point, bilinear between cell centres (as the GPU samples it).</summary>
+    public static float Sample(FrontRoomsMapWorld world, Vector2 mapXZ)
+    {
+        var cs = MapGrid.CellSize;
+        var gx = mapXZ.x / cs - .5f;
+        var gy = mapXZ.y / cs - .5f;
+        var ix = Mathf.FloorToInt(gx);
+        var iy = Mathf.FloorToInt(gy);
+        var fx = gx - ix;
+        var fy = gy - iy;
+        var a = CellValue(world, new GridCoord(ix, iy));
+        var b = CellValue(world, new GridCoord(ix + 1, iy));
+        var c = CellValue(world, new GridCoord(ix, iy + 1));
+        var d = CellValue(world, new GridCoord(ix + 1, iy + 1));
+        return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fy);
+    }
+
+    public static float POffice(float s)
+    {
+        if (Width <= 0f) return s > 0f ? 1f : 0f;
+        var t = Mathf.Clamp01((s + Width) / (2f * Width));
+        return t * t * (3f - 2f * t);
+    }
+
+    /// <summary>The shader's FRHash, bit for bit.</summary>
+    public static uint Hash(uint a, uint b, uint c, uint d)
+    {
+        unchecked
+        {
+            var h = a * 0x8DA6B343u + b * 0xD8163841u + c * 0xCB1AB31Fu + d * 0x165667B1u + 0x9E3779B9u;
+            h ^= h >> 16; h *= 0x7FEB352Du; h ^= h >> 15; h *= 0x846CA68Bu; h ^= h >> 16;
+            return h;
+        }
+    }
+
+    /// <summary>The shader's unit draw in [0, 1).</summary>
+    public static float UnitRand(int ix, int iy, int plane, int axis, int seedFold) =>
+        (Hash(unchecked((uint)ix), unchecked((uint)iy), unchecked((uint)plane), unchecked((uint)axis * 65537u + (uint)seedFold)) >> 8) * (1f / 16777216f);
+
+    /// <summary>The shader's plane id for an axis-aligned face at signed offset d (dot(mapPos, n)).</summary>
+    public static int PlaneId(float d) => Mathf.RoundToInt(d / .04f + .237f);
+
+    static bool HasArg(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
+
+    static float ArgFloat(string name, float fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++)
+            if (args[i] == name && float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)) return v;
+        return fallback;
+    }
+}

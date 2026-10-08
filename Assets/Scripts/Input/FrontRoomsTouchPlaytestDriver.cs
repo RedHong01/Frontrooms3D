@@ -145,6 +145,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Capture("02_calm_ghost_stick");
 
         var L = controls.Layout;
+        HoldRelay();
         Note("layout", "rest " + V(L.StickRest) + " use " + V(L.UseCenter) + " pause " + V(L.PauseCenter) + " frame " + V(L.Frame));
 
         // ---------------------------------------------------------------- stick
@@ -326,7 +327,11 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         Check("back: resumes", Phase() == "Playing", Phase());
         yield return Frames(.4f);
 
-        // ------------------------------------------------------------- USE: door
+        HoldRelay();
+
+        // ------------------------------------------------------------- doors
+        // A shut door faces the player, so the tap lands reliably: tap the door itself to open it (HIG: tap the
+        // object), then USE shuts it again (the verb crossfades) and the latch is felt.
         if (StandAt(MapColliders("doorByCollider"), col => Describe(col, out var hold) is string d && !hold && d.Contains("OPEN DOOR"), 1.4f, out var door))
         {
             for (var i = 0; i < 16; i++)
@@ -335,29 +340,37 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
                 if (i == 1 || i == 4 || i == 8 || i == 15) yield return Capture("15_use_in_f" + i.ToString("00"));
             }
             Check("USE appears on a door", controls.CurrentUsePrompt.Visible && controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Open, controls.CurrentUsePrompt.Kind.ToString());
-            var before = Describe(door, out _);
-            Send(9, L.UseCenter, InputTouchPhase.Began);
-            for (var i = 0; i < 6; i++) { yield return null; if (i == 1 || i == 4) yield return Capture("16_use_press_f" + i.ToString("00")); }
-            Send(9, L.UseCenter, InputTouchPhase.Ended);
-            for (var i = 0; i < 12; i++) { yield return null; if (i == 3 || i == 11) yield return Capture("17_use_release_f" + i.ToString("00")); }
-            yield return Frames(1.2f);
-            var after = Describe(door, out _);
-            Check("USE opens the door", after != before, before + " → " + after);
-            Check("USE press played a control haptic", haptics.Exists(h => h.Contains("Controls,Rigid")), "");
-            yield return Capture("18_door_opened_use_says_shut");
-
-            // Tap the door itself (HIG: tap the object): a quick still touch on the look side, within reach.
             if (TapPointOn(door, out var onDoor))
             {
-                var heard = haptics.Count;
+                var tapped = haptics.Count;
                 yield return Tap(onDoor, 15);
-                yield return Frames(1.6f);
-                var shut = Describe(door, out _);
-                Check("tapping the door itself shuts it", shut != null && shut.Contains("OPEN DOOR"), after + " → " + shut);
-                Check("door: the latch is felt as it shuts", haptics.FindIndex(heard, h => h.Contains("Gameplay,Light")) >= 0, string.Join(" | ", haptics.GetRange(heard, haptics.Count - heard)));
-                yield return Capture("18b_door_tapped_shut");
+                yield return Frames(1.2f);
+                var opened = Describe(door, out _);
+                Check("tapping the door itself opens it", opened != null && opened.Contains("SHUT DOOR"), "now " + opened);
+                Check("a tap on the door plays the USE haptic", haptics.FindIndex(tapped, h => h.Contains("Controls,Rigid")) >= 0, "");
+                yield return Capture("18b_door_tapped_open");
             }
             else Check("door leaf on screen to tap", false, "no tap point on " + door.name);
+
+            // The leaf swung away: stand where it is in reach again, then USE shuts it.
+            if (StandAt(new[] { door }, col => Describe(col, out _) is string d && d.Contains("SHUT DOOR"), 1.2f, out _))
+            {
+                yield return Frames(.35f);
+                Check("USE now says SHUT", controls.CurrentUsePrompt.Visible && controls.CurrentUsePrompt.Kind == FrontRoomsTouchControls.UseKind.Shut, controls.CurrentUsePrompt.Kind.ToString());
+                var before = Describe(door, out _);
+                var heard = haptics.Count;
+                Send(9, L.UseCenter, InputTouchPhase.Began);
+                for (var i = 0; i < 6; i++) { yield return null; if (i == 1 || i == 4) yield return Capture("16_use_press_f" + i.ToString("00")); }
+                Send(9, L.UseCenter, InputTouchPhase.Ended);
+                for (var i = 0; i < 12; i++) { yield return null; if (i == 3 || i == 11) yield return Capture("17_use_release_f" + i.ToString("00")); }
+                yield return Frames(1.6f);
+                var after = Describe(door, out _);
+                Check("USE shuts the door", after != null && after.Contains("OPEN DOOR"), before + " → " + after);
+                Check("USE press played a control haptic", haptics.FindIndex(heard, h => h.Contains("Controls,Rigid")) >= 0, "");
+                Check("door: the latch is felt as it shuts", haptics.FindIndex(heard, h => h.Contains("Gameplay,Light")) >= 0, string.Join(" | ", haptics.GetRange(heard, haptics.Count - heard)));
+                yield return Capture("18_door_shut_use_says_open");
+            }
+            else Check("open door back in reach", false, door.name);
         }
         else Check("found a door to test USE", false, "no OPEN DOOR on the map");
 
@@ -518,6 +531,21 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Keeps the Relay dormant for the touch steps (harness only, a runtime flag on this run's Relay: its Tick
+    /// returns at once). The steps teleport the player around a live map; a chase would cancel the glass shot and
+    /// a catch would end the run halfway (run 9). The caught step calls the game's End() itself.
+    /// </summary>
+    void HoldRelay()
+    {
+        var relay = game.GetType().GetField("relay", Any)?.GetValue(game);
+        if (relay == null) return;
+        var state = relay.GetType().GetProperty("State", Any)?.GetValue(relay)?.ToString();
+        if (state != "Dormant") { Note("relay", "already " + state + " (not held)"); return; }
+        relay.GetType().GetField("caught", Any)?.SetValue(relay, true);
+        Note("relay", "held dormant for the touch steps");
     }
 
     void Teleport(Vector3 feet, float yaw, float pitch)
@@ -707,6 +735,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         var h = uiTarget.height;
         var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
         if (cam == null) cam = Camera.main;
+        if (cam == null) { Check("capture " + name + " has a camera", false, ""); yield break; }
         var scene = RenderTexture.GetTemporary(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
         var prev = cam.targetTexture;
         cam.targetTexture = scene;

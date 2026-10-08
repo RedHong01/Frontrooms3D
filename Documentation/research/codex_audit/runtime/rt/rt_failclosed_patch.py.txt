@@ -1,0 +1,76 @@
+# Codex audit, G14 track (2026-10-07): proposed surgical patch, applied ONLY to a clone for verification.
+#   1. FrontRoomsMetalGlassRTRendererFeature.cs: TracePass.RecordRenderGraph wraps EnsureTargets/SendTargets/BuildFrame
+#      in try/catch. An exception no longer escapes URP's record (which aborts the camera frame and leaves Forward+'s
+#      ZBinningJob uncompleted); RT goes Off for the session instead (design 10 §2.7 "fail closed").
+#   2. FrontRoomsGlassRTSystem.cs: FailClosed(e) (log once, Quality Off for the session); OptIn does nothing in edit mode
+#      (the feature only traces in Play Mode; an edit-mode AddComponent gets saved into scenes).
+# Usage: python3 rt_failclosed_patch.py <unity project root> [--dry-run]
+import sys, os
+
+root = sys.argv[1]
+dry = "--dry-run" in sys.argv
+F = os.path.join(root, "Assets/Scripts/Rendering/FrontRoomsMetalGlassRTRendererFeature.cs")
+S = os.path.join(root, "Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs")
+
+def patch(path, pairs):
+    s = open(path, encoding="utf-8").read()
+    for old, new in pairs:
+        if s.count(old) != 1:
+            raise SystemExit(f"{path}: anchor found {s.count(old)} times, expected 1:\n{old}")
+        s = s.replace(old, new)
+    if not dry:
+        open(path, "w", encoding="utf-8").write(s)
+    print(("would patch " if dry else "patched ") + path)
+
+patch(F, [(
+"""            var quality = FrontRoomsGlassRT.Quality;
+            if (state.EnsureTargets(w, h, quality == FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTSystem.DebugMode != FrontRoomsGlassRTNative.DebugNone))
+                FrontRoomsGlassRTSystem.SendTargets(state);
+
+            var view = cameraData.GetViewMatrix();
+            var gpuProj = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), true);
+            var frame = FrontRoomsGlassRTSystem.BuildFrame(cam, state, w, h, view, gpuProj);
+""",
+"""            var quality = FrontRoomsGlassRT.Quality;
+            var view = cameraData.GetViewMatrix();
+            var gpuProj = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), true);
+            FrontRoomsGlassRTSystem.FrameResult frame;
+            try
+            {
+                if (state.EnsureTargets(w, h, quality == FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTSystem.DebugMode != FrontRoomsGlassRTNative.DebugNone))
+                    FrontRoomsGlassRTSystem.SendTargets(state);
+                frame = FrontRoomsGlassRTSystem.BuildFrame(cam, state, w, h, view, gpuProj);
+            }
+            catch (Exception e)
+            {
+                // Design 10 §2.7, fail closed: an exception escaping URP's record aborts this camera's whole frame
+                // (black screen) and leaves Forward+'s ZBinningJob uncompleted, so every later frame throws too.
+                // RT goes Off for the session instead; EndPass (already enqueued) keeps the keyword off and weight 0.
+                FrontRoomsGlassRTSystem.FailClosed(e);
+                return;
+            }
+""")])
+
+patch(S, [(
+"""    public static void OptIn(Camera camera)
+    {
+        if (camera == null) return;
+""",
+"""    public static void OptIn(Camera camera)
+    {
+        // Edit-mode cameras never trace (the feature needs Play Mode). Adding the component there saves it into the
+        // scene (FrontRoomsScreenAdsDemo.unity), where it is a missing script on every non-macOS editor and player.
+        if (camera == null || !Application.isPlaying) return;
+"""), (
+"""    static bool TryParse(string s, out FrontRoomsGlassRTQuality q)
+""",
+"""    /// <summary>An exception escaped the per-frame RT build: RT is Off for this session (design 10 §2.7, fail closed).</summary>
+    internal static void FailClosed(Exception e)
+    {
+        Debug.LogException(e);
+        Debug.LogError("[FrontRoomsGlassRT] off for this session: " + e.GetType().Name + " while building the RT frame (fail closed, design 10 §2.7)");
+        qualityOverride = FrontRoomsGlassRTQuality.Off;
+    }
+
+    static bool TryParse(string s, out FrontRoomsGlassRTQuality q)
+""")])

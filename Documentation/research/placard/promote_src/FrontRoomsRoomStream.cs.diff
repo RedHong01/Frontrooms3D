@@ -1,0 +1,13 @@
+--- /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Scripts/FrontRoomsRoomStream.cs	2026-10-03 19:11:01
++++ Assets/Scripts/FrontRoomsRoomStream.cs	2026-10-07 16:36:53
+@@ -536,6 +536,10 @@
+         // which take shadows: so do they.
+         foreach (var renderer in terminal.root.GetComponentsInChildren<Renderer>(true))
+             if (renderer.gameObject.name.EndsWith("/ far side", StringComparison.Ordinal)) renderer.receiveShadows = true;
++        // Q16: the evacuation placard goes up on the map side of this door once the run starts
++        // (research/placard/10_spec.md §4.6). The far-side reveal plane is the face it sits on.
++        var roomRoot = terminal.root.transform;
++        FrontRoomsPlacard.Prepare(roomRoot, roomRoot.TransformPoint(0f, 0f, RoomLength), roomRoot.TransformPoint(0f, 0f, RoomLength + DoorWallDepth * .5f + .002f).z);
+     }
+ 
+     /// <summary>

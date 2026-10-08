@@ -45,7 +45,14 @@ All in `images/`. BEFORE = the kit switched off (what the windows were on 2026-1
 | 14 | `r5_L0_A_close_stop_0.3m_insp_rubber_vs_putty.jpg` | Black rubber (main today) vs tan putty (§2.3) |
 | 15 | `r6_OF_B_close_head_0.3m_shadow_diag_sheet.png` | The dash pattern on the steel stop, 5 ways (§3 A7) |
 
-In Figma they are in `FRONTROOMS · VISUAL VERIFICATION LOG` as VL106–VL109 (VL059–VL063 hold the 2026-10-03 run).
+In Figma (`FRONTROOMS · VISUAL VERIFICATION LOG`, 2595:6093; VL059–VL063 hold the 2026-10-03 run):
+
+| VL | Node | Verdict | Images |
+|---|---|---|---|
+| VL106 Windows hold on today's main | 2775:6247 | PASS | `r6_L0_A_front_1.5m_pair`, `r6_OF_A_front_1.5m_pair`, `r6_L0_B_front_1.5m_pair`, `r6_OF_B_front_1.5m_pair` |
+| VL107 Intact glass in Play | 2775:6285 | FAIL | `r6_play_L0_play_intact`, `_broken`, `r6_play_OF_play_intact`, `_broken` |
+| VL108 Shadow ladder on steel stops | 2775:6323 | FINDING | `r6_OF_B_close_head_0.3m_shadow_diag_sheet`, `r6_OF_B_close_head_0.3m_after` |
+| VL109 Putty glazing line on walnut | 2775:6353 | WAIT-RED | `r5_L0_A_close_stop_0.3m_insp_rubber_vs_putty` |
 
 ---
 
@@ -97,7 +104,7 @@ A1 and A7 were measured again on today's frames. The other numbers come from the
 
 | # | What you see | Cause (checked) | Owner | Test before it is called done |
 |---|---|---|---|---|
-| **A1** | The intact glass does not read as glass. At 1.5 m, intact vs broken differs by only **3.2–5.4 luma** (the old milky cube: 10.4–36.6). In the real game at 1 m: **3.2 (W-L0) / 2.8 (W-OF)**, the same as on 2026-10-04 (2.9 / 2.7), even though G14's ray-traced prepass is now in main (VL107) | The only reflection is the zone cube: no box projection, no blending (`FrontRooms_URP.asset`), so lamps and the room are not reflected where they are. G14 now can trace window glass, but it showed no measurable change in our Play frames | visual chat (probe box projection + blending, desktop only), glass track, G14 | intact vs broken ≥ 12 luma at 1.5 m; one lamp-shaped reflection at 1.5 m and at 45°; not milkier than today |
+| **A1** | The intact glass does not read as glass. At 1.5 m, intact vs broken differs by only **3.2–5.4 luma** (the old milky cube: 10.4–36.6). In the real game at 1 m: **2.9 (W-L0) / 2.8 (W-OF)**, the same as on 2026-10-04 (2.9 / 2.7), even though G14's ray-traced prepass is now in main (VL107) | The raster reflection is only the zone cube: no box projection, no blending (`FrontRooms_URP.asset`), so lamps and the room are not reflected where they are. G14 does trace window glass now (codex audit VL116: 3.5 % of a 1.5 m view changes by ≥ 8/255), but too faintly to make the pane read | visual chat (probe box projection + blending, desktop only), glass track, G14 | intact vs broken ≥ 12 luma at 1.5 m; one lamp-shaped reflection at 1.5 m and at 45°; not milkier than today |
 | **A2** | Lamp highlights on the glass are round bloomed discs (`r6_OF_B_close_head_0.3m_pair.jpg`) | The glass shader lights it with the lamps as points; the real lamps are rectangular troffers | glass track | no round disc at 0.3 m |
 | **A3** | The walnut jamb reads as one block: no reveal, the slope rises 2 mm over 55 mm, the back band stands 1 mm | G4 shaped it only to hide the map trims (needs T first) | G4, after T | the reveal reads at 0.3 m and 1.5 m |
 | **A4** | The steel reads as matte black plastic. At 1.5 m it sits at luma 22–33 against the wall at 126–141 (about 4.3 stops darker; real dark-bronze paint would be about 3.3) | `Prop_SteelBrown`: smoothness about 0.43, noise normal reads as hammertone | visual chat (the slot is shared with the key door frame) | smoothness 0.65–0.72, albedo luminance 0.045–0.055, orange-peel normal; door readability harness, then the 0.3 m screw frame without the inspection light |
@@ -139,4 +146,4 @@ Already done in main: the importer fix (frames switch to LOD1 at 4 m and are nev
 | The map chat's own suites | all pass (map 100 / 100, Relay nav 60 / 60, interaction 143, glass shot 20, designer 138, fixtures 28, camera 25, captions 9) |
 | The real game in Play | 26 / 26: prompt, crack, break, rebuild, climb |
 | Room triangle budgets | worst Office room 85,556 / 120,000; worst other 47,126 / 60,000 |
-| Frame rate | 59 fps, p99 17–20 ms with the kit (2026-10-04). **Must be re-measured:** since then the kit's glass also turns on ray tracing in Play, and today's machine was too busy (load 280–660) to measure |
+| Frame rate | 59 fps, p99 17–20 ms with the kit (2026-10-04). **Must be re-measured:** since then the kit's glass also turns on ray tracing in Play. The codex audit measured G14's main-thread cost with a window in view at p50 2.76 ms, p99 8.03 ms per frame (bar 0.3 ms; 0.14 ms with no window in view; VL117). Today's machine was too busy (load 280–860) to measure the whole frame |

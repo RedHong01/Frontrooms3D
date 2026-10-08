@@ -24,6 +24,10 @@ sealed class FrontRoomsPrintImporter : AssetPostprocessor
 
     void OnPreprocessTexture()
     {
+        // The wallpaper print array (FR_Print_*) is built by the visual chat's Q1b builder
+        // (FrontRoomsPrintArray, lands with Q1b); this importer keeps the FR_Ink* sheets only.
+        // Promote this file after Q1b, or it will not compile.
+        if (FrontRoomsPrintArray.IsPrintSheet(assetPath)) return;
         if (!assetPath.StartsWith(Folder) || !assetPath.EndsWith(".png")) return;
         string json = assetPath.Substring(0, assetPath.Length - 4) + ".print.json";
         if (!File.Exists(json))

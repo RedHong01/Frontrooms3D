@@ -54,7 +54,7 @@ Main HEAD is `279c144` (2026-10-04 21:30); the window files below have not chang
 - **G14 (ray tracing).** Verified today in main's `GlassRT/FrontRoomsGlassRTSystem.cs`:
   - it registers only renderers in LOD0 (`InLod0`, line 712, called at 665) and skips disabled ones (line 1011), so the frames do not double (critic E8, A13);
   - it uploads every triangle submesh (`Upload`, lines 268–275) and builds one material block for all slots (`MaterialBlock(mats, …)`, line 679), reading `_BaseMap` for textured materials (lines 491–526), so the walnut and steel will not reflect as white (`_BaseColor` is 1, 1, 1 on both slots);
-  - the prepass is merged, so window glass **can** be traced now. **Still owed by G14:** (a) one RT frame of each member (W-L0, W-OF) against RT off, before its acceptance; our Play frames today show no measurable change from 2026-10-04 (intact vs broken 3.2 / 2.8 luma, then 2.9 / 2.7; `05` §3 A1, VL107), so either the trace adds almost nothing at 1 m or it did not run in batch Play; (b) switch its harnesses from `window.pane`'s renderer to the visible one (`03` §3).
+  - the prepass is merged, so window glass **can** be traced now. **Still owed by G14:** (a) one RT frame of each member (W-L0, W-OF) against RT off, before its acceptance; our Play frames today show no measurable change from 2026-10-04 (intact vs broken 2.9 / 2.8 luma with T, 3.2 / 2.8 without; then 2.9 / 2.7; `05` §3 A1, VL107), although G14 does trace window glass now (codex audit VL116: 3.5 % of a 1.5 m view changes by ≥ 8/255): the RT reflection is too faint to make the pane read; (b) switch its harnesses from `window.pane`'s renderer to the visible one (`03` §3).
 
 ## 4. Cost and the map's §8 acceptance
 
@@ -63,6 +63,7 @@ All in `proj_win` (R1 + R2 + T, importer fix, putty) unless named. Load = `uptim
 | Item | Before the kit | With the kit | Load | Note |
 |---|---|---|---|---|
 | Autopilot 2554: avg fps / p99 | 59.0 / 17.0 ms | **59.0 / 17.3 ms** | 6–8 | 2026-10-04, main `1385738`, before G14's prepass. **Re-run owed** (`03` §6.2) |
+| G14 main thread with a window in view (codex audit VL117, main `279c144`) | 0.14 ms p50 (no window glass in view) | p50 2.76 ms, p99 8.03 ms per traced frame | 500–730 | the kit's `Glass_Window` slab is what G14 traces; bar 0.3 ms p99. G14's budget item, but it lands with the windows |
 | Autopilot 20388: avg fps / p99 | 58.6 / 19.0 ms | **58.9 / 19.8 ms** | 8–25 | same |
 | Chunk build in Play, median / p90 / max | 5.8 / 6.7 / 16.8 ms (2554) | 5.8 / 8.9 / 21.4 ms (2554) | 6–8 | no frame > 50 ms with map work in either kit run |
 | Chunk build (edit mode, 7 runs) | 5.51 / 6.70 / 5.59 ms | 5.83 / 6.88 / 5.77 ms | 18–22 | +0.2–0.3 ms per chunk with 7–9 windows |
@@ -71,7 +72,7 @@ All in `proj_win` (R1 + R2 + T, importer fix, putty) unless named. Load = `uptim
 | Static content per chunk with windows (74 of 250 chunks) | — | median +5 frames, +2 renderers, +7 submeshes, +12,970 LOD0 tris; −4 shadow renderers (T removes the trims' shadows) | — | worst chunk: 12 windows, 5,160 → 38,752 tris |
 | One view, Office 3 m (`OF_A_front_3m`) | 1,453 submeshes, 51.5 k tris | 1,496 submeshes, 92.0 k tris (1 frame LOD0, 43 LOD1) | — | the frames behind walls in the frustum still draw (no occlusion culling) |
 
-Today's timings were taken at load 280–660 and are not used. Per window: W-L0 2,322 tris LOD0 / 1,044 LOD1; W-OF 3,862 / 1,438; 1 renderer, 2 submeshes, casts shadows, no light, no collider.
+Today's timings were taken at load 280–860 and are not used. Per window: W-L0 2,322 tris LOD0 / 1,044 LOD1; W-OF 3,862 / 1,438; 1 renderer, 2 submeshes, casts shadows, no light, no collider.
 
 ## 5. WebGL
 
@@ -88,7 +89,7 @@ Each item has an owner and a test. Details and frames: `05_for_red.md` §3.
 
 | # | Item | Owner | Test before it lands |
 |---|---|---|---|
-| A1 | Intact glass does not read as glass (edit mode 1.5 m: 3.2–5.4 luma with the kit against 10.4–36.6 for the old milky cube; Play 1 m: 3.2 / 2.8 luma) | visual chat (URP asset: probe box projection + blending, desktop only) + glass track + G14 | ≥ 12 luma at 1.5 m; one troffer-shaped reflection at 1.5 m front and 45°; not milkier |
+| A1 | Intact glass does not read as glass (edit mode 1.5 m: 3.2–5.4 luma with the kit against 10.4–36.6 for the old milky cube; Play 1 m: 2.9 / 2.8 luma) | visual chat (URP asset: probe box projection + blending, desktop only) + glass track + G14 | ≥ 12 luma at 1.5 m; one troffer-shaped reflection at 1.5 m front and 45°; not milkier |
 | A2 | Round bloomed lamp highlights on the glass | glass track | no round disc at 0.3 m (`OF_B_close_head`) |
 | A3 | Walnut casing and liner read as one block | G4 (after T) | reveal visible at 0.3 m and 1.5 m |
 | A4 | Pressed steel reads as matte black plastic | visual chat (`Prop_SteelBrown`, shared with the key door frame) | door readability harness (`interactables/05`), then the 0.3 m screw frame without the inspection light |
@@ -103,7 +104,33 @@ Each item has an owner and a test. Details and frames: `05_for_red.md` §3.
 | A13 | RT forward-compatibility | G14 | LOD0-only and all-slot albedo are in G14's code (§3); one RT frame per member owed |
 | A14 | Windows live before the doors | Red | §2 |
 
-## 7. Docs owed by other owners (codex audit, not ours to edit)
+## 7. Docs owed by other owners (codex audit DOC-D4 / F7; outside this workflow's write scope)
 
-- `Documentation/VISUAL_CHAT_TASKS.md` W1.4 / W1.5 / W1.7 rows (DOC-D4, F7): W1.4 should read "PROMOTED BY CODEX 2026-10-03 (r3, untested then); re-tested on main 2026-10-07: PASS; map trims still drawn; contract r6 in `window_landing/03`". W1.7: the kit is live before D1.5. Owner: the visual chat's task file.
-- `LEVEL_MODULE_SPEC.md` "Window" row: the map chat's, with T (`03` §4).
+`Documentation/VISUAL_CHAT_TASKS.md` still says "PROMOTED; runtime acceptance pending" for W1.4 (line 78 today). Exact replacement text for the visual chat:
+- **W1.4 description:** "Promoted to main by Codex 2026-10-03 (the r3 facade plus a direct `DressWindow` call in `RaiseWindowBuilt`). Re-tested on main 2026-10-07 (window landing r6): 411 windows in 10 seeds, gameplay identical to kit off, Play 26 / 26, the map suites pass. The map's trims are still drawn under every frame. Contract r6 (R1 + R2, optional T): `research/interactables/window_landing/03_contract_map.md`; promotion list: `04_promotion.md`; Red's view: `05_for_red.md`."
+- **W1.4 status:** "LIVE (Codex); r6 tested PASS; contract waits for Red's DW confirmation".
+- **W1.5, last sentence:** "Ray tracing (G14) traces the visible slab by its material since `9eddc35`; its look is not accepted yet (codex audit F5b)."
+- **W1.7, append:** "The kit frames have been live in Play since 2026-10-03 19:10 (Codex), before D1.5."
+
+`LEVEL_MODULE_SPEC.md` "Window" row: the map chat's, with T (`03` §4).
+
+## 8. Landing commands (only after Red's OK; each owner runs its own lines)
+
+Dry-run today (17:50) on copies of main's files at HEAD `a5262fb`: every diff below passes `git apply --check`, and the results are byte-identical to the tested clone files.
+
+```zsh
+cd "<Frontrooms3D>"; D=Documentation/research/interactables/window_landing
+# bases (sha256): facade cafa48bd…, RenderSetup cef579cc…, MapWorld a56fc9e1… — stop if any differs and re-run 03 §6
+shasum -a 256 Assets/Scripts/Office/FrontRoomsInteractableKit.Window.cs Assets/Editor/Rendering/FrontRoomsRenderSetup.cs Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+# 1  facade r6 (visual chat)
+git apply --check $D/FrontRoomsInteractableKit.Window.r6.diff && git apply $D/FrontRoomsInteractableKit.Window.r6.diff
+# 3  putty (visual chat, after Red's look call): one SurfaceDef line + the new material and its meta
+git apply --check $D/FrontRoomsRenderSetup.putty.r6.diff && git apply $D/FrontRoomsRenderSetup.putty.r6.diff
+cp $D/Prop_Putty.mat.txt Assets/Resources/Surfaces/Prop_Putty.mat; cp $D/Prop_Putty.mat.meta.txt Assets/Resources/Surfaces/Prop_Putty.mat.meta
+# 4  map R1 + R2 (map chat), then 5 T only if Red says yes
+git apply --check $D/FrontRoomsMapWorld.window-kit.r6.diff && git apply $D/FrontRoomsMapWorld.window-kit.r6.diff
+git apply --check $D/FrontRoomsMapWorld.window-kit.r6-trims.diff && git apply $D/FrontRoomsMapWorld.window-kit.r6-trims.diff
+#    or, if the file has drifted: python3 $D/apply_window_kit_r4.py.txt Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs [--trims] --out <file>, then diff and re-test
+```
+
+Manifest: 3 modified files (`FrontRoomsInteractableKit.Window.cs`, `FrontRoomsRenderSetup.cs`, `FrontRoomsMapWorld.cs`), 2 new files (`Prop_Putty.mat`, `.meta`), no `.meta` GUID changed, no file deleted, no clone harness.

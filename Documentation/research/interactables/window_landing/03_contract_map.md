@@ -15,6 +15,7 @@ This replaces r5 (2026-10-04 08:40). The hunks are the same as r4/r5. r6 re-pins
 ## 0. Short answer
 
 - **Base file:** the CURRENT real `Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs`, re-read at 16:34 today. Main HEAD is `279c144`. The file was last changed in `b5f381f` (2026-10-04 14:04, the Relay director's `PassageRevision` and `OpeningCostBetween`) and has no uncommitted edits: 3,230 lines, sha256 `a56fc9e1985efac67abd68e0aaebf257b5ee2a68361f76b4736600a7e709b093`.
+- **Main moved during the run.** At 17:25 HEAD became `a5262fb` (4 commits since `279c144`: touch and mobile input, docs and research images, the HUD key sprite, 3 Blender modules that are not window modules (placard, outlets), and iCloud conflict copies of FMOD banks). None touches a window file: MapWorld, the facade and `FrontRoomsRenderSetup.cs` are byte-identical (same sha256), so the diffs and the results below hold for `a5262fb` too. The clones also carried main's 16:32 working tree, which equals those commits except 6 touch/mobile input files.
 - **The window code itself is unchanged since r5.** Main's 48 new lines move every window anchor down by 42 lines and add one `TouchPassageRevision()` just before `Kill(window.pane)` (lines 2678 and 2680). They touch nothing the hunks read.
 - **Main already calls the window kit.** Codex added a direct call in `RaiseWindowBuilt` (commit `8ef5b64`, now lines 1342–1343):
   ```csharp
@@ -31,7 +32,7 @@ This replaces r5 (2026-10-04 08:40). The hunks are the same as r4/r5. r6 re-pins
 | **T** | 1253–1262, 1330–1332, 1342–1343 | A window's jamb and head trims are built only when no kit frame was hung | **optional**, Red decides (`05` §2.2) |
 
 - **Apply:** `git apply FrontRoomsMapWorld.window-kit.r6.diff` (R1 + R2), then optionally `git apply FrontRoomsMapWorld.window-kit.r6-trims.diff` (T). Or `…r6-all.diff` for both. `git apply --check` passes on today's file for R1 + R2 alone, for R1 + R2 then T, and for all-in-one. The content-anchored script `apply_window_kit_r4.py.txt` (`--trims` for T) is unchanged and gives byte-identical files (checked today: both outputs `cmp`-equal to the tested clone files).
-- **Tested today, on main `279c144`** (machine load 280–660, so no timing is used from today; see §6.2):
+- **Tested today, on main `279c144`** (machine load 280–860, so no timing is used from today; see §6.2):
 
 | Run | Result |
 |---|---|
@@ -40,7 +41,7 @@ This replaces r5 (2026-10-04 08:40). The hunks are the same as r4/r5. r6 re-pins
 | Kit forced to throw (3 seeds, every window, then every second window), both clones | **PASS 307 / 0** each. 25 / 25 chunks built every time; failing windows keep trims and pane; 1 warning per build |
 | Kit off (the look before the kit), both clones | **PASS 8,847 / 0** (R1 R2) and **8,913 / 0** (R1 R2 T) |
 | Your suites with the kit, both clones | MapVerification 100 / 100 seeds · RelayNav 60 / 60 · Interaction 143 / 0 · GlassShot 20 / 0 · LevelDesigner 138 / 0 · FixtureTick 28 / 0 · CameraRig 25 / 0 · Captions 9 / 0 |
-| Play mode (the real game, seed 4242, run seed 516574485) | **PASS 26 / 0** in R1 + R2 {PLAY_T}: prompt at 1.0 m and not at 1.6 m, crack, drop + rebuild in Play, break, drop + rebuild after the break, climb |
+| Play mode (the real game, seed 4242, run seed 516574485) | **PASS 26 / 0** in R1 + R2 and **26 / 0** in R1 + R2 + T: prompt at 1.0 m and not at 1.6 m, crack, drop + rebuild in Play, break, drop + rebuild after the break, climb |
 | Signatures, today vs r5 (2026-10-04, main `1385738`) | **identical**: both cross-variant comparisons (`tf_logs/r6/compare_r4layout.txt`, `compare_trims_cost.txt`) are byte-identical to r5's. Every ray, sight line, overlap, climb, shell mesh, trim box and per-chunk count is the same as on 2026-10-04 |
 | Autopilot §8 (seeds 2554, 20388) | r5 numbers only (load 6–25, main `1385738`): **PASS**, 59.0 / 58.9 fps, p99 17.3 / 19.8 ms with the kit. **Re-run owed** on a quiet machine, because G14 now traces window glass (§1, §6.2) |
 
@@ -222,7 +223,7 @@ Each writes its JSON under `Verification/`. Today's runs: `tf_logs/r6/suites_kit
 - Frames spawn in the chunk-build frame, not in the room-dress queue. That costs **+0.2 to +0.3 ms per chunk** with 7–9 windows and **0.017 ms per frame** (0.034 ms with the interim slab), measured 2026-10-04 at load 18–22. No chunk build spiked, so we did not move the frames into the dress queue.
 - Per-room LOD0 triangles with frames (10 seeds, a frame counted in both rooms it faces), **re-checked today, unchanged**: worst Office room **85,556 / 120,000**, worst other room **47,126 / 60,000**. 0 rooms over.
 
-**Why it must be re-run.** Since `9eddc35` (2026-10-04 10:05) G14 traces `Glass_Window`. In Play on Mac (quality High/Ultra) every intact window now adds RT receiver pixels, and the "off" runs (the map's own pane material) add none. The r5 kit-vs-off comparison no longer measures what Red plays. Today's machine load was 280–660 (other workflows' Blender renders), far above the 32 limit, so we could not re-run it. **Owed:** the 4 runs above on a quiet machine, plus a third column `kit, -frGlassRT off`, so G14's share is separate from the frames'. Raw r5 data: `autopilot_r5/`.
+**Why it must be re-run.** Since `9eddc35` (2026-10-04 10:05) G14 traces `Glass_Window`. In Play on Mac (quality High/Ultra) every intact window now adds RT receiver pixels, and the "off" runs (the map's own pane material) add none. The r5 kit-vs-off comparison no longer measures what Red plays. The codex audit measured G14's own main-thread cost on main with a window in view: p50 2.76 ms, p99 8.03 ms per traced frame, against 0.14 ms with no window glass in view (VL117, load 500–730). Today's machine load was 280–860 (other workflows' Blender renders), far above the 32 limit, so we could not re-run it. **Owed:** the 4 runs above on a quiet machine, plus a third column `kit, -frGlassRT off`, so G14's share is separate from the frames'. Raw r5 data: `autopilot_r5/`.
 
 ### 6.3 Our window harness (clone only, never promoted)
 

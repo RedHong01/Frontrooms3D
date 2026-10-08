@@ -1,0 +1,285 @@
+// Level transitions · V4 Drift (clone-only pre-render, 2026-10-03). Measurements for the report, separate from the
+// harness (which stays unchanged): -executeMethod FrontRoomsDriftStats.Run -quit -shots <shots.json> -out <dir> [-noDrift]
+//   - within 46 m of each eye: renderers, materials, triangles, lit lights (own count, not the harness's);
+//   - GPU+CPU frame time at each eye, 30 frames with _FR_DRIFT on the six theme materials and 30 with it off
+//     (3 alternating rounds; each frame synchronised with a 1-pixel ReadPixels);
+//   - units switched per chunk (CPU replica of the shader's hash and field), field texture memory, shader variants.
+// It builds through the harness's own private methods (reflection), so scene, camera, post and lamps match the shots.
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsDriftStats
+{
+    [Serializable] class ShotFile { public Shot[] shots; }
+    [Serializable] class Shot { public string id; public int seed; public float[] eyeMap; public float yaw, pitch, fov; public int[] openDoors; }
+
+    const BindingFlags SF = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    const BindingFlags IF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+    static readonly string[] Themed = { "L0_Wallpaper", "L0_Carpet", "L0_Ceiling", "Office_Wall", "Office_Carpet", "Office_Ceiling" };
+    static readonly StringBuilder log = new StringBuilder();
+
+    static void Log(string s) { log.AppendLine(s); Debug.Log("[DriftStats] " + s); }
+
+    static string Arg(string name, string fallback)
+    {
+        var a = Environment.GetCommandLineArgs();
+        for (var i = 0; i < a.Length - 1; i++) if (a[i] == name) return a[i + 1];
+        return fallback;
+    }
+
+    static MethodInfo M(string n) => typeof(FrontRoomsTransitionAudit).GetMethod(n, SF) ?? throw new Exception("harness method " + n);
+
+    public static void Run()
+    {
+        var code = 0;
+        var outDir = Arg("-out", "Verification/drift_stats");
+        Directory.CreateDirectory(outDir);
+        var tag = FrontRoomsThemeField.Enabled ? "drift_w" + FrontRoomsThemeField.Width.ToString("0.#", IC) : "nodrift";
+        try
+        {
+            var file = JsonUtility.FromJson<ShotFile>(File.ReadAllText(Arg("-shots", null)));
+            M("OpenScene").Invoke(null, null);
+            Variants();
+            var mats = Themed.Select(n => AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Surfaces/" + n + ".mat")).ToArray();
+            var chunkStats = new Dictionary<GridCoord, int[]>();
+            foreach (var s in file.shots)
+            {
+                var eyeMap = new Vector3(s.eyeMap[0], s.eyeMap[1], s.eyeMap[2]);
+                var feet = new Vector3(eyeMap.x, 0f, eyeMap.z);
+                var built = M("Build").Invoke(null, new object[] { s.seed, feet });
+                try
+                {
+                    var world = (FrontRoomsMapWorld)built.GetType().GetField("world", IF).GetValue(built);
+                    if (s.openDoors != null)
+                        for (var i = 0; i + 3 < s.openDoors.Length; i += 4)
+                            M("OpenDoor").Invoke(null, new object[] { built, new GridCoord(s.openDoors[i], s.openDoors[i + 1]), new GridCoord(s.openDoors[i + 2], s.openDoors[i + 3]) });
+                    M("StandAt").Invoke(null, new object[] { built, feet });
+                    var root = world.transform.position;
+                    var eyeWorld = root + eyeMap;
+                    Count(s.id, eyeWorld, world);
+                    Log(s.id + " field texture " + FrontRoomsThemeField.TextureBytes(world) + " B, window " + FrontRoomsThemeField.Window(world));
+                    if (FrontRoomsThemeField.Enabled) Units(world, chunkStats);
+                    if (Array.IndexOf(Environment.GetCommandLineArgs(), "-noTiming") < 0) Timing(s, eyeWorld, world, mats);
+                }
+                finally { M("Release").Invoke(null, new object[] { built }); }
+            }
+            if (chunkStats.Count > 0)
+            {
+                int n = chunkStats.Count, withAny = 0;
+                long f = 0, c = 0, w = 0, ft = 0, ct = 0, wt = 0;
+                foreach (var v in chunkStats.Values) { f += v[0]; c += v[1]; w += v[2]; ft += v[3]; ct += v[4]; wt += v[5]; if (v[0] + v[1] + v[2] > 0) withAny++; }
+                Log("units switched over " + n + " distinct chunks (" + withAny + " with any): floor squares " + F(f / (double)n) + " of " + F(ft / (double)n)
+                    + ", ceiling tiles " + F(c / (double)n) + " of " + F(ct / (double)n) + ", wall drops " + F(w / (double)n) + " of " + F(wt / (double)n) + " per chunk"
+                    + "; per chunk with any: floor " + F(f / (double)Math.Max(1, withAny)) + ", ceiling " + F(c / (double)Math.Max(1, withAny)) + ", walls " + F(w / (double)Math.Max(1, withAny)));
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); code = 1; }
+        File.WriteAllText(Path.Combine(outDir, "stats_" + tag + ".txt"), log.ToString());
+        EditorApplication.Exit(code);
+    }
+
+    static string F(double v) => v.ToString("0.0", IC);
+
+    static void Variants()
+    {
+        var shader = Shader.Find("FrontRooms/Surface");
+        if (shader == null) { Log("shader FrontRooms/Surface not found"); return; }
+        var su = typeof(ShaderUtil);
+        foreach (var name in new[] { "GetVariantCount", "GetComboCount" })
+        {
+            var m = su.GetMethod(name, SF);
+            if (m == null) continue;
+            try
+            {
+                var ps = m.GetParameters();
+                var args = ps.Length == 2 ? new object[] { shader, false } : new object[] { shader };
+                Log("ShaderUtil." + name + "(FrontRooms/Surface" + (ps.Length == 2 ? ", all" : "") + ") = " + m.Invoke(null, args));
+                if (ps.Length == 2) Log("ShaderUtil." + name + "(FrontRooms/Surface, used by scene) = " + m.Invoke(null, new object[] { shader, true }));
+            }
+            catch (Exception e) { Log(name + " failed: " + e.GetType().Name); }
+        }
+        Log("local keywords on FrontRooms/Surface: " + string.Join(", ", shader.keywordSpace.keywordNames));
+    }
+
+    static void Count(string id, Vector3 eye, FrontRoomsMapWorld world)
+    {
+        const float R = 46f;
+        int renderers = 0, submeshes = 0, lit = 0, shadowed = 0;
+        long tris = 0;
+        var materials = new HashSet<Material>();
+        int themed = 0, linings = 0;
+        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+            if (r.bounds.SqrDistance(eye) > R * R) continue;
+            Mesh mesh = null;
+            if (r is MeshRenderer) mesh = r.GetComponent<MeshFilter>()?.sharedMesh;
+            else if (r is SkinnedMeshRenderer smr) mesh = smr.sharedMesh;
+            else continue;
+            renderers++;
+            foreach (var m in r.sharedMaterials) if (m != null) { materials.Add(m); if (Themed.Contains(m.name)) themed++; if (m.name.EndsWith("_Lining")) linings++; }
+            if (mesh != null)
+                for (var sm = 0; sm < mesh.subMeshCount; sm++) { tris += mesh.GetIndexCount(sm) / 3; submeshes++; }
+        }
+        foreach (var l in Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (!l.enabled || l.intensity <= 0f || l.type == LightType.Directional) continue;
+            if ((l.transform.position - eye).sqrMagnitude > R * R) continue;
+            lit++;
+            if (l.shadows != LightShadows.None) shadowed++;
+        }
+        Log(id + " within 46 m: renderers " + renderers + " (theme-material slots " + themed + ", lining slots " + linings + "), submeshes " + submeshes
+            + ", materials " + materials.Count + ", triangles " + tris + ", lit lights " + lit + " (shadowed " + shadowed + ")");
+    }
+
+    static void Timing(Shot s, Vector3 eyeWorld, FrontRoomsMapWorld world, Material[] mats)
+    {
+        var cam = (Camera)M("SceneCamera").Invoke(null, null);
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+        rt.Create();
+        var px = new Texture2D(1, 1, TextureFormat.RGB24, false);
+        var t = cam.transform;
+        var keep = (t.position, t.rotation, cam.fieldOfView, cam.nearClipPlane, cam.farClipPlane, cam.targetTexture);
+        t.SetPositionAndRotation(eyeWorld, Quaternion.Euler(s.pitch, s.yaw, 0f));
+        cam.fieldOfView = s.fov > 1f ? s.fov : 76f;
+        cam.nearClipPlane = .06f;
+        cam.farClipPlane = world.SightDistance;
+        cam.targetTexture = rt;
+        double Frames(int n)
+        {
+            var w = Stopwatch.StartNew();
+            for (var i = 0; i < n; i++)
+            {
+                cam.Render();
+                var a = RenderTexture.active;
+                RenderTexture.active = rt;
+                px.ReadPixels(new Rect(0, 0, 1, 1), 0, 0, false);
+                RenderTexture.active = a;
+            }
+            return w.Elapsed.TotalMilliseconds / n;
+        }
+        void Drift(bool on)
+        {
+            foreach (var m in mats) if (on) m.EnableKeyword("_FR_DRIFT"); else m.DisableKeyword("_FR_DRIFT");
+        }
+        var hadDrift = mats.All(m => m.IsKeywordEnabled("_FR_DRIFT"));
+        // Paired, interleaved rounds (ABBA order), so slow changes in machine load cancel in each pair.
+        var rounds = int.Parse(Arg("-rounds", "24"), IC);
+        var per = int.Parse(Arg("-frames", "10"), IC);
+        var on = new List<double>();
+        var off = new List<double>();
+        var deltas = new List<double>();
+        Drift(true); Frames(5); Drift(false); Frames(5);
+        for (var round = 0; round < rounds; round++)
+        {
+            double a, b;
+            if ((round & 1) == 0) { Drift(true); a = Frames(per); Drift(false); b = Frames(per); }
+            else { Drift(false); b = Frames(per); Drift(true); a = Frames(per); }
+            on.Add(a); off.Add(b); deltas.Add(a - b);
+        }
+        Drift(hadDrift);
+        foreach (var m in mats) EditorUtility.ClearDirty(m);
+        double Med(List<double> v) { var c = v.OrderBy(x => x).ToList(); return c.Count % 2 == 1 ? c[c.Count / 2] : (c[c.Count / 2 - 1] + c[c.Count / 2]) * .5; }
+        var md = Med(deltas);
+        var mad = Med(deltas.Select(x => Math.Abs(x - md)).ToList());
+        Log(s.id + " frame ms (render + 1-px sync, 1920x1080 4x MSAA, " + rounds + " paired rounds x " + per + " frames, ABBA): with _FR_DRIFT median " + Med(on).ToString("0.00", IC)
+            + " min " + on.Min().ToString("0.00", IC) + " · without median " + Med(off).ToString("0.00", IC) + " min " + off.Min().ToString("0.00", IC)
+            + " · paired delta median " + md.ToString("+0.00;-0.00", IC) + " ms (MAD " + mad.ToString("0.00", IC) + ", " + deltas.Count(x => x > 0) + "/" + deltas.Count + " rounds slower with drift)");
+        cam.targetTexture = keep.Item6;
+        t.SetPositionAndRotation(keep.Item1, keep.Item2);
+        cam.fieldOfView = keep.Item3; cam.nearClipPlane = keep.Item4; cam.farClipPlane = keep.Item5;
+        rt.Release();
+        Object.DestroyImmediate(rt);
+        Object.DestroyImmediate(px);
+    }
+
+    // ---------- units switched: CPU replica of FrontRooms/Surface's drift ----------
+    static void Units(FrontRoomsMapWorld world, Dictionary<GridCoord, int[]> into)
+    {
+        var seed = FrontRoomsThemeField.SeedFold(world.Seed);
+        var window = FrontRoomsThemeField.Window(world);
+        const int n = MapGrid.ChunkCells;
+        for (var cy = window.y / n; cy < (window.y + window.height) / n; cy++)
+        for (var cx = window.x / n; cx < (window.x + window.width) / n; cx++)
+        {
+            var chunk = new GridCoord(cx, cy);
+            if (into.ContainsKey(chunk)) continue;
+            var v = new int[6];
+            for (var j = 0; j < n; j++)
+            for (var i = 0; i < n; i++)
+            {
+                var cell = new GridCoord(cx * n + i, cy * n + j);
+                var zone = world.ZoneOf(cell);
+                var office = zone.theme == ZoneTheme.Office;
+                // floor: 0.6 m squares, 5 x 5 per cell
+                for (var b = 0; b < 5; b++)
+                for (var a = 0; a < 5; a++)
+                {
+                    int ix = cell.x * 5 + a, iz = cell.y * 5 + b;
+                    v[3]++;
+                    if (Office(world, ix, iz, 0, 4, new Vector2((ix + .5f) * .6f, (iz + .5f) * .6f), seed) != office) v[0]++;
+                }
+                // ceiling: 0.6 x 1.2 m tiles whose centre lies in the cell
+                var h = MapGrid.CeilingHeight(zone.height);
+                var plane = FrontRoomsThemeField.PlaneId(-h);
+                for (var iz = Mathf.FloorToInt(cell.y * 3f / 1.2f) - 1; iz <= Mathf.FloorToInt((cell.y + 1) * 3f / 1.2f) + 1; iz++)
+                {
+                    var zc = (iz + .5f) * 1.2f;
+                    if (zc < cell.y * 3f || zc >= (cell.y + 1) * 3f) continue;
+                    for (var a = 0; a < 5; a++)
+                    {
+                        var ix = cell.x * 5 + a;
+                        v[4]++;
+                        if (Office(world, ix, iz, plane, 5, new Vector2((ix + .5f) * .6f, zc), seed) != office) v[1]++;
+                    }
+                }
+                // walls: the drops on both faces of the east and north edges (openings included)
+                foreach (var east in new[] { true, false })
+                {
+                    var other = east ? new GridCoord(cell.x + 1, cell.y) : new GridCoord(cell.x, cell.y + 1);
+                    if (world.Cache.Edge(cell, other) == EdgeKind.Open) continue;
+                    var otherOffice = world.ZoneOf(other).theme == ZoneTheme.Office;
+                    var line = east ? (cell.x + 1) * 3f : (cell.y + 1) * 3f;
+                    foreach (var side in new[] { -1f, 1f })
+                    {
+                        var faceOffice = side < 0f ? office : otherOffice;
+                        var n3 = east ? new Vector3(side, 0f, 0f) : new Vector3(0f, 0f, side);
+                        var t3 = Vector3.Cross(Vector3.up, n3).normalized;
+                        var facePos = line + side * ModuleUnits.WallHalf;
+                        var p = FrontRoomsThemeField.PlaneId(side * facePos);
+                        var axis = east ? (side > 0f ? 0 : 1) : (side > 0f ? 2 : 3);
+                        for (var d = 0; d < 4; d++)
+                        {
+                            var along = (east ? cell.y : cell.x) * 3f + (d + .5f) * .75f;
+                            var pos = east ? new Vector3(facePos, 0f, along) : new Vector3(along, 0f, facePos);
+                            var u = Vector3.Dot(pos, t3);
+                            var di = Mathf.FloorToInt(u / .75f);
+                            var centre = pos + t3 * ((di + .5f) * .75f - u);
+                            v[5]++;
+                            if (Office(world, di, 0, p, axis, new Vector2(centre.x, centre.z), seed) != faceOffice) v[2]++;
+                        }
+                    }
+                }
+            }
+            into[chunk] = v;
+        }
+    }
+
+    static bool Office(FrontRoomsMapWorld world, int ix, int iz, int plane, int axis, Vector2 centre, int seed)
+    {
+        var p = FrontRoomsThemeField.POffice(FrontRoomsThemeField.Sample(world, centre));
+        return FrontRoomsThemeField.UnitRand(ix, iz, plane, axis, seed) < p;
+    }
+}

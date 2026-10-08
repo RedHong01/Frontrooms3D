@@ -1,0 +1,211 @@
+--- a/Assets/Resources/Rendering/FrontRoomsSurface.shader (drift)
++++ b/Assets/Resources/Rendering/FrontRoomsSurface.shader (drift + patch option)
+@@ -226,6 +226,9 @@
+             float4 _FR_MapOrigin;
+             float _FR_DriftWidth;
+             float _FR_DriftSeed;
++            // Patch option (-driftPatch; 0 = one draw per unit, as briefed): units are grouped the way real
++            // repairs come, so a 50/50 mix reads as patches, not a checkerboard.
++            float _FR_DriftPatch;
+             // #define FR_DRIFT_DEBUG 1   // unit map for diagnostics (needs the global _FR_DriftDebug > 0)
+         #ifdef FR_DRIFT_DEBUG
+             float _FR_DriftDebug;
+@@ -254,8 +257,58 @@
+                 float p = smoothstep(-_FR_DriftWidth, _FR_DriftWidth, s);
+                 uint h = FRHash((uint)idx.x, (uint)idx.y, (uint)plane, (uint)axis * 65537u + (uint)_FR_DriftSeed);
+                 return ((float)(h >> 8) * (1.0 / 16777216.0)) < p ? 1.0 : 0.0;
++            }
++
++            // ---- Patch option (floors and ceilings only; paper drops keep one draw per drop). Every patch
++            // edge is still a unit joint; one draw per patch, made at the patch's centre, with the patch's
++            // first unit as its id (a 1-unit patch draws exactly as a unit does without the option).
++            int FRFloorDiv(int a, int b) { return (int)floor((float)a / (float)b); }
++
++            // Floors and ceilings: 5 x 5 unit blocks in brick bond (rows start 2 units off the cell lines,
++            // each row shifted 1-4 units, so no block edge follows a cell line), each cut by a guillotine
++            // (up to 4 levels) into rectangles of 1-9 units, like cut-in carpet patches and re-laid tiles.
++            void FRPatchRect(int2 idx, int plane, int axis, out int2 id, out float2 centre)
++            {
++                int by = FRFloorDiv(idx.y - 2, 5);
++                int off = 1 + (int)(FRHash((uint)by, 0x5EEDu, (uint)plane, (uint)axis * 65537u + (uint)_FR_DriftSeed) % 4u);
++                int bx = FRFloorDiv(idx.x - off, 5);
++                int2 org = int2(bx * 5 + off, by * 5 + 2);
++                int2 l = idx - org;
++                int2 lo = int2(0, 0), hi = int2(5, 5);
++                bool done = false;
++                [unroll] for (int lev = 0; lev < 4; lev++)
++                {
++                    int2 sz = hi - lo;
++                    int area = sz.x * sz.y;
++                    if (!done && area > 1)
++                    {
++                        uint code = (uint)(lo.x + lo.y * 8 + hi.x * 64 + hi.y * 512);
++                        uint h = FRHash((uint)bx, (uint)by, (uint)plane, (uint)axis * 65537u + (uint)_FR_DriftSeed + code * 0x9E3779B1u);
++                        uint thr = area >= 6 ? 256u : (area >= 3 ? 154u : 90u);
++                        if ((h & 0xFFu) >= thr) done = true;
++                        else
++                        {
++                            bool splitX = sz.x > sz.y || (sz.x == sz.y && (h & 0x100u) != 0u);
++                            int len = splitX ? sz.x : sz.y;
++                            int cut = 1 + (int)((h >> 9) % (uint)(len - 1));
++                            if (splitX) { int c = lo.x + cut; if (l.x < c) hi.x = c; else lo.x = c; }
++                            else { int c = lo.y + cut; if (l.y < c) hi.y = c; else lo.y = c; }
++                        }
++                    }
++                    else done = true;
++                }
++                id = org + lo;
++                centre = float2(org) + float2(lo + hi) * 0.5;
+             }
+ 
++            // A carpet square's or ceiling tile's finish with the patch option.
++            float FRSquareOffice(int2 idx, int plane, int axis, float2 U2)
++            {
++                int2 id; float2 c;
++                FRPatchRect(idx, plane, axis, id, c);
++                return FRUnitOffice(id, plane, axis, c * U2);
++            }
++
+             // One axis of a face: lo..hi is the face's extent in map metres. A face that runs
+             // up to 8 cm past a cell line (a wall end over a post) lends that sliver to the
+             // unit inside the line; a face that is only a sliver (an end cap, a split jamb)
+@@ -421,7 +474,10 @@
+                         float2 f = qFloor - c;
+                         int2 idx = int2(c);
+                         float2 U2 = _DriftUnit.xy;
+-                        float o00 = FRUnitOffice(idx, plane, axis, (c + 0.5) * U2);
++                        bool patch = _FR_DriftPatch > 0.5;
++                        float o00;
++                        [branch] if (patch) o00 = FRSquareOffice(idx, plane, axis, U2);
++                        else o00 = FRUnitOffice(idx, plane, axis, (c + 0.5) * U2);
+                         float2 dpx = min(f, 1.0 - f) / fwQ;
+                         float2 cov = saturate(0.5 - dpx);
+                         int2 stepN = int2(f.x < 0.5 ? -1 : 1, f.y < 0.5 ? -1 : 1);
+@@ -435,9 +491,19 @@
+                         if (seamCov.y > 0.0) cov.y = max(cov.y, 1e-6);
+                         if (cov.x > 0.0 || cov.y > 0.0)
+                         {
+-                            float o10 = cov.x > 0.0 ? FRUnitOffice(idx + int2(stepN.x, 0), plane, axis, (c + float2(stepN.x, 0) + 0.5) * U2) : o00;
+-                            float o01 = cov.y > 0.0 ? FRUnitOffice(idx + int2(0, stepN.y), plane, axis, (c + float2(0, stepN.y) + 0.5) * U2) : o00;
+-                            float o11 = (cov.x > 0.0 && cov.y > 0.0) ? FRUnitOffice(idx + stepN, plane, axis, (c + float2(stepN) + 0.5) * U2) : o00;
++                            float o10, o01, o11;
++                            [branch] if (patch)
++                            {
++                                o10 = cov.x > 0.0 ? FRSquareOffice(idx + int2(stepN.x, 0), plane, axis, U2) : o00;
++                                o01 = cov.y > 0.0 ? FRSquareOffice(idx + int2(0, stepN.y), plane, axis, U2) : o00;
++                                o11 = (cov.x > 0.0 && cov.y > 0.0) ? FRSquareOffice(idx + stepN, plane, axis, U2) : o00;
++                            }
++                            else
++                            {
++                                o10 = cov.x > 0.0 ? FRUnitOffice(idx + int2(stepN.x, 0), plane, axis, (c + float2(stepN.x, 0) + 0.5) * U2) : o00;
++                                o01 = cov.y > 0.0 ? FRUnitOffice(idx + int2(0, stepN.y), plane, axis, (c + float2(0, stepN.y) + 0.5) * U2) : o00;
++                                o11 = (cov.x > 0.0 && cov.y > 0.0) ? FRUnitOffice(idx + stepN, plane, axis, (c + float2(stepN) + 0.5) * U2) : o00;
++                            }
+                             office = (1.0 - cov.x) * (1.0 - cov.y) * o00 + cov.x * (1.0 - cov.y) * o10 + (1.0 - cov.x) * cov.y * o01 + cov.x * cov.y * o11;
+                             seam = max(abs(o10 - o00) * seamCov.x, abs(o01 - o00) * seamCov.y);
+                         }
+--- a/Assets/Scripts/Rendering/Transitions/FrontRoomsThemeField.cs (drift)
++++ b/Assets/Scripts/Rendering/Transitions/FrontRoomsThemeField.cs (drift + patch option)
+@@ -27,6 +27,11 @@
+     public static float Width = ArgFloat("-driftW", 4.5f);
+     /// <summary>-noDrift turns the whole variation off (field, shader mix, B0 and linings), to prove the hooks are inert.</summary>
+     public static bool Enabled = !HasArg("-noDrift");
++    /// <summary>
++    /// -driftPatch (option, 2026-10-04): group carpet squares and ceiling tiles into patches (rectangles of 1-9
++    /// units) with one draw per patch. Paper drops keep one draw per drop. Off = one draw per unit, as briefed.
++    /// </summary>
++    public static bool Patch = HasArg("-driftPatch");
+ 
+     static readonly int FieldId = Shader.PropertyToID("_FR_ThemeField");
+     static readonly int FieldStId = Shader.PropertyToID("_FR_ThemeFieldST");
+@@ -136,6 +141,7 @@
+         Shader.SetGlobalVector(OriginId, world.transform.position);
+         Shader.SetGlobalFloat(WidthId, Enabled ? Width : 0f);
+         Shader.SetGlobalFloat(SeedId, SeedFold(world.Seed));
++        Shader.SetGlobalFloat("_FR_DriftPatch", Patch ? 1f : 0f);
+         Shader.SetGlobalFloat("_FR_DriftDebug", ArgFloat("-driftDebug", 0f));
+     }
+ 
+@@ -206,6 +212,38 @@
+     public static float UnitRand(int ix, int iy, int plane, int axis, int seedFold) =>
+         (Hash(unchecked((uint)ix), unchecked((uint)iy), unchecked((uint)plane), unchecked((uint)axis * 65537u + (uint)seedFold)) >> 8) * (1f / 16777216f);
+ 
++    static int FloorDiv(int a, int b) => (int)Math.Floor((double)a / b);
++
++    /// <summary>The shader's FRPatchRect, bit for bit: the rectangle of floor or ceiling units that unit (ix, iy) belongs to.</summary>
++    public static void PatchRect(int ix, int iy, int plane, int axis, int seedFold, out int idx, out int idy, out float cx, out float cy)
++    {
++        unchecked
++        {
++            var by = FloorDiv(iy - 2, 5);
++            var off = 1 + (int)(Hash((uint)by, 0x5EEDu, (uint)plane, (uint)axis * 65537u + (uint)seedFold) % 4u);
++            var bx = FloorDiv(ix - off, 5);
++            int ox = bx * 5 + off, oy = by * 5 + 2;
++            int lx = ix - ox, ly = iy - oy;
++            int lox = 0, loy = 0, hix = 5, hiy = 5;
++            for (var lev = 0; lev < 4; lev++)
++            {
++                int sx = hix - lox, sy = hiy - loy, area = sx * sy;
++                if (area <= 1) break;
++                var code = (uint)(lox + loy * 8 + hix * 64 + hiy * 512);
++                var h = Hash((uint)bx, (uint)by, (uint)plane, (uint)axis * 65537u + (uint)seedFold + code * 0x9E3779B1u);
++                var thr = area >= 6 ? 256u : (area >= 3 ? 154u : 90u);
++                if ((h & 0xFFu) >= thr) break;
++                var splitX = sx > sy || (sx == sy && (h & 0x100u) != 0u);
++                var len = splitX ? sx : sy;
++                var cut = 1 + (int)((h >> 9) % (uint)(len - 1));
++                if (splitX) { var c = lox + cut; if (lx < c) hix = c; else lox = c; }
++                else { var c = loy + cut; if (ly < c) hiy = c; else loy = c; }
++            }
++            idx = ox + lox; idy = oy + loy;
++            cx = ox + (lox + hix) * .5f; cy = oy + (loy + hiy) * .5f;
++        }
++    }
++
+     /// <summary>The shader's plane id for an axis-aligned face at signed offset d (dot(mapPos, n)).</summary>
+     public static int PlaneId(float d) => Mathf.RoundToInt(d / .04f + .237f);
+ 
+--- a/Assets/Editor/Transitions/FrontRoomsDriftStats.cs (drift)
++++ b/Assets/Editor/Transitions/FrontRoomsDriftStats.cs (drift + patch option)
+@@ -46,7 +46,7 @@
+         var code = 0;
+         var outDir = Arg("-out", "Verification/drift_stats");
+         Directory.CreateDirectory(outDir);
+-        var tag = FrontRoomsThemeField.Enabled ? "drift_w" + FrontRoomsThemeField.Width.ToString("0.#", IC) : "nodrift";
++        var tag = FrontRoomsThemeField.Enabled ? "drift_w" + FrontRoomsThemeField.Width.ToString("0.#", IC) + (FrontRoomsThemeField.Patch ? "_patch" : "") : "nodrift";
+         try
+         {
+             var file = JsonUtility.FromJson<ShotFile>(File.ReadAllText(Arg("-shots", null)));
+@@ -229,7 +229,7 @@
+                 {
+                     int ix = cell.x * 5 + a, iz = cell.y * 5 + b;
+                     v[3]++;
+-                    if (Office(world, ix, iz, 0, 4, new Vector2((ix + .5f) * .6f, (iz + .5f) * .6f), seed) != office) v[0]++;
++                    if (Square(world, ix, iz, 0, 4, .6f, .6f, seed) != office) v[0]++;
+                 }
+                 // ceiling: 0.6 x 1.2 m tiles whose centre lies in the cell
+                 var h = MapGrid.CeilingHeight(zone.height);
+@@ -242,7 +242,7 @@
+                     {
+                         var ix = cell.x * 5 + a;
+                         v[4]++;
+-                        if (Office(world, ix, iz, plane, 5, new Vector2((ix + .5f) * .6f, zc), seed) != office) v[1]++;
++                        if (Square(world, ix, iz, plane, 5, .6f, 1.2f, seed) != office) v[1]++;
+                     }
+                 }
+                 // walls: the drops on both faces of the east and north edges (openings included)
+@@ -275,6 +275,14 @@
+             }
+             into[chunk] = v;
+         }
++    }
++
++    // A carpet square or ceiling tile (unit ux x uz metres): its own draw, or its patch's with -driftPatch.
++    static bool Square(FrontRoomsMapWorld world, int ix, int iz, int plane, int axis, float ux, float uz, int seed)
++    {
++        if (!FrontRoomsThemeField.Patch) return Office(world, ix, iz, plane, axis, new Vector2((ix + .5f) * ux, (iz + .5f) * uz), seed);
++        FrontRoomsThemeField.PatchRect(ix, iz, plane, axis, seed, out var px, out var pz, out var cx, out var cz);
++        return Office(world, px, pz, plane, axis, new Vector2(cx * ux, cz * uz), seed);
+     }
+ 
+     static bool Office(FrontRoomsMapWorld world, int ix, int iz, int plane, int axis, Vector2 centre, int seed)

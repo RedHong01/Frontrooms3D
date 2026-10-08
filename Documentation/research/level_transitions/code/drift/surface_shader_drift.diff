@@ -1,0 +1,335 @@
+--- a/Assets/Resources/Rendering/FrontRoomsSurface.shader (clone base)
++++ b/Assets/Resources/Rendering/FrontRoomsSurface.shader (drift)
+@@ -36,6 +36,27 @@
+         _EmissionMap ("Emission", 2D) = "white" {}
+         [HDR] _EmissionColor ("Emission colour", Color) = (0, 0, 0, 1)
+ 
++        // TRANSITION drift (clone-only pre-render, 2026-10-03): the place half-remembers.
++        // Whole building units (paper drops, carpet squares, ceiling tiles) of the other
++        // theme appear near a theme border, chosen per unit from the global theme field.
++        [Toggle(_FR_DRIFT)] _FRDrift ("Drift: mix units with the counterpart theme", Float) = 0
++        _FR_ThemeSelf ("Drift: own theme (0 Level 0, 1 Office)", Float) = 0
++        _DriftMode ("Drift: 0 wall drops, 1 floor or ceiling units", Float) = 0
++        _DriftUnit ("Drift unit in metres (wall: drop width; floor/ceiling: X, Z)", Vector) = (0.75, 1000, 0, 0)
++        _AltBaseMap ("Drift alt albedo", 2D) = "white" {}
++        [Normal] _AltBumpMap ("Drift alt normal", 2D) = "bump" {}
++        _AltMaskMap ("Drift alt mask", 2D) = "white" {}
++        _AltTileSize ("Drift alt tile size (m)", Vector) = (1, 1, 0, 0)
++        _AltBaseColor ("Drift alt tint", Color) = (1, 1, 1, 1)
++        _AltSmoothness ("Drift alt smoothness", Float) = 1
++        _AltMacroTone ("Drift alt macro tone", Float) = 0.35
++        _AltStainStrength ("Drift alt stains", Float) = 0
++        _AltBumpScale ("Drift alt normal strength", Float) = 1
++        _AltMacroDirt ("Drift alt macro dirt", Float) = 0.25
++        _AltWetStrength ("Drift alt damp", Float) = 0
++        _AltFloorGrime ("Drift alt floor grime", Float) = 0
++        _AltCeilingGrime ("Drift alt ceiling streaks", Float) = 0
++
+         // Required by URP's shadow/depth passes.
+         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
+         [HideInInspector] _Cull ("__cull", Float) = 2
+@@ -68,6 +89,20 @@
+             float _CeilingHeight;
+             half4 _EmissionColor;
+             half _Cutoff;
++            // TRANSITION drift: always declared, so every variant keeps one SRP Batcher layout.
++            float _FR_ThemeSelf;
++            float _DriftMode;
++            float4 _DriftUnit;
++            float4 _AltTileSize;
++            half4 _AltBaseColor;
++            half _AltSmoothness;
++            half _AltMacroTone;
++            half _AltStainStrength;
++            half _AltBumpScale;
++            half _AltMacroDirt;
++            half _AltWetStrength;
++            half _AltFloorGrime;
++            half _AltCeilingGrime;
+         CBUFFER_END
+ 
+         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
+@@ -75,6 +110,10 @@
+         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
+         TEXTURE2D(_MaskMap);      SAMPLER(sampler_MaskMap);
+         TEXTURE2D(_MacroMap);     SAMPLER(sampler_MacroMap);
++        // TRANSITION drift: the counterpart set shares the own samplers (no new sampler slots).
++        TEXTURE2D(_AltBaseMap);
++        TEXTURE2D(_AltBumpMap);
++        TEXTURE2D(_AltMaskMap);
+         ENDHLSL
+ 
+         Pass
+@@ -95,6 +134,8 @@
+             // architectural projection path.
+             #pragma multi_compile_local _ _FR_MESH_UV
+             #pragma shader_feature_local_fragment _EMISSION
++            // TRANSITION drift: vertex and fragment (the face data travels in a varying).
++            #pragma shader_feature_local _FR_DRIFT
+ 
+             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+@@ -117,6 +158,11 @@
+                 float3 normalOS   : NORMAL;
+                 float4 tangentOS  : TANGENT;
+                 float2 uv         : TEXCOORD0;
++            #if defined(_FR_DRIFT) && !defined(_FR_MESH_UV)
++                // TRANSITION drift: the map's face data (FrontRoomsMapWorld.MeshBuilder, UV1):
++                // the face's extent round this vertex, in map metres. x carries -1024 as a marker.
++                float4 faceData   : TEXCOORD1;
++            #endif
+                 UNITY_VERTEX_INPUT_INSTANCE_ID
+             };
+ 
+@@ -129,6 +175,9 @@
+                 float2 uv         : TEXCOORD3;
+                 half4 fogAndVertexLight : TEXCOORD4;
+                 DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 5);
++            #if defined(_FR_DRIFT) && !defined(_FR_MESH_UV)
++                float4 faceData   : TEXCOORD6;
++            #endif
+                 UNITY_VERTEX_INPUT_INSTANCE_ID
+                 UNITY_VERTEX_OUTPUT_STEREO
+             };
+@@ -146,6 +195,9 @@
+                 o.normalWS = n.normalWS;
+                 o.tangentWS = float4(n.tangentWS, input.tangentOS.w * GetOddNegativeScale());
+                 o.uv = input.uv;
++            #if defined(_FR_DRIFT) && !defined(_FR_MESH_UV)
++                o.faceData = input.faceData;
++            #endif
+                 half fog = ComputeFogFactor(p.positionCS.z);
+                 o.fogAndVertexLight = half4(fog, VertexLighting(p.positionWS, n.normalWS));
+                 OUTPUT_SH(o.normalWS, o.vertexSH);
+@@ -161,6 +213,69 @@
+                 uvMetres = float2(dot(positionWS, t), dot(positionWS, b));
+             }
+ 
++        #if defined(_FR_DRIFT) && !defined(_FR_MESH_UV)
++            // ---------- TRANSITION drift ----------
++            // Globals set by FrontRoomsThemeField (no MaterialPropertyBlocks):
++            //   _FR_ThemeField   RHalf, one texel per map cell: signed metres to the other theme's line
++            //                    (negative in Level 0, positive in Office, clamped to +-6), bilinear, clamped.
++            //   _FR_ThemeFieldST map XZ -> field uv.   _FR_MapOrigin  world position of the map root.
++            //   _FR_DriftWidth   W: pOffice = smoothstep(-W, W, s). 0 switches drift off.
++            //   _FR_DriftSeed    the run seed, folded to 16 bits.
++            TEXTURE2D(_FR_ThemeField);
++            float4 _FR_ThemeFieldST;
++            float4 _FR_MapOrigin;
++            float _FR_DriftWidth;
++            float _FR_DriftSeed;
++            // #define FR_DRIFT_DEBUG 1   // unit map for diagnostics (needs the global _FR_DriftDebug > 0)
++        #ifdef FR_DRIFT_DEBUG
++            float _FR_DriftDebug;
++        #endif
++
++            #define FR_LINE 3.0
++            // A joint where two finishes meet: paper butt edge on walls (1.5 mm), cut carpet edge on floors (2.5 mm).
++            #define FR_SEAM_WALL 0.0015
++            #define FR_SEAM_FLOOR 0.0025
++            #define FR_SLIVER 0.0805
++
++            uint FRHash(uint a, uint b, uint c, uint d)
++            {
++                uint h = a * 0x8DA6B343u + b * 0xD8163841u + c * 0xCB1AB31Fu + d * 0x165667B1u + 0x9E3779B9u;
++                h ^= h >> 16; h *= 0x7FEB352Du; h ^= h >> 15; h *= 0x846CA68Bu; h ^= h >> 16;
++                return h;
++            }
++
++            // 1 when the unit (index, plane, axis) shows the Office finish, 0 for Level 0.
++            // The field is read at the unit's centre (map XZ), so a unit never splits.
++            float FRUnitOffice(int2 idx, int plane, int axis, float2 centreXZ)
++            {
++                float2 fuv = centreXZ * _FR_ThemeFieldST.xy + _FR_ThemeFieldST.zw;
++                if (any(fuv < 0.0) || any(fuv > 1.0)) return _FR_ThemeSelf;
++                float s = SAMPLE_TEXTURE2D_LOD(_FR_ThemeField, sampler_LinearClamp, fuv, 0).r;
++                float p = smoothstep(-_FR_DriftWidth, _FR_DriftWidth, s);
++                uint h = FRHash((uint)idx.x, (uint)idx.y, (uint)plane, (uint)axis * 65537u + (uint)_FR_DriftSeed);
++                return ((float)(h >> 8) * (1.0 / 16777216.0)) < p ? 1.0 : 0.0;
++            }
++
++            // One axis of a face: lo..hi is the face's extent in map metres. A face that runs
++            // up to 8 cm past a cell line (a wall end over a post) lends that sliver to the
++            // unit inside the line; a face that is only a sliver (an end cap, a split jamb)
++            // takes the unit just above the line. perPixel: the pixel keeps its own unit.
++            float FREffective(float u, float lo, float hi, bool single, out bool perPixel)
++            {
++                float l0 = ceil(lo / FR_LINE - 1e-4) * FR_LINE;
++                float l1 = floor(hi / FR_LINE + 1e-4) * FR_LINE;
++                bool minS = (l0 - lo) > 5e-4 && (l0 - lo) <= FR_SLIVER;
++                bool maxS = (hi - l1) > 5e-4 && (hi - l1) <= FR_SLIVER;
++                float a = minS ? l0 + 1e-3 : lo;
++                float b = maxS ? l1 - 1e-3 : hi;
++                perPixel = false;
++                if (a > b) return (minS ? l0 : l1) + 1e-3;
++                if (single) return (a + b) * 0.5;
++                perPixel = true;
++                return clamp(u, a, b);
++            }
++        #endif
++
+             void Frag(Varyings input, out half4 outColor : SV_Target0
+             #ifdef _WRITE_RENDERING_LAYERS
+                 , out uint outRenderingLayers : SV_Target1
+@@ -221,6 +336,161 @@
+                 half streak = m1.a * ceilBand;
+                 albedo.rgb *= 1.0h - wall * (_FloorGrime * 0.35h * floorBand * (0.6h + 0.4h * m1.g));
+                 albedo.rgb = lerp(albedo.rgb, albedo.rgb * _StainColor.rgb * 1.5h, wall * saturate(_CeilingGrime * (streak * 0.8h + ceilBand * 0.15h)));
++
++            #if defined(_FR_DRIFT) && !defined(_FR_MESH_UV)
++                // TRANSITION drift. The own finish above is untouched; where this pixel's unit
++                // (or, within half a pixel of a unit edge, its neighbour) shows the counterpart
++                // theme, the counterpart set is shaded and mixed in by pixel coverage.
++                // Derivatives are taken here, outside every branch.
++                float2 uvAlt = metres / max(_AltTileSize.xy, 1e-3) * _BaseMap_ST.xy + _BaseMap_ST.zw;
++                float2 dAltX = ddx(uvAlt), dAltY = ddy(uvAlt);
++                float3 mapPos = input.positionWS - _FR_MapOrigin.xyz;
++                float3 nAx = float3(abs(nGeo.x) > 0.5 ? sign(nGeo.x) : 0.0, abs(nGeo.y) > 0.5 ? sign(nGeo.y) : 0.0, abs(nGeo.z) > 0.5 ? sign(nGeo.z) : 0.0);
++                bool horizontal = abs(nGeo.y) > 0.5;
++                float3 tWall = horizontal ? float3(1, 0, 0) : normalize(cross(float3(0, 1, 0), nAx));
++                float uWall = dot(mapPos, tWall);
++                float fwU = max(fwidth(uWall), 1e-5);
++                float2 qFloor = mapPos.xz / max(_DriftUnit.xy, 1e-3);
++                float2 fwQ = max(fwidth(qFloor), 1e-5);
++                float altW = 0.0;
++                bool shell = input.faceData.x < -512.0;
++                float seam = 0.0;
++            #ifdef FR_DRIFT_DEBUG
++                float3 dbg = float3(shell ? 1.0 : 0.0, 0.0, 0.0);
++            #endif
++                [branch] if (shell && _FR_DriftWidth > 0.0)
++                {
++                    int plane = (int)round(dot(mapPos, nAx) / 0.04 + 0.237);
++                    float self = _FR_ThemeSelf;
++                    if (_DriftMode < 0.5)
++                    {
++                        float U = _DriftUnit.x;
++                        if (!horizontal)
++                        {
++                            // Paper drops: full height, U wide, along the wall.
++                            int axis = abs(nAx.x) > 0.5 ? (nAx.x > 0.0 ? 0 : 1) : (nAx.z > 0.0 ? 2 : 3);
++                            bool perPixel;
++                            float uEff = FREffective(uWall, uWall + input.faceData.x + 1024.0, uWall + input.faceData.y, false, perPixel);
++                            int i = (int)floor(uEff / U);
++                            float2 cXZ = mapPos.xz + tWall.xz * ((i + 0.5) * U - uWall);
++                            float own = FRUnitOffice(int2(i, 0), plane, axis, cXZ);
++                            float cov = 0.0, other = own;
++                            if (perPixel)
++                            {
++                                float q = uEff / U;
++                                float e = round(q);
++                                float edge = e * U;
++                                float lo = uWall + input.faceData.x + 1024.0, hi = uWall + input.faceData.y;
++                                float dm = abs(uWall - edge);
++                                float d = dm / fwU;
++                                if ((d < 0.5 || dm < 2.0 * FR_SEAM_WALL + fwU) && edge > lo + 1e-3 && edge < hi - 1e-3)
++                                {
++                                    int j = q < e ? i + 1 : i - 1;
++                                    cov = saturate(0.5 - d);
++                                    other = FRUnitOffice(int2(j, 0), plane, axis, cXZ + tWall.xz * ((j - i) * U));
++                                    // the butt joint between two finishes: a line FR_SEAM_WALL wide on each side, by pixel coverage
++                                    seam = abs(other - own) * saturate((FR_SEAM_WALL - dm) / fwU + 0.5);
++                                }
++                            }
++                            float office = lerp(own, other, cov);
++                            altW = abs(office - self);
++                        #ifdef FR_DRIFT_DEBUG
++                            float2 dfuv = cXZ * _FR_ThemeFieldST.xy + _FR_ThemeFieldST.zw;
++                            float dlo = uWall + input.faceData.x + 1024.0, dhi = uWall + input.faceData.y;
++                            dbg = _FR_DriftDebug > 1.5 ? float3(saturate((dhi - dlo) / 4.0), altW, perPixel ? 1.0 : 0.0)
++                                : float3(frac((float)i * 0.37), altW, saturate(SAMPLE_TEXTURE2D_LOD(_FR_ThemeField, sampler_LinearClamp, dfuv, 0).r / 12.0 + 0.5));
++                        #endif
++                        }
++                        else
++                        {
++                            // Horizontal faces of walls (sills, soffits): one unit per face.
++                            int axis = nAx.y > 0.0 ? 6 : 7;
++                            bool pp;
++                            float xEff = FREffective(mapPos.x, mapPos.x + input.faceData.x + 1024.0, mapPos.x + input.faceData.y, true, pp);
++                            float zEff = FREffective(mapPos.z, mapPos.z + input.faceData.z, mapPos.z + input.faceData.w, true, pp);
++                            int2 idx = int2(floor(xEff / U), floor(zEff / U));
++                            float office = FRUnitOffice(idx, plane, axis, (float2(idx) + 0.5) * U);
++                            altW = abs(office - self);
++                        }
++                    }
++                    else if (horizontal)
++                    {
++                        // Carpet squares and ceiling tiles: _DriftUnit.xy in X and Z, on the tile grid.
++                        int axis = nAx.y > 0.0 ? 4 : 5;
++                        float2 c = floor(qFloor);
++                        float2 f = qFloor - c;
++                        int2 idx = int2(c);
++                        float2 U2 = _DriftUnit.xy;
++                        float o00 = FRUnitOffice(idx, plane, axis, (c + 0.5) * U2);
++                        float2 dpx = min(f, 1.0 - f) / fwQ;
++                        float2 cov = saturate(0.5 - dpx);
++                        int2 stepN = int2(f.x < 0.5 ? -1 : 1, f.y < 0.5 ? -1 : 1);
++                        float office = o00;
++                        bool floorFace = nAx.y > 0.0;
++                        // distance to the nearest unit edge in metres, per axis, and the seam's pixel coverage there
++                        float2 dmq = min(f, 1.0 - f) * U2;
++                        float2 fwM = fwQ * U2;
++                        float2 seamCov = floorFace ? saturate((FR_SEAM_FLOOR - dmq) / fwM + 0.5) : float2(0.0, 0.0);
++                        if (seamCov.x > 0.0) cov.x = max(cov.x, 1e-6);
++                        if (seamCov.y > 0.0) cov.y = max(cov.y, 1e-6);
++                        if (cov.x > 0.0 || cov.y > 0.0)
++                        {
++                            float o10 = cov.x > 0.0 ? FRUnitOffice(idx + int2(stepN.x, 0), plane, axis, (c + float2(stepN.x, 0) + 0.5) * U2) : o00;
++                            float o01 = cov.y > 0.0 ? FRUnitOffice(idx + int2(0, stepN.y), plane, axis, (c + float2(0, stepN.y) + 0.5) * U2) : o00;
++                            float o11 = (cov.x > 0.0 && cov.y > 0.0) ? FRUnitOffice(idx + stepN, plane, axis, (c + float2(stepN) + 0.5) * U2) : o00;
++                            office = (1.0 - cov.x) * (1.0 - cov.y) * o00 + cov.x * (1.0 - cov.y) * o10 + (1.0 - cov.x) * cov.y * o01 + cov.x * cov.y * o11;
++                            seam = max(abs(o10 - o00) * seamCov.x, abs(o01 - o00) * seamCov.y);
++                        }
++                        altW = abs(office - self);
++                    #ifdef FR_DRIFT_DEBUG
++                        dbg = float3(0.0, altW, 0.5);
++                    #endif
++                    }
++                }
++                [branch] if (altW > 0.0)
++                {
++                    half4 aAlbedo = SAMPLE_TEXTURE2D_GRAD(_AltBaseMap, sampler_BaseMap, uvAlt, dAltX, dAltY) * _AltBaseColor;
++                    half4 aMask = SAMPLE_TEXTURE2D_GRAD(_AltMaskMap, sampler_MaskMap, uvAlt, dAltX, dAltY);
++                    half3 aN = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_AltBumpMap, sampler_BumpMap, uvAlt, dAltX, dAltY), _AltBumpScale);
++                    half aTone = lerp(1.0h, 0.84h + 0.30h * m1.r * m2.r, _AltMacroTone);
++                    half aDirt = 1.0h - _AltMacroDirt * smoothstep(0.55h, 0.95h, m1.g * 0.6h + m2.g * 0.4h);
++                    aAlbedo.rgb *= aTone * aDirt;
++                    aAlbedo.rgb = lerp(aAlbedo.rgb, aAlbedo.rgb * _StainColor.rgb * 1.6h, saturate((ring * 0.9h + pool * 0.35h) * _AltStainStrength));
++                    half aSmooth = aMask.r * _AltSmoothness;
++                    half aCavity = lerp(1.0h, aMask.g, _OcclusionStrength);
++                    half aWet = smoothstep(0.35h, 0.85h, m1.b * 0.7h + m2.b * 0.5h) * _AltWetStrength;
++                    aAlbedo.rgb *= 1.0h - 0.32h * aWet;
++                    aSmooth = lerp(aSmooth, 0.62h, aWet);
++                    aN = normalize(lerp(aN, half3(0, 0, 1), aWet * 0.7h));
++                    aAlbedo.rgb *= 1.0h - wall * (_AltFloorGrime * 0.35h * floorBand * (0.6h + 0.4h * m1.g));
++                    aAlbedo.rgb = lerp(aAlbedo.rgb, aAlbedo.rgb * _StainColor.rgb * 1.5h, wall * saturate(_AltCeilingGrime * (streak * 0.8h + ceilBand * 0.15h)));
++                    half w = (half)altW;
++                    albedo.rgb = lerp(albedo.rgb, aAlbedo.rgb, w);
++                    smoothness = lerp(smoothness, aSmooth, w);
++                    cavity = lerp(cavity, aCavity, w);
++                    nTS = normalize(lerp(nTS, aN, w));
++                }
++                // The joint line: darker, and a touch less glossy (dirt collects in a butt joint).
++                albedo.rgb *= 1.0h - 0.38h * (half)seam;
++                smoothness *= 1.0h - 0.5h * (half)seam;
++            #ifdef FR_DRIFT_DEBUG
++                if (_FR_DriftDebug > 2.5)
++                {
++                    // mode 3: the band mask. White: a map shell pixel whose field |s| < W + 0.75 (drift may act).
++                    float2 muv = mapPos.xz * _FR_ThemeFieldST.xy + _FR_ThemeFieldST.zw;
++                    float ms = SAMPLE_TEXTURE2D_LOD(_FR_ThemeField, sampler_LinearClamp, muv, 0).r;
++                    dbg = (shell && abs(ms) < _FR_DriftWidth + 0.75) ? float3(1, 1, 1) : float3(0, 0, 0);
++                }
++                if (_FR_DriftDebug > 0.5)
++                {
++                    outColor = half4(dbg, 1);
++                #ifdef _WRITE_RENDERING_LAYERS
++                    outRenderingLayers = EncodeMeshRenderingLayer();
++                #endif
++                    return;
++                }
++            #endif
++            #endif
+ 
+                 InputData inputData = (InputData)0;
+                 inputData.positionWS = input.positionWS;

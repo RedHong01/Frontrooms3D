@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Q16 placard: the two edits to existing project files (research/placard/10_spec.md §3, §4.6).
+
+  python3 apply_placard_patches.py <project root> [--dry-run]
+
+1. Assets/Editor/Rendering/FrontRoomsRenderSetup.cs (NEEDS APPROVAL, shared pipeline file):
+   - one SurfaceDef row, Prop_EvacPlan (the printed sheet; glow mask = emission map, black at rest);
+   - one GlassDefs row, Prop_LensNonGlare, plus its blend/shadow block in EnsureGlassMaterials;
+   - one importer rule for the Prop_EvacPlan_* stems (no NPOT rescale, clamp, _E linear BC1, _A sRGB BC7).
+2. Assets/Scripts/FrontRoomsRoomStream.cs (visual-owned): one FrontRoomsPlacard.Prepare call at the end
+   of EndStreamAt.
+
+Idempotent: a file that already carries an edit is left alone. Every anchor must match exactly once,
+or nothing is written. Recovered from the 2026-10-03 build (proj_placard, agent aa2e5a09) and re-based
+on main of 2026-10-07.
+"""
+import sys
+from pathlib import Path
+
+ROOT = Path(sys.argv[1])
+DRY = "--dry-run" in sys.argv
+
+RS = "Assets/Editor/Rendering/FrontRoomsRenderSetup.cs"
+STREAM = "Assets/Scripts/FrontRoomsRoomStream.cs"
+
+EDITS = {
+    RS: [
+        ("Prop_EvacPlan SurfaceDef",
+         '        new SurfaceDef { name = "Prop_Label", texture = "Prop_Label", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = 0f },\n',
+         '        new SurfaceDef { name = "Prop_Label", texture = "Prop_Label", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = 0f },\n'
+         '        // Q16 evacuation placard: the printed sheet (research/placard/10_spec.md §3.1). The phosphor legend\'s mask is the\n'
+         '        // emission map; FrontRoomsPlacardGlow drives _EmissionColor on one instance per placard (black at rest, so the\n'
+         '        // _EMISSION variant stays in builds). Matte offset print; the lens carries the sheen. No macro stain on the print.\n'
+         '        new SurfaceDef { name = "Prop_EvacPlan", texture = "Prop_EvacPlan", tile = Vector2.one, meshUV = true, smooth = .15f, macroTone = 0f, macroDirt = .02f, emission = "Prop_EvacPlan", emissionColor = Color.black },\n',
+         'name = "Prop_EvacPlan"'),
+        ("Prop_LensNonGlare GlassDefs row",
+         '        ("Prop_BottleBlue", new Color(.36f, .58f, .80f, .42f), .9f),\n',
+         '        ("Prop_BottleBlue", new Color(.36f, .58f, .80f, .42f), .9f),\n'
+         '        ("Prop_LensNonGlare", new Color(0f, 0f, 0f, .04f), .55f),   // Q16: the placard\'s 1 mm non-glare lens (placard 10_spec §3.2)\n',
+         '("Prop_LensNonGlare", new Color('),
+        ("Prop_LensNonGlare blend + shadow block",
+         '            m.SetShaderPassEnabled("DepthOnly", false);\n            EditorUtility.SetDirty(m);\n',
+         '            m.SetShaderPassEnabled("DepthOnly", false);\n'
+         '            if (name == "Prop_LensNonGlare")\n'
+         '            {\n'
+         '                // A black base at alpha 0.04 that keeps its full specular (URP "Preserve Specular Lighting": the ROP\n'
+         '                // multiply moves into the shader). out = specular + dst x 0.96: the lens takes ~4 % and adds only its\n'
+         '                // sheen, so it can never veil the paper. No shadow caster: a shadowing lamp would print the lens\'s\n'
+         '                // shadow onto the sheet 1 mm below (placard 10_spec §3.2).\n'
+         '                m.SetFloat("_BlendModePreserveSpecular", 1f);\n'
+         '                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);\n'
+         '                m.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);\n'
+         '                m.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);\n'
+         '                m.EnableKeyword("_ALPHAPREMULTIPLY_ON");\n'
+         '                m.SetOverrideTag("RenderType", "Transparent");\n'
+         '                m.SetShaderPassEnabled("ShadowCaster", false);\n'
+         '            }\n'
+         '            EditorUtility.SetDirty(m);\n',
+         'if (name == "Prop_LensNonGlare")'),
+        ("Prop_EvacPlan importer rule",
+         '            importer.sRGBTexture = stem.EndsWith("_A") || stem.EndsWith("_E");\n        }\n    }\n}\n',
+         '            importer.sRGBTexture = stem.EndsWith("_A") || stem.EndsWith("_E");\n        }\n'
+         '        if (stem.StartsWith("Prop_EvacPlan"))\n'
+         '        {\n'
+         '            // Q16 placard artwork, 2592 x 1676 (placard 10_spec §3.3): never rescaled to a power of two (that would\n'
+         '            // stretch the type), clamped at the sheet edge. _A: sRGB BC7. _E: the phosphor mask is coverage, so LINEAR\n'
+         '            // (an sRGB decode would thin the anti-aliased glyph edges), BC1. The WebGL tab belongs to the WebGL track.\n'
+         '            importer.npotScale = TextureImporterNPOTScale.None;\n'
+         '            importer.wrapMode = TextureWrapMode.Clamp;\n'
+         '            var mask = stem.EndsWith("_E");\n'
+         '            importer.sRGBTexture = !mask;\n'
+         '            importer.textureCompression = mask ? TextureImporterCompression.Compressed : TextureImporterCompression.CompressedHQ;\n'
+         '        }\n'
+         '    }\n}\n',
+         'stem.StartsWith("Prop_EvacPlan")'),
+    ],
+    STREAM: [
+        ("Prepare call in EndStreamAt",
+         '            if (renderer.gameObject.name.EndsWith("/ far side", StringComparison.Ordinal)) renderer.receiveShadows = true;\n    }\n',
+         '            if (renderer.gameObject.name.EndsWith("/ far side", StringComparison.Ordinal)) renderer.receiveShadows = true;\n'
+         '        // Q16: the evacuation placard goes up on the map side of this door once the run starts\n'
+         '        // (research/placard/10_spec.md §4.6). The far-side reveal plane is the face it sits on.\n'
+         '        var roomRoot = terminal.root.transform;\n'
+         '        FrontRoomsPlacard.Prepare(roomRoot, roomRoot.TransformPoint(0f, 0f, RoomLength), roomRoot.TransformPoint(0f, 0f, RoomLength + DoorWallDepth * .5f + .002f).z);\n'
+         '    }\n',
+         'FrontRoomsPlacard.Prepare('),
+    ],
+}
+
+ok = True
+out = {}
+for rel, edits in EDITS.items():
+    p = ROOT / rel
+    s = p.read_text(encoding="utf-8")
+    for label, old, new, marker in edits:
+        if marker in s:
+            print("  already: %s / %s" % (rel, label))
+            continue
+        n = s.count(old)
+        if n != 1:
+            print("  ANCHOR %d x: %s / %s" % (n, rel, label))
+            ok = False
+            continue
+        s = s.replace(old, new)
+        print("  edit:    %s / %s" % (rel, label))
+    out[p] = s
+if not ok:
+    print("FAILED: nothing written")
+    sys.exit(1)
+if not DRY:
+    for p, s in out.items():
+        p.write_text(s, encoding="utf-8")
+print("dry run: nothing written" if DRY else "written")

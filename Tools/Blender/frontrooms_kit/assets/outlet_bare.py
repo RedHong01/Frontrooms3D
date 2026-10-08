@@ -74,10 +74,17 @@ LIP_H = (0.08, 0.34)           # lip height: outer edge on the wall, inner edge 
 TERM = {"R": 3.6, "crown": 0.9, "side": 1.2, "slot": (1.0, 0.7), "axis_h": -1.5, "z": oc.OPEN_Z}
 ARC_DEG_BARE = 5.625           # the faces are the hero here: 64 per circle
 DARK = "Prop_Rubber"           # matte near-black (existing slot): the void reads with no sheen (round 9)
-# LOD2 dot on a bare face (round 9): the slots only (about 48 mm^2 of slot
+# LOD2 marks on a bare face (round 9): the slots only (about 48 mm^2 of slot
 # mouth per face), with no plate-opening gap ring round the face, so the
-# shared 103 mm^2 dot (slots + gap ring) is scaled to 55 mm^2.
-LOD2_DOT_AB_BARE = (oc.LOD2_DOT_AB[0] * 0.73, oc.LOD2_DOT_AB[1] * 0.73)
+# shared 98 mm^2 of marks (slots + gap ring) is scaled to 55 mm^2.
+LOD2_MARK_K_BARE = 55.0 / 98.0
+# LOD2 face 6-gon on a bare tower (round 10): area-matched to the LOD0 5-15R
+# face (Ø32.5 with flats at +-13.9: 775.8 mm^2). The shared plate-kit 6-gon
+# (711.6 mm^2) sits in an ivory plate opening, so its shortfall is hidden;
+# here the strap behind it is darker steel and the face measured -7.6 % (r10).
+# Each axis x sqrt(775.8 / 711.6) = 1.044; the 1 mm overshoot past the flats
+# is 0.2 px at 4 m.
+LOD2_FACE_AB_BARE = (oc.LOD2_FACE_AB[0] * 1.044, oc.LOD2_FACE_AB[1] * 1.044)
 
 
 def ragged_outline(hw, hh, n=60, seed=7):
@@ -272,9 +279,9 @@ def build(kit):
 def build_lods(kit, k, towers, cut):
     """LOD1: 24-point faces with a 2-step edge and 0.5 mm slot insets, a
     coarse strap, box edge and gap; LOD2: the strap as a quad, each face as
-    a device-coloured 6-gon prism with the shared area-matched dark dot over
-    its slot cluster (outlet_common LOD2_*; rounds 8-9), the box edge as an
-    8-point ring on the dark gap."""
+    a device-coloured 6-gon prism with slots-only dark marks (outlet_common
+    lod2_marks; rounds 8-9), the box edge as an 8-point ring on the dark
+    gap."""
     ni, al, pb, br_ = oc.Mesh(), oc.Mesh(), oc.Mesh(), oc.Mesh()
     k1 = oc.LOD1_ARC_K
     for oz in zs_():
@@ -345,15 +352,16 @@ def build_lods(kit, k, towers, cut):
     q = al2.ring(oc.rect(0.0, 0.0, STRAP_W, STRAP_L), STRAP_FRONT)
     al2.fill(q)
     # Round 8/9: each face is a 6-gon PRISM (top LOD2_DOT_UP below the face
-    # top, sides down to the strap) with a slots-only dark dot on top. With no plate round it, the bare tower's lit side walls are part of
+    # top, sides down to the strap) with slots-only dark marks on top. With no plate round it, the bare tower's lit side walls are part of
     # its read: a flat 6-gon alone measured -21 % on the face (r9m). The box
     # edge's 1 mm outer wall (sub-pixel beyond 4 m) pays for the sides.
     for oz in zs_():
-        hx = oc.lod2_hex(oc.LOD2_FACE_AB, 0.0, oz)
+        hx = oc.lod2_hex(LOD2_FACE_AB_BARE, 0.0, oz)
         top = ni2.ring(hx, FACE_TOP - oc.LOD2_DOT_UP)
         ni2.bridge(ni2.ring(hx, STRAP_FRONT), top)
         ni2.fill(top)
-        pb2.fill(pb2.ring(oc.lod2_hex(LOD2_DOT_AB_BARE, 0.0, oz + oc.LOD2_DOT_DZ), FACE_TOP))
+        for poly in oc.lod2_marks(oz, LOD2_MARK_K_BARE):
+            pb2.fill(pb2.ring(poly, FACE_TOP))
     ring8 = [(ohw, -ohh + 3), (ohw, ohh - 3), (ohw - 3, ohh), (-ohw + 3, ohh), (-ohw, ohh - 3), (-ohw, -ohh + 3), (-ohw + 3, -ohh), (ohw - 3, -ohh)]
     o8 = al2.ring(ring8, BOX_FRONT)
     i8 = al2.ring([(x * 0.94, z * 0.96) for x, z in ring8], BOX_FRONT)

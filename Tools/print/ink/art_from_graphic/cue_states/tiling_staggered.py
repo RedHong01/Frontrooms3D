@@ -72,7 +72,7 @@ def build():
     return gs, stripes
 GROUPS, STRIPES = build()
 # timeline (s)
-T_UP0, T_UP1 = 0.3, 2.6          # up-flow, columns settle into rows
+T_UP0, T_UP1 = 0.25, 2.3         # up-flow, columns settle into rows
 T_TURN0, T_TURN = 2.95, 0.6      # each row system turns
 T_H0, T_H1 = 3.85, 6.1           # rows flow right
 T_BACK0 = 6.35                   # turn back
@@ -84,20 +84,19 @@ def motion(variant, g, t):
     cf, cs, ce = sysl[g.col % n]                 # column system (vertical phases)
     rf, rs, re = sysl[g.row % n]                 # row system (horizontal phase, turns)
     voff = hoff = 0.0
+    # columns: one travel distance per unit type (so pieces stay matched after the rows mix them);
+    # each column system differs by when it starts and stops, i.e. by its speed over the shared distance
+    t0, t1 = T_UP0 + cs * 1.6, T_UP1 + ce * 1.6
     if g.kind == "field":
-        base = 0.0 if g.u == 1 else 0.0
-        target = 562.5 if g.u == 0 else 0.0     # rows form when unit 0 rises half a drop
-        t0, t1 = T_UP0 + cs, T_UP1 + ce
-        D = settle_distance(0.0, target, TH, V_UP * cf, t1 - t0)
-        voff = seg(t, t0, t1, D)
-        if g.u == 0:                             # the half-drop returns at the end of the loop
+        target = 562.5 if g.u == 0 else 0.0         # rows form when unit 0 rises half a drop
+        voff = seg(t, t0, t1, settle_distance(0.0, target, TH, V_UP, T_UP1 - T_UP0))
+        if g.u == 0:                                 # the half-drop returns at the end of the loop
             voff += seg(t, T_SLIP0 + cs, T_SLIP1 + ce * 0.5, 562.5)
-        h0, h1 = T_H0 + rs, T_H1 + re
-        Dh = settle_distance(0.0, 0.0, TW, V_H * rf, h1 - h0) or TW   # whole rolls: each piece returns to a field of its own unit
+        h0, h1 = T_H0 + rs, T_H1 + re                # rows: each system has its own speed
+        Dh = settle_distance(0.0, 0.0, TW, V_H * rf, h1 - h0) or TW   # whole rolls keep each piece in a field of its own unit
         hoff = seg(t, h0, h1, Dh)
     else:
-        t0, t1 = T_UP0 + cs, T_UP1 + ce
-        voff = -seg(t, t0, t1, settle_distance(0.0, 0.0, PER, V_DOWN * cf, t1 - t0) or PER)
+        voff = -seg(t, t0, t1, settle_distance(0.0, 0.0, PER, V_DOWN, T_UP1 - T_UP0) or PER)
     turn = M.ease((t - T_TURN0 - rs * 0.6) / T_TURN) - M.ease((t - T_BACK0 - rs * 0.6) / T_TURN)
     return voff, hoff, turn
 

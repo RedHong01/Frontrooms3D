@@ -1,0 +1,244 @@
+"""O3 close-ups (recovered 2026-10-07 from the 2026-10-04 transcript; KIT path now O3_KIT).
+O3 close-ups, iteration 2+: renders from the EXPORTED FBX (so the export,
+normals and colour attributes are what is checked).
+
+Blender -b --factory-startup --python closeups2.py -- <models_dir> <out_dir> <job.json>
+
+Shots: (distance m, elevation deg, yaw deg, vertical fov deg, rake light)
+or eye-level shots "eye<cm>" (player eye 1.62 m, horizontal distance cm/100,
+FOV 76, looking at the target). Modes: "normal" (kit preview materials),
+"backface" (front faces grey, back faces RED: any red seen = a flipped or
+missing face in Unity, which culls back faces), "wear" (the fr_wear colour
+attribute shown as unlit colour; white = untouched).
+"""
+import json
+import math
+import os
+import sys
+
+import bpy
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODELS, OUT, JOB = argv[0], argv[1], argv[2]
+KIT = os.environ.get("O3_KIT", "/Users/redwang/FrontRoomsVisualWork/o3/kit")
+sys.path.insert(0, KIT)
+import kitlib  # noqa: E402
+
+kitlib.register_slot("Prop_NylonIvory", (226 / 255.0, 217 / 255.0, 191 / 255.0), 0.45, 0.0)
+os.makedirs(OUT, exist_ok=True)
+job = json.load(open(JOB))
+SAMPLES = job.get("samples", 32)
+RES = job.get("res", [1280, 720])
+EYE = 1.62
+
+SHOTS = {
+    "c030_front": (0.30, 8.0, 0.0, 62.0, False),
+    "c030_rake": (0.30, 8.0, 0.0, 62.0, True),
+    "c030_34": (0.30, 28.0, 38.0, 62.0, False),
+    "c010_joint": (0.12, 12.0, 30.0, 62.0, False),
+    "c030_detail": (0.30, 8.0, 0.0, 15.0, False),
+    "c030_detail_rake": (0.30, 8.0, 0.0, 15.0, True),
+    "c030_detail34": (0.30, 30.0, 35.0, 15.0, False),
+    "c030_back34": (0.30, 30.0, 215.0, 15.0, False),
+    "c030_side": (0.30, 10.0, 90.0, 20.0, False),
+    "c030_low": (0.30, -8.0, 25.0, 20.0, False),
+    "c030_ko": (0.30, 12.0, 62.0, 30.0, False),
+}
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.render.engine = "CYCLES"
+    sc.cycles.samples = SAMPLES
+    sc.cycles.use_denoising = True
+    sc.cycles.device = "CPU"
+    sc.render.resolution_x = RES[0]
+    sc.render.resolution_y = RES[1]
+    sc.view_settings.view_transform = "AgX"
+    w = bpy.data.worlds.new("w")
+    w.use_nodes = True
+    w.node_tree.nodes["Background"].inputs[0].default_value = (0.30, 0.29, 0.26, 1)
+    w.node_tree.nodes["Background"].inputs[1].default_value = 0.22
+    sc.world = w
+    return sc
+
+
+def mat(name, colour, rough, metal=0.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*colour, 1)
+    b.inputs["Roughness"].default_value = rough
+    b.inputs["Metallic"].default_value = metal
+    return m
+
+
+def backface_mat():
+    m = bpy.data.materials.new("bf")
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    front = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    front.inputs["Color"].default_value = (0.55, 0.55, 0.55, 1)
+    back = nt.nodes.new("ShaderNodeEmission")
+    back.inputs["Color"].default_value = (1.0, 0.0, 0.0, 1)
+    back.inputs["Strength"].default_value = 3.0
+    # Red only where a CAMERA ray meets a back face: indirect rays that hit
+    # the (back-facing) inside of a box would otherwise bleed red light
+    # through gaps onto front faces (a false positive).
+    lp = nt.nodes.new("ShaderNodeLightPath")
+    mul = nt.nodes.new("ShaderNodeMath")
+    mul.operation = "MULTIPLY"
+    nt.links.new(geo.outputs["Backfacing"], mul.inputs[0])
+    nt.links.new(lp.outputs["Is Camera Ray"], mul.inputs[1])
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(mul.outputs["Value"], mix.inputs["Fac"])
+    nt.links.new(front.outputs["BSDF"], mix.inputs[1])
+    nt.links.new(back.outputs["Emission"], mix.inputs[2])
+    nt.links.new(mix.outputs["Shader"], out.inputs["Surface"])
+    return m
+
+
+def wear_mat(attr):
+    m = bpy.data.materials.new("wear")
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    ca = nt.nodes.new("ShaderNodeVertexColor")
+    ca.layer_name = attr
+    em = nt.nodes.new("ShaderNodeEmission")
+    nt.links.new(ca.outputs["Color"], em.inputs["Color"])
+    em.inputs["Strength"].default_value = 1.0
+    nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+    return m
+
+
+def plane(name, size, loc, rot, m):
+    bpy.ops.mesh.primitive_plane_add(size=1, location=loc, rotation=rot)
+    o = bpy.context.active_object
+    o.name = name
+    o.scale = (size[0], size[1], 1)
+    o.data.materials.append(m)
+    return o
+
+
+def import_fbx(name, mode, loc=(0, 0, 0), scale=(1, 1, 1), rot=(math.radians(90), 0, 0), rot_z=0.0):
+    """The kit FBX holds Y-up data; Rx(90) restores the Blender frame."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(MODELS, name + ".fbx"))
+    objs = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    for o in objs:
+        if o.name.endswith("_LOD1"):
+            o.hide_render = True
+        o.rotation_euler = (rot[0], rot[1], rot[2] + math.radians(rot_z))
+        o.scale = Vector(scale)
+        o.location = Vector(loc)
+        if mode == "backface":
+            bf = bpy.data.materials.get("bf") or backface_mat()
+            for i in range(len(o.data.materials)):
+                o.data.materials[i] = bf
+            continue
+        if mode == "wear":
+            attrs = [c.name for c in o.data.color_attributes]
+            wm = wear_mat(attrs[0] if attrs else "fr_wear")
+            for i in range(len(o.data.materials)):
+                o.data.materials[i] = wm
+            print("[wear]", o.name, attrs)
+            continue
+        for i, m in enumerate(o.data.materials):
+            if m is None:
+                continue
+            slot = m.name.split(".")[0]
+            if slot in kitlib.SLOTS:
+                col, rough, metal = kitlib.SLOTS[slot]
+                o.data.materials[i] = mat(slot + "_pv", col, rough, metal)
+    return objs
+
+
+def light(kind, loc, rot, energy, size=0.5, colour=(1.0, 0.95, 0.86)):
+    ld = bpy.data.lights.new(kind + "L", kind)
+    ld.energy = energy
+    ld.color = colour
+    if kind == "AREA":
+        ld.size = size
+    if kind == "SPOT":
+        ld.spot_size = math.radians(40)
+        ld.shadow_soft_size = 0.02
+    o = bpy.data.objects.new(kind, ld)
+    bpy.context.scene.collection.objects.link(o)
+    o.location = loc
+    o.rotation_euler = rot
+    return o
+
+
+def aim(obj, target):
+    d = Vector(target) - obj.location
+    obj.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+
+
+def render(a):
+    sc = reset()
+    kind = a["kind"]
+    mode = a.get("mode", "normal")
+    mount = a.get("mount", 0.0)
+    if kind == "wall":
+        wall = mat("wall", (0.60, 0.53, 0.33), 0.8)       # Level 0 paper tone (preview only)
+        plane("wall", (12, 6), (0, 0.0, 3.0), (math.radians(90), 0, 0), wall)
+        floor = mat("carpet", (0.30, 0.25, 0.13), 0.95)
+    else:
+        floor = mat("carpet", (0.15, 0.15, 0.16), 0.95)   # office carpet tile (preview only)
+    plane("floor", (14, 14), (0, -5.0, 0), (0, 0, 0), floor)
+    if a.get("ceiling"):
+        plane("ceiling", (14, 14), (0, -5.0, a["ceiling"]), (math.radians(180), 0, 0), mat("ceil", (0.7, 0.7, 0.68), 0.9))
+    import_fbx(a["name"], mode, loc=(0, 0, mount), rot_z=a.get("yaw", 0.0))
+    for e in a.get("extra", []):
+        import_fbx(e["name"], mode, loc=e.get("loc", (0, 0, 0)), scale=e.get("scale", (1, 1, 1)), rot_z=e.get("yaw", 0.0))
+    if a.get("hide_main"):
+        for o in bpy.data.objects:
+            if o.type == "MESH" and o.name.startswith(a["name"]) and o.location.length < 1e-6:
+                o.hide_render = True
+    tgt = Vector(a["target"]) + Vector((0, 0, mount))
+    light("AREA", (0.2, -1.2, 2.6), (math.radians(20), 0, 0), 140, size=1.2)
+    k = light("AREA", tgt + Vector((-0.9, -1.4, 1.3)), (0, 0, 0), 45, size=0.4)
+    aim(k, tgt)
+    cam_d = bpy.data.cameras.new("cam")
+    cam_d.sensor_fit = "VERTICAL"
+    cam = bpy.data.objects.new("cam", cam_d)
+    sc.collection.objects.link(cam)
+    sc.camera = cam
+    for shot in a["shots"]:
+        rake = False
+        if shot.startswith("eye"):
+            d = int(shot[3:]) / 100.0
+            yw = math.radians(a.get("eye_yaw", 15.0))
+            cam_d.angle_y = math.radians(76.0)
+            cam.location = Vector((tgt.x + math.sin(yw) * d, tgt.y - math.cos(yw) * d, EYE))
+        else:
+            dist, elev, yaw, fov, rake = SHOTS[shot]
+            cam_d.angle_y = math.radians(fov)
+            el, yw = math.radians(elev), math.radians(yaw)
+            cam.location = tgt + Vector((math.sin(yw) * math.cos(el), -math.cos(yw) * math.cos(el), math.sin(el))) * dist
+        cam_d.clip_start = 0.01
+        aim(cam, tgt)
+        rk = None
+        if rake:
+            rk = light("SPOT", tgt + Vector((-0.35, -0.35, 0.05)), (0, 0, 0), 40)
+            aim(rk, tgt)
+        sfx = "" if mode == "normal" else "_" + mode
+        sc.render.filepath = os.path.join(OUT, "%s_%s%s.png" % (a.get("label", a["name"]), shot, sfx))
+        bpy.ops.render.render(write_still=True)
+        if rk is not None:
+            bpy.data.objects.remove(rk, do_unlink=True)
+        print("[shot]", sc.render.filepath)
+
+
+only = set(argv[3:])
+for a in job["assets"]:
+    if only and a.get("label", a["name"]) not in only:
+        continue
+    render(a)

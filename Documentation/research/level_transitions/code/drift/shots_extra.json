@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "about": "V4 Drift extra shots (clone-only, 2026-10-03). Same harness and conventions as DOC/shots.json.",
+  "mapRoot": [
+    4992,
+    0,
+    4992
+  ],
+  "shots": [
+    {
+      "id": "shot5",
+      "title": "Drift extra: the shot1 arch seen from the Office, 8 m back on the column x = 264 (Office (264,205) -> arch Z = 609.0 -> Level 0 (264,202))",
+      "seed": 516574485,
+      "eyeMap": [
+        793.5,
+        1.62,
+        617.4
+      ],
+      "yaw": 180.0,
+      "pitch": 5.0,
+      "fov": 76,
+      "openDoors": []
+    },
+    {
+      "id": "shot6",
+      "title": "Drift extra: close view of drops and carpet squares on the open edge Z = 588.0 ((255,195) Level 0 | (255,196) Office)",
+      "seed": 516574485,
+      "eyeMap": [
+        766.2,
+        1.62,
+        586.2
+      ],
+      "yaw": 38.0,
+      "pitch": 36.0,
+      "fov": 76,
+      "openDoors": []
+    }
+  ]
+}

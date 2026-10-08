@@ -1,0 +1,388 @@
+"""O3 ray probe v2 (2026-10-07): back faces and see-through leaks on the
+EXPORTED FBX, judged the way Unity draws it (back faces culled).
+
+blender -b --factory-startup --python o3_rayprobe2.py -- <models_dir> <out.json>
+        [--only Kit_A,Kit_B] [--tag LOD0] [--step 0.25] [--fine 0.1] [--dirs 41]
+
+Why v2. The v1 probe (2026-10-04) reported FAILs that were probe artefacts:
+* its ray grid was commensurate with the slot and bezel edges (0.15 mm steps
+  landing exactly on a shared edge), so the BVH returned the face on the far
+  side of the edge;
+* its tilted directions for side and top regions started rays behind the
+  wall or under the floor;
+* its footprint test was a rectangle, so the rounded corners of the flange
+  and the cover counted as "through".
+v2 fixes all three:
+* every ray gets a seeded random offset inside its grid cell, and a
+  back-face or leak hit is confirmed only when 4 of 5 rays (the ray and
+  four shifted 0.03 mm along the diagonals across it) agree: a lone hit on
+  a shared edge or on the rim where a part meets the support is a tie, not
+  a hole;
+* view directions are a Fibonacci set over the support's FRONT hemisphere
+  (polar 0..82 deg from the wall / floor normal), so no ray starts inside
+  the wall or the floor;
+* LEAK = the first hit is the support plane at a point INSIDE the kit's solid:
+  a crossing count along the support normal flags it (> 0) and the
+  generalized winding number confirms it (> 0.25; open and overlapping
+  shells fool a crossing count, not the GWN). A real gap such as the wall
+  under the strap's bend has winding 0 and is not a leak.
+Assemblies are probed as placed: the handy box with an EMT tile at its
+conduit_base; the strap on an EMT tile; the floor boxes and the powered panel
+alone (the panel has no support plane: back faces only).
+"""
+import json
+import math
+import os
+import random
+import sys
+
+import bpy
+import numpy as np
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODELS, OUT = argv[0], argv[1]
+
+
+def opt(name, default, cast=str):
+    return cast(argv[argv.index(name) + 1]) if name in argv else default
+
+
+ONLY = set(x for x in opt("--only", "").split(",") if x)
+TAG = opt("--tag", "LOD0")
+STEP = opt("--step", 0.25, float)
+FINE = opt("--fine", 0.10, float)
+NDIRS = opt("--dirs", 41, int)
+SUFFIX = opt("--suffix", "")          # e.g. "_LOD1" to load <name>_LOD1.fbx
+MM = 0.001
+rng = random.Random(20261007)
+# A hit is confirmed when AGREE of 5 rays agree: the ray itself and four
+# rays shifted 0.03 mm along the diagonals across it. An edge tie (a ray that
+# lands exactly on a shared edge) fails on the diagonal that leaves the edge;
+# a hole holds for all five. (v2 first used +-a / +-b shifts with 3 of 5,
+# which an edge parallel to a or b could pass.)
+DIAG = ((1, 1), (1, -1), (-1, 1), (-1, -1))
+AGREE = 4
+# A back face met within 0.6 deg of edge-on (|n.d| < 0.01) is a grazing tie:
+# the ray runs along the face, which covers no area on screen, so culling it
+# opens no hole. Counted apart as "grazing".
+GRAZE = 0.01
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+
+
+def load(name, loc=(0, 0, 0), sy=1.0):
+    path = os.path.join(MODELS, name + SUFFIX + ".fbx")
+    if not os.path.exists(path):
+        path = os.path.join(MODELS, name + ".fbx")
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=path)
+    objs = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    out = []
+    for o in objs:
+        if o.name.endswith("_LOD1") and not SUFFIX:
+            continue                              # kitlib LOD1 (panel): LOD0 only here
+        o.rotation_euler = (math.radians(90), 0, 0)   # FBX holds Y-up data
+        o.scale = (1, sy, 1)
+        o.location = Vector(loc)
+        out.append(o)
+    bpy.context.view_layer.update()
+    return out
+
+
+def mesh_data(objs):
+    verts, polys, slots = [], [], []
+    for o in objs:
+        mw = o.matrix_world
+        base = len(verts)
+        verts += [mw @ v.co for v in o.data.vertices]
+        names = [m.name.split(".")[0] if m else "?" for m in o.data.materials]
+        for p in o.data.polygons:
+            polys.append([base + i for i in p.vertices])
+            slots.append(names[p.material_index] if p.material_index < len(names) else "?")
+    return verts, polys, slots
+
+
+def fib_dirs(n_support, count, max_polar_deg):
+    """Ray directions TOWARD the support: -(view vectors) spread evenly over
+    the cap of polar angle <= max_polar around the support normal."""
+    nz = Vector(n_support).normalized()
+    t = Vector((1, 0, 0)) if abs(nz.x) < 0.9 else Vector((0, 1, 0))
+    ax = (t - nz * t.dot(nz)).normalized()
+    ay = nz.cross(ax)
+    cmin = math.cos(math.radians(max_polar_deg))
+    golden = math.pi * (3 - math.sqrt(5))
+    out = []
+    for i in range(count):
+        c = 1 - (1 - cmin) * (i + 0.5) / count          # cos(polar), uniform in solid angle
+        s = math.sqrt(max(0.0, 1 - c * c))
+        az = golden * i
+        view = nz * c + (ax * math.cos(az) + ay * math.sin(az)) * s
+        out.append(-view.normalized())
+    return out
+
+
+class Probe:
+    def __init__(self, objs, support, blockers=()):
+        """blockers: z heights where a disc closes an EMT tile's open end, as
+        the game does (the ceiling above the last tile, the socket or the
+        previous tile below the first); hits on them are neither leaks nor
+        back faces."""
+        self.verts, self.polys, self.slots = mesh_data(objs)
+        self.nkit = len(self.polys)
+        self.support = support
+        verts, polys = list(self.verts), list(self.polys)
+        if support == "wall":
+            s = 3.0
+            b = len(verts)
+            verts += [Vector((-s, 0, -s)), Vector((s, 0, -s)), Vector((s, 0, s)), Vector((-s, 0, s))]
+            polys.append([b, b + 1, b + 2, b + 3])          # normal -Y (toward the viewer)
+            self.n = Vector((0, -1, 0))
+        elif support == "floor":
+            s = 3.0
+            b = len(verts)
+            verts += [Vector((-s, -s, 0)), Vector((s, -s, 0)), Vector((s, s, 0)), Vector((-s, s, 0))]
+            polys.append([b, b + 1, b + 2, b + 3])          # normal +Z
+            self.n = Vector((0, 0, 1))
+        else:
+            self.n = None
+        self.isupport = len(polys) - 1 if support in ("wall", "floor") else -1
+        for z in blockers:                       # discs closing the EMT tube ends
+            b = len(verts)
+            r = (17.9 / 2 + 0.05) * MM
+            verts += [Vector((r * math.cos(2 * math.pi * k / 48), -11.5 * MM + r * math.sin(2 * math.pi * k / 48), z))
+                      for k in range(48)]
+            polys.append(list(range(b, b + 48)))
+        self.bvh = BVHTree.FromPolygons(verts, polys, all_triangles=False, epsilon=0.0)
+        self.kit_bvh = BVHTree.FromPolygons(self.verts, self.polys, all_triangles=False, epsilon=0.0)
+        # Fan triangles for the generalized winding number (GWN).
+        tri = []
+        for poly in self.polys:
+            for k in range(1, len(poly) - 1):
+                tri.append((poly[0], poly[k], poly[k + 1]))
+        V = np.array([tuple(v) for v in self.verts], dtype=np.float64)
+        T = np.array(tri, dtype=np.int64)
+        self.TA, self.TB, self.TC = V[T[:, 0]], V[T[:, 1]], V[T[:, 2]]
+        xs = [v.x for v in self.verts]
+        ys = [v.y for v in self.verts]
+        zs = [v.z for v in self.verts]
+        self.lo = Vector((min(xs), min(ys), min(zs)))
+        self.hi = Vector((max(xs), max(ys), max(zs)))
+
+    def behind(self, p):
+        if self.support == "wall":
+            return p.y >= 0.0
+        if self.support == "floor":
+            return p.z <= 0.0
+        return False
+
+    def gwn(self, p):
+        """Generalized winding number of the kit at p (Jacobson et al.;
+        Van Oosterom-Strackee solid angles): ~1 inside a closed solid, ~0.5
+        on the wall / floor inside a kit that is open toward it, ~0
+        outside. Robust where open or overlapping shells (a neck inside a
+        collar, a boss inside a socket) fool a crossing count."""
+        q = np.array(tuple(p), dtype=np.float64)
+        a, b, c = self.TA - q, self.TB - q, self.TC - q
+        la, lb, lc = (np.linalg.norm(x, axis=1) for x in (a, b, c))
+        det = np.einsum("ij,ij->i", a, np.cross(b, c))
+        den = la * lb * lc + np.einsum("ij,ij->i", a, b) * lc + np.einsum("ij,ij->i", b, c) * la \
+            + np.einsum("ij,ij->i", c, a) * lb
+        return float(np.sum(2.0 * np.arctan2(det, den)) / (4.0 * math.pi))
+
+    def inside(self, p):
+        """Leak test for a wall / floor point: a cheap crossing count first,
+        then the GWN (> 0.25) confirms."""
+        return self.winding(p) > 0 and abs(self.gwn(p + self.n * 1e-6)) > 0.25
+
+    def winding(self, p):
+        """Outward faces crossed (+1 leaving, -1 entering) walking from p
+        along the support normal: > 0 means p lies inside the kit's solid."""
+        o = p + self.n * 1e-6
+        w = 0
+        for _ in range(64):
+            loc, nor, idx, dist = self.kit_bvh.ray_cast(o, self.n, 2.0)
+            if loc is None:
+                break
+            d = nor.dot(self.n)
+            if d > 1e-9:
+                w += 1
+            elif d < -1e-9:
+                w -= 1
+            o = loc + self.n * 1e-6
+        return w
+
+    def cast(self, o, d):
+        return self.bvh.ray_cast(o, d, 4.0)
+
+    def is_leak(self, o, d):
+        loc, nor, idx, dist = self.cast(o, d)
+        return loc is not None and idx == self.isupport and self.inside(loc)
+
+    def is_back(self, o, d):
+        loc, nor, idx, dist = self.cast(o, d)
+        return loc is not None and idx < self.nkit and nor.dot(d) > 1e-9
+
+    def run(self, label, dirs, step_mm, region=None):
+        lo, hi = (self.lo, self.hi) if region is None else (Vector(region[0]), Vector(region[1]))
+        lo = lo - Vector((2, 2, 2)) * MM
+        hi = hi + Vector((2, 2, 2)) * MM
+        centre = (lo + hi) / 2
+        corners = [Vector((x, y, z)) for x in (lo.x, hi.x) for y in (lo.y, hi.y) for z in (lo.z, hi.z)]
+        # Every ray starts OUTSIDE the whole kit's bounding sphere (a region
+        # pass must not start rays inside the box or the tube: v2 first run).
+        kc = (self.lo + self.hi) / 2
+        R = (centre - kc).length + (self.hi - self.lo).length / 2 + 0.05
+        res = {"label": label, "step_mm": step_mm, "dirs": len(dirs), "rays": 0, "skipped": 0, "hits": 0,
+               "backface_real": 0, "backface_edge": 0, "grazing": 0, "leak": 0, "leak_edge": 0, "support_hits": 0, "blocked": 0,
+               "samples_back": [], "samples_leak": [], "back_slots": {}}
+        st = step_mm * MM
+        dl = 0.03 * MM / math.sqrt(2.0)        # diagonal shifts: no edge runs along both
+        for d in dirs:
+            t = Vector((1, 0, 0)) if abs(d.x) < 0.9 else Vector((0, 1, 0))
+            a = (t - d * t.dot(d)).normalized()
+            b = d.cross(a)
+            us = [(c - centre).dot(a) for c in corners]
+            vs = [(c - centre).dot(b) for c in corners]
+            u0, u1, v0, v1 = min(us), max(us), min(vs), max(vs)
+            nu = int((u1 - u0) / st) + 1
+            nv = int((v1 - v0) / st) + 1
+            base = centre - d * R
+            for i in range(nu):
+                for j in range(nv):
+                    u = u0 + (i + rng.random()) * st
+                    v = v0 + (j + rng.random()) * st
+                    o = base + a * u + b * v
+                    res["rays"] += 1
+                    if self.behind(o):
+                        res["skipped"] += 1
+                        continue
+                    loc, nor, idx, dist = self.cast(o, d)
+                    if loc is None:
+                        continue
+                    if idx >= self.nkit and idx != self.isupport:
+                        res["blocked"] += 1
+                        continue
+                    if idx >= self.nkit:
+                        res["support_hits"] += 1
+                        if self.inside(loc) and 1 + sum(
+                                1 for sa, sb in DIAG
+                                if self.is_leak(o + a * (sa * dl) + b * (sb * dl), d)) >= AGREE:
+                            res["leak"] += 1
+                            if len(res["samples_leak"]) < 16:
+                                res["samples_leak"].append({"p_mm": [round(x / MM, 2) for x in loc],
+                                                            "d": [round(x, 3) for x in d]})
+                        elif self.winding(loc) > 0:
+                            res["leak_edge"] += 1     # crossing count only, or a lone tie
+                        continue
+                    res["hits"] += 1
+                    if nor.dot(d) <= 1e-9:
+                        continue
+                    if nor.dot(d) < GRAZE:
+                        res["grazing"] += 1         # within 0.6 deg of edge-on: covers no pixel area
+                        continue
+                    agree = 1 + sum(1 for sa, sb in DIAG
+                                    if self.is_back(o + a * (sa * dl) + b * (sb * dl), d))
+                    if agree >= AGREE:
+                        res["backface_real"] += 1
+                        sl = self.slots[idx]
+                        res["back_slots"][sl] = res["back_slots"].get(sl, 0) + 1
+                        if len(res["samples_back"]) < 16:
+                            res["samples_back"].append({"p_mm": [round(x / MM, 2) for x in loc],
+                                                        "n": [round(x, 3) for x in nor], "d": [round(x, 3) for x in d],
+                                                        "slot": sl, "face": idx})
+                    else:
+                        res["backface_edge"] += 1
+        ok = res["backface_real"] == 0 and res["leak"] == 0
+        res["verdict"] = "PASS" if ok else "FAIL"
+        print("[ray2] %-44s rays %8d skip %7d hits %8d  back real %5d (edge ties %4d)  leak %5d (edge %3d)  %s" % (
+            label, res["rays"], res["skipped"], res["hits"], res["backface_real"], res["backface_edge"],
+            res["leak"], res["leak_edge"], res["verdict"]))
+        for s_ in res["samples_back"][:5]:
+            print("[ray2]     back", s_)
+        for s_ in res["samples_leak"][:5]:
+            print("[ray2]     leak", s_)
+        sys.stdout.flush()
+        return res
+
+
+REPORT = {}
+
+
+def want(name):
+    return not ONLY or name in ONLY
+
+
+def floorbox(name, H, D, faces):
+    reset()
+    objs = load(name)
+    pr = Probe(objs, "floor")
+    dirs = fib_dirs((0, 0, 1), NDIRS, 82.0)
+    REPORT[TAG + " " + name + " whole"] = pr.run(TAG + " " + name + " whole", dirs, STEP)
+    hd = D / 2 - 4.0
+    for side, sgn in (("front", -1), ("back", 1))[:faces]:
+        y0, y1 = sorted((sgn * (hd - 4.0), sgn * (hd + 2.0)))
+        reg = ((-0.046, y0 * MM, 0.008), (0.046, y1 * MM, 0.058))
+        REPORT[TAG + " " + name + " device " + side] = pr.run(TAG + " " + name + " device " + side, dirs, FINE, reg)
+
+
+def handybox():
+    reset()
+    objs = load("Kit_OutletHandyBox") + load("Kit_ConduitEMT", (0, 0, 0.0926))
+    pr = Probe(objs, "wall", blockers=(1.0926,))
+    dirs = fib_dirs((0, -1, 0), NDIRS, 82.0)
+    # Whole box (EMT clipped to the first 0.25 m above the socket).
+    REPORT[TAG + " HandyBox + EMT whole"] = pr.run(TAG + " HandyBox + EMT whole", dirs, STEP,
+                                                   ((-0.03, -0.055, -0.054), (0.03, 0.0, 0.25)))
+    REPORT[TAG + " HandyBox device"] = pr.run(TAG + " HandyBox device", dirs, FINE,
+                                              ((-0.02, -0.053, -0.040), (0.02, -0.046, 0.040)))
+    REPORT[TAG + " HandyBox connector joint"] = pr.run(TAG + " HandyBox connector joint", dirs, FINE,
+                                                       ((-0.013, -0.036, 0.050), (0.013, 0.0, 0.105)))
+
+
+def strap():
+    reset()
+    objs = load("Kit_ConduitStrap") + load("Kit_ConduitEMT", (0, 0, -0.1))
+    pr = Probe(objs, "wall", blockers=(-0.1, 0.9))
+    dirs = fib_dirs((0, -1, 0), NDIRS, 82.0)
+    REPORT[TAG + " Strap on EMT"] = pr.run(TAG + " Strap on EMT", dirs, FINE,
+                                           ((-0.012, -0.024, -0.013), (0.020, 0.0, 0.013)))
+
+
+def emt_scaled():
+    reset()
+    objs = load("Kit_ConduitEMT", sy=0.4)
+    pr = Probe(objs, "wall", blockers=(0.0, 0.4))
+    dirs = fib_dirs((0, -1, 0), NDIRS, 82.0)
+    REPORT[TAG + " EMT tile scaled 0.4"] = pr.run(TAG + " EMT tile scaled 0.4", dirs, STEP,
+                                                  ((-0.01, -0.021, 0.0), (0.01, 0.0, 0.40)))
+
+
+def panel():
+    reset()
+    objs = load("Kit_CubiclePanel_Powered")
+    pr = Probe(objs, None)
+    for side, n, x in (("front", (0, -1, 0), 0.30), ("back", (0, 1, 0), -0.30)):
+        dirs = fib_dirs(n, NDIRS, 82.0)
+        y0, y1 = (-0.034, -0.029) if side == "front" else (0.029, 0.034)
+        REPORT[TAG + " Panel receptacle " + side] = pr.run(TAG + " Panel receptacle " + side, dirs, FINE,
+                                                           ((x - 0.041, y0, 0.046), (x + 0.041, y1, 0.094)))
+
+
+if want("Kit_FloorBoxTombstone"):
+    floorbox("Kit_FloorBoxTombstone", 67.0, 76.0, 1)
+if want("Kit_FloorBoxTombstone2"):
+    floorbox("Kit_FloorBoxTombstone2", 76.0, 86.0, 2)
+if want("Kit_OutletHandyBox"):
+    handybox()
+if want("Kit_ConduitStrap"):
+    strap()
+if want("Kit_ConduitEMT"):
+    emt_scaled()
+if want("Kit_CubiclePanel_Powered"):
+    panel()
+json.dump(REPORT, open(OUT, "w"), indent=1)
+print("[ray2] wrote", OUT)

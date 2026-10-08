@@ -1,0 +1,99 @@
+"""Culling check renders (2026-10-07): Workbench with BACK-FACE CULLING ON,
+as Unity draws the kit, the kit flat grey and the wall / floor RED. Any red
+seen where the kit should be = the support shows through a gap or a culled
+face. Cycles shades back faces, so the review renders could not show this.
+
+blender -b --factory-startup --python wb_cull.py -- <job.json> <out_dir>
+
+job: {"shots": [{"label": str, "models": dir, "kits": [[name, [x, y, z] m, sy]],
+                 "support": "wall" | "floor", "target_mm": [x, y, z],
+                 "dir": [dx, dy, dz] (view ray), "dist": m, "fov": deg,
+                 "res": [w, h], "ceiling_disc_z": [m, ...] (optional)}]}
+"""
+import json
+import math
+import os
+import sys
+
+import bpy
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+JOB, OUT = argv[0], argv[1]
+os.makedirs(OUT, exist_ok=True)
+MM = 0.001
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.render.engine = "BLENDER_WORKBENCH"
+    sh = sc.display.shading
+    sh.light = "STUDIO"
+    sh.color_type = "OBJECT"
+    sh.show_backface_culling = True
+    sh.show_cavity = False
+    sh.show_shadows = False
+    sh.show_object_outline = False
+    sc.display.render_aa = "32"
+    sc.view_settings.view_transform = "Standard"
+    return sc
+
+
+def load(models, name, loc, sy):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(models, name + ".fbx"))
+    objs = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    for o in objs:
+        if o.name.endswith("_LOD1") and not name.endswith("_LOD1"):
+            o.hide_render = True
+        o.rotation_euler = (math.radians(90), 0, 0)
+        o.scale = (1, sy, 1)
+        o.location = Vector(loc)
+        o.color = (0.62, 0.62, 0.60, 1)
+    return objs
+
+
+def plane(name, rot, colour, loc=(0, 0, 0), size=8.0):
+    bpy.ops.mesh.primitive_plane_add(size=size, location=loc, rotation=rot)
+    o = bpy.context.active_object
+    o.name = name
+    o.color = colour
+    return o
+
+
+def disc(z, colour):
+    bpy.ops.mesh.primitive_circle_add(vertices=48, radius=(17.9 / 2 + 0.05) * MM, fill_type="NGON",
+                                      location=(0, -11.5 * MM, z))
+    o = bpy.context.active_object
+    o.color = colour
+    return o
+
+
+job = json.load(open(JOB))
+for s in job["shots"]:
+    sc = reset()
+    for name, loc, sy in s["kits"]:
+        load(s["models"], name, loc, sy)
+    red = (1.0, 0.0, 0.0, 1)
+    if s["support"] == "wall":
+        plane("wall", (math.radians(90), 0, 0), red)        # normal -Y
+    else:
+        plane("floor", (0, 0, 0), red)                       # normal +Z
+    for z in s.get("ceiling_disc_z", []):
+        disc(z, (0.62, 0.62, 0.60, 1))
+    tgt = Vector(s["target_mm"]) * MM
+    d = Vector(s["dir"]).normalized()
+    cam_d = bpy.data.cameras.new("cam")
+    cam_d.sensor_fit = "HORIZONTAL"
+    cam_d.angle = math.radians(s["fov"])
+    cam_d.clip_start = 0.002
+    cam = bpy.data.objects.new("cam", cam_d)
+    sc.collection.objects.link(cam)
+    sc.camera = cam
+    cam.location = tgt - d * s["dist"]
+    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+    sc.render.resolution_x, sc.render.resolution_y = s.get("res", [1200, 900])
+    sc.render.filepath = os.path.join(OUT, s["label"] + ".png")
+    bpy.ops.render.render(write_still=True)
+    print("[wb]", sc.render.filepath)

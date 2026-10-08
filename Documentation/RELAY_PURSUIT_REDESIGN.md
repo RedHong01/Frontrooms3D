@@ -489,6 +489,23 @@ Player-facing text never uses the word "relay" for panel sounds. Captions feed t
 - **Audio:** a "Warning cue volume" slider; the lock-on cue never below room tone.
 - **Assists, off by default:** captions (existing row) in the classes above; "Visual sound cues", a small edge marker for stage-2 steps and device trips (Q3e); with captions on, a rumble or vignette pulse (never a flash) at lock-on.
 
+### 9.6 The wallpaper arrow motion in pursuit (decided 2026-10-07 with 平面视觉)
+
+Red wants the pattern-native hint in the game: the wall's arrows click round to point a route in three 30° ratchets, then the rows step along it. These rules govern it during pursuit:
+
+| Moment | Arrows | Why |
+|---|---|---|
+| Stage 1 and 2 (`WarnStage`) | Only the walls of the player's room set click round, never in the Relay's room or within 2 cells of it. They point the **calm FLOW route** (the nearest unvisited threshold, which never looks at the Relay). No stepping | A local warning about you, and no position readout (LD R5) |
+| Lock-on hold (`TargetAcquired` → +0.7 s) | No change | The chime is the only stage-3 signal |
+| Chase (`StateChanged(Chase)`, after the hold) | A travelling wave from the player's room set outward at 8 m/s. The arrows may switch to the **pressure route** (doors away from it that you can shut; LD R6) and the rows step | The same moment as the LD chase wave |
+| Chase ends (`StateChanged` Chase → Search) | The wave retracts over 2–3 s, back to the calm route | The hint lasts as long as the chase |
+| Withdraw, Restore | No change | "It has gone" is audio only (Q3c); the paper is never an all-clear |
+
+- **Rhythm:** fixed, at 平面视觉's two step speeds. Never tied to the Relay's speed or distance, which would make the step rate a proximity readout.
+- **Tiers:** no tier gate. Tiers make the Relay better, never the hints fewer. After it lands, the evader bots measure it; if chase escape is above 50 % at T1 or 35 % at T5, shorten the pressure-route reach at T4–T5.
+- **Safety:** whole-wall stepping is a moving repeated pattern (Game Accessibility Guidelines). With Reduce Motion on, the arrows click round but never step, and the chase wave is a single static reveal.
+- **Never:** marks the Relay's position, marks a trigger room, or reacts on walls the Relay walked past.
+
 **Numbers.**
 
 | Parameter | Value (SP) | Why |

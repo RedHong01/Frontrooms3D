@@ -1,0 +1,8 @@
+1345:[517/635    3s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+1426:[602/635    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+1427:[603/635    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+1473:[631/635    5s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+1479:[633/635    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+1480:[634/635    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+1554:		CompileScripts: 11881.336ms
+warning CS lines: 0 · error CS lines: 0 · base 7320ed1: error CS 0

@@ -1,0 +1,130 @@
+using System;
+using FrontRooms.Map;
+using UnityEngine;
+
+/// <summary>
+/// Level transitions · visual-owned stand-in for the transition kit (clone-only
+/// pre-render, 2026-10-03, variation V4 Drift). The map asks it three questions
+/// through its "// TRANSITION drift" hooks:
+///
+/// 1. Corners (B0.1, drift form). How far each wall piece runs past a cell corner.
+///    Drift makes every unit near a border either finish, whatever the material, so
+///    two pieces may never share a coplanar face there: in a straight run the pieces
+///    meet on the cell line; at an L one arm (the owner) runs over the post and the
+///    other stops at the post face; at a T or a cross the run meets on the line and
+///    the perpendicular arms stop at the post face. The L owner is the arm whose
+///    exposed end cap lies on the low side of the shader's drop axis, so the end cap
+///    takes the same drop as the face it turns onto. Corners outside the drift band
+///    keep the old 8 cm overlap (same finish, same pixels).
+/// 2. Linings. A jamb, a soffit or a free wall end straddles the cell line, which is
+///    a drop joint, so in the band they are built as one thin lining in a non-drift
+///    copy of one theme's finish: Office with probability pOffice at the place (50/50
+///    on a border edge), Level 0 otherwise. Columns in the band (and their bulkheads)
+///    take a lining finish the same way. No beads.
+/// 3. B0.2. Each face of a height-border wall goes in its own side's height block.
+/// </summary>
+public static class FrontRoomsTransitionKit
+{
+    public const float Half = ModuleUnits.WallHalf;
+    /// <summary>Thickness of a lining (its return on the wall face is this wide).</summary>
+    public const float LiningThickness = .005f;
+
+    public static bool Enabled => FrontRoomsThemeField.Enabled;
+
+    public enum Arm { E, W, N, S }
+
+    /// <summary>What one corner asks of one arm.</summary>
+    public struct CornerEnd
+    {
+        /// <summary>Metres past the corner (+0.08 over the post, 0 to the line, -0.08 stop at the post face).</summary>
+        public float extent;
+        /// <summary>Non-null at a free wall end in the band: the end cap lining's finish.</summary>
+        public Material lining;
+        public bool active;
+    }
+
+    static Material l0Lining, officeLining;
+
+    public static Material Lining(bool office)
+    {
+        if (l0Lining == null) l0Lining = Resources.Load<Material>("Transitions/L0_Wallpaper_Lining");
+        if (officeLining == null) officeLining = Resources.Load<Material>("Transitions/Office_Wall_Lining");
+        var m = office ? officeLining : l0Lining;
+        if (m == null) Debug.LogWarning("[Transitions] lining material missing: run FrontRoomsDriftTools.Prepare");
+        return m;
+    }
+
+    static float Band => FrontRoomsThemeField.Width + .75f;
+
+    /// <summary>True when drift can show a foreign unit near this map point.</summary>
+    public static bool InBand(FrontRoomsMapWorld world, Vector2 mapXZ) =>
+        Enabled && Mathf.Abs(FrontRoomsThemeField.Sample(world, mapXZ)) < Band;
+
+    /// <summary>A lining finish for a place, or null outside the band. Office with probability pOffice there.</summary>
+    public static Material LiningAt(FrontRoomsMapWorld world, Vector2 mapXZ, int k0, int k1, int salt)
+    {
+        if (!Enabled) return null;
+        var s = FrontRoomsThemeField.Sample(world, mapXZ);
+        if (Mathf.Abs(s) >= Band) return null;
+        var r = FrontRoomsThemeField.UnitRand(k0, k1, salt, 31, FrontRoomsThemeField.SeedFold(world.Seed));
+        return Lining(r < FrontRoomsThemeField.POffice(s));
+    }
+
+    /// <summary>The lining of an arch on the edge from cell a (west or south) along X (north edge) or Z (east edge).</summary>
+    public static Material ArchLining(FrontRoomsMapWorld world, GridCoord a, bool alongX)
+    {
+        var cs = MapGrid.CellSize;
+        var mid = alongX ? new Vector2((a.x + .5f) * cs, (a.y + 1) * cs) : new Vector2((a.x + 1) * cs, (a.y + .5f) * cs);
+        return LiningAt(world, mid, a.x * 2 + (alongX ? 1 : 0), a.y, 9001);
+    }
+
+    /// <summary>The finish of a column on grid corner (x, z) in the band, or null.</summary>
+    public static Material ColumnLining(FrontRoomsMapWorld world, int x, int z) =>
+        LiningAt(world, new Vector2(x * MapGrid.CellSize, z * MapGrid.CellSize), x, z, 9003);
+
+    /// <summary>
+    /// How the arm leaving corner (x, z) ends there. x, z are cell-corner coordinates:
+    /// corner (x, z) is the south-west corner of cell (x, z).
+    /// </summary>
+    public static CornerEnd Corner(FrontRoomsMapWorld world, int x, int z, Arm arm)
+    {
+        var result = new CornerEnd { extent = Half };
+        if (!Enabled) return result;
+        var sw = new GridCoord(x - 1, z - 1);
+        var se = new GridCoord(x, z - 1);
+        var nw = new GridCoord(x - 1, z);
+        var ne = new GridCoord(x, z);
+        // The start area builds its own edges: leave its corners as they are.
+        if (world.InStartArea(sw) || world.InStartArea(se) || world.InStartArea(nw) || world.InStartArea(ne)) return result;
+        var cs = MapGrid.CellSize;
+        if (!InBand(world, new Vector2(x * cs, z * cs))) return result;
+        var cache = world.Cache;
+        var e = cache.Edge(se, ne) != EdgeKind.Open;
+        var w = cache.Edge(sw, nw) != EdgeKind.Open;
+        var n = cache.Edge(nw, ne) != EdgeKind.Open;
+        var s = cache.Edge(sw, se) != EdgeKind.Open;
+        var count = (e ? 1 : 0) + (w ? 1 : 0) + (n ? 1 : 0) + (s ? 1 : 0);
+        result.active = true;
+        var isX = arm == Arm.E || arm == Arm.W;
+        if (count <= 1)
+        {
+            // A free end: it keeps its 8 cm past the corner and ends in a lining.
+            result.lining = LiningAt(world, new Vector2(x * cs, z * cs), x, z, 9002);
+            return result;
+        }
+        var runX = e && w;
+        var runZ = n && s;
+        if (count == 2 && !runX && !runZ)
+        {
+            // An L. The owner's end cap must lie on the low side of the drop axis
+            // (t = cross(up, n)), so it takes the drop of the face it turns onto.
+            var owner = e ? (n ? Arm.E : Arm.S) : (n ? Arm.N : Arm.W);
+            result.extent = arm == owner ? Half : -Half;
+            return result;
+        }
+        // A straight run, a T or a cross: the run meets on the line, the rest stop at the post face.
+        var inRun = runX ? isX : !isX;
+        result.extent = inRun ? 0f : -Half;
+        return result;
+    }
+}

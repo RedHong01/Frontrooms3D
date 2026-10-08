@@ -1,0 +1,81 @@
+"""Pack the Q16 evacuation-plan artwork for Unity (research/placard/10_spec.md §3.3).
+
+  python3 Tools/lookdev/pack_evac_plan.py [art_dir] [out_dir]
+    art_dir  default Tools/print/ink/art_from_graphic/placard   (平面视觉's artwork; never edited)
+    out_dir  default Assets/Resources/Surfaces/Textures
+
+Inputs: placard_print_lit.png and placard_glow_mask.png, 2592 x 1674 (432 x 279 mm at 6 px/mm).
+Outputs (2592 x 1676: one edge row copied at the top and at the bottom, so the height is a
+multiple of 4 for block compression; the kit's UVs skip those rows, v 1/1676 .. 1675/1676):
+  Prop_EvacPlan_A.png  RGB of the print (its alpha is 255 everywhere and is dropped)   -> sRGB, BC7
+  Prop_EvacPlan_E.png  the mask's R as R = G = B greyscale (white = phosphor ink)       -> linear, BC1
+An R8/BC4 mask would not do: FrontRooms/Surface reads _EmissionMap.rgb, so one channel
+would glow red only.
+
+The artwork pixels are untouched: the script asserts that output rows 1..1674 equal the
+source byte for byte, and prints the input md5s for the build report. A redrawn legend
+(same size) re-runs this script; no mesh, UV or code change.
+"""
+import hashlib
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+ART = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "Tools", "print", "ink", "art_from_graphic", "placard")
+OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(ROOT, "Assets", "Resources", "Surfaces", "Textures")
+W, H = 2592, 1674
+# The artwork this pack was last verified with: v2 of 2026-10-07 (WP03 swatch legend, A.12 footer, the
+# mask = heading + labels + each swatch's turned or flattened band). v1 (2026-10-03, InkShape glyphs):
+# print 7b96ea089792d4ba7ceedb713932f98d, mask 5ee79d132fadd4209eda045c14d12371 (art_from_graphic/placard/v1/).
+EXPECTED_MD5 = {"placard_print_lit.png": "e39befc64c1509599ba51d450256d467",   # v2, 2026-10-07
+                "placard_glow_mask.png": "c7e22e2f192fe1315d4af110328e55a0"}
+
+
+def md5(path):
+    with open(path, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
+
+
+def pad_rows(a):
+    """One edge row copied above and below (edge replicate)."""
+    return np.concatenate([a[:1], a, a[-1:]], axis=0)
+
+
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    src_print = os.path.join(ART, "placard_print_lit.png")
+    src_mask = os.path.join(ART, "placard_glow_mask.png")
+    for p in (src_print, src_mask):
+        h = md5(p)
+        note = "" if EXPECTED_MD5.get(os.path.basename(p)) == h else "  (NEW artwork: differs from the verified v2 md5)"
+        print("[pack_evac_plan] input %s md5 %s%s" % (os.path.basename(p), h, note))
+    pr = np.asarray(Image.open(src_print).convert("RGBA"))
+    mk = np.asarray(Image.open(src_mask).convert("RGBA"))
+    assert pr.shape == (H, W, 4) and mk.shape == (H, W, 4), (pr.shape, mk.shape)
+    if pr[..., 3].min() != 255:
+        print("[pack_evac_plan] WARNING: the print has transparent pixels; alpha is dropped anyway")
+    rgb = pad_rows(pr[..., :3])
+    grey = mk[..., 0]
+    if not (np.array_equal(grey, mk[..., 1]) and np.array_equal(grey, mk[..., 2])):
+        print("[pack_evac_plan] WARNING: the mask is not grey; its R channel is used")
+    e = pad_rows(np.repeat(grey[..., None], 3, axis=2))
+    assert rgb.shape == (H + 2, W, 3) and e.shape == (H + 2, W, 3)
+    assert np.array_equal(rgb[1:H + 1], pr[..., :3]), "print pixels changed"
+    assert np.array_equal(e[1:H + 1, :, 0], grey), "mask pixels changed"
+    assert (H + 2) % 4 == 0 and W % 4 == 0
+    out_a = os.path.join(OUT, "Prop_EvacPlan_A.png")
+    out_e = os.path.join(OUT, "Prop_EvacPlan_E.png")
+    Image.fromarray(np.ascontiguousarray(rgb), "RGB").save(out_a, optimize=True)
+    Image.fromarray(np.ascontiguousarray(e), "RGB").save(out_e, optimize=True)
+    # Read back: the written files hold exactly the padded arrays.
+    assert np.array_equal(np.asarray(Image.open(out_a).convert("RGB")), rgb)
+    assert np.array_equal(np.asarray(Image.open(out_e).convert("RGB")), e)
+    cover = float((grey > 127).mean())
+    print("[pack_evac_plan] wrote %s and %s: %d x %d, mask cover %.2f %%" % (out_a, out_e, W, H + 2, 100 * cover))
+
+
+if __name__ == "__main__":
+    main()

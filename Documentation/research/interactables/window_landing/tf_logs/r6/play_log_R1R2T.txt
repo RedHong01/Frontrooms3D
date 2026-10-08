@@ -1,0 +1,37 @@
+[118] ok   run started (seed 516574485)
+[621] map root (-576.00, 0.00, -576.00) · settled True · chunks 25 · glass prompt reach 1.2 m
+[621] built windows 18 (framed 18)
+[621] ok   every built window has its frame on the map's root
+[621] L0: window (282, 206)-(282, 207) at (271.50, 0.00, 45.00) · room (282, 206) → hall (282, 207)
+[621] ok   L0: root 'Window (282, 206)-(282, 207)' holds the render-only frame
+[621] ok   L0: pane renderer off, interim slab on with Glass_Window and the RT target
+[625] ok   L0: the game's aim at 1.0 m offers 'HOLD E  ·  BREAK GLASS'
+[629] ok   L0: at 1.6 m no glass prompt ('')
+[633] frame L0_play_intact.png · eye (271.50, 1.62, 44.00)
+[633] ok   L0: Hold 0.5 s cracks it to stage 1 (progress 0.50)
+[634] ok   L0: after a drop + rebuild in Play the cracked pane is back at stage 1 with its frame and slab, one root (1)
+[634] ok   L0: Hold breaks it
+[635] ok   L0: next frame the pane and the slab are gone, the frame stays
+[635] ok   L0: IsBrokenWindow
+[639] frame L0_play_broken.png · eye (271.50, 1.62, 44.00)
+[640] ok   L0: after a drop + rebuild in Play: roots in the build frame 2, next frame 1, frame True, pane False, colliders in the opening 0
+[642] ok   L0: the game's TryStartClimb starts a climb through the framed opening
+[660] frame L0_play_climbing.png · eye (271.50, 1.44, 45.08)
+[700] ok   L0: the player lands in the hall cell (282, 207) (want (282, 207))
+[700] OF: window (280, 208)-(281, 208) at (267.00, 0.00, 49.50) · room (280, 208) → hall (281, 208)
+[700] ok   OF: root 'Window (280, 208)-(281, 208)' holds the render-only frame
+[700] ok   OF: pane renderer off, interim slab on with Glass_Window and the RT target
+[704] ok   OF: the game's aim at 1.0 m offers 'HOLD E  ·  BREAK GLASS'
+[708] ok   OF: at 1.6 m no glass prompt ('')
+[712] frame OF_play_intact.png · eye (266.00, 1.62, 49.50)
+[712] ok   OF: Hold 0.5 s cracks it to stage 1 (progress 0.50)
+[713] ok   OF: after a drop + rebuild in Play the cracked pane is back at stage 1 with its frame and slab, one root (1)
+[713] ok   OF: Hold breaks it
+[714] ok   OF: next frame the pane and the slab are gone, the frame stays
+[714] ok   OF: IsBrokenWindow
+[718] frame OF_play_broken.png · eye (266.00, 1.62, 49.50)
+[719] ok   OF: after a drop + rebuild in Play: roots in the build frame 2, next frame 1, frame True, pane False, colliders in the opening 0
+[721] ok   OF: the game's TryStartClimb starts a climb through the framed opening
+[739] frame OF_play_climbing.png · eye (267.08, 1.44, 49.50)
+[779] ok   OF: the player lands in the hall cell (281, 208) (want (281, 208))
+[779] VERDICT PASS: 26 passed, 0 failed

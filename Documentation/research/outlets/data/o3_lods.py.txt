@@ -1,0 +1,73 @@
+"""Build the hand-built LOD1/LOD2 part sets of the O3 modules (recovered 2026-10-07 from the O1 stub) with a
+SCRATCH-ONLY stub of kitlib.Kit.make_lods (kitlib.py is not edited), count
+triangles per level and export <NAME>_LOD0/1/2.fbx into a scratch folder for
+the pop renders. Mirrors kit.finish(): modifiers applied, transforms baked,
+joined per level.
+
+blender -b --factory-startup --python o3_lods.py -- --kit DIR --out DIR module [module ...]
+"""
+import importlib
+import json
+import os
+import sys
+sys.dont_write_bytecode = True
+
+import bpy
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+kit_dir = argv[argv.index("--kit") + 1]
+out = argv[argv.index("--out") + 1]
+mods = [a for i, a in enumerate(argv) if not a.startswith("--") and argv[i - 1] not in ("--kit", "--out")]
+sys.path.insert(0, kit_dir)
+sys.path.insert(0, os.path.join(kit_dir, "assets"))
+import kitlib  # noqa: E402
+
+kitlib.Kit.make_lods = lambda self, *a, **k: None      # scratch stub: has_lods() -> True
+os.makedirs(out, exist_ok=True)
+report = {}
+for name in mods:
+    m = importlib.import_module(name)
+    importlib.reload(m)
+    kit = kitlib.Kit(m.NAME)
+    m.build(kit)
+    counts = {}
+    for lod in "012":
+        parts = [p for p in kit.parts if lod in str(p.get("fr_lods", "0"))]
+        copies = []
+        for p in parts:
+            c = p.copy()
+            c.data = p.data.copy()
+            bpy.context.scene.collection.objects.link(c)
+            bpy.context.view_layer.objects.active = c
+            for mod in list(c.modifiers):
+                bpy.ops.object.select_all(action="DESELECT")
+                c.select_set(True)
+                bpy.ops.object.modifier_apply(modifier=mod.name)
+            copies.append(c)
+        if not copies:
+            continue
+        bpy.ops.object.select_all(action="DESELECT")
+        for c in copies:
+            c.select_set(True)
+        bpy.context.view_layer.objects.active = copies[0]
+        if len(copies) > 1:
+            bpy.ops.object.join()
+        j = bpy.context.view_layer.objects.active
+        j.name = "%s_LOD%s" % (m.NAME, lod)
+        tris = sum(len(p.vertices) - 2 for p in j.data.polygons)
+        counts[lod] = tris
+        bpy.ops.object.select_all(action="DESELECT")
+        j.select_set(True)
+        bpy.ops.export_scene.fbx(filepath=os.path.join(out, j.name + ".fbx"), use_selection=True, object_types={"MESH"},
+                                 apply_unit_scale=True, apply_scale_options="FBX_SCALE_ALL", axis_forward="-Z", axis_up="Y",
+                                 bake_space_transform=True, mesh_smooth_type="OFF", add_leaf_bones=False, bake_anim=False,
+                                 path_mode="STRIP")
+        js = dict(kit.meta)
+        js["anchors"] = [{"name": k, "pos": [-v[0], v[2], -v[1]]} for k, v in kit.meta["anchors"].items()]
+        json.dump(js, open(os.path.join(out, j.name + ".json"), "w"), indent=1, default=str)
+        j.hide_render = True
+    b = list(getattr(m, "BUDGET", ()))
+    report[m.NAME] = {"tris": counts, "budget": b,
+                      "delta": {l: round(100.0 * (counts[l] - b[int(l)]) / b[int(l)], 1) for l in counts if int(l) < len(b)}}
+    print("[lods]", m.NAME, report[m.NAME])
+json.dump(report, open(os.path.join(out, "lod_report.json"), "w"), indent=1)

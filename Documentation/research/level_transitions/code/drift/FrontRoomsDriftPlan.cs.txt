@@ -1,0 +1,140 @@
+// Level transitions · V4 Drift (clone-only pre-render, 2026-10-03). Plan views of the drift band, separate from the
+// harness (which stays unchanged): -executeMethod FrontRoomsDriftPlan.Run -quit -out <dir> [-planWindows "x,z,width;..."] [-extras <shots.json>]
+//   An orthographic camera looks straight down at the floor (from 2.2 m) and straight up at the ceiling (from 2.3 m)
+//   over one window of the shot map, first with drift (the run's -driftW) and then with the whole variation off
+//   (FrontRoomsThemeField.Enabled = false: no field, no B0, no linings), so the two plans compare unit for unit.
+//   Walls and columns are cut by the near plane and drop out; plan_sheet.py draws them back from the plan JSON.
+//   -extras: the extra perspective shots, rendered by the harness's own Render in both states (<id>_drift.jpg, <id>_off.jpg).
+//   It builds through the harness's own private methods (reflection), so scene, post and lamps match the shots.
+using System;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsDriftPlan
+{
+    const BindingFlags SF = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+    const int W = 1920, H = 1080;
+
+    static string Arg(string name, string fallback)
+    {
+        var a = Environment.GetCommandLineArgs();
+        for (var i = 0; i < a.Length - 1; i++) if (a[i] == name) return a[i + 1];
+        return fallback;
+    }
+
+    [Serializable] class ShotFile { public Shot[] shots; }
+    [Serializable] class Shot { public string id; public int seed; public float[] eyeMap; public float yaw, pitch, fov; }
+
+    static MethodInfo M(string n) => typeof(FrontRoomsTransitionAudit).GetMethod(n, SF) ?? throw new Exception("harness method " + n);
+
+    public static void Run()
+    {
+        var code = 0;
+        var outDir = Arg("-out", "Verification/drift_plan");
+        Directory.CreateDirectory(outDir);
+        var log = new System.Text.StringBuilder();
+        try
+        {
+            // windows "x,z,width;x,z,width": plan centre (map metres) and width; the first is window 0.
+            var windows = Arg("-planWindows", "795,606,36").Split(';');
+            var feet = new Vector3(float.Parse(Arg("-planFeetX", "793.5"), IC), 0f, float.Parse(Arg("-planFeetZ", "601.5"), IC));
+            const int seed = 516574485;
+            M("OpenScene").Invoke(null, null);
+            var wasEnabled = FrontRoomsThemeField.Enabled;
+            foreach (var on in new[] { true, false })
+            {
+                FrontRoomsThemeField.Enabled = on && wasEnabled;
+                if (!FrontRoomsThemeField.Enabled) Shader.SetGlobalFloat("_FR_DriftWidth", 0f);
+                var tag = FrontRoomsThemeField.Enabled ? "drift" : "off";
+                var built = M("Build").Invoke(null, new object[] { seed, feet });
+                try
+                {
+                    M("StandAt").Invoke(null, new object[] { built, feet });
+                    var world = (FrontRoomsMapWorld)built.GetType().GetField("world", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).GetValue(built);
+                    var root = world.transform.position;
+                    for (var wi = 0; wi < windows.Length; wi++)
+                    {
+                        var c = windows[wi].Split(',');
+                        var centre = new Vector3(float.Parse(c[0], IC), 0f, float.Parse(c[1], IC));
+                        var width = float.Parse(c[2], IC);
+                        Shoot(root, centre, width, 2.2f, true, Path.Combine(outDir, "plan_floor_" + tag + "_w" + wi + ".jpg"));
+                        Shoot(root, centre, width, 2.3f, false, Path.Combine(outDir, "plan_ceiling_" + tag + "_w" + wi + ".jpg"));
+                        log.AppendLine(tag + " w" + wi + ": drift width " + Shader.GetGlobalFloat("_FR_DriftWidth").ToString("0.##", IC) + ", centre " + centre + ", width " + width + " m, feet " + feet);
+                    }
+                }
+                finally { M("Release").Invoke(null, new object[] { built }); }
+                var extras = Arg("-extras", null);
+                if (extras != null)
+                    foreach (var s in JsonUtility.FromJson<ShotFile>(File.ReadAllText(extras)).shots)
+                    {
+                        var eye = new Vector3(s.eyeMap[0], s.eyeMap[1], s.eyeMap[2]);
+                        var sf = new Vector3(eye.x, 0f, eye.z);
+                        var b = M("Build").Invoke(null, new object[] { s.seed, sf });
+                        try
+                        {
+                            M("StandAt").Invoke(null, new object[] { b, sf });
+                            M("Render").Invoke(null, new object[] { b, eye, s.yaw, s.pitch, s.fov > 1f ? s.fov : 76f, Path.Combine(outDir, s.id + "_" + tag + ".jpg") });
+                            log.AppendLine(s.id + "_" + tag + ".jpg eyeMap " + eye + " yaw " + s.yaw + " pitch " + s.pitch);
+                        }
+                        finally { M("Release").Invoke(null, new object[] { b }); }
+                    }
+            }
+            FrontRoomsThemeField.Enabled = wasEnabled;
+            log.AppendLine("pixel x = (X - (cx - width/2)) / width * 1920 ; pixel y (floor) = ((cz + depth/2) - Z) / depth * 1080 ; depth = width * 9/16. Ceiling images are flipped to the same orientation (image up = +Z).");
+        }
+        catch (Exception e) { log.AppendLine("EXCEPTION " + e); code = 1; }
+        File.WriteAllText(Path.Combine(outDir, "plan_log.txt"), log.ToString());
+        Debug.Log("[DriftPlan] " + log);
+        EditorApplication.Exit(code);
+    }
+
+    static void Shoot(Vector3 root, Vector3 centreMap, float width, float height, bool down, string path)
+    {
+        var cam = (Camera)M("SceneCamera").Invoke(null, null);
+        var t = cam.transform;
+        var keep = (t.position, t.rotation, cam.orthographic, cam.orthographicSize, cam.nearClipPlane, cam.farClipPlane, cam.targetTexture, cam.fieldOfView);
+        var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+        rt.Create();
+        var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        try
+        {
+            t.SetPositionAndRotation(root + new Vector3(centreMap.x, height, centreMap.z), Quaternion.Euler(down ? 90f : -90f, 0f, 0f));
+            cam.orthographic = true;
+            cam.orthographicSize = width * 9f / 16f * .5f;
+            cam.nearClipPlane = .06f;
+            cam.farClipPlane = 12f;
+            cam.targetTexture = rt;
+            cam.Render();
+            cam.Render();
+            var a = RenderTexture.active;
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+            tex.Apply(false);
+            RenderTexture.active = a;
+            if (!down)
+            {
+                // Looking up, image up is -Z: flip rows so image up is +Z, as in the floor plan.
+                var px = tex.GetPixels32();
+                var flipped = new Color32[px.Length];
+                for (var y = 0; y < H; y++) Array.Copy(px, y * W, flipped, (H - 1 - y) * W, W);
+                tex.SetPixels32(flipped);
+                tex.Apply(false);
+            }
+            File.WriteAllBytes(path, tex.EncodeToJPG(90));
+        }
+        finally
+        {
+            cam.targetTexture = keep.Item7;
+            t.SetPositionAndRotation(keep.Item1, keep.Item2);
+            cam.orthographic = keep.Item3; cam.orthographicSize = keep.Item4; cam.nearClipPlane = keep.Item5; cam.farClipPlane = keep.Item6; cam.fieldOfView = keep.Item8;
+            rt.Release();
+            Object.DestroyImmediate(rt);
+            Object.DestroyImmediate(tex);
+        }
+    }
+}

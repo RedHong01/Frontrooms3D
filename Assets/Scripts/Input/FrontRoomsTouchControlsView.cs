@@ -33,13 +33,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     static readonly Color CardColor = Hex(0x0E0E0D);
     static readonly Color WashColor = new Color(.93f, .92f, .88f, 1f);
 
-    /// <summary>
-    /// The card as it reads on screen: 97 % ink over the wash, blended the way Unity blends UI (linear in this
-    /// project). The scroll fade uses it, so rows sink into the card instead of into a darker band.
-    /// </summary>
-    static Color CardApparent => QualitySettings.activeColorSpace == ColorSpace.Linear
-        ? Color.Lerp(WashColor.linear, CardColor.linear, .97f).gamma
-        : Color.Lerp(WashColor, CardColor, .97f);
 
     FrontRoomsTouchControls controls;
     Canvas canvas;
@@ -109,7 +102,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         public bool Shown;
     }
 
-    Image wash;
+    // The frost behind the pause, settings and caught cards (Red, 2026-10-07): the paused frame itself, blurred,
+    // under a light paper veil and the wallpaper's own paper and print, tone on tone. The cards sit on top.
+    CanvasGroup frostGroup;
+    RawImage frostFrame, frostPaper;
+    Image frostVeil;
+    RenderTexture frostTexture;
+    /// <summary>Paper over the blurred frame, blended linear like all UI here: the room shows, the ink still reads (≥ 6 : 1).</summary>
+    const float FrostVeil = .30f;
+    /// <summary>One wallpaper roll tile (0.75 × 1.125 m) is drawn this many points wide.</summary>
+    const float FrostTileWidth = 280f;
     readonly MotionValue washAlpha = new MotionValue();
     Item pauseTitle, pauseMeta, legendA, legendB, confirmText, titlePrompt, caughtTitle, caughtRule, caughtLine, settingsCard;
     Text pauseMetaText, confirmTextText, caughtLineText;
@@ -168,6 +170,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void OnDestroy()
     {
         FrontRoomsSettings.Changed -= OnSettingsChanged;
+        ReleaseFrost();
     }
 
     void OnSettingsChanged()
@@ -300,6 +303,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         s.ThumbDisc.color = Paper;
         s.ThumbDisc.raycastTarget = false;
         s.LabelText = Txt("state label", s.Root, string.Empty, bayon, 17, Accent, TextAnchor.MiddleCenter, new Vector2(120f, 20f));
+        // The label sits where the thumb plays, often over lit floor or wallpaper: a faint ink shadow keeps it
+        // readable there and vanishes on dark rooms (fades with the label).
+        var shadow = s.LabelText.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = WithAlpha(Ink, .55f);
+        shadow.effectDistance = new Vector2(1f, -1f);
         s.Label = s.LabelText.rectTransform;
         return s;
     }
@@ -388,7 +396,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         sprintToggleDisc.sprite = FrontRoomsTouchSprites.Disc(sb);
         sprintToggleRing.sprite = FrontRoomsTouchSprites.Ring(sb, 2f);
         sprintToggleDisc.rectTransform.sizeDelta = sprintToggleRing.rectTransform.sizeDelta = new Vector2(sb, sb);
-        wash.sprite = FrontRoomsTouchSprites.Solid();
+        frostVeil.sprite = FrontRoomsTouchSprites.Solid();
         foreach (var fill in chipFills.Values) fill.sprite = FrontRoomsTouchSprites.Solid();
         ApplyMenuSprites();
     }
@@ -505,7 +513,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         live.HaloRing.color = WithAlpha(Accent, Mathf.Clamp01(haloGrow));
         live.Socket.localScale = Vector3.one * (1f + .15f * latchPop);
         live.LabelText.text = winded ? "WINDED" : "SPRINT";
-        live.LabelText.color = WithAlpha(winded ? Muted : Accent, labelAlpha);
+        // WINDED in paper, not muted: the muted thumb already says "not now"; the word must still read.
+        live.LabelText.color = WithAlpha(winded ? Paper : Accent, labelAlpha);
         live.Label.anchoredPosition = new Vector2(0f, L.SocketOffset + 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
         ApplyStickStyle(live, 1f, sprintTint, arm, windTint, opacity, 1f);
     }
@@ -581,7 +590,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         previous.rectTransform.anchoredPosition = new Vector2(0f, Reduced ? 0f : 4f * labelSwap);
 
         useDisc.color = WithAlpha(Media, Mathf.Min(1f, .55f * opacity + .2f));
-        usePressed.color = WithAlpha(Accent, press * (locked ? .35f : 1f));
+        // A locked press is acknowledged with a faint paper flash, never the yellow "go" fill; the shake and the
+        // rattle say no.
+        usePressed.color = locked ? WithAlpha(Paper, press * .18f) : WithAlpha(Accent, press);
         useRing.color = WithAlpha(Paper, locked ? .3f : Mathf.Min(1f, .9f * opacity + .3f));
 
         // The hold ring sits outside the thumb, so the progress stays visible under a pressing thumb.
@@ -611,17 +622,92 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     // ================================================================= menus
 
+    static void Stretch(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+    }
+
+    void BuildFrost()
+    {
+        var frost = Node("Frost", menuLayer, Vector2.zero);
+        Stretch(frost);
+        frostGroup = frost.gameObject.AddComponent<CanvasGroup>();
+        frostGroup.alpha = 0f;
+        frostGroup.blocksRaycasts = false;
+        frostGroup.interactable = false;
+        frostFrame = Node("Paused frame (blurred)", frost, Vector2.zero).gameObject.AddComponent<RawImage>();
+        Stretch(frostFrame.rectTransform);
+        frostFrame.raycastTarget = false;
+        frostFrame.enabled = false;
+        frostVeil = Img("Paper veil", frost, Vector2.zero, WithAlpha(WashColor, FrostVeil));
+        Stretch(frostVeil.rectTransform);
+        frostPaper = Node("Wallpaper paper + print", frost, Vector2.zero).gameObject.AddComponent<RawImage>();
+        Stretch(frostPaper.rectTransform);
+        frostPaper.raycastTarget = false;
+        var paper = Resources.Load<Texture2D>("UI/Touch/TouchFrostPaper");
+        if (paper != null && paper.wrapMode != TextureWrapMode.Repeat) paper.wrapMode = TextureWrapMode.Repeat;
+        frostPaper.texture = paper;
+        frostPaper.enabled = paper != null;
+    }
+
+    static bool Washed(FrontRoomsTouchControls.MenuState s) =>
+        s == FrontRoomsTouchControls.MenuState.Paused || s == FrontRoomsTouchControls.MenuState.Settings || s == FrontRoomsTouchControls.MenuState.Caught;
+
+    /// <summary>
+    /// Freezes the frame under the frost: the game camera alone (no HUD), at half resolution, halved down to
+    /// 1/16 of the screen and back up to 1/4 with bilinear steps (frosted, not just out of focus). Once per
+    /// pause, so it costs one extra camera render on the press.
+    /// </summary>
+    void CaptureFrost()
+    {
+        ReleaseFrost();
+        var cam = controls.Host != null ? controls.Host.BackdropCamera : null;
+        if (cam == null || !cam.isActiveAndEnabled) return;
+        var px = FrontRoomsHandheld.ScreenPixels;
+        var w = Mathf.Max(64, Mathf.RoundToInt(px.x * .5f));
+        var h = Mathf.Max(32, Mathf.RoundToInt(px.y * .5f));
+        var src = RenderTexture.GetTemporary(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var previous = cam.targetTexture;
+        try
+        {
+            cam.targetTexture = src;
+            cam.Render();
+        }
+        finally
+        {
+            cam.targetTexture = previous;
+        }
+        for (var i = 0; i < 5; i++)
+        {
+            if (i < 3) { w = Mathf.Max(1, w / 2); h = Mathf.Max(1, h / 2); }
+            else { w *= 2; h *= 2; }
+            var next = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            next.filterMode = FilterMode.Bilinear;
+            Graphics.Blit(src, next);
+            RenderTexture.ReleaseTemporary(src);
+            src = next;
+        }
+        frostTexture = src;
+        frostFrame.texture = frostTexture;
+    }
+
+    void ReleaseFrost()
+    {
+        if (frostFrame != null) frostFrame.texture = null;
+        if (frostTexture == null) return;
+        RenderTexture.ReleaseTemporary(frostTexture);
+        frostTexture = null;
+    }
+
     void BuildMenus()
     {
-        wash = Img("Wash", menuLayer, Vector2.zero, WithAlpha(WashColor, 0f), true);
-        var wrt = wash.rectTransform;
-        wrt.anchorMin = Vector2.zero;
-        wrt.anchorMax = Vector2.one;
-        wrt.offsetMin = wrt.offsetMax = Vector2.zero;
+        BuildFrost();
 
         // Pause card (Figma TS 6 · PAUSE).
         pauseTitle = MakeItem("PAUSED", Txt("PAUSED", menuLayer, "PAUSED", bayon, 48, Ink, TextAnchor.MiddleCenter, new Vector2(600f, 48f), true).rectTransform);
-        pauseMetaText = Txt("Pause meta", menuLayer, string.Empty, plex, 11, WithAlpha(Ink, .6f), TextAnchor.MiddleCenter, new Vector2(700f, 16f), true);
+        pauseMetaText = Txt("Pause meta", menuLayer, string.Empty, plex, 11, Ink, TextAnchor.MiddleCenter, new Vector2(700f, 16f), true);
         pauseMeta = MakeItem("meta", pauseMetaText.rectTransform);
         legendA = MakeItem("legend 1", Node("Legend 1", menuLayer, new Vector2(700f, 24f)));
         legendB = MakeItem("legend 2", Node("Legend 2", menuLayer, new Vector2(700f, 24f)));
@@ -641,7 +727,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         {
             caughtNumberTexts[i] = Txt("stat " + i, menuLayer, "0", serif, 26, Ink, TextAnchor.MiddleCenter, new Vector2(180f, 30f), true);
             caughtNumbers[i] = MakeItem("stat", caughtNumberTexts[i].rectTransform);
-            caughtLabels[i] = MakeItem("stat label", Txt("stat label " + i, menuLayer, labels[i], bayon, 17, WithAlpha(Ink, .55f), TextAnchor.MiddleCenter, new Vector2(180f, 20f), true).rectTransform);
+            caughtLabels[i] = MakeItem("stat label", Txt("stat label " + i, menuLayer, labels[i], bayon, 17, Ink, TextAnchor.MiddleCenter, new Vector2(180f, 20f), true).rectTransform);
         }
         var rule = Img("Caught rule", menuLayer, new Vector2(718f, 1f), WithAlpha(Ink, .2f), true);
         rule.sprite = FrontRoomsTouchSprites.Solid();
@@ -764,7 +850,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         cardRoot = Node("Settings card", menuLayer, new Vector2(742f, 369f));
         var card = cardRoot.gameObject.AddComponent<Image>();
-        card.color = WithAlpha(CardColor, .97f);
+        // Opaque on touch: 3 % of a textured frost showing through would read as dirt, and the scroll fade must match it.
+        card.color = CardColor;
         card.sprite = FrontRoomsTouchSprites.Solid();
         card.raycastTarget = false;
         settingsCard = MakeItem("card", cardRoot);
@@ -772,7 +859,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         cardViewportLeft = Node("Left column", cardRoot, Vector2.zero, false);
         cardViewportRight = Node("Touch column", cardRoot, Vector2.zero, false);
         cardViewportRight.gameObject.AddComponent<RectMask2D>();
-        scrollFade = Img("scroll fade", cardRoot, new Vector2(337f, 56f), WithAlpha(CardApparent, 0f));
+        scrollFade = Img("scroll fade", cardRoot, new Vector2(337f, 56f), WithAlpha(CardColor, 0f));
         scrollBarImage = Img("scroll bar", cardRoot, new Vector2(2f, 40f), WithAlpha(Muted, 0f));
         scrollBar = scrollBarImage.rectTransform;
     }
@@ -816,9 +903,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (entered)
         {
             var caught = state == FrontRoomsTouchControls.MenuState.Caught;
-            washAlpha.To(washed ? .98f : 0f, Dur(washed ? (caught ? .42f : .24f) : .16f), washed ? Ease.OutCubic : Ease.InCubic);
+            // From play into a card: freeze this frame under the frost (pause ↔ settings keeps the one it has).
+            if (washed && !Washed(lastState)) CaptureFrost();
+            washAlpha.To(washed ? 1f : 0f, Dur(washed ? (caught ? .42f : .24f) : .16f), washed ? Ease.OutCubic : Ease.InCubic);
         }
-        wash.color = WithAlpha(WashColor, washAlpha);
+        // The frost fades in over the live frame it froze, so it reads as the room frosting over.
+        frostGroup.alpha = washAlpha;
+        frostFrame.enabled = frostTexture != null;
+        // No frame to freeze (no camera): the opaque paper wash it replaces.
+        frostVeil.color = WithAlpha(WashColor, frostTexture != null ? FrostVeil : .98f);
+        var frame = L.Frame;
+        frostPaper.uvRect = new Rect(0f, 0f, frame.x / FrostTileWidth, frame.y / (FrostTileWidth * 1.5f));
+        if (!washed && washAlpha.Current <= .001f && frostTexture != null) ReleaseFrost();
 
         var paused = state == FrontRoomsTouchControls.MenuState.Paused;
         if (entered || confirmChanged)
@@ -1014,7 +1110,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 foreach (var dead in rows) if (dead != null) Destroy(dead.Rect.gameObject);
                 rows.Clear();
             }
-            scrollFade.color = WithAlpha(CardApparent, 0f);
+            scrollFade.color = WithAlpha(CardColor, 0f);
             return;
         }
         while (rows.Count < slots.Count) rows.Add(null);
@@ -1109,7 +1205,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var moreBelow = max > .5f && scroll < max - .5f;
         scrollFade.rectTransform.anchoredPosition = Local(new Vector2(viewport.center.x, viewport.yMin + 28f));
         scrollFade.rectTransform.sizeDelta = new Vector2(viewport.width, 56f);
-        scrollFade.color = WithAlpha(CardApparent, moreBelow ? 1f : 0f);
+        // Only once the card has arrived: two translucent layers of one colour would stack darker while it fades in.
+        scrollFade.color = WithAlpha(CardColor, moreBelow ? Mathf.InverseLerp(.9f, 1f, settingsCard.Alpha.Current) : 0f);
         if (Mathf.Abs(scroll - lastScroll) > .1f) { scrollBarAlpha.Restart(scrollBarAlpha.Current, 1f, .08f, Ease.OutCubic); }
         else if (scrollBarAlpha.Done && scrollBarAlpha.Target > .5f) scrollBarAlpha.To(0f, .4f, Ease.InCubic, .6f);
         lastScroll = scroll;

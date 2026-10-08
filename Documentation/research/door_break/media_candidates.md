@@ -96,3 +96,14 @@ Lead references stay `db03` (RE7 Jack's wall) and the Lady Dimitrescu doorway st
 | `dc02_interior_crack_above_door_frame.jpg` | https://www.canterburystories.nz/collections/archives/archive1232/eqr/heritage/ccl-cs-66811 (Christchurch City Libraries, 580 Ferry Road) | unknown (the page refused an automated read, 403) | <2 MB | unknown; check the page | Plaster cracking above a door frame: how far the network spreads at D2 |
 | `dc03_northridge_1994_ceiling_damage.jpg` (pick one interior frame) | https://calisphere.org/collections/27300/ (CSUN Geography, Northridge Earthquake Photo Collection) | per item | ~1–3 MB | per item (CSUN rights statement) | Lay-in tiles lifted, tilted and dropped out of a T-bar grid: the M→FINAL tile jump on P (the photo date is 1994; it is a physics reference, not an era prop) |
 | `dc04_fema_e74_suspended_ceiling.jpg` | https://femae74.atcouncil.org/docman/abbreviated/section-6-3/25-18-femae-74-chapter6-3-4-1 (FEMA E-74 §6.3.4.1, suspended ceilings) | in the PDF | <1 MB | FEMA publication (US government work, check each photo's credit) | Tiles bounce up off the T-bar flanges before they fall: the "tiles jump on each blow" claim |
+
+## 20 — Direction B pre-render (`20_dir_B.md`)
+
+**Already on disk (reuse, no request needed):** `../interactables/proposal/media/kane_emg_0125_door_six_bolts.jpg` (the IP's locked door: the hardware the Relay goes for) and `a24_trailer_0139_dark_door_level0.jpg` (a dark door in Level 0: the dark-hole read), both credited in `../interactables/proposal/media/SOURCES.md`; `../interaction_audit/images/77_relay_broken_witness.png` (the exposure target).
+
+The lead references stay `db01a–e` (The Shining) and `db02` (L4D2), section 01 above. B adds two wishes for its steel member, not yet found (search with Red's approval; nothing was searched or downloaded on 2026-10-07):
+
+| Proposed filename | Page URL | Direct URL | Approx size | Licence | What it proves |
+|---|---|---|---|---|---|
+| `db13_mortise_cylinder_pulled.jpg` | not yet found (search: fire-service forcible-entry training, "through the lock", "cylinder pulled" mortise lock, steel door) | — | <2 MB | prefer CC / PD; internal if © | What a hollow-metal door looks like after its mortise cylinder is pulled or punched: the ~30 mm coin hole, the torn escutcheon, the paint round it. B's steel stage is an ESTIMATE until this is seen |
+| `db14_knob_torn_off_spindle.jpg` | not yet found (search: "door knob broken off spindle", Commons "broken doorknob") | — | <1 MB | prefer CC / PD | The square spindle and sheared shank left after a knob is wrenched off (B's L0-K D2) |

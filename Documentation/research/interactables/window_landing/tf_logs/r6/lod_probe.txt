@@ -1,0 +1,6 @@
+importer FrontRoomsKitImporter.GetVersion 2 · 17:25:28 · 17:25  up 2 days, 16:26, 1 user, load averages: 770.73 694.04 613.17
+Kit_WindowFrame_Wood: size 1.828 m; heights 0.2925 / 0.0000; High (lodBias 1.0): LOD0->1 4.0 m / cull never; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull never
+Kit_WindowFrame_Steel: size 1.800 m; heights 0.2880 / 0.0000; High (lodBias 1.0): LOD0->1 4.0 m / cull never; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull never
+Kit_WindowFrame_Steel_Enamel: size 1.800 m; heights 0.2880 / 0.0000; High (lodBias 1.0): LOD0->1 4.0 m / cull never; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull never
+Kit_MiniBlind_Raised: size 1.550 m; heights 0.3307 / 0.0331; High (lodBias 1.0): LOD0->1 3.0 m / cull 30.0 m; Ultra (lodBias 2.0): LOD0->1 6.0 m / cull 60.0 m
+Kit_DoorFrame_Wood: size 2.175 m; heights 0.3480 / 0.0000; High (lodBias 1.0): LOD0->1 4.0 m / cull never; Ultra (lodBias 2.0): LOD0->1 8.0 m / cull never

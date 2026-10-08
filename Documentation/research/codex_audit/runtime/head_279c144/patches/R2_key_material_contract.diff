@@ -1,0 +1,18 @@
+# R2 contract patch for the map chat (关卡设计). Map-owned file: NOT applied to Red's project.
+# File: Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs (main 279c144; same bug in pre-Codex 7320ed1).
+# Bug: BuildMaterials() wraps FrontRoomsSurfaces.Lit(...) in Own(...). Lit() returns a material from a STATIC
+# cache shared across map instances (FrontRoomsSurfaces.cs:86-102). Release() (OnDestroy) destroys every owned
+# material with a deferred Destroy (Kill, L740-744). On R / caught restart the new map's Awake takes the cached
+# material before the old map's deferred Destroy runs, so the new map's keyGlow becomes null: every zone key
+# renders with a missing material (Unity's magenta) for the rest of the session.
+# Fix: own a private copy; the shared cached material is never destroyed.
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ void BuildMaterials()   (HEAD 279c144 line 3209)
+-        keyGlow = Own(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f));
++        // Lit() hands out a material from FrontRoomsSurfaces' static cache; own a private copy, because Release()
++        // destroys owned materials after the next map (R / caught restart) has already taken the cached one.
++        keyGlow = Own(new Material(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f)));
+# Same pattern, only reached when Resources are missing (fallbacks), lines 3172, 3190-3192, 3207-3208:
+#   level0Lens / level0.wall / level0.floor / level0.ceiling / trim / doorLeaf = Own(FrontRoomsSurfaces.Lit(...))
+# -> wrap each Lit(...) in new Material(...) the same way.

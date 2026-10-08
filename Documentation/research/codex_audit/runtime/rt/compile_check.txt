@@ -1,0 +1,4 @@
+COMPILE WebGL: assemblies 22 · Assembly-CSharp.dll 555008 B · error CS logged 0 · 'FRGlassRT_' 0 · 'FrontRoomsGlassRTSystem' 0 · 'FrontRoomsGlassRTCamera' 0 · 'TracePass' 0
+COMPILE StandaloneWindows64: assemblies 23 · Assembly-CSharp.dll 555008 B · error CS logged 0 · 'FRGlassRT_' 0 · 'FrontRoomsGlassRTSystem' 0 · 'FrontRoomsGlassRTCamera' 0 · 'TracePass' 0
+COMPILE iOS: assemblies 23 · Assembly-CSharp.dll 560128 B · error CS logged 0 · 'FRGlassRT_' 0 · 'FrontRoomsGlassRTSystem' 0 · 'FrontRoomsGlassRTCamera' 0 · 'TracePass' 0
+COMPILE StandaloneOSX: assemblies 23 · Assembly-CSharp.dll 608768 B · error CS logged 0 · 'FRGlassRT_' 19 · 'FrontRoomsGlassRTSystem' 9 · 'FrontRoomsGlassRTCamera' 3 · 'TracePass' 2

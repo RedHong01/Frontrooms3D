@@ -3,7 +3,7 @@
 Status: **revised and verified in the running game, 2026-10-07** (interaction-design chat). Codex's first pass (2026-10-04) is replaced; what was wrong with it is in §8. Everything below is built in `Assets/Scripts/Input/` and checked by a headless touch playtest on the real game and map (§11). Not yet run on a device, and no mobile build exists (builds only when Red asks). The build-side plan stays in [MOBILE_BUILD_PLAN.md](MOBILE_BUILD_PLAN.md).
 
 - Figma: file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section **FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID** (`2528:5403`) at x 33937, y 2000.
-  - Slides TC01–TC13 (1920×1080, P1 deck system).
+  - Slides TC01–TC15 (1920×1080, P1 deck system); TC14 MOTION and TC15 FROST added 2026-10-07 from the playtest frames.
   - `TK · Touch kit masters · 1x pt` (2528:5495): the touch components.
   - `TS · Screen masters · 1x pt` (2530:5061): every screen as a component, 1 Figma px = 1 pt (iOS) / 1 dp (Android).
 - Research: `Documentation/research/touch/01_shipped_games.md` (how shipped iOS/Android games map first-person verbs) and `02_guidelines_patterns_unity.md` (Apple HIG / WWDC, Android, ergonomics, accessibility, Unity facts). Media is URL-only until Red approves downloads; slides TC02–TC04 hold `media:<key>` slots.
@@ -201,14 +201,14 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Socket | arming | a yellow arc (Ø66, 3.5 pt, outside the thumb) fills clockwise from 12 o'clock over the 150 ms dwell |
 | Socket | latch | the arc closes into the halo; socket and halo pop 1.15 → 1 in 220 ms; thumb tints yellow 120 ms; SPRINT fades in 140 ms rising 6 pt; light haptic |
 | Socket | let go | halo fades 150 ms InCubic, thumb tint 150 ms, label 100 ms |
-| Stick | winded | tints to muted 200 ms; label becomes WINDED; the socket refuses the thumb (drawn back inside the ring) until breath returns |
+| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper (muted vanished on lit wallpaper); the socket refuses the thumb (drawn back inside the ring) until breath returns. Both stick labels carry a faint ink shadow (1 pt, 55 %) |
 | USE | appears / goes | 160 ms alpha + scale 0.86 → 1 in 200 ms OutBack / 120 ms InCubic to 0.94 |
 | USE | press / release | yellow fill and ink verb in 70 ms, scale 0.92 / fill out 140 ms, scale back 180 ms OutBack |
 | USE | verb changes (OPEN ↔ SHUT) | crossfade 120 ms |
-| USE | locked press | shake 3 cycles, ±4 pt decaying, 240 ms (with the rattle haptics) |
+| USE | locked press | shake 3 cycles, ±4 pt decaying, 240 ms, with the rattle haptics; the press shows a faint paper flash, never the yellow "go" fill |
 | Hold ring | hold | track fades in 120 ms; the arc follows progress (60 ms smoothing), outside the thumb at r 46 |
 | Pause keycap | press | scale 0.9 in 70 ms, back in 160 ms OutBackSoft |
-| Wash | pause / settings / caught | 0 → 0.98 in 240 ms (420 ms when caught) OutCubic; out 160 ms |
+| Frost | pause / settings / caught | fades in over the live frame in 240 ms (420 ms when caught) OutCubic, so the room frosts over; out 160 ms (see the backdrop note below) |
 | Pause card | opens | title (+40 ms, rises 18 pt), meta (+70, 12), legend rows (+100 / +130, 10), chips RESUME / SETTINGS / RESTART (+160 / +190 / +220, rise 12, scale 0.96 → 1); each 260 ms OutCubic |
 | Restart question | opens | RESTART THIS RUN? (+40 ms), CANCEL / RESTART (+50 / +80) |
 | Settings card | opens | card fades in 260 ms and scales 0.97 → 1 in 220 ms; rows rise 8 pt, 24 ms apart from +60 ms; CLOSE (+80 ms) |
@@ -217,6 +217,16 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Caught card | opens | title (+80 ms, drops in 12 pt), the four numbers count up over 600 ms from +200 ms, rule (+300), sentence (+340); TRY AGAIN at +600 ms and ignores taps before then |
 | Title | waiting | TAP TO START fades in after 3 s (600 ms InOutSine), then breathes between 55 % and 100 % every 2.4 s |
 | Any chip | press | scale 0.94 in 70 ms, back 160 ms OutBackSoft |
+
+**The backdrop behind the cards is frost, not flat off-white** (Red, 2026-10-07: "a frosted wallpaper-texture mask over the actual paused frame, the UI on top").
+- On the press, the touch layer renders the game camera once (the world only, no HUD) at half resolution and blurs it: halved down to 1/16 of the screen, then back up to 1/4, bilinear both ways.
+- Three layers sit over that, under every card:
+  - a paper veil, `WashColor` at 30 % (linear blend, as Unity blends UI: the room shows, and ink still reads at 6 : 1 or better);
+  - `Resources/UI/Touch/TouchFrostPaper.png`, baked from the game's own wallpaper maps by `Tools/touch/bake_frost_paper.py`: the paper's texture only (fibres, tobacco stains, a fine matte grain), no print pattern (Red: texture, not pattern); one roll tile is drawn 280 pt wide;
+  - the cards.
+- Pause ↔ settings keep the frame they froze. The texture is released once the frost has faded out.
+- With no camera, it falls back to the old 98 % paper wash.
+- On this backdrop the text is solid ink: the pause meta line and the caught labels lose their 60 % / 55 % ink, which on a frosted room measured under 3 : 1. The settings card is opaque on touch, so the frost doesn't show through it like dirt.
 
 ## 11. Verification: the touch playtest
 
@@ -241,4 +251,18 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 - **Two Editor facts** the harness works around, so nobody trips on them again:
   - In batch mode no Game view has focus, so the Input System withholds pointer and touch input from Play Mode. The harness swaps in a copy of the input settings that sends all input to the game (all devices, ignore focus) and restores the original afterwards.
   - `Time.captureDeltaTime` steps game time but not unscaled time, and captures take real seconds. The touch layer therefore reads its own clock (`FrontRoomsTouchMotion.Now`), which the harness steps 1/60 s per frame. In players that clock is plain unscaled time.
-- **Desktop unchanged:** `FrontRoomsHandheld.Active` stays false in batch mode and autopilot runs. The desktop autopilot (`FrontRoomsMainScenePlaytest.RunBatch -autopilotSeed 2554`) is compared against the pre-revision code in a private copy (§11 results).
+- **Desktop unchanged** (关卡设计调研's condition 3, 2026-10-07): `FrontRoomsHandheld.Active` stays false in batch mode and autopilot runs, and the touch layer never appears in their logs. The desktop autopilot (`FrontRoomsMainScenePlaytest.RunBatch -autopilotSeed 2554`, private copy, timeout raised for the machine's load and a separate product name so Red's PlayerPrefs stay untouched) was run three times:
+  - A: current main.
+  - B: the same copy with only the touch files at their pre-revision state (279c144); FrontRooms3DGame.cs and FrontRoomsSettings.cs match 279c144 exactly.
+  - B2: B again.
+
+  | | A · current | B · pre-revision | B2 · pre-revision again |
+  |---|---|---|---|
+  | Verdict | PASS · ended by time | PASS · ended by time | PASS · ended by time |
+  | Errors / caught | 0 / no | 0 / no | 0 / no |
+  | Same maze (seed 2554, start door cell 21, 6) | yes | yes | yes |
+  | Space · start door opened · left start rooms | 1.8 · 3.62 · 4.87 s | 1.8 · 3.62 · 4.87 s | 1.8 · 3.62 · 4.87 s |
+  | Relay released | 10.05 s | 10.22 s | 10.25 s |
+  | Cells · zones · doors opened | 71 · 7 · 1 | 78 · 10 · 8 | 69 · 10 · 4 |
+
+  The paths differ after the start because the bot steps on real frame time. B and B2, with identical code, differ as much as A and B, so the touch revision does not change the desktop game. Reports: `~/FrontRoomsVisualWork/touch/autopilot_compare/`.

@@ -1,0 +1,377 @@
+"""Review renders for Kit_EvacPlacard (scratchpad tool, not a kit module).
+
+  Blender -b --factory-startup --python review.py -- <out_dir> [views...] [--samples N] [--tag T]
+
+Builds the kit parts with every LOD forced on (evac_placard_common.FORCE_LODS),
+does NOT call kit.finish() or export, puts a wall behind the placard at Unity
+z = 0, a troffer-like area light 1.38 m above and 1.5 m out, the packed
+artwork on the sheet, and renders named views. Views are Unity part space.
+"""
+import math
+import os
+import sys
+
+sys.dont_write_bytecode = True
+K = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+TEX = "/Users/redwang/FrontRoomsVisualWork/proj_placard/Assets/Resources/Surfaces/Textures"
+sys.path.insert(0, K)
+sys.path.insert(0, os.path.join(K, "assets"))
+
+import bpy  # noqa: E402
+import bmesh  # noqa: E402
+from mathutils import Vector  # noqa: E402
+
+import kitlib  # noqa: E402
+import evac_placard_common as pc  # noqa: E402
+
+pc.FORCE_LODS = True
+import evac_placard as ep  # noqa: E402
+
+argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+OUT = argv[0]
+views = [a for a in argv[1:] if not a.startswith("--")]
+SAMPLES = 96
+TAG = ""
+FBX = None
+for i, a in enumerate(argv):
+    if a == "--samples":
+        SAMPLES = int(argv[i + 1])
+    if a == "--tag":
+        TAG = argv[i + 1]
+    if a == "--fbx":
+        FBX = argv[i + 1]
+views = [v for v in views if not v.isdigit() and v != TAG and v != FBX]
+os.makedirs(OUT, exist_ok=True)
+
+kit = kitlib.Kit(ep.NAME)
+ep.build(kit)
+lens, _ = pc.lens_box(kit)
+pc.finalize(kit, [lens])
+LOD = {0: pc.lod_parts(kit, 0), 1: pc.lod_parts(kit, 1), 2: pc.lod_parts(kit, 2)}
+for lv in (0, 1, 2):
+    print("[review] LOD%d %d tris: %s" % (lv, pc.tris_of(LOD[lv]), [o.name for o in LOD[lv]]))
+
+
+def U(X, Y, Z):
+    return Vector((-X, -Z, Y))
+
+
+# ------------------------------------------------------------- materials
+def mat_alu():
+    m = bpy.data.materials.new("rv_alu")
+    m.use_nodes = True
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (0.91, 0.92, 0.925, 1)
+    b.inputs["Metallic"].default_value = 1.0
+    b.inputs["Roughness"].default_value = 0.40
+    return m
+
+
+def mat_print(glow=0.0):
+    m = bpy.data.materials.new("rv_print")
+    m.use_nodes = True
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    img = nt.nodes.new("ShaderNodeTexImage")
+    img.image = bpy.data.images.load(os.path.join(TEX, "Prop_EvacPlan_A.png"))
+    img.interpolation = "Cubic"
+    nt.links.new(img.outputs["Color"], b.inputs["Base Color"])
+    b.inputs["Roughness"].default_value = 0.85
+    if glow > 0:
+        e = nt.nodes.new("ShaderNodeTexImage")
+        e.image = bpy.data.images.load(os.path.join(TEX, "Prop_EvacPlan_E.png"))
+        e.image.colorspace_settings.name = "Non-Color"
+        mul = nt.nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs["Factor"].default_value = 1.0
+        nt.links.new(e.outputs["Color"], mul.inputs[6])
+        mul.inputs[7].default_value = (0.5705, 0.8900, 0.2957, 1)
+        nt.links.new(mul.outputs[2], b.inputs["Emission Color"])
+        b.inputs["Emission Strength"].default_value = glow
+    return m
+
+
+def mat_lens():
+    m = bpy.data.materials.new("rv_lens")
+    m.use_nodes = True
+    nt = m.node_tree
+    for n in list(nt.nodes):
+        if n.type != "OUTPUT_MATERIAL":
+            nt.nodes.remove(n)
+    out = [n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"][0]
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    gl = nt.nodes.new("ShaderNodeBsdfGlossy")
+    gl.inputs["Roughness"].default_value = 0.45
+    fr = nt.nodes.new("ShaderNodeFresnel")
+    fr.inputs["IOR"].default_value = 1.49
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(fr.outputs[0], mix.inputs[0])
+    nt.links.new(tr.outputs[0], mix.inputs[1])
+    nt.links.new(gl.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out.inputs["Surface"])
+    return m
+
+
+def flat(name, rgb, emit=1.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    for n in list(nt.nodes):
+        if n.type != "OUTPUT_MATERIAL":
+            nt.nodes.remove(n)
+    out = [n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"][0]
+    em = nt.nodes.new("ShaderNodeEmission")
+    em.inputs["Color"].default_value = (*rgb, 1)
+    em.inputs["Strength"].default_value = emit
+    nt.links.new(em.outputs[0], out.inputs["Surface"])
+    return m
+
+
+ALU, PRINT, LENS = mat_alu(), mat_print(), mat_lens()
+for o in kit.parts:
+    slot = o.data.materials[0].name.split(".")[0]
+    o.data.materials[0] = {pc.ALU: ALU, pc.PRINT: PRINT, pc.LENS: LENS}[slot]
+
+if FBX:
+    # The exported asset itself (the FBX round trip): it replaces the LOD0 parts in every LOD0 view.
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=FBX)
+    imp = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    assert len(imp) == 1, imp
+    fo = imp[0]
+    for i, m in enumerate(fo.data.materials):
+        fo.data.materials[i] = {pc.ALU: ALU, pc.PRINT: PRINT, pc.LENS: LENS}[m.name.split(".")[0]]
+    for o in LOD[0]:
+        o.hide_render = True
+    kit.parts.append(fo)
+    LOD[0] = [fo]
+    # Round-trip check: every loop on the four rails' FACE arc must carry the arc's true normal.
+    import mathutils
+    R, c, ang = pc.face_arc()
+    me = fo.data
+    mw = fo.matrix_world
+    rot = mw.to_3x3()
+    worst, count = 0.0, 0
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            co = mw @ me.vertices[me.loops[li].vertex_index].co
+            X, Y, Z = -co.x / pc.MM, co.z / pc.MM, -co.y / pc.MM
+            for side in ("top", "bottom", "left", "right"):
+                nn, t, E, L = pc.SIDES[side]
+                u = E - (nn[0] * X + nn[1] * Y)
+                along = t[0] * X + t[1] * Y
+                if not (7.0 < u < 23.0 and abs(along) < L - 30.0):
+                    continue
+                w = Z
+                r = math.hypot(u - c[0], w - c[1])
+                if abs(r - R) > 0.02:
+                    continue
+                want_uw = ((u - c[0]) / r, (w - c[1]) / r)
+                want = mathutils.Vector(pc.side_normal(side, want_uw))
+                ln = rot @ me.corner_normals[li].vector
+                got = mathutils.Vector((-ln.x, ln.z, -ln.y)).normalized()
+                d = math.degrees(want.angle(got))
+                # Only loops of faces lying on this side's face arc.
+                if (rot @ poly.normal).normalized().dot(mathutils.Vector(pc.bl_dir(pc.side_normal(side, want_uw)))) < 0.9:
+                    continue
+                worst = max(worst, d)
+                count += 1
+    print("[review] FBX round trip: %d face-arc loops, worst normal deviation %.3f deg" % (count, worst))
+
+# ---------------------------------------------------------------- set
+scene = bpy.context.scene
+scene.render.engine = "CYCLES"
+try:
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    prefs.compute_device_type = "METAL"
+    prefs.get_devices()
+    for d in prefs.devices:
+        d.use = True
+    scene.cycles.device = "GPU"
+except Exception as e:  # noqa: BLE001
+    print("[review] GPU unavailable:", e)
+scene.cycles.samples = SAMPLES
+scene.cycles.use_denoising = True
+scene.view_settings.view_transform = "AgX"
+scene.view_settings.look = "AgX - Base Contrast"
+world = bpy.data.worlds.new("rv")
+world.use_nodes = True
+world.node_tree.nodes["Background"].inputs[0].default_value = (0.20, 0.19, 0.17, 1)
+world.node_tree.nodes["Background"].inputs[1].default_value = 0.35
+scene.world = world
+
+
+def add_plane(name, size, loc_u, mat, facing="+Z"):
+    bm = bmesh.new()
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=size / 2)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(name, me)
+    scene.collection.objects.link(ob)
+    ob.rotation_euler = (math.radians(90), 0, 0)      # grid normal +z -> Blender -y = Unity +Z
+    ob.location = U(*loc_u)
+    me.materials.append(mat)
+    return ob
+
+
+wallm = bpy.data.materials.new("rv_wall")
+wallm.use_nodes = True
+wb = wallm.node_tree.nodes["Principled BSDF"]
+wb.inputs["Base Color"].default_value = (0.52, 0.45, 0.25, 1)
+wb.inputs["Roughness"].default_value = 0.85
+wall = add_plane("wall", 4.0, (0, 0, -0.0002), wallm)
+
+troffer = bpy.data.lights.new("troffer", "AREA")
+troffer.shape = "RECTANGLE"
+troffer.size, troffer.size_y = 0.6, 1.2
+troffer.energy = 220
+tob = bpy.data.objects.new("troffer", troffer)
+scene.collection.objects.link(tob)
+tob.location = U(0.0, 1.376, 1.5)
+tob.rotation_euler = (0, 0, 0)       # area lights point down -z (Blender) = Unity -Y: down
+
+
+def camera(name, eye, target, fov=None, ortho=None, res=(1920, 1080), clip=None, lens_shift=(0, 0)):
+    cd = bpy.data.cameras.new(name)
+    if ortho:
+        cd.type = "ORTHO"
+        cd.ortho_scale = ortho
+    else:
+        cd.sensor_fit = "VERTICAL"
+        cd.angle_y = math.radians(fov)
+    if clip:
+        cd.clip_start = clip
+    cd.clip_end = 50
+    if clip is None:
+        cd.clip_start = 0.002
+    cd.shift_x, cd.shift_y = lens_shift
+    cam = bpy.data.objects.new(name, cd)
+    scene.collection.objects.link(cam)
+    cam.location = U(*eye)
+    d = U(*target) - U(*eye)
+    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+    scene.camera = cam
+    scene.render.resolution_x, scene.render.resolution_y = res
+    scene.render.resolution_percentage = 100
+    return cam
+
+
+def show_lod(lv, with_lens=True):
+    for o in kit.parts:
+        o.hide_render = o not in LOD[lv]
+    lens.hide_render = not with_lens
+
+
+def render(name):
+    scene.render.filepath = os.path.join(OUT, (TAG + "_" if TAG else "") + name + ".png")
+    bpy.ops.render.render(write_still=True)
+    print("[review] wrote", scene.render.filepath)
+
+
+def section_polys():
+    """Flat section fills at the top rail's mid-length (Unity X = 0)."""
+    objs = []
+    def poly(name, pts_uw, rgb, xoff):
+        bm = bmesh.new()
+        vs = [bm.verts.new(U(xoff, (pc.B_HALF - u) * pc.MM, w * pc.MM)) for u, w in pts_uw]
+        bm.faces.new(vs)
+        me = bpy.data.meshes.new(name)
+        bm.to_mesh(me)
+        bm.free()
+        ob = bpy.data.objects.new(name, me)
+        scene.collection.objects.link(ob)
+        me.materials.append(flat("m_" + name, rgb))
+        objs.append(ob)
+    x = -0.0001
+    poly("sec rail", pc.profile_lod0(), (0.75, 0.10, 0.08), x)
+    poly("sec base", pc.BASE_PROFILE, (0.85, 0.45, 0.10), x)
+    sh = pc.SHEET_TO_OUTSIDE
+    poly("sec sheet", [(sh, 4.40), (60, 4.40), (60, pc.SHEET_W), (sh, pc.SHEET_W)], (0.95, 0.93, 0.85), x)
+    poly("sec lens", [(sh, pc.SHEET_W), (60, pc.SHEET_W), (60, pc.LENS_TOP), (sh, pc.LENS_TOP)], (0.35, 0.65, 0.85), x)
+    poly("sec board", [(1.6, 1.20), (60, 1.20), (60, 4.40), (1.6, 4.40)], (0.30, 0.22, 0.15), x)
+    return objs
+
+
+A, B = pc.A_HALF * pc.MM, pc.B_HALF * pc.MM
+ALL = views or ["front", "threeq", "game03", "corner", "mitre", "section", "lip", "lod", "oblique", "lensedge", "glow"]
+for v in ALL:
+    show_lod(0)
+    if v == "front":
+        camera("front", (0, 0, 2.0), (0, 0, 0), ortho=0.50, res=(1600, 1100))
+        render("front")
+    elif v == "threeq":
+        camera("threeq", (-0.42, 0.10, 0.50), (0.0, 0.0, 0.006), fov=40, res=(1600, 1100))
+        render("threeq")
+    elif v == "game03":
+        # A1: the player's view, 0.3 m face-on at FOV 76 (1080p): 2.3 px/mm.
+        camera("game03", (0.0, 0.0, 0.30), (0.0, 0.0, 0.0), fov=76, res=(1920, 1080))
+        render("game03")
+    elif v == "corner":
+        # The viewer's top-left corner (Unity +X, +Y) at about 0.3 m, zoomed (10 px/mm).
+        camera("corner", (A - 0.07, B - 0.10, 0.28), (A - 0.012, B - 0.012, 0.007), fov=16, res=(1600, 1100))
+        render("corner")
+    elif v == "mitre":
+        camera("mitre", (A + 0.06, B + 0.05, 0.10), (A - 0.004, B - 0.004, 0.009), fov=9, res=(1600, 1100))
+        render("mitre")
+    elif v == "section":
+        objs = section_polys()
+        lens.hide_render = True
+        # Section drawing: looking along Unity -X at the top rail's mid-length; image right =
+        # inset u (Unity -Y), image up = height above the wall w (Unity +Z).
+        from mathutils import Matrix
+        cam = camera("section", (0.30, B - 0.0145, 0.0072), (0.0, B - 0.0145, 0.0072), ortho=0.034, res=(1600, 1000), clip=0.30)
+        r, up = U(0, -1, 0), U(0, 0, 1)
+        back = r.cross(up)
+        o = cam.location.copy()
+        cam.matrix_world = Matrix(((r.x, up.x, back.x, o.x), (r.y, up.y, back.y, o.y), (r.z, up.z, back.z, o.z), (0, 0, 0, 1)))
+        render("section")
+        lens.hide_render = False
+        eye, tgt = (0.30, B - 0.0135 + 0.03, 0.0075 + 0.045), (0.0, B - 0.0135, 0.0075)
+        cam2 = camera("section3d", eye, tgt, fov=7, res=(1600, 1000))
+        cam2.data.clip_start = (U(*eye) - U(*tgt)).length - 0.0002
+        render("section3d")
+        for o in objs:
+            bpy.data.objects.remove(o, do_unlink=True)
+    elif v == "lip":
+        # Grazing view down the bottom rail's lip onto the lens and sheet.
+        camera("lip", (0.03, -B + 0.085, 0.030), (0.02, -B + 0.0254, 0.0058), fov=10, res=(1600, 1100))
+        render("lip")
+    elif v == "lod":
+        for lv, d in ((0, 2.0), (1, 2.0), (1, 6.0), (2, 6.0)):
+            show_lod(lv, with_lens=(lv < 2))
+            camera("lod", (0.35 * d / 2.0, 0.0, d), (0.0, 0.0, 0.0), fov=76, res=(1920, 1080))
+            render("lod%d_%dm" % (lv, int(d)))
+        show_lod(1)
+        camera("lod1_close", (A - 0.07, B - 0.10, 0.28), (A - 0.012, B - 0.012, 0.007), fov=16, res=(1600, 1100))
+        render("lod1_corner")
+        show_lod(2)
+        lens.hide_render = True
+        camera("lod2_close", (A - 0.07, B - 0.10, 0.28), (A - 0.012, B - 0.012, 0.007), fov=16, res=(1600, 1100))
+        render("lod2_corner")
+    elif v == "oblique":
+        # A2: 0.3 m from the sheet at 60 deg off the normal, looking toward the troffer side (up).
+        for deg in (45, 60):
+            a = math.radians(deg)
+            camera("oblique", (0.0, -0.30 * math.sin(a), 0.30 * math.cos(a)), (0.0, 0.0, 0.0), fov=76, res=(1920, 1080))
+            render("oblique%d" % deg)
+    elif v == "lensedge":
+        # Cutaway: the top-left rail pair hidden, to see the lens slab's thickness and edge on the sheet.
+        hidden = [o for o in kit.parts if o.name.startswith("rail top") or o.name.startswith("rail right")]
+        for o in hidden:
+            o.hide_render = True
+        camera("lensedge", (A - 0.02 + 0.05, B - 0.02 + 0.05, 0.045), (A - 0.0174 - 0.01, B - 0.0174 - 0.01, 0.005), fov=14, res=(1600, 1100))
+        render("lensedge")
+        for o in hidden:
+            o.hide_render = False
+    elif v == "glow":
+        o_print = [o for o in kit.parts if o.data.materials[0] == PRINT][0]
+        o_print.data.materials[0] = mat_print(glow=1.0)
+        troffer.energy = 0.0
+        world.node_tree.nodes["Background"].inputs[1].default_value = 0.03
+        camera("glow", (0, 0, 1.5), (0, 0, 0), fov=40, res=(1600, 1100))
+        render("glow")
+        troffer.energy = 220
+        world.node_tree.nodes["Background"].inputs[1].default_value = 0.35
+        o_print.data.materials[0] = PRINT

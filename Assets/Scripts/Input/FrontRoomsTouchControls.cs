@@ -23,6 +23,8 @@ public interface IFrontRoomsTouchHost
     void StepGameSetting(int index, int direction);
     string PauseMeta { get; }
     FrontRoomsTouchCaught CaughtStats { get; }
+    /// <summary>The camera whose frame freezes under the pause frost (the world only, no HUD).</summary>
+    Camera BackdropCamera { get; }
 }
 
 /// <summary>The caught card's numbers.</summary>

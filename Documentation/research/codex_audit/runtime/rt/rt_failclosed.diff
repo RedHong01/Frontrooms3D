@@ -1,0 +1,58 @@
+--- Assets/Scripts/Rendering/FrontRoomsMetalGlassRTRendererFeature.cs	2026-10-03 18:55:07
++++ Assets/Scripts/Rendering/FrontRoomsMetalGlassRTRendererFeature.cs	2026-10-07 17:25:25
+@@ -135,12 +135,23 @@
+             var desc = cameraData.cameraTargetDescriptor;
+             int w = Mathf.Max(1, desc.width), h = Mathf.Max(1, desc.height);
+             var quality = FrontRoomsGlassRT.Quality;
+-            if (state.EnsureTargets(w, h, quality == FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTSystem.DebugMode != FrontRoomsGlassRTNative.DebugNone))
+-                FrontRoomsGlassRTSystem.SendTargets(state);
+-
+             var view = cameraData.GetViewMatrix();
+             var gpuProj = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), true);
+-            var frame = FrontRoomsGlassRTSystem.BuildFrame(cam, state, w, h, view, gpuProj);
++            FrontRoomsGlassRTSystem.FrameResult frame;
++            try
++            {
++                if (state.EnsureTargets(w, h, quality == FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTSystem.DebugMode != FrontRoomsGlassRTNative.DebugNone))
++                    FrontRoomsGlassRTSystem.SendTargets(state);
++                frame = FrontRoomsGlassRTSystem.BuildFrame(cam, state, w, h, view, gpuProj);
++            }
++            catch (Exception e)
++            {
++                // Design 10 §2.7, fail closed: an exception escaping URP's record aborts this camera's whole frame
++                // (black screen) and leaves Forward+'s ZBinningJob uncompleted, so every later frame throws too.
++                // RT goes Off for the session instead; EndPass (already enqueued) keeps the keyword off and weight 0.
++                FrontRoomsGlassRTSystem.FailClosed(e);
++                return;
++            }
+             state.lastSeq = frame.seq;
+             state.lastRect = frame.rect;
+             state.lastVisibleReceivers = frame.visibleReceivers;
+--- Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs	2026-10-03 19:40:55
++++ Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs	2026-10-07 17:25:25
+@@ -81,6 +81,14 @@
+         catch { }
+         var level = QualitySettings.GetQualityLevel();
+         return level >= 5 ? FrontRoomsGlassRTQuality.Ultra : level >= 3 ? FrontRoomsGlassRTQuality.High : FrontRoomsGlassRTQuality.Off;
++    }
++
++    /// <summary>An exception escaped the per-frame RT build: RT is Off for this session (design 10 §2.7, fail closed).</summary>
++    internal static void FailClosed(Exception e)
++    {
++        Debug.LogException(e);
++        Debug.LogError("[FrontRoomsGlassRT] off for this session: " + e.GetType().Name + " while building the RT frame (fail closed, design 10 §2.7)");
++        qualityOverride = FrontRoomsGlassRTQuality.Off;
+     }
+ 
+     static bool TryParse(string s, out FrontRoomsGlassRTQuality q)
+@@ -192,7 +200,9 @@
+ 
+     public static void OptIn(Camera camera)
+     {
+-        if (camera == null) return;
++        // Edit-mode cameras never trace (the feature needs Play Mode). Adding the component there saves it into the
++        // scene (FrontRoomsScreenAdsDemo.unity), where it is a missing script on every non-macOS editor and player.
++        if (camera == null || !Application.isPlaying) return;
+         EnsureStarted();
+         if (!camera.TryGetComponent<FrontRoomsGlassRTCamera>(out var state)) state = camera.gameObject.AddComponent<FrontRoomsGlassRTCamera>();
+         if (state.id < 0) { state.id = nextCameraId++; cameras.Add(state); }

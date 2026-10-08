@@ -1,0 +1,48 @@
+# Codex audit, G14 track (2026-10-07): fault-injection chart (clone probe phase "fault"): BuildFrame throws for 12 renders.
+# Values copied from runtime/rt/play_log_high.txt (main as is) and the patched run's play_log (fail-closed guard).
+import sys
+from PIL import Image, ImageDraw, ImageFont
+out = sys.argv[1]
+un = [76.35, 76.91, 76.23] + [76.23] * 12 + [76.80, 76.03, 76.33, 76.97, 76.37, 76.02]
+pa = [76.53, 76.13, 76.82] + [77.34, 76.63, 76.91, 77.48, 76.93, 76.64, 77.32, 77.26, 76.64, 77.01, 77.41, 76.83] + [76.75, 77.37, 77.11, 76.61, 77.13, 77.37]
+# errors per render during the fault (renders 4..15): main as is: every render 1 Render Graph error + NRE (renders 1, 5, 9) or ZBinningJob
+err_un = [("RG+NRE" if k % 4 == 0 else "RG+ZBIN") for k in range(12)]
+err_pa = ["NRE+OFF"] + [""] * 11
+W, H = 1920, 1080
+img = Image.new("RGB", (W, H), (255, 255, 255)); d = ImageDraw.Draw(img)
+def font(sz):
+    try: return ImageFont.truetype("/Users/redwang/Library/Fonts/IBMPlexMono-Regular.otf", sz)
+    except Exception: return ImageFont.load_default()
+f22, f18 = font(22), font(18)
+INK = (10, 10, 10); GRID = (225, 225, 225); RED = (200, 40, 40); BLUE = (42, 120, 214); BAND = (255, 240, 200)
+x0, x1 = 160, W - 80
+n = len(un)
+def X(i): return x0 + (x1 - x0) * i / (n - 1)
+# fault band
+d.rectangle([X(2.5), 140, X(14.5), 1010], fill=BAND)
+d.text((X(2.5) + 10, 148), "BUILDFRAME THROWS (12 RENDERS)", fill=INK, font=f18)
+# luma panel
+y0, y1, lo, hi = 150, 560, 75.8, 77.8
+d.text((x0, y0 - 44), "MEAN FRAME LUMA PER RENDER (FILM GRAIN ON, SO A LIVE FRAME ALWAYS MOVES)", fill=INK, font=f22)
+for t in (76.0, 76.5, 77.0, 77.5):
+    y = y1 - (y1 - y0) * (t - lo) / (hi - lo); d.line([(x0, y), (x1, y)], fill=GRID); d.text((x0 - 80, y - 11), f"{t:.1f}", fill=INK, font=f18)
+for vals, col, name, dy in ((un, RED, "MAIN AS IS: SAME FRAME 12 TIMES (MD5 EQUAL)", 0), (pa, BLUE, "WITH THE FAIL-CLOSED GUARD: RT OFF, FRAMES LIVE", 30)):
+    pts = [(X(i), y1 - (y1 - y0) * (v - lo) / (hi - lo)) for i, v in enumerate(vals)]
+    d.line(pts, fill=col, width=4)
+    for p in pts: d.ellipse([p[0] - 5, p[1] - 5, p[0] + 5, p[1] + 5], fill=col)
+    d.text((x0 + 10, y1 + 16 + dy), name, fill=col, font=f18)
+# errors panel
+y0, y1 = 700, 1000
+d.text((x0, y0 - 44), "ERRORS LOGGED PER RENDER (RG = RENDER GRAPH EXECUTION ERROR, ZBIN = FORWARD+ ZBINNINGJOB)", fill=INK, font=f22)
+for row, (lab, errs, col) in enumerate((("AS IS", err_un, RED), ("GUARD", err_pa, BLUE))):
+    y = y0 + 40 + row * 130
+    d.text((x0 - 120, y + 30), lab, fill=col, font=f18)
+    for k, e in enumerate(errs):
+        cx = X(3 + k)
+        if e:
+            d.rectangle([cx - 38, y, cx + 38, y + 90], fill=col)
+            for j, part in enumerate(e.split("+")): d.text((cx - 30, y + 14 + 30 * j), part, fill=(255, 255, 255), font=f18)
+        else:
+            d.rectangle([cx - 38, y, cx + 38, y + 90], outline=GRID, width=2)
+d.text((x0, 1030), "RENDER 1-3 BEFORE · 4-15 FAULT · 16-21 BUFFER RESTORED", fill=INK, font=f18)
+img.save(out); print(out)

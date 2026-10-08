@@ -3,7 +3,7 @@ composite on its own background. Usage: fits.py plan.json out.json"""
 import json, math, os, re, sys
 import numpy as np
 from PIL import Image
-KD = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/keyicon_design"
+KD = "/Users/redwang/FrontRoomsVisualWork/keyicon_design"   # 游戏视觉's rebuilt key-icon pipeline (the /private/tmp copy was wiped 2026-10-05)
 sys.path.insert(0, KD)
 import iconlib as L
 PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
@@ -11,7 +11,8 @@ DES = os.path.join(PROJ, "Documentation/research/ui_key_icon/design")
 RV = os.path.join(PROJ, "Documentation/research/room_visuals/images")
 BGS = {"lit": os.path.join(RV, "room_map-l0-low_wide.jpg"), "wallpaper": os.path.join(RV, "room_map-l0-standard_wide.jpg"),
        "office": os.path.join(RV, "room_map-office_wide.jpg"),
-       "dark": "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/audit_run3_frames/59_door_key_open_t0000ms.png"}
+       "dark": os.path.join(DES, "bg", "dark_59_door_key_open_t0000ms.png"),
+       "leaf": os.path.join(DES, "bg", "leaf_48_almond.png")}
 FONTS = {"BAYON": "Assets/Resources/Fonts/Bayon-Regular.ttf", "MONO": "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf",
          "SERIF": "Assets/Resources/Fonts/SourceSerif4-Variable.ttf", "COURIER_B": "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Bold.ttf"}
 FONTS = {k: L.Font(os.path.join(PROJ, v)) for k, v in FONTS.items()}
@@ -87,10 +88,19 @@ def sprite_fit(bg, o):
 if __name__ == "__main__":
     plan = json.load(open(sys.argv[1]))
     for c in plan["crops"]:
-        bg = BG[c["bg"]]
+        bg = BG[c["bg"]].copy()          # grows as opaque/semi-transparent rects (the prompt card) are laid down
         for o in c["ops"]:
             if o["op"] == "text" and o["opacity"] < 0.999:
                 o["fig_opacity"] = round(text_fit(bg, o), 3)
+            elif o["op"] == "rect":
+                x0, y0 = int(round(o["x"])), int(round(o["y"])); w, h = int(round(o["w"])), int(round(o["h"]))
+                Bb = bg[y0:y0 + h, x0:x0 + w]
+                F = np.broadcast_to(hexrgb(o["colour"]), Bb.shape)
+                if o["opacity"] < 0.999:
+                    q = lsq(Bb, F, np.full(Bb.shape[:2], o["opacity"]), np.ones(Bb.shape[:2]))
+                    o["fig_opacity"] = round(min(1.0, q), 3) if q is not None else o["opacity"]
+                a = o["opacity"]
+                bg[y0:y0 + h, x0:x0 + w] = srgb(lin(Bb) * (1 - a) + lin(F) * a)    # what later layers sit on
             elif o["op"] == "sprite":
                 r = sprite_fit(bg, o)
                 if r["g"] < 0.999 or o["opacity"] < 0.999:

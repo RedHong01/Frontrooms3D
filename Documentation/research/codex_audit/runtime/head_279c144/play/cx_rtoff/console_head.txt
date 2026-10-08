@@ -1,0 +1,157 @@
+--- [map 0.00 s, frame 0, thread 1, -] Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+--- [map 0.00 s, frame 0, thread 76, -] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 0.00 s, frame 0, thread 77, -] Error: [FMOD] RuntimeBankModel::openFile : Failed to open file 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank'
+
+UnityEngine.Debug:LogError (object)
+FMODUnity.RuntimeUtils:DebugLogError (string) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeUtils.cs:596)
+FMODUnity.RuntimeManager:DEBUG_CALLBACK (FMOD.DEBUG_FLAGS,intptr,int,intptr,intptr) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:109)
+--- [map 0.00 s, frame 0, thread 1, -] Exception: BankLoadException: [FMOD] Could not load bank 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank' : ERR_FILE_NOTFOUND : File not found.
+FMODUnity.RuntimeManager.RegisterLoadedBank (FMODUnity.RuntimeManager+LoadedBank loadedBank, System.String bankPath, System.String bankName, System.Boolean loadSamples, FMOD.RESULT loadResult) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:912)
+FMODUnity.RuntimeManager.LoadBank (System.String bankName, System.Boolean loadSamples, System.String bankId) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1018)
+FMODUnity.RuntimeManager.LoadBank (System.String bankName, System.Boolean loadSamples) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:969)
+FMODUnity.RuntimeManager.LoadBanks (FMODUnity.Settings fmodSettings) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1106)
+UnityEngine.Debug:LogException(Exception)
+FMODUnity.RuntimeUtils:DebugLogException(Exception) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeUtils.cs:612)
+FMODUnity.RuntimeManager:LoadBanks(Settings) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1113)
+FMODUnity.RuntimeManager:Initialize() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:416)
+FMODUnity.RuntimeManager:get_Instance() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:217)
+FMODUnity.RuntimeManager:get_StudioSystem() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:235)
+FMODUnity.StudioListener:AddListener(StudioListener) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/StudioListener.cs:104)
+FMODUnity.StudioListener:OnEnable() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/StudioListener.cs:134)
+--- [map 0.00 s, frame 1, main, Title] Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+Parameter name: index
+System.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <c5eeda5e65d44b388e164c6c5cfe0702>:0)
+UnityEditor.Search.SearchDatabase+<EnumerateAll>d__80.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:445)
+System.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+UnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:420)
+UnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)
+UnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:407)
+--- [map 0.12 s, frame 114, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 0.47 s, frame 135, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (33, 24) · revision 0; left out.
+--- [map 2.33 s, frame 247, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 4.42 s, frame 373, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 7.17 s, frame 538, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 8.47 s, frame 615, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (37, 24) · revision 0; left out.
+--- [map 8.93 s, frame 644, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 10.95 s, frame 764, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 13.78 s, frame 935, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 16.40 s, frame 1092, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 18.77 s, frame 1234, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 21.27 s, frame 1384, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 22.30 s, frame 1445, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (38, 28) · revision 0; left out.
+--- [map 23.75 s, frame 1533, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 25.95 s, frame 1665, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 28.18 s, frame 1799, thread 76, Caught] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 28.60 s, frame 1823, main, Caught] Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+--- [map 29.87 s, frame 1899, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 32.08 s, frame 2033, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 33.87 s, frame 2140, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 36.23 s, frame 2282, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 38.18 s, frame 2398, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 40.27 s, frame 2523, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 42.92 s, frame 2683, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 44.88 s, frame 2801, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 47.08 s, frame 2933, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 48.67 s, frame 3028, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 50.70 s, frame 3149, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (6, 3) · revision 0; left out.
+--- [map 50.70 s, frame 3149, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (6, 3) · revision 0; left out.
+--- [map 50.98 s, frame 3167, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 53.88 s, frame 3340, main, Caught] Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+--- [map 53.88 s, frame 3340, thread 76, Caught] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 55.43 s, frame 3434, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 57.37 s, frame 3550, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 58.83 s, frame 3638, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 60.97 s, frame 3766, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 62.63 s, frame 3866, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 64.87 s, frame 4000, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 67.58 s, frame 4163, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 69.47 s, frame 4276, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 71.23 s, frame 4381, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 73.22 s, frame 4501, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 74.78 s, frame 4595, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 76.70 s, frame 4710, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 79.50 s, frame 4878, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 79.64 s, frame 4885, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (6, 3) · revision 0; left out.
+--- [map 79.64 s, frame 4885, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (6, 3) · revision 0; left out.
+--- [map 81.90 s, frame 5022, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 84.57 s, frame 5182, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 86.39 s, frame 5291, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 87.74 s, frame 5372, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 89.39 s, frame 5471, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 91.00 s, frame 5567, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 92.72 s, frame 5671, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 94.54 s, frame 5780, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 96.27 s, frame 5884, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 98.09 s, frame 5993, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 99.64 s, frame 6086, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 101.46 s, frame 6195, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 102.96 s, frame 6285, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 104.76 s, frame 6393, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 106.54 s, frame 6500, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 108.59 s, frame 6623, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 111.21 s, frame 6780, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 113.28 s, frame 6904, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 114.79 s, frame 6995, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 116.68 s, frame 7107, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 119.04 s, frame 7249, thread 76, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+

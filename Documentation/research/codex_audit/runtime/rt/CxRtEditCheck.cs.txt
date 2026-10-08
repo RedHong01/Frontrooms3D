@@ -1,0 +1,78 @@
+// Codex audit (G14 track), clone proj_cx_rt ONLY. Does FrontRoomsPostStack.ConfigureCamera add the RT camera component
+// to an EDIT-MODE camera (the component then gets saved into scenes)?
+// Batch: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod CxRtEditCheck.Run -logFile <f>
+#if UNITY_EDITOR_OSX
+using System.IO;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+public static class CxRtEditCheck
+{
+    public static void Run()
+    {
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var cam = new GameObject("cx edit-mode camera").AddComponent<Camera>();
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        var has = cam.GetComponent<FrontRoomsGlassRTCamera>() != null;
+        var path = "Assets/CxAuditTmp/cx_editmode_optin.unity";
+        Directory.CreateDirectory(Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Assets", "CxAuditTmp"));
+        EditorSceneManager.SaveScene(scene, path, true);
+        var text = File.ReadAllText(Path.Combine(Directory.GetParent(Application.dataPath).FullName, path));
+        var guid = AssetDatabase.AssetPathToGUID("Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTCamera.cs");
+        var refs = 0; var at = 0; while ((at = text.IndexOf(guid, at, System.StringComparison.Ordinal)) >= 0) { refs++; at += guid.Length; }
+        var line = "EDIT-MODE ConfigureCamera: isPlaying " + Application.isPlaying + " · camera has FrontRoomsGlassRTCamera " + has
+                   + " · saved scene references the component's script guid " + guid + " " + refs + " time(s)";
+        Debug.Log("[CxRtEditCheck] " + line);
+        var outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "cx_rt");
+        Directory.CreateDirectory(outDir);
+        File.AppendAllText(Path.Combine(outDir, "edit_optin.txt"), System.DateTime.Now.ToString("s") + " " + line + "\n");
+        EditorApplication.Exit(0);
+    }
+}
+#endif
+
+// Player-script compile per target (no target switch, no build): which compiled Assembly-CSharp.dll contains RT symbols.
+// Batch: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod CxRtCompileCheck.Run -logFile <f>
+#if UNITY_EDITOR_OSX
+public static class CxRtCompileCheck
+{
+    public static void Run()
+    {
+        var root = System.IO.Directory.GetParent(UnityEngine.Application.dataPath).FullName;
+        var sb = new System.Text.StringBuilder();
+        foreach (var (target, group) in new[] {
+            (UnityEditor.BuildTarget.WebGL, UnityEditor.BuildTargetGroup.WebGL), (UnityEditor.BuildTarget.StandaloneWindows64, UnityEditor.BuildTargetGroup.Standalone),
+            (UnityEditor.BuildTarget.iOS, UnityEditor.BuildTargetGroup.iOS), (UnityEditor.BuildTarget.StandaloneOSX, UnityEditor.BuildTargetGroup.Standalone) })
+        {
+            var outDir = System.IO.Path.Combine(root, "Temp", "cx_compile_" + target);
+            if (System.IO.Directory.Exists(outDir)) System.IO.Directory.Delete(outDir, true);
+            System.IO.Directory.CreateDirectory(outDir);
+            var errors = 0;
+            UnityEngine.Application.LogCallback cb = (m, st, t) => { if (t == UnityEngine.LogType.Error && m.Contains("error CS")) errors++; };
+            UnityEngine.Application.logMessageReceived += cb;
+            var settings = new UnityEditor.Build.Player.ScriptCompilationSettings { target = target, group = group, options = UnityEditor.Build.Player.ScriptCompilationOptions.None };
+            var result = UnityEditor.Build.Player.PlayerBuildInterface.CompilePlayerScripts(settings, outDir);
+            UnityEngine.Application.logMessageReceived -= cb;
+            var dll = System.IO.Path.Combine(outDir, "Assembly-CSharp.dll");
+            string Count(string needle)
+            {
+                if (!System.IO.File.Exists(dll)) return "-";
+                var text = System.Text.Encoding.ASCII.GetString(System.IO.File.ReadAllBytes(dll));
+                var n = 0; var at = 0; while ((at = text.IndexOf(needle, at, System.StringComparison.Ordinal)) >= 0) { n++; at += needle.Length; }
+                return n.ToString();
+            }
+            var line = "COMPILE " + target + ": assemblies " + (result.assemblies != null ? result.assemblies.Count : 0) + " · Assembly-CSharp.dll "
+                + (System.IO.File.Exists(dll) ? new System.IO.FileInfo(dll).Length + " B" : "missing") + " · error CS logged " + errors
+                + " · 'FRGlassRT_' " + Count("FRGlassRT_") + " · 'FrontRoomsGlassRTSystem' " + Count("FrontRoomsGlassRTSystem")
+                + " · 'FrontRoomsGlassRTCamera' " + Count("FrontRoomsGlassRTCamera") + " · 'TracePass' " + Count("TracePass");
+            sb.AppendLine(line);
+            UnityEngine.Debug.Log("[CxRtCompileCheck] " + line);
+        }
+        var outPath = System.IO.Path.Combine(root, "Verification", "cx_rt");
+        System.IO.Directory.CreateDirectory(outPath);
+        System.IO.File.WriteAllText(System.IO.Path.Combine(outPath, "compile_check.txt"), sb.ToString());
+        UnityEditor.EditorApplication.Exit(0);
+    }
+}
+#endif

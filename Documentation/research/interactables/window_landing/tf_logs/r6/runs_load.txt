@@ -10,3 +10,7 @@ play6_r12 end 17:00:55 rc=0 17:00  up 2 days, 16:02, 1 user, load averages: 659.
 tf6_win end 17:06:56 rc=0 17:06  up 2 days, 16:08, 1 user, load averages: 600.61 566.44 500.52
 lod6_r12 start 17:07:05 17:07  up 2 days, 16:08, 1 user, load averages: 599.82 567.49 501.67
 play6_win start 17:07:05 17:07  up 2 days, 16:08, 1 user, load averages: 599.82 567.49 501.67
+lod6_r12 end 17:18:50 rc=0 17:18  up 2 days, 16:20, 1 user, load averages: 624.86 588.64 548.09
+play6_win end 17:24:06 rc=0 17:24  up 2 days, 16:25, 1 user, load averages: 723.71 664.13 595.18
+lod6_win start 17:24:06 17:24  up 2 days, 16:25, 1 user, load averages: 723.71 664.13 595.18
+lod6_win end 17:27:20 rc=0 17:27  up 2 days, 16:28, 1 user, load averages: 862.85 749.87 644.80

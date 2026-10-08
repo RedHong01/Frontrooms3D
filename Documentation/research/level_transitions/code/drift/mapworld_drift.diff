@@ -1,0 +1,256 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs (clone base, md5 e5204f9c)
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs (drift)
+@@ -92,6 +92,11 @@
+     /// <summary>Seconds from DoorUnlocked to the leaf starting to swing (the key turning in the lock). 0 swings at once.</summary>
+     public float UnlockSwingDelay { get; set; }
+ 
++    // TRANSITION drift: chunk events (draft contract; also queued for the RT track). The theme field listens.
++    public static event Action<FrontRoomsMapWorld, GridCoord> ChunkBuilt;
++    public static event Action<FrontRoomsMapWorld, GridCoord> ChunkReleased;
++    public static event Action<FrontRoomsMapWorld> MapReleased;
++
+     /// <summary>What lies between two side-by-side cells right now.</summary>
+     public enum Passage { Open, Wall, ClosedDoor, Glass }
+ 
+@@ -164,6 +169,10 @@
+         public readonly List<Vector3> normals = new List<Vector3>();
+         public readonly List<Vector2> uvs = new List<Vector2>();
+         public readonly List<int> triangles = new List<int>();
++        // TRANSITION drift: face data (UV1) for FrontRooms/Surface's drift: the face's extent round
++        // each vertex in metres (vertical faces: along the drop axis; horizontal: X and Z), x - 1024 as a marker.
++        public bool faceData;
++        readonly List<Vector4> faces = new List<Vector4>();
+ 
+         public void Box(Vector3 center, Vector3 size, Vector3 worldOffset, float repeat)
+         {
+@@ -184,6 +193,7 @@
+             Corner(c + u * uHalf - v * vHalf, normal, worldOffset, repeat);
+             Corner(c + u * uHalf + v * vHalf, normal, worldOffset, repeat);
+             Corner(c - u * uHalf + v * vHalf, normal, worldOffset, repeat);
++            if (faceData) FaceData(c, normal, u * uHalf, v * vHalf); // TRANSITION drift
+             triangles.Add(i); triangles.Add(i + 1); triangles.Add(i + 2);
+             triangles.Add(i); triangles.Add(i + 2); triangles.Add(i + 3);
+         }
+@@ -199,6 +209,23 @@
+             uvs.Add(uv / repeat);
+         }
+ 
++        // TRANSITION drift: same corner order as Face.
++        void FaceData(Vector3 c, Vector3 normal, Vector3 du, Vector3 dv)
++        {
++            var p0 = c - du - dv; var p1 = c + du - dv; var p2 = c + du + dv; var p3 = c - du + dv;
++            if (Mathf.Abs(normal.y) > .5f)
++            {
++                float x0 = Mathf.Min(Mathf.Min(p0.x, p1.x), Mathf.Min(p2.x, p3.x)), x1 = Mathf.Max(Mathf.Max(p0.x, p1.x), Mathf.Max(p2.x, p3.x));
++                float z0 = Mathf.Min(Mathf.Min(p0.z, p1.z), Mathf.Min(p2.z, p3.z)), z1 = Mathf.Max(Mathf.Max(p0.z, p1.z), Mathf.Max(p2.z, p3.z));
++                foreach (var p in new[] { p0, p1, p2, p3 }) faces.Add(new Vector4(x0 - p.x - 1024f, x1 - p.x, z0 - p.z, z1 - p.z));
++                return;
++            }
++            var t = Vector3.Cross(Vector3.up, normal).normalized;
++            float a0 = Vector3.Dot(p0, t), a1 = Vector3.Dot(p1, t), a2 = Vector3.Dot(p2, t), a3 = Vector3.Dot(p3, t);
++            float lo = Mathf.Min(Mathf.Min(a0, a1), Mathf.Min(a2, a3)), hi = Mathf.Max(Mathf.Max(a0, a1), Mathf.Max(a2, a3));
++            foreach (var a in new[] { a0, a1, a2, a3 }) faces.Add(new Vector4(lo - a - 1024f, hi - a, 0f, 0f));
++        }
++
+         public Mesh ToMesh(string name)
+         {
+             var mesh = new Mesh { name = name };
+@@ -206,6 +233,7 @@
+             mesh.SetVertices(vertices);
+             mesh.SetNormals(normals);
+             mesh.SetUVs(0, uvs);
++            if (faceData && faces.Count == vertices.Count) mesh.SetUVs(1, faces); // TRANSITION drift
+             mesh.SetTriangles(triangles, 0);
+             mesh.RecalculateTangents();
+             mesh.RecalculateBounds();
+@@ -558,6 +586,7 @@
+     /// </summary>
+     public void Release()
+     {
++        MapReleased?.Invoke(this); // TRANSITION drift
+         foreach (var chunk in built.Values) FreeMeshes(chunk);
+         foreach (var material in ownedMaterials) Kill(material);
+         ownedMaterials.Clear();
+@@ -722,6 +751,7 @@
+         Unregister(chunk);
+         built.Remove(coord);
+         droppedAt[coord] = Time.time;
++        ChunkReleased?.Invoke(this, coord); // TRANSITION drift
+     }
+ 
+     /// <summary>Forget a chunk's doors, windows and shell colliders, and free its meshes and objects.</summary>
+@@ -788,7 +818,8 @@
+         for (var b = 0; b < builders.Length; b++) builders[b] = new Dictionary<Material, MeshBuilder>();
+         MeshBuilder Get(int blockIndex, Material material)
+         {
+-            if (!builders[blockIndex].TryGetValue(material, out var builder)) builders[blockIndex][material] = builder = new MeshBuilder();
++            if (!builders[blockIndex].TryGetValue(material, out var builder))
++                builders[blockIndex][material] = builder = new MeshBuilder { faceData = FrontRoomsTransitionKit.Enabled }; // TRANSITION drift
+             return builder;
+         }
+         var collision = new MeshBuilder();
+@@ -832,14 +863,19 @@
+             // A wall's ends reach half a thickness past its corner, except into the start area.
+             // The start area's side walls also stop on the door line, where the stream room's end wall closes the corner.
+             var startSide = InStartArea(cell) != InStartArea(east);
++            // TRANSITION drift: B0.1 corner extents, B0.2 per-side blocks and the linings, from the kit.
++            var eastEnds = Ends(cell, east, true, eastKind, BlockOf(i, j, eastHeight), BlockOf(i, j, height), BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)));
++            var northEnds = Ends(cell, north, false, northKind, BlockOf(i, j, northHeight), BlockOf(i, j, height), BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)));
+             BuildEdge(chunk, eastKind, cell, east, new Vector3((i + 1) * cs, 0f, j * cs), Vector3.forward,
+                 eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
+                 !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
+-                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax));
++                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
++                eastEnds);
+             BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
+                 northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
+                 !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
+-                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)));
++                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
++                northEnds);
+ 
+             if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
+             {
+@@ -847,7 +883,8 @@
+                 var style = data.pillarStyle[i + j * (n + 1)];
+                 if (TouchesStartArea(cell.x, cell.y, cell.x + 2, cell.y)) style &= unchecked((byte)~MapChunk.ColumnBeamEast);
+                 if (TouchesStartArea(cell.x, cell.y, cell.x, cell.y + 2)) style &= unchecked((byte)~MapChunk.ColumnBeamNorth);
+-                BuildColumn(style, new Vector3(i * cs, 0f, j * cs), height, zone.theme, theme, b, Get, Solid, origin);
++                BuildColumn(style, new Vector3(i * cs, 0f, j * cs), height, zone.theme, theme, b, Get, Solid, origin,
++                    FrontRoomsTransitionKit.ColumnLining(this, cell.x, cell.y)); // TRANSITION drift
+             }
+ 
+             if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+@@ -882,6 +919,7 @@
+         AddZoneGrades(chunk, data);
+         Furnish(chunk, data);
+         built[coord] = chunk;
++        ChunkBuilt?.Invoke(this, coord); // TRANSITION drift
+     }
+ 
+     static readonly int CeilingHeightId = Shader.PropertyToID("_CeilingHeight");
+@@ -936,6 +974,31 @@
+ 
+     bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
+ 
++    // TRANSITION drift: what the transition kit decided for one edge.
++    struct EdgeEnds
++    {
++        public bool active;
++        public float start, end;                 // metres past the start / end corner (+0.08, 0 or -0.08)
++        public int blockA, blockB;               // B0.2: each face in its own side's height block
++        public Material startLining, endLining;  // free wall ends in the band
++        public Material archLining;              // arch jambs and soffit in the band
++    }
++
++    // TRANSITION drift: ask the kit. a is the west or south cell; east: the edge runs along +Z.
++    EdgeEnds Ends(GridCoord a, GridCoord b, bool east, EdgeKind kind, int edgeBlock, int blockA, int blockB)
++    {
++        var e = new EdgeEnds { start = WallThickness * .5f, end = WallThickness * .5f, blockA = edgeBlock, blockB = edgeBlock };
++        if (!FrontRoomsTransitionKit.Enabled || kind == EdgeKind.Open) return e;
++        e.active = true;
++        if (!InStartArea(a) && !InStartArea(b)) { e.blockA = blockA; e.blockB = blockB; }
++        var s0 = east ? FrontRoomsTransitionKit.Corner(this, a.x + 1, a.y, FrontRoomsTransitionKit.Arm.N) : FrontRoomsTransitionKit.Corner(this, a.x, a.y + 1, FrontRoomsTransitionKit.Arm.E);
++        var s1 = east ? FrontRoomsTransitionKit.Corner(this, a.x + 1, a.y + 1, FrontRoomsTransitionKit.Arm.S) : FrontRoomsTransitionKit.Corner(this, a.x + 1, a.y + 1, FrontRoomsTransitionKit.Arm.W);
++        e.start = s0.extent; e.end = s1.extent;
++        e.startLining = s0.lining; e.endLining = s1.lining;
++        if (kind == EdgeKind.Arch) e.archLining = FrontRoomsTransitionKit.ArchLining(this, a, !east);
++        return e;
++    }
++
+     /// <summary>
+     /// One 3 m edge from <paramref name="start"/> along <paramref name="along"/>.
+     /// Where the two sides are different themes the wall is split in two
+@@ -944,16 +1007,43 @@
+     /// </summary>
+     void BuildEdge(BuiltChunk chunk, EdgeKind kind, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float height,
+         Material wallA, Material wallB, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
+-        bool mayExtendStart = true, bool mayExtendEnd = true)
++        bool mayExtendStart = true, bool mayExtendEnd = true, EdgeEnds ends = default)
+     {
+         if (kind == EdgeKind.Open) return;
+         var length = MapGrid.CellSize;
+         // Positive "across" points from cell a into cell b.
+         var across = new Vector3(along.z, 0f, along.x);
++        // TRANSITION drift: a lining box, the full wall thickness, in one non-drift finish.
++        void LiningBox(float from, float to, float bottom, float top, Material finish)
++        {
++            if (to - from < 1e-4f || top - bottom < 1e-4f) return;
++            var lc = start + along * ((from + to) * .5f) + Vector3.up * ((bottom + top) * .5f);
++            solid(blockIndex, finish, lc, Abs(along * (to - from) + across * WallThickness + Vector3.up * (top - bottom)), WallpaperRepeat);
++        }
+         void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd)
+         {
+             if (from > 0f || !mayExtendStart) extendStart = false;
+             if (to < length || !mayExtendEnd) extendEnd = false;
++            if (ends.active)
++            {
++                // TRANSITION drift: the kit's corner extents (B0.1), per-side blocks (B0.2), free-end linings.
++                var fs = from - (extendStart ? ends.start : 0f);
++                var ts = to + (extendEnd ? ends.end : 0f);
++                var lt = FrontRoomsTransitionKit.LiningThickness;
++                if (extendStart && ends.startLining != null) { LiningBox(fs, fs + lt, bottom, top, ends.startLining); fs += lt; }
++                if (extendEnd && ends.endLining != null) { LiningBox(ts - lt, ts, bottom, top, ends.endLining); ts -= lt; }
++                if (ts - fs < .05f || top - bottom < .05f) return;
++                var pc = start + along * ((fs + ts) * .5f) + Vector3.up * ((bottom + top) * .5f);
++                if (wallA == wallB && ends.blockA == ends.blockB)
++                {
++                    solid(ends.blockA, wallA, pc, Abs(along * (ts - fs) + across * WallThickness + Vector3.up * (top - bottom)), WallpaperRepeat);
++                    return;
++                }
++                var skin = Abs(along * (ts - fs) + across * (WallThickness * .5f) + Vector3.up * (top - bottom));
++                solid(ends.blockA, wallA, pc - across * (WallThickness * .25f), skin, WallpaperRepeat);
++                solid(ends.blockB, wallB, pc + across * (WallThickness * .25f), skin, WallpaperRepeat);
++                return;
++            }
+             var f = from - (extendStart ? WallThickness * .5f : 0f);
+             var t = to + (extendEnd ? WallThickness * .5f : 0f);
+             if (t - f < .05f || top - bottom < .05f) return;
+@@ -990,6 +1080,20 @@
+             openingTop = WindowTop;
+             sill = WindowSill;
+         }
++        if (kind == EdgeKind.Arch && ends.archLining != null)
++        {
++            // TRANSITION drift: jambs and soffit as one lining in one finish (the opening keeps its size).
++            var lt = FrontRoomsTransitionKit.LiningThickness;
++            var l = c - width * .5f;
++            var r = c + width * .5f;
++            Piece(0f, l - lt, 0f, height, true, false);
++            Piece(r + lt, length, 0f, height, false, true);
++            Piece(l - lt, r + lt, openingTop + lt, height, false, false);
++            LiningBox(l - lt, l, 0f, openingTop + lt, ends.archLining);
++            LiningBox(r, r + lt, 0f, openingTop + lt, ends.archLining);
++            LiningBox(l, r, openingTop, openingTop + lt, ends.archLining);
++            return;
++        }
+         Piece(0f, c - width * .5f, 0f, height, true, false);
+         Piece(c + width * .5f, length, 0f, height, false, true);
+         Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
+@@ -1061,19 +1165,22 @@
+     /// bulkhead to the next column on the grid. The bulkhead is
+     /// above every head, so it has no collision.
+     /// </summary>
+-    void BuildColumn(byte style, Vector3 at, float height, ZoneTheme zoneTheme, ThemeMaterials theme, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin)
++    void BuildColumn(byte style, Vector3 at, float height, ZoneTheme zoneTheme, ThemeMaterials theme, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
++        Material finish = null)
+     {
++        // TRANSITION drift: in the band a column (and its bulkheads) is one lining finish, so no drop joint splits a face.
++        var columnWall = finish != null ? finish : theme.wall;
+         var w = (style & MapChunk.ColumnLarge) != 0 ? ModuleUnits.ColumnLarge : ModuleUnits.ColumnSmall;
+-        solid(blockIndex, theme.wall, at + Vector3.up * (height * .5f), new Vector3(w, height, w), WallpaperRepeat);
++        solid(blockIndex, columnWall, at + Vector3.up * (height * .5f), new Vector3(w, height, w), WallpaperRepeat);
+         var cove = w + ModuleUnits.CoveProud * 2f;
+         get(blockIndex, trim).Box(at + Vector3.up * (ModuleUnits.CoveHeight * .5f), new Vector3(cove, ModuleUnits.CoveHeight, cove), origin, 1f);
+         if (zoneTheme != ZoneTheme.Office) return;
+         var span = ModuleUnits.ColumnGrid - w;
+         var y = height - ModuleUnits.BulkheadDepth * .5f;
+         if ((style & MapChunk.ColumnBeamEast) != 0)
+-            get(blockIndex, theme.wall).Box(at + new Vector3(ModuleUnits.ColumnGrid * .5f, y, 0f), new Vector3(span, ModuleUnits.BulkheadDepth, w), origin, WallpaperRepeat);
++            get(blockIndex, columnWall).Box(at + new Vector3(ModuleUnits.ColumnGrid * .5f, y, 0f), new Vector3(span, ModuleUnits.BulkheadDepth, w), origin, WallpaperRepeat);
+         if ((style & MapChunk.ColumnBeamNorth) != 0)
+-            get(blockIndex, theme.wall).Box(at + new Vector3(0f, y, ModuleUnits.ColumnGrid * .5f), new Vector3(w, ModuleUnits.BulkheadDepth, span), origin, WallpaperRepeat);
++            get(blockIndex, columnWall).Box(at + new Vector3(0f, y, ModuleUnits.ColumnGrid * .5f), new Vector3(w, ModuleUnits.BulkheadDepth, span), origin, WallpaperRepeat);
+     }
+ 
+     /// <summary>

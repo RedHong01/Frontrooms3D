@@ -1,0 +1,139 @@
+--- a/Tools/Blender/frontrooms_kit/assets/outlet_box_common.py (main, 2026-10-04 07:55)
++++ b/Tools/Blender/frontrooms_kit/assets/outlet_box_common.py (O3 2026-10-07)
+@@ -588,18 +588,25 @@
+ 
+ 
+ # -------------------------------------------------------------------- sweep
+-def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0, 1), phase=0.0):
++def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0, 1), phase=0.0, end_tangent=None,
++          start_tangent=None):
+     """Round sections along a polyline (Blender metres) with a radius per
+     point (metres). Rings are CCW about the local tangent, so bands face out.
++    ``end_tangent`` / ``start_tangent`` override the last / first ring's
++    tangent (default: the last / first segment): a curve whose true end
++    tangent differs from its end chord (the handy box's S-neck leaves the
++    collar and enters the socket vertically) would otherwise end on a tilted
++    ring that leaves a crescent gap under the socket floor or above the
++    collar.
+     Returns the rings."""
+     pts = [Vector(p) for p in path]
+     rings = []
+     prev_side = None
+     for k, p in enumerate(pts):
+         if k == 0:
+-            t = (pts[1] - pts[0]).normalized()
++            t = (pts[1] - pts[0]).normalized() if start_tangent is None else Vector(start_tangent).normalized()
+         elif k == len(pts) - 1:
+-            t = (pts[-1] - pts[-2]).normalized()
++            t = (pts[-1] - pts[-2]).normalized() if end_tangent is None else Vector(end_tangent).normalized()
+         else:
+             t = ((pts[k] - pts[k - 1]).normalized() + (pts[k + 1] - pts[k]).normalized()).normalized()
+         if prev_side is None:
+--- a/Tools/Blender/frontrooms_kit/assets/outlet_handy_box.py (main, 2026-10-04 07:55)
++++ b/Tools/Blender/frontrooms_kit/assets/outlet_handy_box.py (O3 2026-10-07)
+@@ -27,7 +27,14 @@
+   (y = -11.5 = E_AXIS) over 24 mm, and an 18 mm socket (OD 22.6) with a
+   slotted set screw on its front boss. Offset connectors (and box offsets
+   bent in the EMT) are how surface conduit reaches a box that stands proud
+-  of the wall.
++  of the wall. The neck's last ring is level (its true end tangent is
++  vertical), so it ends 1.0 mm inside the socket all round: with the last
++  chord's 13.7 deg tilt it stopped up to 1.25 mm short of the socket floor
++  on the wall side, a crescent gap that Unity's back-face culling opened to
++  the wall (ray probe v2, 2026-10-07).
++* Cover underside: the 0.5 mm lip overhang is closed from below (an
++  annulus in the box-front plane, facing the wall), so the box and cover
++  form one closed shell against the wall.
+ 
+ ORIGIN = THE WALL POINT AT THE BOX CENTRE (box back on y = 0). FRONT = kit
+ -Y (Unity +Z). Anchor ``conduit_base`` = (0, 0, 0.0926) on the wall plane:
+@@ -68,6 +75,11 @@
+ SOCKET_R, SOCKET_L = 11.3, 18.0                            # ESTIMATE
+ TUBE_IN = 4.0                                              # tile starts this far inside the socket
+ INNER_R = B.EMT_OD / 2 - 0.1                               # socket lip inner radius (under the tube skin)
++# The punched openings' walls run down past the device's back plane (field
++# - 1.5), so the 0.4 mm gap round each face is closed by the ivory backing:
++# walls that stopped at field - 0.8 left a 0.7 mm slot under them into the
++# box (ray probe v2, 2026-10-07: 3 hits at steep views).
++OPEN_FOOT = FIELD - B.BACK_PLANE - 0.05
+ KO_R, KO_PROUD, KO_SEGS = 11.1, 0.3, 20                    # 1/2 in knockout slug (7/8 in hole); proud ESTIMATE
+ 
+ 
+@@ -81,6 +93,19 @@
+     mb.cap(r1, AL, front=True)
+ 
+ 
++def cover_underside(mb, cover, outer_ring, per_corner):
++    """Close the cover's lip from below: the annulus between the cover
++    outline and the box outline in the box-front plane (c = 0), facing the
++    wall. The open 0.5 mm slit under the lip faces the wall, so no viewer
++    ray reaches it, but it left the box + cover an open shell, and the leak
++    probe (ray probe v2, 2026-10-07) could not tell the real gap under the
++    lip from a hole. Closed, the box and cover are one solid against the
++    wall. The inner edge sits 0.05 mm inside the box shell so no sliver
++    opens at the corners."""
++    inner = mb.ring(cover, B.rrect(BOX_W - 0.1, BOX_H - 0.1, BOX_R - 0.05, per_corner), 0.0)
++    return mb.fill(outer_ring, [inner], AL, -cover.n)
++
++
+ def _connector_axis(t):
+     """Neck axis y (mm) at t in [0, 1]: a cosine S from the knockout axis to
+     the wall line."""
+@@ -121,9 +146,10 @@
+     mb = B.MB()                                  # raised cover with the two openings
+     rings = B.profile_stack(mb, cover, lambda d: B.rrect(COVER_W - 2 * d, COVER_H - 2 * d, COVER_R - d, 6),
+                             COVER_PROFILE, AL)
+-    holes = [B.hole_stack(mb, cover, fn, B.mouth_profile(0.4, 2, FIELD, FIELD - 0.8), AL)[0]
++    holes = [B.hole_stack(mb, cover, fn, B.mouth_profile(0.4, 2, FIELD, OPEN_FOOT), AL)[0]
+              for fn in B.duplex_openings(sideways=False)]
+     mb.fill(rings[-1], holes, AL, cover.n)
++    cover_underside(mb, cover, rings[0], 8)
+     mb.to_part(kit, "cover", "0")
+ 
+     mb = B.MB()                                  # receptacle
+@@ -143,11 +169,11 @@
+     mb.band(r0, r1, AL)
+     mb.band(r1, r2, AL)
+     mb.cap(r2, AL, front=True)
+-    path = [(0.0, KO_Y * MM, (zn0 - 0.8) * MM)]
++    path = [(0.0, KO_Y * MM, (zn0 - 2.0) * MM)]       # starts 2 mm down in the collar: no fold at ring 1
+     for k in range(6):
+         t = k / 5.0
+         path.append((0.0, _connector_axis(t) * MM, (zn0 + NECK_L * t) * MM))
+-    B.sweep(mb, path, [NECK_R * MM] * len(path), 20, AL)
++    B.sweep(mb, path, [NECK_R * MM] * len(path), 20, AL, end_tangent=(0, 0, 1))
+     sock = B.up_frame(0, -B.E_AXIS * MM, 0)
+     rs = [mb.ring(sock, B.circle(SOCKET_R, 24), zs0), mb.ring(sock, B.circle(SOCKET_R, 24), zs1 - 0.6),
+           mb.ring(sock, B.circle(SOCKET_R - 0.6, 24), zs1), mb.ring(sock, B.circle(INNER_R, 24), zs1)]
+@@ -177,9 +203,10 @@
+                         [(0.0, 0.0), (0.0, BOX_D)], AL)
+         rings = B.profile_stack(mb, cover, lambda d: B.rrect(COVER_W - 2 * d, COVER_H - 2 * d, COVER_R - d, 4),
+                                 [(0.0, 0.0), (0.0, 0.8), (2.2, 0.8), (5.0, FIELD)], AL)
+-        holes = [B.hole_stack(mb, cover, fn, [(0.3, FIELD), (0.0, FIELD - 0.3), (0.0, FIELD - 0.8)], AL)[0]
++        holes = [B.hole_stack(mb, cover, fn, [(0.3, FIELD), (0.0, FIELD - 0.3), (0.0, OPEN_FOOT)], AL)[0]
+                  for fn in B.duplex_openings(sideways=False, pc=32)]
+         mb.fill(rings[-1], holes, AL, cover.n)
++        cover_underside(mb, cover, rings[0], 4)
+         B.duplex(mb, cover, FIELD, "mid", sideways=False)
+         B.backing(mb, cover, 2 * su + 3.0, 2 * sv + 3.0, 3.0, FIELD - B.BACK_PLANE, per_corner=1)
+         for v in (EAR_Z, 0.0, -EAR_Z):
+@@ -188,7 +215,8 @@
+         r1 = mb.ring(hexf, B.hexagon(HEX_AF), HEX_H)
+         mb.band(r0, r1, AL)
+         mb.cap(r1, AL)
+-        B.sweep(mb, path[1:], [NECK_R * MM] * (len(path) - 1), 12, AL)
++        B.sweep(mb, [(0.0, KO_Y * MM, (zn0 - 0.6) * MM)] + path[2:], [NECK_R * MM] * (len(path) - 1), 12, AL,
++                start_tangent=(0, 0, 1), end_tangent=(0, 0, 1))
+         rs = [mb.ring(sock, B.circle(SOCKET_R, 16), zs0), mb.ring(sock, B.circle(SOCKET_R, 16), zs1),
+               mb.ring(sock, B.circle(SOCKET_R - 0.6, 16), zs1 + 0.0), mb.ring(sock, B.circle(INNER_R, 16), zs1)]
+         for a_, b_ in zip(rs, rs[1:]):
+@@ -204,7 +232,8 @@
+                                 [(0.0, 0.0), (0.0, BOX_D + FIELD)], AL)
+         mb.cap(rings[-1], AL)
+         B.duplex_lod2(mb, cover, FIELD, sideways=False)
+-        B.sweep(mb, [path[0], path[3], (0.0, -B.E_AXIS * MM, zs1 * MM)], [SOCKET_R * MM] * 3, 8, AL)
++        B.sweep(mb, [(0.0, KO_Y * MM, (zh0 - 0.5) * MM), path[3], (0.0, -B.E_AXIS * MM, zs1 * MM)],
++                [SOCKET_R * MM] * 3, 8, AL, cap_end=True, start_tangent=(0, 0, 1), end_tangent=(0, 0, 1))
+         mb.to_part(kit, "lod2", "2")
+ 
+     B.finalize(kit, SMOOTH_ANGLE, wear, face_fn=wear_face)

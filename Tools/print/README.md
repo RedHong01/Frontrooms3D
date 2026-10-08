@@ -112,6 +112,11 @@ Every frame passes the seam check. The packed sheet is 4096×3072 (4 × 2 slices
 
 Do this only after the visual chat promotes P0 and Red agrees, while no other chat is compiling.
 
+**Since 2026-10-07 the importer depends on Q1b.** The staged importer first calls `FrontRoomsPrintArray.IsPrintSheet(assetPath)`, which the visual chat's Q1b merge adds. Promote it only after Q1b has landed.
+- From then on it handles only the FR_Ink* sheets.
+- The wallpaper array `Resources/Print/FR_Print_HardEdge` is built by the visual chat's builder, not by this importer.
+- Step 2 below is superseded by Q1b, which writes the array and `_PrintTex` itself.
+
 1. Copy `unity_staging/Assets/Scripts/Rendering/FrontRoomsPrintDriver.cs` and `unity_staging/Assets/Editor/Print/` into `Assets/`.
 2. Create `Assets/Resources/Print/`. Copy `out/FR_Print_HardEdge.print.json` first, then the `.png`, so the importer finds the sidecar on the first import.
 3. In Play mode, check that the `FrontRooms Print` object appears and the walls show frame 0, then a blend about every minute.

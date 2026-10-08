@@ -1193,10 +1193,27 @@ LOD1_CSK_SEGS = 12
 # (linear, troffer light) at LOD0 and must at LOD2 too. Round 7 drew no face
 # and a 527 mm^2 dark 6-gon: 0.629 (-50 %), a dark pop at 4 m, and the IG
 # orange / Steel ivory faces vanished. 6-gon points are (a cos t, b sin t).
+#
+# Round 9: the single dot measured right (face disc +1.5 % vs LOD0) but at
+# 4 m it packs the dark into one 2 px blob, darker at its peak than the thin
+# LOD1 slots it replaces. The dark area is now split into three marks where
+# the slots are (two widened blade quads and a ground triangle, 98 mm^2 in
+# all, the slots plus the gap ring), so the face reads as LOD1 does.
 LOD2_FACE_AB = (16.6, 16.5)   # x +-16.6, z +-14.3 (the flats); 2.598 a b = 712 mm^2
-LOD2_DOT_AB = (5.2, 7.6)      # x +-5.2, z +-6.6; 2.598 a b = 103 mm^2 (slots + gap ring)
-LOD2_DOT_DZ = -1.9            # slot cluster centroid below the face centre
-LOD2_DOT_UP = 0.3             # the dot stands 0.3 in front of the face 6-gon
+LOD2_MARKS = ((-6.35, 3.0, 3.6, 10.0), (6.35, 3.0, 3.6, 8.5))   # blade marks: x, z, w, h (face frame)
+LOD2_GROUND = (0.0, -8.9, 7.9)    # ground mark: a point-down triangle, base = height = 7.9 (31 mm^2)
+LOD2_DOT_UP = 0.3             # the marks stand 0.3 in front of the face 6-gon
+
+
+def lod2_marks(oz, k=1.0):
+    """LOD2 dark marks of one face centred at z = oz: 2 quads + 1 triangle
+    (5 tris). k scales their area (the bare kit has no gap ring: k < 1)."""
+    s = math.sqrt(k)
+    polys = [rect(x, oz + z, w * s, h * s) for x, z, w, h in LOD2_MARKS]
+    gx, gz, g = LOD2_GROUND
+    g *= s
+    polys.append([(gx, oz + gz - g / 2), (gx + g / 2, oz + gz + g / 2), (gx - g / 2, oz + gz + g / 2)])
+    return polys
 
 
 def lod2_hex(ab, cx, cz):
@@ -1294,8 +1311,9 @@ def lod1_device(info1, face_top, gap_h, t20=False):
 def lod2_plate(W, H, field_h, crown, face_top, chamfer=2.0, open_z=(OPEN_Z, -OPEN_Z)):
     """LOD2 (4-12 m): an 8-point rounded outline at full height (fan to a
     crowned centre), one bevel ring to the wall; each device face as a flat
-    6-gon in the device slot 0.3 mm proud of the crown, with an area-matched
-    dark dot 0.3 mm in front of it (round 8). Returns plate, face, dark."""
+    6-gon in the device slot 0.3 mm proud of the crown, with three
+    area-matched dark slot marks 0.3 mm in front of it (rounds 8-9). Returns
+    plate, face, dark."""
     hw, hh = W / 2, H / 2
     p, face, dark = Mesh(), Mesh(), Mesh()
 
@@ -1310,8 +1328,9 @@ def lod2_plate(W, H, field_h, crown, face_top, chamfer=2.0, open_z=(OPEN_Z, -OPE
     face_h = max(face_top - 0.7, crown + 0.3)
     for oz in open_z:
         face.fill(face.ring(lod2_hex(LOD2_FACE_AB, 0.0, oz), face_h))
-        dark.fill(dark.ring(lod2_hex(LOD2_DOT_AB, 0.0, oz + LOD2_DOT_DZ), face_h + LOD2_DOT_UP))
-    assert face_h + LOD2_DOT_UP <= face_top + 1e-6, "LOD2 dot proud of the face"
+        for poly in lod2_marks(oz):
+            dark.fill(dark.ring(poly, face_h + LOD2_DOT_UP))
+    assert face_h + LOD2_DOT_UP <= face_top + 1e-6, "LOD2 marks proud of the face"
     return p, face, dark
 
 

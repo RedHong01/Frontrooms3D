@@ -588,18 +588,25 @@ def flange(mb, fr, w, h, r, t, edge_r, edge_segs, per_corner=6, slot=AL):
 
 
 # -------------------------------------------------------------------- sweep
-def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0, 1), phase=0.0):
+def sweep(mb, path, radii, segs, slot, cap_start=False, cap_end=False, ref=(0, 0, 1), phase=0.0, end_tangent=None,
+          start_tangent=None):
     """Round sections along a polyline (Blender metres) with a radius per
     point (metres). Rings are CCW about the local tangent, so bands face out.
+    ``end_tangent`` / ``start_tangent`` override the last / first ring's
+    tangent (default: the last / first segment): a curve whose true end
+    tangent differs from its end chord (the handy box's S-neck leaves the
+    collar and enters the socket vertically) would otherwise end on a tilted
+    ring that leaves a crescent gap under the socket floor or above the
+    collar.
     Returns the rings."""
     pts = [Vector(p) for p in path]
     rings = []
     prev_side = None
     for k, p in enumerate(pts):
         if k == 0:
-            t = (pts[1] - pts[0]).normalized()
+            t = (pts[1] - pts[0]).normalized() if start_tangent is None else Vector(start_tangent).normalized()
         elif k == len(pts) - 1:
-            t = (pts[-1] - pts[-2]).normalized()
+            t = (pts[-1] - pts[-2]).normalized() if end_tangent is None else Vector(end_tangent).normalized()
         else:
             t = ((pts[k] - pts[k - 1]).normalized() + (pts[k + 1] - pts[k]).normalized()).normalized()
         if prev_side is None:

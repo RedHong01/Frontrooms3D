@@ -1,0 +1,91 @@
+// Level transitions · V4 Drift (clone-only pre-render, 2026-10-03). Asset preparation, run in its own
+// Unity call before any render: -executeMethod FrontRoomsDriftPrepare.Prepare
+//   - Resources/Transitions/L0_Wallpaper_Lining.mat and Office_Wall_Lining.mat: non-drift copies for linings.
+//   - _FR_DRIFT on the six theme materials, each carrying its counterpart's set (_Alt*), its own theme and unit.
+using System;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsDriftPrepare
+{
+    const string Surfaces = "Assets/Resources/Surfaces/";
+    const string Out = "Assets/Resources/Transitions/";
+
+    public static void Prepare()
+    {
+        var code = 0;
+        try
+        {
+            Directory.CreateDirectory(Out);
+            Lining("L0_Wallpaper");
+            Lining("Office_Wall");
+            Pair("L0_Wallpaper", "Office_Wall", 0);
+            Pair("L0_Carpet", "Office_Carpet", 1);
+            Pair("L0_Ceiling", "Office_Ceiling", 2);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            foreach (var n in new[] { "L0_Wallpaper", "Office_Wall", "L0_Carpet", "Office_Carpet", "L0_Ceiling", "Office_Ceiling" })
+            {
+                var m = Load(n);
+                Debug.Log("[Drift] " + n + " keywords " + string.Join(",", m.shaderKeywords) + " self " + m.GetFloat("_FR_ThemeSelf") + " mode " + m.GetFloat("_DriftMode")
+                    + " unit " + m.GetVector("_DriftUnit") + " alt " + (m.GetTexture("_AltBaseMap") != null ? m.GetTexture("_AltBaseMap").name : "none") + " altTile " + m.GetVector("_AltTileSize"));
+            }
+        }
+        catch (Exception e) { Debug.LogError("[Drift] Prepare failed: " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    static Material Load(string name)
+    {
+        var m = AssetDatabase.LoadAssetAtPath<Material>(Surfaces + name + ".mat");
+        if (m == null) throw new Exception("missing " + name);
+        return m;
+    }
+
+    static void Lining(string name)
+    {
+        var path = Out + name + "_Lining.mat";
+        var copy = new Material(Load(name)) { name = name + "_Lining" };
+        copy.DisableKeyword("_FR_DRIFT");
+        copy.SetFloat("_FRDrift", 0f);
+        AssetDatabase.DeleteAsset(path);
+        AssetDatabase.CreateAsset(copy, path);
+        Debug.Log("[Drift] lining " + path);
+    }
+
+    static void Pair(string level0, string office, int kind)
+    {
+        var a = Load(level0);
+        var b = Load(office);
+        Set(a, b, 0f, kind);
+        Set(b, a, 1f, kind);
+    }
+
+    static void Set(Material m, Material other, float self, int kind)
+    {
+        m.SetFloat("_FRDrift", 1f);
+        m.EnableKeyword("_FR_DRIFT");
+        m.SetFloat("_FR_ThemeSelf", self);
+        m.SetFloat("_DriftMode", kind == 0 ? 0f : 1f);
+        // Walls: 0.75 m drops, full height. Floors: 0.6 m carpet squares. Ceilings: the Level 0 tile, 0.6 (X) x 1.2 (Z),
+        // whose edges lie on bars of both grids (2x4: X 0.6, Z 1.2; 2x2: 0.6 both ways).
+        m.SetVector("_DriftUnit", kind == 0 ? new Vector4(.75f, 1000f, 0f, 0f) : kind == 1 ? new Vector4(.6f, .6f, 0f, 0f) : new Vector4(.6f, 1.2f, 0f, 0f));
+        m.SetTexture("_AltBaseMap", other.GetTexture("_BaseMap"));
+        m.SetTexture("_AltBumpMap", other.GetTexture("_BumpMap"));
+        m.SetTexture("_AltMaskMap", other.GetTexture("_MaskMap"));
+        m.SetVector("_AltTileSize", other.GetVector("_TileSize"));
+        m.SetColor("_AltBaseColor", other.GetColor("_BaseColor"));
+        m.SetFloat("_AltSmoothness", other.GetFloat("_Smoothness"));
+        m.SetFloat("_AltMacroTone", other.GetFloat("_MacroTone"));
+        m.SetFloat("_AltStainStrength", other.GetFloat("_StainStrength"));
+        m.SetFloat("_AltBumpScale", other.GetFloat("_BumpScale"));
+        m.SetFloat("_AltMacroDirt", other.GetFloat("_MacroDirt"));
+        m.SetFloat("_AltWetStrength", other.GetFloat("_WetStrength"));
+        m.SetFloat("_AltFloorGrime", other.GetFloat("_FloorGrime"));
+        m.SetFloat("_AltCeilingGrime", other.GetFloat("_CeilingGrime"));
+        if (Math.Abs(m.GetFloat("_OcclusionStrength") - other.GetFloat("_OcclusionStrength")) > 1e-4f || m.GetColor("_StainColor") != other.GetColor("_StainColor"))
+            Debug.LogWarning("[Drift] " + m.name + " and " + other.name + " differ in occlusion or stain colour (not carried by the alt set)");
+        EditorUtility.SetDirty(m);
+    }
+}

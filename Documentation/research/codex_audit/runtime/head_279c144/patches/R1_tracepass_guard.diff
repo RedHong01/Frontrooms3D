@@ -1,0 +1,5 @@
+# R1 (10_review_runtime.md): use the RT review's patch, not a second one.
+# The fail-closed guard for TracePass.RecordRenderGraph is runtime/rt/rt_failclosed.diff (10_review_rt.md F1,
+# verified there with an injected fault: 0 ZBinningJob, frames live). It is the same idea as the 2026-10-04
+# runtime repro clone proj_cx_repro2 (runtime/harness/repro_Feature.guard.cs.txt: try/catch around BuildFrame),
+# which removed every ZBinningJob error and every black frame while 8ef5b64's DropChunk bug still threw.

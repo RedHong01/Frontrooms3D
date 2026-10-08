@@ -1,0 +1,32 @@
+map_s	frame	phase	chunks_built	cache_generated	chunk_roots_destroyed	glassrt_chunks	glassrt_live	glassrt_watch	visible_receivers	trace_weight	last_seq	rt_main_ms	rt_main_ms_max	rt_gpu_ms	rt_glass_px	rt_hit_px	rt_meshes	status
+0.0	1	Title	-1	-1	0	0	0	0	0	0	0	1.288	1.288	0.000	0	0	0	waiting: layout self-test
+1.0	168	Playing	25	60	0	25	3265	169	8	1	1794	14.286	43.833	1.460	0	0	1518	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+2.0	228	Playing	25	60	0	25	3443	172	11	1	1979	2.205	92.748	0.623	0	0	1602	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+3.0	288	Playing	25	60	0	25	3443	172	11	1	2039	2.301	116.309	1.119	0	0	1602	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+4.0	348	Playing	25	60	0	25	3443	172	12	1	2099	2.612	116.309	0.737	0	0	1602	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+5.0	407	Playing	25	60	0	25	3443	172	15	1	2160	2.590	116.309	0.355	0	0	1602	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+6.0	467	Playing	25	60	0	25	3443	172	16	1	2220	1.989	116.309	0.651	0	0	1602	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+7.0	527	Playing	25	66	5	25	3466	179	0	0	0	0.123	116.309	0.590	0	0	1597	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+8.0	587	Playing	25	66	5	25	3466	179	0	0	0	0.119	116.309	0.590	0	0	1597	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+9.0	647	Playing	25	66	5	25	3466	179	0	0	0	0.115	116.309	0.590	0	0	1597	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+10.0	707	Playing	25	66	5	25	3466	179	0	0	0	0.196	116.309	0.590	0	0	1597	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+11.0	767	Playing	25	66	5	25	3466	179	0	0	0	0.132	116.309	0.590	0	0	1597	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+12.0	828	Playing	25	66	5	25	3466	179	0	0	0	0.117	116.309	0.590	0	0	1597	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+13.0	888	Playing	25	47	30	25	3732	164	24	1	6527	3.748	345.380	1.808	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+14.0	948	Playing	25	47	30	25	3732	164	27	1	6589	2.658	345.380	0.479	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+15.0	1008	Playing	25	47	30	25	3732	164	30	1	6649	2.274	345.380	0.649	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+16.0	1068	Playing	25	47	30	25	3732	164	12	1	6709	2.715	345.380	0.961	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+17.0	1128	Playing	25	47	30	25	3732	164	16	1	6769	5.612	345.380	1.645	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+18.0	1188	Playing	25	47	30	25	3732	164	26	1	6829	3.790	345.380	2.951	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+19.0	1248	Playing	25	47	30	25	3732	164	23	1	6889	4.171	345.380	0.684	0	0	1621	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+20.0	1308	Playing	25	53	35	25	3699	169	21	1	7584	3.234	345.380	0.559	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+21.0	1368	Playing	25	53	35	25	3699	169	20	1	7645	2.372	345.380	0.554	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+22.0	1428	Playing	25	53	35	25	3699	169	19	1	7707	2.660	345.380	0.467	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+23.0	1488	Playing	25	53	35	25	3699	169	19	1	7767	2.714	345.380	0.399	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+24.0	1548	Playing	25	53	35	25	3699	169	19	1	7827	2.387	345.380	0.522	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+25.0	1608	Playing	25	53	35	25	3699	169	19	1	7887	3.649	345.380	0.422	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+26.0	1668	Playing	25	53	35	25	3699	169	19	1	7947	2.711	345.380	0.434	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+27.0	1728	Playing	25	53	35	25	3699	169	19	1	8007	2.812	364.637	0.810	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+28.0	1788	Playing	25	53	35	25	3699	169	19	1	8067	3.843	364.637	0.460	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+29.0	1848	Playing	25	53	35	25	3699	169	19	1	8127	2.391	364.637	0.461	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+30.0	1908	Playing	25	53	35	25	3699	169	19	1	8187	2.869	364.637	0.710	0	0	1610	on: Apple9, High, kernel 12 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters

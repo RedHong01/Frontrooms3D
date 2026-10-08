@@ -1,0 +1,67 @@
+--- [map 0.00 s, frame 0, thread 1, -] Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+--- [map 0.00 s, frame 0, thread 60, -] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 0.00 s, frame 0, thread 61, -] Error: [FMOD] RuntimeBankModel::openFile : Failed to open file 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank'
+
+UnityEngine.Debug:LogError (object)
+FMODUnity.RuntimeUtils:DebugLogError (string) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeUtils.cs:596)
+FMODUnity.RuntimeManager:DEBUG_CALLBACK (FMOD.DEBUG_FLAGS,intptr,int,intptr,intptr) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:109)
+--- [map 0.00 s, frame 0, thread 1, -] Exception: BankLoadException: [FMOD] Could not load bank 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank' : ERR_FILE_NOTFOUND : File not found.
+FMODUnity.RuntimeManager.RegisterLoadedBank (FMODUnity.RuntimeManager+LoadedBank loadedBank, System.String bankPath, System.String bankName, System.Boolean loadSamples, FMOD.RESULT loadResult) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:912)
+FMODUnity.RuntimeManager.LoadBank (System.String bankName, System.Boolean loadSamples, System.String bankId) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1018)
+FMODUnity.RuntimeManager.LoadBank (System.String bankName, System.Boolean loadSamples) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:969)
+FMODUnity.RuntimeManager.LoadBanks (FMODUnity.Settings fmodSettings) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1106)
+UnityEngine.Debug:LogException(Exception)
+FMODUnity.RuntimeUtils:DebugLogException(Exception) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeUtils.cs:612)
+FMODUnity.RuntimeManager:LoadBanks(Settings) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1113)
+FMODUnity.RuntimeManager:Initialize() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:416)
+FMODUnity.RuntimeManager:get_Instance() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:217)
+FMODUnity.RuntimeManager:get_StudioSystem() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:235)
+FMODUnity.StudioListener:AddListener(StudioListener) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/StudioListener.cs:104)
+FMODUnity.StudioListener:OnEnable() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/StudioListener.cs:134)
+--- [map 0.00 s, frame 1, main, Title] Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+Parameter name: index
+System.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <c5eeda5e65d44b388e164c6c5cfe0702>:0)
+UnityEditor.Search.SearchDatabase+<EnumerateAll>d__80.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:445)
+System.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+UnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:420)
+UnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)
+UnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:407)
+--- [map 0.00 s, frame 103, thread 60, Title] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 0.48 s, frame 136, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (33, 24) · revision 0; left out.
+--- [map 1.35 s, frame 189, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 3.30 s, frame 305, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 4.62 s, frame 385, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 6.17 s, frame 478, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 8.18 s, frame 599, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 8.47 s, frame 615, main, Playing] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (37, 24) · revision 0; left out.
+--- [map 9.38 s, frame 671, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 11.55 s, frame 800, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 12.02 s, frame 828, main, Playing] Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+--- [map 12.83 s, frame 878, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 14.75 s, frame 993, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 16.38 s, frame 1090, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 17.93 s, frame 1184, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 20.07 s, frame 1312, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 21.60 s, frame 1403, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 23.25 s, frame 1503, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 25.15 s, frame 1617, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+
+--- [map 27.50 s, frame 1758, thread 60, Playing] Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+

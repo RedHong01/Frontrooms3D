@@ -8,7 +8,7 @@ Usage: /usr/bin/python3 plan.py <out.json>
 """
 import json, os, struct, sys, types
 OUTPATH = sys.argv[1] if len(sys.argv) > 1 else "plan.json"
-KD = "/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad/keyicon_design"
+KD = "/Users/redwang/FrontRoomsVisualWork/keyicon_design"   # 游戏视觉's rebuilt key-icon pipeline (the /private/tmp copy was wiped 2026-10-05)
 sys.path.insert(0, KD)
 src = open(os.path.join(KD, "composites.py")).read()
 head, main = src.split('if __name__ == "__main__":', 1)

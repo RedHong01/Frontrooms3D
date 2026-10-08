@@ -1,0 +1,390 @@
+--- a/Assets/Resources/Surfaces/L0_Wallpaper.mat
++++ b/Assets/Resources/Surfaces/L0_Wallpaper.mat (drift, by FrontRoomsDriftPrepare)
+@@ -11,7 +11,8 @@
+   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+   m_Parent: {fileID: 0}
+   m_ModifiedSerializedProperties: 0
+-  m_ValidKeywords: []
++  m_ValidKeywords:
++  - _FR_DRIFT
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+@@ -23,6 +24,18 @@
+   m_SavedProperties:
+     serializedVersion: 3
+     m_TexEnvs:
++    - _AltBaseMap:
++        m_Texture: {fileID: 2800000, guid: a6a6c3435ddc8442eb581f3d5949f9fc, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltBumpMap:
++        m_Texture: {fileID: 2800000, guid: 112bfd46391af4253acab5af299f707f, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltMaskMap:
++        m_Texture: {fileID: 2800000, guid: 4ed026ab707894a0dbe3a1d0192c77b9, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
+     - _BaseMap:
+         m_Texture: {fileID: 2800000, guid: 05e0bf94e7d86449a9acfb2c70708d60, type: 3}
+         m_Scale: {x: 1, y: 1}
+@@ -45,11 +58,22 @@
+         m_Offset: {x: 0, y: 0}
+     m_Ints: []
+     m_Floats:
++    - _AltBumpScale: 0.8
++    - _AltCeilingGrime: 0.2
++    - _AltFloorGrime: 0.4
++    - _AltMacroDirt: 0.2
++    - _AltMacroTone: 0.3
++    - _AltSmoothness: 1
++    - _AltStainStrength: 0
++    - _AltWetStrength: 0
+     - _BumpScale: 0.8
+     - _CeilingGrime: 0.5
+     - _CeilingHeight: 2.9
+     - _Cull: 2
+     - _Cutoff: 0.5
++    - _DriftMode: 0
++    - _FRDrift: 1
++    - _FR_ThemeSelf: 0
+     - _FloorGrime: 0.6
+     - _FloorGrimeHeight: 0.35
+     - _MacroDirt: 0.3
+@@ -62,7 +86,10 @@
+     - _UseEmission: 0
+     - _WetStrength: 0
+     m_Colors:
++    - _AltBaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _AltTileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _DriftUnit: {r: 0.75, g: 1000, b: 0, a: 0}
+     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+     - _TileSize: {r: 0.75, g: 1.125, b: 0, a: 0}
+--- a/Assets/Resources/Surfaces/Office_Wall.mat
++++ b/Assets/Resources/Surfaces/Office_Wall.mat (drift, by FrontRoomsDriftPrepare)
+@@ -11,7 +11,8 @@
+   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+   m_Parent: {fileID: 0}
+   m_ModifiedSerializedProperties: 0
+-  m_ValidKeywords: []
++  m_ValidKeywords:
++  - _FR_DRIFT
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+@@ -23,6 +24,18 @@
+   m_SavedProperties:
+     serializedVersion: 3
+     m_TexEnvs:
++    - _AltBaseMap:
++        m_Texture: {fileID: 2800000, guid: 05e0bf94e7d86449a9acfb2c70708d60, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltBumpMap:
++        m_Texture: {fileID: 2800000, guid: 4eda6d6c49f9b4d1b969f60a9a409f19, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltMaskMap:
++        m_Texture: {fileID: 2800000, guid: d7b95659c95a54fda8d58e53902b8471, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
+     - _BaseMap:
+         m_Texture: {fileID: 2800000, guid: a6a6c3435ddc8442eb581f3d5949f9fc, type: 3}
+         m_Scale: {x: 1, y: 1}
+@@ -45,11 +58,22 @@
+         m_Offset: {x: 0, y: 0}
+     m_Ints: []
+     m_Floats:
++    - _AltBumpScale: 0.8
++    - _AltCeilingGrime: 0.5
++    - _AltFloorGrime: 0.6
++    - _AltMacroDirt: 0.3
++    - _AltMacroTone: 0.45
++    - _AltSmoothness: 1
++    - _AltStainStrength: 0.18
++    - _AltWetStrength: 0
+     - _BumpScale: 0.8
+     - _CeilingGrime: 0.2
+     - _CeilingHeight: 2.9
+     - _Cull: 2
+     - _Cutoff: 0.5
++    - _DriftMode: 0
++    - _FRDrift: 1
++    - _FR_ThemeSelf: 1
+     - _FloorGrime: 0.4
+     - _FloorGrimeHeight: 0.35
+     - _MacroDirt: 0.2
+@@ -62,7 +86,10 @@
+     - _UseEmission: 0
+     - _WetStrength: 0
+     m_Colors:
++    - _AltBaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _AltTileSize: {r: 0.75, g: 1.125, b: 0, a: 0}
+     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _DriftUnit: {r: 0.75, g: 1000, b: 0, a: 0}
+     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+     - _TileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+--- a/Assets/Resources/Surfaces/L0_Carpet.mat
++++ b/Assets/Resources/Surfaces/L0_Carpet.mat (drift, by FrontRoomsDriftPrepare)
+@@ -11,7 +11,8 @@
+   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+   m_Parent: {fileID: 0}
+   m_ModifiedSerializedProperties: 0
+-  m_ValidKeywords: []
++  m_ValidKeywords:
++  - _FR_DRIFT
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+@@ -23,6 +24,18 @@
+   m_SavedProperties:
+     serializedVersion: 3
+     m_TexEnvs:
++    - _AltBaseMap:
++        m_Texture: {fileID: 2800000, guid: 34750d07d93f74f1e97759169a361d8b, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltBumpMap:
++        m_Texture: {fileID: 2800000, guid: d6d79c8e4d10642eeb0c5f581427c2db, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltMaskMap:
++        m_Texture: {fileID: 2800000, guid: 2eb35497d6da242aea866bee0dd705e4, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
+     - _BaseMap:
+         m_Texture: {fileID: 2800000, guid: 2074e2a0b158b4888aac7480dc97cff1, type: 3}
+         m_Scale: {x: 1, y: 1}
+@@ -45,11 +58,22 @@
+         m_Offset: {x: 0, y: 0}
+     m_Ints: []
+     m_Floats:
++    - _AltBumpScale: 0.8
++    - _AltCeilingGrime: 0
++    - _AltFloorGrime: 0
++    - _AltMacroDirt: 0.3
++    - _AltMacroTone: 0.3
++    - _AltSmoothness: 1
++    - _AltStainStrength: 0
++    - _AltWetStrength: 0.15
+     - _BumpScale: 1
+     - _CeilingGrime: 0
+     - _CeilingHeight: 2.9
+     - _Cull: 2
+     - _Cutoff: 0.5
++    - _DriftMode: 1
++    - _FRDrift: 1
++    - _FR_ThemeSelf: 0
+     - _FloorGrime: 0
+     - _FloorGrimeHeight: 0.35
+     - _MacroDirt: 0.35
+@@ -62,7 +86,10 @@
+     - _UseEmission: 0
+     - _WetStrength: 0.55
+     m_Colors:
++    - _AltBaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _AltTileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _DriftUnit: {r: 0.6, g: 0.6, b: 0, a: 0}
+     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+     - _TileSize: {r: 1, g: 1, b: 0, a: 0}
+--- a/Assets/Resources/Surfaces/Office_Carpet.mat
++++ b/Assets/Resources/Surfaces/Office_Carpet.mat (drift, by FrontRoomsDriftPrepare)
+@@ -11,7 +11,8 @@
+   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+   m_Parent: {fileID: 0}
+   m_ModifiedSerializedProperties: 0
+-  m_ValidKeywords: []
++  m_ValidKeywords:
++  - _FR_DRIFT
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+@@ -23,6 +24,18 @@
+   m_SavedProperties:
+     serializedVersion: 3
+     m_TexEnvs:
++    - _AltBaseMap:
++        m_Texture: {fileID: 2800000, guid: 2074e2a0b158b4888aac7480dc97cff1, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltBumpMap:
++        m_Texture: {fileID: 2800000, guid: 0ad2623aa6c3a4307aac86d567f01521, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltMaskMap:
++        m_Texture: {fileID: 2800000, guid: 518e3711a722e4225bfc4132a0529aa7, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
+     - _BaseMap:
+         m_Texture: {fileID: 2800000, guid: 34750d07d93f74f1e97759169a361d8b, type: 3}
+         m_Scale: {x: 1, y: 1}
+@@ -45,11 +58,22 @@
+         m_Offset: {x: 0, y: 0}
+     m_Ints: []
+     m_Floats:
++    - _AltBumpScale: 1
++    - _AltCeilingGrime: 0
++    - _AltFloorGrime: 0
++    - _AltMacroDirt: 0.35
++    - _AltMacroTone: 0.4
++    - _AltSmoothness: 1
++    - _AltStainStrength: 0
++    - _AltWetStrength: 0.55
+     - _BumpScale: 0.8
+     - _CeilingGrime: 0
+     - _CeilingHeight: 2.9
+     - _Cull: 2
+     - _Cutoff: 0.5
++    - _DriftMode: 1
++    - _FRDrift: 1
++    - _FR_ThemeSelf: 1
+     - _FloorGrime: 0
+     - _FloorGrimeHeight: 0.35
+     - _MacroDirt: 0.3
+@@ -62,7 +86,10 @@
+     - _UseEmission: 0
+     - _WetStrength: 0.15
+     m_Colors:
++    - _AltBaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _AltTileSize: {r: 1, g: 1, b: 0, a: 0}
+     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _DriftUnit: {r: 0.6, g: 0.6, b: 0, a: 0}
+     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+     - _TileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+--- a/Assets/Resources/Surfaces/L0_Ceiling.mat
++++ b/Assets/Resources/Surfaces/L0_Ceiling.mat (drift, by FrontRoomsDriftPrepare)
+@@ -11,7 +11,8 @@
+   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+   m_Parent: {fileID: 0}
+   m_ModifiedSerializedProperties: 0
+-  m_ValidKeywords: []
++  m_ValidKeywords:
++  - _FR_DRIFT
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+@@ -23,6 +24,18 @@
+   m_SavedProperties:
+     serializedVersion: 3
+     m_TexEnvs:
++    - _AltBaseMap:
++        m_Texture: {fileID: 2800000, guid: 72f337efd439b4de48cd8a6110006604, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltBumpMap:
++        m_Texture: {fileID: 2800000, guid: 5112e66fea11a4fbaa15b962d31829aa, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltMaskMap:
++        m_Texture: {fileID: 2800000, guid: 566e5adce13de4d2fb768bb7d710165a, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
+     - _BaseMap:
+         m_Texture: {fileID: 2800000, guid: 932d839ba4836417ab6383b155e80499, type: 3}
+         m_Scale: {x: 1, y: 1}
+@@ -45,11 +58,22 @@
+         m_Offset: {x: 0, y: 0}
+     m_Ints: []
+     m_Floats:
++    - _AltBumpScale: 1
++    - _AltCeilingGrime: 0
++    - _AltFloorGrime: 0
++    - _AltMacroDirt: 0.2
++    - _AltMacroTone: 0.25
++    - _AltSmoothness: 1
++    - _AltStainStrength: 0.3
++    - _AltWetStrength: 0
+     - _BumpScale: 1
+     - _CeilingGrime: 0
+     - _CeilingHeight: 2.9
+     - _Cull: 2
+     - _Cutoff: 0.5
++    - _DriftMode: 1
++    - _FRDrift: 1
++    - _FR_ThemeSelf: 0
+     - _FloorGrime: 0
+     - _FloorGrimeHeight: 0.35
+     - _MacroDirt: 0.2
+@@ -62,7 +86,10 @@
+     - _UseEmission: 0
+     - _WetStrength: 0
+     m_Colors:
++    - _AltBaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _AltTileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _DriftUnit: {r: 0.6, g: 1.2, b: 0, a: 0}
+     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+     - _TileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+--- a/Assets/Resources/Surfaces/Office_Ceiling.mat
++++ b/Assets/Resources/Surfaces/Office_Ceiling.mat (drift, by FrontRoomsDriftPrepare)
+@@ -11,7 +11,8 @@
+   m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+   m_Parent: {fileID: 0}
+   m_ModifiedSerializedProperties: 0
+-  m_ValidKeywords: []
++  m_ValidKeywords:
++  - _FR_DRIFT
+   m_InvalidKeywords: []
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+@@ -23,6 +24,18 @@
+   m_SavedProperties:
+     serializedVersion: 3
+     m_TexEnvs:
++    - _AltBaseMap:
++        m_Texture: {fileID: 2800000, guid: 932d839ba4836417ab6383b155e80499, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltBumpMap:
++        m_Texture: {fileID: 2800000, guid: 597eab198343242e9883be79eb0d5644, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _AltMaskMap:
++        m_Texture: {fileID: 2800000, guid: edf06a41034064198bceae1533be1572, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
+     - _BaseMap:
+         m_Texture: {fileID: 2800000, guid: 72f337efd439b4de48cd8a6110006604, type: 3}
+         m_Scale: {x: 1, y: 1}
+@@ -45,11 +58,22 @@
+         m_Offset: {x: 0, y: 0}
+     m_Ints: []
+     m_Floats:
++    - _AltBumpScale: 1
++    - _AltCeilingGrime: 0
++    - _AltFloorGrime: 0
++    - _AltMacroDirt: 0.2
++    - _AltMacroTone: 0.25
++    - _AltSmoothness: 1
++    - _AltStainStrength: 0.22
++    - _AltWetStrength: 0
+     - _BumpScale: 1
+     - _CeilingGrime: 0
+     - _CeilingHeight: 2.9
+     - _Cull: 2
+     - _Cutoff: 0.5
++    - _DriftMode: 1
++    - _FRDrift: 1
++    - _FR_ThemeSelf: 1
+     - _FloorGrime: 0
+     - _FloorGrimeHeight: 0.35
+     - _MacroDirt: 0.2
+@@ -62,7 +86,10 @@
+     - _UseEmission: 0
+     - _WetStrength: 0
+     m_Colors:
++    - _AltBaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _AltTileSize: {r: 1.2, g: 1.2, b: 0, a: 0}
+     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _DriftUnit: {r: 0.6, g: 1.2, b: 0, a: 0}
+     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+     - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+     - _TileSize: {r: 1.2, g: 1.2, b: 0, a: 0}

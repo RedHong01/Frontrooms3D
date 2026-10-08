@@ -90,6 +90,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     public string PauseMeta =>
         MobileZoneName() + "     ·     " + Mathf.RoundToInt(elapsed) + " S     ·     TIER " + tier;
 
+    public Camera BackdropCamera => cam;
+
     public FrontRoomsTouchCaught CaughtStats => new FrontRoomsTouchCaught
     {
         Seconds = Mathf.RoundToInt(elapsed),
