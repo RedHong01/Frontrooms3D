@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "about": "PICK renders (2026-10-08): shots 1-4 unchanged from shots.json plus two extras. Fixed comparison shots for the level-transition variations (2026-10-03). Every variation renders these four shots with the harness below, unchanged; only the code or assets under test change. Map space = metres from the map root; cell (x, y) covers X [3x, 3x+3), Z [3y, 3y+3). World = mapRoot + map. yaw/pitch are Unity euler Y/X in degrees (positive pitch looks down). fov is vertical (the game's 76). The player stands where the camera stands (feet = eye with y 0): lamps light, fade and shadow for that point as in the game. Lamps are frozen at clock 0, so a frame is identical on every run.",
+  "mapRoot": [
+    4992,
+    0,
+    4992
+  ],
+  "image": {
+    "width": 1920,
+    "height": 1080,
+    "msaa": 4,
+    "format": "JPG q85",
+    "camera": "scene 'First-person camera' (URP data, post on), near 0.06, far = map SightDistance 46 m"
+  },
+  "harness": {
+    "file": "Assets/Editor/Audit/FrontRoomsTransitionAudit.cs in the clone proj_trans (copy it unchanged into your cp -Rc clone; the same file is at Documentation/research/level_transitions/harness/FrontRoomsTransitionAudit.cs.txt, md5 76a624e3217630e637bdb381af7ca5b1)",
+    "method": "FrontRoomsTransitionAudit.ShotsBatch",
+    "command": "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath <your clone> -executeMethod FrontRoomsTransitionAudit.ShotsBatch -quit -logFile <log> -shots <this file> -out <dir> -tag <variation>",
+    "options": "-only shot1,shot3 renders a subset; -plan also writes <id>_plan.json (zones and edge kinds round the eye cell)",
+    "outputs": "<out>/<id>_<tag>.jpg and <id>_<tag>.txt (pose, eye cell zone, lamp count)",
+    "graphics": "needs a GPU session (no -nographics); never two Unity processes on one clone",
+    "before": "images/shot1_before.jpg .. shot4_before.jpg (one full ShotsBatch run, tag before; poses in logs/shots_before.txt, the cells round each eye in logs/shot<k>_plan.json)",
+    "determinism": "Render all four shots in ONE call (no -only). URP seeds film grain with Time.frameCount, so a subset run shifts the grain: up to 13/255 per pixel, mean 0.5/255, everything else identical. A full run reproduces the before frames byte for byte (checked 2026-10-03 11:52: shot1, shot2, shot4 identical across 3 runs; shot3 identical between full runs).",
+    "helper": "harness/run_unity.sh.txt waits until no other Unity has the clone open, then runs Unity: run_unity.sh <clone> FrontRoomsTransitionAudit.ShotsBatch <log> quit -shots <shots.json> -out <dir> -tag <variation>"
+  },
+  "shots": [
+    {
+      "seed": 516574485,
+      "fov": 76,
+      "openDoors": [],
+      "id": "shot9",
+      "eyeMap": [
+        770.0,
+        1.62,
+        580.2
+      ],
+      "yaw": -90.0,
+      "pitch": 3.0,
+      "title": "PICK extra: the arch (254,193)|(255,193) on X = 765, dressed at salt 0, seen from Level 0 cell (256,193), 5 m away, looking west",
+      "boundary": "PICK extra: the arch (254,193)|(255,193) on X = 765, dressed at salt 0, seen from Level 0 cell (256,193), 5 m away, looking west",
+      "worldEye": [
+        5762.0,
+        1.62,
+        5572.2
+      ]
+    },
+    {
+      "seed": 516574485,
+      "fov": 76,
+      "openDoors": [],
+      "id": "shot10",
+      "eyeMap": [
+        767.3,
+        1.62,
+        590.3
+      ],
+      "yaw": -160.0,
+      "pitch": 4.0,
+      "title": "PICK extra: the X = 765 corridor looking south from (255,196): undressed arch (framed), then the dressed open edge and arch",
+      "boundary": "PICK extra: the X = 765 corridor looking south from (255,196): undressed arch (framed), then the dressed open edge and arch",
+      "worldEye": [
+        5759.3,
+        1.62,
+        5582.3
+      ]
+    }
+  ]
+}

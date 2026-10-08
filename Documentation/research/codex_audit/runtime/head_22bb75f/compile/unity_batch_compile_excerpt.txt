@@ -1,0 +1,12 @@
+Unity batch compile of W/proj_cx = main 22bb75f (2026-10-07 23:46) + Red's working tree (synced 2026-10-08 00:1x), -buildTarget OSXUniversal -nographics -quit. Assembly-CSharp rebuilt (FrontRooms3DGame.cs changed).
+359:[BUSY       6s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+361:[BUSY      12s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+362:[BUSY      22s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+363:[BUSY      32s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+364:[627/635   35s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+365:[BUSY       6s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+373:[BUSY      16s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+374:[631/635   26s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+474:		CompileScripts: 83737.574ms
+558:Exiting batchmode successfully now!
+warning CS lines: 0 · error CS lines: 0

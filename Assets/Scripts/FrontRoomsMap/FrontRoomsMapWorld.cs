@@ -400,6 +400,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     static bool dressersResolved;
     static MethodInfo officeDress, officeDressOld, pileBuild;
+    // Their time-sliced versions (FrontRoomsDressJob): a room's furniture is built a few ms per frame.
+    static MethodInfo officeBegin, pileBegin;
 
     /// <summary>A room waiting to be furnished. Rooms are dressed one per frame after their chunk is built.</summary>
     struct DressJob
@@ -409,6 +411,28 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public int room;
     }
     readonly Queue<DressJob> dressQueue = new Queue<DressJob>();
+
+    /// <summary>
+    /// The room being furnished a little per frame, and which room it is.
+    /// One at a time: the next room (its module props included) starts only
+    /// when this one is done, so every chunk's children come out in the same
+    /// order as furnishing each room in one frame.
+    /// </summary>
+    FrontRoomsDressJob currentJob;
+    DressJob currentRoom;
+
+    /// <summary>
+    /// Milliseconds of furnishing per frame. A large Office room or pile cost
+    /// 40-170 ms in one frame; as a job it is spread over frames at this
+    /// budget (a step stops before a unit that would cross it, but one unit
+    /// that runs long can still overrun it). WebGL keeps its own number,
+    /// set in the WebGL build only.
+    /// </summary>
+#if UNITY_WEBGL && !UNITY_EDITOR
+    float dressBudgetMs = 2f;
+#else
+    float dressBudgetMs = 3f;
+#endif
 
     void TouchPassageRevision()
     {
@@ -478,7 +502,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         }
         failedChunks.Remove(coord);
         Build(coord);
-        while (DressNext()) { }
+        while (DressNext(all: true)) { }
     }
 
     void Awake()
@@ -547,7 +571,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (buildAllNow)
         {
             Stream(ChunkOf(StreamCenter), int.MaxValue);
-            while (DressNext()) { }
+            while (DressNext(all: true)) { }
         }
         TickFixtures(0f);
     }
@@ -572,12 +596,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         for (var dx = -buildRadius; dx <= buildRadius; dx++)
             if (!BuiltOrFailed(new GridCoord(center.x + dx, center.y + dy))) return false;
         foreach (var job in dressQueue)
-        {
-            var c = job.data.coord;
-            if (Mathf.Abs(c.x - center.x) <= rings && Mathf.Abs(c.y - center.y) <= rings
-                && built.TryGetValue(c, out var standing) && standing == job.chunk) return false;
-        }
-        return true;
+            if (Waiting(job, center, rings)) return false;
+        return currentJob == null || !Waiting(currentRoom, center, rings);
+    }
+
+    bool Waiting(DressJob job, GridCoord center, int rings)
+    {
+        var c = job.data.coord;
+        return Mathf.Abs(c.x - center.x) <= rings && Mathf.Abs(c.y - center.y) <= rings
+            && built.TryGetValue(c, out var standing) && standing == job.chunk;
     }
 
     /// <summary>Every chunk within the build radius of the streaming centre is built, and every queued room is furnished.</summary>
@@ -585,7 +612,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         get
         {
-            if (!begun || player == null || dressQueue.Count > 0) return false;
+            if (!begun || player == null || dressQueue.Count > 0 || currentJob != null) return false;
             var center = ChunkOf(StreamCenter);
             for (var dy = -buildRadius; dy <= buildRadius; dy++)
             for (var dx = -buildRadius; dx <= buildRadius; dx++)
@@ -1832,9 +1859,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                     officeDressOld = kit.GetMethod("Dress", BindingFlags.Public | BindingFlags.Static, null,
                         new[] { typeof(Transform), typeof(Rect), typeof(float), typeof(int), typeof(Rect[]) }, null);
             }
+            if (kit != null && officeBegin == null)
+                officeBegin = kit.GetMethod("BeginDress", BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Transform), typeof(Rect), typeof(float), typeof(int), typeof(Rect[]), typeof(Rect[]) }, null);
             var pile = assembly.GetType("FrontRoomsFurniturePile");
             if (pile != null && pileBuild == null)
                 pileBuild = pile.GetMethod("Build", BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Transform), typeof(Vector3), typeof(float), typeof(float), typeof(int) }, null);
+            if (pile != null && pileBegin == null)
+                pileBegin = pile.GetMethod("BeginBuild", BindingFlags.Public | BindingFlags.Static, null,
                     new[] { typeof(Transform), typeof(Vector3), typeof(float), typeof(float), typeof(int) }, null);
         }
     }
@@ -1855,9 +1888,25 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 dressQueue.Enqueue(new DressJob { chunk = chunk, data = data, room = r });
     }
 
-    /// <summary>Furnish the next queued room whose chunk is still standing. Returns false when the queue is empty.</summary>
-    bool DressNext()
+    /// <summary>
+    /// Furnish: carry on with the room being furnished (one budget's worth),
+    /// or start the next queued room whose chunk is still standing. Returns
+    /// false when nothing is left. With <paramref name="all"/> the room is
+    /// finished at once (builds nobody watches: buildAllNow, RebuildChunk).
+    /// </summary>
+    bool DressNext(bool all = false)
     {
+        if (currentJob != null)
+        {
+            stepWatch.Restart();
+            var room = currentRoom;
+            // A job whose chunk is gone is dropped without using up the frame.
+            if (StepRoom(all))
+            {
+                NoteWork("room " + room.room + " of " + room.data.coord);
+                return true;
+            }
+        }
         while (dressQueue.Count > 0)
         {
             var job = dressQueue.Dequeue();
@@ -1865,10 +1914,45 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             stepWatch.Restart();
             // A room that gets nothing (no office, no pile, no module props) does not use up the frame.
             if (!Dress(job.chunk, job.data, job.room)) continue;
+            if (currentJob != null)
+            {
+                currentRoom = job;
+                StepRoom(all);
+            }
             NoteWork("room " + job.room + " of " + job.data.coord);
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// One budget of the open job (all of it with <paramref name="all"/>); lets
+    /// it go once it is done, dropped or failed. False when its chunk was
+    /// dropped or rebuilt meanwhile (nothing was done).
+    /// </summary>
+    bool StepRoom(bool all)
+    {
+        var room = currentRoom;
+        var worked = true;
+        try
+        {
+            // Its chunk was dropped or rebuilt meanwhile: stop (what it made goes with the old chunk).
+            if (room.chunk.root == null || !built.TryGetValue(room.data.coord, out var standing) || standing != room.chunk)
+            {
+                currentJob.Cancel();
+                worked = false;
+            }
+            else if (all) currentJob.Complete();
+            else if (!currentJob.Step(dressBudgetMs)) return true;
+        }
+        catch (Exception e)
+        {
+            currentJob.Cancel();
+            Debug.LogWarning("[FrontRoomsMap] Furnishing room " + room.room + " of chunk " + room.data.coord + " failed: " + e.Message);
+        }
+        currentJob = null;
+        currentRoom = default;
+        return worked;
     }
 
     /// <summary>Furnish room r. False when it placed nothing.</summary>
@@ -1942,9 +2026,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 // The clear floor between wall faces; keep-clear strips and columns are in the same chunk-local metres.
                 var floor = new Rect(room.x * cs + ModuleUnits.WallHalf, room.y * cs + ModuleUnits.WallHalf,
                     room.w * cs - ModuleUnits.WallThickness, room.h * cs - ModuleUnits.WallThickness);
-                if (officeDress != null) officeDress.Invoke(null, new object[] { chunk.root.transform, floor, height, roomSeed, clear.ToArray(), obstacles.ToArray() });
+                var args = new object[] { chunk.root.transform, floor, height, roomSeed, clear.ToArray(), obstacles.ToArray() };
+                // The job's "office dressing" root is made now; DressNext steps the rest over the next frames.
+                if (officeBegin != null) currentJob = (FrontRoomsDressJob)officeBegin.Invoke(null, args);
+                else if (officeDress != null) officeDress.Invoke(null, args);
                 else if (officeDressOld != null) officeDressOld.Invoke(null, new object[] { chunk.root.transform, floor, height, roomSeed, clear.ToArray() });
-                return officeDress != null || officeDressOld != null || worked;
+                return officeBegin != null || officeDress != null || officeDressOld != null || worked;
             }
             var pile = fill == ModuleFill.Pile
                 || (fill == ModuleFill.Auto && Mathf.Min(room.w, room.h) >= 4 && MapHash.Unit((uint)roomSeed) < (zone.height == ZoneHeight.Tall ? Mathf.Max(pileChance, .6f) : pileChance));
@@ -1955,7 +2042,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 keepOff.AddRange(obstacles.GetRange(columns.Count, obstacles.Count - columns.Count));
                 if (PileSpot(room, columns, keepOff, out var center, out var radius))
                 {
-                    pileBuild.Invoke(null, new object[] { chunk.root.transform, center, radius, height, roomSeed });
+                    var args = new object[] { chunk.root.transform, center, radius, height, roomSeed };
+                    if (pileBegin != null) currentJob = (FrontRoomsDressJob)pileBegin.Invoke(null, args);
+                    else pileBuild.Invoke(null, args);
                     worked = true;
                 }
             }
@@ -1971,14 +2060,15 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>
     /// First-use loads the map would otherwise pay in the frames after the
     /// title's handoff, where the player is watching: the kit dressers found
-    /// by reflection, every kit model and sidecar (the furniture pile reads
-    /// them all on its first pile) and the Office grade profile. Call once
-    /// while nothing is on screen (the game does it in Awake).
+    /// by reflection, every kit model, sidecar and slot material, one run of
+    /// the dressers' code (FrontRoomsDressJob.WarmUp: off screen, changes
+    /// nothing built later) and the Office grade profile. Call once while
+    /// nothing is on screen (the game does it in Awake).
     /// </summary>
     public static void Prewarm()
     {
         ResolveDressers();
-        foreach (var name in FrontRoomsKitLibrary.AllNames()) FrontRoomsKitLibrary.GetInfo(name);
+        FrontRoomsDressJob.WarmUp();
         Resources.Load<VolumeProfile>("Rendering/FrontRoomsPost_Office");
     }
 

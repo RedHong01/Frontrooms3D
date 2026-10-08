@@ -31,7 +31,7 @@ with the key; a key only leaves at 0 deg.
 Anchors: keyhole (0, 0, 0); keyhole_in (0, 0, -0.10); keyhole_up
 (0, 0.10, 0); pin_1..pin_6 (the six tip points, Y = cut floor + 0.0002).
 Budget (§9.2): LOD0 1,800 (asserted +-15 %), LOD1 700, LOD2 80; LOD
-distances 1.0 / 3 / 8 m; no LOD1 export (part < 1 m). Pins are
+distances 1.0 / 3 / 8 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). Pins are
 fr_lod2_drop. Slots: Prop_Brass (first), Prop_PlasticBlack (keyway and
 chamber walls). 64-segment plug; pins 12-segment (Ø 2.9 mm = 9 px at 0.3 m).
 """
@@ -41,8 +41,8 @@ import math
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Plug"
-LOD1 = None
 LOD1_RATIO = 0.39
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.044
 LOD_DISTANCES = (1.0, 3.0, 8.0)
 BUDGET = 1800

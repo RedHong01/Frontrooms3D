@@ -235,10 +235,10 @@ public static class FrontRoomsExitSignTests
         var batteryReduced = d.Level;
         SetReduced(false);
         UnityEngine.Object.DestroyImmediate(go);
-        var detail = "brownout 0.8 -> Level " + F(brown) + " (0.8^3.4 = " + F(Mathf.Pow(.8f, 3.4f)) + "); drop to 0.3: black " + F(gap) + " s (spec 0.20 s gap + fall), then BATTERY Level " + F(battery)
+        var detail = "brownout 0.8 -> Level " + F(brown) + " (0.8^3.4 = " + F(Mathf.Pow(.8f, 3.4f)) + "); drop to 0.3: black " + F(gap) + " s (spec: a 0.20 s black gap after the AC lamps cool), then BATTERY Level " + F(battery)
             + "; mains back: no gap (lowest " + F(minBack) + " while returning from " + F(battery) + "), Level " + F(back)
             + "; REDUCE FLASHING: lowest " + F(minReduced) + ", largest frame step " + F(maxStep) + ", ends at " + F(batteryReduced);
-        Require(Mathf.Abs(brown - Mathf.Pow(.8f, 3.4f)) < .01f && gap > .15f && gap < .45f && Mathf.Abs(battery - .1655f) < .01f && settledOnDc
+        Require(Mathf.Abs(brown - Mathf.Pow(.8f, 3.4f)) < .01f && gap > .17f && gap < .26f && Mathf.Abs(battery - .1655f) < .01f && settledOnDc
                 && minBack >= battery - .01f && Mathf.Abs(back - 1f) < .01f && minReduced > .1f && maxStep < .05f, detail);
         return detail;
     }
@@ -340,9 +340,22 @@ public static class FrontRoomsExitSignTests
     // ------------------------------------------------------------------ RoomStream
     static readonly BindingFlags IF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
+    /// <summary>A direct child by its exact name (Transform.Find reads "/" as a path separator).</summary>
+    static Transform ChildNamed(Transform parent, string name)
+    {
+        foreach (Transform t in parent) if (t.name == name) return t;
+        return null;
+    }
+
     static string R1Preview()
     {
         var root = new GameObject("TEST stream preview");
+        try { return R1Body(root); }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+    }
+
+    static string R1Body(GameObject root)
+    {
         var stream = root.AddComponent<FrontRoomsRoomStream>();
         stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
             FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
@@ -381,8 +394,9 @@ public static class FrontRoomsExitSignTests
         }
         File.WriteAllText(Path.Combine(outDir, "sign_names.txt"), names.ToString());
         // Placement bars: Run signs at z 3.4 / 9.2, light at 1.96; Exit sign bottom 2.674, top 2.886, back on the header.
-        var run = root.transform.Find("Profile 3 / Run");
-        var exit = root.transform.Find("Profile 4 / Exit");
+        var run = ChildNamed(root.transform, "Profile 3 / Run");
+        var exit = ChildNamed(root.transform, "Profile 4 / Exit");
+        Require(run != null && exit != null, "preview rooms not found: " + string.Join(", ", root.transform.Cast<Transform>().Select(t => t.name)));
         var runSigns = run.GetComponentsInChildren<FrontRoomsExitSign>().Where(x => x.gameObject.activeInHierarchy).ToArray();
         var exitSigns = exit.GetComponentsInChildren<FrontRoomsExitSign>().Where(x => x.gameObject.activeInHierarchy).ToArray();
         Require(runSigns.Length == 2 && exitSigns.Length == 1, "active signs: Run " + runSigns.Length + ", Exit " + exitSigns.Length);
@@ -390,7 +404,6 @@ public static class FrontRoomsExitSignTests
         var others = root.transform.Cast<Transform>().Where(t => t != run && t != exit).Sum(t => t.GetComponentsInChildren<FrontRoomsExitSign>().Count(x => x.gameObject.activeInHierarchy));
         Require(others == 0, others + " signs active in Lobby/Shift/Office");
         Require(bad.Count == 0, "forbidden words in " + string.Join(", ", bad));
-        UnityEngine.Object.DestroyImmediate(root);
         return sb + "names checked: " + names.ToString().Split('\n').Length + " transforms, 0 with wall/floor/carpet/ceiling/seal/partition";
     }
 
@@ -415,7 +428,8 @@ public static class FrontRoomsExitSignTests
         var profiles = new[] { material, material, material, material, material };
         var stream = root.AddComponent<FrontRoomsRoomStream>();
         stream.Initialize(camera, material, material, material, material, material, material, null, null, null, profiles, profiles, profiles);
-        for (var t = 0f; t < 1f; t += Dt) stream.Tick(Dt);
+        // The stream verification's own start: a 3 s title crawl, then the handoff.
+        for (var t = 0f; t < 3f; t += Dt) stream.Tick(Dt);
         stream.RequestStart();
         for (var t = 0f; t < 15f && !stream.HasControl; t += Dt) stream.Tick(Dt);
         Require(stream.HasControl, "no handoff");
@@ -426,15 +440,18 @@ public static class FrontRoomsExitSignTests
         var checkedRooms = new Dictionary<int, string>();
         var mismatches = new List<string>();
         int runRooms = 0, exitRooms = 0, looseMovesBeforeCue = 0, looseFlashes = 0, lightMismatch = 0, looseSigns = 0, halfSigns = 0, litSigns = 0;
-        var lastLevel = new Dictionary<FrontRoomsExitSign, float>();
-        var counters = new Dictionary<FrontRoomsExitSign, FlashCounter>();
+        // Keyed by sign and room: a recycled slot re-deals its signs (Configure), which is not a drop-out.
+        var lastLevel = new Dictionary<(FrontRoomsExitSign, int), float>();
+        var counters = new Dictionary<(FrontRoomsExitSign, int), FlashCounter>();
         var time = 0f;
-        // Walk 30 rooms at walking pace (6 full Shift-Office-Run-Exit-Lobby cycles).
-        for (var f = 0; f < 60 * 60 * 3 && stream.CurrentRoomNumber < stream.FirstProfileSequence + 30; f++)
+        // Walk 82 rooms at walking pace (16 full Shift-Office-Run-Exit-Lobby cycles): the hash first deals
+        // a LOOSE sign to Run rooms 76 and 81, so the walk reaches both.
+        for (var f = 0; f < 60 * 60 * 8 && stream.CurrentRoomNumber < stream.FirstProfileSequence + 82; f++)
         {
             stream.Tick(Dt);
             stream.Move(new Vector2(0f, 3.2f * Dt));
             time += Dt;
+            if (f % 1800 == 0) Log.AppendLine("  R2 t " + F(time) + " cam z " + F(camera.transform.position.z) + " room " + stream.CurrentRoomNumber + " firstProfile " + stream.FirstProfileSequence + " control " + stream.HasControl + " ended " + stream.IsEnded);
             foreach (var slot in pool)
             {
                 if (slot == null) continue;
@@ -464,10 +481,10 @@ public static class FrontRoomsExitSignTests
                     if (s == null) continue;
                     if (s.RedLight != null && (Mathf.Abs(s.RedLight.intensity - 3.6f * s.Level) > 1e-4f || s.RedLight.enabled != s.Level > .0005f)) lightMismatch++;
                     if (s.State != FrontRoomsExitSign.Temperament.Loose) continue;
-                    if (!lastLevel.TryGetValue(s, out var prev)) prev = s.Level;
+                    if (!lastLevel.TryGetValue((s, seq), out var prev)) prev = s.Level;
                     if (!scheduled && Mathf.Abs(s.Level - prev) > 1e-5f) looseMovesBeforeCue++;
-                    lastLevel[s] = s.Level;
-                    if (!counters.TryGetValue(s, out var fc)) counters[s] = fc = new FlashCounter(s.Level);
+                    lastLevel[(s, seq)] = s.Level;
+                    if (!counters.TryGetValue((s, seq), out var fc)) counters[(s, seq)] = fc = new FlashCounter(s.Level);
                     fc.Add(time, s.Level);
                 }
             }
@@ -482,7 +499,7 @@ public static class FrontRoomsExitSignTests
             + "; hash mismatches " + mismatches.Count + (mismatches.Count > 0 ? " (" + string.Join("; ", mismatches.Take(4)) + ")" : "")
             + "; light != 3.6 x Level on " + lightMismatch + " sign-frames; loose Level moved before its room's lamps were cued " + looseMovesBeforeCue + " times; loose flashes " + looseFlashes + " (max " + F(maxRate) + " in 1 s)"
             + "; rooms " + string.Join(" ", checkedRooms.OrderBy(k => k.Key).Select(k => k.Key + "=" + k.Value));
-        Require(runRooms >= 5 && exitRooms >= 5 && mismatches.Count == 0 && lightMismatch == 0 && looseMovesBeforeCue == 0 && maxRate <= 2f && (!reduced || looseFlashes == 0), detail);
+        Require(runRooms >= 15 && exitRooms >= 15 && looseSigns >= 2 && mismatches.Count == 0 && lightMismatch == 0 && looseMovesBeforeCue == 0 && maxRate <= 2f && (!reduced || looseFlashes == 0), detail);
         return detail;
     }
 }

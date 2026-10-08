@@ -9,7 +9,9 @@ The shank and thread are inside the wall. key_hook (0, 1.476, 0.018) is
 where the ring's top inner point rests (on the wire, just behind the bend);
 the hook stands 0.024 proud, its tip at about 1.486 m.
 
-Budget §9.3: 600 / 200 / - tris (cull at 12 m), LOD 1.5 / 4 / 12 m, no LOD1.
+Budget §9.3: 600 / 200 / - tris (cull at 12 m), LOD 1.5 / 4 / 12 m; since the
+2026-10-08 fix pass 850 / 280 (48-segment flange, 16-sided wire; critic L2)
+and LOD1 exported (critic H4).
 Slot Prop_Brass. Tags interactable, key_host, wall_decor. Render-only.
 """
 
@@ -18,8 +20,9 @@ from interact_key_common import U
 
 NAME = "Kit_KeyHook"
 LOD1_RATIO, LOD2_RATIO = 200 / 600, None
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (1.5, 4.0, 12.0)
-BUDGET = (600, 200, None)
+BUDGET = (850, 280, None)   # fix pass 2026-10-08: was 600 / 200; the 48-segment flange (L2) costs ~250 tris
 
 BRASS = "Prop_Brass"
 HOOK = (0.0, 1.476, 0.018)
@@ -30,7 +33,8 @@ SHOULDER_T = 0.0015
 def build(kit):
     leg = HOOK[2] - SHOULDER_T + 0.0012          # the ring rests 1.2 mm behind the bend
     objs, hp = kc.cup_hook(kit, (HOOK[0], HOOK[1] - WIRE_R, 0.0), BRASS, wire_r=WIRE_R, leg=leg, bend_r=0.005,
-                           rise=0.0045, shoulder_d=0.0068, shoulder_t=SHOULDER_T, verts=12, name="cup hook")
+                           rise=0.0045, shoulder_d=0.0068, shoulder_t=SHOULDER_T, verts=16, name="cup hook",
+                           shoulder_verts=48)           # fix pass 2026-10-08 (critic L2): flange 20 -> 48, wire 12 -> 16
     for o in objs:
         kc.paint_wear(o)
     assert all(abs(a - b) < 1e-9 for a, b in zip(hp, HOOK)), (hp, HOOK)
@@ -42,7 +46,10 @@ def build(kit):
     # key hangs tip down from key_contact with its flat normal (+X) square to
     # the room (30 deg of twist in its Ø 4.8 hole) and the tag hangs from
     # tag_contact face to the room (30 deg in its Ø 5 hole on the 2.4 mm tab).
-    kit.meta["hungPose"] = {"ringYawDeg": -60.0, "ringLiftM": 0.0014, "keyTwistDeg": -30.0, "tagTwistDeg": -30.0,
+    # Fix pass 2026-10-08 (critic C2): tag on the WALL side of the ring so the brass key faces the room. The ring turns
+    # 180 deg about the vertical (same plane; the hook still passes through it) and the tag turns back to face the room.
+    # Re-checked with BVH on the real meshes, every host x every tag: 0 overlaps (int_work/fix/hung_pose.json).
+    kit.meta["hungPose"] = {"ringYawDeg": 120.0, "ringLiftM": 0.0014, "keyTwistDeg": -30.0, "tagTwistDeg": 150.0, "tagSide": "wall (behind the key)",
                             "key": "LookRotation(down, Cross(down, hostForward)): tip down, flats to the room",
                             "tag": "LookRotation(hostForward, up): face to the room, hanging along -Y"}
     kit.no_collider()

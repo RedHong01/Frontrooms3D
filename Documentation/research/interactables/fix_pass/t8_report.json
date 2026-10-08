@@ -1,0 +1,76 @@
+{
+ "T8": [
+  {
+   "deg": 0,
+   "key_plug": 15,
+   "key_shell": 0,
+   "plug_shell": 0,
+   "blade_to_plug_min_mm": 0.15
+  },
+  {
+   "deg": 45,
+   "key_plug": 15,
+   "key_shell": 0,
+   "plug_shell": 0,
+   "blade_to_plug_min_mm": 0.15
+  },
+  {
+   "deg": -45,
+   "key_plug": 15,
+   "key_shell": 0,
+   "plug_shell": 0,
+   "blade_to_plug_min_mm": 0.15
+  },
+  {
+   "deg": 90,
+   "key_plug": 15,
+   "key_shell": 0,
+   "plug_shell": 0,
+   "blade_to_plug_min_mm": 0.15
+  },
+  {
+   "deg": -90,
+   "key_plug": 15,
+   "key_shell": 0,
+   "plug_shell": 0,
+   "blade_to_plug_min_mm": 0.15
+  }
+ ],
+ "T8b": {
+  "pin1": {
+   "cutZ": 0.004,
+   "verts": 42,
+   "min_gap_mm": 0.1
+  },
+  "pin2": {
+   "cutZ": 0.0078,
+   "verts": 42,
+   "min_gap_mm": 0.1
+  },
+  "pin3": {
+   "cutZ": 0.0116,
+   "verts": 42,
+   "min_gap_mm": 0.1
+  },
+  "pin4": {
+   "cutZ": 0.0154,
+   "verts": 40,
+   "min_gap_mm": 0.1
+  },
+  "pin5": {
+   "cutZ": 0.0192,
+   "verts": 44,
+   "min_gap_mm": 0.1
+  },
+  "pin6": {
+   "cutZ": 0.023,
+   "verts": 40,
+   "min_gap_mm": 0.1
+  }
+ },
+ "key_unity_z_range_in_lock": [
+  -0.025,
+  0.033
+ ],
+ "pass": false
+}

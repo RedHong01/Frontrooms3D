@@ -1,6 +1,8 @@
-"""Flush veneered wood door leaf, the FREE door of the Lobby (L0-F; VARIANT
-Kit_DoorLeaf_Veneer_Oak with chrome hardware is the Office free door OF-F,
-and the P2 Exit free door EX-F). 44 mm solid-core flush leaf with hardwood
+"""Flush veneered wood door leaf, the FREE door of the Lobby (L0-F). The
+oak leaf with chrome hardware (Office free door OF-F, P2 Exit free door
+EX-F) is its own build since the 2026-10-08 fix pass:
+interact_door_leaf_veneer_oak.py -> Kit_DoorLeaf_Veneer_Oak (same mesh,
+grain turned onto texture U, see interact_door_common.u_grain). 44 mm solid-core flush leaf with hardwood
 edge bands, a 3 deg lock-edge bevel, a bored-latch faceplate and the door
 halves of three 4-1/2" five-knuckle butts (10_spec §1.4, §2.1, §2.3).
 
@@ -52,7 +54,9 @@ VENEER = "Door_Veneer"
 BRASS = "Prop_Brass"
 # Door_Veneer mean albedo sRGB (157, 109, 59) (10_spec §7.3), linear for the preview
 kitlib.register_slot(VENEER, (0.337, 0.153, 0.044), 0.5, 0.0)
-VARIANTS = {"Kit_DoorLeaf_Veneer_Oak": {VENEER: "Prop_WoodOak", BRASS: "Prop_Chrome"}}
+# No VARIANTS: Kit_DoorLeaf_Veneer_Oak was a slot swap of this mesh until 2026-10-08. A slot swap keeps
+# Door_Veneer's V-grain UVs, and Prop_WoodOak_A draws its grain along U, so the oak leaf showed horizontal
+# grain (critic H3). It is now interact_door_leaf_veneer_oak.py.
 
 SEAMS = (-0.0185, 0.0185)
 WEAR_Y = (0.80, 0.85, 1.20, 1.25)        # 1.5 -> 3 mm latch arris and back
@@ -81,10 +85,13 @@ def wear(P, N, edge, obj):
     return r, g, b
 
 
-def build_leaf(kit, leaf_slot, hw_slot, rng, faceplate=True, extra=None, wear_fn=None, protect_extra=(), drop_plates_lod1=False):
+def build_leaf(kit, leaf_slot, hw_slot, rng, faceplate=True, extra=None, wear_fn=None, protect_extra=(), drop_plates_lod1=False,
+               ugrain=False):
     """The veneer-type flush leaf: slab, hinge halves and (optionally) the
     bored-latch faceplate. ``extra(kit, slab, cuts)`` may add parts and slab
-    cutters before the cuts are applied (used by Kit_DoorLeaf_Ward)."""
+    cutters before the cuts are applied (used by Kit_DoorLeaf_Ward).
+    ``ugrain=True``: the slab's grain goes on texture U (U-grain wood
+    textures; the caller must also run dc.u_grain(kit))."""
     # 1. Slab (leaf slot first -> submesh 0): lofted section with the
     #    top/bottom arris rounds and the hand-wear transition on the latch stile.
     rings = dc.chamfer_rings(dc.LEAF_Y0, 1, lambda o: section(o))
@@ -92,6 +99,8 @@ def build_leaf(kit, leaf_slot, hw_slot, rng, faceplate=True, extra=None, wear_fn
               (WEAR_Y[2], section(wear=True)), (WEAR_Y[3], section())]
     rings += list(reversed(dc.chamfer_rings(dc.LEAF_Y1, -1, lambda o: section(o))))
     slab = dc.loft_y(kit, rings, leaf_slot, "slab", grain="z")
+    if ugrain:
+        slab["fr_ugrain"] = True
     cuts = dc.leaf_mortise_cutters()
     protect = [slab]
     if extra is not None:
@@ -130,16 +139,8 @@ def build_leaf(kit, leaf_slot, hw_slot, rng, faceplate=True, extra=None, wear_fn
     return slab
 
 
-def build(kit):
-    rng = random.Random(41030)
-    # LOD1: the flush-mortised hinge leaves and faceplate are dropped (their
-    # 1.5-3.4 mm edge recesses are sub-pixel beyond 4 m), so the knuckles
-    # keep enough triangles instead of collapsing (kitlib protects thin parts).
-    build_leaf(kit, VENEER, BRASS, rng, drop_plates_lod1=True)
-    blo, bhi = dc.bounds_unity(kit.parts)
-    assert bhi[0] <= dc.AXIS_X + dc.KNUCKLE_R + 1e-4 and blo[0] >= -dc.LEAF_X - 1e-4, "nothing proud of the faces but the knuckles"
-
-    # ---- metadata -------------------------------------------------------
+def leaf_meta(kit, module, tags=("interactable", "door", "door_leaf", "lobby", "office", "door_type_wood")):
+    """Anchors, tags and LOD metadata shared by the veneer and oak leaves."""
     dc.anchor(kit, "rose_s", dc.LEAF_X, 1.000, 0.920)
     dc.anchor(kit, "rose_p", -dc.LEAF_X, 1.000, 0.920)
     dc.anchor(kit, "latchbolt", 0.0, 1.000, dc.LEAF_Z_LATCH_MID)
@@ -151,7 +152,24 @@ def build(kit):
     dc.anchor(kit, "hinge_axis_dir", dc.AXIS_X, 0.10, dc.AXIS_Z)
     dc.anchor(kit, "closer_mount_s", dc.LEAF_X, 2.0275, 0.545)
     kit.no_collider()
-    kit.tag("interactable", "door", "door_leaf", "lobby", "office", "door_type_wood")
+    kit.tag(*tags)
     kit.meta["doorType"] = "wood"
     kit.meta["doorRoot"] = "D (closed pose): origin hinge-jamb edge, wall centre line, floor; leaf rig rotates about hinge_axis"
-    dc.lod_meta(kit, sys.modules[__name__])
+    dc.lod_meta(kit, module)
+
+
+def build_flush(kit, leaf_slot, hw_slot, ugrain=False):
+    rng = random.Random(41030)
+    # LOD1: the flush-mortised hinge leaves and faceplate are dropped (their
+    # 1.5-3.4 mm edge recesses are sub-pixel beyond 4 m), so the knuckles
+    # keep enough triangles instead of collapsing (kitlib protects thin parts).
+    if ugrain:
+        dc.u_grain(kit)
+    build_leaf(kit, leaf_slot, hw_slot, rng, drop_plates_lod1=True, ugrain=ugrain)
+    blo, bhi = dc.bounds_unity(kit.parts)
+    assert bhi[0] <= dc.AXIS_X + dc.KNUCKLE_R + 1e-4 and blo[0] >= -dc.LEAF_X - 1e-4, "nothing proud of the faces but the knuckles"
+
+
+def build(kit):
+    build_flush(kit, VENEER, BRASS)
+    leaf_meta(kit, sys.modules[__name__])

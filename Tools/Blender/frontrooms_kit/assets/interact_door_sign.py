@@ -20,7 +20,7 @@ front +Z = outward. The facade mounts it at the leaf's sign_s / sign_p
 anchors (Y 1.524, Z 0.500) with localScale (S_sign, 1, 1) so the text is
 never mirrored.
 
-Budget §9.3: 600 / 200 / 12 tris, LOD 2 / 6 / 25 m, no LOD1. Slots (dominant
+Budget §9.3: 600 / 200 / 12 tris, LOD 2 / 6 / 25 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). Slots (dominant
 first): Prop_PlasticBlack (cap ply sides and back), Prop_SignEngraved (face),
 Prop_PlasticWhite (the bevel's exposed ivory core), Prop_Chrome (screws).
 """
@@ -30,6 +30,7 @@ from interact_key_common import U
 
 NAME = "Kit_DoorSign"
 LOD1_RATIO, LOD2_RATIO = 200 / 600, 12 / 600
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (2.0, 6.0, 25.0)
 BUDGET = (600, 200, 12)
 

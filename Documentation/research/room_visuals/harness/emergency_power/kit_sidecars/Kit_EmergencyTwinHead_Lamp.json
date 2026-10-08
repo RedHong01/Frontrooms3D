@@ -1,0 +1,47 @@
+{
+ "name": "Kit_EmergencyTwinHead_Lamp",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "lens",
+   "pos": [
+    0,
+    0,
+    0.049
+   ]
+  }
+ ],
+ "tags": [
+  "run"
+ ],
+ "noCollider": true,
+ "boundsMin": [
+  -0.06549999862909317,
+  -0.060100000351667404,
+  -0.0560000017285347
+ ],
+ "boundsMax": [
+  0.06549999862909317,
+  0.060100000351667404,
+  0.048700001090765
+ ],
+ "triangles": 2480,
+ "slots": [
+  "Prop_SteelAlmond",
+  "Prop_Chrome",
+  "Run_SealedBeamLens"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0036500003188848495
+ ],
+ "footprintSize": [
+  0.13099999725818634,
+  0.1047000028192997
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.11
+}

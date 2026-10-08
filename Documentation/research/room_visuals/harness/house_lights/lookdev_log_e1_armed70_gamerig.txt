@@ -1,0 +1,16 @@
+zone reflection: Level0 cube (dip), intensity 0.735 (slider)
+SSAO feature on (game setting)
+tuning: strip intensity 0.8, bounce up 0.6, bounce all 0.06, armed level 0.7, spot tilt 0 deg, spot y 2.86, cone 179/170 deg, flasher emission 2, flasher point 0.053, probe res 512
+ambient probe L0 r=0.064 (non-zero = trilight SH present)
+lite glass: game window glass (copy of Glass_Window, FrontRooms/Glass, dust .45, smear .5, prints .8, RT receive off)
+relay: the game's FrontRoomsRelayRig (Run pose, 16 renderers)
+box probes: 3 x 512 px HDR, Custom (baked per shot state with Lightmapping.BakeReflectionProbe), size 2.84 x 2.9 x 9.16, capture (0, 1.40, 4.5 / 13.5 / 22.5), blend 0.25 m
+local post FrontRoomsPost_Run_C, priority 2, blend 1.0 m
+probes baked for state t-1p00 in 33.3 s
+shot s1a t=-1.00 eye (0.00, 1.62, 1.50) look (0.00, 1.30, 27.00) fov 72 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 163, submeshes 284 (transparent 5), tris 107510, depth-normals prepass 279, shadow views 5 with 628 caster draws; total ~1191
+probes baked for state t+4p00_r2_push in 20.7 s
+shot c4p t=4.00 eye (0.00, 1.62, 23.50) look (0.00, 1.40, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 208, submeshes 336 (transparent 6), tris 120102, depth-normals prepass 330, shadow views 8 with 1126 caster draws; total ~1792
+probes baked for state t+4p00_r1 in 21.3 s
+shot c4r t=4.00 eye (0.00, 1.62, 17.20) look (0.00, 1.30, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 154, submeshes 243 (transparent 4), tris 83372, depth-normals prepass 239, shadow views 8 with 1126 caster draws; total ~1608
+photosafety table written
+costs written

@@ -1,0 +1,83 @@
+"""Run! direction C (HOUSE LIGHTS) shared helpers. CLONE-ONLY look-dev.
+
+NOT AN ASSET (no NAME / build). Registers the new slots and holds the door
+leaf builder shared by the pair leaf (RN-F pair) and the goal leaf (RN-X).
+
+Door-leaf frame (Unity metres, leaf-local): x 0 = hinge edge .. w = free
+edge; y up from the floor; z 0 = PULL face (the swing side; hinge axis here),
+z -0.045 = PUSH face. Blender (x, y, z) = (-x_u, -z_u, y_u).
+"""
+
+import math
+
+import kitlib
+
+for _slot, _col, _rough, _metal in (
+    ("Run_Enamel", (0.80, 0.79, 0.76), 0.30, 0.0),        # white baked enamel steel
+    ("Run_TubeGlass", (0.86, 0.87, 0.86), 0.10, 0.0),     # bare T12 glass + phosphor (emissive in Unity)
+    ("Run_TubeEnd", (0.40, 0.39, 0.37), 0.15, 0.0),       # cathode end band (blackened; orange glow when dead)
+    ("Run_FlasherDome", (0.60, 0.04, 0.03), 0.10, 0.0),   # red glass dome (emissive in Unity)
+    ("Run_MagGrey", (0.30, 0.30, 0.29), 0.45, 0.0),       # hammertone grey enamel
+    ("Run_DoorLaminate", (0.52, 0.40, 0.26), 0.55, 0.0),  # wood-grain laminate, grain vertical
+    ("Run_ExitFace", (0.80, 0.78, 0.74), 0.40, 0.0),      # EXIT face (decal, emissive)
+    ("Run_PullFace", (0.55, 0.05, 0.04), 0.40, 0.0),      # pull-station face (decal)
+    ("Run_Orange", (0.62, 0.20, 0.04), 0.45, 0.0),        # burnisher motor housing
+):
+    kitlib.register_slot(_slot, _col, _rough, _metal)
+
+LEAF_T = 0.045
+LEAF_Y0, LEAF_Y1 = 0.012, 2.097
+LITE_W, LITE_H, LITE_YC = 0.25, 0.75, 1.525     # visible glass 0.25 x 0.75 at 1.15 .. 1.90
+
+
+def U(x, y, z):
+    """Unity leaf-local -> Blender."""
+    return (-x, -z, y)
+
+
+def leaf(kit, w, push_plate=True, kick=True, hinge_count=3, lite_x=None):
+    """A flush wood-grain laminate leaf with a wired-glass vision lite kit.
+    lite_x: lite centre from the hinge edge (default: centred)."""
+    h = LEAF_Y1 - LEAF_Y0
+    lx = w / 2 if lite_x is None else lite_x
+    cut_w, cut_h = LITE_W + 0.012, LITE_H + 0.012
+    kit.frame((w, h), (cut_w, cut_h), LEAF_T, U(w / 2, LEAF_Y0 + h / 2, -LEAF_T / 2), "Run_DoorLaminate",
+              inner_offset=(-(lx - w / 2), LITE_YC - (LEAF_Y0 + h / 2)), bevel=0.0015, segments=1, name="leaf")
+    # Lite kit: a lining through the cut-out and a 25 mm dark-bronze flange on each face.
+    kit.frame((cut_w, cut_h), (LITE_W, LITE_H), LEAF_T + 0.002, U(lx, LITE_YC, -LEAF_T / 2), "Prop_SteelBrown",
+              bevel=0.0008, segments=1, name="lite lining")
+    for z in (0.0045, -LEAF_T - 0.0045):
+        kit.frame((LITE_W + 0.05, LITE_H + 0.05), (LITE_W, LITE_H), 0.009, U(lx, LITE_YC, z), "Prop_SteelBrown",
+                  bevel=0.003, segments=2, name="lite flange")
+    # Screws round the push-face flange.
+    for sx in (-1, 1):
+        for sy in (-1, 0, 1):
+            kit.cylinder(0.0028, 0.002, U(lx + sx * (LITE_W / 2 + 0.0125), LITE_YC + sy * 0.3, -LEAF_T - 0.0095),
+                         "Prop_Chrome", verts=8, rot=(90, 0, 0), bevel=0.0008, segments=1, name="lite screw")
+    if push_plate:
+        px, py = w - 0.075, 1.12
+        kit.box((0.100, 0.0016, 0.400), U(px, py, -LEAF_T - 0.0008), "Prop_Aluminium", bevel=0.0007, segments=1, name="push plate")
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                kit.cylinder(0.0025, 0.0012, U(px + sx * 0.037, py + sy * 0.18, -LEAF_T - 0.0019), "Prop_Chrome",
+                             verts=8, rot=(90, 0, 0), bevel=0.0005, segments=1, name="plate screw")
+    if kick:
+        kw, kh = w - 0.04, 0.254
+        ky = LEAF_Y0 + 0.004 + kh / 2
+        kit.box((kw, 0.0016, kh), U(w / 2, ky, -LEAF_T - 0.0008), "Prop_Aluminium", bevel=0.0007, segments=1, name="kick plate")
+        n = 7
+        for i in range(n):
+            x = w / 2 - kw / 2 + 0.03 + (kw - 0.06) * i / (n - 1)
+            for y in (ky - kh / 2 + 0.018, ky + kh / 2 - 0.018):
+                kit.cylinder(0.0024, 0.0012, U(x, y, -LEAF_T - 0.0019), "Prop_Chrome", verts=8, rot=(90, 0, 0),
+                             bevel=0.0005, segments=1, name="kick screw")
+    # 4-1/2 in butts: barrels on the hinge axis, proud of the pull face.
+    hy = (0.25, 1.05, 1.85) if hinge_count == 3 else (0.25, 1.85)
+    for y in hy:
+        kit.cylinder(0.0075, 0.114, U(-0.002, y, 0.004), "Prop_SteelBrown", verts=16, bevel=0.0015, segments=1, name="hinge barrel")
+        for s in (-1, 1):
+            kit.cylinder(0.0045, 0.006, U(-0.002, y + s * 0.060, 0.004), "Prop_SteelBrown", verts=12, bevel=0.0012,
+                         segments=1, name="hinge tip")
+    kit.anchor("lite", U(lx, LITE_YC, -LEAF_T / 2))
+    kit.anchor("closer", U(0.30, 1.995, 0.0))
+    kit.no_collider()

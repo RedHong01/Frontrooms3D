@@ -1,8 +1,9 @@
 # 20 — Outlets C1: the code, the map contract, and the tests
 
-Status: **C1 DONE, 2026-10-04 08:xx.** Written by the outlet workflow's code task (C1, `10_spec.md` §5.4).
-- All code lives in the private clone `scratchpad/proj_outlet`. The clone was re-synced to main **`d610d3a`** at 06:27 today.
-- In Red's real project, only this folder changed: this file, `data/20_*` and `images/20_*`. Unity was never opened on Frontrooms3D.
+Status: **C1 DONE, 2026-10-04 08:xx. Re-verified on main `ee5c9bb`, 2026-10-07 (§12), and packaged for landing: `bash /Users/redwang/FrontRoomsVisualWork/apply/outlets_c1.sh` prints DRY RUN OK (§9).** Written by the outlet workflow's code task (C1, `10_spec.md` §5.4).
+- 2026-10-07: the 2026-10-05 reboot wiped the old clone. The code was restored byte-for-byte from `data/20_*.cs.txt`, the clone was rebuilt as `W/proj_outlet` (`W` = `/Users/redwang/FrontRoomsVisualWork`) and re-synced to main twice (a5262fb6 at 18:16, ee5c9bb at 23:36). No code changed; every test was re-run (§12).
+- 2026-10-04: all code lived in the private clone `scratchpad/proj_outlet` (re-synced to main **`d610d3a`** at 06:27 that day; wiped 2026-10-05). It now lives in `W/proj_outlet` and in the apply payload `W/apply/outlets_c1_payload/`.
+- In Red's real project, only this folder changed (this file, `data/20_*`, `data/21_*`, `images/20_*`, `images/21_*`) plus the VL093/VL094 rows of `Documentation/VERIFICATION_LOG.md`. Unity was never opened on Frontrooms3D.
 - The map part is a **CONTRACT** (§6): an exact diff for 关卡设计, tested in the clone. Nothing map-owned was edited in the real project.
 - The RenderSetup lines are a **proposal** (§8), NEEDS APPROVAL. They were not applied anywhere.
 
@@ -11,6 +12,8 @@ Status: **C1 DONE, 2026-10-04 08:xx.** Written by the outlet workflow's code tas
 ---
 
 ## 0. Results in one table
+
+This table is the 2026-10-04 run (final code, low load). **The 2026-10-07 re-run on main `ee5c9bb` (§12) reproduced every count exactly** (faces, fixtures, rule counts, draws, triangles, colliders, renderers, suite totals). Its milliseconds were all taken at load 170–800 and are marked *measured under load*; the timings below stay the valid ones.
 
 | Check | Result | Load (1 min) |
 |---|---|---|
@@ -217,18 +220,18 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
 ## 6. The contract: the exact clone-only MapWorld diff (CONTRACT for 关卡设计)
 
 **Same request as spec §4.1** in shape and content: the same struct, the same two signatures, the same call point. What is new since the spec:
-- It targets **main `d610d3a`** (MapWorld there is byte-identical to `75cfdff`). Codex's B0.2 gave `BuildEdge` two optional parameters (`int blockA = -1, int blockB = -1`), so the outlet parameters come **after** them, and both calls pass `data, wallFaces` after the B0 arguments.
+- It targeted **main `d610d3a`** on 2026-10-04 (MapWorld there is byte-identical to `75cfdff`); on 2026-10-07 it was re-made on **main `ee5c9bb`** with the same lines (below). Codex's B0.2 gave `BuildEdge` two optional parameters (`int blockA = -1, int blockB = -1`), so the outlet parameters come **after** them, and both calls pass `data, wallFaces` after the B0 arguments.
 - `data/20_contract_patch.py.txt` anchors on text and handles both shapes (the 12:38 file and main). It writes nothing unless every anchor matches exactly once. On main it produces exactly `data/20_contract.diff.txt` (checked with `cmp`).
   - `python3 20_contract_patch.py.txt <project>/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs` — the request.
   - `--probe` adds the clone-only timers (`// PROBE` lines and the `OutletProbe` class). They are test instrumentation, not part of the request.
 - It composes with the window-landing contract (`FrontRoomsMapWorld.window-kit.r4-all.diff`, both the `win_r4` copy and the newer `win_r5` copy of 08:16 today): each was applied to main `d610d3a` together with this patch in both orders at 08:23, and both orders gave the identical file. The outlet line sits just above `if (kind == EdgeKind.Arch) return;`; the window hunks start at that line and below.
 
-**`data/20_contract.diff.txt`** (122 lines, the request itself, no test instrumentation):
+**`data/21_contract.ee5c9bb.diff.txt`** (122 lines, the request itself, no test instrumentation). Re-made 2026-10-07 against **main `ee5c9bb`** (MapWorld sha1 `9abacc6f`, unchanged since `a5262fb6`). Its +/− lines are byte-identical to the 2026-10-04 request (`data/20_contract.diff.txt`, main `d610d3a`); only the hunk line numbers moved (+2 to +42), because the map chat's `b5f381f` (2026-10-04 14:04, `PassageRevision`) added lines above them. `data/20_contract_patch.py.txt` still produces it exactly on main (checked 2026-10-07 23:4x). It still composes with the window-landing contract (`window_landing/FrontRoomsMapWorld.window-kit.r6-all.diff`): applied to main's MapWorld in both orders, the two results are identical.
 
 ```diff
---- a/FrontRoomsMapWorld.cs
-+++ b/FrontRoomsMapWorld.cs
-@@ -389,6 +389,8 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -391,6 +391,8 @@
      bool hasStartArea;
      GridCoord startDoorCell;
      readonly List<GridCoord> scratch = new List<GridCoord>();
@@ -237,7 +240,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
      readonly List<Door> movingDoors = new List<Door>();
      Transform player;
      MaterialPropertyBlock block;
-@@ -938,6 +940,7 @@
+@@ -980,6 +982,7 @@
              return builder;
          }
          var collision = new MeshBuilder();
@@ -245,7 +248,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
          int BlockOf(int i, int j, float ceiling) => (i / BlockCells + j / BlockCells * blocks) * heights + HeightClass(ceiling);
  
          void Solid(int blockIndex, Material material, Vector3 center, Vector3 size, float repeat)
-@@ -987,12 +990,14 @@
+@@ -1029,12 +1032,14 @@
                  eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
                  !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
                  !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
@@ -262,7 +265,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
  
              if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
              {
-@@ -1033,6 +1038,7 @@
+@@ -1075,6 +1080,7 @@
          }
          RegisterRelayEntries(chunk, data);
          AddZoneGrades(chunk, data);
@@ -270,7 +273,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
          Furnish(chunk, data);
          built[coord] = chunk;
      }
-@@ -1134,7 +1140,8 @@
+@@ -1176,7 +1182,8 @@
      /// </summary>
      void BuildEdge(BuiltChunk chunk, EdgeKind kind, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float height,
          Material wallA, Material wallB, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
@@ -280,7 +283,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
      {
          if (kind == EdgeKind.Open) return;
          var length = MapGrid.CellSize;
-@@ -1180,7 +1187,12 @@
+@@ -1222,7 +1229,12 @@
              Skin(sideB, wallB, fB, tB, 1f);
          }
  
@@ -294,7 +297,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
  
          float width, c, openingTop, sill = 0f;
          if (kind == EdgeKind.Arch)
-@@ -1205,6 +1217,7 @@
+@@ -1247,6 +1259,7 @@
          Piece(c + width * .5f, length, 0f, height, false, true);
          Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
          if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
@@ -302,7 +305,7 @@ public static Matrix4x4 FixtureMatrix(in Fixture x, float plateH);
  
          if (kind == EdgeKind.Arch) return;
  
-@@ -1328,8 +1341,45 @@
+@@ -1370,8 +1383,45 @@
              if (type != null && typeof(Component).IsAssignableFrom(type)) { glassBreakable = type; break; }
          }
          return glassBreakable;
@@ -445,7 +448,7 @@ The suites grew since the spec (interaction 44 → 143, designer 85 → 138). "U
 
 ## 8. RenderSetup proposal: P-4b + P-6 (NEEDS APPROVAL; not applied)
 
-`data/20_rendersetup_p4b_p6.diff.txt` (75 lines) against main `d610d3a`; `data/20_rendersetup_patch.py.txt` applies it by text anchors.
+`data/20_rendersetup_p4b_p6.diff.txt` (75 lines) against main `d610d3a`; `data/20_rendersetup_patch.py.txt` applies it by text anchors. **2026-10-07:** main's RenderSetup changed (Q1b print array, `4393964c`); the same script still applies, and `data/21_rendersetup_p4b_p6.ee5c9bb.diff.txt` is the result on main `ee5c9bb` (the same +/− lines; only context moved).
 - **P-4b, five tint-only `SurfaceDef` lines** like `Prop_PlasticRed`, all `meshUV`, all instanced:
 
 | Slot | Tint | Smoothness |
@@ -465,12 +468,36 @@ The suites grew since the spec (interaction 44 → 143, designer 85 → 138). "U
 
 ## 9. How to land it (for the visual chat)
 
-1. Copy the three new `Office/` files **with their `.meta`** (GUIDs in §2) from the clone or `data/`.
-2. Apply `data/20_RoomStream.diff.txt` and `data/20_OfficeKit.diff.txt` to main (both clean on `d610d3a`).
-3. Promote the outlet kits from the clone with the O1–O3 groups' merge (FBX, JSON, `.meta`); main has none, so there is no GUID clash.
-4. Send §6 to 关卡设计 as the contract. Until they apply it, the map draws no outlets, and nothing else changes: `Install` is never called.
-5. Decide P-4b/P-6 (§8) and P-1 (hand-built LODs). R3 picks both up with no code change.
-6. Do not copy `Assets/Editor/OutletCensus/*` (clone-only tests) unless the visual chat wants the probe in the project.
+**2026-10-07: one apply package does steps 1 and 2** (apply convention v2, `W/apply/README.md`). `W` = `/Users/redwang/FrontRoomsVisualWork`.
+
+```
+bash /Users/redwang/FrontRoomsVisualWork/apply/outlets_c1.sh            # dry run: DRY RUN OK on main ee5c9bb (23:38) and 22bb75f (2026-10-08 00:05)
+bash /Users/redwang/FrontRoomsVisualWork/apply/outlets_c1.sh --apply    # writes; backs main's two changed files up to W/backup/outlets_c1_<stamp>/
+```
+
+| Path | Action | Base (sha1, main `ee5c9bb`) | Payload (sha1) |
+|---|---|---|---|
+| `Assets/Scripts/Office/FrontRoomsWallFixtures.cs` + `.meta` (GUID `14ab7ea1…`) | add | absent | `50d1bc4a` / `866ac5cb` |
+| `Assets/Scripts/Office/FrontRoomsWallFixtureSet.cs` + `.meta` (GUID `6f896ecc…`) | add | absent | `618e3cc1` / `41daa154` |
+| `Assets/Scripts/Office/FrontRoomsWallFixtureRenderer.cs` + `.meta` (GUID `e2a60678…`) | add | absent | `66e4cef8` / `6a65a96a` |
+| `Assets/Scripts/FrontRoomsRoomStream.cs` | replace (.meta kept) | `67b2bd60` | `df68c1d2` |
+| `Assets/Scripts/Office/FrontRoomsOfficeKit.cs` | replace (.meta kept) | `7c63d918` | `b7a4d62b` |
+
+- The `.meta` files are written before the scripts, so an open Unity never mints its own GUID for them. No path in main uses these three GUIDs (searched 2026-10-07).
+- Kept, never written: `FrontRoomsRoomStream.cs.meta` (`629abdbd`), `FrontRoomsOfficeKit.cs.meta` (`ae758f35`), and `FrontRoomsMapWorld.cs` (`9abacc6f`, the contract's base: a note only if it moves).
+- Checked: the dry run on main (DRY RUN OK); `--apply` on a scratch copy (`APPLY_REAL`, MANIFEST OK) and a second dry run there (ALREADY APPLIED); Roslyn on main `ee5c9bb` + payload, 0 errors for OSXUniversal and for the iOS defines (`data/21_roslyn_ee5c9bb.txt`); a Unity batch compile of the clone on main `ee5c9bb` + payload, 0 errors (§12).
+- On a base mismatch later, run `W/tools/rebase_apply.sh outlets_c1` first (v2: `outlets_c1_base/` and `outlets_c1.diff` are in the package).
+
+**What changes in the game when it lands, before anything else does:**
+- **Title corridor:** the 45 placeholder boxes with `BoxCollider`s are gone. R3 draws the plates instead, with no collider. Until the integrate stage promotes the kits, main has no `Kit_Outlet*` FBX, so R3 draws its **spec-size placeholder plates** (plate, device face and dark slots as boxes; 6 shared meshes). The Exit threshold marker is built again (without its collider).
+- **Office kit:** no new objects until the kits exist (`Kit_CubiclePanel_Powered` and the floor box are used only when present). Stage 2 still records wall-unit occluders.
+- **Map:** nothing. `Install` is never called until the map chat applies §6.
+
+**Then, in order:**
+1. The integrate stage promotes the outlet kits from `W/proj_outlet` (FBX, JSON, `.meta`; main has none, so no GUID clash).
+2. Send §6 to 关卡设计 as the contract (`data/21_contract.ee5c9bb.diff.txt`, or `python3 data/20_contract_patch.py.txt <MapWorld.cs>`).
+3. Decide P-4b/P-6 (§8, now `data/21_rendersetup_p4b_p6.ee5c9bb.diff.txt`) and P-1 (LODs in the FBX). R3 picks both up with no code change.
+4. Do not copy `Assets/Editor/OutletCensus/*` (clone-only tests) unless the visual chat wants the probe in the project.
 
 ---
 
@@ -497,3 +524,59 @@ All in `images/`, JPG q85, ≤ 1,920 px wide. Figma rows: see the VERIFICATION_L
 | `20_office_phone_data_duplex.jpg`, `20_lone_switch_toggle1.jpg` | Office companions; the Level 0 lone switch at 1.22 m |
 | `20_designer_on_off.jpg` | Level Designer preview, outlets on vs off (4 modules) |
 | `20_r4_sheet.jpg` | R-4: 8 Office rooms, 6 pile rooms, 4 close-ups at 0.3 m, the cut pair (stage 1 / stage 2) |
+
+**2026-10-07 images (C1 re-run, §12).** VL093 (`2637:6093`) now holds the re-run's four images; the verdict did not change, so the newest run replaced the old images (VERIFICATION_LOG §1.1). VL094 keeps its image and got a note: the re-run's R-4 numbers are identical.
+
+| Image | What | Figma |
+|---|---|---|
+| `21_tr2_sheet_1007.jpg` | T-R2 with the final O1–O3 kits: 4 stream rooms; duplex dolly 0.3 / 1.4 / 2.8 / 6.1 m (seed 2554); Toggle1, phone + data + duplex, 2 floor boxes | VL093 `2637:6104` |
+| `21_designer_on_off_1007.jpg` | Level Designer preview, outlets on (20:09) vs off (20:06), back to back | VL093 `2637:6105` |
+| `21_map20388_duplex_0p3m.jpg` | A Level 0 duplex at 0.3 m in the map, seed 20388 (LOD0 + screw) | VL093 `2637:6106` |
+| `21_stream_lobby_steel_0p3m.jpg` | Lobby stream room, stainless plate at 0.3 m | VL093 `2637:6107` |
+
+---
+
+## 12. Re-verification on main `ee5c9bb` (2026-10-07)
+
+**Why.** The 2026-10-05 reboot wiped the 2026-10-04 clone. Main also moved (about 30 commits). This run checks that the unchanged C1 code still holds on today's main, and packages it.
+
+**Base and clone.**
+- Clone `W/proj_outlet` (made 16:32 from `W/proj_audit` + main `279c144` worktree). The three new Office files were restored from `data/20_*.cs.txt` (byte-identical). RoomStream, OfficeKit and the MapWorld contract were re-applied from the `a5262fb6` diffs.
+- Re-synced from main twice, non-outlet files only: `a5262fb6` at 18:16, **`ee5c9bb` at 23:36**. `apply_local_patches.py`: nothing to do.
+- Main's `FrontRoomsRoomStream.cs`, `FrontRoomsOfficeKit.cs` and `FrontRoomsMapWorld.cs` are unchanged from `a5262fb6` to `ee5c9bb`. The clone's three files equal main + `data/20_RoomStream.a5262fb6.diff.txt`, main + `data/20_OfficeKit.a5262fb6.diff.txt` and main + the contract with `--probe` (checked with `cmp`, 23:37).
+- Between `279c144` and `ee5c9bb`, main changed no map, Levels, Relay or Office-kit file. It changed the Q1b print array, RenderSetup (print import rules), the window facade r6, touch/handheld UI and `FrontRooms3DGame.cs` (handheld UI switches only).
+- Codex audit: `codex_audit/20_findings.md` still does not exist. `00_main_state.md` lists D3 outlets as "not touched", and no review file names an outlet finding (checked 23:3x).
+
+**Results.** Load = the 1-minute average at the start → end of the run. Every millisecond taken today was at load > 32, so all of today's milliseconds are **measured under load, re-measure**. The valid low-load timings are still the 2026-10-04 ones (§7.2, §7.3: load 8–15). The code has not changed since.
+
+| Check | Base | Result | Load |
+|---|---|---|---|
+| Unity batch compile (`-buildTarget OSXUniversal`) | `ee5c9bb` + C1 | **0 errors** (compile_e) | 273 → 404 |
+| Roslyn, main tree + payload, outside Unity | `ee5c9bb` | **0 errors**, Assembly-CSharp 76 files + Editor 51 files, OSXUniversal and iOS defines (`data/21_roslyn_ee5c9bb.txt`) | — |
+| Roslyn again after main moved to **`22bb75f`** (23:46: `FrontRooms3DGame.cs` handheld code + touch `.meta` files) | `22bb75f` | **0 errors**, OSXUniversal. The final dry run on `22bb75f` (00:05): DRY RUN OK, all 8 bases match | — |
+| Contract probe, 10 seeds | `ee5c9bb` | **PASS.** 250 chunks, 31,890 faces, 8,881 fixtures: every count equals 2026-10-04. 0 collider and 0 renderer difference on vs off. 0 diffs between independent builds. 0 bytes garbage per `Plan` | 404 → 382 |
+| Install per chunk, the map's call | `ee5c9bb` | median 1.80 ms, p95 19.4, max 20.4 — **measured under load, re-measure** (2026-10-04 at load 12–15: **0.149 ms**) | 404 → 382 |
+| Install warm / Plan alone | `ee5c9bb` | median 0.311 / 0.241 ms — **measured under load, re-measure** (2026-10-04: 0.115 / 0.092 ms) | 404 → 382 |
+| Contract probe, **100 seeds** | `279c144` worktree | **PASS.** 315,052 faces, 84,809 fixtures, every rule count of spec §4.4 at 0; byte-identical totals to 2026-10-04 (`data/21_probe_100seeds_1007.json`) | 185 → 536 |
+| `FrontRoomsRelayNavTest.RunBatch` | `279c144` wt | **60/60** on and off, 0 pass-throughs, door rule PASS | 536 → 528 / 677 → 793 |
+| `FrontRoomsMapInteractionTests.RunBatch` | `279c144` wt | **143/143** on and off | 528 → 553 / 793 → 644 |
+| `FrontRoomsLevelDesignerTests.RunBatch` | on `279c144` wt, off `a5262fb6` | **138/138** on and off | 553 → 660 / 636 → 567 |
+| `FrontRoomsMapVerification.RunBatch` | on `279c144` wt, off `a5262fb6` | **PASS** 100/100 seeds, 924 modules placed, on and off | 660 → 580 / 567 → 573 |
+| `FrontRoomsFixtureTickTests.RunBatch` | on `279c144` wt, off `a5262fb6` | **28/28** on and off | 580 → 677 / 573 → 534 |
+| T-R2 + R-4 captures (`FrontRoomsOutletCapture.RunBatch`, graphics) | `a5262fb6` + final O1–O3 kits | **22 / 22** shots draw outlets; scene GameObjects / colliders / renderers equal before and after every block. R-4 analysis identical to 2026-10-04 (17,106 plates, 71 hidden, 32 cuts all on hidden plates, 0 on drawn, 161 / 165 desks powered) | 534 → 799 |
+| Draws and triangles per shot (44 shots) | same | draws median **35**, max 63 (with P-6: 17.5 / 28); triangles median **24.9 k**, max 43.9 k; same as 2026-10-04 within 0.1 % (the kits were rebuilt) | counts |
+| R3 submit per camera (44 shots) | same | median 0.137 ms, max 0.973 ms — **measured under load, re-measure** (2026-10-04: 0.070 ms) | 534 → 799 |
+| Level Designer preview, on vs off (back to back) | `a5262fb6` | change only in the low wall band: 184 / 775 / 758 / 156 px (L0 waiting, Office bullpen, Low storage, Tall pillar hall) | 572 → 169 |
+| Autopilot 2554, on / off (`FrontRoomsMainScenePlaytest.RunBatch`, graphics, 75 s) | `ee5c9bb` | **PASS / PASS** (ended by time, not caught). 48.8 / 43.1 fps, p99 111.7 / 150.6 ms — **measured under load, re-measure**: the gate (≥ 55 fps, p99 ≤ 33 ms) cannot be judged at this load; outlets on was not slower than off. Max scene colliders 393 / 411, renderers 3,926 / 3,902 (different paths; the exact on/off count is the probe's 0 / 0). R3: 27 sets, ≤ 861 fixtures, ≤ 16 draws per frame | 382 → 317 / 320 → 360 |
+| Autopilot 20388, on / off | `ee5c9bb` | **PASS / PASS** (ended by time). 40.1 / 54.7 fps, p99 176.0 / 63.7 ms — **measured under load, re-measure** (load rose to 569 during the on run). Max scene colliders 396 / 396, renderers 3,802 / 3,747. R3: 27 sets, ≤ 996 fixtures, ≤ 13 draws per frame, submit mean 0.018 ms, max 1.44 ms per frame (under load; 2026-10-04: max 0.21 ms at load 6–7) | 360 → 569 / 576 → 484 |
+| Autopilot, earlier pairs | `a5262fb6` | 20388 on / off PASS (19:46–19:52, load 760–815, 54.7 / 49.0 fps). 2554 on and off ran their 75 s but reported FAIL (19:40–19:46): 1 error each, a `BankLoadException`, because the clone had no FMOD banks (finding 2). The pair was re-run above with the banks | 760 → 815 |
+
+**Findings of the re-run.**
+1. **Cold-import artefact in the clone (not an outlet effect).** The first Level Designer on/off pair after the 18:16 resync (19:30, 19:36) drew the waiting room's ladder chairs, side table, wall clock and outlet plate in one flat red, because their textures were still importing in that batch session. It hit on and off alike. The repeats at 20:06 and 20:09 draw correctly, and every other module view is pixel-identical between repeats (`data/21_designer_onoff_1007.txt`).
+2. **FMOD banks are not in `W/proj_audit`.** The first autopilot pair on seed 2554 (19:40) logged `BankLoadException … Master.strings.bank` at start-up, so both runs reported FAIL. The banks (`FMOD/FrontRooms/Build/Desktop`, 1.5 MB) were copied from main into the clone at 19:45; later runs load them. Other clones made from `W/proj_audit` will hit the same failure (TOOLS.md §2 mentions it).
+3. **No timing could be taken at low load today.** The machine ran at load 170–800 all evening. The counts (faces, fixtures, draws, triangles, colliders, renderers) are exact and match 2026-10-04; the milliseconds above are for the record only.
+
+**Files written by this run.**
+- Apply package (v2): `W/apply/outlets_c1.sh`, `outlets_c1_bases.txt`, `outlets_c1_keep.txt`, `outlets_c1_expected.txt`, `outlets_c1_payload/` (8 files), `outlets_c1_base/` (2 files), `outlets_c1.diff`.
+- `data/21_contract.ee5c9bb.diff.txt` (the contract on today's main), `data/21_rendersetup_p4b_p6.ee5c9bb.diff.txt` (proposal, NEEDS APPROVAL), `data/21_roslyn_ee5c9bb.txt`, `data/21_probe_timing_10seeds_ee5c9bb.json`, `data/21_probe_timing_10seeds_a5262fb6.json` (19:52, load 815 → 568: Install median 8.97 ms, under load), `data/21_probe_100seeds_1007.json`, `data/21_capture_tr2_r4_1007.json`, `data/21_designer_onoff_1007.txt`, `data/21_playtest_*_1007.report.json`, `data/21_timeline_with_load_1007.txt`.
+- `images/21_*.jpg` (4), placed in VL093.

@@ -1,0 +1,1017 @@
+// Q16 EVACUATION PLACARD: RENDER STAGE (private clone only; never copied into the real project).
+// Play mode, built on FrontRoomsTransitionHandoff's pattern. In ONE frame it (1) evaluates the §5.2 placement rule on the map
+// StartRunInPlace is about to attach behind the live terminal door, for run seeds 1..N, picks the first seed that gives the
+// requested mount, (2) gives the game a copy of its level profile with that runSeed, and (3) presses Space through the
+// game's own RequestTitleStart. So the placard is placed by the game's real path: RoomStream.EndStreamAt -> FrontRoomsPlacard
+// .Prepare -> MapRunStarted -> FrontRoomsPlacardMount.Place (+ the clone-only Q16-1 KeepClearAtStart test patch).
+// The Relay is held. Frames are rendered with the game's own first-person camera (its URP camera data and full post),
+// 1920x1080, 4x MSAA, with the camera's transform set for the shot just before the render and restored after.
+// Time: Time.captureDeltaTime = 1/60 from the moment the door is open, so "+1 s" is exactly 60 game frames.
+// Reduce flashing is switched by reflection (property + Changed event), never through SetReduceFlashing: that writes
+// PlayerPrefs, which the Editor shares with Red's own project.
+// Run: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsPlacardRender.RunBatch
+//      -prSet main|a9|fix -prMount P1|P2|P3 [-prSeeds 400] [-prOut dir] -logFile <f>     (no -quit)
+// Fix stage (2026-10-08, placard 35_fix.md): -prSet fix = lit A1 with the anodised frame, the legend swatch beside the
+// real wall with the approved v2 art and with 平面视觉's candidate colourway (clone-only texture in PlacardCand/), the
+// guide-row clearance, A4 with exactly 2 lit neighbours (v2 and candidate), the dark oblique views (#9), and the calm
+// Failing read (A5) with the new peak-follower path.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+[InitializeOnLoad]
+public static class FrontRoomsPlacardRender
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.PlacardRender.Active";
+    const string DeadlineKey = "FrontRooms.PlacardRender.Deadline";
+    const string DoneKey = "FrontRooms.PlacardRender.Done";
+    const int W = 1920, H = 1080;
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    const BindingFlags SF = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
+    // Kit numbers (Kit_EvacPlacard sidecar, placard/20_build.md §3.4).
+    const float FrameW = .4668f, FrameH = .3138f, FrameD = .0135f;
+    static readonly Vector3 LegendAnchor = new Vector3(-.1395f, -.00667f, .00455f);
+
+    static int waitUntilFrame = -1;
+    static bool finished;
+    static string outDir, setName, wantMount;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder frames = new StringBuilder();
+    static readonly StringBuilder series = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+    static RenderTexture rt, hdrRt;
+    static Texture2D readTex, readHdr;
+    static FrontRoomsPlacardMount mount;
+    static FrontRoomsPlacardGlow glow;
+    static Vector3 P, N, R;           // placard origin (wall-face centre), its normal (+Z of the kit), its +X
+    static float floorY;
+    static Vector3 doorPoint;
+    static GridCoord doorCell;
+    static float seriesT0;
+    static int lastSeriesFrame = -1;
+    static string seriesTag = "";
+    static bool origCalm;
+
+    static FrontRoomsPlacardRender()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    const string CandPath = "Assets/Editor/Audit/PlacardCand/Prop_EvacPlan_A_cand.png";
+
+    public static void RunBatch()
+    {
+        // -prSim: the glow simulation first (edit mode, FrontRoomsPlacardLookdev.Simulate -> Verification/placard_lookdev).
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-prSim") >= 0) FrontRoomsPlacardLookdev.Simulate();
+        // The candidate art (clone only): imported with the same rule as Prop_EvacPlan_A before Play.
+        if (File.Exists(CandPath) && AssetImporter.GetAtPath(CandPath) is TextureImporter ci)
+        {
+            FrontRoomsSurfaceTextureImporter.Configure(ci, "Prop_EvacPlan_A");
+            ci.SaveAndReimport();
+        }
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1500f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string Arg(string name, string fallback)
+    {
+        var a = Environment.GetCommandLineArgs();
+        for (var i = 0; i < a.Length - 1; i++) if (a[i] == name) return a[i + 1];
+        return fallback;
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                setName = Arg("-prSet", "main");
+                wantMount = Arg("-prMount", setName == "main" ? "P1" : "P2");
+                outDir = Arg("-prOut", Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "placard_render", setName + "_" + wantMount));
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + " t=" + Time.time.ToString("0.000", IC) + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[PlacardRender] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        Time.timeScale = 1f;
+        try { SetCalm(origCalm); } catch { }
+        SessionState.SetBool(DoneKey, true);
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "frames.txt"), frames.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "series.csv"), series.ToString());
+        }
+        catch (Exception e) { Debug.LogError(e); }
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) { stack.Push(Main()); Log("routine created · set " + setName + " · mount " + wantMount); }
+        Sample();
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    // ------------------------------------------------------------------ reflection helpers
+
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string V(Vector3 v) => "[" + v.x.ToString("0.####", IC) + ", " + v.y.ToString("0.####", IC) + ", " + v.z.ToString("0.####", IC) + "]";
+    static string F(float v) => v.ToString("0.0000", IC);
+
+    static void Resume()
+    {
+        if (Phase != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+    }
+
+    /// <summary>Reduce flashing without PlayerPrefs: the static property's private setter, then the Changed event.</summary>
+    static void SetCalm(bool on)
+    {
+        var prop = typeof(FrontRoomsSettings).GetProperty("ReduceFlashing", SF);
+        prop.GetSetMethod(true).Invoke(null, new object[] { on });
+        var ev = typeof(FrontRoomsSettings).GetField("Changed", SF)?.GetValue(null) as Delegate;
+        ev?.DynamicInvoke();
+    }
+
+    // ------------------------------------------------------------------ seed choice (same frame as Space)
+
+    struct Pick { public int seed; public FrontRoomsPlacard.Spot spot; public string why; }
+
+    static ModuleLamp ModeAt(FrontRoomsMapWorld m, GridCoord c) => m.LampModeOf(c);
+
+    static Pick? ChooseSeed(FrontRoomsRoomStream stream, FrontRoomsLevelProfile profile, int maxSeeds, StringBuilder note)
+    {
+        var terminal = stream.FirstClosedDoorSequence();
+        if (terminal < 0) return null;
+        var centerX = stream.CenterX;
+        var doorZ = stream.RoomStartZ(terminal) + FrontRoomsRoomStream.RoomLength;
+        var rearZ = stream.RoomStartZ(stream.OldestSequence);
+        var rows = Mathf.RoundToInt((doorZ - rearZ) / MapGrid.CellSize);
+        var mapRootFor = typeof(FrontRooms3DGame).GetMethod("MapRootFor", SF);
+        var createCache = typeof(FrontRoomsMapWorld).GetMethod("CreateCache", BF);
+        var door = new Vector3(centerX, 0f, doorZ);
+        var tally = new Dictionary<string, int>();
+        Pick? fallback = null;
+        for (var seed = 1; seed <= maxSeeds; seed++)
+        {
+            var m = FrontRoomsMapWorld.CreateEmbedded(null, profile, seed);
+            try
+            {
+                createCache.Invoke(m, null);
+                m.transform.position = (Vector3)mapRootFor.Invoke(null, new object[] { m, centerX, doorZ, rows });
+                var spot = FrontRoomsPlacard.Resolve(m, door, doorZ + .022f);
+                var label = FrontRoomsPlacard.Label(spot.mount);
+                tally[label] = tally.TryGetValue(label, out var c) ? c + 1 : 1;
+                if (label != wantMount) continue;
+                var g = spot.glowCell;
+                // The glow cell's south neighbour lies in the start area (no lamp in the run): only E, W, N count.
+                var nbs = new[] { new GridCoord(g.x + 1, g.y), new GridCoord(g.x - 1, g.y), new GridCoord(g.x, g.y + 1) };
+                var lit = nbs.Count(n => ModeAt(m, n) == ModuleLamp.Steady);
+                var own = ModeAt(m, g);
+                var north = m.Cache.Edge(g, new GridCoord(g.x, g.y + 1));
+                var why = "glow " + g + " " + own + ", steady E/W/N neighbours " + lit + ", glow-cell north edge " + north + ", west " + spot.west + ", east " + spot.east;
+                if (fallback == null) fallback = new Pick { seed = seed, spot = spot, why = why + " (first " + wantMount + ")" };
+                // The main set wants the A4 case: a Steady own lamp, 2+ Steady neighbours, and room for the 3 m view.
+                var lamps = nbs.Count(n => ModeAt(m, n) != ModuleLamp.Off);
+                var good = setName == "fix" ? lamps >= 2 && north != EdgeKind.Wall && north != EdgeKind.Window
+                    : setName != "main" || (own == ModuleLamp.Steady && lit >= 2 && north != EdgeKind.Wall && north != EdgeKind.Window);
+                if (good) { note.AppendLine("terminal " + terminal + ", door x " + F(centerX) + " z " + F(doorZ) + ", rows " + rows + "; tally to seed " + seed + ": " + string.Join(", ", tally.Select(kv => kv.Key + " " + kv.Value))); return new Pick { seed = seed, spot = spot, why = why }; }
+            }
+            finally
+            {
+                // A temp map's Release() destroys the materials it "owns", and some of those are FrontRoomsSurfaces.Lit's
+                // shared cache entries (the key's "Map test / key": codex-audit VL126 / R2). The run's map, made in this same
+                // frame, would take them from the cache and draw magenta once the deferred Destroy lands. So drop them from
+                // the cache too: the run's map then makes its own.
+                var owned = FI(typeof(FrontRoomsMapWorld), "ownedMaterials")?.GetValue(m) as List<Material>;
+                var dropped = owned != null ? new List<Material>(owned) : new List<Material>();
+                m.Release();
+                UnityEngine.Object.DestroyImmediate(m.gameObject);
+                var cache = typeof(FrontRoomsSurfaces).GetField("Cache", SF)?.GetValue(null) as Dictionary<string, Material>;
+                if (cache != null)
+                    foreach (var k in cache.Where(kv => kv.Value == null || dropped.Contains(kv.Value)).Select(kv => kv.Key).ToList()) cache.Remove(k);
+            }
+        }
+        note.AppendLine("terminal " + terminal + ", door z " + F(doorZ) + ", rows " + rows + "; no seed met every condition; tally " + string.Join(", ", tally.Select(kv => kv.Key + " " + kv.Value)));
+        return fallback;
+    }
+
+    // ------------------------------------------------------------------ rendering
+
+    static void EnsureTargets()
+    {
+        if (rt != null) return;
+        rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "Placard capture" };
+        rt.Create();
+        readTex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        hdrRt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear) { antiAliasing = 4, name = "Placard linear" };
+        hdrRt.Create();
+        readHdr = new Texture2D(W, H, TextureFormat.RGBAHalf, false, true);
+    }
+
+    static void RenderInto(RenderTexture target, Vector3 eye, Vector3 look, float fov, bool post)
+    {
+        var t = cam.transform;
+        var lp = t.localPosition;
+        var lr = t.localRotation;
+        var f = cam.fieldOfView;
+        var data = UnityEngine.Rendering.Universal.CameraExtensions.GetUniversalAdditionalCameraData(cam);
+        var hadPost = data.renderPostProcessing;
+        data.renderPostProcessing = post && hadPost;
+        t.SetPositionAndRotation(eye, Quaternion.LookRotation(look - eye, Vector3.up));
+        cam.fieldOfView = fov;
+        var prev = cam.targetTexture;
+        cam.targetTexture = target;
+        cam.Render();
+        cam.Render();
+        cam.targetTexture = prev;
+        cam.fieldOfView = f;
+        t.localPosition = lp;
+        t.localRotation = lr;
+        data.renderPostProcessing = hadPost;
+    }
+
+    static void Shot(string name, Vector3 eye, Vector3 look, float fov, string note)
+    {
+        EnsureTargets();
+        RenderInto(rt, eye, look, fov, true);
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        readTex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        readTex.Apply(false);
+        RenderTexture.active = active;
+        File.WriteAllBytes(Path.Combine(OutDir, name + ".png"), readTex.EncodeToPNG());
+        var line = name + " | eye " + V(eye) + " dist to placard " + F(Vector3.Distance(eye, P)) + " fov " + fov.ToString("0", IC)
+                   + " | G " + F(glow != null ? glow.Shown : -1f) + " C " + F(glow != null ? glow.Charge : -1f) + " Ls " + F(glow != null ? glow.SmoothedLevel : -1f)
+                   + " L " + F(map.LampLevel(glow != null ? glow.Cell : default)) + " calm " + FrontRoomsSettings.ReduceFlashing
+                   + " door open " + Get<bool>(game, "startDoorOpened") + " | " + note;
+        frames.AppendLine(line);
+        Log("shot " + line);
+        File.WriteAllText(Path.Combine(OutDir, "frames.txt"), frames.ToString());
+    }
+
+    static float[] Linear(Vector3 eye, Vector3 look, float fov)
+    {
+        EnsureTargets();
+        RenderInto(hdrRt, eye, look, fov, false);
+        var active = RenderTexture.active;
+        RenderTexture.active = hdrRt;
+        readHdr.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        readHdr.Apply(false);
+        RenderTexture.active = active;
+        var px = readHdr.GetPixels();
+        var l = new float[px.Length];
+        for (var i = 0; i < px.Length; i++) l[i] = .2126f * px[i].r + .7152f * px[i].g + .0722f * px[i].b;
+        return l;
+    }
+
+    // ------------------------------------------------------------------ views (the placard's own frame)
+
+    static Vector3 Eye(float dist, float lateral = 0f)
+    {
+        var e = P + N * dist + R * lateral;
+        e.y = floorY + ModuleUnits.PlayerEye;
+        return e;
+    }
+
+    /// <summary>How far the player can stand from the placard along its normal: the first collider 0.12 m short, at most <paramref name="want"/>.</summary>
+    static float Clear(float want)
+    {
+        var from = P + N * .05f;
+        from.y = floorY + ModuleUnits.PlayerEye;
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false;                    // the player's own capsule is not a wall
+        Physics.SyncTransforms();
+        var hitSomething = Physics.Raycast(from, N, out var hit, want + .2f, ~0, QueryTriggerInteraction.Ignore);
+        body.enabled = true;
+        if (hitSomething) { Log("clear: " + hit.collider.name + " at " + F(hit.distance + .05f) + " m along the normal"); return Mathf.Min(want, hit.distance + .05f - .12f); }
+        return want;
+    }
+
+    static Vector3 Corner => P + R * (FrameW * .5f - .004f) + Vector3.up * (FrameH * .5f - .004f) + N * .008f;
+
+    static Vector3 CornerEye()
+    {
+        // 0.30 m from the top corner on the +X side (toward the door for a west P1), at the player's eye height.
+        var c = Corner;
+        var dy = floorY + ModuleUnits.PlayerEye - c.y;
+        var h = Mathf.Sqrt(Mathf.Max(0f, .30f * .30f - dy * dy));
+        var dir = (N * .95f + R * .30f).normalized;
+        var e = c + dir * h;
+        e.y = floorY + ModuleUnits.PlayerEye;
+        return e;
+    }
+
+    static void Stand(Vector3 eye)
+    {
+        // The body goes under the camera, kept 0.5 m off the placard's wall; the camera itself is placed per shot.
+        var feet = eye;
+        feet.y = floorY;
+        var off = Vector3.Dot(feet - P, N);
+        if (off < .5f) feet += N * (.5f - off);
+        var root = PlayerRoot;
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false;
+        root.position = feet;
+        body.enabled = true;
+        Physics.SyncTransforms();
+    }
+
+    static void Views(string prefix, string note)
+    {
+        var d3 = Clear(3f);
+        var e3 = Eye(d3);
+        var e1 = Eye(1f);
+        Stand(e1);
+        Shot(prefix + "_3m", e3, P, 76f, note + "; " + F(d3) + " m face-on, eye 1.62 m, game FOV");
+        Shot(prefix + "_1m", e1, P, 76f, note + "; 1 m face-on");
+        var ec = CornerEye();
+        Shot(prefix + "_corner_0p3m", ec, Corner, 76f, note + "; 0.30 m from the top +X corner, game FOV");
+        Shot(prefix + "_corner_zoom", ec, Corner, 30f, note + "; same eye, FOV 30 (inspection zoom)");
+    }
+
+    // ------------------------------------------------------------------ the glow series
+
+    static void Sample()
+    {
+        if (glow == null || map == null || Time.frameCount == lastSeriesFrame || string.IsNullOrEmpty(seriesTag)) return;
+        lastSeriesFrame = Time.frameCount;
+        var g = glow.Cell;
+        float Lv(GridCoord c) { var v = map.LampLevel(c); return v < 0f ? 0f : v; }
+        var w = FrontRoomsPhosphor.WallLight(Lv(g), Lv(new GridCoord(g.x + 1, g.y)), Lv(new GridCoord(g.x - 1, g.y)), Lv(new GridCoord(g.x, g.y + 1)), Lv(new GridCoord(g.x, g.y - 1)));
+        series.Append(seriesTag).Append(',').Append(Time.frameCount).Append(',').Append((Time.time - seriesT0).ToString("0.0000", IC)).Append(',')
+            .Append(F(map.LampLevel(g))).Append(',').Append(F(w)).Append(',').Append(F(glow.SmoothedLevel)).Append(',').Append(F(glow.Charge)).Append(',')
+            .Append(F(glow.Shown)).Append(',').Append(glow.Mode).Append(',').Append(FrontRoomsSettings.ReduceFlashing ? 1 : 0).Append('\n');
+    }
+
+    static void BeginSeries(string tag)
+    {
+        seriesTag = tag;
+        seriesT0 = Time.time;
+        Log("series " + tag + " begins");
+    }
+
+    static IEnumerator Seconds(float s)
+    {
+        var n = Mathf.RoundToInt(s * 60f);
+        for (var i = 0; i < n; i++) { Resume(); yield return 1; }
+    }
+
+    static void SetMode(GridCoord c, ModuleLamp m) { map.SetLampMode(c, m); }
+
+    static List<GridCoord> NeighbourLamps(GridCoord g)
+    {
+        var list = new List<GridCoord>();
+        foreach (var n in new[] { new GridCoord(g.x + 1, g.y), new GridCoord(g.x - 1, g.y), new GridCoord(g.x, g.y + 1), new GridCoord(g.x, g.y - 1) })
+            if (map.LampLevel(n) >= 0f) list.Add(n);
+        return list;
+    }
+
+    static string LampReport(GridCoord g)
+    {
+        var sb = new StringBuilder();
+        foreach (var c in new[] { g, new GridCoord(g.x + 1, g.y), new GridCoord(g.x - 1, g.y), new GridCoord(g.x, g.y + 1), new GridCoord(g.x, g.y - 1) })
+            sb.Append(c).Append(' ').Append(map.LampModeOf(c)).Append(" L ").Append(F(map.LampLevel(c))).Append("; ");
+        return sb.ToString();
+    }
+
+    /// <summary>The 6-frame lamp-off sequence (1 m face-on): t = 0 (before), +0.25, +0.5, +1, +3, +15 s.</summary>
+    static IEnumerator LampOffSequence(string tag)
+    {
+        var g = glow.Cell;
+        var e1 = Eye(1f);
+        Stand(e1);
+        BeginSeries(tag + "_off");
+        Shot(tag + "_seq0_t0", e1, P, 76f, tag + " lamp-off sequence, t 0 (lit, just before the cut)");
+        SetMode(g, ModuleLamp.Off);
+        var t0 = Time.time;
+        var marks = new[] { .25f, .5f, 1f, 3f, 15f };
+        for (var i = 0; i < marks.Length; i++)
+        {
+            while (Time.time - t0 < marks[i] - 1e-4f) { Resume(); yield return 1; }
+            Shot(tag + "_seq" + (i + 1) + "_t" + marks[i].ToString("0.00", IC).Replace('.', 'p'), e1, P, 76f, tag + " lamp-off sequence, t +" + (Time.time - t0).ToString("0.000", IC) + " s");
+        }
+    }
+
+    // ------------------------------------------------------------------ measurement (A4 in the real start room)
+
+    static float[] litLegend;
+
+    static void MeasureLit()
+    {
+        var legend = mount.Frame.transform.TransformPoint(LegendAnchor);
+        litLegend = Linear(legend + N * .6f, legend, 40f);
+        Log("measure: lit legend frame stored (G " + F(glow.Shown) + ")");
+    }
+
+    static void MeasureDark(string tag, StringBuilder report)
+    {
+        if (litLegend == null) return;
+        var legend = mount.Frame.transform.TransformPoint(LegendAnchor);
+        var eye = legend + N * .6f;
+        var g = glow.Shown;
+        var lg = Linear(eye, legend, 40f);
+        FrontRoomsPlacardGlow.Preview(glow.Instance, 0f);
+        var l0 = Linear(eye, legend, 40f);
+        FrontRoomsPlacardGlow.Preview(glow.Instance, 1f);
+        var l1 = Linear(eye, legend, 40f);
+        FrontRoomsPlacardGlow.Preview(glow.Instance, g);       // back to exactly what the component wrote
+        var n = lg.Length;
+        var d1 = new float[n];
+        for (var i = 0; i < n; i++) d1[i] = l1[i] - l0[i];
+        var sorted = d1.Where(v => v > 0f).OrderBy(v => v).ToArray();
+        if (sorted.Length == 0) { report.AppendLine(tag + ": no glow pixels"); return; }
+        var p99 = sorted[(int)(sorted.Length * .99f)];
+        var glyph = new bool[n];
+        int x0 = W, x1 = 0, y0 = H, y1 = 0, glyphCount = 0;
+        for (var i = 0; i < n; i++)
+        {
+            if (d1[i] < .35f * p99) continue;
+            glyph[i] = true; glyphCount++;
+            int x = i % W, y = i / W;
+            x0 = Mathf.Min(x0, x); x1 = Mathf.Max(x1, x); y0 = Mathf.Min(y0, y); y1 = Mathf.Max(y1, y);
+        }
+        // Paper: inside the glyphs' box (+8 px), 4 px clear of any glyph, bright in the lit frame (no printed linework).
+        var near = new bool[n];
+        for (var y = Mathf.Max(0, y0 - 12); y <= Mathf.Min(H - 1, y1 + 12); y++)
+        for (var x = Mathf.Max(0, x0 - 12); x <= Mathf.Min(W - 1, x1 + 12); x++)
+        {
+            if (!glyph[y * W + x]) continue;
+            for (var dy = -4; dy <= 4; dy++)
+            for (var dx = -4; dx <= 4; dx++)
+            {
+                int xx = x + dx, yy = y + dy;
+                if (xx >= 0 && xx < W && yy >= 0 && yy < H) near[yy * W + xx] = true;
+            }
+        }
+        var cand = new List<int>();
+        for (var y = Mathf.Max(0, y0 - 8); y <= Mathf.Min(H - 1, y1 + 8); y++)
+        for (var x = Mathf.Max(0, x0 - 8); x <= Mathf.Min(W - 1, x1 + 8); x++)
+            if (!near[y * W + x]) cand.Add(y * W + x);
+        var litSorted = cand.Select(i => litLegend[i]).OrderBy(v => v).ToArray();
+        var cut = litSorted.Length > 0 ? litSorted[(int)(litSorted.Length * .5f)] : 0f;
+        var paper = cand.Where(i => litLegend[i] >= cut).ToArray();
+        double Mean(float[] a, IEnumerable<int> idx) { double s = 0; var c = 0; foreach (var i in idx) { s += a[i]; c++; } return c > 0 ? s / c : 0; }
+        var glyphIdx = Enumerable.Range(0, n).Where(i => glyph[i]).ToArray();
+        var paperLit = Mean(litLegend, paper);
+        var glyphLit = Mean(litLegend, glyphIdx);
+        var paperG = Mean(lg, paper);
+        var glyphG = Mean(lg, glyphIdx);
+        var paper0 = Mean(l0, paper);
+        var glyph0 = Mean(l0, glyphIdx);
+        var paper1 = Mean(l1, paper);
+        var glyph1 = Mean(l1, glyphIdx);
+        var add1 = Mean(d1, glyphIdx);
+        report.AppendLine(tag + " (legend at 0.6 m, FOV 40, linear HDR, post off): glyph px " + glyphCount + ", paper px " + paper.Length
+                          + " | lit: paper " + paperLit.ToString("0.0000", IC) + ", glyph " + glyphLit.ToString("0.0000", IC) + " (glyph/paper " + (glyphLit / paperLit).ToString("0.000", IC) + ")"
+                          + " | now G " + g.ToString("0.000", IC) + ": paper " + paperG.ToString("0.0000", IC) + ", glyph " + glyphG.ToString("0.0000", IC) + ", glyph/paper " + (glyphG / Math.Max(1e-6, paperG)).ToString("0.000", IC)
+                          + " | G 0: glyph/paper " + (glyph0 / Math.Max(1e-6, paper0)).ToString("0.000", IC)
+                          + " | G 1: glyph/paper " + (glyph1 / Math.Max(1e-6, paper1)).ToString("0.000", IC) + ", full glow adds " + add1.ToString("0.0000", IC) + " = " + (100.0 * add1 / Math.Max(1e-6, paperLit)).ToString("0.0", IC) + " % of the lit paper"
+                          + " | dark paper / lit paper " + (paper0 / Math.Max(1e-6, paperLit)).ToString("0.000", IC));
+        Log("measure " + report.ToString().Split('\n').Reverse().Skip(1).FirstOrDefault());
+    }
+
+    // ------------------------------------------------------------------ overlap check (A9: nothing in front of it)
+
+    static void OverlapCheck(StringBuilder report)
+    {
+        var own = new HashSet<Renderer>(mount.GetComponentsInChildren<Renderer>(true));
+        var c = P + N * (FrameD * .5f);
+        var hx = FrameW * .5f + .02f; var hy = FrameH * .5f + .02f; var hz = FrameD * .5f + .02f;
+        var obb = new Bounds(c, Vector3.zero);
+        foreach (var sx in new[] { -1f, 1f }) foreach (var sy in new[] { -1f, 1f }) foreach (var sz in new[] { -1f, 1f })
+            obb.Encapsulate(c + R * (sx * hx) + Vector3.up * (sy * hy) + N * (sz * hz));
+        var k = mount.Spot.keepClear;
+        var floorBox = new Bounds();
+        floorBox.SetMinMax(new Vector3(k.xMin, floorY + .02f, k.yMin), new Vector3(k.xMax, floorY + 2.0f, k.yMax));
+        var hitsFrame = new List<string>();
+        var hitsFloor = new List<string>();
+        foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+        {
+            if (own.Contains(r) || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+            var b = r.bounds;
+            if (b.Intersects(obb)) hitsFrame.Add(PathOf(r.transform) + " " + V(b.min) + "-" + V(b.max));
+            if (b.Intersects(floorBox)) hitsFloor.Add(PathOf(r.transform) + " " + V(b.min) + "-" + V(b.max));
+        }
+        report.AppendLine("overlap · frame box (+0.02 m, world AABB of the OBB) " + V(obb.min) + "-" + V(obb.max) + ": " + hitsFrame.Count + " renderers");
+        foreach (var h in hitsFrame) report.AppendLine("  frame: " + h);
+        report.AppendLine("overlap · keep-clear floor rect " + V(floorBox.min) + "-" + V(floorBox.max) + ": " + hitsFloor.Count + " renderers");
+        foreach (var h in hitsFloor) report.AppendLine("  floor: " + h);
+    }
+
+    static string PathOf(Transform t)
+    {
+        var parts = new List<string>();
+        for (var i = 0; t != null && i < 6; t = t.parent, i++) parts.Add(t.name);
+        parts.Reverse();
+        return string.Join("/", parts);
+    }
+
+    // ------------------------------------------------------------------ fix stage (35_fix.md)
+
+    static Texture candTex, v2Tex;
+
+    static void UseArt(bool cand)
+    {
+        var m = glow.Instance;
+        if (v2Tex == null) v2Tex = m.GetTexture("_BaseMap");
+        if (cand && candTex == null) candTex = AssetDatabase.LoadAssetAtPath<Texture2D>(CandPath);
+        m.SetTexture("_BaseMap", cand && candTex != null ? candTex : v2Tex);
+        Log("art: " + (cand ? (candTex != null ? "CANDIDATE " + candTex.name + " " + candTex.width + "x" + candTex.height + " " + ((Texture2D)candTex).format : "candidate MISSING") : "v2 " + v2Tex.name + " " + v2Tex.width + "x" + v2Tex.height + " " + ((Texture2D)v2Tex).format));
+    }
+
+    static void LensVisible(bool on)
+    {
+        if (mount.Lens == null) return;
+        foreach (var r in mount.Lens.GetComponentsInChildren<Renderer>(true)) r.enabled = on;
+    }
+
+    /// <summary>The brightest enabled light within 2 m (horizontal) of a cell's centre, or null.</summary>
+    static Light LightOver(GridCoord c)
+    {
+        var centre = map.CellCenter(c);
+        Light best = null;
+        var bestD = 2f;
+        foreach (var l in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+        {
+            if (!l.enabled || l.intensity <= 0f || !l.gameObject.activeInHierarchy) continue;
+            var d = new Vector2(l.transform.position.x - centre.x, l.transform.position.z - centre.z).magnitude;
+            if (d < bestD) { bestD = d; best = l; }
+        }
+        return best;
+    }
+
+    static IEnumerator FixSet(FrontRoomsPlacard.Spot spot, StringBuilder report)
+    {
+        var g0 = spot.glowCell;
+        var nbs = NeighbourLamps(g0);
+        // Exactly 2 lit neighbours (the spec's A4 case): the north one first (the only lamp that can ever reflect in the
+        // sheet for a standing player, §9 of 35_fix.md), then the side nearest the door; the rest Off.
+        var north = new GridCoord(g0.x, g0.y + 1);
+        nbs.Sort((a, b) => (a.Equals(north) ? 0 : 1 + Mathf.Abs(a.x - spot.doorCell.x)).CompareTo(b.Equals(north) ? 0 : 1 + Mathf.Abs(b.x - spot.doorCell.x)));
+        var lit = new List<GridCoord>();
+        foreach (var n in nbs) { if (lit.Count < 2) { SetMode(n, ModuleLamp.Steady); lit.Add(n); } else SetMode(n, ModuleLamp.Off); }
+        SetMode(g0, ModuleLamp.Steady);
+        Log("fix: glow cell " + g0 + " Steady; lit neighbours " + string.Join(" ", lit) + " (of " + nbs.Count + " lamps)");
+        report.AppendLine("fix: lit neighbours " + string.Join(" ", lit) + " of " + nbs.Count + " neighbour lamps; centre height " + F(P.y - floorY));
+        BeginSeries("fix_settle");
+        yield return Seconds(4f);
+        Log("lamps: " + LampReport(g0));
+        report.AppendLine("lamps (lit): " + LampReport(g0));
+        UseArt(false);
+
+        // ---- #2 A1 with the anodised frame (lit), 3 m / 1 m / 0.3 m corner / zoom, plus 0.3 m face-on.
+        Views("fix_lit", "own lamp Steady, 2 Steady neighbours, anodised frame");
+        var e03 = Eye(.3f);
+        Shot("fix_lit_face_0p3m", e03, P, 76f, "0.3 m face-on, eye 1.62 m");
+        var frameMats = mount.Frame.GetComponentsInChildren<Renderer>(true).SelectMany(r => r.sharedMaterials).Where(m => m != null).Select(m => m.name).Distinct();
+        report.AppendLine("frame materials: " + string.Join(", ", frameMats));
+        MeasureLit();
+
+        // ---- #1 the legend swatch beside the real wall: v2 art, then the candidate colourway.
+        var legendW = mount.Frame.transform.TransformPoint(LegendAnchor);
+        var edgeW = mount.Frame.transform.TransformPoint(new Vector3(Mathf.Sign(LegendAnchor.x) * (FrameW * .5f + .03f), LegendAnchor.y, 0f));
+        var tgt = Vector3.Lerp(legendW, edgeW, .45f);
+        var eSw = tgt + N * .55f;
+        foreach (var cand in new[] { false, true })
+        {
+            UseArt(cand);
+            yield return 2;
+            var tag = cand ? "cand" : "v2";
+            Shot("fix_swatch_" + tag + "_0p55m", eSw, tgt, 40f, "legend swatches + the wall past the frame edge, 0.55 m, FOV 40, " + (cand ? "CANDIDATE colourway (平面视觉 to decide)" : "approved v2 art"));
+            Shot("fix_swatch_" + tag + "_1m", Eye(1f), P, 76f, "1 m face-on, " + (cand ? "CANDIDATE colourway" : "v2 art"));
+        }
+        UseArt(false);
+
+        // ---- #8 the guide row under the frame (lit).
+        var below = P - Vector3.up * (FrameH * .5f + .12f);
+        var eBand = P + N * 1.2f; eBand.y = floorY + ModuleUnits.PlayerEye;
+        Shot("fix_band_1p2m", eBand, below, 50f, "the frame's bottom edge (" + F(P.y - FrameH * .5f - floorY) + " m) over the wallpaper's guide row");
+        Shot("fix_band_side_0p6m", P + N * .6f + R * .35f - Vector3.up * .1f, P - Vector3.up * (FrameH * .5f), 45f, "oblique, the frame bottom over the guide row");
+
+        // ---- A4: own lamp Off, 2 lit neighbours, +15 s (v2), then the same frame with the candidate.
+        BeginSeries("fix_ownoff");
+        SetMode(g0, ModuleLamp.Off);
+        yield return Seconds(15f);
+        Views("fix_dark_ownoff", "own lamp Off 15 s, 2 Steady neighbours (A4)");
+        MeasureDark("A4 own lamp off +15 s, 2 lit neighbours, v2 art", report);
+        UseArt(true);
+        yield return 2;
+        MeasureDark("A4 own lamp off +15 s, 2 lit neighbours, CANDIDATE art", report);
+        Shot("fix_dark_cand_1m", Eye(1f), P, 76f, "own lamp Off 15 s, CANDIDATE colourway");
+        UseArt(false);
+
+        // ---- #9 dark, oblique: what a standing player sees with the lit neighbour across the lens.
+        var sideLit = lit.FirstOrDefault(n => !n.Equals(north));
+        var sideDir = Vector3.ProjectOnPlane(map.CellCenter(sideLit) - P, Vector3.up);
+        sideDir = Vector3.ProjectOnPlane(sideDir, N).normalized;
+        if (sideDir.sqrMagnitude < .5f) sideDir = R;
+        var eObl = P + (N * Mathf.Cos(60f * Mathf.Deg2Rad) + sideDir * Mathf.Sin(60f * Mathf.Deg2Rad)) * .8f;
+        eObl.y = floorY + ModuleUnits.PlayerEye;
+        foreach (var lensOn in new[] { true, false })
+        {
+            LensVisible(lensOn);
+            yield return 1;
+            Shot("fix_dark_oblique60_" + (lensOn ? "lens" : "nolens"), eObl, legendW, 50f, "own lamp Off, 0.8 m at 60 deg toward the lit side neighbour " + sideLit + ", lens " + (lensOn ? "on" : "OFF (control)"));
+        }
+        // The one reflection a standing player can see: the north neighbour's lamp mirrored in the sheet's top band (above
+        // eye height). The legend (1.50-1.61 m) is below the eye (1.62 m), so no ceiling lamp can mirror on it.
+        var lampN = LightOver(north);
+        if (lampN != null)
+        {
+            var q = P + Vector3.up * (FrameH * .5f - .035f) + R * (LegendAnchor.x * .5f);
+            var t = lampN.transform.position;
+            var tm = t - 2f * Vector3.Dot(t - q, N) * N;
+            var dir = (q - tm).normalized;
+            var eyeY = floorY + ModuleUnits.PlayerEye;
+            if (dir.y < -1e-3f && q.y > eyeY)
+            {
+                var sDist = (eyeY - q.y) / dir.y;
+                var eRef = q + dir * sDist;
+                report.AppendLine("reflection: lamp " + lampN.name + " at " + V(t) + ", sheet point " + V(q) + " (height " + F(q.y - floorY) + "), eye " + V(eRef) + " = " + F(Vector3.Dot(eRef - P, N)) + " m from the wall");
+                foreach (var lensOn in new[] { true, false })
+                {
+                    LensVisible(lensOn);
+                    yield return 1;
+                    Shot("fix_dark_reflect_" + (lensOn ? "lens" : "nolens"), eRef, Vector3.Lerp(q, legendW, .5f), 50f, "own lamp Off: the north neighbour's lamp mirrored at the sheet's top band, standing eye " + F(Vector3.Dot(eRef - P, N)) + " m out, lens " + (lensOn ? "on" : "OFF (control)"));
+                }
+            }
+            else report.AppendLine("reflection: no standing eye sees lamp " + lampN.name + " in the sheet (q " + F(q.y - floorY) + ")");
+        }
+        else report.AppendLine("reflection: no lit lamp over the north neighbour " + north);
+        LensVisible(true);
+
+        // ---- #3 A5 calm: a Failing own lamp with Reduce flashing (the peak-follower read), then normal for comparison.
+        SetMode(g0, ModuleLamp.Steady);
+        BeginSeries("fix_relight");
+        yield return Seconds(5f);
+        var e1 = Eye(1f);
+        Stand(e1);
+        foreach (var calmRun in new[] { true, false })
+        {
+            SetCalm(calmRun);
+            SetMode(g0, ModuleLamp.Failing);
+            BeginSeries(calmRun ? "fix_failing_calm" : "fix_failing_normal");
+            yield return Seconds(calmRun ? 24f : 10f);
+            for (var i = 0; i < 6; i++)
+            {
+                Shot("fix_A5_" + (calmRun ? "calm" : "normal") + "_" + i, e1, P, 76f, "Failing own lamp, " + (calmRun ? "Reduce flashing" : "normal") + ", strip frame " + i + " (every 0.333 s)");
+                yield return 20;
+            }
+            yield return Seconds(calmRun ? 8f : 2f);
+            SetMode(g0, ModuleLamp.Steady);
+            BeginSeries(calmRun ? "fix_failing_calm_back" : "fix_failing_normal_back");
+            yield return Seconds(6f);
+        }
+        SetCalm(false);
+        report.AppendLine("lamps (end): " + LampReport(g0));
+    }
+
+    // ------------------------------------------------------------------ main
+
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
+        series.Append("tag,frame,t,L,W,Ls,C,G,mode,calm\n");
+        while ((game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        origCalm = FrontRoomsSettings.ReduceFlashing;
+        Log("Reduce flashing at start (Red's PlayerPrefs, read only): " + origCalm);
+        SetCalm(false);
+        while (Time.time < 2.0f) yield return 1;
+        var maxSeeds = int.TryParse(Arg("-prSeeds", "400"), out var ms) ? ms : 400;
+        var baseProfile = Get<FrontRoomsLevelProfile>(game, "levelProfile") ?? FrontRoomsLevelProfile.Default;
+        Pick? pick = null;
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            var stream = Get<FrontRoomsRoomStream>(game, "roomStream");
+            var note = new StringBuilder();
+            pick = stream == null ? null : ChooseSeed(stream, baseProfile, maxSeeds, note);
+            if (pick.HasValue)
+            {
+                Log("seed choice: " + note.ToString().Trim() + " -> seed " + pick.Value.seed + " (" + pick.Value.why + ")");
+                var copy = UnityEngine.Object.Instantiate(baseProfile);
+                copy.runSeed = pick.Value.seed;
+                Set(game, "levelProfile", copy);
+                Call(game, "RequestTitleStart");
+            }
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (!Get<bool>(game, "mapPlay") || !pick.HasValue) { Log("FAILED: could not start a run"); yield break; }
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        var runSeed = Get<int>(game, "runSeed");
+        Log("run started · seed " + runSeed + (runSeed == pick.Value.seed ? " (as chosen)" : " (NOT the chosen " + pick.Value.seed + ")") + " · map root " + V(map.transform.position));
+        var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+        tuning.releaseDelaySeconds = 1e6f;
+        doorPoint = (Vector3)Get(game, "startDoorPoint");
+        doorCell = (GridCoord)Get(game, "startDoorCell");
+        floorY = doorPoint.y;
+        // Walk up to the door inside the stream room: it opens once the map round it is built and furnished.
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false;
+        PlayerRoot.position = doorPoint + new Vector3(.4f, 0f, -2.6f);
+        body.enabled = true;
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 20f) { Resume(); yield return 1; }
+        Log("start door opened=" + Get<bool>(game, "startDoorOpened") + " after " + (Time.time - t0).ToString("0.00", IC) + " s");
+        yield return 90;
+        Time.captureDeltaTime = 1f / 60f;
+        Resume();
+        mount = UnityEngine.Object.FindFirstObjectByType<FrontRoomsPlacardMount>();
+        if (mount == null || !mount.Placed) { Log("FAILED: no placed placard mount"); yield break; }
+        glow = mount.Glow;
+        var spot = mount.Spot;
+        P = mount.Frame.transform.position;
+        N = mount.Frame.transform.forward;
+        R = mount.Frame.transform.right;
+        Log("placard " + FrontRoomsPlacard.Label(spot.mount) + " " + (spot.side < 0 ? "west" : "east") + " · door cell " + spot.doorCell + " (game " + doorCell + ") · west " + spot.west + " east " + spot.east
+            + " · glow cell " + spot.glowCell + " · origin " + V(P) + " normal " + V(N) + " · door point " + V(doorPoint) + " · centre height " + F(P.y - floorY)
+            + " · offset from the door centreline x " + F(P.x - doorPoint.x) + " z " + F(P.z - doorPoint.z) + " · zone " + map.ZoneOf(spot.doorCell).theme + "/" + map.ZoneOf(spot.doorCell).height);
+        Log("lamps as generated: " + LampReport(spot.glowCell));
+        var shadows = mount.GetComponentsInChildren<Renderer>(true).Select(r => r.name + " " + r.shadowCastingMode).ToArray();
+        Log("placard renderers: " + string.Join(", ", shadows) + " · colliders " + mount.GetComponentsInChildren<Collider>(true).Length
+            + " · KeepClearAtStart in this map: " + (typeof(FrontRoomsMapWorld).GetMethod("KeepClearAtStart") != null));
+        var report = new StringBuilder();
+        report.AppendLine("seed " + runSeed + ", mount " + FrontRoomsPlacard.Label(spot.mount) + " " + (spot.side < 0 ? "west" : "east") + ", glow cell " + spot.glowCell);
+        OverlapCheck(report);
+
+        if (setName == "fix")
+        {
+            yield return FixSet(spot, report);
+            File.WriteAllText(Path.Combine(OutDir, "report.txt"), report.ToString());
+            Log("DONE");
+            yield break;
+        }
+
+        if (setName == "a9")
+        {
+            var gA = spot.glowCell;
+            SetMode(gA, ModuleLamp.Steady);
+            yield return Seconds(2f);
+            var s = spot.side;
+            var wide = doorPoint + new Vector3(-s * .5f, 0f, 3.5f);
+            wide.y = floorY + ModuleUnits.PlayerEye;
+            var mid = Vector3.Lerp(doorPoint + Vector3.up * 1.3f, P, .5f);
+            Stand(wide);
+            yield return 2;
+            Shot("A9_" + wantMount + "_open_wide", wide, mid, 76f, "map side, door open, 3.5 m north of the door");
+            if (spot.mount == FrontRoomsPlacard.Mount.P2SideWall)
+            {
+                var past = doorPoint + new Vector3(-s * .9f, 0f, 2.4f);
+                past.y = floorY + ModuleUnits.PlayerEye;
+                Shot("A9_" + wantMount + "_open_pastleaf", past, P, 76f, "map side, door open: the P2 placard past the open leaf");
+            }
+            var e1 = Eye(Clear(1f));
+            Shot("A9_" + wantMount + "_face_1m", e1, P, 76f, "1 m face-on (or the clear distance)");
+            var ec = CornerEye();
+            Shot("A9_" + wantMount + "_corner_0p3m", ec, Corner, 76f, "0.30 m from the top +X corner");
+            var roomStream = Get<FrontRoomsRoomStream>(game, "roomStream");
+            roomStream.CloseTerminalDoor();
+            yield return Seconds(3f);
+            Stand(wide);
+            yield return 2;
+            Shot("A9_" + wantMount + "_shut_wide", wide, mid, 76f, "map side, door shut (CloseTerminalDoor), 3 s later");
+            report.AppendLine("lamps: " + LampReport(gA));
+            // Optional: a long Reduce-flashing Failing series (A5 calm needs its 3 s mean + 6 s low-pass to settle).
+            if (float.TryParse(Arg("-prFailCalm", "0"), NumberStyles.Float, IC, out var failCalm) && failCalm > 0f)
+            {
+                SetMode(gA, ModuleLamp.Steady);
+                yield return Seconds(4f);
+                foreach (var calmRun in new[] { true, false })
+                {
+                    SetCalm(calmRun);
+                    SetMode(gA, ModuleLamp.Failing);
+                    BeginSeries(calmRun ? "failing_calm_long" : "failing_normal_long");
+                    yield return Seconds(failCalm - 2f);
+                    for (var i = 0; i < 6; i++)
+                    {
+                        Shot("A5_failing_" + (calmRun ? "calm" : "normal") + "_long_" + i, e1, P, 76f, "Failing lamp, " + (calmRun ? "Reduce flashing" : "normal") + ", after " + (failCalm - 2f).ToString("0", IC) + " s, strip frame " + i + " (every 0.333 s)");
+                        yield return 20;
+                    }
+                    SetMode(gA, ModuleLamp.Steady);
+                    BeginSeries(calmRun ? "failing_calm_long_back" : "failing_normal_long_back");
+                    yield return Seconds(6f);
+                }
+                SetCalm(false);
+            }
+            // Optional: a long Stutter series (A6): the map's stutter fires 2-16 s after the mode is set, then every 5-20 s.
+            if (float.TryParse(Arg("-prStutter", wantMount == "P3" ? "40" : "0"), NumberStyles.Float, IC, out var stut) && stut > 0f)
+            {
+                SetMode(gA, ModuleLamp.Steady);
+                yield return Seconds(3f);
+                SetMode(gA, ModuleLamp.Stutter);
+                BeginSeries("stutter_long");
+                var ts = Time.time;
+                var shotDip = false;
+                while (Time.time - ts < stut)
+                {
+                    Resume();
+                    var lv = map.LampLevel(gA);
+                    if (!shotDip && lv >= 0f && lv < .5f) { Shot("A6_stutter_dip", e1, P, 76f, "Stutter lamp mid-burst (L " + F(lv) + ")"); shotDip = true; }
+                    yield return 1;
+                }
+                SetMode(gA, ModuleLamp.Steady);
+            }
+            File.WriteAllText(Path.Combine(OutDir, "report.txt"), report.ToString());
+            Log("DONE");
+            yield break;
+        }
+
+        // ---------------- MAIN (P1): lit, own lamp off, sequences, Reduce flashing, A5-A7, A9 P1, power failure
+        var g0 = spot.glowCell;
+        SetMode(g0, ModuleLamp.Steady);
+        var nbs = NeighbourLamps(g0);
+        foreach (var n in nbs) SetMode(n, ModuleLamp.Steady);
+        Log("forced Steady: glow cell + " + nbs.Count + " neighbour lamps (" + string.Join(" ", nbs) + ")");
+        BeginSeries("settle");
+        yield return Seconds(4f);
+        Log("lamps: " + LampReport(g0));
+        Views("lit", "own lamp Steady, " + nbs.Count + " Steady neighbours");
+        MeasureLit();
+
+        // Normal: the lamp-off sequence, then the dark views at +15 s (A4: own lamp Off, neighbours lit).
+        yield return LampOffSequence("normal");
+        Views("dark_ownoff", "own lamp Off (SetLampMode) for 15 s, " + nbs.Count + " Steady neighbours (A4)");
+        MeasureDark("A4 own lamp off, +15 s, normal", report);
+        yield return Seconds(5f);
+        BeginSeries("normal_relight");
+        SetMode(g0, ModuleLamp.Steady);
+        yield return Seconds(12f);
+
+        // Reduce flashing: the same sequence.
+        SetCalm(true);
+        Log("Reduce flashing ON (reflection, no PlayerPrefs)");
+        yield return Seconds(2f);
+        yield return LampOffSequence("calm");
+        yield return Seconds(5f);
+        BeginSeries("calm_relight");
+        SetMode(g0, ModuleLamp.Steady);
+        yield return Seconds(12f);
+        SetCalm(false);
+        Log("Reduce flashing OFF");
+
+        // A5: Failing, normal then calm (12 s each), with a 6-frame strip over 2 s.
+        var e1m = Eye(1f);
+        foreach (var calm in new[] { false, true })
+        {
+            SetCalm(calm);
+            SetMode(g0, ModuleLamp.Failing);
+            BeginSeries(calm ? "failing_calm" : "failing_normal");
+            yield return Seconds(8f);
+            for (var i = 0; i < 6; i++)
+            {
+                Shot("A5_failing_" + (calm ? "calm" : "normal") + "_" + i, e1m, P, 76f, "Failing lamp, " + (calm ? "Reduce flashing" : "normal") + ", strip frame " + i + " (every 0.333 s)");
+                yield return 20;
+            }
+            yield return Seconds(2f);
+            SetMode(g0, ModuleLamp.Steady);
+            BeginSeries(calm ? "failing_calm_back" : "failing_normal_back");
+            yield return Seconds(8f);
+        }
+        SetCalm(false);
+        // A6: Stutter, 12 s.
+        SetMode(g0, ModuleLamp.Stutter);
+        BeginSeries("stutter");
+        yield return Seconds(12f);
+        Shot("A6_stutter_12s", e1m, P, 76f, "Stutter lamp after 12 s");
+        SetMode(g0, ModuleLamp.Steady);
+        BeginSeries("stutter_back");
+        yield return Seconds(6f);
+        // A7: a Warn burst train, 6 bursts at 3 Hz to x0.10, normal then calm.
+        foreach (var calm in new[] { false, true })
+        {
+            SetCalm(calm);
+            yield return Seconds(2f);
+            BeginSeries(calm ? "warn_calm" : "warn_normal");
+            for (var i = 0; i < 6; i++)
+            {
+                map.SetLampOverride(g0, FrontRoomsMapWorld.LampFx.Warn, .1f, .05f);
+                yield return 20;
+            }
+            yield return Seconds(5f);
+        }
+        SetCalm(false);
+        BeginSeries("pre_a9");
+        yield return Seconds(4f);
+
+        // A9 for P1: map side, door open, then shut.
+        {
+            var s = spot.side;
+            var wide = doorPoint + new Vector3(-s * .5f, 0f, 3.5f);
+            wide.y = floorY + ModuleUnits.PlayerEye;
+            var mid = Vector3.Lerp(doorPoint + Vector3.up * 1.3f, P, .5f);
+            Stand(wide);
+            yield return 2;
+            Shot("A9_P1_open_wide", wide, mid, 76f, "map side, door open, 3.5 m north of the door");
+            var roomStream = Get<FrontRoomsRoomStream>(game, "roomStream");
+            roomStream.CloseTerminalDoor();
+            yield return Seconds(3f);
+            Stand(wide);
+            yield return 2;
+            Shot("A9_P1_shut_wide", wide, mid, 76f, "map side, door shut (CloseTerminalDoor), 3 s later");
+        }
+
+        // Power failure: every map lamp within 3 cells of the glow cell Off; the door is shut (stream lamps fade out).
+        var killed = new List<GridCoord>();
+        for (var dy = -3; dy <= 3; dy++)
+        for (var dx = -3; dx <= 3; dx++)
+        {
+            var c = new GridCoord(g0.x + dx, g0.y + dy);
+            if (map.LampLevel(c) < 0f) continue;
+            killed.Add(c);
+        }
+        Log("power failure: " + killed.Count + " lamps Off · " + LampReport(g0));
+        Stand(Eye(1f));
+        BeginSeries("powerfail");
+        foreach (var c in killed) SetMode(c, ModuleLamp.Off);
+        var tp = Time.time;
+        while (Time.time - tp < 3f - 1e-4f) { yield return 1; }
+        Views("dark_powerfail_t3s", "power failure: the glow cell and every lamp within 3 cells Off for 3 s, door shut");
+        MeasureDark("power failure, +3 s", report);
+        while (Time.time - tp < 15f - 1e-4f) { yield return 1; }
+        Shot("dark_powerfail_t15s_1m", Eye(1f), P, 76f, "power failure, +15 s, 1 m");
+        File.WriteAllText(Path.Combine(OutDir, "report.txt"), report.ToString());
+        Log("DONE");
+    }
+}

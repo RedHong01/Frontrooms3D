@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "about": "PICK renders (2026-10-08): shots 1-4 unchanged from shots.json plus two extras. Fixed comparison shots for the level-transition variations (2026-10-03). Every variation renders these four shots with the harness below, unchanged; only the code or assets under test change. Map space = metres from the map root; cell (x, y) covers X [3x, 3x+3), Z [3y, 3y+3). World = mapRoot + map. yaw/pitch are Unity euler Y/X in degrees (positive pitch looks down). fov is vertical (the game's 76). The player stands where the camera stands (feet = eye with y 0): lamps light, fade and shadow for that point as in the game. Lamps are frozen at clock 0, so a frame is identical on every run.",
+  "mapRoot": [
+    4992,
+    0,
+    4992
+  ],
+  "image": {
+    "width": 1920,
+    "height": 1080,
+    "msaa": 4,
+    "format": "JPG q85",
+    "camera": "scene 'First-person camera' (URP data, post on), near 0.06, far = map SightDistance 46 m"
+  },
+  "harness": {
+    "file": "Assets/Editor/Audit/FrontRoomsTransitionAudit.cs in the clone proj_trans (copy it unchanged into your cp -Rc clone; the same file is at Documentation/research/level_transitions/harness/FrontRoomsTransitionAudit.cs.txt, md5 76a624e3217630e637bdb381af7ca5b1)",
+    "method": "FrontRoomsTransitionAudit.ShotsBatch",
+    "command": "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath <your clone> -executeMethod FrontRoomsTransitionAudit.ShotsBatch -quit -logFile <log> -shots <this file> -out <dir> -tag <variation>",
+    "options": "-only shot1,shot3 renders a subset; -plan also writes <id>_plan.json (zones and edge kinds round the eye cell)",
+    "outputs": "<out>/<id>_<tag>.jpg and <id>_<tag>.txt (pose, eye cell zone, lamp count)",
+    "graphics": "needs a GPU session (no -nographics); never two Unity processes on one clone",
+    "before": "images/shot1_before.jpg .. shot4_before.jpg (one full ShotsBatch run, tag before; poses in logs/shots_before.txt, the cells round each eye in logs/shot<k>_plan.json)",
+    "determinism": "Render all four shots in ONE call (no -only). URP seeds film grain with Time.frameCount, so a subset run shifts the grain: up to 13/255 per pixel, mean 0.5/255, everything else identical. A full run reproduces the before frames byte for byte (checked 2026-10-03 11:52: shot1, shot2, shot4 identical across 3 runs; shot3 identical between full runs).",
+    "helper": "harness/run_unity.sh.txt waits until no other Unity has the clone open, then runs Unity: run_unity.sh <clone> FrontRoomsTransitionAudit.ShotsBatch <log> quit -shots <shots.json> -out <dir> -tag <variation>"
+  },
+  "shots": [
+    {
+      "id": "shot1",
+      "title": "Doorway: Level 0 to Office through an arch (the doorway in Red's screenshot, close)",
+      "seed": 516574485,
+      "eyeMap": [
+        794.0,
+        1.62,
+        606.1
+      ],
+      "yaw": -10.36,
+      "pitch": 6.2,
+      "fov": 76,
+      "openDoors": [],
+      "boundary": "Arch (doorless doorway, no trim) on the edge between cell (264,202) Level 0 / Standard 2.9 m and cell (264,203) Office / Standard 2.9 m, on the line Z = 609.0; opening centre X = 793.47, top 2.2 m. The jambs and head are the wall's two 0.08 m skins: half wallpaper, half drywall. Floor cut on Z = 609.0 inside the opening. At right a second border: arch (264,202) | (265,202) Office on X = 795.0. Camera in cell (264,202), 2.9 m from the arch plane, 0.5 m right of its centre.",
+      "worldEye": [
+        5786.0,
+        1.62,
+        5598.1
+      ]
+    },
+    {
+      "id": "shot2",
+      "title": "Continuous wall planes across a zone change (corridor crossing an open edge)",
+      "seed": 516574485,
+      "eyeMap": [
+        766.75,
+        1.62,
+        584.9
+      ],
+      "yaw": -3.0,
+      "pitch": 2.0,
+      "fov": 76,
+      "openDoors": [],
+      "boundary": "Open edge between cell (255,195) Level 0 / Standard and cell (255,196) Office / Standard on the line Z = 588.0, X 765-768. Both corridor walls run straight across it and switch paper on that line (flat seams): west wall X = 765 (an arch to Office in row 195, wall in row 196), east wall X = 768 (wall in both rows; row 196 is a split Office | Level 0 wall). Floor (loop pile to carpet tile) and ceiling (2x4 to 2x2) change on the same line. Camera in cell (255,194), 3.1 m from the cut.",
+      "worldEye": [
+        5758.75,
+        1.62,
+        5576.9
+      ]
+    },
+    {
+      "id": "shot3",
+      "title": "Ceiling height step: door from Office (2.9 m) into Level 0 Low (2.4 m)",
+      "seed": 516574485,
+      "eyeMap": [
+        760.25,
+        1.62,
+        597.3
+      ],
+      "yaw": 5.29,
+      "pitch": 0.0,
+      "fov": 76,
+      "openDoors": [
+        253,
+        199,
+        253,
+        200
+      ],
+      "boundary": "Door (1.0 x 2.1 m, Cove_Base trim, leaf pushed open from the Office side so it swings into the Level 0 room) on the edge between cell (253,199) Office / Standard 2.9 m and cell (253,200) Level 0 / Low 2.4 m, line Z = 600.0, door centre X = 760.5. The step is closed only by the wall: 0.8 m of drywall over the door head on this side, 0.3 m of wallpaper on the far side; paper, carpet, ceiling grid and ceiling height all change in the door plane. Camera in cell (253,199), 2.7 m from the door, eye level, so the threshold, the 0.8 m header and the ceiling line all read.",
+      "worldEye": [
+        5752.25,
+        1.62,
+        5589.3
+      ]
+    },
+    {
+      "id": "shot4",
+      "title": "Wide: two zones in one frame (Red's screenshot, G10 audit frame 01)",
+      "seed": 516574485,
+      "eyeMap": [
+        793.5,
+        1.62,
+        601.5
+      ],
+      "yaw": 0.0,
+      "pitch": 1.15,
+      "fov": 76,
+      "openDoors": [],
+      "boundary": "From cell (264,200) Level 0 / Standard looking north. 7.5 m ahead: the arch of shot1, (264,202) | (264,203) Office. Right: the open edge (265,201) Level 0 | (266,201) Office on X = 798.0 (grey wall and blue carpet tile next to the beige carpet), and the split walls (265,200) | (266,200) and (265,201) | (265,202). Same pose as Documentation/research/glass/images/g10_full_01_rep_L0_A_before.jpg (the game in Play: run seed 516574485, map root (-576, 0, -576), camera (217.5, 1.62, 25.5)).",
+      "worldEye": [
+        5785.5,
+        1.62,
+        5593.5
+      ]
+    },
+    {
+      "seed": 516574485,
+      "fov": 76,
+      "openDoors": [],
+      "id": "shot8",
+      "eyeMap": [
+        794.6,
+        1.62,
+        604.5
+      ],
+      "yaw": 90.0,
+      "pitch": 3.0,
+      "title": "PICK extra: the X = 798 open edge, 3.4 m away, from Level 0 cell (264,201) looking east",
+      "boundary": "PICK extra: the X = 798 open edge, 3.4 m away, from Level 0 cell (264,201) looking east",
+      "worldEye": [
+        5786.6,
+        1.62,
+        5596.5
+      ]
+    },
+    {
+      "seed": 516574485,
+      "fov": 76,
+      "openDoors": [],
+      "id": "shot9",
+      "eyeMap": [
+        766.3,
+        1.62,
+        577.5
+      ],
+      "yaw": -12.0,
+      "pitch": 3.0,
+      "title": "PICK extra: the X = 765 corridor wall looking north: arch (254,193)|(255,193) and open edge (254,194)|(255,194), both dressed at salt 0",
+      "boundary": "PICK extra: the X = 765 corridor wall looking north: arch (254,193)|(255,193) and open edge (254,194)|(255,194), both dressed at salt 0",
+      "worldEye": [
+        5758.3,
+        1.62,
+        5569.5
+      ]
+    }
+  ]
+}

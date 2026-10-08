@@ -1,7 +1,9 @@
 #!/bin/zsh
 # Run one Relay Pursuit v2 Step 0 baseline case.
 # Usage: relay_baseline_run.sh <seed> <mode> <tier> [minutes]
-# The game stays on the legacy hunter; this only drives the editor-only bot.
+# The game stays on the legacy hunter; this only drives the editor-only bot. Minutes count from the
+# Relay's release. Extra -autopilot* flags can be passed in EXTRA (e.g. EXTRA="-autopilotTierFree").
+# Run it in a private clone, never on the project Red has open.
 
 set -u
 
@@ -13,7 +15,7 @@ TIER="${3:-}"
 MINUTES="${4:-}"
 
 case "$MODE" in
-  quiet|noisy|evader03|evader06|staller|shiftholder|doorspammer|edgerunner|closedzone) ;;
+  quiet|noisy|evader03|evader06|evaderv2|staller|shiftholder|doorspammer|edgerunner|closedzone) ;;
   *) echo "usage: $0 <seed> <mode> <tier> [minutes]" >&2; exit 2 ;;
 esac
 
@@ -33,14 +35,15 @@ LOGS="$OUT/logs"
 mkdir -p "$LOGS"
 NAME="$SEED-$MODE-T$TIER"
 JSON="$OUT/$NAME.json"
+rm -f "$JSON"
 LOG="$LOGS/$NAME${MINUTES:+-${MINUTES}min}.log"
 
 if [[ -n "$MINUTES" ]]; then
   "$UNITY" -batchmode -projectPath "$ROOT" -executeMethod FrontRoomsMainScenePlaytest.RunBatch \
-    -autopilotSeed "$SEED" -autopilotBot "$MODE" -autopilotTier "$TIER" -autopilotMinutes "$MINUTES" -logFile "$LOG"
+    -autopilotSeed "$SEED" -autopilotBot "$MODE" -autopilotTier "$TIER" -autopilotMinutes "$MINUTES" ${=EXTRA:-} -logFile "$LOG"
 else
   "$UNITY" -batchmode -projectPath "$ROOT" -executeMethod FrontRoomsMainScenePlaytest.RunBatch \
-    -autopilotSeed "$SEED" -autopilotBot "$MODE" -autopilotTier "$TIER" -logFile "$LOG"
+    -autopilotSeed "$SEED" -autopilotBot "$MODE" -autopilotTier "$TIER" ${=EXTRA:-} -logFile "$LOG"
 fi
 RC=$?
 

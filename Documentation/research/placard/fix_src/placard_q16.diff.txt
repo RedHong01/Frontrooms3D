@@ -1,0 +1,147 @@
+--- a/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
++++ b/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+@@ -384,6 +384,13 @@
+         new SurfaceDef { name = "Prop_CopierPanel", texture = "Prop_CopierPanel", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = .05f },
+         new SurfaceDef { name = "Prop_KeyboardKeys", texture = "Prop_KeyboardKeys", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = .05f },
+         new SurfaceDef { name = "Prop_Label", texture = "Prop_Label", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = 0f },
++        // Q16 evacuation placard: the printed sheet (research/placard/10_spec.md §3.1). The phosphor legend's mask is the
++        // emission map; FrontRoomsPlacardGlow drives _EmissionColor on one instance per placard (black at rest, so the
++        // _EMISSION variant stays in builds). Matte offset print; the lens carries the sheen. No macro stain on the print.
++        new SurfaceDef { name = "Prop_EvacPlan", texture = "Prop_EvacPlan", tile = Vector2.one, meshUV = true, smooth = .15f, macroTone = 0f, macroDirt = .02f, emission = "Prop_EvacPlan", emissionColor = Color.black },
++        // Q16: the placard's snap frame, clean clear-anodised satin aluminium (placard 35_fix.md §4). Its own slot, so the
++        // shared Prop_Aluminium (macro dirt, occlusion 0.8, albedo 0.72) stays as it is on every other kit.
++        new SurfaceDef { name = "Prop_AluminiumAnodised", tint = new Color(.91f, .92f, .92f), smooth = .62f, metallic = 1f, occlusion = 1f, meshUV = true, macroTone = 0f, macroDirt = 0f },
+     };
+ 
+     // Transparent prop slots use URP Lit (FrontRooms/Surface is opaque).
+@@ -391,6 +398,7 @@
+     {
+         ("Prop_Glass", new Color(.82f, .88f, .88f, .16f), .92f),
+         ("Prop_BottleBlue", new Color(.36f, .58f, .80f, .42f), .9f),
++        ("Prop_LensNonGlare", new Color(0f, 0f, 0f, .04f), .55f),   // Q16: the placard's 1 mm non-glare lens (placard 10_spec §3.2)
+     };
+ 
+     static void EnsureCutoutMaterials()
+@@ -436,6 +444,20 @@
+             m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+             m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+             m.SetShaderPassEnabled("DepthOnly", false);
++            if (name == "Prop_LensNonGlare")
++            {
++                // A black base at alpha 0.04 that keeps its full specular (URP "Preserve Specular Lighting": the ROP
++                // multiply moves into the shader). out = specular + dst x 0.96: the lens takes ~4 % and adds only its
++                // sheen, so it can never veil the paper. No shadow caster: a shadowing lamp would print the lens's
++                // shadow onto the sheet 1 mm below (placard 10_spec §3.2).
++                m.SetFloat("_BlendModePreserveSpecular", 1f);
++                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
++                m.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
++                m.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
++                m.EnableKeyword("_ALPHAPREMULTIPLY_ON");
++                m.SetOverrideTag("RenderType", "Transparent");
++                m.SetShaderPassEnabled("ShadowCaster", false);
++            }
+             EditorUtility.SetDirty(m);
+         }
+     }
+@@ -699,6 +721,27 @@
+             importer.textureType = TextureImporterType.Default;
+             importer.sRGBTexture = stem.EndsWith("_A") || stem.EndsWith("_E");
+         }
++        if (stem.StartsWith("Prop_EvacPlan"))
++        {
++            // Q16 placard artwork (placard 10_spec §3.3, 35_fix.md §6): Tools/lookdev/pack_evac_plan.py already stretched
++            // the 2592 x 1676 sheet to 4096 x 2048, because Unity 6 keeps a non-power-of-two texture with mips
++            // UNCOMPRESSED on every platform (measured 2026-10-08: RGBA32 / RGB24, 40 MB for the pair). Never rescaled
++            // again here (npotScale None), clamped at the sheet edge. _A: sRGB BC7. _E: the phosphor mask is coverage,
++            // so LINEAR (an sRGB decode would thin the anti-aliased glyph edges), BC1. Desktop: 16.8 MB with mips.
++            importer.npotScale = TextureImporterNPOTScale.None;
++            importer.wrapMode = TextureWrapMode.Clamp;
++            var mask = stem.EndsWith("_E");
++            importer.sRGBTexture = !mask;
++            importer.textureCompression = mask ? TextureImporterCompression.Compressed : TextureImporterCompression.CompressedHQ;
++            // WebGL tab only (its own track; the desktop tabs never change): capped at 1024, i.e. 1024 x 512 DXT1,
++            // 0.35 MB with mips per map (placard 10_spec §6, D16).
++            var web = importer.GetPlatformTextureSettings("WebGL");
++            web.overridden = true;
++            web.maxTextureSize = 1024;
++            web.format = TextureImporterFormat.Automatic;
++            web.textureCompression = TextureImporterCompression.Compressed;
++            importer.SetPlatformTextureSettings(web);
++        }
+     }
+ }
+ 
+=== new file: Assets/Scripts/Rendering/FrontRoomsPhosphor.cs.meta (59 bytes, sha1 5ec978ca90a0bf41af356f90e01d8d3ffb783620)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPlacardGlow.cs.meta (59 bytes, sha1 cee1062b28e2a34c2adeb89e4722673ed9dd6430)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPlacard.cs.meta (59 bytes, sha1 9365e9335fca3562994c9e81a3c79200b36228b5)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPlacardMount.cs.meta (59 bytes, sha1 174d94a6f3a50d048f636d126aa9de690b54c6fb)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPhosphor.cs (9875 bytes, sha1 257086e7f96b60596d7aaf08e5634056b1f1abb2)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPlacardGlow.cs (7810 bytes, sha1 c03448c9c032b40ae5ca287fe0e2b002ccfb4f21)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPlacard.cs (7252 bytes, sha1 6ba020d45a4d1aafb45b32dcf84f2adfc9a92d3c)
+=== new file: Assets/Scripts/Rendering/FrontRoomsPlacardMount.cs (5338 bytes, sha1 29a463108c203000d73c318fc065f59ffa2a5383)
+=== new file: Assets/Resources/Surfaces/Textures/Prop_EvacPlan_A.png.meta (4076 bytes, sha1 86b78f9b26ffb6c6aa921080d650e1f1283159bc)
+=== new file: Assets/Resources/Surfaces/Textures/Prop_EvacPlan_A.png (627431 bytes, sha1 892d2c956fa98b1bc2a7c6d5a044e18761df56d8)
+=== new file: Assets/Resources/Surfaces/Textures/Prop_EvacPlan_E.png.meta (4076 bytes, sha1 422a5371942b79d24ce9c2c4ac3a286fc78dd882)
+=== new file: Assets/Resources/Surfaces/Textures/Prop_EvacPlan_E.png (99428 bytes, sha1 730096114cf636d0b2a44fc6d07890b6c3129383)
+=== new file: Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat.meta (188 bytes, sha1 f97db23d8ed27258c588c06b67a521038f5ac079)
+=== new file: Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat (2330 bytes, sha1 edb6f01e6e805868fcbf5f1c0830ab39e3cbf852)
+=== new file: Assets/Resources/Surfaces/Prop_EvacPlan.mat.meta (188 bytes, sha1 1eb0db178569cc4834765d48ecfbf85ad03f1404)
+=== new file: Assets/Resources/Surfaces/Prop_EvacPlan.mat (2441 bytes, sha1 21b30b78e5f10102af4271f0bd87371fd0a49b30)
+=== new file: Assets/Resources/Surfaces/Prop_LensNonGlare.mat.meta (188 bytes, sha1 17f5c3b88dbe14ad1d5f313b378b7927a8bbfc7a)
+=== new file: Assets/Resources/Surfaces/Prop_LensNonGlare.mat (3909 bytes, sha1 6fc8dc55258ac74f147f3a899d899e62cdbde13e)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacard.json.meta (158 bytes, sha1 6b64cf3ec80648fe75d8aa2aab25e5066ec22b3f)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacard.json (2832 bytes, sha1 2ebeba94dd55d94ddd1181b7074d3e044541f30c)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacard.fbx.meta (3432 bytes, sha1 dedae63e9273939acdcd3811d0a28cde7b3d0982)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacard.fbx (117308 bytes, sha1 395081924b52ca9dee5dbbf24201ebc276914d95)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacardLens.json.meta (158 bytes, sha1 1d572d14c13a39332936306e012e91940aa5a3ef)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacardLens.json (1178 bytes, sha1 bc0378047742fb5152d92c834665beb007acfd60)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacardLens.fbx.meta (3050 bytes, sha1 74136ac40e90be807bfa7f73430393d7e0bcc805)
+=== new file: Assets/Resources/Props/Models/Kit_EvacPlacardLens.fbx (16444 bytes, sha1 0613ac793e065b2d73ff0580b5342a677e30e969)
+=== new file: Tools/lookdev/pack_evac_plan.py (6867 bytes, sha1 7688d9e934cd446de5819ac3c95b989253e1e9a4)
+--- a/Tools/Blender/frontrooms_kit/assets/evac_placard_common.py
++++ b/Tools/Blender/frontrooms_kit/assets/evac_placard_common.py
+@@ -53,7 +53,11 @@
+ FORCE_LODS = False            # the review tool sets this; never True in a build
+ 
+ # ------------------------------------------------------------ slots (§2.5)
+-ALU = "Prop_Aluminium"        # existing: clear-anodised satin aluminium
++# The frame has its own clean slot (placard 35_fix.md §4): the shared Prop_Aluminium (albedo 0.72, world macro
++# dirt 0.06, occlusion 0.8) read as dark, blotchy pewter at 0.3 m, and spec D1 is a freshly hung clear-anodised
++# satin frame. Prop_AluminiumAnodised: metallic 1, base (0.91, 0.92, 0.92), smoothness 0.62, no macro tone or
++# dirt, occlusion 1 (FrontRoomsRenderSetup SurfaceDefs). Every other aluminium kit keeps Prop_Aluminium.
++ALU = "Prop_AluminiumAnodised"   # NEW: clear-anodised satin aluminium, placard only
+ PRINT = "Prop_EvacPlan"       # NEW: the printed sheet (FrontRooms/Surface; glow mask = emission map)
+ LENS = "Prop_LensNonGlare"    # NEW: 1.0 mm non-glare lens (URP Lit transparent, black base, alpha 0.04)
+ 
+@@ -61,6 +65,7 @@
+ def register_slots():
+     """§2.5 preview colours (Blender only; the Unity look comes from
+     Resources/Surfaces). register_slot is setdefault: kitlib.SLOTS is never edited."""
++    kitlib.register_slot(ALU, (0.91, 0.92, 0.92), 0.38, 1.0)
+     kitlib.register_slot(PRINT, (0.957, 0.945, 0.910), 0.85, 0.0)
+     kitlib.register_slot(LENS, (0.90, 0.92, 0.92), 0.45, 0.0)
+ 
+--- a/Tools/Blender/frontrooms_kit/assets/evac_placard.py
++++ b/Tools/Blender/frontrooms_kit/assets/evac_placard.py
+@@ -22,7 +22,7 @@
+ are hand-built and exported once kitlib has make_lods (P-1/P-1b); until then
+ the FBX holds LOD0 only (interactables convention).
+ 
+-Slots: Prop_Aluminium (existing), Prop_EvacPlan (NEW, the artwork; its glow
++Slots: Prop_AluminiumAnodised (NEW, the clean frame; 35_fix.md §4), Prop_EvacPlan (NEW, the artwork; its glow
+ mask is the emission map that FrontRoomsPlacardGlow drives). Render-only:
+ no collider; the spawner turns shadow casting off.
+ """
+--- a/Assets/Scripts/FrontRoomsRoomStream.cs
++++ b/Assets/Scripts/FrontRoomsRoomStream.cs
+@@ -536,6 +536,10 @@
+         // which take shadows: so do they.
+         foreach (var renderer in terminal.root.GetComponentsInChildren<Renderer>(true))
+             if (renderer.gameObject.name.EndsWith("/ far side", StringComparison.Ordinal)) renderer.receiveShadows = true;
++        // Q16: the evacuation placard goes up on the map side of this door once the run starts
++        // (research/placard/10_spec.md §4.6). The far-side reveal plane is the face it sits on.
++        var roomRoot = terminal.root.transform;
++        FrontRoomsPlacard.Prepare(roomRoot, roomRoot.TransformPoint(0f, 0f, RoomLength), roomRoot.TransformPoint(0f, 0f, RoomLength + DoorWallDepth * .5f + .002f).z);
+     }
+ 
+     /// <summary>

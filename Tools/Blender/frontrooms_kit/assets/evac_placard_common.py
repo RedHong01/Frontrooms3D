@@ -53,7 +53,11 @@ SMOOTH_ANGLE = 35.0
 FORCE_LODS = False            # the review tool sets this; never True in a build
 
 # ------------------------------------------------------------ slots (§2.5)
-ALU = "Prop_Aluminium"        # existing: clear-anodised satin aluminium
+# The frame has its own clean slot (placard 35_fix.md §4): the shared Prop_Aluminium (albedo 0.72, world macro
+# dirt 0.06, occlusion 0.8) read as dark, blotchy pewter at 0.3 m, and spec D1 is a freshly hung clear-anodised
+# satin frame. Prop_AluminiumAnodised: metallic 1, base (0.91, 0.92, 0.92), smoothness 0.62, no macro tone or
+# dirt, occlusion 1 (FrontRoomsRenderSetup SurfaceDefs). Every other aluminium kit keeps Prop_Aluminium.
+ALU = "Prop_AluminiumAnodised"   # NEW: clear-anodised satin aluminium, placard only
 PRINT = "Prop_EvacPlan"       # NEW: the printed sheet (FrontRooms/Surface; glow mask = emission map)
 LENS = "Prop_LensNonGlare"    # NEW: 1.0 mm non-glare lens (URP Lit transparent, black base, alpha 0.04)
 
@@ -61,6 +65,7 @@ LENS = "Prop_LensNonGlare"    # NEW: 1.0 mm non-glare lens (URP Lit transparent,
 def register_slots():
     """§2.5 preview colours (Blender only; the Unity look comes from
     Resources/Surfaces). register_slot is setdefault: kitlib.SLOTS is never edited."""
+    kitlib.register_slot(ALU, (0.91, 0.92, 0.92), 0.38, 1.0)
     kitlib.register_slot(PRINT, (0.957, 0.945, 0.910), 0.85, 0.0)
     kitlib.register_slot(LENS, (0.90, 0.92, 0.92), 0.45, 0.0)
 

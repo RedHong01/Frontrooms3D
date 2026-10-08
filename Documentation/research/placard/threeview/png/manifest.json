@@ -1,0 +1,9 @@
+{
+ "oversample": 2,
+ "padding": 16,
+ "assets": [
+  {"name": "Kit_EvacPlacard", "viewYaw": 0, "sheetPpm": 2000, "pngPpm": 4000, "size_m": [0.4668, 0.3138, 0.0135], "boundsMin": [-0.2334, -0.1569, 0], "boundsMax": [0.2334, 0.1569, 0.0135], "triangles": 1754, "trianglesLod1": 0, "slots": ["Prop_AluminiumAnodised", "Prop_EvacPlan"], "tags": ["placard", "sign", "wall_flush"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [1900, 1288], "side": [86, 1288], "top": [1900, 86], "persp": [1152, 864]}},
+  {"name": "Kit_EvacPlacardLens", "viewYaw": 0, "sheetPpm": 2000, "pngPpm": 4000, "size_m": [0.432, 0.279, 0.0009], "boundsMin": [-0.216, -0.1395, 0.0046], "boundsMax": [0.216, 0.1395, 0.0055], "triangles": 10, "trianglesLod1": 0, "slots": ["Prop_LensNonGlare"], "tags": ["placard", "sign", "wall_flush", "lens"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [1760, 1148], "side": [36, 1148], "top": [1760, 36], "persp": [1152, 864]}}
+ ],
+ "failed": []
+}

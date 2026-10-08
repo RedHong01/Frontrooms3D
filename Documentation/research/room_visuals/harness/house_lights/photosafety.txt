@@ -1,0 +1,12 @@
+lamp	changes in 0..4.5 s	times (s)	max changes in any 1 s window	changes in 0..2 s
+strip 1 (lit)	1	0.358	1	1
+strip 2 (economy off)	2	0.663, 0.723	2	2
+strip 3 (lit)	1	0.968	1	1
+strip 4 (economy off)	2	1.483, 1.543	2	2
+strip 5 (lit)	1	1.788	1	1
+strip 6 (economy off)	2	2.093, 2.153	2	0
+strip 7 (lit)	1	2.608	1	0
+strip 8 (economy off)	2	2.913, 2.973	2	0
+strip 9 (lit)	1	3.218	1	0
+flashers (all, synced)	9	0.300, 0.825, 1.301, 1.825, 2.301, 2.825, 3.301, 3.825, 4.300	2	4
+door leaf angle: t=-1.0 90.0 deg; t=0.0 90.0 deg; t=0.5 76.7 deg; t=0.9 66.0 deg; t=1.0 63.3 deg; t=1.4 52.7 deg; t=2.0 36.7 deg; t=3.0 10.0 deg; t=3.5 5.0 deg; t=4.0 0.0 deg; 

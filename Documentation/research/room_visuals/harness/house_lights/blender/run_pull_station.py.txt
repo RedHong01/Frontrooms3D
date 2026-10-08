@@ -1,0 +1,18 @@
+"""Single-action manual fire alarm pull station (Run! C, also B). CLONE-ONLY.
+Red cast body 105 x 135 x 50 mm, white FIRE / PULL DOWN legend (Run_C_PullFace,
+TeX Gyre Heros Bold Condensed), a pull handle under a hood. ORIGIN = back
+centre on the wall; mounted with the handle at 1.2 m."""
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_PullStation"
+
+
+def build(kit):
+    kit.box((0.105, 0.050, 0.135), (0, -0.025, 0), "Prop_PlasticRed", bevel=0.009, segments=3, name="body")
+    kit.quad(0.074, 0.075, (0, -0.0505, 0.022), "Run_PullFace", facing="-y", uv="decal", name="legend")
+    kit.box((0.090, 0.022, 0.012), (0, -0.058, -0.022), "Prop_PlasticRed", bevel=0.004, segments=2, name="hood")
+    kit.box((0.064, 0.020, 0.020), (0, -0.060, -0.042), "Prop_PlasticRed", bevel=0.006, segments=2, name="handle")
+    for sz in (-1, 1):
+        kit.cylinder(0.0035, 0.002, (0, -0.0505, sz * 0.058), "Prop_Chrome", verts=10, rot=(90, 0, 0), bevel=0.0007, segments=1, name="screw")
+    kit.no_collider()
+    kit.tag("run", "wall_unit")

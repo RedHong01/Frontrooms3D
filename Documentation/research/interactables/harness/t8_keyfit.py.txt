@@ -1,0 +1,108 @@
+"""T8 / T8b key fit re-run for the 2026-10-08 fix pass (cut 6 now clear of the tip bevel).
+
+Blender 4.3 headless:
+  Blender -b --factory-startup --python t8_keyfit.py -- <Models dir> <out json>
+
+Imports Kit_Key_Zone, Kit_Lock_Plug and Kit_Lock_CylinderShell (LOD0 meshes only), seats the key in the
+keyhole frame (key shoulder = keyhole = plug and shell origin; the key's insertion axis +Z_key points INTO the
+lock, i.e. along the plug's -Z: key turned 180 deg about the vertical), then:
+  T8  : key and plug turned together 0, +-45, +-90 deg about the plug axis -> BVH overlaps key-plug, key-shell,
+        plug-shell (the shell stays put).
+  T8b : the blade alone (key vertices with Unity Z_lock < -0.0005): nearest distance to the plug; and for each pin
+        (cut Z 0.0040 .. 0.0230) the gap from the lowest pin-tip vertex down to the blade top (ray cast).
+Unity <-> Blender for the kit's FBX (kitlib export / default import): Blender (x, y, z) = (-X, -Z, Y).
+"""
+import json
+import math
+import sys
+
+import bpy
+from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODELS, OUT = argv[0], argv[1]
+CUT_Z = (0.0040, 0.0078, 0.0116, 0.0154, 0.0192, 0.0230)
+
+
+def load(name):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath="%s/%s.fbx" % (MODELS, name))
+    objs = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    keep = [o for o in objs if not o.name.endswith("_LOD1")]
+    for o in objs:
+        if o not in keep:
+            bpy.data.objects.remove(o, do_unlink=True)
+    assert len(keep) == 1, (name, [o.name for o in objs])
+    o = keep[0]
+    mw = o.matrix_world.copy()
+    o.parent = None
+    o.matrix_world = mw
+    vs = [mw @ v.co for v in o.data.vertices]
+    print("LOADED", name, [round(min(v[i] for v in vs), 4) for i in range(3)], [round(max(v[i] for v in vs), 4) for i in range(3)])
+    return o
+
+
+def world_bm_bvh(obj, extra=Matrix.Identity(4)):
+    m = extra @ obj.matrix_world
+    verts = [m @ v.co for v in obj.data.vertices]
+    polys = [tuple(p.vertices) for p in obj.data.polygons]
+    return BVHTree.FromPolygons(verts, polys, all_triangles=False), verts, polys
+
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+key = load("Kit_Key_Zone")
+plug = load("Kit_Lock_Plug")
+shell = load("Kit_Lock_CylinderShell")
+
+# Key frame -> lock frame: 180 deg about the vertical (Blender z = Unity Y).
+SEAT_OUT = float(argv[2]) if len(argv) > 2 else 0.0      # seat offset out of the lock (m); G3 used 0.02 mm
+SEAT = Matrix.Translation((0.0, -SEAT_OUT, 0.0)) @ Matrix.Rotation(math.pi, 4, "Z")
+res = {"T8": [], "T8b": {}, "seatOffsetM": SEAT_OUT}
+_, kv0, _ = world_bm_bvh(key, SEAT)
+unity_z = [-v.y for v in kv0]
+res["key_unity_z_range_in_lock"] = [round(min(unity_z), 5), round(max(unity_z), 5)]
+assert min(unity_z) < -0.024, "the blade must point INTO the lock (Unity -Z): %s" % res["key_unity_z_range_in_lock"]
+
+shell_bvh, _, _ = world_bm_bvh(shell)
+for deg in (0, 45, -45, 90, -90):
+    # turn about the plug axis (Unity Z = Blender -y)
+    R = Matrix.Rotation(math.radians(deg), 4, Vector((0, -1, 0)))
+    kb, kverts, kpolys = world_bm_bvh(key, R @ SEAT)
+    pb, pverts, ppolys = world_bm_bvh(plug, R)
+    row = {"deg": deg, "key_plug": len(kb.overlap(pb)), "key_shell": len(kb.overlap(shell_bvh)), "plug_shell": len(pb.overlap(shell_bvh))}
+    # T8b blade-only nearest distance to the plug
+    blade = [v for v in kverts if -v.y < -0.0005]
+    dmin = min(pb.find_nearest(v)[3] for v in blade)
+    row["blade_to_plug_min_mm"] = round(dmin * 1000, 3)
+    res["T8"].append(row)
+
+# Pin gaps at 0 deg: plug vertices in each pin column above the blade, ray cast down onto the key.
+kb, kverts, _ = world_bm_bvh(key, SEAT)
+pb, pverts, _ = world_bm_bvh(plug)
+for i, cz in enumerate(CUT_Z):
+    col = [v for v in pverts if abs(v.y - cz) < 0.00145 and abs(v.x) < 0.0010 and 0.0022 < v.z < 0.0065]
+    gaps = []
+    for v in col:
+        hit = kb.ray_cast(v, Vector((0, 0, -1)))
+        if hit[0] is not None:
+            gaps.append(v.z - hit[0].z)
+    res["T8b"]["pin%d" % (i + 1)] = {"cutZ": cz, "verts": len(col), "min_gap_mm": round(min(gaps) * 1000, 3) if gaps else None}
+
+res["pass"] = all(r["key_plug"] == 0 and r["key_shell"] == 0 and r["plug_shell"] == 0 for r in res["T8"]) and \
+    all(v["min_gap_mm"] is None or v["min_gap_mm"] > 0 for v in res["T8b"].values())
+json.dump(res, open(OUT, "w"), indent=1)
+print("T8RESULT", json.dumps(res))
+
+# Where do key and plug overlap at 0 deg? (centroids, Unity lock frame: X = x?, Y = z, Z = -y)
+kb, kverts, kpolys = world_bm_bvh(key, SEAT)
+pb, pverts, ppolys = world_bm_bvh(plug)
+ov = kb.overlap(pb)
+cent = []
+for a, b in ov:
+    ka = sum((kverts[i] for i in kpolys[a]), Vector()) / len(kpolys[a])
+    pbb = sum((pverts[i] for i in ppolys[b]), Vector()) / len(ppolys[b])
+    cent.append(([round(ka.x * 1000, 2), round(ka.z * 1000, 2), round(-ka.y * 1000, 2)], [round(pbb.x * 1000, 2), round(pbb.z * 1000, 2), round(-pbb.y * 1000, 2)]))
+print("OVERLAPS_MM", len(cent))
+for c in cent:
+    print("OV key", c[0], "plug", c[1])

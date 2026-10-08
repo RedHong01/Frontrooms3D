@@ -1,0 +1,1292 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+/// <summary>
+/// CLONE-ONLY pre-render of Run! direction C · HOUSE LIGHTS ("the doors go"),
+/// Documentation/research/room_visuals/10_run_directions.md §1, §4, §7.
+/// Builds the shared layout (Level 0 anteroom, a 1 x 9 cell corridor, the RN-X
+/// goal door and a lit stub beyond it) with C's finishes, strips, held door
+/// pairs, flashers and props, drives it with FrontRoomsRunLookdevRig.Evaluate(t)
+/// and renders the §7.4 shots plus ID masks for the §7.5 measurements to
+/// Verification/run_lookdev_house_lights. Nothing is saved to any scene.
+/// Batch: -executeMethod FrontRoomsRunLookdev.RunBatch [-runShots a,b] [-runNoMasks]
+/// </summary>
+public static class FrontRoomsRunLookdev
+{
+    const float H = 2.9f;
+    static readonly Vector3 RootPos = new Vector3(4992f, 0f, 4992f);
+    const string SurfDir = "Assets/Resources/Surfaces";
+    const string ModelDir = "Assets/Resources/Props/Models/";
+    const string PostPath = "Assets/Resources/Rendering/FrontRoomsPost_Run_C.asset";
+    const uint LAnte = 1u, LCorr = 2u, LStub = 4u;
+    const float P4 = 256f / 210f;          // 4 ft run, the VCT texture repeat (4 tiles)
+    const float TileW = 256f / 315f;       // glazed tile texture repeat: 2 units of 16 in
+    const float TileH = .8128f;            // 4 courses of 8 in
+    const float WainTop = 1.524f, CapR = .02f, CoveR = .025f, TileProud = .02f;
+    static readonly float[] PairWalls = { 0f, 9f, 18f };
+    const float LeafW = 1.112f, HingeX = 1.116f;
+    static float SpotTilt = 0f, SpotY = 2.86f, SpotOuter = 179f, SpotInner = 170f;
+    static int ProbeRes = 512;
+    static string variantSuffix = "";
+    static string glassKind = "";
+    static readonly Color ExitGlow = new Color(1f, .075f, .056f);   // x 3.2 = (3.2, .24, .18)
+    static readonly Color DeadGlow = new Color(1f, .28f, .05f);
+
+    struct Shot { public string name; public Vector3 eye, look; public float fov, t; public int relay; public string masks; public bool flashOff; public bool push; public float pushAge; public bool noGlass; }
+
+    static readonly List<string> log = new List<string>();
+    static bool quick, dump;
+    static void Log(string s) { log.Add(s); Debug.Log("[RunLookdev] " + s); }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string shots = null;
+        var masks = true;
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "-runQuick") quick = true;
+            if (args[i] == "-runDump") dump = true;
+            if (args[i] == "-runShots" && i + 1 < args.Length) shots = args[i + 1];
+            if (args[i] == "-runNoMasks") masks = false;
+        }
+        Run(shots, masks);
+    }
+
+    static float Env(string key, float fallback)
+    {
+        var v = Environment.GetEnvironmentVariable(key);
+        return v != null && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : fallback;
+    }
+
+    [MenuItem("FrontRooms/Rendering/Run C look-dev (clone only)")]
+    public static void Capture() => Run(null, true);
+
+    // ====================================================================== assets
+    static Material SurfaceMat(string name, string tex, Vector2 tile, Color tint, float smooth = 1f, float bump = 1f,
+        float macroTone = .2f, float macroDirt = .15f, float floorGrime = 0f, float ceilingGrime = 0f, bool meshUV = false,
+        string emission = null, Color? emissionColor = null, Vector4? st = null, float stain = 0f)
+    {
+        var path = SurfDir + "/" + name + ".mat";
+        var shader = Shader.Find("FrontRooms/Surface");
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(shader) { name = name }; AssetDatabase.CreateAsset(m, path); }
+        m.shader = shader;
+        Texture2D T(string stem) => stem == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(SurfDir + "/Textures/" + stem + ".png");
+        m.SetTexture("_BaseMap", T(tex == null ? null : tex + "_A"));
+        m.SetTexture("_BumpMap", T(tex == null ? null : tex + "_N"));
+        m.SetTexture("_MaskMap", T(tex == null ? null : tex + "_S"));
+        m.SetColor("_BaseColor", tint);
+        var s = st ?? new Vector4(1, 1, 0, 0);
+        m.SetTextureScale("_BaseMap", new Vector2(s.x, s.y));
+        m.SetTextureOffset("_BaseMap", new Vector2(s.z, s.w));
+        m.SetVector("_TileSize", new Vector4(tile.x, tile.y, 0, 0));
+        m.SetFloat("_BumpScale", bump);
+        m.SetFloat("_Smoothness", smooth);
+        m.SetFloat("_Metallic", 0f);
+        m.SetFloat("_OcclusionStrength", .8f);
+        m.SetTexture("_MacroMap", T("MacroWear_M"));
+        m.SetFloat("_MacroTone", macroTone);
+        m.SetFloat("_MacroDirt", macroDirt);
+        m.SetFloat("_StainStrength", stain);
+        m.SetFloat("_WetStrength", 0f);
+        m.SetFloat("_FloorGrime", floorGrime);
+        m.SetFloat("_CeilingGrime", ceilingGrime);
+        m.SetFloat("_CeilingHeight", H);
+        m.SetFloat("_MeshUV", meshUV ? 1f : 0f);
+        if (meshUV) m.EnableKeyword("_FR_MESH_UV"); else m.DisableKeyword("_FR_MESH_UV");
+        if (Env("RUNC_SOFTAO", 1f) > .5f) m.EnableKeyword("_FR_SOFT_AO"); else m.DisableKeyword("_FR_SOFT_AO");
+        if (emission != null)
+        {
+            m.SetTexture("_EmissionMap", emission.Length == 0 ? null : T(emission));
+            m.SetColor("_EmissionColor", emissionColor ?? Color.white);
+            m.SetFloat("_UseEmission", 1f);
+            m.EnableKeyword("_EMISSION");
+        }
+        else { m.SetFloat("_UseEmission", 0f); m.DisableKeyword("_EMISSION"); }
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    static Material LitMat(string name, Color color, float smooth, float metallic = 0f, bool emissive = false, Color? emission = null,
+        bool asset = true, bool transparent = false, Texture2D tex = null, Vector2? texScale = null, bool alphaClip = false, bool twoSided = false)
+    {
+        var shader = Shader.Find("Universal Render Pipeline/Lit");
+        Material m = null;
+        var path = SurfDir + "/" + name + ".mat";
+        if (asset)
+        {
+            m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(shader) { name = name }; AssetDatabase.CreateAsset(m, path); }
+        }
+        else m = new Material(shader) { name = name, hideFlags = HideFlags.DontUnloadUnusedAsset };  // NewScene(Single) would destroy it
+        m.shader = shader;
+        m.SetColor("_BaseColor", color);
+        m.SetFloat("_Smoothness", smooth);
+        m.SetFloat("_Metallic", metallic);
+        if (tex != null)
+        {
+            m.SetTexture("_BaseMap", tex);
+            m.SetTextureScale("_BaseMap", texScale ?? Vector2.one);
+        }
+        if (emissive)
+        {
+            m.EnableKeyword("_EMISSION");
+            m.SetColor("_EmissionColor", emission ?? Color.black);
+            m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        }
+        else m.DisableKeyword("_EMISSION");
+        if (transparent)
+        {
+            m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", 0f);
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            m.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_ZWrite", 0f);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.renderQueue = (int)RenderQueue.Transparent;
+        }
+        if (alphaClip)
+        {
+            m.SetFloat("_AlphaClip", 1f);
+            m.SetFloat("_Cutoff", .5f);
+            m.EnableKeyword("_ALPHATEST_ON");
+            m.renderQueue = (int)RenderQueue.AlphaTest;
+        }
+        if (twoSided) m.SetFloat("_Cull", 0f);
+        if (asset) EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    static readonly Dictionary<string, Material> M = new Dictionary<string, Material>();
+
+    static void PrepareAssets()
+    {
+        AssetDatabase.Refresh();
+        if (!quick)
+            foreach (var stem in new[] { "Run_GlazedTile", "Run_Plaster", "Run_CeilingGyp", "Run_DoorLaminate" })
+                foreach (var suf in new[] { "_A", "_N", "_S" })
+                    AssetDatabase.ImportAsset(SurfDir + "/Textures/" + stem + suf + ".png", ImportAssetOptions.ForceUpdate);
+
+        var vctTint = new Color(217f / 218f, 213f / 215f, 200f / 204f);
+        var charcoal = new Color(.34f, .335f, .333f);
+        double Off(double x0) { var o = -x0 / P4; o -= Math.Floor(o * 4.0) / 4.0; return o; }
+        double OffV(double z0) { var o = z0 / P4; o -= Math.Floor(o * 4.0) / 4.0; return o; }
+        var vz = (float)OffV(RootPos.z);
+        M["tile"] = SurfaceMat("Run_C_GlazedTile", "Run_GlazedTile", new Vector2(TileW, TileH), Color.white, smooth: 1f, bump: 1f, macroTone: .12f, macroDirt: .18f, floorGrime: .55f);
+        M["trim"] = SurfaceMat("Run_C_GlazedTrim", "Run_GlazedTile", new Vector2(TileW, TileH), Color.white, smooth: 1f, bump: 1f, macroTone: .12f, macroDirt: .18f, meshUV: true);
+        // r5: no ceiling-grime band on the plaster (a scrubbed link corridor, not Level 0); with SSAO it drew a dark crown line.
+        M["plaster"] = SurfaceMat("Run_C_Plaster", "Run_Plaster", Vector2.one, Color.white, smooth: 1f, bump: .8f, macroTone: .22f, macroDirt: .14f, ceilingGrime: Env("RUNC_CGRIME", 0f));
+        M["ceiling"] = SurfaceMat("Run_C_Ceiling", "Run_CeilingGyp", new Vector2(P4, P4), Color.white, smooth: 1f, bump: .8f, macroTone: .2f, macroDirt: .1f, stain: .08f);
+        // Waxed VCT (Red, 2026-10-03 14:1x: glossy, not matte). Run_VCT_S R averages 0.525 (seams lower),
+        // so the scales give a burnished centre lane of ~0.82, bands ~0.80 and wall-side strips ~0.74.
+        var waxLane = Env("RUNC_WAX", 1.56f);
+        M["vct"] = SurfaceMat("Run_C_VCT", "Run_VCT", new Vector2(P4, P4), vctTint, smooth: waxLane, macroTone: .18f, macroDirt: .3f, st: new Vector4(1, 1, (float)Off(RootPos.x), vz));
+        M["vctEdge"] = SurfaceMat("Run_C_VCTEdge", "Run_VCT", new Vector2(P4, P4), vctTint, smooth: waxLane * .905f, macroTone: .18f, macroDirt: .38f, st: new Vector4(1, 1, (float)Off(RootPos.x), vz));
+        M["bandR"] = SurfaceMat("Run_C_VCTBand_R", "Run_VCT", new Vector2(P4, P4), charcoal, smooth: waxLane * .975f, macroTone: .1f, macroDirt: .2f, st: new Vector4(1, 1, (float)Off(RootPos.x + .82), vz));
+        M["bandL"] = SurfaceMat("Run_C_VCTBand_L", "Run_VCT", new Vector2(P4, P4), charcoal, smooth: waxLane * .975f, macroTone: .1f, macroDirt: .2f, st: new Vector4(1, 1, (float)Off(RootPos.x - 1.12), vz));
+        M["Run_Enamel"] = SurfaceMat("Run_Enamel", "PaintedMetal", Vector2.one, new Color(1.07f, 1.09f, 1.15f), smooth: 1.35f, bump: .35f, macroTone: .05f, macroDirt: .05f, meshUV: true, emission: "", emissionColor: Color.black);   // emission = light from its own bare tubes (rig)
+        // r4: hammertone grey at ~.30 linear (sRGB tint .72 x PaintedMetal .83); the r1-r3 tint .46 gave ~.12, which read black in every shot.
+        M["Run_MagGrey"] = SurfaceMat("Run_MagGrey", "PaintedMetal", new Vector2(.25f, .25f), new Color(.72f, .73f, .73f), smooth: .95f, bump: 1.6f, macroTone: .05f, macroDirt: .1f, meshUV: true);
+        // r2: satin high-pressure laminate (mask R .62 x .75 = smoothness ~.47). At 1.0 the shut leaves mirrored the
+        // corridor's ceiling and floor bands as sharp light wedges that read as CG spotlight cones.
+        M["Run_DoorLaminate"] = SurfaceMat("Run_DoorLaminate", "Run_DoorLaminate", Vector2.one, Color.white, smooth: Env("RUNC_DOORSMOOTH", .75f), bump: .3f, macroTone: .1f, macroDirt: .12f, meshUV: true);
+        // r7: satin face (.5): at .9 a strip's highlight sat on the T's crossbar from the run line and "EXIT" read "EXI|".
+        // r9: eggshell (.25): at .5 the face still mirrored the white corridor over the letters (sRGB 206/100/102, salmon);
+        // the glow level hardly mattered (E2: x 3.2 / 1.6 / 0.8 gave the same letters). Glow 1.6.
+        M["Run_ExitFace"] = SurfaceMat("Run_ExitFace", "Run_C_ExitFace", Vector2.one, Color.white, smooth: Env("RUNC_EXITSMOOTH", .25f), macroTone: 0f, macroDirt: 0f, meshUV: true, emission: "Run_C_ExitFace_E", emissionColor: ExitGlow * Env("RUNC_EXITEM", 1.6f));   // r8: red-held glow (as A's D3): white x the red letters read salmon through the cool post
+        M["Run_PullFace"] = SurfaceMat("Run_PullFace", "Run_C_PullFace", Vector2.one, Color.white, smooth: .8f, macroTone: 0f, macroDirt: .05f, meshUV: true);
+        // r4: engraved two-ply plastic plates are satin; at .9 / .8 a strip's highlight sat on the legend from the axis.
+        M["fireplate"] = SurfaceMat("Run_C_FirePlate", "Run_C_FirePlate", Vector2.one, Color.white, smooth: .55f, macroTone: 0f, macroDirt: .04f, meshUV: true);
+        M["plaque"] = SurfaceMat("Run_C_Plaque", "Run_C_Plaque", Vector2.one, Color.white, smooth: .6f, macroTone: 0f, macroDirt: .04f, meshUV: true);
+        // Tubes, cathode ends, flasher dome and the burnisher's orange: FrontRooms/Surface (mesh UVs, no macro wear),
+        // so the emission level can be driven per submesh by the rig.
+        M["Run_TubeGlass"] = SurfaceMat("Run_TubeGlass", null, Vector2.one, new Color(.93f, .94f, .95f), smooth: .9f, macroTone: 0f, macroDirt: 0f, meshUV: true, emission: "", emissionColor: Color.black);
+        M["tubeOff"] = SurfaceMat("Run_TubeGlassOff", null, Vector2.one, new Color(.78f, .79f, .78f), smooth: .88f, macroTone: 0f, macroDirt: 0f, meshUV: true);
+        M["Run_TubeEnd"] = SurfaceMat("Run_TubeEnd", null, Vector2.one, new Color(.30f, .29f, .27f), smooth: .85f, macroTone: 0f, macroDirt: 0f, meshUV: true, emission: "", emissionColor: Color.black);
+        M["tubeEndDead"] = SurfaceMat("Run_TubeEndDead", null, Vector2.one, new Color(.30f, .29f, .27f), smooth: .85f, macroTone: 0f, macroDirt: 0f, meshUV: true, emission: "", emissionColor: DeadGlow * Env("RUNC_DEADEM", .7f));   // dim orange cathode glow (2.2 read yellow through ACES; (1, .36, .08) x 1.1 read peach after the -22 saturation; E2 swept x 1.3 / .7 / .35 on (1, .28, .05): .7)
+        M["Run_FlasherDome"] = SurfaceMat("Run_FlasherDome", null, Vector2.one, new Color(.50f, .035f, .025f), smooth: .92f, macroTone: 0f, macroDirt: 0f, meshUV: true, emission: "", emissionColor: Color.black);
+        // Safety orange, not fire red: (.78, .30, .07) read red through the cool post (-22 sat, -10 temp) and broke
+        // C's palette rule (red only in the flashers and the pull station).
+        M["Run_Orange"] = SurfaceMat("Run_Orange", null, Vector2.one, new Color(.88f, .45f, .10f), smooth: .45f, macroTone: .05f, macroDirt: .1f, meshUV: true);
+        // r6: the lites use a copy of the game's own window glass (Glass_Window, FrontRooms/Glass: face-on alpha .11,
+        // pane F0 .08, grime maps) instead of the brief's URP Lit stand-in (.80/.85/.86, alpha .25). The stand-in's 25 %
+        // lit white veil lifted the Relay's dark body behind the z18 lites to the corridor's own value (r3: 1.3 : 1).
+        // RUNC_BRIEFGLASS=1 restores the stand-in. Interior door lites are cleaner than exterior windows: less dust and smear.
+        var gw = Env("RUNC_BRIEFGLASS", 0f) < .5f ? FrontRoomsSurfaces.TryGet("Glass_Window") : null;
+        if (gw != null)
+        {
+            var gm = new Material(gw) { name = "RunC lite glass (Glass_Window copy)", hideFlags = HideFlags.DontUnloadUnusedAsset };
+            if (gm.HasProperty("_RTReceive")) gm.SetFloat("_RTReceive", 0f);
+            if (gm.HasProperty("_Dust")) gm.SetFloat("_Dust", .45f);
+            if (gm.HasProperty("_Smear")) gm.SetFloat("_Smear", .5f);
+            if (gm.HasProperty("_Prints")) gm.SetFloat("_Prints", .8f);
+            M["glass"] = gm;
+            glassKind = "game window glass (copy of Glass_Window, " + gw.shader.name + ", dust .45, smear .5, prints .8, RT receive off)";
+        }
+        else
+        {
+            M["glass"] = LitMat("RunC wired glass", new Color(.80f, .85f, .86f, .25f), .9f, asset: false, transparent: true);
+            glassKind = "the brief's stand-in (URP Lit transparent .80/.85/.86, alpha .25, smoothness .9)";
+        }
+        M["wire"] = LitMat("RunC wire grid", new Color(1f, 1f, 1f, 1f), .5f, metallic: .6f, asset: false,
+            tex: AssetDatabase.LoadAssetAtPath<Texture2D>(SurfDir + "/Textures/Run_C_WireGrid_A.png"), texScale: new Vector2(5f, 15f), alphaClip: true, twoSided: true);
+        M["relayBody"] = LitMat("RunC relay body", HexColor("2B2928"), .25f, asset: false);
+        M["relayHead"] = LitMat("RunC relay head", HexColor("D8D4C8"), .35f, asset: false);
+        M["aluminium"] = FrontRoomsSurfaces.Get("Prop_Aluminium");
+        AssetDatabase.SaveAssets();
+
+        // Post: only what C changes over the global film look (§4.1).
+        var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(PostPath);
+        if (profile == null) { profile = ScriptableObject.CreateInstance<VolumeProfile>(); AssetDatabase.CreateAsset(profile, PostPath); }
+        var color = Get<ColorAdjustments>(profile);
+        color.postExposure.Override(.25f);
+        color.contrast.Override(10f);
+        color.saturation.Override(-22f);
+        var white = Get<WhiteBalance>(profile);
+        white.temperature.Override(-10f);
+        white.tint.Override(4f);
+        var lgg = Get<LiftGammaGain>(profile);
+        lgg.lift.Override(new Vector4(1f, 1f, 1f, 0f));
+        var smh = Get<ShadowsMidtonesHighlights>(profile);
+        smh.highlights.Override(new Vector4(1f, 1f, 1f, -.05f));
+        var bloom = Get<Bloom>(profile);
+        bloom.threshold.Override(1.1f);
+        bloom.intensity.Override(.35f);
+        var grain = Get<FilmGrain>(profile);
+        grain.intensity.Override(.20f);
+        EditorUtility.SetDirty(profile);
+        AssetDatabase.SaveAssets();
+
+        // Re-import the Run kit so slot remaps pick up the materials above.
+        if (!quick) foreach (var path in Directory.GetFiles(ModelDir, "Kit_*.fbx"))
+        {
+            var n = Path.GetFileNameWithoutExtension(path);
+            if (KitNames.Contains(n)) AssetDatabase.ImportAsset(path.Replace('\\', '/'), ImportAssetOptions.ForceUpdate);
+        }
+    }
+
+    static readonly HashSet<string> KitNames = new HashSet<string> {
+        "Kit_StripFixture_8ft", "Kit_T12Tube_8ft", "Kit_MagHolder", "Kit_MagArmature", "Kit_FlasherLamp", "Kit_DoorLeaf_RunPair",
+        "Kit_DoorLeaf_RunX", "Kit_DoorFrame_RunPair", "Kit_DoorFrame_RunX", "Kit_DoorCloser_Run", "Kit_ExitSign_RunC",
+        "Kit_PullStation", "Kit_FloorBurnisher", "Kit_WheelchairFolded" };
+
+    static T Get<T>(VolumeProfile profile) where T : VolumeComponent
+    {
+        if (!profile.TryGet<T>(out var c))
+        {
+            c = profile.Add<T>(true);
+            c.name = typeof(T).Name;
+            AssetDatabase.AddObjectToAsset(c, profile);
+        }
+        c.active = true;
+        return c;
+    }
+
+    static Color HexColor(string hex) { ColorUtility.TryParseHtmlString("#" + hex, out var c); return c; }
+
+    // ====================================================================== scene
+    static FrontRoomsRunLookdevRig rig;
+    static Transform root;
+    static readonly List<Renderer> relayRenderers = new List<Renderer>();
+    static readonly Dictionary<string, List<Renderer>> groups = new Dictionary<string, List<Renderer>>();
+    static readonly List<Renderer> glassRenderers = new List<Renderer>();
+    static Transform relay;
+    static string relayKind = "";
+    static readonly List<Light> allLights = new List<Light>();
+
+    static void Group(string g, GameObject go)
+    {
+        if (!groups.TryGetValue(g, out var list)) groups[g] = list = new List<Renderer>();
+        list.AddRange(go.GetComponentsInChildren<Renderer>(true));
+    }
+
+    static void Run(string onlyShots, bool masks)
+    {
+        log.Clear();
+        // New scene FIRST: NewScene(Single) unloads in-memory materials made before it (they rendered magenta).
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        EditorSceneManager.SetActiveScene(scene);
+        PrepareAssets();
+        root = new GameObject("RUN C LOOKDEV").transform;
+        root.position = RootPos;
+        FrontRoomsLook.ApplyAmbient();
+        // As the map does in a Level 0 zone (main G6): the anteroom and the stub reflect the Level 0 cube.
+        // Inside the corridor the three box probes below win (blending on in the clone's URP asset).
+        FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
+        Log("zone reflection: Level0 cube (" + FrontRoomsZoneReflection.Mode + "), intensity " + RenderSettings.reflectionIntensity.ToString("0.000") + " (slider)");
+        FrontRoomsPostStack.Ensure(root);
+        groups.Clear(); relayRenderers.Clear(); glassRenderers.Clear(); allLights.Clear();
+        var rigGo = new GameObject("rig");
+        rigGo.transform.SetParent(root, false);
+        rig = rigGo.AddComponent<FrontRoomsRunLookdevRig>();
+        rig.CaptureAmbient();
+        rig.stripIntensity = Env("RUNC_STRIP", rig.stripIntensity);
+        rig.bounceUp = Env("RUNC_BOUNCE_UP", rig.bounceUp);
+        rig.bounceAll = Env("RUNC_BOUNCE_ALL", rig.bounceAll);
+        rig.armedLevel = Env("RUNC_ARMED", rig.armedLevel);
+        SpotTilt = Env("RUNC_TILT", 0f);
+        SpotY = Env("RUNC_SPOTY", 2.86f);
+        SpotOuter = Env("RUNC_OUTER", 179f);
+        SpotInner = Env("RUNC_INNER", 170f);
+        ProbeRes = (int)Env("RUNC_PROBERES", 512f);
+        rig.flasherEmission = Env("RUNC_FLASH", rig.flasherEmission);
+        // The brief's flasher point (0.3) was set against strip spots of 4.5. The strips were tuned down to 1.3 to hit
+        // the §4.1 Y targets, so the point keeps the brief's ratio (0.3 x 1.3 / 4.5 = 0.087). At 0.3 its 0.8 m disc
+        // on the white wall was brighter than the dome itself, and the flashing red area grew 3x.
+        rig.flasherLight = Env("RUNC_FLASHLIGHT", .3f * rig.stripIntensity / 4.5f);
+        var rd = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/FrontRooms_URP_Renderer.asset");
+        if (rd != null)
+            foreach (var f in rd.rendererFeatures)
+                if (f != null && f.name.Contains("Ambient Occlusion"))
+                {
+                    var on = Env("RUNC_NOSSAO", 0f) < .5f;
+                    f.SetActive(on);
+                    Log("SSAO feature " + (on ? "on (game setting)" : "OFF (diagnostic)"));
+                }
+        Log("tuning: strip intensity " + rig.stripIntensity + ", bounce up " + rig.bounceUp + ", bounce all " + rig.bounceAll + ", armed level " + rig.armedLevel + ", spot tilt " + SpotTilt + " deg, spot y " + SpotY + ", cone " + SpotOuter + "/" + SpotInner + " deg, flasher emission " + rig.flasherEmission + ", flasher point " + rig.flasherLight.ToString("0.000") + ", probe res " + ProbeRes);
+        Log("ambient probe L0 r=" + RenderSettings.ambientProbe[0, 0].ToString("0.000") + " (non-zero = trilight SH present)");
+        Log("lite glass: " + glassKind);
+
+        BuildAnteroom();
+        BuildCorridor();
+        BuildPairs();
+        BuildGoal();
+        BuildStub();
+        BuildStrips();
+        BuildProps();
+        BuildRelay();
+        BuildProbes();
+
+        var vol = FrontRoomsPostStack.EnsureZoneVolume(root, "Run_C", new Bounds(new Vector3(0f, H * .5f, 13.5f), new Vector3(3f, H, 27f)), 1f);
+        if (vol != null) { vol.priority = 2f; Log("local post FrontRoomsPost_Run_C, priority 2, blend 1.0 m"); }
+        else Log("WARNING: FrontRoomsPost_Run_C not found");
+
+        var shots = Shots();
+        // RUNC_SWEEP = "1.2,1.5,...": render the selected shots once per strip intensity (suffix _s1p2 ...),
+        // so one Unity launch tunes the level. Masks only on the first pass (geometry does not change).
+        var sweep = Environment.GetEnvironmentVariable("RUNC_SWEEP");
+        if (!string.IsNullOrEmpty(sweep))
+        {
+            var first = true;
+            foreach (var v in sweep.Split(','))
+            {
+                var f = float.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
+                rig.stripIntensity = f;
+                rig.flasherLight = .3f * f / 4.5f;
+                variantSuffix = "_s" + v.Replace(".", "p");
+                bakedKey = null;
+                Log("sweep pass: strip intensity " + f);
+                Render(shots, onlyShots, masks && first);
+                first = false;
+            }
+            variantSuffix = "";
+        }
+        else if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RUNC_SIGNSWEEP")))
+        {
+            // RUNC_SIGNSWEEP = "exit:dead,exit:dead,...": the EXIT face glow and the dead tube's cathode glow per pass
+            foreach (var pair in Environment.GetEnvironmentVariable("RUNC_SIGNSWEEP").Split(','))
+            {
+                var kv = pair.Split(':');
+                var ex = float.Parse(kv[0], System.Globalization.CultureInfo.InvariantCulture);
+                var de = float.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+                M["Run_ExitFace"].SetColor("_EmissionColor", ExitGlow * ex);
+                M["tubeEndDead"].SetColor("_EmissionColor", DeadGlow * de);
+                variantSuffix = "_e" + kv[0].Replace(".", "p") + "_d" + kv[1].Replace(".", "p");
+                bakedKey = null;
+                Log("sign sweep pass: exit glow " + ex + ", dead-end glow " + de);
+                Render(shots, onlyShots, false);
+            }
+            variantSuffix = "";
+        }
+        else Render(shots, onlyShots, masks);
+        WritePhotosafety();
+        WriteCosts();
+        var outDir = OutDir();
+        File.WriteAllLines(Path.Combine(outDir, "lookdev_log.txt"), log);
+    }
+
+    static string OutDir()
+    {
+        var d = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "run_lookdev_house_lights");
+        Directory.CreateDirectory(d);
+        return d;
+    }
+
+    static GameObject Box(Transform parent, string name, Vector3 c, Vector3 size, Material mat, uint layers, bool corridor = false, bool shadows = true)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = name;
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = c;
+        go.transform.localScale = size;
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = mat;
+        r.renderingLayerMask = layers;
+        r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+        if (corridor) rig.corridorRenderers.Add(r);
+        return go;
+    }
+
+    static GameObject Kit(string name, Transform parent, Vector3 pos, Quaternion rot, uint layers, bool corridor = true, Vector3? scale = null)
+    {
+        var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelDir + name + ".fbx");
+        if (model == null) { Log("MISSING kit model " + name); return new GameObject(name + " (missing)"); }
+        var go = (GameObject)UnityEngine.Object.Instantiate(model);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.transform.localRotation = rot;
+        if (scale.HasValue) go.transform.localScale = scale.Value;
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            for (var i = 0; i < mats.Length; i++)
+            {
+                if (mats[i] == null) continue;
+                var key = mats[i].name.Replace(" (Instance)", "");
+                if (M.TryGetValue(key, out var mm)) mats[i] = mm;
+                else
+                {
+                    var fs = FrontRoomsSurfaces.TryGet(key);
+                    if (fs != null) mats[i] = fs;
+                }
+            }
+            r.sharedMaterials = mats;
+            r.renderingLayerMask = layers;
+            r.shadowCastingMode = ShadowCastingMode.On;
+            if (corridor) rig.corridorRenderers.Add(r);
+        }
+        var lod = go.GetComponent<LODGroup>();
+        if (lod != null) lod.ForceLOD(0);
+        return go;
+    }
+
+    static Light Spot(Transform parent, string name, Vector3 pos, float outer, float inner, Color c, float intensity, float range, bool shadow, uint layers)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        var l = go.AddComponent<Light>();
+        l.type = LightType.Spot;
+        l.spotAngle = outer;
+        l.innerSpotAngle = inner;
+        l.color = c;
+        l.intensity = intensity;
+        l.range = range;
+        l.shadows = shadow ? LightShadows.Soft : LightShadows.None;
+        l.shadowStrength = .92f;
+        l.shadowNearPlane = .1f;
+        SetLightLayers(l, layers);
+        allLights.Add(l);
+        return l;
+    }
+
+    /// <summary>URP reads a light's layers from its additional data (masked by the rendering-layer
+    /// names in TagManager: the clone adds RunCorridor = bit 1 and RunStub = bit 2).</summary>
+    static void SetLightLayers(Light l, uint layers)
+    {
+        l.renderingLayerMask = (int)layers;
+        var d = l.GetUniversalAdditionalLightData();
+        d.renderingLayers = layers;
+    }
+
+    // ---------------------------------------------------------------- anteroom (Level 0, 3 x 2 cells)
+    static void BuildAnteroom()
+    {
+        var a = new GameObject("Level 0 anteroom").transform;
+        a.SetParent(root, false);
+        var wall = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
+        var floor = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor);
+        var ceil = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
+        var cove = FrontRoomsSurfaces.CoveBase;
+        Box(a, "carpet", new Vector3(0f, -.1f, -3.08f), new Vector3(9.2f, .2f, 6f), floor, LAnte);
+        Box(a, "ceiling", new Vector3(0f, H + .1f, -3f), new Vector3(9.2f, .2f, 6.2f), ceil, LAnte);
+        Box(a, "wall W", new Vector3(-4.5f, H * .5f, -3f), new Vector3(.16f, H, 6.16f), wall, LAnte);
+        Box(a, "wall E", new Vector3(4.5f, H * .5f, -3f), new Vector3(.16f, H, 6.16f), wall, LAnte);
+        Box(a, "wall S", new Vector3(0f, H * .5f, -6f), new Vector3(9.16f, H, .16f), wall, LAnte);
+        // north wall (z = 0), Level 0 half: z -0.08 .. 0, with the pair opening |x| < 1.16 below 2.14
+        Box(a, "wall N L", new Vector3(-(4.58f + 1.16f) * .5f, H * .5f, -.04f), new Vector3(4.58f - 1.16f, H, .08f), wall, LAnte);
+        Box(a, "wall N R", new Vector3((4.58f + 1.16f) * .5f, H * .5f, -.04f), new Vector3(4.58f - 1.16f, H, .08f), wall, LAnte);
+        Box(a, "wall N transom", new Vector3(0f, (2.14f + H) * .5f, -.04f), new Vector3(2.32f, H - 2.14f, .08f), wall, LAnte);
+        Box(a, "cove W", new Vector3(-4.41f, .05f, -3f), new Vector3(.02f, .1f, 5.84f), cove, LAnte);
+        Box(a, "cove E", new Vector3(4.41f, .05f, -3f), new Vector3(.02f, .1f, 5.84f), cove, LAnte);
+        Box(a, "cove S", new Vector3(0f, .05f, -5.91f), new Vector3(8.8f, .1f, .02f), cove, LAnte);
+        Box(a, "cove N L", new Vector3(-(4.42f + 1.1708f) * .5f, .05f, -.09f), new Vector3(4.42f - 1.1708f, .1f, .02f), cove, LAnte);
+        Box(a, "cove N R", new Vector3((4.42f + 1.1708f) * .5f, .05f, -.09f), new Vector3(4.42f - 1.1708f, .1f, .02f), cove, LAnte);
+        // six map lamps (FrontRoomsMapWorld.BuildFixture): lens at the cell centre + 0.3 m Z
+        var i = 0;
+        foreach (var cz in new[] { -4.5f, -1.5f })
+            foreach (var cx in new[] { -3f, 0f, 3f })
+            {
+                var lens = Box(a, "lamp lens " + i, new Vector3(cx, H - .02f, cz + .3f), new Vector3(.6f, .025f, 1.2f), FrontRoomsSurfaces.TrofferLens, LAnte, shadows: false);
+                var shadow = cz > -2f && (cx == 0f || cx == 3f);
+                Spot(a, "lamp light " + i, new Vector3(cx, H - .06f, cz + .3f), 162f, 96f, new Color(1f, .96f, .88f), 5f, 10f, shadow, shadow ? (LAnte | LCorr) : LAnte);
+                i++;
+            }
+    }
+
+    // ---------------------------------------------------------------- corridor shell
+    static void BuildCorridor()
+    {
+        var c = new GameObject("Run C corridor").transform;
+        c.SetParent(root, false);
+        // floor: field, two charcoal bands, outer strips (VCT), z -0.08 .. 26.92
+        var z0 = -.08f; var z1 = 26.92f; var zc = (z0 + z1) * .5f; var zl = z1 - z0;
+        Box(c, "VCT field", new Vector3(0f, -.1f, zc), new Vector3(1.64f, .2f, zl), M["vct"], LCorr, true);
+        Box(c, "VCT band L", new Vector3(-.97f, -.1f, zc), new Vector3(.30f, .2f, zl), M["bandL"], LCorr, true);
+        Box(c, "VCT band R", new Vector3(.97f, -.1f, zc), new Vector3(.30f, .2f, zl), M["bandR"], LCorr, true);
+        Box(c, "VCT edge L", new Vector3(-1.31f, -.1f, zc), new Vector3(.38f, .2f, zl), M["vctEdge"], LCorr, true);
+        Box(c, "VCT edge R", new Vector3(1.31f, -.1f, zc), new Vector3(.38f, .2f, zl), M["vctEdge"], LCorr, true);
+        Box(c, "threshold", new Vector3(0f, .004f, 0f), new Vector3(2.24f, .008f, .14f), M["aluminium"], LCorr | LAnte, true);
+        Box(c, "ceiling", new Vector3(0f, H + .1f, 13.5f), new Vector3(3f, .2f, 27f), M["ceiling"], LCorr, true);
+        // side walls (plaster through), tile wainscot slabs per compartment
+        foreach (var s in new[] { -1f, 1f })
+        {
+            Box(c, "side wall", new Vector3(s * 1.5f, H * .5f, 13.5f), new Vector3(.16f, H, 27f), M["plaster"], LCorr, true);   // z 0..27: no end face coplanar with the anteroom wall
+            for (var k = 0; k < 3; k++)
+            {
+                var a = 9f * k + .08f; var b = 9f * k + 8.92f;
+                WainscotRun(c, new Vector3(s * 1.42f, 0f, a), Vector3.forward, b - a, new Vector3(-s, 0f, 0f));
+            }
+        }
+        // corridor half of the entrance wall (z 0 .. 0.08) and the pair walls at 9 and 18
+        CrossWall(c, 0f, true);
+        CrossWall(c, 9f, false);
+        CrossWall(c, 18f, false);
+        // goal wall, corridor half (z 26.92 .. 27.0), opening |x| < 0.54
+        foreach (var s in new[] { -1f, 1f })
+        {
+            Box(c, "goal wall", new Vector3(s * (1.42f + .54f) * .5f, H * .5f, 26.96f), new Vector3(1.42f - .54f, H, .08f), M["plaster"], LCorr, true);
+            WainscotRun(c, new Vector3(s * .5508f, 0f, 26.92f), new Vector3(s, 0f, 0f), 1.40f - .5508f, new Vector3(0f, 0f, -1f));
+        }
+        Box(c, "goal transom", new Vector3(0f, (2.14f + H) * .5f, 26.96f), new Vector3(1.08f, H - 2.14f, .08f), M["plaster"], LCorr, true);
+    }
+
+    static void CrossWall(Transform c, float zw, bool entrance)
+    {
+        // jambs x 1.16 .. 1.42 (the frame covers 1.12 .. 1.1708), transom above 2.14
+        var zc = entrance ? zw + .04f : zw;
+        var th = entrance ? .08f : .16f;
+        foreach (var s in new[] { -1f, 1f })
+        {
+            Box(c, "jamb wall", new Vector3(s * 1.29f, H * .5f, zc), new Vector3(.26f, H, th), M["plaster"], LCorr, true);
+            // tile on the corridor faces of the jambs
+            WainscotRun(c, new Vector3(s * 1.1708f, 0f, zw + .08f), new Vector3(s, 0f, 0f), 1.40f - 1.1708f, new Vector3(0f, 0f, 1f));
+            if (!entrance) WainscotRun(c, new Vector3(s * 1.1708f, 0f, zw - .08f), new Vector3(s, 0f, 0f), 1.40f - 1.1708f, new Vector3(0f, 0f, -1f));
+        }
+        Box(c, "transom", new Vector3(0f, (2.14f + H) * .5f, zc), new Vector3(2.32f, H - 2.14f, th), M["plaster"], LCorr, true);
+    }
+
+    /// <summary>A glazed-tile wainscot on a wall face: field slab (0.02 proud), bullnose cap and cove base.
+    /// start = the run's start on the wall face at floor level; along = run direction; n = the face's outward normal.</summary>
+    static void WainscotRun(Transform parent, Vector3 start, Vector3 along, float length, Vector3 n)
+    {
+        var mid = start + along * (length * .5f) + n * (TileProud * .5f);
+        var size = new Vector3(Mathf.Abs(along.x) * length + Mathf.Abs(n.x) * TileProud, WainTop - CapR, Mathf.Abs(along.z) * length + Mathf.Abs(n.z) * TileProud);
+        Box(parent, "tile wainscot", mid + Vector3.up * ((WainTop - CapR) * .5f), size, M["tile"], LCorr, true);
+        // bullnose: quarter round from the tile face (n * 0.02) up to the plaster face at the cap height
+        var cap = new List<Vector2>();
+        for (var i = 0; i <= 8; i++)
+        {
+            var a = Mathf.PI * .5f * i / 8f;
+            cap.Add(new Vector2(CapR * Mathf.Cos(a), WainTop - CapR + CapR * Mathf.Sin(a)));
+        }
+        Trim(parent, start, along, length, n, cap, WainTop - CapR);
+        // cove: concave fillet from the tile face down to the floor
+        var cove = new List<Vector2>();
+        for (var i = 0; i <= 8; i++)
+        {
+            var a = Mathf.PI * .5f * i / 8f;
+            cove.Add(new Vector2(TileProud + CoveR - CoveR * Mathf.Cos(a), CoveR - CoveR * Mathf.Sin(a)));
+        }
+        Trim(parent, start, along, length, n, cove, CoveR);
+    }
+
+    /// <summary>Extrude a profile (x = distance out from the wall face along n, y = height) along a straight run.
+    /// Mesh UVs reproduce the wall's world projection (u along the wall, v = height), so joints line up.</summary>
+    static void Trim(Transform parent, Vector3 start, Vector3 along, float length, Vector3 n, List<Vector2> prof, float v0)
+    {
+        var verts = new List<Vector3>(); var norms = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
+        var t = Vector3.Cross(Vector3.up, n).normalized;  // the Surface shader's wall tangent
+        var arc = 0f;
+        for (var i = 0; i < prof.Count; i++)
+        {
+            if (i > 0) arc += (prof[i] - prof[i - 1]).magnitude;
+            Vector2 tan;
+            if (i == 0) tan = prof[1] - prof[0];
+            else if (i == prof.Count - 1) tan = prof[i] - prof[i - 1];
+            else tan = prof[i + 1] - prof[i - 1];
+            tan.Normalize();
+            var pn = new Vector2(tan.y, -tan.x);           // rotate -90
+            var nn = (n * pn.x + Vector3.up * pn.y).normalized;
+            // make the normal face away from the wall (into the corridor) or up
+            if (Vector3.Dot(nn, n) + nn.y < 0f) nn = -nn;
+            for (var e = 0; e < 2; e++)
+            {
+                var p = start + along * (e * length) + n * prof[i].x + Vector3.up * prof[i].y;
+                verts.Add(p);
+                norms.Add(nn);
+                var w = root.TransformPoint(p);
+                uvs.Add(new Vector2(Vector3.Dot(w, t), v0 + (prof[i].y >= v0 ? arc : -arc)));
+            }
+        }
+        for (var i = 0; i < prof.Count - 1; i++)
+        {
+            int a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
+            tris.AddRange(new[] { a, c, b, b, c, d });
+        }
+        var mesh = new Mesh { name = "trim" };
+        mesh.SetVertices(verts); mesh.SetNormals(norms); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0);
+        // wind toward the normal
+        var tr = mesh.triangles;
+        var first = (verts[tr[1]] - verts[tr[0]]); var second = (verts[tr[2]] - verts[tr[0]]);
+        if (Vector3.Dot(Vector3.Cross(first, second), norms[tr[0]]) < 0f)
+        {
+            for (var k = 0; k < tr.Length; k += 3) { var x = tr[k + 1]; tr[k + 1] = tr[k + 2]; tr[k + 2] = x; }
+            mesh.triangles = tr;
+        }
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        var go = new GameObject("tile trim");
+        go.transform.SetParent(parent, false);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = M["trim"];
+        r.renderingLayerMask = LCorr;
+        rig.corridorRenderers.Add(r);
+    }
+
+    static GameObject Plate(Transform parent, string name, Vector3 centre, Vector2 size, Vector3 facing, Material face, uint layers, float depth = .004f)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var right = Vector3.Cross(Vector3.up, -facing).normalized;
+        var p = centre + facing * (depth + .0005f);
+        var hw = size.x * .5f; var hh = size.y * .5f;
+        var mesh = new Mesh { name = name };
+        mesh.SetVertices(new List<Vector3> { p - right * hw - Vector3.up * hh, p + right * hw - Vector3.up * hh, p + right * hw + Vector3.up * hh, p - right * hw + Vector3.up * hh });
+        mesh.SetNormals(new List<Vector3> { facing, facing, facing, facing });
+        mesh.SetUVs(0, new List<Vector2> { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) });
+        var tr = new[] { 0, 2, 1, 0, 3, 2 };
+        if (Vector3.Dot(Vector3.Cross(mesh.vertices[2] - mesh.vertices[0], mesh.vertices[1] - mesh.vertices[0]), facing) < 0f) tr = new[] { 0, 1, 2, 0, 2, 3 };
+        mesh.SetTriangles(tr, 0);
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        var q = new GameObject("face");
+        q.transform.SetParent(go.transform, false);
+        q.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = q.AddComponent<MeshRenderer>();
+        r.sharedMaterial = face;
+        r.renderingLayerMask = layers;
+        rig.corridorRenderers.Add(r);
+        var back = Box(go.transform, "backing", centre + facing * (depth * .5f), new Vector3(Mathf.Abs(right.x) * size.x + Mathf.Abs(facing.x) * depth, size.y, Mathf.Abs(right.z) * size.x + Mathf.Abs(facing.z) * depth),
+            FrontRoomsSurfaces.Get("Prop_PlasticWhite"), layers, true);
+        back.transform.localScale += new Vector3(Mathf.Abs(right.x), 0f, Mathf.Abs(right.z)) * .006f + Vector3.up * .006f;
+        return go;
+    }
+
+    // ---------------------------------------------------------------- held door pairs at z 0, 9, 18
+    static void BuildPairs()
+    {
+        var p = new GameObject("held door pairs").transform;
+        p.SetParent(root, false);
+        foreach (var zw in PairWalls)
+        {
+            var entrance = zw == 0f;
+            var layers = entrance ? (LCorr | LAnte) : LCorr;
+            var frame = Kit("Kit_DoorFrame_RunPair", p, new Vector3(0f, 0f, zw), Quaternion.identity, layers);
+            Group("doors", frame);
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var pivot = new GameObject(side < 0 ? "leaf pivot L" : "leaf pivot R").transform;
+                pivot.SetParent(p, false);
+                pivot.localPosition = new Vector3(side * HingeX, 0f, zw + .08f);
+                var holder = new GameObject("leaf").transform;
+                holder.SetParent(pivot, false);
+                holder.localScale = new Vector3(-side, 1f, 1f);   // left leaf runs +x from its hinge; right leaf mirrored
+                var leafGo = Kit("Kit_DoorLeaf_RunPair", holder, Vector3.zero, Quaternion.identity, layers);
+                Group("doors", leafGo);
+                var closer = Kit("Kit_DoorCloser_Run", holder, new Vector3(.30f, 1.995f, 0f), Quaternion.identity, layers);
+                Group("doors", closer);
+                var arm = Kit("Kit_MagArmature", holder, new Vector3(1.05f, 1.95f, 0f), Quaternion.identity, layers);
+                Group("holders", arm);
+                // wired glass in the lite (leaf-local, 0.30 m from the meeting edge)
+                var liteX = LeafW - .30f;
+                var glass = Box(holder, "wired glass", new Vector3(liteX, 1.525f, -.0225f), new Vector3(.25f, .75f, .006f), M["glass"], layers, true, false);
+                glassRenderers.Add(glass.GetComponent<Renderer>());
+                Group("doors", glass);
+                Group("lites", glass);   // the apertures: the C4 relay ring is measured inside them only
+                var wire = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                UnityEngine.Object.DestroyImmediate(wire.GetComponent<Collider>());
+                wire.name = "wire grid";
+                wire.transform.SetParent(holder, false);
+                wire.transform.localPosition = new Vector3(liteX, 1.525f, -.0225f + .002f);
+                wire.transform.localScale = new Vector3(.25f, .75f, 1f);
+                var wr = wire.GetComponent<MeshRenderer>();
+                wr.sharedMaterial = M["wire"]; wr.renderingLayerMask = layers; wr.shadowCastingMode = ShadowCastingMode.Off;
+                rig.corridorRenderers.Add(wr);
+                // magnetic holder on the side wall, 0.28 m out, at the armature
+                var hz = zw + .08f + 1.05f;
+                var hol = Kit("Kit_MagHolder", p, new Vector3(side * 1.42f, 1.95f, hz), Quaternion.Euler(0f, side < 0 ? 90f : -90f, 0f), layers, true, new Vector3(1f, 1f, 1.0143f));
+                Group("holders", hol);
+                // regular closer arm: pinion on the leaf, shoe on the frame head's pull face
+                var leaf = new FrontRoomsRunLookdevRig.Leaf { pivot = pivot, sign = side < 0 ? -1f : 1f, mainLength = .25f, foreLength = .27f };
+                leaf.pinionLocal = new Vector3(-side * .195f, 2.052f, .030f);
+                var shoeLocal = new Vector3(side * (HingeX - .42f), 2.125f, zw + .104f);
+                leaf.shoeWorld = root.TransformPoint(shoeLocal);
+                var shoe = Box(p, "closer shoe", shoeLocal, new Vector3(.05f, .036f, .024f), M["aluminium"], layers, true);
+                Group("doors", shoe);
+                leaf.mainArm = Box(p, "closer main arm", Vector3.zero, Vector3.one, M["aluminium"], layers, true).transform;
+                leaf.foreArm = Box(p, "closer forearm", Vector3.zero, Vector3.one, M["aluminium"], layers, true).transform;
+                var elbow = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                UnityEngine.Object.DestroyImmediate(elbow.GetComponent<Collider>());
+                elbow.name = "closer elbow"; elbow.transform.SetParent(p, false); elbow.transform.localScale = new Vector3(.024f, .012f, .024f);
+                var er = elbow.GetComponent<MeshRenderer>(); er.sharedMaterial = M["aluminium"]; er.renderingLayerMask = layers; rig.corridorRenderers.Add(er);
+                leaf.elbow = elbow.transform;
+                Group("doors", leaf.mainArm.gameObject); Group("doors", leaf.foreArm.gameObject);
+                rig.leaves.Add(leaf);
+            }
+            // header plates both faces, flasher on the approach (-Z) face
+            foreach (var f in new[] { -1f, 1f })
+            {
+                var faceZ = zw + f * (entrance && f < 0 ? .08f : .08f);
+                Plate(p, "FIRE DOORS plate", new Vector3(0f, 2.30f, faceZ), new Vector2(.60f, .075f), new Vector3(0f, 0f, f), M["fireplate"], (entrance && f < 0) ? LAnte : LCorr);
+            }
+            var fl = Kit("Kit_FlasherLamp", p, new Vector3(0f, 2.6f, zw - .08f), Quaternion.Euler(0f, 180f, 0f), entrance ? LAnte : LCorr);
+            Group("flashers", fl);
+            AddFlasher(fl, new Vector3(0f, 2.6f, zw - .08f - .09f), entrance ? LAnte : LCorr);
+        }
+    }
+
+    static void AddFlasher(GameObject fl, Vector3 lightPos, uint layers)
+    {
+        var dome = fl.GetComponentInChildren<Renderer>();
+        var l = new GameObject("flasher light").AddComponent<Light>();
+        l.transform.SetParent(root, false);
+        l.transform.localPosition = lightPos;
+        l.type = LightType.Point;
+        l.color = new Color(1f, .12f, .06f);
+        l.range = .8f;
+        l.intensity = .3f;
+        l.shadows = LightShadows.None;
+        SetLightLayers(l, layers);
+        allLights.Add(l);
+        rig.flashers.Add(new FrontRoomsRunLookdevRig.Flasher { dome = dome, light = l });
+        rig.domeMaterial = M["Run_FlasherDome"];
+    }
+
+    // ---------------------------------------------------------------- goal: RN-X, EXIT, flasher
+    static void BuildGoal()
+    {
+        var g = new GameObject("goal RN-X").transform;
+        g.SetParent(root, false);
+        var frame = Kit("Kit_DoorFrame_RunX", g, new Vector3(0f, 0f, 27f), Quaternion.identity, LCorr | LStub);
+        Group("goal", frame);
+        var pivot = new GameObject("goal leaf pivot").transform;
+        pivot.SetParent(g, false);
+        pivot.localPosition = new Vector3(-.496f, 0f, 27.08f);
+        var leaf = Kit("Kit_DoorLeaf_RunX", pivot, Vector3.zero, Quaternion.identity, LCorr | LStub);
+        Group("goal", leaf);
+        // parallel-arm closer on the push (corridor) face, arm folded along the head
+        var closer = Kit("Kit_DoorCloser_Run", pivot, new Vector3(.30f, 1.995f, -.045f), Quaternion.Euler(0f, 180f, 0f), LCorr);
+        Group("goal", closer);
+        var arm = Box(g, "parallel arm", new Vector3(-.496f + .50f, 2.05f, 27.08f - .045f - .05f), new Vector3(.42f, .010f, .022f), M["aluminium"], LCorr, true);
+        Group("goal", arm);
+        var glass = Box(pivot, "wired glass", new Vector3(.496f, 1.525f, -.0225f), new Vector3(.25f, .75f, .006f), M["glass"], LCorr | LStub, true, false);
+        glassRenderers.Add(glass.GetComponent<Renderer>());
+        Group("goal", glass);
+        var wire = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        UnityEngine.Object.DestroyImmediate(wire.GetComponent<Collider>());
+        wire.name = "wire grid"; wire.transform.SetParent(pivot, false);
+        wire.transform.localPosition = new Vector3(.496f, 1.525f, -.0205f); wire.transform.localScale = new Vector3(.25f, .75f, 1f);
+        var wr = wire.GetComponent<MeshRenderer>(); wr.sharedMaterial = M["wire"]; wr.renderingLayerMask = LCorr | LStub; rig.corridorRenderers.Add(wr);
+        var exit = Kit("Kit_ExitSign_RunC", g, new Vector3(0f, 2.28f, 26.92f), Quaternion.Euler(0f, 180f, 0f), LCorr);
+        Group("goal", exit);
+        var fl = Kit("Kit_FlasherLamp", g, new Vector3(0f, 2.6f, 26.92f), Quaternion.Euler(0f, 180f, 0f), LCorr);
+        Group("flashers", fl);
+        AddFlasher(fl, new Vector3(0f, 2.6f, 26.92f - .09f), LCorr);
+    }
+
+    // ---------------------------------------------------------------- stub beyond the goal (one Level 0 cell)
+    static void BuildStub()
+    {
+        var s = new GameObject("stub").transform;
+        s.SetParent(root, false);
+        var wall = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
+        Box(s, "carpet", new Vector3(0f, -.1f, 28.54f), new Vector3(3.2f, .2f, 3f), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor), LStub);
+        Box(s, "ceiling", new Vector3(0f, H + .1f, 28.5f), new Vector3(3.2f, .2f, 3.2f), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), LStub);
+        foreach (var x in new[] { -1f, 1f })
+        {
+            Box(s, "wall", new Vector3(x * 1.5f, H * .5f, 28.5f), new Vector3(.16f, H, 3.16f), wall, LStub);
+            Box(s, "goal wall back", new Vector3(x * (1.58f + .54f) * .5f, H * .5f, 27.04f), new Vector3(1.58f - .54f, H, .08f), wall, LStub);
+        }
+        Box(s, "goal transom back", new Vector3(0f, (2.14f + H) * .5f, 27.04f), new Vector3(1.08f, H - 2.14f, .08f), wall, LStub);
+        Box(s, "wall far", new Vector3(0f, H * .5f, 30f), new Vector3(3.16f, H, .16f), wall, LStub);
+        Box(s, "lamp lens", new Vector3(0f, H - .02f, 28.8f), new Vector3(.6f, .025f, 1.2f), FrontRoomsSurfaces.TrofferLens, LStub, shadows: false);
+        Spot(s, "lamp light", new Vector3(0f, H - .06f, 28.8f), 162f, 96f, new Color(1f, .96f, .88f), 5f, 10f, false, LStub);
+    }
+
+    // ---------------------------------------------------------------- 9 bare 8 ft strips, 3 per compartment
+    static void BuildStrips()
+    {
+        var st = new GameObject("strips").transform;
+        st.SetParent(root, false);
+        rig.enamel = M["Run_Enamel"];
+        rig.tubeOn = M["Run_TubeGlass"]; rig.tubeOff = M["tubeOff"]; rig.tubeEnd = M["Run_TubeEnd"]; rig.tubeEndDead = M["tubeEndDead"];
+        var spot = 0;
+        for (var i = 1; i <= 9; i++)
+        {
+            var comp = (i - 1) / 3; var k = (i - 1) % 3;
+            var z = 9f * comp + 4.5f + (k - 1) * 2.44f;
+            var fix = Kit("Kit_StripFixture_8ft", st, new Vector3(0f, H, z), Quaternion.Euler(0f, 90f, 0f), LCorr);
+            fix.name = "strip " + i;
+            // r4: the spots sit inside the channel line (y 2.86, between the tubes and the ceiling) so the walls are lit
+            // right up to the ceiling as a bare tube lights them; at 2.76 the top 0.14 m of every wall fell outside the
+            // cone and read as a dark band under the ceiling. The channel then must not shadow its own lamps.
+            foreach (var r in fix.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+            Group("strips", fix);
+            var s = new FrontRoomsRunLookdevRig.Strip { number = i, z = z, economyOff = i % 2 == 0, deadTube = i == 7 };
+            s.body = fix.GetComponentsInChildren<Renderer>(true);   // before the tubes are parented
+            for (var t = 0; t < 2; t++)
+            {
+                var tube = Kit("Kit_T12Tube_8ft", fix.transform, new Vector3(0f, -.078f, t == 0 ? .0255f : -.0255f), Quaternion.identity, LCorr);
+                foreach (var r in tube.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.Off;
+                s.tubes[t] = tube.GetComponentInChildren<Renderer>();
+                Group("strips", tube);
+            }
+            for (var e = 0; e < 2; e++)
+            {
+                var shadow = spot % 3 == 0;
+                // r2: a bare T12 strip radiates sideways as well as down, so the upper walls face the tubes from
+                // 1.4 m and are the brightest walls in a real bare-strip corridor. r1 leaned 165/120 deg spots 30 deg
+                // toward each wall; their cone edges then crossed the door leaves and cross walls as hard V wedges.
+                // r2 points them straight down from just under the tubes with a near-hemisphere cone (179/140 deg):
+                // walls are lit up to the tube line, the cone edge lies almost level with the source (no wedges),
+                // and the ceiling above the tubes gets nothing direct (the channel shields it), only the bounce lobe.
+                var l = Spot(st, "strip " + i + (e == 0 ? "a" : "b"), new Vector3(0f, SpotY, z + (e == 0 ? -.6f : .6f)), SpotOuter, SpotInner, FrontRoomsRunLookdevRig.StripColor, 4.5f, 9f, shadow, shadow ? (LCorr | LAnte) : LCorr);
+                l.transform.localRotation = Quaternion.AngleAxis(e == 0 ? -SpotTilt : SpotTilt, Vector3.forward) * Quaternion.Euler(90f, 0f, 0f);
+                s.lights[e] = l;
+                spot++;
+            }
+            rig.strips.Add(s);
+        }
+    }
+
+    // ---------------------------------------------------------------- props and signs
+    static void BuildProps()
+    {
+        var pr = new GameObject("props").transform;
+        pr.SetParent(root, false);
+        // pull station on the right wall (moved from z 1.0 to 1.45: at 1.0 the held z0 leaf hides it)
+        var pull = Kit("Kit_PullStation", pr, new Vector3(1.42f, 1.25f, 1.45f), Quaternion.Euler(0f, -90f, 0f), LCorr);
+        Group("pull", pull);
+        // C-LINK plaque on the Level 0 face, right of the entrance, centre at 1.5 m
+        Plate(pr, "C-LINK plaque", new Vector3(1.55f, 1.5f, -.08f), new Vector2(.30f, .10f), new Vector3(0f, 0f, -1f), M["plaque"], LAnte, .003f);
+        var burn = Kit("Kit_FloorBurnisher", pr, new Vector3(1.02f, 0f, 5.5f), Quaternion.Euler(0f, 200f, 0f), LCorr);
+        Group("burnisher", burn);
+        var chair = Kit("Kit_WheelchairFolded", pr, new Vector3(-1.21f, 0f, 22.0f), Quaternion.Euler(0f, 4f, 0f), LCorr);
+        Group("wheelchair", chair);
+    }
+
+    static void BuildRelay()
+    {
+        // r6: the brief's proxy by default (as direction A, so the three C4 reads compare). RUNC_PROXY=0 = the game's rig.
+        if (Env("RUNC_PROXY", 1f) < .5f)
+        {
+            // r2: the scene's Relay, i.e. the game's own FrontRoomsRelayRig (the rig the Hunter object carries in
+            // FrontRooms3D.unity), with the palette the Hunter look-dev uses: body #2B2928, blank head #D8D4C8,
+            // detail #A99E78. Posed once in its Run gait (mid-stride) and then disabled so the edit-mode
+            // ExecuteAlways Update cannot re-pose it between renders.
+            var go = new GameObject("Relay (FrontRoomsRelayRig)");
+            go.transform.SetParent(root, false);
+            var rr = go.AddComponent<FrontRoomsRelayRig>();
+            rr.Configure(FrontRoomsSurfaces.Lit("Relay / body", new Color32(0x2B, 0x29, 0x28, 255)),
+                FrontRoomsSurfaces.Lit("Relay / blank head", new Color32(0xD8, 0xD4, 0xC8, 255)),
+                FrontRoomsSurfaces.Lit("Relay / detail", new Color32(0xA9, 0x9E, 0x78, 255)));
+            rr.CeilingHeight = H;
+            rr.TickAnimation(.62f, FrontRoomsRelayRig.MotionState.Run, true, 1f);
+            rr.enabled = false;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                r.renderingLayerMask = LCorr;
+                r.shadowCastingMode = ShadowCastingMode.On;
+                relayRenderers.Add(r);
+                rig.corridorRenderers.Add(r);
+            }
+            if (relayRenderers.Count > 0)
+            {
+                var bodyOnly = relayRenderers.Where(r => r.sharedMaterials.All(m => m == null || !m.name.Contains("head"))).ToList();
+                groups["relayBody"] = bodyOnly;
+                relay = go.transform;
+                relayKind = "the game's FrontRoomsRelayRig (Run pose, " + relayRenderers.Count + " renderers)";
+                Log("relay: " + relayKind);
+                relay.gameObject.SetActive(false);
+                groups["relay"] = relayRenderers;
+                return;
+            }
+            UnityEngine.Object.DestroyImmediate(go);
+            Log("relay rig built no renderers: falling back to the proxy");
+        }
+        relayKind = "proxy (capsule r .24 top 1.73, shoulders .78 x .24 x .30, head 0.28)";
+        Log("relay: " + relayKind);
+        relay = new GameObject("Relay proxy").transform;
+        relay.SetParent(root, false);
+        var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        var shoulders = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        foreach (var go in new[] { body, shoulders, head })
+        {
+            UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(relay, false);
+            var r = go.GetComponent<Renderer>();
+            r.renderingLayerMask = LCorr;
+            relayRenderers.Add(r);
+            rig.corridorRenderers.Add(r);
+        }
+        body.transform.localPosition = new Vector3(0f, .865f, 0f); body.transform.localScale = new Vector3(.48f, .865f, .48f);
+        shoulders.transform.localPosition = new Vector3(0f, 1.72f, 0f); shoulders.transform.localScale = new Vector3(.78f, .24f, .30f);
+        head.transform.localPosition = new Vector3(0f, 1.60f, .12f); head.transform.localScale = Vector3.one * .28f;
+        body.GetComponent<Renderer>().sharedMaterial = M["relayBody"];
+        shoulders.GetComponent<Renderer>().sharedMaterial = M["relayBody"];
+        head.GetComponent<Renderer>().sharedMaterial = M["relayHead"];
+        relay.gameObject.SetActive(false);
+        groups["relay"] = relayRenderers;
+        groups["relayBody"] = new List<Renderer> { body.GetComponent<Renderer>(), shoulders.GetComponent<Renderer>() };
+    }
+
+    // ---------------------------------------------------------------- box-projected probes, one per 9 m compartment
+    static readonly List<ReflectionProbe> probes = new List<ReflectionProbe>();
+    static bool useProbes = true;
+    const string ProbeDir = "Assets/Resources/Rendering/RunC_Probes";
+
+    static void BuildProbes()
+    {
+        probes.Clear();
+        useProbes = Env("RUNC_PROBES", 1f) > .5f;
+        if (!useProbes) { Log("box probes OFF (diagnostic)"); return; }
+        Directory.CreateDirectory(ProbeDir);
+        for (var k = 0; k < 3; k++)
+        {
+            var go = new GameObject("RunC probe c" + k);
+            go.transform.SetParent(root, false);
+            go.transform.localPosition = new Vector3(0f, 1.40f, 9f * k + 4.5f);   // capture point: the axis, below eye height
+            var p = go.AddComponent<ReflectionProbe>();
+            p.mode = ReflectionProbeMode.Custom;
+            p.renderDynamicObjects = true;
+            p.resolution = ProbeRes;
+            p.hdr = true;
+            p.clearFlags = ReflectionProbeClearFlags.SolidColor;
+            p.backgroundColor = FrontRoomsLook.FogColor;
+            p.nearClipPlane = .05f;
+            p.farClipPlane = 40f;
+            p.shadowDistance = 40f;
+            p.cullingMask = ~0;
+            p.boxProjection = true;
+            // the compartment's inside faces (x +-1.42, y 0..2.9), overlapping the 0.16 m cross walls
+            p.size = new Vector3(2.84f, 2.9f, 9.16f);
+            p.center = new Vector3(0f, 1.45f - 1.40f, 0f);
+            p.blendDistance = .25f;
+            p.importance = 1;
+            p.intensity = 1f;
+            probes.Add(p);
+        }
+        Log("box probes: 3 x " + ProbeRes + " px HDR, Custom (baked per shot state with Lightmapping.BakeReflectionProbe), size 2.84 x 2.9 x 9.16, capture (0, 1.40, 4.5 / 13.5 / 22.5), blend 0.25 m");
+    }
+
+    static string bakedKey;
+
+    static void BakeProbes(string key)
+    {
+        if (!useProbes || key == bakedKey) return;
+        bakedKey = key;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        for (var k = 0; k < probes.Count; k++)
+        {
+            var path = ProbeDir + "/RunC_Refl_c" + k + "_" + key + ".exr";
+            var ok = false;
+            try { ok = Lightmapping.BakeReflectionProbe(probes[k], path); }
+            catch (Exception e) { Log("probe bake threw: " + e.Message); }
+            if (!ok) { Log("probe bake FAILED " + path); continue; }
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureShape = TextureImporterShape.TextureCube;
+                var settings = new TextureImporterSettings();
+                importer.ReadTextureSettings(settings);
+                settings.cubemapConvolution = TextureImporterCubemapConvolution.Specular;
+                importer.SetTextureSettings(settings);
+                importer.mipmapEnabled = true;
+                importer.sRGBTexture = false;
+                importer.filterMode = FilterMode.Trilinear;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.maxTextureSize = ProbeRes;
+                importer.textureCompression = TextureImporterCompression.CompressedHQ;
+                importer.SaveAndReimport();
+            }
+            probes[k].customBakedTexture = AssetDatabase.LoadAssetAtPath<Cubemap>(path);
+        }
+        Log("probes baked for state " + key + " in " + (sw.ElapsedMilliseconds / 1000f).ToString("0.0") + " s");
+    }
+
+    // ====================================================================== shots
+    static List<Shot> Shots()
+    {
+        var look = new Vector3(0f, 1.30f, 27f);
+        return new List<Shot>
+        {
+            new Shot { name = "s1a", eye = new Vector3(0f, 1.62f, 1.5f), look = look, fov = 72f, t = -1f, masks = "goal,doors,burnisher,wheelchair" },
+            new Shot { name = "s1b", eye = new Vector3(0f, 1.62f, 1.5f), look = look, fov = 72f, t = 3f, masks = "goal,doors,burnisher,wheelchair,flashers" },
+            new Shot { name = "s2", eye = new Vector3(.35f, 1.62f, -2f), look = new Vector3(0f, 1.25f, 27f), fov = 72f, t = -1f, masks = "goal,holders,strips,doors" },
+            new Shot { name = "s3a", eye = new Vector3(.7f, 1.62f, 6.6f), look = new Vector3(-1.12f, 1.6f, 9.6f), fov = 50f, t = -1f },
+            new Shot { name = "s3b", eye = new Vector3(.7f, 1.62f, 6.6f), look = new Vector3(-1.12f, 1.6f, 9.6f), fov = 50f, t = 1f },
+            new Shot { name = "s3b2", eye = new Vector3(.7f, 1.62f, 6.6f), look = new Vector3(-1.12f, 1.6f, 9.6f), fov = 50f, t = 1.4f },   // the brief's t=+1.0 falls in the flasher's off half (on 0.3-0.8, 1.3-1.8): same camera at 1.4 s, flasher on, leaf 52.7 deg
+            new Shot { name = "s3c", eye = new Vector3(-.30f, 1.78f, 20.15f), look = new Vector3(-1.30f, 1.93f, 19.13f), fov = 40f, t = -1f, masks = "holders" },   // z18 pair: under lit strip 7
+            new Shot { name = "s3e", eye = new Vector3(-.30f, 1.78f, 20.15f), look = new Vector3(-1.30f, 1.93f, 19.13f), fov = 40f, t = .4f, masks = "holders" },   // S3c's camera at t+0.4 s: the holder has let go, the leaf is at 79 deg and the armature is 0.2 m off the magnet face
+            new Shot { name = "s3d", eye = new Vector3(.45f, 1.70f, 15.6f), look = new Vector3(0f, 2.50f, 17.92f), fov = 50f, t = .5f, masks = "flashers" },
+            new Shot { name = "c1", eye = new Vector3(0f, 1.62f, .8f), look = look, fov = 72f, t = -.5f },
+            new Shot { name = "c2", eye = new Vector3(0f, 1.62f, 1.5f), look = look, fov = 72f, t = .9f },
+            new Shot { name = "c3", eye = new Vector3(0f, 1.62f, 12.5f), look = look, fov = 72f, t = 2f, masks = "goal,wheelchair,doors" },
+            new Shot { name = "c4", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 1, masks = "relay,relayBody,lites,wheelchair,doors" },
+            new Shot { name = "c4b", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 2, masks = "relay,relayBody,lites,doors" },
+            // C4p: the honest chase state. The Relay at z 11.5 came through the z 9 pair ~0.9 s earlier (2.5 m at
+            // ~5.5 m/s plus CR-7's 0.4 s push), so that pair is still swinging shut behind it (66 deg on the closer
+            // curve) and the Relay stands against the lit compartment 1, not the shut wood leaves. Relay 0.65 m off axis
+            // (the on-axis Relay hides behind the meeting stiles of the z 18 pair). C4p_ng: the same without the
+            // wired-glass stand-in (wire grid kept), to split the stand-in's veil from the doors behind.
+            new Shot { name = "c4p", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 2, push = true, pushAge = .9f, masks = "relay,relayBody,lites,doors" },
+            new Shot { name = "c4p_ng", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 2, push = true, pushAge = .9f, noGlass = true, masks = "relay,relayBody,lites" },
+            new Shot { name = "c4r", eye = new Vector3(0f, 1.62f, 17.2f), look = new Vector3(0f, 1.30f, 0f), fov = 72f, t = 4f, relay = 1, masks = "relay,relayBody" },   // the same instant from just inside the z18 pair: the Relay 5.7 m away in the white corridor, no glass
+            new Shot { name = "p1", eye = new Vector3(0f, 2.6f, 6.92f), look = new Vector3(0f, 2.6f, 8.92f), fov = 72f, t = .35f, masks = "flashers" },
+            new Shot { name = "p1off", eye = new Vector3(0f, 2.6f, 6.92f), look = new Vector3(0f, 2.6f, 8.92f), fov = 72f, t = .35f, flashOff = true },   // same instant, flashers forced off: the flashing area = p1 - p1off
+            new Shot { name = "x1", eye = new Vector3(.60f, 1.70f, 18.55f), look = new Vector3(0f, 2.82f, 19.90f), fov = 45f, t = -1f },   // strip 7 near end: dead tube B, orange cathode glow
+            new Shot { name = "x1b", eye = new Vector3(.22f, 2.25f, 18.30f), look = new Vector3(0f, 2.78f, 18.95f), fov = 40f, t = -1f },   // r7: strip 7's near end close: the dead tube B and its orange cathode glow beside the lit tube A
+            new Shot { name = "x2", eye = new Vector3(.35f, 1.62f, 23.9f), look = new Vector3(0f, 1.45f, 26.92f), fov = 50f, t = 3f },
+            new Shot { name = "dbg_amb0", eye = new Vector3(0f, 1.62f, 1.5f), look = look, fov = 72f, t = -1f },
+        };
+    }
+
+    static void Render(List<Shot> shots, string onlyShots, bool masks)
+    {
+        var outDir = OutDir();
+        var camGo = new GameObject("RUN C camera");
+        var cam = camGo.AddComponent<Camera>();
+        cam.nearClipPlane = .06f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = HexColor("22231C");
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = rt;
+        var filter = string.IsNullOrEmpty(onlyShots) ? null : new HashSet<string>(onlyShots.Split(','));
+        foreach (var s in shots)
+        {
+            if (filter != null && !filter.Contains(s.name)) continue;
+            relay.gameObject.SetActive(s.relay > 0);
+            if (s.relay > 0)
+            {
+                relay.localPosition = new Vector3(s.relay == 2 ? -.65f : 0f, 0f, 11.5f);
+                relay.localRotation = Quaternion.identity; // faces +Z, toward the camera at 23.5
+            }
+            rig.flasherForceOff = s.flashOff;
+            rig.pairAngleOverride[1] = s.push ? FrontRoomsRunLookdevRig.PushAngle(s.pushAge) : float.NaN;
+            foreach (var g in glassRenderers) if (g != null) g.enabled = !s.noGlass;
+            rig.Evaluate(s.t);
+            BakeProbes("t" + s.t.ToString("+0.00;-0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(".", "p") + (s.relay > 0 ? "_r" + s.relay : "") + (s.flashOff ? "_fo" : "") + (s.push ? "_push" : "") + (s.noGlass ? "_ng" : "") + variantSuffix);
+            if (dump)
+            {
+                foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+                {
+                    if (!(r.name.Contains("glass") || r.name.Contains("wire") || r.name.Contains("Tube") || r.name.Contains("Flasher") || (r.transform.parent && r.transform.parent.name.Contains("Tube")))) continue;
+                    var sb = new StringBuilder("DUMP " + s.name + " " + r.GetType().Name + " " + r.name + " / " + (r.transform.parent ? r.transform.parent.name : "") + " en " + r.enabled + " mats " + r.sharedMaterials.Length);
+                    var mf = r.GetComponent<MeshFilter>();
+                    if (mf && mf.sharedMesh) sb.Append(" submeshes " + mf.sharedMesh.subMeshCount);
+                    foreach (var m in r.sharedMaterials)
+                        sb.Append(" | " + (m == null ? "NULL" : m.name + " [" + (m.shader ? m.shader.name : "noshader") + " err " + (m.shader && ShaderUtil.ShaderHasError(m.shader)) + " passes " + m.passCount + " kw " + string.Join(" ", m.shaderKeywords) + "]"));
+                    sb.Append(" hasMPB " + r.HasPropertyBlock());
+                    Log(sb.ToString());
+                }
+                dump = false;
+            }
+            if (s.name == "dbg_amb0") { rig.ambientArmed = 0f; rig.Evaluate(s.t); }
+            cam.fieldOfView = s.fov;
+            var eye = root.TransformPoint(s.eye);
+            cam.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(root.TransformPoint(s.look) - eye, Vector3.up));
+            cam.Render();
+            cam.Render();
+            Save(rt, Path.Combine(outDir, s.name + variantSuffix + ".png"));
+            Log("shot " + s.name + variantSuffix + " t=" + s.t.ToString("0.00") + " eye " + s.eye + " look " + s.look + " fov " + s.fov + " lights on " + allLights.Count(l => l.enabled)
+                + " (shadowed " + allLights.Count(l => l.enabled && l.shadows != LightShadows.None) + ") ambient: " + rig.ambientMode
+                + " " + DrawEstimate(cam));
+            if (s.name == "dbg_amb0") { rig.ambientArmed = 1f; rig.Evaluate(s.t); }
+            if (masks && !string.IsNullOrEmpty(s.masks))
+                foreach (var g in s.masks.Split(','))
+                    RenderMask(cam, rt, g, Path.Combine(outDir, s.name + variantSuffix + "_mask_" + g + ".png"));
+        }
+        cam.targetTexture = null;
+        rt.Release();
+        relay.gameObject.SetActive(false);
+        rig.flasherForceOff = false;
+        rig.pairAngleOverride[1] = float.NaN;
+        foreach (var g in glassRenderers) if (g != null) g.enabled = true;
+    }
+
+    /// <summary>UnityStats stays 0 in batch mode, so count what the frame submits: renderers whose bounds
+    /// pass the camera frustum (one draw per submesh in the opaque/transparent pass; the depth-normals
+    /// prepass that SSAO needs repeats the opaque ones), plus one shadow-caster draw per submesh inside the
+    /// range of each shadowed light. An upper bound before SRP-batcher/instancing savings.</summary>
+    static string DrawEstimate(Camera cam)
+    {
+        var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+        int visR = 0, visSub = 0, transSub = 0, shadowSub = 0; long visTris = 0;
+        var all = UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
+        foreach (var r in all)
+        {
+            if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+            var mf = r.GetComponent<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null) continue;
+            if (!GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
+            visR++;
+            for (var k = 0; k < mf.sharedMesh.subMeshCount; k++)
+            {
+                visSub++;
+                visTris += (long)mf.sharedMesh.GetIndexCount(k) / 3;
+                var m = k < r.sharedMaterials.Length ? r.sharedMaterials[k] : null;
+                if (m != null && m.renderQueue >= (int)RenderQueue.Transparent) transSub++;
+            }
+        }
+        var shadowViews = 0;
+        foreach (var l in allLights)
+        {
+            if (!l.enabled || l.shadows == LightShadows.None) continue;
+            shadowViews++;
+            var sphere = new Bounds(l.transform.position, Vector3.one * (2f * l.range));
+            foreach (var r in all)
+            {
+                if (!r.enabled || !r.gameObject.activeInHierarchy || r.shadowCastingMode == ShadowCastingMode.Off) continue;
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null || !sphere.Intersects(r.bounds)) continue;
+                shadowSub += mf.sharedMesh.subMeshCount;
+            }
+        }
+        var opaque = visSub - transSub;
+        return "draws est: visible renderers " + visR + ", submeshes " + visSub + " (transparent " + transSub + "), tris " + visTris
+            + ", depth-normals prepass " + opaque + ", shadow views " + shadowViews + " with " + shadowSub + " caster draws; total ~" + (visSub + opaque + shadowSub);
+    }
+
+    static void RenderMask(Camera cam, RenderTexture rt, string group, string path)
+    {
+        if (!groups.TryGetValue(group, out var target)) { Log("no group " + group); return; }
+        var black = new Material(Shader.Find("Universal Render Pipeline/Unlit")); black.SetColor("_BaseColor", Color.black);
+        var white = new Material(Shader.Find("Universal Render Pipeline/Unlit")); white.SetColor("_BaseColor", Color.white);
+        var targetSet = new HashSet<Renderer>(target);
+        var saved = new Dictionary<Renderer, Material[]>();
+        var hidden = new List<Renderer>();
+        var forced = new List<Renderer>();
+        foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+        {
+            saved[r] = r.sharedMaterials;
+            var isGlass = glassRenderers.Contains(r) || r.name == "wire grid";
+            if (isGlass && !targetSet.Contains(r)) { if (r.enabled) { r.enabled = false; hidden.Add(r); } continue; }
+            var m = targetSet.Contains(r) ? white : black;
+            r.sharedMaterials = Enumerable.Repeat(m, r.sharedMaterials.Length).ToArray();
+            if (isGlass && !r.enabled) { r.enabled = true; forced.Add(r); }   // a no-glass shot still needs its lite apertures
+        }
+        var data = cam.GetUniversalAdditionalCameraData();
+        var fog = RenderSettings.fog;
+        RenderSettings.fog = false;
+        data.renderPostProcessing = false;
+        cam.backgroundColor = Color.black;
+        cam.Render();
+        Save(rt, path);
+        data.renderPostProcessing = true;
+        cam.backgroundColor = HexColor("22231C");
+        RenderSettings.fog = fog;
+        foreach (var kv in saved) kv.Key.sharedMaterials = kv.Value;
+        foreach (var r in hidden) r.enabled = true;
+        foreach (var r in forced) r.enabled = false;
+        UnityEngine.Object.DestroyImmediate(black); UnityEngine.Object.DestroyImmediate(white);
+    }
+
+    static void Save(RenderTexture rt, string path)
+    {
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        var img = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        img.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(path, img.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(img);
+    }
+
+    // ====================================================================== reports
+    static void WritePhotosafety()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("lamp\tchanges in 0..4.5 s\ttimes (s)\tmax changes in any 1 s window\tchanges in 0..2 s");
+        foreach (var (name, changes) in rig.ChangeTable(4.5f))
+        {
+            var max = 0;
+            foreach (var t0 in changes) max = Mathf.Max(max, changes.Count(t => t >= t0 - 1e-4f && t < t0 + 1f - 1e-3f));   // half-open 1 s window (1 ms sampling)
+            sb.AppendLine(name + "\t" + changes.Count + "\t" + string.Join(", ", changes.Select(t => t.ToString("0.000"))) + "\t" + max + "\t" + changes.Count(t => t <= 2f));
+        }
+        var doors = new StringBuilder();
+        foreach (var t in new[] { -1f, 0f, .5f, .9f, 1f, 1.4f, 2f, 3f, 3.5f, 4f })
+            doors.Append("t=" + t.ToString("0.0") + " " + FrontRoomsRunLookdevRig.DoorAngle(t).ToString("0.0") + " deg; ");
+        sb.AppendLine("door leaf angle: " + doors);
+        File.WriteAllText(Path.Combine(OutDir(), "photosafety.txt"), sb.ToString());
+        Log("photosafety table written");
+    }
+
+    static void WriteCosts()
+    {
+        var sb = new StringBuilder();
+        var corridor = rig.corridorRenderers.Where(r => r != null).ToList();
+        var tris = 0L; var subs = 0;
+        var texs = new HashSet<Texture>(); var mats = new HashSet<Material>();
+        foreach (var r in corridor)
+        {
+            var mf = r.GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null) { tris += mf.sharedMesh.triangles.LongLength / 3; subs += mf.sharedMesh.subMeshCount; }
+            foreach (var m in r.sharedMaterials)
+            {
+                if (m == null) continue;
+                mats.Add(m);
+                foreach (var id in m.GetTexturePropertyNameIDs()) { var t = m.GetTexture(id); if (t != null) texs.Add(t); }
+            }
+        }
+        sb.AppendLine("corridor renderers " + corridor.Count + ", submeshes (draws before batching) " + subs + ", triangles " + tris);
+        sb.AppendLine("materials " + mats.Count + ": " + string.Join(", ", mats.Select(m => m.name).OrderBy(n => n)));
+        var bytes = 0L;
+        foreach (var t in texs) bytes += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(t);
+        sb.AppendLine("textures " + texs.Count + " (" + (bytes / (1024f * 1024f)).ToString("0.0") + " MB runtime): " + string.Join(", ", texs.Select(t => t.name + " " + t.width + "x" + t.height).OrderBy(n => n)));
+        foreach (var name in KitNames)
+        {
+            var info = AssetDatabase.LoadAssetAtPath<GameObject>(ModelDir + name + ".fbx");
+            if (info == null) continue;
+            var tc = info.GetComponentsInChildren<MeshFilter>().Sum(f => f.sharedMesh != null ? f.sharedMesh.triangles.Length / 3 : 0);
+            sb.AppendLine("kit " + name + ": " + tc + " tris");
+        }
+        rig.Evaluate(-1f);
+        sb.AppendLine("lights armed: " + allLights.Count(l => l.enabled) + " (shadowed " + allLights.Count(l => l.enabled && l.shadows != LightShadows.None) + ")");
+        rig.Evaluate(3f);
+        sb.AppendLine("lights tripped: " + allLights.Count(l => l.enabled) + " (shadowed " + allLights.Count(l => l.enabled && l.shadows != LightShadows.None) + ")");
+        sb.AppendLine("of which anteroom 6 + stub 1 map lamps");
+        File.WriteAllText(Path.Combine(OutDir(), "costs.txt"), sb.ToString());
+        Log("costs written");
+    }
+}

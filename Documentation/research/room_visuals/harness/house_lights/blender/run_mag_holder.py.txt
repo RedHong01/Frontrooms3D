@@ -1,0 +1,32 @@
+"""Wall-mounted electromagnetic door holder with extension (Run! C hero).
+CLONE-ONLY look-dev. 1970s-80s surface unit: 115 mm square wall plate, a
+38 mm extension tube with collars, a 100 x 100 x 80 mm hammertone-grey
+housing, and the magnet face (outer pole, insulated coil ring, inner pole)
+0.28 m out from the wall, where the leaf's armature plate lands at 90 deg.
+Manual release button on top. ORIGIN = the wall face at the unit's centre
+line; the magnet faces -Y (Unity +Z).
+"""
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_MagHolder"
+SMOOTH_ANGLE = 40.0
+G = "Run_MagGrey"
+
+
+def build(kit):
+    kit.box((0.115, 0.006, 0.115), (0, -0.003, 0), G, bevel=0.002, segments=2, name="wall plate")
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            kit.cylinder(0.0042, 0.0025, (sx * 0.044, -0.0070, sz * 0.044), "Prop_Chrome", verts=10, rot=(90, 0, 0), bevel=0.0008, segments=1, name="screw")
+    kit.cylinder(0.030, 0.012, (0, -0.012, 0), G, verts=24, rot=(90, 0, 0), bevel=0.002, name="collar")
+    kit.cylinder(0.019, 0.180, (0, -0.104, 0), G, verts=24, rot=(90, 0, 0), bevel=0.0, name="extension")
+    kit.cylinder(0.028, 0.012, (0, -0.188, 0), G, verts=24, rot=(90, 0, 0), bevel=0.002, name="collar")
+    kit.box((0.100, 0.080, 0.100), (0, -0.192 - 0.040 + 0.008, 0), G, bevel=0.009, segments=3, name="housing")
+    # magnet face: outer pole, coil ring, inner pole (stepped so the rings read)
+    kit.cylinder(0.036, 0.010, (0, -0.268, 0), "Prop_Aluminium", verts=32, rot=(90, 0, 0), bevel=0.0015, name="outer pole")
+    kit.cylinder(0.025, 0.0104, (0, -0.2742, 0), "Prop_PlasticBlack", verts=32, rot=(90, 0, 0), bevel=0.0006, segments=1, name="coil ring")
+    kit.cylinder(0.017, 0.0110, (0, -0.2745, 0), "Prop_Aluminium", verts=24, rot=(90, 0, 0), bevel=0.0008, segments=1, name="inner pole")
+    kit.cylinder(0.0075, 0.007, (0.025, -0.220, 0.050 + 0.0025), "Prop_PlasticBlack", verts=16, bevel=0.0015, segments=1, name="release button")
+    kit.anchor("magnet_face", (0, -0.280, 0))
+    kit.no_collider()
+    kit.tag("run", "wall_unit")

@@ -24,15 +24,16 @@ must clear X -0.0070 .. +0.0140 (latch plus plunger), Y 0.9200 .. 0.9530
 Anchors: bolt_axis (0, 0, 0); tip (0.0055, 0, 0.019); plunger
 (0.0105, 0, 0.0025); throw_dir (0, 0, 0.10).
 Budget (§9.2): LOD0 600 (asserted +-15 %), LOD1 220, LOD2 40; LOD
-distances 1.0 / 3 / 8 m; no LOD1 export. The plunger is fr_lod2_drop.
+distances 1.0 / 3 / 8 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). The plunger is fr_lod2_drop.
 Slots: Prop_Chrome.
 """
 
+import interact_door_common as dc
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Latchbolt_Mortise"
-LOD1 = None
 LOD1_RATIO = 0.367
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.067
 LOD_DISTANCES = (1.0, 3.0, 8.0)
 BUDGET = 600
@@ -49,6 +50,7 @@ def _wear(p, n, slot):
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
     outline, zb = lc.latch_outline(T, THROW, BACK, land=0.0005, tip_r=0.0005, bevel_deg=30.0,
                                    sagitta=0.0006, arc_n=14)
     m = lc.Mesh()

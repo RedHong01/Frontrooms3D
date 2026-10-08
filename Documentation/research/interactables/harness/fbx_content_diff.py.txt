@@ -1,0 +1,66 @@
+"""Content comparison of kit FBX pairs (main vs clone), ignoring header timestamps.
+
+  Blender -b --factory-startup --python fbx_content_diff.py -- <main Models> <clone Models> <names file> <out json>
+
+For each name: import both FBX, and compare per mesh object (sorted by name): vertex count, polygon count,
+vertex positions (max abs diff), polygon vertex indices, UV loops (max abs diff), material slot names.
+"""
+import json
+import sys
+
+import bpy
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MA, CL, NAMES, OUT = argv
+names = [l.strip() for l in open(NAMES) if l.strip()]
+
+
+def snap(path):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=path)
+    out = {}
+    for o in bpy.data.objects:
+        if o.type != "MESH":
+            continue
+        me = o.data
+        uv = me.uv_layers.active
+        out[o.name] = {
+            "v": [tuple(round(c, 7) for c in v.co) for v in me.vertices],
+            "p": [tuple(p.vertices) for p in me.polygons],
+            "uv": [tuple(round(c, 6) for c in d.uv) for d in uv.data] if uv else [],
+            "m": [m.name.split(".")[0] if m else None for m in me.materials],
+            "mi": [p.material_index for p in me.polygons],
+        }
+    return out
+
+
+res = {}
+for n in names:
+    try:
+        a = snap("%s/%s.fbx" % (MA, n))
+        b = snap("%s/%s.fbx" % (CL, n))
+    except Exception as e:
+        res[n] = {"state": "ERROR", "error": str(e)}
+        continue
+    if sorted(a) != sorted(b):
+        res[n] = {"state": "CHANGED", "why": "objects %s vs %s" % (sorted(a), sorted(b))}
+        continue
+    why = []
+    for k in sorted(a):
+        x, y = a[k], b[k]
+        if len(x["v"]) != len(y["v"]) or len(x["p"]) != len(y["p"]):
+            why.append("%s: %d/%d verts, %d/%d polys" % (k, len(x["v"]), len(y["v"]), len(x["p"]), len(y["p"])))
+            continue
+        dv = max((max(abs(p - q) for p, q in zip(u, w)) for u, w in zip(x["v"], y["v"])), default=0.0)
+        du = max((max(abs(p - q) for p, q in zip(u, w)) for u, w in zip(x["uv"], y["uv"])), default=0.0) if len(x["uv"]) == len(y["uv"]) else 9.9
+        if dv > 1e-6:
+            why.append("%s: positions differ by %.6f" % (k, dv))
+        if x["p"] != y["p"]:
+            why.append("%s: topology differs" % k)
+        if du > 1e-5:
+            why.append("%s: UVs differ by %.5f" % (k, du))
+        if x["m"] != y["m"] or x["mi"] != y["mi"]:
+            why.append("%s: materials %s vs %s" % (k, x["m"], y["m"]))
+    res[n] = {"state": "CHANGED" if why else "SAME_CONTENT", "why": why[:6]}
+json.dump(res, open(OUT, "w"), indent=1)
+print("FBXDIFF", json.dumps({k: v["state"] for k, v in res.items()}))

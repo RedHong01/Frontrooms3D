@@ -1,0 +1,54 @@
+zone reflection: Level0 cube (dip), intensity 0.735 (slider)
+SSAO feature on (game setting)
+tuning: strip intensity 0.8, bounce up 0.6, bounce all 0.06, armed level 0.7, spot tilt 0 deg, spot y 2.86, cone 179/170 deg, flasher emission 2, flasher point 0.053, probe res 512
+ambient probe L0 r=0.064 (non-zero = trilight SH present)
+lite glass: game window glass (copy of Glass_Window, FrontRooms/Glass, dust .45, smear .5, prints .8, RT receive off)
+relay: proxy (capsule r .24 top 1.73, shoulders .78 x .24 x .30, head 0.28)
+box probes: 3 x 512 px HDR, Custom (baked per shot state with Lightmapping.BakeReflectionProbe), size 2.84 x 2.9 x 9.16, capture (0, 1.40, 4.5 / 13.5 / 22.5), blend 0.25 m
+local post FrontRoomsPost_Run_C, priority 2, blend 1.0 m
+probes baked for state t-1p00 in 23.0 s
+shot s1a t=-1.00 eye (0.00, 1.62, 1.50) look (0.00, 1.30, 27.00) fov 72 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 163, submeshes 284 (transparent 5), tris 107510, depth-normals prepass 279, shadow views 5 with 628 caster draws; total ~1191
+probes baked for state t+3p00 in 19.1 s
+shot s1b t=3.00 eye (0.00, 1.62, 1.50) look (0.00, 1.30, 27.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.84) draws est: visible renderers 163, submeshes 284 (transparent 5), tris 107510, depth-normals prepass 279, shadow views 8 with 1062 caster draws; total ~1625
+probes baked for state t-1p00 in 22.7 s
+shot s2 t=-1.00 eye (0.35, 1.62, -2.00) look (0.00, 1.25, 27.00) fov 72 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 204, submeshes 351 (transparent 7), tris 127536, depth-normals prepass 344, shadow views 5 with 628 caster draws; total ~1323
+shot s3a t=-1.00 eye (0.70, 1.62, 6.60) look (-1.12, 1.60, 9.60) fov 50 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 140, submeshes 240 (transparent 5), tris 86786, depth-normals prepass 235, shadow views 5 with 628 caster draws; total ~1103
+probes baked for state t+1p00 in 21.1 s
+shot s3b t=1.00 eye (0.70, 1.62, 6.60) look (-1.12, 1.60, 9.60) fov 50 lights on 19 (shadowed 6) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.53) draws est: visible renderers 140, submeshes 240 (transparent 5), tris 86786, depth-normals prepass 235, shadow views 6 with 785 caster draws; total ~1260
+probes baked for state t+1p40 in 23.9 s
+shot s3b2 t=1.40 eye (0.70, 1.62, 6.60) look (-1.12, 1.60, 9.60) fov 50 lights on 23 (shadowed 6) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.53) draws est: visible renderers 140, submeshes 240 (transparent 5), tris 86786, depth-normals prepass 235, shadow views 6 with 785 caster draws; total ~1260
+probes baked for state t-1p00 in 19.1 s
+shot s3c t=-1.00 eye (-0.30, 1.78, 20.15) look (-1.30, 1.93, 19.13) fov 40 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 32, submeshes 43 (transparent 1), tris 9194, depth-normals prepass 42, shadow views 5 with 628 caster draws; total ~713
+probes baked for state t+0p40 in 13.5 s
+shot s3e t=0.40 eye (-0.30, 1.78, 20.15) look (-1.30, 1.93, 19.13) fov 40 lights on 21 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.38) draws est: visible renderers 32, submeshes 43 (transparent 1), tris 9194, depth-normals prepass 42, shadow views 5 with 628 caster draws; total ~713
+probes baked for state t+0p50 in 20.3 s
+shot s3d t=0.50 eye (0.45, 1.70, 15.60) look (0.00, 2.50, 17.92) fov 50 lights on 21 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.38) draws est: visible renderers 84, submeshes 148 (transparent 3), tris 57484, depth-normals prepass 145, shadow views 5 with 628 caster draws; total ~921
+probes baked for state t-0p50 in 23.5 s
+shot c1 t=-0.50 eye (0.00, 1.62, 0.80) look (0.00, 1.30, 27.00) fov 72 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 163, submeshes 284 (transparent 5), tris 107510, depth-normals prepass 279, shadow views 5 with 628 caster draws; total ~1191
+probes baked for state t+0p90 in 23.0 s
+shot c2 t=0.90 eye (0.00, 1.62, 1.50) look (0.00, 1.30, 27.00) fov 72 lights on 23 (shadowed 6) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.49) draws est: visible renderers 163, submeshes 284 (transparent 5), tris 107510, depth-normals prepass 279, shadow views 6 with 785 caster draws; total ~1348
+probes baked for state t+2p00 in 23.8 s
+shot c3 t=2.00 eye (0.00, 1.62, 12.50) look (0.00, 1.30, 27.00) fov 72 lights on 21 (shadowed 7) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.67) draws est: visible renderers 103, submeshes 173 (transparent 3), tris 62548, depth-normals prepass 170, shadow views 7 with 940 caster draws; total ~1283
+probes baked for state t+4p00_r1 in 23.1 s
+shot c4 t=4.00 eye (0.00, 1.62, 23.50) look (0.00, 1.40, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 195, submeshes 323 (transparent 6), tris 113386, depth-normals prepass 317, shadow views 8 with 1074 caster draws; total ~1714
+probes baked for state t+4p00_r2 in 18.1 s
+shot c4b t=4.00 eye (0.00, 1.62, 23.50) look (0.00, 1.40, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 195, submeshes 323 (transparent 6), tris 113386, depth-normals prepass 317, shadow views 8 with 1074 caster draws; total ~1714
+probes baked for state t+4p00_r2_push in 13.6 s
+shot c4p t=4.00 eye (0.00, 1.62, 23.50) look (0.00, 1.40, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 195, submeshes 323 (transparent 6), tris 113386, depth-normals prepass 317, shadow views 8 with 1074 caster draws; total ~1714
+probes baked for state t+4p00_r2_push_ng in 22.4 s
+shot c4p_ng t=4.00 eye (0.00, 1.62, 23.50) look (0.00, 1.40, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 189, submeshes 317 (transparent 0), tris 113314, depth-normals prepass 317, shadow views 8 with 1074 caster draws; total ~1708
+probes baked for state t+4p00_r1 in 25.6 s
+shot c4r t=4.00 eye (0.00, 1.62, 17.20) look (0.00, 1.30, 0.00) fov 72 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.94) draws est: visible renderers 141, submeshes 230 (transparent 4), tris 76656, depth-normals prepass 226, shadow views 8 with 1074 caster draws; total ~1530
+probes baked for state t+0p35 in 26.1 s
+shot p1 t=0.35 eye (0.00, 2.60, 6.92) look (0.00, 2.60, 8.92) fov 72 lights on 21 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.35) draws est: visible renderers 150, submeshes 256 (transparent 5), tris 91714, depth-normals prepass 251, shadow views 5 with 628 caster draws; total ~1135
+probes baked for state t+0p35_fo in 26.6 s
+shot p1off t=0.35 eye (0.00, 2.60, 6.92) look (0.00, 2.60, 8.92) fov 72 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.35) draws est: visible renderers 150, submeshes 256 (transparent 5), tris 91714, depth-normals prepass 251, shadow views 5 with 628 caster draws; total ~1135
+probes baked for state t-1p00 in 26.9 s
+shot x1 t=-1.00 eye (0.60, 1.70, 18.55) look (0.00, 2.82, 19.90) fov 45 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 17, submeshes 30 (transparent 0), tris 11336, depth-normals prepass 30, shadow views 5 with 628 caster draws; total ~688
+shot x1b t=-1.00 eye (0.22, 2.25, 18.30) look (0.00, 2.78, 18.95) fov 40 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.00 x global + bounce (flux 0.35) draws est: visible renderers 11, submeshes 18 (transparent 0), tris 6464, depth-normals prepass 18, shadow views 5 with 628 caster draws; total ~664
+probes baked for state t+3p00 in 25.1 s
+shot x2 t=3.00 eye (0.35, 1.62, 23.90) look (0.00, 1.45, 26.92) fov 50 lights on 25 (shadowed 8) ambient: CustomProvided SH via MaterialPropertyBlock, scale 1.20 x global + bounce (flux 0.84) draws est: visible renderers 36, submeshes 49 (transparent 1), tris 11266, depth-normals prepass 48, shadow views 8 with 1062 caster draws; total ~1159
+probes baked for state t-1p00 in 18.9 s
+shot dbg_amb0 t=-1.00 eye (0.00, 1.62, 1.50) look (0.00, 1.30, 27.00) fov 72 lights on 17 (shadowed 5) ambient: CustomProvided SH via MaterialPropertyBlock, scale 0.00 x global + bounce (flux 0.35) draws est: visible renderers 163, submeshes 284 (transparent 5), tris 107510, depth-normals prepass 279, shadow views 5 with 628 caster draws; total ~1191
+photosafety table written
+costs written

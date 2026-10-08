@@ -1,0 +1,74 @@
+// CLONE-ONLY (Run! direction B look-dev). A surface-mounted wraparound throws light
+// sideways through its prismatic side panels, so the dark painted deck around it
+// carries a soft scallop. Spot lights aimed down cannot light a ceiling they hang
+// from, so this is an additive quad laid 1 mm under the soffit, driven by the rig
+// (_Density = the wrap's level, 0 when the mains drop). Zero lights, one draw.
+// The scallop is an ellipse with a steep near-field (inverse-square from 8 cm
+// below the deck) and a long soft tail along the fixture axis.
+Shader "FrontRooms/RunSoffitHalo"
+{
+    Properties
+    {
+        _Color ("Peak added radiance (linear)", Color) = (0.05, 0.053, 0.056, 1)
+        _Density ("Level", Range(0, 2)) = 1
+        _Aspect ("Fixture length / width", Float) = 2.2
+    }
+    SubShader
+    {
+        Tags { "RenderPipeline" = "UniversalPipeline" "Queue" = "Transparent-10" "RenderType" = "Transparent" "IgnoreProjector" = "True" }
+        Blend One One
+        Cull Back
+        ZWrite Off
+        ZTest LEqual
+
+        Pass
+        {
+            Name "RunSoffitHalo"
+            Tags { "LightMode" = "UniversalForward" }
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            CBUFFER_START(UnityPerMaterial)
+                half4 _Color;
+                half _Density;
+                float _Aspect;
+            CBUFFER_END
+
+            struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; half fog : TEXCOORD1; UNITY_VERTEX_OUTPUT_STEREO };
+
+            Varyings vert(Attributes v)
+            {
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
+                o.uv = v.uv;
+                o.fog = ComputeFogFactor(o.positionCS.z);
+                return o;
+            }
+
+            half4 frag(Varyings i) : SV_Target
+            {
+                // uv.x runs along the fixture, uv.y across it; the quad is 2.2 x 1.0 of the fixture.
+                float2 p = (i.uv - 0.5) * 2.0;
+                // distance to the fixture's footprint (a 0.55 x 0.12 box in quad units)
+                float2 q = max(abs(p) - float2(0.55, 0.12), 0.0);
+                float d = length(q * float2(1.0, 0.55 * _Aspect));
+                // near-field inverse-square from 8 cm below the deck, plus a broad tail
+                half near = 1.0h / (1.0h + (half)(d * d) * 90.0h);
+                half tail = exp(-(half)(d * d) * 5.0h) * 0.35h;
+                half edge = 1.0h - smoothstep(0.80h, 1.0h, (half)max(abs(p.x), abs(p.y)));
+                half3 color = _Color.rgb * saturate(near + tail) * edge * _Density;
+                color = MixFogColor(color, half3(0, 0, 0), i.fog);
+                return half4(color, 1);
+            }
+            ENDHLSL
+        }
+    }
+    FallBack Off
+}

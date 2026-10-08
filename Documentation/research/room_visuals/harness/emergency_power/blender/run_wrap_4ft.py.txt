@@ -1,0 +1,45 @@
+"""4 ft two-lamp wraparound fluorescent, surface-mounted (the 1960s-90s
+back-of-house fixture): a white baked-enamel steel back pan, a prismatic
+acrylic lens that wraps the bottom and both sides, steel end plates.
+CLONE-ONLY look-dev asset, Run! direction B (Kit_WrapFixture_4ft).
+
+1.22 x 0.25 x 0.08 m. Origin = top centre (the mounting plane), the body hangs
+below it to z = -0.08 (Unity y = -0.08). Long axis along X (Blender and Unity).
+The lens parts use decal UVs into the Run_WrapLens atlas: top half = the bottom
+panel (two lamp bands), bottom half = the side panels.
+Slots: Painted_Metal, Run_WrapLens.
+"""
+
+import math
+import kitlib
+
+NAME = "Kit_WrapFixture_4ft"
+SMOOTH_ANGLE = 30.0
+
+PAN = "Painted_Metal"
+LENS = "Run_WrapLens"
+kitlib.register_slot(PAN, (0.85, 0.83, 0.78), 0.5)
+kitlib.register_slot(LENS, (0.88, 0.88, 0.86), 0.3)
+
+L = 1.22
+
+
+def build(kit):
+    kit.box((L, 0.25, 0.012), (0, 0, -0.006), PAN, bevel=0.002, segments=1, name="back pan")
+    # Bottom panel.
+    kit.box((L - 0.024, 0.184, 0.003), (0, 0, -0.0785), LENS, bevel=0.0, name="lens bottom", uv="decal", decal_axes="xy")
+    kit.parts[-1]["fr_uv_rect"] = [0.0, 0.5, 1.0, 1.0]
+    # Side panels, sloping from the pan edge (y +-0.118, z -0.012) to the bottom (+-0.092, -0.080).
+    dy, dz = 0.026, 0.068
+    w = math.hypot(dy, dz)
+    ang = math.degrees(math.atan2(dz, dy))
+    for sy in (-1, 1):
+        p = kit.box((L - 0.024, w, 0.003), (0, sy * 0.105, -0.046), LENS, bevel=0.0, rot=(sy * ang, 0, 0), name="lens side", uv="decal", decal_axes="xy")
+        p["fr_uv_rect"] = [0.0, 0.0, 1.0, 0.5]
+    # End plates follow the lens section.
+    outline = [(-0.125, 0.0), (0.125, 0.0), (0.121, -0.012), (0.094, -0.0815), (-0.094, -0.0815), (-0.121, -0.012)]
+    for sx in (-1, 1):
+        kit.extrude(outline, 0.012, (sx * (L / 2 - 0.006), 0, 0), PAN, plane="yz", bevel=0.0015, segments=1, name="end plate")
+    kit.no_collider()
+    kit.anchor("light", (0, 0, -0.082))
+    kit.tag("ceiling", "run")

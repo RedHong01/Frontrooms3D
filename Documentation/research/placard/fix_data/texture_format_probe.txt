@@ -1,0 +1,35 @@
+target StandaloneOSX webgl subtarget Generic compressOnImport True gfx Metal DXT1 supported True
+A_1024: 2592x1676 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46336208 | storage 23167624
+A_1024p1680: 2592x1680 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46448960 | storage 23224000
+A_1024p1680DXT: 2592x1680 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46448960 | storage 23224000
+A_2048: 2592x1676 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46336208 | storage 23167624
+A_NOMIP: 2592x1676 BC7 mips 1 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 8689344 | storage 4344192
+A_POT1024: 1024x1024 BC7 mips 11 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 2797216 | storage 1398128
+A_POT4096: 4096x2048 BC7 mips 13 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 22370656 | storage 11184848
+E_1024: 2592x1676 RGB24 mips 12 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 40544302 | storage 17375718
+E_1024p1680: 2592x1680 RGB24 mips 12 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 40642960 | storage 17418000
+E_2048: 2592x1676 RGB24 mips 12 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 40544302 | storage 17375718
+target iOS webgl subtarget Generic compressOnImport True gfx Metal DXT1 supported True
+A_1024: 2592x1676 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46336208 | storage 23167624
+A_1024p1680: 2592x1680 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46448960 | storage 23224000
+A_1024p1680DXT: 2592x1680 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46448960 | storage 23224000
+A_2048: 2592x1676 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 46336208 | storage 23167624
+A_POT1024: 1024x1024 ASTC_4x4 mips 11 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 2797216 | storage 1398128
+E_1024: 2592x1676 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 46336208 | storage 23167624
+E_1024p1680: 2592x1680 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 46448960 | storage 23224000
+E_2048: 2592x1676 RGBA32 mips 12 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 46336208 | storage 23167624
+target WebGL webgl subtarget Generic compressOnImport True gfx Metal DXT1 supported True
+A_1024: 1024x662 RGB24 mips 11 auto WebGL DXT1 bytes 6325957 | storage 2710713
+A_1024p1680: 1024x664 RGB24 mips 11 auto WebGL DXT1 bytes 6346565 | storage 2719545
+A_1024p1680DXT: 1024x664 RGB24 mips 11 auto WebGL DXT1 bytes 6346565 | storage 2719545
+A_2048: 2048x1324 RGB24 mips 12 auto WebGL DXT1 bytes 25306821 | storage 10845369
+A_POT1024: 1024x1024 DXT1 mips 11 auto WebGL DXT1 bytes 1399088 | storage 699064
+E_1024: 1024x662 RGB24 mips 11 auto WebGL DXT1 bytes 6325957 | storage 2710713
+E_1024p1680: 1024x664 RGB24 mips 11 auto WebGL DXT1 bytes 6346565 | storage 2719545
+E_2048: 2048x1324 RGB24 mips 12 auto WebGL DXT1 bytes 25306821 | storage 10845369
+
+
+# final packed textures (4096 x 2048), WebGL target, WebGL tab max 1024 Automatic Compressed
+target WebGL webgl subtarget Generic compressOnImport True gfx Metal DXT1 supported True
+A_final: 1024x512 DXT1 mips 11 auto WebGL DXT1 auto iOS ASTC_4x4 bytes 700048 | storage 349544
+E_final: 1024x512 DXT1 mips 11 auto WebGL DXT1 auto iOS ASTC_6x6 bytes 700048 | storage 349544

@@ -14,7 +14,7 @@ Z = 0. The body hangs from a top-centre tab, so the typed number reads
 upright when the tag hangs (the §9.3 bounds are landscape: X 0.057 > Y).
 Anchors: hole (0, 0, 0) (+ hole_dir), face = number = insert centre (+ face_dir).
 
-Budget §9.3: 1,200 / 400 / 60 tris, LOD distances 1.0 / 3 / 15 m, no LOD1.
+Budget §9.3: 1,200 / 400 / 60 tris, LOD distances 1.0 / 3 / 15 m; LOD1 exported since the 2026-10-08 fix pass (critic H4).
 Slots: Prop_PlasticRed (body; VARIANTS _Blue = Prop_PlasticBlue, _White =
 Prop_PlasticWhite) and Prop_KeyTagNo (insert, NEW slot for P-4; fallback
 Prop_Paper, blank). The insert UVs point at atlas cell "00", cropped to the
@@ -28,6 +28,7 @@ NAME = "Kit_KeyTag_Rect"
 VARIANTS = {"Kit_KeyTag_Rect_Blue": {"Prop_PlasticRed": "Prop_PlasticBlue"},
             "Kit_KeyTag_Rect_White": {"Prop_PlasticRed": "Prop_PlasticWhite"}}
 LOD1_RATIO, LOD2_RATIO = 400 / 1200, 60 / 1200
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (1.0, 3.0, 15.0)
 BUDGET = (1200, 400, 60)
 SMOOTH_ANGLE = 40.0

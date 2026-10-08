@@ -1,0 +1,4268 @@
+# exit_sign (apply convention v2): unified diff base copies exit_sign_base/ -> payload exit_sign_payload/, recorded 2026-10-08 01:26:16 on main 22bb75f (Red's working tree).
+# Informational: rebases use the base copies, not this file.
+--- a/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
++++ b/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+@@ -271,6 +271,9 @@
+         public string print;
+         public Color inkGround, inkMid, inkDeep, inkCream;
+         public float printAmount = 1f;
++        // Exit-sign lamp field (FrontRooms/Surface _FR_LAMP_FIELD): texture stem of the linear
++        // field map (R lamp A, G lamp B, B DC pair, A transmission). Needs emission.
++        public string lampField;
+     }
+ 
+     // Level 0 print palettes (gen_surfaces.py LOBBY_PALETTE / COLD_PALETTE); Shift is the Lobby
+@@ -308,7 +311,17 @@
+         new SurfaceDef { name = "Run_Ceiling", texture = "Office_Ceiling2x2", tile = new Vector2(FourFoot, FourFoot), tint = new Color(1.04f, 1.04f, 1.04f), macroTone = .2f, stain = .2f },
+         // The sign faces are quads whose U runs right-to-left as seen from the
+         // front, so the print is flipped back with a -1 scale and +1 offset.
+-        new SurfaceDef { name = "Run_ExitSign", texture = "Run_ExitSign", tile = new Vector2(.36f, .18f), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "Run_ExitSign", emissionColor = new Color(3.2f, 3.2f, 3.2f), st = new Vector4(-1, 1, 1, 0) },
++        // smooth .38: there is no mask, so the scale IS the smoothness (1.0 was a perfect mirror; glass/rt/11a M2).
++        new SurfaceDef { name = "Run_ExitSign", texture = "Run_ExitSign", tile = new Vector2(.36f, .18f), meshUV = true, smooth = .38f, macroTone = 0f, macroDirt = 0f, emission = "Run_ExitSign", emissionColor = new Color(3.2f, 3.2f, 3.2f), st = new Vector4(-1, 1, 1, 0) },
++        // The 1990 EXIT sign family (research/exit_sign/10_spec.md §6-§7; Kit_ExitSign*): white enamel
++        // pan (tiling), the stamped frame + stencil plate (decal over the 0.346 x 0.212 face), and the red
++        // diffuser behind the letter holes (decal over the 0.320 x 0.186 opening). Smoothness comes from
++        // the masks (means .50 / .42 / .72): no mirrors. Emission only on the lit diffuser, shaped by the
++        // lamp field; the _Dead copy has no emission keyword at all.
++        new SurfaceDef { name = "ExitSign_Housing", texture = "ExitSign_Enamel", tile = new Vector2(.40f, .40f), meshUV = true, macroTone = .04f, macroDirt = .04f },
++        new SurfaceDef { name = "ExitSign_Face", texture = "ExitSign_Face", tile = new Vector2(.346f, .212f), meshUV = true, macroTone = 0f, macroDirt = .03f },
++        new SurfaceDef { name = "ExitSign_Diffuser", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "ExitSign_Diffuser", emissionColor = new Color(3.2f, .013f, .006f), lampField = "ExitSign_Diffuser_F" },
++        new SurfaceDef { name = "ExitSign_Diffuser_Dead", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, macroTone = 0f, macroDirt = 0f },
+ 
+         // Shared construction.
+         new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.12f, 2.62f), meshUV = true, macroTone = .15f, macroDirt = .1f },
+@@ -508,6 +521,20 @@
+                 m.SetFloat("_UseEmission", 0f);
+                 m.DisableKeyword("_EMISSION");
+             }
++            // Exit-sign lamp field: written only where it is used, so other materials stay untouched.
++            if (d.lampField != null && d.emission != null)
++            {
++                m.SetTexture("_LampFieldMap", Tex(d.lampField));
++                m.SetVector("_LampField", new Vector4(1f, 1f, 0f, 0f));
++                m.SetFloat("_UseLampField", 1f);
++                m.EnableKeyword("_FR_LAMP_FIELD");
++            }
++            else if (m.IsKeywordEnabled("_FR_LAMP_FIELD"))
++            {
++                m.SetTexture("_LampFieldMap", null);
++                m.SetFloat("_UseLampField", 0f);
++                m.DisableKeyword("_FR_LAMP_FIELD");
++            }
+             EditorUtility.SetDirty(m);
+         }
+     }
+@@ -685,7 +712,9 @@
+         importer.mipmapEnabled = true;
+         importer.filterMode = FilterMode.Trilinear;
+         importer.anisoLevel = 16;
+-        importer.wrapMode = stem.StartsWith("Run_ExitSign") ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
++        // Decals clamp so their edges never bleed at far mips (the tiling ExitSign_Enamel repeats).
++        importer.wrapMode = stem.StartsWith("Run_ExitSign") || stem.StartsWith("ExitSign_Face") || stem.StartsWith("ExitSign_Diffuser")
++            ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+         importer.maxTextureSize = 4096;
+         importer.textureCompression = TextureImporterCompression.CompressedHQ;
+         importer.alphaSource = TextureImporterAlphaSource.FromInput;
+--- a/Assets/Resources/Props/Models/Kit_DoorFrame_Steel.json
++++ b/Assets/Resources/Props/Models/Kit_DoorFrame_Steel.json
+@@ -71,7 +71,7 @@
+    "name": "exit_sign_p",
+    "pos": [
+     -0.08,
+-    2.28,
++    2.18,
+     0.5
+    ]
+   }
+--- a/Assets/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.json
++++ b/Assets/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.json
+@@ -71,7 +71,7 @@
+    "name": "exit_sign_p",
+    "pos": [
+     -0.08,
+-    2.28,
++    2.18,
+     0.5
+    ]
+   }
+Binary files a/Assets/Resources/Props/Models/Kit_ExitSign.fbx and b/Assets/Resources/Props/Models/Kit_ExitSign.fbx differ
+Binary files a/Assets/Resources/Props/Models/Kit_ExitSign.fbx.meta and b/Assets/Resources/Props/Models/Kit_ExitSign.fbx.meta differ
+--- a/Assets/Resources/Props/Models/Kit_ExitSign.json
++++ b/Assets/Resources/Props/Models/Kit_ExitSign.json
+@@ -4,96 +4,174 @@
+  "colliders": [],
+  "anchors": [
+   {
+-   "name": "back",
++   "name": "hang",
+    "pos": [
+-    0,
+-    0,
+-    0
++    0.0,
++    0.0,
++    0.0
+    ]
+   },
+   {
++   "name": "back_centre",
++   "pos": [
++    0.0,
++    0.106,
++    0.0
++   ]
++  },
++  {
+    "name": "face",
+    "pos": [
+-    0,
+-    0,
+-    0.052099999999999994
++    0.0,
++    0.106,
++    0.059500000000000004
+    ]
+   },
+   {
+    "name": "face_dir",
+    "pos": [
+-    0,
+-    0,
+-    0.1521
++    0.0,
++    0.106,
++    0.1595
+    ]
++  },
++  {
++   "name": "diffuser",
++   "pos": [
++    0.0,
++    0.106,
++    0.0526
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.05439999999999999,
++    0.1432,
++    0.03
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    -0.048,
++    0.1432,
++    0.03
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.02,
++    0.06
++   ]
++  },
++  {
++   "name": "mount_l",
++   "pos": [
++    0.0445,
++    0.14,
++    0.0
++   ]
++  },
++  {
++   "name": "mount_r",
++   "pos": [
++    -0.0445,
++    0.14,
++    0.0
++   ]
+   }
+  ],
+  "tags": [
+-  "interactable",
+-  "exit_sign"
++  "exit_sign",
++  "wall_decor"
+  ],
+  "noCollider": true,
++ "exitSign": {
++  "faces": 1,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
+  "lodDistances": [
+-  3.0,
+-  10.0,
+-  null
++  5.0,
++  0.0,
++  0.0
+  ],
+  "lodBudget": [
+-  2000,
+-  700,
+-  100
++  3500,
++  1100,
++  200
+  ],
+- "lodRatios": [
+-  0.35,
+-  0.05
+- ],
+- "face": {
+-  "slot": "Run_ExitSign",
+-  "deadSlot": "Run_ExitSign_Dead",
+-  "textureRegion": [
+-   0.165,
+-   0.1441,
+-   0.845,
+-   0.9069
+-  ],
+-  "materialTile": [
+-   0.36,
+-   0.18
+-  ],
+-  "materialST": [
+-   -1,
+-   1,
+-   1,
+-   0
+-  ],
+-  "letterHeightM": 0.096
+- },
+- "trianglesCheck": 1916,
++ "trianglesCheck": 3136,
+  "boundsMin": [
+-  -0.16500000655651093,
+-  -0.10000000149011612,
++  -0.17299999296665192,
++  0.0,
+   -0.0
+  ],
+  "boundsMax": [
+-  0.16500000655651093,
+-  0.10159999877214432,
+-  0.05983543023467064
++  0.17299999296665192,
++  0.21240000426769257,
++  0.06393542885780334
+  ],
+- "triangles": 1916,
++ "triangles": 3136,
+  "slots": [
+-  "Prop_SteelBlack",
+-  "Run_ExitSign"
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser",
++  "Prop_Chrome"
+  ],
++ "trianglesLod1": 984,
+  "frontAxis": "+Z",
+  "footprintCentre": [
+   -0.0,
+-  0.02991771511733532
++  0.03196771442890167
+  ],
+  "footprintSize": [
+-  0.33000001311302185,
+-  0.05983543023467064
++  0.34599998593330383,
++  0.06393542885780334
+  ],
+- "placement": "Floor",
++ "placement": "Wall",
+  "service": 0.0,
+- "minCeiling": 0.152
++ "minCeiling": 0.262
+ }
+\ No newline at end of file
+Binary files a/Assets/Resources/Props/Models/Kit_ExitSign_Dead.fbx and b/Assets/Resources/Props/Models/Kit_ExitSign_Dead.fbx differ
+Binary files a/Assets/Resources/Props/Models/Kit_ExitSign_Dead.fbx.meta and b/Assets/Resources/Props/Models/Kit_ExitSign_Dead.fbx.meta differ
+--- a/Assets/Resources/Props/Models/Kit_ExitSign_Dead.json
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_Dead.json
+@@ -4,96 +4,174 @@
+  "colliders": [],
+  "anchors": [
+   {
+-   "name": "back",
++   "name": "hang",
+    "pos": [
+-    0,
+-    0,
+-    0
++    0.0,
++    0.0,
++    0.0
+    ]
+   },
+   {
++   "name": "back_centre",
++   "pos": [
++    0.0,
++    0.106,
++    0.0
++   ]
++  },
++  {
+    "name": "face",
+    "pos": [
+-    0,
+-    0,
+-    0.052099999999999994
++    0.0,
++    0.106,
++    0.059500000000000004
+    ]
+   },
+   {
+    "name": "face_dir",
+    "pos": [
+-    0,
+-    0,
+-    0.1521
++    0.0,
++    0.106,
++    0.1595
+    ]
++  },
++  {
++   "name": "diffuser",
++   "pos": [
++    0.0,
++    0.106,
++    0.0526
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.05439999999999999,
++    0.1432,
++    0.03
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    -0.048,
++    0.1432,
++    0.03
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.02,
++    0.06
++   ]
++  },
++  {
++   "name": "mount_l",
++   "pos": [
++    0.0445,
++    0.14,
++    0.0
++   ]
++  },
++  {
++   "name": "mount_r",
++   "pos": [
++    -0.0445,
++    0.14,
++    0.0
++   ]
+   }
+  ],
+  "tags": [
+-  "interactable",
+-  "exit_sign"
++  "exit_sign",
++  "wall_decor"
+  ],
+  "noCollider": true,
++ "exitSign": {
++  "faces": 1,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
+  "lodDistances": [
+-  3.0,
+-  10.0,
+-  null
++  5.0,
++  0.0,
++  0.0
+  ],
+  "lodBudget": [
+-  2000,
+-  700,
+-  100
++  3500,
++  1100,
++  200
+  ],
+- "lodRatios": [
+-  0.35,
+-  0.05
+- ],
+- "face": {
+-  "slot": "Run_ExitSign",
+-  "deadSlot": "Run_ExitSign_Dead",
+-  "textureRegion": [
+-   0.165,
+-   0.1441,
+-   0.845,
+-   0.9069
+-  ],
+-  "materialTile": [
+-   0.36,
+-   0.18
+-  ],
+-  "materialST": [
+-   -1,
+-   1,
+-   1,
+-   0
+-  ],
+-  "letterHeightM": 0.096
+- },
+- "trianglesCheck": 1916,
++ "trianglesCheck": 3136,
+  "boundsMin": [
+-  -0.16500000655651093,
+-  -0.10000000149011612,
++  -0.17299999296665192,
++  0.0,
+   -0.0
+  ],
+  "boundsMax": [
+-  0.16500000655651093,
+-  0.10159999877214432,
+-  0.05983543023467064
++  0.17299999296665192,
++  0.21240000426769257,
++  0.06393542885780334
+  ],
+- "triangles": 1916,
++ "triangles": 3136,
+  "slots": [
+-  "Prop_SteelBlack",
+-  "Run_ExitSign_Dead"
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser_Dead",
++  "Prop_Chrome"
+  ],
++ "trianglesLod1": 984,
+  "frontAxis": "+Z",
+  "footprintCentre": [
+   -0.0,
+-  0.02991771511733532
++  0.03196771442890167
+  ],
+  "footprintSize": [
+-  0.33000001311302185,
+-  0.05983543023467064
++  0.34599998593330383,
++  0.06393542885780334
+  ],
+- "placement": "Floor",
++ "placement": "Wall",
+  "service": 0.0,
+- "minCeiling": 0.152
++ "minCeiling": 0.262
+ }
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_End.fbx differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_End.fbx.meta differ
+--- /dev/null
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_End.json
+@@ -0,0 +1,153 @@
++{
++ "name": "Kit_ExitSign_End",
++ "supports": [],
++ "colliders": [],
++ "anchors": [
++  {
++   "name": "wall",
++   "pos": [
++    0.0,
++    0.0,
++    0.0
++   ]
++  },
++  {
++   "name": "centre",
++   "pos": [
++    0.0,
++    0.106,
++    0.188
++   ]
++  },
++  {
++   "name": "face_pos_x",
++   "pos": [
++    0.035,
++    0.106,
++    0.188
++   ]
++  },
++  {
++   "name": "face_neg_x",
++   "pos": [
++    -0.035,
++    0.106,
++    0.188
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.0,
++    0.1432,
++    0.13360000000000002
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    0.0,
++    0.1432,
++    0.23600000000000002
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.02,
++    0.188
++   ]
++  }
++ ],
++ "tags": [
++  "exit_sign",
++  "wall_decor"
++ ],
++ "noCollider": true,
++ "exitSign": {
++  "faces": 2,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
++ "lodDistances": [
++  5.0,
++  0.0,
++  0.0
++ ],
++ "lodBudget": [
++  6000,
++  1900,
++  300
++ ],
++ "trianglesCheck": 5758,
++ "boundsMin": [
++  -0.03943542763590813,
++  0.0,
++  -0.0
++ ],
++ "boundsMax": [
++  0.03943542763590813,
++  0.21199999749660492,
++  0.3610000014305115
++ ],
++ "triangles": 5758,
++ "slots": [
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser",
++  "Prop_Chrome"
++ ],
++ "trianglesLod1": 1822,
++ "frontAxis": "+Z",
++ "footprintCentre": [
++  -0.0,
++  0.18050000071525574
++ ],
++ "footprintSize": [
++  0.07887085527181625,
++  0.3610000014305115
++ ],
++ "placement": "Wall",
++ "service": 0.0,
++ "minCeiling": 0.262
++}
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_End.json.meta differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_End_Dead.fbx differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_End_Dead.fbx.meta differ
+--- /dev/null
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_End_Dead.json
+@@ -0,0 +1,153 @@
++{
++ "name": "Kit_ExitSign_End_Dead",
++ "supports": [],
++ "colliders": [],
++ "anchors": [
++  {
++   "name": "wall",
++   "pos": [
++    0.0,
++    0.0,
++    0.0
++   ]
++  },
++  {
++   "name": "centre",
++   "pos": [
++    0.0,
++    0.106,
++    0.188
++   ]
++  },
++  {
++   "name": "face_pos_x",
++   "pos": [
++    0.035,
++    0.106,
++    0.188
++   ]
++  },
++  {
++   "name": "face_neg_x",
++   "pos": [
++    -0.035,
++    0.106,
++    0.188
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.0,
++    0.1432,
++    0.13360000000000002
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    0.0,
++    0.1432,
++    0.23600000000000002
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.02,
++    0.188
++   ]
++  }
++ ],
++ "tags": [
++  "exit_sign",
++  "wall_decor"
++ ],
++ "noCollider": true,
++ "exitSign": {
++  "faces": 2,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
++ "lodDistances": [
++  5.0,
++  0.0,
++  0.0
++ ],
++ "lodBudget": [
++  6000,
++  1900,
++  300
++ ],
++ "trianglesCheck": 5758,
++ "boundsMin": [
++  -0.03943542763590813,
++  0.0,
++  -0.0
++ ],
++ "boundsMax": [
++  0.03943542763590813,
++  0.21199999749660492,
++  0.3610000014305115
++ ],
++ "triangles": 5758,
++ "slots": [
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser_Dead",
++  "Prop_Chrome"
++ ],
++ "trianglesLod1": 1822,
++ "frontAxis": "+Z",
++ "footprintCentre": [
++  -0.0,
++  0.18050000071525574
++ ],
++ "footprintSize": [
++  0.07887085527181625,
++  0.3610000014305115
++ ],
++ "placement": "Wall",
++ "service": 0.0,
++ "minCeiling": 0.262
++}
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_End_Dead.json.meta differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging.fbx differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging.fbx.meta differ
+--- /dev/null
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging.json
+@@ -0,0 +1,170 @@
++{
++ "name": "Kit_ExitSign_Hanging",
++ "supports": [],
++ "colliders": [],
++ "anchors": [
++  {
++   "name": "ceiling",
++   "pos": [
++    0.0,
++    0.0,
++    0.0
++   ]
++  },
++  {
++   "name": "centre",
++   "pos": [
++    0.0,
++    -0.506,
++    0.0
++   ]
++  },
++  {
++   "name": "face_front",
++   "pos": [
++    0.0,
++    -0.506,
++    0.035
++   ]
++  },
++  {
++   "name": "face_back",
++   "pos": [
++    0.0,
++    -0.506,
++    -0.035
++   ]
++  },
++  {
++   "name": "stem_l",
++   "pos": [
++    0.105,
++    -0.4,
++    0.0
++   ]
++  },
++  {
++   "name": "stem_r",
++   "pos": [
++    -0.105,
++    -0.4,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.05439999999999999,
++    -0.4688,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    -0.048,
++    -0.4688,
++    0.0
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.94,
++    0.0
++   ]
++  }
++ ],
++ "tags": [
++  "exit_sign",
++  "ceiling"
++ ],
++ "noCollider": true,
++ "exitSign": {
++  "faces": 2,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
++ "lodDistances": [
++  5.0,
++  0.0,
++  0.0
++ ],
++ "lodBudget": [
++  6500,
++  2000,
++  300
++ ],
++ "dropM": 0.4,
++ "trianglesCheck": 6502,
++ "boundsMin": [
++  -0.17299999296665192,
++  -0.6119999885559082,
++  -0.03943542763590813
++ ],
++ "boundsMax": [
++  0.17299999296665192,
++  0.0,
++  0.03943542763590813
++ ],
++ "triangles": 6502,
++ "slots": [
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser",
++  "Prop_Chrome"
++ ],
++ "trianglesLod1": 1999,
++ "frontAxis": "+Z",
++ "footprintCentre": [
++  -0.0,
++  -0.0
++ ],
++ "footprintSize": [
++  0.34599998593330383,
++  0.07887085527181625
++ ],
++ "placement": "Ceiling",
++ "service": 0.0,
++ "minCeiling": 0.05
++}
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging.json.meta differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush.fbx differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush.fbx.meta differ
+--- /dev/null
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush.json
+@@ -0,0 +1,170 @@
++{
++ "name": "Kit_ExitSign_HangingFlush",
++ "supports": [],
++ "colliders": [],
++ "anchors": [
++  {
++   "name": "ceiling",
++   "pos": [
++    0.0,
++    0.0,
++    0.0
++   ]
++  },
++  {
++   "name": "centre",
++   "pos": [
++    0.0,
++    -0.131,
++    0.0
++   ]
++  },
++  {
++   "name": "face_front",
++   "pos": [
++    0.0,
++    -0.131,
++    0.035
++   ]
++  },
++  {
++   "name": "face_back",
++   "pos": [
++    0.0,
++    -0.131,
++    -0.035
++   ]
++  },
++  {
++   "name": "stem_l",
++   "pos": [
++    0.105,
++    -0.025,
++    0.0
++   ]
++  },
++  {
++   "name": "stem_r",
++   "pos": [
++    -0.105,
++    -0.025,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.05439999999999999,
++    -0.09380000000000001,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    -0.048,
++    -0.09380000000000001,
++    0.0
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.44,
++    0.0
++   ]
++  }
++ ],
++ "tags": [
++  "exit_sign",
++  "ceiling"
++ ],
++ "noCollider": true,
++ "exitSign": {
++  "faces": 2,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
++ "lodDistances": [
++  5.0,
++  0.0,
++  0.0
++ ],
++ "lodBudget": [
++  5800,
++  1800,
++  300
++ ],
++ "dropM": 0.025,
++ "trianglesCheck": 6254,
++ "boundsMin": [
++  -0.17299999296665192,
++  -0.2370000034570694,
++  -0.03943542763590813
++ ],
++ "boundsMax": [
++  0.17299999296665192,
++  0.0,
++  0.03943542763590813
++ ],
++ "triangles": 6254,
++ "slots": [
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser",
++  "Prop_Chrome"
++ ],
++ "trianglesLod1": 1940,
++ "frontAxis": "+Z",
++ "footprintCentre": [
++  -0.0,
++  -0.0
++ ],
++ "footprintSize": [
++  0.34599998593330383,
++  0.07887085527181625
++ ],
++ "placement": "Ceiling",
++ "service": 0.0,
++ "minCeiling": 0.05
++}
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush.json.meta differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush_Dead.fbx differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush_Dead.fbx.meta differ
+--- /dev/null
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush_Dead.json
+@@ -0,0 +1,170 @@
++{
++ "name": "Kit_ExitSign_HangingFlush_Dead",
++ "supports": [],
++ "colliders": [],
++ "anchors": [
++  {
++   "name": "ceiling",
++   "pos": [
++    0.0,
++    0.0,
++    0.0
++   ]
++  },
++  {
++   "name": "centre",
++   "pos": [
++    0.0,
++    -0.131,
++    0.0
++   ]
++  },
++  {
++   "name": "face_front",
++   "pos": [
++    0.0,
++    -0.131,
++    0.035
++   ]
++  },
++  {
++   "name": "face_back",
++   "pos": [
++    0.0,
++    -0.131,
++    -0.035
++   ]
++  },
++  {
++   "name": "stem_l",
++   "pos": [
++    0.105,
++    -0.025,
++    0.0
++   ]
++  },
++  {
++   "name": "stem_r",
++   "pos": [
++    -0.105,
++    -0.025,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.05439999999999999,
++    -0.09380000000000001,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    -0.048,
++    -0.09380000000000001,
++    0.0
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.44,
++    0.0
++   ]
++  }
++ ],
++ "tags": [
++  "exit_sign",
++  "ceiling"
++ ],
++ "noCollider": true,
++ "exitSign": {
++  "faces": 2,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
++ "lodDistances": [
++  5.0,
++  0.0,
++  0.0
++ ],
++ "lodBudget": [
++  5800,
++  1800,
++  300
++ ],
++ "dropM": 0.025,
++ "trianglesCheck": 6254,
++ "boundsMin": [
++  -0.17299999296665192,
++  -0.2370000034570694,
++  -0.03943542763590813
++ ],
++ "boundsMax": [
++  0.17299999296665192,
++  0.0,
++  0.03943542763590813
++ ],
++ "triangles": 6254,
++ "slots": [
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser_Dead",
++  "Prop_Chrome"
++ ],
++ "trianglesLod1": 1940,
++ "frontAxis": "+Z",
++ "footprintCentre": [
++  -0.0,
++  -0.0
++ ],
++ "footprintSize": [
++  0.34599998593330383,
++  0.07887085527181625
++ ],
++ "placement": "Ceiling",
++ "service": 0.0,
++ "minCeiling": 0.05
++}
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush_Dead.json.meta differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging_Dead.fbx differ
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging_Dead.fbx.meta differ
+--- /dev/null
++++ b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging_Dead.json
+@@ -0,0 +1,170 @@
++{
++ "name": "Kit_ExitSign_Hanging_Dead",
++ "supports": [],
++ "colliders": [],
++ "anchors": [
++  {
++   "name": "ceiling",
++   "pos": [
++    0.0,
++    0.0,
++    0.0
++   ]
++  },
++  {
++   "name": "centre",
++   "pos": [
++    0.0,
++    -0.506,
++    0.0
++   ]
++  },
++  {
++   "name": "face_front",
++   "pos": [
++    0.0,
++    -0.506,
++    0.035
++   ]
++  },
++  {
++   "name": "face_back",
++   "pos": [
++    0.0,
++    -0.506,
++    -0.035
++   ]
++  },
++  {
++   "name": "stem_l",
++   "pos": [
++    0.105,
++    -0.4,
++    0.0
++   ]
++  },
++  {
++   "name": "stem_r",
++   "pos": [
++    -0.105,
++    -0.4,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_a",
++   "pos": [
++    0.05439999999999999,
++    -0.4688,
++    0.0
++   ]
++  },
++  {
++   "name": "lamp_b",
++   "pos": [
++    -0.048,
++    -0.4688,
++    0.0
++   ]
++  },
++  {
++   "name": "glow",
++   "pos": [
++    0.0,
++    -0.94,
++    0.0
++   ]
++  }
++ ],
++ "tags": [
++  "exit_sign",
++  "ceiling"
++ ],
++ "noCollider": true,
++ "exitSign": {
++  "faces": 2,
++  "openingM": [
++   0.32,
++   0.186
++  ],
++  "letterHeightM": 0.1524,
++  "strokeM": 0.01905,
++  "faceSlot": "ExitSign_Face",
++  "diffuserSlot": "ExitSign_Diffuser",
++  "deadSlot": "ExitSign_Diffuser_Dead",
++  "chevrons": "closed",
++  "lampField": {
++   "lampA": [
++    0.33,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "lampB": [
++    0.65,
++    0.7,
++    0.08,
++    0.2
++   ],
++   "fill": 0.06,
++   "dc": [
++    [
++     0.12,
++     0.7,
++     0.08,
++     0.2
++    ],
++    [
++     0.88,
++     0.7,
++     0.08,
++     0.2
++    ]
++   ],
++   "dcLevel": 0.25,
++   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
++  }
++ },
++ "lodDistances": [
++  5.0,
++  0.0,
++  0.0
++ ],
++ "lodBudget": [
++  6500,
++  2000,
++  300
++ ],
++ "dropM": 0.4,
++ "trianglesCheck": 6502,
++ "boundsMin": [
++  -0.17299999296665192,
++  -0.6119999885559082,
++  -0.03943542763590813
++ ],
++ "boundsMax": [
++  0.17299999296665192,
++  0.0,
++  0.03943542763590813
++ ],
++ "triangles": 6502,
++ "slots": [
++  "ExitSign_Housing",
++  "ExitSign_Face",
++  "ExitSign_Diffuser_Dead",
++  "Prop_Chrome"
++ ],
++ "trianglesLod1": 1999,
++ "frontAxis": "+Z",
++ "footprintCentre": [
++  -0.0,
++  -0.0
++ ],
++ "footprintSize": [
++  0.34599998593330383,
++  0.07887085527181625
++ ],
++ "placement": "Ceiling",
++ "service": 0.0,
++ "minCeiling": 0.05
++}
+\ No newline at end of file
+Binary files /dev/null and b/Assets/Resources/Props/Models/Kit_ExitSign_Hanging_Dead.json.meta differ
+--- a/Assets/Resources/Rendering/FrontRoomsSurface.shader
++++ b/Assets/Resources/Rendering/FrontRoomsSurface.shader
+@@ -36,6 +36,13 @@
+         _EmissionMap ("Emission", 2D) = "white" {}
+         [HDR] _EmissionColor ("Emission colour", Color) = (0, 0, 0, 1)
+ 
++        // EXIT sign diffusers (research/exit_sign/10_spec.md §7.2): with this on, emission =
++        // dot(field.rgb, _LampField.rgb) * field.a * _EmissionColor (field: R lamp A, G lamp B,
++        // B DC pair, A transmission; linear). FrontRoomsExitSign writes _LampField per renderer.
++        [Toggle(_FR_LAMP_FIELD)] _UseLampField ("Lamp field (exit-sign diffusers)", Float) = 0
++        _LampFieldMap ("Lamp field (R A, G B, B DC, A transmission; linear)", 2D) = "black" {}
++        _LampField ("Lamp weights (A, B, DC, unused)", Vector) = (1, 1, 0, 0)
++
+         // Print layer (wallpaper "sandwich", research/wallpaper_motion): with it on, the
+         // Albedo slot holds the PAPER modulation (linear, see FR_PAPER_*) and the colour
+         // comes from the print: frame 0 below, or the global _FR_Print flipbook.
+@@ -86,6 +93,8 @@
+             half4 _InkDeep;
+             half4 _InkCream;
+             half _PrintAmount;
++            // Exit-sign lamp weights: in every pass, so the SRP batcher layout never changes.
++            float4 _LampField;
+         CBUFFER_END
+ 
+         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
+@@ -116,6 +125,8 @@
+             // Wallpaper print layer (L0_Wallpaper, L0_Wallpaper_Shift, Exit_Wallpaper). Runtime
+             // on/off goes through _FR_PrintClock.w, never through this keyword.
+             #pragma shader_feature_local_fragment _FR_PRINT
++            // Exit-sign lamp field (ExitSign_Diffuser only). Off: emission is the plain map, bit-identical.
++            #pragma shader_feature_local_fragment _FR_LAMP_FIELD
+             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
+             // shader_feature: no material enables it, so player builds strip it; the editor
+             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
+@@ -289,6 +300,13 @@
+             }
+         #endif
+ 
++        #if defined(_FR_LAMP_FIELD)
++            // Its own sampler: with the keyword on, _EmissionMap is not sampled, so the
++            // compiler strips it and sampler_EmissionMap no longer exists (HLSLcc error on
++            // Metal). The field map's importer state is clamped, trilinear.
++            TEXTURE2D(_LampFieldMap); SAMPLER(sampler_LampFieldMap);
++        #endif
++
+         #if defined(_FR_DEBUG_VIEW)
+             // 1 specular only, 2 diffuse only, 3 wear masks (stain, floor grime, ceiling
+             // streaks), 4 wear masks (tone, dirt, damp), 5 albedo. 0 = normal shading.
+@@ -465,8 +483,13 @@
+                 s.occlusion = cavity;
+                 s.alpha = 1;
+             #if defined(_EMISSION)
++            #if defined(_FR_LAMP_FIELD)
++                half4 lampField = SAMPLE_TEXTURE2D(_LampFieldMap, sampler_LampFieldMap, uv);
++                s.emission = dot(lampField.rgb, (half3)_LampField.rgb) * lampField.a * _EmissionColor.rgb;
++            #else
+                 s.emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;
+             #endif
++            #endif
+ 
+             #if defined(_FR_DEBUG_VIEW)
+                 half4 color;
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Diffuser.mat differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Diffuser.mat.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Diffuser_Dead.mat differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Diffuser_Dead.mat.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Face.mat differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Face.mat.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Housing.mat differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/ExitSign_Housing.mat.meta differ
+Binary files a/Assets/Resources/Surfaces/Run_ExitSign.mat and b/Assets/Resources/Surfaces/Run_ExitSign.mat differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_A.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_A.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_E.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_E.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_F.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_F.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_S.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Diffuser_S.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Enamel_A.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Enamel_A.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Enamel_N.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Enamel_N.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Enamel_S.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Enamel_S.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Face_A.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Face_A.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Face_N.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Face_N.png.meta differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Face_S.png differ
+Binary files /dev/null and b/Assets/Resources/Surfaces/Textures/ExitSign_Face_S.png.meta differ
+--- a/Assets/Scripts/FrontRoomsRoomStream.cs
++++ b/Assets/Scripts/FrontRoomsRoomStream.cs
+@@ -147,6 +147,12 @@
+         public float[] lightOutputLevel;
+         public bool[] lightOutputEnabled;
+         public GameObject[] profileVariants;
++        // EXIT signs per profile variant (index = RoomRule; null where a profile has none).
++        // Only the room's own rule's signs are configured and ticked.
++        public FrontRoomsExitSign[][] exitSigns;
++        // Set once the room's lamps are cued (ScheduleRoomLight / ActivateRoomLightImmediately):
++        // a loose exit-sign lamp only plays its drop-outs while someone can be there.
++        public bool lampsScheduled;
+     }
+ 
+     enum LampState { Off, Waiting, Striking, Rising, Steady, Unstable, Dead }
+@@ -800,7 +806,23 @@
+             if (room == null || room.lampState == null || room.sequence > terminalSequence) continue;
+             for (var lamp = 0; lamp < room.lampState.Length; lamp++)
+                 TickLamp(room, lamp, dt);
++            if (room.lampsScheduled) TickExitSigns(room, dt);
+         }
++    }
++
++    /// <summary>The room's own EXIT signs: a static sign returns at once, a loose one plays its drop-outs.</summary>
++    static void TickExitSigns(RoomSlot room, float dt)
++    {
++        var signs = ActiveExitSigns(room);
++        if (signs == null) return;
++        for (var i = 0; i < signs.Length; i++)
++            if (signs[i] != null) signs[i].Tick(dt);
++    }
++
++    static FrontRoomsExitSign[] ActiveExitSigns(RoomSlot room)
++    {
++        var index = (int)room.rule;
++        return room.exitSigns != null && index >= 0 && index < room.exitSigns.Length ? room.exitSigns[index] : null;
+     }
+ 
+     void TickLamp(RoomSlot room, int lamp, float dt)
+@@ -861,6 +883,7 @@
+         // Only dark lamps are cued; a lamp that is already on keeps its clock.
+         for (var lamp = 0; lamp < room.lampState.Length; lamp++)
+             if (room.lampState[lamp] == LampState.Off) room.lampState[lamp] = LampState.Waiting;
++        room.lampsScheduled = true;
+     }
+ 
+     void TickUnstableLamp(RoomSlot room, int lamp, float dt)
+@@ -1125,6 +1148,7 @@
+         room.rearSeal.SetActive(index == 0);
+         BuildDoor(room);
+         BuildProfileProps(room);
++        ConfigureExitSigns(room);
+         RefreshRoomMaterials(room);
+     }
+ 
+@@ -1409,6 +1433,7 @@
+     {
+         EnsurePropMaterials();
+         room.profileVariants = new GameObject[5];
++        room.exitSigns = new FrontRoomsExitSign[room.profileVariants.Length][];
+         for (var ruleIndex = 0; ruleIndex < room.profileVariants.Length; ruleIndex++)
+         {
+             var rule = (RoomRule)ruleIndex;
+@@ -1426,6 +1451,10 @@
+                     var outlet = Box(props.transform, "outlet plate", new Vector3(x, .32f, z), new Vector3(.012f, .115f, .07f), outletMaterial);
+                     outlet.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                 }
++                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
++                // (Here, not in the Exit branch below: this branch already takes Exit, so that one never runs.)
++                if (rule == RoomRule.Exit)
++                    room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
+             }
+             else if (rule == RoomRule.Office)
+             {
+@@ -1469,28 +1498,13 @@
+                     Box(bed, "run gurney wheel", new Vector3(wx, .06f, wz), new Vector3(.04f, .11f, .11f), officeDarkMaterial);
+                 }
+                 Cylinder(props.transform, "run IV pole", new Vector3(4.3f, .95f, 8.6f), new Vector3(.03f, .95f, .03f), runChromeMaterial, Vector3.zero);
+-                // Hanging exit signs: battery fixtures that stay lit when the
+-                // ballasts fail, and the red source of the whole level.
+-                foreach (var sz in new[] { 3.4f, 9.2f })
++                // Hanging exit signs: battery fixtures on their own circuit, so
++                // they burn when the ballasts fail; the red source of the whole level.
++                room.exitSigns[ruleIndex] = new[]
+                 {
+-                    var sign = new GameObject("run exit sign").transform;
+-                    sign.SetParent(props.transform, false);
+-                    sign.localPosition = new Vector3(0f, 2.36f, sz);
+-                    Box(sign, "run exit sign housing", Vector3.zero, new Vector3(.40f, .21f, .05f), officeDarkMaterial);
+-                    SignFace(sign, "run exit sign face / near", new Vector3(0f, 0f, -.027f), new Vector2(.36f, .18f), FrontRoomsSurfaces.ExitSign, true);
+-                    SignFace(sign, "run exit sign face / far", new Vector3(0f, 0f, .027f), new Vector2(.36f, .18f), FrontRoomsSurfaces.ExitSign, false);
+-                    Box(sign, "run exit sign rod left", new Vector3(-.15f, .32f, 0f), new Vector3(.012f, .43f, .012f), runChromeMaterial);
+-                    Box(sign, "run exit sign rod right", new Vector3(.15f, .32f, 0f), new Vector3(.012f, .43f, .012f), runChromeMaterial);
+-                    var red = new GameObject("run exit sign light").AddComponent<Light>();
+-                    red.transform.SetParent(sign, false);
+-                    red.transform.localPosition = new Vector3(0f, -.40f, 0f);
+-                    red.type = LightType.Point;
+-                    red.color = new Color(1f, .10f, .06f);
+-                    red.intensity = 3.6f;
+-                    red.range = 9.5f;
+-                    red.shadows = LightShadows.Soft;
+-                    red.shadowStrength = .85f;
+-                }
++                    BuildHangingExitSign(props.transform, 3.4f, "exit sign A"),
++                    BuildHangingExitSign(props.transform, 9.2f, "exit sign B")
++                };
+             }
+             else if (rule == RoomRule.Exit)
+             {
+@@ -1511,6 +1525,7 @@
+             var renderer = renderers[i];
+             if (renderer == null) continue;
+             var name = renderer.gameObject.name.ToLowerInvariant();
++            // Name rule: no exit-sign label or part may contain these words (research/exit_sign/10_spec.md §3.3).
+             if (name.Contains("floor") || name.Contains("carpet")) renderer.sharedMaterial = floor;
+             else if (name.Contains("ceiling")) renderer.sharedMaterial = ceiling;
+             else if (name.Contains("wall") || name.Contains("seal") || name.Contains("partition") || name.Contains("threshold marker")) renderer.sharedMaterial = wall;
+@@ -1663,8 +1678,48 @@
+             room.lampRiseFrom[lamp] = 0f;
+             room.lampUnstableElapsed[lamp] = 0f;
+         }
++        room.lampsScheduled = false;
++        ConfigureExitSigns(room);
+     }
+ 
++    // Exit-sign odds per profile (research/exit_sign/10_spec.md §8.2). A sign has its own
++    // circuit, so these never follow the troffers' dead/failing odds. Run: the level's red
++    // source must burn (no BATTERY, no DEAD), at most one LOOSE sign a room. Exit: the true
++    // exit never fails. Other profiles have no signs.
++    static void SignOdds(RoomRule rule, out float half, out float loose)
++    {
++        switch (rule)
++        {
++            case RoomRule.Run: half = .15f; loose = .15f; break;
++            default: half = 0f; loose = 0f; break;
++        }
++    }
++
++    /// <summary>
++    /// Deal the room's own signs their temperaments from the sequence hash: keys
++    /// sequence * 16 + 12 + i (the lamps use 0..11), so a recycled slot never repeats
++    /// its old signs and a room always shows the same ones.
++    /// </summary>
++    void ConfigureExitSigns(RoomSlot room)
++    {
++        var signs = room == null ? null : ActiveExitSigns(room);
++        if (signs == null) return;
++        SignOdds(room.rule, out var half, out var loose);
++        var sequence = Mathf.Max(0, room.sequence);
++        var looseTaken = false;
++        for (var i = 0; i < signs.Length; i++)
++        {
++            var sign = signs[i];
++            if (sign == null) continue;
++            var key = sequence * 16 + 12 + i;
++            var roll = Hash01(key, 89);
++            var temperament = FrontRoomsExitSign.Temperament.Lit;
++            if (roll < half) temperament = Hash01(key, 97) < .5f ? FrontRoomsExitSign.Temperament.HalfA : FrontRoomsExitSign.Temperament.HalfB;
++            else if (roll < half + loose && !looseTaken) { temperament = FrontRoomsExitSign.Temperament.Loose; looseTaken = true; }
++            sign.Configure((uint)key ^ 0x9E3779B9u, temperament, sign.RedLight, sign.LightBase);
++        }
++    }
++
+     static float Hash01(int sequence, int salt)
+     {
+         unchecked
+@@ -1682,6 +1737,7 @@
+     void ActivateRoomLightImmediately(RoomSlot room)
+     {
+         if (room == null || room.lampState == null) return;
++        room.lampsScheduled = true;
+         for (var lamp = 0; lamp < room.lampState.Length; lamp++)
+         {
+             if (room.lampDead[lamp])
+@@ -1840,13 +1896,58 @@
+         return reveal;
+     }
+ 
+-    void SignFace(Transform parent, string name, Vector3 localPosition, Vector2 size, Material material, bool faceBack)
++    /// <summary>
++    /// A double-faced hanging EXIT sign (Kit_ExitSign_Hanging, no colliders) from the
++    /// ceiling at <paramref name="z"/>, its faces down the corridor, with the red point light
++    /// at its glow anchor (1.96 m, where the code-built sign had it) driven by the sign's Level.
++    /// The light is built even if the model is missing, so the level keeps its red source.
++    /// </summary>
++    FrontRoomsExitSign BuildHangingExitSign(Transform parent, float z, string label)
+     {
+-        var face = InteriorReveal(parent, name, localPosition, size, material, faceBack);
+-        var renderer = face.GetComponent<Renderer>();
+-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
++        const string asset = "Kit_ExitSign_Hanging";
++        var position = new Vector3(0f, RoomHeight, z);
++        var sign = FrontRoomsKitLibrary.Spawn(asset, parent, position, 0f, null, false, label);
++        if (sign == null)
++        {
++            sign = new GameObject(label);
++            sign.transform.SetParent(parent, false);
++            sign.transform.localPosition = position;
++        }
++        var info = FrontRoomsKitLibrary.GetInfo(asset);
++        var glow = info != null && info.TryAnchor("glow", out var anchor) ? anchor : new Vector3(0f, 1.96f - RoomHeight, 0f);
++        var red = new GameObject("run exit sign light").AddComponent<Light>();
++        red.transform.SetParent(sign.transform, false);
++        red.transform.localPosition = glow;
++        red.type = LightType.Point;
++        red.color = new Color(1f, .10f, .06f);
++        red.intensity = 3.6f;
++        red.range = 9.5f;
++        red.shadows = LightShadows.Soft;
++        red.shadowStrength = .85f;
++        return AttachExitSign(sign, red, 3.6f);
+     }
+ 
++    /// <summary>
++    /// A wall EXIT sign (Kit_ExitSign, no colliders) on the far door's header, centred on
++    /// the 2.4 m opening, its back on the header's room face, facing -Z: bottom 2.674 m,
++    /// top 2.886 m, clear of the 2.62 m leaves. No light of its own (spec §8.6: spill off).
++    /// </summary>
++    FrontRoomsExitSign BuildDoorExitSign(Transform parent, string label)
++    {
++        var position = new Vector3(0f, RoomHeight - DoorHeaderHeight + .014f, RoomLength - DoorWallDepth * .5f - .004f);
++        var sign = FrontRoomsKitLibrary.Spawn("Kit_ExitSign", parent, position, 180f, null, false, label);
++        return sign == null ? null : AttachExitSign(sign, null, 0f);
++    }
++
++    static FrontRoomsExitSign AttachExitSign(GameObject sign, Light light, float lightBase)
++    {
++        var driver = sign.GetComponent<FrontRoomsExitSign>();
++        if (driver == null) driver = sign.AddComponent<FrontRoomsExitSign>();
++        driver.SelfTick = false;
++        driver.Configure(0u, FrontRoomsExitSign.Temperament.Lit, light, lightBase);
++        return driver;
++    }
++
+     static Mesh cylinderMesh;
+ 
+     GameObject Cylinder(Transform parent, string name, Vector3 localPosition, Vector3 scale, Material material, Vector3 eulerAngles)
+--- a/Assets/Scripts/Office/FrontRoomsKitLibrary.cs
++++ b/Assets/Scripts/Office/FrontRoomsKitLibrary.cs
+@@ -226,6 +226,11 @@
+         if (current.x != s.x || current.y != s.y || current.z != s.z) t.localScale = s;
+         ApplyMaterials(assetName, model, instance);
+         if (colliders) AddColliders(assetName, model, instance);
++        // EXIT signs carry their own lamp driver (research/exit_sign/10_spec.md §8.6), so a
++        // map-module or facade spawn gets a working sign with no map edit.
++        var info = GetInfo(assetName);
++        if (info != null && info.HasTag("exit_sign") && instance.GetComponent<FrontRoomsExitSign>() == null)
++            instance.AddComponent<FrontRoomsExitSign>();
+         return instance;
+     }
+ 
+--- /dev/null
++++ b/Assets/Scripts/Rendering/FrontRoomsExitSign.cs
+@@ -0,0 +1,359 @@
++using UnityEngine;
++
++/// <summary>
++/// An EXIT sign's lamps (exit-sign workflow; Documentation/research/exit_sign/10_spec.md §8).
++/// A 1990 stencil sign has two 20 W lamps (A behind E-X, B behind I-T) and, in a battery
++/// unit, two 5 W DC lamps near the ends. The diffuser's lamp-field map (ExitSign_Diffuser_F:
++/// R lamp A, G lamp B, B DC pair) gives each lamp its own hot spot; this component writes the
++/// lamp weights to the diffuser submeshes as _LampField (FrontRooms/Surface, _FR_LAMP_FIELD)
++/// and drives an optional red light by the sign's Level.
++///
++/// Temperaments: Lit; HalfA / HalfB (one lamp burnt out); Loose (one lamp's socket drops out
++/// now and then: 1-3 drop-outs per episode, at least 0.5 s apart, at most 3 s an episode, then
++/// at least 4 s of quiet, so never more than 2 flashes a second and never a full blackout);
++/// Battery (mains lost: only the DC lamps); Dead (nothing, the light off).
++/// REDUCE FLASHING: a loose lamp rests at 0.6, steady (its clock and random stream still run),
++/// and a mains transfer is a 0.5 s crossfade with no black gap.
++///
++/// A sign has its own circuit: troffer failures never reach it. Mains events do (SetMains).
++/// A static sign (Lit, Half, Battery, Dead, settled mains) does no per-frame work, and the
++/// diffuser keeps no property block while it is plainly LIT, so it stays SRP-batched.
++/// The room stream calls Tick itself; a sign spawned by the kit library (tag exit_sign)
++/// runs its own Update only while it is Loose or in a mains transition. No allocation per frame.
++/// </summary>
++[DisallowMultipleComponent]
++public sealed class FrontRoomsExitSign : MonoBehaviour
++{
++    public enum Temperament { Lit, HalfA, HalfB, Loose, Battery, Dead }
++
++    // Mean level through the letter holes of each lamp channel of ExitSign_Diffuser_F, relative to
++    // LIT (A + B = 1); measured over the letter polygons of exit_sign_geom.py (research/exit_sign/30_integration.md §2).
++    const float LetterShareA = .4587f;
++    const float LetterShareB = .5413f;
++    const float LetterShareDC = .6621f;
++    const float DcWeight = .25f;               // exit_sign_geom.DC_LEVEL: 2 x 5 W against 2 x 20 W
++    const string DiffuserMaterial = "ExitSign_Diffuser";
++    const string DeadDiffuserMaterial = "ExitSign_Diffuser_Dead";
++
++    // LOOSE: an incandescent contact, not a ballast (spec §8.3).
++    const float LooseMeanGap = 3f, LooseGapMin = .6f, LooseGapMax = 8f;
++    const float DropFloor = .05f, TauOff = .04f, TauOn = .06f;
++    const float FallSeconds = .12f;            // three time constants to the floor
++    const float HoldMin = .08f, HoldMax = .30f;
++    const float DropSpacing = .5f;             // from one recovery to the next fall: <= 2 flashes/s
++    const float EpisodeMax = 3f, QuietMin = 4f;
++    const float ReducedLooseLevel = .6f;
++    const float ReducedEnvelopeSeconds = .5f;
++
++    // Mains (spec §8.2).
++    const float TransferLevel = .55f, BrownoutExponent = 3.4f, TransferGap = .20f;
++    const float CoolSeconds = .18f;            // AC filaments below 1 % (4.6 x 40 ms) before the black gap starts
++
++    static readonly int LampFieldId = Shader.PropertyToID("_LampField");
++    static readonly Vector4 LitWeights = new Vector4(1f, 1f, 0f, 0f);
++
++    enum LoosePhase { Quiet, Drop, Rise, Gap }
++
++    Temperament temperament;
++    Light redLight;
++    float lightBase;
++    bool selfTick = true;
++
++    // Diffuser submeshes (LOD0 and LOD1).
++    Renderer[] diffuserRenderers;
++    int[] diffuserSlots;
++    bool cached;
++    bool deadAsset;
++    MaterialPropertyBlock block;
++    Vector4 applied = new Vector4(-1f, -1f, -1f, -1f);
++
++    // Lamp state.
++    uint rng = 1u;
++    int looseLamp;                              // 0 = A, 1 = B
++    LoosePhase phase;
++    float phaseTimer;
++    int dropsLeft;
++    float episodeElapsed;
++    float looseLevel = 1f;
++    float reducedMix;
++    float mains = 1f;
++    bool onDc;
++    float ac = 1f, acTarget = 1f;
++    float dc, dcTarget;
++    float gapTimer;
++
++    public Temperament State => temperament;
++    /// <summary>Mean letter level against a LIT sign (0 = dark). The red light and the RT read it.</summary>
++    public float Level { get; private set; } = 1f;
++    public Light RedLight => redLight;
++    public float LightBase => lightBase;
++    /// <summary>The lamp weights last written to _LampField (A, B, DC, 0).</summary>
++    public Vector4 Weights { get; private set; } = LitWeights;
++    /// <summary>True while Loose, or while a mains change is still settling.</summary>
++    public bool NeedsTick => !deadAsset && (temperament == Temperament.Loose || !Settled);
++    /// <summary>Run Update by itself (kit-library spawns). The room stream sets it false and calls Tick.</summary>
++    public bool SelfTick
++    {
++        get => selfTick;
++        set { selfTick = value; enabled = value && NeedsTick; }
++    }
++
++    bool Settled => gapTimer <= 0f && Mathf.Approximately(ac, acTarget) && Mathf.Approximately(dc, dcTarget);
++
++    void Awake()
++    {
++        EnsureCache();
++        if (deadAsset) temperament = Temperament.Dead;
++        Apply();
++        enabled = selfTick && NeedsTick;
++    }
++
++    void Update() => Tick(Time.deltaTime);
++
++    /// <summary>
++    /// Deal the sign its temperament. The seed picks the loose lamp and its drop-out clock.
++    /// A sign built with no live diffuser (the _Dead models) is always Dead.
++    /// </summary>
++    public void Configure(uint seed, Temperament t, Light light = null, float lightIntensity = 0f)
++    {
++        EnsureCache();
++        redLight = light;
++        lightBase = lightIntensity;
++        temperament = deadAsset ? Temperament.Dead : t;
++        rng = seed * 747796405u + 2891336453u;
++        if (rng == 0u) rng = 1u;
++        looseLamp = (Next() & 1u) == 0u ? 0 : 1;
++        phase = LoosePhase.Quiet;
++        phaseTimer = Gap();
++        dropsLeft = 0;
++        episodeElapsed = 0f;
++        looseLevel = 1f;
++        reducedMix = FrontRoomsSettings.ReduceFlashing ? 1f : 0f;
++        mains = 1f;
++        onDc = temperament == Temperament.Battery;
++        ac = acTarget = onDc ? 0f : 1f;
++        dc = dcTarget = onDc ? 1f : 0f;
++        gapTimer = 0f;
++        Apply();
++        enabled = selfTick && NeedsTick;
++    }
++
++    /// <summary>
++    /// Mains supply, 1 = normal. Between 0.55 and 1 the AC lamps follow level^3.4 (a brownout);
++    /// below 0.55 the transfer relay drops to the DC lamps after a 0.2 s black gap (no gap with
++    /// REDUCE FLASHING). Back above 0.55 the AC lamps return with no gap.
++    /// </summary>
++    public void SetMains(float level)
++    {
++        if (deadAsset || temperament == Temperament.Dead || temperament == Temperament.Battery) return;
++        mains = Mathf.Clamp01(level);
++        var reduced = FrontRoomsSettings.ReduceFlashing;
++        if (!onDc && mains < TransferLevel)
++        {
++            onDc = true;
++            acTarget = 0f;
++            dcTarget = reduced ? 1f : 0f;
++            gapTimer = reduced ? 0f : CoolSeconds + TransferGap;
++        }
++        else if (onDc && mains >= TransferLevel)
++        {
++            onDc = false;
++            gapTimer = 0f;
++            dcTarget = 0f;
++            acTarget = Mathf.Pow(mains, BrownoutExponent);
++        }
++        else if (!onDc) acTarget = Mathf.Pow(mains, BrownoutExponent);
++        if (!Settled) enabled = selfTick;
++    }
++
++    /// <summary>Advance the lamps. Returns at once for a static sign.</summary>
++    public void Tick(float dt)
++    {
++        if (!NeedsTick)
++        {
++            if (selfTick && enabled) enabled = false;
++            return;
++        }
++        dt = Mathf.Clamp(dt, 0f, .1f);
++        var reduced = FrontRoomsSettings.ReduceFlashing;
++        if (temperament == Temperament.Loose) TickLoose(dt, reduced);
++        TickMains(dt, reduced);
++        Apply();
++        if (selfTick && !NeedsTick) enabled = false;
++    }
++
++    void TickLoose(float dt, bool reduced)
++    {
++        // The drop-out clock and the random stream run with or without REDUCE FLASHING,
++        // so switching it off resumes the same pattern.
++        reducedMix = Mathf.MoveTowards(reducedMix, reduced ? 1f : 0f, dt / ReducedEnvelopeSeconds);
++        switch (phase)
++        {
++            case LoosePhase.Quiet:
++                looseLevel = Approach(looseLevel, 1f, TauOn, dt);
++                phaseTimer -= dt;
++                if (phaseTimer > 0f) return;
++                dropsLeft = 1 + (int)(Next() % 3u);
++                episodeElapsed = 0f;
++                StartDrop();
++                return;
++            case LoosePhase.Drop:
++                episodeElapsed += dt;
++                looseLevel = Approach(looseLevel, DropFloor, TauOff, dt);
++                phaseTimer -= dt;
++                if (phaseTimer > 0f) return;
++                phase = LoosePhase.Rise;
++                return;
++            case LoosePhase.Rise:
++                episodeElapsed += dt;
++                looseLevel = Approach(looseLevel, 1f, TauOn, dt);
++                if (looseLevel < .995f) return;
++                looseLevel = 1f;
++                phase = LoosePhase.Gap;
++                phaseTimer = DropSpacing + .5f * Next01();
++                return;
++            case LoosePhase.Gap:
++                episodeElapsed += dt;
++                phaseTimer -= dt;
++                if (phaseTimer > 0f) return;
++                // The next drop-out at most: fall, the longest hold and the rise.
++                if (dropsLeft > 0 && episodeElapsed + FallSeconds + HoldMax + .3f <= EpisodeMax) StartDrop();
++                else
++                {
++                    phase = LoosePhase.Quiet;
++                    phaseTimer = Mathf.Max(QuietMin, Gap());
++                }
++                return;
++        }
++    }
++
++    void StartDrop()
++    {
++        dropsLeft--;
++        phase = LoosePhase.Drop;
++        phaseTimer = FallSeconds + Mathf.Lerp(HoldMin, HoldMax, Next01());
++    }
++
++    void TickMains(float dt, bool reduced)
++    {
++        if (Settled) return;
++        if (gapTimer > 0f)
++        {
++            gapTimer -= dt;
++            if (gapTimer <= 0f) { gapTimer = 0f; if (onDc) dcTarget = 1f; }
++        }
++        if (reduced)
++        {
++            var step = dt / ReducedEnvelopeSeconds;
++            ac = Mathf.MoveTowards(ac, acTarget, step);
++            dc = Mathf.MoveTowards(dc, onDc ? 1f : 0f, step);
++            if (onDc) dcTarget = 1f;
++        }
++        else
++        {
++            ac = Approach(ac, acTarget, acTarget < ac ? TauOff : TauOn, dt);
++            dc = Approach(dc, dcTarget, dcTarget < dc ? TauOff : TauOn, dt);
++        }
++        if (Mathf.Abs(ac - acTarget) < .002f) ac = acTarget;
++        if (Mathf.Abs(dc - dcTarget) < .002f) dc = dcTarget;
++    }
++
++    void Apply()
++    {
++        float a = 0f, b = 0f, d = 0f;
++        switch (deadAsset ? Temperament.Dead : temperament)
++        {
++            case Temperament.Lit: a = 1f; b = 1f; break;
++            case Temperament.HalfA: b = 1f; break;
++            case Temperament.HalfB: a = 1f; break;
++            case Temperament.Loose:
++            {
++                var loose = Mathf.Lerp(looseLevel, ReducedLooseLevel, reducedMix);
++                a = looseLamp == 0 ? loose : 1f;
++                b = looseLamp == 1 ? loose : 1f;
++                break;
++            }
++            case Temperament.Battery: d = DcWeight; break;
++        }
++        if (temperament != Temperament.Battery && temperament != Temperament.Dead)
++        {
++            a *= ac;
++            b *= ac;
++            d = DcWeight * dc;
++        }
++        var w = new Vector4(a, b, d, 0f);
++        Level = a * LetterShareA + b * LetterShareB + d * LetterShareDC;
++        Weights = w;
++        if (redLight != null)
++        {
++            var on = Level > .0005f && lightBase > 0f;
++            redLight.enabled = on;
++            redLight.intensity = lightBase * Level;
++        }
++        if ((w - applied).sqrMagnitude < 1e-8f) return;
++        applied = w;
++        WriteBlocks(w);
++    }
++
++    void WriteBlocks(Vector4 w)
++    {
++        if (diffuserRenderers == null) return;
++        // Plain LIT is the material's own value: drop the block so the renderer stays SRP-batched.
++        var lit = (w - LitWeights).sqrMagnitude < 1e-8f;
++        for (var i = 0; i < diffuserRenderers.Length; i++)
++        {
++            var r = diffuserRenderers[i];
++            if (r == null) continue;
++            if (lit) { r.SetPropertyBlock(null, diffuserSlots[i]); continue; }
++            block ??= new MaterialPropertyBlock();
++            r.GetPropertyBlock(block, diffuserSlots[i]);
++            block.SetVector(LampFieldId, w);
++            r.SetPropertyBlock(block, diffuserSlots[i]);
++        }
++    }
++
++    void EnsureCache()
++    {
++        if (cached) return;
++        cached = true;
++        var renderers = GetComponentsInChildren<MeshRenderer>(true);
++        int live = 0, dead = 0;
++        foreach (var r in renderers)
++            foreach (var m in r.sharedMaterials)
++            {
++                if (m == null || !m.name.StartsWith(DiffuserMaterial, System.StringComparison.Ordinal)) continue;
++                if (m.name.StartsWith(DeadDiffuserMaterial, System.StringComparison.Ordinal)) dead++; else live++;
++            }
++        deadAsset = live == 0 && dead > 0;
++        diffuserRenderers = new Renderer[live];
++        diffuserSlots = new int[live];
++        var k = 0;
++        foreach (var r in renderers)
++        {
++            var mats = r.sharedMaterials;
++            for (var i = 0; i < mats.Length && k < live; i++)
++            {
++                var m = mats[i];
++                if (m == null || !m.name.StartsWith(DiffuserMaterial, System.StringComparison.Ordinal) || m.name.StartsWith(DeadDiffuserMaterial, System.StringComparison.Ordinal)) continue;
++                diffuserRenderers[k] = r;
++                diffuserSlots[k] = i;
++                k++;
++            }
++        }
++    }
++
++    static float Approach(float value, float target, float tau, float dt) => target + (value - target) * Mathf.Exp(-dt / tau);
++
++    /// <summary>An exponential (Poisson) gap with mean 3 s, clamped to 0.6-8 s.</summary>
++    float Gap() => Mathf.Clamp(-LooseMeanGap * Mathf.Log(1f - Next01() * .999f), LooseGapMin, LooseGapMax);
++
++    uint Next()
++    {
++        rng ^= rng << 13;
++        rng ^= rng >> 17;
++        rng ^= rng << 5;
++        return rng;
++    }
++
++    float Next01() => (Next() & 0x00ffffffu) / 16777216f;
++}
+Binary files /dev/null and b/Assets/Scripts/Rendering/FrontRoomsExitSign.cs.meta differ
+--- /dev/null
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_common.py
+@@ -0,0 +1,680 @@
++"""EXIT sign family: shared Blender construction (helper module, no NAME).
++
++Spec: Documentation/research/exit_sign/10_spec.md §4 (model), §5 (letters),
++§6 (textures), §7 (materials). Numbers: exit_sign_geom.py (no bpy; the
++texture generator Tools/lookdev/gen_exit_sign.py reads the same file).
++
++A 1990 US internally lit EXIT sign: a drawn steel pan, a pressed face frame
++whose skirt overlaps the pan (the 0.6 x 0.4 seam), a 0.9 mm stencil plate
++with the letters cut THROUGH it (stamped reflex corners R 0.5, 0.2 front
++chamfer), a white 6 mm spacer, and a red acrylic diffuser 6 mm behind the
++plate. Two 20 W lamps inside light the diffuser; their hot-spot field lives
++in the diffuser textures (_E, _F), not in geometry.
++
++Frames
++* Assets are authored in Unity part metres and converted with
++  interact_key_common.U(): Blender (x, y, z) = (-X, -Z, Y); kitlib.export()
++  writes them back unchanged, so anchors below are exact Unity numbers.
++* A FACE is placed by (origin, normal n, right r) in Unity space; face-local
++  (a, b, c) mm = (to the reader's right, up, toward the reader) maps to
++  origin + r*a + up*b + n*c. c = 0 is the frame's front flat.
++* Face UVs are written here ("keep"), in metres over the face, so the
++  materials are position-independent and a double face reads correctly from
++  both sides: ExitSign_Face (0.346 x 0.212, frame + plate), ExitSign_Diffuser
++  (0.320 x 0.186, the opening). The back diffuser of a double face is
++  U-mirrored, so lamp A is the same physical lamp from both sides.
++
++Slots (4, the kit rule): ExitSign_Housing (pan, canopy, spacer; tiling metre
++UVs), ExitSign_Face, ExitSign_Diffuser (VARIANT -> ExitSign_Diffuser_Dead),
++Prop_Chrome (screws, stems, collars, nuts).
++
++Never edit kitlib.py: everything here goes through Kit's public helpers.
++"""
++
++import math
++
++import bmesh
++import bpy
++from mathutils import Vector
++
++import kitlib
++import interact_key_common as kc
++import exit_sign_geom as g
++
++HOUSING = "ExitSign_Housing"
++FACE = "ExitSign_Face"
++DIFFUSER = "ExitSign_Diffuser"
++DIFFUSER_DEAD = "ExitSign_Diffuser_Dead"
++CHROME = "Prop_Chrome"
++MM = 0.001
++
++FACE_TILE_M = (g.HOUSING_W * MM, g.HOUSING_H * MM)
++DIFF_TILE_M = (g.OPEN_W * MM, g.OPEN_H * MM)
++LOD_DISTANCES = (5.0, 0.0, 0.0)      # 2-LOD FBX: LOD0 -> LOD1 at 5 m, LOD1 never culls (spec §4.3; never null)
++
++
++def register_slots():
++    """Preview colours only; the Unity look comes from Resources/Surfaces."""
++    kitlib.register_slot(HOUSING, (0.78, 0.76, 0.70), 0.5, 0.0)
++    kitlib.register_slot(FACE, (0.79, 0.77, 0.69), 0.55, 0.0)
++    kitlib.register_slot(DIFFUSER, (0.60, 0.04, 0.03), 0.3, 0.0)
++    kitlib.register_slot(DIFFUSER_DEAD, (0.15, 0.022, 0.018), 0.3, 0.0)
++
++
++# ------------------------------------------------------------------ helpers
++def V(p):
++    return Vector(p)
++
++
++class Face:
++    """One sign face: origin (Unity m), outward normal n, reader's right r."""
++
++    def __init__(self, origin, n, r, mirror_lamps=False, screw_axis="+Z"):
++        self.o = V(origin)
++        self.n = V(n).normalized()
++        self.r = V(r).normalized()
++        self.up = Vector((0.0, 1.0, 0.0))
++        self.mirror = mirror_lamps
++        self.screw_axis = screw_axis
++
++    def unity(self, a, b, c):
++        return self.o + self.r * (a * MM) + self.up * (b * MM) + self.n * (c * MM)
++
++    def blender(self, a, b, c):
++        p = self.unity(a, b, c)
++        return kc.U(p.x, p.y, p.z)
++
++    def want(self):
++        """The face normal in Blender space (for orientation checks)."""
++        return V(kc.U(self.n.x, self.n.y, self.n.z)).normalized()
++
++    def face_uv(self, a, b):
++        return ((a + g.HOUSING_W / 2) * MM, (b + g.HOUSING_H / 2) * MM)
++
++    def diff_uv(self, a, b):
++        u = (g.OPEN_W / 2 - a) if self.mirror else (a + g.OPEN_W / 2)
++        return (u * MM, (b + g.OPEN_H / 2) * MM)
++
++
++class MB:
++    """bmesh builder that remembers a UV per vertex (for "keep" parts)."""
++
++    def __init__(self):
++        self.bm = bmesh.new()
++        self.uv = {}
++
++    def v(self, p, uv=None):
++        vert = self.bm.verts.new(p)
++        if uv is not None:
++            self.uv[vert] = uv
++        return vert
++
++    def ring(self, pts, uvs=None):
++        return [self.v(p, None if uvs is None else uvs[i]) for i, p in enumerate(pts)]
++
++    def bridge(self, a, b):
++        n = len(a)
++        out = []
++        for i in range(n):
++            j = (i + 1) % n
++            out.append(self.bm.faces.new((a[i], a[j], b[j], b[i])))
++        return out
++
++    def fill(self, loops):
++        edges = []
++        for lp in loops:
++            for i in range(len(lp)):
++                e = self.bm.edges.get((lp[i], lp[(i + 1) % len(lp)]))
++                if e is None:
++                    e = self.bm.edges.new((lp[i], lp[(i + 1) % len(lp)]))
++                edges.append(e)
++        res = bmesh.ops.triangle_fill(self.bm, use_beauty=True, use_dissolve=False, edges=edges)
++        return [f for f in res["geom"] if isinstance(f, bmesh.types.BMFace)]
++
++    @staticmethod
++    def orient(faces, want, ref=None):
++        """Flip all faces if the reference face (default: the first) points away from want."""
++        if not faces:
++            return
++        f = ref or faces[0]
++        f.normal_update()
++        if f.normal.dot(want) < 0:
++            for x in faces:
++                x.normal_flip()
++
++    @staticmethod
++    def orient_each(faces, want):
++        for f in faces:
++            f.normal_update()
++            if f.normal.dot(want) < 0:
++                f.normal_flip()
++
++    def finish(self, kit, slot, name, keep_uv):
++        bm = self.bm
++        if keep_uv:
++            layer = bm.loops.layers.uv.verify()
++            for f in bm.faces:
++                for loop in f.loops:
++                    loop[layer].uv = self.uv.get(loop.vert, (0.0, 0.0))
++        for f in bm.faces:
++            f.smooth = True
++        return kit._new_object(name, bm, slot, "keep" if keep_uv else "metres", "xz")
++
++
++def rr(w, h, r, seg, cx=0.0, cy=0.0):
++    return g.rounded_rect(w, h, r, seg, cx, cy)
++
++
++def wear(obj):
++    kc.paint_wear(obj)
++    return obj
++
++
++# ------------------------------------------------------------------ the face assembly
++def frame_profile():
++    """(inset from the outer edge, c) for the pressed face frame, skirt -> lip."""
++    P = [(g.SEAM_RETURN, -g.FRAME_SKIRT), (0.0, -g.FRAME_SKIRT + 0.3), (0.0, -g.ROLL_R)]
++    for th in (30.0, 60.0):
++        t = math.radians(th)
++        P.append((g.ROLL_R - g.ROLL_R * math.cos(t), -g.ROLL_R + g.ROLL_R * math.sin(t)))
++    P.append((g.ROLL_R, 0.0))
++    P.append((g.BEAD_IN0, 0.0))
++    for ph in (30.0, 60.0, 90.0, 120.0, 150.0):
++        t = math.radians(ph)
++        P.append((g.BEAD_IN0 + (g.BEAD_IN1 - g.BEAD_IN0) * (1 - math.cos(t)) / 2, g.BEAD_H * math.sin(t)))
++    P.append((g.BEAD_IN1, 0.0))
++    P.append((g.BORDER - g.LIP_R, 0.0))
++    t = math.radians(45.0)
++    P.append((g.BORDER - g.LIP_R + g.LIP_R * math.sin(t), -g.LIP_R + g.LIP_R * math.cos(t)))
++    P.append((g.BORDER, -g.LIP_R))
++    P.append((g.BORDER, -g.LIP_DEPTH))
++    return P
++
++
++def frame_uv_insets(prof):
++    """UV inset per profile ring. The front (roll top, flat, bead, lip top) keeps
++    its geometric inset, so the texture's bead and border lines sit on the
++    geometry. The skirt + outer roll and the inner lip return are UNFOLDED by
++    arc length (outward past the face edge, inward into the opening): rings at
++    one inset but different depths no longer share a UV, so their tangent frame
++    is defined and nothing stretches (build round 2; Unity probe: 152 Face
++    vertices had a tangent within 60 degrees of the normal)."""
++    out = [d for d, c in prof]
++    i0 = prof.index((g.ROLL_R, 0.0))
++    i1 = prof.index((g.BORDER - g.LIP_R, 0.0))
++    acc = 0.0
++    for k in range(i0 - 1, -1, -1):
++        acc += math.hypot(prof[k][0] - prof[k + 1][0], prof[k][1] - prof[k + 1][1])
++        out[k] = g.ROLL_R - acc
++    acc = 0.0
++    for k in range(i1 + 1, len(prof)):
++        acc += math.hypot(prof[k][0] - prof[k - 1][0], prof[k][1] - prof[k - 1][1])
++        out[k] = g.BORDER - g.LIP_R + acc
++    return out
++
++
++def build_frame(kit, face, seg=8, name="face frame"):
++    mb = MB()
++    rings = []
++    ref_band = None
++    prof = frame_profile()
++    uvd = frame_uv_insets(prof)
++    for k, (d, c) in enumerate(prof):
++        r = max(g.HOUSING_R - d, g.OPEN_R)
++        poly = rr(g.HOUSING_W - 2 * d, g.HOUSING_H - 2 * d, r, seg)
++        e = uvd[k]
++        puv = rr(g.HOUSING_W - 2 * e, g.HOUSING_H - 2 * e, max(g.HOUSING_R - e, g.OPEN_R), seg)
++        assert len(puv) == len(poly)
++        rings.append(mb.ring([face.blender(a, b, c) for a, b in poly], [face.face_uv(a, b) for a, b in puv]))
++    faces = []
++    for k in range(len(rings) - 1):
++        band = mb.bridge(rings[k], rings[k + 1])
++        faces += band
++        d0, d1 = prof[k][0], prof[k + 1][0]
++        if ref_band is None and abs(prof[k][1]) < 1e-9 and abs(prof[k + 1][1]) < 1e-9 and d1 > d0:
++            ref_band = band
++    MB.orient(faces, face.want(), ref_band[0])
++    return wear(mb.finish(kit, FACE, name, True))
++
++
++def build_plate(kit, face, chevrons="closed", name="stencil plate"):
++    """Stencil plate: front face with the letter holes, 0.2 chamfer, cut walls
++    0.9 deep. No back face and no outer edge (both hidden: the frame covers
++    the edge, and every ray through a hole ends on the diffuser or spacer)."""
++    mb = MB()
++    cp = -g.LIP_DEPTH
++    cb = cp - g.SHEET
++    ch = g.HOLE_CHAMFER
++    sup = 0.15
++    outline = rr(g.OPEN_W + 2 * g.PLATE_MARGIN, g.OPEN_H + 2 * g.PLATE_MARGIN, g.PLATE_R + g.PLATE_MARGIN, 3)
++    out_loop = mb.ring([face.blender(a, b, cp) for a, b in outline], [face.face_uv(a, b) for a, b in outline])
++    loops = [out_loop]
++    wall_faces = []
++    for hole in g.hole_polys(chevrons):
++        poly = [g.open_to_reader(p) for p in hole]
++        rings_2d = [(kc.offset_poly(poly, -(ch + sup)), cp), (kc.offset_poly(poly, -ch), cp), (poly, cp - ch), (poly, cb)]
++        # UVs: the chamfer and the cut wall are unfolded INTO the hole by arc length
++        # (the texture's letter interior is the painted cut wall), so the wall rings
++        # do not share one UV and the wall has a real tangent frame (build round 2).
++        e_ch = -ch + ch * math.sqrt(2.0)
++        uv_off = [-(ch + sup), -ch, e_ch, e_ch + (g.SHEET - ch)]
++        rings = [mb.ring([face.blender(a, b, c) for a, b in pts], [face.face_uv(a, b) for a, b in kc.offset_poly(poly, uo)])
++                 for (pts, c), uo in zip(rings_2d, uv_off)]
++        for k in range(len(rings) - 1):
++            wall_faces.append(mb.bridge(rings[k], rings[k + 1]))
++        loops.append(rings[0])
++    front = mb.fill(loops)
++    MB.orient_each(front, face.want())
++    # Bands: support ring (flat, faces out), chamfer, wall (faces into the hole).
++    for bands in wall_faces:
++        MB.orient(bands, face.want(), bands[0])       # band 0 lies on the front plane
++    # The wall bands of a hole share the support band's winding, so fix them per
++    # band against the hole centre instead: a wall faces the hole's axis.
++    obj = mb.finish(kit, FACE, name, True)
++    _fix_hole_walls(obj, face, chevrons)
++    return wear(obj)
++
++
++def _fix_hole_walls(obj, face, chevrons="closed"):
++    """Cut walls must face into their hole (toward the hole's own centre line)."""
++    me = obj.data
++    bm = bmesh.new()
++    bm.from_mesh(me)
++    want = face.want()
++    bm.faces.ensure_lookup_table()
++    # Group wall faces (normal roughly in the plate plane) and orient each toward
++    # the nearest hole's centroid: a wall of a hole of a CCW polygon faces inward.
++    holes = [[g.open_to_reader(p) for p in h] for h in g.hole_polys(chevrons)]
++    cents = []
++    for h in holes:
++        cx = sum(p[0] for p in h) / len(h)
++        cy = sum(p[1] for p in h) / len(h)
++        cents.append((h, cx, cy))
++    inv_r = face.r
++    for f in bm.faces:
++        f.normal_update()
++        if abs(f.normal.dot(want)) > 0.5:
++            continue
++        c = f.calc_center_median()
++        # Unity-space centre -> reader (a, b)
++        P = Vector((-c.x, c.z, -c.y))
++        rel = P - face.o
++        a = rel.dot(inv_r) / MM
++        b = rel.y / MM
++        # inside which hole polygon (or nearest)?
++        best, bd = None, 1e18
++        for h, cx, cy in cents:
++            if _point_near_poly(a, b, h):
++                best = (h, cx, cy)
++                break
++            dd = (a - cx) ** 2 + (b - cy) ** 2
++            if dd < bd:
++                bd, best = dd, (h, cx, cy)
++        h = best[0]
++        # inward direction: from the face centre toward the closest interior point,
++        # approximated by the polygon edge normal of the nearest edge (CCW -> left normal).
++        e = _nearest_edge(a, b, h)
++        (x0, y0), (x1, y1) = e
++        ex, ey = x1 - x0, y1 - y0
++        L = math.hypot(ex, ey) or 1.0
++        inward_r = (-ey / L, ex / L)       # left normal of a CCW edge points inside the hole
++        inward_U = face.r * inward_r[0] + face.up * inward_r[1]
++        inward_B = Vector(kc.U(inward_U.x, inward_U.y, inward_U.z))
++        if f.normal.dot(inward_B) < 0:
++            f.normal_flip()
++    bm.to_mesh(me)
++    bm.free()
++
++
++def _point_near_poly(a, b, poly):
++    # crossing-number test with a 1.5 mm tolerance band (walls sit on the outline)
++    inside = False
++    n = len(poly)
++    for i in range(n):
++        x0, y0 = poly[i]
++        x1, y1 = poly[(i + 1) % n]
++        if (y0 > b) != (y1 > b):
++            xi = x0 + (b - y0) * (x1 - x0) / (y1 - y0)
++            if xi > a:
++                inside = not inside
++    if inside:
++        return True
++    e = _nearest_edge(a, b, poly)
++    return _seg_dist(a, b, e) < 1.5
++
++
++def _seg_dist(a, b, e):
++    (x0, y0), (x1, y1) = e
++    ex, ey = x1 - x0, y1 - y0
++    L2 = ex * ex + ey * ey or 1e-12
++    t = max(0.0, min(1.0, ((a - x0) * ex + (b - y0) * ey) / L2))
++    return math.hypot(a - (x0 + t * ex), b - (y0 + t * ey))
++
++
++def _nearest_edge(a, b, poly):
++    n = len(poly)
++    best, bd = None, 1e18
++    for i in range(n):
++        e = (poly[i], poly[(i + 1) % n])
++        d = _seg_dist(a, b, e)
++        if d < bd:
++            bd, best = d, e
++    return best
++
++
++def build_spacer(kit, face, name="spacer"):
++    """White spacer: the inner wall round the opening, plate back to diffuser."""
++    mb = MB()
++    c0 = -g.LIP_DEPTH - g.SHEET
++    c1 = c0 - g.DIFFUSER_GAP
++    poly = rr(g.OPEN_W, g.OPEN_H, g.OPEN_R, 3)
++    r0 = mb.ring([face.blender(a, b, c0) for a, b in poly])
++    r1 = mb.ring([face.blender(a, b, c1) for a, b in poly])
++    faces = mb.bridge(r0, r1)
++    # walls face the opening's centre: test the face on the +a (reader's right) side
++    for f in faces:
++        f.normal_update()
++    centre = V(face.blender(0, 0, (c0 + c1) / 2))
++    for f in faces:
++        if f.normal.dot(centre - f.calc_center_median()) < 0:
++            f.normal_flip()
++    obj = mb.finish(kit, HOUSING, name, False)
++    kit.lod1_drop(obj)
++    kc.drop2(obj)
++    return wear(obj)
++
++
++def build_diffuser(kit, face, slot=DIFFUSER, name="diffuser"):
++    mb = MB()
++    c = -g.LIP_DEPTH - g.SHEET - g.DIFFUSER_GAP
++    w, h = g.OPEN_W / 2 + g.PLATE_MARGIN, g.OPEN_H / 2 + g.PLATE_MARGIN
++    pts = [(-w, -h), (w, -h), (w, h), (-w, h)]
++    vs = [mb.v(face.blender(a, b, c), face.diff_uv(a, b)) for a, b in pts]
++    f = mb.bm.faces.new(vs)
++    MB.orient_each([f], face.want())
++    return wear(mb.finish(kit, slot, name, True))
++
++
++def build_diffuser_back(kit, face, name="diffuser back"):
++    """The diffuser's inner side (white interior, HOUSING slot), facing INTO the box.
++    Build round 3: the interior had no surface facing outward from inside (the plate
++    has no back, the diffuser was one outward quad), so a shadow-map ray that slipped
++    through the 0.4 mm frame seam crossed the whole sign and left light dashes in its
++    shadow (Run room ceiling, under the red light). Hidden from every outside view."""
++    mb = MB()
++    c = -g.LIP_DEPTH - g.SHEET - g.DIFFUSER_GAP - 0.05
++    w, h = g.OPEN_W / 2 + g.PLATE_MARGIN, g.OPEN_H / 2 + g.PLATE_MARGIN
++    pts = [(-w, -h), (w, -h), (w, h), (-w, h)]
++    f = mb.bm.faces.new([mb.v(face.blender(a, b, c)) for a, b in pts])
++    MB.orient_each([f], -face.want())
++    obj = mb.finish(kit, HOUSING, name, False)
++    return _lod_keep(obj)
++
++
++def _lod_keep(obj):
++    """Protect a hidden shadow part from kitlib's LOD1 collapse: kitlib marks thin
++    and decal parts with the vertex group "fr_lod_keep", and the join merges groups
++    by name, so the same group on this part keeps it whole in the LOD1 (kitlib.py
++    itself is not touched)."""
++    vg = obj.vertex_groups.get("fr_lod_keep") or obj.vertex_groups.new(name="fr_lod_keep")
++    vg.add([v.index for v in obj.data.vertices], 1.0, "REPLACE")
++    return obj
++
++
++CHASSIS_INSET = 8.0          # mm in from the pan's outside (clears the R10 drawn corners)
++CHASSIS_GAP = 2.0            # mm behind the diffuser's back (no depth fight at distance)
++
++
++def chassis_front_c():
++    """Face-local c (mm, 0 = the frame's front flat) of the chassis front."""
++    return -g.LIP_DEPTH - g.SHEET - g.DIFFUSER_GAP - CHASSIS_GAP
++
++
++def build_chassis(kit, centre_U, size_U, name="lamp chassis"):
++    """The lamp chassis: a closed box inside the housing (the sockets and wiring tray
++    of a real sign), on HOUSING, 12 triangles. Build round 3: it makes the sign a
++    solid shadow caster, so the seams, the stencil holes and the one-sided interior
++    no longer let shadow-map rays through. Hidden behind the diffusers in every view.
++    centre_U / size_U: Unity metres (part space)."""
++    obj = kit.box(kc.U_size(*size_U), kc.U(*centre_U), HOUSING, bevel=0.0, segments=1, name=name)
++    return _lod_keep(obj)
++
++
++def build_screws(kit, face, segs=12):
++    out = []
++    for (a, b), deg in zip(g.screw_positions(), g.SCREW_SLOT_DEG):
++        p = face.unity(a, b, 0.0)
++        s = kc.oval_screw(kit, (p.x, p.y, p.z), CHROME, axis=face.screw_axis, head_d=g.SCREW_HEAD_D * MM,
++                          dome_h=g.SCREW_DOME * MM, slot_w=0.0007, slot_d=0.0008, slot_deg=deg, segs=segs, name="face screw")
++        kit.lod1_drop(s)
++        kc.drop2(s)
++        out.append(wear(s))
++    return out
++
++
++def build_face(kit, face, chevrons="closed"):
++    parts = [build_frame(kit, face), build_plate(kit, face, chevrons), build_spacer(kit, face), build_diffuser(kit, face),
++             build_diffuser_back(kit, face)]
++    parts += build_screws(kit, face)
++    return parts
++
++
++# ------------------------------------------------------------------ housings
++def pan_rings_profile(z_front_seam):
++    """Pan side profile (inset, Z mm) from the back edge to the seam flange."""
++    zp = z_front_seam
++    # first ring = a flat support ring 0.3 mm inside the roll, so the back cap shades flat
++    return [(2.3, 0.0), (2.0, 0.0), (0.586, 0.586), (0.0, 2.0), (0.0, zp - 0.5), (0.15, zp - 0.15), (0.5, zp), (1.6, zp), (1.6, zp - 1.2)]
++
++
++def build_pan_wall(kit, yc, zf, seg=8, name="housing"):
++    """Single-face pan on the wall: back at Z 0 (with the two keyholes), side
++    walls with drawn R10 corners and an R2 back edge, a front flange that is
++    the bottom of the frame seam. yc = housing centre Y (mm), zf = the frame's
++    front flat Z (mm)."""
++    mb = MB()
++    zp = zf - g.FRAME_SKIRT - g.SEAM_GAP
++    prof = pan_rings_profile(zp)
++    rings = []
++    for d, z in prof:
++        poly = kc.offset_poly(rr(g.HOUSING_W, g.HOUSING_H, g.HOUSING_R, seg), d)
++        rings.append(mb.ring([kc.U(-a * MM, (yc + b) * MM, z * MM) for a, b in poly]))
++    sides = []
++    for k in range(len(rings) - 1):
++        sides += mb.bridge(rings[k], rings[k + 1])
++    # outward test: a face on the reader's-right side wall (Unity -X) must face -X.
++    ref = max(sides, key=lambda f: f.calc_center_median().x)      # Blender +x = Unity -X
++    MB.orient(sides, Vector((1, 0, 0)), ref)
++    # Back cap with the keyholes (blind 1 mm pockets: the dark box interior).
++    loops = [rings[0]]
++    pockets = []
++    for sx in (+1, -1):
++        kh = keyhole_poly(sx * g.KEYHOLE_PITCH / 2, 140.0)
++        top = mb.ring([kc.U(-a * MM, b * MM, 0.0) for a, b in kh])
++        bot = mb.ring([kc.U(-a * MM, b * MM, 1.0 * MM) for a, b in kh])
++        walls = mb.bridge(top, bot)
++        pockets.append((walls, kh))
++        loops.append(top)
++        cap = mb.fill([bot])
++        MB.orient_each(cap, Vector(kc.U(0, 0, -1)))
++    back = mb.fill(loops)
++    MB.orient_each(back, Vector(kc.U(0, 0, -1)))
++    for walls, kh in pockets:
++        cx = sum(p[0] for p in kh) / len(kh)
++        cy = sum(p[1] for p in kh) / len(kh)
++        c = Vector(kc.U(-cx * MM, cy * MM, 0.5 * MM))
++        for f in walls:
++            f.normal_update()
++            if f.normal.dot(c - f.calc_center_median()) < 0:
++                f.normal_flip()
++    return wear(mb.finish(kit, HOUSING, name, False))
++
++
++def keyhole_poly(cx, y_top):
++    """Keyhole in READER mm: Ø8.5 entry, 4.5 wide slot rising to the screw seat at y_top."""
++    R, w = 4.25, 2.25
++    yc = y_top - 8.0
++    pts = []
++    # slot top (semicircle round the seat)
++    for i in range(5):
++        a = math.radians(0 + 180 * i / 4)
++        pts.append((cx + w * math.cos(a), y_top + w * math.sin(a)))
++    # down the left side of the slot to the circle
++    sa = math.degrees(math.asin(w / R))
++    for i in range(9):
++        a = math.radians(90 + sa + (360 - 2 * sa) * i / 8)
++        pts.append((cx + R * math.cos(a), yc + R * math.sin(a)))
++    return g.ccw(pts)
++
++
++def build_ring_double(kit, yc, zf, seg=8, name="housing", to_unity=None):
++    """Double-face housing: the side ring between the two face frames.
++    to_unity(a, b, z) -> Unity mm (default: the ring round +-Z, X = -a,
++    Y = yc + b, Z = z). a/b = the reader's right/up of the +n face."""
++    if to_unity is None:
++        to_unity = lambda a, b, z: (-a, yc + b, z)
++    mb = MB()
++    zp = zf - g.FRAME_SKIRT - g.SEAM_GAP
++    # back flange -> back seam -> side wall -> front seam -> front flange
++    prof = [(1.6, -(zp - 1.2)), (1.6, -zp), (0.5, -zp), (0.15, -(zp - 0.15)), (0.0, -(zp - 0.5)),
++            (0.0, zp - 0.5), (0.15, zp - 0.15), (0.5, zp), (1.6, zp), (1.6, zp - 1.2)]
++    base = rr(g.HOUSING_W, g.HOUSING_H, g.HOUSING_R, seg)
++    rings = []
++    for d, z in prof:
++        poly = kc.offset_poly(base, d)
++        rings.append(mb.ring([kc.U(*[c * MM for c in to_unity(a, b, z)]) for a, b in poly]))
++    bands = [mb.bridge(rings[k], rings[k + 1]) for k in range(len(rings) - 1)]
++    faces = [f for band in bands for f in band]
++    # Reference: the middle (side wall) band's first face must face away from the axis.
++    k = 4
++    a0, b0 = base[0]
++    a1, b1 = base[1]
++    am, bm_ = (a0 + a1) / 2, (b0 + b1) / 2
++    p_out = Vector(kc.U(*[c * MM for c in to_unity(am, bm_, 0.0)]))
++    p_axis = Vector(kc.U(*[c * MM for c in to_unity(0.0, 0.0, 0.0)]))
++    MB.orient(faces, (p_out - p_axis).normalized(), bands[k][0])
++    return wear(mb.finish(kit, HOUSING, name, False))
++
++
++def build_knockout(kit, centre_U):
++    """1/2 in concentric knockout, stamped 0.4 mm proud on the top (centre_U in Unity m)."""
++    ko = kit.cylinder(g.KO_D / 2 * MM, 0.0008, (0, 0, 0), HOUSING, verts=20, bevel=0.0003, segments=1, name="knockout")
++    kc.orient(ko, centre_U, (0, 1, 0), (0, 0, 1))
++    kit.lod1_drop(ko)
++    kc.drop2(ko)
++    return wear(ko)
++
++
++def build_canopy(kit, length, width, height, radius, y_ceiling=0.0, seg=4, name="canopy", to_unity=None, out_U=(0, -1, 0)):
++    """Rectangular canopy pan, open on its mounting side. to_unity(a, b, d) ->
++    Unity mm, d >= 0 = distance from the mounting surface (default: on the
++    ceiling, X = -a, Y = y_ceiling - d, Z = b). out_U = the cap's outward normal."""
++    if to_unity is None:
++        to_unity = lambda a, b, d: (-a, y_ceiling - d, b)
++    mb = MB()
++    prof = [(0.0, 0.0), (0.0, height - 2.0), (0.586, height - 0.586), (2.0, height), (2.3, height)]   # + flat support ring
++    base = rr(length, width, radius, seg)
++    rings = []
++    for d, dd in prof:
++        poly = kc.offset_poly(base, d)
++        rings.append(mb.ring([kc.U(*[c * MM for c in to_unity(a, b, dd)]) for a, b in poly]))
++    bands = [mb.bridge(rings[k], rings[k + 1]) for k in range(len(rings) - 1)]
++    faces = [f for band in bands for f in band]
++    a0, b0 = base[0]
++    a1, b1 = base[1]
++    p_out = Vector(kc.U(*[c * MM for c in to_unity((a0 + a1) / 2, (b0 + b1) / 2, height / 2)]))
++    p_axis = Vector(kc.U(*[c * MM for c in to_unity(0.0, 0.0, height / 2)]))
++    MB.orient(faces, (p_out - p_axis).normalized(), bands[0][0])
++    cap = mb.fill([rings[-1]])
++    MB.orient_each(cap, Vector(kc.U(*out_U)))
++    return wear(mb.finish(kit, HOUSING, name, False))
++
++
++def chrome_cyl(kit, r, length, centre_U, axis_U, verts=12, bevel=0.0004, name="stem"):
++    c = kit.cylinder(r, length, (0, 0, 0), CHROME, verts=verts, bevel=bevel, segments=1, name=name)
++    kc.orient(c, centre_U, axis_U, (0, 0, 1) if abs(axis_U[1]) > 0.9 else (0, 1, 0))
++    return wear(c)
++
++
++def build_stems(kit, y_top_housing, y_canopy_bottom, xs=(g.STEM_X, -g.STEM_X), collars=True):
++    """Ø12 chrome stems from the canopy to the housing top, a collar under the
++    canopy and a hex lock nut + washer on the housing top."""
++    parts = []
++    for x in xs:
++        X = x * MM
++        L = (y_canopy_bottom - y_top_housing) * MM
++        if L > 0.002:
++            parts.append(chrome_cyl(kit, g.STEM_D / 2 * MM, L + 0.004, (X, (y_top_housing + y_canopy_bottom) / 2 * MM - 0.0, 0.0),
++                                    (0, 1, 0), verts=14, name="stem"))
++        if collars:
++            collar = chrome_cyl(kit, 0.0085, 0.006, (X, y_canopy_bottom * MM - 0.003, 0.0), (0, 1, 0), verts=16, name="collar")
++            kit.lod1_drop(collar)
++            parts.append(collar)
++        nut = chrome_cyl(kit, 0.0087, 0.0055, (X, y_top_housing * MM + 0.0042, 0.0), (0, 1, 0), verts=6, bevel=0.0006, name="lock nut")
++        washer = chrome_cyl(kit, 0.0105, 0.0014, (X, y_top_housing * MM + 0.0007, 0.0), (0, 1, 0), verts=16, bevel=0.0003, name="washer")
++        kit.lod1_drop(washer)
++        parts += [nut, washer]
++    return parts
++
++
++def canopy_screws(kit, y_bottom, xs=(g.KEYHOLE_PITCH / 2, -g.KEYHOLE_PITCH / 2)):
++    out = []
++    for x, deg in zip(xs, (40.0, -15.0)):
++        s = kc.oval_screw(kit, (x * MM, y_bottom * MM, 0.0), CHROME, axis="-Y", head_d=0.0062, dome_h=0.0012,
++                          slot_w=0.0007, slot_d=0.0008, slot_deg=deg, segs=12, name="canopy screw")
++        kit.lod1_drop(s)
++        kc.drop2(s)
++        out.append(wear(s))
++    return out
++
++
++# ------------------------------------------------------------------ meta
++def exit_meta(kit, faces, chevrons="closed"):
++    kit.meta["exitSign"] = {
++        "faces": faces,
++        "openingM": [round(g.OPEN_W * MM, 4), round(g.OPEN_H * MM, 4)],
++        "letterHeightM": round(g.H * MM, 4),
++        "strokeM": round(g.S * MM, 5),
++        "faceSlot": FACE,
++        "diffuserSlot": DIFFUSER,
++        "deadSlot": DIFFUSER_DEAD,
++        "chevrons": chevrons,
++        "lampField": {"lampA": list(g.LAMP_A), "lampB": list(g.LAMP_B), "fill": g.LAMP_FILL,
++                      "dc": [list(x) for x in g.DC_LAMPS], "dcLevel": g.DC_LEVEL,
++                      "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"},
++    }
++    kit.meta["lodDistances"] = list(LOD_DISTANCES)
++
++
++def tri_count(kit):
++    dg = bpy.context.evaluated_depsgraph_get()
++    tris = 0
++    for obj in kit.parts:
++        ev = obj.evaluated_get(dg)
++        me = ev.to_mesh()
++        tris += sum(len(p.vertices) - 2 for p in me.polygons)
++        ev.to_mesh_clear()
++    return tris
++
++
++def part_report(kit):
++    dg = bpy.context.evaluated_depsgraph_get()
++    rows = {}
++    for obj in kit.parts:
++        ev = obj.evaluated_get(dg)
++        me = ev.to_mesh()
++        n = sum(len(p.vertices) - 2 for p in me.polygons)
++        ev.to_mesh_clear()
++        key = obj.name.split(".")[0]
++        rows[key] = rows.get(key, 0) + n
++    print("[exit_sign] parts: " + ", ".join("%s %d" % kv for kv in sorted(rows.items(), key=lambda kv: -kv[1])))
++    return rows
++
++
++def check_budget(kit, target, tol=0.15):
++    part_report(kit)
++    tris = tri_count(kit)
++    lo, hi = target * (1 - tol), target * (1 + tol)
++    assert lo <= tris <= hi, "%s: %d tris, budget %d +/- %d%%" % (kit.name, tris, target, int(tol * 100))
++    kit.meta["trianglesCheck"] = tris
++    return tris
+--- /dev/null
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_end.py
+@@ -0,0 +1,74 @@
++"""Kit_ExitSign_End: the double-face EXIT sign on an end (flag) mount (P2).
++
++Exit-sign workflow, spec Documentation/research/exit_sign/10_spec.md §4.1
++(mount E: housing 2.294-2.506 under 2.90 when its origin is set at 2.294),
++Run! direction B (room_visuals/10_run_directions.md). Construction in
++exit_sign_common.py, numbers in exit_sign_geom.py.
++
++The double-face housing projects from the wall on its end: a 150 x 70 x 3
++wall plate with two screws, a 127 x 50 x 12 stand-off canopy, then the
++346 mm housing (Z 0.015-0.361). The faces look down +X and -X, so a corridor
++reads the sign from both directions.
++
++Origin: the WALL plane at the housing bottom (Y 0 = housing bottom, Z 0 =
++the wall face, +Z = the room). Tags exit_sign + wall_decor -> Wall.
++VARIANT Kit_ExitSign_End_Dead. Budget §4.3: 6,000 +-15 % / LOD1 1,900;
++lodDistances [5, 0, 0].
++"""
++
++import exit_sign_common as es
++import exit_sign_geom as g
++import interact_key_common as kc
++from interact_key_common import U
++
++NAME = "Kit_ExitSign_End"
++VARIANTS = {"Kit_ExitSign_End_Dead": {es.DIFFUSER: es.DIFFUSER_DEAD}}
++BUDGET = (6000, 1900, 300)
++LOD1 = BUDGET[1] / BUDGET[0]
++SMOOTH_ANGLE = 40.0
++MM = es.MM
++PLATE = (70.0, 150.0, 3.0)        # wall plate X, Y, Z
++STANDOFF = (50.0, 127.0, 12.0)    # stand-off canopy X, Y, Z
++
++
++def build(kit):
++    es.register_slots()
++    yc = g.HOUSING_H / 2
++    z0 = PLATE[2] + STANDOFF[2]                   # housing end on the wall side
++    zc = z0 + g.HOUSING_W / 2                     # housing centre along Z
++    xf = g.DEPTH_DOUBLE / 2
++    # +X face: the reader looks along -X, so the reader's right is +Z.
++    fp = es.Face((xf * MM, yc * MM, zc * MM), (1, 0, 0), (0, 0, 1), screw_axis="+X")
++    fn = es.Face((-xf * MM, yc * MM, zc * MM), (-1, 0, 0), (0, 0, -1), mirror_lamps=True, screw_axis="-X")
++    es.build_ring_double(kit, yc, xf, to_unity=lambda a, b, z: (z, yc + b, zc + a))
++    es.build_face(kit, fp)
++    es.build_face(kit, fn)
++    # Lamp chassis (build round 3): between the two diffusers, inset 8 mm from the pan.
++    xc_front = xf + es.chassis_front_c()
++    es.build_chassis(kit, (0.0, yc * MM, zc * MM),
++                     (2 * xc_front * MM, (g.HOUSING_H - 2 * es.CHASSIS_INSET) * MM, (g.HOUSING_W - 2 * es.CHASSIS_INSET) * MM))
++    # Wall plate and the stand-off canopy (open toward the plate).
++    kit.box(kc.U_size(PLATE[0] * MM, PLATE[1] * MM, PLATE[2] * MM), U(0.0, yc * MM, PLATE[2] / 2 * MM), es.HOUSING,
++            bevel=0.0006, segments=2, name="mount plate")
++    es.build_canopy(kit, STANDOFF[1], STANDOFF[0], STANDOFF[2], 4.0, name="stand-off",
++                    to_unity=lambda a, b, d: (b, yc + a, z0 - d), out_U=(0, 0, -1))
++    for y, deg in ((yc + 60.0, 30.0), (yc - 60.0, -50.0)):
++        s = kc.oval_screw(kit, (0.0, y * MM, PLATE[2] * MM), es.CHROME, axis="+Z", head_d=0.0062, dome_h=0.0012,
++                          slot_w=0.0007, slot_d=0.0008, slot_deg=deg, segs=12, name="plate screw")
++        kit.lod1_drop(s)
++        kc.drop2(s)
++
++    kit.anchor("wall", U(0.0, 0.0, 0.0))
++    kit.anchor("centre", U(0.0, yc * MM, zc * MM))
++    z_plate = (xf - g.LIP_DEPTH) * MM
++    kit.anchor("face_pos_x", U(z_plate, yc * MM, zc * MM))
++    kit.anchor("face_neg_x", U(-z_plate, yc * MM, zc * MM))
++    for nm, lamp in (("lamp_a", g.LAMP_A), ("lamp_b", g.LAMP_B)):
++        a, b = g.lamp_reader_mm(lamp)
++        kit.anchor(nm, U(0.0, (yc + b) * MM, (zc + a) * MM))
++    kit.anchor("glow", U(0.0, -0.02, zc * MM))
++    kit.no_collider()
++    kit.tag("exit_sign", "wall_decor")
++    es.exit_meta(kit, 2)
++    kit.meta["lodBudget"] = list(BUDGET)
++    es.check_budget(kit, BUDGET[0])
+--- /dev/null
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_geom.py
+@@ -0,0 +1,237 @@
++"""EXIT sign family: the numbers (no bpy). Shared by the Blender modules
++(exit_sign_common.py) and the texture generator (Tools/lookdev/gen_exit_sign.py),
++so the letter holes in the plate and the letters printed in the textures can
++never drift apart.
++
++Spec: Documentation/research/exit_sign/10_spec.md §4.2 (construction), §4.4
++(chevrons), §5 (the letter face), §6.3 (the lamp field). Millimetres unless a
++name ends in _M. The READER frame: x to the reader's right, y up, origin at the
++centre of the face, seen from the front. (Unity part space has +X to the
++reader's LEFT when the face looks down +Z; exit_sign_common converts.)
++
++Period basis (S1 NISTIR 4399, Aug 1990; S4 UL 924-1989; S2 NISTIR 4532, 1991):
++6 in letters, 3/4 in strokes (1:8, the code minimum), letters >= 2 in wide
++except I, spacing >= 3/8 in, a 2.25 in chevron outside the legend (closed
++knockouts by default: a scored outline, not a hole).
++"""
++
++import math
++
++# ---------------------------------------------------------------- housing
++HOUSING_W, HOUSING_H = 346.0, 212.0       # outside of the pan (ESTIMATE in the 12-14 x 8-9 in period range)
++HOUSING_R = 10.0                          # drawn corners
++DEPTH_SINGLE = 64.0                       # wall sign: wall face to the frame's front flat (+ bead/screws)
++DEPTH_DOUBLE = 76.0                       # double face: front flat to front flat
++SHEET = 0.9                               # 20 ga steel
++
++# Face frame (a shallow pressed tray whose skirt overlaps the pan).
++BORDER = 13.0                             # frame border = (346 - 320) / 2
++OPEN_W, OPEN_H, OPEN_R = 320.0, 186.0, 3.0
++FRAME_SKIRT = 12.0                        # the skirt wraps 12 mm over the pan's side walls
++SEAM_GAP = 0.4                            # skirt edge to the pan's front flange (the 0.6 x 0.4 seam)
++SEAM_RETURN = 0.6
++ROLL_R = 1.5                              # outer roll of the frame
++# Bead: 3.5 wide x 1.0 high at 8.0-11.5 from the outer edge. Deviation from the
++# spec's 4 x 1.2 at 6-10: the Ø6.2 face screws need the outer 1.5-7.7 mm flat.
++BEAD_IN0, BEAD_IN1, BEAD_H = 8.0, 11.5, 1.0
++LIP_R = 0.8
++LIP_DEPTH = 3.0                           # the inner lip returns 3 mm into the box
++SCREW_X = 120.0                           # face screws at x +-120 on the top and bottom borders
++SCREW_INSET = 4.6                         # screw centre from the outer edge
++SCREW_HEAD_D, SCREW_DOME = 6.2, 1.2
++SCREW_SLOT_DEG = (20.0, -35.0, 75.0, 5.0)  # TL, TR, BL, BR (reader frame), fixed "random"
++
++# Stencil plate and diffuser.
++PLATE_MARGIN = 5.0                        # the plate runs 5 mm under the frame on every side
++PLATE_R = 3.0
++HOLE_CHAMFER = 0.2                        # front chamfer on every hole
++HOLE_FILLET = 0.5                         # stamped inner (reflex) corners
++DIFFUSER_GAP = 6.0                        # plate back to diffuser front
++DIFFUSER_T = 2.5
++SPACER_W = 6.0                            # white spacer frame round the opening, plate to diffuser
++
++# Mounting.
++KO_D = 22.0                               # 1/2 in trade-size concentric knockout (wall sign top)
++KEYHOLE_PITCH = 89.0                      # 3.5 in outlet-box screws
++KEYHOLE_Y = 140.0 - HOUSING_H / 2         # keyhole screw centres 140 mm above the housing bottom
++STEM_X = 105.0                            # hanging stems
++STEM_D = 12.0
++CANOPY_L, CANOPY_W, CANOPY_H, CANOPY_R = 250.0, 70.0, 16.0, 4.0   # deviation: 250 long so it reaches both stems (spec 127 x 70)
++HANG_DROP = 400.0                         # ceiling to housing top
++FLUSH_DROP = 25.0
++END_PLATE = (70.0, 150.0, 3.0)
++END_CANOPY = (127.0, 70.0, 12.0)          # wall canopy of the end mount (tall x wide x deep)
++
++# ---------------------------------------------------------------- letters
++H, S = 152.4, 19.05                       # 6 in, 3/4 in
++GAP = 12.0
++EW, XW, TW = 54.0, 60.0, 54.0
++E_MID = 48.0                              # E middle arm reaches x = 48 (6 mm short of the 54 arms)
++CH_H, CH_W = 57.15, 24.6                  # 2.25 in chevron, w/h 0.43
++CH_ARM = 0.45 * CH_W                      # 11.07 mm arm
++CH_GAP = 10.0                             # >= 3/8 in from the letters
++LEGEND_W = CH_W + CH_GAP + EW + GAP + XW + GAP + S + GAP + TW + CH_GAP + CH_W   # 292.25
++Y0 = (OPEN_H - H) / 2                     # baseline 16.8 above the opening's bottom
++
++
++def _isect(p1, p2, p3, p4):
++    """Intersection of lines p1-p2 and p3-p4."""
++    x1, y1 = p1
++    x2, y2 = p2
++    x3, y3 = p3
++    x4, y4 = p4
++    d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
++    a = x1 * y2 - y1 * x2
++    b = x3 * y4 - y3 * x4
++    return ((a * (x3 - x4) - (x1 - x2) * b) / d, (a * (y3 - y4) - (y1 - y2) * b) / d)
++
++
++def x_half_width():
++    """Horizontal width of one X bar whose square stroke is S."""
++    hw = S
++    for _ in range(12):
++        hw = S / math.cos(math.atan((XW - hw) / H))
++    return hw
++
++
++def letter_polys_open():
++    """{name: [poly, ...]} in OPENING mm (origin = the opening's bottom-left,
++    x to the reader's right). E, X, I and T are single simple polygons (the
++    X is the union of its two bars); "<" and ">" are the chevron knockouts.
++    Every polygon is counter-clockwise. Same construction as
++    research/exit_sign/tools/make_diagrams.py letter_polys()."""
++    x = (OPEN_W - LEGEND_W) / 2
++    polys = {}
++    chl_x = x
++    x += CH_W + CH_GAP
++    m0, m1 = (H - S) / 2, (H + S) / 2
++    e = [(0, 0), (EW, 0), (EW, S), (S, S), (S, m0), (E_MID, m0), (E_MID, m1), (S, m1), (S, H - S), (EW, H - S), (EW, H), (0, H)]
++    polys["E"] = [[(x + a, Y0 + b) for a, b in e]]
++    x += EW + GAP
++    hw = x_half_width()
++    p1 = [(0, 0), (hw, 0), (XW, H), (XW - hw, H)]            # rising bar
++    p2 = [(XW - hw, 0), (XW, 0), (hw, H), (0, H)]            # falling bar
++    B = _isect(p1[1], p1[2], p2[0], p2[3])
++    R = _isect(p1[1], p1[2], p2[1], p2[2])
++    T = _isect(p1[0], p1[3], p2[1], p2[2])
++    L = _isect(p1[0], p1[3], p2[0], p2[3])
++    xu = [(0, 0), (hw, 0), B, (XW - hw, 0), (XW, 0), R, (XW, H), (XW - hw, H), T, (hw, H), (0, H), L]
++    polys["X"] = [[(x + a, Y0 + b) for a, b in xu]]
++    x += XW + GAP
++    polys["I"] = [[(x, Y0), (x + S, Y0), (x + S, Y0 + H), (x, Y0 + H)]]
++    x += S + GAP
++    a0, a1 = (TW - S) / 2, (TW + S) / 2
++    t = [(a0, 0), (a1, 0), (a1, H - S), (TW, H - S), (TW, H), (0, H), (0, H - S), (a0, H - S)]
++    polys["T"] = [[(x + a, Y0 + b) for a, b in t]]
++    x += TW + CH_GAP
++    chr_x = x
++    cy = Y0 + H / 2 - CH_H / 2
++    a = CH_ARM
++
++    def chevron(x0, left):
++        pts = [(0, CH_H / 2), (CH_W - a, CH_H), (CH_W, CH_H), (a, CH_H / 2), (CH_W, 0), (CH_W - a, 0)]
++        if not left:
++            pts = [(CH_W - px, py) for px, py in pts]
++        return ccw([(x0 + px, cy + py) for px, py in pts])
++
++    polys["<"] = [chevron(chl_x, True)]
++    polys[">"] = [chevron(chr_x, False)]
++    return polys
++
++
++def area(poly):
++    return 0.5 * sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))
++
++
++def ccw(poly):
++    return poly if area(poly) > 0 else list(reversed(poly))
++
++
++def fillet_reflex(poly, r, segs=2):
++    """Round every reflex (inward) corner of a CCW polygon with radius r
++    (segs + 1 points per corner); convex corners stay sharp (the punch)."""
++    out = []
++    n = len(poly)
++    for i in range(n):
++        p0, p1, p2 = poly[i - 1], poly[i], poly[(i + 1) % n]
++        e0 = (p1[0] - p0[0], p1[1] - p0[1])
++        e1 = (p2[0] - p1[0], p2[1] - p1[1])
++        cross = e0[0] * e1[1] - e0[1] * e1[0]
++        if cross >= 0 or r <= 0:          # convex (left turn) in a CCW polygon
++            out.append(p1)
++            continue
++        l0, l1 = math.hypot(*e0), math.hypot(*e1)
++        u0 = (e0[0] / l0, e0[1] / l0)
++        u1 = (e1[0] / l1, e1[1] / l1)
++        ang = math.acos(max(-1.0, min(1.0, -(u0[0] * u1[0] + u0[1] * u1[1]))))   # interior angle at p1 (of the turn)
++        t = r / math.tan(ang / 2)                    # tangent length
++        t = min(t, 0.45 * l0, 0.45 * l1)
++        a = (p1[0] - u0[0] * t, p1[1] - u0[1] * t)
++        b = (p1[0] + u1[0] * t, p1[1] + u1[1] * t)
++        # Quadratic Bezier through the corner: close enough to an arc at 0.5 mm.
++        for k in range(segs + 1):
++            s = k / segs
++            out.append(((1 - s) ** 2 * a[0] + 2 * (1 - s) * s * p1[0] + s * s * b[0],
++                        (1 - s) ** 2 * a[1] + 2 * (1 - s) * s * p1[1] + s * s * b[1]))
++    return out
++
++
++def hole_polys(chevrons="closed"):
++    """The plate's through-holes in OPENING mm: EXIT (+ the open chevron).
++    chevrons: "closed" (default; both stay as scored outlines), "left", "right"."""
++    p = letter_polys_open()
++    names = ["E", "X", "I", "T"]
++    if chevrons == "left":
++        names.append("<")
++    elif chevrons == "right":
++        names.append(">")
++    holes = []
++    for k in names:
++        for poly in p[k]:
++            holes.append(fillet_reflex(ccw(poly), HOLE_FILLET))
++    return holes
++
++
++def open_to_reader(pt):
++    """OPENING mm -> READER mm (origin at the face centre)."""
++    return (pt[0] - OPEN_W / 2, pt[1] - OPEN_H / 2)
++
++
++def rounded_rect(w, h, r, seg, cx=0.0, cy=0.0):
++    """CCW rounded rectangle (same construction as interact_key_common)."""
++    hw, hh = w / 2, h / 2
++    pts = []
++    for (x, y, a0) in ((hw - r, -hh + r, -90), (hw - r, hh - r, 0), (-hw + r, hh - r, 90), (-hw + r, -hh + r, 180)):
++        for i in range(seg + 1):
++            a = math.radians(a0 + 90 * i / seg)
++            pts.append((cx + x + r * math.cos(a), cy + y + r * math.sin(a)))
++    out = []
++    for p in pts:
++        if not out or abs(p[0] - out[-1][0]) > 1e-9 or abs(p[1] - out[-1][1]) > 1e-9:
++            out.append(p)
++    if abs(out[0][0] - out[-1][0]) < 1e-9 and abs(out[0][1] - out[-1][1]) < 1e-9:
++        out.pop()
++    return out
++
++
++def screw_positions():
++    """Face screws in READER mm: TL, TR, BL, BR."""
++    y = HOUSING_H / 2 - SCREW_INSET
++    return [(-SCREW_X, y), (SCREW_X, y), (-SCREW_X, -y), (SCREW_X, -y)]
++
++
++# ---------------------------------------------------------------- lamp field (§6.3)
++# (u, v) on the opening, 0-1 from the reader's bottom-left; sigma in opening fractions.
++LAMP_A = (0.33, 0.70, 0.08, 0.20)        # 20 W behind the E-X web
++LAMP_B = (0.65, 0.70, 0.08, 0.20)        # 20 W behind the I-T web
++LAMP_FILL = 0.06                          # each working lamp adds 0.06 everywhere (cavity inter-reflection)
++DC_LAMPS = ((0.12, 0.70, 0.08, 0.20), (0.88, 0.70, 0.08, 0.20))   # 2 x 5 W DC (positions ESTIMATE)
++DC_LEVEL = 0.25
++# Lamp positions in the housing (READER mm from the face centre, depth from the face), for anchors.
++def lamp_reader_mm(lamp):
++    u, v = lamp[0], lamp[1]
++    return (u * OPEN_W - OPEN_W / 2, v * OPEN_H - OPEN_H / 2)
++
++
++# Targets (S1 Table 1, mean of red signs 2 and 3R, relative to I).
++NIST_REL = {"E": 0.544, "X": 0.651, "I": 1.0, "T": 0.531}
+--- /dev/null
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_hanging.py
+@@ -0,0 +1,78 @@
++"""Kit_ExitSign_Hanging: the 1990 double-face ceiling EXIT sign on two stems (P1).
++
++Exit-sign workflow, spec Documentation/research/exit_sign/10_spec.md §4.1-§4.5,
++§9.1 (RoomStream Run rooms: two of these replace the code-built signs).
++Construction in exit_sign_common.py, numbers in exit_sign_geom.py.
++
++A white-enamel double-face housing 346 x 212 x 76 mm with a face frame,
++stencil plate, spacer and diffuser on each side, hung 0.400 m below the
++ceiling (housing 2.288-2.500 under a 2.9 m ceiling) on two Ø12 chrome stems
++at x +-105 with collars, washers and hex lock nuts, from a 250 x 70 x 16
++canopy (deviation: the spec's 127 mm canopy cannot reach stems 210 mm apart)
++with two canopy screws on the 3.5 in box centres.
++
++Origin: the centre of the canopy on the CEILING plane (Y 0); the sign hangs
++into -Y; the faces look down +Z and -Z. The back face's diffuser is U-mirrored
++so lamp A is one physical lamp seen from both sides (HALF reads right).
++Tags exit_sign + ceiling -> placement "Ceiling" (only for zones >= 2.9 m;
++Low zones use Kit_ExitSign_HangingFlush). kitlib's minCeiling (0.05) is
++meaningless for a ceiling-origin asset (spec §4.5).
++
++VARIANT Kit_ExitSign_Hanging_Dead: ExitSign_Diffuser -> ExitSign_Diffuser_Dead.
++Budget §4.3: 6,500 +-15 % / LOD1 2,000; lodDistances [5, 0, 0].
++"""
++
++import exit_sign_common as es
++import exit_sign_geom as g
++from interact_key_common import U
++
++NAME = "Kit_ExitSign_Hanging"
++VARIANTS = {"Kit_ExitSign_Hanging_Dead": {es.DIFFUSER: es.DIFFUSER_DEAD}}
++BUDGET = (6500, 2000, 300)
++LOD1 = BUDGET[1] / BUDGET[0]
++SMOOTH_ANGLE = 40.0
++DROP = g.HANG_DROP
++MM = es.MM
++
++
++def build_hanging(kit, drop, budget, collars=True, ceiling_m=2.9):
++    es.register_slots()
++    y_top = -drop
++    yc = y_top - g.HOUSING_H / 2
++    zf = g.DEPTH_DOUBLE / 2
++    front = es.Face((0.0, yc * MM, zf * MM), (0, 0, 1), (-1, 0, 0), screw_axis="+Z")
++    back = es.Face((0.0, yc * MM, -zf * MM), (0, 0, -1), (1, 0, 0), mirror_lamps=True, screw_axis="-Z")
++    es.build_ring_double(kit, yc, zf)
++    es.build_face(kit, front)
++    es.build_face(kit, back)
++    # Lamp chassis (build round 3): from 2 mm behind one diffuser to 2 mm behind the other.
++    zc_front = zf + es.chassis_front_c()
++    es.build_chassis(kit, (0.0, yc * MM, 0.0),
++                     ((g.HOUSING_W - 2 * es.CHASSIS_INSET) * MM, (g.HOUSING_H - 2 * es.CHASSIS_INSET) * MM, 2 * zc_front * MM))
++    es.build_canopy(kit, g.CANOPY_L, g.CANOPY_W, g.CANOPY_H, g.CANOPY_R)
++    es.canopy_screws(kit, -g.CANOPY_H)
++    es.build_stems(kit, y_top, -g.CANOPY_H, collars=collars)
++
++    z_plate = (zf - g.LIP_DEPTH) * MM
++    kit.anchor("ceiling", U(0.0, 0.0, 0.0))
++    kit.anchor("centre", U(0.0, yc * MM, 0.0))
++    kit.anchor("face_front", U(0.0, yc * MM, z_plate))
++    kit.anchor("face_back", U(0.0, yc * MM, -z_plate))
++    kit.anchor("stem_l", U(g.STEM_X * MM, y_top * MM, 0.0))
++    kit.anchor("stem_r", U(-g.STEM_X * MM, y_top * MM, 0.0))
++    for nm, lamp in (("lamp_a", g.LAMP_A), ("lamp_b", g.LAMP_B)):
++        a, b = g.lamp_reader_mm(lamp)
++        kit.anchor(nm, U(-a * MM, (yc + b) * MM, 0.0))
++    # The Run room's red light stays at world y 1.96 (spec §9.1): 0.94 under the 2.9 m
++    # ceiling this sign is for; the flush sign (Low 2.4 m zones) keeps the same 1.96.
++    kit.anchor("glow", U(0.0, -round(ceiling_m - 1.96, 4), 0.0))
++    kit.no_collider()
++    kit.tag("exit_sign", "ceiling")
++    es.exit_meta(kit, 2)
++    kit.meta["lodBudget"] = list(budget)
++    kit.meta["dropM"] = round(drop * MM, 4)
++    es.check_budget(kit, budget[0])
++
++
++def build(kit):
++    build_hanging(kit, DROP, BUDGET)
+--- /dev/null
++++ b/Tools/Blender/frontrooms_kit/assets/exit_sign_hanging_flush.py
+@@ -0,0 +1,26 @@
++"""Kit_ExitSign_HangingFlush: the double-face EXIT sign close under a Low ceiling (P2).
++
++Exit-sign workflow, spec Documentation/research/exit_sign/10_spec.md §4.1
++(mount D: housing 2.163-2.375 under a 2.40 m ceiling). The same housing and
++faces as Kit_ExitSign_Hanging (exit_sign_hanging.build_hanging), with the
++housing top 25 mm under the ceiling: the canopy (16 mm), 9 mm of stem and
++the lock nuts; no collars (no room for them).
++
++Origin: the centre of the canopy on the ceiling plane; the sign hangs into -Y;
++faces +-Z. Tags exit_sign + ceiling. VARIANT Kit_ExitSign_HangingFlush_Dead.
++Budget §4.3: 5,800 +-15 % / LOD1 1,800; lodDistances [5, 0, 0].
++"""
++
++import exit_sign_common as es
++import exit_sign_geom as g
++import exit_sign_hanging as hang
++
++NAME = "Kit_ExitSign_HangingFlush"
++VARIANTS = {"Kit_ExitSign_HangingFlush_Dead": {es.DIFFUSER: es.DIFFUSER_DEAD}}
++BUDGET = (5800, 1800, 300)
++LOD1 = BUDGET[1] / BUDGET[0]
++SMOOTH_ANGLE = 40.0
++
++
++def build(kit):
++    hang.build_hanging(kit, g.FLUSH_DROP, BUDGET, collars=False, ceiling_m=2.4)
+--- a/Tools/Blender/frontrooms_kit/assets/interact_door_frame_steel.py
++++ b/Tools/Blender/frontrooms_kit/assets/interact_door_frame_steel.py
+@@ -152,7 +152,7 @@
+     dc.anchor(kit, "head_dust_b", 0.0, dc.LINING_Y, 0.95)
+     dc.anchor(kit, "threshold", 0.0, dc.SADDLE_H, 0.50)
+     dc.anchor(kit, "closer_shoe", *CLOSER_SHOE)
+-    dc.anchor(kit, "exit_sign_p", -0.080, 2.280, 0.500)
++    dc.anchor(kit, "exit_sign_p", -0.080, 2.180, 0.500)   # the wall sign's origin (its bottom): 3 mm over the head casing (exit_sign/10_spec.md §4.5)
+     kit.no_collider()
+     kit.tag("interactable", "door", "door_frame", "office", "lobby", "frame_steel")
+     kit.meta["frameType"] = "steel"
+--- a/Tools/Blender/frontrooms_kit/assets/interact_exit_sign.py
++++ b/Tools/Blender/frontrooms_kit/assets/interact_exit_sign.py
+@@ -1,103 +1,70 @@
+-"""Wall exit sign (P2): a 1990 stamped-steel single-face EXIT sign over the
+-Exit doors (spec 10 §2.4, §2.1 EX-F / EX-K).
++"""Kit_ExitSign: the 1990 single-face wall EXIT sign (exit-sign workflow, P1).
+ 
+-Real-world reference: the US commercial wall-mount exit sign of the period:
+-a black painted stamped-steel housing (0.330 x 0.200 x 0.050) with rounded
+-drawn corners, a stamped face frame with a raised bead and an inner lip that
+-holds the face, four slotted face screws on the long sides, and a conduit
+-knockout plug on top. No pilot light, no test button, no brand (era note R10:
+-no LED indicators). The face is the project's existing Run_ExitSign surface
+-(red EXIT, emissive in Unity, as the Run level's hanging signs; Stream:1470-
+-1479), shown through that material's own UV transform (_TileSize 0.36 x 0.18,
+-_BaseMap_ST (-1, 1, 1, 0)): the face quad's UVs are authored in its metres so
+-the texture region U 0.165-0.845, V 0.145-0.907 (the word without the Run
+-chevrons, which point along a corridor) fills the 0.296 x 0.166 opening.
+-Deviation: with that texture the letters are 0.10 m tall, not 6"; a 6"
+-legend needs its own face texture (reported).
++Rewritten 2026-10-03 by the exit-sign workflow, which took over this module,
++Kit_ExitSign and Kit_ExitSign_Dead from G3 (interactables/build_g3 §0.4,
++item 15). Spec: Documentation/research/exit_sign/10_spec.md §4.1-§4.5;
++construction in exit_sign_common.py, numbers in exit_sign_geom.py.
+ 
+-Origin = THE CENTRE OF THE BACK, on the wall face (the door frame's
+-exit_sign_p anchor puts it at Y 2.280, so its top is at 2.380); front +Z =
+-the room. 0.330 x 0.200 x 0.060. No Light component (00): the sign glows by
+-its emissive face only.
++What it is: a white-enamel drawn steel pan 346 x 212 x 64 mm on the wall, a
++pressed face frame (bead, 4 slotted oval-head screws, the 0.6 x 0.4 seam), a
++0.9 mm stencil plate with EXIT cut through it (6 in letters, 3/4 in strokes,
++both chevron knockouts closed), a white spacer and a red diffuser 6 mm
++behind the plate. A 1/2 in knockout on the top, two keyholes on the back on
++3.5 in centres (the outlet-box screws). No pilot light, no test switch, no
++brand, no date (era lock, T9).
+ 
+-Budget §9.3: 2,000 / 700 / 100 tris, LOD 3 / 10 / - m, no LOD1. Slots:
+-Prop_SteelBlack (housing, frame, screws), Run_ExitSign (face; existing
+-surface via register_slot). VARIANT Kit_ExitSign_Dead: Run_ExitSign ->
+-Run_ExitSign_Dead (NEW non-emissive copy, P-4).
++Origin: the bottom-centre of the back plane (Y 0 = the housing bottom, Z 0 =
++the wall face); front +Z = the room. The Level Designer's Wall placement
++with the "hang" anchor puts the bottom at min(2.10, ceiling - 0.262).
++Seen from the front, +X is the reader's LEFT (Unity is left-handed).
++
++VARIANT Kit_ExitSign_Dead: ExitSign_Diffuser -> ExitSign_Diffuser_Dead (no
++emission keyword at all). Main's GUIDs for both names stay (spec §1).
++Budget §4.3: 3,500 +-15 % / LOD1 1,100; lodDistances [5, 0, 0] (2 LODs:
++LOD1 never culls; never null).
+ """
+ 
+-import math
+-
+-import interact_key_common as kc
++import exit_sign_common as es
++import exit_sign_geom as g
+ from interact_key_common import U
+ 
+ NAME = "Kit_ExitSign"
+-VARIANTS = {"Kit_ExitSign_Dead": {kc.EXIT_FACE: kc.EXIT_DEAD}}
+-LOD1_RATIO, LOD2_RATIO = 700 / 2000, 100 / 2000
+-LOD_DISTANCES = (3.0, 10.0, None)
+-BUDGET = (2000, 700, 100)
++VARIANTS = {"Kit_ExitSign_Dead": {es.DIFFUSER: es.DIFFUSER_DEAD}}
++BUDGET = (3500, 1100, 200)
++LOD1 = BUDGET[1] / BUDGET[0]
++SMOOTH_ANGLE = 40.0
++ZF = 62.5            # the frame's front flat, mm from the wall (bead 63.5, screw domes ~64.0)
++MM = es.MM
+ 
+-STEEL = "Prop_SteelBlack"
+-W, H = 0.330, 0.200
+-BODY_D = 0.050
+-DEPTH = 0.060           # to the screw heads
+-FRONT = DEPTH - 0.0015  # the frame's flat
+-OPEN = (0.296, 0.166, 0.006)
+-TEX_U = (0.165, 0.845)
+ 
+-
+ def build(kit):
+-    kc.register_slots()
+-    to3 = lambda u, v, w: U(u, v, w)
+-    hpath = kc.rounded_rect(W, H, 0.010, 8)
+-    r = 0.004
+-    prof = [(0.0, 0.0), (0.0, BODY_D - r)]
+-    for i in range(1, 5):
+-        a = math.radians(90 * i / 4)
+-        prof.append((r * (1 - math.cos(a)), BODY_D - r + r * math.sin(a)))
+-    prof.append((r + 0.0004, BODY_D))
+-    housing = kc.profile_sweep(kit, hpath, prof, STEEL, to3, name="housing", cap_last=True)
+-    # Stamped face frame round the opening: outward offsets of the opening path.
+-    ow, oh, orad = OPEN
+-    opath = kc.rounded_rect(ow, oh, orad, 8)
+-    border = (W - ow) / 2 - 0.0005
+-    fprof = [(-border, BODY_D), (-border + 0.0006, BODY_D + 0.0032), (-border + 0.0030, BODY_D + 0.0075),
+-             (-border + 0.0062, FRONT - 0.0002), (-0.0045, FRONT), (-0.0020, FRONT - 0.0004), (-0.0004, FRONT - 0.0022),
+-             (0.0, FRONT - 0.0045), (0.0020, FRONT - 0.0050), (0.0020, FRONT - 0.0062)]
+-    frame = kc.profile_sweep(kit, opath, fprof, STEEL, to3, name="face frame")
+-    # Conduit knockout plug on the top.
+-    ko = kit.cylinder(0.011, 0.0016, (0, 0, 0), STEEL, verts=20, bevel=0.0004, segments=1, name="knockout")
+-    kc.orient(ko, (0.0, H / 2 + 0.0008, 0.024), (0, 1, 0), (0, 0, 1))
+-    kc.drop2(ko)
+-    for sx, sy, deg in ((0.10, 1, 20), (-0.10, 1, -35), (-0.10, -1, 75), (0.10, -1, 5)):
+-        s = kc.oval_screw(kit, (sx, sy * (oh / 2 + 0.0075), FRONT - 0.0001), STEEL, head_d=0.0062, dome_h=0.0012,
+-                          slot_w=0.0007, slot_d=0.0008, slot_deg=deg, segs=12, name="face screw")
+-        kc.drop2(s)
+-    # Face: the existing Run_ExitSign surface, UVs in that material's metres.
+-    zf = FRONT - 0.0064
+-    aspect = ow / oh
+-    u_span = TEX_U[1] - TEX_U[0]
+-    v_span = u_span * (1024 / 512) / aspect
+-    vc = 0.5255
+-    V0, V1 = vc - v_span / 2, vc + v_span / 2
+-    u0, v0, u1, v1 = kc.exit_face_rect(TEX_U[0], V0, TEX_U[1], V1)
+-    hw, hh = ow / 2 + 0.002, oh / 2 + 0.002
+-    gu = (u1 - u0) * 0.002 / ow
+-    gv = (v1 - v0) * 0.002 / oh
+-    face = kc.quad_uv(kit, [(hw, -hh, zf), (-hw, -hh, zf), (-hw, hh, zf), (hw, hh, zf)],
+-                      [(u0 - gu, v0 - gv), (u1 + gu, v0 - gv), (u1 + gu, v1 + gv), (u0 - gu, v1 + gv)],
+-                      kc.EXIT_FACE, name="exit face")
+-    kc.wear_all(kit)
+-    kit.anchor("back", U(0, 0, 0))
+-    kit.anchor("face", U(0, 0, zf))
+-    kit.anchor("face_dir", U(0, 0, zf + 0.10))
++    es.register_slots()
++    yc = g.HOUSING_H / 2
++    face = es.Face((0.0, yc * MM, ZF * MM), (0, 0, 1), (-1, 0, 0), screw_axis="+Z")
++    es.build_pan_wall(kit, yc, ZF)
++    es.build_face(kit, face)
++    es.build_knockout(kit, (0.0, g.HOUSING_H * MM, 0.024))
++    # Lamp chassis (build round 3): Z 1.5 mm (clear of the 1 mm keyhole pockets) to
++    # 2 mm behind the diffuser, inset 8 mm from the pan sides.
++    z_back, z_front = 1.5, ZF + es.chassis_front_c()
++    es.build_chassis(kit, (0.0, yc * MM, (z_back + z_front) / 2 * MM),
++                     ((g.HOUSING_W - 2 * es.CHASSIS_INSET) * MM, (g.HOUSING_H - 2 * es.CHASSIS_INSET) * MM, (z_front - z_back) * MM))
++
++    z_plate = (ZF - g.LIP_DEPTH) * MM
++    z_diff = (ZF - g.LIP_DEPTH - g.SHEET - g.DIFFUSER_GAP) * MM
++    kit.anchor("hang", U(0.0, 0.0, 0.0))
++    kit.anchor("back_centre", U(0.0, yc * MM, 0.0))
++    kit.anchor("face", U(0.0, yc * MM, z_plate))
++    kit.anchor("face_dir", U(0.0, yc * MM, z_plate + 0.10))
++    kit.anchor("diffuser", U(0.0, yc * MM, z_diff))
++    for nm, lamp in (("lamp_a", g.LAMP_A), ("lamp_b", g.LAMP_B)):
++        a, b = g.lamp_reader_mm(lamp)
++        kit.anchor(nm, U(-a * MM, (yc + b) * MM, 0.030))
++    kit.anchor("glow", U(0.0, -0.02, 0.06))
++    kit.anchor("mount_l", U(g.KEYHOLE_PITCH / 2 * MM, 0.140, 0.0))
++    kit.anchor("mount_r", U(-g.KEYHOLE_PITCH / 2 * MM, 0.140, 0.0))
+     kit.no_collider()
+-    kit.tag("interactable", "exit_sign")
+-    kc.lod_meta(kit, LOD_DISTANCES, BUDGET)
+-    kit.meta["face"] = {"slot": kc.EXIT_FACE, "deadSlot": kc.EXIT_DEAD, "textureRegion": [TEX_U[0], round(V0, 4), TEX_U[1], round(V1, 4)],
+-                        "materialTile": [0.36, 0.18], "materialST": [-1, 1, 1, 0], "letterHeightM": round(0.441 / v_span * oh, 3)}
+-    lo, hi = kc.eval_bounds_unity(kit)
+-    assert abs((hi[0] - lo[0]) - W) < 1e-4, ("width", lo, hi)
+-    assert abs(lo[1] + H / 2) < 1e-4 and abs(hi[1] - (H / 2 + 0.0016)) < 2e-4, ("height", lo, hi)
+-    assert abs(lo[2]) < 1e-6 and hi[2] <= DEPTH + 1e-4, ("depth", lo, hi)
+-    kc.check_budget(kit, BUDGET[0])
++    kit.tag("exit_sign", "wall_decor")
++    es.exit_meta(kit, 1)
++    kit.meta["lodBudget"] = list(BUDGET)
++    es.check_budget(kit, BUDGET[0])
+--- /dev/null
++++ b/Tools/lookdev/exit_sign_measure.py
+@@ -0,0 +1,160 @@
++"""EXIT sign acceptance numbers from raw HDR captures (exit-sign workflow, build stage).
++
++Reads <dir>/raw_*.rgbf32 + .json written by FrontRoomsExitSignLookdev (Editor,
++clone-only): linear radiance before post, camera and sign matrices. Projects
++the letter polygons of exit_sign_geom.py onto the image and reports
++  T2  LIT letter mean / lit wall luminance        (pass 1.5-2.5)
++  T3  DEAD (L_face - L_letters) / L_face          (pass >= 0.5, UL 924)
++  T4  per-letter means vs "I", spread, max/min    (E/X/T within +-0.08 of 0.54/0.65/0.53;
++                                                   spread 0.4-0.75; max/min <= 40)
++  python3 exit_sign_measure.py <dir> [--out report.json]
++"""
++import json
++import os
++import sys
++
++import numpy as np
++from PIL import Image, ImageDraw
++
++
++class ndimage:
++    """numpy stand-ins for scipy.ndimage.binary_erosion / binary_dilation with
++    scipy's default cross (4-neighbour) element and a False border."""
++
++    @staticmethod
++    def _shifts(m):
++        p = np.pad(m, 1, constant_values=False)
++        return p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]
++
++    @staticmethod
++    def binary_erosion(m, iterations=1):
++        m = np.asarray(m, bool)
++        for _ in range(iterations):
++            a, b, c, d = ndimage._shifts(m)
++            m = m & a & b & c & d
++        return m
++
++    @staticmethod
++    def binary_dilation(m, iterations=1):
++        m = np.asarray(m, bool)
++        for _ in range(iterations):
++            a, b, c, d = ndimage._shifts(m)
++            m = m | a | b | c | d
++        return m
++
++HERE = os.path.dirname(os.path.abspath(__file__))
++sys.path.insert(0, os.path.join(HERE, "..", "Blender", "frontrooms_kit", "assets"))
++import exit_sign_geom as g  # noqa: E402
++
++Z_PLATE_WALL = (62.5 - g.LIP_DEPTH) / 1000.0     # Kit_ExitSign plate front, sign space
++YC_WALL = g.HOUSING_H / 2 / 1000.0
++
++
++def load(dirn, name):
++    meta = json.load(open(os.path.join(dirn, name + ".json")))
++    w, h = meta["w"], meta["h"]
++    img = np.fromfile(os.path.join(dirn, name + ".rgbf32"), np.float32).reshape(h, w, 3)
++    M = lambda k: np.array(meta[k], np.float64).reshape(4, 4)
++    return img, M("proj"), M("view"), M("sign"), w, h
++
++
++def project(pts_local, P, V, S, w, h):
++    out = []
++    for x, y, z in pts_local:
++        c = P @ V @ S @ np.array([x, y, z, 1.0])
++        nx, ny = c[0] / c[3], c[1] / c[3]
++        out.append(((nx + 1) / 2 * w, (ny + 1) / 2 * h))       # y from the bottom
++    return out
++
++
++def mask(polys_px, w, h, erode=2):
++    im = Image.new("L", (w, h), 0)
++    d = ImageDraw.Draw(im)
++    for poly in polys_px:
++        d.polygon([(x, h - y) for x, y in poly], fill=255)
++    m = np.asarray(im)[::-1] > 127                              # back to row 0 = bottom
++    if erode:
++        m = ndimage.binary_erosion(m, iterations=erode)
++    return m
++
++
++def lum(img):
++    return img[..., 0] * 0.2126 + img[..., 1] * 0.7152 + img[..., 2] * 0.0722
++
++
++def letter_local(poly_open):
++    return [(-(a) / 1000.0, YC_WALL + b / 1000.0, Z_PLATE_WALL) for a, b in (g.open_to_reader(p) for p in poly_open)]
++
++
++def letters_masks(P, V, S, w, h, erode=2):
++    polys = g.letter_polys_open()
++    return {k: mask([project(letter_local(p), P, V, S, w, h) for p in polys[k]], w, h, erode) for k in "EXIT"}
++
++
++def t4(dirn):
++    img, P, V, S, w, h = load(dirn, "raw_t4_lit_dark")
++    L = lum(img)
++    ms = letters_masks(P, V, S, w, h, 3)
++    means = {k: float(L[m].mean()) for k, m in ms.items()}
++    spread = {k: float(L[m].std() / L[m].mean()) for k, m in ms.items()}
++    allv = np.concatenate([L[m] for m in ms.values()])
++    rel = {k: round(v / means["I"], 3) for k, v in means.items()}
++    ok = all(abs(rel[k] - g.NIST_REL[k]) <= 0.08 for k in "EXT")
++    return {"relI": rel, "target": g.NIST_REL, "spread": {k: round(v, 3) for k, v in spread.items()},
++            "maxOverMin_p99.5/p0.5": round(float(np.percentile(allv, 99.5) / max(np.percentile(allv, 0.5), 1e-6)), 2),
++            "pixels": {k: int(m.sum()) for k, m in ms.items()}, "passRel": ok,
++            "passSpread": all(0.4 <= v <= 0.75 for v in spread.values())}
++
++
++def t2(dirn):
++    img, P, V, S, w, h = load(dirn, "raw_t2_lit_3m")
++    L = lum(img)
++    ms = letters_masks(P, V, S, w, h, 1)
++    letters = np.concatenate([L[m] for m in ms.values()])
++    # Wall patches either side of the sign, same height band, on the wall plane (sign space z = 0).
++    patches = []
++    for x0, x1 in ((.40, .70), (-.70, -.40)):
++        quad = [(x0, .04, 0.0), (x1, .04, 0.0), (x1, .17, 0.0), (x0, .17, 0.0)]
++        patches.append(mask([project(quad, P, V, S, w, h)], w, h, 2))
++    wall = np.concatenate([L[m] for m in patches])
++    ratio = float(letters.mean() / wall.mean())
++    return {"letterMean": round(float(letters.mean()), 4), "wallMean": round(float(wall.mean()), 4), "ratio": round(ratio, 3),
++            "pass": 1.5 <= ratio <= 2.5, "letterPixels": int(letters.size), "wallPixels": int(wall.size)}
++
++
++def t3(dirn):
++    img, P, V, S, w, h = load(dirn, "raw_t3_dead")
++    L = lum(img)
++    ms = letters_masks(P, V, S, w, h, 2)
++    letters = np.concatenate([L[m] for m in ms.values()])
++    # Plate inside the opening, away from the letters, the chevron scores and the lip shadow.
++    inner = [(-(g.OPEN_W / 2 - 8) / 1000.0, YC_WALL + (-(g.OPEN_H / 2 - 8)) / 1000.0, Z_PLATE_WALL),
++             ((g.OPEN_W / 2 - 8) / 1000.0, YC_WALL + (-(g.OPEN_H / 2 - 8)) / 1000.0, Z_PLATE_WALL),
++             ((g.OPEN_W / 2 - 8) / 1000.0, YC_WALL + (g.OPEN_H / 2 - 8) / 1000.0, Z_PLATE_WALL),
++             (-(g.OPEN_W / 2 - 8) / 1000.0, YC_WALL + (g.OPEN_H / 2 - 8) / 1000.0, Z_PLATE_WALL)]
++    face = mask([project(inner, P, V, S, w, h)], w, h, 0)
++    polys = g.letter_polys_open()
++    near = mask([project(letter_local(p), P, V, S, w, h) for k in "EXIT<>" for p in polys[k]], w, h, 0)
++    near = ndimage.binary_dilation(near, iterations=6)
++    face &= ~near
++    Lf, Ll = float(L[face].mean()), float(letters.mean())
++    c = (Lf - Ll) / Lf
++    return {"faceMean": round(Lf, 4), "letterMean": round(Ll, 4), "contrast": round(c, 3), "pass": c >= 0.5}
++
++
++def main():
++    d = sys.argv[1]
++    out = {}
++    for name, fn in (("T4_hot_spots", t4), ("T2_lit_level", t2), ("T3_unlit_contrast", t3)):
++        try:
++            out[name] = fn(d)
++        except FileNotFoundError as e:
++            out[name] = {"missing": str(e)}
++    s = json.dumps(out, indent=1)
++    print(s)
++    if "--out" in sys.argv:
++        open(sys.argv[sys.argv.index("--out") + 1], "w").write(s)
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/Tools/lookdev/gen_exit_sign.py
+@@ -0,0 +1,523 @@
++"""EXIT sign textures (exit-sign workflow; spec research/exit_sign/10_spec.md §6).
++
++Generated from numbers only (numpy + PIL, no external images; no scipy). The
++letters, chevrons, screws and lamps come from
++Tools/Blender/frontrooms_kit/assets/exit_sign_geom.py, the same file the
++Blender modules cut the plate from, so print and holes cannot drift apart.
++
++Writes to <out>/ (default: Assets/Resources/Surfaces/Textures of this project):
++  ExitSign_Face_A/_N/_S       2048 x 1024 over the face 0.346 x 0.212 m (decal)
++  ExitSign_Diffuser_A/_S/_E   1024 x 512 over the opening 0.320 x 0.186 m (decal)
++  ExitSign_Diffuser_F         linear RGBA: R lamp A, G lamp B, B DC pair, A transmission
++  ExitSign_Enamel_A/_N/_S     1024 x 1024, tiling, 0.40 m (housing)
++and a review sheet + exit_sign_textures_report.json (field checks vs S1) to --report-dir.
++
++Conventions: u runs to the READER's right, v up (image row 0 = the top).
++_A/_E are sRGB; _N is a tangent-space normal map (+Y up, OpenGL); _S/_F are
++linear (R smoothness, G cavity for _S). Deterministic (fixed seeds).
++
++  python3 gen_exit_sign.py [--out DIR] [--report-dir DIR]
++"""
++
++import argparse
++import json
++import math
++import os
++import sys
++
++import numpy as np
++from PIL import Image, ImageDraw
++
++
++class ndimage:
++    """numpy stand-in for scipy.ndimage.gaussian_filter (truncate 4.0; modes
++    "reflect" = scipy's default, and "wrap"). The machines here have no scipy
++    and nothing may be installed, so the generator carries its own filter."""
++
++    @staticmethod
++    def _axis(a, k, axis, mode):
++        r = (len(k) - 1) // 2
++        n = a.shape[axis]
++        pad = [(0, 0)] * a.ndim
++        pad[axis] = (r, r)
++        b = np.pad(a, pad, mode="wrap" if mode == "wrap" else "symmetric")
++        L = b.shape[axis] + len(k) - 1
++        nfft = 1 << (L - 1).bit_length()
++        shape = [1] * a.ndim
++        shape[axis] = -1
++        fk = np.fft.rfft(k, nfft).reshape([-1 if i == axis else 1 for i in range(a.ndim)])
++        out = np.fft.irfft(np.fft.rfft(b, nfft, axis=axis) * fk, nfft, axis=axis)
++        sl = [slice(None)] * a.ndim
++        sl[axis] = slice(2 * r, 2 * r + n)
++        return out[tuple(sl)]
++
++    @staticmethod
++    def gaussian_filter(a, sigma, mode="reflect", truncate=4.0):
++        a = np.asarray(a, np.float64)
++        r = int(truncate * float(sigma) + 0.5)
++        if r < 1:
++            return a.astype(np.float32)
++        x = np.arange(-r, r + 1, dtype=np.float64)
++        k = np.exp(-0.5 * (x / float(sigma)) ** 2)
++        k /= k.sum()
++        for ax in range(a.ndim):
++            a = ndimage._axis(a, k, ax, mode)
++        return a.astype(np.float32)
++
++HERE = os.path.dirname(os.path.abspath(__file__))
++ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
++sys.path.insert(0, os.path.join(ROOT, "Tools", "Blender", "frontrooms_kit", "assets"))
++import exit_sign_geom as g  # noqa: E402
++
++FACE_W, FACE_H = 2048, 1024
++DIFF_W, DIFF_H = 1024, 512
++ENAMEL = 1024
++ENAMEL_TILE_MM = 400.0
++
++ENAMEL_SRGB = np.array([230, 226, 212], np.float32)      # baked white enamel, lightly yellowed
++STEEL_SRGB = np.array([120, 118, 112], np.float32)       # bare steel in a chip
++PRIMER_SRGB = np.array([140, 62, 44], np.float32)        # red-oxide primer at a chip's edge
++DUST_SRGB = np.array([170, 162, 146], np.float32)
++DIFF_LIN = np.array([0.15, 0.022, 0.018], np.float32)    # red acrylic over the white interior (linear)
++SMOOTH_FACE, SMOOTH_DUST, SMOOTH_PRINT, SMOOTH_CHIP = 0.42, 0.25, 0.55, 0.35
++SMOOTH_DIFF, SMOOTH_DIFF_DUST, DIFF_CAVITY = 0.55, 0.40, 0.70
++
++
++# ------------------------------------------------------------------ colour helpers
++def to_lin(srgb):
++    c = np.asarray(srgb, np.float32) / 255.0
++    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
++
++
++def to_srgb8(lin):
++    c = np.clip(lin, 0, 1)
++    s = np.where(c <= 0.0031308, 12.92 * c, 1.055 * np.power(c, 1 / 2.4) - 0.055)
++    return np.clip(np.round(s * 255), 0, 255).astype(np.uint8)
++
++
++def lin8(x):
++    return np.clip(np.round(np.asarray(x) * 255), 0, 255).astype(np.uint8)
++
++
++def save(img, path):
++    Image.fromarray(img).save(path, compress_level=6)
++
++
++# ------------------------------------------------------------------ rasters
++class Grid:
++    """Pixel grid over a rectangle in READER mm (x right, y up)."""
++
++    def __init__(self, w_px, h_px, x0, y0, w_mm, h_mm):
++        self.w, self.h = w_px, h_px
++        self.x0, self.y0, self.wm, self.hm = x0, y0, w_mm, h_mm
++        self.sx, self.sy = w_px / w_mm, h_px / h_mm          # px per mm
++        j, i = np.mgrid[0:h_px, 0:w_px].astype(np.float32)
++        self.X = x0 + (i + 0.5) / self.sx                    # mm
++        self.Y = y0 + h_mm - (j + 0.5) / self.sy
++
++    def px(self, x, y, ss=1):
++        return ((x - self.x0) * self.sx * ss, (self.y0 + self.hm - y) * self.sy * ss)
++
++    def mask(self, polys, ss=4, outline=None):
++        """Anti-aliased coverage of polygons (READER mm). outline = line width in mm -> outlines only."""
++        img = Image.new("L", (self.w * ss, self.h * ss), 0)
++        d = ImageDraw.Draw(img)
++        for poly in polys:
++            pts = [self.px(x, y, ss) for x, y in poly]
++            if outline is None:
++                d.polygon(pts, fill=255)
++            else:
++                wpx = max(1, int(round(outline * self.sx * ss)))
++                d.line(pts + [pts[0]], fill=255, width=wpx, joint="curve")
++        img = img.resize((self.w, self.h), Image.BOX)
++        return np.asarray(img).astype(np.float32) / 255.0
++
++
++def noise(shape, sigma, rng, octaves=1):
++    out = np.zeros(shape, np.float32)
++    amp = 1.0
++    tot = 0.0
++    for o in range(octaves):
++        n = rng.standard_normal(shape).astype(np.float32)
++        n = ndimage.gaussian_filter(n, sigma * (2 ** o), mode="wrap")
++        n /= (n.std() + 1e-8)
++        out += amp * n
++        tot += amp
++        amp *= 0.5
++    return out / tot
++
++
++def orange_peel(shape, cell_px, rng):
++    """Enamel orange peel: a band-pass (DoG) field with cells of about cell_px."""
++    n = rng.standard_normal(shape).astype(np.float32)
++    a = ndimage.gaussian_filter(n, cell_px * 0.30, mode="wrap")
++    b = ndimage.gaussian_filter(n, cell_px * 0.85, mode="wrap")
++    d = a - b
++    return d / (d.std() + 1e-8)
++
++
++def height_to_normal(h_mm, sx, sy, strength=1.0):
++    """Tangent-space normal (+X u right, +Y v up) from a height field in mm."""
++    dx = (np.roll(h_mm, -1, 1) - np.roll(h_mm, 1, 1)) * 0.5 * sx      # mm per mm
++    dy = (np.roll(h_mm, 1, 0) - np.roll(h_mm, -1, 0)) * 0.5 * sy      # rows go down; v goes up
++    nx, ny, nz = -dx * strength, -dy * strength, np.ones_like(h_mm)
++    l = np.sqrt(nx * nx + ny * ny + nz * nz)
++    n = np.stack([nx / l, ny / l, nz / l], -1)
++    return np.clip(np.round((n * 0.5 + 0.5) * 255), 0, 255).astype(np.uint8)
++
++
++def soft_blob(X, Y, cx, cy, sx, sy, rot=0.0):
++    c, s = math.cos(rot), math.sin(rot)
++    u = (X - cx) * c + (Y - cy) * s
++    v = -(X - cx) * s + (Y - cy) * c
++    return np.exp(-0.5 * ((u / sx) ** 2 + (v / sy) ** 2))
++
++
++def fingerprint(G, cx, cy, warpN, smearN, size=(7.0, 9.0), rot=0.0, pitch=0.48):
++    """A partial fingerprint: elliptic whorl ridges at ~0.48 mm pitch in a soft oval
++    (warpN / smearN: shared noise fields, so each print costs no new filtering)."""
++    c, s = math.cos(rot), math.sin(rot)
++    u = (G.X - cx) * c + (G.Y - cy) * s
++    v = -(G.X - cx) * s + (G.Y - cy) * c
++    r = np.sqrt((u / size[0]) ** 2 + (v / size[1]) ** 2) * size[0] + warpN * 0.25
++    ridge = 0.5 + 0.5 * np.sin(2 * math.pi * r / pitch)
++    env = np.exp(-0.5 * ((u / (size[0] * 0.85)) ** 2 + (v / (size[1] * 0.85)) ** 2) ** 2)
++    smear = np.clip(smearN * 0.5 + 0.6, 0, 1)
++    return ridge * env * smear, env * smear
++
++
++# ------------------------------------------------------------------ the face
++def face_maps(rng):
++    G = Grid(FACE_W, FACE_H, -g.HOUSING_W / 2, -g.HOUSING_H / 2, g.HOUSING_W, g.HOUSING_H)
++    X, Y = G.X, G.Y
++    polys = g.letter_polys_open()
++    to_r = lambda poly: [g.open_to_reader(p) for p in poly]
++    letters = [to_r(p) for k in "EXIT" for p in polys[k]]
++    chev = [to_r(p) for k in "<>" for p in polys[k]]
++    m_let = G.mask(letters)
++    # Chevron score: the outline with three 1.5 mm hold-tabs left uncut per chevron.
++    score = np.zeros((G.h, G.w), np.float32)
++    for poly in chev:
++        sc = G.mask([poly], outline=0.3)
++        n = len(poly)
++        for k in (0, 2, 4):
++            ax, ay = poly[k]
++            bx, by = poly[(k + 1) % n]
++            mx, my = (ax + bx) / 2, (ay + by) / 2
++            sc *= 1.0 - (np.hypot(X - mx, Y - my) < 0.75)
++        score = np.maximum(score, sc)
++
++    # Distances for the frame / opening layout.
++    hw, hh = g.HOUSING_W / 2, g.HOUSING_H / 2
++    ow, oh = g.OPEN_W / 2, g.OPEN_H / 2
++    edge_in = np.minimum(hw - np.abs(X), hh - np.abs(Y))          # mm in from the outer edge (approx, square)
++    in_open = (np.abs(X) <= ow) & (np.abs(Y) <= oh)
++    d_open = np.minimum(ow - np.abs(X), oh - np.abs(Y))           # mm in from the opening edge
++
++    # ---------------- albedo (linear)
++    base = to_lin(ENAMEL_SRGB)
++    tone = 1.0 + 0.012 * noise((G.h, G.w), 30.0, rng, 2) + 0.006 * noise((G.h, G.w), 4.0, rng)
++    alb = np.ones((G.h, G.w, 3), np.float32) * base * tone[..., None]
++    # Lightly yellowed toward the top (heat rises), and browned over each lamp.
++    yellow = np.clip((Y + hh) / (2 * hh), 0, 1) ** 2 * 0.035
++    heat = np.zeros_like(X)
++    for lamp in (g.LAMP_A, g.LAMP_B):
++        la, lb = g.lamp_reader_mm(lamp)
++        heat += soft_blob(X, Y, la, lb + 26.0, 42.0, 34.0)
++    heat = np.clip(heat, 0, 1)
++    warm = np.array([1.0, 0.975, 0.90], np.float32)
++    alb *= (1 - (0.06 * heat + yellow))[..., None] * (1 - (1 - warm) * (heat + yellow * 3)[..., None])
++    # Letter interiors: enamel (the cut walls were painted after stamping), a touch darker.
++    alb *= (1 - 0.08 * m_let)[..., None]
++    # Scored knockouts: a dark hairline (-25 %).
++    alb *= (1 - 0.25 * score)[..., None]
++    # Dust film on the lower lip: the bottom border and the plate's lowest strip.
++    dust = np.clip(1 - (Y + hh) / 20.0, 0, 1) ** 1.6
++    dust *= 0.7 + 0.3 * np.clip(noise((G.h, G.w), 3.0, rng) * 0.5 + 0.5, 0, 1)
++    dust = np.clip(dust + 0.12 * np.clip(noise((G.h, G.w), 1.2, rng) - 1.6, 0, 1), 0, 1)
++    # The top fold: the frame's skirt on top faces up, and its UVs are the outermost
++    # 0-0.6 mm of the face, so a narrow band here is a dust skin along the whole top.
++    dust_top = np.clip(1 - (hh - Y) / 2.2, 0, 1) * (0.55 + 0.25 * np.clip(noise((G.h, G.w), 6.0, rng) * 0.5 + 0.5, 0, 1))
++    # The opening's bottom lip (the frame's inner return faces up there): a fine line of dust.
++    lip = np.exp(-0.5 * ((Y - (-oh)) / 0.8) ** 2) * (np.abs(X) < ow) * 0.6
++    dust = np.clip(np.maximum(dust, np.maximum(dust_top, lip)), 0, 1)
++    alb = alb * (1 - 0.30 * dust[..., None]) + to_lin(DUST_SRGB) * (0.30 * dust[..., None])
++    # Fingerprints round the screws (relamping) and on the lower border.
++    prints_ridge = np.zeros_like(X)
++    prints_env = np.zeros_like(X)
++    spots = []
++    for (sx, sy) in g.screw_positions():
++        for k in range(2):
++            ang = rng.uniform(0, 2 * math.pi)
++            r = rng.uniform(9.0, 18.0)
++            spots.append((sx + r * math.cos(ang), np.clip(sy + r * math.sin(ang) * 0.6, -hh + 4, hh - 4), rng.uniform(-0.8, 0.8)))
++    spots.append((rng.uniform(-60, -20), -hh + 6.0, 0.3))
++    spots.append((rng.uniform(30, 90), -hh + 7.0, -0.2))
++    warpN = noise((G.h, G.w), 6.0, rng)
++    smearN = noise((G.h, G.w), 10.0, rng)
++    for cx, cy, rot in spots:
++        rdg, env = fingerprint(G, cx, cy, warpN, smearN, size=(rng.uniform(5.5, 7.5), rng.uniform(7.5, 9.5)), rot=rot)
++        prints_ridge = np.maximum(prints_ridge, rdg)
++        prints_env = np.maximum(prints_env, env)
++    alb *= (1 - 0.035 * prints_ridge)[..., None]
++    # Chips: bare steel over a red-oxide primer edge, at sharp corners and one screwdriver slip.
++    chip = np.zeros_like(X)
++    primer = np.zeros_like(X)
++    chips = [(-hw + 2.2, -hh + 2.4, 2.4, 1.6, 0.6), (hw - 24.0, -hh + 1.2, 1.6, 0.9, 0.0), (-ow - 0.3, oh - 9.0, 0.9, 2.0, 0.0)]
++    chipN = noise((G.h, G.w), 2.0, rng)
++    for cx, cy, ax, ay, rot in chips:
++        # irregular edge: the blob is modulated by noise only where it exists (no stray specks)
++        blob = soft_blob(X, Y, cx, cy, ax, ay, rot) * (1 + 0.45 * chipN)
++        chip = np.maximum(chip, (blob > 0.55).astype(np.float32))
++        primer = np.maximum(primer, ((blob > 0.40) & (blob <= 0.55)).astype(np.float32))
++    # Screwdriver slip: a 6 mm arc scratch beside the top-right screw.
++    sxr, syr = g.screw_positions()[1]
++    t = np.arctan2(Y - syr, X - sxr)
++    rr = np.hypot(X - sxr, Y - syr)
++    slip = ((np.abs(rr - 4.6) < 0.14) & (t > math.radians(200)) | (np.abs(rr - 4.6) < 0.14) & (t < math.radians(-110)) & (t > math.radians(-170))).astype(np.float32)
++    slip = ndimage.gaussian_filter(slip, 0.6)
++    slip = np.clip(slip * 2.5, 0, 1)
++    chip = np.clip(chip, 0, 1)
++    primer = np.clip(ndimage.gaussian_filter(primer, 0.5), 0, 1) * (1 - chip)
++    alb = alb * (1 - primer[..., None]) + to_lin(PRIMER_SRGB) * primer[..., None]
++    steel = np.maximum(chip, slip)
++    alb = alb * (1 - steel[..., None]) + to_lin(STEEL_SRGB) * steel[..., None]
++    A = to_srgb8(alb)
++
++    # ---------------- height (mm) -> normal
++    h = 0.006 * orange_peel((G.h, G.w), 0.7 * G.sx, rng)
++    h -= 0.08 * score
++    dents = []
++    for idx in (2, 1):                         # bottom-left and top-right screws were over-tightened
++        sx_, sy_ = g.screw_positions()[idx]
++        r = np.hypot(X - sx_, Y - sy_)
++        h -= 0.12 * np.exp(-0.5 * ((r - 3.6) / 1.4) ** 2) * (r > 3.1)
++        dents.append((sx_, sy_))
++    h += 0.04 * (chip + primer * 0.5)          # chip edge: the paint layer's step (negative inside)
++    h -= 0.05 * chip
++    h -= 0.03 * slip
++    N = height_to_normal(h, G.sx, G.sy)
++
++    # ---------------- smoothness / cavity
++    rough = SMOOTH_FACE + 0.02 * noise((G.h, G.w), 12.0, rng) + 0.015 * noise((G.h, G.w), 2.0, rng)
++    rough = rough * (1 - dust) + SMOOTH_DUST * dust
++    rough = rough + (SMOOTH_PRINT - SMOOTH_FACE) * prints_ridge * prints_env
++    rough = rough * (1 - chip) + SMOOTH_CHIP * chip
++    rough = rough * (1 - slip) + 0.60 * slip
++    rough = rough * (1 - 0.25 * score)
++    cav = np.ones_like(X)
++    # round the screws
++    for sx_, sy_ in g.screw_positions():
++        r = np.hypot(X - sx_, Y - sy_)
++        cav *= 1 - 0.45 * np.exp(-0.5 * ((r - 3.15) / 0.35) ** 2)
++    # the bead's two edges and the frame/opening junction
++    for d in (g.BEAD_IN0, g.BEAD_IN1):
++        cav *= 1 - 0.25 * np.exp(-0.5 * ((edge_in - d) / 0.35) ** 2)
++    cav *= 1 - 0.20 * np.exp(-0.5 * ((edge_in - 0.1) / 0.5) ** 2)
++    occl = np.where(in_open, np.exp(-np.clip(d_open, 0, None) / 2.2), 0.0)
++    cav *= 1 - 0.30 * occl
++    # letter edges: a thin dark ring on the plate round every hole
++    ring = np.clip(ndimage.gaussian_filter(m_let, 1.2) - m_let, 0, 1)
++    cav *= 1 - 0.8 * ring
++    cav *= 1 - 0.5 * score
++    S = np.stack([lin8(np.clip(rough, 0, 1)), lin8(np.clip(cav, 0, 1)), np.zeros_like(lin8(cav)), np.full_like(lin8(cav), 255)], -1)
++
++    info = {"pxPerMm": [round(G.sx, 3), round(G.sy, 3)], "smoothMeanFace": float(np.mean(rough[~in_open | (m_let < 0.5)])),
++            "smoothMeanAll": float(np.mean(rough)), "fingerprints": len(spots), "chips": len(chips), "dents": len(dents)}
++    return A, N, S, info, m_let
++
++
++# ------------------------------------------------------------------ the diffuser
++def lamp_field(G, lamps, fill_per_lamp):
++    """Sum of Gaussians on the opening (u, v 0-1 from the reader's bottom-left)."""
++    u = (G.X + g.OPEN_W / 2) / g.OPEN_W
++    v = (G.Y + g.OPEN_H / 2) / g.OPEN_H
++    f = np.zeros_like(u)
++    for lu, lv, su, sv in lamps:
++        f += np.exp(-((u - lu) ** 2 / (2 * su * su) + (v - lv) ** 2 / (2 * sv * sv)))
++    return f + fill_per_lamp * len(lamps)
++
++
++def bug(G, cx, cy, length, rot, rng):
++    """A dead insect silhouette (fly / small moth), READER mm. Returns (opacity mask)."""
++    c, s = math.cos(rot), math.sin(rot)
++    u = (G.X - cx) * c + (G.Y - cy) * s
++    v = -(G.X - cx) * s + (G.Y - cy) * c
++    L = length
++    body = np.exp(-0.5 * ((u / (0.30 * L)) ** 2 + (v / (0.12 * L)) ** 2) ** 1.5)
++    head = np.exp(-0.5 * (((u - 0.36 * L) / (0.09 * L)) ** 2 + (v / (0.09 * L)) ** 2) ** 1.5)
++    m = np.maximum(body, head)
++    # wings: two translucent lobes
++    for sgn in (-1, 1):
++        w = np.exp(-0.5 * (((u + 0.05 * L) / (0.28 * L)) ** 2 + ((v - sgn * 0.20 * L) / (0.13 * L)) ** 2) ** 1.5)
++        m = np.maximum(m, 0.55 * w)
++    # six legs: thin strokes
++    for k, (ang, ln) in enumerate(((60, 0.30), (95, 0.28), (130, 0.32))):
++        for sgn in (-1, 1):
++            a = math.radians(ang) * sgn
++            x0, y0 = (0.10 - 0.08 * k) * L, 0.0
++            dx, dy = math.cos(a), math.sin(a)
++            t = np.clip((u - x0) * dx + (v - y0) * dy, 0, ln * L)
++            d = np.hypot(u - x0 - t * dx, v - y0 - t * dy)
++            m = np.maximum(m, np.clip(1 - d / (0.025 * L + 0.12), 0, 1) * 0.9)
++    return np.clip(m, 0, 1)
++
++
++def diffuser_maps(rng):
++    G = Grid(DIFF_W, DIFF_H, -g.OPEN_W / 2, -g.OPEN_H / 2, g.OPEN_W, g.OPEN_H)
++    X, Y = G.X, G.Y
++    hb = (Y + g.OPEN_H / 2)                      # mm from the opening's bottom
++    # Insects along the bottom 25 mm (8 of them), and dust. The legend's baseline is
++    # 16.8 mm above the opening's bottom, so insects lower than that hide behind the
++    # plate: three are placed where the bottom of a letter hole shows them (the E's
++    # foot, the X's right foot, the T's stem: dark shapes against the lit red), five
++    # lie lower along the bottom wall and only show at grazing angles.
++    polys = g.letter_polys_open()
++    def foot(letter, fx, dy):
++        xs = [p[0] for p in polys[letter][0]]
++        x0, x1 = min(xs), max(xs)
++        return (x0 + fx * (x1 - x0) - g.OPEN_W / 2, g.Y0 + dy - g.OPEN_H / 2)
++    placed = [(foot("E", 0.62, 6.5), 5.5), (foot("X", 0.90, 4.0), 7.5), (foot("T", 0.50, 9.0), 4.5)]
++    ins = np.zeros_like(X)
++    bugs = []
++    for (cx, cy), L in placed:
++        rot = rng.uniform(0, 2 * math.pi)
++        ins = np.maximum(ins, bug(G, cx, cy, L, rot, rng))
++        bugs.append([round(cx, 1), round(cy, 1), round(L, 1), "visible"])
++    for k in range(5):
++        cx = rng.uniform(-g.OPEN_W / 2 + 12, g.OPEN_W / 2 - 12)
++        cy = -g.OPEN_H / 2 + rng.uniform(2.5, 13.0)
++        L = rng.uniform(4.0, 12.0)
++        rot = rng.uniform(0, 2 * math.pi)
++        ins = np.maximum(ins, bug(G, cx, cy, L, rot, rng))
++        bugs.append([round(cx, 1), round(cy, 1), round(L, 1), "behind plate"])
++    dust = np.clip(1 - hb / 26.0, 0, 1) ** 1.4 * (0.75 + 0.25 * np.clip(noise((G.h, G.w), 3.0, rng) * 0.5 + 0.5, 0, 1))
++    mottle = 1.0 + 0.04 * noise((G.h, G.w), 1.2, rng) + 0.03 * noise((G.h, G.w), 18.0, rng)
++    # Albedo (unlit): red acrylic over white; dust greys it; insects are dark.
++    alb = DIFF_LIN[None, None, :] * mottle[..., None]
++    dust_lin = np.array([0.24, 0.20, 0.17], np.float32)
++    alb = alb * (1 - 0.35 * dust[..., None]) + dust_lin * (0.35 * dust[..., None])
++    bug_lin = np.array([0.012, 0.008, 0.006], np.float32)
++    alb = alb * (1 - 0.92 * ins[..., None]) + bug_lin * (0.92 * ins[..., None])
++    A = to_srgb8(alb)
++    # Frosted red acrylic (the spec's "fine frosted mottle"): smoothness 0.55, 0.40 under dust.
++    # Build round 1 used the spec's 0.72; a DEAD sign seen from below then showed the
++    # troffer's highlight across whole letters (white letters), so the sheet is frosted.
++    smooth = SMOOTH_DIFF * (1 - dust) + SMOOTH_DIFF_DUST * dust
++    smooth = smooth * (1 - 0.6 * ins) + 0.35 * 0.6 * ins
++    edge = np.minimum(g.OPEN_W / 2 - np.abs(X), g.OPEN_H / 2 - np.abs(Y))
++    # Cavity = occlusion of the recessed sheet: 6.9 mm behind a plate that covers about
++    # 2/3 of the opening, inside a closed white box. It dims the room's reflection and
++    # ambient on the sheet (not the lamp field), darker toward the opening's rim.
++    cav = DIFF_CAVITY - 0.20 * np.exp(-np.clip(edge, 0, None) / 3.0)
++    S = np.stack([lin8(smooth), lin8(cav), np.zeros_like(lin8(cav)), np.full_like(lin8(cav), 255)], -1)
++    # Lamp fields (linear), each lamp with its own share of the cavity fill.
++    fa = lamp_field(G, [g.LAMP_A], g.LAMP_FILL)
++    fb = lamp_field(G, [g.LAMP_B], g.LAMP_FILL)
++    fdc = lamp_field(G, list(g.DC_LAMPS), g.LAMP_FILL)
++    norm = float((fa + fb).max())
++    fa, fb, fdc = fa / norm, fb / norm, fdc / norm
++    trans = np.clip((1 - 0.85 * ins) * (1 - 0.12 * dust) * (1 + 0.02 * (mottle - 1)), 0, 1)
++    dither = (rng.random((G.h, G.w)).astype(np.float32) - 0.5) / 255.0
++    F = np.stack([lin8(fa + dither), lin8(fb + dither), lin8(fdc + dither), lin8(trans)], -1)
++    lit = np.clip((fa + fb) * trans, 0, 1)
++    E = to_srgb8(np.repeat(lit[..., None], 3, -1))
++    info = {"bugs": bugs, "fieldNorm": round(norm, 4), "dcPeak": round(float(fdc.max()), 4)}
++    return A, S, E, F, info, (fa, fb, fdc, trans, G)
++
++
++def field_checks(fields):
++    """§6.3 / T4 checks on the LIT field through the letter holes."""
++    fa, fb, fdc, trans, G = fields
++    polys = g.letter_polys_open()
++    res = {}
++    states = {"LIT": fa + fb, "HALF_A_out": fb, "BATTERY": fdc * g.DC_LEVEL}
++    lit_I = None
++    for name, f in states.items():
++        means, spreads = {}, {}
++        allv, allf = [], []
++        for k in "EXIT":
++            m = G.mask([[g.open_to_reader(p) for p in poly] for poly in polys[k]]) > 0.5
++            vals = (f * trans)[m]
++            means[k] = float(vals.mean())
++            spreads[k] = float(vals.std() / vals.mean())
++            allv.append(vals)
++            allf.append(f[m])
++        if lit_I is None:
++            lit_I = means["I"]
++        allv = np.concatenate(allv)
++        allf = np.concatenate(allf)
++        # UL 924's max/min is a property of the lamps and the diffuser: measured on the
++        # field without the insects (a dead fly is not part of the sign). The figure
++        # with the insects is reported too.
++        res[name] = {"relI": {k: round(v / lit_I, 3) for k, v in means.items()},
++                     "spread": {k: round(v, 3) for k, v in spreads.items()},
++                     "maxOverMin": round(float(allf.max() / max(allf.min(), 1e-6)), 2),
++                     "maxOverMinWithInsects": round(float(allv.max() / max(allv.min(), 1e-6)), 2)}
++    res["targetRelI"] = g.NIST_REL
++    return res
++
++
++# ------------------------------------------------------------------ the housing enamel
++def enamel_maps(rng):
++    n = ENAMEL
++    s = n / ENAMEL_TILE_MM                          # px per mm
++    base = to_lin(ENAMEL_SRGB)
++    tone = 1.0 + 0.012 * noise((n, n), 40.0, rng, 2) + 0.005 * noise((n, n), 2.0, rng)
++    alb = np.ones((n, n, 3), np.float32) * base * tone[..., None]
++    A = to_srgb8(alb)
++    h = 0.006 * orange_peel((n, n), 0.75 * s, rng)
++    N = height_to_normal(h, s, s)
++    rough = 0.50 + 0.03 * noise((n, n), 20.0, rng) + 0.015 * noise((n, n), 1.5, rng)
++    # Build round 3: capped at 0.60 (acceptance T1: face and housing <= 0.6; before, 0.06 % of
++    # texels, the fingerprints, reached 0.655).
++    S = np.stack([lin8(np.clip(rough, 0, 0.60)), np.full((n, n), 255, np.uint8), np.zeros((n, n), np.uint8), np.full((n, n), 255, np.uint8)], -1)
++    return A, N, S, {"smoothMean": float(rough.mean())}
++
++
++# ------------------------------------------------------------------ review sheet
++def review_sheet(path, face_A, face_S, diff_A, diff_E, diff_F, en_A, m_let):
++    def fit(a, w):
++        im = Image.fromarray(a if a.ndim == 3 else a)
++        r = w / im.size[0]
++        return im.convert("RGB").resize((w, int(im.size[1] * r)), Image.LANCZOS)
++    W = 1800
++    tiles = [fit(face_A, W), fit(np.repeat(face_S[..., :1], 3, -1), W // 2), fit(np.repeat(face_S[..., 1:2], 3, -1), W // 2),
++             fit(diff_A, W // 2), fit(diff_E, W // 2), fit(diff_F[..., :3], W // 2), fit(np.repeat(diff_F[..., 3:4], 3, -1), W // 2)]
++    H = tiles[0].size[1] + tiles[1].size[1] + tiles[3].size[1] + tiles[5].size[1] + 40
++    sheet = Image.new("RGB", (W, H), (30, 30, 30))
++    y = 0
++    sheet.paste(tiles[0], (0, y)); y += tiles[0].size[1] + 10
++    sheet.paste(tiles[1], (0, y)); sheet.paste(tiles[2], (W // 2, y)); y += tiles[1].size[1] + 10
++    sheet.paste(tiles[3], (0, y)); sheet.paste(tiles[4], (W // 2, y)); y += tiles[3].size[1] + 10
++    sheet.paste(tiles[5], (0, y)); sheet.paste(tiles[6], (W // 2, y))
++    sheet.save(path, quality=88)
++
++
++def main():
++    ap = argparse.ArgumentParser()
++    ap.add_argument("--out", default=os.path.join(ROOT, "Assets", "Resources", "Surfaces", "Textures"))
++    ap.add_argument("--report-dir", default=None)
++    a = ap.parse_args()
++    os.makedirs(a.out, exist_ok=True)
++    rng = np.random.default_rng(19900401)
++    fA, fN, fS, finfo, m_let = face_maps(rng)
++    dA, dS, dE, dF, dinfo, fields = diffuser_maps(np.random.default_rng(19901002))
++    eA, eN, eS, einfo = enamel_maps(np.random.default_rng(19880515))
++    out = {"ExitSign_Face_A": fA, "ExitSign_Face_N": fN, "ExitSign_Face_S": fS,
++           "ExitSign_Diffuser_A": dA, "ExitSign_Diffuser_S": dS, "ExitSign_Diffuser_E": dE, "ExitSign_Diffuser_F": dF,
++           "ExitSign_Enamel_A": eA, "ExitSign_Enamel_N": eN, "ExitSign_Enamel_S": eS}
++    for stem, img in out.items():
++        save(img, os.path.join(a.out, stem + ".png"))
++    report = {"face": finfo, "diffuser": dinfo, "enamel": einfo, "field": field_checks(fields)}
++    if a.report_dir:
++        os.makedirs(a.report_dir, exist_ok=True)
++        review_sheet(os.path.join(a.report_dir, "exit_sign_textures_sheet.jpg"), fA, fS, dA, dE, dF, eA, m_let)
++        with open(os.path.join(a.report_dir, "exit_sign_textures_report.json"), "w") as f:
++            json.dump(report, f, indent=1)
++    print(json.dumps(report["field"], indent=1))
++    print(json.dumps({k: v for k, v in report.items() if k != "field"}, indent=1))
++
++
++if __name__ == "__main__":
++    main()

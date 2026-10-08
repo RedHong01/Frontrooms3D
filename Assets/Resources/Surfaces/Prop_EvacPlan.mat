@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Prop_EvacPlan
+  m_Shader: {fileID: 4800000, guid: 38dd6d7df75f84369b8237ac8848106c, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EMISSION
+  - _FR_MESH_UV
+  m_InvalidKeywords: []
+  m_LightmapFlags: 1
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: a46c31881f6594e9b88e6b55d2e3697e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 2800000, guid: 9ef8f2e31869f4601bf45b79e43ed07e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MacroMap:
+        m_Texture: {fileID: 2800000, guid: f777b2e3dd7d240d390e2b2cd59cbb9e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PrintTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BumpScale: 1
+    - _CeilingGrime: 0
+    - _CeilingHeight: 2.9
+    - _Cull: 2
+    - _Cutoff: 0.5
+    - _FloorGrime: 0
+    - _FloorGrimeHeight: 0.35
+    - _MacroDirt: 0.02
+    - _MacroTone: 0
+    - _MeshUV: 1
+    - _Metallic: 0
+    - _OcclusionStrength: 0.8
+    - _PrintAmount: 1
+    - _Smoothness: 0.15
+    - _StainStrength: 0
+    - _UseEmission: 1
+    - _UsePrint: 0
+    - _WetStrength: 0
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _InkCream: {r: 0.8901961, g: 0.8352941, b: 0.5803922, a: 1}
+    - _InkDeep: {r: 0.4627451, g: 0.41568628, b: 0.20392157, a: 1}
+    - _InkGround: {r: 0.8235294, g: 0.7607843, b: 0.4862745, a: 1}
+    - _InkMid: {r: 0.6745098, g: 0.6039216, b: 0.32156864, a: 1}
+    - _StainColor: {r: 0.42, g: 0.31, b: 0.16, a: 1}
+    - _TileSize: {r: 1, g: 1, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

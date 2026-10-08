@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Build the v2 apply package for the exit-sign track (build + integrate) from the verified int clone.
+
+usage: build_package.py <out_dir> [--clone W/proj_es_int] [--paths W/es_int/r4_paths_all.txt]
+
+Writes into <out_dir> (never into Red's project, which is only read):
+  exit_sign.sh                 copied from W/es_int/tools/exit_sign.sh
+  exit_sign_payload/<path>     the clone's files (76 paths)
+  exit_sign_base/<path>        exact copies of main's current files for every path main already has
+  exit_sign_bases.txt          sha1 of main's file per touched path, or ABSENT
+  exit_sign_expected.txt       sha1 of the payload per touched path
+  exit_sign_keep.txt           sha1 of main's .meta for every replaced asset whose .meta is not in the payload
+  exit_sign.diff               unified diff base -> payload for text files (informational)
+"""
+import hashlib, os, shutil, subprocess, sys, datetime
+
+W = '/Users/redwang/FrontRoomsVisualWork'
+RED = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D'
+T = 'exit_sign'
+TEXT_EXT = {'.cs', '.shader', '.py', '.json', '.md', '.txt'}
+
+
+def sha(p):
+    h = hashlib.sha1()
+    with open(p, 'rb') as f:
+        for b in iter(lambda: f.read(1 << 20), b''):
+            h.update(b)
+    return h.hexdigest()
+
+
+def main():
+    a = sys.argv[1:]
+    out = os.path.realpath(a[0])
+    clone = a[a.index('--clone') + 1] if '--clone' in a else W + '/proj_es_int'
+    plist = a[a.index('--paths') + 1] if '--paths' in a else W + '/es_int/r4_paths_all.txt'
+    assert out.startswith(W + '/') and not out.startswith(os.path.realpath(RED)), out
+    paths = [l.strip() for l in open(plist) if l.strip()]
+    assert len(paths) == len(set(paths))
+    head = subprocess.run(['git', '-C', RED, 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True,
+                          env=dict(os.environ, GIT_OPTIONAL_LOCKS='0')).stdout.strip()
+    stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    for d in (f'{T}_payload', f'{T}_base'):
+        if os.path.exists(os.path.join(out, d)):
+            shutil.rmtree(os.path.join(out, d))
+    bases, exp, keep, diffs = [], [], [], []
+    for p in paths:
+        src = os.path.join(clone, p)
+        assert os.path.isfile(src), src
+        if ' 2.' in p or ' 3.' in p:
+            raise SystemExit('iCloud copy in the list: ' + p)
+        dst = os.path.join(out, f'{T}_payload', p)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(src, dst)
+        exp.append(f'{sha(dst)}  {p}')
+        main_p = os.path.join(RED, p)
+        if os.path.isfile(main_p):
+            b = os.path.join(out, f'{T}_base', p)
+            os.makedirs(os.path.dirname(b), exist_ok=True)
+            shutil.copyfile(main_p, b)
+            bases.append(f'{sha(b)}  {p}')
+            meta = p + '.meta'
+            if p.startswith('Assets/') and not p.endswith('.meta') and meta not in paths:
+                keep.append(f'{sha(os.path.join(RED, meta))}  {meta}')
+        else:
+            b = None
+            bases.append(f'ABSENT  {p}')
+        if os.path.splitext(p)[1] in TEXT_EXT:
+            d = subprocess.run(['diff', '-u', '--label', ('a/' + p) if b else '/dev/null', '--label', 'b/' + p,
+                                b or '/dev/null', dst], capture_output=True, text=True)
+            if d.stdout:
+                diffs.append(d.stdout.rstrip('\n'))
+        elif not b or sha(b) != sha(dst):
+            diffs.append(f'Binary files {("a/" + p) if b else "/dev/null"} and b/{p} differ')
+    hdr = f'recorded {stamp} on main {head} (Red\'s working tree)'
+    open(os.path.join(out, f'{T}_bases.txt'), 'w').write(
+        f'# {T} bases: sha1 of every path the script writes, {hdr}; ABSENT = new path\n' + '\n'.join(bases) + '\n')
+    open(os.path.join(out, f'{T}_expected.txt'), 'w').write(
+        f'# expected after --apply (= the payload = W/proj_es_int, verified by the exit-sign integrate stage round 4), {hdr}\n'
+        + '\n'.join(exp) + '\n')
+    open(os.path.join(out, f'{T}_keep.txt'), 'w').write(
+        f'# kept, never written: the .meta (GUID) of every replaced asset whose .meta is not in the payload, {hdr}\n'
+        + '\n'.join(keep) + '\n')
+    open(os.path.join(out, f'{T}.diff'), 'w').write(
+        f'# {T} (apply convention v2): unified diff base copies {T}_base/ -> payload {T}_payload/, {hdr}.\n'
+        '# Informational: rebases use the base copies, not this file.\n' + '\n'.join(diffs) + '\n')
+    shutil.copyfile(W + '/es_int/tools/exit_sign.sh', os.path.join(out, f'{T}.sh'))
+    os.chmod(os.path.join(out, f'{T}.sh'), 0o755)
+    print(f'package {out}: {len(paths)} paths ({sum(1 for b in bases if b.startswith("ABSENT"))} new), '
+          f'{len(keep)} kept metas, main {head}')
+
+
+if __name__ == '__main__':
+    main()

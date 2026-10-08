@@ -1,0 +1,5 @@
+GUID check at HEAD 22bb75f (git archive of 1315 YAML/meta files under Assets + ProjectSettings)
+asset GUIDs 1182 (metas 1182); known incl. packages 9022; references checked 1136
+duplicate asset GUIDs: 0
+files with unresolved references: 1
+  Assets/Plugins/FMOD/src/FMODEventPlayable.cs.meta: ['392af304825cbe847bbf4e603852e4dd']  (FMOD package icon reference; pre-existing, harmless)

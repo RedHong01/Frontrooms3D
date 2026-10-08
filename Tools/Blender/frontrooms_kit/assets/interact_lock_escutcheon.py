@@ -24,11 +24,12 @@ Anchors (Unity, part frame):
 Motion: static.
 
 Budget (§9.2): LOD0 3,000 tris (asserted +-15 %), LOD1 1,200, LOD2 200;
-LOD distances 1.5 / 4 / 12 m. No LOD1 export (part < 1 m: today's importer
-would cull it near 1.4 m, §1.8). Screws are flagged fr_lod2_drop.
+LOD distances 1.5 / 4 / 12 m. LOD1 exported since the 2026-10-08 fix pass
+(the importer now maps these distances; critic H4). Screws are flagged
+fr_lod2_drop. Plate edge: 1.5 mm round in 4 segments (was 1.0 mm in 3; L7).
 Slots: Prop_Chrome (dominant, first), Prop_PlasticBlack (screw slots,
 countersink and collar-recess shadow lines). VARIANT _Brass.
-Detail: 96-segment boss, 1 mm rounded plate edge (3 segments), real slotted
+Detail: 96-segment boss, 1.5 mm rounded plate edge (4 segments), real slotted
 oval heads (48 segments, 0.8 mm slots).
 """
 
@@ -37,8 +38,8 @@ import math
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Escutcheon"
-LOD1 = None
 LOD1_RATIO = 0.40
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.067
 LOD_DISTANCES = (1.5, 4.0, 12.0)
 BUDGET = 3000
@@ -46,7 +47,9 @@ VARIANTS = {"Kit_Lock_Escutcheon_Brass": {lc.CHROME: lc.BRASS}}
 
 W, H, T = 0.0572, 0.2032, 0.0020
 CORNER = 0.0032
-EDGE_R = 0.0010
+EDGE_R = 0.0015          # fix pass 2026-10-08 (critic L7): was 1.0 mm, whose highlight broke into dotted
+                         # specular aliasing at grazing angles; 1.5 mm in 4 segments (EDGE_SEGS)
+EDGE_SEGS = 4
 KNOB_Y = -0.0315
 CYL_Y = 0.032
 KEYHOLE_Z = 0.0095
@@ -58,8 +61,8 @@ def _plate(kit):
     m = lc.Mesh()
     a, b = W / 2, H / 2
     prof = [(0.0, 0.0), (0.0, T - EDGE_R)]
-    for i in (1, 2, 3):
-        t = math.radians(30.0 * i)
+    for i in range(1, EDGE_SEGS + 1):
+        t = math.radians(90.0 * i / EDGE_SEGS)
         prof.append((EDGE_R * (1 - math.cos(t)), T - EDGE_R + EDGE_R * math.sin(t)))
     # Support ring 0.4 mm inside the round: the flat face keeps a flat normal
     # (no smoothing fan across the long face triangles).

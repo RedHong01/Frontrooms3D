@@ -1,0 +1,124 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+/// <summary>
+/// PRIVATE CLONE ONLY (proj_int, interactables-kit fix pass, 2026-10-08). Never merge into Red's project.
+///
+/// LodProbeThenThreeView: T7 (10_spec §11) on the imported kit: for every interactables kit FBX, the LODGroup the
+/// importer built (FrontRoomsKitImporter, sidecar lodDistances since 663e858), its transition heights turned back
+/// into distances at the reference FOV 76 and lodBias 1, triangle counts per LOD, renderer counts, and the sidecar's
+/// own numbers; then FrontRoomsThreeView.RunBatch() with the same command line (-threeViewOut, -threeViewOnly).
+/// Batch: Unity -batchmode -projectPath proj_int -buildTarget OSXUniversal -executeMethod
+///        FrontRoomsIntFixBatch.LodProbeThenThreeView -intFixOut DIR [-threeViewOut DIR -threeViewOnly A,B] -quit
+/// </summary>
+public static class FrontRoomsIntFixBatch
+{
+    static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+    public static void LodProbeThenThreeView()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string outDir = null;
+        var threeView = false;
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "-intFixOut") outDir = args[i + 1];
+            if (args[i] == "-threeViewOut") threeView = true;
+        }
+        if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "interactables_fix");
+        Directory.CreateDirectory(outDir);
+        try { LodProbe(outDir); }
+        catch (Exception e) { Debug.LogException(e); }
+        if (threeView)
+        {
+            try { FrontRoomsThreeView.RunBatch(); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+        Debug.Log("[IntFix] DONE " + outDir);
+    }
+
+    [Serializable] class Side { public float[] lodDistances; public int triangles; public int trianglesLod1; public string[] slots; }
+
+    static void LodProbe(string outDir)
+    {
+        const string folder = "Assets/Resources/Props/Models/";
+        var names = new List<string>();
+        foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { folder.TrimEnd('/') }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var n = Path.GetFileNameWithoutExtension(path);
+            var json = Path.ChangeExtension(path, ".json");
+            if (!File.Exists(json)) continue;
+            var text = File.ReadAllText(json);
+            if (!text.Contains("\"interactable\"")) continue;   // kit tag of every interactables asset
+            names.Add(n);
+        }
+        names.Sort(StringComparer.Ordinal);
+        var tanHalf = Mathf.Tan(38f * Mathf.Deg2Rad);
+        var sb = new StringBuilder("[\n");
+        var tsv = new StringBuilder("name\tlodgroup\tlods\tsize\td01_import\tdcull_import\td01_sidecar\tdcull_sidecar\ttri_lod0\ttri_lod1\trenderers\tslots\n");
+        var first = true;
+        foreach (var n in names)
+        {
+            var path = folder + n + ".fbx";
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (go == null) continue;
+            var side = JsonUtility.FromJson<Side>(File.ReadAllText(folder + n + ".json"));
+            var group = go.GetComponent<LODGroup>();
+            var tris = new List<int>();
+            var dists = new List<float>();
+            float size = 0f;
+            if (group != null)
+            {
+                size = group.size;
+                foreach (var lod in group.GetLODs())
+                {
+                    var t = 0;
+                    foreach (var r in lod.renderers)
+                    {
+                        var mf = r != null ? r.GetComponent<MeshFilter>() : null;
+                        if (mf != null && mf.sharedMesh != null)
+                            for (var s = 0; s < mf.sharedMesh.subMeshCount; s++) t += (int)mf.sharedMesh.GetIndexCount(s) / 3;
+                    }
+                    tris.Add(t);
+                    dists.Add(lod.screenRelativeTransitionHeight > 0f ? size / (2f * lod.screenRelativeTransitionHeight * tanHalf) : -1f);
+                }
+            }
+            else
+            {
+                var t = 0;
+                foreach (var mf in go.GetComponentsInChildren<MeshFilter>())
+                    if (mf.sharedMesh != null)
+                        for (var s = 0; s < mf.sharedMesh.subMeshCount; s++) t += (int)mf.sharedMesh.GetIndexCount(s) / 3;
+                tris.Add(t);
+            }
+            var rends = go.GetComponentsInChildren<Renderer>().Length;
+            var sd = side.lodDistances ?? new float[0];
+            if (!first) sb.Append(",\n");
+            first = false;
+            sb.Append("{\"name\":\"").Append(n).Append("\",\"lodGroup\":").Append(group != null ? "true" : "false")
+              .Append(",\"size\":").Append(size.ToString("0.####", Inv))
+              .Append(",\"distancesImport\":[").Append(string.Join(",", dists.ConvertAll(d => d.ToString("0.###", Inv)))).Append("]")
+              .Append(",\"lodDistancesSidecar\":[").Append(string.Join(",", Array.ConvertAll(sd, d => d.ToString("0.###", Inv)))).Append("]")
+              .Append(",\"tris\":[").Append(string.Join(",", tris)).Append("]")
+              .Append(",\"renderers\":").Append(rends)
+              .Append(",\"slots\":\"").Append(side.slots != null ? string.Join(" ", side.slots) : "").Append("\"}");
+            tsv.Append(n).Append('\t').Append(group != null).Append('\t').Append(dists.Count).Append('\t').Append(size.ToString("0.###", Inv)).Append('\t')
+               .Append(dists.Count > 0 ? dists[0].ToString("0.##", Inv) : "-").Append('\t')
+               .Append(dists.Count > 0 ? dists[dists.Count - 1].ToString("0.##", Inv) : "-").Append('\t')
+               .Append(sd.Length > 0 ? sd[0].ToString("0.##", Inv) : "-").Append('\t')
+               .Append(sd.Length > 0 ? sd[sd.Length - 1].ToString("0.##", Inv) : "-").Append('\t')
+               .Append(tris.Count > 0 ? tris[0].ToString() : "-").Append('\t').Append(tris.Count > 1 ? tris[1].ToString() : "-").Append('\t')
+               .Append(rends).Append('\t').Append(side.slots != null ? string.Join(" ", side.slots) : "").Append('\n');
+        }
+        sb.Append("\n]\n");
+        File.WriteAllText(Path.Combine(outDir, "lod_probe.json"), sb.ToString());
+        File.WriteAllText(Path.Combine(outDir, "lod_probe.tsv"), tsv.ToString());
+        Debug.Log("[IntFix] lod probe: " + names.Count + " interactables kits");
+    }
+}

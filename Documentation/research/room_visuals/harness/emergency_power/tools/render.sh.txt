@@ -1,0 +1,10 @@
+#!/bin/zsh
+# usage: render.sh <outname> [extra args...]   (clone-only Run B look-dev)
+W=/Users/redwang/FrontRoomsVisualWork
+C=$W/proj_run_emergency_power
+N=$1; shift
+mkdir -p $W/run_ep_work/$N $W/run_ep_work/logs
+S=$(date +%s)
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off -runOut $W/run_ep_work/$N "$@" -logFile $W/run_ep_work/logs/$N.log
+echo "exit $? in $(( $(date +%s) - S )) s"
+grep -E "error CS|Exception|WARNING|MISSING" $W/run_ep_work/logs/$N.log | head -20

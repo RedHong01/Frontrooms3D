@@ -116,38 +116,56 @@ public sealed partial class FrontRooms3DGame
 
     // ---------- Step 0 baseline (-autopilotBot <mode>): today's Relay, measured by seeded bots ----------
     // RELAY_PURSUIT_REDESIGN.md v2 §13 step 0 and §14, before anything of v2 lands. The autopilot plays as one
-    // of the bots below for -autopilotMinutes of game time (default 4, the staller 5), with the run's tier forced
-    // to -autopilotTier at the start (the rise rule still runs from there), on a fixed 1/60 s step, so a seed, a
-    // mode and a tier replay the same run under any machine load. Only a catch ends a run sooner. It writes
+    // of the bots below for -autopilotMinutes of game time after the Relay's release (default 4, the staller 5),
+    // so every run has the same exposure; the run's tier is forced to -autopilotTier and held there (the tier
+    // lock; -autopilotTierFree lets the rise rule run). Fixed 1/60 s step, so a seed, a mode and a tier replay
+    // the same run under any machine load. Only a catch ends a run sooner. It writes
     // Verification/relay-baseline/<seed>-<mode>-T<n>.json. Nothing here changes the game: the bots press only
     // what a player could (the walk, Shift, E through EDown/EHeld, doors through TryOpenDoor and Use as the
     // autopilot always has), and the Relay is only watched (its public state, its events, the map's API).
+    // The one exception is evaderv2, which sets v2's G5 conditions on its own run (see below).
     //   quiet        walks, never sprints, never touches a window, opens only the doors its route needs;
-    //   noisy        sprints on every straight, breaks every window it meets (from 0.9 m, inside the pane
-    //                rule's 1.2 m), shuts each door right after passing it;
+    //   noisy        sprints on every straight, shuts each door right after passing it, and every 20 s walks
+    //                to the nearest intact window it can reach and breaks it (from 0.9 m, inside the pane rule);
     //   evader03/06  walks; 0.3 / 0.6 s after the Relay starts a chase it turns away and sprints for the
     //                nearest cell out of its sight, shutting doors it passes, then walks away once unseen;
+    //   evaderv2     evader06 under v2's G5 conditions (§8): a 2 s stamina bar and the chase capped at 4.4 m/s;
     //   staller      wanders inside the zone it first steps into, the whole run;
     //   shiftholder  walks its routes with Shift always held (the winded rule: sprint noise only while it sprints);
-    //   doorspammer  stands at a door near the start and opens or shuts it every 0.8 s;
+    //   doorspammer  stands at one door away from the start door and opens or shuts it every 0.8 s;
     //   edgerunner   walks north (the way the start door faces) as far as it can: the unbuilt-cell relay (A7b);
-    //   closedzone   shuts every door of its zone that stands open, then sprints round inside the zone.
-    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone }
-    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone" };
+    //   closedzone   goes to the nearest low or standard zone with at least 2 border doors, opens them if
+    //                fewer than 2 stand open, shuts every one, then sprints round inside the zone.
+    // Each mode has a fidelity check (did it do its job), and a failed check fails the run (AutoBaseModeChecks).
+    enum AutoBot { None, Quiet, Noisy, Evader03, Evader06, Staller, ShiftHolder, DoorSpammer, EdgeRunner, ClosedZone, EvaderV2 }
+    static readonly string[] AutoBotNames = { "none", "quiet", "noisy", "evader03", "evader06", "staller", "shiftholder", "doorspammer", "edgerunner", "closedzone", "evaderv2" };
     AutoBot autoBot;
     bool autoBaseline;
     string autoBotUnknown;
     int autoBotTier = 1;
-    float autoBotSeconds;
+    // autoBotSeconds is when the run ends (play seconds): budget seconds after the release once it has happened.
+    float autoBotSeconds, autoBotBudget;
+    bool autoBotBudgetSet;
+    // The tier lock: RaiseTier ignores every rise but the baseline's own (the guard sits in RaiseTier).
+    bool autoTierLock = true;
+    readonly float[] autoTierSeconds = new float[16];
+    string autoBotArgs = "";
 
-    // The fixed step and the frame clock: game time no longer follows how fast frames come, and frames come as
-    // fast as the machine makes them, so the Stopwatch from one frame to the next is that frame's real cost.
+    // v2's G5 conditions (evaderv2): the stamina bar and the chase cap. The cap goes through the Inspector base
+    // (hunterTuning), which the tier row scales every frame, so the Relay's speed is base × row ≤ the cap.
+    const float AutoV2StaminaSeconds = 2f, AutoV2ChaseCap = 4.4f;
+    float autoBaseChaseSpeed = -1f, autoChaseSpeedMax;
+    bool AutoV2Conditions => autoBot == AutoBot.EvaderV2;
+    bool AutoIsEvader => autoBot == AutoBot.Evader03 || autoBot == AutoBot.Evader06 || autoBot == AutoBot.EvaderV2;
+
+    // The fixed step: game time no longer follows how fast frames come. Frame times are not reported (a batch
+    // editor under load says nothing about the game's); the Relay's tick and the path field are timed instead.
     float autoPrevCaptureDelta;
     int autoPrevTargetFps;
     bool autoBaseTimeSet;
-    readonly System.Diagnostics.Stopwatch autoBaseFrameWatch = new System.Diagnostics.Stopwatch(), autoBaseWall = new System.Diagnostics.Stopwatch();
-    readonly List<float> autoBaseFrameMs = new List<float>();
+    readonly System.Diagnostics.Stopwatch autoBaseWall = new System.Diagnostics.Stopwatch();
     string autoBaseLoadStart;
+    BaselineBuild autoBuild;
 
     // The start hold: while the player is in the stream rooms the map furnishes on a wall-clock budget (8 ms a
     // frame), so the frame the stream door opens depends on machine load. The bot waits short of the door until
@@ -162,33 +180,51 @@ public sealed partial class FrontRooms3DGame
 
     // What the baseline watches. Clocks are game seconds from Space (autoPlayClock) unless said "after release".
     HunterState autoBaseState, autoBreakFrom, autoPreState;
-    float autoBaseReleaseAt = -1f, autoFirstHunt = -1f, autoFirstChase = -1f, autoReleaseStraight = -1f, autoReleaseWalk = -1f;
+    float autoBaseReleaseAt = -1f, autoFirstHunt = -1f, autoFirstChase = -1f, autoReleaseStraight = -1f, autoReleaseWalk = -1f, autoReleaseF = -1f, autoReleaseW = -1f;
     readonly float[] autoStateSeconds = new float[16];
     readonly int[] autoNoiseEmitted = new int[4], autoNoiseHeard = new int[4], autoNoiseDeaf = new int[4], autoNoiseOutOfRange = new int[4], autoHuntRetargets = new int[4];
     readonly int[] autoHuntsBy = new int[6], autoBreakAttempts = new int[16], autoDoorsBrokenFrom = new int[16];
-    int autoNoiseInFlight = -1, autoLastHeardFrame = int.MinValue / 2, autoLastHeardCause, autoLastNoiseCause, autoWanderEncounters, autoCatches, autoChaseOpen = -1;
-    float autoLastNoiseAt = -1e9f;
+    int autoNoiseInFlight = -1, autoLastHeardFrame = int.MinValue / 2, autoLastHeardCause, autoWanderEncounters, autoCatches, autoChaseOpen = -1, autoHuntResumes, autoGlassBroken;
+    // The call log: every noise the player made, and what the Relay did with it. The active call is the heard
+    // noise (or the lost chase) the Relay is still acting on: set when it turns to hunt, kept through its search,
+    // dropped when it goes back to Listen or Wander. A chase links to the call active when it starts.
+    const int AutoCallLogMax = 4000;
+    int autoActiveCall = -1, autoLastHeardCall = -1, autoInFlightCall = -1, autoCallsLogged;
+    bool autoActiveRehunt;
+    readonly List<BaselineCall> autoCallLog = new List<BaselineCall>();
+    readonly List<BaselineHunt> autoHuntLog = new List<BaselineHunt>();
     readonly List<BaselineChase> autoChaseLog = new List<BaselineChase>();
     readonly List<BaselineRelay> autoRelayLog = new List<BaselineRelay>();
     // The Relay as it stood before this frame's Tick: a relay in that Tick is the unbuilt-cell one (A7b) when its cell was not built.
     Vector3 autoPrePosition;
     bool autoPreBuilt;
 
-    // The hypothetical warning ladder (v2 §7, §9.1), sampled every 0.25 s of game time.
-    const float AutoSampleSeconds = .25f, AutoFieldCap = 60f, AutoWalkCap = 150f;
-    BaselinePathField autoField, autoWalkField;
-    float autoSampleClock, autoS1Since, autoS2Since, autoFieldMsMax;
-    int autoSamples, autoDormantSamples, autoOnMapSamples, autoFUnreached, autoFieldBuilds;
+    // The warning ladder (v2 §7, §9.1), sampled every 0.25 s of game time on W = min(F, 3 × straight), F from the
+    // game's own path field (FrontRoomsMapPathField: the hunter's hearing model, an intact window +9 m).
+    // §9.1 (as clarified 2026-10-08): a stage starts on the first sample in its band (0 → 2 at once when W ≤ 18)
+    // and lasts at least 4 s (stage 1) or 3 s (stage 2) from its start (a 2 → 1 drop starts stage 1's 4 s again);
+    // after that it ends once W has stayed above its exit band for 1.0 s. Stage 2 drops to 1, or straight to 0
+    // when W has also stayed above 36 m for that 1.0 s. An unbuilt Relay cell is stage 0 at once. The hunter's
+    // own WarnStage is reported beside it, with how often the two agree.
+    const float AutoSampleSeconds = .25f, AutoFieldCap = 60f, AutoWalkCap = 150f, AutoHeardCap = 150f, AutoCensorSeconds = 5f;
+    FrontRoomsMapPathField autoField, autoWalkField, autoHeardField;
+    float autoSampleClock, autoS1Since, autoS2Since, autoDwellSince, autoAbove1, autoAbove2, autoAbove36In2, autoFieldMsMax, autoLastW = -1f, autoLastF = -1f;
+    int autoSamples, autoOnMapSamples, autoFUnreached, autoFieldBuilds, autoStage, autoStage1Entries;
     double autoFieldMsSum, autoFieldVisitedSum;
-    readonly int[] autoBandF = new int[4], autoBandW = new int[4], autoBandStraight = new int[4], autoStageSamples = new int[3];
-    bool autoS1, autoS2;
+    readonly int[] autoBandF = new int[4], autoBandW = new int[4], autoBandStraight = new int[4];
+    // Per on-map sample: the §9.1 stage and the hunter's, so shares can be cut short of a catch (survival censoring).
+    readonly List<byte> autoStageTrace = new List<byte>(), autoHunterStageTrace = new List<byte>();
+    // The hunter's WarnStage: entries into stage 1 (from 0) and when its current stage-1 and stage-2 runs began.
+    int autoHunterStage1Entries;
+    float autoHunterS1Since = -1f, autoHunterS2Since = -1f;
 
     // The bot's own counters.
     int autoBotSprintBursts, autoBotSprintNoiseNotSprinting, autoBotDoorsShut, autoBotDoorToggles, autoBotWindowsTried, autoBotWindowsBroken;
-    int autoBotEvasions, autoBotEvadeOk, autoBotEvadeCaught, autoBotZoneDoors = -1, autoBotZoneDoorsOpen = -1, autoEdgeStalls;
-    float autoBotSprintSeconds, autoBotWindedSeconds;
+    int autoBotEvasions, autoBotEvadeOk, autoBotEvadeCaught, autoBotZoneDoors = -1, autoBotZoneDoorsOpen = -1, autoEdgeStalls, autoBotZoneDoorsOpened;
+    float autoBotSprintSeconds, autoBotWindedSeconds, autoBotNotSprinting = 1e9f;
     bool autoBotWasSprinting;
     readonly List<string> autoBotNotes = new List<string>();
+    readonly List<BaselineModeCheck> autoModeChecks = new List<BaselineModeCheck>();
 
     [Serializable]
     sealed class BaselineNoiseKinds { public int sprint, door, glass, otherNoise; }
@@ -197,21 +233,52 @@ public sealed partial class FrontRooms3DGame
     sealed class BaselineHuntCauses { public int sprint, door, glass, otherNoise, chaseLost, other; }
 
     [Serializable]
-    sealed class BaselineCallCauses { public int sprint, door, glass, otherNoise, wanderEncounter, total; public float perMinute; }
-
-    [Serializable]
     sealed class BaselineStateTime { public string state; public float seconds, share; }
 
     [Serializable]
     sealed class BaselineStateCount { public string state; public int count; }
 
     [Serializable]
+    sealed class BaselineCall
+    {
+        // Seconds after release (-1 before it); sprint, door or glass; what became of it: heard (it turned
+        // to hunt the source), outOfRange, ignored (Chase or BreakDoor do not listen), dormant (not released yet);
+        // the Relay's state before and after; metres from the Relay to the source, straight and (heard only) by
+        // the hearing field.
+        public float at;
+        public string cause, outcome, stateBefore, stateAfter;
+        public float straight, pathMetres = -1f;
+    }
+
+    [Serializable]
+    sealed class BaselineHunt
+    {
+        // A new hunt (never the resume after a door it broke mid-hunt): seconds after release, cause (sprint, door,
+        // glass, chaseLost = the re-hunt after a lost chase, unknown), the state before, and the call it answers.
+        public float at;
+        public string cause, from;
+        public int call = -1;
+        public float heardStraight = -1f, heardPath = -1f;
+    }
+
+    [Serializable]
     sealed class BaselineChase
     {
-        // Seconds after release; the state it came from; the player's last noise in the 3 s before ("none": a wander encounter).
+        // Seconds after release; the state it came from; why it came: call (a heard noise; see call), rehunt (the
+        // hunt after a lost chase), wander (from Wander or Listen with no call), other; how it ended.
         public float startAt, seconds, straightAtStart;
-        public string from, noiseBefore, end;
+        public string from, cause, end;
+        public int call = -1;
+        // G3: the ladder at the start: W and F (-1 unreached), the §9.1 stage and how long stage ≥ 1 and stage 2 had
+        // run without a break; the same for the hunter's own WarnStage.
+        public float wAtStart = -1f, fAtStart = -1f;
+        public int stageAtStart, hunterStageAtStart;
+        public float stage1Seconds, stage2Seconds, hunterStage1Seconds, hunterStage2Seconds;
+        // Evaders: whether evasion began (only those chases grade G5), when, and every time sight broke while it ran:
+        // "<t> <door|wall|prop> <player cell> from <Relay cell>".
         public bool evaded;
+        public float evadeAt = -1f;
+        public List<string> sightBreaks = new List<string>();
     }
 
     [Serializable]
@@ -222,33 +289,73 @@ public sealed partial class FrontRooms3DGame
         public float at;
         public string kind, stateBefore, entry;
         public float straightBefore, walkBefore, straightAfter, walkAfter;
+        // The ladder where it appeared: F, W (-1 unreached), the §9.1 stage and the hunter's.
+        public float fAfter = -1f, wAfter = -1f;
+        public int stageAfter, hunterStageAfter;
+        // A7b only: chunks between where it stood and the player's chunk; past the build radius, the player's own
+        // movement dropped its chunk (the edge runner's job).
+        public int chunkGap = -1;
+        public bool byPlayerPosition;
     }
 
     [Serializable]
     sealed class BaselineBands { public float le18, le30, from30to36, gt36; }
 
     [Serializable]
+    sealed class BaselineStages
+    {
+        // Shares of on-map samples at stage 0, 1, 2 (2 includes chase time: there is no stage 3 here), over the whole
+        // run and censored (without the last 5 s before a catch); stage-1 entries (from 0) per 10 min after release.
+        public float stage0, stage1, stage2;
+        public float censoredStage0, censoredStage1, censoredStage2;
+        public int stage1Entries;
+        public float stage1EntriesPer10Min;
+    }
+
+    [Serializable]
+    sealed class BaselineModeCheck { public string check, detail; public bool ok, soft; }
+
+    [Serializable]
+    sealed class BaselineBuild
+    {
+        // The build the run measured: HEAD of the project's git, whether Assets/Packages/ProjectSettings differ from
+        // it (iCloud "name 2" copies and untracked files aside), how many files, and a hash of that diff; the SHA-1
+        // of the hunter and of this harness; the run's arguments.
+        public string gitSha = "unknown", diffHash = "", hunterSha1 = "", harnessSha1 = "", unity = "", args = "";
+        public bool gitDirty;
+        public int dirtyFiles;
+        public string harness = "step0 r2 (2026-10-08)";
+    }
+
+    [Serializable]
     sealed class BaselineBot
     {
         public float distanceWalked;
         public int cellsVisited, zonesVisited, routes;
+        // A burst starts when it sprints after at least 0.3 s without sprinting.
         public int sprintBursts;
         public float sprintSeconds, windedSeconds;
         public int sprintNoises, sprintNoisesNotSprinting;
         public int doorsOpened, doorsShut, doorToggles;
         public int windowsTried, windowsBroken;
         public int evasionsAttempted, evasionsSucceeded, evasionsCaught;
-        public int zoneDoors = -1, zoneDoorsOpenAtStart = -1;
+        // Closed zone: the zone it chose, its border doors, how many stood open when it got there, how many it opened.
+        public string zoneChosen = "";
+        public int zoneDoors = -1, zoneDoorsOpenAtStart = -1, zoneDoorsOpened;
+        // Door-spammer: doors it used, how many the Relay broke under it, seconds at a door, toggles a minute there.
+        public int spamDoors, spamDoorsBroken;
+        public float spamSeconds, spamTogglesPerMinute;
         public int edgeStalls;
+        // Edge runner: the furthest north it got, in cells from where it left the start rooms.
+        public int northCells;
+        // evaderv2: the stamina bar and the chase cap it ran under, and the fastest chase speed the Relay had.
+        public float staminaBarSeconds, chaseCap, chaseSpeedMax;
         public List<string> notes = new List<string>();
     }
 
     [Serializable]
     sealed class BaselinePerf
     {
-        public string frameClock = "real-time Stopwatch from frame to frame (from Space), frames unthrottled (targetFrameRate -1), game time on captureDeltaTime 1/60";
-        public int frames;
-        public float meanFrameMs, p50FrameMs, p95FrameMs, p99FrameMs, maxFrameMs;
         public string loadAverageStart, loadAverageEnd;
         public float wallSeconds;
         public float relayTickMaxMs;
@@ -264,21 +371,28 @@ public sealed partial class FrontRooms3DGame
         public string verdict;
         public string mode;
         public int seed, tier;
+        // Budget minutes after the release; whether the tier was held at its start value.
         public float minutes, playSeconds;
+        public bool tierLocked;
         public string endedBy;
         public bool caught;
         // The bot left the start rooms on its fixed frame (AutoStartHoldSeconds): false means this run's start depended on load.
         public float startHoldEndedAt;
         public bool startOnFixedFrame;
-        public float releasedAt = -1f, releaseStraightMetres = -1f, releaseWalkMetres = -1f;
+        public float releasedAt = -1f, releaseStraightMetres = -1f, releaseWalkMetres = -1f, releaseF = -1f, releaseW = -1f;
         public float secondsAfterRelease;
         public List<BaselineStateTime> stateShares = new List<BaselineStateTime>();
+        // v2's Away state does not exist in this Relay: always 0 here, kept so v2 runs report it in the same place.
+        public float awaySeconds;
         public float firstHuntAfterRelease = -1f, firstChaseAfterRelease = -1f;
-        public int hunts;
+        // New hunts only (huntResumes: a hunt picked up again after a door it broke, not counted as one).
+        public int hunts, huntResumes;
         public float huntsPerMinute;
         public BaselineHuntCauses huntsByCause = new BaselineHuntCauses();
         public BaselineNoiseKinds huntRetargets = new BaselineNoiseKinds();
-        public BaselineCallCauses callsByCause = new BaselineCallCauses();
+        public List<BaselineHunt> huntLog = new List<BaselineHunt>();
+        public int calls;
+        public List<BaselineCall> callLog = new List<BaselineCall>();
         public int chases;
         public float chasesPerMinute;
         public int chasesLost, chasesRelayed, chasesCaught, chasesOpenAtEnd, wanderEncounters;
@@ -286,25 +400,31 @@ public sealed partial class FrontRooms3DGame
         public List<BaselineChase> chaseLog = new List<BaselineChase>();
         public int catches;
         public BaselineNoiseKinds noiseEmitted = new BaselineNoiseKinds(), noiseHeard = new BaselineNoiseKinds(), noiseOutOfRange = new BaselineNoiseKinds(), noiseIgnoredByState = new BaselineNoiseKinds();
-        public int relaysAfterRelease, relaysA7a, relaysA7b;
+        public int relaysAfterRelease, relaysA7a, relaysA7b, relaysA7bByPlayer;
         public List<BaselineRelay> relayLog = new List<BaselineRelay>();
         public int doorsBroken;
         public List<BaselineStateCount> doorsBrokenByState = new List<BaselineStateCount>(), breakAttemptsByState = new List<BaselineStateCount>();
+        // Panes that broke (the map's GlassBroken), whoever broke them.
         public int glassBroken;
         public int tierFinal;
         public List<string> tierLog = new List<string>();
-        // The ladder: F (octile path field, capped 60 m), W = min(F, 3 × straight 3D) and the straight line, as shares
-        // of the time the Relay was on the map; the share it was not (Dormant); W's stages with §9.1's hysteresis and holds.
+        public List<BaselineStateTime> tierSeconds = new List<BaselineStateTime>();
+        // The ladder: F (the game's path field, capped 60 m), W = min(F, 3 × straight 3D) and the straight line, as
+        // shares of the time the Relay was on the map; the stages by §9.1 and by the hunter's WarnStage.
         public float sampleSeconds = AutoSampleSeconds, fieldCapMetres = AutoFieldCap;
         public int samples, onMapSamples;
-        public float dormantShare, fUnreachedShare;
+        public float fUnreachedShare;
         public BaselineBands fBands = new BaselineBands(), wBands = new BaselineBands(), straightBands = new BaselineBands();
-        public float wStage0, wStage1, wStage2, wStage0OfRun;
+        public BaselineStages stages = new BaselineStages(), hunterStages = new BaselineStages();
+        // Both stage traces, one digit per on-map sample (0.25 s), so stagesAgree can be checked offline.
+        public string stageTrace = "", hunterStageTrace = "";
         public BaselineBot bot = new BaselineBot();
+        public List<BaselineModeCheck> modeChecks = new List<BaselineModeCheck>();
         public int errors;
         public List<string> errorLog = new List<string>();
-        // FNV-1a of everything above: two runs that played the same have the same hash.
+        // FNV-1a of everything above: two runs that played the same have the same hash (build and perf are not in it).
         public string behaviourHash;
+        public BaselineBuild build = new BaselineBuild();
         public BaselinePerf perf = new BaselinePerf();
     }
 
@@ -312,8 +432,10 @@ public sealed partial class FrontRooms3DGame
     {
         string mode = null;
         var minutes = 0f;
-        for (var i = 0; i < args.Length - 1; i++)
+        for (var i = 0; i < args.Length; i++)
         {
+            if (args[i] == "-autopilotTierFree") autoTierLock = false;
+            if (i + 1 >= args.Length) continue;
             if (args[i] == "-autopilotBot") mode = args[i + 1].Trim().ToLowerInvariant();
             else if (args[i] == "-autopilotTier" && int.TryParse(args[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var t)) autoBotTier = Mathf.Max(1, t);
             else if (args[i] == "-autopilotMinutes" && float.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var m)) minutes = m;
@@ -327,22 +449,88 @@ public sealed partial class FrontRooms3DGame
         }
         autoBot = (AutoBot)index;
         autoBaseline = true;
-        autoBotSeconds = 60f * (minutes > 0f ? minutes : autoBot == AutoBot.Staller ? 5f : 4f);
+        autoBotBudget = 60f * (minutes > 0f ? minutes : autoBot == AutoBot.Staller ? 5f : 4f);
+        // Until the release the run may last the budget plus 3 minutes; the release resets the end (AutoBaseTick).
+        autoBotSeconds = autoBotBudget + 180f;
+        var kept = new List<string>();
+        for (var i = 0; i < args.Length; i++) if (args[i].StartsWith("-autopilot", StringComparison.Ordinal)) kept.Add(args[i] + (i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.Ordinal) ? " " + args[i + 1] : ""));
+        autoBotArgs = string.Join(" ", kept);
         autoPrevCaptureDelta = Time.captureDeltaTime;
         autoPrevTargetFps = Application.targetFrameRate;
         Time.captureDeltaTime = 1f / 60f;
         Application.targetFrameRate = -1;
         autoBaseTimeSet = true;
-        autoField = new BaselinePathField(AutoFieldCap);
-        autoWalkField = new BaselinePathField(AutoWalkCap);
+        autoField = new FrontRoomsMapPathField(AutoFieldCap);
+        autoWalkField = new FrontRoomsMapPathField(AutoWalkCap);
+        autoHeardField = new FrontRoomsMapPathField(AutoHeardCap);
+        autoBuild = AutoBaseBuildInfo();
         autoBaseLoadStart = AutoLoadAverage();
         autoBaseWall.Start();
-        autoBaseFrameWatch.Start();
     }
 
-    /// <summary>Hand the editor back its own frame step and frame-rate cap (once).</summary>
+    /// <summary>The build this run measures (BaselineBuild): git HEAD and its diff over the game's sources, and file hashes.</summary>
+    BaselineBuild AutoBaseBuildInfo()
+    {
+        var root = Directory.GetParent(Application.dataPath).FullName;
+        var build = new BaselineBuild { unity = Application.unityVersion, args = autoBotArgs };
+        var sha = AutoRun("/usr/bin/git", "-C \"" + root + "\" rev-parse HEAD");
+        if (sha.Length == 40) build.gitSha = sha;
+        var status = AutoRun("/usr/bin/git", "-C \"" + root + "\" status --porcelain --untracked-files=no -- Assets Packages ProjectSettings");
+        foreach (var line in status.Split('\n'))
+        {
+            if (line.Length < 4) continue;
+            // An iCloud conflict copy ("Name 2.ext") that the clone left out is not a change to the game.
+            var path = line.Substring(3).Trim('"');
+            if (line.StartsWith(" D", StringComparison.Ordinal) && System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileNameWithoutExtension(path), " [0-9]+$")) continue;
+            build.dirtyFiles++;
+        }
+        build.gitDirty = build.dirtyFiles > 0;
+        if (build.gitDirty) build.diffHash = AutoHash(AutoRun("/usr/bin/git", "-C \"" + root + "\" diff HEAD -- Assets Packages ProjectSettings"));
+        build.hunterSha1 = AutoSha1(Path.Combine(Application.dataPath, "Scripts", "FrontRoomsMap", "FrontRoomsMapHunter.cs"));
+        build.harnessSha1 = AutoSha1(Path.Combine(Application.dataPath, "Scripts", "FrontRooms3DGame.Baseline.cs"));
+        return build;
+    }
+
+    /// <summary>A command's standard output, trimmed ("" when it cannot run).</summary>
+    static string AutoRun(string file, string arguments)
+    {
+        try
+        {
+            var info = new System.Diagnostics.ProcessStartInfo(file, arguments) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
+            using (var process = System.Diagnostics.Process.Start(info))
+            {
+                var text = process.StandardOutput.ReadToEnd();
+                process.WaitForExit(10000);
+                return text.Trim();
+            }
+        }
+        catch (Exception)
+        {
+            return "";
+        }
+    }
+
+    static string AutoSha1(string path)
+    {
+        try
+        {
+            using (var sha = System.Security.Cryptography.SHA1.Create())
+                return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(path))).Replace("-", "").ToLowerInvariant();
+        }
+        catch (Exception)
+        {
+            return "";
+        }
+    }
+
+    /// <summary>Hand the editor back its own frame step and frame-rate cap (once), and the Relay its own chase speed.</summary>
     void AutoBaseRestoreTime()
     {
+        if (autoBaseChaseSpeed > 0f)
+        {
+            hunterTuning.chaseSpeed = autoBaseChaseSpeed;
+            autoBaseChaseSpeed = -1f;
+        }
         if (!autoBaseTimeSet) return;
         autoBaseTimeSet = false;
         Time.captureDeltaTime = autoPrevCaptureDelta;
@@ -368,12 +556,9 @@ public sealed partial class FrontRooms3DGame
         }
     }
 
-    /// <summary>Each frame: the real time since the frame before, from the frame Space is pressed on.</summary>
+    /// <summary>Each frame (the game's autopilot calls it). Frame times are no longer kept; see autoBaseWall.</summary>
     void AutoBaseFrame()
     {
-        var ms = (float)autoBaseFrameWatch.Elapsed.TotalMilliseconds;
-        autoBaseFrameWatch.Restart();
-        if (mapPlay) autoBaseFrameMs.Add(ms);
     }
 
     /// <summary>The start hold (see AutoStartHoldSeconds): true from the frame the bot may walk out of the stream rooms.</summary>
@@ -396,7 +581,38 @@ public sealed partial class FrontRooms3DGame
         relay.StateChanged += AutoBaseStateChanged;
         relay.Arrived += AutoBaseArrived;
         relay.Caught += AutoBaseCaught;
+        relay.WarnStageChanged += AutoBaseHunterStage;
         map.DoorBroken += AutoBaseDoorBroken;
+        map.GlassBroken += AutoBaseGlassBroken;
+        if (AutoV2Conditions)
+        {
+            autoBaseChaseSpeed = hunterTuning.chaseSpeed;
+            AutoBaseApplyChaseCap();
+        }
+    }
+
+    void AutoBaseGlassBroken(Vector3 at) => autoGlassBroken++;
+
+    /// <summary>evaderv2: the Inspector base set so that the tier row's chase speed stays at or under the cap.</summary>
+    void AutoBaseApplyChaseCap()
+    {
+        if (autoBaseChaseSpeed <= 0f) return;
+        var row = Mathf.Max(.01f, TierRules.At(tier).chaseSpeed);
+        hunterTuning.chaseSpeed = Mathf.Min(autoBaseChaseSpeed, AutoV2ChaseCap / row);
+    }
+
+    /// <summary>The hunter's own WarnStage (Step 1): entries into stage 1 and when its current runs began.</summary>
+    void AutoBaseHunterStage(int stage)
+    {
+        var now = autoPlayClock;
+        if (stage >= 1 && autoHunterS1Since < 0f)
+        {
+            autoHunterS1Since = now;
+            autoHunterStage1Entries++;
+        }
+        if (stage >= 2 && autoHunterS2Since < 0f) autoHunterS2Since = now;
+        if (stage < 2) autoHunterS2Since = -1f;
+        if (stage < 1) autoHunterS1Since = -1f;
     }
 
     void AutoBaseBeforeRelayTick()
@@ -420,22 +636,70 @@ public sealed partial class FrontRooms3DGame
         }
         var before = relay.State;
         autoNoiseEmitted[cause]++;
-        autoLastNoiseAt = autoPlayClock;
-        autoLastNoiseCause = cause;
         if (cause == AutoCauseSprint && !PlayerSprinting) autoBotSprintNoiseNotSprinting++;
         autoNoiseInFlight = cause;
+        var callIndex = autoCallLog.Count < AutoCallLogMax ? autoCallLog.Count : -1;
+        autoCallsLogged++;
+        autoInFlightCall = callIndex;
         relay.Noise(source, radius);
         autoNoiseInFlight = -1;
+        autoInFlightCall = -1;
         var heard = relay.State == HunterState.Hunt && relay.StateTime == 0f && relay.ListenPoint.HasValue && relay.ListenPoint.Value == source;
+        string outcome;
         if (heard)
         {
+            outcome = "heard";
             autoNoiseHeard[cause]++;
             autoLastHeardFrame = Time.frameCount;
             autoLastHeardCause = cause;
-            if (before == HunterState.Hunt) autoHuntRetargets[cause]++;
+            autoLastHeardCall = callIndex;
+            if (before == HunterState.Hunt)
+            {
+                autoHuntRetargets[cause]++;
+                // A re-target is the same hunt answering a newer call.
+                autoActiveCall = callIndex;
+                autoActiveRehunt = false;
+            }
         }
-        else if (!relay.Released || before == HunterState.Chase || before == HunterState.BreakDoor) autoNoiseDeaf[cause]++;
-        else autoNoiseOutOfRange[cause]++;
+        else if (!relay.Released)
+        {
+            outcome = "dormant";
+            autoNoiseDeaf[cause]++;
+        }
+        else if (before == HunterState.Chase || before == HunterState.BreakDoor)
+        {
+            outcome = "ignored";
+            autoNoiseDeaf[cause]++;
+        }
+        else
+        {
+            outcome = "outOfRange";
+            autoNoiseOutOfRange[cause]++;
+        }
+        if (callIndex >= 0)
+        {
+            var call = new BaselineCall
+            {
+                at = autoBaseReleaseAt >= 0f ? autoPlayClock - autoBaseReleaseAt : -1f,
+                cause = AutoCauseNames[cause], outcome = outcome, stateBefore = before.ToString(), stateAfter = relay.State.ToString(),
+                straight = Vector3.Distance(relay.Position, source),
+            };
+            if (heard) call.pathMetres = AutoHeardMetres(source);
+            autoCallLog.Add(call);
+            if (heard && autoHuntLog.Count > 0 && autoHuntLog[autoHuntLog.Count - 1].call == callIndex)
+            {
+                autoHuntLog[autoHuntLog.Count - 1].heardStraight = call.straight;
+                autoHuntLog[autoHuntLog.Count - 1].heardPath = call.pathMetres;
+            }
+        }
+    }
+
+    /// <summary>Metres from a heard noise to the Relay by the hearing field (the game's FrontRoomsMapPathField); -1 past 150 m or unbuilt.</summary>
+    float AutoHeardMetres(Vector3 source)
+    {
+        autoHeardField.Build(map, map.CellOf(source));
+        var d = autoHeardField.DistanceTo(map.CellOf(relay.Position));
+        return float.IsInfinity(d) ? -1f : d;
     }
 
     bool AutoRelayChasing => relay != null && (relay.State == HunterState.Chase || (relay.State == HunterState.BreakDoor && autoBreakFrom == HunterState.Chase));
@@ -447,13 +711,40 @@ public sealed partial class FrontRooms3DGame
         var sinceRelease = autoPlayClock - autoBaseReleaseAt;
         if (next == HunterState.Hunt)
         {
-            // A heard noise turns it to Hunt inside the Noise call; the tick right after one still takes its cause.
-            int cause;
-            if (autoNoiseInFlight >= 0) cause = autoNoiseInFlight;
-            else if (Time.frameCount - autoLastHeardFrame <= 1) cause = autoLastHeardCause;
-            else cause = previous == HunterState.Chase || previous == HunterState.BreakDoor ? AutoCauseChaseLost : AutoCauseUnknown;
-            autoHuntsBy[cause]++;
-            if (autoFirstHunt < 0f) autoFirstHunt = sinceRelease;
+            if (previous == HunterState.BreakDoor && autoBreakFrom == HunterState.Hunt)
+            {
+                // The hunt it broke a door for, picked up again: the same hunt, not a new one.
+                autoHuntResumes++;
+            }
+            else
+            {
+                // A heard noise turns it to Hunt inside the Noise call; the tick right after one still takes its cause.
+                // The hunt after a lost chase (LoseTrack) comes straight from Chase.
+                int cause;
+                var call = -1;
+                if (autoNoiseInFlight >= 0)
+                {
+                    cause = autoNoiseInFlight;
+                    call = autoInFlightCall;
+                }
+                else if (Time.frameCount - autoLastHeardFrame <= 1)
+                {
+                    cause = autoLastHeardCause;
+                    call = autoLastHeardCall;
+                }
+                else cause = previous == HunterState.Chase ? AutoCauseChaseLost : AutoCauseUnknown;
+                autoHuntsBy[cause]++;
+                autoActiveCall = call;
+                autoActiveRehunt = cause == AutoCauseChaseLost;
+                autoHuntLog.Add(new BaselineHunt { at = sinceRelease, cause = cause == AutoCauseUnknown ? "unknown" : AutoCauseNames[cause], from = previous.ToString(), call = call });
+                if (autoFirstHunt < 0f) autoFirstHunt = sinceRelease;
+            }
+        }
+        if (next == HunterState.Listen || next == HunterState.Wander)
+        {
+            // It no longer acts on any call.
+            autoActiveCall = -1;
+            autoActiveRehunt = false;
         }
         if (next == HunterState.BreakDoor)
         {
@@ -463,20 +754,46 @@ public sealed partial class FrontRooms3DGame
         var resumed = previous == HunterState.BreakDoor && autoBreakFrom == HunterState.Chase;
         if (next == HunterState.Chase && !resumed)
         {
-            // A new chase (one resumed after a door it broke mid-chase is the same chase).
-            var noise = autoPlayClock - autoLastNoiseAt <= 3f ? AutoCauseNames[autoLastNoiseCause] : "none";
-            if (noise == "none") autoWanderEncounters++;
-            autoChaseLog.Add(new BaselineChase
+            // A new chase (one resumed after a door it broke mid-chase is the same chase). Why it came: the call it
+            // was answering, the hunt after a chase it lost, or nothing at all (Wander or Listen: a wander encounter).
+            string cause;
+            if (autoActiveRehunt) cause = "rehunt";
+            else if (autoActiveCall >= 0) cause = "call";
+            else if (previous == HunterState.Wander || previous == HunterState.Listen) cause = "wander";
+            else cause = "other";
+            if (cause == "wander") autoWanderEncounters++;
+            var chase = new BaselineChase
             {
-                startAt = sinceRelease, from = previous.ToString(), noiseBefore = noise, end = "open",
+                startAt = sinceRelease, from = previous.ToString(), cause = cause, call = cause == "call" ? autoActiveCall : -1, end = "open",
                 straightAtStart = Vector3.Distance(relay.Position, playerRoot.position),
-            });
+                stageAtStart = autoStage, hunterStageAtStart = relay.WarnStage,
+                stage1Seconds = autoStage >= 1 ? autoPlayClock - autoS1Since : 0f,
+                stage2Seconds = autoStage >= 2 ? autoPlayClock - autoS2Since : 0f,
+                hunterStage1Seconds = autoHunterS1Since >= 0f ? autoPlayClock - autoHunterS1Since : 0f,
+                hunterStage2Seconds = autoHunterS2Since >= 0f ? autoPlayClock - autoHunterS2Since : 0f,
+            };
+            AutoLadderAt(relay.Position, out chase.fAtStart, out chase.wAtStart);
+            autoChaseLog.Add(chase);
             autoChaseOpen = autoChaseLog.Count - 1;
             if (autoFirstChase < 0f) autoFirstChase = sinceRelease;
-            if (autoBot == AutoBot.Evader03 || autoBot == AutoBot.Evader06) autoEvadeAt = autoPlayClock + (autoBot == AutoBot.Evader03 ? .3f : .6f);
+            if (AutoIsEvader) autoEvadeAt = autoPlayClock + (autoBot == AutoBot.Evader03 ? .3f : .6f);
         }
         else if (autoChaseOpen >= 0 && next != HunterState.Chase && !(next == HunterState.BreakDoor && previous == HunterState.Chase))
             AutoCloseChase(next == HunterState.Hunt ? "lost" : next == HunterState.Listen ? "relayed" : next.ToString());
+    }
+
+    /// <summary>F and W from the player to a point now (the game's field, capped 60 m; -1 where it does not reach).</summary>
+    void AutoLadderAt(Vector3 point, out float f, out float w)
+    {
+        f = w = -1f;
+        var playerCell = map.CellOf(playerRoot.position);
+        if (!map.IsBuilt(playerCell)) return;
+        autoField.Build(map, playerCell);
+        var d = autoField.DistanceTo(map.CellOf(point));
+        var straight = Vector3.Distance(point, playerRoot.position);
+        if (!float.IsInfinity(d)) f = d;
+        var wv = Mathf.Min(d, 3f * straight);
+        if (!float.IsInfinity(wv)) w = wv;
     }
 
     void AutoCloseChase(string end)
@@ -509,9 +826,10 @@ public sealed partial class FrontRooms3DGame
             autoBaseReleaseAt = autoPlayClock;
             autoReleaseStraight = Vector3.Distance(feet, player);
             autoReleaseWalk = AutoWalkMetres(feet);
+            AutoLadderAt(feet, out autoReleaseF, out autoReleaseW);
             return;
         }
-        autoRelayLog.Add(new BaselineRelay
+        var entry = new BaselineRelay
         {
             at = autoPlayClock - autoBaseReleaseAt,
             kind = autoPreBuilt ? "A7a" : "A7b",
@@ -521,7 +839,19 @@ public sealed partial class FrontRooms3DGame
             walkBefore = autoPreBuilt ? AutoWalkMetres(autoPrePosition) : -1f,
             straightAfter = Vector3.Distance(feet, player),
             walkAfter = AutoWalkMetres(feet),
-        });
+            stageAfter = autoStage,
+            hunterStageAfter = relay.WarnStage,
+        };
+        AutoLadderAt(feet, out entry.fAfter, out entry.wAfter);
+        if (!autoPreBuilt)
+        {
+            // Its chunk was dropped: by the player walking away when that chunk lies past the build radius from theirs.
+            var from = MapGrid.ChunkOf(map.CellOf(autoPrePosition));
+            var at = MapGrid.ChunkOf(map.CellOf(player));
+            entry.chunkGap = Mathf.Max(Mathf.Abs(from.x - at.x), Mathf.Abs(from.y - at.y));
+            entry.byPlayerPosition = entry.chunkGap > map.BuildRadius;
+        }
+        autoRelayLog.Add(entry);
     }
 
     /// <summary>Walking metres from the player to a point by the path field (capped at 150 m); -1 where it does not reach.</summary>
@@ -534,15 +864,38 @@ public sealed partial class FrontRooms3DGame
 
     void AutoBaseTick(float dt)
     {
+        // The run's budget counts from the release, so every run has the same exposure.
+        if (!autoBotBudgetSet && autoBaseReleaseAt >= 0f)
+        {
+            autoBotBudgetSet = true;
+            autoBotSeconds = autoBaseReleaseAt + autoBotBudget;
+        }
         // The sprint rule's answer from the last step (PlayerSprinting, PlayerWinded), for the bot's own counters.
+        // A burst is a sprint that starts after at least 0.3 s without one (not every cell's re-plan).
         if (PlayerSprinting)
         {
             autoBotSprintSeconds += dt;
-            if (!autoBotWasSprinting) autoBotSprintBursts++;
+            if (!autoBotWasSprinting && autoBotNotSprinting >= .3f) autoBotSprintBursts++;
+            autoBotNotSprinting = 0f;
         }
+        else autoBotNotSprinting += dt;
         autoBotWasSprinting = PlayerSprinting;
         if (PlayerWinded) autoBotWindedSeconds += dt;
-        if (relay != null && relay.Released) autoStateSeconds[(int)relay.State] += dt;
+        if (AutoV2Conditions)
+        {
+            // v2's 2 s bar: the stamina never holds more than 2 s of sprint (it drains and refills as the game's rule says).
+            stamina = Mathf.Min(stamina, AutoV2StaminaSeconds);
+            AutoBaseApplyChaseCap();
+        }
+        if (relay != null && relay.Released)
+        {
+            autoStateSeconds[(int)relay.State] += dt;
+            autoTierSeconds[Mathf.Clamp(tier, 0, autoTierSeconds.Length - 1)] += dt;
+            if (relay.State == HunterState.Chase) autoChaseSpeedMax = Mathf.Max(autoChaseSpeedMax, relayTuning.chaseSpeed);
+        }
+        if (autoBot == AutoBot.EdgeRunner && autoBotLeftAt >= 0f && !inStartRooms)
+            autoBotNorth = Mathf.Max(autoBotNorth, map.CellOf(playerRoot.position).y - startDoorCell.y);
+        AutoBotWatchSight();
         autoSampleClock += dt;
         if (autoSampleClock < AutoSampleSeconds - 1e-4f) return;
         autoSampleClock -= AutoSampleSeconds;
@@ -551,16 +904,15 @@ public sealed partial class FrontRooms3DGame
 
     /// <summary>
     /// One sample of the ladder v2 would have shown: F, the walking metres from the player's cell to the Relay's
-    /// by the path field (capped at 60 m); W = min(F, 3 × the straight 3D distance); and the stages on W with
-    /// §9.1's bands, hysteresis and holds. No stage while the Relay is not on the map (Dormant).
+    /// by the game's path field (capped at 60 m); W = min(F, 3 × the straight 3D distance); and the stages on W
+    /// by §9.1 (see AutoSampleSeconds). No stage while the Relay is not on the map (Dormant).
     /// </summary>
     void AutoBaseSample()
     {
         autoSamples++;
         if (relay == null || !relay.Released)
         {
-            autoDormantSamples++;
-            autoS1 = autoS2 = false;
+            AutoStageToZero();
             return;
         }
         autoOnMapSamples++;
@@ -581,29 +933,71 @@ public sealed partial class FrontRooms3DGame
         }
         if (float.IsInfinity(f)) autoFUnreached++;
         var w = Mathf.Min(f, 3f * straight);
+        autoLastF = float.IsInfinity(f) ? -1f : f;
+        autoLastW = float.IsInfinity(w) ? -1f : w;
         AutoBand(autoBandF, f);
         AutoBand(autoBandW, w);
         AutoBand(autoBandStraight, straight);
-        // Stage 2: in at W ≤ 18, out past 24 after ≥ 3 s; it includes stage 1. Stage 1: in at W ≤ 30, out past 36 after ≥ 4 s.
+        if (map.IsBuilt(map.CellOf(relay.Position))) AutoStageStep(w);
+        else AutoStageToZero();
+        autoStageTrace.Add((byte)autoStage);
+        autoHunterStageTrace.Add((byte)Mathf.Clamp(relay.WarnStage, 0, 2));
+    }
+
+    /// <summary>
+    /// §9.1 on one sample (see AutoSampleSeconds). autoS1Since is the G3 run timer (stage ≥ 1 without a break; a
+    /// 2 → 1 drop does not reset it); autoDwellSince is the current stage's minimum-time start (set on 0 → 1,
+    /// 0 → 2 and 2 → 1).
+    /// </summary>
+    void AutoStageStep(float w)
+    {
         var now = autoPlayClock;
-        if (!autoS2 && w <= 18f)
+        if (autoStage < 2 && w <= 18f)
         {
-            autoS2 = true;
-            autoS2Since = now;
-            if (!autoS1)
+            if (autoStage < 1)
             {
-                autoS1 = true;
                 autoS1Since = now;
+                autoStage1Entries++;
+            }
+            autoStage = 2;
+            autoS2Since = autoDwellSince = now;
+            autoAbove1 = autoAbove2 = autoAbove36In2 = 0f;
+            return;
+        }
+        if (autoStage < 1 && w <= 30f)
+        {
+            autoStage = 1;
+            autoS1Since = autoDwellSince = now;
+            autoStage1Entries++;
+            autoAbove1 = 0f;
+            return;
+        }
+        if (autoStage == 2)
+        {
+            autoAbove2 = w > 24f ? autoAbove2 + AutoSampleSeconds : 0f;
+            autoAbove36In2 = w > 36f ? autoAbove36In2 + AutoSampleSeconds : 0f;
+            if (now - autoDwellSince >= 3f - 1e-4f && autoAbove2 >= 1f - 1e-4f)
+            {
+                if (autoAbove36In2 >= 1f - 1e-4f) AutoStageToZero();
+                else
+                {
+                    autoStage = 1;
+                    autoDwellSince = now;
+                    autoAbove1 = 0f;
+                }
             }
         }
-        else if (autoS2 && w > 24f && now - autoS2Since >= 3f) autoS2 = false;
-        if (!autoS1 && w <= 30f)
+        else if (autoStage == 1)
         {
-            autoS1 = true;
-            autoS1Since = now;
+            autoAbove1 = w > 36f ? autoAbove1 + AutoSampleSeconds : 0f;
+            if (now - autoDwellSince >= 4f - 1e-4f && autoAbove1 >= 1f - 1e-4f) AutoStageToZero();
         }
-        else if (autoS1 && !autoS2 && w > 36f && now - autoS1Since >= 4f) autoS1 = false;
-        autoStageSamples[autoS2 ? 2 : autoS1 ? 1 : 0]++;
+    }
+
+    void AutoStageToZero()
+    {
+        autoStage = 0;
+        autoAbove1 = autoAbove2 = autoAbove36In2 = 0f;
     }
 
     static void AutoBand(int[] band, float metres)
@@ -642,11 +1036,12 @@ public sealed partial class FrontRooms3DGame
                 break;
             case AutoBot.Noisy:
                 if (AutoBotWindow(dt, here, out local)) break;
-                AutoBotRoam(dt, here, false, out local);
+                if (!AutoBotSeekWindow(dt, here, out local)) AutoBotRoam(dt, here, false, out local);
                 sprint = AutoBotOnStraight(here);
                 break;
             case AutoBot.Evader03:
             case AutoBot.Evader06:
+            case AutoBot.EvaderV2:
                 AutoBotEvade(dt, here, out local, out sprint);
                 break;
             case AutoBot.Staller:
@@ -798,25 +1193,105 @@ public sealed partial class FrontRooms3DGame
     GridCoord autoBotWindowCell;
     bool autoBotWindowCellSet;
     readonly HashSet<long> autoBotWindowsSeen = new HashSet<long>();
-    const float AutoPaneStand = .9f, AutoPaneAimHeight = 1.3f;
+    const float AutoPaneStand = .9f, AutoPaneAimHeight = 1.3f, AutoWindowEvery = 20f, AutoWindowSeekGiveUp = 40f;
+    // The window it is walking to (AutoBotSeekWindow), the cell it breaks it from, and when it may look for the next.
+    FrontRoomsMapWorld.Window autoBotWindowGoal;
+    GridCoord autoBotWindowGoalCell;
+    float autoBotWindowSeekAt, autoBotWindowGoalSince;
+    int autoBotWindowRoutes;
+
+    /// <summary>The intact window on the edge between two neighbouring cells, or null.</summary>
+    FrontRoomsMapWorld.Window AutoWindowBetween(GridCoord a, GridCoord b)
+    {
+        var w = map.NearestIntactWindowForTools(map.CrossingPoint(a, b));
+        return w != null && ((w.a == a && w.b == b) || (w.a == b && w.b == a)) ? w : null;
+    }
+
+    /// <summary>An intact window on one of the cell's edges that the bot has not tried yet, or null.</summary>
+    FrontRoomsMapWorld.Window AutoUntriedWindowAt(GridCoord cell)
+    {
+        foreach (var step in AutoSteps)
+        {
+            var n = cell + step;
+            if (!map.IsBuilt(cell) || !map.IsBuilt(n) || map.Cache.Edge(cell, n) != EdgeKind.Window || map.IsBrokenWindow(cell, n)) continue;
+            var w = AutoWindowBetween(cell, n);
+            if (w != null && w.pane != null && w.root != null && !autoBotWindowsSeen.Contains(w.edge)) return w;
+        }
+        return null;
+    }
 
     /// <summary>
-    /// The noisy bot breaks every window it meets: once per cell it enters, a pane on one of that cell's edges
-    /// it has not tried. It stands 0.9 m in front (inside the pane rule's 1.2 m), aims 1.3 m up and holds E
-    /// through the glass shot's own input path until the pane gives. True while it is busy with one.
+    /// The noisy bot's glass: every 20 s (from its last window) it walks to the nearest intact window it can
+    /// reach (breadth-first over the cells it can walk, up to 30 steps) and breaks it from that cell. True while
+    /// it walks there; AutoBotWindow takes over in the cell.
+    /// </summary>
+    bool AutoBotSeekWindow(float dt, GridCoord here, out Vector2 local)
+    {
+        local = Vector2.zero;
+        if (autoBotWindowGoal != null && (autoBotWindowGoal.pane == null || autoPlayClock - autoBotWindowGoalSince > AutoWindowSeekGiveUp))
+        {
+            AutoBotNote("window " + autoBotWindowGoal.a + "-" + autoBotWindowGoal.b + (autoBotWindowGoal.pane == null ? ": broken before it got there" : ": not reached in 40 s"));
+            autoBotWindowsSeen.Add(autoBotWindowGoal.edge);
+            autoBotWindowGoal = null;
+            autoRouteIndex = autoRoute.Count;
+        }
+        if (autoBotWindowGoal == null)
+        {
+            if (autoPlayClock < autoBotWindowSeekAt) return false;
+            // None in reach now: look again in 2 s, from wherever the roam has taken it.
+            autoBotWindowSeekAt = autoPlayClock + 2f;
+            AutoBfs(here, 30, null);
+            foreach (var cell in autoReached)
+            {
+                var w = AutoUntriedWindowAt(cell);
+                if (w == null) continue;
+                autoBotWindowGoal = w;
+                autoBotWindowGoalCell = cell;
+                autoBotWindowGoalSince = autoPlayClock;
+                autoBotWindowRoutes++;
+                AutoRouteTo(here, cell);
+                break;
+            }
+            if (autoBotWindowGoal == null) return false;
+        }
+        if (here == autoBotWindowGoalCell) return false;
+        if (autoRouteIndex >= autoRoute.Count)
+        {
+            AutoBfs(here, 40, null);
+            AutoRouteTo(here, autoBotWindowGoalCell);
+            if (autoRoute.Count == 0) return false;
+        }
+        AutoWalkRoute(dt, here, out local);
+        return true;
+    }
+
+    /// <summary>
+    /// The noisy bot breaks a window: the one it walked to, or an untried pane on an edge of a cell it enters.
+    /// It stands 0.9 m in front (inside the pane rule's 1.2 m), aims 1.3 m up and holds E through the glass
+    /// shot's own input path until the pane gives. True while it is busy with one.
     /// </summary>
     bool AutoBotWindow(float dt, GridCoord here, out Vector2 local)
     {
         local = Vector2.zero;
         if (autoBotWindow == null)
         {
-            if (autoBotWindowCellSet && here == autoBotWindowCell) return false;
             // Mid-climb or mid-step the cell is looked at again next frame.
             if (climbTime >= 0f || pullClear.HasValue) return false;
-            autoBotWindowCell = here;
-            autoBotWindowCellSet = true;
-            var found = map.NearestIntactWindowForTools(playerRoot.position);
-            if (found == null || found.pane == null || found.root == null || (found.a != here && found.b != here) || !autoBotWindowsSeen.Add(found.edge)) return false;
+            FrontRoomsMapWorld.Window found = null;
+            if (autoBotWindowGoal != null && here == autoBotWindowGoalCell)
+            {
+                found = autoBotWindowGoal;
+                autoBotWindowGoal = null;
+            }
+            else if (!(autoBotWindowCellSet && here == autoBotWindowCell))
+            {
+                autoBotWindowCell = here;
+                autoBotWindowCellSet = true;
+                found = AutoUntriedWindowAt(here);
+            }
+            if (found == null || found.pane == null || found.root == null || (found.a != here && found.b != here)) return false;
+            autoBotWindowsSeen.Add(found.edge);
+            autoBotWindowSeekAt = autoPlayClock + AutoWindowEvery;
             // The root faces cell b (+Z): stand on this cell's side.
             var stand = found.root.position + found.root.forward * ((here == found.b ? 1f : -1f) * AutoPaneStand);
             stand.y = playerRoot.position.y;
@@ -905,7 +1380,12 @@ public sealed partial class FrontRooms3DGame
                 autoEvadeSprint = true;
                 autoEvadeUnseen = 0f;
                 autoBotEvasions++;
-                if (autoChaseOpen >= 0) autoChaseLog[autoChaseOpen].evaded = true;
+                if (autoChaseOpen >= 0)
+                {
+                    autoChaseLog[autoChaseOpen].evaded = true;
+                    autoChaseLog[autoChaseOpen].evadeAt = autoPlayClock - autoBaseReleaseAt;
+                }
+                autoSawLast = relay.SeesPlayer;
                 AutoPlanCover(here);
             }
         }
@@ -1000,6 +1480,46 @@ public sealed partial class FrontRooms3DGame
         else AutopilotPlan(here);
     }
 
+    // Evaders: whether the Relay saw the player on the last frame of the evasion, for the sight-break log.
+    bool autoSawLast;
+    int autoBotNorth;
+
+    /// <summary>
+    /// While an evasion runs: the frame the Relay stops seeing the player, log what broke the line (the first
+    /// thing between its eye and the player's: a door leaf, a wall, or a prop) and the two cells.
+    /// </summary>
+    void AutoBotWatchSight()
+    {
+        if (!autoEvading || relay == null || autoChaseOpen < 0) return;
+        var sees = relay.SeesPlayer;
+        if (autoSawLast && !sees)
+        {
+            var chase = autoChaseLog[autoChaseOpen];
+            if (chase.sightBreaks.Count < 12)
+            {
+                var eye = relay.Position + Vector3.up * ModuleUnits.RelayEye;
+                var to = playerRoot.position + Vector3.up * EyeHeight;
+                var by = "none";
+                var dir = to - eye;
+                var distance = dir.magnitude;
+                if (distance > .01f)
+                {
+                    var count = Physics.RaycastNonAlloc(eye, dir / distance, autoSightHits, distance, ~0, QueryTriggerInteraction.Ignore);
+                    var nearest = float.MaxValue;
+                    for (var i = 0; i < count; i++)
+                    {
+                        var c = autoSightHits[i].collider;
+                        if (c == null || c == playerBody || (hunter != null && c.transform.IsChildOf(hunter)) || autoSightHits[i].distance >= nearest) continue;
+                        nearest = autoSightHits[i].distance;
+                        by = c.name.StartsWith("Door leaf", StringComparison.Ordinal) ? "door" : c.GetComponentInParent<FrontRoomsModulePropTag>() != null || c.name.StartsWith("Kit_", StringComparison.Ordinal) ? "prop" : "wall";
+                    }
+                }
+                chase.sightBreaks.Add((autoPlayClock - autoBaseReleaseAt).ToString("0.00", CultureInfo.InvariantCulture) + " " + by + " " + map.CellOf(playerRoot.position) + " from " + map.CellOf(relay.Position));
+            }
+        }
+        autoSawLast = sees;
+    }
+
     readonly RaycastHit[] autoSightHits = new RaycastHit[16];
 
     /// <summary>True when anything but the player or the Relay's rig stands between the two points.</summary>
@@ -1018,13 +1538,15 @@ public sealed partial class FrontRooms3DGame
         return false;
     }
 
-    // ---------- Working a door (the closed-zone bot shuts, the door-spammer toggles) ----------
+    // ---------- Working a door (the closed-zone bot opens and shuts, the door-spammer toggles) ----------
 
     FrontRoomsMapWorld.Door autoBotDoor;
     GridCoord autoBotDoorNear, autoBotDoorFar;
     Vector3 autoBotDoorStand;
-    float autoBotDoorClock, autoBotDoorScanAt, autoBotSpamAt;
-    readonly HashSet<long> autoBotDoorsSkipped = new HashSet<long>();
+    float autoBotDoorClock, autoBotDoorScanAt, autoBotSpamAt, autoBotSpamSeconds, autoBotDoorWork;
+    bool autoBotDoorArrived;
+    readonly HashSet<long> autoBotDoorsSkipped = new HashSet<long>(), autoBotSpamDoorsUsed = new HashSet<long>();
+    int autoBotSpamBroken;
 
     /// <summary>Go to work a door: stand 1.3 m back from its line in the near cell, on the opening's centre, clear of the leaf.</summary>
     void AutoBotTakeDoor(FrontRoomsMapWorld.Door door, GridCoord near, GridCoord far, GridCoord here)
@@ -1033,6 +1555,8 @@ public sealed partial class FrontRooms3DGame
         autoBotDoorNear = near;
         autoBotDoorFar = far;
         autoBotDoorClock = 0f;
+        autoBotDoorWork = 0f;
+        autoBotDoorArrived = false;
         var into = map.CellCenter(far) - map.CellCenter(near);
         into.y = 0f;
         var stand = map.CrossingPoint(near, far) - into.normalized * 1.3f;
@@ -1043,20 +1567,24 @@ public sealed partial class FrontRooms3DGame
 
     /// <summary>
     /// Walk to the door's stand and face it. True once there (or, after 6 s, wherever it got to, if the door is
-    /// within E's reach). A door it cannot reach in 20 s is skipped for good.
+    /// within E's reach). A door it cannot reach in 20 s of walking is skipped for good. The clock stops once it
+    /// has got there: working the door is the job, not a failure to reach it.
     /// </summary>
     bool AutoBotGoToDoor(float dt, GridCoord here, out Vector2 local)
     {
         local = Vector2.zero;
         var door = autoBotDoor;
-        autoBotDoorClock += dt;
-        if (autoBotDoorClock > 20f)
+        if (!autoBotDoorArrived)
         {
-            AutoBotNote("door " + autoBotDoorNear + "-" + autoBotDoorFar + ": not reached in 20 s, skipped");
-            autoBotDoorsSkipped.Add(door.edge);
-            autoBotDoor = null;
-            autoRouteIndex = autoRoute.Count;
-            return false;
+            autoBotDoorClock += dt;
+            if (autoBotDoorClock > 20f)
+            {
+                AutoBotNote("door " + autoBotDoorNear + "-" + autoBotDoorFar + ": not reached in 20 s, skipped");
+                autoBotDoorsSkipped.Add(door.edge);
+                autoBotDoor = null;
+                autoRouteIndex = autoRoute.Count;
+                return false;
+            }
         }
         var inReach = Flat(door.position - playerRoot.position).magnitude <= Reach;
         var late = autoBotDoorClock > 6f;
@@ -1076,17 +1604,43 @@ public sealed partial class FrontRooms3DGame
             return false;
         }
         AutoFace(dt, door.position, 0f);
+        if (inReach) autoBotDoorArrived = true;
         return inReach;
     }
 
+    // The closed-zone bot: its zone is chosen once (AutoPickClosedZone); while fewer than 2 of its border doors
+    // stand open it opens shut ones, then it shuts every open one.
+    bool autoBotZonePicked, autoBotZoneOpening = true;
+    // The part of the zone it works: the cells it can walk to from its entry without leaving the zone (a zone can
+    // come in pieces that only meet through other zones).
+    readonly HashSet<GridCoord> autoBotZoneCells = new HashSet<GridCoord>();
+    GridCoord autoBotZoneEntry;
+
     /// <summary>
-    /// The closed-zone bot: every 2 s it looks for a door on its zone's border that stands open (unbroken) and
-    /// goes to shut it; with none left, it sprints round inside the zone.
+    /// The closed-zone bot: walks into its chosen zone; every 2 s it looks for the next border door to work
+    /// (to open while the zone has fewer than 2 open, then to shut); with none left, it sprints round inside.
     /// </summary>
     void AutoBotClosedZone(float dt, GridCoord here, out Vector2 local, out bool sprint)
     {
         local = Vector2.zero;
         sprint = false;
+        if (!autoBotZonePicked)
+        {
+            autoBotZonePicked = true;
+            AutoPickClosedZone(here);
+        }
+        if (autoBotDoor == null && autoBotZoneCells.Count > 0 && !autoBotZoneCells.Contains(here))
+        {
+            // On its way in: to the entry of the part of the zone it chose.
+            if (autoRouteIndex >= autoRoute.Count)
+            {
+                AutoBfs(here, 60, null);
+                AutoRouteTo(here, autoBotZoneEntry);
+                if (autoRoute.Count == 0) AutopilotPlan(here);
+            }
+            AutoWalkRoute(dt, here, out local);
+            return;
+        }
         if (autoBotDoor == null && autoPlayClock >= autoBotDoorScanAt)
         {
             autoBotDoorScanAt = autoPlayClock + 2f;
@@ -1095,17 +1649,37 @@ public sealed partial class FrontRooms3DGame
         var door = autoBotDoor;
         if (door != null)
         {
-            // Shut by now (or broken, or its chunk rebuilt): done with it.
-            if (door.broken || !door.open || map.DoorBetween(autoBotDoorNear, autoBotDoorFar) != door)
+            // Done with it once it is as wanted (or broken, or its chunk rebuilt).
+            var done = autoBotZoneOpening ? door.open : !door.open;
+            if (door.broken || done || map.DoorBetween(autoBotDoorNear, autoBotDoorFar) != door)
             {
                 autoBotDoor = null;
                 autoRouteIndex = autoRoute.Count;
                 return;
             }
             if (!AutoBotGoToDoor(dt, here, out local)) return;
-            map.Use(door.leaf);
-            if (door.open) return;
-            autoBotDoorsShut++;
+            // At the door: a door that will not open (or shut) in 5 s of trying is skipped for good.
+            autoBotDoorWork += dt;
+            if (autoBotDoorWork > 5f)
+            {
+                AutoBotNote("closedzone: door " + autoBotDoorNear + "-" + autoBotDoorFar + " would not " + (autoBotZoneOpening ? "open" : "shut") + " in 5 s, skipped");
+                autoBotDoorsSkipped.Add(door.edge);
+                autoBotDoor = null;
+                autoRouteIndex = autoRoute.Count;
+                return;
+            }
+            if (autoBotZoneOpening)
+            {
+                if (!map.TryOpenDoor(autoBotDoorNear, autoBotDoorFar)) return;
+                autoDoorsOpened++;
+                autoBotZoneDoorsOpened++;
+            }
+            else
+            {
+                map.Use(door.leaf);
+                if (door.open) return;
+                autoBotDoorsShut++;
+            }
             autoBotDoor = null;
             autoRouteIndex = autoRoute.Count;
             return;
@@ -1114,27 +1688,83 @@ public sealed partial class FrontRooms3DGame
         sprint = true;
     }
 
-    /// <summary>The closed-zone bot's next door: one of its zone's border doors that stands open, nearest by walking inside the zone.</summary>
+    /// <summary>
+    /// The closed-zone bot's zone: of the zones it can walk to (40 steps), the nearest low or standard one with at
+    /// least 2 unbroken border doors on the part of it reachable from its entry without leaving it (doors stand only
+    /// where the ceiling height changes; tall zones have windows). None: the zone it stands in, noted (its fidelity
+    /// check then fails unless it shuts a door anyway).
+    /// </summary>
+    void AutoPickClosedZone(GridCoord here)
+    {
+        AutoBfs(here, 40, null);
+        // Each low or standard zone it can walk to, at the first cell it reaches of it (its entry).
+        var entries = new List<GridCoord>();
+        var zones = new List<GridCoord>();
+        foreach (var cell in autoReached)
+        {
+            var zone = map.ZoneOf(cell);
+            if (zone.height == ZoneHeight.Tall || zones.Contains(zone.id)) continue;
+            zones.Add(zone.id);
+            entries.Add(cell);
+            if (zones.Count >= 8) break;
+        }
+        // Border doors are counted only from the cells reachable from the entry inside the zone.
+        for (var z = 0; z < zones.Count; z++)
+        {
+            var id = zones[z];
+            AutoBfs(entries[z], 40, c => map.ZoneOf(c).id == id);
+            var doors = new HashSet<long>();
+            foreach (var cell in autoReached)
+                foreach (var step in AutoSteps)
+                {
+                    var n = cell + step;
+                    if (!map.IsBuilt(n) || map.Cache.Edge(cell, n) != EdgeKind.Door || map.ZoneOf(n).id == id) continue;
+                    var door = map.DoorBetween(cell, n);
+                    if (door != null && !door.broken) doors.Add(door.edge);
+                }
+            if (doors.Count < 2) continue;
+            autoBotZone = id;
+            autoBotZoneSet = true;
+            autoBotZoneEntry = entries[z];
+            autoBotZoneCells.Clear();
+            foreach (var cell in autoReached) autoBotZoneCells.Add(cell);
+            AutoBotNote("closedzone: chose zone " + id + " (" + doors.Count + " border doors in its " + autoReached.Count + " cells from entry " + entries[z] + ")");
+            autoRouteIndex = autoRoute.Count;
+            return;
+        }
+        AutoBotNote("closedzone: no low or standard zone with 2 border doors within 40 steps; staying in zone " + autoBotZone);
+    }
+
+    /// <summary>The closed-zone bot's next door on its zone's border, nearest by walking inside the zone: a shut one while it is opening, an open one after.</summary>
     void AutoFindZoneDoor(GridCoord here)
     {
         AutoBfs(here, 40, InBotZone);
         int doors = 0, open = 0;
-        FrontRoomsMapWorld.Door pick = null;
-        GridCoord near = default, far = default;
+        FrontRoomsMapWorld.Door pickOpen = null, pickShut = null;
+        GridCoord nearOpen = default, farOpen = default, nearShut = default, farShut = default;
+        var seen = new HashSet<long>();
         foreach (var cell in autoReached)
             foreach (var step in AutoSteps)
             {
                 var n = cell + step;
                 if (InBotZone(n) || !map.IsBuilt(n) || map.Cache.Edge(cell, n) != EdgeKind.Door) continue;
                 var door = map.DoorBetween(cell, n);
-                if (door == null) continue;
+                if (door == null || door.broken || !seen.Add(door.edge)) continue;
                 doors++;
-                if (!door.open || door.broken) continue;
-                open++;
-                if (pick != null || autoBotDoorsSkipped.Contains(door.edge)) continue;
-                pick = door;
-                near = cell;
-                far = n;
+                if (door.open) open++;
+                if (autoBotDoorsSkipped.Contains(door.edge)) continue;
+                if (door.open && pickOpen == null)
+                {
+                    pickOpen = door;
+                    nearOpen = cell;
+                    farOpen = n;
+                }
+                else if (!door.open && pickShut == null)
+                {
+                    pickShut = door;
+                    nearShut = cell;
+                    farShut = n;
+                }
             }
         if (autoBotZoneDoors < 0)
         {
@@ -1142,17 +1772,29 @@ public sealed partial class FrontRooms3DGame
             autoBotZoneDoorsOpen = open;
             AutoBotNote("closedzone: zone " + autoBotZone + ", " + autoReached.Count + " cells reached, " + doors + " border doors, " + open + " open");
         }
-        if (pick != null) AutoBotTakeDoor(pick, near, far, here);
+        // Open shut doors until 2 stand open (or none is left to open), then shut them all.
+        if (autoBotZoneOpening && (open >= 2 || pickShut == null)) autoBotZoneOpening = false;
+        if (autoBotZoneOpening) AutoBotTakeDoor(pickShut, nearShut, farShut, here);
+        else if (pickOpen != null) AutoBotTakeDoor(pickOpen, nearOpen, farOpen, here);
     }
 
-    /// <summary>The door-spammer: the nearest unbroken door at least 6 m from the start door; it stands at it and opens or shuts it every 0.8 s. A door the Relay breaks sends it to the next.</summary>
+    /// <summary>
+    /// The door-spammer: one unbroken door away from the start door (both its cells 3 or more steps from the
+    /// start door's cell, outside the start area, 6 m or more from the start door), reached without passing
+    /// the start door's cell; it stands at it and opens or shuts it every 0.8 s. Only a door the Relay breaks
+    /// sends it to another.
+    /// </summary>
     void AutoBotDoorSpam(float dt, GridCoord here, out Vector2 local)
     {
         local = Vector2.zero;
         var door = autoBotDoor;
         if (door == null || door.broken || map.DoorBetween(autoBotDoorNear, autoBotDoorFar) != door)
         {
-            if (door != null) AutoBotNote("doorspammer: door " + autoBotDoorNear + "-" + autoBotDoorFar + (door.broken ? " broken by the Relay" : " rebuilt"));
+            if (door != null)
+            {
+                AutoBotNote("doorspammer: door " + autoBotDoorNear + "-" + autoBotDoorFar + (door.broken ? " broken by the Relay" : " rebuilt"));
+                if (door.broken) autoBotSpamBroken++;
+            }
             autoBotDoor = null;
             if (autoPlayClock >= autoBotDoorScanAt)
             {
@@ -1166,7 +1808,9 @@ public sealed partial class FrontRooms3DGame
             }
             door = autoBotDoor;
         }
-        if (!AutoBotGoToDoor(dt, here, out local) || autoPlayClock < autoBotSpamAt) return;
+        if (!AutoBotGoToDoor(dt, here, out local)) return;
+        autoBotSpamSeconds += dt;
+        if (autoPlayClock < autoBotSpamAt) return;
         autoBotSpamAt = autoPlayClock + .8f;
         if (door.open)
         {
@@ -1183,17 +1827,21 @@ public sealed partial class FrontRooms3DGame
         }
     }
 
+    static int AutoSteps1(GridCoord a, GridCoord b) => Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+
     void AutoFindSpamDoor(GridCoord here)
     {
-        AutoBfs(here, 30, null);
+        AutoBfs(here, 30, c => c != startDoorCell && !map.InStartArea(c));
         foreach (var cell in autoReached)
             foreach (var step in AutoSteps)
             {
                 var n = cell + step;
                 if (!map.IsBuilt(n) || map.Cache.Edge(cell, n) != EdgeKind.Door) continue;
+                if (map.InStartArea(cell) || map.InStartArea(n) || AutoSteps1(cell, startDoorCell) < 3 || AutoSteps1(n, startDoorCell) < 3) continue;
                 var door = map.DoorBetween(cell, n);
                 if (door == null || door.broken || autoBotDoorsSkipped.Contains(door.edge) || Flat(door.position - startDoorPoint).magnitude < 6f) continue;
                 AutoBotTakeDoor(door, cell, n, here);
+                autoBotSpamDoorsUsed.Add(door.edge);
                 AutoBotNote("doorspammer: door " + cell + "-" + n + ", " + autoDepth[cell] + " steps away");
                 return;
             }
@@ -1212,7 +1860,8 @@ public sealed partial class FrontRooms3DGame
             mode = AutoBotNames[(int)autoBot],
             seed = runSeed,
             tier = autoBotTier,
-            minutes = autoBotSeconds / 60f,
+            minutes = autoBotBudget / 60f,
+            tierLocked = autoTierLock,
             playSeconds = autoPlayClock,
             endedBy = reason,
             caught = phase == Phase.Caught,
@@ -1222,14 +1871,20 @@ public sealed partial class FrontRooms3DGame
             releasedAt = autoBaseReleaseAt,
             releaseStraightMetres = autoReleaseStraight,
             releaseWalkMetres = autoReleaseWalk,
+            releaseF = autoReleaseF,
+            releaseW = autoReleaseW,
             secondsAfterRelease = since,
             firstHuntAfterRelease = autoFirstHunt,
             firstChaseAfterRelease = autoFirstChase,
             catches = autoCatches,
             wanderEncounters = autoWanderEncounters,
+            huntResumes = autoHuntResumes,
+            huntLog = autoHuntLog,
+            calls = autoCallsLogged,
+            callLog = autoCallLog,
             chaseLog = autoChaseLog,
             relayLog = autoRelayLog,
-            glassBroken = autoNoiseEmitted[AutoCauseGlass],
+            glassBroken = autoGlassBroken,
             tierFinal = tier,
             tierLog = new List<string>(autoTiers),
             samples = autoSamples,
@@ -1245,6 +1900,8 @@ public sealed partial class FrontRooms3DGame
             if (autoBreakAttempts[(int)state] > 0) r.breakAttemptsByState.Add(new BaselineStateCount { state = state.ToString(), count = autoBreakAttempts[(int)state] });
             r.doorsBroken += autoDoorsBrokenFrom[(int)state];
         }
+        for (var t = 1; t < autoTierSeconds.Length; t++)
+            if (autoTierSeconds[t] > 0f) r.tierSeconds.Add(new BaselineStateTime { state = "T" + t, seconds = autoTierSeconds[t], share = since > 0f ? autoTierSeconds[t] / since : 0f });
         foreach (var n in autoHuntsBy) r.hunts += n;
         r.huntsPerMinute = r.hunts * perMinute;
         r.huntsByCause = new BaselineHuntCauses
@@ -1253,14 +1910,6 @@ public sealed partial class FrontRooms3DGame
             otherNoise = autoHuntsBy[AutoCauseOther], chaseLost = autoHuntsBy[AutoCauseChaseLost], other = autoHuntsBy[AutoCauseUnknown],
         };
         r.huntRetargets = AutoKinds(autoHuntRetargets);
-        // What brought it to the player: a hunt on a noise, by the noise; a chase with no noise in the 3 s before, a wander encounter.
-        r.callsByCause = new BaselineCallCauses
-        {
-            sprint = autoHuntsBy[AutoCauseSprint], door = autoHuntsBy[AutoCauseDoor], glass = autoHuntsBy[AutoCauseGlass],
-            otherNoise = autoHuntsBy[AutoCauseOther], wanderEncounter = autoWanderEncounters,
-        };
-        r.callsByCause.total = r.callsByCause.sprint + r.callsByCause.door + r.callsByCause.glass + r.callsByCause.otherNoise + r.callsByCause.wanderEncounter;
-        r.callsByCause.perMinute = r.callsByCause.total * perMinute;
         r.chases = autoChaseLog.Count;
         r.chasesPerMinute = r.chases * perMinute;
         foreach (var chase in autoChaseLog)
@@ -1280,20 +1929,20 @@ public sealed partial class FrontRooms3DGame
         foreach (var relayed in autoRelayLog)
         {
             if (relayed.kind == "A7a") r.relaysA7a++;
-            else r.relaysA7b++;
+            else
+            {
+                r.relaysA7b++;
+                if (relayed.byPlayerPosition) r.relaysA7bByPlayer++;
+            }
         }
-        r.dormantShare = autoSamples > 0 ? autoDormantSamples / (float)autoSamples : 0f;
         r.fUnreachedShare = autoOnMapSamples > 0 ? autoFUnreached / (float)autoOnMapSamples : 0f;
         r.fBands = AutoBands(autoBandF);
         r.wBands = AutoBands(autoBandW);
         r.straightBands = AutoBands(autoBandStraight);
-        if (autoOnMapSamples > 0)
-        {
-            r.wStage0 = autoStageSamples[0] / (float)autoOnMapSamples;
-            r.wStage1 = autoStageSamples[1] / (float)autoOnMapSamples;
-            r.wStage2 = autoStageSamples[2] / (float)autoOnMapSamples;
-        }
-        r.wStage0OfRun = autoSamples > 0 ? (autoDormantSamples + autoStageSamples[0]) / (float)autoSamples : 0f;
+        r.stages = AutoStages(autoStageTrace, autoStage1Entries, since, r.caught);
+        r.hunterStages = AutoStages(autoHunterStageTrace, autoHunterStage1Entries, since, r.caught);
+        r.stageTrace = AutoTrace(autoStageTrace);
+        r.hunterStageTrace = AutoTrace(autoHunterStageTrace);
         r.bot = new BaselineBot
         {
             distanceWalked = autoDistance, cellsVisited = autoCells.Count, zonesVisited = zonesVisited.Count, routes = autoRoutes,
@@ -1302,13 +1951,25 @@ public sealed partial class FrontRooms3DGame
             doorsOpened = autoDoorsOpened, doorsShut = autoBotDoorsShut, doorToggles = autoBotDoorToggles,
             windowsTried = autoBotWindowsTried, windowsBroken = autoBotWindowsBroken,
             evasionsAttempted = autoBotEvasions, evasionsSucceeded = autoBotEvadeOk, evasionsCaught = autoBotEvadeCaught,
-            zoneDoors = autoBotZoneDoors, zoneDoorsOpenAtStart = autoBotZoneDoorsOpen, edgeStalls = autoEdgeStalls,
+            zoneChosen = autoBot == AutoBot.ClosedZone ? autoBotZone.ToString() : "",
+            zoneDoors = autoBotZoneDoors, zoneDoorsOpenAtStart = autoBotZoneDoorsOpen, zoneDoorsOpened = autoBotZoneDoorsOpened,
+            spamDoors = autoBotSpamDoorsUsed.Count, spamDoorsBroken = autoBotSpamBroken, spamSeconds = autoBotSpamSeconds,
+            spamTogglesPerMinute = autoBotSpamSeconds > 0f ? autoBotDoorToggles * 60f / autoBotSpamSeconds : 0f,
+            edgeStalls = autoEdgeStalls, northCells = autoBotNorth,
+            staminaBarSeconds = AutoV2Conditions ? AutoV2StaminaSeconds : StaminaSeconds,
+            chaseCap = AutoV2Conditions ? AutoV2ChaseCap : -1f, chaseSpeedMax = autoChaseSpeedMax,
             notes = new List<string>(autoBotNotes),
         };
-        var ok = mapPlay && relay != null && relay.Released && autoErrors == 0;
-        r.verdict = (ok ? "PASS" : "FAIL") + " · baseline " + r.mode + " T" + autoBotTier + " seed " + runSeed + " · ended by " + reason;
-        // The hash covers the behaviour only: perf is still its blank default here.
+        AutoBaseModeChecks(r);
+        r.modeChecks = new List<BaselineModeCheck>(autoModeChecks);
+        var failed = new List<string>();
+        foreach (var check in autoModeChecks) if (!check.ok && !check.soft) failed.Add(check.check);
+        var ok = mapPlay && relay != null && relay.Released && autoErrors == 0 && failed.Count == 0;
+        r.verdict = (ok ? "PASS" : "FAIL") + " · baseline " + r.mode + " T" + autoBotTier + " seed " + runSeed + " · ended by " + reason
+            + (failed.Count > 0 ? " · checks failed: " + string.Join(", ", failed) : "");
+        // The hash covers the behaviour only: build and perf are still their blank defaults here.
         r.behaviourHash = AutoHash(JsonUtility.ToJson(r));
+        r.build = autoBuild ?? new BaselineBuild();
         r.perf = AutoBasePerf();
         var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-baseline");
         Directory.CreateDirectory(dir);
@@ -1318,14 +1979,97 @@ public sealed partial class FrontRooms3DGame
         return r.verdict;
     }
 
+    void AutoCheck(string check, bool ok, string detail, bool soft = false) => autoModeChecks.Add(new BaselineModeCheck { check = check, ok = ok, detail = detail, soft = soft });
+
+    /// <summary>
+    /// Did the run measure what it claims to: every hunt has a cause, a sprinting bot's sprint noise was counted,
+    /// the tier held, and each mode did its job. Any failed check fails the run.
+    /// </summary>
+    void AutoBaseModeChecks(BaselineReport r)
+    {
+        autoModeChecks.Clear();
+        AutoCheck("huntCauseKnown", autoHuntsBy[AutoCauseUnknown] == 0, autoHuntsBy[AutoCauseUnknown] + " hunts with no known cause");
+        // Soft (reported, never fails the run): the §9.1 sampler and the hunter's WarnStage should agree on about
+        // 95 % of on-map samples once the hunter runs the same rule (it rebuilds W per cell change, this samples at 4 Hz).
+        var same = 0;
+        var n = Mathf.Min(autoStageTrace.Count, autoHunterStageTrace.Count);
+        for (var i = 0; i < n; i++) if (autoStageTrace[i] == autoHunterStageTrace[i]) same++;
+        var agree = n > 0 ? same / (float)n : 1f;
+        AutoCheck("stagesAgree", agree >= .95f, (agree * 100f).ToString("0.0", CultureInfo.InvariantCulture) + " % of " + n + " on-map samples (§9.1 sampler vs hunter WarnStage)", true);
+        if (autoTierLock) AutoCheck("tierLocked", r.tierFinal == autoBotTier, "tier " + autoBotTier + " → " + r.tierFinal + (r.tierFinal != autoBotTier ? " (the RaiseTier guard is missing)" : ""));
+        // Sprinting makes noise on every step: a run that sprinted with none counted lost them on the way.
+        if (autoBotSprintSeconds > .5f)
+            AutoCheck("sprintNoiseCounted", r.bot.sprintNoises > 0, r.bot.sprintNoises + " sprint noises in " + autoBotSprintSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s of sprint");
+        if (autoBot == AutoBot.Noisy || autoBot == AutoBot.ShiftHolder)
+            AutoCheck("sprinted", autoBotSprintSeconds > .5f, autoBotSprintSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s of sprint, " + autoBotSprintBursts + " bursts");
+        switch (autoBot)
+        {
+            case AutoBot.Noisy:
+                AutoCheck("windowBroken", autoBotWindowsBroken > 0, autoBotWindowsTried + " tried, " + autoBotWindowsBroken + " broken, " + autoBotWindowRoutes + " routes to a window");
+                break;
+            case AutoBot.ClosedZone:
+                AutoCheck("zoneDoorShut", autoBotDoorsShut > 0, "zone " + autoBotZone + ": " + autoBotZoneDoors + " border doors, " + autoBotZoneDoorsOpen + " open at first look, " + autoBotZoneDoorsOpened + " opened, " + autoBotDoorsShut + " shut");
+                break;
+            case AutoBot.DoorSpammer:
+            {
+                var rate = r.bot.spamTogglesPerMinute;
+                var moved = autoBotSpamDoorsUsed.Count - 1 - autoBotSpamBroken;
+                AutoCheck("oneDoor", autoBotSpamDoorsUsed.Count >= 1 && moved <= 0, autoBotSpamDoorsUsed.Count + " doors used, " + autoBotSpamBroken + " broken by the Relay");
+                // 0.8 s a toggle is 75 a minute; under 30 means it was not working its door.
+                AutoCheck("toggleRate", autoBotDoorToggles > 0 && (autoBotSpamSeconds < 20f || rate >= 30f), autoBotDoorToggles + " toggles in " + autoBotSpamSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s at a door (" + rate.ToString("0", CultureInfo.InvariantCulture) + " a minute)");
+                break;
+            }
+            case AutoBot.EdgeRunner:
+                AutoCheck("edgeReached", autoEdgeStalls > 0 || r.relaysA7bByPlayer > 0, autoEdgeStalls + " edge stalls, " + r.relaysA7bByPlayer + " of " + r.relaysA7b + " A7b by the player's position, " + autoBotNorth + " cells north");
+                break;
+            case AutoBot.Evader03:
+            case AutoBot.Evader06:
+            case AutoBot.EvaderV2:
+            {
+                var long_ = 0;
+                foreach (var chase in autoChaseLog) if (chase.seconds > (autoBot == AutoBot.Evader03 ? .3f : .6f) + .1f) long_++;
+                AutoCheck("evaded", long_ == 0 || autoBotEvasions > 0, autoBotEvasions + " evasions in " + long_ + " chases that outlasted the reaction");
+                if (AutoV2Conditions) AutoCheck("chaseCapped", autoChaseSpeedMax <= AutoV2ChaseCap + 1e-3f, "fastest chase speed " + autoChaseSpeedMax.ToString("0.00", CultureInfo.InvariantCulture) + " m/s, cap " + AutoV2ChaseCap);
+                break;
+            }
+        }
+    }
+
+    static string AutoTrace(List<byte> trace)
+    {
+        var text = new System.Text.StringBuilder(trace.Count);
+        foreach (var b in trace) text.Append((char)('0' + Mathf.Clamp(b, 0, 9)));
+        return text.ToString();
+    }
+
+    /// <summary>Stage shares (whole, and without the last 5 s before a catch) and stage-1 entries per 10 min.</summary>
+    static BaselineStages AutoStages(List<byte> trace, int entries, float since, bool caught)
+    {
+        var s = new BaselineStages { stage1Entries = entries, stage1EntriesPer10Min = since > 0f ? entries * 600f / since : 0f };
+        var counts = new int[3];
+        foreach (var b in trace) counts[Mathf.Clamp(b, 0, 2)]++;
+        if (trace.Count > 0)
+        {
+            s.stage0 = counts[0] / (float)trace.Count;
+            s.stage1 = counts[1] / (float)trace.Count;
+            s.stage2 = counts[2] / (float)trace.Count;
+        }
+        var keep = caught ? Mathf.Max(0, trace.Count - Mathf.RoundToInt(AutoCensorSeconds / AutoSampleSeconds)) : trace.Count;
+        if (keep > 0)
+        {
+            var c = new int[3];
+            for (var i = 0; i < keep; i++) c[Mathf.Clamp(trace[i], 0, 2)]++;
+            s.censoredStage0 = c[0] / (float)keep;
+            s.censoredStage1 = c[1] / (float)keep;
+            s.censoredStage2 = c[2] / (float)keep;
+        }
+        return s;
+    }
+
     BaselinePerf AutoBasePerf()
     {
-        var perf = new BaselinePerf
+        return new BaselinePerf
         {
-            frames = autoBaseFrameMs.Count,
-            p50FrameMs = Percentile(autoBaseFrameMs, .5f),
-            p95FrameMs = Percentile(autoBaseFrameMs, .95f),
-            p99FrameMs = Percentile(autoBaseFrameMs, .99f),
             loadAverageStart = autoBaseLoadStart,
             loadAverageEnd = AutoLoadAverage(),
             wallSeconds = (float)autoBaseWall.Elapsed.TotalSeconds,
@@ -1337,14 +2081,6 @@ public sealed partial class FrontRooms3DGame
             startDoorOpenedAt = autoStartDoorAt,
             mapSettledAt = autoSettledAt,
         };
-        double sum = 0;
-        foreach (var ms in autoBaseFrameMs)
-        {
-            sum += ms;
-            perf.maxFrameMs = Mathf.Max(perf.maxFrameMs, ms);
-        }
-        perf.meanFrameMs = autoBaseFrameMs.Count > 0 ? (float)(sum / autoBaseFrameMs.Count) : 0f;
-        return perf;
     }
 
     static BaselineNoiseKinds AutoKinds(int[] counts) => new BaselineNoiseKinds { sprint = counts[0], door = counts[1], glass = counts[2], otherNoise = counts[3] };
@@ -1365,142 +2101,6 @@ public sealed partial class FrontRooms3DGame
             h *= 1099511628211UL;
         }
         return h.ToString("x16");
-    }
-
-    /// <summary>
-    /// The v2 §7 path field, built only for the Step 0 baseline and its bench (nothing in the game reads it): an
-    /// 8-neighbour (octile) Dijkstra from a root cell over built cells, in metres, capped. Orthogonal steps 3 m;
-    /// a diagonal step 4.24 m only inside a room (the four edges round the 2 × 2 block are plain open edges, so
-    /// it never cuts through an arch, a door or a window); crossing an open edge, an arch, an open or broken door
-    /// or a broken window adds 0, a shut door or an intact window 9; walls block. It keeps its own arrays over a
-    /// square window round the root, cleared by a stamp, so a rebuild allocates nothing; and it reads only built
-    /// cells, so it never makes the map generate a chunk.
-    /// </summary>
-    public sealed class BaselinePathField
-    {
-        public const float Orthogonal = 3f, Diagonal = 4.2426407f, ShutOpening = 9f;
-        static readonly int[] SideX = { 1, -1, 0, 0 }, SideY = { 0, 0, 1, -1 };
-        public readonly float Cap;
-        readonly int radius, side;
-        readonly float[] distance;
-        readonly int[] reached, settled, heapNode;
-        readonly float[] heapKey;
-        int heapCount, stamp;
-
-        public GridCoord Root { get; private set; }
-        /// <summary>The cells the last build settled.</summary>
-        public int Visited { get; private set; }
-
-        public BaselinePathField(float capMetres)
-        {
-            Cap = capMetres;
-            // No cell further than Cap / 3 steps along either axis can be within Cap.
-            radius = Mathf.CeilToInt(capMetres / Orthogonal) + 1;
-            side = radius * 2 + 1;
-            distance = new float[side * side];
-            reached = new int[side * side];
-            settled = new int[side * side];
-            // Each settled cell pushes at most its eight neighbours.
-            heapNode = new int[side * side * 8 + 1];
-            heapKey = new float[heapNode.Length];
-        }
-
-        /// <summary>Metres from the root to the cell; infinity where the last build did not reach it within the cap.</summary>
-        public float DistanceTo(GridCoord cell)
-        {
-            var i = Index(cell);
-            return i >= 0 && settled[i] == stamp ? distance[i] : float.PositiveInfinity;
-        }
-
-        public void Build(FrontRoomsMapWorld map, GridCoord root)
-        {
-            stamp++;
-            Root = root;
-            Visited = 0;
-            heapCount = 0;
-            if (!map.IsBuilt(root)) return;
-            Reach(Index(root), 0f);
-            var cache = map.Cache;
-            while (heapCount > 0)
-            {
-                var node = Pop(out var d);
-                if (settled[node] == stamp || d > distance[node]) continue;
-                settled[node] = stamp;
-                Visited++;
-                var cell = new GridCoord(node % side - radius + Root.x, node / side - radius + Root.y);
-                // The four sides: the step across each, and which are plain open edges (for the diagonals).
-                var plain = 0;
-                for (var k = 0; k < 4; k++)
-                {
-                    var n = new GridCoord(cell.x + SideX[k], cell.y + SideY[k]);
-                    if (!map.IsBuilt(n)) continue;
-                    var edge = cache.Edge(cell, n);
-                    if (edge == EdgeKind.Wall) continue;
-                    if (edge == EdgeKind.Open) plain |= 1 << k;
-                    // Doors and windows by their state now: swung open, broken or smashed through, or shut or intact.
-                    var open = edge == EdgeKind.Open || edge == EdgeKind.Arch || map.PassageBetween(cell, n) == FrontRoomsMapWorld.Passage.Open;
-                    var i = Index(n);
-                    if (i >= 0 && settled[i] != stamp) Reach(i, d + Orthogonal + (open ? 0f : ShutOpening));
-                }
-                for (var k = 0; k < 4; k++)
-                {
-                    int dx = k < 2 ? 1 : -1, dy = (k & 1) == 0 ? 1 : -1;
-                    if ((plain & (1 << (dx > 0 ? 0 : 1))) == 0 || (plain & (1 << (dy > 0 ? 2 : 3))) == 0) continue;
-                    var corner = new GridCoord(cell.x + dx, cell.y + dy);
-                    var i = Index(corner);
-                    if (i < 0 || settled[i] == stamp || !map.IsBuilt(corner)) continue;
-                    if (cache.Edge(new GridCoord(cell.x + dx, cell.y), corner) != EdgeKind.Open || cache.Edge(new GridCoord(cell.x, cell.y + dy), corner) != EdgeKind.Open) continue;
-                    Reach(i, d + Diagonal);
-                }
-            }
-        }
-
-        int Index(GridCoord cell)
-        {
-            int x = cell.x - Root.x + radius, y = cell.y - Root.y + radius;
-            return x < 0 || y < 0 || x >= side || y >= side ? -1 : x + y * side;
-        }
-
-        void Reach(int i, float d)
-        {
-            if (d > Cap || (reached[i] == stamp && d >= distance[i])) return;
-            reached[i] = stamp;
-            distance[i] = d;
-            // A binary heap on the distance (stale entries are skipped when popped).
-            var at = heapCount++;
-            while (at > 0)
-            {
-                var parent = (at - 1) / 2;
-                if (heapKey[parent] <= d) break;
-                heapNode[at] = heapNode[parent];
-                heapKey[at] = heapKey[parent];
-                at = parent;
-            }
-            heapNode[at] = i;
-            heapKey[at] = d;
-        }
-
-        int Pop(out float d)
-        {
-            var top = heapNode[0];
-            d = heapKey[0];
-            var lastNode = heapNode[--heapCount];
-            var lastKey = heapKey[heapCount];
-            var at = 0;
-            while (true)
-            {
-                var child = at * 2 + 1;
-                if (child >= heapCount) break;
-                if (child + 1 < heapCount && heapKey[child + 1] < heapKey[child]) child++;
-                if (heapKey[child] >= lastKey) break;
-                heapNode[at] = heapNode[child];
-                heapKey[at] = heapKey[child];
-                at = child;
-            }
-            heapNode[at] = lastNode;
-            heapKey[at] = lastKey;
-            return top;
-        }
     }
 }
 #endif

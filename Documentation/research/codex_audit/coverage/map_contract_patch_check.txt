@@ -1,0 +1,11 @@
+MAP-1/MAP-2/MAP-3 patches from 10_review_map-edits.md, dry-run against HEAD 22bb75f copies (patch -p1 --dry-run), 2026-10-08 01:xx
+-- block 0 (--- a/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionLightLead.cs)
+patching file 'Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionLightLead.cs'
+-- block 1 (--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs)
+patching file 'Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs'
+-- block 2 (--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs)
+patching file 'Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs'
+
+Compile of HEAD with MAP-2 + MAP-3 applied (W/tools/roslyn_check.py, HEAD sources from git archive):
+error lines: 0
+roslyn_check: COMPILE OK: Assembly-CSharp 73 files, Assembly-CSharp-Editor 51 files - 0 errors, 0 warnings

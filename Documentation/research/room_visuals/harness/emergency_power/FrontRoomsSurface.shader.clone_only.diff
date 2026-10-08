@@ -1,0 +1,13 @@
+--- <main>/Assets/Resources/Rendering/FrontRoomsSurface.shader	2026-10-03 17:22:38
++++ <clone>/Assets/Resources/Rendering/FrontRoomsSurface.shader	2026-10-07 18:50:07
+@@ -125,6 +125,10 @@
+             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+             #pragma multi_compile _ EVALUATE_SH_MIXED EVALUATE_SH_VERTEX
+             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
++            // CLONE-ONLY (Run! B look-dev r3, 2026-10-07): per-pixel probe blending (Forward+ probe
++            // atlas) and box projection, for the glossy waxed VCT. Main's Surface shader has neither.
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
+             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+             #pragma multi_compile_fragment _ _LIGHT_COOKIES

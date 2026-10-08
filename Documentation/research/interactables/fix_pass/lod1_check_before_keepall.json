@@ -1,0 +1,686 @@
+{
+ "Kit_DoorCloser_Arm": {
+  "lod1": true,
+  "tris": [
+   660,
+   859
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 12.557,
+  "p99_dev_mm": 11.261,
+  "max_dev_px_at_d01": 5.79,
+  "p99_dev_px_at_d01": 5.19
+ },
+ "Kit_DoorCloser_Body": {
+  "lod1": true,
+  "tris": [
+   1764,
+   1067
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.845,
+  "p99_dev_mm": 0.729,
+  "max_dev_px_at_d01": 0.39,
+  "p99_dev_px_at_d01": 0.34
+ },
+ "Kit_DoorCloser_Forearm": {
+  "lod1": true,
+  "tris": [
+   570,
+   318
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 11.623,
+  "p99_dev_mm": 10.821,
+  "max_dev_px_at_d01": 5.36,
+  "p99_dev_px_at_d01": 4.99
+ },
+ "Kit_DoorCloser_Shoe": {
+  "lod1": true,
+  "tris": [
+   532,
+   922
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_DoorFrame_Steel": {
+  "lod1": true,
+  "tris": [
+   2575,
+   1430
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 3.5,
+  "p99_dev_mm": 2.9,
+  "max_dev_px_at_d01": 0.6,
+  "p99_dev_px_at_d01": 0.5
+ },
+ "Kit_DoorFrame_Steel_Alu": {
+  "lod1": true,
+  "tris": [
+   2575,
+   1430
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 3.5,
+  "p99_dev_mm": 2.9,
+  "max_dev_px_at_d01": 0.6,
+  "p99_dev_px_at_d01": 0.5
+ },
+ "Kit_DoorFrame_Wood": {
+  "lod1": true,
+  "tris": [
+   2145,
+   1260
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 3.5,
+  "p99_dev_mm": 2.9,
+  "max_dev_px_at_d01": 0.6,
+  "p99_dev_px_at_d01": 0.5
+ },
+ "Kit_DoorLeaf_Steel": {
+  "lod1": true,
+  "tris": [
+   2498,
+   1572
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 1.126,
+  "p99_dev_mm": 1.126,
+  "max_dev_px_at_d01": 0.19,
+  "p99_dev_px_at_d01": 0.19
+ },
+ "Kit_DoorLeaf_SteelLite": {
+  "lod1": true,
+  "tris": [
+   2882,
+   1834
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 1.126,
+  "p99_dev_mm": 1.126,
+  "max_dev_px_at_d01": 0.19,
+  "p99_dev_px_at_d01": 0.19
+ },
+ "Kit_DoorLeaf_Steel_PaintedMetal": {
+  "lod1": true,
+  "tris": [
+   2498,
+   1572
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 1.126,
+  "p99_dev_mm": 1.126,
+  "max_dev_px_at_d01": 0.19,
+  "p99_dev_px_at_d01": 0.19
+ },
+ "Kit_DoorLeaf_Veneer": {
+  "lod1": true,
+  "tris": [
+   1633,
+   886
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 3.55,
+  "p99_dev_mm": 3.55,
+  "max_dev_px_at_d01": 0.61,
+  "p99_dev_px_at_d01": 0.61
+ },
+ "Kit_DoorLeaf_Veneer_Oak": {
+  "lod1": true,
+  "tris": [
+   1633,
+   886
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 3.55,
+  "p99_dev_mm": 3.55,
+  "max_dev_px_at_d01": 0.61,
+  "p99_dev_px_at_d01": 0.61
+ },
+ "Kit_DoorLeaf_Ward": {
+  "lod1": true,
+  "tris": [
+   3059,
+   1972
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 1.126,
+  "p99_dev_mm": 1.126,
+  "max_dev_px_at_d01": 0.19,
+  "p99_dev_px_at_d01": 0.19
+ },
+ "Kit_DoorNumberPlate": {
+  "lod1": true,
+  "tris": [
+   231,
+   480
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_DoorNumberPlate_Blue": {
+  "lod1": true,
+  "tris": [
+   231,
+   480
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_DoorNumberPlate_White": {
+  "lod1": true,
+  "tris": [
+   231,
+   480
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_DoorSign": {
+  "lod1": true,
+  "tris": [
+   269,
+   664
+  ],
+  "d01": 2.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_ExitDevice_Crossbar": {
+  "lod1": true,
+  "tris": [
+   1948,
+   1683
+  ],
+  "d01": 2.0,
+  "max_dev_mm": 67.223,
+  "p99_dev_mm": 63.657,
+  "max_dev_px_at_d01": 23.23,
+  "p99_dev_px_at_d01": 22.0
+ },
+ "Kit_KeyCabinet": {
+  "lod1": true,
+  "tris": [
+   3328,
+   6060
+  ],
+  "d01": 3.0,
+  "max_dev_mm": 143.814,
+  "p99_dev_mm": 133.644,
+  "max_dev_px_at_d01": 33.13,
+  "p99_dev_px_at_d01": 30.79
+ },
+ "Kit_KeyHook": {
+  "lod1": true,
+  "tris": [
+   419,
+   922
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyHookBoard": {
+  "lod1": true,
+  "tris": [
+   2062,
+   4173
+  ],
+  "d01": 3.0,
+  "max_dev_mm": 115.921,
+  "p99_dev_mm": 107.82,
+  "max_dev_px_at_d01": 26.71,
+  "p99_dev_px_at_d01": 24.84
+ },
+ "Kit_KeyRing": {
+  "lod1": true,
+  "tris": [
+   986,
+   1972
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Long": {
+  "lod1": true,
+  "tris": [
+   590,
+   1038
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Long_Blue": {
+  "lod1": true,
+  "tris": [
+   590,
+   1038
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Long_White": {
+  "lod1": true,
+  "tris": [
+   590,
+   1038
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Rect": {
+  "lod1": true,
+  "tris": [
+   590,
+   1038
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Rect_Blue": {
+  "lod1": true,
+  "tris": [
+   590,
+   1038
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Rect_White": {
+  "lod1": true,
+  "tris": [
+   590,
+   1038
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Round": {
+  "lod1": true,
+  "tris": [
+   718,
+   1282
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Round_Blue": {
+  "lod1": true,
+  "tris": [
+   718,
+   1282
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyTag_Round_White": {
+  "lod1": true,
+  "tris": [
+   718,
+   1282
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Key_Zone": {
+  "lod1": true,
+  "tris": [
+   1180,
+   2188
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Key_Zone_Nickel": {
+  "lod1": true,
+  "tris": [
+   1180,
+   2188
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_CylinderShell": {
+  "lod1": true,
+  "tris": [
+   1831,
+   2708
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_CylinderShell_Brass": {
+  "lod1": true,
+  "tris": [
+   1831,
+   2708
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Deadbolt": {
+  "lod1": true,
+  "tris": [
+   252,
+   289
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 15.085,
+  "p99_dev_mm": 15.065,
+  "max_dev_px_at_d01": 10.43,
+  "p99_dev_px_at_d01": 10.41
+ },
+ "Kit_Lock_Escutcheon": {
+  "lod1": true,
+  "tris": [
+   2106,
+   3248
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Escutcheon_Brass": {
+  "lod1": true,
+  "tris": [
+   2106,
+   3248
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Knob": {
+  "lod1": true,
+  "tris": [
+   2976,
+   1996
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.151,
+  "p99_dev_mm": 0.151,
+  "max_dev_px_at_d01": 0.07,
+  "p99_dev_px_at_d01": 0.07
+ },
+ "Kit_Lock_Knob_Brass": {
+  "lod1": true,
+  "tris": [
+   2976,
+   1996
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.151,
+  "p99_dev_mm": 0.151,
+  "max_dev_px_at_d01": 0.07,
+  "p99_dev_px_at_d01": 0.07
+ },
+ "Kit_Lock_Latchbolt_Bored": {
+  "lod1": true,
+  "tris": [
+   268,
+   476
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Latchbolt_Bored_Brass": {
+  "lod1": true,
+  "tris": [
+   268,
+   476
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Latchbolt_Mortise": {
+  "lod1": true,
+  "tris": [
+   334,
+   269
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 14.16,
+  "p99_dev_mm": 13.426,
+  "max_dev_px_at_d01": 9.79,
+  "p99_dev_px_at_d01": 9.28
+ },
+ "Kit_Lock_Lever": {
+  "lod1": true,
+  "tris": [
+   2120,
+   1588
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.055,
+  "p99_dev_mm": 0.04,
+  "max_dev_px_at_d01": 0.03,
+  "p99_dev_px_at_d01": 0.02
+ },
+ "Kit_Lock_Lever_Brass": {
+  "lod1": true,
+  "tris": [
+   2120,
+   1588
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.055,
+  "p99_dev_mm": 0.04,
+  "max_dev_px_at_d01": 0.03,
+  "p99_dev_px_at_d01": 0.02
+ },
+ "Kit_Lock_Plug": {
+  "lod1": true,
+  "tris": [
+   1355,
+   1884
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Rose": {
+  "lod1": true,
+  "tris": [
+   1632,
+   2728
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Rose_Brass": {
+  "lod1": true,
+  "tris": [
+   1632,
+   2728
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_StrikeBored": {
+  "lod1": true,
+  "tris": [
+   452,
+   652
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 15.0,
+  "p99_dev_mm": 15.0,
+  "max_dev_px_at_d01": 6.91,
+  "p99_dev_px_at_d01": 6.91
+ },
+ "Kit_Lock_StrikeBored_Brass": {
+  "lod1": true,
+  "tris": [
+   452,
+   652
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 15.0,
+  "p99_dev_mm": 15.0,
+  "max_dev_px_at_d01": 6.91,
+  "p99_dev_px_at_d01": 6.91
+ },
+ "Kit_Lock_StrikeMortise": {
+  "lod1": true,
+  "tris": [
+   663,
+   920
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 23.0,
+  "p99_dev_mm": 23.0,
+  "max_dev_px_at_d01": 10.6,
+  "p99_dev_px_at_d01": 10.6
+ },
+ "Kit_MiniBlind_Lowered": {
+  "lod1": true,
+  "tris": [
+   3902,
+   1594
+  ],
+  "d01": 3.0,
+  "max_dev_mm": 4.679,
+  "p99_dev_mm": 1.994,
+  "max_dev_px_at_d01": 1.08,
+  "p99_dev_px_at_d01": 0.46
+ },
+ "Kit_MiniBlind_Raised": {
+  "lod1": true,
+  "tris": [
+   1579,
+   480
+  ],
+  "d01": 3.0,
+  "max_dev_mm": 7.437,
+  "p99_dev_mm": 6.821,
+  "max_dev_px_at_d01": 1.71,
+  "p99_dev_px_at_d01": 1.57
+ },
+ "Kit_WindowFrame_Alu": {
+  "lod1": true,
+  "tris": [
+   1167,
+   1050
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 0.059,
+  "p99_dev_mm": 0.016,
+  "max_dev_px_at_d01": 0.01,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_WindowFrame_Steel": {
+  "lod1": true,
+  "tris": [
+   2241,
+   1458
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 1.452,
+  "p99_dev_mm": 1.401,
+  "max_dev_px_at_d01": 0.25,
+  "p99_dev_px_at_d01": 0.24
+ },
+ "Kit_WindowFrame_Steel_Enamel": {
+  "lod1": true,
+  "tris": [
+   2241,
+   1458
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 1.452,
+  "p99_dev_mm": 1.401,
+  "max_dev_px_at_d01": 0.25,
+  "p99_dev_px_at_d01": 0.24
+ },
+ "Kit_WindowFrame_Wood": {
+  "lod1": true,
+  "tris": [
+   1297,
+   1044
+  ],
+  "d01": 4.0,
+  "max_dev_mm": 0.704,
+  "p99_dev_mm": 0.198,
+  "max_dev_px_at_d01": 0.12,
+  "p99_dev_px_at_d01": 0.03
+ }
+}

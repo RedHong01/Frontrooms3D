@@ -1,0 +1,116 @@
+"""Before | after three-view sheets for the interactables fix pass (2026-10-08).
+
+  W/venv/bin/python fix_sheets.py <before png dir> <after png dir> <out dir>
+
+before = Documentation/research/interactables/threeview/png (the 2026-10-03 hand-off, rendered from main's FBX),
+after  = proj_int/Verification/threeview_fix (the same FrontRoomsThreeView tool on the fix-pass builds).
+Transparent PNGs are laid on the hero-panel colour #EEECE6, aspect kept, BEFORE left / AFTER right per pair.
+Writes PNG (exact) and JPG q85 (<= 1920 wide is NOT applied: these are evidence sheets, width capped at 3840).
+"""
+import os
+import sys
+
+from PIL import Image, ImageDraw, ImageFont
+
+B, A, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+os.makedirs(OUT, exist_ok=True)
+BG = (238, 236, 230)
+FONT = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Medium.otf")
+
+
+def font(px):
+    try:
+        return ImageFont.truetype(FONT, px)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def load(d, kit, view):
+    p = os.path.join(d, "%s_%s.png" % (kit, view))
+    if not os.path.exists(p):
+        return None
+    im = Image.open(p).convert("RGBA")
+    bg = Image.new("RGBA", im.size, BG + (255,))
+    bg.alpha_composite(im)
+    return bg.convert("RGB")
+
+
+def crop_frac(im, box):
+    if im is None or box is None:
+        return im
+    w, h = im.size
+    return im.crop((int(box[0] * w), int(box[1] * h), int(box[2] * w), int(box[3] * h)))
+
+
+def sheet(name, title, items, cell_h=520, cols=2, label_px=22, max_w=3840):
+    """items: (label, kit, view, crop box in fractions or None)."""
+    cells = []
+    for label, kit, view, box in items:
+        b = crop_frac(load(B, kit, view), box)
+        a = crop_frac(load(A, kit, view), box)
+        pair = []
+        for im, tag in ((b, "BEFORE"), (a, "AFTER")):
+            if im is None:
+                im = Image.new("RGB", (cell_h, cell_h), (200, 60, 50))
+                tag += " (missing)"
+            s = cell_h / im.height
+            pair.append((im.resize((max(1, int(im.width * s)), cell_h), Image.LANCZOS), tag))
+        cells.append((label, pair))
+    pad, cap = 14, label_px + 12
+    rows = [cells[i:i + cols] for i in range(0, len(cells), cols)]
+    widths = [sum(sum(p[0].width for p in c[1]) + pad * 3 for c in r) + pad for r in rows]
+    W = min(max(widths), 10 ** 6)
+    H = (label_px * 2 + 20) + len(rows) * (cell_h + cap * 2 + pad) + pad
+    out = Image.new("RGB", (W, H), (250, 249, 246))
+    d = ImageDraw.Draw(out)
+    d.text((pad, 8), title, fill=(10, 10, 10), font=font(int(label_px * 1.3)))
+    y = label_px * 2 + 20
+    f = font(label_px)
+    for r in rows:
+        x = pad
+        for label, pair in r:
+            d.text((x, y), label, fill=(10, 10, 10), font=f)
+            xx = x
+            for im, tag in pair:
+                out.paste(im, (xx, y + cap))
+                d.text((xx + 4, y + cap + cell_h + 4), tag, fill=(10, 10, 10), font=f)
+                xx += im.width + pad
+            x = xx + pad * 2
+        y += cell_h + cap * 2 + pad
+    out.save(os.path.join(OUT, name + ".png"))
+    if out.width > max_w:
+        out = out.resize((max_w, int(out.height * max_w / out.width)), Image.LANCZOS)
+    out.save(os.path.join(OUT, name + ".jpg"), "JPEG", quality=85)
+    print("sheet", name, out.size)
+
+
+sheet("int_fix_threeview_doors", "Fix pass 2026-10-08, door woods and saddles: BEFORE (main's FBX) | AFTER (rebuilt)", [
+    ("H3 Kit_DoorLeaf_Veneer_Oak front: oak grain now runs up the leaf", "Kit_DoorLeaf_Veneer_Oak", "front", None),
+    ("H3 same, 0.75 x 0.75 m crop at 500 px/m", "Kit_DoorLeaf_Veneer_Oak", "front", (0.15, 0.30, 0.90, 0.67)),
+    ("H3 Kit_DoorLeaf_Ward front: laminate grain up the leaf", "Kit_DoorLeaf_Ward", "front", None),
+    ("H3 same, crop", "Kit_DoorLeaf_Ward", "front", (0.15, 0.30, 0.90, 0.67)),
+    ("M1 Kit_DoorFrame_Steel persp: saddle in the frame's dark bronze", "Kit_DoorFrame_Steel", "persp", None),
+    ("M1 same, saddle crop", "Kit_DoorFrame_Steel", "persp", (0.28, 0.60, 0.66, 0.88)),
+    ("H3 Kit_DoorFrame_Wood persp: oak saddle", "Kit_DoorFrame_Wood", "persp", None),
+    ("H3 same, saddle crop: grain along the sill", "Kit_DoorFrame_Wood", "persp", (0.28, 0.60, 0.66, 0.88)),
+], cell_h=560, cols=2, max_w=3200)
+
+sheet("int_fix_threeview_parts", "Fix pass 2026-10-08, hardware: BEFORE (main's FBX) | AFTER (rebuilt)", [
+    ("L3 Kit_Lock_Knob side: crowned face R 0.07", "Kit_Lock_Knob", "side", None),
+    ("L3 Kit_Lock_Knob persp", "Kit_Lock_Knob", "persp", None),
+    ("L7 Kit_Lock_Escutcheon persp: 1.5 mm edge round", "Kit_Lock_Escutcheon", "persp", None),
+    ("L6 Kit_Key_Zone side: cut 6 clear of the tip bevel", "Kit_Key_Zone", "front", None),
+    ("L1 Kit_DoorCloser_Shoe persp: 48-segment ear", "Kit_DoorCloser_Shoe", "persp", None),
+    ("L2 Kit_KeyHook persp: 48-segment flange", "Kit_KeyHook", "persp", None),
+    ("L4 Kit_ExitDevice_Crossbar front: mechanism case + rim latch head", "Kit_ExitDevice_Crossbar", "front", None),
+    ("H3 Kit_KeyHookBoard front: board grain up", "Kit_KeyHookBoard", "front", None),
+], cell_h=420, cols=2)
+
+sheet("int_fix_threeview_windows", "Fix pass 2026-10-08, H5: window FBX rebuilt from main's 2026-10-04 modules: BEFORE (main's 10-03 FBX) | AFTER", [
+    ("Kit_WindowFrame_Wood persp", "Kit_WindowFrame_Wood", "persp", None),
+    ("Kit_WindowFrame_Steel persp", "Kit_WindowFrame_Steel", "persp", None),
+    ("Kit_WindowFrame_Steel_Enamel persp", "Kit_WindowFrame_Steel_Enamel", "persp", None),
+    ("Kit_WindowFrame_Alu persp", "Kit_WindowFrame_Alu", "persp", None),
+    ("Kit_MiniBlind_Raised persp", "Kit_MiniBlind_Raised", "persp", None),
+    ("F5 Kit_KeyCabinet persp (main's faulty build | G3 fix)", "Kit_KeyCabinet", "persp", None),
+], cell_h=520, cols=2)

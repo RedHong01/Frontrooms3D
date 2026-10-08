@@ -1,0 +1,20 @@
+--- main 22bb75f Assets/Scripts/FrontRoomsMap/FrontRoomsMap.cs
++++ proj_trans_pick (close rule, -closeBorders)
+@@ -357,11 +357,16 @@
+             return Resolve(cell, other, local == gate, false, roll);
+         }
+ 
++        /// <summary>CLOSE (clone only): -closeBorders on the command line.</summary>
++        public static readonly bool CloseThemeBorders = Array.IndexOf(Environment.GetCommandLineArgs(), "-closeBorders") >= 0;
++
+         EdgeKind Resolve(GridCoord a, GridCoord b, bool required, bool inRoom, float roll)
+         {
+             var ha = HeightOf(a);
+             var hb = HeightOf(b);
+-            if (ha != hb)
++            // CLOSE (clone proj_trans_pick only, -closeBorders): a theme border is closed like a height
++            // border: a door (window when tall), or a wall when the edge is not on the maze tree.
++            if (ha != hb || (CloseThemeBorders && ZoneOf(a).theme != ZoneOf(b).theme))
+             {
+                 var exit = ha == ZoneHeight.Tall || hb == ZoneHeight.Tall ? EdgeKind.Window : EdgeKind.Door;
+                 return required || roll < settings.borderOpening ? exit : EdgeKind.Wall;

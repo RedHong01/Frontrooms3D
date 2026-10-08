@@ -1,0 +1,317 @@
+"""Post-process the interactables render stage (proj_int Verification/interactables):
+contact sheets, leak and readability metrics, JPG copies for Documentation/research/interactables/images.
+
+  W/venv/bin/python int_post.py <render dir> <docs images dir>
+
+Writes into <render dir>/sheets/ (PNG sheets) and copies every frame and sheet as JPG q85 (<= 1920 px wide)
+into <docs images dir>/ (frames under renders/, sheets at the top). Prints the metrics it writes to
+<render dir>/metrics.json.
+"""
+import glob, json, math, os, sys
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+SRC, DST = sys.argv[1], sys.argv[2]
+BEFORE = os.environ.get("INT_BEFORE", "")
+PFX = os.environ.get("INT_PREFIX", "int_")          # fix pass: "intfix_" so the render stage's files (logged as VL155-165) stay as logged
+RDIR = os.environ.get("INT_RENDERS", "renders")   # fix pass 2026-10-08: the previous run's frames, for before/after sheets
+SHEETS = os.path.join(SRC, "sheets")
+os.makedirs(SHEETS, exist_ok=True)
+os.makedirs(os.path.join(DST, os.environ.get("INT_RENDERS", "renders")), exist_ok=True)
+FONT = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Medium.otf")
+
+
+def font(px):
+    try:
+        return ImageFont.truetype(FONT, px)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def load(name):
+    if name.startswith("BEFORE:"):
+        p = os.path.join(BEFORE, name[7:] + ".png")
+        return Image.open(p).convert("RGB") if BEFORE and os.path.exists(p) else None
+    p = os.path.join(SRC, name + ".png")
+    return Image.open(p).convert("RGB") if os.path.exists(p) else None
+
+
+def lin(a):
+    a = a / 255.0
+    return np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
+
+
+def lum(img, rect):
+    x0, y0, x1, y1 = [int(round(v)) for v in rect]
+    w, h = img.size
+    x0, x1 = max(0, min(x0, x1)), min(w, max(x0, x1))
+    y0, y1 = max(0, min(y0, y1)), min(h, max(y0, y1))
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        return None
+    a = lin(np.asarray(img.crop((x0, y0, x1, y1)), dtype=np.float64))
+    return float((0.2126 * a[..., 0] + 0.7152 * a[..., 1] + 0.0722 * a[..., 2]).mean())
+
+
+SHEET_JOBS = []
+
+
+def sheet(name, rows, cell_w=640, label_px=22, title=None, notes=None):
+    """Deferred: recorded here, rendered in parallel at the end (the host runs ~800 load; one process gets ~2 % of a core)."""
+    SHEET_JOBS.append((name, rows, cell_w, label_px, title, notes))
+    return name
+
+
+def _sheet_now(job):
+    name, rows, cell_w, label_px, title, notes = job
+    """rows: list of lists of (frame name or Image, caption)."""
+    cols = max(len(r) for r in rows)
+    cell_h = int(cell_w * 1080 / 1920)
+    pad, cap = 8, label_px + 10
+    top = (label_px * 2 + 16) if title else 0
+    bottom = (len(notes) * (label_px + 6) + 12) if notes else 0
+    W = cols * (cell_w + pad) + pad
+    H = top + len(rows) * (cell_h + cap + pad) + pad + bottom
+    out = Image.new("RGB", (W, H), (238, 236, 230))
+    d = ImageDraw.Draw(out)
+    f = font(label_px)
+    if title:
+        d.text((pad, 8), title, fill=(10, 10, 10), font=font(int(label_px * 1.3)))
+    for r, row in enumerate(rows):
+        for c, item in enumerate(row):
+            if item is None:
+                continue
+            src, caption = item
+            if isinstance(src, str) and src.startswith("MASKX6:"):
+                im = load(src[7:])
+                if im is not None:
+                    im = Image.fromarray(np.clip(np.asarray(im, dtype=np.float32) * 6.0, 0, 255).astype(np.uint8))   # amplify sub-pixel slits
+            else:
+                im = load(src) if isinstance(src, str) else src
+            x = pad + c * (cell_w + pad)
+            y = top + pad + r * (cell_h + cap + pad)
+            if im is None:
+                d.rectangle([x, y + cap, x + cell_w, y + cap + cell_h], fill=(200, 60, 50))
+                d.text((x + 6, y + cap + 6), "missing " + str(src), fill=(255, 255, 255), font=f)
+            else:
+                out.paste(im.resize((cell_w, cell_h), Image.BILINEAR, reducing_gap=2.0), (x, y + cap))
+            d.text((x + 2, y + 2), caption, fill=(10, 10, 10), font=f)
+    if notes:
+        y = H - bottom + 6
+        for n in notes:
+            d.text((pad, y), n, fill=(10, 10, 10), font=f)
+            y += label_px + 6
+    out.save(os.path.join(SHEETS, name + ".png"))
+    return name
+
+
+metrics = {}
+made = []
+
+# ------------------------------------------------------------------ gap test
+leaks = {}
+p = os.path.join(SRC, "leaks.tsv")
+if os.path.exists(p):
+    sweeps = {}
+    for line in open(p).read().splitlines()[1:]:
+        f_, door, face, camn, px, mx, sm = line.split("\t")
+        if f_.startswith("SWEEP"):
+            sweeps[f_[6:]] = {"door": door, "face": face, "note": camn, "worst_px": int(px)}
+            continue
+        leaks[f_] = {"door": door, "face": face, "camera": camn, "px": int(px), "max": float(mx), "sum": float(sm)}
+    metrics["sweeps"] = sweeps
+    metrics["leaks"] = leaks
+    views = ["a_front_1.5m", "b_oblique30_latch", "c_oblique60_latch", "d_oblique60_hinge", "e_latch_0.4m", "f_hinge_0.4m", "g_head_0.4m", "h_floor_low_1m",
+             "i_latch_inline_1.5m", "j_hinge_inline_1.5m", "k_head_3.5m", "l_floor_stress_0.05m"]
+    labels = [("old", "OLD primitive"), ("L0F_Sface", "L0-F kit, S face"), ("L0F_Pface", "L0-F kit, P face"), ("OFK_Sface", "OF-K kit, S face"), ("OFK_Pface", "OF-K kit, P face")]
+    for half, vs in (("1", views[:4]), ("2", views[4:8]), ("3", views[8:])):
+        rows = []
+        for v in vs:
+            rows.append([("10_gap_%s_%s" % (l, v), "%s | %s" % (t, v)) for l, t in labels])
+            mrow = []
+            for l, t in labels:
+                fn = "10_gap_%s_%s" % (l, v)
+                lk = leaks.get(fn, {})
+                mrow.append(("MASKX6:" + fn + "_mask", "mask x6: %s leak px %s" % (t.split(",")[0], lk.get("px", "?"))))
+            rows.append(mrow)
+        made.append(sheet("gap_sheet_" + half, rows, cell_w=560, label_px=18,
+                          title="Door gap test: dim near room, bright far room, door shut. Masks: far room white, all else black (x6)."))
+    # before/after pairs for the worst cases (game look, crops at the slit)
+    rows = []
+    for v in ("i_latch_inline_1.5m", "j_hinge_inline_1.5m", "k_head_3.5m", "a_front_1.5m"):
+        rows.append([("10_gap_old_" + v, "BEFORE old primitive | " + v), ("10_gap_L0F_Sface_" + v, "AFTER L0-F S face"), ("10_gap_L0F_Pface_" + v, "AFTER L0-F P face"), ("10_gap_OFK_Pface_" + v, "AFTER OF-K P face")])
+    rows.append([("10_gap_old_r_front_reverse_light", "BEFORE reverse light"), ("10_gap_L0F_Sface_r_front_reverse_light", "AFTER reverse light S"),
+                 ("10_gap_L0F_Pface_r_latch_inline_reverse_light", "AFTER reverse, latch inline P"), ("10_gap_OFK_Sface_r_latch_inline_reverse_light", "AFTER OF-K reverse, latch inline S")])
+    made.append(sheet("gap_before_after", rows, cell_w=600, label_px=18, title="Door gap: BEFORE (map primitive) vs AFTER (kit door, A2 axis, 16 mm stops), worst-case cameras"))
+
+# ------------------------------------------------------------------ swing
+for code in ("L0-F", "OF-K"):
+    for dirn, lab in (("toward_camera_pull", "leaf toward camera (S side)"), ("away_from_camera_push", "leaf away (P / stop side)")):
+        rows = [[("11_swing_%s_%s_%sdeg_oblique" % (code, dirn, a), "%s %s deg" % (code, a)) for a in ("00", "05", "30", "60", "95")],
+                [("11_swing_%s_%s_%sdeg_plan" % (code, dirn, a), "plan over hinge %s deg" % a) for a in ("00", "05", "30", "60", "95")]]
+        rows.append([("11_swing_%s_%s_00deg_stop" % (code, dirn), "stop side, latch jamb 0 deg"), ("11_swing_%s_%s_30deg_stop" % (code, dirn), "stop side 30 deg"),
+                     ("11_swing_%s_%s_95deg_stop" % (code, dirn), "stop side 95 deg"),
+                     ("11_swing_OLD_%s_95deg_oblique" % dirn, "OLD primitive 95 deg"), ("11_swing_OLD_%s_95deg_plan" % dirn, "OLD plan 95 deg")])
+        made.append(sheet("swing_%s_%s" % (code, dirn), rows, cell_w=520, label_px=18, title="Single-acting swing %s, %s" % (code, lab)))
+
+# ------------------------------------------------------------------ family
+rows = []
+for lv in ("L0", "OF", "RN", "EX"):
+    rows.append([("02_family_%s_P_3m" % lv, "%s-F | %s-K  P face 3 m" % (lv, lv)), ("02_family_%s_P_8m" % lv, "P face 8 m"), ("02_family_%s_S_3m" % lv, "S face 3 m")])
+made.append(sheet("family_sheet", rows, cell_w=620, label_px=20, title="Door family: FREE left, LOCKED right (Lobby, Office, Run, Exit)"))
+
+# ------------------------------------------------------------------ readability
+rects = json.load(open(os.path.join(SRC, "rects.json"))) if os.path.exists(os.path.join(SRC, "rects.json")) else []
+
+read = []
+for r in rects:
+    im = load(r["file"])
+    if im is None:
+        continue
+    L = {k: lum(im, v) for k, v in r["rects"].items()}
+    def st(a, b):
+        return None if (L.get(a) is None or L.get(b) in (None, 0) or L[a] <= 0) else round(math.log2(L[a] / L[b]), 2)
+    read.append({"file": r["file"], "condition": r["condition"], "distance": r["distance"], "lum": {k: (round(v, 4) if v is not None else None) for k, v in L.items()},
+                 "stops_locked_vs_free": st("lock_leaf", "free_leaf"), "stops_locked_vs_void": st("lock_leaf", "open_void"),
+                 "stops_lockframe_vs_wall": st("lock_frame", "wall"), "stops_freeframe_vs_wall": st("free_frame", "wall"),
+                 "stops_locked_vs_wall": st("lock_leaf", "wall"), "stops_upper_locked_vs_free": st("lock_upper", "free_upper")})
+metrics["readability"] = read
+corr = []
+CONDS = ("L0lit", "L0dim", "Office", "Run", "Exit", "L0litdoor", "Officelitdoor")
+for cond in CONDS:
+    for dist in (6, 12, 20):
+        a = next((x for x in read if x["file"] == "03_readability_%s_%02dm" % (cond, dist)), None)
+        b = next((x for x in read if x["file"] == "03_readability_%s_swapped_%02dm" % (cond, dist)), None)
+        if a and b and a["stops_locked_vs_free"] is not None and b["stops_locked_vs_free"] is not None:
+            corr.append({"condition": cond, "distance": dist,
+                         "locked_vs_free_stops_bias_corrected": round((a["stops_locked_vs_free"] + b["stops_locked_vs_free"]) / 2, 2),
+                         "centre_slot_bias_stops": round((a["stops_locked_vs_free"] - b["stops_locked_vs_free"]) / 2, 2),
+                         "locked_vs_void_stops": a["stops_locked_vs_void"], "locked_vs_void_stops_swapped": b["stops_locked_vs_void"],
+                         "lockframe_vs_wall": a["stops_lockframe_vs_wall"], "locked_leaf_vs_wall": a["stops_locked_vs_wall"],
+                         "upper_locked_vs_free_stops_bias_corrected": (round((a["stops_upper_locked_vs_free"] + b["stops_upper_locked_vs_free"]) / 2, 2)
+                                                                       if a["stops_upper_locked_vs_free"] is not None and b["stops_upper_locked_vs_free"] is not None else None)})
+metrics["readability_corrected"] = corr
+for c in corr:
+    print("READC", c)
+if read:
+    rows = []
+    for cond in CONDS:
+        row = []
+        for dist in (6, 12, 20):
+            fn = "03_readability_%s_%02dm" % (cond, dist)
+            m = next((x for x in read if x["file"] == fn), None)
+            row.append((fn, "%s %d m  K-F %+.2f st, K-void %+.2f st" % (cond, dist, m["stops_locked_vs_free"] or 0, m["stops_locked_vs_void"] or 0) if m else fn))
+        rows.append(row)
+    made.append(sheet("readability_sheet", rows, cell_w=640, label_px=20, title="Locked vs free from the player's eye (1.62 m, FOV 76): end wall F | K | open doorway (dark void; *litdoor: a lit room behind); K-F = lower leaf, stops"))
+
+# ------------------------------------------------------------------ dip + lock
+rows = []
+for code in ("L0-K", "OF-K"):
+    rows.append([("05_dip_%s_f0_stand_1.2m" % code, "%s f0 standing 1.2 m" % code), ("05_dip_%s_f1_dip" % code, "f1 dipping"), ("05_dip_%s_f2_poseP_key_at_keyway" % code, "f2 pose P, key at keyway"),
+                 ("05_dip_%s_f3_pushin_key_home" % code, "f3 push-in, key home"), ("05_dip_%s_f4_0.30m_key_turned" % code, "f4 0.30 m, key turned 90")])
+rows.append([("05_dip_L0-K_f3_pushin_key_home_shotlight", "L0-K f3 + shot light"), ("05_dip_L0-K_f4_0.30m_key_turned_shotlight", "f4 + shot light"),
+             ("05_dip_L0-K_f3_pushin_key_home_yaw30_shotlight", "f3 yawed 30 + shot light"), ("05_dip_L0-K_f4_0.30m_key_turned_yaw30_shotlight", "f4 yawed 30 + shot light"), None])
+for code in ("L0-K", "OF-K"):
+    rows.append([("05_dip_%s_h7_f2_poseP25_key_at_keyway" % code, "%s H7: pose P yawed 25, key at keyway" % code), ("05_dip_%s_h7_f3a_0.30m_fov56_key_half" % code, "H7 0.30 m FOV 56, key 50 %"),
+                 ("05_dip_%s_h7_f3b_0.24m_fov52_key_home" % code, "H7 0.24 m FOV 52, key home"), ("05_dip_%s_h7_f4_0.20m_fov50_key_turned" % code, "H7 end 0.20 m FOV 50, turned 90"), None])
+made.append(sheet("dip_strip", rows, cell_w=560, label_px=18, title="Head dip key shot (FrontRoomsShotTimings.Unlock pose P, then push-in to 0.30 m)"))
+rows = [[("06_lock_poseP_key_000", "pose P key 0%"), ("06_lock_poseP_key_050", "key 50%"), ("06_lock_poseP_key_100", "key 100%"), ("06_lock_poseP_plug_045", "plug 45"), ("06_lock_poseP_plug_090", "plug 90")],
+        [("06_lock_macro_key_000", "0.25 m key 0%"), ("06_lock_macro_key_050", "key 50%"), ("06_lock_macro_key_100", "key 100%"), ("06_lock_macro_plug_045", "plug 45"), ("06_lock_macro_plug_090", "plug 90")],
+        [("06_lock_macroyaw30_key_000", "0.25 m yaw 30 key 0%"), ("06_lock_macroyaw30_key_050", "key 50%"), ("06_lock_macroyaw30_key_100", "key 100%"), ("06_lock_macroyaw30_plug_045", "plug 45"), ("06_lock_macroyaw30_plug_090", "plug 90")],
+        [("06_lock_edgeprofile_a_deadbolt_thrown", "edge profile: deadbolt thrown"), ("06_lock_edgeprofile_b_deadbolt_retracted", "deadbolt retracted"), ("06_lock_edgeprofile_c_both_retracted", "deadbolt + latch retracted"),
+         ("06_lock_edge_a_deadbolt_thrown", "edge head-on: thrown"), ("06_lock_edge_c_both_retracted", "head-on: both retracted")]]
+made.append(sheet("lock_sequence", rows, cell_w=560, label_px=18, title="Lock sequence, L0-K push face: key insertion, plug turn, bolts"))
+
+# ------------------------------------------------------------------ room, keys
+rows = [[("04_room_L0-F_1.5m", "L0-F 1.5 m"), ("04_room_L0-F_0.6m", "L0-F 0.6 m"), ("04_room_L0-K_1.5m", "L0-K 1.5 m"), ("04_room_L0-K_0.6m", "L0-K 0.6 m")],
+        [("04_room_L0-K_keyin_0.35m", "key in, 0.35 m"), ("04_room_L0-K_keyin_0.25m", "key in, 0.25 m"), ("04_room_L0-K_keyin_0.35m_yaw30_shotlight", "0.35 m yawed 30 + shot light"), ("04_room_L0-K_keyin_0.25m_yaw30_shotlight", "0.25 m yawed 30 + shot light")]]
+made.append(sheet("room_insitu", rows, cell_w=620, label_px=20, title="Level 0 room, 1.0 x 2.1 openings, kit doors at ModuleUnits positions"))
+rows = [[("07_keys_L0_overview_old_cube_vs_hosts", "L0 overview (old cube front)"), ("07_keys_OF_overview", "Office overview"), None],
+        [("07_keys_L0_board_2m", "L0 key board 2 m"), ("07_keys_L0_hook_2m", "L0 single hook 2 m"), ("07_keys_L0_cabinettop_2m", "L0 cabinet top 2 m")],
+        [("07_keys_L0_board_4m", "L0 board 4 m"), ("07_keys_L0_hook_4m", "L0 hook 4 m"), ("07_keys_L0_cabinettop_4m", "L0 cabinet top 4 m")],
+        [("07_keys_L0_board_0.6m", "board 0.6 m"), ("07_keys_L0_hook_0.6m", "hook 0.6 m"), ("07_keys_L0_cabinettop_0.6m", "cabinet top 0.6 m")],
+        [("07_keys_OF_cabinet_2m", "Office key cabinet 2 m"), ("07_keys_OF_hook_2m", "Office hook 2 m"), ("07_keys_OF_desk_2m", "Office desk 2 m")],
+        [("07_keys_OF_cabinet_4m", "Office cabinet 4 m"), ("07_keys_OF_hook_4m", "Office hook 4 m"), ("07_keys_OF_desk_4m", "Office desk 4 m")],
+        [("07_keys_OF_cabinet_0.6m", "cabinet 0.6 m"), ("07_keys_OF_hook_0.6m", "hook 0.6 m"), ("07_keys_OF_desk_0.6m", "desk 0.6 m")],
+        [("07_keys_L0_all_diag_6m", "L0 hosts from ~6 m"), ("07_keys_OF_all_diag_6m", "Office hosts from ~6 m"), None]]
+made.append(sheet("keys_hosts", rows, cell_w=620, label_px=20, title="Zone keys on their hosts (no spin, no emission; tag on the wall side of the ring since the fix pass)"))
+
+# ------------------------------------------------------------------ fix pass 2026-10-08: in-engine before / after
+if BEFORE:
+    rows = [[("BEFORE:07_keys_L0_hook_0.6m", "BEFORE L0 hook 0.6 m: tag in front"), ("07_keys_L0_hook_0.6m", "AFTER tag behind, key to the room"),
+             ("BEFORE:07_keys_L0_board_0.6m", "BEFORE board 0.6 m"), ("07_keys_L0_board_0.6m", "AFTER board 0.6 m")],
+            [("BEFORE:02_family_OF_P_3m", "BEFORE Office F | K 3 m (oak grain, Al saddle)"), ("02_family_OF_P_3m", "AFTER (oak grain up, bronze saddle)"),
+             ("BEFORE:02_family_RN_P_3m", "BEFORE Run F | K 3 m (laminate grain)"), ("02_family_RN_P_3m", "AFTER")],
+            [("BEFORE:10_gap_OFK_Pface_a_front_1.5m", "BEFORE OF-K gap test: Al saddle lit line"), ("10_gap_OFK_Pface_a_front_1.5m", "AFTER bronze saddle"),
+             ("BEFORE:05_dip_L0-K_f4_0.30m_key_turned", "BEFORE dip end 0.30 m, pose P"), ("05_dip_L0-K_h7_f4_0.20m_fov50_key_turned", "AFTER H7 proposal: yaw 25, 0.20 m, FOV 50")],
+            [("BEFORE:05_dip_L0-K_f2_poseP_key_at_keyway", "BEFORE pose P: key edge-on"), ("05_dip_L0-K_h7_f2_poseP25_key_at_keyway", "AFTER H7 pose P yawed 25"),
+             ("BEFORE:04_room_L0-K_0.6m", "BEFORE L0-K lockset 0.6 m"), ("04_room_L0-K_0.6m", "AFTER (domed knob, 1.5 mm escutcheon edge)")]]
+    made.append(sheet("fix_before_after", rows, cell_w=560, label_px=18, title="Fix pass 2026-10-08: before (render stage) | after, same harness and cameras"))
+
+# ------------------------------------------------------------------ windows + fracture
+rows = []
+for code in ("W-L0", "W-OF", "W-RN", "W-EX"):
+    rows.append([("08_window_%s_intact_1.5m" % code, "%s intact 1.5 m" % code), ("08_window_%s_intact_oblique" % code, "intact oblique"),
+                 ("08_window_%s_broken_1.5m" % code, "broken 1.5 m (stand-in glass)"), ("08_window_%s_broken_oblique" % code, "broken oblique")])
+made.append(sheet("windows_family", rows, cell_w=560, label_px=18, title="Window family in matching rooms, intact and broken (fracture = STAND-IN from the glass track's prototype)"))
+rows = [[("09_fracture_W-L0_crack1_1.5m", "W-L0 crack stage 1"), ("09_fracture_W-L0_crack2_1.5m", "crack stage 2"), ("09_fracture_W-L0_crack3_1.5m", "crack stage 3 (full web)"), ("09_fracture_W-L0_shatter_1.5m", "shatter t+0.22 s")],
+        [("09_fracture_W-L0_crack2_0.6m", "stage 2 at 0.6 m"), ("09_fracture_W-L0_crack3_0.6m", "stage 3 at 0.6 m"), ("09_fracture_W-L0_shatter_oblique", "shatter oblique"), ("09_fracture_W-L0_after_1.5m", "after: teeth + floor")],
+        [("09_fracture_W-L0_after_oblique", "after oblique"), ("09_fracture_W-L0_after_floor", "after, floor"), ("09_fracture_W-OF_crack2_1.5m", "W-OF stage 2"), ("09_fracture_W-OF_shatter_1.5m", "W-OF shatter")],
+        [("09_fracture_W-OF_shatter_oblique", "W-OF shatter oblique"), ("09_fracture_W-OF_after_1.5m", "W-OF after"), ("09_fracture_W-OF_after_oblique", "W-OF after oblique"), ("09_fracture_W-OF_after_floor", "W-OF after floor")]]
+made.append(sheet("fracture_stages", rows, cell_w=560, label_px=18, title="Window break: crack stages, shatter, floor glass (STAND-IN pieces from glass/destruction/04_proto)"))
+
+# ------------------------------------------------------------------ lineup (annotated)
+labels = json.load(open(os.path.join(SRC, "labels.json"))) if os.path.exists(os.path.join(SRC, "labels.json")) else []
+def _label_now(fn):
+    im = load(fn)
+    if im is None:
+        return
+    d = ImageDraw.Draw(im)
+    f = font(15)
+    items = [l for l in labels if l["file"] == fn]
+    for i, l in enumerate(sorted(items, key=lambda x: x["x"])):
+        x, y = l["x"], l["y"] + 8 + (i % 2) * 18
+        t = l["name"].replace("Kit_", "")
+        w = d.textlength(t, font=f)
+        d.rectangle([x - w / 2 - 3, y - 1, x + w / 2 + 3, y + 17], fill=(10, 10, 10))
+        d.text((x - w / 2, y), t, fill=(240, 240, 235), font=f)
+    im.save(os.path.join(SHEETS, fn + "_labelled.png"))
+
+
+LABEL_JOBS = sorted({l["file"] for l in labels})
+made += [fn + "_labelled" for fn in LABEL_JOBS]
+
+# ------------------------------------------------------------------ copies
+def to_jpg(src, dst):
+    im = Image.open(src).convert("RGB")
+    if im.width > 1920:
+        im = im.resize((1920, int(im.height * 1920 / im.width)), Image.BILINEAR, reducing_gap=2.0)
+    im.save(dst, "JPEG", quality=85)
+
+def _copy_now(pth):
+    base = os.path.basename(pth)[:-4]
+    if base.endswith("_mask"):
+        Image.open(pth).convert("L").save(os.path.join(DST, RDIR, "masks", PFX + base + ".png"), optimize=True)
+    else:
+        to_jpg(pth, os.path.join(DST, RDIR, PFX + base + ".jpg"))
+
+
+json.dump(metrics, open(os.path.join(SRC, "metrics.json"), "w"), indent=1)
+os.makedirs(os.path.join(DST, RDIR, "masks"), exist_ok=True)
+import multiprocessing
+PHASES = os.environ.get("INT_POST_PHASES", "sheets,copy").split(",")
+# fork, not macOS's default spawn: this script is top-level code, spawn would re-run it in every worker
+with multiprocessing.get_context("fork").Pool(int(os.environ.get("INT_POST_PROCS", "12"))) as pool:
+    if "sheets" in PHASES:
+        pool.map(_sheet_now, SHEET_JOBS, chunksize=1)
+        pool.map(_label_now, LABEL_JOBS, chunksize=1)
+        pool.starmap(to_jpg, [(os.path.join(SHEETS, nm + ".png"), os.path.join(DST, PFX + nm + ".jpg")) for nm in made
+                              if os.path.exists(os.path.join(SHEETS, nm + ".png"))], chunksize=1)
+    frames = [p_ for p_ in sorted(glob.glob(os.path.join(SRC, "*.png"))) if not os.path.basename(p_).startswith("10_gapsweep_")]
+    n = len(frames)
+    if "copy" in PHASES:
+        pool.map(_copy_now, frames, chunksize=4)
+print("frames copied", n, "sheets", len(made))
+for r in read:
+    print("READ", r["file"], r["stops_locked_vs_free"], r["stops_locked_vs_void"], r["stops_lockframe_vs_wall"], r["stops_locked_vs_wall"])
+for f_, v in sorted(leaks.items()):
+    print("LEAK", f_, v["px"], v["max"])

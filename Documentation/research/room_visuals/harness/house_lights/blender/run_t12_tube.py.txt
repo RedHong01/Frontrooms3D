@@ -1,0 +1,20 @@
+"""F96T12 slimline lamp (38 mm, single pin) for Kit_StripFixture_8ft.
+CLONE-ONLY look-dev. Glass body (Run_TubeGlass: emissive in Unity), the
+cathode end bands (Run_TubeEnd: blackened on an old lamp, orange end-glow
+on a dead one), aluminium ferrules and the single pins. Origin = centre;
+along Blender X.
+"""
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_T12Tube_8ft"
+SMOOTH_ANGLE = 50.0
+R = 0.019
+
+
+def build(kit):
+    kit.cylinder(R, 2.21, (0, 0, 0), "Run_TubeGlass", verts=24, rot=(0, 90, 0), bevel=0.0, name="glass")
+    for s in (-1, 1):
+        kit.cylinder(R, 0.048, (s * (1.105 + 0.024), 0, 0), "Run_TubeEnd", verts=24, rot=(0, 90, 0), bevel=0.0, name="cathode band")
+        kit.cylinder(R + 0.0006, 0.018, (s * (1.153 + 0.009), 0, 0), "Prop_Aluminium", verts=24, rot=(0, 90, 0), bevel=0.0015, segments=2, name="ferrule")
+        kit.cylinder(0.002, 0.007, (s * (1.171 + 0.0035), 0, 0), "Prop_Aluminium", verts=8, rot=(0, 90, 0), bevel=0.0005, segments=1, name="pin")
+    kit.no_collider()

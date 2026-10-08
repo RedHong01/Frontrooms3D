@@ -26,8 +26,7 @@ Kit_DoorCloser_Arm's origin goes. 50 mm proud only above Y 1.995, which
 inside the 0.065 lockset envelope's height band only above 1.99 m).
 
 Budget (§9.1): 3,000 / 1,000 / 150 tris; slots SteelBrown (painted
-aluminium; submesh 0) and Chrome. No LOD1 (small part; ships without a
-LODGroup until P-1). Render-only. kit.meta["motion"] = static.
+aluminium; submesh 0) and Chrome. LOD1 exported since the 2026-10-08 fix pass (critic H4). Render-only. kit.meta["motion"] = static.
 """
 
 import random
@@ -36,8 +35,8 @@ import sys
 import interact_door_common as dc
 
 NAME = "Kit_DoorCloser_Body"
-LOD1 = None
 LOD1_RATIO = 0.33
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.05
 LOD_DISTANCES = (1.5, 5.0, 20.0)
 SMOOTH_ANGLE = 35.0

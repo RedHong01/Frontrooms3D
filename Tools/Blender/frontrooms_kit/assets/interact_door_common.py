@@ -805,6 +805,61 @@ def lod2_drop(obj):
     return obj
 
 
+def lod1_keep_all(kit):
+    """LOD1 without the collapse: every LOD0 vertex joins kitlib's fr_lod_keep group, so make_lod1() only removes
+    the parts flagged kit.lod1_drop() and the LOD1 keeps the LOD0 shape (fix pass 2026-10-08).
+
+    Why: once the small parts got a LOD1 (critic H4), kitlib's collapse decimation wrecked the shapes of parts over
+    12 mm that it does not protect: the key board's slab became a triangle at 4 m, the key cabinet, the exit-device
+    cases, the strikes' dust boxes, the bolts and the closer arms moved 5-34 px at their LOD0->LOD1 distance
+    (int_work/fix/lod1_check.json). For these parts the LODGroup's value is the cull at dcull, not the triangles.
+    Wraps this Kit instance's make_lod1 (build_asset.py calls kit.make_lod1 after finish()); kitlib.py is not edited.
+    """
+    base = type(kit).make_lod1
+
+    def make_lod1(ratio):
+        obj = getattr(kit, "object", None)
+        if ratio and obj is not None:
+            vg = obj.vertex_groups.get("fr_lod_keep") or obj.vertex_groups.new(name="fr_lod_keep")
+            vg.add([v.index for v in obj.data.vertices], 1.0, "REPLACE")
+        return base(kit, ratio)
+
+    kit.make_lod1 = make_lod1
+    return kit
+
+
+def u_grain(kit):
+    """Make parts flagged ``obj["fr_ugrain"] = True`` carry their wood grain
+    along texture U (fix pass 2026-10-08, critic H3).
+
+    kitlib's metre UVs put the grain along texture V (kitlib.py _uv_metres:
+    V follows obj["fr_grain"] or the longer extent on wood slots; on other
+    slots V is up on vertical faces). Door_Veneer (DoorVeneer_A) and
+    Prop_WoodWalnut_A are drawn that way, but Prop_WoodOak_A,
+    Prop_WoodLaminate_A, Prop_WoodDark_A (and Teak, Cherry, Ebony) run their
+    grain lines along U (mean |d/dU| vs |d/dV| of the albedo: Oak 1.44 / 4.38,
+    Laminate 1.03 / 3.13, Dark 1.61 / 3.75; DoorVeneer 3.08 / 1.69, Walnut
+    1.87 / 0.90). So a flagged part gets kitlib's projection first, then a
+    90 deg turn (u, v) -> (v, -u): U lands where kitlib put V.
+
+    kitlib.py is not edited: this wraps the Kit instance's _uv_metres (finish()
+    calls it as self._uv_metres(obj); an instance attribute shadows the
+    staticmethod for this kit only). Call it once in build(), before finish().
+    """
+    base = type(kit)._uv_metres
+
+    def uv_metres(obj):
+        base(obj)
+        if obj.get("fr_ugrain"):
+            layer = obj.data.uv_layers.active
+            for luv in layer.data:
+                u, v = luv.uv
+                luv.uv = (v, -u)
+
+    kit._uv_metres = uv_metres
+    return kit
+
+
 def anchor(kit, name, X, Y, Z):
     kit.anchor(name, U(X, Y, Z))
 

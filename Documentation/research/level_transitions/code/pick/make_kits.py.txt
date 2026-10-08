@@ -1,0 +1,96 @@
+import re, sys, os
+DOC = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/level_transitions"
+T = "/Users/redwang/FrontRoomsVisualWork/trans_pick_work"
+C = "/Users/redwang/FrontRoomsVisualWork/proj_trans_pick"
+
+def sub1(s, old, new, count=1):
+    n = s.count(old)
+    if n < 1: raise SystemExit("MISS: " + old[:90])
+    if count == 1 and n != 1: raise SystemExit("AMBIG %d: %s" % (n, old[:90]))
+    return s.replace(old, new) if count != 1 else s.replace(old, new, 1)
+
+# ---------------- renovation kit ----------------
+s = open(DOC + "/code/renovation/FrontRoomsTransitionKit.cs.txt").read()
+s = re.sub(r'\bFrontRoomsTransitionKit\b', 'FrontRoomsTransitionRenovationKit', s)
+s = sub1(s, "/// LEVEL TRANSITIONS · V2 RENOVATION (pre-render prototype, private clone only).",
+ "/// LEVEL TRANSITIONS · PICK = V1 FRAME + SPARSE V2 RENOVATION over current main (clone proj_trans_pick only).\n/// This is the V2 renovation kit (12_var_renovation.md), renamed, with salt 0 and a per-crossing\n/// dressing share (default 30 %): only dressed crossings get the band, floor strip, ceiling tiles,\n/// halos, reveals and props. The frame kit owns every other border crossing.\n///\n/// (original header) LEVEL TRANSITIONS · V2 RENOVATION (pre-render prototype, private clone only).")
+s = sub1(s, 'public static bool Enabled = !Array.Exists(Environment.GetCommandLineArgs(), a => a == "-renovationOff");',
+ 'public static bool Enabled = FrontRoomsTransitionPick.On;')
+s = sub1(s, "public static int RunSalt = 130;", "public static int RunSalt = FrontRoomsTransitionPick.RenoSalt;\n    /// <summary>PICK: share of border crossings that are dressed (under renovation). 1 = every crossing (the V2 test).</summary>\n    public static float Share = FrontRoomsTransitionPick.RenoShare;")
+# Dressed()
+s = sub1(s, "    static GridCoord Step(bool alongX) =>",
+"""    /// <summary>PICK: is the border crossing p|q under renovation? One draw per crossing (salt-independent of the pattern draw).</summary>
+    public static bool Dressed(Context c, GridCoord p, GridCoord q)
+    {
+        if (Share >= 1f) return true;
+        if (Share <= 0f) return false;
+        var (ex, ey) = EdgeKey(p, q);
+        return Unit(Hash(c.seed, ex * 31 + ey, 0, 977 + RunSalt)) < Share;
+    }
+
+    static GridCoord Step(bool alongX) =>""")
+# gate AddEvent
+s = sub1(s, """            var h = CrossingHash(c, p, q);
+            var u = Unit(h);
+            events.Add(""", """            if (!Dressed(c, p, q)) return;   // PICK
+            var h = CrossingHash(c, p, q);
+            var u = Unit(h);
+            events.Add(""")
+# gate halo
+s = sub1(s, """        if (c.theme(face.other) != ZoneTheme.Office) return false;
+        var r = Unit(Hash(c.seed, EdgeKey(e.a, e.b).Item1, EdgeKey(e.a, e.b).Item2, 907));""",
+"""        if (c.theme(face.other) != ZoneTheme.Office) return false;
+        if (!Dressed(c, e.a, e.b)) return false;   // PICK: the frame kit owns undressed openings
+        var r = Unit(Hash(c.seed, EdgeKey(e.a, e.b).Item1, EdgeKey(e.a, e.b).Item2, 907));""")
+# gate arch reveal
+s = sub1(s, """        if (e.kind != EdgeKind.Arch || c.theme(e.a) == c.theme(e.b)) return;
+        var o = c.output;""", """        if (e.kind != EdgeKind.Arch || c.theme(e.a) == c.theme(e.b)) return;
+        if (!Dressed(c, e.a, e.b)) return;   // PICK: undressed arches are cased by the frame kit
+        var o = c.output;""")
+# gate crossings
+s = sub1(s, """            var k = c.edge(cell, nb);
+            if (k != EdgeKind.Open && k != EdgeKind.Arch && k != EdgeKind.Door) continue;""",
+"""            var k = c.edge(cell, nb);
+            if (k != EdgeKind.Open && k != EdgeKind.Arch && k != EdgeKind.Door) continue;
+            if (!Dressed(c, cell, nb)) continue;   // PICK""")
+# WallPiece insets (frame: bead insets at cased arches, end caps)
+s = sub1(s, "public static void WallPiece(Context c, in Edge e, float from, float to, float bottom, float top, bool atOpeningStart, bool atOpeningEnd)",
+ "public static void WallPiece(Context c, in Edge e, float from, float to, float bottom, float top, bool atOpeningStart, bool atOpeningEnd, float insetFrom = 0f, float insetTo = 0f)")
+s = sub1(s, """        var f = from - (from <= 0f ? Ext(cs) : 0f);
+        var t = to + (to >= Cell ? Ext(ce) : 0f);
+        if (!split)""", """        var f = from - (from <= 0f ? Ext(cs) : 0f) + insetFrom;   // PICK: frame insets
+        var t = to + (to >= Cell ? Ext(ce) : 0f) - insetTo;
+        if (!split)""")
+open(C + "/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionRenovationKit.cs", "w").write(s)
+
+# ---------------- renovation asset prep ----------------
+a = open("/Users/redwang/FrontRoomsVisualWork/proj_trans_renovation2/Assets/Editor/Rendering/FrontRoomsTransitionAssets.cs").read()
+a = re.sub(r'\bFrontRoomsTransitionKit\b', 'FrontRoomsTransitionRenovationKit', a)
+a = sub1(a, "    static void SetupCore()", "    public static void SetupCorePublic() => SetupCore();\n\n    static void SetupCore()")
+open(C + "/Assets/Editor/Rendering/FrontRoomsTransitionAssets.cs", "w").write(a)
+
+# ---------------- frame kit ----------------
+f = open(T + "/sim_frame/S/proj_trans_frame/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionKit.cs").read()
+f = re.sub(r'\bFrontRoomsTransitionKit\b', 'FrontRoomsTransitionFrameKit', f)
+f = re.sub(r'\bFrontRoomsTransitionAssets\b', 'FrontRoomsTransitionFrameAssets', f)
+f = sub1(f, "/// TRANSITION frame (clone prototype, level_transitions V1 \"Frame\").",
+ "/// PICK (clone proj_trans_pick): the V1 frame kit (11_var_frame.md), renamed, run over current main\n/// together with the renovation kit. Window casings are off (main's DressWindow frames every map\n/// window); the B0 post quarters are off (the renovation kit's corner rule owns posts).\n///\n/// TRANSITION frame (clone prototype, level_transitions V1 \"Frame\").")
+f = sub1(f, """    public static KitMode Mode
+    {
+        get
+        {
+            if (!mode.HasValue) mode = ParseMode();""", """    public static KitMode Mode
+    {
+        get
+        {
+            if (!mode.HasValue) mode = FrontRoomsTransitionPick.On && FrontRoomsTransitionPick.Frame ? KitMode.Frame : KitMode.Off;   // PICK""")
+f = sub1(f, "            case EdgeKind.Window: WindowFrame(e, sink); break;", "            case EdgeKind.Window: if (FrontRoomsTransitionPick.FrameWindows) WindowFrame(e, sink); break;   // PICK: main's DressWindow frames windows")
+open(C + "/Assets/Scripts/Rendering/Transitions/FrontRoomsTransitionFrameKit.cs", "w").write(f)
+
+# frame asset prep
+fa = open(T + "/sim_frame/S/proj_trans_frame/Assets/Editor/Transitions/FrontRoomsTransitionAssets.cs").read()
+fa = re.sub(r'\bFrontRoomsTransitionAssets\b', 'FrontRoomsTransitionFrameAssets', fa)
+fa = sub1(fa, "EditorApplication.Exit(1); return; }", "throw new System.Exception(\"Prop_Aluminium.mat missing\"); }")
+os.makedirs(C + "/Assets/Editor/Transitions", exist_ok=True)
+open(C + "/Assets/Editor/Transitions/FrontRoomsTransitionFrameAssets.cs", "w").write(fa)
+print("ok")

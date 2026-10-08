@@ -1,0 +1,31 @@
+// TRANSITION frame (clone only): asset prep for the V1 Frame pre-render. Run before rendering:
+// Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsTransitionAssets.Prepare -quit -logFile <log>
+// Trans_AluminiumSatin: Prop_Aluminium's maps (no new texture) with a satin, darker finish for
+// the carpet binder bars and door saddles; mill-finish aluminium read as a white line at
+// grazing angles with Prop_Aluminium's smoothness.
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsTransitionAssets
+{
+    const string Folder = "Assets/Resources/Surfaces/";
+
+    public static void Prepare()
+    {
+        var src = AssetDatabase.LoadAssetAtPath<Material>(Folder + "Prop_Aluminium.mat");
+        if (src == null) { Debug.LogError("[TransitionAssets] Prop_Aluminium.mat missing"); EditorApplication.Exit(1); return; }
+        var path = Folder + "Trans_AluminiumSatin.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null)
+        {
+            m = new Material(src) { name = "Trans_AluminiumSatin" };
+            AssetDatabase.CreateAsset(m, path);
+        }
+        else m.CopyPropertiesFromMaterial(src);
+        m.SetColor("_BaseColor", new Color(.80f, .80f, .78f, 1f));
+        m.SetFloat("_Smoothness", .80f);
+        EditorUtility.SetDirty(m);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[TransitionAssets] wrote " + path);
+    }
+}

@@ -1,0 +1,199 @@
+#!/bin/bash
+# EXIT sign (build + integrate) -> Red's real Frontrooms3D project (visual-owned files only).
+#
+#   exit_sign.sh            DRY RUN: checks every base by sha1 against exit_sign_bases.txt, the kept .meta files against
+#                           exit_sign_keep.txt, every payload file against exit_sign_expected.txt, that every replaced .meta
+#                           keeps main's GUID and that no new .meta GUID is already used in Assets/; prints every action;
+#                           writes nothing.
+#   exit_sign.sh --apply    performs exactly those actions (main's files backed up first), then prints the sha1 manifest of
+#                           every touched path and compares it with exit_sign_expected.txt.
+#
+# What it touches (the full list, with sha1s, is exit_sign_expected.txt; 76 paths):
+#   replace  Assets/Scripts/FrontRoomsRoomStream.cs            Run rooms: 2 x Kit_ExitSign_Hanging (A z 3.4, B z 9.2) with the
+#                                                              same red light (1, .10, .06), 3.6, range 9.5, soft .85, at 1.96 m,
+#                                                              intensity x sign Level; Exit rooms: 1 x Kit_ExitSign over the far
+#                                                              door; SignOdds/ConfigureExitSigns/TickExitSigns; SignFace removed
+#            Assets/Scripts/Office/FrontRoomsKitLibrary.cs     Spawn attaches FrontRoomsExitSign to kits tagged exit_sign
+#            Assets/Editor/Rendering/FrontRoomsRenderSetup.cs  4 ExitSign SurfaceDefs, lampField, Run_ExitSign smooth .38, clamp
+#            Assets/Resources/Rendering/FrontRoomsSurface.shader   _FR_LAMP_FIELD keyword (bit-identical when off)
+#            Assets/Resources/Surfaces/Run_ExitSign.mat        _Smoothness 1 -> 0.38 (nothing else)
+#            Assets/Resources/Props/Models/Kit_ExitSign(.fbx|.fbx.meta|.json), Kit_ExitSign_Dead(...)   (main's GUIDs kept)
+#            Assets/Resources/Props/Models/Kit_DoorFrame_Steel.json, Kit_DoorFrame_Steel_Alu.json   (exit_sign_p y 2.28 -> 2.18)
+#            Tools/Blender/frontrooms_kit/assets/interact_exit_sign.py, interact_door_frame_steel.py
+#   add      Assets/Scripts/Rendering/FrontRoomsExitSign.cs (+ .meta)
+#            Assets/Resources/Props/Models/Kit_ExitSign_{Hanging,Hanging_Dead,HangingFlush,HangingFlush_Dead,End,End_Dead}
+#                (.fbx, .fbx.meta, .json, .json.meta)
+#            Assets/Resources/Surfaces/ExitSign_{Housing,Face,Diffuser,Diffuser_Dead}.mat (+ .meta)
+#            Assets/Resources/Surfaces/Textures/ExitSign_{Face_A,Face_N,Face_S,Diffuser_A,Diffuser_E,Diffuser_F,Diffuser_S,
+#                Enamel_A,Enamel_N,Enamel_S}.png (+ .meta)
+#            Tools/Blender/frontrooms_kit/assets/exit_sign_{common,geom,hanging,hanging_flush,end}.py
+#            Tools/lookdev/gen_exit_sign.py, exit_sign_measure.py
+# Write order: every .meta first (so an open Unity never invents its own GUID), then textures, materials, shader,
+# models, Tools, and the C# last. Unity, if open, imports the new assets and recompiles once.
+# Never touches FrontRoomsMap/*, FrontRooms3DGame.cs, Editor/FrontRoomsMap/*, Assets/Levels, Library/ or any file
+# listed in W/LOCAL_PATCHES.md. Never deletes anything, never commits. No map contract is needed.
+#
+# Refuses (exit 1, nothing written) if any base or kept .meta changed since the bases were recorded, if a payload file
+# changed, if a replaced .meta would change main's GUID or if a new GUID is already in use.
+#
+# apply-convention: v2 (W/apply/README.md): exact base copies in exit_sign_base/<path>, unified diff exit_sign.diff;
+# on a base mismatch run W/tools/rebase_apply.sh exit_sign before any re-verify.
+# APPLY_REAL overrides the target, APPLY_DIR the package dir, APPLY_BACKUP the backup dir (to test this script on
+# scratch copies under W). Already applied everywhere -> "ALREADY APPLIED", exit 0, nothing written.
+set -u
+set -o pipefail
+
+T=exit_sign
+A="${APPLY_DIR:-/Users/redwang/FrontRoomsVisualWork/apply}"
+REAL="${APPLY_REAL:-/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D}"
+PAYLOAD="$A/${T}_payload"
+BASES="$A/${T}_bases.txt"
+KEEP="$A/${T}_keep.txt"
+EXPECTED="$A/${T}_expected.txt"
+BACKUP="${APPLY_BACKUP:-/Users/redwang/FrontRoomsVisualWork/backup/2026-10-07_exit_sign}"   # --apply copies main's files here first
+
+MODE=dry
+case "${1:-}" in
+  --apply) MODE=apply ;;
+  "") ;;
+  *) echo "usage: $0 [--apply]"; exit 2 ;;
+esac
+
+FAIL=0
+bad() { echo "  REFUSE: $*"; FAIL=1; }
+sha() { shasum "$1" | cut -c1-40; }
+guid() { sed -n 's/^guid: \([0-9a-f]\{32\}\).*/\1/p' "$1" | head -1; }
+act() { if [ $MODE = apply ]; then echo "  do:    $*"; else echo "  would: $*"; fi; }
+rows() { grep -v '^#' "$1" | grep -v '^$'; }
+row_is() { awk -v r="$1" '$0 == r { f = 1 } END { exit !f }' "$2"; }          # exact line match
+has_path() { awk -v p="$1" 'index($0, "  ") && substr($0, index($0, "  ") + 2) == p { f = 1 } END { exit !f }' "$2"; }
+
+echo "$T.sh ($MODE) -> $REAL"
+[ -d "$REAL/Assets/Scripts" ] && [ -d "$REAL/Assets/Resources/Props/Models" ] || { echo "REFUSED: $REAL is not the project"; exit 1; }
+for f in "$BASES" "$KEEP" "$EXPECTED"; do [ -f "$f" ] || { echo "REFUSED: missing $f"; exit 1; }; done
+[ -d "$PAYLOAD" ] || { echo "REFUSED: missing $PAYLOAD"; exit 1; }
+
+# ------------------------------------------------------------- 1. bases (every touched path)
+echo "1. bases ($BASES)"
+nb=0; napplied=0
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"; nb=$((nb+1))
+  if [ -e "$REAL/$p" ]; then
+    got=$(sha "$REAL/$p")
+    if [ "$want" = ABSENT ] || [ "$got" != "$want" ]; then
+      if row_is "$got  $p" "$EXPECTED"; then napplied=$((napplied+1))
+      elif [ "$want" = ABSENT ]; then bad "$p exists (expected absent)"
+      else bad "$p changed since the bases were recorded ($got != $want)"; fi
+    fi
+  elif [ "$want" != ABSENT ]; then bad "$p missing"
+  fi
+done < <(rows "$BASES")
+ALREADY=0
+if [ $napplied -gt 0 ]; then
+  if [ $napplied -eq $nb ] && [ $FAIL -eq 0 ]; then ALREADY=1; echo "  every path already holds the payload"
+  else bad "partially applied: $napplied of $nb paths already hold the payload"; fi
+elif [ $FAIL -eq 0 ]; then echo "  all $nb bases match ($(rows "$BASES" | grep -c '^ABSENT') new paths absent, $(rows "$BASES" | grep -vc '^ABSENT') existing paths at their recorded sha1)"; fi
+
+# ------------------------------------------------------------- 2. kept files (.meta GUIDs of replaced paths)
+echo "2. kept, never written ($KEEP)"
+nk=0
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"; nk=$((nk+1))
+  got=$(sha "$REAL/$p" 2>/dev/null || echo MISSING)
+  [ "$got" = "$want" ] || bad "$p changed ($got != $want): its GUID must stay as verified"
+done < <(rows "$KEEP")
+[ $FAIL -eq 0 ] && echo "  all $nk kept .meta files unchanged"
+
+# ------------------------------------------------------------- 3. payloads
+echo "3. payloads ($PAYLOAD)"
+np=0
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"; np=$((np+1))
+  [ -f "$PAYLOAD/$p" ] || { bad "payload lacks $p"; continue; }
+  got=$(sha "$PAYLOAD/$p"); [ "$got" = "$want" ] || bad "payload $p changed ($got != $want)"
+  has_path "$p" "$BASES" || bad "$p has no recorded base"
+done < <(rows "$EXPECTED")
+[ "$(find "$PAYLOAD" -type f ! -name .DS_Store | wc -l | tr -d ' ')" -eq $np ] || bad "payload holds files not in the expected manifest"
+[ $FAIL -eq 0 ] && echo "  all $np payload files match"
+
+# ------------------------------------------------------------- 4. GUIDs
+echo "4. GUIDs"
+if [ $ALREADY -eq 0 ]; then
+  used=$(mktemp "${TMPDIR:-/tmp}/${T}_guids.XXXXXX") || exit 1
+  find "$REAL/Assets" -name "*.meta" ! -name "* [0-9].*" -print0 | xargs -0 sed -n 's/^guid: \([0-9a-f]\{32\}\).*/\1/p' 2>/dev/null | sort > "$used"
+  nkept=0; nnew=0
+  while IFS= read -r line; do
+    p="${line#*  }"
+    case "$p" in *.meta) ;; *) continue ;; esac
+    g=$(guid "$PAYLOAD/$p")
+    [ -n "$g" ] || { bad "$p has no guid"; continue; }
+    if [ -f "$REAL/$p" ]; then
+      [ "$(guid "$REAL/$p")" = "$g" ] && nkept=$((nkept+1)) || bad "$p would change main's GUID ($(guid "$REAL/$p") -> $g)"
+    else
+      grep -qx "$g" "$used" && bad "$p: GUID $g is already used in Assets/" || nnew=$((nnew+1))
+    fi
+  done < <(rows "$EXPECTED")
+  rm -f "$used"
+  [ $FAIL -eq 0 ] && echo "  $nkept replaced .meta keep main's GUID; $nnew new GUIDs unused in Assets/"
+else echo "  (already applied)"; fi
+
+if [ $FAIL -ne 0 ]; then
+  echo "REFUSED: nothing was written."
+  exit 1
+fi
+if [ $ALREADY -eq 1 ]; then
+  echo "ALREADY APPLIED: every touched path holds the payload and the kept files are unchanged; nothing to do (nothing written)."
+  exit 0
+fi
+
+# ------------------------------------------------------------- 5. actions (metas, textures, materials, shader, models, Tools, C#)
+echo "5. actions"
+order() {
+  rows "$EXPECTED" | grep '\.meta$'
+  rows "$EXPECTED" | grep -v '\.meta$' | grep '\.png$'
+  rows "$EXPECTED" | grep -v '\.meta$' | grep '\.mat$'
+  rows "$EXPECTED" | grep -v '\.meta$' | grep '\.shader$'
+  rows "$EXPECTED" | grep -v '\.meta$' | grep '\.fbx$'
+  rows "$EXPECTED" | grep -v '\.meta$' | grep '^[0-9a-f]*  Assets/.*\.json$'
+  rows "$EXPECTED" | grep '  Tools/'
+  rows "$EXPECTED" | grep -v '\.meta$' | grep '\.cs$'
+}
+[ "$(order | sort | uniq | wc -l | tr -d ' ')" -eq $np ] && [ "$(order | wc -l | tr -d ' ')" -eq $np ] || { echo "SETUP ERROR: the write order does not cover the manifest exactly"; exit 1; }
+while IFS= read -r line; do
+  p="${line#*  }"
+  if [ -e "$REAL/$p" ]; then verb="replace"; else verb="add    "; fi
+  act "$verb $p  (sha1 ${line%%  *})"
+  if [ $MODE = apply ]; then
+    if [ -e "$REAL/$p" ]; then
+      mkdir -p "$BACKUP/$(dirname "$p")" && cp -p "$REAL/$p" "$BACKUP/$p" || { echo "FAILED backup of $p (stopped; files written so far are listed above)"; exit 1; }
+    fi
+    mkdir -p "$REAL/$(dirname "$p")" || { echo "FAILED mkdir for $p"; exit 1; }
+    # Written in place: no temp file inside Assets/, which an open Unity would import (and give a stray .meta).
+    cat "$PAYLOAD/${p:?}" > "$REAL/${p:?}" || { echo "FAILED writing $p"; exit 1; }
+  fi
+done < <(order)
+[ $MODE = dry ] || echo "  main's replaced files are backed up in $BACKUP"
+rows "$KEEP" | while IFS= read -r line; do act "keep    ${line#*  }"; done
+
+if [ $MODE = dry ]; then
+  echo "DRY RUN OK: every base matches; run with --apply to perform the actions above."
+  exit 0
+fi
+
+# ------------------------------------------------------------- 6. manifest
+echo "6. manifest after apply"
+MAN=$(mktemp "$A/.${T}_manifest.XXXXXX") || exit 1
+while IFS= read -r line; do
+  p="${line#*  }"
+  if [ -f "$REAL/$p" ]; then printf '%s  %s\n' "$(sha "$REAL/$p")" "$p"; else printf 'ABSENT  %s\n' "$p"; fi
+done < <(rows "$EXPECTED") > "$MAN"
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"
+  [ "$(sha "$REAL/$p")" = "$want" ] || { echo "MANIFEST MISMATCH: kept $p changed"; exit 1; }
+done < <(rows "$KEEP")
+if diff <(rows "$EXPECTED") "$MAN" > /dev/null; then
+  echo "MANIFEST OK: the real project equals ${T}_expected.txt for all $np touched paths; $nk kept .meta files unchanged."
+  mv -f "$MAN" "$A/${T}_applied_manifest.txt"
+else
+  echo "MANIFEST MISMATCH:"; diff <(rows "$EXPECTED") "$MAN"; exit 1
+fi

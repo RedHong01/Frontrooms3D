@@ -123,7 +123,11 @@ def extra(kit, slab, cuts, rng):
 
 def build(kit):
     rng = random.Random(41090)
-    base.build_leaf(kit, LAM, CHROME, rng, faceplate=False, extra=lambda k, s, c: extra(k, s, c, rng), wear_fn=wear)
+    # Fix pass 2026-10-08 (critic H3): Prop_WoodLaminate_A draws its grain along texture U, so the slab's
+    # UVs are turned onto U (interact_door_common.u_grain); before, the laminate grain ran across the leaf.
+    dc.u_grain(kit)
+    base.build_leaf(kit, LAM, CHROME, rng, faceplate=False, extra=lambda k, s, c: extra(k, s, c, rng), wear_fn=wear,
+                    ugrain=True)
     blo, bhi = dc.bounds_unity(kit.parts)
     assert bhi[0] <= dc.LEAF_X + PULL_PROJ + 1e-4, "pull projection %.4f" % (bhi[0] - dc.LEAF_X)
     assert blo[0] >= -(dc.LEAF_X + KT + 0.0015), "push face hardware stays flat"
@@ -144,4 +148,5 @@ def build(kit):
     kit.tag("interactable", "door", "door_leaf", "run", "door_type_wood", "push_pull")
     kit.meta["doorType"] = "wood"
     kit.meta["latch"] = "none (push/pull; no Unlatch beat)"
+    kit.meta["grainAxis"] = "texture U (Prop_WoodLaminate_A is U-grain; see interact_door_common.u_grain)"
     dc.lod_meta(kit, sys.modules[__name__])

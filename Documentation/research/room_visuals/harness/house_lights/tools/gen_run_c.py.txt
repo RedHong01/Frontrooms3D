@@ -1,0 +1,205 @@
+"""Run! direction C (HOUSE LIGHTS) surfaces and sign faces. CLONE-ONLY look-dev.
+
+python3 gen_run_c.py <outdir> <fontdir>
+
+Writes (Surfaces/Textures conventions, see gen_common.py):
+  Run_GlazedTile_A/N/S   8 x 16 in structural glazed facing tile, running bond,
+                         buff-white glaze #E6E1D2, 1/4 in grout #9C978A. One
+                         texture = 2 units x 4 courses = 256/315 m x 0.8128 m.
+  Run_Plaster_A/N/S      eggshell paint on plaster #EEEBE2, 1 m repeat.
+  Run_CeilingGyp_A/N/S   flat paint on gypsum board #EDEBE4, taped joints,
+                         256/210 m (4 ft) x 2 x that (8 ft board) repeat.
+  Run_C_ExitFace_A/E     EXIT, red 6 in letters on an off-white face, no arrows,
+                         TeX Gyre Heros Bold Condensed.
+  Run_C_FirePlate_A      FIRE DOORS — DO NOT OBSTRUCT, red caps on white plastic.
+  Run_C_Plaque_A         C-LINK, engraved two-ply laminate (bronze over cream).
+  Run_C_PullFace_A       FIRE / PULL DOWN, white on red (pull station face).
+  Run_C_WireGrid_A       12.5 mm square wire mesh, alpha = wire (0.05 m repeat).
+"""
+import os, sys
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+OUT = sys.argv[1]
+FONTS = sys.argv[2]
+sys.argv = [sys.argv[0], OUT, "unused"]
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "gen_common.py")).read())
+
+HEROS_CN = os.path.join(FONTS, "texgyreheroscn-bold.otf")
+HEROS = os.path.join(FONTS, "texgyreheros-bold.otf")
+
+
+def wrap_lines(dr, N, M, pts, width, fill=255):
+    for ox in (-N, 0, N):
+        for oy in (-M, 0, M):
+            dr.line([(a + ox, b + oy) for a, b in pts], fill=fill, width=width)
+
+
+def mask(smooth, cavity, wet=None):
+    z = np.zeros_like(smooth)
+    return np.stack([smooth, cavity, z if wet is None else wet, np.ones_like(smooth)], -1)
+
+
+def write(name, col, n=None, s=None, e=None):
+    save_rgb(f"{OUT}/{name}_A.png", col)
+    if n is not None: save_normal(f"{OUT}/{name}_N.png", n)
+    if s is not None: save_rgba(f"{OUT}/{name}_S.png", s)
+    if e is not None: save_rgb(f"{OUT}/{name}_E.png", e)
+
+
+def glazed_tile():
+    # 2 units (2 x 16 in) wide, 4 courses (4 x 8 in) tall. 1600 px / 0.8127 m = 1969 px/m.
+    W, H = 1600, 1600
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    unit_w, course_h = W / 2.0, H / 4.0
+    joint = 6.35 / 1000 * (W / 0.8127)          # 1/4 in grout, ~12.5 px
+    course = np.floor(yy / course_h).astype(int)
+    shift = (course % 2) * unit_w * .5           # running bond
+    ux = (xx + shift) % W
+    uid = (np.floor(ux / unit_w).astype(int) + 2 * course) % 8
+    lx = ux % unit_w
+    ly = yy % course_h
+    # distance to the nearest joint centre line (px)
+    dx = np.minimum(lx, unit_w - lx)
+    dy = np.minimum(ly, course_h - ly)
+    d = np.minimum(dx, dy)
+    half = joint * .5
+    grout = (d < half).astype(np.float32)
+    grout = np.clip(blur(grout, .6), 0, 1)
+    # cushion edge: the glaze rolls over ~3 mm into the joint
+    roll = np.clip((d - half) / 7.0, 0, 1)
+    edge_h = np.sin(roll * np.pi * .5)          # 0 at the joint, 1 on the field
+    r = np.random.default_rng(3150)
+    glaze = hexc("#E6E1D2")
+    tone = r.normal(0, .018, 8)[uid]            # unit-to-unit glaze variance
+    warm = r.normal(0, .010, 8)[uid]
+    col = glaze[None, None, :] * (1 + tone[..., None])
+    col[..., 0] *= 1 + warm
+    col[..., 2] *= 1 - warm
+    # glaze pooling: faintly darker, thicker glaze toward the lower edge of each unit
+    pool = np.clip((ly / course_h - .55) / .45, 0, 1) ** 2
+    col *= (1 - .025 * pool[..., None])
+    # pinholes and specks in the glaze
+    specks = (r.random((H, W)) > .99975).astype(np.float32)
+    specks = np.clip(blur(specks, .8) * 6, 0, 1)
+    col *= (1 - .25 * specks[..., None])
+    # fine crazing (old glaze): a sparse crack network, very faint
+    img = Image.new("L", (W, H), 0); dr = ImageDraw.Draw(img)
+    for _ in range(260):
+        x, y = r.random() * W, r.random() * H
+        pts = [(x, y)]
+        a = r.random() * np.pi * 2
+        for _k in range(int(r.integers(3, 8))):
+            a += r.normal(0, .7); l = r.random() * 40 + 12
+            x, y = x + np.cos(a) * l, y + np.sin(a) * l
+            pts.append((x, y))
+        wrap_lines(dr, W, H, pts, 1)
+    craze = blur(np.asarray(img).astype(np.float32) / 255, .45) * roll
+    col *= (1 - .06 * craze[..., None])
+    # a few chipped corners (buff body showing)
+    chip = np.zeros((H, W), np.float32)
+    for _ in range(7):
+        c = int(r.integers(0, 4))
+        cx = (int(r.integers(0, 2)) * unit_w - (c % 2) * unit_w * .5) % W
+        cy = c * course_h + (course_h if r.random() < .5 else 0)
+        rad = r.random() * 8 + 5
+        chip += np.exp(-(((xx - cx + W / 2) % W - W / 2) ** 2 + ((yy - cy + H / 2) % H - H / 2) ** 2) / (2 * rad * rad))
+    chip = np.clip(chip * 1.5, 0, 1) * (1 - grout)
+    col = col * (1 - chip[..., None]) + hexc("#B8A98C")[None, None, :] * chip[..., None]
+    # grout: sanded, a little dirty
+    gtex = band(H, W, 200, 700, 3151)
+    gcol = hexc("#9C978A")[None, None, :] * (0.92 + .14 * gtex[..., None])
+    col = col * (1 - grout[..., None]) + gcol * grout[..., None]
+    # height: tooled concave joint below the cushioned glaze face
+    height = edge_h * 1.0 - grout * .35 + .02 * band(H, W, 30, 90, 3152) * (1 - grout)
+    smooth = .86 * (1 - grout) + .28 * grout - .30 * chip - .10 * craze
+    cavity = 1 - .45 * grout - .25 * (1 - edge_h) * (1 - grout)
+    write("Run_GlazedTile", col, normal_from_height(blur(height, .7), 6.0), mask(smooth, cavity))
+
+
+def plaster(name="Run_Plaster", hexcol="#EEEBE2", N=1024, smooth0=.36, joints=None, seed=3160):
+    # eggshell latex over plaster: roller stipple, patched spots, faint trowel waves
+    stip = band(N, N, 180, 520, seed)
+    wave = spectral(N, N, 2.2, seed + 1)
+    patch = np.clip((band(N, N, 2, 6, seed + 2) - .70) / .12, 0, 1)
+    col = hexc(hexcol)[None, None, :] * (0.985 + .02 * wave[..., None]) * (1 - .012 * patch[..., None])
+    height = .35 * stip + .8 * wave + .15 * patch
+    smooth = smooth0 + .05 * (stip - .5) - .04 * patch
+    if joints is not None:
+        # taped board joints: a slightly raised, feathered band with a different sheen
+        yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+        j = np.zeros((N, N), np.float32)
+        for axis, period in joints:
+            coord = xx if axis == 0 else yy
+            dd = np.abs(((coord + period / 2) % period) - period / 2)
+            j = np.maximum(j, np.exp(-(dd / 18.0) ** 2))
+        height += .9 * j
+        smooth += .04 * j
+        col *= (1 + .006 * j[..., None])
+    write(name, col, normal_from_height(blur(height, .8), 1.4), mask(smooth, np.ones_like(stip)))
+
+
+def text_face(name, W, H, bg, fg, lines, font_path, size_frac, emit=None, spacing=.12, border=None):
+    img = Image.new("RGB", (W, H), bg)
+    dr = ImageDraw.Draw(img)
+    total = 0; metrics = []
+    for text, frac in lines:
+        size = int(H * frac)
+        font = ImageFont.truetype(font_path, size)
+        bb = dr.textbbox((0, 0), text, font=font)
+        if bb[2] - bb[0] > W * .92:
+            size = int(size * W * .92 / (bb[2] - bb[0]))
+            font = ImageFont.truetype(font_path, size)
+            bb = dr.textbbox((0, 0), text, font=font)
+        metrics.append((text, font, bb))
+        total += bb[3] - bb[1]
+    total += int(H * spacing) * (len(lines) - 1)
+    y = (H - total) // 2
+    for text, font, bb in metrics:
+        tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        dr.text(((W - tw) // 2 - bb[0], y - bb[1]), text, font=font, fill=fg)
+        y += th + int(H * spacing)
+    if border is not None:
+        w, c = border
+        dr.rectangle([w // 2, w // 2, W - 1 - w // 2, H - 1 - w // 2], outline=c, width=w)
+    a = np.asarray(img).astype(np.float32) / 255
+    if emit is not None:
+        fgc = np.array(fg, np.float32) / 255
+        ink = np.clip(1 - np.abs(a - fgc).sum(-1) / .6, 0, 1)
+        e = ink[..., None] * np.array(emit[0], np.float32)[None, None, :]
+        e = np.maximum(blur(e, 3.0) * .55, e)
+        e += np.array(emit[1], np.float32)[None, None, :]
+        write(name, a, None, None, np.clip(e, 0, 1))
+    else:
+        write(name, a)
+
+
+def wire_grid():
+    N = 256                                       # 4 x 4 cells of 12.5 mm -> 0.05 m
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    cell = N / 4
+    dx = np.minimum(xx % cell, cell - xx % cell)
+    dy = np.minimum(yy % cell, cell - yy % cell)
+    w = np.clip(1.6 - np.minimum(dx, dy), 0, 1)   # ~3 px ~ 0.6 mm
+    rgb = np.ones((N, N, 3), np.float32) * hexc("#6E6E6A")[None, None, :]
+    rgba = np.concatenate([rgb, w[..., None]], -1)
+    save_rgba(f"{OUT}/Run_C_WireGrid_A.png", rgba)
+
+
+if __name__ == "__main__":
+    os.makedirs(OUT, exist_ok=True)
+    if "--signs" not in sys.argv[1:] and os.environ.get("RUNC_SIGNS_ONLY") != "1":
+        glazed_tile(); print("tile", flush=True)
+        plaster(); print("plaster", flush=True)
+        plaster("Run_CeilingGyp", "#EDEBE4", N=1024, smooth0=.14, joints=[(0, 1024)], seed=3170)
+        print("ceiling", flush=True)
+    # EXIT: face 0.30 x 0.18 m -> 1000 x 600 px; letters 6 in = 152 mm = 507 px cap height
+    text_face("Run_C_ExitFace", 1000, 600, (232, 229, 220), (196, 24, 20), [("EXIT", 1.2)], HEROS_CN, 1.2,
+              emit=((1.0, .09, .05), (.06, .015, .01)))
+    text_face("Run_C_FirePlate", 1800, 220, (236, 234, 228), (178, 26, 22), [("FIRE DOORS — DO NOT OBSTRUCT", .62)], HEROS, .62,
+              border=(10, (178, 26, 22)))
+    text_face("Run_C_Plaque", 900, 300, (74, 56, 40), (226, 218, 196), [("C-LINK", .62)], HEROS, .62,
+              border=(8, (226, 218, 196)))
+    text_face("Run_C_PullFace", 400, 520, (168, 22, 18), (240, 236, 228), [("FIRE", .22), ("PULL", .13), ("DOWN", .13)], HEROS_CN, .2, spacing=.07)
+    wire_grid()
+    print("done", flush=True)

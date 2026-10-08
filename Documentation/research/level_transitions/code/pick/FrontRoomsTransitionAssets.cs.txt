@@ -1,0 +1,345 @@
+// LEVEL TRANSITIONS · V2 RENOVATION (private clone only).
+// Asset preparation: surface materials for the renovation kit, made the same way
+// FrontRoomsRenderSetup.EnsureSurfaces makes the project's (FrontRooms/Surface,
+// world-projected unless meshUV), from the textures Tools/lookdev/gen_transition_surfaces.py
+// wrote to Resources/Surfaces/Textures; then the trans_ kit FBXs are re-imported so their
+// slots remap to these materials. Also measures what the new textures cost.
+//   Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsTransitionAssets.Setup -quit -logFile <log>
+//   Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsTransitionAssets.Stats -quit -logFile <log> -shots <shots.json> -out <dir>
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Profiling;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsTransitionAssets
+{
+    const string SurfaceDir = "Assets/Resources/Surfaces";
+    const string TextureDir = SurfaceDir + "/Textures";
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
+    sealed class Def
+    {
+        public string name, texture;
+        public Vector2 tile = Vector2.one;
+        public bool meshUV;
+        public Color tint = Color.white;
+        public float bump = 1f, smooth = 1f, metallic, occlusion = .8f;
+        public float macroTone = .2f, macroDirt = .15f, stain, wet, floorGrime, ceilingGrime;
+        public Color stainColor = new Color(.42f, .31f, .16f);
+    }
+
+    static readonly Def[] Defs =
+    {
+        // Wall stages (world-projected; tiles divide 192 m).
+        new Def { name = "Office_Wall_Fresh", texture = "Wall_FreshPaint", tile = new Vector2(1.2f, 1.2f), bump = .8f, macroTone = .10f, macroDirt = .05f, floorGrime = .10f, ceilingGrime = .03f },
+        new Def { name = "Office_Wall_CutIn", texture = "Wall_CutIn", tile = new Vector2(1.2f, 1.2f), bump = .8f, macroTone = .10f, macroDirt = .05f, floorGrime = .10f, ceilingGrime = .03f },
+        new Def { name = "Wall_Primer", texture = "Wall_Primer", tile = new Vector2(2.4f, 2.4f), bump = .9f, macroTone = .10f, macroDirt = .08f, floorGrime = .18f, ceilingGrime = .05f },
+        new Def { name = "Wall_Stripped", texture = "Wall_Stripped", tile = new Vector2(2.4f, 2.4f), bump = 1f, macroTone = .25f, macroDirt = .22f, floorGrime = .40f, ceilingGrime = .30f },
+        new Def { name = "Wall_Compound", texture = "Wall_Compound", tile = new Vector2(1.2f, 1.2f), bump = .9f, macroTone = .06f, macroDirt = .06f, floorGrime = .15f },
+        new Def { name = "Paper_Backing", texture = "Paper_Backing", tile = new Vector2(.6f, .6f), bump = .7f, macroTone = .15f, macroDirt = .10f },
+        // The Level 0 print on loose and peeled paper (mesh UVs in metres, same 0.75 m roll).
+        new Def { name = "Paper_Scrap", texture = "Wallpaper_Chevron", tile = new Vector2(.75f, 1.125f), meshUV = true, bump = .8f, macroTone = .45f, macroDirt = .3f, stain = .18f },
+        // Floor and ceiling.
+        new Def { name = "Slab_Adhesive", texture = "Slab_Adhesive", tile = new Vector2(2.4f, 2.4f), bump = 1f, macroTone = .30f, macroDirt = .30f },
+        new Def { name = "Office_Ceiling_New", texture = "Office_Ceiling2x2", tile = new Vector2(1.2f, 1.2f), tint = new Color(1.06f, 1.06f, 1.06f), macroTone = .06f, macroDirt = .02f },
+        new Def { name = "L0_CeilingTile_Loose", texture = "Ceiling_Fissured", tile = new Vector2(1.2f, 1.2f), meshUV = true, macroTone = .25f, stain = .22f },
+        new Def { name = "Office_CarpetTile_Loose", texture = "Office_CarpetTile", tile = new Vector2(1.2f, 1.2f), meshUV = true, bump = .8f, macroTone = .10f, macroDirt = .10f },
+        new Def { name = "Plenum_Dark", tint = new Color(.055f, .052f, .048f), smooth = .12f, macroTone = .3f, macroDirt = .2f },
+        new Def { name = "Chalk_Blue", tint = new Color(.40f, .50f, .64f), smooth = .05f, macroTone = .2f, macroDirt = .1f },
+        // Prop slots of the trans_ kit.
+        new Def { name = "Prop_Compound", texture = "Wall_Compound", tile = new Vector2(.6f, .6f), meshUV = true, bump = .8f, macroTone = .04f, macroDirt = .05f },
+        new Def { name = "Prop_PaintWet", tint = new Color(.64f, .65f, .59f), smooth = .78f, meshUV = true, macroTone = 0f, macroDirt = 0f },
+        new Def { name = "Prop_RollerNap", texture = "Prop_RollerNap", tile = new Vector2(.15f, .15f), meshUV = true, bump = 1f, macroTone = .04f, macroDirt = .05f },
+        new Def { name = "Prop_Canvas", texture = "Prop_Canvas", tile = new Vector2(1f, 1f), meshUV = true, bump = 1f, macroTone = .06f, macroDirt = .08f },
+        new Def { name = "Prop_TapeBeige", texture = "Prop_TapeBeige", tile = new Vector2(.15f, .15f), meshUV = true, bump = .7f, macroTone = .02f, macroDirt = .04f },
+    };
+
+    public static readonly string[] NewTextures =
+    {
+        "Wall_FreshPaint", "Wall_CutIn", "Wall_Primer", "Wall_Stripped", "Wall_Compound", "Slab_Adhesive", "Paper_Backing",
+        "Prop_Canvas", "Prop_TapeBeige", "Prop_RollerNap",
+    };
+
+    public static void Setup()
+    {
+        var code = 0;
+        try { SetupCore(); }
+        catch (Exception e) { Debug.LogError("[Transitions] EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    /// <summary>Setup, then BandMap, in one Unity start (the machine is shared and slow).</summary>
+    public static void SetupAndBand()
+    {
+        var code = 0;
+        try { SetupCore(); BandCore(); }
+        catch (Exception e) { Debug.LogError("[Transitions] EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    public static void SetupCorePublic() => SetupCore();
+
+    static void SetupCore()
+    {
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            var shader = Shader.Find("FrontRooms/Surface");
+            if (shader == null) throw new Exception("FrontRooms/Surface missing");
+            var macro = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureDir + "/MacroWear_M.png");
+            foreach (var d in Defs)
+            {
+                var path = SurfaceDir + "/" + d.name + ".mat";
+                var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (m == null) { m = new Material(shader) { name = d.name }; AssetDatabase.CreateAsset(m, path); }
+                m.shader = shader;
+                if (d.texture != null)
+                {
+                    m.SetTexture("_BaseMap", Tex(d.texture + "_A"));
+                    m.SetTexture("_BumpMap", Tex(d.texture + "_N"));
+                    m.SetTexture("_MaskMap", Tex(d.texture + "_S"));
+                }
+                else { m.SetTexture("_BaseMap", null); m.SetTexture("_BumpMap", null); m.SetTexture("_MaskMap", null); }
+                m.SetColor("_BaseColor", d.tint);
+                m.SetVector("_TileSize", new Vector4(d.tile.x, d.tile.y, 0, 0));
+                m.SetFloat("_BumpScale", d.bump);
+                m.SetFloat("_Smoothness", d.smooth);
+                m.SetFloat("_Metallic", d.metallic);
+                m.SetFloat("_OcclusionStrength", d.occlusion);
+                m.SetTexture("_MacroMap", macro);
+                m.SetFloat("_MacroTone", d.macroTone);
+                m.SetFloat("_MacroDirt", d.macroDirt);
+                m.SetColor("_StainColor", d.stainColor);
+                m.SetFloat("_StainStrength", d.stain);
+                m.SetFloat("_WetStrength", d.wet);
+                m.SetFloat("_FloorGrime", d.floorGrime);
+                m.SetFloat("_CeilingGrime", d.ceilingGrime);
+                m.SetFloat("_CeilingHeight", 2.9f);
+                m.SetFloat("_MeshUV", d.meshUV ? 1f : 0f);
+                if (d.meshUV) m.EnableKeyword("_FR_MESH_UV"); else m.DisableKeyword("_FR_MESH_UV");
+                m.SetFloat("_UseEmission", 0f);
+                m.DisableKeyword("_EMISSION");
+                EditorUtility.SetDirty(m);
+                Debug.Log("[Transitions] material " + d.name + (d.texture != null ? " <- " + d.texture : " (tint)"));
+            }
+            // Paper_Peel: the Level 0 paper itself with mesh UVs, so a strip hanging off the wall keeps
+            // the print where it lay (iteration 2; the hanging strips).
+            var l0 = AssetDatabase.LoadAssetAtPath<Material>(SurfaceDir + "/L0_Wallpaper.mat");
+            if (l0 != null)
+            {
+                var path = SurfaceDir + "/Paper_Peel.mat";
+                var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (m == null) { m = new Material(l0) { name = "Paper_Peel" }; AssetDatabase.CreateAsset(m, path); }
+                else m.CopyPropertiesFromMaterial(l0);
+                m.SetFloat("_MeshUV", 1f);
+                m.EnableKeyword("_FR_MESH_UV");
+                EditorUtility.SetDirty(m);
+                Debug.Log("[Transitions] material Paper_Peel <- L0_Wallpaper (mesh UV)");
+            }
+            AssetDatabase.SaveAssets();
+            foreach (var n in new[] { "Kit_TransBucket", "Kit_TransPaintTray", "Kit_TransDropCloth", "Kit_TransTileBox" })
+            {
+                var p = "Assets/Resources/Props/Models/" + n + ".fbx";
+                if (File.Exists(p)) AssetDatabase.ImportAsset(p, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+                Debug.Log("[Transitions] reimported " + p + " exists " + File.Exists(p));
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log("[Transitions] " + TextureReport());
+        }
+    }
+
+    static Texture2D Tex(string stem)
+    {
+        var t = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureDir + "/" + stem + ".png");
+        if (t == null) Debug.LogWarning("[Transitions] missing texture " + stem);
+        return t;
+    }
+
+    /// <summary>Runtime memory of the new textures as imported here (desktop), and a WebGL 1024 estimate.</summary>
+    public static string TextureReport()
+    {
+        var sb = new StringBuilder("new textures:\n");
+        long total = 0;
+        double webgl = 0;
+        foreach (var stem in NewTextures)
+            foreach (var suffix in new[] { "_A", "_N", "_S" })
+            {
+                var t = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureDir + "/" + stem + suffix + ".png");
+                if (t == null) continue;
+                // GPU size: block-compressed bytes per texel x mip chain (the editor's profiler figure also counts the CPU copy).
+                var bpt = t.format == TextureFormat.DXT1 || t.format == TextureFormat.BC4 ? .5 : t.format == TextureFormat.RGBA32 || t.format == TextureFormat.ARGB32 ? 4.0 : 1.0;
+                var bytes = (long)(t.width * (double)t.height * bpt * (t.mipmapCount > 1 ? 4.0 / 3.0 : 1.0));
+                total += bytes;
+                // WebGL tier: max 1024; ASTC/DXT at 1 byte per texel (8 bpp) incl. mips -> 1024^2 * 1.333 bytes.
+                var w = Mathf.Min(1024, t.width); var h = Mathf.Min(1024, t.height);
+                webgl += w * h * 1.0 * 4.0 / 3.0;
+                sb.Append("  " + stem + suffix + " " + t.width + "x" + t.height + " " + t.format + " mips " + t.mipmapCount + " " + (bytes / 1048576.0).ToString("0.00", IC) + " MB\n");
+            }
+        sb.Append("  TOTAL desktop (GPU, mips) " + (total / 1048576.0).ToString("0.0", IC) + " MB; WebGL 1024 estimate " + (webgl / 1048576.0).ToString("0.0", IC) + " MB\n");
+        return sb.ToString();
+    }
+
+    // ------------------------------------------------------------------ stats
+
+    [Serializable] class ShotFile { public float[] mapRoot; public Shot[] shots; }
+    [Serializable] class Shot { public string id; public int seed; public float[] eyeMap; public int[] openDoors; }
+
+    static string Arg(string name, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return fallback;
+    }
+
+    /// <summary>
+    /// Renderers, materials, triangles and lit lights within 46 m of each eye, with the kit
+    /// off (BEFORE, B0 off too) and on, built the way the audit harness builds the map.
+    /// </summary>
+    public static void Stats()
+    {
+        var code = 0;
+        try { StatsCore(); }
+        catch (Exception e) { Debug.LogError("[Transitions] EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    /// <summary>Band maps, then stats, in one Unity start (the machine is shared and slow).</summary>
+    public static void BandAndStats()
+    {
+        var code = 0;
+        try { BandCore(); StatsCore(); }
+        catch (Exception e) { Debug.LogError("[Transitions] EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    static void StatsCore()
+    {
+        var sb = new StringBuilder();
+        {
+            var file = JsonUtility.FromJson<ShotFile>(File.ReadAllText(Arg("-shots", null)));
+            var outDir = Arg("-out", Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "transitions"));
+            Directory.CreateDirectory(outDir);
+            EditorSceneManager.OpenScene("Assets/Scenes/FrontRooms3D.unity", OpenSceneMode.Single);
+            var root = new Vector3(file.mapRoot[0], file.mapRoot[1], file.mapRoot[2]);
+            sb.Append("shot | kit | renderers | materials | triangles | lit lights | shadowed | kit renderers | kit tris | props\n");
+            foreach (var s in file.shots)
+                foreach (var on in new[] { false, true })
+                {
+                    FrontRoomsTransitionRenovationKit.Enabled = on;
+                    FrontRoomsTransitionRenovationKit.Stats.Clear();
+                    var eye = new Vector3(s.eyeMap[0], s.eyeMap[1], s.eyeMap[2]);
+                    var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+                    profile.generation = profile.Generation(s.seed);
+                    var go = new GameObject("STATS map") { hideFlags = HideFlags.DontSave };
+                    go.transform.position = root;
+                    var world = go.AddComponent<FrontRoomsMapWorld>();
+                    world.Profile = profile;
+                    world.OverrideSpawn(new Vector3(eye.x, 0f, eye.z), 0f);
+                    world.BuildForCapture();
+                    world.TickFixturesForTools(0f);
+                    var eyeW = root + eye;
+                    int renderers = 0, tris = 0, kitR = 0, kitT = 0, props = 0;
+                    var mats = new HashSet<Material>();
+                    foreach (var r in go.GetComponentsInChildren<MeshRenderer>())
+                    {
+                        if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+                        if (r.bounds.SqrDistance(eyeW) > 46f * 46f) continue;
+                        var lod = r.GetComponentInParent<LODGroup>();
+                        if (lod != null && !r.name.EndsWith("_LOD0") && r.name.Contains("_LOD")) continue;
+                        var mf = r.GetComponent<MeshFilter>();
+                        var t = 0;
+                        if (mf != null && mf.sharedMesh != null) for (var sm = 0; sm < mf.sharedMesh.subMeshCount; sm++) t += (int)mf.sharedMesh.GetIndexCount(sm) / 3;
+                        renderers++;
+                        tris += t;
+                        foreach (var m in r.sharedMaterials) if (m != null) mats.Add(m);
+                        var isKit = HasAncestor(r.transform, "Renovation") || HasAncestor(r.transform, "Transition pieces");
+                        if (isKit) { kitR++; kitT += t; }
+                    }
+                    foreach (Transform t in go.GetComponentsInChildren<Transform>()) if (t.name.StartsWith("Renovation prop") && (t.position - eyeW).sqrMagnitude < 46f * 46f) props++;
+                    int lit = 0, shadowed = 0;
+                    foreach (var l in go.GetComponentsInChildren<Light>())
+                        if (l.enabled && l.intensity > 0f && (l.transform.position - eyeW).sqrMagnitude < 46f * 46f) { lit++; if (l.shadows != LightShadows.None) shadowed++; }
+                    sb.Append(s.id + " | " + (on ? "renovation" : "before") + " | " + renderers + " | " + mats.Count + " | " + tris + " | " + lit + " | " + shadowed + " | " + kitR + " | " + kitT + " | " + props + "\n");
+                    if (on)
+                    {
+                        sb.Append("   kit counters (5x5 chunks): ");
+                        foreach (var kv in FrontRoomsTransitionRenovationKit.Stats.OrderBy(k => k.Key)) sb.Append(kv.Key + "=" + kv.Value.ToString("0.##", IC) + "; ");
+                        sb.Append("\n");
+                    }
+                    world.Release();
+                    Object.DestroyImmediate(go);
+                    Object.DestroyImmediate(profile);
+                }
+            FrontRoomsTransitionRenovationKit.Enabled = true;
+            sb.Append(TextureReport());
+            File.WriteAllText(Path.Combine(outDir, "renovation_stats.txt"), sb.ToString());
+            Debug.Log("[Transitions] stats\n" + sb);
+        }
+    }
+
+    /// <summary>
+    /// Band map dump: for each salt in -salts (comma list, default the kit's RunSalt) and each shot in
+    /// -shots, builds the map round the eye with the kit on and writes every band box, slab strip,
+    /// tear, tile stack and prop (world metres) to -out/band_s<salt>_<shot>.txt.
+    /// </summary>
+    public static void BandMap()
+    {
+        var code = 0;
+        try { BandCore(); }
+        catch (Exception e) { Debug.LogError("[Transitions] EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+
+    static void BandCore()
+    {
+        {
+            var file = JsonUtility.FromJson<ShotFile>(File.ReadAllText(Arg("-shots", null)));
+            var outDir = Arg("-out", Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "transitions"));
+            Directory.CreateDirectory(outDir);
+            var salts = Arg("-salts", FrontRoomsTransitionRenovationKit.RunSalt.ToString(IC)).Split(',').Select(x => int.Parse(x.Trim(), IC)).ToArray();
+            EditorSceneManager.OpenScene("Assets/Scenes/FrontRooms3D.unity", OpenSceneMode.Single);
+            var root = new Vector3(file.mapRoot[0], file.mapRoot[1], file.mapRoot[2]);
+            var keep = FrontRoomsTransitionRenovationKit.RunSalt;
+            foreach (var salt in salts)
+                foreach (var s in file.shots)
+                {
+                    FrontRoomsTransitionRenovationKit.Enabled = true;
+                    FrontRoomsTransitionRenovationKit.RunSalt = salt;
+                    FrontRoomsTransitionRenovationKit.Stats.Clear();
+                    FrontRoomsTransitionRenovationKit.DebugLog = new List<string>();
+                    var eye = new Vector3(s.eyeMap[0], s.eyeMap[1], s.eyeMap[2]);
+                    var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+                    profile.generation = profile.Generation(s.seed);
+                    var go = new GameObject("BAND map") { hideFlags = HideFlags.DontSave };
+                    go.transform.position = root;
+                    var world = go.AddComponent<FrontRoomsMapWorld>();
+                    world.Profile = profile;
+                    world.OverrideSpawn(new Vector3(eye.x, 0f, eye.z), 0f);
+                    world.BuildForCapture();
+                    var lines = new List<string> { "root " + root.x.ToString(IC) + " " + root.z.ToString(IC), "eye " + (root.x + eye.x).ToString(IC) + " " + (root.z + eye.z).ToString(IC) };
+                    lines.AddRange(FrontRoomsTransitionRenovationKit.DebugLog);
+                    foreach (var kv in FrontRoomsTransitionRenovationKit.Stats.OrderBy(k => k.Key)) lines.Add("stat " + kv.Key.Replace(' ', '_') + " " + kv.Value.ToString("0.##", IC));
+                    File.WriteAllLines(Path.Combine(outDir, "band_s" + salt + "_" + s.id + ".txt"), lines);
+                    world.Release();
+                    Object.DestroyImmediate(go);
+                    Object.DestroyImmediate(profile);
+                }
+            FrontRoomsTransitionRenovationKit.DebugLog = null;
+            FrontRoomsTransitionRenovationKit.RunSalt = keep;
+            Debug.Log("[Transitions] band maps written for salts " + string.Join(",", salts));
+        }
+    }
+
+    static bool HasAncestor(Transform t, string prefix)
+    {
+        for (var p = t; p != null; p = p.parent) if (p.name.StartsWith(prefix)) return true;
+        return false;
+    }
+}

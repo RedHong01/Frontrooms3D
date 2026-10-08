@@ -1,0 +1,29 @@
+{
+  "columns": 4,
+  "rows": 4,
+  "frames": [
+    "card1",
+    "card1",
+    "card1",
+    "card2",
+    "card2",
+    "card2",
+    "card2",
+    "card3",
+    "card3",
+    "card3",
+    "card4",
+    "card4",
+    "card4",
+    "card4",
+    "station_id",
+    "station_id"
+  ],
+  "secondsPerFrame": 1.0,
+  "frameSize": [
+    256,
+    192
+  ],
+  "loopSeconds": 16.0,
+  "srgb": true
+}

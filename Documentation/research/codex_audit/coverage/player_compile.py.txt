@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Approximate PLAYER compile of Assembly-CSharp for several targets, outside Unity.
+Unlike runtime/csc_check.py it also drops every UnityEditor / *.Editor reference, so editor-only API used
+outside #if UNITY_EDITOR fails here as it would in a player build.
+usage: player_compile.py <src tree> <ref clone> <out dir>"""
+import os, re, subprocess, sys
+sys.path.insert(0, '/Users/redwang/FrontRoomsVisualWork/tools')
+import roslyn_check as rc
+
+tree, ref, out = sys.argv[1], sys.argv[2], sys.argv[3]
+os.makedirs(out, exist_ok=True)
+bee = rc.bee_dir(ref)
+lines = rc.read_rsp(os.path.join(bee, 'Assembly-CSharp.rsp'))
+srcs, _ = rc.sources_by_assembly(tree)
+asm_src = sorted(srcs.get('Assembly-CSharp', []))
+EDITOR_REF = re.compile(r'(UnityEditor|\.Editor(\.|$)|Editor\.ref\.dll|EditorBridge|Unity\.Android\.(Gradle|Types)|Mono\.Cecil|PPv2URPConverters|TestRunner|ShaderGraph\.Editor|Searcher\.Editor|PerformanceTesting\.Editor)')
+PLAT = {'PLATFORM_STANDALONE_OSX', 'PLATFORM_STANDALONE', 'UNITY_STANDALONE_OSX', 'UNITY_STANDALONE', 'ENABLE_GAMECENTER'}
+TARGETS = {
+    'mac':     ['PLATFORM_STANDALONE_OSX', 'PLATFORM_STANDALONE', 'UNITY_STANDALONE_OSX', 'UNITY_STANDALONE', 'ENABLE_MONO'],
+    'win64':   ['PLATFORM_STANDALONE_WIN', 'PLATFORM_STANDALONE', 'UNITY_STANDALONE_WIN', 'UNITY_STANDALONE', 'ENABLE_MONO'],
+    'linux64': ['PLATFORM_STANDALONE_LINUX', 'PLATFORM_STANDALONE', 'UNITY_STANDALONE_LINUX', 'UNITY_STANDALONE', 'ENABLE_MONO'],
+    'ios':     ['PLATFORM_IOS', 'UNITY_IOS', 'UNITY_IPHONE', 'ENABLE_IL2CPP', 'ENABLE_GAMECENTER'],
+    'android': ['PLATFORM_ANDROID', 'UNITY_ANDROID', 'ENABLE_IL2CPP'],
+    'webgl':   ['PLATFORM_WEBGL', 'UNITY_WEBGL', 'ENABLE_IL2CPP'],
+}
+env = dict(os.environ, DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+bee_rel = os.path.relpath(bee, ref)
+summary = []
+for name, defs in TARGETS.items():
+    opts, dropped = [], []
+    for l in lines:
+        if l.startswith('"') or l.startswith(('-out:', '-refout:', '/additionalfile:')):
+            continue
+        m = re.match(r'(-r:|-analyzer:)(.*)$', l)
+        if m:
+            p = rc.unq(m.group(2))
+            if m.group(1) == '-r:' and EDITOR_REF.search(os.path.basename(p)):
+                dropped.append(os.path.basename(p)); continue
+            if not p.startswith('/'):
+                p = os.path.join(ref, p)
+            opts.append(f'{m.group(1)}"{p}"'); continue
+        if l.startswith('-define:'):
+            d = l[8:]
+            if d.startswith('UNITY_EDITOR') or d in PLAT or d in ('ENABLE_MONO', 'UNITY_INCLUDE_TESTS', 'ENABLE_UNITY_COLLECTIONS_CHECKS', 'ENABLE_EDITOR_GAME_SERVICES', 'ENABLE_EDITOR_HUB_LICENSE', 'EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED'):
+                continue
+        opts.append(l)
+    opts += ['-define:' + d for d in defs]
+    if name == 'android': opts.append('-r:"/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/Managed/UnityEngine/UnityEngine.AndroidJNIModule.dll"')
+    vd = os.path.join(out, name); os.makedirs(vd, exist_ok=True)
+    opts += [f'-out:"{vd}/Assembly-CSharp.dll"']
+    opts += [f'"{os.path.join(tree, s)}"' for s in asm_src]
+    rsp = os.path.join(vd, 'Assembly-CSharp.rsp')
+    open(rsp, 'w').write('\n'.join(opts) + '\n')
+    pr = subprocess.run([rc.DOTNET, 'exec', rc.CSC, '/noconfig', '@' + rsp], capture_output=True, text=True, env=env)
+    msgs = (pr.stdout + pr.stderr).splitlines()
+    open(os.path.join(vd, 'log.txt'), 'w').write('\n'.join(msgs) + '\n')
+    errs = [x for x in msgs if re.search(r'\berror [A-Z]+\d+', x)]
+    warns = [x for x in msgs if re.search(r'\bwarning [A-Z]+\d+', x)]
+    summary.append(f'{name}: {len(asm_src)} files, rc {pr.returncode}, {len(errs)} errors, {len(warns)} warnings, {len(dropped)} editor refs dropped')
+    for e in errs[:25]: summary.append('    ' + e.replace(tree + '/', ''))
+    for w in warns[:12]: summary.append('    ' + w.replace(tree + '/', ''))
+open(os.path.join(out, 'summary.txt'), 'w').write('\n'.join(summary) + '\n')
+print('\n'.join(summary))

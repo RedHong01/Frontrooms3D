@@ -1,6 +1,7 @@
 # 10 — Evacuation-plan placard (Q16): prop, glow and placement spec
 
 Status: **SPEC v1, 2026-10-03 (17:1x PDT).** Research, prop, glow component, placement contract and WebGL path.
+**Superseded in places by the fix stage (2026-10-08, `35_fix.md`):** centre height 1.560 m (not 1.524, §5.2); the frame on its own slot `Prop_AluminiumAnodised` (not the shared `Prop_Aluminium`, D8); the textures packed to 4096 × 2048 (not 2592 × 1676, §3.3, because Unity keeps a non-power-of-two texture with mips uncompressed); the calm Failing read (§4.5); `PeakEmission` moved to `FrontRoomsPhosphor` (§4.4); the art is v2 (`20_build.md` §2). Where this file and `35_fix.md` differ, `35_fix.md` wins.
 - Nothing was built and nothing in the real project was changed, apart from this folder (`10_spec.md`, `SOURCES.md`, `media_candidates.md`).
 - Unity was not opened on Frontrooms3D, and no media was downloaded.
 
@@ -84,7 +85,7 @@ Status: **SPEC v1, 2026-10-03 (17:1x PDT).** Research, prop, glow component, pla
 | 11 × 17 in, 1 in profile | outside 12.22 × 18.22 in, viewable 9.78 × 15.78 in (15.5 mm over the poster) | S10 (snippet) |
 | Corners | mitred; the front rails open one by one | S1, S5, S8 |
 | Finish | silver (clear) anodised; black as an option | S8, S9 |
-| 11 × 17 in | ANSI B, the US tabloid copier size; a plan is copied, not printed by a sign shop | general knowledge, not fetched |
+| 11 × 17 in | ANSI B, the US tabloid size. **Fix 2026-10-08:** art v2 (full-colour wallpaper swatches plus a phosphor overprint) can only be **screen-printed** (or offset with a screened phosphor pass), not photocopied; that fits the title block's `PRINTED 03/90` | general knowledge, not fetched; 35_fix.md §8 |
 
 **Our choice (D3).** A 25.4 mm face, but **8.0 mm** over the sheet (not 9.5–15.5 mm).
 - Why: the artwork's outer rule sits 11.67–12.33 mm in from the sheet edge (measured).

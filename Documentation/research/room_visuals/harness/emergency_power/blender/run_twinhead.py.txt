@@ -1,0 +1,86 @@
+"""Twin-head battery emergency lighting unit, US, c. 1975-1992 (the wall-mounted
+"bug-eye" unit on a building's emergency circuit): a stamped-steel cabinet in
+almond baked enamel holding a 6 V lead-calcium battery and charger, a red neon
+"AC ON" pilot, a push-to-test switch, side and bottom vent louvres, two swivel
+bosses on top for the lamp-head yokes, a centre knockout for the conduit feed.
+CLONE-ONLY look-dev asset for Run! direction B (EMERGENCY POWER).
+
+This module is the CABINET (Kit_EmergencyTwinHead). The heads and yokes are
+separate assets (run_twinhead_yoke.py, run_twinhead_lamp.py) so the rig can aim
+each head like an installer does: the yoke swivels on its boss (yaw), the head
+tilts in the yoke (pitch). Anchors "mount_l" / "mount_r" give the boss tops.
+
+Size: 0.33 m wide x 0.18 m tall x 0.10 m deep (13 x 7 x 4 in). Origin = bottom
+centre; the back face (+Y in Blender, -Z in Unity) goes on the wall.
+Slots (4): Prop_SteelAlmond, Prop_PlasticBlack, Run_NeonPilot, Run_UnitLegend.
+No brand, no date: the nameplate reads EMERGENCY LIGHTING UNIT and the rating.
+"""
+
+import kitlib
+
+NAME = "Kit_EmergencyTwinHead"
+SMOOTH_ANGLE = 40.0
+
+STEEL = "Prop_SteelAlmond"
+BLACK = "Prop_PlasticBlack"
+PILOT = "Run_NeonPilot"
+LEGEND = "Run_UnitLegend"
+kitlib.register_slot(PILOT, (0.45, 0.04, 0.03), 0.2)
+kitlib.register_slot(LEGEND, (0.85, 0.83, 0.78), 0.6)
+
+W, D, H = 0.33, 0.10, 0.18
+FRONT = -D / 2
+MOUNT_X = 0.105
+
+
+def build(kit):
+    # Cabinet: one deep-drawn shell, 9 mm edge radius, and a front cover 1.2 mm
+    # proud with its own 1.5 mm round (the seam reads as a fine line at 3 m).
+    kit.box((W, D, H), (0, 0, H / 2), STEEL, bevel=0.009, segments=3, name="shell")
+    kit.box((W - 0.024, 0.003, H - 0.024), (0, FRONT - 0.0012, H / 2), STEEL, bevel=0.0015, segments=1, name="front cover")
+    cover = FRONT - 0.0027
+
+    # Side louvres: four lanced slots per end, each a dark slot under a pressed hood.
+    for sx in (-1, 1):
+        for i in range(4):
+            z = 0.060 + 0.024 * i
+            kit.box((0.004, 0.056, 0.0065), (sx * (W / 2 - 0.0012), -0.004, z), BLACK, bevel=0.0008, segments=1, name="louvre slot")
+            hood = kit.box((0.0045, 0.060, 0.0032), (sx * (W / 2 + 0.0015), -0.004, z + 0.0052), STEEL, bevel=0.0012, segments=1, name="louvre hood")
+            kitlib.Kit.lod1_drop(hood)
+    # Bottom vents (seen from below by a standing player): five slots.
+    for i in range(5):
+        x = -0.10 + 0.05 * i
+        kit.box((0.040, 0.007, 0.004), (x, 0.008, 0.0012), BLACK, bevel=0.0008, segments=1, name="bottom slot")
+
+    # Pilot (viewer's left): black bezel, red neon jewel.
+    px, pz = -0.095, 0.125
+    kit.cylinder(0.0100, 0.005, (px, cover - 0.0022, pz), BLACK, verts=24, rot=(90, 0, 0), bevel=0.0012, name="pilot bezel")
+    kit.lathe([(0.0068, 0.0), (0.0067, 0.0022), (0.0055, 0.0042), (0.0033, 0.0054), (0.0, 0.0059)],
+              (px, cover - 0.0045, pz), PILOT, verts=24, rot=(90, 0, 0), name="pilot jewel")
+    # Test switch (viewer's right): bezel ring and a round push cap.
+    tx, tz = 0.095, 0.125
+    kit.cylinder(0.0108, 0.004, (tx, cover - 0.0018, tz), BLACK, verts=24, rot=(90, 0, 0), bevel=0.001, name="test bezel")
+    kit.lathe([(0.0072, 0.0), (0.0072, 0.0050), (0.0064, 0.0068), (0.0040, 0.0076), (0.0, 0.0078)],
+              (tx, cover - 0.0038, tz), BLACK, verts=24, rot=(90, 0, 0), name="test cap")
+    # Legends: nameplate low on the cover, AC ON and PUSH TO TEST under the controls.
+    lg = cover - 0.0004
+    kit.quad(0.200, 0.050, (0.0, lg, 0.047), LEGEND, facing="-y", uv="decal", uv_rect=kitlib.Kit.atlas_cell(0, 1, 4), name="nameplate")
+    kit.quad(0.046, 0.0115, (px, lg, 0.104), LEGEND, facing="-y", uv="decal", uv_rect=kitlib.Kit.atlas_cell(1, 1, 4), name="legend ac on")
+    kit.quad(0.050, 0.0125, (tx, lg, 0.104), LEGEND, facing="-y", uv="decal", uv_rect=kitlib.Kit.atlas_cell(2, 1, 4), name="legend test")
+    # Cover screws (four, almond-painted pan heads).
+    for sx in (-1, 1):
+        for sz in (0.022, H - 0.022):
+            s = kit.cylinder(0.0036, 0.0016, (sx * (W / 2 - 0.022), cover - 0.0007, sz), STEEL, verts=12, rot=(90, 0, 0), bevel=0.0006, segments=1, name="screw")
+            kitlib.Kit.lod1_drop(s)
+
+    # Top: two swivel bosses for the yokes and the centre knockout (conduit feed).
+    for sx in (-1, 1):
+        kit.cylinder(0.016, 0.010, (sx * MOUNT_X, -0.008, H + 0.004), STEEL, verts=28, bevel=0.002, name="swivel boss")
+        kit.cylinder(0.0105, 0.003, (sx * MOUNT_X, -0.008, H + 0.0095), BLACK, verts=24, bevel=0.0008, segments=1, name="boss collar")
+    kit.cylinder(0.012, 0.003, (0.0, 0.012, H + 0.0005), STEEL, verts=24, bevel=0.0008, segments=1, name="knockout ring")
+
+    kit.no_collider()
+    kit.anchor("mount_l", (-MOUNT_X, -0.008, H + 0.011))
+    kit.anchor("mount_r", (MOUNT_X, -0.008, H + 0.011))
+    kit.anchor("feed", (0.0, 0.012, H + 0.002))
+    kit.tag("wall_unit", "run")

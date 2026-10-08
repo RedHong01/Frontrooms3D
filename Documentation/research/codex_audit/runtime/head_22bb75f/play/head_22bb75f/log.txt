@@ -1,0 +1,63 @@
+00:24:06 [frame 1 map 0.0 s] play started · gfx Metal Apple M3 Max · quality High · URP FrontRooms_URP
+00:24:06 [frame 1 map 0.0 s] game found (restart 0) · cam First-person camera
+00:26:02 [frame 3811 map 61.7 s] CAUGHT → restart 1 (R: static restart + LoadScene, as the game does)
+00:26:03 [frame 3812 map 61.7 s] game found (restart 1) · cam First-person camera
+00:26:04 [frame 3828 map 62.0 s] BAD MATERIAL null material · FrontRooms 3D/Level 0 map/Chunk (12, -2) · revision 0/Key · zone (12, -2) · at (295.50, 1.05, -40.50)
+00:26:45 [frame 5113 map 83.4 s] CAUGHT → restart 2 (R: static restart + LoadScene, as the game does)
+00:26:46 [frame 5114 map 83.4 s] game found (restart 2) · cam First-person camera
+00:27:09 [frame 5807 map 95.0 s] KEY SHOT 0 · Key · zone (9, 0) · material Map test / key (Universal Render Pipeline/Lit)
+00:27:18 [frame 6107 map 100.0 s] FORCED R RESTART at map 100.0 s (static restart + LoadScene, the game's R path)
+00:27:20 [frame 6108 map 100.0 s] game found (restart 3) · cam First-person camera
+00:27:23 [frame 6197 map 101.5 s] KEY SHOT 1 · Key · zone (10, 0) · material NULL
+00:28:03 [frame 7307 map 120.0 s] FINISH
+label head_22bb75f
+map seconds 120.0 · frames rendered 7307 · restarts after caught 3 · chunk roots destroyed 135 · max chunks built 25
+console: 54 warnings, 1 errors, 2 exceptions, 0 asserts
+G14 status: on: Apple9, High, kernel 14 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters · quality High
+G14 stats: tlas 1968 · candidates 1968 · meshes 1610 (pending 0) · receiversVisible 19 · glassPixels 0 · hitPixels 0 · gpuMsTotal 0.40 · mainThreadMs 1.97 (max 483.71) · traceEvents 5530 · commandBufferErrors 0 · residency residency set · blasBytes 5636848 · geometryBytes 9286796 · targetBytes 51840000 · blasBuiltTotal 10190 · gpuMsFrame 0.00 · encodeMs 0.19 (max 8.02)
+G14 coverage: renderers with Glass_Window* material 68 · on prepass bit 30 68 (material has FRGlassRTPrepass pass: 68) · on override bit 29 0
+    bit 30: 68 × Glass_Window (FrontRooms/Glass, passes 2)
+renderers that would draw pink (null / missing / unsupported / error shader): 1 · null material · FrontRooms #D/Level # map/Chunk (#, #) · revision #/Key · zone (#, #)
+G14 per map frame, main-thread ms of BuildFrame: n 7200 · mean 2.759 · p50 3.055 · p95 4.800 · p99 8.065 · max 483.714
+G14 per map frame, GPU ms: n 7200 · mean 2.573 · p50 1.091 · p95 9.325 · p99 14.847 · max 33.484 · frames with glass pixels > 0: 525
+
+messages (count · first at map s · message):
+  48 · 0.0 s · Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+  4 · 0.0 s · Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+  1 · 0.0 s · Error: [FMOD] RuntimeBankModel::openFile : Failed to open file 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank'
+  1 · 0.0 s · Exception: BankLoadException: [FMOD] Could not load bank 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank' : ERR_FILE_NOTFOUND : File not found.
+  1 · 0.0 s · Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+  1 · 0.5 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (33, 24) · revision 0; left out.
+  1 · 8.5 s · Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (37, 24) · revision 0; left out.
+
+first stack of each error / exception:
+=== Error: [FMOD] RuntimeBankModel::openFile : Failed to open file 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank'
+UnityEngine.Debug:LogError (object)
+FMODUnity.RuntimeUtils:DebugLogError (string) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeUtils.cs:596)
+FMODUnity.RuntimeManager:DEBUG_CALLBACK (FMOD.DEBUG_FLAGS,intptr,int,intptr,intptr) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:109)
+
+=== Exception: BankLoadException: [FMOD] Could not load bank 'FMOD/FrontRooms/Build/Desktop/Master.strings.bank' : ERR_FILE_NOTFOUND : File not found.
+FMODUnity.RuntimeManager.RegisterLoadedBank (FMODUnity.RuntimeManager+LoadedBank loadedBank, System.String bankPath, System.String bankName, System.Boolean loadSamples, FMOD.RESULT loadResult) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:912)
+FMODUnity.RuntimeManager.LoadBank (System.String bankName, System.Boolean loadSamples, System.String bankId) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1018)
+FMODUnity.RuntimeManager.LoadBank (System.String bankName, System.Boolean loadSamples) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:969)
+FMODUnity.RuntimeManager.LoadBanks (FMODUnity.Settings fmodSettings) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1106)
+UnityEngine.Debug:LogException(Exception)
+FMODUnity.RuntimeUtils:DebugLogException(Exception) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeUtils.cs:612)
+FMODUnity.RuntimeManager:LoadBanks(Settings) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:1113)
+FMODUnity.RuntimeManager:Initialize() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:416)
+FMODUnity.RuntimeManager:get_Instance() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:217)
+FMODUnity.RuntimeManager:get_StudioSystem() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/RuntimeManager.cs:235)
+FMODUnity.StudioListener:AddListener(StudioListener) (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/StudioListener.cs:104)
+FMODUnity.StudioListener:OnEnable() (at /Users/redwang/FrontRoomsVisualWork/base/Assets/Plugins/FMOD/src/StudioListener.cs:134)
+
+=== Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+System.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <c5eeda5e65d44b388e164c6c5cfe0702>:0)
+UnityEditor.Search.SearchDatabase+<EnumerateAll>d__80.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:445)
+System.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+UnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:420)
+UnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)
+UnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:407)
+
+
+00:28:04 [frame 1 map 120.0 s] exit

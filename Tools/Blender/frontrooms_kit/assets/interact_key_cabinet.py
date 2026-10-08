@@ -23,8 +23,8 @@ Body Y 1.24 - 1.70. Front +Z = the room. Anchors hook_r{0..3}_c{0..5} (r0
 top row, c0 the left column as seen from the room), key_hook = hook_r1_c4,
 door_hinge (+ door_hinge_dir, the hinge axis), body_centre.
 
-Budget §9.3: 7,000 / 2,400 / 250 tris, LOD 3 / 8 / 40 m; 0.72 m wide, so no
-LOD1 until P-1. Slots (dominant first): Prop_SteelAlmond (body, door,
+Budget §9.3: 7,000 / 2,400 / 250 tris, LOD 3 / 8 / 40 m; 0.72 m wide;
+LOD1 exported since the 2026-10-08 fix pass (critic H4); LOD1 keeps the LOD0 shape (lod1_keep_all). Slots (dominant first): Prop_SteelAlmond (body, door,
 strips), Prop_PlasticWhite (hook panel), Prop_Chrome (hooks, lock, screws),
 Prop_KeyTagNo (the 24 hook labels, cells 01-24, and the index card, which
 maps to a blank paper band of the atlas between rows 0 and 1 so it stays
@@ -34,11 +34,13 @@ Tags interactable, key_host, wall_decor.
 
 import math
 
+import interact_door_common as dc
 import interact_key_common as kc
 from interact_key_common import U
 
 NAME = "Kit_KeyCabinet"
 LOD1_RATIO, LOD2_RATIO = 2400 / 7000, 250 / 7000
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (3.0, 8.0, 40.0)
 BUDGET = (7000, 2400, 250)
 
@@ -103,6 +105,7 @@ def door_point(s, y, t):
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
     kc.register_slots()
     # ---------------------------------------------------------- body shell
     r = 0.0015
@@ -234,7 +237,10 @@ def build(kit):
     # key hangs tip down from key_contact with its flat normal (+X) square to
     # the room (30 deg of twist in its Ø 4.8 hole) and the tag hangs from
     # tag_contact face to the room (30 deg in its Ø 5 hole on the 2.4 mm tab).
-    kit.meta["hungPose"] = {"ringYawDeg": -60.0, "ringLiftM": 0.0011, "keyTwistDeg": -30.0, "tagTwistDeg": -30.0,
+    # Fix pass 2026-10-08 (critic C2): tag on the WALL side of the ring so the brass key faces the room. The ring turns
+    # 180 deg about the vertical (same plane; the hook still passes through it) and the tag turns back to face the room.
+    # Re-checked with BVH on the real meshes, every host x every tag: 0 overlaps (int_work/fix/hung_pose.json).
+    kit.meta["hungPose"] = {"ringYawDeg": 120.0, "ringLiftM": 0.0011, "keyTwistDeg": -30.0, "tagTwistDeg": 150.0, "tagSide": "wall (behind the key)",
                             "key": "LookRotation(down, Cross(down, hostForward)): tip down, flats to the room",
                             "tag": "LookRotation(hostForward, up): face to the room, hanging along -Y"}
     kit.no_collider()

@@ -1,0 +1,35 @@
+--- /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Resources/Rendering/FrontRoomsSurface.shader	2026-10-03 17:22:38
++++ /Users/redwang/FrontRoomsVisualWork/proj_run_house_lights/Assets/Resources/Rendering/FrontRoomsSurface.shader	2026-10-07 16:35:24
+@@ -133,6 +133,19 @@
+             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
+             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
+             #pragma multi_compile_instancing
++            // CLONE-ONLY (Run C look-dev): white-corridor surfaces take SSAO at half strength on
++            // indirect light and none on direct, so the game's SSAO (1.6, r 0.45) does not draw a
++            // noisy grey band along every white ceiling joint.
++            #pragma shader_feature_local_fragment _ _FR_SOFT_AO
++            #if defined(_FR_SOFT_AO) && defined(_SCREEN_SPACE_OCCLUSION)
++                #define FR_SOFT_AO_ON 1
++                #undef _SCREEN_SPACE_OCCLUSION
++            #endif
++            // CLONE-ONLY (Run C look-dev, a mini G7): box-projected, blended reflection probes, as URP Lit
++            // declares them, so the waxed VCT and glazed tile reflect the corridor's own baked probes.
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_ATLAS
+ 
+             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+ 
+@@ -463,6 +476,12 @@
+                 s.smoothness = saturate(smoothness);
+                 s.normalTS = nTS;
+                 s.occlusion = cavity;
++            #if defined(FR_SOFT_AO_ON)
++                {
++                    half ssao = saturate(SampleAmbientOcclusion(inputData.normalizedScreenSpaceUV) + (1.0h - (half)_AmbientOcclusionParam.x));
++                    s.occlusion *= lerp(1.0h, ssao, 0.5h);
++                }
++            #endif
+                 s.alpha = 1;
+             #if defined(_EMISSION)
+                 s.emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;

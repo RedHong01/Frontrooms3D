@@ -1,0 +1,45 @@
+"""Red incandescent flasher over the Run! C door pairs (hero). CLONE-ONLY.
+A 4 in (104 mm) red-enamel cast box on the wall, a spun-aluminium bezel,
+a ribbed red glass dome (100 mm) and a chrome wire guard. The dome is the
+emissive part in Unity (Run_FlasherDome). ORIGIN = wall face, dome to -Y."""
+import math
+
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_FlasherLamp"
+SMOOTH_ANGLE = 45.0
+
+
+def build(kit):
+    kit.box((0.104, 0.046, 0.104), (0, -0.023, 0), "Prop_PlasticRed", bevel=0.008, segments=3, name="box")
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            kit.cylinder(0.0035, 0.002, (sx * 0.040, -0.0465, sz * 0.040), "Prop_Chrome", verts=10, rot=(90, 0, 0), bevel=0.0007, segments=1, name="screw")
+    kit.cylinder(0.054, 0.010, (0, -0.051, 0), "Prop_Aluminium", verts=40, rot=(90, 0, 0), bevel=0.003, name="bezel")
+    # ribbed dome: radius 0.048 base, 0.056 tall, 16 shallow vertical ribs via a wavy lathe isn't possible,
+    # so the ribs are horizontal fresnel steps (period beacon glass).
+    prof = []
+    steps = 12
+    for i in range(steps + 1):
+        a = (math.pi / 2) * i / steps
+        r = 0.048 * math.cos(a)
+        z = 0.056 * math.sin(a)
+        if 0 < i < steps and i % 2 == 1:
+            r += 0.0012
+        prof.append((max(r, 0.0), z))
+    kit.lathe(prof, (0, -0.056, 0), "Run_FlasherDome", verts=40, rot=(90, 0, 0), close_top=False, name="dome")
+    # wire guard: a base ring and two crossing arches
+    ring = [(0.056 * math.cos(2 * math.pi * k / 32), -0.058, 0.056 * math.sin(2 * math.pi * k / 32)) for k in range(33)]
+    kit.tube(ring, 0.0024, "Prop_Chrome", verts=8, name="guard ring", caps=False)
+    for ang in (45, 135):
+        c, s = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+        pts = []
+        for k in range(17):
+            t = math.pi * k / 16
+            u = 0.056 * math.cos(t)
+            d = 0.064 * math.sin(t)
+            pts.append((u * c, -0.058 - d, u * s))
+        kit.tube(pts, 0.0022, "Prop_Chrome", verts=8, name="guard arch")
+    kit.anchor("dome", (0, -0.085, 0))
+    kit.no_collider()
+    kit.tag("run", "wall_unit")

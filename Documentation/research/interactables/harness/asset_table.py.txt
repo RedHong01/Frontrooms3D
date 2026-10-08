@@ -1,0 +1,70 @@
+"""Final asset table + promote list for the interactables kit fix pass (2026-10-08).
+
+  W/venv/bin/python asset_table.py <clone Models dir> <main Models dir> <out dir>
+
+Reads every sidecar tagged "interactable" in the clone (except the exit-sign track's Kit_ExitSign*), and writes:
+  assets.md      markdown table: name, size (Unity X x Y x Z m), tris LOD0 / LOD1, LOD distances, slots, anchors
+  promote.tsv    path, clone sha1, main sha1, state (CHANGED / SAME / NEW), main .meta GUID
+"""
+import hashlib
+import json
+import os
+import re
+import sys
+
+CL, MA, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+os.makedirs(OUT, exist_ok=True)
+
+
+def sha1(p):
+    if not os.path.exists(p):
+        return "ABSENT"
+    h = hashlib.sha1()
+    with open(p, "rb") as f:
+        h.update(f.read())
+    return h.hexdigest()
+
+
+def guid(meta):
+    if not os.path.exists(meta):
+        return "-"
+    m = re.search(r"guid: ([0-9a-f]{32})", open(meta).read())
+    return m.group(1) if m else "-"
+
+
+names = []
+for fn in sorted(os.listdir(CL)):
+    if not fn.endswith(".json") or not fn.startswith("Kit_"):
+        continue
+    d = json.load(open(os.path.join(CL, fn)))
+    if "interactable" not in d.get("tags", []):
+        continue
+    if fn.startswith("Kit_ExitSign"):
+        continue                      # owned by the exit-sign track since 2026-10-07
+    names.append((fn[:-5], d))
+
+rows = ["| Asset | Size X × Y × Z (m) | Tris LOD0 / LOD1 | LOD d01 / dcull (m, lodBias 1) | Slots | Anchors |",
+        "|---|---|---|---|---|---|"]
+for n, d in names:
+    lo, hi = d["boundsMin"], d["boundsMax"]
+    size = " × ".join("%.4g" % (hi[i] - lo[i]) for i in range(3))
+    l1 = d.get("trianglesLod1")
+    ld = d.get("lodDistances") or []
+    def f(x):
+        return "never" if (x is None or x <= 0) else ("%g" % x)
+    lods = "%s / %s" % (f(ld[0]) if ld else "-", f(ld[-1]) if ld else "-")
+    anchors = ", ".join(a["name"] for a in d.get("anchors", []))
+    rows.append("| `%s` | %s | %s / %s | %s | %s | %s |" % (n, size, "{:,}".format(d["triangles"]), "{:,}".format(l1) if l1 else "—", lods,
+                                                         ", ".join(d.get("slots", [])), anchors or "—"))
+open(os.path.join(OUT, "assets.md"), "w").write("\n".join(rows) + "\n")
+
+lines = ["path\tclone_sha1\tmain_sha1\tstate\tmain_meta_guid"]
+for n, d in names:
+    for ext in (".fbx", ".json"):
+        rel = "Assets/Resources/Props/Models/" + n + ext
+        c, m = sha1(os.path.join(CL, n + ext)), sha1(os.path.join(MA, n + ext))
+        st = "NEW" if m == "ABSENT" else ("SAME" if c == m else "CHANGED")
+        lines.append("\t".join([rel, c, m, st, guid(os.path.join(MA, n + ext + ".meta"))]))
+open(os.path.join(OUT, "promote.tsv"), "w").write("\n".join(lines) + "\n")
+print(len(names), "assets;", sum(1 for l in lines[1:] if "\tCHANGED\t" in l), "changed files;",
+      sum(1 for l in lines[1:] if "\tNEW\t" in l), "new;", sum(1 for l in lines[1:] if "\tSAME\t" in l), "same")

@@ -47,6 +47,7 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
 
     // Mains (spec §8.2).
     const float TransferLevel = .55f, BrownoutExponent = 3.4f, TransferGap = .20f;
+    const float CoolSeconds = .18f;            // AC filaments below 1 % (4.6 x 40 ms) before the black gap starts
 
     static readonly int LampFieldId = Shader.PropertyToID("_LampField");
     static readonly Vector4 LitWeights = new Vector4(1f, 1f, 0f, 0f);
@@ -152,7 +153,7 @@ public sealed class FrontRoomsExitSign : MonoBehaviour
             onDc = true;
             acTarget = 0f;
             dcTarget = reduced ? 1f : 0f;
-            gapTimer = reduced ? 0f : TransferGap + FallSeconds;
+            gapTimer = reduced ? 0f : CoolSeconds + TransferGap;
         }
         else if (onDc && mains >= TransferLevel)
         {

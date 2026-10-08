@@ -76,7 +76,7 @@ CUT_FLAT = 0.0008
 # "50 deg flanks": read as each flank 50 deg off the vertical (100 deg
 # included, the common US cut angle). ESTIMATE reading of the spec wording.
 CUT_FLANK_DEG = 50.0
-TIP_START, TIP_Y, NOSE_R = 0.0215, 0.0005, 0.0005
+TIP_START, TIP_Y, NOSE_R = 0.0234, 0.0005, 0.0005   # fix pass 2026-10-08 (L6): = interact_key_common.TIP_BEVEL_Z
 
 PIN_D = 0.0029
 PIN_LIFT = 0.0002            # pin tip above its cut floor at full insertion

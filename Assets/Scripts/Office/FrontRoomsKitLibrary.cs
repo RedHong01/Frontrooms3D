@@ -124,9 +124,27 @@ public static class FrontRoomsKitLibrary
         Models.Clear();
         Infos.Clear();
         MaterialSets.Clear();
+        PreparedKits.Clear();
         Missing.Clear();
         ProjectMaterials.Clear();
         allNames = null;
+    }
+
+    /// <summary>
+    /// Load what the first Spawn of each kit would otherwise load mid-game:
+    /// every model and sidecar, the project slot materials each model's
+    /// renderers are remapped to (Resources/Surfaces, with their textures),
+    /// and the per-kit shadow and collider set-up. Changes nothing that gets
+    /// built. Call once while nothing is on screen (e.g. from the map's Prewarm).
+    /// </summary>
+    public static void Prewarm()
+    {
+        foreach (var name in AllNames())
+        {
+            GetInfo(name);
+            var model = Model(name);
+            if (model != null) Prepare(name, model);
+        }
     }
 
     /// <summary>Every kit asset name in Resources/Props/Models, sorted (stable for seeding).</summary>
@@ -199,55 +217,137 @@ public static class FrontRoomsKitLibrary
         if (model == null) return null;
         var instance = UnityEngine.Object.Instantiate(model, parent, false);
         instance.name = label ?? assetName;
-        instance.transform.localPosition = localPosition;
-        instance.transform.localRotation = localRotation;
-        instance.transform.localScale = scale ?? Vector3.one;
-        ApplyMaterials(assetName, instance);
-        if (colliders) AddColliders(assetName, instance);
+        var t = instance.transform;
+        t.localPosition = localPosition;
+        t.localRotation = localRotation;
+        // The clone already has the model's scale; write only when it differs (bit for bit).
+        var s = scale ?? Vector3.one;
+        var current = t.localScale;
+        if (current.x != s.x || current.y != s.y || current.z != s.z) t.localScale = s;
+        ApplyMaterials(assetName, model, instance);
+        if (colliders) AddColliders(assetName, model, instance);
         return instance;
     }
 
     static readonly Dictionary<string, Material> ProjectMaterials = new Dictionary<string, Material>();
 
     /// <summary>
-    /// Remap every renderer (LOD0 and LOD1) to the project slot materials and
-    /// keep shadows only on props larger than 0.3 m (LEVEL_MODULE_SPEC §8).
+    /// What Spawn does to every instance of one asset, worked out once from the
+    /// model (an instance's renderers are clones of the model's, in the same
+    /// order): the material set per renderer (null when the importer already
+    /// assigned exactly those materials), whether the shadow settings need
+    /// writing, and the collider boxes.
     /// </summary>
-    static void ApplyMaterials(string assetName, GameObject instance)
+    sealed class Prepared
     {
-        var info = GetInfo(assetName);
-        var castShadows = info == null || Mathf.Max(info.Size.x, Mathf.Max(info.Size.y, info.Size.z)) > .3f;
-        foreach (var renderer in instance.GetComponentsInChildren<MeshRenderer>(true))
-        {
-            if (!MaterialSets.TryGetValue(assetName + "/" + renderer.name, out var set))
-            {
-                var imported = renderer.sharedMaterials;
-                set = new Material[imported.Length];
-                for (var i = 0; i < imported.Length; i++)
-                {
-                    var slot = imported[i] != null ? imported[i].name.Replace(" (Instance)", string.Empty) : null;
-                    Material project = null;
-                    if (slot != null && !ProjectMaterials.TryGetValue(slot, out project))
-                        ProjectMaterials[slot] = project = FrontRoomsSurfaces.TryGet(slot);
-                    set[i] = project != null ? project : imported[i];
-                }
-                MaterialSets[assetName + "/" + renderer.name] = set;
-            }
-            renderer.sharedMaterials = set;
-            renderer.shadowCastingMode = castShadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = true;
-        }
+        public int renderers;
+        public Material[][] sets;
+        public bool[] writeShadows, writeReceive;
+        public UnityEngine.Rendering.ShadowCastingMode shadows;
+        public Vector3[] boxCentres, boxSizes;
     }
 
-    static void AddColliders(string assetName, GameObject instance)
+    static readonly Dictionary<string, Prepared> PreparedKits = new Dictionary<string, Prepared>();
+    static readonly List<MeshRenderer> RendererScratch = new List<MeshRenderer>();
+
+    static Prepared Prepare(string assetName, GameObject model)
     {
+        if (PreparedKits.TryGetValue(assetName, out var prep)) return prep;
         var info = GetInfo(assetName);
-        if (info?.colliders == null || info.colliders.Length == 0) return;
-        foreach (var box in info.colliders)
+        var castShadows = info == null || Mathf.Max(info.Size.x, Mathf.Max(info.Size.y, info.Size.z)) > .3f;
+        var shadows = castShadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+        var renderers = model.GetComponentsInChildren<MeshRenderer>(true);
+        prep = new Prepared
+        {
+            renderers = renderers.Length,
+            sets = new Material[renderers.Length][],
+            writeShadows = new bool[renderers.Length],
+            writeReceive = new bool[renderers.Length],
+            shadows = shadows,
+        };
+        for (var r = 0; r < renderers.Length; r++)
+        {
+            var renderer = renderers[r];
+            var set = MaterialSet(assetName, renderer);
+            var imported = renderer.sharedMaterials;
+            var same = imported.Length == set.Length;
+            for (var i = 0; same && i < set.Length; i++) same = ReferenceEquals(imported[i], set[i]);
+            prep.sets[r] = same ? null : set;
+            prep.writeShadows[r] = renderer.shadowCastingMode != shadows;
+            prep.writeReceive[r] = !renderer.receiveShadows;
+        }
+        if (info?.colliders != null && info.colliders.Length > 0)
+        {
+            prep.boxCentres = new Vector3[info.colliders.Length];
+            prep.boxSizes = new Vector3[info.colliders.Length];
+            for (var i = 0; i < info.colliders.Length; i++)
+            {
+                prep.boxCentres[i] = V(info.colliders[i].centre);
+                prep.boxSizes[i] = V(info.colliders[i].size);
+            }
+        }
+        PreparedKits[assetName] = prep;
+        return prep;
+    }
+
+    /// <summary>The project slot materials for one renderer, cached by asset and renderer name.</summary>
+    static Material[] MaterialSet(string assetName, MeshRenderer renderer)
+    {
+        if (MaterialSets.TryGetValue(assetName + "/" + renderer.name, out var set)) return set;
+        var imported = renderer.sharedMaterials;
+        set = new Material[imported.Length];
+        for (var i = 0; i < imported.Length; i++)
+        {
+            var slot = imported[i] != null ? imported[i].name.Replace(" (Instance)", string.Empty) : null;
+            Material project = null;
+            if (slot != null && !ProjectMaterials.TryGetValue(slot, out project))
+                ProjectMaterials[slot] = project = FrontRoomsSurfaces.TryGet(slot);
+            set[i] = project != null ? project : imported[i];
+        }
+        MaterialSets[assetName + "/" + renderer.name] = set;
+        return set;
+    }
+
+    /// <summary>
+    /// Remap every renderer (LOD0 and LOD1) to the project slot materials and
+    /// keep shadows only on props larger than 0.3 m (LEVEL_MODULE_SPEC §8).
+    /// Writes are skipped where the instance already holds the wanted value.
+    /// </summary>
+    static void ApplyMaterials(string assetName, GameObject model, GameObject instance)
+    {
+        var prep = Prepare(assetName, model);
+        instance.GetComponentsInChildren(true, RendererScratch);
+        if (RendererScratch.Count != prep.renderers)
+        {
+            // Not shaped like its model (never expected): set everything, as before.
+            foreach (var renderer in RendererScratch)
+            {
+                renderer.sharedMaterials = MaterialSet(assetName, renderer);
+                renderer.shadowCastingMode = prep.shadows;
+                renderer.receiveShadows = true;
+            }
+            RendererScratch.Clear();
+            return;
+        }
+        for (var r = 0; r < RendererScratch.Count; r++)
+        {
+            var renderer = RendererScratch[r];
+            if (prep.sets[r] != null) renderer.sharedMaterials = prep.sets[r];
+            if (prep.writeShadows[r]) renderer.shadowCastingMode = prep.shadows;
+            if (prep.writeReceive[r]) renderer.receiveShadows = true;
+        }
+        RendererScratch.Clear();
+    }
+
+    static void AddColliders(string assetName, GameObject model, GameObject instance)
+    {
+        var prep = Prepare(assetName, model);
+        if (prep.boxCentres == null) return;
+        for (var i = 0; i < prep.boxCentres.Length; i++)
         {
             var collider = instance.AddComponent<BoxCollider>();
-            collider.center = V(box.centre);
-            collider.size = V(box.size);
+            collider.center = prep.boxCentres[i];
+            collider.size = prep.boxSizes[i];
         }
     }
 }

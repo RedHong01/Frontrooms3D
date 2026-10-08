@@ -23,8 +23,7 @@ head underneath. Anchors: spindle (0, 0, 0), elbow (0.240, 0, 0) (the pivot
 axis), elbow_top (0.240, 0.012, 0) where Kit_DoorCloser_Forearm's origin
 sits.
 
-Budget (§9.1): 1,200 / 400 / 60 tris; slot SteelBrown. No LOD1 (small part,
-until P-1). Render-only.
+Budget (§9.1): 1,200 / 400 / 60 tris; slot SteelBrown. LOD1 exported since the 2026-10-08 fix pass (critic H4). Render-only.
 """
 
 import random
@@ -33,8 +32,8 @@ import sys
 import interact_door_common as dc
 
 NAME = "Kit_DoorCloser_Arm"
-LOD1 = None
 LOD1_RATIO = 0.33
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.05
 LOD_DISTANCES = (1.5, 5.0, 20.0)
 SMOOTH_ANGLE = 35.0
@@ -52,6 +51,7 @@ def wear(P, N, edge, obj):
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
     rng = random.Random(41060)
     # bar: a rounded rectangle swept from inside the hub to inside the elbow boss
     # (0.5 mm thinner than the hub and elbow boss at top and bottom, so no

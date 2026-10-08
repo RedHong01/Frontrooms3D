@@ -1,0 +1,53 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -390,6 +390,19 @@
+     RectInt startArea;
+     bool hasStartArea;
+     GridCoord startDoorCell;
++    // World-XZ rects the start area keeps free of furnishing (visual Q16, research/placard/40_contract_map.md).
++    readonly List<Rect> startKeepClear = new List<Rect>();
++
++    /// <summary>
++    /// Keep furnishing (office kits, piles and module props) out of a world-XZ rect
++    /// while the start area stands: the evacuation placard's wall and the floor in
++    /// front of it. Cleared by SetStartArea and ClearStartArea. MapRunStarted is
++    /// early enough: rooms are dressed one a frame from Update. [Preserve]: the
++    /// visual mount reaches it by reflection until it calls it directly, and WebGL
++    /// (managed stripping High) / iOS (Low) may strip a method nothing calls.
++    /// </summary>
++    [UnityEngine.Scripting.Preserve]
++    public void KeepClearAtStart(Rect worldXZ) => startKeepClear.Add(worldXZ);
+     readonly List<GridCoord> scratch = new List<GridCoord>();
+     readonly List<Door> movingDoors = new List<Door>();
+     Transform player;
+@@ -613,6 +626,7 @@
+     /// </summary>
+     public void SetStartArea(RectInt cells, GridCoord doorCell)
+     {
++        startKeepClear.Clear();
+         startArea = cells;
+         startDoorCell = doorCell;
+         hasStartArea = cells.width > 0 && cells.height > 0;
+@@ -623,7 +637,7 @@
+     /// Only while StartAreaBuilt is false: a chunk built round the rooms keeps
+     /// their hole and its walls until it is rebuilt.
+     /// </summary>
+-    public void ClearStartArea() => hasStartArea = false;
++    public void ClearStartArea() { hasStartArea = false; startKeepClear.Clear(); }
+ 
+     public bool HasStartArea => hasStartArea;
+ 
+@@ -1892,6 +1906,13 @@
+                 doorway = new Rect((startDoorCell.x - o.x) * cs, (startDoorCell.y - o.y) * cs, cs, depth);
+                 clear.Add(doorway.Value);
+             }
++            foreach (var w in startKeepClear)
++            {
++                var a = chunk.root.transform.InverseTransformPoint(new Vector3(w.xMin, 0f, w.yMin));
++                var b = chunk.root.transform.InverseTransformPoint(new Vector3(w.xMax, 0f, w.yMax));
++                var local = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
++                if (local.Overlaps(new Rect(room.x * cs, room.y * cs, room.w * cs, room.h * cs))) clear.Add(local);
++            }
+         }
+         else
+         {

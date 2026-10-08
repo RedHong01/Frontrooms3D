@@ -1,0 +1,10 @@
+"""Pair frame 2.24 x 2.1 m (two 1.12 m leaves) for the Run! C held door pairs.
+CLONE-ONLY look-dev. Origin = opening centre at the wall centre, floor."""
+import run_door_frame_common as fc
+
+NAME = "Kit_DoorFrame_RunPair"
+
+
+def build(kit):
+    fc.frame(kit, 2.24)
+    kit.tag("run", "door")

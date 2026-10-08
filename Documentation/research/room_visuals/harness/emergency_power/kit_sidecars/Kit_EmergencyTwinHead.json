@@ -1,0 +1,65 @@
+{
+ "name": "Kit_EmergencyTwinHead",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "mount_l",
+   "pos": [
+    0.105,
+    0.191,
+    0.008
+   ]
+  },
+  {
+   "name": "mount_r",
+   "pos": [
+    -0.105,
+    0.191,
+    0.008
+   ]
+  },
+  {
+   "name": "feed",
+   "pos": [
+    -0.0,
+    0.182,
+    -0.012
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "run"
+ ],
+ "noCollider": true,
+ "boundsMin": [
+  -0.16875000298023224,
+  -0.000800000037997961,
+  -0.05000000074505806
+ ],
+ "boundsMax": [
+  0.16875000298023224,
+  0.19099999964237213,
+  0.06430000066757202
+ ],
+ "triangles": 3706,
+ "slots": [
+  "Prop_SteelAlmond",
+  "Prop_PlasticBlack",
+  "Run_NeonPilot",
+  "Run_UnitLegend"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.007149999961256981
+ ],
+ "footprintSize": [
+  0.3375000059604645,
+  0.11430000141263008
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.241
+}

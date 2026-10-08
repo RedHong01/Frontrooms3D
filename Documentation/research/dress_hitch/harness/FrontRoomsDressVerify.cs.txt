@@ -1,0 +1,815 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+using Case = FrontRoomsDressPerfTest.Case;
+
+/// <summary>
+/// Independent verifier (adversarial pass). Builds every case with the original
+/// dressers (the *Orig copies), the new synchronous call, and the new job stepped
+/// at several budgets, and compares an exact dump of everything built.
+/// -executeMethod FrontRoomsDressVerify.RunBatch -verifyOut out.json [-verifyDump dir]
+/// -executeMethod FrontRoomsDressVerify.RunCold -verifyOut out.json -verifyImpl orig|new|newstep
+/// </summary>
+public static class FrontRoomsDressVerify
+{
+    [Serializable] public class Mismatch { public string id, kind, what; }
+    [Serializable] public class CaseRow
+    {
+        public string id, kind, group;
+        public int objects, tallPanels;
+        public bool joinedCut;
+        public bool syncMatch, step0, step05, step3, step100;
+        public int steps3, steps05;
+        public double maxStep3, maxStep3NoGc, maxSolveUnit3, maxCreateUnit3, maxStep05NoGc;
+        public long allocSync, allocStep3, maxAllocPerStep3;
+        public double origMedian, newMedian, origMax, newMax;
+    }
+    [Serializable] public class Report
+    {
+        public string date, codeHash, optimization;
+        public double load;
+        public int cases, syncMismatches, stepMismatches;
+        public List<Mismatch> mismatches = new List<Mismatch>();
+        public List<CaseRow> rows = new List<CaseRow>();
+        public List<string> safety = new List<string>();
+        public List<string> notes = new List<string>();
+        public bool allocCounterWorks;
+    }
+
+    static string Arg(string key, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == key) return args[i + 1];
+        return fallback;
+    }
+
+    static int joinedWarnings;
+    static void OnLog(string condition, string stack, LogType type)
+    {
+        if (condition != null && condition.Contains("Obstacles cut")) joinedWarnings++;
+    }
+
+    public static void RunBatch()
+    {
+        var outPath = Arg("-verifyOut", "verify.json");
+        var dump = Arg("-verifyDump", null);
+        var timingReps = int.Parse(Arg("-verifyReps", "5"), CultureInfo.InvariantCulture);
+        var onlyGroup = Arg("-verifyGroup", null);
+        if (dump != null) Directory.CreateDirectory(dump);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        Application.logMessageReceived += OnLog;
+        var report = new Report
+        {
+            date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            optimization = UnityEditor.Compilation.CompilationPipeline.codeOptimization.ToString(),
+        };
+        long a0 = GC.GetAllocatedBytesForCurrentThread();
+        var junk = new byte[4096];
+        long a1 = GC.GetAllocatedBytesForCurrentThread();
+        report.allocCounterWorks = a1 - a0 >= 4096 && junk.Length > 0;
+
+        var cases = new List<(Case c, string group)>();
+        var notes = report.notes;
+        var t = typeof(FrontRoomsDressPerfTest);
+        var flags = BindingFlags.NonPublic | BindingFlags.Static;
+        var capture = t.GetMethod("CaptureMap", flags);
+        var synth = t.GetMethod("Synthetic", flags);
+        if (onlyGroup == null || onlyGroup == "map")
+        {
+            void Cap(int seed, GridCoord? focus, string tag)
+            {
+                try { foreach (var c in (List<Case>)capture.Invoke(null, new object[] { seed, focus, tag, notes })) cases.Add((c, "map")); }
+                catch (Exception e) { notes.Add("capture " + tag + " threw " + e); }
+            }
+            Cap(20388, new GridCoord(16, 10), "map20388");
+            Cap(2554, null, "map2554");
+            Cap(20261001, null, "map20261001");
+            Cap(777, new GridCoord(3, -2), "map777");
+            Cap(4242, null, "map4242");
+            Cap(99, null, "map99");
+            Cap(31337, null, "map31337");
+            Cap(20388, null, "map20388spawn");
+        }
+        if (onlyGroup == null || onlyGroup == "synthetic")
+            foreach (var c in (List<Case>)synth.Invoke(null, new object[] { false })) cases.Add((c, "synthetic"));
+        if (onlyGroup == null || onlyGroup == "extra")
+            foreach (var c in Extra()) cases.Add(c);
+        if (onlyGroup == null || onlyGroup == "exact")
+        {
+            // FrontRoomsKitLookdev: office A (12 x 12, two openings) and hall B pile, seeds 1..12.
+            for (var s = 1; s <= 12; s++)
+            {
+                cases.Add((new Case { id = "lookdev-office-s" + s, kind = "officeCols", source = "lookdev", floor = new Rect(-6f + .08f, .08f, 12f - .16f, 12f - .16f), ceiling = 2.9f, seed = s, clear = new[] { new Rect(-.6f, .08f, 1.2f, 1.2f), new Rect(6f - .08f - 1f, 7.3f, 1f, 1.6f) } }, "exact"));
+                cases.Add((new Case { id = "lookdev-pile-s" + s, kind = "pile", source = "lookdev", center = new Vector3(0f, 0f, 8f), radius = Mathf.Min(3.2f, .22f * Mathf.Min(18f, 16f)), ceiling = 2.9f, seed = s }, "exact"));
+            }
+            // FrontRoomsRoomStream Office profile: sequences 0..40.
+            var half = FrontRoomsRoomStream.RoomWidth * .5f - .26f * .5f;
+            for (var q = 0; q <= 40; q++)
+                cases.Add((new Case { id = "stream-seq" + q, kind = "officeCols", source = "room stream", floor = new Rect(-half, .35f, half * 2f, FrontRoomsRoomStream.RoomLength - .7f), ceiling = FrontRoomsRoomStream.RoomHeight, seed = 7919 * q + 104729, clear = new[] { new Rect(-1.4f, .35f, 2.8f, FrontRoomsRoomStream.RoomLength - .7f) } }, "exact"));
+        }
+        report.cases = cases.Count;
+
+        // -verifyWarmUp: run the warm-up the map's Prewarm runs first; everything after must still match the original.
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-verifyWarmUp") >= 0)
+        {
+            var ws = Stopwatch.StartNew();
+            FrontRoomsDressJob.WarmUp();
+            notes.Add("FrontRoomsDressJob.WarmUp ran first: " + ws.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture) + " ms");
+        }
+        // Spawn equivalence for every kit (the look-dev line-up and the map's module props use Spawn directly).
+        SpawnCheck(report);
+        // Safety: parent destroyed mid-job, cancel, null parent, interleaving.
+        Safety(report);
+
+        var sw = Stopwatch.StartNew();
+        foreach (var (c, group) in cases)
+        {
+            try { report.rows.Add(Check(c, group, report, dump, timingReps)); }
+            catch (Exception e) { report.mismatches.Add(new Mismatch { id = c.id, kind = c.kind, what = "threw " + e }); }
+        }
+        notes.Add("checked " + cases.Count + " cases in " + sw.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s");
+        foreach (var m in report.mismatches) { if (m.what.StartsWith("sync")) report.syncMismatches++; else report.stepMismatches++; }
+        Application.logMessageReceived -= OnLog;
+        File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
+        Debug.Log("[DressVerify] " + cases.Count + " cases, sync mismatches " + report.syncMismatches + ", step mismatches " + report.stepMismatches + " -> " + outPath);
+    }
+
+    // ------------------------------------------------------------ builders
+
+    static Transform NewParent(string id)
+    {
+        var go = new GameObject("VERIFY / " + id) { hideFlags = HideFlags.DontSave };
+        go.transform.position = new Vector3(3.3f, 0f, -7.1f);
+        return go.transform;
+    }
+
+    static void BuildOrig(Case c, Transform parent)
+    {
+        switch (c.kind)
+        {
+            case "office": FrontRoomsOfficeKitOrig.Dress(parent, c.floor, c.ceiling, c.seed, c.clear, c.obstacles); break;
+            case "officeCols": FrontRoomsOfficeKitOrig.Dress(parent, c.floor, c.ceiling, c.seed, c.clear); break;
+            case "pile": FrontRoomsFurniturePileOrig.Build(parent, c.center, c.radius, c.ceiling, c.seed); break;
+            case "pileForced": FrontRoomsFurniturePileOrig.BuildPile(parent, c.center, c.radius, c.ceiling, c.seed, (FrontRoomsFurniturePileOrig.Tableau)c.tableau); break;
+        }
+    }
+
+    static void BuildNew(Case c, Transform parent)
+    {
+        switch (c.kind)
+        {
+            case "office": FrontRoomsOfficeKit.Dress(parent, c.floor, c.ceiling, c.seed, c.clear, c.obstacles); break;
+            case "officeCols": FrontRoomsOfficeKit.Dress(parent, c.floor, c.ceiling, c.seed, c.clear); break;
+            case "pile": FrontRoomsFurniturePile.Build(parent, c.center, c.radius, c.ceiling, c.seed); break;
+            case "pileForced": FrontRoomsFurniturePile.BuildPile(parent, c.center, c.radius, c.ceiling, c.seed, (FrontRoomsFurniturePile.Tableau)c.tableau); break;
+        }
+    }
+
+    static FrontRoomsDressJob BeginNew(Case c, Transform parent)
+    {
+        switch (c.kind)
+        {
+            case "office": return FrontRoomsOfficeKit.BeginDress(parent, c.floor, c.ceiling, c.seed, c.clear, c.obstacles);
+            case "officeCols": return FrontRoomsOfficeKit.BeginDress(parent, c.floor, c.ceiling, c.seed, c.clear);
+            case "pile": return FrontRoomsFurniturePile.BeginBuild(parent, c.center, c.radius, c.ceiling, c.seed);
+            case "pileForced": return FrontRoomsFurniturePile.BeginBuildPile(parent, c.center, c.radius, c.ceiling, c.seed, (FrontRoomsFurniturePile.Tableau)c.tableau);
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------ one case
+
+    struct StepStats { public int steps, gcSteps; public double max, maxNoGc, solveUnit, createUnit; public long alloc, maxAllocStep; }
+
+    static StepStats RunSteps(FrontRoomsDressJob job, float budget)
+    {
+        var s = new StepStats();
+        var start = GC.GetAllocatedBytesForCurrentThread();
+        while (true)
+        {
+            var gc = GC.CollectionCount(0);
+            var a = GC.GetAllocatedBytesForCurrentThread();
+            var w = Stopwatch.StartNew();
+            var done = job.Step(budget);
+            var ms = w.Elapsed.TotalMilliseconds;
+            var al = GC.GetAllocatedBytesForCurrentThread() - a;
+            s.steps++;
+            s.max = Math.Max(s.max, ms);
+            s.maxAllocStep = Math.Max(s.maxAllocStep, al);
+            if (GC.CollectionCount(0) != gc) s.gcSteps++; else s.maxNoGc = Math.Max(s.maxNoGc, ms);
+            if (done || s.steps > 200000) break;
+        }
+        s.alloc = GC.GetAllocatedBytesForCurrentThread() - start;
+        s.solveUnit = job.MaxSolveUnitMs;
+        s.createUnit = job.MaxCreateUnitMs;
+        return s;
+    }
+
+    static CaseRow Check(Case c, string group, Report report, string dump, int reps)
+    {
+        var row = new CaseRow { id = c.id, kind = c.kind, group = group };
+        // Original
+        var p = NewParent(c.id);
+        joinedWarnings = 0;
+        BuildOrig(c, p);
+        row.joinedCut = joinedWarnings > 0;
+        var orig = Dump(p, out row.objects);
+        row.tallPanels = Count(orig, "Kit_CubiclePanelTall");
+        Object.DestroyImmediate(p.gameObject);
+
+        // New, synchronous
+        p = NewParent(c.id);
+        var a = GC.GetAllocatedBytesForCurrentThread();
+        BuildNew(c, p);
+        row.allocSync = GC.GetAllocatedBytesForCurrentThread() - a;
+        var sync = Dump(p, out _);
+        Object.DestroyImmediate(p.gameObject);
+        row.syncMatch = sync == orig;
+        if (!row.syncMatch)
+        {
+            report.mismatches.Add(new Mismatch { id = c.id, kind = c.kind, what = "sync differs from original" });
+            if (dump != null) { File.WriteAllText(Path.Combine(dump, Safe(c.id) + ".orig.txt"), orig); File.WriteAllText(Path.Combine(dump, Safe(c.id) + ".sync.txt"), sync); }
+        }
+
+        // New, stepped at several budgets
+        foreach (var budget in new[] { 0f, .5f, 3f, 100f })
+        {
+            p = NewParent(c.id);
+            var job = BeginNew(c, p);
+            var st = RunSteps(job, budget);
+            var text = Dump(p, out _);
+            Object.DestroyImmediate(p.gameObject);
+            var ok = text == orig && job.Done && !job.Cancelled;
+            if (budget == 0f) row.step0 = ok;
+            else if (budget == .5f) { row.step05 = ok; row.steps05 = st.steps; row.maxStep05NoGc = st.maxNoGc; }
+            else if (budget == 3f)
+            {
+                row.step3 = ok; row.steps3 = st.steps; row.maxStep3 = st.max; row.maxStep3NoGc = st.maxNoGc;
+                row.maxSolveUnit3 = st.solveUnit; row.maxCreateUnit3 = st.createUnit; row.allocStep3 = st.alloc; row.maxAllocPerStep3 = st.maxAllocStep;
+            }
+            else row.step100 = ok;
+            if (!ok)
+            {
+                report.mismatches.Add(new Mismatch { id = c.id, kind = c.kind, what = "step " + budget + " differs (done " + job.Done + ", cancelled " + job.Cancelled + ")" });
+                if (dump != null) File.WriteAllText(Path.Combine(dump, Safe(c.id) + ".step" + budget + ".txt"), text);
+            }
+        }
+
+        // Same-process timing, alternating order.
+        if (reps > 0 && (group != "extra" || c.id.StartsWith("rand")))
+        {
+            var to = new List<double>();
+            var tn = new List<double>();
+            // warm-up
+            p = NewParent(c.id); BuildOrig(c, p); Object.DestroyImmediate(p.gameObject);
+            p = NewParent(c.id); BuildNew(c, p); Object.DestroyImmediate(p.gameObject);
+            for (var r = 0; r < reps; r++)
+            {
+                for (var k = 0; k < 2; k++)
+                {
+                    var useOrig = (r + k) % 2 == 0;
+                    GC.Collect();
+                    p = NewParent(c.id);
+                    var w = Stopwatch.StartNew();
+                    if (useOrig) BuildOrig(c, p); else BuildNew(c, p);
+                    var ms = w.Elapsed.TotalMilliseconds;
+                    Object.DestroyImmediate(p.gameObject);
+                    (useOrig ? to : tn).Add(ms);
+                }
+            }
+            to.Sort(); tn.Sort();
+            row.origMedian = to[to.Count / 2]; row.newMedian = tn[tn.Count / 2];
+            row.origMax = to[to.Count - 1]; row.newMax = tn[tn.Count - 1];
+        }
+        return row;
+    }
+
+    static int Count(string s, string what)
+    {
+        var n = 0;
+        for (var i = s.IndexOf(what, StringComparison.Ordinal); i >= 0; i = s.IndexOf(what, i + 1, StringComparison.Ordinal)) n++;
+        return n;
+    }
+
+    // ------------------------------------------------------------ spawn
+
+    static void SpawnCheck(Report report)
+    {
+        var names = FrontRoomsKitLibrary.AllNames();
+        var bad = 0;
+        var n = 0;
+        foreach (var name in names)
+        {
+            foreach (var variant in new[] { 0, 1, 2, 3 })
+            {
+                var po = NewParent("spawn"); var pn = NewParent("spawn");
+                var pos = new Vector3(1.25f, .3f, -2.5f);
+                var rot = Quaternion.Euler(3f, 181.5f, -2f);
+                switch (variant)
+                {
+                    case 0: FrontRoomsKitLibraryOrig.Spawn(name, po, pos, 180f, null, false); FrontRoomsKitLibrary.Spawn(name, pn, pos, 180f, null, false); break;
+                    case 1: FrontRoomsKitLibraryOrig.Spawn(name, po, pos, rot, new Vector3(1.1f, .9f, 1f), true, "label x"); FrontRoomsKitLibrary.Spawn(name, pn, pos, rot, new Vector3(1.1f, .9f, 1f), true, "label x"); break;
+                    case 2: FrontRoomsKitLibraryOrig.Spawn(name, po, pos, rot, Vector3.one, true, name); FrontRoomsKitLibrary.Spawn(name, pn, pos, rot, Vector3.one, true, name); break;
+                    default: FrontRoomsKitLibraryOrig.Spawn(name, po, pos, 90f); FrontRoomsKitLibrary.Spawn(name, pn, pos, 90f); break;
+                }
+                var a = Dump(po, out _); var b = Dump(pn, out _);
+                n++;
+                if (a != b) { bad++; report.mismatches.Add(new Mismatch { id = "spawn " + name + " v" + variant, kind = "spawn", what = "sync spawn differs" }); }
+                Object.DestroyImmediate(po.gameObject); Object.DestroyImmediate(pn.gameObject);
+            }
+        }
+        report.safety.Add("spawn equivalence: " + (n - bad) + "/" + n + " kit spawns identical over " + names.Count + " kits");
+        // Prewarm then spawn again: still identical.
+        FrontRoomsKitLibrary.Prewarm();
+        var po2 = NewParent("spawn2"); var pn2 = NewParent("spawn2");
+        foreach (var name in names) { FrontRoomsKitLibraryOrig.Spawn(name, po2, Vector3.zero, 0f); FrontRoomsKitLibrary.Spawn(name, pn2, Vector3.zero, 0f); }
+        report.safety.Add("spawn after Prewarm identical: " + (Dump(po2, out _) == Dump(pn2, out _)));
+        Object.DestroyImmediate(po2.gameObject); Object.DestroyImmediate(pn2.gameObject);
+    }
+
+    // ------------------------------------------------------------ safety
+
+    static int SceneRootCount() => SceneManager.GetActiveScene().rootCount;
+
+    static void Safety(Report report)
+    {
+        var office = new Case { id = "safety-office", kind = "office", floor = new Rect(.08f, .08f, 6 * 3f - .16f, 6 * 3f - .16f), ceiling = 2.9f, seed = 77, clear = new[] { new Rect(7.5f, .08f, 1.2f, 1f), new Rect(.08f, 10.5f, 1f, 1.2f) }, obstacles = new Rect[0] };
+        var pile = new Case { id = "safety-pile", kind = "pile", center = new Vector3(4f, 0f, 4f), radius = 3.2f, ceiling = 5.4f, seed = 1325199691 };
+        var s = report.safety;
+
+        void Try(string label, Action a)
+        {
+            try { a(); }
+            catch (Exception e) { s.Add(label + ": THREW " + e.GetType().Name + " " + e.Message); }
+        }
+
+        // 1. Office: destroy the parent after a few steps.
+        Try("office parent destroyed", () =>
+        {
+            var roots = SceneRootCount();
+            var p = NewParent("safety");
+            var job = BeginNew(office, p);
+            for (var i = 0; i < 25; i++) job.Step(0f);
+            var created = job.Created;
+            Object.DestroyImmediate(p.gameObject);
+            var done = job.Step(3f);
+            var again = job.Step(3f);
+            job.Complete();
+            s.Add("office parent destroyed after 25 unit steps (created " + created + "): Step -> " + done + ", again " + again + ", Cancelled " + job.Cancelled + ", Created after " + job.Created + ", scene roots " + roots + " -> " + SceneRootCount());
+        });
+        // 2. Office: destroy only the 'office dressing' root.
+        Try("office root destroyed", () =>
+        {
+            var p = NewParent("safety");
+            var job = BeginNew(office, p);
+            for (var i = 0; i < 25; i++) job.Step(0f);
+            Object.DestroyImmediate(p.GetChild(0).gameObject);
+            var done = job.Step(3f);
+            s.Add("office root destroyed: Step -> " + done + ", Cancelled " + job.Cancelled + ", parent children " + p.childCount);
+            Object.DestroyImmediate(p.gameObject);
+        });
+        // 3. Pile: destroy the parent while solving (no root yet).
+        Try("pile parent destroyed while solving", () =>
+        {
+            var roots = SceneRootCount();
+            var p = NewParent("safety");
+            var job = (FrontRoomsFurniturePile.PileJob)BeginNew(pile, p);
+            for (var i = 0; i < 5; i++) job.Step(0f);
+            var hadRoot = job.Root != null;
+            Object.DestroyImmediate(p.gameObject);
+            var done = job.Step(3f);
+            job.Complete();
+            s.Add("pile parent destroyed while solving (root yet " + hadRoot + "): Step -> " + done + ", Cancelled " + job.Cancelled + ", Root null " + (job.Root == null) + ", scene roots " + roots + " -> " + SceneRootCount());
+        });
+        // 4. Pile: destroy the parent after the root exists, while spawning.
+        Try("pile parent destroyed while spawning", () =>
+        {
+            var roots = SceneRootCount();
+            var p = NewParent("safety");
+            var job = (FrontRoomsFurniturePile.PileJob)BeginNew(pile, p);
+            var guard = 0;
+            while (job.Root == null && !job.Done && guard++ < 100000) job.Step(0f);
+            job.Step(0f); job.Step(0f);
+            var created = job.Created;
+            Object.DestroyImmediate(p.gameObject);
+            var done = job.Step(3f);
+            s.Add("pile parent destroyed while spawning (created " + created + "): Step -> " + done + ", Cancelled " + job.Cancelled + ", created after " + job.Created + ", scene roots " + roots + " -> " + SceneRootCount());
+        });
+        // 5. Pile root destroyed only.
+        Try("pile root destroyed", () =>
+        {
+            var p = NewParent("safety");
+            var job = (FrontRoomsFurniturePile.PileJob)BeginNew(pile, p);
+            var guard = 0;
+            while (job.Root == null && !job.Done && guard++ < 100000) job.Step(0f);
+            Object.DestroyImmediate(job.Root);
+            var done = job.Step(3f);
+            s.Add("pile root destroyed: Step -> " + done + ", Cancelled " + job.Cancelled + ", parent children " + p.childCount);
+            Object.DestroyImmediate(p.gameObject);
+        });
+        // 6. Cancel mid-way, null parent, step after done.
+        Try("cancel / null", () =>
+        {
+            var p = NewParent("safety");
+            var job = BeginNew(office, p);
+            for (var i = 0; i < 10; i++) job.Step(0f);
+            job.Cancel();
+            var created = job.Created;
+            var done = job.Step(3f);
+            job.Complete();
+            s.Add("office Cancel: Step -> " + done + ", Cancelled " + job.Cancelled + ", created stays " + (created == job.Created));
+            Object.DestroyImmediate(p.gameObject);
+            var jn = FrontRoomsOfficeKit.BeginDress(null, office.floor, 2.9f, 1, office.clear, null);
+            var jp = FrontRoomsFurniturePile.BeginBuild(null, Vector3.zero, 3f, 2.9f, 1);
+            var small = FrontRoomsFurniturePile.BeginBuild(NewParent("small"), Vector3.zero, .59f, 2.9f, 1);
+            s.Add("null parent: office Done " + jn.Done + " Step " + jn.Step(3f) + "; pile Done " + jp.Done + " Step " + jp.Step(3f) + "; radius .59 Done " + small.Done);
+            FrontRoomsOfficeKit.Dress(null, office.floor, 2.9f, 1, office.clear, null);
+            FrontRoomsOfficeKit.Dress(null, office.floor, 2.9f, 1, office.clear);
+            FrontRoomsFurniturePile.Build(null, Vector3.zero, 3f, 2.9f, 1);
+            s.Add("null parent sync calls returned quietly; BuildPile(radius .59) -> " + (FrontRoomsFurniturePile.BuildPile(NewParent("small2"), Vector3.zero, .59f, 2.9f, 1, null) == null));
+        });
+        // 7. Interleaving two jobs in different parents (shared statics), budget 0.
+        Try("interleave", () =>
+        {
+            var piles = new[] { pile, new Case { id = "p2", kind = "pileForced", center = new Vector3(5f, 0f, 5f), radius = 4.2f, ceiling = 5.4f, seed = 11, tableau = (int)FrontRoomsFurniturePile.Tableau.CentreSculpture } };
+            var refs = new List<string>();
+            foreach (var c in new[] { office, piles[0], piles[1] }) { var pp = NewParent("ref"); BuildOrig(c, pp); refs.Add(Dump(pp, out _)); Object.DestroyImmediate(pp.gameObject); }
+            var ps = new[] { NewParent("i0"), NewParent("i1"), NewParent("i2") };
+            var jobs = new[] { BeginNew(office, ps[0]), BeginNew(piles[0], ps[1]), BeginNew(piles[1], ps[2]) };
+            var any = true;
+            while (any) { any = false; foreach (var j in jobs) if (!j.Step(0f)) any = true; }
+            var ok = true;
+            for (var i = 0; i < 3; i++) { ok &= Dump(ps[i], out _) == refs[i]; Object.DestroyImmediate(ps[i].gameObject); }
+            s.Add("three jobs (office + 2 piles) stepped round-robin one unit at a time, separate parents: all identical to original = " + ok);
+        });
+        // 8. Same parent: pile begun first, office second (child order under the parent).
+        Try("same parent order", () =>
+        {
+            var pr = NewParent("seq");
+            BuildOrig(pile, pr); BuildOrig(office, pr);
+            var reference = Dump(pr, out _);
+            Object.DestroyImmediate(pr.gameObject);
+            var pi = NewParent("seq");
+            var j1 = BeginNew(pile, pi);
+            var j2 = BeginNew(office, pi);
+            var any = true;
+            while (any) { any = false; if (!j1.Step(0f)) any = true; if (!j2.Step(0f)) any = true; }
+            var same = Dump(pi, out _) == reference;
+            var order = new StringBuilder();
+            for (var i = 0; i < pi.childCount; i++) order.Append(pi.GetChild(i).name).Append(" ; ");
+            Object.DestroyImmediate(pi.gameObject);
+            var ps = NewParent("seq");
+            var k1 = BeginNew(pile, ps); k1.Complete();
+            var k2 = BeginNew(office, ps); k2.Complete();
+            var seqSame = Dump(ps, out _) == reference;
+            Object.DestroyImmediate(ps.gameObject);
+            s.Add("same parent, pile begun before office, interleaved: identical to sequential original = " + same + " (child order: " + order + "); one job at a time = " + seqSame);
+        });
+        // 9. Caller edits its arrays after BeginDress.
+        Try("input copy", () =>
+        {
+            var clear = (Rect[])office.clear.Clone();
+            var pr = NewParent("copy"); FrontRoomsOfficeKitOrig.Dress(pr, office.floor, 2.9f, 5, clear, new Rect[0]); var reference = Dump(pr, out _); Object.DestroyImmediate(pr.gameObject);
+            var pc = NewParent("copy");
+            var job = FrontRoomsOfficeKit.BeginDress(pc, office.floor, 2.9f, 5, clear, new Rect[0]);
+            clear[0] = new Rect(5f, 5f, 4f, 4f);
+            job.Complete();
+            s.Add("keepClear edited after BeginDress: result unchanged = " + (Dump(pc, out _) == reference));
+            Object.DestroyImmediate(pc.gameObject);
+        });
+    }
+
+    // ------------------------------------------------------------ cases
+
+    const float Cell = 3f, Wall = .16f;
+
+    static Rect MapFloor(int nx, int nz) => new Rect(Wall * .5f, Wall * .5f, nx * Cell - Wall, nz * Cell - Wall);
+
+    static Rect Door(Rect floor, int side, float along, float w = 1.2f, float depth = 1f)
+    {
+        switch (side)
+        {
+            case 0: return new Rect(along - w * .5f, floor.yMin, w, depth);
+            case 1: return new Rect(along - w * .5f, floor.yMax - depth, w, depth);
+            case 2: return new Rect(floor.xMin, along - w * .5f, depth, w);
+            default: return new Rect(floor.xMax - depth, along - w * .5f, depth, w);
+        }
+    }
+
+    static IEnumerable<(Case, string)> Extra()
+    {
+        var heights = new[] { 2.4f, 2.9f, 5.4f };
+        // Cut rooms: a band of obstacles across the room splits the strips (the Joined path).
+        foreach (var nx in new[] { 3, 4, 6 })
+            foreach (var nz in new[] { 3, 5 })
+                foreach (var variant in new[] { 0, 1, 2, 3, 4, 5 })
+                    foreach (var seed in new[] { 1, 2, 3 })
+                    {
+                        var f = MapFloor(nx, nz);
+                        var cy = f.center.y;
+                        var clear = new List<Rect>();
+                        var obstacles = new List<Rect>();
+                        clear.Add(Door(f, 0, 1.5f));                // strip 0, south
+                        clear.Add(Door(f, 2, 1.5f));                // west, south half
+                        clear.Add(Door(f, 1, f.xMax - 1.5f));       // north
+                        clear.Add(Door(f, 3, f.yMax - 1.5f));       // east, north half
+                        switch (variant)
+                        {
+                            case 0: obstacles.Add(new Rect(f.xMin, cy - .25f, f.width, .5f)); break;                                  // full cut, 2 v 2
+                            case 1: obstacles.Add(new Rect(f.xMin, cy - .25f, f.width * .5f - .3f, .5f)); obstacles.Add(new Rect(f.center.x + .3f, cy - .25f, f.width * .5f - .3f, .5f)); break; // 0.6 m gap: cut by clearance
+                            case 2: obstacles.Add(new Rect(f.xMin, cy - .25f, f.width * .5f - .9f, .5f)); obstacles.Add(new Rect(f.center.x + .9f, cy - .25f, f.width * .5f - .9f, .5f)); break; // 1.8 m gap: joined
+                            case 3: clear.Add(Door(f, 1, f.xMin + 1.5f)); obstacles.Add(new Rect(f.xMin, cy - .25f, f.width, .5f)); break;  // north side bigger: strip 0 dropped
+                            case 4: obstacles.Add(new Rect(f.xMin - .1f, f.yMin - .1f, 2.6f, 1.6f)); break;                       // strip 0 buried under an obstacle
+                            default:
+                                obstacles.Add(new Rect(f.xMin, f.yMin + f.height / 3f, f.width, .4f));
+                                obstacles.Add(new Rect(f.xMin, f.yMin + 2f * f.height / 3f, f.width, .4f));
+                                clear.Add(Door(f, 2, cy)); clear.Add(Door(f, 3, cy)); break;                                         // three bands of strips
+                        }
+                        yield return (new Case { id = "cut-" + nx + "x" + nz + "-v" + variant + "-s" + seed, kind = "office", source = "verify cut", floor = f, ceiling = heights[seed % 3], seed = seed * 7919 + variant, clear = clear.ToArray(), obstacles = obstacles.ToArray() }, "extra");
+                    }
+        // Tiny, narrow, odd and off-lattice rooms, both overloads.
+        var odd = new[]
+        {
+            new Rect(0f, 0f, 2.39f, 5f), new Rect(0f, 0f, 2.4f, 2.4f), new Rect(.08f, .08f, 2.84f, 2.84f), new Rect(.08f, .08f, 2.84f, 5.84f),
+            new Rect(.08f, .08f, 5.84f, 2.84f), new Rect(0f, 0f, 2.6f, 14f), new Rect(0f, 0f, 14f, 2.6f), new Rect(.08f, .08f, 6.99f, 9f),
+            new Rect(0f, 0f, 7f, 7f), new Rect(0f, 0f, 7.1f, 30f), new Rect(-3f, 2f, 9.5f, 13.3f), new Rect(-10f, -4f, 20f, 9.1f), new Rect(.08f, .08f, 23.84f, 23.84f),
+        };
+        var oi = 0;
+        foreach (var f in odd)
+        {
+            oi++;
+            var stripSets = new List<Rect[]>
+            {
+                null,
+                new Rect[0],
+                new[] { Door(f, 0, f.center.x) },
+                new[] { Door(f, 0, f.center.x), Door(f, 1, f.center.x) },
+                new[] { Door(f, 0, f.xMin + .7f), new Rect(f.xMax - .5f, f.yMax - .5f, 3f, 3f), new Rect(f.center.x, f.center.y, .06f, .06f), new Rect(f.xMax + 1f, f.yMin, 1f, 1f) },
+                new[] { Door(f, 2, f.center.y), Door(f, 3, f.center.y), new Rect(f.center.x - .5f, f.yMin, 1f, f.height) },
+            };
+            for (var si = 0; si < stripSets.Count; si++)
+                foreach (var seed in new[] { 3, 44 })
+                {
+                    yield return (new Case { id = "odd" + oi + "-strips" + si + "-s" + seed, kind = "officeCols", source = "verify odd", floor = f, ceiling = heights[(si + seed) % 3], seed = seed + si, clear = stripSets[si] }, "extra");
+                    yield return (new Case { id = "oddmap" + oi + "-strips" + si + "-s" + seed, kind = "office", source = "verify odd", floor = f, ceiling = heights[(si + seed + 1) % 3], seed = seed * 3 + si, clear = stripSets[si], obstacles = si % 2 == 0 ? null : new[] { new Rect(f.center.x - .45f, f.center.y - .45f, .9f, .9f) } }, "extra");
+                }
+        }
+        // Dense module obstacles: pods fail and the scattered fallback runs.
+        foreach (var nx in new[] { 3, 5, 7 })
+            foreach (var seed in new[] { 1, 2, 3, 4 })
+            {
+                var f = MapFloor(nx, nx);
+                var obstacles = new List<Rect>();
+                for (var x = 1.2f; x < f.xMax - 1f; x += 2.6f)
+                    for (var z = 1.6f; z < f.yMax - 1f; z += 3.1f)
+                        obstacles.Add(new Rect(x, z, .8f + .1f * seed, .6f));
+                yield return (new Case { id = "dense-" + nx + "-s" + seed, kind = "office", source = "verify dense", floor = f, ceiling = 2.9f, seed = 900 + seed, clear = new[] { Door(f, 0, 1.5f), Door(f, 1, f.xMax - 1.5f) }, obstacles = obstacles.ToArray() }, "extra");
+            }
+        // Tall pods: many seeds of big rooms.
+        foreach (var seed in new[] { 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115 })
+        {
+            var nx = 5 + seed % 3; var nz = 6 + seed % 2;
+            var f = MapFloor(nx, nz);
+            yield return (new Case { id = "big-" + nx + "x" + nz + "-s" + seed, kind = seed % 2 == 0 ? "office" : "officeCols", source = "verify big", floor = f, ceiling = heights[seed % 3], seed = seed * 31, clear = new[] { Door(f, 0, 4.5f), Door(f, 3, 1.5f), Door(f, 1, f.xMax - 4.5f) }, obstacles = new Rect[0] }, "extra");
+        }
+        // Random rooms.
+        var rng = new System.Random(20261003);
+        for (var i = 0; i < 80; i++)
+        {
+            var lattice = rng.NextDouble() < .7;
+            var nx = 1 + rng.Next(8); var nz = 1 + rng.Next(8);
+            var f = lattice ? MapFloor(nx, nz) : new Rect((float)rng.NextDouble() * 4f - 2f, (float)rng.NextDouble() * 4f - 2f, 2.2f + (float)rng.NextDouble() * 20f, 2.2f + (float)rng.NextDouble() * 20f);
+            var clear = new List<Rect>();
+            var nd = rng.Next(6);
+            for (var d = 0; d < nd; d++)
+            {
+                var side = rng.Next(4);
+                var along = side < 2 ? f.xMin + (float)rng.NextDouble() * f.width : f.yMin + (float)rng.NextDouble() * f.height;
+                clear.Add(Door(f, side, along, .8f + (float)rng.NextDouble() * 2.4f, .5f + (float)rng.NextDouble() * 1.5f));
+            }
+            var obstacles = new List<Rect>();
+            var no = rng.Next(7);
+            for (var o = 0; o < no; o++)
+                obstacles.Add(new Rect(f.xMin + (float)rng.NextDouble() * f.width, f.yMin + (float)rng.NextDouble() * f.height, .3f + (float)rng.NextDouble() * 2.5f, .3f + (float)rng.NextDouble() * 2.5f));
+            var cols = rng.NextDouble() < .3;
+            yield return (new Case { id = "rand-office-" + i, kind = cols ? "officeCols" : "office", source = "verify random", floor = f, ceiling = heights[rng.Next(3)], seed = rng.Next(), clear = clear.ToArray(), obstacles = obstacles.ToArray() }, "extra");
+        }
+        // Piles: radii x ceilings x seeds, every tableau forced.
+        var radii = new[] { .6f, .65f, 1f, 2f, 3.006f, 3.8f, 6f, 8f };
+        var ceilings = new[] { 1.8f, 2f, 2.4f, 2.9f, 3.19f, 4.6f, 5.4f };
+        foreach (var r in radii)
+            foreach (var c in ceilings)
+                foreach (var seed in new[] { 7, 8, 9 })
+                    yield return (new Case { id = "pile-" + r.ToString("0.###", CultureInfo.InvariantCulture) + "-" + c.ToString("0.##", CultureInfo.InvariantCulture) + "-s" + seed, kind = "pile", source = "verify pile", center = new Vector3(r + 1f, 0f, r + 1f), radius = r, ceiling = c, seed = seed * 104729 + (int)(r * 1000) + (int)(c * 10) }, "extra");
+        foreach (FrontRoomsFurniturePile.Tableau tab in Enum.GetValues(typeof(FrontRoomsFurniturePile.Tableau)))
+            foreach (var c in new[] { 1.9f, 2.4f, 2.9f, 5.4f })
+                foreach (var r in new[] { .8f, 2f, 3.2f, 5f })
+                    foreach (var seed in new[] { 21, 22 })
+                        yield return (new Case { id = "forced-" + tab + "-" + c.ToString("0.##", CultureInfo.InvariantCulture) + "-" + r.ToString("0.#", CultureInfo.InvariantCulture) + "-s" + seed, kind = "pileForced", source = "verify forced", center = Vector3.zero, radius = r, ceiling = c, seed = seed * 7 + (int)(r * 10), tableau = (int)tab }, "extra");
+        // Rejected inputs.
+        yield return (new Case { id = "pile-reject-radius", kind = "pile", center = Vector3.zero, radius = .59f, ceiling = 2.9f, seed = 1 }, "extra");
+        yield return (new Case { id = "pile-reject-ceiling", kind = "pile", center = Vector3.zero, radius = 3f, ceiling = 1.79f, seed = 1 }, "extra");
+    }
+
+    // ------------------------------------------------------------ repeat
+
+    static MethodInfo totalAllocated;
+    static long Alloc(out string how)
+    {
+        how = "thread";
+        var a = GC.GetAllocatedBytesForCurrentThread();
+        if (a > 0) return a;
+        if (totalAllocated == null) totalAllocated = typeof(GC).GetMethod("GetTotalAllocatedBytes", new[] { typeof(bool) });
+        if (totalAllocated != null) { how = "total"; return (long)totalAllocated.Invoke(null, new object[] { true }); }
+        how = "monoUsed";
+        return UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+    }
+
+    /// <summary>-executeMethod FrontRoomsDressVerify.RunRepeat -verifyOut out.txt -verifyIds a,b,c -verifyReps 15</summary>
+    public static void RunRepeat()
+    {
+        var outPath = Arg("-verifyOut", "repeat.txt");
+        var ids = new HashSet<string>(Arg("-verifyIds", "").Split(','));
+        var reps = int.Parse(Arg("-verifyReps", "15"), CultureInfo.InvariantCulture);
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var lines = new List<string>();
+        // Which allocation counter works here.
+        var b0 = Alloc(out var how); var junk = new byte[100000]; var b1 = Alloc(out _);
+        lines.Add("alloc counter " + how + " delta for 100000-byte array: " + (b1 - b0) + " (" + junk.Length + ")");
+
+        var notes = new List<string>();
+        var all = new List<Case>();
+        var t = typeof(FrontRoomsDressPerfTest);
+        var flags = BindingFlags.NonPublic | BindingFlags.Static;
+        var capture = t.GetMethod("CaptureMap", flags);
+        var synth = t.GetMethod("Synthetic", flags);
+        void Cap(int seed, GridCoord? focus, string tag)
+        {
+            var want = false;
+            foreach (var id in ids) if (id.StartsWith(tag + "-")) want = true;
+            if (want) all.AddRange((List<Case>)capture.Invoke(null, new object[] { seed, focus, tag, notes }));
+        }
+        Cap(20388, new GridCoord(16, 10), "map20388");
+        Cap(777, new GridCoord(3, -2), "map777");
+        Cap(20388, null, "map20388spawn");
+        all.AddRange((List<Case>)synth.Invoke(null, new object[] { false }));
+        foreach (var (c, _) in Extra()) all.Add(c);
+
+        foreach (var c in all)
+        {
+            if (!ids.Contains(c.id)) continue;
+            // Warm both.
+            var p = NewParent(c.id); BuildOrig(c, p); Object.DestroyImmediate(p.gameObject);
+            p = NewParent(c.id); BuildNew(c, p); Object.DestroyImmediate(p.gameObject);
+            var to = new List<double>(); var tn = new List<double>();
+            var stepMax = new List<double>(); var solve = new List<double>(); var create = new List<double>(); var stepsN = new List<int>();
+            var step05 = new List<double>();
+            for (var r = 0; r < reps; r++)
+            {
+                for (var k = 0; k < 2; k++)
+                {
+                    var useOrig = (r + k) % 2 == 0;
+                    p = NewParent(c.id);
+                    var w = Stopwatch.StartNew();
+                    if (useOrig) BuildOrig(c, p); else BuildNew(c, p);
+                    (useOrig ? to : tn).Add(w.Elapsed.TotalMilliseconds);
+                    Object.DestroyImmediate(p.gameObject);
+                }
+                p = NewParent(c.id);
+                var st = RunSteps(BeginNew(c, p), 3f);
+                Object.DestroyImmediate(p.gameObject);
+                stepMax.Add(st.maxNoGc); solve.Add(st.solveUnit); create.Add(st.createUnit); stepsN.Add(st.steps);
+                p = NewParent(c.id);
+                var s5 = RunSteps(BeginNew(c, p), .5f);
+                Object.DestroyImmediate(p.gameObject);
+                step05.Add(s5.maxNoGc);
+            }
+            // Allocation: sync original, sync new, stepped new (3 ms and 0.5 ms), per build.
+            long AllocOf(Action<Transform> build)
+            {
+                var pp = NewParent(c.id);
+                var a0 = Alloc(out _);
+                build(pp);
+                var a1 = Alloc(out _);
+                Object.DestroyImmediate(pp.gameObject);
+                return a1 - a0;
+            }
+            var allocOrig = AllocOf(pp => BuildOrig(c, pp));
+            var allocNew = AllocOf(pp => BuildNew(c, pp));
+            var allocStep3 = AllocOf(pp => RunSteps(BeginNew(c, pp), 3f));
+            var allocStep05 = AllocOf(pp => RunSteps(BeginNew(c, pp), .5f));
+            // Per-step allocation at 3 ms.
+            var pq = NewParent(c.id);
+            var job = BeginNew(c, pq);
+            long maxStepAlloc = 0; var nSteps = 0;
+            while (true) { var a0 = Alloc(out _); var done = job.Step(3f); maxStepAlloc = Math.Max(maxStepAlloc, Alloc(out _) - a0); nSteps++; if (done) break; }
+            Object.DestroyImmediate(pq.gameObject);
+            string S(List<double> v) { v.Sort(); return "min " + v[0].ToString("0.00", CultureInfo.InvariantCulture) + " med " + v[v.Count / 2].ToString("0.00", CultureInfo.InvariantCulture) + " max " + v[v.Count - 1].ToString("0.00", CultureInfo.InvariantCulture); }
+            lines.Add(c.id + " | orig " + S(to) + " | new " + S(tn) + " | step3 worst " + S(stepMax) + " solveUnit " + S(solve) + " createUnit " + S(create) + " steps " + stepsN[0]
+                + " | step0.5 worst " + S(step05)
+                + " | alloc orig " + allocOrig + " new " + allocNew + " step3 " + allocStep3 + " step0.5 " + allocStep05 + " maxPerStep3 " + maxStepAlloc + " over " + nSteps + " steps");
+        }
+        File.WriteAllText(outPath, string.Join("\n", lines));
+        Debug.Log("[DressVerify repeat] done " + lines.Count);
+    }
+
+    // ------------------------------------------------------------ cold
+
+    public static void RunCold()
+    {
+        var outPath = Arg("-verifyOut", "cold.json");
+        var impl = Arg("-verifyImpl", "new");
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var office = new Case { id = "cold-office", kind = "office", floor = MapFloor(6, 5), ceiling = 2.9f, seed = 4242, clear = new[] { Door(MapFloor(6, 5), 0, 4.5f), Door(MapFloor(6, 5), 1, 10.5f) }, obstacles = new[] { new Rect(5.7f, 5.7f, .6f, .6f) } };
+        var pile = new Case { id = "cold-pile", kind = "pile", center = new Vector3(9f, 0f, 15f), radius = 3.006f, ceiling = 5.4f, seed = 1325199691 };
+        var lines = new List<string> { "impl " + impl };
+        foreach (var c in new[] { office, pile, office, pile })
+        {
+            var p = NewParent(c.id);
+            var w = Stopwatch.StartNew();
+            string extra = "";
+            if (impl == "orig") BuildOrig(c, p);
+            else if (impl == "new") BuildNew(c, p);
+            else
+            {
+                var st = RunSteps(BeginNew(c, p), 3f);
+                extra = " steps " + st.steps + " maxStep " + st.max.ToString("0.00", CultureInfo.InvariantCulture) + " maxNoGc " + st.maxNoGc.ToString("0.00", CultureInfo.InvariantCulture);
+            }
+            lines.Add(c.id + " " + w.Elapsed.TotalMilliseconds.ToString("0.00", CultureInfo.InvariantCulture) + " ms" + extra);
+            Object.DestroyImmediate(p.gameObject);
+        }
+        File.WriteAllText(outPath, string.Join("\n", lines));
+        Debug.Log("[DressVerify cold] " + string.Join(" | ", lines));
+    }
+
+    // ------------------------------------------------------------ dump
+
+    static string Dump(Transform parent, out int objects)
+    {
+        var sb = new StringBuilder();
+        objects = 0;
+        for (var i = 0; i < parent.childCount; i++) Dump(parent.GetChild(i), 0, sb, ref objects);
+        return sb.ToString();
+    }
+
+    static void Dump(Transform t, int depth, StringBuilder sb, ref int objects)
+    {
+        objects++;
+        var go = t.gameObject;
+        sb.Append(depth).Append(' ').Append(t.name).Append(" a").Append(go.activeSelf ? 1 : 0).Append(" l").Append(go.layer).Append(" t").Append(go.tag)
+          .Append(" h").Append((int)go.hideFlags).Append(" st").Append((int)GameObjectUtility.GetStaticEditorFlags(go))
+          .Append(" p").Append(X(t.localPosition)).Append(" r").Append(X(t.localRotation)).Append(" s").Append(X(t.localScale));
+        foreach (var comp in t.GetComponents<Component>())
+        {
+            if (comp is Transform) continue;
+            sb.Append(" |").Append(comp == null ? "null" : comp.GetType().Name);
+            switch (comp)
+            {
+                case MeshFilter mf:
+                    sb.Append(' ').Append(mf.sharedMesh != null ? mf.sharedMesh.name + "#" + mf.sharedMesh.GetInstanceID() : "null");
+                    break;
+                case Renderer r:
+                    sb.Append(' ').Append(r.enabled).Append(' ').Append(r.shadowCastingMode).Append(' ').Append(r.receiveShadows).Append(' ').Append(r.staticShadowCaster)
+                      .Append(' ').Append(r.lightProbeUsage).Append(' ').Append(r.reflectionProbeUsage).Append(' ').Append(r.motionVectorGenerationMode)
+                      .Append(' ').Append(r.allowOcclusionWhenDynamic).Append(' ').Append(r.renderingLayerMask).Append(" [");
+                    foreach (var m in r.sharedMaterials) sb.Append(m != null ? m.name + "#" + m.GetInstanceID() : "null").Append(',');
+                    sb.Append(']');
+                    break;
+                case BoxCollider bc:
+                    sb.Append(' ').Append(bc.enabled).Append(' ').Append(bc.isTrigger).Append(" c").Append(X(bc.center)).Append(" z").Append(X(bc.size)).Append(' ').Append(bc.sharedMaterial != null ? bc.sharedMaterial.name : "-");
+                    break;
+                case Collider col:
+                    sb.Append(' ').Append(col.enabled).Append(' ').Append(col.isTrigger);
+                    break;
+                case LODGroup lg:
+                    sb.Append(' ').Append(lg.enabled).Append(" n").Append(lg.lodCount).Append(" size").Append(B(lg.size)).Append(" ref").Append(X(lg.localReferencePoint)).Append(' ').Append(lg.fadeMode);
+                    foreach (var lod in lg.GetLODs())
+                    {
+                        sb.Append(" {").Append(B(lod.screenRelativeTransitionHeight));
+                        foreach (var rr in lod.renderers) sb.Append(',').Append(rr != null ? rr.name : "null");
+                        sb.Append('}');
+                    }
+                    break;
+            }
+        }
+        sb.Append('\n');
+        for (var i = 0; i < t.childCount; i++) Dump(t.GetChild(i), depth + 1, sb, ref objects);
+    }
+
+    static string X(Vector3 v) => B(v.x) + "," + B(v.y) + "," + B(v.z);
+    static string X(Quaternion q) => B(q.x) + "," + B(q.y) + "," + B(q.z) + "," + B(q.w);
+    static string B(float f) => BitConverter.ToInt32(BitConverter.GetBytes(f), 0).ToString("x8");
+    static string Safe(string s) => System.Text.RegularExpressions.Regex.Replace(s, "[^A-Za-z0-9_.-]", "_");
+}

@@ -1,0 +1,47 @@
+{
+ "name": "Kit_WrapFixture_4ft",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "light",
+   "pos": [
+    0,
+    -0.082,
+    0
+   ]
+  }
+ ],
+ "tags": [
+  "ceiling",
+  "run"
+ ],
+ "noCollider": true,
+ "boundsMin": [
+  -0.6100000143051147,
+  -0.08150000125169754,
+  -0.125
+ ],
+ "boundsMax": [
+  0.6100000143051147,
+  0.0,
+  0.125
+ ],
+ "triangles": 200,
+ "slots": [
+  "Painted_Metal",
+  "Run_WrapLens"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.2200000286102295,
+  0.25
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.05
+}

@@ -1,0 +1,45 @@
+#!/bin/zsh
+# exit-sign integrate, round 4 (2026-10-07 23:xx): one clone's Unity jobs, one at a time (never two on one clone).
+# usage: run_clone.zsh before|int
+K=$1
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_$K; L=$W/logs/es_int/r4; O=$W/es_int/runs/$K
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+mkdir -p $O $L; S=$O/_status.txt; : > $S
+# run_to <name> <limit s> <unity args...>: Unity in the background, killed (with its children) after the limit.
+run_to() {
+  local name=$1 lim=$2; shift 2
+  echo "$(date +%H:%M:%S) $name start (limit ${lim}s)" >> $S
+  $U "$@" -logFile $L/${K}_$name.log > /dev/null 2>&1 &
+  local pid=$! t=0
+  while kill -0 $pid 2>/dev/null; do
+    sleep 10; t=$((t+10))
+    if [ $t -ge $lim ]; then
+      kill $pid 2>/dev/null; sleep 5; kill -9 $pid 2>/dev/null
+      pkill -f "projectPath $C " 2>/dev/null
+      echo "$(date +%H:%M:%S) $name KILLED after ${t}s" >> $S
+      break
+    fi
+  done
+  wait $pid 2>/dev/null; local rc=$?
+  echo "$(date +%H:%M:%S) $name exit $rc ($(grep -c 'error CS' $L/${K}_$name.log 2>/dev/null) error CS)" >> $S
+}
+B=(-batchmode -projectPath $C -buildTarget OSXUniversal)
+run_to compile 3600 -batchmode -nographics -quit -projectPath $C -buildTarget OSXUniversal
+if [ $K = int ]; then
+  run_to tests 1500 -batchmode -nographics -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignTests.RunBatch -esTestOut $O/tests
+  run_to probe 900 -batchmode -nographics -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignProbe.Run
+  cp $C/Verification/exit_sign_probe.txt $O/probe.txt 2>/dev/null
+fi
+run_to escap 2700 $B -executeMethod FrontRoomsExitSignStreamCapture.RunBatch -esCapOut $O/stream
+rm -rf $C/Verification/room_visuals
+run_to roomvis 2700 $B -executeMethod FrontRoomsRoomVisualsCapture.RunBatch
+rm -rf $O/room_visuals; cp -R $C/Verification/room_visuals $O/room_visuals 2>/dev/null
+if [ $K = int ]; then
+  run_to lookdev 2700 $B -quit -executeMethod FrontRoomsExitSignLookdev.RunBatch -esPrepare 0 -esOut $O/lookdev
+fi
+rm -rf $C/Verification/cx_audit
+run_to cxsuites 3600 $B -executeMethod FrontRoomsCxSuites.RunBatch
+rm -rf $O/cx_audit; cp -R $C/Verification/cx_audit $O/cx_audit 2>/dev/null
+run_to cxplay 1800 $B -executeMethod FrontRoomsCxPlayRun.RunBatch -cxLabel es_$K -cxSeconds 90 -cxSeed 516574485
+cp -R $C/Verification/cx_audit/play_es_$K $O/play_es_$K 2>/dev/null
+echo "$(date +%H:%M:%S) ALL DONE" >> $S

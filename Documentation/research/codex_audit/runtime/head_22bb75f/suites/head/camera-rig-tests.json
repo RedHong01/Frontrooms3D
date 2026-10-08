@@ -1,0 +1,32 @@
+{
+    "verdict": "PASS: 25 passed, 0 failed",
+    "passed": 25,
+    "failed": 0,
+    "checks": [
+        "ok   rest: BaseEye is the body plus 1.62 m with the base pitch",
+        "ok   rest: with no layers the camera sits exactly on BaseEye",
+        "ok   shot: ShotStarted once; move and look locked",
+        "ok   shot: the camera reaches the shot pose after the blend-in",
+        "ok   shot: BaseEye does not move with the shot",
+        "ok   shot: FOV is the player's 76 minus 14 (62.0)",
+        "ok   shot: the HUD is faded",
+        "ok   shot: E after the cancel delay is swallowed and cancels the shot",
+        "ok   shot: after the cancel the camera is back on the eye, FOV restored, ShotEnded once",
+        "ok   push: E before the cancel delay is swallowed, neither a cancel nor a push",
+        "ok   push: E in the last 0.2 s of a door shot is kept as a buffered push (age 0.60 s)",
+        "ok   relay: a shot without the Relay flag is not cancelled by it",
+        "ok   push: a new shot clears a push buffered in an earlier one",
+        "ok   push: E at the end of a glass shot is not a push",
+        "ok   relay: a chase frees the player within 0.15 s",
+        "ok   clamp: a shot pose behind a wall stops 0.1 m short of it (0.400 m in, wall face at 0.50)",
+        "ok   shake: rotates the camera (0.38°), still live just before 0.25 s (0.100°), gone at it, never moves BaseEye",
+        "ok   offset: a 6 cm dip goes there and back (0.060)",
+        "ok   fov: a -3° push and back (73.0)",
+        "ok   motion off: the shot plays in place, look free, move still locked",
+        "ok   motion off: no look cone, look stays free",
+        "ok   motion off: no shake",
+        "ok   stance: the climb duck lowers BaseEye at once, and the camera with it",
+        "ok   cone: look is held within ±8° of the shot's heading",
+        "ok   cone: an ending shot frees look at once"
+    ]
+}

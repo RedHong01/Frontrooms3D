@@ -16,7 +16,7 @@ and tag_contact (+0.004, -0.0213, 0) - the points where the key's ring_hole
 and the tag's hole go (each wire passes through its hole with clearance:
 hole Ø 4.8 / 5.0 vs a 1.6 x 1.8 mm wire section); centre (0, -0.0109, 0).
 
-Budget §9.3: 2,000 / 600 / 96 tris, LOD distances 1.0 / 3 / 12 m, no LOD1.
+Budget §9.3: 2,000 / 600 / 96 tris, LOD distances 1.0 / 3 / 12 m; LOD1 exported since the 2026-10-08 fix pass (critic H4).
 128 segments per turn with a 4-sided (flat bar) section = 2 x 128 x 8 tris:
 the §4.1 "8-sided section" would be 4,096 tris, twice the budget, and its
 0.1 mm corner rounds are sub-pixel at 0.3 m (deviation, reported).
@@ -33,6 +33,7 @@ from interact_key_common import U
 
 NAME = "Kit_KeyRing"
 LOD1_RATIO, LOD2_RATIO = 600 / 2000, 96 / 2000
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (1.0, 3.0, 12.0)
 BUDGET = (2000, 600, 96)
 

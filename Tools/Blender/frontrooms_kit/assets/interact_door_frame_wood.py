@@ -88,6 +88,7 @@ def wear(P, N, edge, obj):
 
 
 def build(kit):
+    dc.u_grain(kit)
     rng = random.Random(41010)
     envelope = []
 
@@ -122,6 +123,9 @@ def build(kit):
     # 4. Oak saddle between the linings.
     sec = dc.saddle_section(flutes=False)
     saddle = dc.loft_z(kit, [(dc.LINING_Z_H, sec), (dc.LINING_Z_L, sec)], OAK, "saddle", grain="y")
+    # Fix pass 2026-10-08 (critic H3): Prop_WoodOak_A is U-grain; turn the saddle's UVs so the grain runs
+    # along the threshold (interact_door_common.u_grain), not across it.
+    saddle["fr_ugrain"] = True
     envelope.append(saddle)
 
     # 5. Frame halves of the three butts (brass), screws and button tips.

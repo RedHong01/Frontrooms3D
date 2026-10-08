@@ -1,0 +1,121 @@
+"""Hung-pose overlap check for the 2026-10-08 fix pass (critic C2: tag on the wall side of the ring).
+
+  Blender -b --factory-startup --python hung_pose_check.py -- <Models dir> <out json>
+
+Re-creates FrontRoomsInteractablesLookdev.Hang (the facade recipe, 10_spec §4.1) in Unity space for each host
+(Kit_KeyHook, Kit_KeyHookBoard, Kit_KeyCabinet) and each tag shape, for the G3 recipe (tag in front) and the fix-pass
+recipe (ring turned 180 deg about the vertical, tag turned back to face the room), places the imported LOD0 meshes,
+and counts BVH triangle overlaps ring-host, key-host, tag-host, key-tag, key-ring (ring contact excluded by a
+clearance report instead), tag-ring. Host faces the room along Unity -Z (host yaw 180, as in the harness).
+Unity -> Blender for kit FBX: (X, Y, Z) -> (-X, -Z, Y) (kitlib export, default FBX import).
+"""
+import json
+import math
+import sys
+
+import bpy
+from mathutils import Matrix, Quaternion as BQ, Vector
+from mathutils.bvhtree import BVHTree
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODELS, OUT = argv[0], argv[1]
+
+
+# ---------------------------------------------------------------- Unity math (left-handed, Y up)
+def euler_y(deg):
+    a = math.radians(deg)
+    c, s = math.cos(a), math.sin(a)
+    return Matrix(((c, 0, s), (0, 1, 0), (-s, 0, c)))      # +Z -> +X for positive yaw
+
+
+def cross(a, b):                                            # Unity Vector3.Cross (same formula)
+    return Vector((a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x))
+
+
+def look_rotation(fwd, up):
+    f = Vector(fwd).normalized()
+    r = cross(Vector(up), f).normalized()
+    u = cross(f, r)
+    return Matrix((r, u, f)).transposed()                   # columns = right, up, forward
+
+
+C = Matrix(((-1, 0, 0), (0, 0, -1), (0, 1, 0)))             # Unity -> Blender
+
+
+def load(name):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath="%s/%s.fbx" % (MODELS, name))
+    objs = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+    lod0 = [o for o in objs if not o.name.endswith("_LOD1")]
+    o = lod0[0]
+    mw = o.matrix_world.copy()
+    verts_b = [mw @ v.co for v in o.data.vertices]
+    polys = [tuple(p.vertices) for p in o.data.polygons]
+    for x in objs:
+        bpy.data.objects.remove(x, do_unlink=True)
+    # back to Unity local space
+    Ci = C.inverted()
+    return [Ci @ v for v in verts_b], polys
+
+
+def anchors(name):
+    d = json.load(open("%s/%s.json" % (MODELS, name)))
+    return {a["name"]: Vector(a["pos"]) for a in d["anchors"]}, d
+
+
+def bvh(mesh, R, t):
+    vs = [R @ v + t for v in mesh[0]]
+    return BVHTree.FromPolygons(vs, mesh[1], all_triangles=False), vs
+
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+# Axis-sign probe on an asymmetric part: the lever's grip runs along part +X (sidecar bounds).
+lev = load("Kit_Lock_Lever")
+_, ld = anchors("Kit_Lock_Lever")
+xs = [v.x for v in lev[0]]
+probe = {"mesh_x": [round(min(xs), 4), round(max(xs), 4)], "sidecar_x": [round(ld["boundsMin"][0], 4), round(ld["boundsMax"][0], 4)]}
+print("AXISPROBE", json.dumps(probe))
+assert abs(probe["mesh_x"][1] - probe["sidecar_x"][1]) < 1e-3, "Unity<-Blender X sign wrong: %s" % probe
+ring, key = load("Kit_KeyRing"), load("Kit_Key_Zone")
+A_ring, _ = anchors("Kit_KeyRing")
+A_key, _ = anchors("Kit_Key_Zone")
+tags = {}
+for t in ("Kit_KeyTag_Rect", "Kit_KeyTag_Round", "Kit_KeyTag_Long"):
+    tags[t] = (load(t), anchors(t)[0])
+res = []
+for host in ("Kit_KeyHook", "Kit_KeyHookBoard", "Kit_KeyCabinet"):
+    hm = load(host)
+    Ah, hd = anchors(host)
+    hp = hd.get("hungPose", {})
+    lift = hp.get("ringLiftM", 0.0012)
+    HR = euler_y(180.0)                                     # host faces the room (-Z)
+    hb, _ = bvh(hm, HR, Vector())
+    hook = HR @ Ah["key_hook"]
+    for tagname, (tm, At) in tags.items():
+        for recipe, behind in (("G3_tag_front", False), ("fix_tag_behind", True)):
+            ring_yaw, key_tw, tag_tw = 180.0 - 60.0, -30.0, -30.0
+            if behind:
+                ring_yaw += 180.0
+                tag_tw += 180.0
+            Rr = euler_y(ring_yaw)
+            ring_pos = hook + Vector((0, lift, 0)) - Rr @ A_ring["hook_contact"]
+            tX = euler_y(ring_yaw + key_tw) @ Vector((1, 0, 0))
+            down = Vector((0, -1, 0))
+            Rk = look_rotation(down, cross(down, tX))
+            key_pos = ring_pos + Rr @ A_ring["key_contact"] - Rk @ A_key["ring_hole"]
+            gX = euler_y(ring_yaw + tag_tw) @ Vector((1, 0, 0))
+            Rt = look_rotation(gX, Vector((0, 1, 0)))
+            tag_pos = ring_pos + Rr @ A_ring["tag_contact"] - Rt @ At["hole"]
+            rb, rv = bvh(ring, Rr, ring_pos)
+            kb, kv = bvh(key, Rk, key_pos)
+            tb, tv = bvh(tm, Rt, tag_pos)
+            row = {"host": host, "tag": tagname, "recipe": recipe,
+                   "ring_host": len(rb.overlap(hb)), "key_host": len(kb.overlap(hb)), "tag_host": len(tb.overlap(hb)),
+                   "key_tag": len(kb.overlap(tb)), "tag_ring": len(tb.overlap(rb)), "key_ring": len(kb.overlap(rb)),
+                   "key_face_z": round(min(v.z for v in kv), 4), "tag_face_z": round(min(v.z for v in tv), 4),
+                   "tag_back_z": round(max(v.z for v in tv), 4)}
+            # room is -Z: the smaller min z is nearer the room
+            row["key_in_front"] = row["key_face_z"] < row["tag_face_z"]
+            res.append(row)
+            print("HUNG", json.dumps(row))
+json.dump(res, open(OUT, "w"), indent=1)

@@ -134,6 +134,7 @@ public static class FrontRoomsMapInteractionTests
             Live(roots, profiles);
             Lamps(roots);
             Glass(roots);
+            WarnStages(roots);
         }
         catch (Exception e)
         {
@@ -1216,6 +1217,125 @@ public static class FrontRoomsMapInteractionTests
     }
 
     // ---------- Lamp overrides (interface v1) ----------
+
+    // ---------- The Relay's warning stages (v2 §9.1) ----------
+
+    /// <summary>
+    /// §9.1: a stage starts on the first sample in its band; its minimum time (4 s / 3 s) counts from entry and only holds
+    /// it in; it ends once W has stayed past its exit band (36 / 24 m) for 1 s; off the map is stage 0 at once.
+    /// </summary>
+    static void WarnStages(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -49f, "MAP INTERACTION TEST / warn stages");
+        world.BuildForCapture();
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var events = new List<int>();
+        FrontRoomsMapHunter Fresh()
+        {
+            var h = new FrontRoomsMapHunter(world, tuning, null, null, 7);
+            events.Clear();
+            h.WarnStageChanged += events.Add;
+            return h;
+        }
+        // Feed W for some seconds (whole frames), the way the tick takes it.
+        void Feed(FrontRoomsMapHunter h, float w, float seconds)
+        {
+            for (var k = Mathf.RoundToInt(seconds / Dt); k > 0; k--) h.DebugWarnSample(w, Dt);
+        }
+        string Log(FrontRoomsMapHunter h) => "stage " + h.WarnStage + ", events [" + string.Join(", ", events) + "], run " + h.WarnRunSeconds.ToString("F2") + " s, stage-2 run " + h.WarnStage2RunSeconds.ToString("F2") + " s";
+
+        // 40 → 15 in one sample: stage 2 on that sample, stage 1 included.
+        var h1 = Fresh();
+        h1.DebugWarnSample(40f, Dt);
+        var at40 = h1.WarnStage;
+        h1.DebugWarnSample(15f, Dt);
+        Check(at40 == 0 && h1.WarnStage == 2 && events.Count == 1 && events[0] == 2, "warn stages: W 40 → 15 in one sample is stage 2 on that sample (" + Log(h1) + ")");
+        // Past both exit bands from 0.5 s, inside the 3 s minimum: it holds; the minimum ends at 3 s with W past 36 for 2.5 s, so 2 → 0 there.
+        Feed(h1, 15f, .5f);
+        Feed(h1, 37f, 2.4f);
+        var inDwell = h1.WarnStage;
+        Feed(h1, 37f, .2f);
+        Check(inDwell == 2 && h1.WarnStage == 0 && events.Count == 2 && events[1] == 0 && h1.WarnRunSeconds == 0f,
+            "warn stages: W 37 inside stage 2's 3 s does not drop it (stage " + inDwell + " at 2.9 s); at 3 s, past 36 m for over 1 s, 2 → 0 (" + Log(h1) + ")");
+
+        // After the minimum: 25 m (past 24, inside 36) for 1 s drops 2 → 1, not before; the stage ≥ 1 run keeps going and stage 1's 4 s starts again.
+        var h2 = Fresh();
+        Feed(h2, 15f, 3.5f);
+        Feed(h2, 25f, .9f);
+        var at09 = h2.WarnStage;
+        Feed(h2, 25f, .15f);
+        var run = h2.WarnRunSeconds;
+        Check(at09 == 2 && h2.WarnStage == 1 && events.Count == 2 && events[1] == 1 && run > 4.4f && h2.WarnStage2RunSeconds == 0f,
+            "warn stages: after the 3 s, W 25 for 0.9 s keeps stage 2 (" + at09 + "), for 1 s drops it to 1; the stage ≥ 1 run goes on (" + Log(h2) + ")");
+        Feed(h2, 37f, 3.8f);
+        var inDwell1 = h2.WarnStage;
+        Feed(h2, 37f, .3f);
+        Check(inDwell1 == 1 && h2.WarnStage == 0 && events.Count == 3 && events[2] == 0 && h2.WarnRunSeconds == 0f,
+            "warn stages: a 2 → 1 drop restarts stage 1's 4 s (still " + inDwell1 + " at 3.8 s past 36 m), then 1 → 0 (" + Log(h2) + ")");
+
+        // A dip back inside the band before the second is up starts the confirm again.
+        var h3 = Fresh();
+        Feed(h3, 15f, 3.5f);
+        Feed(h3, 25f, .9f);
+        Feed(h3, 23f, Dt);
+        Feed(h3, 25f, .9f);
+        var jitter = h3.WarnStage;
+        Feed(h3, 25f, .15f);
+        Check(jitter == 2 && h3.WarnStage == 1 && events.Count == 2, "warn stages: 0.9 s past 24 m, one sample at 23, 0.9 s past again keeps stage 2; the full second drops it (" + Log(h3) + ")");
+
+        // 2 → 0 needs W past 36 m for the same second; past 24 for 1.1 s but past 36 only for 0.6 s is 2 → 1.
+        var h4 = Fresh();
+        Feed(h4, 15f, 3.5f);
+        Feed(h4, 30f, .5f);
+        Feed(h4, 40f, .6f);
+        Check(h4.WarnStage == 1 && events.Count == 2 && events[1] == 1, "warn stages: past 24 m for 1.1 s but past 36 m for 0.6 s drops 2 → 1, not to 0 (" + Log(h4) + ")");
+
+        // Going up is never held: 1 → 2 the sample W reaches 18, inside stage 1's 4 s.
+        var h5 = Fresh();
+        Feed(h5, 25f, .5f);
+        h5.DebugWarnSample(17f, Dt);
+        Check(h5.WarnStage == 2 && events.Count == 2 && events[0] == 1 && events[1] == 2 && h5.WarnRunSeconds > .45f && h5.WarnStage2RunSeconds == 0f,
+            "warn stages: 1 → 2 on the sample W reaches 17 m, 0.5 s into stage 1 (" + Log(h5) + ")");
+        // Off the map (infinite W) is stage 0 at once, inside a minimum time.
+        h5.DebugWarnSample(float.PositiveInfinity, Dt);
+        Check(h5.WarnStage == 0 && events.Count == 3 && events[2] == 0 && h5.WarnRunSeconds == 0f, "warn stages: off the map inside stage 2's 3 s is stage 0 on that sample (" + Log(h5) + ")");
+
+        // Through the tick: released next to the player is stage 2 on its first tick; its chunk dropped, stage 0 on the next, inside the 3 s.
+        var mid = world.CellOf(world.SpawnWorldPosition);
+        GridCoord? playerCell = null, relayCell = null;
+        for (var y = mid.y - 12; y <= mid.y + 12 && !playerCell.HasValue; y++)
+        for (var x = mid.x - 12; x <= mid.x + 12 && !playerCell.HasValue; x++)
+        {
+            var p = new GridCoord(x, y);
+            var r = new GridCoord(x + 2, y);
+            // Different chunks, so dropping the Relay's leaves the player's field standing.
+            if (world.IsBuilt(p) && world.IsBuilt(r) && MapGrid.ChunkOf(p) != MapGrid.ChunkOf(r)) { playerCell = p; relayCell = r; }
+        }
+        if (!playerCell.HasValue) { Check(false, "warn stages (tick): no built cell pair 2 cells apart across a chunk border near the spawn"); return; }
+        var feet = world.CellCenter(playerCell.Value);
+        // DebugPlace clears the stage and its timers: the next tick enters the new spot's band on its first sample.
+        var h7 = Fresh();
+        var beside = feet + Vector3.right;
+        h7.DebugPlace(beside);
+        h7.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+        var placedStage = h7.WarnStage;
+        h7.DebugPlace(beside);
+        Check(placedStage == 2 && h7.WarnStage == 0 && h7.WarnRunSeconds == 0f && events.Count == 2, "warn stages (tick): DebugPlace clears the stage and its timers (" + Log(h7) + ")");
+        var h6 = Fresh();
+        h6.DebugPlace(world.CellCenter(relayCell.Value));
+        h6.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+        var first = h6.WarnStage;
+        var w6 = h6.WarningDistance;
+        for (var t = 0f; t < .5f; t += Dt) h6.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+        var before = h6.WarnStage;
+        var relayAt = world.CellOf(h6.Position);
+        world.DropChunkForTools(MapGrid.ChunkOf(relayAt));
+        var dropped = !world.IsBuilt(relayAt);
+        h6.Tick(Dt, feet, feet + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+        Check(first == 2 && before == 2 && dropped && h6.WarnStage == 0 && events.Count == 2 && events[0] == 2 && events[1] == 0,
+            "warn stages (tick): placed " + relayCell.Value + " next to the player at " + playerCell.Value + " (W " + w6.ToString("F1") + " m) is stage " + first + " on the first tick, "
+            + before + " 0.5 s later; its chunk dropped (" + (dropped ? "unbuilt" : "STILL BUILT") + "), stage 0 on the next tick (" + Log(h6) + ")");
+    }
 
     static void Lamps(List<GameObject> roots)
     {

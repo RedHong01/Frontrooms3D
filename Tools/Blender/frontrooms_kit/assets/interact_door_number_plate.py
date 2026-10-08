@@ -18,7 +18,7 @@ front +Z = outward. Mounted at the leaf's tagplate_s / tagplate_p anchors
 atlas cell "00"; the facade shows number n with _BaseMap_ST = (1, 1,
 (n%10)/10, -(n//10)/10).
 
-Budget §9.3: 500 / 180 / 12 tris, LOD 1.5 / 5 / 15 m, no LOD1. Slots:
+Budget §9.3: 500 / 180 / 12 tris, LOD 1.5 / 5 / 15 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). Slots:
 Prop_PlasticRed (VARIANTS _Blue, _White), Prop_KeyTagNo (NEW; fallback
 Prop_Paper), Prop_Chrome (screws).
 """
@@ -30,6 +30,7 @@ NAME = "Kit_DoorNumberPlate"
 VARIANTS = {"Kit_DoorNumberPlate_Blue": {"Prop_PlasticRed": "Prop_PlasticBlue"},
             "Kit_DoorNumberPlate_White": {"Prop_PlasticRed": "Prop_PlasticWhite"}}
 LOD1_RATIO, LOD2_RATIO = 180 / 500, 12 / 500
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (1.5, 5.0, 15.0)
 BUDGET = (500, 180, 12)
 

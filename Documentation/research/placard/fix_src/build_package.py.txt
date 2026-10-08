@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Build the v2 apply package W/apply/placard_q16.* for the Q16 evacuation placard (placard 41_promotion.md).
+Reads the verified clone W/proj_placard_fix and Red's main (read-only); writes only W/apply/placard_q16*.
+Re-run it after any change in the clone; it refuses if a modified path in main moved away from the clone's base hunk."""
+import hashlib, os, shutil, subprocess, sys, datetime
+W = "/Users/redwang/FrontRoomsVisualWork"
+M = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+C = W + "/proj_placard_fix"
+A = W + "/apply"
+T = "placard_q16"
+NEW = []
+def new(*paths): NEW.extend(paths)
+# Order = write order (35_fix/41 §3): RenderSetup first (importer rule before the textures), each .meta before its asset,
+# materials before the FBX, the sidecar JSON before its FBX, RoomStream (calls FrontRoomsPlacard) last.
+ORDER = ["Assets/Editor/Rendering/FrontRoomsRenderSetup.cs"]
+for s in ["FrontRoomsPhosphor", "FrontRoomsPlacardGlow", "FrontRoomsPlacard", "FrontRoomsPlacardMount"]:
+    ORDER.append("Assets/Scripts/Rendering/%s.cs.meta" % s)
+for s in ["FrontRoomsPhosphor", "FrontRoomsPlacardGlow", "FrontRoomsPlacard", "FrontRoomsPlacardMount"]:
+    ORDER.append("Assets/Scripts/Rendering/%s.cs" % s)
+for t in ["Prop_EvacPlan_A.png", "Prop_EvacPlan_E.png"]:
+    ORDER += ["Assets/Resources/Surfaces/Textures/%s.meta" % t, "Assets/Resources/Surfaces/Textures/%s" % t]
+for m in ["Prop_AluminiumAnodised", "Prop_EvacPlan", "Prop_LensNonGlare"]:
+    ORDER += ["Assets/Resources/Surfaces/%s.mat.meta" % m, "Assets/Resources/Surfaces/%s.mat" % m]
+for k in ["Kit_EvacPlacard", "Kit_EvacPlacardLens"]:
+    ORDER += ["Assets/Resources/Props/Models/%s.json.meta" % k, "Assets/Resources/Props/Models/%s.json" % k,
+              "Assets/Resources/Props/Models/%s.fbx.meta" % k, "Assets/Resources/Props/Models/%s.fbx" % k]
+ORDER += ["Tools/lookdev/pack_evac_plan.py",
+          "Tools/Blender/frontrooms_kit/assets/evac_placard_common.py",
+          "Tools/Blender/frontrooms_kit/assets/evac_placard.py",
+          "Assets/Scripts/FrontRoomsRoomStream.cs"]
+KEEP = ["Assets/Editor/Rendering/FrontRoomsRenderSetup.cs.meta", "Assets/Scripts/FrontRoomsRoomStream.cs.meta",
+        "Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs"]
+def sha(p):
+    h = hashlib.sha1(); h.update(open(p, "rb").read()); return h.hexdigest()
+head = subprocess.run(["git", "-C", M, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+dirty = subprocess.run(["git", "-C", M, "status", "--porcelain", "--"] + [p for p in ORDER if os.path.exists(os.path.join(M, p))], capture_output=True, text=True).stdout.strip()
+now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+for d in [A + "/%s_payload" % T, A + "/%s_base" % T]:
+    if os.path.exists(d): shutil.rmtree(d)
+bases, expected, keep = [], [], []
+for p in ORDER:
+    src = os.path.join(C, p); dst = os.path.join(A, "%s_payload" % T, p)
+    assert os.path.isfile(src), src
+    os.makedirs(os.path.dirname(dst), exist_ok=True); shutil.copy2(src, dst)
+    expected.append("%s  %s" % (sha(dst), p))
+    mp = os.path.join(M, p)
+    if os.path.exists(mp):
+        bases.append("%s  %s" % (sha(mp), p))
+        b = os.path.join(A, "%s_base" % T, p); os.makedirs(os.path.dirname(b), exist_ok=True); shutil.copy2(mp, b)
+    else:
+        bases.append("ABSENT  %s" % p)
+for p in KEEP:
+    keep.append("%s  %s" % (sha(os.path.join(M, p)), p))
+open(A + "/%s_bases.txt" % T, "w").write("# %s bases: sha1 of every path the script writes, recorded %s on main %s (worktree%s)\n" % (T, now, head, "; DIRTY: " + dirty.replace("\n", "; ") if dirty else ", these paths clean") + "\n".join(bases) + "\n")
+open(A + "/%s_keep.txt" % T, "w").write("# kept, never written: the GUID .meta of each changed script (must stay), and the map contract Q16-1's MapWorld base (note only)\n" + "\n".join(keep) + "\n")
+open(A + "/%s_expected.txt" % T, "w").write("# expected after --apply (= the payload, in write order: RenderSetup first, .meta before each asset, materials before the FBX, RoomStream last)\n" + "\n".join(expected) + "\n")
+# unified diff base -> payload for the modified text files (review only; rebases use the base copies)
+out = []
+for p in ORDER:
+    b = os.path.join(A, "%s_base" % T, p)
+    if os.path.exists(b):
+        r = subprocess.run(["diff", "-u", "--label", "a/" + p, "--label", "b/" + p, b, os.path.join(A, "%s_payload" % T, p)], capture_output=True, text=True)
+        out.append(r.stdout)
+    else:
+        out.append("=== new file: %s (%d bytes, sha1 %s)\n" % (p, os.path.getsize(os.path.join(A, "%s_payload" % T, p)), sha(os.path.join(A, "%s_payload" % T, p))))
+open(A + "/%s.diff" % T, "w").write("".join(out))
+print("package %s: %d paths (%d new, %d modified), main %s%s" % (T, len(ORDER), sum(1 for b in bases if b.startswith("ABSENT")), sum(1 for b in bases if not b.startswith("ABSENT")), head, " DIRTY" if dirty else ""))

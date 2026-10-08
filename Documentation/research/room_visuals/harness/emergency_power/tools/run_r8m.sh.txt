@@ -1,0 +1,5 @@
+#!/bin/zsh
+cd /Users/redwang/FrontRoomsVisualWork/run_ep_work
+./render_x.sh r8ma -runMatte -runState armed -runShots s1a,s2,c1 -runNoTimeline -runNoId
+./render_x.sh r8mt -runMatte -runState tripped -runShots s1b,c3,c4,x_goal,s3,r_cart,r_truck -runNoTimeline -runNoId
+echo ALLDONE

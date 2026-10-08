@@ -27,15 +27,16 @@ deadbolt_opening (0, 0.032, 0.0002); lip_tip (-0.040, -0.0315, 0.001);
 detach_dir (0, 0, 0.10) (the strike flies toward the leaf edge / room).
 Motion: static; detaches on the Relay break ({"detach": true}).
 Budget (§9.2): LOD0 900 (asserted +-15 %), LOD1 350, LOD2 60; LOD distances
-1.5 / 4 / 12 m; no LOD1 export. Screws fr_lod2_drop.
+1.5 / 4 / 12 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). Screws fr_lod2_drop.
 Slots: Prop_Chrome (plate, first), Prop_PlasticBlack (dust boxes, slots).
 """
 
+import interact_door_common as dc
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_StrikeMortise"
-LOD1 = None
 LOD1_RATIO = 0.39
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.067
 LOD_DISTANCES = (1.5, 4.0, 12.0)
 BUDGET = 900
@@ -48,6 +49,7 @@ SCREW_Y = (0.085, -0.085)
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
     plate, lip, boxes, screws = lc.build_strike(kit, HALF_LEN, OPENINGS, LIP_Y, SCREW_Y, screw_segs=32,
                                                 corner_k=3, box_k=2)
     wear = lc.strike_wear(OPENINGS)

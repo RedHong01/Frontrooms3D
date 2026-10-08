@@ -13,7 +13,7 @@
      }
  
      enum LampState { Off, Waiting, Striking, Rising, Steady, Unstable, Dead }
-@@ -800,9 +806,25 @@
+@@ -800,7 +806,23 @@
              if (room == null || room.lampState == null || room.sequence > terminalSequence) continue;
              for (var lamp = 0; lamp < room.lampState.Length; lamp++)
                  TickLamp(room, lamp, dt);
@@ -28,17 +28,15 @@
 +        if (signs == null) return;
 +        for (var i = 0; i < signs.Length; i++)
 +            if (signs[i] != null) signs[i].Tick(dt);
-     }
- 
++    }
++
 +    static FrontRoomsExitSign[] ActiveExitSigns(RoomSlot room)
 +    {
 +        var index = (int)room.rule;
 +        return room.exitSigns != null && index >= 0 && index < room.exitSigns.Length ? room.exitSigns[index] : null;
-+    }
-+
+     }
+ 
      void TickLamp(RoomSlot room, int lamp, float dt)
-     {
-         switch (room.lampState[lamp])
 @@ -861,6 +883,7 @@
          // Only dark lamps are cued; a lamp that is already on keeps its clock.
          for (var lamp = 0; lamp < room.lampState.Length; lamp++)
@@ -63,7 +61,18 @@
          for (var ruleIndex = 0; ruleIndex < room.profileVariants.Length; ruleIndex++)
          {
              var rule = (RoomRule)ruleIndex;
-@@ -1469,32 +1494,19 @@
+@@ -1426,6 +1451,10 @@
+                     var outlet = Box(props.transform, "outlet plate", new Vector3(x, .32f, z), new Vector3(.012f, .115f, .07f), outletMaterial);
+                     outlet.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                 }
++                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
++                // (Here, not in the Exit branch below: this branch already takes Exit, so that one never runs.)
++                if (rule == RoomRule.Exit)
++                    room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
+             }
+             else if (rule == RoomRule.Office)
+             {
+@@ -1469,28 +1498,13 @@
                      Box(bed, "run gurney wheel", new Vector3(wx, .06f, wz), new Vector3(.04f, .11f, .11f), officeDarkMaterial);
                  }
                  Cylinder(props.transform, "run IV pole", new Vector3(4.3f, .95f, 8.6f), new Vector3(.03f, .95f, .03f), runChromeMaterial, Vector3.zero);
@@ -98,13 +107,7 @@
              }
              else if (rule == RoomRule.Exit)
              {
-                 Box(props.transform, "exit threshold marker", new Vector3(0f, .04f, 5.9f), new Vector3(2.8f, .03f, .12f), roomWall);
-+                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
-+                room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
-             }
-         }
-     }
-@@ -1511,6 +1523,7 @@
+@@ -1511,6 +1525,7 @@
              var renderer = renderers[i];
              if (renderer == null) continue;
              var name = renderer.gameObject.name.ToLowerInvariant();
@@ -112,7 +115,7 @@
              if (name.Contains("floor") || name.Contains("carpet")) renderer.sharedMaterial = floor;
              else if (name.Contains("ceiling")) renderer.sharedMaterial = ceiling;
              else if (name.Contains("wall") || name.Contains("seal") || name.Contains("partition") || name.Contains("threshold marker")) renderer.sharedMaterial = wall;
-@@ -1663,8 +1676,48 @@
+@@ -1663,8 +1678,48 @@
              room.lampRiseFrom[lamp] = 0f;
              room.lampUnstableElapsed[lamp] = 0f;
          }
@@ -161,7 +164,7 @@
      static float Hash01(int sequence, int salt)
      {
          unchecked
-@@ -1682,6 +1735,7 @@
+@@ -1682,6 +1737,7 @@
      void ActivateRoomLightImmediately(RoomSlot room)
      {
          if (room == null || room.lampState == null) return;
@@ -169,7 +172,7 @@
          for (var lamp = 0; lamp < room.lampState.Length; lamp++)
          {
              if (room.lampDead[lamp])
-@@ -1840,13 +1894,58 @@
+@@ -1840,13 +1896,58 @@
          return reveal;
      }
  

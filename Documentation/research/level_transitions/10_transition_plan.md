@@ -833,6 +833,12 @@ Pick it over V1's portal if the renders show the portal reads too thin.
 
 **Later: V4 Drift**, on top of V1 (the frames stay and units drift round them), for tier 4–5 chunks or a special zone. It fits the A24 "less remembered" idea. It should not be the default: it does not put the change on a built object, and Red reads shader-made change as fake.
 
+
+**Update 2026-10-08 (fix stage, after the pre-renders and the critic):**
+- The pick was rendered over today's main (`16_pick_and_close.md`). It holds as the recommendation, but in Red's own frame (shot 4) it changes only 1.1 % of pixels. Up close (portal, dressed crossings) it reads.
+- A fourth geometric family was added and rendered: **Close**, a map rule that closes Office | Level 0 borders like height borders (door or wall). Frameless crossings 1.26 → 0 per chunk, doors 1.37 → 2.53. It is the alternative if Red wants the change out of sight; it changes the layout.
+- Red's questions are now four (`40_for_red.md`): the pick, the map rule, light, media.
+
 ---
 
 ## 9. What Red decides

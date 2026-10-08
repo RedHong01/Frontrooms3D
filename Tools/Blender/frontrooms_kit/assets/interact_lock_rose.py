@@ -14,7 +14,7 @@ face, at rose_s / rose_p = (+-0.022, 1.000, 0.920). Front = Unity +Z (kit
 Anchors: spindle (0, 0, 0.010) = Kit_Lock_Lever's origin (door X +-0.032).
 Motion: static.
 Budget (§9.2): LOD0 2,400 (asserted +-15 %), LOD1 900, LOD2 120; LOD
-distances 1.5 / 4 / 12 m; no LOD1 export (part < 1 m). Screws fr_lod2_drop.
+distances 1.5 / 4 / 12 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). Screws fr_lod2_drop.
 Slots: Prop_Chrome (first), Prop_PlasticBlack (screw slots, countersink
 shadow rings). VARIANT _Brass. 96-segment turning, 48-segment screws.
 """
@@ -24,8 +24,8 @@ import math
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Rose"
-LOD1 = None
 LOD1_RATIO = 0.375
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.05
 LOD_DISTANCES = (1.5, 4.0, 12.0)
 BUDGET = 2400

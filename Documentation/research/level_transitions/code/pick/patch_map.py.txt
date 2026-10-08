@@ -1,0 +1,386 @@
+import sys
+p = sys.argv[1]
+s = open(p).read()
+def sub1(old, new):
+    global s
+    n = s.count(old)
+    if n != 1: raise SystemExit("count %d for: %s" % (n, old[:100]))
+    s = s.replace(old, new, 1)
+
+# H1 MeshBuilder: Raw (renovation) and Append (frame)
+sub1("""        public Mesh ToMesh(string name)
+        {""", """        // PICK (clone only): renovation kit geometry (torn paper, beads, tiles) appended to a block's builder.
+        public void Raw(List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<int> t)
+        {
+            var o = vertices.Count;
+            vertices.AddRange(v); normals.AddRange(n); uvs.AddRange(uv);
+            foreach (var i in t) triangles.Add(o + i);
+        }
+
+        // PICK (clone only): frame kit geometry (Office lining, portals, posts) merged into this block's wall mesh.
+        public void Append(FrontRoomsTransitionFrameKit.TransitionMesh m)
+        {
+            var offset = vertices.Count;
+            vertices.AddRange(m.vertices);
+            normals.AddRange(m.normals);
+            uvs.AddRange(m.uvs);
+            foreach (var t in m.triangles) triangles.Add(t + offset);
+        }
+
+        public Mesh ToMesh(string name)
+        {""")
+
+# H2 fields + context
+sub1("""    Material trim, doorLeaf, glass, keyGlow;
+""", """    Material trim, doorLeaf, glass, keyGlow;
+    // PICK (clone only): the renovation kit's view of this map (one per cache).
+    FrontRoomsTransitionRenovationKit.Context pickReno;
+    FrontRoomsMapCache pickRenoCache;
+
+    FrontRoomsTransitionRenovationKit.Context PickReno()
+    {
+        if (!FrontRoomsTransitionRenovationKit.Enabled || Cache == null) return null;
+        if (pickReno != null && pickRenoCache == Cache) return pickReno;
+        pickRenoCache = Cache;
+        return pickReno = new FrontRoomsTransitionRenovationKit.Context
+        {
+            theme = c => Cache.ZoneOf(c).theme,
+            ceiling = c => MapGrid.CeilingHeight(Cache.ZoneOf(c).height),
+            edge = (p, q) => Cache.Edge(p, q),
+            arch = ArchOpening,
+            excluded = InStartArea,
+            seed = Cache.Generator.Seed,
+            mats = FrontRoomsTransitionRenovationKit.Mats.Load(level0.ceiling),
+        };
+    }
+""")
+
+# H3 BuildInto: kits for this chunk
+sub1("""        void Solid(int blockIndex, Material material, Vector3 center, Vector3 size, float repeat)
+        {
+            Get(blockIndex, material).Box(center, size, origin, repeat);
+            collision.Box(center, size, origin, 1f);
+        }
+
+        for (var j = 0; j < n; j++)""", """        void Solid(int blockIndex, Material material, Vector3 center, Vector3 size, float repeat)
+        {
+            Get(blockIndex, material).Box(center, size, origin, repeat);
+            collision.Box(center, size, origin, 1f);
+        }
+
+        // PICK (clone only): the frame kit (V1, every border crossing) and the renovation kit (V2,
+        // dressed crossings; its corner rule builds every wall piece outside the start area).
+        var kit = PickReno();
+        kit?.Begin(new GridCoord(coord.x * n, coord.y * n), chunk.root.transform.position);
+        void Collide(Vector3 c, Vector3 s) => collision.Box(c, s, origin, 1f);
+        var corners = kit != null ? new Dictionary<GridCoord, FrontRoomsTransitionFrameKit.TransitionCorner>() : null;
+        FrontRoomsTransitionFrameKit.TransitionCorner CornerAt(GridCoord p, Vector3 local)
+        {
+            if (corners.TryGetValue(p, out var known)) return known;
+            var tc = TransitionCornerAt(p);
+            tc.at = local;
+            corners[p] = tc;
+            return tc;
+        }
+        var sink = kit != null && FrontRoomsTransitionFrameKit.FrameOn ? new TransitionSink { blockOf = BlockOf, officeWall = office.wall } : null;
+
+        for (var j = 0; j < n; j++)""")
+
+# H4 floor / ceiling of crossing cells
+sub1("""            if (!reserved)
+            {
+                Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
+                Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
+            }
+""", """            if (!reserved)
+            {
+                // PICK: a dressed Level 0 crossing cell builds its floor and ceiling in pieces (render only); collision keeps the full slabs.
+                if (kit != null && FrontRoomsTransitionRenovationKit.CrossingCell(kit, cell, new Vector3(i * cs, 0f, j * cs), height, b, theme.floor, theme.ceiling))
+                {
+                    Collide(cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs));
+                    Collide(cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs));
+                }
+                else
+                {
+                    Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
+                    Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
+                }
+            }
+""")
+
+# H5 edge descriptors and BuildEdge calls
+sub1("""            var eastSide = sideBlocks && !InStartArea(east);
+            var northSide = sideBlocks && !InStartArea(north);
+            BuildEdge(chunk, eastKind, cell, east, new Vector3((i + 1) * cs, 0f, j * cs), Vector3.forward,
+                eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
+                !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
+                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
+                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1);
+            BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
+                northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
+                !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
+                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
+                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1);
+""", """            var eastSide = sideBlocks && !InStartArea(east);
+            var northSide = sideBlocks && !InStartArea(north);
+            // PICK: the frame kit's edge descriptors (both cells outside the start area).
+            FrontRoomsTransitionFrameKit.TransitionEdge eastT = null, northT = null;
+            if (kit != null)
+            {
+                if (sink != null) { sink.i = i; sink.j = j; }
+                if (!InStartArea(cell) && !InStartArea(east))
+                    eastT = new FrontRoomsTransitionFrameKit.TransitionEdge
+                    {
+                        kind = eastKind, a = cell, b = east, themeA = zone.theme, themeB = eastZone.theme, heightA = height, heightB = MapGrid.CeilingHeight(eastZone.height), height = eastHeight,
+                        start = new Vector3((i + 1) * cs, 0f, j * cs), along = Vector3.forward, across = Vector3.right, officeWall = office.wall,
+                        c0 = CornerAt(new GridCoord(cell.x + 1, cell.y), new Vector3((i + 1) * cs, 0f, j * cs)),
+                        c1 = CornerAt(new GridCoord(cell.x + 1, cell.y + 1), new Vector3((i + 1) * cs, 0f, (j + 1) * cs)),
+                    };
+                if (!InStartArea(cell) && !InStartArea(north))
+                    northT = new FrontRoomsTransitionFrameKit.TransitionEdge
+                    {
+                        kind = northKind, a = cell, b = north, themeA = zone.theme, themeB = northZone.theme, heightA = height, heightB = MapGrid.CeilingHeight(northZone.height), height = northHeight,
+                        start = new Vector3(i * cs, 0f, (j + 1) * cs), along = Vector3.right, across = Vector3.forward, officeWall = office.wall,
+                        c0 = CornerAt(new GridCoord(cell.x, cell.y + 1), new Vector3(i * cs, 0f, (j + 1) * cs)),
+                        c1 = CornerAt(new GridCoord(cell.x + 1, cell.y + 1), new Vector3((i + 1) * cs, 0f, (j + 1) * cs)),
+                    };
+            }
+            BuildEdge(chunk, eastKind, cell, east, new Vector3((i + 1) * cs, 0f, j * cs), Vector3.forward,
+                eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
+                !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
+                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
+                eastSide ? BlockOf(i, j, height) : -1, eastSide ? BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height)) : -1,
+                kit, Collide, eastT, sink);
+            BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
+                northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
+                !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
+                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
+                northSide ? BlockOf(i, j, height) : -1, northSide ? BlockOf(i, j, MapGrid.CeilingHeight(northZone.height)) : -1,
+                kit, Collide, northT, sink);
+
+            // PICK: the frame kit's corner pieces at this cell's south-west lattice point (free posts, end caps, guards).
+            if (sink != null) FrontRoomsTransitionFrameKit.Corner(CornerAt(cell, new Vector3(i * cs, 0f, j * cs)), sink, office.wall);
+""")
+
+# H6 after the loop: kit output into blocks and kit renderers
+sub1("""            if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+        }
+
+        for (var b = 0; b < builders.Length; b++)""", """            if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+        }
+
+        // PICK: the renovation kit's boxes and meshes go into the blocks; block -1 (props, beads, tiles) into its own renderers.
+        Dictionary<Material, MeshBuilder> kitLoose = null;
+        if (kit != null)
+        {
+            kitLoose = new Dictionary<Material, MeshBuilder>();
+            MeshBuilder Sink(int block, Material m)
+            {
+                if (block >= 0) return Get(block, m);
+                if (!kitLoose.TryGetValue(m, out var lb)) kitLoose[m] = lb = new MeshBuilder();
+                return lb;
+            }
+            foreach (var bx in kit.output.boxes) Sink(bx.block, bx.mat).Box(bx.centre, bx.size, origin, bx.repeat);
+            foreach (var r in kit.output.raws.Values) if (r.v.Count > 0) Sink(r.block, r.mat).Raw(r.v, r.n, r.uv, r.t);
+            foreach (var p in kit.output.props) FrontRoomsKitLibrary.Spawn(p.asset, chunk.root.transform, p.position, p.rotation, null, false, "Renovation prop " + p.asset);
+        }
+        // PICK: frame kit Office-wall geometry joins the block's wall mesh; the rest gets its own renderers.
+        var kitRenderers = new List<(int block, Material material, bool shadows, FrontRoomsTransitionFrameKit.TransitionMesh mesh)>();
+        if (sink != null)
+            foreach (var pair in sink.meshes)
+            {
+                if (pair.Key.material == office.wall && pair.Key.shadows) Get(pair.Key.block, office.wall).Append(pair.Value);
+                else kitRenderers.Add((pair.Key.block, pair.Key.material, pair.Key.shadows, pair.Value));
+            }
+
+        for (var b = 0; b < builders.Length; b++)""")
+
+# H7 renderers
+sub1("""        var col = new GameObject("Collision");
+        col.transform.SetParent(chunk.root.transform, false);
+        var shell = col.AddComponent<MeshCollider>();""", """        if (kitLoose != null && kitLoose.Count > 0)
+        {
+            // PICK
+            var go = new GameObject("Renovation");
+            go.transform.SetParent(chunk.root.transform, false);
+            foreach (var pair in kitLoose)
+            {
+                var mesh = AddRenderer(go, pair.Key, pair.Value, chunk.root.transform.position.y + ModuleUnits.StandardCeiling);
+                if (mesh != null) chunk.meshes.Add(mesh);
+            }
+        }
+        if (kitRenderers.Count > 0)
+        {
+            // PICK
+            var kitRoot = new GameObject("Transition pieces");
+            kitRoot.transform.SetParent(chunk.root.transform, false);
+            foreach (var k in kitRenderers)
+            {
+                if (k.mesh.vertices.Count == 0 || k.material == null) continue;
+                var kgo = new GameObject("Transition " + k.material.name + (k.shadows ? "" : " (no shadow)"));
+                kgo.transform.SetParent(kitRoot.transform, false);
+                var kmesh = k.mesh.ToMesh("Chunk " + coord + " transition " + k.material.name, k.material.IsKeywordEnabled("_FR_MESH_UV"));
+                kgo.AddComponent<MeshFilter>().sharedMesh = kmesh;
+                var kr = kgo.AddComponent<MeshRenderer>();
+                kr.sharedMaterial = k.material;
+                kr.shadowCastingMode = k.shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                chunk.meshes.Add(kmesh);
+            }
+        }
+        var col = new GameObject("Collision");
+        col.transform.SetParent(chunk.root.transform, false);
+        var shell = col.AddComponent<MeshCollider>();""")
+
+# H8 frame corner descriptor + sink
+sub1("""    bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
+""", """    bool BothInStartArea(GridCoord a, GridCoord b) => InStartArea(a) && InStartArea(b);
+
+    // PICK (frame kit): what meets at the lattice point that is the south-west corner of cell p.
+    FrontRoomsTransitionFrameKit.TransitionCorner TransitionCornerAt(GridCoord p)
+    {
+        var c = new FrontRoomsTransitionFrameKit.TransitionCorner { point = p };
+        var cells = new[] { new GridCoord(p.x - 1, p.y - 1), new GridCoord(p.x, p.y - 1), new GridCoord(p.x - 1, p.y), p };
+        for (var q = 0; q < 4; q++)
+        {
+            var z = Cache.ZoneOf(cells[q]);
+            c.theme[q] = z.theme;
+            c.ceiling[q] = MapGrid.CeilingHeight(z.height);
+            c.wall[q] = Theme(z.theme).wall;
+            if (InStartArea(cells[q])) c.special = true;
+        }
+        // Arms: W, E, S, N.
+        c.arm[0] = Cache.Edge(cells[0], cells[2]);
+        c.arm[1] = Cache.Edge(cells[1], cells[3]);
+        c.arm[2] = Cache.Edge(cells[0], cells[1]);
+        c.arm[3] = Cache.Edge(cells[2], cells[3]);
+        c.armHeight[0] = Mathf.Max(c.ceiling[0], c.ceiling[2]);
+        c.armHeight[1] = Mathf.Max(c.ceiling[1], c.ceiling[3]);
+        c.armHeight[2] = Mathf.Max(c.ceiling[0], c.ceiling[1]);
+        c.armHeight[3] = Mathf.Max(c.ceiling[2], c.ceiling[3]);
+        return c;
+    }
+
+    // PICK (frame kit): the kit's meshes for one chunk, keyed by block, material and shadow casting.
+    sealed class TransitionSink : FrontRoomsTransitionFrameKit.ISink
+    {
+        public Func<int, int, float, int> blockOf;
+        public int i, j;
+        public Material officeWall;
+        public readonly Dictionary<(int block, Material material, bool shadows), FrontRoomsTransitionFrameKit.TransitionMesh> meshes =
+            new Dictionary<(int, Material, bool), FrontRoomsTransitionFrameKit.TransitionMesh>();
+
+        public FrontRoomsTransitionFrameKit.TransitionMesh Mesh(Material material, float ceiling, bool castShadows)
+        {
+            // Office-wall pieces join their block's wall mesh (its _CeilingHeight); the rest is one renderer per chunk and material.
+            var key = (material == officeWall && castShadows ? blockOf(i, j, ceiling) : -1, material, castShadows);
+            if (!meshes.TryGetValue(key, out var m)) meshes[key] = m = new FrontRoomsTransitionFrameKit.TransitionMesh();
+            return m;
+        }
+    }
+""")
+
+# H9 BuildEdge signature + open edges + descriptor
+sub1("""        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1)
+    {
+        if (kind == EdgeKind.Open) return;
+        var length = MapGrid.CellSize;
+        // Positive "across" points from cell a into cell b.
+        var across = new Vector3(along.z, 0f, along.x);
+        var sideA = blockA >= 0 ? blockA : blockIndex;
+        var sideB = blockB >= 0 ? blockB : blockIndex;""", """        bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1,
+        FrontRoomsTransitionRenovationKit.Context kit = null, Action<Vector3, Vector3> collide = null,
+        FrontRoomsTransitionFrameKit.TransitionEdge t = null, TransitionSink sink = null)   // PICK
+    {
+        // PICK: the kits see every edge outside the start area. A dressed border crossing belongs to
+        // the renovation kit (no frame casing or portal there); every other border edge to the frame kit.
+        var pick = kit != null && collide != null && t != null;
+        var dressed = pick && t.Border && FrontRoomsTransitionRenovationKit.Dressed(kit, a, b);
+        if (kind == EdgeKind.Open) { if (pick && !dressed) FrontRoomsTransitionFrameKit.Edge(t, sink); return; }
+        var length = MapGrid.CellSize;
+        // Positive "across" points from cell a into cell b.
+        var across = new Vector3(along.z, 0f, along.x);
+        var sideA = blockA >= 0 ? blockA : blockIndex;
+        var sideB = blockB >= 0 ? blockB : blockIndex;
+        // PICK: the edge as the renovation kit sees it (the opening is filled in below), and the frame kit's end caps.
+        var desc = new FrontRoomsTransitionRenovationKit.Edge
+        {
+            kind = kind, a = a, b = b, alongX = along.x > .5f, start = start, along = along, across = across, height = height,
+            wallA = wallA, wallB = wallB, blockA = sideA, blockB = sideB, mayExtendStart = mayExtendStart, mayExtendEnd = mayExtendEnd,
+        };
+        var capStart = pick && FrontRoomsTransitionFrameKit.EndCapAt(t.c0) ? FrontRoomsTransitionFrameKit.BeadInset : 0f;
+        var capEnd = pick && FrontRoomsTransitionFrameKit.EndCapAt(t.c1) ? FrontRoomsTransitionFrameKit.BeadInset : 0f;""")
+
+# H10 Piece
+sub1("""        void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd)
+        {
+            if (from > 0f || !mayExtendStart) extendStart = false;
+            if (to < length || !mayExtendEnd) extendEnd = false;
+            if (top - bottom < .05f) return;""", """        void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd,
+            float insetFrom = 0f, float insetTo = 0f, float raise = 0f, bool atOpeningStart = false, bool atOpeningEnd = false)
+        {
+            if (from > 0f || !mayExtendStart) extendStart = false;
+            if (to < length || !mayExtendEnd) extendEnd = false;
+            if (pick)
+            {
+                // PICK: collision exactly as before B0; render geometry from the renovation kit (its corner rule,
+                // the band on dressed crossings) with the frame kit's bead and end-cap insets.
+                var cf = from - (extendStart ? WallThickness * .5f : 0f);
+                var ct = to + (extendEnd ? WallThickness * .5f : 0f);
+                if (ct - cf >= .05f && top - bottom >= .05f)
+                {
+                    var cc = start + along * ((cf + ct) * .5f) + Vector3.up * ((bottom + top) * .5f);
+                    if (wallA == wallB) collide(cc, Abs(along * (ct - cf) + across * WallThickness + Vector3.up * (top - bottom)));
+                    else
+                    {
+                        var h2 = Abs(along * (ct - cf) + across * (WallThickness * .5f) + Vector3.up * (top - bottom));
+                        collide(cc - across * (WallThickness * .25f), h2);
+                        collide(cc + across * (WallThickness * .25f), h2);
+                    }
+                }
+                var iF = insetFrom + (from <= 0f && mayExtendStart ? capStart : 0f);
+                var iT = insetTo + (to >= length && mayExtendEnd ? capEnd : 0f);
+                FrontRoomsTransitionRenovationKit.WallPiece(kit, desc, from, to, bottom + raise, top, atOpeningStart, atOpeningEnd, iF, iT);
+                return;
+            }
+            if (top - bottom < .05f) return;""")
+
+# H11 walls and openings
+sub1("""        if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }
+
+        float width, c, openingTop, sill = 0f;""", """        if (kind == EdgeKind.Wall)
+        {
+            Piece(0f, length, 0f, height, true, true);
+            if (pick)
+            {
+                FrontRoomsTransitionFrameKit.Base(t, sink);
+                FrontRoomsTransitionRenovationKit.EdgeExtras(kit, desc, MapGrid.CeilingHeight(Cache.ZoneOf(a).height), MapGrid.CeilingHeight(Cache.ZoneOf(b).height));
+            }
+            return;
+        }
+
+        float width, c, openingTop, sill = 0f;""")
+sub1("""        Piece(0f, c - width * .5f, 0f, height, true, false);
+        Piece(c + width * .5f, length, 0f, height, false, true);
+        Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
+        if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
+
+        if (kind == EdgeKind.Arch) return;""", """        // PICK: the opening for the renovation kit; an undressed border arch is cased by the frame kit
+        // (the pieces beside it stop BeadInset short and the head starts BeadInset higher).
+        desc.lo = c - width * .5f; desc.hi = c + width * .5f; desc.top = openingTop; desc.sill = sill;
+        var bead = pick && kind == EdgeKind.Arch && t.Border && !dressed && FrontRoomsTransitionFrameKit.FrameOn ? FrontRoomsTransitionFrameKit.BeadInset : 0f;
+        Piece(0f, c - width * .5f, 0f, height, true, false, 0f, bead, 0f, false, true);
+        Piece(c + width * .5f, length, 0f, height, false, true, bead, 0f, 0f, true, false);
+        Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false, -bead, -bead, bead);
+        if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
+        if (pick)
+        {
+            FrontRoomsTransitionRenovationKit.ArchReveal(kit, desc);
+            FrontRoomsTransitionRenovationKit.EdgeExtras(kit, desc, MapGrid.CeilingHeight(Cache.ZoneOf(a).height), MapGrid.CeilingHeight(Cache.ZoneOf(b).height));
+            t.width = width; t.centre = c; t.top = openingTop; t.sill = sill;
+            if (!(dressed && kind == EdgeKind.Arch)) FrontRoomsTransitionFrameKit.Edge(t, sink);
+            FrontRoomsTransitionFrameKit.Base(t, sink);
+        }
+
+        if (kind == EdgeKind.Arch) return;""")
+open(p, "w").write(s)
+print("patched")

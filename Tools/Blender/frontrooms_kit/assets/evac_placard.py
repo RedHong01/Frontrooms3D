@@ -22,7 +22,7 @@ base strip swept round the rectangle, the sheet quad. LOD1 (2-6 m): one
 are hand-built and exported once kitlib has make_lods (P-1/P-1b); until then
 the FBX holds LOD0 only (interactables convention).
 
-Slots: Prop_Aluminium (existing), Prop_EvacPlan (NEW, the artwork; its glow
+Slots: Prop_AluminiumAnodised (NEW, the clean frame; 35_fix.md §4), Prop_EvacPlan (NEW, the artwork; its glow
 mask is the emission map that FrontRoomsPlacardGlow drives). Render-only:
 no collider; the spawner turns shadow casting off.
 """

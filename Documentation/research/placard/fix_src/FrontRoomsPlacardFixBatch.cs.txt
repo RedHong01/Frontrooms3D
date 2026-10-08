@@ -1,0 +1,60 @@
+// Q16 placard FIX stage (2026-10-08, research/placard/35_fix.md), clone only, never for main.
+// Edit mode, -quit: (1) FrontRoomsRenderSetup.SetUp (Prop_AluminiumAnodised, Prop_EvacPlan, Prop_LensNonGlare),
+// (2) force re-import of the two packed textures and both kit FBX (the remaps need the materials first),
+// (3) a report of what the importer made (texture format, size, mips, storage; materials; FBX slots),
+// (4) FrontRoomsPlacardLookdev.RunBatch, which reads its own args (-placardSimOnly -placardSeeds 0 -placardThreeView ...).
+// Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsPlacardFixBatch.Run
+//   -placardSimOnly -placardSeeds 0 -placardThreeView -threeViewOut <dir> -threeViewOnly Kit_EvacPlacard,Kit_EvacPlacardLens -quit -logFile <f>
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsPlacardFixBatch
+{
+    static readonly string[] Textures = { "Assets/Resources/Surfaces/Textures/Prop_EvacPlan_A.png", "Assets/Resources/Surfaces/Textures/Prop_EvacPlan_E.png" };
+    static readonly string[] Kits = { "Assets/Resources/Props/Models/Kit_EvacPlacard.fbx", "Assets/Resources/Props/Models/Kit_EvacPlacardLens.fbx" };
+    static readonly string[] Mats = { "Prop_AluminiumAnodised", "Prop_Aluminium", "Prop_EvacPlan", "Prop_LensNonGlare" };
+
+    public static void Run()
+    {
+        var sb = new StringBuilder("Q16 fix batch " + System.DateTime.Now.ToString("s") + ", target " + EditorUserBuildSettings.activeBuildTarget + "\n");
+        FrontRoomsRenderSetup.SetUp();
+        foreach (var t in Textures) AssetDatabase.ImportAsset(t, ImportAssetOptions.ForceUpdate);
+        foreach (var k in Kits) AssetDatabase.ImportAsset(k, ImportAssetOptions.ForceUpdate);
+        AssetDatabase.SaveAssets();
+        FrontRoomsKitLibrary.ClearCache();
+        var storage = typeof(Editor).Assembly.GetType("UnityEditor.TextureUtil")?.GetMethod("GetStorageMemorySizeLong", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        foreach (var t in Textures)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(t);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(t);
+            var web = imp.GetPlatformTextureSettings("WebGL");
+            sb.AppendLine(Path.GetFileName(t) + ": " + tex.width + " x " + tex.height + " " + tex.format + ", mips " + tex.mipmapCount + ", storage " + (storage != null ? storage.Invoke(null, new object[] { tex }) : "?")
+                + " B, sRGB " + imp.sRGBTexture + ", npot " + imp.npotScale + ", wrap " + imp.wrapMode + ", compression " + imp.textureCompression
+                + " | WebGL tab: overridden " + web.overridden + ", max " + web.maxTextureSize + ", " + web.format + " (auto " + imp.GetAutomaticFormat("WebGL") + ") | iOS auto " + imp.GetAutomaticFormat("iPhone"));
+        }
+        foreach (var n in Mats)
+        {
+            var m = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Surfaces/" + n + ".mat");
+            if (m == null) { sb.AppendLine(n + ": MISSING"); continue; }
+            string P(string p) => m.HasProperty(p) ? m.GetFloat(p).ToString("0.###") : "-";
+            sb.AppendLine(n + ".mat: " + m.shader.name + ", base " + (m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor").ToString("F3") : "-") + ", map " + (m.HasProperty("_BaseMap") && m.GetTexture("_BaseMap") != null ? m.GetTexture("_BaseMap").name : "none")
+                + ", smooth " + P("_Smoothness") + ", metal " + P("_Metallic") + ", occl " + P("_OcclusionStrength") + ", macroTone " + P("_MacroTone") + ", macroDirt " + P("_MacroDirt")
+                + ", keywords [" + string.Join(" ", m.shaderKeywords) + "], ShadowCaster " + m.GetShaderPassEnabled("ShadowCaster") + ", queue " + m.renderQueue + ", guid " + AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(m)));
+        }
+        foreach (var k in Kits)
+        {
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(k);
+            var mats = go.GetComponentsInChildren<Renderer>(true).SelectMany(r => r.sharedMaterials).Select(m => m == null ? "null" : m.name + " (" + AssetDatabase.GetAssetPath(m) + ")").Distinct();
+            var tris = go.GetComponentsInChildren<MeshFilter>(true).Sum(f => f.sharedMesh != null ? f.sharedMesh.triangles.Length / 3 : 0);
+            sb.AppendLine(Path.GetFileName(k) + ": " + tris + " tris, materials " + string.Join(", ", mats) + ", guid " + AssetDatabase.AssetPathToGUID(k));
+        }
+        var outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "placard_fix");
+        Directory.CreateDirectory(outDir);
+        File.WriteAllText(Path.Combine(outDir, "batch_report.txt"), sb.ToString());
+        Debug.Log("[PlacardFix]\n" + sb);
+        FrontRoomsPlacardLookdev.RunBatch();
+    }
+}

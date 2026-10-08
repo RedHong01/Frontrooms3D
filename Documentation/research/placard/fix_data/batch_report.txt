@@ -1,0 +1,9 @@
+Q16 fix batch 2026-10-08T01:15:19, target StandaloneOSX
+Prop_EvacPlan_A.png: 4096 x 2048 BC7, mips 13, storage 11184848 B, sRGB True, npot None, wrap Clamp, compression CompressedHQ | WebGL tab: overridden True, max 1024, AutomaticCompressed (auto DXT1) | iOS auto ASTC_4x4
+Prop_EvacPlan_E.png: 4096 x 2048 DXT1, mips 13, storage 5592424 B, sRGB False, npot None, wrap Clamp, compression Compressed | WebGL tab: overridden True, max 1024, AutomaticCompressed (auto DXT1) | iOS auto ASTC_6x6
+Prop_AluminiumAnodised.mat: FrontRooms/Surface, base RGBA(0.910, 0.920, 0.920, 1.000), map none, smooth 0.62, metal 1, occl 1, macroTone 0, macroDirt 0, keywords [_FR_MESH_UV], ShadowCaster True, queue 2000, guid d971225eba2a249789c186437239f267
+Prop_Aluminium.mat: FrontRooms/Surface, base RGBA(1.000, 1.000, 1.000, 1.000), map Prop_Aluminium_A, smooth 1, metal 1, occl 0.8, macroTone 0, macroDirt 0.06, keywords [_FR_MESH_UV], ShadowCaster True, queue 2000, guid 372be76307c67427da6556d4e199948f
+Prop_EvacPlan.mat: FrontRooms/Surface, base RGBA(1.000, 1.000, 1.000, 1.000), map Prop_EvacPlan_A, smooth 0.15, metal 0, occl 0.8, macroTone 0, macroDirt 0.02, keywords [_EMISSION _FR_MESH_UV], ShadowCaster True, queue 2000, guid 0cfd51a38ad384cf1b3737c9ec6f6b8d
+Prop_LensNonGlare.mat: Universal Render Pipeline/Lit, base RGBA(0.000, 0.000, 0.000, 0.040), map none, smooth 0.55, metal 0, occl 1, macroTone -, macroDirt -, keywords [_ALPHAPREMULTIPLY_ON _SURFACE_TYPE_TRANSPARENT], ShadowCaster False, queue 3000, guid f2e52cfd329764516a815a1b5b901e9e
+Kit_EvacPlacard.fbx: 1754 tris, materials Prop_AluminiumAnodised (Assets/Resources/Surfaces/Prop_AluminiumAnodised.mat), Prop_EvacPlan (Assets/Resources/Surfaces/Prop_EvacPlan.mat), guid 9422a5e2b89a940cfb03eacb688a6ae6
+Kit_EvacPlacardLens.fbx: 10 tris, materials Prop_LensNonGlare (Assets/Resources/Surfaces/Prop_LensNonGlare.mat), guid 0d394adff2bf447e4baf2f33656d2d96

@@ -2289,6 +2289,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// <summary>Raise the run's tier to <paramref name="next"/> (never lower, capped at the table): chunks generated from now on take it too.</summary>
     void RaiseTier(int next, string why)
     {
+#if UNITY_EDITOR
+        // A baseline run keeps the tier it asked for (Baseline.cs: autoTierLock, off with -autopilotTierFree).
+        if (autoBaseline && autoTierLock && why != "baseline") return;
+#endif
         next = Mathf.Min(next, TierRules.MaxTier);
         if (next <= tier) return;
         tier = next;
@@ -2684,14 +2688,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void AutopilotCapture(string name)
     {
-        if (cam == null) return;
+        // Baseline runs take no pictures: a capture renders twice and skips frames, which would skew their timings.
+        if (cam == null || autoBaseline) return;
         AutopilotRender(cam, name);
     }
 
     /// <summary>One view from a point towards another, with the player's lens.</summary>
     void AutopilotLookFrom(Vector3 from, Vector3 target, string label)
     {
-        if (cam == null) return;
+        if (cam == null || autoBaseline) return;
         var go = new GameObject("AUTOPILOT / look-at camera");
         var shot = go.AddComponent<Camera>();
         shot.CopyFrom(cam);
@@ -2718,7 +2723,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// <summary>Four views from the player's eye, a quarter turn apart, level.</summary>
     void AutopilotLookAround(string label)
     {
-        if (cam == null) return;
+        if (cam == null || autoBaseline) return;
         var go = new GameObject("AUTOPILOT / look-around camera");
         var shot = go.AddComponent<Camera>();
         shot.CopyFrom(cam);
@@ -2737,7 +2742,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// <summary>A third-person look at the Relay from behind the player's side of it, to check the rig is placed and animating.</summary>
     void AutopilotCaptureRelay()
     {
-        if (relay == null || cam == null) return;
+        if (relay == null || cam == null || autoBaseline) return;
         var go = new GameObject("AUTOPILOT / relay camera");
         var shot = go.AddComponent<Camera>();
         shot.CopyFrom(cam);

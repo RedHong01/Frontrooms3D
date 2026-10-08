@@ -1,0 +1,51 @@
+"""Standard folding wheelchair, folded and parked against a wall (Run! C
+prop; A's Kit_Wheelchair folded). CLONE-ONLY. Secondary prop at correct size
+and albedo: 24 in rear wheels with push rims and spokes, 8 in casters,
+chrome frame, black vinyl sling seat and back hanging slack, padded arms,
+push handles at 0.92 m. Folded width 0.30 m. ORIGIN = floor centre; front
+(casters) toward -Y."""
+import math
+
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_WheelchairFolded"
+SMOOTH_ANGLE = 45.0
+CH = "Prop_Chrome"
+
+
+def ring(cx, cy, cz, r, n=40):
+    return [(cx, cy + r * math.cos(2 * math.pi * k / n), cz + r * math.sin(2 * math.pi * k / n)) for k in range(n + 1)]
+
+
+def build(kit):
+    wy, wz, wr = 0.12, 0.305, 0.290
+    for s in (-1, 1):
+        x = s * 0.125
+        kit.tube(ring(x, wy, wz, wr), 0.016, "Prop_Rubber", verts=12, name="tyre", caps=False)
+        kit.tube(ring(x + s * 0.003, wy, wz, wr - 0.018), 0.006, CH, verts=8, name="rim", caps=False)
+        kit.tube(ring(x + s * 0.030, wy, wz, wr - 0.025), 0.0065, CH, verts=8, name="push rim", caps=False)
+        kit.cylinder(0.032, 0.06, (x, wy, wz), "Prop_PlasticGrey", verts=16, rot=(0, 90, 0), bevel=0.005, name="hub")
+        for k in range(12):
+            a = 2 * math.pi * k / 12
+            kit.tube([(x - s * 0.02, wy, wz), (x, wy + (wr - 0.02) * math.cos(a), wz + (wr - 0.02) * math.sin(a))], 0.0016, CH, verts=4, name="spoke")
+        # side frame: rear post + push handle, seat rail, front post, lower rail
+        kit.tube([(s * 0.10, wy + 0.02, 0.30), (s * 0.10, wy + 0.04, 0.88), (s * 0.10, wy + 0.13, 0.92)], 0.011, CH, verts=10, name="rear post")
+        kit.cylinder(0.016, 0.11, (s * 0.10, wy + 0.10, 0.915), "Prop_Rubber", verts=12, rot=(90, 0, 0), bevel=0.004, name="grip")
+        kit.tube([(s * 0.10, wy + 0.03, 0.50), (s * 0.10, -0.30, 0.50), (s * 0.10, -0.33, 0.20), (s * 0.10, -0.33, 0.13)], 0.011, CH, verts=10, name="seat rail")
+        kit.tube([(s * 0.10, wy, 0.30), (s * 0.10, -0.30, 0.30)], 0.010, CH, verts=10, name="lower rail")
+        kit.tube([(s * 0.10, wy + 0.03, 0.72), (s * 0.10, -0.18, 0.72), (s * 0.10, -0.18, 0.50)], 0.010, CH, verts=10, name="arm")
+        kit.box((0.05, 0.30, 0.035), (s * 0.10, -0.03, 0.745), "Prop_Vinyl", bevel=0.012, segments=2, name="arm pad")
+        # caster fork and wheel
+        kit.cylinder(0.010, 0.07, (s * 0.10, -0.35, 0.155), CH, verts=10, bevel=0.002, name="caster stem")
+        kit.cylinder(0.100, 0.026, (s * 0.10, -0.37, 0.100), "Prop_Rubber", verts=24, rot=(0, 90, 0), bevel=0.006, name="caster")
+        kit.cylinder(0.035, 0.03, (s * 0.10, -0.37, 0.100), "Prop_PlasticGrey", verts=12, rot=(0, 90, 0), bevel=0.003, segments=1, name="caster hub")
+        # footrest hanging
+        kit.tube([(s * 0.10, -0.33, 0.20), (s * 0.12, -0.45, 0.13)], 0.009, CH, verts=8, name="footrest")
+        kit.box((0.10, 0.12, 0.012), (s * 0.15, -0.48, 0.12), "Prop_PlasticGrey", bevel=0.004, segments=1, rot=(20, 0, 0), name="foot plate")
+    # folded X-brace (scissored up between the side frames)
+    kit.tube([(-0.10, -0.05, 0.30), (0.0, -0.05, 0.52), (0.10, -0.05, 0.30)], 0.010, CH, verts=10, name="x brace")
+    kit.tube([(-0.10, 0.06, 0.30), (0.0, 0.06, 0.52), (0.10, 0.06, 0.30)], 0.010, CH, verts=10, name="x brace")
+    # slack slings: seat folded up in a V, back sagging
+    kit.extrude([(-0.10, 0.50), (0.0, 0.36), (0.10, 0.50), (0.09, 0.505), (0.0, 0.375), (-0.09, 0.505)], 0.40, (0, -0.10, 0), "Prop_Vinyl", plane="xz", bevel=0.002, segments=1, name="seat sling")
+    kit.extrude([(-0.10, 0.52), (0.0, 0.50), (0.10, 0.52), (0.10, 0.88), (0.0, 0.84), (-0.10, 0.88)], 0.012, (0, wy + 0.045, 0), "Prop_Vinyl", plane="xz", bevel=0.002, segments=1, name="back sling")
+    kit.tag("run", "floor")

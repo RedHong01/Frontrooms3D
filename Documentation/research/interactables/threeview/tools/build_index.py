@@ -330,5 +330,11 @@ index = dict(
     heroes=heroes,
     proposalSlots=proposal_slots,
 )
+# Keep the hand-off "assets" block (tools/build_assets.py, 2026-10-08) across rebuilds of the K-sheet record.
+if os.path.exists(ROOT + "/index.json"):
+    _old = json.load(open(ROOT + "/index.json"))
+    for _k in ("assets", "assetsMeta"):
+        if _k in _old:
+            index[_k] = _old[_k]
 json.dump(index, open(ROOT + "/index.json", "w"), indent=1, ensure_ascii=False)
 print("sheets", len(sheets), "kits", len(kits), "heroes", len(heroes))

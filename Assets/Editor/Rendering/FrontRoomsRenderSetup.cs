@@ -384,6 +384,13 @@ public static class FrontRoomsRenderSetup
         new SurfaceDef { name = "Prop_CopierPanel", texture = "Prop_CopierPanel", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = .05f },
         new SurfaceDef { name = "Prop_KeyboardKeys", texture = "Prop_KeyboardKeys", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = .05f },
         new SurfaceDef { name = "Prop_Label", texture = "Prop_Label", tile = Vector2.one, meshUV = true, macroTone = 0f, macroDirt = 0f },
+        // Q16 evacuation placard: the printed sheet (research/placard/10_spec.md §3.1). The phosphor legend's mask is the
+        // emission map; FrontRoomsPlacardGlow drives _EmissionColor on one instance per placard (black at rest, so the
+        // _EMISSION variant stays in builds). Matte offset print; the lens carries the sheen. No macro stain on the print.
+        new SurfaceDef { name = "Prop_EvacPlan", texture = "Prop_EvacPlan", tile = Vector2.one, meshUV = true, smooth = .15f, macroTone = 0f, macroDirt = .02f, emission = "Prop_EvacPlan", emissionColor = Color.black },
+        // Q16: the placard's snap frame, clean clear-anodised satin aluminium (placard 35_fix.md §4). Its own slot, so the
+        // shared Prop_Aluminium (macro dirt, occlusion 0.8, albedo 0.72) stays as it is on every other kit.
+        new SurfaceDef { name = "Prop_AluminiumAnodised", tint = new Color(.91f, .92f, .92f), smooth = .62f, metallic = 1f, occlusion = 1f, meshUV = true, macroTone = 0f, macroDirt = 0f },
     };
 
     // Transparent prop slots use URP Lit (FrontRooms/Surface is opaque).
@@ -391,6 +398,7 @@ public static class FrontRoomsRenderSetup
     {
         ("Prop_Glass", new Color(.82f, .88f, .88f, .16f), .92f),
         ("Prop_BottleBlue", new Color(.36f, .58f, .80f, .42f), .9f),
+        ("Prop_LensNonGlare", new Color(0f, 0f, 0f, .04f), .55f),   // Q16: the placard's 1 mm non-glare lens (placard 10_spec §3.2)
     };
 
     static void EnsureCutoutMaterials()
@@ -436,6 +444,20 @@ public static class FrontRoomsRenderSetup
             m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             m.SetShaderPassEnabled("DepthOnly", false);
+            if (name == "Prop_LensNonGlare")
+            {
+                // A black base at alpha 0.04 that keeps its full specular (URP "Preserve Specular Lighting": the ROP
+                // multiply moves into the shader). out = specular + dst x 0.96: the lens takes ~4 % and adds only its
+                // sheen, so it can never veil the paper. No shadow caster: a shadowing lamp would print the lens's
+                // shadow onto the sheet 1 mm below (placard 10_spec §3.2).
+                m.SetFloat("_BlendModePreserveSpecular", 1f);
+                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                m.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
+                m.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                m.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                m.SetOverrideTag("RenderType", "Transparent");
+                m.SetShaderPassEnabled("ShadowCaster", false);
+            }
             EditorUtility.SetDirty(m);
         }
     }
@@ -698,6 +720,27 @@ public sealed class FrontRoomsSurfaceTextureImporter : AssetPostprocessor
         {
             importer.textureType = TextureImporterType.Default;
             importer.sRGBTexture = stem.EndsWith("_A") || stem.EndsWith("_E");
+        }
+        if (stem.StartsWith("Prop_EvacPlan"))
+        {
+            // Q16 placard artwork (placard 10_spec §3.3, 35_fix.md §6): Tools/lookdev/pack_evac_plan.py already stretched
+            // the 2592 x 1676 sheet to 4096 x 2048, because Unity 6 keeps a non-power-of-two texture with mips
+            // UNCOMPRESSED on every platform (measured 2026-10-08: RGBA32 / RGB24, 40 MB for the pair). Never rescaled
+            // again here (npotScale None), clamped at the sheet edge. _A: sRGB BC7. _E: the phosphor mask is coverage,
+            // so LINEAR (an sRGB decode would thin the anti-aliased glyph edges), BC1. Desktop: 16.8 MB with mips.
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            var mask = stem.EndsWith("_E");
+            importer.sRGBTexture = !mask;
+            importer.textureCompression = mask ? TextureImporterCompression.Compressed : TextureImporterCompression.CompressedHQ;
+            // WebGL tab only (its own track; the desktop tabs never change): capped at 1024, i.e. 1024 x 512 DXT1,
+            // 0.35 MB with mips per map (placard 10_spec §6, D16).
+            var web = importer.GetPlatformTextureSettings("WebGL");
+            web.overridden = true;
+            web.maxTextureSize = 1024;
+            web.format = TextureImporterFormat.Automatic;
+            web.textureCompression = TextureImporterCompression.Compressed;
+            importer.SetPlatformTextureSettings(web);
         }
     }
 }

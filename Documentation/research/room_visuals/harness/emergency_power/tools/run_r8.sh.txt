@@ -1,0 +1,7 @@
+#!/bin/zsh
+cd /Users/redwang/FrontRoomsVisualWork/run_ep_work
+./render.sh r8a -runState armed -runShots s1a,s2,c1,x_pull,x_armed_unit,x_unit_armed,x_wrap -runNoTimeline
+./render.sh r8t -runState tripped -runShots s1b,s3,c3,c4,x_goal,x_unit_tripped,r_cart,r_truck -runNoTimeline
+./render.sh r8n -runState none -runShots c2,timeline
+./render.sh r8noref -runState none -runShots s1b,x_goal,s1a -runNoTimeline -runNoId
+echo ALLDONE

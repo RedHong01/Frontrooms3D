@@ -1,0 +1,16 @@
+Q16 placard glow simulation (FrontRoomsPhosphorCell at 60 fps; map lamp curves; 2 lit neighbours)
+PASS steady: max G 0.000 (< 0.010: a lit cell never glows)
+PASS stutter: max G 0.000 (= 0: R15)
+PASS failing: breathes: 0.550 turns/s (P2 gate <= 3; the lamp itself 0.49 Hz), swing 0.796, 2 s window 0.796 (> 0.05: it reads), mean 0.312, max |dG/dt| 2.000/s
+PASS dead: spill glow G(10 s) 0.385 (about W = 0.392), min 0.385 in blinks, max |dG/dt| 2.000/s
+PASS dim: faint read G 0.198 (gate ~0.25 x C)
+PASS off: A4: G(10 s) 0.385 (C charging from 0 toward W 0.392)
+PASS warn_train: one swell: 1 peak(s), max G 0.196, max |dG/dt| 2.000/s
+PASS steady_calm: max G 0.000 (< 0.010: a lit cell never glows)
+PASS stutter_calm: max G 0.000 (= 0: R15)
+PASS failing_calm: steady read from 24 s: mean 0.353 (>= 0.7 x the normal mean 0.312), 2 s window swing 0.047 (<= 0.050), 66 s drift 0.107, 0.078 turns/s (<= 0.25), max |dG/dt| 0.500/s (<= 0.5)
+PASS dead_calm: spill glow G(10 s) 0.385 (about W = 0.392), min 0.385 in blinks, max |dG/dt| 0.500/s
+PASS dim_calm: faint read G 0.196 (gate ~0.25 x C)
+PASS off_calm: A4: G(10 s) 0.385 (C charging from 0 toward W 0.392)
+PASS warn_train_calm: one swell: 1 peak(s), max G 0.556, max |dG/dt| 0.500/s
+ALL PASS

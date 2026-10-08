@@ -1,0 +1,59 @@
+"""Verification images for Run! C (HOUSE LIGHTS), final round r9. JPG q85, 1920 wide."""
+import os, sys
+from PIL import Image, ImageDraw, ImageFont
+H = "/Users/redwang/FrontRoomsVisualWork/hl_work/runs"
+OUT = sys.argv[1]
+FONT = "/Users/redwang/FrontRoomsVisualWork/proj_run_house_lights/Assets/Fonts/Period1990/TeXGyre/texgyreheros-bold.otf"
+f = ImageFont.truetype(FONT, 24)
+fs = ImageFont.truetype(FONT, 20)
+BG = (34, 35, 28)
+
+def label(d, x, y, text, sub=None):
+    w = d.textlength(text, font=f) + 16
+    d.rectangle((x, y, x + w, y + 34), fill=(244, 223, 59))
+    d.text((x + 8, y + 5), text, font=f, fill=(10, 10, 10))
+    if sub:
+        w2 = d.textlength(sub, font=fs) + 16
+        d.rectangle((x, y + 34, x + w2, y + 62), fill=(10, 10, 10))
+        d.text((x + 8, y + 37), sub, font=fs, fill=(240, 238, 230))
+
+def panel(path, crop=None, size=None):
+    im = Image.open(path).convert("RGB")
+    if crop: im = im.crop(crop)
+    if size: im = im.resize(size, Image.LANCZOS)
+    return im
+
+def grid(items, cols, tile, name, pad=0):
+    rows = (len(items) + cols - 1) // cols
+    sh = Image.new("RGB", (cols * tile[0] + (cols - 1) * pad, rows * tile[1] + (rows - 1) * pad), BG)
+    d = ImageDraw.Draw(sh)
+    for i, (path, crop, text, sub) in enumerate(items):
+        x = (i % cols) * (tile[0] + pad); y = (i // cols) * (tile[1] + pad)
+        sh.paste(panel(path, crop, tile), (x, y))
+        label(d, x + 12, y + 12, text, sub)
+    if sh.width > 1920:
+        sh = sh.resize((1920, round(sh.height * 1920 / sh.width)), Image.LANCZOS)
+    sh.save(os.path.join(OUT, "run_dir_house_lights_" + name + ".jpg"), quality=85)
+    print(name, sh.size)
+
+# 1. light levels: armed .9 vs .7 (S1a), tripped at the brief's 4.5 vs the final 0.8 (S1b)
+grid([(H + "/r8/s1a.png", None, "S1A ARMED, LIT STRIPS AT .9 (BRIEF)", "median Y .155 = 1.7 x Level 0 Standard (.091)"),
+      (H + "/r9/s1a.png", None, "S1A ARMED, LIT STRIPS AT .7 (FINAL)", "median Y .116 = 1.28 x Level 0 (target 1.3 x)"),
+      (H + "/e3/s1b_s4p5.png", None, "S1B TRIPPED, SPOTS AT 4.5 (BRIEF)", "median Y .645, p95/p5 2.3 (target .30-.40, >= 10)"),
+      (H + "/r9/s1b.png", None, "S1B TRIPPED, SPOTS AT 0.8 (FINAL)", "median Y .327, p95/p5 17.9")], 2, (960, 540), "v_levels")
+
+# 2. the Relay through a shut pair's lite (C4p: z 9 pair still swinging behind it), three glasses
+cr = (800, 430, 1120, 610)
+grid([(H + "/e3/c4p_s0p8.png", cr, "BRIEF STAND-IN, ALPHA .25", "Relay body 3.2 : 1 inside the lite"),
+      (H + "/r9/c4p.png", cr, "GAME WINDOW GLASS (FINAL)", "5.4 : 1"),
+      (H + "/r9/c4p_ng.png", cr, "NO GLASS", "14.9 : 1")], 3, (640, 360), "v_glass")
+
+# 3. the goal EXIT face by round
+ce = (800, 150, 1120, 300)
+grid([(H + "/r6/x2.png", ce, "R6 FACE SMOOTHNESS .9", "a strip highlight eats the T"),
+      (H + "/r8/x2.png", ce, "R8 SMOOTHNESS .5", "letters salmon, sRGB 207/111/114"),
+      (H + "/r9/x2.png", ce, "R9 EGGSHELL .25 (FINAL)", "letters red, sRGB 204/74/74")], 3, (640, 300), "v_exitface")
+
+# 4. the game's own Relay rig vs the brief's proxy, C4r (inside the z 18 pair, 5.7 m)
+grid([(H + "/e1/c4r.png", None, "GAME RELAY RIG (FRONTROOMSRELAYRIG, RUN POSE)", "limbs float apart in an empty scene"),
+      (H + "/r9/c4r.png", None, "BRIEF PROXY (FINAL)", "body 27.5 : 1 vs a 12 px ring")], 2, (960, 540), "v_gamerig")

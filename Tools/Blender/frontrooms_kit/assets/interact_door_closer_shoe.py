@@ -19,8 +19,11 @@ Geometry (part m): back plate 0.030 (X) x 0.040 (Y) x 0.004, part Z
 slotted screws in the plate. The forearm stud's top (Y 0) meets the ear's
 underside.
 
-Budget (§9.1): 500 / 200 / 40 tris; slots SteelBrown and Chrome. No LOD1.
-Render-only. kit.meta["motion"] = static.
+Budget (§9.1): 500 / 200 / 40 tris; since the 2026-10-08 fix pass about
+1,000 LOD0: the ear's round end has 48 segments per circle and the pivot
+screw 32 (critic L1, §1.8's ">= 48 on anything <= 0.07 m across" wins over the
+500 budget for this 0.3 m close-up part). LOD1 exported (critic H4). Slots
+SteelBrown and Chrome. Render-only. kit.meta["motion"] = static.
 """
 
 import math
@@ -30,8 +33,8 @@ import sys
 import interact_door_common as dc
 
 NAME = "Kit_DoorCloser_Shoe"
-LOD1 = None
 LOD1_RATIO = 0.4
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.08
 LOD_DISTANCES = (1.5, 5.0, 20.0)
 SMOOTH_ANGLE = 35.0
@@ -42,6 +45,7 @@ FACE_Z = -0.020          # frame face band, part Z
 PLATE_T = 0.004
 EAR_R = 0.011
 EAR_Y = (0.0, 0.006)
+EAR_PTS = 35
 
 
 def wear(P, N, edge, obj):
@@ -62,13 +66,16 @@ def build(kit):
     zb = FACE_Z + PLATE_T - 0.001                     # root, buried 1 mm in the plate
     a0 = math.degrees(math.atan2(-math.sqrt(EAR_R ** 2 - 0.009 ** 2), 0.009))
     outline = [(-0.009, zb), (0.009, zb)]
-    for k in range(15):
-        a = math.radians(a0 + (180 - 2 * a0) * k / 14)  # round end about the pivot (0, 0)
+    # Fix pass 2026-10-08 (critic L1): the round end had 15 points over its 250 deg arc (about 20 per full
+    # circle) and faceted in close-ups; EAR_PTS = 35 gives 48 per full circle (§1.8).
+    for k in range(EAR_PTS):
+        a = math.radians(a0 + (180 - 2 * a0) * k / (EAR_PTS - 1))  # round end about the pivot (0, 0)
         outline.append((EAR_R * math.cos(a), EAR_R * math.sin(a)))
     ear = dc.loft_y(kit, [(EAR_Y[0], outline), (EAR_Y[1], outline)], PAINT, "shoe ear")
     kit._bevel(ear, 0.0008, 2, angle=40)
     # pivot screw: slotted pan head on the ear, and two plate screws
-    piv = dc.oval_head(kit, (0.0, EAR_Y[1], 0.0), (0, 1, 0), CHROME, rng, d=0.0080, dome_k=0.30, name="pivot screw")
+    piv = dc.oval_head(kit, (0.0, EAR_Y[1], 0.0), (0, 1, 0), CHROME, rng, d=0.0080, dome_k=0.30, half_segs=16,
+                       name="pivot screw")                    # 32 round the dome (was 16; L1)
     for yy in (-0.0125, 0.0140):
         dc.flat_head(kit, (0.0, yy, FACE_Z + PLATE_T), (0, 0, 1), CHROME, rng, d=0.0068, host=plate, notch=0.0010,
                      name="shoe screw")

@@ -24,7 +24,7 @@ public static class FrontRoomsFurniturePile
     const float CeilingClearance = .06f;
     const float GlobalOverlapBudget = .22f;
 
-    sealed class Piece
+    internal sealed class Piece
     {
         public string asset;
         public FrontRoomsKitLibrary.Info info;
@@ -34,40 +34,126 @@ public static class FrontRoomsFurniturePile
         public float tolerance;
         public string palette;
         public bool topper;
-        public Vector3 centre => (info.Min + info.Max) * .5f;
-        public Vector3 half => info.Size * .5f;
-        public float Volume => Mathf.Max(1e-4f, info.Size.x * info.Size.y * info.Size.z);
+        // Box numbers from the sidecar, worked out once with the same expressions
+        // the solver used to re-evaluate on every test.
+        public Vector3 centre, half;
+        public float Volume, halfMagnitude;
+
+        public void CacheBox()
+        {
+            centre = (info.Min + info.Max) * .5f;
+            half = info.Size * .5f;
+            Volume = Mathf.Max(1e-4f, info.Size.x * info.Size.y * info.Size.z);
+            halfMagnitude = half.magnitude;
+        }
+
         public bool Allows(Rest r) => Array.IndexOf(states, r) >= 0;
     }
 
-    sealed class Placed
+    /// <summary>
+    /// A piece where the solver put it. Everything derived from its position and
+    /// rotation (box centre, inverse rotation, axes, corners, top, world extent)
+    /// is computed on first use with the same expressions as before and kept
+    /// until the position or rotation changes, so results are bit-identical.
+    /// </summary>
+    internal sealed class Placed
     {
         public Piece piece;
-        public Vector3 position;     // asset origin, pile-local
-        public Quaternion rotation;
         public Rest rest;
         public int copyGroup = -1;   // pieces of one copy-paste run
-        public Vector3 obbCentre => position + rotation * piece.centre;
+
+        Vector3 pos;
+        Quaternion rot;
+        bool centreValid, rotValid, cornersValid, topValid;
+        Vector3 centreCache, axisX, axisY, axisZ, extent;
+        Quaternion inverse;
+        Vector3[] corners;
+        float top;
+
+        /// <summary>Asset origin, pile-local.</summary>
+        public Vector3 position
+        {
+            get => pos;
+            set { pos = value; centreValid = cornersValid = topValid = false; }
+        }
+
+        public Quaternion rotation
+        {
+            get => rot;
+            set { rot = value; rotValid = centreValid = cornersValid = topValid = false; }
+        }
+
+        public Vector3 obbCentre
+        {
+            get
+            {
+                if (!centreValid) { centreCache = pos + rot * piece.centre; centreValid = true; }
+                return centreCache;
+            }
+        }
+
         public Vector3 obbHalf => piece.half;
 
-        public void Corners(Vector3[] into)
+        void Rot()
         {
+            if (rotValid) return;
+            inverse = Quaternion.Inverse(rot);
+            axisX = rot * Vector3.right;
+            axisY = rot * Vector3.up;
+            axisZ = rot * Vector3.forward;
+            var h = piece.half;
+            // World half extent of the box (only for conservative early-outs).
+            extent = new Vector3(
+                Mathf.Abs(axisX.x) * h.x + Mathf.Abs(axisY.x) * h.y + Mathf.Abs(axisZ.x) * h.z,
+                Mathf.Abs(axisX.y) * h.x + Mathf.Abs(axisY.y) * h.y + Mathf.Abs(axisZ.y) * h.z,
+                Mathf.Abs(axisX.z) * h.x + Mathf.Abs(axisY.z) * h.y + Mathf.Abs(axisZ.z) * h.z);
+            rotValid = true;
+        }
+
+        public Quaternion Inverse { get { Rot(); return inverse; } }
+        public Vector3 AxisX { get { Rot(); return axisX; } }
+        public Vector3 AxisY { get { Rot(); return axisY; } }
+        public Vector3 AxisZ { get { Rot(); return axisZ; } }
+        /// <summary>Half size of the world-axis box round the piece's box.</summary>
+        public Vector3 Extent { get { Rot(); return extent; } }
+
+        /// <summary>The eight box corners (x, y, z = -1/+1, z fastest). Read only.</summary>
+        public Vector3[] Corners()
+        {
+            if (cornersValid) return corners;
+            if (corners == null) corners = new Vector3[8];
             var c = obbCentre; var h = obbHalf; var i = 0;
             for (var x = -1; x <= 1; x += 2)
                 for (var y = -1; y <= 1; y += 2)
                     for (var z = -1; z <= 1; z += 2)
-                        into[i++] = c + rotation * Vector3.Scale(h, new Vector3(x, y, z));
+                        corners[i++] = c + rot * Vector3.Scale(h, new Vector3(x, y, z));
+            cornersValid = true;
+            return corners;
+        }
+
+        /// <summary>Highest corner.</summary>
+        public float Top
+        {
+            get
+            {
+                if (topValid) return top;
+                var max = float.MinValue;
+                foreach (var c in Corners()) max = Mathf.Max(max, c.y);
+                top = max;
+                topValid = true;
+                return top;
+            }
         }
 
         public bool Contains(Vector3 p, float pad = 0f)
         {
-            var local = Quaternion.Inverse(rotation) * (p - obbCentre);
+            var local = Inverse * (p - obbCentre);
             var h = obbHalf;
             return Mathf.Abs(local.x) <= h.x + pad && Mathf.Abs(local.y) <= h.y + pad && Mathf.Abs(local.z) <= h.z + pad;
         }
     }
 
-    sealed class Plan
+    internal sealed class Plan
     {
         public Vector3 centre;
         public float radius, ceiling, hMax;
@@ -88,11 +174,14 @@ public static class FrontRoomsFurniturePile
     }
 
     static List<Piece> library;
-    static readonly Vector3[] CornersA = new Vector3[8];
+    static readonly float[] QuarterYaws = { 0f, 90f, 180f, 270f };
+    static readonly float[] RowYawSteps = { 0f, 3f, 7f };
+    static readonly float[] RunYawSteps = { 3f, 7f, 15f, 90f };
+    static readonly Vector3[] RunAxes = { Vector3.right, Vector3.forward };
 
     // ===================================================================== API
 
-    /// <summary>Reflection entry point used by FrontRoomsMapWorld.</summary>
+    /// <summary>Reflection entry point used by FrontRoomsMapWorld (runs <see cref="BeginBuild"/> to completion).</summary>
     public static void Build(Transform parent, Vector3 localCenter, float radius, float ceilingHeight, int seed)
     {
         BuildPile(parent, localCenter, radius, ceilingHeight, seed, null);
@@ -101,8 +190,81 @@ public static class FrontRoomsFurniturePile
     /// <summary>Build and return the pile root (null if the kit has too few pieces).</summary>
     public static GameObject BuildPile(Transform parent, Vector3 localCenter, float radius, float ceilingHeight, int seed, Tableau? force)
     {
+        var job = BeginBuildPile(parent, localCenter, radius, ceilingHeight, seed, force);
+        job.Complete();
+        return job.Root;
+    }
+
+    /// <summary>
+    /// Time-sliced <see cref="Build"/>: the same pile, solved and spawned a
+    /// little per <see cref="FrontRoomsDressJob.Step"/>. Nothing is created until
+    /// the layout is solved: the pile root is made then (Build makes it at the
+    /// same point, but within one call), a few steps after BeginBuild.
+    /// So keep one job at a time per parent and add nothing else to
+    /// <paramref name="parent"/> until this job is done (the map: do not begin
+    /// the next room, nor run its PlaceProps, under the same chunk). Otherwise
+    /// the pile root lands after those children instead of before them. A pile
+    /// begun before an office under the same parent and stepped alternately
+    /// gives "office dressing ; furniture pile" instead of the synchronous
+    /// "furniture pile ; office dressing".
+    /// </summary>
+    public static FrontRoomsDressJob BeginBuild(Transform parent, Vector3 localCenter, float radius, float ceilingHeight, int seed)
+    {
+        return BeginBuildPile(parent, localCenter, radius, ceilingHeight, seed, null);
+    }
+
+    /// <summary>Time-sliced <see cref="BuildPile"/>; the job's Root is the pile root once it is finished.</summary>
+    public static PileJob BeginBuildPile(Transform parent, Vector3 localCenter, float radius, float ceilingHeight, int seed, Tableau? force)
+    {
+        var job = new PileJob();
         var lib = Library();
-        if (parent == null || lib.Count == 0 || radius < .6f || ceilingHeight < 1.8f) return null;
+        if (parent == null || lib.Count == 0 || radius < .6f || ceilingHeight < 1.8f)
+        {
+            job.Start(null, null);
+            return job;
+        }
+        job.parent = parent;
+        job.localCenter = localCenter;
+        var build = new FrontRoomsDressBuild(null);
+        build.Watch(parent);
+        job.Start(Solve(job, lib, radius, ceilingHeight, seed, force).GetEnumerator(), build);
+        return job;
+    }
+
+    /// <summary>A pile being solved and built (see <see cref="FrontRoomsDressJob"/>).</summary>
+    public sealed class PileJob : FrontRoomsDressJob
+    {
+        internal Transform parent;
+        internal Vector3 localCenter;
+        internal Plan plan;
+        internal Tableau tableau;
+
+        /// <summary>The pile root once the job is finished (null when nothing was placed).</summary>
+        public GameObject Root { get; private set; }
+
+        protected override void OnPlanned()
+        {
+            if (plan == null || plan.placed.Count == 0) return;
+            if (parent == null) { Cancel(); return; }
+            var root = new GameObject("furniture pile (" + tableau + ")").transform;
+            root.SetParent(parent, false);
+            root.localPosition = localCenter;
+            Root = root.gameObject;
+            build.SetRoot(root);
+            build.Watch(root);
+            foreach (var p in plan.placed)
+            {
+                // Small pieces stay walk-through; everything else blocks.
+                var blocks = p.piece.cls != "Small" && p.piece.info.Size.magnitude > .5f;
+                build.Kit(-1, p.piece.asset, p.position, p.rotation, blocks, p.piece.asset + " / " + p.rest);
+            }
+            plan = null;
+        }
+    }
+
+    /// <summary>The solver, one operator call per step.</summary>
+    static IEnumerable<bool> Solve(PileJob job, List<Piece> lib, float radius, float ceilingHeight, int seed, Tableau? force)
+    {
         var rng = new Rng(seed);
         var tableau = force ?? ChooseTableau(rng, lib, radius, ceilingHeight);
         // Cubicle panels and posts only belong to the pasted-workstation tableau.
@@ -114,25 +276,19 @@ public static class FrontRoomsFurniturePile
             ceiling = ceilingHeight,
             hMax = Mathf.Min(ceilingHeight - CeilingClearance, HeightRatio(tableau, rng) * ceilingHeight),
         };
+        job.plan = plan;
+        job.tableau = tableau;
+        IEnumerable<bool> steps = null;
         switch (tableau)
         {
-            case Tableau.CentreSculpture: CentreSculpture(plan, lib, rng); break;
-            case Tableau.CopyPasteRow: CopyPasteRow(plan, lib, rng); break;
-            case Tableau.CeilingStuck: CeilingStuck(plan, lib, rng); break;
-            case Tableau.OfficeCluster: OfficeCluster(plan, lib, rng); break;
-            case Tableau.ZeroPile: ZeroPile(plan, lib, rng); break;
+            case Tableau.CentreSculpture: steps = CentreSculpture(plan, lib, rng); break;
+            case Tableau.CopyPasteRow: steps = CopyPasteRow(plan, lib, rng); break;
+            case Tableau.CeilingStuck: steps = CeilingStuck(plan, lib, rng); break;
+            case Tableau.OfficeCluster: steps = OfficeCluster(plan, lib, rng); break;
+            case Tableau.ZeroPile: steps = ZeroPile(plan, lib, rng); break;
         }
-        if (plan.placed.Count == 0) return null;
-        var root = new GameObject("furniture pile (" + tableau + ")").transform;
-        root.SetParent(parent, false);
-        root.localPosition = localCenter;
-        foreach (var p in plan.placed)
-        {
-            // Small pieces stay walk-through; everything else blocks.
-            var blocks = p.piece.cls != "Small" && p.piece.info.Size.magnitude > .5f;
-            FrontRoomsKitLibrary.Spawn(p.piece.asset, root, p.position, p.rotation, null, blocks, p.piece.asset + " / " + p.rest);
-        }
-        return root.gameObject;
+        if (steps != null)
+            foreach (var s in steps) yield return s;
     }
 
     // ================================================================ library
@@ -150,7 +306,7 @@ public static class FrontRoomsFurniturePile
                 foreach (var s in info.pile.states)
                     if (Enum.TryParse(s, out Rest r)) states.Add(r);
             if (states.Count == 0) states.Add(Rest.Upright);
-            library.Add(new Piece
+            var piece = new Piece
             {
                 asset = name,
                 info = info,
@@ -160,10 +316,15 @@ public static class FrontRoomsFurniturePile
                 tolerance = info.pile.tolerance > 0f ? info.pile.tolerance : .25f,
                 palette = info.pile.palette,
                 topper = info.pile.topper,
-            });
+            };
+            piece.CacheBox();
+            library.Add(piece);
         }
         return library;
     }
+
+    /// <summary>Forget the piece library (tools, after the kit is re-imported).</summary>
+    internal static void ResetCachesForTools() => library = null;
 
     static List<Piece> Filter(List<Piece> lib, Func<Piece, bool> keep)
     {
@@ -201,8 +362,12 @@ public static class FrontRoomsFurniturePile
     }
 
     // =============================================================== tableaux
+    //
+    // Each tableau is a sequence of operator calls; it yields after each one so
+    // a PileJob can stop between them. Run to the end, the calls and their
+    // random draws happen in exactly the same order as a straight call.
 
-    static void CentreSculpture(Plan plan, List<Piece> lib, Rng rng)
+    static IEnumerable<bool> CentreSculpture(Plan plan, List<Piece> lib, Rng rng)
     {
         var bases = Filter(lib, p => p.mass >= 2);
         var mids = Filter(lib, p => p.cls != "Small" && p.cls != "Tall");
@@ -215,27 +380,28 @@ public static class FrontRoomsFurniturePile
         // Counts scale with the radius: the film's piles are a dense mass of
         // furniture, not a few objects (R 3.2 → ~4 bases, ~10 stacked pieces).
         var r = plan.radius;
-        Repeat(Mathf.Clamp(Mathf.RoundToInt(r * 1.3f), 2, 5), () => TryBase(plan, bases.Count > 0 ? bases : mids, rng));
-        Repeat(Mathf.Clamp(Mathf.RoundToInt(r * .8f), 1, 3), () => TryEdgeLean(plan, cases, rng));
-        Repeat(Mathf.Clamp(Mathf.RoundToInt(r * 3.2f), 4, 12), () => TryStack(plan, mids, rng, null, highest: rng.Chance(.45f)));
-        Repeat(rng.Range(2, 5), () => TryStack(plan, seatsTables, rng, Rest.Inverted, highest: rng.Chance(.3f)));
-        if (seatsTables.Count > 0) TryCopyPasteRun(plan, seatsTables, rng, rng.Range(3, 6));
-        Repeat(Mathf.Clamp(Mathf.RoundToInt(r * 1.5f), 2, 5), () => TryStack(plan, mids, rng, null, highest: true));
-        if (talls.Count > 0) TrySpike(plan, talls, rng);
-        if (toppers.Count > 0) TryStack(plan, toppers, rng, null, highest: true);
-        if (smalls.Count > 0) Repeat(rng.Range(4, 8), () => TrySatellite(plan, smalls, rng));
+        for (int i = 0, n = Mathf.Clamp(Mathf.RoundToInt(r * 1.3f), 2, 5); i < n; i++) { foreach (var s in TryBase(plan, bases.Count > 0 ? bases : mids, rng, Ignored)) yield return s; yield return true; }
+        for (int i = 0, n = Mathf.Clamp(Mathf.RoundToInt(r * .8f), 1, 3); i < n; i++) { foreach (var s in TryEdgeLean(plan, cases, rng, Ignored)) yield return s; yield return true; }
+        for (int i = 0, n = Mathf.Clamp(Mathf.RoundToInt(r * 3.2f), 4, 12); i < n; i++) { foreach (var s in TryStack(plan, mids, rng, null, rng.Chance(.45f), Ignored)) yield return s; yield return true; }
+        for (int i = 0, n = rng.Range(2, 5); i < n; i++) { foreach (var s in TryStack(plan, seatsTables, rng, Rest.Inverted, rng.Chance(.3f), Ignored)) yield return s; yield return true; }
+        if (seatsTables.Count > 0) { foreach (var s in TryCopyPasteRun(plan, seatsTables, rng, rng.Range(3, 6))) yield return s; yield return true; }
+        for (int i = 0, n = Mathf.Clamp(Mathf.RoundToInt(r * 1.5f), 2, 5); i < n; i++) { foreach (var s in TryStack(plan, mids, rng, null, true, Ignored)) yield return s; yield return true; }
+        if (talls.Count > 0) { foreach (var s in TrySpike(plan, talls, rng)) yield return s; yield return true; }
+        if (toppers.Count > 0) { foreach (var s in TryStack(plan, toppers, rng, null, true, Ignored)) yield return s; yield return true; }
+        if (smalls.Count > 0)
+            for (int i = 0, n = rng.Range(4, 8); i < n; i++) { foreach (var s in TrySatellite(plan, smalls, rng)) yield return s; yield return true; }
     }
 
-    static void CopyPasteRow(Plan plan, List<Piece> lib, Rng rng)
+    static IEnumerable<bool> CopyPasteRow(Plan plan, List<Piece> lib, Rng rng)
     {
         var seats = Filter(lib, p => p.cls == "Seat" || p.cls == "Soft" || p.cls == "Table");
         if (seats.Count == 0) seats = Filter(lib, p => p.cls != "Small");
-        if (seats.Count == 0) return;
+        if (seats.Count == 0) yield break;
         var piece = rng.Pick(seats);
-        var yaw = rng.Pick(new[] { 0f, 90f, 180f, 270f });
+        var yaw = rng.Pick(QuarterYaws);
         var count = Mathf.Clamp(Mathf.RoundToInt(plan.radius * 2f / Mathf.Max(.25f, piece.info.Size.x * .55f)), 5, 14);
         var step = piece.info.Size.x * rng.Range(.3f, .5f);
-        var yawStep = rng.Pick(new[] { 0f, 3f, 7f });
+        var yawStep = rng.Pick(RowYawSteps);
         var start = -step * (count - 1) * .5f;
         var axis = Quaternion.Euler(0f, yaw, 0f) * Vector3.right;
         var group = plan.nextCopyGroup++;
@@ -246,6 +412,7 @@ public static class FrontRoomsFurniturePile
             var placed = Make(piece, Rest.Upright, rot, pos, 0f);
             placed.copyGroup = group;
             TryCommit(plan, placed, ignoreOverlapWithGroup: true);
+            yield return true;
         }
         // A second, inverted row pasted on top when it fits.
         if (piece.Allows(Rest.Inverted) && rng.Chance(.5f))
@@ -257,16 +424,21 @@ public static class FrontRoomsFurniturePile
                 var placed = Make(piece, Rest.Inverted, rot, pos, top);
                 placed.copyGroup = group;
                 TryCommit(plan, placed, ignoreOverlapWithGroup: true);
+                yield return true;
             }
     }
 
-    static void CeilingStuck(Plan plan, List<Piece> lib, Rng rng)
+    static IEnumerable<bool> CeilingStuck(Plan plan, List<Piece> lib, Rng rng)
     {
         // One light chair repeated floor to ceiling (the film's chair columns);
         // crates/tables only when no light seat exists.
         var stackable = Filter(lib, p => p.cls == "Seat" && p.mass == 0 && p.info.Height < plan.ceiling * .45f);
         if (stackable.Count == 0) stackable = Filter(lib, p => (p.cls == "Seat" || p.cls == "Crate" || p.cls == "Table") && p.info.Height < plan.ceiling * .45f);
-        if (stackable.Count == 0) { CentreSculpture(plan, lib, rng); return; }
+        if (stackable.Count == 0)
+        {
+            foreach (var s in CentreSculpture(plan, lib, rng)) yield return s;
+            yield break;
+        }
         var piece = rng.Pick(stackable);
         var before = plan.placed.Count;
         var group = plan.nextCopyGroup++;
@@ -286,67 +458,81 @@ public static class FrontRoomsFurniturePile
             if (!TryCommit(plan, placed, ignoreOverlapWithGroup: true, interlocked: i > 0)) break;
             // Interlock a little: the next copy sits 12% into this one.
             y = top - (top - y) * .12f;
+            yield return true;
         }
         if (plan.placed.Count - before < 3)
         {
             // Too short to read as a column: make it a sculpture instead.
             plan.placed.RemoveRange(before, plan.placed.Count - before);
             plan.hMax = Mathf.Min(plan.ceiling - CeilingClearance, .9f * plan.ceiling);
-            CentreSculpture(plan, lib, rng);
-            return;
+            foreach (var s in CentreSculpture(plan, lib, rng)) yield return s;
+            yield break;
         }
         var bases = Filter(lib, p => p.mass >= 2);
-        if (bases.Count > 0) Repeat(3, () => TryBase(plan, bases, rng, minR: .45f));
+        if (bases.Count > 0)
+            for (var i = 0; i < 3; i++) { foreach (var s in TryBase(plan, bases, rng, Ignored, .45f)) yield return s; yield return true; }
         var seats = Filter(lib, p => p.cls == "Seat");
-        if (seats.Count > 0) TryCopyPasteRun(plan, seats, rng, rng.Range(2, 4));
+        if (seats.Count > 0) { foreach (var s in TryCopyPasteRun(plan, seats, rng, rng.Range(2, 4))) yield return s; yield return true; }
     }
 
-    static void OfficeCluster(Plan plan, List<Piece> lib, Rng rng)
+    static IEnumerable<bool> OfficeCluster(Plan plan, List<Piece> lib, Rng rng)
     {
         var office = Filter(lib, p => p.palette == "office90s" && p.cls != "Small");
-        if (office.Count == 0) { CentreSculpture(plan, lib, rng); return; }
-        Repeat(2, () => TryBase(plan, Filter(office, p => p.mass >= 1), rng));
-        Repeat(2, () => TryEdgeLean(plan, Filter(office, p => p.Allows(Rest.EdgeLean)), rng));
-        Repeat(3, () => TryStack(plan, office, rng, rng.Chance(.5f) ? Rest.Side : (Rest?)null));
-        TryCopyPasteRun(plan, office, rng, rng.Range(2, 4));
+        if (office.Count == 0)
+        {
+            foreach (var s in CentreSculpture(plan, lib, rng)) yield return s;
+            yield break;
+        }
+        for (var i = 0; i < 2; i++) { foreach (var s in TryBase(plan, Filter(office, p => p.mass >= 1), rng, Ignored)) yield return s; yield return true; }
+        for (var i = 0; i < 2; i++) { foreach (var s in TryEdgeLean(plan, Filter(office, p => p.Allows(Rest.EdgeLean)), rng, Ignored)) yield return s; yield return true; }
+        for (var i = 0; i < 3; i++) { foreach (var s in TryStack(plan, office, rng, rng.Chance(.5f) ? Rest.Side : (Rest?)null, false, Ignored)) yield return s; yield return true; }
+        foreach (var s in TryCopyPasteRun(plan, office, rng, rng.Range(2, 4))) yield return s;
+        yield return true;
     }
 
-    static void ZeroPile(Plan plan, List<Piece> lib, Rng rng)
+    static IEnumerable<bool> ZeroPile(Plan plan, List<Piece> lib, Rng rng)
     {
         var seats = Filter(lib, p => p.cls == "Seat");
         if (seats.Count == 0) seats = Filter(lib, p => p.cls != "Small");
-        if (seats.Count == 0) return;
+        if (seats.Count == 0) yield break;
         TryCommit(plan, Make(rng.Pick(seats), Rest.Upright, Quaternion.identity, Vector3.zero, 0f));
+        yield return true;
     }
 
     // ============================================================= operators
+    //
+    // Each operator yields after every attempt (so a PileJob step is one
+    // attempt, not up to 22) and reports whether it placed a piece through an
+    // Outcome. Run to the end, every attempt and random draw happens in the
+    // same order as before.
 
-    static void Repeat(int n, Func<bool> op)
-    {
-        for (var i = 0; i < n; i++) op();
-    }
+    sealed class Outcome { public bool placed; }
 
-    static bool TryBase(Plan plan, List<Piece> pool, Rng rng, float minR = 0f)
+    static readonly Outcome Ignored = new Outcome();
+
+    static IEnumerable<bool> TryBase(Plan plan, List<Piece> pool, Rng rng, Outcome result, float minR = 0f)
     {
-        if (pool.Count == 0) return false;
+        result.placed = false;
+        if (pool.Count == 0) yield break;
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var piece = rng.Pick(pool);
             var rest = piece.Allows(Rest.Back) && rng.Chance(.3f) ? Rest.Back : Rest.Upright;
             var r = Mathf.Lerp(minR, .55f, rng.Next()) * plan.radius;
             var a = rng.Range(0f, Mathf.PI * 2f);
-            var yaw = rng.Pick(new[] { 0f, 90f, 180f, 270f }) + rng.Range(-12f, 12f);
+            var yaw = rng.Pick(QuarterYaws) + rng.Range(-12f, 12f);
             var placed = Make(piece, rest, Quaternion.Euler(0f, yaw, 0f), new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r), 0f);
-            if (TryCommit(plan, placed)) return true;
+            if (TryCommit(plan, placed)) { result.placed = true; yield break; }
+            yield return true;
         }
-        return false;
     }
 
     /// <summary>Stand a case next to a committed piece and tip it onto it about
     /// its bottom edge until first contact, then jam it a few degrees.</summary>
-    static bool TryEdgeLean(Plan plan, List<Piece> pool, Rng rng)
+    static IEnumerable<bool> TryEdgeLean(Plan plan, List<Piece> pool, Rng rng, Outcome result)
     {
-        if (pool.Count == 0 || plan.placed.Count == 0) return false;
+        result.placed = false;
+        if (pool.Count == 0 || plan.placed.Count == 0) yield break;
         for (var attempt = 0; attempt < 12; attempt++)
         {
             var piece = rng.Pick(pool);
@@ -374,27 +560,28 @@ public static class FrontRoomsFurniturePile
                 var trial = new Placed { piece = piece, rest = Rest.EdgeLean, rotation = q * stand.rotation, position = pivot + q * (stand.position - pivot) };
                 if (OverlapFraction(trial, target) > .004f) { contact = deg; break; }
             }
-            if (contact < 0f) continue;
+            if (contact < 0f) { yield return true; continue; }
             var angle = contact + rng.Range(2f, 6f);
-            if (angle < 30f || angle > 52f) continue;
+            if (angle < 30f || angle > 52f) { yield return true; continue; }
             var rot = Quaternion.AngleAxis(angle, axis);
             var lean = new Placed { piece = piece, rest = Rest.EdgeLean, rotation = rot * stand.rotation, position = pivot + rot * (stand.position - pivot) };
             // Keep the hinge edge on the floor.
             Ground(lean, 0f);
-            if (TryCommit(plan, lean)) return true;
+            if (TryCommit(plan, lean)) { result.placed = true; yield break; }
+            yield return true;
         }
-        return false;
     }
 
     /// <summary>Rest a piece on top of a committed piece (or the floor).</summary>
-    static bool TryStack(Plan plan, List<Piece> pool, Rng rng, Rest? want, bool highest = false)
+    static IEnumerable<bool> TryStack(Plan plan, List<Piece> pool, Rng rng, Rest? want, bool highest, Outcome result)
     {
-        if (pool.Count == 0) return false;
+        result.placed = false;
+        if (pool.Count == 0) yield break;
         for (var attempt = 0; attempt < 22; attempt++)
         {
             var piece = rng.Pick(pool);
             var rest = want.HasValue && piece.Allows(want.Value) ? want.Value : PickRest(piece, rng);
-            var yaw = rng.Pick(new[] { 0f, 90f, 180f, 270f }) + rng.Range(-20f, 20f);
+            var yaw = rng.Pick(QuarterYaws) + rng.Range(-20f, 20f);
             Placed support = null;
             if (plan.placed.Count > 0)
             {
@@ -402,46 +589,45 @@ public static class FrontRoomsFurniturePile
                 if (support.rest == Rest.EdgeLean || (support.rest == Rest.Inverted && (support.piece.cls == "Seat" || support.piece.cls == "Table"))) support = null;
             }
             Vector3 pos;
-            float y;
+            // (The height under pos used to be sampled here too and never used; MakeResting finds it.)
             if (support != null)
             {
                 var c = support.obbCentre;
                 var spread = Mathf.Min(Extent(support, Vector3.right), Extent(support, Vector3.forward)) * .3f;
                 pos = new Vector3(c.x + rng.Range(-spread, spread), 0f, c.z + rng.Range(-spread, spread));
-                y = TopAt(plan, pos);
             }
             else
             {
                 var r = rng.Range(0f, .55f) * plan.radius;
                 var a = rng.Range(0f, Mathf.PI * 2f);
                 pos = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
-                y = TopAt(plan, pos);
             }
             var placed = MakeResting(plan, piece, rest, Quaternion.Euler(0f, yaw, 0f), pos);
-            if (TryCommit(plan, placed)) return true;
+            if (TryCommit(plan, placed)) { result.placed = true; yield break; }
+            yield return true;
         }
-        return false;
     }
 
     /// <summary>Paste exact copies of one piece with a rigid offset; they interpenetrate.</summary>
-    static bool TryCopyPasteRun(Plan plan, List<Piece> pool, Rng rng, int copies)
+    static IEnumerable<bool> TryCopyPasteRun(Plan plan, List<Piece> pool, Rng rng, int copies)
     {
-        if (pool.Count == 0) return false;
+        if (pool.Count == 0) yield break;
         Placed source = null;
         for (var i = plan.placed.Count - 1; i >= 0 && source == null; i--)
             if (pool.Contains(plan.placed[i].piece) && plan.placed[i].rest != Rest.EdgeLean) source = plan.placed[i];
         if (source == null)
         {
-            if (!TryStack(plan, pool, rng, null)) return false;
+            var stacked = new Outcome();
+            foreach (var s in TryStack(plan, pool, rng, null, false, stacked)) yield return s;
+            if (!stacked.placed) yield break;
             source = plan.placed[plan.placed.Count - 1];
         }
         var group = source.copyGroup >= 0 ? source.copyGroup : (source.copyGroup = plan.nextCopyGroup++);
-        var localAxis = rng.Pick(new[] { Vector3.right, Vector3.forward });
+        var localAxis = rng.Pick(RunAxes);
         var size = Vector3.Scale(source.piece.info.Size, localAxis).magnitude;
         var step = size * rng.Range(.15f, .45f);
-        var yawStep = rng.Pick(new[] { 3f, 7f, 15f, 90f });
+        var yawStep = rng.Pick(RunYawSteps);
         var prev = source;
-        var any = false;
         for (var i = 0; i < copies; i++)
         {
             var dir = prev.rotation * localAxis;
@@ -453,14 +639,13 @@ public static class FrontRoomsFurniturePile
             Ground(copy, prev.position.y < .01f ? 0f : TopAt(plan, pos, copy));
             if (!TryCommit(plan, copy, ignoreOverlapWithGroup: true)) break;
             prev = copy;
-            any = true;
+            yield return true;
         }
-        return any;
     }
 
-    static bool TrySpike(Plan plan, List<Piece> pool, Rng rng)
+    static IEnumerable<bool> TrySpike(Plan plan, List<Piece> pool, Rng rng)
     {
-        if (pool.Count == 0 || plan.placed.Count == 0) return false;
+        if (pool.Count == 0 || plan.placed.Count == 0) yield break;
         for (var attempt = 0; attempt < 8; attempt++)
         {
             var piece = rng.Pick(pool);
@@ -469,14 +654,14 @@ public static class FrontRoomsFurniturePile
             var pos = new Vector3(c.x + rng.Range(-.15f, .15f), 0f, c.z + rng.Range(-.15f, .15f));
             var tilt = Quaternion.Euler(rng.Range(-8f, 8f), rng.Range(0f, 360f), rng.Range(-8f, 8f));
             var placed = MakeResting(plan, piece, Rest.Upright, tilt, pos);
-            if (TryCommit(plan, placed)) return true;
+            if (TryCommit(plan, placed)) yield break;
+            yield return true;
         }
-        return false;
     }
 
-    static bool TrySatellite(Plan plan, List<Piece> pool, Rng rng)
+    static IEnumerable<bool> TrySatellite(Plan plan, List<Piece> pool, Rng rng)
     {
-        if (pool.Count == 0) return false;
+        if (pool.Count == 0) yield break;
         for (var attempt = 0; attempt < 6; attempt++)
         {
             var piece = rng.Pick(pool);
@@ -484,9 +669,9 @@ public static class FrontRoomsFurniturePile
             var a = rng.Range(0f, Mathf.PI * 2f);
             var rest = piece.Allows(Rest.Side) && rng.Chance(.3f) ? Rest.Side : Rest.Upright;
             var placed = Make(piece, rest, Quaternion.Euler(0f, rng.Range(0f, 360f), 0f), new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r), 0f);
-            if (TryCommit(plan, placed)) return true;
+            if (TryCommit(plan, placed)) yield break;
+            yield return true;
         }
-        return false;
     }
 
     // ================================================================ geometry
@@ -500,7 +685,21 @@ public static class FrontRoomsFurniturePile
         return rng.Chance(.4f) && options.Contains(Rest.Upright) ? Rest.Upright : rng.Pick(options);
     }
 
-    static Quaternion RestRotation(Rest rest, Rng rng = null)
+    static Quaternion[] restRotations;
+
+    /// <summary>RestRotationOf, computed once per state (the same Quaternion.Euler results).</summary>
+    static Quaternion RestRotation(Rest rest)
+    {
+        if (restRotations == null)
+        {
+            var values = (Rest[])Enum.GetValues(typeof(Rest));
+            restRotations = new Quaternion[values.Length];
+            foreach (var r in values) restRotations[(int)r] = RestRotationOf(r);
+        }
+        return restRotations[(int)rest];
+    }
+
+    static Quaternion RestRotationOf(Rest rest)
     {
         switch (rest)
         {
@@ -527,7 +726,9 @@ public static class FrontRoomsFurniturePile
     {
         var placed = Make(piece, rest, yaw, position, 0f);
         var top = 0f;
-        foreach (var s in BottomSamples(placed)) top = Mathf.Max(top, TopAt(plan, s));
+        var samples = BottomSamples(placed);
+        Gather(plan, samples, null);
+        foreach (var s in samples) top = Mathf.Max(top, TopAtNear(s));
         Ground(placed, top);
         return placed;
     }
@@ -537,15 +738,19 @@ public static class FrontRoomsFurniturePile
     /// <summary>Nine points spread over the lowest face of a piece's box (world xz, y = its bottom).</summary>
     static Vector3[] BottomSamples(Placed p)
     {
-        p.Corners(CornersA);
+        var corners = p.Corners();
         var minY = float.MaxValue;
-        foreach (var c in CornersA) minY = Mathf.Min(minY, c.y);
+        foreach (var c in corners) minY = Mathf.Min(minY, c.y);
         // The four lowest corners span the resting face (good enough for quantised states).
-        var low = new List<Vector3>();
-        foreach (var c in CornersA) if (c.y < minY + .05f) low.Add(c);
-        if (low.Count < 3) low = new List<Vector3>(CornersA);
+        var lowCount = 0;
+        foreach (var c in corners) if (c.y < minY + .05f) lowCount++;
+        var all = lowCount < 3;
         float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
-        foreach (var c in low) { x0 = Mathf.Min(x0, c.x); x1 = Mathf.Max(x1, c.x); z0 = Mathf.Min(z0, c.z); z1 = Mathf.Max(z1, c.z); }
+        foreach (var c in corners)
+        {
+            if (!all && !(c.y < minY + .05f)) continue;
+            x0 = Mathf.Min(x0, c.x); x1 = Mathf.Max(x1, c.x); z0 = Mathf.Min(z0, c.z); z1 = Mathf.Max(z1, c.z);
+        }
         var i = 0;
         for (var a = 0; a < 3; a++)
             for (var b = 0; b < 3; b++)
@@ -557,10 +762,13 @@ public static class FrontRoomsFurniturePile
     static float SupportFraction(Plan plan, Placed p)
     {
         var supported = 0;
-        foreach (var s in BottomSamples(p))
+        var samples = BottomSamples(p);
+        var gathered = false;
+        foreach (var s in samples)
         {
             if (s.y < .03f) { supported++; continue; }
-            if (Mathf.Abs(TopAt(plan, s, p) - s.y) < .03f) supported++;
+            if (!gathered) { Gather(plan, samples, p); gathered = true; }
+            if (Mathf.Abs(TopAtNear(s) - s.y) < .03f) supported++;
         }
         return supported / 9f;
     }
@@ -568,25 +776,17 @@ public static class FrontRoomsFurniturePile
     /// <summary>Move vertically so the lowest corner sits at y.</summary>
     static void Ground(Placed p, float y)
     {
-        p.Corners(CornersA);
         var min = float.MaxValue;
-        foreach (var c in CornersA) min = Mathf.Min(min, c.y);
+        foreach (var c in p.Corners()) min = Mathf.Min(min, c.y);
         p.position += Vector3.up * (y - min);
     }
 
-    static float Top(Placed p)
-    {
-        p.Corners(CornersA);
-        var max = float.MinValue;
-        foreach (var c in CornersA) max = Mathf.Max(max, c.y);
-        return max;
-    }
+    static float Top(Placed p) => p.Top;
 
     static float Extent(Placed p, Vector3 dir)
     {
         var h = p.obbHalf;
-        var r = p.rotation;
-        return Mathf.Abs(Vector3.Dot(r * Vector3.right, dir)) * h.x + Mathf.Abs(Vector3.Dot(r * Vector3.up, dir)) * h.y + Mathf.Abs(Vector3.Dot(r * Vector3.forward, dir)) * h.z;
+        return Mathf.Abs(Vector3.Dot(p.AxisX, dir)) * h.x + Mathf.Abs(Vector3.Dot(p.AxisY, dir)) * h.y + Mathf.Abs(Vector3.Dot(p.AxisZ, dir)) * h.z;
     }
 
     static Placed Highest(Plan plan)
@@ -602,6 +802,13 @@ public static class FrontRoomsFurniturePile
         return best;
     }
 
+    // Margins for the early-outs below. They only skip tests that cannot pass:
+    // a point inside a box (padded by at most 2 cm along the box's own axes)
+    // lies within the box's world-axis extent plus pad·√3 < 3.5 cm, and float
+    // error on these metre-scale numbers is under 1e-5 m.
+    const float TopAtMargin = .05f;
+    const float OverlapMargin = .01f;
+
     /// <summary>
     /// Height of the highest committed surface under (x, z). An upright piece
     /// offers its authored supports (a desk top, a chair seat) when it has
@@ -613,40 +820,97 @@ public static class FrontRoomsFurniturePile
         foreach (var p in plan.placed)
         {
             if (p == ignore || p.rest == Rest.EdgeLean) continue;
-            var probe = new Vector3(xz.x, p.obbCentre.y, xz.z);
-            if (!p.Contains(probe, .02f)) continue;
-            var supports = p.piece.info.supports;
-            if (p.rest == Rest.Upright && supports != null && supports.Length > 0)
-            {
-                var local = Quaternion.Inverse(p.rotation) * (new Vector3(xz.x, 0f, xz.z) - new Vector3(p.position.x, 0f, p.position.z));
-                foreach (var sup in supports)
-                {
-                    if (sup?.centre == null || sup.size == null || sup.centre.Length < 3 || sup.size.Length < 2) continue;
-                    if (Mathf.Abs(local.x - sup.centre[0]) <= sup.size[0] * .5f + .02f && Mathf.Abs(local.z - sup.centre[2]) <= sup.size[1] * .5f + .02f)
-                        y = Mathf.Max(y, p.position.y + sup.centre[1]);
-                }
-                continue;
-            }
-            y = Mathf.Max(y, Top(p));
+            y = TopOf(p, xz, y);
         }
         return y;
+    }
+
+    // Pieces that can be under any of a set of sample points (same order as plan.placed).
+    static readonly List<Placed> Near = new List<Placed>();
+
+    /// <summary>
+    /// Keep, in order, the pieces TopAt could use for any of the samples: a piece
+    /// whose widened extent misses the samples' bounding rectangle fails TopAt's
+    /// own early-out for every one of them (the extra 1 cm covers rounding).
+    /// </summary>
+    static void Gather(Plan plan, Vector3[] samples, Placed ignore)
+    {
+        float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+        foreach (var s in samples) { x0 = Mathf.Min(x0, s.x); x1 = Mathf.Max(x1, s.x); z0 = Mathf.Min(z0, s.z); z1 = Mathf.Max(z1, s.z); }
+        const float m = TopAtMargin + .01f;
+        Near.Clear();
+        foreach (var p in plan.placed)
+        {
+            if (p == ignore || p.rest == Rest.EdgeLean) continue;
+            var c = p.obbCentre;
+            var e = p.Extent;
+            if (c.x + e.x + m < x0 || c.x - e.x - m > x1 || c.z + e.z + m < z0 || c.z - e.z - m > z1) continue;
+            Near.Add(p);
+        }
+    }
+
+    /// <summary>TopAt over the gathered pieces (same pieces in the same order as TopAt would test).</summary>
+    static float TopAtNear(Vector3 xz)
+    {
+        var y = 0f;
+        foreach (var p in Near) y = TopOf(p, xz, y);
+        return y;
+    }
+
+    /// <summary>One piece's contribution to TopAt: y raised to its surface under xz, if any.</summary>
+    static float TopOf(Placed p, Vector3 xz, float y)
+    {
+        var c = p.obbCentre;
+        var e = p.Extent;
+        if (Mathf.Abs(xz.x - c.x) > e.x + TopAtMargin || Mathf.Abs(xz.z - c.z) > e.z + TopAtMargin) return y;
+        var probe = new Vector3(xz.x, c.y, xz.z);
+        if (!p.Contains(probe, .02f)) return y;
+        var supports = p.piece.info.supports;
+        if (p.rest == Rest.Upright && supports != null && supports.Length > 0)
+        {
+            var local = p.Inverse * (new Vector3(xz.x, 0f, xz.z) - new Vector3(p.position.x, 0f, p.position.z));
+            foreach (var sup in supports)
+            {
+                if (sup?.centre == null || sup.size == null || sup.centre.Length < 3 || sup.size.Length < 2) continue;
+                if (Mathf.Abs(local.x - sup.centre[0]) <= sup.size[0] * .5f + .02f && Mathf.Abs(local.z - sup.centre[2]) <= sup.size[1] * .5f + .02f)
+                    y = Mathf.Max(y, p.position.y + sup.centre[1]);
+            }
+            return y;
+        }
+        return Mathf.Max(y, Top(p));
+    }
+
+    static readonly Vector3[] OverlapSamples = OverlapGrid();
+
+    static Vector3[] OverlapGrid()
+    {
+        var grid = new Vector3[64];
+        var n = 0;
+        for (var i = 0; i < 4; i++)
+            for (var j = 0; j < 4; j++)
+                for (var k = 0; k < 4; k++)
+                    grid[n++] = new Vector3((i + .5f) / 4f * 2f - 1f, (j + .5f) / 4f * 2f - 1f, (k + .5f) / 4f * 2f - 1f);
+        return grid;
     }
 
     /// <summary>Fraction of a's box (4x4x4 samples) that lies inside b's box.</summary>
     static float OverlapFraction(Placed a, Placed b)
     {
-        // Cheap reject on bounding spheres.
-        if ((a.obbCentre - b.obbCentre).magnitude > a.obbHalf.magnitude + b.obbHalf.magnitude) return 0f;
+        var ca = a.obbCentre;
+        var cb = b.obbCentre;
+        // Exact early-out: boxes whose world-axis extents are apart share no sample.
+        var ea = a.Extent;
+        var eb = b.Extent;
+        if (Mathf.Abs(ca.x - cb.x) > ea.x + eb.x + OverlapMargin
+            || Mathf.Abs(ca.y - cb.y) > ea.y + eb.y + OverlapMargin
+            || Mathf.Abs(ca.z - cb.z) > ea.z + eb.z + OverlapMargin) return 0f;
+        // Cheap reject on bounding spheres (as before).
+        if ((ca - cb).magnitude > a.piece.halfMagnitude + b.piece.halfMagnitude) return 0f;
         var inside = 0;
         var h = a.obbHalf;
-        for (var i = 0; i < 4; i++)
-            for (var j = 0; j < 4; j++)
-                for (var k = 0; k < 4; k++)
-                {
-                    var local = new Vector3((i + .5f) / 4f * 2f - 1f, (j + .5f) / 4f * 2f - 1f, (k + .5f) / 4f * 2f - 1f);
-                    var p = a.obbCentre + a.rotation * Vector3.Scale(h, local);
-                    if (b.Contains(p)) inside++;
-                }
+        var ra = a.rotation;
+        foreach (var local in OverlapSamples)
+            if (b.Contains(ca + ra * Vector3.Scale(h, local))) inside++;
         return inside / 64f;
     }
 
@@ -661,8 +925,7 @@ public static class FrontRoomsFurniturePile
             var need = p.rest == Rest.Inverted && p.piece.cls == "Seat" ? .33f : .5f;
             if (SupportFraction(plan, p) < need) return false;
         }
-        p.Corners(CornersA);
-        foreach (var c in CornersA)
+        foreach (var c in p.Corners())
         {
             if (new Vector2(c.x, c.z).magnitude > plan.radius) return false;
             if (c.y > plan.hMax) return false;
@@ -690,24 +953,25 @@ public static class FrontRoomsFurniturePile
         return true;
     }
 
+    static Vector3 Axis(Placed p, int i) => i == 0 ? p.AxisX : i == 1 ? p.AxisY : p.AxisZ;
+    static float HalfAxis(Vector3 h, int i) => i == 0 ? h.x : i == 1 ? h.y : h.z;
+
     /// <summary>Parallel faces closer than 3 mm with overlapping projections flicker; reject them.</summary>
     static bool AlmostCoplanar(Placed a, Placed b)
     {
-        var axesA = new[] { a.rotation * Vector3.right, a.rotation * Vector3.up, a.rotation * Vector3.forward };
-        var axesB = new[] { b.rotation * Vector3.right, b.rotation * Vector3.up, b.rotation * Vector3.forward };
-        var ha = new[] { a.obbHalf.x, a.obbHalf.y, a.obbHalf.z };
-        var hb = new[] { b.obbHalf.x, b.obbHalf.y, b.obbHalf.z };
+        var ha = a.obbHalf;
+        var hb = b.obbHalf;
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 3; j++)
             {
-                var d = Vector3.Dot(axesA[i], axesB[j]);
+                var n = Axis(a, i);
+                var d = Vector3.Dot(n, Axis(b, j));
                 if (Mathf.Abs(d) < .9994f) continue; // > 2 degrees apart
-                var n = axesA[i];
                 var ca = Vector3.Dot(a.obbCentre, n);
                 var cb = Vector3.Dot(b.obbCentre, n);
                 for (var sa = -1; sa <= 1; sa += 2)
                     for (var sb = -1; sb <= 1; sb += 2)
-                        if (Mathf.Abs((ca + sa * ha[i]) - (cb + sb * hb[j])) < .003f) return true;
+                        if (Mathf.Abs((ca + sa * HalfAxis(ha, i)) - (cb + sb * HalfAxis(hb, j))) < .003f) return true;
             }
         return false;
     }

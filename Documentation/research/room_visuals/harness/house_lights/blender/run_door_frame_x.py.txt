@@ -1,0 +1,12 @@
+"""Single frame 1.0 x 2.1 m for the RN-X goal door, with the rim strike for
+the crossbar device on the latch jamb (push side). CLONE-ONLY look-dev."""
+import run_door_frame_common as fc
+
+NAME = "Kit_DoorFrame_RunX"
+
+
+def build(kit):
+    fc.frame(kit, 1.0)
+    # Rim strike on the latch (x_u = +0.5) jamb's stop, push side (z_u < -0.055 .. on the stop face).
+    kit.box((0.030, 0.070, 0.110), (-0.469, 0.005, 1.03), "Prop_Chrome", bevel=0.004, segments=2, name="rim strike")
+    kit.tag("run", "door")

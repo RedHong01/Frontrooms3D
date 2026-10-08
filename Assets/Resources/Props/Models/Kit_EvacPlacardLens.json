@@ -1,0 +1,83 @@
+{
+ "name": "Kit_EvacPlacardLens",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "back",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "lens_top",
+   "pos": [
+    0.0,
+    0.0,
+    0.00555
+   ]
+  }
+ ],
+ "tags": [
+  "placard",
+  "sign",
+  "wall_flush",
+  "lens"
+ ],
+ "noCollider": true,
+ "placardLens": {
+  "size": [
+   0.432,
+   0.279,
+   0.001
+  ],
+  "top": 0.00555,
+  "edgeLow": 0.0046,
+  "slot": "Prop_LensNonGlare",
+  "frameKit": "Kit_EvacPlacard"
+ },
+ "lodDistances": [
+  6.0,
+  6.0,
+  6.0
+ ],
+ "lodBudget": [
+  10,
+  10,
+  10
+ ],
+ "lodRatios": [
+  1.0,
+  1.0
+ ],
+ "lodNote": "One level; culled at 6 m (lodBias 1) once P-1 lands. Draw it only with the frame's LOD0/LOD1.",
+ "trianglesCheck": 10,
+ "boundsMin": [
+  -0.2160000056028366,
+  -0.13950000703334808,
+  0.004600000102072954
+ ],
+ "boundsMax": [
+  0.2160000056028366,
+  0.13950000703334808,
+  0.005549999885261059
+ ],
+ "triangles": 10,
+ "slots": [
+  "Prop_LensNonGlare"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.0050749999936670065
+ ],
+ "footprintSize": [
+  0.4320000112056732,
+  0.0009499997831881046
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.19
+}

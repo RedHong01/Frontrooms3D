@@ -1,0 +1,36 @@
+import json
+from PIL import Image, ImageDraw, ImageFont
+T = "/Users/redwang/FrontRoomsVisualWork/trans_pick_work"
+IMG = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/level_transitions/images"
+F = lambda s: ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", s)
+TH = {"Level0": (206, 190, 120), "Office": (150, 168, 178)}
+def draw(d, js, ox, oy, size, cam):
+    cells = {(c["x"], c["y"]): c for c in js["cells"]}
+    xs = [k[0] for k in cells]; ys = [k[1] for k in cells]; x0, y1 = min(xs), max(ys)
+    P = lambda x, y: (ox + (x - x0) * size, oy + (y1 + 1 - y) * size)
+    for (x, y), c in cells.items():
+        px, py = P(x, y + 1); d.rectangle([px, py, px + size, py + size], fill=TH[c["theme"]])
+    for (x, y), c in cells.items():
+        for side in ("east", "north"):
+            q = (x + 1, y) if side == "east" else (x, y + 1)
+            if q not in cells: continue
+            k = c[side]; a, b = (P(x + 1, y), P(x + 1, y + 1)) if side == "east" else (P(x, y + 1), P(x + 1, y + 1))
+            border = cells[q]["theme"] != c["theme"]
+            if k != "Open": d.line([a, b], fill=(35, 35, 35), width=6)
+            m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2); r = size * .26
+            seg = [(m[0], m[1] - r), (m[0], m[1] + r)] if a[0] == b[0] else [(m[0] - r, m[1]), (m[0] + r, m[1])]
+            if k == "Door": d.line(seg, fill=(150, 70, 30), width=12)
+            elif k == "Window": d.line(seg, fill=(60, 120, 200), width=12)
+            elif k == "Arch": d.line(seg, fill=TH[c["theme"]], width=12)
+            if border and k in ("Open", "Arch"): d.line([a, b], fill=(225, 30, 30), width=10)
+    cx, cz = cam; px = ox + (cx / 3 - x0) * size; py = oy + (y1 + 1 - cz / 3) * size
+    d.ellipse([px - 10, py - 10, px + 10, py + 10], fill=(0, 0, 0))
+for k, cam in ((4, (793.5, 601.5)), (2, (766.75, 584.9))):
+    im = Image.new("RGB", (1920, 1080), (245, 243, 236)); d = ImageDraw.Draw(im)
+    a = json.load(open(f"{T}/shots_now/shot{k}_plan.json")); b = json.load(open(f"{T}/shots_close/shot{k}_plan.json"))
+    n = max(c["x"] for c in a["cells"]) - min(c["x"] for c in a["cells"]) + 1
+    size = 64
+    draw(d, a, 120, 110, size, cam); draw(d, b, 120 + n * size + 80, 110, size, cam)
+    d.text((120, 30), "NOW", font=F(52), fill=(20, 20, 20)); d.text((120 + n * size + 80, 30), "CLOSED", font=F(52), fill=(20, 20, 20))
+    d.text((120, 1010), "red = open or arched border    brown = door    blue = window    dot = camera", font=F(34), fill=(50, 50, 50))
+    im.save(f"{IMG}/close_plan_shot{k}.jpg", quality=85); print(k, n, im.size)

@@ -105,15 +105,16 @@ def probe(default, reduced, trace, out_dir):
         dr.line(pts, fill=color, width=2)
         dr.text((x0 + 8, y0 + ly), label, fill=color, font=f1)
 
-    plot((60, 20, 1580, 340), tr["t"], tr["level"], 60.0, (200, 20, 20), "Driver Level, LOOSE, seed 1, 60 s at 60 Hz (1 = LIT)", 6)
+    plot((60, 20, 1580, 340), tr["t"], tr["level"], 60.0, (200, 20, 20), "Driver Level, LOOSE, seed 1, 60 s at 60 Hz (1 = LIT)", 280)
     for s in range(0, 61, 10):
         dr.text((60 + s / 60 * 1520 - 8, 344), "%d s" % s, fill=(90, 90, 90), font=f2)
     t, lv, sn = res["default_series"]
-    plot((60, 400, 1580, 720), t, sn, 12.0, (200, 20, 20), "Rendered sign luminance (own max = 1), LOOSE, 12 s", 6)
+    span = float(round(t.max()))
+    plot((60, 400, 1580, 720), t, sn, span, (200, 20, 20), "Rendered sign luminance (own max = 1), LOOSE, %d s at 60 Hz" % span, 250)
     t2, lv2, sn2 = res["reduced_series"]
-    plot((60, 400, 1580, 720), t2, sn2, 12.0, (40, 40, 160), "Same sign, REDUCE FLASHING on", 36)
-    for s in range(0, 13, 2):
-        dr.text((60 + s / 12 * 1520 - 8, 724), "%d s" % s, fill=(90, 90, 90), font=f2)
+    plot((60, 400, 1580, 720), t2, sn2, span, (40, 40, 160), "Same sign, REDUCE FLASHING on", 280)
+    for s in range(0, int(span) + 1):
+        dr.text((60 + s / span * 1520 - 8, 724), "%d s" % s, fill=(90, 90, 90), font=f2)
     os.makedirs(out_dir, exist_ok=True)
     im.save(os.path.join(out_dir, "es_i_t5_flash_chart.png"))
     for k in ("default_series", "reduced_series"):

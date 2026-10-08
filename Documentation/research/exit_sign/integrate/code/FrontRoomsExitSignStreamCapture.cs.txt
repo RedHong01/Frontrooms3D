@@ -32,9 +32,11 @@ public static class FrontRoomsExitSignStreamCapture
     const string DeadlineKey = "FrontRooms.ESCap.Deadline";
     const string DoneKey = "FrontRooms.ESCap.Done";
     const string OutKey = "FrontRooms.ESCap.Out";
+    const string ProbeOnlyKey = "FrontRooms.ESCap.ProbeOnly";
     const int W = 1920, H = 1080, PW = 480, PH = 270;
     const float WideFov = 72f, DetailFov = 50f;
     const int InitSeed = 4242;
+    const int ProbeFrames = 300;
     static readonly Vector3 PreviewRoot = new Vector3(4992f, 0f, 4992f);
     const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
@@ -60,8 +62,14 @@ public static class FrontRoomsExitSignStreamCapture
     {
         var args = Environment.GetCommandLineArgs();
         var o = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign_int", "stream");
-        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-esCapOut") o = args[i + 1];
+        var probeOnly = false;
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "-esCapOut" && i + 1 < args.Length) o = args[i + 1];
+            if (args[i] == "-esProbeOnly") probeOnly = true;
+        }
         SessionState.SetString(OutKey, o);
+        SessionState.SetBool(ProbeOnlyKey, probeOnly);
         EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         SessionState.SetBool(ActiveKey, true);
         SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1800f);
@@ -231,7 +239,8 @@ public static class FrontRoomsExitSignStreamCapture
     static IEnumerator Main()
     {
         ShaderUtil.allowAsyncCompilation = false;
-        foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
+        if (!SessionState.GetBool(ProbeOnlyKey, false))
+            foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
         driverType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("FrontRoomsExitSign")).FirstOrDefault(t => t != null);
         while ((game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
         cam = Get<Camera>(game, "cam");
@@ -288,8 +297,10 @@ public static class FrontRoomsExitSignStreamCapture
         typeof(FrontRoomsRoomStream).GetMethod("ActivateRoomLightImmediately", BF).Invoke(stream, new[] { slot });
         yield return 5;
         spaceRoot = go.transform;
-        var run = go.transform.Find("Profile 3 / Run");
-        var exit = go.transform.Find("Profile 4 / Exit");
+        // Transform.Find reads "/" as a path separator, so the rooms are looked up by exact name.
+        var run = go.transform.Cast<Transform>().FirstOrDefault(t => t.name == "Profile 3 / Run");
+        var exit = go.transform.Cast<Transform>().FirstOrDefault(t => t.name == "Profile 4 / Exit");
+        if (run == null || exit == null) { Log("preview rooms not found: " + string.Join(", ", go.transform.Cast<Transform>().Select(t => t.name))); yield break; }
 
         // ---- inventory: lamps and signs
         foreach (var room in new[] { run, exit })
@@ -323,11 +334,13 @@ public static class FrontRoomsExitSignStreamCapture
         }
         Flush();
 
+        var probeOnlyRun = SessionState.GetBool(ProbeOnlyKey, false);
         var zr = 3 * FrontRoomsRoomStream.RoomLength;      // Run room start (preview-local)
         var ze = 4 * FrontRoomsRoomStream.RoomLength;      // Exit room start
         const float sy = 2.394f;                            // hanging sign centre (2.36 for the code-built sign)
         float za = zr + 3.4f, zb = zr + 9.2f;
 
+        if (!probeOnlyRun) {
         // ---- Run room
         Shot("run_wide", new Vector3(0f, 1.62f, zr + .9f), new Vector3(0f, .85f, zr + 12f), WideFov, "Run · from the room's entry down its 12 m (room-visuals title-run_wide)");
         yield return 1;
@@ -368,6 +381,7 @@ public static class FrontRoomsExitSignStreamCapture
         Shot("exit_doorway", new Vector3(0f, 1.62f, ze - 3.2f), new Vector3(0f, 1.25f, ze + 6f), WideFov, "Exit · arrival from the Run room through the open double door (room-visuals title-exit_doorway)");
         yield return 1;
 
+        }
         if (driverType == null) { Log("before clone: no driver, no state strip or probe"); yield break; }
 
         // ---- every lamp state on sign A (after only); the red light follows Level
@@ -375,7 +389,7 @@ public static class FrontRoomsExitSignStreamCapture
         var dA = Driver(signA);
         var light = RedLight(dA);
         var lightBase = 3.6f;
-        foreach (var state in new[] { "Lit", "HalfA", "HalfB", "Loose", "Battery", "Dead" })
+        foreach (var state in probeOnlyRun ? new string[0] : new[] { "Lit", "HalfA", "HalfB", "Loose", "Battery", "Dead" })
         {
             Configure(dA, 20261007u, state, light, lightBase);
             var ticks = 0;
@@ -405,9 +419,11 @@ public static class FrontRoomsExitSignStreamCapture
             var csv = new StringBuilder("frame,t,level,frame_lum,sign_lum,sign_red\n");
             // the sign's screen rectangle (0.35 x 0.21 m housing)
             var corners = new[] { new Vector3(-.17f, -.106f, 0f), new Vector3(.17f, .106f, 0f) }.Select(c => spaceRoot.TransformPoint(new Vector3(c.x, sy + c.y, za - .04f))).ToArray();
-            for (var f = 0; f < 720; f++)
+            for (var f = 0; f < ProbeFrames; f++)
             {
                 DriverTick(dA, 1f / 60f);
+                yield return 1;   // let the engine take the new light intensity and _LampField before the render
+                t.SetPositionAndRotation(eye, Quaternion.LookRotation(centre - eye));   // the game may move its camera between frames
                 var tex = Render(PW, PH, 50f, ref prt);
                 var px = tex.GetPixels32();
                 UnityEngine.Object.Destroy(tex);
@@ -429,10 +445,9 @@ public static class FrontRoomsExitSignStreamCapture
                 csv.Append(f).Append(',').Append(F((f + 1) / 60f)).Append(',').Append(Level(dA).ToString("0.0000", CultureInfo.InvariantCulture)).Append(',')
                     .Append((all / px.Length).ToString("0.00000", CultureInfo.InvariantCulture)).Append(',').Append((sign / Mathf.Max(1, n)).ToString("0.00000", CultureInfo.InvariantCulture)).Append(',')
                     .Append((red / Mathf.Max(1, n)).ToString("0.00000", CultureInfo.InvariantCulture)).Append('\n');
-                if (f % 120 == 0) yield return 1;
             }
             File.WriteAllText(Path.Combine(OutDir, "probe_" + (reduced ? "reduced" : "default") + ".csv"), csv.ToString());
-            Log("probe " + (reduced ? "REDUCE FLASHING" : "default") + ": 720 frames at 60 Hz written; sign corners " + V(corners[0]) + " - " + V(corners[1]));
+            Log("probe " + (reduced ? "REDUCE FLASHING" : "default") + ": " + ProbeFrames + " frames at 60 Hz written; sign corners " + V(corners[0]) + " - " + V(corners[1]));
             t.localPosition = lp; t.localRotation = lr;
         }
         setter.Invoke(null, new object[] { reducedBefore });

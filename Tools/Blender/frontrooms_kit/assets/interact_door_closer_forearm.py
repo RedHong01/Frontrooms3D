@@ -21,7 +21,7 @@ top at (0.260, 0.050, 0) = the shoe pivot (door Y 2.130). Anchors: elbow
 (0, 0, 0), shoe_end (0.260, 0.050, 0).
 
 Budget (§9.1): 900 / 300 / 50 tris; slots SteelBrown and Chrome (threaded
-rod, nut). No LOD1 (until P-1). Render-only.
+rod, nut). LOD1 exported since the 2026-10-08 fix pass (critic H4). Render-only.
 """
 
 import math
@@ -31,8 +31,8 @@ import sys
 import interact_door_common as dc
 
 NAME = "Kit_DoorCloser_Forearm"
-LOD1 = None
 LOD1_RATIO = 0.33
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.06
 LOD_DISTANCES = (1.5, 5.0, 20.0)
 SMOOTH_ANGLE = 35.0
@@ -58,6 +58,7 @@ def wear(P, N, edge, obj):
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
     rng = random.Random(41070)
     # elbow eye (forged), sits on the main arm's elbow boss
     eye = dc.revolve(kit, [(0.0095, 0.0), (0.0105, 0.0008), (0.0105, 0.0072), (0.0095, 0.0080), (0.0, 0.0080)],

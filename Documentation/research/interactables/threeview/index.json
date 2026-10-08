@@ -12113,5 +12113,2264 @@
    ],
    "action": "replaces WIP; HOLD if the exit-sign workflow has re-modelled Kit_ExitSign since (it is running)"
   }
- ]
+ ],
+ "assets": [
+  {
+   "name": "Kit_DoorFrame_Wood",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorFrame_Wood.fbx",
+   "dims_m": [
+    1.15,
+    2.175,
+    0.21
+   ],
+   "tris_lod0": 3152,
+   "tris_lod1": 1260,
+   "materials": [
+    "Prop_WoodWalnut",
+    "Prop_WoodOak",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorFrame_Steel",
+     "kind": "free/locked",
+     "differs": "The Lobby's LOCKED door (L0-K) sits in the pressed-steel frame instead: dark-bronze steel, formed 16 mm stop, rubber silencers, dark-bronze saddle. Same casing envelope, lining, stop line and A2 hinge axis."
+    },
+    {
+     "name": "Kit_DoorFrame_Steel_Alu",
+     "kind": "theme",
+     "differs": "Exit frame: the steel frame's geometry in clear-anodised aluminium."
+    },
+    {
+     "name": "Kit_DoorFrame_Wood (door open/closed)",
+     "kind": "state",
+     "differs": "static: the frame does not move when the door opens, locks, unlocks or is broken; the strike detaches from it on the Relay's last blow. The frame's three hinge halves (knuckles 1, 3, 5) are part of this mesh, in Prop_Brass."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Second-hand (1955-90): stain-grade wood-cased openings are the older office fit-out (02 §2.2; film still F09's dark frame). Ranch casing with a back band and no plinth blocks, which 1990 commercial work did not use.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorFrame_Steel",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel.fbx",
+   "dims_m": [
+    1.15,
+    2.175,
+    0.21
+   ],
+   "tris_lod0": 3866,
+   "tris_lod1": 1430,
+   "materials": [
+    "Prop_SteelBrown",
+    "Prop_Rubber",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorFrame_Steel_Alu",
+     "kind": "theme",
+     "differs": "Exit (EX-F, EX-K): the same mesh with Prop_SteelBrown swapped for Prop_Aluminium on the frame and saddle (clear-anodised look)."
+    },
+    {
+     "name": "Kit_DoorFrame_Wood",
+     "kind": "free/locked",
+     "differs": "The Lobby's FREE door (L0-F) uses the walnut wood frame; this steel frame carries every locked door and the Office and Run free doors."
+    },
+    {
+     "name": "Kit_DoorFrame_Steel (door open/closed)",
+     "kind": "state",
+     "differs": "static: the frame does not move when the door opens, locks, unlocks or is broken; the strike detaches from it on the Relay's last blow. Hinge halves 1, 3, 5 are part of this mesh (Prop_Chrome)."
+    }
+   ],
+   "level": [
+    "Lobby",
+    "Office",
+    "Run"
+   ],
+   "era_note": "Timeless: the SDI hollow-metal frame (2 in face, 5/8 in stop, 16 ga; SDI 111A) kept its form from well before 1990 to after 1993 (02 §2.2). Dark bronze with a matching saddle since the 2026-10-08 fix pass.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorFrame_Steel_Alu",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorFrame_Steel_Alu.fbx",
+   "dims_m": [
+    1.15,
+    2.175,
+    0.21
+   ],
+   "tris_lod0": 3866,
+   "tris_lod1": 1430,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_Rubber",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorFrame_Steel",
+     "kind": "theme",
+     "differs": "Lobby locked, Office and Run: the same mesh in dark-bronze Prop_SteelBrown, saddle included."
+    },
+    {
+     "name": "Kit_DoorFrame_Wood",
+     "kind": "theme",
+     "differs": "Lobby free door: walnut casing, wood stop, oak saddle, brass hinge halves."
+    },
+    {
+     "name": "Kit_DoorFrame_Steel_Alu (door open/closed)",
+     "kind": "state",
+     "differs": "static: the frame does not move when the door opens, locks, unlocks or is broken; the strike detaches from it on the Relay's last blow."
+    }
+   ],
+   "level": [
+    "Exit"
+   ],
+   "era_note": "Timeless: the same SDI pressed-frame form (02 §2.2); clear-anodised aluminium was an ordinary 1990 finish (06 §2.3). Gives the Exit its cold, clean frame.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorLeaf_Veneer",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer.fbx",
+   "dims_m": [
+    0.9925,
+    2.08,
+    0.0589
+   ],
+   "tris_lod0": 2464,
+   "tris_lod1": 886,
+   "materials": [
+    "Door_Veneer",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorLeaf_Veneer_Oak",
+     "kind": "theme",
+     "differs": "Office and Exit free leaf: golden oak (Prop_WoodOak, grain turned to run vertically) and chrome hinge halves instead of Door_Veneer and brass. Same geometry and anchors; its own module since the fix pass."
+    },
+    {
+     "name": "Kit_DoorLeaf_Steel",
+     "kind": "free/locked",
+     "differs": "The Lobby's LOCKED door: an almond-enamel steel leaf with the mortise lock (escutcheon, knob, IC cylinder), kick plates, sign and number plate. Pale leaf in a dark frame vs this warm wood leaf in a walnut frame."
+    },
+    {
+     "name": "Kit_DoorLeaf_Ward",
+     "kind": "theme",
+     "differs": "Run free leaf: laminate push-pull ward door, no latch."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer (open)",
+     "kind": "state",
+     "differs": "closed / open: the leaf swings one way only, up to 95 degrees into the pull-face (S) room, about hinge_axis (the A2 knuckle axis X 0.0295, Z 0.0098 in the door root). Pose only; the mesh does not change. Lever 0-35 degrees retracts the bored latch 13 mm."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer (Relay damage)",
+     "kind": "state",
+     "differs": "Damage stages are the door-break track's, built from this module (not part of this set)."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Timeless (1955-2000): the flush stain-grade veneer door with a brass lever is the project's own film still F09 and IP canon (02 §1, §2.1). Flush, not panelled: the 1955-93 US commercial door is flush (10_spec §2.1).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorLeaf_Veneer_Oak",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Veneer_Oak.fbx",
+   "dims_m": [
+    0.9925,
+    2.08,
+    0.0589
+   ],
+   "tris_lod0": 2464,
+   "tris_lod1": 886,
+   "materials": [
+    "Prop_WoodOak",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorLeaf_Veneer",
+     "kind": "theme",
+     "differs": "Lobby free leaf: Door_Veneer face and brass hinge halves."
+    },
+    {
+     "name": "Kit_DoorLeaf_Steel",
+     "kind": "free/locked",
+     "differs": "The Office and Exit LOCKED door: almond-enamel steel leaf with the mortise lock."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer_Oak (open)",
+     "kind": "state",
+     "differs": "closed / open: the leaf swings one way only, up to 95 degrees into the pull-face (S) room, about hinge_axis (the A2 knuckle axis X 0.0295, Z 0.0098 in the door root). Pose only; the mesh does not change. Office: chrome rose and lever; Exit: crossbar on the push face, lever on the pull face."
+    }
+   ],
+   "level": [
+    "Office",
+    "Exit"
+   ],
+   "era_note": "Timeless: the same flush stain-grade door (02 §1, §2.1) in golden oak with chrome butts for the Office and the Exit. Grain runs vertically, as on a real door face.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorLeaf_Steel",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel.fbx",
+   "dims_m": [
+    0.9925,
+    2.08,
+    0.0613
+   ],
+   "tris_lod0": 3930,
+   "tris_lod1": 1572,
+   "materials": [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorLeaf_Steel_PaintedMetal",
+     "kind": "fallback",
+     "differs": "Door_Enamel swapped for the existing Painted_Metal surface: the working fallback until Door_Enamel exists. Same mesh."
+    },
+    {
+     "name": "Kit_DoorLeaf_SteelLite",
+     "kind": "option",
+     "differs": "Run locked option (RN-K, Red's call): the same leaf with a 4 x 25 in vision lite at 1.575 m (Prop_Glass)."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer",
+     "kind": "free/locked",
+     "differs": "Lobby FREE counterpart: veneer wood leaf, lever, no keyhole."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer_Oak",
+     "kind": "free/locked",
+     "differs": "Office and Exit FREE counterpart: oak leaf, lever, no keyhole."
+    },
+    {
+     "name": "Kit_DoorLeaf_Ward",
+     "kind": "free/locked",
+     "differs": "Run FREE counterpart: laminate push-pull ward door."
+    },
+    {
+     "name": "Kit_DoorLeaf_Steel (locked / unlocked / open)",
+     "kind": "state",
+     "differs": "Locked and unlocked look the same (an unlocked locked door keeps this model); the key turns the plug 90 degrees and retracts the deadbolt 25 mm. closed / open: the leaf swings one way only, up to 95 degrees into the pull-face (S) room, about hinge_axis (the A2 knuckle axis X 0.0295, Z 0.0098 in the door root). Pose only; the mesh does not change."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: painted hollow-metal doors were the back-of-house standard (SDI 108 Level 2 for storage and utility rooms; 02 §2.1). The almond enamel needs the new Door_Enamel surface (P-4; 05 §6.2).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorLeaf_Steel_PaintedMetal",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Steel_PaintedMetal.fbx",
+   "dims_m": [
+    0.9925,
+    2.08,
+    0.0613
+   ],
+   "tris_lod0": 3930,
+   "tris_lod1": 1572,
+   "materials": [
+    "Painted_Metal",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorLeaf_Steel",
+     "kind": "fallback",
+     "differs": "The target: almond enamel (Door_Enamel, P-4, not yet a Unity surface). Same mesh."
+    },
+    {
+     "name": "Kit_DoorLeaf_SteelLite",
+     "kind": "option",
+     "differs": "The vision-lite version of the steel leaf."
+    },
+    {
+     "name": "Kit_DoorLeaf_Steel_PaintedMetal (open)",
+     "kind": "state",
+     "differs": "closed / open: the leaf swings one way only, up to 95 degrees into the pull-face (S) room, about hinge_axis (the A2 knuckle axis X 0.0295, Z 0.0098 in the door root). Pose only; the mesh does not change."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Same door as Kit_DoorLeaf_Steel (SDI 108 hollow metal; 02 §2.1). Painted_Metal is the spec's working fallback until Door_Enamel exists (10_spec §2.3).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorLeaf_SteelLite",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_SteelLite.fbx",
+   "dims_m": [
+    0.9925,
+    2.08,
+    0.0614
+   ],
+   "tris_lod0": 4586,
+   "tris_lod1": 1834,
+   "materials": [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome",
+    "Prop_Glass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorLeaf_Steel",
+     "kind": "option",
+     "differs": "The default Run locked leaf (RN-K): no lite. Red picks."
+    },
+    {
+     "name": "Kit_DoorLeaf_SteelLite (open)",
+     "kind": "state",
+     "differs": "closed / open: the leaf swings one way only, up to 95 degrees into the pull-face (S) room, about hinge_axis (the A2 knuckle axis X 0.0295, Z 0.0098 in the door root). Pose only; the mesh does not change."
+    }
+   ],
+   "level": [
+    "Run"
+   ],
+   "era_note": "Narrow vision lites sat 60-66 in up (02 §4.3); wired glass was fire-door glazing until US production stopped in 1992 (06 §2.4). The wired look needs Glass_Wired from the glass track.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorLeaf_Ward",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorLeaf_Ward.fbx",
+   "dims_m": [
+    0.9925,
+    2.08,
+    0.1104
+   ],
+   "tris_lod0": 4930,
+   "tris_lod1": 1972,
+   "materials": [
+    "Prop_WoodLaminate",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorLeaf_Steel",
+     "kind": "free/locked",
+     "differs": "The Run LOCKED door (RN-K): almond-enamel steel leaf with the mortise lock and a STAFF ONLY sign."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer_Oak",
+     "kind": "theme",
+     "differs": "Office and Exit free leaf (oak, lever and latch)."
+    },
+    {
+     "name": "Kit_DoorLeaf_Ward (open)",
+     "kind": "state",
+     "differs": "closed / open: the leaf swings one way only, up to 95 degrees into the pull-face (S) room, about hinge_axis (the A2 knuckle axis X 0.0295, Z 0.0098 in the door root). Pose only; the mesh does not change. Push and pull only: no latch, rose or strike."
+    }
+   ],
+   "level": [
+    "Run"
+   ],
+   "era_note": "Current stock (1975-2000): a hospital-corridor door with a wood-grain laminate face, stainless armor and kick plates, a push plate and an offset D-pull, and no latch (04 §5.3).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorCloser_Body",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorCloser_Body.fbx",
+   "dims_m": [
+    0.2923,
+    0.0828,
+    0.0506
+   ],
+   "tris_lod0": 3236,
+   "tris_lod1": 1067,
+   "materials": [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorCloser_Body (door 0 / 45 / 95 degrees)",
+     "kind": "state",
+     "differs": "The arm and forearm are re-aimed every frame by the closer linkage solver from the door angle (sidecar motion.elbowDoorAt); body and shoe stay fixed (body on the leaf, shoe on the frame head)."
+    },
+    {
+     "name": "parts: Kit_DoorCloser_Arm, Kit_DoorCloser_Forearm, Kit_DoorCloser_Shoe",
+     "kind": "assembly",
+     "differs": "Not variants: the other three parts of the same closer (see README §5.3)."
+    }
+   ],
+   "level": [
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "era_note": "Timeless: surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 type dates from 1958 (02 §5.3). Unbranded; the arm lengths come from the linkage solve, not a maker's template.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_DoorCloser_Arm",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorCloser_Arm.fbx",
+   "dims_m": [
+    0.266,
+    0.0212,
+    0.03
+   ],
+   "tris_lod0": 1112,
+   "tris_lod1": 1112,
+   "materials": [
+    "Prop_SteelBrown"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorCloser_Arm (door 0 / 45 / 95 degrees)",
+     "kind": "state",
+     "differs": "The arm and forearm are re-aimed every frame by the closer linkage solver from the door angle (sidecar motion.elbowDoorAt); body and shoe stay fixed (body on the leaf, shoe on the frame head)."
+    },
+    {
+     "name": "parts: Kit_DoorCloser_Body, Kit_DoorCloser_Forearm, Kit_DoorCloser_Shoe",
+     "kind": "assembly",
+     "differs": "Not variants: the other three parts of the same closer (see README §5.3)."
+    }
+   ],
+   "level": [
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "era_note": "Timeless: surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 type dates from 1958 (02 §5.3). Unbranded; the arm lengths come from the linkage solve, not a maker's template.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_DoorCloser_Forearm",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorCloser_Forearm.fbx",
+   "dims_m": [
+    0.2795,
+    0.05,
+    0.0219
+   ],
+   "tris_lod0": 940,
+   "tris_lod1": 940,
+   "materials": [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorCloser_Forearm (door 0 / 45 / 95 degrees)",
+     "kind": "state",
+     "differs": "The arm and forearm are re-aimed every frame by the closer linkage solver from the door angle (sidecar motion.elbowDoorAt); body and shoe stay fixed (body on the leaf, shoe on the frame head)."
+    },
+    {
+     "name": "parts: Kit_DoorCloser_Body, Kit_DoorCloser_Arm, Kit_DoorCloser_Shoe",
+     "kind": "assembly",
+     "differs": "Not variants: the other three parts of the same closer (see README §5.3)."
+    }
+   ],
+   "level": [
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "era_note": "Timeless: surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 type dates from 1958 (02 §5.3). Unbranded; the arm lengths come from the linkage solve, not a maker's template.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_DoorCloser_Shoe",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorCloser_Shoe.fbx",
+   "dims_m": [
+    0.03,
+    0.04,
+    0.031
+   ],
+   "tris_lod0": 922,
+   "tris_lod1": 922,
+   "materials": [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorCloser_Shoe (door 0 / 45 / 95 degrees)",
+     "kind": "state",
+     "differs": "The arm and forearm are re-aimed every frame by the closer linkage solver from the door angle (sidecar motion.elbowDoorAt); body and shoe stay fixed (body on the leaf, shoe on the frame head)."
+    },
+    {
+     "name": "parts: Kit_DoorCloser_Body, Kit_DoorCloser_Arm, Kit_DoorCloser_Forearm",
+     "kind": "assembly",
+     "differs": "Not variants: the other three parts of the same closer (see README §5.3)."
+    }
+   ],
+   "level": [
+    "Office",
+    "Run",
+    "Exit"
+   ],
+   "era_note": "Timeless: surface closers were standard on commercial doors; the heavy-duty LCN 4010/4110 type dates from 1958 (02 §5.3). Unbranded; the arm lengths come from the linkage solve, not a maker's template.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_ExitDevice_Crossbar",
+   "fbx": "Assets/Resources/Props/Models/Kit_ExitDevice_Crossbar.fbx",
+   "dims_m": [
+    0.9088,
+    0.18,
+    0.095
+   ],
+   "tris_lod0": 3588,
+   "tris_lod1": 3588,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_ExitDevice_Crossbar (pushed)",
+     "kind": "state",
+     "differs": "Bar travel 12 mm toward the leaf is in the sidecar but needs the bar as a separate renderer (not in v1); today the device is static."
+    },
+    {
+     "name": "Kit_DoorLeaf_Veneer_Oak",
+     "kind": "assembly",
+     "differs": "Mounted on the push face of the Exit free leaf (EX-F) at door (-0.022, 1.0, 0.9)."
+    }
+   ],
+   "level": [
+    "Exit"
+   ],
+   "era_note": "Second-hand (1950-95): tube crossbars on two end cases are the older exit-device form; touch-bar devices were taking over by 1990 (10_spec §2.4).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_DoorSign",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorSign.fbx",
+   "dims_m": [
+    0.254,
+    0.076,
+    0.0043
+   ],
+   "tris_lod0": 664,
+   "tris_lod1": 664,
+   "materials": [
+    "Prop_PlasticBlack",
+    "Prop_PlasticWhite",
+    "Prop_SignEngraved",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorSign (EMPLOYEES ONLY / STAFF ONLY)",
+     "kind": "text",
+     "differs": "Lobby and Office locked doors read EMPLOYEES ONLY, the Run's STAFF ONLY: one cell each of the Prop_SignEngraved atlas (P-4, not yet a Unity surface). Until it exists the face renders blank, so the facade must not spawn the sign yet."
+    }
+   ],
+   "level": [
+    "Lobby",
+    "Office",
+    "Run"
+   ],
+   "era_note": "Engraved two-colour room signs at 60 in to centre follow UFAS 1984 (02 §4.3). No Braille, because the ADAAG requirement post-dates the 1990 story year.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_DoorNumberPlate",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorNumberPlate.fbx",
+   "dims_m": [
+    0.1,
+    0.05,
+    0.0042
+   ],
+   "tris_lod0": 480,
+   "tris_lod1": 480,
+   "materials": [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorNumberPlate_Blue",
+     "kind": "colour",
+     "differs": "Blue plate (Prop_PlasticBlue) for blue-tag zones."
+    },
+    {
+     "name": "Kit_DoorNumberPlate_White",
+     "kind": "colour",
+     "differs": "White plate (Prop_PlasticWhite) for white-tag zones."
+    },
+    {
+     "name": "Kit_DoorNumberPlate (number)",
+     "kind": "text",
+     "differs": "The number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a facility key system indexes keys by room code, so door number = key-tag number is the period system (02 §8.2). Typed digits from the Prop_KeyTagNo atlas (P-4), no dates.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_DoorNumberPlate_Blue",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_Blue.fbx",
+   "dims_m": [
+    0.1,
+    0.05,
+    0.0042
+   ],
+   "tris_lod0": 480,
+   "tris_lod1": 480,
+   "materials": [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorNumberPlate",
+     "kind": "colour",
+     "differs": "Red plate (Prop_PlasticRed)."
+    },
+    {
+     "name": "Kit_DoorNumberPlate_White",
+     "kind": "colour",
+     "differs": "White plate (Prop_PlasticWhite)."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a facility key system indexes keys by room code, so door number = key-tag number is the period system (02 §8.2). Typed digits from the Prop_KeyTagNo atlas (P-4), no dates.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_DoorNumberPlate_White",
+   "fbx": "Assets/Resources/Props/Models/Kit_DoorNumberPlate_White.fbx",
+   "dims_m": [
+    0.1,
+    0.05,
+    0.0042
+   ],
+   "tris_lod0": 480,
+   "tris_lod1": 480,
+   "materials": [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_DoorNumberPlate",
+     "kind": "colour",
+     "differs": "Red plate (Prop_PlasticRed)."
+    },
+    {
+     "name": "Kit_DoorNumberPlate_Blue",
+     "kind": "colour",
+     "differs": "Blue plate (Prop_PlasticBlue)."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a facility key system indexes keys by room code, so door number = key-tag number is the period system (02 §8.2). Typed digits from the Prop_KeyTagNo atlas (P-4), no dates.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Escutcheon",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Escutcheon.fbx",
+   "dims_m": [
+    0.0572,
+    0.2032,
+    0.008
+   ],
+   "tris_lod0": 3248,
+   "tris_lod1": 3248,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Escutcheon_Brass",
+     "kind": "finish",
+     "differs": "Brass finish (Prop_Brass): a spare. Locked hardware stays satin chrome in every level, so no door member uses it in v1."
+    },
+    {
+     "name": "Kit_Lock_Rose",
+     "kind": "free/locked",
+     "differs": "FREE doors carry a round rose and lever instead of this tall plate."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: mortise locks stayed widely installed in commercial and institutional buildings (02 §4.4). US26D satin chrome and unbranded; plate plus dot reads as locked at 2-5 m.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Escutcheon_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Escutcheon_Brass.fbx",
+   "dims_m": [
+    0.0572,
+    0.2032,
+    0.008
+   ],
+   "tris_lod0": 3248,
+   "tris_lod1": 3248,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Escutcheon",
+     "kind": "finish",
+     "differs": "The used finish: satin chrome (Prop_Chrome) on every locked door."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: mortise locks stayed widely installed in commercial and institutional buildings (02 §4.4). US26D satin chrome and unbranded; plate plus dot reads as locked at 2-5 m.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_CylinderShell",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_CylinderShell.fbx",
+   "dims_m": [
+    0.044,
+    0.044,
+    0.0075
+   ],
+   "tris_lod0": 2708,
+   "tris_lod1": 2708,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_CylinderShell_Brass",
+     "kind": "finish",
+     "differs": "Collar in Prop_Brass instead of Prop_Chrome (the core face is brass on both). Locked hardware stays satin chrome in every level, so no door member uses it in v1."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: interchangeable-core cylinders (Best type) since the 1920s, with a figure-8 core face and no brand (02 §13). Core dimensions are an estimate, not checked against a real SFIC.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_CylinderShell_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_CylinderShell_Brass.fbx",
+   "dims_m": [
+    0.044,
+    0.044,
+    0.0075
+   ],
+   "tris_lod0": 2708,
+   "tris_lod1": 2708,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_CylinderShell",
+     "kind": "finish",
+     "differs": "The used finish: satin-chrome collar."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: interchangeable-core cylinders (Best type) since the 1920s, with a figure-8 core face and no brand (02 §13). Core dimensions are an estimate, not checked against a real SFIC.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Plug",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Plug.fbx",
+   "dims_m": [
+    0.0115,
+    0.0115,
+    0.03
+   ],
+   "tris_lod0": 1884,
+   "tris_lod1": 1884,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Plug (0 / 45 / 90 degrees)",
+     "kind": "state",
+     "differs": "Turns about its axis 0 -> 90 degrees together with the key (unlock), then returns. Never mirrored: placed with scale (S_sign, 1, 1) on both faces."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: US practice is pins up, so the key enters cuts uppermost (02 §4.2). One keyway profile is shared by the key and the plug (10_spec §3.2).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Knob",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Knob.fbx",
+   "dims_m": [
+    0.054,
+    0.054,
+    0.0628
+   ],
+   "tris_lod0": 4992,
+   "tris_lod1": 1996,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Knob_Brass",
+     "kind": "finish",
+     "differs": "Brass finish (Prop_Brass): a spare. Locked hardware stays satin chrome in every level, so no door member uses it in v1."
+    },
+    {
+     "name": "Kit_Lock_Knob (turned)",
+     "kind": "state",
+     "differs": "Rotates +-40 degrees (the rattle beat), retracting the mortise latch 19 mm; spring return."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Current stock (1984-93): UFAS 1984 §4.29.3 marks doors to hazardous areas with a knurled knob (02 §3.1). Knobs still outsold levers in the early 1990s, and service doors kept them (02 §3.2).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Knob_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Knob_Brass.fbx",
+   "dims_m": [
+    0.054,
+    0.054,
+    0.0628
+   ],
+   "tris_lod0": 4992,
+   "tris_lod1": 1996,
+   "materials": [
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Knob",
+     "kind": "finish",
+     "differs": "The used finish: satin chrome."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Current stock (1984-93): UFAS 1984 §4.29.3 marks doors to hazardous areas with a knurled knob (02 §3.1). Knobs still outsold levers in the early 1990s, and service doors kept them (02 §3.2).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Deadbolt",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Deadbolt.fbx",
+   "dims_m": [
+    0.0125,
+    0.03,
+    0.0451
+   ],
+   "tris_lod0": 380,
+   "tris_lod1": 380,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_Aluminium"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Deadbolt (thrown / retracted)",
+     "kind": "state",
+     "differs": "Authored thrown (locked, 25 mm into the strike); slides 25 mm back along -Z when the key turns (unlocked)."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: commercial deadbolts throw 1 in, 25 mm (02 §4.2). Keyed from both faces is a game liberty: the key works from the side the player stands on.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Latchbolt_Mortise",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Mortise.fbx",
+   "dims_m": [
+    0.0193,
+    0.03,
+    0.04
+   ],
+   "tris_lod0": 600,
+   "tris_lod1": 600,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Latchbolt_Mortise (extended / retracted)",
+     "kind": "state",
+     "differs": "Extended at rest; the knob's 40 degrees pulls it in 19 mm; held back while the leaf is within 8 degrees of shut."
+    },
+    {
+     "name": "Kit_Lock_Latchbolt_Bored",
+     "kind": "free/locked",
+     "differs": "FREE doors use the smaller bored latch (13 mm throw)."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a passage-function deadlocking latch with an auxiliary plunger; the deadbolt does the locking (10_spec §3.1).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_StrikeMortise",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_StrikeMortise.fbx",
+   "dims_m": [
+    0.056,
+    0.2,
+    0.0254
+   ],
+   "tris_lod0": 988,
+   "tris_lod1": 988,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_StrikeMortise (attached / torn off)",
+     "kind": "state",
+     "differs": "Static on the frame's strike anchor; detaches as a rigid render-only piece along detach_dir on the Relay's last blow."
+    },
+    {
+     "name": "Kit_Lock_StrikeBored",
+     "kind": "free/locked",
+     "differs": "FREE doors use the shorter ANSI strike with one opening."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a curved-lip strike in the lock's finish, a separate render-only part so it can tear off when the Relay breaks the door (10_spec §3.1).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Rose",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Rose.fbx",
+   "dims_m": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "tris_lod0": 2728,
+   "tris_lod1": 2728,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Rose_Brass",
+     "kind": "theme",
+     "differs": "Lobby free door (L0-F): Prop_Brass (US3/US4). Chrome against brass is a 2-5 m cue in the Lobby."
+    },
+    {
+     "name": "Kit_Lock_Escutcheon",
+     "kind": "free/locked",
+     "differs": "LOCKED doors carry the tall escutcheon with knob and keyhole instead."
+    }
+   ],
+   "level": [
+    "Office",
+    "Exit"
+   ],
+   "era_note": "Current stock (1980-2000): cylindrical (bored) locksets are the most common commercial lock (02 §4.1). US26D satin chrome here; brass on the Lobby's free door.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Rose_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Rose_Brass.fbx",
+   "dims_m": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "tris_lod0": 2728,
+   "tris_lod1": 2728,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Rose",
+     "kind": "theme",
+     "differs": "Office and Exit free doors: satin chrome (Prop_Chrome)."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Current stock (1980-2000): cylindrical (bored) locksets are the most common commercial lock (02 §4.1). US26D satin chrome here; brass on the Lobby's free door.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Lever",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Lever.fbx",
+   "dims_m": [
+    0.133,
+    0.024,
+    0.0536
+   ],
+   "tris_lod0": 3974,
+   "tris_lod1": 1588,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Lever_Brass",
+     "kind": "theme",
+     "differs": "Lobby free door: Prop_Brass."
+    },
+    {
+     "name": "Kit_Lock_Lever (pressed)",
+     "kind": "state",
+     "differs": "Grip end goes down 35 degrees (Open beat), retracting the bored latch 13 mm; spring back."
+    },
+    {
+     "name": "Kit_Lock_Knob",
+     "kind": "free/locked",
+     "differs": "LOCKED doors have the knurled knob instead: a bar reads free, a dot on a plate reads locked."
+    }
+   ],
+   "level": [
+    "Office",
+    "Exit"
+   ],
+   "era_note": "Current stock: levers were the accessible standard from ANSI A117.1-1980 and UFAS 1984; the ADA required them only for buildings occupied after 26 January 1993 (02 §3.1).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Lever_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Lever_Brass.fbx",
+   "dims_m": [
+    0.133,
+    0.024,
+    0.0536
+   ],
+   "tris_lod0": 3974,
+   "tris_lod1": 1588,
+   "materials": [
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Lever",
+     "kind": "theme",
+     "differs": "Office and Exit: satin chrome."
+    },
+    {
+     "name": "Kit_Lock_Lever_Brass (pressed)",
+     "kind": "state",
+     "differs": "Grip end down 35 degrees, spring back."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Current stock: levers were the accessible standard from ANSI A117.1-1980 and UFAS 1984; the ADA required them only for buildings occupied after 26 January 1993 (02 §3.1).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Latchbolt_Bored",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored.fbx",
+   "dims_m": [
+    0.016,
+    0.02,
+    0.03
+   ],
+   "tris_lod0": 476,
+   "tris_lod1": 476,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Latchbolt_Bored_Brass",
+     "kind": "theme",
+     "differs": "Lobby free door: brass faceplate and bolt."
+    },
+    {
+     "name": "Kit_Lock_Latchbolt_Bored (extended / retracted)",
+     "kind": "state",
+     "differs": "Extended at rest; the lever pulls it in 13 mm."
+    }
+   ],
+   "level": [
+    "Office",
+    "Exit"
+   ],
+   "era_note": "Timeless: a 1/2 in throw latch with a deadlatch plunger on a 1-1/8 x 2-1/4 in faceplate, the D Series pattern (02 §4.1).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_Latchbolt_Bored_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_Latchbolt_Bored_Brass.fbx",
+   "dims_m": [
+    0.016,
+    0.02,
+    0.03
+   ],
+   "tris_lod0": 476,
+   "tris_lod1": 476,
+   "materials": [
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_Latchbolt_Bored",
+     "kind": "theme",
+     "differs": "Office and Exit: satin chrome."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Timeless: a 1/2 in throw latch with a deadlatch plunger on a 1-1/8 x 2-1/4 in faceplate, the D Series pattern (02 §4.1).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_StrikeBored",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored.fbx",
+   "dims_m": [
+    0.056,
+    0.124,
+    0.0174
+   ],
+   "tris_lod0": 674,
+   "tris_lod1": 674,
+   "materials": [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_StrikeBored_Brass",
+     "kind": "theme",
+     "differs": "Lobby free door: brass."
+    },
+    {
+     "name": "Kit_Lock_StrikeBored (attached / torn off)",
+     "kind": "state",
+     "differs": "Detaches along detach_dir on the Relay's last blow."
+    }
+   ],
+   "level": [
+    "Office",
+    "Exit"
+   ],
+   "era_note": "Timeless: the ANSI curved-lip strike, 1-1/4 x 4-7/8 in (02 §5.2).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Lock_StrikeBored_Brass",
+   "fbx": "Assets/Resources/Props/Models/Kit_Lock_StrikeBored_Brass.fbx",
+   "dims_m": [
+    0.056,
+    0.124,
+    0.0174
+   ],
+   "tris_lod0": 674,
+   "tris_lod1": 674,
+   "materials": [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Lock_StrikeBored",
+     "kind": "theme",
+     "differs": "Office and Exit: satin chrome."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Timeless: the ANSI curved-lip strike, 1-1/4 x 4-7/8 in (02 §5.2).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Key_Zone",
+   "fbx": "Assets/Resources/Props/Models/Kit_Key_Zone.fbx",
+   "dims_m": [
+    0.058,
+    0.026,
+    0.0022
+   ],
+   "tris_lod0": 2188,
+   "tris_lod1": 2188,
+   "materials": [
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Key_Zone_Nickel",
+     "kind": "finish",
+     "differs": "Satin nickel-silver look (Prop_Aluminium): the factory original, kept for a later master key."
+    },
+    {
+     "name": "Kit_Key_Zone (pickup / hung / inserted / turned)",
+     "kind": "state",
+     "differs": "Same mesh in every state: hung on a host (tip down, flats to the room, no spin), in the head-dip shot inserted 0-100 % along insert_dir (shoulder ends on the escutcheon's keyhole anchor), then turned 90 degrees with the plug."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a cut brass duplicate with a generic paddle bow; factory keys were nickel silver, brass is the hardware-store copy and reads under yellow light (02 §8.1). No maker's name, no stamping.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_Key_Zone_Nickel",
+   "fbx": "Assets/Resources/Props/Models/Kit_Key_Zone_Nickel.fbx",
+   "dims_m": [
+    0.058,
+    0.026,
+    0.0022
+   ],
+   "tris_lod0": 2188,
+   "tris_lod1": 2188,
+   "materials": [
+    "Prop_Aluminium"
+   ],
+   "variants": [
+    {
+     "name": "Kit_Key_Zone",
+     "kind": "finish",
+     "differs": "The zone key every key spot uses: cut brass duplicate (Prop_Brass)."
+    },
+    {
+     "name": "Kit_Key_Zone_Nickel (pickup / hung / inserted / turned)",
+     "kind": "state",
+     "differs": "Same mesh in every state: hung on a host (tip down, flats to the room, no spin), in the head-dip shot inserted 0-100 % along insert_dir (shoulder ends on the escutcheon's keyhole anchor), then turned 90 degrees with the plug."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: factory keys were nickel silver ('two nickel silver keys per lock', 02 §8.1). Kept for a later master key.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyRing",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyRing.fbx",
+   "dims_m": [
+    0.025,
+    0.025,
+    0.0018
+   ],
+   "tris_lod0": 1972,
+   "tris_lod1": 1972,
+   "materials": [
+    "Prop_Chrome"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyRing (hung pose)",
+     "kind": "state",
+     "differs": "On a host the ring turns 120 degrees about the hook so the tag hangs on the wall side and the key faces the room (hosts' sidecar hungPose v2)."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a flat-wire, nickel-plated double-coil split ring of 25 mm (02 §8.2).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Rect",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Rect.fbx",
+   "dims_m": [
+    0.057,
+    0.039,
+    0.0042
+   ],
+   "tris_lod0": 1038,
+   "tris_lod1": 1038,
+   "materials": [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Rect_Blue",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticBlue: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_White",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticWhite: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Round",
+     "kind": "shape",
+     "differs": "Round 38 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long",
+     "kind": "shape",
+     "differs": "Long 76 mm valet tag."
+    },
+    {
+     "name": "Kit_KeyTag_Rect (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Rect_Blue",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_Blue.fbx",
+   "dims_m": [
+    0.057,
+    0.039,
+    0.0042
+   ],
+   "tris_lod0": 1038,
+   "tris_lod1": 1038,
+   "materials": [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Rect",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticRed: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_White",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticWhite: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Round_Blue",
+     "kind": "shape",
+     "differs": "Round 38 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long_Blue",
+     "kind": "shape",
+     "differs": "Long 76 mm valet tag."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_Blue (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Rect_White",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Rect_White.fbx",
+   "dims_m": [
+    0.057,
+    0.039,
+    0.0042
+   ],
+   "tris_lod0": 1038,
+   "tris_lod1": 1038,
+   "materials": [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Rect",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticRed: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_Blue",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticBlue: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Round_White",
+     "kind": "shape",
+     "differs": "Round 38 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long_White",
+     "kind": "shape",
+     "differs": "Long 76 mm valet tag."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_White (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Round",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Round.fbx",
+   "dims_m": [
+    0.038,
+    0.048,
+    0.0042
+   ],
+   "tris_lod0": 1282,
+   "tris_lod1": 1282,
+   "materials": [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Round_Blue",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticBlue: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Round_White",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticWhite: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect",
+     "kind": "shape",
+     "differs": "Square 57 x 39 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long",
+     "kind": "shape",
+     "differs": "Long 76 mm valet tag."
+    },
+    {
+     "name": "Kit_KeyTag_Round (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Round_Blue",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Round_Blue.fbx",
+   "dims_m": [
+    0.038,
+    0.048,
+    0.0042
+   ],
+   "tris_lod0": 1282,
+   "tris_lod1": 1282,
+   "materials": [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Round",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticRed: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Round_White",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticWhite: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_Blue",
+     "kind": "shape",
+     "differs": "Square 57 x 39 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long_Blue",
+     "kind": "shape",
+     "differs": "Long 76 mm valet tag."
+    },
+    {
+     "name": "Kit_KeyTag_Round_Blue (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Round_White",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Round_White.fbx",
+   "dims_m": [
+    0.038,
+    0.048,
+    0.0042
+   ],
+   "tris_lod0": 1282,
+   "tris_lod1": 1282,
+   "materials": [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Round",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticRed: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Round_Blue",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticBlue: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_White",
+     "kind": "shape",
+     "differs": "Square 57 x 39 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long_White",
+     "kind": "shape",
+     "differs": "Long 76 mm valet tag."
+    },
+    {
+     "name": "Kit_KeyTag_Round_White (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Long",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Long.fbx",
+   "dims_m": [
+    0.076,
+    0.032,
+    0.0042
+   ],
+   "tris_lod0": 1038,
+   "tris_lod1": 1038,
+   "materials": [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Long_Blue",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticBlue: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Long_White",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticWhite: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect",
+     "kind": "shape",
+     "differs": "Square 57 x 39 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Round",
+     "kind": "shape",
+     "differs": "Round 38 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Long_Blue",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Long_Blue.fbx",
+   "dims_m": [
+    0.076,
+    0.032,
+    0.0042
+   ],
+   "tris_lod0": 1038,
+   "tris_lod1": 1038,
+   "materials": [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Long",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticRed: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Long_White",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticWhite: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_Blue",
+     "kind": "shape",
+     "differs": "Square 57 x 39 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Round_Blue",
+     "kind": "shape",
+     "differs": "Round 38 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long_Blue (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyTag_Long_White",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyTag_Long_White.fbx",
+   "dims_m": [
+    0.076,
+    0.032,
+    0.0042
+   ],
+   "tris_lod0": 1038,
+   "tris_lod1": 1038,
+   "materials": [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyTag_Long",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticRed: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Long_Blue",
+     "kind": "colour",
+     "differs": "Same shape in Prop_PlasticBlue: colour + shape name the zone (3 shapes x 3 colours = 9 identities)."
+    },
+    {
+     "name": "Kit_KeyTag_Rect_White",
+     "kind": "shape",
+     "differs": "Square 57 x 39 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Round_White",
+     "kind": "shape",
+     "differs": "Round 38 mm tag."
+    },
+    {
+     "name": "Kit_KeyTag_Long_White (number)",
+     "kind": "text",
+     "differs": "The typed number is one quad on Prop_KeyTagNo; blank until that atlas exists."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: coloured plastic ID tags with a label window on a split ring, the Lucky Line type (02 §8.2). Numbers typed in Courier Prime, no dates (Prop_KeyTagNo atlas, P-4).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_KeyHookBoard",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyHookBoard.fbx",
+   "dims_m": [
+    0.3,
+    0.4,
+    0.0436
+   ],
+   "tris_lod0": 4392,
+   "tris_lod1": 4392,
+   "materials": [
+    "Prop_WoodDark",
+    "Prop_Brass",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyCabinet",
+     "kind": "theme",
+     "differs": "Office key host: almond steel wall cabinet with 24 hooks."
+    },
+    {
+     "name": "Kit_KeyHook",
+     "kind": "theme",
+     "differs": "Single brass cup hook; only at module key spots with a framed sight line of 3 m or less."
+    },
+    {
+     "name": "Kit_KeyHookBoard (with key)",
+     "kind": "state",
+     "differs": "Empty or with the zone key hung on key_hook (hook 6) in the hungPose v2 recipe."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Timeless: a painted board with brass cup hooks in a grid was the everyday facility key store (02 §9, 03 §2.3). Name pending Red: Kit_KeyHookBoard or Kit_KeyRack (codex audit F6).",
+   "suggested_sheet_scale": 1000
+  },
+  {
+   "name": "Kit_KeyCabinet",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyCabinet.fbx",
+   "dims_m": [
+    0.7188,
+    0.46,
+    0.0838
+   ],
+   "tris_lod0": 6804,
+   "tris_lod1": 6804,
+   "materials": [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite",
+    "Prop_Chrome",
+    "Prop_KeyTagNo"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyHookBoard",
+     "kind": "theme",
+     "differs": "Lobby key host (board with 8 cup hooks)."
+    },
+    {
+     "name": "Kit_KeyHook",
+     "kind": "theme",
+     "differs": "Single cup hook."
+    },
+    {
+     "name": "Kit_KeyCabinet (with key)",
+     "kind": "state",
+     "differs": "Its door is modelled swung flat to the wall (open); the zone key hangs on key_hook."
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "Timeless: a Telkee-type institution key cabinet (the Telkee mark for institution key boards was filed in 1928), unbranded (02 §9).",
+   "suggested_sheet_scale": 1000
+  },
+  {
+   "name": "Kit_KeyHook",
+   "fbx": "Assets/Resources/Props/Models/Kit_KeyHook.fbx",
+   "dims_m": [
+    0.0068,
+    0.0144,
+    0.0257
+   ],
+   "tris_lod0": 922,
+   "tris_lod1": 922,
+   "materials": [
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "Kit_KeyHookBoard",
+     "kind": "theme",
+     "differs": "Lobby default host (reads at 6 m; a lone hook reads only to about 2 m)."
+    },
+    {
+     "name": "Kit_KeyCabinet",
+     "kind": "theme",
+     "differs": "Office default host."
+    }
+   ],
+   "level": [
+    "shared"
+   ],
+   "era_note": "Timeless: a single key on a brass cup hook by a door (02 §9).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_WindowFrame_Wood",
+   "fbx": "Assets/Resources/Props/Models/Kit_WindowFrame_Wood.fbx",
+   "dims_m": [
+    1.6,
+    1.828,
+    0.242
+   ],
+   "tris_lod0": 2322,
+   "tris_lod1": 1044,
+   "materials": [
+    "Prop_WoodWalnut",
+    "Prop_Rubber"
+   ],
+   "variants": [
+    {
+     "name": "Kit_WindowFrame_Steel",
+     "kind": "theme",
+     "differs": "Office (and Run since the fix pass): pressed-steel SDI borrowed light in dark bronze."
+    },
+    {
+     "name": "Kit_WindowFrame_Alu",
+     "kind": "theme",
+     "differs": "Exit: clear-anodised aluminium office front."
+    },
+    {
+     "name": "Kit_WindowFrame_Wood (intact / broken)",
+     "kind": "intact/broken",
+     "differs": "intact / broken: the frame is the same mesh in both states. Intact = the glass track's 6 mm Glass_Window slab sits in the pocket (anchor glass_slab). Broken = the glass-break track (GD3) puts its remnant teeth in the pockets (pocket_*, tooth_band_*) and floor glass around floor_a / floor_b; nothing enters the 1.4 x 0.35-2.0 m climb opening."
+    }
+   ],
+   "level": [
+    "Lobby"
+   ],
+   "era_note": "Second-hand (1955-85): wood borrowed lights with stool, apron and casing belong to older buildings (06 §2.1). Same casing profile as the wood door frame.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_WindowFrame_Steel",
+   "fbx": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel.fbx",
+   "dims_m": [
+    1.55,
+    1.8,
+    0.21
+   ],
+   "tris_lod0": 4054,
+   "tris_lod1": 1458,
+   "materials": [
+    "Prop_SteelBrown",
+    "Prop_Rubber"
+   ],
+   "variants": [
+    {
+     "name": "Kit_WindowFrame_Steel_Enamel",
+     "kind": "theme",
+     "differs": "Same mesh in almond enamel (Door_Enamel, P-4). Spare since the fix pass moved the Run window (W-RN) to this bronze frame to match the Run doors (critic M2)."
+    },
+    {
+     "name": "Kit_WindowFrame_Wood",
+     "kind": "theme",
+     "differs": "Lobby: walnut light with horned stool and apron."
+    },
+    {
+     "name": "Kit_WindowFrame_Alu",
+     "kind": "theme",
+     "differs": "Exit: clear-anodised aluminium."
+    },
+    {
+     "name": "Kit_MiniBlind_Raised",
+     "kind": "option",
+     "differs": "Optional raised mini-blind on face A of Office windows (blind_rail anchor)."
+    },
+    {
+     "name": "Kit_WindowFrame_Steel (intact / broken)",
+     "kind": "intact/broken",
+     "differs": "intact / broken: the frame is the same mesh in both states. Intact = the glass track's 6 mm Glass_Window slab sits in the pocket (anchor glass_slab). Broken = the glass-break track (GD3) puts its remnant teeth in the pockets (pocket_*, tooth_band_*) and floor glass around floor_a / floor_b; nothing enters the 1.4 x 0.35-2.0 m climb opening."
+    }
+   ],
+   "level": [
+    "Office",
+    "Run"
+   ],
+   "era_note": "Timeless: a pressed-steel SDI borrowed-light frame, integral stop on the hall side and a screwed removable stop on the room side (SDI 111A; 06 §2.2).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_WindowFrame_Steel_Enamel",
+   "fbx": "Assets/Resources/Props/Models/Kit_WindowFrame_Steel_Enamel.fbx",
+   "dims_m": [
+    1.55,
+    1.8,
+    0.21
+   ],
+   "tris_lod0": 4054,
+   "tris_lod1": 1458,
+   "materials": [
+    "Door_Enamel",
+    "Prop_Rubber"
+   ],
+   "variants": [
+    {
+     "name": "Kit_WindowFrame_Steel",
+     "kind": "theme",
+     "differs": "The frame W-OF and, since the fix pass, W-RN use: dark-bronze Prop_SteelBrown. Same mesh."
+    },
+    {
+     "name": "Kit_WindowFrame_Steel_Enamel (intact / broken)",
+     "kind": "intact/broken",
+     "differs": "intact / broken: the frame is the same mesh in both states. Intact = the glass track's 6 mm Glass_Window slab sits in the pocket (anchor glass_slab). Broken = the glass-break track (GD3) puts its remnant teeth in the pockets (pocket_*, tooth_band_*) and floor glass around floor_a / floor_b; nothing enters the 1.4 x 0.35-2.0 m climb opening."
+    }
+   ],
+   "level": [
+    "Run"
+   ],
+   "era_note": "Same SDI frame as Kit_WindowFrame_Steel (06 §2.2) in almond enamel for a Run corridor light. Spare since the fix pass gave W-RN the bronze frame (30_final §5.5).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_WindowFrame_Alu",
+   "fbx": "Assets/Resources/Props/Models/Kit_WindowFrame_Alu.fbx",
+   "dims_m": [
+    1.55,
+    1.8,
+    0.21
+   ],
+   "tris_lod0": 2190,
+   "tris_lod1": 1050,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_Rubber"
+   ],
+   "variants": [
+    {
+     "name": "Kit_WindowFrame_Steel",
+     "kind": "theme",
+     "differs": "Office and Run: dark-bronze pressed steel."
+    },
+    {
+     "name": "Kit_WindowFrame_Wood",
+     "kind": "theme",
+     "differs": "Lobby: walnut."
+    },
+    {
+     "name": "Kit_WindowFrame_Alu (intact / broken)",
+     "kind": "intact/broken",
+     "differs": "intact / broken: the frame is the same mesh in both states. Intact = the glass track's 6 mm Glass_Window slab sits in the pocket (anchor glass_slab). Broken = the glass-break track (GD3) puts its remnant teeth in the pockets (pocket_*, tooth_band_*) and floor glass around floor_a / floor_b; nothing enters the 1.4 x 0.35-2.0 m climb opening."
+    }
+   ],
+   "level": [
+    "Exit"
+   ],
+   "era_note": "Current stock (1982-2000): demountable aluminium partition glazing, US Gypsum patents US4463535 / US4443984, granted 1984 (06 §2.3). Clear anodising was ordinary by 1990.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_MiniBlind_Raised",
+   "fbx": "Assets/Resources/Props/Models/Kit_MiniBlind_Raised.fbx",
+   "dims_m": [
+    1.55,
+    1.06,
+    0.0762
+   ],
+   "tris_lod0": 2572,
+   "tris_lod1": 876,
+   "materials": [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite"
+   ],
+   "variants": [
+    {
+     "name": "Kit_MiniBlind_Lowered",
+     "kind": "state",
+     "differs": "Lowered and half-tilted, 2.40 m wide: decor for the Office kit's interior window only. Never on a breakable map window, where it would hang in the climb opening."
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "Current stock: 1-inch aluminium mini-blinds were 70-80 % of the US window-covering market in 1981, and the 1993 Sears catalogue sells them in Almond (06 §2.5).",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_MiniBlind_Lowered",
+   "fbx": "Assets/Resources/Props/Models/Kit_MiniBlind_Lowered.fbx",
+   "dims_m": [
+    2.4,
+    1.308,
+    0.0762
+   ],
+   "tris_lod0": 6376,
+   "tris_lod1": 1594,
+   "materials": [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite"
+   ],
+   "variants": [
+    {
+     "name": "Kit_MiniBlind_Raised",
+     "kind": "state",
+     "differs": "Raised clear of the opening, 1.55 m wide: the optional blind on Office map windows."
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "As the raised blind (06 §2.5). Decor for the Office kit's Kit_InteriorWindow only.",
+   "suggested_sheet_scale": 250
+  }
+ ],
+ "assetsMeta": {
+  "schema": "frontrooms.interactables.handoff-assets/1",
+  "generated": "2026-10-08T01:45:48-07:00",
+  "by": "visual chat (游戏视觉), interactables-kit workflow, three-view hand-off stage, for 平面视觉",
+  "count": 57,
+  "fields": [
+   "name",
+   "fbx",
+   "dims_m",
+   "tris_lod0",
+   "tris_lod1",
+   "materials",
+   "variants",
+   "level",
+   "era_note",
+   "suggested_sheet_scale"
+  ],
+  "units": {
+   "dims_m": "metres, [w, h, d] in the FRONT image's frame: w across the front view, h up, d toward the camera. Door frames, door leaves and keys are turned -90 degrees for their front view (show face = their +X), so for them w = sidecar Z extent (opening width / key length) and d = sidecar X extent (thickness).",
+   "suggested_sheet_scale": "px per metre on the 1920 x 1080 K-sheet; one of 2000/1000/500/250/125, the ladder of Tools/three_view (furniture >= 0.75 m at 250, the largest step whose third-angle layout fits 1080 x 688 otherwise)",
+   "tris": "triangles from the sidecar; LOD1 equal to LOD0 means kitlib protects every vertex (thin parts, lod1_keep_all) and the LODGroup only culls"
+  },
+  "variantKinds": {
+   "theme": "a level's version of the same part",
+   "free/locked": "the counterpart on the other door type in the same level",
+   "finish": "metal finish swap (brass/chrome/nickel)",
+   "colour": "zone colour",
+   "shape": "key-tag shape",
+   "fallback": "material fallback until a P-4 surface exists",
+   "option": "Red's optional member",
+   "state": "a runtime pose or part state of the same mesh (not a separate asset)",
+   "intact/broken": "window states (glass is the glass tracks')",
+   "text": "atlas text not yet available",
+   "assembly": "parts that go together, not variants"
+  },
+  "images": {
+   "pattern": "threeview/<name>_{front,side,top,hero}.png",
+   "note": "front/side/top = orthographic third-angle at suggested_sheet_scale (1 PNG px = 1 sheet px), transparent, 16 px clear padding; hero = 1152 x 864 3/4 view from the front-left, 22 degrees down, transparent. Place at 100 %.",
+   "manifest": "threeview/handoff_manifest.json (renderer record: px sizes, bounds, viewYaw)"
+  },
+  "source": {
+   "models": "the 2026-10-08 fix-pass builds in W/proj_int (= the promote payload /Users/redwang/FrontRoomsVisualWork/int_work/fix/payload, 102 files, SHA1SUMS.txt; checked 0 differ). Not in main yet: the interactables merge copies them over main's Kit_* FBX/JSON and keeps main's .meta GUIDs. 7 FBX are content-identical to main (timestamp only). Sidecars/FBX path in the project: Assets/Resources/Props/Models.",
+   "materials": "Assets/Resources/Surfaces/<slot>.mat (the kit library remaps every FBX slot to it). Missing (P-4, render with the FBX preview colour): Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved.",
+   "renderClone": "W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time",
+   "renderer": "FrontRoomsThreeView (clone version) with -threeViewOversample 1 -threeViewMaxPpm 2000; copy: threeview/FrontRoomsThreeView.handoff.cs.txt"
+  },
+  "notIncluded": {
+   "hinges": "No separate hinge asset: the 5-knuckle butt hinges are merged into the meshes (frame halves = knuckles 1, 3, 5 in Kit_DoorFrame_*; leaf halves = knuckles 2, 4 in Kit_DoorLeaf_*), on the A2 axis (0.0295, y, 0.0098).",
+   "glassFracture": "No fracture, remnant or shard FBX: Red put glass fracture in the glass-destruction tracks (10_spec decision D12, §5.3); the window frames only carry the interface anchors (glass_slab, stop_*, pocket_*, tooth_band_*, floor_a/b).",
+   "exitSigns": "Kit_ExitSign and Kit_ExitSign_Dead are the exit-sign track's now; not in this set.",
+   "doorwayStuds": "Kit_DoorwayStuds* = the existing K45, unchanged."
+  },
+  "changedSincePlaced": {
+   "Kit_DoorFrame_Wood": [
+    "VISIBLE: oak saddle grain turned to run along the saddle (critic H3)"
+   ],
+   "Kit_DoorFrame_Steel": [
+    "VISIBLE: saddle now dark bronze like the frame, not aluminium (critic M1)",
+    "materials Prop_SteelBrown/Prop_Rubber/Prop_Chrome/Prop_Aluminium -> Prop_SteelBrown/Prop_Rubber/Prop_Chrome"
+   ],
+   "Kit_DoorLeaf_Veneer_Oak": [
+    "VISIBLE: oak grain now vertical (was horizontal); own module (critic H3)"
+   ],
+   "Kit_DoorLeaf_Ward": [
+    "VISIBLE: laminate grain now vertical (was horizontal) (critic H3)"
+   ],
+   "Kit_DoorCloser_Body": [
+    "tris LOD1 None -> 1067"
+   ],
+   "Kit_DoorCloser_Arm": [
+    "tris LOD1 None -> 1112"
+   ],
+   "Kit_DoorCloser_Forearm": [
+    "tris LOD1 None -> 940"
+   ],
+   "Kit_DoorCloser_Shoe": [
+    "VISIBLE: rounder ear (48 segments per circle) and 32-segment pivot screw (critic L1)",
+    "tris LOD0 570 -> 922",
+    "tris LOD1 None -> 922"
+   ],
+   "Kit_ExitDevice_Crossbar": [
+    "VISIBLE: larger latch-end mechanism case 0.1025 x 0.180 m with a rim-latch head (critic L4)",
+    "tris LOD0 3948 -> 3588",
+    "tris LOD1 None -> 3588",
+    "dims_m [0.8773, 0.12, 0.095] -> [0.9088, 0.18, 0.095]"
+   ],
+   "Kit_DoorSign": [
+    "tris LOD1 None -> 664"
+   ],
+   "Kit_DoorNumberPlate": [
+    "tris LOD1 None -> 480"
+   ],
+   "Kit_DoorNumberPlate_Blue": [
+    "tris LOD1 None -> 480"
+   ],
+   "Kit_DoorNumberPlate_White": [
+    "tris LOD1 None -> 480"
+   ],
+   "Kit_Lock_Escutcheon": [
+    "VISIBLE: 1.5 mm edge round in 4 segments (critic L7)",
+    "tris LOD0 3176 -> 3248",
+    "tris LOD1 None -> 3248"
+   ],
+   "Kit_Lock_Escutcheon_Brass": [
+    "VISIBLE: 1.5 mm edge round in 4 segments (critic L7)",
+    "tris LOD0 3176 -> 3248",
+    "tris LOD1 None -> 3248"
+   ],
+   "Kit_Lock_CylinderShell": [
+    "tris LOD1 None -> 2708"
+   ],
+   "Kit_Lock_CylinderShell_Brass": [
+    "tris LOD1 None -> 2708"
+   ],
+   "Kit_Lock_Plug": [
+    "tris LOD1 None -> 1884"
+   ],
+   "Kit_Lock_Knob": [
+    "VISIBLE: crowned face (sphere R 0.070), still 0.065 proud (critic L3)",
+    "tris LOD0 4608 -> 4992",
+    "tris LOD1 None -> 1996"
+   ],
+   "Kit_Lock_Knob_Brass": [
+    "VISIBLE: crowned face (sphere R 0.070), still 0.065 proud (critic L3)",
+    "tris LOD0 4608 -> 4992",
+    "tris LOD1 None -> 1996"
+   ],
+   "Kit_Lock_Deadbolt": [
+    "tris LOD1 None -> 380"
+   ],
+   "Kit_Lock_Latchbolt_Mortise": [
+    "tris LOD1 None -> 600"
+   ],
+   "Kit_Lock_StrikeMortise": [
+    "tris LOD1 None -> 988"
+   ],
+   "Kit_Lock_Rose": [
+    "tris LOD1 None -> 2728"
+   ],
+   "Kit_Lock_Rose_Brass": [
+    "tris LOD1 None -> 2728"
+   ],
+   "Kit_Lock_Lever": [
+    "tris LOD1 None -> 1588"
+   ],
+   "Kit_Lock_Lever_Brass": [
+    "tris LOD1 None -> 1588"
+   ],
+   "Kit_Lock_Latchbolt_Bored": [
+    "tris LOD1 None -> 476"
+   ],
+   "Kit_Lock_Latchbolt_Bored_Brass": [
+    "tris LOD1 None -> 476"
+   ],
+   "Kit_Lock_StrikeBored": [
+    "tris LOD1 None -> 674"
+   ],
+   "Kit_Lock_StrikeBored_Brass": [
+    "tris LOD1 None -> 674"
+   ],
+   "Kit_Key_Zone": [
+    "VISIBLE: tip bevel starts at Z 0.0234, so all six cuts show (critic L6)",
+    "tris LOD0 2184 -> 2188",
+    "tris LOD1 None -> 2188"
+   ],
+   "Kit_Key_Zone_Nickel": [
+    "VISIBLE: tip bevel starts at Z 0.0234, so all six cuts show (critic L6)",
+    "tris LOD0 2184 -> 2188",
+    "tris LOD1 None -> 2188"
+   ],
+   "Kit_KeyRing": [
+    "tris LOD1 None -> 1972"
+   ],
+   "Kit_KeyTag_Rect": [
+    "tris LOD1 None -> 1038"
+   ],
+   "Kit_KeyTag_Rect_Blue": [
+    "tris LOD1 None -> 1038"
+   ],
+   "Kit_KeyTag_Rect_White": [
+    "tris LOD1 None -> 1038"
+   ],
+   "Kit_KeyTag_Round": [
+    "tris LOD1 None -> 1282"
+   ],
+   "Kit_KeyTag_Round_Blue": [
+    "tris LOD1 None -> 1282"
+   ],
+   "Kit_KeyTag_Round_White": [
+    "tris LOD1 None -> 1282"
+   ],
+   "Kit_KeyTag_Long": [
+    "tris LOD1 None -> 1038"
+   ],
+   "Kit_KeyTag_Long_Blue": [
+    "tris LOD1 None -> 1038"
+   ],
+   "Kit_KeyTag_Long_White": [
+    "tris LOD1 None -> 1038"
+   ],
+   "Kit_KeyHookBoard": [
+    "VISIBLE: board grain turned to run vertically (critic H3)",
+    "tris LOD1 None -> 4392"
+   ],
+   "Kit_KeyCabinet": [
+    "tris LOD1 None -> 6804"
+   ],
+   "Kit_KeyHook": [
+    "VISIBLE: 48-segment flange and 16-sided wire (critic L2)",
+    "tris LOD0 530 -> 922",
+    "tris LOD1 None -> 922"
+   ],
+   "Kit_WindowFrame_Steel": [
+    "VISIBLE: rebuilt from main's 2026-10-04 module (critic H5)",
+    "tris LOD0 3862 -> 4054",
+    "tris LOD1 1438 -> 1458"
+   ],
+   "Kit_WindowFrame_Steel_Enamel": [
+    "VISIBLE: rebuilt from main's 2026-10-04 module (critic H5)",
+    "tris LOD0 3862 -> 4054",
+    "tris LOD1 1438 -> 1458"
+   ],
+   "Kit_WindowFrame_Alu": [
+    "VISIBLE: rebuilt from main's 2026-10-04 module (critic H5)",
+    "tris LOD0 2066 -> 2190",
+    "tris LOD1 None -> 1050"
+   ]
+  },
+  "note": "`assets` describes the current models (fix pass, 2026-10-08). `sheets` and `kits` above are the 2026-10-04 record behind the placed K46-K80 sheets; where they differ, `assets` wins. changedSincePlaced lists what each placed sheet would change."
+ }
 }

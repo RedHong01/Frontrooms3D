@@ -1,0 +1,251 @@
+{
+ "Kit_DoorCloser_Arm": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorCloser_Arm'] vs ['Kit_DoorCloser_Arm_LOD0', 'Kit_DoorCloser_Arm_LOD1']"
+ },
+ "Kit_DoorCloser_Body": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorCloser_Body'] vs ['Kit_DoorCloser_Body_LOD0', 'Kit_DoorCloser_Body_LOD1']"
+ },
+ "Kit_DoorCloser_Forearm": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorCloser_Forearm'] vs ['Kit_DoorCloser_Forearm_LOD0', 'Kit_DoorCloser_Forearm_LOD1']"
+ },
+ "Kit_DoorCloser_Shoe": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorCloser_Shoe'] vs ['Kit_DoorCloser_Shoe_LOD0', 'Kit_DoorCloser_Shoe_LOD1']"
+ },
+ "Kit_DoorFrame_Steel": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_DoorFrame_Steel_LOD0: materials ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome', 'Prop_Aluminium'] vs ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome']",
+   "Kit_DoorFrame_Steel_LOD1: materials ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome', 'Prop_Aluminium'] vs ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome']"
+  ]
+ },
+ "Kit_DoorFrame_Steel_Alu": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_DoorFrame_Steel_LOD0: materials ['Prop_Aluminium', 'Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome'] vs ['Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome']",
+   "Kit_DoorFrame_Steel_LOD1: materials ['Prop_Aluminium', 'Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome'] vs ['Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome']"
+  ]
+ },
+ "Kit_DoorFrame_Wood": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_DoorFrame_Wood_LOD0: UVs differ by 1.07400",
+   "Kit_DoorFrame_Wood_LOD1: UVs differ by 1.07400"
+  ]
+ },
+ "Kit_DoorLeaf_Steel": {
+  "state": "SAME_CONTENT",
+  "why": []
+ },
+ "Kit_DoorLeaf_SteelLite": {
+  "state": "SAME_CONTENT",
+  "why": []
+ },
+ "Kit_DoorLeaf_Steel_PaintedMetal": {
+  "state": "SAME_CONTENT",
+  "why": []
+ },
+ "Kit_DoorLeaf_Veneer": {
+  "state": "SAME_CONTENT",
+  "why": []
+ },
+ "Kit_DoorLeaf_Veneer_Oak": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorLeaf_Veneer_LOD0', 'Kit_DoorLeaf_Veneer_LOD1'] vs ['Kit_DoorLeaf_Veneer_Oak_LOD0', 'Kit_DoorLeaf_Veneer_Oak_LOD1']"
+ },
+ "Kit_DoorLeaf_Ward": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_DoorLeaf_Ward_LOD0: UVs differ by 3.08900",
+   "Kit_DoorLeaf_Ward_LOD1: UVs differ by 3.08900"
+  ]
+ },
+ "Kit_DoorNumberPlate": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorNumberPlate'] vs ['Kit_DoorNumberPlate_LOD0', 'Kit_DoorNumberPlate_LOD1']"
+ },
+ "Kit_DoorNumberPlate_Blue": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorNumberPlate'] vs ['Kit_DoorNumberPlate_LOD0', 'Kit_DoorNumberPlate_LOD1']"
+ },
+ "Kit_DoorNumberPlate_White": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorNumberPlate'] vs ['Kit_DoorNumberPlate_LOD0', 'Kit_DoorNumberPlate_LOD1']"
+ },
+ "Kit_DoorSign": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_DoorSign'] vs ['Kit_DoorSign_LOD0', 'Kit_DoorSign_LOD1']"
+ },
+ "Kit_ExitDevice_Crossbar": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_ExitDevice_Crossbar'] vs ['Kit_ExitDevice_Crossbar_LOD0', 'Kit_ExitDevice_Crossbar_LOD1']"
+ },
+ "Kit_KeyCabinet": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyCabinet'] vs ['Kit_KeyCabinet_LOD0', 'Kit_KeyCabinet_LOD1']"
+ },
+ "Kit_KeyHook": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyHook'] vs ['Kit_KeyHook_LOD0', 'Kit_KeyHook_LOD1']"
+ },
+ "Kit_KeyHookBoard": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyHookBoard'] vs ['Kit_KeyHookBoard_LOD0', 'Kit_KeyHookBoard_LOD1']"
+ },
+ "Kit_KeyRing": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyRing'] vs ['Kit_KeyRing_LOD0', 'Kit_KeyRing_LOD1']"
+ },
+ "Kit_KeyTag_Long": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Long'] vs ['Kit_KeyTag_Long_LOD0', 'Kit_KeyTag_Long_LOD1']"
+ },
+ "Kit_KeyTag_Long_Blue": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Long'] vs ['Kit_KeyTag_Long_LOD0', 'Kit_KeyTag_Long_LOD1']"
+ },
+ "Kit_KeyTag_Long_White": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Long'] vs ['Kit_KeyTag_Long_LOD0', 'Kit_KeyTag_Long_LOD1']"
+ },
+ "Kit_KeyTag_Rect": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Rect'] vs ['Kit_KeyTag_Rect_LOD0', 'Kit_KeyTag_Rect_LOD1']"
+ },
+ "Kit_KeyTag_Rect_Blue": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Rect'] vs ['Kit_KeyTag_Rect_LOD0', 'Kit_KeyTag_Rect_LOD1']"
+ },
+ "Kit_KeyTag_Rect_White": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Rect'] vs ['Kit_KeyTag_Rect_LOD0', 'Kit_KeyTag_Rect_LOD1']"
+ },
+ "Kit_KeyTag_Round": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Round'] vs ['Kit_KeyTag_Round_LOD0', 'Kit_KeyTag_Round_LOD1']"
+ },
+ "Kit_KeyTag_Round_Blue": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Round'] vs ['Kit_KeyTag_Round_LOD0', 'Kit_KeyTag_Round_LOD1']"
+ },
+ "Kit_KeyTag_Round_White": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_KeyTag_Round'] vs ['Kit_KeyTag_Round_LOD0', 'Kit_KeyTag_Round_LOD1']"
+ },
+ "Kit_Key_Zone": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Key_Zone'] vs ['Kit_Key_Zone_LOD0', 'Kit_Key_Zone_LOD1']"
+ },
+ "Kit_Key_Zone_Nickel": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Key_Zone'] vs ['Kit_Key_Zone_LOD0', 'Kit_Key_Zone_LOD1']"
+ },
+ "Kit_Lock_CylinderShell": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_CylinderShell'] vs ['Kit_Lock_CylinderShell_LOD0', 'Kit_Lock_CylinderShell_LOD1']"
+ },
+ "Kit_Lock_CylinderShell_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_CylinderShell'] vs ['Kit_Lock_CylinderShell_LOD0', 'Kit_Lock_CylinderShell_LOD1']"
+ },
+ "Kit_Lock_Deadbolt": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Deadbolt'] vs ['Kit_Lock_Deadbolt_LOD0', 'Kit_Lock_Deadbolt_LOD1']"
+ },
+ "Kit_Lock_Escutcheon": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Escutcheon'] vs ['Kit_Lock_Escutcheon_LOD0', 'Kit_Lock_Escutcheon_LOD1']"
+ },
+ "Kit_Lock_Escutcheon_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Escutcheon'] vs ['Kit_Lock_Escutcheon_LOD0', 'Kit_Lock_Escutcheon_LOD1']"
+ },
+ "Kit_Lock_Knob": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Knob'] vs ['Kit_Lock_Knob_LOD0', 'Kit_Lock_Knob_LOD1']"
+ },
+ "Kit_Lock_Knob_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Knob'] vs ['Kit_Lock_Knob_LOD0', 'Kit_Lock_Knob_LOD1']"
+ },
+ "Kit_Lock_Latchbolt_Bored": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Latchbolt_Bored'] vs ['Kit_Lock_Latchbolt_Bored_LOD0', 'Kit_Lock_Latchbolt_Bored_LOD1']"
+ },
+ "Kit_Lock_Latchbolt_Bored_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Latchbolt_Bored'] vs ['Kit_Lock_Latchbolt_Bored_LOD0', 'Kit_Lock_Latchbolt_Bored_LOD1']"
+ },
+ "Kit_Lock_Latchbolt_Mortise": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Latchbolt_Mortise'] vs ['Kit_Lock_Latchbolt_Mortise_LOD0', 'Kit_Lock_Latchbolt_Mortise_LOD1']"
+ },
+ "Kit_Lock_Lever": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Lever'] vs ['Kit_Lock_Lever_LOD0', 'Kit_Lock_Lever_LOD1']"
+ },
+ "Kit_Lock_Lever_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Lever'] vs ['Kit_Lock_Lever_LOD0', 'Kit_Lock_Lever_LOD1']"
+ },
+ "Kit_Lock_Plug": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Plug'] vs ['Kit_Lock_Plug_LOD0', 'Kit_Lock_Plug_LOD1']"
+ },
+ "Kit_Lock_Rose": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Rose'] vs ['Kit_Lock_Rose_LOD0', 'Kit_Lock_Rose_LOD1']"
+ },
+ "Kit_Lock_Rose_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_Rose'] vs ['Kit_Lock_Rose_LOD0', 'Kit_Lock_Rose_LOD1']"
+ },
+ "Kit_Lock_StrikeBored": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_StrikeBored'] vs ['Kit_Lock_StrikeBored_LOD0', 'Kit_Lock_StrikeBored_LOD1']"
+ },
+ "Kit_Lock_StrikeBored_Brass": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_StrikeBored'] vs ['Kit_Lock_StrikeBored_LOD0', 'Kit_Lock_StrikeBored_LOD1']"
+ },
+ "Kit_Lock_StrikeMortise": {
+  "state": "CHANGED",
+  "why": "objects ['Kit_Lock_StrikeMortise'] vs ['Kit_Lock_StrikeMortise_LOD0', 'Kit_Lock_StrikeMortise_LOD1']"
+ },
+ "Kit_MiniBlind_Lowered": {
+  "state": "SAME_CONTENT",
+  "why": []
+ },
+ "Kit_MiniBlind_Raised": {
+  "state": "SAME_CONTENT",
+  "why": []
+ },
+ "Kit_WindowFrame_Alu": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_WindowFrame_Alu_LOD0: 752/1328 verts, 616/1167 polys",
+   "Kit_WindowFrame_Alu_LOD1: 736/737 verts, 1064/1050 polys"
+  ]
+ },
+ "Kit_WindowFrame_Steel": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_WindowFrame_Steel_LOD0: 2462/2540 verts, 2145/2241 polys",
+   "Kit_WindowFrame_Steel_LOD1: 946/934 verts, 783/1458 polys"
+  ]
+ },
+ "Kit_WindowFrame_Steel_Enamel": {
+  "state": "CHANGED",
+  "why": [
+   "Kit_WindowFrame_Steel_LOD0: 2462/2540 verts, 2145/2241 polys",
+   "Kit_WindowFrame_Steel_LOD1: 946/934 verts, 783/1458 polys"
+  ]
+ },
+ "Kit_WindowFrame_Wood": {
+  "state": "SAME_CONTENT",
+  "why": []
+ }
+}

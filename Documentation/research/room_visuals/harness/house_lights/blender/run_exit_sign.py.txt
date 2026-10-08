@@ -1,0 +1,18 @@
+"""Wall EXIT sign over the Run! goal door (C). CLONE-ONLY look-dev.
+Housing 0.330 x 0.200 x 0.060 m, white baked enamel, a 15 mm bezel and an
+off-white stencil face with 6 in red letters, TeX Gyre Heros Bold Condensed
+(Run_C_ExitFace texture), no arrows. ORIGIN = back centre on the wall."""
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_ExitSign_RunC"
+
+
+def build(kit):
+    kit.box((0.330, 0.054, 0.200), (0, -0.027, 0), "Run_Enamel", bevel=0.006, segments=3, name="housing")
+    kit.frame((0.330, 0.200), (0.300, 0.180), 0.006, (0, -0.057, 0), "Run_Enamel", bevel=0.002, segments=2, name="bezel")
+    kit.quad(0.300, 0.180, (0, -0.0555, 0), "Run_ExitFace", facing="-y", uv="decal", name="face")
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            kit.cylinder(0.003, 0.002, (sx * 0.1575, -0.0605, sz * 0.095), "Prop_Chrome", verts=8, rot=(90, 0, 0), bevel=0.0006, segments=1, name="screw")
+    kit.no_collider()
+    kit.tag("run", "wall_decor")

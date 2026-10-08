@@ -22,7 +22,7 @@ Anchors: keyhole (0, 0, 0); keyhole_in (0, 0, -0.10) (insertion axis);
 keyhole_up (0, 0.10, 0); collar_back (0, 0, -0.0075).
 Motion: static.
 Budget (§9.2): LOD0 2,600 (asserted +-15 %), LOD1 1,000, LOD2 150; LOD
-distances 1.5 / 4 / 12 m; no LOD1 export (part < 1 m, §1.8).
+distances 1.5 / 4 / 12 m; LOD1 exported since the 2026-10-08 fix pass (critic H4).
 Slots: Prop_Chrome (housing, first), Prop_PlasticBlack (groove, bore and
 notch shadows), Prop_Brass (core face). VARIANT _Brass (housing to brass).
 Detail: 96-segment collar with a 1 mm rounded, domed front.
@@ -33,8 +33,8 @@ import math
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_CylinderShell"
-LOD1 = None
 LOD1_RATIO = 0.385
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.058
 LOD_DISTANCES = (1.5, 4.0, 12.0)
 BUDGET = 2600

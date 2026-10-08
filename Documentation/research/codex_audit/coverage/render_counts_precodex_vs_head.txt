@@ -1,0 +1,4 @@
+Renderer / light / collider counts: pre-Codex 7320ed1 (runtime/head_279c144/suites/base/map_signatures.tsv) vs ee5c9bb (runtime/head_ee5c9bb/suites/head/map_signatures.tsv); 20 seeds x 25 chunks; ee5c9bb = 22bb75f (0/500 chunks differ, runtime review)
+renderers: chunks 500 · base 70947 · head 73766 · delta +2819 (+4.0 %) · per chunk mean +5.6, min -5, max +45 · per 25-chunk build: base mean 3547, head mean 3688, max delta +326
+lights: chunks 500 · base 31941 · head 31941 · delta +0 (+0.0 %) · per chunk mean +0.0, min +0, max +0 · per 25-chunk build: base mean 1597, head mean 1597, max delta +0
+colliders: chunks 500 · base 5607 · head 5607 · delta +0 (+0.0 %) · per chunk mean +0.0, min +0, max +0 · per 25-chunk build: base mean 280, head mean 280, max delta +0

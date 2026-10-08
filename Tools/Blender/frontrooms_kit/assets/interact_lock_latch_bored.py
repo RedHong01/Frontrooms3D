@@ -20,15 +20,15 @@ X -0.0057 .. +0.0115 (latch plus plunger), Y 0.9895 .. 1.0105.
 Anchors: bolt_axis (0, 0, 0); tip (0.0043, 0, 0.013); plunger
 (0.009, 0, 0.002); throw_dir (0, 0, 0.10).
 Budget (§9.2): LOD0 500 (asserted +-15 %), LOD1 200, LOD2 40; LOD
-distances 1.0 / 3 / 8 m; no LOD1 export. The plunger is fr_lod2_drop.
+distances 1.0 / 3 / 8 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). The plunger is fr_lod2_drop.
 Slots: Prop_Chrome. VARIANT _Brass (Lobby free doors, US3/US4).
 """
 
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Latchbolt_Bored"
-LOD1 = None
 LOD1_RATIO = 0.40
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.08
 LOD_DISTANCES = (1.0, 3.0, 8.0)
 BUDGET = 500

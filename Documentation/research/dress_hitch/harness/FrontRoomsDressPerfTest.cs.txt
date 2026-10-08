@@ -1,0 +1,1366 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+/// <summary>
+/// Dressing hitch harness (visual chat). Builds representative rooms exactly
+/// as the map does — FrontRoomsOfficeKit.Dress (map overload: floor rect,
+/// ceiling, seed, keepClear, obstacles), the look-dev/room-stream overload, and
+/// FrontRoomsFurniturePile.Build / BuildPile — and for every case records:
+///   * a canonical hash of what was built (every transform in hierarchy order:
+///     name, local position/rotation/scale rounded to 1e-4, mesh, material
+///     names, shadow mode, collider boxes), plus an exact-bits hash that also
+///     holds active/layer/tag/flags, every renderer setting and the LOD groups;
+///   * Stopwatch timings: the first (cold) call in the process, a call after the
+///     kit caches are cleared, and N warm calls;
+///   * a split of the warm time into spawning (re-spawning the same kit
+///     instances through FrontRoomsKitLibrary.Spawn, and bare Instantiate)
+///     versus everything else (the solver);
+///   * when the time-sliced API exists (BeginDress / BeginBuild), the same
+///     room built through Step(budget) at 0 (one unit per step), 0.5, 1, 3 and
+///     100 ms: steps, worst step, and whether the result is identical to the
+///     synchronous call.
+///
+/// Corpus (-dressCorpus full, the default): rooms captured from the real map
+/// (FrontRoomsMapWorld.BuildForCapture with the dressers swapped for recorders:
+/// the autopilot seed 20388 chunk (16, 10), seeds 2554, 20261001, 777, 4242,
+/// 99, 31337 and the 20388 spawn), synthetic map-shaped rooms and piles, the
+/// look-dev and room-stream inputs, and the edge cases (Extra): cut rooms that
+/// take the Joined path, tiny / narrow / off-lattice rooms, dense obstacles,
+/// tall pods, random rooms, piles over every radius / ceiling / tableau, and
+/// rejected inputs. -dressCorpus core is the original 165-case set.
+///
+/// Batch: -executeMethod FrontRoomsDressPerfTest.RunBatch -quit
+///        -dressOut path.json [-dressLabel name] [-dressReps 5] [-dressDump dir] [-dressQuick]
+///        [-dressCorpus full|core] [-dressIds id,id,...]
+///        [-dressPrewarm: run the map's Prewarm (+ FrontRoomsKitLibrary.Prewarm) before the cold cases]
+///        [-dressWarmUp: also run FrontRoomsDressJob.WarmUp before the cold cases]
+///        [-dressColdStep: build the cold cases through Step(3 ms) and record their worst step]
+///        [-dressColdOnly: stop after the two cold cases]
+/// Same-process old-vs-new timing and identity: RunAbBatch (needs the *Orig copies in DressPerfOriginal/).
+/// Step granularity, unfiltered: RunStepBatch.
+/// </summary>
+public static class FrontRoomsDressPerfTest
+{
+    // ------------------------------------------------------------------ data
+
+    [Serializable]
+    public class Case
+    {
+        public string id, kind, source;   // kind: office | officeCols | pile | pileForced
+        public Rect floor;
+        public float ceiling;
+        public int seed;
+        public Rect[] clear = new Rect[0];
+        public Rect[] obstacles = new Rect[0];
+        public Vector3 center;
+        public float radius;
+        public int tableau = -1;
+        public string inputHash;
+    }
+
+    [Serializable]
+    public class StepRun
+    {
+        public float budgetMs;
+        public int steps, gcSteps;
+        public double maxStepMs, maxStepNoGcMs, p95StepMs, totalMs;
+        // The job's own longest single unit (solver attempt / object creation), when it reports them.
+        public double maxSolveUnitMs, maxCreateUnitMs;
+        public bool hashMatch;
+    }
+
+    [Serializable]
+    public class Result
+    {
+        public string id, kind, source, inputHash;
+        public string hash, exactHash;
+        public int transforms, kitInstances, renderers, colliders;
+        public double cacheClearedMs;
+        public double[] warmMs;
+        public double warmMedianMs, warmMinMs, warmMaxMs;
+        public long allocBytes;
+        public double spawnReplayMs, instantiateOnlyMs, solverEstimateMs;
+        public bool repeatHashMatch;
+        public List<StepRun> stepRuns = new List<StepRun>();
+    }
+
+    [Serializable]
+    public class Report
+    {
+        public string label, unity, date, codeHash;
+        public int reps;
+        public double coldFirstOfficeMs, coldFirstPileMs;
+        public string coldFirstOfficeCase, coldFirstPileCase;
+        // Optional (-dressPrewarm): the map's Prewarm + FrontRoomsKitLibrary.Prewarm before the cold cases.
+        public bool prewarmed;
+        public double prewarmMs;
+        // Optional (-dressWarmUp): FrontRoomsDressJob.WarmUp before the cold cases.
+        public bool warmedUp;
+        public double warmUpMs;
+        // Optional (-dressColdStep): the cold cases built through Step(3 ms) instead of the synchronous call.
+        public bool coldStepped;
+        public int coldOfficeSteps, coldPileSteps;
+        public double coldOfficeMaxStepMs, coldPileMaxStepMs;
+        public bool hasStepApi;
+        public int cases;
+        public List<Result> results = new List<Result>();
+        public List<Case> corpus = new List<Case>();
+        public List<string> notes = new List<string>();
+    }
+
+    // ------------------------------------------------------------- entry
+
+    [MenuItem("FrontRooms/Office/Dress perf harness")]
+    public static void RunMenu() => Run(Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "dress-perf.json"), "menu", 5, null, false);
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string Arg(string key, string fallback)
+        {
+            for (var i = 0; i < args.Length - 1; i++) if (args[i] == key) return args[i + 1];
+            return fallback;
+        }
+        var outPath = Arg("-dressOut", Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "dress-perf.json"));
+        var label = Arg("-dressLabel", Path.GetFileNameWithoutExtension(outPath));
+        var reps = int.Parse(Arg("-dressReps", "5"), CultureInfo.InvariantCulture);
+        var dump = Arg("-dressDump", null);
+        var quick = Array.IndexOf(args, "-dressQuick") >= 0;
+        prewarmFlag = Array.IndexOf(args, "-dressPrewarm") >= 0;
+        warmUpFlag = Array.IndexOf(args, "-dressWarmUp") >= 0;
+        coldStepFlag = Array.IndexOf(args, "-dressColdStep") >= 0;
+        coldOnlyFlag = Array.IndexOf(args, "-dressColdOnly") >= 0;
+        ReadCorpusArgs();
+        Run(outPath, label, reps, dump, quick);
+    }
+
+    // ------------------------------------------------------------ corpus
+
+    static bool fullCorpus = true;
+    static HashSet<string> onlyIds;
+
+    static string CmdArg(string key, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == key) return args[i + 1];
+        return fallback;
+    }
+
+    static void ReadCorpusArgs()
+    {
+        fullCorpus = CmdArg("-dressCorpus", "full") != "core";
+        var ids = CmdArg("-dressIds", null);
+        onlyIds = string.IsNullOrEmpty(ids) ? null : new HashSet<string>(ids.Split(','));
+    }
+
+    /// <summary>The cases every batch runs: map captures, synthetic rooms and, with the full corpus, the edge cases.</summary>
+    static List<Case> Corpus(bool quick, List<string> notes)
+    {
+        var cases = new List<Case>();
+        cases.AddRange(CaptureMap(20388, new GridCoord(16, 10), "map20388", notes));
+        if (!quick)
+        {
+            cases.AddRange(CaptureMap(2554, null, "map2554", notes));
+            cases.AddRange(CaptureMap(20261001, null, "map20261001", notes));
+            cases.AddRange(CaptureMap(777, new GridCoord(3, -2), "map777", notes));
+        }
+        if (fullCorpus && !quick)
+        {
+            cases.AddRange(CaptureMap(4242, null, "map4242", notes));
+            cases.AddRange(CaptureMap(99, null, "map99", notes));
+            cases.AddRange(CaptureMap(31337, null, "map31337", notes));
+            cases.AddRange(CaptureMap(20388, null, "map20388spawn", notes));
+        }
+        cases.AddRange(Synthetic(quick));
+        if (fullCorpus && !quick)
+        {
+            cases.AddRange(LookdevAndStream());
+            cases.AddRange(Extra());
+        }
+        if (onlyIds != null) cases = cases.FindAll(c => onlyIds.Contains(c.id));
+        // Ids must be unique (results are matched by id across runs).
+        var seen = new Dictionary<string, int>();
+        foreach (var c in cases)
+        {
+            if (seen.TryGetValue(c.id, out var n)) { seen[c.id] = n + 1; c.id += "~" + (n + 1); }
+            else seen[c.id] = 0;
+        }
+        foreach (var c in cases) c.inputHash = InputHash(c);
+        notes.Add("corpus: " + cases.Count + " cases (" + (fullCorpus ? "full" : "core") + (quick ? ", quick" : "") + (onlyIds != null ? ", id filter" : "") + ")");
+        return cases;
+    }
+
+    /// <summary>
+    /// Profiling pass (needs the temporary FrontRoomsDressProf sections compiled in):
+    /// per case, one warm-up call, then 3 calls with the section clocks on.
+    /// -executeMethod FrontRoomsDressPerfTest.RunProfileBatch -dressOut profile.json
+    /// </summary>
+    public static void RunProfileBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string outPath = null;
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-dressOut") outPath = args[i + 1];
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var prof = typeof(FrontRoomsOfficeKit).Assembly.GetType("FrontRoomsDressProf");
+        if (prof == null) throw new Exception("FrontRoomsDressProf is not compiled in");
+        var ms = (Dictionary<string, double>)prof.GetField("ms").GetValue(null);
+        var count = (Dictionary<string, long>)prof.GetField("count").GetValue(null);
+        var reset = prof.GetMethod("Reset");
+        var maxField = prof.GetField("max");
+        var mx = maxField != null ? (Dictionary<string, double>)maxField.GetValue(null) : new Dictionary<string, double>();
+        var notes = new List<string>();
+        var cases = new List<Case>();
+        cases.AddRange(CaptureMap(20388, new GridCoord(16, 10), "map20388", notes));
+        cases.AddRange(CaptureMap(777, new GridCoord(3, -2), "map777", notes));
+        cases.AddRange(Synthetic(false));
+        var sb = new StringBuilder("{\n \"cases\": [\n");
+        var first = true;
+        foreach (var c in cases)
+        {
+            var warm = NewParent(c);
+            Invoke(c, warm);
+            Object.DestroyImmediate(warm.gameObject);
+            reset.Invoke(null, null);
+            double total = 0;
+            const int n = 3;
+            for (var k = 0; k < n; k++)
+            {
+                GC.Collect();
+                var parent = NewParent(c);
+                var watch = Stopwatch.StartNew();
+                Invoke(c, parent);
+                total += watch.Elapsed.TotalMilliseconds;
+                Object.DestroyImmediate(parent.gameObject);
+            }
+            if (!first) sb.Append(",\n");
+            first = false;
+            sb.Append("  {\"id\": \"").Append(c.id).Append("\", \"kind\": \"").Append(c.kind).Append("\", \"totalMs\": ").Append((total / n).ToString("0.000", CultureInfo.InvariantCulture)).Append(", \"sections\": {");
+            var keys = new List<string>(ms.Keys);
+            foreach (var k in count.Keys) if (!keys.Contains(k)) keys.Add(k);
+            keys.Sort(StringComparer.Ordinal);
+            for (var i = 0; i < keys.Count; i++)
+            {
+                var k = keys[i];
+                ms.TryGetValue(k, out var v);
+                count.TryGetValue(k, out var cnt);
+                mx.TryGetValue(k, out var vmax);
+                sb.Append(i > 0 ? ", " : "").Append('"').Append(k).Append("\": [").Append((v / n).ToString("0.0000", CultureInfo.InvariantCulture)).Append(", ").Append((cnt / (double)n).ToString("0.##", CultureInfo.InvariantCulture)).Append(", ").Append(vmax.ToString("0.0000", CultureInfo.InvariantCulture)).Append(']');
+            }
+            sb.Append("}}");
+        }
+        sb.Append("\n ]\n}\n");
+        File.WriteAllText(outPath, sb.ToString());
+        Debug.Log("[DressPerf] profile: " + cases.Count + " cases → " + outPath);
+    }
+
+    // ------------------------------------------------------------ A/B
+
+    [Serializable]
+    public class AbResult
+    {
+        public string id, kind, source;
+        // Rounded, exact-bits, and exact-bits with mesh/material instance ids (same process, so ids compare).
+        public bool sameHash, sameExact, sameWithIds;
+        public double[] origMs, newMs;
+        public double origMedianMs, newMedianMs, origMinMs, newMinMs, origMaxMs, newMaxMs;
+        public List<StepDetail> steps = new List<StepDetail>();
+    }
+
+    [Serializable]
+    public class StepDetail
+    {
+        public float budgetMs;
+        public int steps, overBudget2x, overBudgetHalfMs, gcSteps;
+        public double maxStepMs, maxStepNoGcMs, p95StepMs, totalMs;
+        public double maxSolveUnitMs, maxCreateUnitMs;
+        public bool hashMatch;
+    }
+
+    [Serializable]
+    public class AbReport
+    {
+        public string date, codeOptimization;
+        public int reps;
+        public List<AbResult> results = new List<AbResult>();
+        public List<string> notes = new List<string>();
+    }
+
+    /// <summary>
+    /// Same-process A/B (machine noise hits both sides alike): the original
+    /// dressers, compiled as renamed copies (FrontRoomsOfficeKitOrig,
+    /// FrontRoomsFurniturePileOrig, FrontRoomsKitLibraryOrig), against the
+    /// current ones, alternating call by call on every case, plus the
+    /// time-sliced jobs with per-step times.
+    /// -executeMethod FrontRoomsDressPerfTest.RunAbBatch -dressOut ab.json [-dressReps 7]
+    /// </summary>
+    public static void RunAbBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string outPath = null;
+        var reps = 7;
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "-dressOut") outPath = args[i + 1];
+            if (args[i] == "-dressReps") reps = int.Parse(args[i + 1], CultureInfo.InvariantCulture);
+        }
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var asm = typeof(FrontRoomsDressPerfTest).Assembly;
+        var officeOrig = asm.GetType("FrontRoomsOfficeKitOrig");
+        var pileOrig = asm.GetType("FrontRoomsFurniturePileOrig");
+        if (officeOrig == null || pileOrig == null) throw new Exception("the *Orig copies are not compiled in");
+        var f = BindingFlags.Public | BindingFlags.Static;
+        var oMap = officeOrig.GetMethod("Dress", f, null, new[] { typeof(Transform), typeof(Rect), typeof(float), typeof(int), typeof(Rect[]), typeof(Rect[]) }, null);
+        var oCols = officeOrig.GetMethod("Dress", f, null, new[] { typeof(Transform), typeof(Rect), typeof(float), typeof(int), typeof(Rect[]) }, null);
+        var pBuild = pileOrig.GetMethod("Build", f);
+        var tableauOrig = pileOrig.GetNestedType("Tableau");
+        var pForced = pileOrig.GetMethod("BuildPile", f);
+        void InvokeOrig(Case c, Transform parent)
+        {
+            switch (c.kind)
+            {
+                case "office": oMap.Invoke(null, new object[] { parent, c.floor, c.ceiling, c.seed, c.clear, c.obstacles }); break;
+                case "officeCols": oCols.Invoke(null, new object[] { parent, c.floor, c.ceiling, c.seed, c.clear }); break;
+                case "pile": pBuild.Invoke(null, new object[] { parent, c.center, c.radius, c.ceiling, c.seed }); break;
+                case "pileForced": pForced.Invoke(null, new object[] { parent, c.center, c.radius, c.ceiling, c.seed, Enum.ToObject(tableauOrig, c.tableau) }); break;
+            }
+        }
+        StepApi.Resolve();
+        var report = new AbReport
+        {
+            date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            codeOptimization = UnityEditor.Compilation.CompilationPipeline.codeOptimization.ToString(),
+            reps = reps,
+        };
+        ReadCorpusArgs();
+        var cases = Corpus(false, report.notes);
+        // Warm both sides once (loads, JIT).
+        foreach (var c in cases)
+        {
+            var p0 = NewParent(c); InvokeOrig(c, p0); Object.DestroyImmediate(p0.gameObject);
+            var p1 = NewParent(c); Invoke(c, p1); Object.DestroyImmediate(p1.gameObject);
+        }
+        foreach (var c in cases)
+        {
+            var r = new AbResult { id = c.id, kind = c.kind, source = c.source, origMs = new double[reps], newMs = new double[reps] };
+            string ho = null, hxo = null, hn = null, hxn = null, hio = null, hin = null;
+            for (var i = 0; i < reps; i++)
+            {
+                for (var side = 0; side < 2; side++)
+                {
+                    // Alternate which side goes first.
+                    var orig = (side == 0) == (i % 2 == 0);
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    var parent = NewParent(c);
+                    var watch = Stopwatch.StartNew();
+                    if (orig) InvokeOrig(c, parent); else Invoke(c, parent);
+                    watch.Stop();
+                    if (orig) r.origMs[i] = watch.Elapsed.TotalMilliseconds; else r.newMs[i] = watch.Elapsed.TotalMilliseconds;
+                    if (i == 0)
+                    {
+                        Canonical(parent, out var h, out var hx, out _, out _);
+                        var hi = WithIds(parent);
+                        if (orig) { ho = h; hxo = hx; hio = hi; } else { hn = h; hxn = hx; hin = hi; }
+                    }
+                    Object.DestroyImmediate(parent.gameObject);
+                }
+            }
+            r.sameHash = ho == hn;
+            r.sameExact = hxo == hxn;
+            r.sameWithIds = hio == hin;
+            r.origMedianMs = Median(r.origMs); r.newMedianMs = Median(r.newMs);
+            r.origMinMs = Min(r.origMs); r.newMinMs = Min(r.newMs);
+            r.origMaxMs = Max(r.origMs); r.newMaxMs = Max(r.newMs);
+            if (StepApi.available)
+                foreach (var budget in new[] { 3f, 1f, .5f })
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    var parent = NewParent(c);
+                    var d = new StepDetail { budgetMs = budget };
+                    var job = StepApi.Begin(c, parent);
+                    var times = new List<double>();
+                    var total = Stopwatch.StartNew();
+                    while (true)
+                    {
+                        var gc = GC.CollectionCount(0);
+                        var step = Stopwatch.StartNew();
+                        var done = StepApi.Step(job, budget);
+                        var ms = step.Elapsed.TotalMilliseconds;
+                        var hadGc = GC.CollectionCount(0) != gc;
+                        times.Add(ms);
+                        if (hadGc) d.gcSteps++;
+                        else d.maxStepNoGcMs = Math.Max(d.maxStepNoGcMs, ms);
+                        if (ms > 2 * budget) d.overBudget2x++;
+                        if (ms > budget + .5) d.overBudgetHalfMs++;
+                        if (done || times.Count > 100000) break;
+                    }
+                    d.totalMs = total.Elapsed.TotalMilliseconds;
+                    UnitMaxima(job, out d.maxSolveUnitMs, out d.maxCreateUnitMs);
+                    d.steps = times.Count;
+                    times.Sort();
+                    d.maxStepMs = times[times.Count - 1];
+                    d.p95StepMs = times[(int)Math.Floor((times.Count - 1) * .95)];
+                    Canonical(parent, out var hs, out var hxs, out _, out _);
+                    // Against the original's build (ids included), not only the new synchronous one.
+                    d.hashMatch = hs == hn && hxs == hxn && WithIds(parent) == hio;
+                    r.steps.Add(d);
+                    Object.DestroyImmediate(parent.gameObject);
+                }
+            report.results.Add(r);
+        }
+        File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
+        Debug.Log("[DressPerf] A/B: " + report.results.Count + " cases → " + outPath);
+    }
+
+    // ------------------------------------------------------- step granularity
+
+    [Serializable]
+    public class StepGrain
+    {
+        public string id, kind;
+        public float budgetMs;
+        public int steps;
+        // Per repeat, unfiltered: the room's worst step, its worst step without a GC, longest solver unit, longest create unit.
+        public double[] worstStepMs, worstNoGcMs, solveUnitMs, createUnitMs;
+        public double minWorstStepMs, medianWorstStepMs, maxWorstStepMs;
+        public double minSolveUnitMs, medianSolveUnitMs, minCreateUnitMs, medianCreateUnitMs;
+        // Over every step of every repeat.
+        public int totalSteps, gcSteps, overBudgetHalfMs, overBudget2x;
+        public double p50StepMs, p95StepMs, p99StepMs;
+        public bool hashMatch;
+    }
+
+    [Serializable]
+    public class StepGrainReport
+    {
+        public string date, codeOptimization;
+        public int repeats;
+        public float[] budgets;
+        public List<StepGrain> results = new List<StepGrain>();
+        public List<string> notes = new List<string>();
+    }
+
+    /// <summary>
+    /// How finely the time-sliced jobs cut the work: every case built through
+    /// Step at each budget (-dressBudgets, default 3,1,0.5), several times
+    /// (-dressReps, default 5). Nothing is filtered: every repeat's worst step
+    /// is kept (with and without the steps that saw a GC), with the min /
+    /// median / max over repeats, percentiles over all steps, and the steps
+    /// that ran more than 0.5 ms or 2x over the budget. A shared machine stops
+    /// the process now and then (a ~10 ms scheduler slice), so the max over
+    /// repeats includes the machine's own interruptions and the min is the
+    /// room's own cost.
+    /// -executeMethod FrontRoomsDressPerfTest.RunStepBatch -dressOut steps.json [-dressReps 5] [-dressBudgets 3,1,0.5] [-dressCorpus full|core] [-dressIds a,b]
+    /// </summary>
+    public static void RunStepBatch()
+    {
+        var outPath = CmdArg("-dressOut", null);
+        var reps = int.Parse(CmdArg("-dressReps", "5"), CultureInfo.InvariantCulture);
+        var budgetText = CmdArg("-dressBudgets", "3,1,0.5").Split(',');
+        var budgets = new float[budgetText.Length];
+        for (var i = 0; i < budgets.Length; i++) budgets[i] = float.Parse(budgetText[i], CultureInfo.InvariantCulture);
+        ReadCorpusArgs();
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        if (!StepApi.Resolve()) throw new Exception("no time-sliced API");
+        var report = new StepGrainReport
+        {
+            date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            codeOptimization = UnityEditor.Compilation.CompilationPipeline.codeOptimization.ToString(),
+            repeats = reps,
+            budgets = budgets,
+        };
+        var cases = Corpus(false, report.notes);
+        foreach (var c in cases)
+        {
+            // Warm, and the synchronous result to compare with.
+            var p0 = NewParent(c);
+            Invoke(c, p0);
+            Canonical(p0, out var h, out var hx, out _, out _);
+            Object.DestroyImmediate(p0.gameObject);
+            foreach (var budget in budgets)
+            {
+                var g = new StepGrain
+                {
+                    id = c.id, kind = c.kind, budgetMs = budget, hashMatch = true,
+                    worstStepMs = new double[reps], worstNoGcMs = new double[reps], solveUnitMs = new double[reps], createUnitMs = new double[reps],
+                };
+                var all = new List<double>();
+                for (var k = 0; k < reps; k++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    var parent = NewParent(c);
+                    var run = new StepRun { budgetMs = budget };
+                    StepLoop(StepApi.Begin(c, parent), budget, run, all);
+                    Canonical(parent, out var hs, out var hxs, out _, out _);
+                    g.hashMatch &= hs == h && hxs == hx;
+                    Object.DestroyImmediate(parent.gameObject);
+                    g.steps = run.steps;
+                    g.gcSteps += run.gcSteps;
+                    g.worstStepMs[k] = run.maxStepMs;
+                    g.worstNoGcMs[k] = run.maxStepNoGcMs;
+                    g.solveUnitMs[k] = run.maxSolveUnitMs;
+                    g.createUnitMs[k] = run.maxCreateUnitMs;
+                }
+                g.minWorstStepMs = Min(g.worstStepMs);
+                g.medianWorstStepMs = Median(g.worstStepMs);
+                g.maxWorstStepMs = Max(g.worstStepMs);
+                g.minSolveUnitMs = Min(g.solveUnitMs);
+                g.medianSolveUnitMs = Median(g.solveUnitMs);
+                g.minCreateUnitMs = Min(g.createUnitMs);
+                g.medianCreateUnitMs = Median(g.createUnitMs);
+                all.Sort();
+                g.totalSteps = all.Count;
+                foreach (var ms in all)
+                {
+                    if (ms > budget + .5) g.overBudgetHalfMs++;
+                    if (ms > 2 * budget) g.overBudget2x++;
+                }
+                g.p50StepMs = Pct(all, .5);
+                g.p95StepMs = Pct(all, .95);
+                g.p99StepMs = Pct(all, .99);
+                report.results.Add(g);
+            }
+        }
+        File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
+        Debug.Log("[DressPerf] steps: " + cases.Count + " cases → " + outPath);
+    }
+
+    static double Pct(List<double> sorted, double p) => sorted.Count == 0 ? 0 : sorted[(int)Math.Floor((sorted.Count - 1) * p)];
+    static double Max(double[] v) { var m = double.MinValue; foreach (var x in v) m = Math.Max(m, x); return m; }
+
+    static double Median(double[] v) { var s = (double[])v.Clone(); Array.Sort(s); return s[s.Length / 2]; }
+    static double Min(double[] v) { var m = double.MaxValue; foreach (var x in v) m = Math.Min(m, x); return m; }
+
+    static bool prewarmFlag, warmUpFlag, coldStepFlag, coldOnlyFlag;
+
+    static void Run(string outPath, string label, int reps, string dumpDir, bool quick)
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var report = new Report
+        {
+            label = label,
+            unity = Application.unityVersion,
+            date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            reps = reps,
+            codeHash = CodeHash(),
+        };
+        report.hasStepApi = StepApi.Resolve();
+        report.notes.Add("editor code optimization: " + UnityEditor.Compilation.CompilationPipeline.codeOptimization + " (Debug = unoptimised JIT, the editor's default)");
+        if (dumpDir != null) Directory.CreateDirectory(dumpDir);
+
+        // 1. Cold: the very first office and pile build in this process, before any kit is loaded.
+        var coldOffice = OfficeCase("cold-office-map-6x5", 6, 5, 4242, withColumns: true);
+        var coldPile = PileCase("cold-pile-r3.2-c2.9", 3.2f, 2.9f, 4242, -1);
+        report.coldFirstOfficeCase = coldOffice.id;
+        report.coldFirstPileCase = coldPile.id;
+        if (prewarmFlag)
+        {
+            // What the game does in Awake (FrontRoomsMapWorld.Prewarm), plus the kit library's own Prewarm when it exists.
+            var watch = Stopwatch.StartNew();
+            FrontRoomsMapWorld.Prewarm();
+            typeof(FrontRoomsKitLibrary).GetMethod("Prewarm", BindingFlags.Public | BindingFlags.Static)?.Invoke(null, null);
+            report.prewarmMs = watch.Elapsed.TotalMilliseconds;
+            report.prewarmed = true;
+        }
+        if (warmUpFlag)
+        {
+            // What the map's Prewarm should add: kit loads + one run of the dressers' code (FrontRoomsDressJob.WarmUp).
+            var warmUp = typeof(FrontRoomsKitLibrary).Assembly.GetType("FrontRoomsDressJob")?.GetMethod("WarmUp", BindingFlags.Public | BindingFlags.Static);
+            if (warmUp != null)
+            {
+                var watch = Stopwatch.StartNew();
+                warmUp.Invoke(null, null);
+                report.warmUpMs = watch.Elapsed.TotalMilliseconds;
+                report.warmedUp = true;
+            }
+            else report.notes.Add("-dressWarmUp: FrontRoomsDressJob.WarmUp not found");
+        }
+        if (coldStepFlag && report.hasStepApi)
+        {
+            report.coldStepped = true;
+            var o = StepOnce(coldOffice, 3f);
+            report.coldFirstOfficeMs = o.totalMs; report.coldOfficeSteps = o.steps; report.coldOfficeMaxStepMs = o.maxStepMs;
+            var p = StepOnce(coldPile, 3f);
+            report.coldFirstPileMs = p.totalMs; report.coldPileSteps = p.steps; report.coldPileMaxStepMs = p.maxStepMs;
+        }
+        else
+        {
+            report.coldFirstOfficeMs = TimeOnce(coldOffice, out _);
+            report.coldFirstPileMs = TimeOnce(coldPile, out _);
+        }
+
+        if (coldOnlyFlag)
+        {
+            File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
+            Debug.Log("[DressPerf] " + label + " (cold only): office " + report.coldFirstOfficeMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms (worst step " + report.coldOfficeMaxStepMs.ToString("0.0", CultureInfo.InvariantCulture) + "), pile " + report.coldFirstPileMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms (worst step " + report.coldPileMaxStepMs.ToString("0.0", CultureInfo.InvariantCulture) + "), prewarm " + report.prewarmMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms, warm-up " + report.warmUpMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms");
+            return;
+        }
+
+        // 2. The corpus: real map rooms first, then synthetic sizes and seeds, then the edge cases.
+        var cases = Corpus(quick, report.notes);
+        report.corpus = cases;
+        report.cases = cases.Count;
+
+        var sw = Stopwatch.StartNew();
+        foreach (var c in cases)
+        {
+            try { report.results.Add(Measure(c, reps, dumpDir)); }
+            catch (Exception e)
+            {
+                report.notes.Add("case " + c.id + " threw " + e.GetType().Name + ": " + e.Message);
+                Debug.LogError("[DressPerf] " + c.id + ": " + e);
+            }
+        }
+        report.notes.Add("measured " + cases.Count + " cases in " + sw.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+        File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
+        Debug.Log("[DressPerf] " + label + ": " + report.results.Count + " cases → " + outPath
+            + " · cold office " + report.coldFirstOfficeMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms, cold pile " + report.coldFirstPileMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms"
+            + " · step API " + report.hasStepApi);
+    }
+
+    // ------------------------------------------------------------- measure
+
+    static Result Measure(Case c, int reps, string dumpDir)
+    {
+        var r = new Result { id = c.id, kind = c.kind, source = c.source, inputHash = c.inputHash };
+
+        // Cache-cleared: kit models stay loaded in the editor, but sidecars, material sets and the pile library are rebuilt.
+        ClearKitCaches();
+        r.cacheClearedMs = TimeOnce(c, out var clearedHash);
+
+        var times = new double[reps];
+        string firstHash = null, firstExact = null;
+        for (var i = 0; i < reps; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            var parent = NewParent(c);
+            var before = GC.GetTotalMemory(false);
+            var watch = Stopwatch.StartNew();
+            Invoke(c, parent);
+            watch.Stop();
+            if (i == 0) r.allocBytes = GC.GetTotalMemory(false) - before;
+            times[i] = watch.Elapsed.TotalMilliseconds;
+            if (i == 0)
+            {
+                Canonical(parent, out firstHash, out firstExact, out var text, out var stats);
+                r.hash = firstHash;
+                r.exactHash = firstExact;
+                r.transforms = stats.transforms;
+                r.renderers = stats.renderers;
+                r.colliders = stats.colliders;
+                if (dumpDir != null) File.WriteAllText(Path.Combine(dumpDir, Safe(c.id) + ".txt"), text);
+                // Spawn replay: the same kit instances, spawned again (twice, keep the faster).
+                var kits = KitInstances(parent);
+                r.kitInstances = kits.Count;
+                r.spawnReplayMs = Math.Min(Replay(kits, true), Replay(kits, true));
+                r.instantiateOnlyMs = Math.Min(Replay(kits, false), Replay(kits, false));
+            }
+            Object.DestroyImmediate(parent.gameObject);
+        }
+        r.repeatHashMatch = clearedHash == firstHash;
+        r.warmMs = times;
+        var sorted = (double[])times.Clone();
+        Array.Sort(sorted);
+        r.warmMinMs = sorted[0];
+        r.warmMaxMs = sorted[sorted.Length - 1];
+        r.warmMedianMs = sorted[sorted.Length / 2];
+        r.solverEstimateMs = Math.Max(0, r.warmMedianMs - r.spawnReplayMs);
+
+        if (StepApi.available)
+            // 0 = one unit per step (the finest split), 100 = all at once.
+            foreach (var budget in new[] { 3f, 1f, .5f, 0f, 100f })
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                var parent = NewParent(c);
+                var run = new StepRun { budgetMs = budget };
+                var job = StepApi.Begin(c, parent);
+                if (job != null)
+                {
+                    StepLoop(job, budget, run);
+                    Canonical(parent, out var h, out var hx, out var text, out _);
+                    run.hashMatch = h == firstHash && hx == firstExact;
+                    if (!run.hashMatch && dumpDir != null) File.WriteAllText(Path.Combine(dumpDir, Safe(c.id) + ".step" + budget + ".txt"), text);
+                }
+                r.stepRuns.Add(run);
+                Object.DestroyImmediate(parent.gameObject);
+            }
+        return r;
+    }
+
+    /// <summary>Step a job to the end; per-step times, with steps that saw a GC counted apart.</summary>
+    static void StepLoop(object job, float budget, StepRun run, List<double> sink = null)
+    {
+        var times = new List<double>();
+        var total = Stopwatch.StartNew();
+        while (true)
+        {
+            var gc = GC.CollectionCount(0);
+            var step = Stopwatch.StartNew();
+            var done = StepApi.Step(job, budget);
+            var ms = step.Elapsed.TotalMilliseconds;
+            times.Add(ms);
+            if (GC.CollectionCount(0) != gc) run.gcSteps++;
+            else run.maxStepNoGcMs = Math.Max(run.maxStepNoGcMs, ms);
+            if (done || times.Count > 100000) break;
+        }
+        run.totalMs = total.Elapsed.TotalMilliseconds;
+        UnitMaxima(job, out run.maxSolveUnitMs, out run.maxCreateUnitMs);
+        sink?.AddRange(times);
+        run.steps = times.Count;
+        times.Sort();
+        run.maxStepMs = times[times.Count - 1];
+        run.p95StepMs = times[(int)Math.Floor((times.Count - 1) * .95)];
+    }
+
+    static void UnitMaxima(object job, out double solve, out double create)
+    {
+        var t = job.GetType();
+        solve = t.GetProperty("MaxSolveUnitMs")?.GetValue(job) is double su ? su : 0;
+        create = t.GetProperty("MaxCreateUnitMs")?.GetValue(job) is double cu ? cu : 0;
+    }
+
+    static StepRun StepOnce(Case c, float budget)
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        var parent = NewParent(c);
+        var run = new StepRun { budgetMs = budget };
+        StepLoop(StepApi.Begin(c, parent), budget, run);
+        Object.DestroyImmediate(parent.gameObject);
+        return run;
+    }
+
+    static double TimeOnce(Case c, out string hash)
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        var parent = NewParent(c);
+        var watch = Stopwatch.StartNew();
+        Invoke(c, parent);
+        watch.Stop();
+        Canonical(parent, out hash, out _, out _, out _);
+        Object.DestroyImmediate(parent.gameObject);
+        return watch.Elapsed.TotalMilliseconds;
+    }
+
+    static Transform NewParent(Case c)
+    {
+        var go = new GameObject("DRESS PERF / " + c.id) { hideFlags = HideFlags.DontSave };
+        return go.transform;
+    }
+
+    static void Invoke(Case c, Transform parent)
+    {
+        switch (c.kind)
+        {
+            case "office": FrontRoomsOfficeKit.Dress(parent, c.floor, c.ceiling, c.seed, c.clear, c.obstacles); break;
+            case "officeCols": FrontRoomsOfficeKit.Dress(parent, c.floor, c.ceiling, c.seed, c.clear); break;
+            case "pile": FrontRoomsFurniturePile.Build(parent, c.center, c.radius, c.ceiling, c.seed); break;
+            case "pileForced": FrontRoomsFurniturePile.BuildPile(parent, c.center, c.radius, c.ceiling, c.seed, (FrontRoomsFurniturePile.Tableau)c.tableau); break;
+        }
+    }
+
+    static void ClearKitCaches()
+    {
+        FrontRoomsKitLibrary.ClearCache();
+        var lib = typeof(FrontRoomsFurniturePile).GetField("library", BindingFlags.NonPublic | BindingFlags.Static);
+        lib?.SetValue(null, null);
+        // Any other static caches added by an optimisation register a reset here.
+        var reset = typeof(FrontRoomsFurniturePile).GetMethod("ResetCachesForTools", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        reset?.Invoke(null, null);
+    }
+
+    // ---------------------------------------------------- time-sliced API
+
+    static class StepApi
+    {
+        public static bool available;
+        static MethodInfo officeMap, officeCols, pile, pileForced;
+
+        public static bool Resolve()
+        {
+            var f = BindingFlags.Public | BindingFlags.Static;
+            officeMap = typeof(FrontRoomsOfficeKit).GetMethod("BeginDress", f, null, new[] { typeof(Transform), typeof(Rect), typeof(float), typeof(int), typeof(Rect[]), typeof(Rect[]) }, null);
+            officeCols = typeof(FrontRoomsOfficeKit).GetMethod("BeginDress", f, null, new[] { typeof(Transform), typeof(Rect), typeof(float), typeof(int), typeof(Rect[]) }, null);
+            pile = typeof(FrontRoomsFurniturePile).GetMethod("BeginBuild", f, null, new[] { typeof(Transform), typeof(Vector3), typeof(float), typeof(float), typeof(int) }, null);
+            pileForced = typeof(FrontRoomsFurniturePile).GetMethod("BeginBuildPile", f, null, new[] { typeof(Transform), typeof(Vector3), typeof(float), typeof(float), typeof(int), typeof(FrontRoomsFurniturePile.Tableau?) }, null);
+            available = officeMap != null && officeCols != null && pile != null && pileForced != null;
+            return available;
+        }
+
+        public static object Begin(Case c, Transform parent)
+        {
+            switch (c.kind)
+            {
+                case "office": return officeMap.Invoke(null, new object[] { parent, c.floor, c.ceiling, c.seed, c.clear, c.obstacles });
+                case "officeCols": return officeCols.Invoke(null, new object[] { parent, c.floor, c.ceiling, c.seed, c.clear });
+                case "pile": return pile.Invoke(null, new object[] { parent, c.center, c.radius, c.ceiling, c.seed });
+                case "pileForced": return pileForced.Invoke(null, new object[] { parent, c.center, c.radius, c.ceiling, c.seed, (FrontRoomsFurniturePile.Tableau?)(FrontRoomsFurniturePile.Tableau)c.tableau });
+            }
+            return null;
+        }
+
+        static readonly Dictionary<Type, MethodInfo> steps = new Dictionary<Type, MethodInfo>();
+
+        public static bool Step(object job, float budget)
+        {
+            var t = job.GetType();
+            if (!steps.TryGetValue(t, out var m)) steps[t] = m = t.GetMethod("Step", new[] { typeof(float) });
+            return (bool)m.Invoke(job, new object[] { budget });
+        }
+    }
+
+    // ------------------------------------------------------- hash / dump
+
+    struct Stats { public int transforms, renderers, colliders; }
+
+    static void Canonical(Transform parent, out string hash, out string exactHash, out string text, out Stats stats)
+    {
+        var rounded = new StringBuilder();
+        var exact = new StringBuilder();
+        stats = new Stats();
+        for (var i = 0; i < parent.childCount; i++) Dump(parent.GetChild(i), 0, rounded, ref stats);
+        for (var i = 0; i < parent.childCount; i++) Strict(parent.GetChild(i), 0, exact, false);
+        text = rounded.ToString();
+        hash = Sha(text);
+        exactHash = Sha(exact.ToString());
+    }
+
+    /// <summary>The strict dump with mesh and material instance ids: only comparable inside one process (the A/B).</summary>
+    static string WithIds(Transform parent)
+    {
+        var sb = new StringBuilder();
+        for (var i = 0; i < parent.childCount; i++) Strict(parent.GetChild(i), 0, sb, true);
+        return Sha(sb.ToString());
+    }
+
+    /// <summary>Readable dump (positions rounded to 1e-4): the -dressDump files and the rounded hash.</summary>
+    static void Dump(Transform t, int depth, StringBuilder rounded, ref Stats stats)
+    {
+        stats.transforms++;
+        var head = new string(' ', depth) + t.name + (t.gameObject.activeSelf ? "" : " [inactive]");
+        rounded.Append(head).Append(" p").Append(R(t.localPosition)).Append(" r").Append(R(t.localRotation)).Append(" s").Append(R(t.localScale));
+        foreach (var comp in t.GetComponents<Component>())
+        {
+            if (comp is Transform) continue;
+            var line = new StringBuilder(" | ").Append(comp == null ? "missing" : comp.GetType().Name);
+            switch (comp)
+            {
+                case MeshFilter mf:
+                    line.Append(' ').Append(mf.sharedMesh != null ? mf.sharedMesh.name : "null");
+                    break;
+                case MeshRenderer mr:
+                    stats.renderers++;
+                    line.Append(' ').Append(mr.enabled ? "on" : "off").Append(' ').Append(mr.shadowCastingMode).Append(mr.receiveShadows ? " recv" : " norecv").Append(" [");
+                    foreach (var m in mr.sharedMaterials) line.Append(m != null ? m.name : "null").Append(',');
+                    line.Append(']');
+                    break;
+                case BoxCollider bc:
+                    stats.colliders++;
+                    line.Append(' ').Append(bc.enabled ? "on" : "off").Append(bc.isTrigger ? " trigger" : "").Append(" c").Append(R(bc.center)).Append(" z").Append(R(bc.size));
+                    break;
+                case Collider col:
+                    stats.colliders++;
+                    line.Append(' ').Append(col.enabled ? "on" : "off");
+                    break;
+                case LODGroup lod:
+                    line.Append(" lods ").Append(lod.lodCount);
+                    break;
+            }
+            rounded.Append(line);
+        }
+        rounded.Append('\n');
+        for (var i = 0; i < t.childCount; i++) Dump(t.GetChild(i), depth + 1, rounded, ref stats);
+    }
+
+    /// <summary>
+    /// Exact dump: float bits of every transform, active / layer / tag / hide
+    /// and static flags, every renderer setting, materials, colliders (with
+    /// physic material) and LOD groups (sizes, transition heights, renderers).
+    /// With <paramref name="ids"/>, meshes and materials also carry their
+    /// instance id, so a same-named copy would show.
+    /// </summary>
+    static void Strict(Transform t, int depth, StringBuilder sb, bool ids)
+    {
+        var go = t.gameObject;
+        sb.Append(depth).Append(' ').Append(t.name).Append(" a").Append(go.activeSelf ? 1 : 0).Append(" l").Append(go.layer).Append(" t").Append(go.tag)
+          .Append(" h").Append((int)go.hideFlags).Append(" st").Append((int)GameObjectUtility.GetStaticEditorFlags(go))
+          .Append(" p").Append(X(t.localPosition)).Append(" r").Append(X(t.localRotation)).Append(" s").Append(X(t.localScale));
+        foreach (var comp in t.GetComponents<Component>())
+        {
+            if (comp is Transform) continue;
+            sb.Append(" |").Append(comp == null ? "null" : comp.GetType().Name);
+            switch (comp)
+            {
+                case MeshFilter mf:
+                    sb.Append(' ').Append(mf.sharedMesh != null ? mf.sharedMesh.name + (ids ? "#" + mf.sharedMesh.GetInstanceID() : "") : "null");
+                    break;
+                case Renderer r:
+                    sb.Append(' ').Append(r.enabled).Append(' ').Append(r.shadowCastingMode).Append(' ').Append(r.receiveShadows).Append(' ').Append(r.staticShadowCaster)
+                      .Append(' ').Append(r.lightProbeUsage).Append(' ').Append(r.reflectionProbeUsage).Append(' ').Append(r.motionVectorGenerationMode)
+                      .Append(' ').Append(r.allowOcclusionWhenDynamic).Append(' ').Append(r.renderingLayerMask).Append(" [");
+                    foreach (var m in r.sharedMaterials) sb.Append(m != null ? m.name + (ids ? "#" + m.GetInstanceID() : "") : "null").Append(',');
+                    sb.Append(']');
+                    break;
+                case BoxCollider bc:
+                    sb.Append(' ').Append(bc.enabled).Append(' ').Append(bc.isTrigger).Append(" c").Append(X(bc.center)).Append(" z").Append(X(bc.size)).Append(' ').Append(bc.sharedMaterial != null ? bc.sharedMaterial.name : "-");
+                    break;
+                case Collider col:
+                    sb.Append(' ').Append(col.enabled).Append(' ').Append(col.isTrigger);
+                    break;
+                case LODGroup lg:
+                    sb.Append(' ').Append(lg.enabled).Append(" n").Append(lg.lodCount).Append(" size").Append(B(lg.size)).Append(" ref").Append(X(lg.localReferencePoint)).Append(' ').Append(lg.fadeMode);
+                    foreach (var lod in lg.GetLODs())
+                    {
+                        sb.Append(" {").Append(B(lod.screenRelativeTransitionHeight));
+                        foreach (var rr in lod.renderers) sb.Append(',').Append(rr != null ? rr.name : "null");
+                        sb.Append('}');
+                    }
+                    break;
+            }
+        }
+        sb.Append('\n');
+        for (var i = 0; i < t.childCount; i++) Strict(t.GetChild(i), depth + 1, sb, ids);
+    }
+
+    static string R(Vector3 v) => "(" + Q(v.x) + "," + Q(v.y) + "," + Q(v.z) + ")";
+    static string R(Quaternion q) => "(" + Q(q.x) + "," + Q(q.y) + "," + Q(q.z) + "," + Q(q.w) + ")";
+    static string Q(float f) => ((long)Math.Round(f * 10000.0)).ToString(CultureInfo.InvariantCulture);
+    static string X(Vector3 v) => "(" + B(v.x) + "," + B(v.y) + "," + B(v.z) + ")";
+    static string X(Quaternion q) => "(" + B(q.x) + "," + B(q.y) + "," + B(q.z) + "," + B(q.w) + ")";
+    static string B(float f) => BitConverter.ToInt32(BitConverter.GetBytes(f), 0).ToString("x8");
+
+    static string Sha(string s)
+    {
+        using (var sha = SHA1.Create())
+        {
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(s));
+            var sb = new StringBuilder();
+            foreach (var b in bytes) sb.Append(b.ToString("x2"));
+            return sb.ToString();
+        }
+    }
+
+    static string Safe(string s) => Regex.Replace(s, "[^A-Za-z0-9_.-]", "_");
+
+    static string InputHash(Case c)
+    {
+        var sb = new StringBuilder(c.kind).Append('|').Append(c.seed).Append('|').Append(B(c.ceiling)).Append('|').Append(Rx(c.floor));
+        if (c.clear == null) sb.Append("|c-null"); else foreach (var r in c.clear) sb.Append("|c").Append(Rx(r));
+        if (c.obstacles == null) sb.Append("|o-null"); else foreach (var r in c.obstacles) sb.Append("|o").Append(Rx(r));
+        sb.Append('|').Append(X(c.center)).Append('|').Append(B(c.radius)).Append('|').Append(c.tableau);
+        return Sha(sb.ToString()).Substring(0, 16);
+    }
+
+    static string Rx(Rect r) => B(r.x) + "," + B(r.y) + "," + B(r.width) + "," + B(r.height);
+
+    static string CodeHash()
+    {
+        var sb = new StringBuilder();
+        foreach (var f in new[] { "FrontRoomsOfficeKit.cs", "FrontRoomsFurniturePile.cs", "FrontRoomsKitLibrary.cs" })
+        {
+            var p = Path.Combine(Application.dataPath, "Scripts", "Office", f);
+            if (File.Exists(p)) sb.Append(File.ReadAllText(p));
+        }
+        return Sha(sb.ToString()).Substring(0, 12);
+    }
+
+    // ------------------------------------------------------ spawn replay
+
+    struct Kit { public string asset, label; public Vector3 p, s; public Quaternion r; public bool colliders; }
+
+    static Dictionary<Mesh, string> meshToAsset;
+
+    static List<Kit> KitInstances(Transform parent)
+    {
+        if (meshToAsset == null)
+        {
+            meshToAsset = new Dictionary<Mesh, string>();
+            foreach (var name in FrontRoomsKitLibrary.AllNames())
+            {
+                var model = FrontRoomsKitLibrary.Model(name);
+                if (model == null) continue;
+                foreach (var mf in model.GetComponentsInChildren<MeshFilter>(true))
+                    if (mf.sharedMesh != null && !meshToAsset.ContainsKey(mf.sharedMesh)) meshToAsset[mf.sharedMesh] = name;
+            }
+        }
+        var list = new List<Kit>();
+        Walk(parent, list);
+        return list;
+    }
+
+    static void Walk(Transform t, List<Kit> list)
+    {
+        for (var i = 0; i < t.childCount; i++)
+        {
+            var c = t.GetChild(i);
+            var isKit = false;
+            if (c.GetComponent<LODGroup>() != null || c.GetComponent<MeshFilter>() != null)
+            {
+                var mf = c.GetComponentInChildren<MeshFilter>(true);
+                if (mf != null && mf.sharedMesh != null && meshToAsset.TryGetValue(mf.sharedMesh, out var asset))
+                {
+                    isKit = true;
+                    list.Add(new Kit { asset = asset, label = c.name, p = c.localPosition, r = c.localRotation, s = c.localScale, colliders = c.GetComponent<BoxCollider>() != null });
+                }
+            }
+            if (!isKit) Walk(c, list);
+        }
+    }
+
+    static double Replay(List<Kit> kits, bool full)
+    {
+        var scratch = new GameObject("DRESS PERF / replay") { hideFlags = HideFlags.DontSave }.transform;
+        GC.Collect();
+        var watch = Stopwatch.StartNew();
+        foreach (var k in kits)
+        {
+            if (full) FrontRoomsKitLibrary.Spawn(k.asset, scratch, k.p, k.r, k.s, k.colliders, k.label);
+            else
+            {
+                var go = Object.Instantiate(FrontRoomsKitLibrary.Model(k.asset), scratch, false);
+                go.name = k.label;
+                go.transform.localPosition = k.p;
+                go.transform.localRotation = k.r;
+            }
+        }
+        watch.Stop();
+        Object.DestroyImmediate(scratch.gameObject);
+        return watch.Elapsed.TotalMilliseconds;
+    }
+
+    // ------------------------------------------------------ map capture
+
+    static readonly List<Case> recorded = new List<Case>();
+    static string recordTag;
+    static int recordOrder;
+
+    static void RecordOffice(Transform parent, Rect floor, float ceiling, int seed, Rect[] clear, Rect[] obstacles)
+    {
+        recorded.Add(new Case
+        {
+            kind = "office", source = recordTag + " " + parent.name, floor = floor, ceiling = ceiling, seed = seed,
+            clear = clear != null ? (Rect[])clear.Clone() : new Rect[0], obstacles = obstacles != null ? (Rect[])obstacles.Clone() : new Rect[0],
+            id = recordTag + "#" + recordOrder++,
+        });
+    }
+
+    static void RecordPile(Transform parent, Vector3 center, float radius, float ceiling, int seed)
+    {
+        recorded.Add(new Case
+        {
+            kind = "pile", source = recordTag + " " + parent.name, center = center, radius = radius, ceiling = ceiling, seed = seed,
+            id = recordTag + "#" + recordOrder++,
+        });
+    }
+
+    static List<Case> CaptureMap(int seed, GridCoord? focus, string tag, List<string> notes)
+    {
+        var world = typeof(FrontRoomsMapWorld);
+        var flags = BindingFlags.NonPublic | BindingFlags.Static;
+        var resolved = world.GetField("dressersResolved", flags);
+        var office = world.GetField("officeDress", flags);
+        var officeOld = world.GetField("officeDressOld", flags);
+        var pile = world.GetField("pileBuild", flags);
+        // A map that steps the jobs (officeBegin / pileBegin) is sent through the recorders too: those stay null.
+        var officeBegin = world.GetField("officeBegin", flags);
+        var pileBegin = world.GetField("pileBegin", flags);
+        var hash = world.Assembly.GetType("FrontRooms.Map.MapHash")?.GetMethod("Hash", BindingFlags.Public | BindingFlags.Static);
+        recorded.Clear();
+        recordTag = tag;
+        recordOrder = 0;
+        var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.generation.seed = seed;
+        var root = new GameObject("DRESS PERF map " + seed) { hideFlags = HideFlags.DontSave };
+        var map = root.AddComponent<FrontRoomsMapWorld>();
+        map.Profile = profile;
+        if (focus.HasValue)
+            map.OverrideSpawn(new Vector3((focus.Value.x * MapGrid.ChunkCells + MapGrid.ChunkCells / 2 + .5f) * MapGrid.CellSize, .05f,
+                (focus.Value.y * MapGrid.ChunkCells + MapGrid.ChunkCells / 2 + .5f) * MapGrid.CellSize));
+        resolved.SetValue(null, true);
+        office.SetValue(null, typeof(FrontRoomsDressPerfTest).GetMethod(nameof(RecordOffice), flags));
+        officeOld.SetValue(null, null);
+        pile.SetValue(null, typeof(FrontRoomsDressPerfTest).GetMethod(nameof(RecordPile), flags));
+        officeBegin?.SetValue(null, null);
+        pileBegin?.SetValue(null, null);
+        try { map.BuildForCapture(); }
+        finally
+        {
+            resolved.SetValue(null, false);
+            office.SetValue(null, null);
+            officeOld.SetValue(null, null);
+            pile.SetValue(null, null);
+            officeBegin?.SetValue(null, null);
+            pileBegin?.SetValue(null, null);
+            map.Release();
+            Object.DestroyImmediate(root);
+            Object.DestroyImmediate(profile);
+        }
+        var list = new List<Case>(recorded);
+        // Name each room by chunk and room index (the map's room seed is Hash(seed, x * 16 + r, y, 307, revision)).
+        var rx = new Regex(@"Chunk \((-?\d+), (-?\d+)\) · revision (\d+)");
+        foreach (var c in list)
+        {
+            var m = rx.Match(c.source);
+            if (!m.Success || hash == null) continue;
+            int x = int.Parse(m.Groups[1].Value), y = int.Parse(m.Groups[2].Value), rev = int.Parse(m.Groups[3].Value);
+            for (var r = 0; r < 32; r++)
+                if ((int)(uint)hash.Invoke(null, new object[] { seed, x * 16 + r, y, 307, rev }) == c.seed)
+                {
+                    c.id = tag + "-c" + x + "_" + y + "-r" + r + "-" + c.kind;
+                    break;
+                }
+        }
+        notes.Add(tag + ": captured " + list.Count + " dress calls (" + list.FindAll(c => c.kind == "office").Count + " office, " + list.FindAll(c => c.kind == "pile").Count + " pile)");
+        return list;
+    }
+
+    // --------------------------------------------------------- synthetic
+
+    const float Cell = 3f, Wall = .16f;
+
+    /// <summary>A map-shaped Office room of nx x nz cells (clear floor between wall faces), with doorways and, sometimes, columns.</summary>
+    static Case OfficeCase(string id, int nx, int nz, int seed, bool withColumns)
+    {
+        var rng = new System.Random(seed * 31 + nx * 7 + nz);
+        var floor = new Rect(Wall * .5f, Wall * .5f, nx * Cell - Wall, nz * Cell - Wall);
+        var clear = new List<Rect>();
+        var doors = 2 + rng.Next(3);
+        for (var d = 0; d < doors; d++)
+        {
+            var side = rng.Next(4);
+            var cell = rng.Next(side < 2 ? nx : nz);
+            var mid = (cell + .5f) * Cell;
+            const float w = 1.2f, depth = 1.0f;
+            switch (side)
+            {
+                case 0: clear.Add(new Rect(mid - w * .5f, floor.yMin, w, depth)); break;
+                case 1: clear.Add(new Rect(mid - w * .5f, floor.yMax - depth, w, depth)); break;
+                case 2: clear.Add(new Rect(floor.xMin, mid - w * .5f, depth, w)); break;
+                default: clear.Add(new Rect(floor.xMax - depth, mid - w * .5f, depth, w)); break;
+            }
+        }
+        var obstacles = new List<Rect>();
+        if (withColumns && nx >= 3 && nz >= 3)
+            for (var i = 1; i < nx; i++)
+                for (var j = 1; j < nz; j++)
+                    if (rng.NextDouble() < .2) obstacles.Add(new Rect(i * Cell - .3f, j * Cell - .3f, .6f, .6f));
+        var heights = new[] { MapGrid.CeilingHeight(ZoneHeight.Low), MapGrid.CeilingHeight(ZoneHeight.Standard), MapGrid.CeilingHeight(ZoneHeight.Tall) };
+        return new Case { id = id, kind = "office", source = "synthetic", floor = floor, ceiling = heights[rng.Next(3)], seed = seed, clear = clear.ToArray(), obstacles = obstacles.ToArray() };
+    }
+
+    static Case PileCase(string id, float radius, float ceiling, int seed, int tableau)
+    {
+        return new Case { id = id, kind = tableau < 0 ? "pile" : "pileForced", source = "synthetic", center = new Vector3(radius + 1f, 0f, radius + 1f), radius = radius, ceiling = ceiling, seed = seed, tableau = tableau };
+    }
+
+    // ------------------------------------------------------ edge cases
+
+    /// <summary>The look-dev scene's inputs (office A 12 x 12 with two openings, hall B's pile, seeds 1..12) and the room stream's Office rooms (sequences 0..40).</summary>
+    static List<Case> LookdevAndStream()
+    {
+        var list = new List<Case>();
+        for (var s = 1; s <= 12; s++)
+        {
+            list.Add(new Case { id = "lookdev-office-s" + s, kind = "officeCols", source = "lookdev", floor = new Rect(-6f + .08f, .08f, 12f - .16f, 12f - .16f), ceiling = 2.9f, seed = s, clear = new[] { new Rect(-.6f, .08f, 1.2f, 1.2f), new Rect(6f - .08f - 1f, 7.3f, 1f, 1.6f) } });
+            list.Add(new Case { id = "lookdev-pile-s" + s, kind = "pile", source = "lookdev", center = new Vector3(0f, 0f, 8f), radius = Mathf.Min(3.2f, .22f * Mathf.Min(18f, 16f)), ceiling = 2.9f, seed = s });
+        }
+        var half = FrontRoomsRoomStream.RoomWidth * .5f - .26f * .5f;
+        for (var q = 0; q <= 40; q++)
+            list.Add(new Case { id = "stream-seq" + q, kind = "officeCols", source = "room stream", floor = new Rect(-half, .35f, half * 2f, FrontRoomsRoomStream.RoomLength - .7f), ceiling = FrontRoomsRoomStream.RoomHeight, seed = 7919 * q + 104729, clear = new[] { new Rect(-1.4f, .35f, 2.8f, FrontRoomsRoomStream.RoomLength - .7f) } });
+        return list;
+    }
+
+    static Rect MapFloor(int nx, int nz) => new Rect(Wall * .5f, Wall * .5f, nx * Cell - Wall, nz * Cell - Wall);
+
+    static Rect Door(Rect floor, int side, float along, float w = 1.2f, float depth = 1f)
+    {
+        switch (side)
+        {
+            case 0: return new Rect(along - w * .5f, floor.yMin, w, depth);
+            case 1: return new Rect(along - w * .5f, floor.yMax - depth, w, depth);
+            case 2: return new Rect(floor.xMin, along - w * .5f, depth, w);
+            default: return new Rect(floor.xMax - depth, along - w * .5f, depth, w);
+        }
+    }
+
+    /// <summary>
+    /// Edge cases (from the adversarial verify pass): cut rooms whose obstacles
+    /// split the keep-clear strips (the Joined path: full cuts, gaps cut by
+    /// clearance, a buried strip 0, three strip bands), tiny / narrow /
+    /// off-lattice rooms with null, empty, outside and degenerate strips, dense
+    /// obstacles that force the scattered-pod fallback, big rooms with tall
+    /// pods, 80 random rooms, piles over radius x ceiling x seed, every tableau
+    /// forced, and the rejected inputs.
+    /// </summary>
+    static List<Case> Extra() => new List<Case>(ExtraCases());
+
+    static IEnumerable<Case> ExtraCases()
+    {
+        var heights = new[] { 2.4f, 2.9f, 5.4f };
+        // Cut rooms: a band of obstacles across the room splits the strips (the Joined path).
+        foreach (var nx in new[] { 3, 4, 6 })
+            foreach (var nz in new[] { 3, 5 })
+                foreach (var variant in new[] { 0, 1, 2, 3, 4, 5 })
+                    foreach (var seed in new[] { 1, 2, 3 })
+                    {
+                        var f = MapFloor(nx, nz);
+                        var cy = f.center.y;
+                        var clear = new List<Rect>();
+                        var obstacles = new List<Rect>();
+                        clear.Add(Door(f, 0, 1.5f));                // strip 0, south
+                        clear.Add(Door(f, 2, 1.5f));                // west, south half
+                        clear.Add(Door(f, 1, f.xMax - 1.5f));       // north
+                        clear.Add(Door(f, 3, f.yMax - 1.5f));       // east, north half
+                        switch (variant)
+                        {
+                            case 0: obstacles.Add(new Rect(f.xMin, cy - .25f, f.width, .5f)); break;                                  // full cut, 2 v 2
+                            case 1: obstacles.Add(new Rect(f.xMin, cy - .25f, f.width * .5f - .3f, .5f)); obstacles.Add(new Rect(f.center.x + .3f, cy - .25f, f.width * .5f - .3f, .5f)); break; // 0.6 m gap: cut by clearance
+                            case 2: obstacles.Add(new Rect(f.xMin, cy - .25f, f.width * .5f - .9f, .5f)); obstacles.Add(new Rect(f.center.x + .9f, cy - .25f, f.width * .5f - .9f, .5f)); break; // 1.8 m gap: joined
+                            case 3: clear.Add(Door(f, 1, f.xMin + 1.5f)); obstacles.Add(new Rect(f.xMin, cy - .25f, f.width, .5f)); break;  // north side bigger: strip 0 dropped
+                            case 4: obstacles.Add(new Rect(f.xMin - .1f, f.yMin - .1f, 2.6f, 1.6f)); break;                       // strip 0 buried under an obstacle
+                            default:
+                                obstacles.Add(new Rect(f.xMin, f.yMin + f.height / 3f, f.width, .4f));
+                                obstacles.Add(new Rect(f.xMin, f.yMin + 2f * f.height / 3f, f.width, .4f));
+                                clear.Add(Door(f, 2, cy)); clear.Add(Door(f, 3, cy)); break;                                         // three bands of strips
+                        }
+                        yield return new Case { id = "cut-" + nx + "x" + nz + "-v" + variant + "-s" + seed, kind = "office", source = "verify cut", floor = f, ceiling = heights[seed % 3], seed = seed * 7919 + variant, clear = clear.ToArray(), obstacles = obstacles.ToArray() };
+                    }
+        // Tiny, narrow, odd and off-lattice rooms, both overloads.
+        var odd = new[]
+        {
+            new Rect(0f, 0f, 2.39f, 5f), new Rect(0f, 0f, 2.4f, 2.4f), new Rect(.08f, .08f, 2.84f, 2.84f), new Rect(.08f, .08f, 2.84f, 5.84f),
+            new Rect(.08f, .08f, 5.84f, 2.84f), new Rect(0f, 0f, 2.6f, 14f), new Rect(0f, 0f, 14f, 2.6f), new Rect(.08f, .08f, 6.99f, 9f),
+            new Rect(0f, 0f, 7f, 7f), new Rect(0f, 0f, 7.1f, 30f), new Rect(-3f, 2f, 9.5f, 13.3f), new Rect(-10f, -4f, 20f, 9.1f), new Rect(.08f, .08f, 23.84f, 23.84f),
+        };
+        var oi = 0;
+        foreach (var f in odd)
+        {
+            oi++;
+            var stripSets = new List<Rect[]>
+            {
+                null,
+                new Rect[0],
+                new[] { Door(f, 0, f.center.x) },
+                new[] { Door(f, 0, f.center.x), Door(f, 1, f.center.x) },
+                new[] { Door(f, 0, f.xMin + .7f), new Rect(f.xMax - .5f, f.yMax - .5f, 3f, 3f), new Rect(f.center.x, f.center.y, .06f, .06f), new Rect(f.xMax + 1f, f.yMin, 1f, 1f) },
+                new[] { Door(f, 2, f.center.y), Door(f, 3, f.center.y), new Rect(f.center.x - .5f, f.yMin, 1f, f.height) },
+            };
+            for (var si = 0; si < stripSets.Count; si++)
+                foreach (var seed in new[] { 3, 44 })
+                {
+                    yield return new Case { id = "odd" + oi + "-strips" + si + "-s" + seed, kind = "officeCols", source = "verify odd", floor = f, ceiling = heights[(si + seed) % 3], seed = seed + si, clear = stripSets[si] };
+                    yield return new Case { id = "oddmap" + oi + "-strips" + si + "-s" + seed, kind = "office", source = "verify odd", floor = f, ceiling = heights[(si + seed + 1) % 3], seed = seed * 3 + si, clear = stripSets[si], obstacles = si % 2 == 0 ? null : new[] { new Rect(f.center.x - .45f, f.center.y - .45f, .9f, .9f) } };
+                }
+        }
+        // Dense module obstacles: pods fail and the scattered fallback runs.
+        foreach (var nx in new[] { 3, 5, 7 })
+            foreach (var seed in new[] { 1, 2, 3, 4 })
+            {
+                var f = MapFloor(nx, nx);
+                var obstacles = new List<Rect>();
+                for (var x = 1.2f; x < f.xMax - 1f; x += 2.6f)
+                    for (var z = 1.6f; z < f.yMax - 1f; z += 3.1f)
+                        obstacles.Add(new Rect(x, z, .8f + .1f * seed, .6f));
+                yield return new Case { id = "dense-" + nx + "-s" + seed, kind = "office", source = "verify dense", floor = f, ceiling = 2.9f, seed = 900 + seed, clear = new[] { Door(f, 0, 1.5f), Door(f, 1, f.xMax - 1.5f) }, obstacles = obstacles.ToArray() };
+            }
+        // Tall pods: many seeds of big rooms.
+        foreach (var seed in new[] { 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115 })
+        {
+            var nx = 5 + seed % 3; var nz = 6 + seed % 2;
+            var f = MapFloor(nx, nz);
+            yield return new Case { id = "big-" + nx + "x" + nz + "-s" + seed, kind = seed % 2 == 0 ? "office" : "officeCols", source = "verify big", floor = f, ceiling = heights[seed % 3], seed = seed * 31, clear = new[] { Door(f, 0, 4.5f), Door(f, 3, 1.5f), Door(f, 1, f.xMax - 4.5f) }, obstacles = new Rect[0] };
+        }
+        // Random rooms.
+        var rng = new System.Random(20261003);
+        for (var i = 0; i < 80; i++)
+        {
+            var lattice = rng.NextDouble() < .7;
+            var nx = 1 + rng.Next(8); var nz = 1 + rng.Next(8);
+            var f = lattice ? MapFloor(nx, nz) : new Rect((float)rng.NextDouble() * 4f - 2f, (float)rng.NextDouble() * 4f - 2f, 2.2f + (float)rng.NextDouble() * 20f, 2.2f + (float)rng.NextDouble() * 20f);
+            var clear = new List<Rect>();
+            var nd = rng.Next(6);
+            for (var d = 0; d < nd; d++)
+            {
+                var side = rng.Next(4);
+                var along = side < 2 ? f.xMin + (float)rng.NextDouble() * f.width : f.yMin + (float)rng.NextDouble() * f.height;
+                clear.Add(Door(f, side, along, .8f + (float)rng.NextDouble() * 2.4f, .5f + (float)rng.NextDouble() * 1.5f));
+            }
+            var obstacles = new List<Rect>();
+            var no = rng.Next(7);
+            for (var o = 0; o < no; o++)
+                obstacles.Add(new Rect(f.xMin + (float)rng.NextDouble() * f.width, f.yMin + (float)rng.NextDouble() * f.height, .3f + (float)rng.NextDouble() * 2.5f, .3f + (float)rng.NextDouble() * 2.5f));
+            var cols = rng.NextDouble() < .3;
+            yield return new Case { id = "rand-office-" + i, kind = cols ? "officeCols" : "office", source = "verify random", floor = f, ceiling = heights[rng.Next(3)], seed = rng.Next(), clear = clear.ToArray(), obstacles = obstacles.ToArray() };
+        }
+        // Piles: radii x ceilings x seeds, every tableau forced.
+        var radii = new[] { .6f, .65f, 1f, 2f, 3.006f, 3.8f, 6f, 8f };
+        var ceilings = new[] { 1.8f, 2f, 2.4f, 2.9f, 3.19f, 4.6f, 5.4f };
+        foreach (var r in radii)
+            foreach (var c in ceilings)
+                foreach (var seed in new[] { 7, 8, 9 })
+                    yield return new Case { id = "pile-" + r.ToString("0.###", CultureInfo.InvariantCulture) + "-" + c.ToString("0.##", CultureInfo.InvariantCulture) + "-s" + seed, kind = "pile", source = "verify pile", center = new Vector3(r + 1f, 0f, r + 1f), radius = r, ceiling = c, seed = seed * 104729 + (int)(r * 1000) + (int)(c * 10) };
+        foreach (FrontRoomsFurniturePile.Tableau tab in Enum.GetValues(typeof(FrontRoomsFurniturePile.Tableau)))
+            foreach (var c in new[] { 1.9f, 2.4f, 2.9f, 5.4f })
+                foreach (var r in new[] { .8f, 2f, 3.2f, 5f })
+                    foreach (var seed in new[] { 21, 22 })
+                        yield return new Case { id = "forced-" + tab + "-" + c.ToString("0.##", CultureInfo.InvariantCulture) + "-" + r.ToString("0.#", CultureInfo.InvariantCulture) + "-s" + seed, kind = "pileForced", source = "verify forced", center = Vector3.zero, radius = r, ceiling = c, seed = seed * 7 + (int)(r * 10), tableau = (int)tab };
+        // Rejected inputs.
+        yield return new Case { id = "pile-reject-radius", kind = "pile", center = Vector3.zero, radius = .59f, ceiling = 2.9f, seed = 1 };
+        yield return new Case { id = "pile-reject-ceiling", kind = "pile", center = Vector3.zero, radius = 3f, ceiling = 1.79f, seed = 1 };
+    }
+
+
+    static List<Case> Synthetic(bool quick)
+    {
+        var list = new List<Case>();
+        var sizes = quick ? new[] { 2, 4, 7 } : new[] { 2, 3, 4, 5, 6, 7 };
+        var seeds = quick ? new[] { 11 } : new[] { 11, 1234567 };
+        foreach (var nx in sizes)
+            foreach (var nz in sizes)
+                foreach (var s in seeds)
+                    list.Add(OfficeCase("office-" + nx + "x" + nz + "-s" + s, nx, nz, s + nx * 100 + nz, withColumns: true));
+        // Look-dev / room-stream overload (Dress places its own columns).
+        foreach (var s in new[] { 1, 2, 3 })
+        {
+            list.Add(new Case { id = "lookdev-12x12-s" + s, kind = "officeCols", source = "synthetic lookdev", floor = new Rect(-6f + .08f, .08f, 12f - .16f, 12f - .16f), ceiling = 2.9f, seed = s, clear = new[] { new Rect(-.6f, .08f, 1.2f, 1.2f), new Rect(6f - .08f - 1f, 7.3f, 1f, 1.6f) } });
+            var half = 11.5f * .5f - .26f * .5f;
+            list.Add(new Case { id = "stream-room-s" + s, kind = "officeCols", source = "synthetic room stream", floor = new Rect(-half, .35f, half * 2f, 12f - .7f), ceiling = 2.9f, seed = 7919 * s + 104729, clear = new[] { new Rect(-1.4f, .35f, 2.8f, 12f - .7f) } });
+        }
+        // Lattice room big enough for its own columns.
+        foreach (var s in new[] { 5, 6 })
+            list.Add(new Case { id = "lattice-6x6-cols-s" + s, kind = "officeCols", source = "synthetic", floor = new Rect(.08f, .08f, 6 * Cell - Wall, 6 * Cell - Wall), ceiling = 2.9f, seed = s, clear = new[] { new Rect(7.5f, .08f, 1.2f, 1f), new Rect(.08f, 10.5f, 1f, 1.2f) } });
+
+        var radii = quick ? new[] { 1.6f, 3.2f, 5.5f } : new[] { .9f, 1.6f, 2.4f, 3.2f, 4.2f, 5.5f };
+        var ceilings = new[] { MapGrid.CeilingHeight(ZoneHeight.Low), MapGrid.CeilingHeight(ZoneHeight.Standard), MapGrid.CeilingHeight(ZoneHeight.Tall) };
+        foreach (var r in radii)
+            foreach (var c in ceilings)
+                foreach (var s in seeds)
+                    list.Add(PileCase("pile-r" + r.ToString("0.0", CultureInfo.InvariantCulture) + "-c" + c.ToString("0.0", CultureInfo.InvariantCulture) + "-s" + s, r, c, s + (int)(r * 10) + (int)(c * 100), -1));
+        foreach (FrontRoomsFurniturePile.Tableau t in Enum.GetValues(typeof(FrontRoomsFurniturePile.Tableau)))
+            foreach (var c in new[] { ceilings[1], ceilings[2] })
+                foreach (var s in quick ? new[] { 3 } : new[] { 3, 4 })
+                    list.Add(PileCase("pile-" + t + "-c" + c.ToString("0.0", CultureInfo.InvariantCulture) + "-s" + s, 3.2f, c, s, (int)t));
+        return list;
+    }
+}

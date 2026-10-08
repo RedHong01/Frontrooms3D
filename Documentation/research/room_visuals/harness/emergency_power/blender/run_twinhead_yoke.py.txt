@@ -1,0 +1,36 @@
+"""Swivel yoke for one lamp head of the twin-head emergency unit (see
+run_twinhead.py). CLONE-ONLY look-dev asset, Run! direction B.
+
+A 3 x 18 mm bent steel strap U on a short swivel stem with a black lock collar;
+a knurled black wing knob on each arm clamps the head's trunnion. Origin = the
+stem foot (sits on the cabinet's swivel boss, anchor mount_l / mount_r). The rig
+yaws this asset about its vertical axis; the head pivots at the "trunnion"
+anchor, 85 mm above the foot. Slots: Prop_SteelAlmond, Prop_PlasticBlack.
+"""
+
+import kitlib
+
+NAME = "Kit_EmergencyTwinHead_Yoke"
+SMOOTH_ANGLE = 40.0
+
+STEEL = "Prop_SteelAlmond"
+BLACK = "Prop_PlasticBlack"
+
+A = 0.0605          # inner half gap of the U (head housing r 57.5 mm + 3 mm)
+T = 0.003           # strap thickness
+TRUNNION_Z = 0.085
+
+
+def build(kit):
+    kit.cylinder(0.0115, 0.006, (0, 0, 0.003), BLACK, verts=24, bevel=0.001, segments=1, name="lock collar")
+    kit.cylinder(0.0070, 0.016, (0, 0, 0.012), STEEL, verts=20, bevel=0.0008, segments=1, name="stem")
+    top = 0.104
+    outline = [(-A - T, 0.018), (A + T, 0.018), (A + T, top), (A, top), (A, 0.021), (-A, 0.021), (-A, top), (-A - T, top)]
+    kit.extrude(outline, 0.018, (0, 0, 0), STEEL, plane="xz", bevel=0.0011, segments=2, name="yoke strap")
+    for sx in (-1, 1):
+        x = sx * (A + T + 0.0045)
+        kit.cylinder(0.0085, 0.008, (x, 0, TRUNNION_Z), BLACK, verts=16, rot=(0, 90, 0), bevel=0.0012, segments=1, name="knob")
+        kit.box((0.005, 0.005, 0.026), (sx * (A + T + 0.007), 0, TRUNNION_Z), BLACK, bevel=0.0015, segments=1, name="knob wing")
+    kit.no_collider()
+    kit.anchor("trunnion", (0, 0, TRUNNION_Z))
+    kit.tag("run")

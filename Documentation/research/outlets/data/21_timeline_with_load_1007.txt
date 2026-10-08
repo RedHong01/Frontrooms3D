@@ -1,0 +1,67 @@
+base main 279c144 + worktree 16:32; clone created 16:32:49
+probe100 start 16:35:50 load 184.81 112.41 103.22
+probe100 end 16:47:59 rc=0 load 535.73 507.93 350.62
+relaynav_on start 16:47:59 load 535.73 507.93 350.62
+relaynav_on end 16:50:51 rc=0 load 527.62 526.43 387.50
+interaction_on start 16:50:51 load 527.62 526.43 387.50
+interaction_on end 16:56:57 rc=0 load 552.91 505.96 421.22
+designer_on start 16:56:57 load 552.91 505.96 421.22
+designer_on end 17:00:56 rc=0 load 659.76 572.87 469.33
+mapverify_on start 17:00:56 load 659.76 572.87 469.33
+mapverify_on end 17:06:31 rc=0 load 579.59 559.94 496.34
+fixturetick_on start 17:06:31 load 579.59 559.94 496.34
+fixturetick_on end 17:21:16 rc=0 load 677.32 622.53 568.15
+relaynav_off start 17:21:17 load 677.32 622.53 568.15
+relaynav_off end 17:25:50 rc=0 load 792.73 703.95 618.60
+interaction_off start 17:25:51 load 792.73 703.95 618.60
+interaction_off end 17:36:46 rc=0 load 643.79 696.83 669.38
+designer_off start 17:36:46 load 643.79 696.83 669.38
+resync 18:16:59 main a5262fb6 worktree (non-outlet files only) load 359.86 155.63 170.64
+designer_off killed 17:46 (usage limit); log kept as designer_off.killed1746.log
+compile_c start 18:21:14 load 608.65 381.23 265.07
+compile_c end 18:27:40 rc=0 load 636.42 543.51 389.42
+designer_off start 18:27:42 load 636.42 543.51 389.42
+designer_off end 18:35:07 rc=0 load 567.02 584.78 477.53
+mapverify_off start 18:35:07 load 567.02 584.78 477.53
+mapverify_off end 18:41:01 rc=0 load 572.66 570.20 506.21
+fixturetick_off start 18:41:02 load 572.66 570.20 506.21
+fixturetick_off end 18:43:30 rc=0 load 534.22 558.15 511.97
+CHAIN_A_DONE 18:43:31
+capture start 18:43:33 load 534.22 558.15 511.97
+shadercache merged from 9 clones (ignore-existing) 19:10:01      711->    2231 files
+capture end 19:30:36 rc=0 load 797.71 789.17 799.34
+designer_cap_on start 19:30:36 load 798.69 789.52 799.40
+designer_cap_on end 19:35:59 rc=0 load 528.79 913.40 851.40
+designer_cap_off start 19:36:07 load 585.77 913.02 852.00
+designer_cap_off end 19:40:49 rc=0 load 798.11 855.93 844.29
+playtest_on_2554 start 19:40:49 load 798.11 855.93 844.29
+playtest_on_2554 end 19:43:46 rc=1 load 885.64 862.55 848.28
+playtest_off_2554 start 19:43:47 load 874.22 860.56 847.66
+fmod banks copied into clone 19:45:42 (TOOLS.md §2; playtest_*_2554 to be re-run)
+playtest_off_2554 end 19:46:17 rc=1 load 760.31 810.59 828.91
+playtest_on_20388 start 19:46:19 load 760.31 810.59 828.91
+playtest_on_20388 end 19:49:31 rc=0 load 755.69 775.97 809.95
+playtest_off_20388 start 19:49:32 load 761.08 776.75 810.03
+playtest_off_20388 end 19:52:33 rc=0 load 815.30 790.60 809.20
+probe_timing start 19:52:34 load 815.30 790.60 809.20
+probe_timing end 20:06:06 rc=0 load 568.13 617.40 688.61
+CHAIN_B_DONE 20:06:06
+designer_cap_off2 start 20:06:15 load 571.60 616.50 687.45
+designer_cap_off2 end 20:09:17 rc=0 load 197.44 443.84 603.06
+designer_cap_on2 start 20:09:17 load 197.44 443.84 603.06
+designer_cap_on2 end 20:09:33 rc=0 load 168.88 425.48 593.73
+designer_cap_on3 start 20:09:34 load 168.88 425.48 593.73
+resync2 23:36:24 main ee5c9bb worktree (non-outlet files; RoomStream/OfficeKit/MapWorld bases unchanged since a5262fb6) load 336.35 235.96 134.36
+compile_e start 23:37:14 load 273.24 235.01 139.86
+compile_e end 23:42:57 rc=0 load 403.70 321.76 208.74
+probe_timing2 start 23:42:58 load 403.70 321.76 208.74
+probe_timing2 end 23:50:10 rc=0 load 381.98 408.59 300.49
+playtest3_on_2554 start 23:50:11 load 381.98 408.59 300.49
+playtest3_on_2554 end 23:52:24 rc=0 load 316.96 373.56 301.84
+playtest3_off_2554 start 23:52:26 load 319.77 373.20 302.13
+playtest3_off_2554 end 23:55:18 rc=0 load 360.33 386.94 322.21
+playtest3_on_20388 start 23:55:18 load 360.33 386.94 322.21
+playtest3_on_20388 end 00:00:14 rc=0 load 569.10 471.11 376.70
+playtest3_off_20388 start 00:00:16 load 576.14 474.20 378.34
+playtest3_off_20388 end 00:03:58 rc=0 load 484.45 489.46 408.06
+CHAIN_E_DONE 00:03:58

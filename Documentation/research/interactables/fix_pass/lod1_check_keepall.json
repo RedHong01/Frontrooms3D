@@ -1,0 +1,122 @@
+{
+ "Kit_KeyCabinet": {
+  "lod1": true,
+  "tris": [
+   3328,
+   6804
+  ],
+  "d01": 3.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_KeyHookBoard": {
+  "lod1": true,
+  "tris": [
+   2062,
+   4392
+  ],
+  "d01": 3.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_ExitDevice_Crossbar": {
+  "lod1": true,
+  "tris": [
+   1948,
+   3588
+  ],
+  "d01": 2.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_StrikeMortise": {
+  "lod1": true,
+  "tris": [
+   663,
+   988
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_StrikeBored": {
+  "lod1": true,
+  "tris": [
+   452,
+   674
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_StrikeBored_Brass": {
+  "lod1": true,
+  "tris": [
+   452,
+   674
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Deadbolt": {
+  "lod1": true,
+  "tris": [
+   252,
+   380
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_Lock_Latchbolt_Mortise": {
+  "lod1": true,
+  "tris": [
+   334,
+   600
+  ],
+  "d01": 1.0,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_DoorCloser_Arm": {
+  "lod1": true,
+  "tris": [
+   660,
+   1112
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ },
+ "Kit_DoorCloser_Forearm": {
+  "lod1": true,
+  "tris": [
+   570,
+   940
+  ],
+  "d01": 1.5,
+  "max_dev_mm": 0.0,
+  "p99_dev_mm": 0.0,
+  "max_dev_px_at_d01": 0.0,
+  "p99_dev_px_at_d01": 0.0
+ }
+}

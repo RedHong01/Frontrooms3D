@@ -1,0 +1,8 @@
+--- /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/ProjectSettings/TagManager.asset	2026-09-22 11:57:08
++++ /Users/redwang/FrontRoomsVisualWork/proj_run_house_lights/ProjectSettings/TagManager.asset	2026-10-07 16:35:24
+@@ -44,3 +44,5 @@
+     locked: 0
+   m_RenderingLayers:
+   - Default
++  - RunCorridor
++  - RunStub

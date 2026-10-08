@@ -1,0 +1,22 @@
+mac: 73 files, rc 0, 0 errors, 4 warnings, 80 editor refs dropped
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(122,35): warning CS0067: The event 'FrontRoomsTouchControls.SettingsRowRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(125,34): warning CS0067: The event 'FrontRoomsTouchControls.LookTapped' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(123,25): warning CS0067: The event 'FrontRoomsTouchControls.RestartCancelRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(174,22): warning CS0414: The field 'FrontRoomsTouchControls.lookId' is assigned but its value is never used
+win64: 73 files, rc 0, 0 errors, 4 warnings, 80 editor refs dropped
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(122,35): warning CS0067: The event 'FrontRoomsTouchControls.SettingsRowRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(123,25): warning CS0067: The event 'FrontRoomsTouchControls.RestartCancelRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(125,34): warning CS0067: The event 'FrontRoomsTouchControls.LookTapped' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(174,22): warning CS0414: The field 'FrontRoomsTouchControls.lookId' is assigned but its value is never used
+linux64: 73 files, rc 0, 0 errors, 4 warnings, 80 editor refs dropped
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(125,34): warning CS0067: The event 'FrontRoomsTouchControls.LookTapped' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(123,25): warning CS0067: The event 'FrontRoomsTouchControls.RestartCancelRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(122,35): warning CS0067: The event 'FrontRoomsTouchControls.SettingsRowRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(174,22): warning CS0414: The field 'FrontRoomsTouchControls.lookId' is assigned but its value is never used
+ios: 73 files, rc 0, 0 errors, 0 warnings, 80 editor refs dropped
+android: 73 files, rc 0, 0 errors, 0 warnings, 80 editor refs dropped
+webgl: 73 files, rc 0, 0 errors, 4 warnings, 80 editor refs dropped
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(123,25): warning CS0067: The event 'FrontRoomsTouchControls.RestartCancelRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(122,35): warning CS0067: The event 'FrontRoomsTouchControls.SettingsRowRequested' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(125,34): warning CS0067: The event 'FrontRoomsTouchControls.LookTapped' is never used
+    head_src/Assets/Scripts/Input/FrontRoomsTouchControls.cs(174,22): warning CS0414: The field 'FrontRoomsTouchControls.lookId' is assigned but its value is never used

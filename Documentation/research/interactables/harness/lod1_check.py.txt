@@ -1,0 +1,48 @@
+"""LOD1 shape check for the interactables kit (fix pass 2026-10-08, after the H4 LOD1 change).
+
+  Blender -b --factory-startup --python lod1_check.py -- <Models dir> <names file> <out json>
+
+For each FBX with <NAME>_LOD0 and <NAME>_LOD1: two-sided surface deviation (LOD0 vertices to the LOD1 surface and
+LOD1 vertices to the LOD0 surface, BVH nearest), reported in metres and in screen pixels at the LOD0->LOD1 switch
+distance d01 from the sidecar (1080 px vertical, FOV 76, lodBias 1 = the closest the LOD1 is ever seen).
+"""
+import json
+import math
+import sys
+
+import bpy
+from mathutils.bvhtree import BVHTree
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODELS, NAMES, OUT = argv
+names = [l.strip() for l in open(NAMES) if l.strip()]
+PX_PER_M_AT_1M = 1080.0 / (2.0 * math.tan(math.radians(38.0)))
+res = {}
+for n in names:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath="%s/%s.fbx" % (MODELS, n))
+    objs = {o.name: o for o in bpy.data.objects if o.type == "MESH"}
+    l0 = next((o for k, o in objs.items() if k.endswith("_LOD0")), None)
+    l1 = next((o for k, o in objs.items() if k.endswith("_LOD1")), None)
+    if l0 is None or l1 is None:
+        res[n] = {"lod1": False}
+        continue
+    side = json.load(open("%s/%s.json" % (MODELS, n)))
+    d01 = (side.get("lodDistances") or [1.0])[0] or 1.0
+
+    def mesh(o):
+        mw = o.matrix_world
+        vs = [mw @ v.co for v in o.data.vertices]
+        return vs, BVHTree.FromPolygons(vs, [tuple(p.vertices) for p in o.data.polygons], all_triangles=False)
+    v0, b0 = mesh(l0)
+    v1, b1 = mesh(l1)
+    d0 = [b1.find_nearest(v)[3] for v in v0]
+    d1 = [b0.find_nearest(v)[3] for v in v1]
+    d0s = sorted(d0)
+    worst = max(max(d0), max(d1))
+    p99 = d0s[int(0.99 * (len(d0s) - 1))]
+    res[n] = {"lod1": True, "tris": [len(l0.data.polygons), len(l1.data.polygons)], "d01": d01,
+              "max_dev_mm": round(worst * 1000, 3), "p99_dev_mm": round(p99 * 1000, 3),
+              "max_dev_px_at_d01": round(worst * PX_PER_M_AT_1M / d01, 2), "p99_dev_px_at_d01": round(p99 * PX_PER_M_AT_1M / d01, 2)}
+    print("LOD1CHECK", n, json.dumps(res[n]))
+json.dump(res, open(OUT, "w"), indent=1)

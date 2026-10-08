@@ -1,0 +1,26 @@
+Unity log of the 22bb75f play run (W/cx_rt/logs/cx_play_22bb75f.log, 22618 lines): signature counts
+Collection was modified          0
+ZBinningJob                      0
+Render Graph Execution error     0
+Shader error                     0
+NullReferenceException           0
+MissingReferenceException        0
+InvalidOperationException        0
+ScreenVideo                      0
+not SRP Batcher compatible       0
+
+   4 [FrontRooms3D] AUTOPILOT HUD all panels on screen
+
+frame stats (W/smoke/framestats.py):
+00_map_001s.jpg                                    1600x900 mean   62.2 std  25.7 black   0.0% magenta  0.00% transparent   0.0% colours 327
+01_map_021s.jpg                                    1600x900 mean   62.3 std  30.8 black   0.0% magenta  0.00% transparent   0.0% colours 259
+02_map_041s.jpg                                    1600x900 mean   78.4 std  39.2 black   0.0% magenta  0.00% transparent   0.0% colours 936
+03_map_061s.jpg                                    1600x900 mean   75.5 std  37.4 black   0.0% magenta  0.00% transparent   0.0% colours 851
+04_caught_1.jpg                                    1600x900 mean   76.2 std  37.9 black   0.0% magenta  0.00% transparent   0.0% colours 826
+05_map_081s.jpg                                    1600x900 mean   89.2 std  38.1 black   0.0% magenta  0.00% transparent   0.0% colours 796
+06_caught_2.jpg                                    1600x900 mean   59.8 std  32.8 black   0.0% magenta  0.00% transparent   0.0% colours 812
+07_map_101s.jpg                                    1600x900 mean   74.3 std  31.5 black   0.0% magenta  0.00% transparent   0.0% colours 484
+08_end.jpg                                         1600x900 mean   63.2 std  44.8 black   0.0% magenta  0.00% transparent   0.0% colours 657
+closeup_bad_1.jpg                                  1600x900 mean   42.1 std   6.4 black   0.0% magenta  2.19% transparent   0.0% colours 428
+closeup_key_after_R.jpg                            1600x900 mean  126.7 std  30.3 black   0.0% magenta  2.37% transparent   0.0% colours 914
+closeup_key_first_life.jpg                         1600x900 mean  122.7 std  31.7 black   0.0% magenta  0.00% transparent   0.0% colours 443

@@ -1,0 +1,342 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+/// <summary>
+/// CLONE-ONLY look-dev rig for Run! direction B (EMERGENCY POWER). A deterministic
+/// stand-in for the production FrontRoomsRunRig: Evaluate(t) sets every light,
+/// emission, beam and the corridor ambient from the state tables in
+/// Documentation/research/room_visuals/10_run_directions.md §3.1 and §7.3.
+/// t = seconds since RoomTriggered(Alarm); t &lt; 0 = armed. No randomness, no Play Mode.
+///
+///   t &lt; 0          armed: 9 wraparounds on (cell 5 stutters dim), red AC ON pilots lit,
+///                  battery heads off, corridor ambient 0.6 x global.
+///   0 .. 0.06 s     mains drop: wraps 1 -> 0 (lens keeps a 0.03 glow), pilots out,
+///                  ambient 0.6 -> 0.10 x global, neutral.
+///   0.06 .. 0.35 s  black (only the EXIT faces, the goal lite and the anteroom behind).
+///   0.35 + 0.004 z  each head rises 0 -> 1 over 0.18 s (ease-in), with its beam cone.
+///   then            steady. Nothing reacts to the Relay.
+/// </summary>
+[ExecuteAlways]
+public sealed class FrontRoomsRunLookdevRig : MonoBehaviour
+{
+    [Serializable] public sealed class Wrap { public Light light; public Renderer renderer; public int lensIndex = -1; public float level = 1f; }
+    [Serializable] public sealed class Head { public Light light; public Renderer renderer; public int lensIndex = -1; public Renderer beam; public float unitZ; public float gain = 1f; public bool goal; }
+    public enum AmbientMode { Override, CustomSH }
+    [Serializable] public sealed class Pilot { public Renderer renderer; public int index = -1; }
+    /// <summary>Floor-bounce fill under a pool (look-dev stand-in for baked probes): follows the
+    /// mean level of the heads, so it is zero in the 0.35 s black and rises with the filaments.</summary>
+    [Serializable] public sealed class Bounce { public Light light; public float poolZ; public float level = 1f; }
+
+    public List<Wrap> wraps = new List<Wrap>();
+    public List<Head> heads = new List<Head>();
+    public List<Pilot> pilots = new List<Pilot>();
+    public List<Bounce> bounces = new List<Bounce>();
+    public float bounceIntensity = 1f;
+    public List<Renderer> corridorRenderers = new List<Renderer>();
+    /// <summary>Additive soffit scallops over each wraparound (the light its side panels throw
+    /// on the dark deck). Same order as <see cref="wraps"/>; level follows the wrap.</summary>
+    public List<Renderer> halos = new List<Renderer>();
+    public float haloLevel = 1f;
+    /// <summary>The twin-head units (cabinet, yokes, heads, feed). After the trip they get a local
+    /// probe: the bounce of their own heads off the wall patches and pools beside them
+    /// (what a light probe at the unit would hold). Armed they share the corridor SH.</summary>
+    public List<Renderer> unitRenderers = new List<Renderer>();
+    public float unitTrippedDown = .20f, unitTrippedSide = .12f, unitTrippedUp = .07f;
+    public Color unitTrippedTint = new Color(1f, .90f, .78f);
+
+    [Header("Armed")]
+    public float wrapIntensity = 5.5f;
+    public Color wrapLensEmission = new Color(.90f, .95f, 1f) * 2.8f;
+    public float lensGlow = .03f;
+    [Tooltip("r3: the .03 lens glow after the mains drop is phosphor afterglow, so it decays (time constant, s). At t = +3 s the dead wraps read as dead acrylic, not as lit lenses.")]
+    public float afterglowTau = .5f;
+    public Color pilotEmission = new Color(2.6f, .20f, .10f);
+    public float armedAmbient = .6f;
+    [Tooltip("Corridor ambient, armed: SampleSH(n) targets in linear units (what the shader multiplies albedo by). Down = ceiling-facing (bounce off the lit VCT), Up = floor-facing (off the dark soffit).")]
+    public float armedDown = .40f, armedSide = .25f, armedUp = .06f;
+    public Color armedTint = new Color(.93f, .97f, 1f);
+
+    [Header("Tripped")]
+    public float headIntensity = 4f;
+    public Color headLensEmission = new Color(1f, .84f, .64f) * 8f;   // the fluted lens and hot core still read through bloom
+    public float beamDensity = .02f;
+    public float trippedAmbient = .10f;
+    public float trippedDown = .070f, trippedSide = .050f, trippedUp = .025f;
+    public Color trippedTint = Color.white;
+    [Tooltip("true: absolute SampleSH targets above (bounce model). false: brief §7.3, global probe x armedAmbient / trippedAmbient.")]
+    public bool bounceAmbient = true;
+    public float mainsDrop = .06f;
+    public float headDelay = .35f;
+    public float headStagger = .004f;
+    public float headRise = .18f;
+
+    public SphericalHarmonicsL2 globalAmbient;
+    public bool useCustomAmbient = true;
+    [Tooltip("CustomSH (used): LightProbeUsage.CustomProvided + CopySHCoefficientArraysFrom per renderer (brief §7.3). Override: a retired experiment (a _FR_Amb* hemisphere in a modified Surface shader); the shader edit was reverted 2026-10-04, so Override now does nothing.")]
+    public AmbientMode ambientMode = AmbientMode.CustomSH;
+    public float ambientMul = 1f;
+    [Tooltip("r4 look-dev switch: multiplier on the box probes' intensity (0 = no probe reflection), to measure what the reflections add.")]
+    public float probeMul = 1f;
+
+    [Header("Corridor reflection (custom box probe, per state)")]
+    public ReflectionProbe probe;
+    public Texture armedCube, trippedCube;
+    [Tooltip("r3 (glossy waxed VCT): box-projected probes baked per state (armed / tripped), one per 3 cells. Armed cube while the mains fall (scaled by the wraps), tripped cube scaled by the heads.")]
+    public List<ReflectionProbe> probes = new List<ReflectionProbe>();
+    public List<Texture> armedCubes = new List<Texture>(), trippedCubes = new List<Texture>();
+    [Tooltip("r5: one fixed probe set PER STATE (probes = armed, probesTripped = tripped), toggled by enabling. URP 17.3's Forward+ probe atlas caches a probe by instance id and re-blits cachedProbe.texture, the texture it first saw: swapping customBakedTexture on one probe kept the armed cube in the tripped frames (r5: bluish far walls).")]
+    public List<ReflectionProbe> probesTripped = new List<ReflectionProbe>();
+
+    MaterialPropertyBlock block;
+    readonly Dictionary<Renderer, Dictionary<int, Color>> emission = new Dictionary<Renderer, Dictionary<int, Color>>();
+    readonly Dictionary<Renderer, float> beams = new Dictionary<Renderer, float>();
+    public float LastT { get; private set; } = -1f;
+
+    public float WrapLevel(float t) => t < 0f ? 1f : Mathf.Clamp01(1f - t / mainsDrop);
+    public float HeadStart(float unitZ) => headDelay + headStagger * unitZ;
+    public float HeadLevel(float t, float unitZ)
+    {
+        var f = Mathf.Clamp01((t - HeadStart(unitZ)) / headRise);
+        return f * f; // ease-in filament rise
+    }
+    public float MeanHeadLevel(float t)
+    {
+        if (heads.Count == 0) return t < 0f ? 0f : 1f;
+        var sum = 0f;
+        foreach (var h in heads) sum += HeadLevel(t, h.unitZ);
+        return sum / heads.Count;
+    }
+    public float Afterglow(float t) => t <= mainsDrop ? lensGlow : lensGlow * Mathf.Exp(-(t - mainsDrop) / Mathf.Max(.01f, afterglowTau));
+    public float AmbientScale(float t) => t < 0f ? armedAmbient : Mathf.Lerp(armedAmbient, trippedAmbient, Mathf.Clamp01(t / mainsDrop));
+    public float AmbientNeutral(float t) => t < 0f ? 0f : Mathf.Clamp01(t / mainsDrop);
+
+    public void Evaluate(float t)
+    {
+        LastT = t;
+        emission.Clear();
+        beams.Clear();
+        var w = WrapLevel(t);
+        foreach (var wr in wraps)
+        {
+            if (wr.light != null)
+            {
+                wr.light.intensity = wrapIntensity * wr.level * w;
+                wr.light.enabled = w > 0f;
+            }
+            if (wr.renderer != null && wr.lensIndex >= 0)
+                Set(wr.renderer, wr.lensIndex, wrapLensEmission * wr.level * Mathf.Lerp(Afterglow(t), 1f, w));
+        }
+        foreach (var h in heads)
+        {
+            var f = HeadLevel(t, h.unitZ);
+            if (h.light != null)
+            {
+                h.light.intensity = headIntensity * h.gain * f;
+                h.light.enabled = f > 0f;
+            }
+            if (h.renderer != null && h.lensIndex >= 0) Set(h.renderer, h.lensIndex, headLensEmission * f);
+            if (h.beam != null)
+            {
+                h.beam.enabled = f > 0f;
+                beams[h.beam] = beamDensity * f;
+            }
+        }
+        var meanHead = MeanHeadLevel(t);
+        foreach (var b in bounces)
+        {
+            if (b.light == null) continue;
+            b.light.intensity = bounceIntensity * b.level * meanHead;
+            b.light.enabled = meanHead > 0f && bounceIntensity > 0f;
+        }
+        for (var i = 0; i < halos.Count && i < wraps.Count; i++)
+            if (halos[i] != null) { beams[halos[i]] = haloLevel * wraps[i].level * w; halos[i].enabled = w > 0f; }
+        foreach (var p in pilots)
+            if (p.renderer != null && p.index >= 0) Set(p.renderer, p.index, t < 0f ? pilotEmission : Color.black);
+        {
+            var armed = t < mainsDrop;
+            var ia = probeMul * (t < 0f ? 1f : armed ? WrapLevel(t) : 0f);
+            var it = probeMul * (armed ? 0f : MeanHeadLevel(t));
+            foreach (var pa in probes) if (pa != null) { pa.intensity = Mathf.Max(ia, 1e-4f); pa.enabled = ia > 0f; }
+            foreach (var pt in probesTripped) if (pt != null) { pt.intensity = Mathf.Max(it, 1e-4f); pt.enabled = it > 0f; }
+        }
+        if (probe != null)
+        {
+            // Armed: the wraps' cool room. Tripped: a near-black room with warm floor patches,
+            // scaled with the heads (none in the 0.35 s black).
+            probe.customBakedTexture = t < 0f ? armedCube : trippedCube;
+            probe.intensity = t < 0f ? 1f : MeanHeadLevel(t);
+        }
+        Apply(t);
+    }
+
+    void Set(Renderer r, int index, Color c)
+    {
+        if (!emission.TryGetValue(r, out var map)) emission[r] = map = new Dictionary<int, Color>();
+        map[index] = c;
+    }
+
+    /// <summary>The corridor's own ambient, through CustomProvided SH (property blocks).
+    /// Bounce model (default): a two-term SH (constant + one directional lobe from below)
+    /// solved so SampleSH(down) and SampleSH(up) hit the per-state targets, tinted.
+    /// Brief model: the global trilight probe scaled per state and desaturated to neutral.</summary>
+    public SphericalHarmonicsL2 CorridorSH(float t)
+    {
+        var neutral = AmbientNeutral(t);
+        if (bounceAmbient)
+        {
+            // The bounce follows the light that makes it: the wraps' share drops with the mains,
+            // the heads' share rises with the heads. In the 0.35 s blackout there is none.
+            var armed = BounceSH(armedUp, armedSide, armedDown, armedTint);
+            var tripped = BounceSH(trippedUp, trippedSide, trippedDown, trippedTint);
+            return armed * WrapLevel(t) + tripped * MeanHeadLevel(t);
+        }
+        var scale = AmbientScale(t);
+        var sh = new SphericalHarmonicsL2();
+        for (var k = 0; k < 9; k++)
+        {
+            var r = globalAmbient[0, k]; var g = globalAmbient[1, k]; var b = globalAmbient[2, k];
+            var y = .2126f * r + .7152f * g + .0722f * b;
+            sh[0, k] = Mathf.Lerp(r, y, neutral) * scale;
+            sh[1, k] = Mathf.Lerp(g, y, neutral) * scale;
+            sh[2, k] = Mathf.Lerp(b, y, neutral) * scale;
+        }
+        return sh;
+    }
+
+    /// <summary>An SH whose SampleSH is <paramref name="up"/> for an up-facing normal (floor),
+    /// <paramref name="side"/> for a wall and <paramref name="down"/> for the ceiling: three
+    /// basis lobes (constant, light from below, light from the four horizontal axes) solved
+    /// against Unity's own Evaluate, then tinted.</summary>
+    public static SphericalHarmonicsL2 BounceSH(float up, float side, float down, Color tint)
+    {
+        var b0 = new SphericalHarmonicsL2(); b0.AddAmbientLight(Color.white);
+        var b1 = new SphericalHarmonicsL2(); b1.AddDirectionalLight(Vector3.down, Color.white, 1f);
+        var b2 = new SphericalHarmonicsL2();
+        foreach (var d in new[] { Vector3.right, Vector3.left, Vector3.forward, Vector3.back }) b2.AddDirectionalLight(d, Color.white, .25f);
+        var dirs = new[] { Vector3.up, Vector3.right, Vector3.down };
+        var m = new float[3, 3];
+        var basis = new[] { b0, b1, b2 };
+        var res = new Color[3];
+        for (var j = 0; j < 3; j++) { basis[j].Evaluate(dirs, res); for (var i = 0; i < 3; i++) m[i, j] = res[i].r; }
+        var w = Solve3(m, new[] { up, side, down });
+        var sh = b0 * w[0] + b1 * w[1] + b2 * w[2];
+        for (var k = 0; k < 9; k++) { sh[0, k] *= tint.r; sh[1, k] *= tint.g; sh[2, k] *= tint.b; }
+        return sh;
+    }
+
+    static float[] Solve3(float[,] a, float[] b)
+    {
+        float Det(float[,] m) => m[0, 0] * (m[1, 1] * m[2, 2] - m[1, 2] * m[2, 1]) - m[0, 1] * (m[1, 0] * m[2, 2] - m[1, 2] * m[2, 0]) + m[0, 2] * (m[1, 0] * m[2, 1] - m[1, 1] * m[2, 0]);
+        var d = Det(a);
+        var x = new float[3];
+        for (var c = 0; c < 3; c++)
+        {
+            var t = (float[,])a.Clone();
+            for (var r = 0; r < 3; r++) t[r, c] = b[r];
+            x[c] = Det(t) / d;
+        }
+        return x;
+    }
+
+    /// <summary>The corridor ambient as three hemisphere values (up-facing, wall, down-facing),
+    /// for the Surface shader override: the wraps' bounce scaled by the mains, the heads'
+    /// bounce scaled by the heads.</summary>
+    public void Hemisphere(float t, bool unit, out Color up, out Color side, out Color down)
+    {
+        var w = WrapLevel(t); var hl = MeanHeadLevel(t);
+        var tu = unit ? unitTrippedUp : trippedUp; var ts = unit ? unitTrippedSide : trippedSide; var td = unit ? unitTrippedDown : trippedDown;
+        var tt = unit ? unitTrippedTint : trippedTint;
+        up = (armedTint * armedUp * w + tt * tu * hl) * ambientMul;
+        side = (armedTint * armedSide * w + tt * ts * hl) * ambientMul;
+        down = (armedTint * armedDown * w + tt * td * hl) * ambientMul;
+    }
+
+    /// <summary>SampleSH-equivalent values (linear rgb) for up / side / down normals.</summary>
+    public static string Describe(SphericalHarmonicsL2 sh)
+    {
+        var dirs = new[] { Vector3.up, Vector3.right, Vector3.down };
+        var res = new Color[3];
+        sh.Evaluate(dirs, res);
+        return "up " + Fmt(res[0]) + " side " + Fmt(res[1]) + " down " + Fmt(res[2]);
+    }
+    static string Fmt(Color c) => "(" + c.r.ToString("0.000") + ", " + c.g.ToString("0.000") + ", " + c.b.ToString("0.000") + ")";
+
+    void Apply(float t)
+    {
+        if (block == null) block = new MaterialPropertyBlock();
+        var shArr = new[] { CorridorSH(t) };
+        var neutral = AmbientNeutral(t);
+        var unitSh = new[] { bounceAmbient ? BounceSH(armedUp, armedSide, armedDown, armedTint) * WrapLevel(t) + BounceSH(unitTrippedUp, unitTrippedSide, unitTrippedDown, unitTrippedTint) * MeanHeadLevel(t) : shArr[0] };
+        var units = new HashSet<Renderer>(unitRenderers);
+        Hemisphere(t, false, out var u0, out var s0, out var d0);
+        Hemisphere(t, true, out var u1, out var s1, out var d1);
+        var hemi = new[] { u0, s0, d0 };
+        var unitHemi = new[] { u1, s1, d1 };
+        var done = new HashSet<Renderer>();
+        foreach (var r in corridorRenderers)
+        {
+            if (r == null || !done.Add(r)) continue;
+            emission.TryGetValue(r, out var map);
+            var count = r.sharedMaterials.Length;
+            for (var i = 0; i < count; i++)
+            {
+                block.Clear();
+                if (useCustomAmbient && ambientMode == AmbientMode.CustomSH && r.lightProbeUsage == LightProbeUsage.CustomProvided)
+                {
+                    var src = units.Contains(r) ? unitSh : shArr;
+                    var scaled = new[] { src[0] * ambientMul };
+                    block.CopySHCoefficientArraysFrom(scaled);
+                }
+                if (useCustomAmbient && ambientMode == AmbientMode.Override)
+                {
+                    var isUnit = units.Contains(r);
+                    var hu = isUnit ? unitHemi : hemi;
+                    block.SetVector("_FR_AmbUp", new Vector4(hu[0].r, hu[0].g, hu[0].b, 1f));
+                    block.SetVector("_FR_AmbSide", new Vector4(hu[1].r, hu[1].g, hu[1].b, 1f));
+                    block.SetVector("_FR_AmbDown", new Vector4(hu[2].r, hu[2].g, hu[2].b, 1f));
+                }
+                if (map != null && map.TryGetValue(i, out var c)) block.SetColor("_EmissionColor", c);
+                if (beams.TryGetValue(r, out var d)) block.SetFloat("_Density", d);
+                r.SetPropertyBlock(block, i);
+            }
+        }
+        // Emissive renderers outside the corridor list (none expected) still get their colour.
+        foreach (var kv in emission)
+        {
+            if (done.Contains(kv.Key)) continue;
+            foreach (var e in kv.Value)
+            {
+                block.Clear();
+                block.SetColor("_EmissionColor", e.Value);
+                kv.Key.SetPropertyBlock(block, e.Key);
+            }
+        }
+        foreach (var kv in beams)
+        {
+            if (done.Contains(kv.Key)) continue;
+            block.Clear();
+            block.SetFloat("_Density", kv.Value);
+            kv.Key.SetPropertyBlock(block, 0);
+        }
+    }
+
+    /// <summary>Every lamp change in [t0, t1] as (time, lamp, from, to): the photosafety table.</summary>
+    public List<(float time, string lamp, float from, float to)> Changes(float t0, float t1)
+    {
+        var list = new List<(float, string, float, float)>();
+        if (t0 <= 0f && t1 >= 0f)
+        {
+            for (var i = 0; i < wraps.Count; i++) list.Add((0f, "wrap " + i, wraps[i].level, 0f));
+            list.Add((0f, "pilots x" + pilots.Count, 1f, 0f));
+        }
+        for (var i = 0; i < heads.Count; i++)
+        {
+            var s = HeadStart(heads[i].unitZ);
+            if (s >= t0 && s <= t1) list.Add((s, "head " + i + " (unit z " + heads[i].unitZ.ToString("0") + ")", 0f, 1f));
+        }
+        list.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+        return list;
+    }
+}

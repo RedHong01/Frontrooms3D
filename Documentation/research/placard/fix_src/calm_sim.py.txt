@@ -1,0 +1,42 @@
+import numpy as np, math, sys
+g_=np.random.default_rng(7).uniform(-1,1,1000)
+def perlin1(x):
+    xi=int(math.floor(x)); xf=x-xi
+    a=g_[xi%1000]*xf; b=g_[(xi+1)%1000]*(xf-1)
+    u=xf*xf*(3-2*xf); return 0.5+(a+(b-a)*u)
+def gate(ls):
+    t=min(1,max(0,(ls-.55)/(.15-.55))); return t*t*(3-2*t)
+def lp(c,t,dt,tau): return c+(t-c)*(1-math.exp(-dt/max(1e-4,tau)))
+def step(C,W,dt): return C+(W-C)*(1-math.exp(-dt/2)) if W>C else C/(1+C*dt/8)
+def run(calm, variant, nb=2, T=60):
+  dt=1/60; n=int(T/dt)
+  Ls=None; ring=[0]*30; head=0; clk=0; held=0; hold=0; shown=0; out=[]
+  for i in range(n):
+    t=i*dt+.37
+    wave=.5+.5*math.sin(t*3.1)*(.7+.3*math.sin(t*1.27))
+    drop=(.7 if calm else .05) if perlin1(t*1.4)>.72 else 1
+    L=(.25+.45*wave)*drop
+    W=min(1,L+.2*(0.98*nb))
+    if Ls is None:
+        Ls=Ln=L; C=.75; t0=C*gate(L); ring=[t0]*30; calmread=t0
+    Ls=lp(Ls,L,dt,1.0 if calm else .35); Ln=lp(Ln,L,dt,.35)
+    C=step(C,W,dt)
+    clk+=dt
+    v = C*gate(Ln) if variant in ('mean','max') else C*gate(L)
+    while clk>=.1:
+        clk-=.1; ring[head]=v; head=(head+1)%30
+    agg = max(ring) if variant=='max' else sum(ring)/30
+    calmread=lp(calmread,agg,dt,6)
+    tgt = calmread if calm else C*gate(Ls)
+    if tgt>=held: held=tgt; hold=1.5 if calm else .6
+    else:
+        hold-=dt
+        if hold<=0: held=tgt
+    rate=.5 if calm else 2
+    shown+=max(-rate*dt,min(rate*dt,held-shown))
+    out.append(shown)
+  o=np.array(out[int(6/dt):])
+  w=max(np.ptp(o[i:i+120]) for i in range(0,len(o)-120,10))
+  return o.mean(), o.max(), o.min(), w
+for v in ('mean','raw','max'):
+  print(v, 'normal mean %.3f max %.3f min %.3f win2 %.3f'%run(False,v), '| calm mean %.3f max %.3f min %.3f win2 %.3f'%run(True,v))

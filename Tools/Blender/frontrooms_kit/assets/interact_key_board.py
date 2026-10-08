@@ -17,8 +17,8 @@ Anchors hook_0 .. hook_7 = where a ring rests in each cup (top of the wire,
 row, each read left to right as seen from the room (Unity +X to -X);
 key_hook = hook_6 (bottom row, third from the left; the map may pick any).
 
-Budget §9.3: 4,000 / 1,400 / 150 tris, LOD 3 / 8 / 40 m; 0.40 m tall, so no
-LOD1 until P-1. Slots: Prop_WoodDark (board, lum 0.014), Prop_Brass (hooks,
+Budget §9.3: 4,000 / 1,400 / 150 tris, LOD 3 / 8 / 40 m; 0.40 m tall;
+LOD1 exported since the 2026-10-08 fix pass (critic H4); LOD1 keeps the LOD0 shape (lod1_keep_all). Slots: Prop_WoodDark (board, lum 0.014), Prop_Brass (hooks,
 screws), Prop_KeyTagNo (strips, cells 01-08 via uv_rect; NEW slot, fallback
 Prop_Paper). Tags interactable, key_host, wall_decor. Render-only.
 
@@ -33,11 +33,13 @@ facade must use that name (sidecar meta specName records the spec's name).
 
 import math
 
+import interact_door_common as dc
 import interact_key_common as kc
 from interact_key_common import U
 
 NAME = "Kit_KeyHookBoard"          # spec name Kit_KeyBoard collides with Kit_Keyboard (see docstring)
 LOD1_RATIO, LOD2_RATIO = 1400 / 4000, 150 / 4000
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (3.0, 8.0, 40.0)
 BUDGET = (4000, 1400, 150)
 
@@ -54,6 +56,8 @@ STRIP_CROP = (0.62, 0.31)
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
+    dc.u_grain(kit)          # fix pass 2026-10-08 (critic H3): Prop_WoodDark_A is U-grain
     kc.register_slots()
     cy = TOP - BH / 2
     path = kc.rounded_rect(BW, BH, 0.004, 3, 0.0, cy)
@@ -66,6 +70,7 @@ def build(kit):
     board = kc.profile_sweep(kit, path, prof, WOOD, lambda u, v, w: U(u, v, w), name="board",
                              cap_first=True, cap_last=True)
     board["fr_grain"] = "z"
+    board["fr_ugrain"] = True   # grain up the board on the U-grain texture (was across it)
     hooks = []
     parts = []
     for r, y in enumerate(ROWS):
@@ -110,7 +115,10 @@ def build(kit):
     # key hangs tip down from key_contact with its flat normal (+X) square to
     # the room (30 deg of twist in its Ø 4.8 hole) and the tag hangs from
     # tag_contact face to the room (30 deg in its Ø 5 hole on the 2.4 mm tab).
-    kit.meta["hungPose"] = {"ringYawDeg": -60.0, "ringLiftM": 0.0012, "keyTwistDeg": -30.0, "tagTwistDeg": -30.0,
+    # Fix pass 2026-10-08 (critic C2): tag on the WALL side of the ring so the brass key faces the room. The ring turns
+    # 180 deg about the vertical (same plane; the hook still passes through it) and the tag turns back to face the room.
+    # Re-checked with BVH on the real meshes, every host x every tag: 0 overlaps (int_work/fix/hung_pose.json).
+    kit.meta["hungPose"] = {"ringYawDeg": 120.0, "ringLiftM": 0.0012, "keyTwistDeg": -30.0, "tagTwistDeg": 150.0, "tagSide": "wall (behind the key)",
                             "key": "LookRotation(down, Cross(down, hostForward)): tip down, flats to the room",
                             "tag": "LookRotation(hostForward, up): face to the room, hanging along -Y"}
     kit.no_collider()

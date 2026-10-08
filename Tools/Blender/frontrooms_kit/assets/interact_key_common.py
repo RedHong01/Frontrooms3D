@@ -25,8 +25,13 @@ Wear (§1.8 W1/W2): every part carries a POINT colour attribute "fr_wear"
 (white = clean; darker R = hand grime, darker G = edge wear, darker B =
 cavity). Nothing reads it until P-3 is approved.
 
-LOD (§1.8, §9.3): every G3 asset is under 1.0 m, so no module sets LOD1
-(no LODGroup until P-1); modules record lodDistances / lodRatios /
+LOD (§1.8, §9.3): until 2026-10-08 no G3 module set LOD1, because the old
+importer culled small objects at 3 % screen height. Since 663e858
+FrontRoomsKitImporter maps the sidecar's lodDistances (d01, d12, dcull) to
+the LODGroup, so every module now sets LOD1 = LOD1_RATIO (fix pass, critic
+H4): LOD0 -> LOD1 at d01 and the cull at dcull. kitlib keeps parts under
+12 mm uncollapsed (fr_lod_keep), so a thin part's LOD1 can be close to its
+LOD0; the gain is the cull. Modules record lodDistances / lodRatios /
 lodBudget in kit.meta and mark LOD2 drops with obj["fr_lod2_drop"].
 """
 
@@ -81,7 +86,9 @@ CUT_STEP = 0.00038
 CUT_BASE = 0.0002
 CUT_FLAT = 0.0008
 CUT_FLANK_DEG = 50.0                # flank angle from the vertical (100 deg included) - ESTIMATE reading of "50 deg flanks"
-TIP_BEVEL_Z = 0.0215
+TIP_BEVEL_Z = 0.0234                # fix pass 2026-10-08 (critic L6): was 0.0215, which ran the tip bevel
+                                    # under cut 6 (Z 0.0230, floor Y 0.00364) and erased it (5 cuts showed for
+                                    # 6 pins). It now starts at cut 6's floor end (0.0230 + 0.0004).
 TIP_Y = 0.0005
 NOSE_R = 0.0005
 PIN_Z = CUT_Z                       # G2's pin tips hang at the cut Z values

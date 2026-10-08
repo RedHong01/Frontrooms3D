@@ -1,0 +1,36 @@
+"""RN-X goal leaf for Run! C: 1.0 x 2.1 m, latching. CLONE-ONLY look-dev.
+RN-F's laminate leaf with the 0.25 x 0.75 m wired lite, a kick plate, and a
+period crossbar exit device on the push (corridor) face at 1.0 m: an active
+end case at the latch stile, a hinge-side end bracket, a 32 mm tubular bar,
+and the rim latch bolt projecting past the latch edge. Lever trim on the
+pull face. Origin = hinge edge, pull face, floor (see run_c_common.py).
+"""
+import run_c_common as rc
+from run_c_common import U
+
+NAME = "Kit_DoorLeaf_RunX"
+SMOOTH_ANGLE = 40.0
+W = 0.992
+
+
+def build(kit):
+    rc.leaf(kit, W, push_plate=False)
+    t = rc.LEAF_T
+    ay = 1.00
+    # Active end case (latch stile) and hinge-side bracket.
+    kit.box((0.064, 0.078, 0.230), U(W - 0.080, ay, -t - 0.039), "Prop_Aluminium", bevel=0.012, segments=3, name="active case")
+    kit.box((0.050, 0.070, 0.150), U(0.070, ay, -t - 0.035), "Prop_Aluminium", bevel=0.010, segments=3, name="hinge bracket")
+    # Crossbar: 32 mm tube at 60 mm proud.
+    x0, x1 = 0.095, W - 0.112
+    kit.cylinder(0.016, x1 - x0, U((x0 + x1) / 2, ay, -t - 0.060), "Prop_Aluminium", verts=24, rot=(0, 90, 0), bevel=0.002, name="crossbar")
+    for x in (x0 + 0.004, x1 - 0.004):
+        kit.cylinder(0.018, 0.010, U(x, ay, -t - 0.060), "Prop_SteelBlack", verts=20, rot=(0, 90, 0), bevel=0.002, name="bar end")
+    # Rim latch bolt past the latch edge (into the frame's rim strike).
+    kit.box((0.016, 0.024, 0.040), U(W - 0.040, ay + 0.03, -t - 0.044), "Prop_Chrome", bevel=0.003, segments=1, name="rim bolt")
+    for sy in (-1, 1):
+        kit.cylinder(0.003, 0.002, U(W - 0.080, ay + sy * 0.095, -t - 0.0785), "Prop_Chrome", verts=8, rot=(90, 0, 0), bevel=0.0006, segments=1, name="case screw")
+    # Pull-face lever trim.
+    kit.box((0.045, 0.008, 0.200), U(W - 0.060, ay, 0.004), "Prop_Aluminium", bevel=0.003, segments=1, name="trim plate")
+    kit.cylinder(0.009, 0.040, U(W - 0.060, ay, 0.028), "Prop_Aluminium", verts=16, rot=(90, 0, 0), bevel=0.002, name="lever hub")
+    kit.box((0.120, 0.016, 0.018), U(W - 0.060 - 0.055, ay, 0.050), "Prop_Aluminium", bevel=0.006, segments=2, name="lever")
+    kit.tag("run", "door")

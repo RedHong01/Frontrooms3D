@@ -18,7 +18,7 @@ the anchors (shoulder, tip, insert_dir, cuts_up, grip, ring_hole,
 ring_hole_dir).
 
 Budget §9.3: 2,400 / 900 / 150 tris, LOD distances 1.0 / 3 / 12 m. Under
-1.0 m, so no LOD1 until P-1 (§1.8). Slot Prop_Brass; VARIANT
+1.0 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). Slot Prop_Brass; VARIANT
 Kit_Key_Zone_Nickel = Prop_Aluminium (the satin nickel-silver original, for a
 later master key). Era: pin-tumbler IC keys since the 1920s; brass copies
 cut at a hardware store are period-true for 1990 (02 §8.1, §13).
@@ -32,6 +32,7 @@ from interact_key_common import U
 NAME = "Kit_Key_Zone"
 VARIANTS = {"Kit_Key_Zone_Nickel": {"Prop_Brass": "Prop_Aluminium"}}
 LOD1_RATIO, LOD2_RATIO = 900 / 2400, 150 / 2400
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD_DISTANCES = (1.0, 3.0, 12.0)
 BUDGET = (2400, 900, 150)
 

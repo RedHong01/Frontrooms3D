@@ -1,5 +1,5 @@
---- Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs	2026-10-07 23:36:42
-+++ mw_contract.cs	2026-10-07 23:36:43
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
 @@ -391,6 +391,8 @@
      bool hasStartArea;
      GridCoord startDoorCell;

@@ -1,0 +1,14 @@
+import sys, os
+from PIL import Image, ImageDraw, ImageFont
+V = sys.argv[1]; out = sys.argv[2]; names = sys.argv[3].split(',')
+W, Hh = 960, 540
+font = ImageFont.truetype('/Users/redwang/FrontRoomsVisualWork/proj_run_house_lights/Assets/Fonts/Period1990/TeXGyre/texgyreheros-bold.otf', 22)
+ims = [(n, Image.open(os.path.join(V, n + '.png')).convert('RGB')) for n in names if os.path.exists(os.path.join(V, n + '.png'))]
+rows = (len(ims) + 1) // 2
+sh = Image.new('RGB', (2 * W, rows * Hh), (0, 0, 0))
+d = ImageDraw.Draw(sh)
+for i, (n, im) in enumerate(ims):
+    x, y = (i % 2) * W, (i // 2) * Hh
+    sh.paste(im.resize((W, Hh), Image.LANCZOS), (x, y))
+    d.rectangle((x, y, x + 90, y + 30), fill=(244, 223, 59)); d.text((x + 6, y + 3), n, font=font, fill=(10, 10, 10))
+sh.save(out, quality=88)

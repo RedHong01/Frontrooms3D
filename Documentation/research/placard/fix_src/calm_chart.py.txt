@@ -1,0 +1,61 @@
+"""Q16 fix: the calm Failing read in the game (placard 35_fix.md §2). Static PNG for the verification log."""
+import csv, sys
+from PIL import Image, ImageDraw, ImageFont
+P1 = sys.argv[1]; OLD = sys.argv[2]; OUT = sys.argv[3]
+def font(sz, mono=False):
+    for p in (["/System/Library/Fonts/Menlo.ttc"] if mono else ["/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc"]):
+        try: return ImageFont.truetype(p, sz)
+        except Exception: pass
+    return ImageFont.load_default()
+def series(path, tag):
+    out = []
+    for r in csv.DictReader(open(path)):
+        if r["tag"] == tag: out.append((float(r["t"]), float(r["G"]), float(r["L"])))
+    return out
+new_calm = series(P1, "fix_failing_calm"); normal = series(P1, "fix_failing_normal"); old_calm = series(OLD, "failing_calm_long")
+W, H = 1600, 960
+SURF, INK, INK2, GRID = (252, 252, 251), (11, 11, 11), (82, 81, 78), (229, 228, 224)
+BLUE, ORANGE, GREY = (42, 120, 214), (235, 104, 52), (154, 152, 147)
+im = Image.new("RGB", (W, H), SURF); d = ImageDraw.Draw(im)
+L, R, T, B = 130, 1180, 110, 780
+X0, X1 = 0.0, 34.0
+def X(t): return L + (t - X0) / (X1 - X0) * (R - L)
+def Y(g): return B - g * (B - T)
+f20, f22, f26, f30 = font(20), font(22), font(26), font(30)
+d.text((L, 30), "Glow G after the placard's own lamp turns Failing (in game; fixed and normal: P1, 2 lit neighbours)", font=f30, fill=INK)
+for g in [0, .2, .4, .6, .8, 1.0]:
+    d.line([(L, Y(g)), (R, Y(g))], fill=GRID, width=1)
+    d.text((L - 14, Y(g)), "%.1f" % g, font=f22, fill=INK2, anchor="rm")
+for t in range(0, 35, 5):
+    d.line([(X(t), B), (X(t), B + 8)], fill=INK2, width=1)
+    d.text((X(t), B + 14), "%d s" % t, font=f22, fill=INK2, anchor="mt")
+d.line([(L, B), (R, B)], fill=INK2, width=2)
+d.text(((L + R) / 2, B + 48), "seconds since the lamp turned Failing", font=f22, fill=INK2, anchor="mt")
+d.text((L - 100, T - 40), "G (glow, 0-1)", font=f22, fill=INK2)
+def poly(s, col, dash=False, width=3):
+    pts = [(X(t), Y(g)) for t, g, _ in s if X0 <= t <= X1]
+    if dash:
+        for i in range(0, len(pts) - 1, 2):
+            if (i // 6) % 2 == 0: d.line([pts[i], pts[i + 1]], fill=col, width=width)
+    else:
+        d.line(pts, fill=col, width=width, joint="curve")
+poly(old_calm, GREY, dash=True)
+poly(normal, ORANGE)
+poly(new_calm, BLUE, width=4)
+def end_label(s, col, text, dy=0):
+    t, g, _ = [p for p in s if p[0] <= X1][-1]
+    d.text((X(t) + 14, Y(g) + dy), text, font=f22, fill=INK, anchor="lm")
+    d.ellipse([X(t) - 5, Y(g) - 5 + 0, X(t) + 5, Y(g) + 5], fill=col)
+end_label(new_calm, BLUE, "Reduce flashing, fixed: steady 0.36", -2)
+end_label(old_calm, GREY, "Reduce flashing, before: 0.09")
+end_label(normal, ORANGE, "Normal: pulses to 0.86")
+# legend row
+lx, ly = L, H - 40
+for col, txt, dash in [(BLUE, "Reduce flashing, fixed (peak follower)", False), (GREY, "Reduce flashing, before (lamp mean; render stage, P2)", True), (ORANGE, "Normal", False)]:
+    if dash:
+        for k in range(0, 40, 12): d.line([(lx + k, ly), (lx + k + 7, ly)], fill=col, width=4)
+    else: d.line([(lx, ly), (lx + 40, ly)], fill=col, width=4)
+    d.text((lx + 52, ly), txt, font=f22, fill=INK, anchor="lm")
+    lx += 52 + d.textlength(txt, font=f22) + 48
+im.save(OUT)
+print(OUT, len(new_calm), len(normal), len(old_calm))

@@ -1,7 +1,8 @@
 """Pressed-steel door frame (hollow-metal "knock-down" frame in sleeve mode)
 for every family member except the Lobby free door: L0-K, OF-F, OF-K, and
 the P2 Run / Exit members. Dark-bronze paint, a formed 5/8" push-side stop
-with three rubber silencers, a fluted aluminium saddle, and the frame halves
+with three rubber silencers, a fluted dark-bronze anodised saddle (clear
+aluminium on the _Alu variant; fix pass 2026-10-08), and the frame halves
 of three satin-chrome 4-1/2" five-knuckle butts (10_spec §1.4, §2.3).
 
 Real-world reference: an SDI 111-type 16 ga single-rabbet hollow-metal
@@ -9,7 +10,8 @@ frame, the US commercial standard 1955-1990: 2" face (here widened to a
 77 mm sleeve so it swallows the map's 0.07 x 0.20 trims), 5/8" stop, square
 returns, 1.5 mm inside bend radii, hairline mitres, rubber silencers on the
 latch stop, a mortise strike prep, and a 1/2" fluted aluminium transition
-saddle with 1:2 bevels (ADAAG 1991 4.13.8). The face is plain: no moulding,
+saddle with 1:2 bevels (ADAAG 1991 4.13.8), dark-bronze (duranodic) anodised
+to match the frame, as 1970s-90s commercial thresholds were sold. The face is plain: no moulding,
 which is the close-range difference from the wood casing (05 §6.2). No
 maker marks. VARIANT Kit_DoorFrame_Steel_Alu (Exit members) swaps the paint
 for the clear-anodised look.
@@ -31,8 +33,9 @@ strike box 1.6 mm behind the soffit face, so G2's mortise strike sits flush.
 Silencers: Ø 8 x 2.5 mm at Y 0.35 / 1.30 / 1.90, Z 0.988 on the latch stop
 (0.5 mm off the closed leaf: by design, like a real door).
 
-Budget (§9.1): 3,600 / 1,300 / 280 tris; slots SteelBrown (submesh 0),
-Rubber, Chrome, Aluminium. Render-only (kit.no_collider()). LOD1 0.40
+Budget (§9.1): 3,600 / 1,300 / 280 tris; slots SteelBrown (submesh 0: sheet,
+strike box and saddle), Rubber, Chrome (Aluminium only via the _Alu
+variant). Render-only (kit.no_collider()). LOD1 0.40
 keeps the sheet + saddle envelope uncollapsed (fr_lod_keep), so LOD1 stays
 gap-free; screws, pin tips and silencers drop at LOD1; hinges flagged for
 LOD2.
@@ -112,12 +115,16 @@ def build(kit):
             if p.get("fr_screw") or "tip" in p.name or "web" in p.name:
                 kit.lod1_drop(p)
 
-    # 4. Fluted aluminium saddle, three countersunk screws on the centre land.
+    # 4. Fluted saddle, three countersunk screws on the centre land. Fix pass 2026-10-08 (critic M1): the
+    #    saddle takes the frame's own slot, i.e. a dark-bronze (duranodic) anodised threshold on the
+    #    dark-bronze frames and clear aluminium only on the _Alu variant (the VARIANT swap carries it). The
+    #    bright Prop_Aluminium saddle was the brightest thing in the gap-test frames (~4.8 stops over the
+    #    frame median), a lit line under the door against RE8's "the perimeter reads dark" rule (§1.1).
     ssec = dc.saddle_section(flutes=True)
-    saddle = dc.loft_z(kit, [(dc.LINING_Z_H, ssec), (dc.LINING_Z_L, ssec)], ALU, "saddle")
+    saddle = dc.loft_z(kit, [(dc.LINING_Z_H, ssec), (dc.LINING_Z_L, ssec)], STEEL, "saddle")
     envelope.append(saddle)
     for z in SADDLE_SCREW_Z:
-        s = dc.flat_head(kit, (0.0, dc.SADDLE_H, z), (0, 1, 0), ALU, rng, d=0.0080, host=saddle, name="saddle screw")
+        s = dc.flat_head(kit, (0.0, dc.SADDLE_H, z), (0, 1, 0), STEEL, rng, d=0.0080, host=saddle, name="saddle screw")
         kit.lod1_drop(s)
         dc.lod2_drop(s)
 

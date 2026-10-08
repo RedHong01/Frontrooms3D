@@ -1,0 +1,43 @@
+"""1980s 20 in high-speed floor burnisher, parked (Run! C prop). CLONE-ONLY.
+Secondary prop at correct size and albedo, modelled a step past blockout:
+grey pad deck (0.58 m) with a black bumper, an orange ribbed motor housing,
+two rear wheels, a chrome tubular handle to 1.0 m with grips and a switch
+box, and the cord coiled on the handle hooks. ORIGIN = floor centre of the
+deck; the handle leans back toward -Y (Unity +Z)."""
+import math
+
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_FloorBurnisher"
+SMOOTH_ANGLE = 45.0
+
+
+def build(kit):
+    deck = [(0.0, 0.020), (0.270, 0.020), (0.290, 0.035), (0.292, 0.080), (0.275, 0.115), (0.200, 0.128), (0.0, 0.130)]
+    kit.lathe(deck, (0, 0, 0), "Prop_PlasticGrey", verts=48, name="deck")
+    kit.lathe([(0.296, 0.040), (0.302, 0.050), (0.302, 0.070), (0.296, 0.080)], (0, 0, 0), "Prop_Rubber", verts=48, close_top=False, close_bottom=False, name="bumper")
+    kit.cylinder(0.255, 0.020, (0, 0, 0.010), "Prop_Rubber", verts=40, bevel=0.003, name="pad")
+    motor = [(0.0, 0.128), (0.165, 0.128)]
+    for k in range(9):
+        z = 0.14 + 0.024 * k
+        motor += [(0.165 if k % 2 == 0 else 0.160, z)]
+    motor += [(0.160, 0.36), (0.130, 0.385), (0.0, 0.39)]
+    kit.lathe(motor, (0.0, 0.03, 0), "Run_Orange", verts=40, name="motor")
+    for sx in (-1, 1):
+        kit.cylinder(0.075, 0.040, (sx * 0.200, -0.250, 0.075), "Prop_Rubber", verts=24, rot=(0, 90, 0), bevel=0.008, name="wheel")
+        kit.cylinder(0.030, 0.044, (sx * 0.200, -0.250, 0.075), "Prop_PlasticGrey", verts=16, rot=(0, 90, 0), bevel=0.004, segments=1, name="hub")
+        kit.tube([(sx * 0.13, -0.10, 0.15), (sx * 0.13, -0.26, 0.30), (sx * 0.13, -0.62, 0.86), (sx * 0.13, -0.70, 0.98)], 0.012, "Prop_Chrome", verts=12, name="handle tube")
+    kit.tube([(-0.24, -0.70, 0.98), (0.24, -0.70, 0.98)], 0.012, "Prop_Chrome", verts=12, name="handle bar")
+    for sx in (-1, 1):
+        kit.cylinder(0.017, 0.10, (sx * 0.20, -0.70, 0.98), "Prop_Rubber", verts=16, rot=(0, 90, 0), bevel=0.004, name="grip")
+    kit.box((0.090, 0.070, 0.110), (0.0, -0.66, 0.90), "Run_Orange", bevel=0.010, segments=2, rot=(-55, 0, 0), name="switch box")
+    # cord: six loops coiled over the two hooks on the handle
+    for k in range(6):
+        pts = []
+        for i in range(25):
+            t = 2 * math.pi * i / 24
+            x = 0.155 * math.cos(t) * (1 + 0.02 * k)
+            zz = 0.20 * math.sin(t)
+            pts.append((x, -0.50 + 0.012 * k - 0.07 * (zz / 0.2), 0.60 + zz + 0.004 * k))
+        kit.tube(pts, 0.0055, "Prop_Rubber", verts=8, name="cord", caps=False)
+    kit.tag("run", "floor")

@@ -1,0 +1,46 @@
+{
+ "name": "Kit_EmergencyTwinHead_Yoke",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "trunnion",
+   "pos": [
+    0,
+    0.085,
+    0
+   ]
+  }
+ ],
+ "tags": [
+  "run"
+ ],
+ "noCollider": true,
+ "boundsMin": [
+  -0.0729999989271164,
+  0.0,
+  -0.011500000022351742
+ ],
+ "boundsMax": [
+  0.0729999989271164,
+  0.10400000214576721,
+  0.011500000022351742
+ ],
+ "triangles": 916,
+ "slots": [
+  "Prop_PlasticBlack",
+  "Prop_SteelAlmond"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.1459999978542328,
+  0.023000000044703484
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.154
+}

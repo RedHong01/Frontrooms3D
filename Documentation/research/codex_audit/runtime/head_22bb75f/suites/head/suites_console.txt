@@ -1,0 +1,198 @@
+[FrontRoomsMapInteractionTests] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (1.40, 5.40) would block an opening of chunk Chunk (1, 0) · revision 1; left out.
+[FrontRoomsMapInteractionTests] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (2, 0) · revision 1; left out.
+[FrontRoomsMapInteractionTests] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (1.40, 5.40) would block an opening of chunk Chunk (2, 0) · revision 1; left out.
+[FrontRoomsMapInteractionTests] Warning: [FrontRoomsMap] Module prop Kit_BarStool at (6.00, 6.00) stands in a column of chunk Chunk (0, 0) · revision 0; left out.
+[FrontRoomsMapInteractionTests] Warning: [FrontRoomsMap] Module prop Kit_Credenza at (6.66, 6.00) stands in a column of chunk Chunk (0, 0) · revision 0; left out.
+[FrontRoomsMapInteractionTests] Warning: [FrontRoomsMap] Module prop Kit_Binders at (7.17, 6.00) stood on a prop left out of chunk Chunk (0, 0) · revision 0; left out.
+[FrontRoomsMapInteractionTests] Error: [FrontRoomsMap] Chunk (1, 0) failed to build and is left out until it leaves range: System.InvalidOperationException: tools: forced build failure
+  at FrontRoomsMapWorld.BuildInto (FrontRooms.Map.GridCoord coord, FrontRoomsMapWorld+BuiltChunk chunk) [0x00872] in /Users/redwang/FrontRoomsVisualWork/proj_cx/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1080 
+  at FrontRoomsMapWorld.Build (FrontRooms.Map.GridCoord coord) [0x00006] in /Users/redwang/FrontRoomsVisualWork/proj_cx/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:945 
+UnityEngine.Debug:LogError (object)
+FrontRoomsMapWorld:Build (FrontRooms.Map.GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:952)
+FrontRoomsMapWorld:Stream (FrontRooms.Map.GridCoord,int) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:892)
+FrontRoomsMapWorld:Begin (UnityEngine.Transform,bool) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:549)
+FrontRoomsMapWorld:BuildForCapture () (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:680)
+FrontRoomsMapInteractionTests:BuildGuard (System.Collections.Generic.List`1<UnityEngine.GameObject>) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1806)
+FrontRoomsMapInteractionTests:Execute (bool) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:130)
+FrontRoomsMapInteractionTests:RunBatch () (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:100)
+System.Reflection.MethodBase:Invoke (object,object[])
+FrontRoomsCxSuites:RunSuites () (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:156)
+FrontRoomsCxSuites:RunBatch () (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:98)
+
+[FrontRoomsMapInteractionTests] Error: [FrontRoomsMap] Chunk (1, 0) failed to build and is left out until it leaves range: System.InvalidOperationException: tools: forced build failure
+  at FrontRoomsMapWorld.BuildInto (FrontRooms.Map.GridCoord coord, FrontRoomsMapWorld+BuiltChunk chunk) [0x00872] in /Users/redwang/FrontRoomsVisualWork/proj_cx/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1080 
+  at FrontRoomsMapWorld.Build (FrontRooms.Map.GridCoord coord) [0x00006] in /Users/redwang/FrontRoomsVisualWork/proj_cx/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:945 
+UnityEngine.Debug:LogError (object)
+FrontRoomsMapWorld:Build (FrontRooms.Map.GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:952)
+FrontRoomsMapWorld:Stream (FrontRooms.Map.GridCoord,int) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:892)
+System.Reflection.MethodBase:Invoke (object,object[])
+FrontRoomsMapInteractionTests:BuildGuard (System.Collections.Generic.List`1<UnityEngine.GameObject>) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1822)
+FrontRoomsMapInteractionTests:Execute (bool) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:130)
+FrontRoomsMapInteractionTests:RunBatch () (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:100)
+System.Reflection.MethodBase:Invoke (object,object[])
+FrontRoomsCxSuites:RunSuites () (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:156)
+FrontRoomsCxSuites:RunBatch () (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:98)
+
+[FrontRoomsMapInteractionTests] Exception: InvalidOperationException: test: a broken glass kit
+FrontRoomsMapInteractionTests+<>c.<Glass>b__31_11 (FrontRoomsMapWorld+Window w, FrontRoomsMapWorld+GlassBreakRecord r) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1451)
+FrontRoomsMapWorld.RaiseWindowBuilt (FrontRoomsMapWorld+Window window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1347)
+UnityEngine.Debug:LogException(Exception)
+FrontRoomsMapWorld:RaiseWindowBuilt(Window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1348)
+FrontRoomsMapWorld:Build(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:956)
+FrontRoomsMapWorld:RebuildChunk(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:480)
+FrontRoomsMapInteractionTests:Glass(List`1) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1454)
+FrontRoomsMapInteractionTests:Execute(Boolean) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:136)
+FrontRoomsMapInteractionTests:RunBatch() (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:100)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+FrontRoomsCxSuites:RunSuites() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:156)
+FrontRoomsCxSuites:RunBatch() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:98)
+
+[FrontRoomsMapInteractionTests] Exception: InvalidOperationException: test: a broken glass kit
+FrontRoomsMapInteractionTests+<>c.<Glass>b__31_11 (FrontRoomsMapWorld+Window w, FrontRoomsMapWorld+GlassBreakRecord r) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1451)
+FrontRoomsMapWorld.RaiseWindowBuilt (FrontRoomsMapWorld+Window window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1347)
+UnityEngine.Debug:LogException(Exception)
+FrontRoomsMapWorld:RaiseWindowBuilt(Window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1348)
+FrontRoomsMapWorld:Build(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:956)
+FrontRoomsMapWorld:RebuildChunk(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:480)
+FrontRoomsMapInteractionTests:Glass(List`1) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1454)
+FrontRoomsMapInteractionTests:Execute(Boolean) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:136)
+FrontRoomsMapInteractionTests:RunBatch() (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:100)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+FrontRoomsCxSuites:RunSuites() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:156)
+FrontRoomsCxSuites:RunBatch() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:98)
+
+[FrontRoomsMapInteractionTests] Exception: InvalidOperationException: test: a broken glass kit
+FrontRoomsMapInteractionTests+<>c.<Glass>b__31_11 (FrontRoomsMapWorld+Window w, FrontRoomsMapWorld+GlassBreakRecord r) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1451)
+FrontRoomsMapWorld.RaiseWindowBuilt (FrontRoomsMapWorld+Window window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1347)
+UnityEngine.Debug:LogException(Exception)
+FrontRoomsMapWorld:RaiseWindowBuilt(Window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1348)
+FrontRoomsMapWorld:Build(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:956)
+FrontRoomsMapWorld:RebuildChunk(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:480)
+FrontRoomsMapInteractionTests:Glass(List`1) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1454)
+FrontRoomsMapInteractionTests:Execute(Boolean) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:136)
+FrontRoomsMapInteractionTests:RunBatch() (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:100)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+FrontRoomsCxSuites:RunSuites() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:156)
+FrontRoomsCxSuites:RunBatch() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:98)
+
+[FrontRoomsMapInteractionTests] Exception: InvalidOperationException: test: a broken glass kit
+FrontRoomsMapInteractionTests+<>c.<Glass>b__31_11 (FrontRoomsMapWorld+Window w, FrontRoomsMapWorld+GlassBreakRecord r) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1451)
+FrontRoomsMapWorld.RaiseWindowBuilt (FrontRoomsMapWorld+Window window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1347)
+UnityEngine.Debug:LogException(Exception)
+FrontRoomsMapWorld:RaiseWindowBuilt(Window) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:1348)
+FrontRoomsMapWorld:Build(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:956)
+FrontRoomsMapWorld:RebuildChunk(GridCoord) (at Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs:480)
+FrontRoomsMapInteractionTests:Glass(List`1) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:1454)
+FrontRoomsMapInteractionTests:Execute(Boolean) (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:136)
+FrontRoomsMapInteractionTests:RunBatch() (at Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs:100)
+System.Reflection.MethodBase:Invoke(Object, Object[])
+FrontRoomsCxSuites:RunSuites() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:156)
+FrontRoomsCxSuites:RunBatch() (at Assets/Editor/Audit/FrontRoomsCxSuites.cs:98)
+
+[FrontRoomsLevelDesignerTests] Warning: [FrontRoomsMap] Module prop Kit_Crate at (0.60, 7.50) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[FrontRoomsLevelDesignerTests] Warning: [FrontRoomsMap] Module prop Kit_Crate at (0.60, 7.50) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (1, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (1, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (1, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_WaterCooler at (2.80, 0.27) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_FilingCabinet at (0.44, 1.00) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_WaterCooler at (2.80, 0.27) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_FilingCabinet at (0.44, 1.00) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_WaterCooler at (2.80, 0.27) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_FilingCabinet at (0.44, 1.00) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (2, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (2, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (2, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (2, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (2, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (7.60, 4.60) would block an opening of chunk Chunk (2, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (2, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (5.40, 4.60) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (5.40, 4.60) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (5.40, 4.60) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (1, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (5.40, 4.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (1, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (1, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (5.40, 4.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (1, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (1, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (5.40, 4.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (7.40, 0.26) would block an opening of chunk Chunk (1, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 7.60) would block an opening of chunk Chunk (0, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (4.60, 1.40) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 10.80) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 10.20) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 9.60) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_SideTableTurned at (8.66, 8.80) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (4.60, 1.40) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 10.80) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 10.20) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 9.60) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_SideTableTurned at (8.66, 8.80) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (0.26, 1.60) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (4.60, 1.40) would block an opening of chunk Chunk (1, 1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 10.80) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 10.20) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (8.60, 9.60) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_SideTableTurned at (8.66, 8.80) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (4.60, 1.40) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (4.60, 3.60) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (1.20, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (1.80, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (2.40, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_SideTableTurned at (3.20, 8.66) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (4.60, 1.40) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (4.60, 3.60) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (1.20, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (1.80, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (2.40, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_SideTableTurned at (3.20, 8.66) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (-2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Crate at (4.60, 1.40) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Pallet at (4.60, 3.60) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (1.20, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (1.80, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_LadderChair at (2.40, 8.60) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_SideTableTurned at (3.20, 8.66) would block an opening of chunk Chunk (-2, 0) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (3.80, 5.67) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (3.80, 5.67) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (3.80, 5.67) would block an opening of chunk Chunk (-2, -2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (1.60, 5.74) would block an opening of chunk Chunk (2, -1) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (0, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (0, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (0, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (0, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_Bookcase at (5.74, 7.40) would block an opening of chunk Chunk (0, 2) · revision 0; left out.
+[signatures] Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.67, 5.20) would block an opening of chunk Chunk (0, 2) · revision 0; left out.

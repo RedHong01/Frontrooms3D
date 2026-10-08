@@ -1,0 +1,34 @@
+#!/bin/zsh
+setopt NO_BG_NICE NULL_GLOB
+# usage: run.sh <tag> <shots|all> [quick|full] [extra args...]   (env RUNC_* passes through)
+H=/Users/redwang/FrontRoomsVisualWork/hl_work
+C=/Users/redwang/FrontRoomsVisualWork/proj_run_house_lights; V=$C/Verification/run_lookdev_house_lights; W=$H/runs
+PY=/Users/redwang/FrontRoomsVisualWork/venv/bin/python
+tag=$1; shots=$2; mode=${3:-quick}; shift 3 2>/dev/null
+mkdir -p $W
+args=()
+[[ $mode == quick ]] && args+=(-runQuick)
+[[ $shots != all ]] && args+=(-runShots $shots)
+if pgrep -f "projectPath $C " >/dev/null || pgrep -f "projectPath $C\$" >/dev/null; then echo "Unity already running on clone"; exit 1; fi
+rm -f $V/*.png $V/lookdev_log.txt
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off $args $@ -logFile $W/$tag.log > /dev/null 2>&1 & upid=$!; lim=${RUNC_LIMIT:-1800}; ( t0=$SECONDS; while kill -0 $upid 2>/dev/null; do (( SECONDS - t0 > lim )) && { kill $upid; echo "WATCHDOG KILL"; }; sleep 2; done ) & wait $upid; ec=$?; wait
+echo "unity exit $ec"
+grep -n "error CS\|Exception:\|FAILED\|Shader error\|MISSING" $W/$tag.log | head -12
+grep -v DUMP $V/lookdev_log.txt | grep "tuning\|zone refl\|probe\|shot \|MISSING\|WARN" | sed -E 's/ stats:.*//' | cut -c1-240
+mkdir -p $W/$tag
+cd $V
+list=()
+for f in *.png; do
+  n=${f%.png}
+  [[ $n == *_mask_* ]] && continue
+  base=${n%%_s[0-9]p*}
+  if [[ $shots == all || ",$shots," == *",$n,"* || ",$shots," == *",$base,"* ]]; then
+    $PY -c "
+from PIL import Image; im=Image.open('$V/$n.png').convert('RGB'); im.thumbnail((1280,720)); im.save('$W/$tag/$n.jpg',quality=85)"
+    list+=($n.png)
+  fi
+done
+$PY $H/measure.py $list | $PY -c "
+import sys,json
+for l in sys.stdin:
+    d=json.loads(l); print(d['file'], 'p5',d['Y_p5'],'p50',d['Y_p50'],'p95',d['Y_p95'],'c95/5',d['contrast_p95_p5'],'satred%',d['sat_red_pct'])"

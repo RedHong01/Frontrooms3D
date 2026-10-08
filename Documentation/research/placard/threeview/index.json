@@ -1,0 +1,393 @@
+{
+ "schema": "frontrooms.kit-sheets.interactables/1",
+ "generated": "2026-10-08T01:18:42-07:00",
+ "by": "visual chat (游戏视觉), Q16 fix stage, for 平面视觉's K-sheets",
+ "figma": {
+  "file": "0tCbAiVUlrPId3RWd9LRif",
+  "page": "2099:76",
+  "propKitSection": "2324:852 (平面视觉, read-only for us)"
+ },
+ "source": {
+  "models": "Kit_EvacPlacard / Kit_EvacPlacardLens rebuilt 2026-10-08 from Tools/Blender/frontrooms_kit/assets/evac_placard*.py (fix stage: frame slot Prop_AluminiumAnodised) into the clone W/proj_placard_fix (main 22bb75f + the Q16 package); art v2 (2026-10-07) packed to 4096 x 2048",
+  "renderClone": "W/proj_placard_fix",
+  "renderer": "W/tools FrontRoomsThreeView (interactables version), via FrontRoomsPlacardLookdev -placardThreeView",
+  "manifest": "png/manifest.json"
+ },
+ "conventions": {
+  "oversample": 2,
+  "paddingPx": 16,
+  "pngPerSheetPx": "PNG px = 2 x sheet px; place each PNG at 50 % so the sheet reads at sheetPpm",
+  "sheetPpmLadder": [
+   8000,
+   4000,
+   2000,
+   1000,
+   500,
+   250,
+   125
+  ],
+  "groundLine": "Part-frame kit: drawn about its origin (the wall-face point at the frame centre, +Z out of the wall), not on a floor. aboveFloor_m = the frame bottom in the game (centre 1.560 m).",
+  "views": "third-angle: front = camera on +Z (the printed face), side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
+  "swatchRule": "hex = sRGB of ( linear(mean of the _BaseMap's sRGB pixels) x linear(_BaseColor) ), read from Resources/Surfaces/<slot>.mat in the render clone (interactables/threeview/tools/swatch.py)",
+  "eraAxis": {
+   "band": [
+    1985,
+    1993
+   ],
+   "chips": [
+    "Current stock",
+    "Second-hand",
+    "Timeless"
+   ],
+   "now": 1990,
+   "t0": 1950,
+   "t1": 2000
+  }
+ },
+ "counts": {
+  "kits": 2,
+  "sheets": 1,
+  "pngs": 8,
+  "heroes": 0
+ },
+ "sheets": [
+  {
+   "id": "evac_placard",
+   "order": 1,
+   "title": "Evacuation plan",
+   "primary": "Kit_EvacPlacard",
+   "kit": "Kit_EvacPlacard",
+   "lede": "A 17 x 11 in plan in a 1 in clear-anodised snap frame by the start door; its legend glows faintly when the lamp dies.",
+   "family": "Signage · wall",
+   "dims_mm": {
+    "w": 466.8,
+    "d": 13.5,
+    "h": 313.8
+   },
+   "dims_label": "W 466.8 · D 13.5 · H 313.8 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "Aluminium snap frames are US products from 1977 (MDI US 4,145,828); the tamper-proof bullnose rail is the 1983 type (US 4,519,152). The plan inside is screen-printed and dated PRINTED 03/90. No period photo of one on an office wall yet (media_candidates.md M1–M5 wait for Red).",
+    "sources": [
+     "10_spec §1.1–1.2",
+     "35_fix §8"
+    ]
+   },
+   "materials": [
+    {
+     "name": "Prop_AluminiumAnodised",
+     "slot": "Prop_AluminiumAnodised",
+     "label": "Clear-anodised aluminium",
+     "hex": "#e8ebeb",
+     "source": "Resources/Surfaces/Prop_AluminiumAnodised.mat: no base map x _BaseColor (0.91, 0.92, 0.92); metallic 1, smoothness 0.62 (placard-only slot, 35_fix §4)"
+    },
+    {
+     "name": "Prop_EvacPlan",
+     "slot": "Prop_EvacPlan",
+     "label": "Printed plan (paper)",
+     "hex": "#e9dfd8",
+     "source": "Resources/Surfaces/Prop_EvacPlan.mat: mean of Prop_EvacPlan_A.png (art v2, 4096 x 2048) x _BaseColor white (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "name": "Prop_EvacPlan (glow)",
+     "slot": "Prop_EvacPlan",
+     "label": "Phosphor legend (dark)",
+     "hex": "#c7f294",
+     "emissive": true,
+     "source": "FrontRoomsPhosphor.TintLinear = sRGB (0.78, 0.95, 0.58), the ZnS:Cu ink; only the head, labels and changed bands glow, gated by the cell lamp"
+    },
+    {
+     "name": "Prop_LensNonGlare",
+     "slot": "Prop_LensNonGlare",
+     "label": "Non-glare lens (clear)",
+     "hex": "#000000",
+     "source": "Resources/Surfaces/Prop_LensNonGlare.mat: URP Lit transparent, black base at alpha 0.04 (preserve specular): reads as clear"
+    }
+   ],
+   "members": [
+    "start door, map side: P1 facade 76 %, P2 side wall 22 %, P3 past the pier 2 % (400 runs)"
+   ],
+   "parts": [
+    "Kit_EvacPlacardLens"
+   ],
+   "variants": [],
+   "variantImages": {},
+   "images": {
+    "top": "png/Kit_EvacPlacard_top.png",
+    "front": "png/Kit_EvacPlacard_front.png",
+    "side": "png/Kit_EvacPlacard_side.png",
+    "persp": "png/Kit_EvacPlacard_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_EvacPlacard_top",
+    "front": "img:Kit_EvacPlacard_front",
+    "side": "img:Kit_EvacPlacard_side",
+    "persp": "img:Kit_EvacPlacard_persp"
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "sheetPpm": 2000,
+   "tris": {
+    "budget": [
+     1600,
+     120,
+     28
+    ],
+    "lod0": 1754,
+    "lod1": null,
+    "lodDistances_m": [
+     2.0,
+     6.0,
+     30.0
+    ],
+    "note": "LOD1 106 and LOD2 26 tris are built and reviewed; the FBX holds LOD0 until kitlib.make_lods (P-1) lands"
+   },
+   "pending": "The legend swatches are in the WP03 reference colourway (pink/grey); 平面视觉 has a request to redraw them in the game colourway (placard 42_request_graphic.md). Re-render this sheet if the art changes."
+  }
+ ],
+ "kits": {
+  "Kit_EvacPlacard": {
+   "kit": "Kit_EvacPlacard",
+   "title": "Evacuation plan",
+   "lede": "A 17 x 11 in plan in a 1 in clear-anodised snap frame by the start door; its legend glows faintly when the lamp dies.",
+   "role": "primary",
+   "sheet": "evac_placard",
+   "dims_mm": {
+    "w": 466.8,
+    "d": 13.5,
+    "h": 313.8
+   },
+   "dims_label": "W 466.8 · D 13.5 · H 313.8 mm",
+   "size_m": [
+    0.4668,
+    0.3138,
+    0.0135
+   ],
+   "boundsMin": [
+    -0.2334,
+    -0.1569,
+    0
+   ],
+   "boundsMax": [
+    0.2334,
+    0.1569,
+    0.0135
+   ],
+   "aboveFloor_m": 1.403,
+   "placement": "Wall",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "Aluminium snap frames are US products from 1977 (MDI US 4,145,828); the tamper-proof bullnose rail is the 1983 type (US 4,519,152). The plan inside is screen-printed and dated PRINTED 03/90. No period photo of one on an office wall yet (media_candidates.md M1–M5 wait for Red).",
+    "sources": [
+     "10_spec §1.1–1.2",
+     "35_fix §8"
+    ]
+   },
+   "family": "Signage · wall",
+   "materials": [
+    {
+     "name": "Prop_AluminiumAnodised",
+     "slot": "Prop_AluminiumAnodised",
+     "label": "Clear-anodised aluminium",
+     "hex": "#e8ebeb",
+     "source": "Resources/Surfaces/Prop_AluminiumAnodised.mat: no base map x _BaseColor (0.91, 0.92, 0.92); metallic 1, smoothness 0.62 (placard-only slot, 35_fix §4)"
+    },
+    {
+     "name": "Prop_EvacPlan",
+     "slot": "Prop_EvacPlan",
+     "label": "Printed plan (paper)",
+     "hex": "#e9dfd8",
+     "source": "Resources/Surfaces/Prop_EvacPlan.mat: mean of Prop_EvacPlan_A.png (art v2, 4096 x 2048) x _BaseColor white (tint sRGB->linear, product -> sRGB)"
+    },
+    {
+     "name": "Prop_EvacPlan (glow)",
+     "slot": "Prop_EvacPlan",
+     "label": "Phosphor legend (dark)",
+     "hex": "#c7f294",
+     "emissive": true,
+     "source": "FrontRoomsPhosphor.TintLinear = sRGB (0.78, 0.95, 0.58), the ZnS:Cu ink; only the head, labels and changed bands glow, gated by the cell lamp"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1900,
+     1288
+    ],
+    "side": [
+     86,
+     1288
+    ],
+    "top": [
+     1900,
+     86
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "placard",
+    "sign",
+    "wall_flush"
+   ],
+   "anchors": [
+    "back",
+    "face",
+    "face_dir",
+    "lens_top",
+    "legend_centre",
+    "screw_0",
+    "screw_1",
+    "screw_2",
+    "screw_3"
+   ],
+   "images": {
+    "top": "png/Kit_EvacPlacard_top.png",
+    "front": "png/Kit_EvacPlacard_front.png",
+    "side": "png/Kit_EvacPlacard_side.png",
+    "persp": "png/Kit_EvacPlacard_persp.png"
+   },
+   "tris": {
+    "budget": [
+     1600,
+     120,
+     28
+    ],
+    "lod0": 1754,
+    "lod1": null,
+    "lodDistances_m": [
+     2.0,
+     6.0,
+     30.0
+    ],
+    "note": "LOD1 106 and LOD2 26 tris are built and reviewed; the FBX holds LOD0 until kitlib.make_lods (P-1) lands"
+   }
+  },
+  "Kit_EvacPlacardLens": {
+   "kit": "Kit_EvacPlacardLens",
+   "title": "Evacuation plan · lens",
+   "lede": "The 1 mm non-glare lens over the sheet: its own renderer, no shadow, not spawned on WebGL.",
+   "role": "part",
+   "sheet": "evac_placard",
+   "dims_mm": {
+    "w": 432.0,
+    "d": 0.9,
+    "h": 279.0
+   },
+   "dims_label": "W 432 · D 0.9 · H 279 mm",
+   "size_m": [
+    0.432,
+    0.279,
+    0.0009
+   ],
+   "boundsMin": [
+    -0.216,
+    -0.1395,
+    0.0046
+   ],
+   "boundsMax": [
+    0.216,
+    0.1395,
+    0.0055
+   ],
+   "aboveFloor_m": 1.403,
+   "placement": "Wall",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "Aluminium snap frames are US products from 1977 (MDI US 4,145,828); the tamper-proof bullnose rail is the 1983 type (US 4,519,152). The plan inside is screen-printed and dated PRINTED 03/90. No period photo of one on an office wall yet (media_candidates.md M1–M5 wait for Red).",
+    "sources": [
+     "10_spec §1.1–1.2",
+     "35_fix §8"
+    ]
+   },
+   "family": "Signage · wall",
+   "materials": [
+    {
+     "name": "Prop_LensNonGlare",
+     "slot": "Prop_LensNonGlare",
+     "label": "Non-glare lens (clear)",
+     "hex": "#000000",
+     "source": "Resources/Surfaces/Prop_LensNonGlare.mat: URP Lit transparent, black base at alpha 0.04 (preserve specular): reads as clear"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1760,
+     1148
+    ],
+    "side": [
+     36,
+     1148
+    ],
+    "top": [
+     1760,
+     36
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "placard",
+    "sign",
+    "wall_flush",
+    "lens"
+   ],
+   "anchors": [],
+   "images": {
+    "top": "png/Kit_EvacPlacardLens_top.png",
+    "front": "png/Kit_EvacPlacardLens_front.png",
+    "side": "png/Kit_EvacPlacardLens_side.png",
+    "persp": "png/Kit_EvacPlacardLens_persp.png"
+   },
+   "tris": {
+    "budget": [
+     10
+    ],
+    "lod0": 10,
+    "lod1": null,
+    "lodDistances_m": [
+     6.0
+    ]
+   }
+  }
+ },
+ "heroes": []
+}

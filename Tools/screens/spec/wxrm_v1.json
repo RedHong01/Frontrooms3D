@@ -1,0 +1,41 @@
+{
+  "name": "FrontRooms_Ad_02",
+  "about": "WXRM-TV 61 broadcast loop for in-game CRTs. Strings: narrative chat v1 (Documentation/research/screens/30_screen_strings.md). Type, layout and timing: graphic-visual chat (Documentation/SCREENS_VISUAL_SYSTEM.md, Figma section 2800:6096).",
+  "raster": [640, 480],
+  "fps": 30,
+  "photo": "photos/Kit_Sofa3_persp.png",
+  "sequence": [
+    {"card": "card1", "seconds": 3.0},
+    {"card": "card2", "seconds": 4.0},
+    {"card": "card3", "seconds": 3.0},
+    {"card": "card4", "seconds": 4.0},
+    {"card": "station_id", "seconds": 2.0}
+  ],
+  "strings": {
+    "brand_script": "Front Rooms",
+    "brand_caps": "FURNITURE",
+    "card1_super": "BACK ROOM CLEARANCE",
+    "card2_headline": "3-PC SOFA SET",
+    "card2_now": "NOW",
+    "card2_price": "499",
+    "card2_was": "WAS $899",
+    "card2_finance": "90 DAYS SAME AS CASH",
+    "card3_lead": "CALL",
+    "card3_phone": "555-0147",
+    "card3_hours": "OPEN 9 TO 9  ·  7 DAYS",
+    "card3_flag": "FREE DELIVERY",
+    "card4_line": "ALWAYS MORE IN THE BACK",
+    "card4_cg": "RT. 41 AT MAIN ST.  ·  555-0147",
+    "station_ring": "61",
+    "station_call": "WXRM-TV",
+    "station_market": "TRI-COUNTY",
+    "station_short": "WXRM 61",
+    "station_slogan": "STAY TUNED.",
+    "standby_1": "PLEASE STAND BY",
+    "standby_2": "TECHNICAL DIFFICULTIES",
+    "signoff_1": "THIS CONCLUDES OUR",
+    "signoff_2": "BROADCAST DAY",
+    "signoff_short": "WXRM 61 SIGNS OFF AT 2 AM",
+    "alarm": ["ALARM IN PROGRESS", "CLOSE DOORS", "BEHIND YOU"]
+  }
+}

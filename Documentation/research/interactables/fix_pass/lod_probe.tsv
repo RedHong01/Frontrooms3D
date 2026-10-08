@@ -1,0 +1,60 @@
+name	lodgroup	lods	size	d01_import	dcull_import	d01_sidecar	dcull_sidecar	tri_lod0	tri_lod1	renderers	slots
+Kit_DoorCloser_Arm	True	2	0.266	1.5	20	1.5	20	1112	1112	2	Prop_SteelBrown
+Kit_DoorCloser_Body	True	2	0.292	1.5	20	1.5	20	3236	1067	2	Prop_SteelBrown Prop_Chrome
+Kit_DoorCloser_Forearm	True	2	0.28	1.5	20	1.5	20	940	940	2	Prop_SteelBrown Prop_Chrome
+Kit_DoorCloser_Shoe	True	2	0.04	1.5	20	1.5	20	922	922	2	Prop_SteelBrown Prop_Chrome
+Kit_DoorFrame_Steel	True	2	2.175	4	-1	4	-1	3866	1430	2	Prop_SteelBrown Prop_Rubber Prop_Chrome
+Kit_DoorFrame_Steel_Alu	True	2	2.175	4	-1	4	-1	3866	1430	2	Prop_Aluminium Prop_Rubber Prop_Chrome
+Kit_DoorFrame_Wood	True	2	2.175	4	-1	4	-1	3152	1260	2	Prop_WoodWalnut Prop_WoodOak Prop_Brass
+Kit_DoorLeaf_Steel	True	2	2.08	4	-1	4	-1	3930	1572	2	Door_Enamel Prop_Aluminium Prop_Chrome
+Kit_DoorLeaf_SteelLite	True	2	2.08	4	-1	4	-1	4586	1834	2	Door_Enamel Prop_Aluminium Prop_Chrome Prop_Glass
+Kit_DoorLeaf_Steel_PaintedMetal	True	2	2.08	4	-1	4	-1	3930	1572	2	Painted_Metal Prop_Aluminium Prop_Chrome
+Kit_DoorLeaf_Veneer	True	2	2.08	4	-1	4	-1	2464	886	2	Door_Veneer Prop_Brass
+Kit_DoorLeaf_Veneer_Oak	True	2	2.08	4	-1	4	-1	2464	886	2	Prop_WoodOak Prop_Chrome
+Kit_DoorLeaf_Ward	True	2	2.08	4	-1	4	-1	4930	1972	2	Prop_WoodLaminate Prop_Aluminium Prop_Chrome
+Kit_DoorNumberPlate	True	2	0.1	1.5	15	1.5	15	480	480	2	Prop_PlasticRed Prop_KeyTagNo Prop_Chrome
+Kit_DoorNumberPlate_Blue	True	2	0.1	1.5	15	1.5	15	480	480	2	Prop_PlasticBlue Prop_KeyTagNo Prop_Chrome
+Kit_DoorNumberPlate_White	True	2	0.1	1.5	15	1.5	15	480	480	2	Prop_PlasticWhite Prop_KeyTagNo Prop_Chrome
+Kit_DoorSign	True	2	0.254	2	25	2	25	664	664	2	Prop_PlasticBlack Prop_PlasticWhite Prop_SignEngraved Prop_Chrome
+Kit_ExitDevice_Crossbar	True	2	0.909	2	25	2	25	3588	3588	2	Prop_Aluminium Prop_Chrome
+Kit_ExitSign	False	0	0	-	-	3	0	1916	-	1	Prop_SteelBlack Run_ExitSign
+Kit_ExitSign_Dead	False	0	0	-	-	3	0	1916	-	1	Prop_SteelBlack Run_ExitSign_Dead
+Kit_KeyCabinet	True	2	0.719	3	40	3	40	6804	6804	2	Prop_SteelAlmond Prop_PlasticWhite Prop_Chrome Prop_KeyTagNo
+Kit_KeyHook	True	2	0.026	1.5	12	1.5	12	922	922	2	Prop_Brass
+Kit_KeyHookBoard	True	2	0.4	3	40	3	40	4392	4392	2	Prop_WoodDark Prop_Brass Prop_KeyTagNo
+Kit_KeyRing	True	2	0.025	1	12	1	12	1972	1972	2	Prop_Chrome
+Kit_KeyTag_Long	True	2	0.076	1	15	1	15	1038	1038	2	Prop_PlasticRed Prop_KeyTagNo
+Kit_KeyTag_Long_Blue	True	2	0.076	1	15	1	15	1038	1038	2	Prop_PlasticBlue Prop_KeyTagNo
+Kit_KeyTag_Long_White	True	2	0.076	1	15	1	15	1038	1038	2	Prop_PlasticWhite Prop_KeyTagNo
+Kit_KeyTag_Rect	True	2	0.057	1	15	1	15	1038	1038	2	Prop_PlasticRed Prop_KeyTagNo
+Kit_KeyTag_Rect_Blue	True	2	0.057	1	15	1	15	1038	1038	2	Prop_PlasticBlue Prop_KeyTagNo
+Kit_KeyTag_Rect_White	True	2	0.057	1	15	1	15	1038	1038	2	Prop_PlasticWhite Prop_KeyTagNo
+Kit_KeyTag_Round	True	2	0.048	1	15	1	15	1282	1282	2	Prop_PlasticRed Prop_KeyTagNo
+Kit_KeyTag_Round_Blue	True	2	0.048	1	15	1	15	1282	1282	2	Prop_PlasticBlue Prop_KeyTagNo
+Kit_KeyTag_Round_White	True	2	0.048	1	15	1	15	1282	1282	2	Prop_PlasticWhite Prop_KeyTagNo
+Kit_Key_Zone	True	2	0.058	1	12	1	12	2188	2188	2	Prop_Brass
+Kit_Key_Zone_Nickel	True	2	0.058	1	12	1	12	2188	2188	2	Prop_Aluminium
+Kit_Lock_CylinderShell	True	2	0.044	1.5	12	1.5	12	2708	2708	2	Prop_Chrome Prop_PlasticBlack Prop_Brass
+Kit_Lock_CylinderShell_Brass	True	2	0.044	1.5	12	1.5	12	2708	2708	2	Prop_Brass Prop_PlasticBlack Prop_Brass
+Kit_Lock_Deadbolt	True	2	0.045	1	8	1	8	380	380	2	Prop_Chrome Prop_Aluminium
+Kit_Lock_Escutcheon	True	2	0.203	1.5	12	1.5	12	3248	3248	2	Prop_Chrome Prop_PlasticBlack
+Kit_Lock_Escutcheon_Brass	True	2	0.203	1.5	12	1.5	12	3248	3248	2	Prop_Brass Prop_PlasticBlack
+Kit_Lock_Knob	True	2	0.063	1.5	12	1.5	12	4992	1996	2	Prop_Chrome
+Kit_Lock_Knob_Brass	True	2	0.063	1.5	12	1.5	12	4992	1996	2	Prop_Brass
+Kit_Lock_Latchbolt_Bored	True	2	0.03	1	8	1	8	476	476	2	Prop_Chrome
+Kit_Lock_Latchbolt_Bored_Brass	True	2	0.03	1	8	1	8	476	476	2	Prop_Brass
+Kit_Lock_Latchbolt_Mortise	True	2	0.04	1	8	1	8	600	600	2	Prop_Chrome
+Kit_Lock_Lever	True	2	0.133	1.5	15	1.5	15	3974	1588	2	Prop_Chrome
+Kit_Lock_Lever_Brass	True	2	0.133	1.5	15	1.5	15	3974	1588	2	Prop_Brass
+Kit_Lock_Plug	True	2	0.03	1	8	1	8	1884	1884	2	Prop_Brass Prop_PlasticBlack
+Kit_Lock_Rose	True	2	0.07	1.5	12	1.5	12	2728	2728	2	Prop_Chrome Prop_PlasticBlack
+Kit_Lock_Rose_Brass	True	2	0.07	1.5	12	1.5	12	2728	2728	2	Prop_Brass Prop_PlasticBlack
+Kit_Lock_StrikeBored	True	2	0.124	1.5	12	1.5	12	674	674	2	Prop_Chrome Prop_PlasticBlack
+Kit_Lock_StrikeBored_Brass	True	2	0.124	1.5	12	1.5	12	674	674	2	Prop_Brass Prop_PlasticBlack
+Kit_Lock_StrikeMortise	True	2	0.2	1.5	12	1.5	12	988	988	2	Prop_Chrome Prop_PlasticBlack
+Kit_MiniBlind_Lowered	True	2	2.4	3	30	3	30	6376	1594	2	Prop_SteelAlmond Prop_PlasticWhite
+Kit_MiniBlind_Raised	True	2	1.55	3	30	3	30	2572	876	2	Prop_SteelAlmond Prop_PlasticWhite
+Kit_WindowFrame_Alu	True	2	1.8	4	-1	4	0	2190	1050	2	Prop_Aluminium Prop_Rubber
+Kit_WindowFrame_Steel	True	2	1.8	4	-1	4	0	4054	1458	2	Prop_SteelBrown Prop_Rubber
+Kit_WindowFrame_Steel_Enamel	True	2	1.8	4	-1	4	0	4054	1458	2	Door_Enamel Prop_Rubber
+Kit_WindowFrame_Wood	True	2	1.828	4	-1	4	0	2322	1044	2	Prop_WoodWalnut Prop_Rubber

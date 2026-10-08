@@ -1,0 +1,162 @@
+// TRANSITION frame (clone only): scene statistics for the V1 Frame pre-render, measured
+// independently of the audit harness. For each fixed shot and each kit mode (off, b0,
+// frame) it builds the map the way the harness does (BuildForCapture, 25 chunks, root
+// 4992, the shot's seed), stands the player at the eye, and counts within 46 m of the eye:
+// renderers, shadow casters, distinct materials, triangles, enabled lights, texture memory
+// of the materials in range, and the mesh memory of the whole build. It also writes the
+// kit's counters over the 25 built chunks and the list of border pieces.
+//
+// Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsTransitionStats.Run -quit -logFile <log>
+//   -shots <shots.json> -out <file.txt>
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Profiling;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsTransitionStats
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const float Range = 46f;
+    static readonly Vector3 MapRoot = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+    static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
+    static string Arg(string name, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return fallback;
+    }
+
+    public static void Run()
+    {
+        var code = 0;
+        var sb = new StringBuilder();
+        try
+        {
+            var file = JsonUtility.FromJson<FrontRoomsTransitionAudit.ShotFile>(File.ReadAllText(Arg("-shots", null)));
+            var outPath = Arg("-out", "transition_stats.txt");
+            ShaderUtil.allowAsyncCompilation = false;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var modes = new[] { FrontRoomsTransitionKit.KitMode.Off, FrontRoomsTransitionKit.KitMode.B0, FrontRoomsTransitionKit.KitMode.Frame };
+            sb.AppendLine("FrontRoomsTransitionStats " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", IC) + " · range " + Range + " m round each eye · map root " + MapRoot);
+            sb.AppendLine("columns: shot | mode | renderers | shadow casters | materials | triangles | lights enabled | texture MB (materials in range) | mesh MB (whole 25-chunk build) | kit renderers in range | kit tris in range | in the shot's frustum: renderers (= opaque draws before batching) / kit renderers / triangles");
+            foreach (var s in file.shots)
+            {
+                var eye = new Vector3(s.eyeMap[0], s.eyeMap[1], s.eyeMap[2]);
+                var feet = new Vector3(eye.x, 0f, eye.z);
+                foreach (var m in modes)
+                {
+                    FrontRoomsTransitionKit.Mode = m;
+                    FrontRoomsTransitionKit.Count.Reset();
+                    FrontRoomsTransitionKit.Built.Clear();
+                    FrontRoomsTransitionKit.LogBuilt = m == FrontRoomsTransitionKit.KitMode.Frame;
+                    var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+                    profile.hideFlags = HideFlags.DontSave;
+                    profile.generation = profile.Generation(s.seed);
+                    var root = new GameObject("TRANSITION STATS " + s.id + " " + m) { hideFlags = HideFlags.DontSave };
+                    root.transform.position = MapRoot;
+                    var world = root.AddComponent<FrontRoomsMapWorld>();
+                    world.Profile = profile;
+                    world.OverrideSpawn(feet, 0f);
+                    world.BuildForCapture();
+                    var eyeT = root.transform.Find("CAPTURE / eye");
+                    if (eyeT != null) eyeT.localPosition = feet;
+                    if (s.openDoors != null)
+                        for (var i = 0; i + 3 < s.openDoors.Length; i += 4)
+                        {
+                            world.TryOpenDoor(new GridCoord(s.openDoors[i], s.openDoors[i + 1]), new GridCoord(s.openDoors[i + 2], s.openDoors[i + 3]));
+                            for (var k = 0; k < 4; k++) world.TickDoorsForTools(1f);
+                        }
+                    world.TickFixturesForTools(0f);
+                    var eyeW = MapRoot + eye;
+                    var fov = s.fov > 1f ? s.fov : 76f;
+                    var view = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * Matrix4x4.TRS(eyeW, Quaternion.Euler(s.pitch, s.yaw, 0f), Vector3.one).inverse;
+                    var planes = GeometryUtility.CalculateFrustumPlanes(Matrix4x4.Perspective(fov, 16f / 9f, .06f, Range) * view);
+                    int inFrustum = 0, kitInFrustum = 0;
+                    long frustumTris = 0;
+                    int renderers = 0, casters = 0, kitRenderers = 0;
+                    long tris = 0, kitTris = 0;
+                    var materials = new HashSet<Material>();
+                    var textures = new HashSet<Texture>();
+                    foreach (var r in root.GetComponentsInChildren<Renderer>(false))
+                    {
+                        if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+                        if (r.bounds.SqrDistance(eyeW) > Range * Range) continue;
+                        renderers++;
+                        if (r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) casters++;
+                        foreach (var mat in r.sharedMaterials)
+                        {
+                            if (mat == null) continue;
+                            materials.Add(mat);
+                            foreach (var id in mat.GetTexturePropertyNameIDs())
+                            {
+                                var t = mat.GetTexture(id);
+                                if (t != null) textures.Add(t);
+                            }
+                        }
+                        var mf = r.GetComponent<MeshFilter>();
+                        long t3 = 0;
+                        if (mf != null && mf.sharedMesh != null)
+                            for (var sm = 0; sm < mf.sharedMesh.subMeshCount; sm++) t3 += mf.sharedMesh.GetIndexCount(sm) / 3;
+                        tris += t3;
+                        if (r.name.StartsWith("Transition ")) { kitRenderers++; kitTris += t3; }
+                        if (GeometryUtility.TestPlanesAABB(planes, r.bounds))
+                        {
+                            inFrustum++;
+                            frustumTris += t3;
+                            if (r.name.StartsWith("Transition ")) kitInFrustum++;
+                        }
+                    }
+                    var lights = root.GetComponentsInChildren<Light>(false).Count(l => l.enabled && l.gameObject.activeInHierarchy && (l.transform.position - eyeW).sqrMagnitude <= Range * Range);
+                    long texBytes = textures.Sum(t => Profiler.GetRuntimeMemorySizeLong(t));
+                    long meshBytes = 0;
+                    foreach (var mf in root.GetComponentsInChildren<MeshFilter>(true))
+                        if (mf.sharedMesh != null) meshBytes += Profiler.GetRuntimeMemorySizeLong(mf.sharedMesh);
+                    sb.AppendLine(s.id + " | " + m + " | " + renderers + " | " + casters + " | " + materials.Count + " | " + tris + " | " + lights
+                        + " | " + (texBytes / 1048576.0).ToString("0.0", IC) + " | " + (meshBytes / 1048576.0).ToString("0.00", IC) + " | " + kitRenderers + " | " + kitTris
+                        + " | " + inFrustum + " / " + kitInFrustum + " / " + frustumTris);
+                    if (m != FrontRoomsTransitionKit.KitMode.Off) sb.AppendLine("    kit counts over " + world.BuiltChunkCount + " chunks: " + FrontRoomsTransitionKit.Count);
+                    if (m == FrontRoomsTransitionKit.KitMode.Frame)
+                    {
+                        sb.AppendLine("    materials in range: " + string.Join(", ", materials.Select(x => x.name).OrderBy(x => x)));
+                        var cell = FrontRoomsMapWorld.CellAt(eye);
+                        foreach (var line in FrontRoomsTransitionKit.Built)
+                            if (Near(line, cell, 4)) sb.AppendLine("    " + line);
+                    }
+                    world.Release();
+                    Object.DestroyImmediate(root);
+                    Object.DestroyImmediate(profile);
+                }
+            }
+            File.WriteAllText(outPath, sb.ToString());
+            Debug.Log("[TransitionStats]\n" + sb);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[TransitionStats] " + e + "\n" + sb);
+            code = 1;
+        }
+        FrontRoomsTransitionKit.Mode = FrontRoomsTransitionKit.KitMode.Frame;
+        EditorApplication.Exit(code);
+    }
+
+    /// <summary>Lines whose first cell lies within r cells of the eye cell.</summary>
+    static bool Near(string line, GridCoord c, int r)
+    {
+        var i = line.IndexOf('(');
+        var j = line.IndexOf(')', i + 1);
+        if (i < 0 || j < 0) return false;
+        var parts = line.Substring(i + 1, j - i - 1).Split(',');
+        if (parts.Length != 2) return false;
+        if (!int.TryParse(parts[0].Trim(), out var x) || !int.TryParse(parts[1].Trim(), out var y)) return false;
+        return Mathf.Abs(x - c.x) <= r && Mathf.Abs(y - c.y) <= r;
+    }
+}

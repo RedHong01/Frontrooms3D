@@ -22,16 +22,17 @@ INTERFACE NOTE for G1 (the armor front): the deadbolt opening must clear
 X -0.0070 .. +0.0070, Y 0.9835 .. 1.0165 (door root).
 Anchors: bolt_axis (0, 0, 0); end_face (0, 0, 0.025); throw_dir (0, 0, 0.10).
 Budget (§9.2): LOD0 400 (asserted +-15 %), LOD1 150, LOD2 30; LOD distances
-1.0 / 3 / 8 m; no LOD1 export (part < 1 m). The insert dots are
+1.0 / 3 / 8 m; LOD1 exported since the 2026-10-08 fix pass (critic H4). The insert dots are
 fr_lod2_drop. Slots: Prop_Chrome (bolt, first), Prop_Aluminium (the duller
 hardened-steel inserts).
 """
 
+import interact_door_common as dc
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Deadbolt"
-LOD1 = None
 LOD1_RATIO = 0.375
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.075
 LOD_DISTANCES = (1.0, 3.0, 8.0)
 BUDGET = 400
@@ -52,6 +53,7 @@ def _wear(p, n, slot):
 
 
 def build(kit):
+    dc.lod1_keep_all(kit)   # fix pass 2026-10-08: LOD1 keeps the LOD0 shape (collapse broke it; see dc.lod1_keep_all)
     m = lc.Mesh()
     lc.plate_sweep(m, 0.0, 0.0, BX / 2, BY / 2, EDGE_R, 3,
                    [(0.0, BACK), (0.0, THROW - CHAMFER), (CHAMFER, THROW)])

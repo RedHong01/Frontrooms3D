@@ -1,6 +1,7 @@
 # 30 — Evacuation placard (Q16): in-game render
 
 Status: **RENDERED in the private clone, 2026-10-07.** Art **v2**. Build report: `20_build.md`. Spec: `10_spec.md`.
+**Superseded in parts by the fix stage (2026-10-08): `35_fix.md`, `40_contract_map.md`, `41_promotion.md`.** Frame slot, texture size, centre height, calm Failing read and the patch script changed; the merge is now `W/apply/placard_q16.sh`.
 - Clone: `/Users/redwang/FrontRoomsVisualWork/proj_placard` (main 16f520e + the placard build). Unity was never opened on Frontrooms3D.
 - Captures: 19:38–20:01, three play-mode runs (P1, P2, P3). Door-position tally: 23:38.
 - The first render attempt stopped on a usage limit at 20:06, after all captures and images were done. This run continued from its outputs: it reviewed every image, added one crop sheet and two chart crops, ran one extra placement tally, placed the Figma slides and wrote this report. Nothing was re-captured.

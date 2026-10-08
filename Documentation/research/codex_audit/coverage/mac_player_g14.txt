@@ -1,0 +1,41 @@
+G14 in macOS PLAYER builds (read-only evidence, 2026-10-08 01:xx)
+
+1. Plugin and importer
+/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib: Mach-O 64-bit dynamically linked shared library arm64
+17:    Editor:
+20:        CPU: ARM64
+23:    OSXUniversal:
+26:        CPU: ARM64
+34:        Set(p.GetEditorData("CPU") == "ARM64", () => p.SetEditorData("CPU", "ARM64"));
+36:        Set(p.GetPlatformData(BuildTarget.StandaloneOSX, "CPU") == "ARM64", () => p.SetPlatformData(BuildTarget.StandaloneOSX, "CPU", "ARM64"));
+42:xcrun clang++ -std=c++17 -fobjc-arc -O1 -arch arm64 -mmacosx-version-min=13.0 \
+50:  -arch arm64 -mmacosx-version-min=13.0 \
+
+2. Builds/Mac/FrontRoomsss.app (built 2026-10-04 17:25, URP build)
+/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Builds/Mac/FrontRoomsss.app/Contents/MacOS/FrontRoomsss: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64:Mach-O 64-bit executable arm64]
+Contents/PlugIns:
+fmod_haptics.bundle
+fmodstudio.bundle
+lib_burst_generated.bundle
+resonanceaudio.bundle
+files named *GlassRT* / *MetalGlass* anywhere in the bundle: 0
+
+3. ~/Library/Logs/Red Wang/FRONTROOMSSS/Player-prev.log (Mac player run 2026-10-04 19:52, /private/tmp/FRONTROOMSSS-Mac-newid-prep build)
+1:Mono path[0] = '/private/tmp/FRONTROOMSSS-Mac-newid-prep/FRONTROOMSSS.app/Contents/Resources/Data/Managed'
+15:Apple GPU Family: 9
+30:[FrontRoomsGlassRT] off: plugin not loaded: FrontRoomsMetalGlassRT assembly:<unknown assembly> type:<unknown type> member:(null)
+329:[FrontRooms3D] READY · manual title, first-person · display 1920x1080 Windowed · camera active
+
+4. ~/Library/Logs/Red Wang/FRONTROOMSSS/Player.log (Builds/Mac/FrontRoomsss.app launched 2026-10-04 20:47)
+1:Mono path[0] = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Builds/Mac/FrontRoomsss.app/Contents/Resources/Data/Managed'
+29:The file '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Builds/Mac/FrontRoomsss.app/Contents/Resources/Data/sharedassets0.assets' is corrupted! Remove it and launch unity again!
+30:[Position out of bounds!]
+31:Obtained 21 stack frames.
+-rw-r--r--@ 1 redwang  staff  400428 Oct  4 17:25 /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Builds/Mac/FrontRoomsss.app/Contents/Resources/Data/sharedassets0.assets
+-rw-r--r--@ 1 redwang  staff  524288 Oct  4 17:25 /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Builds/Mac/FrontRoomsss.app/Contents/Resources/Data/sharedassets0.assets.resS
+
+5. FrontRooms3DBuild.BuildMac clears URP before building (pre-existing since c8349b3, 2026-09-30)
+57:    [MenuItem("FrontRooms 3D/Build macOS")]
+61:        GraphicsSettings.defaultRenderPipeline = null;
+62:        QualitySettings.renderPipeline = null;
+99:        // Preserve the authored URP pipeline. The older build entry point cleared

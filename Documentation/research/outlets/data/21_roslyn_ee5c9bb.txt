@@ -1,8 +1,13 @@
+Roslyn compile (W/tools/roslyn_check.py): Red's main tree + the outlets_c1 payload (5 .cs overrides), outside Unity.
+== main ee5c9bb, 2026-10-07 23:4x, OSXUniversal ==
   Assembly-CSharp: 76 files, 0 errors, 0 warnings, rc 0, 28 s
   Assembly-CSharp-Editor: 51 files, 0 errors, 0 warnings, rc 0, 30 s
 COMPILE OK: Assembly-CSharp 76 files, Assembly-CSharp-Editor 51 files — 0 errors
+== main ee5c9bb, iOS defines ==
   Assembly-CSharp: 76 files, 0 errors, 0 warnings, rc 0, 38 s
   Assembly-CSharp-Editor: 51 files, 0 errors, 0 warnings, rc 0, 31 s
 COMPILE OK (iOS defines): Assembly-CSharp 76 files, Assembly-CSharp-Editor 51 files — 0 errors
-
-[exited with code 0]
+== main 22bb75f (moved during the stage: FrontRooms3DGame.cs + touch metas), 2026-10-08 00:0x, OSXUniversal ==
+  Assembly-CSharp: 76 files, 0 errors, 0 warnings, rc 0, 22 s
+  Assembly-CSharp-Editor: 51 files, 0 errors, 0 warnings, rc 0, 14 s
+COMPILE OK: Assembly-CSharp 76 files, Assembly-CSharp-Editor 51 files — 0 errors

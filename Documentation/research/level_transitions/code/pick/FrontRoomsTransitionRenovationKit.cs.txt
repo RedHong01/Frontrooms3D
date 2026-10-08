@@ -1,0 +1,1861 @@
+using System;
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+/// <summary>
+/// LEVEL TRANSITIONS · PICK = V1 FRAME + SPARSE V2 RENOVATION over current main (clone proj_trans_pick only).
+/// This is the V2 renovation kit (12_var_renovation.md), renamed, with salt 0 and a per-crossing
+/// dressing share (default 30 %): only dressed crossings get the band, floor strip, ceiling tiles,
+/// halos, reveals and props. The frame kit owns every other border crossing.
+///
+/// (original header) LEVEL TRANSITIONS · V2 RENOVATION (pre-render prototype, private clone only).
+///
+/// A visual-owned stand-in for FrontRoomsTransitionRenovationKit: pure functions from the
+/// map's own answers (zone theme, edge kind, arch opening) to render-only boxes,
+/// meshes and prop requests. The map calls it from a few hooks marked
+/// "// TRANSITION renovation" in FrontRoomsMapWorld.cs; those hooks are the
+/// draft contract. Nothing here changes zones, edges, doors or collision.
+///
+/// The story: the Office is a 1990 fit-out still being built into Level 0.
+/// Within three paper drops (3 x 0.75 m) of every Office | Level 0 crossing,
+/// the Level 0 face steps from paper to stripped, primed and freshly painted
+/// drywall; the carpet is cut back 0.6 m to the slab; ceiling tiles are out,
+/// askew or new; a few work props stand against the walls.
+///
+/// Also B0 (every variation): corner ownership at mixed-finish posts (B0.1)
+/// and per-side grime blocks for height-border walls (B0.2, in the hook).
+/// </summary>
+public static class FrontRoomsTransitionRenovationKit
+{
+    /// <summary>Tools switch this off to build the BEFORE geometry in the same session.</summary>
+    public static bool Enabled = FrontRoomsTransitionPick.On;   // tools: -renovationOff renders BEFORE (B0 off too)
+    /// <summary>
+    /// Salt for the per-crossing pattern hash (60 % full / 25 % stripped only / 15 % one drop).
+    /// Pre-render staging: salt 130 is one of the 54 salts in 0..399 where the four fixed shot
+    /// crossings (Z 609, X 795, Z 588, X 798) all draw the 60 % "full" pattern, and the two side
+    /// crossings in shot2 (X 765) draw the 25 % "stripped only" one; it also puts a step stool on
+    /// shot1's left wall. Every other crossing keeps its own draw. The real kit uses salt 0.
+    /// </summary>
+    public static int RunSalt = FrontRoomsTransitionPick.RenoSalt;
+    /// <summary>PICK: share of border crossings that are dressed (under renovation). 1 = every crossing (the V2 test).</summary>
+    public static float Share = FrontRoomsTransitionPick.RenoShare;
+    /// <summary>Counters for the report (reset per build by tools).</summary>
+    public static readonly Dictionary<string, float> Stats = new Dictionary<string, float>();
+    /// <summary>When set (tools only), every band box, slab strip, tear and prop is logged here in world metres.</summary>
+    public static List<string> DebugLog;
+    static string F(float v) => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+
+    public enum Stage : byte { Paper, Stripped, Primer, Fresh }
+    public enum Corner : byte { Extend, Centre, Retract }
+
+    public const float Drop = .75f;
+    const float Cell = MapGrid.CellSize, Half = ModuleUnits.WallHalf, Thick = ModuleUnits.WallThickness;
+    const float StripDepth = .6f, SlabDrop = .007f, CutIn = .05f;
+    // Stand-offs of the layers laid on a wall face (iteration 3). The map sits ~5.8 km from the
+    // origin in captures (root 4992 m), where a float32 world coordinate is only good to ~0.5 mm,
+    // so sub-millimetre layers z-fight in wedges at oblique views. Every layer keeps >= 2 ulp.
+    const float PrintOff = .0022f, LipOff = .0010f, CoatOff = .0016f, TapeOff = .0026f;
+    static readonly Stage[][] Patterns =
+    {
+        new[] { Stage.Fresh, Stage.Primer, Stage.Stripped },
+        new[] { Stage.Stripped, Stage.Stripped },
+        new[] { Stage.Stripped },
+    };
+
+    // ------------------------------------------------------------------ inputs
+
+    public delegate void ArchFn(GridCoord a, bool alongX, out float width, out float centre);
+
+    /// <summary>What the kit asks the map, and where its output goes. One per map; Begin() per chunk.</summary>
+    public sealed class Context
+    {
+        public Func<GridCoord, ZoneTheme> theme;
+        public Func<GridCoord, float> ceiling;
+        public Func<GridCoord, GridCoord, EdgeKind> edge;
+        public ArchFn arch;
+        public Func<GridCoord, bool> excluded;
+        public int seed;
+        public Mats mats;
+        // Per chunk.
+        public GridCoord cell0;          // map cell of chunk-local cell (0, 0)
+        public Vector3 worldOrigin;      // world position of chunk-local (0, 0, 0)
+        public readonly Output output = new Output();
+        public readonly Dictionary<(int, int, bool, bool), Face> faces = new Dictionary<(int, int, bool, bool), Face>();
+        public readonly Dictionary<(int, int, int), (Corner mode, bool postBox, bool outsideB)> corners = new Dictionary<(int, int, int), (Corner, bool, bool)>();
+        public readonly List<Rect> propRects = new List<Rect>();
+        public readonly HashSet<(int, int, bool, bool)> extrasDone = new HashSet<(int, int, bool, bool)>();
+
+        public void Begin(GridCoord chunkCell0, Vector3 chunkWorldOrigin)
+        {
+            cell0 = chunkCell0;
+            worldOrigin = chunkWorldOrigin;
+            output.Clear();
+            faces.Clear();
+            corners.Clear();
+            propRects.Clear();
+            extrasDone.Clear();
+        }
+
+        public Vector3 Local(GridCoord cell) => new Vector3((cell.x - cell0.x) * Cell, 0f, (cell.y - cell0.y) * Cell);
+    }
+
+    public sealed class Mats
+    {
+        public Material fresh, cutIn, primer, stripped, compound, slab, backing, scrap, ceilingNew, ceilingLoose, carpetLoose,
+            plenum, chalk, tbar, metal, cable, tape, peel, level0Ceiling;
+
+        public static Mats Load(Material level0Ceiling)
+        {
+            Material M(string n, Color fallback) => FrontRoomsSurfaces.TryGet(n) ?? FrontRoomsSurfaces.Lit("Transition / " + n, fallback, .2f);
+            return new Mats
+            {
+                fresh = M("Office_Wall_Fresh", new Color(.74f, .72f, .66f)),
+                cutIn = M("Office_Wall_CutIn", new Color(.75f, .73f, .67f)),
+                primer = M("Wall_Primer", new Color(.88f, .86f, .80f)),
+                stripped = M("Wall_Stripped", new Color(.74f, .70f, .62f)),
+                compound = M("Wall_Compound", new Color(.90f, .89f, .86f)),
+                slab = M("Slab_Adhesive", new Color(.50f, .47f, .42f)),
+                backing = M("Paper_Backing", new Color(.88f, .86f, .80f)),
+                scrap = M("Paper_Scrap", new Color(.75f, .68f, .40f)),
+                ceilingNew = M("Office_Ceiling_New", new Color(.86f, .85f, .82f)),
+                ceilingLoose = M("L0_CeilingTile_Loose", new Color(.80f, .78f, .71f)),
+                carpetLoose = M("Office_CarpetTile_Loose", new Color(.33f, .36f, .39f)),
+                plenum = M("Plenum_Dark", new Color(.05f, .05f, .045f)),
+                chalk = M("Chalk_Blue", new Color(.35f, .46f, .62f)),
+                tbar = M("Painted_Metal", new Color(.85f, .84f, .80f)),
+                metal = M("Prop_Aluminium", new Color(.7f, .7f, .7f)),
+                cable = M("Prop_PlasticGrey", new Color(.22f, .22f, .22f)),
+                tape = M("Prop_TapeBeige", new Color(.80f, .72f, .57f)),
+                peel = M("Paper_Peel", new Color(.75f, .68f, .40f)),
+                level0Ceiling = level0Ceiling,
+            };
+        }
+
+        public Material Of(Stage s, Material paper) =>
+            s == Stage.Fresh ? fresh : s == Stage.Primer ? primer : s == Stage.Stripped ? stripped : paper;
+    }
+
+    /// <summary>One wall edge as the map builds it (chunk-local metres).</summary>
+    public struct Edge
+    {
+        public EdgeKind kind;
+        public GridCoord a, b;           // map cells: a west/south, b east/north
+        public bool alongX;              // true: a north edge (the wall runs along X)
+        public Vector3 start, along, across;
+        public float height;             // wall top
+        public float lo, hi, top, sill;  // opening (metres along the edge), its top, window sill
+        public Material wallA, wallB;
+        public int blockA, blockB;
+        public bool mayExtendStart, mayExtendEnd;
+    }
+
+    // ------------------------------------------------------------------ outputs
+
+    public struct BoxCmd { public int block; public Material mat; public Vector3 centre, size; public float repeat; }
+
+    public sealed class RawCmd
+    {
+        public int block;
+        public Material mat;
+        public readonly List<Vector3> v = new List<Vector3>();
+        public readonly List<Vector3> n = new List<Vector3>();
+        public readonly List<Vector2> uv = new List<Vector2>();
+        public readonly List<int> t = new List<int>();
+
+        public void Quad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 nrm, Vector2 u0, Vector2 u1, Vector2 u2, Vector2 u3)
+        {
+            var i = v.Count;
+            v.Add(p0); v.Add(p1); v.Add(p2); v.Add(p3);
+            n.Add(nrm); n.Add(nrm); n.Add(nrm); n.Add(nrm);
+            uv.Add(u0); uv.Add(u1); uv.Add(u2); uv.Add(u3);
+            if (Vector3.Dot(Vector3.Cross(p1 - p0, p2 - p0), nrm) > 0f) { t.Add(i); t.Add(i + 1); t.Add(i + 2); t.Add(i); t.Add(i + 2); t.Add(i + 3); }
+            else { t.Add(i); t.Add(i + 2); t.Add(i + 1); t.Add(i); t.Add(i + 3); t.Add(i + 2); }
+        }
+
+        public int Tris => t.Count / 3;
+    }
+
+    public struct PropCmd { public string asset; public Vector3 position; public Quaternion rotation; }
+
+    public sealed class Output
+    {
+        public readonly List<BoxCmd> boxes = new List<BoxCmd>();
+        public readonly Dictionary<(int, Material), RawCmd> raws = new Dictionary<(int, Material), RawCmd>();
+        public readonly List<PropCmd> props = new List<PropCmd>();
+
+        public void Clear() { boxes.Clear(); raws.Clear(); props.Clear(); }
+
+        public RawCmd Raw(int block, Material mat)
+        {
+            if (!raws.TryGetValue((block, mat), out var r)) raws[(block, mat)] = r = new RawCmd { block = block, mat = mat };
+            return r;
+        }
+
+        public void Box(int block, Material mat, Vector3 centre, Vector3 size, float repeat = 1.2f)
+        {
+            if (size.x < 1e-4f || size.y < 1e-4f || size.z < 1e-4f) return;
+            boxes.Add(new BoxCmd { block = block, mat = mat, centre = centre, size = size, repeat = repeat });
+        }
+    }
+
+    static void Count(string key, float add = 1f)
+    {
+        Stats.TryGetValue(key, out var v);
+        Stats[key] = v + add;
+    }
+
+    // ------------------------------------------------------------------ hashing
+
+    static uint Mix(uint h)
+    {
+        unchecked
+        {
+            h ^= h >> 16; h *= 0x7feb352du;
+            h ^= h >> 15; h *= 0x846ca68bu;
+            h ^= h >> 16;
+            return h;
+        }
+    }
+
+    static uint Hash(int a, int b, int c, int d)
+    {
+        unchecked
+        {
+            var h = Mix((uint)a ^ 0x9e3779b9u);
+            h = Mix(h ^ (uint)b * 0x85ebca6bu);
+            h = Mix(h ^ (uint)c * 0xc2b2ae35u);
+            return Mix(h ^ (uint)d * 0x27d4eb2fu);
+        }
+    }
+
+    static float Unit(uint h) => (h >> 8) * (1f / 16777216f);
+
+    sealed class Rng
+    {
+        uint s;
+        public Rng(uint seed) { s = seed | 1u; }
+        public float Next() { s = Mix(s + 0x6d2b79f5u); return Unit(s); }
+        public float Range(float a, float b) => a + (b - a) * Next();
+        public int Int(int a, int bExclusive) => Mathf.Min(bExclusive - 1, a + (int)(Next() * (bExclusive - a)));
+    }
+
+    /// <summary>Smooth 1-D value noise in [-1, 1].</summary>
+    static float Noise(uint seed, float x)
+    {
+        var i = Mathf.FloorToInt(x);
+        var f = x - i;
+        var a = Unit(Hash((int)seed, i, 0, 5)) * 2f - 1f;
+        var b = Unit(Hash((int)seed, i + 1, 0, 5)) * 2f - 1f;
+        f = f * f * (3f - 2f * f);
+        return a + (b - a) * f;
+    }
+
+    /// <summary>The per-crossing hash (pattern 60/25/15 %, prop and tile choices). RunSalt picks a different draw.</summary>
+    public static uint CrossingHash(Context c, GridCoord p, GridCoord q)
+    {
+        var (ex, ey) = EdgeKey(p, q);
+        return Hash(c.seed, ex * 31 + ey, 0, 811 + RunSalt);
+    }
+
+    /// <summary>PICK: is the border crossing p|q under renovation? One draw per crossing (salt-independent of the pattern draw).</summary>
+    public static bool Dressed(Context c, GridCoord p, GridCoord q)
+    {
+        if (Share >= 1f) return true;
+        if (Share <= 0f) return false;
+        var (ex, ey) = EdgeKey(p, q);
+        return Unit(Hash(c.seed, ex * 31 + ey, 0, 977 + RunSalt)) < Share;
+    }
+
+    static GridCoord Step(bool alongX) => alongX ? new GridCoord(1, 0) : new GridCoord(0, 1);
+    static GridCoord Add(GridCoord a, GridCoord d, int k = 1) => new GridCoord(a.x + d.x * k, a.y + d.y * k);
+    static bool Passable(EdgeKind k) => k == EdgeKind.Open || k == EdgeKind.Arch;
+    static (int, int) EdgeKey(GridCoord p, GridCoord q)
+    {
+        if (q.x < p.x || q.y < p.y) { var t = p; p = q; q = t; }
+        return (p.x * 2 + (q.x > p.x ? 1 : 0), p.y);
+    }
+
+    // ------------------------------------------------------------------ the band
+
+    /// <summary>One wall face: the stage of each drop (k = -1..4, metres [0.75k, 0.75k + 0.75] along the edge).</summary>
+    public sealed class Face
+    {
+        public bool level0, band;
+        public GridCoord room, other;
+        public readonly Stage[] stage = new Stage[6];
+        public readonly int[] n = { 99, 99, 99, 99, 99, 99 };
+        public readonly List<Vector2> keepOut = new List<Vector2>();   // opening intervals (u), for props
+        public bool continuesStart, continuesEnd, cornerStart, cornerEnd;
+        public uint hash;
+        public int pattern = -1;
+        public Stage At(int k) => stage[Mathf.Clamp(k + 1, 0, 5)];
+        public int N(int k) => n[Mathf.Clamp(k + 1, 0, 5)];
+    }
+
+    struct Event { public float lo, hi; public int pattern; public uint hash; }
+
+    static int DropDistance(int k, in Event e)
+    {
+        if (Mathf.Abs(e.hi - e.lo) < 1e-4f)
+        {
+            var m = Mathf.RoundToInt(e.lo / Drop);
+            return k < m ? m - 1 - k : k - m;
+        }
+        var kL = Mathf.FloorToInt((e.lo - 1e-4f) / Drop);
+        var kR = Mathf.FloorToInt((e.hi + 1e-4f) / Drop);
+        if (k <= kL) return kL - k;
+        if (k >= kR) return k - kR;
+        return 0;
+    }
+
+    public static Face FaceOf(Context c, GridCoord a, GridCoord b, bool alongX, bool sideB)
+    {
+        var key = (a.x, a.y, alongX, sideB);
+        if (c.faces.TryGetValue(key, out var face)) return face;
+        face = new Face { room = sideB ? b : a, other = sideB ? a : b };
+        c.faces[key] = face;
+        var R = face.room;
+        var O = face.other;
+        face.level0 = c.theme(R) == ZoneTheme.Level0;
+        var step = Step(alongX);
+        // Does the face run on straight past each post (a collinear wall piece there, and no wall across our side)?
+        for (var d = -1; d <= 1; d += 2)
+        {
+            var collinear = c.edge(Add(a, step, d), Add(b, step, d)) != EdgeKind.Open;
+            var across = c.edge(R, Add(R, step, d));
+            var cont = collinear && Passable(across);
+            if (d < 0) { face.continuesStart = cont; face.cornerStart = across != EdgeKind.Open; }
+            else { face.continuesEnd = cont; face.cornerEnd = across != EdgeKind.Open; }
+        }
+        if (!face.level0 || (c.excluded != null && (c.excluded(R) || c.excluded(O)))) return face;
+
+        var events = new List<Event>(4);
+        void AddEvent(float lo, float hi, GridCoord p, GridCoord q)
+        {
+            // One stage pattern per border crossing (iteration 2): every face round one opening
+            // shows the same state of the work, so a doorway never mixes "painted" and "only stripped".
+            if (!Dressed(c, p, q)) return;   // PICK
+            var h = CrossingHash(c, p, q);
+            var u = Unit(h);
+            events.Add(new Event { lo = lo, hi = hi, hash = h, pattern = u < .60f ? 0 : u < .85f ? 1 : 2 });
+        }
+        // 1. The run crosses the border on its own side (open or arch crossing at a post).
+        for (var d = -1; d <= 1; d += 2)
+        {
+            var R2 = Add(R, step, d);
+            if (c.theme(R2) == ZoneTheme.Office && Passable(c.edge(R, R2))) AddEvent(d < 0 ? 0f : Cell, d < 0 ? 0f : Cell, R, R2);
+        }
+        var kind = c.edge(a, b);
+        // 2. A border arch in this wall.
+        if (c.theme(O) == ZoneTheme.Office && kind == EdgeKind.Arch)
+        {
+            c.arch(a, alongX, out var w, out var ctr);
+            AddEvent(ctr - w * .5f, ctr + w * .5f, a, b);
+            face.keepOut.Add(new Vector2(ctr - w * .5f, ctr + w * .5f));
+        }
+        if (kind == EdgeKind.Door || kind == EdgeKind.Window) face.keepOut.Add(new Vector2(1f, 2f));
+        // 3. A border opening (open or arch) in the collinear edge before or after, while the face runs on.
+        for (var d = -1; d <= 1; d += 2)
+        {
+            var Rn = Add(R, step, d);
+            var On = Add(O, step, d);
+            if (c.theme(Rn) != ZoneTheme.Level0 || c.theme(On) != ZoneTheme.Office || !Passable(c.edge(R, Rn))) continue;
+            var an = Add(a, step, d);
+            var bn = Add(b, step, d);
+            var k2 = c.edge(an, bn);
+            if (k2 == EdgeKind.Open) { AddEvent(d * Cell, d * Cell + Cell, an, bn); face.keepOut.Add(new Vector2(d * Cell, d * Cell + Cell)); }
+            else if (k2 == EdgeKind.Arch)
+            {
+                c.arch(an, alongX, out var w2, out var c2);
+                AddEvent(c2 - w2 * .5f + d * Cell, c2 + w2 * .5f + d * Cell, an, bn);
+                face.keepOut.Add(new Vector2(c2 - w2 * .5f + d * Cell, c2 + w2 * .5f + d * Cell));
+            }
+        }
+        foreach (var e in events) if (Mathf.Abs(e.hi - e.lo) < 1e-4f) face.keepOut.Add(new Vector2(e.lo, e.lo));
+        if (events.Count == 0) return face;
+
+        var best = 99;
+        for (var k = -1; k <= 4; k++)
+        {
+            var s = Stage.Paper;
+            var nMin = 99;
+            foreach (var e in events)
+            {
+                var nk = DropDistance(k, e);
+                var p = Patterns[e.pattern];
+                var se = nk < p.Length ? p[nk] : Stage.Paper;
+                if (se > s) s = se;
+                if (nk < nMin) nMin = nk;
+                if (nk < best) { best = nk; face.hash = e.hash; face.pattern = e.pattern; }
+            }
+            face.stage[k + 1] = s;
+            face.n[k + 1] = nMin;
+            if (s != Stage.Paper && k >= 0 && k <= 3) face.band = true;
+        }
+        return face;
+    }
+
+    // ------------------------------------------------------------------ B0.1 corners
+
+    // Arms at a post (cell corner px, py): 0 E, 1 W, 2 N, 3 S.
+    static void Arm(int px, int py, int arm, out GridCoord a, out GridCoord b, out bool alongX, out bool atStart)
+    {
+        switch (arm)
+        {
+            case 0: a = new GridCoord(px, py - 1); b = new GridCoord(px, py); alongX = true; atStart = true; break;
+            case 1: a = new GridCoord(px - 1, py - 1); b = new GridCoord(px - 1, py); alongX = true; atStart = false; break;
+            case 2: a = new GridCoord(px - 1, py); b = new GridCoord(px, py); alongX = false; atStart = true; break;
+            default: a = new GridCoord(px - 1, py - 1); b = new GridCoord(px, py - 1); alongX = false; atStart = false; break;
+        }
+    }
+
+    static int FaceKey(Context c, GridCoord a, GridCoord b, bool alongX, bool sideB, bool atStart)
+    {
+        var f = FaceOf(c, a, b, alongX, sideB);
+        if (!f.level0) return 100;
+        return (int)f.At(atStart ? 0 : 3);
+    }
+
+    /// <summary>
+    /// B0.1: how the piece of <paramref name="arm"/> ends at post (px, py). Where faces of
+    /// different finish meet, no two pieces share the 0.16 m post square: a collinear pair
+    /// meets at the centre and every other arm stops at the post face; at an L the arm whose
+    /// outside face is Office (else the more finished one) owns the post with a full post box.
+    /// </summary>
+    public static Corner CornerAt(Context c, int px, int py, int arm, out bool postBox, out bool outsideB)
+    {
+        postBox = false;
+        outsideB = false;
+        if (c.corners.TryGetValue((px, py, arm), out var cached)) { postBox = cached.postBox; outsideB = cached.outsideB; return cached.mode; }
+        var present = new bool[4];
+        var keys = new HashSet<int>();
+        for (var i = 0; i < 4; i++)
+        {
+            Arm(px, py, i, out var a, out var b, out var ax, out var st);
+            present[i] = c.edge(a, b) != EdgeKind.Open;
+            if (!present[i]) continue;
+            keys.Add(FaceKey(c, a, b, ax, false, st));
+            keys.Add(FaceKey(c, a, b, ax, true, st));
+        }
+        var modes = new Corner[4];
+        var boxes = new bool[4];
+        var outs = new bool[4];
+        var count = 0;
+        for (var i = 0; i < 4; i++) if (present[i]) count++;
+        if (keys.Count <= 1 || count <= 1)
+        {
+            for (var i = 0; i < 4; i++) modes[i] = Corner.Extend;
+        }
+        else if (present[0] && present[1])
+        {
+            modes[0] = modes[1] = Corner.Centre; modes[2] = modes[3] = Corner.Retract;
+        }
+        else if (present[2] && present[3])
+        {
+            modes[2] = modes[3] = Corner.Centre; modes[0] = modes[1] = Corner.Retract;
+        }
+        else
+        {
+            // L corner: one X arm and one Z arm.
+            var xArm = present[0] ? 0 : 1;
+            var zArm = present[2] ? 2 : 3;
+            // The X arm's outside face looks away from the Z arm, and the other way round.
+            var xOutB = zArm == 3;
+            var zOutB = xArm == 1;
+            Arm(px, py, xArm, out var xa, out var xb, out var xax, out var xst);
+            Arm(px, py, zArm, out var za, out var zb, out var zax, out var zst);
+            var kx = FaceKey(c, xa, xb, xax, xOutB, xst);
+            var kz = FaceKey(c, za, zb, zax, zOutB, zst);
+            var xOwns = kx == 100 || (kz != 100 && kx >= kz);
+            var owner = xOwns ? xArm : zArm;
+            var other = xOwns ? zArm : xArm;
+            modes[owner] = Corner.Extend;
+            boxes[owner] = true;
+            outs[owner] = xOwns ? xOutB : zOutB;
+            modes[other] = Corner.Retract;
+        }
+        for (var i = 0; i < 4; i++) c.corners[(px, py, i)] = (modes[i], boxes[i], outs[i]);
+        postBox = boxes[arm];
+        outsideB = outs[arm];
+        return modes[arm];
+    }
+
+    // ------------------------------------------------------------------ walls
+
+    struct Patch { public float u0, u1, y0, y1; public Material mat; }
+
+    /// <summary>
+    /// The render geometry of one wall piece (the map keeps its own collision box).
+    /// Two 0.08 m skins whenever the faces differ (theme, grime block or band); band
+    /// skins are cut into world-anchored drops, each in its stage material.
+    /// </summary>
+    public static void WallPiece(Context c, in Edge e, float from, float to, float bottom, float top, bool atOpeningStart, bool atOpeningEnd, float insetFrom = 0f, float insetTo = 0f)
+    {
+        var o = c.output;
+        var px0 = e.alongX ? e.a.x : e.a.x + 1;
+        var py0 = e.alongX ? e.a.y + 1 : e.a.y;
+        var px1 = e.alongX ? px0 + 1 : px0;
+        var py1 = e.alongX ? py0 : py0 + 1;
+        Corner cs = Corner.Centre, ce = Corner.Centre;
+        bool boxS = false, boxE = false, outS = false, outE = false;
+        if (from <= 0f) cs = e.mayExtendStart ? CornerAt(c, px0, py0, e.alongX ? 0 : 2, out boxS, out outS) : Corner.Centre;
+        if (to >= Cell) ce = e.mayExtendEnd ? CornerAt(c, px1, py1, e.alongX ? 1 : 3, out boxE, out outE) : Corner.Centre;
+
+        var fa = FaceOf(c, e.a, e.b, e.alongX, false);
+        var fb = FaceOf(c, e.a, e.b, e.alongX, true);
+        var haloA = Halo(c, e, fa, false, out var hwA);
+        var haloB = Halo(c, e, fb, true, out var hwB);
+        var split = e.wallA != e.wallB || e.blockA != e.blockB || fa.band || fb.band || haloA || haloB;
+
+        float Ext(Corner m) => m == Corner.Extend ? Half : m == Corner.Retract ? -Half : 0f;
+        var f = from - (from <= 0f ? Ext(cs) : 0f) + insetFrom;   // PICK: frame insets
+        var t = to + (to >= Cell ? Ext(ce) : 0f) - insetTo;
+        if (!split)
+        {
+            if (t - f < .02f || top - bottom < .02f) return;
+            var centre = e.start + e.along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f);
+            o.Box(e.blockA, e.wallA, centre, Abs(e.along * (t - f) + e.across * Thick + Vector3.up * (top - bottom)));
+            return;
+        }
+        // A split piece that owns an L post covers it with one full-thickness box in its outside finish.
+        if (boxS && cs == Corner.Extend) { PostBox(c, e, -Half, 0f, bottom, top, outS, fa, fb, 0); f = from; }
+        if (boxE && ce == Corner.Extend) { PostBox(c, e, Cell, Cell + Half, bottom, top, outE, fa, fb, 3); t = to; }
+        if (t - f < .02f || top - bottom < .02f) return;
+        Skin(c, e, fa, false, e.wallA, e.blockA, f, t, bottom, top, haloA, hwA, atOpeningStart, atOpeningEnd, from <= 1e-4f, to >= Cell - 1e-4f);
+        Skin(c, e, fb, true, e.wallB, e.blockB, f, t, bottom, top, haloB, hwB, atOpeningStart, atOpeningEnd, from <= 1e-4f, to >= Cell - 1e-4f);
+    }
+
+    static void PostBox(Context c, in Edge e, float u0, float u1, float bottom, float top, bool outsideB, Face fa, Face fb, int k)
+    {
+        var face = outsideB ? fb : fa;
+        var paper = outsideB ? e.wallB : e.wallA;
+        var mat = face.level0 ? c.mats.Of(face.At(k == 0 ? -1 : 4), paper) : paper;
+        var centre = e.start + e.along * ((u0 + u1) * .5f) + Vector3.up * ((bottom + top) * .5f);
+        c.output.Box(outsideB ? e.blockB : e.blockA, mat, centre, Abs(e.along * (u1 - u0) + e.across * Thick + Vector3.up * (top - bottom)));
+        Count("post boxes");
+    }
+
+    /// <summary>Door or window on a border, seen from its Level 0 face: the compound halo width (0.08-0.20 m past the trim).</summary>
+    static bool Halo(Context c, in Edge e, Face face, bool sideB, out float hw)
+    {
+        hw = 0f;
+        if (!face.level0 || (e.kind != EdgeKind.Door && e.kind != EdgeKind.Window && e.kind != EdgeKind.Arch)) return false;
+        if (c.theme(face.other) != ZoneTheme.Office) return false;
+        if (!Dressed(c, e.a, e.b)) return false;   // PICK: the frame kit owns undressed openings
+        var r = Unit(Hash(c.seed, EdgeKey(e.a, e.b).Item1, EdgeKey(e.a, e.b).Item2, 907));
+        // Doors and windows: 0.08-0.20 m of compound past the trim. Arches: the bead flange
+        // (32 mm) and its first coat, 0.06-0.10 m, not yet cut in by the painter.
+        hw = e.kind == EdgeKind.Arch ? .06f + .04f * r : .08f + .12f * r;
+        return true;
+    }
+
+    static void Skin(Context c, in Edge e, Face face, bool sideB, Material paper, int block, float f, float t, float bottom, float top,
+        bool halo, float hw, bool atOpeningStart, bool atOpeningEnd, bool startAtPost, bool endAtPost)
+    {
+        var o = c.output;
+        var ceiling = c.ceiling(face.room);
+        var visibleTop = Mathf.Min(top, ceiling);
+        // Cut along u: drop lines, halo edges.
+        var cuts = new List<float> { f, t };
+        for (var m = Mathf.CeilToInt(f / Drop); m * Drop < t; m++) if (m * Drop > f + 1e-4f) cuts.Add(m * Drop);
+        float hu0 = 0f, hu1 = 0f, hy0 = 0f, hy1 = 0f;
+        if (halo)
+        {
+            var e2 = (e.kind == EdgeKind.Arch ? 0f : ModuleUnits.TrimFace) + hw;
+            hu0 = e.lo - e2; hu1 = e.hi + e2;
+            hy0 = e.kind == EdgeKind.Window ? Mathf.Max(0f, e.sill - e2) : 0f;
+            hy1 = Mathf.Min(e.top + e2, ceiling - .03f);
+            if (hu0 > f + 1e-4f && hu0 < t - 1e-4f) cuts.Add(hu0);
+            if (hu1 > f + 1e-4f && hu1 < t - 1e-4f) cuts.Add(hu1);
+        }
+        cuts.Sort();
+        var patches = new List<Patch>();
+        for (var i = 0; i + 1 < cuts.Count; i++)
+        {
+            var u0 = cuts[i];
+            var u1 = cuts[i + 1];
+            if (u1 - u0 < 1e-4f) continue;
+            var k = Mathf.FloorToInt((u0 + u1) * .5f / Drop);
+            var stage = face.level0 ? face.At(k) : Stage.Paper;
+            var mat = face.level0 ? c.mats.Of(stage, paper) : paper;
+            // Compound round a border opening: on any stage at arches (the bead is not cut in yet), on all but fresh paint at doors and windows.
+            var inHalo = halo && (e.kind == EdgeKind.Arch || stage != Stage.Fresh) && (u0 + u1) * .5f > hu0 && (u0 + u1) * .5f < hu1;
+            if (inHalo)
+            {
+                // Compound inside the halo band, paper above and below it.
+                AddPatch(patches, u0, u1, bottom, top, mat, hy0, hy1, c.mats.compound);
+            }
+            else if (stage == Stage.Fresh)
+            {
+                // The painter's brushed cut-in: 0.05 m under the ceiling and beside corners and jambs.
+                var cin0 = u0 <= f + 1e-4f && ((startAtPost && face.cornerStart) || atOpeningStart);
+                var cin1 = u1 >= t - 1e-4f && ((endAtPost && face.cornerEnd) || atOpeningEnd);
+                var a0 = cin0 ? Mathf.Min(u0 + CutIn, u1) : u0;
+                var a1 = cin1 ? Mathf.Max(u1 - CutIn, a0) : u1;
+                if (cin0) patches.Add(new Patch { u0 = u0, u1 = a0, y0 = bottom, y1 = top, mat = c.mats.cutIn });
+                if (cin1) patches.Add(new Patch { u0 = a1, u1 = u1, y0 = bottom, y1 = top, mat = c.mats.cutIn });
+                if (a1 - a0 > 1e-4f) AddPatch(patches, a0, a1, bottom, top, mat, visibleTop - CutIn, visibleTop, c.mats.cutIn);
+            }
+            else patches.Add(new Patch { u0 = u0, u1 = u1, y0 = bottom, y1 = top, mat = mat });
+        }
+        // Merge neighbours of one material and one height range.
+        var merged = new List<Patch>();
+        foreach (var p in patches)
+        {
+            var last = merged.Count - 1;
+            if (last >= 0 && merged[last].mat == p.mat && Mathf.Abs(merged[last].y0 - p.y0) < 1e-4f && Mathf.Abs(merged[last].y1 - p.y1) < 1e-4f && Mathf.Abs(merged[last].u1 - p.u0) < 1e-4f)
+            {
+                var m = merged[last]; m.u1 = p.u1; merged[last] = m;
+            }
+            else merged.Add(p);
+        }
+        var side = sideB ? 1f : -1f;
+        foreach (var p in merged)
+        {
+            if (p.u1 - p.u0 < 1e-4f || p.y1 - p.y0 < 1e-4f) continue;
+            var centre = e.start + e.along * ((p.u0 + p.u1) * .5f) + Vector3.up * ((p.y0 + p.y1) * .5f) + e.across * (side * Thick * .25f);
+            o.Box(block, p.mat, centre, Abs(e.along * (p.u1 - p.u0) + e.across * (Thick * .5f) + Vector3.up * (p.y1 - p.y0)));
+            if (p.mat != paper) Count("band m2 " + p.mat.name, (p.u1 - p.u0) * Mathf.Max(0f, Mathf.Min(p.y1, visibleTop) - p.y0));
+            if (DebugLog != null && p.mat != paper) { var w = c.worldOrigin + centre; var sz = Abs(e.along * (p.u1 - p.u0) + e.across * (Thick * .5f)); DebugLog.Add("wall " + p.mat.name + " " + F(w.x - sz.x * .5f) + " " + F(w.z - sz.z * .5f) + " " + F(w.x + sz.x * .5f) + " " + F(w.z + sz.z * .5f) + " " + F(p.y0) + " " + F(p.y1)); }
+        }
+        if (!face.level0) return;
+
+        // Torn paper edge on every paper | stripped drop line in this piece.
+        var plane = e.start + e.across * (side * Half);
+        var nrm = e.across * side;
+        for (var m = Mathf.CeilToInt((f - 1e-4f) / Drop); m * Drop < t - 1e-4f; m++)
+        {
+            var ub = m * Drop;
+            if (ub < -1e-4f || ub > Cell - 1e-4f) continue;
+            if (ub <= f + 1e-4f && !(ub <= 1e-4f && f <= 1e-4f && face.continuesStart)) continue;
+            var s0 = face.At(m - 1);
+            var s1 = face.At(m);
+            if ((s0 == Stage.Paper) == (s1 == Stage.Paper)) continue;
+            var dir = s0 == Stage.Paper ? e.along : -e.along;
+            var y1 = Mathf.Min(top, ceiling);
+            if (y1 - bottom < .05f) continue;
+            // Remnants stay inside the stripped drop and this piece (never into the next drop or an opening).
+            var room = (s0 == Stage.Paper ? Mathf.Min(ub + Drop, t) - ub : ub - Mathf.Max(ub - Drop, f)) - .10f;   // clear of the next drop's roller edge
+            if (halo) room = Mathf.Min(room, s0 == Stage.Paper ? hu0 - ub - .02f : ub - hu1 - .02f);
+            var seed = Hash(c.seed, EdgeKey(face.room, face.other).Item1 * 8 + m, EdgeKey(face.room, face.other).Item2, sideB ? 61 : 67);
+            Tear(c, block, plane + e.along * ub, dir, nrm, bottom, y1, seed, top >= ceiling - 1e-3f, bottom <= 1e-3f, room, paper);
+            if (DebugLog != null) { var w = c.worldOrigin + plane + e.along * ub; DebugLog.Add("tear " + F(w.x) + " " + F(w.z)); }
+            Count("tear lines");
+            Count("tear m", y1 - bottom);
+        }
+        // Printed paper the scraper has not reached yet, inside each stripped drop (iteration 3):
+        // 1-3 islands mid-wall with a torn rim and the white base layer showing round it. They keep
+        // clear of the seam's own tongues and remnants, of the drop edges and of any halo.
+        for (var m = Mathf.FloorToInt((f + 1e-4f) / Drop); m * Drop < t - 1e-4f; m++)
+        {
+            if (face.At(m) != Stage.Stripped) continue;
+            var d0 = Mathf.Max(f, m * Drop); var d1 = Mathf.Min(t, (m + 1) * Drop);
+            var paperBefore = face.At(m - 1) == Stage.Paper; var paperAfter = face.At(m + 1) == Stage.Paper;
+            var lo = Mathf.Max(d0 + (paperBefore && d0 <= m * Drop + 1e-4f ? .26f : .07f), m * Drop + .07f);
+            var hi = Mathf.Min(d1 - (paperAfter && d1 >= (m + 1) * Drop - 1e-4f ? .26f : .07f), (m + 1) * Drop - .07f);
+            if (halo) { if (hu0 < hi && hu1 > lo) { if (hu0 - lo > hi - hu1) hi = Mathf.Min(hi, hu0 - .05f); else lo = Mathf.Max(lo, hu1 + .05f); } }
+            var yLo = bottom + (bottom <= 1e-3f ? .95f : .10f);
+            var yHi = Mathf.Min(top, ceiling) - (top >= ceiling - 1e-3f ? .40f : .10f);
+            if (hi - lo < .08f || yHi - yLo < .12f) continue;
+            var irng = new Rng(Hash(c.seed, EdgeKey(face.room, face.other).Item1 * 8 + m, EdgeKey(face.room, face.other).Item2, sideB ? 131 : 137));
+            var count = 1 + irng.Int(0, 3);
+            var placedI = new List<Vector4>();
+            for (var q = 0; q < count * 3 && placedI.Count < count; q++)
+            {
+                var rx = irng.Range(.03f, Mathf.Min(.13f, (hi - lo) * .5f));
+                var ry = rx * irng.Range(.7f, 2.2f);
+                ry = Mathf.Min(ry, (yHi - yLo) * .5f);
+                var cu = irng.Range(lo + rx, hi - rx);
+                var cy = irng.Range(yLo + ry, yHi - ry);
+                if (hi - lo < 2f * rx || yHi - yLo < 2f * ry) continue;
+                var clash = false;
+                foreach (var pi in placedI) if (Mathf.Abs(pi.x - cu) < pi.z + rx + .03f && Mathf.Abs(pi.y - cy) < pi.w + ry + .03f) clash = true;
+                if (clash) continue;
+                placedI.Add(new Vector4(cu, cy, rx * 1.25f, ry * 1.25f));
+                Island(c, block, plane + e.along * cu + Vector3.up * cy, e.along, nrm, rx, ry, Hash(c.seed, m * 17 + q, EdgeKey(face.room, face.other).Item1, EdgeKey(face.room, face.other).Item2), paper);
+                if (DebugLog != null) { var w = c.worldOrigin + plane + e.along * cu; DebugLog.Add("island " + F(w.x) + " " + F(w.z) + " " + F(cy) + " " + F(rx) + " " + F(ry)); }
+                Count("islands");
+            }
+        }
+        // The primer roller's edge where it stopped short of a stripped drop: soft, uneven, 10-70 mm over.
+        for (var m = Mathf.CeilToInt((f - 1e-4f) / Drop); m * Drop < t - 1e-4f; m++)
+        {
+            var ub = m * Drop;
+            if (ub <= f + 1e-4f || ub > Cell - 1e-4f) continue;
+            var s0 = face.At(m - 1);
+            var s1 = face.At(m);
+            if (!((s0 == Stage.Primer && s1 == Stage.Stripped) || (s0 == Stage.Stripped && s1 == Stage.Primer))) continue;
+            var y1 = Mathf.Min(top, ceiling);
+            if (y1 - bottom < .05f) continue;
+            var into = s0 == Stage.Primer ? e.along : -e.along;
+            var rs = Hash(c.seed, EdgeKey(face.room, face.other).Item1 * 8 + m, EdgeKey(face.room, face.other).Item2, sideB ? 83 : 89);
+            RaggedOver(c.output.Raw(block, c.mats.primer), plane + e.along * ub + Vector3.up * bottom, Vector3.up, into, nrm, y1 - bottom, rs, .035f, .028f, .30f);
+            Count("roller edges");
+        }
+        if (!halo) return;
+        var hseed = Hash(c.seed, EdgeKey(e.a, e.b).Item1, EdgeKey(e.a, e.b).Item2, sideB ? 71 : 73);
+        if (e.kind == EdgeKind.Arch)
+        {
+            // Arches: the first coat of compound feathers 5-35 mm past the halo onto whatever stage is there.
+            var fr = c.output.Raw(block, c.mats.compound);
+            var y0h = Mathf.Max(bottom, hy0);
+            var y1h = Mathf.Min(top, hy1);
+            if (hu0 > f + 1e-4f && hu0 < t - 1e-4f && y1h > y0h + .01f) Feather(fr, plane + e.along * hu0 + Vector3.up * y0h, Vector3.up, -e.along, nrm, y1h - y0h, hseed);
+            if (hu1 > f + 1e-4f && hu1 < t - 1e-4f && y1h > y0h + .01f) Feather(fr, plane + e.along * hu1 + Vector3.up * y0h, Vector3.up, e.along, nrm, y1h - y0h, hseed + 1);
+            if (hy1 > bottom + 1e-3f && hy1 < top - 1e-3f)
+            {
+                var a = Mathf.Max(f, hu0);
+                var b = Mathf.Min(t, hu1);
+                if (b - a > .01f) Feather(fr, plane + e.along * a + Vector3.up * hy1, e.along, Vector3.up, nrm, b - a, hseed + 2);
+            }
+            Count("arch halos");
+            return;
+        }
+        // Doors and windows: knife-cut paper round the new frame, where the drop outside the halo is still paper.
+        if (hu0 > f + 1e-4f && hu0 < t - 1e-4f && face.At(Mathf.FloorToInt((hu0 - .01f) / Drop)) == Stage.Paper)
+            CutLine(c, block, plane + e.along * hu0 + Vector3.up * Mathf.Max(bottom, hy0), Vector3.up, e.along, nrm, Mathf.Min(top, hy1) - Mathf.Max(bottom, hy0), hseed, paper);
+        if (hu1 > f + 1e-4f && hu1 < t - 1e-4f && face.At(Mathf.FloorToInt((hu1 + .01f) / Drop)) == Stage.Paper)
+            CutLine(c, block, plane + e.along * hu1 + Vector3.up * Mathf.Max(bottom, hy0), Vector3.up, -e.along, nrm, Mathf.Min(top, hy1) - Mathf.Max(bottom, hy0), hseed + 1, paper);
+        if (hy1 > bottom + 1e-3f && hy1 < top - 1e-3f)
+        {
+            var a = Mathf.Max(f, hu0);
+            var b = Mathf.Min(t, hu1);
+            if (b - a > .01f && face.At(Mathf.FloorToInt((a + b) * .5f / Drop)) == Stage.Paper)
+                CutLine(c, block, plane + e.along * a + Vector3.up * hy1, e.along, Vector3.down, nrm, b - a, hseed + 2, paper);
+        }
+        if (e.kind == EdgeKind.Window && hy0 > bottom + 1e-3f && hy0 < top - 1e-3f)
+        {
+            var a = Mathf.Max(f, hu0);
+            var b = Mathf.Min(t, hu1);
+            if (b - a > .01f && face.At(Mathf.FloorToInt((a + b) * .5f / Drop)) == Stage.Paper)
+                CutLine(c, block, plane + e.along * a + Vector3.up * hy0, e.along, Vector3.up, nrm, b - a, hseed + 3, paper);
+        }
+        // Compound wiped past the cut onto the paper by the knife: 1-3 short smears per side (iteration 3).
+        {
+            var srng = new Rng(hseed + 11);
+            var cmp = c.output.Raw(block, c.mats.compound);
+            void Smears(Vector3 p0, Vector3 run, Vector3 away, float len)
+            {
+                if (len < .15f) return;
+                var k = 1 + srng.Int(0, 3);
+                for (var i = 0; i < k; i++)
+                {
+                    var l = srng.Range(.06f, Mathf.Min(.30f, len * .5f));
+                    var s0 = srng.Range(0f, len - l);
+                    Smear(cmp, p0 + run * s0, run, away, nrm, l, srng.Range(.006f, .030f), Hash((int)hseed, i, 5, 77));
+                    Count("compound smears");
+                }
+            }
+            var y0s = Mathf.Max(bottom, hy0); var y1s = Mathf.Min(top, hy1);
+            if (hu0 > f + 1e-4f && hu0 < t - 1e-4f && y1s - y0s > .1f && face.At(Mathf.FloorToInt((hu0 - .01f) / Drop)) == Stage.Paper) Smears(plane + e.along * hu0 + Vector3.up * y0s, Vector3.up, -e.along, y1s - y0s);
+            if (hu1 > f + 1e-4f && hu1 < t - 1e-4f && y1s - y0s > .1f && face.At(Mathf.FloorToInt((hu1 + .01f) / Drop)) == Stage.Paper) Smears(plane + e.along * hu1 + Vector3.up * y0s, Vector3.up, e.along, y1s - y0s);
+            if (hy1 > bottom + 1e-3f && hy1 < top - 1e-3f)
+            {
+                var a = Mathf.Max(f, hu0); var b = Mathf.Min(t, hu1);
+                if (b - a > .1f && face.At(Mathf.FloorToInt((a + b) * .5f / Drop)) == Stage.Paper) Smears(plane + e.along * a + Vector3.up * hy1, e.along, Vector3.up, b - a);
+            }
+        }
+    }
+
+    static void AddPatch(List<Patch> patches, float u0, float u1, float bottom, float top, Material mat, float y0, float y1, Material inner)
+    {
+        y0 = Mathf.Clamp(y0, bottom, top);
+        y1 = Mathf.Clamp(y1, bottom, top);
+        if (y0 > bottom + 1e-4f) patches.Add(new Patch { u0 = u0, u1 = u1, y0 = bottom, y1 = y0, mat = mat });
+        if (y1 > y0 + 1e-4f) patches.Add(new Patch { u0 = u0, u1 = u1, y0 = y0, y1 = y1, mat = inner });
+        if (top > y1 + 1e-4f) patches.Add(new Patch { u0 = u0, u1 = u1, y0 = y1, y1 = top, mat = mat });
+    }
+
+    // ------------------------------------------------------------------ paper geometry
+
+    /// <summary>Wall frame of one tear: p0 on the seam at y = 0, dir from the paper into the stripped drop, nrm out of the wall.</summary>
+    readonly struct Frame
+    {
+        public readonly Vector3 p0, dir, nrm;
+        public Frame(Vector3 p0, Vector3 dir, Vector3 nrm) { this.p0 = p0; this.dir = dir; this.nrm = nrm; }
+        public Vector3 W(float u, float y, float off) => p0 + dir * u + Vector3.up * y + nrm * off;
+    }
+
+    /// <summary>The white base layer's feathered band: 2.5-8 mm, thinner where vinyl and base tore together.</summary>
+    static float LipWidth(uint seed, float s) => Mathf.Lerp(.0025f, .008f, .5f + .5f * Noise(seed, s / .03f)) * (Noise(seed + 5, s / .09f) < -.55f ? .3f : 1f);
+
+    /// <summary>
+    /// A torn paper edge on the seam between an intact drop and a stripped one:
+    ///  - the seam tear: the print runs 3 mm back over the intact drop and 8-25 mm out over the
+    ///    stripped one, with 2-3 tongues reaching 40-150 mm further (steep where the strip
+    ///    snapped, a long tail below);
+    ///  - remnants the scraper has not reached: a ragged patch at the floor (0.25-0.85 m high, up
+    ///    to 0.55 m into the drop) and one under the ceiling (0.06-0.30 m);
+    ///  - the white base layer in a 2.5-8 mm feathered lip outside every torn contour;
+    ///  - the top 0.10 m of the seam curls 15-25 mm off the wall, its white back showing;
+    ///  - a strip peeled down from the ceiling remnant hangs off the wall, its foot rolled.
+    /// The print is the wall's own world-projected material, so it continues the drop exactly.
+    /// 2.5-6 mm steps. No alpha, no shader noise.
+    /// </summary>
+    static void Tear(Context c, int block, Vector3 p0, Vector3 dir, Vector3 nrm, float y0, float y1, uint seed, bool atCeiling, bool atFloor, float room, Material paper)
+    {
+        var rng = new Rng(seed);
+        var fr = new Frame(p0, dir, nrm);
+        var len = y1 - y0;
+        room = Mathf.Max(.012f, room);
+        var tongues = 2 + rng.Int(0, 2);
+        var tc = new float[tongues]; var tw = new float[tongues]; var ta = new float[tongues];
+        for (var i = 0; i < tongues; i++) { tc[i] = rng.Range(.15f, Mathf.Max(.2f, len - .25f)); tw[i] = rng.Range(.03f, .08f); ta[i] = rng.Range(.04f, .15f); }
+        var curl = atCeiling ? rng.Range(.015f, .025f) : 0f;
+        float Depth(float s)
+        {
+            var d = .014f + .008f * Noise(seed, s / .17f) + .004f * Noise(seed + 11, s / .045f) + .0015f * Noise(seed + 23, s / .011f);
+            for (var i = 0; i < tongues; i++)
+            {
+                var x = (s - tc[i]) / tw[i];
+                d += ta[i] * (x > 0f ? Mathf.Exp(-x * x * 2.2f) : Mathf.Exp(-x * x * .30f));
+            }
+            return Mathf.Clamp(d, .005f, room);
+        }
+        float Lift(float s, float across)
+        {
+            if (curl <= 0f) return 0f;
+            var z = s - (len - .10f);
+            if (z <= 0f) return 0f;
+            var q = z / .10f;
+            return curl * q * q * (.35f + .65f * Mathf.Clamp01(across / .03f));
+        }
+        var print = c.output.Raw(block, paper);
+        var lip = c.output.Raw(block, c.mats.backing);
+        var back = curl > 0f ? c.output.Raw(block, c.mats.backing) : null;
+        var steps = Mathf.Max(2, Mathf.CeilToInt(len / .0045f));
+        Vector3 pA = default, pB = default, pL0 = default, pL1 = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var s = len * i / steps;
+            var d = Depth(s);
+            // Outward normal of the contour u = d(s), in (u, y): (1, -d'(s)) normalised.
+            var dd = (Depth(Mathf.Min(len, s + .003f)) - Depth(Mathf.Max(0f, s - .003f))) / .006f;
+            var nl = 1f / Mathf.Sqrt(1f + dd * dd);
+            var nU = nl; var nY = -dd * nl;
+            var lw = LipWidth(seed + 37, s);
+            var y = y0 + s;
+            var A = fr.W(-.003f, y, PrintOff + Lift(s, 0f));
+            var B = fr.W(d, y, PrintOff + Lift(s, d));
+            var L0 = fr.W(d - .0015f * nU, y - .0015f * nY, LipOff + Lift(s, d));
+            var L1 = fr.W(d + lw * nU, y + lw * nY, LipOff + Lift(s, d + lw));
+            if (i > 0)
+            {
+                Strip(print, pA, pB, B, A, nrm, dir);
+                Strip(lip, pL0, pL1, L1, L0, nrm, dir);
+                if (back != null && s > len - .11f) Strip(back, pB, pA, A, B, -nrm, -dir);
+            }
+            pA = A; pB = B; pL0 = L0; pL1 = L1;
+        }
+        // Remnants the scraper has not reached: at the floor and under the ceiling.
+        if (atFloor && room > .08f && rng.Next() < .8f)
+        {
+            Remnant(print, lip, fr, nrm, 1f, y0, rng.Range(.25f, Mathf.Min(.85f, len * .4f)), Mathf.Min(room, rng.Range(.18f, .55f)), rng.Range(.7f, 2.2f), seed + 201, out _);
+            Count("remnants");
+        }
+        if (atCeiling && room > .08f && rng.Next() < .65f)
+        {
+            // Iteration 3: the paper trimmed into the ceiling line is the last to come off, so it
+            // often runs most of the drop as a strip 4-22 cm deep.
+            var longStrip = rng.Next() < .6f;
+            var wd = longStrip ? Mathf.Min(room, rng.Range(.45f, .70f)) : Mathf.Min(room, rng.Range(.14f, .42f));
+            var H = Remnant(print, lip, fr, nrm, -1f, y1, longStrip ? rng.Range(.06f, .22f) : rng.Range(.07f, .30f), wd, longStrip ? rng.Range(2.2f, 4f) : rng.Range(.6f, 1.8f), seed + 211, out var ok);
+            Count("remnants");
+            // One strip in two peeled down from it, still hanging.
+            if (ok && wd > .10f && rng.Next() < .6f)
+            {
+                var w = Mathf.Min(rng.Range(.05f, .10f), wd * .5f);
+                var ua = rng.Range(.01f, wd * .55f - w * .2f);
+                var ya = y1 - Mathf.Max(H(ua), H(ua + w)) + .006f;
+                if (ya < y1 - .02f) Hang(c, fr, ua, ya, w, rng.Range(.10f, .30f), rng, Mathf.Max(.05f, ya - y0 - .05f));
+            }
+        }
+    }
+
+    /// <summary>
+    /// A ragged paper patch along a baseline (the floor, sgn +1, or the ceiling, sgn -1): height
+    /// hb at the seam, tapering to nothing at wd, contour noise 4-30 mm, white lip outside it.
+    /// Returns its height function.
+    /// </summary>
+    static Func<float, float> Remnant(RawCmd print, RawCmd lip, Frame fr, Vector3 nrm, float sgn, float yb, float hb, float wd, float pw, uint sd, out bool ok)
+    {
+        float H(float u)
+        {
+            var q = Mathf.Clamp01(u / wd);
+            var shape = 1f - Mathf.Pow(q, pw);
+            var h = hb * shape + (.03f * Noise(sd, u / .11f) + .011f * Noise(sd + 3, u / .03f) + .004f * Noise(sd + 7, u / .008f)) * Mathf.Clamp01(shape * 4f);
+            return Mathf.Max(0f, h);
+        }
+        ok = wd >= .03f && hb >= .02f;
+        if (!ok) return H;
+        var steps = Mathf.Max(4, Mathf.CeilToInt((wd + .003f) / .004f));
+        Vector3 qa = default, qb = default, la = default, lb = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var u = -.003f + (wd + .003f) * i / steps;
+            var h = H(u);
+            var dh = (H(Mathf.Min(wd, u + .003f)) - H(Mathf.Max(0f, u - .003f))) / .006f;
+            var nl = 1f / Mathf.Sqrt(1f + dh * dh);
+            var nU = -dh * nl; var nY = sgn * nl;
+            var lw = LipWidth(sd + 41, u) * Mathf.Clamp01(h / .01f);
+            var y = yb + sgn * h;
+            var A = fr.W(u, yb, PrintOff);
+            var B = fr.W(u, y, PrintOff);
+            var L0 = fr.W(u - .0015f * nU, y - .0015f * nY, LipOff);
+            var L1 = fr.W(u + lw * nU, y + lw * nY, LipOff);
+            if (i > 0)
+            {
+                if (h > 1e-4f || (qb - qa).sqrMagnitude > 1e-8f) Strip(print, qa, A, B, qb, nrm, fr.dir);
+                if (lw > 1e-4f) Strip(lip, la, L0, L1, lb, nrm, fr.dir);
+            }
+            qa = A; qb = B; la = L0; lb = L1;
+        }
+        return H;
+    }
+
+    /// <summary>
+    /// A strip peeled down off a ceiling remnant and left hanging: attached along w at ya, it
+    /// leaves the wall in a widening arc (15-40 deg at its end), bows 2-8 mm across, and its
+    /// foot rolls outward through 130-200 deg so the white back shows. Print side in the wall
+    /// paper with mesh UVs taken from where it lay (the pattern continues the wall), back in
+    /// Paper_Backing. Render-only (block -1).
+    /// </summary>
+    static void Hang(Context c, Frame fr, float ua, float ya, float w, float len, Rng rng, float maxDrop)
+    {
+        var printR = c.output.Raw(-1, c.mats.peel);
+        var backR = c.output.Raw(-1, c.mats.backing);
+        var nrm = fr.nrm;
+        var tWorld = new Vector3(nrm.z, 0f, -nrm.x);   // the shader's PlanarFrame tangent for this face
+        len = Mathf.Min(len, maxDrop * .8f);
+        if (len < .06f) return;
+        var thMax = rng.Range(.26f, .70f);
+        var rc = rng.Range(.010f, .017f);
+        var roll = rng.Range(2.3f, 3.5f);
+        var bow = rng.Range(.002f, .008f);
+        var twist = rng.Range(-.35f, .35f);
+        var total = len + rc * roll;
+        const int nu = 6;
+        var nv = Mathf.CeilToInt(total / .008f);
+        var pts = new Vector3[nu + 1, nv + 1];
+        var fn = new Vector3[nu + 1, nv + 1];
+        var flat = new Vector3[nu + 1, nv + 1];
+        for (var i = 0; i <= nu; i++)
+        {
+            var x = w * i / nu;
+            var k = 1f + twist * (x / w - .5f);
+            var pos = Vector3.zero;
+            var prevP = 0f;
+            for (var j = 0; j <= nv; j++)
+            {
+                var p = total * j / nv;
+                // Integrate the centre line with the angle at the segment midpoint.
+                var pm = (p + prevP) * .5f;
+                float Th(float q) => q <= len ? thMax * k * Mathf.Pow(q / len, 1.6f) : thMax * k + (q - len) / rc;
+                var th = Th(pm);
+                if (j > 0) pos += (Vector3.down * Mathf.Cos(th) + nrm * Mathf.Sin(th)) * (p - prevP);
+                prevP = p;
+                var thp = Th(p);
+                var front = Vector3.up * Mathf.Sin(thp) + nrm * Mathf.Cos(thp);
+                var across = 4f * (x / w) * (1f - x / w);
+                pts[i, j] = fr.W(ua + x, ya, PrintOff + .0004f) + pos + front * (bow * across * Mathf.Clamp01(p / (len * .5f)));
+                fn[i, j] = front;
+                flat[i, j] = fr.W(ua + x, ya - p, 0f);
+            }
+        }
+        var wo = c.worldOrigin;
+        Vector2 UV(Vector3 f) => new Vector2(Vector3.Dot(f + wo, tWorld), f.y + wo.y);
+        for (var j = 0; j < nv; j++)
+            for (var i = 0; i < nu; i++)
+            {
+                var a = pts[i, j]; var b = pts[i + 1, j]; var cc = pts[i + 1, j + 1]; var d = pts[i, j + 1];
+                var n = (fn[i, j] + fn[i + 1, j] + fn[i + 1, j + 1] + fn[i, j + 1]).normalized;
+                AddQuadOriented(printR, a + n * .0002f, b + n * .0002f, cc + n * .0002f, d + n * .0002f, n, UV(flat[i, j]), UV(flat[i + 1, j]), UV(flat[i + 1, j + 1]), UV(flat[i, j + 1]));
+                AddQuadOriented(backR, a - n * .0002f, b - n * .0002f, cc - n * .0002f, d - n * .0002f, -n, UV(flat[i, j]), UV(flat[i + 1, j]), UV(flat[i + 1, j + 1]), UV(flat[i, j + 1]));
+            }
+        // The torn foot and sides: a thin white edge band so the paper has a visible thickness.
+        Count("hanging strips");
+    }
+
+    /// <summary>
+    /// A closed island of printed paper still stuck mid-wall (iteration 3): a ragged contour
+    /// (an ellipse rx x ry broken by three octaves of noise and one or two torn tongues), the
+    /// print as a fan 0.6 mm proud, and the white base layer in a 2.5-8 mm lip round it.
+    /// </summary>
+    static void Island(Context c, int block, Vector3 centre, Vector3 along, Vector3 nrm, float rx, float ry, uint seed, Material paper)
+    {
+        var print = c.output.Raw(block, paper);
+        var lip = c.output.Raw(block, c.mats.backing);
+        var rng = new Rng(seed);
+        const int n = 56;
+        var tongues = 1 + rng.Int(0, 2);
+        var ta = new float[tongues]; var tw = new float[tongues]; var tl = new float[tongues];
+        for (var i = 0; i < tongues; i++) { ta[i] = rng.Range(0f, Mathf.PI * 2f); tw[i] = rng.Range(.12f, .35f); tl[i] = rng.Range(.25f, .7f); }
+        var pts = new Vector3[n]; var outs = new Vector3[n]; var dirs = new Vector3[n];
+        for (var i = 0; i < n; i++)
+        {
+            var th = Mathf.PI * 2f * i / n;
+            var k = 1f + .22f * Noise(seed, th * 2.2f) + .09f * Noise(seed + 7, th * 7f) + .035f * Noise(seed + 13, th * 23f);
+            for (var j = 0; j < tongues; j++)
+            {
+                var dth = Mathf.DeltaAngle(th * Mathf.Rad2Deg, ta[j] * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                k += tl[j] * Mathf.Exp(-(dth / tw[j]) * (dth / tw[j]));
+            }
+            k = Mathf.Max(.35f, k);
+            var dir = along * Mathf.Cos(th) * rx + Vector3.up * Mathf.Sin(th) * ry;
+            pts[i] = centre + dir * k;
+            dirs[i] = (along * Mathf.Cos(th) * ry + Vector3.up * Mathf.Sin(th) * rx).normalized;   // outward normal of the ellipse
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var lw = LipWidth(seed + 37, i * .013f);
+            outs[i] = pts[i] + dirs[i] * lw;
+        }
+        var cen = centre + nrm * PrintOff;
+        for (var i = 0; i < n; i++)
+        {
+            var j = (i + 1) % n;
+            Tri(print, cen, pts[i] + nrm * PrintOff, pts[j] + nrm * PrintOff, nrm);
+            Strip(lip, pts[i] - dirs[i] * .0015f + nrm * LipOff, pts[j] - dirs[j] * .0015f + nrm * LipOff, outs[j] + nrm * LipOff, outs[i] + nrm * LipOff, nrm, along);
+        }
+    }
+
+    static bool Finite(Vector3 v) => !(float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) || float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z));
+
+    static void Tri(RawCmd r, Vector3 a, Vector3 b, Vector3 c2, Vector3 nrm)
+    {
+        if (!Finite(a) || !Finite(b) || !Finite(c2)) { Count("dropped non-finite"); return; }
+        var i = r.v.Count;
+        r.v.Add(a); r.v.Add(b); r.v.Add(c2);
+        for (var k = 0; k < 3; k++) r.n.Add(nrm);
+        r.uv.Add(new Vector2(a.x + a.z, a.y)); r.uv.Add(new Vector2(b.x + b.z, b.y)); r.uv.Add(new Vector2(c2.x + c2.z, c2.y));
+        if (Vector3.Dot(Vector3.Cross(b - a, c2 - a), nrm) > 0f) { r.t.Add(i); r.t.Add(i + 1); r.t.Add(i + 2); }
+        else { r.t.Add(i); r.t.Add(i + 2); r.t.Add(i + 1); }
+    }
+
+    /// <summary>Quad from four points (a, b along the bottom edge; c, d top), wound to face nrm.</summary>
+    static void Strip(RawCmd r, Vector3 a, Vector3 b, Vector3 c2, Vector3 d, Vector3 nrm, Vector3 uDir)
+    {
+        if (!Finite(a) || !Finite(b) || !Finite(c2) || !Finite(d)) { Count("dropped non-finite"); return; }
+        var face = Vector3.Cross(b - a, d - a);
+        var nn = face.sqrMagnitude > 1e-12f ? face.normalized : nrm;
+        if (Vector3.Dot(nn, nrm) < 0f) nn = -nn;
+        var i = r.v.Count;
+        r.v.Add(a); r.v.Add(b); r.v.Add(c2); r.v.Add(d);
+        for (var k = 0; k < 4; k++) r.n.Add(nn);
+        r.uv.Add(new Vector2(Vector3.Dot(a, uDir), a.y)); r.uv.Add(new Vector2(Vector3.Dot(b, uDir), b.y));
+        r.uv.Add(new Vector2(Vector3.Dot(c2, uDir), c2.y)); r.uv.Add(new Vector2(Vector3.Dot(d, uDir), d.y));
+        // Unity: a triangle faces n when Cross(p1 - p0, p2 - p0) points along n (MeshBuilder.Face does the same).
+        var front = Vector3.Dot(Vector3.Cross(b - a, c2 - a), nn) > 0f;
+        if (front) { r.t.Add(i); r.t.Add(i + 1); r.t.Add(i + 2); r.t.Add(i); r.t.Add(i + 2); r.t.Add(i + 3); }
+        else { r.t.Add(i); r.t.Add(i + 2); r.t.Add(i + 1); r.t.Add(i); r.t.Add(i + 3); r.t.Add(i + 2); }
+    }
+
+    static void AddQuadOriented(RawCmd r, Vector3 a, Vector3 b, Vector3 c2, Vector3 d, Vector3 nrm, Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
+    {
+        if (!Finite(a) || !Finite(b) || !Finite(c2) || !Finite(d)) { Count("dropped non-finite"); return; }
+        var i = r.v.Count;
+        r.v.Add(a); r.v.Add(b); r.v.Add(c2); r.v.Add(d);
+        for (var k = 0; k < 4; k++) r.n.Add(nrm);
+        r.uv.Add(ua); r.uv.Add(ub); r.uv.Add(uc); r.uv.Add(ud);
+        var front = Vector3.Dot(Vector3.Cross(b - a, c2 - a), nrm) > 0f;
+        if (front) { r.t.Add(i); r.t.Add(i + 1); r.t.Add(i + 2); r.t.Add(i); r.t.Add(i + 2); r.t.Add(i + 3); }
+        else { r.t.Add(i); r.t.Add(i + 2); r.t.Add(i + 1); r.t.Add(i); r.t.Add(i + 3); r.t.Add(i + 2); }
+    }
+
+    /// <summary>Knife-cut paper round a new frame: nearly straight, 2-8 mm over the compound, a few drag tears with a white lip.</summary>
+    static void CutLine(Context c, int block, Vector3 p0, Vector3 run, Vector3 into, Vector3 nrm, float len, uint seed, Material paper)
+    {
+        if (len < .02f) return;
+        var rng = new Rng(seed);
+        // Iteration 3: the paper tore as the old board was cut out for the new frame, so the line
+        // is ragged: 3-45 mm over the compound, with 2-4 tongues 15-40 mm long and the white
+        // base layer showing in a 2.5-8 mm lip, like the torn drops.
+        var nicks = 2 + rng.Int(0, 3);
+        var nc = new float[nicks]; var nw = new float[nicks]; var na = new float[nicks];
+        for (var i = 0; i < nicks; i++) { nc[i] = rng.Range(0f, len); nw[i] = rng.Range(.02f, .08f); na[i] = rng.Range(.015f, .040f); }
+        var steps = Mathf.Max(2, Mathf.CeilToInt(len / .0045f));
+        var print = c.output.Raw(block, paper);
+        var lip = c.output.Raw(block, c.mats.backing);
+        Vector3 pa = default, pb = default, l0 = default, l1 = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var s = len * i / steps;
+            var d = .010f + .007f * Noise(seed, s / .12f) + .004f * Noise(seed + 3, s / .035f) + .0015f * Noise(seed + 9, s / .01f);
+            var nick = 0f;
+            for (var k = 0; k < nicks; k++) { var x = (s - nc[k]) / nw[k]; nick += na[k] * (x > 0f ? Mathf.Exp(-x * x * 2.2f) : Mathf.Exp(-x * x * .4f)); }
+            d = Mathf.Clamp(d + nick, .003f, .045f);
+            var lw = LipWidth(seed + 37, s);
+            var bp = p0 + run * s;
+            var A = bp - into * .003f + nrm * PrintOff;
+            var B = bp + into * d + nrm * PrintOff;
+            var L0 = bp + into * (d - .001f) + nrm * LipOff;
+            var L1 = bp + into * (d + lw) + nrm * LipOff;
+            if (i > 0) { Strip(print, pa, pb, B, A, nrm, run); Strip(lip, l0, l1, L1, L0, nrm, run); }
+            pa = A; pb = B; l0 = L0; l1 = L1;
+        }
+        Count("cut lines");
+    }
+
+    /// <summary>A coat run past a straight line: depth mean +/- amp (two octaves, wavelength in metres), 0.4 mm proud.</summary>
+    static void RaggedOver(RawCmd r, Vector3 p0, Vector3 run, Vector3 into, Vector3 nrm, float len, uint seed, float mean, float amp, float wave)
+    {
+        if (len < .02f) return;
+        var steps = Mathf.Max(2, Mathf.CeilToInt(len / .008f));
+        Vector3 pa = default, pb = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var s = len * i / steps;
+            var d = Mathf.Clamp(mean + amp * Noise(seed, s / wave) + amp * .35f * Noise(seed + 3, s / (wave * .2f)), .004f, mean + amp * 1.4f);
+            var A = p0 + run * s - into * .004f + nrm * CoatOff;
+            var B = p0 + run * s + into * d + nrm * CoatOff;
+            if (i > 0) Strip(r, pa, pb, B, A, nrm, run);
+            pa = A; pb = B;
+        }
+    }
+
+    /// <summary>A knife smear of compound over the paper next to a cut: lens-shaped, up to w wide, its edge ragged, 1.2 mm over the print.</summary>
+    static void Smear(RawCmd r, Vector3 p0, Vector3 run, Vector3 away, Vector3 nrm, float len, float w, uint seed)
+    {
+        var steps = Mathf.Max(2, Mathf.CeilToInt(len / .006f));
+        Vector3 pa = default, pb = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var s = len * i / steps;
+            var env = Mathf.Clamp01(Mathf.Sin(Mathf.PI * Mathf.Clamp01(s / len)));   // iteration 6: sin(pi) < 0 gave Pow(NaN)
+            var d = Mathf.Max(.0005f, w * Mathf.Pow(env, .6f) * (1f + .35f * Noise(seed, s / .05f)));
+            var A = p0 + run * s - away * .006f + nrm * (PrintOff + .0012f);
+            var B = p0 + run * s + away * d + nrm * (PrintOff + .0012f);
+            if (i > 0) Strip(r, pa, pb, B, A, nrm, run);
+            pa = A; pb = B;
+        }
+    }
+
+    /// <summary>Compound feathered past a straight halo edge onto the neighbouring stage: 4-40 mm, softly ragged.</summary>
+    static void Feather(RawCmd r, Vector3 p0, Vector3 run, Vector3 into, Vector3 nrm, float len, uint seed)
+    {
+        if (len < .02f) return;
+        var steps = Mathf.Max(2, Mathf.CeilToInt(len / .008f));
+        Vector3 pa = default, pb = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var s = len * i / steps;
+            var d = Mathf.Clamp(.018f + .014f * Noise(seed, s / .22f) + .006f * Noise(seed + 3, s / .05f), .004f, .040f);
+            var A = p0 + run * s - into * .004f + nrm * CoatOff;
+            var B = p0 + run * s + into * d + nrm * CoatOff;
+            if (i > 0) Strip(r, pa, pb, B, A, nrm, run);
+            pa = A; pb = B;
+        }
+    }
+
+    // ------------------------------------------------------------------ border arches
+
+    /// <summary>
+    /// A border arch: a bare drywall reveal (3 mm Wall_Primer liners over the jambs and
+    /// soffit) with exposed galvanised corner beads on the Level 0 arrises.
+    /// </summary>
+    public static void ArchReveal(Context c, in Edge e)
+    {
+        if (e.kind != EdgeKind.Arch || c.theme(e.a) == c.theme(e.b)) return;
+        if (!Dressed(c, e.a, e.b)) return;   // PICK: undressed arches are cased by the frame kit
+        var o = c.output;
+        var block = c.theme(e.a) == ZoneTheme.Level0 ? e.blockA : e.blockB;
+        var lo = e.lo; var hi = e.hi; var top = e.top;
+        var depth = .003f;
+        // 3 mm liners inside the opening (the opening narrows 6 mm; collision is the map's).
+        o.Box(block, c.mats.primer, e.start + e.along * (lo + depth * .5f) + Vector3.up * (top * .5f), Abs(e.along * depth + e.across * Thick + Vector3.up * top));
+        o.Box(block, c.mats.primer, e.start + e.along * (hi - depth * .5f) + Vector3.up * (top * .5f), Abs(e.along * depth + e.across * Thick + Vector3.up * top));
+        o.Box(block, c.mats.primer, e.start + e.along * ((lo + hi) * .5f) + Vector3.up * (top - depth * .5f), Abs(e.along * (hi - lo) + e.across * Thick + Vector3.up * depth));
+        lo += depth; hi -= depth; top -= depth;
+        var side = c.theme(e.a) == ZoneTheme.Level0 ? -1f : 1f;
+        var nf = e.across * side;
+        var faceY = e.start + e.across * (side * Half);
+        var metal = o.Raw(-1, c.mats.metal);
+        // Vertical beads: arris at (lo, face) and (hi, face); flange on the face away from the opening, nose, flange into the reveal.
+        Bead(metal, faceY + e.along * lo, Vector3.up, -e.along, nf, top);
+        Bead(metal, faceY + e.along * hi, Vector3.up, e.along, nf, top);
+        // Head bead along the soffit arris.
+        Bead(metal, faceY + e.along * lo + Vector3.up * top, e.along, Vector3.up, nf, hi - lo);
+        Count("arch reveals");
+    }
+
+    /// <summary>
+    /// Galvanised corner bead: 30 mm flanges 0.5-0.8 mm proud on both surfaces and a round
+    /// nose at the arris, extruded along <paramref name="run"/> for <paramref name="len"/>.
+    /// fDir points along the wall face away from the opening; nf is the face normal.
+    /// </summary>
+    static void Bead(RawCmd r, Vector3 arris, Vector3 run, Vector3 fDir, Vector3 nf, float len)
+    {
+        // Profile in (X along fDir, Y along nf): the wall is X >= 0, Y <= 0.
+        // 1-1/4 in (32 mm) flanges as hung; the nose 3 mm round the arris.
+        // Iteration 3: flanges 1.6 mm proud (sheet + first coat), so they never share a depth with the
+        // halo compound under them at oblique views; nose radius 3 mm, tangent to both flanges.
+        // Iteration 6: 3.5 mm (bead nose + first coat). The float32 view transform at ~5.8 km from the
+        // origin loses 1-2 mm, so the 1.6 mm flange sawtoothed against the face and the reveal liner.
+        const float fp = .0035f, R = .0035f;
+        var cx = -fp + R; var cy = fp - R;
+        var prof = new List<Vector2> { new Vector2(.030f, 0f), new Vector2(.030f, fp), new Vector2(.008f, fp) };
+        for (var i = 0; i <= 6; i++)
+        {
+            var a = Mathf.PI * .5f + Mathf.PI * .5f * i / 6f;   // 90..180 deg round the arris
+            prof.Add(new Vector2(cx + R * Mathf.Cos(a), cy + R * Mathf.Sin(a)));
+        }
+        prof.Add(new Vector2(-fp, -.008f)); prof.Add(new Vector2(-fp, -.030f)); prof.Add(new Vector2(0f, -.030f));
+        var rDir = -nf;
+        Vector3 P(Vector2 q, float s) => arris + fDir * q.x + nf * q.y + run * s;
+        float acc = 0f;
+        for (var i = 0; i + 1 < prof.Count; i++)
+        {
+            var a = prof[i]; var b = prof[i + 1];
+            var tan = (b - a).normalized;
+            var n2 = new Vector2(tan.y, -tan.x);   // outward (away from the wall corner)
+            var nrm = (fDir * n2.x + nf * n2.y).normalized;
+            if (Vector3.Dot(nrm, fDir * a.x + nf * a.y - (fDir * .002f - nf * .002f)) < 0f) nrm = -nrm;
+            var seg = (b - a).magnitude;
+            AddQuadOriented(r, P(a, 0f), P(b, 0f), P(b, len), P(a, len), nrm, new Vector2(acc, 0f), new Vector2(acc + seg, 0f), new Vector2(acc + seg, len), new Vector2(acc, len));
+            acc += seg;
+        }
+        _ = rDir;
+    }
+
+    // ------------------------------------------------------------------ floor and ceiling
+
+    struct Crossing { public int side; public EdgeKind kind; public float lo, hi; public GridCoord other; }   // side 0 S, 1 N, 2 W, 3 E
+
+    static List<Crossing> Crossings(Context c, GridCoord cell)
+    {
+        var list = new List<Crossing>();
+        if (c.theme(cell) != ZoneTheme.Level0 || (c.excluded != null && c.excluded(cell))) return list;
+        for (var s = 0; s < 4; s++)
+        {
+            var nb = s == 0 ? new GridCoord(cell.x, cell.y - 1) : s == 1 ? new GridCoord(cell.x, cell.y + 1) : s == 2 ? new GridCoord(cell.x - 1, cell.y) : new GridCoord(cell.x + 1, cell.y);
+            if (c.theme(nb) != ZoneTheme.Office || (c.excluded != null && c.excluded(nb))) continue;
+            var k = c.edge(cell, nb);
+            if (k != EdgeKind.Open && k != EdgeKind.Arch && k != EdgeKind.Door) continue;
+            if (!Dressed(c, cell, nb)) continue;   // PICK
+            float lo = 0f, hi = Cell;
+            if (k == EdgeKind.Arch)
+            {
+                var a = s == 0 ? nb : s == 1 ? cell : s == 2 ? nb : cell;
+                c.arch(a, s <= 1, out var w, out var ctr);
+                lo = ctr - w * .5f; hi = ctr + w * .5f;
+            }
+            else if (k == EdgeKind.Door) { lo = (Cell - ModuleUnits.DoorWidth) * .5f; hi = lo + ModuleUnits.DoorWidth; }
+            list.Add(new Crossing { side = s, kind = k, lo = lo, hi = hi, other = nb });
+        }
+        return list;
+    }
+
+    struct Rect2 { public float x0, z0, x1, z1; public int cls; public Rect2(float a, float b, float c2, float d, int k) { x0 = a; z0 = b; x1 = c2; z1 = d; cls = k; } }
+
+    /// <summary>Paint rectangles (later wins) over a base rect; returns merged rectangles per class.</summary>
+    static List<Rect2> Paint(Rect2 bounds, List<Rect2> layers)
+    {
+        var xs = new List<float> { bounds.x0, bounds.x1 };
+        var zs = new List<float> { bounds.z0, bounds.z1 };
+        foreach (var r in layers)
+        {
+            if (r.x0 > bounds.x0 && r.x0 < bounds.x1) xs.Add(r.x0);
+            if (r.x1 > bounds.x0 && r.x1 < bounds.x1) xs.Add(r.x1);
+            if (r.z0 > bounds.z0 && r.z0 < bounds.z1) zs.Add(r.z0);
+            if (r.z1 > bounds.z0 && r.z1 < bounds.z1) zs.Add(r.z1);
+        }
+        xs.Sort(); zs.Sort();
+        var nx = xs.Count - 1; var nz = zs.Count - 1;
+        var cls = new int[nx, nz];
+        for (var i = 0; i < nx; i++)
+            for (var j = 0; j < nz; j++)
+            {
+                var cx = (xs[i] + xs[i + 1]) * .5f; var cz = (zs[j] + zs[j + 1]) * .5f;
+                var k = bounds.cls;
+                foreach (var r in layers) if (cx > r.x0 && cx < r.x1 && cz > r.z0 && cz < r.z1) k = r.cls;
+                cls[i, j] = k;
+            }
+        // Merge along x per row, then identical runs along z.
+        var rows = new List<Rect2>();
+        for (var j = 0; j < nz; j++)
+        {
+            var i = 0;
+            while (i < nx)
+            {
+                var k = cls[i, j]; var i2 = i;
+                while (i2 + 1 < nx && cls[i2 + 1, j] == k) i2++;
+                if (xs[i2 + 1] - xs[i] > 1e-5f && zs[j + 1] - zs[j] > 1e-5f) rows.Add(new Rect2(xs[i], zs[j], xs[i2 + 1], zs[j + 1], k));
+                i = i2 + 1;
+            }
+        }
+        var outList = new List<Rect2>();
+        foreach (var r in rows)
+        {
+            var hit = outList.FindIndex(q => q.cls == r.cls && Mathf.Abs(q.x0 - r.x0) < 1e-5f && Mathf.Abs(q.x1 - r.x1) < 1e-5f && Mathf.Abs(q.z1 - r.z0) < 1e-5f);
+            if (hit >= 0) { var q = outList[hit]; q.z1 = r.z1; outList[hit] = q; } else outList.Add(r);
+        }
+        return outList;
+    }
+
+    /// <summary>
+    /// A Level 0 cell at a crossing: the carpet is cut back 0.6 m to the slab, and its
+    /// ceiling has a tile out (plenum, duct, cable), a tile askew and two new 2x2 tiles.
+    /// Returns false when the cell is not a crossing cell (the map builds its own slabs).
+    /// Collision stays the map's full slabs.
+    /// </summary>
+    public static bool CrossingCell(Context c, GridCoord cell, Vector3 local, float height, int block, Material carpet, Material ceiling)
+    {
+        var crossings = Crossings(c, cell);
+        if (crossings.Count == 0) return false;
+        var o = c.output;
+        var rng = new Rng(Hash(c.seed, cell.x, cell.y, 1117 + RunSalt));
+        // ---- floor
+        var layers = new List<Rect2>();
+        bool Walled(GridCoord p, GridCoord q) => c.edge(p, q) != EdgeKind.Open;
+        foreach (var x in crossings)
+        {
+            float a0 = x.lo, a1 = x.hi;
+            if (x.kind == EdgeKind.Open)
+            {
+                // Across the corridor, stopping at the side walls.
+                GridCoord s0, s1, n0, n1;
+                if (x.side <= 1) { s0 = new GridCoord(cell.x - 1, cell.y); s1 = new GridCoord(cell.x + 1, cell.y); n0 = new GridCoord(x.other.x - 1, x.other.y); n1 = new GridCoord(x.other.x + 1, x.other.y); }
+                else { s0 = new GridCoord(cell.x, cell.y - 1); s1 = new GridCoord(cell.x, cell.y + 1); n0 = new GridCoord(x.other.x, x.other.y - 1); n1 = new GridCoord(x.other.x, x.other.y + 1); }
+                if (Walled(cell, s0) || Walled(x.other, n0)) a0 = Half;
+                if (Walled(cell, s1) || Walled(x.other, n1)) a1 = Cell - Half;
+            }
+            Rect2 r;
+            switch (x.side)
+            {
+                case 0: r = new Rect2(a0, 0f, a1, StripDepth, 1); break;
+                case 1: r = new Rect2(a0, Cell - StripDepth, a1, Cell, 1); break;
+                case 2: r = new Rect2(0f, a0, StripDepth, a1, 1); break;
+                default: r = new Rect2(Cell - StripDepth, a0, Cell, a1, 1); break;
+            }
+            layers.Add(r);
+        }
+        var floorRects = Paint(new Rect2(0f, 0f, Cell, Cell, 0), layers);
+        foreach (var r in floorRects)
+        {
+            var mat = r.cls == 1 ? c.mats.slab : carpet;
+            var topY = r.cls == 1 ? -SlabDrop : 0f;
+            o.Box(block, mat, local + new Vector3((r.x0 + r.x1) * .5f, (topY - ModuleUnits.FloorSlab) * .5f, (r.z0 + r.z1) * .5f), new Vector3(r.x1 - r.x0, ModuleUnits.FloorSlab + topY, r.z1 - r.z0), 1.5f);
+            if (r.cls == 1) Count("slab m2", (r.x1 - r.x0) * (r.z1 - r.z0));
+            if (DebugLog != null && r.cls == 1) { var w = c.worldOrigin + local; DebugLog.Add("slab " + F(w.x + r.x0) + " " + F(w.z + r.z0) + " " + F(w.x + r.x1) + " " + F(w.z + r.z1)); }
+        }
+        // Frayed carpet edge on every carpet | slab boundary in the open floor.
+        var fray = o.Raw(block, carpet);
+        foreach (var s in floorRects)
+        {
+            if (s.cls != 1) continue;
+            foreach (var r in floorRects)
+            {
+                if (r.cls != 0) continue;
+                // Shared vertical (z-running) boundary.
+                if (Mathf.Abs(r.x1 - s.x0) < 1e-4f || Mathf.Abs(r.x0 - s.x1) < 1e-4f)
+                {
+                    var z0 = Mathf.Max(r.z0, s.z0); var z1 = Mathf.Min(r.z1, s.z1);
+                    if (z1 - z0 > .02f) Fray(fray, local + new Vector3(Mathf.Abs(r.x1 - s.x0) < 1e-4f ? s.x0 : s.x1, 0f, z0), Vector3.forward, Mathf.Abs(r.x1 - s.x0) < 1e-4f ? Vector3.right : Vector3.left, z1 - z0, rng);
+                }
+                if (Mathf.Abs(r.z1 - s.z0) < 1e-4f || Mathf.Abs(r.z0 - s.z1) < 1e-4f)
+                {
+                    var x0 = Mathf.Max(r.x0, s.x0); var x1 = Mathf.Min(r.x1, s.x1);
+                    if (x1 - x0 > .02f) Fray(fray, local + new Vector3(x0, 0f, Mathf.Abs(r.z1 - s.z0) < 1e-4f ? s.z0 : s.z1), Vector3.right, Mathf.Abs(r.z1 - s.z0) < 1e-4f ? Vector3.forward : Vector3.back, x1 - x0, rng);
+                }
+            }
+        }
+        // Chalk line for the new tiles; 2-4 loose Office tiles: 0-2 lying on the strip (none in a
+        // door's swing), 1-3 stacked against a wall beside it. The slab stays visible next to the line.
+        var tiles = o.Raw(-1, c.mats.carpetLoose);
+        var chalk = o.Raw(-1, c.mats.chalk);
+        var placed = new List<Rect2>();
+        bool Free(Rect2 q)
+        {
+            if (q.x0 < Half + .01f || q.z0 < Half + .01f || q.x1 > Cell - Half - .01f || q.z1 > Cell - Half - .01f) return false;
+            foreach (var l in layers) if (q.x0 < l.x1 && l.x0 < q.x1 && q.z0 < l.z1 && l.z0 < q.z1) return false;
+            foreach (var l in placed) if (q.x0 < l.x1 && l.x0 < q.x1 && q.z0 < l.z1 && l.z0 < q.z1) return false;
+            return true;
+        }
+        foreach (var x in crossings)
+        {
+            var r = layers[crossings.IndexOf(x)];
+            var alongX = x.side <= 1;
+            var lineIn = x.side == 0 ? Vector3.forward : x.side == 1 ? Vector3.back : x.side == 2 ? Vector3.right : Vector3.left; // from the line into the cell
+            var lineLocal = x.side == 0 ? Vector3.zero : x.side == 1 ? new Vector3(0f, 0f, Cell) : x.side == 2 ? Vector3.zero : new Vector3(Cell, 0f, 0f);
+            var linePt = local + lineLocal;
+            var runDir = alongX ? Vector3.right : Vector3.forward;
+            float s0 = alongX ? r.x0 : r.z0, s1 = alongX ? r.x1 : r.z1;
+            var dc = rng.Range(.14f, .28f);
+            ChalkLine(chalk, linePt + runDir * s0 + lineIn * dc + Vector3.up * -SlabDrop, runDir, s1 - s0, rng);
+            var span = s1 - s0;
+            // Iteration 3: the fitters stage tiles in stacks; at most one lies loose on the strip
+            // (none at doors), so the floor reads as work in hand, not as scattered mats.
+            var onStrip = x.kind == EdgeKind.Door ? 0 : rng.Next() < .45f ? 1 : 0;
+            var stack = 2 + rng.Int(0, 3);
+            if (onStrip + stack > 4) stack = 4 - onStrip;
+            for (var i = 0; i < onStrip; i++)
+            {
+                var along = span < .9f ? (s0 + s1) * .5f : onStrip == 1 ? Mathf.Lerp(s0 + .4f, s1 - .4f, rng.Range(.2f, .8f)) : Mathf.Lerp(s0 + .4f, s1 - .4f, (i + rng.Range(.2f, .8f)) / 2f);
+                // Half on the cut carpet, half over the slab, its near edge dipping onto it.
+                var centre = linePt + runDir * along + lineIn * rng.Range(.56f, .64f);
+                var yaw = rng.Range(2f, 12f) * (rng.Next() < .5f ? -1f : 1f);
+                var tilt = Quaternion.AngleAxis(-1.1f, Vector3.Cross(Vector3.up, lineIn));
+                CarpetTile(tiles, centre + Vector3.up * -.0012f, tilt * Quaternion.Euler(0f, yaw + (alongX ? 0f : 90f), 0f), c.worldOrigin);
+                Count("loose tiles");
+            }
+            if (stack <= 0) continue;
+            // Candidate stack spots (cell-local along / across the line).
+            var spots = new List<(float along, float across)>();
+            if (x.kind == EdgeKind.Open)
+            {
+                // Against a side wall, just behind the strip.
+                if (s0 > .01f) spots.Add((s0 + .35f, StripDepth + .36f));
+                if (s1 < Cell - .01f) spots.Add((s1 - .35f, StripDepth + .36f));
+            }
+            else
+            {
+                // Against the border wall beside the opening (doors: outside the leaf's swing).
+                var gap = x.kind == EdgeKind.Door ? .60f : .36f;
+                spots.Add((s0 - gap, Half + .345f));
+                spots.Add((s1 + gap, Half + .345f));
+            }
+            if (rng.Next() < .5f) spots.Reverse();
+            foreach (var (al, ac) in spots)
+            {
+                var cl = lineLocal + runDir * al + lineIn * ac;
+                var q = new Rect2(cl.x - .335f, cl.z - .335f, cl.x + .335f, cl.z + .335f, 0);
+                if (!Free(q)) continue;
+                var qw = Rect.MinMaxRect(local.x + q.x0, local.z + q.z0, local.x + q.x1, local.z + q.z1);
+                if (c.propRects.Exists(pr => pr.Overlaps(qw))) continue;
+                c.propRects.Add(qw);
+                placed.Add(q);
+                if (DebugLog != null) DebugLog.Add("stack " + F(c.worldOrigin.x + qw.xMin) + " " + F(c.worldOrigin.z + qw.yMin) + " " + F(c.worldOrigin.x + qw.xMax) + " " + F(c.worldOrigin.z + qw.yMax) + " " + stack);
+                for (var k = 0; k < stack; k++)
+                {
+                    var yaw = rng.Range(-5f, 5f);
+                    CarpetTile(tiles, local + cl + Vector3.up * (.0072f * k + .0004f), Quaternion.Euler(0f, yaw + (alongX ? 0f : 90f), 0f), c.worldOrigin);
+                    Count("loose tiles");
+                }
+                break;
+            }
+        }
+
+        // ---- ceiling
+        var primary = crossings[0];
+        foreach (var x in crossings) if ((int)x.kind < (int)primary.kind || (x.kind == primary.kind && x.side == 1)) primary = x;
+        var ceil = Ceiling(c, cell, local, height, block, ceiling, primary, rng);
+        return true;
+    }
+
+    static void Fray(RawCmd r, Vector3 p0, Vector3 run, Vector3 outDir, float len, Rng rng)
+    {
+        // A 5 mm fringe of cut loops over the slab, drooping to it.
+        var steps = Mathf.Max(2, Mathf.CeilToInt(len / .004f));
+        Vector3 pa = default, pb = default;
+        for (var i = 0; i <= steps; i++)
+        {
+            var s = len * i / steps;
+            var d = .0015f + .0035f * Mathf.Abs(Noise((uint)(p0.x * 1000 + p0.z * 37), s / .006f)) + (rng.Next() < .08f ? .003f : 0f);
+            var A = p0 + run * s - outDir * .002f + Vector3.up * -.0004f;
+            var B = p0 + run * s + outDir * d + Vector3.up * -(SlabDrop * .55f * Mathf.Clamp01(d / .005f));
+            if (i > 0) Strip(r, pa, pb, B, A, Vector3.up, run);
+            pa = A; pb = B;
+        }
+        Count("fray m", len);
+    }
+
+    static void ChalkLine(RawCmd r, Vector3 p0, Vector3 run, float len, Rng rng)
+    {
+        var side = Vector3.Cross(Vector3.up, run).normalized;
+        var s = .02f;
+        while (s < len - .02f)
+        {
+            var seg = Mathf.Min(rng.Range(.15f, .6f), len - .02f - s);
+            var w = rng.Range(.003f, .006f);
+            var off = rng.Range(-.0008f, .0008f);
+            var a = p0 + run * s + side * (off - w * .5f) + Vector3.up * .0003f;
+            var b = p0 + run * (s + seg) + side * (off - w * .5f) + Vector3.up * .0003f;
+            var cc = p0 + run * (s + seg) + side * (off + w * .5f) + Vector3.up * .0003f;
+            var d = p0 + run * s + side * (off + w * .5f) + Vector3.up * .0003f;
+            AddQuadOriented(r, a, b, cc, d, Vector3.up, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            s += seg + rng.Range(.005f, .05f);
+        }
+    }
+
+    /// <summary>A loose 0.6 x 0.6 x 0.007 Office carpet tile, mesh-UV'd onto one tile of the 2x2 texture.</summary>
+    static void CarpetTile(RawCmd r, Vector3 bottomCentre, Quaternion rot, Vector3 worldOrigin)
+    {
+        const float s = .6f, h = .007f;
+        var hx = s * .5f;
+        Vector3 P(float x, float y, float z) => bottomCentre + rot * new Vector3(x, y, z);
+        var up = rot * Vector3.up;
+        // Top: the tile's own pile (UV 0.6 square in metres of the 1.2 m texture).
+        AddQuadOriented(r, P(-hx, h, -hx), P(hx, h, -hx), P(hx, h, hx), P(-hx, h, hx), up, new Vector2(0f, 0f), new Vector2(.6f, 0f), new Vector2(.6f, .6f), new Vector2(0f, .6f));
+        foreach (var (dx, dz) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+        {
+            var nrm = rot * new Vector3(dx, 0f, dz);
+            var t = rot * new Vector3(-dz, 0f, dx);
+            var c0 = bottomCentre + nrm * hx;
+            AddQuadOriented(r, c0 - t * hx, c0 + t * hx, c0 + t * hx + up * h, c0 - t * hx + up * h, nrm, new Vector2(0f, 0f), new Vector2(.6f, 0f), new Vector2(.6f, .007f), new Vector2(0f, .007f));
+        }
+    }
+
+    static bool Ceiling(Context c, GridCoord cell, Vector3 local, float h, int block, Material ceilingMat, Crossing primary, Rng rng)
+    {
+        var o = c.output;
+        // Tile slots of the 2x4 grid (0.6 along X, 1.2 along Z, world-anchored).
+        var zOff = Mathf.Repeat(-(cell.y * Cell), 1.2f);
+        var zLines = new List<float> { 0f };
+        for (var z = zOff; z < Cell - 1e-4f; z += 1.2f) if (z > 1e-4f) zLines.Add(z);
+        zLines.Add(Cell);
+        var slots = new List<Rect2>();
+        for (var i = 0; i < 5; i++)
+            for (var j = 0; j + 1 < zLines.Count; j++)
+                slots.Add(new Rect2(i * .6f, zLines[j], i * .6f + .6f, zLines[j + 1], 0));
+        var troffer = new Rect2(1.2f, 1.2f, 1.8f, 2.4f, 0);
+        bool Overlaps(Rect2 a, Rect2 b) => a.x0 < b.x1 - 1e-4f && b.x0 < a.x1 - 1e-4f && a.z0 < b.z1 - 1e-4f && b.z0 < a.z1 - 1e-4f;
+        bool Full(Rect2 s) => s.z1 - s.z0 > 1.19f;
+        // The strip of slots touching the line, and the next row in.
+        Rect2 band = primary.side == 0 ? new Rect2(0f, 0f, Cell, .6f, 0) : primary.side == 1 ? new Rect2(0f, Cell - .6f, Cell, Cell, 0)
+            : primary.side == 2 ? new Rect2(0f, 0f, .6f, Cell, 0) : new Rect2(Cell - .6f, 0f, Cell, Cell, 0);
+        Rect2 band2 = primary.side == 0 ? new Rect2(0f, .6f, Cell, 1.8f, 0) : primary.side == 1 ? new Rect2(0f, Cell - 1.8f, Cell, Cell - .6f, 0)
+            : primary.side == 2 ? new Rect2(.6f, 0f, 1.8f, Cell, 0) : new Rect2(Cell - 1.8f, 0f, Cell - .6f, Cell, 0);
+        bool InteriorX(Rect2 s) => s.x0 > .3f && s.x1 < Cell - .3f;
+        bool InteriorZ(Rect2 s) => s.z0 > .3f && s.z1 < Cell - .3f;
+        var lineSlots = slots.FindAll(s => Overlaps(s, band) && !Overlaps(s, troffer) && (primary.side <= 1 ? InteriorX(s) : true) && (primary.side >= 2 ? InteriorZ(s) || Full(s) : true));
+        if (lineSlots.Count == 0) return false;
+        var miss = lineSlots[rng.Int(0, lineSlots.Count)];
+        // New tiles: a full slot (two 2x2 tiles) or two cut ones, in the line strip, not next to the hole.
+        var newSlots = new List<Rect2>();
+        var cand = slots.FindAll(s => Overlaps(s, band) && !Overlaps(s, troffer) && !Overlaps(s, miss) && Mathf.Abs((s.x0 + s.x1) * .5f - (miss.x0 + miss.x1) * .5f) + Mathf.Abs((s.z0 + s.z1) * .5f - (miss.z0 + miss.z1) * .5f) > .95f);
+        if (cand.Count > 0)
+        {
+            var first = cand[rng.Int(0, cand.Count)];
+            newSlots.Add(first);
+            if (!Full(first))
+            {
+                var pair = cand.Find(s => !s.Equals(first) && Mathf.Abs(s.z0 - first.z0) < 1e-3f && Mathf.Abs(s.x0 - first.x0) > .59f && Mathf.Abs(s.x0 - first.x0) < .61f);
+                if (pair.x1 > pair.x0) newSlots.Add(pair);
+            }
+        }
+        // Askew: a full slot in the next row, away from the hole and the new tiles.
+        var askCand = slots.FindAll(s => Full(s) && Overlaps(s, band2) && !Overlaps(s, troffer) && !Overlaps(s, miss) && !newSlots.Exists(n2 => Overlaps(n2, s)) && InteriorX(s) && !Overlaps(Grow(s, .3f), miss));
+        Rect2? ask = askCand.Count > 0 ? askCand[rng.Int(0, askCand.Count)] : (Rect2?)null;
+
+        Rect2 Hole(Rect2 s) => new Rect2(s.x0 + Inset(s.x0), s.z0 + Inset(s.z0), s.x1 - Inset(s.x1), s.z1 - Inset(s.z1), 3);
+        float Inset(float v) => v <= 1e-4f || v >= Cell - 1e-4f ? Half + .022f : .012f;
+        var layers = new List<Rect2>();
+        var holes = new List<Rect2> { Hole(miss) };
+        if (ask.HasValue) holes.Add(Hole(ask.Value));
+        var rings = new List<Rect2>();
+        foreach (var hRect in holes) rings.Add(Clamp(Grow(hRect, .25f), Half + .002f, Cell - Half - .002f, 2));
+        // Merge overlapping rings into their bounds.
+        for (var i = 0; i < rings.Count; i++)
+            for (var j = i + 1; j < rings.Count; j++)
+                if (Overlaps(rings[i], rings[j])) { rings[i] = new Rect2(Mathf.Min(rings[i].x0, rings[j].x0), Mathf.Min(rings[i].z0, rings[j].z0), Mathf.Max(rings[i].x1, rings[j].x1), Mathf.Max(rings[i].z1, rings[j].z1), 2); rings.RemoveAt(j); j = i; }
+        foreach (var n2 in newSlots) layers.Add(new Rect2(n2.x0, n2.z0, n2.x1, n2.z1, 1));
+        layers.AddRange(rings);
+        layers.AddRange(holes);
+        var rects = Paint(new Rect2(0f, 0f, Cell, Cell, 0), layers);
+        foreach (var r in rects)
+        {
+            if (r.cls == 3) continue;
+            var thick = r.cls == 2 ? .016f : ModuleUnits.CeilingSlab;
+            var mat = r.cls == 1 ? c.mats.ceilingNew : ceilingMat;
+            o.Box(block, mat, local + new Vector3((r.x0 + r.x1) * .5f, h + thick * .5f, (r.z0 + r.z1) * .5f), new Vector3(r.x1 - r.x0, thick, r.z1 - r.z0));
+        }
+        Count("tiles out"); if (ask.HasValue) Count("tiles askew"); Count("tiles new", newSlots.Count == 1 && Full(newSlots[0]) ? 2 : newSlots.Count);
+        // Plenum: a dark box 0.25 m deep over each ring, its walls 1 mm inside the slab edges.
+        var plen = o.Raw(block, c.mats.plenum);
+        foreach (var ring in rings)
+        {
+            var x0 = ring.x0 + .001f; var x1 = ring.x1 - .001f; var z0 = ring.z0 + .001f; var z1 = ring.z1 - .001f;
+            var y0 = h + .016f; var y1 = y0 + .25f;
+            Vector3 L(float x, float y, float z) => local + new Vector3(x, y, z);
+            AddQuadOriented(plen, L(x0, y1, z0), L(x1, y1, z0), L(x1, y1, z1), L(x0, y1, z1), Vector3.down, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            AddQuadOriented(plen, L(x0, y0, z0), L(x1, y0, z0), L(x1, y1, z0), L(x0, y1, z0), Vector3.forward, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            AddQuadOriented(plen, L(x0, y0, z1), L(x1, y0, z1), L(x1, y1, z1), L(x0, y1, z1), Vector3.back, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            AddQuadOriented(plen, L(x0, y0, z0), L(x0, y0, z1), L(x0, y1, z1), L(x0, y1, z0), Vector3.right, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            AddQuadOriented(plen, L(x1, y0, z0), L(x1, y0, z1), L(x1, y1, z1), L(x1, y1, z0), Vector3.left, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+        }
+        // T-bar webs round each hole (38 mm above the flange), on the grid sides.
+        foreach (var hRect in holes)
+        {
+            void Web(Vector3 centre, Vector3 size) => o.Box(block, c.mats.tbar, centre, size, 1f);
+            var ym = h + .019f;
+            if (hRect.x0 > Half + .03f) Web(local + new Vector3(hRect.x0 - .012f, ym, (hRect.z0 + hRect.z1) * .5f), new Vector3(.004f, .038f, hRect.z1 - hRect.z0 + .024f));
+            if (hRect.x1 < Cell - Half - .03f) Web(local + new Vector3(hRect.x1 + .012f, ym, (hRect.z0 + hRect.z1) * .5f), new Vector3(.004f, .038f, hRect.z1 - hRect.z0 + .024f));
+            if (hRect.z0 > Half + .03f) Web(local + new Vector3((hRect.x0 + hRect.x1) * .5f, ym, hRect.z0 - .012f), new Vector3(hRect.x1 - hRect.x0 + .024f, .038f, .004f));
+            if (hRect.z1 < Cell - Half - .03f) Web(local + new Vector3((hRect.x0 + hRect.x1) * .5f, ym, hRect.z1 + .012f), new Vector3(hRect.x1 - hRect.x0 + .024f, .038f, .004f));
+        }
+        // A hint of duct over the hole and a cable looping down through it.
+        var hole0 = holes[0];
+        var ring0 = rings[0];
+        var ductAlongX = (hole0.x1 - hole0.x0) > (hole0.z1 - hole0.z0) == false;
+        var dw = .30f; var dh = .18f;
+        if (ductAlongX)
+        {
+            var zc = Mathf.Lerp(hole0.z0, hole0.z1, rng.Range(.15f, .35f));
+            o.Box(-1, c.mats.metal, local + new Vector3((ring0.x0 + ring0.x1) * .5f, h + .016f + .03f + dh * .5f, zc), new Vector3(ring0.x1 - ring0.x0 - .01f, dh, dw), 1f);
+        }
+        else
+        {
+            var xc = Mathf.Lerp(hole0.x0, hole0.x1, rng.Range(.65f, .85f));
+            o.Box(-1, c.mats.metal, local + new Vector3(xc, h + .016f + .03f + dh * .5f, (ring0.z0 + ring0.z1) * .5f), new Vector3(Mathf.Min(dw, .2f), dh, ring0.z1 - ring0.z0 - .01f), 1f);
+        }
+        var cable = o.Raw(-1, c.mats.cable);
+        var pa = local + new Vector3(hole0.x0 + .05f, h + .14f, Mathf.Lerp(hole0.z0, hole0.z1, .3f));
+        var pb = local + new Vector3(hole0.x1 - .05f, h + .16f, Mathf.Lerp(hole0.z0, hole0.z1, .7f));
+        var sagDepth = rng.Range(.10f, .22f);
+        Tube(cable, i2 => { var t = i2; var p = Vector3.Lerp(pa, pb, t); p.y -= (.15f + sagDepth) * 4f * t * (1f - t); return p; }, .0045f, 28, 8);
+        // The askew tile: resting on one long flange, the other edge pushed up 30-70 mm.
+        if (ask.HasValue)
+        {
+            var s = ask.Value;
+            var lift = rng.Range(.03f, .07f);
+            var loose = o.Raw(-1, c.mats.ceilingLoose);
+            var hingeAtLow = rng.Next() < .5f;
+            AskewTile(loose, local, s, h, lift, hingeAtLow, rng.Range(-.012f, .012f));
+        }
+        return true;
+    }
+
+    static Rect2 Grow(Rect2 r, float g) => new Rect2(r.x0 - g, r.z0 - g, r.x1 + g, r.z1 + g, r.cls);
+    static Rect2 Clamp(Rect2 r, float lo, float hi, int cls) => new Rect2(Mathf.Max(lo, r.x0), Mathf.Max(lo, r.z0), Mathf.Min(hi, r.x1), Mathf.Min(hi, r.z1), cls);
+
+    static void Tube(RawCmd r, Func<float, Vector3> path, float radius, int segs, int sides)
+    {
+        var rings = new Vector3[segs + 1][];
+        var norms = new Vector3[segs + 1][];
+        var prevSide = Vector3.up;
+        for (var i = 0; i <= segs; i++)
+        {
+            var t = i / (float)segs;
+            var p = path(t);
+            var tan = (path(Mathf.Min(1f, t + .01f)) - path(Mathf.Max(0f, t - .01f))).normalized;
+            var side = Vector3.Cross(tan, Mathf.Abs(Vector3.Dot(tan, Vector3.up)) > .9f ? Vector3.right : Vector3.up).normalized;
+            var up = Vector3.Cross(side, tan);
+            rings[i] = new Vector3[sides]; norms[i] = new Vector3[sides];
+            for (var k = 0; k < sides; k++)
+            {
+                var a = k * Mathf.PI * 2f / sides;
+                var n = side * Mathf.Cos(a) + up * Mathf.Sin(a);
+                rings[i][k] = p + n * radius; norms[i][k] = n;
+            }
+        }
+        for (var i = 0; i < segs; i++)
+            for (var k = 0; k < sides; k++)
+            {
+                var k2 = (k + 1) % sides;
+                var nrm = (norms[i][k] + norms[i][k2] + norms[i + 1][k] + norms[i + 1][k2]).normalized;
+                AddQuadOriented(r, rings[i][k], rings[i][k2], rings[i + 1][k2], rings[i + 1][k], nrm, new Vector2(k, i), new Vector2(k + 1, i), new Vector2(k + 1, i + 1), new Vector2(k, i + 1));
+            }
+    }
+
+    static void AskewTile(RawCmd r, Vector3 local, Rect2 s, float h, float lift, bool hingeAtLow, float slide)
+    {
+        // Tile 0.576 x 0.016 x 1.176 (2x4 minus the flanges), hinge on a long (Z-running) edge.
+        var w = s.x1 - s.x0 - .024f; var l = s.z1 - s.z0 - .024f; const float th = .016f;
+        var hingeX = hingeAtLow ? s.x0 + .012f : s.x1 - .012f;
+        var sign = hingeAtLow ? 1f : -1f;
+        var ang = Mathf.Asin(Mathf.Clamp(lift / w, 0f, .5f));
+        var across = new Vector3(sign * Mathf.Cos(ang), Mathf.Sin(ang), 0f);
+        var upv = new Vector3(-sign * Mathf.Sin(ang), Mathf.Cos(ang), 0f);
+        var o0 = local + new Vector3(hingeX, h, s.z0 + .012f + slide);
+        Vector3 P(float a, float y, float z) => o0 + across * a + upv * y + Vector3.forward * z;
+        // Bottom face (seen from the room), mesh UVs inside one tile of the 2x4 texture.
+        AddQuadOriented(r, P(0f, 0f, 0f), P(w, 0f, 0f), P(w, 0f, l), P(0f, 0f, l), -upv, new Vector2(.012f, .012f), new Vector2(.012f + w, .012f), new Vector2(.012f + w, .012f + l), new Vector2(.012f, .012f + l));
+        AddQuadOriented(r, P(0f, th, 0f), P(w, th, 0f), P(w, th, l), P(0f, th, l), upv, Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+        AddQuadOriented(r, P(w, 0f, 0f), P(w, 0f, l), P(w, th, l), P(w, th, 0f), across, Vector2.zero, new Vector2(l, 0f), new Vector2(l, th), new Vector2(0f, th));
+        AddQuadOriented(r, P(0f, 0f, 0f), P(0f, 0f, l), P(0f, th, l), P(0f, th, 0f), -across, Vector2.zero, new Vector2(l, 0f), new Vector2(l, th), new Vector2(0f, th));
+        AddQuadOriented(r, P(0f, 0f, 0f), P(w, 0f, 0f), P(w, th, 0f), P(0f, th, 0f), Vector3.back, Vector2.zero, new Vector2(w, 0f), new Vector2(w, th), new Vector2(0f, th));
+        AddQuadOriented(r, P(0f, 0f, l), P(w, 0f, l), P(w, th, l), P(0f, th, l), Vector3.forward, Vector2.zero, new Vector2(w, 0f), new Vector2(w, th), new Vector2(0f, th));
+    }
+
+    // ------------------------------------------------------------------ props and scraps per run
+
+    /// <summary>
+    /// Once per wall edge: work props against the Level 0 faces in the band (render-only,
+    /// at least 1.0 m clear of every opening and crossing, 1-2 per run), paper scraps on
+    /// the floor under the stripped drops, and masking tape on the paint | primer line.
+    /// </summary>
+    public static void EdgeExtras(Context c, in Edge edge, float ceilingA, float ceilingB)
+    {
+        var e = edge;
+        for (var sb = 0; sb < 2; sb++)
+        {
+            var sideB = sb == 1;
+            var key = (e.a.x, e.a.y, e.alongX, sideB);
+            if (!c.extrasDone.Add(key)) continue;
+            var face = FaceOf(c, e.a, e.b, e.alongX, sideB);
+            if (!face.level0 || !face.band) continue;
+            var side = sideB ? 1f : -1f;
+            var nrm = e.across * side;
+            var plane = e.start + e.across * (side * Half);
+            var rng = new Rng(face.hash ^ Hash(e.a.x, e.a.y, e.alongX ? 1 : 0, sideB ? 3 : 5));
+            var ceiling = sideB ? ceilingB : ceilingA;
+            // Wall pieces exist along [0, 3] minus the opening of this edge.
+            bool OnWall(float u0, float u1)
+            {
+                if (u0 < Half + .05f || u1 > Cell - Half - .05f) return false;
+                if (e.kind == EdgeKind.Open) return false;
+                if (e.kind != EdgeKind.Wall && u1 > e.lo - .02f && u0 < e.hi + .02f) return false;
+                return true;
+            }
+            bool Clear(float u0, float u1)
+            {
+                foreach (var k in face.keepOut)
+                    if (u1 > k.x - 1f && u0 < k.y + 1f) return false;
+                return true;
+            }
+            // Props, 1-2 per run, chosen by the stage of the drop they stand at: scraping gear
+            // (stool, bucket) at stripped drops, compound and tiles at primed ones, paint gear at fresh ones.
+            var want = face.N(0) <= 2 || face.N(3) <= 2 ? (rng.Next() < .45f ? 2 : 1) : 0;
+            string first = null;
+            for (var pi = 0; pi < want; pi++)
+            {
+                for (var attempt = 0; attempt < 10; attempt++)
+                {
+                    var k = rng.Int(0, 4);
+                    if (face.N(k) > 2) continue;
+                    var asset = PickProp(face.At(k), rng, first);
+                    var info = FrontRoomsKitLibrary.GetInfo(asset);
+                    if (info == null) continue;
+                    var fp = info.Footprint;
+                    var w = Mathf.Max(fp.width, .2f); var d = Mathf.Max(fp.height, .2f);
+                    var u = k * Drop + rng.Range(w * .5f + .02f, Drop - w * .5f - .02f);
+                    if (Drop < w + .04f) u = k * Drop + Drop * .5f;
+                    var u0 = u - w * .5f; var u1 = u + w * .5f;
+                    if (!OnWall(u0, u1) || !Clear(u0, u1))
+                    {
+                        // Iteration 7: slide the prop along the run to the nearest spot that is on the wall,
+                        // 1.0 m clear of every opening and still inside the band (wide paint gear rarely fit
+                        // inside one 0.75 m drop next to the keep-out). The first fit is unchanged.
+                        var bestD = float.MaxValue; var bu = u;
+                        var cands = new List<float> { Half + .06f + w * .5f, Cell - Half - .06f - w * .5f };
+                        foreach (var kq in face.keepOut) { cands.Add(kq.x - 1.01f - w * .5f); cands.Add(kq.y + 1.01f + w * .5f); }
+                        foreach (var cu in cands)
+                        {
+                            var kk = Mathf.FloorToInt(cu / Drop);
+                            if (kk < 0 || kk > 3 || face.N(kk) > 2) continue;
+                            if (!OnWall(cu - w * .5f, cu + w * .5f) || !Clear(cu - w * .5f, cu + w * .5f)) continue;
+                            if (Mathf.Abs(cu - u) < bestD) { bestD = Mathf.Abs(cu - u); bu = cu; }
+                        }
+                        if (bestD == float.MaxValue) continue;
+                        u = bu; u0 = u - w * .5f; u1 = u + w * .5f;
+                        Count("props slid");
+                    }
+                    if (info.Height > ceiling - .1f) continue;
+                    var gap = asset == "Kit_TransDropCloth" ? .01f : asset == "Kit_StepStool" ? .03f : .05f;
+                    var pos = plane + e.along * u + nrm * (gap + d * .5f);
+                    var hx = (e.alongX ? w : d) * .5f + .04f; var hz = (e.alongX ? d : w) * .5f + .04f;
+                    var rect = Rect.MinMaxRect(pos.x - hx, pos.z - hz, pos.x + hx, pos.z + hz);
+                    if (c.propRects.Exists(q => q.Overlaps(rect))) continue;
+                    c.propRects.Add(rect);
+                    var yaw = Mathf.Atan2(nrm.x, nrm.z) * Mathf.Rad2Deg + rng.Range(-7f, 7f);
+                    // Kit footprints are centred on the asset origin's footprint centre.
+                    var centreOff = new Vector3(fp.center.x, 0f, fp.center.y);
+                    var rot = Quaternion.Euler(0f, yaw, 0f);
+                    c.output.props.Add(new PropCmd { asset = asset, position = pos - rot * centreOff, rotation = rot });
+                    if (DebugLog != null) { var wp = c.worldOrigin + pos; DebugLog.Add("prop " + asset + " " + F(wp.x) + " " + F(wp.z)); }
+                    Count("props");
+                    Count("prop " + asset);
+                    first = asset;
+                    break;
+                }
+            }
+            // Paper scraps on the floor below the stripped drops.
+            var scrapPrint = c.output.Raw(-1, c.mats.scrap);
+            var scrapBack = c.output.Raw(-1, c.mats.backing);
+            for (var k = 0; k <= 3; k++)
+            {
+                if (face.At(k) != Stage.Stripped) continue;
+                var nScr = 1 + rng.Int(0, 3);
+                for (var i = 0; i < nScr; i++)
+                {
+                    var u = k * Drop + rng.Range(.08f, Drop - .08f);
+                    if (!OnWall(u - .05f, u + .05f) && e.kind != EdgeKind.Wall) continue;
+                    if (face.keepOut.Exists(kq => Mathf.Abs(kq.y - kq.x) < 1e-4f && Mathf.Abs(u - kq.x) < .75f)) continue;   // the slab strip is lower than the carpet
+                    var p = plane + e.along * u + nrm * rng.Range(.04f, .45f);
+                    FloorScrap(scrapPrint, scrapBack, p, rng, c.worldOrigin);
+                    Count("floor scraps");
+                }
+            }
+            // Masking tape on the fresh | primer line, where the next drop was masked off.
+            var tape = c.output.Raw(-1, c.mats.tape);
+            for (var m = 1; m <= 3; m++)
+            {
+                var s0 = face.At(m - 1); var s1 = face.At(m);
+                if (!((s0 == Stage.Fresh && s1 == Stage.Primer) || (s1 == Stage.Fresh && s0 == Stage.Primer))) continue;
+                var ub = m * Drop;
+                if (!OnWall(ub - .03f, ub + .03f)) continue;
+                var freshSide = s0 == Stage.Fresh ? -1f : 1f;
+                var pieces = 2 + rng.Int(0, 2);
+                for (var i = 0; i < pieces; i++)
+                {
+                    var y0 = rng.Range(.25f, ceiling - .5f);
+                    var len = rng.Range(.12f, .38f);
+                    var ang = rng.Range(-2f, 2f) * Mathf.Deg2Rad;
+                    var centre = plane + e.along * (ub - freshSide * .012f) + Vector3.up * (y0 + len * .5f) + nrm * TapeOff;
+                    TapePiece(tape, centre, Vector3.up * Mathf.Cos(ang) + e.along * Mathf.Sin(ang), e.along, nrm, len, .048f);
+                    Count("tape pieces");
+                }
+            }
+        }
+    }
+
+    static string PickProp(Stage stage, Rng rng, string not)
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            var r = rng.Next();
+            var a = stage == Stage.Fresh ? (r < .55f ? "Kit_TransPaintTray" : "Kit_TransDropCloth")
+                : stage == Stage.Primer ? (r < .40f ? "Kit_TransPaintTray" : r < .65f ? "Kit_TransBucket" : r < .80f ? "Kit_TransDropCloth" : r < .90f ? "Kit_TransTileBox" : "Kit_StepStool")
+                : (r < .50f ? "Kit_StepStool" : r < .80f ? "Kit_TransBucket" : "Kit_TransTileBox");
+            if (a != not) return a;
+        }
+        return "Kit_TransBucket";
+    }
+
+    static void FloorScrap(RawCmd print, RawCmd back, Vector3 p, Rng rng, Vector3 worldOrigin)
+    {
+        var w = rng.Range(.06f, .20f); var l = rng.Range(.05f, .16f);
+        var yaw = rng.Range(0f, Mathf.PI * 2f);
+        var ax = new Vector3(Mathf.Cos(yaw), 0f, Mathf.Sin(yaw));
+        var az = new Vector3(-ax.z, 0f, ax.x);
+        var curlR = rng.Range(.025f, .08f);
+        var flip = rng.Next() < .5f;
+        var uo = new Vector2(rng.Range(0f, 3f), rng.Range(.2f, 2.2f));
+        const int nu = 8, nv = 3;
+        for (var i = 0; i < nu; i++)
+            for (var j = 0; j < nv; j++)
+            {
+                Vector3 Pt(int a, int b)
+                {
+                    var s = w * a / nu; var q = l * b / nv - l * .5f;
+                    var phi = s / curlR;
+                    var x = phi < Mathf.PI * .9f ? curlR * Mathf.Sin(Mathf.Min(phi, Mathf.PI * .9f)) : 0f;
+                    var y = phi < Mathf.PI * .9f ? curlR * (1f - Mathf.Cos(Mathf.Min(phi, Mathf.PI * .9f))) : 0f;
+                    var flatLen = Mathf.Min(s, w * .55f);
+                    x = s <= w * .55f ? s : w * .55f + curlR * Mathf.Sin((s - w * .55f) / curlR);
+                    y = s <= w * .55f ? 0f : curlR * (1f - Mathf.Cos((s - w * .55f) / curlR));
+                    return p + ax * (x - w * .4f) + az * q + Vector3.up * (.0012f + y + .002f * Mathf.Sin(a * 1.7f + b));
+                }
+                var a0 = Pt(i, j); var b0 = Pt(i + 1, j); var c0 = Pt(i + 1, j + 1); var d0 = Pt(i, j + 1);
+                var nrm = Vector3.Cross(d0 - a0, b0 - a0).normalized;
+                if (nrm.y < 0f) nrm = -nrm;
+                Vector2 U(int a, int b) => uo + new Vector2(w * a / nu, l * b / nv);
+                var top = flip ? back : print;
+                var bot = flip ? print : back;
+                AddQuadOriented(top, a0, b0, c0, d0, nrm, U(i, j), U(i + 1, j), U(i + 1, j + 1), U(i, j + 1));
+                AddQuadOriented(bot, a0 - nrm * .0003f, b0 - nrm * .0003f, c0 - nrm * .0003f, d0 - nrm * .0003f, -nrm, U(i, j), U(i + 1, j), U(i + 1, j + 1), U(i, j + 1));
+            }
+    }
+
+    static void TapePiece(RawCmd r, Vector3 centre, Vector3 run, Vector3 across, Vector3 nrm, float len, float width)
+    {
+        var a = centre - run * (len * .5f) - across * (width * .5f);
+        var b = centre - run * (len * .5f) + across * (width * .5f);
+        var cc = centre + run * (len * .5f) + across * (width * .5f);
+        var d = centre + run * (len * .5f) - across * (width * .5f);
+        AddQuadOriented(r, a, b, cc, d, nrm, new Vector2(0f, 0f), new Vector2(width, 0f), new Vector2(width, len), new Vector2(0f, len));
+    }
+
+    static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
+}

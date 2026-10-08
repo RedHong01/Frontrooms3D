@@ -1,0 +1,46 @@
+using System;
+using System.Globalization;
+
+/// <summary>
+/// LEVEL TRANSITIONS · PICK (clone proj_trans_pick only, 2026-10-08): the recommended mix
+/// rendered over current main. V1 Frame on every border crossing, V2 Renovation on a share of
+/// crossings (salt 0), main's V5 colour lead and B0.2 blocks as the game runs them today.
+/// Command line:
+///   -pickMode now      kits off: the map exactly as main builds it today (the NOW frames)
+///   -pickMode frame    frame kit only (renovation share 0; its corner rule still owns posts)
+///   -pickMode pick     frame + renovation on RenoShare of crossings (default)
+///   -pickMode renoall  frame + renovation on every crossing (the V2 test density)
+///   -renoSalt N        renovation draw salt (default 0, the real kit's)
+///   -renoShare F       share of dressed crossings in pick mode (default 0.30)
+///   -pickFrameWindows  also build the frame kit's window casings (off: main's DressWindow frames windows)
+/// </summary>
+public static class FrontRoomsTransitionPick
+{
+    public static readonly string ModeName = Arg("-pickMode", "pick").ToLowerInvariant();
+    public static bool On => ModeName != "now";
+    public static bool Frame => On;
+    public static readonly int RenoSalt = ParseInt(Arg("-renoSalt", "0"), 0);
+    public static readonly float RenoShare = ModeName == "renoall" ? 1f : ModeName == "frame" ? 0f : ParseFloat(Arg("-renoShare", "0.30"), .30f);
+    public static readonly bool FrameWindows = HasArg("-pickFrameWindows");
+
+    public static string Describe() =>
+        "pickMode=" + ModeName + " renoSalt=" + RenoSalt + " renoShare=" + RenoShare.ToString("0.00", CultureInfo.InvariantCulture) + " frameWindows=" + FrameWindows;
+
+    static string[] Args()
+    {
+        try { return Environment.GetCommandLineArgs(); }
+        catch { return new string[0]; }
+    }
+
+    static bool HasArg(string name) => Array.IndexOf(Args(), name) >= 0;
+
+    static string Arg(string name, string fallback)
+    {
+        var a = Args();
+        for (var i = 0; i + 1 < a.Length; i++) if (a[i] == name) return a[i + 1];
+        return fallback;
+    }
+
+    static int ParseInt(string s, int fallback) => int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : fallback;
+    static float ParseFloat(string s, float fallback) => float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
+}

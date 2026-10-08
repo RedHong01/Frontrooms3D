@@ -1,0 +1,1016 @@
+using System;
+using System.Collections.Generic;
+using FrontRooms.Map;
+using UnityEngine;
+
+/// <summary>
+/// TRANSITION frame (clone prototype, level_transitions V1 "Frame"). A
+/// visual-owned stand-in for FrontRoomsTransitionKit: a pure function from an
+/// edge or corner descriptor that the map hands over to render-only meshes per
+/// material. Every Office | Level 0 change sits on a piece the Office side (the
+/// 1990 fit-out) owns: a cased arch (Office lining, 6 mm beads, aluminium
+/// binder bar), a portal on an open edge (pilasters, 0.35 m header, wall
+/// angles, bar), a dark-bronze pressed-steel door frame (R3 sleeve section)
+/// with stop and saddle, a steel window casing, end caps and corner guards, and
+/// a rubber cove base on every Office wall face. No collider, no texture: it
+/// re-uses Office_Wall, Cove_Base, Prop_SteelBrown, Prop_Aluminium,
+/// Painted_Metal and Prop_PlasticBeige.
+///
+/// Coordinates: chunk-local metres. An edge runs from <c>start</c> along
+/// <c>along</c> for 3 m; <c>across</c> points from cell a into cell b. A
+/// corner is the lattice point at the south-west corner of cell <c>point</c>.
+/// </summary>
+public static class FrontRoomsTransitionKit
+{
+    // ---------- mode (the clone renders off, b0 and frame from one build) ----------
+
+    public enum KitMode { Off, B0, Frame }
+    static KitMode? mode;
+
+    /// <summary>Off: today's map. B0: the two bug fixes only. Frame: B0 + V1. Command line: -transMode off|b0|frame (default frame).</summary>
+    public static KitMode Mode
+    {
+        get
+        {
+            if (!mode.HasValue) mode = ParseMode();
+            return mode.Value;
+        }
+        set => mode = value;
+    }
+
+    static KitMode ParseMode()
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i + 1 < args.Length; i++)
+            if (args[i] == "-transMode")
+            {
+                var v = args[i + 1].ToLowerInvariant();
+                if (v == "off") return KitMode.Off;
+                if (v == "b0") return KitMode.B0;
+            }
+        return KitMode.Frame;
+    }
+
+    public static bool B0On => Mode != KitMode.Off;
+    public static bool FrameOn => Mode == KitMode.Frame;
+
+    // ---------- units (proposed ModuleUnits constants) ----------
+
+    public const float WallHalf = ModuleUnits.WallHalf;
+    /// <summary>Wall pieces beside a border arch stop this short of the opening; the Office lining fills the gap.</summary>
+    public const float BeadInset = .012f;
+    /// <summary>Quarter-round corner bead radius, 8 segments.</summary>
+    public const float Bead = .006f;
+    public const int BeadSegments = 8;
+    public const float PortalPilaster = .12f, PortalDepth = .20f, PortalHeaderDrop = ModuleUnits.BulkheadDepth;
+    /// <summary>Half-size of a free post where border open edges meet with no wall: 0.24 along a line with a border opening, else 0.20.</summary>
+    public const float SharedPilaster = .24f;
+    public const float BarWidth = .035f, BarHeight = .005f;
+    public const float WallAngle = .022f, WallAngleGauge = .0015f;
+    public const float CoveHeight = ModuleUnits.CoveHeight, CoveProud = ModuleUnits.CoveProud, BaseStopGap = .005f;
+    public const float GuardWing = .05f, GuardHeight = 1.22f, GuardGauge = .002f, GuardNose = .003f;
+    public const float CapWidth = .20f, CapProud = .04f;
+    // R3 pressed-steel sleeve (interactables/10_spec.md §1.4, door root, S = +X).
+    const float CasingFace = .105f, CasingInner = .0795f, CasingReturn = .075f, Soffit = .002f;
+    const float StopP0 = .0605f, StopP1 = .025f, StopDepth = .018f;
+    const float SaddleHalf = .076f, SaddleTop = .052f, SaddleHeight = .012f;
+    const float CasingConvex = .003f, CasingConcave = .0015f;
+
+    // ---------- counters (reset by the caller) ----------
+
+    public sealed class Stats
+    {
+        public int casedArches, portals, portalPilasters, freePosts, sharedPilasters, doorFrames, windowFrames, endCaps, pilasterCaps, guards, quarters, bars, saddles, baseRuns;
+        public float baseMetres, barMetres;
+        public int officeWallTris, kitTris;
+        public void Reset()
+        {
+            casedArches = portals = portalPilasters = freePosts = sharedPilasters = doorFrames = windowFrames = endCaps = pilasterCaps = guards = quarters = bars = saddles = baseRuns = 0;
+            baseMetres = barMetres = 0f;
+            officeWallTris = kitTris = 0;
+        }
+
+        public override string ToString() =>
+            "cased arches " + casedArches + ", portals " + portals + " (pilasters " + portalPilasters + ", free posts " + freePosts + ", of which shared " + sharedPilasters + "), door frames " + doorFrames
+            + ", window frames " + windowFrames + ", end caps " + endCaps + ", pilaster caps " + pilasterCaps + ", corner guards " + guards + ", B0 post quarters " + quarters
+            + ", bars " + bars + " (" + barMetres.ToString("0.0") + " m), saddles " + saddles + ", base runs " + baseRuns + " (" + baseMetres.ToString("0.0") + " m)"
+            + ", tris: Office_Wall merged " + officeWallTris + ", kit renderers " + kitTris;
+    }
+
+    public static readonly Stats Count = new Stats();
+
+    /// <summary>Tools: every border piece built since the last Clear (kind, cells, world centre of the opening, width).</summary>
+    public static readonly List<string> Built = new List<string>();
+    public static bool LogBuilt;
+
+    static void Note(TransitionEdge e, string what)
+    {
+        if (!LogBuilt) return;
+        Built.Add(what + " " + e.kind + " " + e.a + "|" + e.b + " " + e.themeA + "|" + e.themeB + " start " + e.start.ToString("F2") + " along " + e.along.ToString("F0")
+            + " centre " + e.centre.ToString("0.000") + " width " + e.width.ToString("0.000") + " top " + e.top.ToString("0.00") + " h " + e.height.ToString("0.0"));
+    }
+
+    // ---------- descriptors (filled by the map) ----------
+
+    /// <summary>What meets at one lattice point. Arms: 0 W (-x), 1 E (+x), 2 S (-z), 3 N (+z). Quadrants: 0 SW, 1 SE, 2 NW, 3 NE.</summary>
+    public sealed class TransitionCorner
+    {
+        public GridCoord point;
+        public Vector3 at;
+        public readonly EdgeKind[] arm = new EdgeKind[4];
+        public readonly ZoneTheme[] theme = new ZoneTheme[4];
+        public readonly float[] ceiling = new float[4];
+        public readonly Material[] wall = new Material[4];
+        public readonly float[] armHeight = new float[4];
+        /// <summary>Touches the start area: left exactly as today.</summary>
+        public bool special;
+
+        public bool Has(int dir) => arm[dir] != EdgeKind.Open;
+
+        public int Arms
+        {
+            get
+            {
+                var n = 0;
+                for (var d = 0; d < 4; d++) if (Has(d)) n++;
+                return n;
+            }
+        }
+
+        /// <summary>The four cells do not share one wall finish.</summary>
+        public bool Mixed => wall[0] != wall[1] || wall[0] != wall[2] || wall[0] != wall[3];
+
+        public float MaxArmHeight
+        {
+            get
+            {
+                var h = 0f;
+                for (var d = 0; d < 4; d++) if (Has(d)) h = Mathf.Max(h, armHeight[d]);
+                return h;
+            }
+        }
+
+        /// <summary>The two quadrants an arm separates.</summary>
+        public static void Sides(int dir, out int q0, out int q1)
+        {
+            switch (dir)
+            {
+                case 0: q0 = 0; q1 = 2; break;   // W: SW | NW
+                case 1: q0 = 1; q1 = 3; break;   // E: SE | NE
+                case 2: q0 = 0; q1 = 1; break;   // S: SW | SE
+                default: q0 = 2; q1 = 3; break;  // N: NW | NE
+            }
+        }
+
+        public bool Border(int dir)
+        {
+            Sides(dir, out var q0, out var q1);
+            return theme[q0] != theme[q1];
+        }
+
+        public bool BorderOpen(int dir) => !Has(dir) && Border(dir);
+
+        public bool AnyBorderOpen()
+        {
+            for (var d = 0; d < 4; d++) if (BorderOpen(d)) return true;
+            return false;
+        }
+    }
+
+    public sealed class TransitionEdge
+    {
+        public EdgeKind kind;
+        public GridCoord a, b;
+        public ZoneTheme themeA, themeB;
+        /// <summary>Each side's own ceiling, and the wall's height (the taller).</summary>
+        public float heightA, heightB, height;
+        public float width, centre, top, sill;
+        public Vector3 start, along, across;
+        public Material officeWall;
+        public TransitionCorner c0, c1;
+
+        public bool Border => themeA != themeB;
+        public Vector3 P(float u, float y, float w) => start + along * u + Vector3.up * y + across * w;
+    }
+
+    /// <summary>Where the kit's meshes go. castShadows false, or any material but the Office wall, makes a kit renderer (no property block).</summary>
+    public interface ISink
+    {
+        TransitionMesh Mesh(Material material, float ceiling, bool castShadows);
+    }
+
+    // ---------- geometry ----------
+
+    public sealed class TransitionMesh
+    {
+        public readonly List<Vector3> vertices = new List<Vector3>();
+        public readonly List<Vector3> normals = new List<Vector3>();
+        public readonly List<Vector2> uvs = new List<Vector2>();
+        public readonly List<int> triangles = new List<int>();
+        public int TriangleCount => triangles.Count / 3;
+
+        public int Add(Vector3 p, Vector3 n, Vector2 uv)
+        {
+            vertices.Add(p);
+            normals.Add(n);
+            uvs.Add(uv);
+            return vertices.Count - 1;
+        }
+
+        /// <summary>A triangle wound to face the side its vertex normals point to (clockwise seen from the front, as Unity draws).</summary>
+        public void Tri(int a, int b, int c)
+        {
+            var va = vertices[a];
+            var face = Vector3.Cross(vertices[b] - va, vertices[c] - va);
+            if (face.sqrMagnitude < 1e-16f) return;
+            var n = normals[a] + normals[b] + normals[c];
+            if (Vector3.Dot(face, n) < 0f) { var t = b; b = c; c = t; }
+            triangles.Add(a); triangles.Add(b); triangles.Add(c);
+        }
+
+        public void Quad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 normal)
+        {
+            // UVs in metres on the quad's own plane (mesh-UV materials).
+            var t = (p1 - p0).normalized;
+            var bt = Vector3.Cross(normal, t);
+            Vector2 U(Vector3 p) => new Vector2(Vector3.Dot(p, t), Vector3.Dot(p, bt));
+            var i0 = Add(p0, normal, U(p0));
+            var i1 = Add(p1, normal, U(p1));
+            var i2 = Add(p2, normal, U(p2));
+            var i3 = Add(p3, normal, U(p3));
+            Tri(i0, i1, i2);
+            Tri(i0, i2, i3);
+        }
+
+        /// <summary>tangents: only mesh-UV materials (_FR_MESH_UV) read them; world-projected ones build their own frame.</summary>
+        public Mesh ToMesh(string name, bool tangents = true)
+        {
+            var mesh = new Mesh { name = name };
+            if (vertices.Count > 65000) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0);
+            if (tangents) mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+    }
+
+    /// <summary>
+    /// A 2D section in (s, w): s runs along the sweep's outward vector, w along
+    /// its fixed axis A. Strips are smooth inside and hard between each other.
+    /// </summary>
+    public sealed class Profile
+    {
+        public readonly List<List<Vector2>> points = new List<List<Vector2>>();
+        public readonly List<List<Vector2>> normals = new List<List<Vector2>>();
+        /// <summary>Closed outline for end caps (optional).</summary>
+        public readonly List<Vector2> outline = new List<Vector2>();
+
+        public void Line(Vector2 a, Vector2 b, Vector2 n)
+        {
+            points.Add(new List<Vector2> { a, b });
+            normals.Add(new List<Vector2> { n.normalized, n.normalized });
+        }
+
+        /// <summary>Arc round <paramref name="c"/>, radius r, whose outward normal turns from n0 to n1 (shortest way).</summary>
+        public void Arc(Vector2 c, float r, Vector2 n0, Vector2 n1, int segments)
+        {
+            var a0 = Mathf.Atan2(n0.y, n0.x);
+            var a1 = Mathf.Atan2(n1.y, n1.x);
+            var d = Mathf.DeltaAngle(a0 * Mathf.Rad2Deg, a1 * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            var p = new List<Vector2>();
+            var n = new List<Vector2>();
+            for (var k = 0; k <= segments; k++)
+            {
+                var a = a0 + d * k / segments;
+                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                p.Add(c + dir * r);
+                n.Add(dir);
+            }
+            points.Add(p);
+            normals.Add(n);
+        }
+
+        /// <summary>
+        /// A polyline with filleted corners. The outside (air) lies to the left of
+        /// travel, so each flat's normal is its direction turned 90° counter-clockwise.
+        /// radii[k] is the fillet at point k (0 = sharp).
+        /// </summary>
+        public static Profile Rounded(IList<Vector2> poly, IList<float> radii, bool closed, int arcSegments = 3)
+        {
+            var pr = new Profile();
+            var n = poly.Count;
+            Vector2 Ccw(Vector2 d) => new Vector2(-d.y, d.x);
+            // Tangent points per corner.
+            var tin = new Vector2[n];
+            var tout = new Vector2[n];
+            var hasArc = new bool[n];
+            for (var k = 0; k < n; k++)
+            {
+                tin[k] = tout[k] = poly[k];
+                var interior = closed || (k > 0 && k < n - 1);
+                if (!interior || radii[k] <= 0f) continue;
+                var prev = poly[(k - 1 + n) % n];
+                var next = poly[(k + 1) % n];
+                var d1 = (poly[k] - prev).normalized;
+                var d2 = (next - poly[k]).normalized;
+                var turn = Mathf.Acos(Mathf.Clamp(Vector2.Dot(d1, d2), -1f, 1f));
+                if (turn < 1e-3f) continue;
+                var t = radii[k] * Mathf.Tan(turn * .5f);
+                t = Mathf.Min(t, (poly[k] - prev).magnitude * .5f, (next - poly[k]).magnitude * .5f);
+                tin[k] = poly[k] - d1 * t;
+                tout[k] = poly[k] + d2 * t;
+                hasArc[k] = true;
+            }
+            var segs = closed ? n : n - 1;
+            for (var k = 0; k < segs; k++)
+            {
+                var k1 = (k + 1) % n;
+                var a = tout[k];
+                var b = tin[k1];
+                var d = (poly[k1] - poly[k]).normalized;
+                if ((b - a).sqrMagnitude > 1e-12f) pr.Line(a, b, Ccw(d));
+                if (hasArc[k1])
+                {
+                    var next = poly[(k1 + 1) % n];
+                    var d2 = (next - poly[k1]).normalized;
+                    var n0 = Ccw(d);
+                    var n1 = Ccw(d2);
+                    // Fillet centre: on the inside of the turn, radius from both tangent points.
+                    var cross = d.x * d2.y - d.y * d2.x;
+                    // Left turn (cross > 0) turns toward the outside: a concave fillet whose centre is on the air side.
+                    var centre = cross > 0f ? tin[k1] + n0 * Fillet(tin[k1], tout[k1], d, d2) : tin[k1] - n0 * Fillet(tin[k1], tout[k1], d, d2);
+                    var arc = new List<Vector2>();
+                    var arcN = new List<Vector2>();
+                    var r0 = tin[k1] - centre;
+                    var r1 = tout[k1] - centre;
+                    var a0 = Mathf.Atan2(r0.y, r0.x);
+                    var da = Mathf.DeltaAngle(a0 * Mathf.Rad2Deg, Mathf.Atan2(r1.y, r1.x) * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                    var rad = r0.magnitude;
+                    var na0 = Mathf.Atan2(n0.y, n0.x);
+                    var dn = Mathf.DeltaAngle(na0 * Mathf.Rad2Deg, Mathf.Atan2(n1.y, n1.x) * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+                    for (var s = 0; s <= arcSegments; s++)
+                    {
+                        var f = (float)s / arcSegments;
+                        var aa = a0 + da * f;
+                        arc.Add(centre + new Vector2(Mathf.Cos(aa), Mathf.Sin(aa)) * rad);
+                        var nn = na0 + dn * f;
+                        arcN.Add(new Vector2(Mathf.Cos(nn), Mathf.Sin(nn)));
+                    }
+                    pr.points.Add(arc);
+                    pr.normals.Add(arcN);
+                }
+            }
+            foreach (var p in poly) pr.outline.Add(p);
+            return pr;
+        }
+
+        static float Fillet(Vector2 tin, Vector2 tout, Vector2 d1, Vector2 d2)
+        {
+            // Distance from a tangent point to the centre (= radius): chord / (2 sin(turn/2)).
+            var turn = Mathf.Acos(Mathf.Clamp(Vector2.Dot(d1, d2), -1f, 1f));
+            var chord = (tout - tin).magnitude;
+            return chord / Mathf.Max(1e-6f, 2f * Mathf.Sin(turn * .5f));
+        }
+
+        /// <summary>The cap outline: every strip point in order, de-duplicated.</summary>
+        public List<Vector2> CapOutline()
+        {
+            if (outline.Count > 0 && points.Count == 0) return outline;
+            var o = new List<Vector2>();
+            foreach (var strip in points)
+                foreach (var p in strip)
+                    if (o.Count == 0 || (o[o.Count - 1] - p).sqrMagnitude > 1e-12f) o.Add(p);
+            foreach (var p in extraCap) o.Add(p);
+            if (o.Count > 1 && (o[0] - o[o.Count - 1]).sqrMagnitude < 1e-12f) o.RemoveAt(o.Count - 1);
+            return o;
+        }
+
+        /// <summary>Points appended to the cap outline after the strips (e.g. the hidden wall corner).</summary>
+        public readonly List<Vector2> extraCap = new List<Vector2>();
+    }
+
+    /// <summary>
+    /// Sweep a profile along a polyline that lies in the plane normal to A.
+    /// Joints are mitred. o0 is the outward vector of the first segment; the
+    /// others turn with the path. k0 / k1 slide the open ends' section by k·s
+    /// along the path (1 = an outside mitre, for runs that wrap a corner).
+    /// </summary>
+    public static int Sweep(TransitionMesh m, IList<Vector3> path, bool closed, Vector3 A, Vector3 o0, Profile prof,
+        float k0 = 0f, float k1 = 0f, bool cap0 = false, bool cap1 = false)
+    {
+        var before = m.TriangleCount;
+        var np = path.Count;
+        var nSeg = closed ? np : np - 1;
+        if (nSeg < 1) return 0;
+        A = A.normalized;
+        var d = new Vector3[nSeg];
+        var o = new Vector3[nSeg];
+        var len = new float[nSeg];
+        for (var k = 0; k < nSeg; k++)
+        {
+            var v = path[(k + 1) % np] - path[k];
+            len[k] = v.magnitude;
+            d[k] = v / Mathf.Max(1e-6f, len[k]);
+        }
+        var side = Mathf.Sign(Vector3.Dot(Vector3.Cross(A, d[0]), o0));
+        if (side == 0f) side = 1f;
+        for (var k = 0; k < nSeg; k++) o[k] = (Vector3.Cross(A, d[k]) * side).normalized;
+
+        Vector3 Offset(int seg, bool atStart, float s)
+        {
+            var other = atStart ? seg - 1 : seg + 1;
+            if (closed) other = (other + nSeg) % nSeg;
+            if (other >= 0 && other < nSeg)
+            {
+                var mv = (o[seg] + o[other]).normalized;
+                var dot = Vector3.Dot(mv, o[seg]);
+                return mv * (s / Mathf.Max(.2f, dot));
+            }
+            var kk = atStart ? k0 : k1;
+            var outDir = atStart ? -d[seg] : d[seg];
+            return o[seg] * s + outDir * (kk * s);
+        }
+
+        var uAcc = 0f;
+        for (var k = 0; k < nSeg; k++)
+        {
+            var p0 = path[k];
+            var p1 = path[(k + 1) % np];
+            for (var si = 0; si < prof.points.Count; si++)
+            {
+                var pts = prof.points[si];
+                var nrm = prof.normals[si];
+                var vAcc = 0f;
+                var prev0 = -1;
+                var prev1 = -1;
+                for (var j = 0; j < pts.Count; j++)
+                {
+                    if (j > 0) vAcc += (pts[j] - pts[j - 1]).magnitude;
+                    var s = pts[j].x;
+                    var w = pts[j].y;
+                    var n = (o[k] * nrm[j].x + A * nrm[j].y).normalized;
+                    var v0 = p0 + Offset(k, true, s) + A * w;
+                    var v1 = p1 + Offset(k, false, s) + A * w;
+                    var i0 = m.Add(v0, n, new Vector2(uAcc + Vector3.Dot(v0 - p0, d[k]), vAcc));
+                    var i1 = m.Add(v1, n, new Vector2(uAcc + Vector3.Dot(v1 - p0, d[k]), vAcc));
+                    if (prev0 >= 0)
+                    {
+                        m.Tri(prev0, prev1, i1);
+                        m.Tri(prev0, i1, i0);
+                    }
+                    prev0 = i0;
+                    prev1 = i1;
+                }
+            }
+            uAcc += len[k];
+        }
+        if (!closed)
+        {
+            if (cap0) Cap(m, prof, path[0], o[0], A, -d[0], 0, k0, d[0]);
+            if (cap1) Cap(m, prof, path[np - 1], o[nSeg - 1], A, d[nSeg - 1], 0, k1, d[nSeg - 1]);
+        }
+        return m.TriangleCount - before;
+    }
+
+    static void Cap(TransitionMesh m, Profile prof, Vector3 at, Vector3 o, Vector3 A, Vector3 normal, int unused, float k, Vector3 d)
+    {
+        var outline = prof.CapOutline();
+        if (outline.Count < 3) return;
+        var idx = new int[outline.Count];
+        for (var i = 0; i < outline.Count; i++)
+        {
+            var p = at + o * outline[i].x + A * outline[i].y + normal * (k * outline[i].x);
+            idx[i] = m.Add(p, normal, new Vector2(Vector3.Dot(p, o), Vector3.Dot(p, A)));
+        }
+        foreach (var t in EarClip(outline))
+            m.Tri(idx[t.x], idx[t.y], idx[t.z]);
+    }
+
+    /// <summary>Ear clipping for a simple polygon (either winding).</summary>
+    public static List<Vector3Int> EarClip(IList<Vector2> poly)
+    {
+        var result = new List<Vector3Int>();
+        var n = poly.Count;
+        var idx = new List<int>();
+        for (var i = 0; i < n; i++) idx.Add(i);
+        var area = 0f;
+        for (var i = 0; i < n; i++)
+        {
+            var a = poly[i];
+            var b = poly[(i + 1) % n];
+            area += a.x * b.y - b.x * a.y;
+        }
+        var ccw = area > 0f;
+        float Cross(Vector2 a, Vector2 b, Vector2 c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        bool Inside(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+        {
+            var c1 = Cross(a, b, p);
+            var c2 = Cross(b, c, p);
+            var c3 = Cross(c, a, p);
+            return ccw ? (c1 > 1e-12f && c2 > 1e-12f && c3 > 1e-12f) : (c1 < -1e-12f && c2 < -1e-12f && c3 < -1e-12f);
+        }
+        var guard = 0;
+        while (idx.Count > 3 && guard++ < 10000)
+        {
+            var clipped = false;
+            for (var i = 0; i < idx.Count; i++)
+            {
+                var ia = idx[(i - 1 + idx.Count) % idx.Count];
+                var ib = idx[i];
+                var ic = idx[(i + 1) % idx.Count];
+                var cr = Cross(poly[ia], poly[ib], poly[ic]);
+                if (ccw ? cr <= 1e-14f : cr >= -1e-14f) continue;
+                var ok = true;
+                foreach (var j in idx)
+                {
+                    if (j == ia || j == ib || j == ic) continue;
+                    if (Inside(poly[j], poly[ia], poly[ib], poly[ic])) { ok = false; break; }
+                }
+                if (!ok) continue;
+                result.Add(new Vector3Int(ia, ib, ic));
+                idx.RemoveAt(i);
+                clipped = true;
+                break;
+            }
+            if (!clipped) break;
+        }
+        if (idx.Count == 3) result.Add(new Vector3Int(idx[0], idx[1], idx[2]));
+        return result;
+    }
+
+    // ---------- sections ----------
+
+    /// <summary>Office lining round a reveal: face strips (L deep) and 6 mm quarter-round beads on both arrises.</summary>
+    static Profile Lining(float half, float depth)
+    {
+        var p = new Profile();
+        var r = Bead;
+        if (depth > r) p.Line(new Vector2(depth, -half), new Vector2(r, -half), new Vector2(0f, -1f));
+        p.Arc(new Vector2(r, -half + r), r, new Vector2(0f, -1f), new Vector2(-1f, 0f), BeadSegments);
+        p.Line(new Vector2(0f, -half + r), new Vector2(0f, half - r), new Vector2(-1f, 0f));
+        p.Arc(new Vector2(r, half - r), r, new Vector2(-1f, 0f), new Vector2(0f, 1f), BeadSegments);
+        if (depth > r) p.Line(new Vector2(r, half), new Vector2(depth, half), new Vector2(0f, 1f));
+        return p;
+    }
+
+    static Profile barProfile, saddleProfile, baseProfile, wallAngleProfile, guardProfile;
+
+    /// <summary>Aluminium binder bar: 35 mm wide, 5 mm high, rounded top (s = up, w = across the line).</summary>
+    static Profile BarProfile()
+    {
+        if (barProfile != null) return barProfile;
+        var h = BarWidth * .5f;
+        var poly = new List<Vector2> { new Vector2(0f, h), new Vector2(.0022f, h - .0012f), new Vector2(BarHeight, h - .0065f), new Vector2(BarHeight, -h + .0065f), new Vector2(.0022f, -h + .0012f), new Vector2(0f, -h) };
+        var radii = new List<float> { 0f, .0015f, .003f, .003f, .0015f, 0f };
+        barProfile = Profile.Rounded(poly, radii, false, 4);
+        return barProfile;
+    }
+
+    /// <summary>Fluted aluminium saddle: 152 x 12 mm, 1:2 bevels, 104 mm flat top with 13 flutes.</summary>
+    static Profile SaddleProfile()
+    {
+        if (saddleProfile != null) return saddleProfile;
+        var poly = new List<Vector2> { new Vector2(0f, SaddleHalf), new Vector2(SaddleHeight, SaddleTop) };
+        var radii = new List<float> { 0f, .0015f };
+        const int flutes = 13;
+        var pitch = SaddleTop * 2f / flutes;
+        for (var f = 0; f < flutes; f++)
+        {
+            var w0 = SaddleTop - f * pitch;
+            poly.Add(new Vector2(SaddleHeight - .0006f, w0 - pitch * .5f));
+            radii.Add(.0012f);
+            if (f < flutes - 1) { poly.Add(new Vector2(SaddleHeight, w0 - pitch)); radii.Add(.0008f); }
+        }
+        poly.Add(new Vector2(SaddleHeight, -SaddleTop));
+        radii.Add(.0015f);
+        poly.Add(new Vector2(0f, -SaddleHalf));
+        radii.Add(0f);
+        saddleProfile = Profile.Rounded(poly, radii, false, 2);
+        return saddleProfile;
+    }
+
+    /// <summary>Rubber cove base, 100 mm, 3.2 mm thick, toe out to 6 mm (s = off the wall, w = up).</summary>
+    static Profile BaseProfile()
+    {
+        if (baseProfile != null) return baseProfile;
+        var poly = new List<Vector2> { new Vector2(0f, CoveHeight), new Vector2(.0032f, CoveHeight - .0035f), new Vector2(.0032f, .0015f), new Vector2(CoveProud, .0015f), new Vector2(CoveProud, 0f) };
+        var radii = new List<float> { 0f, .001f, .0026f, 0f, 0f };
+        baseProfile = Profile.Rounded(poly, radii, false, 2);
+        baseProfile.extraCap.Add(new Vector2(0f, 0f));
+        return baseProfile;
+    }
+
+    /// <summary>White steel wall angle, 22 x 22 x 1.5 mm (s = off the header face, w = up from the ceiling plane).</summary>
+    static Profile WallAngleProfile()
+    {
+        if (wallAngleProfile != null) return wallAngleProfile;
+        var poly = new List<Vector2> { new Vector2(0f, -WallAngle), new Vector2(WallAngleGauge, -WallAngle), new Vector2(WallAngleGauge, -WallAngleGauge), new Vector2(WallAngle, -WallAngleGauge), new Vector2(WallAngle, 0f) };
+        // Outside on the left of travel: reverse so the flats face away from the header and the ceiling.
+        poly.Reverse();
+        var radii = new List<float> { 0f, .0004f, 0f, .0004f, 0f };
+        wallAngleProfile = Profile.Rounded(poly, radii, false, 2);
+        wallAngleProfile.extraCap.Add(new Vector2(0f, 0f));
+        return wallAngleProfile;
+    }
+
+    /// <summary>Vinyl corner guard: two 50 mm wings, 2 mm, 3 mm nose (s along face 1's normal, w along face 2's normal; corner at 0).</summary>
+    static Profile GuardProfile()
+    {
+        if (guardProfile != null) return guardProfile;
+        var t = GuardGauge;
+        var poly = new List<Vector2> { new Vector2(-GuardWing, 0f), new Vector2(-GuardWing, t), new Vector2(t, t), new Vector2(t, -GuardWing), new Vector2(0f, -GuardWing) };
+        var radii = new List<float> { 0f, .0005f, GuardNose, .0005f, 0f };
+        guardProfile = Profile.Rounded(poly, radii, false, 6);
+        guardProfile.extraCap.Add(new Vector2(0f, 0f));
+        return guardProfile;
+    }
+
+    /// <summary>R3 sleeve (door root X; S = +X). withStop: the 16 mm push-side stop; glazing: two glazing stops round a 30 mm glass.</summary>
+    static Profile Sleeve(bool withStop, bool glazing, float pSign)
+    {
+        // Built for S = +X, then mirrored so the push side P lands on w = pSign.
+        var poly = new List<Vector2>();
+        var radii = new List<float>();
+        void Pt(float s, float x, float r) { poly.Add(new Vector2(s, x)); radii.Add(r); }
+        Pt(CasingReturn, -CasingInner, 0f);
+        Pt(CasingReturn, -CasingFace, CasingConvex);
+        Pt(-Soffit, -CasingFace, CasingConvex);
+        if (withStop)
+        {
+            Pt(-Soffit, -StopP0, CasingConcave);
+            Pt(-StopDepth, -StopP0, CasingConvex);
+            Pt(-StopDepth, -StopP1, CasingConvex);
+            Pt(-Soffit, -StopP1, CasingConcave);
+        }
+        if (glazing)
+        {
+            const float g0 = .027f, g1 = .0155f, gd = .017f;
+            Pt(-Soffit, -g0, CasingConcave);
+            Pt(-gd, -g0, .001f);
+            Pt(-gd, -g1, .001f);
+            Pt(-Soffit, -g1, 0f);
+            Pt(-Soffit, g1, 0f);
+            Pt(-gd, g1, .001f);
+            Pt(-gd, g0, .001f);
+            Pt(-Soffit, g0, CasingConcave);
+        }
+        Pt(-Soffit, CasingFace, CasingConvex);
+        Pt(CasingReturn, CasingFace, CasingConvex);
+        Pt(CasingReturn, CasingInner, 0f);
+        var pr = Profile.Rounded(poly, radii, false, 3);
+        // P is -X when authored; mirror when the push side is +w. Normals mirror too.
+        var flip = pSign > 0f;
+        if (flip)
+        {
+            foreach (var strip in pr.points) for (var i = 0; i < strip.Count; i++) strip[i] = new Vector2(strip[i].x, -strip[i].y);
+            foreach (var strip in pr.normals) for (var i = 0; i < strip.Count; i++) strip[i] = new Vector2(strip[i].x, -strip[i].y);
+        }
+        return pr;
+    }
+
+    // ---------- materials ----------
+
+    static Material Mat(string name) => FrontRoomsSurfaces.Get(name);
+    static Material Steel => Mat("Prop_SteelBrown");
+    // Satin variant of Prop_Aluminium (same maps; FrontRoomsTransitionAssets.Prepare); falls back to Prop_Aluminium.
+    static Material Alu => FrontRoomsSurfaces.TryGet("Trans_AluminiumSatin") ?? Mat("Prop_Aluminium");
+    // White enamel wall angle: Prop_PlasticWhite is already loaded by the office kit (Painted_Metal would add 8 MB of maps in range).
+    static Material Angle => Mat("Prop_PlasticWhite");
+    static Material Vinyl => Mat("Prop_PlasticBeige");
+    static Material Cove => FrontRoomsSurfaces.CoveBase;
+
+    static void Tally(Material material, TransitionMesh mesh, int tris, Material officeWall)
+    {
+        if (material == officeWall) Count.officeWallTris += tris;
+        else Count.kitTris += tris;
+    }
+
+    // ---------- edges ----------
+
+    /// <summary>The BuildEdge hook: a theme-border edge gets its V1 piece.</summary>
+    public static void Edge(TransitionEdge e, ISink sink)
+    {
+        if (!FrameOn || sink == null || !e.Border) return;
+        Note(e, "border");
+        switch (e.kind)
+        {
+            case EdgeKind.Arch: CasedArch(e, sink); break;
+            case EdgeKind.Open: Portal(e, sink); break;
+            case EdgeKind.Door: DoorFrame(e, sink); break;
+            case EdgeKind.Window: WindowFrame(e, sink); break;
+        }
+    }
+
+    static float OfficeCeiling(TransitionEdge e) => e.themeA == ZoneTheme.Office ? e.heightA : e.heightB;
+
+    static void CasedArch(TransitionEdge e, ISink sink)
+    {
+        var cL = e.centre - e.width * .5f;
+        var cR = e.centre + e.width * .5f;
+        var T = e.top;
+        var wall = sink.Mesh(e.officeWall, OfficeCeiling(e), true);
+        var path = new[] { e.P(cL, 0f, 0f), e.P(cL, T, 0f), e.P(cR, T, 0f), e.P(cR, 0f, 0f) };
+        Tally(e.officeWall, wall, Sweep(wall, path, false, e.across, -e.along, Lining(WallHalf, BeadInset)), e.officeWall);
+        Bar(e, sink, cL, cR);
+        Count.casedArches++;
+    }
+
+    static void Bar(TransitionEdge e, ISink sink, float u0, float u1)
+    {
+        var m = sink.Mesh(Alu, e.height, false);
+        var tris = Sweep(m, new[] { e.P(u0, 0f, 0f), e.P(u1, 0f, 0f) }, false, e.across, Vector3.up, BarProfile(), 0f, 0f, true, true);
+        Tally(Alu, m, tris, e.officeWall);
+        Count.bars++;
+        Count.barMetres += u1 - u0;
+    }
+
+    /// <summary>How far from a corner a portal's clear span starts, and whether a pilaster stands there (a wall meets the corner) or a free post.</summary>
+    static void PortalEnd(TransitionCorner c, Vector3 lineAxis, out float back, out float face, out bool pilaster)
+    {
+        if (c.special || c.Arms > 0)
+        {
+            pilaster = true;
+            back = WallHalf;
+            face = WallHalf + PortalPilaster;
+            return;
+        }
+        pilaster = false;
+        back = face = FreePostHalf(c, Mathf.Abs(lineAxis.x) > .5f);
+    }
+
+    /// <summary>Half-size of the free post along x (alongX) or z: 0.12 if a border opening runs along that axis, else 0.10.</summary>
+    static float FreePostHalf(TransitionCorner c, bool alongX)
+    {
+        var along = alongX ? c.BorderOpen(0) || c.BorderOpen(1) : c.BorderOpen(2) || c.BorderOpen(3);
+        return along ? SharedPilaster * .5f : PortalDepth * .5f;
+    }
+
+    static void Portal(TransitionEdge e, ISink sink)
+    {
+        var L = MapGrid.CellSize;
+        var H = e.height;
+        var D = PortalHeaderDrop;
+        var hd = PortalDepth * .5f;
+        var r = Bead;
+        PortalEnd(e.c0, e.along, out var backL, out var faceL, out var jambL);
+        PortalEnd(e.c1, e.along, out var backR, out var faceR, out var jambR);
+        float uStart = backL, uEnd = L - backR, pL = faceL, pR = L - faceR;
+        var wall = sink.Mesh(e.officeWall, H, true);
+        var tris = 0;
+
+        // Reveal: pilaster inner faces and the header soffit, beaded.
+        var path = new List<Vector3>();
+        if (jambL) path.Add(e.P(pL, 0f, 0f));
+        path.Add(e.P(pL, H - D, 0f));
+        path.Add(e.P(pR, H - D, 0f));
+        if (jambR) path.Add(e.P(pR, 0f, 0f));
+        tris += Sweep(wall, path, false, e.across, jambL ? -e.along : Vector3.up, Lining(hd, 0f));
+
+        // Flat faces on both sides (w = ±0.10): pilaster faces full height, header face above the bead.
+        foreach (var sg in new[] { -1f, 1f })
+        {
+            var n = e.across * sg;
+            var w = sg * hd;
+            var hx0 = jambL ? pL - r : uStart;
+            var hx1 = jambR ? pR + r : uEnd;
+            if (jambL) wall.Quad(e.P(uStart, 0f, w), e.P(pL - r, 0f, w), e.P(pL - r, H, w), e.P(uStart, H, w), n);
+            wall.Quad(e.P(hx0, H - D + r, w), e.P(hx1, H - D + r, w), e.P(hx1, H, w), e.P(hx0, H, w), n);
+            if (!jambL) wall.Quad(e.P(uStart, H - D, w), e.P(uStart + .0001f, H - D, w), e.P(uStart + .0001f, H - D + r, w), e.P(uStart, H - D + r, w), n);
+            if (jambR) wall.Quad(e.P(pR + r, 0f, w), e.P(uEnd, 0f, w), e.P(uEnd, H, w), e.P(pR + r, H, w), n);
+            tris += (jambL ? 2 : 0) + 2 + (jambR ? 2 : 0);
+        }
+        // Back faces where a pilaster stands proud of a narrower wall end.
+        if (jambL) { wall.Quad(e.P(uStart, 0f, -hd), e.P(uStart, 0f, hd), e.P(uStart, H, hd), e.P(uStart, H, -hd), -e.along); tris += 2; }
+        if (jambR) { wall.Quad(e.P(uEnd, 0f, -hd), e.P(uEnd, 0f, hd), e.P(uEnd, H, hd), e.P(uEnd, H, -hd), e.along); tris += 2; }
+        Tally(e.officeWall, wall, tris, e.officeWall);
+
+        // White wall angles where both ceiling grids die into the header.
+        var angle = sink.Mesh(Angle, H, false);
+        foreach (var sg in new[] { -1f, 1f })
+            Tally(Angle, angle, Sweep(angle, new[] { e.P(uStart, H, sg * hd), e.P(uEnd, H, sg * hd) }, false, Vector3.up, e.across * sg, WallAngleProfile(), 0f, 0f, true, true), e.officeWall);
+
+        Bar(e, sink, pL, pR);
+        if (jambL) { PilasterBase(e, sink, uStart, pL, 1f); Count.portalPilasters++; }
+        if (jambR) { PilasterBase(e, sink, uEnd, pR, -1f); Count.portalPilasters++; }
+        Count.portals++;
+    }
+
+    /// <summary>Cove base round a portal pilaster: both sides and the inner face (it is an Office object on both sides).</summary>
+    static void PilasterBase(TransitionEdge e, ISink sink, float uBack, float uFace, float dirSign)
+    {
+        var hd = PortalDepth * .5f;
+        BaseRun(sink, e.height, e.P(uBack, 0f, hd), e.P(uFace, 0f, hd), e.across, BaseEnd.Flat, BaseEnd.Convex);
+        BaseRun(sink, e.height, e.P(uFace, 0f, hd), e.P(uFace, 0f, -hd), e.along * dirSign, BaseEnd.Convex, BaseEnd.Convex);
+        BaseRun(sink, e.height, e.P(uFace, 0f, -hd), e.P(uBack, 0f, -hd), -e.across, BaseEnd.Convex, BaseEnd.Flat);
+    }
+
+    static void DoorFrame(TransitionEdge e, ISink sink)
+    {
+        // The Office side is the push side P (the stop and its casing face the Office); the leaf swings into Level 0.
+        var pSign = e.themeA == ZoneTheme.Office ? -1f : 1f;
+        var cL = e.centre - e.width * .5f;
+        var cR = e.centre + e.width * .5f;
+        var T = e.top;
+        var steel = sink.Mesh(Steel, OfficeCeiling(e), true);
+        var path = new[] { e.P(cL, 0f, 0f), e.P(cL, T, 0f), e.P(cR, T, 0f), e.P(cR, 0f, 0f) };
+        Tally(Steel, steel, Sweep(steel, path, false, e.across, -e.along, Sleeve(true, false, pSign)), e.officeWall);
+        // Saddle between the soffits (its ends die into them).
+        var alu = sink.Mesh(Alu, OfficeCeiling(e), false);
+        Tally(Alu, alu, Sweep(alu, new[] { e.P(cL + Soffit, 0f, 0f), e.P(cR - Soffit, 0f, 0f) }, false, e.across, Vector3.up, SaddleProfile()), e.officeWall);
+        Count.saddles++;
+        Count.doorFrames++;
+    }
+
+    static void WindowFrame(TransitionEdge e, ISink sink)
+    {
+        var cL = e.centre - e.width * .5f;
+        var cR = e.centre + e.width * .5f;
+        var steel = sink.Mesh(Steel, OfficeCeiling(e), true);
+        var path = new[] { e.P(cL, e.sill, 0f), e.P(cL, e.top, 0f), e.P(cR, e.top, 0f), e.P(cR, e.sill, 0f) };
+        Tally(Steel, steel, Sweep(steel, path, true, e.across, -e.along, Sleeve(false, true, 1f)), e.officeWall);
+        Count.windowFrames++;
+    }
+
+    // ---------- Office base ----------
+
+    enum BaseEnd { Flat, Convex, Cap }
+
+    static void BaseRun(ISink sink, float ceiling, Vector3 p0, Vector3 p1, Vector3 outward, BaseEnd e0, BaseEnd e1)
+    {
+        var length = (p1 - p0).magnitude;
+        if (length < .002f) return;
+        var m = sink.Mesh(Cove, ceiling, false);
+        var tris = Sweep(m, new[] { p0, p1 }, false, Vector3.up, outward, BaseProfile(),
+            e0 == BaseEnd.Convex ? 1f : 0f, e1 == BaseEnd.Convex ? 1f : 0f, e0 == BaseEnd.Cap, e1 == BaseEnd.Cap);
+        Count.kitTris += tris;
+        Count.baseRuns++;
+        Count.baseMetres += length;
+    }
+
+    static int DirIndex(Vector3 d) => Mathf.Abs(d.x) > .5f ? (d.x < 0f ? 0 : 1) : (d.z < 0f ? 2 : 3);
+
+    /// <summary>Where the side-q face run of an edge ends at corner c (u measured from that corner into the edge).</summary>
+    static void FaceEnd(TransitionEdge e, TransitionCorner c, bool atStart, float q, out float u, out BaseEnd end)
+    {
+        var dd = atStart ? e.along : -e.along;
+        var perp = DirIndex(e.across * q);
+        var col = DirIndex(-dd);
+        if (c.special) { u = 0f; end = BaseEnd.Flat; return; }
+        if (c.Has(perp)) { u = WallHalf; end = BaseEnd.Flat; return; }                          // inside corner
+        if (c.BorderOpen(perp)) { u = PortalDepth * .5f; end = BaseEnd.Flat; return; }          // a portal pilaster stands on this face
+        if (c.Has(col)) { u = 0f; end = BaseEnd.Flat; return; }                                 // the run goes on along the next edge
+        if (c.BorderOpen(col)) { u = -WallHalf; end = BaseEnd.Flat; return; }                   // a portal pilaster stands on the wall end
+        u = -WallHalf;                                                                          // outside corner or free end: wrap
+        end = BaseEnd.Convex;
+    }
+
+    /// <summary>The base on every Office face of a built edge (border or not).</summary>
+    public static void Base(TransitionEdge e, ISink sink)
+    {
+        if (!FrameOn || sink == null || e.kind == EdgeKind.Open) return;
+        var L = MapGrid.CellSize;
+        foreach (var q in new[] { -1f, 1f })
+        {
+            var theme = q < 0f ? e.themeA : e.themeB;
+            if (theme != ZoneTheme.Office) continue;
+            var otherOffice = (q < 0f ? e.themeB : e.themeA) == ZoneTheme.Office;
+            var ceiling = q < 0f ? e.heightA : e.heightB;
+            FaceEnd(e, e.c0, true, q, out var u0, out var end0);
+            FaceEnd(e, e.c1, false, q, out var du1, out var end1);
+            var u1 = L - du1;
+            var w = q * WallHalf;
+            var outward = e.across * q;
+            Vector3 F(float u) => e.P(u, 0f, w);
+            var cL = e.centre - e.width * .5f;
+            var cR = e.centre + e.width * .5f;
+            switch (e.kind)
+            {
+                case EdgeKind.Door:
+                {
+                    var gap = (e.Border ? CasingReturn : ModuleUnits.TrimFace) + BaseStopGap;
+                    BaseRun(sink, ceiling, F(u0), F(cL - gap), outward, end0, BaseEnd.Cap);
+                    BaseRun(sink, ceiling, F(cR + gap), F(u1), outward, BaseEnd.Cap, end1);
+                    break;
+                }
+                case EdgeKind.Arch:
+                {
+                    BaseRun(sink, ceiling, F(u0), F(cL), outward, end0, BaseEnd.Convex);
+                    BaseRun(sink, ceiling, F(cR), F(u1), outward, BaseEnd.Convex, end1);
+                    // Into the reveals: wrap from this face; stop at the other face's plane unless it is Office too (then build once).
+                    if (!otherOffice || q > 0f)
+                    {
+                        var far = otherOffice ? BaseEnd.Convex : BaseEnd.Cap;
+                        BaseRun(sink, ceiling, e.P(cL, 0f, w), e.P(cL, 0f, -w), e.along, BaseEnd.Convex, far);
+                        BaseRun(sink, ceiling, e.P(cR, 0f, w), e.P(cR, 0f, -w), -e.along, BaseEnd.Convex, far);
+                    }
+                    break;
+                }
+                default:
+                    BaseRun(sink, ceiling, F(u0), F(u1), outward, end0, end1);
+                    break;
+            }
+        }
+    }
+
+    // ---------- corners ----------
+
+    /// <summary>V1: a free wall end on a border (one split arm, no portal against its end) gets an Office end cap; the map insets that end by BeadInset.</summary>
+    public static bool EndCapAt(TransitionCorner c)
+    {
+        if (!FrameOn || c.special || c.Arms != 1) return false;
+        var dir = 0;
+        for (var d = 0; d < 4; d++) if (c.Has(d)) dir = d;
+        if (!c.Border(dir)) return false;
+        var opposite = dir ^ 1;
+        return !c.BorderOpen(opposite);
+    }
+
+    static Vector3 DirVec(int dir) => dir == 0 ? Vector3.left : dir == 1 ? Vector3.right : dir == 2 ? Vector3.back : Vector3.forward;
+
+    static int Quad(float sx, float sz) => (sx > 0f ? 1 : 0) + (sz > 0f ? 2 : 0);
+
+    /// <summary>The corner hook: free posts, end caps, corner guards and their base.</summary>
+    public static void Corner(TransitionCorner c, ISink sink, Material officeWall)
+    {
+        if (!FrameOn || sink == null || c.special) return;
+        var arms = c.Arms;
+        if (arms == 0)
+        {
+            if (c.AnyBorderOpen()) FreePost(c, sink, officeWall);
+            return;
+        }
+        if (arms == 1 && EndCapAt(c)) EndCap(c, sink, officeWall);
+        if (arms == 2) LGuard(c, sink);
+    }
+
+    static void FreePost(TransitionCorner c, ISink sink, Material officeWall)
+    {
+        var hx = FreePostHalf(c, true);
+        var hz = FreePostHalf(c, false);
+        var H = 0f;
+        for (var q = 0; q < 4; q++) H = Mathf.Max(H, c.ceiling[q]);
+        var wall = sink.Mesh(officeWall, H, true);
+        var poly = new List<Vector2> { new Vector2(hx, hz), new Vector2(hx, -hz), new Vector2(-hx, -hz), new Vector2(-hx, hz) };
+        var prof = Profile.Rounded(poly, new List<float> { Bead, Bead, Bead, Bead }, true, BeadSegments);
+        Tally(officeWall, wall, Sweep(wall, new[] { c.at, c.at + Vector3.up * H }, false, Vector3.forward, Vector3.right, prof), officeWall);
+        // Base round all four faces.
+        Vector3 Pt(float x, float z) => c.at + new Vector3(x, 0f, z);
+        BaseRun(sink, H, Pt(hx, -hz), Pt(hx, hz), Vector3.right, BaseEnd.Convex, BaseEnd.Convex);
+        BaseRun(sink, H, Pt(hx, hz), Pt(-hx, hz), Vector3.forward, BaseEnd.Convex, BaseEnd.Convex);
+        BaseRun(sink, H, Pt(-hx, hz), Pt(-hx, -hz), Vector3.left, BaseEnd.Convex, BaseEnd.Convex);
+        BaseRun(sink, H, Pt(-hx, -hz), Pt(hx, -hz), Vector3.back, BaseEnd.Convex, BaseEnd.Convex);
+        Count.freePosts++;
+        var straight = (c.BorderOpen(0) && c.BorderOpen(1)) || (c.BorderOpen(2) && c.BorderOpen(3));
+        if (straight) Count.sharedPilasters++;
+    }
+
+    static void EndCap(TransitionCorner c, ISink sink, Material officeWall)
+    {
+        var dir = 0;
+        for (var d = 0; d < 4; d++) if (c.Has(d)) dir = d;
+        var ad = DirVec(dir);
+        var aa = dir < 2 ? Vector3.forward : Vector3.right;
+        var H = c.armHeight[dir];
+        // Which side of the arm is Office: the quadrant toward +aa or -aa.
+        TransitionCorner.Sides(dir, out var q0, out var q1);
+        var qPlus = Quad(ad.x + aa.x, ad.z + aa.z);
+        var officeSide = c.theme[qPlus] == ZoneTheme.Office ? 1f : -1f;
+        var officeCeiling = c.ceiling[officeSide > 0f ? qPlus : (qPlus == q0 ? q1 : q0)];
+        var plane = c.at - ad * WallHalf;
+        var wall = sink.Mesh(officeWall, officeCeiling, true);
+        Tally(officeWall, wall, Sweep(wall, new[] { plane, plane + Vector3.up * H }, false, aa, ad, Lining(WallHalf, BeadInset)), officeWall);
+        Count.endCaps++;
+        // Base across the cap face, wrapping from the Office face, stopping at the Level 0 face's plane.
+        var perpOffice = DirIndex(aa * officeSide);
+        BaseRun(sink, officeCeiling, plane + aa * (officeSide * WallHalf), plane - aa * (officeSide * WallHalf), -ad, BaseEnd.Convex, BaseEnd.Cap);
+        // Corner guard on the Office arris, unless a portal pilaster stands on that face.
+        if (!c.BorderOpen(perpOffice))
+            Guard(sink, officeCeiling, plane + aa * (officeSide * WallHalf), aa * officeSide, -ad);
+    }
+
+    static void LGuard(TransitionCorner c, ISink sink)
+    {
+        int ax = c.Has(0) ? 0 : c.Has(1) ? 1 : -1;
+        int az = c.Has(2) ? 2 : c.Has(3) ? 3 : -1;
+        if (ax < 0 || az < 0 || !c.Mixed || c.AnyBorderOpen()) return;
+        var sx = ax == 0 ? 1f : -1f;   // the outside quadrant lies away from both arms
+        var sz = az == 2 ? 1f : -1f;
+        var q = Quad(sx, sz);
+        if (c.theme[q] != ZoneTheme.Office) return;
+        var corner = c.at + new Vector3(sx * WallHalf, 0f, sz * WallHalf);
+        Guard(sink, c.ceiling[q], corner, new Vector3(sx, 0f, 0f), new Vector3(0f, 0f, sz));
+    }
+
+    /// <summary>A beige vinyl corner guard on an outside corner whose faces point along n1 and n2, standing on the base.</summary>
+    static void Guard(ISink sink, float ceiling, Vector3 corner, Vector3 n1, Vector3 n2)
+    {
+        var m = sink.Mesh(Vinyl, ceiling, false);
+        var y0 = CoveHeight;
+        var tris = Sweep(m, new[] { corner + Vector3.up * y0, corner + Vector3.up * (y0 + GuardHeight) }, false, n2, n1, GuardProfile(), 0f, 0f, true, true);
+        Count.kitTris += tris;
+        Count.guards++;
+    }
+}

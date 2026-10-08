@@ -1,0 +1,93 @@
+import json, os, shutil
+from PIL import Image, ImageDraw, ImageFont
+T = "/Users/redwang/FrontRoomsVisualWork/trans_pick_work"
+DOC = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/level_transitions"
+IMG = DOC + "/images"
+FONT = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+def font(s): return ImageFont.truetype(FONT, s)
+
+def src(mode, k):
+    base = {"now": "now", "frame": "frame", "pick": "pick", "close": "close"}[mode]
+    if k in (9, 10) and mode != "close": return f"{T}/shots2_{base}/shot{k}_{base}.jpg"
+    return f"{T}/shots_{base}/shot{k}_{base}.jpg"
+
+names = {"now": "pick_now", "frame": "pick_frame", "pick": "pick_mix", "close": "close"}
+written = []
+for mode in ("now", "frame", "pick", "close"):
+    for k in (1, 2, 3, 4, 8, 9, 10):
+        dst = f"{IMG}/{names[mode]}_shot{k}.jpg"
+        shutil.copyfile(src(mode, k), dst); written.append(dst)
+
+def sheet(rows, cols, labels, out, w=640):
+    h = w * 9 // 16
+    top = 44
+    im = Image.new("RGB", (w * len(cols), top + h * len(rows) + 6 * (len(rows) - 1)), (18, 18, 18))
+    d = ImageDraw.Draw(im)
+    for j, lab in enumerate(labels):
+        d.text((j * w + 12, 10), lab, font=font(24), fill=(235, 232, 220))
+    for i, k in enumerate(rows):
+        for j, m in enumerate(cols):
+            t = Image.open(src(m, k)).resize((w - 4, h - 4), Image.LANCZOS)
+            im.paste(t, (j * w + 2, top + i * (h + 6) + 2))
+        d.text((8, top + i * (h + 6) + 8), f"shot {k}", font=font(20), fill=(255, 220, 90))
+    im.save(out, quality=85); written.append(out)
+
+sheet([1, 2, 4, 8, 9], ["now", "frame", "pick"], ["NOW (main today)", "FRAME (V1 over main)", "PICK (V1 + V2 on 30 %)"], f"{IMG}/pick_sheet.jpg")
+sheet([1, 2, 4, 3], ["now", "close"], ["NOW (main today)", "CLOSE (map rule + door frames)"], f"{IMG}/close_sheet.jpg", w=960)
+
+# soft crops from the V5 sheet (column 3 = SOFT, rows 1-2)
+ll = Image.open(f"{IMG}/v_lightlead_vs_before.jpg")
+for r, k in ((0, 1), (1, 2)):
+    y = 126 + 394 * r
+    c = ll.crop((1280, y, 1916, y + 360)); c.save(f"{IMG}/v_lightlead_soft_shot{k}.jpg", quality=85); written.append(f"{IMG}/v_lightlead_soft_shot{k}.jpg")
+
+# plan diagrams: now vs close round shot 4 (centre 264,200) and shot 2 (255,194)
+TH = {"Level0": (206, 190, 120), "Office": (150, 168, 178)}
+def plan(js, cam=None, size=44, title=""):
+    cells = {(c["x"], c["y"]): c for c in js["cells"]}
+    xs = [k[0] for k in cells]; ys = [k[1] for k in cells]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    W = (x1 - x0 + 1) * size + 40; H = (y1 - y0 + 1) * size + 84
+    im = Image.new("RGB", (W, H), (245, 243, 236)); d = ImageDraw.Draw(im)
+    def P(x, y): return (20 + (x - x0) * size, 50 + (y1 + 1 - y) * size)
+    for (x, y), c in cells.items():
+        px, py = P(x, y + 1)
+        d.rectangle([px, py, px + size, py + size], fill=TH[c["theme"]])
+    for (x, y), c in cells.items():
+        for side in ("east", "north"):
+            k = c[side]
+            if side == "east":
+                if (x + 1, y) not in cells: continue
+                a = P(x + 1, y); b = P(x + 1, y + 1)
+            else:
+                if (x, y + 1) not in cells: continue
+                a = P(x, y + 1); b = P(x + 1, y + 1)
+            border = cells.get((x + 1, y) if side == "east" else (x, y + 1))["theme"] != c["theme"]
+            if k == "Wall": d.line([a, b], fill=(40, 40, 40), width=4)
+            elif k in ("Door", "Window"):
+                d.line([a, b], fill=(40, 40, 40), width=4)
+                m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2); r = size * .22
+                col = (150, 70, 30) if k == "Door" else (60, 120, 200)
+                if a[0] == b[0]: d.line([(m[0], m[1] - r), (m[0], m[1] + r)], fill=col, width=7)
+                else: d.line([(m[0] - r, m[1]), (m[0] + r, m[1])], fill=col, width=7)
+            elif k == "Arch":
+                d.line([a, b], fill=(40, 40, 40), width=4)
+                m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2); r = size * .25
+                if a[0] == b[0]: d.line([(m[0], m[1] - r), (m[0], m[1] + r)], fill=TH[c["theme"]], width=8)
+                else: d.line([(m[0] - r, m[1]), (m[0] + r, m[1])], fill=TH[c["theme"]], width=8)
+            if border and k in ("Open", "Arch"):
+                d.line([a, b], fill=(220, 30, 30), width=6)
+    if cam:
+        cx, cz = cam
+        px = 20 + (cx / 3 - x0) * size; py = 50 + (y1 + 1 - cz / 3) * size
+        d.ellipse([px - 6, py - 6, px + 6, py + 6], fill=(0, 0, 0))
+    d.text((20, 12), title, font=font(26), fill=(20, 20, 20)); d.text((20, H - 22), "red line = open or arched border   brown = door   blue = window", font=font(16), fill=(60, 60, 60))
+    return im
+for k, cam in ((4, (793.5, 601.5)), (2, (766.75, 584.9))):
+    a = plan(json.load(open(f"{T}/shots_now/shot{k}_plan.json")), cam, title=f"Now · round shot {k}")
+    b = plan(json.load(open(f"{T}/shots_close/shot{k}_plan.json")), cam, title=f"Close · round shot {k}")
+    im = Image.new("RGB", (a.width + b.width + 20, max(a.height, b.height)), (245, 243, 236))
+    im.paste(a, (0, 0)); im.paste(b, (a.width + 20, 0))
+    if im.width > 1920: im = im.resize((1920, int(im.height * 1920 / im.width)), Image.LANCZOS)
+    out = f"{IMG}/close_plan_shot{k}.jpg"; im.save(out, quality=85); written.append(out)
+print("\n".join(os.path.basename(w) + " " + str(Image.open(w).size) for w in written))

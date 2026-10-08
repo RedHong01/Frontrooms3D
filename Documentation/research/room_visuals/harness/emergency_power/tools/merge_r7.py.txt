@@ -1,0 +1,24 @@
+"""Merge the per-state runs (armed / tripped / none) into one render folder for measure_b_r4.py.
+Usage: python3 merge_r7.py <out> <armed dir> <tripped dir> <none dir> [<noref dir>]"""
+import sys, os, json, shutil, glob
+out, a, t, n = sys.argv[1:5]
+noref = sys.argv[5] if len(sys.argv) > 5 else None
+os.makedirs(out, exist_ok=True)
+samples = {}
+for d in (a, t, n):
+    for p in glob.glob(os.path.join(d, "*.png")):
+        shutil.copyfile(p, os.path.join(out, os.path.basename(p)))
+    sj = os.path.join(d, "samples.json")
+    if os.path.exists(sj):
+        samples.update(json.load(open(sj)))
+json.dump(samples, open(os.path.join(out, "samples.json"), "w"), indent=1)
+for f in ("timeline.csv", "changes.csv"):
+    shutil.copyfile(os.path.join(n, f), os.path.join(out, f))
+shutil.copyfile(os.path.join(t, "stats.txt"), os.path.join(out, "stats.txt"))
+with open(os.path.join(out, "log.txt"), "w") as fo:
+    for d in (a, t, n):
+        fo.write("==== " + d + "\n" + open(os.path.join(d, "log.txt")).read() + "\n")
+if noref:
+    for p in glob.glob(os.path.join(noref, "*.png")):
+        shutil.copyfile(p, os.path.join(out, "sweep_p0_" + os.path.basename(p)))
+print("merged", len(glob.glob(os.path.join(out, "*.png"))), "png; samples", sorted(samples))

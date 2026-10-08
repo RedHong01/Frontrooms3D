@@ -25,7 +25,7 @@ Motion: rotate about part -Z, 0 -> 35 deg (+angle moves the grip end -Y,
 Anchors: spindle (0, 0, 0); grip_press (0.070, 0, 0.054) (where the hand
 pushes); grip_end (0.121, 0, 0.033); axis_out (0, 0, 0.10).
 Budget (§9.2): LOD0 4,000 (asserted +-15 %), LOD1 1,600, LOD2 300; LOD
-distances 1.5 / 4 / 15 m; no LOD1 export (part < 1 m).
+distances 1.5 / 4 / 15 m; LOD1 exported since the 2026-10-08 fix pass (critic H4).
 Slots: Prop_Chrome. VARIANT _Brass. 96-segment hub; the grip root is a
 half-turned cap (48 steps) welded to a 30-point swept section
 (16 steps round the return bend).
@@ -36,8 +36,8 @@ import math
 import interact_lock_common as lc
 
 NAME = "Kit_Lock_Lever"
-LOD1 = None
 LOD1_RATIO = 0.40
+LOD1 = LOD1_RATIO  # fix pass 2026-10-08 (critic H4): FrontRoomsKitImporter honours the sidecar distances since 663e858, so LOD1 = LOD0->LOD1 at d01 and a cull at dcull
 LOD2_RATIO = 0.075
 LOD_DISTANCES = (1.5, 4.0, 15.0)
 BUDGET = 4000

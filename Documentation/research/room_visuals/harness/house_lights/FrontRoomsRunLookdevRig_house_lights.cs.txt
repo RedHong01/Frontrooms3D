@@ -1,0 +1,322 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+/// <summary>
+/// CLONE-ONLY look-dev rig for Run! direction C · HOUSE LIGHTS
+/// (Documentation/research/room_visuals/10_run_directions.md §4).
+/// Deterministic: Evaluate(t) sets every strip, light, flasher, door leaf,
+/// closer arm and the corridor ambient from t = seconds since the trip
+/// (t &lt; 0 = armed). No Update, no randomness. Built by
+/// Assets/Editor/Rendering/FrontRoomsRunLookdev.cs. Not for production.
+/// </summary>
+public sealed class FrontRoomsRunLookdevRig : MonoBehaviour
+{
+    // ---------------------------------------------------------------- tuning (SP values from §4.1)
+    public static readonly Color StripColor = new Color(.94f, .97f, 1f);
+    public float stripIntensity = .8f;           // per spot, 2 spots per strip (brief SP 4.5). r1: 1.3 with 165/120 cones tilted 30 deg;
+                                                 // r2: 179/140 straight down, swept 1.2 / 1.6 -> 1.0 put tripped S1b at ~.31 (target .30-.40);
+                                                 // r4-r5 (lamps at the channel, ceiling bounce .6) swept .75-1.0; r6 final: .8 -> S1b ~.33, S1a ~.155
+    public float armedLevel = .7f;               // economy switching: lit strips at 70 % (brief SP .9; r8 measured S1a .155 = 1.7 x Level 0
+                                                 // Standard's .091 at .9; E1 at .7: .116 = the brief's 1.3 x target. Tripped unchanged)
+    public float frontSpeed = 8f;                // m/s, the chase wave's speed
+    public float frontDelay = .1f;               // s after the trip
+    public float flickLevel = .30f, flickSeconds = .06f, riseSeconds = .2f;
+    public float tubeEmission = 9f;              // HDR multiplier of a lit tube at level 1
+    public float tubeEndEmission = .30f;         // blackened cathode band relative to the glass
+    public Color deadEndGlow = new Color(1f, .42f, .10f);
+    public float deadEndEmission = 2.2f;
+    public float flasherStart = .3f, flasherHz = 1f, flasherDuty = .5f;
+    public float flasherEmission = 2.0f;         // keeps the dome red through ACES (7 went salmon); 3.5 bloomed a 0.6 m red disc on the wall
+    public float flasherLight = .3f;
+    public float ambientArmed = 1f, ambientTripped = 1.2f;
+    // White-room bounce (the game has no GI): an SH lobe from the floor up (ceiling, upper walls) plus a flat term,
+    // both scaled by the strips' summed level (flux / 9 full strips) and the strip intensity.
+    // r5: up .30 -> .60. With the lamps at the channel line the walls are lit to the ceiling, but the ceiling itself only
+    // sees the tubes at grazing angles (E ~ h / r^3, ~5 % of the wall tops near the walls); in a white corridor its
+    // light is mostly interreflection, so the up lobe carries it. At .30 the ceiling margins read as a dark crown band.
+    public float bounceUp = .60f, bounceAll = .06f;
+    public static readonly Color BounceTint = new Color(.92f, .93f, .92f);
+    public bool reduceFlashing;
+    public bool flasherForceOff;                 // look-dev only: the same instant with the flashers dark (flash-area measure)
+    // look-dev only: a pair the Relay has just pushed through (CR-7: it shoves the shut leaves open and the closers
+    // bring them back). NaN = the trip curve. Index 0 = z 0 pair, 1 = z 9, 2 = z 18.
+    public float[] pairAngleOverride = { float.NaN, float.NaN, float.NaN };
+
+    /// <summary>Leaf angle t seconds after a push-through that swung the leaves to 90 deg: the same closer
+    /// sweep as the trip (90 -> 10 deg over 3 s, then latch-free easing to 0).</summary>
+    public static float PushAngle(float sincePush) => DoorAngle(sincePush);
+
+    // ---------------------------------------------------------------- parts
+    public sealed class Strip
+    {
+        public int number;                       // 1..9 from the entrance
+        public float z;                          // corridor-local centre
+        public bool economyOff;                  // 2, 4, 6, 8
+        public bool deadTube;                    // strip 7, tube B
+        public Renderer[] tubes = new Renderer[2];
+        public Light[] lights = new Light[2];
+        public Renderer[] body;                  // channel, end plates, holders: lit by its own tubes
+    }
+    public float bodySelfLight = .8f;            // enamel emission x strip level (tubes 2 cm away; no real light reaches it)
+    public Material enamel;
+
+    public sealed class Flasher
+    {
+        public Renderer dome;
+        public Light light;
+    }
+
+    public sealed class Leaf
+    {
+        public Transform pivot;                  // at the hinge axis, pull face
+        public float sign;                       // -1 left leaf (yaw -angle), +1 right leaf
+        public Transform mainArm, foreArm, elbow;
+        public Vector3 shoeWorld;                // fixed shoe on the frame head (world)
+        public Vector3 pinionLocal;              // pinion in the leaf pivot's local space
+        public float mainLength, foreLength;
+    }
+
+    public readonly List<Strip> strips = new List<Strip>();
+    public readonly List<Flasher> flashers = new List<Flasher>();
+    public readonly List<Leaf> leaves = new List<Leaf>();
+    public readonly List<Renderer> corridorRenderers = new List<Renderer>();
+    public Material tubeOn, tubeOff, tubeEnd, tubeEndDead, domeMaterial;
+    public string ambientMode = "none";
+
+    MaterialPropertyBlock block;
+    SphericalHarmonicsL2 baseProbe;
+    bool probeCaptured;
+
+    public float StripLevel(Strip s, float t)
+    {
+        if (t < 0f) return s.economyOff ? 0f : armedLevel;
+        var start = frontDelay + s.z / frontSpeed;
+        if (!s.economyOff) return t >= start ? 1f : armedLevel;
+        if (t < start) return 0f;
+        if (reduceFlashing) return Mathf.Clamp01((t - start) / .5f);
+        if (t < start + flickSeconds) return flickLevel;
+        return Mathf.Lerp(flickLevel, 1f, Mathf.Clamp01((t - start - flickSeconds) / riseSeconds));
+    }
+
+    public float FlasherLevel(float t)
+    {
+        if (t < flasherStart || flasherForceOff) return 0f;
+        if (reduceFlashing) return 1f;
+        var phase = ((t - flasherStart) * flasherHz) % 1f;
+        if (phase < flasherDuty) return 1f;
+        // incandescent filament: ~80 ms decay after the relay opens
+        var off = (phase - flasherDuty) / flasherHz;
+        return Mathf.Exp(-off / .035f) * (off < .25f ? 1f : 0f);
+    }
+
+    public static float DoorAngle(float t)
+    {
+        if (t < 0f) return 90f;
+        if (t < 3f) return 90f - 80f * (t / 3f);
+        if (t < 4f)
+        {
+            var u = (t - 3f) / 1f;
+            return 10f * (.5f + .5f * Mathf.Cos(Mathf.PI * u));
+        }
+        return 0f;
+    }
+
+    public void CaptureAmbient()
+    {
+        baseProbe = RenderSettings.ambientProbe;
+        probeCaptured = true;
+    }
+
+    public void Evaluate(float t)
+    {
+        block ??= new MaterialPropertyBlock();
+        foreach (var s in strips)
+        {
+            var level = StripLevel(s, t);
+            for (var k = 0; k < 2; k++)
+            {
+                var r = s.tubes[k];
+                var dead = s.deadTube && k == 1;
+                var lit = level > 0f && !dead;
+                block.Clear();
+                r.SetPropertyBlock(block);
+                var mats = r.sharedMaterials;
+                for (var m = 0; m < mats.Length; m++) r.SetPropertyBlock(new MaterialPropertyBlock(), m);
+                for (var m = 0; m < mats.Length; m++)
+                {
+                    var n = mats[m] != null ? mats[m].name : "";
+                    if (n.StartsWith("Run_TubeGlass") || n.StartsWith("RunC tube glass")) mats[m] = lit ? tubeOn : tubeOff;
+                    else if (n.StartsWith("Run_TubeEnd") || n.StartsWith("RunC tube end")) mats[m] = dead ? tubeEndDead : tubeEnd;
+                }
+                r.sharedMaterials = mats;
+                if (lit)
+                {
+                    // per-tube level through a property block on the glass submesh
+                    for (var m = 0; m < mats.Length; m++)
+                    {
+                        var pb = new MaterialPropertyBlock();
+                        if (mats[m] == tubeOn) pb.SetColor("_EmissionColor", StripColor * (tubeEmission * level));
+                        else if (mats[m] == tubeEnd) pb.SetColor("_EmissionColor", StripColor * (tubeEmission * tubeEndEmission * level));
+                        else continue;
+                        r.SetPropertyBlock(pb, m);
+                    }
+                }
+            }
+            if (s.body != null && enamel != null)
+            {
+                var lit = level * (s.deadTube ? .75f : 1f);
+                foreach (var b in s.body)
+                {
+                    var bm = b.sharedMaterials;
+                    for (var m = 0; m < bm.Length; m++)
+                    {
+                        if (bm[m] != enamel) continue;
+                        var pb = new MaterialPropertyBlock();
+                        pb.SetColor("_EmissionColor", StripColor * (bodySelfLight * lit));
+                        b.SetPropertyBlock(pb, m);
+                    }
+                }
+            }
+            foreach (var l in s.lights)
+            {
+                l.enabled = level > 0f;
+                l.intensity = stripIntensity * level;
+            }
+        }
+        var f = FlasherLevel(t);
+        foreach (var fl in flashers)
+        {
+            var pb = new MaterialPropertyBlock();
+            pb.SetColor("_EmissionColor", new Color(1f, .07f, .035f) * (flasherEmission * f + .02f));
+            var mats = fl.dome.sharedMaterials;
+            for (var m = 0; m < mats.Length; m++)
+                if (mats[m] == domeMaterial) fl.dome.SetPropertyBlock(pb, m);
+            if (fl.light != null)
+            {
+                fl.light.enabled = f > .01f;
+                fl.light.intensity = flasherLight * f;
+            }
+        }
+        var angle = DoorAngle(t);
+        for (var i = 0; i < leaves.Count; i++)
+        {
+            var leaf = leaves[i];
+            // leaves are built pair by pair (z 0, 9, 18), left then right: pair = i / 2
+            var pair = i / 2;
+            var a = pair < pairAngleOverride.Length && !float.IsNaN(pairAngleOverride[pair]) ? pairAngleOverride[pair] : angle;
+            leaf.pivot.localRotation = Quaternion.Euler(0f, leaf.sign * a, 0f);
+            SolveCloser(leaf);
+        }
+        var flux = 0f;
+        foreach (var s in strips) flux += StripLevel(s, t) * (s.deadTube ? .5f : 1f);
+        flux /= 9f;
+        ApplyAmbient(t < 0f ? ambientArmed : ambientTripped, flux);
+    }
+
+    void SolveCloser(Leaf leaf)
+    {
+        if (leaf.mainArm == null) return;
+        var p = leaf.pivot.TransformPoint(leaf.pinionLocal);
+        var s = leaf.shoeWorld;
+        var flatP = new Vector2(p.x, p.z);
+        var flatS = new Vector2(s.x, s.z);
+        var d = Vector2.Distance(flatP, flatS);
+        var a = leaf.mainLength;
+        var b = leaf.foreLength;
+        d = Mathf.Clamp(d, Mathf.Abs(a - b) + 1e-4f, a + b - 1e-4f);
+        var along = (a * a - b * b + d * d) / (2f * d);
+        var h = Mathf.Sqrt(Mathf.Max(0f, a * a - along * along));
+        var dir = (flatS - flatP).normalized;
+        var perp = new Vector2(-dir.y, dir.x);
+        // the elbow sits on the side away from the wall plane (+Z, the pull side)
+        var e1 = flatP + dir * along + perp * h;
+        var e2 = flatP + dir * along - perp * h;
+        var wallZ = s.z;
+        var e = (e1.y - wallZ) > (e2.y - wallZ) ? e1 : e2;
+        var elbow = new Vector3(e.x, Mathf.Lerp(p.y, s.y, .35f), e.y);
+        Place(leaf.mainArm, p, elbow, .022f, .008f);
+        Place(leaf.foreArm, elbow, s, .016f, .016f);
+        if (leaf.elbow != null) leaf.elbow.position = elbow;
+    }
+
+    static void Place(Transform bar, Vector3 a, Vector3 b, float w, float h)
+    {
+        var mid = (a + b) * .5f;
+        var dir = b - a;
+        bar.position = mid;
+        bar.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+        bar.localScale = new Vector3(w, h, dir.magnitude);
+    }
+
+    public float lastFlux;
+
+    void ApplyAmbient(float scale, float flux)
+    {
+        if (!probeCaptured) CaptureAmbient();
+        lastFlux = flux;
+        var sh = baseProbe * scale;
+        var k = stripIntensity * flux;
+        if (bounceUp > 0f) sh.AddDirectionalLight(Vector3.down, BounceTint, bounceUp * k);
+        if (bounceAll > 0f) sh.AddAmbientLight(BounceTint * (bounceAll * k));
+        var arr = new[] { sh };
+        foreach (var r in corridorRenderers)
+        {
+            if (r == null) continue;
+            r.lightProbeUsage = LightProbeUsage.CustomProvided;
+            var pb = new MaterialPropertyBlock();
+            r.GetPropertyBlock(pb);
+            pb.CopySHCoefficientArraysFrom(arr);
+            r.SetPropertyBlock(pb);
+            // per-submesh blocks (tubes, domes) may override the renderer block: copy SH into every one
+            var n = r.sharedMaterials.Length;
+            for (var m = 0; m < n; m++)
+            {
+                var sub = new MaterialPropertyBlock();
+                r.GetPropertyBlock(sub, m);
+                sub.CopySHCoefficientArraysFrom(arr);
+                r.SetPropertyBlock(sub, m);
+            }
+        }
+        ambientMode = "CustomProvided SH via MaterialPropertyBlock, scale " + scale.ToString("0.00") + " x global + bounce (flux " + flux.ToString("0.00") + ")";
+    }
+
+    /// <summary>Every lamp change in [0, seconds] sampled at 1 ms: (name, list of change times).</summary>
+    public List<(string name, List<float> changes)> ChangeTable(float seconds)
+    {
+        var table = new List<(string, List<float>)>();
+        foreach (var s in strips)
+        {
+            var list = new List<float>();
+            var prevKind = Kind(s, 0f);
+            for (var ms = 1; ms <= seconds * 1000f; ms++)
+            {
+                var t = ms / 1000f;
+                var kind = Kind(s, t);
+                if (kind != prevKind) list.Add(t);
+                prevKind = kind;
+            }
+            table.Add(("strip " + s.number + (s.economyOff ? " (economy off)" : " (lit)"), list));
+        }
+        var fl = new List<float>();
+        var prev = FlasherLevel(0f) > .5f;
+        for (var ms = 1; ms <= seconds * 1000f; ms++)
+        {
+            var on = FlasherLevel(ms / 1000f) > .5f;
+            if (on != prev) fl.Add(ms / 1000f);
+            prev = on;
+        }
+        table.Add(("flashers (all, synced)", fl));
+        return table;
+    }
+
+    // a lamp's state class: 0 off, 1 armed, 2 flick, 3 rising, 4 full. A ramp counts as one change.
+    int Kind(Strip s, float t)
+    {
+        var start = frontDelay + s.z / frontSpeed;
+        if (!s.economyOff) return t >= start ? 4 : 1;
+        if (t < start) return 0;
+        if (t < start + flickSeconds) return 2;
+        return 3; // rise then full: one continuous change
+    }
+}

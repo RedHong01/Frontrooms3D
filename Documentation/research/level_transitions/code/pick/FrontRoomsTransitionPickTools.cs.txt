@@ -1,0 +1,23 @@
+// LEVEL TRANSITIONS · PICK (clone proj_trans_pick only): asset prep for the frame + renovation mix.
+//   Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsTransitionPickTools.Setup -logFile <log>
+// It makes the renovation kit's materials from the copied textures (against main's FrontRooms/Surface),
+// re-imports its four prop FBXs, and writes the frame kit's Trans_AluminiumSatin material.
+using System;
+using UnityEditor;
+using UnityEngine;
+
+public static class FrontRoomsTransitionPickTools
+{
+    public static void Setup()
+    {
+        var code = 0;
+        try
+        {
+            FrontRoomsTransitionAssets.SetupCorePublic();
+            FrontRoomsTransitionFrameAssets.Prepare();
+            Debug.Log("[Pick] setup done; " + FrontRoomsTransitionPick.Describe());
+        }
+        catch (Exception e) { Debug.LogError("[Pick] EXCEPTION " + e); code = 1; }
+        EditorApplication.Exit(code);
+    }
+}

@@ -1,0 +1,21 @@
+"""Surface door closer body (regular arm), sprayed aluminium, 1970s-80s
+cast-iron closer with a full cover. CLONE-ONLY look-dev. 270 x 55 x 60 mm,
+pinion boss on top at the hinge end (Blender +X = Unity -X). The arms are
+built in Unity (they move with the leaf). ORIGIN = mount face centre."""
+import run_c_common as rc  # noqa: F401
+
+NAME = "Kit_DoorCloser_Run"
+SMOOTH_ANGLE = 40.0
+
+
+def build(kit):
+    kit.box((0.270, 0.052, 0.060), (0, -0.026, 0), "Prop_Aluminium", bevel=0.014, segments=4, name="cover")
+    kit.box((0.230, 0.010, 0.046), (0, -0.003, 0), "Prop_Aluminium", bevel=0.003, segments=1, name="back plate")
+    kit.cylinder(0.015, 0.010, (0.105, -0.030, 0.030 + 0.004), "Prop_Aluminium", verts=24, bevel=0.002, name="pinion boss")
+    kit.cylinder(0.006, 0.010, (0.105, -0.030, 0.030 + 0.012), "Prop_SteelBlack", verts=12, bevel=0.001, segments=1, name="pinion")
+    for sx in (-1, 1):
+        kit.cylinder(0.003, 0.003, (sx * 0.128, -0.030, -0.012), "Prop_SteelBlack", verts=10, rot=(0, 90, 0), bevel=0.0006, segments=1, name="valve screw")
+    for sx in (-1, 1):
+        kit.cylinder(0.0035, 0.0025, (sx * 0.100, -0.0525, 0.0), "Prop_Chrome", verts=10, rot=(90, 0, 0), bevel=0.0007, segments=1, name="cover screw")
+    kit.anchor("pinion", (0.105, -0.030, 0.047))
+    kit.no_collider()

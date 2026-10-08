@@ -1,6 +1,7 @@
 # 20 — Evacuation placard (Q16): build report
 
 Status: **BUILT in the private clone, 2026-10-07 (continuation after the 2026-10-05 wipe).** Art **v2**.
+**Superseded in parts by the fix stage (2026-10-08): `35_fix.md`, `40_contract_map.md`, `41_promotion.md`.** Frame slot, texture size, centre height, calm Failing read and the patch script changed; the merge is now `W/apply/placard_q16.sh`.
 - Clone: `/Users/redwang/FrontRoomsVisualWork/proj_placard` (main 16f520e + this work; compiles, 0 errors, `-buildTarget OSXUniversal`). Main is now a5262fb: the commits since 16f520e touch touch-controls, the HUD key glyph, outlets and the placard's own `LEGEND_BOX` line only, so nothing the placard depends on moved (checked 2026-10-07 18:2x).
 - Red's project: only these were written: this folder, the Q16 rows of `Documentation/VERIFICATION_LOG.md` (VL123–125, VL127), and one data line in `Tools/Blender/frontrooms_kit/assets/evac_placard_common.py` (the art-v2 legend box; Red's auto-commit 5e6e7f9 already holds it). Unity was never opened on Frontrooms3D.
 - Last run in the clone: 2026-10-07 17:45–17:47 (`lookdev3`: simulation, 100-seed placement and the Unity three-view, exit 0, 0 compile errors).

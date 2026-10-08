@@ -1,0 +1,20 @@
+corridor renderers 196, submeshes (draws before batching) 343, triangles 129020
+materials 35: Prop_Aluminium, Prop_Chrome, Prop_PlasticBlack, Prop_PlasticGrey, Prop_PlasticRed, Prop_PlasticWhite, Prop_Rubber, Prop_SteelBlack, Prop_SteelBrown, Prop_Vinyl, Run_C_Ceiling, Run_C_FirePlate, Run_C_GlazedTile, Run_C_GlazedTrim, Run_C_Plaque, Run_C_Plaster, Run_C_VCT, Run_C_VCTBand_L, Run_C_VCTBand_R, Run_C_VCTEdge, Run_DoorLaminate, Run_Enamel, Run_ExitFace, Run_FlasherDome, Run_MagGrey, Run_Orange, Run_PullFace, Run_TubeEnd, Run_TubeEndDead, Run_TubeGlass, Run_TubeGlassOff, RunC lite glass (Glass_Window copy), RunC relay body, RunC relay head, RunC wire grid
+textures 48 (249.4 MB runtime): GlassGrime_M 1024x1024, GlassSmear_N 512x512, MacroWear_M 1024x1024, PaintedMetal_A 1024x1024, PaintedMetal_N 1024x1024, PaintedMetal_S 1024x1024, Prop_Aluminium_A 1024x1024, Prop_Aluminium_N 1024x1024, Prop_Aluminium_S 1024x1024, Prop_PlasticBlack_A 1024x1024, Prop_PlasticBlack_N 1024x1024, Prop_PlasticBlack_S 1024x1024, Prop_PlasticGrey_A 1024x1024, Prop_PlasticGrey_N 1024x1024, Prop_PlasticGrey_S 1024x1024, Prop_PlasticWhite_A 1024x1024, Prop_PlasticWhite_N 1024x1024, Prop_PlasticWhite_S 1024x1024, Prop_SteelBlack_A 1024x1024, Prop_SteelBlack_N 1024x1024, Prop_SteelBlack_S 1024x1024, Prop_SteelBrown_A 1024x1024, Prop_SteelBrown_N 1024x1024, Prop_SteelBrown_S 1024x1024, Prop_Vinyl_A 1024x1024, Prop_Vinyl_N 1024x1024, Prop_Vinyl_S 1024x1024, Run_C_ExitFace_A 1000x600, Run_C_ExitFace_E 1000x600, Run_C_FirePlate_A 1800x220, Run_C_Plaque_A 900x300, Run_C_PullFace_A 400x520, Run_C_WireGrid_A 256x256, Run_CeilingGyp_A 1024x1024, Run_CeilingGyp_N 1024x1024, Run_CeilingGyp_S 1024x1024, Run_DoorLaminate_A 2048x2048, Run_DoorLaminate_N 2048x2048, Run_DoorLaminate_S 2048x2048, Run_GlazedTile_A 1600x1600, Run_GlazedTile_N 1600x1600, Run_GlazedTile_S 1600x1600, Run_Plaster_A 1024x1024, Run_Plaster_N 1024x1024, Run_Plaster_S 1024x1024, Run_VCT_A 2048x2048, Run_VCT_N 2048x2048, Run_VCT_S 2048x2048
+kit Kit_StripFixture_8ft: 2904 tris
+kit Kit_T12Tube_8ft: 964 tris
+kit Kit_MagHolder: 2204 tris
+kit Kit_MagArmature: 828 tris
+kit Kit_FlasherLamp: 2974 tris
+kit Kit_DoorLeaf_RunPair: 3188 tris
+kit Kit_DoorLeaf_RunX: 4540 tris
+kit Kit_DoorFrame_RunPair: 1548 tris
+kit Kit_DoorFrame_RunX: 1656 tris
+kit Kit_DoorCloser_Run: 1024 tris
+kit Kit_ExitSign_RunC: 686 tris
+kit Kit_PullStation: 558 tris
+kit Kit_FloorBurnisher: 6036 tris
+kit Kit_WheelchairFolded: 7468 tris
+lights armed: 17 (shadowed 5)
+lights tripped: 25 (shadowed 8)
+of which anteroom 6 + stub 1 map lamps

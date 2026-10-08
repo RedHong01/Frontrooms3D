@@ -1,0 +1,95 @@
+// TRANSITION frame (clone only): proves the V1 Frame kit adds no collision. For each fixed
+// shot it builds the 25-chunk map (root 4992, the shot's seed, BuildForCapture) in kit modes
+// off, b0 and frame, and hashes every MeshCollider mesh (vertices and triangles, in chunk
+// order) plus the count of colliders. The hashes must match across the three modes.
+//
+// Unity -batchmode -projectPath <clone> -executeMethod FrontRoomsTransitionCollisionCheck.Run -quit -logFile <log>
+//   -shots <shots.json> -out <file.txt>
+using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+public static class FrontRoomsTransitionCollisionCheck
+{
+    static readonly Vector3 MapRoot = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+
+    static string Arg(string name, string fallback)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return fallback;
+    }
+
+    public static void Run()
+    {
+        var code = 0;
+        var sb = new StringBuilder();
+        try
+        {
+            var file = JsonUtility.FromJson<FrontRoomsTransitionAudit.ShotFile>(File.ReadAllText(Arg("-shots", null)));
+            EditorSceneManager.OpenScene("Assets/Scenes/FrontRooms3D.unity", OpenSceneMode.Single);
+            sb.AppendLine("FrontRoomsTransitionCollisionCheck " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            sb.AppendLine("columns: shot | mode | colliders | collider vertices | collider triangles | hash (FNV-1a 64 over vertices + indices)");
+            foreach (var s in file.shots)
+            {
+                string first = null;
+                foreach (var m in new[] { FrontRoomsTransitionKit.KitMode.Off, FrontRoomsTransitionKit.KitMode.B0, FrontRoomsTransitionKit.KitMode.Frame })
+                {
+                    FrontRoomsTransitionKit.Mode = m;
+                    var profile = Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+                    profile.hideFlags = HideFlags.DontSave;
+                    profile.generation = profile.Generation(s.seed);
+                    var root = new GameObject("TRANSITION COLLISION " + s.id + " " + m) { hideFlags = HideFlags.DontSave };
+                    root.transform.position = MapRoot;
+                    var world = root.AddComponent<FrontRoomsMapWorld>();
+                    world.Profile = profile;
+                    world.OverrideSpawn(new Vector3(s.eyeMap[0], 0f, s.eyeMap[2]), 0f);
+                    world.BuildForCapture();
+                    var colliders = root.GetComponentsInChildren<MeshCollider>(true)
+                        .Where(c => c.sharedMesh != null)
+                        .OrderBy(c => c.transform.position.x).ThenBy(c => c.transform.position.z).ThenBy(c => c.sharedMesh.vertexCount)
+                        .ToList();
+                    ulong h = 1469598103934665603UL;
+                    void Mix(int v) { unchecked { h ^= (uint)v; h *= 1099511628211UL; } }
+                    long verts = 0, tris = 0;
+                    foreach (var c in colliders)
+                    {
+                        var mesh = c.sharedMesh;
+                        foreach (var v in mesh.vertices)
+                        {
+                            Mix(Mathf.RoundToInt(v.x * 10000f));
+                            Mix(Mathf.RoundToInt(v.y * 10000f));
+                            Mix(Mathf.RoundToInt(v.z * 10000f));
+                        }
+                        var idx = mesh.triangles;
+                        foreach (var i in idx) Mix(i);
+                        verts += mesh.vertexCount;
+                        tris += idx.Length / 3;
+                    }
+                    var hash = h.ToString("x16");
+                    first ??= hash;
+                    sb.AppendLine(s.id + " | " + m + " | " + colliders.Count + " | " + verts + " | " + tris + " | " + hash + (hash == first ? "" : "  << DIFFERS"));
+                    if (hash != first) code = 2;
+                    world.Release();
+                    Object.DestroyImmediate(root);
+                    Object.DestroyImmediate(profile);
+                }
+            }
+            File.WriteAllText(Arg("-out", "transition_collision.txt"), sb.ToString());
+            Debug.Log("[TransitionCollision]\n" + sb);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[TransitionCollision] " + e + "\n" + sb);
+            code = 1;
+        }
+        FrontRoomsTransitionKit.Mode = FrontRoomsTransitionKit.KitMode.Frame;
+        EditorApplication.Exit(code);
+    }
+}

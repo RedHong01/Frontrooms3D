@@ -1,0 +1,22 @@
+Unity log of the ee5c9bb play run (W/cx_rt/logs/cx_play_ee5c9bb.log, 12417 lines): signature counts
+Collection was modified          0
+ZBinningJob                      0
+Render Graph Execution error     0
+Shader error                     0
+NullReferenceException           0
+MissingReferenceException        0
+InvalidOperationException        0
+ScreenVideo                      0
+not SRP Batcher compatible       0
+
+frame stats (W/smoke/framestats.py):
+00_map_001s.jpg                                    1600x900 mean   62.2 std  25.7 black   0.0% magenta  0.00% transparent   0.0% colours 327
+01_map_021s.jpg                                    1600x900 mean   92.3 std  37.3 black   0.0% magenta  0.00% transparent   0.0% colours 757
+02_map_041s.jpg                                    1600x900 mean   83.2 std  46.4 black   0.0% magenta  0.00% transparent   0.0% colours 513
+03_map_061s.jpg                                    1600x900 mean   92.5 std  38.7 black   0.0% magenta  0.00% transparent   0.0% colours 757
+04_map_081s.jpg                                    1600x900 mean   77.9 std  40.8 black   0.0% magenta  0.00% transparent   0.0% colours 614
+05_map_101s.jpg                                    1600x900 mean   74.3 std  31.5 black   0.0% magenta  0.00% transparent   0.0% colours 483
+06_end.jpg                                         1600x900 mean   86.8 std  41.0 black   0.0% magenta  0.00% transparent   0.0% colours 1011
+closeup_bad_1.jpg                                  1600x900 mean   38.4 std  10.8 black   2.1% magenta  1.61% transparent   0.0% colours 403
+closeup_key_after_R.jpg                            1600x900 mean  126.7 std  30.3 black   0.0% magenta  2.37% transparent   0.0% colours 914
+closeup_key_first_life.jpg                         1600x900 mean  136.7 std  22.7 black   0.0% magenta  0.00% transparent   0.0% colours 331

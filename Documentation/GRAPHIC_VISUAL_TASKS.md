@@ -45,6 +45,12 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 - What counts as an "exit" is open; Red or the narrative chat decides.
 - Nothing gets built until Red and all three chats agree.
 
+**Preview status (2026-10-08 00:2x):**
+- **v1** (a hall with pillars, pass A only) was delivered to Red: `Research/week03/wallpaper_cue/cue_ingame_preview_v1_hall.mp4` (outside the git repo). Frames: `~/FrontRoomsVisualWork/pgcue_out/v1_hall/`.
+- **v2** is rendering: a real corridor with walls on both sides, plus pass B (an oblique look along one wall).
+- **Encoder:** ffmpeg plus pre-rendered caption PNGs. This ffmpeg has no drawtext, and per-frame PIL is too slow on the loaded machine.
+- **VL slide:** due after v2, in `research/cue_driver/images/`.
+
 **BLOCKER RESOLVED (2026-10-07 23:4x):** the cause was my own harness. Its Chinese text and C# tuple syntax made FrontRooms3DGame's MonoScript resolve NULL. It was rewritten ASCII-only and tuple-free; the render now runs in `proj_pgcue2`. History of the blocker:
 - In clones `proj_pgcue` (from proj_audit + rsync main) and `proj_pgcue2` (from `proj_g14b`), `MonoScript(Assets/Scripts/FrontRooms3DGame.cs).GetClass()` is NULL. The scene's game component is MISSING, so the game never starts; the harness logs a DIAG.
 - Other chats' clones run fine tonight: proj_cx_rt*, the touch chat's proj_touch, and `proj_g14b_r3`. Note that the working g14b run was `_r3`, not `proj_g14b`.
@@ -109,6 +115,19 @@ Red, 2026-10-07: "之前chat开始做了一个电脑/电视机广告的task…�
 - strings: narrative chat;
 - tube shader, F6 fix and kit anchors: 游戏视觉;
 - events: 系统设计 / 关卡设计.
+
+## 3a. Instagram promo (Red, 2026-10-08: "一个电视机在后室的场景里面，播放一个又一个你做的广告HDR"): IN PROGRESS
+- **Shot:** Kit_CRTTV on the carpet of a Level 0 room against the hard-edge wallpaper. The set plays the WXRM loop from `Tools/screens` (station ID → 4 cards). Then interference with lamp Warn bursts, the EXIT-green alarm slate as the lamps die, power-off, and the FRONTROOMS wordmark end card. 9:16, 1080×1920, 30 fps, ~23.5 s, silent.
+- **Pipeline:**
+  - Clone `proj_pgcue2`, harness `FrontRoomsPromoCapture`.
+  - Tube look from the clone-only shader `FrontRooms/PromoScreen`.
+  - Capture renders HDR with tonemapping off, then `Hidden/FrontRooms/PromoEncode` writes 16-bit PQ/Rec.2020 and 8-bit ACES/sRGB per frame.
+  - Encode with `Tools/screens/promo_encode.py`: HDR10 HEVC Main10 plus SDR H.264.
+- **Output:** `Research/week03/instagram_promo/`.
+
+**Held for Red (blocked by the permission classifier 2026-10-08, not worked around):**
+1. Swap the in-game ad `Assets/StreamingAssets/FrontRooms_Ad_01.mp4` (the real LEVITZ trademark, must not ship) for `Tools/screens/out/FrontRooms_Ad_02/FrontRooms_Ad_02.mp4`.
+2. The request to 游戏视觉 for the tube shader, the F6 `Shader.Find` fix and the Kit_CRTTV anchor. The message text is in this file's §3; Red can forward it.
 
 ## 3b. Touch type review (touch chat, 2026-10-07): DONE
 - Approved:

@@ -1,0 +1,43 @@
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+public static class Probe
+{
+    public static void Run()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("target " + EditorUserBuildSettings.activeBuildTarget + " webgl subtarget " + EditorUserBuildSettings.webGLBuildSubtarget + " compressOnImport " + EditorUserSettings.compressAssetsOnImport + " gfx " + SystemInfo.graphicsDeviceType + " DXT1 supported " + SystemInfo.SupportsTextureFormat(TextureFormat.DXT1));
+        foreach (var path in Directory.GetFiles("Assets/Tex", "*.png"))
+        {
+            var p = path.Replace('\\', '/');
+            var stem = Path.GetFileNameWithoutExtension(p);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(p);
+            var mask = stem.StartsWith("E");
+            imp.textureType = TextureImporterType.Default;
+            imp.npotScale = TextureImporterNPOTScale.None;
+            imp.mipmapEnabled = !stem.Contains("NOMIP");
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.sRGBTexture = !mask;
+            imp.maxTextureSize = 4096;
+            imp.textureCompression = mask ? TextureImporterCompression.Compressed : TextureImporterCompression.CompressedHQ;
+            var web = imp.GetPlatformTextureSettings("WebGL");
+            web.overridden = true;
+            web.maxTextureSize = stem.Contains("2048") ? 2048 : 1024;
+            web.textureCompression = TextureImporterCompression.Compressed;
+            web.format = stem.Contains("DXT") ? TextureImporterFormat.DXT1 : TextureImporterFormat.Automatic;
+            imp.SetPlatformTextureSettings(web);
+            imp.SaveAndReimport();
+            var t = AssetDatabase.LoadAssetAtPath<Texture2D>(p);
+            sb.AppendLine(stem + ": " + t.width + "x" + t.height + " " + t.format + " mips " + t.mipmapCount + " auto WebGL " + imp.GetAutomaticFormat("WebGL") + " auto iOS " + imp.GetAutomaticFormat("iPhone") + " bytes " + UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(t)
+                + " | storage " + EditorStorageSize(t));
+        }
+        File.WriteAllText("probe_" + EditorUserBuildSettings.activeBuildTarget + ".txt", sb.ToString());
+        Debug.Log("[Probe]\n" + sb);
+    }
+    static string EditorStorageSize(Texture2D t)
+    {
+        var m = typeof(Editor).Assembly.GetType("UnityEditor.TextureUtil")?.GetMethod("GetStorageMemorySizeLong", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        return m != null ? m.Invoke(null, new object[] { t }).ToString() : "?";
+    }
+}

@@ -1,0 +1,14 @@
+seed 3, mount P2 east, glow cell (149, 70)
+overlap · frame box (+0.02 m, world AABB of the OBB) [257.886, 1.3831, 19.2466]-[257.9395, 1.7369, 19.7534]: 2 renderers
+  frame: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 15 · 2.9 m/L0_Wallpaper [257.92, 0, 18]-[264.08, 2.9, 24.08]
+  frame: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 14 · 2.9 m/L0_Wallpaper [251.92, 0, 18]-[258.08, 2.9, 24.08]
+overlap · keep-clear floor rect [257.02, 0.02, 19.117]-[257.92, 2, 19.883]: 2 renderers
+  floor: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 15 · 2.9 m/L0_Wallpaper [257.92, 0, 18]-[264.08, 2.9, 24.08]
+  floor: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 14 · 2.9 m/L0_Wallpaper [251.92, 0, 18]-[258.08, 2.9, 24.08]
+fix: lit neighbours (149, 71) (148, 70) of 3 neighbour lamps; centre height 1.5600
+lamps (lit): (149, 70) Steady L 0.9966; (150, 70) Off L 0.0000; (148, 70) Steady L 0.9600; (149, 71) Steady L 0.9989; (149, 69) Off L -1.0000; 
+frame materials: Prop_AluminiumAnodised, Prop_EvacPlan (Placard)
+A4 own lamp off +15 s, 2 lit neighbours, v2 art (legend at 0.6 m, FOV 40, linear HDR, post off): glyph px 3801, paper px 35249 | lit: paper 0.7226, glyph 0.5673 (glyph/paper 0.785) | now G 0.391: paper 0.0661, glyph 0.0910, glyph/paper 1.375 | G 0: glyph/paper 0.804 | G 1: glyph/paper 2.258, full glow adds 0.0962 = 13.3 % of the lit paper | dark paper / lit paper 0.092
+A4 own lamp off +15 s, 2 lit neighbours, CANDIDATE art (legend at 0.6 m, FOV 40, linear HDR, post off): glyph px 3802, paper px 35249 | lit: paper 0.7226, glyph 0.5674 (glyph/paper 0.785) | now G 0.391: paper 0.0656, glyph 0.0866, glyph/paper 1.321 | G 0: glyph/paper 0.748 | G 1: glyph/paper 2.214, full glow adds 0.0962 = 13.3 % of the lit paper | dark paper / lit paper 0.091
+reflection: lamp Light at [256.5, 2.84, 22.8], sheet point [257.9195, 1.6819, 19.4303] (height 1.6819), eye [257.8436, 1.62, 19.2501] = 0.0759 m from the wall
+lamps (end): (149, 70) Steady L 0.9607; (150, 70) Off L 0.0000; (148, 70) Steady L 0.9989; (149, 71) Steady L 0.9600; (149, 69) Off L -1.0000; 

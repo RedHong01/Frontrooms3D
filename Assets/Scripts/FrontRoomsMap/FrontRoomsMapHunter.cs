@@ -64,8 +64,11 @@ public sealed class FrontRoomsMapHunter
     const float SeenDoorSeconds = 1f;
     // Step 1 warning bands. Holds are deliberately data-only: the caller can
     // decide how a stage is presented without the level field driving lamps or audio.
-    const float WarnStage1Enter = 30f, WarnStage1Exit = 36f, WarnStage1Hold = 4f;
-    const float WarnStage2Enter = 18f, WarnStage2Exit = 24f, WarnStage2Hold = 3f;
+    // §9.1: enter at W ≤ 30 / 18 m, leave past 36 / 24 m; a stage lasts at least 4 / 3 s from entry, and ends only once W
+    // has stayed past its exit band for 1 s (cell jitter is about ±3 m).
+    const float WarnStage1Enter = 30f, WarnStage1Exit = 36f, WarnStage1MinSeconds = 4f;
+    const float WarnStage2Enter = 18f, WarnStage2Exit = 24f, WarnStage2MinSeconds = 3f;
+    const float WarnExitConfirmSeconds = 1f;
     const float PlayerFieldCap = 45f;
     const float SourceFieldCap = 90f;
     const float PlayerSeesRelayPeriod = .1f;
@@ -143,7 +146,8 @@ public sealed class FrontRoomsMapHunter
     GridCoord relayFieldRoot;
     int relayFieldRevision = -1;
     bool relayFieldReady;
-    float warnEnterHold, warnExitHold;
+    // Time in the current stage, and how long W has stayed past its exit band and past stage 1's (for 2 → 0).
+    float warnStageSeconds, warnPastExit, warnPastClear;
     float playerSeesRelayTimer;
 
     public HunterState State { get; private set; } = HunterState.Dormant;
@@ -159,8 +163,12 @@ public sealed class FrontRoomsMapHunter
     public float PathOpeningCost { get; private set; } = float.PositiveInfinity;
     /// <summary>Warning distance W = min(F, three times the straight-line 3D distance).</summary>
     public float WarningDistance { get; private set; } = float.PositiveInfinity;
-    /// <summary>0, 1 or 2 according to the §9 hysteresis bands.</summary>
+    /// <summary>0, 1 or 2 by §9.1's bands, minimum times and exit confirm.</summary>
     public int WarnStage { get; private set; }
+    /// <summary>Seconds stage ≥ 1 has run without a break (a 2 → 1 drop keeps it; a drop to 0 ends it), for the G3 gate.</summary>
+    public float WarnRunSeconds { get; private set; }
+    /// <summary>Seconds the current stage 2 has run (0 outside stage 2).</summary>
+    public float WarnStage2RunSeconds { get; private set; }
     /// <summary>Player-side frustum plus two body-height rays, refreshed at 10 Hz for Step 1 consumers.</summary>
     public bool PlayerSeesRelay { get; private set; }
     /// <summary>Path distance from the Relay's current cell to a cell, using the same edge costs as F.</summary>
@@ -358,6 +366,8 @@ public sealed class FrontRoomsMapHunter
         sweepIndex = 0;
         lookTimer = 0f;
         playerSeesRelayTimer = 0f;
+        // Nor does a stage or its timers: the next tick enters the band the new spot is in, on its first sample.
+        ClearWarnStage();
         DoorSqueeze = DoorSqueezeAt(position);
         SetState(HunterState.Search);
     }
@@ -1183,56 +1193,60 @@ public sealed class FrontRoomsMapHunter
         PathDistanceToPlayer = float.PositiveInfinity;
         PathOpeningCost = float.PositiveInfinity;
         WarningDistance = float.PositiveInfinity;
-        warnEnterHold = 0f;
-        warnExitHold = 0f;
-        SetWarnStage(0);
+        ClearWarnStage();
     }
 
-    void UpdateWarnStage(float dt, GridCoord myCell)
+    /// <summary>Off the map (not released, or on an unbuilt cell) is stage 0 at once, with no hold.</summary>
+    void UpdateWarnStage(float dt, GridCoord myCell) =>
+        StepWarnStage(dt, Released && world.IsBuilt(myCell) ? WarningDistance : float.PositiveInfinity);
+
+    /// <summary>Tests: one sample of W as a tick takes it (infinity = off the map), without a map or a release.</summary>
+    public void DebugWarnSample(float w, float dt)
     {
-        if (!Released || !world.IsBuilt(myCell) || float.IsPositiveInfinity(WarningDistance))
+        WarningDistance = w;
+        StepWarnStage(dt, w);
+    }
+
+    /// <summary>
+    /// §9.1. A stage starts on the first sample inside its band, and going up is never delayed (0 → 2 and 1 → 2 at once).
+    /// Once in, stage 1 lasts ≥ 4 s and stage 2 ≥ 3 s from entry; after that a stage ends once W has stayed past its exit
+    /// band for 1 s. Stage 2 drops to 1, or to 0 if W has also stayed past 36 m for that second.
+    /// </summary>
+    void StepWarnStage(float dt, float w)
+    {
+        if (float.IsPositiveInfinity(w))
         {
-            warnEnterHold = 0f;
-            warnExitHold = 0f;
-            SetWarnStage(0);
+            ClearWarnStage();
             return;
         }
-
-        switch (WarnStage)
+        var band = w <= WarnStage2Enter ? 2 : w <= WarnStage1Enter ? 1 : 0;
+        if (band > WarnStage)
         {
-            case 0:
-                warnExitHold = 0f;
-                warnEnterHold = WarningDistance <= WarnStage1Enter ? warnEnterHold + dt : 0f;
-                if (warnEnterHold >= WarnStage1Hold) SetWarnStage(1);
-                break;
-            case 1:
-                warnEnterHold = WarningDistance <= WarnStage2Enter ? warnEnterHold + dt : 0f;
-                if (warnEnterHold >= WarnStage2Hold)
-                {
-                    warnEnterHold = 0f;
-                    warnExitHold = 0f;
-                    SetWarnStage(2);
-                    break;
-                }
-                warnExitHold = WarningDistance > WarnStage1Exit ? warnExitHold + dt : 0f;
-                if (warnExitHold >= WarnStage1Hold)
-                {
-                    warnEnterHold = 0f;
-                    warnExitHold = 0f;
-                    SetWarnStage(0);
-                }
-                break;
-            default:
-                warnEnterHold = 0f;
-                warnExitHold = WarningDistance > WarnStage2Exit ? warnExitHold + dt : 0f;
-                if (warnExitHold >= WarnStage2Hold)
-                {
-                    warnExitHold = 0f;
-                    SetWarnStage(1);
-                }
-                break;
+            EnterWarnStage(band);
+            return;
         }
+        if (WarnStage == 0) return;
+        warnStageSeconds += dt;
+        WarnRunSeconds += dt;
+        if (WarnStage == 2) WarnStage2RunSeconds += dt;
+        warnPastExit = w > (WarnStage == 2 ? WarnStage2Exit : WarnStage1Exit) ? warnPastExit + dt : 0f;
+        warnPastClear = w > WarnStage1Exit ? warnPastClear + dt : 0f;
+        if (warnStageSeconds < (WarnStage == 2 ? WarnStage2MinSeconds : WarnStage1MinSeconds) || warnPastExit < WarnExitConfirmSeconds) return;
+        EnterWarnStage(WarnStage == 2 && warnPastClear >= WarnExitConfirmSeconds ? 0 : WarnStage - 1);
     }
+
+    /// <summary>Into a stage, up or down: its minimum time starts again (a 2 → 1 drop restarts stage 1's 4 s).</summary>
+    void EnterWarnStage(int next)
+    {
+        if (next == 0 || WarnStage == 0) WarnRunSeconds = 0f;
+        WarnStage2RunSeconds = 0f;
+        warnStageSeconds = 0f;
+        warnPastExit = 0f;
+        warnPastClear = 0f;
+        SetWarnStage(next);
+    }
+
+    void ClearWarnStage() => EnterWarnStage(0);
 
     void SetWarnStage(int next)
     {

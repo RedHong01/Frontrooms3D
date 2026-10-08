@@ -1,0 +1,346 @@
+"""Run! direction B (EMERGENCY POWER) measurements + derived frames + JPG export.
+Usage: /usr/bin/python3 measure_b.py <render dir> <out images dir> <prefix> <json out>
+Brief: Documentation/research/room_visuals/10_run_directions.md §7.4-7.7.
+"""
+import sys, os, json, math
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+SRC, OUT, PREFIX, JOUT = sys.argv[1:5]
+os.makedirs(OUT, exist_ok=True)
+
+def load(name):
+    return np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB")).astype(np.float32) / 255.0
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+def enc(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+
+def Y(img):
+    return lin(img) @ np.array([.2126, .7152, .0722], np.float32)
+
+def stats(img):
+    y = Y(img)
+    p = np.percentile(y, [5, 50, 95, 99.5])
+    im = img * 255
+    s = im.sum(-1) + 1e-6
+    redfrac = im[..., 0] / s
+    return dict(Y_p5=round(float(p[0]), 4), Y_p50=round(float(p[1]), 4), Y_p95=round(float(p[2]), 4), Y_p995=round(float(p[3]), 4),
+                contrast_p95_p5=round(float((p[2] + .05) / (p[0] + .05)), 2),
+                sat_red_pct=round(float(((redfrac >= 0.8) & (s > 30)).mean() * 100), 2),
+                red_dominant_pct=round(float(((redfrac > 0.6) & (s > 30)).mean() * 100), 2))
+
+# ID palette (sRGB-encoded unlit colours from FrontRoomsRunLookdev.IdColour)
+PAL = {
+    "Background": (0, 0, 0), "Relay": (1, 1, 1), "Goal": (1, 0, 0), "Dolly": (0, 1, 0), "Cart": (0, 0, 1),
+    "Truck": (1, 1, 0), "Units": (1, 0, 1), "Main": (0, 1, 1), "Emitter": (.5, .5, .5), "Door": (1, .5, 0), "Sign": (.5, 0, 1),
+}
+def idmap(name):
+    im = load(name + "_id")
+    keys = list(PAL.keys())
+    cols = np.array([enc(np.array(PAL[k], np.float32)) for k in keys], np.float32)
+    d = ((im[:, :, None, :] - cols[None, None, :, :]) ** 2).sum(-1)
+    idx = d.argmin(-1)
+    return {k: idx == i for i, k in enumerate(keys)}
+
+def ring(mask, px=12):
+    m = Image.fromarray((mask * 255).astype(np.uint8))
+    dil = np.asarray(m.filter(ImageFilter.MaxFilter(2 * px + 1))) > 127
+    return dil & ~mask
+
+def ratio(a, b):
+    hi, lo = max(a, b), min(a, b)
+    return round(hi / max(lo, 1e-6), 2)
+
+def protan(img):
+    M = np.array([[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]], np.float32)
+    return enc(np.clip(lin(img) @ M.T, 0, 1))
+
+def grey(img):
+    y = Y(img)
+    return np.repeat(enc(y)[..., None], 3, -1)
+
+def save_jpg(arr, name):
+    im = Image.fromarray((np.clip(arr, 0, 1) * 255 + .5).astype(np.uint8))
+    if im.width > 1920:
+        im = im.resize((1920, round(im.height * 1920 / im.width)), Image.LANCZOS)
+    path = os.path.join(OUT, f"{PREFIX}_{name}.jpg")
+    im.save(path, quality=85, optimize=True)
+    return path
+
+# ------------------------------------------------------------------ camera model (pinhole, like Unity)
+def project(eye, look, fov, p, w=1920, h=1080):
+    eye, look, p = map(lambda v: np.array(v, np.float64), (eye, look, p))
+    f = look - eye; f /= np.linalg.norm(f)
+    r = np.cross([0, 1, 0], f); r /= np.linalg.norm(r)
+    u = np.cross(f, r)
+    d = p - eye
+    x, y, z = d @ r, d @ u, d @ f
+    t = math.tan(math.radians(fov) / 2)
+    sx = w / 2 + (x / (z * t * w / h)) * w / 2
+    sy = h / 2 - (y / (z * t)) * h / 2
+    return sx, sy, z
+
+res = {"frames": {}}
+shots = ["s1a", "s1b", "s2", "s3", "c1", "c2", "c3", "c4"]
+extras = ["x_goal", "x_pull", "x_unit_armed", "x_unit_tripped", "x_wrap", "x_armed_unit", "r_cart", "r_truck"]
+imgs = {n: load(n) for n in shots + extras}
+for n in shots + extras:
+    res["frames"][n] = stats(imgs[n])
+
+# ---- S2: readable before entry
+ids2 = idmap("s2")
+g = ids2["Goal"]
+rows = np.where(g.any(1))[0]
+eye, look = (0.35, 1.62, -2.0), (0, 1.25, 27)
+_, top, _ = project(eye, look, 72, (0, 2.10, 26.92)); _, bot, zz = project(eye, look, 72, (0, 0.0, 26.92))
+res["S2"] = dict(units_px=int(ids2["Units"].sum()), main_px=int(ids2["Main"].sum()), goal_px=int(g.sum()),
+                 goal_mask_rows=[int(rows.min()), int(rows.max())] if len(rows) else None,
+                 door_leaf_height_px_projected=round(bot - top, 1), door_distance_m=round(zz, 2))
+
+# ---- S1b: goal region brightest?
+ids = idmap("s1b")
+y1b = Y(imgs["s1b"])
+goal = ids["Goal"].copy()
+ys, xs = np.where(goal)
+x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+box = np.zeros_like(goal); box[y0:y1 + 1, x0:x1 + 1] = True
+goal_region = goal | (ids["Emitter"] & box)           # door + lite + frame + sign (face is an emitter)
+gm = float(y1b[goal_region].mean())
+# brightest same-size window elsewhere (stride 8), windows overlapping the goal box excluded
+hh, ww = y1 - y0 + 1, x1 - x0 + 1
+ii = np.pad(y1b, ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+best, where = 0.0, None
+for yy in range(0, 1080 - hh, 8):
+    for xx in range(0, 1920 - ww, 8):
+        if not (xx + ww < x0 - 4 or xx > x1 + 4 or yy + hh < y0 - 4 or yy > y1 + 4):
+            continue
+        s = ii[yy + hh, xx + ww] - ii[yy, xx + ww] - ii[yy + hh, xx] + ii[yy, xx]
+        m = s / (hh * ww)
+        if m > best:
+            best, where = float(m), (xx, yy)
+# r3: the goal AREA as the eye reads it at a sprint -- the door, its frame, the EXIT sign and the
+# lit end-wall ring around them: the door bbox grown by one door width each side and half a
+# door height above (stops at the floor line), vs the brightest same-size window elsewhere.
+ax0, ax1 = max(0, x0 - ww), min(1919, x1 + ww); ay0, ay1 = max(0, y0 - hh // 2), y1
+area = y1b[ay0:ay1 + 1, ax0:ax1 + 1]; am = float(area.mean())
+AH, AW = ay1 - ay0 + 1, ax1 - ax0 + 1
+best2, where2 = 0.0, None
+for yy in range(0, 1080 - AH, 8):
+    for xx in range(0, 1920 - AW, 8):
+        if not (xx + AW < ax0 or xx > ax1 or yy + AH < ay0 or yy > ay1):
+            continue
+        s_ = ii[yy + AH, xx + AW] - ii[yy, xx + AW] - ii[yy + AH, xx] + ii[yy, xx]
+        m_ = s_ / (AH * AW)
+        if m_ > best2:
+            best2, where2 = float(m_), (xx, yy)
+classes = {k: round(float(y1b[v].mean()), 4) for k, v in ids.items() if v.sum() > 50 and k not in ("Background",)}
+res["S1b_goal"] = dict(goal_region_meanY=round(gm, 4), goal_bbox=[int(x0), int(y0), int(ww), int(hh)],
+                       brightest_other_window_meanY=round(best, 4), at=where, class_means=classes,
+                       goal_area_meanY=round(am, 4), goal_area_bbox=[int(ax0), int(ay0), int(AW), int(AH)],
+                       brightest_other_area_meanY=round(best2, 4), area_at=where2)
+
+# ---- obstacles in S1b (and S1a for reference)
+res["obstacles"] = {}
+for shot in ("s1b", "s1a"):
+    idm = ids if shot == "s1b" else idmap("s1a")
+    yy = Y(imgs[shot])
+    for k in ("Dolly", "Cart", "Truck"):
+        m = idm[k]
+        if m.sum() < 20:
+            res["obstacles"][f"{shot}_{k}"] = "not visible"; continue
+        r = ring(m) & ~(idm["Dolly"] | idm["Cart"] | idm["Truck"])
+        a, b = float(yy[m].mean()), float(yy[r].mean())
+        res["obstacles"][f"{shot}_{k}"] = dict(px=int(m.sum()), meanY=round(a, 4), ringY=round(b, 4), ratio=ratio(a, b))
+
+# ---- C4 relay
+idc = idmap("c4")
+rel = idc["Relay"]
+yc4 = Y(imgs["c4"]); pc4 = protan(imgs["c4"]); ypc4 = Y(pc4)
+rr = ring(rel)
+a, b = float(yc4[rel].mean()), float(yc4[rr].mean())
+ap, bp = float(ypc4[rel].mean()), float(ypc4[rr].mean())
+ys, xs = np.where(rel)
+# split the ring into lower half (floor/pool behind) and upper half (dark far corridor)
+cy = (ys.min() + ys.max()) / 2
+rows_idx = np.arange(1080)[:, None]
+up_r, lo_r = rr & (rows_idx < cy), rr & (rows_idx >= cy)
+glare = yc4 > 0.5
+res["C4_relay"] = dict(px=int(rel.sum()), bbox=[int(xs.min()), int(ys.min()), int(xs.max() - xs.min() + 1), int(ys.max() - ys.min() + 1)],
+                      relay_meanY=round(a, 4), ring12_meanY=round(b, 4), ratio=ratio(a, b),
+                      ring_upper_meanY=round(float(yc4[up_r].mean()), 4), ring_lower_meanY=round(float(yc4[lo_r].mean()), 4),
+                      ratio_upper=ratio(a, float(yc4[up_r].mean())), ratio_lower=ratio(a, float(yc4[lo_r].mean())),
+                      protan_ratio=ratio(ap, bp),
+                      glare_px_over_0p5=int(glare.sum()), glare_pct=round(float(glare.mean() * 100), 3))
+# glare blobs: centroid of each connected bright region (cheap: label by 32 px grid cells)
+blobs = []
+gy, gx = np.where(glare)
+if len(gy):
+    cells = {}
+    for y_, x_ in zip(gy, gx):
+        cells.setdefault((y_ // 40, x_ // 40), []).append((y_, x_))
+    rc = ((xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2)
+    for k, v in cells.items():
+        v = np.array(v); c = v.mean(0)
+        blobs.append(dict(x=int(c[1]), y=int(c[0]), px=len(v), dist_to_relay_px=int(math.hypot(c[1] - rc[0], c[0] - rc[1]))))
+res["C4_relay"]["glare_blobs"] = sorted(blobs, key=lambda d: -d["px"])[:6]
+
+# ---- axis floor (tripped S1b) + pools vs armed
+smp = json.load(open(os.path.join(SRC, "samples.json")))
+def axis(shot):
+    yy = Y(imgs[shot]); out = []
+    for z, x, y in smp[shot]["axis"]:
+        xi, yi = int(x), int(y)
+        if 2 <= yi < 1078 and 2 <= xi < 1918 and z <= 26.5:
+            out.append((z, float(yy[yi - 2:yi + 3, xi - 2:xi + 3].mean())))
+    return out
+ax_b, ax_a = axis("s1b"), axis("s1a")
+vb = np.array([v for _, v in ax_b])
+res["axis_s1b"] = dict(samples=len(vb), min=round(float(vb.min()), 4), max=round(float(vb.max()), 4), ratio=round(float(vb.max() / vb.min()), 1),
+                       min_at=[z for z, v in ax_b if v == vb.min()][0], max_at=[z for z, v in ax_b if v == vb.max()][0],
+                       profile=[(z, round(v, 4)) for z, v in ax_b])
+da = dict(ax_a)
+res["pools"] = {str(z): dict(tripped=round(dict(ax_b)[z], 4), armed=round(da[z], 4), ratio=round(dict(ax_b)[z] / da[z], 3)) for z in (6.0, 12.0, 18.0, 25.5) if z in da}
+
+# ---- photosafety from the 30 fps timeline at the C2 pose
+tl = [l.strip().split(",") for l in open(os.path.join(SRC, "timeline.csv")).read().strip().splitlines()[1:]]
+tl = [(float(t), float(m)) for t, m, *_ in tl]
+ms = [m for _, m in tl]; mx = max(ms)
+# a "transition" = a monotonic run whose total change exceeds 10 % of the max frame mean
+trans, start, direction = [], 0, 0
+for i in range(1, len(ms)):
+    d = ms[i] - ms[i - 1]
+    s = 0 if abs(d) < 1e-6 else (1 if d > 0 else -1)
+    if s != 0 and s != direction:
+        if direction != 0 and abs(ms[i - 1] - ms[start]) > .1 * mx:
+            trans.append((tl[start][0], tl[i - 1][0], ms[start], ms[i - 1]))
+        start, direction = i - 1, s
+if direction != 0 and abs(ms[-1] - ms[start]) > .1 * mx:
+    trans.append((tl[start][0], tl[-1][0], ms[start], ms[-1]))
+res["photosafety"] = dict(timeline_frames=len(tl), max_frame_meanY=round(mx, 4),
+                          transitions=[dict(t0=a, t1=b, from_=round(c, 4), to=round(d, 4)) for a, b, c, d in trans],
+                          changes_csv=open(os.path.join(SRC, "changes.csv")).read().strip().splitlines())
+
+# ---- r4: goal vs the brightest NON-FIXTURE window (brief §7.5.2: "highest region, or second after
+# a fixture"). Fixture = the twin-head units and every emitter face (lamp lenses, wrap lenses, EXIT
+# faces), dilated 24 px so a head's own glare halo counts as the fixture.
+fix = ring(ids["Units"] | ids["Emitter"], 24) | ids["Units"] | ids["Emitter"]
+fix_ii = np.pad(fix.astype(np.float64), ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+def brightest_nonfixture(h_, w_, ex):
+    bst, at = 0.0, None
+    for yy in range(0, 1080 - h_, 8):
+        for xx in range(0, 1920 - w_, 8):
+            if not (xx + w_ < ex[0] or xx > ex[1] or yy + h_ < ex[2] or yy > ex[3]):
+                continue
+            f_ = fix_ii[yy + h_, xx + w_] - fix_ii[yy, xx + w_] - fix_ii[yy + h_, xx] + fix_ii[yy, xx]
+            if f_ > .05 * h_ * w_:
+                continue
+            s_ = ii[yy + h_, xx + w_] - ii[yy, xx + w_] - ii[yy + h_, xx] + ii[yy, xx]
+            if s_ / (h_ * w_) > bst:
+                bst, at = float(s_ / (h_ * w_)), (xx, yy)
+    return round(bst, 4), at
+nf_door = brightest_nonfixture(hh, ww, (x0 - 4, x1 + 4, y0 - 4, y1 + 4))
+nf_area = brightest_nonfixture(AH, AW, (ax0, ax1, ay0, ay1))
+res["S1b_goal"].update(door_vs_nonfixture=dict(goal=round(gm, 4), brightest_nonfixture=nf_door[0], at=nf_door[1], ratio=round(gm / max(nf_door[0], 1e-6), 2)),
+                       area_vs_nonfixture=dict(goal=round(am, 4), brightest_nonfixture=nf_area[0], at=nf_area[1], ratio=round(am / max(nf_area[0], 1e-6), 2)))
+
+# ---- r8: OUTLINE contrast. The brief's bar compares the whole obstacle's mean with a 12 px ring;
+# a two-tone object (a light cart with a dark vinyl bag) can average to its background and still
+# separate along its outline. For each outline pixel: mean Y of the object pixels vs the background
+# pixels inside a 7 x 7 window around it; report the median ratio and the share of the outline at
+# >= 2 : 1. Reported next to the brief's number, not instead of it.
+def boxsum(a, r=3):
+    c = np.pad(a, ((r + 1, r), (r + 1, r))).cumsum(0).cumsum(1)
+    return c[2 * r + 1:, 2 * r + 1:] - c[:-2 * r - 1, 2 * r + 1:] - c[2 * r + 1:, :-2 * r - 1] + c[:-2 * r - 1, :-2 * r - 1]
+def outline(yy, m, bg):
+    mi = m.astype(np.float64); bi = bg.astype(np.float64)
+    sin, nin = boxsum(yy * mi), boxsum(mi); sout, nout = boxsum(yy * bi), boxsum(bi)
+    edge = m & (nout > 3)
+    if edge.sum() < 10:
+        return None
+    a_ = sin[edge] / np.maximum(nin[edge], 1); b_ = sout[edge] / np.maximum(nout[edge], 1)
+    r_ = np.maximum(a_, b_) / np.maximum(np.minimum(a_, b_), 1e-5)
+    return dict(edge_px=int(edge.sum()), median=round(float(np.median(r_)), 2), share_ge2=round(float((r_ >= 2).mean()), 3))
+res["outline"] = {}
+for shot, keys in (("s1b", ("Dolly", "Cart", "Truck")), ("r_cart", ("Cart",)), ("r_truck", ("Truck",)), ("c4", ("Relay",))):
+    if not os.path.exists(os.path.join(SRC, shot + "_id.png")):
+        continue
+    idm = idmap(shot); yy = Y(imgs[shot])
+    obst = idm["Dolly"] | idm["Cart"] | idm["Truck"] | idm["Relay"]
+    for k in keys:
+        o = outline(yy, idm[k], ~obst)
+        if o: res["outline"][f"{shot}_{k}"] = o
+
+# ---- r4: obstacles at the read distance (8 m), tripped
+for shot, k in (("r_cart", "Cart"), ("r_truck", "Truck"), ("s1b", "Dolly")):
+    if not os.path.exists(os.path.join(SRC, shot + "_id.png")):
+        continue
+    idm = idmap(shot); yy = Y(imgs[shot]); m = idm[k]
+    if m.sum() < 20:
+        res["obstacles"][f"read_{shot}_{k}"] = "not visible"; continue
+    r = ring(m) & ~(idm["Dolly"] | idm["Cart"] | idm["Truck"])
+    a_, b_ = float(yy[m].mean()), float(yy[r].mean())
+    rows_idx = np.arange(1080)[:, None]; ysm, xsm = np.where(m); cy_ = (ysm.min() + ysm.max()) / 2
+    res["obstacles"][f"read_{shot}_{k}"] = dict(px=int(m.sum()), meanY=round(a_, 4), ringY=round(b_, 4), ratio=ratio(a_, b_),
+        bbox=[int(xsm.min()), int(ysm.min()), int(xsm.max() - xsm.min() + 1), int(ysm.max() - ysm.min() + 1)],
+        p10Y=round(float(np.percentile(yy[m], 10)), 4), p90Y=round(float(np.percentile(yy[m], 90)), 4))
+
+# ---- r4: what the box-probe reflections add (sweep p0 = probes at 0, p3 = probes x3)
+res["probe_contribution"] = {}
+for n in ("s1b", "x_goal"):
+    for tag in ("p0", "p3"):
+        f = os.path.join(SRC, f"sweep_{tag}_{n}.png")
+        if not os.path.exists(f):
+            continue
+        other = np.asarray(Image.open(f).convert("RGB")).astype(np.float32) / 255.0
+        d_ = Y(imgs[n]) - Y(other)
+        d8 = np.abs(imgs[n] * 255 - other * 255).sum(-1)
+        res["probe_contribution"][f"{n}_vs_{tag}"] = dict(meanY_diff=round(float(d_.mean()), 5), absY_p99=round(float(np.percentile(np.abs(d_), 99)), 4),
+            px_changed_gt6_levels=int((d8 > 6).sum()), pct_changed=round(float((d8 > 6).mean() * 100), 2), max_levels=int(d8.max()))
+
+# ---- r4: red, both definitions (WCAG saturated R/(R+G+B) >= .8 and red-dominant > .6)
+res["red"] = {n: dict(sat=res["frames"][n]["sat_red_pct"], dominant=res["frames"][n]["red_dominant_pct"]) for n in shots}
+
+# ---- derived frames + export
+paths = {}
+for n in shots:
+    paths[n] = save_jpg(imgs[n], n)
+for n in ("s1a", "s1b", "s2", "c4"):
+    paths[n + "_grey"] = save_jpg(grey(imgs[n]), n + "_grey")
+for n in ("s1b", "c4"):
+    paths[n + "_protan"] = save_jpg(protan(imgs[n]), n + "_protan")
+for n in extras:
+    paths[n] = save_jpg(imgs[n], n)
+
+# contact sheet: 8 shots + 6 derived + 4 extras, labelled
+order = shots + ["s1a_grey", "s1b_grey", "s2_grey", "c4_grey", "s1b_protan", "c4_protan", "x_unit_armed", "x_unit_tripped", "x_goal", "x_pull"]
+W, H, cols = 640, 360, 3
+rowsN = math.ceil(len(order) / cols)
+sheet = Image.new("RGB", (W * cols, (H + 22) * rowsN), (20, 20, 18))
+d = ImageDraw.Draw(sheet)
+try:
+    font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Courier New.ttf", 15)
+except Exception:
+    font = ImageFont.load_default()
+labels = {"s1a": "S1a armed", "s1b": "S1b tripped t+3", "s2": "S2 from Level 0, armed", "s3": "S3 twin-head, tripped",
+          "c1": "C1 t-0.5", "c2": "C2 t+0.20 blackout", "c3": "C3 t+2.0", "c4": "C4 t+4.0 look back",
+          "s1a_grey": "S1a grey", "s1b_grey": "S1b grey", "s2_grey": "S2 grey", "c4_grey": "C4 grey",
+          "s1b_protan": "S1b protan", "c4_protan": "C4 protan", "x_unit_armed": "unit close, armed",
+          "x_unit_tripped": "unit close, tripped", "x_goal": "goal, tripped", "x_pull": "pull station, armed"}
+for i, n in enumerate(order):
+    im = Image.open(paths[n]).convert("RGB").resize((W, H), Image.LANCZOS)
+    x, y = (i % cols) * W, (i // cols) * (H + 22)
+    sheet.paste(im, (x, y))
+    d.text((x + 6, y + H + 3), labels.get(n, n), fill=(230, 226, 210), font=font)
+p = os.path.join(OUT, f"{PREFIX}_sheet.jpg")
+sheet.save(p, quality=85, optimize=True)
+paths["sheet"] = p
+res["paths"] = paths
+json.dump(res, open(JOUT, "w"), indent=1, default=lambda o: o if not isinstance(o, np.generic) else o.item())
+print(json.dumps({k: v for k, v in res.items() if k not in ("paths", "axis_s1b", "frames")}, indent=1, default=str))
+print("axis", res["axis_s1b"]["min"], res["axis_s1b"]["max"], res["axis_s1b"]["ratio"])
+for k, v in res["frames"].items():
+    print(k, v)

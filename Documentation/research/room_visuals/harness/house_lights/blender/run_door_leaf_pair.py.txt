@@ -1,0 +1,17 @@
+"""RN-F pair leaf for Run! C (HOUSE LIGHTS): 1.12 m opening half, no latch.
+CLONE-ONLY look-dev. Wood-grain laminate flush leaf (FREE value 0.174),
+0.25 x 0.75 m wired-glass lite at 1.15-1.90 m, stainless push plate and kick
+plate on the push face, three butts on the pull face. Glass goes in Unity
+(anchor 'lite'); the regular-arm closer body is Kit_DoorCloser_Run (anchor
+'closer'). Origin = hinge edge, pull face, floor. See run_c_common.py.
+"""
+import run_c_common as rc
+
+NAME = "Kit_DoorLeaf_RunPair"
+SMOOTH_ANGLE = 40.0
+
+
+def build(kit):
+    # lite 0.30 m from the meeting edge, so a pursuer near the axis shows through it
+    rc.leaf(kit, 1.112, lite_x=1.112 - 0.30)
+    kit.tag("run", "door")

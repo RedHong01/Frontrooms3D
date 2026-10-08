@@ -4,7 +4,7 @@ Status: **proposal v2, 2026-10-03. Runtime v2 is not enabled.** On 2026-10-04 th
 
 **Systems landing 2026-10-04.** The policy core covers the director vocabulary and deterministic rules for `Arm`/first-run RELAX, Attention gains and decay, weighted call estimates, PENDING/drop handling, queued device calls, quiet-player sweep requests, Pressure, peak/cap → SUSTAIN → FADE, handoff budget, and `NotifyAway` → RESTORE/RELAX. It is deliberately an adapter seam: no old release/leash behavior, map navigation, sound implementation, lamp look, wallpaper, narrative, or mobile build was changed. Wiring waits for Step 0 and the map-owned path/Arrive contracts.
 
-**Level-design Step 1 landing 2026-10-04.** `FrontRoomsMapPathField` now supplies the player-rooted 45 m octile field, opening costs, bounded source fields, Relay-rooted estimates, `WarningDistance`, hysteretic `WarnStage`, and the 10 Hz `PlayerSeesRelay` hook. These values are measurement-only: no v2 director, lamp, audio, sight-lock, or movement behavior is enabled. The field invalidates on player-cell, streaming-topology, and door/window edge-state changes. Step 0 remains the only reconciled runtime evidence (54/54 PASS); Step 1 runtime acceptance is still pending the Unity compile/test pass.
+**Level-design Step 1 landing 2026-10-04.** `FrontRoomsMapPathField` now supplies the player-rooted 45 m octile field, opening costs, bounded source fields, Relay-rooted estimates, `WarningDistance`, hysteretic `WarnStage`, and the 10 Hz `PlayerSeesRelay` hook. These values are measurement-only: no v2 director, lamp, audio, sight-lock, or movement behavior is enabled. **Correction (2026-10-08, 系统设计):** one gameplay change did land with it. `Noise()` now tests **path** distance through the field (shut door +9, window +9, walls block) instead of the flat straight line (b5f381f / 6ca3b3c, 10-04 ~14:05, after the Step 0 runs at 12:22–13:00). The radii and hearing ×1.4 are still v1's. So the Oct 4 Step 0 reports are pure v1, and any run on main since then is "v1 + path hearing". The field invalidates on player-cell, streaming-topology, and door/window edge-state changes. Step 0 remains the only reconciled runtime evidence (54/54 PASS); Step 1 runtime acceptance is still pending the Unity compile/test pass.
 
 Written by the chat 怪物追捕机制设计审计 (systems), with:
 - **关卡设计** (map / Relay code owner): level design, feasibility. Peer chapter `research/relay_pursuit/20_level_design.md`.
@@ -154,7 +154,7 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 - **`aba5f77` (12:26):** `FrontRoomsSettings` with **REDUCE FLASHING** and **CAPTIONS** rows; hunter, game, world and nav-test edits.
 - **`ef061ae` (12:56): lamp override interface v1 has landed** in `FrontRoomsMapWorld`: `LampFx { Dip, Sag, Warn }`, `SetLampOverride(cell, kind, multiplier, hold, envelope?)`, `RemoveLampOverride`, `LampLevel`, `LampBaseLevel`, `SetLampMode`, `FixtureChanged`, `LampDipped` (fires on **every** override start). Level = temperament × the **lowest** active multiplier. Default envelopes Dip 0.3/1.2 s, Sag 0.6/1.5 s, Warn 0.08/0.2 s; with Reduce Flashing no attack or release is under 0.5 s. Nothing raises an override yet. AUDIO_CONTRACT lists these as "in main". The same commit added the **winded** stamina rule (above) and 154 lines of interaction tests.
 - **Working tree, uncommitted:** `FrontRoomsCaptions.cs` (untracked) and a caption panel in `FrontRooms3DGame.cs`: up to three lines, each tagged AHEAD / LEFT / RIGHT / BEHIND from the player's view. Another session owns this; check before touching Game.cs.
-- Step 1's measurement hooks (`WarnStage`, `WarnStageChanged`, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `PlayerSeesRelay`) now exist in `FrontRoomsMapHunter`; they are not consumed by v2 behavior. `TargetAcquired`, `Attention`, `Summon` and the director remain absent.
+- Step 1's measurement hooks (`WarnStage`, `WarnStageChanged`, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `PlayerSeesRelay`) now exist in `FrontRoomsMapHunter`; nothing reads them yet. **Except hearing:** since 10-04 ~14:05, `Noise()` uses the path field (one-off source field, or the player field when the noise is at the player's cell; SourceFieldCap 90 m, which covers T5 glass at 89.6 m). Hearing through walls is therefore already attenuated in main, with v1's radii. `TargetAcquired`, `Attention`, `Summon` and the director remain absent.
 
 ### 2.6 Step 0 baseline, measured (2026-10-04 runs, audited 2026-10-07)
 
@@ -453,7 +453,11 @@ The full report is `Verification/relay-baseline/summary.md`. Two auditors checke
     - A stage starts on the first field sample inside its band. If W jumps straight to ≤ 18 m (a door opens), stage 2 starts at once and the stage-1 run timer starts with it.
     - Once entered, stage 1 lasts ≥ 4 s and stage 2 ≥ 3 s.
     - After that, a stage ends once W has stayed above its exit band (36 / 24 m) for 1.0 s, to absorb ±3 m of cell jitter.
-    - Stage 2 drops to 1, not 0, unless W is also above 36 m.
+    - Stage 2 drops to 1. It goes straight to 0 only if W has also stayed above 36 m for the same 1.0 s.
+    - The 1.0 s exit confirm is the same for both stages, and it may overlap the minimum time: if W has already stayed past the band for 1 s when the 4 s / 3 s ends, the stage ends then. Going up is never delayed: 1 → 2 happens the tick W ≤ 18, even inside stage 1's minimum time.
+    - A 2 → 1 drop restarts stage 1's 4 s minimum. The G3 run timer for stage ≥ 1 keeps running; the stage-2 run timer resets.
+    - Not on the map (Dormant, Away, Arrive, unbuilt cell) is stage 0 at once, with no hold. `DebugPlace` clears the holds.
+    - **Landed** in main on 2026-10-08 by 关卡设计: `FrontRoomsMapHunter.StepWarnStage` / `EnterWarnStage` (~:1200-1250), `WarnRunSeconds` and `WarnStage2RunSeconds` for G3, and `DebugWarnSample` for tests. `FrontRoomsMapInteractionTests.WarnStages()` runs 10 checks; interaction passes 153/153. The baseline sampler (`AutoStageStep`) follows the same rule.
     - Why not an entry delay: the Relay walks in at about 2.6 m/s. A 4 s delay would start stage 1 near 20 m, and a 3 s delay would start the steps near 10 m, inside the 12 m calm sight. The G3 gate would then hold almost every lock-on, and the steps would come too late to warn.
   - **Stage 3, lock-on:** latched from `TargetAcquired` to the end of the chase.
 - Shutting a door between you honestly adds 9 m.
@@ -724,7 +728,18 @@ Total ≈ 35 working days across chats; the map chat's share ≈ 26 (v1 said 9�
 
 The editor-only harness lives in `Assets/Scripts/FrontRooms3DGame.Baseline.cs`; it does not alter the legacy hunter when no bot arguments are present. One case can be run from the project root with `Tools/relay_baseline_run.sh 2554 quiet 1 4`. The serial matrix is `Tools/relay_baseline_matrix.sh` (54 cases: seeds `2554 20388 7`, current nine modes, T1/T5); set `SEEDS`, `MODES`, or `TIERS` for a smoke subset. Reports are written to `Verification/relay-baseline/` and should be copied into an evidence folder before starting Step 1.
 
-**Step 0 evidence (2026-10-04):** the independent clean-clone matrix produced **52 PASS / 2 FAIL**; the two seed-7 `edgerunner` cases were rerun after the bot was made to clear one full door cell before selecting a lateral edge route, bringing the reconciled result to **54 PASS / 0 FAIL**. All 54 JSON reports are retained in `Verification/relay-baseline/`. **Audit (2026-10-07):** PASS did not check mode fidelity, sprint noise skipped the counters, and door-break resumes were counted as hunts. The trusted numbers and the 15 harness fixes needed before these bots can grade v2 are in `Verification/relay-baseline/summary.md` and §2.6.
+**Step 0 evidence (2026-10-04):** the independent clean-clone matrix produced **52 PASS / 2 FAIL**; the two seed-7 `edgerunner` cases were rerun after the bot was made to clear one full door cell before selecting a lateral edge route, bringing the reconciled result to **54 PASS / 0 FAIL**. All 54 JSON reports are retained in `Verification/relay-baseline/`. **Audit (2026-10-07):** PASS did not check mode fidelity, sprint noise skipped the counters, and door-break resumes were counted as hunts. The trusted numbers and the 15 harness fixes needed before these bots can grade v2 are in `Verification/relay-baseline/summary.md` and §2.6. **Harness fixed (2026-10-08, 关卡设计调研, in main):**
+- Every report carries provenance: git SHA, dirty flag, and the hunter and harness hashes.
+- Logs are kept, with a repeat check.
+- Unknown-cause hunts fail the run.
+- There is a hunt log and a call log, and chases are linked to calls.
+- Every mode is checked for doing its job (glass broken, zone door shut, one door at ≥ 30 toggles per minute, edge reached, evaded, tier locked).
+- The §9.1 sampler sits beside the hunter's own WarnStage.
+- Shares are reported censored, and stage-1 entries per 10 min are counted.
+- A new evaderv2 mode runs G5 conditions (0.6 s reaction, 2 s bar, 4.4 m/s cap).
+- W comes from the game's own path field.
+
+The tier-lock and no-capture guards in Game.cs belong to 关卡设计. The smoke run (8 runs) and the 6-seed matrix wait for Red's OK.
 
 | Test (SP) | Pass |
 |---|---|
