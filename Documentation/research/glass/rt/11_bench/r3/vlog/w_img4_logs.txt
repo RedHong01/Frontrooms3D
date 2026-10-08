@@ -1,0 +1,73 @@
+# rt_bench4 flat img4 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 56/54/42
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+wrote w_flat_A_h2_off.png | load 56/54/42
+wrote w_flat_A_h2_rt.png | load 56/54/42
+wrote w_flat_A_h2_mask.png
+wrote w_flat_B_h2_off.png | load 56/54/42
+wrote w_flat_B_h2_rt.png | load 56/54/42
+wrote w_flat_B_h2_mask.png
+wrote w_flat_D_h2_off.png | load 56/54/42
+wrote w_flat_D_h2_rt.png | load 56/54/42
+wrote w_flat_D_h2_mask.png
+wrote w_flat_F_h2_off.png | load 56/54/42
+wrote w_flat_F_h2_rt.png | load 56/54/42
+wrote w_flat_F_h2_mask.png
+# done load 56/54/42
+# rt_bench4 l0 img4 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 56/54/42
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+wrote w_l0_A_h2_off.png | load 56/54/42
+wrote w_l0_A_h2_rt.png | load 56/54/42
+wrote w_l0_A_h2_mask.png
+wrote w_l0_B_h2_off.png | load 56/54/42
+wrote w_l0_B_h2_rt.png | load 56/54/42
+wrote w_l0_B_h2_mask.png
+wrote w_l0_D_h2_off.png | load 56/54/42
+wrote w_l0_D_h2_rt.png | load 56/54/42
+wrote w_l0_D_h2_mask.png
+wrote w_l0_F_h2_off.png | load 56/54/42
+wrote w_l0_F_h2_rt.png | load 56/54/42
+wrote w_l0_F_h2_mask.png
+# done load 56/54/42
+# rt_bench4 own img4 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 56/54/42
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# captured cube scene 0 at (3.00, 1.60, 0.80), 256 px, GGX-prefiltered mips
+# captured cube scene 1 at (0.00, 1.50, 13.50), 256 px, GGX-prefiltered mips
+# captured cube scene 2 at (0.00, 1.50, 6.00), 256 px, GGX-prefiltered mips
+# captured cube scene 3 at (0.00, 1.50, 13.50), 256 px, GGX-prefiltered mips
+# CUBE=own: RT-off and every fallback use the scene's own captured cube (x 0.50), URP roughness->mip
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+wrote w_own_A_h2_off.png | load 56/54/42
+wrote w_own_A_h2_rt.png | load 56/54/42
+wrote w_own_A_h2_mask.png
+wrote w_own_B_h2_off.png | load 56/54/42
+wrote w_own_B_h2_rt.png | load 56/54/42
+wrote w_own_B_h2_mask.png
+wrote w_own_D_h2_off.png | load 56/54/42
+wrote w_own_D_h2_rt.png | load 56/54/42
+wrote w_own_D_h2_mask.png
+wrote w_own_F_h2_off.png | load 56/54/42
+wrote w_own_F_h2_rt.png | load 56/54/42
+wrote w_own_F_h2_mask.png
+# done load 56/54/42

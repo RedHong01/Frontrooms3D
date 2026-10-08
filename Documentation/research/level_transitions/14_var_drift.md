@@ -330,6 +330,7 @@ Everything else (field, shader, materials, the kit's rules) is visual-owned.
 - Drift is **not** in main. No drift file, no `_FR_DRIFT`, no theme field.
 - Main's `FrontRoomsTransitionKit.cs` (GUID `b215858f1c0014f87ae44abb9c680391`) is V5's kit. Codex promoted it with V5's B0 on 2026-10-03 (`8ef5b64`); `FrontRoomsMapWorld.cs` last changed on 2026-10-04 (`b5f381f`). Red keeps V5 on until the Figma pick (`RED_DECISIONS.md`).
 - This pre-render is built on the frozen 10-03 base, not on main, so its BEFORE frames match. If Red picks Drift, it is re-rendered over main first (as `13_var_neck.md` §12 also asks).
+- Re-checked 2026-10-07 23:3x (workflow retry, main HEAD `ee5c9bb`). Since `6c6fe81`, no map, transition-kit or surface-material file changed. Only `Resources/Surfaces/Textures/Wallpaper_Print_P.png` changed (`3ff05ee`, the print track). The clone, harness md5 `76a624e3…`, base check (4 of 4 byte-identical), `-plan` files (identical in all 6 sets) and lamp lines (84/82/83/88) were checked again. Nothing was re-rendered, because nothing that the drift frames depend on had changed.
 
 ### 11.2 Merge rules (codex audit MAP-5)
 

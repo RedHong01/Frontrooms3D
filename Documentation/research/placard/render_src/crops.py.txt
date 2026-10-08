@@ -1,0 +1,24 @@
+"""Q16 render: placard crops from the full frames (lit / own lamp off +15 s / power failure +3 s, at 3 m and 1 m)."""
+import os, sys
+from PIL import Image, ImageDraw, ImageFont
+SRC, OUT = sys.argv[1], sys.argv[2]
+F = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 20)
+def label(im, t):
+    d = ImageDraw.Draw(im); x0, y0, x1, y1 = d.textbbox((10, 8), t, font=F)
+    d.rectangle((x0 - 6, y0 - 5, x1 + 6, y1 + 5), fill=(250, 226, 60)); d.text((10, 8), t, font=F, fill=(0, 0, 0))
+cells = [("lit_3m", "LIT · 3 M"), ("dark_ownoff_3m", "OWN LAMP OFF +15 S · G 0.58 · 3 M"), ("dark_powerfail_t3s_3m", "POWER FAILURE +3 S · G 0.73 · 3 M"),
+         ("lit_1m", "LIT · 1 M"), ("dark_ownoff_1m", "OWN LAMP OFF +15 S · G 0.58 · 1 M"), ("dark_powerfail_t3s_1m", "POWER FAILURE +3 S · G 0.73 · 1 M")]
+boxes = {"3m": (860, 460, 1060, 620), "1m": (780, 400, 1140, 680)}
+tw, gap = 624, 12
+tiles = []
+for stem, lab in cells:
+    b = boxes["3m" if stem.endswith("3m") else "1m"]
+    im = Image.open(os.path.join(SRC, stem + ".png")).convert("RGB").crop(b)
+    im = im.resize((tw, round(tw * (b[3] - b[1]) / (b[2] - b[0]))), Image.LANCZOS)
+    label(im, lab); tiles.append(im)
+h0, h1 = tiles[0].height, tiles[3].height
+sheet = Image.new("RGB", (3 * tw + 2 * gap, h0 + h1 + gap), (255, 255, 255))
+for i, im in enumerate(tiles):
+    sheet.paste(im, ((i % 3) * (tw + gap), 0 if i < 3 else h0 + gap))
+sheet.save(os.path.join(OUT, "q16_r_glow_crops.jpg"), quality=88)
+print(sheet.size)

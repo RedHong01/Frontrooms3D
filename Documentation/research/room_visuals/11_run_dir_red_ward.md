@@ -1,7 +1,7 @@
 # 11 — Run! direction A · RED WARD: pre-render
 
 Date: 2026-10-07 (final round v5-6, renders 19:52, exports 19:58). Brief: `10_run_directions.md` §1, §2, §7.
-Clone-only. Nothing was promoted. Red's project was not opened in Unity. Only this folder was written (plus the three claimed rows in `Documentation/VERIFICATION_LOG.md`).
+Clone-only. Nothing was promoted. Red's project was not opened in Unity. Only this folder was written (plus the three rows VL166–168 in `Documentation/VERIFICATION_LOG.md` and their Figma slides).
 
 **One line.** A white 1990 hospital ward corridor at night, with a hanging double-faced EXIT sign every 6 m. Step 1.5 m in and the white tubes cut in one step. The steady red sign row is left as the only fill. The only white light is the wired-glass lite of the door you must reach.
 
@@ -211,7 +211,15 @@ Per shot (estimates from the harness): S1a 229 draws + ~1,200 shadow-caster draw
 
 ## 6. Verification log
 
-Claimed in `Documentation/VERIFICATION_LOG.md` §3 (task N2): **VL166** Red Ward pre-render bars (PARTIAL), **VL167** Sign rim was the glow light (PASS), **VL168** Tripped fill vs adaptation (PASS). Slide ids and placement: see that file.
+Placed in Figma, section FRONTROOMS · VISUAL VERIFICATION LOG (`2595:6093`, page `2099:76`), and recorded in `Documentation/VERIFICATION_LOG.md` §3 (task N2). The frames were built at 20:0x; the stage stopped before the upload, and the resumed stage uploaded the images and recorded the rows at 23:3x (2026-10-07).
+
+| VL | Figma frame | Check | Verdict | Images (slot order) |
+|---|---|---|---|---|
+| VL166 | `2817:6157` | Red Ward pre-render bars | PARTIAL | `run_dir_red_ward_sheet`, `…_s1b_grey`, `…_c4_protan`, `…_v_tripstrip` |
+| VL167 | `2817:6173` | Sign rim was the glow light | PASS | `run_dir_red_ward_v_signrim`, `…_v_rimdiag` |
+| VL168 | `2817:6183` | Tripped fill vs adaptation | PASS | `run_dir_red_ward_v_ambsweep` |
+
+The cover (VL000, `2597:6093`) now reads 167 checks, 510 images, 22 tasks; the N2 legend reads VL039–042, 166–168, 7 checks.
 
 ---
 

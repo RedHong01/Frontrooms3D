@@ -449,6 +449,12 @@ The full report is `Verification/relay-baseline/summary.md`. Two auditors checke
   - Stage 0: W > 36 m after hysteresis, or not on the map.
   - **Stage 1, lights:** enter W ≤ 30 m, leave > 36 m, hold ≥ 4 s.
   - **Stage 2, steps:** enter W ≤ 18 m, leave > 24 m, hold ≥ 3 s. Includes stage 1.
+  - **What "hold" means** (clarified 2026-10-07): a **minimum time in the stage, counted from entry**, never a delay before entry.
+    - A stage starts on the first field sample inside its band. If W jumps straight to ≤ 18 m (a door opens), stage 2 starts at once and the stage-1 run timer starts with it.
+    - Once entered, stage 1 lasts ≥ 4 s and stage 2 ≥ 3 s.
+    - After that, a stage ends once W has stayed above its exit band (36 / 24 m) for 1.0 s, to absorb ±3 m of cell jitter.
+    - Stage 2 drops to 1, not 0, unless W is also above 36 m.
+    - Why not an entry delay: the Relay walks in at about 2.6 m/s. A 4 s delay would start stage 1 near 20 m, and a 3 s delay would start the steps near 10 m, inside the 12 m calm sight. The G3 gate would then hold almost every lock-on, and the steps would come too late to warn.
   - **Stage 3, lock-on:** latched from `TargetAcquired` to the end of the chase.
 - Shutting a door between you honestly adds 9 m.
 

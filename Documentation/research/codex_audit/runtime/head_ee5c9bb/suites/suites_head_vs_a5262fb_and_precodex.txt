@@ -1,0 +1,39 @@
+Suites: main ee5c9bb (W/proj_cx, 2026-10-07 23:33) vs main a5262fb (18:2x) and pre-Codex 7320ed1 (W/proj_cx_base)
+--- vs a5262fb
+camera-rig-tests.json                a5262fb passed 25 failed 0 PASS: 25 passed, 0 failed
+                                    ee5c9bb passed 25 failed 0 PASS: 25 passed, 0 failed
+captions-tests.json                  a5262fb passed 9 failed 0 PASS: 9 passed, 0 failed
+                                    ee5c9bb passed 9 failed 0 PASS: 9 passed, 0 failed
+fixture-tick-tests.json              a5262fb passed 28 failed 0 PASS: 28 passed, 0 failed
+                                    ee5c9bb passed 28 failed 0 PASS: 28 passed, 0 failed
+glass-shot-tests.json                a5262fb passed 20 failed 0 PASS: 20 passed, 0 failed
+                                    ee5c9bb passed 20 failed 0 PASS: 20 passed, 0 failed
+level-designer-tests.json            a5262fb passed 138 failed 0 PASS
+                                    ee5c9bb passed 138 failed 0 PASS
+map-interaction-tests.json           a5262fb passed 143 failed 0 PASS: 143 passed, 0 failed
+                                    ee5c9bb passed 143 failed 0 PASS: 143 passed, 0 failed
+map-verification-latest.json         a5262fb passed 100 failed 0 
+                                    ee5c9bb passed 100 failed 0 
+relay-nav-test.json                  a5262fb passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+                                    ee5c9bb passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+stream-verification-latest.json      a5262fb passed 5 failed 0 
+                                    ee5c9bb passed 5 failed 0 
+--- vs pre-Codex 7320ed1 (base reports from runtime/head_279c144/suites/base)
+camera-rig-tests.json                7320ed1 passed 25 failed 0 PASS: 25 passed, 0 failed
+                                    ee5c9bb passed 25 failed 0 PASS: 25 passed, 0 failed
+captions-tests.json                  7320ed1 passed 9 failed 0 PASS: 9 passed, 0 failed
+                                    ee5c9bb passed 9 failed 0 PASS: 9 passed, 0 failed
+fixture-tick-tests.json              7320ed1 passed 28 failed 0 PASS: 28 passed, 0 failed
+                                    ee5c9bb passed 28 failed 0 PASS: 28 passed, 0 failed
+glass-shot-tests.json                7320ed1 passed 20 failed 0 PASS: 20 passed, 0 failed
+                                    ee5c9bb passed 20 failed 0 PASS: 20 passed, 0 failed
+level-designer-tests.json            7320ed1 passed 138 failed 0 PASS
+                                    ee5c9bb passed 138 failed 0 PASS
+map-interaction-tests.json           7320ed1 passed 136 failed 0 PASS: 136 passed, 0 failed
+                                    ee5c9bb passed 143 failed 0 PASS: 143 passed, 0 failed
+map-verification-latest.json         7320ed1 passed 100 failed 0 
+                                    ee5c9bb passed 100 failed 0 
+relay-nav-test.json                  7320ed1 passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+                                    ee5c9bb passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+stream-verification-latest.json      7320ed1 passed 5 failed 0 
+                                    ee5c9bb passed 5 failed 0 

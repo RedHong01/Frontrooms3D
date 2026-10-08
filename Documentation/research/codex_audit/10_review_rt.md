@@ -7,6 +7,12 @@ Read-only on Red's project, except this file, `images/rt_head_*`, `runtime/rt/*`
 - `git diff 5e6e7f9 a5262fb` touches no G14 file (scripts, shaders, `Editor/RT`, `Editor/Rendering`, renderer asset, plugin, `NativePlugin/`, `FrontRoomsGlass.shader`, the ads-demo scene). `git status` shows no local edit to any of them. So every result below holds for `a5262fb`.
 - The F1/F5 patch (`runtime/rt/rt_failclosed.diff`) applies to `a5262fb` cleanly (`patch --dry-run`). Patched `a5262fb` is byte-identical to the verified clone `W/proj_cx_rt`.
 
+**Re-check 2026-10-07 23:2x against HEAD `ee5c9bb` (20:22)** (this stage's retry; no new Unity run):
+- `git diff a5262fb ee5c9bb` touches no G14 file. The three new commits are touch controls, the print array (`FrontRoomsPrintDriver.cs`, `Editor/Rendering/FrontRoomsPrint*`), `FrontRoomsInteractableKit.Window.cs` and docs. `git status` shows no local edit to a G14 file.
+- Hashes at HEAD: `FrontRoomsGlassRTSystem.cs` md5 `e75df1b1…` (1,531 lines), `FrontRoomsMetalGlassRTRendererFeature.cs` md5 `c2406ca9…`. Every file:line cited below was re-read at HEAD and still holds.
+- `rt_failclosed.diff` (apply with `patch -p0`) applies to HEAD cleanly. HEAD + that patch = `W/proj_cx_rt` byte for byte (System `8d592671…`, Feature `4059937f…`). The visual review's `vis_F2_rt_print_albedo.diff` (`patch -p1`) applies on top of it cleanly, so the two RT patches do not conflict (§4.5).
+- Red's own editor ran the map today (§4.5): 0 RT errors.
+
 The RT code itself has not changed since Codex's `75cfdff` (2026-10-03). Three later Codex commits changed the glass shader that RT feeds: `9eddc35`, `bf2e883`, `70644f0` (2026-10-04).
 
 **Where the evidence comes from:**
@@ -57,6 +63,7 @@ The RT code itself has not changed since Codex's `75cfdff` (2026-10-03). Three l
 | **F5** | minor | `OptIn` adds a `FrontRoomsGlassRTCamera` to edit-mode cameras, so it gets saved into scenes (`FrontRoomsScreenAdsDemo.unity:1997`). It is a missing script off macOS | visual (patch) + ads-demo owner (re-save the scene) |
 | **F6** | minor | iOS / Android / Windows builds keep G14 shader code. Both strippers act only when the target is WebGL | visual → glass-rt-track |
 | **F7** | minor | Codex's G14 task row is wrong in two places: "Metal toolchain unavailable" and "the map opts the camera" | docs |
+| **F8** | major | **Same defect as `10_review_visual.md` V2, listed here for this track (one fix, do not count twice).** G14 traces `_FR_PRINT` wallpapers with the paper code as albedo, so Level 0 walls reflect dark red in window glass | visual (fix phase: `vis_F2_rt_print_albedo.diff`) → glass-rt-track (real paper × print in the hit shader) |
 
 Details and evidence follow in §3. Checks that passed are in §2. The list of unfinished work is in §5.
 

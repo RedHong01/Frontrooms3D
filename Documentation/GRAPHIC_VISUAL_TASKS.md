@@ -45,7 +45,7 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 - What counts as an "exit" is open; Red or the narrative chat decides.
 - Nothing gets built until Red and all three chats agree.
 
-**BLOCKER (2026-10-07 ~19:55): the in-game render can't start.**
+**BLOCKER RESOLVED (2026-10-07 23:4x):** the cause was my own harness. Its Chinese text and C# tuple syntax made FrontRooms3DGame's MonoScript resolve NULL. It was rewritten ASCII-only and tuple-free; the render now runs in `proj_pgcue2`. History of the blocker:
 - In clones `proj_pgcue` (from proj_audit + rsync main) and `proj_pgcue2` (from `proj_g14b`), `MonoScript(Assets/Scripts/FrontRooms3DGame.cs).GetClass()` is NULL. The scene's game component is MISSING, so the game never starts; the harness logs a DIAG.
 - Other chats' clones run fine tonight: proj_cx_rt*, the touch chat's proj_touch, and `proj_g14b_r3`. Note that the working g14b run was `_r3`, not `proj_g14b`.
 

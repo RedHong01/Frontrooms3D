@@ -1,0 +1,68 @@
+# G14b record stage (2026-10-07): two small charts from text-only bench results.
+#  gate_ab_chart.png  - soft gate on/off, view G (2.5 m from the goal, armed), depth 2 vs 1, per RT-off cube
+#                       (r2/b5 r2_t1_diff2_{l0exr,flat,own05}{,_gate}.txt; the l0exr_gate row re-rendered in vlog_g14b/v_l0g_*).
+#  stack_cost_chart.png - bench 6f, design facing rule (x1/x2/x3) on main's kernel, median ratio vs main
+#                       (11_bench/r2/b6/r2_b6_summary.txt), shown as % change; loads 36-43.
+from PIL import Image, ImageDraw, ImageFont
+FD = '/Users/redwang/Library/Fonts/'
+S = 2
+f20, f22 = (ImageFont.truetype(FD + 'IBMPlexMono-Regular.otf', s * S) for s in (20, 22)); fb22 = ImageFont.truetype(FD + 'IBMPlexMono-Bold.otf', 22 * S)
+INK, MUTED, GRID = '#0A0A0A', '#52514E', '#E4E2DC'
+C = ['#2a78d6', '#eb6834', '#1baf7a']
+def dashed_v(d, x, y0, y1):
+    for yy in range(y0, y1, 14 * S): d.line([x, yy, x, min(yy + 8 * S, y1)], fill=INK, width=2 * S)
+def legend(d, x, y, items):
+    for c, t in items:
+        d.rounded_rectangle([x, y + 4 * S, x + 22 * S, y + 26 * S], 3 * S, fill=c); d.text((x + 32 * S, y), t, font=f20, fill=INK)
+        x += int(d.textlength(t, font=f20)) + 70 * S
+def bar(d, x0, x, y, h, c):
+    if x - x0 >= 4 * S: d.rounded_rectangle([x0, y, x, y + h], 4 * S, fill=c); d.rectangle([x0, y, x0 + 4 * S, y + h], fill=c)
+    else: d.rectangle([x0, y, max(x, x0 + 2 * S), y + h], fill=c)
+# ---- gate A/B: two panels, one measure each (no dual axis)
+W, H = 1776 * S, 520 * S
+img = Image.new('RGB', (W, H), '#FFFFFF'); d = ImageDraw.Draw(img)
+cubes = ["main's Level 0 cube", 'flat cube (bench 4)', "corridor's own capture"]
+lite = [(73, 85), (71, 83), (63, 74)]; floor = [(359, 509), (331, 479), (345, 489)]
+legend(d, 24 * S, 20 * S, [(C[0], 'soft gate on (design)'), (C[1], 'gate off')])
+panels = [('LITE SHOWS THE FLOOR: max change /255', lite, 100, 40, 'R2 bar: max >= 40', lambda v: '%d' % v),
+          ('FLOOR SHOWS THE LITE: px >= 8/255', floor, 600, 200, 'R2 bar: >= 200 px (0.05 %)', lambda v: '%d px' % v)]
+pw = (W - 3 * 24 * S) // 2; lab_w = 300 * S
+for k, (title, vals, vmax, bar_at, bar_txt, fmt) in enumerate(panels):
+    px0 = 24 * S + k * (pw + 24 * S); x0 = px0 + lab_w; x1 = px0 + pw - 90 * S
+    X = lambda v: x0 + (x1 - x0) * v / vmax
+    top = 120 * S; d.text((px0, 70 * S), title, font=fb22, fill=INK)
+    rh = 110 * S; bh = 30 * S; yb = top + 3 * rh
+    for t in range(0, vmax + 1, vmax // 4):
+        d.line([X(t), top - 6 * S, X(t), yb], fill=GRID, width=S); d.text((X(t) - 12 * S, yb + 8 * S), str(t), font=f20, fill=MUTED)
+    for i, (cname, (on, off)) in enumerate(zip(cubes, vals)):
+        y = top + i * rh + 12 * S; d.text((px0, y + 14 * S), cname, font=f20, fill=INK)
+        for j, v in enumerate((on, off)):
+            yy = y + j * (bh + 2 * S); bar(d, x0, X(v), yy, bh, C[j]); d.text((X(v) + 10 * S, yy), fmt(v), font=f20, fill=INK)
+    dashed_v(d, int(X(bar_at)), top - 10 * S, yb); d.text((X(bar_at) + 8 * S, yb + 40 * S), bar_txt, font=f20, fill=INK)
+img.save('gate_ab_chart.png'); print('gate', img.size)
+# ---- stack cost: % change vs main's kernel, depth 1/2/3, design facing rule
+rows = [('Run S1 tripped, High tree', 0.571, (0.977, 1.025, 1.035)),
+        ('Run S1 tripped, Ultra tree', 0.563, (0.975, 1.031, 1.040)),
+        ('Near goal tripped, Ultra tree', 0.712, (0.968, 1.050, 1.058)),
+        ('2.5 m from goal armed, High', 0.967, (0.966, 1.079, 1.090)),
+        ('2.5 m from goal armed, Ultra', 0.969, (0.968, 1.085, 1.094))]
+W, H = 1776 * S, 640 * S
+img = Image.new('RGB', (W, H), '#FFFFFF'); d = ImageDraw.Draw(img)
+legend(d, 24 * S, 20 * S, [(C[0], 'P1b kernel, max depth 1'), (C[1], 'depth 2 (High)'), (C[2], 'depth 3 (Ultra)')])
+lab_w = 560 * S; x0 = lab_w + 40 * S; x1 = W - 160 * S; vmin, vmax = -5.0, 10.0
+X = lambda v: x0 + (x1 - x0) * (v - vmin) / (vmax - vmin)
+top = 90 * S; rh = 96 * S; bh = 24 * S; yb = top + len(rows) * rh
+for t in (-5, 0, 5, 10):
+    d.line([X(t), top - 6 * S, X(t), yb], fill=GRID if t else INK, width=S if t else 2 * S)
+    d.text((X(t) - 22 * S, yb + 8 * S), ('%+d %%' % t) if t else '0', font=f20, fill=MUTED)
+d.text((x0, yb + 40 * S), "GPU time vs main's G14 kernel (median of runs, 36 interleaved reps)", font=f20, fill=MUTED)
+for i, (name, ms, rs) in enumerate(rows):
+    y = top + i * rh + 6 * S
+    d.text((24 * S, y + 4 * S), name, font=f22, fill=INK); d.text((24 * S, y + 36 * S), "main %.2f ms" % ms, font=f20, fill=MUTED)
+    for j, r in enumerate(rs):
+        v = (r - 1) * 100; yy = y + j * (bh + 2 * S); a, b = sorted((X(0), X(v)))
+        d.rectangle([a, yy, b, yy + bh], fill=C[j])
+        txt = '%+.1f %%' % v
+        tx = b + 10 * S if v >= 0 else a - 10 * S - d.textlength(txt, font=f20)
+        d.text((tx, yy - 2 * S), txt, font=f20, fill=INK)
+img.save('stack_cost_chart.png'); print('stack', img.size)

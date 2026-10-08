@@ -1,4 +1,4 @@
-# Wallpaper cue: driver interface and event list (v0.2, 平面视觉, 2026-10-07)
+# Wallpaper cue: driver interface and event list (v0.2.1, 平面视觉, 2026-10-07)
 
 **v0.2.** 系统设计 confirmed §3. The binding contract is now RELAY_PURSUIT_REDESIGN.md §9.6 "Driver contract", with the invariant in the §14 G7 row. 关卡设计 answered the map side. Their changes are folded in below and listed in §5.
 
@@ -43,7 +43,7 @@
 | Part | Owner | Notes |
 |---|---|---|
 | Route field: dir per cell (normal FLOW route, pressure route in a chase), room groups ("your room": BFS over Open edges, depth ≤ 2, ≤ 9 cells), message per cell | 关卡设计 (FrontRoomsWayfinding, not built yet) | "Exit" is still undefined (Red / narrative) |
-| Cue driver: per-cell state machine → `_FR_WayCells` every frame, both tick paths, no allocation | proposal: a small C# class next to the map tick, written by 关卡设计 or 游戏视觉. 平面视觉 owns the timing table below. | Only touched cells change; the texture uploads 16 KB per frame at most |
+| Cue driver `FrontRoomsWayCueDriver`: per-cell state machine → `_FR_WayCells`, no allocation | 关卡设计 (its own component, started from `MapRunStarted`). 平面视觉 owns the timing table `FrontRoomsCueTiming`; the driver only reads it. | It advances on game time in its own LateUpdate, after MapWorld and the hunter have ticked that frame. Captures step it with `TickForTools(dt)`, the same pattern as `MapWorld.TickFixturesForTools`, with identical results. It reads no lamp levels, so the full and near-only fixture paths behave the same. It writes a NativeArray<Color32> and calls Apply(false) only when dirty. |
 | `CueInk` in FrontRoomsSurface, `_FR_Cue` builder (slices are encoded and need FrontRoomsPrintMips like Q1b) | 游戏视觉 | The prototype `CueInk` is the spec |
 | Slices (`cue_flipbook.py`) | 平面视觉 | Re-run if the print changes; C00 must stay bit-identical to K00 |
 
@@ -91,3 +91,9 @@
     - `FrontRoomsWayCueDriver` (state machine) writes a NativeArray<Color32> and calls Apply(false) only when dirty.
     - Both are started from `MapRunStarted`, with no edits to FrontRooms3DGame.cs.
     - The timing table is one static table that 平面视觉 owns and the driver reads.
+14. **State 0 = the live print (shader rule, 平面视觉, 2026-10-07).** In `CueInk`, state 0 never samples C00. It returns the print exactly as the static `_PrintTex` and the ambient flipbook give it.
+    - A cue starting or ending cross-fades from or to whatever ambient frame is live, so there is no pop and no per-cell hold.
+    - Beat-0 lamp cues (stage-0 sags, dying lamps; narrative's addition, LD R1, §9.3 beat 0) can start at any time.
+    - The turn and step slices stay authored on K00. A fault frame vanishes on the first click.
+    - The global rule stays: ambient holds at K00 during WarnStage ≥ 1 or a chase, and resumes no earlier than the burst lamps' first quiet slot after stage 0.
+    - The ambient driver is one global clock, so per-cell ambient exemptions are not possible and are not needed.

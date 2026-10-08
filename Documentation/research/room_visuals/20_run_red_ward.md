@@ -2,7 +2,7 @@
 
 Date: 2026-10-07. Companion to `11_run_dir_red_ward.md` (the values, the measurements, pass / fail).
 Clone: `/Users/redwang/FrontRoomsVisualWork/proj_run_red_ward` (clone-only; nothing was promoted). A second APFS copy, `W/proj_run_red_ward_x`, ran parallel sweeps.
-Red's project was not opened in Unity. Writes there: this folder (`research/room_visuals/`: reports, images, `harness/`) and the three claimed rows in `Documentation/VERIFICATION_LOG.md`.
+Red's project was not opened in Unity. Writes there: this folder (`research/room_visuals/`: reports, images, `harness/`) and the three rows VL166–168 in `Documentation/VERIFICATION_LOG.md`.
 
 ---
 
@@ -138,4 +138,17 @@ Nothing here is an apply script: this direction is a pre-render for Red's pick.
 - Shots: `images/run_dir_red_ward_{s1a, s1b, s2, s3, c1, c2, c3, c4}.jpg` (the same as `images/run_red_ward_<shot>.jpg`).
 - Derived: `…_{s1a, s1b, s2, c4}_grey.jpg`, `…_{s1b, c4}_protan.jpg`, `…_sheet.jpg`.
 - Extras: `…_s3x.jpg`, `…_s3x_armed.jpg`, `…_s2_tripped.jpg`.
-- Verification: `…_v_signrim.jpg`, `…_v_rimdiag.jpg` (VL167), `…_v_ambsweep.jpg` (VL168), `…_v_tripstrip.jpg` (VL166).
+- Verification slides (Figma section `2595:6093`, placed 2026-10-07 23:3x):
+  - VL166 `2817:6157` Red Ward pre-render bars (PARTIAL): `…_sheet.jpg`, `…_s1b_grey.jpg`, `…_c4_protan.jpg`, `…_v_tripstrip.jpg`;
+  - VL167 `2817:6173` Sign rim was the glow light (PASS): `…_v_signrim.jpg`, `…_v_rimdiag.jpg`;
+  - VL168 `2817:6183` Tripped fill vs adaptation (PASS): `…_v_ambsweep.jpg`.
+
+---
+
+## 7. Resume note (2026-10-07 23:3x)
+
+The stage stopped at about 20:05, after the reports and the three Figma frames, before the image upload. The resumed stage:
+- checked the clone, the reports and the images (all from the final round v5-6, 19:52–19:59) and read the final frames again: nothing was half-written;
+- found no apply package for this track under `W/apply/` (a pre-render; nothing is merged) and no codex-audit finding for it;
+- uploaded the 7 images into the three half-built slides, checked each slot (one IMAGE fill, FIT, aspect within 0.5 px), took one screenshot per slide, updated the cover and recorded the rows.
+No new renders were made.

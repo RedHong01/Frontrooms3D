@@ -1,0 +1,29 @@
+# G14b record stage (2026-10-07): what the floor receiver changes, measured against each RT-off cube.
+# Bench 5c/5w img4, design tree, soft gate, 1920x1080. Tiles = |High - Off| x 4 (max channel), grey; 4th column = High.
+# Out: cube_diff_sheet.jpg; prints the shares (must equal r2_t1_diff2_{flat,l0exr,own05}_gate.txt).
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+FD = '/Users/redwang/Library/Fonts/'
+FB = ImageFont.truetype(FD + 'IBMPlexMono-Bold.otf', 30); FR = ImageFont.truetype(FD + 'IBMPlexMono-Regular.otf', 28)
+L = lambda p: np.asarray(Image.open(p).convert('RGB')).astype(int)
+views = [('A', 'S1 TRIPPED'), ('B', 'NEAR GOAL TRIPPED'), ('D', 'STREAM RUN ROOM')]
+cubes = [('flat', 'OFF = FLAT CUBE (BENCH 4)'), ('l0', "OFF = MAIN'S LEVEL 0 CUBE"), ('own', "OFF = THE ROOM'S OWN CAPTURE")]
+TW, TH, G = 640, 360, 6
+sheet = Image.new('RGB', (4 * TW + 3 * G, 3 * TH + 2 * G), '#FFFFFF'); dr = ImageDraw.Draw(sheet)
+def chip(x, y, lines, bold0=True, fill='#F4DF3B', ink='#0A0A0A'):
+    fonts = [FB if (k == 0 and bold0) else FR for k in range(len(lines))]
+    w = max(dr.textlength(s, font=f) for s, f in zip(lines, fonts)) + 22; h = 12 + 36 * len(lines)
+    dr.rectangle([x, y, x + w, y + h], fill=fill)
+    for k, (s, f) in enumerate(zip(lines, fonts)): dr.text((x + 11, y + 5 + 36 * k), s, font=f, fill=ink)
+for r, (v, vname) in enumerate(views):
+    mk = L('w_l0_%s_h2_mask.png' % v); fl = mk[..., 0] > 127
+    for c, (cb, cname) in enumerate(cubes):
+        off, rt = L('w_%s_%s_h2_off.png' % (cb, v)), L('w_%s_%s_h2_rt.png' % (cb, v))
+        e = np.abs(rt - off).max(-1); n = int((e[fl] >= 8).sum()); p = n / fl.sum() * 100
+        print(v, cb, 'floor max', int(e[fl].max()), 'px>=8', n, '%.2f%%' % p)
+        im = np.repeat(np.clip(e * 4, 0, 255)[..., None], 3, -1).astype(np.uint8)
+        tile = Image.fromarray(im).resize((TW, TH), Image.LANCZOS); x, y = c * (TW + G), r * (TH + G); sheet.paste(tile, (x, y))
+        chip(x + 10, y + 10, ([vname] if c == 0 else []) + [cname, '|HIGH - OFF| x 4', '%.1f %% of floor >= 8/255' % p], bold0=(c == 0))
+    hi = Image.open('w_l0_%s_h2_rt.png' % v).convert('RGB').resize((TW, TH), Image.LANCZOS); x, y = 3 * (TW + G), r * (TH + G); sheet.paste(hi, (x, y))
+    chip(x + 10, y + 10, ['HIGH (P1B), WHAT RT SHOWS'], bold0=False)
+sheet.save('cube_diff_sheet.jpg', quality=88); print(sheet.size)

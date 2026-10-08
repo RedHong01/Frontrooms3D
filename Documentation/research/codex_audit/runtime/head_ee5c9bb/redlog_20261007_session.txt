@@ -1,0 +1,20 @@
+Red's Editor.log (read-only), session opened 2026-10-07 20:38 local (licensing 2026-10-08T03:38Z), project Frontrooms3D, read 2026-10-07 23:4x; main HEAD ee5c9bb was committed 20:22. Lines:    12651
+  Collection was modified          0
+  ZBinningJob                      0
+  Render Graph Execution error     0
+  NullReferenceException           0
+  MissingReferenceException        0
+  InvalidOperationException        0
+  error CS                         0
+  warning CS                       0
+  Shader error                     0
+  not SRP Batcher compatible       0
+  lines matching 'Exception' : 4 (all 4 are 'System.Exception&' in UIElements stack frames of info logs, not thrown exceptions)
+Play sessions that entered the map:
+1560:[FrontRoomsGlassRT] plugin loaded · caps 0x30ff · waiting: layout self-test
+6659:[FrontRooms3D] START · in place in stream room 1 · maze seed 2025812370 behind its door, map root (192.00, 0.00, -192.00), door cell (21, 70) · 24.3 ms (map 5.5, placing 13.6)
+6673:[FrontRoomsGlassRT] map found: Level 0 map · Relay parts 16
+7002:[FrontRoomsGlassRT] plugin loaded · caps 0x31ff · on: Apple9, High, kernel 7 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters
+12113:[FrontRooms3D] START · in place in stream room 0 · maze seed 1218601834 behind its door, map root (192.00, 0.00, 0.00), door cell (21, 2) · 38.3 ms (map 8.5, placing 22.3)
+12127:[FrontRoomsGlassRT] map found: Level 0 map · Relay parts 16
+Pre-existing, not Codex, not visual: 594 'AudioClip.SetData failed' (FrontRoomsAudio.cs:20, Unity audio disabled; also 297/594 in the pre-Codex/HEAD batch runs)

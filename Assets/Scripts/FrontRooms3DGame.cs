@@ -1880,7 +1880,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             staminaSegments[i].enabled = false;
         }
 
-        keyPanel = TypographyGroup(g.transform, "HUD / Key", new Vector2(0, 1), mobileHud ? new Vector2(78, -72) : new Vector2(72, 118), mobileHud ? new Vector2(150, 22) : new Vector2(147, 22));
+        // Desktop keeps the key row bottom-left (72, 118 up from the corner); the phone HUD puts it top-left under the zone.
+        keyPanel = TypographyGroup(g.transform, "HUD / Key", mobileHud ? new Vector2(0, 1) : new Vector2(0, 0), mobileHud ? new Vector2(78, -72) : new Vector2(72, 118), mobileHud ? new Vector2(150, 22) : new Vector2(147, 22));
         keyHudGroup = keyPanel.AddComponent<CanvasGroup>();
         keyImage = Panel(keyPanel.transform, "Key glyph", new Vector2(0, 0), Vector2.zero, new Vector2(40, 22), Color.white).GetComponent<Image>();
         keyImage.sprite = LoadHudSprite("UI/HUD_KeyGlyph");
@@ -2420,6 +2421,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // The glass scenario (-autopilotGlass): what it checked, ok or FAIL.
         public bool glassScenario;
         public List<string> glassChecks = new List<string>();
+        // HUD panels laid out outside the screen (any one fails the run).
+        public List<string> hudOffscreen = new List<string>();
     }
 
     readonly List<string> autoFrameNames = new List<string>();
@@ -2550,6 +2553,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             }
         }
         if (autoGlassWanted && !autoGlassDone) AutopilotGlass(dt);
+        if (!autoHudChecked && autoPlayClock > 1f) AutopilotHudCheck();
         if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive)
         {
             autoNextShot = autoPlayClock + 9f;
@@ -2937,6 +2941,43 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
     }
 
+    // ---------- HUD layout: every panel inside the screen ----------
+    // Laid out by hand per platform, the HUD can drift off the canvas without any error
+    // (the desktop key row once sat 96-118 px above the top edge). Each panel's rect is
+    // checked against the canvas once, active or not; one outside fails the run.
+    bool autoHudChecked;
+    readonly List<string> autoHudOffscreen = new List<string>();
+
+    void AutopilotHudCheck()
+    {
+        autoHudChecked = true;
+        var canvas = keyPanel != null ? keyPanel.GetComponentInParent<Canvas>(true) : null;
+        if (canvas == null)
+        {
+            autoHudOffscreen.Add("no HUD canvas");
+            return;
+        }
+        Canvas.ForceUpdateCanvases();
+        var root = (RectTransform)canvas.transform;
+        var screen = root.rect;
+        var corners = new Vector3[4];
+        var panels = new (string name, GameObject go)[]
+        {
+            ("room", roomPanel), ("threat", threatPanel), ("hint card", contextPanel), ("captions", captionPanel),
+            ("crosshair", crosshairImage != null ? crosshairImage.gameObject : null), ("key", keyPanel),
+        };
+        foreach (var (name, go) in panels)
+        {
+            if (go == null) continue;
+            ((RectTransform)go.transform).GetWorldCorners(corners);
+            var min = (Vector2)root.InverseTransformPoint(corners[0]);
+            var max = (Vector2)root.InverseTransformPoint(corners[2]);
+            if (min.x < screen.xMin - 1f || min.y < screen.yMin - 1f || max.x > screen.xMax + 1f || max.y > screen.yMax + 1f)
+                autoHudOffscreen.Add(name + " panel " + min.ToString("F0") + " to " + max.ToString("F0") + " on a screen " + screen.min.ToString("F0") + " to " + screen.max.ToString("F0"));
+        }
+        Log("AUTOPILOT HUD " + (autoHudOffscreen.Count == 0 ? "all panels on screen" : "OFF SCREEN: " + string.Join("; ", autoHudOffscreen)));
+    }
+
     void AutopilotFinish(string reason)
     {
         if (autoFinished) return;
@@ -2985,11 +3026,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             frames = autoFrameNames,
             glassScenario = autoGlassWanted,
             glassChecks = autoGlassChecks,
+            hudOffscreen = autoHudOffscreen,
         };
+        if (!autoHudChecked && mapPlay) AutopilotHudCheck();
         var reached = mapPlay && autoDistance > 20f && autoCells.Count > 8;
         if (autoGlassWanted && !autoGlassDone) AutoGlassCheck(false, "glass: the scenario did not finish (step " + autoGlassStep + ")");
         var glassOk = !autoGlassWanted || autoGlassChecks.TrueForAll(c => c.StartsWith("ok"));
-        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk ? "PASS" : "FAIL") + " · ended by " + reason;
+        var hudOk = autoHudOffscreen.Count == 0;
+        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk ? "PASS" : "FAIL") + " · ended by " + reason
+            + (hudOk ? "" : " · HUD off screen: " + string.Join("; ", autoHudOffscreen));
         if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));
         var done = Path.Combine(Directory.GetParent(Application.dataPath).FullName, AutopilotDoneFile);

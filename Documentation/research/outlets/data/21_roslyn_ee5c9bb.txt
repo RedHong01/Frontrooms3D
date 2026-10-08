@@ -1,0 +1,8 @@
+  Assembly-CSharp: 76 files, 0 errors, 0 warnings, rc 0, 28 s
+  Assembly-CSharp-Editor: 51 files, 0 errors, 0 warnings, rc 0, 30 s
+COMPILE OK: Assembly-CSharp 76 files, Assembly-CSharp-Editor 51 files — 0 errors
+  Assembly-CSharp: 76 files, 0 errors, 0 warnings, rc 0, 38 s
+  Assembly-CSharp-Editor: 51 files, 0 errors, 0 warnings, rc 0, 31 s
+COMPILE OK (iOS defines): Assembly-CSharp 76 files, Assembly-CSharp-Editor 51 files — 0 errors
+
+[exited with code 0]

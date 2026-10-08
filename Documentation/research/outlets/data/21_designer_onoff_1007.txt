@@ -1,0 +1,21 @@
+Level Designer CaptureBatch, outlets on vs OUTLETS_OFF=1, clone proj_outlet (main a5262fb6 + C1), 2026-10-07.
+Changed pixels = max channel difference > 8 (of 255), 1600 x 900 eye/plan views. Runs: on 19:30, off 19:36, off2 20:06, on2 20:09.
+
+module               view  on~on2  off~off2  on~off   on2~off2  (rows of the on2~off2 change)
+L0_WaitingRoom_4x3   eye   10171   10238     10590    184       y 521-583
+L0_WaitingRoom_4x3   plan  0       0         152      152       y 54-869
+Office_Bullpen_4x4   eye   0       0         775      775       y 466-687
+Office_Bullpen_4x4   plan  0       0         582      582       y 27-881
+Low_Storage_2x3      eye   0       0         758      758       y 548-783
+Low_Storage_2x3      plan  0       0         270      270       y 37-875
+Tall_PillarHall_6x5  eye   0       0         156      156       y 526-646
+Tall_PillarHall_6x5  plan  0       0         69       69        y 44-857
+
+Reading: the L0 waiting room's eye view changes by ~10,200 px between two runs of the SAME mode (on~on2, off~off2).
+Cause (crop W/outlet_c1/view/l0_on_on2.jpg): the first on (19:30) and off (19:36) runs after the 18:16 clone resync drew
+the ladder chairs, side table, wall clock and the outlet plate in one flat red (materials built while their textures
+were still importing in that batch session). The repeats at 20:06 / 20:09 draw them correctly. It hit on and off
+alike, so it is a cold-import artefact of the clone, not an outlet effect.
+Between back-to-back runs (on2~off2) the outlets change only the lower wall band: 184 / 775 / 758 / 156 px.
+Every other module view is pixel-identical between repeats. Oct 4 (older kits): 176 / 706 / 614 / 109 px.
+Chain D's third run (on3) was cut by the usage limit at 20:09 and is not needed.

@@ -1,0 +1,6 @@
+Q16 placard placement over seeds (door at x 256.5, z 18, 8 stream rows; MapRootFor by reflection)
+P1 east: 21 / 100 (21 %)
+P1 west: 53 / 100 (53 %)
+P2 east: 14 / 100 (14 %)
+P2 west: 11 / 100 (11 %)
+P3 west: 1 / 100 (1 %)

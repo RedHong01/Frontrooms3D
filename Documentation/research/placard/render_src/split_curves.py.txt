@@ -1,0 +1,9 @@
+"""Split q16_r_glow_curves_ingame.png into its two panel rows (lamp-off pair; failing/stutter/warn trio), 24 px white margin."""
+import sys
+from PIL import Image
+D = sys.argv[1]
+im = Image.open(D + "q16_r_glow_curves_ingame.png").convert("RGB")
+im.crop((40, 45 - 24, 1900, 485 + 24)).save(D + "q16_r_curves_lampoff.png", optimize=True)
+im.crop((40, 565 - 24, 1900, 1005 + 24)).save(D + "q16_r_curves_lamps.png", optimize=True)
+for n in ("q16_r_curves_lampoff.png", "q16_r_curves_lamps.png"):
+    print(n, Image.open(D + n).size)

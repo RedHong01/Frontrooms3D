@@ -1,0 +1,46 @@
+# G14b record stage (2026-10-07): the second bounce at the RN-X goal lite, bench 5c/5d view G
+# (2.5 m from the goal, armed, floor r 0.15, main's Refl_Level0 x 0.5, soft gate, design tree), from v_l0g_G_*.png
+# (rt_bench5v img3; d1-d2 and d2-d3 reproduce r2_t1_diff2_l0exr_gate.txt exactly).
+# Out: second_bounce_sheet.png = context column (depth 2, crop boxes) + crop grid (x3 nearest): 1 bounce | 2 | |2-1|x8 | |3-2|x8.
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+FD = '/Users/redwang/Library/Fonts/'
+FB = ImageFont.truetype(FD + 'IBMPlexMono-Bold.otf', 38); FR = ImageFont.truetype(FD + 'IBMPlexMono-Regular.otf', 34)
+L = lambda n: np.asarray(Image.open('v_l0g_G_%s.png' % n).convert('RGB')).astype(int)
+d1, d2, d3, mk = L('d1'), L('d2'), L('d3'), L('mask')
+fl, gl = mk[..., 0] > 127, mk[..., 1] > 127
+e21 = np.abs(d2 - d1).max(-1); e32 = np.abs(d3 - d2).max(-1)
+def stat(e, m): return int(e[m].max()), int((e[m] >= 8).sum()), (e[m] >= 8).mean() * 100
+S = 3; GAP = 8; HEAD = 76
+crops = [('LITE', (900, 150, 1020, 410), gl), ('FLOOR', (900, 840, 1020, 1040), fl)]
+cols = ['1 BOUNCE', '2 BOUNCES', '|2-1| x8', '|3-2| x8']
+CW = 120 * S; rows_h = [(b[3] - b[1]) * S for _, b, _ in crops]
+GH = HEAD + sum(rows_h) + GAP
+# context column: depth-2 frame, x 600-1320, full height, scaled to the grid height
+ctx = Image.fromarray(d2.astype(np.uint8)); cd = ImageDraw.Draw(ctx)
+for _, (x0, y0, x1, y1), _ in crops: cd.rectangle([x0 - 3, y0 - 3, x1 + 2, y1 + 2], outline='#F4DF3B', width=5)
+ctx = ctx.crop((600, 0, 1320, 1080)); cw = round(720 * GH / 1080); ctx = ctx.resize((cw, GH), Image.LANCZOS)
+W = cw + GAP + 4 * CW + 3 * GAP
+sheet = Image.new('RGB', (W, GH), '#FFFFFF'); sheet.paste(ctx, (0, 0)); dr = ImageDraw.Draw(sheet)
+def chip(x, y, lines, fonts, bottom=False, h_avail=None):
+    w = max(dr.textlength(s, font=f) for s, f in zip(lines, fonts)) + 28; hh = 16 + 42 * len(lines)
+    if bottom: y = y + h_avail - 12 - hh
+    dr.rectangle([x, y, x + w, y + hh], fill='#F4DF3B')
+    for k, (s, f) in enumerate(zip(lines, fonts)): dr.text((x + 14, y + 6 + 42 * k), s, font=f, fill='#0A0A0A')
+chip(12, 12, ['2.5 M FROM GOAL', 'ARMED, 2 BOUNCES'], [FB, FR])
+gx = cw + GAP
+for c, t in enumerate(cols): dr.text((gx + c * (CW + GAP) + 6, 18), t, font=FB, fill='#0A0A0A')
+y = HEAD
+for r, (name, (x0, y0, x1, y1), m) in enumerate(crops):
+    tiles = [d1, d2, np.repeat(np.clip(e21 * 8, 0, 255)[..., None], 3, -1), np.repeat(np.clip(e32 * 8, 0, 255)[..., None], 3, -1)]
+    st = [None, None, stat(e21, m), stat(e32, m)]
+    for c, t in enumerate(tiles):
+        im = Image.fromarray(t[y0:y1, x0:x1].astype(np.uint8)).resize(((x1 - x0) * S, (y1 - y0) * S), Image.NEAREST)
+        x = gx + c * (CW + GAP); sheet.paste(im, (x, y))
+        if c == 0: chip(x + 12, y + 12, [name], [FB])
+        if st[c] is not None:
+            mx, n, p = st[c]
+            chip(x + 12, y + 12, ['max %d' % mx, '%d px >= 8' % n], [FR, FR], bottom=(r == 1), h_avail=rows_h[r] - 12)
+    y += rows_h[r] + GAP
+sheet.save('second_bounce_sheet.png'); print('sheet', sheet.size, 'aspect %.3f' % (W / GH))
+for nm, e in (('d2-d1', e21), ('d3-d2', e32)): print(nm, 'glass', stat(e, gl), 'floor', stat(e, fl))

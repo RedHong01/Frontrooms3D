@@ -1,0 +1,15 @@
+diff --git a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+index dd00cfc..a97fd5c 100644
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -3206,7 +3206,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
+         }
+         trim = FrontRoomsSurfaces.CoveBase ?? Own(FrontRoomsSurfaces.Lit("Map test / frame", new Color(.55f, .50f, .36f), .2f));
+         doorLeaf = FrontRoomsSurfaces.DoorVeneer ?? Own(FrontRoomsSurfaces.Lit("Map test / door", new Color(.72f, .66f, .50f), .25f));
+-        keyGlow = Own(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f));
++        // Lit() returns a material from FrontRoomsSurfaces' static cache, shared with the next map after R or a caught
++        // restart. Own a private copy: Release() destroys owned materials after the next map has taken the cached one.
++        keyGlow = Own(new Material(FrontRoomsSurfaces.Lit("Map test / key", new Color(.96f, .87f, .23f), .4f, 0f, new Color(.96f, .87f, .23f) * .8f)));
+         glass = Own(TransparentGlass("Map test / glass", new Color(.75f, .85f, .88f, .28f)));
+     }
+ 

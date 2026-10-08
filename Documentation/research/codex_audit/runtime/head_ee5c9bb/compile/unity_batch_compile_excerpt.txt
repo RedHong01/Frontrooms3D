@@ -1,0 +1,6 @@
+Unity batch compile of W/proj_cx = main ee5c9bb + Red's working tree (synced 2026-10-07 23:30), -buildTarget OSXUniversal -nographics -quit
+321:[631/635    3s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+409:		CompileScripts: 4782.851ms
+465:Exiting batchmode successfully now!
+warning CS lines: 0 · error CS lines: 0
+Assembly-CSharp was up to date: the 23:30 rsync changed no Assets .cs file (proj_cx already held the 19:41 sync of 3ff05ee + working tree, which equals ee5c9bb for every Assets script), and that build had 0 warnings (runtime/head_3ff05ee/compile). Every target recompiled from source with Unity's Roslyn: csc_variants_summary.txt

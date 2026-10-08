@@ -1,0 +1,35 @@
+23:33:15 start · Unity 6000.3.10f1 · gfx Metal · project /Users/redwang/FrontRoomsVisualWork/proj_cx · only all
+23:33:23 suite FrontRoomsMapVerification.RunBatch: no exception · 7.9 s · report map-verification-latest.json · console 0 warnings, 0 errors, 0 exceptions
+23:33:25 suite FrontRoomsRelayNavTest.RunBatch: no exception · 1.5 s · report relay-nav-test.json · console 0 warnings, 0 errors, 0 exceptions
+23:33:42 suite FrontRoomsMapInteractionTests.RunBatch: no exception · 17.6 s · report map-interaction-tests.json · console 6 warnings, 2 errors, 4 exceptions
+23:33:48 suite FrontRoomsLevelDesignerTests.RunBatch: no exception · 5.7 s · report level-designer-tests.json · console 2 warnings, 0 errors, 0 exceptions
+23:33:53 suite FrontRoomsFixtureTickTests.RunBatch: no exception · 4.5 s · report fixture-tick-tests.json · console 0 warnings, 0 errors, 0 exceptions
+23:33:53 suite FrontRoomsCameraRigTests.RunBatch: no exception · 0.0 s · report camera-rig-tests.json · console 0 warnings, 0 errors, 0 exceptions
+23:33:53 suite FrontRoomsCaptionsTests.RunBatch: no exception · 0.0 s · report captions-tests.json · console 0 warnings, 0 errors, 0 exceptions
+23:33:53 suite FrontRoomsGlassShotTests.RunBatch: no exception · 0.0 s · report glass-shot-tests.json · console 0 warnings, 0 errors, 0 exceptions
+23:33:54 suite FrontRoomsStreamVerification.Run: no exception · 1.5 s · report stream-verification-latest.json · console 0 warnings, 0 errors, 0 exceptions
+23:38:05 suite FrontRoomsGlassCompileCheck.RunBatch: no exception · 250.4 s · report glass/compile_check.txt · console 0 warnings, 0 errors, 0 exceptions
+23:38:07 seed 20261001: 25 chunks (centre cell Level 0 21, Office 4) · second world: identical · drop+rebuild of 25 chunks: identical · 1.8 s
+23:38:08 seed 20261002: 25 chunks (centre cell Level 0 18, Office 7) · second world: identical · drop+rebuild of 25 chunks: identical · 1.8 s
+23:38:10 seed 20261003: 25 chunks (centre cell Level 0 19, Office 6) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:12 seed 20261004: 25 chunks (centre cell Level 0 18, Office 7) · second world: identical · drop+rebuild of 25 chunks: identical · 1.8 s
+23:38:14 seed 20261005: 25 chunks (centre cell Level 0 18, Office 7) · second world: identical · drop+rebuild of 25 chunks: identical · 1.9 s
+23:38:16 seed 20261006: 25 chunks (centre cell Level 0 20, Office 5) · second world: identical · drop+rebuild of 25 chunks: identical · 1.9 s
+23:38:18 seed 20261007: 25 chunks (centre cell Level 0 20, Office 5) · second world: identical · drop+rebuild of 25 chunks: identical · 2.1 s
+23:38:20 seed 20261008: 25 chunks (centre cell Level 0 22, Office 3) · second world: identical · drop+rebuild of 25 chunks: identical · 2.4 s
+23:38:23 seed 20261009: 25 chunks (centre cell Level 0 24, Office 1) · second world: identical · drop+rebuild of 25 chunks: identical · 2.4 s
+23:38:25 seed 20261010: 25 chunks (centre cell Level 0 23, Office 2) · second world: identical · drop+rebuild of 25 chunks: identical · 2.8 s
+23:38:27 seed 516574485: 25 chunks (centre cell Level 0 23, Office 2) · second world: identical · drop+rebuild of 25 chunks: identical · 1.9 s
+23:38:29 seed 4242: 25 chunks (centre cell Level 0 22, Office 3) · second world: identical · drop+rebuild of 25 chunks: identical · 2.0 s
+23:38:31 seed 1990: 25 chunks (centre cell Level 0 22, Office 3) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:33 seed 7: 25 chunks (centre cell Level 0 21, Office 4) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:34 seed 1955: 25 chunks (centre cell Level 0 22, Office 3) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:36 seed 1993: 25 chunks (centre cell Level 0 21, Office 4) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:38 seed 8086: 25 chunks (centre cell Level 0 23, Office 2) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:39 seed 6502: 25 chunks (centre cell Level 0 19, Office 6) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:41 seed 68000: 25 chunks (centre cell Level 0 25, Office 0) · second world: identical · drop+rebuild of 25 chunks: identical · 1.8 s
+23:38:43 seed 2554: 25 chunks (centre cell Level 0 18, Office 7) · second world: identical · drop+rebuild of 25 chunks: identical · 1.7 s
+23:38:43 signatures: 20 seeds · second-world determinism failures 0 · rebuild determinism failures 0 · /Users/redwang/FrontRoomsVisualWork/proj_cx/Verification/cx_audit/map_signatures.tsv
+23:38:43 console · FrontRoomsMapInteractionTests: 6 warnings, 2 errors, 4 exceptions
+23:38:43 console · FrontRoomsLevelDesignerTests: 2 warnings, 0 errors, 0 exceptions
+23:38:43 console · signatures: 105 warnings, 0 errors, 0 exceptions

@@ -73,3 +73,10 @@ Built and rendered in the private clone `W/proj_trans_renovation2` only (W = `/U
 6. The fixed shots use salt 130 so all four crossings draw the full pattern; the real kit uses salt 0.
 7. These frames use the clone's warm Office lamps; main now runs V5's cool colour.
 8. Verification frames are listed in `12_var_renovation.md` §13 for the Figma VERIFICATION LOG (no Figma writes in this stage).
+
+## 2026-10-07 23:3x: resume check (no new work)
+The stage stopped on a session limit right after this page was written, before it returned its result. On resume everything was re-checked, nothing rebuilt:
+- `code/renovation/*` are byte-identical to the clone's files; the hook diff matches the clone against base md5 `e5204f9c…` (14 hooks).
+- Harness md5 `76a624e3…` and `shots.json` unchanged. Final plans 4/4 identical to `logs/shot<k>_plan.json`. Lamps lit 84 / 82 / 83 / 88, shadowed 8 / 7 / 7 / 7. 0 compile errors or exceptions in `render_i7.log` and `render_i7x.log`.
+- `var_renovation_shot1..4.jpg` = `v_renovation_shot1..4.jpg` = the harness JPGs in `W/reno_work2/shots_i7/` (byte-identical). All shots 1920 × 1080; sheets 1920 × 2360 and 1920 × 4082.
+- `codex_audit/20_findings.md` still does not exist; the review files add nothing for Renovation beyond MAP-2 and MAP-5 (both in `12_var_renovation.md` §12).

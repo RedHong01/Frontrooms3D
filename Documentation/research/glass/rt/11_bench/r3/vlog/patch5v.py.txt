@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""patch5v.py - G14b verification-log stage (2026-10-07): rt_bench5d.mm -> rt_bench5v.mm. Not part of the game.
+Adds mode 'img3': view G (2.5 m from the goal, armed, floor patch r 0.15) rendered RT off, depth 1, depth 2 and
+depth 3 (cut-off), plus the pixel-class mask (R = floor, G = glass), as 1920x1080 PNGs. Same render path as 'diff2'.
+Every other mode unchanged."""
+import sys
+src = open("rt_bench5d.mm").read()
+old = '    if (what == "img2") {'
+if src.count(old) != 1: sys.exit("patch5v: anchor not found once")
+new = '''    if (what == "img3") {
+      struct S3 { const char* cid; uint32_t comp; const char* nm; };
+      std::vector<S3> ss = {{"G_h2", 0, "off"}, {"G_h1", 1, "d1"}, {"G_h2", 1, "d2"}, {"G_h3c", 1, "d3"}};
+      std::vector<float> cls;
+      for (auto& s : ss) { auto px = render(s.cid, s.comp, &cls); std::string p = std::string("v_") + tag + "_G_" + s.nm + ".png";
+        writePng(p, px, ti.W, ti.H); printf("wrote %s | %s\\n", p.c_str(), loadStr().c_str()); }
+      std::vector<uint8_t> mk((size_t)ti.W * ti.H * 4, 0);
+      for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { int k = (int)(cls[i * 4 + 3] + .5f); mk[i * 4] = k == 2 ? 255 : 0; mk[i * 4 + 1] = k == 1 ? 255 : 0; mk[i * 4 + 3] = 255; }
+      std::string p = std::string("v_") + tag + "_G_mask.png"; writePng(p, mk, ti.W, ti.H); printf("wrote %s\\n", p.c_str());
+    }
+'''
+src = src.replace(old, new + old)
+open("rt_bench5v.mm", "w").write(src)
+print("wrote rt_bench5v.mm")
