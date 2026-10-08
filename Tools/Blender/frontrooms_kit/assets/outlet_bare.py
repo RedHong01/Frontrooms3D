@@ -17,9 +17,13 @@ Size: 61.9 x 106.7 mm on the wall (box cut-out width x strap length),
 <= 35). ORIGIN = the wall-face point at the device centre; front -Y (Unity
 +Z). Render-only.
 
-Game read (no hole can be cut in the map wall, spec 8 item 7): a dark (PB)
+Game read (no hole can be cut in the map wall, spec 8 item 7): a dark
 sheet 0.3 mm in front of the wall fills the ragged cut-out, so the box
-interior reads as a void instead of wallpaper; a torn lip 0.5-1.3 mm wide
+interior reads as a void instead of wallpaper. The dark part (slots, gap,
+tapped hole) uses the existing matte Prop_Rubber (albedo 0.02, smoothness
+0.15), not the spec's Prop_PlasticBlack (0.03, 0.5): a void has no sheen,
+and under 45 deg raking light PB read as a grey card (round 9: gap 0.191 vs
+0.131 linear on Rubber, wall 0.578; head-on 0.093 vs 0.083, wall 0.461); a torn lip 0.5-1.3 mm wide
 (device ivory, the pale paper core) slopes from the cut edge down onto the
 paper, so the edge reads torn rather than as a grey card. The terminal screws and
 their clamp plates sit far enough forward (axis 1.5 mm behind the wall
@@ -29,7 +33,7 @@ modelled for the day a hole can be cut (then drop the sheet).
 
 Budget (spec 1.3): 3,600 / 1,300 / 60 tris; LOD 1.5 / 4 / 12 m. Slots:
 Prop_NylonIvory (device, submesh 0), Prop_Aluminium (strap, box, box
-screws, silver terminals), Prop_PlasticBlack (slots, gap, tapped hole),
+screws, silver terminals), Prop_Rubber (slots, gap, tapped hole),
 Prop_Brass (contacts, hot-side terminals). No anchors for plate screws
 (the plate is gone); face_top / face_bottom / plate_top (strap top).
 
@@ -69,6 +73,7 @@ LIP_W = (0.5, 1.3)             # torn paper / gypsum lip width range (mm), round
 LIP_H = (0.08, 0.34)           # lip height: outer edge on the wall, inner edge at the cut
 TERM = {"R": 3.6, "crown": 0.9, "side": 1.2, "slot": (1.0, 0.7), "axis_h": -1.5, "z": oc.OPEN_Z}
 ARC_DEG_BARE = 5.625           # the faces are the hero here: 64 per circle
+DARK = "Prop_Rubber"           # matte near-black (existing slot): the void reads with no sheen (round 9)
 # LOD2 dot on a bare face (round 9): the slots only (about 48 mm^2 of slot
 # mouth per face), with no plate-opening gap ring round the face, so the
 # shared 103 mm^2 dot (slots + gap ring) is scaled to 55 mm^2.
@@ -245,7 +250,7 @@ def build(kit):
         return oc.wear_device(p, n)
     ni.to_object(kit, "device", oc.NI, wear=wear_ni, lods="0")
     al.to_object(kit, "strap box screws", oc.AL, wear=lambda p, n: (1.0, 0.9 if p[1] > STRAP_FRONT - 0.01 else 1.0, 1.0), lods="0")
-    pb.to_object(kit, "slots gap", oc.PB, wear=oc.wear_cavity, lods="0")
+    pb.to_object(kit, "slots gap", DARK, wear=oc.wear_cavity, lods="0")
     br.to_object(kit, "contacts terminals", oc.BR, lods="0")
     counts = [oc.total_tris(kit, "0")]
     if oc.has_lods():
@@ -334,7 +339,7 @@ def build_lods(kit, k, towers, cut):
     pb.fill(pb.ring(cut, GAP_H))
     ni.to_object(kit, "device LOD1", oc.NI, wear=oc.wear_device, lods="1")
     al.to_object(kit, "steel LOD1", oc.AL, lods="1")
-    pb.to_object(kit, "dark LOD1", oc.PB, wear=oc.wear_cavity, lods="1")
+    pb.to_object(kit, "dark LOD1", DARK, wear=oc.wear_cavity, lods="1")
     br_.to_object(kit, "brass LOD1", oc.BR, lods="1")
     ni2, al2, pb2 = oc.Mesh(), oc.Mesh(), oc.Mesh()
     q = al2.ring(oc.rect(0.0, 0.0, STRAP_W, STRAP_L), STRAP_FRONT)
@@ -356,7 +361,7 @@ def build_lods(kit, k, towers, cut):
     pb2.fill(pb2.ring(cut[::6], GAP_H))
     ni2.to_object(kit, "faces LOD2", oc.NI, lods="2")
     al2.to_object(kit, "steel LOD2", oc.AL, lods="2")
-    pb2.to_object(kit, "dark LOD2", oc.PB, lods="2")
+    pb2.to_object(kit, "dark LOD2", DARK, lods="2")
     return [oc.total_tris(kit, "1"), oc.total_tris(kit, "2")]
 
 

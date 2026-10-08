@@ -1,0 +1,50 @@
+== window TF r5: trims, throw, cost ==
+-- R1+R2 keep every map trim: off vs kitR --
+shelltrim      off   vs kitR : 965 identical, 0 different (of 965)
+-- forced throw keeps every trim (thr runs seeds 4242, 7, 1993 only) --
+shell          off   vs thrT : 4555 identical, 0 different (of 4555) [keys of thrT]
+shelltrim      off   vs thrT : 301 identical, 0 different (of 301) [keys of thrT]
+shell          off   vs thrR : 4555 identical, 0 different (of 4555) [keys of thrR]
+shelltrim      off   vs thrR : 301 identical, 0 different (of 301) [keys of thrR]
+-- T: only the window trims go; doors keep theirs --
+shelltrim      off   vs kitT : 692 identical, 273 different (of 965)
+   trim vertices removed 29592 = 1233 boxes of 24; windows 411 x 3 = 1233; trimBoxes off 4241 -> kitT 3008
+-- per chunk with windows: kitR minus off (static content in the chunk; LOD and frustum culling not applied) --
+   chunks with windows 74 of 250
+   frames           min +1 median +5 max +13 total +411
+   trimBoxes        min +0 median +0 max +0 total +0
+   renderers        min +1 median +5 max +13 total +411
+   submeshes        min +2 median +10 max +26 total +822
+   shadowRenderers  min +0 median +0 max +0 total +0
+   shadowSubmeshes  min +1 median +5 max +13 total +411
+   transparent      min +0 median +0 max +0 total +0
+   lights           min +0 median +0 max +0 total +0
+   tris             min +2322 median +13150 max +34024 total +1023642
+   lod1Tris         min +1044 median +5614 max +14360 total +446814
+   worst chunk ('7', '(-1, 1)'): windows 12, tris 5160 -> 39184, renderers 167 -> 179, shadow renderers 103 -> 103
+-- per chunk with windows: kitT minus off (static content in the chunk; LOD and frustum culling not applied) --
+   chunks with windows 74 of 250
+   frames           min +1 median +5 max +13 total +411
+   trimBoxes        min -39 median -15 max -3 total -1233
+   renderers        min +0 median +2 max +6 total +138
+   submeshes        min +1 median +7 max +19 total +549
+   shadowRenderers  min -10 median -4 max -1 total -273
+   shadowSubmeshes  min +0 median +2 max +6 total +138
+   transparent      min +0 median +0 max +0 total +0
+   lights           min +0 median +0 max +0 total +0
+   tris             min +2286 median +12970 max +33592 total +1008846
+   lod1Tris         min +1044 median +5614 max +14360 total +446814
+   worst chunk ('7', '(-1, 1)'): windows 12, tris 5160 -> 38752, renderers 167 -> 169, shadow renderers 103 -> 93
+-- view measures (offT before / kitT after, the same cameras) --
+   L0 A_front_3m      before: renderers 857 submeshes 861 tris 27693 transparent 20 shadowCasters 459 framesLOD0 0 framesLOD1 0 framesCulled 0
+                      after:  renderers 862 submeshes 886 tris 49131 transparent 20 shadowCasters 444 framesLOD0 1 framesLOD1 23 framesCulled 45
+   L0 B_front_3m      before: renderers 789 submeshes 797 tris 27758 transparent 7 shadowCasters 435 framesLOD0 0 framesLOD1 0 framesCulled 0
+                      after:  renderers 790 submeshes 803 tris 34040 transparent 7 shadowCasters 431 framesLOD0 1 framesLOD1 4 framesCulled 64
+   L0 hall_tall_5.0m  before: renderers 921 submeshes 929 tris 31754 transparent 9 shadowCasters 508 framesLOD0 0 framesLOD1 0 framesCulled 0
+                      after:  renderers 923 submeshes 938 tris 38774 transparent 9 shadowCasters 503 framesLOD0 0 framesLOD1 7 framesCulled 62
+   OF A_front_3m      before: renderers 1427 submeshes 1453 tris 51542 transparent 33 shadowCasters 796 framesLOD0 0 framesLOD1 0 framesCulled 0
+                      after:  renderers 1437 submeshes 1496 tris 91958 transparent 33 shadowCasters 773 framesLOD0 1 framesLOD1 43 framesCulled 10
+   OF B_front_3m      before: renderers 357 submeshes 424 tris 30328 transparent 5 shadowCasters 214 framesLOD0 0 framesLOD1 0 framesCulled 0
+                      after:  renderers 358 submeshes 428 tris 38952 transparent 5 shadowCasters 212 framesLOD0 2 framesLOD1 1 framesCulled 51
+   OF hall_tall_5.0m  before: renderers 411 submeshes 478 tris 31960 transparent 6 shadowCasters 238 framesLOD0 0 framesLOD1 0 framesCulled 0
+                      after:  renderers 412 submeshes 483 tris 36708 transparent 6 shadowCasters 235 framesLOD0 0 framesLOD1 4 framesCulled 50

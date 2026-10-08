@@ -1,4 +1,4 @@
-# Ready-to-upload images for our proposal section 2497:3804 (FRONTROOMS · DOORS + WINDOWS · PROPOSAL).
+# Ready-to-upload images for our proposal section 2748:6099 (FRONTROOMS · DOORS + WINDOWS · PROPOSAL, rebuilt 2026-10-07; was 2497:3804).
 # For each slot in build_index.PROPOSAL_SLOTS: flatten the render on the K-sheet panel colour #EEECE6,
 # crop to the slot's aspect around the content (5 % margin, never cutting content), and save at 2x the
 # slot size to heroes/slots/<slot name>.png. Upload with upload_assets(nodeIds=[slot node], scaleMode=FILL).

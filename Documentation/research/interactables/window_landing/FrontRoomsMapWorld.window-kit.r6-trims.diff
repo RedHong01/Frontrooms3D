@@ -1,0 +1,46 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -1251,6 +1251,10 @@
+         if (kind == EdgeKind.Arch) return;
+ 
+         // Frame: two jambs and a head in the trim colour.
++        // [WINDOW-KIT BEGIN] (T) a window's trims wait until the visual chat's frame has been tried (window branch).
++        void FrameTrims()
++        {
++        // [WINDOW-KIT END]
+         var trims = get(blockIndex, trim);
+         var frame = ModuleUnits.TrimFace;
+         var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;
+@@ -1260,6 +1264,10 @@
+             trims.Box(jc, Abs(along * frame + across * jambDepth + Vector3.up * (openingTop - sill)), origin, 1f);
+         }
+         trims.Box(start + along * c + Vector3.up * (openingTop + frame * .5f), Abs(along * (width + frame * 2f) + across * jambDepth + Vector3.up * frame), origin, 1f);
++        // [WINDOW-KIT BEGIN]
++        }
++        if (kind != EdgeKind.Window) FrameTrims();
++        // [WINDOW-KIT END]
+ 
+         var edge = EdgeId(a, b);
+         var openingCenter = chunk.root.transform.TransformPoint(start + along * c);
+@@ -1332,6 +1340,10 @@
+                 root.gameObject.AddComponent(breakable);
+                 if (window.pane != null) window.pane.GetComponent<Renderer>().enabled = false;
+             }
++            // [WINDOW-KIT BEGIN] (T) the visual chat's frame on the root (render-only, broken windows too, guarded);
++            // the map's own trims only when no frame was hung.
++            if (!DressWindowFrame(window, record)) FrameTrims();
++            // [WINDOW-KIT END]
+             chunk.windows.Add(window);
+         }
+     }
+@@ -1342,9 +1354,7 @@
+     {
+         window.announced = true;
+         var record = GlassBreakOf(window);
+-        // [WINDOW-KIT BEGIN] the visual chat's frame on the root: render-only, broken windows too, outside Build's guard.
+-        DressWindowFrame(window, record);
+-        // [WINDOW-KIT END]
++        // [WINDOW-KIT] (T) the visual chat's frame was hung in BuildEdge, before the trims.
+         if (WindowBuilt == null) return;
+         foreach (Action<Window, GlassBreakRecord> handler in WindowBuilt.GetInvocationList())
+         {

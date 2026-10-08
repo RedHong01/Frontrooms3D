@@ -729,6 +729,7 @@ def thermoset_plate(kit, W, H, screws, openings, wear=None, name="plate", slot=T
     m.fill(rings[-1], front_holes, hf, steiner=FIELD_STEINER)
     m.fill(rim_top, back_holes, flip=True)
     plate = m.to_object(kit, name, slot, wear=wear or plate_wear(W, H))
+    plate["fr_field"] = [W, H]                         # finalize(): crown normals on the field
     bores = dark.to_object(kit, name + " screw bores", PB, wear=uniform_wear(1.0, 1.0, 0.2)) if screws else None
     info = {"hf": hf, "seats": seats, "W": W, "H": H, "mesh": m, "plate": plate, "bores": bores,
             "openings": openings, "csk_depth": depth}
@@ -987,6 +988,7 @@ def plate_lod1(kit, W, H, screws, openings, slot=TI, lods="1"):
     # flattens and the field's shading steps at the 1.5 m switch.
     m.fill(rings[-1], holes, hf, steiner=FIELD_STEINER)
     out = [m.to_object(kit, "plate lod1", slot, lods=lods)]
+    out[0]["fr_field"] = [W, H]                      # finalize(): crown normals on the field
     if screws:
         out.append(d.to_object(kit, "screw slots lod1", PB, lods=lods))
     return out, hf
@@ -1223,6 +1225,70 @@ def finalize(kit, smooth_angle=SMOOTH_ANGLE):
         mod.mode = "FACE_AREA"
         mod.weight = 50
         mod.keep_sharp = True
+    for obj in kit.parts:
+        if obj.get("fr_field") is not None:
+            n, worst = field_normals(obj)
+            print("[o2] %s: crown normals on %d field corners (largest correction %.2f deg)" % (obj.name, n, worst))
+
+
+def field_normals(obj, tol=0.002, same_deg=0.05):
+    """Crown normals on the plate field (2026-10-07).
+
+    The WEIGHTED_NORMAL recipe smooths every field vertex with its smooth
+    neighbours: the field-edge ring with the 11-degree shoulder band, the
+    opening rims with their 0.5 round, the countersink rims with the lip.
+    Those vertices took normals tilted up to ~8 degrees, and the large CDT
+    field triangles (up to 813 mm^2) spread that tilt across the field in
+    ramps that follow the triangulation. In Unity (glossy plastic, a troffer
+    above) the ramps read as diagonal lines on the plate (C1 capture
+    20_lone_switch_toggle1.jpg). A molded plate's shoulder and rounds meet
+    the field tangentially, so every field vertex gets the crown's own
+    normal (the analytic gradient of crown(): at most 0.37 degrees). The
+    shoulder band and the rounds now ramp from the field normal to their
+    next ring: narrow even strips, no diagonals.
+
+    Applies the part's WEIGHTED_NORMAL modifier now, then overrides only the
+    corners in the field's smooth fan at each field vertex (corners across a
+    sharp edge keep theirs), so the fans and the sharp edges are unchanged
+    and the normals survive kitlib.finish() (join, then shade smooth and
+    sharp by the same angle) like the G1 recipe. No geometry change."""
+    import bpy
+    W, H = obj["fr_field"]
+    hf = crown(W, H)
+    fx, fz = W / 2 - FIELD_INSET, H / 2 - FIELD_INSET
+    C = FIELD_CROWN_H - FIELD_EDGE_H
+    bpy.context.view_layer.objects.active = obj
+    for mod in list(obj.modifiers):
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    me = obj.data
+    on = []
+    for v in me.vertices:
+        x, h, z = to_plate(v.co)
+        on.append(abs(x) <= fx + 1e-3 and abs(z) <= fz + 1e-3 and abs(h - hf(x, z)) < tol)
+    cn = [Vector(c.vector) for c in me.corner_normals]
+    ref = {}
+    for p in me.polygons:
+        if all(on[i] for i in p.vertices):                 # a field face
+            for li in p.loop_indices:
+                ref.setdefault(me.loops[li].vertex_index, cn[li])
+    same = math.radians(same_deg)
+    out, n, worst = list(cn), 0, 0.0
+    for li, lp in enumerate(me.loops):
+        r = ref.get(lp.vertex_index)
+        if r is None or cn[li].angle(r, 0.0) > same:
+            continue
+        x, h, z = to_plate(me.vertices[lp.vertex_index].co)
+        u, w = x / fx, z / fz
+        su, sw = max(0.0, 1 - u * u), max(0.0, 1 - w * w)
+        gx = C * (-2 * u / fx) * sw if su > 0 else 0.0
+        gz = C * (-2 * w / fz) * su if sw > 0 else 0.0
+        nb = Vector((-gx, -1.0, -gz)).normalized()        # plate (-gx, 1, -gz) -> Blender (x, -h, z)
+        worst = max(worst, math.degrees(cn[li].angle(nb, 0.0)))
+        out[li] = nb
+        n += 1
+    me.normals_split_custom_set([tuple(v) for v in out])
+    obj["fr_field_corners"] = n
+    return n, worst
 
 
 def lod_parts(kit, level):

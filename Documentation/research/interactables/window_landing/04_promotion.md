@@ -1,6 +1,6 @@
 # 04 — Window landing: promotion list and order (r6)
 
-Status: r6, 2026-10-07 17:40. Nothing here is promoted by this workflow. It lands only after Red confirms the doors + windows proposal (Figma 2497:3804; `05_for_red.md`). Then each owner lands its own items.
+Status: r6, 2026-10-07 17:40. Nothing here is promoted by this workflow. It lands only after Red confirms the doors + windows proposal (Figma 2748:6099, rebuilt 2026-10-07 after 2497:3804 was deleted; `05_for_red.md`). Then each owner lands its own items.
 
 This replaces r5 (2026-10-04 08:50, with the visual chat's 09:40 note), `01` §6 and `02` §7.
 

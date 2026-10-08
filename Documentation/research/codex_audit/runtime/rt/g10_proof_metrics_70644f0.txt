@@ -1,0 +1,240 @@
+# G14 hook proof — 2026-10-07 16:58
+post off, ARGBFloat target 4x MSAA, URP HDR buffer 64 bit, exact float comparison (bit patterns)
+## Pass 1 (globals never set, keyword _FR_GLASS_RT off)
+### 01_rep_L0 (pass 1) — representative L0 · cell (264, 200) Level0/Standard · looking (0, 1) (run 7) · score 7 (audit procedure) · zone Level0 (cell (264, 200) Level0/Standard, lamp mode 1 level 0.987 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_L0_1.5m (pass 1) — head-on from 1.5 m · window (282, 206)→(282, 207) · camera side Level0/Low · far side Level0/Tall · zone Level0 (cell (282, 206) Level0/Low, lamp mode 0 level 1 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_L0_oblique50 (pass 1) — ~50° (1.2 m back, 1.4 m to the side; audit frame 04) · window (282, 206)→(282, 207) · camera side Level0/Low · far side Level0/Tall · zone Level0 (cell (282, 206) Level0/Low, lamp mode 0 level 0.987 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  FAIL (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 162 · max|Δ| 0.0050424 · by quadrant TL/TR/BL/BR 0/0/124/38
+### window_L0_0.7m (pass 1) — head-on from 0.7 m · window (282, 206)→(282, 207) · camera side Level0/Low · far side Level0/Tall · zone Level0 (cell (282, 206) Level0/Low, lamp mode 0 level 0.967 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_L0_steep (pass 1) — steep, 61° from the pane normal (1.166 m from the opening centre, same cell) · window (282, 206)→(282, 207) · camera side Level0/Low · far side Level0/Tall · zone Level0 (cell (282, 206) Level0/Low, lamp mode 0 level 0.96 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_Office_1.5m (pass 1) — head-on from 1.5 m · window (281, 206)→(281, 207) · camera side Office/Standard · far side Level0/Tall · zone Office (cell (281, 206) Office/Standard, lamp mode 0 level 0.968 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_Office_oblique50 (pass 1) — ~50° (1.2 m back, 1.4 m to the side; audit frame 23) · window (281, 206)→(281, 207) · camera side Office/Standard · far side Level0/Tall · zone Office (cell (281, 206) Office/Standard, lamp mode 0 level 0.988 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_Office_0.7m (pass 1) — head-on from 0.7 m · window (281, 206)→(281, 207) · camera side Office/Standard · far side Level0/Tall · zone Office (cell (281, 206) Office/Standard, lamp mode 0 level 1 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_Office_steep (pass 1) — steep, 61° from the pane normal (1.166 m from the opening centre, same cell) · window (281, 206)→(281, 207) · camera side Office/Standard · far side Level0/Tall · zone Office (cell (281, 206) Office/Standard, lamp mode 0 level 0.992 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### 34_rep_Office (pass 1) — representative Office · cell (285, 191) Office/Standard · looking (1, 0) (run 7) · score 27 (audit procedure) · zone Office (cell (285, 191) Office/Standard, lamp mode 0 level 0.96 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### 35_rep_Office_b (pass 1) — Office, quarter turn (audit frame 35) · zone Office (cell (285, 191) Office/Standard, lamp mode 0 level 0.968 enabled True)
+  FAIL determinism: baseline vs baseline again: differing pixels 8 · max|Δ| 0.000122998 · by quadrant TL/TR/BL/BR 0/0/8/0
+  FAIL (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 8 · max|Δ| 0.000122998 · by quadrant TL/TR/BL/BR 0/0/8/0
+### 38_deadlamp_window_1.5m (pass 1) — head-on from 1.5 m · camera under a dead lamp (mode 3) · window (304, 207)→(305, 207) · camera side Level0/Tall · far side Level0/Standard · zone DeadLamp (cell (304, 207) Level0/Tall, lamp mode 3 level 0 enabled False)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### 38_deadlamp_window_oblique50 (pass 1) — ~50° · camera under a dead lamp (mode 3) · window (304, 207)→(305, 207) · camera side Level0/Tall · far side Level0/Standard · zone DeadLamp (cell (304, 207) Level0/Tall, lamp mode 3 level 0 enabled False)
+  FAIL determinism: baseline vs baseline again: differing pixels 2 · max|Δ| 5.38491E-06 · by quadrant TL/TR/BL/BR 2/0/0/0
+  FAIL (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 2 · max|Δ| 5.38491E-06 · by quadrant TL/TR/BL/BR 2/0/0/0
+### 39_dark_beyond_window_1.5m (pass 1) — head-on from 1.5 m · camera lit, dead lamp in the far cell · window (305, 207)→(304, 207) · camera side Level0/Standard · far side Level0/Tall · zone Level0 (cell (305, 207) Level0/Standard, lamp mode 0 level 0.996 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### 42_hutch_cabinet_STAGED (pass 1) — STAGED in cell (306, 206) Level0/Standard: Kit_Hutch (frame left) and Kit_DisplayCabinet (frame right), free-standing, glass doors facing the camera, camera 2.0 m back at eye height · zone Level0 (cell (307, 206) Level0/Standard, lamp mode 1 level 0.957 enabled True)
+  PASS determinism: baseline vs baseline again: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+## Pass 2 (globals set)
+### 01_rep_L0 (pass 2)
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info P1 keyword on, weight 1, RT (2,0,0,1), no held pane in this view: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### window_L0_1.5m (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452354 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452354 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452354 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 2805 · max|Δ| 5.96046E-08 · in the pane mask 2805 of 452354 (0.6 %) · outside 0 · by quadrant TL/TR/BL/BR 891/1144/395/375
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452354 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 435182 · max|Δ| 6.17868 · in the pane mask 435182 of 452354 (96.2 %) · outside 0 · by quadrant TL/TR/BL/BR 132434/132469/85131/85148
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452354 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 132434 · max|Δ| 6.17868 · in the pane mask 132434 of 452354 (29.3 %) · outside 0 · by quadrant TL/TR/BL/BR 132434/0/0/0 · pane pixels by quadrant 138303/138305/87872/87874
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 435182 · max|Δ| 3.48655 · by quadrant TL/TR/BL/BR 132434/132469/85131/85148
+  PASS P4 depth tag = the pane's own eye depth (453800 tagged px): the pane changes like P1, nothing outside: differing pixels 435182 · max|Δ| 6.17868 · in the pane mask 435182 of 452354 (96.2 %) · outside 0 · by quadrant TL/TR/BL/BR 132434/132469/85131/85148 · P1 changed 435182 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452354 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 438315 · max|Δ| 4.9327 · in the pane mask 438315 of 452354 (96.9 %) · outside 0 · by quadrant TL/TR/BL/BR 133196/133184/85965/85970
+### window_L0_oblique50 (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356771 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356771 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356771 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 3213 · max|Δ| 1.90735E-06 · in the pane mask 3213 of 356771 (0.9 %) · outside 0 · by quadrant TL/TR/BL/BR 356/1081/380/1396
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356771 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 328455 · max|Δ| 24.1034 · in the pane mask 328455 of 356771 (92.1 %) · outside 0 · by quadrant TL/TR/BL/BR 24388/145971/18384/139712
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356771 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 24388 · max|Δ| 0.398836 · in the pane mask 24388 of 356771 (6.8 %) · outside 0 · by quadrant TL/TR/BL/BR 24388/0/0/0 · pane pixels by quadrant 25319/160594/18870/151988
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 328455 · max|Δ| 13.7392 · by quadrant TL/TR/BL/BR 24388/145971/18384/139712
+  PASS P4 depth tag = the pane's own eye depth (357402 tagged px): the pane changes like P1, nothing outside: differing pixels 328455 · max|Δ| 24.1034 · in the pane mask 328455 of 356771 (92.1 %) · outside 0 · by quadrant TL/TR/BL/BR 24388/145971/18384/139712 · P1 changed 328455 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356771 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 330705 · max|Δ| 20.181 · in the pane mask 330682 of 356771 (92.7 %) · outside 23 · by quadrant TL/TR/BL/BR 24719/146780/18639/140567
+### window_L0_0.7m (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 5632 · max|Δ| 5.96046E-08 · in the pane mask 5632 of 1150713 (0.5 %) · outside 0 · by quadrant TL/TR/BL/BR 2134/2323/569/606
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 1130927 · max|Δ| 0.962839 · in the pane mask 1130927 of 1150713 (98.3 %) · outside 0 · by quadrant TL/TR/BL/BR 386508/386803/178728/178888
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 386508 · max|Δ| 0.439144 · in the pane mask 386508 of 1150713 (33.6 %) · outside 0 · by quadrant TL/TR/BL/BR 386508/0/0/0 · pane pixels by quadrant 393196/393205/182154/182158
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 1130927 · max|Δ| 0.624709 · by quadrant TL/TR/BL/BR 386508/386803/178728/178888
+  PASS P4 depth tag = the pane's own eye depth (1157161 tagged px): the pane changes like P1, nothing outside: differing pixels 1130927 · max|Δ| 0.505121 · in the pane mask 1130927 of 1150713 (98.3 %) · outside 0 · by quadrant TL/TR/BL/BR 386508/386803/178728/178888 · P1 changed 1130927 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 1134479 · max|Δ| 0.504224 · in the pane mask 1134479 of 1150713 (98.6 %) · outside 0 · by quadrant TL/TR/BL/BR 387729/387953/179334/179463
+### window_L0_steep (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537710 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537710 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537710 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 3428 · max|Δ| 8.9407E-08 · in the pane mask 3427 of 537710 (0.6 %) · outside 1 · by quadrant TL/TR/BL/BR 1063/800/615/950
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537710 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 463799 · max|Δ| 0.961464 · in the pane mask 463711 of 537710 (86.2 %) · outside 88 · by quadrant TL/TR/BL/BR 73789/213603/32285/144122
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537710 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 73789 · max|Δ| 0.856825 · in the pane mask 73725 of 537710 (13.7 %) · outside 64 · by quadrant TL/TR/BL/BR 73789/0/0/0 · pane pixels by quadrant 75202/254983/32490/175035
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 463630 · max|Δ| 0.565437 · by quadrant TL/TR/BL/BR 73665/213603/32240/144122
+  PASS P4 depth tag = the pane's own eye depth (537330 tagged px): the pane changes like P1, nothing outside: differing pixels 463799 · max|Δ| 0.961464 · in the pane mask 463711 of 537710 (86.2 %) · outside 88 · by quadrant TL/TR/BL/BR 73789/213603/32285/144122 · P1 changed 463711 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537710 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 466138 · max|Δ| 0.959778 · in the pane mask 465490 of 537710 (86.6 %) · outside 648 · by quadrant TL/TR/BL/BR 74430/214102/32671/144935
+### window_Office_1.5m (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452353 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452353 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452353 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 3437 · max|Δ| 5.96046E-08 · in the pane mask 3437 of 452353 (0.8 %) · outside 0 · by quadrant TL/TR/BL/BR 1497/967/501/472
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452353 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 437081 · max|Δ| 1.16103 · in the pane mask 437081 of 452353 (96.6 %) · outside 0 · by quadrant TL/TR/BL/BR 132997/133017/85522/85545
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452353 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 132997 · max|Δ| 1.16103 · in the pane mask 132997 of 452353 (29.4 %) · outside 0 · by quadrant TL/TR/BL/BR 132997/0/0/0 · pane pixels by quadrant 138303/138303/87873/87874
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 437081 · max|Δ| 0.778561 · by quadrant TL/TR/BL/BR 132997/133017/85522/85545
+  PASS P4 depth tag = the pane's own eye depth (453800 tagged px): the pane changes like P1, nothing outside: differing pixels 437081 · max|Δ| 0.27343 · in the pane mask 437081 of 452353 (96.6 %) · outside 0 · by quadrant TL/TR/BL/BR 132997/133017/85522/85545 · P1 changed 437081 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 452353 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 438894 · max|Δ| 0.272893 · in the pane mask 438894 of 452353 (97.0 %) · outside 0 · by quadrant TL/TR/BL/BR 133359/133377/86072/86086
+### window_Office_oblique50 (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356776 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356776 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356776 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 5430 · max|Δ| 8.9407E-08 · in the pane mask 5430 of 356776 (1.5 %) · outside 0 · by quadrant TL/TR/BL/BR 613/2474/493/1850
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356776 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 328580 · max|Δ| 0.744526 · in the pane mask 328580 of 356776 (92.1 %) · outside 0 · by quadrant TL/TR/BL/BR 24590/145800/18541/139649
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356776 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 24590 · max|Δ| 0.525667 · in the pane mask 24590 of 356776 (6.9 %) · outside 0 · by quadrant TL/TR/BL/BR 24590/0/0/0 · pane pixels by quadrant 25319/160597/18870/151990
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 328580 · max|Δ| 0.454913 · by quadrant TL/TR/BL/BR 24590/145800/18541/139649
+  PASS P4 depth tag = the pane's own eye depth (357367 tagged px): the pane changes like P1, nothing outside: differing pixels 328580 · max|Δ| 0.474346 · in the pane mask 328580 of 356776 (92.1 %) · outside 0 · by quadrant TL/TR/BL/BR 24590/145800/18541/139649 · P1 changed 328580 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 356776 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 330794 · max|Δ| 0.472067 · in the pane mask 330718 of 356776 (92.7 %) · outside 76 · by quadrant TL/TR/BL/BR 24891/146617/18781/140505
+### window_Office_0.7m (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 6520 · max|Δ| 8.9407E-08 · in the pane mask 6520 of 1150713 (0.6 %) · outside 0 · by quadrant TL/TR/BL/BR 3088/2158/644/630
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 1132834 · max|Δ| 1.09584 · in the pane mask 1132834 of 1150713 (98.4 %) · outside 0 · by quadrant TL/TR/BL/BR 387152/387344/179102/179236
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 387152 · max|Δ| 1.09584 · in the pane mask 387152 of 1150713 (33.6 %) · outside 0 · by quadrant TL/TR/BL/BR 387152/0/0/0 · pane pixels by quadrant 393200/393202/182155/182156
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 1132834 · max|Δ| 0.718569 · by quadrant TL/TR/BL/BR 387152/387344/179102/179236
+  PASS P4 depth tag = the pane's own eye depth (1157159 tagged px): the pane changes like P1, nothing outside: differing pixels 1132834 · max|Δ| 0.533459 · in the pane mask 1132834 of 1150713 (98.4 %) · outside 0 · by quadrant TL/TR/BL/BR 387152/387344/179102/179236 · P1 changed 1132834 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 1150713 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 1137950 · max|Δ| 0.532645 · in the pane mask 1137950 of 1150713 (98.9 %) · outside 0 · by quadrant TL/TR/BL/BR 388663/388749/180232/180306
+### window_Office_steep (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537709 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537709 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537709 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 5150 · max|Δ| 1.19209E-07 · in the pane mask 5146 of 537709 (1.0 %) · outside 4 · by quadrant TL/TR/BL/BR 1190/2057/690/1213
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537709 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 462147 · max|Δ| 1.00809 · in the pane mask 461807 of 537709 (85.9 %) · outside 340 · by quadrant TL/TR/BL/BR 74169/212278/32453/143247
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537709 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 74169 · max|Δ| 0.90352 · in the pane mask 73916 of 537709 (13.7 %) · outside 253 · by quadrant TL/TR/BL/BR 74169/0/0/0 · pane pixels by quadrant 75201/254984/32490/175034
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 461561 · max|Δ| 0.595809 · by quadrant TL/TR/BL/BR 73786/212278/32290/143207
+  PASS P4 depth tag = the pane's own eye depth (537150 tagged px): the pane changes like P1, nothing outside: differing pixels 462147 · max|Δ| 1.00809 · in the pane mask 461807 of 537709 (85.9 %) · outside 340 · by quadrant TL/TR/BL/BR 74169/212278/32453/143247 · P1 changed 461807 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 537709 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 464534 · max|Δ| 1.00675 · in the pane mask 463389 of 537709 (86.2 %) · outside 1145 · by quadrant TL/TR/BL/BR 74821/212773/32855/144085
+### 34_rep_Office (pass 2)
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info P1 keyword on, weight 1, RT (2,0,0,1), no held pane in this view: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### 35_rep_Office_b (pass 2)
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info P1 keyword on, weight 1, RT (2,0,0,1), no held pane in this view: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+### 38_deadlamp_window_1.5m (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444853 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444853 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444853 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 1764 · max|Δ| 5.96046E-08 · in the pane mask 1764 of 444853 (0.4 %) · outside 0 · by quadrant TL/TR/BL/BR 438/494/404/428
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444853 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 428653 · max|Δ| 0.314734 · in the pane mask 428379 of 444853 (96.3 %) · outside 274 · by quadrant TL/TR/BL/BR 126402/126437/87763/88051
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444853 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 126402 · max|Δ| 0.314734 · in the pane mask 126402 of 444853 (28.4 %) · outside 0 · by quadrant TL/TR/BL/BR 126402/0/0/0 · pane pixels by quadrant 132137/132138/90289/90289
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 428653 · max|Δ| 0.314734 · by quadrant TL/TR/BL/BR 126402/126437/87763/88051
+  PASS P4 depth tag = the pane's own eye depth (446242 tagged px): the pane changes like P1, nothing outside: differing pixels 428653 · max|Δ| 0.334137 · in the pane mask 428379 of 444853 (96.3 %) · outside 274 · by quadrant TL/TR/BL/BR 126402/126437/87763/88051 · P1 changed 428379 in the mask
+  FAIL P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 428653 · max|Δ| 0.296604 · in the pane mask 428379 of 444853 (96.3 %) · outside 274 · by quadrant TL/TR/BL/BR 126402/126437/87763/88051
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 430954 · max|Δ| 0.594326 · in the pane mask 430954 of 444853 (96.9 %) · outside 0 · by quadrant TL/TR/BL/BR 127141/127130/88342/88341
+### 38_deadlamp_window_oblique50 (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 232406 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 232406 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 232406 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 1509 · max|Δ| 5.96046E-08 · in the pane mask 1341 of 232406 (0.6 %) · outside 168 · by quadrant TL/TR/BL/BR 422/344/325/418
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 232406 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 208685 · max|Δ| 0.561276 · in the pane mask 206069 of 232406 (88.7 %) · outside 2616 · by quadrant TL/TR/BL/BR 43246/75530/27110/62799
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 232406 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 43246 · max|Δ| 0.508072 · in the pane mask 40630 of 232406 (17.5 %) · outside 2616 · by quadrant TL/TR/BL/BR 43246/0/0/0 · pane pixels by quadrant 41664/89176/27580/73986
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 208685 · max|Δ| 0.308061 · by quadrant TL/TR/BL/BR 43246/75530/27110/62799
+  PASS P4 depth tag = the pane's own eye depth (232652 tagged px): the pane changes like P1, nothing outside: differing pixels 206069 · max|Δ| 0.561276 · in the pane mask 206069 of 232406 (88.7 %) · outside 0 · by quadrant TL/TR/BL/BR 40630/75530/27110/62799 · P1 changed 206069 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 232406 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 207870 · max|Δ| 0.55998 · in the pane mask 207773 of 232406 (89.4 %) · outside 97 · by quadrant TL/TR/BL/BR 41048/76051/27418/63353
+### 39_dark_beyond_window_1.5m (pass 2)
+  pane was rebuilt by streaming; found again by position: True
+  PASS (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444849 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  FAIL (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 174 · max|Δ| 0.000312038 · in the pane mask 174 of 444849 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/85/0/89
+  PASS (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444849 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 5044 · max|Δ| 5.96046E-08 · in the pane mask 5044 of 444849 (1.1 %) · outside 0 · by quadrant TL/TR/BL/BR 1967/1834/615/628
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444849 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P1 keyword on, weight 1, RT (2,0,0,1): the pane changes: differing pixels 428390 · max|Δ| 0.748034 · in the pane mask 428390 of 444849 (96.3 %) · outside 0 · by quadrant TL/TR/BL/BR 126403/126442/87763/87782
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444849 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P2 orientation: only the RT's top-left texel is covered -> changes only in the screen's top-left quadrant: differing pixels 126403 · max|Δ| 0.748034 · in the pane mask 126403 of 444849 (28.4 %) · outside 0 · by quadrant TL/TR/BL/BR 126403/0/0/0 · pane pixels by quadrant 132137/132137/90287/90288
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 428390 · max|Δ| 0.459382 · by quadrant TL/TR/BL/BR 126403/126442/87763/87782
+  PASS P4 depth tag = the pane's own eye depth (446215 tagged px): the pane changes like P1, nothing outside: differing pixels 428390 · max|Δ| 0.372699 · in the pane mask 428390 of 444849 (96.3 %) · outside 0 · by quadrant TL/TR/BL/BR 126403/126442/87763/87782 · P1 changed 428390 in the mask
+  PASS P5 depth tag + 0.5 m (as for a pane behind): equals weight 0: differing pixels 0 · max|Δ| 0 · in the pane mask 0 of 444849 (0.0 %) · outside 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  PASS P6 = P4 at render scale 0.75: the pane changes, (almost) nothing outside it: differing pixels 430964 · max|Δ| 0.371724 · in the pane mask 430964 of 444849 (96.9 %) · outside 0 · by quadrant TL/TR/BL/BR 127143/127137/88343/88341
+### 42_hutch_cabinet_STAGED (pass 2)
+  FAIL (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline: differing pixels 68 · max|Δ| 0.213471 · by quadrant TL/TR/BL/BR 17/0/51/0
+  PASS (iii) keyword off, weight 1, RT A=0, vs baseline: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  FAIL (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline: differing pixels 68 · max|Δ| 0.213471 · by quadrant TL/TR/BL/BR 17/0/51/0
+  info keyword on, weight 0, vs baseline (code differs, so the last bit may): differing pixels 3960 · max|Δ| 5.96046E-08 · by quadrant TL/TR/BL/BR 1459/1328/0/1173
+  PASS keyword on: weight 1 with A=0 equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  info P1 keyword on, weight 1, RT (2,0,0,1), no held pane in this view: differing pixels 13831 · max|Δ| 0.383799 · by quadrant TL/TR/BL/BR 5493/8338/0/0
+  PASS P3 depth tag 1000 m (no glass at that depth) equals weight 0: differing pixels 0 · max|Δ| 0 · by quadrant TL/TR/BL/BR 0/0/0/0
+  FAIL props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0: differing pixels 13831 · max|Δ| 0.217318 · by quadrant TL/TR/BL/BR 5493/8338/0/0
+## Summary: 175 checks, 21 failed: window_L0_oblique50 (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline; 35_rep_Office_b determinism: baseline vs baseline again; 35_rep_Office_b (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline; 38_deadlamp_window_oblique50 determinism: baseline vs baseline again; 38_deadlamp_window_oblique50 (i) hook shader (keyword _FR_GLASS_RT off), globals never set, vs baseline; window_L0_1.5m props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_L0_oblique50 props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_L0_0.7m props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_L0_steep props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_Office_1.5m props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_Office_oblique50 props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_Office_0.7m props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; window_Office_steep props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; 38_deadlamp_window_1.5m props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; 38_deadlamp_window_1.5m P5 depth tag + 0.5 m (as for a pane behind): equals weight 0; 38_deadlamp_window_oblique50 props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; 39_dark_beyond_window_1.5m (iii) keyword off, weight 1, RT A=0, vs baseline; 39_dark_beyond_window_1.5m props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0; 42_hutch_cabinet_STAGED (ii) keyword off, weight 0, RT = 1x1 red A=1, vs baseline; 42_hutch_cabinet_STAGED (iv) keyword off, weight 1, RT (2,0,0,1), vs baseline; 42_hutch_cabinet_STAGED props (_RTReceive 0), every pane hidden, keyword on: weight 1 + RT (2,0,0,1) equals weight 0

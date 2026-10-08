@@ -11,7 +11,7 @@ From the visual chat (游戏视觉), 2026-10-03. Red asked for the new door mode
 | `index.json` | One record per K-sheet (`sheets`, 36) and per kit (`kits`, 62), in the fields of `INDEX_FORMAT.md`. Also `heroes` and `proposalSlots` (ours) |
 | `png/<Kit>_<top\|front\|side\|persp>.png` | 248 transparent PNGs, 16 px clear padding, rendered at 2× the sheet scale. `png/manifest.json` = the renderer's own record (px/m, sizes, slots, tags) |
 | `heroes/` | Grouped hero shots (doors, lock, keys, windows). `<name>.png` sits on the hero-panel colour #EEECE6; `<name>_alpha.png` is transparent where the scene allows |
-| `heroes/slots/` | Ready-made crops for **our** proposal section 2497:3804 (not for the K-sheets) |
+| `heroes/slots/` | Ready-made crops for **our** proposal section 2748:6099 (rebuilt 2026-10-07; was 2497:3804; not for the K-sheets) |
 | `FrontRoomsThreeView.interactables.cs.txt` | The three-view renderer with the interactables patch (`-threeViewYaw`, 4000/8000 px/m steps, tight shadow range) |
 | `FrontRoomsInteractableHeroes.cs.txt` | The hero renderer |
 | `tools/` | `build_index.py` (writes `index.json`), `sheets_meta.py` (titles, ledes, era notes), `swatch.py`, `postcrop.py`, `slots.py`, `contact.py` |

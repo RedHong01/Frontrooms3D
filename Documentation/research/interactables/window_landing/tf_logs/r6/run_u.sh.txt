@@ -1,0 +1,14 @@
+#!/bin/zsh
+# usage: run_u.sh <clone dir name> <method|-> <tag> [extra unity args...]   (method "-" = compile only, -quit)
+W=/Users/redwang/FrontRoomsVisualWork; R=$W/wf/win_r6
+C=$1; M=$2; T=$3; shift 3
+L=$R/logs/$T.log
+echo "$T start $(date +%H:%M:%S) $(uptime)" >> $R/logs/runs_load.txt
+if [ "$M" = "-" ]; then
+  /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath $W/$C -buildTarget OSXUniversal -logFile $L "$@"
+else
+  /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath $W/$C -buildTarget OSXUniversal -executeMethod $M -logFile $L "$@"
+fi
+rc=$?
+echo "$T end $(date +%H:%M:%S) rc=$rc $(uptime)" >> $R/logs/runs_load.txt
+exit $rc

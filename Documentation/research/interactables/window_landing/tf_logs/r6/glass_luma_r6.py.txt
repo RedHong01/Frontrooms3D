@@ -1,0 +1,18 @@
+"""A1: mean |intact - broken| luma over the opening at 1.5 m, same camera (r5 method). kit = proj_win kit, today = kitoff."""
+from PIL import Image
+import numpy as np, sys
+W = "/Users/redwang/FrontRoomsVisualWork"
+K = W + "/proj_win/Verification/window_tf4/frames_kit/"; O = W + "/proj_win/Verification/window_tf4/frames_kitoff/"
+def L(p): return np.asarray(Image.open(p).convert("L"), dtype=np.float32)
+out = []
+for m in ["L0", "OF"]:
+    for side in ["A_front_1.5m", "B_front_1.5m"]:
+        res = []
+        for tag, D in [("kit", K), ("before-kit", O)]:
+            a = L(D + f"{m}_{side}.png"); b = L(D + f"{m}_broken_{side}.png")
+            d = np.abs(a - b); ys, xs = np.where(d > 1.5)
+            if len(xs) == 0: res.append(f"{tag}: no change"); continue
+            x0, x1 = np.percentile(xs, [5, 95]).astype(int); y0, y1 = np.percentile(ys, [5, 95]).astype(int)
+            res.append(f"{tag}: {d[y0:y1, x0:x1].mean():.1f} luma (box x {x0}-{x1} y {y0}-{y1})")
+        out.append(f"{m} {side}: " + " | ".join(res))
+print("\n".join(out)); open(W + "/wf/win_r6/glass_luma_r6.txt", "w").write("\n".join(out) + "\n")

@@ -1,0 +1,21 @@
+{
+    "verdict": "PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture, 0 frames in furniture outside a pass-through, 0 exceptions; 23 doors broken (12 from the swing side), 0 frames breaking inside a sweep, 0 broken leaves off their swing side; door rule PASS",
+    "seed": 20261001,
+    "boxes": 136,
+    "officeRoomsDressed": 4,
+    "trials": 60,
+    "arrived": 60,
+    "endedBeside": 15,
+    "ghosts": 0,
+    "exceptions": 0,
+    "wallFrames": 0,
+    "furnitureFramesNotGhosting": 0,
+    "averageSeconds": 11.903319358825684,
+    "worstPlanMs": 5.1305999755859379,
+    "doorRule": "PASS · seen: PASS · door (-4, -8)→(-4, -9), the Relay from (-4, -6), the player in sight 79/79 frames through to (-4, -10), search began in (-4, -9) (expected (-4, -9)), player vanished to (0, -4), closest approach 15.0 m · unseen: PASS · door (-4, -8)→(-4, -9), the Relay from (-6, -8), the player in sight 36/61 frames, on the near side only, search began in (-4, -8) (expected (-4, -8)), player vanished to (1, -10), closest approach 13.4 m",
+    "doorBreaks": 23,
+    "breaksFromSwingSide": 12,
+    "breakStanceInSweepFrames": 0,
+    "brokenLeavesOffSwingSide": 0,
+    "failures": []
+}

@@ -1,0 +1,12 @@
+compile_r12 start 16:34:51 16:34  up 2 days, 15:36, 1 user, load averages: 162.92 93.32 96.27
+compile_win start 16:34:51 16:34  up 2 days, 15:36, 1 user, load averages: 162.92 93.32 96.27
+compile_r12 end 16:36:39 rc=0 16:36  up 2 days, 15:38, 1 user, load averages: 285.80 150.54 117.82
+compile_win end 16:36:43 rc=0 16:36  up 2 days, 15:38, 1 user, load averages: 285.80 150.54 117.82
+tf6_win start 16:36:54 16:36  up 2 days, 15:38, 1 user, load averages: 293.62 156.71 120.39
+tf6_r12 start 16:36:54 16:36  up 2 days, 15:38, 1 user, load averages: 293.62 156.71 120.39
+tf6_r12 end 16:44:52 rc=0 16:44  up 2 days, 15:46, 1 user, load averages: 575.66 477.79 301.86
+play6_r12 start 16:47:30 16:47  up 2 days, 15:48, 1 user, load averages: 517.04 502.34 343.10
+play6_r12 end 17:00:55 rc=0 17:00  up 2 days, 16:02, 1 user, load averages: 659.76 572.87 469.33
+tf6_win end 17:06:56 rc=0 17:06  up 2 days, 16:08, 1 user, load averages: 600.61 566.44 500.52
+lod6_r12 start 17:07:05 17:07  up 2 days, 16:08, 1 user, load averages: 599.82 567.49 501.67
+play6_win start 17:07:05 17:07  up 2 days, 16:08, 1 user, load averages: 599.82 567.49 501.67

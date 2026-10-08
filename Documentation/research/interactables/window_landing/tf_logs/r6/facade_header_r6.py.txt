@@ -1,0 +1,33 @@
+"""Comment-only r6 edit of the facade header (DOC-D4): describe main's call site and the contract's, without a sha."""
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old1 = """/// Call site (contract r4, 2026-10-03, on main 75cfdff): the map's own window model (commit df4cb03) owns the root
+/// "Window {a}-{b}" (unscaled, opening centre on the wall line at floor level, +Z into cell b), the gameplay pane under
+/// it, GlassBreakRecord, WindowBuilt / WindowReleased and the FrontRoomsGlassBreakable hook. The map calls
+/// DressWindow(map, window, record) directly, once per window edge, broken windows included, after the breakable hook,
+/// behind its own try/catch (FrontRoomsMapWorld.DressWindowFrame, logged once):
+///   r4 R1   from RaiseWindowBuilt, after the chunk is registered; the map's trims stay (hidden by the casing);
+///   r4 T    (optional) from BuildEdge, before the trims; the map builds a window's trims only when this returns false.
+/// A signature change here is a compile error in the map, never a silent fallback.
+"""
+new1 = """/// Call site: the map's own window model owns the root "Window {a}-{b}" (unscaled, opening centre on the wall line at
+/// floor level, +Z into cell b), the gameplay pane under it, GlassBreakRecord, WindowBuilt / WindowReleased and the
+/// FrontRoomsGlassBreakable hook. The map calls DressWindow(map, window, record) directly (compile time, not reflection),
+/// once per window edge, broken windows included, after the breakable hook, outside Build's guard:
+///   main as Codex left it: from RaiseWindowBuilt, in a try/catch that logs every failure; the map's trims stay;
+///   contract R1 (window_landing/03_contract_map.md): the same place, through FrontRoomsMapWorld.DressWindowFrame,
+///           which logs one warning per session; the map's trims stay (hidden by the casing);
+///   contract T (optional, Red decides): from BuildEdge, before the trims, still through DressWindowFrame; the map
+///           builds a window's trims only when this returns false.
+/// A signature change here is a compile error in the map, never a silent fallback.
+"""
+old2 = """/// exception goes back to the map's guard, which keeps today's trims and pane for that window and logs once."""
+new2 = """/// exception goes back to the map's guard, which keeps the map's trims and pane for that window (logged once with R1)."""
+old3 = """    /// Returns true when a frame was hung, so the map leaves its own trims out for this window."""
+new3 = """    /// Returns true when a frame was hung, so the map can leave its own trims out for this window (contract T)."""
+for o, n in ((old1, new1), (old2, new2), (old3, new3)):
+    assert s.count(o) == 1, o[:60]
+    s = s.replace(o, n)
+open(p, "w", encoding="utf-8").write(s)
+print("header r6 applied to", p)

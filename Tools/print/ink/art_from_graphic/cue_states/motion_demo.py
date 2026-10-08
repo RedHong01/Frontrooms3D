@@ -198,7 +198,7 @@ def render_video(state, outdir):
         pool.map(_frame, [(state, i, tmp, outdir, n) for i in range(n)])
     mp4 = os.path.join(outdir, "cue_motion_%s.mp4" % state)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(tmp, "f%04d.png"),
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4], check=True)
+                    "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2:color=white", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4], check=True)
     shutil.rmtree(tmp)
     return mp4
 

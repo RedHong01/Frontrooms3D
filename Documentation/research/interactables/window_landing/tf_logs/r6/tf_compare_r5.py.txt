@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Window TF r4/r5: compare the signatures across clones and variants.
+  off   = proj_win_r12 kitoff (main + r4 R1 R2, kit disabled: the map's look before the kit)
+  offT  = proj_win kitoff      (main + r4 R1 R2 T, kit disabled)
+  kitR  = proj_win_r12 kit    (main + r4 R1 R2: frames, map trims kept under the casing = main's behaviour)
+  kitT  = proj_win kit         (main + r4 R1 R2 T: frames, no map trims on framed windows)
+  thrT  = proj_win kitthrow    (T, the facade forced to throw)
+"""
+import collections
+import re
+import sys
+
+S = "/Users/redwang/FrontRoomsVisualWork"
+paths = {
+    "off": S + "/proj_win_r12/Verification/window_tf4/kitoff_sig.tsv",
+    "offT": S + "/proj_win/Verification/window_tf4/kitoff_sig.tsv",
+    "kitR": S + "/proj_win_r12/Verification/window_tf4/kit_sig.tsv",
+    "kitT": S + "/proj_win/Verification/window_tf4/kit_sig.tsv",
+    "thrT": S + "/proj_win/Verification/window_tf4/kitthrow_sig.tsv",
+    "thrR": S + "/proj_win_r12/Verification/window_tf4/kitthrow_sig.tsv",
+}
+def load(p):
+    d = collections.defaultdict(dict)
+    try:
+        for line in open(p, encoding="utf-8"):
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 4:
+                continue
+            seed, sec, key, val = parts[0], parts[1], parts[2], "\t".join(parts[3:])
+            d[sec][(seed, key)] = val
+    except FileNotFoundError:
+        print("missing", p)
+    return d
+
+
+V = {k: load(p) for k, p in paths.items()}
+out = []
+
+
+def say(s=""):
+    out.append(s)
+    print(s)
+
+
+def compare(sec, a, b, allow=None):
+    A, B = V[a].get(sec, {}), V[b].get(sec, {})
+    keys = sorted(set(A) | set(B))
+    same = diff = 0
+    allowed = 0
+    examples = []
+    for k in keys:
+        x, y = A.get(k), B.get(k)
+        if x == y:
+            same += 1
+        elif allow and allow(k, x, y):
+            allowed += 1
+        else:
+            diff += 1
+            if len(examples) < 4:
+                examples.append((k, x, y))
+    say(f"{sec:24s} {a:6s} vs {b:6s}: {same} identical, {diff} different" + (f", {allowed} expected differences" if allow else "") + f" (of {len(keys)})")
+    for k, x, y in examples:
+        say(f"    e.g. {k}\n      {a}: {str(x)[:300]}\n      {b}: {str(y)[:300]}")
+    return same, diff, allowed
+
+
+say("== window TF r5 cross-variant comparison ==")
+for v in V:
+    say(f"{v}: sections " + ", ".join(f"{s} {len(V[v][s])}" for s in sorted(V[v])))
+say()
+G = ["count", "eray-pre", "sight-pre", "overlap-pre-cut", "eray-post", "sight-post", "overlap-post-cut", "overlap-post-corridor", "climb"]
+say("-- T is inert without a frame: offT (T, kit disabled) must equal off (no T, kit disabled) in everything --")
+for sec in G + ["shell", "chunkvis", "chunkcount", "shift"]:
+    compare(sec, "off", "offT")
+say()
+say("-- R1/R2 keep the map's trims: kitR shell must equal off shell --")
+compare("shell", "off", "kitR")
+say()
+say("-- gameplay: the kit (either shape) must not change any ray, overlap or climb --")
+for sec in G:
+    compare(sec, "off", "kitR")
+for sec in G:
+    compare(sec, "off", "kitT")
+say()
+say("-- forced throw (every window): the map keeps its trims and pane: thrT shell equals off shell --")
+compare("shell", "off", "thrT")
+compare("shell", "off", "thrR")
+say()
+say("-- T shell: differs from off only in trim meshes --")
+compare("shell", "off", "kitT", allow=lambda k, x, y: "Cove" in k[1] or "Trim" in k[1])
+B_, K_ = V["off"].get("shell", {}), V["kitT"].get("shell", {})
+removed_v = 0
+kinds = collections.Counter()
+for k, x in B_.items():
+    y = K_.get(k)
+    if y == x:
+        continue
+    kinds[k[1].split("/")[-1] + (" (gone)" if y is None else " (changed)")] += 1
+    removed_v += int(x.split()[0]) - (int(y.split()[0]) if y else 0)
+added = [k for k in K_ if k not in B_]
+say(f"    differing shell meshes by kind: {dict(kinds)}; meshes only in kitT: {len(added)}")
+say(f"    trim vertices removed in total: {removed_v} (= {removed_v / 24:.2f} boxes of 24 vertices)")
+nwin = sum(int(v.split()[0]) for (seed, key), v in V["kitT"].get("count", {}).items() if key == "windows")
+say(f"    windows in these seeds: {nwin}; 3 trim boxes each = {3 * nwin} boxes")
+say()
+def num(s):
+    t = s.split()
+    out = {}
+    for k_, v_ in zip(t[0::2], t[1::2]):
+        try: out[k_] = int(v_)
+        except ValueError: pass
+    return out
+for kv in ["kitR", "kitT"]:
+    say(f"-- per-chunk counts: {kv} minus off --")
+    deltas = []
+    for k, x in sorted(V["off"].get("chunkcount", {}).items()):
+        y = V[kv].get("chunkcount", {}).get(k)
+        if y is None:
+            continue
+        a, b = num(x), num(y)
+        d = {f: b.get(f, 0) - a.get(f, 0) for f in a}
+        deltas.append((k, a, b, d))
+    withw = [t for t in deltas if t[1].get("winL0", 0) + t[1].get("winOF", 0) > 0]
+    say(f"chunks {len(deltas)}, with windows {len(withw)}")
+    if withw:
+        for f in ["renderers", "submeshes", "shadowRenderers", "shadowSubmeshes", "transparent", "lights", "tris", "lod1Renderers", "lod1Tris"]:
+            if f not in withw[0][3]: continue
+            vals = [t[3][f] for t in withw]
+            say(f"  {f:16s} added per chunk with windows: min {min(vals)}, median {sorted(vals)[len(vals)//2]}, max {max(vals)}, total {sum(vals)}")
+        worst = max(withw, key=lambda t: t[3]["tris"])
+        say(f"  worst chunk {worst[0]}: windows L0 {worst[1]['winL0']} OF {worst[1]['winOF']}; tris {worst[1]['tris']} -> {worst[2]['tris']} (+{worst[3]['tris']}); renderers {worst[1]['renderers']} -> {worst[2]['renderers']}; submeshes {worst[1]['submeshes']} -> {worst[2]['submeshes']}")
+        tot_b = sum(t[1]["tris"] for t in deltas); tot_k = sum(t[2]["tris"] for t in deltas)
+        say(f"  all chunks: tris {tot_b} -> {tot_k} (+{100*(tot_k-tot_b)/max(1,tot_b):.1f} %); renderers {sum(t[1]['renderers'] for t in deltas)} -> {sum(t[2]['renderers'] for t in deltas)}; submeshes {sum(t[1]['submeshes'] for t in deltas)} -> {sum(t[2]['submeshes'] for t in deltas)}")
+    say()
+say("-- frame picks --")
+compare("framepick", "off", "kitT")
+open(S + "/wf/win_r6/compare_out.txt", "w").write(chr(10).join(out) + chr(10))

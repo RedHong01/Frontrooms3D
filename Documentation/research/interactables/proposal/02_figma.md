@@ -4,6 +4,248 @@ Date: 2026-10-03. Built about 12:55; fix pass about 17:00 (§0). Owner: visual c
 
 This file records what is in Figma. Nothing landed in the game. Red confirms or changes the proposal; phase 2 then fills the reserved slots. `03_for_red.md` is the one-page guide for Red.
 
+**2026-10-07: the section was deleted and rebuilt as `2748:6099` at x 51297, y 2000. Read §R first. The node ids in §0–§10 are the deleted originals; §R.4 maps each one to its new node.**
+
+## R. Rebuilt 2026-10-07 (read this first)
+
+**The section was deleted and has been rebuilt.** The original section `2497:3804` was deleted from the file. It was last at x 33937, y 8918, under TOUCH CONTROLS. The likely cause is Codex's iOS app-icon run on 2026-10-04 (commit 756a031): it put six "ICON · BRAND YELLOW · 1024×1024" frames inside TOUCH CONTROLS 2528:5403 at that spot. Red asked (2026-10-07): "Rebuild it, in a new position that does not conflict."
+
+The node ids in §0–§10 below are the **deleted originals**. §R.4 maps every one of them to its new node.
+
+### R.1 Where it is now
+
+| Item | Value |
+|---|---|
+| Section | **`2748:6099`** "FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07)" |
+| Link | https://www.figma.com/design/0tCbAiVUlrPId3RWd9LRif?node-id=2748-6099 |
+| Position | **x 51297, y 2000**, 8280 × 3880. The hidden DW01 is parked at (120, 4040) as before, so the footprint is x 51297–59577, y 2000–7120 |
+| Why here | This is where the section was first built on 2026-10-03, before someone moved it. It is the column agreed for it, between the planned ROOM VISUALS (x 42617) and DOOR BREAK · VISUAL PROPOSAL (x 59977), both still unbuilt. The column at x 33937 was not used |
+| Clearance | All 25 page-level nodes and sections (nested ones too) were listed by `absoluteBoundingBox` before the build and again after it. Nothing lies within 400 px of the footprint. The gap to the two planned sections is exactly 400 px. The nearest built section is HUD KEY 2532:4038, at x 68657 |
+| Untouched | The six icon frames and every other section |
+
+| Slide | Frame | Name | Cell |
+|---|---|---|---|
+| 01 / 13 | `2748:6100` | DW00 · Three boxes | r1 c1 |
+| 02 / 13 | `2748:6109` | DW01 · What we take from RE8 · HIDDEN until C1 + C2 arrive | hidden, (120, 4040) |
+| 03 / 13 | `2748:6118` | DW02 · Stop behind every gap | r1 c2 |
+| 04 / 13 | `2748:6127` | DW03 · The store's own doors | r1 c3 |
+| 05 / 13 | `2748:6136` | DW04 · Locked from 20 m | r1 c4 |
+| 06 / 13 | `2748:6145` | DW05 · One section eight doors | r2 c1 |
+| 07 / 13 | `2748:6154` | DW06 · A lock that takes a key | r2 c2 |
+| 08 / 13 | `2748:6163` | DW07 · A key on a hook | r2 c3 |
+| 09 / 13 | `2748:6172` | DW08 · A window, not a pane | r2 c4 |
+| 10 / 13 | `2748:6181` | DW09 · The glass sits in a pocket | r3 c1 |
+| 11 / 13 | `2748:6190` | DW10 · What changes | r3 c2 |
+| 12 / 13 | `2748:6199` | DW11 · Your calls | r3 c3 |
+| 13 / 13 | `2753:6258` | DW12 · Later and already set | r3 c4 |
+
+Diagrams: D1 `2749:6143`, D2 `2750:6186`, D3 `2751:6155`, D4 `2751:6210` (S0 geometry `2752:6247`), D5 `2751:6251`.
+
+### R.2 How it was rebuilt
+
+- **The original scripts were replayed.** Every `use_figma` write of the figma stage (agent a70db8dd65ac242ff) and the fix stage (a4e2b26f26f207883) of run wf_144d6856-540 ran again, in order, with its code unchanged except for the node ids: A041, A042, A044, A046, A047, A049, A050, A064, A065, A068, A069, A079, A091, A093, B089, B103, B107, B110, B145, B159.
+- **How the ids were mapped.** The read-only dumps the old ids came from were replayed too (A096, B009, B010, B083, plus a compact form of B008, whose original output was over the 20 KB limit). Each new result was paired with the original result, id for id. Every id pairing kept the same names, text and structure. No id was guessed.
+- **What the rebuild returned matches the original scripts' returns:** the same text heights, the same 11 chip widths in the layout pass, the same D2 label rows and the same DW11 row positions. The one exception is in §R.5.
+- **Final audit, the same numbers as the fix pass's own audit:**
+  - 604 nodes, 13 frames (DW01 hidden);
+  - fonts IBM Plex Mono 65, Bayon 201, Source Serif 4 52, with no Inter;
+  - 68 named slots: 48 hold an image (one IMAGE fill each) and 20 are placeholders (15 `img:`, 5 `ref:`).
+- **Images.** All 48 were uploaded with `upload_assets` into their named slots: raw PNG bytes, so the layer names stayed, and `scaleMode` FILL, as in the original. Images could not be taken from Figma's history: `figma.getImageByHash` returned null for all 24 original hashes tried.
+- **Visual check.**
+  - The section and all 12 visible slides were screenshotted (`$W/recovery/dw_rebuild/shots/`).
+  - They were compared with the original's screenshots that survive in the old transcripts. DW05 and DW12 differ from the fix stage's own screenshots by a mean of 0.0 and 0.04 per channel. DW03, DW08, DW09 and DW10 differ from its 2000 px check sheet only by resampling at edges.
+  - Logged as **VL113** (`2767:6093`) in the verification log.
+- **Where the files are.** The replay scripts, the id map (`map.json`, 407 ids), the 48 uploaded crops, the hashes and the screenshots are in `/Users/redwang/FrontRoomsVisualWork/recovery/dw_rebuild/`. The six recovered tiles are also in `proposal/media/rebuild/`, because their sources no longer exist.
+
+### R.3 Images: slot, new node, provenance
+
+Path keys as in §5 (`PM` = `proposal/media/`, `IMG` = `interactables/images/`). Every "byte-identical" image has the same imageHash as its original upload, so it is the same file.
+
+| Slide | Slot | Node | Provenance |
+|---|---|---|---|
+| DW00 | `dw00_slit` | `2749:6093` | Byte-identical: same imageHash `2cd42a70c333…` |
+| DW00 | `dw00_swing_a` | `2749:6102` | Byte-identical: same imageHash `8df28224dc7b…` |
+| DW00 | `dw00_swing_b` | `2749:6105` | Byte-identical: same imageHash `37b3f5763ba3…` |
+| DW00 | `dw00_locked` | `2749:6108` | Byte-identical: same imageHash `a1598b7a8eed…` |
+| DW00 | `dw00_key` | `2749:6111` | Byte-identical: same imageHash `f33ac6dd7ec8…` |
+| DW00 | `dw00_window` | `2749:6114` | Byte-identical: same imageHash `62a0192aedec…` |
+| DW02 | `dw02_today` | `2749:6137` | Byte-identical: same imageHash `a7ed686847a8…` |
+| DW02 | `dw02_option_a` | `2749:6140` | Byte-identical: same imageHash `b0065c38c777…` |
+| DW02 | `dw02_leak` | `2749:6144` | Re-cut: same source, same crop code; PNG bytes differ: `PM/ingame_door_gap3_00_floor_leak.png` (700, 560, 1220, 845) at 2× |
+| DW02 | `dw02_proxy` | `2749:6147` | Re-cut: same source, same crop code; PNG bytes differ: `PM/ingame_door_gap3_01_floor_shadowproxy.png` (700, 560, 1220, 845) at 2× |
+| DW03 | `dw03_a24_door` | `2749:7254` | Byte-identical: same imageHash `93191c39a5d5…` |
+| DW03 | `dw03_a24_dark_door` | `2749:7257` | Byte-identical: same imageHash `f984d7f288b0…` |
+| DW03 | `dw03_kane_oak_door` | `2749:7260` | Byte-identical: same imageHash `45ddfac9bbbe…` |
+| DW03 | `dw03_kane_bolts` | `2749:7263` | Byte-identical: same imageHash `c1246b1f2c15…` |
+| DW03 | `dw03_locked_mockup` | `2749:7266` | Re-cut: same source, same crop code; PNG bytes differ: `IMG/05_r3_close_L0lit_recommended.jpg` (180, 120, 1150, 842) |
+| DW04 | `dw04_l0lit_6m` | `2749:7269` | Byte-identical: same imageHash `a6fc4dbd8d5f…` |
+| DW04 | `dw04_l0lit_12m` | `2749:7272` | Byte-identical: same imageHash `70b77b1d0c94…` |
+| DW04 | `dw04_l0lit_20m` | `2749:7275` | Byte-identical: same imageHash `8153e8719448…` |
+| DW04 | `dw04_l0dim_6m` | `2749:7278` | Byte-identical: same imageHash `e224d2e1cbf0…` |
+| DW04 | `dw04_l0dim_12m` | `2749:7281` | Byte-identical: same imageHash `7dc32898bb49…` |
+| DW04 | `dw04_l0dim_20m` | `2749:7282` | Byte-identical: same imageHash `9b24ac13589c…` |
+| DW04 | `dw04_office_6m` | `2749:7283` | Byte-identical: same imageHash `75dedd690576…` |
+| DW04 | `dw04_office_12m` | `2749:7286` | Byte-identical: same imageHash `0c70bcd1ee86…` |
+| DW04 | `dw04_office_20m` | `2749:7287` | Byte-identical: same imageHash `1f4747b68d7f…` |
+| DW04 | `dw04_no_p1` | `2749:7288` | Byte-identical: same imageHash `4d833f3206f6…` |
+| DW04 | `dw04_no_p3` | `2749:7291` | Byte-identical: same imageHash `dfede3b68f61…` |
+| DW04 | `dw04_no_p2p` | `2749:7294` | Byte-identical: same imageHash `0736561d2a9e…` |
+| DW05 | `DoorSet_L0-F_persp` | `2750:6093` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/spec_l0f.png` (194, 0, 1407, 900) |
+| DW05 | `DoorSet_OF-F_persp` | `2750:6104` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/spec_off.png` (274, 0, 1487, 900) |
+| DW05 | `DoorSet_L0-K_persp` | `2750:6119` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/spec_l0k.png` (204, 0, 1417, 900) |
+| DW05 | `DoorSet_OF-K_persp` | `2750:6124` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/spec_ofk.png` (274, 0, 1487, 900) |
+| DW06 | `dw06_dip_start` | `2750:6139` | Byte-identical: same imageHash `6bd2cece1df0…` |
+| DW06 | `dw06_dip_mid` | `2750:6142` | Byte-identical: same imageHash `c819a06429af…` |
+| DW06 | `dw06_dip_pose_p` | `2750:6145` | Byte-identical: same imageHash `d8a7ffbeb9bb…` |
+| DW06 | `dw06_dip_key_in` | `2750:6148` | Byte-identical: same imageHash `4e03b34ebe4d…` |
+| DW06 | `dw06_dip_turned` | `2750:6151` | Byte-identical: same imageHash `7ec849461938…` |
+| DW06 | `LockSet_Mortise_persp` | `2750:6182` | **Recovered.** `IMG/g2_e_poseP_key090.jpg` (the same render as the lost `G2/selfcheck/e_poseP_key090.png`, a JPEG copy; mean diff 0.71 / 255 against the fix stage's contact sheet), same crop (660, 400, 1060, 696) |
+| DW07 | `KeySet_Cabinet_persp` | `2751:6102` | **Substitute.** The 12:31 `G3_cabinet_34.png` is lost. `IMG/g3/G3_cabinet_34_v2.jpg` is the same camera and stand-in colours, re-rendered at 22:50 after the cabinet's corner-arc fix (VL072); 1.2 / 255 against the old 324 px sheet. Same crop (0, 18, 1300, 982) |
+| DW07 | `KeySet_Hook_persp` | `2751:6105` | **Recovered.** `IMG/g3/G3_keyhook_close.jpg` (same render as the lost PNG, JPEG copy; 0.55 / 255), same crop (0, 116, 900, 784) |
+| DW07 | `KeySet_Desk_persp` | `2751:6108` | **Recovered at 640 px.** The render `G3_flat_desk_close.png` is lost and `G3_flat_desk_close_v2.jpg` is a different re-render (the tag moved). The tile comes from the fix stage's contact sheet `crops1.jpg` (embedded in transcript a4e2b26f26f207883): 640 × 474 JPEG; its label bar hid the top 19 rows, so rows 0–21 repeat row 22 (plain desk surface) |
+| DW08 | `Kit_WindowFrame_Wood_persp` | `2751:6127` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/Kit_WindowFrame_Wood_faceA_1p5m.png` (0, 4, 1200, 897) |
+| DW08 | `Kit_WindowFrame_Steel_persp` | `2751:6130` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/Kit_WindowFrame_Steel_faceA_1p5m.png` (0, 4, 1200, 897) |
+| DW08 | `Kit_WindowFrame_Alu_persp` | `2751:6137` | **Recovered at 640 px.** The render `G4/Kit_WindowFrame_Alu_faceA_1p5m.png` is lost (no copy). The tile comes from the same `crops1.jpg` sheet: 640 × 476 JPEG, rows 0–21 repeat row 22 (glass, card edge and jambs run straight up) |
+| DW08 | `dw08_kane_window` | `2751:6140` | Re-cut: same source, same crop code; PNG bytes differ: `PM/kane_emg_0308_framed_window_1990.jpg` (0, 120, 1290, 1080) |
+| DW09 | `Kit_WindowFrame_Steel_close` | `2751:6245` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/Kit_WindowFrame_Steel_screws_0p3m.png` (0, 95, 1200, 835), edges extended (§5.3) |
+| DW09 | `Kit_WindowFrame_Wood_close` | `2751:6248` | Re-cut: same source, same crop code; PNG bytes differ: `PM/wip/Kit_WindowFrame_Wood_stoolA_0p3m.png` (0, 150, 1200, 810) |
+| DW12 | `dw12_peek_lite` | `2753:6290` | Re-cut: same source, same crop code; PNG bytes differ: `IMG/05_r3_close_Office_recommended_lite.jpg` (600, 80, 1300, 601) |
+| DW12 | `Kit_ExitSign_persp` | `2753:6293` | **Recovered.** `IMG/g3/G3_exit_sign_close.jpg` (same render as the lost `G3_exit_sign_close.png`, JPEG copy; 1.29 / 255), same crop (140, 0, 1484, 1000) |
+
+Totals:
+- 29 byte-identical;
+- 13 re-cut from the same sources with the same code. Pixel-equal where a lossless reference exists: Steel close-up and OF-F match the fix stage's own previews at 0.0 / 255. Everything else is within 0.9–1.9 / 255 of the fix stage's JPEG contact sheets;
+- 6 recovered: 3 from same-render JPEG copies, 1 substitute render, 2 at 640 px from a contact sheet.
+
+### R.4 Old id → new id (every id this file cites)
+
+| Old (deleted) | New | Node |
+|---|---|---|
+| `2497:3804` | `2748:6099` | FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07) |
+| `2497:3805` | `2748:6100` | DW00 · Three boxes |
+| `2497:3820` | `2748:6109` | DW01 · What we take from RE8 · HIDDEN until C1 + C2 arrive |
+| `2497:3829` | `2748:6118` | DW02 · Stop behind every gap |
+| `2497:3838` | `2748:6127` | DW03 · The store's own doors |
+| `2497:3847` | `2748:6136` | DW04 · Locked from 20 m |
+| `2497:3856` | `2748:6145` | DW05 · One section eight doors |
+| `2497:3865` | `2748:6154` | DW06 · A lock that takes a key |
+| `2497:3874` | `2748:6163` | DW07 · A key on a hook |
+| `2497:3883` | `2748:6172` | DW08 · A window, not a pane |
+| `2497:3892` | `2748:6181` | DW09 · The glass sits in a pocket |
+| `2497:3901` | `2748:6190` | DW10 · What changes |
+| `2497:3910` | `2748:6199` | DW11 · Your calls |
+| `2499:3828` | `2749:6117` | ref:re8_steam_castle_hall |
+| `2499:3829` | `2749:6118` | placeholder · re8_steam_castle_hall = re8_steam_castle_hall · AWAITING OK · C1 |
+| `2499:3832` | `2749:6121` | ref:re8_walkthrough_1-36-39 |
+| `2499:3833` | `2749:6122` | placeholder · re8_walkthrough_1-36-39 = re8_walkthrough_1-36-39 · AWAITING OK ·  |
+| `2499:3854` | `2749:6143` | diagram:dw02_jamb_section |
+| `2499:3855` | `2749:6144` | media:dw02_leak |
+| `2499:3858` | `2749:6147` | media:dw02_proxy |
+| `2500:4902` | `2749:7266` | media:dw03_locked_mockup |
+| `2501:3804` | `2750:6093` | img:DoorSet_L0-F_persp |
+| `2501:3815` | `2750:6104` | img:DoorSet_OF-F_persp |
+| `2501:3820` | `2750:6109` | img:DoorSet_RN-F_persp |
+| `2501:3821` | `2750:6110` | placeholder · DoorSet_RN-F_persp = DoorSet_RN-F_persp · PHASE 2 |
+| `2501:3822` | `2750:6111` | chip · Run · free · P2 · ward door, no latch |
+| `2501:3825` | `2750:6114` | img:DoorSet_EX-F_persp |
+| `2501:3826` | `2750:6115` | placeholder · DoorSet_EX-F_persp = DoorSet_EX-F_persp · PHASE 2 |
+| `2501:3827` | `2750:6116` | chip · Exit · free · P2 · push bar, lit EXIT |
+| `2501:3830` | `2750:6119` | img:DoorSet_L0-K_persp |
+| `2501:3835` | `2750:6124` | img:DoorSet_OF-K_persp |
+| `2501:3840` | `2750:6129` | img:DoorSet_RN-K_persp |
+| `2501:3841` | `2750:6130` | placeholder · DoorSet_RN-K_persp = DoorSet_RN-K_persp · PHASE 2 |
+| `2501:3842` | `2750:6131` | chip · Run · locked · P2 · STAFF ONLY sign |
+| `2501:3845` | `2750:6134` | img:DoorSet_EX-K_persp |
+| `2501:3846` | `2750:6135` | placeholder · DoorSet_EX-K_persp = DoorSet_EX-K_persp · PHASE 2 |
+| `2501:3847` | `2750:6136` | chip · Exit · locked · P2 · dead EXIT sign |
+| `2501:3865` | `2750:6154` | img:Kit_Lock_Escutcheon_persp |
+| `2501:3866` | `2750:6155` | placeholder · Kit_Lock_Escutcheon_persp = Kit_Lock_Escutcheon_persp · PHASE 2 |
+| `2501:3867` | `2750:6156` | chip · Escutcheon · fixed |
+| `2501:3869` | `2750:6158` | img:Kit_Lock_CylinderShell_persp |
+| `2501:3870` | `2750:6159` | placeholder · Kit_Lock_CylinderShell_persp = Kit_Lock_CylinderShell_ persp · PHASE 2 |
+| `2501:3871` | `2750:6160` | chip · Cylinder · fixed |
+| `2501:3873` | `2750:6162` | img:Kit_Lock_Plug_persp |
+| `2501:3874` | `2750:6163` | placeholder · Kit_Lock_Plug_persp = Kit_Lock_Plug_persp · PHASE 2 |
+| `2501:3875` | `2750:6164` | chip · Plug |
+| `2501:3877` | `2750:6166` | img:Kit_Lock_Knob_persp |
+| `2501:3878` | `2750:6167` | placeholder · Kit_Lock_Knob_persp = Kit_Lock_Knob_persp · PHASE 2 |
+| `2501:3879` | `2750:6168` | chip · Knob |
+| `2501:3881` | `2750:6170` | img:Kit_Lock_Deadbolt_persp |
+| `2501:3882` | `2750:6171` | placeholder · Kit_Lock_Deadbolt_persp = Kit_Lock_Deadbolt_persp · PHASE 2 |
+| `2501:3883` | `2750:6172` | chip · Deadbolt |
+| `2501:3885` | `2750:6174` | img:Kit_Lock_Latchbolt_Mortise_persp |
+| `2501:3886` | `2750:6175` | placeholder · Kit_Lock_Latchbolt_Mortise_persp = Kit_Lock_Latchbolt_Mortise_ persp · PHAS |
+| `2501:3887` | `2750:6176` | chip · Latch · 19 mm |
+| `2501:3889` | `2750:6178` | img:Kit_Lock_StrikeMortise_persp |
+| `2501:3890` | `2750:6179` | placeholder · Kit_Lock_StrikeMortise_persp = Kit_Lock_StrikeMortise_ persp · PHASE 2 |
+| `2501:3891` | `2750:6180` | chip · Strike · tears off |
+| `2501:3893` | `2750:6182` | img:LockSet_Mortise_persp |
+| `2501:3897` | `2750:6186` | diagram:dw06_unlock_timeline |
+| `2503:4468` | `2751:6093` | img:KeySet_Rack_persp |
+| `2503:4469` | `2751:6094` | chip · Lobby · key rack |
+| `2503:4477` | `2751:6102` | img:KeySet_Cabinet_persp |
+| `2503:4480` | `2751:6105` | img:KeySet_Hook_persp |
+| `2503:4483` | `2751:6108` | img:KeySet_Desk_persp |
+| `2503:4487` | `2751:6112` | ref:henryford_tivoli_motel_key |
+| `2503:4488` | `2751:6113` | placeholder · henryford_tivoli_motel_key = henryford_tivoli_motel_key · AWAITING OK |
+| `2503:4491` | `2751:6116` | img:KeyParts_Lineup_front |
+| `2503:4492` | `2751:6117` | placeholder · KeyParts_Lineup_front = KeyParts_Lineup_front · PHASE 2 |
+| `2503:4493` | `2751:6118` | chip · 9 tags · same number on the door |
+| `2503:4502` | `2751:6127` | img:Kit_WindowFrame_Wood_persp |
+| `2503:4505` | `2751:6130` | img:Kit_WindowFrame_Steel_persp |
+| `2503:4508` | `2751:6133` | img:Kit_WindowFrame_Steel_Enamel_persp |
+| `2503:4509` | `2751:6134` | placeholder · Kit_WindowFrame_Steel_Enamel_persp = Kit_WindowFrame_Steel_Enamel_persp · PHA |
+| `2503:4510` | `2751:6135` | chip · Run · white steel · P2 |
+| `2503:4512` | `2751:6137` | img:Kit_WindowFrame_Alu_persp |
+| `2503:4515` | `2751:6140` | media:dw08_kane_window |
+| `2503:4518` | `2751:6143` | ref:sears1993_levolor_miniblinds |
+| `2503:4519` | `2751:6144` | placeholder · sears1993_levolor_miniblinds = sears1993_levolor_miniblinds · AWAITING  |
+| `2503:4522` | `2751:6147` | ref:us4463535_glass_stop |
+| `2503:4523` | `2751:6148` | placeholder · us4463535_glass_stop = us4463535_glass_stop · AWAITING OK · C11 |
+| `2503:4526` | `2751:6151` | img:Kit_MiniBlind_Raised_persp |
+| `2503:4527` | `2751:6152` | placeholder · Kit_MiniBlind_Raised_persp = Kit_MiniBlind_Raised_persp · PHASE 2 |
+| `2503:4528` | `2751:6153` | chip · Office · raised blind |
+| `2505:3804` | `2751:6155` | diagram:dw09_elevation |
+| `2505:3862` | `2751:6207` | label = Ray tracing aims at this glass |
+| `2505:3865` | `2751:6210` | diagram:dw09_jamb_section |
+| `2505:3900` | `2751:6245` | img:Kit_WindowFrame_Steel_close |
+| `2505:3903` | `2751:6248` | img:Kit_WindowFrame_Wood_close |
+| `2505:3906` | `2751:6251` | diagram:dw10_door_plan |
+| `2507:3804` | `2751:7368` | placeholder · KeySet_Rack_persp = KeySet_Rack_persp · PHASE 2 |
+| `2534:5783` | `2752:6247` | geometry · S0 fallback · 2.4 px/mm |
+| `2534:5789` | `2752:6253` | label = With the map's OK |
+| `2534:5790` | `2752:6254` | label = If the map says no |
+| `2534:5793` | `2752:6257` | label = Dark 12 mm line |
+| `2534:5877` | `2753:6258` | DW12 · Later and already set |
+| `2534:5882` | `2753:6263` | header page = 13 / 13 |
+| `2534:5883` | `2753:6264` | title = Later, and already set |
+| `2534:5884` | `2753:6265` | lede = Two calls can wait for Run and Exit. The |
+| `2534:5885` | `2753:6266` | statement = None of this blocks phase 2; any line ca |
+| `2534:5886` | `2753:6267` | call = 9 · A peek window |
+| `2534:5889` | `2753:6270` | call body = Default: red. Or: green, to suit the cya |
+| `2534:5894` | `2753:6275` | rule = Also set |
+| `2534:5902` | `2753:6283` | default row = Run windows: plain glass. Wired glass wo |
+| `2534:5908` | `2753:6289` | default row = Bronze frames would reflect white in ray |
+| `2534:5909` | `2753:6290` | media:dw12_peek_lite |
+| `2534:5910` | `2753:6291` | chip · Peek window · Office light · mock-up |
+| `2534:5912` | `2753:6293` | img:Kit_ExitSign_persp |
+| `2534:5913` | `2753:6294` | chip · EXIT · red letters · WIP |
+
+The full map (407 ids, including every node the scripts touched) is `/Users/redwang/FrontRoomsVisualWork/recovery/dw_rebuild/map.json`.
+
+### R.5 Differences from the original that could not be avoided
+
+1. **New node ids** everywhere (§R.4). Links to `node-id=2497-3804` no longer resolve.
+2. **Name and position.** The section name now ends in "(rebuilt 2026-10-07)". The section is at x 51297, y 2000 instead of x 33937, y 8918.
+3. **KeySet_Cabinet_persp (DW07) is a substitute render.** The original 12:31 render is lost. The tile uses the 22:50 `G3_cabinet_34_v2.jpg`: the same camera and the same stand-in colours, but the cabinet model after its corner-arc fix.
+4. **KeySet_Desk_persp (DW07) and Kit_WindowFrame_Alu_persp (DW08) are 640 px JPEG tiles**, not the original 852 px PNGs. They are still above the 426 px slot. In each, the top 22 rows (4.6 %) are row 22 repeated, because a contact-sheet label covered them.
+5. **LockSet_Mortise_persp (DW06), KeySet_Hook_persp (DW07) and Kit_ExitSign_persp (DW12) come from JPEG copies** of the same renders. The content is the same; there are JPEG artefacts at full zoom.
+6. **13 re-cut tiles** have the same pixels but different PNG bytes, so their imageHashes differ. This is a Pillow version difference.
+7. **The DW00 hero chip** "See-through slit · 1.2 m · near room dimmed" is 386 px wide, not 377. It has the same text and style; the difference is font metrics on this machine. It still sits inside its slot. Every other measured width and height matches.
+8. **Unchanged on purpose:** the running header still reads "Week 3 · Oct 3, 2026", and all text is word for word the fix pass's, including DW11's 8 calls and DW12.
+
+---
+
 ## 0. Fix pass (17:00): what changed, and the review verdicts
 
 A review raised 22 issues. 21 were confirmed and fixed. Two were fixed only in part, with reasons (items 5 and 19). None was rejected outright.

@@ -1,0 +1,86 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -1251,6 +1251,10 @@
+         if (kind == EdgeKind.Arch) return;
+ 
+         // Frame: two jambs and a head in the trim colour.
++        // [WINDOW-KIT BEGIN] (T) a window's trims wait until the visual chat's frame has been tried (window branch).
++        void FrameTrims()
++        {
++        // [WINDOW-KIT END]
+         var trims = get(blockIndex, trim);
+         var frame = ModuleUnits.TrimFace;
+         var jambDepth = WallThickness + ModuleUnits.TrimProud * 2f;
+@@ -1260,6 +1264,10 @@
+             trims.Box(jc, Abs(along * frame + across * jambDepth + Vector3.up * (openingTop - sill)), origin, 1f);
+         }
+         trims.Box(start + along * c + Vector3.up * (openingTop + frame * .5f), Abs(along * (width + frame * 2f) + across * jambDepth + Vector3.up * frame), origin, 1f);
++        // [WINDOW-KIT BEGIN]
++        }
++        if (kind != EdgeKind.Window) FrameTrims();
++        // [WINDOW-KIT END]
+ 
+         var edge = EdgeId(a, b);
+         var openingCenter = chunk.root.transform.TransformPoint(start + along * c);
+@@ -1316,7 +1324,10 @@
+                 pane.transform.localPosition = Vector3.up * ((sill + openingTop) * .5f);
+                 pane.transform.localScale = new Vector3(width, openingTop - sill, ModuleUnits.GlassThickness);
+                 pane.GetComponent<Renderer>().sharedMaterial = glass;
+-                pane.AddComponent<FrontRoomsMetalGlassTarget>();
++                // [WINDOW-KIT BEGIN] the RT hint marks the visible glass: the pane only while no FrontRoomsGlassBreakable
++                // exists (with it the pane renderer is hidden below, and the breakable's slab is the glass).
++                if (GlassBreakableType() == null) pane.AddComponent<FrontRoomsMetalGlassTarget>();
++                // [WINDOW-KIT END]
+                 window.pane = pane;
+                 // A cracked pane resumes from the stage it reached.
+                 window.hold = StageFloor(window.stage);
+@@ -1329,6 +1340,10 @@
+                 root.gameObject.AddComponent(breakable);
+                 if (window.pane != null) window.pane.GetComponent<Renderer>().enabled = false;
+             }
++            // [WINDOW-KIT BEGIN] (T) the visual chat's frame on the root (render-only, broken windows too, guarded);
++            // the map's own trims only when no frame was hung.
++            if (!DressWindowFrame(window, record)) FrameTrims();
++            // [WINDOW-KIT END]
+             chunk.windows.Add(window);
+         }
+     }
+@@ -1339,8 +1354,7 @@
+     {
+         window.announced = true;
+         var record = GlassBreakOf(window);
+-        try { FrontRoomsInteractableKit.DressWindow(this, window, record); }
+-        catch (Exception e) { Debug.LogException(e); }
++        // [WINDOW-KIT] (T) the visual chat's frame was hung in BuildEdge, before the trims.
+         if (WindowBuilt == null) return;
+         foreach (Action<Window, GlassBreakRecord> handler in WindowBuilt.GetInvocationList())
+         {
+@@ -1357,8 +1371,28 @@
+         {
+             try { handler(window); }
+             catch (Exception e) { Debug.LogException(e); }
++        }
++    }
++
++    // [WINDOW-KIT BEGIN] The visual chat's window frame (Office/FrontRoomsInteractableKit.Window.cs). A throw is caught
++    // here, never by Build's guard (that would leave the whole chunk out: floor, walls, doors, key), and logged once;
++    // that window then keeps the map's trims and pane as today. Returns true when a frame was hung.
++    static bool windowFrameFailureLogged;
++
++    bool DressWindowFrame(Window window, GlassBreakRecord record)
++    {
++        try { return FrontRoomsInteractableKit.DressWindow(this, window, record); }
++        catch (Exception e)
++        {
++            if (!windowFrameFailureLogged)
++            {
++                windowFrameFailureLogged = true;
++                Debug.LogWarning("[FrontRoomsMap] Window frame " + window.a + "-" + window.b + " failed; it keeps the map's trims and pane (logged once): " + e);
++            }
++            return false;
+         }
+     }
++    // [WINDOW-KIT END]
+ 
+     static Type GlassBreakableType()
+     {

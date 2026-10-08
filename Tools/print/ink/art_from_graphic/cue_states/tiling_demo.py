@@ -117,7 +117,7 @@ if __name__ == "__main__":
     with mp.get_context("fork").Pool(10) as pool: pool.map(_frame, [(i, tmp) for i in range(n)])
     mp4 = os.path.join(out, "wallpaper_tiling_up_to_left_right.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(tmp, "f%04d.png"),
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4], check=True)
+                    "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2:color=white", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4], check=True)
     for t in (1.0, 3.4, 5.0):
         shutil.copy(os.path.join(tmp, "f%04d.png" % int(t * FPS)), os.path.join(out, "tiling_key_%.1fs.png" % t))
     shutil.rmtree(tmp); print(mp4)

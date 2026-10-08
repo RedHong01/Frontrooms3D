@@ -6,7 +6,7 @@
   "file": "0tCbAiVUlrPId3RWd9LRif",
   "page": "2099:76",
   "propKitSection": "2324:852 (平面视觉, read-only for us)",
-  "proposalSection": "2497:3804 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (ours)"
+  "proposalSection": "2748:6099 FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07; ours)"
  },
  "source": {
   "models": "55 kits = Assets/Resources/Props/Models in the real project (main d610d3a), byte-identical to the build clone proj_int (Codex copied them in 8ef5b64, 2026-10-03 19:10). 7 kits = proj_int's verified finals, not in main yet (they replace Codex's copies at the interactables merge; main's .meta GUIDs kept): Kit_KeyCabinet, Kit_WindowFrame_Wood, Kit_WindowFrame_Steel, Kit_WindowFrame_Steel_Enamel, Kit_WindowFrame_Alu, Kit_MiniBlind_Raised, Kit_MiniBlind_Lowered. Why: G3 pass 3 fixed the cabinet's inside-out corners (codex audit F5); G4 pass 3/4 rebuilt the windows (alu 2,066 tris without LOD1 and with wear, 1.1 mm steel screw slots, wall_decor tag, lodDistances 0.0 for never cull). Wood frame and blinds: same geometry as main.",
@@ -11804,7 +11804,7 @@
   {
    "slide": "DW05",
    "slot": "img:DoorSet_L0-F_persp",
-   "node": "2501:3804",
+   "node": "2750:6093",
    "source": "heroes/doorset_L0-F_pull.png",
    "flat": "heroes/slots/DoorSet_L0-F_persp.png",
    "slotPx": [
@@ -11816,7 +11816,7 @@
   {
    "slide": "DW05",
    "slot": "img:DoorSet_OF-F_persp",
-   "node": "2501:3815",
+   "node": "2750:6104",
    "source": "heroes/doorset_OF-F_pull.png",
    "flat": "heroes/slots/DoorSet_OF-F_persp.png",
    "slotPx": [
@@ -11828,31 +11828,31 @@
   {
    "slide": "DW05",
    "slot": "img:DoorSet_RN-F_persp",
-   "node": "2501:3820",
+   "node": "2750:6109",
    "source": "heroes/doorset_RN-F_pull.png",
    "flat": "heroes/slots/DoorSet_RN-F_persp.png",
    "slotPx": [
     426,
     316
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3821, keep chip 2501:3822"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6110, keep chip 2750:6111"
   },
   {
    "slide": "DW05",
    "slot": "img:DoorSet_EX-F_persp",
-   "node": "2501:3825",
+   "node": "2750:6114",
    "source": "heroes/doorset_EX-F_pull.png",
    "flat": "heroes/slots/DoorSet_EX-F_persp.png",
    "slotPx": [
     426,
     316
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3826, keep chip 2501:3827"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6115, keep chip 2750:6116"
   },
   {
    "slide": "DW05",
    "slot": "img:DoorSet_L0-K_persp",
-   "node": "2501:3830",
+   "node": "2750:6119",
    "source": "heroes/doorset_L0-K_pull.png",
    "flat": "heroes/slots/DoorSet_L0-K_persp.png",
    "slotPx": [
@@ -11864,7 +11864,7 @@
   {
    "slide": "DW05",
    "slot": "img:DoorSet_OF-K_persp",
-   "node": "2501:3835",
+   "node": "2750:6124",
    "source": "heroes/doorset_OF-K_pull.png",
    "flat": "heroes/slots/DoorSet_OF-K_persp.png",
    "slotPx": [
@@ -11876,115 +11876,115 @@
   {
    "slide": "DW05",
    "slot": "img:DoorSet_RN-K_persp",
-   "node": "2501:3840",
+   "node": "2750:6129",
    "source": "heroes/doorset_RN-K_pull.png",
    "flat": "heroes/slots/DoorSet_RN-K_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3841, keep chip 2501:3842"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6130, keep chip 2750:6131"
   },
   {
    "slide": "DW05",
    "slot": "img:DoorSet_EX-K_persp",
-   "node": "2501:3845",
+   "node": "2750:6134",
    "source": "heroes/doorset_EX-K_pull.png",
    "flat": "heroes/slots/DoorSet_EX-K_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3846, keep chip 2501:3847"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6135, keep chip 2750:6136"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_Escutcheon_persp",
-   "node": "2501:3865",
+   "node": "2750:6154",
    "source": "png/Kit_Lock_Escutcheon_persp.png",
    "flat": "heroes/slots/Kit_Lock_Escutcheon_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3866"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6155"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_CylinderShell_persp",
-   "node": "2501:3869",
+   "node": "2750:6158",
    "source": "png/Kit_Lock_CylinderShell_persp.png",
    "flat": "heroes/slots/Kit_Lock_CylinderShell_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3870"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6159"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_Plug_persp",
-   "node": "2501:3873",
+   "node": "2750:6162",
    "source": "png/Kit_Lock_Plug_persp.png",
    "flat": "heroes/slots/Kit_Lock_Plug_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3874"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6163"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_Knob_persp",
-   "node": "2501:3877",
+   "node": "2750:6166",
    "source": "png/Kit_Lock_Knob_persp.png",
    "flat": "heroes/slots/Kit_Lock_Knob_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3878"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6167"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_Deadbolt_persp",
-   "node": "2501:3881",
+   "node": "2750:6170",
    "source": "png/Kit_Lock_Deadbolt_persp.png",
    "flat": "heroes/slots/Kit_Lock_Deadbolt_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3882"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6171"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_Latchbolt_Mortise_persp",
-   "node": "2501:3885",
+   "node": "2750:6174",
    "source": "png/Kit_Lock_Latchbolt_Mortise_persp.png",
    "flat": "heroes/slots/Kit_Lock_Latchbolt_Mortise_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3886"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6175"
   },
   {
    "slide": "DW06",
    "slot": "img:Kit_Lock_StrikeMortise_persp",
-   "node": "2501:3889",
+   "node": "2750:6178",
    "source": "png/Kit_Lock_StrikeMortise_persp.png",
    "flat": "heroes/slots/Kit_Lock_StrikeMortise_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2501:3890"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6179"
   },
   {
    "slide": "DW06",
    "slot": "img:LockSet_Mortise_persp",
-   "node": "2501:3893",
+   "node": "2750:6182",
    "source": "heroes/lock_exploded.png",
    "flat": "heroes/slots/LockSet_Mortise_persp.png",
    "slotPx": [
@@ -11996,19 +11996,19 @@
   {
    "slide": "DW07",
    "slot": "img:KeySet_Rack_persp",
-   "node": "2503:4468",
+   "node": "2751:6093",
    "source": "heroes/keys_board_hung.png",
    "flat": "heroes/slots/KeySet_Rack_persp.png",
    "slotPx": [
     426,
     316
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2507:3804, keep chip 2503:4469"
+   "action": "fills PHASE 2 placeholder; delete text 2751:7368, keep chip 2751:6094"
   },
   {
    "slide": "DW07",
    "slot": "img:KeySet_Cabinet_persp",
-   "node": "2503:4477",
+   "node": "2751:6102",
    "source": "heroes/keys_cabinet_hung.png",
    "flat": "heroes/slots/KeySet_Cabinet_persp.png",
    "slotPx": [
@@ -12020,7 +12020,7 @@
   {
    "slide": "DW07",
    "slot": "img:KeySet_Hook_persp",
-   "node": "2503:4480",
+   "node": "2751:6105",
    "source": "heroes/keys_hook_hung.png",
    "flat": "heroes/slots/KeySet_Hook_persp.png",
    "slotPx": [
@@ -12032,19 +12032,19 @@
   {
    "slide": "DW07",
    "slot": "img:KeyParts_Lineup_front",
-   "node": "2503:4491",
+   "node": "2751:6116",
    "source": "heroes/keys_parts_lineup_front.png",
    "flat": "heroes/slots/KeyParts_Lineup_front.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2503:4492"
+   "action": "fills PHASE 2 placeholder; delete text 2751:6117"
   },
   {
    "slide": "DW08",
    "slot": "img:Kit_WindowFrame_Wood_persp",
-   "node": "2503:4502",
+   "node": "2751:6127",
    "source": "heroes/window_W-L0_face_a.png",
    "flat": "heroes/slots/Kit_WindowFrame_Wood_persp.png",
    "slotPx": [
@@ -12056,7 +12056,7 @@
   {
    "slide": "DW08",
    "slot": "img:Kit_WindowFrame_Steel_persp",
-   "node": "2503:4505",
+   "node": "2751:6130",
    "source": "heroes/window_W-OF_face_a.png",
    "flat": "heroes/slots/Kit_WindowFrame_Steel_persp.png",
    "slotPx": [
@@ -12068,19 +12068,19 @@
   {
    "slide": "DW08",
    "slot": "img:Kit_WindowFrame_Steel_Enamel_persp",
-   "node": "2503:4508",
+   "node": "2751:6133",
    "source": "heroes/window_W-RN_face_a.png",
    "flat": "heroes/slots/Kit_WindowFrame_Steel_Enamel_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2503:4509"
+   "action": "fills PHASE 2 placeholder; delete text 2751:6134"
   },
   {
    "slide": "DW08",
    "slot": "img:Kit_WindowFrame_Alu_persp",
-   "node": "2503:4512",
+   "node": "2751:6137",
    "source": "heroes/window_W-EX_face_a.png",
    "flat": "heroes/slots/Kit_WindowFrame_Alu_persp.png",
    "slotPx": [
@@ -12092,19 +12092,19 @@
   {
    "slide": "DW08",
    "slot": "img:Kit_MiniBlind_Raised_persp",
-   "node": "2503:4526",
+   "node": "2751:6151",
    "source": "png/Kit_MiniBlind_Raised_persp.png",
    "flat": "heroes/slots/Kit_MiniBlind_Raised_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2503:4527"
+   "action": "fills PHASE 2 placeholder; delete text 2751:6152"
   },
   {
    "slide": "DW12",
    "slot": "img:Kit_ExitSign_persp",
-   "node": "2534:5912",
+   "node": "2753:6293",
    "source": "png/Kit_ExitSign_persp.png",
    "flat": "heroes/slots/Kit_ExitSign_persp.png",
    "slotPx": [

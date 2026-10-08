@@ -1,0 +1,93 @@
+# Codex audit, G14 track (2026-10-07): grid of the 175 G14 hook-proof checks (FrontRoomsGlassG10Capture.RunProofBatch)
+# on main's FrontRooms/Glass (70644f0) + a frame sheet. Usage: python g10grid.py <glass_g10_proof dir> <grid.png> <sheet.jpg>
+import sys, re
+from PIL import Image, ImageDraw, ImageFont
+
+src, out_grid, out_sheet = sys.argv[1:4]
+lines = open(f"{src}/g10_metrics.txt", encoding="utf-8").read().splitlines()
+
+def short(check):
+    c = check
+    table = [
+        ("determinism", "B = B"), ("(i) hook shader", "(i) KW OFF"), ("(ii) keyword off, weight 0", "(ii) W0"),
+        ("(iii) keyword off, weight 1", "(iii) A0"), ("(iv) keyword off, weight 1", "(iv) RED"),
+        ("keyword on: weight 1 with A=0", "KW A0"), ("P1 ", "P1"), ("P3 ", "P3"), ("P2 ", "P2"),
+        ("props (_RTReceive 0)", "PROPS"), ("P4 ", "P4"), ("P5 ", "P5"), ("P6 ", "P6"),
+    ]
+    for k, v in table:
+        if c.startswith(k): return v
+    return None
+
+views, cols, cells = [], [], {}
+view = None
+for l in lines:
+    m = re.match(r"### (\S+) \(pass (\d)\)", l)
+    if m:
+        view = m.group(1)
+        if view not in views: views.append(view)
+        continue
+    m = re.match(r"  (PASS|FAIL) (.+)$", l)
+    if m and view:
+        s = short(m.group(2))
+        if s is None: continue
+        if s not in cols: cols.append(s)
+        cells[(view, s)] = m.group(1)
+
+ORDER = ["B = B", "(i) KW OFF", "(ii) W0", "(iii) A0", "(iv) RED", "KW A0", "P1", "P2", "P3", "P4", "P5", "P6", "PROPS"]
+cols = [c for c in ORDER if c in cols] + [c for c in cols if c not in ORDER]
+
+def category(v, c, res):
+    if res == "PASS": return "pass"
+    if c == "PROPS": return "fixture"
+    if c == "P5": return "open"
+    return "noise"
+
+COL = {"pass": (208, 226, 214), "fixture": (244, 223, 59), "noise": (232, 196, 160), "open": (214, 40, 40), None: (245, 245, 245)}
+W, H = 1920, 1080
+img = Image.new("RGB", (W, H), (255, 255, 255))
+d = ImageDraw.Draw(img)
+def font(sz):
+    try: return ImageFont.truetype("/Users/redwang/Library/Fonts/IBMPlexMono-Regular.otf", sz)
+    except Exception: return ImageFont.load_default()
+f20, f17 = font(20), font(17)
+INK = (10, 10, 10)
+x0, y0 = 420, 120
+cw = (W - 60 - x0) / len(cols)
+ch = min(56, (H - 230 - y0) / len(views))
+for j, c in enumerate(cols):
+    d.text((x0 + j * cw + 8, y0 - 34), c, fill=INK, font=f17)
+counts = {"pass": 0, "fixture": 0, "noise": 0, "open": 0}
+for i, v in enumerate(views):
+    y = y0 + i * ch
+    d.text((40, y + ch / 2 - 11), v, fill=INK, font=f17)
+    for j, c in enumerate(cols):
+        res = cells.get((v, c))
+        cat = category(v, c, res) if res else None
+        if cat: counts[cat] += 1
+        d.rectangle([x0 + j * cw + 2, y + 2, x0 + (j + 1) * cw - 2, y + ch - 2], fill=COL[cat])
+        if res == "FAIL": d.text((x0 + j * cw + 10, y + ch / 2 - 11), "FAIL", fill=(255, 255, 255) if cat == "open" else INK, font=f17)
+ly = y0 + len(views) * ch + 40
+legend = [("pass", f"PASS {counts['pass']}"), ("fixture", f"FAIL, HARNESS: KIT SLAB NOT HIDDEN {counts['fixture']}"),
+          ("noise", f"FAIL, NON-DETERMINISTIC SCENE (B != B OR KEYWORD OFF) {counts['noise']}"), ("open", f"FAIL, OPEN: P5 DEPTH TAG + 0.5 M {counts['open']}")]
+lx = 40
+for cat, text in legend:
+    d.rectangle([lx, ly, lx + 28, ly + 28], fill=COL[cat])
+    d.text((lx + 38, ly + 3), text, fill=INK, font=f17)
+    lx += 60 + d.textlength(text, font=f17)
+d.text((40, 40), f"G14 HOOK PROOF, MAIN'S FRONTROOMS/GLASS AT 70644F0: {sum(counts.values())} CHECKS, {len(views)} VIEWS", fill=INK, font=f20)
+img.save(out_grid)
+print(counts, len(views), cols)
+
+rows = ["window_L0_1.5m", "window_Office_oblique50", "38_deadlamp_window_1.5m"]
+kinds = [("B_baseline", "BASELINE (NO HOOK)"), ("P1_rt_red", "P1: RT = RED, WEIGHT 1"), ("P4_depthtag", "P4: DEPTH TAG = PANE")]
+tw, th, pad, lab = 600, 338, 12, 30
+sheet = Image.new("RGB", (3 * tw + 4 * pad, len(rows) * (th + lab) + (len(rows) + 1) * pad), (255, 255, 255))
+sd = ImageDraw.Draw(sheet)
+for r, v in enumerate(rows):
+    for k, (suf, name) in enumerate(kinds):
+        x = pad + k * (tw + pad); y = pad + r * (th + lab + pad)
+        sd.text((x, y + 4), (v + " · " + name).upper(), fill=INK, font=f17)
+        im = Image.open(f"{src}/{v}_{suf}.jpg").convert("RGB").resize((tw, th), Image.LANCZOS)
+        sheet.paste(im, (x, y + lab))
+sheet.save(out_sheet, quality=85)
+print(sheet.size)

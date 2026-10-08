@@ -1,0 +1,4 @@
+L0 A_front_1.5m: kit: 5.0 luma (box x 647-1266 y 167-817) | before-kit: 13.3 luma (box x 648-1275 y 148-1042)
+L0 B_front_1.5m: kit: 4.9 luma (box x 640-1275 y 165-819) | before-kit: 16.6 luma (box x 633-1286 y 144-828)
+OF A_front_1.5m: kit: 5.4 luma (box x 650-1268 y 163-920) | before-kit: 36.6 luma (box x 650-1269 y 149-815)
+OF B_front_1.5m: kit: 3.2 luma (box x 540-1538 y 202-1038) | before-kit: 10.4 luma (box x 628-1278 y 147-1052)

@@ -100,7 +100,7 @@ Nothing lands from this workflow. After Red reviews the Figma:
 
 ### 5.2 Figma
 
-- 平面视觉 re-syncs section `2532:4038` from `03_figma.md` §0 (13 SVG masters changed, 80 crops changed, 21 added; three path fixes in their tools). Their call: the prompt card (their UI06 mockup has the same contrast problem), B's yellow rule, keeping the "used" column.
+- 平面视觉 re-syncs section `2532:4038` from `03_figma.md` §0 (13 SVG masters changed, 80 HUD crops changed, 22 added; path fixes in their tools). Their call: the prompt card (their UI06 mockup has the same contrast problem), B's yellow rule, keeping the "used" column.
 
 ### 5.3 Contract request to the map chat (they own `FrontRooms3DGame.cs` and the map files; exact lines at `279c144`)
 

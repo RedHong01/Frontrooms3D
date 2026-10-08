@@ -4,7 +4,7 @@
 
 ## Where to look
 
-- **Figma:** "Undergoing Game Projects", section **FRONTROOMS · DOORS + WINDOWS · PROPOSAL**: https://www.figma.com/design/0tCbAiVUlrPId3RWd9LRif?node-id=2497-3804. It now sits under TOUCH CONTROLS.
+- **Figma:** "Undergoing Game Projects", section **FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07)**: https://www.figma.com/design/0tCbAiVUlrPId3RWd9LRif?node-id=2748-6099. It sits at x 51297, y 2000, two columns right of TOUCH CONTROLS. The first section (2497:3804) was deleted from the file. This one rebuilds it with the same slides, text and calls; `02_figma.md` §R lists the few differences.
 - **12 slides show, numbered 01–13.** Slide 02 (RE8) is hidden because it has no RE8 pictures yet (see Downloads).
 - **Reading order:**
   - 01: today's faults (see-through slits, a one-line lock, a glowing key cube, a one-box window);

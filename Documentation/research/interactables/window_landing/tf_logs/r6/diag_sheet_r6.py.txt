@@ -1,0 +1,23 @@
+from PIL import Image, ImageDraw, ImageFont, ImageStat
+import numpy as np
+S="/Users/redwang/FrontRoomsVisualWork"
+D=S+"/proj_win/Verification/window_tf4/frames_kit/"
+names=["diag_game","diag_shadows_off","diag_bias_x3","diag_hard","diag_res_2x"]
+box=(960,480,1200,760)
+font=ImageFont.truetype("/System/Library/Fonts/Supplemental/Courier New Bold.ttf",22)
+tiles=[]
+for n in names:
+    im=Image.open(D+"OF_B_close_head_0.3m_"+n+".png").convert("RGB")
+    c=im.crop(box)
+    a=np.asarray(c.convert("L"),dtype=np.float32)
+    # ladder metric: mean abs vertical second difference inside the stop strip x 1040-1110 (box-relative 80-150)
+    strip=a[60:240,80:150]
+    lad=np.abs(np.diff(strip,axis=0)).mean()
+    c=c.resize((c.width*2,c.height*2),Image.NEAREST)
+    d=ImageDraw.Draw(c); d.rectangle([0,0,c.width,30],fill=(0,0,0)); d.text((6,4),f"{n[5:]}  d/dy {lad:.2f}",fill=(240,240,230),font=font)
+    tiles.append(c); print(n, "mean |dL/dy| in the stop strip", round(float(lad),3))
+W=sum(t.width for t in tiles)+8*(len(tiles)-1)
+sheet=Image.new("RGB",(W,tiles[0].height),(20,20,18)); x=0
+for t in tiles: sheet.paste(t,(x,0)); x+=t.width+8
+sheet.save(S+"/wf/win_r6/frames_stage/r6_OF_B_close_head_0.3m_shadow_diag_sheet.png")
+print(sheet.size)

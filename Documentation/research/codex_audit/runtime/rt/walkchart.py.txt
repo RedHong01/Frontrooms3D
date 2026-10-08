@@ -1,0 +1,61 @@
+# Codex audit, G14 track (2026-10-07): per-frame chart of the 900-frame streaming walk (clone probe walk_frames.tsv).
+# Top: G14 main-thread ms per frame (BuildFrame, RT High) with its scene/registration share and the 0.3 ms / 1.5 ms bars.
+# Bottom: camera.Render CPU ms per frame, RT High vs RT Off (same seed and path).
+# Usage: python walkchart.py <high.tsv> <off.tsv|-> <out.png>
+import sys
+from PIL import Image, ImageDraw, ImageFont
+
+high_p, off_p, out = sys.argv[1:4]
+
+def load(p):
+    rows = [l.rstrip("\n").split("\t") for l in open(p)][1:]
+    return [{"f": int(r[0]), "cpu": float(r[1]), "rt": float(r[3]), "scene": float(r[4]), "up": int(r[9])} for r in rows if len(r) > 9]
+
+hi = load(high_p)
+off = load(off_p) if off_p != "-" else []
+
+W, H = 1920, 1080
+img = Image.new("RGB", (W, H), (255, 255, 255))
+d = ImageDraw.Draw(img)
+def font(sz):
+    for f in ("/Users/redwang/Library/Fonts/IBMPlexMono-Regular.otf", "/System/Library/Fonts/Supplemental/Courier New.ttf"):
+        try: return ImageFont.truetype(f, sz)
+        except Exception: pass
+    return ImageFont.load_default()
+f22, f18 = font(22), font(18)
+INK = (10, 10, 10); GRID = (225, 225, 225)
+BLUE = (42, 120, 214); ORANGE = (235, 104, 52); GREY = (150, 150, 150)
+
+def panel(y0, y1, series, ymax, ticks, bars, label, unit=" ms"):
+    x0, x1 = 140, W - 60
+    d.text((x0, y0 - 40), label, fill=INK, font=f22)
+    for t in ticks:
+        y = y1 - (y1 - y0) * t / ymax
+        d.line([(x0, y), (x1, y)], fill=GRID, width=1)
+        d.text((x0 - 90, y - 11), f"{t:g}{unit}", fill=INK, font=f18)
+    for (v, col, name) in bars:
+        y = y1 - (y1 - y0) * v / ymax
+        d.line([(x0, y), (x1, y)], fill=col, width=2)
+        d.text((x0 + 12, y - 24), name, fill=col, font=f18)
+    n = max(len(s[0]) for s in series)
+    for vals, col, width in series:
+        pts = []
+        for i, v in enumerate(vals):
+            x = x0 + (x1 - x0) * i / max(n - 1, 1)
+            y = y1 - (y1 - y0) * min(v, ymax) / ymax
+            pts.append((x, y))
+        d.line(pts, fill=col, width=width)
+    d.line([(x0, y1), (x1, y1)], fill=INK, width=2)
+    for fr in range(0, n + 1, 150):
+        x = x0 + (x1 - x0) * fr / max(n - 1, 1)
+        d.text((x - 20, y1 + 8), str(fr), fill=INK, font=f18)
+
+panel(110, 500, [([r["rt"] for r in hi], BLUE, 2), ([r["scene"] for r in hi], ORANGE, 2)], 12.0, [0, 2, 4, 6, 8, 10, 12],
+      [(0.3, (0, 150, 70), "budget 0.3 ms p99 (design 3.3)"), (1.5, (180, 0, 0), "streaming bar 1.5 ms (P0-A7)")],
+      "G14 MAIN THREAD PER FRAME, RT HIGH (BLUE = BUILDFRAME TOTAL, ORANGE = SCENE DIFF + REGISTRATION)")
+ups = [0] + [max(0, hi[i]["up"] - hi[i - 1]["up"]) for i in range(1, len(hi))]
+top = max(10, ((max(ups) + 49) // 50) * 50)
+panel(640, 1010, [(ups, ORANGE, 2)], float(top), [round(top * k / 4) for k in range(5)], [],
+      "NEW MESH UPLOADS + BLAS BUILDS PER FRAME (CHUNK STREAMING), FRAME NUMBER BELOW", "")
+img.save(out)
+print(out)

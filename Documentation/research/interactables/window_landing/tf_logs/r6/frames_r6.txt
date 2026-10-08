@@ -1,0 +1,57 @@
+L0_A_45deg_2.4m                              luma before   87.0  after   84.4  vs r5 pair: mean |dL|  0.92, px > 16:  0.00 %
+L0_A_close_horn_0.3m                         luma before   97.2  after   83.6  vs r5 pair: mean |dL|  0.94, px > 16:  0.00 %
+L0_A_close_horn_0.3m_insp                    luma before  121.9  after  107.1  vs r5 pair: mean |dL|  0.99, px > 16:  0.00 %
+L0_A_close_sill_0.3m                         luma before  115.7  after   81.9  vs r5 pair: mean |dL|  1.29, px > 16:  0.00 %
+L0_A_close_sill_0.3m_insp                    luma before  129.6  after   87.2  vs r5 pair: mean |dL|  1.27, px > 16:  0.00 %
+L0_A_close_stop_0.3m                         luma before   94.7  after   72.9  vs r5 pair: mean |dL|  0.87, px > 16:  0.00 %
+L0_A_close_stop_0.3m_insp                    luma before  116.5  after   78.5  vs r5 pair: mean |dL|  0.89, px > 16:  0.00 %
+L0_A_front_1.5m                              luma before   90.6  after   81.7  vs r5 pair: mean |dL|  0.99, px > 16:  0.00 %
+L0_A_front_1.5m_insp                         luma before  115.7  after  101.6  vs r5 pair: mean |dL|  1.08, px > 16:  0.00 %
+L0_A_front_3m                                luma before   90.8  after   86.8  vs r5 pair: mean |dL|  0.99, px > 16:  0.00 %
+L0_B_45deg_2.4m                              luma before  111.6  after  106.7  vs r5 pair: mean |dL|  1.31, px > 16:  0.00 %
+L0_B_close_head_0.3m                         luma before   76.1  after   61.7  vs r5 pair: mean |dL|  0.68, px > 16:  0.00 %
+L0_B_close_head_0.3m_insp                    luma before   97.2  after   67.5  vs r5 pair: mean |dL|  0.72, px > 16:  0.00 %
+L0_B_close_sill_0.3m                         luma before  115.3  after   83.5  vs r5 pair: mean |dL|  1.17, px > 16:  0.00 %
+L0_B_close_sill_0.3m_insp                    luma before  131.0  after   88.8  vs r5 pair: mean |dL|  1.17, px > 16:  0.00 %
+L0_B_front_1.5m                              luma before  107.3  after   97.5  vs r5 pair: mean |dL|  1.15, px > 16:  0.00 %
+L0_B_front_1.5m_insp                         luma before  126.5  after  112.1  vs r5 pair: mean |dL|  1.15, px > 16:  0.00 %
+L0_B_front_3m                                luma before  114.2  after  108.8  vs r5 pair: mean |dL|  1.29, px > 16:  0.00 %
+L0_broken_A_45deg_2.4m                       luma before   86.1  after   84.7  vs r5 pair: mean |dL|  0.92, px > 16:  0.00 %
+L0_broken_A_close_sill_0.3m                  luma before  112.7  after   82.7  vs r5 pair: mean |dL|  1.33, px > 16:  0.00 %
+L0_broken_A_close_sill_0.3m_insp             luma before  118.4  after   87.1  vs r5 pair: mean |dL|  1.30, px > 16:  0.00 %
+L0_broken_A_front_1.5m                       luma before   87.0  after   82.3  vs r5 pair: mean |dL|  1.00, px > 16:  0.00 %
+L0_broken_B_front_1.5m                       luma before  103.5  after   98.2  vs r5 pair: mean |dL|  1.16, px > 16:  0.00 %
+L0_deadlamp_A_front_2m                       luma before   66.3  after   62.2  vs r5 pair: mean |dL|  0.95, px > 16:  0.00 %
+L0_deadlamp_B_45deg_2.1m                     luma before   95.5  after   90.4  vs r5 pair: mean |dL|  1.32, px > 16:  0.00 %
+L0_hall_tall_5.0m                            luma before  104.8  after  101.8  vs r5 pair: mean |dL|  1.21, px > 16:  0.00 %
+OF_A_45deg_2.4m                              luma before   86.4  after   80.0  vs r5 pair: mean |dL|  1.11, px > 16:  0.00 %
+OF_A_close_corner_0.3m                       luma before   93.1  after   64.1  vs r5 pair: mean |dL|  0.99, px > 16:  0.00 %
+OF_A_close_corner_0.3m_insp                  luma before  111.1  after   69.3  vs r5 pair: mean |dL|  0.98, px > 16:  0.00 %
+OF_A_close_screws_0.3m                       luma before   98.9  after   59.1  vs r5 pair: mean |dL|  0.74, px > 16:  0.00 %
+OF_A_close_screws_0.3m_insp                  luma before  124.8  after   64.3  vs r5 pair: mean |dL|  0.75, px > 16:  0.00 %
+OF_A_close_sill_0.3m                         luma before   98.6  after   60.5  vs r5 pair: mean |dL|  0.96, px > 16:  0.00 %
+OF_A_close_sill_0.3m_insp                    luma before  115.3  after   65.5  vs r5 pair: mean |dL|  0.95, px > 16:  0.00 %
+OF_A_front_1.5m                              luma before   99.2  after   83.8  vs r5 pair: mean |dL|  1.13, px > 16:  0.00 %
+OF_A_front_1.5m_insp                         luma before  118.0  after   98.3  vs r5 pair: mean |dL|  1.00, px > 16:  0.00 %
+OF_A_front_3m                                luma before   80.8  after   72.0  vs r5 pair: mean |dL|  1.13, px > 16:  0.00 %
+OF_B_45deg_2.4m                              luma before   98.2  after   95.2  vs r5 pair: mean |dL|  0.74, px > 16:  0.00 %
+OF_B_close_head_0.3m                         luma before   71.2  after   54.8  vs r5 pair: mean |dL|  0.34, px > 16:  0.00 %
+OF_B_close_head_0.3m_diag_bias_x3            luma before   -1.0  after   53.9
+OF_B_close_head_0.3m_diag_game               luma before   -1.0  after   54.8
+OF_B_close_head_0.3m_diag_hard               luma before   -1.0  after   54.9
+OF_B_close_head_0.3m_diag_res_2x             luma before   -1.0  after   54.7
+OF_B_close_head_0.3m_diag_shadows_off        luma before   -1.0  after   56.8
+OF_B_close_head_0.3m_insp                    luma before   98.0  after   59.3  vs r5 pair: mean |dL|  0.38, px > 16:  0.00 %
+OF_B_close_sill_0.3m                         luma before   91.6  after   54.6  vs r5 pair: mean |dL|  0.95, px > 16:  0.00 %
+OF_B_close_sill_0.3m_insp                    luma before  110.4  after   59.6  vs r5 pair: mean |dL|  0.95, px > 16:  0.00 %
+OF_B_front_1.5m                              luma before   82.3  after   74.4  vs r5 pair: mean |dL|  0.67, px > 16:  0.00 %
+OF_B_front_1.5m_insp                         luma before  107.9  after   94.0  vs r5 pair: mean |dL|  0.69, px > 16:  0.00 %
+OF_B_front_3m                                luma before   98.9  after   91.6  vs r5 pair: mean |dL|  0.84, px > 16:  0.00 %
+OF_broken_A_45deg_2.4m                       luma before   84.2  after   80.1  vs r5 pair: mean |dL|  1.12, px > 16:  0.00 %
+OF_broken_A_close_sill_0.3m                  luma before   97.4  after   60.0  vs r5 pair: mean |dL|  0.97, px > 16:  0.00 %
+OF_broken_A_close_sill_0.3m_insp             luma before  103.7  after   63.5  vs r5 pair: mean |dL|  0.97, px > 16:  0.00 %
+OF_broken_A_front_1.5m                       luma before   90.7  after   84.1  vs r5 pair: mean |dL|  1.15, px > 16:  0.00 %
+OF_broken_B_front_1.5m                       luma before   79.6  after   75.4  vs r5 pair: mean |dL|  0.69, px > 16:  0.01 %
+OF_deadlamp_A_front_2m                       luma before   46.9  after   45.5  vs r5 pair: mean |dL|  0.70, px > 16:  0.00 %
+OF_deadlamp_B_45deg_2.1m                     luma before  100.3  after   94.1  vs r5 pair: mean |dL|  1.11, px > 16:  0.00 %
+OF_hall_tall_5.0m                            luma before  109.7  after  107.7  vs r5 pair: mean |dL|  1.07, px > 16:  0.00 %

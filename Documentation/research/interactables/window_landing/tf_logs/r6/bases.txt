@@ -1,0 +1,5 @@
+main HEAD 279c14493ba9f1249f77c301136364d226728ba6 Wed Oct  7 16:34:43 PDT 2026
+a56fc9e1985efac67abd68e0aaebf257b5ee2a68361f76b4736600a7e709b093  Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+cafa48bde3c38cc841a0c076c234965d249169b49d86489729ea8a8c30cf80bc  Assets/Scripts/Office/FrontRoomsInteractableKit.Window.cs
+cef579cca6b6106d870a59aab52ae1289c0c4c7643c05e4def08bea408570ff5  Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+4ed191907a72ecf731e3c97f2709ee081fd7e6f89bc93099e6c44ed022afe822  Assets/Editor/Rendering/FrontRoomsKitImporter.cs

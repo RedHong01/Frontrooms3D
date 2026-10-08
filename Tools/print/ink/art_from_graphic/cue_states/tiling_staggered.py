@@ -45,8 +45,8 @@ class G:
 
 def build():
     gs, stripes, diamonds = [], [], []
-    for r in range(-1, 4):
-        for k in range(-2, 3):
+    for r in range(-3, 4):
+        for k in range(-2, 5):          # unit 0 climbs ~2.25 m per loop: keep tiles below the window
             for u in (0, 1):
                 dx = r * TW + u * UNIT; ky = k * TH
                 if k == 0:
@@ -93,7 +93,7 @@ def motion(variant, g, t):
         if g.u == 0:                             # the half-drop returns at the end of the loop
             voff += seg(t, T_SLIP0 + cs, T_SLIP1 + ce * 0.5, 562.5)
         h0, h1 = T_H0 + rs, T_H1 + re
-        Dh = settle_distance(0.0, 0.0, UNIT, V_H * rf, h1 - h0) or UNIT
+        Dh = settle_distance(0.0, 0.0, TW, V_H * rf, h1 - h0) or TW   # whole rolls: each piece returns to a field of its own unit
         hoff = seg(t, h0, h1, Dh)
     else:
         t0, t1 = T_UP0 + cs, T_UP1 + ce
@@ -131,7 +131,7 @@ def draw_panel(variant, t, font):
     for ink, pts in fields:
         if vis(pts): d.polygon(P(pts), fill=PAL[ink])
     # the rails are opaque: field arrows pass behind every non-field strip
-    for r in range(-1, 4):
+    for r in range(-3, 4):
         for u in (0, 1):
             dx = r * TW + u * UNIT
             a, b = (-5.4 + dx - x0) * k * ss, (he.FIELD_X0 + dx - x0) * k * ss
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     with mp.get_context("fork").Pool(10) as pool: pool.map(_frame, [(i, tmp) for i in range(n)])
     mp4 = os.path.join(out, "wallpaper_tiling_staggered_V1_V2_V3.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(tmp, "f%04d.png"),
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4], check=True)
-    for t in (0.0, 1.4, 3.3, 5.0, 8.95):
-        shutil.copy(os.path.join(tmp, "f%04d.png" % min(n - 1, int(t * FPS))), os.path.join(out, "stag_key_%.2fs.png" % t))
+                    "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2:color=white", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4], check=True)
+    for i in (0, 42, 99, 150, n - 1):
+        shutil.copy(os.path.join(tmp, "f%04d.png" % i), os.path.join(out, "stag_key_%d.png" % i))
     shutil.rmtree(tmp); print(mp4)
