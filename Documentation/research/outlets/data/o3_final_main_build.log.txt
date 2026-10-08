@@ -1,0 +1,64 @@
+[o3] Kit_FloorBoxTombstone LOD0 3576 tris (budget 3200, +11.8 %); bounds mm x -55.50..55.50 y -38.00..38.00 z 0.00..67.00
+[o3]    flange                       194 tris  Prop_Aluminium
+[o3]    housing                     1454 tris  Prop_Aluminium
+[o3]    device_front                1498 tris  Prop_NylonIvory,Prop_PlasticBlack,Prop_Brass
+[o3]    screw_front                  430 tris  Prop_Aluminium
+[o3] Kit_FloorBoxTombstone envelope W 111.00 x H 67.00 x D 76.00 mm (spec 111.0 x 67.0 x 76.0); flange 2.00 mm; z min 0.0000
+
+FBX export starting... '/Users/redwang/FrontRoomsVisualWork/proj_outlet/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx'
+export finished in 0.6902 sec.
+[kit] exported Kit_FloorBoxTombstone: 3576 tris (LOD1 -), slots ['Prop_Aluminium', 'Prop_NylonIvory', 'Prop_PlasticBlack', 'Prop_Brass']
+[o3] Kit_FloorBoxTombstone2 LOD0 5112 tris (budget 4600, +11.1 %); bounds mm x -63.50..63.50 y -43.00..43.00 z 0.00..76.00
+[o3]    flange                       194 tris  Prop_Aluminium
+[o3]    housing                     1918 tris  Prop_Aluminium
+[o3]    device_front                1222 tris  Prop_NylonIvory,Prop_PlasticBlack,Prop_Brass
+[o3]    screw_front                  278 tris  Prop_Aluminium
+[o3]    device_back                 1222 tris  Prop_NylonIvory,Prop_PlasticBlack,Prop_Brass
+[o3]    screw_back                   278 tris  Prop_Aluminium
+[o3] Kit_FloorBoxTombstone2 envelope W 127.00 x H 76.00 x D 86.00 mm (spec 127.0 x 76.0 x 86.0); flange 2.00 mm; z min 0.0000
+
+FBX export starting... '/Users/redwang/FrontRoomsVisualWork/proj_outlet/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx'
+export finished in 0.4655 sec.
+[kit] exported Kit_FloorBoxTombstone2: 5112 tris (LOD1 -), slots ['Prop_Aluminium', 'Prop_NylonIvory', 'Prop_PlasticBlack', 'Prop_Brass']
+[o3] Kit_OutletHandyBox LOD0 3860 tris (budget 3400, +13.5 %); bounds mm x -27.50..27.50 y -52.30..0.00 z -51.30..96.60
+[o3]    box                           72 tris  Prop_Aluminium
+[o3]    cover                       1018 tris  Prop_Aluminium
+[o3]    device                      1498 tris  Prop_NylonIvory,Prop_PlasticBlack,Prop_Brass
+[o3]    screw_0                      186 tris  Prop_Aluminium
+[o3]    screw_1                      186 tris  Prop_Aluminium
+[o3]    screw_2                      186 tris  Prop_Aluminium
+[o3]    connector                    468 tris  Prop_Aluminium
+[o3]    set_screw                    130 tris  Prop_Aluminium
+[o3]    knockouts                    116 tris  Prop_Aluminium
+[o3] Kit_OutletHandyBox box 54.00 x 101.60 x 47.60 mm; overall x -27.50..27.50, proud 52.30, z -51.30..96.60; conduit_base z 92.60
+
+FBX export starting... '/Users/redwang/FrontRoomsVisualWork/proj_outlet/Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx'
+export finished in 0.3464 sec.
+[kit] exported Kit_OutletHandyBox: 3860 tris (LOD1 -), slots ['Prop_Aluminium', 'Prop_NylonIvory', 'Prop_PlasticBlack', 'Prop_Brass']
+[o3] Kit_ConduitEMT LOD0 576 tris (budget 600, -4.0 %); bounds mm x -8.95..8.95 y -20.45..-2.55 z 0.00..1000.00
+[o3]    tube                         576 tris  Prop_Aluminium
+[o3] Kit_ConduitEMT OD 17.900 mm, axis y -11.500 mm, z 0.0..1000.0
+
+FBX export starting... '/Users/redwang/FrontRoomsVisualWork/proj_outlet/Assets/Resources/Props/Models/Kit_ConduitEMT.fbx'
+export finished in 0.2566 sec.
+[kit] exported Kit_ConduitEMT: 576 tris (LOD1 -), slots ['Prop_Aluminium']
+[o3] Kit_ConduitStrap LOD0 294 tris (budget 300, -2.0 %); bounds mm x -10.70..19.30 y -22.20..0.00 z -11.00..11.00
+[o3]    strap                        164 tris  Prop_Aluminium
+[o3]    screw                        130 tris  Prop_Aluminium
+[o3] Kit_ConduitStrap envelope 30.00 x 22.00 x 22.20 mm (spec 30 x 22 x 22)
+
+FBX export starting... '/Users/redwang/FrontRoomsVisualWork/proj_outlet/Assets/Resources/Props/Models/Kit_ConduitStrap.fbx'
+export finished in 0.1916 sec.
+[kit] exported Kit_ConduitStrap: 294 tris (LOD1 -), slots ['Prop_Aluminium']
+[o3] Kit_CubiclePanel_Powered receptacles 1004 tris (2 units), proud 1.50 mm of the rail; z 48.0..92.0
+[o3]    receptacle_front             502 tris  Prop_PlasticBlack,Prop_NylonIvory
+[o3]    receptacle_back              502 tris  Prop_PlasticBlack,Prop_NylonIvory
+
+FBX export starting... '/Users/redwang/FrontRoomsVisualWork/proj_outlet/Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx'
+export finished in 0.5499 sec.
+Warning: Mesh 'Kit_CubiclePanel_Powered' has polygons with more than 4 vertices, cannot compute/export tangent space for it
+Warning: Mesh 'Kit_CubiclePanel_Powered.001' has polygons with more than 4 vertices, cannot compute/export tangent space for it
+[kit] exported Kit_CubiclePanel_Powered: 1460 tris (LOD1 184), slots ['Prop_SteelPutty', 'Prop_PlasticBlack', 'Prop_FabricCubicle', 'Prop_NylonIvory']
+Blender 4.3.0 (hash 2b18cad88b13 built 2024-11-19 09:01:18)
+
+Blender quit

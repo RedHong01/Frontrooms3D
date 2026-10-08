@@ -1,0 +1,64 @@
+"""Unity-like back-face-culled renders (Workbench, culling on) of an O2
+module built from a given assets dir. A red debug wall sits behind the
+plate so every see-through shows red.
+-- <assets_dir> <module> <out_dir> <tag> <view>[,<view>...]"""
+import bpy, sys, os, math, importlib
+from mathutils import Vector
+a = sys.argv[sys.argv.index("--") + 1:]
+ASSETS, MODULE, OUT, TAG, VIEWS = a[0], a[1], a[2], a[3], a[4].split(",")
+KIT = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+sys.path.insert(0, KIT); sys.path.insert(0, ASSETS)
+import kitlib, outlet_plate_common as pc
+assert os.path.dirname(pc.__file__) == ASSETS.rstrip("/"), pc.__file__
+pc.HAS_LODS = True
+mod = importlib.import_module(MODULE)
+kit = kitlib.Kit(mod.NAME); mod.build(kit)
+for o in kit.parts:
+    bpy.context.view_layer.objects.active = o
+    for m in list(o.modifiers):
+        bpy.ops.object.modifier_apply(modifier=m.name)
+sets = {lv: pc.lod_parts(kit, lv) for lv in (0, 1, 2)}
+scene = bpy.context.scene
+scene.render.engine = "BLENDER_WORKBENCH"
+sh = scene.display.shading
+sh.light = "STUDIO"; sh.color_type = "MATERIAL"; sh.show_backface_culling = True
+sh.show_specular_highlight = True
+scene.render.resolution_x, scene.render.resolution_y = 1080, 1080
+scene.view_settings.view_transform = "Standard"
+# red debug wall at y = +0.01 mm
+bpy.ops.mesh.primitive_plane_add(size=0.4, location=(0, 0.00001, 0), rotation=(math.radians(90), 0, 0))
+wall = bpy.context.active_object
+wm = bpy.data.materials.new("debug_wall"); wm.diffuse_color = (0.9, 0.05, 0.05, 1); wall.data.materials.append(wm)
+cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam")); scene.collection.objects.link(cam); scene.camera = cam
+def show(level):
+    for lv, objs in sets.items():
+        for o in objs:
+            o.hide_render = lv != level
+def look(pos, target, width_mm):
+    cam.location = pos
+    cam.rotation_euler = (Vector(target) - Vector(pos)).to_track_quat("-Z", "Y").to_euler()
+    d = (Vector(target) - Vector(pos)).length
+    cam.data.sensor_fit = "HORIZONTAL"
+    cam.data.angle = 2 * math.atan(width_mm / 1000 / 2 / d)
+    cam.data.clip_start = 0.001
+def p(h_mm, x_mm=0.0, z_mm=0.0):     # plate frame -> Blender
+    return (x_mm / 1000, -h_mm / 1000, z_mm / 1000)
+gx = -23.0 if "Toggle2" in mod.NAME else 0.0
+VIEW = {
+    # 6P cavity head-on, LOD0, 22 mm wide
+    "jack_front": (0, p(150, 0, 1.0), p(0, 0, 1.0), 22),
+    # 6P cavity from 30 deg below: the contact wires on the cavity roof
+    "jack_contacts": (0, p(120 * math.cos(math.radians(30)), 0, 1.0 - 120 * math.sin(math.radians(30))), p(2, 0, 3.0), 16),
+    # toggle head-on at LOD1 (1.5-4 m set), 40 mm wide
+    "toggle_lod1": (1, p(250, gx, 0), p(0, gx, 0), 40),
+    # toggle LOD0, 70 deg off the normal from the side, at the opening's top end
+    "toggle_graze": (0, p(250 * math.cos(math.radians(70)), gx + 250 * math.sin(math.radians(70)), 11.0), p(0, gx, 11.0), 30),
+    # BNC studs from the side, 45 deg
+    "bnc_studs": (0, p(16 + 120 * math.cos(math.radians(45)), 120 * math.sin(math.radians(45)), 0), p(16, 4.0, 0), 16),
+}
+for v in VIEWS:
+    lv, pos, tgt, w = VIEW[v]
+    show(lv); look(pos, tgt, w)
+    scene.render.filepath = os.path.join(OUT, "%s_%s_%s.png" % (mod.NAME, v, TAG))
+    bpy.ops.render.render(write_still=True)
+    print("[cull]", scene.render.filepath)

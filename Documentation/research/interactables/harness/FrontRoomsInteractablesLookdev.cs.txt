@@ -1,0 +1,1644 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Object = UnityEngine.Object;
+
+/// <summary>
+/// PRIVATE CLONE ONLY (proj_int, interactables-kit render stage, 2026-10-07). Never merge into Red's project.
+///
+/// In-situ, in-engine renders of the interactables kit (Documentation/research/interactables/10_spec.md):
+/// the kit FBX + sidecar anchors composed with the raw recipe of §6.2 (door root D, A2 hinge axis,
+/// Leaf rig, face rules of §1.2 incl. handing S_sign = ±1), in rooms built by the KitLookdev copy
+/// (FrontRoomsKitLookdevAccess.Room: the levels' own surfaces, troffer grid, game post, zone grade).
+/// Every frame goes through the game's camera setup (FrontRoomsPostStack.ConfigureCamera, 4x MSAA,
+/// 1920x1080); player frames use the game's 76° vertical FOV at the 1.62 m eye, the head dip uses
+/// FrontRoomsShotTimings.Unlock (eye −0.25, 0.45 m off the lock, 38° down, FOV 62).
+///
+/// Groups (-intOnly a,b,...; default all):
+///   probe       materials Unity binds per kit slot (materials_probe.json) + locked leaf material compare
+///   lineup      every new asset on a neutral floor with a 1.80 m reference (labels.json for annotation)
+///   family      Lobby / Office / Run / Exit, FREE | LOCKED side by side in matching rooms, 3 m and 8 m
+///   readability free/locked alternating down an L0 corridor (lit, dim), an Office, a Run and an Exit corridor, 6/12/20 m (rects.json)
+///   room        Level 0 room: L0-F and L0-K in a 1.0 x 2.1 opening at 1.5 m and 0.6 m; key push-in at 0.35/0.25 m
+///   dip         head-dip key shot, 5 frames (standing 1.2 m -> pose P -> 0.30 m, key turning), L0-K and OF-K
+///   lock        pose P lock sequence: key 0/50/100 % insertion, plug 0/45/90°, deadbolt thrown / retracted (head-on + profile)
+///   Every frame sets the zone reflection cube the game would use in the camera's room (FrontRoomsZoneReflection.SetImmediate).
+///   keys        zone keys on board / cabinet / hook / desk / cabinet top, 2 m and 0.6 m, L0 and Office; old cube
+///   windows     window family W-L0/W-OF/W-RN/W-EX intact and broken, 1.5 m and oblique, matching rooms
+///   fracture    crack stages 1-3, the shatter (pieces mid-air), floor glass after (STAND-IN fracture, see below)
+///   gap         door gap test: old primitive vs kit door between a dim near and a bright far room, 7 cameras,
+///               both faces; every frame also gets a leak mask (far room white, all else black) and a pixel count
+///   swing       single-acting swing 0/5/30/60/95°, both handings: oblique, plan over the hinge jamb, stop-side latch jamb (0/30/95°); old door at 95°
+///
+/// The fracture set is NOT the glass-destruction track's (not built yet): the pieces come from that track's own
+/// crack-graph prototype (glass/destruction/04_proto/web_proto_crack_graph.py), exported by
+/// W/int_work/fracture_data.py to Verification/interactables_data/*_u.json, with teeth kept in the approved tooth band.
+///
+/// Batch: Unity -batchmode -projectPath proj_int -buildTarget OSXUniversal -executeMethod
+///        FrontRoomsInteractablesLookdev.RunBatch [-intOut DIR] [-intOnly g1,g2] [-intLockedLeaf Kit_...] -quit
+/// Output: Verification/interactables/*.png, frames.tsv, leaks.tsv, rects.json, labels.json, int_log.txt
+/// </summary>
+public static class FrontRoomsInteractablesLookdev
+{
+    const float Eye = 1.62f, GameFov = 76f, DipFov = 62f, Standard = 2.9f, Tall = 5.4f;
+    const int Wpx = 1920, Hpx = 1080;
+    static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    static string outDir, dataDir;
+    static Camera cam;
+    static RenderTexture rt;
+    static Transform world;
+    static HashSet<string> only;
+    static string lockedLeaf = "Kit_DoorLeaf_Steel";
+    static readonly StringBuilder framesTsv = new StringBuilder("file\tgroup\tcam_pos\tcam_euler\tfov\tnote\n");
+    static readonly StringBuilder leakTsv = new StringBuilder("file\tdoor\tface_to_camera\tcamera\tleak_px\tleak_max\tleak_sum\n");
+    static readonly StringBuilder rectJson = new StringBuilder("[\n");
+    static readonly StringBuilder labelJson = new StringBuilder("[\n");
+    static bool rectFirst = true, labelFirst = true;
+    static readonly List<string> log = new List<string>();
+    static string group = "";
+
+    // ======================================================================================== entry
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        string onlyArg = null;
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "-intOut") outDir = args[i + 1];
+            if (args[i] == "-intOnly") onlyArg = args[i + 1];
+            if (args[i] == "-intLockedLeaf") lockedLeaf = args[i + 1];
+        }
+        var project = Directory.GetParent(Application.dataPath).FullName;
+        if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(project, "Verification", "interactables");
+        dataDir = Path.Combine(project, "Verification", "interactables_data");
+        Directory.CreateDirectory(outDir);
+        only = string.IsNullOrEmpty(onlyArg) ? null : new HashSet<string>(onlyArg.Split(','));
+
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        world = new GameObject("INTERACTABLES LOOKDEV").transform;
+        FrontRoomsLook.ApplyAmbient();
+        FrontRoomsPostStack.Ensure(world);
+        var co = new GameObject("INT camera");
+        cam = co.AddComponent<Camera>();
+        cam.nearClipPlane = .03f;
+        cam.farClipPlane = 90f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = Color.black;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        rt = new RenderTexture(Wpx, Hpx, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = rt;
+        Log("locked leaf asset: " + lockedLeaf + "; urp " + (GraphicsSettings.currentRenderPipeline != null ? GraphicsSettings.currentRenderPipeline.name : "none"));
+
+        Group("probe", Probe);
+        Group("lineup", Lineup);
+        Group("family", Family);
+        Group("readability", Readability);
+        Group("room", RoomInSitu);
+        Group("dip", HeadDip);
+        Group("lock", LockSequence);
+        Group("keys", Keys);
+        Group("windows", Windows);
+        Group("fracture", Fracture);
+        Group("gap", GapTest);
+        Group("swing", Swing);
+
+        cam.targetTexture = null;
+        rt.Release();
+        File.WriteAllText(Path.Combine(outDir, "frames.tsv"), framesTsv.ToString());
+        File.WriteAllText(Path.Combine(outDir, "leaks.tsv"), leakTsv.ToString());
+        File.WriteAllText(Path.Combine(outDir, "rects.json"), rectJson.Append("\n]\n").ToString());
+        File.WriteAllText(Path.Combine(outDir, "labels.json"), labelJson.Append("\n]\n").ToString());
+        File.WriteAllText(Path.Combine(outDir, "int_log.txt"), string.Join("\n", log) + "\n");
+        Debug.Log("[IntLookdev] DONE " + outDir + " (" + log.Count + " log lines)");
+    }
+
+    static void Group(string name, Action a)
+    {
+        if (only != null && !only.Contains(name)) return;
+        group = name;
+        var t0 = EditorApplication.timeSinceStartup;
+        try { a(); Log("group " + name + " ok in " + (EditorApplication.timeSinceStartup - t0).ToString("F1", Inv) + " s"); }
+        catch (Exception e) { Log("FAILED group " + name + ": " + e); Debug.LogException(e); }
+        // Each group builds under its own root; anything left behind is cleared before the next.
+        zoneRooms.Clear();
+        for (var i = world.childCount - 1; i >= 0; i--)
+        {
+            var c = world.GetChild(i);
+            if (!c.name.StartsWith("Post /")) Object.DestroyImmediate(c.gameObject);
+        }
+    }
+
+    static void Log(string s) { log.Add(s); Debug.Log("[IntLookdev] " + s); }
+
+    static Transform G(string name)
+    {
+        var g = new GameObject(name).transform;
+        g.SetParent(world, false);
+        return g;
+    }
+
+    // ======================================================================================== rendering
+
+    /// <summary>Every lookdev room's world bounds and the reflection cube the game would use there (FrontRooms3DGame.UpdateReflectionZone).</summary>
+    static readonly List<(Bounds b, FrontRoomsLook.ReflectionZone z)> zoneRooms = new List<(Bounds, FrontRoomsLook.ReflectionZone)>();
+
+    /// <summary>The game's zone reflection for the camera's room: Office rooms the Office cube, Tall rooms Tall, the rest Level 0.</summary>
+    static FrontRoomsLook.ReflectionZone ZoneFor(Vector3 pos)
+    {
+        foreach (var (b, z) in zoneRooms) if (b.Contains(pos)) return z;
+        return FrontRoomsLook.ReflectionZone.Level0;
+    }
+
+    static void Shot(string file, Vector3 pos, Quaternion rot, float fov, string note = "")
+    {
+        var zone = ZoneFor(pos);
+        FrontRoomsZoneReflection.SetImmediate(zone);
+        note = (note + " · refl " + zone).Trim();
+        cam.fieldOfView = fov;
+        cam.transform.SetPositionAndRotation(pos, rot);
+        // Local volumes blend by camera position: render twice so the stack and shadows settle for this pose.
+        cam.Render();
+        cam.Render();
+        FrontRoomsKitLookdevAccess.Save(rt, Path.Combine(outDir, file + ".png"));
+        framesTsv.Append(file).Append('\t').Append(group).Append('\t').Append(V3(pos)).Append('\t').Append(V3(rot.eulerAngles)).Append('\t')
+            .Append(fov.ToString("F1", Inv)).Append('\t').Append(note).Append('\n');
+    }
+
+    static void ShotAt(string file, Vector3 pos, Vector3 target, float fov, string note = "")
+    {
+        if (shotLight != null && shotLight.enabled)
+        {
+            // ShotLightIntensity is not wired in the game yet (FrontRoomsShotTimings.cs:56 only). Read here as 0.6 of
+            // illuminance AT THE SUBJECT: a point light on the camera scaled by distance², so it is a fill, not a flash.
+            var dd = Vector3.Distance(pos, target);
+            shotLight.intensity = .6f * dd * dd;
+            shotLight.range = Mathf.Max(1f, dd * 4f);
+            note += " · shot light 0.6 at the subject (" + dd.ToString("0.00", Inv) + " m)";
+        }
+        Shot(file, pos, Quaternion.LookRotation(target - pos, Vector3.up), fov, note);
+    }
+
+    static Light shotLight;
+
+    /// <summary>The Unlock shot's optional camera light (FrontRoomsShotTimings.Unlock.ShotLightIntensity 0.6, unshadowed), on or off.</summary>
+    static void ShotLight(bool on)
+    {
+        if (on && shotLight == null)
+        {
+            shotLight = new GameObject("Shot light (Unlock.ShotLightIntensity)").AddComponent<Light>();
+            shotLight.transform.SetParent(cam.transform, false);
+            shotLight.type = LightType.Point;
+            shotLight.range = 3f;
+            shotLight.intensity = .6f;
+            shotLight.color = new Color(1f, .96f, .9f);
+            shotLight.shadows = LightShadows.None;
+        }
+        if (shotLight != null) shotLight.enabled = on;
+    }
+
+    /// <summary>A camera on the head-dip line, yawed about the keyhole's vertical axis (degrees, + toward door +Z of the opener face).</summary>
+    static Vector3 Yawed(Vector3 keyhole, Vector3 camPos, float deg) => keyhole + Quaternion.Euler(0f, deg, 0f) * (camPos - keyhole);
+
+    static string V3(Vector3 v) => "(" + v.x.ToString("F3", Inv) + ", " + v.y.ToString("F3", Inv) + ", " + v.z.ToString("F3", Inv) + ")";
+    static string F(float v) => v.ToString("0.0", Inv);
+
+    static Material maskBlack, maskWhite;
+
+    /// <summary>
+    /// The leak mask: every renderer black and unlit except the bright room behind the door, which is white and unlit.
+    /// Any white pixel is the far room seen through the door's perimeter. Post off, 4x MSAA resolved (sub-pixel
+    /// slits still show as partial grey). Returns the number of pixels above 8/255.
+    /// </summary>
+    static int LeakMask(string file, Transform bright, out float max, out double sum, bool save = true)
+    {
+        if (maskBlack == null)
+        {
+            var sh = Shader.Find("Universal Render Pipeline/Unlit");
+            maskBlack = new Material(sh) { name = "INT mask black" };
+            maskBlack.SetColor("_BaseColor", Color.black);
+            maskWhite = new Material(sh) { name = "INT mask white" };
+            maskWhite.SetColor("_BaseColor", Color.white);
+        }
+        var renderers = Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        var saved = new Material[renderers.Length][];
+        for (var i = 0; i < renderers.Length; i++)
+        {
+            saved[i] = renderers[i].sharedMaterials;
+            var white = renderers[i].transform.IsChildOf(bright);
+            var arr = new Material[saved[i].Length];
+            for (var k = 0; k < arr.Length; k++) arr[k] = white ? maskWhite : maskBlack;
+            renderers[i].sharedMaterials = arr;
+        }
+        var data = cam.GetUniversalAdditionalCameraData();
+        var pp = data.renderPostProcessing;
+        data.renderPostProcessing = false;
+        cam.Render();
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        var img = new Texture2D(Wpx, Hpx, TextureFormat.RGB24, false);
+        img.ReadPixels(new Rect(0, 0, Wpx, Hpx), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        var px = img.GetPixels32();
+        var count = 0;
+        max = 0f;
+        sum = 0;
+        foreach (var p in px)
+        {
+            var v = Mathf.Max(p.r, Mathf.Max(p.g, p.b)) / 255f;
+            if (v > 8f / 255f) { count++; sum += v; if (v > max) max = v; }
+        }
+        if (save || count > 0) File.WriteAllBytes(Path.Combine(outDir, file + "_mask.png"), img.EncodeToPNG());
+        Object.DestroyImmediate(img);
+        data.renderPostProcessing = pp;
+        for (var i = 0; i < renderers.Length; i++) renderers[i].sharedMaterials = saved[i];
+        return count;
+    }
+
+    // ======================================================================================== rooms
+
+    static FrontRoomsKitLookdevAccess.Opening Op(int side, float centre, float width) =>
+        new FrontRoomsKitLookdevAccess.Opening { side = side, centre = centre, width = width };
+
+    static Transform Room(Transform parent, string name, Vector3 origin, float w, float d, RoomRule rule, float h, params FrontRoomsKitLookdevAccess.Opening[] openings)
+    {
+        var room = FrontRoomsKitLookdevAccess.Room(parent, name, origin, w, d, rule, openings, h);
+        var wo = parent.TransformPoint(origin);
+        zoneRooms.Add((new Bounds(wo + new Vector3(0f, h * .5f, d * .5f), new Vector3(w, h, d)),
+            rule == RoomRule.Office ? FrontRoomsLook.ReflectionZone.Office : h > 4f ? FrontRoomsLook.ReflectionZone.Tall : FrontRoomsLook.ReflectionZone.Level0));
+        if (rule == RoomRule.Office)
+            FrontRoomsPostStack.EnsureZoneVolume(room, "Office", new Bounds(new Vector3(0f, h * .5f, d * .5f), new Vector3(w + 2f, h + .4f, d + 2f)), 1.0f);
+        return room;
+    }
+
+    /// <summary>Remove a room's south wall (and its cove), so a neighbour's north wall is the only wall there.</summary>
+    static void DropSouthWall(Transform room)
+    {
+        var kill = new List<GameObject>();
+        foreach (Transform c in room)
+            if ((c.name == "wall" || c.name == "cove") && Mathf.Abs(c.localPosition.z) < .01f) kill.Add(c.gameObject);
+        foreach (var k in kill) Object.DestroyImmediate(k);
+    }
+
+    /// <summary>Clip the floor and ceiling slabs to z0..z1 (room-local) so two rooms never overlap coplanar.</summary>
+    static void ClipSlabs(Transform room, float z0, float z1)
+    {
+        foreach (Transform c in room)
+            if (c.name == "floor" || c.name == "ceiling")
+            {
+                var p = c.localPosition; var s = c.localScale;
+                c.localPosition = new Vector3(p.x, p.y, (z0 + z1) * .5f);
+                c.localScale = new Vector3(s.x, s.y, z1 - z0);
+            }
+    }
+
+    static List<Light> Lights(Transform room)
+    {
+        var list = new List<Light>();
+        foreach (var l in room.GetComponentsInChildren<Light>(true)) list.Add(l);
+        return list;
+    }
+
+    static void ScaleLights(Transform room, float k) { foreach (var l in Lights(room)) l.intensity *= k; }
+
+    static void KillLamps(Transform room, Func<Vector3, bool> where)
+    {
+        var kill = new List<GameObject>();
+        foreach (Transform c in room) if (c.name.StartsWith("troffer") && where(c.localPosition)) kill.Add(c.gameObject);
+        foreach (var k in kill) Object.DestroyImmediate(k);
+    }
+
+    /// <summary>Fill the rest of a 1.4-wide opening in a Room wall to make the map's window cut: sill 0-0.35, head 2.0-2.1.</summary>
+    static void WindowCut(Transform room, RoomRule rule, float centreX, float wallZ)
+    {
+        var wall = FrontRoomsSurfaces.Room(rule, FrontRoomsSurfaces.Slot.Wall);
+        Box(room, "wall", new Vector3(centreX, .175f, wallZ), new Vector3(1.4f, .35f, .16f), wall);
+        Box(room, "wall", new Vector3(centreX, 2.05f, wallZ), new Vector3(1.4f, .1f, .16f), wall);
+        Box(room, "cove", new Vector3(centreX, .05f, wallZ), new Vector3(1.4f, .1f, .18f), FrontRoomsSurfaces.CoveBase);
+    }
+
+    static GameObject Box(Transform p, string n, Vector3 pos, Vector3 size, Material m) => FrontRoomsKitLookdevAccess.Box(p, n, pos, size, m);
+
+    // ======================================================================================== kit helpers
+
+    static Vector3 A(string kit, string anchor)
+    {
+        var info = FrontRoomsKitLibrary.GetInfo(kit);
+        if (info != null && info.TryAnchor(anchor, out var p)) return p;
+        throw new Exception(kit + " has no anchor " + anchor);
+    }
+
+    static Transform S(string kit, Transform parent, Vector3 pos, Quaternion rot, Vector3? scale = null, string label = null)
+    {
+        var go = FrontRoomsKitLibrary.Spawn(kit, parent, pos, rot, scale ?? Vector3.one, false, label ?? kit);
+        if (go == null) throw new Exception("no model " + kit);
+        foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+        return go.transform;
+    }
+
+    static readonly Quaternion Rs = Quaternion.Euler(0f, 90f, 0f), Rp = Quaternion.Euler(0f, -90f, 0f);
+    static readonly Vector3 Mp = new Vector3(-1f, 1f, 1f);
+    static Vector3 On(Vector3 at, Quaternion r, Vector3 m, Vector3 local) => at + r * Vector3.Scale(m, local);
+
+    // ======================================================================================== doors
+
+    sealed class DoorSpec
+    {
+        public string code, leaf, frame, finish = "", sign, plate, exitSign;
+        public bool locked, free, closer, crossbar;
+        public RoomRule rule;
+    }
+
+    static DoorSpec Spec(string code)
+    {
+        switch (code)
+        {
+            case "L0-F": return new DoorSpec { code = code, leaf = "Kit_DoorLeaf_Veneer", frame = "Kit_DoorFrame_Wood", finish = "_Brass", free = true, rule = RoomRule.Lobby };
+            case "L0-K": return new DoorSpec { code = code, leaf = lockedLeaf, frame = "Kit_DoorFrame_Steel", locked = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate", rule = RoomRule.Lobby };
+            case "OF-F": return new DoorSpec { code = code, leaf = "Kit_DoorLeaf_Veneer_Oak", frame = "Kit_DoorFrame_Steel", free = true, closer = true, rule = RoomRule.Office };
+            case "OF-K": return new DoorSpec { code = code, leaf = lockedLeaf, frame = "Kit_DoorFrame_Steel", locked = true, closer = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate_Blue", rule = RoomRule.Office };
+            case "RN-F": return new DoorSpec { code = code, leaf = "Kit_DoorLeaf_Ward", frame = "Kit_DoorFrame_Steel", closer = true, rule = RoomRule.Run };
+            case "RN-K": return new DoorSpec { code = code, leaf = lockedLeaf, frame = "Kit_DoorFrame_Steel", locked = true, closer = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate_White", rule = RoomRule.Run };
+            case "EX-F": return new DoorSpec { code = code, leaf = "Kit_DoorLeaf_Veneer_Oak", frame = "Kit_DoorFrame_Steel_Alu", free = true, closer = true, crossbar = true, exitSign = "Kit_ExitSign", rule = RoomRule.Exit };
+            case "EX-K": return new DoorSpec { code = code, leaf = lockedLeaf, frame = "Kit_DoorFrame_Steel_Alu", locked = true, closer = true, plate = "Kit_DoorNumberPlate", exitSign = "Kit_ExitSign_Dead", rule = RoomRule.Exit };
+        }
+        throw new Exception("no door " + code);
+    }
+
+    sealed class Door
+    {
+        public DoorSpec spec;
+        public bool old;
+        public int s;                       // S_sign: +1 = the swing room is on door-root +X
+        public Transform root, frame, hinge, rig;
+        public Transform kfS, kfP, plugS, plugP, keyS, keyP;
+        public Transform knobS, knobP, leverS, leverP;
+        public Quaternion knobSR, knobPR, leverSR, leverPR;
+        public Transform deadbolt, latch;
+        public Vector3 deadboltHome, latchHome;
+        public float latchTravel;
+        public Transform arm, forearm;
+        public Vector3 spindle0, shoe;
+        public float armA, foreB, latchT, angle;
+    }
+
+    static readonly Vector3 Axis = new Vector3(.0295f, 0f, .0098f);   // A2 hinge axis, door root (S = +X)
+
+    /// <summary>The map's render-only trims (MapWorld BuildEdge): 0.07 face x 0.20 deep jambs and head, outside the opening.</summary>
+    static void MapTrims(Transform root)
+    {
+        var trim = FrontRoomsSurfaces.CoveBase;
+        Box(root, "Map trim jamb hinge", new Vector3(0f, 1.05f, -.035f), new Vector3(.20f, 2.1f, .07f), trim);
+        Box(root, "Map trim jamb latch", new Vector3(0f, 1.05f, 1.035f), new Vector3(.20f, 2.1f, .07f), trim);
+        Box(root, "Map trim head", new Vector3(0f, 2.135f, .5f), new Vector3(.20f, .07f, 1.14f), trim);
+    }
+
+    /// <summary>
+    /// The new door (10_spec §6.2 raw recipe): frame at the door root with M = (S_sign,1,1); the hinge on the A2 axis;
+    /// the Leaf rig under it, mirrored by M; face hardware per §1.2 (plug and text parts with (S_sign,1,1));
+    /// bolts at the leaf anchors; strike on the frame; closer linkage solved per angle; the Leaf shadow proxy.
+    /// </summary>
+    static Door KitDoor(DoorSpec d, Transform parent, Vector3 pos, Quaternion rot, int s, bool trims = true)
+    {
+        var door = new Door { spec = d, s = s };
+        var root = new GameObject("DoorSet " + d.code + (s > 0 ? " S+" : " S-")).transform;
+        root.SetParent(parent, false);
+        root.localPosition = pos;
+        root.localRotation = rot;
+        door.root = root;
+        if (trims) MapTrims(root);
+        var m = new Vector3(s, 1f, 1f);
+        door.frame = S(d.frame, root, Vector3.zero, Quaternion.identity, m, "Door frame (kit)");
+        door.hinge = new GameObject("Door hinge (A2)").transform;
+        door.hinge.SetParent(root, false);
+        door.hinge.localPosition = new Vector3(s * Axis.x, 0f, Axis.z);
+        door.rig = new GameObject("Leaf rig").transform;
+        door.rig.SetParent(door.hinge, false);
+        door.rig.localPosition = new Vector3(-s * Axis.x, 0f, -Axis.z);
+        door.rig.localScale = m;
+        var rig = door.rig;
+        S(d.leaf, rig, Vector3.zero, Quaternion.identity, null, "Leaf (kit)");
+        var shadow = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(shadow.GetComponent<Collider>());
+        shadow.name = "Leaf shadow";
+        shadow.transform.SetParent(rig, false);
+        shadow.transform.localPosition = new Vector3(0f, 1.055f, .5f);
+        shadow.transform.localScale = new Vector3(.10f, 2.08f, .96f);
+        var sr = shadow.GetComponent<MeshRenderer>();
+        sr.sharedMaterial = FrontRoomsSurfaces.DoorVeneer;
+        sr.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+        var txt = new Vector3(s, 1f, 1f);
+
+        if (d.free)
+        {
+            foreach (var f in new[] { "s", "p" })
+            {
+                if (d.crossbar && f == "p") continue;   // EX-F: the crossbar replaces the P-face trim
+                var r = f == "s" ? Rs : Rp;
+                var mm = f == "s" ? Vector3.one : Mp;
+                var at = A(d.leaf, "rose_" + f);
+                var rose = "Kit_Lock_Rose" + d.finish;
+                S(rose, rig, at, r, mm, "Lock rose " + f);
+                var lever = S("Kit_Lock_Lever" + d.finish, rig, On(at, r, mm, A(rose, "spindle")), r, mm, "Lock lever " + f);
+                if (f == "s") { door.leverS = lever; door.leverSR = r; } else { door.leverP = lever; door.leverPR = r; }
+            }
+            door.latch = S("Kit_Lock_Latchbolt_Bored" + d.finish, rig, A(d.leaf, "latchbolt"), Quaternion.identity, null, "Lock latchbolt");
+            door.latchTravel = .013f;
+            var strikeAt = d.frame == "Kit_DoorFrame_Wood" ? A(d.frame, "strike") : A(d.frame, "strike_bored");
+            S("Kit_Lock_StrikeBored" + d.finish, door.frame, strikeAt, Quaternion.Euler(0f, 180f, 0f), null, "Lock strike");
+        }
+        if (d.locked)
+        {
+            foreach (var f in new[] { "s", "p" })
+            {
+                var r = f == "s" ? Rs : Rp;
+                var mm = f == "s" ? Vector3.one : Mp;
+                var at = A(d.leaf, "escutcheon_" + f);
+                S("Kit_Lock_Escutcheon", rig, at, r, mm, "Lock escutcheon " + f);
+                var knob = S("Kit_Lock_Knob", rig, On(at, r, mm, A("Kit_Lock_Escutcheon", "knob_pivot")), r, mm, "Lock knob " + f);
+                var keyhole = On(at, r, mm, A("Kit_Lock_Escutcheon", "keyhole"));
+                S("Kit_Lock_CylinderShell", rig, keyhole, r, mm, "Lock cylinder " + f);
+                var kf = new GameObject("Keyhole frame " + f).transform;   // the plug's part frame: never mirrored
+                kf.SetParent(rig, false);
+                kf.localPosition = keyhole;
+                kf.localRotation = r;
+                kf.localScale = txt;
+                var plug = S("Kit_Lock_Plug", kf, Vector3.zero, Quaternion.identity, null, "Lock plug " + f);
+                if (f == "s") { door.kfS = kf; door.plugS = plug; door.knobS = knob; door.knobSR = r; }
+                else { door.kfP = kf; door.plugP = plug; door.knobP = knob; door.knobPR = r; }
+                if (d.sign != null) S(d.sign, rig, A(d.leaf, "sign_" + f), r, txt, "Door sign " + f);
+                if (d.plate != null) S(d.plate, rig, A(d.leaf, "tagplate_" + f), r, txt, "Door number " + f);
+            }
+            door.deadbolt = S("Kit_Lock_Deadbolt", rig, A(d.leaf, "deadbolt"), Quaternion.identity, null, "Lock deadbolt");
+            door.deadboltHome = door.deadbolt.localPosition;
+            door.latch = S("Kit_Lock_Latchbolt_Mortise", rig, A(d.leaf, "latchbolt"), Quaternion.identity, null, "Lock latchbolt");
+            door.latchTravel = .019f;
+            S("Kit_Lock_StrikeMortise", door.frame, A(d.frame, "strike"), Quaternion.Euler(0f, 180f, 0f), null, "Lock strike");
+        }
+        if (door.latch != null) door.latchHome = door.latch.localPosition;
+        if (d.closer)
+        {
+            var mount = A(d.leaf, "closer_mount_s");
+            S("Kit_DoorCloser_Body", rig, mount, Rs, null, "Closer body");
+            door.spindle0 = mount + Rs * A("Kit_DoorCloser_Body", "spindle");
+            door.shoe = A(d.frame, "closer_shoe");
+            S("Kit_DoorCloser_Shoe", door.frame, door.shoe, Rs, null, "Closer shoe");
+            door.armA = A("Kit_DoorCloser_Arm", "elbow").x;
+            var fe = A("Kit_DoorCloser_Forearm", "shoe_end");
+            door.foreB = new Vector2(fe.x, fe.z).magnitude;
+            door.arm = S("Kit_DoorCloser_Arm", door.frame, door.spindle0, Quaternion.identity, null, "Closer arm");
+            door.forearm = S("Kit_DoorCloser_Forearm", door.frame, door.spindle0, Quaternion.identity, null, "Closer forearm");
+        }
+        if (d.crossbar) S("Kit_ExitDevice_Crossbar", rig, new Vector3(-.022f, 1f, .9f), Rp, Mp, "Exit device");
+        if (d.exitSign != null) S(d.exitSign, door.frame, A(d.frame, "exit_sign_p"), Rp, txt, "Exit sign");
+        SetAngle(door, 0f);
+        return door;
+    }
+
+    /// <summary>The map's door before the kit: hinge on the low jamb's centre line, the 0.05 x 2.08 x 0.98 leaf cube, trims.</summary>
+    static Door OldDoor(Transform parent, Vector3 pos, Quaternion rot, int s)
+    {
+        var door = new Door { old = true, s = s, spec = new DoorSpec { code = "OLD" } };
+        var root = new GameObject("DoorSet OLD primitive").transform;
+        root.SetParent(parent, false);
+        root.localPosition = pos;
+        root.localRotation = rot;
+        door.root = root;
+        MapTrims(root);
+        door.hinge = new GameObject("Door hinge (old)").transform;
+        door.hinge.SetParent(root, false);
+        Box(door.hinge, "Door leaf", new Vector3(0f, 1.04f, .5f), new Vector3(.05f, 2.08f, .98f), FrontRoomsSurfaces.DoorVeneer);
+        return door;
+    }
+
+    static void SetAngle(Door door, float deg)
+    {
+        door.angle = deg;
+        door.hinge.localRotation = Quaternion.Euler(0f, door.s * deg, 0f);
+        if (door.old) return;
+        // Facade rule (G2): the spring latch is held back within ~8° of shut, so it never rubs the strike or lining.
+        if (door.latch != null) SetLatch(door, deg > .01f && deg <= 8f ? 1f : door.latchT);
+        if (door.arm != null) SolveCloser(door);
+    }
+
+    static void SetLatch(Door door, float t)
+    {
+        if (door.latch == null) return;
+        door.latch.localPosition = door.latchHome - new Vector3(0f, 0f, door.latchTravel * t);
+    }
+
+    static void SetDeadbolt(Door door, float retracted)
+    {
+        if (door.deadbolt == null) return;
+        door.deadbolt.localPosition = door.deadboltHome - new Vector3(0f, 0f, .025f * retracted);
+    }
+
+    /// <summary>Plug and key on one face: the plug turns about its part −Z; +angle sends the cuts toward the hinge (§3.4).</summary>
+    static void SetPlug(Door door, string face, float deg, float insert, bool withKey)
+    {
+        var kf = face == "s" ? door.kfS : door.kfP;
+        var plug = face == "s" ? door.plugS : door.plugP;
+        if (kf == null) return;
+        var sign = (face == "s" ? 1f : -1f) * door.s;
+        var turn = Quaternion.AngleAxis(sign * deg, new Vector3(0f, 0f, -1f));
+        plug.localRotation = turn;
+        var key = face == "s" ? door.keyS : door.keyP;
+        if (withKey && key == null)
+        {
+            key = S("Kit_Key_Zone", kf, Vector3.zero, Quaternion.identity, null, "Key");
+            if (face == "s") door.keyS = key; else door.keyP = key;
+        }
+        if (key == null) return;
+        key.gameObject.SetActive(withKey);
+        // Key frame: origin at the shoulder, +Z toward the tip (into the lock), +Y = cuts up. Part +Z points out of the door.
+        var outMetres = Unlock.InsertDepth * (1f - Mathf.Clamp01(insert));
+        key.localPosition = new Vector3(0f, 0f, outMetres);
+        key.localRotation = turn * Quaternion.LookRotation(Vector3.back, Vector3.up);
+    }
+
+    static class Unlock { public const float InsertDepth = .025f; }
+
+    static void SetKnob(Door door, string face, float deg)
+    {
+        var k = face == "s" ? door.knobS : door.knobP;
+        if (k == null) return;
+        k.localRotation = (face == "s" ? door.knobSR : door.knobPR) * Quaternion.AngleAxis(deg, Vector3.forward);
+    }
+
+    /// <summary>Closer elbow (10_spec §2.4): circle(spindle(θ), a) ∩ circle(shoe pivot, b), the root farther from the leaf's S face.</summary>
+    static void SolveCloser(Door door)
+    {
+        var q = Quaternion.Euler(0f, door.angle, 0f);   // frame space is authored (S = +X): the leaf turns +θ
+        var sp = Axis + q * (door.spindle0 - Axis);
+        var n3 = q * Vector3.right;
+        var p0 = new Vector2(sp.x, sp.z);
+        var p1 = new Vector2(door.shoe.x, door.shoe.z);
+        float a = door.armA, b = door.foreB;
+        var dist = Vector2.Distance(p0, p1);
+        var along = (a * a - b * b + dist * dist) / (2f * dist);
+        var h = Mathf.Sqrt(Mathf.Max(0f, a * a - along * along));
+        var dir = (p1 - p0) / dist;
+        var mid = p0 + dir * along;
+        var perp = new Vector2(-dir.y, dir.x);
+        var e1 = mid + perp * h;
+        var e2 = mid - perp * h;
+        var n = new Vector2(n3.x, n3.z);
+        var e = Vector2.Dot(e1 - p0, n) >= Vector2.Dot(e2 - p0, n) ? e1 : e2;
+        float Yaw(Vector2 from, Vector2 to) => Mathf.Atan2(-(to.y - from.y), to.x - from.x) * Mathf.Rad2Deg;
+        door.arm.localPosition = sp;
+        door.arm.localRotation = Quaternion.Euler(0f, Yaw(p0, e), 0f);
+        door.forearm.localPosition = new Vector3(e.x, sp.y + A("Kit_DoorCloser_Arm", "elbow").y, e.y);
+        door.forearm.localRotation = Quaternion.Euler(0f, Yaw(e, p1), 0f);
+    }
+
+    /// <summary>World keyhole, out-of-door direction and up for one face (through the rig: valid at any angle and handing).</summary>
+    static void Keyhole(Door door, string face, out Vector3 point, out Vector3 outDir)
+    {
+        var kf = face == "s" ? door.kfS : door.kfP;
+        point = kf.position;
+        outDir = kf.TransformVector(Vector3.forward).normalized;
+    }
+
+    // Door placement on a Room wall. side 0 S, 1 N (opening centre along x), 2 W, 3 E (centre along z).
+    // Door root on the hinge jamb (low coordinate), door +Z along the opening. Returns whether door +X points into the room.
+    static bool DoorOnWall(int side, float centre, float w, float d, out Vector3 pos, out Quaternion rot)
+    {
+        switch (side)
+        {
+            case 0: pos = new Vector3(centre - .5f, 0f, 0f); rot = Quaternion.LookRotation(Vector3.right); return false;
+            case 1: pos = new Vector3(centre - .5f, 0f, d); rot = Quaternion.LookRotation(Vector3.right); return true;
+            case 2: pos = new Vector3(-w * .5f, 0f, centre - .5f); rot = Quaternion.LookRotation(Vector3.forward); return true;
+            default: pos = new Vector3(w * .5f, 0f, centre - .5f); rot = Quaternion.LookRotation(Vector3.forward); return false;
+        }
+    }
+
+    /// <summary>S_sign that puts the requested face toward the room the wall belongs to.</summary>
+    static int SFor(bool plusXIntoRoom, bool sFaceToRoom) => plusXIntoRoom == sFaceToRoom ? 1 : -1;
+
+    static Door PlaceDoor(Transform room, string code, int side, float centre, float w, float d, bool sFaceToRoom)
+    {
+        var intoRoom = DoorOnWall(side, centre, w, d, out var pos, out var rot);
+        return KitDoor(Spec(code), room, pos, rot, SFor(intoRoom, sFaceToRoom));
+    }
+
+    // ======================================================================================== probe
+
+    static readonly string[] InteractableKits =
+    {
+        "Kit_DoorFrame_Wood", "Kit_DoorFrame_Steel", "Kit_DoorFrame_Steel_Alu", "Kit_DoorLeaf_Veneer", "Kit_DoorLeaf_Veneer_Oak",
+        "Kit_DoorLeaf_Steel", "Kit_DoorLeaf_Steel_PaintedMetal", "Kit_DoorLeaf_SteelLite", "Kit_DoorLeaf_Ward",
+        "Kit_DoorCloser_Body", "Kit_DoorCloser_Arm", "Kit_DoorCloser_Forearm", "Kit_DoorCloser_Shoe", "Kit_ExitDevice_Crossbar",
+        "Kit_Lock_Escutcheon", "Kit_Lock_CylinderShell", "Kit_Lock_Plug", "Kit_Lock_Knob", "Kit_Lock_Deadbolt", "Kit_Lock_Latchbolt_Mortise",
+        "Kit_Lock_Latchbolt_Bored", "Kit_Lock_Rose", "Kit_Lock_Lever", "Kit_Lock_StrikeMortise", "Kit_Lock_StrikeBored",
+        "Kit_Lock_Escutcheon_Brass", "Kit_Lock_CylinderShell_Brass", "Kit_Lock_Knob_Brass", "Kit_Lock_Latchbolt_Bored_Brass", "Kit_Lock_Rose_Brass",
+        "Kit_Lock_Lever_Brass", "Kit_Lock_StrikeBored_Brass",
+        "Kit_Key_Zone", "Kit_Key_Zone_Nickel", "Kit_KeyRing", "Kit_KeyTag_Rect", "Kit_KeyTag_Rect_Blue", "Kit_KeyTag_Rect_White",
+        "Kit_KeyTag_Round", "Kit_KeyTag_Round_Blue", "Kit_KeyTag_Round_White", "Kit_KeyTag_Long", "Kit_KeyTag_Long_Blue", "Kit_KeyTag_Long_White",
+        "Kit_KeyHookBoard", "Kit_KeyCabinet", "Kit_KeyHook", "Kit_DoorSign", "Kit_DoorNumberPlate", "Kit_DoorNumberPlate_Blue", "Kit_DoorNumberPlate_White",
+        "Kit_ExitSign", "Kit_ExitSign_Dead",
+        "Kit_WindowFrame_Wood", "Kit_WindowFrame_Steel", "Kit_WindowFrame_Steel_Enamel", "Kit_WindowFrame_Alu", "Kit_MiniBlind_Raised", "Kit_MiniBlind_Lowered",
+    };
+
+    static void Probe()
+    {
+        var g = G("probe");
+        var sb = new StringBuilder("{\n");
+        var first = true;
+        foreach (var k in InteractableKits)
+        {
+            var info = FrontRoomsKitLibrary.GetInfo(k);
+            GameObject go = null;
+            try { go = FrontRoomsKitLibrary.Spawn(k, g, Vector3.zero, Quaternion.identity, Vector3.one, false, k); } catch (Exception e) { Log("probe spawn " + k + ": " + e.Message); }
+            var parts = new List<string>();
+            if (go != null)
+            {
+                var seen = new HashSet<string>();
+                var lodGroup = go.GetComponent<LODGroup>();
+                foreach (var r in go.GetComponentsInChildren<MeshRenderer>(true))
+                    foreach (var mat in r.sharedMaterials)
+                    {
+                        if (mat == null || !seen.Add(mat.name)) continue;
+                        var c = mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : Color.white;
+                        var path = AssetDatabase.GetAssetPath(mat);
+                        var tex = mat.HasProperty("_BaseMap") && mat.GetTexture("_BaseMap") != null ? mat.GetTexture("_BaseMap").name : "";
+                        parts.Add(string.Format(Inv, "   {{\"material\": \"{0}\", \"shader\": \"{1}\", \"asset\": \"{2}\", \"projectSurface\": {3}, \"baseColor\": [{4:F3}, {5:F3}, {6:F3}], \"baseMap\": \"{7}\"}}",
+                            mat.name, mat.shader != null ? mat.shader.name : "", path, path.StartsWith("Assets/Resources/Surfaces/") ? "true" : "false", c.r, c.g, c.b, tex));
+                    }
+                var lods = lodGroup != null ? lodGroup.GetLODs() : null;
+                parts.Add(string.Format(Inv, "   {{\"lodGroup\": {0}, \"lods\": [{1}], \"renderers\": {2}, \"tris\": {3}, \"trisLod1\": {4}, \"castShadows\": \"{5}\"}}",
+                    lodGroup != null ? "true" : "false",
+                    lods == null ? "" : string.Join(", ", Array.ConvertAll(lods, l => l.screenRelativeTransitionHeight.ToString("F4", Inv))),
+                    go.GetComponentsInChildren<MeshRenderer>(true).Length, info != null ? info.triangles : -1, info != null ? info.trianglesLod1 : -1,
+                    go.GetComponentInChildren<MeshRenderer>() != null ? go.GetComponentInChildren<MeshRenderer>().shadowCastingMode.ToString() : "-"));
+                Object.DestroyImmediate(go);
+            }
+            sb.Append(first ? "" : ",\n").Append(" \"").Append(k).Append("\": [\n").Append(string.Join(",\n", parts)).Append("\n ]");
+            first = false;
+        }
+        sb.Append("\n}\n");
+        File.WriteAllText(Path.Combine(outDir, "materials_probe.json"), sb.ToString());
+
+        // The locked leaf: Door_Enamel has no project material yet (P-4), so Unity draws the FBX's own material;
+        // the _PaintedMetal variant is the spec's named fallback. Side by side in L0 at 3 m.
+        const float w = 6f, dd = 8f;
+        var room = Room(g, "probe L0", new Vector3(0f, 0f, 0f), w, dd, RoomRule.Lobby, Standard, Op(1, -.9f, 1f), Op(1, .9f, 1f));
+        var saved = lockedLeaf;
+        lockedLeaf = "Kit_DoorLeaf_Steel";
+        PlaceDoor(room, "L0-K", 1, -.9f, w, dd, false);
+        lockedLeaf = "Kit_DoorLeaf_Steel_PaintedMetal";
+        PlaceDoor(room, "L0-K", 1, .9f, w, dd, false);
+        lockedLeaf = saved;
+        var eye = room.TransformPoint(new Vector3(0f, Eye, dd - 3f));
+        Shot("00_probe_lockedleaf_DoorEnamelFBX_vs_PaintedMetal_3m", eye, room.rotation, GameFov, "left Kit_DoorLeaf_Steel (Door_Enamel slot, FBX material), right Kit_DoorLeaf_Steel_PaintedMetal");
+    }
+
+    // ======================================================================================== lineup
+
+    static void LabelRec(string file, string name, Vector3 world, float topY)
+    {
+        var p = cam.WorldToScreenPoint(world);
+        var t = cam.WorldToScreenPoint(new Vector3(world.x, topY, world.z));
+        if (p.z <= 0f) return;
+        labelJson.Append(labelFirst ? "" : ",\n");
+        labelFirst = false;
+        labelJson.Append("{\"file\":\"" + file + "\",\"name\":\"" + name + "\",\"x\":" + F(p.x) + ",\"y\":" + F(Hpx - p.y) + ",\"top\":" + F(Hpx - t.y) + "}");
+    }
+
+    static void Lineup()
+    {
+        // A neutral studio, not the game look: post off, one soft key + fill, flat grey ambient, grey floor.
+        var g = G("lineup");
+        var data = cam.GetUniversalAdditionalCameraData();
+        var pp = data.renderPostProcessing;
+        var amb = (RenderSettings.ambientMode, RenderSettings.ambientLight, RenderSettings.ambientIntensity);
+        data.renderPostProcessing = false;
+        RenderSettings.ambientMode = AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(.42f, .42f, .42f);
+        try
+        {
+            var grey = FrontRoomsSurfaces.Lit("INT neutral floor", new Color(.46f, .46f, .45f), .2f);
+            var back = FrontRoomsSurfaces.Lit("INT neutral backdrop", new Color(.62f, .62f, .60f), .1f);
+            Box(g, "floor", new Vector3(100f, -.05f, 0f), new Vector3(320f, .1f, 30f), grey);
+            Box(g, "backdrop", new Vector3(100f, 4f, 3.2f), new Vector3(320f, 8f, .1f), back);
+            var key = new GameObject("studio key").AddComponent<Light>();
+            key.transform.SetParent(g, false);
+            key.type = LightType.Directional;
+            key.transform.rotation = Quaternion.Euler(38f, 28f, 0f);
+            key.intensity = 1.15f;
+            key.shadows = LightShadows.Soft;
+            key.shadowStrength = .7f;
+            var fill = new GameObject("studio fill").AddComponent<Light>();
+            fill.transform.SetParent(g, false);
+            fill.type = LightType.Directional;
+            fill.transform.rotation = Quaternion.Euler(12f, -40f, 0f);
+            fill.intensity = .35f;
+            fill.shadows = LightShadows.None;
+            // 1.80 m reference: a slim figure and a pole in 0.1 m bands.
+            Transform Human(Transform parent, Vector3 at)
+            {
+                var h = new GameObject("Ref 1.80 m").transform;
+                h.SetParent(parent, false);
+                h.localPosition = at;
+                var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                Object.DestroyImmediate(body.GetComponent<Collider>());
+                body.transform.SetParent(h, false);
+                body.transform.localPosition = new Vector3(0f, .9f, 0f);
+                body.transform.localScale = new Vector3(.42f, .9f, .26f);
+                body.GetComponent<MeshRenderer>().sharedMaterial = FrontRoomsSurfaces.Lit("INT ref figure", new Color(.32f, .38f, .46f), .2f);
+                var black = FrontRoomsSurfaces.Lit("INT ref black", new Color(.03f, .03f, .03f), .2f);
+                var white = FrontRoomsSurfaces.Lit("INT ref white", new Color(.85f, .85f, .82f), .2f);
+                for (var i = 0; i < 18; i++)
+                    Box(h, "pole band", new Vector3(.36f, .05f + i * .1f, 0f), new Vector3(.04f, .1f, .04f), i % 2 == 0 ? black : white);
+                Box(h, "pole top 1.80", new Vector3(.36f, 1.805f, 0f), new Vector3(.14f, .01f, .04f), black);
+                return h;
+            }
+            var doorRot = Quaternion.LookRotation(Vector3.right);   // door +X (S face) -> world -Z, toward the camera
+            var front = Quaternion.Euler(0f, 180f, 0f);
+            var rowIndex = 0;
+            void Row(string file, IList<(string kit, Quaternion rot, float y, float before, float after)> items, float fov)
+            {
+                var row = new GameObject("row " + file).transform;
+                row.SetParent(g, false);
+                row.localPosition = new Vector3(rowIndex++ * 40f, 0f, 0f);
+                var hum = Human(row, new Vector3(-.9f, 0f, 0f));
+                var x = 0f;
+                var spawned = new List<(string kit, Transform t, float y)>();
+                foreach (var it in items)
+                {
+                    x += it.before;
+                    var t = S(it.kit, row, new Vector3(x, it.y, 0f), it.rot, null, it.kit);
+                    spawned.Add((it.kit, t, it.y));
+                    x += it.after;
+                }
+                Bounds? b = null;
+                foreach (var r in row.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if (!r.enabled) continue;
+                    if (b == null) b = r.bounds; else { var bb = b.Value; bb.Encapsulate(r.bounds); b = bb; }
+                }
+                var bounds = b ?? new Bounds(row.position, Vector3.one);
+                bounds.Expand(new Vector3(.3f, .25f, 0f));
+                var rot = Quaternion.Euler(5f, 0f, 0f);
+                var tanV = Mathf.Tan(fov * .5f * Mathf.Deg2Rad);
+                var dist = Mathf.Max(bounds.extents.y / tanV, bounds.extents.x / (tanV * Wpx / Hpx)) + bounds.extents.z + .2f;
+                var pos = bounds.center - rot * Vector3.forward * dist;
+                Shot(file, pos, rot, fov, "neutral studio (post off, key + fill); 1.80 m figure and 0.1 m banded pole at the left");
+                foreach (var (kit, t, y) in spawned)
+                {
+                    var info = FrontRoomsKitLibrary.GetInfo(kit);
+                    var c = info != null ? t.TransformPoint((info.Min + info.Max) * .5f) : t.position;
+                    LabelRec(file, kit, new Vector3(c.x, Mathf.Max(0f, info != null ? t.TransformPoint(info.Min).y : y), c.z), info != null ? t.TransformPoint(info.Max).y : y + .2f);
+                }
+                LabelRec(file, "Ref 1.80 m", hum.position, 1.8f);
+            }
+            Row("01_lineup_door_frames_leaves", new List<(string, Quaternion, float, float, float)>
+            {
+                ("Kit_DoorFrame_Wood", doorRot, 0f, .1f, 1.3f), ("Kit_DoorFrame_Steel", doorRot, 0f, .1f, 1.3f), ("Kit_DoorFrame_Steel_Alu", doorRot, 0f, .1f, 1.3f),
+                ("Kit_DoorLeaf_Veneer", doorRot, 0f, .1f, 1.15f), ("Kit_DoorLeaf_Veneer_Oak", doorRot, 0f, .1f, 1.15f), ("Kit_DoorLeaf_Steel", doorRot, 0f, .1f, 1.15f),
+                ("Kit_DoorLeaf_Steel_PaintedMetal", doorRot, 0f, .1f, 1.15f), ("Kit_DoorLeaf_SteelLite", doorRot, 0f, .1f, 1.15f), ("Kit_DoorLeaf_Ward", doorRot, 0f, .1f, 1.15f),
+            }, 30f);
+            Row("01_lineup_windows_blinds", new List<(string, Quaternion, float, float, float)>
+            {
+                ("Kit_WindowFrame_Wood", front, 0f, .9f, .95f), ("Kit_WindowFrame_Steel", front, 0f, .85f, .9f), ("Kit_WindowFrame_Steel_Enamel", front, 0f, .85f, .9f),
+                ("Kit_WindowFrame_Alu", front, 0f, .85f, .9f), ("Kit_MiniBlind_Raised", front, 2.195f, .85f, .95f), ("Kit_MiniBlind_Lowered", front, 2.3f, 1.25f, 1.2f),
+            }, 30f);
+            Row("01_lineup_hosts_signs", new List<(string, Quaternion, float, float, float)>
+            {
+                ("Kit_KeyHookBoard", front, 0f, .3f, .4f), ("Kit_KeyCabinet", front, 0f, .45f, .5f), ("Kit_KeyHook", front, 0f, .15f, .25f),
+                ("Kit_ExitSign", front, 2.28f, .25f, .3f), ("Kit_ExitSign_Dead", front, 2.28f, .25f, .3f), ("Kit_ExitDevice_Crossbar", front, 1f, .1f, .95f),
+            }, 30f);
+            // Small parts on a 1.0 m plinth, close, with a 0.1 m scale bar in 10 mm bands.
+            var small = new GameObject("small parts").transform;
+            small.SetParent(g, false);
+            small.localPosition = new Vector3(rowIndex * 40f, 0f, 0f);
+            Box(small, "plinth", new Vector3(.45f, .5f, 0f), new Vector3(1.2f, 1f, .45f), FrontRoomsSurfaces.Lit("INT plinth", new Color(.58f, .58f, .56f), .15f));
+            var bk = FrontRoomsSurfaces.Lit("INT ref black", new Color(.03f, .03f, .03f), .2f);
+            var wh = FrontRoomsSurfaces.Lit("INT ref white", new Color(.85f, .85f, .82f), .2f);
+            for (var i = 0; i < 10; i++) Box(small, "scale 10 mm", new Vector3(-.1f + i * .01f + .005f, 1.0015f, -.2f), new Vector3(.01f, .003f, .012f), i % 2 == 0 ? bk : wh);
+            string[] parts =
+            {
+                "Kit_Lock_Escutcheon", "Kit_Lock_CylinderShell", "Kit_Lock_Plug", "Kit_Lock_Knob", "Kit_Lock_Rose_Brass", "Kit_Lock_Lever_Brass", "Kit_Lock_Rose", "Kit_Lock_Lever",
+                "Kit_Lock_Deadbolt", "Kit_Lock_Latchbolt_Mortise", "Kit_Lock_Latchbolt_Bored", "Kit_Lock_StrikeMortise", "Kit_Lock_StrikeBored_Brass",
+                "Kit_Key_Zone", "Kit_Key_Zone_Nickel", "Kit_KeyRing", "Kit_KeyTag_Rect", "Kit_KeyTag_Round_Blue", "Kit_KeyTag_Long_White",
+                "Kit_DoorSign", "Kit_DoorNumberPlate", "Kit_DoorNumberPlate_Blue", "Kit_DoorNumberPlate_White",
+                "Kit_DoorCloser_Body", "Kit_DoorCloser_Arm", "Kit_DoorCloser_Forearm", "Kit_DoorCloser_Shoe", "Kit_KeyHook",
+            };
+            var col = 0; var rowI = 0;
+            var placed = new List<(string, Transform)>();
+            foreach (var p in parts)
+            {
+                var info = FrontRoomsKitLibrary.GetInfo(p);
+                var at = new Vector3(-.05f + col * .115f, 1f - (info != null ? info.Min.y : 0f), -.12f + rowI * .14f);
+                // Keys, bolts and the plug lie along their part Z: turn them side-on so the length reads.
+                var sideOn = p.StartsWith("Kit_Key_") || p.Contains("bolt") || p.Contains("Plug");
+                var t = S(p, small, at, sideOn ? Quaternion.LookRotation(Vector3.right, Vector3.up) : front, null, p);
+                placed.Add((p, t));
+                if (++col >= 9) { col = 0; rowI++; }
+            }
+            var c0 = small.TransformPoint(new Vector3(.42f, 1.05f, .02f));
+            var camPos = c0 + new Vector3(0f, .55f, -1.05f);
+            ShotAt("01_lineup_small_parts", camPos, c0, 40f, "small parts on a 1.0 m plinth, neutral studio; scale bar 0.1 m in 10 mm bands at front left");
+            foreach (var (p, t) in placed)
+            {
+                var info = FrontRoomsKitLibrary.GetInfo(p);
+                var c = info != null ? t.TransformPoint((info.Min + info.Max) * .5f) : t.position;
+                LabelRec("01_lineup_small_parts", p, new Vector3(c.x, info != null ? t.TransformPoint(info.Min).y : 1f, c.z), info != null ? t.TransformPoint(info.Max).y : 1.05f);
+            }
+        }
+        finally
+        {
+            data.renderPostProcessing = pp;
+            RenderSettings.ambientMode = amb.Item1;
+            RenderSettings.ambientLight = amb.Item2;
+            RenderSettings.ambientIntensity = amb.Item3;
+        }
+    }
+
+    // ======================================================================================== door family
+
+    static void Family()
+    {
+        var g = G("family");
+        string[] levels = { "L0", "OF", "RN", "EX" };
+        RoomRule[] rules = { RoomRule.Lobby, RoomRule.Office, RoomRule.Run, RoomRule.Exit };
+        const float w = 6f, d = 12f;
+        for (var i = 0; i < 4; i++)
+        {
+            var room = Room(g, "family " + levels[i], new Vector3(i * 40f, 0f, 0f), w, d, rules[i], Standard, Op(1, -.9f, 1f), Op(1, .9f, 1f));
+            // P face (push, stop side) toward the room: the corridor side of an in-swinging door.
+            var free = PlaceDoor(room, levels[i] + "-F", 1, -.9f, w, d, false);
+            var locked = PlaceDoor(room, levels[i] + "-K", 1, .9f, w, d, false);
+            foreach (var dist in new[] { 3f, 8f })
+            {
+                var eye = room.TransformPoint(new Vector3(0f, Eye, d - .08f - dist));
+                Shot("02_family_" + levels[i] + "_P_" + dist.ToString("0", Inv) + "m", eye, Quaternion.Euler(dist < 5f ? 6f : 2f, 0f, 0f), GameFov,
+                    levels[i] + "-F left, " + levels[i] + "-K right; push (P) faces");
+            }
+            // The other face (pull, S): mirror both doors.
+            Object.DestroyImmediate(free.root.gameObject);
+            Object.DestroyImmediate(locked.root.gameObject);
+            PlaceDoor(room, levels[i] + "-F", 1, -.9f, w, d, true);
+            PlaceDoor(room, levels[i] + "-K", 1, .9f, w, d, true);
+            var eye3 = room.TransformPoint(new Vector3(0f, Eye, d - .08f - 3f));
+            Shot("02_family_" + levels[i] + "_S_3m", eye3, Quaternion.Euler(6f, 0f, 0f), GameFov, levels[i] + "-F left, " + levels[i] + "-K right; pull (S) faces, closers on S");
+        }
+    }
+
+    // ======================================================================================== readability
+
+    static void RectRec(string file, string condition, float dist, Transform room, IList<(string name, Transform doorRoot, float z0, float z1, float y0, float y1)> regions)
+    {
+        rectJson.Append(rectFirst ? "" : ",\n");
+        rectFirst = false;
+        rectJson.Append("{\"file\":\"" + file + "\",\"condition\":\"" + condition + "\",\"distance\":" + dist.ToString(Inv) + ",\"rects\":{");
+        for (var i = 0; i < regions.Count; i++)
+        {
+            var r = regions[i];
+            float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
+            foreach (var z in new[] { r.z0, r.z1 })
+                foreach (var y in new[] { r.y0, r.y1 })
+                {
+                    var p = cam.WorldToScreenPoint(r.doorRoot.TransformPoint(new Vector3(0f, y, z)));
+                    x0 = Mathf.Min(x0, p.x); x1 = Mathf.Max(x1, p.x);
+                    y0 = Mathf.Min(y0, Hpx - p.y); y1 = Mathf.Max(y1, Hpx - p.y);
+                }
+            rectJson.Append((i > 0 ? "," : "") + "\"" + r.name + "\":[" + F(x0) + "," + F(y0) + "," + F(x1) + "," + F(y1) + "]");
+        }
+        rectJson.Append("}}");
+    }
+
+    static void Readability()
+    {
+        var g = G("readability");
+        const float w = 6f, d = 26f;
+        float[] sideZ = { 7f, 12f, 17f, 22f };
+        // Run and Exit added for 10_spec T6 (their readability was UNVERIFIED in §2.2).
+        var conditions = new[] { ("L0lit", RoomRule.Lobby, "L0"), ("L0dim", RoomRule.Lobby, "L0"), ("Office", RoomRule.Office, "OF"), ("Run", RoomRule.Run, "RN"), ("Exit", RoomRule.Exit, "EX") };
+        for (var c = 0; c < conditions.Length; c++)
+        {
+            var (cname, rule, lvl) = conditions[c];
+            var ops = new List<FrontRoomsKitLookdevAccess.Opening> { Op(1, -1.8f, 1f), Op(1, 0f, 1f), Op(1, 1.8f, 1f) };
+            foreach (var z in sideZ) { ops.Add(Op(2, z, 1f)); ops.Add(Op(3, z, 1f)); }
+            var room = Room(g, "corridor " + cname, new Vector3(c * 60f, 0f, 0f), w, d, rule, Standard, ops.ToArray());
+            if (cname == "L0dim") KillLamps(room, p => p.z > d - 6f);
+            for (var k = 0; k < sideZ.Length; k++)
+            {
+                PlaceDoor(room, lvl + (k % 2 == 0 ? "-F" : "-K"), 2, sideZ[k], w, d, false);
+                PlaceDoor(room, lvl + (k % 2 == 0 ? "-K" : "-F"), 3, sideZ[k], w, d, false);
+            }
+            DoorOnWall(1, 1.8f, w, d, out var openPos, out var openRot);
+            var openRoot = new GameObject("open doorway ref").transform;
+            openRoot.SetParent(room, false);
+            openRoot.localPosition = openPos;
+            openRoot.localRotation = openRot;
+            // End wall: FREE | LOCKED | an open dark doorway (05's method), then swapped (LOCKED | FREE | open) so the
+            // centre slot's lighting bias cancels in the mean of the two layouts. Side walls alternate.
+            foreach (var swapped in new[] { false, true })
+            {
+            var free = PlaceDoor(room, lvl + "-F", 1, swapped ? 0f : -1.8f, w, d, false);
+            var locked = PlaceDoor(room, lvl + "-K", 1, swapped ? -1.8f : 0f, w, d, false);
+            foreach (var dist in new[] { 6f, 12f, 20f })
+            {
+                var file = "03_readability_" + cname + (swapped ? "_swapped_" : "_") + dist.ToString("00", Inv) + "m";
+                var eye = room.TransformPoint(new Vector3(0f, Eye, d - .08f - dist));
+                Shot(file, eye, room.rotation, GameFov, (swapped ? "end wall: " + lvl + "-K | " + lvl + "-F" : "end wall: " + lvl + "-F | " + lvl + "-K") + " | open doorway; side walls alternate F/K (W: F,K,F,K; E: K,F,K,F)");
+                var regions = new List<(string, Transform, float, float, float, float)>
+                {
+                    ("free_leaf", free.root, .12f, .72f, .35f, .85f),
+                    ("lock_leaf", locked.root, .12f, .72f, .35f, .85f),
+                    ("lock_upper", locked.root, .62f, .92f, 1.15f, 1.9f),
+                    ("free_upper", free.root, .62f, .92f, 1.15f, 1.9f),
+                    ("free_frame", free.root, -.07f, -.02f, .5f, 1.8f),
+                    ("lock_frame", locked.root, -.07f, -.02f, .5f, 1.8f),
+                    ("open_void", openRoot, .2f, .8f, .35f, 1.9f),
+                    ("wall", swapped ? locked.root : free.root, 1.25f, 1.6f, .5f, 1.8f),
+                };
+                RectRec(file, cname + (swapped ? "_swapped" : ""), dist, room, regions);
+            }
+            Object.DestroyImmediate(free.root.gameObject);
+            Object.DestroyImmediate(locked.root.gameObject);
+            }
+        }
+    }
+
+    // ======================================================================================== room in situ
+
+    static void RoomInSitu()
+    {
+        var g = G("room");
+        const float w = 5f, d = 6f;
+        var room = Room(g, "room L0", Vector3.zero, w, d, RoomRule.Lobby, Standard, Op(1, -1.2f, 1f), Op(1, 1.2f, 1f));
+        var far = Room(g, "room L0 beyond", new Vector3(0f, 0f, d), w, 5f, RoomRule.Lobby, Standard, Op(0, -1.2f, 1f), Op(0, 1.2f, 1f));
+        DropSouthWall(far);
+        ClipSlabs(room, -.2f, d);
+        ClipSlabs(far, 0f, 5.2f);
+        var free = PlaceDoor(room, "L0-F", 1, -1.2f, w, d, false);
+        var locked = PlaceDoor(room, "L0-K", 1, 1.2f, w, d, false);
+        foreach (var (door, cx) in new[] { (free, -1.2f), (locked, 1.2f) })
+        {
+            var code = door.spec.code;
+            var c = room.TransformPoint(new Vector3(cx, 0f, d - .08f));
+            ShotAt("04_room_" + code + "_1.5m", c + new Vector3(0f, Eye, -1.5f), c + new Vector3(0f, 1.25f, 0f), GameFov, code + ", push (P) face, player eye 1.62 at 1.5 m");
+            // 0.6 m, looking at the lockset (centred at Y 1.0, Z 0.92 of the door root = 0.42 m right of the opening centre).
+            var lockAt = door.root.TransformPoint(new Vector3(0f, 1f, .92f));
+            ShotAt("04_room_" + code + "_0.6m", new Vector3(lockAt.x - .1f, Eye, c.z - .6f), lockAt + new Vector3(0f, .1f, 0f), GameFov, code + ", eye 1.62 at 0.6 m from the door face, looking at the lockset");
+        }
+        // Key push-in on the locked door's P face: camera on the pose-P line (0.45 out, 0.37 up), at 0.35 and 0.25 m from the keyhole.
+        SetPlug(locked, "p", 0f, 1f, true);
+        Keyhole(locked, "p", out var kh, out var outDir);
+        var dirP = (outDir * .45f + Vector3.up * .37f).normalized;
+        foreach (var dist in new[] { .35f, .25f })
+        {
+            ShotAt("04_room_L0-K_keyin_" + dist.ToString("0.00", Inv) + "m", kh + dirP * dist, kh, DipFov, "key at its insertion anchor (shoulder on the keyhole), plug 0°; camera on the head-dip line");
+            ShotLight(true);
+            ShotAt("04_room_L0-K_keyin_" + dist.ToString("0.00", Inv) + "m_yaw30_shotlight", Yawed(kh, kh + dirP * dist, -30f), kh, DipFov, "as above, camera yawed 30° about the keyhole toward the door centre, shot light 0.6 on");
+            ShotLight(false);
+        }
+    }
+
+    // ======================================================================================== head dip
+
+    static float Smooth(float t) => t * t * (3f - 2f * t);
+
+    static void HeadDip()
+    {
+        var g = G("dip");
+        foreach (var (code, rule, x0) in new[] { ("L0-K", RoomRule.Lobby, 0f), ("OF-K", RoomRule.Office, 60f) })
+        {
+            const float w = 5f, d = 6f;
+            var room = Room(g, "dip " + code, new Vector3(x0, 0f, 0f), w, d, rule, Standard, Op(1, 0f, 1f));
+            var far = Room(g, "dip beyond " + code, new Vector3(x0, 0f, d), w, 5f, rule, Standard, Op(0, 0f, 1f));
+            DropSouthWall(far);
+            ClipSlabs(room, -.2f, d);
+            ClipSlabs(far, 0f, 5.2f);
+            var door = PlaceDoor(room, code, 1, 0f, w, d, false);
+            Keyhole(door, "p", out var kh, out var o);
+            o.y = 0f; o.Normalize();
+            var standEye = new Vector3(kh.x, Eye, kh.z) + o * 1.2f;
+            var standLook = new Vector3(kh.x, 1.3f, kh.z);
+            var pose = kh + o * .45f + Vector3.up * .37f;   // Unlock: DipDistanceFromLock 0.45, eye 1.62 - 0.25
+            var line = (pose - kh).normalized;
+            // f0 standing; f1 dipping; f2 pose P (key at the keyway, tip 3 cm out); f3 push-in, key home; f4 0.30 m, key turned 90°.
+            SetPlug(door, "p", 0f, 0f, false);
+            ShotAt("05_dip_" + code + "_f0_stand_1.2m", standEye, standLook, GameFov, "standing eye 1.62, 1.2 m from the door, before the dip");
+            var t1 = Smooth(.45f);
+            ShotAt("05_dip_" + code + "_f1_dip", Vector3.Lerp(standEye, pose, t1), Vector3.Lerp(standLook, kh, t1), Mathf.Lerp(GameFov, DipFov, t1), "dipping: 45% of the travel (cubic ease)");
+            SetPlug(door, "p", 0f, -.2f, true);   // shoulder 0.030 out = tip 3 cm... insert -0.2 -> 0.030 out
+            door.keyP.localPosition = new Vector3(0f, 0f, .055f);   // KeyAtKeyway: tip 3 cm in front of the core face
+            ShotAt("05_dip_" + code + "_f2_poseP_key_at_keyway", pose, kh, DipFov, "pose P: 0.45 m off the door, eye 1.37, 38-39° down, FOV 62; key tip 30 mm out");
+            SetPlug(door, "p", 0f, 1f, true);
+            var p3 = kh + line * .42f;
+            ShotAt("05_dip_" + code + "_f3_pushin_key_home", p3, kh, DipFov, "push-in to 0.42 m; key fully inserted (shoulder on the core face), 0°");
+            SetPlug(door, "p", 90f, 1f, true);
+            SetDeadbolt(door, 1f);
+            var p4 = kh + line * .30f;
+            ShotAt("05_dip_" + code + "_f4_0.30m_key_turned", p4, kh, DipFov, "0.30 m from the keyhole; key and plug turned 90° (cuts toward the hinge), deadbolt retracted");
+            // The same beats with the Unlock shot light (0.6, unshadowed) and with the pose yawed 30° toward the door centre,
+            // so the key's bow reads face-on instead of edge-on.
+            ShotLight(true);
+            SetDeadbolt(door, 0f);
+            SetPlug(door, "p", 0f, 1f, true);
+            ShotAt("05_dip_" + code + "_f3_pushin_key_home_shotlight", p3, kh, DipFov, "f3 with the Unlock shot light");
+            ShotAt("05_dip_" + code + "_f3_pushin_key_home_yaw30_shotlight", Yawed(kh, p3, -30f), kh, DipFov, "f3, pose yawed 30° about the keyhole, shot light");
+            SetPlug(door, "p", 90f, 1f, true);
+            SetDeadbolt(door, 1f);
+            ShotAt("05_dip_" + code + "_f4_0.30m_key_turned_shotlight", p4, kh, DipFov, "f4 with the Unlock shot light");
+            ShotAt("05_dip_" + code + "_f4_0.30m_key_turned_yaw30_shotlight", Yawed(kh, p4, -30f), kh, DipFov, "f4, pose yawed 30° about the keyhole, shot light");
+            ShotLight(false);
+        }
+    }
+
+    // ======================================================================================== lock sequence
+
+    static void LockSequence()
+    {
+        var g = G("lock");
+        const float w = 5f, d = 6f;
+        var room = Room(g, "lock L0", Vector3.zero, w, d, RoomRule.Lobby, Standard, Op(1, 0f, 1f));
+        var far = Room(g, "lock beyond", new Vector3(0f, 0f, d), w, 5f, RoomRule.Lobby, Standard, Op(0, 0f, 1f));
+        DropSouthWall(far);
+        ClipSlabs(room, -.2f, d);
+        ClipSlabs(far, 0f, 5.2f);
+        var door = PlaceDoor(room, "L0-K", 1, 0f, w, d, false);
+        Keyhole(door, "p", out var kh, out var o);
+        var pose = kh + new Vector3(o.x, 0f, o.z).normalized * .45f + Vector3.up * .37f;
+        var line = (pose - kh).normalized;
+        var macro = kh + line * .25f;
+        var macroYaw = Yawed(kh, macro, -30f);
+        SetPlug(door, "p", 0f, 1f, true);
+        ShotAt("06_lock_poseP_key_100_noshotlight", pose, kh, DipFov, "pose P, key home, no shot light (the level's light only)");
+        ShotLight(true);
+        foreach (var (ins, tag) in new[] { (0f, "000"), (.5f, "050"), (1f, "100") })
+        {
+            SetPlug(door, "p", 0f, ins, true);
+            ShotAt("06_lock_poseP_key_" + tag, pose, kh, DipFov, "key " + tag + "% inserted (0% = tip on the core face), plug 0°; pose P; shot light 0.6");
+            ShotAt("06_lock_macro_key_" + tag, macro, kh, DipFov, "as pose P but 0.25 m from the keyhole");
+            ShotAt("06_lock_macroyaw30_key_" + tag, macroYaw, kh, DipFov, "0.25 m, yawed 30° about the keyhole toward the door centre");
+        }
+        foreach (var deg in new[] { 45f, 90f })
+        {
+            SetPlug(door, "p", deg, 1f, true);
+            var tag = deg.ToString("000", Inv);
+            ShotAt("06_lock_poseP_plug_" + tag, pose, kh, DipFov, "key home, key + plug turned " + tag + "°; shot light 0.6");
+            ShotAt("06_lock_macro_plug_" + tag, macro, kh, DipFov, "as pose P but 0.25 m from the keyhole");
+            ShotAt("06_lock_macroyaw30_plug_" + tag, macroYaw, kh, DipFov, "0.25 m, yawed 30°");
+        }
+        ShotLight(false);
+        // Deadbolt and latch at the leaf edge: the leaf open 30° into the far room, camera in front of the latch edge.
+        SetPlug(door, "p", 0f, 0f, false);
+        SetAngle(door, 30f);
+        var edge = door.rig.TransformPoint(new Vector3(0f, 1f, .9939f));
+        var edgeN = door.rig.TransformVector(Vector3.forward).normalized;
+        var camEdge = edge + edgeN * .32f + Vector3.up * .06f + door.rig.TransformVector(Vector3.right).normalized * .06f;
+        foreach (var (db, la, tag, note) in new[] { (0f, 0f, "a_deadbolt_thrown", "deadbolt thrown 25 mm, latch out"), (1f, 0f, "b_deadbolt_retracted", "deadbolt retracted (the 0.86 s commit), latch out"), (1f, 1f, "c_both_retracted", "deadbolt and latch retracted (knob 40°)") })
+        {
+            SetDeadbolt(door, db);
+            door.latchT = la;
+            SetLatch(door, la);
+            SetKnob(door, "s", la > 0f ? 40f : 0f);
+            SetKnob(door, "p", la > 0f ? 40f : 0f);
+            ShotAt("06_lock_edge_" + tag, camEdge, edge + Vector3.down * .03f, 50f, note + "; leaf open 30°, camera 0.32 m off the latch edge");
+            // Profile: from above and beyond the edge, so the bolts' throw reads as length, not as a face seen end-on.
+            var sDir = door.rig.TransformVector(Vector3.right).normalized;   // the S face's outward normal (handing included)
+            var camTop = edge + edgeN * .13f + Vector3.up * .17f + sDir * .05f;
+            ShotAt("06_lock_edgeprofile_" + tag, camTop, edge + edgeN * .012f + Vector3.down * .035f, 40f, note + "; profile from above the latch edge (0.13 m out, 0.17 m up)");
+        }
+        door.latchT = 0f;
+        SetLatch(door, 0f);
+        SetDeadbolt(door, 0f);
+    }
+
+    // ======================================================================================== keys
+
+    /// <summary>Hung pose (10_spec §4.1; same as FrontRoomsInteractableHeroes.Hang).</summary>
+    static Vector3 Hang(Transform parent, Vector3 hook, string tag, string keyKit, float ringYaw, float lift, float keyTwist, float tagTwist)
+    {
+        var ringRot = Quaternion.Euler(0f, ringYaw, 0f);
+        var ringPos = hook + Vector3.up * lift - ringRot * A("Kit_KeyRing", "hook_contact");
+        S("Kit_KeyRing", parent, ringPos, ringRot, null, "Key ring");
+        var tX = Quaternion.Euler(0f, ringYaw + keyTwist, 0f) * Vector3.right;
+        var keyRot = Quaternion.LookRotation(Vector3.down, Vector3.Cross(Vector3.down, tX));
+        var keyPos = ringPos + ringRot * A("Kit_KeyRing", "key_contact") - keyRot * A(keyKit, "ring_hole");
+        S(keyKit, parent, keyPos, keyRot, null, "Key");
+        var gX = Quaternion.Euler(0f, ringYaw + tagTwist, 0f) * Vector3.right;
+        var tagRot = Quaternion.LookRotation(gX, Vector3.up);
+        var tagPos = ringPos + ringRot * A("Kit_KeyRing", "tag_contact") - tagRot * A(tag, "hole");
+        S(tag, parent, tagPos, tagRot, null, "Key tag");
+        return keyPos + keyRot * new Vector3(0f, 0f, .0f);
+    }
+
+    /// <summary>Flat pose on a surface: key flats down, ring tilted through the bow hole, tag flat beside (approximate; G3's search is not ported).</summary>
+    static Vector3 LayFlat(Transform parent, Vector3 top, float yaw, string tag)
+    {
+        var keyRot = Quaternion.Euler(0f, yaw, 0f) * Quaternion.LookRotation(Vector3.right, Vector3.forward);   // key X (flat normal) = up
+        var keyPos = top + Vector3.up * .0011f;
+        S("Kit_Key_Zone", parent, keyPos, keyRot, null, "Key");
+        var hole = keyPos + keyRot * A("Kit_Key_Zone", "ring_hole");
+        // Ring tilted 28° about the key's long axis, its key_contact in the bow hole.
+        var ringRot = Quaternion.Euler(0f, yaw, 0f) * Quaternion.Euler(0f, 90f, 0f) * Quaternion.Euler(-90f + 28f, 0f, 0f);
+        var ringPos = hole - ringRot * A("Kit_KeyRing", "key_contact");
+        if (ringPos.y < top.y + .0012f) ringPos.y = top.y + .0012f;
+        S("Kit_KeyRing", parent, ringPos, ringRot, null, "Key ring");
+        var tagContact = ringPos + ringRot * A("Kit_KeyRing", "tag_contact");
+        var tagRot = Quaternion.Euler(0f, yaw - 140f, 0f) * Quaternion.Euler(-90f, 0f, 0f);   // tag face (+Z) up, body lying away from the key
+        var tagPos = tagContact - tagRot * A(tag, "hole");
+        tagPos.y = top.y + .0021f;
+        S(tag, parent, tagPos, tagRot, null, "Key tag");
+        return keyPos;
+    }
+
+    static float SupportTop(string kit, out Vector3 centre)
+    {
+        var info = FrontRoomsKitLibrary.GetInfo(kit);
+        if (info != null && info.TrySupport(null, out centre, out _)) return centre.y;
+        centre = info != null ? (info.Min + info.Max) * .5f : Vector3.zero;
+        return info != null ? info.Max.y : .75f;
+    }
+
+    static void Keys()
+    {
+        var g = G("keys");
+        const float w = 6f, d = 5f;
+        var wallZ = d - .08f;
+        var back = Quaternion.Euler(0f, 180f, 0f);   // wall hosts' front +Z -> the room (-Z)
+        // ---- Level 0: key board (Lobby default), single hook, flat on a filing cabinet; the old spinning cube for reference.
+        var l0 = Room(g, "keys L0", Vector3.zero, w, d, RoomRule.Lobby, Standard);
+        var keyAt = new Dictionary<string, Vector3>();
+        var board = S("Kit_KeyHookBoard", l0, new Vector3(-1.8f, 0f, wallZ), back, null, "Key host (kit)");
+        keyAt["L0_board"] = Hang(l0, board.TransformPoint(A("Kit_KeyHookBoard", "key_hook")) - l0.position, "Kit_KeyTag_Rect", "Kit_Key_Zone", 180f - 60f, .0012f, -30f, -30f) + l0.position;
+        var hook = S("Kit_KeyHook", l0, new Vector3(-.3f, 0f, wallZ), back, null, "Key host (kit)");
+        keyAt["L0_hook"] = Hang(l0, hook.TransformPoint(A("Kit_KeyHook", "key_hook")) - l0.position, "Kit_KeyTag_Round_Blue", "Kit_Key_Zone", 180f - 60f, .0014f, -30f, -30f) + l0.position;
+        var cab = S("Kit_FilingCabinet", l0, new Vector3(1.4f, 0f, wallZ - .34f), back, null, "Kit_FilingCabinet");
+        var top = SupportTop("Kit_FilingCabinet", out var sc);
+        keyAt["L0_cabinettop"] = LayFlat(l0, cab.TransformPoint(new Vector3(sc.x + .05f, top, sc.z - .05f)) - l0.position, 25f, "Kit_KeyTag_Long") + l0.position;
+        // The old key: the map's emissive yellow cube 0.32 x 0.12 x 0.12 at 1.05 m (CollectKeys), for before/after.
+        var oldKey = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(oldKey.GetComponent<Collider>());
+        oldKey.name = "Key · old cube";
+        oldKey.transform.SetParent(l0, false);
+        oldKey.transform.localPosition = new Vector3(.7f, 1.05f, 2.2f);
+        oldKey.transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
+        oldKey.transform.localScale = new Vector3(.32f, .12f, .12f);
+        oldKey.GetComponent<MeshRenderer>().sharedMaterial = FrontRoomsSurfaces.Lit("Map test / key (old)", new Color(1f, .82f, .2f), .3f, 0f, new Color(1f, .78f, .15f) * 1.6f);
+        ShotAt("07_keys_L0_overview_old_cube_vs_hosts", l0.TransformPoint(new Vector3(0f, Eye, .6f)), l0.TransformPoint(new Vector3(0f, 1.25f, d)), GameFov, "L0: key board (left), single hook (centre), flat on a filing cabinet (right); the old emissive cube in front for comparison");
+        Object.DestroyImmediate(oldKey);
+        foreach (var kv in new[] { "L0_board", "L0_hook", "L0_cabinettop" })
+        {
+            var k = keyAt[kv];
+            var flat = kv.Contains("top");
+            ShotAt("07_keys_" + kv + "_2m", new Vector3(k.x + .3f, Eye, k.z - 2f), k, GameFov, "eye 1.62 at 2 m");
+            ShotAt("07_keys_" + kv + "_0.6m", flat ? new Vector3(k.x + .1f, k.y + .45f, k.z - .4f) : new Vector3(k.x + .12f, Mathf.Max(1.45f, k.y + .1f), k.z - .58f), k, GameFov, "0.6 m");
+        }
+        // ---- Office: key cabinet (Office default), flat on a desk, single hook; zone grade on.
+        var of = Room(g, "keys Office", new Vector3(50f, 0f, 0f), w, d, RoomRule.Office, Standard);
+        var kc = S("Kit_KeyCabinet", of, new Vector3(-1.5f, 0f, wallZ), back, null, "Key host (kit)");
+        keyAt["OF_cabinet"] = Hang(of, kc.TransformPoint(A("Kit_KeyCabinet", "key_hook")) - of.position, "Kit_KeyTag_Long_White", "Kit_Key_Zone", 180f - 60f, .0011f, -30f, -30f) + of.position;
+        var desk = S("Kit_OfficeDesk", of, new Vector3(1.3f, 0f, wallZ - .39f), back, null, "Kit_OfficeDesk");
+        var dtop = SupportTop("Kit_OfficeDesk", out var dc);
+        keyAt["OF_desk"] = LayFlat(of, desk.TransformPoint(new Vector3(dc.x - .2f, dtop, dc.z - .12f)) - of.position, -20f, "Kit_KeyTag_Rect_Blue") + of.position;
+        var hook2 = S("Kit_KeyHook", of, new Vector3(.1f, 0f, wallZ), back, null, "Key host (kit)");
+        keyAt["OF_hook"] = Hang(of, hook2.TransformPoint(A("Kit_KeyHook", "key_hook")) - of.position, "Kit_KeyTag_Round", "Kit_Key_Zone", 180f - 60f, .0014f, -30f, -30f) + of.position;
+        ShotAt("07_keys_OF_overview", of.TransformPoint(new Vector3(0f, Eye, .6f)), of.TransformPoint(new Vector3(0f, 1.2f, d)), GameFov, "Office: key cabinet (left), single hook (centre), flat on a desk (right)");
+        foreach (var kv in new[] { "OF_cabinet", "OF_desk", "OF_hook" })
+        {
+            var k = keyAt[kv];
+            var flat = kv.Contains("desk");
+            ShotAt("07_keys_" + kv + "_2m", new Vector3(k.x + .3f, Eye, k.z - 2f), k, GameFov, "eye 1.62 at 2 m");
+            ShotAt("07_keys_" + kv + "_0.6m", flat ? new Vector3(k.x + .1f, k.y + .45f, k.z - .4f) : new Vector3(k.x + .12f, Mathf.Max(1.45f, k.y + .1f), k.z - .58f), k, GameFov, "0.6 m");
+        }
+    }
+
+    // ======================================================================================== windows + fracture
+
+    [Serializable] class FracFloor { public float[] poly; public float x, z, yaw, tilt; public bool flip; }
+    [Serializable] class FracPiece { public string kind; public float cx, cy; public float[] poly; public float[] air; public FracFloor[] floor; }
+    [Serializable] class FracData { public string name; public float[] impact; public float centreY; public float[] edges; public FracPiece[] pieces; public FracFloor[] glitter; }
+
+    static FracData LoadFrac(string name)
+    {
+        var path = Path.Combine(dataDir, name + "_u.json");
+        if (!File.Exists(path)) throw new Exception("missing fracture data " + path + " (run W/int_work/fracture_data.py)");
+        return JsonUtility.FromJson<FracData>(File.ReadAllText(path));
+    }
+
+    static Material shardFace, shardEdge, crackMat, crushMat;
+
+    static void GlassMats()
+    {
+        if (shardFace != null) return;
+        shardFace = FrontRoomsSurfaces.TryGet("Glass_ShardClear") ?? FrontRoomsSurfaces.TryGet("Glass_Window");
+        shardEdge = FrontRoomsSurfaces.Lit("INT glass edge (float glass green)", new Color(.30f, .42f, .38f), .9f);
+        // Stand-in for the glass track's crack shader: a crack reads by the lamp glint along its faces, so the line is
+        // near-white with a little emission (render stand-in only; not a proposal for the game material).
+        crackMat = FrontRoomsSurfaces.Lit("INT crack line (stand-in glint)", new Color(.92f, .95f, .95f), .9f, 0f, new Color(.30f, .32f, .32f));
+        crushMat = FrontRoomsSurfaces.Lit("INT crushed glass", new Color(.72f, .75f, .75f), .4f);
+    }
+
+    /// <summary>Ear-clipping triangulation of a simple CCW polygon.</summary>
+    static List<int> Triangulate(List<Vector2> p)
+    {
+        var tris = new List<int>();
+        var idx = new List<int>();
+        for (var i = 0; i < p.Count; i++) idx.Add(i);
+        float Cross(Vector2 a, Vector2 b, Vector2 c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        var guard = 0;
+        while (idx.Count > 3 && guard++ < 500)
+        {
+            var clipped = false;
+            for (var i = 0; i < idx.Count; i++)
+            {
+                int i0 = idx[(i + idx.Count - 1) % idx.Count], i1 = idx[i], i2 = idx[(i + 1) % idx.Count];
+                if (Cross(p[i0], p[i1], p[i2]) <= 1e-12f) continue;
+                var inside = false;
+                foreach (var j in idx)
+                {
+                    if (j == i0 || j == i1 || j == i2) continue;
+                    if (Cross(p[i0], p[i1], p[j]) > 0 && Cross(p[i1], p[i2], p[j]) > 0 && Cross(p[i2], p[i0], p[j]) > 0) { inside = true; break; }
+                }
+                if (inside) continue;
+                tris.Add(i0); tris.Add(i1); tris.Add(i2);
+                idx.RemoveAt(i);
+                clipped = true;
+                break;
+            }
+            if (!clipped) break;
+        }
+        if (idx.Count == 3) { tris.Add(idx[0]); tris.Add(idx[1]); tris.Add(idx[2]); }
+        else if (idx.Count > 3) for (var i = 1; i < idx.Count - 1; i++) { tris.Add(idx[0]); tris.Add(idx[i]); tris.Add(idx[i + 1]); }   // fallback fan
+        return tris;
+    }
+
+    /// <summary>A 6 mm glass piece: the polygon (piece-local, XY) extruded ±0.003 in Z. Submesh 0 faces (glass), 1 the edge band.</summary>
+    static Mesh PieceMesh(float[] flat, float halfT = .003f)
+    {
+        var p = new List<Vector2>();
+        for (var i = 0; i + 1 < flat.Length; i += 2) p.Add(new Vector2(flat[i], flat[i + 1]));
+        var area = 0f;
+        for (var i = 0; i < p.Count; i++) { var a = p[i]; var b = p[(i + 1) % p.Count]; area += a.x * b.y - b.x * a.y; }
+        if (area < 0f) p.Reverse();
+        var tri = Triangulate(p);
+        var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>();
+        var faces = new List<int>(); var edges = new List<int>();
+        // front (+Z) and back (-Z)
+        var baseF = v.Count;
+        foreach (var q in p) { v.Add(new Vector3(q.x, q.y, halfT)); n.Add(Vector3.forward); uv.Add(q); }
+        for (var i = 0; i < tri.Count; i += 3) { faces.Add(baseF + tri[i]); faces.Add(baseF + tri[i + 1]); faces.Add(baseF + tri[i + 2]); }   // CCW in XY faces +Z
+        var baseB = v.Count;
+        foreach (var q in p) { v.Add(new Vector3(q.x, q.y, -halfT)); n.Add(Vector3.back); uv.Add(q); }
+        for (var i = 0; i < tri.Count; i += 3) { faces.Add(baseB + tri[i]); faces.Add(baseB + tri[i + 2]); faces.Add(baseB + tri[i + 1]); }
+        for (var i = 0; i < p.Count; i++)
+        {
+            var a = p[i]; var b = p[(i + 1) % p.Count];
+            var e = (b - a).normalized;
+            var nn = new Vector3(e.y, -e.x, 0f);
+            var k = v.Count;
+            v.Add(new Vector3(a.x, a.y, halfT)); v.Add(new Vector3(b.x, b.y, halfT)); v.Add(new Vector3(b.x, b.y, -halfT)); v.Add(new Vector3(a.x, a.y, -halfT));
+            for (var j = 0; j < 4; j++) { n.Add(nn); uv.Add(new Vector2(j < 2 ? 0f : 1f, j % 3 == 0 ? 0f : 1f)); }
+            edges.Add(k); edges.Add(k + 2); edges.Add(k + 1);
+            edges.Add(k); edges.Add(k + 3); edges.Add(k + 2);
+        }
+        var mesh = new Mesh { name = "glass piece" };
+        mesh.SetVertices(v); mesh.SetNormals(n); mesh.SetUVs(0, uv);
+        mesh.subMeshCount = 2;
+        mesh.SetTriangles(faces, 0);
+        mesh.SetTriangles(edges, 1);
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    static GameObject Piece(Transform parent, string name, float[] poly, Vector3 pos, Quaternion rot)
+    {
+        GlassMats();
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.transform.localRotation = rot;
+        go.AddComponent<MeshFilter>().sharedMesh = PieceMesh(poly);
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterials = new[] { shardFace, shardEdge };
+        r.shadowCastingMode = ShadowCastingMode.Off;
+        return go;
+    }
+
+    /// <summary>Crack lines on both glass faces for a stage (1, 2 or 3): radial cracks first, then the concentric chords.</summary>
+    static void Cracks(Transform root, FracData f, int stage)
+    {
+        GlassMats();
+        var cy = f.centreY;
+        float ix = f.impact[0], iy = f.impact[1];
+        var v = new List<Vector3>(); var tris = new List<int>();
+        const float halfW = .0011f, zf = .0032f;
+        for (var i = 0; i + 3 < f.edges.Length; i += 4)
+        {
+            var a = new Vector2(f.edges[i], f.edges[i + 1]);
+            var b = new Vector2(f.edges[i + 2], f.edges[i + 3]);
+            var mid = (a + b) * .5f;
+            var r = Vector2.Distance(mid, new Vector2(ix, iy));
+            var dir = (b - a).normalized;
+            var radial = Mathf.Abs(Vector2.Dot(dir, (mid - new Vector2(ix, iy)).normalized)) > .7f;
+            var keep = stage >= 3 || (stage == 2 ? (radial ? r < .55f : r < .22f) : (radial ? r < .2f : r < .045f));
+            if (!keep) continue;
+            var nrm = new Vector2(-dir.y, dir.x) * halfW;
+            foreach (var z in new[] { zf, -zf })
+            {
+                var k = v.Count;
+                v.Add(new Vector3(a.x + nrm.x, cy + a.y + nrm.y, z)); v.Add(new Vector3(b.x + nrm.x, cy + b.y + nrm.y, z));
+                v.Add(new Vector3(b.x - nrm.x, cy + b.y - nrm.y, z)); v.Add(new Vector3(a.x - nrm.x, cy + a.y - nrm.y, z));
+                if (z > 0) { tris.Add(k); tris.Add(k + 2); tris.Add(k + 1); tris.Add(k); tris.Add(k + 3); tris.Add(k + 2); }
+                else { tris.Add(k); tris.Add(k + 1); tris.Add(k + 2); tris.Add(k); tris.Add(k + 2); tris.Add(k + 3); }
+            }
+        }
+        var mesh = new Mesh { name = "cracks stage " + stage, indexFormat = IndexFormat.UInt32 };
+        mesh.SetVertices(v);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        var go = new GameObject("Glass cracks (stand-in) stage " + stage);
+        go.transform.SetParent(root, false);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = crackMat;
+        mr.shadowCastingMode = ShadowCastingMode.Off;
+        // The crushed core: frosted, from stage 1 on.
+        foreach (var p in f.pieces)
+            if (p.kind == "crush")
+            {
+                var c = Piece(root, "Glass crush (stand-in)", p.poly, new Vector3(p.cx, cy + p.cy, 0f), Quaternion.identity);
+                c.transform.localScale = new Vector3(1f, 1f, 1.15f);
+                c.GetComponent<MeshRenderer>().sharedMaterials = new[] { crushMat, crushMat };
+            }
+    }
+
+    enum Pane { Intact, Crack1, Crack2, Crack3, Shatter, After }
+
+    /// <summary>A window opening in the near room's north wall at x = cx; the frame member, glass state, blind. Window root: +Z = face A = the room.</summary>
+    static Transform Window(Transform room, string frameKit, float cx, float d, Pane state, FracData f, bool blind)
+    {
+        var root = new GameObject("Window " + frameKit + " " + state).transform;
+        root.SetParent(room, false);
+        root.localPosition = new Vector3(cx, 0f, d);
+        root.localRotation = Quaternion.Euler(0f, 180f, 0f);   // +Z (face A) toward the room (-Z)
+        S(frameKit, root, Vector3.zero, Quaternion.identity, null, "Window frame (kit)");
+        if (blind) S("Kit_MiniBlind_Raised", root, A(frameKit, "blind_rail"), Quaternion.identity, null, "Window blind (kit)");
+        var slabC = A(frameKit, "glass_slab");
+        if (state <= Pane.Crack3)
+        {
+            var glass = Resources.Load<Material>("Surfaces/Glass_Window") ?? FrontRoomsSurfaces.TryGet("Prop_Glass");
+            var slab = Box(root, "Window glass (interim slab)", slabC, new Vector3(1.391f, 1.642f, .006f), glass);
+            slab.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            if (state != Pane.Intact) Cracks(root, f, (int)state);
+            return root;
+        }
+        var cy = f.centreY;
+        var rng = new System.Random(7);
+        foreach (var p in f.pieces)
+        {
+            if (p.kind == "tooth") { Piece(root, "Glass tooth (stand-in)", p.poly, new Vector3(p.cx, cy + p.cy, 0f), Quaternion.identity); continue; }
+            if (state == Pane.Shatter)
+            {
+                if (p.air == null || p.air.Length < 6) continue;
+                Piece(root, "Glass shard mid-air (stand-in)", p.poly, new Vector3(p.cx + p.air[0], cy + p.cy + p.air[1], p.air[2]), Quaternion.Euler(p.air[3], p.air[4], p.air[5]));
+            }
+            else if (p.floor != null)
+            {
+                foreach (var fl in p.floor)
+                {
+                    var rot = Quaternion.Euler(0f, fl.yaw, 0f) * Quaternion.Euler(90f + (fl.flip ? 180f : 0f) + fl.tilt, 0f, 0f);
+                    Piece(root, "Glass on the floor (stand-in)", fl.poly, new Vector3(fl.x, .0032f + fl.tilt * .0006f, fl.z), rot);
+                }
+            }
+        }
+        if (state == Pane.After && f.glitter != null)
+            foreach (var gl in f.glitter)
+                Piece(root, "Glass chip (stand-in)", gl.poly, new Vector3(gl.x, .0031f, gl.z), Quaternion.Euler(0f, gl.yaw, 0f) * Quaternion.Euler(90f, 0f, 0f));
+        return root;
+    }
+
+    /// <summary>Near room (the window's room) and a Tall Level 0 hall behind, sharing the window wall.</summary>
+    static Transform WindowRooms(Transform g, string name, Vector3 origin, RoomRule rule, float w, float d, out Transform hall)
+    {
+        var room = Room(g, name, origin, w, d, rule, Standard, Op(1, 0f, 1.4f));
+        WindowCut(room, rule, 0f, d);
+        hall = Room(g, name + " hall", origin + new Vector3(0f, 0f, d), w + 2f, 7f, RoomRule.Lobby, Tall, Op(0, 0f, 1.4f));
+        DropSouthWall(hall);
+        ClipSlabs(room, -.2f, d);
+        ClipSlabs(hall, 0f, 7.2f);
+        // The hall's south wall is gone: close the extra width either side of the room's north wall.
+        var hw = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
+        Box(hall, "wall", new Vector3(-(w * .5f + .5f), Tall * .5f, 0f), new Vector3(1f + .16f, Tall, .16f), hw);
+        Box(hall, "wall", new Vector3(w * .5f + .5f, Tall * .5f, 0f), new Vector3(1f + .16f, Tall, .16f), hw);
+        Box(hall, "wall", new Vector3(0f, (Standard + Tall) * .5f, 0f), new Vector3(w, Tall - Standard, .16f), hw);
+        return room;
+    }
+
+    static void Windows()
+    {
+        var g = G("windows");
+        var f = LoadFrac("fracture_eye_centre");
+        var members = new[] { ("W-L0", "Kit_WindowFrame_Wood", RoomRule.Lobby, false), ("W-OF", "Kit_WindowFrame_Steel", RoomRule.Office, true), ("W-RN", "Kit_WindowFrame_Steel_Enamel", RoomRule.Run, false), ("W-EX", "Kit_WindowFrame_Alu", RoomRule.Exit, false) };
+        const float w = 5f, d = 5f;
+        for (var i = 0; i < members.Length; i++)
+        {
+            var (code, kit, rule, blind) = members[i];
+            var room = WindowRooms(g, "win " + code, new Vector3(i * 40f, 0f, 0f), rule, w, d, out _);
+            foreach (var st in new[] { Pane.Intact, Pane.After })
+            {
+                var win = Window(room, kit, 0f, d, st, f, blind);
+                var c = room.TransformPoint(new Vector3(0f, 1.175f, d));
+                var tag = st == Pane.Intact ? "intact" : "broken";
+                ShotAt("08_window_" + code + "_" + tag + "_1.5m", new Vector3(c.x, Eye, c.z - 1.5f), c, GameFov, code + " " + tag + ", eye 1.62 at 1.5 m" + (st == Pane.After ? "; stand-in teeth + floor glass" : ""));
+                var ob = Quaternion.Euler(0f, -40f, 0f) * new Vector3(0f, 0f, -1.9f);
+                ShotAt("08_window_" + code + "_" + tag + "_oblique", new Vector3(c.x + ob.x, Eye, c.z + ob.z), new Vector3(c.x, 1.0f, c.z), GameFov, code + " " + tag + ", 40° oblique at 1.9 m");
+                Object.DestroyImmediate(win.gameObject);
+            }
+        }
+    }
+
+    static void Fracture()
+    {
+        var g = G("fracture");
+        const float w = 5f, d = 5f;
+        foreach (var (code, kit, rule, blind, data, ox) in new[] { ("W-L0", "Kit_WindowFrame_Wood", RoomRule.Lobby, false, "fracture_eye_centre", 0f), ("W-OF", "Kit_WindowFrame_Steel", RoomRule.Office, true, "fracture_eye_left", 40f) })
+        {
+            var f = LoadFrac(data);
+            var room = WindowRooms(g, "frac " + code, new Vector3(ox, 0f, 0f), rule, w, d, out _);
+            var c = room.TransformPoint(new Vector3(0f, 1.175f, d));
+            var states = code == "W-L0" ? new[] { Pane.Crack1, Pane.Crack2, Pane.Crack3, Pane.Shatter, Pane.After } : new[] { Pane.Crack2, Pane.Shatter, Pane.After };
+            foreach (var st in states)
+            {
+                var win = Window(room, kit, 0f, d, st, f, blind);
+                var tag = st.ToString().ToLowerInvariant();
+                ShotAt("09_fracture_" + code + "_" + tag + "_1.5m", new Vector3(c.x, Eye, c.z - 1.5f), c, GameFov, code + " " + tag + " (stand-in fracture from the glass track's crack-graph prototype, " + data + ")");
+                if (st >= Pane.Shatter)
+                {
+                    var ob = Quaternion.Euler(0f, 35f, 0f) * new Vector3(0f, 0f, -2.0f);
+                    ShotAt("09_fracture_" + code + "_" + tag + "_oblique", new Vector3(c.x + ob.x, Eye, c.z + ob.z), new Vector3(c.x, .7f, c.z), GameFov, code + " " + tag + ", 35° oblique");
+                }
+                if (st == Pane.Crack2 || st == Pane.Crack3)
+                    ShotAt("09_fracture_" + code + "_" + tag + "_0.6m", new Vector3(c.x + .15f, Eye - .05f, c.z - .6f), c + new Vector3(f.impact[0] * -1f, f.impact[1], 0f), GameFov, "0.6 m, at the impact");
+                if (st == Pane.After)
+                    ShotAt("09_fracture_" + code + "_after_floor", new Vector3(c.x + .4f, Eye, c.z - 1.2f), new Vector3(c.x, 0f, c.z - .15f), GameFov, "looking down at the sill and the near-side floor glass");
+                Object.DestroyImmediate(win.gameObject);
+            }
+        }
+    }
+
+    // ======================================================================================== gap test
+
+    struct View { public string name; public Vector3 pos, look; }
+
+    /// <summary>Cameras around a shut door on the near side: c = opening centre (floor), n = toward the camera room, t = toward the latch jamb.</summary>
+    static List<View> GapViews(Vector3 c, Vector3 n, Vector3 t)
+    {
+        var up = Vector3.up;
+        var look = c + up * 1.25f;
+        Vector3 Arc(float deg, float r) => c + (n * Mathf.Cos(deg * Mathf.Deg2Rad) + t * Mathf.Sin(deg * Mathf.Deg2Rad)) * r + up * Eye;
+        return new List<View>
+        {
+            new View { name = "a_front_1.5m", pos = Arc(0f, 1.5f), look = look },
+            new View { name = "b_oblique30_latch", pos = Arc(30f, 1.5f), look = look },
+            new View { name = "c_oblique60_latch", pos = Arc(60f, 1.5f), look = look },
+            new View { name = "d_oblique60_hinge", pos = Arc(-60f, 1.5f), look = look },
+            new View { name = "e_latch_0.4m", pos = c + t * .62f + n * .36f + up * 1.32f, look = c + t * .5f + up * 1.15f },
+            new View { name = "f_hinge_0.4m", pos = c - t * .62f + n * .36f + up * 1.32f, look = c - t * .5f + up * 1.15f },
+            new View { name = "g_head_0.4m", pos = c + t * .1f + n * .30f + up * 1.85f, look = c + t * .1f + up * 2.1f },
+            new View { name = "h_floor_low_1m", pos = c + n * 1.0f + up * .15f, look = c + up * .02f },
+            // Worst cases: the camera on the slit's own line, looking straight through it (04's "inline" frames).
+            new View { name = "i_latch_inline_1.5m", pos = c + t * .496f + n * 1.5f + up * 1.2f, look = c + t * .496f + up * 1.15f },
+            new View { name = "j_hinge_inline_1.5m", pos = c - t * .496f + n * 1.5f + up * 1.2f, look = c - t * .496f + up * 1.15f },
+            new View { name = "k_head_3.5m", pos = c + n * 3.5f + up * Eye, look = c + up * 2.09f },
+            new View { name = "l_floor_stress_0.05m", pos = c + n * 1.0f + up * .05f, look = c + up * .013f },
+        };
+    }
+
+    static void GapTest()
+    {
+        var g = G("gap");
+        const float w = 5f, d = 5f;
+        var near = Room(g, "gap near (dim)", Vector3.zero, w, d, RoomRule.Lobby, Standard, Op(1, 0f, 1f));
+        var far = Room(g, "gap far (bright)", new Vector3(0f, 0f, d), w, d, RoomRule.Lobby, Standard, Op(0, 0f, 1f));
+        DropSouthWall(far);
+        ClipSlabs(near, -.2f, d);
+        ClipSlabs(far, 0f, d + .2f);
+        ScaleLights(near, .3f);
+        ScaleLights(far, 3f);
+        DoorOnWall(1, 0f, w, d, out var dpos, out var drot);
+        var c = near.TransformPoint(new Vector3(0f, 0f, d));
+        var n = Vector3.back;
+        var t = near.TransformDirection(drot * Vector3.forward);
+        var views = GapViews(c, n, t);
+        // Old primitive door (symmetric), then the kit door with the S face toward the camera (s = +1) and with the P face (s = -1).
+        foreach (var (label, code, s) in new[] { ("old", "", 0), ("L0F_Sface", "L0-F", 1), ("L0F_Pface", "L0-F", -1), ("OFK_Sface", "OF-K", 1), ("OFK_Pface", "OF-K", -1) })
+        {
+            var door = s == 0 ? OldDoor(near, dpos, drot, 1) : KitDoor(Spec(code), near, dpos, drot, s);
+            var doorName = s == 0 ? "OLD primitive" : code;
+            var faceName = s == 0 ? "-" : (s > 0 ? "S (pull)" : "P (push, stops)");
+            foreach (var v in views)
+            {
+                var file = "10_gap_" + label + "_" + v.name;
+                ShotAt(file, v.pos, v.look, GameFov, "dim near room (lamps x0.3), bright far room (lamps x3); door shut");
+                var px = LeakMask(file, far, out var mx, out var sum);
+                leakTsv.Append(file).Append('\t').Append(doorName).Append('\t').Append(faceName).Append('\t')
+                    .Append(v.name).Append('\t').Append(px).Append('\t').Append(mx.ToString("F3", Inv)).Append('\t').Append(sum.ToString("F1", Inv)).Append('\n');
+            }
+            // Mask-only sweep: inline cameras across every jamb gap position (1 mm steps) at 1.2 and 2.5 m, and the head from 3-5 m.
+            var sweepPx = 0; var sweepWorst = ""; var sweepN = 0;
+            foreach (var side in new[] { -1f, 1f })
+                for (var k = 0; k <= 12; k++)
+                    foreach (var dist in new[] { 1.2f, 2.5f })
+                    {
+                        var along = side * (.488f + k * .001f);
+                        var file = "10_gapsweep_" + label + "_t" + (along >= 0 ? "+" : "") + along.ToString("0.000", Inv) + "_n" + dist.ToString("0.0", Inv);
+                        cam.fieldOfView = GameFov;
+                        cam.transform.SetPositionAndRotation(c + t * along + n * dist + Vector3.up * 1.2f, Quaternion.LookRotation(-n, Vector3.up));
+                        var px = LeakMask(file, far, out var mx, out _, false);
+                        sweepN++;
+                        if (px > sweepPx) { sweepPx = px; sweepWorst = file; }
+                    }
+            foreach (var dist in new[] { 3f, 4f, 4.8f })
+                foreach (var lat in new[] { -.3f, 0f, .3f })
+                {
+                    var file = "10_gapsweep_" + label + "_head_n" + dist.ToString("0.0", Inv) + "_t" + lat.ToString("0.0", Inv);
+                    cam.fieldOfView = GameFov;
+                    var pos = c + t * lat + n * dist + Vector3.up * Eye;
+                    cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(c + t * lat + Vector3.up * 2.09f - pos, Vector3.up));
+                    var px = LeakMask(file, far, out var mx, out _, false);
+                    sweepN++;
+                    if (px > sweepPx) { sweepPx = px; sweepWorst = file; }
+                }
+            leakTsv.Append("SWEEP " + label).Append('\t').Append(doorName).Append('\t').Append(faceName).Append('\t')
+                .Append(sweepN + " inline masks; worst " + (sweepWorst == "" ? "none" : sweepWorst)).Append('\t').Append(sweepPx).Append("\t-\t-\n");
+            // The reverse light (bright near room, dim far room): the perimeter should read as a dark line, never a lit one.
+            ScaleLights(near, 5f);
+            ScaleLights(far, 1f / 60f);
+            ShotAt("10_gap_" + label + "_r_front_reverse_light", views[0].pos, views[0].look, GameFov, "reverse light: near room lamps x1.5, far room x0.05");
+            ShotAt("10_gap_" + label + "_r_latch_inline_reverse_light", views[8].pos, views[8].look, GameFov, "reverse light, latch inline");
+            ScaleLights(near, .2f);
+            ScaleLights(far, 60f);
+            Object.DestroyImmediate(door.root.gameObject);
+        }
+    }
+
+    // ======================================================================================== swing
+
+    static void Swing()
+    {
+        var g = G("swing");
+        const float w = 5f, d = 5f;
+        var near = Room(g, "swing near", Vector3.zero, w, d, RoomRule.Lobby, Standard, Op(1, 0f, 1f));
+        var far = Room(g, "swing far", new Vector3(0f, 0f, d), w, d, RoomRule.Lobby, Standard, Op(0, 0f, 1f));
+        DropSouthWall(far);
+        ClipSlabs(near, -.2f, d);
+        ClipSlabs(far, 0f, d + .2f);
+        ScaleLights(far, 1.6f);
+        DoorOnWall(1, 0f, w, d, out var dpos, out var drot);
+        var c = near.TransformPoint(new Vector3(0f, 0f, d));
+        var n = Vector3.back;                                  // toward the near (camera) room
+        var t = near.TransformDirection(drot * Vector3.forward); // toward the latch jamb
+        var obl = c + (n * Mathf.Cos(40f * Mathf.Deg2Rad) + t * Mathf.Sin(40f * Mathf.Deg2Rad)) * 2.1f + Vector3.up * Eye;
+        var oblLook = c + Vector3.up * 1.1f - t * .15f;
+        foreach (var code in new[] { "L0-F", "OF-K" })
+            foreach (var s in new[] { 1, -1 })
+            {
+                var door = KitDoor(Spec(code), near, dpos, drot, s);
+                var dirName = s > 0 ? "toward_camera_pull" : "away_from_camera_push";
+                var sw = s > 0 ? n : -n;   // the swing room (the S / pull side); the stops are on the other side
+                // Plan: high in the swing room over the hinge jamb, looking down at knuckles, leaf edge, casing, closer.
+                var planCam = c - t * .18f + sw * .80f + Vector3.up * 2.62f;
+                var planLook = c - t * .46f + sw * .12f + Vector3.up * 1.55f;
+                // Stop: on the push (stop) side, looking at the latch jamb: stop strip, strike, the leaf landing on the stop.
+                // 0.55 m off the latch jamb at ~40° to the wall: casing, lining, stop and leaf edge read as a stepped section.
+                var stopCam = c + t * .13f - sw * .42f + Vector3.up * 1.52f;
+                var stopLook = c + t * .50f - sw * .01f + Vector3.up * 1.22f;
+                foreach (var deg in new[] { 0f, 5f, 30f, 60f, 95f })
+                {
+                    SetAngle(door, deg);
+                    var tag = deg.ToString("00", Inv);
+                    ShotAt("11_swing_" + code + "_" + dirName + "_" + tag + "deg_oblique", obl, oblLook, GameFov, code + " swing " + tag + "°, leaf moves " + (s > 0 ? "toward the camera (camera on the S/pull side)" : "away (camera on the P/stop side)"));
+                    ShotAt("11_swing_" + code + "_" + dirName + "_" + tag + "deg_plan", planCam, planLook, 70f, "plan: 2.62 m up in the swing room over the hinge jamb (knuckles, leaf edge, casing" + (Spec(code).closer ? ", closer" : "") + ")");
+                    if (deg == 0f || deg == 30f || deg == 95f)
+                        ShotAt("11_swing_" + code + "_" + dirName + "_" + tag + "deg_stop", stopCam, stopLook, 50f, "push (stop) side, latch jamb: the 16 mm stop and strike, the leaf landing on the stop");
+                }
+                Object.DestroyImmediate(door.root.gameObject);
+            }
+        // The old map door at 95° both ways (hinge on the centre line, no stop): before/after reference.
+        foreach (var s in new[] { 1, -1 })
+        {
+            var door = OldDoor(near, dpos, drot, s);
+            SetAngle(door, 95f);
+            var dirName = s > 0 ? "toward_camera_pull" : "away_from_camera_push";
+            var sw = s > 0 ? n : -n;
+            ShotAt("11_swing_OLD_" + dirName + "_95deg_oblique", obl, oblLook, GameFov, "old primitive door at 95°");
+            ShotAt("11_swing_OLD_" + dirName + "_95deg_plan", c - t * .18f + sw * .80f + Vector3.up * 2.62f, c - t * .46f + sw * .12f + Vector3.up * 1.55f, 70f, "old primitive door at 95°, plan over the hinge jamb");
+            Object.DestroyImmediate(door.root.gameObject);
+        }
+    }
+}

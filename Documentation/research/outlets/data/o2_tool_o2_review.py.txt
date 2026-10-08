@@ -1,0 +1,345 @@
+"""O2 review renders (scratchpad tool, not a kit module).
+
+Blender -b --factory-startup --python o2_review.py -- <module> <outdir> <proj_root> [--samples N] [--shots a,b]
+
+* Rebuilds the module with outlet_plate_common.HAS_LODS forced True, so the
+  hand-built LOD1/LOD2 part sets exist; counts triangles per level.
+* Imports the EXPORTED FBX (<proj>/Assets/Resources/Props/Models/<NAME>.fbx)
+  and renders LOD0 from it (what ships), LOD1/LOD2 from the forced build.
+* Screws: O1's Kit_OutletScrew FBX at each screw_k anchor if it exists in the
+  clone, else a preview-only #6-32 oval-head stand-in (spec §1.2 numbers),
+  slot angle random per plate, like R3 at LOD0.
+* Shots: front030 (0.30 m, FOV 62 V, 1080p crop), rake030 (45 deg raking key),
+  obl030 (0.30 m, 35 deg off axis), d150 (LOD0 | LOD1), d400 (LOD1 | LOD2)
+  at FOV 76 V, cropped to the plate at true 1080p pixel size.
+"""
+
+import json
+import math
+import os
+import random
+import sys
+
+import bpy
+import bmesh
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+MODULE, OUT, PROJ = argv[0], argv[1], argv[2]
+SAMPLES = 64
+SHOTS = None
+FORCE_CPU = False
+i = 3
+while i < len(argv):
+    if argv[i] == "--samples":
+        SAMPLES = int(argv[i + 1]); i += 2; continue
+    if argv[i] == "--shots":
+        SHOTS = argv[i + 1].split(","); i += 2; continue
+    if argv[i] == "--cpu":
+        FORCE_CPU = True; i += 1; continue
+    i += 1
+
+KIT = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+sys.path.insert(0, KIT)
+sys.path.insert(0, os.path.join(KIT, "assets"))
+import kitlib  # noqa: E402
+import outlet_plate_common as pc  # noqa: E402
+import importlib  # noqa: E402
+
+pc.HAS_LODS = True
+mod = importlib.import_module(MODULE)
+kit = kitlib.Kit(mod.NAME)
+mod.build(kit)
+counts = {lv: pc.tris_of(pc.lod_parts(kit, lv)) for lv in (0, 1, 2)}
+for obj in kit.parts:
+    bpy.context.view_layer.objects.active = obj
+    for m in list(obj.modifiers):
+        bpy.ops.object.modifier_apply(modifier=m.name)
+lod_sets = {lv: [o for o in pc.lod_parts(kit, lv)] for lv in (0, 1, 2)}
+os.makedirs(OUT, exist_ok=True)
+
+# ------------------------------------------------------------- shipped FBX
+models = os.path.join(PROJ, "Assets", "Resources", "Props", "Models")
+fbx = os.path.join(models, mod.NAME + ".fbx")
+side = json.load(open(os.path.join(models, mod.NAME + ".json")))
+before = set(bpy.data.objects)
+bpy.ops.import_scene.fbx(filepath=fbx, axis_forward="-Z", axis_up="Y", bake_space_transform=True)
+shipped = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
+for o in shipped:
+    for k, slot in enumerate(o.material_slots):
+        if slot.material is not None:
+            base = slot.material.name.split(".")[0]
+            if base in bpy.data.materials:
+                o.material_slots[k].material = bpy.data.materials[base]
+def s2l(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+# Review only: the slot preview colour is the sRGB hex; render it as sRGB.
+for slot_name, rgb in ((pc.TI, pc._hex("#E6DDC2")), (pc.NI, pc._hex("#E2D9BF")), (pc.CE, (0.353, 0.227, 0.141))):
+    mat = bpy.data.materials.get(slot_name)
+    if mat is not None and mat.node_tree:
+        mat.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = tuple(s2l(x) for x in rgb) + (1.0,)
+ship_tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in shipped)
+ship_lo = [min((o.matrix_world @ v.co)[k] for o in shipped for v in o.data.vertices) for k in range(3)]
+ship_hi = [max((o.matrix_world @ v.co)[k] for o in shipped for v in o.data.vertices) for k in range(3)]
+has_wear = all(o.data.color_attributes.get("fr_wear") is not None or len(o.data.color_attributes) > 0 for o in shipped)
+custom_n = all(o.data.has_custom_normals for o in shipped)
+
+
+def u2b(p):   # sidecar Unity -> Blender
+    return Vector((-p[0], -p[2], p[1]))
+
+
+anchors = {a["name"]: u2b(a["pos"]) for a in side["anchors"]}
+
+# ------------------------------------------------------------------ screws
+screw_fbx = os.path.join(models, "Kit_OutletScrew.fbx")
+screw_src = None
+if os.path.exists(screw_fbx):
+    b2 = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=screw_fbx, axis_forward="-Z", axis_up="Y", bake_space_transform=True)
+    new = [o for o in bpy.data.objects if o not in b2 and o.type == "MESH"]
+    screw_src = new[0] if new else None
+    screw_kind = "O1 Kit_OutletScrew"
+if screw_src is None:
+    screw_kind = "preview stand-in (spec 1.2 numbers)"
+    bm = bmesh.new()
+    R, C = pc.SCREW_HEAD_D / 2 * pc.MM, pc.SCREW_CROWN * pc.MM
+    Rs = (R * R + C * C) / (2 * C)
+    segs = 64
+    rings = []
+    for k in range(9):
+        r = R * (1 - k / 8.0)
+        h = math.sqrt(max(Rs * Rs - r * r, 0)) - (Rs - C)
+        rings.append([bm.verts.new((r * math.cos(2 * math.pi * j / segs), -h, r * math.sin(2 * math.pi * j / segs))) for j in range(segs)] if r > 1e-9 else [bm.verts.new((0, -C, 0))])
+    # underside cone (82 deg) to the shank
+    cone_r = 1.75 * pc.MM
+    cone_h = (R - cone_r) / math.tan(math.radians(41))
+    under = [bm.verts.new((cone_r * math.cos(2 * math.pi * j / segs), cone_h, cone_r * math.sin(2 * math.pi * j / segs))) for j in range(segs)]
+    for a, b in zip(rings, rings[1:]):
+        if len(b) == 1:
+            for j in range(segs):
+                bm.faces.new((a[j], a[(j + 1) % segs], b[0]))
+        else:
+            for j in range(segs):
+                bm.faces.new((a[j], a[(j + 1) % segs], b[(j + 1) % segs], b[j]))
+    for j in range(segs):
+        bm.faces.new((under[j], under[(j + 1) % segs], rings[0][(j + 1) % segs], rings[0][j]))
+    bm.faces.new(list(reversed(under)))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new("screw")
+    bm.to_mesh(me)
+    bm.free()
+    screw_src = bpy.data.objects.new("screw", me)
+    bpy.context.scene.collection.objects.link(screw_src)
+    cut = bpy.data.objects.new("slotcut", bpy.data.meshes.new("slotcut"))
+    bmc = bmesh.new()
+    bmesh.ops.create_cube(bmc, size=1.0)
+    bmesh.ops.scale(bmc, vec=Vector((8 * pc.MM, 2 * pc.MM, pc.SCREW_SLOT[0] * pc.MM)), verts=bmc.verts)
+    bmesh.ops.translate(bmc, vec=Vector((0, -(C - pc.SCREW_SLOT[1] * pc.MM) - 1 * pc.MM, 0)), verts=bmc.verts)
+    bmc.to_mesh(cut.data)
+    bmc.free()
+    bpy.context.scene.collection.objects.link(cut)
+    bo = screw_src.modifiers.new("slot", "BOOLEAN")
+    bo.operation = "DIFFERENCE"
+    bo.solver = "EXACT"
+    bo.object = cut
+    bpy.context.view_layer.objects.active = screw_src
+    bpy.ops.object.modifier_apply(modifier="slot")
+    bpy.data.objects.remove(cut)
+    screw_src.data.materials.append(bpy.data.materials.get(pc.TI) or kit._material(pc.TI))
+    for p in screw_src.data.polygons:
+        p.use_smooth = True
+    screw_src.data.set_sharp_from_angle(angle=math.radians(40))
+screw_src.hide_render = True
+import zlib
+rng = random.Random(zlib.crc32(mod.NAME.encode()))
+slot_angle = rng.uniform(0, 180)
+screws = []
+for name, pos in sorted(anchors.items()):
+    if not name.startswith("screw_"):
+        continue
+    s = screw_src.copy()
+    s.data = screw_src.data
+    bpy.context.scene.collection.objects.link(s)
+    s.location = pos
+    s.rotation_euler = (0, math.radians(slot_angle), 0)
+    s.hide_render = False
+    screws.append(s)
+
+# ------------------------------------------------------------------ scene
+scene = bpy.context.scene
+scene.render.engine = "CYCLES"
+scene.cycles.samples = SAMPLES
+scene.cycles.use_denoising = True
+try:
+    if FORCE_CPU:
+        raise RuntimeError("--cpu (GPU queue contended)")
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    prefs.compute_device_type = "METAL"
+    prefs.get_devices()
+    for d in prefs.devices:
+        d.use = True
+    scene.cycles.device = "GPU"
+    dev = "GPU"
+except Exception as e:  # noqa: BLE001
+    scene.cycles.device = "CPU"
+    dev = "CPU (%s)" % e
+scene.view_settings.view_transform = "AgX"
+scene.render.resolution_x = 1920
+scene.render.resolution_y = 1080
+scene.render.film_transparent = False
+world = bpy.data.worlds.new("w")
+world.use_nodes = True
+world.node_tree.nodes["Background"].inputs[0].default_value = (0.30, 0.29, 0.25, 1)
+world.node_tree.nodes["Background"].inputs[1].default_value = 0.35
+scene.world = world
+
+# Wall: a Level 0 paper tone, y = +0.02 mm behind the plate back.
+bmw = bmesh.new()
+bmesh.ops.create_grid(bmw, x_segments=1, y_segments=1, size=3.0)
+bmesh.ops.rotate(bmw, verts=bmw.verts, cent=(0, 0, 0), matrix=__import__("mathutils").Matrix.Rotation(math.radians(90), 3, "X"))
+wm = bpy.data.meshes.new("wall")
+bmw.to_mesh(wm)
+bmw.free()
+wall = bpy.data.objects.new("wall", wm)
+wall.location = (0, 0.00002, 0)
+scene.collection.objects.link(wall)
+wmat = bpy.data.materials.new("wallpaper")
+wmat.use_nodes = True
+nt = wmat.node_tree
+bsdf = nt.nodes["Principled BSDF"]
+noise = nt.nodes.new("ShaderNodeTexNoise")
+noise.inputs["Scale"].default_value = 900.0
+ramp = nt.nodes.new("ShaderNodeValToRGB")
+ramp.color_ramp.elements[0].color = (0.56, 0.50, 0.27, 1)
+ramp.color_ramp.elements[1].color = (0.64, 0.58, 0.33, 1)
+nt.links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
+nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+bsdf.inputs["Roughness"].default_value = 0.85
+wm.materials.append(wmat)
+for p in wm.polygons:
+    p.use_smooth = False
+
+# Lights
+def area(name, size, energy, loc, target, shape="RECTANGLE", size_y=None):
+    L = bpy.data.lights.new(name, "AREA")
+    L.energy = energy
+    L.shape = shape
+    L.size = size
+    if size_y:
+        L.size_y = size_y
+    o = bpy.data.objects.new(name, L)
+    o.location = loc
+    d = Vector(target) - Vector(loc)
+    o.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+    scene.collection.objects.link(o)
+    return o
+
+
+troffer = area("troffer", 0.6, 120.0, (0.0, -1.3, 2.3), (0, 0, 0), size_y=1.2)
+fill = area("fill", 2.0, 10.0, (0.0, -2.5, 0.0), (0, 0, 0))
+rake = area("rake", 0.03, 6.0, (-0.42, -0.42, 0.10), (0, 0, 0))
+
+cam_data = bpy.data.cameras.new("cam")
+cam_data.sensor_fit = "VERTICAL"
+cam_data.clip_start = 0.005
+cam = bpy.data.objects.new("cam", cam_data)
+scene.collection.objects.link(cam)
+scene.camera = cam
+
+
+def set_visible(level):
+    for o in shipped:
+        o.hide_render = level != 0
+    for s in screws:
+        s.hide_render = level != 0
+    for lv, objs in lod_sets.items():
+        for o in objs:
+            o.hide_render = True
+    if level in (1, 2):
+        for o in lod_sets[level]:
+            o.hide_render = False
+
+
+def look(pos, fov_v, target=(0, 0, 0)):
+    cam.location = pos
+    cam.rotation_euler = (Vector(target) - Vector(pos)).to_track_quat("-Z", "Y").to_euler()
+    cam_data.angle_y = math.radians(fov_v)
+
+
+def lights(mode):
+    troffer.hide_render = mode == "rake"
+    fill.hide_render = mode == "rake"
+    rake.hide_render = mode != "rake"
+    world.node_tree.nodes["Background"].inputs[1].default_value = 0.08 if mode == "rake" else 0.35
+
+
+def crop_for(dist, fov_v, half_w_m, half_h_m):
+    """Render border round the plate (asset centred in frame)."""
+    vis_h = 2 * dist * math.tan(math.radians(fov_v) / 2)
+    vis_w = vis_h * 16 / 9
+    fx = min(0.5, half_w_m / vis_w)
+    fy = min(0.5, half_h_m / vis_h)
+    scene.render.use_border = True
+    scene.render.use_crop_to_border = True
+    scene.render.border_min_x, scene.render.border_max_x = 0.5 - fx, 0.5 + fx
+    scene.render.border_min_y, scene.render.border_max_y = 0.5 - fy, 0.5 + fy
+
+
+def shot(name, level, pos, fov_v, mode, half_w, half_h, dist, target=(0, 0, 0), tilt=0.0):
+    set_visible(level)
+    lights(mode)
+    look(pos, fov_v, target)
+    pivot.rotation_euler = (math.radians(tilt), 0, 0)
+    crop_for(dist, fov_v, half_w, half_h)
+    scene.render.filepath = os.path.join(OUT, "%s_%s.png" % (mod.NAME, name))
+    bpy.ops.render.render(write_still=True)
+    return scene.render.filepath
+
+
+pivot = bpy.data.objects.new("tilt pivot", None)
+scene.collection.objects.link(pivot)
+pivot.location = (0, 0, -side["outlet"]["plateH"] / 2)
+bpy.context.view_layer.update()
+for o in shipped + screws:
+    mw = o.matrix_world.copy()
+    o.parent = pivot
+    o.matrix_world = mw
+W = side["outlet"]["plateW"]
+H = side["outlet"]["plateH"]
+hw, hh = W / 2 + 0.012, H / 2 + 0.010
+up = math.radians(30)
+sd = math.radians(15)
+def away(d, el=up, az=sd):
+    return (d * math.cos(el) * math.sin(az), -d * math.cos(el) * math.cos(az), d * math.sin(el))
+
+
+plan = [
+    ("front030", 0, (0, -0.30, 0), 62, "front", hw, hh, 0.30),
+    ("rake030", 0, (0, -0.30, 0), 62, "rake", hw, hh, 0.30),
+    ("obl030", 0, away(0.30, math.radians(28), math.radians(-32)), 62, "front", hw + 0.01, hh + 0.01, 0.30),
+    ("d150_lod0", 0, away(1.5), 76, "front", hw, hh, 1.5),
+    ("d150_lod1", 1, away(1.5), 76, "front", hw, hh, 1.5),
+    ("d400_lod1", 1, away(4.0), 76, "front", hw, hh, 4.0),
+    ("d400_lod2", 2, away(4.0), 76, "front", hw, hh, 4.0),
+]
+if not side["outlet"].get("surfaceBlock"):
+    top = (0.0, -0.003, H / 2)
+    el, az, dd = math.radians(72), math.radians(10), 0.25      # a standing player's view down at a 0.31 m plate
+    cpos = (top[0] + dd * math.cos(el) * math.sin(az), top[1] - dd * math.cos(el) * math.cos(az), top[2] + dd * math.sin(el))
+    plan.append(("tilt030", 0, cpos, 25, "front", 0.045, 0.03, dd, top, 1.5))
+done = []
+for p in plan:
+    if SHOTS and p[0] not in SHOTS:
+        continue
+    done.append(shot(*p))
+
+report = {"module": MODULE, "name": mod.NAME, "trisPerLod": counts, "budget": list(mod.BUDGET),
+          "shippedTris": ship_tris, "shippedBoundsMm": [[x * 1000 for x in ship_lo], [x * 1000 for x in ship_hi]],
+          "shippedHasWear": has_wear, "shippedCustomNormals": custom_n, "screws": screw_kind,
+          "slotAngle": slot_angle, "device": dev, "renders": done,
+          "lodParts": {lv: [o.name for o in objs] for lv, objs in lod_sets.items()}}
+json.dump(report, open(os.path.join(OUT, mod.NAME + "_review.json"), "w"), indent=1)
+print("[o2review]", json.dumps({k: report[k] for k in ("name", "trisPerLod", "shippedTris", "shippedHasWear", "shippedCustomNormals", "screws", "device")}))

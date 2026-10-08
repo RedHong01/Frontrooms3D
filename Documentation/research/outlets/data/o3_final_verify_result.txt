@@ -1,0 +1,211 @@
+[verify] {
+ "Kit_FloorBoxTombstone": {
+  "W": 111.0,
+  "H": 67.0,
+  "D": 76.0,
+  "zmin": -0.0,
+  "ok": true,
+  "tris": 3576,
+  "color_attrs": [
+   "fr_wear"
+  ],
+  "all_parts_coloured": true,
+  "mats": [
+   "Prop_Aluminium",
+   "Prop_Brass",
+   "Prop_NylonIvory",
+   "Prop_PlasticBlack"
+  ],
+  "colliders": [],
+  "noCollider": true,
+  "tags": [
+   "outlet",
+   "outlet_floor"
+  ],
+  "anchors": [
+   "cord_in",
+   "face_a",
+   "face_b"
+  ]
+ },
+ "Kit_FloorBoxTombstone2": {
+  "W": 127.0,
+  "H": 76.0,
+  "D": 86.0,
+  "zmin": -0.0,
+  "ok": true,
+  "tris": 5112,
+  "color_attrs": [
+   "fr_wear"
+  ],
+  "all_parts_coloured": true,
+  "mats": [
+   "Prop_Aluminium",
+   "Prop_Brass",
+   "Prop_NylonIvory",
+   "Prop_PlasticBlack"
+  ],
+  "colliders": [],
+  "noCollider": true,
+  "tags": [
+   "outlet",
+   "outlet_floor"
+  ],
+  "anchors": [
+   "cord_in",
+   "face_a",
+   "face_b",
+   "cord_in_back",
+   "face_a_back",
+   "face_b_back"
+  ]
+ },
+ "Kit_OutletHandyBox": {
+  "x": [
+   -27.5,
+   27.5
+  ],
+  "y": [
+   -52.3,
+   0.0
+  ],
+  "z": [
+   -51.3,
+   96.6
+  ],
+  "behind_wall_mm": 0.0,
+  "tris": 3860,
+  "color_attrs": [
+   "fr_wear"
+  ],
+  "all_parts_coloured": true,
+  "mats": [
+   "Prop_Aluminium",
+   "Prop_Brass",
+   "Prop_NylonIvory",
+   "Prop_PlasticBlack"
+  ],
+  "colliders": [],
+  "tags": [
+   "outlet",
+   "outlet_surface",
+   "wall_flush"
+  ],
+  "conduit_base": [
+   -0.0,
+   0.0926,
+   -0.0
+  ],
+  "body_x_y_z": [
+   55.0,
+   52.3,
+   102.6
+  ],
+  "socket_top_mm": 96.6,
+  "socket_lip_inner_r_min_max": [
+   8.85,
+   10.7
+  ]
+ },
+ "Kit_ConduitEMT": {
+  "OD": 17.9,
+  "axis_y": -11.5,
+  "z": [
+   0.0,
+   1000.0
+  ],
+  "tube_r_min": 8.95,
+  "tris": 576,
+  "color_attrs": [
+   "fr_wear"
+  ],
+  "all_parts_coloured": true,
+  "mats": [
+   "Prop_Aluminium"
+  ],
+  "colliders": [],
+  "tags": [
+   "outlet",
+   "outlet_surface",
+   "wall_flush",
+   "conduit"
+  ],
+  "max_abs_normal_along_axis": 7.549790126404332e-08
+ },
+ "joint": {
+  "tile_bottom_z": 92.6,
+  "socket_top": 96.6,
+  "tube_inside_socket_mm": 4.0,
+  "lip_under_tube_skin_mm": 0.1
+ },
+ "Kit_ConduitStrap": {
+  "W": 30.0,
+  "H": 22.0,
+  "proud": 22.2,
+  "behind": 0.0,
+  "tris": 294,
+  "color_attrs": [
+   "fr_wear"
+  ],
+  "all_parts_coloured": true,
+  "mats": [
+   "Prop_Aluminium"
+  ],
+  "colliders": [],
+  "tags": [
+   "outlet",
+   "outlet_surface",
+   "wall_flush",
+   "conduit"
+  ]
+ },
+ "Kit_CubiclePanel_Powered": {
+  "bounds_mm": [
+   [
+    -762.0,
+    -33.5,
+    -0.0
+   ],
+   [
+    762.0,
+    33.5,
+    1520.0
+   ]
+  ],
+  "json_bounds_equal": true,
+  "collider_equal": true,
+  "lod1_equal": true,
+  "tris_lod0": 1460,
+  "ref_tris": 456,
+  "mats": [
+   "Prop_FabricCubicle",
+   "Prop_NylonIvory",
+   "Prop_PlasticBlack",
+   "Prop_SteelPutty"
+  ],
+  "slots": [
+   "Prop_SteelPutty",
+   "Prop_PlasticBlack",
+   "Prop_FabricCubicle",
+   "Prop_NylonIvory"
+  ],
+  "tags": [
+   "office",
+   "panel",
+   "outlet",
+   "outlet_surface",
+   "powered_panel"
+  ],
+  "objects": [
+   [
+    "Kit_CubiclePanel_Powered_LOD0",
+    845
+   ],
+   [
+    "Kit_CubiclePanel_Powered_LOD1",
+    73
+   ]
+  ]
+ }
+}
+

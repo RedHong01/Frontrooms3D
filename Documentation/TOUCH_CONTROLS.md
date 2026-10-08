@@ -101,7 +101,7 @@ Assets: phones are @3x, but `HUD_KeyGlyph` and the crosshair exist only at 1x/2x
 | STICK | FLOATING / FIXED |
 | SPRINT | SOCKET / TOGGLE BUTTON |
 | CONTROLS SIZE | 100 % (80 / 100 / 120 / 140) |
-| CONTROLS OPACITY | 34 % (20 / 34 / 50 / 65); 34 % draws the Figma state alphas exactly |
+| CONTROLS OPACITY | 34 % (20 / 34 / 50 / 65); 34 % draws the Figma state alphas exactly. It thins only the text-free ghosts (stick, rings, socket, hold track, pause keycap); a control that carries a word (USE, the SPRINT button) stays solid at any setting, so a low setting never makes a verb illegible |
 | LEFT-HANDED | OFF / ON (swaps sides) |
 | HAPTICS · GAMEPLAY | ON / OFF (door, glass, lock-on, caught) |
 | HAPTICS · CONTROLS | ON / OFF (sprint socket, hold ring) — two switches like Alien: Isolation; hidden on iPad (no haptics) |
@@ -174,6 +174,12 @@ Ownership (agreed with 声音设计, 2026-10-03): this touch layer owns the hapt
 
 `FrontRooms3DGame.cs` changed only where 关卡设计调研 agreed: the platform test, the safe-area pixels, the prompt and hint strings shown on touch, and one `OnDestroyMobile()` call. Level profile, map start, autopilot and Relay-facing code are untouched.
 
+**Mobile texture budget (游戏视觉, 2026-10-07).** The Q1b wallpaper print is in main:
+- `_PrintTex` on iOS is now ASTC 4×4, about 5.3 MiB (it was uncompressed RGBA32, 32 MiB).
+- `Resources/Print/FR_Print_HardEdge`, an 8-frame array, is ASTC 4×4 2048² × 8 on iOS, about 42.7 MiB. It sits in Resources, so it ships in the package.
+- iOS was tested (slice 0 matches the static map, 0 of 262,144 samples differ); Android wasn't.
+- Mobile import settings are at their defaults and belong to the mobile tier. Change only the iOS/Android tabs (e.g. ASTC 6×6 / 8×8, or 1024²) once device profiling says how much memory a phone can spare.
+
 **Still to do:** run on devices (two thumbs, gyro, haptics, notch and island insets, Android `WindowInsets` and gesture exclusion), the EDIT LAYOUT editor, INTERACTION ASSIST, Core Haptics (AHAP) for the glass, FMOD mobile banks, the mobile render tier, and the export (`Assets/Editor/FrontRoomsMobileBuild.cs` has the menus; nothing has been built).
 
 ## 9. Open decisions for Red
@@ -191,7 +197,7 @@ Ownership (agreed with 声音设计, 2026-10-03): this touch layer owns the hapt
 
 Rules: every change moves, nothing pops; controls answer within one frame (70–90 ms to full); menus build in reading order; springs (OutBack) only where a thumb lets go or something locks in. All motion runs on the touch layer's own unscaled clock (`FrontRoomsTouchMotion.Now`), so menus move while the game is paused. Curves: OutCubic (arrivals), InCubic (exits), OutBack / OutBackSoft (springs, overshoot constant 1.70 / 1.1), InOutSine (breathing).
 
-**Reduce Motion** (iOS Reduce Motion, Android "remove animations" (animator duration scale 0), or CAMERA MOTION at 0 %): alpha only, every duration capped at 108 ms, no rises, scales, springs, shakes or pops, numbers appear at their value, the title prompt doesn't breathe. REDUCE FLASHING also stops the breathing.
+**Reduce Motion** (iOS Reduce Motion, Android "remove animations" (animator duration scale 0), or CAMERA MOTION at 0 %): alpha only, every duration capped at 108 ms, no rises, scales, springs, shakes or pops, numbers appear at their value.
 
 | Element | Moment | Motion |
 |---|---|---|
@@ -201,7 +207,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Socket | arming | a yellow arc (Ø66, 3.5 pt, outside the thumb) fills clockwise from 12 o'clock over the 150 ms dwell |
 | Socket | latch | the arc closes into the halo; socket and halo pop 1.15 → 1 in 220 ms; thumb tints yellow 120 ms; SPRINT fades in 140 ms rising 6 pt; light haptic |
 | Socket | let go | halo fades 150 ms InCubic, thumb tint 150 ms, label 100 ms |
-| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper (muted vanished on lit wallpaper); the socket refuses the thumb (drawn back inside the ring) until breath returns. Both stick labels carry a faint ink shadow (1 pt, 55 %) |
+| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper (muted vanished on lit wallpaper); the socket refuses the thumb (drawn back inside the ring) until breath returns. The stick label sits on a solid ink chip (below) |
 | USE | appears / goes | 160 ms alpha + scale 0.86 → 1 in 200 ms OutBack / 120 ms InCubic to 0.94 |
 | USE | press / release | yellow fill and ink verb in 70 ms, scale 0.92 / fill out 140 ms, scale back 180 ms OutBack |
 | USE | verb changes (OPEN ↔ SHUT) | crossfade 120 ms |
@@ -215,7 +221,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Settings row | press / change | pressed tint 60 ms in, 200 ms out; the value crossfades and slides 6 pt in 140 ms; the active row's yellow rule 120 ms |
 | Touch column | scroll | inertia (velocity decays with a 220 ms time constant); a scroll bar shows while it moves and fades 400 ms after 600 ms still; a fade into the card where rows continue |
 | Caught card | opens | title (+80 ms, drops in 12 pt), the four numbers count up over 600 ms from +200 ms, rule (+300), sentence (+340); TRY AGAIN at +600 ms and ignores taps before then |
-| Title | waiting | TAP TO START fades in after 3 s (600 ms InOutSine), then breathes between 55 % and 100 % every 2.4 s |
+| Title | waiting | TAP TO START (paper on the ink chip) fades in after 3 s (600 ms InOutSine), then stays still. It doesn't breathe (平面视觉: no alpha ramp on words; the corridor already moves). Any future "waiting" signal may only be a hard on/off of a solid element, e.g. a paper block cursor 0.6 s on / 0.6 s off, stopped by REDUCE FLASHING |
 | Any chip | press | scale 0.94 in 70 ms, back 160 ms OutBackSoft |
 
 **The backdrop behind the cards is frost, not flat off-white** (Red, 2026-10-07: "a frosted wallpaper-texture mask over the actual paused frame, the UI on top").
@@ -227,6 +233,30 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 - Pause ↔ settings keep the frame they froze. The texture is released once the frost has faded out.
 - With no camera, it falls back to the old 98 % paper wash.
 - On this backdrop the text is solid ink: the pause meta line and the caught labels lose their 60 % / 55 % ink, which on a frosted room measured under 3 : 1. The settings card is opaque on touch, so the frost doesn't show through it like dirt.
+
+**平面视觉's rule for all in-game UI (2026-10-07): no translucent ink or surfaces.**
+- Unity blends UI alpha in linear light, so any alpha tint renders lighter than Figma shows.
+- Hierarchy comes from face, size and tracking. A secondary tone is a solid colour that is ≥ 4.5 : 1 on both the darkest and the lightest backdrop.
+- Approved: solid-ink pause meta and caught labels (about 7.9 : 1 at worst over the frost's L 0.37 floor), and the opaque settings card.
+
+**The stick's state label sits on a solid ink chip**, the same family as the HUD's key prompt and hint card:
+- fill `#0E0E0D` at 100 %, square corners;
+- 4 pt above and below Bayon 17's caps and 7 pt either side;
+- SPRINT in accent yellow, WINDED in paper `#F4F1E8`;
+- it fades in and out with the label.
+- In code, the chip hugs the caps measured from the glyph quads (`Caps()`), not Bayon's line box.
+- If the chip ever crowds the ring, drop the label to Bayon 15 before shrinking the padding.
+- It replaces a 1 pt shadow: paper on lit Level 0 paper measured about 1.9 : 1, and shadows aren't part of the system.
+- Figma: `Touch / Stick` State=Sprint and State=Winded (2530:3812, 2530:3823) carry the chip, and so does the Sprint screen master through its instance.
+- The chip's height is Bayon's cap height (0.714 em) + 8 pt = 20.1 pt at 17 pt. Glyph quads and rasterised glyph bounds both carry padding (runs 11–12 drew 21.3 pt); only their middle is used.
+
+**Text-bearing controls are solid (平面视觉, Q1, 2026-10-07).**
+- The rule is about text and the ground under it, so text-free ghosts stay translucent and are scaled by CONTROLS OPACITY, as §1 rule 3 says.
+- Anything that carries a word is solid:
+  - the USE disc is `#0E0E0D` at 100 % behind its verb (paper; LOCKED in muted, 9.9 : 1);
+  - the SPRINT button's disc is solid too (ink, or yellow when on);
+  - TAP TO START sits on the stick label's ink chip.
+- Figma: `Touch / Use` (2530:3854) and `Touch / Sprint toggle` (2530:3877) discs are solid; the Title screen master (2532:5101) has the prompt on the chip.
 
 ## 11. Verification: the touch playtest
 
@@ -243,11 +273,13 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
   - look: 100 pt = 20°; two thumbs at once;
   - pause, settings (the desktop rows tap, ‹ › step, the TOUCH column scrolls), restart confirm and cancel, resume;
   - Android Back through the bridge's own queue: pause, close settings, cancel restart, resume;
-  - USE opens a door; tapping the door itself shuts it and the latch is felt; a locked door rattles, is felt twice and shakes USE (the harness switches keys on for that step only, since the shipped profile has none);
+  - tapping a shut door itself opens it (a shut leaf always faces the player); USE then shuts it, the verb crossfades and the latch is felt; a locked door rattles, is felt twice and shakes USE with a paper flash (the harness switches keys on for that step only, since the shipped profile has none);
   - holding USE on a pane breaks it in 1 s, with the rising buzz, two cracks and the heavy hit (the stand matches the desktop autopilot's glass scenario);
   - caught: the stats count up, an early tap is ignored, TRY AGAIN restarts;
   - Reduce Motion: the chips fade in place.
   - Motion checks read node positions: for example, the RESUME chip is still low at f08, nearly home at f18 and home at f30.
+  - The Relay is held dormant for these steps (a runtime flag on that run's Relay; no game code changes). The steps teleport the player around a live map, and in run 9 the Relay caught it halfway. The caught step calls the game's `End()` itself.
+  - Latest: run 10, 2026-10-07, 63 / 63 checks, 74 frames. Frames are in `~/FrontRoomsVisualWork/touch/run10_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL131; Figma TC14, TC15).
 - **Two Editor facts** the harness works around, so nobody trips on them again:
   - In batch mode no Game view has focus, so the Input System withholds pointer and touch input from Play Mode. The harness swaps in a copy of the input settings that sends all input to the game (all devices, ignore focus) and restores the original afterwards.
   - `Time.captureDeltaTime` steps game time but not unscaled time, and captures take real seconds. The touch layer therefore reads its own clock (`FrontRoomsTouchMotion.Now`), which the harness steps 1/60 s per frame. In players that clock is plain unscaled time.

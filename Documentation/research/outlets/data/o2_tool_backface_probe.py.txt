@@ -1,0 +1,50 @@
+"""Find triangles that face the wall (+Y in Blender) but are the first surface
+a front ray (-Y side -> +Y) meets: visible back faces = holes in Unity (culled).
+Also rays from a 30-degree-off direction set. Usage: -- <models dir> [names...]"""
+import bpy, sys, os, math
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+argv = sys.argv[sys.argv.index("--")+1:]
+M = argv[0]
+names = argv[1:] or ["Kit_OutletBlank", "Kit_OutletToggle1", "Kit_OutletToggle2", "Kit_JackPhone", "Kit_JackData", "Kit_JackBNC", "Kit_JackPhone4Prong"]
+dirs = [Vector((0, 1, 0))]
+for az in range(0, 360, 45):
+    a = math.radians(az); t = math.radians(35)
+    dirs.append(Vector((math.sin(t)*math.cos(a), math.cos(t), math.sin(t)*math.sin(a))).normalized())
+for n in names:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(M, n + ".fbx"), axis_forward="-Z", axis_up="Y", bake_space_transform=True)
+    V, P, info = [], [], []
+    for o in bpy.data.objects:
+        if o.type != "MESH": continue
+        me = o.data
+        mats = [m.name.split(".")[0] for m in me.materials]
+        base = len(V)
+        V.extend(o.matrix_world @ v.co for v in me.vertices)
+        for p in me.polygons:
+            vs = [V[base+i] for i in p.vertices]
+            # triangulate fan for quads (exporter keeps quads)
+            for k in range(1, len(vs)-1):
+                P.append((base+p.vertices[0], base+p.vertices[k], base+p.vertices[k+1]))
+                info.append((o.name, mats[p.material_index]))
+    bvh = BVHTree.FromPolygons(V, P)
+    bad = {}
+    for ti, tri in enumerate(P):
+        a, b, c = (V[i] for i in tri)
+        nrm = (b - a).cross(c - a)
+        if nrm.length < 1e-14: continue
+        nrm.normalize()
+        cen = (a + b + c) / 3
+        for d in dirs:
+            if nrm.dot(d) <= 0.2:   # front-facing for a viewer looking along d (viewer at -d)
+                continue
+            org = cen - d * 1.0
+            hit = bvh.ray_cast(org, d, 1.001)
+            if hit[0] is not None and hit[2] == ti and org.y < -0.0:
+                key = (info[ti][0], info[ti][1])
+                bad.setdefault(key, []).append((round(cen.x*1000,2), round(-cen.y*1000,2), round(cen.z*1000,2), round((nrm.cross(Vector())).length,1)))
+                break
+    tot = sum(len(v) for v in bad.values())
+    print("[bf] %s: %d visible back-facing triangles" % (n, tot))
+    for k, v in bad.items():
+        print("[bf]    %s / %s: %d e.g. %s" % (k[0], k[1], len(v), v[:4]))

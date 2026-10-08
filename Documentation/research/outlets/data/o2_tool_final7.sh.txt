@@ -1,0 +1,45 @@
+#!/bin/zsh
+# O2 rebuild + re-verification after the 2026-10-05 /tmp wipe (2026-10-07).
+W=/Users/redwang/FrontRoomsVisualWork
+O=$W/o2
+T=$O/old_sp/o2
+K="/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+B=/Applications/Blender.app/Contents/MacOS/Blender
+NOPYC='import sys; sys.dont_write_bytecode = True'
+MODS=(outlet_blank outlet_toggle1 outlet_toggle2 outlet_jack_phone outlet_jack_data outlet_jack_bnc outlet_jack_phone4)
+STAGE=$O/stage
+REV=$W/outlet_prev/g1/review7
+mkdir -p $REV $O/o1ref $STAGE $W/outlet_prev/g1
+cd $O
+echo "=== O1 reference build $(date +%T) load $(uptime | sed 's/.*averages: //')"
+mkdir -p $O/o1ref_b; $B -b --factory-startup --python-expr "$NOPYC" --python "$K/build_asset.py" -- outlet_duplex --no-preview --out-root $O/o1ref_b > $O/f7_o1ref.log 2>&1
+echo "o1ref exit $?"; grep -E "\[kit\]|Error|Traceback" $O/f7_o1ref.log
+$B -b --factory-startup --python-expr "$NOPYC" --python "$K/build_asset.py" -- outlet_screw --no-preview --out-root $STAGE > $O/f7_screw.log 2>&1
+echo "screw exit $?"; grep -E "\[kit\]|Error|Traceback" $O/f7_screw.log
+echo "=== O2 build+previews $(date +%T)"
+$B -b --factory-startup --python-expr "$NOPYC" --python "$K/build_asset.py" -- $MODS --out-root $STAGE --preview-dir $W/outlet_prev/g1 > $O/f7_build_full.log 2>&1
+echo "build exit $?"
+grep -E "\[o2\]|\[kit\]|Error|Traceback|FAILED" $O/f7_build_full.log > $O/f7_build.log
+cat $O/f7_build.log
+echo "=== review $(date +%T)"
+lane() {
+  for m in "$@"; do
+    echo "=== $m $(date +%T)"
+    $B -b --factory-startup --python-expr "$NOPYC" --python $T/o2_review.py -- $m $REV $STAGE --samples 64 $CPU 2>&1 | grep -E "o2review|\[o2\]|Error|Traceback|File \""
+  done
+}
+lane outlet_toggle1 outlet_jack_bnc outlet_blank outlet_jack_phone4 > $O/f7_lane1.log 2>&1 &
+lane outlet_jack_phone outlet_jack_data outlet_toggle2 > $O/f7_lane2.log 2>&1 &
+wait
+grep -h "o2review\|Error\|Traceback" $O/f7_lane*.log
+echo "=== verify $(date +%T)"
+$B -b --factory-startup --python-expr "$NOPYC" --python $T/o2_verify.py -- $STAGE $O/verify7.json $O/o1ref_b/Assets/Resources/Props/Models > $O/f7_verify_full.log 2>&1
+grep -E "\[verify\]|Error|Traceback" $O/f7_verify_full.log > $O/f7_verify.log
+cat $O/f7_verify.log
+for n in Kit_OutletBlank Kit_OutletToggle1 Kit_OutletToggle2 Kit_JackPhone Kit_JackData Kit_JackBNC Kit_JackPhone4Prong; do $W/venv/bin/python $T/sheet.py $REV $n $O/sheet_${n}_r7.jpg >/dev/null; done
+echo "=== probes $(date +%T)"
+$B -b --factory-startup --python-expr "$NOPYC" --python $T/lod_probe.py -- $MODS 2>&1 | grep -E "^\[lp\]|re-filled|Error|Traceback" > $O/f7_lodprobe.log
+$B -b --factory-startup --python-expr "$NOPYC" --python $T/crack_probe.py -- $MODS 2>&1 | grep -E "^\[cp\]|Error|Traceback" > $O/f7_crack.log
+$B -b --factory-startup --python-expr "$NOPYC" --python $T/backface_probe.py -- $STAGE/Assets/Resources/Props/Models 2>&1 | grep -E "^\[bf\]|Error|Traceback" > $O/f7_backface_fbx.log
+cat $O/f7_lodprobe.log $O/f7_crack.log $O/f7_backface_fbx.log
+echo "=== all done $(date +%T)"

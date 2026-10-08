@@ -191,9 +191,42 @@ below only by agreement between the two.
   variant binds 12 (10 base, plus `_FR_Print` and `_PrintTex`). Light cookies
   add 2 and reflection-probe blending adds 1, for 15. Any further print map must
   share an existing sampler or pack into `_FR_Print` B/A.
-- **Import.** `_P` has a Standalone override to R8G8 (lossless, 16 MiB at
-  2048×3072 with mips). The WebGL tab is untouched. 2048×3072 is NPOT, so BC7 is
-  unavailable for every mipped wallpaper texture.
+- **Import (Q1b, 2026-10-03: Hard edge, Red's option C).** `_P` is the Hard edge
+  K00, 2048×2048 (POT; one 0.75 × 1.125 m roll tile on a square texture, so the
+  texels are not square: 2731 px/m across and 1820 px/m down; `_PrintTex_ST` stays (1, 1, 0, 0)). Standalone tab BC5
+  (quality Best), WebGL tab only R8G8 at 1024. BC5 passed its gate against an exact
+  R8G8 reference: renders of 3 palettes × 6 views (room, 25 m corridor, fog on/off)
+  × static and live, pooled mean ≤ 0.023 levels, p99 ≤ 0.84, max 5.7 (lit HDR); film
+  post mean ≤ 0.013, p99 1, max 4. Memory: `_PrintTex` 5.3 MiB (was 16 MiB R8G8).
+  BC5's own error on the print mips (read back with `Load` at every level): density
+  mean ≤ 0.06 levels at mips 0–1, 0.3–0.8 at mips 3–4, up to 2.4 at mips 5–9 (the
+  soft middle levels); every level sits closer to the `FrontRoomsPrintMips` rule than
+  to box mips. The gates: FrontRooms → Rendering → Print Q1b gates
+  (`FrontRoomsPrintP0Test.RunQ1bBatch`, or `RunQ1bFinalBatch` for Q1b + P0).
+  **Only Unity writes `_P` now:** FrontRooms → Rendering → Build Print Array
+  (`FrontRoomsPrintArray.cs`) copies K00's R/G from the print tools' encoded slices.
+  `gen_surfaces.py`'s `wallpaper_print` target writes only the CC0 test frame
+  (`Wallpaper_Print_CC0_P`, into `PrintP0/Ref`) and is no longer in the default run.
+- **Live print array.** `Assets/Resources/Print/FR_Print_HardEdge.png` holds the 8
+  encoded slices `Tools/print/patterns/out/hard_edge/encoded/K00..K07.png` as a 4 × 2
+  sheet (slice k = column k % 4, row k / 4 from the top). It imports as a
+  Texture2DArray, Resources path `Print/FR_Print_HardEdge` (the driver's
+  `DefaultPrint`): 2048² × 8, 12 print mips per slice (every level from
+  `FrontRoomsPrintMips`), linear, repeat, trilinear, aniso 16, not readable.
+  Standalone BC5 (42.7 MiB), WebGL tab R8G8 1024 per slice (21.3 MiB); for a
+  flipbook array the max size applies per slice. It is not a `.asset`: this project
+  serialises as Force Text, so a saved array would be a 90–180 MB YAML file, and a
+  `.asset` has no platform tabs. Slice 0 and `_PrintTex` decode to the same texels at
+  all 12 mips (measured: 0 difference), so the crossfade at `w` is invisible. Build
+  Print Array writes both; the print tools never write into `Assets`. Do not put
+  another `FR_Print_HardEdge.*` texture in `Resources/Print`. `FrontRoomsPrintArray`
+  owns the import rules of `Resources/Print/FR_Print_*.png`; the print tools' own
+  importer for that folder (staged in `Tools/print/unity_staging`, for the glow-ink
+  arrays) must skip those names before it is promoted.
+- **Channels.** BC5 and R8G8 store R and G only. `_FR_Print` B/A no longer exist in
+  the shipped formats, so the sampler-budget fallback "pack into `_FR_Print` B/A"
+  now needs a different format (BC7 RGBA at about twice the size) or a separate
+  texture that shares `sampler_FR_Print`.
 - **Legacy and tests.** `Wallpaper_Chevron(_Cold)_A/_N/_S` and the two NoHue
   references live in `Assets/Editor/Rendering/PrintP0/Ref/`: T1 only, never
   shipped. The gates are under FrontRooms → Rendering → Print P0 gates

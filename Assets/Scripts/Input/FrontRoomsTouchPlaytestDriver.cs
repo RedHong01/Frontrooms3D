@@ -9,6 +9,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using InputTouchPhase = UnityEngine.InputSystem.TouchPhase;
 
@@ -221,6 +222,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             if (i == 0 || i == 5 || i == 10 || i == 15) yield return Capture("07w_winded_f" + i.ToString("00"));
         }
         Check("winded: the stick says WINDED and sprint stops", controls.Winded && !FrontRoomsInput.Snapshot.SprintHeld && !FrontRooms3DGame.PlayerSprinting, "winded " + controls.Winded);
+        yield return CaptureDark("07z_label_winded_dark");
         Check("winded: soft double haptic", haptics.FindAll(h => h.Contains("Controls,Soft")).Count >= 2, "");
         var recovered = -1;
         for (var i = 0; i < 300 && recovered < 0; i++)
@@ -233,6 +235,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Frames(.3f);
         Check("winded: a thumb still in the socket sprints again", controls.SprintLatched && FrontRoomsInput.Snapshot.SprintHeld, "latched " + controls.SprintLatched);
         yield return Capture("07x_sprint_again");
+        yield return CaptureDark("07z_label_sprint_dark");
         Send(2, socket, InputTouchPhase.Ended);
         yield return Frames(.4f);
         // The long sprint ends against a wall: turn round so the next steps have room to walk. (No teleport back:
@@ -531,6 +534,28 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// A dark room for 平面视觉's label audit: the frame pushed down 6 EV by a temporary global volume, for one
+    /// capture. Exposure rather than switching lamps off, because the lamp system drives its own lights each frame.
+    /// The touch layer is drawn over the frame, so it is unaffected.
+    /// </summary>
+    IEnumerator CaptureDark(string name)
+    {
+        var go = new GameObject("Touch playtest dark room");
+        var volume = go.AddComponent<Volume>();
+        volume.isGlobal = true;
+        volume.priority = 10000f;
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        profile.Add<ColorAdjustments>(true).postExposure.Override(-6f);
+        volume.sharedProfile = profile;
+        yield return null;
+        yield return null;
+        yield return Capture(name);
+        Destroy(go);
+        Destroy(profile);
+        yield return null;
     }
 
     /// <summary>

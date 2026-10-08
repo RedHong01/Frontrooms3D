@@ -1,0 +1,6 @@
+[RelayDirectorPolicyTests] PASS: 5 checks
+[RelayDirectorPolicyTests] ok: arm starts first-run RELAX
+[RelayDirectorPolicyTests] ok: device sound is immediate and queued while on map
+[RelayDirectorPolicyTests] ok: noise is ignored during RELAX
+[RelayDirectorPolicyTests] ok: pressure peak asks the hunter to leave
+[RelayDirectorPolicyTests] ok: threshold creates PENDING and resolves to a call

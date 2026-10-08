@@ -1194,11 +1194,12 @@ LOD1_CSK_SEGS = 12
 # and a 527 mm^2 dark 6-gon: 0.629 (-50 %), a dark pop at 4 m, and the IG
 # orange / Steel ivory faces vanished. 6-gon points are (a cos t, b sin t).
 #
-# Round 9: the single dot measured right (face disc +1.5 % vs LOD0) but at
+# Round 10: the single dot measured right (face disc +1.5 % vs LOD0) but at
 # 4 m it packs the dark into one 2 px blob, darker at its peak than the thin
 # LOD1 slots it replaces. The dark area is now split into three marks where
 # the slots are (two widened blade quads and a ground triangle, 98 mm^2 in
-# all, the slots plus the gap ring), so the face reads as LOD1 does.
+# all, the slots plus the gap ring), so the face reads as LOD1 does
+# (measured: face disc +1.9 % vs LOD0, LOD1 +1.1 %; +2 tris per plate).
 LOD2_FACE_AB = (16.6, 16.5)   # x +-16.6, z +-14.3 (the flats); 2.598 a b = 712 mm^2
 LOD2_MARKS = ((-6.35, 3.0, 3.6, 10.0), (6.35, 3.0, 3.6, 8.5))   # blade marks: x, z, w, h (face frame)
 LOD2_GROUND = (0.0, -8.9, 7.9)    # ground mark: a point-down triangle, base = height = 7.9 (31 mm^2)
@@ -1312,7 +1313,7 @@ def lod2_plate(W, H, field_h, crown, face_top, chamfer=2.0, open_z=(OPEN_Z, -OPE
     """LOD2 (4-12 m): an 8-point rounded outline at full height (fan to a
     crowned centre), one bevel ring to the wall; each device face as a flat
     6-gon in the device slot 0.3 mm proud of the crown, with three
-    area-matched dark slot marks 0.3 mm in front of it (rounds 8-9). Returns
+    area-matched dark slot marks 0.3 mm in front of it (rounds 8-10). Returns
     plate, face, dark."""
     hw, hh = W / 2, H / 2
     p, face, dark = Mesh(), Mesh(), Mesh()
@@ -1552,5 +1553,5 @@ def build_lod_parts(kit, kind, info, face_top, gap_h, t20, crack, chip):
     p2, f2, d2 = lod2_plate(W, H, edge_h, crown, face_top)
     p2.to_object(kit, "plate LOD2", plate_slot, lods="2")
     f2.to_object(kit, "faces LOD2", NI, lods="2")
-    d2.to_object(kit, "dots LOD2", PB, lods="2")
+    d2.to_object(kit, "marks LOD2", PB, lods="2")
     return [total_tris(kit, "1"), total_tris(kit, "2")]

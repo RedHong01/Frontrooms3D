@@ -74,7 +74,7 @@ LIP_H = (0.08, 0.34)           # lip height: outer edge on the wall, inner edge 
 TERM = {"R": 3.6, "crown": 0.9, "side": 1.2, "slot": (1.0, 0.7), "axis_h": -1.5, "z": oc.OPEN_Z}
 ARC_DEG_BARE = 5.625           # the faces are the hero here: 64 per circle
 DARK = "Prop_Rubber"           # matte near-black (existing slot): the void reads with no sheen (round 9)
-# LOD2 marks on a bare face (round 9): the slots only (about 48 mm^2 of slot
+# LOD2 marks on a bare face (rounds 9-10): the slots only (about 48 mm^2 of slot
 # mouth per face), with no plate-opening gap ring round the face, so the
 # shared 98 mm^2 of marks (slots + gap ring) is scaled to 55 mm^2.
 LOD2_MARK_K_BARE = 55.0 / 98.0
@@ -279,9 +279,9 @@ def build(kit):
 def build_lods(kit, k, towers, cut):
     """LOD1: 24-point faces with a 2-step edge and 0.5 mm slot insets, a
     coarse strap, box edge and gap; LOD2: the strap as a quad, each face as
-    a device-coloured 6-gon prism with slots-only dark marks (outlet_common
-    lod2_marks; rounds 8-9), the box edge as an 8-point ring on the dark
-    gap."""
+    a device-coloured 6-gon prism (area-matched to the LOD0 face, round 10)
+    with slots-only dark marks (outlet_common lod2_marks; rounds 8-10), the
+    box edge as an 8-point ring on the dark gap."""
     ni, al, pb, br_ = oc.Mesh(), oc.Mesh(), oc.Mesh(), oc.Mesh()
     k1 = oc.LOD1_ARC_K
     for oz in zs_():

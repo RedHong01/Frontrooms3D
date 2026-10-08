@@ -1,0 +1,45 @@
+"""Visible back faces on the forced LOD0/LOD1/LOD2 part sets of each module
+(before export). -- <module> [<module> ...]"""
+import bpy, sys, os, math, importlib
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+KIT = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+sys.path.insert(0, KIT); sys.path.insert(0, os.path.join(KIT, "assets"))
+import kitlib, outlet_plate_common as pc
+pc.HAS_LODS = True
+dirs = [Vector((0, 1, 0))]
+for t_deg in (35, 60, 75):
+    for az in range(0, 360, 30):
+        a = math.radians(az); t = math.radians(t_deg)
+        dirs.append(Vector((math.sin(t)*math.cos(a), math.cos(t), math.sin(t)*math.sin(a))).normalized())
+for modname in sys.argv[sys.argv.index("--")+1:]:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mod = importlib.import_module(modname)
+    kit = kitlib.Kit(mod.NAME)
+    mod.build(kit)
+    for lv in (0, 1, 2):
+        objs = pc.lod_parts(kit, lv)
+        V, P, info = [], [], []
+        dg = bpy.context.evaluated_depsgraph_get()
+        for o in objs:
+            ev = o.evaluated_get(dg); me = ev.to_mesh()
+            base = len(V)
+            V.extend(o.matrix_world @ v.co for v in me.vertices)
+            for p in me.polygons:
+                for k in range(1, len(p.vertices)-1):
+                    P.append((base+p.vertices[0], base+p.vertices[k], base+p.vertices[k+1])); info.append(o.name)
+            ev.to_mesh_clear()
+        bvh = BVHTree.FromPolygons(V, P)
+        bad = {}
+        for ti, tri in enumerate(P):
+            a, b, c = (V[i] for i in tri)
+            nrm = (b - a).cross(c - a)
+            if nrm.length < 1e-14: continue
+            nrm.normalize(); cen = (a + b + c) / 3
+            for d in dirs:
+                if nrm.dot(d) <= 0.2: continue
+                org = cen - d * 1.0
+                hit = bvh.ray_cast(org, d, 1.001)
+                if hit[0] is not None and hit[2] == ti:
+                    bad.setdefault(info[ti], []).append((round(cen.x*1000,2), round(-cen.y*1000,2), round(cen.z*1000,2))); break
+        print("[lp] %s LOD%d: %d tris, %d visible back-facing %s" % (mod.NAME, lv, len(P), sum(len(v) for v in bad.values()), {k: (len(v), v[:2]) for k, v in bad.items()}))

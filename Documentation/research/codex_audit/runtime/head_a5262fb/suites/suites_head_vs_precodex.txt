@@ -1,0 +1,18 @@
+camera-rig-tests.json                BASE passed 25 failed 0 PASS: 25 passed, 0 failed
+                                     CX   passed 25 failed 0 PASS: 25 passed, 0 failed
+captions-tests.json                  BASE passed 9 failed 0 PASS: 9 passed, 0 failed
+                                     CX   passed 9 failed 0 PASS: 9 passed, 0 failed
+fixture-tick-tests.json              BASE passed 28 failed 0 PASS: 28 passed, 0 failed
+                                     CX   passed 28 failed 0 PASS: 28 passed, 0 failed
+glass-shot-tests.json                BASE passed 20 failed 0 PASS: 20 passed, 0 failed
+                                     CX   passed 20 failed 0 PASS: 20 passed, 0 failed
+level-designer-tests.json            BASE passed 138 failed 0 PASS
+                                     CX   passed 138 failed 0 PASS
+map-interaction-tests.json           BASE passed 136 failed 0 PASS: 136 passed, 0 failed
+                                     CX   passed 143 failed 0 PASS: 143 passed, 0 failed
+map-verification-latest.json         BASE passed 100 failed 0 
+                                     CX   passed 100 failed 0 
+relay-nav-test.json                  BASE passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+                                     CX   passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+stream-verification-latest.json      BASE passed 5 failed 0 
+                                     CX   passed 5 failed 0 

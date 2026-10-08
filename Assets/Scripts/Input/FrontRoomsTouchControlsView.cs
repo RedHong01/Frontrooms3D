@@ -48,7 +48,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     sealed class StickView
     {
         public RectTransform Root, Thumb, Socket, Halo, Label;
-        public Image BaseDisc, BaseRing, SocketRing, SocketArc, HaloRing, ThumbDisc;
+        public Image BaseDisc, BaseRing, SocketRing, SocketArc, HaloRing, ThumbDisc, LabelChip;
         public Text LabelText;
         public CanvasGroup Group;
     }
@@ -110,10 +110,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     RenderTexture frostTexture;
     /// <summary>Paper over the blurred frame, blended linear like all UI here: the room shows, the ink still reads (≥ 6 : 1).</summary>
     const float FrostVeil = .30f;
+    /// <summary>Bayon's cap height in em (平面视觉, measured; Figma's glyph bounds agree at 12.17 pt for 17 pt).</summary>
+    const float BayonCapHeightEm = .714f;
+    /// <summary>Bayon 17's cap height plus 4 pt above and below: the stick label's chip.</summary>
+    const float LabelChipHeight = 17f * BayonCapHeightEm + 8f;
     /// <summary>One wallpaper roll tile (0.75 × 1.125 m) is drawn this many points wide.</summary>
     const float FrostTileWidth = 280f;
     readonly MotionValue washAlpha = new MotionValue();
     Item pauseTitle, pauseMeta, legendA, legendB, confirmText, titlePrompt, caughtTitle, caughtRule, caughtLine, settingsCard;
+    Image titlePromptChip;
+    Text titlePromptText;
     Text pauseMetaText, confirmTextText, caughtLineText;
     Text legendATextMove, legendATextDrag, legendATextSprint, legendBTextUse, legendBTextHold;
     Image legendSprintGlyph;
@@ -302,12 +308,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         s.ThumbDisc = s.Thumb.gameObject.AddComponent<Image>();
         s.ThumbDisc.color = Paper;
         s.ThumbDisc.raycastTarget = false;
+        // The label sits on a solid ink chip, like the HUD's key prompt card (平面视觉, 2026-10-07): the thumb
+        // plays over lit paper and dark rooms alike, and no tint or shadow holds contrast on both.
+        s.LabelChip = Img("state label chip", s.Root, new Vector2(60f, LabelChipHeight), WithAlpha(CardColor, 0f));
         s.LabelText = Txt("state label", s.Root, string.Empty, bayon, 17, Accent, TextAnchor.MiddleCenter, new Vector2(120f, 20f));
-        // The label sits where the thumb plays, often over lit floor or wallpaper: a faint ink shadow keeps it
-        // readable there and vanishes on dark rooms (fades with the label).
-        var shadow = s.LabelText.gameObject.AddComponent<Shadow>();
-        shadow.effectColor = WithAlpha(Ink, .55f);
-        shadow.effectDistance = new Vector2(1f, -1f);
         s.Label = s.LabelText.rectTransform;
         return s;
     }
@@ -380,6 +384,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             s.ThumbDisc.sprite = FrontRoomsTouchSprites.Disc(td);
             s.Thumb.sizeDelta = new Vector2(td, td);
             s.Label.anchoredPosition = new Vector2(0f, L.SocketOffset + 33f * k + 14f);
+            s.LabelChip.sprite = FrontRoomsTouchSprites.Solid();
         }
         var ud = L.UseRadius * 2f;
         useDisc.sprite = usePressed.sprite = FrontRoomsTouchSprites.Disc(ud);
@@ -429,7 +434,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             sprintToggleRoot.anchoredPosition = L.SprintButtonCenter;
             toggleOn.To(controls.SprintLatched ? 1f : 0f, Dur(.12f), Ease.OutCubic);
             var toggleWinded = controls.Winded;
-            sprintToggleDisc.color = WithAlpha(Color.Lerp(Media, Accent, toggleOn), Mathf.Min(1f, Mathf.Lerp(.45f * opacity, 1f, toggleOn)));
+            // It carries a word, so its disc is solid whatever CONTROLS OPACITY says.
+            sprintToggleDisc.color = Color.Lerp(CardColor, Accent, toggleOn);
             sprintToggleRing.color = WithAlpha(toggleWinded ? Muted : Color.Lerp(Paper, Accent, toggleOn), Mathf.Min(1f, (toggleWinded ? .4f : .8f) * opacity + toggleOn));
             sprintToggleText.color = toggleWinded ? Muted : Color.Lerp(Paper, Ink, toggleOn);
             var pressed = controls.PressedButton == FrontRoomsTouchControls.Button.SprintToggle;
@@ -495,6 +501,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         ghost.Group.alpha = ghostAlpha;
         ApplyStickStyle(ghost, 0f, 0f, 0f, windTint, opacity, 0f);
         ghost.LabelText.text = string.Empty;
+        ghost.LabelChip.color = WithAlpha(CardColor, 0f);
         ghost.SocketArc.fillAmount = 0f;
         ghost.Halo.gameObject.SetActive(false);
 
@@ -515,7 +522,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         live.LabelText.text = winded ? "WINDED" : "SPRINT";
         // WINDED in paper, not muted: the muted thumb already says "not now"; the word must still read.
         live.LabelText.color = WithAlpha(winded ? Paper : Accent, labelAlpha);
-        live.Label.anchoredPosition = new Vector2(0f, L.SocketOffset + 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
+        var labelAt = new Vector2(0f, L.SocketOffset + 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
+        live.Label.anchoredPosition = labelAt;
+        // The chip: 4 pt over and under Bayon 17's caps, 7 pt either side, square, opaque once the label is in.
+        var caps = Caps(live.LabelText);
+        live.LabelChip.rectTransform.anchoredPosition = labelAt + new Vector2(caps.x, caps.y);
+        live.LabelChip.rectTransform.sizeDelta = new Vector2(caps.z + 14f, caps.w + 8f);
+        live.LabelChip.color = WithAlpha(CardColor, labelAlpha);
         ApplyStickStyle(live, 1f, sprintTint, arm, windTint, opacity, 1f);
     }
 
@@ -589,7 +602,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         current.rectTransform.anchoredPosition = new Vector2(0f, Reduced ? 0f : -4f * (1f - labelSwap));
         previous.rectTransform.anchoredPosition = new Vector2(0f, Reduced ? 0f : 4f * labelSwap);
 
-        useDisc.color = WithAlpha(Media, Mathf.Min(1f, .55f * opacity + .2f));
+        // A control that carries a word is solid (平面视觉, 2026-10-07): the verb reads on any room, and
+        // CONTROLS OPACITY only thins the text-free ghosts (its ring here, the stick, the keycap).
+        useDisc.color = CardColor;
         // A locked press is acknowledged with a faint paper flash, never the yellow "go" fill; the shake and the
         // rattle say no.
         usePressed.color = locked ? WithAlpha(Paper, press * .18f) : WithAlpha(Accent, press);
@@ -602,6 +617,41 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         holdTrack.color = WithAlpha(Paper, .3f * holdTrackAlpha);
         holdArc.color = WithAlpha(Accent, holdTrackAlpha);
         holdArc.fillAmount = holdShown;
+    }
+
+    readonly Dictionary<string, Vector4> capsCache = new Dictionary<string, Vector4>();
+
+    /// <summary>
+    /// The caps of a Text's word (pt), for the ink chip: x, y = where their middle sits from the centre of the
+    /// line box, z = their width, w = their height. Laid out once per word and density from the glyph quads, so
+    /// the chip hugs the letters rather than Bayon's line metrics or side bearings.
+    /// </summary>
+    Vector4 Caps(Text t)
+    {
+        if (string.IsNullOrEmpty(t.text)) return Vector4.zero;
+        var key = t.text + "@" + t.pixelsPerUnit;
+        if (capsCache.TryGetValue(key, out var caps)) return caps;
+        var generator = new TextGenerator();
+        generator.Populate(t.text, t.GetGenerationSettings(t.rectTransform.rect.size));
+        float low = float.MaxValue, high = float.MinValue, left = float.MaxValue, right = float.MinValue;
+        foreach (var v in generator.verts)
+        {
+            low = Mathf.Min(low, v.position.y);
+            high = Mathf.Max(high, v.position.y);
+            left = Mathf.Min(left, v.position.x);
+            right = Mathf.Max(right, v.position.x);
+        }
+        var ppu = Mathf.Max(.01f, t.pixelsPerUnit);
+        // The quads (and the rasterised glyph bounds) carry the same padding on every side: their middle is the
+        // caps' middle; the height is Bayon's cap height, 0.714 em (平面视觉's figure; runs 11-12 drew 21.3 pt
+        // chips from raster bounds); that padding, read off the height, comes off the width too (run 14 measured
+        // the advance width 0.7-1.5 pt wide).
+        if (generator.vertexCount == 0) return Vector4.zero;
+        var capHeight = t.fontSize * BayonCapHeightEm;
+        var padding = Mathf.Max(0f, ((high - low) / ppu - capHeight) * .5f);
+        caps = new Vector4((left + right) * .5f / ppu, (low + high) * .5f / ppu, (right - left) / ppu - 2f * padding, capHeight);
+        capsCache[key] = caps;
+        return caps;
     }
 
     static float Shake(float t) => t >= 1f ? 0f : Mathf.Sin(t * Mathf.PI * 6f) * 4f * (1f - t);
@@ -736,7 +786,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         caughtLine = MakeItem("line", caughtLineText.rectTransform);
 
         // Title: a text line under the wordmark, no container (Red's review).
-        titlePrompt = MakeItem("TAP TO START", Txt("TAP TO START", menuLayer, "TAP TO START", bayon, 17, WithAlpha(Paper, .95f), TextAnchor.MiddleCenter, new Vector2(300f, 22f), true).rectTransform);
+        // TAP TO START sits on the stick label's ink chip, static (平面视觉: no alpha ramp on words).
+        var promptRoot = Node("Title prompt", menuLayer, new Vector2(300f, 22f));
+        titlePromptChip = Img("chip", promptRoot, Vector2.zero, CardColor);
+        titlePromptText = Txt("TAP TO START", promptRoot, "TAP TO START", bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(300f, 22f));
+        titlePrompt = MakeItem("TAP TO START", promptRoot);
 
         BuildSettingsCard();
     }
@@ -1074,12 +1128,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             titlePrompt.Shown = true;
             titlePrompt.Alpha.Restart(0f, 1f, Reduced ? .2f : .6f, Ease.InOutSine);
         }
-        if (titlePrompt.Shown && titlePrompt.Alpha.Done && !Reduced && !FrontRoomsSettings.ReduceFlashing)
-        {
-            // A slow breath (2.4 s) so the line reads as waiting, never blinking.
-            var breath = .775f + .225f * Mathf.Cos((now - titleShownAt - .6f) * Mathf.PI * 2f / 2.4f);
-            titlePrompt.Group.alpha = breath;
-        }
+        // Static once in: the corridor already moves. If a "waiting" signal ever returns, it is a hard on/off of a
+        // solid element (a block cursor, 0.6 s / 0.6 s, off under REDUCE FLASHING), never an alpha ramp on the words.
+        var caps = Caps(titlePromptText);
+        titlePromptChip.sprite = FrontRoomsTouchSprites.Solid();
+        titlePromptChip.rectTransform.anchoredPosition = new Vector2(caps.x, caps.y);
+        titlePromptChip.rectTransform.sizeDelta = new Vector2(caps.z + 14f, caps.w + 8f);
     }
 
     // ---------------------------------------------------------------- settings

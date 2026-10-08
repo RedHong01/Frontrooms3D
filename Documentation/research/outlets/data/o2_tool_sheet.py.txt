@@ -1,0 +1,43 @@
+"""Contact sheet of one asset's review renders: 0.30 m front / rake /
+oblique at 1:1 (true 1080p pixels), then the 1.5 m and 4 m crops scaled up
+with nearest-neighbour (x4 and x8) so their real pixel count stays visible.
+
+python sheet.py <review_dir> <NAME> <out.jpg>
+"""
+import os
+import sys
+
+from PIL import Image, ImageDraw
+
+d, name, out = sys.argv[1], sys.argv[2], sys.argv[3]
+
+
+def load(tag):
+    p = os.path.join(d, "%s_%s.png" % (name, tag))
+    return Image.open(p).convert("RGB") if os.path.exists(p) else None
+
+
+row1 = [load(t) for t in ("front030", "rake030", "obl030", "tilt030")]
+row2 = []
+for t, k in (("d150_lod0", 4), ("d150_lod1", 4), ("d400_lod1", 8), ("d400_lod2", 8)):
+    im = load(t)
+    if im is not None:
+        im = im.resize((im.width * k, im.height * k), Image.NEAREST)
+    row2.append(im)
+row1 = [i for i in row1 if i is not None]
+row2 = [i for i in row2 if i is not None]
+pad = 12
+W = max(sum(i.width for i in row1) + pad * (len(row1) + 1), sum(i.width for i in row2) + pad * (len(row2) + 1))
+H = max(i.height for i in row1) + max(i.height for i in row2) + pad * 3
+sheet = Image.new("RGB", (W, H), (24, 24, 24))
+x = pad
+for im in row1:
+    sheet.paste(im, (x, pad))
+    x += im.width + pad
+y = pad * 2 + max(i.height for i in row1)
+x = pad
+for im in row2:
+    sheet.paste(im, (x, y))
+    x += im.width + pad
+sheet.save(out, quality=88)
+print(out, sheet.size)

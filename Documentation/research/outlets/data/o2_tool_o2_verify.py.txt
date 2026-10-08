@@ -1,0 +1,205 @@
+"""O2 verification on the SHIPPED FBX files (scratchpad tool).
+
+Blender -b --factory-startup --python o2_verify.py -- <proj_root> <out.json>
+
+* per asset: triangles per slot, bounds (mm, plate frame), min h (nothing
+  behind the wall), fr_wear on every corner, custom normals, mesh names;
+* 6P plug test (§5.2 c): a 9.85 x 6.6 x 5.0 mm plug block in the cavity
+  does not touch the insert or cavity walls (BVH overlap, brass contact
+  wires excluded: they are springs); a 9.95 mm control block must touch;
+* cross-check of shared numbers against O3's helper (and O1's when present),
+  read-only.
+"""
+import json
+import math
+import os
+import sys
+
+import bpy
+import bmesh
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+PROJ, OUT = argv[0], argv[1]
+O1REF = argv[2] if len(argv) > 2 else None   # optional models dir with a fresh O1 Kit_OutletDuplex build
+KIT = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+sys.path.insert(0, KIT)
+sys.path.insert(0, os.path.join(KIT, "assets"))
+import kitlib  # noqa
+import outlet_plate_common as pc  # noqa
+
+M = os.path.join(PROJ, "Assets", "Resources", "Props", "Models")
+names = ["Kit_OutletBlank", "Kit_OutletToggle1", "Kit_OutletToggle2", "Kit_JackPhone", "Kit_JackData", "Kit_JackBNC", "Kit_JackPhone4Prong"]
+report = {"assets": {}}
+
+
+def load(name):
+    return load_from(M, name)
+
+
+def load_from(models, name):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(models, name + ".fbx"), axis_forward="-Z", axis_up="Y", bake_space_transform=True)
+    return [o for o in bpy.data.objects if o.type == "MESH"]
+
+
+for n in names:
+    objs = load(n)
+    info = {"objects": [o.name for o in objs]}
+    per_slot = {}
+    hmin, lo, hi = 1e9, [1e9] * 3, [-1e9] * 3
+    wear_ok, normals_ok = True, True
+    for o in objs:
+        me = o.data
+        mats = [m.name.split(".")[0] if m else "" for m in me.materials]
+        for p in me.polygons:
+            s = mats[p.material_index]
+            per_slot[s] = per_slot.get(s, 0) + len(p.vertices) - 2
+        for v in me.vertices:
+            w = o.matrix_world @ v.co
+            p = (w.x * 1000, -w.y * 1000, w.z * 1000)
+            hmin = min(hmin, p[1])
+            for k in range(3):
+                lo[k] = min(lo[k], p[k]); hi[k] = max(hi[k], p[k])
+        ca = me.color_attributes
+        wear_ok &= len(ca) > 0 and any(len(a.data) == len(me.loops) for a in ca)
+        normals_ok &= me.has_custom_normals
+    info.update({"trisPerSlot": per_slot, "tris": sum(per_slot.values()), "boundsMm": [lo, hi], "minH": hmin,
+                 "wearOnEveryCorner": wear_ok, "customNormals": normals_ok})
+    report["assets"][n] = info
+    print("[verify]", n, info["tris"], per_slot, "minH %.4f" % hmin, "wear", wear_ok, "normals", normals_ok)
+
+# ---------------------------------------------------------- 6P plug test
+objs = load("Kit_JackPhone")
+verts, polys = [], []
+for o in objs:
+    me = o.data
+    mats = [m.name.split(".")[0] if m else "" for m in me.materials]
+    base = len(verts)
+    verts.extend(o.matrix_world @ v.co for v in me.vertices)
+    for p in me.polygons:
+        if mats[p.material_index] == pc.BR:
+            continue
+        polys.append([base + i for i in p.vertices])
+jack_bvh = BVHTree.FromPolygons(verts, polys)
+hf = pc.crown(*pc.PLATE_1G)
+face_h = hf(0, 0) - pc.JACK_FACE_BEHIND
+zc = pc.JACK_CAVITY_TOP_Z - pc.JACK_CAVITY[1] / 2
+
+
+def plug(width, height=6.6, depth=5.0):
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bmesh.ops.scale(bm, vec=Vector((width, depth, height)) * 0.001, verts=bm.verts)
+    bmesh.ops.translate(bm, vec=Vector((0, -(face_h + 1.0 - depth / 2) * 0.001, zc * 0.001)), verts=bm.verts)
+    v = [x.co.copy() for x in bm.verts]
+    f = [[x.index for x in fc.verts] for fc in bm.faces]
+    bm.free()
+    return BVHTree.FromPolygons(v, f)
+
+
+hits_985 = len(jack_bvh.overlap(plug(pc.PLUG_6P_W)))
+hits_995 = len(jack_bvh.overlap(plug(9.95)))
+report["plug6P"] = {"plugW": pc.PLUG_6P_W, "plugH": 6.6, "depth": 5.0, "overlapsAt9_85": hits_985, "overlapsAt9_95_control": hits_995,
+                    "clearanceASide": (pc.JACK_CAVITY[0] - pc.PLUG_6P_W) / 2}
+print("[verify] 6P plug 9.85: %d overlaps; control 9.95: %d overlaps" % (hits_985, hits_995))
+
+# ---------------------------------------------------- shared-number cross-check
+cross = {}
+try:
+    import outlet_box_common as o3
+    pairs = [("SCREW_HEAD_D", pc.SCREW_HEAD_D, o3.SCREW_SEAT_D), ("SCREW_CROWN", pc.SCREW_CROWN, o3.SCREW_CROWN),
+             ("SCREW_SLOT_W", pc.SCREW_SLOT[0], o3.SCREW_SLOT_W), ("SCREW_SLOT_DEPTH", pc.SCREW_SLOT[1], o3.SCREW_SLOT_DEPTH),
+             ("CSK_D", pc.CSK_D, o3.CSK_D), ("CSK_ANGLE", pc.CSK_ANGLE, 2 * o3.CSK_HALF_ANGLE),
+             ("OPENING_ROUND", pc.OPENING_ROUND, o3.OPEN_EDGE_R), ("SLOT_CHAMFER", pc.SLOT_CHAMFER, o3.MOUTH_CHAMFER),
+             ("DEVICE_ROUND", pc.DEVICE_ROUND, o3.FACE_EDGE_R)]
+    cross["O3"] = {k: {"o2": a, "o3": b, "ok": abs(a - b) <= 0.05} for k, a, b in pairs}
+except Exception as e:  # noqa
+    cross["O3"] = "not importable: %s" % e
+o1p = os.path.join(KIT, "assets", "outlet_common.py")
+cross["O1"] = "present" if os.path.exists(o1p) else "outlet_common.py not on disk at %s" % __import__("time").strftime("%H:%M")
+if os.path.exists(o1p):
+    try:
+        import outlet_common as o1
+        pairs = [("PLATE_1G", pc.PLATE_1G, (o1.PLATE_W, o1.PLATE_H)), ("CORNER_R", pc.CORNER_R, o1.CORNER_R),
+                 ("CORNER_SEGS", pc.CORNER_SEGS, o1.CORNER_SEGS), ("PROFILE", pc.PROFILE, o1.PROFILE),
+                 ("FIELD_CROWN_H", pc.FIELD_CROWN_H, o1.FIELD_CROWN), ("BACK_RIM_W", pc.BACK_RIM_W, o1.BACK_RIM),
+                 ("CAVITY_H", pc.CAVITY_H, o1.CAVITY_H), ("CSK_D", pc.CSK_D, o1.CSK_D), ("CSK_ANGLE", pc.CSK_ANGLE, o1.CSK_ANGLE),
+                 ("SCREW_HEAD_D", pc.SCREW_HEAD_D, o1.SEAT_D), ("SCREW_CROWN", pc.SCREW_CROWN, o1.SCREW_CROWN),
+                 ("SCREW_SLOT", pc.SCREW_SLOT, o1.SCREW_SLOT), ("OPENING_ROUND", pc.OPENING_ROUND, o1.OPEN_ROUND),
+                 ("OPENING_ROUND_SEGS", pc.OPENING_ROUND_SEGS, o1.OPEN_ROUND_SEGS), ("SLOT_CHAMFER", pc.SLOT_CHAMFER, o1.SLOT_CHAMFER),
+                 ("DEVICE_ROUND", pc.DEVICE_ROUND, o1.FACE_ROUND), ("SEAT_DROP", pc.SEAT_DROP, o1.SEAT_DROP),
+                 ("BORE_D", pc.BORE_D, o1.BORE_D), ("R_FLOOR", pc.R_FLOOR, o1.R_FLOOR),
+                 ("PROUD_PLATE", pc.PROUD_PLATE, o1.PROUD_LIMIT), ("LOD_DISTANCES", pc.LOD_DISTANCES, o1.LOD_DISTANCES)]
+        res = {k: {"o2": a, "o1": b, "ok": pc._close(a, b, 0.05)} for k, a, b in pairs}
+        cross["O1"] = res or "no matching constant names"
+    except Exception as e:  # noqa
+        cross["O1"] = "present but not importable: %s" % e
+report["crossCheck"] = cross
+
+# ------------------------------------- O1 vs O2 plate surface (ray scan)
+# Front rays (+Y) at scan lines that are plain plate on both kits: z = 0
+# from x = 4 to the edge (O1's duplex has only its centre screw there),
+# x = +-25 over the full height (clear of every opening and screw on both),
+# and the four corner diagonals. Hit height h (mm) must agree to 0.05 mm;
+# a miss on one kit and a hit on the other is an outline mismatch.
+def bvh_of(name, slots=None, models=None):
+    objs = load(name) if models is None else load_from(models, name)
+    vv, pp = [], []
+    for o in objs:
+        me = o.data
+        mats = [m.name.split(".")[0] if m else "" for m in me.materials]
+        base = len(vv)
+        vv.extend(o.matrix_world @ v.co for v in me.vertices)
+        for p in me.polygons:
+            if slots is None or mats[p.material_index] in slots:
+                pp.append([base + i for i in p.vertices])
+    return BVHTree.FromPolygons(vv, pp)
+
+
+def scan(bvh, pts):
+    out = []
+    for x, z in pts:
+        hit = bvh.ray_cast(Vector((x / 1000, -0.05, z / 1000)), Vector((0, 1, 0)), 0.06)
+        out.append(None if hit[0] is None else -hit[0].y * 1000)
+    return out
+
+
+lines = {"z0": [(4.0 + 0.05 * i, 0.0) for i in range(int((34.95 - 4.0) / 0.05) + 1)],
+         "x+25": [(25.0, -57.2 + 0.1 * i) for i in range(1145)],
+         "x-25": [(-25.0, -57.2 + 0.1 * i) for i in range(1145)]}
+for sx in (1, -1):
+    for sz in (1, -1):
+        cx, cz = sx * (34.9 - 2.0), sz * (57.15 - 2.0)
+        lines["corner%+d%+d" % (sx, sz)] = [(cx + sx * 0.02 * i * 0.7071, cz + sz * 0.02 * i * 0.7071) for i in range(0, 260)]
+o1_name = "Kit_OutletDuplex"
+plate_scan = {}
+REFM = O1REF if O1REF and os.path.exists(os.path.join(O1REF, o1_name + ".fbx")) else M
+report["plateRefModels"] = REFM
+if os.path.exists(os.path.join(REFM, o1_name + ".fbx")):
+    ref = bvh_of(o1_name, {pc.TI}, REFM)
+    ref_h = {k: scan(ref, v) for k, v in lines.items()}
+    for n in ("Kit_OutletBlank", "Kit_OutletToggle1", "Kit_JackPhone", "Kit_JackData", "Kit_JackBNC"):
+        b = bvh_of(n, {pc.TI})
+        worst, mism, nhit = 0.0, 0, 0
+        for k, v in lines.items():
+            x_min = {"Kit_OutletToggle1": 5.8, "Kit_JackPhone": 7.6, "Kit_JackData": 18.5}.get(n, 4.0)
+            if k == "z0":
+                v = [p for p in v if p[0] > x_min]   # past this kit's opening / flange
+            hh = scan(b, v)
+            rr = scan(ref, v) if len(v) != len(lines[k]) else ref_h[k]
+            for a, c in zip(hh, rr):
+                if (a is None) != (c is None):
+                    mism += 1
+                elif a is not None:
+                    nhit += 1
+                    worst = max(worst, abs(a - c))
+        plate_scan[n] = {"vs": o1_name, "rays": nhit, "maxDiffMm": round(worst, 4), "outlineMismatches": mism,
+                         "ok": worst <= 0.05 and mism <= 2}
+        print("[verify] plate vs O1 %s: %s" % (n, plate_scan[n]))
+else:
+    plate_scan = "O1 %s.fbx not in the clone" % o1_name
+report["plateVsO1"] = plate_scan
+print("[verify] cross", json.dumps(cross, default=str))
+json.dump(report, open(OUT, "w"), indent=1, default=str)

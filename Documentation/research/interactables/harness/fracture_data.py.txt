@@ -1,0 +1,171 @@
+"""Stand-in fracture layouts for the interactables render harness (proj_int only).
+
+Uses the glass-destruction track's own crack-graph prototype
+(Documentation/research/glass/destruction/04_proto/web_proto_crack_graph.py:
+build_web + finalize) on the window kit's 6 mm slab (1.391 x 1.642, 10_spec §5.4),
+with the tooth cut kept inside the approved tooth band (jambs |X| >= 0.600,
+head Y >= 1.900, sill Y <= 0.390 in window-root space). Writes JSON the Unity
+harness reads: web edges (cracks), pieces (shard / tooth / crush), a mid-air
+layout at t = 0.22 s after the shatter and a floor layout after the pieces broke
+again. NOT the glass track's fracture set: a labelled stand-in for renders.
+"""
+import json, math, random, sys, os
+
+PROTO = sys.argv[1]
+OUT = sys.argv[2]
+src = open(PROTO).read()
+src = src[: src.rstrip().rfind("main()")]          # drop the bpy main() call
+g = {"__name__": "proto"}
+exec(compile(src, PROTO, "exec"), g)
+g["PANE_W"], g["PANE_H"] = 1.391, 1.642            # the visible slab, not the 1.4 x 1.65 collider
+HW, HH = 1.391 / 2, 1.642 / 2
+CY = 1.175                                        # slab centre height (window root)
+BAND = {"r": ("x>=", 0.600), "l": ("x<=", -0.600), "t": ("y>=", 1.900 - CY), "b": ("y<=", 0.390 - CY)}
+MAXD = {"r": 0.088, "l": 0.088, "t": 0.088, "b": 0.032}
+clip, area, centroid, clip_rect = g["clip"], g["area"], g["centroid"], g["clip_rect"]
+
+
+def half(poly, rule):
+    op, v = rule
+    if op == "x>=": return clip(poly, -1, 0, -v)
+    if op == "x<=": return clip(poly, 1, 0, v)
+    if op == "y>=": return clip(poly, 0, -1, -v)
+    return clip(poly, 0, 1, v)
+
+
+def other(rule):
+    op, v = rule
+    return ({"x>=": "x<=", "x<=": "x>=", "y>=": "y<=", "y<=": "y>="}[op], v)
+
+
+def finalize_band(pieces, rng):
+    out = []
+    for p in pieces:
+        poly = clip_rect(p["poly"], HW, HH)
+        if len(poly) < 3 or abs(area(poly)) < 2e-6: continue
+        if area(poly) < 0: poly.reverse()
+        kind = "crush" if p["band"] == 0 else "shard"
+        sides = {"r": 0.0, "l": 0.0, "t": 0.0, "b": 0.0}
+        for i in range(len(poly)):
+            (x0, y0), (x1, y1) = poly[i], poly[(i + 1) % len(poly)]
+            L = math.hypot(x1 - x0, y1 - y0)
+            if abs(x0 - HW) < 1e-6 and abs(x1 - HW) < 1e-6: sides["r"] += L
+            if abs(x0 + HW) < 1e-6 and abs(x1 + HW) < 1e-6: sides["l"] += L
+            if abs(y0 - HH) < 1e-6 and abs(y1 - HH) < 1e-6: sides["t"] += L
+            if abs(y0 + HH) < 1e-6 and abs(y1 + HH) < 1e-6: sides["b"] += L
+        side = max(sides, key=sides.get)
+        if kind == "crush" or sides[side] < 0.01:
+            out.append({"poly": poly, "kind": kind, "band": p["band"]}); continue
+        d = rng.uniform(0.025, MAXD[side])
+        tilt = math.radians(rng.uniform(-20, 20))
+        n = {"r": (1, 0), "l": (-1, 0), "t": (0, 1), "b": (0, -1)}[side]
+        nx = n[0] * math.cos(tilt) - n[1] * math.sin(tilt)
+        ny = n[0] * math.sin(tilt) + n[1] * math.cos(tilt)
+        cx, cy = centroid(poly)
+        px = (HW - d) * n[0] if n[0] else cx
+        py = (HH - d) * n[1] if n[1] else cy
+        c = nx * px + ny * py
+        inner = clip(poly, nx, ny, c)
+        outer = clip(poly, -nx, -ny, -c)
+        if len(inner) >= 3 and abs(area(inner)) > 2e-5:
+            out.append({"poly": inner, "kind": "shard", "band": p["band"]})
+        if len(outer) >= 3 and abs(area(outer)) > 2e-6:
+            tooth = half(outer, BAND[side])
+            rest = half(outer, other(BAND[side]))
+            if len(tooth) >= 3 and abs(area(tooth)) > 2e-6:
+                out.append({"poly": tooth, "kind": "tooth", "band": p["band"], "side": side})
+            if len(rest) >= 3 and abs(area(rest)) > 2e-6:
+                out.append({"poly": rest, "kind": "shard", "band": p["band"]})
+    for q in out:
+        if area(q["poly"]) < 0: q["poly"].reverse()
+    return out
+
+
+def split(poly, rng, n):
+    """Break a piece again on landing: n random chords through near-centroid points."""
+    parts = [poly]
+    for _ in range(n):
+        new = []
+        for p in parts:
+            if abs(area(p)) < 6e-4: new.append(p); continue
+            cx, cy = centroid(p)
+            a = rng.uniform(0, math.pi)
+            nx, ny = math.cos(a), math.sin(a)
+            c = nx * (cx + rng.uniform(-.01, .01)) + ny * (cy + rng.uniform(-.01, .01))
+            A, B = clip(p, nx, ny, c), clip(p, -nx, -ny, -c)
+            if len(A) >= 3 and len(B) >= 3 and abs(area(A)) > 3e-6 and abs(area(B)) > 3e-6: new += [A, B]
+            else: new.append(p)
+        parts = new
+    return parts
+
+
+def layout(name, seed, impact_uv, radials):
+    rng = random.Random(seed)
+    web, impact, rings, tracks = g["build_web"](seed, impact_uv, radials=radials)
+    # crack edges: the web as the pane shows it before anything falls (clipped to the slab)
+    edges = []
+    for p in web:
+        poly = clip_rect(p["poly"], HW, HH)
+        for i in range(len(poly)):
+            a, b = poly[i], poly[(i + 1) % len(poly)]
+            on_edge = (abs(abs(a[0]) - HW) < 1e-6 and abs(abs(b[0]) - HW) < 1e-6) or (abs(abs(a[1]) - HH) < 1e-6 and abs(abs(b[1]) - HH) < 1e-6)
+            if not on_edge and math.hypot(b[0] - a[0], b[1] - a[1]) > 1e-4:
+                edges.append([round(a[0], 5), round(a[1], 5), round(b[0], 5), round(b[1], 5)])
+    pieces = finalize_band(web, random.Random(seed + 1))
+    ix, iy = impact
+    out_pieces = []
+    t = 0.22
+    for k, p in enumerate(pieces):
+        cx, cy = centroid(p["poly"])
+        local = [[round(x - cx, 5), round(y - cy, 5)] for x, y in p["poly"]]
+        q = {"kind": p["kind"], "cx": round(cx, 5), "cy": round(cy, 5), "poly": local, "area": round(abs(area(p["poly"])), 6)}
+        if p["kind"] != "tooth":
+            r = math.hypot(cx - ix, cy - iy)
+            w = math.exp(-r / 0.35)
+            speed = 0.9 + 2.6 * w
+            # strike from face A (+Z) toward -Z (the far side), slight outward spread from the impact
+            dirx, diry = (cx - ix), (cy - iy)
+            L = max(1e-6, math.hypot(dirx, diry))
+            vx = 0.55 * speed * dirx / L * (0.3 + w) + rng.gauss(0, 0.08)
+            vy = 0.25 * speed * diry / L * (0.3 + w) + rng.gauss(0, 0.05)
+            vz = -speed * rng.uniform(0.8, 1.2)
+            q["air"] = {"dx": round(vx * t, 4), "dy": round(vy * t - 0.5 * 9.81 * t * t, 4), "dz": round(vz * t, 4),
+                        "rx": round(rng.uniform(-1, 1) * (40 + 160 * w), 2), "ry": round(rng.uniform(-1, 1) * (30 + 120 * w), 2), "rz": round(rng.uniform(-1, 1) * (30 + 160 * w), 2)}
+            # on the floor: broken again into 1-4 pieces, 2/3 on the far side (-Z)
+            n = 0 if q["area"] < 4e-4 else (1 if q["area"] < 4e-3 else (2 if q["area"] < 2e-2 else 3))
+            sub = split(p["poly"], rng, n)
+            q["floor"] = []
+            far = rng.random() < 0.68
+            # a piece lands where its own trajectory takes it, then skids
+            land_x = cx + rng.gauss(0, 0.18) + vx * 0.25
+            land_z = (-rng.uniform(0.15, 1.35) * (0.6 + w)) if far else rng.uniform(0.08, 0.55)
+            for sp in sub:
+                sx, sy = centroid(sp)
+                ql = [[round(x - sx, 5), round(y - sy, 5)] for x, y in sp]
+                q["floor"].append({"poly": ql, "x": round(max(-1.0, min(1.0, land_x + (sx - cx) * 0.6 + rng.gauss(0, 0.07))), 4),
+                                   "z": round(land_z + rng.gauss(0, 0.09), 4), "yaw": round(rng.uniform(0, 360), 1),
+                                   "tilt": round(rng.uniform(0, 5), 2), "flip": rng.random() < 0.5})
+        out_pieces.append(q)
+    # glitter: small chips from every break, mostly near the wall line
+    glitter = []
+    for i in range(220):
+        far = rng.random() < 0.66
+        s = rng.uniform(0.004, 0.018)
+        m = rng.randint(3, 5)
+        poly = [[round(s * math.cos(2 * math.pi * j / m + rng.uniform(-.4, .4)) * rng.uniform(.5, 1), 5),
+                 round(s * math.sin(2 * math.pi * j / m + rng.uniform(-.4, .4)) * rng.uniform(.5, 1), 5)] for j in range(m)]
+        glitter.append({"poly": poly, "x": round(rng.gauss(ix * .5, 0.45), 4), "z": round((-abs(rng.gauss(0.25, 0.55))) if far else abs(rng.gauss(0.12, 0.25)), 4),
+                        "yaw": round(rng.uniform(0, 360), 1)})
+    stats = {k: sum(1 for p in out_pieces if p["kind"] == k) for k in ("shard", "tooth", "crush")}
+    data = {"name": name, "seed": seed, "impactUV": impact_uv, "impact": [round(ix, 4), round(iy, 4)], "slab": [1.391, 1.642, 0.006], "centreY": CY,
+            "edges": edges, "pieces": out_pieces, "glitter": glitter, "stats": stats,
+            "source": "Documentation/research/glass/destruction/04_proto/web_proto_crack_graph.py build_web+finalize (tooth cut clipped to the tooth band)"}
+    json.dump(data, open(os.path.join(OUT, name + ".json"), "w"))
+    print(name, stats, "edges", len(edges))
+
+
+os.makedirs(OUT, exist_ok=True)
+layout("fracture_eye_centre", 1001, (0.50, 0.70), 10)
+layout("fracture_eye_left", 2002, (0.27, 0.66), 9)
+layout("fracture_low_right", 3003, (0.72, 0.42), 11)
+layout("fracture_eye_centre_b", 4004, (0.52, 0.72), 12)

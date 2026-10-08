@@ -1,7 +1,7 @@
 # 平面视觉 (graphic visual) — work list
 
 Owner: 平面视觉 chat. This is separate from 游戏视觉's `VISUAL_CHAT_TASKS.md`. Read it on resume and update status here.
-Last update: 2026-10-07. The usage limit was reached mid-task; items 1–3 are open.
+Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
 
 ## 1. In-game wallpaper cue: IN PROGRESS
 Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有系统设计协作构思这个逻辑在游戏里什么时候启用，以及给我一个游戏内渲染的预览效果视频"
@@ -13,10 +13,22 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 
 **Demos:** `Tools/print/ink/art_from_graphic/cue_states/v2_motion/`. Scripts are `motion_demo.py`, `tiling_demo.py` and `tiling_staggered.py`.
 
-**Preview path (needs no shader change):**
-- `_FR_Print` is a Texture2DArray RG flipbook, encoded with hard_edge `encode_table` at 1024×1536 per roll.
-- `_FR_PrintClock`: x = frame, y = number of slices, z = per-roll phase, w = live mix.
-- Snap look: each state gets 4 slices and x advances fast.
+**Status 2026-10-07 evening: the flipbook is built and the in-game render is running.**
+
+**Flipbook:**
+- Built by `Tools/print/ink/art_from_graphic/cue_states/cue_flipbook.py` into `.../cue_states/flipbook/`: 17 encoded 2048² slices, C00–C16.
+- C00 is bit-identical to Q1b's K00.
+- C01–C08 turn and step toward +u; C09–C16 do the same toward −u.
+- V1 stepping: the upper chevrons tick 125 mm per click; the lower chevrons hop 375 mm on clicks 2 and 5. One loop is 6 clicks = 750 mm.
+- Previews: `flipbook_states.png` and `flipbook_timing.mp4`.
+
+**Clone:** `~/FrontRoomsVisualWork/proj_pgcue`.
+- Its `FrontRoomsSurface.shader` carries a prototype `CueInk`: a per-cell 2-slice crossfade read from `_FR_WayCells` (RGBA8 64×64: R from, G to, B fade, A dir + 4·msg), with `_FR_WayOrigin` and `_FR_Cue`, sharing `sampler_FR_Print`. The FaceSign picks the +u or −u set.
+- Its `_PrintTex` is Q1b's K00.
+- The harness is `Assets/Editor/CuePreview/FrontRoomsCuePreviewCapture.cs`. It runs a simulated order: Warn bursts → stage-1 turn → chase wave at 8 m/s with lamp Dips → search retract.
+- Frames go to `Verification/cue_preview/{A,B}`.
+
+**Design choice:** the CPU writes per-cell state, so all timing rules (系统设计) stay in C# and the shader stays a two-slice player.
 
 **系统设计 rules (RELAY_PURSUIT_REDESIGN v2):**
 - Stage 1: arrows turn only. FLOW route only. Only the player's room set, never the Relay's room or within 2 cells of it.
@@ -34,37 +46,64 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 - Nothing gets built until Red and all three chats agree.
 
 **Next:**
-1. Write the flipbook generator (encoded RG slices).
-2. Make a clone per `~/FrontRoomsVisualWork/TOOLS.md`. Never run Unity on Red's project.
-3. Build a play-mode harness from the room_visuals capture: seed 4242, Relay dormant, simulated order (lamp flicker → turn → step). Render 1920×1080 frames to MP4 for Red.
-4. Send the driver interface and event list to 系统设计 and 关卡设计.
-5. Send the shader snap flag and the per-cell texture read to 游戏视觉, who owns FrontRoomsSurface.
+1. ~~Write the flipbook generator.~~ Done.
+2. ~~Make the clone.~~ Done.
+3. Render the harness (running), then build the MP4 for Red: pass A down the corridor, pass B oblique along a wall.
+4. Send the driver interface and event list to 系统设计 and 关卡设计. Base it on 关卡设计's `_FR_WayCells` proposal, but with per-cell from/to/fade written by the CPU. Answered in principle on 2026-10-07.
+5. Send the `CueInk` prototype to 游戏视觉 as the shader spec. They land the shader once Red and all four chats agree.
 
-## 2. Wallpaper = hard-edge only: NEW, not started
+## 2. Wallpaper = hard-edge only: ROUTED to 游戏视觉 Q1b (lands tonight per 游戏视觉)
 Red, 2026-10-07: "当前游戏的墙纸纹理完全以hardedge 为主，不要当前有纹理干的stroke了"
 
-Goal: drop the textured dry-brush stroke layer from the in-game wallpaper and keep the flat hard-edge bands (WP03 hard_edge geometry and palette).
+**Found:** the "dry stroke" is the OLD chevron print in main's `_PrintTex`, `Assets/Resources/Surfaces/Textures/Wallpaper_Print_P.png` (2048×3072, 10-03). Its ragged ikat edges are the stroke. The paper M/N/S maps are not the cause.
 
-Steps:
-1. Find where the stroke lives: albedo, normal or print slices. See also the "ink baked into N/S" note in `research/wallpaper_motion`.
-2. Find out who owns the texture: 游戏视觉 (kit/shader) or my print tools.
-3. Regenerate in a clone and render before/after.
-4. Red approves before anything goes to main.
+**Fix = 游戏视觉's Q1b:**
+- the 2048² hard-edge K00 goes into `_PrintTex` with the GUID unchanged;
+- plus the `Resources/Print/FR_Print_HardEdge` array;
+- desktop BC5, WebGL R8G8 1024.
+- Build and verify passed on 10-04; the package was lost in the 10-05 reboot. 游戏视觉 resumed `cont-q1-live-print` on 10-07 and put it first in their merge queue.
 
-## 3. TV / computer screen-ad pipeline: NEW, intake only
-Red, 2026-10-07: an earlier chat started a TV/computer ad task so the in-game screens actually show content. Red wants it on this list: analyse it, revise it, and connect it to the game's whole visual system.
+**My part, done:**
+- At 游戏视觉's request, the staged importer `Tools/print/unity_staging/.../FrontRoomsPrintImporter.cs` now skips print sheets: `FrontRoomsPrintArray.IsPrintSheet`, which arrives with Q1b. Promote it only after Q1b.
+- I noted the change in `Tools/print/README.md` and told the wallpaper/narrative chat, which owns that folder.
 
-**Status:** the survey was stopped before it reported. Its last note says the screen-ad files are in git commits.
+**Check after it lands:** a before/after frame of Level 0 for Red.
 
-**Re-run the survey for:**
-- task definitions and existing media and tools;
-- which props have screens and how those screens are set up today;
-- the owning chat and its status;
-- constraints: era ≤1993; period ads are research only and must not ship; WebGL is its own tier; desktop is the high-spec reference.
+## 3. TV / computer screens: ANALYSED, plan written
+Red, 2026-10-07: "之前chat开始做了一个电脑/电视机广告的task…把它接入到游戏中一整套视觉系统里"
 
-**Then:**
-- revise into the house system: type through 平面视觉 rules, palette, CRT treatment;
-- plan integration with 游戏视觉 (materials) and 关卡设计 (placement).
+**Analysis and plan:** `Documentation/SCREENS_VISUAL_SYSTEM.md`.
+- **Fixes required:**
+  - P1: the real LEVITZ trademark on card 1.
+  - P2: macOS Arial and Courier type, overflow, illegible secondary lines.
+  - P3: no CRT layer.
+  - P4: every set is on, on one channel.
+  - P5: Codex audit F6, `Shader.Find` fails in player builds.
+  - P6: anchors hard-coded to `Kit_CRTMonitor`.
+- **System:** three layers per screen, from the research finding "agency spot + station CG":
+  - programme (agency type);
+  - station (CG face, ID, stand-by and emergency slates, 4:3 safe areas);
+  - tube (shader by 游戏视觉).
+- **Warning language:** the screens join it with the same events and timing as the wallpaper cue: interference at Warn, emergency slate on the chase wave, roll back on Search. This is a proposal for Red.
+
+**Next:**
+1. Figma style frames (editable layers).
+2. `Tools/screens/` generator: the four v0 cards rebuilt in the system, with a fictional brand from the narrative chat and Period1990 faces.
+3. A tube look test in a clone.
+
+**Owners:**
+- strings: narrative chat;
+- tube shader, F6 fix and kit anchors: 游戏视觉;
+- events: 系统设计 / 关卡设计.
+
+## 3b. Touch type review (touch chat, 2026-10-07): DONE
+- Approved:
+  - solid ink for the pause meta line and the caught labels;
+  - an opaque settings card;
+  - the stick SPRINT/WINDED label on a solid ink chip, #0E0E0D, 4/7 pt padding, no shadow. Audit passed: 14.3 : 1 and 17.2 : 1.
+- **USE disc:** solid whenever it carries a verb; CONTROLS OPACITY scales only text-free ghosts.
+- **TAP TO START:** static on the chip; the alpha breathing was dropped.
+- **Rule:** no translucent ink or surfaces in in-game UI, because Unity blends UI alpha in linear light.
 
 ## 4. HUD KEY FINAL re-sync: queued
 Waiting on 游戏视觉 FINAL (`03_figma.md` §0). Tools are in `Tools/figma/hud_key/`.

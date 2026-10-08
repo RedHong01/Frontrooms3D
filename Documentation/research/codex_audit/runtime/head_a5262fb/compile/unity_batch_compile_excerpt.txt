@@ -1,0 +1,11 @@
+Unity batch compile of W/proj_cx = main a5262fb + Red's working tree (synced 2026-10-07 18:22), -buildTarget OSXUniversal -nographics -quit
+358:[BUSY       9s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+359:[BUSY      19s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+360:[627/635   20s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp.dll (+2 others)
+361:[BUSY       6s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+363:[BUSY      17s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+371:[BUSY      25s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+372:[631/635   31s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+513:		CompileScripts: 62026.655ms
+569:Exiting batchmode successfully now!
+warning CS lines: 0 · error CS lines: 0

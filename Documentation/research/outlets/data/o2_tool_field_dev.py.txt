@@ -1,0 +1,44 @@
+"""Field normal deviation on exported kit FBX files (2026-10-07, O2).
+For every plate-field corner (TI faces whose corners all lie inside the field
+rectangle and on the crown height within 0.003 mm) compare the shading normal
+with the analytic crown normal. -- <models_dir> <name> [<name> ...]"""
+import bpy, sys, os, math, json
+from mathutils import Vector
+a = sys.argv[sys.argv.index("--") + 1:]
+M, names = a[0], a[1:]
+INSET, EDGE_H, CROWN_H = 4.0, 5.50, 5.60
+for n in names:
+    side = json.load(open(os.path.join(M, n + ".json")))
+    o_ = side.get("outlet", {})
+    W, H = o_.get("plateW"), o_.get("plateH")
+    W = W * 1000 if W and W < 1 else W
+    H = H * 1000 if H and H < 1 else H
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(M, n + ".fbx"), axis_forward="-Z", axis_up="Y", bake_space_transform=True)
+    fx, fz = W / 2 - INSET, H / 2 - INSET
+    C = CROWN_H - EDGE_H
+    hf = lambda x, z: EDGE_H + C * max(0, 1 - (x / fx) ** 2) * max(0, 1 - (z / fz) ** 2)
+    devs, nc = [], 0
+    for o in [o for o in bpy.data.objects if o.type == "MESH"]:
+        me = o.data
+        mats = [m.name.split(".")[0] if m else "" for m in me.materials]
+        mw = o.matrix_world; rot = mw.to_3x3()
+        cn = me.corner_normals
+        P = [(mw @ v.co) * 1000 for v in me.vertices]
+        on = [abs(p.x) <= fx + 1e-3 and abs(p.z) <= fz + 1e-3 and abs(-p.y - hf(p.x, p.z)) < 0.003 for p in P]
+        for p in me.polygons:
+            if mats[p.material_index] != "Prop_ThermosetIvory" or not all(on[v] for v in p.vertices):
+                continue
+            for li in p.loop_indices:
+                v = me.loops[li].vertex_index
+                x, z = P[v].x, P[v].z
+                u, w = x / fx, z / fz
+                gx = C * (-2 * u / fx) * max(0, 1 - w * w)
+                gz = C * (-2 * w / fz) * max(0, 1 - u * u)
+                nb = Vector((-gx, -1.0, -gz)).normalized()
+                nv = (rot @ cn[li].vector).normalized()
+                devs.append(math.degrees(nv.angle(nb, 0.0)))
+    devs.sort()
+    q = lambda f: devs[min(len(devs) - 1, int(f * len(devs)))] if devs else float("nan")
+    print("[fd] %-20s plate %.1f x %.1f  field corners %5d  deviation from crown normal deg: p50 %.3f p90 %.3f p99 %.3f max %.3f  >1deg %d" % (
+        n, W, H, len(devs), q(.5), q(.9), q(.99), devs[-1] if devs else float("nan"), sum(1 for d in devs if d > 1.0)))

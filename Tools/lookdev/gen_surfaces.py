@@ -141,7 +141,9 @@ PRINT_FIT = (("lobby", LOBBY_PALETTE, 2.0), ("cold", COLD_PALETTE, 1.0))
 # Optional frame 0 from the print tools (Tools/print/patterns/out/<chosen>/K00.png, RGBA:
 # R raw density, G raw cream, B phosphor, A unused). Set it to replace the CC0-derived frame.
 # Both sources go through the same print_encode(), so nothing else changes (the paper does
-# not depend on the print).
+# not depend on the print). Since Q1b the game's print does NOT come from here: the print
+# tools deliver ENCODED 2048 x 2048 slices and Unity's Build Print Array writes _PrintTex and
+# the _FR_Print array from them (Assets/Editor/Rendering/FrontRoomsPrintArray.cs).
 PRINT_FILE = os.environ.get("FR_PRINT_K00")
 # PRINT ENCODING (binding, shared with the print tools): a print texel's R and G are the
 # parameters of the SHADER's ramp, which runs in LINEAR light:
@@ -495,8 +497,14 @@ def wallpaper_paper(name="Wallpaper_Paper"):
     save_rgba(f"{OUT}/{name}_S.png", mask(smooth, np.broadcast_to(cav, smooth.shape)))
 
 
-def wallpaper_print(name="Wallpaper_Print_P"):
-    """Static frame 0 (_PrintTex): linear RGB, R density, G cream, B phosphor (reserved, 0)."""
+def wallpaper_print(name="Wallpaper_Print_CC0_P"):
+    """The CC0 chevron frame 0 that P0 shipped as _PrintTex (2048 x 3072): linear RGB, R density,
+    G cream, B phosphor (reserved, 0). Since Q1b (2026-10-03) the production _PrintTex
+    (Resources/Surfaces/Textures/Wallpaper_Print_P.png) is the Hard edge K00 at 2048 x 2048,
+    written by Unity's FrontRooms > Rendering > Build Print Array from the print tools' encoded
+    slices; this generator must never write Wallpaper_Print_P again. This target only rebuilds
+    the CC0 frame for the P0 T1 test and the before/after captures:
+    <outdir> = Assets/Editor/Rendering/PrintP0/Ref."""
     d, c, ph = print_maps()
     save_rgb(f"{OUT}/{name}.png", np.stack([d, c, ph], -1))
 
@@ -774,16 +782,17 @@ def macro():
 
 
 # The default run: every texture a material uses (written to <outdir>, i.e. Resources).
-ALL = dict(wallpaper_paper=wallpaper_paper, wallpaper_print=wallpaper_print,
+ALL = dict(wallpaper_paper=wallpaper_paper,
            carpet=carpet, ceiling=ceiling, lens=lens,
            office_carpet=office_carpet, drywall=drywall, office_ceiling=office_ceiling, louver=louver, fabric=fabric,
            vct=vct, hospital_wall=hospital_wall, exit_sign=exit_sign, veneer=veneer, metal=painted_metal, macro=macro)
 # Run only when named. The legacy one-layer wallpapers and the T1 keep_hue = 0 references feed
 # the P0 parity test (FrontRoomsPrintP0Test); no material uses them, so write them OUTSIDE
-# Resources: <outdir> = Assets/Editor/Rendering/PrintP0/Ref. print_encode_lut writes
-# print_encode_lut.json next to this file (for the print tools).
+# Resources: <outdir> = Assets/Editor/Rendering/PrintP0/Ref. So does wallpaper_print (the CC0
+# frame 0, Wallpaper_Print_CC0_P; the production print comes from Build Print Array since Q1b).
+# print_encode_lut writes print_encode_lut.json next to this file (for the print tools).
 EXTRA = dict(wallpaper=wallpaper, wallpaper_cold=wallpaper_cold, wallpaper_t1_reference=wallpaper_t1_reference,
-             print_encode_lut=print_encode_lut_json)
+             wallpaper_print=wallpaper_print, print_encode_lut=print_encode_lut_json)
 
 if __name__ == "__main__":
     for name in (sys.argv[3:] or ALL.keys()):

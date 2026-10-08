@@ -33,17 +33,23 @@ using UnityEngine.Rendering.Universal;
 /// the run creates is destroyed and the print globals are unbound when it ends.
 /// Writes PNGs and print_p0.json to Verification/print_p0. Nothing is saved to a scene.
 /// Batch: -executeMethod FrontRoomsPrintP0Test.RunBatch (needs graphics).
+/// Since Q1b the production _PrintTex is the Hard edge K00 (2048 x 2048), so T1 and the raking
+/// sheet use the CC0 frame 0 they were defined with (CC0Print in RefDir, R8G8 as in P0). The
+/// Q1b gates (BC5, static vs live, seams, captures) are in FrontRoomsPrintQ1bTest.cs.
 /// </summary>
-public static class FrontRoomsPrintP0Test
+public static partial class FrontRoomsPrintP0Test
 {
     const int W = 1920, H = 1080;
     const string TexDir = "Assets/Resources/Surfaces/Textures/";
     internal const string RefDir = "Assets/Editor/Rendering/PrintP0/Ref/";
+    // The CC0 chevron frame 0 that P0 shipped (2048 x 3072), kept for T1 and before/after frames.
+    internal const string CC0Print = "Wallpaper_Print_CC0_P";
     static readonly Vector3 RoomOrigin = Vector3.zero;
     static readonly Vector3 CorridorOrigin = new Vector3(-30f, 0f, 0f);
     static readonly Vector3 WallCentre = new Vector3(40f, 1.45f, 0f);   // test wall for raking + T2, front face at z = -0.08
 
-    static string OutDir => Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "print_p0");
+    static string outSub = "print_p0";
+    static string OutDir => Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", outSub);
     static readonly int ClockId = Shader.PropertyToID("_FR_PrintClock");
     static readonly int PrintId = Shader.PropertyToID("_FR_Print");
     static readonly int DebugViewId = Shader.PropertyToID("_FR_DebugView");
@@ -277,7 +283,7 @@ public static class FrontRoomsPrintP0Test
     {
         var m = Clone(production, name);
         m.SetTexture("_BaseMap", LoadTex("Wallpaper_Paper_M"));
-        m.SetTexture("_PrintTex", LoadTex("Wallpaper_Print_P"));
+        m.SetTexture("_PrintTex", LoadRef(CC0Print));   // the frame the keep_hue = 0 reference was made from
         m.SetTexture("_BumpMap", LoadRef(ns + "_N"));
         m.SetTexture("_MaskMap", LoadRef(ns + "_S"));
         return m;
@@ -364,8 +370,39 @@ public static class FrontRoomsPrintP0Test
     }
 
     // -------------------------------------------------------------- main
-    static void RunInternal()
+    static void RunInternal() => WithRig("print_p0", (root, json, report, urp) =>
     {
+        json.Append("{\n");
+        var t1Pass = RunT1(root, json, report);
+        var (corridorFogOn, corridorFogOff) = RunT1Corridor(root, json, report);
+        var invPass = RunInvariance(root, json, report);
+        // Raking + T2 use one light: dim the ambient, no fog.
+        RenderSettings.fog = false;
+        RenderSettings.ambientSkyColor = FrontRoomsLook.AmbientSky * .25f;
+        RenderSettings.ambientEquatorColor = FrontRoomsLook.AmbientEquator * .25f;
+        RenderSettings.ambientGroundColor = FrontRoomsLook.AmbientGround * .25f;
+        DynamicGI.UpdateEnvironment();
+        RunRaking(root, report);
+        var t2Pass = RunT2(root, json, report);
+        RunLiveCheck(root, json, report, urp);
+        var mipsOk = CheckPrintMips(json, report);
+        WriteMemory(json, report);
+        WriteShaderStats(json);
+        json.Append("  \"gates\": {\"T1a\": " + B(t1Pass) + ", \"T2\": " + B(t2Pass) + ", \"invariance\": " + B(invPass)
+            + ", \"T1a_corridor_fog_on (reported)\": " + B(corridorFogOn) + ", \"T1a_corridor_fog_off (reported)\": " + B(corridorFogOff)
+            + ", \"print_mips_are_FrontRoomsPrintMips (reported)\": " + B(mipsOk) + "}\n}\n");
+        File.WriteAllText(Path.Combine(OutDir, "print_p0.json"), json.ToString());
+        File.WriteAllText(Path.Combine(OutDir, "print_p0_summary.txt"), string.Join("\n", report) + "\n");
+        Debug.Log("[PrintP0] T1a " + (t1Pass ? "PASS" : "FAIL") + ", T2 " + (t2Pass ? "PASS" : "FAIL") + ", invariance " + (invPass ? "PASS" : "FAIL")
+            + ", corridor fog on " + (corridorFogOn ? "pass" : "over") + " / off " + (corridorFogOff ? "pass" : "over") + "\n" + string.Join("\n", report));
+    });
+
+    /// <summary>The test rig shared by the P0 and Q1b gates: an empty scene, the game's ambient
+    /// and post stack (grain, lens distortion and chromatic aberration off), one camera and its
+    /// render targets. Everything is destroyed and every global restored when the body ends.</summary>
+    static void WithRig(string sub, Action<Transform, StringBuilder, List<string>, UniversalRenderPipelineAsset> body)
+    {
+        outSub = sub;
         var asyncWas = ShaderUtil.allowAsyncCompilation;
         ShaderUtil.allowAsyncCompilation = false;
         var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
@@ -411,34 +448,12 @@ public static class FrontRoomsPrintP0Test
             rtRake = Own(new RenderTexture(960, 540, 24, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear) { antiAliasing = 4 });
             rtBytes = Own(new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 });
 
-            json.Append("{\n");
-            var t1Pass = RunT1(root, json, report);
-            var (corridorFogOn, corridorFogOff) = RunT1Corridor(root, json, report);
-            var invPass = RunInvariance(root, json, report);
-            // Raking + T2 use one light: dim the ambient, no fog.
-            RenderSettings.fog = false;
-            RenderSettings.ambientSkyColor = FrontRoomsLook.AmbientSky * .25f;
-            RenderSettings.ambientEquatorColor = FrontRoomsLook.AmbientEquator * .25f;
-            RenderSettings.ambientGroundColor = FrontRoomsLook.AmbientGround * .25f;
-            DynamicGI.UpdateEnvironment();
-            RunRaking(root, report);
-            var t2Pass = RunT2(root, json, report);
-            RunLiveCheck(root, json, report, urp);
-            var mipsOk = CheckPrintMips(json, report);
-            WriteMemory(json, report);
-            WriteShaderStats(json);
-            json.Append("  \"gates\": {\"T1a\": " + B(t1Pass) + ", \"T2\": " + B(t2Pass) + ", \"invariance\": " + B(invPass)
-                + ", \"T1a_corridor_fog_on (reported)\": " + B(corridorFogOn) + ", \"T1a_corridor_fog_off (reported)\": " + B(corridorFogOff)
-                + ", \"print_mips_are_FrontRoomsPrintMips (reported)\": " + B(mipsOk) + "}\n}\n");
-            File.WriteAllText(Path.Combine(OutDir, "print_p0.json"), json.ToString());
-            File.WriteAllText(Path.Combine(OutDir, "print_p0_summary.txt"), string.Join("\n", report) + "\n");
-            Debug.Log("[PrintP0] T1a " + (t1Pass ? "PASS" : "FAIL") + ", T2 " + (t2Pass ? "PASS" : "FAIL") + ", invariance " + (invPass ? "PASS" : "FAIL")
-                + ", corridor fog on " + (corridorFogOn ? "pass" : "over") + " / off " + (corridorFogOff ? "pass" : "over") + "\n" + string.Join("\n", report));
+            body(root, json, report, urp);
         }
         catch (Exception e)
         {
-            Debug.LogError("[PrintP0] " + e);
-            File.WriteAllText(Path.Combine(OutDir, "print_p0_error.txt"), e.ToString());
+            Debug.LogError("[PrintP0] " + sub + ": " + e);
+            File.WriteAllText(Path.Combine(OutDir, sub + "_error.txt"), e.ToString());
         }
         finally
         {
@@ -706,7 +721,8 @@ public static class FrontRoomsPrintP0Test
 
     static void RunRaking(Transform root, List<string> report)
     {
-        var production = FrontRoomsSurfaces.Get("L0_Wallpaper");
+        var production = Clone(FrontRoomsSurfaces.Get("L0_Wallpaper"), "Lobby split, CC0 print");   // the frame the legacy column shows
+        production.SetTexture("_PrintTex", LoadRef(CC0Print));
         var legacy = Legacy(production, "Wallpaper_Chevron_A", "Wallpaper_Chevron", "Lobby today (legacy)");
         EnsureTestWall(root, production);
         var angles = new[] { 5f, 15f, 35f };
@@ -780,16 +796,11 @@ public static class FrontRoomsPrintP0Test
         printB.Apply(false, false);
         arrayB = Own(new Texture2DArray(w, h, 1, TextureFormat.RGBA32, true, true) { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 16, hideFlags = HideFlags.DontSave });
         FrontRoomsPrintMips.ApplySlice(arrayB, 0, bCol); arrayB.Apply(false, false);
-        // Live check array: slice 0 = today's frame 0 (from the PNG), slice 1 = B, both 2048 x 3072.
-        var png = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
-        png.LoadImage(File.ReadAllBytes(TexDir + "Wallpaper_Print_P.png"));
-        var a = ToColors(png.GetPixels32());
-        var bw = png.width; var bh = png.height;
-        var bBig = new Color[bw * bh];
-        for (var y = 0; y < bh; y++) for (var x = 0; x < bw; x++) bBig[y * bw + x] = bCol[(y * h / bh) * w + x * w / bw];
-        arrayAB = Own(new Texture2DArray(bw, bh, 2, TextureFormat.RGBA32, true, true) { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 16, hideFlags = HideFlags.DontSave });
-        FrontRoomsPrintMips.ApplySlice(arrayAB, 0, a); FrontRoomsPrintMips.ApplySlice(arrayAB, 1, bBig); arrayAB.Apply(false, false);
-        UnityEngine.Object.DestroyImmediate(png);
+        // Live check array: the shipped _FR_Print (Resources Print/FR_Print_HardEdge). Since Q1b its
+        // slice 0 is K00, the same texels as _PrintTex, imported with the same rules and format.
+        // It is an asset: never Own() it (Own destroys).
+        arrayAB = Resources.Load<Texture2DArray>(FrontRoomsPrintArray.ResourcesName);
+        if (arrayAB == null) throw new InvalidOperationException("No _FR_Print array at Resources/" + FrontRoomsPrintArray.ResourcesName + "; run FrontRooms > Rendering > Build Print Array");
     }
 
     static bool RunT2(Transform root, StringBuilder json, List<string> report)
@@ -898,8 +909,8 @@ public static class FrontRoomsPrintP0Test
     // ---------------------------------------------------- live path sanity
     static void RunLiveCheck(Transform root, StringBuilder json, List<string> report, UniversalRenderPipelineAsset urp)
     {
-        // The live array path vs the static frame: slice 0 = the same frame 0 (RGBA32 in the
-        // array, R8G8 in _PrintTex; both with FrontRoomsPrintMips mips), clock (0, 2, 0, 1).
+        // The live array path vs the static frame: slice 0 = the same frame 0 (the imported
+        // _PrintTex's format in both; both with FrontRoomsPrintMips mips), clock (0, 2, 0, 1).
         // Repeated at render scale 0.5, where URP sets _GlobalMipBias = (-1, 0.5): both print
         // fetches take gradients, URP scales the static one's (SAMPLE_TEXTURE2D_GRAD) and the
         // shader the array's by the same FR_PRINT_GRAD_SCALE, so they must still match. Then a
@@ -912,7 +923,7 @@ public static class FrontRoomsPrintP0Test
         // Far enough (6.5 m, 60 deg) that the print samples mip 1-2, where a missed bias shows.
         var poses = new[] { ("near", FaceCentre + Vector3.back * 2.6f, Vector3.zero), ("far", FaceCentre + new Vector3(0f, .2f, -6.5f), new Vector3(2f, 0f, 0f)) };
         json.Append("  \"live_path\": {");
-        Img stat = null, live = null, phase = null, half = null;
+        Img stat = null, live = null, phase = null, half = null;   // arrayAB: slice 0 = K00 = _PrintTex, slice 1 = K01
         foreach (var (pname, pos, euler) in poses)
             foreach (var scale in new[] { 1f, .5f })
             {
@@ -936,7 +947,7 @@ public static class FrontRoomsPrintP0Test
                 var st = Diff(Display(s, 1f), Display(l, 1f), null);
                 var key = "albedo_static_vs_live_frame0_" + pname + "_scale" + scale.ToString("0.0", Inv);
                 json.Append("\"" + key + "\": " + st.Json() + ", \"" + key + "_GlobalMipBias\": [" + mipBias.x.ToString("0.###", Inv) + ", " + mipBias.y.ToString("0.###", Inv) + "], ");
-                report.Add($"Live path {pname}, render scale {scale:0.0} (_GlobalMipBias {mipBias.x:0.##}, {mipBias.y:0.##}): albedo static (_PrintTex) vs live (_FR_Print slice 0 = same PNG), clock (0,2,0,1): mean {F(st.mean)} p99 {F(st.p99)} max {F(st.max)} (8-bit sRGB units)");
+                report.Add($"Live path {pname}, render scale {scale:0.0} (_GlobalMipBias {mipBias.x:0.##}, {mipBias.y:0.##}): albedo static (_PrintTex) vs live (shipped _FR_Print slice 0 = K00), clock (0,2,0,1): mean {F(st.mean)} p99 {F(st.p99)} max {F(st.max)} (8-bit sRGB units)");
             }
         if (urp != null) urp.renderScale = 1f;
         Shader.SetGlobalTexture(PrintId, null);
@@ -977,6 +988,8 @@ public static class FrontRoomsPrintP0Test
             }
             box.Add(next); w = tw; h = th;
         }
+        if (GraphicsFormatUtility.IsCompressedFormat(tex.graphicsFormat))
+            return CheckPrintMipsCompressed(tex, mip0, w0, h0, rule, box, json, report);
         var bpp = (int)GraphicsFormatUtility.GetBlockSize(tex.graphicsFormat);
         var ok = true;
         var rows = new List<string>();
@@ -1023,7 +1036,7 @@ public static class FrontRoomsPrintP0Test
         {
             ("legacy_materials (now in RefDir)", RefDir, new[] { "Wallpaper_Chevron_A", "Wallpaper_Chevron_N", "Wallpaper_Chevron_S", "Wallpaper_Chevron_Cold_A", "Wallpaper_Chevron_Cold_N", "Wallpaper_Chevron_Cold_S" }),
             ("split_materials (Resources)", TexDir, new[] { "Wallpaper_Paper_M", "Wallpaper_Paper_N", "Wallpaper_Paper_S", "Wallpaper_Print_P" }),
-            ("t1_test_refs (RefDir)", RefDir, new[] { "Wallpaper_Chevron_NoHue_A", "Wallpaper_Chevron_Cold_NoHue_A" }),
+            ("t1_test_refs (RefDir)", RefDir, new[] { "Wallpaper_Chevron_NoHue_A", "Wallpaper_Chevron_Cold_NoHue_A", CC0Print }),
         };
         var totals = new Dictionary<string, long>();
         json.Append("  \"texture_memory\": {");
@@ -1053,7 +1066,7 @@ public static class FrontRoomsPrintP0Test
         var st = imp.GetPlatformTextureSettings("Standalone");
         json.Append("  \"compression\": {\"importer\": \"" + imp.textureCompression + "\", \"print_standalone_override\": \"" + (st.overridden ? st.format.ToString() : "none")
             + "\", \"imported_format_print\": \"" + probe.graphicsFormat + "\", \"imported_format_paper\": \"" + LoadTex("Wallpaper_Paper_M").graphicsFormat
-            + "\", \"reason\": \"2048x3072 is NPOT with mips; Unity refuses BC7 for NPOT mipped textures and falls back to RGBA32 (legacy wallpaper textures too); the print is R8G8 by override\"},\n");
+            + "\", \"reason\": \"the paper (2048x3072) is NPOT with mips, so Unity refuses BC7 and falls back to RGBA32; the print is 2048x2048 (Q1b) in FrontRoomsPrintArray.DesktopFormat by override, the same format as _FR_Print\"},\n");
     }
 
     // ---------------------------------------------------------- shader cost
@@ -1122,6 +1135,15 @@ public sealed class FrontRoomsPrintP0RefImporter : AssetPostprocessor
     void OnPreprocessTexture()
     {
         if (!assetPath.Replace('\\', '/').StartsWith(FrontRoomsPrintP0Test.RefDir)) return;
-        FrontRoomsSurfaceTextureImporter.Configure((TextureImporter)assetImporter, Path.GetFileNameWithoutExtension(assetPath));
+        var importer = (TextureImporter)assetImporter;
+        var stem = Path.GetFileNameWithoutExtension(assetPath);
+        FrontRoomsSurfaceTextureImporter.Configure(importer, stem);
+        if (stem == FrontRoomsPrintP0Test.CC0Print)
+        {
+            // T1 was measured with this frame as R8G8; keep it so, whatever the production print uses.
+            var standalone = importer.GetPlatformTextureSettings("Standalone");
+            standalone.format = TextureImporterFormat.RG16;
+            importer.SetPlatformTextureSettings(standalone);
+        }
     }
 }

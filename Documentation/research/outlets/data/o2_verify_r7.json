@@ -1,0 +1,468 @@
+{
+ "assets": {
+  "Kit_OutletBlank": {
+   "objects": [
+    "Kit_OutletBlank"
+   ],
+   "trisPerSlot": {
+    "Prop_ThermosetIvory": 1384,
+    "Prop_PlasticBlack": 28
+   },
+   "tris": 1412,
+   "boundsMm": [
+    [
+     -34.8999984562397,
+     -0.0,
+     -57.14999884366989
+    ],
+    [
+     34.8999984562397,
+     5.5979592725634575,
+     57.14999884366989
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  },
+  "Kit_OutletToggle1": {
+   "objects": [
+    "Kit_OutletToggle1"
+   ],
+   "trisPerSlot": {
+    "Prop_ThermosetIvory": 1660,
+    "Prop_PlasticBlack": 158,
+    "Prop_NylonIvory": 478
+   },
+   "tris": 2296,
+   "boundsMm": [
+    [
+     -34.8999984562397,
+     -0.0,
+     -57.14999884366989
+    ],
+    [
+     34.8999984562397,
+     18.406493589282036,
+     57.14999884366989
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  },
+  "Kit_OutletToggle2": {
+   "objects": [
+    "Kit_OutletToggle2"
+   ],
+   "trisPerSlot": {
+    "Prop_ThermosetIvory": 2388,
+    "Prop_PlasticBlack": 316,
+    "Prop_NylonIvory": 956
+   },
+   "tris": 3660,
+   "boundsMm": [
+    [
+     -57.95000120997429,
+     -0.0,
+     -57.14999884366989
+    ],
+    [
+     57.95000120997429,
+     18.38831789791584,
+     57.14999884366989
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  },
+  "Kit_JackPhone": {
+   "objects": [
+    "Kit_JackPhone"
+   ],
+   "trisPerSlot": {
+    "Prop_ThermosetIvory": 1664,
+    "Prop_PlasticBlack": 122,
+    "Prop_NylonIvory": 204,
+    "Prop_Brass": 128
+   },
+   "tris": 2118,
+   "boundsMm": [
+    [
+     -34.8999984562397,
+     -0.0,
+     -57.14999884366989
+    ],
+    [
+     34.8999984562397,
+     5.594790447503328,
+     57.14999884366989
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  },
+  "Kit_JackData": {
+   "objects": [
+    "Kit_JackData"
+   ],
+   "trisPerSlot": {
+    "Prop_ThermosetIvory": 1476,
+    "Prop_PlasticBlack": 992,
+    "Prop_NylonIvory": 174,
+    "Prop_Brass": 120
+   },
+   "tris": 2762,
+   "boundsMm": [
+    [
+     -34.8999984562397,
+     -0.0,
+     -57.14999884366989
+    ],
+    [
+     34.8999984562397,
+     24.47209134697914,
+     57.14999884366989
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  },
+  "Kit_JackBNC": {
+   "objects": [
+    "Kit_JackBNC"
+   ],
+   "trisPerSlot": {
+    "Prop_ThermosetIvory": 1480,
+    "Prop_PlasticBlack": 116,
+    "Prop_Chrome": 1024,
+    "Prop_Brass": 128
+   },
+   "tris": 2748,
+   "boundsMm": [
+    [
+     -34.8999984562397,
+     -0.0,
+     -57.14999884366989
+    ],
+    [
+     34.8999984562397,
+     17.999999225139618,
+     57.14999884366989
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  },
+  "Kit_JackPhone4Prong": {
+   "objects": [
+    "Kit_JackPhone4Prong"
+   ],
+   "trisPerSlot": {
+    "Prop_Ceramic": 1164,
+    "Prop_PlasticBlack": 144,
+    "Prop_Brass": 364
+   },
+   "tris": 1672,
+   "boundsMm": [
+    [
+     -26.000000536441803,
+     -0.0,
+     -26.000000536441803
+    ],
+    [
+     26.000000536441803,
+     17.999999225139618,
+     26.000000536441803
+    ]
+   ],
+   "minH": -0.0,
+   "wearOnEveryCorner": true,
+   "customNormals": true
+  }
+ },
+ "plug6P": {
+  "plugW": 9.85,
+  "plugH": 6.6,
+  "depth": 5.0,
+  "overlapsAt9_85": 0,
+  "overlapsAt9_95_control": 12,
+  "clearanceASide": 0.025000000000000355
+ },
+ "crossCheck": {
+  "O3": {
+   "SCREW_HEAD_D": {
+    "o2": 6.6,
+    "o3": 6.6,
+    "ok": true
+   },
+   "SCREW_CROWN": {
+    "o2": 1.0,
+    "o3": 1.0,
+    "ok": true
+   },
+   "SCREW_SLOT_W": {
+    "o2": 0.8,
+    "o3": 0.8,
+    "ok": true
+   },
+   "SCREW_SLOT_DEPTH": {
+    "o2": 0.6,
+    "o3": 0.6,
+    "ok": true
+   },
+   "CSK_D": {
+    "o2": 7.4,
+    "o3": 7.4,
+    "ok": true
+   },
+   "CSK_ANGLE": {
+    "o2": 82.0,
+    "o3": 82.0,
+    "ok": true
+   },
+   "OPENING_ROUND": {
+    "o2": 0.5,
+    "o3": 0.5,
+    "ok": true
+   },
+   "SLOT_CHAMFER": {
+    "o2": 0.15,
+    "o3": 0.15,
+    "ok": true
+   },
+   "DEVICE_ROUND": {
+    "o2": 0.6,
+    "o3": 0.6,
+    "ok": true
+   }
+  },
+  "O1": {
+   "PLATE_1G": {
+    "o2": [
+     69.8,
+     114.3
+    ],
+    "o1": [
+     69.8,
+     114.3
+    ],
+    "ok": true
+   },
+   "CORNER_R": {
+    "o2": 2.0,
+    "o1": 2.0,
+    "ok": true
+   },
+   "CORNER_SEGS": {
+    "o2": 12,
+    "o1": 12,
+    "ok": true
+   },
+   "PROFILE": {
+    "o2": [
+     [
+      0.0,
+      0.0
+     ],
+     [
+      0.15,
+      1.2
+     ],
+     [
+      0.45,
+      2.6
+     ],
+     [
+      0.95,
+      3.8
+     ],
+     [
+      1.7,
+      4.7
+     ],
+     [
+      2.7,
+      5.25
+     ],
+     [
+      4.0,
+      5.5
+     ]
+    ],
+    "o1": [
+     [
+      0.0,
+      0.0
+     ],
+     [
+      0.15,
+      1.2
+     ],
+     [
+      0.45,
+      2.6
+     ],
+     [
+      0.95,
+      3.8
+     ],
+     [
+      1.7,
+      4.7
+     ],
+     [
+      2.7,
+      5.25
+     ],
+     [
+      4.0,
+      5.5
+     ]
+    ],
+    "ok": true
+   },
+   "FIELD_CROWN_H": {
+    "o2": 5.6,
+    "o1": 5.6,
+    "ok": true
+   },
+   "BACK_RIM_W": {
+    "o2": 1.6,
+    "o1": 1.6,
+    "ok": true
+   },
+   "CAVITY_H": {
+    "o2": 3.5,
+    "o1": 3.5,
+    "ok": true
+   },
+   "CSK_D": {
+    "o2": 7.4,
+    "o1": 7.4,
+    "ok": true
+   },
+   "CSK_ANGLE": {
+    "o2": 82.0,
+    "o1": 82.0,
+    "ok": true
+   },
+   "SCREW_HEAD_D": {
+    "o2": 6.6,
+    "o1": 6.6,
+    "ok": true
+   },
+   "SCREW_CROWN": {
+    "o2": 1.0,
+    "o1": 1.0,
+    "ok": true
+   },
+   "SCREW_SLOT": {
+    "o2": [
+     0.8,
+     0.6
+    ],
+    "o1": [
+     0.8,
+     0.6
+    ],
+    "ok": true
+   },
+   "OPENING_ROUND": {
+    "o2": 0.5,
+    "o1": 0.5,
+    "ok": true
+   },
+   "OPENING_ROUND_SEGS": {
+    "o2": 3,
+    "o1": 3,
+    "ok": true
+   },
+   "SLOT_CHAMFER": {
+    "o2": 0.15,
+    "o1": 0.15,
+    "ok": true
+   },
+   "DEVICE_ROUND": {
+    "o2": 0.6,
+    "o1": 0.6,
+    "ok": true
+   },
+   "SEAT_DROP": {
+    "o2": 0.05,
+    "o1": 0.05,
+    "ok": true
+   },
+   "BORE_D": {
+    "o2": 3.6,
+    "o1": 3.6,
+    "ok": true
+   },
+   "R_FLOOR": {
+    "o2": 0.5,
+    "o1": 0.5,
+    "ok": true
+   },
+   "PROUD_PLATE": {
+    "o2": 7.5,
+    "o1": 7.5,
+    "ok": true
+   },
+   "LOD_DISTANCES": {
+    "o2": [
+     1.5,
+     4.0,
+     12.0
+    ],
+    "o1": [
+     1.5,
+     4.0,
+     12.0
+    ],
+    "ok": true
+   }
+  }
+ },
+ "plateRefModels": "/Users/redwang/FrontRoomsVisualWork/o2/o1ref_b/Assets/Resources/Props/Models",
+ "plateVsO1": {
+  "Kit_OutletBlank": {
+   "vs": "Kit_OutletDuplex",
+   "rays": 3308,
+   "maxDiffMm": 0.0072,
+   "outlineMismatches": 0,
+   "ok": true
+  },
+  "Kit_OutletToggle1": {
+   "vs": "Kit_OutletDuplex",
+   "rays": 3272,
+   "maxDiffMm": 0.007,
+   "outlineMismatches": 0,
+   "ok": true
+  },
+  "Kit_JackPhone": {
+   "vs": "Kit_OutletDuplex",
+   "rays": 3236,
+   "maxDiffMm": 0.007,
+   "outlineMismatches": 0,
+   "ok": true
+  },
+  "Kit_JackData": {
+   "vs": "Kit_OutletDuplex",
+   "rays": 3018,
+   "maxDiffMm": 0.0084,
+   "outlineMismatches": 0,
+   "ok": true
+  },
+  "Kit_JackBNC": {
+   "vs": "Kit_OutletDuplex",
+   "rays": 3308,
+   "maxDiffMm": 0.0072,
+   "outlineMismatches": 0,
+   "ok": true
+  }
+ }
+}

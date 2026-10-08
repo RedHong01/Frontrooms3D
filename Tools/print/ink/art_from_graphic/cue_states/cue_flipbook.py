@@ -234,9 +234,9 @@ def timing_video(sts, out, fps=30):
             gap = np.full((a.shape[0], 16, 3), .1, np.float32)
             cache[i] = np.concatenate([a, gap, b], 1)
         return cache[i]
-    tmp = out + "_frames"
-    shutil.rmtree(tmp, ignore_errors=True)
-    os.makedirs(tmp)
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="cue_timing_")      # never inside the project: Red's repo auto-commits
+
     n, prev = 0, None
     for idx, dur in seq:
         cur = strip(idx)

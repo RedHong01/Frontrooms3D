@@ -1,0 +1,95 @@
+"""O3 final verify (2026-10-07, continuation): reads the SHIPPED FBX + JSON
+from the clone and checks envelopes, wall plane, fr_wear, slots, the
+conduit_base joint, the EMT normals under a 0.4 Y scale and the powered
+panel against Kit_CubiclePanel. Read-only.
+blender -b --factory-startup --python o3_final_verify.py -- <models_dir>"""
+import bpy, sys, os, json, math
+from mathutils import Vector
+M = sys.argv[sys.argv.index("--") + 1]
+MM = 1000.0
+
+def load(name):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(M, name + ".fbx"))
+    objs = [o for o in bpy.data.objects if o.type == "MESH"]
+    return objs
+
+def world_verts(objs, skip_lod1=True):
+    pts = []
+    for o in objs:
+        if skip_lod1 and o.name.endswith("_LOD1"):
+            continue
+        mw = o.matrix_world
+        pts += [mw @ v.co for v in o.data.vertices]
+    return pts
+
+def bounds(pts):
+    lo = [min(p[i] for p in pts) * MM for i in range(3)]
+    hi = [max(p[i] for p in pts) * MM for i in range(3)]
+    return lo, hi
+
+def info(name):
+    objs = load(name)
+    pts = world_verts(objs)
+    lo, hi = bounds(pts)
+    attrs = sorted({c.name for o in objs for c in o.data.color_attributes})
+    corners_ok = all(len(o.data.color_attributes) > 0 for o in objs)
+    tris = sum(len(p.vertices) - 2 for o in objs if not o.name.endswith("_LOD1") for p in o.data.polygons)
+    mats = sorted({m.name.split(".")[0] for o in objs for m in o.data.materials if m})
+    sc = json.load(open(os.path.join(M, name + ".json")))
+    return objs, lo, hi, attrs, corners_ok, tris, mats, sc
+
+R = {}
+for name, W, H, D in (("Kit_FloorBoxTombstone", 111, 67, 76), ("Kit_FloorBoxTombstone2", 127, 76, 86)):
+    objs, lo, hi, attrs, cok, tris, mats, sc = info(name)
+    w, d, h = hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]
+    R[name] = dict(W=round(w, 3), H=round(h, 3), D=round(d, 3), zmin=round(lo[2], 4), ok=abs(w - W) <= 1 and abs(h - H) <= 1 and abs(d - D) <= 1 and abs(lo[2]) < 1e-3,
+                   tris=tris, color_attrs=attrs, all_parts_coloured=cok, mats=mats, colliders=sc["colliders"], noCollider=sc.get("noCollider"), tags=sc["tags"],
+                   anchors=[a["name"] for a in sc["anchors"]])
+# Handy box: wall plane = Blender y 0, nothing behind (y > 0)
+objs, lo, hi, attrs, cok, tris, mats, sc = info("Kit_OutletHandyBox")
+R["Kit_OutletHandyBox"] = dict(x=(round(lo[0], 3), round(hi[0], 3)), y=(round(lo[1], 3), round(hi[1], 3)), z=(round(lo[2], 3), round(hi[2], 3)),
+                               behind_wall_mm=round(hi[1], 4), tris=tris, color_attrs=attrs, all_parts_coloured=cok, mats=mats, colliders=sc["colliders"],
+                               tags=sc["tags"], conduit_base=[a["pos"] for a in sc["anchors"] if a["name"] == "conduit_base"][0])
+hb_objs = objs
+# box body only (|z| <= 50.8): width/height/depth of the box + cover
+body = [p for p in world_verts(hb_objs) if abs(p.z * MM) <= 51.31]
+blo, bhi = bounds(body)
+R["Kit_OutletHandyBox"]["body_x_y_z"] = (round(bhi[0] - blo[0], 3), round(bhi[1] - blo[1], 3), round(bhi[2] - blo[2], 3))
+# socket: vertices near the top of the socket (z 92..96.6) within r < 12 of the axis (0, -11.5)
+sock = [p for p in world_verts(hb_objs) if 90.0 <= p.z * MM <= 96.61 and math.hypot(p.x * MM, p.y * MM + 11.5) < 12.0]
+top = max(p.z for p in sock) * MM
+lip = [p for p in sock if abs(p.z * MM - top) < 0.01]
+lip_r = sorted(math.hypot(p.x * MM, p.y * MM + 11.5) for p in lip)
+R["Kit_OutletHandyBox"]["socket_top_mm"] = round(top, 3)
+R["Kit_OutletHandyBox"]["socket_lip_inner_r_min_max"] = (round(lip_r[0], 4), round(lip_r[-1], 4))
+# EMT
+objs, lo, hi, attrs, cok, tris, mats, sc = info("Kit_ConduitEMT")
+pts = world_verts(objs)
+ax_y = (lo[1] + hi[1]) / 2
+rmin = min(math.hypot(p.x * MM, p.y * MM - ax_y) for p in pts)
+R["Kit_ConduitEMT"] = dict(OD=round(hi[0] - lo[0], 3), axis_y=round(ax_y, 3), z=(round(lo[2], 3), round(hi[2], 3)), tube_r_min=round(rmin, 4), tris=tris,
+                           color_attrs=attrs, all_parts_coloured=cok, mats=mats, colliders=sc["colliders"], tags=sc["tags"])
+me = objs[0].data
+mw3 = objs[0].matrix_world.to_3x3()
+nz = 0.0
+for l in me.loops:
+    n = (mw3 @ Vector(l.normal)).normalized()
+    nz = max(nz, abs(n.z))
+R["Kit_ConduitEMT"]["max_abs_normal_along_axis"] = nz
+# joint: tile placed at conduit_base (Blender z 92.6) starts this far below the socket top
+R["joint"] = dict(tile_bottom_z=92.6, socket_top=round(top, 3), tube_inside_socket_mm=round(top - 92.6, 3),
+                  lip_under_tube_skin_mm=round(rmin - lip_r[0], 4))
+# Strap
+objs, lo, hi, attrs, cok, tris, mats, sc = info("Kit_ConduitStrap")
+R["Kit_ConduitStrap"] = dict(W=round(hi[0] - lo[0], 3), H=round(hi[2] - lo[2], 3), proud=round(-lo[1], 3), behind=round(hi[1], 4), tris=tris, color_attrs=attrs,
+                             all_parts_coloured=cok, mats=mats, colliders=sc["colliders"], tags=sc["tags"])
+# Panel vs reference
+objs, lo, hi, attrs, cok, tris, mats, sc = info("Kit_CubiclePanel_Powered")
+ref = json.load(open(os.path.join(M, "Kit_CubiclePanel.json")))
+R["Kit_CubiclePanel_Powered"] = dict(bounds_mm=([round(x, 3) for x in lo], [round(x, 3) for x in hi]),
+                                     json_bounds_equal=(sc["boundsMin"] == ref["boundsMin"] and sc["boundsMax"] == ref["boundsMax"]),
+                                     collider_equal=(sc["colliders"] == ref["colliders"]), lod1_equal=(sc.get("trianglesLod1") == ref.get("trianglesLod1")),
+                                     tris_lod0=sc["triangles"], ref_tris=ref["triangles"], mats=mats, slots=sc["slots"], tags=sc["tags"],
+                                     objects=[(o.name, len(o.data.polygons)) for o in objs])
+print("[verify] " + json.dumps(R, indent=1, default=str))

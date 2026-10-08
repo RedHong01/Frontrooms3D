@@ -107,3 +107,15 @@ The lead references stay `db01a–e` (The Shining) and `db02` (L4D2), section 01
 |---|---|---|---|---|---|
 | `db13_mortise_cylinder_pulled.jpg` | not yet found (search: fire-service forcible-entry training, "through the lock", "cylinder pulled" mortise lock, steel door) | — | <2 MB | prefer CC / PD; internal if © | What a hollow-metal door looks like after its mortise cylinder is pulled or punched: the ~30 mm coin hole, the torn escutcheon, the paint round it. B's steel stage is an ESTIMATE until this is seen |
 | `db14_knob_torn_off_spindle.jpg` | not yet found (search: "door knob broken off spindle", Commons "broken doorknob") | — | <1 MB | prefer CC / PD | The square spindle and sheared shank left after a knob is wrenched off (B's L0-K D2) |
+
+## 20 — Direction A pre-render (`20_dir_A.md`)
+
+**Already on disk (reuse, no request needed):** `../interactables/proposal/media/kane_emg_0053_oak_door_lever.jpg` (the IP's office door, the wood member's look) and `ingame_door_gap_16_sideB_hinge_inline_darknear.png` (how a lit slit reads in engine), credited in `../interactables/proposal/media/SOURCES.md`; `../interaction_audit/images/70–80` (today's inert break: the "before") and `77_relay_broken_witness.png` (the exposure target).
+
+The lead references stay `df01`, `df02`, `db05` and `df05` (sections 01 and 02 above). A adds three wishes, not yet found (search with Red's approval; nothing was searched or downloaded on 2026-10-07):
+
+| Proposed filename | Page URL | Direct URL | Approx size | Licence | What it proves |
+|---|---|---|---|---|---|
+| `da01_hollow_metal_lock_edge_split.jpg` | not yet found (search: fire-service forcible entry "hollow metal door" lock edge, "door spread" training photo; Commons "damaged steel door") | — | <2 MB | prefer CC / PD; internal if © | A hollow-metal door's lock edge crushed with the face sheet torn from the edge seam and the paper honeycomb showing. A's steel D2 (the folded lip and the core) is an ESTIMATE until this is seen |
+| `da02_light_through_door_gap_dark_room.jpg` | not yet found (search Commons: "light under door", "light through door gap") | — | <2 MB | prefer CC / PD | A real dark room with light leaking round a closed door: how bright the line and the two corners read to the eye, and how little beam a 3–5 mm gap throws (A's light cue) |
+| `da03_wood_jamb_strike_torn_out.jpg` | not yet found (search: "kicked in door jamb", "door jamb split strike plate", Commons "burglary door frame") | — | <2 MB | prefer CC / PD | A softwood jamb split along the strike screws with the strip, the strike and its screws torn out: a second photo beside `df02` for the D2 / S4 notch |

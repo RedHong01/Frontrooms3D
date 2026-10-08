@@ -8,7 +8,7 @@
 | Bases | pre-Codex `7320ed1`; Codex's last 10-03 commit `75cfdff`; reviewed at main HEAD `a5262fb` (2026-10-07 17:25) |
 | Later commits in this track | `663e858` + `1114d6b` (kit importer LOD fix), `9eddc35` + `bf2e883` + `70644f0` (G14 prepass in the glass shader), `04c3a6a` + `b5f381f` (CRT ad screens via the Office kit). All by Codex sessions on 2026-10-04, committed as Red. No other commit after `75cfdff` touches a file in this track (§1, row 1) |
 | Reference for "verified" | `research/glass/30_final.md` (§4 promotion list, §5 hook, §9 UNVERIFIED) and `research/glass/20_verification.md` (G10 run 3) |
-| Red's project | Read only. Unity was never opened on it. Nothing committed. Files written: this report; `images/cx2_*`; rows VL114–VL115 in `Documentation/VERIFICATION_LOG.md` |
+| Red's project | Read only. Unity was never opened on it. Nothing committed. Files written: this report; `images/cx2_*`; rows VL114–VL115 in `Documentation/VERIFICATION_LOG.md` and the codex-audit legend on the log's cover (VL000) |
 | Clones | `W/proj_cx_glass` (shader compile, LOD re-import, probes) and `W/proj_cx_glass2` (Play-mode CRT harness). Both = main's files plus clone-only tools in `Assets/Editor/Audit/CxGlass/`. `W` = `/Users/redwang/FrontRoomsVisualWork` |
 
 ---
@@ -20,8 +20,8 @@
 - **Codex's 10-03 importer bug (old F1) is fixed by `663e858`.** After a forced re-import of all 113 kits in my clone: window frames, door frames and door leaves never cull; blinds cull at 30 m (60 m Ultra). Rendered at 12.3 m and 30 m, the window frame is drawn (VL114).
 - **Old F5 (no prepass pass) is fixed by `9eddc35`.** That moves the risk: G14 is ON at High in Red's editor (`Editor.log` L5904), and window glass is now really traced. Its runtime look was never accepted (F5b, handoff).
 - **Red's hand-tuned assets are untouched.** `Prop_Glass` and `Prop_BottleBlue` are unchanged since 10-04 (§2). `FrontRoomsLook.cs` keeps the F5 ambient. `FrontRoomsRenderSetup.cs` is still the P0 port + 2 lines, and its glass steps rewrite the 7 glass/lens materials byte-identically (re-run today). No post, URP, renderer, scene or quality asset changed after `75cfdff`.
-- **New, from the Office kit change (`04c3a6a`): the CRT ad screens.** {{F6_SHORT}}
-- **Findings:** F6 MAJOR (fix now), {{F7_SHORT}}F5b MAJOR (handoff glass-rt-track), F2 MINOR (stale cubes, still open), F3 DECISION (glass look, still open).
+- **New, from the Office kit change (`04c3a6a`): the CRT ad screens.** Codex's `04c3a6a` puts a runtime ad quad on every `Kit_CRTMonitor` that `FrontRoomsOfficeKit` spawns (map Office zones). Its material comes from `Shader.Find("Universal Render Pipeline/Unlit")`, and that shader is in none of Red's player builds. So in a build every monitor throws `ArgumentNullException` when it spawns, and no ad shows (F6). In the editor the quad works, but it is not in the monitor's LODGroup: past 11.2 m the monitor culls and the quad floats on alone (F7, VL115).
+- **Findings:** F6 MAJOR (fix now), F7 MAJOR (fix now, same file), F5b MAJOR (handoff glass-rt-track), F2 MINOR (stale cubes, still open), F3 DECISION (glass look, still open).
 
 ---
 
@@ -29,7 +29,7 @@
 
 | # | Item | Evidence | Result |
 |---|---|---|---|
-| 1 | Track files changed after `75cfdff` | `git log 75cfdff..HEAD` per path: `FrontRoomsGlass.shader` 3 commits, `FrontRoomsKitImporter.cs` 1, `FrontRoomsOfficeKit.cs` 1 (`04c3a6a`); 0 for `FrontRoomsReflectionBlend.shader`, `Reflections/*`, the 7 glass/lens `.mat`, grime textures, `FrontRoomsLook.cs`, `FrontRoomsRenderSetup.cs`, `FrontRoomsRoomStream.cs`, `Assets/Settings`, `QualitySettings`, `GraphicsSettings`. No uncommitted change and no iCloud copy (`* 2.*`) under these paths | PASS |
+| 1 | Track files changed after `75cfdff` | `git log 75cfdff..HEAD` per path: `FrontRoomsGlass.shader` 3 commits, `FrontRoomsKitImporter.cs` 1, `FrontRoomsOfficeKit.cs` 1 (`04c3a6a`), `Scripts/Media/FrontRoomsScreenVideo.cs` new in `04c3a6a` and changed in `b5f381f` (E key, U flip, video audio off); 0 for `FrontRoomsReflectionBlend.shader`, `Reflections/*`, the 7 glass/lens `.mat`, grime textures, `FrontRoomsLook.cs`, `FrontRoomsRenderSetup.cs`, `FrontRoomsRoomStream.cs`, `Assets/Settings`, `QualitySettings`, `GraphicsSettings`. No uncommitted change and no iCloud copy (`* 2.*`) under these paths | PASS |
 | 2 | Hashes today | md5 (first 8): `FrontRoomsGlass.shader` `d3a53c99` (was `3e4bdc16`; only G14 hunks, row 4); `ReflectionBlend` `81dc1692`; cubes `d6acc839 / cc315e5a / c0f1b6e7 / 44d83e56`; manifest `f34a1523`; `ZoneReflection` `42d371db`; Driver `0b3329bb`; `GlassPane` `b2792eef`; `GlassSetup` `c43bf659`; `ReflectionCapture` `ceec26df`; `GlassVerification` `2aa3e10b`; `CompileCheck` `0d1144b1`; `RTStripper` `2e22d16d`; `Glass_Window` `f6285cd6`; `Glass_Edge` `0ffba08c`; `Glass_Shard` `a8ff20b2`; `Glass_ShardClear` `92a4c8ef`; `GlassGrime_M` `5ce543f2`; `GlassSmear_N` `8de9065b`; `Prop_Glass` `0583e4e9`; `Prop_BottleBlue` `85bf5dbb`; `Troffer_Lens_Cool` `1eecb065`; `FrontRoomsPost_Office` `2d46ab21`; `FrontRoomsPost` `c88c9e52`; `FrontRooms_URP` `406dc1aa` | PASS: all equal the 10-04 values |
 | 3 | `FrontRoomsLook.cs` | L17–19: Sky (.20, .19, .15), Equator (.26, .24, .17), Ground (.40, .36, .24); Red's comment L12–16 | PASS |
 | 4 | Glass shader, keyword off | `CxGlassShaderCheck` (clone): `ForwardLit` of main vs `Hidden/CxAudit/GlassVerified` (= `3e4bdc16`, renamed only), offline `CompileVariant`, SHA1 of the bytes. Sets: none; grime; grime + main/additional shadows + soft + cluster + cookies + fog; grime + additional + soft medium + cluster + fog + instancing; grime + probe blending + box projection + cluster + fog; cascade + soft high + layers + probe atlas + fog. **60 / 60 identical** on Metal macOS, GLES3x WebGL, Vulkan, D3D11 and Metal iOS. Output: `W/proj_cx_glass/Verification/cx_glass/shader_check.txt` | PASS: G10's verified look holds wherever RT is off |
@@ -40,6 +40,8 @@
 | 9 | Red's editor since 10-04 | `~/Library/Logs/Unity/Editor.log`, session 2026-10-05 13:43, 11,333 lines: two Play sessions, both title only (`READY` L5699, L10973). L5904 `[FrontRoomsGlassRT] plugin loaded · caps 0x31ff · on: Apple9, High, kernel 9 ms (async), layout OK`. 0 shader errors, 0 glass/zone/RT exceptions, 0 `Collection was modified`, 0 ZBinningJob. 1,188 `AudioClip.SetData` lines are the sound track's | PASS (no map entered, so map windows and Office CRTs were not exercised) |
 | 10 | Load-time side effects | Unchanged since 10-04: `[InitializeOnLoad]` only in `FrontRoomsGlassVerification.cs:31` and `FrontRoomsGlassRTVerify.cs:31`, both gated by their own batch `SessionState` flag | PASS |
 | 11 | Material pass queries in batch | Note for future tools: in a batch editor session `Shader.passCount` and `Material.FindPass("FRGlassRTPrepass")` report the FallBack subshader (1 pass, −1) for `FrontRooms/Glass` and also for `URP/Lit`. `ShaderUtil.GetShaderData` sees the real subshader 0 with both passes. This is an editor artefact, not a shader fault | INFO |
+| 12 | Red's player builds vs the new CRT ads (`04c3a6a`) | Shader name table in `globalgamemanagers` of the Mac (10-04 17:25) and iOS TestFlight (10-04 20:28) builds; `Assembly-CSharp.dll` / `global-metadata.dat` | FAIL: `Universal Render Pipeline/Unlit` absent from both builds, `Unlit/Texture` maps to a null PPtr (F6) |
+| 13 | CRT ad quad vs the monitor's LOD (clone harness `CxCrtMini`) | 6 views × screen on/off; LODGroup readout | FAIL: quad in no LOD, floats past the 11.18 m cull (F7, VL115) |
 
 ---
 
@@ -57,9 +59,63 @@ Unchanged since the 10-04 review: no commit after `75cfdff` touches them, md5 `0
 
 ### F6 · MAJOR · CONFIRMED · The CRT ad screens cannot create their material in a player build
 
-{{F6_BODY}}
+- **What the code does.** `FrontRoomsOfficeKit.BuildStation` calls `FrontRoomsScreenVideo.Attach(monitorObject)` for every monitor (`FrontRoomsOfficeKit.cs:674-675`; 88 % of stations get one, L662). Map Office zones reach `BuildStation` through `FrontRoomsMapWorld.cs:1824` (reflection call into `FrontRoomsOfficeKit`). `Awake` → `CreateSurface` → `MakeMaterial` (`FrontRoomsScreenVideo.cs:56-62, 163-182, 208-220`). L210: `Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture")`; L211: `new Material(shader)`.
+- **The shader is not in Red's builds.** A player's `Shader.Find` only finds shaders that are in the build. No asset in `Assets/`, `Packages/` or `ProjectSettings/` references URP Unlit (guid `650dd9526735d5b46b79224bc6e94025`: 0 files). `GraphicsSettings.asset` Always Included lists only the 7 Unity defaults (L29-36). I parsed the shader name table (name → PPtr) in each build's `globalgamemanagers`:
 
-{{F7_SECTION}}
+| Build | Built | `Universal Render Pipeline/Unlit` | `Unlit/Texture` | `Universal Render Pipeline/Lit` (control) |
+|---|---|---|---|---|
+| `Builds/Mac/FrontRoomsss.app` (Mono) | 2026-10-04 17:25 | absent | name only, PPtr (0, 0) = null | (5, 2) = `sharedassets0.assets` |
+| `Builds/Mobile/iOS/FRONTROOMSSS` (TestFlight, IL2CPP) | 2026-10-04 20:28 | absent | (0, 0) | (5, 2) |
+| `Builds/Mobile/iOSSimulator/FrontRooms3D`, `iOS/FrontRooms3D` | 10-04 17:03, 17:13 | absent | (0, 0) | (5, 2) |
+
+  `FrontRoomsScreenVideo` is compiled into both newest builds (3 hits in the Mac `Assembly-CSharp.dll`, 3 in the iOS `global-metadata.dat`), and both ship `StreamingAssets/FrontRooms_Ad_01.mp4`. Both were built after `04c3a6a` (13:34) and `b5f381f` (14:04). Nothing added since then references URP Unlit, so the next build is the same.
+- **What happens then** (clone probe `CxNullShaderProbe`, `W/proj_cx_glass/Verification/cx_glass/null_shader_probe.txt`): `new Material(null)` throws `System.ArgumentNullException: Value cannot be null. Parameter name: shader`. Unity logs an exception thrown in `Awake` during `AddComponent`, and the caller carries on, so `Dress` still finishes. Each monitor is left with a quad `GameObject` whose fresh `MeshRenderer` has 1 empty material slot (probe: `sharedMaterials.Length = 1`, null, enabled). It gets no ad and no collider, so there is no E prompt. I did not test how a player draws that empty slot (nothing, or the error shader).
+- **Effect in Red's game now:** one exception with a stack trace per monitor, each time an Office zone streams in, in every Mac and iOS build (TestFlight builds 2 and 3 included). No ads in any build. The editor is not affected, because there `Shader.Find` finds both shaders (probe: True, True), so Red never sees the bug in Play Mode.
+- **Owner:** visual (`Scripts/Media/` belongs to the Office kit dress; Codex-authored). Not a map file.
+- **Fix (this audit's Fix phase; all platforms, because it is a bug, not a WebGL optimisation):**
+  1. New asset `Assets/Resources/Media/CRT_AdSurface.mat` (+ `.meta`, + `Media.meta`): shader `Universal Render Pipeline/Unlit`, Opaque, `_BaseColor` white, no texture. Make it with Unity in a clone and copy the files over. Being under `Resources/`, it pulls URP Unlit's opaque variants into every build. Do not use Always Included Shaders: that compiles every Unlit variant on every platform.
+  2. `MakeMaterial` (L208-220): load the template first, and never construct a material from null:
+```csharp
+static Material MakeMaterial(Texture texture)
+{
+    // A player only finds shaders that are in the build; this Resources material keeps URP/Unlit in every build.
+    var template = Resources.Load<Material>("Media/CRT_AdSurface");
+    var shader = template == null ? Shader.Find("Universal Render Pipeline/Unlit") : null;
+    if (template == null && shader == null) return null;
+    var material = template != null ? new Material(template) : new Material(shader);
+    material.name = "FrontRooms / CRT ad surface";
+    // ... texture and colour lines unchanged (L212-219)
+}
+```
+  3. `CreateSurface` (L163): make the material before the quad. If it is null, log one warning per session and return, without creating the quad or the collider: `surfaceMaterial = MakeMaterial(bank != null ? bank.TargetTexture : null); if (surfaceMaterial == null) { /* warn once */ return; }`, then the existing body. `Update` already returns while `surfaceRenderer` is null (L101).
+- **Verify the fix:** (a) a clone compile and `CxCrtMini` frames identical to today's at 0.85 / 2.8 / 9.3 m (same shader, so the editor look is unchanged); (b) a Mac development player of a one-monitor scene in a clone: 0 exceptions in `Player.log`, the material reports `Universal Render Pipeline/Unlit`, and the build's `globalgamemanagers` table maps that name to a non-null PPtr; (c) URP Unlit compiles for GLES3, since it is a stock URP shader.
+
+### F7 · MAJOR · CONFIRMED · The CRT ad quad floats on after its monitor culls (VL115)
+
+- **Cause.** `CreateSurface` parents the quad under the monitor (`FrontRoomsScreenVideo.cs:166-176`) but never adds it to the monitor's `LODGroup`, which the kit importer puts on the FBX root. The renderer stays enabled at any distance; `visibleDistance` 18 m (L18, L104) only pauses the video. Past the cull distance the monitor disappears and the quad stays.
+- **Measured** (clone `W/proj_cx_glass2`, clone-only harness `CxCrtMini`: Play Mode, Metal, quality High, lodBias 1; one `Kit_CRTMonitor` spawned through `FrontRoomsKitLibrary.Spawn` + `Attach`; F5 ambient; `FrontRoomsPost_Office`; four spots in the V5 Office colour; log `W/proj_cx_glass2/Verification/cx_crt_mini/log.txt`):
+  - LODGroup size 0.524 m. LOD0 → LOD1 at 3.35 m; **culled at 11.18 m** at FOV 76. "ad quad inside a LOD: False".
+  - Each view was rendered with the screen on, then off (`TogglePower`). Pixels where any channel is more than 8/255 apart: 0.85 m **0**, 2.8 m **0**, 9.3 m **0** (monitor drawn; the empty quad matches the dark glass), **14.3 m 138** and **17.3 m 94**. Every changed pixel at 14 m and 17 m sits in one 14 × 10 px box where the culled monitor stood (x 953–966, y 535–544). The quad draws at RGB ≈ (34, 41, 35) against the wall at (46, 50, 40).
+  - The video did not prepare in batch mode (no error logged), so these frames show the quad with an empty render texture. In Red's editor it carries the ad: a lit 640 × 434 picture floating in mid-air over every desk past 11.2 m (Very High's lodBias 1.5 moves the cull to about 16.8 m, Ultra's 2 to about 22.4 m). Past 18 m the paused video leaves its last frame on the quad.
+- **Fix (this audit's Fix phase, same file as F6):** at the end of `CreateSurface`, add the quad to every LOD of the monitor's group, so it switches and culls with the monitor:
+```csharp
+var group = GetComponent<LODGroup>();
+if (group != null)
+{
+    var lods = group.GetLODs();
+    for (var i = 0; i < lods.Length; i++)
+    {
+        var list = new List<Renderer>(lods[i].renderers) { surfaceRenderer };
+        lods[i].renderers = list.ToArray();
+    }
+    group.SetLODs(lods);
+}
+```
+  Verify: re-run `CxCrtMini`. 14.3 m and 17.3 m must change 0 px (on vs off), and the 0.85, 2.8 and 9.3 m frames must match today's.
+- **Also seen; not findings; for whoever owns the CRT screen next:**
+  - At 0.9 m and 40°, the flat quad sits in front of the bezel's rounded inner corner: 329 px over 8/255 in a 7 px strip (x 1110–1117, y 390–668). A screen drawn through the model's own `Prop_ScreenCRT` slot would keep the curved glass and the recess.
+  - The render texture uses point filtering and no mips (L281-289). Small ad type will likely shimmer beyond about 2 m. Not measured, because the video does not play in batch mode.
+  - Out of this track: `b5f381f` reads `Keyboard.current.eKey` directly (L141) instead of `FrontRoomsInput.UseDown`, so touch players cannot toggle a screen. This belongs to the input/touch owner.
 
 ### F5b · MAJOR · PLAUSIBLE · Handoff glass-rt-track · Traced window reflections are live on desktop Mac without acceptance
 
@@ -98,23 +154,24 @@ Unchanged since the 10-04 review: no commit after `75cfdff` touches them, md5 `0
 
 | Workflow | What to take from this review |
 |---|---|
-| this audit's Fix phase (visual) | F6: {{F6_FIX_SHORT}} |
+| this audit's Fix phase (visual) | F6 + F7: both in `Assets/Scripts/Media/FrontRoomsScreenVideo.cs` (visual-owned), plus one new material asset `Resources/Media/CRT_AdSurface.mat`. Exact patches and checks are in §3. Neither changes the editor look at monitor distances under 11.2 m |
 | glass-rt-track | F5b: accept or reject the traced window look on today's main; the shader side (prepass, fade, roll gate) is clean |
 | visual (glass owner) | F2: recapture the cubes; extend the manifest inputs |
 | interactables-kit, window-landing | Nothing new: the importer fix is in main and verified (VL114). Kit FBX merges no longer risk the 12 m cull |
-| Red | F3 (glass look per part); {{F7_RED}} |
+| Red | F3 (glass look per part); nothing for F6/F7: they are bugs in Codex's CRT ads, not look choices |
 
 ## 5. Verification images (Figma "FRONTROOMS · VISUAL VERIFICATION LOG", section `2595:6093`)
 
 | VL | Slide | Check | Verdict | Images |
 |---|---|---|---|---|
 | VL114 | `2771:6093` | Kit frames drawn past 12 m | PASS | `images/cx2_kit_lod_windowframe_drawn.jpg` · `images/cx2_kit_lod_readout.png` |
-{{VL115_ROW}}
+| VL115 | `2791:7171` | CRT ad quad outlives monitor | FAIL | `images/cx2_crt_14m_on.jpg` · `images/cx2_crt_14m_off.jpg` · `images/cx2_crt_09m_on.jpg` |
 
 Earlier slides from this review: VL080 (`2624:6093`, title rooms reflect Level 0, WAIT-RED) and VL081 (`2624:6105`, kit frames cull at 12 m, FAIL; superseded by VL114).
 
 ## 6. Files
 
 - Images: `research/codex_audit/images/cx2_*` (this pass); `cx_glass_title_*`, `cx_kit_lod_*` (10-04).
-- Clone-only tools (never merge): `W/proj_cx_glass/Assets/Editor/Audit/CxGlass/` — `CxGlassShaderCheck.cs`, `CxGlassVerified.shader` (verified shader renamed), `CxNullShaderProbe.cs`, `CxKitLodReadout.cs` (recovered from the 10-04 transcript), `CxGlassAfter.cs`; `W/proj_cx_glass2/Assets/Editor/Audit/CxGlass/CxCrtMini.cs`.
-- Outputs: `W/proj_cx_glass/Verification/cx_glass/{shader_check.txt, null_shader_probe.txt, lod/}`; `W/proj_cx_glass2/Verification/cx_crt_mini/`; logs in `W/cx_glass/logs/`.
+- Clone-only tools (never merge): `W/proj_cx_glass/Assets/Editor/Audit/CxGlass/` — `CxGlassShaderCheck.cs`, `CxGlassVerified.shader` (verified shader renamed), `CxNullShaderProbe.cs`, `CxKitLodReadout.cs` (recovered from the 10-04 transcript), `CxGlassAfter.cs`; `W/proj_cx_glass2/Assets/Editor/Audit/CxGlass/CxCrtMini.cs` (CRT Play-mode harness; `CxNullShaderProbe` was extended on 10-07 18:5x to read a fresh `MeshRenderer`'s material slots).
+- Outputs: `W/proj_cx_glass/Verification/cx_glass/{shader_check.txt, null_shader_probe.txt, lod/}`; `W/proj_cx_glass2/Verification/cx_crt_mini/` (12 frames + `log.txt`); logs in `W/cx_glass/logs/` (`null_probe2.log`, `crt_mini.log`). The earlier full-game CRT run (`W/proj_cx_glass2/Verification/cx_crt/`) timed out at the start room before reaching an Office zone; the small harness replaced it.
+- VL115 images (crops ×6 nearest from the 1920 × 1080 frames `08_far_14m_on/off`, `06_far_09m_on`): `research/codex_audit/images/cx2_crt_14m_on.jpg`, `cx2_crt_14m_off.jpg`, `cx2_crt_09m_on.jpg`. Supporting crops for the F7 bezel note, not on a slide because the 7 px overhang barely shows on an empty screen: `cx2_crt_side40_on.jpg`, `cx2_crt_side40_off.jpg` (×6 Lanczos from `02/03_side_0p7m_40deg`).

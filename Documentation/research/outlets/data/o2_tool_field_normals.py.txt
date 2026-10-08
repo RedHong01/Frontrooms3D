@@ -1,0 +1,39 @@
+"""Per-corner normal tilt on the plate FIELD of exported kit FBX files.
+-- <models_dir> <name> [<name> ...]
+Field = TI faces whose corners all lie at h >= 5.40 mm (Unity front = Blender -Y)."""
+import bpy, sys, os, math
+from mathutils import Vector
+a = sys.argv[sys.argv.index("--") + 1:]
+M, names = a[0], a[1:]
+for n in names:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(M, n + ".fbx"), axis_forward="-Z", axis_up="Y", bake_space_transform=True)
+    tilts = []; area_by_bin = {}; nf = 0; big = []
+    for o in [o for o in bpy.data.objects if o.type == "MESH"]:
+        me = o.data
+        mats = [m.name.split(".")[0] if m else "" for m in me.materials]
+        mw = o.matrix_world; rot = mw.to_3x3()
+        try:
+            cn = me.corner_normals
+        except AttributeError:
+            me.calc_normals_split(); cn = None
+        for p in me.polygons:
+            if mats[p.material_index] != "Prop_ThermosetIvory" and mats[p.material_index] != "Prop_Ceramic":
+                continue
+            hs = [-(mw @ me.vertices[v].co).y * 1000 for v in p.vertices]
+            if min(hs) < 5.40:
+                continue
+            nf += 1
+            fa = p.area * 1e6
+            for li in p.loop_indices:
+                nv = (rot @ (cn[li].vector if cn is not None else me.loops[li].normal)).normalized()
+                t = math.degrees(math.acos(max(-1, min(1, -nv.y))))
+                tilts.append(t)
+            # face normal tilt
+            fn = (rot @ p.normal).normalized()
+            big.append((fa, math.degrees(math.acos(max(-1, min(1, -fn.y))))))
+    tilts.sort()
+    q = lambda f: tilts[min(len(tilts) - 1, int(f * len(tilts)))]
+    big.sort(reverse=True)
+    print("[fn] %-22s field faces %4d corners %5d  corner-normal tilt deg: p50 %.2f p90 %.2f p99 %.2f max %.2f | largest faces mm2 %s" % (
+        n, nf, len(tilts), q(.5), q(.9), q(.99), tilts[-1], [round(b[0]) for b in big[:5]]))

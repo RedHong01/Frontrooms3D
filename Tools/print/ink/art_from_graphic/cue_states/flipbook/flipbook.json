@@ -1,0 +1,352 @@
+{
+  "name": "FR_Cue_HardEdge",
+  "slices": 17,
+  "sliceWidth": 2048,
+  "sliceHeight": 2048,
+  "tileMetres": [
+    0.75,
+    1.125
+  ],
+  "encoded": true,
+  "lut_sha1": "353e29eba14d68d93a86656c49df76754e79f93a",
+  "mips": "none (builder makes them)",
+  "encoding": "R/G = print_encode(raw density, raw cream); B = 0; A = 1; linear",
+  "set": "A + M4 + V1",
+  "fit": {
+    "field": 0.6542,
+    "motif": 0.255
+  },
+  "turnDegrees": [
+    30,
+    60,
+    90
+  ],
+  "flow": {
+    "clicks": 6,
+    "rowA_mm": [
+      0.0,
+      125.0,
+      250.0,
+      375.0,
+      500.0,
+      625.0
+    ],
+    "rowB_mm": [
+      0.0,
+      0.0,
+      375.0,
+      375.0,
+      375.0,
+      750.0
+    ]
+  },
+  "plusU": "arrows point to +x of the image = +u of PlanarFrame (t = cross(up, n))",
+  "layout": {
+    "baseline": 0,
+    "plus": {
+      "turn": [
+        1,
+        2,
+        3
+      ],
+      "flow": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "minus": {
+      "turn": [
+        9,
+        10,
+        11
+      ],
+      "flow": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    }
+  },
+  "c00_equals_q1b_k00": true,
+  "slicesReport": [
+    {
+      "file": "encoded/C00.png",
+      "name": "C00_baseline",
+      "raw_mean": [
+        0.2655,
+        0.1322
+      ],
+      "encoded_mean": [
+        0.2776,
+        0.1258
+      ],
+      "seam_xy": [
+        0.0,
+        0.1
+      ]
+    },
+    {
+      "file": "encoded/C01.png",
+      "name": "C01_pu",
+      "raw_mean": [
+        0.2332,
+        0.1296
+      ],
+      "encoded_mean": [
+        0.2457,
+        0.1233
+      ],
+      "seam_xy": [
+        0.0,
+        0.65
+      ]
+    },
+    {
+      "file": "encoded/C02.png",
+      "name": "C02_pu",
+      "raw_mean": [
+        0.2169,
+        0.1283
+      ],
+      "encoded_mean": [
+        0.2296,
+        0.122
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C03.png",
+      "name": "C03_pu",
+      "raw_mean": [
+        0.2057,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2187,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C04.png",
+      "name": "C04_pu",
+      "raw_mean": [
+        0.1961,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2093,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C05.png",
+      "name": "C05_pu",
+      "raw_mean": [
+        0.1942,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2072,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C06.png",
+      "name": "C06_pu",
+      "raw_mean": [
+        0.2057,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2187,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C07.png",
+      "name": "C07_pu",
+      "raw_mean": [
+        0.1961,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2093,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C08.png",
+      "name": "C08_pu",
+      "raw_mean": [
+        0.1942,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2072,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C09.png",
+      "name": "C09_mu",
+      "raw_mean": [
+        0.2331,
+        0.1296
+      ],
+      "encoded_mean": [
+        0.2456,
+        0.1233
+      ],
+      "seam_xy": [
+        0.0,
+        0.74
+      ]
+    },
+    {
+      "file": "encoded/C10.png",
+      "name": "C10_mu",
+      "raw_mean": [
+        0.2169,
+        0.1283
+      ],
+      "encoded_mean": [
+        0.2296,
+        0.1221
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C11.png",
+      "name": "C11_mu",
+      "raw_mean": [
+        0.2057,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2187,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C12.png",
+      "name": "C12_mu",
+      "raw_mean": [
+        0.1961,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2093,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C13.png",
+      "name": "C13_mu",
+      "raw_mean": [
+        0.1942,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2072,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C14.png",
+      "name": "C14_mu",
+      "raw_mean": [
+        0.2057,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2187,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C15.png",
+      "name": "C15_mu",
+      "raw_mean": [
+        0.1961,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2093,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "file": "encoded/C16.png",
+      "name": "C16_mu",
+      "raw_mean": [
+        0.1942,
+        0.1269
+      ],
+      "encoded_mean": [
+        0.2072,
+        0.1207
+      ],
+      "seam_xy": [
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

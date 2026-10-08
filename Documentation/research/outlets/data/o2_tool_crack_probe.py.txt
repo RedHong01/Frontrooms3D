@@ -1,0 +1,53 @@
+"""See-through test on forced LOD0/1/2 sets: rays aimed at wall points inside
+the footprint (which every closed outlet covers) from 25 directions must hit
+geometry. A miss = a crack the wall shows through. -- <module> ..."""
+import bpy, sys, os, math, importlib, json
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+KIT = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Tools/Blender/frontrooms_kit"
+sys.path.insert(0, KIT); sys.path.insert(0, os.path.join(KIT, "assets"))
+import kitlib, outlet_plate_common as pc
+pc.HAS_LODS = True
+dirs = [Vector((0, 1, 0))]
+for t_deg in (35, 60, 75):
+    for az in range(0, 360, 45):
+        a = math.radians(az); t = math.radians(t_deg)
+        dirs.append(Vector((math.sin(t)*math.cos(a), math.cos(t), math.sin(t)*math.sin(a))).normalized())
+STEP = 0.4
+for modname in sys.argv[sys.argv.index("--")+1:]:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mod = importlib.import_module(modname)
+    kit = kitlib.Kit(mod.NAME)
+    mod.build(kit)
+    o = kit.meta.get("outlet") or {}
+    for lv in (0, 1, 2):
+        objs = pc.lod_parts(kit, lv)
+        V, P = [], []
+        dg = bpy.context.evaluated_depsgraph_get()
+        lo = [1e9]*3; hi = [-1e9]*3
+        for ob in objs:
+            ev = ob.evaluated_get(dg); me = ev.to_mesh()
+            base = len(V)
+            for v in me.vertices:
+                w = ob.matrix_world @ v.co; V.append(w)
+                for k in range(3): lo[k] = min(lo[k], w[k]); hi[k] = max(hi[k], w[k])
+            for p in me.polygons:
+                for k in range(1, len(p.vertices)-1):
+                    P.append((base+p.vertices[0], base+p.vertices[k], base+p.vertices[k+1]))
+            ev.to_mesh_clear()
+        bvh = BVHTree.FromPolygons(V, P)
+        inset = 0.0065 if "Phone4" in mod.NAME else 0.0022
+        x0, x1, z0, z1 = lo[0] + inset, hi[0] - inset, lo[2] + inset, hi[2] - inset
+        nx, nz = int((x1 - x0) / (STEP / 1000)) + 1, int((z1 - z0) / (STEP / 1000)) + 1
+        miss = []
+        by_tilt = {}
+        for i in range(nx):
+            for j in range(nz):
+                tgt = Vector((x0 + i * STEP / 1000, 0.0, z0 + j * STEP / 1000))
+                for d in dirs:
+                    hit = bvh.ray_cast(tgt - d * 0.5, d, 0.5 - 0.00001 / max(d.y, 0.05))
+                    if hit[0] is None:
+                        tilt = round(math.degrees(math.acos(max(-1, min(1, d.y)))))
+                        by_tilt[tilt] = by_tilt.get(tilt, 0) + 1
+                        miss.append((round(tgt.x*1000, 1), round(tgt.z*1000, 1), tilt))
+        print("[cp] %s LOD%d: %d points x %d dirs, %d see-through rays by tilt %s e.g. %s" % (mod.NAME, lv, nx*nz, len(dirs), len(miss), by_tilt, [m for m in miss if m[2] == min(by_tilt)][:4] if by_tilt else []))

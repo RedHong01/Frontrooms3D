@@ -651,11 +651,14 @@ public static class FrontRoomsRenderSetup
 /// sRGB, normals (_N) as normal maps, everything else linear: masks (_S), the
 /// macro wear and paper modulation (_M) and the wallpaper print frame (_P).
 /// Full mip chain, trilinear and 16x anisotropy, repeat, so floors, ceilings
-/// and the print stay sharp at grazing angles. The print frame (_P) is R8G8 on
-/// Standalone: two channels, lossless (R density, G cream; the file's B is the
-/// reserved phosphor channel and 0), half the RGBA32 that NPOT + mips falls back to,
-/// and its mips are rebuilt by FrontRoomsPrintMips (cream-weighted density).
-/// WebGL import settings belong to the WebGL track and are not touched here.
+/// and the print stay sharp at grazing angles. The print frame (_P: R density, G cream;
+/// the file's B is the reserved phosphor channel and 0) is 2048 x 2048 since Q1b, slice 0
+/// of _FR_Print (FrontRoomsPrintArray writes it from K00). It takes the array's import
+/// rules (FrontRoomsPrintArray.ConfigurePlatforms): Standalone tab
+/// FrontRoomsPrintArray.DesktopFormat, WebGL tab only R8G8 at half size, so the static
+/// frame and slice 0 decode to the same texels on every platform. Its mips are rebuilt by
+/// FrontRoomsPrintMips (cream-weighted density). Every other texture's WebGL settings
+/// belong to the WebGL track and are not touched here.
 /// </summary>
 public sealed class FrontRoomsSurfaceTextureImporter : AssetPostprocessor
 {
@@ -667,21 +670,18 @@ public sealed class FrontRoomsSurfaceTextureImporter : AssetPostprocessor
 
     void OnPostprocessTexture(Texture2D texture)
     {
-        if (!assetPath.Replace('\\', '/').Contains("/Resources/Surfaces/Textures/")) return;
-        if (Path.GetFileNameWithoutExtension(assetPath).EndsWith("_P")) FrontRoomsPrintMips.Apply(texture);
+        // Prints in Resources, plus the P0 test's CC0 frame 0 (Editor/Rendering/PrintP0/Ref, never shipped).
+        var path = assetPath.Replace('\\', '/');
+        if (!path.Contains("/Resources/Surfaces/Textures/") && !path.Contains("/Editor/Rendering/PrintP0/Ref/")) return;
+        if (Path.GetFileNameWithoutExtension(path).EndsWith("_P")) FrontRoomsPrintMips.Apply(texture, path);
     }
 
     /// <summary>The import rules for one surface texture (also used for test references kept outside Resources).</summary>
     internal static void Configure(TextureImporter importer, string stem)
     {
-        if (stem.EndsWith("_P"))
-        {
-            var standalone = importer.GetPlatformTextureSettings("Standalone");
-            standalone.overridden = true;
-            standalone.maxTextureSize = 4096;
-            standalone.format = TextureImporterFormat.RG16;
-            importer.SetPlatformTextureSettings(standalone);
-        }
+        // The print frame: the same per-platform format as _FR_Print (desktop up to 4096, so the
+        // 2048 x 3072 CC0 test reference in PrintP0/Ref keeps its size; WebGL 1024).
+        if (stem.EndsWith("_P")) FrontRoomsPrintArray.ConfigurePlatforms(importer, 4096, FrontRoomsPrintArray.WebGLSliceSize);
         importer.mipmapEnabled = true;
         importer.filterMode = FilterMode.Trilinear;
         importer.anisoLevel = 16;
@@ -769,6 +769,28 @@ public static class FrontRoomsPrintMips
         if (texture.mipmapCount < 2) return;
         var levels = Build(texture.GetPixels(0), texture.width, texture.height, texture.mipmapCount);
         for (var m = 1; m < levels.Count; m++) texture.SetPixels(levels[m], m);
+    }
+
+    /// <summary>
+    /// As Apply, from the source file: when a platform's max size (the WebGL tab) hands the
+    /// importer a resampled mip 0, every level, mip 0 included, is taken from the rule chain
+    /// of the full-size source instead, so the reduced print is exactly the chain's lower
+    /// levels, like the reduced _FR_Print tier. At full size this equals Apply(texture).
+    /// </summary>
+    public static void Apply(Texture2D texture, string sourcePath)
+    {
+        if (texture.mipmapCount >= 1 && File.Exists(sourcePath))
+        {
+            var src = FrontRoomsPrintArray.LoadPng(sourcePath, out var sw, out var sh);
+            var skip = FrontRoomsPrintArray.Skip(sw, texture.width);
+            if (skip > 0 && (sw >> skip) == texture.width && Math.Max(1, sh >> skip) == texture.height)
+            {
+                var levels = Build(FrontRoomsPrintArray.ToColors(src), sw, sh, FrontRoomsPrintArray.MipCount(sw, sh));
+                for (var m = 0; m < texture.mipmapCount && m + skip < levels.Count; m++) texture.SetPixels(levels[m + skip], m);
+                return;
+            }
+        }
+        Apply(texture);
     }
 
     /// <summary>Fills one _FR_Print slice (all mips) from its mip 0; call Apply(false) on the array afterwards.</summary>
