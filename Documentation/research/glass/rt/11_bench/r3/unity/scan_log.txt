@@ -1,0 +1,20 @@
+[595] run started · seed 516574485 · RT quality Off · camera FOV 76.00 · far 46.00
+[608] LOADED MAP at start: chunk roots 25 · MeshRenderers 3550 · G14 glass receivers 18 · P1b High receivers (any slot) 27 · High with a slot ≥ 0.25 m 23 · Ultra (any slot) 33 · Ultra ≥ 0.25 m 29
+    High by kit: Kit_TaskChair_LOD0 10, Kit_CRTMonitor_LOD0 8, Kit_DeskPhone_LOD0 4, Kit_PlyCabinet 3, Kit_VendingMachine_LOD0 2
+    High ≥ size by kit: Kit_TaskChair_LOD0 10, Kit_CRTMonitor_LOD0 8, Kit_PlyCabinet 3, Kit_VendingMachine_LOD0 2
+    Ultra-only by kit: Kit_FilingCabinet_LOD0 6
+[623] WINDOW Window pane (282, 206)-(282, 207) · centre (271.50, 1.18, 45.00) · head-on feet (271.50, 0.00, 43.50)
+[636] LOADED MAP at the walk start: chunk roots 25 · MeshRenderers 3748 · G14 glass receivers 38 · P1b High receivers (any slot) 34 · High with a slot ≥ 0.25 m 29 · Ultra (any slot) 45 · Ultra ≥ 0.25 m 40
+    High by kit: Kit_TaskChair_LOD0 11, Kit_CRTMonitor_LOD0 9, Kit_VendingMachine_LOD0 6, Kit_DeskPhone_LOD0 5, Kit_PlyCabinet 3
+    High ≥ size by kit: Kit_TaskChair_LOD0 11, Kit_CRTMonitor_LOD0 9, Kit_VendingMachine_LOD0 6, Kit_PlyCabinet 3
+    Ultra-only by kit: Kit_FilingCabinet_LOD0 11
+[1536] WALK 900 frames at 8 m/s over a 91-cell path (270.00 m, ping-pong) · rescans 62
+    frames with a receiver in the frustum: G14 glass 697 (77.4 %) · P1b High any slot 667 (74.1 %) · High ≥ 0.25 m slot 660 (73.3 %) · Ultra any 846 (94.0 %) · Ultra ≥ size 838 (93.1 %)
+    traced frames (glass OR surface): today (glass only) 697 (77.4 %) · + High any 833 (92.6 %) · + High ≥ size 829 (92.1 %) · + High ≥ size and ≥ 32 px 770 (85.6 %) · ≥ 64 px 697 (77.4 %) · + Ultra any 900 (100.0 %) · + Ultra ≥ size 900 (100.0 %)
+    live surface receivers per frame (would sit on G14's per-frame watch list): High any p50 29 max 34 · High ≥ size p50 25 max 29
+[1536] LOADED MAP at the walk end: chunk roots 25 · MeshRenderers 3597 · G14 glass receivers 56 · P1b High receivers (any slot) 10 · High with a slot ≥ 0.25 m 9 · Ultra (any slot) 18 · Ultra ≥ 0.25 m 17
+    High by kit: Kit_VendingMachine_LOD0 3, Kit_SideTableTurned_LOD0 2, Kit_CRTMonitor_LOD0 2, Kit_TaskChair_LOD0 1, Kit_PlyCabinet 1, Kit_DeskPhone_LOD0 1
+    High ≥ size by kit: Kit_VendingMachine_LOD0 3, Kit_SideTableTurned_LOD0 2, Kit_CRTMonitor_LOD0 2, Kit_TaskChair_LOD0 1, Kit_PlyCabinet 1
+    Ultra-only by kit: Kit_FilingCabinet_LOD0 8
+[1536] UNIQUE over the run (all scans): G14 glass receivers 80 · High any 41 · High ≥ size 35 · Ultra any 56 · Ultra ≥ size 50
+[1536] DONE

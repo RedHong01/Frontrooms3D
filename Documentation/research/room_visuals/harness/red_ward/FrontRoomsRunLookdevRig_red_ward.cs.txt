@@ -1,0 +1,210 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+/// <summary>
+/// CLONE-ONLY look-dev rig for Run! direction A (RED WARD). Deterministic:
+/// Evaluate(t) sets every light, emission, the corridor ambient, the corridor
+/// haze colour, the eye-adaptation exposure and the reflection-probe set for
+/// t = seconds since the trip (t &lt; 0 = armed). No Play Mode, no random rolls.
+/// A production FrontRoomsRunRig would own the same state table.
+///
+/// Armed ("night ward"): troffers k = 0, 2, 4, 6, 8 lit, cool white
+/// (.93, .96, 1.0) at 3.5; odd k off (lens glow .04). Hanging EXIT signs
+/// always on and steady (the sign lights never change).
+/// Trip at t = 0: lit troffers 1 -> 0 over 0.08 s (one cut); the lens glow
+/// decays with tau 0.12 s to .04 (phosphor afterglow). The smoke detector LED
+/// blinks once every 8 s armed, burns steady tripped. Corridor ambient
+/// 0.6 x global armed, tinted red bounce tripped.
+/// Eye adaptation (look-dev addition, see 11_run_dir_red_ward.md): after the
+/// cut the corridor's post exposure rises smoothly from 0 to +E stops
+/// (delay 0.15 s, tau 0.5 s), so the steady signs read as the only fill
+/// without being bright enough to turn the armed ward red.
+/// </summary>
+public sealed class FrontRoomsRunLookdevRig : MonoBehaviour
+{
+    public Color trofferColor = new Color(.93f, .96f, 1f);
+    public float trofferIntensity = 3.5f;
+    public float lensLit = 2.6f;
+    public float lensOff = .04f;
+    public float cutSeconds = .08f;
+    public float afterglowTau = .12f;
+    public float beamDensity = .012f;
+    public float ambientArmed = .6f;
+    public float ambientTripped = .15f;
+    public Color ambientTrippedTint = new Color(1f, .35f, .30f);
+    public float ledPeriod = 8f;
+    public float ledOnSeconds = .12f;
+    public Color ledColor = new Color(1f, .05f, .03f);
+    public float ledIntensity = 6f;
+
+    // Eye adaptation (post exposure in stops on the Run_A volume).
+    public float exposureTripped = 3f;
+    public float adaptDelay = .15f;
+    public float adaptTau = .5f;
+    public ColorAdjustments exposure;
+    /// <summary>Emissive faces that hold their on-screen value through the adaptation:
+    /// emission x 2^(-E x faceHold). 1 = fully held, 0 = they brighten with the eye.</summary>
+    public float faceHold = 1f;
+    public readonly List<(Material mat, Color baseEmission)> heldFaces = new List<(Material, Color)>();
+
+    // Corridor haze (RenderSettings fog colour, gamma space).
+    public Color fogArmed = new Color(.16f, .15f, .11f);
+    public Color fogTripped = new Color(.10f, .018f, .014f);
+
+    public readonly List<Light> troffers = new List<Light>();
+    public readonly List<bool> trofferArmedLit = new List<bool>();
+    public readonly List<Renderer> trofferLenses = new List<Renderer>();
+    public readonly List<Renderer> trofferBeams = new List<Renderer>();
+    public readonly List<Light> signLights = new List<Light>();
+    public readonly List<Renderer> corridorRenderers = new List<Renderer>();
+    /// <summary>The EXIT sign housings and faces. They hang in the middle of their own light
+    /// pool, so besides the corridor ambient they get the bounce of the lit floor and walls
+    /// around them (URP has no realtime bounce; a baked probe at the sign would give the same).
+    /// Without it the off-white stencil face rendered near-black, like a modern LED sign.</summary>
+    public readonly List<Renderer> signRenderers = new List<Renderer>();
+    public Color signBounceArmed = new Color(.93f, .96f, 1f) * .15f;
+    public Color signBounceTripped = new Color(1f, .13f, .07f) * .15f;
+    public readonly List<ReflectionProbe> probes = new List<ReflectionProbe>();
+    public readonly List<Texture> probesArmed = new List<Texture>();
+    public readonly List<Texture> probesTripped = new List<Texture>();
+    public Renderer led;
+    /// <summary>Zone reflection per state (the game's FrontRoomsZoneReflection path): the default
+    /// reflection cube and its linear intensity, armed while any tube is lit, tripped after.</summary>
+    public bool zoneSwap;
+    public Texture zoneArmed, zoneTripped;
+    public float zoneLinear = .5f;
+    public SphericalHarmonicsL2 globalAmbient;
+
+    /// <summary>Last evaluated values, for the report.</summary>
+    public float LastTrofferLevel { get; private set; }
+    public float LastLensGlow { get; private set; }
+    public float LastAmbientScale { get; private set; }
+    public float LastExposure { get; private set; }
+    public bool LastLedOn { get; private set; }
+
+    MaterialPropertyBlock blockStore;
+    MaterialPropertyBlock block => blockStore ??= new MaterialPropertyBlock();
+    readonly SphericalHarmonicsL2[] shArray = new SphericalHarmonicsL2[1];
+
+    public static float TrofferLevel(float t, float cut) => t < 0f ? 1f : Mathf.Clamp01(1f - t / Mathf.Max(1e-4f, cut));
+
+    public float Exposure(float t) => t < 0f ? 0f : exposureTripped * (1f - Mathf.Exp(-Mathf.Max(0f, t - adaptDelay) / Mathf.Max(1e-4f, adaptTau)));
+
+    public void Evaluate(float t)
+    {
+        var level = TrofferLevel(t, cutSeconds);
+        LastExposure = Exposure(t);
+        // The off-lens floor (.04) is a display value: hold it through the adaptation so
+        // the dead tubes do not turn white when the eye opens up.
+        var offFloor = lensOff * Mathf.Pow(2f, -LastExposure);
+        var glow = t < 0f ? lensLit : offFloor + (lensLit - offFloor) * Mathf.Exp(-t / afterglowTau);
+        LastTrofferLevel = level;
+        LastLensGlow = glow;
+        for (var i = 0; i < troffers.Count; i++)
+        {
+            var lit = trofferArmedLit[i];
+            var light = troffers[i];
+            light.color = trofferColor;
+            light.intensity = lit ? trofferIntensity * level : 0f;
+            light.enabled = lit && level > .0005f;
+            var lens = trofferLenses[i];
+            lens.GetPropertyBlock(block);
+            block.SetColor("_EmissionColor", trofferColor * (lit ? glow : offFloor));
+            lens.SetPropertyBlock(block);
+            var beam = trofferBeams[i];
+            if (beam != null)
+            {
+                beam.GetPropertyBlock(block);
+                block.SetColor("_Color", trofferColor);
+                block.SetFloat("_Density", lit ? beamDensity * level : 0f);
+                beam.SetPropertyBlock(block);
+                beam.enabled = lit && level > .0005f;
+            }
+        }
+        // The signs never change: steady, always on.
+        foreach (var s in signLights) s.enabled = true;
+
+        // Smoke detector LED: a blink every 8 s armed, steady tripped.
+        if (led != null)
+        {
+            var on = t >= 0f || Mathf.Repeat(t, ledPeriod) < ledOnSeconds;
+            LastLedOn = on;
+            led.GetPropertyBlock(block);
+            block.SetColor("_EmissionColor", on ? ledColor * ledIntensity : Color.black);
+            led.SetPropertyBlock(block);
+        }
+
+        // Corridor ambient: the global trilight SH, scaled (and tinted when
+        // tripped), following the troffer level so the bounce drops with the cut.
+        var armed = globalAmbient * ambientArmed;
+        var tripped = globalAmbient * ambientTripped;
+        for (var c = 0; c < 9; c++)
+        {
+            tripped[0, c] *= ambientTrippedTint.r;
+            tripped[1, c] *= ambientTrippedTint.g;
+            tripped[2, c] *= ambientTrippedTint.b;
+        }
+        var sh = new SphericalHarmonicsL2();
+        for (var ch = 0; ch < 3; ch++)
+            for (var c = 0; c < 9; c++)
+                sh[ch, c] = Mathf.Lerp(tripped[ch, c], armed[ch, c], level);
+        LastAmbientScale = Mathf.Lerp(ambientTripped, ambientArmed, level);
+        ApplyAmbient(sh);
+        var signSh = sh;
+        signSh.AddAmbientLight(Color.Lerp(signBounceTripped, signBounceArmed, level));
+        ApplyAmbient(signSh, signRenderers);
+
+        // Haze follows the light that fills it.
+        RenderSettings.fogColor = Color.Lerp(fogTripped, fogArmed, level);
+
+        // Sign faces: steady on screen (see faceHold).
+        var hold = Mathf.Pow(2f, -LastExposure * faceHold);
+        foreach (var (mat, baseEmission) in heldFaces)
+            if (mat != null) mat.SetColor("_EmissionColor", baseEmission * hold);
+
+        // Eye adaptation on the corridor volume.
+        if (exposure != null)
+        {
+            exposure.postExposure.overrideState = true;
+            exposure.postExposure.value = LastExposure;
+        }
+
+        // Reflection probes: the armed captures while any tube is lit, the tripped ones after.
+        var useArmed = level > .5f;
+        if (zoneSwap)
+        {
+            var cube = useArmed ? zoneArmed : zoneTripped;
+            if (cube != null)
+            {
+                RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+                RenderSettings.customReflectionTexture = cube;
+                RenderSettings.reflectionIntensity = Mathf.LinearToGammaSpace(zoneLinear);
+            }
+        }
+
+        for (var i = 0; i < probes.Count; i++)
+        {
+            var tex = useArmed ? (i < probesArmed.Count ? probesArmed[i] : null) : (i < probesTripped.Count ? probesTripped[i] : null);
+            if (tex == null) continue;
+            probes[i].mode = ReflectionProbeMode.Custom;
+            probes[i].customBakedTexture = tex;
+        }
+    }
+
+    public void ApplyAmbient(SphericalHarmonicsL2 sh) => ApplyAmbient(sh, corridorRenderers);
+
+    public void ApplyAmbient(SphericalHarmonicsL2 sh, List<Renderer> renderers)
+    {
+        shArray[0] = sh;
+        foreach (var r in renderers)
+        {
+            if (r == null) continue;
+            r.lightProbeUsage = LightProbeUsage.CustomProvided;
+            r.GetPropertyBlock(block);
+            block.CopySHCoefficientArraysFrom(shArray);
+            r.SetPropertyBlock(block);
+        }
+    }
+}

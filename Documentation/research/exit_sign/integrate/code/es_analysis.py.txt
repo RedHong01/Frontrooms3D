@@ -1,0 +1,196 @@
+"""Exit-sign integrate stage: frame-probe flash counts, a Level/luminance chart, before|after pairs,
+and the regression diff of two capture folders. numpy + Pillow only (W/venv).
+
+  python es_analysis.py probe <probe_default.csv> <probe_reduced.csv> <level_trace.csv> <out_dir>
+  python es_analysis.py pair <before.png> <after.png> <out.jpg> [label_before] [label_after]
+  python es_analysis.py diff <dir_before> <dir_after> <out.tsv>
+  python es_analysis.py sheet <out.jpg> <cols> <thumb_w> <files...>
+"""
+import csv, json, os, sys
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+FONT = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+
+
+def font(size):
+    try:
+        return ImageFont.truetype(FONT, size)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def transitions(t, v, delta, dark_bar=None):
+    """WCAG-style transitions: a change >= delta from the last extreme; the darker side below dark_bar."""
+    out, ext, d = [], v[0], 0
+    for ti, vi in zip(t, v):
+        if d >= 0:
+            if vi > ext:
+                ext = vi
+            elif ext - vi >= delta and (dark_bar is None or vi < dark_bar):
+                out.append(ti); d = -1; ext = vi
+        else:
+            if vi < ext:
+                ext = vi
+            elif vi - ext >= delta and (dark_bar is None or ext < dark_bar):
+                out.append(ti); d = 1; ext = vi
+    return out
+
+
+def max_per_second(tr):
+    best, j = 0, 0
+    for i in range(len(tr)):
+        while tr[i] - tr[j] >= 1.0:
+            j += 1
+        best = max(best, i - j + 1)
+    return best / 2.0
+
+
+def episodes(tr, gap=2.0):
+    eps, start, last = [], None, None
+    for t in tr:
+        if start is None or t - last >= gap:
+            if start is not None:
+                eps.append(last - start)
+            start = t
+        last = t
+    if start is not None:
+        eps.append(last - start)
+    return eps
+
+
+def load(p):
+    with open(p) as f:
+        rows = list(csv.DictReader(f))
+    return {k: np.array([float(r[k]) for r in rows]) for k in rows[0]}
+
+
+def probe(default, reduced, trace, out_dir):
+    res = {}
+    for name, p in (("default", default), ("reduced", reduced)):
+        d = load(p)
+        t = d["t"]
+        sign = d["sign_lum"]
+        res[name] = {
+            "frames": int(len(t)),
+            "level_min": float(d["level"].min()), "level_max": float(d["level"].max()),
+            "sign_lum_min": float(sign.min()), "sign_lum_max": float(sign.max()),
+            "frame_lum_min": float(d["frame_lum"].min()), "frame_lum_max": float(d["frame_lum"].max()),
+            # WCAG 2.3.1 general flash, absolute relative luminance (delta 0.1, darker < 0.8)
+            "general_flash_frame": max_per_second(transitions(t, d["frame_lum"], .1, .8)),
+            "general_flash_sign": max_per_second(transitions(t, sign, .1, .8)),
+            # stricter: the sign's own luminance, 10 % of its own maximum (treats every drop-out as a flash)
+            "self_norm_transitions": len(transitions(t, sign / max(sign.max(), 1e-9), .1)),
+            "self_norm_flashes_per_s_max": max_per_second(transitions(t, sign / max(sign.max(), 1e-9), .1)),
+            "self_norm_longest_episode_s": max(episodes(transitions(t, sign / max(sign.max(), 1e-9), .1)) or [0.0]),
+            "level_transitions": len(transitions(t, d["level"], .1, .8)),
+            "corr_level_sign": float(np.corrcoef(d["level"], sign)[0, 1]) if sign.std() > 0 and d["level"].std() > 0 else None,
+        }
+        res[name + "_series"] = (t, d["level"], sign / max(sign.max(), 1e-9))
+    tr = load(trace)
+    # chart: 1600 x 760, Level trace (60 s of seed 1) on top, probe default/reduced underneath
+    W, H = 1600, 760
+    im = Image.new("RGB", (W, H), (255, 255, 255))
+    dr = ImageDraw.Draw(im)
+    f1, f2 = font(22), font(16)
+
+    def plot(box, xs, ys, xmax, color, label, ly):
+        x0, y0, x1, y1 = box
+        dr.rectangle(box, outline=(200, 200, 200))
+        for g in (0.0, 0.5, 1.0):
+            gy = y1 - g * (y1 - y0)
+            dr.line([(x0, gy), (x1, gy)], fill=(232, 232, 232))
+            dr.text((x0 - 34, gy - 8), "%.1f" % g, fill=(90, 90, 90), font=f2)
+        pts = [(x0 + (x / xmax) * (x1 - x0), y1 - max(0.0, min(1.0, y)) * (y1 - y0)) for x, y in zip(xs, ys) if x <= xmax]
+        dr.line(pts, fill=color, width=2)
+        dr.text((x0 + 8, y0 + ly), label, fill=color, font=f1)
+
+    plot((60, 20, 1580, 340), tr["t"], tr["level"], 60.0, (200, 20, 20), "Driver Level, LOOSE, seed 1, 60 s at 60 Hz (1 = LIT)", 6)
+    for s in range(0, 61, 10):
+        dr.text((60 + s / 60 * 1520 - 8, 344), "%d s" % s, fill=(90, 90, 90), font=f2)
+    t, lv, sn = res["default_series"]
+    plot((60, 400, 1580, 720), t, sn, 12.0, (200, 20, 20), "Rendered sign luminance (own max = 1), LOOSE, 12 s", 6)
+    t2, lv2, sn2 = res["reduced_series"]
+    plot((60, 400, 1580, 720), t2, sn2, 12.0, (40, 40, 160), "Same sign, REDUCE FLASHING on", 36)
+    for s in range(0, 13, 2):
+        dr.text((60 + s / 12 * 1520 - 8, 724), "%d s" % s, fill=(90, 90, 90), font=f2)
+    os.makedirs(out_dir, exist_ok=True)
+    im.save(os.path.join(out_dir, "es_i_t5_flash_chart.png"))
+    for k in ("default_series", "reduced_series"):
+        res.pop(k)
+    with open(os.path.join(out_dir, "probe_flash.json"), "w") as f:
+        json.dump(res, f, indent=1)
+    print(json.dumps(res, indent=1))
+
+
+def label(im, text, xy, size=34):
+    dr = ImageDraw.Draw(im)
+    f = font(size)
+    x, y = xy
+    tw = dr.textlength(text, font=f)
+    dr.rectangle([x, y, x + tw + 20, y + size + 14], fill=(10, 10, 10))
+    dr.text((x + 10, y + 6), text, fill=(255, 255, 255), font=f)
+
+
+def pair(a, b, out, la="BEFORE", lb="AFTER"):
+    A = Image.open(a).convert("RGB")
+    B = Image.open(b).convert("RGB")
+    w, h = A.size
+    im = Image.new("RGB", (w * 2 + 16, h), (255, 255, 255))
+    im.paste(A, (0, 0))
+    im.paste(B, (w + 16, 0))
+    label(im, la, (24, 24))
+    label(im, lb, (w + 16 + 24, 24))
+    im = im.resize((1920, int(1920 * h / (w * 2 + 16))), Image.LANCZOS)
+    im.save(out, quality=88)
+    print(out, im.size)
+
+
+def diff(da, db, out):
+    rows = []
+    names = sorted(f for f in os.listdir(da) if f.endswith(".png"))
+    for n in names:
+        pb = os.path.join(db, n)
+        if not os.path.exists(pb):
+            rows.append((n, "missing", "", "", ""))
+            continue
+        A = np.asarray(Image.open(os.path.join(da, n)).convert("RGB"), np.int16)
+        B = np.asarray(Image.open(pb).convert("RGB"), np.int16)
+        if A.shape != B.shape:
+            rows.append((n, "size", "", "", ""))
+            continue
+        d = np.abs(A - B).max(-1)
+        rows.append((n, "ok", "%.3f" % d.mean(), "%.4f" % (d > 8).mean(), "%d" % d.max()))
+    with open(out, "w") as f:
+        f.write("frame\tstate\tmean_abs_diff\tfrac_px_over_8\tmax\n")
+        for r in rows:
+            f.write("\t".join(r) + "\n")
+    for r in rows:
+        print("\t".join(r))
+
+
+def sheet(out, cols, tw, files):
+    ims = []
+    for p in files:
+        im = Image.open(p).convert("RGB")
+        ims.append(im.resize((tw, int(im.size[1] * tw / im.size[0])), Image.LANCZOS))
+    th = max(i.size[1] for i in ims)
+    rows = (len(ims) + cols - 1) // cols
+    g = 12
+    S = Image.new("RGB", (cols * tw + (cols - 1) * g, rows * th + (rows - 1) * g), (255, 255, 255))
+    for k, im in enumerate(ims):
+        S.paste(im, ((k % cols) * (tw + g), (k // cols) * (th + g)))
+    S.save(out, quality=88)
+    print(out, S.size)
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1]
+    if cmd == "probe":
+        probe(*sys.argv[2:6])
+    elif cmd == "pair":
+        pair(*sys.argv[2:])
+    elif cmd == "diff":
+        diff(*sys.argv[2:5])
+    elif cmd == "sheet":
+        sheet(sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5:])

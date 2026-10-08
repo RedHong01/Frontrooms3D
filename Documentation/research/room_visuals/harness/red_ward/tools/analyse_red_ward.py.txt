@@ -1,0 +1,325 @@
+"""Run! A (RED WARD) look-dev: measurements, derived frames, contact sheet, export.
+
+Usage: python3 analyse.py <verification dir> <doc images dir> <out json> [--export]
+
+Reads the PNG renders + ID masks written by FrontRoomsRunLookdev.cs and
+ - runs run_research/measure.py's statistics on every frame,
+ - decodes the ID masks (flat unlit colours on a 0 / .5 / 1 lattice),
+ - S2: is the sign row and the goal door in frame, door height in px,
+ - S1b: goal region vs every other window of the same size (greyscale Y),
+ - S1b: each obstacle's mean Y vs a 12 px ring around it,
+ - C4: Relay body (+ head) vs a 12 px ring, also on the protan copy,
+ - the trip sequence: per-frame mean Y and saturated-red share (photosafety),
+ - writes greyscale (linear Rec. 709 Y) and protan (Machado 2009, severity 1)
+   copies, a contact sheet, and (with --export) the JPGs for the doc folder.
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+
+class ndimage:
+    """numpy stand-in for scipy.ndimage.binary_dilation (cross structure), W/venv has no scipy."""
+    @staticmethod
+    def binary_dilation(mask, iterations=1):
+        m = np.asarray(mask, bool).copy()
+        for _ in range(iterations):
+            g = m.copy()
+            g[1:, :] |= m[:-1, :]; g[:-1, :] |= m[1:, :]
+            g[:, 1:] |= m[:, :-1]; g[:, :-1] |= m[:, 1:]
+            m = g
+        return m
+
+V, DOC, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+EXPORT = "--export" in sys.argv
+KEY = "red_ward"
+
+
+def srgb_to_lin(c):
+    c = c / 255.0
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def lin_to_srgb(l):
+    l = np.clip(l, 0, 1)
+    return np.where(l <= 0.0031308, l * 12.92, 1.055 * np.power(l, 1 / 2.4) - 0.055) * 255.0
+
+
+def load(name):
+    return np.asarray(Image.open(os.path.join(V, name + ".png")).convert("RGB")).astype(np.float32)
+
+
+def lum(img):
+    return srgb_to_lin(img) @ np.array([.2126, .7152, .0722])
+
+
+def stats(img):
+    Y = lum(img)
+    r, g, b = img[..., 0], img[..., 1], img[..., 2]
+    s = r + g + b + 1e-6
+    redfrac = r / s
+    p = np.percentile(Y, [5, 50, 95, 99.5])
+    return dict(Y_p5=round(float(p[0]), 4), Y_p50=round(float(p[1]), 4), Y_p95=round(float(p[2]), 4), Y_p995=round(float(p[3]), 4),
+                contrast_p95_p5=round(float((p[2] + .05) / (p[0] + .05)), 2),
+                raw_p95_over_p5=round(float(p[2] / max(p[0], 1e-5)), 1),
+                red_dominant_pct=round(float(((redfrac > 0.6) & (s > 30)).mean() * 100), 1),
+                sat_red_pct=round(float(((redfrac >= 0.8) & (s > 30)).mean() * 100), 1),
+                mean_rgb=[round(float(x), 1) for x in img.reshape(-1, 3).mean(0)])
+
+
+ID_COLOURS = {
+    "door": (1, 0, 0), "lite": (1, 1, 1), "wall_sign": (0, 1, 0),
+    "sign0": (0, 0, 1), "sign1": (1, 1, 0), "sign2": (1, 0, 1), "sign3": (0, 1, 1),
+    "relay_body": (1, .5, 0), "relay_head": (.5, 0, 1),
+    "stretcher": (.5, 1, 0), "chairs": (0, .5, 1), "wheelchair": (1, 0, .5), "cart": (0, 1, .5), "detector": (.5, .5, .5), "ivpole": (.5, 0, 0),
+}
+
+
+def id_masks(name):
+    im = np.asarray(Image.open(os.path.join(V, name + "_id.png")).convert("RGB")).astype(np.float32) / 255.0
+    q = np.where(im < .25, 0.0, np.where(im < .85, .5, 1.0))
+    out = {}
+    for k, c in ID_COLOURS.items():
+        out[k] = np.all(np.abs(q - np.array(c)) < .01, axis=-1)
+    return out
+
+
+def ring(mask, px=12):
+    grown = ndimage.binary_dilation(mask, iterations=px)
+    return grown & ~mask
+
+
+def bbox(mask):
+    ys, xs = np.nonzero(mask)
+    if len(xs) == 0:
+        return None
+    return [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+
+
+def contrast(a, b):
+    hi, lo = max(a, b), min(a, b)
+    return dict(ratio=round(hi / max(lo, 1e-6), 2), wcag=round((hi + .05) / (lo + .05), 2))
+
+
+PROTAN = np.array([[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]])
+
+
+def protan(img):
+    l = srgb_to_lin(img) @ PROTAN.T
+    return lin_to_srgb(l)
+
+
+def grey(img):
+    Y = lum(img)
+    g = lin_to_srgb(Y)
+    return np.repeat(g[..., None], 3, axis=-1)
+
+
+report = {"frames": {}, "checks": {}}
+MAIN = ["s1a", "s1b", "s2", "s3", "c1", "c2", "c3", "c4", "s3x", "s3x_armed", "s2_tripped", "c4_gamerig", "dbg_s1b_noexp", "dbg_s1b_noprobe"]
+frames = {}
+for n in MAIN:
+    if os.path.exists(os.path.join(V, n + ".png")):
+        frames[n] = load(n)
+        report["frames"][n] = stats(frames[n])
+
+derived = {}
+for n in ["s1a", "s1b", "s2", "c4"]:
+    derived[n + "_grey"] = grey(frames[n])
+for n in ["s1b", "c4"]:
+    derived[n + "_protan"] = protan(frames[n])
+for k, img in derived.items():
+    report["frames"][k] = stats(img)
+
+# ---- S2: readable before entry
+m = id_masks("s2")
+door = m["door"] | m["lite"]
+signs = {k: int(m[k].sum()) for k in ["sign0", "sign1", "sign2", "sign3", "wall_sign"]}
+bb = bbox(door)
+report["checks"]["S2_readable_before_entry"] = dict(
+    door_bbox=bb, door_height_px=(bb[3] - bb[1] + 1) if bb else 0, door_visible_px=int(door.sum()),
+    sign_pixels=signs, signs_visible=sum(1 for k in ["sign0", "sign1", "sign2", "sign3"] if signs[k] > 0),
+    pass_=bool(bb and (bb[3] - bb[1] + 1) >= 40 and sum(1 for k in ["sign0", "sign1", "sign2", "sign3"] if signs[k] > 0) >= 3))
+
+# ---- S1b: goal region brightest (greyscale), obstacles
+m = id_masks("s1b")
+Y = lum(frames["s1b"])
+goal = m["door"] | m["lite"] | m["wall_sign"]
+gb = bbox(goal)
+goal_mean = float(Y[goal].mean())
+lite_mean = float(Y[m["lite"]].mean()) if m["lite"].any() else 0.0
+# Every window of the goal's bbox size, stride 8 px, excluding windows that overlap the goal bbox.
+h, w = gb[3] - gb[1] + 1, gb[2] - gb[0] + 1
+ii = np.pad(Y, ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+goal_box_mean_pre = float((ii[gb[3] + 1, gb[2] + 1] - ii[gb[1], gb[2] + 1] - ii[gb[3] + 1, gb[0]] + ii[gb[1], gb[0]]) / (h * w))
+best = (0, None)
+for y0 in range(0, Y.shape[0] - h, 8):
+    for x0 in range(0, Y.shape[1] - w, 8):
+        if not (x0 + w < gb[0] or x0 > gb[2] or y0 + h < gb[1] or y0 > gb[3]):
+            continue
+        s = ii[y0 + h, x0 + w] - ii[y0, x0 + w] - ii[y0 + h, x0] + ii[y0, x0]
+        mval = s / (h * w)
+        if mval > best[0]:
+            best = (float(mval), [x0, y0, x0 + w, y0 + h])
+goal_box_mean = float((ii[gb[3] + 1, gb[2] + 1] - ii[gb[1], gb[2] + 1] - ii[gb[3] + 1, gb[0]] + ii[gb[1], gb[0]]) / (h * w))
+fixtures = {k: round(float(Y[m[k]].mean()), 4) for k in ["sign0", "sign1", "sign2", "sign3"] if m[k].any()}
+# Same windows, but windows touching a fixture (the hanging signs and their ceiling glow,
+# dilated 24 px) are excluded: the brief's rule allows the goal to rank "second after a fixture".
+fix = ndimage.binary_dilation(m["sign0"] | m["sign1"] | m["sign2"] | m["sign3"], iterations=24)
+fi = np.pad(fix.astype(np.float64), ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+best_nf, n_above, n_all = (0, None), 0, 0
+for y0 in range(0, Y.shape[0] - h, 8):
+    for x0 in range(0, Y.shape[1] - w, 8):
+        if not (x0 + w < gb[0] or x0 > gb[2] or y0 + h < gb[1] or y0 > gb[3]):
+            continue
+        sv = ii[y0 + h, x0 + w] - ii[y0, x0 + w] - ii[y0 + h, x0] + ii[y0, x0]
+        mval = sv / (h * w)
+        n_all += 1
+        if mval > goal_box_mean_pre:
+            n_above += 1
+        if fi[y0 + h, x0 + w] - fi[y0, x0 + w] - fi[y0 + h, x0] + fi[y0, x0] > 0:
+            continue
+        if mval > best_nf[0]:
+            best_nf = (float(mval), [x0, y0, x0 + w, y0 + h])
+objs = {k: float(Y[m[k]].mean()) for k in ["sign0", "sign1", "sign2", "sign3", "stretcher", "chairs", "wheelchair", "ivpole", "cart"] if m[k].sum() >= 20}
+report["checks"]["S1b_goal_brightest_detail"] = dict(
+    best_nonfixture_window_meanY=round(best_nf[0], 4), best_nonfixture_window=best_nf[1],
+    windows_brighter_than_goal_box=n_above, windows_total=n_all,
+    lite_meanY=round(lite_mean, 4), brightest_other_object=max(objs, key=objs.get) if objs else None,
+    brightest_other_object_meanY=round(max(objs.values()), 4) if objs else None,
+    lite_is_brightest_object=bool(objs and lite_mean > max(objs.values())))
+report["checks"]["S1b_goal_brightest"] = dict(
+    goal_bbox=gb, goal_mask_meanY=round(goal_mean, 4), lite_meanY=round(lite_mean, 4), lite_maxY=round(float(Y[m["lite"]].max()), 4) if m["lite"].any() else 0,
+    goal_box_meanY=round(goal_box_mean, 4), best_other_window_meanY=round(best[0], 4), best_other_window=best[1],
+    hanging_sign_meanY=fixtures, frame_maxY_outside_goal=round(float(Y[~ndimage.binary_dilation(goal, iterations=6)].max()), 4))
+
+
+def white_outside(name, goal_mask):
+    """Near-white light outside the goal (rule: the lite is the only white): pixels with
+    linear Y > 0.15 whose chroma (max-min)/max in sRGB is < 0.35."""
+    img = frames[name]
+    Yw = lum(img)
+    mx, mn = img.max(-1), img.min(-1)
+    chroma = (mx - mn) / np.maximum(mx, 1e-3)
+    outside = ~ndimage.binary_dilation(goal_mask, iterations=6) if goal_mask is not None else np.ones(Yw.shape, bool)
+    w = (Yw > .15) & (chroma < .35) & outside
+    return dict(white_px=int(w.sum()), white_bbox=bbox(w), maxY_white=round(float(Yw[w].max()), 4) if w.any() else 0.0)
+
+
+report["checks"]["white_outside_goal"] = {}
+for n in ["s1b", "c3", "s3", "c4"]:
+    if n not in frames:
+        continue
+    gm = None
+    if os.path.exists(os.path.join(V, n + "_id.png")):
+        mm = id_masks(n)
+        gm = mm["door"] | mm["lite"] | mm["wall_sign"]
+    elif n == "s1b":
+        gm = goal
+    report["checks"]["white_outside_goal"][n] = white_outside(n, gm)
+obst = {}
+for k in ["stretcher", "chairs", "wheelchair", "ivpole", "cart"]:
+    mk = m[k]
+    if mk.sum() < 20:
+        obst[k] = dict(pixels=int(mk.sum()), note="not in frame / too small")
+        continue
+    rg = ring(mk) & ~(m["door"] | m["lite"])
+    a, b = float(Y[mk].mean()), float(Y[rg].mean())
+    obst[k] = dict(pixels=int(mk.sum()), bbox=bbox(mk), objY=round(a, 4), ringY=round(b, 4), **contrast(a, b))
+    obst[k]["pass_"] = obst[k]["ratio"] >= 2
+# The brief lists the wheelchair and its IV pole as one obstacle (one row, z 18.5): measure the pair too.
+mk = m["wheelchair"] | m["ivpole"]
+rg = ring(mk) & ~(m["door"] | m["lite"])
+a, b = float(Y[mk].mean()), float(Y[rg].mean())
+obst["wheelchair+ivpole"] = dict(pixels=int(mk.sum()), bbox=bbox(mk), objY=round(a, 4), ringY=round(b, 4), **contrast(a, b))
+obst["wheelchair+ivpole"]["pass_"] = obst["wheelchair+ivpole"]["ratio"] >= 2
+report["checks"]["S1b_obstacles"] = obst
+
+# ---- C4: Relay silhouette
+for src, img in [("c4", frames["c4"]), ("c4_protan", derived["c4_protan"])]:
+    m = id_masks("c4")
+    body = m["relay_body"]
+    whole = m["relay_body"] | m["relay_head"]
+    Yc = lum(img)
+    rg = ring(whole)
+    a, b = float(Yc[body].mean()), float(Yc[rg].mean())
+    res = dict(body_px=int(body.sum()), bbox=bbox(whole), bodyY=round(a, 4), ringY=round(b, 4), **contrast(a, b))
+    res["pass_"] = res["ratio"] >= 4
+    report["checks"]["C4_relay_" + src] = res
+if "c4_gamerig" in frames and os.path.exists(os.path.join(V, "c4_gamerig_id.png")):
+    m = id_masks("c4_gamerig")
+    whole = m["relay_body"] | m["relay_head"]
+    Yc = lum(frames["c4_gamerig"])
+    a, b = float(Yc[m["relay_body"]].mean()), float(Yc[ring(whole)].mean())
+    report["checks"]["C4_relay_gamerig_reference"] = dict(body_px=int(m["relay_body"].sum()), bbox=bbox(whole), bodyY=round(a, 4), ringY=round(b, 4), **contrast(a, b))
+
+# ---- Trip sequence (photosafety)
+seq_dir = os.path.join(V, "seq")
+if os.path.isdir(seq_dir):
+    rows = [l.strip().split(",") for l in open(os.path.join(seq_dir, "seq.csv")).read().strip().split("\n")[1:]]
+    seq = []
+    for r in rows:
+        img = np.asarray(Image.open(os.path.join(seq_dir, "seq_%03d.png" % int(r[0]))).convert("RGB")).astype(np.float32)
+        Yi = lum(img)
+        rr, gg, bb_ = img[..., 0], img[..., 1], img[..., 2]
+        s = rr + gg + bb_ + 1e-6
+        seq.append(dict(frame=int(r[0]), t=float(r[1]), troffer=float(r[2]), glow=float(r[3]), amb=float(r[4]), exposure=float(r[5]), led=int(r[6]),
+                        meanY=round(float(Yi.mean()), 4), sat_red_pct=round(float(((rr / s >= .8) & (s > 30)).mean() * 100), 1)))
+    # WCAG-style opposing transitions on the frame mean: a transition is a monotone run whose
+    # total change is >= 10 % of the brighter end with the darker end < 0.8.
+    ys = [x["meanY"] for x in seq]
+    trans = []
+    i = 0
+    while i < len(ys) - 1:
+        j = i
+        d = np.sign(ys[i + 1] - ys[i])
+        if d == 0:
+            i += 1
+            continue
+        while j < len(ys) - 1 and np.sign(ys[j + 1] - ys[j]) in (d, 0):
+            j += 1
+        hi, lo = max(ys[i], ys[j]), min(ys[i], ys[j])
+        if hi > 0 and (hi - lo) / hi >= .10 and lo < .8:
+            trans.append(dict(from_t=seq[i]["t"], to_t=seq[j]["t"], dir="down" if d < 0 else "up", fromY=ys[i], toY=ys[j],
+                              seconds=round(seq[j]["t"] - seq[i]["t"], 3)))
+        i = j
+    report["checks"]["photosafety_sequence"] = dict(frames=seq, transitions=trans)
+
+json.dump(report, open(OUT, "w"), indent=1)
+
+# ---- Derived files and export
+def save_jpg(arr, path):
+    im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+    if im.width > 1920:
+        im = im.resize((1920, int(im.height * 1920 / im.width)), Image.LANCZOS)
+    im.save(path, quality=85, optimize=True)
+
+
+if EXPORT:
+    os.makedirs(DOC, exist_ok=True)
+    for n in ["s1a", "s1b", "s2", "s3", "c1", "c2", "c3", "c4", "s3x", "s3x_armed", "s2_tripped"]:
+        save_jpg(frames[n], os.path.join(DOC, "run_dir_%s_%s.jpg" % (KEY, n)))
+        if n in ("s1a", "s1b", "s2", "s3", "c1", "c2", "c3", "c4"):
+            save_jpg(frames[n], os.path.join(DOC, "run_%s_%s.jpg" % (KEY, n)))
+    for k, img in derived.items():
+        save_jpg(img, os.path.join(DOC, "run_dir_%s_%s.jpg" % (KEY, k)))
+    # Contact sheet: 4 x 4 of the main and derived frames, 480 px tiles, small id tags.
+    order = ["s1a", "s1b", "s2", "s3", "c1", "c2", "c3", "c4", "s3x", "s3x_armed", "s2_tripped", "s1b_grey", "c4_grey", "s1b_protan", "c4_protan", "s2_grey"]
+    tw, th = 480, 270
+    sheet = Image.new("RGB", (tw * 4, th * 4), (24, 24, 22))
+    try:
+        font = ImageFont.truetype("/System/Library/Fonts/Menlo.ttc", 14)
+    except Exception:
+        font = ImageFont.load_default()
+    for i, n in enumerate(order):
+        arr = frames[n] if n in frames else derived[n]
+        im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).resize((tw, th), Image.LANCZOS)
+        d = ImageDraw.Draw(im)
+        d.rectangle((0, 0, 10 + 9 * len(n), 20), fill=(0, 0, 0))
+        d.text((5, 2), n, fill=(235, 230, 215), font=font)
+        sheet.paste(im, ((i % 4) * tw, (i // 4) * th))
+    sheet.save(os.path.join(DOC, "run_dir_%s_sheet.jpg" % KEY), quality=85, optimize=True)
+print("ok")

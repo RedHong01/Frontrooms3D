@@ -1,0 +1,24 @@
+# G14b r3: what G14's lamp gap does to a traced RoomStream room. 2 rows x 4 tiles, labels baked in.
+from PIL import Image, ImageDraw, ImageFont
+R2 = '/Users/redwang/FrontRoomsVisualWork/rt_bench2/r2/b5/'; R3 = '/Users/redwang/FrontRoomsVisualWork/rt_bench2/r3/b5/'
+FB = ImageFont.truetype('/Library/Fonts/IBMPlexMono-Bold.otf', 26); FR = ImageFont.truetype('/Library/Fonts/IBMPlexMono-Regular.otf', 22)
+rows = [('D20', 'STREAM RUN ROOM (R5)', ['17.2', '11.6', '3.4', '']),
+        ('B20', 'NEAR GOAL, TRIPPED (R3)', ['16.7', '4.9', '2.0', ''])]
+cols = [('off', R2 + 'd5_r2dd_c4_sg1_%s_off.png', 'RT OFF: today\'s cube'),
+        ('nl', R3 + 'd5_r3nl_c4_sg1_%s_high_k2.png', 'HIGH, NO LAMPS AT HITS (G14 today)'),
+        ('hi', R2 + 'd5_r2dd_c4_sg1_%s_high_k2.png', 'HIGH, ROOM LAMPS REGISTERED (P1b)'),
+        ('ref', R2 + 'd5_r2dd_c4_sg1_%s_ref.png', '2048-RAY REFERENCE')]
+TW, TH = 960, 540
+sheet = Image.new('RGB', (TW * 4, TH * 2), '#FFFFFF'); d = ImageDraw.Draw(sheet)
+for r, (key, rname, errs) in enumerate(rows):
+    for c, (cid, pat, lab) in enumerate(cols):
+        im = Image.open(pat % key).convert('RGB').resize((TW, TH), Image.LANCZOS)
+        sheet.paste(im, (c * TW, r * TH))
+        x, y = c * TW, r * TH
+        t1 = lab; t2 = rname + ('  ·  error %s/255' % errs[c] if errs[c] else '')
+        w = max(d.textlength(t1, font=FB), d.textlength(t2, font=FR)) + 28
+        d.rectangle([x + 12, y + 12, x + 12 + w, y + 12 + 74], fill='#0A0A0A')
+        d.text((x + 26, y + 18), t1, font=FB, fill='#FFFFFF'); d.text((x + 26, y + 52), t2, font=FR, fill='#FFFFFF')
+for c in range(1, 4): d.line([c * TW, 0, c * TW, TH * 2], fill='#FFFFFF', width=4)
+d.line([0, TH, TW * 4, TH], fill='#FFFFFF', width=4)
+sheet.save('/Users/redwang/FrontRoomsVisualWork/rt_bench2/r3/img/lamp_gap_sheet.png'); print(sheet.size)

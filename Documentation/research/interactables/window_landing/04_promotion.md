@@ -1,3 +1,7 @@
+> **STATUS 2026-10-07 19:4x: item 1 (facade r6) MERGED into main.** Red approved it, the session 视觉材料未同步到主场景 applied it, and MANIFEST OK. `FrontRoomsInteractableKit.Window.cs` went e1472c6d → 07dc067e, GUID fe28a88a kept; backup in `W/backup/2026-10-07_window_landing`.
+> - Not merged: Prop_Putty (waits for Red to see its look) and MapWorld R1/R2 (map contract, base 9abacc6f unchanged).
+> - A re-run of the apply script reports "already applied"; do not re-record bases.
+
 # 04 — Window landing: promotion list and order (r6)
 
 Status: r6, 2026-10-07 17:40. Nothing here is promoted by this workflow. It lands only after Red confirms the doors + windows proposal (Figma 2748:6099, rebuilt 2026-10-07 after 2497:3804 was deleted; `05_for_red.md`). Then each owner lands its own items.

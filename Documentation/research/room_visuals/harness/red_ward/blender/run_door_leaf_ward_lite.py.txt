@@ -1,0 +1,105 @@
+"""RN-X "Run exit" leaf (clone-only, Run! direction A look-dev): the ward
+door's wood-grain laminate leaf with a wired-glass vision lite, a latch and
+no push/pull hardware (room_visuals/10_run_directions.md §1.4: "Leaf
+Kit_DoorLeaf_Ward_Lite = RN-F's wood-grain laminate leaf (FREE value) with a
+0.25 x 0.75 m wired-glass vision lite"; the crossbar exit device, lever trim
+and strike are separate kit parts).
+
+Real-world reference: the 1970s-90s US hospital cross-corridor / stair exit
+door: a 44 mm plastic-laminate flush leaf, a factory vision cut-out glazed
+with 1/4" polished wired glass (12.5 mm square mesh) in a pressed-steel lite
+kit with 45 deg bevelled stops, a stainless armor plate on the push face
+below the exit device, a kick plate on the pull face, a bored latch. No
+maker marks, no signage.
+
+Built on interact_door_leaf_veneer.build_leaf (the slab, the hinge halves and
+the bored-latch faceplate), with interact_door_leaf_ward's armor and kick
+plates and interact_door_leaf_steel_lite's lite-kit section.
+
+Origin: DOOR ROOT D, closed pose (10_spec §1.2), as every leaf. +X = S.
+Lite (Unity m): visible 0.25 (Z) x 0.75 (Y), Y 1.15..1.90, centred on the
+leaf (Z 0.50). Glass X +-0.003 in slot Run_WiredGlass (the look-dev maps it
+to the wired-glass stand-in; production: the glass track's Glass_Wired).
+Slots: Prop_WoodLaminate (submesh 0), Prop_Chrome, Prop_Aluminium,
+Prop_SteelBrown (lite kit), Run_WiredGlass.
+"""
+
+import random
+import sys
+
+import kitlib
+
+import interact_door_common as dc
+import interact_door_leaf_veneer as base
+import interact_door_leaf_ward as ward
+import interact_door_leaf_steel_lite as lite
+
+NAME = "Kit_DoorLeaf_Ward_Lite"
+LOD1 = 0.40
+LOD1_RATIO = 0.40
+LOD2_RATIO = 0.04
+LOD_DISTANCES = (4.0, 12.0, None)
+SMOOTH_ANGLE = 35.0
+
+LAM = ward.LAM
+CHROME = ward.CHROME
+KIT = "Prop_SteelBrown"
+GLASS = "Run_WiredGlass"
+kitlib.register_slot(GLASS, (0.80, 0.85, 0.86), 0.05)
+
+LITE_W, LITE_H = 0.25, 0.75
+LITE_Y, LITE_Z = (1.15 + 1.90) / 2, 0.50
+POCKET = lite.POCKET
+
+
+def extra(kit, slab, cuts, rng):
+    # Armor plate on the push face, as RN-F (it stops below the exit device's cases at 0.94).
+    y0, y1, z0, z1 = ward.ARMOR
+    armor = ward.plate(kit, -1, y0, y1, z0, z1, ward.KT, "armor plate p")
+    ym, zm = (y0 + y1) / 2, (z0 + z1) / 2
+    ward.screws_on(kit, -1, [(y0 + 0.015, z0 + 0.015), (y0 + 0.015, zm), (y0 + 0.015, z1 - 0.015), (ym, z0 + 0.015),
+                             (ym, z1 - 0.015), (y1 - 0.015, z0 + 0.015), (y1 - 0.015, zm), (y1 - 0.015, z1 - 0.015)], rng)
+    # Kick plate on the pull face.
+    ky0, ky1, kz0, kz1 = ward.KICK
+    kick = ward.plate(kit, 1, ky0, ky1, kz0, kz1, ward.KT, "kick plate s")
+    ward.screws_on(kit, 1, [(ky0 + 0.015, kz0 + 0.015), (ky0 + 0.015, (kz0 + kz1) / 2), (ky0 + 0.015, kz1 - 0.015),
+                            (ky1 - 0.015, kz0 + 0.015), (ky1 - 0.015, (kz0 + kz1) / 2), (ky1 - 0.015, kz1 - 0.015)], rng)
+    # The vision cut-out, the glass and the two lite kits.
+    lz0, lz1 = LITE_Z - LITE_W / 2, LITE_Z + LITE_W / 2
+    ly0, ly1 = LITE_Y - LITE_H / 2, LITE_Y + LITE_H / 2
+    cuts.append(dc.cutter((-0.03, ly0 - POCKET, lz0 - POCKET), (0.03, ly1 + POCKET, lz1 + POCKET)))
+    dc.obox(kit, GLASS, lo=(-0.003, ly0 - POCKET + 0.001, lz0 - POCKET + 0.001),
+            hi=(0.003, ly1 + POCKET - 0.001, lz1 + POCKET - 0.001), name="lite wired glass")
+    kits = []
+    for side, tag in ((1, "s"), (-1, "p")):
+        kits.append(lite.rect_sweep_yz(kit, lite.kit_section(side), lz0, lz1, ly0, ly1, KIT, "lite kit " + tag))
+    # Six slotted screws on the S kit (the secure side), as the steel lite.
+    for y, z in ((ly0 - 0.012, LITE_Z), (ly1 + 0.012, LITE_Z), (ly0 + 0.15, lz0 - 0.012), (ly1 - 0.15, lz0 - 0.012),
+                 (ly0 + 0.15, lz1 + 0.012), (ly1 - 0.15, lz1 + 0.012)):
+        s = dc.oval_head(kit, (0.0245, y, z), (1, 0, 0), CHROME, rng, d=0.0055, half_segs=6, dome_k=0.16, name="lite screw")
+        kit.lod1_drop(s)
+        dc.lod2_drop(s)
+    return [armor, kick] + kits
+
+
+def build(kit):
+    rng = random.Random(41095)
+    base.build_leaf(kit, LAM, CHROME, rng, faceplate=True, extra=lambda k, s, c: extra(k, s, c, rng), wear_fn=ward.wear)
+    blo, bhi = dc.bounds_unity(kit.parts)
+    assert blo[0] >= -(dc.LEAF_X + ward.KT + 0.0035), "push face stays flat for the exit device"
+    assert ward.ARMOR[1] < 0.94, "armor plate stops below the exit device cases"
+    for tag, sx in (("s", 1), ("p", -1)):
+        dc.anchor(kit, "kick_" + tag, sx * 0.0226, 0.145, 0.500)
+    dc.anchor(kit, "exit_device_p", -dc.LEAF_X, 1.000, 0.900)
+    dc.anchor(kit, "lever_s", dc.LEAF_X, 1.000, 0.920)
+    dc.anchor(kit, "lite_centre", 0.0, LITE_Y, LITE_Z)
+    dc.anchor(kit, "latch_edge_bottom", 0.0, dc.LEAF_Y0, dc.LEAF_Z_LATCH_MID)
+    dc.anchor(kit, "latch_edge_top", 0.0, dc.LEAF_Y1, dc.LEAF_Z_LATCH_MID)
+    dc.anchor(kit, "hinge_axis", dc.AXIS_X, 0.0, dc.AXIS_Z)
+    dc.anchor(kit, "closer_mount_s", dc.LEAF_X, 2.0275, 0.545)
+    kit.no_collider()
+    kit.tag("door", "door_leaf", "run", "door_type_wood", "lite", "latch", "clone_only")
+    kit.meta["doorType"] = "wood"
+    kit.meta["latch"] = "bored latch, crossbar exit device on P"
+    kit.meta["glassSlab"] = [LITE_W + 2 * POCKET - 0.002, LITE_H + 2 * POCKET - 0.002, 0.006]
+    dc.lod_meta(kit, sys.modules[__name__])

@@ -149,12 +149,12 @@ def make_keys(k0, out):
     frames = {
         "K00_original": k0,
         "K01_mirrored": k0[:, ::-1],                                 # chevrons point the other way
-        "K02_half_drop": np.roll(k0, H // 2, axis=0),                # the roll hung half a repeat off
+        "K02_plate_shift": plate if plate is not None else k0,                # the roll hung half a repeat off
         "K03_double_repeat": resample_periodic(np.tile(k0, (2, 1, 1)), SLICE_W, SLICE_H),  # twice as dense
         "K04_starved_ink": tone(k0, 2.2),                            # print running dry
         "K05_flooded_ink": tone(k0, 0.45),                           # ink bleeding, darker
         "K06_negative": np.stack([1 - k0[..., 0], k0[..., 1] * 0, k0[..., 2]], -1),  # negative print
-        "K07_turned": np.roll(k0[::-1, ::-1], H // 2, axis=0),      # upside down, half-dropped
+        "K07_block_swap": np.roll(k0, W // 2, axis=1),      # upside down, half-dropped
     }
     for name, f in frames.items():
         save_frame(os.path.join(out, name + ".png"), f)
@@ -241,10 +241,17 @@ def print_encode(raw_d, raw_c, lut):
     return bil(D), bil(C)
 
 
-def raw_keyframes(k0):
+def raw_keyframes(k0, plate=None, missing=None):
     """The 8 motion keyframes on RAW (density, cream) frames (H x W x 2). Same story
-    as gen-test: each step is one more thing wrong with the paper; K07 blends to K00."""
-    H = k0.shape[0]
+    as gen-test: each step is one more thing wrong with the paper; K07 blends to K00.
+
+    The cue vocabulary is reserved (32_pattern_native_hints.md §9.6, narrative chat +
+    平面视觉, 2026-10-07): ambient keyframes never straight-match, turn (90 or 180 deg),
+    flatten or change one row. So K03 is a missing plate (the slate station didn't print;
+    the old x2 repeat shallowed the arms 55 -> 36 deg, a step toward the STOP flatten), K02 is a plate shift (`plate`, re-rasterised from the
+    vector with the pink plate mis-registered) and K07 is a block swap (the two units'
+    field stacks trade columns; the stripes are identical per unit, so they stay put)."""
+    H, W = k0.shape[:2]
     d, c = k0[..., 0], k0[..., 1]
 
     def two(dd, cc):
@@ -255,7 +262,7 @@ def raw_keyframes(k0):
         "K00_original": k0,
         "K01_mirrored": k0[:, ::-1],
         "K02_half_drop": np.roll(k0, H // 2, axis=0),
-        "K03_double_repeat": dbl,
+        "K03_missing_plate": missing if missing is not None else dbl,
         "K04_starved_ink": two(d ** 2.2, c),
         "K05_flooded_ink": two(d ** 0.45, c),
         "K06_negative": two(1 - d, c * 0),
@@ -270,17 +277,36 @@ def build_print(key, out, w, h):
     pat = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pat)
     SS = pat.SUPER
-    lab = pat.rasterise(pat.tile_pieces(pat.build_regions()), w * SS, h * SS)
     enc = pat.encode_table()                                     # raw (density, cream) per ink
-    raw = np.stack([pat.box_down(enc[lab, 0].astype(np.float32), SS),
-                    pat.box_down(enc[lab, 1].astype(np.float32), SS)], -1)
+
+    def to_raw(lab):
+        return np.stack([pat.box_down(enc[lab, 0].astype(np.float32), SS),
+                         pat.box_down(enc[lab, 1].astype(np.float32), SS)], -1)
+
+    def render(regs):
+        return to_raw(pat.rasterise(pat.tile_pieces(regs), w * SS, h * SS))
+    regs = pat.build_regions()
+    lab0 = pat.rasterise(pat.tile_pieces(regs), w * SS, h * SS)
+    raw = to_raw(lab0)
+    # K03 missing plate (narrative chat, 2026-10-07): the slate station didn't print, so
+    # every slate band shows bare ground. The bands never overlap, so relabelling the
+    # slate texels as ground is exact (no re-rasterisation).
+    lab_m = lab0.copy()
+    lab_m[lab_m == pat.LABELS.index("slate")] = pat.LABELS.index("ground")
+    missing = to_raw(lab_m)
+    del lab0, lab_m
+    # K02 plate shift (平面视觉): the pink plate printed +3 mm across, +2 mm down. Pink keeps
+    # its place in the print order, so it lands over grey/cream and under slate/deep, and
+    # the paper ground shows where it moved away. Re-rasterised from the vector, wrapped.
+    PLATE_MM = (3.0, 2.0)
+    plate = render([r.moved(*PLATE_MM) if r.ink == "pink" else r for r in regs])
     lut = load_lut()
     sha = hashlib.sha1(open(LUT_PATH, "rb").read()).hexdigest()
     os.makedirs(os.path.join(out, "encoded"), exist_ok=True)
     os.makedirs(os.path.join(out, "raw"), exist_ok=True)
     report = {"pattern": key, "slice": [w, h], "tileMetres": list(TILE_METRES), "lut": "Tools/lookdev/print_encode_lut.json",
               "lut_sha1": sha, "slices": []}
-    keys = raw_keyframes(raw)
+    keys = raw_keyframes(raw, plate, missing)
     encoded = []
     for idx, (name, fr) in enumerate(keys.items()):
         ed, ec = print_encode(fr[..., 0], fr[..., 1], lut)

@@ -1,0 +1,40 @@
+# G14b r3: worst frame of each tier-drop sequence (max over 5 bench views), main's cube vs the Run cube, vs B16's 0.5 %.
+from PIL import Image, ImageDraw, ImageFont
+S = 2; W, H = 1776 * S, 657 * S
+img = Image.new('RGB', (W, H), '#FFFFFF'); d = ImageDraw.Draw(img)
+F = '/Library/Fonts/IBMPlexMono-Regular.otf'; FB = '/Library/Fonts/IBMPlexMono-Bold.otf'
+f20, f22, f26 = (ImageFont.truetype(F, s * S) for s in (20, 22, 26)); fb24 = ImageFont.truetype(FB, 24 * S)
+INK, MUTED, GRID = '#0A0A0A', '#52514E', '#E4E2DC'
+C1, C2 = '#2a78d6', '#eb6834'
+rows = [('Weight only, 16 frames', '(revision 2 plan)', 9.68, 3.38),
+        ('Weight only, 32 frames', '', 3.80, 1.35),
+        ('Weight + smoothness, 60 frames', '', 0.98, 0.57),
+        ('Weight + smoothness, 90 frames', 'DESIGN', 0.35, 0.28),
+        ('Weight + smoothness, 120 frames', '', 0.14, 0.12),
+        ('Weight only, 90 frames', '(after R-2b: floor stays waxed)', 0.043, 0.31)]
+x0, x1 = 640 * S, 1640 * S; vmax = 10.0
+X = lambda v: x0 + (x1 - x0) * min(v, vmax) / vmax
+top = 92 * S; rh = 78 * S; bh = 24 * S
+# legend
+lx = x0; ly = 26 * S
+for c, t in [(C1, "main's Level 0 cube (today)"), (C2, 'Run cube of the state (R-2a)')]:
+    d.rectangle([lx, ly + 4 * S, lx + 22 * S, ly + 26 * S], fill=c); d.text((lx + 32 * S, ly), t, font=f20, fill=INK); lx += (len(t) * 12 + 90) * S
+# grid + axis
+yb = top + len(rows) * rh
+for v in (0, 2, 4, 6, 8, 10):
+    d.line([X(v), top - 8 * S, X(v), yb], fill=GRID, width=S)
+    d.text((X(v) - 10 * S, yb + 10 * S), '%d %%' % v, font=f20, fill=MUTED)
+d.text((x0, yb + 42 * S), 'worst frame: share of floor pixels changing >= 8/255 (max over 5 views)', font=f20, fill=MUTED)
+for k, (lab, sub, a, b) in enumerate(rows):
+    y = top + k * rh
+    d.text((24 * S, y + 4 * S), lab, font=fb24 if sub == 'DESIGN' else f22, fill=INK)
+    if sub: d.text((24 * S, y + 38 * S), sub, font=f20, fill=MUTED)
+    for j, (v, c) in enumerate([(a, C1), (b, C2)]):
+        yy = y + j * (bh + 4 * S)
+        d.rectangle([x0, yy, max(X(v), x0 + 3 * S), yy + bh], fill=c)
+        d.text((max(X(v), X(0.5) + 4 * S) + 10 * S, yy - 2 * S), ('%.2f %%' % v) if v >= 0.1 else ('%.3f %%' % v), font=f20, fill=INK)
+# B16 line
+xl = X(0.5)
+for yy in range(top - 14 * S, yb, 14 * S): d.line([xl, yy, xl, yy + 8 * S], fill=INK, width=2 * S)
+d.text((xl + 10 * S, top - 34 * S), 'B16 bar: 0.5 %', font=f20, fill=INK)
+img.save('/Users/redwang/FrontRoomsVisualWork/rt_bench2/r3/img/drop_fade_chart.png'); print(img.size)

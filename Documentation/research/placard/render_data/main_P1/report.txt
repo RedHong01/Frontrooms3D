@@ -1,0 +1,9 @@
+seed 2, mount P1 west, glow cell (20, 70)
+overlap · frame box (+0.02 m, world AABB of the OBB) [254.5132, 1.3471, 18.0025]-[255.02, 1.7009, 18.056]: 2 renderers
+  frame: Title sequence / recycled corridor/Stream room / 001/door wall return left [250.75, 0, 17.98]-[255.3, 2.9, 18.02]
+  frame: Title sequence / recycled corridor/Stream room / 001/door reveal left / far side [250.75, 0, 18.022]-[255.3, 2.9, 18.022]
+overlap · keep-clear floor rect [254.383, 0.02, 18]-[255.15, 2, 18.9]: 2 renderers
+  floor: Title sequence / recycled corridor/Stream room / 001/door wall return left [250.75, 0, 17.98]-[255.3, 2.9, 18.02]
+  floor: Title sequence / recycled corridor/Stream room / 001/door reveal left / far side [250.75, 0, 18.022]-[255.3, 2.9, 18.022]
+A4 own lamp off, +15 s, normal (legend at 0.6 m, FOV 40, linear HDR, post off): glyph px 3871, paper px 35378 | lit: paper 0.2937, glyph 0.2255 (glyph/paper 0.768) | now G 0.578: paper 0.0592, glyph 0.1020, glyph/paper 1.723 | G 0: glyph/paper 0.793 | G 1: glyph/paper 2.393, full glow adds 0.0948 = 32.3 % of the lit paper | dark paper / lit paper 0.202
+power failure, +3 s (legend at 0.6 m, FOV 40, linear HDR, post off): glyph px 3871, paper px 35378 | lit: paper 0.2937, glyph 0.2255 (glyph/paper 0.768) | now G 0.727: paper 0.0387, glyph 0.1004, glyph/paper 2.596 | G 0: glyph/paper 0.808 | G 1: glyph/paper 3.260, full glow adds 0.0948 = 32.3 % of the lit paper | dark paper / lit paper 0.132

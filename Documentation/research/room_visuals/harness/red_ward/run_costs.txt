@@ -1,0 +1,102 @@
+LIGHTS (name, type, intensity, range, shadows, armed on, tripped on)
+map lamp spot @[3,2.815,-4.2002], Spot, 5, 10, Soft, on, on
+map lamp spot @[-3,2.815,-4.2002], Spot, 5, 10, Soft, on, on
+map lamp spot @[0,2.815,-4.2002], Spot, 5, 10, Soft, on, on
+map lamp spot @[-3,2.815,-1.2002], Spot, 5, 10, Soft, on, on
+map lamp spot @[0,2.815,-1.2002], Spot, 5, 10, Soft, on, on
+map lamp spot @[3,2.815,-1.2002], Spot, 5, 10, Soft, on, on
+troffer spot @[0,2.85,1.7998], Spot, 3.5, 9, Soft, on, off
+troffer spot @[0,2.85,4.7998], Spot, 3.5, 9, None, off, off
+EXIT sign ceiling glow -z (hanging 6) @[0,2.42,5.9199], Spot, 0.42, 2.2, None, on, on
+EXIT sign spot (hanging 6) @[0,2.31,6], Spot, 2.4, 6.5, Soft, on, on
+EXIT sign ceiling glow +z (hanging 6) @[0,2.42,6.0801], Spot, 0.42, 2.2, None, on, on
+troffer spot @[0,2.85,7.7998], Spot, 3.5, 9, Soft, on, off
+troffer spot @[0,2.85,10.7998], Spot, 3.5, 9, None, off, off
+EXIT sign ceiling glow -z (hanging 12) @[0,2.42,11.9199], Spot, 0.42, 2.2, None, on, on
+EXIT sign spot (hanging 12) @[0,2.31,12], Spot, 2.4, 6.5, Soft, on, on
+EXIT sign ceiling glow +z (hanging 12) @[0,2.42,12.0801], Spot, 0.42, 2.2, None, on, on
+troffer spot @[0,2.85,13.7998], Spot, 3.5, 9, Soft, on, off
+troffer spot @[0,2.85,16.7998], Spot, 3.5, 9, None, off, off
+EXIT sign ceiling glow -z (hanging 18) @[0,2.42,17.9199], Spot, 0.42, 2.2, None, on, on
+EXIT sign spot (hanging 18) @[0,2.31,18], Spot, 2.4, 6.5, Soft, on, on
+EXIT sign ceiling glow +z (hanging 18) @[0,2.42,18.0801], Spot, 0.42, 2.2, None, on, on
+troffer spot @[0,2.85,19.7998], Spot, 3.5, 9, Soft, on, off
+troffer spot @[0,2.85,22.7998], Spot, 3.5, 9, None, off, off
+EXIT sign ceiling glow -z (hanging 24) @[0,2.42,23.9199], Spot, 0.42, 2.2, None, on, on
+EXIT sign spot (hanging 24) @[0,2.31,24], Spot, 2.4, 6.5, Soft, on, on
+EXIT sign ceiling glow +z (hanging 24) @[0,2.42,24.0801], Spot, 0.42, 2.2, None, on, on
+troffer spot @[0,2.85,25.7998], Spot, 3.5, 9, Soft, on, off
+EXIT sign spot (wall over goal) @[0,2.165,26.8599], Spot, 2, 6.5, Soft, on, on
+map lamp spot @[0,2.815,28.7998], Spot, 5, 10, Soft, on, on
+
+MATERIALS 39, TEXTURES 54, texture memory 491.0648 MB
+  Wallpaper_Paper_M 2048x3072 64.0009 MB
+  Wallpaper_Paper_N 2048x3072 64.0009 MB
+  Wallpaper_Paper_S 2048x3072 64.0009 MB
+  Wallpaper_Print_P 2048x3072 32.0009 MB
+  Carpet_LoopPile_A 2048x2048 10.6676 MB
+  Carpet_LoopPile_N 2048x2048 10.6676 MB
+  Carpet_LoopPile_S 2048x2048 10.6676 MB
+  Ceiling_Fissured_A 2048x2048 10.6676 MB
+  Ceiling_Fissured_N 2048x2048 10.6676 MB
+  Ceiling_Fissured_S 2048x2048 10.6676 MB
+  Run_VCT_A 2048x2048 10.6676 MB
+  Run_VCT_N 2048x2048 10.6676 MB
+  Run_VCT_S 2048x2048 10.6676 MB
+  Prop_WoodLaminate_A 2048x2048 10.6676 MB
+  Prop_WoodLaminate_N 2048x2048 10.6676 MB
+  Prop_WoodLaminate_S 2048x2048 10.6676 MB
+  Office_Ceiling2x2_A 2048x2048 10.6676 MB
+  Office_Ceiling2x2_N 2048x2048 10.6676 MB
+  Office_Ceiling2x2_S 2048x2048 10.6676 MB
+  RunA_ExitFace_A 1224x704 8.7662 MB
+  RunA_ExitFace_E 1224x704 8.7662 MB
+  TrofferLens_A 1024x2048 5.3343 MB
+  TrofferLens_N 1024x2048 5.3343 MB
+  TrofferLens_E 1024x2048 5.3343 MB
+  RunA_Plate_QUIET_A 1200x360 4.3949 MB
+  RunA_Plate_STAFF_A 1000x300 3.0515 MB
+  MacroWear_M 1024x1024 2.6676 MB
+  Prop_Aluminium_A 1024x1024 2.6676 MB
+  Prop_Aluminium_N 1024x1024 2.6676 MB
+  Prop_Aluminium_S 1024x1024 2.6676 MB
+  Prop_PlasticBlack_A 1024x1024 2.6676 MB
+  Prop_PlasticBlack_N 1024x1024 2.6676 MB
+  Prop_PlasticBlack_S 1024x1024 2.6676 MB
+  Prop_SteelBrown_A 1024x1024 2.6676 MB
+  Prop_SteelBrown_N 1024x1024 2.6676 MB
+  Prop_SteelBrown_S 1024x1024 2.6676 MB
+  Run_HospitalWall_A 1024x1024 2.6676 MB
+  Run_HospitalWall_N 1024x1024 2.6676 MB
+  Run_HospitalWall_S 1024x1024 2.6676 MB
+  PaintedMetal_A 1024x1024 2.6676 MB
+  PaintedMetal_N 1024x1024 2.6676 MB
+  PaintedMetal_S 1024x1024 2.6676 MB
+  Prop_SteelPutty_A 1024x1024 2.6676 MB
+  Prop_SteelPutty_N 1024x1024 2.6676 MB
+  Prop_SteelPutty_S 1024x1024 2.6676 MB
+  Prop_PlasticWhite_A 1024x1024 2.6676 MB
+  Prop_PlasticWhite_N 1024x1024 2.6676 MB
+  Prop_PlasticWhite_S 1024x1024 2.6676 MB
+  RunA_Plate_4-13_A 800x300 2.4415 MB
+  RunA_Plate_4-11_A 800x300 2.4415 MB
+  RunA_Plate_LINEN_A 800x300 2.4415 MB
+  RunA_WireGrid_A 128x128 0.0426 MB
+  UnityNormalMap 4x4 0.0089 MB
+  UnityWhite 4x4 0.001 MB
+
+CORRIDOR renderers 191, tris 153774
+  Kit_ExitSign_Hanging tris 2212 LOD1 0 slots Prop_PlasticWhite/Run_ExitSign_Ward/Prop_Chrome
+  Kit_ExitSign_Wall tris 836 LOD1 0 slots Prop_PlasticWhite/Run_ExitSign_Ward/Prop_Chrome
+  Kit_Stretcher tris 7568 LOD1 3404 slots Run_CasterGrey/Prop_Chrome/Prop_SteelPutty/Prop_PlasticBlack/Prop_Rubber/Run_VinylWhite/Run_LinenBlue/Run_LinenWhite
+  Kit_VisitorChair3 tris 5904 LOD1 2656 slots Prop_PlasticBlack/Run_VinylTeal/Prop_Chrome
+  Kit_Wheelchair tris 8816 LOD1 3526 slots Run_CasterGrey/Prop_Chrome/Run_SlingBlack/Prop_Rubber/Prop_PlasticBlack
+  Kit_IVPole tris 2132 LOD1 0 slots Prop_Chrome/Run_CasterGrey/Prop_PlasticBlack/Prop_Glass
+  Kit_LinenCart tris 4348 LOD1 2174 slots Run_CasterGrey/Prop_Aluminium/Run_Canvas/Run_LinenWhite/Run_LinenBlue
+  Kit_DoorFrame_Steel tris 3866 LOD1 1430 slots Prop_SteelBrown/Prop_Rubber/Prop_Chrome/Prop_Aluminium
+  Kit_DoorLeaf_Ward_Lite tris 4376 LOD1 1750 slots Prop_WoodLaminate/Prop_Aluminium/Run_WiredGlass/Prop_SteelBrown/Prop_Chrome
+  Kit_DoorLeaf_Steel tris 3930 LOD1 1572 slots Door_Enamel/Prop_Aluminium/Prop_Chrome
+  Kit_ExitDevice_Crossbar tris 3948 LOD1 0 slots Prop_Aluminium/Prop_Chrome
+  Kit_Lock_Escutcheon tris 3176 LOD1 0 slots Prop_Chrome/Prop_PlasticBlack
+  Kit_Lock_Knob tris 4608 LOD1 0 slots Prop_Chrome
+  Kit_Lock_CylinderShell tris 2708 LOD1 0 slots Prop_Chrome/Prop_PlasticBlack/Prop_Brass

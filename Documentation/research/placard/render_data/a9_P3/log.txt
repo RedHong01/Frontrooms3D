@@ -1,0 +1,15 @@
+[1 t=0.000] routine created · set  · mount 
+[1 t=0.000] Reduce flashing at start (Red's PlayerPrefs, read only): False
+[101 t=2.025] seed choice: terminal 1, door x 256.5000 z 18.0000, rows 8; tally to seed 15: P1 8, P2 6, P3 1 -> seed 15 (glow (212, 134) Dim, steady E/W/N neighbours 1, glow-cell north edge Open, west Arch, east Arch)
+[101 t=2.025] run started · seed 15 (as chosen) · map root [-384, 0, -384]
+[142 t=3.886] start door opened=True after 1.86 s
+[232 t=6.206] placard P3 west · door cell (213, 134) (game (213, 134)) · west Arch east Arch · glow cell (212, 134) · origin [254.5866, 1.524, 18.0225] normal [0, 0, 1] · door point [256.5, 0, 18] · centre height 1.5240 · offset from the door centreline x -1.9134 z 0.0225 · zone Level0/Standard
+[232 t=6.206] lamps as generated: (212, 134) Dim L 0.4428; (213, 134) Steady L 0.9866; (211, 134) Stutter L 0.9538; (212, 135) Dim L 0.4326; (212, 133) Off L -1.0000; 
+[232 t=6.206] placard renderers: evacuation placard Off, evacuation placard lens Off · colliders 0 · KeepClearAtStart in this map: True
+[354 t=8.240] shot A9_P3_open_wide | eye [257, 1.62, 21.5] dist to placard 4.2340 fov 76 | G 0.0000 C 0.9435 Ls 0.9781 L 0.9635 calm False door open True | map side, door open, 3.5 m north of the door
+[354 t=8.240] shot A9_P3_face_1m | eye [254.5866, 1.62, 19.0225] dist to placard 1.0046 fov 76 | G 0.0000 C 0.9435 Ls 0.9781 L 0.9635 calm False door open True | 1 m face-on (or the clear distance)
+[354 t=8.240] shot A9_P3_corner_0p3m | eye [254.9047, 1.62, 18.3114] dist to placard 0.4403 fov 76 | G 0.0000 C 0.9435 Ls 0.9781 L 0.9635 calm False door open True | 0.30 m from the top +X corner
+[536 t=11.273] shot A9_P3_shut_wide | eye [257, 1.62, 21.5] dist to placard 4.2340 fov 76 | G 0.0000 C 0.9876 Ls 0.9795 L 0.9600 calm False door open True | map side, door shut (CloseTerminalDoor), 3 s later
+[716 t=14.273] series stutter_long begins
+[851 t=16.523] shot A6_stutter_dip | eye [254.5866, 1.62, 19.0225] dist to placard 1.0046 fov 76 | G 0.0000 C 0.9970 Ls 0.9279 L 0.0500 calm False door open True | Stutter lamp mid-burst (L 0.0500)
+[3116 t=54.273] DONE

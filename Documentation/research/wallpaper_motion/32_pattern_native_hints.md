@@ -251,3 +251,37 @@ The rest of this subsection is the earlier three-beat draft, kept for reference.
 2. Then FLOW, HERE (door converge) and STOP loops.
 3. **Done:** Figma GN07–GN09 replaced (The way on / The way out / No way on). GN06's column A now shows the FLOW cue.
 4. Ask 平面视觉 to draw the three final states in Figma from the real geometry.
+
+### 9.6 Reserved vocabulary (added 2026-10-07; agreed with 平面视觉)
+
+The hard-edge ambient keyframes (`Tools/print` K00–K07, now in main) jump the whole wall in sync. They must never use the cue's vocabulary.
+
+**Never produced by an ambient jump:**
+- a straight-match alignment;
+- a 90° or 180° turn;
+- a flattened chevron;
+- any change confined to one row.
+
+**Why:** these mean "the building is speaking", and come only from the cue path.
+
+**Replacements (平面视觉's picks, relayed to the wallpaper-print chat):**
+
+| Slot | Old | New (applied in `print_tool.py`, rebuild pending) |
+|---|---|---|
+| K02 | "half-drop" (misnamed) | **plate shift**: the pink plate out of register by +3 mm across and +2 mm down; slivers of pink and ground at the band edges |
+| K07 | 180° turn | **block swap**: the two units' field stacks trade columns, the stripes stay. The old K02 "half-drop" was already exactly this (half-tile roll = unit swap, diff 0.0), so new K07 = old K02. It never straight-matched |
+| K03 | double repeat (arms 55° → about 35.6°, a step toward flatten) | **missing slate plate** (every chevron loses its slate band). Approved by 平面视觉 on 2026-10-07, in the same rebuild batch |
+
+All three stay one-step "wrong" frames. The shipped array still has the old frames; the swap needs a build-print rerun plus 游戏视觉's builder, batched with the driver promotion.
+
+**Also:**
+- Cells showing a cue sit out ambient jumps.
+- Ambient blends may be smooth (1.2 s); the cue stays quantized.
+
+**K00 hold (平面视觉's rule, 2026-10-07; narrative additions a and b).**
+Every cue slice (C00–C16) is authored on K00. A cue starting on a wall at any other ambient frame would make the print fault snap back at the warning.
+- **Warnings and chases:** when WarnStage ≥ 1 or a chase starts, the HoldAndJump driver blends back to K00 (1.2 s). It holds until stage 0 and every cue cell is back at state 0.
+- **(a) The lamp gate:** a cell whose lamp is not Steady (a stage-0 sag, dying, dead) takes no ambient jumps. It blends to K00 when its lamp leaves Steady, and beat 1 waits until the cell is at K00. The 1.2 s blend fits inside the sag's 1.6 s attack.
+- **(b) No all-clear tell:** ambient jumps resume no earlier than the burst lamps' own restore slot ("first quiet slot after stage 0", RELAY_PURSUIT_REDESIGN §9).
+- **Why:** a print fault never overlaps a warning; ambient never false-alarms (G7) and never all-clears.
+- **Rejected:** cue slices authored per keyframe (8× the slices).

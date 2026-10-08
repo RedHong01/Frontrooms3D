@@ -1,0 +1,483 @@
+// EXIT SIGN STREAM CAPTURE (exit-sign workflow, integrate stage; private clones only, never merged).
+// A cut-down copy of the room-visuals harness (FrontRoomsRoomVisualsCapture, research/room_visuals/harness):
+// the same Play-mode start (title, Space with Random.InitState(4242), Relay held dormant), the same game
+// camera (URP data, post, grade, grain, 4x MSAA, 1920x1080), and the same title-profile build
+// (FrontRoomsRoomStream.BuildEditorPreview at world (4992, 0, 4992), lamps per ActivateRoomLightImmediately,
+// plus the Lobby breather after Exit). It skips the map rooms and frames the EXIT signs of the Run and
+// Exit rooms: wide, sign close-ups, the sign under dead troffers, all troffers forced dead, and (with the
+// kit driver) every lamp state and a 60 Hz frame-luminance probe of a LOOSE sign.
+// Compiles with or without FrontRoomsExitSign (reflection), so the same file runs in the before clone.
+// Run: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignStreamCapture.RunBatch -logFile <f> [-esCapOut dir]
+// Output: <clone>/Verification/exit_sign_int/stream/*.png, frames.txt, log.txt, signs.txt, probe_*.csv
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+[InitializeOnLoad]
+public static class FrontRoomsExitSignStreamCapture
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.ESCap.Active";
+    const string DeadlineKey = "FrontRooms.ESCap.Deadline";
+    const string DoneKey = "FrontRooms.ESCap.Done";
+    const string OutKey = "FrontRooms.ESCap.Out";
+    const int W = 1920, H = 1080, PW = 480, PH = 270;
+    const float WideFov = 72f, DetailFov = 50f;
+    const int InitSeed = 4242;
+    static readonly Vector3 PreviewRoot = new Vector3(4992f, 0f, 4992f);
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    static int waitUntilFrame = -1;
+    static bool finished;
+    static string outDir;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder frames = new StringBuilder();
+    static readonly StringBuilder signsTxt = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+
+    static FrontRooms3DGame game;
+    static Camera cam;
+    static RenderTexture rt, prt;
+    static Type driverType;
+
+    static FrontRoomsExitSignStreamCapture()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        var o = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign_int", "stream");
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-esCapOut") o = args[i + 1];
+        SessionState.SetString(OutKey, o);
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1800f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                outDir = SessionState.GetString(OutKey, Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign_int", "stream"));
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + " t=" + Time.time.ToString("0.000", CultureInfo.InvariantCulture) + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[ESCap] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Flush()
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "frames.txt"), frames.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "signs.txt"), signsTxt.ToString());
+        }
+        catch (Exception e) { Debug.LogError(e); }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        SessionState.SetBool(DoneKey, true);
+        Flush();
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) { stack.Push(Main()); Log("routine created"); }
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    // ---------------- reflection ----------------
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static string V(Vector3 v) => "(" + v.x.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.y.ToString("0.00", CultureInfo.InvariantCulture) + ", " + v.z.ToString("0.00", CultureInfo.InvariantCulture) + ")";
+    static string F(float f) => f.ToString("0.###", CultureInfo.InvariantCulture);
+
+    // ---------------- driver via reflection (absent in the before clone) ----------------
+    static Component Driver(Transform sign) => driverType == null || sign == null ? null : sign.GetComponent(driverType);
+    static object Temper(string name) => Enum.Parse(driverType.GetNestedType("Temperament"), name);
+    static void Configure(Component d, uint seed, string temperament, Light light, float lightBase)
+        => driverType.GetMethod("Configure").Invoke(d, new object[] { seed, Temper(temperament), light, lightBase });
+    static void DriverTick(Component d, float dt) => driverType.GetMethod("Tick").Invoke(d, new object[] { dt });
+    static float Level(Component d) => (float)driverType.GetProperty("Level").GetValue(d);
+    static string State(Component d) => driverType.GetProperty("State").GetValue(d).ToString();
+    static Vector4 Weights(Component d) => (Vector4)driverType.GetProperty("Weights").GetValue(d);
+    static Light RedLight(Component d) => (Light)driverType.GetProperty("RedLight").GetValue(d);
+
+    // ---------------- capture ----------------
+    static int shotIndex;
+    static Transform spaceRoot;
+
+    static Texture2D Render(int w, int h, float fov, ref RenderTexture target)
+    {
+        if (target == null)
+        {
+            target = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "ES capture " + w };
+            target.Create();
+        }
+        var prevFov = cam.fieldOfView;
+        cam.fieldOfView = fov;
+        var prev = cam.targetTexture;
+        cam.targetTexture = target;
+        cam.Render();
+        cam.Render();
+        cam.targetTexture = prev;
+        cam.fieldOfView = prevFov;
+        var active = RenderTexture.active;
+        RenderTexture.active = target;
+        var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+        tex.Apply();
+        RenderTexture.active = active;
+        return tex;
+    }
+
+    static void Shot(string name, Vector3 eyeL, Vector3 lookL, float fov, string note)
+    {
+        var t = cam.transform;
+        var lp = t.localPosition;
+        var lr = t.localRotation;
+        var far = cam.farClipPlane;
+        var eye = spaceRoot.TransformPoint(eyeL);
+        var look = spaceRoot.TransformPoint(lookL);
+        t.SetPositionAndRotation(eye, Quaternion.LookRotation(look - eye));
+        cam.farClipPlane = 80f;
+        var tex = Render(W, H, fov, ref rt);
+        var file = (shotIndex < 10 ? "0" : "") + shotIndex + "_" + name + ".png";
+        shotIndex++;
+        File.WriteAllBytes(Path.Combine(OutDir, file), tex.EncodeToPNG());
+        UnityEngine.Object.Destroy(tex);
+        frames.AppendLine(file + " | preview-local eye " + V(eyeL) + " look-at " + V(lookL) + " | vfov " + F(fov) + " | " + note);
+        Flush();
+        Log("captured " + file + " — " + note);
+        t.localPosition = lp;
+        t.localRotation = lr;
+        cam.farClipPlane = far;
+    }
+
+    // ---------------- main ----------------
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
+        driverType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("FrontRoomsExitSign")).FirstOrDefault(t => t != null);
+        while ((game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        Time.captureDeltaTime = 1f / 60f;
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        Log("game found · phase " + Phase + " · quality " + QualitySettings.names[QualitySettings.GetQualityLevel()] + " · gfx " + SystemInfo.graphicsDeviceType + " " + SystemInfo.graphicsDeviceName
+            + " · URP asset " + (urp != null ? urp.name + " MSAA " + urp.msaaSampleCount + " HDR " + urp.supportsHDR : "none")
+            + " · driver " + (driverType != null ? "FrontRoomsExitSign present" : "none (before)") + " · reduce flashing " + FrontRoomsSettings.ReduceFlashing);
+        while (Time.time < 1.0f) yield return 1;
+        // Space, as the room-visuals harness: same Random state, Relay held dormant.
+        UnityEngine.Random.InitState(InitSeed);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (Get<bool>(game, "mapPlay"))
+        {
+            var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+            tuning.releaseDelaySeconds = 1e6f;
+            Log("run started · run seed " + Get<int>(game, "runSeed") + " · Relay held dormant");
+        }
+        else Log("could not start a run; capturing from the title");
+        yield return 120;
+        yield return Profiles();
+        Log("DONE · " + shotIndex + " frames");
+    }
+
+    static readonly string[] Forbidden = { "wall", "floor", "carpet", "ceiling", "seal", "partition" };
+
+    static IEnumerator Profiles()
+    {
+        var go = new GameObject("ESCAP / title profiles (harness)");
+        go.transform.position = PreviewRoot;
+        var stream = go.AddComponent<FrontRoomsRoomStream>();
+        stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
+            FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
+            FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+        // The Lobby breather after Exit (as the room-visuals harness), its far door shut.
+        var slotType = typeof(FrontRoomsRoomStream).GetNestedType("RoomSlot", BindingFlags.NonPublic);
+        var count = Enum.GetValues(typeof(RoomRule)).Length;
+        var slot = Activator.CreateInstance(slotType, true);
+        Set(slot, "sequence", count);
+        Set(slot, "rule", RoomRule.Lobby);
+        Set(slot, "startZ", count * FrontRoomsRoomStream.RoomLength);
+        Set(slot, "endZ", (count + 1) * FrontRoomsRoomStream.RoomLength);
+        var breather = new GameObject("Profile " + count + " / Lobby (breather after Exit, added by the harness)");
+        breather.transform.SetParent(go.transform, false);
+        breather.transform.localPosition = new Vector3(0f, 0f, count * FrontRoomsRoomStream.RoomLength);
+        Set(slot, "root", breather);
+        typeof(FrontRoomsRoomStream).GetMethod("BuildRoom", BF).Invoke(stream, new[] { slot, (object)count });
+        Set(slot, "doorProgress", 0f);
+        typeof(FrontRoomsRoomStream).GetMethod("ApplyDoorPose", BF).Invoke(stream, new[] { slot });
+        typeof(FrontRoomsRoomStream).GetMethod("ActivateRoomLightImmediately", BF).Invoke(stream, new[] { slot });
+        yield return 5;
+        spaceRoot = go.transform;
+        var run = go.transform.Find("Profile 3 / Run");
+        var exit = go.transform.Find("Profile 4 / Exit");
+
+        // ---- inventory: lamps and signs
+        foreach (var room in new[] { run, exit })
+        {
+            var lamps = new StringBuilder();
+            for (var i = 0; i < 12; i++)
+            {
+                var l = room.GetComponentsInChildren<Light>(true).FirstOrDefault(x => x.name == "fluorescent light " + i);
+                var p = l == null ? Vector3.zero : room.InverseTransformPoint(l.transform.position);
+                lamps.Append(i).Append(" (x ").Append(F(p.x)).Append(", z ").Append(F(p.z)).Append(") ").Append(l == null ? "?" : !l.enabled ? "off" : "on " + F(l.intensity)).Append("; ");
+            }
+            signsTxt.AppendLine(room.name + " troffers: " + lamps);
+            foreach (var t in room.GetComponentsInChildren<Transform>(true))
+            {
+                if (!t.name.Contains("exit sign") || !t.gameObject.activeInHierarchy) continue;
+                if (t.parent != null && t.parent.name.Contains("exit sign")) continue;
+                var d = Driver(t);
+                var b = new Bounds(); var first = true;
+                foreach (var r in t.GetComponentsInChildren<Renderer>())
+                {
+                    if (r.name.EndsWith("_LOD1", StringComparison.Ordinal)) continue;
+                    if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds);
+                }
+                var line = room.name + " | " + t.name + " | local " + V(room.InverseTransformPoint(t.position)) + " | bounds y " + F(b.min.y) + "-" + F(b.max.y) + " z " + F(room.InverseTransformPoint(b.min).z) + "-" + F(room.InverseTransformPoint(b.max).z)
+                    + " | renderers " + t.GetComponentsInChildren<Renderer>().Length + " lights " + string.Join(",", t.GetComponentsInChildren<Light>(true).Select(l => l.name + " y " + F(l.transform.position.y) + " " + (l.enabled ? F(l.intensity) : "off")))
+                    + (d != null ? " | driver " + State(d) + " Level " + F(Level(d)) + " weights " + Weights(d) : " | no driver");
+                signsTxt.AppendLine(line);
+                var bad = t.GetComponentsInChildren<Transform>(true).Where(c => Forbidden.Any(w => c.name.ToLowerInvariant().Contains(w))).Select(c => c.name).ToList();
+                signsTxt.AppendLine("   names: " + string.Join(", ", t.GetComponentsInChildren<Transform>(true).Select(c => c.name)) + " · forbidden words: " + (bad.Count == 0 ? "none" : string.Join(", ", bad)));
+            }
+        }
+        Flush();
+
+        var zr = 3 * FrontRoomsRoomStream.RoomLength;      // Run room start (preview-local)
+        var ze = 4 * FrontRoomsRoomStream.RoomLength;      // Exit room start
+        const float sy = 2.394f;                            // hanging sign centre (2.36 for the code-built sign)
+        float za = zr + 3.4f, zb = zr + 9.2f;
+
+        // ---- Run room
+        Shot("run_wide", new Vector3(0f, 1.62f, zr + .9f), new Vector3(0f, .85f, zr + 12f), WideFov, "Run · from the room's entry down its 12 m (room-visuals title-run_wide)");
+        yield return 1;
+        Shot("run_sign", new Vector3(.7f, 1.62f, zr + 6.0f), new Vector3(0f, 2.36f, za), DetailFov, "Run · sign A from 2.7 m behind (room-visuals title-run_sign)");
+        yield return 1;
+        Shot("run_signA_front", new Vector3(.45f, 1.70f, za - 1.3f), new Vector3(0f, sy, za), DetailFov, "Run · sign A, the face the arriving player sees, from 1.5 m; troffer 0 (z 1.7) lit, 1 (z 4.55) dead");
+        yield return 1;
+        Shot("run_signB_deadlamps", new Vector3(-.45f, 1.70f, zb - 1.3f), new Vector3(0f, sy, zb), DetailFov, "Run · sign B under dead troffers (centre column 2 and 3, z 7.4 / 10.25, both dead) from 1.5 m");
+        yield return 1;
+        Shot("run_signB_below", new Vector3(.35f, 1.55f, zb - .75f), new Vector3(0f, sy, zb), DetailFov, "Run · sign B from below at 1.1 m: the face's reflection read (mirror check)");
+        yield return 1;
+        Shot("run_back", new Vector3(0f, 1.62f, zr + 11.1f), new Vector3(0f, 1.7f, zr), WideFov, "Run · looking back to the entry: both signs' far faces");
+        yield return 1;
+
+        // ---- all troffers dead (forced by the harness: lights off, lenses dark, beams off)
+        var restore = ForceDark(run);
+        yield return 2;
+        Shot("run_alldead_wide", new Vector3(0f, 1.62f, zr + .9f), new Vector3(0f, .85f, zr + 12f), WideFov, "Run · every troffer forced dead: only the exit signs light the room");
+        yield return 1;
+        Shot("run_alldead_signA", new Vector3(.45f, 1.70f, za - 1.3f), new Vector3(0f, sy, za), DetailFov, "Run · every troffer forced dead: sign A from 1.5 m");
+        yield return 1;
+        restore();
+        yield return 2;
+
+        // ---- Exit room
+        var hinges = new List<(Transform t, Quaternion q)>();
+        foreach (var t in exit.GetComponentsInChildren<Transform>(true))
+            if (t.name == "double door left hinge" || t.name == "double door right hinge") { hinges.Add((t, t.localRotation)); t.localRotation = Quaternion.identity; }
+        yield return 1;
+        Shot("exit_arrival", new Vector3(0f, 1.62f, ze + 2.0f), new Vector3(0f, 1.25f, ze + 12f), WideFov, "Exit · arrival as in play: 2 m inside, far door shut (room-visuals title-exit_arrival)");
+        yield return 1;
+        Shot("exit_sign", new Vector3(0f, 1.62f, ze + 8.0f), new Vector3(0f, 2.70f, ze + 12f), DetailFov, "Exit · the far door and its header from 4 m");
+        yield return 1;
+        Shot("exit_sign_close", new Vector3(.35f, 1.80f, ze + 10.6f), new Vector3(0f, 2.78f, ze + 11.98f), DetailFov, "Exit · the header from 1.7 m");
+        yield return 1;
+        foreach (var (t, q) in hinges) t.localRotation = q;
+        yield return 1;
+        Shot("exit_doorway", new Vector3(0f, 1.62f, ze - 3.2f), new Vector3(0f, 1.25f, ze + 6f), WideFov, "Exit · arrival from the Run room through the open double door (room-visuals title-exit_doorway)");
+        yield return 1;
+
+        if (driverType == null) { Log("before clone: no driver, no state strip or probe"); yield break; }
+
+        // ---- every lamp state on sign A (after only); the red light follows Level
+        var signA = run.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "exit sign A");
+        var dA = Driver(signA);
+        var light = RedLight(dA);
+        var lightBase = 3.6f;
+        foreach (var state in new[] { "Lit", "HalfA", "HalfB", "Loose", "Battery", "Dead" })
+        {
+            Configure(dA, 20261007u, state, light, lightBase);
+            var ticks = 0;
+            if (state == "Loose")
+                while (ticks < 60 * 30 && Weights(dA).x > .08f && Weights(dA).y > .08f) { DriverTick(dA, 1f / 60f); ticks++; }
+            yield return 2;
+            var w = Weights(dA);
+            Shot("run_state_" + state.ToLowerInvariant(), new Vector3(.3f, 1.80f, za - 1.15f), new Vector3(0f, sy, za), 36f,
+                "Run · sign A forced to " + state + (state == "Loose" ? " at a drop-out (" + ticks + " ticks in)" : "") + ": weights (" + F(w.x) + ", " + F(w.y) + ", " + F(w.z) + "), Level " + F(Level(dA)) + ", red light " + (light.enabled ? F(light.intensity) : "off"));
+            yield return 1;
+        }
+        Configure(dA, 20261007u, "Lit", light, lightBase);
+        yield return 2;
+
+        // ---- 60 Hz frame-luminance probe of a LOOSE sign (T5): 12 s, 480x270, with and without REDUCE FLASHING
+        var reducedBefore = FrontRoomsSettings.ReduceFlashing;
+        var setter = typeof(FrontRoomsSettings).GetProperty("ReduceFlashing").GetSetMethod(true);
+        foreach (var reduced in new[] { false, true })
+        {
+            setter.Invoke(null, new object[] { reduced });
+            Configure(dA, 516574485u, "Loose", light, lightBase);
+            var t = cam.transform;
+            var lp = t.localPosition; var lr = t.localRotation;
+            var eye = spaceRoot.TransformPoint(new Vector3(0f, 1.62f, za - 3.0f));
+            var centre = spaceRoot.TransformPoint(new Vector3(0f, sy, za));
+            t.SetPositionAndRotation(eye, Quaternion.LookRotation(centre - eye));
+            var csv = new StringBuilder("frame,t,level,frame_lum,sign_lum,sign_red\n");
+            // the sign's screen rectangle (0.35 x 0.21 m housing)
+            var corners = new[] { new Vector3(-.17f, -.106f, 0f), new Vector3(.17f, .106f, 0f) }.Select(c => spaceRoot.TransformPoint(new Vector3(c.x, sy + c.y, za - .04f))).ToArray();
+            for (var f = 0; f < 720; f++)
+            {
+                DriverTick(dA, 1f / 60f);
+                var tex = Render(PW, PH, 50f, ref prt);
+                var px = tex.GetPixels32();
+                UnityEngine.Object.Destroy(tex);
+                // project with the probe's own target, so the aspect is the rendered one
+                var prevFov = cam.fieldOfView; var prevTarget = cam.targetTexture;
+                cam.fieldOfView = 50f; cam.targetTexture = prt;
+                var s0 = cam.WorldToViewportPoint(corners[0]); var s1 = cam.WorldToViewportPoint(corners[1]);
+                cam.fieldOfView = prevFov; cam.targetTexture = prevTarget;
+                int x0 = Mathf.Clamp((int)(Mathf.Min(s0.x, s1.x) * PW), 0, PW - 1), x1 = Mathf.Clamp((int)(Mathf.Max(s0.x, s1.x) * PW), 0, PW - 1);
+                int y0 = Mathf.Clamp((int)(Mathf.Min(s0.y, s1.y) * PH), 0, PH - 1), y1 = Mathf.Clamp((int)(Mathf.Max(s0.y, s1.y) * PH), 0, PH - 1);
+                double all = 0, sign = 0, red = 0; var n = 0;
+                for (var i = 0; i < px.Length; i++)
+                {
+                    var L = RelLum(px[i]);
+                    all += L;
+                    int x = i % PW, y = i / PW;
+                    if (x >= x0 && x <= x1 && y >= y0 && y <= y1) { sign += L; red += px[i].r / 255.0; n++; }
+                }
+                csv.Append(f).Append(',').Append(F((f + 1) / 60f)).Append(',').Append(Level(dA).ToString("0.0000", CultureInfo.InvariantCulture)).Append(',')
+                    .Append((all / px.Length).ToString("0.00000", CultureInfo.InvariantCulture)).Append(',').Append((sign / Mathf.Max(1, n)).ToString("0.00000", CultureInfo.InvariantCulture)).Append(',')
+                    .Append((red / Mathf.Max(1, n)).ToString("0.00000", CultureInfo.InvariantCulture)).Append('\n');
+                if (f % 120 == 0) yield return 1;
+            }
+            File.WriteAllText(Path.Combine(OutDir, "probe_" + (reduced ? "reduced" : "default") + ".csv"), csv.ToString());
+            Log("probe " + (reduced ? "REDUCE FLASHING" : "default") + ": 720 frames at 60 Hz written; sign corners " + V(corners[0]) + " - " + V(corners[1]));
+            t.localPosition = lp; t.localRotation = lr;
+        }
+        setter.Invoke(null, new object[] { reducedBefore });
+        Configure(dA, 20261007u, "Lit", light, lightBase);
+        Flush();
+    }
+
+    static double RelLum(Color32 c)
+    {
+        double Lin(byte v) { var s = v / 255.0; return s <= 0.04045 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
+        return 0.2126 * Lin(c.r) + 0.7152 * Lin(c.g) + 0.0722 * Lin(c.b);
+    }
+
+    /// <summary>Every troffer of the room dead, as RoomStream's SetFixtureOutput(…, 0, false): light off, lens dark, beam off.</summary>
+    static Action ForceDark(Transform room)
+    {
+        var undo = new List<Action>();
+        foreach (var l in room.GetComponentsInChildren<Light>(true))
+        {
+            if (!l.name.StartsWith("fluorescent light ", StringComparison.Ordinal)) continue;
+            var was = l.enabled; var light = l;
+            light.enabled = false;
+            undo.Add(() => light.enabled = was);
+        }
+        foreach (var r in room.GetComponentsInChildren<Renderer>(true))
+        {
+            var rend = r;
+            if (r.name.StartsWith("fluorescent diffuser ", StringComparison.Ordinal))
+            {
+                var keep = new MaterialPropertyBlock();
+                r.GetPropertyBlock(keep);
+                var mpb = new MaterialPropertyBlock();
+                r.GetPropertyBlock(mpb);
+                mpb.SetColor("_EmissionColor", new Color(.88f, .92f, .94f) * .02f);
+                mpb.SetColor("_Color", new Color(.045f, .042f, .035f));
+                r.SetPropertyBlock(mpb);
+                undo.Add(() => rend.SetPropertyBlock(keep));
+            }
+            else if (r.name.StartsWith("volumetric fluorescent beam ", StringComparison.Ordinal))
+            {
+                var was = r.enabled;
+                r.enabled = false;
+                undo.Add(() => rend.enabled = was);
+            }
+        }
+        return () => { foreach (var u in undo) u(); };
+    }
+}

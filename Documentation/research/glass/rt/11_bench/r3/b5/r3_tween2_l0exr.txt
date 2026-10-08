@@ -1,0 +1,61 @@
+# rt_bench4 r3t2 tween2 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 819/815/725
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# FARFADE: Ultra floor rays fade to High's mirror + k2 between pixel footprints 6.0 and 12.0 mm
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- tween2 1920x1080 (B16): eased fades, floor px share changing >= 8/255 between frames, cube mode 4  load 819/815/726
+r3t2 tween2 A20 fade        p 1 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.478% of floor px (frame 1, max 12/255), >=4 5.056%, mean >=8 0.0265% | load 826/817/728
+r3t2 tween2 A20 fade        p 1 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.043% of floor px (frame 1, max 8/255), >=4 2.354%, mean >=8 0.0005% | load 843/821/731
+r3t2 tween2 A20 fade        p 1 N 120: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 1, max 6/255), >=4 0.935%, mean >=8 0.0000% | load 868/829/737
+r3t2 tween2 A20 fade-ease2  p 2 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.137% of floor px (frame 60, max 21/255), >=4 1.150%, mean >=8 0.0032% | load 865/830/739
+r3t2 tween2 A20 fade-ease2  p 2 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.010% of floor px (frame 90, max 15/255), >=4 0.239%, mean >=8 0.0003% | load 874/833/742
+r3t2 tween2 A20 fade-ease3  p 3 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.136% of floor px (frame 90, max 21/255), >=4 0.331%, mean >=8 0.0021% | load 880/837/744
+r3t2 tween2 A20 both-ease2  p 2 N  90: r 0.200 -> 0.474 | worst frame >=8/255 0.353% of floor px (frame 7, max 22/255), >=4 1.388%, mean >=8 0.0508% | load 876/836/745
+r3t2 tween2 A20 both-ease2  p 2 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.141% of floor px (frame 10, max 14/255), >=4 0.853%, mean >=8 0.0186% | load 883/840/748
+r3t2 tween2 A20 both        p 1 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.138% of floor px (frame 1, max 29/255), >=4 1.446%, mean >=8 0.0132% | load 872/840/750
+r3t2 tween2 B20 fade        p 1 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.191% of floor px (frame 1, max 9/255), >=4 1.542%, mean >=8 0.0047% | load 881/844/753
+r3t2 tween2 B20 fade        p 1 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 1, max 6/255), >=4 0.888%, mean >=8 0.0000% | load 909/854/760
+r3t2 tween2 B20 fade        p 1 N 120: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 1, max 5/255), >=4 0.423%, mean >=8 0.0000% | load 890/855/764
+r3t2 tween2 B20 fade-ease2  p 2 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.193% of floor px (frame 60, max 9/255), >=4 1.158%, mean >=8 0.0034% | load 871/853/765
+r3t2 tween2 B20 fade-ease2  p 2 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 89, max 6/255), >=4 0.754%, mean >=8 0.0000% | load 878/856/769
+r3t2 tween2 B20 fade-ease3  p 3 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.187% of floor px (frame 90, max 9/255), >=4 1.154%, mean >=8 0.0022% | load 896/863/775
+r3t2 tween2 B20 both-ease2  p 2 N  90: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 3, max 7/255), >=4 0.767%, mean >=8 0.0000% | load 899/864/776
+r3t2 tween2 B20 both-ease2  p 2 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 3, max 6/255), >=4 0.222%, mean >=8 0.0000% | load 898/865/777
+r3t2 tween2 B20 both        p 1 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 3, max 5/255), >=4 0.294%, mean >=8 0.0000% | load 911/869/779
+r3t2 tween2 D20 fade        p 1 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.318% of floor px (frame 60, max 12/255), >=4 2.188%, mean >=8 0.0143% | load 920/871/781
+r3t2 tween2 D20 fade        p 1 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.021% of floor px (frame 90, max 8/255), >=4 1.080%, mean >=8 0.0003% | load 924/873/782
+r3t2 tween2 D20 fade        p 1 N 120: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 117, max 6/255), >=4 0.492%, mean >=8 0.0000% | load 925/874/783
+r3t2 tween2 D20 fade-ease2  p 2 N  60: r 0.200 -> 0.200 | worst frame >=8/255 1.939% of floor px (frame 60, max 22/255), >=4 3.611%, mean >=8 0.1122% | load 922/874/783
+r3t2 tween2 D20 fade-ease2  p 2 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.866% of floor px (frame 90, max 16/255), >=4 2.851%, mean >=8 0.0283% | load 927/876/785
+r3t2 tween2 D20 fade-ease3  p 3 N  90: r 0.200 -> 0.200 | worst frame >=8/255 1.934% of floor px (frame 90, max 22/255), >=4 3.606%, mean >=8 0.0721% | load 927/878/786
+r3t2 tween2 D20 both-ease2  p 2 N  90: r 0.200 -> 0.474 | worst frame >=8/255 0.018% of floor px (frame 1, max 10/255), >=4 0.889%, mean >=8 0.0006% | load 937/882/789
+r3t2 tween2 D20 both-ease2  p 2 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 8/255), >=4 0.299%, mean >=8 0.0000% | load 938/884/791
+r3t2 tween2 D20 both        p 1 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 8/255), >=4 0.230%, mean >=8 0.0000% | load 986/900/800
+r3t2 tween2 F20 fade        p 1 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 57, max 3/255), >=4 0.000%, mean >=8 0.0000% | load 997/905/803
+r3t2 tween2 F20 fade        p 1 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 1003/910/806
+r3t2 tween2 F20 fade        p 1 N 120: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 112, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 995/911/807
+r3t2 tween2 F20 fade-ease2  p 2 N  60: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 60, max 6/255), >=4 0.154%, mean >=8 0.0000% | load 992/912/808
+r3t2 tween2 F20 fade-ease2  p 2 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 89, max 4/255), >=4 0.017%, mean >=8 0.0000% | load 986/912/809
+r3t2 tween2 F20 fade-ease3  p 3 N  90: r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 90, max 6/255), >=4 0.153%, mean >=8 0.0000% | load 981/912/809
+r3t2 tween2 F20 both-ease2  p 2 N  90: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 21, max 4/255), >=4 0.005%, mean >=8 0.0000% | load 974/912/810
+r3t2 tween2 F20 both-ease2  p 2 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 28, max 4/255), >=4 0.005%, mean >=8 0.0000% | load 975/913/811
+r3t2 tween2 F20 both        p 1 N 120: r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 28, max 4/255), >=4 0.006%, mean >=8 0.0000% | load 973/914/812
+r3t2 tween2 G15 fade        p 1 N  60: r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 50, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 973/914/812
+r3t2 tween2 G15 fade        p 1 N  90: r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 85, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 967/913/812
+r3t2 tween2 G15 fade        p 1 N 120: r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 1, max 1/255), >=4 0.000%, mean >=8 0.0000% | load 961/913/813
+r3t2 tween2 G15 fade-ease2  p 2 N  60: r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 59, max 4/255), >=4 0.001%, mean >=8 0.0000% | load 953/912/813
+r3t2 tween2 G15 fade-ease2  p 2 N  90: r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 89, max 3/255), >=4 0.000%, mean >=8 0.0000% | load 949/912/814
+r3t2 tween2 G15 fade-ease3  p 3 N  90: r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 89, max 4/255), >=4 0.001%, mean >=8 0.0000% | load 947/912/814
+r3t2 tween2 G15 both-ease2  p 2 N  90: r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 946/913/815
+r3t2 tween2 G15 both-ease2  p 2 N 120: r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 947/914/817
+r3t2 tween2 G15 both        p 1 N 120: r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean >=8 0.0000% | load 950/915/817
+# done load 950/915/817

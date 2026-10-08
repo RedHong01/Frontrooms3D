@@ -1,0 +1,9 @@
+Unity log of the a5262fb play run (W/cx_rt/logs/cx_play_a5262fb.log,    12353 lines): signature counts
+Collection was modified          0
+ZBinningJob                      0
+Render Graph Execution error     0
+Shader error                     0
+NullReferenceException           0
+MissingReferenceException        0
+ScreenVideo                      0
+not SRP Batcher compatible       0

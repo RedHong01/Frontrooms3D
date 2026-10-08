@@ -1,0 +1,152 @@
+{
+ "title": [
+  {
+   "key": "tp-lobby_wide",
+   "dY": 1.57,
+   "absdY": 1.57,
+   "pct8": 0.3
+  },
+  {
+   "key": "tp-shift_wide",
+   "dY": 2.04,
+   "absdY": 2.04,
+   "pct8": 1.3
+  },
+  {
+   "key": "tp-office_wide",
+   "dY": 1.76,
+   "absdY": 1.8,
+   "pct8": 0.9
+  },
+  {
+   "key": "tp-run_wide",
+   "dY": 3.75,
+   "absdY": 3.75,
+   "pct8": 10.5
+  },
+  {
+   "key": "tp-exit_wide",
+   "dY": 1.87,
+   "absdY": 1.87,
+   "pct8": 0.2
+  },
+  {
+   "key": "tp-run_sign",
+   "dY": 1.59,
+   "absdY": 1.59,
+   "pct8": 0.8
+  },
+  {
+   "key": "title_doorway",
+   "dY": 2.1,
+   "absdY": 2.1,
+   "pct8": 1.1
+  },
+  {
+   "key": "start_room_hud",
+   "dY": 2.0,
+   "absdY": 2.0,
+   "pct8": 0.5
+  }
+ ],
+ "map": [
+  {
+   "key": "l0-standard_wide",
+   "dY": 0.9,
+   "absdY": 0.93,
+   "pct8": 0.0
+  },
+  {
+   "key": "l0-tall_wall",
+   "dY": -3.66,
+   "absdY": 4.69,
+   "pct8": 9.2
+  },
+  {
+   "key": "office_wide",
+   "dY": 2.73,
+   "absdY": 2.73,
+   "pct8": 0.2
+  },
+  {
+   "key": "seam_post_e1_OFside",
+   "dY": 2.56,
+   "absdY": 2.56,
+   "pct8": 0.0
+  },
+  {
+   "key": "dead-lamp_wide",
+   "dY": 1.5,
+   "absdY": 1.5,
+   "pct8": 0.6
+  },
+  {
+   "key": "door_open",
+   "dY": 0.46,
+   "absdY": 0.48,
+   "pct8": 0.4
+  },
+  {
+   "key": "key_1m",
+   "dY": 0.45,
+   "absdY": 0.45,
+   "pct8": 0.0
+  },
+  {
+   "key": "relay",
+   "dY": 0.71,
+   "absdY": 0.77,
+   "pct8": 0.3
+  }
+ ],
+ "windows": [
+  {
+   "key": "win4_L0_room_1.5m",
+   "dY": -22.45,
+   "absdY": 23.38,
+   "pct8": 57.5
+  },
+  {
+   "key": "win2_L0_hall_1.5m",
+   "dY": -10.12,
+   "absdY": 10.93,
+   "pct8": 31.2
+  },
+  {
+   "key": "win1_OF_room_1.5m",
+   "dY": -18.28,
+   "absdY": 20.49,
+   "pct8": 44.7
+  },
+  {
+   "key": "win3_OF_hall_1.5m",
+   "dY": -9.39,
+   "absdY": 9.92,
+   "pct8": 28.3
+  },
+  {
+   "key": "win4_L0_room_sill_0.3m",
+   "dY": -28.65,
+   "absdY": 29.54,
+   "pct8": 55.0
+  },
+  {
+   "key": "win1_OF_room_head_0.3m",
+   "dY": -15.35,
+   "absdY": 17.95,
+   "pct8": 39.3
+  },
+  {
+   "key": "win3_OF_hall_head_0.3m",
+   "dY": -13.13,
+   "absdY": 14.72,
+   "pct8": 44.8
+  },
+  {
+   "key": "glass_before_hud",
+   "dY": -19.47,
+   "absdY": 21.53,
+   "pct8": 44.5
+  }
+ ]
+}

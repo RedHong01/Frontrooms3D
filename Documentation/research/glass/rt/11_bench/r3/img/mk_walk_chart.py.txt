@@ -1,0 +1,55 @@
+# G14b r3: traced frames on codex-audit VL117's walk, today (glass) vs P1b High / Ultra. Input: the G14bRecvScan TSV.
+import csv, sys
+from PIL import Image, ImageDraw, ImageFont
+tsv, out = sys.argv[1], sys.argv[2]
+rows = list(csv.DictReader(open(tsv), delimiter='\t'))
+N = len(rows)
+S = 2  # render at 2x
+W, H = 1776 * S, 657 * S
+img = Image.new('RGB', (W, H), '#FFFFFF'); d = ImageDraw.Draw(img)
+F = '/Library/Fonts/IBMPlexMono-Regular.otf'; FB = '/Library/Fonts/IBMPlexMono-Bold.otf'
+f20, f24, f28, f34 = (ImageFont.truetype(F, s * S) for s in (20, 24, 28, 34)); fb28 = ImageFont.truetype(FB, 28 * S)
+INK, MUTED, GRID = '#0A0A0A', '#52514E', '#E4E2DC'
+BLUE, ORANGE, GREY = '#2a78d6', '#eb6834', '#E9E7E1'
+x0, x1 = 360 * S, 1500 * S
+strips = [
+    ('G14 TODAY', 'glass in view', lambda r: int(r['glass_vis']) > 0, lambda r: False),
+    ('P1b HIGH', 'glass or a High receiver', lambda r: int(r['glass_vis']) > 0, lambda r: int(r['hbig_vis']) > 0),
+    ('P1b ULTRA', 'glass or an Ultra receiver', lambda r: int(r['glass_vis']) > 0, lambda r: int(r['ubig_vis']) > 0),
+]
+top, sh, gap = 92 * S, 112 * S, 70 * S
+for k, (lab, sub, g, s) in enumerate(strips):
+    y = top + k * (sh + gap)
+    d.text((24 * S, y + 18 * S), lab, font=fb28, fill=INK)
+    d.text((24 * S, y + 58 * S), sub, font=f20, fill=MUTED)
+    nb = no = 0
+    for i, r in enumerate(rows):
+        xa = x0 + (x1 - x0) * i / N; xb = x0 + (x1 - x0) * (i + 1) / N
+        if g(r): c = BLUE; nb += 1
+        elif s(r): c = ORANGE; no += 1
+        else: c = GREY
+        d.rectangle([xa, y, xb, y + sh], fill=c)
+    tr = nb + no
+    d.text((x1 + 30 * S, y + 14 * S), '%.1f %%' % (100.0 * tr / N), font=f34, fill=INK)
+    d.text((x1 + 30 * S, y + 62 * S), '%d of %d frames' % (tr, N), font=f20, fill=MUTED)
+# axis
+ya = top + 3 * (sh + gap) - gap + 18 * S
+for fr in (0, 150, 300, 450, 600, 750, 900):
+    x = x0 + (x1 - x0) * fr / N
+    d.line([x, ya, x, ya + 10 * S], fill=MUTED, width=S)
+    d.text((x - 20 * S, ya + 14 * S), str(fr), font=f20, fill=MUTED)
+d.text((x0, ya + 44 * S), 'frame (60 fps, 8 m/s, ping-pong over 270 m)', font=f20, fill=MUTED)
+# legend
+ly = ya + 44 * S
+for j, (c, t) in enumerate([(BLUE, 'traced today (a window in view)'), (ORANGE, 'traced only because of P1b'), (GREY, 'not traced')]):
+    lx = 1040 * S + j * 0  # stacked legend at right
+    yy = ly - 2 * S + j * 0
+legend = [(BLUE, 'window in view: traced today'), (ORANGE, 'added by P1b (surface receiver only)'), (GREY, 'not traced')]
+lx = x0; ly2 = 30 * S
+for c, t in legend:
+    d.rectangle([lx, ly2 + 4 * S, lx + 22 * S, ly2 + 26 * S], fill=c)
+    d.text((lx + 32 * S, ly2), t, font=f20, fill=INK)
+    lx += (len(t) * 12 + 80) * S
+img = img.resize((1776, 657), Image.LANCZOS) if '--1x' in sys.argv else img
+img.save(out)
+print('wrote', out, img.size)

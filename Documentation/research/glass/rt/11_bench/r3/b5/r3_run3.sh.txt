@@ -1,0 +1,5 @@
+#!/bin/zsh
+cd /Users/redwang/FrontRoomsVisualWork/rt_bench2/r3/b5
+HITLAMPS=0 TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3nl dump D20 > r3_hitlamps0_dump_D20.txt 2>&1
+HITLAMPS=0 TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3nl dump B20 > r3_hitlamps0_dump_B20.txt 2>&1
+echo DONE

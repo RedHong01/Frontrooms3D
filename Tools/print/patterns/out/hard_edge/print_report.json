@@ -61,18 +61,18 @@
     },
     {
       "file": "encoded/K03.png",
-      "name": "K03_double_repeat",
+      "name": "K03_missing_plate",
       "raw_mean": [
-        0.2655,
+        0.2222,
         0.1322
       ],
       "encoded_mean": [
-        0.2776,
-        0.1257
+        0.2339,
+        0.1258
       ],
       "seam_xy": [
         0.0,
-        0.03
+        0.02
       ]
     },
     {

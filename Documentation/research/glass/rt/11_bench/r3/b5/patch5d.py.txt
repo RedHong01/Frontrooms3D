@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""patch5d.py - G14b revision 3 (2026-10-07): rt_bench5c.mm -> rt_bench5d.mm. Not part of the game.
+
+Adds, without changing any existing result (all new switches default off; every 5c mode is untouched):
+  HITLAMPS=0  check 3 issue 1: reflection-ray HITS get no direct lamp light (ambient + emission + the
+              cube/recursion only), as G14 does today in RoomStream rooms, whose Lights never reach its lamp list.
+              The primary (raster) image keeps its lamps, and so does the reference (refBlocks turns it off).
+  mode 'tween' check 3 issue 4 / B16: per-frame floor change while the surface tier turns off in view.
+              Sequences (each frame re-runs the gbuffer, High's trace + filter at that frame's roughness, and the
+              composite with the RT weight blended in linear HDR before exposure and tonemap, as the hook does):
+                fadeN   : _FR_SurfaceRTWeight 1 -> 0 over N frames, the twin stays waxed (r0);
+                tweenN  : RT already off; the twin's _Smoothness 1.52 -> 1.00 over N frames (s 0.80 -> 0.526;
+                          G15's s 0.85 patch -> 0.559), linear in _Smoothness;
+                bothN   : both at once over N frames;
+              the per-pixel fade (r 0.40-0.55) multiplies the weight, as in the hook. Floor px (cls 2), display
+              8-bit, share of floor px changing >= 8/255 (and >= 4/255) between consecutive frames, worst frame.
+"""
+import sys
+src = open("rt_bench5c.mm").read()
+
+def rep(old, new, count=1):
+    global src
+    n = src.count(old)
+    if n != count:
+        sys.exit(f"patch5d: expected {count} x {old[:70]!r}, found {n}")
+    src = src.replace(old, new)
+
+# ---------------------------------------------------------------- HITLAMPS: shadeHit knows whether it shades a reflection hit
+rep("                       uint nShadow, float rough, thread uint& srays)\n{",
+    "                       uint nShadow, float rough, thread uint& srays, uint fromTrace)\n{")
+rep("  for (uint k = 0; k < f.lightCount; k++) {\n    Light lt = f.lights[k];",
+    "  uint lcount = (fromTrace != 0u && (f.pad3 & 1u) != 0u) ? 0u : f.lightCount;   // r3: HITLAMPS=0\n"
+    "  for (uint k = 0; k < lcount; k++) {\n    Light lt = f.lights[k];")
+rep("                         e.depth == 1 ? f.shadow1 : f.shadow2, rough, srays);",
+    "                         e.depth == 1 ? f.shadow1 : f.shadow2, rough, srays, 1u);")
+rep("                             depth == 1u ? f.shadow1 : f.shadow2, rough, srays);",
+    "                             depth == 1u ? f.shadow1 : f.shadow2, rough, srays, 1u);")
+rep("P, n, d, trav * f.pixelAngle, f.shadow1, rough, srays);",
+    "P, n, d, trav * f.pixelAngle, f.shadow1, rough, srays, 1u);")
+rep("                            glossy ? f.floorRough : g.emis.w, dummy);",
+    "                            glossy ? f.floorRough : g.emis.w, dummy, 0u);")
+
+# ---------------------------------------------------------------- composite mode 2: RT weight (pad4, float bits) x the per-pixel fade
+rep("    else { float Fs = schlick(0.04f, dot(N, V)); col = b * (1 - Fs) + (traced ? rr : Fs * envS(f, env, R, 4.0f * f.floorRough)); }",
+    "    else { float Fs = schlick(0.04f, dot(N, V)); float3 cubeT = Fs * envS(f, env, R, 4.0f * f.floorRough);\n"
+    "      float3 rtT = traced ? rr : cubeT;\n"
+    "      if (f.compMode == 2u) rtT = mix(cubeT, rr, as_type<float>(f.pad4) * (1.0f - smoothstep(0.40f, 0.55f, f.floorRough)));   // r3 tween\n"
+    "      col = b * (1 - Fs) + rtT; }")
+
+# ---------------------------------------------------------------- host: the HITLAMPS flag
+rep("    uint32_t farFade = 0u;   // pad2: lo | hi << 16 in 0.1 mm",
+    "    bool hitLampsOff = getenv(\"HITLAMPS\") && atoi(getenv(\"HITLAMPS\")) == 0;   // r3: reflection hits without lamps\n"
+    "    if (hitLampsOff) printf(\"# HITLAMPS=0: reflection-ray hits get no direct lamp light (G14 in RoomStream rooms today); primary image and reference keep them\\n\");\n"
+    "    uint32_t farFade = 0u;   // pad2: lo | hi << 16 in 0.1 mm")
+rep("      f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1); f.pad2 = farFade; f.tree = treeMode;",
+    "      f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1); f.pad2 = farFade; f.tree = treeMode; f.pad3 = hitLampsOff ? 1u : 0u;")
+rep("      uint32_t savedFF = farFade; farFade = 0u;   // r4 fix: the reference never uses the far fade",
+    "      uint32_t savedFF = farFade; farFade = 0u;   // r4 fix: the reference never uses the far fade\n"
+    "      bool savedHL = hitLampsOff; hitLampsOff = false;   // r3: the reference always lights its hits")
+rep("      jitterMode = savedJ; farFade = savedFF;\n",
+    "      jitterMode = savedJ; farFade = savedFF; hitLampsOff = savedHL;\n")
+
+# ---------------------------------------------------------------- mode 'tween'
+TWEEN = r'''
+    if (what == "tween") {
+      printf("# --- tween 1920x1080 (B16): floor px share changing >= 8/255 between consecutive frames, cube mode %d  %s\n", cubeMode, loadStr().c_str());
+      struct TW { const char* key; const char* hi; float r0; };
+      auto frameImg = [&](Cfg c, float rough, float w) {
+        c.rough = rough; FrameH f = frameFor(ti, c, 1, 0); runG(ti, c, f);
+        if (w <= 0.0f) { runC(ti, f, ti.refl, 0); return grab8(ti); }
+        runT(ti, c, f); runF(ti, f); FrameH fc = f; float wv = w; memcpy(&fc.pad4, &wv, 4); runC(ti, fc, ti.filt, 2); return grab8(ti); };
+      for (TW tw : {TW{"A20", "A_H", .2f}, TW{"B20", "B_H", .2f}, TW{"D20", "D_H", .2f}, TW{"F20", "F_H", .2f}, TW{"G15", "G_H", .15f}}) {
+        Cfg hi = findCfg(tw.hi);
+        auto cls = clsOf(hi);
+        float s0 = 1.0f - tw.r0, s1 = s0 / 1.52f, r1 = 1.0f - s1;
+        struct SQ { const char* name; int n; int kind; };   // kind 0 fade, 1 tween, 2 both, 3 fade16 then tween n
+        for (SQ sq : {SQ{"fade", 16, 0}, SQ{"fade", 32, 0}, SQ{"tween", 16, 1}, SQ{"tween", 30, 1}, SQ{"tween", 60, 1}, SQ{"tween", 90, 1},
+                      SQ{"both", 32, 2}, SQ{"both", 60, 2}, SQ{"both", 90, 2}, SQ{"fade16+tween", 60, 3}, SQ{"fade32+tween", 60, 4}}) {
+          std::vector<std::pair<float, float>> seq;   // (rough, weight) per frame, frame 0 = before
+          if (sq.kind == 0) for (int k = 0; k <= sq.n; k++) seq.push_back({tw.r0, 1.0f - (float)k / sq.n});
+          if (sq.kind == 1) for (int k = 0; k <= sq.n; k++) seq.push_back({1.0f - (s0 + (s1 - s0) * (float)k / sq.n), 0.0f});
+          if (sq.kind == 2) for (int k = 0; k <= sq.n; k++) seq.push_back({1.0f - (s0 + (s1 - s0) * (float)k / sq.n), 1.0f - (float)k / sq.n});
+          if (sq.kind >= 3) { int nf = sq.kind == 3 ? 16 : 32; for (int k = 0; k <= nf; k++) seq.push_back({tw.r0, 1.0f - (float)k / nf});
+                              for (int k = 1; k <= sq.n; k++) seq.push_back({1.0f - (s0 + (s1 - s0) * (float)k / sq.n), 0.0f}); }
+          std::vector<uint8_t> prev; double worst8 = 0, worst4 = 0, sum8 = 0; int worstMax = 0, worstK = -1, nfr = 0; size_t nfloor = 0;
+          for (size_t k = 0; k < seq.size(); k++) {
+            auto cur = frameImg(hi, seq[k].first, seq[k].second);
+            if (k > 0) {
+              size_t g8 = 0, g4 = 0; int mx = 0; nfloor = 0;
+              for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { if ((int)(cls[i * 4 + 3] + .5f) != 2) continue; nfloor++;
+                int m = d8(prev, cur, i); g8 += m >= 8; g4 += m >= 4; mx = std::max(mx, m); }
+              double p8 = 100.0 * g8 / std::max<size_t>(nfloor, 1), p4 = 100.0 * g4 / std::max<size_t>(nfloor, 1);
+              sum8 += p8; nfr++;
+              if (p8 > worst8 || (p8 == worst8 && mx > worstMax)) { worst8 = p8; worstMax = mx; worstK = (int)k; }
+              worst4 = std::max(worst4, p4);
+            }
+            prev = cur;
+          }
+          printf("%s tween %s %-13s N %3d (%3zu frames): r %.3f -> %.3f | worst frame >=8/255 %.3f%% of floor px (frame %d, max %d/255), >=4 %.3f%%, mean over frames >=8 %.4f%% | %s\n",
+                 tag.c_str(), tw.key, sq.name, sq.n, seq.size() - 1, seq.front().first, seq.back().first, worst8, worstK, worstMax, worst4, sum8 / std::max(nfr, 1), loadStr().c_str());
+          fflush(stdout);
+        }
+      }
+    }
+'''
+rep('    if (what == "diff2") {', TWEEN + '    if (what == "diff2") {')
+
+open("rt_bench5d.mm", "w").write(src)
+print("patch5d: wrote rt_bench5d.mm")

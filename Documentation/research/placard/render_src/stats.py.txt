@@ -1,0 +1,53 @@
+import csv, sys, os
+from collections import defaultdict
+root = sys.argv[1]
+data = defaultdict(list)
+for sub in ("main_P1", "a9_P2", "a9_P3"):
+    p = os.path.join(root, sub, "series.csv")
+    if not os.path.exists(p): continue
+    for r in csv.DictReader(open(p)):
+        data[sub + ":" + r["tag"]].append({k: (float(v) if k not in ("tag", "mode") else v) for k, v in r.items()})
+def stats(key, cut=None):
+    rows = data.get(key, [])
+    if not rows: return None
+    t0 = rows[0]["t"]
+    if cut:
+        for r in rows:
+            if r["L"] < .5: t0 = r["t"] - 1/60.; break
+    G = [(r["t"] - t0, r["G"]) for r in rows]
+    gmax = max(g for _, g in G); tmax = [t for t, g in G if g == gmax][0]
+    slope = max(abs(G[i+1][1] - G[i][1]) / max(1e-6, G[i+1][0] - G[i][0]) for i in range(len(G) - 1))
+    t50 = next((t for t, g in G if g >= .5), None)
+    # turns: rising->falling with 0.01 hysteresis
+    turns = 0; peak = G[0][1]; rising = True; lo = G[0][1]
+    for t, g in G:
+        if rising:
+            if g > peak: peak = g
+            elif g < peak - .01: turns += 1; rising = False; lo = g
+        else:
+            if g < lo: lo = g
+            elif g > lo + .01: rising = True; peak = g
+    dur = G[-1][0] - G[0][0]
+    # largest swing in any 2 s window
+    sw = 0
+    for i in range(0, len(G), 10):
+        w = [g for t, g in G if G[i][0] <= t <= G[i][0] + 2]
+        sw = max(sw, max(w) - min(w))
+    mean = sum(g for _, g in G) / len(G)
+    last = G[-1][1]
+    return "%s: n %d, %.1f s, G max %.3f at %.2f s, first G>=0.5 at %s, max |dG/dt| %.2f/s, turns %d (%.2f/s), max 2 s swing %.3f, mean %.3f, last %.3f" % (
+        key, len(G), dur, gmax, tmax, ("%.2f s" % t50) if t50 is not None else "never", slope, turns, turns / max(dur, 1e-6), sw, mean, last)
+for k in sorted(data):
+    cut = k.endswith("_off")
+    s = stats(k, cut)
+    if s: print(s)
+# extra: G at the six sequence times
+for tag in ("main_P1:normal_off", "main_P1:calm_off"):
+    rows = data[tag]; t0 = None
+    for r in rows:
+        if r["L"] < .5: t0 = r["t"] - 1/60.; break
+    out = []
+    for m in (0.25, .5, 1, 2, 3, 5, 10, 15, 20):
+        r = min(rows, key=lambda r: abs(r["t"] - t0 - m))
+        out.append("t%g: G %.3f C %.3f Ls %.3f W %.3f" % (m, r["G"], r["C"], r["Ls"], r["W"]))
+    print(tag, " | ".join(out))

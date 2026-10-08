@@ -1,0 +1,15 @@
+quality level Ultra, pipeline FrontRooms_URP
+doors: interactables kit (G1 frame/leaf/exit device, G2 lock trim)
+goal door RN-X from the kit: Kit_DoorFrame_Steel + Kit_DoorLeaf_Ward_Lite (clone-only Blender asset) + Kit_ExitDevice_Crossbar; parallel-arm closer (blockout) on the corridor face; S-face lever trim not placed (S face is the stub side, never in frame)
+side doors RN-K from the kit: Kit_DoorFrame_Steel + Kit_DoorLeaf_Steel (Door_Enamel -> Prop_SteelAlmond) + Kit_Lock_Escutcheon/Knob/CylinderShell on the corridor face
+prop Kit_Stretcher: kit model (LOD0)
+prop Kit_VisitorChair3: kit model (LOD0)
+prop Kit_Wheelchair: kit model (LOD0)
+prop Kit_IVPole: kit model (LOD0)
+prop Kit_LinenCart: kit model (LOD0)
+game Relay rig (FrontRooms3DGame.CreateHunter, Run pose) bounds min [-1.2935,-1.1191,10.8545] max [1.3452,3.0402,12.165]
+relay proxy bounds min [-0.3906,0,11.2598] max [0.3906,1.84,11.7598]
+sign-face bounce (uniform SH on 5 sign renderers): armed 0.4 x troffer white, tripped 0.035 x sign red; corridor troffer lens smoothness 0.55, base 0.6
+global ambient probe DC (L0) rgb = 0.0643, 0.0541, 0.0274
+light values: sign spot 2.4 range 6.5, wall sign spot 2, ceiling glow 2 spots per sign (45° up-out, 130°/40°) 0.42 each, range 2.2, corridor ambient tripped 0.25 x global tinted (1, 0.35, 0.3), eye adaptation +3.2 stops (delay 0.15 s, tau 0.5 s), sign face hold 1.15, glow spots y 2.42, sign bounce armed 0.4, probes on
+reflections: zone cube swap (default reflection = probe 1 capture, armed / tripped, linear 0.5); the 3 box probes are bake-only

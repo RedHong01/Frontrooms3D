@@ -1,0 +1,8 @@
+seed 3, mount P2 east, glow cell (149, 70)
+overlap · frame box (+0.02 m, world AABB of the OBB) [257.886, 1.3471, 19.2466]-[257.9395, 1.7009, 19.7534]: 2 renderers
+  frame: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 14 · 2.9 m/L0_Wallpaper [251.92, 0, 18]-[258.08, 2.9, 24.08]
+  frame: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 15 · 2.9 m/L0_Wallpaper [257.92, 0, 18]-[264.08, 2.9, 24.08]
+overlap · keep-clear floor rect [257.02, 0.02, 19.117]-[257.92, 2, 19.883]: 2 renderers
+  floor: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 14 · 2.9 m/L0_Wallpaper [251.92, 0, 18]-[258.08, 2.9, 24.08]
+  floor: FrontRooms 3D/Level 0 map/Chunk (18, 8) · revision 0/Block 15 · 2.9 m/L0_Wallpaper [257.92, 0, 18]-[264.08, 2.9, 24.08]
+lamps: (149, 70) Steady L 0.9611; (150, 70) Steady L 0.9804; (148, 70) Stutter L 0.9819; (149, 71) Steady L 0.9635; (149, 69) Off L -1.0000; 

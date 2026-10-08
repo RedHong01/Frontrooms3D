@@ -1,0 +1,261 @@
+"""Q16 placard render stage: post-processing (sheets, curves, JPG copies).
+Usage: W/venv/bin/python post.py <render root> <doc images dir>
+<render root> holds main_P1/, a9_P2/, a9_P3/ from FrontRoomsPlacardRender (clone tool)."""
+import csv
+import os
+import sys
+from collections import defaultdict
+
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT, OUT = sys.argv[1], sys.argv[2]
+MAIN = os.path.join(ROOT, "main_P1")
+os.makedirs(OUT, exist_ok=True)
+
+FONT_PATHS = ["/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc"]
+MONO_PATHS = ["/System/Library/Fonts/Menlo.ttc", "/System/Library/Fonts/Monaco.ttf"]
+
+
+def font(size, mono=False):
+    for p in (MONO_PATHS if mono else FONT_PATHS):
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, size)
+            except Exception:
+                pass
+    return ImageFont.load_default()
+
+
+def jpg(src, name, maxw=1920):
+    im = Image.open(src).convert("RGB")
+    if im.width > maxw:
+        im = im.resize((maxw, round(im.height * maxw / im.width)), Image.LANCZOS)
+    dst = os.path.join(OUT, name + ".jpg")
+    im.save(dst, quality=85, optimize=True)
+    return dst
+
+
+def frames_meta(d):
+    meta = {}
+    p = os.path.join(d, "frames.txt")
+    if not os.path.exists(p):
+        return meta
+    for line in open(p):
+        name = line.split(" | ")[0].strip()
+        g = None
+        if " G " in line:
+            try:
+                g = float(line.split(" G ")[1].split()[0])
+            except Exception:
+                pass
+        meta[name] = (g, line.strip())
+    return meta
+
+
+def crop_centre(im, w, h):
+    cx, cy = im.width // 2, im.height // 2
+    return im.crop((cx - w // 2, cy - h // 2, cx + w // 2, cy + h // 2))
+
+
+def label(img, text, pos=(10, 8), size=22, fill=(255, 255, 255), bg=(10, 10, 10)):
+    d = ImageDraw.Draw(img)
+    f = font(size)
+    l, t, r, b = d.textbbox((0, 0), text, font=f)
+    x, y = pos
+    d.rectangle((x - 6, y - 4, x + (r - l) + 6, y + (b - t) + 8), fill=bg)
+    d.text((x, y - t), text, font=f, fill=fill)
+
+
+# ---------------------------------------------------------------- JPG copies of the frames that are logged
+copies = {
+    "lit_3m": "q16_r_lit_3m", "lit_1m": "q16_r_lit_1m", "lit_corner_0p3m": "q16_r_lit_corner_0p3m", "lit_corner_zoom": "q16_r_lit_corner_zoom",
+    "dark_ownoff_3m": "q16_r_dark_ownoff_3m", "dark_ownoff_1m": "q16_r_dark_ownoff_1m", "dark_ownoff_corner_0p3m": "q16_r_dark_ownoff_corner_0p3m", "dark_ownoff_corner_zoom": "q16_r_dark_ownoff_corner_zoom",
+    "dark_powerfail_t3s_3m": "q16_r_dark_powerfail_3m", "dark_powerfail_t3s_1m": "q16_r_dark_powerfail_1m", "dark_powerfail_t3s_corner_0p3m": "q16_r_dark_powerfail_corner_0p3m",
+    "dark_powerfail_t3s_corner_zoom": "q16_r_dark_powerfail_corner_zoom", "dark_powerfail_t15s_1m": "q16_r_dark_powerfail_t15s_1m",
+    "A9_P1_open_wide": "q16_r_A9_P1_open_wide", "A9_P1_shut_wide": "q16_r_A9_P1_shut_wide", "A6_stutter_12s": "q16_r_A6_stutter_12s",
+}
+made = []
+for stem, name in copies.items():
+    src = os.path.join(MAIN, stem + ".png")
+    if os.path.exists(src):
+        made.append(jpg(src, name))
+for sub in ("a9_P2", "a9_P3"):
+    d = os.path.join(ROOT, sub)
+    if not os.path.isdir(d):
+        continue
+    for f in sorted(os.listdir(d)):
+        if f.endswith(".png"):
+            made.append(jpg(os.path.join(d, f), "q16_r_" + f[:-4]))
+
+# ---------------------------------------------------------------- views sheet: 3 states x 3 distances
+rows = [("LIT · STEADY LAMP", "lit"), ("OWN LAMP OFF · +15 S", "dark_ownoff"), ("POWER FAILURE · +3 S", "dark_powerfail_t3s")]
+cols = [("3 M", "_3m"), ("1 M", "_1m"), ("0.3 M CORNER", "_corner_0p3m")]
+tw, th, gap, head = 624, 351, 12, 0
+sheet = Image.new("RGB", (3 * tw + 2 * gap, 3 * th + 2 * gap), (255, 255, 255))
+ok = True
+for r, (rl, rs) in enumerate(rows):
+    for c, (cl, cs) in enumerate(cols):
+        p = os.path.join(MAIN, rs + cs + ".png")
+        if not os.path.exists(p):
+            ok = False
+            continue
+        im = Image.open(p).convert("RGB").resize((tw, th), Image.LANCZOS)
+        label(im, rl + " · " + cl, size=18, fill=(10, 10, 10) if r == 0 else (10, 10, 10), bg=(255, 255, 255) if r == 0 else (244, 223, 59))
+        sheet.paste(im, (c * (tw + gap), r * (th + gap)))
+if ok:
+    sheet.save(os.path.join(OUT, "q16_r_views_sheet.jpg"), quality=88)
+    made.append(os.path.join(OUT, "q16_r_views_sheet.jpg"))
+
+# ---------------------------------------------------------------- lamp-off sequences: normal and Reduce flashing
+meta = frames_meta(MAIN)
+seq_names = ["seq0_t0", "seq1_t0p25", "seq2_t0p50", "seq3_t1p00", "seq4_t3p00", "seq5_t15p00"]
+seq_lbl = ["T 0 (LIT)", "+0.25 S", "+0.5 S", "+1 S", "+3 S", "+15 S"]
+cw, ch = 420, 286
+scale = 1.0
+tile_w = 300
+tile_h = round(ch * tile_w / cw)
+pad = 10
+left = 0
+strip = Image.new("RGB", (6 * tile_w + 5 * pad, 2 * tile_h + pad), (255, 255, 255))
+have = True
+for r, mode in enumerate(["normal", "calm"]):
+    for i, s in enumerate(seq_names):
+        p = os.path.join(MAIN, mode + "_" + s + ".png")
+        if not os.path.exists(p):
+            have = False
+            continue
+        im = crop_centre(Image.open(p).convert("RGB"), cw, ch).resize((tile_w, tile_h), Image.LANCZOS)
+        g = meta.get(mode + "_" + s, (None, ""))[0]
+        label(im, seq_lbl[i] + ("" if g is None else "  G %.2f" % g), size=16, bg=(244, 223, 59), fill=(10, 10, 10))
+        if i == 0:
+            label(im, "NORMAL" if mode == "normal" else "REDUCE FLASHING", pos=(10, tile_h - 30), size=16)
+        strip.paste(im, (i * (tile_w + pad), r * (tile_h + pad)))
+if have:
+    strip.save(os.path.join(OUT, "q16_r_lampoff_sequence.jpg"), quality=90)
+    made.append(os.path.join(OUT, "q16_r_lampoff_sequence.jpg"))
+
+# A9 placement sheet: P1 / P2 / P3 x door open / door shut / from the placard's own side
+A9 = [("P1", [("main_P1", "A9_P1_open_wide", "DOOR OPEN"), ("main_P1", "A9_P1_shut_wide", "DOOR SHUT"), ("main_P1", "lit_3m", "FROM ITS CELL · 3 M")]),
+      ("P2", [("a9_P2", "A9_P2_open_wide", "DOOR OPEN"), ("a9_P2", "A9_P2_shut_wide", "DOOR SHUT"), ("a9_P2", "A9_P2_open_pastleaf", "PAST THE OPEN LEAF")]),
+      ("P3", [("a9_P3", "A9_P3_open_wide", "DOOR OPEN"), ("a9_P3", "A9_P3_shut_wide", "DOOR SHUT"), ("a9_P3", "A9_P3_face_1m", "FROM ITS CELL · 1 M")])]
+tw, th, gap = 624, 351, 12
+sheet = Image.new("RGB", (3 * tw + 2 * gap, 3 * th + 2 * gap), (255, 255, 255))
+ok = True
+for r, (m, cells) in enumerate(A9):
+    for c, (sub, stem, lbl) in enumerate(cells):
+        p = os.path.join(ROOT, sub, stem + ".png")
+        if not os.path.exists(p):
+            ok = False
+            continue
+        im = Image.open(p).convert("RGB").resize((tw, th), Image.LANCZOS)
+        label(im, m + " · " + lbl, size=18, fill=(255, 255, 255), bg=(10, 10, 10))
+        sheet.paste(im, (c * (tw + gap), r * (th + gap)))
+if ok:
+    sheet.save(os.path.join(OUT, "q16_r_A9_sheet.jpg"), quality=88)
+    made.append(os.path.join(OUT, "q16_r_A9_sheet.jpg"))
+
+# A5 failing strip (normal over calm)
+strip = Image.new("RGB", (6 * tile_w + 5 * pad, 2 * tile_h + pad), (255, 255, 255))
+have = True
+for r, mode in enumerate(["normal", "calm"]):
+    for i in range(6):
+        stem = "A5_failing_%s_long_%d" % (mode, i)
+        p = os.path.join(ROOT, "a9_P2", stem + ".png")
+        if not os.path.exists(p):
+            stem = "A5_failing_%s_%d" % (mode, i)
+            p = os.path.join(MAIN, stem + ".png")
+        if not os.path.exists(p):
+            have = False
+            continue
+        im = crop_centre(Image.open(p).convert("RGB"), cw, ch).resize((tile_w, tile_h), Image.LANCZOS)
+        g = (frames_meta(os.path.dirname(p)).get(stem, (None, "")))[0]
+        label(im, "+%.2f S" % (i / 3.0) + ("" if g is None else "  G %.2f" % g), size=16, bg=(244, 223, 59), fill=(10, 10, 10))
+        if i == 0:
+            label(im, "FAILING · NORMAL" if mode == "normal" else "FAILING · REDUCE FLASHING", pos=(10, tile_h - 30), size=16)
+        strip.paste(im, (i * (tile_w + pad), r * (tile_h + pad)))
+if have:
+    strip.save(os.path.join(OUT, "q16_r_A5_failing_strip.jpg"), quality=90)
+    made.append(os.path.join(OUT, "q16_r_A5_failing_strip.jpg"))
+
+# ---------------------------------------------------------------- curves from series.csv
+data = defaultdict(list)
+for sub in ("main_P1", "a9_P2", "a9_P3"):
+    p = os.path.join(ROOT, sub, "series.csv")
+    if os.path.exists(p):
+        for row in csv.DictReader(open(p)):
+            data[row["tag"]].append({k: (float(v) if k not in ("tag", "mode") else v) for k, v in row.items()})
+
+
+def panel(draw, box, title, curves, tmax, ymax=1.05, hlines=()):
+    x0, y0, x1, y1 = box
+    f = font(18)
+    fs = font(14)
+    draw.text((x0, y0 - 28), title, font=f, fill=(10, 10, 10))
+    draw.rectangle(box, outline=(160, 160, 160))
+    for yv in [0, .25, .5, .75, 1.0]:
+        if yv > ymax:
+            continue
+        yy = y1 - (y1 - y0) * yv / ymax
+        draw.line((x0, yy, x1, yy), fill=(232, 232, 232))
+        draw.text((x0 - 34, yy - 8), "%.2f" % yv, font=fs, fill=(90, 90, 90))
+    step = 1 if tmax <= 6 else (2 if tmax <= 14 else 5)
+    t = 0
+    while t <= tmax + 1e-6:
+        xx = x0 + (x1 - x0) * t / tmax
+        draw.line((xx, y1, xx, y1 + 5), fill=(90, 90, 90))
+        draw.text((xx - 8, y1 + 8), "%g" % t, font=fs, fill=(90, 90, 90))
+        t += step
+    for yv, col in hlines:
+        yy = y1 - (y1 - y0) * yv / ymax
+        draw.line((x0, yy, x1, yy), fill=col, width=1)
+    lx, ly = x0, y1 + 30
+    for name, pts, col, w in curves:
+        if not pts:
+            continue
+        xy = [(x0 + (x1 - x0) * min(t, tmax) / tmax, y1 - (y1 - y0) * max(0.0, min(v, ymax)) / ymax) for t, v in pts if t <= tmax]
+        if len(xy) > 1:
+            draw.line(xy, fill=col, width=w)
+        tw = draw.textbbox((0, 0), name, font=fs)[2]
+        if lx + 20 + tw > x1:
+            lx, ly = x0, ly + 20
+        draw.rectangle((lx, ly + 4, lx + 14, ly + 14), fill=col)
+        draw.text((lx + 20, ly), name, font=fs, fill=(10, 10, 10))
+        lx += 20 + tw + 18
+
+
+def series(tag, key, shift=0.0):
+    return [(r["t"] + shift, r[key]) for r in data.get(tag, [])]
+
+
+if data:
+    img = Image.new("RGB", (1920, 1080), (255, 255, 255))
+    d = ImageDraw.Draw(img)
+    BLUE, GREEN, GREY, ORANGE, RED, PURPLE = (40, 90, 200), (60, 160, 60), (150, 150, 150), (230, 140, 30), (200, 40, 40), (130, 70, 170)
+    # The off series starts at the t0 frame (the cut follows one shot later): shift so t = 0 is the cut.
+    def cut_shift(tag):
+        rows = data.get(tag, [])
+        for r in rows:
+            if r["L"] < .5:
+                return -r["t"] + 1 / 60.0
+        return 0.0
+    sn, sc = cut_shift("normal_off"), cut_shift("calm_off")
+    panel(d, (90, 70, 930, 440), "Own lamp off at t 0 (s): normal", [
+        ("L own lamp", series("normal_off", "L", sn), GREY, 2), ("Ls (tau 0.35 s)", series("normal_off", "Ls", sn), ORANGE, 2),
+        ("C charge", series("normal_off", "C", sn), BLUE, 2), ("W wall light", series("normal_off", "W", sn), PURPLE, 1), ("G shown", series("normal_off", "G", sn), GREEN, 4)], 20)
+    panel(d, (1030, 70, 1870, 440), "Own lamp off at t 0 (s): Reduce flashing", [
+        ("L own lamp", series("calm_off", "L", sc), GREY, 2), ("Ls (tau 1.0 s)", series("calm_off", "Ls", sc), ORANGE, 2),
+        ("C charge", series("calm_off", "C", sc), BLUE, 2), ("W wall light", series("calm_off", "W", sc), PURPLE, 1), ("G shown", series("calm_off", "G", sc), GREEN, 4)], 20)
+    fn = "failing_normal_long" if data.get("failing_normal_long") else "failing_normal"
+    fc = "failing_calm_long" if data.get("failing_calm_long") else "failing_calm"
+    tf = 30 if data.get("failing_calm_long") else 12
+    panel(d, (90, 590, 640, 960), "Failing lamp (A5): G", [
+        ("G normal", series(fn, "G"), GREEN, 3), ("G Reduce flashing", series(fc, "G"), BLUE, 3), ("L", series(fn, "L"), GREY, 1)], tf)
+    st = "stutter_long" if data.get("stutter_long") else "stutter"
+    panel(d, (720, 590, 1240, 960), "Stutter lamp (A6): G", [
+        ("G", series(st, "G"), GREEN, 3), ("L", series(st, "L"), GREY, 1)], 40 if st == "stutter_long" else 12)
+    panel(d, (1320, 590, 1870, 960), "Warn train x6 at 3 Hz (A7): G", [
+        ("G normal", series("warn_normal", "G"), GREEN, 3), ("G Reduce flashing", series("warn_calm", "G"), BLUE, 3), ("L normal", series("warn_normal", "L"), GREY, 1), ("L Reduce flashing", series("warn_calm", "L"), ORANGE, 1)], 7)
+    img.save(os.path.join(OUT, "q16_r_glow_curves_ingame.png"))
+    made.append(os.path.join(OUT, "q16_r_glow_curves_ingame.png"))
+
+print("\n".join(made))

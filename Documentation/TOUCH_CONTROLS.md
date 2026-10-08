@@ -211,7 +211,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | USE | appears / goes | 160 ms alpha + scale 0.86 → 1 in 200 ms OutBack / 120 ms InCubic to 0.94 |
 | USE | press / release | yellow fill and ink verb in 70 ms, scale 0.92 / fill out 140 ms, scale back 180 ms OutBack |
 | USE | verb changes (OPEN ↔ SHUT) | crossfade 120 ms |
-| USE | locked press | shake 3 cycles, ±4 pt decaying, 240 ms, with the rattle haptics; the press shows a faint paper flash, never the yellow "go" fill |
+| USE | locked press | shake 3 cycles, ±4 pt decaying, 240 ms, with the rattle haptics; the press never fills (no yellow "go"; a paper tint greyed the solid disc and took LOCKED to 2.6 : 1): its text-free ring flashes to full paper instead |
 | Hold ring | hold | track fades in 120 ms; the arc follows progress (60 ms smoothing), outside the thumb at r 46 |
 | Pause keycap | press | scale 0.9 in 70 ms, back in 160 ms OutBackSoft |
 | Frost | pause / settings / caught | fades in over the live frame in 240 ms (420 ms when caught) OutCubic, so the room frosts over; out 160 ms (see the backdrop note below) |
@@ -279,7 +279,8 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
   - Reduce Motion: the chips fade in place.
   - Motion checks read node positions: for example, the RESUME chip is still low at f08, nearly home at f18 and home at f30.
   - The Relay is held dormant for these steps (a runtime flag on that run's Relay; no game code changes). The steps teleport the player around a live map, and in run 9 the Relay caught it halfway. The caught step calls the game's `End()` itself.
-  - Latest: run 10, 2026-10-07, 63 / 63 checks, 74 frames. Frames are in `~/FrontRoomsVisualWork/touch/run10_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL131; Figma TC14, TC15).
+  - Latest: run 16, 2026-10-07, 63 / 63 checks, 76 frames (with the ink chips, the solid USE disc and the static title prompt). Frames are in `~/FrontRoomsVisualWork/touch/run16_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL132, VL144; Figma TC14, TC15).
+  - The label audit adds two captures, 07z_label_*_dark: the same frame pushed down 6 EV by a temporary post volume, as a dark room for 平面视觉.
 - **Two Editor facts** the harness works around, so nobody trips on them again:
   - In batch mode no Game view has focus, so the Input System withholds pointer and touch input from Play Mode. The harness swaps in a copy of the input settings that sends all input to the game (all devices, ignore focus) and restores the original afterwards.
   - `Time.captureDeltaTime` steps game time but not unscaled time, and captures take real seconds. The touch layer therefore reads its own clock (`FrontRoomsTouchMotion.Now`), which the harness steps 1/60 s per frame. In players that clock is plain unscaled time.

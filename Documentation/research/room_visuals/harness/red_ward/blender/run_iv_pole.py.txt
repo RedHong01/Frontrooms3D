@@ -1,0 +1,35 @@
+"""Five-caster IV pole, 1.9 m, chrome, two-hook top, one empty PVC bag
+(clone-only, Run! direction A props). Stands on z = 0."""
+
+import math
+
+import run_props_common as c
+
+NAME = "Kit_IVPole"
+SMOOTH_ANGLE = 40.0
+
+
+def build(kit):
+    hub_z = 0.11
+    kit.cylinder(0.035, 0.05, (0, 0, hub_z), c.CHROME, verts=20, bevel=0.006, segments=2, name="hub")
+    for k in range(5):
+        a = 2 * math.pi * k / 5
+        ex, ey = math.cos(a) * 0.29, math.sin(a) * 0.29
+        kit.tube([(math.cos(a) * 0.03, math.sin(a) * 0.03, hub_z), (ex, ey, 0.075)], 0.011, c.CHROME, verts=10, name="leg")
+        kit.cylinder(0.024, 0.02, (ex, ey, 0.024), c.CASTER, verts=14, rot=(0, 90, 0), bevel=0.004, segments=1, name="caster")
+        kit.box((0.03, 0.03, 0.03), (ex, ey, 0.055), c.CHROME, bevel=0.004, segments=1, name="caster yoke")
+    kit.cylinder(0.0125, 1.25, (0, 0, hub_z + 0.625), c.CHROME, verts=16, bevel=0.0, name="pole lower")
+    kit.cylinder(0.009, 0.56, (0, 0, 1.30 + 0.28 - 0.01), c.CHROME, verts=14, bevel=0.0, name="pole upper")
+    kit.cylinder(0.02, 0.04, (0, 0, 1.32), c.CHROME, verts=16, bevel=0.004, segments=2, name="height collar")
+    kit.cylinder(0.008, 0.025, (0.026, 0, 1.32), c.BLACK, verts=10, rot=(0, 90, 0), name="collar knob")
+    for sx in (-1, 1):
+        pts = []
+        for i in range(9):
+            a = math.pi * i / 8
+            pts.append((sx * (0.055 - 0.045 * math.cos(a)), 0, 1.86 + 0.045 * math.sin(a) - (0.0 if i < 8 else 0.0)))
+        kit.tube([(0, 0, 1.86)] + pts, 0.005, c.CHROME, verts=8, name="ram's horn hook")
+    # An empty bag on one hook.
+    kit.soft_box((0.11, 0.03, 0.18), (0.10, 0, 1.73), "Prop_Glass", radius=0.012, segments=14, rings=8, puff=0.004, name="IV bag")
+    kit.tube([(0.10, 0, 1.64), (0.10, 0, 1.50), (0.08, 0.01, 1.30)], 0.002, "Prop_Glass", verts=6, name="IV line")
+    kit.collider((0, 0, 0.95), (0.60, 0.60, 1.90))
+    kit.tag("run", "hospital", "floor")

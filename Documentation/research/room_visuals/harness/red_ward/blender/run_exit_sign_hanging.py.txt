@@ -1,0 +1,77 @@
+"""1990 hospital corridor EXIT sign, ceiling-hung and double-faced
+(Run! direction A, RED WARD, the signature object; clone-only look-dev).
+
+Real-world reference: a late-1970s/1980s incandescent "universal" EXIT sign:
+a shallow steel housing (13 x 8 x 2.4 in) painted white, two stamped-steel
+stencil faces with 6 in letters over red diffusers, two lamps inside, hung
+from a ceiling canopy on a pair of threaded stems. No arrows, no brand.
+
+Spec (room_visuals/10_run_directions.md §1.4, §2.1): housing 0.330 x 0.200 x
+0.060 m, visible face 0.306 x 0.176 m, letters 152 mm (texture RunA_ExitFace).
+Hung on two chrome rods Ø 0.012 m to a ceiling canopy.
+
+ORIGIN = THE CEILING PLANE, centred over the sign (z = 0 is the ceiling; the
+sign hangs into -Z). DROP is the rod length from the ceiling to the housing top
+(0.38 m for a 2.9 m ceiling and a housing centre at 2.42 m). The faces look
+-Y (front, toward the runner) and +Y (back).
+Slots: Prop_PlasticWhite (painted housing, canopy), Prop_Chrome (stems,
+collars), Run_ExitSign_Ward (the two faces, decal UVs 0..1).
+"""
+
+import kitlib
+
+NAME = "Kit_ExitSign_Hanging"
+SMOOTH_ANGLE = 40.0
+
+HOUSING = "Prop_PlasticWhite"
+CHROME = "Prop_Chrome"
+FACE = "Run_ExitSign_Ward"
+kitlib.register_slot(FACE, colour=(0.88, 0.86, 0.80), roughness=0.5)
+
+W, H, D = 0.330, 0.200, 0.060      # housing
+FW, FH = 0.306, 0.176              # visible face (bezel 12 mm)
+DROP = 0.38                        # ceiling -> housing top
+ROD_X = 0.105                      # stem spacing ±
+ROD_R = 0.006                      # Ø 12 mm
+
+
+def housing(kit, zc, double=True):
+    """The painted housing as a bezel band around both faces, centred at z = zc."""
+    # Bezel ring 12 mm wide, the full housing depth.
+    kit.frame((W, H), (FW, FH), D, (0, 0, zc), HOUSING, bevel=0.005, segments=3, name="housing bezel")
+    # Faces sit 4 mm inside each bezel lip (the stamped face is recessed).
+    inset = D / 2 - 0.004
+    kit.quad(FW, FH, (0, -inset, zc), FACE, facing="-y", name="face front")
+    if double:
+        kit.quad(FW, FH, (0, inset, zc), FACE, facing="+y", name="face back", uv_rect=(1, 0, 0, 1))
+    else:
+        kit.quad(FW, FH, (0, inset, zc), HOUSING, facing="+y", uv="metres", name="back plate")
+    # The inner lip of the bezel: a 2 mm return so the face edge reads as a step.
+    for sy in ((-1, 1) if double else (-1,)):
+        y = sy * (D / 2 - 0.0035)
+        kit.frame((FW + 0.004, FH + 0.004), (FW - 0.002, FH - 0.002), 0.003, (0, y, zc), HOUSING,
+                  bevel=0.0008, segments=1, name="face lip")
+    # Bottom: the lamp-access seam and two captive screws.
+    zb = zc - H / 2
+    kit.box((W - 0.03, D - 0.012, 0.0015), (0, 0, zb - 0.0004), HOUSING, bevel=0.0005, segments=1, name="access plate")
+    for x in (-0.12, 0.12):
+        kit.cylinder(0.0045, 0.003, (x, 0, zb - 0.0018), CHROME, verts=12, bevel=0.0008, segments=1, name="screw")
+
+
+def build(kit):
+    zc = -(DROP + H / 2)
+    housing(kit, zc, double=True)
+    ztop = zc + H / 2
+    # Ceiling canopy: a shallow painted pan that hides the box and the feed.
+    kit.box((0.27, 0.07, 0.016), (0, 0, -0.008), HOUSING, bevel=0.004, segments=2, name="canopy")
+    for x in (-ROD_X, ROD_X):
+        # Threaded stem, chrome, with a collar at each end.
+        kit.cylinder(ROD_R, DROP - 0.016, (x, 0, -0.016 - (DROP - 0.016) / 2), CHROME, verts=16,
+                     bevel=0.0, name="stem")
+        kit.cylinder(0.011, 0.012, (x, 0, -0.016 - 0.006), CHROME, verts=20, bevel=0.0015, segments=2, name="canopy collar")
+        kit.cylinder(0.010, 0.010, (x, 0, ztop + 0.005), CHROME, verts=20, bevel=0.0015, segments=2, name="housing collar")
+        kit.cylinder(0.0075, 0.004, (x, 0, ztop + 0.012), CHROME, verts=6, bevel=0.0006, segments=1, name="lock nut")
+    kit.no_collider()
+    kit.anchor("ceiling", (0, 0, 0))
+    kit.anchor("face_centre", (0, 0, zc))
+    kit.tag("run", "ceiling", "sign")

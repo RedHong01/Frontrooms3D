@@ -1,0 +1,27 @@
+"""The same 1990 EXIT sign, back-mounted flat on the wall over a door
+(single face). Clone-only look-dev for Run! direction A.
+
+ORIGIN = THE WALL PLANE, bottom centre of the housing: the back of the housing
+is the plane y = 0, the face looks -Y, the housing spans z 0 .. 0.200.
+Slots as Kit_ExitSign_Hanging.
+"""
+
+import kitlib
+import run_exit_sign_hanging as hang
+
+NAME = "Kit_ExitSign_Wall"
+SMOOTH_ANGLE = 40.0
+
+
+def build(kit):
+    zc = hang.H / 2
+    # Build the housing centred at y = 0, then the whole sign sits D/2 off the wall.
+    before = len(kit.parts)
+    hang.housing(kit, zc, double=False)
+    for obj in kit.parts[before:]:
+        obj.location.y -= hang.D / 2
+    # Wall back plate with a 6 mm stand-off (the junction-box cover).
+    kit.box((0.20, 0.006, 0.12), (0, -0.003, zc), hang.HOUSING, bevel=0.002, segments=1, name="back plate")
+    kit.no_collider()
+    kit.anchor("wall", (0, 0, 0))
+    kit.tag("run", "wall_decor", "sign")

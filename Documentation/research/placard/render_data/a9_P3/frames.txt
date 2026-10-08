@@ -1,0 +1,5 @@
+A9_P3_open_wide | eye [257, 1.62, 21.5] dist to placard 4.2340 fov 76 | G 0.0000 C 0.9435 Ls 0.9781 L 0.9635 calm False door open True | map side, door open, 3.5 m north of the door
+A9_P3_face_1m | eye [254.5866, 1.62, 19.0225] dist to placard 1.0046 fov 76 | G 0.0000 C 0.9435 Ls 0.9781 L 0.9635 calm False door open True | 1 m face-on (or the clear distance)
+A9_P3_corner_0p3m | eye [254.9047, 1.62, 18.3114] dist to placard 0.4403 fov 76 | G 0.0000 C 0.9435 Ls 0.9781 L 0.9635 calm False door open True | 0.30 m from the top +X corner
+A9_P3_shut_wide | eye [257, 1.62, 21.5] dist to placard 4.2340 fov 76 | G 0.0000 C 0.9876 Ls 0.9795 L 0.9600 calm False door open True | map side, door shut (CloseTerminalDoor), 3 s later
+A6_stutter_dip | eye [254.5866, 1.62, 19.0225] dist to placard 1.0046 fov 76 | G 0.0000 C 0.9970 Ls 0.9279 L 0.0500 calm False door open True | Stutter lamp mid-burst (L 0.0500)

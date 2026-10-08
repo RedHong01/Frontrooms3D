@@ -1,0 +1,23 @@
+from PIL import Image
+import numpy as np, sys, json
+def lin(c):
+    c=c/255.0
+    return np.where(c<=0.04045,c/12.92,((c+0.055)/1.055)**2.4)
+def stats(path,crop=None):
+    im=np.asarray(Image.open(path).convert('RGB')).astype(np.float32)
+    if crop: 
+        h,w,_=im.shape; x0,y0,x1,y1=crop; im=im[int(y0*h):int(y1*h),int(x0*w):int(x1*w)]
+    l=lin(im); Y=l@np.array([.2126,.7152,.0722])
+    r,g,b=im[...,0],im[...,1],im[...,2]
+    s=r+g+b+1e-6
+    redfrac=r/s
+    p=np.percentile(Y,[5,50,95,99.5])
+    return dict(file=path.split('/')[-1],Y_p5=round(float(p[0]),4),Y_p50=round(float(p[1]),4),Y_p95=round(float(p[2]),4),Y_p995=round(float(p[3]),4),
+        contrast_p95_p5=round(float((p[2]+.05)/(p[0]+.05)),2),contrast_p995_p5=round(float((p[3]+.05)/(p[0]+.05)),2),
+        red_dominant_pct=round(float(((redfrac>0.6)&(s>30)).mean()*100),1), sat_red_pct=round(float(((redfrac>=0.8)&(s>30)).mean()*100),1),
+        mean_rgb=[round(float(x),1) for x in im.reshape(-1,3).mean(0)])
+out=[]
+for a in sys.argv[1:]:
+    # crop VHS stamp region out of ETB frames: use top 75% and right 85%? keep full but note
+    out.append(stats(a))
+for o in out: print(json.dumps(o))

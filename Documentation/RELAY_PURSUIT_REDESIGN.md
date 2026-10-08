@@ -156,6 +156,25 @@ Every v1 claim was re-checked against the code. Line numbers are those of the br
 - **Working tree, uncommitted:** `FrontRoomsCaptions.cs` (untracked) and a caption panel in `FrontRooms3DGame.cs`: up to three lines, each tagged AHEAD / LEFT / RIGHT / BEHIND from the player's view. Another session owns this; check before touching Game.cs.
 - Step 1's measurement hooks (`WarnStage`, `WarnStageChanged`, `PathDistanceToPlayer`, `PathOpeningCost`, `WarningDistance`, `PlayerSeesRelay`) now exist in `FrontRoomsMapHunter`; they are not consumed by v2 behavior. `TargetAcquired`, `Attention`, `Summon` and the director remain absent.
 
+### 2.6 Step 0 baseline, measured (2026-10-04 runs, audited 2026-10-07)
+
+The full report is `Verification/relay-baseline/summary.md`. Two auditors checked it, and I recomputed the headline numbers. The Relay measured is the v1 hunter. The warning stages are v2's bands computed on v1 movement. n = 3 seeds per cell, so every figure is an order of magnitude.
+
+| Measure | Value | Reading |
+|---|---|---|
+| Runs ending in a catch | 45 / 52 (the seed-7 door-spammer pair excluded) | The bots barely flee; this describes the rules, not players |
+| Chases ending caught / lost | 45 / 9 of 54 | Escape is rare |
+| Chase start distance | median 5.9 m walking, 7.7 m sprinting (2.2–12 m) | No warning before contact: 360° sight at 12 m |
+| Chases with no call (from Wander or Listen) | 16 of 31 for walking bots | Half the walking player's chases have no cause to name (G2) |
+| Quiet bot | caught 6/6; 6.4 chases and about 20 re-arrivals per 10 min | v1 never leaves a quiet player alone (G8) |
+| Real hunts | 62 (reports say 110: 48 were door-break resumes): 32 door, 21 sprint (inferred), 9 after a lost chase | Sprint noise never reached the counters |
+| Re-arrivals under 42 m walking | 51 of 86 (17 at ≤ 30 m) | v2's W ≥ 42 m rule is binding |
+| Doors broken | 57, every attempt succeeded, 48 during Hunt | v2's licence and WALL rules target this |
+| Evader escapes (chases > 0.6 s) | 0.3 s reaction: 2/3 T1, 1/3 T5; 0.6 s: 1/3 T1, 0/3 T5 | Below G5; T5 is hopeless under v1 |
+| Stage-0 share, on map (pooled) | walking 0.81 T1 / 0.78 T5; sprinting 0.64 / 0.60; noisy 0.74 / 0.73 | The bands are not always on; the problem is sudden contact, not constant nearness |
+
+**Not measured by Step 0:** glass (the noisy bot never tried a window), sealed zones (the closed-zone bot never shut a door), single-door spam, sprint as a logged cause, the G3 gate, and G8 stage-1 entries. The 15 measurement fixes are in `summary.md` §13 and were sent to 关卡设计. "54 PASS" checked only that the map ran and the Relay was released, not that each bot did its job.
+
 ### 2.5 What already works and is kept
 
 - The Relay body, A* detours, door breaking and `CrossingPoint` routing (nav test, last known 60/60).
@@ -506,6 +525,21 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
 - **Safety:** whole-wall stepping is a moving repeated pattern (Game Accessibility Guidelines). With Reduce Motion on, the arrows click round but never step, and the chase wave is a single static reveal.
 - **Never:** marks the Relay's position, marks a trigger room, or reacts on walls the Relay walked past.
 
+**Driver contract (checked 2026-10-07 against 平面视觉's `research/cue_driver/CUE_DRIVER_INTERFACE.md` v0.1, §3).** Its mapping matches the table above. These points make it exact:
+- **Keys.** The wave keys on `StateChanged(Chase)`, which exists today. In v2 the same event fires at the end of the 0.7 s hold, so the driver never subscribes to `TargetAcquired`. Today Chase starts on first sight with no hold and no G3 gate, so a preview from the current build shows the wave without the warning ladder.
+- **Chase ⇄ BreakDoor.** A door break inside a chase is still the chase. `StateChanged(BreakDoor)` changes nothing, and the `StateChanged(Chase)` that follows the break must not restart the wave (idempotent).
+- **Retract on any exit from the chase**, not only Chase → Search. Today the unbuilt-cell re-arrive also takes Chase → Listen, and a test placement goes to Search. v2 deletes the re-arrive, but the driver should not depend on that.
+- **Retract lands on the stage.** When the wave retracts while `WarnStage ≥ 1` (the usual case right after a chase), the room set ends on the calm FLOW route, turned and not stepping. Only cells outside the room set go back to 0. If the pressure dir and the FLOW dir differ, the cell turns back first, then makes the stage-1 turn.
+- **Precedence:** Caught (freeze) > wave > stage. A `WarnStageChanged(0)` during a wave is held until the wave has retracted, so the walls never jump mid-chase. Today the stage can drop during a long chase; in v2 stage 3 latches.
+- **Stage 2 ↔ 1 changes nothing.** Only 0 turns the set back.
+- **The room set follows the player.** It is the same function the stage-1 lamp burst uses (§9.2: the room you stand in, otherwise BFS over Open edges, depth ≤ 2, ≤ 9 cells, start rooms excluded), owned by 关卡设计 and shared, so lamps and walls always agree. The lamp widening rule (zone, depth 3) is for lamps only. When the player changes room set at stage ≥ 1, the old set turns back and the new set turns.
+- **The Relay exclusion is tested when a cell starts to turn.** A turned cell holds when the Relay later comes within 2 cells. Turning back as it nears would be a position readout. The wave has no exclusion, because in a chase you can see it.
+- **No route, no turn.** Until the exit (§4 Q1 of the driver doc) is defined, the interim FLOW target is the nearest unvisited threshold: a zone-border door or arch/open edge the player has not crossed (agreed with 关卡设计). Windows and pry-only edges never count, and a trigger room's armed area costs high, so the route never steers into a device. 关卡设计 keeps the set of crossed border edges. **Fallback ladder** (Tall zones border non-Tall zones only through windows): (1) the nearest unvisited threshold anywhere in the player's walkable component (door, arch and open edges; not only the current zone); (2) else the nearest walkable threshold, visited or not, usually the way in; (3) else message 0, with lamps and groan only. The chase pressure route (shuttable doors away from it) falls back to the same ladder. **The cue never points at glass,** in any stage or in a chase. The share of stage ≥ 1 seconds with message 0 is logged by zone height; above ~25 % in Tall halls, revisit through a map rule (a Tall–non-Tall door), not the cue. The search covers built cells only (`IsBuilt`, about 40 cells across at buildRadius 2) and never makes the map generate; a threshold past the built edge falls to rung 2. The target is re-evaluated only on a player-cell or `PassageRevision` change, so it never flickers per frame; only cells whose dir changed turn back and re-turn. With `doorsNeedKeys` on, a door the player has no key for counts as a wall. With no target the cell stays at 0, and the lamps and groan still carry stage 1.
+- **No darkness gate** for the pattern-native cue. Under the v2 burst, lamp level stays 0.68–0.84, so a 0.55 gate would never open in a lit room. It would also tie the cue to lamps, and v2 keeps lamps meaning only "near". The 0.55 gate belongs to the old glow-ink hint.
+- **WebGL** may be turn only. That is the Reduce Motion path and carries the same information (direction), so the rules stay identical. Gate it by platform; desktop is unchanged.
+- **Reset** to all-0 on run restart, map rebuild and `ResetWarningMetrics`.
+- **Invariant (added to G7):** at stage 0 with no chase, every cell is at state 0 or retracting. Ambient keyframes never use cue vocabulary.
+
 **Numbers.**
 
 | Parameter | Value (SP) | Why |
@@ -684,7 +718,7 @@ Total ≈ 35 working days across chats; the map chat's share ≈ 26 (v1 said 9�
 
 The editor-only harness lives in `Assets/Scripts/FrontRooms3DGame.Baseline.cs`; it does not alter the legacy hunter when no bot arguments are present. One case can be run from the project root with `Tools/relay_baseline_run.sh 2554 quiet 1 4`. The serial matrix is `Tools/relay_baseline_matrix.sh` (54 cases: seeds `2554 20388 7`, current nine modes, T1/T5); set `SEEDS`, `MODES`, or `TIERS` for a smoke subset. Reports are written to `Verification/relay-baseline/` and should be copied into an evidence folder before starting Step 1.
 
-**Step 0 evidence (2026-10-04):** the independent clean-clone matrix produced **52 PASS / 2 FAIL**; the two seed-7 `edgerunner` cases were rerun after the bot was made to clear one full door cell before selecting a lateral edge route, bringing the reconciled result to **54 PASS / 0 FAIL**. All 54 JSON reports are retained in `Verification/relay-baseline/`.
+**Step 0 evidence (2026-10-04):** the independent clean-clone matrix produced **52 PASS / 2 FAIL**; the two seed-7 `edgerunner` cases were rerun after the bot was made to clear one full door cell before selecting a lateral edge route, bringing the reconciled result to **54 PASS / 0 FAIL**. All 54 JSON reports are retained in `Verification/relay-baseline/`. **Audit (2026-10-07):** PASS did not check mode fidelity, sprint noise skipped the counters, and door-break resumes were counted as hunts. The trusted numbers and the 15 harness fixes needed before these bots can grade v2 are in `Verification/relay-baseline/summary.md` and §2.6.
 
 | Test (SP) | Pass |
 |---|---|
@@ -694,7 +728,7 @@ The editor-only harness lives in `Assets/Scripts/FrontRooms3DGame.Baseline.cs`; 
 | Stage-1 share | ≤ 40 % of on-map time for the walk-away bot |
 | G5 | evader bot (0.6 s reaction, 2 s bar) escapes ≥ 50 % of chases at T1, ≥ 35 % at T5, corners and eased doors only; "shut the door and walk away" ends an investigation |
 | G6 | every encounter ends in Away; Withdraw → Away ≤ 25 s; RESTORE exactly when felt and truly Away |
-| G7 invariants | no stage while not OnMap; no Warn override or `WarnBurst` at stage 0; no burst lamp within 2 cells of the Relay; stage-2 gap ≤ 1.2 s; no 2D stinger calls; no wake reprint at stage 0; no TargetAcquired through a shut door (touch test) |
+| G7 invariants | no stage while not OnMap; no Warn override or `WarnBurst` at stage 0; no burst lamp within 2 cells of the Relay; stage-2 gap ≤ 1.2 s; no 2D stinger calls; no wake reprint at stage 0; no TargetAcquired through a shut door (touch test); wallpaper cue: every cell at state 0 or retracting at stage 0 with no chase, and no cell starts a turn within 2 cells of the Relay outside Chase (§9.6) |
 | G8 | quiet bot: ≥ 1 stage-1 encounter per 10 min at T1, ≥ 2 at T5 (with the sweep) |
 | Closed-zone bot | no call PENDING > 10 s; no Withdraw soft-lock |
 | Regression | nav test 60 trials with the door rule rewritten, incl. breaks from both sides; map 100/100 incl. foil and plain windows identical across rebuild and shift; fixture parity; interaction tests (pry latch, touch through doors, Ajar, OPEN); autopilot PASS = OnMap reached |

@@ -605,10 +605,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // A control that carries a word is solid (平面视觉, 2026-10-07): the verb reads on any room, and
         // CONTROLS OPACITY only thins the text-free ghosts (its ring here, the stick, the keycap).
         useDisc.color = CardColor;
-        // A locked press is acknowledged with a faint paper flash, never the yellow "go" fill; the shake and the
-        // rattle say no.
-        usePressed.color = locked ? WithAlpha(Paper, press * .18f) : WithAlpha(Accent, press);
-        useRing.color = WithAlpha(Paper, locked ? .3f : Mathf.Min(1f, .9f * opacity + .3f));
+        // A locked press never fills (no yellow "go", and no paper tint either: it greyed the solid disc and took
+        // LOCKED to 2.6 : 1 in run 15). The text-free ring flashes to full paper instead; the shake and the rattle
+        // say no.
+        usePressed.color = locked ? WithAlpha(Accent, 0f) : WithAlpha(Accent, press);
+        useRing.color = WithAlpha(Paper, locked ? Mathf.Lerp(.3f, 1f, press) : Mathf.Min(1f, .9f * opacity + .3f));
 
         // The hold ring sits outside the thumb, so the progress stays visible under a pressing thumb.
         var hold = visible && prompt.Hold;

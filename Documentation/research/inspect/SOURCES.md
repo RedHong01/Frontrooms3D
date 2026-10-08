@@ -60,3 +60,13 @@ The numbered web sources S1–S47 (URL, date read, what each supports) are in `0
 - `[S#]`: the page was opened and read.
 - `[search]`: a search-engine summary only; the page was not opened.
 - `[PLAY]`: play or footage memory, UNVERIFIED.
+
+## 4. Design diagrams in `images/` (10 design, 2026-10-07)
+
+JPG q85, 1920 × 1080, drawn with `W/venv` PIL by scratch scripts (`d01.py`–`d03.py`, session scratchpad, not in the project). Support diagrams, not verification images, so they have no VERIFICATION LOG row. Nothing was downloaded.
+
+| Frame | Built from |
+|---|---|
+| `d_01_inspect_flow_timeline.jpg` | Drawn from `10_design.md` §2.3–§2.4 (states, times, events). No media |
+| `d_02_placard_base_vs_zoom.jpg` | Our own render `research/placard/images/q16_u1_A3_legend_0p6m.jpg` (visual chat, clone `proj_placard`, art v2 by 平面视觉). Left: the render scaled to the panel. Right: crop x 477–1435, y 255–794 of the same render, ×2 bicubic, which simulates the 0.18 m zoom step. Bottom strip: crop x 800–1012, y 716–748 at 1:1 and ×2 |
+| `d_03_inspect_poses.jpg` | Drawn from `10_design.md` §3.3 numbers (side views). No media |

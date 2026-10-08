@@ -4,7 +4,10 @@
 # cache shared across map instances (FrontRoomsSurfaces.cs:86-102). Release() (OnDestroy) destroys every owned
 # material with a deferred Destroy (Kill, L740-744). On R / caught restart the new map's Awake takes the cached
 # material before the old map's deferred Destroy runs, so the new map's keyGlow becomes null: every zone key
-# renders with a missing material (Unity's magenta) for the rest of the session.
+# renders with a missing material (Unity's magenta) for that life. Measured after the 1st restart (forced R and a
+# caught restart). By the same logic it recurs on every 2nd restart after that: the next map finds the destroyed
+# cache entry, makes a fresh material, and the restart after that hands the fresh one over again (not measured).
+# Still the same line and bug on main 3ff05ee (2026-10-07 19:22; MapWorld md5 07ce188a...). Introduced in f5e99e10.
 # Fix: own a private copy; the shared cached material is never destroyed.
 --- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
 +++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs

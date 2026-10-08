@@ -1,6 +1,6 @@
 # Build O3: floor and surface boxes (P2)
 
-Status: **DONE, 2026-10-07 19:xx.** This is the continuation run after the 17:54 usage-limit stop on 2026-10-03, the reboot on 2026-10-05 and the second limit at about 17:46 on 2026-10-07. Build contract: `10_spec.md` §1.1–§1.3, §2.10, §5.0, §5.3, and `01_period_research.md` §6.
+Status: **DONE, 2026-10-07 20:00.** This is the continuation run after the 17:54 usage-limit stop on 2026-10-03, the reboot on 2026-10-05 and the second limit at about 17:46 on 2026-10-07. Build contract: `10_spec.md` §1.1–§1.3, §2.10, §5.0, §5.3, and `01_period_research.md` §6.
 
 - Six assets are built, exported and checked: `Kit_FloorBoxTombstone`, `Kit_FloorBoxTombstone2`, `Kit_OutletHandyBox`, `Kit_ConduitEMT`, `Kit_ConduitStrap` and `Kit_CubiclePanel_Powered`.
 - All envelopes are within ±1 mm. The floor boxes are exact to 0.01 mm.
@@ -50,7 +50,7 @@ Slots: AL `Prop_Aluminium`, NI `Prop_NylonIvory` (new, registered with `register
 - `closeups.py`: Cycles renders of the exported FBX (normal, back-face-red and wear modes).
 - `wb_cull.py`: the before/after back-face renders.
 - `emt_normals.py`: EMT normal check.
-- `o3_final_verify.py` (new today): the read-only checks in §2 on the shipped FBX and JSON.
+- `o3_final_verify.py` (new today): the read-only checks in §2 on the shipped FBX and JSON. Probe results: `data/o3_probe_summary.txt`, `data/o3_probe_final_handybox.json`; verify output: `data/o3_final_verify_result.txt`.
 
 ## 2. Self-checks (§5.3)
 
@@ -81,9 +81,10 @@ The probe (`o3_rayprobe2.py`, v2 of 2026-10-07) shoots rays from the front hemis
 | LOD1, dense | HandyBox + EMT whole / device / joint | 23.5 M / 15.7 M / 14.1 M | 0 / 0 / 0 | 0 / 0 / 0 | PASS |
 | LOD2, dense | HandyBox + EMT whole / device / joint | 23.5 M / 15.7 M / 14.1 M | 0 / 0 / 0 | 0 / 0 / 0 | PASS |
 | FINAL LOD0, dense | FloorBox whole / device | 8.9 M / 15.4 M | 0 / 0 | 0 / 0 | PASS |
-| FINAL LOD0, dense | FloorBox2 whole / front / back | 11.3 M / 15.4 M / PENDING_FB2B | 0 / 0 / PENDING_FB2B | 0 / 0 / PENDING_FB2B | PENDING_FB2 |
-| FINAL LOD0, dense | Strap on EMT; EMT scaled 0.4 | PENDING_REST | PENDING_REST | PENDING_REST | PENDING_REST |
-| FINAL LOD0, dense | Panel receptacle front / back | PENDING_PANEL | PENDING_PANEL | – | PENDING_PANEL |
+| FINAL LOD0, dense | FloorBox2 whole / front / back | 11.3 M / 15.4 M / 15.4 M | 0 / 0 / 0 | 0 / 0 / 0 | PASS |
+| FINAL LOD0, dense | Strap on EMT; EMT scaled 0.4 | 7.1 M; 22.4 M | 0; 0 | 0; 0 | PASS |
+| LOD0, moderate (17 directions, 0.15 mm), 4-of-5 rule (`r10_P`) | Panel receptacle front / back | 2.7 M / 2.7 M | 0 / 0 | – | PASS |
+| FINAL LOD0, dense | Panel receptacle front / back | not run: stopped at 20:00 to free the CPU (load average about 800). The panel module has not changed since the moderate run above | – | – | – |
 | LOD1 and LOD2, moderate (17 directions, 0.4 / 0.15 mm) | both floor boxes, strap, EMT 0.4 | 1.3–3.9 M per region | 0 | 0 | PASS |
 
 The BEFORE hits all land on one spot: the inside of the box top (z 50.8 mm), reached through a 0.7 mm slot under the cover's punched openings (§2.2, fix 3).
@@ -94,8 +95,8 @@ One note on the panel. A moderate run before the 4-of-5 rule found 1 back-face h
 
 1. **Crescent gap under the socket.** The S-neck's last ring took the tilt of the last chord (13.7°). It stopped up to 1.25 mm short of the socket floor on the wall side. With back faces culled, a crescent opened onto the wall. Fix: the neck's last ring is level (end tangent vertical), so it ends 1.0 mm inside the socket all round. The neck now starts 2 mm down in the collar, so ring 1 does not fold. Evidence: `images/o3_hb_crescent_cull_pair.jpg`, `o3_hb_neck_after_c030.jpg`, `o3_hb_joint_after_c010.jpg`.
 2. **Open cover lip.** The cover laps the box by 0.5 mm, and that lap was open from below. No viewer ray reaches it (it faces the wall), but it left an open shell that the leak test could not judge. Fix: an annulus in the box-front plane closes it. The box and cover are now one closed shell against the wall. Cover +64 tris (954 → 1,018).
-3. **Slot under the openings.** The walls of the punched openings stopped at field − 0.8 mm. That left a 0.7 mm slot under them into the box, which steep views could see through (the 17 BEFORE hits). Fix: the walls now run down to field − 1.55, past the device's back plane, so the ivory backing closes the 0.4 mm gap round each face.
-4. The LOD1 neck and the LOD2 socket sweep got the same level end rings, and the LOD2 sweep got an end cap. Before: LOD1 leaked (103 and 745 confirmed hits at the joint) and LOD2 had 6 back faces. After: 0.
+3. **Slot under the openings.** The walls of the punched openings stopped at field − 0.8 mm. That left a 0.7 mm slot under them into the box, which steep views could see through. The 17 BEFORE hits sit right behind it, on the inside of the box top. Fix: the walls now run down to field − 1.55, past the device's back plane, so the ivory backing closes the 0.4 mm gap round each face.
+4. The LOD1 neck and the LOD2 socket sweep got the same level end rings, and the LOD2 sweep got an end cap. Before: LOD1 leaked (103 confirmed hits over the whole kit, 745 in the joint region) and LOD2 had 6 back faces. After: 0.
 
 LOD0 3,796 → 3,860 tris (+13.5 % on 3,400, inside ±15 %). Nothing else changed: the other five kits rebuild to identical JSON and the same triangle counts.
 

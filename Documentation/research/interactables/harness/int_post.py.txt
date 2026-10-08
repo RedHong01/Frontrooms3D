@@ -46,7 +46,17 @@ def lum(img, rect):
     return float((0.2126 * a[..., 0] + 0.7152 * a[..., 1] + 0.0722 * a[..., 2]).mean())
 
 
+SHEET_JOBS = []
+
+
 def sheet(name, rows, cell_w=640, label_px=22, title=None, notes=None):
+    """Deferred: recorded here, rendered in parallel at the end (the host runs ~800 load; one process gets ~2 % of a core)."""
+    SHEET_JOBS.append((name, rows, cell_w, label_px, title, notes))
+    return name
+
+
+def _sheet_now(job):
+    name, rows, cell_w, label_px, title, notes = job
     """rows: list of lists of (frame name or Image, caption)."""
     cols = max(len(r) for r in rows)
     cell_h = int(cell_w * 1080 / 1920)
@@ -65,14 +75,19 @@ def sheet(name, rows, cell_w=640, label_px=22, title=None, notes=None):
             if item is None:
                 continue
             src, caption = item
-            im = load(src) if isinstance(src, str) else src
+            if isinstance(src, str) and src.startswith("MASKX6:"):
+                im = load(src[7:])
+                if im is not None:
+                    im = Image.fromarray(np.clip(np.asarray(im, dtype=np.float32) * 6.0, 0, 255).astype(np.uint8))   # amplify sub-pixel slits
+            else:
+                im = load(src) if isinstance(src, str) else src
             x = pad + c * (cell_w + pad)
             y = top + pad + r * (cell_h + cap + pad)
             if im is None:
                 d.rectangle([x, y + cap, x + cell_w, y + cap + cell_h], fill=(200, 60, 50))
                 d.text((x + 6, y + cap + 6), "missing " + str(src), fill=(255, 255, 255), font=f)
             else:
-                out.paste(im.resize((cell_w, cell_h), Image.LANCZOS), (x, y + cap))
+                out.paste(im.resize((cell_w, cell_h), Image.BILINEAR, reducing_gap=2.0), (x, y + cap))
             d.text((x + 2, y + 2), caption, fill=(10, 10, 10), font=f)
     if notes:
         y = H - bottom + 6
@@ -109,13 +124,8 @@ if os.path.exists(p):
             mrow = []
             for l, t in labels:
                 fn = "10_gap_%s_%s" % (l, v)
-                m = load(fn + "_mask")
-                if m is not None:
-                    a = np.asarray(m, dtype=np.float32)
-                    a = np.clip(a * 6.0, 0, 255).astype(np.uint8)   # amplify sub-pixel slits
-                    m = Image.fromarray(a)
                 lk = leaks.get(fn, {})
-                mrow.append((m, "mask x6: %s leak px %s" % (t.split(",")[0], lk.get("px", "?"))))
+                mrow.append(("MASKX6:" + fn + "_mask", "mask x6: %s leak px %s" % (t.split(",")[0], lk.get("px", "?"))))
             rows.append(mrow)
         made.append(sheet("gap_sheet_" + half, rows, cell_w=560, label_px=18,
                           title="Door gap test: dim near room, bright far room, door shut. Masks: far room white, all else black (x6)."))
@@ -226,10 +236,10 @@ made.append(sheet("fracture_stages", rows, cell_w=560, label_px=18, title="Windo
 
 # ------------------------------------------------------------------ lineup (annotated)
 labels = json.load(open(os.path.join(SRC, "labels.json"))) if os.path.exists(os.path.join(SRC, "labels.json")) else []
-for fn in sorted({l["file"] for l in labels}):
+def _label_now(fn):
     im = load(fn)
     if im is None:
-        continue
+        return
     d = ImageDraw.Draw(im)
     f = font(15)
     items = [l for l in labels if l["file"] == fn]
@@ -240,31 +250,41 @@ for fn in sorted({l["file"] for l in labels}):
         d.rectangle([x - w / 2 - 3, y - 1, x + w / 2 + 3, y + 17], fill=(10, 10, 10))
         d.text((x - w / 2, y), t, fill=(240, 240, 235), font=f)
     im.save(os.path.join(SHEETS, fn + "_labelled.png"))
-    made.append(fn + "_labelled")
+
+
+LABEL_JOBS = sorted({l["file"] for l in labels})
+made += [fn + "_labelled" for fn in LABEL_JOBS]
 
 # ------------------------------------------------------------------ copies
 def to_jpg(src, dst):
     im = Image.open(src).convert("RGB")
     if im.width > 1920:
-        im = im.resize((1920, int(im.height * 1920 / im.width)), Image.LANCZOS)
+        im = im.resize((1920, int(im.height * 1920 / im.width)), Image.BILINEAR, reducing_gap=2.0)
     im.save(dst, "JPEG", quality=85)
 
-n = 0
-os.makedirs(os.path.join(DST, "renders", "masks"), exist_ok=True)
-for pth in sorted(glob.glob(os.path.join(SRC, "*.png"))):
+def _copy_now(pth):
     base = os.path.basename(pth)[:-4]
-    if base.startswith("10_gapsweep_"):
-        continue                     # mask-only sweep: its numbers are in leaks.tsv / metrics.json
     if base.endswith("_mask"):
         Image.open(pth).convert("L").save(os.path.join(DST, "renders", "masks", "int_" + base + ".png"), optimize=True)
     else:
         to_jpg(pth, os.path.join(DST, "renders", "int_" + base + ".jpg"))
-    n += 1
-for name in made:
-    pth = os.path.join(SHEETS, name + ".png")
-    if os.path.exists(pth):
-        to_jpg(pth, os.path.join(DST, "int_" + name + ".jpg"))
+
+
 json.dump(metrics, open(os.path.join(SRC, "metrics.json"), "w"), indent=1)
+os.makedirs(os.path.join(DST, "renders", "masks"), exist_ok=True)
+import multiprocessing
+PHASES = os.environ.get("INT_POST_PHASES", "sheets,copy").split(",")
+# fork, not macOS's default spawn: this script is top-level code, spawn would re-run it in every worker
+with multiprocessing.get_context("fork").Pool(int(os.environ.get("INT_POST_PROCS", "12"))) as pool:
+    if "sheets" in PHASES:
+        pool.map(_sheet_now, SHEET_JOBS, chunksize=1)
+        pool.map(_label_now, LABEL_JOBS, chunksize=1)
+        pool.starmap(to_jpg, [(os.path.join(SHEETS, nm + ".png"), os.path.join(DST, "int_" + nm + ".jpg")) for nm in made
+                              if os.path.exists(os.path.join(SHEETS, nm + ".png"))], chunksize=1)
+    frames = [p_ for p_ in sorted(glob.glob(os.path.join(SRC, "*.png"))) if not os.path.basename(p_).startswith("10_gapsweep_")]
+    n = len(frames)
+    if "copy" in PHASES:
+        pool.map(_copy_now, frames, chunksize=4)
 print("frames copied", n, "sheets", len(made))
 for r in read:
     print("READ", r["file"], r["stops_locked_vs_free"], r["stops_locked_vs_void"], r["stops_lockframe_vs_wall"], r["stops_locked_vs_wall"])

@@ -1,0 +1,17 @@
+A9_P2_open_wide | eye [256, 1.62, 21.5] dist to placard 2.7737 fov 76 | G 0.0000 C 0.9974 Ls 0.9796 L 0.9610 calm False door open True | map side, door open, 3.5 m north of the door
+A9_P2_open_pastleaf | eye [255.6, 1.62, 20.4] dist to placard 2.4898 fov 76 | G 0.0000 C 0.9974 Ls 0.9796 L 0.9610 calm False door open True | map side, door open: the P2 placard past the open leaf
+A9_P2_face_1m | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0000 C 0.9974 Ls 0.9796 L 0.9610 calm False door open True | 1 m face-on (or the clear distance)
+A9_P2_corner_0p3m | eye [257.6306, 1.62, 19.8181] dist to placard 0.4403 fov 76 | G 0.0000 C 0.9974 Ls 0.9796 L 0.9610 calm False door open True | 0.30 m from the top +X corner
+A9_P2_shut_wide | eye [256, 1.62, 21.5] dist to placard 2.7737 fov 76 | G 0.0000 C 0.9994 Ls 0.9794 L 0.9611 calm False door open True | map side, door shut (CloseTerminalDoor), 3 s later
+A5_failing_calm_long_0 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0874 C 0.9350 Ls 0.4858 L 0.2834 calm True door open True | Failing lamp, Reduce flashing, after 28 s, strip frame 0 (every 0.333 s)
+A5_failing_calm_long_1 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0874 C 0.9000 Ls 0.4275 L 0.3098 calm True door open True | Failing lamp, Reduce flashing, after 28 s, strip frame 1 (every 0.333 s)
+A5_failing_calm_long_2 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0874 C 0.9106 Ls 0.4196 L 0.4793 calm True door open True | Failing lamp, Reduce flashing, after 28 s, strip frame 2 (every 0.333 s)
+A5_failing_calm_long_3 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0853 C 0.9243 Ls 0.4581 L 0.5977 calm True door open True | Failing lamp, Reduce flashing, after 28 s, strip frame 3 (every 0.333 s)
+A5_failing_calm_long_4 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0861 C 0.9357 Ls 0.4831 L 0.4025 calm True door open True | Failing lamp, Reduce flashing, after 28 s, strip frame 4 (every 0.333 s)
+A5_failing_calm_long_5 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0861 C 0.9373 Ls 0.4592 L 0.4766 calm True door open True | Failing lamp, Reduce flashing, after 28 s, strip frame 5 (every 0.333 s)
+A5_failing_normal_long_0 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0000 C 0.9423 Ls 0.5564 L 0.5179 calm False door open True | Failing lamp, normal, after 28 s, strip frame 0 (every 0.333 s)
+A5_failing_normal_long_1 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.0520 C 0.9512 Ls 0.4933 L 0.4174 calm False door open True | Failing lamp, normal, after 28 s, strip frame 1 (every 0.333 s)
+A5_failing_normal_long_2 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.2040 C 0.9555 Ls 0.4308 L 0.3855 calm False door open True | Failing lamp, normal, after 28 s, strip frame 2 (every 0.333 s)
+A5_failing_normal_long_3 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.3207 C 0.9560 Ls 0.3802 L 0.0217 calm False door open True | Failing lamp, normal, after 28 s, strip frame 3 (every 0.333 s)
+A5_failing_normal_long_4 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.9122 C 0.9242 Ls 0.2082 L 0.5389 calm False door open True | Failing lamp, normal, after 28 s, strip frame 4 (every 0.333 s)
+A5_failing_normal_long_5 | eye [256.9195, 1.62, 19.5] dist to placard 1.0046 fov 76 | G 0.9122 C 0.9358 Ls 0.4429 L 0.6121 calm False door open True | Failing lamp, normal, after 28 s, strip frame 5 (every 0.333 s)

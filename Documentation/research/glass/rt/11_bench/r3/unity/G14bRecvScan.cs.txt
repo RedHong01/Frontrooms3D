@@ -1,0 +1,470 @@
+// G14b r3 (design 11, check 3 issue 3), clone proj_g14b_r3 ONLY. Never copied into Red's project.
+// Plays Assets/Scenes/FrontRooms3D.unity exactly as Red's game (seed 516574485 via Random.InitState(4242), as
+// CxRtPlayProbe), RT off (-frGlassRT off: nothing is registered, nothing traced). It answers:
+//   scan : on the loaded map, how many renderers would P1b make surface receivers (High / Ultra lists of design 11
+//          §2.2, per material SLOT, with and without a minimum receiver-slot size), next to G14's glass receivers;
+//   walk : on codex-audit VL117's walk (same seed, same head-on Level 0 window start, 900 frames, 8 m/s, ping-pong over
+//          a 90-cell BFS path), per frame which receiver classes are inside the camera frustum (G14's own test:
+//          enabled, active, culling mask, frustum vs bounds), and their largest projected size at 2560x1440.
+//          Frames with a visible receiver are the frames G14 (and P1b) would trace.
+// Batch: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod G14bRecvScan.RunBatch -frGlassRT off -logFile <f>
+#if UNITY_EDITOR_OSX
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class G14bRecvScan
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "G14bScan.Active", DoneKey = "G14bScan.Done", DeadlineKey = "G14bScan.Deadline";
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    const int PW = 2560, PH = 1440;
+    const float BigSlot = 0.25f;   // design 11 r3: receiver slots smaller than this stay hit-only
+
+    static readonly HashSet<string> High = new HashSet<string> { "Prop_ScreenCRT", "Prop_GlassCRT", "Prop_Chrome", "Prop_CeramicGlaze", "Prop_Ceramic", "Prop_VendingFront", "Office_BlackedGlass", "Prop_Brass" };
+    static readonly HashSet<string> UltraOnly = new HashSet<string> { "Prop_WoodCherry", "Prop_WoodEbony", "Prop_WoodDark", "Prop_Aluminium" };
+
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+    static int waitUntilFrame;
+    static bool finished;
+    static string outDir;
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+
+    static G14bRecvScan()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) { EditorApplication.update -= Tick; EditorApplication.update += Tick; }
+    }
+
+    public static void RunBatch()
+    {
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 2400f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null) { outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "g14b_r3"); Directory.CreateDirectory(outDir); }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[G14bScan] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "scan_log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Finish() { finished = true; Time.captureDeltaTime = 0f; SessionState.SetBool(DoneKey, true); }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey); SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) stack.Push(Main());
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext()) { stack.Pop(); if (stack.Count == 0) { Finish(); return; } continue; }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    static FieldInfo FI(Type t, string n) { for (; t != null; t = t.BaseType) { var f = t.GetField(n, BF); if (f != null) return f; } return null; }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string F(double f) => f.ToString("0.00", CultureInfo.InvariantCulture);
+    static string P1(double f) => f.ToString("0.0", CultureInfo.InvariantCulture);
+
+    static void Place(Vector3 feet, Vector3 lookAt)
+    {
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false; PlayerRoot.position = feet; body.enabled = true;
+        Physics.SyncTransforms();
+        Look(lookAt);
+    }
+
+    static void Look(Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var eye = root.position + Vector3.up * ModuleUnits.PlayerEye;
+        var d = lookAt - eye;
+        var yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        var pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        Set(game, "yaw", yaw); Set(game, "pitch", pitch);
+        root.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    static void Resume()
+    {
+        if (Phase != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+    }
+
+    static IEnumerator Settle(int extra = 10)
+    {
+        yield return 3;
+        var start = Time.frameCount;
+        while (!map.Settled && Time.frameCount - start < 1500) yield return 1;
+        yield return extra;
+    }
+
+    static bool FreeStanding(Vector3 feet)
+    {
+        var r = ModuleUnits.PlayerRadius; var root = PlayerRoot;
+        foreach (var c in Physics.OverlapCapsule(feet + Vector3.up * (r + .15f), feet + Vector3.up * (ModuleUnits.PlayerHeight - r), r, ~0, QueryTriggerInteraction.Ignore))
+            if (root == null || !c.transform.IsChildOf(root)) return false;
+        return true;
+    }
+
+    static Collider WindowCollider(GridCoord a, GridCoord b)
+    {
+        var dict = Get(map, "windowByCollider") as IDictionary;
+        var p = map.CrossingPoint(a, b);
+        foreach (DictionaryEntry e in dict)
+        {
+            var pos = (Vector3)Get(e.Value, "position");
+            if ((new Vector2(pos.x - p.x, pos.z - p.z)).sqrMagnitude < .01f) return (Collider)e.Key;
+        }
+        return null;
+    }
+
+    static IEnumerable<GridCoord> CellsAround(GridCoord center, int radiusCells)
+    {
+        for (var r = 0; r <= radiusCells; r++)
+        for (var dy = -r; dy <= r; dy++)
+        for (var dx = -r; dx <= r; dx++)
+        {
+            if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
+            yield return new GridCoord(center.x + dx, center.y + dy);
+        }
+    }
+
+    // ------------------------------------------------------------------ receiver classification
+    [Flags] enum Cls { None = 0, Glass = 1, HAny = 2, HBig = 4, UAny = 8, UBig = 16 }
+
+    sealed class Rec
+    {
+        public MeshRenderer r; public GameObject go; public int layer; public Cls cls; public string kit;
+        public Bounds hBig, uBig;   // world AABB of the receiver slots that pass the size rule (High / Ultra lists)
+        public float hMaxSlot, uMaxSlot;
+    }
+
+    static readonly Dictionary<int, Rec> recs = new Dictionary<int, Rec>();
+    static readonly HashSet<int> everH = new HashSet<int>(), everHBig = new HashSet<int>(), everU = new HashSet<int>(), everUBig = new HashSet<int>(), everG = new HashSet<int>();
+
+    static string BaseName(Material m) => m == null ? "" : m.name.Replace(" (Instance)", "");
+
+    static bool InLod0(LODGroup group, Renderer r)
+    {
+        var lods = group.GetLODs();
+        if (lods.Length == 0) return true;
+        foreach (var x in lods[0].renderers) if (x == r) return true;
+        for (var k = 1; k < lods.Length; k++) foreach (var x in lods[k].renderers) if (x == r) return false;
+        return true;
+    }
+
+    static Bounds WorldAabb(Transform t, Bounds local)
+    {
+        var c = local.center; var e = local.extents;
+        var b = new Bounds(t.TransformPoint(c), Vector3.zero);
+        for (var k = 0; k < 8; k++) b.Encapsulate(t.TransformPoint(c + new Vector3((k & 1) != 0 ? e.x : -e.x, (k & 2) != 0 ? e.y : -e.y, (k & 4) != 0 ? e.z : -e.z)));
+        return b;
+    }
+
+    static Rec Classify(MeshRenderer r)
+    {
+        var rec = new Rec { r = r, go = r.gameObject, layer = r.gameObject.layer };
+        if (r.isPartOfStaticBatch || r.shadowCastingMode == ShadowCastingMode.ShadowsOnly) return rec;
+        var lod = r.GetComponentInParent<LODGroup>();
+        if (lod != null && !InLod0(lod, r)) return rec;
+        var mats = r.sharedMaterials;
+        if (mats == null || mats.Length == 0) return rec;
+        var first = mats[0];
+        if (first != null && first.shader != null && first.shader.name.Contains("FrontRooms/Glass") && first.HasProperty("_RTReceive") && first.GetFloat("_RTReceive") > .5f) rec.cls |= Cls.Glass;
+        var mf = r.GetComponent<MeshFilter>(); var mesh = mf != null ? mf.sharedMesh : null;
+        var sc = r.transform.lossyScale; sc = new Vector3(Mathf.Abs(sc.x), Mathf.Abs(sc.y), Mathf.Abs(sc.z));
+        for (var k = 0; k < mats.Length; k++)
+        {
+            var n = BaseName(mats[k]);
+            var hi = High.Contains(n); var ul = hi || UltraOnly.Contains(n);
+            if (!ul) continue;
+            var lb = mesh != null && k < mesh.subMeshCount ? mesh.GetSubMesh(k).bounds : (mesh != null ? mesh.bounds : new Bounds(Vector3.zero, Vector3.one));
+            var ext = Mathf.Max(lb.size.x * sc.x, Mathf.Max(lb.size.y * sc.y, lb.size.z * sc.z));
+            var wb = WorldAabb(r.transform, lb);
+            if (hi) { rec.cls |= Cls.HAny; rec.hMaxSlot = Mathf.Max(rec.hMaxSlot, ext); if (ext >= BigSlot) { if ((rec.cls & Cls.HBig) == 0) rec.hBig = wb; else rec.hBig.Encapsulate(wb); rec.cls |= Cls.HBig; } }
+            rec.cls |= Cls.UAny; rec.uMaxSlot = Mathf.Max(rec.uMaxSlot, ext);
+            if (ext >= BigSlot) { if ((rec.cls & Cls.UBig) == 0) rec.uBig = wb; else rec.uBig.Encapsulate(wb); rec.cls |= Cls.UBig; }
+        }
+        var t = r.transform; while (t != null && !t.name.StartsWith("Kit_", StringComparison.Ordinal)) t = t.parent;
+        rec.kit = t != null ? t.name.Split(' ')[0].Split('(')[0] : (r.sharedMaterial != null ? "(map) " + BaseName(r.sharedMaterial) : "(map)");
+        return rec;
+    }
+
+    static int rescans;
+    static void Rescan()
+    {
+        rescans++;
+        var seen = new HashSet<int>();
+        foreach (Transform root in map.transform)
+            foreach (var r in root.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var id = r.GetInstanceID(); seen.Add(id);
+                if (!recs.ContainsKey(id)) recs[id] = Classify(r);
+            }
+        foreach (var id in recs.Keys.Where(k => !seen.Contains(k)).ToList()) recs.Remove(id);
+        foreach (var kv in recs)
+        {
+            var c = kv.Value.cls;
+            if ((c & Cls.Glass) != 0) everG.Add(kv.Key);
+            if ((c & Cls.HAny) != 0) everH.Add(kv.Key);
+            if ((c & Cls.HBig) != 0) everHBig.Add(kv.Key);
+            if ((c & Cls.UAny) != 0) everU.Add(kv.Key);
+            if ((c & Cls.UBig) != 0) everUBig.Add(kv.Key);
+        }
+    }
+
+    static float ProjectedPx(Bounds b, Matrix4x4 vp)
+    {
+        float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+        var c = b.center; var e = b.extents;
+        for (var k = 0; k < 8; k++)
+        {
+            var p = new Vector3(c.x + ((k & 1) != 0 ? e.x : -e.x), c.y + ((k & 2) != 0 ? e.y : -e.y), c.z + ((k & 4) != 0 ? e.z : -e.z));
+            var clip = vp * new Vector4(p.x, p.y, p.z, 1f);
+            if (clip.w <= 1e-3f) return 99999f;   // straddles the camera plane: treat as full screen
+            var vx = (clip.x / clip.w * .5f + .5f) * PW; var vy = (clip.y / clip.w * .5f + .5f) * PH;
+            x0 = Mathf.Min(x0, vx); x1 = Mathf.Max(x1, vx); y0 = Mathf.Min(y0, vy); y1 = Mathf.Max(y1, vy);
+        }
+        x0 = Mathf.Max(x0, 0); y0 = Mathf.Max(y0, 0); x1 = Mathf.Min(x1, PW); y1 = Mathf.Min(y1, PH);
+        return Mathf.Max(0f, Mathf.Max(x1 - x0, y1 - y0));
+    }
+
+    static string Census(string title)
+    {
+        int nAll = recs.Count, g = 0, h = 0, hb = 0, u = 0, ub = 0;
+        var byKitH = new Dictionary<string, int>(); var byKitHBig = new Dictionary<string, int>(); var byKitU = new Dictionary<string, int>();
+        foreach (var rec in recs.Values)
+        {
+            if ((rec.cls & Cls.Glass) != 0) g++;
+            if ((rec.cls & Cls.HAny) != 0) { h++; byKitH[rec.kit] = byKitH.TryGetValue(rec.kit, out var n) ? n + 1 : 1; }
+            if ((rec.cls & Cls.HBig) != 0) { hb++; byKitHBig[rec.kit] = byKitHBig.TryGetValue(rec.kit, out var n) ? n + 1 : 1; }
+            if ((rec.cls & Cls.UAny) != 0) { u++; if ((rec.cls & Cls.HAny) == 0) byKitU[rec.kit] = byKitU.TryGetValue(rec.kit, out var n) ? n + 1 : 1; }
+            if ((rec.cls & Cls.UBig) != 0) ub++;
+        }
+        string Top(Dictionary<string, int> d) => string.Join(", ", d.OrderByDescending(kv => kv.Value).Take(18).Select(kv => kv.Key + " " + kv.Value));
+        return title + ": chunk roots " + map.transform.childCount + " · MeshRenderers " + nAll + " · G14 glass receivers " + g
+            + " · P1b High receivers (any slot) " + h + " · High with a slot ≥ " + BigSlot + " m " + hb + " · Ultra (any slot) " + u + " · Ultra ≥ " + BigSlot + " m " + ub
+            + "\n    High by kit: " + Top(byKitH) + "\n    High ≥ size by kit: " + Top(byKitHBig) + "\n    Ultra-only by kit: " + Top(byKitU);
+    }
+
+    // ------------------------------------------------------------------ main
+    static IEnumerator Main()
+    {
+        while ((game = Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        while (Time.time < 2.0f) yield return 1;
+        UnityEngine.Random.InitState(4242);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++) { Call(game, "RequestTitleStart"); if (!Get<bool>(game, "mapPlay")) yield return 15; }
+        if (!Get<bool>(game, "mapPlay")) { Log("FAILED: could not start a run"); yield break; }
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+        tuning.releaseDelaySeconds = 1e6f;
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 8f) { Resume(); yield return 1; }
+        yield return 30;
+        Time.captureDeltaTime = 1f / 60f;
+        Log("run started · seed " + Get<int>(game, "runSeed") + " · RT quality " + FrontRoomsGlassRT.Quality + " · camera FOV " + F(cam.fieldOfView) + " · far " + F(cam.farClipPlane));
+        yield return Settle(10);
+        Rescan();
+        Log(Census("LOADED MAP at start"));
+
+        // the same Level 0 window search as CxRtPlayProbe, for the same walk start
+        var startDoorCell = (GridCoord)Get(game, "startDoorCell");
+        var origin = startDoorCell + new GridCoord(0, 3);
+        Vector3? walkStart = null; var tried = 0;
+        foreach (var c in CellsAround(origin, 70))
+        {
+            if (walkStart != null || tried > 24) break;
+            if (map.InStartArea(c)) continue;
+            foreach (var s in new[] { new GridCoord(1, 0), new GridCoord(0, 1) })
+            {
+                if (walkStart != null) break;
+                var n = c + s;
+                if (map.InStartArea(n) || map.Cache.Edge(c, n) != EdgeKind.Window) continue;
+                if (map.Cache.ZoneOf(c).theme == ZoneTheme.Office || map.Cache.ZoneOf(n).theme == ZoneTheme.Office) continue;
+                tried++;
+                var cross = map.CrossingPoint(c, n);
+                var d = map.CellCenter(n) - map.CellCenter(c); d.y = 0f; d.Normalize();
+                var centre = cross + Vector3.up * ((ModuleUnits.WindowSill + ModuleUnits.WindowTop) * .5f);
+                Place(cross - d * 1.5f, centre);
+                yield return Settle(6);
+                Resume();
+                var col = WindowCollider(c, n);
+                if (col == null) continue;
+                foreach (var sign in new[] { 1f, -1f })
+                {
+                    var dd = d * sign; var fHead = cross - dd * 1.5f;
+                    if (!FreeStanding(fHead)) continue;
+                    var eye = fHead + Vector3.up * ModuleUnits.PlayerEye; var toC = col.bounds.center - eye;
+                    if (Physics.Raycast(eye, toC.normalized, out var hit, toC.magnitude + .2f, ~0, QueryTriggerInteraction.Ignore) && hit.collider != col) continue;
+                    walkStart = fHead;
+                    Log("WINDOW " + col.name + " · centre " + col.bounds.center + " · head-on feet " + fHead);
+                    break;
+                }
+            }
+        }
+        if (walkStart == null) { Log("NO usable Level 0 window"); yield break; }
+        Place(walkStart.Value, walkStart.Value + Vector3.forward); yield return Settle(10); Resume();
+        Rescan();
+        Log(Census("LOADED MAP at the walk start"));
+        yield return Walk(walkStart.Value);
+        Rescan();
+        Log(Census("LOADED MAP at the walk end"));
+        Log("UNIQUE over the run (all scans): G14 glass receivers " + everG.Count + " · High any " + everH.Count + " · High ≥ size " + everHBig.Count + " · Ultra any " + everU.Count + " · Ultra ≥ size " + everUBig.Count);
+        Log("DONE");
+    }
+
+    static List<Vector3> WalkPath(Vector3 start, int cells)
+    {
+        var s0 = map.CellOf(start);
+        var prev = new Dictionary<GridCoord, GridCoord> { [s0] = s0 };
+        var dist = new Dictionary<GridCoord, int> { [s0] = 0 };
+        var q = new Queue<GridCoord>(); q.Enqueue(s0);
+        var far = s0;
+        while (q.Count > 0 && dist.Count < 20000)
+        {
+            var c = q.Dequeue();
+            if (dist[c] > dist[far]) far = c;
+            if (dist[c] >= cells) break;
+            foreach (var dlt in new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) })
+            {
+                var n = c + dlt;
+                if (dist.ContainsKey(n) || map.InStartArea(n)) continue;
+                var e = map.Cache.Edge(c, n);
+                if (e == EdgeKind.Wall || e == EdgeKind.Window) continue;
+                dist[n] = dist[c] + 1; prev[n] = c; q.Enqueue(n);
+            }
+        }
+        var path = new List<Vector3>();
+        for (var c = far; ; c = prev[c]) { var p = map.CellCenter(c); path.Add(new Vector3(p.x, start.y, p.z)); if (c.Equals(s0)) break; }
+        path.Reverse();
+        return path;
+    }
+
+    static IEnumerator Walk(Vector3 start)
+    {
+        const int Frames = 900;
+        var path = WalkPath(start, 90);
+        var pathLen = 0f; for (var k = 1; k < path.Count; k++) pathLen += (path[k] - path[k - 1]).magnitude;
+        var rows = new StringBuilder("frame\tx\tz\tchunks\tmeshrenderers\tglass_vis\thany_vis\thbig_vis\tuany_vis\tubig_vis\tglass_px\thany_px\thbig_px\tuany_px\tubig_px\thany_live\thbig_live\n");
+        int fG = 0, fH = 0, fHB = 0, fU = 0, fUB = 0, fGH = 0, fGHB = 0, fGU = 0, fGUB = 0, fGHB32 = 0, fGHB64 = 0;
+        var planes = new Plane[6];
+        var liveH = new List<int>(); var liveHB = new List<int>();
+        for (var f = 0; f < Frames; f++)
+        {
+            var dAlong = Mathf.PingPong(f * 8f / 60f, Mathf.Max(pathLen, .01f));
+            Vector3 pos = path[0], ahead = path[Math.Min(1, path.Count - 1)];
+            var acc = 0f;
+            for (var k = 1; k < path.Count; k++)
+            {
+                var seg = (path[k] - path[k - 1]).magnitude;
+                if (acc + seg >= dAlong) { pos = Vector3.Lerp(path[k - 1], path[k], (dAlong - acc) / Mathf.Max(seg, 1e-4f)); ahead = path[Math.Min(k + 1, path.Count - 1)]; break; }
+                acc += seg;
+            }
+            var body = Get<CharacterController>(game, "playerBody");
+            body.enabled = false; PlayerRoot.position = pos; body.enabled = true;
+            var look = ahead - pos; look.y = 0f; if (look.sqrMagnitude < 1e-4f) look = Vector3.forward;
+            Look(pos + Vector3.up * ModuleUnits.PlayerEye + look.normalized * 3f + Vector3.Cross(Vector3.up, look.normalized) * Mathf.Sin(f * .05f) * 2f);
+            yield return 1;
+            Resume();
+            if (f % 15 == 0) Rescan();
+            GeometryUtility.CalculateFrustumPlanes(cam, planes);
+            var vp = cam.projectionMatrix * cam.worldToCameraMatrix;
+            int g = 0, h = 0, hb = 0, u = 0, ub = 0, hl = 0, hbl = 0; float gpx = 0, hpx = 0, hbpx = 0, upx = 0, ubpx = 0;
+            foreach (var rec in recs.Values)
+            {
+                if (rec.cls == Cls.None || rec.r == null) continue;
+                var on = rec.r.enabled && rec.go.activeInHierarchy && !rec.r.forceRenderingOff && (cam.cullingMask & (1 << rec.layer)) != 0;
+                if (!on) continue;
+                if ((rec.cls & Cls.HAny) != 0) hl++;
+                if ((rec.cls & Cls.HBig) != 0) hbl++;
+                var b = rec.r.bounds;
+                if (GeometryUtility.TestPlanesAABB(planes, b))
+                {
+                    var px = ProjectedPx(b, vp);
+                    if ((rec.cls & Cls.Glass) != 0) { g++; gpx = Mathf.Max(gpx, px); }
+                    if ((rec.cls & Cls.HAny) != 0) { h++; hpx = Mathf.Max(hpx, px); }
+                    if ((rec.cls & Cls.UAny) != 0) { u++; upx = Mathf.Max(upx, px); }
+                }
+                if ((rec.cls & Cls.HBig) != 0 && GeometryUtility.TestPlanesAABB(planes, rec.hBig)) { hb++; hbpx = Mathf.Max(hbpx, ProjectedPx(rec.hBig, vp)); }
+                if ((rec.cls & Cls.UBig) != 0 && GeometryUtility.TestPlanesAABB(planes, rec.uBig)) { ub++; ubpx = Mathf.Max(ubpx, ProjectedPx(rec.uBig, vp)); }
+            }
+            if (g > 0) fG++; if (h > 0) fH++; if (hb > 0) fHB++; if (u > 0) fU++; if (ub > 0) fUB++;
+            if (g > 0 || h > 0) fGH++; if (g > 0 || hb > 0) fGHB++; if (g > 0 || u > 0) fGU++; if (g > 0 || ub > 0) fGUB++;
+            if (g > 0 || hbpx >= 32f) fGHB32++; if (g > 0 || hbpx >= 64f) fGHB64++;
+            liveH.Add(hl); liveHB.Add(hbl);
+            rows.Append(f).Append('\t').Append(F(pos.x)).Append('\t').Append(F(pos.z)).Append('\t').Append(map.transform.childCount).Append('\t').Append(recs.Count)
+                .Append('\t').Append(g).Append('\t').Append(h).Append('\t').Append(hb).Append('\t').Append(u).Append('\t').Append(ub)
+                .Append('\t').Append(P1(gpx)).Append('\t').Append(P1(hpx)).Append('\t').Append(P1(hbpx)).Append('\t').Append(P1(upx)).Append('\t').Append(P1(ubpx))
+                .Append('\t').Append(hl).Append('\t').Append(hbl).Append('\n');
+        }
+        File.WriteAllText(Path.Combine(OutDir, "walk_receivers.tsv"), rows.ToString());
+        string Pc(int n) => n + " (" + P1(100.0 * n / Frames) + " %)";
+        liveH.Sort(); liveHB.Sort();
+        Log("WALK " + Frames + " frames at 8 m/s over a " + path.Count + "-cell path (" + F(pathLen) + " m, ping-pong) · rescans " + rescans
+            + "\n    frames with a receiver in the frustum: G14 glass " + Pc(fG) + " · P1b High any slot " + Pc(fH) + " · High ≥ " + BigSlot + " m slot " + Pc(fHB) + " · Ultra any " + Pc(fU) + " · Ultra ≥ size " + Pc(fUB)
+            + "\n    traced frames (glass OR surface): today (glass only) " + Pc(fG) + " · + High any " + Pc(fGH) + " · + High ≥ size " + Pc(fGHB) + " · + High ≥ size and ≥ 32 px " + Pc(fGHB32) + " · ≥ 64 px " + Pc(fGHB64)
+            + " · + Ultra any " + Pc(fGU) + " · + Ultra ≥ size " + Pc(fGUB)
+            + "\n    live surface receivers per frame (would sit on G14's per-frame watch list): High any p50 " + liveH[liveH.Count / 2] + " max " + liveH[liveH.Count - 1]
+            + " · High ≥ size p50 " + liveHB[liveHB.Count / 2] + " max " + liveHB[liveHB.Count - 1]);
+    }
+}
+#endif

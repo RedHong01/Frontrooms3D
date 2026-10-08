@@ -1,0 +1,5 @@
+#!/bin/zsh
+cd /Users/redwang/FrontRoomsVisualWork/rt_bench2/r3/b5
+TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 ./rt_bench5e r3t2 tween2 > r3_tween2_l0exr.txt 2>&1
+TREE=1 CUBE=own OWNSCALE=0.5 SOFTGATE=1 FARFADE=6,12 ./rt_bench5e r3t2o tween2 > r3_tween2_own05.txt 2>&1
+echo DONE

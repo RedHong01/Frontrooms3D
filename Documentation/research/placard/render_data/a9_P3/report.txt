@@ -1,0 +1,10 @@
+seed 15, mount P3 west, glow cell (212, 134)
+overlap · frame box (+0.02 m, world AABB of the OBB) [254.3332, 1.3471, 18.0025]-[254.84, 1.7009, 18.056]: 3 renderers
+  frame: FrontRooms 3D/Level 0 map/Chunk (26, 16) · revision 0/Block 14 · 2.9 m/L0_Wallpaper [252, 0, 18]-[258.08, 2.9, 24.08]
+  frame: Title sequence / recycled corridor/Stream room / 001/door reveal left / far side [250.75, 0, 18.022]-[255.3, 2.9, 18.022]
+  frame: Title sequence / recycled corridor/Stream room / 001/door wall return left [250.75, 0, 17.98]-[255.3, 2.9, 18.02]
+overlap · keep-clear floor rect [254.203, 0.02, 18]-[254.97, 2, 18.9]: 3 renderers
+  floor: FrontRooms 3D/Level 0 map/Chunk (26, 16) · revision 0/Block 14 · 2.9 m/L0_Wallpaper [252, 0, 18]-[258.08, 2.9, 24.08]
+  floor: Title sequence / recycled corridor/Stream room / 001/door reveal left / far side [250.75, 0, 18.022]-[255.3, 2.9, 18.022]
+  floor: Title sequence / recycled corridor/Stream room / 001/door wall return left [250.75, 0, 17.98]-[255.3, 2.9, 18.02]
+lamps: (212, 134) Steady L 0.9600; (213, 134) Steady L 0.9962; (211, 134) Stutter L 0.9432; (212, 135) Dim L 0.4212; (212, 133) Off L -1.0000; 

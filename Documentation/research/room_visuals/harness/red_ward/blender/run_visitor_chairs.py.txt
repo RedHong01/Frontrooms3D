@@ -1,0 +1,37 @@
+"""Three ganged visitor chairs, 1970s-80s hospital waiting row: teal vinyl
+seat and back cushions on black shells, a chrome tubular sled base with
+open loop arms between the seats, all on one chrome beam (clone-only).
+Seats along X, the front faces -Y (Unity +Z). Stands on z = 0.
+"""
+
+import run_props_common as c
+
+NAME = "Kit_VisitorChair3"
+SMOOTH_ANGLE = 45.0
+LOD1 = 0.45
+
+PITCH = 0.58
+SEAT_W, SEAT_D = 0.50, 0.46
+
+
+def build(kit):
+    xs = [-PITCH, 0.0, PITCH]
+    for x in xs:
+        kit.box((SEAT_W - 0.02, SEAT_D - 0.04, 0.02), (x, -0.02, 0.37), c.BLACK, bevel=0.006, segments=2, name="seat shell")
+        kit.soft_box((SEAT_W, SEAT_D, 0.08), (x, -0.03, 0.42), c.TEAL, radius=0.035, segments=24, rings=12, sag=0.012, puff=0.006, name="seat cushion")
+        kit.box((SEAT_W - 0.02, 0.02, 0.38), (x, 0.235, 0.70), c.BLACK, bevel=0.006, segments=2, rot=(-10, 0, 0), name="back shell")
+        kit.soft_box((SEAT_W, 0.07, 0.38), (x, 0.205, 0.705), c.TEAL, radius=0.03, segments=24, rings=12, puff=0.008, rot=(-10, 0, 0), name="back cushion")
+        # Back stanchion from the beam.
+        kit.tube([(x, 0.10, 0.33), (x, 0.24, 0.40), (x, 0.27, 0.56)], 0.011, c.CHROME, verts=12, name="back stanchion")
+    # Beam under the seats.
+    kit.box((PITCH * 3 + 0.06, 0.05, 0.03), (0, 0.08, 0.335), c.CHROME, bevel=0.008, segments=2, name="beam")
+    # Sled legs with loop arms at both ends and between the seats.
+    for x in (-1.5 * PITCH, -0.5 * PITCH, 0.5 * PITCH, 1.5 * PITCH):
+        kit.tube([(x, -0.24, 0.62), (x, -0.25, 0.36), (x, -0.27, 0.06), (x, -0.25, 0.013), (x, 0.22, 0.013),
+                  (x, 0.26, 0.04), (x, 0.24, 0.34), (x, 0.18, 0.62), (x, -0.24, 0.62)], 0.0115, c.CHROME, verts=12, name="sled loop")
+        kit.box((0.05, 0.40, 0.028), (x, -0.03, 0.643), c.BLACK, bevel=0.01, segments=2, name="arm pad")
+        kit.tube([(x, -0.20, 0.335), (x, 0.20, 0.335)], 0.011, c.CHROME, verts=10, name="sled cross")
+        for y in (-0.25, 0.22):
+            kit.box((0.03, 0.05, 0.008), (x, y, 0.004), c.BLACK, bevel=0.002, segments=1, name="glide")
+    kit.collider((0, 0, 0.45), (PITCH * 3 + 0.06, 0.56, 0.90))
+    kit.tag("run", "hospital", "floor")

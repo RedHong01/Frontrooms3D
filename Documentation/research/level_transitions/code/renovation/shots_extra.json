@@ -1,0 +1,89 @@
+{
+ "version": 1,
+ "about": "V2 Renovation extra shots (same harness, seed 516574485, root 4992)",
+ "mapRoot": [
+  4992,
+  0,
+  4992
+ ],
+ "image": {
+  "width": 1920,
+  "height": 1080,
+  "msaa": 4,
+  "format": "JPG q85",
+  "camera": "scene 'First-person camera' (URP data, post on), near 0.06, far = map SightDistance 46 m"
+ },
+ "harness": {
+  "file": "Assets/Editor/Audit/FrontRoomsTransitionAudit.cs in the clone proj_trans (copy it unchanged into your cp -Rc clone; the same file is at Documentation/research/level_transitions/harness/FrontRoomsTransitionAudit.cs.txt, md5 76a624e3217630e637bdb381af7ca5b1)",
+  "method": "FrontRoomsTransitionAudit.ShotsBatch",
+  "command": "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath <your clone> -executeMethod FrontRoomsTransitionAudit.ShotsBatch -quit -logFile <log> -shots <this file> -out <dir> -tag <variation>",
+  "options": "-only shot1,shot3 renders a subset; -plan also writes <id>_plan.json (zones and edge kinds round the eye cell)",
+  "outputs": "<out>/<id>_<tag>.jpg and <id>_<tag>.txt (pose, eye cell zone, lamp count)",
+  "graphics": "needs a GPU session (no -nographics); never two Unity processes on one clone",
+  "before": "images/shot1_before.jpg .. shot4_before.jpg (one full ShotsBatch run, tag before; poses in logs/shots_before.txt, the cells round each eye in logs/shot<k>_plan.json)",
+  "determinism": "Render all four shots in ONE call (no -only). URP seeds film grain with Time.frameCount, so a subset run shifts the grain: up to 13/255 per pixel, mean 0.5/255, everything else identical. A full run reproduces the before frames byte for byte (checked 2026-10-03 11:52: shot1, shot2, shot4 identical across 3 runs; shot3 identical between full runs).",
+  "helper": "harness/run_unity.sh.txt waits until no other Unity has the clone open, then runs Unity: run_unity.sh <clone> FrontRoomsTransitionAudit.ShotsBatch <log> quit -shots <shots.json> -out <dir> -tag <variation>"
+ },
+ "shots": [
+  {
+   "id": "shot5",
+   "title": "Renovation extra: the shot3 door seen from its Level 0 side (paper cut ragged round the frame, compound halo, slab strip)",
+   "seed": 516574485,
+   "eyeMap": [
+    760.6,
+    1.62,
+    602.45
+   ],
+   "yaw": 180.0,
+   "pitch": 7.0,
+   "fov": 76,
+   "openDoors": [],
+   "boundary": "Door (253,199) Office | (253,200) Level 0 Low on Z = 600.0, centre X = 760.5, closed; camera in (253,200) 2.45 m from the door.",
+   "worldEye": [
+    5752.6,
+    1.62,
+    5594.45
+   ]
+  },
+  {
+   "id": "shot6b",
+   "title": "Renovation extra: the same wall from inside the corridor",
+   "seed": 516574485,
+   "eyeMap": [
+    765.5,
+    1.62,
+    583.0
+   ],
+   "yaw": 32.0,
+   "pitch": 3.0,
+   "fov": 76,
+   "openDoors": [],
+   "boundary": "Corridor (255,194)-(255,195) Level 0, east wall X = 768, border Z = 588.",
+   "worldEye": [
+    5757.5,
+    1.62,
+    5575.0
+   ]
+  },
+  {
+   "id": "shot7",
+   "title": "Renovation extra: the X = 795 border arch close from Level 0 (bare reveal, galvanised corner beads, compound, drops beside it)",
+   "seed": 516574485,
+   "eyeMap": [
+    793.55,
+    1.55,
+    606.3
+   ],
+   "yaw": 58.0,
+   "pitch": 4.0,
+   "fov": 76,
+   "openDoors": [],
+   "boundary": "extra",
+   "worldEye": [
+    5785.55,
+    1.55,
+    5598.3
+   ]
+  }
+ ]
+}

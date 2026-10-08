@@ -1,0 +1,22 @@
+"""Area-weighted letter means of each lamp channel of ExitSign_Diffuser_F (exit-sign integrate).
+Gives the driver's Level weights: Level = (wA*kA + wB*kB + wDC*kDC), with LIT (1,1,0) = 1."""
+import sys, os, json
+import numpy as np
+C = sys.argv[1]
+sys.path.insert(0, os.path.join(C, "Tools", "lookdev"))
+sys.path.insert(0, os.path.join(C, "Tools", "Blender", "frontrooms_kit", "assets"))
+import gen_exit_sign as gen
+g = gen.g
+_, _, _, _, _, fields = gen.diffuser_maps(np.random.default_rng(19901002))
+fa, fb, fdc, trans, G = fields
+polys = g.letter_polys_open()
+m = np.zeros(fa.shape, bool)
+for k in "EXIT":
+    m |= G.mask([[g.open_to_reader(p) for p in poly] for poly in polys[k]]) > 0.5
+lit = float(((fa + fb) * trans)[m].mean())
+kA = float((fa * trans)[m].mean()) / lit
+kB = float((fb * trans)[m].mean()) / lit
+kDC = float((fdc * trans)[m].mean()) / lit
+print(json.dumps({"kA": round(kA, 4), "kB": round(kB, 4), "kDC": round(kDC, 4),
+                  "HALF_A_out": round(kB, 4), "HALF_B_out": round(kA, 4), "BATTERY_at_DC_LEVEL": round(kDC * g.DC_LEVEL, 4),
+                  "letterPixels": int(m.sum())}, indent=1))

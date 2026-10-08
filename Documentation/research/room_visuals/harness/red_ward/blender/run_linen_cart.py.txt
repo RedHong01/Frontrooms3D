@@ -1,0 +1,38 @@
+"""Hospital linen hamper cart, 1980s: a satin-aluminium tubular frame on four
+4 in casters, a white canvas bag slung inside, overfilled with folded sheets,
+a lower deck (clone-only, Run! direction A props).
+Long side along X, the front faces -Y. Stands on z = 0.
+"""
+
+import run_props_common as c
+
+NAME = "Kit_LinenCart"
+SMOOTH_ANGLE = 45.0
+LOD1 = 0.5
+
+L, D, TOP = 0.90, 0.52, 1.00
+
+
+def build(kit):
+    hl, hd = L / 2, D / 2
+    for x in (-hl + 0.05, hl - 0.05):
+        for y in (-hd + 0.05, hd - 0.05):
+            c.caster(kit, x, y, 0.05, 0.03, slot_wheel=c.CASTER, fork=c.ALU, stem_top=0.13, name="caster")
+            kit.tube([(x, y, 0.13), (x, y, TOP)], 0.013, c.ALU, verts=12, name="post")
+    kit.tube([(-hl + 0.05, -hd + 0.05, TOP), (hl - 0.05, -hd + 0.05, TOP), (hl - 0.05, hd - 0.05, TOP), (-hl + 0.05, hd - 0.05, TOP),
+              (-hl + 0.05, -hd + 0.05, TOP)], 0.014, c.ALU, verts=12, name="top rim")
+    kit.tube([(-hl + 0.05, -hd + 0.05, 0.16), (hl - 0.05, -hd + 0.05, 0.16), (hl - 0.05, hd - 0.05, 0.16), (-hl + 0.05, hd - 0.05, 0.16),
+              (-hl + 0.05, -hd + 0.05, 0.16)], 0.012, c.ALU, verts=10, name="bottom rim")
+    kit.box((L - 0.12, D - 0.12, 0.012), (0, 0, 0.17), c.ALU, bevel=0.003, segments=1, name="deck")
+    # Push handle on one end.
+    kit.tube([(hl - 0.05, -0.16, TOP), (hl + 0.06, -0.16, TOP + 0.02), (hl + 0.06, 0.16, TOP + 0.02), (hl - 0.05, 0.16, TOP)],
+             0.012, c.ALU, verts=10, name="push handle")
+    # The canvas bag: hangs from the rim, bellies below it.
+    kit.soft_box((L - 0.12, D - 0.12, 0.70), (0, 0, TOP - 0.33), c.CANVAS, radius=0.06, segments=28, rings=14, puff=0.025, name="bag")
+    kit.soft_box((L - 0.07, D - 0.07, 0.05), (0, 0, TOP - 0.01), c.CANVAS, radius=0.02, segments=24, rings=8, puff=0.01, name="bag hem")
+    # Overfilled: folded sheets above the rim.
+    kit.soft_box((0.42, 0.30, 0.08), (-0.14, 0.02, TOP + 0.05), c.LINEN, radius=0.03, segments=18, rings=8, puff=0.01, rot=(0, 0, 8), name="sheets")
+    kit.soft_box((0.38, 0.28, 0.07), (0.18, -0.03, TOP + 0.045), c.LINEN, radius=0.03, segments=18, rings=8, puff=0.01, rot=(0, 4, -6), name="sheets")
+    kit.soft_box((0.30, 0.24, 0.06), (0.02, 0.0, TOP + 0.11), c.LINEN_BLUE, radius=0.025, segments=16, rings=8, puff=0.008, rot=(0, -3, 15), name="blanket")
+    kit.collider((0, 0, 0.55), (L + 0.12, D, 1.1))
+    kit.tag("run", "hospital", "floor")

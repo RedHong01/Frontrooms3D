@@ -1,0 +1,68 @@
+[ray2] BEFORE HandyBox + EMT whole                  rays 23501413 skip       0 hits  6373012  back real     1 (edge ties    5)  leak     0 (edge 31501)  FAIL
+[ray2]     back {'p_mm': [-14.22, -44.55, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2] BEFORE HandyBox device                       rays 15652489 skip       0 hits 13247054  back real     8 (edge ties    8)  leak     0 (edge   0)  FAIL
+[ray2]     back {'p_mm': [-14.38, -44.65, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.3, -44.69, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.3, -44.59, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.25, -44.5, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.04, -44.69, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2] BEFORE HandyBox connector joint              rays 14081386 skip       0 hits  7937345  back real     8 (edge ties    3)  leak     0 (edge 44079)  FAIL
+[ray2]     back {'p_mm': [-14.32, -44.65, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.19, -44.68, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.2, -44.6, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.23, -44.52, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2]     back {'p_mm': [-14.11, -44.64, 50.8], 'n': [0.0, -0.0, 1.0], 'd': [-0.785, 0.171, 0.596], 'slot': 'Prop_Aluminium', 'face': 17}
+[ray2] wrote logs/r11_B0.json
+[ray2] LOD2 HandyBox + EMT whole                    rays 23501413 skip       0 hits  6410644  back real     0 (edge ties    4)  leak     0 (edge   0)  PASS
+[ray2] LOD2 HandyBox device                         rays 15652489 skip       0 hits 13552827  back real     0 (edge ties    4)  leak     0 (edge   0)  PASS
+[ray2] LOD2 HandyBox connector joint                rays 14081386 skip       0 hits  7952491  back real     0 (edge ties    6)  leak     0 (edge   1)  PASS
+[ray2] wrote logs/r11_E.json
+[ray2] FINAL Kit_FloorBoxTombstone whole            rays  8880880 skip     829 hits  6125867  back real     0 (edge ties    0)  leak     0 (edge   1)  PASS
+[ray2] FINAL Kit_FloorBoxTombstone device front     rays 15398282 skip       0 hits 13914114  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] FINAL Kit_FloorBoxTombstone2 whole           rays 11343004 skip    1467 hits  8034004  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] FINAL Kit_FloorBoxTombstone2 device front    rays 15399310 skip       0 hits 14626972  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] FINAL Kit_FloorBoxTombstone2 device back     rays 15399310 skip       0 hits 14638456  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] FINAL Strap on EMT                           rays  7149417 skip       0 hits  3970400  back real     0 (edge ties   10)  leak     0 (edge   2)  PASS
+[ray2] FINAL EMT tile scaled 0.4                    rays 22424179 skip  466283 hits  3773800  back real     0 (edge ties    2)  leak     0 (edge   0)  PASS
+[ray2] FINAL HandyBox + EMT whole                   rays 23501413 skip       0 hits  6372906  back real     0 (edge ties    4)  leak     0 (edge 644)  PASS
+[ray2] FINAL HandyBox device                        rays 15652489 skip       0 hits 13247054  back real     0 (edge ties   16)  leak     0 (edge   0)  PASS
+[ray2] FINAL HandyBox connector joint               rays 14081386 skip       0 hits  7936814  back real     0 (edge ties    3)  leak     0 (edge 4054)  PASS
+[ray2] wrote logs/r12_HB.json
+[ray2] LOD1 HandyBox + EMT whole                    rays 23501413 skip       0 hits  6373272  back real     0 (edge ties    7)  leak     0 (edge 650)  PASS
+[ray2] LOD1 HandyBox device                         rays 15652489 skip       0 hits 13279723  back real     0 (edge ties   22)  leak     0 (edge   0)  PASS
+[ray2] LOD1 HandyBox connector joint                rays 14081386 skip       0 hits  7925744  back real     0 (edge ties   10)  leak     0 (edge 4087)  PASS
+[ray2] wrote logs/r11_D.json
+[ray2] LOD2 Kit_FloorBoxTombstone whole             rays  1465711 skip     140 hits   986755  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] LOD2 Kit_FloorBoxTombstone device front      rays  2931649 skip       0 hits  2619435  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] LOD2 Kit_FloorBoxTombstone2 whole            rays  1872570 skip     314 hits  1296699  back real     0 (edge ties    0)  leak     0 (edge   2)  PASS
+[ray2] LOD2 Kit_FloorBoxTombstone2 device front     rays  2931649 skip       0 hits  2782916  back real     0 (edge ties    1)  leak     0 (edge   0)  PASS
+[ray2] LOD2 Kit_FloorBoxTombstone2 device back      rays  2931649 skip       0 hits  2780039  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] LOD2 HandyBox + EMT whole                    rays  3915006 skip       0 hits  1040291  back real     0 (edge ties    3)  leak     0 (edge   1)  PASS
+[ray2] LOD2 HandyBox device                         rays  2945912 skip       0 hits  2530280  back real     0 (edge ties    3)  leak     0 (edge   0)  PASS
+[ray2] LOD2 HandyBox connector joint                rays  2646462 skip       0 hits  1489826  back real     0 (edge ties    2)  leak     0 (edge   0)  PASS
+[ray2] LOD2 EMT tile scaled 0.4                     rays  3804201 skip   77248 hits   599866  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] wrote logs/r8_E.json
+[ray2] LOD1 Kit_FloorBoxTombstone whole             rays  1465711 skip     140 hits  1002033  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] LOD1 Kit_FloorBoxTombstone device front      rays  2931649 skip       0 hits  2650505  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] LOD1 Kit_FloorBoxTombstone2 whole            rays  1872570 skip     314 hits  1314490  back real     0 (edge ties    0)  leak     0 (edge   2)  PASS
+[ray2] LOD1 Kit_FloorBoxTombstone2 device front     rays  2931649 skip       0 hits  2793965  back real     0 (edge ties    2)  leak     0 (edge   0)  PASS
+[ray2] LOD1 Kit_FloorBoxTombstone2 device back      rays  2931649 skip       0 hits  2791790  back real     0 (edge ties    1)  leak     0 (edge   0)  PASS
+[ray2] LOD1 HandyBox + EMT whole                    rays  3915006 skip       0 hits  1034082  back real     0 (edge ties    1)  leak   103 (edge   0)  FAIL
+[ray2]     leak {'p_mm': [3.36, 0.0, 88.48], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.27, 0.0, 88.06], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.36, 0.0, 87.79], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.27, 0.0, 87.12], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.81, -0.0, 87.7], 'd': [-0.772, 0.57, -0.282]}
+[ray2] LOD1 HandyBox device                         rays  2945912 skip       0 hits  2479300  back real     0 (edge ties    4)  leak     0 (edge   0)  PASS
+[ray2] LOD1 HandyBox connector joint                rays  2646462 skip       0 hits  1483900  back real     0 (edge ties    0)  leak   745 (edge   0)  FAIL
+[ray2]     leak {'p_mm': [3.24, -0.0, 89.15], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.31, -0.0, 88.93], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.27, -0.0, 88.82], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.29, -0.0, 88.6], 'd': [-0.772, 0.57, -0.282]}
+[ray2]     leak {'p_mm': [3.26, 0.0, 88.52], 'd': [-0.772, 0.57, -0.282]}
+[ray2] LOD1 Strap on EMT                            rays  1343311 skip       0 hits   737705  back real     0 (edge ties    1)  leak     0 (edge   9)  PASS
+[ray2] LOD1 EMT tile scaled 0.4                     rays  3804201 skip   77253 hits   605322  back real     0 (edge ties    0)  leak     0 (edge   0)  PASS
+[ray2] wrote logs/r8_D.json
+[ray2] LOD0 Panel receptacle front                  rays  2732328 skip       0 hits  2729948  back real     0 (edge ties    8)  leak     0 (edge   0)  PASS
+[ray2] LOD0 Panel receptacle back                   rays  2732328 skip       0 hits  2726998  back real     0 (edge ties    4)  leak     0 (edge   0)  PASS
+[ray2] wrote logs/r10_P.json

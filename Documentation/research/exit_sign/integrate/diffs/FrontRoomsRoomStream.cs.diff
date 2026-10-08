@@ -1,0 +1,234 @@
+--- a/Assets/Scripts/FrontRoomsRoomStream.cs
++++ b/Assets/Scripts/FrontRoomsRoomStream.cs
+@@ -147,6 +147,12 @@
+         public float[] lightOutputLevel;
+         public bool[] lightOutputEnabled;
+         public GameObject[] profileVariants;
++        // EXIT signs per profile variant (index = RoomRule; null where a profile has none).
++        // Only the room's own rule's signs are configured and ticked.
++        public FrontRoomsExitSign[][] exitSigns;
++        // Set once the room's lamps are cued (ScheduleRoomLight / ActivateRoomLightImmediately):
++        // a loose exit-sign lamp only plays its drop-outs while someone can be there.
++        public bool lampsScheduled;
+     }
+ 
+     enum LampState { Off, Waiting, Striking, Rising, Steady, Unstable, Dead }
+@@ -800,9 +806,25 @@
+             if (room == null || room.lampState == null || room.sequence > terminalSequence) continue;
+             for (var lamp = 0; lamp < room.lampState.Length; lamp++)
+                 TickLamp(room, lamp, dt);
++            if (room.lampsScheduled) TickExitSigns(room, dt);
+         }
++    }
++
++    /// <summary>The room's own EXIT signs: a static sign returns at once, a loose one plays its drop-outs.</summary>
++    static void TickExitSigns(RoomSlot room, float dt)
++    {
++        var signs = ActiveExitSigns(room);
++        if (signs == null) return;
++        for (var i = 0; i < signs.Length; i++)
++            if (signs[i] != null) signs[i].Tick(dt);
+     }
+ 
++    static FrontRoomsExitSign[] ActiveExitSigns(RoomSlot room)
++    {
++        var index = (int)room.rule;
++        return room.exitSigns != null && index >= 0 && index < room.exitSigns.Length ? room.exitSigns[index] : null;
++    }
++
+     void TickLamp(RoomSlot room, int lamp, float dt)
+     {
+         switch (room.lampState[lamp])
+@@ -861,6 +883,7 @@
+         // Only dark lamps are cued; a lamp that is already on keeps its clock.
+         for (var lamp = 0; lamp < room.lampState.Length; lamp++)
+             if (room.lampState[lamp] == LampState.Off) room.lampState[lamp] = LampState.Waiting;
++        room.lampsScheduled = true;
+     }
+ 
+     void TickUnstableLamp(RoomSlot room, int lamp, float dt)
+@@ -1125,6 +1148,7 @@
+         room.rearSeal.SetActive(index == 0);
+         BuildDoor(room);
+         BuildProfileProps(room);
++        ConfigureExitSigns(room);
+         RefreshRoomMaterials(room);
+     }
+ 
+@@ -1409,6 +1433,7 @@
+     {
+         EnsurePropMaterials();
+         room.profileVariants = new GameObject[5];
++        room.exitSigns = new FrontRoomsExitSign[room.profileVariants.Length][];
+         for (var ruleIndex = 0; ruleIndex < room.profileVariants.Length; ruleIndex++)
+         {
+             var rule = (RoomRule)ruleIndex;
+@@ -1469,32 +1494,19 @@
+                     Box(bed, "run gurney wheel", new Vector3(wx, .06f, wz), new Vector3(.04f, .11f, .11f), officeDarkMaterial);
+                 }
+                 Cylinder(props.transform, "run IV pole", new Vector3(4.3f, .95f, 8.6f), new Vector3(.03f, .95f, .03f), runChromeMaterial, Vector3.zero);
+-                // Hanging exit signs: battery fixtures that stay lit when the
+-                // ballasts fail, and the red source of the whole level.
+-                foreach (var sz in new[] { 3.4f, 9.2f })
++                // Hanging exit signs: battery fixtures on their own circuit, so
++                // they burn when the ballasts fail; the red source of the whole level.
++                room.exitSigns[ruleIndex] = new[]
+                 {
+-                    var sign = new GameObject("run exit sign").transform;
+-                    sign.SetParent(props.transform, false);
+-                    sign.localPosition = new Vector3(0f, 2.36f, sz);
+-                    Box(sign, "run exit sign housing", Vector3.zero, new Vector3(.40f, .21f, .05f), officeDarkMaterial);
+-                    SignFace(sign, "run exit sign face / near", new Vector3(0f, 0f, -.027f), new Vector2(.36f, .18f), FrontRoomsSurfaces.ExitSign, true);
+-                    SignFace(sign, "run exit sign face / far", new Vector3(0f, 0f, .027f), new Vector2(.36f, .18f), FrontRoomsSurfaces.ExitSign, false);
+-                    Box(sign, "run exit sign rod left", new Vector3(-.15f, .32f, 0f), new Vector3(.012f, .43f, .012f), runChromeMaterial);
+-                    Box(sign, "run exit sign rod right", new Vector3(.15f, .32f, 0f), new Vector3(.012f, .43f, .012f), runChromeMaterial);
+-                    var red = new GameObject("run exit sign light").AddComponent<Light>();
+-                    red.transform.SetParent(sign, false);
+-                    red.transform.localPosition = new Vector3(0f, -.40f, 0f);
+-                    red.type = LightType.Point;
+-                    red.color = new Color(1f, .10f, .06f);
+-                    red.intensity = 3.6f;
+-                    red.range = 9.5f;
+-                    red.shadows = LightShadows.Soft;
+-                    red.shadowStrength = .85f;
+-                }
++                    BuildHangingExitSign(props.transform, 3.4f, "exit sign A"),
++                    BuildHangingExitSign(props.transform, 9.2f, "exit sign B")
++                };
+             }
+             else if (rule == RoomRule.Exit)
+             {
+                 Box(props.transform, "exit threshold marker", new Vector3(0f, .04f, 5.9f), new Vector3(2.8f, .03f, .12f), roomWall);
++                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
++                room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
+             }
+         }
+     }
+@@ -1511,6 +1523,7 @@
+             var renderer = renderers[i];
+             if (renderer == null) continue;
+             var name = renderer.gameObject.name.ToLowerInvariant();
++            // Name rule: no exit-sign label or part may contain these words (research/exit_sign/10_spec.md §3.3).
+             if (name.Contains("floor") || name.Contains("carpet")) renderer.sharedMaterial = floor;
+             else if (name.Contains("ceiling")) renderer.sharedMaterial = ceiling;
+             else if (name.Contains("wall") || name.Contains("seal") || name.Contains("partition") || name.Contains("threshold marker")) renderer.sharedMaterial = wall;
+@@ -1663,8 +1676,48 @@
+             room.lampRiseFrom[lamp] = 0f;
+             room.lampUnstableElapsed[lamp] = 0f;
+         }
++        room.lampsScheduled = false;
++        ConfigureExitSigns(room);
+     }
+ 
++    // Exit-sign odds per profile (research/exit_sign/10_spec.md §8.2). A sign has its own
++    // circuit, so these never follow the troffers' dead/failing odds. Run: the level's red
++    // source must burn (no BATTERY, no DEAD), at most one LOOSE sign a room. Exit: the true
++    // exit never fails. Other profiles have no signs.
++    static void SignOdds(RoomRule rule, out float half, out float loose)
++    {
++        switch (rule)
++        {
++            case RoomRule.Run: half = .15f; loose = .15f; break;
++            default: half = 0f; loose = 0f; break;
++        }
++    }
++
++    /// <summary>
++    /// Deal the room's own signs their temperaments from the sequence hash: keys
++    /// sequence * 16 + 12 + i (the lamps use 0..11), so a recycled slot never repeats
++    /// its old signs and a room always shows the same ones.
++    /// </summary>
++    void ConfigureExitSigns(RoomSlot room)
++    {
++        var signs = room == null ? null : ActiveExitSigns(room);
++        if (signs == null) return;
++        SignOdds(room.rule, out var half, out var loose);
++        var sequence = Mathf.Max(0, room.sequence);
++        var looseTaken = false;
++        for (var i = 0; i < signs.Length; i++)
++        {
++            var sign = signs[i];
++            if (sign == null) continue;
++            var key = sequence * 16 + 12 + i;
++            var roll = Hash01(key, 89);
++            var temperament = FrontRoomsExitSign.Temperament.Lit;
++            if (roll < half) temperament = Hash01(key, 97) < .5f ? FrontRoomsExitSign.Temperament.HalfA : FrontRoomsExitSign.Temperament.HalfB;
++            else if (roll < half + loose && !looseTaken) { temperament = FrontRoomsExitSign.Temperament.Loose; looseTaken = true; }
++            sign.Configure((uint)key ^ 0x9E3779B9u, temperament, sign.RedLight, sign.LightBase);
++        }
++    }
++
+     static float Hash01(int sequence, int salt)
+     {
+         unchecked
+@@ -1682,6 +1735,7 @@
+     void ActivateRoomLightImmediately(RoomSlot room)
+     {
+         if (room == null || room.lampState == null) return;
++        room.lampsScheduled = true;
+         for (var lamp = 0; lamp < room.lampState.Length; lamp++)
+         {
+             if (room.lampDead[lamp])
+@@ -1840,13 +1894,58 @@
+         return reveal;
+     }
+ 
+-    void SignFace(Transform parent, string name, Vector3 localPosition, Vector2 size, Material material, bool faceBack)
++    /// <summary>
++    /// A double-faced hanging EXIT sign (Kit_ExitSign_Hanging, no colliders) from the
++    /// ceiling at <paramref name="z"/>, its faces down the corridor, with the red point light
++    /// at its glow anchor (1.96 m, where the code-built sign had it) driven by the sign's Level.
++    /// The light is built even if the model is missing, so the level keeps its red source.
++    /// </summary>
++    FrontRoomsExitSign BuildHangingExitSign(Transform parent, float z, string label)
+     {
+-        var face = InteriorReveal(parent, name, localPosition, size, material, faceBack);
+-        var renderer = face.GetComponent<Renderer>();
+-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
++        const string asset = "Kit_ExitSign_Hanging";
++        var position = new Vector3(0f, RoomHeight, z);
++        var sign = FrontRoomsKitLibrary.Spawn(asset, parent, position, 0f, null, false, label);
++        if (sign == null)
++        {
++            sign = new GameObject(label);
++            sign.transform.SetParent(parent, false);
++            sign.transform.localPosition = position;
++        }
++        var info = FrontRoomsKitLibrary.GetInfo(asset);
++        var glow = info != null && info.TryAnchor("glow", out var anchor) ? anchor : new Vector3(0f, 1.96f - RoomHeight, 0f);
++        var red = new GameObject("run exit sign light").AddComponent<Light>();
++        red.transform.SetParent(sign.transform, false);
++        red.transform.localPosition = glow;
++        red.type = LightType.Point;
++        red.color = new Color(1f, .10f, .06f);
++        red.intensity = 3.6f;
++        red.range = 9.5f;
++        red.shadows = LightShadows.Soft;
++        red.shadowStrength = .85f;
++        return AttachExitSign(sign, red, 3.6f);
+     }
+ 
++    /// <summary>
++    /// A wall EXIT sign (Kit_ExitSign, no colliders) on the far door's header, centred on
++    /// the 2.4 m opening, its back on the header's room face, facing -Z: bottom 2.674 m,
++    /// top 2.886 m, clear of the 2.62 m leaves. No light of its own (spec §8.6: spill off).
++    /// </summary>
++    FrontRoomsExitSign BuildDoorExitSign(Transform parent, string label)
++    {
++        var position = new Vector3(0f, RoomHeight - DoorHeaderHeight + .014f, RoomLength - DoorWallDepth * .5f - .004f);
++        var sign = FrontRoomsKitLibrary.Spawn("Kit_ExitSign", parent, position, 180f, null, false, label);
++        return sign == null ? null : AttachExitSign(sign, null, 0f);
++    }
++
++    static FrontRoomsExitSign AttachExitSign(GameObject sign, Light light, float lightBase)
++    {
++        var driver = sign.GetComponent<FrontRoomsExitSign>();
++        if (driver == null) driver = sign.AddComponent<FrontRoomsExitSign>();
++        driver.SelfTick = false;
++        driver.Configure(0u, FrontRoomsExitSign.Temperament.Lit, light, lightBase);
++        return driver;
++    }
++
+     static Mesh cylinderMesh;
+ 
+     GameObject Cylinder(Transform parent, string name, Vector3 localPosition, Vector3 scale, Material material, Vector3 eulerAngles)

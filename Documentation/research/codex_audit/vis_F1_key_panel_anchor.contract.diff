@@ -1,0 +1,11 @@
+--- a/Assets/Scripts/FrontRooms3DGame.cs	2026-10-07 19:39:55
++++ b/Assets/Scripts/FrontRooms3DGame.cs	2026-10-07 19:39:57
+@@ -1880,7 +1880,7 @@
+             staminaSegments[i].enabled = false;
+         }
+ 
+-        keyPanel = TypographyGroup(g.transform, "HUD / Key", new Vector2(0, 1), mobileHud ? new Vector2(78, -72) : new Vector2(72, 118), mobileHud ? new Vector2(150, 22) : new Vector2(147, 22));
++        keyPanel = TypographyGroup(g.transform, "HUD / Key", mobileHud ? new Vector2(0, 1) : new Vector2(0, 0), mobileHud ? new Vector2(78, -72) : new Vector2(72, 118), mobileHud ? new Vector2(150, 22) : new Vector2(147, 22));
+         keyHudGroup = keyPanel.AddComponent<CanvasGroup>();
+         keyImage = Panel(keyPanel.transform, "Key glyph", new Vector2(0, 0), Vector2.zero, new Vector2(40, 22), Color.white).GetComponent<Image>();
+         keyImage.sprite = LoadHudSprite("UI/HUD_KeyGlyph");

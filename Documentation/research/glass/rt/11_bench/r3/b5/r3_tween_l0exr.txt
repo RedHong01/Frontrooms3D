@@ -1,0 +1,71 @@
+# rt_bench4 r3tw tween device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 796/723/628
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# FARFADE: Ultra floor rays fade to High's mirror + k2 between pixel footprints 6.0 and 12.0 mm
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- tween 1920x1080 (B16): floor px share changing >= 8/255 between consecutive frames, cube mode 4  load 796/725/630
+r3tw tween A20 fade          N  16 ( 16 frames): r 0.200 -> 0.200 | worst frame >=8/255 9.675% of floor px (frame 1, max 39/255), >=4 17.039%, mean over frames >=8 3.3184% | load 806/730/633
+r3tw tween A20 fade          N  32 ( 32 frames): r 0.200 -> 0.200 | worst frame >=8/255 3.800% of floor px (frame 1, max 21/255), >=4 10.594%, mean over frames >=8 0.5198% | load 828/738/638
+r3tw tween A20 tween         N  16 ( 16 frames): r 0.200 -> 0.474 | worst frame >=8/255 6.205% of floor px (frame 1, max 24/255), >=4 24.417%, mean over frames >=8 1.3726% | load 829/741/640
+r3tw tween A20 tween         N  30 ( 30 frames): r 0.200 -> 0.474 | worst frame >=8/255 1.209% of floor px (frame 2, max 13/255), >=4 11.853%, mean over frames >=8 0.0806% | load 843/752/647
+r3tw tween A20 tween         N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.299% of floor px (frame 3, max 9/255), >=4 1.747%, mean over frames >=8 0.0050% | load 818/753/650
+r3tw tween A20 tween         N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 5, max 7/255), >=4 1.245%, mean over frames >=8 0.0000% | load 788/752/654
+r3tw tween A20 both          N  32 ( 32 frames): r 0.200 -> 0.474 | worst frame >=8/255 6.625% of floor px (frame 1, max 86/255), >=4 19.656%, mean over frames >=8 0.9182% | load 805/757/656
+r3tw tween A20 both          N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.976% of floor px (frame 1, max 56/255), >=4 8.799%, mean over frames >=8 0.1368% | load 842/771/665
+r3tw tween A20 both          N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.349% of floor px (frame 1, max 40/255), >=4 3.748%, mean over frames >=8 0.0385% | load 840/780/674
+r3tw tween A20 fade16+tween  N  60 ( 76 frames): r 0.200 -> 0.474 | worst frame >=8/255 9.675% of floor px (frame 1, max 39/255), >=4 17.039%, mean over frames >=8 0.7025% | load 842/784/678
+r3tw tween A20 fade32+tween  N  60 ( 92 frames): r 0.200 -> 0.474 | worst frame >=8/255 3.800% of floor px (frame 1, max 21/255), >=4 10.594%, mean over frames >=8 0.1840% | load 860/792/683
+r3tw tween B20 fade          N  16 ( 16 frames): r 0.200 -> 0.200 | worst frame >=8/255 2.882% of floor px (frame 1, max 29/255), >=4 6.567%, mean over frames >=8 1.2417% | load 857/793/684
+r3tw tween B20 fade          N  32 ( 32 frames): r 0.200 -> 0.200 | worst frame >=8/255 1.235% of floor px (frame 1, max 15/255), >=4 3.134%, mean over frames >=8 0.1973% | load 856/793/685
+r3tw tween B20 tween         N  16 ( 16 frames): r 0.200 -> 0.474 | worst frame >=8/255 2.814% of floor px (frame 1, max 26/255), >=4 27.962%, mean over frames >=8 0.7655% | load 856/793/685
+r3tw tween B20 tween         N  30 ( 30 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.872% of floor px (frame 1, max 13/255), >=4 5.529%, mean over frames >=8 0.0592% | load 854/794/686
+r3tw tween B20 tween         N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.444% of floor px (frame 3, max 10/255), >=4 1.066%, mean over frames >=8 0.0075% | load 865/800/690
+r3tw tween B20 tween         N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 5, max 7/255), >=4 0.862%, mean over frames >=8 0.0000% | load 864/803/693
+r3tw tween B20 both          N  32 ( 32 frames): r 0.200 -> 0.474 | worst frame >=8/255 1.870% of floor px (frame 1, max 13/255), >=4 9.195%, mean over frames >=8 0.1463% | load 864/805/694
+r3tw tween B20 both          N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.028% of floor px (frame 1, max 8/255), >=4 2.709%, mean over frames >=8 0.0008% | load 860/809/700
+r3tw tween B20 both          N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 6/255), >=4 0.996%, mean over frames >=8 0.0000% | load 859/812/704
+r3tw tween B20 fade16+tween  N  60 ( 76 frames): r 0.200 -> 0.474 | worst frame >=8/255 2.882% of floor px (frame 1, max 29/255), >=4 6.567%, mean over frames >=8 0.2673% | load 858/814/705
+r3tw tween B20 fade32+tween  N  60 ( 92 frames): r 0.200 -> 0.474 | worst frame >=8/255 1.235% of floor px (frame 1, max 15/255), >=4 3.134%, mean over frames >=8 0.0735% | load 857/815/708
+r3tw tween D20 fade          N  16 ( 16 frames): r 0.200 -> 0.200 | worst frame >=8/255 3.353% of floor px (frame 16, max 38/255), >=4 6.889%, mean over frames >=8 1.2549% | load 853/815/708
+r3tw tween D20 fade          N  32 ( 32 frames): r 0.200 -> 0.200 | worst frame >=8/255 1.789% of floor px (frame 32, max 21/255), >=4 3.511%, mean over frames >=8 0.2093% | load 851/815/709
+r3tw tween D20 tween         N  16 ( 16 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.830% of floor px (frame 1, max 21/255), >=4 4.548%, mean over frames >=8 0.0718% | load 850/816/710
+r3tw tween D20 tween         N  30 ( 30 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.267% of floor px (frame 1, max 11/255), >=4 0.931%, mean over frames >=8 0.0172% | load 845/816/711
+r3tw tween D20 tween         N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 3, max 8/255), >=4 0.488%, mean over frames >=8 0.0000% | load 843/818/715
+r3tw tween D20 tween         N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 2, max 5/255), >=4 0.278%, mean over frames >=8 0.0000% | load 831/818/719
+r3tw tween D20 both          N  32 ( 32 frames): r 0.200 -> 0.474 | worst frame >=8/255 1.266% of floor px (frame 1, max 21/255), >=4 6.895%, mean over frames >=8 0.0954% | load 824/817/720
+r3tw tween D20 both          N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.104% of floor px (frame 1, max 13/255), >=4 2.202%, mean over frames >=8 0.0066% | load 813/815/720
+r3tw tween D20 both          N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.011% of floor px (frame 1, max 10/255), >=4 0.700%, mean over frames >=8 0.0003% | load 802/812/721
+r3tw tween D20 fade16+tween  N  60 ( 76 frames): r 0.200 -> 0.474 | worst frame >=8/255 3.353% of floor px (frame 16, max 38/255), >=4 6.889%, mean over frames >=8 0.2642% | load 802/811/722
+r3tw tween D20 fade32+tween  N  60 ( 92 frames): r 0.200 -> 0.474 | worst frame >=8/255 1.789% of floor px (frame 32, max 21/255), >=4 3.511%, mean over frames >=8 0.0728% | load 820/815/725
+r3tw tween F20 fade          N  16 ( 16 frames): r 0.200 -> 0.200 | worst frame >=8/255 0.103% of floor px (frame 16, max 10/255), >=4 0.544%, mean over frames >=8 0.0068% | load 820/815/725
+r3tw tween F20 fade          N  32 ( 32 frames): r 0.200 -> 0.200 | worst frame >=8/255 0.000% of floor px (frame 31, max 5/255), >=4 0.140%, mean over frames >=8 0.0000% | load 820/815/726
+r3tw tween F20 tween         N  16 ( 16 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 6/255), >=4 1.463%, mean over frames >=8 0.0000% | load 819/815/726
+r3tw tween F20 tween         N  30 ( 30 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 3/255), >=4 0.000%, mean over frames >=8 0.0000% | load 819/815/726
+r3tw tween F20 tween         N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean over frames >=8 0.0000% | load 829/818/729
+r3tw tween F20 tween         N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean over frames >=8 0.0000% | load 843/821/731
+r3tw tween F20 both          N  32 ( 32 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 7/255), >=4 0.539%, mean over frames >=8 0.0000% | load 848/823/733
+r3tw tween F20 both          N  60 ( 60 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 1, max 5/255), >=4 0.009%, mean over frames >=8 0.0000% | load 868/829/737
+r3tw tween F20 both          N  90 ( 90 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 21, max 5/255), >=4 0.006%, mean over frames >=8 0.0000% | load 866/830/740
+r3tw tween F20 fade16+tween  N  60 ( 76 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.103% of floor px (frame 16, max 10/255), >=4 0.544%, mean over frames >=8 0.0014% | load 874/833/742
+r3tw tween F20 fade32+tween  N  60 ( 92 frames): r 0.200 -> 0.474 | worst frame >=8/255 0.000% of floor px (frame 31, max 5/255), >=4 0.140%, mean over frames >=8 0.0000% | load 880/837/744
+r3tw tween G15 fade          N  16 ( 16 frames): r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 16, max 7/255), >=4 0.105%, mean over frames >=8 0.0000% | load 880/837/744
+r3tw tween G15 fade          N  32 ( 32 frames): r 0.150 -> 0.150 | worst frame >=8/255 0.000% of floor px (frame 31, max 4/255), >=4 0.001%, mean over frames >=8 0.0000% | load 876/836/745
+r3tw tween G15 tween         N  16 ( 16 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 5/255), >=4 0.015%, mean over frames >=8 0.0000% | load 876/836/745
+r3tw tween G15 tween         N  30 ( 30 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 3/255), >=4 0.000%, mean over frames >=8 0.0000% | load 876/836/745
+r3tw tween G15 tween         N  60 ( 60 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean over frames >=8 0.0000% | load 875/837/746
+r3tw tween G15 tween         N  90 ( 90 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 1/255), >=4 0.000%, mean over frames >=8 0.0000% | load 883/840/748
+r3tw tween G15 both          N  32 ( 32 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 5/255), >=4 0.022%, mean over frames >=8 0.0000% | load 879/840/748
+r3tw tween G15 both          N  60 ( 60 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 3/255), >=4 0.000%, mean over frames >=8 0.0000% | load 875/840/749
+r3tw tween G15 both          N  90 ( 90 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 1, max 2/255), >=4 0.000%, mean over frames >=8 0.0000% | load 881/844/753
+r3tw tween G15 fade16+tween  N  60 ( 76 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 16, max 7/255), >=4 0.105%, mean over frames >=8 0.0000% | load 905/852/758
+r3tw tween G15 fade32+tween  N  60 ( 92 frames): r 0.150 -> 0.441 | worst frame >=8/255 0.000% of floor px (frame 31, max 4/255), >=4 0.001%, mean over frames >=8 0.0000% | load 895/854/762
+# done load 895/854/762

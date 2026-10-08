@@ -1,0 +1,14 @@
+--- a/Assets/Scripts/Office/FrontRoomsKitLibrary.cs
++++ b/Assets/Scripts/Office/FrontRoomsKitLibrary.cs
+@@ -204,6 +204,11 @@
+         instance.transform.localScale = scale ?? Vector3.one;
+         ApplyMaterials(assetName, instance);
+         if (colliders) AddColliders(assetName, instance);
++        // EXIT signs carry their own lamp driver (research/exit_sign/10_spec.md §8.6), so a
++        // map-module or facade spawn gets a working sign with no map edit.
++        var info = GetInfo(assetName);
++        if (info != null && info.HasTag("exit_sign") && instance.GetComponent<FrontRoomsExitSign>() == null)
++            instance.AddComponent<FrontRoomsExitSign>();
+         return instance;
+     }
+ 

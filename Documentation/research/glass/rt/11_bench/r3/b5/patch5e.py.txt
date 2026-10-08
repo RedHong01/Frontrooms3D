@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""patch5e.py - G14b r3: rt_bench5d.mm -> rt_bench5e.mm. Adds mode 'tween2' (B16 follow-up): longer and eased
+RT-weight fades, and the fade + smoothness tween at once, with an ease. Ease p: w = 1 - t^p (small steps first, where
+the traced floor is darkest and the display gamma magnifies a step); p = 1 is linear. Not part of the game."""
+import sys
+src = open("rt_bench5d.mm").read()
+def rep(old, new, count=1):
+    global src
+    n = src.count(old)
+    if n != count: sys.exit(f"patch5e: expected {count} x {old[:70]!r}, found {n}")
+    src = src.replace(old, new)
+T2 = r'''
+    if (what == "tween2") {
+      printf("# --- tween2 1920x1080 (B16): eased fades, floor px share changing >= 8/255 between frames, cube mode %d  %s\n", cubeMode, loadStr().c_str());
+      struct TW { const char* key; const char* hi; float r0; };
+      auto frameImg = [&](Cfg c, float rough, float w) {
+        c.rough = rough; FrameH f = frameFor(ti, c, 1, 0); runG(ti, c, f);
+        if (w <= 0.0f) { runC(ti, f, ti.refl, 0); return grab8(ti); }
+        runT(ti, c, f); runF(ti, f); FrameH fc = f; float wv = w; memcpy(&fc.pad4, &wv, 4); runC(ti, fc, ti.filt, 2); return grab8(ti); };
+      const char* only = getenv("TWVIEWS");
+      for (TW tw : {TW{"A20", "A_H", .2f}, TW{"B20", "B_H", .2f}, TW{"D20", "D_H", .2f}, TW{"F20", "F_H", .2f}, TW{"G15", "G_H", .15f}}) {
+        if (only && !strstr(only, tw.key)) continue;
+        Cfg hi = findCfg(tw.hi);
+        auto cls = clsOf(hi);
+        float s0 = 1.0f - tw.r0, s1 = s0 / 1.52f;
+        struct SQ { const char* name; int n; int kind; float p; };   // kind 0 fade, 2 fade + tween together
+        for (SQ sq : {SQ{"fade", 60, 0, 1.f}, SQ{"fade", 90, 0, 1.f}, SQ{"fade", 120, 0, 1.f}, SQ{"fade-ease2", 60, 0, 2.f}, SQ{"fade-ease2", 90, 0, 2.f},
+                      SQ{"fade-ease3", 90, 0, 3.f}, SQ{"both-ease2", 90, 2, 2.f}, SQ{"both-ease2", 120, 2, 2.f}, SQ{"both", 120, 2, 1.f}}) {
+          std::vector<std::pair<float, float>> seq;
+          for (int k = 0; k <= sq.n; k++) { float t = (float)k / sq.n; float w = 1.0f - powf(t, sq.p);
+            float s = sq.kind == 2 ? s0 + (s1 - s0) * t : s0; seq.push_back({1.0f - s, w}); }
+          std::vector<uint8_t> prev; double worst8 = 0, worst4 = 0, sum8 = 0; int worstMax = 0, worstK = -1, nfr = 0;
+          for (size_t k = 0; k < seq.size(); k++) {
+            auto cur = frameImg(hi, seq[k].first, seq[k].second);
+            if (k > 0) {
+              size_t g8 = 0, g4 = 0, nfloor = 0; int mx = 0;
+              for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { if ((int)(cls[i * 4 + 3] + .5f) != 2) continue; nfloor++;
+                int m = d8(prev, cur, i); g8 += m >= 8; g4 += m >= 4; mx = std::max(mx, m); }
+              double p8 = 100.0 * g8 / std::max<size_t>(nfloor, 1), p4 = 100.0 * g4 / std::max<size_t>(nfloor, 1);
+              sum8 += p8; nfr++;
+              if (p8 > worst8 || (p8 == worst8 && mx > worstMax)) { worst8 = p8; worstMax = mx; worstK = (int)k; }
+              worst4 = std::max(worst4, p4);
+            }
+            prev = cur;
+          }
+          printf("%s tween2 %s %-11s p %.0f N %3d: r %.3f -> %.3f | worst frame >=8/255 %.3f%% of floor px (frame %d, max %d/255), >=4 %.3f%%, mean >=8 %.4f%% | %s\n",
+                 tag.c_str(), tw.key, sq.name, sq.p, sq.n, seq.front().first, seq.back().first, worst8, worstK, worstMax, worst4, sum8 / std::max(nfr, 1), loadStr().c_str());
+          fflush(stdout);
+        }
+      }
+    }
+'''
+rep('    if (what == "diff2") {', T2 + '    if (what == "diff2") {')
+open("rt_bench5e.mm", "w").write(src)
+print("patch5e: wrote rt_bench5e.mm")

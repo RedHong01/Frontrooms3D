@@ -7,25 +7,32 @@ using Object = UnityEngine.Object;
 
 /// <summary>
 /// The window part of the interactables kit facade (Documentation/research/interactables/10_spec.md §5 and §6.1;
-/// 06_period_windows.md §3-§4; window_landing/03_contract_map.md). Owned by the visual session. The map calls
-/// DressWindow after its glass-break hook, behind a local exception guard, so a render-only kit failure leaves the
-/// map's window trims and pane intact. Rebased 2026-10-03 on the map chat's window model (commit df4cb03): the map owns the root
-/// "Window {a}-{b}" (unscaled, opening centre on the wall line at floor level, +Z into cell b), the gameplay pane under
-/// it, GlassBreakRecord, WindowBuilt / WindowReleased and the FrontRoomsGlassBreakable hook.
+/// 06_period_windows.md §3-§4; window_landing/03_contract_map.md). Owned by the visual session.
 ///
-/// DressWindow(map, window, record): once per window edge, broken windows included, right after the map's breakable
-/// hook. It hangs the frame member for the room side (the non-tall cell) from the root, turned so face A (the kit's
-/// +Z) looks into the room:
+/// Call site: the map's own window model owns the root "Window {a}-{b}" (unscaled, opening centre on the wall line at
+/// floor level, +Z into cell b), the gameplay pane under it, GlassBreakRecord, WindowBuilt / WindowReleased and the
+/// FrontRoomsGlassBreakable hook. The map calls DressWindow(map, window, record) directly (compile time, not reflection),
+/// once per window edge, broken windows included, after the breakable hook, outside Build's guard:
+///   main as Codex left it: from RaiseWindowBuilt, in a try/catch that logs every failure; the map's trims stay;
+///   contract R1 (window_landing/03_contract_map.md): the same place, through FrontRoomsMapWorld.DressWindowFrame,
+///           which logs one warning per session; the map's trims stay (hidden by the casing);
+///   contract T (optional, Red decides): from BuildEdge, before the trims, still through DressWindowFrame; the map
+///           builds a window's trims only when this returns false.
+/// A signature change here is a compile error in the map, never a silent fallback.
+///
+/// It hangs the frame member for the room side (the non-tall cell) from the root, turned so face A (the kit's +Z) looks
+/// into the room:
 ///   Level 0 room -> W-L0 Kit_WindowFrame_Wood  (walnut back-office light)
 ///   Office room  -> W-OF Kit_WindowFrame_Steel (dark-bronze pressed-steel borrowed light)
 /// Until GD3's FrontRoomsGlassBreakable exists (the map then still draws its 1.4 x 1.65 x 0.03 pane cube itself), an
 /// intact window also gets the INTERIM glass: a 6 mm slab (1.391 x 1.642, edges 12 mm behind the stops, Glass_Window,
-/// no shadow, FrontRoomsMetalGlassTarget) hung from the pane, so the map's own Kill(pane) at the shatter removes it.
+/// no shadow) hung from the pane, so the map's own Kill(pane) at the shatter removes it. G14 classifies it as glass and
+/// as a receiver by its material (FrontRooms/Glass, _RTReceive 1); it also carries the FrontRoomsMetalGlassTarget hint.
 /// The pane cube's renderer is hidden only once the slab exists. When the breakable exists the map has already hidden
-/// the pane and the breakable owns the visible glass on the root: no interim slab is made.
+/// the pane and the breakable owns the visible glass on the root (stages 0-3, the teeth): no interim slab is made.
 ///
-/// All or nothing: if anything throws, what this call built is destroyed and the pane is left as the map made it;
-/// the exception goes back to the map's guard, which keeps today's trims for that window and logs once.
+/// All or nothing: if anything throws, what this call built is destroyed, the pane renderer is restored, and the
+/// exception goes back to the map's guard, which keeps the map's trims and pane for that window (logged once with R1).
 /// Everything here is render-only: no colliders, no lights (00_map_constraints.md). Nothing visible enters the clear
 /// opening X ±0.6835 x Y 0.3665-1.9835 except the glass; the stop band is the 16 mm inside the wall cut (S1, approved
 /// by the map chat 2026-10-03).
@@ -40,6 +47,9 @@ public static partial class FrontRoomsInteractableKit
     /// <summary>Tools and tests: make DressWindow throw (after the frame is spawned) for the windows it returns true for.</summary>
     public static Func<FrontRoomsMapWorld.Window, bool> FailWindowDressForTools { get; set; }
 
+    /// <summary>Tools and tests: DressWindow builds nothing and returns false (the map's look before the kit: trims, pane cube).</summary>
+    public static bool DisableWindowDressForTools { get; set; }
+
     /// <summary>The member for a room theme (the non-tall side). Run and Exit have no map windows yet.</summary>
     public static WindowMember WindowMemberFor(ZoneTheme roomTheme) => roomTheme == ZoneTheme.Office ? WindowMember.Office : WindowMember.Lobby;
 
@@ -47,12 +57,13 @@ public static partial class FrontRoomsInteractableKit
 
     /// <summary>
     /// Dress one map window: the frame on the root (and the interim glass while the map draws the pane itself).
-    /// Returns true when a frame was hung, so the map leaves its own trims out for this window.
+    /// Returns true when a frame was hung, so the map can leave its own trims out for this window (contract T).
     /// </summary>
     public static bool DressWindow(FrontRoomsMapWorld map, FrontRoomsMapWorld.Window window, FrontRoomsMapWorld.GlassBreakRecord record)
     {
-        if (map == null || map.Cache == null || window == null || window.root == null) return false;
+        if (DisableWindowDressForTools || map == null || map.Cache == null || window == null || window.root == null) return false;
         GameObject frame = null, slab = null;
+        MeshRenderer hidden = null;
         try
         {
             // A window always joins a Tall hall to a Low/Standard room (FrontRoomsMap.Resolve): the room is the non-tall side.
@@ -66,12 +77,13 @@ public static partial class FrontRoomsInteractableKit
             if (paneRenderer != null && paneRenderer.enabled && record.stage < 3)
             {
                 slab = WindowParts.InterimSlab(window.pane, paneRenderer.sharedMaterial);
-                if (slab != null) paneRenderer.enabled = false;   // last: the cube's collider, name and mapping stay
+                if (slab != null) { paneRenderer.enabled = false; hidden = paneRenderer; }   // last: the cube's collider, name and mapping stay
             }
             return frame != null;
         }
         catch
         {
+            if (hidden != null) hidden.enabled = true;
             WindowParts.Kill(slab);
             WindowParts.Kill(frame);
             throw;

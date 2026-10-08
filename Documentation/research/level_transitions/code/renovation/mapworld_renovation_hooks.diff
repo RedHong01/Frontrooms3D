@@ -1,0 +1,223 @@
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs	2026-10-03 10:41:11
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs	2026-10-07 16:53:37
+@@ -197,6 +197,14 @@
+             // and continues across chunk borders.
+             var uv = Mathf.Abs(normal.x) > .5f ? new Vector2(w.z, w.y) : Mathf.Abs(normal.y) > .5f ? new Vector2(w.x, w.z) : new Vector2(w.x, w.y);
+             uvs.Add(uv / repeat);
++        }
++
++        // TRANSITION renovation: kit geometry (torn paper, beads, tiles) appended to a block's builder.
++        public void Raw(List<Vector3> v, List<Vector3> n, List<Vector2> uv, List<int> t)
++        {
++            var o = vertices.Count;
++            vertices.AddRange(v); normals.AddRange(n); uvs.AddRange(uv);
++            foreach (var i in t) triangles.Add(o + i);
+         }
+ 
+         public Mesh ToMesh(string name)
+@@ -251,6 +259,27 @@
+     MaterialPropertyBlock block;
+     ThemeMaterials level0, office;
+     Material trim, doorLeaf, glass, keyGlow;
++    // TRANSITION renovation: the visual kit's view of this map (one per cache).
++    FrontRoomsTransitionKit.Context transitionKit;
++    FrontRoomsMapCache transitionCache;
++
++    // TRANSITION renovation
++    FrontRoomsTransitionKit.Context TransitionKit()
++    {
++        if (!FrontRoomsTransitionKit.Enabled || Cache == null) return null;
++        if (transitionKit != null && transitionCache == Cache) return transitionKit;
++        transitionCache = Cache;
++        return transitionKit = new FrontRoomsTransitionKit.Context
++        {
++            theme = c => Cache.ZoneOf(c).theme,
++            ceiling = c => MapGrid.CeilingHeight(Cache.ZoneOf(c).height),
++            edge = (p, q) => Cache.Edge(p, q),
++            arch = ArchOpening,
++            excluded = InStartArea,
++            seed = Cache.Generator.Seed,
++            mats = FrontRoomsTransitionKit.Mats.Load(level0.ceiling),
++        };
++    }
+     bool begun;
+ 
+     static bool dressersResolved;
+@@ -793,6 +822,10 @@
+         }
+         var collision = new MeshBuilder();
+         int BlockOf(int i, int j, float ceiling) => (i / BlockCells + j / BlockCells * blocks) * heights + HeightClass(ceiling);
++        // TRANSITION renovation: the kit for this chunk (null when switched off).
++        var kit = TransitionKit();
++        kit?.Begin(new GridCoord(coord.x * n, coord.y * n), chunk.root.transform.position);
++        void Collide(Vector3 c, Vector3 s) => collision.Box(c, s, origin, 1f);
+ 
+         void Solid(int blockIndex, Material material, Vector3 center, Vector3 size, float repeat)
+         {
+@@ -814,8 +847,17 @@
+             var reserved = InStartArea(cell);
+             if (!reserved)
+             {
+-                Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
+-                Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
++                // TRANSITION renovation: a Level 0 crossing cell builds its floor and ceiling in pieces (render only); collision keeps the full slabs.
++                if (kit != null && FrontRoomsTransitionKit.CrossingCell(kit, cell, new Vector3(i * cs, 0f, j * cs), height, b, theme.floor, theme.ceiling))
++                {
++                    Collide(cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs));
++                    Collide(cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs));
++                }
++                else
++                {
++                    Solid(b, theme.floor, cellCenter + Vector3.down * (ModuleUnits.FloorSlab * .5f), new Vector3(cs, ModuleUnits.FloorSlab, cs), CarpetRepeat);
++                    Solid(b, theme.ceiling, cellCenter + Vector3.up * (height + ModuleUnits.CeilingSlab * .5f), new Vector3(cs, ModuleUnits.CeilingSlab, cs), CeilingRepeat);
++                }
+             }
+ 
+             // East and north edges of every cell. Chunk borders on the east and
+@@ -832,14 +874,23 @@
+             // A wall's ends reach half a thickness past its corner, except into the start area.
+             // The start area's side walls also stop on the door line, where the stream room's end wall closes the corner.
+             var startSide = InStartArea(cell) != InStartArea(east);
++            // TRANSITION renovation (B0.2): each face of a wall goes in its own side's height block, so _CeilingHeight is its own ceiling.
++            var eastStart = InStartArea(cell) || InStartArea(east);
++            var northStart = InStartArea(cell) || InStartArea(north);
++            var eastBlockA = eastStart ? BlockOf(i, j, eastHeight) : BlockOf(i, j, height);
++            var eastBlockB = eastStart ? BlockOf(i, j, eastHeight) : BlockOf(i, j, MapGrid.CeilingHeight(eastZone.height));
++            var northBlockA = northStart ? BlockOf(i, j, northHeight) : BlockOf(i, j, height);
++            var northBlockB = northStart ? BlockOf(i, j, northHeight) : BlockOf(i, j, MapGrid.CeilingHeight(northZone.height));
+             BuildEdge(chunk, eastKind, cell, east, new Vector3((i + 1) * cs, 0f, j * cs), Vector3.forward,
+                 eastHeight, eastA, eastB, BlockOf(i, j, eastHeight), Get, Solid, origin,
+                 !BothInStartArea(new GridCoord(cell.x, cell.y - 1), new GridCoord(cell.x + 1, cell.y - 1)),
+-                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax));
++                !BothInStartArea(new GridCoord(cell.x, cell.y + 1), new GridCoord(cell.x + 1, cell.y + 1)) && !(startSide && cell.y + 1 == startArea.yMax),
++                kit, eastBlockA, eastBlockB, Collide);
+             BuildEdge(chunk, northKind, cell, north, new Vector3(i * cs, 0f, (j + 1) * cs), Vector3.right,
+                 northHeight, northA, northB, BlockOf(i, j, northHeight), Get, Solid, origin,
+                 !BothInStartArea(new GridCoord(cell.x - 1, cell.y), new GridCoord(cell.x - 1, cell.y + 1)),
+-                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)));
++                !BothInStartArea(new GridCoord(cell.x + 1, cell.y), new GridCoord(cell.x + 1, cell.y + 1)),
++                kit, northBlockA, northBlockB, Collide);
+ 
+             if (data.pillar[i + j * (n + 1)] && !TouchesStartArea(cell.x, cell.y, cell.x, cell.y))
+             {
+@@ -853,6 +904,22 @@
+             if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+         }
+ 
++        // TRANSITION renovation: the kit's boxes and meshes go into the blocks; block -1 (props, ducts, tiles) into its own renderers.
++        Dictionary<Material, MeshBuilder> kitLoose = null;
++        if (kit != null)
++        {
++            kitLoose = new Dictionary<Material, MeshBuilder>();
++            MeshBuilder Sink(int block, Material m)
++            {
++                if (block >= 0) return Get(block, m);
++                if (!kitLoose.TryGetValue(m, out var lb)) kitLoose[m] = lb = new MeshBuilder();
++                return lb;
++            }
++            foreach (var bx in kit.output.boxes) Sink(bx.block, bx.mat).Box(bx.centre, bx.size, origin, bx.repeat);
++            foreach (var r in kit.output.raws.Values) if (r.v.Count > 0) Sink(r.block, r.mat).Raw(r.v, r.n, r.uv, r.t);
++            foreach (var p in kit.output.props) FrontRoomsKitLibrary.Spawn(p.asset, chunk.root.transform, p.position, p.rotation, null, false, "Renovation prop " + p.asset);
++        }
++
+         for (var b = 0; b < builders.Length; b++)
+         {
+             if (builders[b].Count == 0) continue;
+@@ -865,6 +932,17 @@
+                 if (mesh != null) chunk.meshes.Add(mesh);
+             }
+         }
++        if (kitLoose != null && kitLoose.Count > 0)
++        {
++            // TRANSITION renovation
++            var go = new GameObject("Renovation");
++            go.transform.SetParent(chunk.root.transform, false);
++            foreach (var pair in kitLoose)
++            {
++                var mesh = AddRenderer(go, pair.Key, pair.Value, chunk.root.transform.position.y + ModuleUnits.StandardCeiling);
++                if (mesh != null) chunk.meshes.Add(mesh);
++            }
++        }
+         var col = new GameObject("Collision");
+         col.transform.SetParent(chunk.root.transform, false);
+         var shell = col.AddComponent<MeshCollider>();
+@@ -944,20 +1022,42 @@
+     /// </summary>
+     void BuildEdge(BuiltChunk chunk, EdgeKind kind, GridCoord a, GridCoord b, Vector3 start, Vector3 along, float height,
+         Material wallA, Material wallB, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin,
+-        bool mayExtendStart = true, bool mayExtendEnd = true)
++        bool mayExtendStart = true, bool mayExtendEnd = true,
++        FrontRoomsTransitionKit.Context kit = null, int blockA = -1, int blockB = -1, Action<Vector3, Vector3> collide = null) // TRANSITION renovation
+     {
+         if (kind == EdgeKind.Open) return;
+         var length = MapGrid.CellSize;
+         // Positive "across" points from cell a into cell b.
+         var across = new Vector3(along.z, 0f, along.x);
+-        void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd)
++        // TRANSITION renovation: the edge as the kit sees it (opening filled in below).
++        var desc = new FrontRoomsTransitionKit.Edge
+         {
++            kind = kind, a = a, b = b, alongX = along.x > .5f, start = start, along = along, across = across, height = height,
++            wallA = wallA, wallB = wallB, blockA = blockA >= 0 ? blockA : blockIndex, blockB = blockB >= 0 ? blockB : blockIndex,
++            mayExtendStart = mayExtendStart, mayExtendEnd = mayExtendEnd,
++        };
++        var useKit = kit != null && collide != null;
++        void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd, bool atOpeningStart = false, bool atOpeningEnd = false)
++        {
+             if (from > 0f || !mayExtendStart) extendStart = false;
+             if (to < length || !mayExtendEnd) extendEnd = false;
+             var f = from - (extendStart ? WallThickness * .5f : 0f);
+             var t = to + (extendEnd ? WallThickness * .5f : 0f);
+             if (t - f < .05f || top - bottom < .05f) return;
+             var center = start + along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f);
++            if (useKit)
++            {
++                // TRANSITION renovation: collision exactly as before; render geometry from the kit (B0.1 corners, B0.2 blocks, drops).
++                if (wallA == wallB) collide(center, Abs(along * (t - f) + across * WallThickness + Vector3.up * (top - bottom)));
++                else
++                {
++                    var h2 = along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom);
++                    collide(center - across * (WallThickness * .25f), Abs(h2));
++                    collide(center + across * (WallThickness * .25f), Abs(h2));
++                }
++                FrontRoomsTransitionKit.WallPiece(kit, desc, from, to, bottom, top, atOpeningStart, atOpeningEnd);
++                return;
++            }
+             if (wallA == wallB)
+             {
+                 var size = along * (t - f) + across * WallThickness + Vector3.up * (top - bottom);
+@@ -969,7 +1069,12 @@
+             solid(blockIndex, wallB, center + across * (WallThickness * .25f), Abs(half), WallpaperRepeat);
+         }
+ 
+-        if (kind == EdgeKind.Wall) { Piece(0f, length, 0f, height, true, true); return; }
++        if (kind == EdgeKind.Wall)
++        {
++            Piece(0f, length, 0f, height, true, true);
++            if (useKit) FrontRoomsTransitionKit.EdgeExtras(kit, desc, MapGrid.CeilingHeight(Cache.ZoneOf(a).height), MapGrid.CeilingHeight(Cache.ZoneOf(b).height)); // TRANSITION renovation
++            return;
++        }
+ 
+         float width, c, openingTop, sill = 0f;
+         if (kind == EdgeKind.Arch)
+@@ -990,10 +1095,18 @@
+             openingTop = WindowTop;
+             sill = WindowSill;
+         }
+-        Piece(0f, c - width * .5f, 0f, height, true, false);
+-        Piece(c + width * .5f, length, 0f, height, false, true);
++        // TRANSITION renovation: the opening for the kit.
++        desc.lo = c - width * .5f; desc.hi = c + width * .5f; desc.top = openingTop; desc.sill = sill;
++        Piece(0f, c - width * .5f, 0f, height, true, false, false, true);
++        Piece(c + width * .5f, length, 0f, height, false, true, true, false);
+         Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
+         if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
++        if (useKit)
++        {
++            // TRANSITION renovation: reveal and beads on border arches; props, scraps and tape per face.
++            FrontRoomsTransitionKit.ArchReveal(kit, desc);
++            FrontRoomsTransitionKit.EdgeExtras(kit, desc, MapGrid.CeilingHeight(Cache.ZoneOf(a).height), MapGrid.CeilingHeight(Cache.ZoneOf(b).height));
++        }
+ 
+         if (kind == EdgeKind.Arch) return;
+ 

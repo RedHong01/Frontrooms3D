@@ -1,0 +1,9 @@
+#!/bin/zsh
+# r3 image runs (load does not change images; every line logs load)
+cd /Users/redwang/FrontRoomsVisualWork/rt_bench2/r3/b5
+TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3s accept > r3_sanity_accept_l0exr.txt 2>&1
+HITLAMPS=0 TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3nl accept > r3_hitlamps0_accept_l0exr.txt 2>&1
+TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3tw tween > r3_tween_l0exr.txt 2>&1
+TREE=1 CUBE=own OWNSCALE=0.5 SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3two tween > r3_tween_own05.txt 2>&1
+HITLAMPS=0 TREE=1 CUBE=own OWNSCALE=0.5 SOFTGATE=1 FARFADE=6,12 ./rt_bench5d r3nlo accept > r3_hitlamps0_accept_own05.txt 2>&1
+echo DONE

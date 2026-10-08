@@ -1,0 +1,52 @@
+"""Shared slots and helpers for the Run! (direction A, RED WARD) hospital props.
+Clone-only look-dev. Slots registered here are given Unity materials by the
+look-dev harness (FrontRoomsRunLookdev.BuildMaterials)."""
+
+import math
+
+import kitlib
+
+CHROME = "Prop_Chrome"
+ALU = "Prop_Aluminium"
+RUBBER = "Prop_Rubber"
+BLACK = "Prop_PlasticBlack"
+PUTTY = "Prop_SteelPutty"
+TEAL = "Run_VinylTeal"
+WHITE_VINYL = "Run_VinylWhite"
+LINEN = "Run_LinenWhite"
+LINEN_BLUE = "Run_LinenBlue"
+CANVAS = "Run_Canvas"
+SLING = "Run_SlingBlack"
+CASTER = "Run_CasterGrey"
+
+kitlib.register_slot(TEAL, (0.20, 0.36, 0.35), 0.5)
+kitlib.register_slot(WHITE_VINYL, (0.86, 0.85, 0.81), 0.55)
+kitlib.register_slot(LINEN, (0.85, 0.84, 0.80), 0.9)
+kitlib.register_slot(LINEN_BLUE, (0.56, 0.64, 0.68), 0.9)
+kitlib.register_slot(CANVAS, (0.82, 0.81, 0.76), 0.9)
+kitlib.register_slot(SLING, (0.11, 0.105, 0.10), 0.6)
+kitlib.register_slot(CASTER, (0.37, 0.36, 0.35), 0.6)
+
+
+def torus(kit, R, r, loc, slot, axis="x", seg=40, ring=10, name="torus"):
+    """A ring (tyre, hand rim) of major radius R and tube radius r, its axis
+    along X (a wheel rolling along Y) or Z."""
+    prof = []
+    for i in range(ring + 1):
+        a = 2 * math.pi * i / ring
+        prof.append((R + r * math.cos(a), r * math.sin(a)))
+    rot = (0, 90, 0) if axis == "x" else (0, 0, 0)
+    return kit.lathe(prof, loc, slot, verts=seg, rot=rot, name=name, close_top=False, close_bottom=False)
+
+
+def caster(kit, x, y, wheel_r, width, slot_wheel=CASTER, fork=CHROME, stem_top=None, name="caster"):
+    """A swivel caster: wheel on a fork, the wheel axle along X, centred at (x, y)."""
+    kit.cylinder(wheel_r, width, (x, y, wheel_r), slot_wheel, verts=20, rot=(0, 90, 0), bevel=0.004, segments=2, name=name + " wheel")
+    kit.cylinder(wheel_r * 0.35, width + 0.012, (x, y, wheel_r), fork, verts=12, rot=(0, 90, 0), bevel=0.001, segments=1, name=name + " hub")
+    top = wheel_r * 2 + 0.02
+    for sx in (-1, 1):
+        kit.box((0.006, wheel_r * 0.9, wheel_r * 1.2 + 0.02), (x + sx * (width / 2 + 0.008), y - wheel_r * 0.15, wheel_r * 1.1 + 0.01), fork,
+                bevel=0.002, segments=1, name=name + " fork")
+    kit.box((width + 0.03, wheel_r * 0.9, 0.012), (x, y - wheel_r * 0.15, top), fork, bevel=0.002, segments=1, name=name + " yoke")
+    if stem_top is not None and stem_top > top:
+        kit.cylinder(0.009, stem_top - top, (x, y - wheel_r * 0.15, (top + stem_top) / 2), fork, verts=12, bevel=0.0, name=name + " stem")
