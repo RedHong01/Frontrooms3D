@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""patch5c.py - G14b revision 2 (2026-10-07): rt_bench5b.mm -> rt_bench5c.mm. Not part of the game.
+
+Adds, without changing any TREE=0 result (TREE=0 is bench 5b bit for bit):
+  TREE=1      the DESIGN tree of report 11 r2 s2.5 instead of bench 5's first layout:
+              - see-through continuation in registers (G14's FRTraceReflection loop), not pushed;
+              - only reflection branches pushed, on a stack of maxBounces - 1 entries (High 1, Ultra 2);
+              - G14's pane terms: Fr = 0.08 + 0.92 F^5, transmission 1 - (0.11 + 0.89 F^5) (main .metal:467-468)
+                instead of 11's (1 - F) 0.9;
+              - G14's layer limit: past the layer budget the pane shows the zone cube along the ray (main :456-462);
+              - facing rule: an exiting glass face passes with no Fresnel and no layer (the bench's triNormal is the
+                unflipped world normal of positive-scale boxes, so 'entering' is exact here);
+              - soft gate and cut-off as before; the cube takes the (1 - g) share when a branch is pushed.
+              Reference caches get a '_t1' key.
+  ARMEDCUBE=1 the tripped corridor (scene 1) uses the ARMED corridor capture (scene 3) (check r2's case);
+  TRIPCUBE=1  the armed corridor (scene 3) uses the TRIPPED capture (scene 1). Both add a key to the caches.
+  mode 'ramp' issue 2 (B12): Ultra floor ray-count switches 1->2 (High's mirror path -> 2 GGX), 2->3, 3->4,
+              instant vs a linear ramp between the nested estimators over N frames, optionally staggered by a
+              hashed per-16x16-tile phase of 0..P-1 frames. Floor px, display /255, worst frame of the ramp.
+"""
+import sys
+src = open("rt_bench5b.mm").read()
+
+def rep(old, new, count=1):
+    global src
+    n = src.count(old)
+    if n != count:
+        sys.exit(f"patch5c: expected {count} x {old[:70]!r}, found {n}")
+    src = src.replace(old, new)
+
+# ---------------------------------------------------------------- Frame: tree field (MSL + host)
+rep("  float envScale; uint pad0, pad1, pad2;\n  Light lights[48];",
+    "  float envScale; uint pad0, pad1, pad2;\n  uint tree, pad3, pad4, pad5;\n  Light lights[48];")
+rep("  float envScale; uint32_t pad0, pad1, pad2;\n  LightH lights[48];",
+    "  float envScale; uint32_t pad0, pad1, pad2;\n  uint32_t tree, pad3, pad4, pad5;\n  LightH lights[48];")
+
+# ---------------------------------------------------------------- MSL: rename the first-layout tree, add the design tree
+rep("static float3 tracePath(constant Frame& f,", "static float3 tracePathF(constant Frame& f,")
+DESIGN = r'''
+// ---- r2: the DESIGN tree (report 11 r2 s2.5): G14's see-through loop in registers + a reflection-only stack of
+// maxBounces - 1 entries; G14's pane terms and layer limit; exiting glass faces pass (facing rule).
+struct RB { float3 o; float3 d; float w; float trav; uint depth; uint layers; };
+static float3 tracePathD(constant Frame& f, constant GpuInst* insts, instance_acceleration_structure scene,
+                         texture2d_array<half> alb, texturecube<half> env, float3 o, float3 d, float importance,
+                         float coneStart, thread uint& rays, thread uint& srays, thread float& firstT, thread uint& maxDepth)
+{
+  RB st[2]; uint sp = 0u; uint cap = f.maxBounces > 1u ? min(f.maxBounces - 1u, 2u) : 0u;
+  float3 L = 0; firstT = -1;
+  float w = 1; float trav = coneStart; uint depth = 1u, layers = 0u;
+  intersector<triangle_data, instancing> isect; isect.assume_geometry_type(geometry_type::triangle);
+  for (uint guard = 0u; guard < 24u; guard++) {
+    rays++; maxDepth = max(maxDepth, depth);
+    ray r; r.origin = o; r.direction = d; r.min_distance = 0.0005f; r.max_distance = f.maxDist;
+    auto hit = isect.intersect(r, scene, f.rayMask);
+    bool endB = false;
+    if (hit.type != intersection_type::triangle) { L += w * envS(f, env, d, 0); if (firstT < 0) firstT = f.maxDist; endB = true; }
+    else {
+      if (firstT < 0) firstT = hit.distance;
+      constant GpuInst& g = insts[hit.instance_id];
+      float3 n = triNormal(g, hit.primitive_id); bool entering = dot(n, d) < 0; if (!entering) n = -n;
+      float3 P = o + d * hit.distance; float travH = trav + hit.distance;
+      float c = saturate(-dot(n, d));
+      if ((g.flags & F_GLASS) && !entering) { o = P + d * 0.002f; trav = travH; continue; }   // exiting face: pass, no layer
+      if (g.flags & F_GLASS) {
+        if (layers >= f.maxLayers) { L += w * envS(f, env, d, 0); endB = true; }               // G14: the pane shows the cube
+        else {
+          float m = 1.0f - c; float f5 = m * m * m * m * m;
+          float Fp = 0.08f + 0.92f * f5, tr = 1.0f - (0.11f + 0.89f * f5);                       // G14 .metal:467-468
+          float3 R = reflect(d, n); float wr = w * Fp;
+          if (depth < f.maxBounces && sp < cap && importance * wr > f.cutoff) { RB b; b.o = P + n * 0.002f; b.d = R; b.w = wr; b.trav = travH; b.depth = depth + 1u; b.layers = layers; st[sp++] = b; }
+          else L += wr * envS(f, env, R, 0);
+          w *= tr; layers++; o = P + d * 0.002f; trav = travH; continue;
+        }
+      } else {
+        bool glossy = (g.flags & F_FLOOR) != 0 && f.floorGlossy != 0 && n.y > 0.9f;
+        bool metal = (g.flags & F_METAL) != 0;
+        float rough = glossy ? f.floorRough : g.emis.w;
+        float3 Ld = shadeHit(f, insts, scene, alb, hit.instance_id, P, n, d, travH * f.pixelAngle,
+                             depth == 1u ? f.shadow1 : f.shadow2, rough, srays);
+        if (glossy || metal) {
+          float Fs = metal ? schlick(0.7f, c) : schlick(0.04f, c); float3 R = reflect(d, n);
+          L += w * (metal ? 1.f : (1 - Fs)) * Ld;
+          float wr = w * Fs;
+          float gg = (f.pad0 & 1u) ? (1.0f - smoothstep(0.10f, 0.25f, rough)) : 1.0f;
+          if (gg > 0.0f && depth < f.maxBounces && rough <= f.recurseMaxRough && importance * wr * gg > f.cutoff && sp < cap) {
+            RB b; b.o = P + n * 0.002f; b.d = R; b.w = wr * gg; b.trav = travH; b.depth = depth + 1u; b.layers = layers; st[sp++] = b;
+            L += wr * (1.0f - gg) * envS(f, env, R, 4.0f * rough);                              // the cube keeps the (1 - g) share
+          } else L += wr * envS(f, env, R, 4.0f * rough);
+        } else L += w * Ld;
+        endB = true;
+      }
+    }
+    if (endB) {
+      if (sp == 0u) break;
+      RB b = st[--sp]; o = b.o; d = b.d; w = b.w; trav = b.trav; depth = b.depth; layers = b.layers;
+    }
+  }
+  return L;
+}
+static float3 tracePath(constant Frame& f, constant GpuInst* insts, instance_acceleration_structure scene,
+                        texture2d_array<half> alb, texturecube<half> env, float3 o, float3 d, float importance,
+                        float coneStart, thread uint& rays, thread uint& srays, thread float& firstT, thread uint& maxDepth)
+{
+  if (f.tree == 1u) return tracePathD(f, insts, scene, alb, env, o, d, importance, coneStart, rays, srays, firstT, maxDepth);
+  return tracePathF(f, insts, scene, alb, env, o, d, importance, coneStart, rays, srays, firstT, maxDepth);
+}
+
+// Stackless depth-1 path'''
+rep("\n// Stackless depth-1 path", DESIGN)
+
+# ---------------------------------------------------------------- host: TREE, cube swaps, cache keys
+rep("    uint32_t jitterMode = getenv(\"JITTER\") ? (uint32_t)atoi(getenv(\"JITTER\")) : 0u;",
+    "    uint32_t jitterMode = getenv(\"JITTER\") ? (uint32_t)atoi(getenv(\"JITTER\")) : 0u;\n"
+    "    uint32_t treeMode = getenv(\"TREE\") ? (uint32_t)atoi(getenv(\"TREE\")) : 0u;\n"
+    "    if (treeMode == 1u) printf(\"# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule\\n\");\n"
+    "    std::string cacheExtra = std::string(treeMode ? \"_t1\" : \"\") + (getenv(\"ARMEDCUBE\") ? \"_ac\" : \"\") + (getenv(\"TRIPCUBE\") ? \"_tc\" : \"\");")
+rep("f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1); f.pad2 = farFade;",
+    "f.pad1 = (urpMip ? 1u : 0u) | ((jitterMode & 7u) << 1); f.pad2 = farFade; f.tree = treeMode;")
+rep('char fn[256]; snprintf(fn, sizeof fn, "refcache_%s_c%d%s_%s_p%d_n%d_sg%d.bin", key, cubeMode, getenv("OWNSCALE") ? (std::string("s") + getenv("OWNSCALE")).c_str() : "", base.id, firstPass, nPass, getenv("SOFTGATE") ? 1 : 0);',
+    'char fn[256]; snprintf(fn, sizeof fn, "refcache_%s_c%d%s%s_%s_p%d_n%d_sg%d.bin", key, cubeMode, getenv("OWNSCALE") ? (std::string("s") + getenv("OWNSCALE")).c_str() : "", cacheExtra.c_str(), base.id, firstPass, nPass, getenv("SOFTGATE") ? 1 : 0);')
+rep('        printf("# CUBE=%s: RT-off and every fallback use the %s captured cube (x 1), URP roughness->mip\\n", cm, cubeMode == 1 ? "scene\'s own" : "office");',
+    '        printf("# CUBE=%s: RT-off and every fallback use the %s captured cube (x %.2f), URP roughness->mip\\n", cm, cubeMode == 1 ? "scene\'s own" : "office", envScaleOverride);\n'
+    '        if (getenv("ARMEDCUBE")) { capCube[1] = capCube[3]; printf("# ARMEDCUBE: the tripped corridor (scene 1) uses the ARMED corridor capture (scene 3)\\n"); }\n'
+    '        if (getenv("TRIPCUBE")) { capCube[3] = capCube[1]; printf("# TRIPCUBE: the armed corridor (scene 3) uses the TRIPPED corridor capture (scene 1)\\n"); }')
+
+# ---------------------------------------------------------------- mode 'ramp'
+RAMP = r'''    if (what == "ramp") {
+      // B12 (issue 2): how much of the floor changes per frame when Ultra's rays per tile switch, instant vs ramped.
+      // The estimators are nested (sample s hashes (cell, s) only), so n+1 rays reuse the n rays' samples; a ramp
+      // blends the two filtered results linearly (the mip blur is linear) over N frames; with P > 0 each 16x16 tile
+      // starts its ramp after a hashed phase of 0..P-1 frames. n = 1 is High's mirror path (k 2) in Ultra's tree.
+      printf("# --- ramp 1920x1080, footprint jitter, floor px, display /255, worst frame of each ramp  %s\n", loadStr().c_str());
+      struct RC { const char* key; const char* ul; };
+      std::vector<RC> rcs = {{"A20", "A_U3"}, {"B20", "B_U2"}, {"C20", "C_U2"}, {"D20", "D_U2"}, {"F20", "F_U3"}, {"G15", "G_U2"}};
+      for (auto& rc : rcs) {
+        Cfg ul = findCfg(rc.ul); auto cls = clsOf(ul);
+        std::vector<std::vector<float>> lin(5);
+        uint32_t sj = jitterMode; jitterMode = 2;
+        for (uint32_t n = 1; n <= 4; n++) {
+          Cfg c = ul; c.filter = true; c.aniso = 2;
+          if (n == 1) { c.spp = 1; c.mode = 1; c.blurK = 2.f; } else { c.spp = n; c.mode = 0; c.blurK = 1.f; }
+          FrameH f = frameFor(ti, c, 1, 0); runG(ti, c, f); runT(ti, c, f); runF(ti, f); lin[n] = readHalf4(ti.filt, ti.W, ti.H);
+        }
+        jitterMode = sj;
+        size_t nF = 0; for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) nF += (int)(cls[i * 4 + 3] + .5f) == 2;
+        auto comp = [&](const std::vector<float>& L) { return comp8(ul, 1, 2, &L); };
+        auto phaseOf = [&](size_t i, int P) -> int { if (P <= 0) return 0; uint32_t tx = (uint32_t)(i % ti.W) / 16u, ty = (uint32_t)(i / ti.W) / 16u;
+          uint32_t h = tx * 73856093u ^ ty * 19349663u; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return (int)(h % (uint32_t)P); };
+        auto frameStat = [&](const std::vector<uint8_t>& a, const std::vector<uint8_t>& b, double& ge8, int& mx, double& mean) {
+          size_t g8 = 0; double s = 0; mx = 0;
+          for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { if ((int)(cls[i * 4 + 3] + .5f) != 2) continue; int m = d8(a, b, i); g8 += m >= 8; s += m; mx = std::max(mx, m); }
+          ge8 = 100.0 * g8 / std::max<size_t>(nF, 1); mean = s / std::max<size_t>(nF, 1); };
+        for (auto tr : {std::pair<int,int>{1, 2}, std::pair<int,int>{2, 3}, std::pair<int,int>{3, 4}}) {
+          const auto& A = lin[tr.first]; const auto& Bv = lin[tr.second];
+          std::string trName = std::string(rc.key) + "_u" + std::to_string(tr.first) + "u" + std::to_string(tr.second);
+          auto heat = [&](const std::vector<uint8_t>& a, const std::vector<uint8_t>& b, const char* what) {   // |frame k - frame k-1| x 8 on floor px, display /255
+            std::vector<uint8_t> px((size_t)ti.W * ti.H * 4, 0);
+            for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { int v = (int)(cls[i * 4 + 3] + .5f) == 2 ? std::min(255, 8 * d8(a, b, i)) : 0; px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = (uint8_t)v; px[i * 4 + 3] = 255; }
+            std::string fn = "ramp_" + tag + "_" + trName + "_" + what + ".png"; writePngG(fn, px, ti.W, ti.H); };
+          { auto a8 = comp(A), b8 = comp(Bv); double g8, mean; int mx; frameStat(a8, b8, g8, mx, mean); if (getenv("RAMPIMG")) heat(a8, b8, "instant");
+            printf("%s ramp %s u%d->u%d instant: floor %.2f%% of screen | >=8 %.2f%% of floor px, max %d, mean %.3f | %s\n", tag.c_str(), rc.key, tr.first, tr.second, 100.0 * nF / ((double)ti.W * ti.H), g8, mx, mean, loadStr().c_str()); }
+          for (int N : {8, 12, 16}) for (int P : {0, 8}) {
+            std::vector<uint8_t> prev; double worst8 = 0, worstMean = 0; int worstMax = 0, worstK = 0;
+            std::vector<float> Lk(A.size());
+            for (int k = 0; k <= N + P; k++) {
+              for (size_t i = 0; i < (size_t)ti.W * ti.H; i++) { float t = std::min(1.f, std::max(0.f, (float)(k - phaseOf(i, P)) / (float)N));
+                for (int ch = 0; ch < 4; ch++) Lk[i * 4 + ch] = A[i * 4 + ch] + t * (Bv[i * 4 + ch] - A[i * 4 + ch]); }
+              auto cur = comp(Lk);
+              if (k > 0) { double g8, mean; int mx; frameStat(prev, cur, g8, mx, mean); if (g8 > worst8 || (g8 == worst8 && mx > worstMax)) { worst8 = g8; worstMax = mx; worstK = k; if (getenv("RAMPIMG") && N == 16 && P == 8) heat(prev, cur, "ramp16p8"); } worstMean = std::max(worstMean, mean); }
+              prev.swap(cur);
+            }
+            printf("%s ramp %s u%d->u%d N %2d P %d: worst frame (k %d) >=8 %.3f%% of floor px, max %d; worst frame mean %.3f | %s\n", tag.c_str(), rc.key, tr.first, tr.second, N, P, worstK, worst8, worstMax, worstMean, loadStr().c_str());
+            fflush(stdout);
+          }
+        }
+      }
+    }
+    if (what == "diff2") {'''
+rep('    if (what == "diff2") {', RAMP)
+
+open("rt_bench5c.mm", "w").write(src)
+print("wrote rt_bench5c.mm", len(src))

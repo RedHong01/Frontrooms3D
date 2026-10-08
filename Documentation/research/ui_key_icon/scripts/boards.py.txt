@@ -1,0 +1,396 @@
+"""Design boards (1920 x 1080, the deck grammar of the Figma slides) as HTML -> PNG via
+headless Chrome (shot.sh). Images are the real composites; masters are the SVG files."""
+import json, os, re, subprocess, sys
+from urllib.parse import quote
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+DES = os.environ.get("KEYICON_DES", os.path.join(PROJ, "Documentation/research/ui_key_icon/design"))  # override for scratch re-renders
+SVG, PNG, HUD = (os.path.join(DES, d) for d in ("svg", "png", "hud"))
+MODEL = os.path.join(HERE, "model")
+OUT = DES
+HTML = os.path.join(HERE, "boards_html")
+os.makedirs(HTML, exist_ok=True)
+META = json.load(open(os.path.join(HERE, "design_meta.json")))
+FONTS = os.path.join(PROJ, "Assets/Resources/Fonts")
+COUR = os.path.join(PROJ, "Assets/Fonts/Period1990/CourierPrime")
+N_BOARDS = 10
+
+url = lambda p: "file://" + quote(p)
+
+CSS = """
+@font-face{font-family:Bayon;src:url("%s")}
+@font-face{font-family:Plex;src:url("%s")}
+@font-face{font-family:SrcSerif4;src:url("%s")}
+@font-face{font-family:CourierPrimeB;src:url("%s")}
+html,body{margin:0;padding:0}
+body{width:1920px;height:1080px;background:#fff;color:#111;position:relative;overflow:hidden}
+.h{position:absolute;top:30px;font:14px/16px Plex;color:#111;white-space:nowrap}
+.title{position:absolute;left:72px;top:136px;font:88px/88px Bayon;white-space:nowrap}
+.intro{position:absolute;left:1272px;width:576px;top:142px;font:24px/26px SrcSerif4;font-variation-settings:'wght' 400}
+.a{position:absolute}
+.lab{position:absolute;font:20px/20px Bayon;white-space:nowrap}
+.ovl{position:absolute;left:16px;top:14px;font:20px/20px Bayon;color:#F4F1E8;white-space:nowrap;z-index:5}
+.ovd{position:absolute;left:16px;top:14px;font:20px/20px Bayon;color:#111;white-space:nowrap;z-index:5}
+.t{position:absolute;font:20px/23px SrcSerif4;font-variation-settings:'wght' 400}
+.t b{font-variation-settings:'wght' 600;font-weight:normal}
+.m{position:absolute;font:14px/18px Plex;color:#111;white-space:pre}
+.px{image-rendering:pixelated}
+.panel{position:absolute;overflow:hidden}
+.chip{position:absolute;font:20px/20px Bayon;background:#111;color:#fff;padding:7px 10px 5px 10px}
+.n{font-family:CourierPrimeB;font-size:1.25em;line-height:0}
+""" % (os.path.join(FONTS, "Bayon-Regular.ttf"), os.path.join(FONTS, "IBMPlexMono-Regular.ttf"),
+       os.path.join(FONTS, "SourceSerif4-Variable.ttf"), os.path.join(COUR, "CourierPrime-Bold.ttf"))
+CSS = re.sub(r'url\("([^"]+)"\)', lambda m: 'url("%s")' % url(m.group(1)), CSS)
+
+
+LABEL_RE = re.compile(r'(<div class="(?:lab|ovl|ovd|chip)"[^>]*>)(.*?)(</div>)', re.S)
+
+
+def num_spans(html):
+    """Digits inside Bayon labels -> Courier Prime Bold spans (the HUD label rule of board 04)."""
+    def fix(m):
+        inner = re.sub(r"(?<![&#\w])(\d+)", r'<span class="n">\1</span>', m.group(2))
+        return m.group(1) + inner + m.group(3)
+    return LABEL_RE.sub(fix, html)
+
+
+def page(n, title, intro, body):
+    hdr = "".join('<div class="h" style="left:%dpx">%s</div>' % (x, t) for x, t in (
+        (72, "Individual Game Project"), (522, "FrontRooms &middot; Key icon"), (972, "Week 2 &middot; Oct 7, 2026"),
+        (1422, "Red Wang"), (1722, "%02d / %02d" % (n, N_BOARDS))))
+    return ('<!doctype html><html><head><meta charset="utf-8"><style>%s</style></head><body>%s'
+            '<div class="title">%s</div><div class="intro">%s</div>%s</body></html>' % (CSS, hdr, title, intro, num_spans(body)))
+
+
+def img(path, x, y, w=None, h=None, px=False, extra=""):
+    st = "left:%dpx;top:%dpx;" % (x, y)
+    if w: st += "width:%dpx;" % w
+    if h: st += "height:%dpx;" % h
+    return '<img class="a%s" src="%s" style="%s%s">' % (" px" if px else "", url(path), st, extra)
+
+
+def crop(path, x, y, w, h, ox=0, oy=0, label=None, dark_label=False, scale=1, px=False):
+    """A window (w x h on the page) onto an image at `scale`, offset (ox, oy) in image px."""
+    lab = ""
+    if label:
+        lab = '<div class="%s">%s</div>' % ("ovd" if dark_label else "ovl", label)
+    sz = ""
+    if scale != 1:
+        sz = "transform:scale(%g);transform-origin:0 0;" % scale
+    return ('<div class="panel" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx">%s'
+            '<img class="a%s" src="%s" style="left:%dpx;top:%dpx;%s"></div>'
+            % (x, y, w, h, lab, " px" if px else "", url(path), -ox * scale, -oy * scale, sz))
+
+
+def svg_inline(name, scale):
+    s = open(os.path.join(SVG, name + ".svg")).read()
+    s = re.sub(r"<\?xml[^>]*>", "", s)
+    m = re.search(r'width="([\d.]+)" height="([\d.]+)"', s)
+    w, h = float(m.group(1)), float(m.group(2))
+    s = s.replace(m.group(0), 'width="%g" height="%g"' % (w * scale, h * scale), 1)
+    return s, w * scale, h * scale
+
+
+def panel(x, y, w, h, bg, inner="", label=None, dark_label=False):
+    lab = '<div class="%s">%s</div>' % ("ovd" if dark_label else "ovl", label) if label else ""
+    return '<div class="panel" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s">%s%s</div>' % (x, y, w, h, bg, lab, inner)
+
+
+def centred_svg(name, scale, w, h, dy=0):
+    s, sw, sh = svg_inline(name, scale)
+    return '<div class="a" style="left:%dpx;top:%dpx">%s</div>' % ((w - sw) / 2, (h - sh) / 2 + dy, s)
+
+
+def tile(png, x, y, bg, label=None, w=None, h=None, pad=12):
+    """A true-size PNG on a flat swatch (lit #79693C / dark #25200F)."""
+    import struct
+    d = open(png, "rb").read(32)
+    pw, ph = struct.unpack(">II", d[16:24])
+    W = w or pw + 2 * pad; H = h or ph + 2 * pad
+    lab = '<div class="lab" style="left:%dpx;top:%dpx">%s</div>' % (x, y - 28, label) if label else ""
+    return lab + '<div class="panel" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s">%s</div>' % (
+        x, y, W, H, bg, img(png, (W - pw) // 2, (H - ph) // 2))
+
+
+LIT, DARK = "#79693C", "#25200F"
+P = lambda n, s=1: os.path.join(PNG, "%s@%dx.png" % (n, s))
+Hc = lambda n: os.path.join(HUD, n)
+boards = {}
+
+# ------------------------------------------------------------------ 01 overview
+cols = [(72, "A", "A_L_held", 6, "A &middot; CUT KEY", "A_L"), (672, "B", "B_rect_red_held", 4, "B &middot; KEY ON ITS TAG", "B"),
+        (1272, "C", "C_dark_held", 6, "C &middot; SIGN PLATE", "C")]
+notes = {"A": ["The 3D key&rsquo;s own outline: paddle bow, shoulder step, six cuts, bevelled tip.",
+               "One paper colour, like the HUD type. The crosshair dot stays white.",
+               "Fits the 22 px row. The zone number goes in the label; the tag chip is an option (board 05)."],
+         "B": ["Key, ring and tag: the last frame of the pickup shot.",
+               "Tag shape, colour and typed number match the locked door&rsquo;s plate.",
+               "Needs the 48 px full panel and four colours. Round-tag digits are only 7.7 px."],
+         "C": ["Brings its own plate, so the key never loses contrast.",
+               "The 1974 US public-sign grammar (AIGA/DOT), period-true for 1990.",
+               "Drifts from our key, and a box next to type reads as a badge or a keycap."]}
+body = ""
+for x, k, svgname, sc, lab, hudname in cols:
+    body += panel(x, 232, 576, 236, DARK, centred_svg(svgname, sc, 576, 236, 6), lab)
+    if k == "A":
+        body += '<div class="chip" style="left:%dpx;top:246px">RECOMMENDED</div>' % (x + 576 - 160)
+    body += crop(Hc("%s_held_lit_1x.png" % hudname), x, 492, 576, 120)
+    body += crop(Hc("%s_held_dark_1x.png" % hudname), x, 636, 576, 120)
+    body += '<div class="t" style="left:%dpx;top:784px;width:552px">%s</div>' % (
+        x, "".join("<p style='margin:0 0 10px 0'>%s</p>" % s for s in notes[k]))
+boards["01_overview"] = page(1, "KEY ICON &middot; THREE DIRECTIONS",
+                             "Three ways to draw our key in the HUD. Each is traced from Kit_Key_Zone and its tag. HUD rows below are real frames at 1080p, 1:1.",
+                             body)
+
+# ------------------------------------------------------------------ 02 A echo
+def a_overlay_paths(nm, disp_scale):
+    m = META[nm]; k1 = m["k2"] / 2.0
+    oy = 4.0 / 2 if nm == "A_S" else 0.0
+    def tr(pts):
+        out = []
+        for x, y in pts:
+            Z = x / k1 - 33.0
+            Y = 13.5 - (y - oy) / k1
+            out.append(((700 + (Z + 4) * 20) * disp_scale, (350 - (Y - 0.5) * 20) * disp_scale))
+        return "M" + " L".join("%.2f %.2f" % p for p in out) + " Z"
+    return tr(m["icon"]["poly"]) + " " + tr(m["icon"]["hole"]), tr(m["trace"]["poly"]) + " " + tr(m["trace"]["hole"])
+
+ds = 576 / 1400.0
+icon_d, trace_d = a_overlay_paths("A_L", ds)
+body = ""
+body += panel(72, 232, 576, 300, "#1B1A17", img(os.path.join(MODEL, "key_side.png"), 0, 6, 576, 288), "MODEL &middot; KIT_KEY_ZONE, BRASS, ORTHO")
+ov = ('<svg class="a" style="left:0;top:6px" width="576" height="288" viewBox="0 0 576 288">'
+      '<path d="%s" fill="#F4F1E8" fill-opacity="0.82" fill-rule="evenodd"/>'
+      '<path d="%s" fill="none" stroke="#111" stroke-width="1.4" stroke-dasharray="4 3"/></svg>' % (icon_d, trace_d))
+body += panel(672, 232, 576, 300, "#1B1A17", img(os.path.join(MODEL, "key_side.png"), 0, 6, 576, 288) + ov, "TRACE &middot; ICON OVER MODEL")
+# the icon at the same mm scale as the render: 1x px/mm 49/58 -> page px/mm 20*ds
+sc = (20 * ds) / (49.0 / 58.0)
+s, sw, sh = svg_inline("A_L_held", sc)
+body += panel(1272, 232, 576, 300, "#1B1A17", '<div class="a" style="left:%dpx;top:%dpx">%s</div>' % (
+    (700 + (-33 + 4) * 20) * ds, 6 + (350 - (13.5 - 0.5) * 20) * ds, s), "ICON &middot; VECTOR MASTER, SAME SCALE")
+body += '<div class="t" style="left:72px;top:556px;width:1176px">The dashed line is the model at true depth. The paper shape is the icon: <b>cuts 2.5&times; deeper</b> and <b>the hole 1.5&times; wider</b>, so both stay open at 22 px. Bow, shoulder step, blade and tip bevel are the model&rsquo;s own, snapped to whole pixels.</div>'
+# sizes
+y0 = 680
+body += tile(P("A_L_held", 1), 72, y0, LIT, "1X &middot; 49 &times; 22")
+body += tile(P("A_L_held", 1), 72 + 96, y0, DARK)
+body += tile(P("A_L_held", 2), 288, y0, LIT, "2X &middot; 98 &times; 44 (4K, RETINA)")
+body += tile(P("A_L_held", 2), 288 + 146, y0, DARK)
+body += tile(P("A_S_held", 1), 624, y0, LIT, "1X &middot; 40 &times; 22 (TODAY&rsquo;S SLOT)")
+body += tile(P("A_S_held", 1), 624 + 88, y0, DARK)
+body += tile(P("A_S_held", 2), 900, y0, LIT, "2X &middot; 80 &times; 44")
+body += tile(P("A_S_held", 2), 900 + 128, y0, DARK)
+body += '<div class="lab" style="left:72px;top:796px">1X, EACH PIXEL &times; 8</div>'
+body += panel(72, 824, 392, 176, LIT, img(P("A_L_held", 1), 0, 0, 392, 176, px=True))
+body += panel(488, 824, 392, 176, DARK, img(P("A_L_held", 1), 0, 0, 392, 176, px=True))
+body += panel(904, 824, 320, 176, LIT, img(P("A_S_held", 1), 0, 0, 320, 176, px=True))
+body += ('<div class="t" style="left:1272px;top:556px;width:576px">'
+         '<p style="margin:0 0 12px 0"><b>Model &rarr; 49 &times; 22 px (1x)</b></p>'
+         '<p style="margin:0 0 8px 0">Bow 30 &times; 26 mm, R 8 &rarr; 25 &times; 22 px, R 7.</p>'
+         '<p style="margin:0 0 8px 0">Shoulder step 3.9 mm &rarr; 4 px on the top edge.</p>'
+         '<p style="margin:0 0 8px 0">Blade 25 &times; 8.6 mm &rarr; 21 &times; 7 px.</p>'
+         '<p style="margin:0 0 8px 0">Six cuts, model order 2-4-1-5-3-2, 2.5&times; deep: 1.2&ndash;4.4 px.</p>'
+         '<p style="margin:0 0 8px 0">Hole &Oslash; 4.8 mm &times; 1.5 &rarr; 6 px. Tip bevel from 21.5 mm.</p>'
+         '<p style="margin:0 0 8px 0">Every edge on a whole pixel at 1x. Drawn at 1080p, the 2x file averages to the 1x file: mean error 0.03 %, worst pixel 2 %.</p>'
+         '<p style="margin:0">Paper #F4F1E8, real alpha. 3.9&ndash;13 : 1 on our frames.</p></div>')
+boards["02_A_echo"] = page(2, "A &middot; CUT KEY &middot; TRACED",
+                           "The icon is Kit_Key_Zone seen flat, tip right, cuts up: the way it enters the lock in the unlock shot.", body)
+
+# ------------------------------------------------------------------ HUD boards (A, B, C)
+def hud_board(n, d, title, intro):
+    body = ""
+    names = [("lit", "LEVEL 0 &middot; LOW, LIT"), ("wallpaper", "LEVEL 0 &middot; WALLPAPER AND DOOR"),
+             ("office", "OFFICE"), ("dark", "DARK CELL, AT THE DOOR")]
+    for i, (bg, lab) in enumerate(names):
+        x = 72 + (i % 2) * 624
+        y = 232 + (i // 2) * 144
+        body += crop(Hc("%s_held_%s_1x.png" % (d, bg)), x, y, 600, 120, label=lab)
+    if d == "B":
+        # B's meta line runs to x 394 (1x), so its 2x crop is 700 px wide: shown at 72 % to fit the column
+        body += '<div class="lab" style="left:1344px;top:232px">2X &middot; 4K OR RETINA &middot; SHOWN AT 72 %</div>'
+        body += crop(Hc("%s_held_lit_2x.png" % d), 1344, 260, 504, 116, ox=40, oy=76, scale=0.72)
+        body += crop(Hc("%s_held_dark_2x.png" % d), 1344, 380, 504, 116, ox=40, oy=76, scale=0.72)
+    else:
+        body += '<div class="lab" style="left:1344px;top:232px">2X &middot; 4K OR RETINA</div>'
+        body += crop(Hc("%s_held_lit_2x.png" % d), 1344, 260, 504, 116, ox=40, oy=84)
+        body += crop(Hc("%s_held_dark_2x.png" % d), 1344, 380, 504, 116, ox=40, oy=84)
+    states = [("held", "HELD &middot; THIS ZONE"), ("other", "HELD &middot; OTHER ZONE"), ("missing", "NO KEY &middot; LOCKED DOOR"), ("used", "IF KEYS BECOME SINGLE-USE")]
+    for j, bgname in enumerate(("lit", "dark")):
+        for i, (st, lab) in enumerate(states):
+            x = 72 + i * 450
+            y = 556 + j * 144
+            ox = 0 if st != "missing" else 30
+            body += crop(Hc("%s_state_%s_%s_1x.png" % (d, st, bgname)), x, y, 426, 120, ox=ox, label=lab if j == 0 else None)
+    return body
+
+intro_hud = "Real game frames, 1080p, 1:1. Bottom-left on the 72 px margin. Blended in linear light, as Unity draws the overlay canvas: no post on the HUD."
+b = hud_board(3, "A_L", "", "")
+b += ('<div class="t" style="left:72px;top:860px;width:1776px">'
+      '<p style="margin:0 0 8px 0"><b>States.</b> Shape says whether the key works here; the type stays paper. This zone: the filled key. Another zone: the outline key, &ldquo;the key that does not open this door&rdquo;. No key: the panel stays hidden; at a locked door the outline key, LOCKED and NEEDS KEY 14 sit on the HUD&rsquo;s own hint card (#141414, 90 %), because the locked leaf is light almond enamel.</p>'
+      '<p style="margin:0">Contrast, worst frame: filled key 3.9 : 1 and outline key 3.2 : 1 on lit low rooms; on the hint card the prompt is 5.9 : 1 or more on all five frames, the almond leaf included (was 1.3 : 1). Keys are never spent today, so the last column only applies if that changes.</p></div>')
+boards["03_A_hud"] = page(3, "A &middot; IN THE HUD", intro_hud, b)
+
+# ------------------------------------------------------------------ 04 label set (A)
+body = ""
+opts = [("level", "LEVEL 0 KEY &middot; TODAY&rsquo;S DEFAULT TEXT"), ("bayon", "KEY 14 &middot; ALL BAYON"), ("plex", "KEY 14 &middot; NUMBER IN PLEX MONO"),
+        ("courier", "KEY 14 &middot; NUMBER IN COURIER PRIME BOLD")]
+for i, (o, lab) in enumerate(opts):
+    x = 72 + (i % 2) * 900
+    y = 268 + (i // 2) * 212
+    body += '<div class="lab" style="left:%dpx;top:%dpx">%s</div>' % (x, y - 28, lab)
+    body += crop(Hc("label_%s_lit_1x.png" % o), x, y, 400, 60)
+    body += crop(Hc("label_%s_dark_1x.png" % o), x + 424, y, 400, 60)
+    body += crop(Hc("label_%s_lit_2x.png" % o), x, y + 72, 824, 96, ox=40, oy=12)
+body += ('<div class="t" style="left:72px;top:684px;width:1176px">'
+         '<p style="margin:0 0 10px 0"><b>Bayon draws 1 as I and 0 as O.</b> &ldquo;KEY 14&rdquo; reads &ldquo;KEY I4&rdquo;. The number needs a face with a flagged 1.</p>'
+         '<p style="margin:0 0 10px 0"><b>Plex Mono</b> is already the HUD&rsquo;s number face (ZONE 06, 2.9 M), but the Regular cut is too light next to Bayon.</p>'
+         '<p style="margin:0 0 10px 0"><b>Courier Prime Bold</b> is the face typed on the tag insert (Prop_KeyTagNo). The label then quotes the tag: same number, same type. Recommended.</p>'
+         '<p style="margin:0">Today the code writes the zone name + KEY (&ldquo;LEVEL 0 / THE MAZE KEY&rdquo;). The room meta&rsquo;s &ldquo;ZONE 06&rdquo; counts zones visited, so it is not a key number: zones need a fixed tag number first.</p></div>')
+body += crop(Hc("live_code_lit_1x.png"), 1272, 684, 400, 60, label=None)
+body += '<div class="lab" style="left:1272px;top:656px">TODAY IN CODE &middot; LIVE GLYPH</div>'
+body += ('<div class="t" style="left:1272px;top:772px;width:576px">Number sized to Bayon&rsquo;s cap height (14.3 px), rounded to the whole sizes Unity&rsquo;s legacy Text can draw: Courier Prime Bold 25 (cap 14.5 px), Plex Mono 20 (cap 14.0 px). '
+         'Courier Prime lives in Assets/Fonts/Period1990, not in Resources: the HUD needs a reference to it (contract request).</div>')
+boards["04_A_label"] = page(4, "A &middot; LABEL IN THE HUD FACE",
+                            "The label is Bayon 20, paper, 14 px after the key. The zone number must read at a glance, and match the tag and the door plate.", body)
+
+
+# ------------------------------------------------------------------ 05 A option: tag chip
+body = ""
+echo = ""
+tags = [("tag_rect_14_true.png", 1400, 1000, "rect", "red"), ("tag_round_37_true.png", 1000, 1120, "round", "blue"),
+        ("tag_long_08_true.png", 1800, 840, "long", "white")]
+ksc = 3.4 / 20.0            # page px per render px (3.4 page px per mm)
+xx = 24
+for fn, w, h, kind, col in tags:
+    echo += img(os.path.join(MODEL, fn), xx, 252 - h * ksc, w * ksc, h * ksc)
+    xx += w * ksc + 28
+body += panel(72, 232, 1152, 300, "#1B1A17", echo, "MODEL &middot; KIT_KEYTAG RECT, ROUND, LONG")
+# second panel: the chips as vectors at 6x, same order
+body += panel(72, 556, 1152, 152, DARK, "".join(
+    '<div class="a" style="left:%dpx;top:%dpx">%s</div>' % (x_, 48, svg_inline("Achip_%s_%s_held" % (k_, c_), 4)[0])
+    for x_, k_, c_ in ((40, "rect", "red"), (388, "round", "blue"), (704, "long", "white"))), "ICON &middot; VECTOR MASTER, 4X")
+grid = ""
+for r, (kind, num) in enumerate((("rect", "14"), ("round", "37"), ("long", "08"))):
+    for c, col in enumerate(("red", "blue", "white")):
+        grid += crop(Hc("Achip_zone_%s_%s_lit_1x.png" % (kind, col)), 72 + c * 392, 740 + r * 72, 368, 60, ox=24)
+body += '<div class="lab" style="left:72px;top:712px">3 SHAPES &times; 3 COLOURS &middot; LIT &middot; 1:1</div>'
+body += grid
+body += ('<div class="t" style="left:1272px;top:232px;width:576px">'
+         '<p style="margin:0 0 10px 0">The zone&rsquo;s tag as a solid chip on the bow side of the key, where the real tag hangs off the ring.</p>'
+         '<p style="margin:0 0 10px 0">True relative size of the three tags at 0.42 px/mm: rect 24 &times; 12 px, round 16 px, long 32 &times; 9 px, each with its tab. Tab and hole &times;1.3 so the hole stays open. A 1 px split-ring wire runs from the tab hole into the key&rsquo;s bow hole, so the chip hangs on the key instead of reading as a battery.</p>'
+         '<p style="margin:0 0 10px 0">A 1 px paper rim carries the contrast (3.9&ndash;13 : 1). The fill carries the zone colour only: red and blue are under 2.5 : 1 on our frames, so colour is never the only cue.</p>'
+         '<p style="margin:0 0 10px 0">No number on the chip: digits would be 6 px. The number is in the label, in the tag&rsquo;s Courier Prime.</p>'
+         '<p style="margin:0">Needs map data that does not exist yet: a fixed number, colour and shape per zone (ZoneInfo has none). Runtime: one rim sprite per shape + a fill sprite tinted with the zone colour.</p></div>')
+boards["05_A_chip"] = page(5, "A &middot; OPTION &middot; TAG CHIP",
+                           "Puts the tag&rsquo;s shape and colour in the HUD as well as its number, so the HUD, the tag and the door plate say the same thing.", body)
+
+# ------------------------------------------------------------------ 06 B echo
+body = ""
+k = 5.5  # page px per mm
+rcx, rcy = 72 + 40 + 28.5 * k, 232 + 40 + 13 * k
+ks = k / 20.0
+lock = ""
+def place(path, ax, ay, w, h, cx, cy):
+    return img(path, cx - ax * ks, cy - ay * ks, w * ks, h * ks)
+lock += place(os.path.join(MODEL, "ring.png"), 320, 320, 640, 640, rcx - 72, rcy - 232)
+lock += place(os.path.join(MODEL, "tag_rect_14_true.png"), 700, 220, 1400, 1000, rcx - 72, rcy - 232 + 11.7 * k)
+lock += place(os.path.join(MODEL, "key_side.png"), 250, 350, 1400, 700, rcx - 72 + 11.7 * k, rcy - 232)
+body += panel(72, 232, 576, 400, "#1B1A17", lock, "MODEL &middot; KEY + RING + RECT TAG, ONE SCALE")
+body += panel(672, 232, 576, 400, DARK, centred_svg("B_rect_red_held", 7.4, 576, 400, 10), "ICON &middot; VECTOR MASTER")
+var = ""
+for r, kind in enumerate(("rect", "round", "long")):
+    for c, col in enumerate(("red", "blue", "white")):
+        var += img(P("B_%s_%s_held" % (kind, col), 2), 36 + c * 176, 44 + r * 116)
+body += panel(1272, 232, 576, 400, DARK, var, "ZONES &middot; 3 SHAPES &times; 3 COLOURS")
+y0 = 700
+body += tile(P("B_rect_red_held", 1), 72, y0, LIT, "1X &middot; 72 &times; 48")
+body += tile(P("B_rect_red_held", 1), 72 + 120, y0, DARK)
+body += tile(P("B_rect_red_held", 2), 336, y0, LIT, "2X &middot; 144 &times; 96")
+body += tile(P("B_rect_red_held", 2), 336 + 192, y0, DARK)
+body += tile(P("B_round_blue_held", 1), 744, y0, LIT, "ROUND")
+body += tile(P("B_long_white_held", 1), 864, y0, LIT, "LONG")
+body += panel(72, 852, 576, 384 * 0 + 150, LIT, img(P("B_rect_red_held", 1), 0, 0, 216, 144, px=True) + img(P("B_round_blue_held", 1), 228, 0, 216, 144, px=True))
+body += '<div class="lab" style="left:72px;top:824px">1X, EACH PIXEL &times; 3</div>'
+body += ('<div class="t" style="left:1272px;top:668px;width:576px">'
+         '<p style="margin:0 0 10px 0">Key held level, the split ring (&Oslash; 25 mm) through its bow, the tag hanging from the ring with its number to the lens: the pickup shot&rsquo;s last frame.</p>'
+         '<p style="margin:0 0 10px 0">All parts at 0.69 px/mm (1x). Tag colour inside a 1 px paper rim (red and blue are under 2.5 : 1 on our frames). Insert in paper, number in Courier Prime at the model&rsquo;s ink height.</p>'
+         '<p style="margin:0">Digit height at 1x: rect 10.2 px, long 7.9 px, round 7.7 px. Only the rect tag is easy to read at 1080p.</p></div>')
+boards["06_B_echo"] = page(6, "B &middot; KEY ON ITS TAG",
+                           "Echoes the whole assembly: the same shape, colour and number that the locked door&rsquo;s plate shows.", body)
+b = hud_board(7, "B", "", "")
+b += ('<div class="t" style="left:72px;top:860px;width:1776px">'
+      '<p style="margin:0 0 8px 0"><b>Full form</b> (Figma HUD / Key 2256:161): 4 px rule, glyph, name in Bayon 20, meta in Plex Mono 13. 48 px tall, so the panel grows up from today&rsquo;s 22 px row.</p>'
+      '<p style="margin:0">The tag adds the only saturated colours on the HUD. The 4 px yellow rule comes from Figma HUD / Key; in the code that yellow marks stamina and the hold bar, so keeping it in a calm state is the graphic designer&rsquo;s call. The muted meta line is 2.1 : 1 on lit low rooms.</p></div>')
+boards["07_B_hud"] = page(7, "B &middot; IN THE HUD", intro_hud, b)
+
+# ------------------------------------------------------------------ 07 C echo
+body = ""
+body += panel(72, 232, 576, 300, "#1B1A17", img(os.path.join(MODEL, "key_side.png"), 0, 6, 576, 288), "MODEL &middot; KIT_KEY_ZONE")
+body += panel(672, 232, 576, 300, "#1B1A17", img(os.path.join(MODEL, "plate_14_true.png"), 28, 6, 520, 286), "MODEL &middot; KIT_DOORNUMBERPLATE, 2 : 1")
+s, sw, sh = svg_inline("C_dark_held", 12)
+grid = ('<svg class="a" style="left:%dpx;top:%dpx" width="%d" height="%d"><defs><pattern id="g" width="12" height="12" patternUnits="userSpaceOnUse">'
+        '<path d="M12 0 L0 0 0 12" fill="none" stroke="#F4F1E8" stroke-opacity="0.18" stroke-width="1"/></pattern></defs>'
+        '<rect width="100%%" height="100%%" fill="url(#g)"/></svg>' % ((576 - sw) / 2, (300 - sh) / 2 + 8, sw, sh))
+body += panel(1272, 232, 576, 300, DARK, '<div class="a" style="left:%dpx;top:%dpx">%s</div>%s' % ((576 - sw) / 2, (300 - sh) / 2 + 8, s, grid), "ICON &middot; ON THE 1X PIXEL GRID")
+var = ""
+for i, v in enumerate(("dark", "red", "blue", "white")):
+    var += img(P("C_%s_held" % v, 2), 40 + i * 132, 30)
+body += panel(72, 600, 576, 104, LIT, var)
+body += panel(72, 716, 576, 104, DARK, var)
+body += '<div class="lab" style="left:72px;top:572px">PLATES &middot; DEFAULT, RED, BLUE, WHITE (2X)</div>'
+y0 = 880
+body += tile(P("C_dark_held", 1), 72, y0, LIT, "1X &middot; 40 &times; 22")
+body += tile(P("C_dark_held", 1), 72 + 88, y0, DARK)
+body += tile(P("C_dark_held", 2), 288, y0, LIT, "2X &middot; 80 &times; 44")
+body += tile(P("C_dark_held", 2), 288 + 128, y0, DARK)
+body += panel(672, 600, 576, 316, LIT, img(P("C_dark_held", 1), 8, 8, 560, 308, px=True))
+body += '<div class="lab" style="left:672px;top:572px">1X, EACH PIXEL &times; 14</div>'
+body += ('<div class="t" style="left:1272px;top:572px;width:576px">'
+         '<p style="margin:0 0 10px 0">The 1974 AIGA/DOT symbols (public domain, on US public signs through 1990) draw a key as one solid figure: round bow, off-centre hole, even V cuts, angled tip.</p>'
+         '<p style="margin:0 0 10px 0">Here: our rounded-square bow (R = 1/3 of its height), our shoulder step, cuts on the top edge as on our key, three even 90&deg; V cuts instead of six.</p>'
+         '<p style="margin:0 0 10px 0">Plate 40 &times; 20 px, R 2: the door number plate&rsquo;s 2 : 1. Default face = the HUD card colour (#141414, 90 %); zones take the plate colour; white plates get an ink key.</p>'
+         '<p style="margin:0">ISO 7001&rsquo;s locker symbol is from 2007, so it is not used (era lock 1990).</p></div>')
+boards["08_C_echo"] = page(8, "C &middot; SIGN PLATE",
+                           "Our key redrawn in the 1974 US sign grammar and set on a plate with the door number plate&rsquo;s proportion.", body)
+b = hud_board(9, "C", "", "")
+b += ('<div class="t" style="left:72px;top:860px;width:1776px">'
+      '<p style="margin:0 0 8px 0"><b>Fits today&rsquo;s 40 &times; 22 slot.</b> The plate keeps the key at 14 : 1 on every frame, but on dark frames the plate vanishes and only a small key remains (28 &times; 12 px).</p>'
+      '<p style="margin:0">Risk: the HUD&rsquo;s keycap chip (Overlay / Key chip 2256:191) is also a box with a symbol in it. A plate next to Bayon type can read as &ldquo;press a key&rdquo;.</p></div>')
+boards["09_C_hud"] = page(9, "C &middot; IN THE HUD", intro_hud, b)
+
+# ------------------------------------------------------------------ 10 recommendation (fix stage 2026-10-07)
+body = ""
+body += crop(Hc("A_L_fullframe_target_wallpaper.jpg"), 72, 232, 1152, 620, scale=0.6)
+# 1:1 inset of the same frame's key row (x 40-400, y 900-1000), bottom-right of the hero
+body += ('<div class="panel" style="left:912px;top:764px;width:280px;height:64px;outline:2px solid #F4F1E8">'
+         '<img class="a" src="%s" style="left:-56px;top:-919px"></div>' % url(Hc("A_L_fullframe_target_wallpaper.jpg")))
+body += crop(Hc("cmp_live_wallpaper_1x.png"), 72, 876, 368, 120, label="MAIN &middot; OLD GLYPH")
+body += crop(Hc("cmp_dropin_wallpaper_1x.png"), 464, 876, 368, 120, label="DROP-IN &middot; 40 &times; 22 &middot; NO CODE CHANGE")
+body += crop(Hc("cmp_target_wallpaper_1x.png"), 856, 876, 368, 120, label="TARGET &middot; 49 &times; 22 &middot; KEY 14")
+body += ('<div class="t" style="left:1272px;top:232px;width:576px">'
+         '<p style="margin:0 0 10px 0"><b>A &middot; Cut key.</b> The model&rsquo;s own outline: the HUD shows the key the player picked up and will turn in the lock. One paper colour, like the HUD type; the crosshair dot stays white.</p>'
+         '<p style="margin:0 0 10px 0">&ldquo;KEY&rdquo; in Bayon + the number in Courier Prime Bold, the tag&rsquo;s own type. At a locked door: the outline key on the hint card.</p></div>')
+body += '<div class="lab" style="left:1272px;top:420px">LOCKED DOOR &middot; ALMOND LEAF</div>'
+body += crop(Hc("A_L_state_missing_leaf_1x.png"), 1272, 448, 480, 120)
+body += '<div class="lab" style="left:1272px;top:600px">CONTRACT REQUEST &middot; MAP CHAT</div>'
+body += ('<div class="t" style="left:1272px;top:628px;width:576px">'
+         '<p style="margin:0 0 6px 0"><b>First:</b> on desktop the key panel is off-screen in main (anchor top-left at y +118). Anchor it bottom-left again.</p>'
+         '<p style="margin:0 0 6px 0">Glyph 49 &times; 22, label after it; &ldquo;KEY&rdquo; + Courier Prime Bold 25 number once zones have numbers.</p>'
+         '<p style="margin:0 0 6px 0">Locked prompt: outline key + LOCKED + NEEDS KEY nn on the hint card.</p>'
+         '<p style="margin:0">Phones: their own sprites; SpawnKey: the kit key, not the cube.</p></div>')
+boards["10_recommendation"] = page(10, "RECOMMENDED &middot; A &middot; CUT KEY",
+                                   "", body)
+
+if __name__ == "__main__":
+    only = sys.argv[1:]
+    for name, html in boards.items():
+        if only and name not in only:
+            continue
+        hp = os.path.join(HTML, name + ".html")
+        open(hp, "w").write(html)
+        out = os.path.join(OUT, name + ".png")
+        for attempt in range(6):
+            r = subprocess.run([os.path.join(HERE, "shot.sh"), hp, out, "1920", "1080"], capture_output=True, text=True)
+            if r.stdout.startswith("ok"):
+                break
+        print(attempt, r.stdout.strip())

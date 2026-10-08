@@ -1,0 +1,21 @@
+"""Fix stage 2026-10-07: the prompt cells for images/12 (today in code | Oct 3 design | fix), one per ground.
+Writes W/keyicon_verify/cells/prompt_<version>_<bg>.png (480 x 120, the PROMPT_BOX crop).
+Run with Blender's Python 3.11."""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import composites as C
+OUT = "/Users/redwang/FrontRoomsVisualWork/keyicon_verify/cells"
+os.makedirs(OUT, exist_ok=True)
+x0, y0, x1, y1 = C.PROMPT_BOX
+for bg in ("lit", "wallpaper", "office", "dark", "leaf", "leafwood"):
+    for v in ("today", "oct3", "fix"):
+        img = C.frame(bg, 1)
+        if v == "today":
+            C.today_prompt(img, 960, 591, 20)
+        elif v == "oct3":
+            C.prompt_v1(img, "A_L_missing_oct3", 49, 22, 1, meta="NEEDS KEY 14")
+        else:
+            C.prompt(img, "A_L_missing", 49, 22, 1, meta="NEEDS KEY 14")
+        C.crosshair(img, 1)
+        C.L.write_png(os.path.join(OUT, "prompt_%s_%s.png" % (v, bg)), img[y0:y1, x0:x1])
+print("[cells] done")

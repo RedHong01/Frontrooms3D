@@ -1,0 +1,48 @@
+"""Resume pass (2026-10-03 22:0x): HUD crops with the glyph that is LIVE in main now.
+
+Since 17:22 (visual chat F2, commit df4cb03) main's Assets/Resources/UI/HUD_KeyGlyph.png
+is the old generic key with real alpha (40 x 22, no white box). The label the code
+writes at runtime is KeyLabel(zone) = ZoneName(zone) + " KEY". These crops show:
+  live_code_<bg>_1x.png        live glyph + the runtime label (board 04 'TODAY IN CODE')
+  cmp_live_wallpaper_1x.png    step 0: main today
+  cmp_dropin_wallpaper_1x.png  step 1: A drop-in in today's 40 x 22 rect, same label (no code change)
+  cmp_target_wallpaper_1x.png  step 2: A at 49 x 22 + "KEY 14" (after the contract request)
+Same layout constants and linear-light blend as composites.py.
+"""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import composites as C
+import iconlib as L
+
+LIVE = os.path.join(C.PROJ, "Assets/Resources/UI/HUD_KeyGlyph.png")
+DROPIN = os.path.join(C.DES, "dropin/slot_40x22/HUD_KeyGlyph@1x.png")
+
+
+def sprite_file(img, path, x, y, opacity=1.0):
+    rgb, a = L.read_png(path)
+    img[:] = L.composite_over(img, rgb, a * opacity, int(round(x)), int(round(y)))
+    return a.shape[1]
+
+
+def row(img, glyph_path, gw, label):
+    sprite_file(img, glyph_path, 72, C.ROW_Y)
+    C.draw_label(img, label, 72 + gw + 14, C.LABEL_BASE, C.PAPER, 1, 1.0)
+
+
+if __name__ == "__main__":
+    rgb, a = L.read_png(LIVE)
+    assert a.shape == (22, 40), a.shape
+    print("[live] main glyph 40x22, alpha min %.3f max %.3f, corners %s" % (
+        a.min(), a.max(), [round(float(a[y, x]), 3) for y, x in ((0, 0), (0, -1), (-1, 0), (-1, -1))]))
+    for bg in ("lit", "dark", "wallpaper"):
+        img = C.frame(bg, 1)
+        row(img, LIVE, 40, "LEVEL 0 / THE MAZE KEY")
+        C.save_crop(img, os.path.join(C.HUD, "live_code_%s_1x.png" % bg), 1, (40, 920, 440, 980))
+    steps = (("live", LIVE, 40, "LEVEL 0 / THE MAZE KEY"),
+             ("dropin", DROPIN, 40, "LEVEL 0 / THE MAZE KEY"),
+             ("target", os.path.join(C.PNG, "A_L_held@1x.png"), 49, "KEY 14"))
+    for name, path, gw, label in steps:
+        img = C.frame("wallpaper", 1)
+        row(img, path, gw, label)
+        C.save_crop(img, os.path.join(C.HUD, "cmp_%s_wallpaper_1x.png" % name), 1, (40, 880, 640, 1000))
+    print("[live] done")

@@ -1,0 +1,20 @@
+#!/bin/zsh
+# shot.sh <html> <out.png> <w> <h> [dpr] -- headless Chrome screenshot. Fresh profile per shot,
+# Chrome in the background, poll for the PNG, then kill every process of that profile.
+HTML=$1; OUT=$2; WW=$3; HH=$4; DPR=${5:-1}
+D=/Users/redwang/FrontRoomsVisualWork/keyicon_design
+PROF=$(mktemp -d $D/tmp/prof.XXXXXX)
+TMP=$PROF.png
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars \
+  --user-data-dir=$PROF --allow-file-access-from-files --force-device-scale-factor=$DPR \
+  --window-size=$WW,$HH --virtual-time-budget=3000 \
+  --screenshot="$TMP" "file://$HTML" > $D/tmp/chrome.log 2>&1 &!
+for i in $(seq 1 90); do
+  if [ -s "$TMP" ]; then sleep 1; break; fi
+  sleep 0.5
+done
+pgrep -f "user-data-dir=$PROF" | xargs kill 2>/dev/null
+sleep 1
+pgrep -f "user-data-dir=$PROF" | xargs kill -9 2>/dev/null
+[ -s "$TMP" ] && cp "$TMP" "$OUT" && echo "ok $OUT" || echo "FAIL $OUT"
+rm -rf "$PROF" "$TMP"

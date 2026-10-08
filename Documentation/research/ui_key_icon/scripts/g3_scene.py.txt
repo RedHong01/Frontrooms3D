@@ -1,0 +1,194 @@
+"""Render helpers for the G3 self-checks (scratchpad tool, not a kit module).
+Imports the built FBX files from proj_int, rebuilds preview materials from
+kitlib.SLOTS (plus the proposal atlases), poses parts with Blender-space
+matrices and renders Cycles stills."""
+import bpy, bmesh, json, math, os, sys
+from mathutils import Matrix, Vector, Quaternion
+
+SCR = "/Users/redwang/FrontRoomsVisualWork"
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+KIT = os.path.join(PROJ, "Tools/Blender/frontrooms_kit")
+MODELS = os.path.join(PROJ, "Assets/Resources/Props/Models")   # 2026-10-07: main holds the same kit FBX (Codex 8ef5b64; VL075)
+TEX = os.path.join(SCR, "g3/textures")
+sys.path.insert(0, KIT); sys.path.insert(0, os.path.join(KIT, "assets"))
+import kitlib
+import interact_key_common as kc
+kc.register_slots()
+
+_img = {}
+
+def U(X, Y, Z):
+    return Vector((-X, -Z, Y))
+
+def reset():
+    _img.clear()
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+
+def sidecar(name):
+    with open(os.path.join(MODELS, name + ".json")) as f:
+        return json.load(f)
+
+def anchor(name, a):
+    for e in sidecar(name)["anchors"]:
+        if e["name"] == a:
+            return U(*e["pos"])
+    raise KeyError(a)
+
+def image(path):
+    if path not in _img:
+        _img[path] = bpy.data.images.load(path)
+    return _img[path]
+
+def material(slot, cell=None, tag=""):
+    key = "%s|%s|%s" % (slot, cell, tag)
+    m = bpy.data.materials.get(key)
+    if m:
+        return m
+    m = bpy.data.materials.new(key)
+    m.use_nodes = True
+    nt = m.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    col, rough, metal = kitlib.SLOTS.get(slot, ((0.6, 0.6, 0.6), 0.6, 0.0))
+    bsdf.inputs["Base Color"].default_value = (*col, 1)
+    bsdf.inputs["Roughness"].default_value = rough
+    bsdf.inputs["Metallic"].default_value = metal
+    if slot == "Prop_Brass":
+        bsdf.inputs["Roughness"].default_value = 0.38
+    def uvchain(offset=(0, 0), scale=(1, 1)):
+        uvn = nt.nodes.new("ShaderNodeTexCoord")
+        mp = nt.nodes.new("ShaderNodeMapping")
+        mp.inputs["Location"].default_value = (offset[0], offset[1], 0)
+        mp.inputs["Scale"].default_value = (scale[0], scale[1], 1)
+        nt.links.new(uvn.outputs["UV"], mp.inputs["Vector"])
+        return mp
+    if slot == "Prop_KeyTagNo":
+        n = cell or 0
+        st = kc.number_cell_st(n)
+        mp = uvchain((st[2], st[3]))
+        tx = nt.nodes.new("ShaderNodeTexImage")
+        tx.image = image(os.path.join(TEX, "Prop_KeyTagNo_A.png"))
+        tx.interpolation = "Cubic"
+        nt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
+        nt.links.new(tx.outputs["Color"], bsdf.inputs["Base Color"])
+    elif slot == "Prop_SignEngraved":
+        n = cell or 0
+        mp = uvchain(((n % 2) / 2, -(n // 2) / 2))
+        tx = nt.nodes.new("ShaderNodeTexImage")
+        tx.image = image(os.path.join(TEX, "Prop_SignEngraved_A.png"))
+        nt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
+        nt.links.new(tx.outputs["Color"], bsdf.inputs["Base Color"])
+    elif slot in ("Run_ExitSign", "Run_ExitSign_Dead"):
+        # the Unity material's transform: uv = (1 - m.x/0.36, m.y/0.18)
+        mp = uvchain((1, 0), (-1 / 0.36, 1 / 0.18))
+        tx = nt.nodes.new("ShaderNodeTexImage")
+        tx.image = image(os.path.join(PROJ, "Assets/Resources/Surfaces/Textures/Run_ExitSign_A.png"))
+        nt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
+        nt.links.new(tx.outputs["Color"], bsdf.inputs["Base Color"])
+        if slot == "Run_ExitSign":
+            te = nt.nodes.new("ShaderNodeTexImage")
+            te.image = image(os.path.join(PROJ, "Assets/Resources/Surfaces/Textures/Run_ExitSign_E.png"))
+            nt.links.new(mp.outputs["Vector"], te.inputs["Vector"])
+            nt.links.new(te.outputs["Color"], bsdf.inputs["Emission Color"])
+            bsdf.inputs["Emission Strength"].default_value = 4.0
+        bsdf.inputs["Roughness"].default_value = 0.45
+    return m
+
+def import_asset(name, cell=None, label=None):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(MODELS, name + ".fbx"))
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH"]
+    for o in new:
+        if o.type != "MESH":
+            bpy.data.objects.remove(o, do_unlink=True)
+    obj = meshes[0]
+    for o in meshes[1:]:
+        bpy.data.objects.remove(o, do_unlink=True)
+    obj.parent = None
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    for i, ms in enumerate(obj.material_slots):
+        base = ms.material.name.split(".")[0] if ms.material else "x"
+        obj.material_slots[i].material = material(base, cell)
+    obj.name = label or name
+    return obj
+
+def place(obj, M):
+    obj.matrix_world = M
+
+def frame_from_axes(origin, x_axis, y_axis):
+    """Blender-space matrix whose local x/y axes map to the given vectors."""
+    x = Vector(x_axis).normalized()
+    y = Vector(y_axis)
+    y = (y - x * y.dot(x)).normalized()
+    z = x.cross(y)
+    M = Matrix(((x.x, y.x, z.x, origin[0]), (x.y, y.y, z.y, origin[1]), (x.z, y.z, z.z, origin[2]), (0, 0, 0, 1)))
+    return M
+
+def box(name, size, loc, colour, rough=0.7):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=loc)
+    o = bpy.context.active_object
+    o.scale = size
+    o.name = name
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    m.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (*colour, 1)
+    m.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = rough
+    o.data.materials.append(m)
+    return o
+
+def world(strength=0.7, colour=(0.30, 0.29, 0.27)):
+    w = bpy.data.worlds.new("w")
+    w.use_nodes = True
+    w.node_tree.nodes["Background"].inputs[0].default_value = (*colour, 1)
+    w.node_tree.nodes["Background"].inputs[1].default_value = strength
+    bpy.context.scene.world = w
+
+def area(loc, target, power, size):
+    l = bpy.data.lights.new("area", "AREA")
+    l.energy = power
+    l.size = size
+    o = bpy.data.objects.new("area", l)
+    bpy.context.scene.collection.objects.link(o)
+    o.location = loc
+    o.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
+    return o
+
+def point(loc, power, radius=0.05, colour=(1, 0.93, 0.8)):
+    l = bpy.data.lights.new("pt", "POINT")
+    l.energy = power
+    l.shadow_soft_size = radius
+    l.color = colour
+    o = bpy.data.objects.new("pt", l)
+    bpy.context.scene.collection.objects.link(o)
+    o.location = loc
+    return o
+
+def camera(loc, target, lens=50.0, fov_v=None, res=(1200, 900), clip=0.001):
+    cd = bpy.data.cameras.new("cam")
+    cd.clip_start = clip
+    if fov_v is not None:
+        cd.sensor_fit = "VERTICAL"
+        cd.angle = math.radians(fov_v)
+    else:
+        cd.lens = lens
+    c = bpy.data.objects.new("cam", cd)
+    bpy.context.scene.collection.objects.link(c)
+    c.location = loc
+    c.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
+    bpy.context.scene.camera = c
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = res
+    return c
+
+def render(path, samples=64):
+    s = bpy.context.scene
+    s.render.engine = "CYCLES"
+    s.cycles.samples = samples
+    s.cycles.use_denoising = True
+    s.cycles.device = "CPU"
+    s.view_settings.view_transform = "AgX"
+    s.render.filepath = path
+    bpy.ops.render.render(write_still=True)
+    print("[g3] rendered", path)

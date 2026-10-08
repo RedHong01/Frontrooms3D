@@ -33,6 +33,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     static readonly Color CardColor = Hex(0x0E0E0D);
     static readonly Color WashColor = new Color(.93f, .92f, .88f, 1f);
 
+    /// <summary>
+    /// The card as it reads on screen: 97 % ink over the wash, blended the way Unity blends UI (linear in this
+    /// project). The scroll fade uses it, so rows sink into the card instead of into a darker band.
+    /// </summary>
+    static Color CardApparent => QualitySettings.activeColorSpace == ColorSpace.Linear
+        ? Color.Lerp(WashColor.linear, CardColor.linear, .97f).gamma
+        : Color.Lerp(WashColor, CardColor, .97f);
+
     FrontRoomsTouchControls controls;
     Canvas canvas;
     CanvasScaler scaler;
@@ -764,7 +772,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         cardViewportLeft = Node("Left column", cardRoot, Vector2.zero, false);
         cardViewportRight = Node("Touch column", cardRoot, Vector2.zero, false);
         cardViewportRight.gameObject.AddComponent<RectMask2D>();
-        scrollFade = Img("scroll fade", cardRoot, new Vector2(337f, 56f), WithAlpha(CardColor, .97f));
+        scrollFade = Img("scroll fade", cardRoot, new Vector2(337f, 56f), WithAlpha(CardApparent, 0f));
         scrollBarImage = Img("scroll bar", cardRoot, new Vector2(2f, 40f), WithAlpha(Muted, 0f));
         scrollBar = scrollBarImage.rectTransform;
     }
@@ -1006,7 +1014,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                 foreach (var dead in rows) if (dead != null) Destroy(dead.Rect.gameObject);
                 rows.Clear();
             }
-            scrollFade.color = WithAlpha(CardColor, 0f);
+            scrollFade.color = WithAlpha(CardApparent, 0f);
             return;
         }
         while (rows.Count < slots.Count) rows.Add(null);
@@ -1101,7 +1109,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var moreBelow = max > .5f && scroll < max - .5f;
         scrollFade.rectTransform.anchoredPosition = Local(new Vector2(viewport.center.x, viewport.yMin + 28f));
         scrollFade.rectTransform.sizeDelta = new Vector2(viewport.width, 56f);
-        scrollFade.color = WithAlpha(CardColor, moreBelow ? .97f : 0f);
+        scrollFade.color = WithAlpha(CardApparent, moreBelow ? 1f : 0f);
         if (Mathf.Abs(scroll - lastScroll) > .1f) { scrollBarAlpha.Restart(scrollBarAlpha.Current, 1f, .08f, Ease.OutCubic); }
         else if (scrollBarAlpha.Done && scrollBarAlpha.Target > .5f) scrollBarAlpha.To(0f, .4f, Ease.InCubic, .6f);
         lastScroll = scroll;

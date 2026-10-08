@@ -1,0 +1,140 @@
+"""Verification sheets for the Figma hand-off stage (2026-10-03, K1):
+  images/09_integer_type_sizes.png  before (24.63 / 20.45 px) | after (25 / 20 px) | difference x4
+  images/10_3x_exports.png          @1x x3 nearest | @3x 1:1 | |@3x box-filtered to 1x - @1x| x8, + crosshair
+Run with /usr/bin/python3 (numpy + PIL)."""
+import json, os, sys
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+DOC = os.path.join(PROJ, "Documentation/research/ui_key_icon")
+DES = os.path.join(DOC, "design")
+SCR = "/Users/redwang/FrontRoomsVisualWork"
+BEFORE = os.path.join(SCR, "keyicon_figma/design_before")
+MONO = ImageFont.truetype(os.path.join(PROJ, "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf"), 30)
+MONO_S = ImageFont.truetype(os.path.join(PROJ, "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf"), 26)
+# headers in Plex Mono: Bayon has no ·, ×, →, − and draws 1 as I
+BAYON = ImageFont.truetype(os.path.join(PROJ, "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf"), 34)
+INK, PAPER_BG = (10, 10, 10), (255, 255, 255)
+DARK = (37, 32, 15)
+
+
+def rgb(p):
+    return np.asarray(Image.open(p).convert("RGB")).astype(np.int16)
+
+
+def heat(a, b, gain):
+    d = np.abs(a - b).max(axis=2).astype(float) * gain
+    d = np.clip(d, 0, 255).astype(np.uint8)
+    out = np.zeros(a.shape, np.uint8)
+    out[..., 0] = d
+    out[..., 1] = (d * 0.85).astype(np.uint8)
+    out[..., 2] = (d * 0.2).astype(np.uint8)
+    return out
+
+
+# ------------------------------------------------------------------ 1. integer type sizes
+rows = [  # (file, scale, crop box in file px (x0, y0, x1, y1), label)
+    ("label_courier_lit_2x.png", 1, (40, 0, 640, 120), "KEY + COURIER PRIME BOLD · LIT · 2X"),
+    ("label_courier_dark_2x.png", 1, (40, 0, 640, 120), "KEY + COURIER PRIME BOLD · DARK · 2X"),
+    ("label_plex_lit_2x.png", 1, (40, 0, 640, 120), "KEY + PLEX MONO · LIT · 2X"),
+    ("C_zone_red_lit_1x.png", 2, (20, 0, 320, 60), "C PLATE + PLEX MONO · LIT · 1X ×2"),
+    ("A_L_state_other_lit_1x.png", 2, (20, 50, 320, 110), "A · OTHER ZONE · META SHIFTS · 1X ×2"),
+    ("Achip_zone_rect_red_dark_2x.png", 1, (40, 0, 640, 120), "A + CHIP · DARK · 2X"),
+]
+CW = 600
+X0 = 36
+GAP = 24
+W = X0 * 2 + CW * 3 + GAP * 2
+H_ROW = 120 + 52
+H = 110 + len(rows) * H_ROW + 120
+sheet = Image.new("RGB", (W, H), PAPER_BG)
+dr = ImageDraw.Draw(sheet)
+for i, t in enumerate(("BEFORE · 24.63 / 20.45 px", "AFTER · 25 / 20 px (Unity int sizes)", "DIFFERENCE × 4")):
+    dr.text((X0 + i * (CW + GAP), 40), t, font=BAYON, fill=INK)
+stats = []
+y = 110
+for fn, sc, box, lab in rows:
+    a = rgb(os.path.join(BEFORE, "hud", fn))
+    b = rgb(os.path.join(DES, "hud", fn))
+    x0, y0, x1, y1 = box
+    a, b = a[y0:y1, x0:x1], b[y0:y1, x0:x1]
+    full_a, full_b = rgb(os.path.join(BEFORE, "hud", fn)), rgb(os.path.join(DES, "hud", fn))
+    dfull = np.abs(full_a - full_b).max(axis=2)
+    stats.append({"file": fn, "changed_px": int((dfull > 0).sum()), "max_abs": int(dfull.max())})
+    dr.text((X0, y), lab, font=MONO_S, fill=INK)
+    for j, im in enumerate((a, b, heat(a, b, 4))):
+        pim = Image.fromarray(im.astype(np.uint8))
+        if sc != 1:
+            pim = pim.resize((pim.width * sc, pim.height * sc), Image.NEAREST)
+        sheet.paste(pim, (X0 + j * (CW + GAP), y + 36))
+    y += H_ROW
+cap = {"bayon_20": 14.28, "courier_bold_24.63": 14.28, "courier_bold_25": round(14.28 * 25 / 24.6335, 2),
+       "plex_20.45": 14.28, "plex_20": round(14.28 * 20 / 20.4546, 2)}
+dr.text((X0, y + 10), "Cap height vs Bayon 20 (%.2f px): Courier Prime Bold 25 = %.2f (+%.2f), Plex Mono 20 = %.2f (%.2f)."
+        % (cap["bayon_20"], cap["courier_bold_25"], cap["courier_bold_25"] - 14.28, cap["plex_20"], cap["plex_20"] - 14.28),
+        font=MONO, fill=INK)
+dr.text((X0, y + 52), "Only the numeral and the text after it move. Glyphs, Bayon, backgrounds: unchanged.", font=MONO, fill=INK)
+os.makedirs(os.path.join(DOC, "images"), exist_ok=True)
+sheet.save(os.path.join(DOC, "images", "09_integer_type_sizes.png"), optimize=True)
+
+# ------------------------------------------------------------------ 2. @3x exports
+# Two columns of tiles, sized to read on a projected slide: per glyph, @1x x6 nearest | @3x x2 nearest
+# (the same size on the page), then the check numbers. Crosshair: desktop 64 x3 | @3x 192 1:1.
+PNG = os.path.join(DES, "png")
+names = ["A_S_held", "A_L_held", "A_L_missing", "C_dark_held", "Achip_rect_red_held", "B_rect_red_held"]
+chk = json.load(open(os.path.join(SCR, "keyicon_figma/export_3x_checks.json")))
+F_T = ImageFont.truetype(os.path.join(PROJ, "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf"), 30)
+F_S = ImageFont.truetype(os.path.join(PROJ, "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf"), 26)
+
+
+def on_dark(im_rgba):
+    bg = Image.new("RGBA", im_rgba.size, DARK + (255,))
+    return Image.alpha_composite(bg, im_rgba).convert("RGB")
+
+
+W2, COLW, PADX = 1920, 920, 40
+tiles = []
+for n in names:
+    a1 = Image.open(os.path.join(PNG, n + "@1x.png")).convert("RGBA")
+    a3 = Image.open(os.path.join(PNG, n + "@3x.png")).convert("RGBA")
+    k = 6 if a1.width <= 49 else 4                      # wide glyphs (chip, B) at x4 / x(4/3)
+    i1 = on_dark(a1.resize((a1.width * k, a1.height * k), Image.NEAREST))
+    i3 = on_dark(a3.resize((a3.width * k // 3, a3.height * k // 3), Image.NEAREST))
+    c = chk[n]
+    tiles.append((n, "%d×%d → %d×%d" % (a1.width, a1.height, a3.width, a3.height), i1, i3,
+                  "÷3 vs @1x: mean %.3f %%, max %.2f %%" % (c["box3to1_vs_1x_mean_pct"], c["box3to1_vs_1x_max_pct"]),
+                  "@1x ×%d" % k, "@3x ×%s" % ({6: "2", 4: "4/3"}[k])))
+heights = [44 + max(t[2].height, t[3].height) + 46 for t in tiles]
+rows = (len(tiles) + 1) // 2
+row_h = [max(heights[2 * r:2 * r + 2]) for r in range(rows)]
+desk = Image.open(os.path.join(PROJ, "Assets/Resources/UI/HUD_Crosshair.png")).convert("RGBA")
+ch3 = Image.open(os.path.join(DES, "dropin/crosshair/HUD_Crosshair@3x.png")).convert("RGBA")
+H2 = 40 + sum(row_h) + 24 * rows + 44 + 192 + 30
+sh = Image.new("RGB", (W2, H2), PAPER_BG)
+d2 = ImageDraw.Draw(sh)
+y = 40
+for r in range(rows):
+    for cidx in range(2):
+        i = 2 * r + cidx
+        if i >= len(tiles):
+            continue
+        n, sz, i1, i3, st, l1, l3 = tiles[i]
+        x = PADX + cidx * (COLW + 40)
+        d2.text((x, y), "%s  %s" % (n, sz), font=F_T, fill=INK)
+        sh.paste(i1, (x, y + 44))
+        sh.paste(i3, (x + i1.width + 24, y + 44))
+        d2.text((x, y + 44 + max(i1.height, i3.height) + 8), st, font=F_S, fill=INK)
+    y += row_h[r] + 24
+cc = chk["dropin/crosshair/HUD_Crosshair@3x.png"]
+d2.text((PADX, y), "HUD_Crosshair  64×64 (Ø32) → @3x 192×192 (Ø96)", font=F_T, fill=INK)
+sh.paste(on_dark(desk.resize((192, 192), Image.NEAREST)), (PADX, y + 44))
+sh.paste(on_dark(ch3), (PADX + 216, y + 44))
+tx = PADX + 216 + 192 + 40
+d2.text((tx, y + 60), "area Ø %.2f px, centre (%.1f, %.1f), one RGB value, corners alpha 0" % (cc["area_diameter_px"], cc["centre"][0], cc["centre"][1]), font=F_S, fill=INK)
+d2.text((tx, y + 100), "÷3 vs desktop 64: mean %.3f %%, max %.2f %%" % (cc["desktop_64"]["box3to1_of_3x_vs_desktop_mean_pct"],
+                                                              cc["desktop_64"]["box3to1_of_3x_vs_desktop_max_pct"]), font=F_S, fill=INK)
+d2.text((tx, y + 140), "left: desktop sprite ×3 nearest · right: @3x 1:1", font=F_S, fill=INK)
+sh.save(os.path.join(DOC, "images", "10_3x_exports.png"), optimize=True)
+json.dump({"integer_sizes": stats, "cap": cap}, open(os.path.join(SCR, "keyicon_figma/verif_stats.json"), "w"), indent=1)
+print(json.dumps(stats), cap, sh.size)

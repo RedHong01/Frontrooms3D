@@ -1,0 +1,48 @@
+16:30  up 2 days, 15:32, 1 user, load averages: 36.55 42.84 86.95
+# rt_bench6 r2a2 view A tripped device=Apple M3 Max Apple9=1  load 37/43/87
+# pso main maxd 1 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso x1   maxd 1 full 0 facing 2 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso x2   maxd 2 full 0 facing 2 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso x3   maxd 3 full 0 facing 2 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso y1   maxd 1 full 0 facing 1 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso y2   maxd 2 full 0 facing 1 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso y3   maxd 3 full 0 facing 1 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso c2   maxd 2 full 0 facing 0 stats 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso c3   maxd 3 full 0 facing 0 stats 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 17 lamps
+# receiver px (floor + lite): 12.04% of the screen
+# s1   vs main: 0 of 443629 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# s3   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# x1   vs main: 0 of 443629 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# x2   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# x3   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# y1   vs main: 0 of 443629 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# y2   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# y3   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# c2   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# c3   vs main: 366 of 443629 traced px differ in any bit; mean |dL| 0.00001, max rel 0.557
+# main shadow rays per frame 85688
+# x1 (facing rule) vs s1 (lastGlass): 0 of 443629 traced px differ in any bit
+# x2 (facing rule) vs s2 (lastGlass): 0 of 443629 traced px differ in any bit
+# x3 (facing rule) vs s3 (lastGlass): 0 of 443629 traced px differ in any bit
+# y1 (facing rule) vs s1 (lastGlass): 0 of 443629 traced px differ in any bit
+# y2 (facing rule) vs s2 (lastGlass): 0 of 443629 traced px differ in any bit
+# y3 (facing rule) vs s3 (lastGlass): 0 of 443629 traced px differ in any bit
+# facing c2  glass hits 540 (truth: 270 exiting, 270 entering) | wrong vs truth: lastGlass 0, front_facing(default) 0, front_facing(ccw) 540, cross x det 0, cross alone 0
+# facing c3  glass hits 540 (truth: 270 exiting, 270 entering) | wrong vs truth: lastGlass 0, front_facing(default) 0, front_facing(ccw) 540, cross x det 0, cross alone 0
+r2a2 b6 A tripped Ultra-tree 2560x1440 main min 0.543 p25 0.555 med 0.564 ms | ratio to main: min 1.000 med 1.000 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 s1   min 0.532 p25 0.540 med 0.544 ms | ratio to main: min 0.978 med 0.964 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 s2   min 0.560 p25 0.571 med 0.577 ms | ratio to main: min 1.030 med 1.022 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 s3   min 0.560 p25 0.568 med 0.576 ms | ratio to main: min 1.030 med 1.021 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 x1   min 0.533 p25 0.540 med 0.546 ms | ratio to main: min 0.982 med 0.967 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 x2   min 0.560 p25 0.572 med 0.580 ms | ratio to main: min 1.030 med 1.027 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 x3   min 0.561 p25 0.577 med 0.584 ms | ratio to main: min 1.032 med 1.036 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 y1   min 0.531 p25 0.543 med 0.552 ms | ratio to main: min 0.978 med 0.978 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 y2   min 0.564 p25 0.574 med 0.584 ms | ratio to main: min 1.037 med 1.035 | load 37/43/87
+r2a2 b6 A tripped Ultra-tree 2560x1440 y3   min 0.564 p25 0.579 med 0.587 ms | ratio to main: min 1.038 med 1.040 | load 37/43/87
+# done load 37/43/87
+16:30  up 2 days, 15:32, 1 user, load averages: 36.55 42.84 86.95

@@ -1,0 +1,19 @@
+"""ana5_pop.py - issue 10: how big is the image jump when Ultra's ray count switches (2<->3, 3<->4) on the same frame?
+Uses rt_bench5 'dump' output (d5_<tag>_c<cube>_sg<g>_<case>_u<n>.png, footprint jitter seed 1). Floor px only.
+Also the seed-to-seed change at a fixed count (what a re-randomised frame would show) for scale."""
+import sys, numpy as np
+sys.argv = [sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3]]
+exec(open("ana5.py").read().split("for case in")[0])
+for case in ["A20", "B20", "D20", "F20", "G15"]:
+    mk = load(case, "mask")
+    if mk is None: continue
+    F = mk[..., 0] > 127
+    u = {n: load(case, f"u{n}") for n in (2, 3, 4)}
+    s = {n: load(case, f"u{n}_seed8") for n in (2, 3, 4)}
+    for a, b in [(2, 3), (3, 4)]:
+        d = d8(u[a], u[b])[F]
+        bx, v = blocks(u[a], F); by, _ = blocks(u[b], F); bd = np.abs(bx - by).max(axis=2)[v]
+        print(f"{case} pop u{a}->u{b}: floor px mean {d.mean():.2f}/255 p99 {np.percentile(d, 99):.0f} max {d.max()} >=8 {100*(d>=8).mean():.2f}% | 8x8 blocks mean {bd.mean():.2f} p99 {np.percentile(bd,99):.1f} max {bd.max():.1f}")
+    for n in (2, 3):
+        d = d8(u[n], s[n])[F]
+        print(f"{case} seed change at u{n}: floor px mean {d.mean():.2f}/255 p99 {np.percentile(d, 99):.0f} >=8 {100*(d>=8).mean():.2f}%")

@@ -1,0 +1,335 @@
+"""Fix stage 2026-10-07 (K1): verification images for the Figma VISUAL VERIFICATION LOG.
+
+Rules (VERIFICATION_LOG.md 1.5, critic issue 11): only Bayon labels on images (digits in Courier
+Prime Bold at 1.25 em, as on the boards, because Bayon draws 1 as I); no captions, no numbers
+under images, no file lists: the numbers live in the VL row, 03_figma.md and 04_for_red.md.
+
+  images/08_main_fbx_vs_trace.png     VL075, re-laid out 2 x 2 so it fills the slot; re-run on main
+  images/09_integer_type_sizes.png    VL076, no overlapping header, no caption lines
+  images/10_3x_exports.png            VL077, labels only (the check numbers moved to the docs)
+  images/11_pipeline_recovered.png    VL104  rebuilt scripts vs the files on disk
+  images/12_locked_prompt_card.png    VL100  the locked prompt on six grounds: today | Oct 3 | fix
+  images/13_states_by_shape.png       VL101  other zone / single-use: Oct 3 vs fix, lit and dark
+  images/14_outline_stroke.png        VL102  the three outline masters, clipped vs fixed
+  images/15_phone_hud.png             VL103  TestFlight today vs the proposal, @3x
+  images/16_chip_ring.png             VL105  the A + chip glyphs, Oct 3 vs fix
+Run with W/venv/bin/python (numpy + Pillow)."""
+import json, os, sys
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+W = "/Users/redwang/FrontRoomsVisualWork"
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+DOC = os.path.join(PROJ, "Documentation/research/ui_key_icon")
+OUTD = os.environ.get("KEYICON_IMAGES", os.path.join(DOC, "images"))
+NEW = os.environ.get("KEYICON_DES", os.path.join(DOC, "design"))          # the fixed design set
+OLD = os.path.join(W, "keyicon_figma/design_prefix_1007")                 # the Oct 3 set (snapshot)
+REC = os.path.join(W, "keyicon_verify/recovered_prefix/design")           # Oct 3 set re-rendered by the rebuilt scripts
+BEFORE = os.path.join(W, "keyicon_verify/before_regen/design")            # pre-integer crops (24.63 / 20.45)
+CELLS = os.path.join(W, "keyicon_verify/cells")
+FONTS = os.path.join(PROJ, "Assets/Resources/Fonts")
+BAYON = os.path.join(FONTS, "Bayon-Regular.ttf")
+COUR = os.path.join(PROJ, "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Bold.ttf")
+INK, WHITE, PAPER = (10, 10, 10), (255, 255, 255), (244, 241, 232)
+DARK, LIT = (37, 32, 15), (121, 105, 60)
+os.makedirs(OUTD, exist_ok=True)
+_f = {}
+
+
+def font(path, size):
+    k = (path, size)
+    if k not in _f:
+        _f[k] = ImageFont.truetype(path, size)
+    return _f[k]
+
+
+def label(dr, x, y, text, size=28, fill=INK):
+    """Bayon label; runs of digits in Courier Prime Bold at 1.25 em on the same baseline."""
+    fb, fc = font(BAYON, size), font(COUR, int(round(size * 1.25)))
+    asc_b = fb.getmetrics()[0]
+    asc_c = fc.getmetrics()[0]
+    import re
+    for part in re.split(r"(\d+)", text):
+        if not part:
+            continue
+        f, asc = (fc, asc_c) if part.isdigit() else (fb, asc_b)
+        dr.text((x, y + asc_b - asc), part, font=f, fill=fill)
+        x += dr.textlength(part, font=f)
+    return x
+
+
+def rgb(p):
+    return Image.open(p).convert("RGB")
+
+
+def on(bg, p, scale=1):
+    im = Image.open(p).convert("RGBA")
+    b = Image.new("RGBA", im.size, bg + (255,))
+    out = Image.alpha_composite(b, im).convert("RGB")
+    if scale != 1:
+        out = out.resize((out.width * scale, out.height * scale), Image.NEAREST)
+    return out
+
+
+def heat(a, b, gain):
+    d = np.abs(np.asarray(a).astype(int) - np.asarray(b).astype(int)).max(axis=2).astype(float) * gain
+    d = np.clip(d, 0, 255).astype(np.uint8)
+    out = np.zeros(d.shape + (3,), np.uint8)
+    out[..., 0] = d
+    out[..., 1] = (d * 0.85).astype(np.uint8)
+    out[..., 2] = (d * 0.2).astype(np.uint8)
+    return Image.fromarray(out)
+
+
+def save(im, name):
+    im.save(os.path.join(OUTD, name), optimize=True)
+    print("[verif2]", name, im.size)
+
+
+# ------------------------------------------------------------------ 08 main FBX vs trace (VL075), 2 x 2
+def img08():
+    sys.path.insert(0, os.path.join(W, "keyicon_design"))
+    ref_rgba = Image.open(os.path.join(W, "keyicon_design/model/key_side.png")).convert("RGBA")
+    a = np.asarray(ref_rgba).astype(float) / 255.0
+    ref = a[..., 3] > 0.5
+    mask = np.load(os.path.join(W, "keyicon_resume/mask_Kit_Key_Zone.npy"))
+    H, Wd = mask.shape
+    bg = np.array([0x1B, 0x1A, 0x17]) / 255.0
+    p1 = a[..., :3] * a[..., 3:4] + bg * (1 - a[..., 3:4])
+    p2 = np.where(mask[..., None], np.array(PAPER) / 255.0, bg)
+    p3 = np.where((mask & ref)[..., None], np.array([0x8A, 0x87, 0x7E]) / 255.0, bg)
+    diff = np.argwhere(mask ^ ref)
+    k = 0.45
+    pw, ph = int(Wd * k), int(H * k)
+
+    def down(x):
+        return Image.fromarray(np.round(np.clip(x, 0, 1) * 255).astype(np.uint8)).resize((pw, ph), Image.BILINEAR)
+    P = [down(p1), down(p2), down(p3)]
+    d3 = ImageDraw.Draw(P[2])
+    for y, x in diff:
+        d3.ellipse((x * k - 4, y * k - 4, x * k + 4, y * k + 4), fill=(0xE0, 0x44, 0x2E))
+    # zoom: the 1/6-panel window (full res) that holds the most differing pixels, x6 nearest
+    zw, zh = pw // 6, ph // 6
+    best = None
+    for cy, cx in diff:
+        y0 = int(np.clip(cy - zh / 2, 0, H - zh)); x0 = int(np.clip(cx - zw / 2, 0, Wd - zw))
+        n = int(((diff[:, 0] >= y0) & (diff[:, 0] < y0 + zh) & (diff[:, 1] >= x0) & (diff[:, 1] < x0 + zw)).sum())
+        if best is None or n > best[0]:
+            best = (n, x0, y0)
+    _, x0, y0 = best
+    z = p3[y0:y0 + zh, x0:x0 + zw].copy()
+    for y, x in diff:
+        if y0 <= y < y0 + zh and x0 <= x < x0 + zw:
+            z[y - y0, x - x0] = np.array([0xE0, 0x44, 0x2E]) / 255.0
+    Z = Image.fromarray(np.round(z * 255).astype(np.uint8)).resize((zw * 6, zh * 6), Image.NEAREST)
+    G, LH = 24, 48
+    sheet = Image.new("RGB", (pw * 2 + G, (ph + LH) * 2 + G), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    labs = ["TRACE SOURCE, BLENDER RENDER", "MAIN, KIT_KEY_ZONE.FBX", "BOTH, DIFFERING PX IN RED", "ZOOM X6 ON %d OF THEM" % best[0]]
+    for i, p in enumerate(P + [Z]):
+        x, y = (i % 2) * (pw + G), (i // 2) * (ph + LH + G)
+        label(dr, x, y + 6, labs[i], 28)
+        sheet.paste(p, (x, y + LH))
+    save(sheet, "08_main_fbx_vs_trace.png")
+    return {"diff_px": int(len(diff)), "zoom_window": [x0, y0, zw, zh], "in_zoom": best[0]}
+
+
+# ------------------------------------------------------------------ 09 integer type sizes (VL076)
+def img09():
+    rows = [("label_courier_lit_2x.png", 1, (40, 0, 640, 120), "KEY + COURIER PRIME BOLD, LIT, 2X"),
+            ("label_courier_dark_2x.png", 1, (40, 0, 640, 120), "KEY + COURIER PRIME BOLD, DARK, 2X"),
+            ("label_plex_lit_2x.png", 1, (40, 0, 640, 120), "KEY + PLEX MONO, LIT, 2X"),
+            ("C_zone_red_lit_1x.png", 2, (20, 0, 320, 60), "C PLATE + PLEX MONO, LIT, 1X AT X2"),
+            ("A_L_state_other_lit_1x.png", 2, (20, 50, 320, 110), "A, OTHER ZONE, META SHIFTS, 1X AT X2"),
+            ("Achip_zone_rect_red_dark_2x.png", 1, (40, 0, 640, 120), "A + CHIP, DARK, 2X")]
+    CW, X0, GAP, HR = 600, 36, 24, 172
+    sheet = Image.new("RGB", (X0 * 2 + CW * 3 + GAP * 2, 96 + len(rows) * HR), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    for i, t in enumerate(("BEFORE: 24.63 AND 20.45", "AFTER: 25 AND 20", "DIFFERENCE X4")):
+        label(dr, X0 + i * (CW + GAP), 28, t, 34)
+    y = 96
+    for fn, sc, box, lab in rows:
+        a = rgb(os.path.join(BEFORE, "hud", fn)).crop(box)
+        b = rgb(os.path.join(OLD, "hud", fn)).crop(box)          # Oct 3 = the integer-size set
+        label(dr, X0, y, lab, 26)
+        for j, im in enumerate((a, b, heat(a, b, 4))):
+            if sc != 1:
+                im = im.resize((im.width * sc, im.height * sc), Image.NEAREST)
+            sheet.paste(im, (X0 + j * (CW + GAP), y + 40))
+        y += HR
+    save(sheet, "09_integer_type_sizes.png")
+
+
+# ------------------------------------------------------------------ 10 @3x exports (VL077), labels only
+def img10():
+    PNG = os.path.join(NEW, "png")
+    names = [("A_S_held", "A_S HELD, 40 X 22 TO 120 X 66, X6 AND X2"), ("A_L_held", "A_L HELD, 49 X 22 TO 147 X 66"),
+             ("A_L_missing", "A_L MISSING, 51 X 24 TO 153 X 72"), ("C_dark_held", "C DARK, 40 X 22 TO 120 X 66"),
+             ("Achip_rect_red_held", "A + CHIP, 77 X 22 TO 231 X 66"), ("B_rect_red_held", "B, 72 X 48 TO 216 X 144")]
+    W2, COLW, PADX = 1920, 920, 40
+    tiles = []
+    for n, lab in names:
+        t1 = on(DARK, os.path.join(PNG, n + "@1x.png"), 6)        # @1x x6 nearest
+        t3 = on(DARK, os.path.join(PNG, n + "@3x.png"), 2)        # @3x x2 nearest: the same page size
+        tiles.append((lab, t1, t3))
+    rowh = [max(t[1].height, t[2].height) for t in tiles]
+    H = 0
+    for i in range(0, len(tiles), 2):
+        H += 52 + max(rowh[i:i + 2]) + 40
+    H += 52 + 192 + 40
+    sheet = Image.new("RGB", (W2, H), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    y = 20
+    for i in range(0, len(tiles), 2):
+        for j, (lab, t1, t3) in enumerate(tiles[i:i + 2]):
+            x = PADX + j * (COLW + 40)
+            label(dr, x, y, lab, 28)
+            sheet.paste(t1, (x, y + 48))
+            sheet.paste(t3, (x + t1.width + 24, y + 48))
+        y += 52 + max(rowh[i:i + 2]) + 40
+    ch = os.path.join(PROJ, "Assets/Resources/UI/HUD_Crosshair.png")
+    cells = [("DESKTOP 64, X3", on(DARK, ch, 3)), ("@3X 192", on(DARK, os.path.join(NEW, "dropin/crosshair/HUD_Crosshair@3x.png"))),
+             ("TOUCH 144, IN THE 24 PT RECT", on(DARK, os.path.join(NEW, "dropin/crosshair/HUD_Crosshair_Touch.png")))]
+    x = PADX
+    for lab, im in cells:
+        label(dr, x, y, lab, 28)
+        sheet.paste(im, (x, y + 48))
+        x += max(im.width, 300) + 40
+    save(sheet, "10_3x_exports.png")
+
+
+# ------------------------------------------------------------------ 11 pipeline recovered (VL104)
+def img11():
+    CW, X0, GAP = 600, 36, 24
+    rows = []
+    a = rgb(os.path.join(OLD, "03_A_hud.png")).resize((600, 338), Image.LANCZOS)
+    b = rgb(os.path.join(REC, "03_A_hud.png")).resize((600, 338), Image.LANCZOS)
+    rows.append(("BOARD 03, 1920 X 1080, SHOWN SMALL", a, b, rgb(os.path.join(OLD, "03_A_hud.png")), rgb(os.path.join(REC, "03_A_hud.png")), (600, 338)))
+    a = rgb(os.path.join(OLD, "hud/A_L_state_held_lit_1x.png")); b = rgb(os.path.join(REC, "hud/A_L_state_held_lit_1x.png"))
+    rows.append(("HUD CROP, A_L HELD, LIT, 1X", a, b, a, b, (600, 120)))
+    a = on(DARK, os.path.join(OLD, "png/A_L_held@2x.png"), 6); b = on(DARK, os.path.join(REC, "png/A_L_held@2x.png"), 6)
+    rows.append(("MASTER A_L HELD @2X, X6", a, b, a, b, a.size))
+    box = (180, 450, 420, 570)
+    a = rgb(os.path.join(OLD, "06_B_echo.png")).crop(box); b = rgb(os.path.join(REC, "06_B_echo.png")).crop(box)
+    a, b = a.resize((a.width * 2, a.height * 2), Image.NEAREST), b.resize((b.width * 2, b.height * 2), Image.NEAREST)
+    rows.append(("BOARD 06, TAG RENDER X2: ONLY THE TYPED DIGITS MOVE", a, b, a, b, a.size))
+    H = 96 + sum(r[5][1] + 64 for r in rows)
+    sheet = Image.new("RGB", (X0 * 2 + CW * 3 + GAP * 2, H), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    for i, t in enumerate(("ON DISK, OCT 3", "REBUILT SCRIPTS, OCT 7", "DIFFERENCE X16")):
+        label(dr, X0 + i * (CW + GAP), 28, t, 34)
+    y = 96
+    for lab, a, b, fa, fb, sz in rows:
+        label(dr, X0, y, lab, 26)
+        hm = heat(fa, fb, 16)
+        if hm.size != sz:
+            hm = hm.resize(sz, Image.BOX)
+        for j, im in enumerate((a, b, hm)):
+            sheet.paste(im, (X0 + j * (CW + GAP), y + 40))
+        y += sz[1] + 64
+    save(sheet, "11_pipeline_recovered.png")
+
+
+# ------------------------------------------------------------------ 12 locked prompt on six grounds (VL100)
+def img12():
+    bgs = [("lit", "LIT LOW ROOM"), ("wallpaper", "WALLPAPER"), ("office", "OFFICE"), ("dark", "DARK CELL"),
+           ("leaf", "LOCKED LEAF, ALMOND (SPEC)"), ("leafwood", "LOCKED LEAF, WOOD (TODAY)")]
+    cols = [("today", "TODAY IN CODE"), ("oct3", "OCT 3 DESIGN"), ("fix", "FIX: ON THE HINT CARD")]
+    LW, CW, G, X0 = 300, 480, 24, 36
+    sheet = Image.new("RGB", (X0 * 2 + LW + (CW + G) * 3 - G, 84 + len(bgs) * (120 + G)), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    for j, (_, t) in enumerate(cols):
+        label(dr, X0 + LW + j * (CW + G), 28, t, 34)
+    y = 84
+    for bg, t in bgs:
+        label(dr, X0, y + 44, t, 26)
+        for j, (v, _) in enumerate(cols):
+            sheet.paste(rgb(os.path.join(CELLS, "prompt_%s_%s.png" % (v, bg))), (X0 + LW + j * (CW + G), y))
+        y += 120 + G
+    save(sheet, "12_locked_prompt_card.png")
+
+
+# ------------------------------------------------------------------ 13 states by shape (VL101)
+def img13():
+    cols = [("held", "HELD, THIS ZONE"), ("other", "HELD, OTHER ZONE"), ("used", "IF KEYS BECOME SINGLE-USE")]
+    CW, G, X0 = 600, 24, 36
+    rows = [("lit", OLD, "LIT LOW ROOM, OCT 3"), ("lit", NEW, "LIT LOW ROOM, FIX"),
+            ("dark", OLD, "DARK CELL, OCT 3"), ("dark", NEW, "DARK CELL, FIX")]
+    RH = 90
+    sheet = Image.new("RGB", (X0 * 2 + (CW + G) * 3 - G, 84 + len(rows) * (RH + 44 + 16)), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    for j, (_, t) in enumerate(cols):
+        label(dr, X0 + j * (CW + G), 28, t, 34)
+    y = 84
+    for bg, src, t in rows:
+        label(dr, X0, y, t, 26)
+        for j, (st, _) in enumerate(cols):
+            im = rgb(os.path.join(src, "hud", "A_L_state_%s_%s_1x.png" % (st, bg))).crop((20, 30, 420, 90))
+            sheet.paste(im.resize((CW, RH), Image.NEAREST), (X0 + j * (CW + G), y + 40))
+        y += RH + 44 + 16
+    save(sheet, "13_states_by_shape.png")
+
+
+# ------------------------------------------------------------------ 14 outline stroke (VL102)
+def img14():
+    names = [("A_L_missing", "A_L MISSING"), ("A_S_missing", "A_S MISSING"), ("C_dark_missing", "C MISSING")]
+    K, G, X0 = 10, 40, 36
+    tiles = [(t, on(DARK, os.path.join(OLD, "png", n + "@1x.png"), K), on(DARK, os.path.join(NEW, "png", n + "@1x.png"), K)) for n, t in names]
+    cw = max(max(a.width, b.width) for _, a, b in tiles)
+    H = 84 + sum(max(a.height, b.height) + 60 for _, a, b in tiles)
+    sheet = Image.new("RGB", (X0 * 2 + 260 + cw * 2 + G, H), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    label(dr, X0 + 260, 28, "OCT 3, STROKE CUT AT THE BOX", 34)
+    label(dr, X0 + 260 + cw + G, 28, "FIX, BOX GROWN 1 PX", 34)
+    y = 84
+    for t, a, b in tiles:
+        label(dr, X0, y + 40, t + ", 1X AT X10", 26)
+        sheet.paste(a, (X0 + 260, y)); sheet.paste(b, (X0 + 260 + cw + G, y))
+        y += max(a.height, b.height) + 60
+    save(sheet, "14_outline_stroke.png")
+
+
+# ------------------------------------------------------------------ 15 phone HUD (VL103)
+def img15():
+    H_ = os.path.join(NEW, "hud")
+    cells = [("phone_today_held_wallpaper_3x.jpg", (180, 0, 1000, 330), "TESTFLIGHT TODAY, KEY ROW"),
+             ("phone_target_held_wallpaper_3x.jpg", (180, 0, 1000, 330), "PROPOSAL, KEY ROW"),
+             ("phone_today_locked_leaf_3x.jpg", (900, 520, 1720, 850), "TESTFLIGHT TODAY, LOCKED LEAF"),
+             ("phone_target_locked_leaf_3x.jpg", (900, 520, 1720, 850), "PROPOSAL, LOCKED LEAF")]
+    CW, CH, G, X0 = 820, 330, 24, 36
+    sheet = Image.new("RGB", (X0 * 2 + CW * 2 + G, 2 * (CH + 48) + G + 8), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    for i, (fn, box, t) in enumerate(cells):
+        x = X0 + (i % 2) * (CW + G); y = (i // 2) * (CH + 48 + G)
+        label(dr, x, y + 4, t + ", @3X 1:1", 28)
+        sheet.paste(rgb(os.path.join(H_, fn)).crop(box), (x, y + 48))
+    save(sheet, "15_phone_hud.png")
+
+
+# ------------------------------------------------------------------ 16 chip ring (VL105)
+def img16():
+    kinds = [("rect", "RECT"), ("round", "ROUND"), ("long", "LONG")]
+    K, G, X0 = 5, 24, 36
+    cols = [(OLD, LIT, "OCT 3, LIT"), (NEW, LIT, "FIX, LIT"), (OLD, DARK, "OCT 3, DARK"), (NEW, DARK, "FIX, DARK")]
+    cw = 85 * K
+    sheet = Image.new("RGB", (X0 * 2 + 160 + (cw + G) * 4 - G, 84 + 3 * (22 * K + G)), WHITE)
+    dr = ImageDraw.Draw(sheet)
+    for j, (_, _, t) in enumerate(cols):
+        label(dr, X0 + 160 + j * (cw + G), 28, t, 30)
+    y = 84
+    for k, t in kinds:
+        label(dr, X0, y + 40, t, 30)
+        for j, (src, bg, _) in enumerate(cols):
+            sheet.paste(on(bg, os.path.join(src, "png", "Achip_%s_red_held@1x.png" % k), K), (X0 + 160 + j * (cw + G), y))
+        y += 22 * K + G
+    save(sheet, "16_chip_ring.png")
+
+
+if __name__ == "__main__":
+    which = sys.argv[1:] or ["08", "09", "10", "11", "12", "13", "14", "15", "16"]
+    out = {}
+    for w in which:
+        r = globals()["img" + w]()
+        if r:
+            out[w] = r
+    print(json.dumps(out))

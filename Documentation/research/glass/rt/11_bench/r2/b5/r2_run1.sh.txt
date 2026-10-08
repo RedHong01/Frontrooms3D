@@ -1,0 +1,32 @@
+#!/bin/zsh
+# G14b revision 2 (2026-10-07), image metrics. Every log line carries its 1/5/15-minute load.
+cd /Users/redwang/FrontRoomsVisualWork/rt_bench2/r2/b5
+B=./rt_bench5c
+# issue 1: one Run cube per state (scene-captured, x 0.5), design tree
+(uptime; TREE=1 CUBE=own OWNSCALE=0.5 SOFTGATE=1 FARFADE=6,12 $B r2own accept; uptime) > r2_t1_accept_design_own05.txt 2>&1
+(uptime; TREE=1 CUBE=own OWNSCALE=0.5 ARMEDCUBE=1 SOFTGATE=1 FARFADE=6,12 $B r2ac accept; uptime) > r2_t1_accept_design_own05_armedcube.txt 2>&1
+(uptime; TREE=1 CUBE=own OWNSCALE=0.5 TRIPCUBE=1 SOFTGATE=1 FARFADE=6,12 $B r2tc accept; uptime) > r2_t1_accept_design_own05_tripcube.txt 2>&1
+echo acc
+# issue 12a + R2: soft gate with each cube (corridor cube now x 0.5), design tree and first-layout tree
+for T in 1 0; do
+  (uptime; TREE=$T CUBE=l0exr SOFTGATE=1 $B r2t$T diff2; uptime) > r2_t${T}_diff2_l0exr_gate.txt 2>&1
+  (uptime; TREE=$T CUBE=l0exr $B r2t$T diff2; uptime) > r2_t${T}_diff2_l0exr.txt 2>&1
+  (uptime; TREE=$T SOFTGATE=1 $B r2t$T diff2; uptime) > r2_t${T}_diff2_flat_gate.txt 2>&1
+  (uptime; TREE=$T $B r2t$T diff2; uptime) > r2_t${T}_diff2_flat.txt 2>&1
+  (uptime; TREE=$T CUBE=own OWNSCALE=0.5 SOFTGATE=1 $B r2t$T diff2; uptime) > r2_t${T}_diff2_own05_gate.txt 2>&1
+  (uptime; TREE=$T CUBE=own OWNSCALE=0.5 $B r2t$T diff2; uptime) > r2_t${T}_diff2_own05.txt 2>&1
+done
+echo diff
+# reference convergence on the design tree (128..1024 rays vs 2048)
+(uptime; TREE=1 CUBE=l0exr SOFTGATE=1 $B r2c conv; uptime) > r2_t1_conv_l0exr_gate.txt 2>&1
+echo conv
+# issue 2 / B12: ray-count switches, instant vs ramped
+(uptime; TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 $B r2r ramp; uptime) > r2_t1_ramp_l0exr.txt 2>&1
+echo ramp
+# B6 blocks + stream room u2: dumps on the design tree, then ana5.py
+(uptime; TREE=1 CUBE=l0exr SOFTGATE=1 FARFADE=6,12 $B r2dd dump; uptime) > r2_t1_dump_design_l0exr.txt 2>&1
+/Users/redwang/FrontRoomsVisualWork/venv/bin/python ana5.py r2dd 4 1 > r2_t1_ana_design_l0exr.txt 2>&1
+echo dump
+# R1-U: grain under motion on the design tree
+(uptime; TREE=1 CUBE=l0exr SOFTGATE=1 DOLLYREF=32 DOLLYIMG=1 $B r2m dolly; uptime) > r2_t1_dolly_l0exr_ref2048.txt 2>&1
+echo alldone

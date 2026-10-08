@@ -1,0 +1,161 @@
+"""Tables for 03_figma.md (the hand-off to 平面视觉), generated from the recorded op lists.
+
+Inputs: keyicon_figma/plan_after.json (平面视觉's Tools/figma/hud_key/plan.py run on our
+composites.py, so the rows are exactly what their sync sees), plan_before.json (17:10 version),
+the before snapshot keyicon_figma/design_before, and the live design folder.
+Outputs: <DOC>/03_variants.tsv and keyicon_figma/handoff_tables.md (pasted into 03_figma.md).
+Fix stage 2026-10-07: inputs are plan_fix.json (this stage) vs plan_oct3.json (the Oct 3 set, recorded
+from the rebuilt original scripts) and the Oct 3 snapshot keyicon_figma/design_prefix_1007; new files
+(no Oct 3 twin) are marked "new". The phone frames (not twins; plan.py skips them) are listed like the live crops.
+Run with /usr/bin/python3 (numpy + PIL)."""
+import hashlib, json, os, re
+import numpy as np
+from PIL import Image
+
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+DOC = os.path.join(PROJ, "Documentation/research/ui_key_icon")
+DES = os.environ.get("KEYICON_DES", os.path.join(DOC, "design"))
+W = "/Users/redwang/FrontRoomsVisualWork/keyicon_figma"
+BEF = os.path.join(W, "design_prefix_1007")
+after = json.load(open(os.path.join(W, "plan_fix.json")))
+before = json.load(open(os.path.join(W, "plan_oct3.json")))
+B = {c["file"]: c for c in before["crops"]}
+FONT = {"BAYON": "Bayon", "MONO": "Plex Mono", "SERIF": "Source Serif 4", "COURIER_B": "Courier Prime Bold"}
+DIRNAME = {"A_S": "A · 40×22", "A_L": "A · 49×22", "Achip": "A + chip", "B": "B · key on tag", "C": "C · plate"}
+
+
+def real_name(f):
+    return f.replace(".png", ".jpg") if "_fullframe_" in f else f
+
+
+def sha(p):
+    return hashlib.sha1(open(p, "rb").read()).hexdigest() if os.path.exists(p) else None
+
+
+def pix_changed(f):
+    a, b = os.path.join(BEF, "hud", f), os.path.join(DES, "hud", f)
+    if not os.path.exists(a):
+        return "new"
+    if sha(a) == sha(b):
+        return False
+    x = np.asarray(Image.open(a).convert("RGB")).astype(int)
+    y = np.asarray(Image.open(b).convert("RGB")).astype(int)
+    return bool(np.abs(x - y).max() > 0)
+
+
+def zone_of(glyph):
+    if glyph is None:
+        return "-"
+    g = re.sub(r"_(held|muted|missing)$", "", glyph)
+    if g in ("A_S", "A_L"):
+        return "one glyph, all zones"
+    m = re.match(r"Achip_(rect|round|long)_(red|blue|white)", g)
+    if m:
+        return "%s tag · %s" % m.groups()
+    m = re.match(r"B_(rect|round|long)_(red|blue|white)", g)
+    if m:
+        return "%s tag · %s · %s" % (m.group(1), m.group(2), {"rect": "14", "round": "37", "long": "08"}[m.group(1)])
+    m = re.match(r"C_(dark|red|blue|white)", g)
+    if m:
+        return "%s plate" % m.group(1)
+    return g
+
+
+def parse(f):
+    m = re.match(r"^(A_S|A_L|Achip|B|C)_held_(\w+?)_(\d)x\.png$", f)
+    if m:
+        return m.group(1), "held", m.group(2)
+    m = re.match(r"^(A_S|A_L|Achip|B|C)_state_(held|other|missing|used)_(\w+?)_1x\.png$", f)
+    if m:
+        return m.group(1), m.group(2), m.group(3)
+    m = re.match(r"^label_(\w+?)_(lit|dark)_(\d)x\.png$", f)
+    if m:
+        return "A_L", "held · label " + m.group(1), m.group(2)
+    m = re.match(r"^(B|C|Achip)_zone_.*_(lit|dark)_(\d)x\.png$", f)
+    if m:
+        return m.group(1), "held · zone", m.group(2)
+    m = re.match(r"^A_L_fullframe_target_(\w+)\.png$", f)
+    if m:
+        return "A_L", "held · KEY 14 · full 1080p frame (board 10 hero)", m.group(1)
+    m = re.match(r"^(A_S|A_L|Achip|B|C)_fullframe_(\w+)\.png$", f)
+    if m:
+        return m.group(1), "held · full 1080p frame", m.group(2)
+    raise ValueError(f)
+
+
+rows = []
+for c in after["crops"]:
+    f = c["file"]
+    d, state, bg = parse(f)
+    sprites = [o for o in c["ops"] if o["op"] == "sprite"]
+    glyph = sprites[0]["name"] if sprites else None
+    gop = sprites[0]["opacity"] if sprites else None
+    texts = [o for o in c["ops"] if o["op"] == "text" and not (o["font"] == "SERIF" or o["baseline"] in (102,))]
+    label = " ".join("%s [%s %g%s]" % (o["text"], FONT[o["font"]], o["size"], "" if o["opacity"] == 1 else " @%d%%" % round(o["opacity"] * 100))
+                     for o in texts)
+    rule = any(o["op"] == "rect" for o in c["ops"])
+    x0, y0, x1, y1 = c["box"]
+    s = c["s"]
+    rn = real_name(f)
+    rows.append({"file": "design/hud/" + rn, "direction": DIRNAME[d], "state": state, "zone": zone_of(glyph),
+                 "glyph": "%s%s" % (glyph, "" if gop in (None, 1.0) else " @%d%%" % round(gop * 100)),
+                 "label": label + (" + 4 px rule" if rule else ""), "bg": bg, "scale": "%dx" % s,
+                 "crop_1x": "%d, %d, %d × %d" % (x0, y0, x1 - x0, y1 - y0),
+                 "crop_px": "%d, %d, %d × %d" % (x0 * s, y0 * s, (x1 - x0) * s, (y1 - y0) * s),
+                 "changed": {True: "yes", False: "no", "new": "new"}[pix_changed(rn)],
+                 "ops_changed": "new" if f not in B else ("yes" if json.dumps(B[f], sort_keys=True) != json.dumps(c, sort_keys=True) else "no")})
+
+# composites_live.py (not seen by plan.py): main's live glyph + today's label, and the three steps
+LIVE = [("live_code_lit_1x.png", "today in main", "live HUD_KeyGlyph.png", "LEVEL 0 / THE MAZE KEY [Bayon 20]", "lit", (40, 920, 440, 980)),
+        ("live_code_dark_1x.png", "today in main", "live HUD_KeyGlyph.png", "LEVEL 0 / THE MAZE KEY [Bayon 20]", "dark", (40, 920, 440, 980)),
+        ("live_code_wallpaper_1x.png", "today in main", "live HUD_KeyGlyph.png", "LEVEL 0 / THE MAZE KEY [Bayon 20]", "wallpaper", (40, 920, 440, 980)),
+        ("cmp_live_wallpaper_1x.png", "step 0 · today", "live HUD_KeyGlyph.png", "LEVEL 0 / THE MAZE KEY [Bayon 20]", "wallpaper", (40, 880, 640, 1000)),
+        ("cmp_dropin_wallpaper_1x.png", "step 1 · drop-in", "dropin/slot_40x22 (= A_S_held)", "LEVEL 0 / THE MAZE KEY [Bayon 20]", "wallpaper", (40, 880, 640, 1000)),
+        ("cmp_target_wallpaper_1x.png", "step 2 · target", "A_L_held", "KEY [Bayon 20] 14 [Courier Prime Bold 25]", "wallpaper", (40, 880, 640, 1000))]
+for f, st, g, lab, bg, (x0, y0, x1, y1) in LIVE:
+    rows.append({"file": "design/hud/" + f, "direction": "live / steps", "state": st, "zone": "-", "glyph": g, "label": lab, "bg": bg,
+                 "scale": "1x", "crop_1x": "%d, %d, %d × %d" % (x0, y0, x1 - x0, y1 - y0), "crop_px": "%d, %d, %d × %d" % (x0, y0, x1 - x0, y1 - y0),
+                 "changed": {True: "yes", False: "no", "new": "new"}[pix_changed(f)], "ops_changed": "n/a (composites_live.py)"})
+# phone frames (composites.py 'phone', fix stage 2026-10-07; not twins, plan.py skips them)
+for v, st, bg in (("today", "held", "wallpaper"), ("target", "held", "wallpaper"), ("target", "held", "lit"),
+                  ("today", "locked", "leaf"), ("target", "locked", "leaf"), ("target", "locked", "dark")):
+    f = "phone_%s_%s_%s_3x.jpg" % (v, st, bg)
+    rows.append({"file": "design/hud/" + f, "direction": "phone · " + ("TestFlight today" if v == "today" else "proposal (A_L)"),
+                 "state": st, "zone": "-", "glyph": ("live HUD_KeyGlyph.png stretched x3" if v == "today" else ("A_L_held" if st == "held" else "A_L_missing")),
+                 "label": ("LEVEL 0 / THE MAZE KEY [Bayon 11]" if (v, st) == ("today", "held") else
+                           "LOCKED · NEEDS THIS ZONE'S KEY [Bayon 17]" if v == "today" else
+                           "KEY [Bayon 17] 14 [Courier Prime Bold 21]" if st == "held" else "LOCKED [Bayon 17] + NEEDS KEY 14 [Plex Mono 11] on #141414 90 %"),
+                 "bg": bg, "scale": "@3x", "crop_1x": "874 × 402 pt", "crop_px": "0, 0, 2622 × 1206",
+                 "changed": "new", "ops_changed": "n/a (phone)"})
+
+cols = ["file", "direction", "state", "zone", "glyph", "label", "bg", "scale", "crop_1x", "crop_px", "changed", "ops_changed"]
+with open(os.path.join(DOC, "03_variants.tsv"), "w") as fh:
+    fh.write("\t".join(cols) + "\n")
+    for r in rows:
+        fh.write("\t".join(str(r[k]) for k in cols) + "\n")
+
+md = []
+md.append("| # | File | Direction | State | Zone | Glyph | Label (face size) | Bg | Scale | Crop x, y, w × h (px) | Changed |")
+md.append("|---|---|---|---|---|---|---|---|---|---|---|")
+for i, r in enumerate(rows, 1):
+    md.append("| %d | `%s` | %s | %s | %s | `%s` | %s | %s | %s | %s | %s |" % (
+        i, r["file"].replace("design/hud/", ""), r["direction"], r["state"], r["zone"], r["glyph"], r["label"].replace("|", "/"),
+        r["bg"], r["scale"], r["crop_px"], "**yes**" if r["changed"] == "yes" else ("**new**" if r["changed"] == "new" else "no")))
+
+# crop boxes summary
+boxes = {}
+for c in after["crops"]:
+    k = (c["bg"], tuple(c["box"]), c["s"])
+    boxes.setdefault(k, []).append(c["file"])
+for f, st, g, lab, bg, box in LIVE:
+    boxes.setdefault((bg, box, 1), []).append(f)
+bx = ["| Background | Scale | x | y | w | h (px, in that scale's frame) | Files |", "|---|---|---|---|---|---|---|"]
+for (bg, box, s), fs in sorted(boxes.items(), key=lambda kv: (kv[0][1], kv[0][2], kv[0][0])):
+    x0, y0, x1, y1 = box
+    bx.append("| %s | %dx | %d | %d | %d | %d | %d |" % (bg, s, x0 * s, y0 * s, (x1 - x0) * s, (y1 - y0) * s, len(fs)))
+open(os.path.join(W, "handoff_tables.md"), "w").write("\n".join(md) + "\n\n" + "\n".join(bx) + "\n")
+ch = [r for r in rows if r["changed"] in ("yes", "new")]
+print(len(rows), "rows;", len(ch), "changed;", sum(1 for r in rows if r["ops_changed"] == "yes"), "ops changed")
+print("changed-but-ops-same:", [r["file"] for r in rows if r["changed"] == "yes" and r["ops_changed"] == "no"])
+print("ops-changed-but-pixels-same:", [r["file"] for r in rows if r["changed"] == "no" and r["ops_changed"] == "yes"])
+json.dump([r["file"] for r in ch], open(os.path.join(W, "changed_files.json"), "w"), indent=0)

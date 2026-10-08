@@ -69,6 +69,10 @@ LIP_W = (0.5, 1.3)             # torn paper / gypsum lip width range (mm), round
 LIP_H = (0.08, 0.34)           # lip height: outer edge on the wall, inner edge at the cut
 TERM = {"R": 3.6, "crown": 0.9, "side": 1.2, "slot": (1.0, 0.7), "axis_h": -1.5, "z": oc.OPEN_Z}
 ARC_DEG_BARE = 5.625           # the faces are the hero here: 64 per circle
+# LOD2 dot on a bare face (round 9): the slots only (about 48 mm^2 of slot
+# mouth per face), with no plate-opening gap ring round the face, so the
+# shared 103 mm^2 dot (slots + gap ring) is scaled to 55 mm^2.
+LOD2_DOT_AB_BARE = (oc.LOD2_DOT_AB[0] * 0.73, oc.LOD2_DOT_AB[1] * 0.73)
 
 
 def ragged_outline(hw, hh, n=60, seed=7):
@@ -336,8 +340,7 @@ def build_lods(kit, k, towers, cut):
     q = al2.ring(oc.rect(0.0, 0.0, STRAP_W, STRAP_L), STRAP_FRONT)
     al2.fill(q)
     # Round 8/9: each face is a 6-gon PRISM (top LOD2_DOT_UP below the face
-    # top, sides down to the strap) with the shared area-matched dark dot on
-    # top. With no plate round it, the bare tower's lit side walls are part of
+    # top, sides down to the strap) with a slots-only dark dot on top. With no plate round it, the bare tower's lit side walls are part of
     # its read: a flat 6-gon alone measured -21 % on the face (r9m). The box
     # edge's 1 mm outer wall (sub-pixel beyond 4 m) pays for the sides.
     for oz in zs_():
@@ -345,7 +348,7 @@ def build_lods(kit, k, towers, cut):
         top = ni2.ring(hx, FACE_TOP - oc.LOD2_DOT_UP)
         ni2.bridge(ni2.ring(hx, STRAP_FRONT), top)
         ni2.fill(top)
-        pb2.fill(pb2.ring(oc.lod2_hex(oc.LOD2_DOT_AB, 0.0, oz + oc.LOD2_DOT_DZ), FACE_TOP))
+        pb2.fill(pb2.ring(oc.lod2_hex(LOD2_DOT_AB_BARE, 0.0, oz + oc.LOD2_DOT_DZ), FACE_TOP))
     ring8 = [(ohw, -ohh + 3), (ohw, ohh - 3), (ohw - 3, ohh), (-ohw + 3, ohh), (-ohw, ohh - 3), (-ohw, -ohh + 3), (-ohw + 3, -ohh), (ohw - 3, -ohh)]
     o8 = al2.ring(ring8, BOX_FRONT)
     i8 = al2.ring([(x * 0.94, z * 0.96) for x, z in ring8], BOX_FRONT)

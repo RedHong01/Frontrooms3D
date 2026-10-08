@@ -1,0 +1,130 @@
+"""Orthographic model renders for the key-icon design (scratchpad tool).
+
+Imports the built G3 FBX files from proj_int (read-only) through the G3
+preview helpers, and renders flat-on orthographic stills at a known scale
+(PX_PER_MM) on a transparent film, so the icon can be traced and overlaid:
+  key_side.png      Kit_Key_Zone, flat face to the camera, tip right, cuts up
+  key_side_nickel.png  the _Nickel variant (master key)
+  tag_rect_14.png / tag_round_37.png / tag_long_08.png   tags face-on, hung (tab up)
+  plate_14.png      Kit_DoorNumberPlate (red) face-on
+  ring.png          Kit_KeyRing face-on
+Run: Blender -b --factory-startup --python model_renders.py
+"""
+import sys, os, math
+sys.dont_write_bytecode = True
+SCR = "/Users/redwang/FrontRoomsVisualWork"
+sys.path.insert(0, os.path.join(SCR, "g3"))
+from g3_scene import *          # reset, import_asset, place, world, area, render ...
+import bpy
+from mathutils import Vector, Matrix
+
+OUT = os.path.join(SCR, "keyicon_design/model")
+os.makedirs(OUT, exist_ok=True)
+PX_PER_MM = 20.0
+
+
+def ortho_cam(centre, view_dir, up, width_mm, height_mm):
+    """Orthographic camera looking along view_dir at centre; frame width_mm x height_mm."""
+    cd = bpy.data.cameras.new("ortho")
+    cd.type = "ORTHO"
+    cd.ortho_scale = width_mm / 1000.0
+    cd.sensor_fit = "HORIZONTAL"
+    cd.clip_start = 0.001
+    cd.clip_end = 1.0
+    c = bpy.data.objects.new("ortho", cd)
+    bpy.context.scene.collection.objects.link(c)
+    d = Vector(view_dir).normalized()
+    c.location = Vector(centre) - d * 0.2
+    c.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()   # camera +Y (image up) toward world +Z
+    bpy.context.scene.camera = c
+    s = bpy.context.scene
+    s.render.resolution_x = int(round(width_mm * PX_PER_MM))
+    s.render.resolution_y = int(round(height_mm * PX_PER_MM))
+    s.render.resolution_percentage = 100
+    s.render.film_transparent = True
+    s.render.image_settings.color_mode = "RGBA"
+    return c
+
+
+def studio(front):
+    """Soft studio light from the camera side (front = direction the camera looks)."""
+    world(0.35, (0.30, 0.29, 0.27))
+    f = Vector(front).normalized()
+    up = Vector((0, 0, 1))
+    side = f.cross(up).normalized()
+    area(tuple(-f * 0.30 + up * 0.22 - side * 0.12), (0, 0, 0), 4.0, 0.30)
+    area(tuple(-f * 0.25 - up * 0.06 + side * 0.26), (0, 0, 0), 1.2, 0.35)
+
+
+# Unity Resources/Surfaces/*.mat _BaseColor values are sRGB (Unity converts them to
+# linear in a linear-colour-space project); the kit preview feeds them to Blender as
+# linear, which renders too pale. Re-enter them as linear so the render matches the game.
+UNITY_SRGB = {"Prop_Brass": ((0.69, 0.541, 0.29), 0.40, 1.0), "Prop_Aluminium": None,
+              "Prop_PlasticRed": ((0.55, 0.06, 0.05), 0.50, 0.0), "Prop_PlasticBlue": ((0.06, 0.16, 0.45), 0.50, 0.0),
+              "Prop_PlasticWhite": ((1.0, 1.0, 1.0), 0.0, 0.0), "Prop_Chrome": ((0.847, 0.847, 0.847), 0.15, 1.0)}
+
+def lin(c):
+    return tuple(x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c)
+
+def unity_colours():
+    for m in bpy.data.materials:
+        base = m.name.split("|")[0]
+        v = UNITY_SRGB.get(base)
+        if not v or not m.use_nodes:
+            continue
+        b = m.node_tree.nodes.get("Principled BSDF")
+        if b is None or b.inputs["Base Color"].is_linked:
+            continue
+        b.inputs["Base Color"].default_value = (*lin(v[0]), 1)
+        b.inputs["Roughness"].default_value = max(0.12, v[1])
+        b.inputs["Metallic"].default_value = v[2]
+
+def shoot(name, samples=96):
+    unity_colours()
+    render(os.path.join(OUT, name), samples)
+
+
+# ---------------------------------------------------------------- key side
+for variant in ("Kit_Key_Zone", "Kit_Key_Zone_Nickel"):
+    reset()
+    k = import_asset(variant)
+    # Unity key frame: Z -33..25 mm, Y -12.5..13.5 mm. Blender = U(X, Y, Z) = (-X, -Z, Y).
+    centre = U(0.0, 0.0005, -0.004)
+    studio((1, 0, 0))
+    ortho_cam(centre, (1, 0, 0), (0, 0, 1), 70.0, 35.0)
+    shoot("key_side.png" if variant == "Kit_Key_Zone" else "key_side_nickel.png")
+
+# ---------------------------------------------------------------- tags face-on
+for name, n, fname, w, h, ytop in (("Kit_KeyTag_Rect", 14, "tag_rect_14.png", 70.0, 50.0, 0.0),
+                                    ("Kit_KeyTag_Round_Blue", 37, "tag_round_37.png", 50.0, 56.0, 0.0),
+                                    ("Kit_KeyTag_Long_White", 8, "tag_long_08.png", 90.0, 42.0, 0.0)):
+    reset()
+    o = import_asset(name, cell=n)
+    lo = Vector([min(v.co[i] for v in o.data.vertices) for i in range(3)])
+    hi = Vector([max(v.co[i] for v in o.data.vertices) for i in range(3)])
+    c = (lo + hi) / 2
+    print("[keyicon] %s blender bounds %s %s" % (name, tuple(round(x, 5) for x in lo), tuple(round(x, 5) for x in hi)))
+    studio((0, 1, 0))
+    ortho_cam(c, (0, 1, 0), (0, 0, 1), w, h)
+    shoot(fname)
+
+# ---------------------------------------------------------------- door number plate
+reset()
+o = import_asset("Kit_DoorNumberPlate", cell=14)
+lo = Vector([min(v.co[i] for v in o.data.vertices) for i in range(3)])
+hi = Vector([max(v.co[i] for v in o.data.vertices) for i in range(3)])
+print("[keyicon] plate blender bounds", tuple(round(x, 5) for x in lo), tuple(round(x, 5) for x in hi))
+studio((0, 1, 0))
+ortho_cam((lo + hi) / 2, (0, 1, 0), (0, 0, 1), 120.0, 64.0)
+shoot("plate_14.png")
+
+# ---------------------------------------------------------------- ring
+reset()
+o = import_asset("Kit_KeyRing")
+lo = Vector([min(v.co[i] for v in o.data.vertices) for i in range(3)])
+hi = Vector([max(v.co[i] for v in o.data.vertices) for i in range(3)])
+print("[keyicon] ring blender bounds", tuple(round(x, 5) for x in lo), tuple(round(x, 5) for x in hi))
+studio((0, 1, 0))
+ortho_cam((lo + hi) / 2, (0, 1, 0), (0, 0, 1), 32.0, 32.0)
+shoot("ring.png")
+print("[keyicon] DONE")

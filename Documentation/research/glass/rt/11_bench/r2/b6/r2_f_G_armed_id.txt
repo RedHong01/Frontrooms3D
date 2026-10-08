@@ -1,0 +1,38 @@
+16:53  up 2 days, 15:54, 1 user, load averages: 405.94 483.63 393.16
+# rt_bench6 r2fG view G armed device=Apple M3 Max Apple9=1  load 406/484/393
+# pso main maxd 1 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s1   maxd 1 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s2   maxd 2 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso s3   maxd 3 full 0 facing 0 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso x1   maxd 1 full 0 facing 2 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso x2   maxd 2 full 0 facing 2 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso x3   maxd 3 full 0 facing 2 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso y1   maxd 1 full 0 facing 1 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso y2   maxd 2 full 0 facing 1 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso y3   maxd 3 full 0 facing 1 stats 0: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso c2   maxd 2 full 0 facing 0 stats 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# pso c3   maxd 3 full 0 facing 0 stats 1: maxTotalThreadsPerThreadgroup 1024, simd 32, static threadgroup mem 0
+# scene: 69 corridor instances + 3000 far, 18 lamps
+# receiver px (floor + lite): 20.31% of the screen
+# s1   vs main: 0 of 745106 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# s2   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# s3   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# x1   vs main: 0 of 745106 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# x2   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# x3   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# y1   vs main: 0 of 745106 traced px differ in any bit; mean |dL| 0.00000, max rel 0.000
+# y2   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# y3   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# c2   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# c3   vs main: 20246 of 745106 traced px differ in any bit; mean |dL| 0.00411, max rel 2.295
+# main shadow rays per frame 1564352
+# x1 (facing rule) vs s1 (lastGlass): 0 of 745106 traced px differ in any bit
+# x2 (facing rule) vs s2 (lastGlass): 0 of 745106 traced px differ in any bit
+# x3 (facing rule) vs s3 (lastGlass): 0 of 745106 traced px differ in any bit
+# y1 (facing rule) vs s1 (lastGlass): 0 of 745106 traced px differ in any bit
+# y2 (facing rule) vs s2 (lastGlass): 0 of 745106 traced px differ in any bit
+# y3 (facing rule) vs s3 (lastGlass): 0 of 745106 traced px differ in any bit
+# facing c2  glass hits 18251 (truth: 9117 exiting, 9134 entering) | wrong vs truth: lastGlass 0, front_facing(default) 0, front_facing(ccw) 18251, cross x det 0, cross alone 0
+# facing c3  glass hits 18251 (truth: 9117 exiting, 9134 entering) | wrong vs truth: lastGlass 0, front_facing(default) 0, front_facing(ccw) 18251, cross x det 0, cross alone 0
+# NOTIME: identity only
+16:53  up 2 days, 15:55, 1 user, load averages: 401.52 478.98 393.09

@@ -1,0 +1,504 @@
+"""Small vector + raster kit for the key-icon design (scratchpad tool).
+
+Everything is in pixels of the 1080p reference (y down). A drawing is a
+list of layers; a layer is (hex colour, opacity, [polygons], rule). Rules:
+'evenodd' (icons, holes as extra polygons) or 'nonzero' (font glyphs).
+The same layers write the SVG master and the PNG (16 x 16 supersampled
+coverage, composited in LINEAR light like Unity's linear-colour-space UI,
+straight alpha, RGB bled into transparent pixels so bilinear filtering
+never pulls in black).  Also: a minimal TrueType (glyf) reader for the HUD
+fonts, a PNG reader/writer, and a linear-light compositor for HUD crops.
+Runs on Blender's bundled Python (numpy).
+"""
+import math, struct, zlib
+import numpy as np
+
+# ------------------------------------------------------------------ colour
+def hexrgb(h):
+    h = h.lstrip("#")
+    return np.array([int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4)])
+
+def to_lin(c):
+    c = np.asarray(c, dtype=np.float64)
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+def to_srgb(c):
+    c = np.clip(np.asarray(c, dtype=np.float64), 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055)
+
+def rel_lum(rgb):
+    l = to_lin(rgb)
+    return 0.2126 * l[..., 0] + 0.7152 * l[..., 1] + 0.0722 * l[..., 2]
+
+def contrast(a, b):
+    la, lb = rel_lum(np.asarray(a)), rel_lum(np.asarray(b))
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+# ------------------------------------------------------------------ geometry
+def arc(cx, cy, r, a0, a1, n):
+    """Points on an arc, angles in degrees, y-down screen maths (a=90 is down)."""
+    return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
+             cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+
+def circle(cx, cy, r, n=96):
+    return [(cx + r * math.cos(2 * math.pi * i / n), cy + r * math.sin(2 * math.pi * i / n)) for i in range(n)]
+
+def rrect(x0, y0, x1, y1, r, n=12):
+    if r <= 0:
+        return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    p = []
+    p += arc(x1 - r, y0 + r, r, -90, 0, n)
+    p += arc(x1 - r, y1 - r, r, 0, 90, n)
+    p += arc(x0 + r, y1 - r, r, 90, 180, n)
+    p += arc(x0 + r, y0 + r, r, 180, 270, n)
+    return dedupe(p)
+
+def dedupe(pts, eps=1e-9):
+    out = []
+    for p in pts:
+        if not out or abs(out[-1][0] - p[0]) > eps or abs(out[-1][1] - p[1]) > eps:
+            out.append(p)
+    if len(out) > 1 and abs(out[0][0] - out[-1][0]) < eps and abs(out[0][1] - out[-1][1]) < eps:
+        out.pop()
+    return out
+
+def xform(polys, sx=1.0, sy=None, tx=0.0, ty=0.0):
+    sy = sx if sy is None else sy
+    return [[(x * sx + tx, y * sy + ty) for x, y in p] for p in polys]
+
+def bbox(polys):
+    xs = [x for p in polys for x, _ in p]
+    ys = [y for p in polys for _, y in p]
+    return min(xs), min(ys), max(xs), max(ys)
+
+# ------------------------------------------------------------------ raster
+SS = 16
+
+def coverage(polys, W, H, scale=1.0, rule="evenodd", ss=SS):
+    """Fractional coverage (H*scale, W*scale) of the polygons (px units * scale)."""
+    w, h = int(round(W * scale)), int(round(H * scale))
+    edges = []
+    for p in polys:
+        n = len(p)
+        for i in range(n):
+            (xa, ya), (xb, yb) = p[i], p[(i + 1) % n]
+            if ya == yb:
+                continue
+            edges.append((xa * scale, ya * scale, xb * scale, yb * scale))
+    if not edges:
+        return np.zeros((h, w))
+    E = np.array(edges)
+    xa, ya, xb, yb = E.T
+    sx = (np.arange(w * ss) + 0.5) / ss
+    out = np.zeros((h * ss, w * ss), bool)
+    for r in range(h * ss):
+        y = (r + 0.5) / ss
+        hit = (ya <= y) != (yb <= y)
+        if not hit.any():
+            continue
+        t = (y - ya[hit]) / (yb[hit] - ya[hit])
+        xi = xa[hit] + t * (xb[hit] - xa[hit])
+        if rule == "evenodd":
+            xi.sort()
+            cnt = np.searchsorted(xi, sx)
+            out[r] = (cnt % 2) == 1
+        else:
+            d = np.where(yb[hit] > ya[hit], 1, -1)
+            o = np.argsort(xi)
+            xi, d = xi[o], d[o]
+            cum = np.concatenate([[0], np.cumsum(d)])
+            cnt = np.searchsorted(xi, sx)
+            out[r] = cum[cnt] != 0
+    return out.reshape(h, ss, w, ss).mean(axis=(1, 3))
+
+
+def stroke_coverage(polys, width, W, H, scale=1.0, ss=8, closed=True):
+    """Coverage of a centred stroke (width in px at scale 1) along the polygon edges.
+    Distances are computed only inside each segment's padded bounding window."""
+    w, h = int(round(W * scale)), int(round(H * scale))
+    hw = width * scale / 2
+    best = np.full((h * ss, w * ss), 1e9)
+    for p in polys:
+        n = len(p)
+        rng = range(n) if closed else range(n - 1)
+        for i in rng:
+            ax, ay = p[i][0] * scale, p[i][1] * scale
+            bx, by = p[(i + 1) % n][0] * scale, p[(i + 1) % n][1] * scale
+            x0 = max(int(math.floor((min(ax, bx) - hw - 1) * ss)), 0); x1 = min(int(math.ceil((max(ax, bx) + hw + 1) * ss)), w * ss)
+            y0 = max(int(math.floor((min(ay, by) - hw - 1) * ss)), 0); y1 = min(int(math.ceil((max(ay, by) + hw + 1) * ss)), h * ss)
+            if x0 >= x1 or y0 >= y1:
+                continue
+            X, Y = np.meshgrid((np.arange(x0, x1) + 0.5) / ss, (np.arange(y0, y1) + 0.5) / ss)
+            dx, dy = bx - ax, by - ay
+            L2 = dx * dx + dy * dy
+            if L2 == 0:
+                d = np.hypot(X - ax, Y - ay)
+            else:
+                t = np.clip(((X - ax) * dx + (Y - ay) * dy) / L2, 0, 1)
+                d = np.hypot(X - (ax + t * dx), Y - (ay + t * dy))
+            np.minimum(best[y0:y1, x0:x1], d, out=best[y0:y1, x0:x1])
+    m = best <= hw
+    return m.reshape(h, ss, w, ss).mean(axis=(1, 3))
+
+
+def render_layers(layers, W, H, scale=1.0, bg=None):
+    """Composite layers in linear light. Returns (rgb_srgb, alpha) arrays.
+    layers: dicts {colour, opacity, polys, rule} or {colour, opacity, stroke: (polys, width)}."""
+    w, h = int(round(W * scale)), int(round(H * scale))
+    acc = np.zeros((h, w, 3))      # premultiplied linear
+    a = np.zeros((h, w))
+    bleed = None
+    for L in layers:
+        if "stroke" in L:
+            polys, width = L["stroke"]
+            cov = stroke_coverage(polys, width, W, H, scale, closed=L.get("closed", True))
+        else:
+            cov = coverage(L["polys"], W, H, scale, L.get("rule", "evenodd"))
+        if "cut" in L:
+            cov = cov * (1 - coverage(L["cut"], W, H, scale, "evenodd"))
+        cov = cov * L.get("opacity", 1.0)
+        col = to_lin(hexrgb(L["colour"]))
+        acc = acc * (1 - cov[..., None]) + col * cov[..., None]
+        a = a * (1 - cov) + cov
+        if bleed is None:
+            bleed = hexrgb(L["colour"])
+    rgb = np.where(a[..., None] > 1e-6, acc / np.maximum(a[..., None], 1e-6), to_lin(bleed if bleed is not None else np.ones(3)))
+    return to_srgb(rgb), a
+
+
+def composite_over(bg_srgb, fg_srgb, fg_a, x, y):
+    """Linear-light 'over' of an RGBA sprite onto a background at integer (x, y)."""
+    out = bg_srgb.copy()
+    h, w = fg_a.shape
+    region = to_lin(out[y:y + h, x:x + w])
+    f = to_lin(fg_srgb)
+    region = region * (1 - fg_a[..., None]) + f * fg_a[..., None]
+    out[y:y + h, x:x + w] = to_srgb(region)
+    return out
+
+# ------------------------------------------------------------------ PNG io
+def write_png(path, rgb, alpha=None):
+    rgb = np.clip(np.round(np.asarray(rgb) * 255), 0, 255).astype(np.uint8)
+    h, w = rgb.shape[:2]
+    if alpha is not None:
+        a = np.clip(np.round(np.asarray(alpha) * 255), 0, 255).astype(np.uint8)
+        px = np.dstack([rgb, a]); ct, ch = 6, 4
+    else:
+        px = rgb; ct, ch = 2, 3
+    raw = b"".join(b"\x00" + px[r].tobytes() for r in range(h))
+    def chunk(t, d):
+        c = struct.pack(">I", len(d)) + t + d
+        return c + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+    data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, ct, 0, 0, 0))
+    data += chunk(b"sRGB", b"\x00") + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+    open(path, "wb").write(data)
+
+
+def read_png(path):
+    """8-bit RGB/RGBA/grey non-interlaced PNG -> (rgb float 0..1, alpha or None)."""
+    d = open(path, "rb").read()
+    assert d[:8] == b"\x89PNG\r\n\x1a\n", path
+    pos, idat = 8, b""
+    while pos < len(d):
+        ln = struct.unpack(">I", d[pos:pos + 4])[0]; t = d[pos + 4:pos + 8]; body = d[pos + 8:pos + 8 + ln]
+        if t == b"IHDR":
+            w, h, bd, ct, _, _, il = struct.unpack(">IIBBBBB", body)
+        elif t == b"IDAT":
+            idat += body
+        pos += 12 + ln
+    assert bd == 8 and il == 0, (path, bd, il)
+    ch = {0: 1, 2: 3, 4: 2, 6: 4}[ct]
+    raw = zlib.decompress(idat)
+    stride = w * ch
+    img = np.zeros((h, stride), np.int32)
+    prev = np.zeros(stride, np.int32)
+    for r in range(h):
+        f = raw[r * (stride + 1)]
+        line = np.frombuffer(raw, np.uint8, stride, r * (stride + 1) + 1).astype(np.int32)
+        if f == 0:
+            cur = line
+        elif f == 1:
+            cur = line.copy()
+            for i in range(ch, stride, ch):
+                pass
+            cur = cur.reshape(-1, ch)
+            cur = np.cumsum(cur, axis=0) % 256
+            cur = cur.reshape(-1)
+        elif f == 2:
+            cur = (line + prev) % 256
+        elif f == 3:
+            cur = line.copy()
+            for i in range(stride):
+                left = cur[i - ch] if i >= ch else 0
+                cur[i] = (cur[i] + ((left + prev[i]) >> 1)) % 256
+        elif f == 4:
+            cur = line.copy()
+            for i in range(stride):
+                a = cur[i - ch] if i >= ch else 0
+                b = prev[i]
+                c = prev[i - ch] if i >= ch else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                cur[i] = (cur[i] + pr) % 256
+        img[r] = cur
+        prev = cur
+    img = img.reshape(h, w, ch) / 255.0
+    if ch == 1:
+        return np.dstack([img[..., 0]] * 3), None
+    if ch == 2:
+        return np.dstack([img[..., 0]] * 3), img[..., 1]
+    if ch == 3:
+        return img, None
+    return img[..., :3], img[..., 3]
+
+
+def upscale_nearest(img, k):
+    return np.repeat(np.repeat(img, k, 0), k, 1)
+
+
+def resample_bilinear(img, w, h):
+    """Bilinear resample with pixel-centre alignment (like a GPU sampler)."""
+    H, W = img.shape[:2]
+    xs = (np.arange(w) + 0.5) * W / w - 0.5
+    ys = (np.arange(h) + 0.5) * H / h - 0.5
+    x0 = np.clip(np.floor(xs).astype(int), 0, W - 1); x1 = np.clip(x0 + 1, 0, W - 1)
+    y0 = np.clip(np.floor(ys).astype(int), 0, H - 1); y1 = np.clip(y0 + 1, 0, H - 1)
+    fx = np.clip(xs - np.floor(xs), 0, 1); fy = np.clip(ys - np.floor(ys), 0, 1)
+    if img.ndim == 2:
+        img = img[..., None]; squeeze = True
+    else:
+        squeeze = False
+    top = img[y0][:, x0] * (1 - fx)[None, :, None] + img[y0][:, x1] * fx[None, :, None]
+    bot = img[y1][:, x0] * (1 - fx)[None, :, None] + img[y1][:, x1] * fx[None, :, None]
+    out = top * (1 - fy)[:, None, None] + bot * fy[:, None, None]
+    return out[..., 0] if squeeze else out
+
+# ------------------------------------------------------------------ TrueType
+class Font:
+    """Minimal glyf reader: cmap 4/12, hmtx, simple + composite glyphs, quadratic flattening."""
+    def __init__(self, path):
+        self.d = d = open(path, "rb").read()
+        n = struct.unpack(">H", d[4:6])[0]
+        self.t = {}
+        for i in range(n):
+            tag, _, off, ln = struct.unpack(">4sIII", d[12 + 16 * i:28 + 16 * i])
+            self.t[tag.decode()] = (off, ln)
+        o = self.t["head"][0]
+        self.upm = struct.unpack(">H", d[o + 18:o + 20])[0]
+        self.loca_fmt = struct.unpack(">h", d[o + 50:o + 52])[0]
+        o = self.t["hhea"][0]
+        self.ascent, self.descent = struct.unpack(">hh", d[o + 4:o + 8])
+        self.n_hm = struct.unpack(">H", d[o + 34:o + 36])[0]
+        o = self.t["maxp"][0]
+        self.n_glyphs = struct.unpack(">H", d[o + 4:o + 6])[0]
+        o, _ = self.t["OS/2"]
+        self.cap = struct.unpack(">h", d[o + 88:o + 90])[0]
+        self._cmap()
+
+    def _cmap(self):
+        d = self.d; o = self.t["cmap"][0]
+        n = struct.unpack(">H", d[o + 2:o + 4])[0]
+        best = None
+        for i in range(n):
+            pid, eid, off = struct.unpack(">HHI", d[o + 4 + 8 * i:o + 12 + 8 * i])
+            fmt = struct.unpack(">H", d[o + off:o + off + 2])[0]
+            if fmt in (4, 12) and (best is None or fmt == 12):
+                best = (o + off, fmt)
+        self.cmap = {}
+        so, fmt = best
+        if fmt == 4:
+            segx2 = struct.unpack(">H", d[so + 6:so + 8])[0]; seg = segx2 // 2
+            ends = struct.unpack(">%dH" % seg, d[so + 14:so + 14 + segx2])
+            starts = struct.unpack(">%dH" % seg, d[so + 16 + segx2:so + 16 + 2 * segx2])
+            deltas = struct.unpack(">%dh" % seg, d[so + 16 + 2 * segx2:so + 16 + 3 * segx2])
+            ro = so + 16 + 3 * segx2
+            ranges = struct.unpack(">%dH" % seg, d[ro:ro + segx2])
+            for i in range(seg):
+                for c in range(starts[i], ends[i] + 1):
+                    if c == 0xFFFF or c > 0x2FFF:
+                        continue
+                    if ranges[i] == 0:
+                        g = (c + deltas[i]) & 0xFFFF
+                    else:
+                        a = ro + 2 * i + ranges[i] + 2 * (c - starts[i])
+                        g = struct.unpack(">H", d[a:a + 2])[0]
+                        if g:
+                            g = (g + deltas[i]) & 0xFFFF
+                    self.cmap[c] = g
+        else:
+            ng = struct.unpack(">I", d[so + 12:so + 16])[0]
+            for i in range(ng):
+                s, e, g0 = struct.unpack(">III", d[so + 16 + 12 * i:so + 28 + 12 * i])
+                for c in range(s, min(e, 0x2FFF) + 1):
+                    self.cmap[c] = g0 + c - s
+
+    def advance(self, g):
+        d = self.d; o = self.t["hmtx"][0]
+        i = min(g, self.n_hm - 1)
+        return struct.unpack(">H", d[o + 4 * i:o + 4 * i + 2])[0]
+
+    def _loc(self, g):
+        d = self.d; o = self.t["loca"][0]
+        if self.loca_fmt == 0:
+            a, b = struct.unpack(">HH", d[o + 2 * g:o + 2 * g + 4]); return a * 2, b * 2
+        return struct.unpack(">II", d[o + 4 * g:o + 4 * g + 8])
+
+    def contours(self, g):
+        """List of contours [(x, y, on_curve)] in font units (y up)."""
+        d = self.d; go = self.t["glyf"][0]
+        a, b = self._loc(g)
+        if a == b:
+            return []
+        o = go + a
+        nc = struct.unpack(">h", d[o:o + 2])[0]
+        if nc < 0:      # composite
+            out = []; p = o + 10
+            while True:
+                flags, gi = struct.unpack(">HH", d[p:p + 4]); p += 4
+                if flags & 1:
+                    dx, dy = struct.unpack(">hh", d[p:p + 4]); p += 4
+                else:
+                    dx, dy = struct.unpack(">bb", d[p:p + 2]); p += 2
+                sx = sy = 1.0; s01 = s10 = 0.0
+                if flags & 8:
+                    sx = sy = struct.unpack(">h", d[p:p + 2])[0] / 16384; p += 2
+                elif flags & 0x40:
+                    sx, sy = [v / 16384 for v in struct.unpack(">hh", d[p:p + 4])]; p += 4
+                elif flags & 0x80:
+                    sx, s01, s10, sy = [v / 16384 for v in struct.unpack(">hhhh", d[p:p + 8])]; p += 8
+                for c in self.contours(gi):
+                    out.append([(x * sx + y * s10 + dx, x * s01 + y * sy + dy, on) for x, y, on in c])
+                if not flags & 0x20:
+                    break
+            return out
+        ends = struct.unpack(">%dH" % nc, d[o + 10:o + 10 + 2 * nc])
+        npts = ends[-1] + 1
+        p = o + 10 + 2 * nc
+        il = struct.unpack(">H", d[p:p + 2])[0]; p += 2 + il
+        flags = []
+        while len(flags) < npts:
+            f = d[p]; p += 1; flags.append(f)
+            if f & 8:
+                r = d[p]; p += 1; flags += [f] * r
+        xs, ys = [], []
+        v = 0
+        for f in flags:
+            if f & 2:
+                dx = d[p]; p += 1; v += dx if f & 16 else -dx
+            elif not f & 16:
+                v += struct.unpack(">h", d[p:p + 2])[0]; p += 2
+            xs.append(v)
+        v = 0
+        for f in flags:
+            if f & 4:
+                dy = d[p]; p += 1; v += dy if f & 32 else -dy
+            elif not f & 32:
+                v += struct.unpack(">h", d[p:p + 2])[0]; p += 2
+            ys.append(v)
+        out, s = [], 0
+        for e in ends:
+            out.append([(xs[i], ys[i], bool(flags[i] & 1)) for i in range(s, e + 1)]); s = e + 1
+        return out
+
+    @staticmethod
+    def flatten(c, steps=6):
+        pts = c
+        if not any(on for _, _, on in pts):
+            return []
+        while not pts[0][2]:
+            pts = pts[1:] + pts[:1]
+        out = []
+        n = len(pts)
+        i = 0
+        cur = pts[0][:2]
+        out.append(cur)
+        k = 1
+        while k <= n:
+            p = pts[k % n]
+            if p[2]:
+                out.append(p[:2]); cur = p[:2]; k += 1
+            else:
+                nxt = pts[(k + 1) % n]
+                end = nxt[:2] if nxt[2] else ((p[0] + nxt[0]) / 2, (p[1] + nxt[1]) / 2)
+                for s in range(1, steps + 1):
+                    t = s / steps
+                    out.append(((1 - t) ** 2 * cur[0] + 2 * (1 - t) * t * p[0] + t * t * end[0],
+                                (1 - t) ** 2 * cur[1] + 2 * (1 - t) * t * p[1] + t * t * end[1]))
+                cur = end
+                k += 2 if nxt[2] else 1
+        return dedupe(out)
+
+    def text_polys(self, text, size, x, baseline, tracking=0.0):
+        """Glyph polygons for text at font size `size` px; returns (polys, advance_px)."""
+        s = size / self.upm
+        polys = []
+        pen = x
+        for ch in text:
+            g = self.cmap.get(ord(ch), 0)
+            for c in self.contours(g):
+                f = self.flatten(c)
+                if len(f) > 2:
+                    polys.append([(pen + px * s, baseline - py * s) for px, py in f])
+            pen += self.advance(g) * s + tracking
+        return polys, pen - x
+
+    def width(self, text, size, tracking=0.0):
+        s = size / self.upm
+        return sum(self.advance(self.cmap.get(ord(c), 0)) * s + tracking for c in text)
+
+# ------------------------------------------------------------------ SVG
+def path_d(polys, nd=3, closed=True):
+    f = lambda v: ("%.*f" % (nd, v)).rstrip("0").rstrip(".")
+    z = " Z" if closed else ""
+    return " ".join("M" + " L".join("%s %s" % (f(x), f(y)) for x, y in p) + z for p in polys)
+
+def write_svg(path, layers, W, H, title="", desc=""):
+    out = ['<svg xmlns="http://www.w3.org/2000/svg" width="%g" height="%g" viewBox="0 0 %g %g">' % (W, H, W, H)]
+    if title:
+        out.append("  <title>%s</title>" % title)
+    if desc:
+        out.append("  <desc>%s</desc>" % desc)
+    for L in layers:
+        op = L.get("opacity", 1.0)
+        ops = ' opacity="%g"' % op if op < 1 else ""
+        nm = ' id="%s"' % L["name"] if L.get("name") else ""
+        if "stroke" in L:
+            polys, width = L["stroke"]
+            out.append('  <path%s d="%s" fill="none" stroke="#%s" stroke-width="%g" stroke-linejoin="round"%s/>'
+                       % (nm, path_d(polys, closed=L.get("closed", True)), L["colour"].lstrip("#"), width, ops))
+        else:
+            polys = L["polys"]
+            if "cut" in L:
+                # cuts become extra even-odd sub-paths (they always lie inside the filled shape here)
+                polys = polys + L["cut"]
+            out.append('  <path%s d="%s" fill="#%s" fill-rule="%s"%s/>'
+                       % (nm, path_d(polys), L["colour"].lstrip("#"), L.get("rule", "evenodd"), ops))
+    out.append("</svg>")
+    open(path, "w").write("\n".join(out) + "\n")
+
+
+def read_bmp(path):
+    """24/32-bit uncompressed BMP (as written by `sips -s format bmp`) -> rgb float 0..1."""
+    d = open(path, "rb").read()
+    off = struct.unpack("<I", d[10:14])[0]
+    w, h = struct.unpack("<ii", d[18:26])
+    bpp = struct.unpack("<H", d[28:30])[0]
+    comp = struct.unpack("<I", d[30:34])[0]
+    assert bpp in (24, 32) and comp in (0, 3), (path, bpp, comp)
+    ch = bpp // 8
+    stride = (w * ch + 3) & ~3
+    a = np.frombuffer(d, np.uint8, stride * abs(h), off).reshape(abs(h), stride)[:, :w * ch].reshape(abs(h), w, ch)
+    if h > 0:
+        a = a[::-1]
+    return a[..., [2, 1, 0]].astype(np.float64) / 255.0
+
+
+def load_frame(path, cache_dir):
+    """Any image sips can read -> rgb float, via an uncompressed BMP copy in cache_dir."""
+    import os, subprocess, hashlib
+    os.makedirs(cache_dir, exist_ok=True)
+    out = os.path.join(cache_dir, hashlib.md5(path.encode()).hexdigest()[:12] + ".bmp")
+    if not os.path.exists(out):
+        subprocess.run(["sips", "-s", "format", "bmp", path, "--out", out], check=True, capture_output=True)
+    return read_bmp(out)

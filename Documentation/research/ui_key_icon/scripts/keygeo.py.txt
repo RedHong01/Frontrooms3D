@@ -1,0 +1,166 @@
+"""Key-icon geometry, traced from Kit_Key_Zone / Kit_KeyTag_* / Kit_DoorNumberPlate.
+
+Model numbers come from geometry_mm.json (dumped from read-only copies of the
+G3 modules, 2026-10-03 12:5x). Key frame: Z along the key (-33 bow end ..
++25 tip), Y up (cuts up). Screen: x right (tip right), y down.
+All drawings are authored on the 2x grid (80 x 44 for the 40 x 22 HUD
+slot): every structural edge sits on an EVEN 2x coordinate, so the 1x
+(x 0.5) version keeps it on a whole pixel.
+"""
+import json, math, os
+import iconlib as L
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+G = json.load(open(os.path.join(HERE, "geometry_mm.json")))
+B = G["blade"]
+
+
+def rdp(pts, eps=0.01):
+    """Ramer-Douglas-Peucker on an open polyline."""
+    if len(pts) < 3:
+        return pts
+    (x0, y0), (x1, y1) = pts[0], pts[-1]
+    dx, dy = x1 - x0, y1 - y0
+    L2 = math.hypot(dx, dy) or 1e-12
+    dmax, idx = 0.0, 0
+    for i in range(1, len(pts) - 1):
+        d = abs(dy * pts[i][0] - dx * pts[i][1] + x1 * y0 - y1 * x0) / L2
+        if d > dmax:
+            dmax, idx = d, i
+    if dmax > eps:
+        return rdp(pts[:idx + 1], eps)[:-1] + rdp(pts[idx:], eps)
+    return [pts[0], pts[-1]]
+
+
+def fillet_centre(line_y, side, c, R, rf):
+    """Centre of a radius-rf fillet tangent to the line y = line_y (on `side`:
+    -1 = above in screen terms) and outside the corner circle (c, R); front solution."""
+    fy = line_y + side * rf
+    dy = fy - c[1]
+    dz = math.sqrt(max((R + rf) ** 2 - dy ** 2, 0.0))
+    return (c[0] + dz, fy)
+
+
+def key_poly(bx0, by0, bx1, by1, R, neck_x, neck_top, blade_top, blade_bot, tip_x, tip_y,
+             cut_x, cut_d, flank_deg, flat, bevel_x, flare=1.4, nose=0.0, n_arc=16):
+    """One closed outline of Kit_Key_Zone's side view (screen px, y down).
+    bow = rounded rect (bx0..bx1, by0..by1, R); neck from bx1 to neck_x between
+    neck_top and blade_bot; blade from neck_x to tip_x between blade_top and
+    blade_bot; V cuts (centres cut_x, depths cut_d, flank angle from vertical,
+    flat bottom width) on the top edge; tip bevel from bevel_x down to (tip_x, tip_y)."""
+    # --- top profile of the blade (y down: deeper cut = larger y)
+    k = math.tan(math.radians(flank_deg))
+    h = flat / 2
+
+    def env(x):
+        y = blade_top
+        for c, d in zip(cut_x, cut_d):
+            u = max(0.0, abs(x - c) - h)
+            y = max(y, blade_top + d - u / k)
+        return y
+    yb = env(bevel_x)
+    def top(x):
+        y = env(x)
+        if x > bevel_x:
+            y = max(y, yb + (x - bevel_x) * (tip_y - yb) / (tip_x - bevel_x))
+        return y
+    xs = [neck_x + i * 0.02 for i in range(int((tip_x - neck_x) / 0.02) + 1)]
+    if xs[-1] < tip_x:
+        xs.append(tip_x)
+    prof = rdp([(x, top(x)) for x in xs], 0.004)
+
+    # --- bow corners (centres) and the two flares into the neck
+    c_tr = (bx1 - R, by0 + R); c_tl = (bx0 + R, by0 + R)
+    c_bl = (bx0 + R, by1 - R); c_br = (bx1 - R, by1 - R)
+    f1 = fillet_centre(neck_top, -1, c_tr, R, flare)          # above the neck top line
+    f2 = fillet_centre(blade_bot, +1, c_br, R, flare)         # below the neck bottom line
+    ang = lambda c, p: math.degrees(math.atan2(p[1] - c[1], p[0] - c[0]))
+    pts = []
+    # start at the blade's bottom-left (neck bottom meets the flare), run clockwise on screen
+    t2 = (f2[0], blade_bot)                                   # flare tangent on the bottom line
+    pts.append(t2)
+    if nose > 0:
+        pts.append((tip_x - nose, blade_bot))
+        pts += L.arc(tip_x - nose, blade_bot - nose, nose, 90, 0, 4)[1:]
+    else:
+        pts.append((tip_x, blade_bot))
+    pts.append((tip_x, tip_y))
+    pts += list(reversed(prof))[1:]                           # tip -> neck along the cut edge
+    pts.append((neck_x, blade_top))
+    pts.append((neck_x, neck_top))
+    # neck top line to the top flare, flare (concave) into the top-right arc
+    pts.append((f1[0], neck_top))
+    a_start = 90.0                                            # flare point on the neck line (below the centre)
+    a_end = ang(f1, c_tr)                                     # toward the corner centre
+    pts += L.arc(f1[0], f1[1], flare, a_start, a_end + 360 if a_end < 0 else a_end, 4)[1:]
+    t_arc = ang(c_tr, f1)                                     # tangent point direction on the corner arc
+    pts += L.arc(c_tr[0], c_tr[1], R, t_arc, -90, n_arc)[1:]
+    pts += L.arc(c_tl[0], c_tl[1], R, -90, -180, n_arc)
+    pts += L.arc(c_bl[0], c_bl[1], R, 180, 90, n_arc)
+    t_arc2 = ang(c_br, f2)
+    pts += L.arc(c_br[0], c_br[1], R, 90, t_arc2, n_arc)
+    a2s = ang(f2, c_br)
+    pts += L.arc(f2[0], f2[1], flare, a2s if a2s > 0 else a2s + 360, 270, 4)[1:-1]
+    return L.dedupe(pts)
+
+
+# ------------------------------------------------------------------ direction A
+def key_A(gain=2.0, flank=40.0, scale2x=True):
+    """Kit_Key_Zone traced on the 2x grid of the 40 x 22 slot (key 80 x 36 at y 4..40).
+    Model -> 2x: k = 80/58 px/mm along the key; edges hinted to even values."""
+    k = 80.0 / 58.0
+    neck_x, tip_x = 46.0, 80.0
+    kb = (tip_x - neck_x) / B["len"]                      # 1.36 px/mm along the blade
+    cut_x = [neck_x + z * kb for z in B["cut_z"]]
+    cut_d = [d * kb * gain for d in B["cut_depths"]]
+    poly = key_poly(0, 4, 42, 40, 11.0, neck_x, 10.0, 16.0, 28.0, tip_x, 22.0,
+                    cut_x, cut_d, flank, B["cut_flat"] * kb, neck_x + B["tip_bevel_z"] * kb, flare=1.4)
+    hole = L.circle(9.0, 22.0, 5.0, 64)                   # model r 2.4 mm x 1.5 = 3.6 mm -> 5 px (2x)
+    return poly, hole
+
+
+def model_to_2x_A(Z, Y):
+    """Exact (unhinted) model point on A's 2x grid, for the trace overlay."""
+    k = 80.0 / 58.0
+    return ((Z + 33.0) * k, 4.0 + (13.5 - Y) * k)
+
+
+# ------------------------------------------------------------------ direction C (1974 sign grammar)
+def key_C():
+    """Our key redrawn in AIGA/DOT construction on the 2x grid of a 80 x 40 plate:
+    rounded-square bow (R = 1/3 of its height), a round off-centre hole, a square
+    shoulder step, a straight blade with three equal 90-degree V cuts on the top
+    edge (pins up, as on our key) and a straight bevel at the tip."""
+    bx0, by0, bx1, by1, R = 12.0, 10.0, 38.0, 34.0, 8.0
+    neck_x, neck_top, blade_top, blade_bot = 42.0, 13.0, 16.0, 26.0
+    tip_x, tip_y = 70.0, 21.0
+    cut_x = [47.0, 54.0, 61.0]
+    cut_d = [3.5, 3.5, 3.5]
+    poly = key_poly(bx0, by0, bx1, by1, R, neck_x, neck_top, blade_top, blade_bot, tip_x, tip_y,
+                    cut_x, cut_d, 45.0, 0.0, 65.0, flare=0.0001)
+    hole = L.circle(19.0, 22.0, 4.0, 64)
+    return poly, hole
+
+
+def plate_C(x0=0.0, y0=2.0, x1=80.0, y1=42.0, r=4.0):
+    return L.rrect(x0, y0, x1, y1, r, 12)
+
+
+# ------------------------------------------------------------------ tags (model outlines, mm -> px)
+def tag_shape(kind, k, hx, hy):
+    """Tag silhouette (body + tab), hole and window, hole centre at screen (hx, hy), k px/mm.
+    Model frame: hole at origin, body hangs along -Y (screen +y)."""
+    t = G["tags"][kind]
+    m = lambda pts: [(hx + x * k, hy - y * k) for x, y in pts]
+    body = m(t["body"])
+    tab = m(t["tab"])
+    hole = L.circle(hx, hy, t["hole_r"] * k, 48)
+    w = t["window"]
+    if w["kind"] == "rect":
+        win = L.rrect(hx - w["w"] / 2 * k, hy - (w["cy"] + w["h"] / 2) * k, hx + w["w"] / 2 * k,
+                      hy - (w["cy"] - w["h"] / 2) * k, w["r"] * k, 6)
+        win_c = (hx, hy - w["cy"] * k); win_h = w["h"] * k
+    else:
+        win = L.circle(hx, hy - w["cy"] * k, w["d"] / 2 * k, 64)
+        win_c = (hx, hy - w["cy"] * k); win_h = w["d"] * k
+    return {"body": body, "tab": tab, "hole": hole, "window": win, "win_c": win_c, "win_h": win_h}

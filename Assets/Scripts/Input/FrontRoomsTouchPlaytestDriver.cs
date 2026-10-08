@@ -145,8 +145,6 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Capture("02_calm_ghost_stick");
 
         var L = controls.Layout;
-        var spawn = PlayerRoot.position;
-        var spawnYaw = GetFloat("yaw");
         Note("layout", "rest " + V(L.StickRest) + " use " + V(L.UseCenter) + " pause " + V(L.PauseCenter) + " frame " + V(L.Frame));
 
         // ---------------------------------------------------------------- stick
@@ -236,8 +234,9 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Capture("07x_sprint_again");
         Send(2, socket, InputTouchPhase.Ended);
         yield return Frames(.4f);
-        // Back to the spawn point: the long sprint ends against a wall, and the next steps need room to walk.
-        Teleport(spawn, spawnYaw, 0f);
+        // The long sprint ends against a wall: turn round so the next steps have room to walk. (No teleport back:
+        // the start rooms keep the map's doors and panes asleep, as the desktop autopilot's glass scenario knows.)
+        game.GetType().GetField("yaw", Any).SetValue(game, GetFloat("yaw") + 180f);
         yield return Frames(.2f);
 
         // ----------------------------------------------------------------- look
@@ -483,7 +482,13 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         target = null;
         var feet = PlayerRoot.position;
         var found = new List<Collider>();
-        foreach (var c in candidates) if (c != null && c.enabled && c.gameObject.activeInHierarchy && want(c)) found.Add(c);
+        var seen = 0;
+        foreach (var c in candidates)
+        {
+            seen++;
+            if (c != null && c.enabled && c.gameObject.activeInHierarchy && want(c)) found.Add(c);
+        }
+        Note("candidates", found.Count + " of " + seen + (GetBool("inStartRooms") ? " (player in the start rooms)" : ""));
         found.Sort((a, b) => (a.bounds.center - feet).sqrMagnitude.CompareTo((b.bounds.center - feet).sqrMagnitude));
         for (var n = 0; n < found.Count && n < 40; n++)
             if (PlaceAt(found[n], distance, feet)) { target = found[n]; return true; }

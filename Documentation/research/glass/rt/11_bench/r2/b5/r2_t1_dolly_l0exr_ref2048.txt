@@ -1,0 +1,38 @@
+16:28  up 2 days, 15:29, 1 user, load averages: 50.09 48.37 97.39
+# rt_bench4 r2m dolly device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 50/48/97
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- dolly 1920x1080 Run S1 tripped, Ultra 3 rays + hw-aniso k1, cube mode 4  load 50/48/97
+r2m dolly forward screen hash, re-seeded per frame (11's bench)    | 0-3 m: T 1.03 (>=8 1.48%) |E| 0.58 | 3-6 m: T 2.51 (>=8 6.89%) |E| 1.58 | 6-12 m: T 11.32 (>=8 37.90%) |E| 7.04 | 12+ m: T 9.05 (>=8 25.02%) |E| 6.28 | load 49/48/97
+wrote dolly_r2m_mode0r.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly forward screen hash, fixed seed                          | 0-3 m: T 0.34 (>=8 0.01%) |E| 0.52 | 3-6 m: T 0.85 (>=8 0.96%) |E| 1.57 | 6-12 m: T 1.98 (>=8 4.78%) |E| 8.44 | 12+ m: T 1.29 (>=8 2.78%) |E| 6.18 | load 49/48/97
+wrote dolly_r2m_mode0.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly forward world 1 cm cells                                 | 0-3 m: T 0.45 (>=8 0.14%) |E| 0.39 | 3-6 m: T 1.42 (>=8 3.49%) |E| 1.18 | 6-12 m: T 7.94 (>=8 26.23%) |E| 6.52 | 12+ m: T 6.92 (>=8 21.21%) |E| 6.02 | load 49/48/97
+wrote dolly_r2m_mode1.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly forward footprint-aware (long axis)                      | 0-3 m: T 0.48 (>=8 0.22%) |E| 0.36 | 3-6 m: T 1.51 (>=8 4.34%) |E| 1.34 | 6-12 m: T 5.39 (>=8 17.95%) |E| 7.11 | 12+ m: T 3.60 (>=8 8.74%) |E| 7.40 | load 49/48/97
+wrote dolly_r2m_mode2.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly forward footprint-aware (geometric mean)                 | 0-3 m: T 0.45 (>=8 0.08%) |E| 0.32 | 3-6 m: T 1.57 (>=8 4.14%) |E| 1.27 | 6-12 m: T 7.58 (>=8 24.39%) |E| 6.62 | 12+ m: T 3.40 (>=8 9.68%) |E| 6.15 | load 49/48/97
+wrote dolly_r2m_mode3.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly forward High: mirror + k2 (deterministic)                | 0-3 m: T 0.34 (>=8 0.01%) |E| 0.56 | 3-6 m: T 0.81 (>=8 0.92%) |E| 1.65 | 6-12 m: T 2.35 (>=8 6.98%) |E| 10.76 | 12+ m: T 1.04 (>=8 2.36%) |E| 9.72 | load 49/48/97
+wrote dolly_r2m_mode0_high.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly forward Ultra hybrid: footprint jitter + far fade 6-12 mm | 0-3 m: T 0.48 (>=8 0.22%) |E| 0.36 | 3-6 m: T 1.38 (>=8 3.81%) |E| 1.29 | 6-12 m: T 2.69 (>=8 9.18%) |E| 9.80 | 12+ m: T 1.04 (>=8 2.36%) |E| 9.72 | load 49/48/97
+wrote dolly_r2m_mode2_hybrid.png (screen-space |E3 - E2| x8, not reprojected)
+r2m dolly strafe  screen hash, re-seeded per frame (11's bench)    | 0-3 m: T 1.01 (>=8 1.29%) |E| 0.57 | 3-6 m: T 2.48 (>=8 6.51%) |E| 1.51 | 6-12 m: T 12.52 (>=8 40.41%) |E| 7.57 | 12+ m: T 8.93 (>=8 26.85%) |E| 6.17 | load 55/50/97
+r2m dolly strafe  screen hash, fixed seed                          | 0-3 m: T 0.38 (>=8 0.01%) |E| 0.54 | 3-6 m: T 1.09 (>=8 2.16%) |E| 1.40 | 6-12 m: T 5.31 (>=8 21.16%) |E| 8.05 | 12+ m: T 4.97 (>=8 16.40%) |E| 7.18 | load 55/50/97
+r2m dolly strafe  world 1 cm cells                                 | 0-3 m: T 0.46 (>=8 0.17%) |E| 0.38 | 3-6 m: T 1.52 (>=8 4.19%) |E| 1.23 | 6-12 m: T 7.49 (>=8 27.95%) |E| 7.04 | 12+ m: T 6.17 (>=8 21.97%) |E| 6.25 | load 55/50/97
+r2m dolly strafe  footprint-aware (long axis)                      | 0-3 m: T 0.42 (>=8 0.08%) |E| 0.33 | 3-6 m: T 1.42 (>=8 3.90%) |E| 1.17 | 6-12 m: T 6.28 (>=8 23.38%) |E| 7.16 | 12+ m: T 4.17 (>=8 13.69%) |E| 8.34 | load 55/50/97
+r2m dolly strafe  footprint-aware (geometric mean)                 | 0-3 m: T 0.45 (>=8 0.05%) |E| 0.33 | 3-6 m: T 1.34 (>=8 3.43%) |E| 1.16 | 6-12 m: T 6.56 (>=8 24.30%) |E| 6.55 | 12+ m: T 4.17 (>=8 14.71%) |E| 5.99 | load 55/50/97
+r2m dolly strafe  High: mirror + k2 (deterministic)                | 0-3 m: T 0.35 (>=8 0.01%) |E| 0.58 | 3-6 m: T 1.13 (>=8 2.65%) |E| 1.92 | 6-12 m: T 4.75 (>=8 19.50%) |E| 11.13 | 12+ m: T 3.16 (>=8 12.17%) |E| 9.71 | load 55/50/97
+r2m dolly strafe  Ultra hybrid: footprint jitter + far fade 6-12 mm | 0-3 m: T 0.42 (>=8 0.08%) |E| 0.33 | 3-6 m: T 1.34 (>=8 3.66%) |E| 1.17 | 6-12 m: T 4.70 (>=8 19.01%) |E| 10.34 | 12+ m: T 3.16 (>=8 12.17%) |E| 9.71 | load 55/50/97
+# done load 55/50/97
+16:28  up 2 days, 15:29, 1 user, load averages: 55.21 49.52 96.95

@@ -1,0 +1,41 @@
+"""Fix stage 2026-10-07: WCAG contrast of every element of the key HUD states, per background.
+Method = the critic's contrast.py: each element's colour, blended at its opacity in linear light,
+against every ground pixel under its box (the frame plus anything drawn before it, e.g. the card).
+Thresholds: 3 : 1 for graphics (WCAG 1.4.11) and for 20 px Bayon is not 'large' (24 px), so text
+targets 4.5 : 1; Plex Mono 13 meta 4.5 : 1. Prints a table and writes measure.json next to it.
+Run with Blender's Python 3.11 (numpy). Usage: measure.py [out.json]"""
+import json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import composites as C
+
+ROWS = []
+
+
+def run(label, bg, fn):
+    C.MEASURE = []
+    img = C.frame(bg, 1)
+    fn(img)
+    for m in C.MEASURE:
+        ROWS.append(dict(m, case=label, bg=bg))
+    C.MEASURE = None
+
+
+BGS5 = ("lit", "wallpaper", "office", "dark", "leaf", "leafwood")
+for bg in BGS5:
+    # the prompt, before (2026-10-03) and after (fix stage)
+    run("prompt v1 (before)", bg, lambda img: C.prompt_v1(img, "A_L_missing", 49, 22, 1, meta="NEEDS KEY 14"))
+    run("prompt v2 (card)", bg, lambda img: C.prompt(img, "A_L_missing", 49, 22, 1, meta="NEEDS KEY 14"))
+    run("prompt today (code)", bg, lambda img: C.today_prompt(img, 960, 591, 20))
+for bg in ("lit", "wallpaper", "office", "dark"):
+    for d in ("A_L", "B", "C", "Achip"):
+        for st in ("held", "other", "used"):
+            run("%s %s" % (d, st), bg, lambda img, d=d, st=st: C.state(img, d, st))
+    # the 2026-10-03 states, for the before column
+    run("A_L other v1", bg, lambda img: C.compact(img, "A_L_held", 49, "KEY 14", 1, glyph_op=0.4, label_col=C.MUTED, label_op=0.7, meta="NOT THIS ZONE"))
+    run("A_L used v1", bg, lambda img: C.compact(img, "A_L_muted", 49, "KEY 14", 1, label_col=C.MUTED, meta="DOOR OPENED"))
+
+if __name__ == "__main__":
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "measure.json")
+    json.dump(ROWS, open(out, "w"), indent=1)
+    for r in ROWS:
+        print("%-22s %-9s %-34s op %.2f  min %5.2f  p10 %5.2f  med %5.2f" % (r["case"], r["bg"], r["what"][:34], r["opacity"], r["min"], r["p10"], r["median"]))

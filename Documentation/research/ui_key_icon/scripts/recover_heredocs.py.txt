@@ -1,0 +1,19 @@
+import re, sys
+def blocks(cmd):
+    lines = cmd.split('\n'); out = []; i = 0
+    while i < len(lines):
+        m = re.search(r"<<-?\s*(['\"]?)(\w+)\1", lines[i])
+        if m:
+            d = m.group(2); body = []; j = i + 1
+            while j < len(lines) and lines[j] != d:
+                body.append(lines[j]); j += 1
+            out.append({'header': lines[i], 'quoted': bool(m.group(1)), 'body': '\n'.join(body) + '\n', 'after': lines[j + 1:j + 3] if j + 1 < len(lines) else []})
+            i = j + 1
+        else:
+            i += 1
+    return out
+if __name__ == '__main__':
+    for f in sys.argv[1:]:
+        cmd = open(f).read()
+        for k, b in enumerate(blocks(cmd)):
+            print(f, k, 'Q' if b['quoted'] else 'U', b['header'][-140:])

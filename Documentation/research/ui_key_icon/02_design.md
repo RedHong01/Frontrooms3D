@@ -1,5 +1,7 @@
 # 02 — Key icon: three directions, states, zones, drop-in
 
+**Fix stage 2026-10-07 (read first):** the critic's 18 issues are fixed or written up; summary and decisions in `04_for_red.md`, change list for 平面视觉 in `03_figma.md` §0, details in §12 below. The states (§4), the locked prompt, the outline masters, the chip (§2) and the contract request (§7) changed. Main checked at `279c144`.
+
 Status: DESIGN DONE 2026-10-03 (second run). Nothing was installed in the game. The Unity project, `FrontRooms3DGame.cs`, the map files and Figma were **not** changed. No media was downloaded.
 
 **Resume check 2026-10-03 22:0x** (after the 17:54 usage stop and Codex's commits into main at 19:10–19:41): every input was re-checked against main at `75cfdff`. The design still holds. Three things changed and are fixed here (§10):
@@ -24,7 +26,8 @@ All paths are under `design/`.
 | PNG renders (99), real alpha | `png/<name>@1x.png`, `@2x.png`, `@3x.png` (@3x added in the Figma stage for the touch track) |
 | HUD composites on game frames (188) | `hud/` — `<dir>_held_<bg>_<1x/2x>.png`, `<dir>_state_<state>_<bg>_1x.png`, `<dir>_zone_…`, `label_…`, `<dir>_fullframe_<bg>.jpg`; resume pass: `live_code_<bg>_1x.png` (main's live glyph + today's label) and `cmp_<live/dropin/target>_wallpaper_1x.png` (the three steps on one frame) |
 | **Drop-in (recommended, NOT installed)** | `dropin/slot_40x22/` and `dropin/slot_49x22/` (§6), each now with `HUD_KeyGlyph@3x.png`; `dropin/crosshair/` (touch @3x crosshair + SVG) |
-| Verification image (resume) | `../images/08_main_fbx_vs_trace.png`: the trace source render, main's FBX outline, and the 15 px where they differ (red) |
+| Verification image (resume) | `../images/08_main_fbx_vs_trace.png`: the trace source render, main's FBX outline, and the 15 px where they differ (red); re-run and re-laid out 2 × 2 on 2026-10-07 |
+| **Fix stage (2026-10-07)** | `bg/leaf_48_almond.png` (5th ground: the spec's almond locked leaf) and `bg/leaf_48_wood.png` (today's wood leaf, measured only); `hud/*_state_missing_{wallpaper,office,leaf}_1x.png`; `hud/phone_*_3x.jpg` (phone, today vs proposal); `hud/A_L_fullframe_target_wallpaper.jpg` (board 10 hero); `dropin/*/HUD_KeyGlyph_Touch.png`, `dropin/prompt/HUD_KeyOutline*.png` + `.svg`, `dropin/crosshair/HUD_Crosshair_Touch.png`; verification images `../images/11_*` … `16_*` |
 
 Board list:
 
@@ -41,13 +44,14 @@ Board list:
 | 09 | C · in the HUD | as 03 |
 | 10 | Recommended | full 1080p frame; three steps on one frame (main today → drop-in → target); drop-in files; contract request |
 
-Scripts (scratchpad, re-runnable with Blender's Python 3.11 + numpy):
-- `keyicon_design/design.py`: SVG + PNG for all directions.
+Scripts: `$W/keyicon_design/` (`$W` = `/Users/redwang/FrontRoomsVisualWork`), rebuilt on 2026-10-07 after the `/private/tmp` wipe; durable copies in `scripts/*.py.txt`; run list in `03_figma.md` §11. Blender's Python 3.11 + numpy unless noted:
+- `design.py`: SVG + PNG for all directions.
 - `composites.py`: the HUD crops.
 - `boards.py`: the boards (HTML → headless Chrome).
 - `iconlib.py`: rasteriser, PNG io and a TrueType reader for the real HUD fonts.
 - `geometry_mm.json`: the key, tag and plate outlines dumped from read-only copies of the G3 Blender modules.
 - Resume pass: `composites_live.py` (crops with main's live glyph) and `keyicon_resume/verify_main_fbx.py` + `bounds_main.py` (main's FBX against the trace).
+- Fix stage: `make_leaf_bg.py`, `measure.py` (contrast), `export_touch.py`, `make_cells.py`, `make_verif2.py` (images 08–16).
 
 ---
 
@@ -118,6 +122,7 @@ So the echo holds in main. The interactables rebuild (G2/G3) was not finished. I
   - round Ø 16 px; whole glyph 69 × 22;
   - long 32 × 9 px; whole glyph 85 × 22.
 - Tab and hole × 1.3 so the hole stays open.
+- **Fix stage 2026-10-07:** alone, the chip read as a battery (tab on top, 4 px gap). A 1 px paper split-ring wire now runs as an arc from the tab hole into the key's bow hole. It is drawn behind the chip and the key, so it shows only in the gap and through the two holes. Glyph sizes unchanged.
 - 1 px paper rim, zone-colour fill. Rim vs fill: red 8.5 : 1, blue 11.7 : 1.
 - The rim carries the contrast against the scene. The fill carries identity only: tag red and blue are 1.2–2.5 : 1 on our frames, so colour is never the only cue. The white tag reads as a white shape, so it relies on its outline.
 - No number on the chip (digits would be 6 px). The number is in the label.
@@ -185,19 +190,23 @@ So the echo holds in main. The interactables rebuild (G2/G3) was not finished. I
 
 ## 4. States (boards 03, 07, 09)
 
-Rule: brightness says how much the key matters **here**.
+Rule (fix stage 2026-10-07, critic issues 2 and 5): **shape** says whether the key works here; the type stays paper. Opacity dimming (40 % glyph, muted label at 70 %) failed 3 : 1 on lit carpet (2.0–2.3 : 1), so it is gone.
 
-| State | Today in code | Design |
+| State | Today in code (`279c144`) | Design |
 |---|---|---|
-| **Held, this zone** | panel shown (`map.HasKeyFor(zone.id)`); glyph = the generic ring key, real alpha since 17:22 | paper glyph + "KEY 14" |
-| **Held, other zone** | panel hidden | glyph at 40 %, label muted `#BDBAB0` at 70 %, meta Plex Mono 13 "NOT THIS ZONE" (B: "OPENS ZONE 14 ONLY", no yellow rule) |
-| **No key** | panel hidden; door prompt "LOCKED  ·  NEEDS THIS ZONE'S KEY" (Bayon) | panel stays hidden. At a locked door the prompt shows the **outline** key (1.25 px stroke, paper 70 %) + "LOCKED" (muted Bayon) + Plex Mono "NEEDS KEY 14", as in Figma UI06. B and the chip option use A's outline in the prompt: their 48 px or coloured glyphs are too heavy beside the crosshair. |
-| **Used** | no such state: keys are never spent (`keysHeld` is a set; a held zone key opens every door of that zone) | muted glyph + muted label + "DOOR OPENED". Only needed if keys become single-use (RE2R's check-mark idea). Otherwise keep "held". |
+| **Held, this zone** | panel shown (`map.HasKeyFor(zone.id)`); generic ring key; on desktop the panel is off-screen since `c1f2d31` (anchor bug, `04_for_red.md` §1) | filled paper key + "KEY 14" |
+| **Held, other zone** | panel hidden | the **outline** key (`<dir>_missing`; A + chip has none, so its glyph at 70 %) + paper label + Plex Mono 13 "NOT THIS ZONE" in paper (B: "OPENS ZONE 14 ONLY", no yellow rule). Lit carpet p10: key 3.16, label 4.04, meta 3.72 : 1 |
+| **No key** | panel hidden; door prompt "LOCKED  ·  NEEDS THIS ZONE'S KEY" (Bayon, paper, no ground) | panel stays hidden. At a locked door: the outline key + "LOCKED" (Bayon 20, **paper**) + Plex Mono 13 "NEEDS KEY 14" (muted), all on the HUD's own hint card `#141414` at 90 % (`media` in `BuildHud`), padding 12 × 8 px, card y 565–622. B and the chip option use A's outline. Worst ground (the almond leaf): key 5.92, LOCKED 8.04, meta 4.68 : 1 (was 1.31 / 1.19 / 1.19) |
+| **Used** | no such state: keys are never spent (`keysHeld` is a set) | shown only as "IF KEYS BECOME SINGLE-USE": filled key at 70 % + paper type + "DOOR OPENED". The `_muted` masters stay in the library but are not used (muted `#BDBAB0` is 2.3–2.5 : 1 on lit carpet) |
+
+Why a card for the prompt: the interactables spec makes every LOCKED door an almond enamel steel leaf (sRGB 205/197/176, luminance 0.56, `interactables/10_spec.md`). The prompt always sits on that leaf, and paper on almond is 1.3–1.5 : 1. The card is the hint card the HUD already uses, so it adds no new colour. A 1 px shadow instead of a card is lighter, but gives the 13 px meta no measurable ground; that choice is 平面视觉's and Red's.
 
 Also drawn: the today label vs the target label on the same frames (board 04), and full 1080p frames with the real room typography for every direction (`hud/*_fullframe_*.jpg`):
-- room meta: "ZONE 06  /  TIER 1  /  STANDARD  2.9 M" (format from `FrontRooms3DGame.cs` line ~1970 in main at `75cfdff`);
+- room meta: "ZONE 06  /  TIER 1  /  STANDARD  2.9 M" (format from `FrontRooms3DGame.cs:2182` at `279c144`);
 - room names: from `ZoneName()`;
-- the crosshair: today's 16 px dot (`HUD_Crosshair.png`, 64 px sprite in a 32 px rect).
+- the crosshair: today's 16 px white dot (`HUD_Crosshair.png`, 64 px sprite in a 32 px rect).
+
+**Phone (fix stage):** `hud/phone_{today,target}_{held,locked}_<bg>_3x.jpg`, 874 × 402 pt at @3x. Today TestFlight stretches the one 40 × 22 px sprite ×3 and sets the label in Bayon 11. Proposal: `HUD_KeyGlyph_Touch` (147 × 66), label Bayon 17 + Courier Prime Bold 21 (TOUCH_CONTROLS §4 ramp), `HUD_Crosshair_Touch` (144 × 144, dot 12 pt), the prompt card 32 pt under the dot (label 17, meta 11, padding 10 × 7 pt).
 
 ---
 
@@ -235,11 +244,19 @@ Checks (run on the files in `dropin/`):
   - 4K and Retina 2x (native);
   - 1440p (1.5 : 1, slightly soft).
 
-Import settings for the PNG:
+Added in the fix stage (2026-10-07; checks in `$W/keyicon_figma/export_touch_checks.json`: corners alpha 0, one RGB value):
+
+| Folder | File | Size | Use |
+|---|---|---|---|
+| `dropin/slot_40x22/`, `dropin/slot_49x22/` | `HUD_KeyGlyph_Touch.png` | 120 × 66 / 147 × 66 | phones (fix stage): a name `Resources.Load` can find (the @3x files could never load) |
+| `dropin/prompt/` | `HUD_KeyOutline.png`, `HUD_KeyOutline_Touch.png`, `HUD_KeyOutline.svg` | 102 × 48 / 153 × 72 | the outline key for the locked prompt and the other-zone state (51 × 24 rect, 1 px up-left of the key slot) |
+| `dropin/crosshair/` | `HUD_Crosshair_Touch.png` | 144 × 144, dot 72 | phones: 2 : 1 in the 24 pt rect (72 px), dot 12 pt |
+
+Import settings for the PNGs:
 - sRGB on, Alpha Is Transparency on;
 - Bilinear, no mipmaps;
 - **Compression None** (today's `.meta` says Normal; `UI_SHARPNESS.md` imports the brand PNG uncompressed);
-- Max Size 128.
+- Max Size 256 (128 is enough for the desktop key; the touch files need 256).
 
 The sprite is made in code by `LoadHudSprite()` from the whole texture, so the PNG's size sets nothing but resolution.
 
@@ -249,21 +266,15 @@ Owner: `Resources/UI/HUD_KeyGlyph.png` is the visual chat's file. Red reviews Fi
 
 ## 7. Contract request for the map chat (exact proposal; not applied)
 
-`Assets/Scripts/FrontRooms3DGame.cs` in main at `75cfdff`: `BuildHud()` key panel at lines 1828–1838, `UpdateMapPlay` key update at 1995–2002, `KeyLabel()` at 2035, room meta at 1970. (Codex's commits changed only the title logo code in this file, so the key code is the same; it sits about 125 lines lower than when the research read it.)
-1. `Key glyph` size `new Vector2(40, 22)` → `new Vector2(49, 22)`. `Key label` position `new Vector2(54, 0)` → `new Vector2(63, 0)`. Panel `HUD / Key` width 147 → wide enough for the label (≥ 200 for "KEY 14", ≥ 300 for today's zone-name label).
-2. When zones have a fixed tag number: add a second Text after `Key label` for the number:
-   - Courier Prime Bold, size 25, paper;
-   - 6 px after "KEY";
-   - named without "Key" so `UiFont()` does not set Bayon.
-   - Load the font from a `Resources` copy or a serialized reference.
-   - `KeyLabel(zone)` → "KEY" + the number.
-3. Map data (`FrontRoomsMap.cs` `ZoneInfo`): a fixed tag number (00–99), tag colour (red / blue / white) and tag shape (rect / round / long) per zone. Use the same source that dresses the 3D key, its tag and the door number plate, so the HUD can never disagree with the world. Decide what the room meta's "ZONE nn" (a visit counter today) shows next to it.
-4. Optional states:
-   - "other zone": show the panel muted when `KeysHeld > 0` and `!HasKeyFor(zone.id)` (`FrontRoomsMapWorld.cs` lines 57 and 790).
-   - Locked prompt: `Describe()` (`FrontRoomsMapWorld.cs` line 2160) "LOCKED  ·  NEEDS THIS ZONE'S KEY" → "LOCKED" + a meta line "NEEDS KEY nn", with the outline glyph (an Image beside the prompt Text).
-5. Tag chip (option): an Image left of the key glyph. One rim sprite per shape + one fill sprite tinted with the zone colour. Label x moves by chip width + 4.
-
-Dependency: the in-game key is still a placeholder cube (`FrontRoomsMapWorld.cs` `SpawnKey`, line 2804: 0.32 × 0.12 × 0.12 m, `keyGlow` material; re-checked in main at 22:0x). `Kit_Key_Zone.fbx` is now in main, but nothing spawns it yet. The icon echoes `Kit_Key_Zone`. The echo only works in play once the kit key replaces the cube.
+**Rebased on main `279c144` in the fix stage (2026-10-07).** The full list, with exact lines, is in `04_for_red.md` §5.3. In short:
+1. **Desktop anchor bug** (`FrontRooms3DGame.cs:1883`, from `c1f2d31`): the key panel is anchored top-left at (72, 118) on desktop, so it is off-screen. Anchor `(0, 0)` on desktop.
+2. Glyph rect `:1885` 40 × 22 → 49 × 22; label `:1888` x 54 → 63.
+3. Phones: `UI/HUD_KeyGlyph_Touch` (`:1886`) and `UI/HUD_Crosshair_Touch` (`:1867`); label size 11 → 17.
+4. Number Text: Courier Prime Bold 25 (phone 21), 6 px after "KEY", not named "Key"; `KeyLabel()` (`:2253`).
+5. Locked prompt (`FrontRoomsMapWorld.cs:2203`): outline Image + "LOCKED" + meta line on the hint card.
+6. Other zone (`:2214`; `FrontRoomsMapWorld.cs:57`, `:830`).
+7. `ZoneInfo` (`FrontRoomsMap.cs:136`): tag number, colour, shape per zone; the room meta's "ZONE nn" (`:2182`) is a visit counter.
+8. `SpawnKey` (`FrontRoomsMapWorld.cs:2852`): the kit key + ring + tag instead of the yellow cube. **The icon only echoes the model in play once this lands.**
 
 ---
 
@@ -273,7 +284,7 @@ Dependency: the in-game key is still a placeholder cube (`FrontRoomsMapWorld.cs`
   - A, A + chip and B: met.
   - C is a filled plate, not an outlined square, but it still reads close to a keycap. That is one reason it is not recommended.
 - **Era:** the HUD fonts are a separate system (`FONTS_PERIOD_1990.md`). The object drawn is period: a cut brass blank and a plastic tag with a typed paper insert. Courier Prime is a revival of Courier (1955), the period's typewriter face; `FONTS_PERIOD_1990.md` lists it for typed tags. C uses the 1974 AIGA/DOT grammar, not ISO 7001 (2007).
-- **HUD system:** paper `#F4F1E8`, muted `#BDBAB0`, Bayon 20 label, Plex Mono 13 meta, 72 px margin, bottom-left at y 940. The yellow rule is used only in B's full form (it is the threat accent).
+- **HUD system:** paper `#F4F1E8`, muted `#BDBAB0`, Bayon 20 label, Plex Mono 13 meta, 72 px margin, bottom-left at y 940. The yellow rule is used only in B's full form. In the code that yellow marks stamina and the hold bar; it comes from Figma HUD / Key `2256:161`, so keeping it in a calm state is 平面视觉's decision (B is not recommended anyway).
 - **Composites:** blended in linear light like Unity's overlay canvas (no post on the HUD). Backgrounds are in-engine captures:
   - `room_visuals/images/room_map-l0-low_wide.jpg`;
   - `room_map-l0-standard_wide.jpg`;
@@ -282,6 +293,8 @@ Dependency: the in-game key is still a placeholder cube (`FrontRoomsMapWorld.cs`
 - **Fonts:** the real files, `Assets/Resources/Fonts/` (Bayon, IBM Plex Mono, Source Serif 4) and `Assets/Fonts/Period1990/CourierPrime/`.
 
 ## 9. Open questions for Red
+
+Superseded by `04_for_red.md` §4 (fix stage). The 2026-10-03 list:
 
 1. Direction: A (recommended), A + chip, B or C?
 2. Label: "KEY 14" with the number in Courier Prime Bold, once zones have numbers? Until then, keep the zone-name label?
@@ -328,4 +341,18 @@ The Figma stage built no key-HUD block (平面视觉 owns it, `2532:4038`). It w
 - SVG masters: unchanged.
 - Verification: VL075–VL077 in the Figma VISUAL VERIFICATION LOG.
 - **Open:** the missing-state outlines A_L, A_S and C clip half their stroke at the glyph box (`03_figma.md` §10.1).
+
+---
+
+## 12. Fix stage (2026-10-07)
+
+The critic (2026-10-07) found 18 issues: 3 HIGH, 6 MEDIUM, 9 LOW. Every one is fixed or written up; the table is in `04_for_red.md` §6. Design changes:
+- **Locked prompt** on the HUD hint card, LOCKED in paper (§4). New 5th ground `leaf` = in-engine audit frame 48 (a locked door) with the leaf re-coloured to the spec's almond `#CDC5B0` at full albedo (the worst case), made by `make_leaf_bg.py`; today's wood leaf is measured too.
+- **States by shape** (§4): other zone = outline key; used = 70 % (hypothetical only).
+- **Outline masters** A_L, A_S and C: box grown 1 px where the centred stroke ran out (A_L 51 × 24, A_S and C 42 × 22); the composites draw them 1 px up-left, so the key does not move. B was not clipped.
+- **Tag chip**: 1 px ring wire (§2).
+- **Phone**: composites and `_Touch` sprites (§4, §6).
+- **Boards**: 01 and 10 wording (the dot stays white), 03/07/09 "IF KEYS BECOME SINGLE-USE", 05 chip text, 07 yellow-rule note, 10 hero = the target with a 1 : 1 inset, no file list. Header date Oct 7.
+- **Pipeline**: rebuilt from the transcripts; the Oct 3 set re-renders byte for byte (331 / 334 files; boards 05, 06 and 08 differ only in the typed tag digits of the re-rendered Blender panels). VL104.
+- **Contrast numbers**: `03_figma.md` §2.5; raw per-element data in `$W/keyicon_figma/measure_fix.json`.
 

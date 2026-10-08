@@ -1,0 +1,25 @@
+16:26  up 2 days, 15:28, 1 user, load averages: 29.95 46.97 101.85
+# rt_bench4 r2t0 diff2 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 30/47/102
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# --- diff2 1920x1080  load 30/47/102
+diff2 A_h2 (0) vs A_h2 (1) glass px   0.01%: mean 0.00/255, p99 0, max 0; >=8: 0.00% (0 px) >=24: 0.00% | S1 tripped: RT off vs floor receiver | load 30/47/102
+diff2 A_h2 (0) vs A_h2 (1) floor px  12.04%: mean 9.29/255, p99 63, max 169; >=8: 32.87% (82024 px) >=24: 6.91% | S1 tripped: RT off vs floor receiver | load 30/47/102
+diff2 B_h2 (0) vs B_h2 (1) glass px   0.18%: mean 1.45/255, p99 9, max 50; >=8: 1.71% (65 px) >=24: 0.95% | near goal tripped: RT off vs floor receiver | load 30/47/102
+diff2 B_h2 (0) vs B_h2 (1) floor px  15.06%: mean 8.06/255, p99 61, max 93; >=8: 36.92% (115289 px) >=24: 2.41% | near goal tripped: RT off vs floor receiver | load 30/47/102
+diff2 D_h2 (0) vs D_h2 (1) floor px  37.15%: mean 13.74/255, p99 117, max 149; >=8: 57.66% (444202 px) >=24: 9.67% | stream room: RT off vs floor receiver | load 30/47/102
+diff2 F_h2 (0) vs F_h2 (1) glass px   0.01%: mean 0.00/255, p99 0, max 0; >=8: 0.00% (0 px) >=24: 0.00% | S1 armed: RT off vs floor receiver | load 30/47/102
+diff2 F_h2 (0) vs F_h2 (1) floor px  12.04%: mean 3.03/255, p99 29, max 64; >=8: 8.59% (21446 px) >=24: 1.48% | S1 armed: RT off vs floor receiver | load 30/47/102
+diff2 E_h1 (1) vs E_h2 (1) glass px   0.18%: mean 0.56/255, p99 3, max 4; >=8: 0.00% (0 px) >=24: 0.00% | near goal armed r0.20: 1 vs 2 bounces | load 30/47/102
+diff2 E_h1 (1) vs E_h2 (1) floor px  15.06%: mean 0.05/255, p99 1, max 9; >=8: 0.01% (36 px) >=24: 0.00% | near goal armed r0.20: 1 vs 2 bounces | load 30/47/102
+diff2 G_h2 (0) vs G_h2 (1) glass px   0.87%: mean 6.65/255, p99 111, max 132; >=8: 5.80% (1049 px) >=24: 3.54% | 2.5 m armed r0.15: RT off vs floor receiver | load 30/47/102
+diff2 G_h2 (0) vs G_h2 (1) floor px  19.42%: mean 1.72/255, p99 20, max 61; >=8: 2.11% (8484 px) >=24: 0.79% | 2.5 m armed r0.15: RT off vs floor receiver | load 30/47/102
+diff2 G_h1 (1) vs G_h2 (1) glass px   0.87%: mean 1.09/255, p99 3, max 83; >=8: 0.61% (110 px) >=24: 0.61% | 2.5 m armed r0.15: 1 vs 2 bounces | load 30/47/102
+diff2 G_h1 (1) vs G_h2 (1) floor px  19.42%: mean 0.06/255, p99 2, max 19; >=8: 0.12% (484 px) >=24: 0.00% | 2.5 m armed r0.15: 1 vs 2 bounces | load 30/47/102
+diff2 G_h2 (1) vs G_h3c(1) glass px   0.87%: mean 0.00/255, p99 0, max 0; >=8: 0.00% (0 px) >=24: 0.00% | 2.5 m armed r0.15: 2 vs 3 (cut-off) | load 30/47/102
+diff2 G_h2 (1) vs G_h3c(1) floor px  19.42%: mean 0.03/255, p99 1, max 6; >=8: 0.00% (0 px) >=24: 0.00% | 2.5 m armed r0.15: 2 vs 3 (cut-off) | load 30/47/102
+# done load 30/47/102
+16:26  up 2 days, 15:28, 1 user, load averages: 29.95 46.97 101.85

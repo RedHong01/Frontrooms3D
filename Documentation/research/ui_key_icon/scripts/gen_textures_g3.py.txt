@@ -1,0 +1,129 @@
+"""G3 proposal textures (P-4, for approval; scratchpad only, never Assets/).
+
+Prop_KeyTagNo_A.png    2048 x 2048, 10 x 10 cells "00".."99" typed in Courier
+                       Prime Regular on index-card paper. Cell n is row n//10,
+                       column n%10 from the top-left. Ink height 0.24 of a cell.
+Prop_SignEngraved_A.png 2048 x 1024, 2 x 2 cells of 1024 x 512 (0.254 x 0.127 m
+                       at 4031 px/m): 0 EMPLOYEES ONLY, 1 STAFF ONLY, 2 STORAGE,
+                       3 spare (blank). TeX Gyre Heros Bold, ivory core on a
+                       dark-brown cap ply (sRGB 48/36/30), caps 17 mm at 1:1.
+"""
+import math, os, random
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "textures")
+COURIER = os.path.join(PROJ, "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Regular.ttf")
+HEROS = os.path.join(PROJ, "Assets/Fonts/Period1990/TeXGyre/texgyreheros-bold.otf")
+rng = np.random.default_rng(1990)
+
+def paper(w, h, base=(228, 223, 205)):
+    """Index-card stock: warm off-white, fine fibre noise, faint mottling."""
+    n1 = rng.normal(0, 1, (h, w))
+    fib = Image.fromarray(((n1 * 18) + 128).clip(0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.7))
+    mot = Image.fromarray(((rng.normal(0, 1, (h // 32 + 1, w // 32 + 1)) * 40) + 128).clip(0, 255).astype(np.uint8)).resize((w, h), Image.BICUBIC)
+    f = (np.asarray(fib, np.float32) - 128) / 128.0
+    m = (np.asarray(mot, np.float32) - 128) / 128.0
+    img = np.zeros((h, w, 3), np.float32)
+    for c in range(3):
+        img[..., c] = base[c] + f * 4.0 + m * 3.0
+    return img
+
+def keytagno():
+    S, N = 2048, 10
+    cell = S / N
+    img = paper(S, S)
+    ink = Image.new("L", (S, S), 0)
+    # Size the font so the digit ink height is 0.24 of a cell.
+    target = 0.24 * cell
+    size = 40
+    while True:
+        f = ImageFont.truetype(COURIER, size)
+        b = f.getbbox("0")
+        if b[3] - b[1] >= target:
+            break
+        size += 1
+    font = ImageFont.truetype(COURIER, size)
+    widths = []
+    for n in range(100):
+        r, c = n // N, n % N
+        txt = "%02d" % n
+        # typewriter: each digit struck separately, a little baseline jitter and
+        # uneven ribbon density
+        x0 = c * cell + cell / 2
+        y0 = r * cell + cell / 2
+        bb = font.getbbox(txt)
+        tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        widths.append(tw / cell)
+        x = x0 - tw / 2 - bb[0]
+        y = y0 - th / 2 - bb[1]
+        adv = font.getlength(txt[0])
+        for k, ch in enumerate(txt):
+            layer = Image.new("L", (S, S), 0)
+            d = ImageDraw.Draw(layer)
+            dx = random.uniform(-0.8, 0.8)
+            dy = random.uniform(-1.2, 1.2)
+            dens = random.uniform(0.82, 1.0)
+            d.text((x + k * adv + dx, y + dy), ch, font=font, fill=int(255 * dens))
+            ink = Image.fromarray(np.maximum(np.asarray(ink), np.asarray(layer)))
+    # ribbon texture: break the ink up a little, soften the strike edge
+    a = np.asarray(ink.filter(ImageFilter.GaussianBlur(0.9)), np.float32) / 255.0
+    grain = (rng.random((S, S)) * 0.35 + 0.65)
+    a = np.clip(a * grain * 1.15, 0, 1)
+    inkcol = np.array([38, 36, 40], np.float32)
+    out = img * (1 - a[..., None]) + inkcol * a[..., None]
+    Image.fromarray(out.clip(0, 255).astype(np.uint8)).save(os.path.join(OUT, "Prop_KeyTagNo_A.png"))
+    return size, max(widths), target / cell
+
+def sign():
+    W, H = 2048, 1024
+    cw, ch = W // 2, H // 2
+    ppm = cw / 0.254                       # 4031 px per metre
+    cap_px = 0.017 * ppm
+    ground = np.array([48, 36, 30], np.float32)
+    core = np.array([232, 224, 200], np.float32)
+    n = rng.normal(0, 1, (H, W))
+    tex = Image.fromarray((n * 30 + 128).clip(0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))
+    t = (np.asarray(tex, np.float32) - 128) / 128.0
+    img = ground[None, None, :] + t[..., None] * 3.0
+    size = 20
+    while True:
+        f = ImageFont.truetype(HEROS, size)
+        b = f.getbbox("H")
+        if b[3] - b[1] >= cap_px:
+            break
+        size += 1
+    font = ImageFont.truetype(HEROS, size)
+    track = 0.020 * size                   # +20 tracking (1/1000 em units)
+    texts = ["EMPLOYEES ONLY", "STAFF ONLY", "STORAGE", ""]
+    mask = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(mask)
+    report = []
+    for i, txt in enumerate(texts):
+        if not txt:
+            continue
+        cx = (i % 2) * cw + cw / 2
+        cy = (i // 2) * ch + ch / 2
+        width = sum(font.getlength(c) for c in txt) + track * (len(txt) - 1)
+        hb = font.getbbox("H")
+        x = cx - width / 2
+        y = cy - (hb[3] - hb[1]) / 2 - hb[1]
+        for c in txt:
+            d.text((x, y), c, font=font, fill=255)
+            x += font.getlength(c) + track
+        report.append((txt, width / ppm))
+    m = np.asarray(mask.filter(ImageFilter.GaussianBlur(0.6)), np.float32) / 255.0
+    # engraved: the core sits a hair lower, so a thin dark rim on the
+    # upper-left inside edge of every stroke
+    shift = np.roll(np.roll(m, 2, axis=0), 2, axis=1)
+    rim = np.clip(shift - m, 0, 1) * 0 + np.clip(m - shift, 0, 1)
+    col = img * (1 - m[..., None]) + core[None, None, :] * m[..., None]
+    col = col * (1 - 0.35 * rim[..., None])
+    Image.fromarray(col.clip(0, 255).astype(np.uint8)).save(os.path.join(OUT, "Prop_SignEngraved_A.png"))
+    return size, cap_px, report
+
+if __name__ == "__main__":
+    random.seed(1990)
+    print("keytagno font px, max ink width/cell, ink h/cell:", keytagno())
+    print("sign font px, cap px, widths (m):", sign())

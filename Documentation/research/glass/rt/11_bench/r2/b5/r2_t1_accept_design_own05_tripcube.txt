@@ -1,0 +1,38 @@
+16:26  up 2 days, 15:27, 1 user, load averages: 32.59 48.53 103.69
+# rt_bench4 r2tc accept device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 33/49/104
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# FARFADE: Ultra floor rays fade to High's mirror + k2 between pixel footprints 6.0 and 12.0 mm
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# captured cube scene 0 at (3.00, 1.60, 0.80), 256 px, GGX-prefiltered mips
+# captured cube scene 1 at (0.00, 1.50, 13.50), 256 px, GGX-prefiltered mips
+# captured cube scene 2 at (0.00, 1.50, 6.00), 256 px, GGX-prefiltered mips
+# captured cube scene 3 at (0.00, 1.50, 13.50), 256 px, GGX-prefiltered mips
+# CUBE=own: RT-off and every fallback use the scene's own captured cube (x 0.50), URP roughness->mip
+# TRIPCUBE: the armed corridor (scene 3) uses the TRIPPED corridor capture (scene 1)
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- accept 1920x1080, cube mode 1, jitter 0, soft gate 1  load 33/49/104
+r2tc accept A20 glass px 0.01% | err vs own-tree ref: off 0.00 (p99 0, >=8 0.0%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[A_U3] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 0.0% (mean 0.00)  High 0.0% (mean 0.00)  Ultra 0.0% (mean 0.00) | load 33/48/103
+r2tc accept A20 floor px 12.04% | err vs own-tree ref: off 6.87 (p99 79, >=8 21.1%)  High 2.80 (p99 47, >=8 7.21%)  Ultra[A_U3] 2.33 (p99 44, >=8 6.60%) | off->RT >=8: ref 21.1% (mean 6.87)  High 18.3% (mean 6.69)  Ultra 20.7% (mean 7.17) | load 33/48/103
+r2tc accept A20 all  streak px 15060 (0.73% of screen, mean ref change 54.0/255): captured energy High 0.97 Ultra 0.99; recall (>= half the ref change) High 81.6% Ultra 87.2% | load 33/48/103
+r2tc accept A20 red  streak px 3342 (0.16% of screen, mean ref change 62.5/255): captured energy High 0.97 Ultra 0.99; recall (>= half the ref change) High 57.7% Ultra 64.5% | load 33/48/103
+r2tc accept B20 glass px 0.18% | err vs own-tree ref: off 1.21 (p99 31, >=8 2.1%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[B_U2] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 2.1% (mean 1.21)  High 2.1% (mean 1.21)  Ultra 2.1% (mean 1.21) | load 33/48/103
+r2tc accept B20 floor px 15.06% | err vs own-tree ref: off 6.16 (p99 48, >=8 27.2%)  High 1.97 (p99 25, >=8 7.48%)  Ultra[B_U2] 1.19 (p99 13, >=8 2.88%) | off->RT >=8: ref 27.2% (mean 6.16)  High 19.4% (mean 5.34)  Ultra 27.1% (mean 6.40) | load 33/48/103
+r2tc accept B20 all  streak px 11394 (0.55% of screen, mean ref change 40.0/255): captured energy High 1.00 Ultra 1.05; recall (>= half the ref change) High 66.8% Ultra 98.8% | load 33/48/103
+r2tc accept B20 red  streak px 11206 (0.54% of screen, mean ref change 40.3/255): captured energy High 1.00 Ultra 1.05; recall (>= half the ref change) High 66.3% Ultra 98.8% | load 33/48/103
+r2tc accept D20 floor px 37.15% | err vs own-tree ref: off 18.12 (p99 125, >=8 59.8%)  High 3.33 (p99 31, >=8 10.50%)  Ultra[D_H] 3.33 (p99 31, >=8 10.50%) | off->RT >=8: ref 59.8% (mean 18.12)  High 60.4% (mean 18.62)  Ultra 60.4% (mean 18.62) | load 34/48/103
+r2tc accept D20 all  streak px 140510 (6.78% of screen, mean ref change 61.5/255): captured energy High 1.00 Ultra 1.00; recall (>= half the ref change) High 93.0% Ultra 93.0% | load 34/48/103
+r2tc accept D20 red streak: none
+r2tc accept F20 glass px 0.01% | err vs own-tree ref: off 0.00 (p99 0, >=8 0.0%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[F_U3] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 0.0% (mean 0.00)  High 0.0% (mean 0.00)  Ultra 0.0% (mean 0.00) | load 34/48/103
+r2tc accept F20 floor px 12.04% | err vs own-tree ref: off 4.60 (p99 39, >=8 12.4%)  High 1.18 (p99 11, >=8 2.47%)  Ultra[F_U3] 0.74 (p99 10, >=8 1.86%) | off->RT >=8: ref 12.4% (mean 4.60)  High 14.4% (mean 4.87)  Ultra 12.6% (mean 4.75) | load 34/48/103
+r2tc accept F20 all  streak px 7695 (0.37% of screen, mean ref change 37.5/255): captured energy High 1.06 Ultra 1.08; recall (>= half the ref change) High 98.6% Ultra 98.6% | load 34/48/103
+r2tc accept F20 red streak: none
+r2tc accept G15 glass px 0.87% | err vs own-tree ref: off 6.45 (p99 117, >=8 18.5%)  High 0.00 (p99 0, >=8 0.00%)  Ultra[G_U2] 0.00 (p99 0, >=8 0.00%) | off->RT >=8: ref 18.5% (mean 6.45)  High 18.5% (mean 6.45)  Ultra 18.5% (mean 6.44) | load 32/48/102
+r2tc accept G15 floor px 19.42% | err vs own-tree ref: off 2.48 (p99 18, >=8 2.7%)  High 0.35 (p99 5, >=8 0.26%)  Ultra[G_U2] 0.20 (p99 2, >=8 0.01%) | off->RT >=8: ref 2.7% (mean 2.48)  High 2.3% (mean 2.44)  Ultra 2.9% (mean 2.49) | load 32/48/102
+r2tc accept G15 all  streak px 2151 (0.10% of screen, mean ref change 28.2/255): captured energy High 1.22 Ultra 0.96; recall (>= half the ref change) High 100.0% Ultra 100.0% | load 32/48/102
+r2tc accept G15 red  streak px 897 (0.04% of screen, mean ref change 29.2/255): captured energy High 1.23 Ultra 0.93; recall (>= half the ref change) High 100.0% Ultra 100.0% | load 32/48/102
+# done load 32/48/102
+16:26  up 2 days, 15:28, 1 user, load averages: 32.04 47.66 102.42

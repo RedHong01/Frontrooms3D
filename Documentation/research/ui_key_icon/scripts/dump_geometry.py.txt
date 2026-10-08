@@ -1,0 +1,45 @@
+"""Dump the key/tag/plate outlines from read-only copies of the G3 modules to JSON (mm)."""
+import sys, os, json, math
+sys.dont_write_bytecode = True
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "mods"))
+import interact_key as ik
+import interact_key_common as kc
+import interact_key_tag_rect as tr, interact_key_tag_round as tro, interact_key_tag_long as tl
+import interact_door_number_plate as dp
+import interact_key_ring as ir
+mm = lambda pts: [[round(a * 1000, 5), round(b * 1000, 5)] for a, b in pts]
+out = {}
+out["bow"] = mm(ik.bow_outline())                      # (Z, Y) key frame
+out["top_profile"] = mm(kc.top_profile(0.0, kc.BLADE_LEN))
+out["hole_c"] = [ik.HOLE_C[0] * 1000, ik.HOLE_C[1] * 1000]
+out["hole_r"] = ik.HOLE_R * 1000
+out["blade"] = {"top": kc.BLADE_TOP * 1000, "bottom": -4.0, "len": kc.BLADE_LEN * 1000, "nose_r": kc.NOSE_R * 1000,
+                "tip_y": kc.TIP_Y * 1000, "tip_bevel_z": kc.TIP_BEVEL_Z * 1000,
+                "cut_z": [z * 1000 for z in kc.CUT_Z], "cut_depths": [d * 1000 for d in kc.cut_depths()],
+                "cut_flat": kc.CUT_FLAT * 1000, "flank_deg": kc.CUT_FLANK_DEG}
+out["neck_y"] = [ik.NECK_Y[0] * 1000, ik.NECK_Y[1] * 1000]
+tags = {}
+for mod, kind in ((tr, "rect"), (tro, "round"), (tl, "long")):
+    if kind == "round":
+        body = ("round", mod.D, mod.Y_TOP); wy = mod.Y_TOP - mod.D / 2
+        win = {"kind": "round", "d": mod.WIN_D * 1000, "cy": wy * 1000}
+    else:
+        body = ("rect", mod.W, mod.H, mod.R, mod.Y_TOP); wy = mod.Y_TOP - mod.H / 2
+        win = {"kind": "rect", "w": mod.WIN[0] * 1000, "h": mod.WIN[1] * 1000, "r": mod.WIN[2] * 1000, "cy": wy * 1000}
+    if kind == "round":
+        outline = kc.circle(0.0, body[2] - body[1] / 2, body[1] / 2, 96, start=math.pi / 2)
+        y_top = body[2]
+    else:
+        outline = kc.rounded_rect(body[1], body[2], body[3], 10, 0.0, body[4] - body[2] / 2)
+        y_top = body[4]
+    tab = [(kc.TAB_R, y_top - kc.TAB_ROOT)] + kc.arc(0.0, 0.0, kc.TAB_R, 0.0, 180.0, 24) + [(-kc.TAB_R, y_top - kc.TAB_ROOT)]
+    tags[kind] = {"body": mm(outline), "tab": mm(tab), "hole_r": kc.TAG_HOLE_D / 2 * 1000, "window": win, "crop": list(mod.CROP)}
+out["tags"] = tags
+out["plate_outline"] = mm(kc.rounded_rect(dp.W, dp.H, dp.R, 8))
+out["plate"] = {"w": dp.W * 1000, "h": dp.H * 1000, "r": dp.R * 1000, "win": [x * 1000 for x in dp.WIN], "screw_x": 42.5, "screw_d": 5.0}
+out["digit_ink_h"] = kc.DIGIT_INK_H
+src = open(os.path.join(HERE, "mods", "interact_key_ring.py")).read()
+out["ring_doc"] = src[:600]
+json.dump(out, open(os.path.join(HERE, "geometry_mm.json"), "w"), indent=1)
+print("[dump] ok", len(out["bow"]), len(out["top_profile"]))

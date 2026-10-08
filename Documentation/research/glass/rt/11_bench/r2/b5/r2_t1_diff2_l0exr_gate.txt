@@ -1,0 +1,32 @@
+16:26  up 2 days, 15:28, 1 user, load averages: 32.04 47.66 102.42
+# rt_bench4 r2t1 diff2 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 32/48/102
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- diff2 1920x1080  load 32/48/102
+diff2 A_h2 (0) vs A_h2 (1) glass px   0.01%: mean 0.00/255, p99 0, max 0; >=8: 0.00% (0 px) >=24: 0.00% | S1 tripped: RT off vs floor receiver | load 32/48/102
+diff2 A_h2 (0) vs A_h2 (1) floor px  12.04%: mean 24.66/255, p99 146, max 191; >=8: 57.46% (143398 px) >=24: 26.33% | S1 tripped: RT off vs floor receiver | load 32/48/102
+diff2 B_h2 (0) vs B_h2 (1) glass px   0.18%: mean 1.18/255, p99 26, max 37; >=8: 2.21% (84 px) >=24: 1.19% | near goal tripped: RT off vs floor receiver | load 32/48/102
+diff2 B_h2 (0) vs B_h2 (1) floor px  15.06%: mean 16.96/255, p99 132, max 163; >=8: 49.93% (155901 px) >=24: 19.84% | near goal tripped: RT off vs floor receiver | load 32/48/102
+diff2 D_h2 (0) vs D_h2 (1) floor px  37.15%: mean 16.53/255, p99 122, max 154; >=8: 52.98% (408107 px) >=24: 18.56% | stream room: RT off vs floor receiver | load 32/48/102
+diff2 F_h2 (0) vs F_h2 (1) glass px   0.01%: mean 0.00/255, p99 0, max 0; >=8: 0.00% (0 px) >=24: 0.00% | S1 armed: RT off vs floor receiver | load 32/48/102
+diff2 F_h2 (0) vs F_h2 (1) floor px  12.04%: mean 4.17/255, p99 31, max 63; >=8: 13.04% (32546 px) >=24: 2.43% | S1 armed: RT off vs floor receiver | load 32/48/102
+diff2 E_h1 (1) vs E_h2 (1) glass px   0.18%: mean 0.26/255, p99 1, max 2; >=8: 0.00% (0 px) >=24: 0.00% | near goal armed r0.20: 1 vs 2 bounces | load 32/48/102
+diff2 E_h1 (1) vs E_h2 (1) floor px  15.06%: mean 0.04/255, p99 1, max 7; >=8: 0.00% (0 px) >=24: 0.00% | near goal armed r0.20: 1 vs 2 bounces | load 32/48/102
+diff2 G_h2 (0) vs G_h2 (1) glass px   0.87%: mean 7.58/255, p99 115, max 137; >=8: 18.11% (3274 px) >=24: 3.55% | 2.5 m armed r0.15: RT off vs floor receiver | load 32/48/102
+diff2 G_h2 (0) vs G_h2 (1) floor px  19.42%: mean 2.71/255, p99 18, max 47; >=8: 9.30% (37437 px) >=24: 0.62% | 2.5 m armed r0.15: RT off vs floor receiver | load 32/48/102
+diff2 G_h1 (1) vs G_h2 (1) glass px   0.87%: mean 0.88/255, p99 3, max 73; >=8: 0.61% (110 px) >=24: 0.61% | 2.5 m armed r0.15: 1 vs 2 bounces | load 32/48/102
+diff2 G_h1 (1) vs G_h2 (1) floor px  19.42%: mean 0.05/255, p99 2, max 16; >=8: 0.09% (359 px) >=24: 0.00% | 2.5 m armed r0.15: 1 vs 2 bounces | load 32/48/102
+diff2 G_h2 (1) vs G_h3c(1) glass px   0.87%: mean 0.00/255, p99 0, max 0; >=8: 0.00% (0 px) >=24: 0.00% | 2.5 m armed r0.15: 2 vs 3 (cut-off) | load 32/48/102
+diff2 G_h2 (1) vs G_h3c(1) floor px  19.42%: mean 0.03/255, p99 1, max 7; >=8: 0.00% (0 px) >=24: 0.00% | 2.5 m armed r0.15: 2 vs 3 (cut-off) | load 32/48/102
+# done load 32/48/102
+16:26  up 2 days, 15:28, 1 user, load averages: 32.04 47.66 102.42

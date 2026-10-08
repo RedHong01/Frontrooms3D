@@ -1,0 +1,44 @@
+{
+ "high_vs_off": {
+  "px_ge1": 1549284,
+  "px_ge2": 448716,
+  "px_ge8": 71919,
+  "px_ge32": 2542,
+  "max": 144,
+  "mean_dY_all": -0.465,
+  "mean_dY_ge8": -4.36,
+  "frac_ge8_pct": 3.468,
+  "bbox_ge8": [
+   617,
+   133,
+   1305,
+   841
+  ]
+ },
+ "ultra_vs_off": {
+  "px_ge1": 1581276,
+  "px_ge2": 464608,
+  "px_ge8": 72138,
+  "px_ge32": 2558,
+  "max": 144,
+  "mean_dY_all": -0.466,
+  "mean_dY_ge8": -4.36,
+  "frac_ge8_pct": 3.479,
+  "bbox_ge8": [
+   616,
+   133,
+   1303,
+   841
+  ]
+ },
+ "off_vs_off": {
+  "px_ge1": 1443537,
+  "px_ge2": 77322,
+  "px_ge8": 0,
+  "px_ge32": 0,
+  "max": 3,
+  "mean_dY_all": -0.0,
+  "mean_dY_ge8": 0.0,
+  "frac_ge8_pct": 0.0
+ }
+}

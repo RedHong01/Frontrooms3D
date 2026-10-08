@@ -1,0 +1,98 @@
+"""@3x exports for the iOS/Android touch track (2026-10-03, 平面视觉's request in figma_target.md).
+
+Phones are @3x (TOUCH_CONTROLS.md: the key sits under the zone block at (78, 72), 22 pt tall).
+- Key glyphs: design.py already writes png/<name>@3x.png for all 33 SVG masters (66 px tall
+  for the 22 px row, 144 px for B's 48 px lockup). This script copies the two drop-in glyphs
+  into dropin/slot_40x22 and dropin/slot_49x22 as HUD_KeyGlyph@3x.png.
+- Crosshair: dropin/crosshair/HUD_Crosshair@3x.png, 192 x 192, a centred anti-aliased white
+  dot of diameter 96 px, plus HUD_Crosshair.svg (1x units: the 32 x 32 rect, dot r 8).
+  The desktop file Assets/Resources/UI/HUD_Crosshair.png (64 x 64, dot 32) stays unchanged.
+Checks are printed and written to keyicon_figma/export_3x_checks.json.
+Run with Blender's Python 3.11 (numpy).
+"""
+import json, math, os, shutil, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import numpy as np
+import iconlib as L
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+DES = os.environ.get("KEYICON_DES", os.path.join(PROJ, "Documentation/research/ui_key_icon/design"))  # override for scratch re-renders
+PNG = os.path.join(DES, "png")
+DROP = os.path.join(DES, "dropin")
+OUTJ = os.path.join(os.path.dirname(HERE), "keyicon_figma", "export_3x_checks.json")
+checks = {}
+
+
+def box_down(a, f):
+    """Box-filter an (h*f, w*f) array to (h, w)."""
+    h, w = a.shape[0] // f, a.shape[1] // f
+    return a[:h * f, :w * f].reshape(h, f, w, f, *a.shape[2:]).mean(axis=(1, 3))
+
+
+def glyph_checks(p3, p1):
+    rgb3, a3 = L.read_png(p3)
+    rgb1, a1 = L.read_png(p1)
+    rgb8 = np.round(rgb3 * 255).astype(int).reshape(-1, 3)
+    uniq = np.unique(rgb8, axis=0)
+    d = np.abs(box_down(a3, 3) - a1)
+    return {"size": [a3.shape[1], a3.shape[0]], "size_1x": [a1.shape[1], a1.shape[0]],
+            "corners_alpha": [float(a3[y, x]) for y, x in ((0, 0), (0, -1), (-1, 0), (-1, -1))],
+            "rgb_values": len(uniq), "rgb": "".join("%02X" % v for v in uniq[0]) if len(uniq) == 1 else None,
+            "alpha_0_pct": round(100 * float((a3 == 0).mean()), 1), "alpha_255_pct": round(100 * float((a3 >= 1).mean()), 1),
+            "box3to1_vs_1x_mean_pct": round(100 * float(d.mean()), 3), "box3to1_vs_1x_max_pct": round(100 * float(d.max()), 2)}
+
+
+# ------------------------------------------------------------ 1. all 33 masters @3x vs @1x
+names = sorted(f[:-7] for f in os.listdir(PNG) if f.endswith("@1x.png"))
+for n in names:
+    checks[n] = glyph_checks(os.path.join(PNG, n + "@3x.png"), os.path.join(PNG, n + "@1x.png"))
+
+# ------------------------------------------------------------ 2. drop-in @3x
+for slot, n in (("slot_40x22", "A_S_held"), ("slot_49x22", "A_L_held")):
+    dst = os.path.join(DROP, slot, "HUD_KeyGlyph@3x.png")
+    shutil.copyfile(os.path.join(PNG, n + "@3x.png"), dst)
+    checks["dropin/%s/HUD_KeyGlyph@3x.png" % slot] = glyph_checks(dst, os.path.join(DROP, slot, "HUD_KeyGlyph@1x.png"))
+
+# ------------------------------------------------------------ 3. crosshair @3x + SVG
+CH = os.path.join(DROP, "crosshair")
+os.makedirs(CH, exist_ok=True)
+N, D = 192, 96.0
+ss = 16
+c = N / 2.0
+g = (np.arange(N * ss) + 0.5) / ss
+X, Y = np.meshgrid(g, g)
+inside = ((X - c) ** 2 + (Y - c) ** 2) <= (D / 2) ** 2
+a = inside.reshape(N, ss, N, ss).mean(axis=(1, 3))
+rgb = np.ones((N, N, 3))
+L.write_png(os.path.join(CH, "HUD_Crosshair@3x.png"), rgb, a)
+open(os.path.join(CH, "HUD_Crosshair.svg"), "w").write(
+    '<?xml version="1.0" encoding="UTF-8"?>\n'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">\n'
+    '  <title>FrontRooms HUD crosshair</title>\n'
+    '  <desc>The 32 x 32 HUD / Crosshair rect in 1x units. A plain white dot, diameter 16 (Red, 2026-10-03). '
+    'Desktop sprite: 64 x 64 PNG, dot 32. Touch @3x sprite: 192 x 192 PNG, dot 96.</desc>\n'
+    '  <circle id="dot" cx="16" cy="16" r="8" fill="#FFFFFF"/>\n'
+    '</svg>\n')
+rgb_r, a_r = L.read_png(os.path.join(CH, "HUD_Crosshair@3x.png"))
+desk_rgb, desk_a = L.read_png(os.path.join(PROJ, "Assets/Resources/UI/HUD_Crosshair.png"))
+ys, xs = np.mgrid[0:N, 0:N]
+dd = np.abs(box_down(a_r, 3) - desk_a)
+checks["dropin/crosshair/HUD_Crosshair@3x.png"] = {
+    "size": [N, N], "area_diameter_px": round(2 * math.sqrt(float(a_r.sum()) / math.pi), 3),
+    "centre": [round(float((a_r * xs).sum() / a_r.sum()), 3), round(float((a_r * ys).sum() / a_r.sum()), 3)],
+    "corners_alpha": [float(a_r[0, 0]), float(a_r[0, -1]), float(a_r[-1, 0]), float(a_r[-1, -1])],
+    "rgb_values": int(len(np.unique(np.round(rgb_r * 255).astype(int).reshape(-1, 3), axis=0))),
+    "edge_px": int(((a_r > 0) & (a_r < 1)).sum()),
+    "desktop_64": {"area_diameter_px": round(2 * math.sqrt(float(desk_a.sum()) / math.pi), 3),
+                   "box3to1_of_3x_vs_desktop_mean_pct": round(100 * float(dd.mean()), 3),
+                   "box3to1_of_3x_vs_desktop_max_pct": round(100 * float(dd.max()), 2)}}
+
+json.dump(checks, open(OUTJ, "w"), indent=1)
+# every file: transparent corners; one-colour files (A, the drop-ins, the crosshair): one RGB value everywhere
+one_colour = lambda k: k.startswith(("A_S", "A_L", "dropin/"))
+bad = [k for k, v in checks.items() if any(x != 0 for x in v["corners_alpha"]) or (one_colour(k) and v["rgb_values"] != 1)]
+print("[3x] %d files checked, %d bad: %s" % (len(checks), len(bad), bad))
+for k in ("A_S_held", "A_L_held", "B_rect_red_held", "Achip_rect_red_held", "C_dark_held",
+          "dropin/slot_40x22/HUD_KeyGlyph@3x.png", "dropin/slot_49x22/HUD_KeyGlyph@3x.png", "dropin/crosshair/HUD_Crosshair@3x.png"):
+    print(k, checks[k])

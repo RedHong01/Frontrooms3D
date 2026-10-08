@@ -1,0 +1,68 @@
+"""mk_sheets_r2.py - G14b r2 verification sheets (bench 5c, standalone Metal, 1080p). Not part of the game."""
+import sys
+from PIL import Image, ImageDraw, ImageFont
+B5 = "/Users/redwang/FrontRoomsVisualWork/rt_bench2/r2/b5/"
+OUT = sys.argv[1]
+FONT = "/Users/redwang/Library/Fonts/ABCDiatype-Medium-Trial__dinamo_58c9d0f61b.otf"
+f22 = ImageFont.truetype(FONT, 22); f18 = ImageFont.truetype(FONT, 18)
+CROP = (360, 380, 1560, 1040)          # 1200 x 660: the floor and the far end
+
+def tile(path, w, crop=CROP):
+    im = Image.open(path).convert("RGB").crop(crop)
+    return im.resize((w, round(w * im.height / im.width)), Image.LANCZOS)
+
+def sheet(rows, cols, labels, rowlabels, fn, w=468, gap=8, bar=34):
+    th = round(w * (CROP[3] - CROP[1]) / (CROP[2] - CROP[0]))
+    W = cols * w + (cols + 1) * gap; H = len(rows) * (th + bar) + (len(rows) + 1) * gap
+    s = Image.new("RGB", (W, H), (255, 255, 255)); d = ImageDraw.Draw(s)
+    for r, row in enumerate(rows):
+        y = gap + r * (th + bar + gap)
+        for c, p in enumerate(row):
+            x = gap + c * (w + gap)
+            s.paste(tile(p, w), (x, y))
+            d.rectangle([x, y + th, x + w, y + th + bar], fill=(10, 10, 10))
+            d.text((x + 10, y + th + 6), labels[r][c], font=f18, fill=(255, 255, 255))
+        d.rectangle([gap, y, gap + 12 + d.textlength(rowlabels[r], font=f22), y + 32], fill=(244, 223, 59))
+        d.text((gap + 6, y + 4), rowlabels[r], font=f22, fill=(10, 10, 10))
+    s.save(fn, quality=85) if fn.endswith(".jpg") else s.save(fn)
+    print("wrote", fn, s.size)
+
+# VL100: one Run cube per state (raster tiers), tripped corridor
+cases = [("A20", "S1 TRIPPED", (24.17, 29.15, 6.87)), ("B20", "NEAR GOAL TRIPPED", (16.70, 14.13, 6.16))]
+rows, labels, rl = [], [], []
+for key, name, e in cases:
+    rows.append([B5 + f"d5_r2dd_c4_sg1_{key}_off.png", B5 + f"d5_r2ac_c1_sg1_{key}_off.png", B5 + f"d5_r2own_c1_sg1_{key}_off.png", B5 + f"d5_r2dd_c4_sg1_{key}_ref.png"])
+    labels.append([f"OFF · LEVEL 0 CUBE (MAIN) · ERROR {e[0]:.1f}", f"OFF · ARMED RUN CUBE · ERROR {e[1]:.1f}", f"OFF · TRIPPED RUN CUBE · ERROR {e[2]:.1f}", "2048-RAY REFERENCE"])
+    rl.append(name)
+sheet(rows, 4, labels, rl, OUT + "/11r2_run_cube_per_state.jpg")
+
+# VL101: ray-count switch, instant vs the worst frame of a 16-frame ramp with per-tile phase.
+# Heatmap = |frame k - frame k-1| x 8 on floor px (grey); px that change >= 8/255 in yellow. 3x3 max-pool so sparse px stay visible.
+import numpy as np
+def heat_tile(path, w=632, h=360):
+    a = np.asarray(Image.open(path).convert("L"), dtype=np.uint8)
+    H, W = a.shape; a = a[: H - H % 3, : W - W % 3]
+    m = a.reshape(a.shape[0] // 3, 3, a.shape[1] // 3, 3).max(axis=(1, 3))     # 640 x 360
+    rgb = np.stack([m, m, m], axis=-1).astype(np.uint8)
+    hot = m >= 64; rgb[hot] = (244, 223, 59)
+    im = Image.fromarray(rgb); x0 = (im.width - w) // 2
+    return im.crop((x0, 0, x0 + w, h))
+def ramp_sheet(cols, fn, gap=6, bar=34):
+    w, h = 632, 360
+    W = len(cols) * w + (len(cols) + 1) * gap; H = 2 * (h + bar) + 3 * gap
+    s = Image.new("RGB", (W, H), (255, 255, 255)); d = ImageDraw.Draw(s)
+    for c, (title, inst, ramp, li, lr) in enumerate(cols):
+        x = gap + c * (w + gap)
+        for r, (p, lab) in enumerate([(inst, li), (ramp, lr)]):
+            y = gap + r * (h + bar + gap)
+            s.paste(heat_tile(p), (x, y))
+            d.rectangle([x, y + h, x + w, y + h + bar], fill=(10, 10, 10)); d.text((x + 10, y + h + 6), lab, font=f18, fill=(255, 255, 255))
+            if r == 0:
+                d.rectangle([x, y, x + 12 + d.textlength(title, font=f22), y + 32], fill=(244, 223, 59)); d.text((x + 6, y + 4), title, font=f22, fill=(10, 10, 10))
+    s.save(fn); print("wrote", fn, s.size)
+R = B5 + "ramp_"
+ramp_sheet([
+    ("S1 TRIPPED · 1→2 RAYS · NO FAR FADE", R + "r2rni_A20_u1u2_instant.png", R + "r2rni_A20_u1u2_ramp16p8.png", "INSTANT · 7.37 % OF FLOOR ≥ 8/255", "16-FRAME RAMP, WORST FRAME · 0.293 %"),
+    ("NEAR GOAL · 1→2 RAYS · DESIGN", R + "r2ri_B20_u1u2_instant.png", R + "r2ri_B20_u1u2_ramp16p8.png", "INSTANT · 7.73 %", "16-FRAME RAMP, WORST FRAME · 0.011 %"),
+    ("STREAM ROOM · 1→2 RAYS · DESIGN", R + "r2ri_D20_u1u2_instant.png", R + "r2ri_D20_u1u2_ramp16p8.png", "INSTANT · 11.30 %", "16-FRAME RAMP, WORST FRAME · 0.000 %"),
+], OUT + "/11r2_ray_ramp_sheet.png")

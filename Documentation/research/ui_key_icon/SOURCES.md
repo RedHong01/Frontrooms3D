@@ -80,3 +80,18 @@ No new web sources and no downloads. Every image in `design/` is made by us from
 | `Assets/Resources/Fonts/` Bayon, IBM Plex Mono, Source Serif 4; `Assets/Fonts/Period1990/CourierPrime/` | HUD type and the tag number in the composites and boards | OFL (project copies) |
 | `Assets/Resources/UI/HUD_Crosshair.png` | the 16 px crosshair dot in the composites | ours |
 | AIGA/DOT 1974 "Baggage Lockers" key (W29) | construction grammar of direction C (redrawn, not copied) | public domain |
+
+## Fix stage (`04_for_red.md`, 2026-10-07)
+
+No new web sources and no downloads. New inputs, all ours:
+
+| Input | Used for | Owner / licence |
+|---|---|---|
+| `Frontrooms3D/Documentation/research/interaction_audit/images/48_door_locked_before_hud.png` (in-engine audit frame at a locked door, cam fwd (0, −0.27, 0.96)) | the 5th HUD ground `design/bg/leaf_48_almond.png` (leaf re-coloured to the spec almond `#CDC5B0`) and `leaf_48_wood.png` (today's wood leaf, baked HUD painted out) | ours |
+| `research/interactables/10_spec.md` (FREE vs LOCKED rule: almond enamel leaf, sRGB 205/197/176) and `Assets/Resources/Surfaces/Textures/DoorVeneer_A.png` (wood albedo luminance 0.185) | the leaf colour and the reason for the prompt card | ours |
+| main's `Assets/Resources/Props/Models/Kit_Key_Zone*.fbx`, `Kit_KeyRing.fbx`, `Kit_KeyTag_*`, `Kit_DoorNumberPlate.fbx` (read only) | the model panels on boards 02, 05, 06, 08, re-rendered after the scratchpad wipe; the VL075 re-check | ours |
+| `Prop_KeyTagNo_A.png`, `Prop_SignEngraved_A.png` regenerated from the interactables G3 script (`$W/g3/gen_textures_g3.py`, seed 1990) | the typed digits on the tag renders (they differ from the Oct 3 renders only in typewriter jitter) | ours |
+| `Assets/Resources/UI/HUD_KeyGlyph.png` (main, 40 × 22) | the "TestFlight today" phone composites (stretched ×3, as the game does) | ours |
+| `Documentation/TOUCH_CONTROLS.md` §3–4 (phone layout and type ramp) | the phone composites and the `_Touch` sprite sizes | ours |
+
+Verification images added: `images/11_pipeline_recovered.png` … `16_chip_ring.png`; rebuilt: `08_main_fbx_vs_trace.png`, `09_integer_type_sizes.png`, `10_3x_exports.png`. All are ours, made from the files above.

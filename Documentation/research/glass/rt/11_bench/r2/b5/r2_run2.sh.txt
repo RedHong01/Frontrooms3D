@@ -1,0 +1,18 @@
+#!/bin/zsh
+# G14b revision 2 (2026-10-07), timing. Interleaved configs per process; TREE 0/1 processes alternate. 1440p.
+cd /Users/redwang/FrontRoomsVisualWork/rt_bench2/r2/b5
+for i in 1 2 3; do
+  for T in 0 1; do
+    (uptime; TREE=$T CUBE=l0exr SOFTGATE=1 JITTER=2 FARFADE=6,12 ./rt_bench5c r2t${T}_$i timing2 A_H A_U2 A_U3 A_U4 B_H B_U2 B_U3 C_H C_U2 C_U3 D_H D_U2 F_H F_U3 G_H G_U2; uptime) > r2_t${T}_timing2_$i.txt 2>&1
+  done
+done
+echo t2done
+cd ../b6
+for i in 1 2; do
+  (uptime; ./rt_bench6f r2a$i A tripped; uptime) > r2_f_A_tripped_ultra_$i.txt 2>&1
+  (uptime; ./rt_bench6f r2b$i B tripped; uptime) > r2_f_B_tripped_ultra_$i.txt 2>&1
+  (uptime; ./rt_bench6f r2g$i G armed; uptime) > r2_f_G_armed_ultra_$i.txt 2>&1
+  (uptime; HIGH=1 ./rt_bench6f r2ah$i A tripped; uptime) > r2_f_A_tripped_high_$i.txt 2>&1
+  (uptime; HIGH=1 ./rt_bench6f r2gh$i G armed; uptime) > r2_f_G_armed_high_$i.txt 2>&1
+done
+echo alldone

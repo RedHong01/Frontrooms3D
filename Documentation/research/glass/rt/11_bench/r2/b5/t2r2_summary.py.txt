@@ -1,0 +1,18 @@
+"""t2r2_summary.py - G14b r2: per config, TREE 0 vs 1: min of the 3 process minima, median of the 3 medians (1440p, trace + filter)."""
+import re, glob, statistics as st
+rows = {}
+loads = {}
+for T in (0, 1):
+    for f in sorted(glob.glob(f"r2_t{T}_timing2_[123].txt")):
+        for line in open(f):
+            m = re.search(r"timing2 2560x1440 (\S+)\s+total min ([\d.]+) p25 ([\d.]+) med ([\d.]+) \| trace med ([\d.]+) filter med ([\d.]+) \| floor ([\d.]+)%.*rays/recv ([\d.]+) \| load (\S+)", line)
+            if m:
+                c = m.group(1); rows.setdefault((c, T), []).append((float(m.group(2)), float(m.group(4)), float(m.group(8)), float(m.group(7))))
+                loads.setdefault(T, []).append(m.group(9))
+for T in (0, 1): print(f"# TREE={T} loads: {loads[T][0]} .. {loads[T][-1]}")
+print(f"{'cfg':6} {'floor%':>6} {'rays':>5} | {'T0 min':>7} {'T0 med':>7} | {'T1 min':>7} {'T1 med':>7} | T1/T0 med")
+for c in sorted({k[0] for k in rows}):
+    a, b = rows[(c, 0)], rows[(c, 1)]
+    a_min, a_med = min(x[0] for x in a), st.median(x[1] for x in a)
+    b_min, b_med = min(x[0] for x in b), st.median(x[1] for x in b)
+    print(f"{c:6} {b[0][3]:6.1f} {b[0][2]:5.2f} | {a_min:7.3f} {a_med:7.3f} | {b_min:7.3f} {b_med:7.3f} | {b_med / a_med:5.3f}")

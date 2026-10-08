@@ -1,0 +1,363 @@
+"""Fix stage 2026-10-07: rewrite 03_figma.md (FINAL) from the 2026-10-03 draft + the fix-stage pieces.
+Sections 3 (Figma-stage history) and 8's table rows are kept; 0, 1, 2, 4, 5, 6, 7, 9, 10, 11 are rewritten;
+section 7 comes from gen_handoff.py's handoff_tables.md. Run with /usr/bin/python3."""
+import json, os, re
+
+DOC = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/ui_key_icon"
+W = "/Users/redwang/FrontRoomsVisualWork/keyicon_figma"
+old = open(os.path.join(DOC, "03_figma.md")).read()
+tables = open(os.path.join(W, "handoff_tables.md")).read().strip()
+variants, boxes = tables.split("\n\n", 1)
+M = json.load(open(os.path.join(W, "measure_fix.json")))
+
+
+def sec(title):
+    i = old.index(title)
+    j = old.find("\n## ", i + 3)
+    return old[i:j if j > 0 else len(old)].rstrip() + "\n"
+
+
+def stat(case, bg, what_prefix):
+    for r in M:
+        if r["case"] == case and r["bg"] == bg and r["what"].startswith(what_prefix):
+            return r
+    return None
+
+
+def cell(case, bg, what):
+    r = stat(case, bg, what)
+    return "—" if r is None else "%.2f / %.2f" % (r["p10"], r["median"])
+
+
+hist3 = sec("## 3. What changed in this stage (for the re-sync)").replace(
+    "## 3. What changed in this stage (for the re-sync)", "## 3. History: what the Figma stage changed (2026-10-03, for the record)")
+fig8_rows = [l for l in sec("## 8. Figma: what this stage wrote, ids and slot map").splitlines() if l.startswith("| VL07")]
+
+grounds = [("lit", "lit low room"), ("wallpaper", "wallpaper"), ("office", "office"), ("dark", "dark cell"),
+           ("leaf", "**almond locked leaf**"), ("leafwood", "wood locked leaf (today)")]
+prompt_rows = []
+for bg, name in grounds:
+    prompt_rows.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
+        name, cell("prompt today (code)", bg, "text LOCKED"),
+        cell("prompt v1 (before)", bg, "sprite"), cell("prompt v1 (before)", bg, "text LOCKED"), cell("prompt v1 (before)", bg, "text NEEDS"),
+        cell("prompt v2 (card)", bg, "sprite"), cell("prompt v2 (card)", bg, "text LOCKED"), cell("prompt v2 (card)", bg, "text NEEDS")))
+row_rows = []
+for case, lab in (("A_L held", "A held"), ("A_L other v1", "A other, Oct 3"), ("A_L other", "**A other, fix**"),
+                  ("A_L used v1", "A used, Oct 3"), ("A_L used", "**A used, fix**"), ("B other", "B other, fix"),
+                  ("C other", "C other, fix"), ("Achip other", "A + chip other, fix")):
+    row_rows.append("| %s | %s | %s | %s | %s |" % (
+        lab, cell(case, "lit", "sprite"), cell(case, "lit", "text KEY"),
+        next((cell(case, "lit", w) for w in ("text NOT", "text DOOR", "text OPENS") if stat(case, "lit", w)), "—"),
+        cell(case, "dark", "sprite")))
+
+head = """# 03 — Key icon: hand-off to 平面视觉
+
+**Status: FINAL, 2026-10-07 (fix stage).** The critic (2026-10-07) and fix stages are done. The visual chat now pings 平面视觉 with §0. Red's decisions are in `04_for_red.md` §4; nothing is installed in the game.
+
+**No key-HUD block was built in Figma by this workflow** (`figma_target.md`). 平面视觉 owns the native build: section `2532:4038` "FRONTROOMS · HUD KEY · UI VARIATIONS (平面视觉)" at (68657, 2000), library KV-LIB `2579:4775`, sync in `Frontrooms3D/Tools/figma/hud_key/`. This file is the source list for their re-sync.
+
+Paths are under `Documentation/research/ui_key_icon/` unless they start with `Assets/`, `Tools/` or `$W` (= `/Users/redwang/FrontRoomsVisualWork`, the persistent work root that replaced the wiped `/private/tmp` scratchpad). Main checked at `279c144`.
+
+---
+
+## 0. Fix stage changes (2026-10-07): the re-sync list for 平面视觉
+
+### (a) `composites.py`, old → new
+
+| Constant / function | Old (2026-10-03) | New |
+|---|---|---|
+| `prompt()` | no ground; glyph + "LOCKED" **muted** + meta muted; glyph at its box origin | the same row on a **card** `CARD` `#141414` at `CARD_OP` **90 %** (= the HUD hint card, `media` in `BuildHud`), padding `CARD_PAD_X` **12** × `CARD_PAD_Y` **8** px around the glyph row and the meta line; "LOCKED" in **paper**; meta stays muted; new keyword arguments for the phone (`cx`, `cy`, `label_sz`, `meta_sz`, `gap`, `meta_dy`, `pad`). The old function is kept as `prompt_v1` (not called by any entry point) |
+| `OUTLINE_PAD` (new) | — | `A_L_missing` (1, 1), `A_S_missing` (1, 0), `C_dark_missing` (1, 0), `B_rect_red_missing` (0, 0): `compact()`, `full()` and `prompt()` draw these sprites that many px left and up, so the key stays where it was |
+| `compact()`, `full()` | meta always `MUTED` | new `meta_col` argument (default `MUTED`) |
+| States (new `state()`) | other: `<dir>_held` at **40 %**, label `MUTED` at **70 %**, meta muted. Used: `<dir>_muted` at 100 %, label muted, meta muted | other: the **outline** `<dir>_missing` at 100 % (`OTHER_OUTLINE`; A + chip has none, so `Achip_rect_red_held` at `FLOOR_OP` **70 %**), label `PAPER` 100 %, meta `PAPER`. Used: `<dir>_held` at `FLOOR_OP` **70 %**, label `PAPER`, meta `PAPER` |
+| `STATE_BGS` (new) | states on lit, dark | held / other / used on lit and dark; **missing on lit, dark, wallpaper, office, leaf** |
+| `PROMPT_BOX` (new) | missing crops at (720, 500, 1200, 620) | (720, **512**, 1200, **632**): the card runs to y 622 |
+| `BGS` | lit, wallpaper, office, dark | + `leaf` = `design/bg/leaf_48_almond.png`. `BG_ROW` = the four room frames (the `held` loop, unchanged set). `BG_MEASURE_ONLY` = `leafwood` (never cropped) |
+| Entry points | `all`, `held`, `states`, `labels`, `zones`, `full` | + **`phone`** (skipped by a recording run: `L.__name__` is not `iconlib`). `full` also writes `A_L_fullframe_target_wallpaper.jpg` (board 10 hero) |
+| New helpers | — | `today_prompt()` (the code's prompt string; Bayon has no "·", drawn with Plex Mono), `phone_frame()`, `disc()`, `phone_hud()`, the `MEASURE` hook (inactive unless set) |
+
+Unchanged: `ROW_Y` 940, `LABEL_BASE` 958, `FULL_Y` 914, `PAPER`, `MUTED`, `ACCENT`, `COUR_SZ` 25, `MONO_SZ` 20, `DIRS`, `MISSING`, `ROOM`, every other crop box and every old output stem. Their `plan.py` (read-only copy, `KD` repointed) records **198 outputs** (was 182) and op counts text 430, sprite 198, rect 57, crosshair 46 (was 396 / 182 / 32 / 30).
+
+### (b) Files
+
+| Change | Files |
+|---|---|
+| **SVG masters changed (13)** | `A_L_missing` (box 49 × 22 → **51 × 24**), `A_S_missing` (40 → **42** × 22), `C_dark_missing` (40 → **42** × 22): the outline's centred stroke no longer runs out of the box. The 10 `Achip_*` masters: a new first layer `ring` (1 px paper wire, an arc from the tag hole to the bow hole); sizes unchanged (77 / 69 / 85 × 22). Their @1x / @2x / @3x PNGs (39) change with them. KV-LIB: re-import these 13 |
+| **HUD crops changed (80)** | every `*_state_{other,used,missing}_{lit,dark}_1x` (30); `Achip_state_held_*` (2), `Achip_held_*` (8), `Achip_fullframe_*` (4), `Achip_zone_*` (36). Per file: `changed` in `03_variants.tsv` |
+| **HUD crops added (22)** | `<dir>_state_missing_{wallpaper,office,leaf}_1x.png` (15), `A_L_fullframe_target_wallpaper.jpg` (1), `phone_{today,target}_{held,locked}_<bg>_3x.jpg` (6, not twins) |
+| Backgrounds added | `design/bg/leaf_48_almond.png`, `design/bg/leaf_48_wood.png` (§4) |
+| Drop-in added | `dropin/slot_40x22/HUD_KeyGlyph_Touch.png` (120 × 66), `dropin/slot_49x22/HUD_KeyGlyph_Touch.png` (147 × 66), `dropin/prompt/HUD_KeyOutline.png` (102 × 48), `HUD_KeyOutline_Touch.png` (153 × 72), `HUD_KeyOutline.svg`, `dropin/crosshair/HUD_Crosshair_Touch.png` (144 × 144) |
+| Boards | all 10 re-rendered (header date Oct 7; text and layout fixes on 01, 03, 05, 07, 09, 10). Not part of the sync |
+| Removed | none |
+| **Not part of the set** | 9 iCloud conflict copies tracked in git (`03c43ed`, `956b786`): `design/hud/A_L_fullframe_lit 2.jpg`, `A_S_fullframe_{dark,lit,office,wallpaper} 2.jpg`, `Achip_fullframe_{dark,lit,office,wallpaper} 2.jpg` (the `Achip_* 2.jpg` are the old 17:16 renders, numeral 24.63). Ignore them; the iCloud chat owns them |
+
+### (c) Your tools (`Tools/figma/hud_key/`, yours, not edited here)
+
+- `plan.py:11` and `fits.py:6`: `KD` points at the wiped `/private/tmp/…/scratchpad/keyicon_design`. Repoint to **`/Users/redwang/FrontRoomsVisualWork/keyicon_design`**.
+- `fits.py:14`: `BGS["dark"]` → `Documentation/research/ui_key_icon/design/bg/dark_59_door_key_open_t0000ms.png` (same bytes).
+- `fits.py`: add `BGS["leaf"]` = `design/bg/leaf_48_almond.png`; 5 new missing crops sit on it.
+- The prompt now has a `rect` op (the card, `#141414`, opacity 0.9): fit its sRGB alpha per crop like the other semi-transparent elements.
+- The outline sprites carry a 1 px offset (`OUTLINE_PAD`); `plan.py` records the shifted x / y.
+
+---
+
+## 1. Recommended direction and states
+
+**Recommendation: A · Cut key** (`02_design.md` §2). `Kit_Key_Zone`'s own outline, one paper colour, like the HUD type; the crosshair dot stays white.
+- **Ship today:** `dropin/slot_40x22/HUD_KeyGlyph.png` in today's 40 × 22 rect. No code change, but on desktop the panel only shows after the anchor fix (`04_for_red.md` §1).
+- **Target:** 49 × 22 (`A_L`) + label "KEY" in Bayon 20 and the zone number in Courier Prime Bold 25. Contract request in `04_for_red.md` §5.3.
+- **Options:** A + tag chip (once zones carry tag data); B for 2x moments. C is not used.
+
+States (final; opacities are engine values, blended in **linear light**, §2.4):
+
+| State | Glyph | Label | Meta (IBM Plex Mono 13) | Where |
+|---|---|---|---|---|
+| **Held, this zone** | `<dir>_held` at 100 % | paper `#F4F1E8` | none (B: "OPENS DOORS OUT OF THIS ZONE", muted) | bottom-left row |
+| **Held, other zone** | the outline `<dir>_missing` at 100 % (its stroke is paper at 70 % inside the SVG); A + chip: `Achip_*_held` at **70 %** | paper | "NOT THIS ZONE", **paper** (B: "OPENS ZONE 14 ONLY", no yellow rule) | bottom-left row |
+| **Used** (only if keys become single-use) | `<dir>_held` at **70 %** | paper | "DOOR OPENED", paper | bottom-left row |
+| **Missing** (locked door) | `<dir>_missing` (B and A + chip use `A_L_missing`) | "LOCKED", Bayon 20, **paper** | "NEEDS KEY 14", centred, muted | under the crosshair, on the card `#141414` 90 % |
+
+The `_muted` masters (5) stay in the library but no state uses them.
+
+---
+
+## 2. Every constant in `composites.py` (final values)
+
+### 2.1 Layout (1080p canvas, 1x px; 2x = the same numbers × 2)
+
+| Constant / rule | Value | Source in `composites.py` |
+|---|---|---|
+| Canvas | 1920 × 1080, CanvasScaler match 0.5 | docstring |
+| Glyph x | **72** (outline sprites: 72 − pad) | `compact()`, `full()` |
+| `ROW_Y` (glyph rect top, compact row) | **940** (outline sprites: 940 − pad) | constant |
+| Row height | **22** | glyph height |
+| `LABEL_BASE` (label baseline) | **958** (= `ROW_Y` + 18) | constant |
+| Label x | glyph x + glyph slot width + **14** (A_S 126, A_L 135, C 126, A + chip rect 163 / round 155 / long 171) | `compact()` |
+| "KEY" → numeral gap | "KEY" advance (Bayon 20: 25.79 px) + **6** | `draw_label()` |
+| Meta after the label | label end + **12**, baseline **957** (`LABEL_BASE` − 1) | `compact()` |
+| `FULL_Y` (full form top, B) | **914**, 48 high, same bottom edge (962) as the compact row | constant |
+| Full form rule | **4 × 48** at x 72, accent `#F4DF3B` | `full()` |
+| Full form glyph x | 72 + 4 + 14 = **90** (no rule: 72) | `full()` |
+| Full form name / meta | glyph x + glyph width + 14; baselines **936** / **955** | `full()` |
+| Prompt row | glyph + **10** + "LOCKED", centred on x 960; row centre y **584**; "LOCKED" baseline **591** | `prompt()` |
+| Prompt meta | centred on x 960, baseline 584 + max(30, glyph h / 2 + 16) = **614** | `prompt()` |
+| Prompt card | x: min(glyph x, meta x) − 12 … max(row end, meta end) + 12; y: glyph top − 8 … meta baseline + 8 = **565 … 622** (A_L: x **888 … 1032**, 144 × 57) | `prompt()` |
+| `PROMPT_BOX` (missing crops) | **720, 512, 480 × 120** | constant |
+| Crosshair | 32 × 32 rect at (944, 524), the 64 × 64 sprite (dot Ø 16 on screen) | `crosshair()` |
+| Room meta | IBM Plex Mono 13, muted, x 96, baseline **102** | `room_type()` |
+| Room name | Source Serif 4, **50**, paper, x 96, baseline **165** | `room_type()` |
+
+**Phone** (`phone_hud()`, pt, drawn @3x; TestFlight layout at `279c144` + the TOUCH_CONTROLS §4 ramp): canvas 874 × 402; zone rule 3 × 40 at (79.5, 16); meta Plex 11 at x 91, baseline 26; zone name Serif 26, baseline 59; key row top-left (78, 72), glyph 49 × 22, label x 139, Bayon **17** + Courier Prime Bold **21**, 5 pt gap; crosshair dot Ø **12** at (437, 201); prompt row centre **233** (32 under the dot), label 17, meta 11 at +26, gap 8, card padding **10 × 7**. "Today" draws main's 40 × 22 px sprite stretched ×3, label Bayon 11 at x 132, and the 64 px crosshair sprite in the 72 px rect.
+
+### 2.2 Type sizes (whole numbers)
+
+| Use | Face | Size | Cap height |
+|---|---|---|---|
+| Label words ("KEY", "LEVEL 0 KEY", "LOCKED") | Bayon Regular | **20** (phone 17) | 14.28 px |
+| Key numeral (`COUR_SZ`) | Courier Prime Bold | **25** (phone 21) | 14.49 px |
+| Numeral, Plex option and C zone labels (`MONO_SZ`) | IBM Plex Mono Regular | **20** | 13.96 px |
+| Meta | IBM Plex Mono Regular | **13** (phone 11) | — |
+| Room name | Source Serif 4 (variable, default instance) | **50** (phone 26) | — |
+
+In Unity: the numeral is a second `Text` element (legacy `Text` cannot switch fonts inside one string).
+
+### 2.3 Glyph sizes (1x; the SVG masters' width × height)
+
+| Glyph | Size | Note |
+|---|---|---|
+| `A_S_held`, `A_S_muted` | 40 × 22 | key 40 × 18, centred; today's slot |
+| `A_S_missing` | **42 × 22** | 40 × 22 slot + 1 px left and right |
+| `A_L_held`, `A_L_muted` | 49 × 22 | key fills the row; target |
+| `A_L_missing` | **51 × 24** | 49 × 22 slot + 1 px all round |
+| `C_*` | 40 × 22 | plate 40 × 20, R 2; `C_dark_missing` **42 × 22** |
+| `Achip_rect_*` / `round_*` / `long_*` | 77 / 69 / 85 × 22 | chip + 4 px + A_L key; ring wire inside the box |
+| `B_*` | 72 × 48 | key + ring + tag; needs the 48 px full form |
+
+### 2.4 Colours and opacities
+
+| Name | Value |
+|---|---|
+| Paper | `#F4F1E8` |
+| Muted | `#BDBAB0` (prompt meta, room meta, B's held meta) |
+| Accent (B rule only) | `#F4DF3B` |
+| Card (prompt ground, C dark plate) | `#141414` |
+| Ink (C white plate key, B tag numbers) | `#1E1D1A` |
+| Zone red / blue / white (`Prop_Plastic*` base colours, sRGB) | `#8C0F0D` / `#0F2973` / `#FFFFFF` |
+
+| Opacity (linear-light engine value) | Where |
+|---|---|
+| **90 %** | the prompt card; C dark plate (held) |
+| **70 %** | `FLOOR_OP`: the used glyph, the A + chip other-zone glyph; the outline stroke (inside the SVG) |
+| **60 %** | C dark plate (muted master, unused) |
+| **55 %** | tag or chip fill in the muted masters (unused) |
+| 100 % | everything else |
+
+**Blending.** The composites blend every layer in **linear light**, like Unity's overlay canvas in a linear-colour project (no post on the HUD). Figma blends in **sRGB**: keep fitting an sRGB alpha per crop for every semi-transparent element (90 / 70 %).
+
+### 2.5 Contrast (WCAG ratio, p10 / median of the ground pixels under each element; `measure.py`)
+
+Locked prompt, per ground (today's code prompt has no glyph):
+
+| Ground | Today: text | Oct 3: key | Oct 3: LOCKED | Oct 3: meta | **Fix: key** | **Fix: LOCKED** | **Fix: meta** |
+|---|---|---|---|---|---|---|---|
+""" + "\n".join(prompt_rows) + """
+
+Bottom-left row (lit carpet = the worst frame; dark for reference):
+
+| Case | Key, lit | Label "KEY", lit | Meta, lit | Key, dark |
+|---|---|---|---|---|
+""" + "\n".join(row_rows) + """
+
+Bars: 3 : 1 for graphics (WCAG 1.4.11), 4.5 : 1 for text under 24 px. Paper on lit carpet is itself 3.9–4.3 : 1, so no small paper text reaches 4.5 : 1 there without a ground (a HUD-system choice). Raw rows: `$W/keyicon_figma/measure_fix.json`.
+
+---
+
+"""
+
+body4 = """## 4. The background frames
+
+| Key | File | Size | What |
+|---|---|---|---|
+| `lit` | `Documentation/research/room_visuals/images/room_map-l0-low_wide.jpg` | 1920 × 1080 | Level 0 low rooms, lit (worst contrast for paper) |
+| `wallpaper` | `Documentation/research/room_visuals/images/room_map-l0-standard_wide.jpg` | 1920 × 1080 | Level 0 standard rooms, wallpaper and door |
+| `office` | `Documentation/research/room_visuals/images/room_map-office_wide.jpg` | 1920 × 1080 | Office zone |
+| `dark` | `design/bg/dark_59_door_key_open_t0000ms.png` | 1920 × 1080 | in-engine audit frame at a key door, dark cell |
+| **`leaf`** (new) | `design/bg/leaf_48_almond.png` | 1920 × 1080 | in-engine audit frame 48 (`interaction_audit/images/48_door_locked_before_hud.png`, a locked door) with the leaf quad re-coloured to the spec's almond enamel `#CDC5B0` at full albedo (the brightest locked leaf the spec allows), gentle shading kept. Made by `make_leaf_bg.py` |
+| `leafwood` (measured only) | `design/bg/leaf_48_wood.png` | 1920 × 1080 | the same frame, today's wood leaf, with the baked old HUD painted out |
+
+Their Figma copies are in KV-SRC `2532:4039` (`figma_ids.json`); `leaf` is new there.
+
+2x crops: the HUD region (x 0–640, y 840–1080) is upsampled ×2 bilinear before the 2x sprites and the 2x type go on it (`frame(name, 2)`).
+
+---
+
+## 5. @3x and touch exports
+
+Phones are @3x. TestFlight (`279c144`) puts the key under the zone block at (78, 72) pt in a 150 × 22 pt panel, with a **40 × 22 pt** glyph rect, and the crosshair in a **24 pt** rect (dot 12 pt). The game loads one sprite per element on every platform, so the @3x files below can only load under their own names (the `_Touch` files).
+
+| File | Size | Use |
+|---|---|---|
+| `design/png/<name>@3x.png` × 33 | 3 × the 1x size | every master, every state (vector source: `design/svg/`) |
+| `design/dropin/slot_40x22/HUD_KeyGlyph@3x.png`, `…/HUD_KeyGlyph_Touch.png` | 120 × 66 | = `A_S_held@3x`; the `_Touch` copy is the name to load |
+| `design/dropin/slot_49x22/HUD_KeyGlyph@3x.png`, `…/HUD_KeyGlyph_Touch.png` | 147 × 66 | = `A_L_held@3x` (the target) |
+| `design/dropin/prompt/HUD_KeyOutline_Touch.png` | 153 × 72 | = `A_L_missing@3x` (51 × 24 pt rect) |
+| `design/dropin/crosshair/HUD_Crosshair_Touch.png` | 144 × 144, dot 72 | **for the shipped 24 pt rect**: 2 : 1 like the desktop sprite, dot 12 pt |
+| `design/dropin/crosshair/HUD_Crosshair@3x.png` (+ `.svg`) | 192 × 192, dot 96 | for a 32 pt rect only. Correction: the 2026-10-03 note said the phone rect was 32 pt and the dot 16 pt; the shipped rect is 24 pt, where this file would be shrunk 2.67 : 1 with no mipmaps. Use `_Touch` |
+
+The desktop `Assets/Resources/UI/HUD_Crosshair.png` (64 × 64, Ø 32) is unchanged.
+
+Checks (`$W/keyicon_figma/export_3x_checks.json`, `export_touch_checks.json`):
+- **36 / 36 @3x files and 5 / 5 `_Touch` files pass:** corners alpha 0; one-colour files hold one RGB value in every pixel.
+- **@3x box-filtered to 1x vs @1x:** mean error per file 0.004–0.185 % (median 0.06 %, was 0.03 % before the ring wire and the outline boxes); worst single pixel ≤ 5.05 % (on the chip's ring wire), the B lockups 9.5 % on one ring pixel.
+- **Touch crosshair:** area diameter 72.00 px.
+- Import (when it lands): Sprite (2D and UI), sRGB, Alpha Is Transparency, Bilinear, no mipmaps, Compression None, Max Size 256.
+
+---
+
+## 6. Boards and drop-in
+
+- Boards 01–10 (`design/*.png`) were re-rendered on 2026-10-07: board 01 and 10 wording (the crosshair dot stays white), 03 / 07 / 09 state rows ("IF KEYS BECOME SINGLE-USE", the carded prompt), 05 (the ring wire), 07 (yellow rule = your decision), 10 (hero = the target A_L + KEY 14 with a 1 : 1 inset; the file list and the meta label moved into the docs). Not part of the sync.
+- Drop-in: `slot_40x22/HUD_KeyGlyph.png` is still byte-identical to `png/A_S_held@2x.png`, `slot_49x22` to `A_L_held@2x.png`. New: the `_Touch`, `prompt/` files (§5). Nothing was copied into `Assets/`.
+
+---
+
+## 7. The variant list: one row per rendered file
+
+Columns: direction × state × zone × label × background × scale, the glyph sprite (with its opacity when not 100 %), the text set (face, size, opacity when not 100 %), and the crop box in px **in that scale's frame** (x, y, w × h). "Changed" = pixels differ from the 2026-10-03 set (**new** = no Oct 3 file). The same rows, with the crop also in 1x units and an `ops_changed` column, are in `03_variants.tsv`. Rows 1–198 are `composites.py` (what `plan.py` records, in its order); then `composites_live.py` and the phone frames (not twins).
+
+""" + variants + """
+
+### 7.1 Every crop box
+
+| Box (1x units) | Used by |
+|---|---|
+| 0, 0, 1920 × 1080 | full frames `<dir>_fullframe_<bg>`, `A_L_fullframe_target_wallpaper` |
+| 40, 880, 600 × 120 | compact-row crops (`*_held_*`, `*_state_{held,other,used}_*` of A, A + chip, C), `cmp_*` |
+| 40, 860, 600 × 120 | B (48 px full form: 20 px more headroom) |
+| 40, 920, 400 × 60 | `label_*`, `C_zone_*`, `Achip_zone_*`, `live_code_*` |
+| **720, 512, 480 × 120** | `*_state_missing_*` (was 720, 500: the card runs to y 622) |
+| 874 × 402 pt @3x | `phone_*` |
+
+""" + boxes + """
+
+---
+
+"""
+
+fig8 = """## 8. Figma: what this workflow wrote, ids and slot map
+
+**Key-HUD design: nothing.** Read only, for reference (平面视觉's, `Tools/figma/hud_key/figma_ids.json`):
+
+| What | Id |
+|---|---|
+| Section "FRONTROOMS · HUD KEY · UI VARIATIONS (平面视觉)" | `2532:4038` (68657, 2000; 8280 × 11920) |
+| KV-SRC (backgrounds + crosshair as image fills) | `2532:4039`; lit `2532:4040`, wallpaper `2532:4041`, office `2532:4042`, dark `2532:4043`, crosshair `2532:4044` |
+| KV-LIB (the 33 masters as components) | `2579:4775`; sets A `2579:4809`, chip `2579:4810`, B `2579:4811`, C `2579:4812`; crosshair `2579:4813` |
+| UI MOCKUP (HUD type and colour system; read only) | `2256:8`; HUD / Key `2256:161`; Overlay / Key chip `2256:191` |
+
+**Verification log (`2595:6093` "FRONTROOMS · VISUAL VERIFICATION LOG").** Procedure: `Documentation/VERIFICATION_LOG.md`. The fix stage claimed VL100–VL105, grew the section from 31,080 to **33,560** (27 rows; the band x 76937–86017, y 33080–35960 was checked clear), and refreshed the images of VL075–VL077 (slots re-fitted to the new images' aspect).
+
+| VL | Frame id | Cell (section-relative) | Title | Verdict | Slot → image |
+|---|---|---|---|---|---|
+""" + "\n".join(fig8_rows) + """
+| VL100 | `2760:6093` | (120, 31160) | Locked prompt on a hint card | PASS | `img:12_locked_prompt_card` `2760:6101` → `images/12_locked_prompt_card.png` |
+| VL101 | `2760:6102` | (2160, 31160) | Key states dim by shape | PASS | `img:13_states_by_shape` `2760:6110` → `images/13_states_by_shape.png` |
+| VL102 | `2760:6111` | (4200, 31160) | Outline stroke no longer cut | PASS | `img:14_outline_stroke` `2760:6119` → `images/14_outline_stroke.png` |
+| VL103 | `2760:6120` | (6240, 31160) | Phone key HUD and prompt | FLAG | `img:15_phone_hud` `2760:6128` → `images/15_phone_hud.png` |
+| VL104 | `2760:6129` | (120, 32400) | Key pipeline rebuilt | PASS | `img:11_pipeline_recovered` `2760:6137` → `images/11_pipeline_recovered.png` |
+| VL105 | `2760:6138` | (2160, 32400) | Tag chip hangs on a ring | WAIT-RED | `img:16_chip_ring` `2760:6146` → `images/16_chip_ring.png` |
+
+VL075–VL077 (2026-10-07): images rebuilt with Bayon labels only (no captions, no numbers on the image), 08 re-run on main (IoU 0.99996 again) and re-laid out 2 × 2, 09 without the overlapping header (its "before" crops regenerated and checked pixel-identical to the 2026-10-03 sheet), 10 with the fix-stage masters; VL077's statement now says median 0.06 %.
+
+---
+
+## 9. Checks against main (`279c144`, 2026-10-07)
+
+| Item | Main now | Effect |
+|---|---|---|
+| `FrontRooms3DGame.cs` key panel (`c1f2d31`, 2026-10-04) | `HUD / Key` anchored top-left on every platform; desktop keeps (72, 118) → **off-screen on desktop** | contract item 1 (`04_for_red.md` §1). Lines now: panel 1883–1892, `UpdateHud` key logic 2208–2215, `KeyLabel` 2253, room meta 2182, `UiFont` 1482–1485 |
+| Phone HUD (`c1f2d31`) | canvas 874 × 402, key at (78, 72) pt, label Bayon 11, crosshair rect 24 pt, one sprite per element | §5, contract item 3 |
+| `FrontRoomsMapWorld.cs` | `KeysHeld` 57, `HasKeyFor` 830, locked prompt string 2203, `SpawnKey` 2852 (still the 0.32 × 0.12 × 0.12 m yellow cube) | contract items 5, 6, 8 |
+| `Kit_Key_Zone.fbx` (+ `_Nickel`) | no commit since `75cfdff` | VL075 re-run: IoU 0.99996 |
+| `interact_key*.py` | `interact_key_common.py` changed in `03c43ed` (`orient` helper, `rrect_sweep` for the cabinet) | the key blank is not built with them; geometry re-dumped identical |
+| `Assets/Resources/UI/` | no commit since `7320ed1`; `HUD_KeyGlyph.png` GUID `eb266a1345aeb45f69bf39f9c6d34fb4` | drop-in plan stands |
+| Codex audit | `20_findings.md` never written; `00_main_state.md`: "C9 key icon: not touched"; no `10_review_*.md` names K1 | nothing to resolve |
+
+Nothing was written under `Assets/`. Unity was not opened.
+
+---
+
+## 10. Open issues
+
+- **10.1 (2026-10-03) — the outline masters clipped half their stroke:** fixed (§0, VL102).
+- Red's decisions (`04_for_red.md` §4): direction, prompt card vs shadow, other-zone panel, label, drop-in now, chip.
+- 平面视觉's decisions: the prompt card (their UI06 mockup has the same contrast problem), B's yellow rule (stamina / hold-bar accent in a calm state), the "used" column.
+- Map data and the HUD code: contract request (`04_for_red.md` §5.3), not sent or applied.
+- The almond `leaf` ground is a worst case; replace it with an in-engine capture of an L0-K door once the kit doors are in play.
+
+---
+
+## 11. Scripts
+
+Rebuilt on 2026-10-07 from the transcripts (`wf_05944ce4-1a3`: full-file checkpoints from `cat` outputs + every later patch, replayed in order by `$W/keyicon_design_recover/replay.py`). The rebuilt originals reproduce the 2026-10-03 files byte for byte (VL104). Durable copies of the final versions: `scripts/*.py.txt` (+ `shot.sh.txt`).
+
+| Script (`$W/keyicon_design/`) | What | Run with |
+|---|---|---|
+| `dump_geometry.py` | `geometry_mm.json` from read-only copies of the G3 modules (`mods/`, from `ef061ae`) | Blender `-b --python` |
+| `design.py` | SVG + PNG @1x/@2x/@3x for all masters (fix: `emit_outline`, `ring_link`) | Blender's Python 3.11 |
+| `make_leaf_bg.py` | `design/bg/leaf_48_almond.png`, `leaf_48_wood.png` | `$W/venv/bin/python` |
+| `composites.py` | all HUD crops (`all` / `held` / `states` / `labels` / `zones` / `phone` / `full`) | Blender's Python 3.11 |
+| `composites_live.py` | `live_code_*`, `cmp_*` | Blender's Python 3.11 |
+| `export_3x.py`, `export_touch.py` | the @3x and `_Touch` drop-ins, the crosshairs, the checks | Blender's Python 3.11 |
+| `boards.py` (+ `shot.sh`) | boards 01–10 (headless Chrome); model panels from `model_renders.py` / `model_renders_true.py` (+ `$W/g3/g3_scene.py`, textures from `$W/g3/gen_textures_g3.py`) | `/usr/bin/python3` |
+| `measure.py` | §2.5 contrast table → `measure_fix.json` | Blender's Python 3.11 |
+| `make_cells.py`, `make_verif2.py` | verification images 08–16 | Blender's Python / `$W/venv/bin/python` |
+| `gen_handoff.py` | §7 and `03_variants.tsv` from `plan.py`'s record | `/usr/bin/python3` |
+| `$W/keyicon_resume/verify_main_fbx.py` | main's FBX vs the trace (VL075) | Blender `-b --python` |
+
+Set `KEYICON_DES` to render into a scratch folder instead of `design/`.
+"""
+
+out = head + hist3 + "\n---\n\n" + body4 + fig8 + "\n"
+open(os.path.join(DOC, "03_figma.md"), "w").write(out)
+print(len(out.splitlines()), "lines")

@@ -1,0 +1,77 @@
+"""Rebuild W/keyicon_design (the key-icon pipeline lost in the 2026-10-05 /private/tmp wipe)
+from the wf_05944ce4-1a3 transcripts: full-file checkpoints (cat outputs) + every later patch, in order."""
+import json, os, re, subprocess, glob, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from heredocs import blocks
+OLD = '/private/tmp/claude-501/-Users-redwang-Desktop-ArtCenter-Fall26T7-EGAM-401A-01-Individual-Game-Project/5656cffd-bc90-45f6-86a3-09b26549df8d/scratchpad'
+NEW = '/Users/redwang/FrontRoomsVisualWork'
+KD = NEW + '/keyicon_design'
+HERE = os.path.dirname(os.path.abspath(__file__))
+calls = json.load(open(os.path.join(HERE, 'all_calls.json')))
+D = os.path.join(HERE, 'dump')
+def dump(n):
+    return open(glob.glob(os.path.join(D, '%03d_*' % n))[0]).read()
+def result_of(ts_prefix, must):
+    c = [d for d in calls if d['ts'].startswith(ts_prefix) and must in d['input'].get('command', '')]
+    assert len(c) == 1, (ts_prefix, must, len(c))
+    return c[0]['result']
+def write(name, text):
+    if not text.endswith('\n'):
+        text += '\n'
+    open(os.path.join(KD, name), 'w').write(text)
+os.makedirs(KD, exist_ok=True)
+log = []
+# ---- checkpoints
+r = result_of('2026-10-03T23:44:08', 'cat $S/iconlib.py'); write('iconlib.py', r); log.append(('iconlib.py', '23:44:08 cat'))
+r = result_of('2026-10-03T23:43:46', 'cat $S/keygeo.py')
+assert r.startswith('Exit code 1\n'); r = r[len('Exit code 1\n'):]
+write('keygeo.py', r.split('\n======')[0]); log.append(('keygeo.py', '23:43:46 cat'))
+r = result_of('2026-10-03T23:43:51', 'cat $S/dump_geometry.py')
+write('dump_geometry.py', r.split('\n-----')[0]); log.append(('dump_geometry.py', '23:43:51 cat'))
+r = result_of('2026-10-04T05:17:39', 'cat $S/keyicon_design/design.py'); write('design.py', r); log.append(('design.py', '05:17:39 cat'))
+r = result_of('2026-10-04T05:17:18', 'cat $S/keyicon_design/composites.py'); write('composites.py', r); log.append(('composites.py', '05:17:18 cat'))
+r = result_of('2026-10-04T05:18:03', 'cat $S/keyicon_design/composites_live.py'); write('composites_live.py', r.split('\n-----')[0]); log.append(('composites_live.py', '05:18:03 cat'))
+# Write tool contents
+def write_tool(n):
+    t = dump(n); assert t.startswith('FILE ')
+    path, body = t.split('\n', 1)
+    write(os.path.basename(path[5:]), body); log.append((os.path.basename(path[5:]), 'Write #%d' % n))
+write_tool(45)    # boards.py 20:15
+write_tool(5)     # model_renders.py
+write_tool(144)   # export_3x.py
+write_tool(150)   # make_verif.py
+write_tool(155)   # gen_handoff.py
+# ---- patches, in time order
+def run_py(n, k=0, expand=None):
+    b = blocks(dump(n))[k]
+    body = b['body']
+    if not b['quoted']:
+        for var, val in (expand or {}).items():
+            body = body.replace(var, val)
+    p = subprocess.run(['/usr/bin/python3', '-'], input=body, text=True, cwd=KD, capture_output=True)
+    assert p.returncode == 0, (n, p.stderr[-2000:])
+    log.append(('patch', '#%d py: %s' % (n, p.stdout.strip()[:80])))
+def run_cat(n, k, name):
+    b = blocks(dump(n))[k]
+    write(name, b['body'].rstrip('\n')); log.append((name, 'cat #%d' % n))
+def run_sed(n, target):
+    cmd = dump(n)
+    m = [x for x in re.findall(r"sed -i '' (?:(?!&&|;\s*(?:cat|grep|cd|echo|ls)).)*?" + re.escape(target), cmd, re.S)]
+    assert m, (n, target)
+    for s in m:
+        p = subprocess.run(s, shell=True, cwd=KD, capture_output=True, text=True, executable='/bin/zsh')
+        assert p.returncode == 0, (n, s, p.stderr)
+        log.append(('sed', '#%d %s' % (n, s[:100])))
+W_OLD = {'$W': OLD + '/keyicon_design', '$SP': OLD}
+# model_renders.py (Blender model panels), adff45 phase
+run_py(12, expand={'$W': KD}); run_py(17, expand={'$W': KD})
+# boards.py, a18fc1 phase
+run_py(69); run_py(70); run_sed(74, 'boards.py'); run_cat(74, 0, 'shot.sh'); run_sed(75, 'shot.sh')
+run_py(76); run_py(81); run_cat(85, 0, 'shot.sh'); run_cat(87, 0, 'shot.sh'); run_py(89); run_sed(97, 'boards.py')
+# a6b78d resume
+run_py(117); run_py(119, 0)
+# adeec1 figma stage
+run_py(136); run_py(137); run_sed(138, 'composites.py'); run_sed(140, 'design.py')
+run_py(145); run_py(153); run_py(161, 0); run_cat(161, 1, 'rerender_rest.py'); run_py(164); run_py(168)
+for x in log:
+    print(*x)

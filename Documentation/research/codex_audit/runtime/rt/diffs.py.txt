@@ -1,0 +1,40 @@
+# Codex audit, G14 track (2026-10-07): frame diffs of the clone probe's RT Off / High / Ultra / Off-again frames.
+# Usage: python diffs.py <probe out dir> <view name> <images out dir> <prefix>
+import sys, json
+import numpy as np
+from PIL import Image
+
+src, view, out, prefix = sys.argv[1:5]
+
+def load(q):
+    return np.asarray(Image.open(f"{src}/{view}_{q}.png").convert("RGB")).astype(np.int16)
+
+off, high, ultra, off2 = load("off"), load("high"), load("ultra"), load("off2")
+res = {}
+def stats(a, b, name):
+    d = np.abs(a - b).max(axis=2)
+    ya = (0.2126 * a[..., 0] + 0.7152 * a[..., 1] + 0.0722 * a[..., 2])
+    yb = (0.2126 * b[..., 0] + 0.7152 * b[..., 1] + 0.0722 * b[..., 2])
+    dy = yb - ya
+    m8 = d >= 8
+    r = {
+        "px_ge1": int((d >= 1).sum()), "px_ge2": int((d >= 2).sum()), "px_ge8": int(m8.sum()), "px_ge32": int((d >= 32).sum()),
+        "max": int(d.max()), "mean_dY_all": round(float(dy.mean()), 3),
+        "mean_dY_ge8": round(float(dy[m8].mean()), 2) if m8.any() else 0.0,
+        "frac_ge8_pct": round(100.0 * float(m8.mean()), 3),
+    }
+    if m8.any():
+        ys, xs = np.nonzero(m8)
+        r["bbox_ge8"] = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+    res[name] = r
+    heat = np.clip(d * 32, 0, 255).astype(np.uint8)
+    Image.fromarray(heat, "L").convert("RGB").save(f"{out}/{prefix}_diff_{name}_x32.png")
+    return d
+
+stats(off, high, "high_vs_off")
+stats(off, ultra, "ultra_vs_off")
+stats(off, off2, "off_vs_off")
+for q, a in (("off", off), ("high", high), ("ultra", ultra)):
+    Image.fromarray(a.astype(np.uint8)).save(f"{out}/{prefix}_{q}.jpg", quality=85)
+json.dump(res, open(f"{out}/{prefix}_diff_stats.json", "w"), indent=1)
+print(json.dumps(res, indent=1))

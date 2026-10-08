@@ -1,0 +1,354 @@
+"""Build the three key-icon directions: SVG masters + PNG (1x / 2x, real alpha).
+
+A  CUT KEY     Kit_Key_Zone traced (cuts x2.5 deep, hole x1.5), solid paper.
+B  KEY ON TAG  key + split ring + the zone's tag (shape, colour, typed number).
+C  SIGN PLATE  the key in 1974 AIGA/DOT construction on a 2:1 plate (the door
+               number plate's proportion).
+Output: design/svg, design/png (+ geometry JSON for the composites).
+Run with Blender's Python (numpy).
+"""
+import json, math, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import iconlib as L
+import keygeo as K
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+OUT = os.environ.get("KEYICON_DES", os.path.join(PROJ, "Documentation/research/ui_key_icon/design"))  # override for scratch re-renders
+SVG = os.path.join(OUT, "svg"); PNG = os.path.join(OUT, "png")
+for d in (SVG, PNG):
+    os.makedirs(d, exist_ok=True)
+
+PAPER, MUTED, INK, CARD = "F4F1E8", "BDBAB0", "1E1D1A", "141414"
+ZONE = {"red": "8C0F0D", "blue": "0F2973", "white": "FFFFFF"}   # Prop_Plastic* _BaseColor (sRGB)
+CUT_GAIN, FLANK = 2.5, 40.0
+FONT_TAG = L.Font(os.path.join(PROJ, "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Regular.ttf"))
+FONT_TAG_B = L.Font(os.path.join(PROJ, "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Bold.ttf"))
+
+even = lambda v: 2.0 * round(v / 2.0)
+meta = {}
+
+
+def key_traced(k2, ox, oy, gain=CUT_GAIN, flank=FLANK, hint=True, hole_gain=1.5):
+    """Kit_Key_Zone side view on a 2x grid: k2 = 2x px per mm, (ox, oy) = where the
+    model's (Z -33, Y 13.5) corner lands. With hint=True every structural edge is
+    rounded to an even 2x value (= a whole 1x pixel)."""
+    h = even if hint else (lambda v: v)
+    X = lambda Z: ox + (Z + 33.0) * k2
+    Y = lambda Yv: oy + (13.5 - Yv) * k2
+    bx0, bx1 = h(X(-33.0)), h(X(-3.0))
+    by0, by1 = h(Y(13.5)), h(Y(-12.5))
+    neck_x, tip_x = h(X(0.0)), h(X(25.0))
+    neck_top, blade_top, blade_bot = h(Y(8.5)), h(Y(4.6)), h(Y(-4.0))
+    tip_y = h(Y(0.5))
+    kb = (tip_x - neck_x) / K.B["len"]
+    cut_x = [neck_x + z * kb for z in K.B["cut_z"]]
+    cut_d = [d * kb * gain for d in K.B["cut_depths"]]
+    R = round(8.0 * k2) if hint else 8.0 * k2
+    poly = K.key_poly(bx0, by0, bx1, by1, R, neck_x, neck_top, blade_top, blade_bot, tip_x, tip_y,
+                      cut_x, cut_d, flank, K.B["cut_flat"] * kb, neck_x + K.B["tip_bevel_z"] * kb,
+                      flare=max(1.0 * k2, 0.6))
+    hc = (h(X(-26.5)) if hint else X(-26.5), (by0 + by1) / 2 if hint else Y(0.5))
+    hr = round(2.4 * hole_gain * k2) if hint else 2.4 * hole_gain * k2
+    hole = L.circle(hc[0], hc[1], hr, 64)
+    return poly, hole, {"bow": [bx0, by0, bx1, by1], "neck_x": neck_x, "tip": [tip_x, tip_y],
+                        "blade": [blade_top, blade_bot], "neck_top": neck_top, "hole": [hc[0], hc[1], hr], "R": R}
+
+
+def half(polys):
+    return L.xform(polys, 0.5)
+
+
+def emit_outline(name, layers2x, W1, H1, title, desc):
+    """Fix stage 2026-10-07 (critic issue 4 / 03_figma.md 10.1): an outline master whose
+    centred stroke would run past the glyph box gets a box grown by whole 1x pixels on
+    exactly those sides, and its paths shifted by the same amount, so no stroke is cut.
+    The key stays the same size; the composites shift the sprite back by the pad."""
+    pad = [0, 0, 0, 0]                                       # left, top, right, bottom (1x px)
+    for l in layers2x:
+        if "stroke" not in l:
+            continue
+        x0, y0, x1, y1 = L.bbox(l["stroke"][0])
+        hw = l["stroke"][1] / 2                              # 2x px
+        pad[0] = max(pad[0], math.ceil(max(0.0, hw - x0) / 2 - 1e-9))
+        pad[1] = max(pad[1], math.ceil(max(0.0, hw - y0) / 2 - 1e-9))
+        pad[2] = max(pad[2], math.ceil(max(0.0, x1 + hw - 2 * W1) / 2 - 1e-9))
+        pad[3] = max(pad[3], math.ceil(max(0.0, y1 + hw - 2 * H1) / 2 - 1e-9))
+    lay = []
+    for l in layers2x:
+        l2 = dict(l)
+        if "stroke" in l2:
+            l2["stroke"] = (L.xform(l2["stroke"][0], 1.0, 1.0, 2 * pad[0], 2 * pad[1]), l2["stroke"][1])
+        if "polys" in l2:
+            l2["polys"] = L.xform(l2["polys"], 1.0, 1.0, 2 * pad[0], 2 * pad[1])
+        lay.append(l2)
+    W2, H2 = W1 + pad[0] + pad[2], H1 + pad[1] + pad[3]
+    emit(name, lay, W2, H2, title, desc + (" Box grown by %d/%d/%d/%d px (l/t/r/b) so the stroke is not cut; place it %d px left and %d px up of the %d x %d key slot." % (pad[0], pad[1], pad[2], pad[3], pad[0], pad[1], W1, H1) if any(pad) else ""))
+    meta.setdefault("outline_pad", {})[name] = {"pad_ltrb": pad, "slot": [W1, H1], "box": [W2, H2]}
+    return pad
+
+
+def emit(name, layers2x, W1, H1, title, desc, png_sizes=(1, 2, 3)):
+    """Write <name>.svg in 1x units and <name>@1x / @2x / @3x.png from 2x-grid layers.
+    @3x (2026-10-03): the iOS/Android touch track (phones are @3x; TOUCH_CONTROLS.md)."""
+    lay1 = []
+    for Lr in layers2x:
+        l = dict(Lr)
+        if "polys" in l:
+            l["polys"] = half(l["polys"])
+        if "cut" in l:
+            l["cut"] = half(l["cut"])
+        if "stroke" in l:
+            l["stroke"] = (half(l["stroke"][0]), l["stroke"][1] / 2)
+        lay1.append(l)
+    L.write_svg(os.path.join(SVG, name + ".svg"), lay1, W1, H1, title, desc)
+    for s in png_sizes:
+        rgb, a = L.render_layers(lay1, W1, H1, s)
+        L.write_png(os.path.join(PNG, "%s@%dx.png" % (name, s)), rgb, a)
+    return lay1
+
+
+# ================================================================== A · CUT KEY
+# A-S: the current 40 x 22 slot (key 40 x 18). A-L: 49 x 22 (key fills the 22 px row).
+A_SIZES = {"A_S": (40, 22, 80.0 / 58.0, 0.0, 4.0), "A_L": (49, 22, 98.0 / 58.0, 0.0, 0.0)}
+for nm, (w1, h1, k2, ox, oy) in A_SIZES.items():
+    poly, hole, info = key_traced(k2, ox, oy)
+    meta[nm] = {"w": w1, "h": h1, "k2": k2, "info": info}
+    emit(nm + "_held", [{"name": "key", "colour": PAPER, "polys": [poly, hole]}], w1, h1,
+         "FrontRooms HUD key · A cut key · held", "Kit_Key_Zone side view, tip right, cuts up; cuts x%.1f deep, hole x1.5. Paper #F4F1E8." % CUT_GAIN)
+    emit_outline(nm + "_missing", [{"name": "key", "colour": PAPER, "opacity": 0.7, "stroke": ([poly, hole], 2.5)}], w1, h1,
+         "FrontRooms HUD key · A · missing (outline)", "Outline 1.25 px at 1x, paper at 70 %.")
+    emit(nm + "_muted", [{"name": "key", "colour": MUTED, "polys": [poly, hole]}], w1, h1,
+         "FrontRooms HUD key · A · used (muted)", "Muted #BDBAB0.")
+    # trace overlay data: the exact (unhinted, gain 1, hole x1) model outline on the same grid
+    tp, th, _ = key_traced(k2, ox, oy, gain=1.0, flank=50.0, hint=False, hole_gain=1.0)
+    meta[nm]["trace"] = {"poly": half([tp])[0], "hole": half([th])[0]}
+    meta[nm]["icon"] = {"poly": half([poly])[0], "hole": half([hole])[0]}
+
+# ================================================================== C · SIGN PLATE
+cpoly, chole = K.key_C()
+plate = K.plate_C()
+C_VARIANTS = {"dark": (CARD, 0.9, PAPER), "red": (ZONE["red"], 1.0, PAPER), "blue": (ZONE["blue"], 1.0, PAPER),
+              "white": (ZONE["white"], 1.0, INK)}
+for v, (plate_col, plate_op, key_col) in C_VARIANTS.items():
+    emit("C_%s_held" % v, [{"name": "plate", "colour": plate_col, "opacity": plate_op, "polys": [plate]},
+                           {"name": "key", "colour": key_col, "polys": [cpoly, chole]}], 40, 22,
+         "FrontRooms HUD key · C sign plate · %s" % v,
+         "Key in 1974 AIGA/DOT construction on a 2:1 plate (Kit_DoorNumberPlate proportion, R 4 %%), plate %s." % v)
+emit_outline("C_dark_missing", [{"name": "plate", "colour": PAPER, "opacity": 0.7, "stroke": ([plate], 2.0)},
+                        {"name": "key", "colour": PAPER, "opacity": 0.7, "stroke": ([cpoly, chole], 2.0)}], 40, 22,
+     "FrontRooms HUD key · C · missing", "Outline only.")
+emit("C_dark_muted", [{"name": "plate", "colour": CARD, "opacity": 0.6, "polys": [plate]},
+                      {"name": "key", "colour": MUTED, "polys": [cpoly, chole]}], 40, 22,
+     "FrontRooms HUD key · C · used", "Muted key on a 60 % plate.")
+meta["C"] = {"plate": half([plate])[0], "key": half([cpoly])[0], "hole": half([chole])[0]}
+
+# ================================================================== B · KEY ON ITS TAG
+# Lockup = the pickup shot's last frame: the key held level (tip right), the split ring
+# through its bow hole, the zone's tag hanging from the ring with its number to the lens.
+KB = 1.38         # 2x px per mm (0.69 px/mm at 1x)
+TAGS = {"rect": {"body": ("rect", 57.0, 29.0, 5.0), "win": ("rect", 40.0, 19.0, 1.5), "digit_h": 14.8},
+        "round": {"body": ("round", 38.0), "win": ("round", 26.0), "digit_h": 11.1},
+        "long": {"body": ("rect", 76.0, 22.0, 5.0), "win": ("rect", 50.0, 14.0, 1.5), "digit_h": 11.5}}
+Y_TOP, TAB_R, TAB_ROOT, HOLE_R = -4.5, 5.5, 3.0, 2.5
+RING_R, RING_W = 11.7, 1.6
+
+
+def tag_layers(kind, colour, number, hx, hy, k, inset):
+    """Tag (body + tab + hole + window + typed number) at hole centre (hx, hy), k px/mm.
+    inset = paper rim width (px) kept round the coloured body."""
+    t = TAGS[kind]
+    m = lambda x, y: (hx + x * k, hy - y * k)
+    if t["body"][0] == "rect":
+        _, Wt, Ht, Rt = t["body"]
+        body = L.rrect(hx - Wt / 2 * k, hy - Y_TOP * k, hx + Wt / 2 * k, hy - (Y_TOP - Ht) * k, Rt * k, 10)
+        body_in = L.rrect(hx - Wt / 2 * k + inset, hy - Y_TOP * k + inset, hx + Wt / 2 * k - inset,
+                          hy - (Y_TOP - Ht) * k - inset, max(Rt * k - inset, 0.5), 10)
+        win_cy = Y_TOP - Ht / 2
+    else:
+        D = t["body"][1]
+        cy = hy - (Y_TOP - D / 2) * k
+        body = L.circle(hx, cy, D / 2 * k, 96)
+        body_in = L.circle(hx, cy, D / 2 * k - inset, 96)
+        win_cy = Y_TOP - D / 2
+    # tab: semicircle round the hole + straight sides rooted TAB_ROOT into the body
+    tab = [(hx + TAB_R * k, hy - (Y_TOP - TAB_ROOT) * k)] + \
+          [(hx + TAB_R * k * math.cos(math.radians(a)), hy - TAB_R * k * math.sin(math.radians(a))) for a in range(0, 181, 6)] + \
+          [(hx - TAB_R * k, hy - (Y_TOP - TAB_ROOT) * k)]
+    tab_in = [(hx + (TAB_R * k - inset), hy - (Y_TOP - TAB_ROOT) * k)] + \
+             [(hx + (TAB_R * k - inset) * math.cos(math.radians(a)), hy - (TAB_R * k - inset) * math.sin(math.radians(a))) for a in range(0, 181, 6)] + \
+             [(hx - (TAB_R * k - inset), hy - (Y_TOP - TAB_ROOT) * k)]
+    hole = L.circle(hx, hy, HOLE_R * k, 48)
+    hole_in = L.circle(hx, hy, HOLE_R * k + inset, 48)
+    w = t["win"]
+    wcx, wcy = hx, hy - win_cy * k
+    if w[0] == "rect":
+        win = L.rrect(wcx - w[1] / 2 * k, wcy - w[2] / 2 * k, wcx + w[1] / 2 * k, wcy + w[2] / 2 * k, w[3] * k, 6)
+    else:
+        win = L.circle(wcx, wcy, w[1] / 2 * k, 64)
+    # typed number: Courier Prime Regular, ink height = the model's digit height
+    f = FONT_TAG
+    probe, _ = f.text_polys(number, 100.0, 0, 0)
+    ph = L.bbox(probe)[3] - L.bbox(probe)[1]
+    size = 100.0 * t["digit_h"] * k / ph            # ink height = the model's digit height
+    sx = 1.035 if kind == "long" else 1.0          # the long tag's atlas crop stretches digits 3.5 %
+    digits, _ = f.text_polys(number, size, 0, 0)
+    bx0, by0, bx1, by1 = L.bbox(digits)
+    digits = L.xform(digits, sx, 1.0, wcx - (bx0 + bx1) / 2 * sx, wcy - (by0 + by1) / 2)
+    lay = [{"name": "tag rim", "colour": PAPER, "polys": [body]},
+           {"name": "tag tab rim", "colour": PAPER, "polys": [tab], "cut": [hole]},
+           {"name": "tag body", "colour": colour, "polys": [body_in]},
+           {"name": "tag tab", "colour": colour, "polys": [tab_in], "cut": [hole_in]},
+           {"name": "insert", "colour": PAPER, "polys": [win]},
+           {"name": "number", "colour": INK, "polys": digits, "rule": "nonzero"}]
+    return lay, {"hole": (hx, hy), "body": L.bbox([body]), "digit_px": t["digit_h"] * k}
+
+
+def lockup_B(kind, colour, number, inset=2.0):
+    """B on the 2x grid. Key hole on the ring's right point; tag hangs from the ring's bottom."""
+    k = KB
+    # ring centre: chosen so the key's bow top is at y = 2 and the composition starts at x = 2
+    left_mm = {"rect": 28.5, "round": 19.0, "long": 38.0}
+    widest_left = 38.0
+    rcx = 2 + widest_left * k
+    rcy = 2 + 13.0 * k
+    khx, khy = rcx + RING_R * k, rcy                      # key hole centre
+    # key: model hole (Z -26.5, Y 0.5) must land on (khx, khy)
+    ox = khx - (6.5) * k
+    oy = khy - (13.0) * k
+    kpoly, khole, kinfo = key_traced(k, ox, oy)
+    # ring (paper stroke) behind the key; the key's hole shows the wire passing through
+    # visible ring: from just past the tag's hole (90 deg + 13) round the left to where it goes
+    # behind the bow (the bow and the tab hide the rest; the holes stay clean at 1x)
+    ring = L.arc(rcx, rcy, RING_R * k, 103.0, 340.0, 80)
+    thx, thy = rcx, rcy + RING_R * k                      # tag hole on the ring's bottom
+    tlay, tinfo = tag_layers(kind, colour, number, thx, thy, k, inset)
+    lay = [{"name": "ring", "colour": PAPER, "stroke": ([ring], RING_W * k * 1.15), "closed": False}] + tlay + \
+          [{"name": "key", "colour": PAPER, "polys": [kpoly, khole]}]
+    x0, y0, x1, y1 = L.bbox([kpoly] + [tinfo and L.rrect(*tinfo["body"], 0.1, 1)])
+    return lay, {"ring": (rcx, rcy), "key": kinfo, "tag": tinfo, "bbox": (min(x0, 2), 2, x1, y1)}
+
+
+B_W1, B_H1 = 72, 48          # glyph box at 1x
+for kind in ("rect", "round", "long"):
+    for cname, col in ZONE.items():
+        num = {"rect": "14", "round": "37", "long": "08"}[kind]
+        lay, info = lockup_B(kind, col, num)
+        nm = "B_%s_%s" % (kind, cname)
+        emit(nm + "_held", lay, B_W1, B_H1, "FrontRooms HUD key · B key on its tag · %s %s %s" % (kind, cname, num),
+             "Kit_Key_Zone + Kit_KeyRing + Kit_KeyTag_%s (%s) at 0.7 px/mm (1x); number typed in Courier Prime as on Prop_KeyTagNo." % (kind.title(), cname))
+        meta[nm] = {"bbox": [v / 2 for v in info["bbox"]], "digit_px_1x": info["tag"]["digit_px"] / 2,
+                    "ring": [v / 2 for v in info["ring"]]}
+# B states on the default (rect red 14)
+lay, info = lockup_B("rect", ZONE["red"], "14")
+outline = []
+for l in lay:
+    if l["name"] in ("tag rim", "tag tab rim", "key"):
+        outline += l["polys"]
+emit_outline("B_rect_red_missing", [{"name": "outline", "colour": PAPER, "opacity": 0.7, "stroke": (outline, 2.5)}], B_W1, B_H1,
+     "FrontRooms HUD key · B · missing", "Outline only.")
+mut = []
+for l in lay:
+    l2 = dict(l)
+    if l2["colour"] in (PAPER,):
+        l2["colour"] = MUTED
+    if l2["name"] in ("tag body", "tag tab"):
+        l2["opacity"] = 0.55
+    mut.append(l2)
+emit("B_rect_red_muted", mut, B_W1, B_H1, "FrontRooms HUD key · B · used", "Muted paper, tag colour at 55 %.")
+
+# ================================================================== A + TAG CHIP (option)
+# The zone's tag as a small solid chip left of the key (the tag hangs off the ring at the
+# bow end, so it sits on the bow side). True relative size of the three tags at 0.42 px/mm
+# (1x); tab and hole x1.3 so the hole stays open. Paper rim 1 px carries the contrast,
+# the zone colour fills it. No number (6 px digits do not read): the number is in the label.
+CHIP_K2 = 0.84          # 2x px per mm
+CHIP_GAP2 = 8           # 4 px at 1x between chip and key
+
+
+def chip_layers(kind, colour, ox=0.0, row_h2=44.0, k2=CHIP_K2, tab_gain=1.3, hole_gain=1.3):
+    t = TAGS[kind]
+    if t["body"][0] == "rect":
+        _, Wt, Ht, Rt = t["body"]
+    else:
+        Wt = Ht = t["body"][1]
+        Rt = Wt / 2
+    tab_r = TAB_R * tab_gain * k2
+    total = tab_r + (-Y_TOP + Ht) * k2
+    top = even((row_h2 - total) / 2)
+    hy = top + tab_r
+    by0 = even(hy - Y_TOP * k2)
+    by1 = even(by0 + Ht * k2)
+    bx0 = ox
+    bx1 = even(ox + Wt * k2)
+    cx = (bx0 + bx1) / 2
+    if t["body"][0] == "rect":
+        body = L.rrect(bx0, by0, bx1, by1, max(2.0, round(Rt * k2)), 10)
+        body_in = L.rrect(bx0 + 2, by0 + 2, bx1 - 2, by1 - 2, max(1.0, round(Rt * k2) - 2), 10)
+    else:
+        r = (by1 - by0) / 2
+        cy = (by0 + by1) / 2
+        body = L.circle(cx, cy, r, 96)
+        body_in = L.circle(cx, cy, r - 2, 96)
+    tab = [(cx + tab_r, by0 + 2)] + \
+          [(cx + tab_r * math.cos(math.radians(a)), hy - tab_r * math.sin(math.radians(a))) for a in range(0, 181, 6)] + \
+          [(cx - tab_r, by0 + 2)]
+    hole = L.circle(cx, hy, HOLE_R * hole_gain * k2, 48)
+    # body and tab as two paper layers (a nonzero union of the two cancelled where their
+    # windings differ and left a dark seam under the tab); the hole lies wholly inside the tab.
+    lay = [{"name": "chip rim", "colour": PAPER, "polys": [body]},
+           {"name": "chip tab", "colour": PAPER, "polys": [tab, hole]},
+           {"name": "chip fill", "colour": colour, "polys": [body_in]}]
+    return lay, bx1 - bx0
+
+
+def ring_link(tab_hole, key_hole, sag_frac=0.22, over=1.0):
+    """Fix stage 2026-10-07 (critic issue 14: the chip alone read as a battery). The split ring as a
+    1 px paper wire: a circular arc through the tag's tab hole and the key's bow hole, bulging up,
+    run on past each hole centre (by `over` x the hole span) so it crosses both holes. Drawn first:
+    the chip and the key hide it, so it shows only in the gap and through the two holes."""
+    (tcx, tcy), (kcx, kcy) = tab_hole, key_hole
+    dx, dy = kcx - tcx, kcy - tcy
+    d = math.hypot(dx, dy)
+    sag = sag_frac * d
+    r = (d * d / 4 + sag * sag) / (2 * sag)
+    mx, my = (tcx + kcx) / 2, (tcy + kcy) / 2
+    nx, ny = dy / d, -dx / d
+    if ny > 0:
+        nx, ny = -nx, -ny
+    cx, cy = mx - nx * (r - sag), my - ny * (r - sag)
+    a0 = math.degrees(math.atan2(tcy - cy, tcx - cx))
+    a1 = math.degrees(math.atan2(kcy - cy, kcx - cx))
+    if a1 < a0:
+        a1 += 360
+    ext = math.degrees(over * 6.0 / r)            # ~6 2x-px of wire past each hole centre
+    return L.arc(cx, cy, r, a0 - ext, a1 + ext, 48)
+
+
+def centre(poly):
+    return (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
+
+
+A_CHIP = {}
+k2L, oxL, oyL = A_SIZES["A_L"][2], A_SIZES["A_L"][3], A_SIZES["A_L"][4]
+for kind in ("rect", "round", "long"):
+    for cname, col in ZONE.items():
+        clay, cw2 = chip_layers(kind, col)
+        kx = cw2 + CHIP_GAP2
+        poly, hole, info = key_traced(k2L, oxL + kx, oyL)
+        wire = ring_link(centre(clay[1]["polys"][1]), centre(hole))
+        lay = [{"name": "ring", "colour": PAPER, "stroke": ([wire], 2.0), "closed": False}] + clay + \
+              [{"name": "key", "colour": PAPER, "polys": [poly, hole]}]
+        w1 = int((kx + 98) / 2)
+        nm = "Achip_%s_%s" % (kind, cname)
+        emit(nm + "_held", lay, w1, 22, "FrontRooms HUD key · A + tag chip · %s %s" % (kind, cname),
+             "Kit_KeyTag_%s outline at 0.42 px/mm (tab and hole x1.3), paper rim 1 px, %s fill; a 1 px split-ring wire from its tab hole to the key's bow hole (fix stage 2026-10-07); then the A key (49 x 22)." % (kind.title(), cname))
+        A_CHIP[nm] = {"w": w1, "chip_w": cw2 / 2}
+        if kind == "rect" and cname == "red":
+            mut = [dict(l, colour=MUTED) if l["colour"] == PAPER else dict(l, opacity=0.55) for l in lay]
+            emit(nm + "_muted", mut, w1, 22, "FrontRooms HUD key · A + tag chip · used", "Muted paper, tag colour at 55 %.")
+meta["A_CHIP"] = A_CHIP
+
+json.dump(meta, open(os.path.join(HERE, "design_meta.json"), "w"), indent=1, default=float)
+print("[design] wrote", len(os.listdir(SVG)), "svg,", len(os.listdir(PNG)), "png")
+print({k: v.get("digit_px_1x") for k, v in meta.items() if k.startswith("B_")})

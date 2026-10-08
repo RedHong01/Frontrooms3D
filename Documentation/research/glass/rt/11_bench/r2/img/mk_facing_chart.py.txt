@@ -1,0 +1,31 @@
+"""mk_facing_chart.py - G14b r2 issue 9: facing rule on main's kernel (bench 6f logs). Not part of the game."""
+import re
+from PIL import Image, ImageDraw, ImageFont
+FONT = "/Users/redwang/Library/Fonts/ABCDiatype-Medium-Trial__dinamo_58c9d0f61b.otf"
+f = lambda s: ImageFont.truetype(FONT, s)
+B6 = "/Users/redwang/FrontRoomsVisualWork/rt_bench2/r2/b6/"
+def counts(fn):
+    for l in open(B6 + fn):
+        m = re.search(r"facing c2  glass hits (\d+) \(truth: (\d+) exiting.*lastGlass (\d+), front_facing\(default\) (\d+), front_facing\(ccw\) (\d+), cross x det (\d+), cross alone (\d+)", l)
+        if m: return [int(x) for x in m.groups()]
+views = [("B · NEAR GOAL, TRIPPED", "r2_f_B_tripped_id.txt", "r2_f_B_tripped_mirror_id.txt"), ("G · 2.5 M FROM GOAL, ARMED", "r2_f_G_armed_id.txt", "r2_f_G_armed_mirror_id.txt")]
+methods = ["G14 today: lastGlass (instance id)", "triangle_front_facing, default winding", "triangle_front_facing, ccw winding", "unflipped cross x sign(det)", "unflipped cross, no det"]
+W, H = 1920, 900
+s = Image.new("RGB", (W, H), (255, 255, 255)); d = ImageDraw.Draw(s)
+d.text((40, 24), "WRONG 'EXITING FACE' CALLS PER GLASS HIT · MAIN'S KERNEL · BENCH 6", font=f(30), fill=(10, 10, 10))
+x0, bw = 600, 1260
+for vi, (vname, fa, fb) in enumerate(views):
+    ca, cb = counts(fa), counts(fb)
+    y = 86 + vi * 372
+    d.text((40, y), f"{vname}   ·   {ca[0]:,} glass hits, {ca[1]:,} of them exiting", font=f(24), fill=(10, 10, 10))
+    for mi, mname in enumerate(methods):
+        yy = y + 44 + mi * 64
+        d.text((40, yy + 10), mname, font=f(22), fill=(10, 10, 10))
+        for k, (c, lab, col) in enumerate([(ca, "normal lite", (10, 10, 10)), (cb, "mirrored lite (x scale -0.25)", (196, 56, 36))]):
+            wrong = c[2 + mi]; pct = 100.0 * wrong / c[0]; by = yy + k * 28
+            d.rectangle([x0, by, x0 + bw, by + 22], outline=(205, 205, 205))
+            if wrong: d.rectangle([x0, by, x0 + bw * pct / 100, by + 22], fill=col)
+            txt = f"{lab}: {wrong:,} wrong ({pct:.0f} %)"
+            d.text((x0 + 12, by + 1) if pct >= 50 else (x0 + bw * pct / 100 + 10, by + 1), txt, font=f(18), fill=(255, 255, 255) if pct >= 50 else (80, 80, 80))
+d.text((40, 842), "Identity: the facing rule = main bit for bit at depth 1, and = G14's lastGlass rule at depths 2 and 3 (0 differing px in views A, B, G; normal and mirrored lite).", font=f(20), fill=(10, 10, 10))
+s.save("11r2_facing_rule.png"); print("wrote 11r2_facing_rule.png", s.size)

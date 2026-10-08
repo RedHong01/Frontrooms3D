@@ -2,6 +2,16 @@
 
 状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；`FRONTROOMSSS` 的 Figma 对齐版已生成 iPhone Xcode、分发归档并上传 TestFlight `0.1.0 (3)`，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 交互验收、测试组配置和 App Store Connect processing 结果仍待完成。
 
+> **2026-10-07 修订（交互设计 chat）。** 触控层已按 [TOUCH_CONTROLS.md](TOUCH_CONTROLS.md) 重写，并在无头 touch playtest 里对真实游戏逐项验证（TOUCH_CONTROLS §11）。下面 2026-10-04 的描述里，有几处已经不成立：
+> - **冲刺从未生效。** 摇杆用屏幕像素去比 pt 尺寸，3× iPhone 上判定的 socket 只在拇指上方约 31 pt（圈内），不在画出来的 92 pt 处。现在全部按 pt 计算（iOS `nativeScale`、Android density）。
+> - **动效只是整组线性淡入淡出**，现已按元素做缓动、错峰和回弹（TOUCH_CONTROLS §10），并支持 Reduce Motion。
+> - **桌面和 Android 都编不过**（CS0103 ×24；`AndroidJavaProxy` 存进 `AndroidJavaObject`），现已修复。
+> - **平台判断**从 `Application.isMobilePlatform`（手机上的 WebGL 也为真）改为 `FrontRoomsHandheld.Active`。
+> - **设置卡**原来只有 9 行触控偏好，桌面行（字幕、镜头运动、减少闪烁等）在手机上无法修改；现在左列是桌面行，右列是 TOUCH。
+> - **触觉**由 `Handheld.Vibrate()` 换成 iOS UIKit 原生反馈和 Android 预设效果，分 GAMEPLAY / CONTROLS 两个开关（TOUCH_CONTROLS §7）。
+>
+> 已在 iPhone 上安装的 build 3 和 TestFlight `0.1.0 (3)` 仍是旧触控层；新的手机构建要等 Red 要求时再做。
+
 设计来源：Figma 文件 `0tCbAiVUlrPId3RWd9LRif`，节点 `2528:5403`（`FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID · 1920×1080`）。关键子节点：`2530:5061`（screen masters）、`2530:3828`（Touch / Stick）、`2530:3854`（Touch / Use）、`2528:5439`（Thumb map）、`2528:5446`（Same size in the eye）、`2528:5488`（Build plan）。
 
 ## 目前的工程基线
@@ -124,10 +134,10 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | 层 | 完成证据 | 当前状态 |
 | --- | --- | --- |
 | 输入 facade | 桌面/WASM/autopilot 与基线行为一致，脚本化输入检查通过 | 代码已接线；完整回归待做 |
-| Touch / Stick | Calm、Walk、Sprint、Winded 四态；双指移动+look；socket latch 正确释放 | 第一版代码；设备待测 |
-| Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | prompt/USE/hold ring 已接线；原生 haptics 与设备回归待做 |
+| Touch / Stick | Calm、Walk、Sprint、Winded 四态；双指移动+look；socket latch 正确释放 | 2026-10-07 playtest 已验证（3.2 / 5.5 m/s、latch 与回拉、winded 与恢复、双指）；设备待测 |
+| Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | 2026-10-07 playtest 已验证 Open/Shut、直接点门、Locked 晃动、Hold 碎玻璃及其触觉；Take（地图暂无钥匙）与 Tap mode 待测；设备待测 |
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
-| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 第一版代码已接线；Device Simulator/实机回归待做 |
+| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 2026-10-07 playtest 已验证 Title、Pause、Settings（行、‹ ›、滚动）、重启确认/取消、Caught 早按无效与 TRY AGAIN、Android Back 四步；实机待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
 | Build | Xcode export、包版本/identifier/横屏、Release archive、分发签名 | iOS Xcode 导出、Release archive、Cloud Managed Distribution 签名和开发签名 iPhone 安装已通过；FMOD/触控运行时验收待做；Android 暂缓 |
 | Store/TestFlight | `FRONTROOMSSS` App record 已由 Xcode 创建；`0.1.0 (3)` 已上传，等待 App Store Connect processing；测试组配置仍待做，真机 build 3 已安装并启动 |

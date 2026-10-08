@@ -1,0 +1,76 @@
+"""Fix stage 2026-10-07 (critic issue 2): the 'locked leaf' HUD background.
+
+Source: the in-engine audit frame interaction_audit/images/48_door_locked_before_hud.png
+(1920 x 1080, the player at a locked door, cam fwd (0, -0.27, 0.96)). Today that door is the
+map's wood veneer (albedo luminance 0.185). The interactables spec (10_spec.md, FREE vs LOCKED
+rule) makes every LOCKED door an almond enamel steel leaf, sRGB 205/197/176 = #CDC5B0
+(luminance 0.56). Two backgrounds are written to design/bg/:
+
+  leaf_48_almond.png  the leaf quad re-coloured to the spec almond at full albedo (#CDC5B0 mean,
+                      the frame's own low-frequency shading kept, +-6 %). Worst case: the
+                      brightest locked leaf the spec allows, lit as if the light were 1.0.
+  leaf_48_wood.png    today's wood leaf with the baked HUD (old glyph box, prompt text, crosshair)
+                      painted out by copying the leaf 110 px lower (the grain runs vertically).
+Run: W/venv/bin/python make_leaf_bg.py
+"""
+import os
+import numpy as np
+from PIL import Image
+
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+SRC = os.path.join(PROJ, "Documentation/research/interaction_audit/images/48_door_locked_before_hud.png")
+DES = os.environ.get("KEYICON_DES", os.path.join(PROJ, "Documentation/research/ui_key_icon/design"))
+OUT = os.path.join(DES, "bg")
+os.makedirs(OUT, exist_ok=True)
+ALMOND = np.array([205, 197, 176]) / 255.0
+# leaf quad in frame 48 (read on a x4 brightened copy): TL, TR, BR, BL
+QUAD = [(700, 95), (1222, 95), (1148, 975), (772, 975)]
+HUD_BOX = (820, 505, 1100, 605)       # x0, y0, x1, y1: the baked old glyph, prompt and crosshair
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def srgb(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055)
+
+
+def quad_mask(h, w):
+    yy, xx = np.mgrid[0:h, 0:w] + 0.5
+    (x0, y0), (x1, _), (x2, y2), (x3, _) = QUAD
+    t = (yy - y0) / (y2 - y0)
+    left = x0 + (x3 - x0) * t
+    right = x1 + (x2 - x1) * t
+    return (yy >= y0) & (yy <= y2) & (xx >= left) & (xx <= right)
+
+
+a = np.asarray(Image.open(SRC).convert("RGB")).astype(np.float64) / 255.0
+h, w, _ = a.shape
+x0, y0, x1, y1 = HUD_BOX
+wood = a.copy()
+wood[y0:y1, x0:x1] = a[y0 + 110:y1 + 110, x0:x1]          # paint the baked HUD out
+Image.fromarray(np.round(wood * 255).astype(np.uint8)).save(os.path.join(OUT, "leaf_48_wood.png"))
+
+m = quad_mask(h, w)
+L = (lin(wood) * [0.2126, 0.7152, 0.0722]).sum(-1)
+# low-frequency shading: fit a quadratic in (x, y) to the leaf luminance
+ys, xs = np.nonzero(m)
+X = np.stack([np.ones_like(xs), xs, ys, xs * xs, ys * ys, xs * ys], 1).astype(np.float64) / [1, 1e3, 1e3, 1e6, 1e6, 1e6]
+coef, *_ = np.linalg.lstsq(X, L[ys, xs], rcond=None)
+yy, xx = np.mgrid[0:h, 0:w]
+F = np.stack([np.ones_like(xx), xx, yy, xx * xx, yy * yy, xx * yy], -1).astype(np.float64) / [1, 1e3, 1e3, 1e6, 1e6, 1e6]
+shade = F @ coef
+shade = shade / shade[m].mean()
+shade = np.clip(1 + (shade - 1) * 0.5, 0.94, 1.06)            # keep a gentle gradient only
+almond = srgb(lin(ALMOND)[None, None, :] * shade[..., None])
+out = wood.copy()
+# 1 px soft edge on the quad
+from PIL import ImageFilter
+mm = np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.6))).astype(np.float64) / 255.0
+out = srgb(lin(wood) * (1 - mm[..., None]) + lin(almond) * mm[..., None])
+Image.fromarray(np.round(out * 255).astype(np.uint8)).save(os.path.join(OUT, "leaf_48_almond.png"))
+mean = srgb(lin(out[m]).mean(0))
+print("[leaf] almond leaf mean sRGB #%02X%02X%02X" % tuple(int(round(v * 255)) for v in mean),
+      "shade range %.3f-%.3f" % (shade[m].min(), shade[m].max()), "leaf px", int(m.sum()))

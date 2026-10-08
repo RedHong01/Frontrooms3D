@@ -1,0 +1,143 @@
+16:29  up 2 days, 15:30, 1 user, load averages: 38.43 45.37 92.41
+# rt_bench4 r2rn ramp device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 38/45/92
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# TREE=1: design tree (11 r2 s2.5): see-through in registers, reflection-only stack of maxBounces-1, G14 pane terms + layer limit, facing rule
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- ramp 1920x1080, footprint jitter, floor px, display /255, worst frame of each ramp  load 38/45/92
+r2rn ramp A20 u1->u2 instant: floor 12.04% of screen | >=8 7.37% of floor px, max 173, mean 2.954 | load 38/45/92
+r2rn ramp A20 u1->u2 N  8 P 0: worst frame (k 6) >=8 0.825% of floor px, max 24; worst frame mean 0.508 | load 38/45/92
+r2rn ramp A20 u1->u2 N  8 P 8: worst frame (k 9) >=8 0.710% of floor px, max 70; worst frame mean 0.458 | load 38/45/92
+r2rn ramp A20 u1->u2 N 12 P 0: worst frame (k 12) >=8 0.579% of floor px, max 54; worst frame mean 0.361 | load 38/45/92
+r2rn ramp A20 u1->u2 N 12 P 8: worst frame (k 13) >=8 0.395% of floor px, max 54; worst frame mean 0.331 | load 39/45/92
+r2rn ramp A20 u1->u2 N 16 P 0: worst frame (k 16) >=8 0.460% of floor px, max 44; worst frame mean 0.283 | load 39/45/92
+r2rn ramp A20 u1->u2 N 16 P 8: worst frame (k 17) >=8 0.293% of floor px, max 44; worst frame mean 0.264 | load 39/45/92
+r2rn ramp A20 u2->u3 instant: floor 12.04% of screen | >=8 2.04% of floor px, max 176, mean 0.933 | load 39/45/92
+r2rn ramp A20 u2->u3 N  8 P 0: worst frame (k 1) >=8 0.162% of floor px, max 144; worst frame mean 0.171 | load 39/45/92
+r2rn ramp A20 u2->u3 N  8 P 8: worst frame (k 2) >=8 0.130% of floor px, max 37; worst frame mean 0.148 | load 39/45/92
+r2rn ramp A20 u2->u3 N 12 P 0: worst frame (k 1) >=8 0.111% of floor px, max 131; worst frame mean 0.124 | load 39/45/92
+r2rn ramp A20 u2->u3 N 12 P 8: worst frame (k 2) >=8 0.089% of floor px, max 31; worst frame mean 0.107 | load 39/45/92
+r2rn ramp A20 u2->u3 N 16 P 0: worst frame (k 1) >=8 0.086% of floor px, max 119; worst frame mean 0.098 | load 39/45/92
+r2rn ramp A20 u2->u3 N 16 P 8: worst frame (k 2) >=8 0.069% of floor px, max 33; worst frame mean 0.086 | load 39/45/92
+r2rn ramp A20 u3->u4 instant: floor 12.04% of screen | >=8 1.45% of floor px, max 168, mean 0.717 | load 39/45/92
+r2rn ramp A20 u3->u4 N  8 P 0: worst frame (k 1) >=8 0.121% of floor px, max 67; worst frame mean 0.123 | load 39/45/92
+r2rn ramp A20 u3->u4 N  8 P 8: worst frame (k 8) >=8 0.083% of floor px, max 37; worst frame mean 0.118 | load 39/45/92
+r2rn ramp A20 u3->u4 N 12 P 0: worst frame (k 1) >=8 0.068% of floor px, max 49; worst frame mean 0.087 | load 39/45/92
+r2rn ramp A20 u3->u4 N 12 P 8: worst frame (k 8) >=8 0.053% of floor px, max 32; worst frame mean 0.084 | load 39/45/92
+r2rn ramp A20 u3->u4 N 16 P 0: worst frame (k 1) >=8 0.036% of floor px, max 39; worst frame mean 0.068 | load 39/45/92
+r2rn ramp A20 u3->u4 N 16 P 8: worst frame (k 8) >=8 0.030% of floor px, max 28; worst frame mean 0.067 | load 38/45/92
+r2rn ramp B20 u1->u2 instant: floor 15.06% of screen | >=8 7.74% of floor px, max 208, mean 2.143 | load 38/45/92
+r2rn ramp B20 u1->u2 N  8 P 0: worst frame (k 8) >=8 0.053% of floor px, max 9; worst frame mean 0.321 | load 38/45/92
+r2rn ramp B20 u1->u2 N  8 P 8: worst frame (k 11) >=8 0.028% of floor px, max 12; worst frame mean 0.310 | load 38/45/92
+r2rn ramp B20 u1->u2 N 12 P 0: worst frame (k 1) >=8 0.015% of floor px, max 118; worst frame mean 0.227 | load 38/45/92
+r2rn ramp B20 u1->u2 N 12 P 8: worst frame (k 6) >=8 0.012% of floor px, max 118; worst frame mean 0.219 | load 38/45/92
+r2rn ramp B20 u1->u2 N 16 P 0: worst frame (k 1) >=8 0.011% of floor px, max 100; worst frame mean 0.178 | load 38/45/92
+r2rn ramp B20 u1->u2 N 16 P 8: worst frame (k 6) >=8 0.010% of floor px, max 100; worst frame mean 0.174 | load 38/45/92
+r2rn ramp B20 u2->u3 instant: floor 15.06% of screen | >=8 0.52% of floor px, max 71, mean 0.565 | load 38/45/92
+r2rn ramp B20 u2->u3 N  8 P 0: worst frame (k 1) >=8 0.004% of floor px, max 11; worst frame mean 0.095 | load 38/45/92
+r2rn ramp B20 u2->u3 N  8 P 8: worst frame (k 6) >=8 0.003% of floor px, max 11; worst frame mean 0.095 | load 38/45/92
+r2rn ramp B20 u2->u3 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 8; worst frame mean 0.067 | load 38/45/92
+r2rn ramp B20 u2->u3 N 12 P 8: worst frame (k 6) >=8 0.000% of floor px, max 8; worst frame mean 0.067 | load 38/45/92
+r2rn ramp B20 u2->u3 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 6; worst frame mean 0.051 | load 38/45/92
+r2rn ramp B20 u2->u3 N 16 P 8: worst frame (k 6) >=8 0.000% of floor px, max 6; worst frame mean 0.052 | load 38/45/92
+r2rn ramp B20 u3->u4 instant: floor 15.06% of screen | >=8 0.27% of floor px, max 30, mean 0.415 | load 38/45/92
+r2rn ramp B20 u3->u4 N  8 P 0: worst frame (k 1) >=8 0.000% of floor px, max 4; worst frame mean 0.070 | load 38/45/92
+r2rn ramp B20 u3->u4 N  8 P 8: worst frame (k 3) >=8 0.000% of floor px, max 4; worst frame mean 0.069 | load 38/45/92
+r2rn ramp B20 u3->u4 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 3; worst frame mean 0.048 | load 38/45/91
+r2rn ramp B20 u3->u4 N 12 P 8: worst frame (k 3) >=8 0.000% of floor px, max 3; worst frame mean 0.048 | load 38/45/91
+r2rn ramp B20 u3->u4 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 2; worst frame mean 0.037 | load 38/45/91
+r2rn ramp B20 u3->u4 N 16 P 8: worst frame (k 3) >=8 0.000% of floor px, max 2; worst frame mean 0.037 | load 38/45/91
+r2rn ramp C20 u1->u2 instant: floor 17.59% of screen | >=8 4.88% of floor px, max 172, mean 1.956 | load 38/45/91
+r2rn ramp C20 u1->u2 N  8 P 0: worst frame (k 8) >=8 0.615% of floor px, max 61; worst frame mean 0.336 | load 38/45/91
+r2rn ramp C20 u1->u2 N  8 P 8: worst frame (k 9) >=8 0.449% of floor px, max 21; worst frame mean 0.296 | load 38/45/91
+r2rn ramp C20 u1->u2 N 12 P 0: worst frame (k 12) >=8 0.433% of floor px, max 44; worst frame mean 0.237 | load 38/45/91
+r2rn ramp C20 u1->u2 N 12 P 8: worst frame (k 14) >=8 0.266% of floor px, max 27; worst frame mean 0.212 | load 38/45/91
+r2rn ramp C20 u1->u2 N 16 P 0: worst frame (k 16) >=8 0.311% of floor px, max 34; worst frame mean 0.185 | load 38/45/91
+r2rn ramp C20 u1->u2 N 16 P 8: worst frame (k 18) >=8 0.187% of floor px, max 21; worst frame mean 0.169 | load 38/45/91
+r2rn ramp C20 u2->u3 instant: floor 17.59% of screen | >=8 1.14% of floor px, max 165, mean 0.602 | load 38/45/91
+r2rn ramp C20 u2->u3 N  8 P 0: worst frame (k 1) >=8 0.093% of floor px, max 122; worst frame mean 0.113 | load 38/45/91
+r2rn ramp C20 u2->u3 N  8 P 8: worst frame (k 4) >=8 0.066% of floor px, max 27; worst frame mean 0.096 | load 38/45/91
+r2rn ramp C20 u2->u3 N 12 P 0: worst frame (k 1) >=8 0.069% of floor px, max 105; worst frame mean 0.082 | load 38/45/91
+r2rn ramp C20 u2->u3 N 12 P 8: worst frame (k 4) >=8 0.046% of floor px, max 19; worst frame mean 0.070 | load 38/45/91
+r2rn ramp C20 u2->u3 N 16 P 0: worst frame (k 1) >=8 0.057% of floor px, max 92; worst frame mean 0.064 | load 38/45/91
+r2rn ramp C20 u2->u3 N 16 P 8: worst frame (k 2) >=8 0.036% of floor px, max 31; worst frame mean 0.055 | load 37/45/91
+r2rn ramp C20 u3->u4 instant: floor 17.59% of screen | >=8 0.90% of floor px, max 161, mean 0.479 | load 37/45/91
+r2rn ramp C20 u3->u4 N  8 P 0: worst frame (k 1) >=8 0.083% of floor px, max 70; worst frame mean 0.082 | load 37/45/91
+r2rn ramp C20 u3->u4 N  8 P 8: worst frame (k 7) >=8 0.064% of floor px, max 44; worst frame mean 0.078 | load 37/45/91
+r2rn ramp C20 u3->u4 N 12 P 0: worst frame (k 1) >=8 0.040% of floor px, max 53; worst frame mean 0.058 | load 37/45/91
+r2rn ramp C20 u3->u4 N 12 P 8: worst frame (k 7) >=8 0.032% of floor px, max 31; worst frame mean 0.056 | load 37/45/91
+r2rn ramp C20 u3->u4 N 16 P 0: worst frame (k 1) >=8 0.021% of floor px, max 43; worst frame mean 0.045 | load 37/45/91
+r2rn ramp C20 u3->u4 N 16 P 8: worst frame (k 6) >=8 0.017% of floor px, max 27; worst frame mean 0.044 | load 37/45/91
+r2rn ramp D20 u1->u2 instant: floor 37.15% of screen | >=8 12.39% of floor px, max 86, mean 3.744 | load 37/45/91
+r2rn ramp D20 u1->u2 N  8 P 0: worst frame (k 1) >=8 0.259% of floor px, max 18; worst frame mean 0.580 | load 37/45/91
+r2rn ramp D20 u1->u2 N  8 P 8: worst frame (k 8) >=8 0.114% of floor px, max 12; worst frame mean 0.571 | load 37/45/91
+r2rn ramp D20 u1->u2 N 12 P 0: worst frame (k 1) >=8 0.025% of floor px, max 12; worst frame mean 0.411 | load 37/45/91
+r2rn ramp D20 u1->u2 N 12 P 8: worst frame (k 7) >=8 0.010% of floor px, max 9; worst frame mean 0.406 | load 37/45/91
+r2rn ramp D20 u1->u2 N 16 P 0: worst frame (k 1) >=8 0.001% of floor px, max 9; worst frame mean 0.322 | load 37/45/91
+r2rn ramp D20 u1->u2 N 16 P 8: worst frame (k 4) >=8 0.001% of floor px, max 9; worst frame mean 0.318 | load 37/45/91
+r2rn ramp D20 u2->u3 instant: floor 37.15% of screen | >=8 0.25% of floor px, max 48, mean 0.756 | load 37/45/91
+r2rn ramp D20 u2->u3 N  8 P 0: worst frame (k 1) >=8 0.000% of floor px, max 7; worst frame mean 0.139 | load 37/45/91
+r2rn ramp D20 u2->u3 N  8 P 8: worst frame (k 1) >=8 0.000% of floor px, max 7; worst frame mean 0.138 | load 38/45/91
+r2rn ramp D20 u2->u3 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 5; worst frame mean 0.098 | load 38/45/91
+r2rn ramp D20 u2->u3 N 12 P 8: worst frame (k 1) >=8 0.000% of floor px, max 5; worst frame mean 0.098 | load 38/45/91
+r2rn ramp D20 u2->u3 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 4; worst frame mean 0.076 | load 38/45/91
+r2rn ramp D20 u2->u3 N 16 P 8: worst frame (k 1) >=8 0.000% of floor px, max 4; worst frame mean 0.076 | load 38/45/91
+r2rn ramp D20 u3->u4 instant: floor 37.15% of screen | >=8 0.08% of floor px, max 26, mean 0.560 | load 38/45/91
+r2rn ramp D20 u3->u4 N  8 P 0: worst frame (k 1) >=8 0.000% of floor px, max 4; worst frame mean 0.102 | load 38/45/91
+r2rn ramp D20 u3->u4 N  8 P 8: worst frame (k 2) >=8 0.000% of floor px, max 4; worst frame mean 0.101 | load 38/45/91
+r2rn ramp D20 u3->u4 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 3; worst frame mean 0.071 | load 38/45/91
+r2rn ramp D20 u3->u4 N 12 P 8: worst frame (k 2) >=8 0.000% of floor px, max 3; worst frame mean 0.070 | load 38/45/91
+r2rn ramp D20 u3->u4 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 2; worst frame mean 0.054 | load 38/45/91
+r2rn ramp D20 u3->u4 N 16 P 8: worst frame (k 2) >=8 0.000% of floor px, max 2; worst frame mean 0.054 | load 38/45/91
+r2rn ramp F20 u1->u2 instant: floor 12.04% of screen | >=8 2.27% of floor px, max 73, mean 1.220 | load 38/45/91
+r2rn ramp F20 u1->u2 N  8 P 0: worst frame (k 1) >=8 0.021% of floor px, max 30; worst frame mean 0.236 | load 38/45/91
+r2rn ramp F20 u1->u2 N  8 P 8: worst frame (k 1) >=8 0.021% of floor px, max 30; worst frame mean 0.230 | load 38/45/91
+r2rn ramp F20 u1->u2 N 12 P 0: worst frame (k 1) >=8 0.013% of floor px, max 23; worst frame mean 0.173 | load 38/45/91
+r2rn ramp F20 u1->u2 N 12 P 8: worst frame (k 1) >=8 0.013% of floor px, max 23; worst frame mean 0.169 | load 38/45/91
+r2rn ramp F20 u1->u2 N 16 P 0: worst frame (k 1) >=8 0.009% of floor px, max 18; worst frame mean 0.136 | load 37/44/90
+r2rn ramp F20 u1->u2 N 16 P 8: worst frame (k 1) >=8 0.009% of floor px, max 18; worst frame mean 0.135 | load 37/44/90
+r2rn ramp F20 u2->u3 instant: floor 12.04% of screen | >=8 0.20% of floor px, max 92, mean 0.334 | load 37/44/90
+r2rn ramp F20 u2->u3 N  8 P 0: worst frame (k 1) >=8 0.019% of floor px, max 51; worst frame mean 0.061 | load 37/44/90
+r2rn ramp F20 u2->u3 N  8 P 8: worst frame (k 1) >=8 0.013% of floor px, max 35; worst frame mean 0.057 | load 37/44/90
+r2rn ramp F20 u2->u3 N 12 P 0: worst frame (k 1) >=8 0.011% of floor px, max 41; worst frame mean 0.042 | load 37/44/90
+r2rn ramp F20 u2->u3 N 12 P 8: worst frame (k 1) >=8 0.008% of floor px, max 27; worst frame mean 0.041 | load 37/44/90
+r2rn ramp F20 u2->u3 N 16 P 0: worst frame (k 1) >=8 0.007% of floor px, max 34; worst frame mean 0.032 | load 37/44/90
+r2rn ramp F20 u2->u3 N 16 P 8: worst frame (k 1) >=8 0.004% of floor px, max 21; worst frame mean 0.031 | load 37/44/90
+r2rn ramp F20 u3->u4 instant: floor 12.04% of screen | >=8 0.06% of floor px, max 56, mean 0.256 | load 37/44/90
+r2rn ramp F20 u3->u4 N  8 P 0: worst frame (k 1) >=8 0.001% of floor px, max 11; worst frame mean 0.045 | load 37/44/90
+r2rn ramp F20 u3->u4 N  8 P 8: worst frame (k 7) >=8 0.000% of floor px, max 11; worst frame mean 0.044 | load 37/44/90
+r2rn ramp F20 u3->u4 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 8; worst frame mean 0.031 | load 37/44/90
+r2rn ramp F20 u3->u4 N 12 P 8: worst frame (k 7) >=8 0.000% of floor px, max 8; worst frame mean 0.031 | load 37/44/90
+r2rn ramp F20 u3->u4 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 6; worst frame mean 0.024 | load 37/44/90
+r2rn ramp F20 u3->u4 N 16 P 8: worst frame (k 7) >=8 0.000% of floor px, max 6; worst frame mean 0.023 | load 37/44/90
+r2rn ramp G15 u1->u2 instant: floor 19.42% of screen | >=8 0.38% of floor px, max 17, mean 0.412 | load 37/44/90
+r2rn ramp G15 u1->u2 N  8 P 0: worst frame (k 8) >=8 0.000% of floor px, max 4; worst frame mean 0.068 | load 37/44/90
+r2rn ramp G15 u1->u2 N  8 P 8: worst frame (k 9) >=8 0.000% of floor px, max 4; worst frame mean 0.067 | load 34/44/90
+r2rn ramp G15 u1->u2 N 12 P 0: worst frame (k 11) >=8 0.000% of floor px, max 3; worst frame mean 0.048 | load 34/44/90
+r2rn ramp G15 u1->u2 N 12 P 8: worst frame (k 12) >=8 0.000% of floor px, max 3; worst frame mean 0.048 | load 34/44/90
+r2rn ramp G15 u1->u2 N 16 P 0: worst frame (k 10) >=8 0.000% of floor px, max 2; worst frame mean 0.038 | load 34/44/90
+r2rn ramp G15 u1->u2 N 16 P 8: worst frame (k 11) >=8 0.000% of floor px, max 2; worst frame mean 0.038 | load 34/44/90
+r2rn ramp G15 u2->u3 instant: floor 19.42% of screen | >=8 0.01% of floor px, max 18, mean 0.111 | load 34/44/90
+r2rn ramp G15 u2->u3 N  8 P 0: worst frame (k 1) >=8 0.000% of floor px, max 3; worst frame mean 0.017 | load 34/44/90
+r2rn ramp G15 u2->u3 N  8 P 8: worst frame (k 3) >=8 0.000% of floor px, max 3; worst frame mean 0.017 | load 34/44/90
+r2rn ramp G15 u2->u3 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 2; worst frame mean 0.012 | load 34/44/90
+r2rn ramp G15 u2->u3 N 12 P 8: worst frame (k 3) >=8 0.000% of floor px, max 2; worst frame mean 0.012 | load 34/44/90
+r2rn ramp G15 u2->u3 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 2; worst frame mean 0.009 | load 34/44/90
+r2rn ramp G15 u2->u3 N 16 P 8: worst frame (k 3) >=8 0.000% of floor px, max 2; worst frame mean 0.009 | load 34/44/90
+r2rn ramp G15 u3->u4 instant: floor 19.42% of screen | >=8 0.00% of floor px, max 4, mean 0.082 | load 34/44/90
+r2rn ramp G15 u3->u4 N  8 P 0: worst frame (k 1) >=8 0.000% of floor px, max 1; worst frame mean 0.012 | load 34/44/90
+r2rn ramp G15 u3->u4 N  8 P 8: worst frame (k 1) >=8 0.000% of floor px, max 1; worst frame mean 0.012 | load 34/44/90
+r2rn ramp G15 u3->u4 N 12 P 0: worst frame (k 1) >=8 0.000% of floor px, max 1; worst frame mean 0.008 | load 34/44/90
+r2rn ramp G15 u3->u4 N 12 P 8: worst frame (k 1) >=8 0.000% of floor px, max 1; worst frame mean 0.008 | load 34/44/90
+r2rn ramp G15 u3->u4 N 16 P 0: worst frame (k 1) >=8 0.000% of floor px, max 1; worst frame mean 0.006 | load 35/44/90
+r2rn ramp G15 u3->u4 N 16 P 8: worst frame (k 1) >=8 0.000% of floor px, max 1; worst frame mean 0.006 | load 35/44/90
+# done load 35/44/90
+16:29  up 2 days, 15:31, 1 user, load averages: 34.64 43.62 89.61

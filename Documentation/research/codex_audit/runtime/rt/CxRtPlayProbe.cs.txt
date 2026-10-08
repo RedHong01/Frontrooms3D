@@ -1,0 +1,671 @@
+// Codex audit (G14 track), clone proj_cx_rt ONLY (= Red's main at HEAD 279c144, 2026-10-07). Never copied into Red's project.
+// Plays Assets/Scenes/FrontRooms3D.unity exactly as Red's game is now: NO pane swap, no shader change. The map's
+// windows already carry the window kit's interim Glass_Window slab (the only RT receivers).
+//   views : at one Level 0 window (v2 head-on 1.5 m, v5 close), RT Off / High / Ultra: frames, whole-frame GPU ms,
+//           RT stage ms, glass px, prepass depth coverage, RT output coverage, Off-vs-High pixel diff.
+//   walk  : N frames at 8 m/s along a BFS path (chunk streaming), RT at its DEFAULT quality (-frGlassRT off for the
+//           control run): per-frame camera.Render CPU ms, whole-frame GPU ms, RT main-thread ms, mono heap growth.
+//   exit  : native scene after Play Mode exit (BLAS / geometry bytes, mesh count, plugin events) at once and 120 ticks later.
+//   errors: every Error/Exception logged during Play (ZBinningJob / Collection-was-modified counted separately).
+// Batch: Unity -batchmode -projectPath <proj_cx_rt> -executeMethod CxRtPlayProbe.RunBatch -logFile <f>
+//        [-cxRtTag name] [-cxRtPhases views,walk] [-cxRtWalkFrames 900] [-frGlassRT off|high|ultra]
+#if UNITY_EDITOR_OSX
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class CxRtPlayProbe
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "CxRt.Play.Active", DoneKey = "CxRt.Play.Done", DeadlineKey = "CxRt.Play.Deadline", ArgsKey = "CxRt.Play.Args";
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    const int W = 1920, H = 1080;
+
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+    static int waitUntilFrame;
+    static bool finished;
+    static string tag = "run", outDir;
+    static HashSet<string> phases;
+    static int walkFrames = 900;
+
+    static FrontRooms3DGame game;
+    static FrontRoomsMapWorld map;
+    static Camera cam;
+    static FrontRoomsGlassRTCamera camState;
+    static RenderTexture rt;
+    static Texture2D frameTex, tiny;
+
+    // error counting (whole Play session)
+    static int errTotal, errZBin, errColl, errOther;
+    static readonly List<string> errFirst = new List<string>();
+
+    // exit probe
+    static int exitTicks = -1;
+    static double eventsAtExit;
+
+    static CxRtPlayProbe()
+    {
+        EditorApplication.playModeStateChanged -= OnState;
+        EditorApplication.playModeStateChanged += OnState;
+        if (SessionState.GetBool(ActiveKey, false)) { EditorApplication.update -= Tick; EditorApplication.update += Tick; }
+    }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        var sb = new StringBuilder();
+        for (var i = 0; i + 1 < args.Length; i++)
+            if (args[i].StartsWith("-cxRt", StringComparison.Ordinal)) sb.Append(args[i]).Append('=').Append(args[i + 1]).Append(';');
+        SessionState.SetString(ArgsKey, sb.ToString());
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 2400f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static void ReadArgs()
+    {
+        phases = new HashSet<string>();
+        foreach (var kv in SessionState.GetString(ArgsKey, "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var p = kv.Split('=');
+            if (p.Length != 2) continue;
+            if (p[0] == "-cxRtTag") tag = p[1];
+            if (p[0] == "-cxRtPhases") foreach (var x in p[1].Split(',')) phases.Add(x);
+            if (p[0] == "-cxRtWalkFrames") int.TryParse(p[1], out walkFrames);
+        }
+        if (phases.Count == 0) { phases.Add("views"); phases.Add("walk"); }
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "cx_rt", tag);
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[CxRtPlay] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "play_log.txt"), log.ToString()); } catch { }
+    }
+
+    static void OnLog(string msg, string st, LogType type)
+    {
+        if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert) return;
+        if (msg != null && msg.StartsWith("[CxRtPlay]", StringComparison.Ordinal)) return;
+        errTotal++;
+        if (msg != null && msg.Contains("ZBinningJob")) errZBin++;
+        else if (msg != null && msg.Contains("Collection was modified")) errColl++;
+        else errOther++;
+        if (errFirst.Count < 8 && msg != null) { var m = msg.Split('\n')[0]; if (!errFirst.Contains(m)) errFirst.Add(m); }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        Application.logMessageReceivedThreaded -= OnLog;
+        Log("ERRORS during Play: total " + errTotal + " · ZBinningJob " + errZBin + " · Collection was modified " + errColl + " · other " + errOther
+            + (errFirst.Count > 0 ? " · first: " + string.Join(" | ", errFirst) : ""));
+        Log("BEFORE EXIT native: " + NativeLine());
+        eventsAtExit = FrontRoomsGlassRTNative.Get(FrontRoomsGlassRTNative.Stat.Events);
+        SessionState.SetBool(DoneKey, true);
+    }
+
+    static string NativeLine()
+    {
+        FrontRoomsGlassRT.TryGetStats(out var s);
+        return "plugin events " + FrontRoomsGlassRTNative.Get(FrontRoomsGlassRTNative.Stat.Events) + " · trace events " + s.traceEvents + " · meshes " + s.meshes
+            + " (pending " + s.meshesPending + ") · BLAS " + F(s.blasBytes / 1048576.0) + " MB · geometry pool " + F(s.geometryBytes / 1048576.0) + " MB"
+            + " · camera targets (C#) " + F(s.targetBytes / 1048576.0) + " MB · native targets " + F(FrontRoomsGlassRTNative.Get(FrontRoomsGlassRTNative.Stat.TargetsBytes) / 1048576.0) + " MB"
+            + " · C# cameras " + FrontRoomsGlassRTSystem.Cameras.Count + " · C# instances " + FrontRoomsGlassRTSystem.RegisteredInstances;
+    }
+
+    static void OnState(PlayModeStateChange st)
+    {
+        if (!SessionState.GetBool(ActiveKey, false)) return;
+        if (st == PlayModeStateChange.EnteredEditMode && SessionState.GetBool(DoneKey, false))
+        {
+            Log("EXIT → edit mode at once: " + NativeLine());
+            exitTicks = 0;
+        }
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (exitTicks >= 0)
+        {
+            if (++exitTicks < 120) return;
+            Log("EXIT + 120 editor ticks: plugin events since the last Play frame " + (FrontRoomsGlassRTNative.Get(FrontRoomsGlassRTNative.Stat.Events) - eventsAtExit) + " · " + NativeLine());
+            exitTicks = -1;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (exitTicks < 0 && !SessionState.GetBool(DoneKey, false)) { EditorApplication.update -= Tick; if (Application.isBatchMode) EditorApplication.Exit(0); }
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0)
+        {
+            ReadArgs();
+            Application.logMessageReceivedThreaded -= OnLog;
+            Application.logMessageReceivedThreaded += OnLog;
+            stack.Push(Main());
+        }
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                if (cur is IEnumerator sub) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int n ? Mathf.Max(1, n) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    // ------------------------------------------------------------------ game internals (reflection, as the RT harness does)
+    static FieldInfo FI(Type t, string n) { for (; t != null; t = t.BaseType) { var f = t.GetField(n, BF); if (f != null) return f; } return null; }
+    static object Get(object o, string n) => FI(o.GetType(), n)?.GetValue(o);
+    static T Get<T>(object o, string n) => (T)Get(o, n);
+    static void Set(object o, string n, object v) => FI(o.GetType(), n).SetValue(o, v);
+    static object Call(object o, string n, params object[] a) => o.GetType().GetMethod(n, BF).Invoke(o, a);
+    static string Phase => Get(game, "phase").ToString();
+    static Transform PlayerRoot => Get<Transform>(game, "playerRoot");
+    static string F(double f) => f.ToString("0.00", CultureInfo.InvariantCulture);
+    static string F3(double f) => f.ToString("0.000", CultureInfo.InvariantCulture);
+    static string V(Vector3 v) => "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
+
+    static void Place(Vector3 feet, Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var body = Get<CharacterController>(game, "playerBody");
+        body.enabled = false; root.position = feet; body.enabled = true;
+        Physics.SyncTransforms();
+        Look(lookAt);
+    }
+
+    static void Look(Vector3 lookAt)
+    {
+        var root = PlayerRoot;
+        var eye = root.position + Vector3.up * ModuleUnits.PlayerEye;
+        var d = lookAt - eye;
+        var yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        var pitch = -Mathf.Asin(Mathf.Clamp(d.y / Mathf.Max(1e-4f, d.magnitude), -1f, 1f)) * Mathf.Rad2Deg;
+        Set(game, "yaw", yaw); Set(game, "pitch", pitch);
+        root.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    static void Resume()
+    {
+        if (Phase != "Paused") return;
+        var phaseType = typeof(FrontRooms3DGame).GetNestedType("Phase", BindingFlags.NonPublic);
+        Call(game, "SetPhase", Enum.Parse(phaseType, "Playing"));
+    }
+
+    static IEnumerator Settle(int extra = 10)
+    {
+        yield return 3;
+        var start = Time.frameCount;
+        while (!map.Settled && Time.frameCount - start < 1500) yield return 1;
+        yield return extra;
+    }
+
+    static bool FreeStanding(Vector3 feet)
+    {
+        var r = ModuleUnits.PlayerRadius; var root = PlayerRoot;
+        foreach (var c in Physics.OverlapCapsule(feet + Vector3.up * (r + .15f), feet + Vector3.up * (ModuleUnits.PlayerHeight - r), r, ~0, QueryTriggerInteraction.Ignore))
+            if (root == null || !c.transform.IsChildOf(root)) return false;
+        return true;
+    }
+
+    static Collider WindowCollider(GridCoord a, GridCoord b)
+    {
+        var dict = Get(map, "windowByCollider") as IDictionary;
+        var p = map.CrossingPoint(a, b);
+        foreach (DictionaryEntry e in dict)
+        {
+            var pos = (Vector3)Get(e.Value, "position");
+            if ((new Vector2(pos.x - p.x, pos.z - p.z)).sqrMagnitude < .01f) return (Collider)e.Key;
+        }
+        return null;
+    }
+
+    static IEnumerable<GridCoord> CellsAround(GridCoord center, int radiusCells)
+    {
+        for (var r = 0; r <= radiusCells; r++)
+        for (var dy = -r; dy <= r; dy++)
+        for (var dx = -r; dx <= r; dx++)
+        {
+            if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
+            yield return new GridCoord(center.x + dx, center.y + dy);
+        }
+    }
+
+    // ------------------------------------------------------------------ rendering
+    static void Render(RenderTexture target) { var prev = cam.targetTexture; cam.targetTexture = target; cam.Render(); cam.targetTexture = prev; }
+
+    static void Sync(RenderTexture target)
+    {
+        var active = RenderTexture.active; RenderTexture.active = target;
+        tiny.ReadPixels(new Rect(0, 0, 1, 1), 0, 0); tiny.Apply();
+        RenderTexture.active = active;
+        System.Threading.Thread.Sleep(3);
+    }
+
+    static CommandBuffer timerBegin, timerEnd;
+    static double lastRenderCpuMs;
+    static double RenderTimed(RenderTexture target)
+    {
+        if (timerBegin == null)
+        {
+            var f = FrontRoomsGlassRTNative.FRGlassRT_GetRenderEventFunc();
+            timerBegin = new CommandBuffer { name = "cx timer begin" }; timerBegin.IssuePluginEventAndData(f, 2, IntPtr.Zero);
+            timerEnd = new CommandBuffer { name = "cx timer end" }; timerEnd.IssuePluginEventAndData(f, 3, IntPtr.Zero);
+        }
+        Sync(target);
+        Graphics.ExecuteCommandBuffer(timerBegin);
+        var sw = Stopwatch.StartNew();
+        Render(target);
+        lastRenderCpuMs = sw.Elapsed.TotalMilliseconds;
+        Graphics.ExecuteCommandBuffer(timerEnd);
+        Sync(target);
+        return FrontRoomsGlassRTNative.Get(FrontRoomsGlassRTNative.Stat.TimerFrameGpuMs);
+    }
+
+    static byte[] Read8(RenderTexture src)
+    {
+        var active = RenderTexture.active; RenderTexture.active = src;
+        if (frameTex == null || frameTex.width != src.width || frameTex.height != src.height) frameTex = new Texture2D(src.width, src.height, TextureFormat.RGB24, false);
+        frameTex.ReadPixels(new Rect(0, 0, src.width, src.height), 0, 0); frameTex.Apply();
+        RenderTexture.active = active;
+        return frameTex.GetRawTextureData();
+    }
+
+    static void SavePng(string file) => File.WriteAllBytes(Path.Combine(OutDir, file), frameTex.EncodeToPNG());
+
+    static Color[] ReadFloat(RenderTexture src)
+    {
+        if (src == null) return null;
+        var active = RenderTexture.active; RenderTexture.active = src;
+        var t = new Texture2D(src.width, src.height, TextureFormat.RGBAFloat, false, true);
+        t.ReadPixels(new Rect(0, 0, src.width, src.height), 0, 0); t.Apply();
+        RenderTexture.active = active;
+        var px = t.GetPixels(); Object.DestroyImmediate(t);
+        return px;
+    }
+
+    static readonly Dictionary<FilmGrain, bool> grainOriginal = new Dictionary<FilmGrain, bool>();
+    static void Grain(bool on)
+    {
+        foreach (var v in Object.FindObjectsByType<Volume>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            var p = v.sharedProfile;
+            if (p == null || !p.TryGet<FilmGrain>(out var g)) continue;
+            if (!grainOriginal.ContainsKey(g)) grainOriginal[g] = g.active;
+            g.active = on && grainOriginal[g];
+        }
+    }
+
+    static double Median(List<double> l) { var o = new List<double>(l); o.Sort(); return o.Count == 0 ? 0 : o[o.Count / 2]; }
+    static double Pct(List<double> l, double q) { var o = new List<double>(l); o.Sort(); return o.Count == 0 ? 0 : o[Math.Min(o.Count - 1, (int)(o.Count * q))]; }
+
+    static string StatsLine()
+    {
+        FrontRoomsGlassRT.TryGetStats(out var s);
+        return "GPU AS " + F3(s.gpuMsAccel) + " · trace " + F3(s.gpuMsTrace) + " · resolve " + F3(s.gpuMsResolve) + " · total " + F3(s.gpuMsTotal)
+            + " ms · encode " + F3(s.encodeMs) + " ms · main " + F3(s.mainThreadMs) + " ms (scene/live/cand/lamps/submit " + string.Join("/", FrontRoomsGlassRTSystem.Breakdown.Select(x => F3(x)))
+            + ") · TLAS " + s.tlasInstances + " · meshes " + s.meshes + " (pending " + s.meshesPending + ") · lamps " + s.lamps + " · receivers visible " + s.receiversVisible
+            + " · glass px " + s.glassPixels + " · hit " + s.hitPixels + " · miss " + s.missPixels + " · shadow rays " + s.shadowRays + " · trace events " + s.traceEvents
+            + " · CB errors " + s.commandBufferErrors + " · BLAS " + F(s.blasBytes / 1048576.0) + " MB · geometry " + F(s.geometryBytes / 1048576.0) + " MB · targets " + F(s.targetBytes / 1048576.0) + " MB";
+    }
+
+    // ------------------------------------------------------------------ main
+    struct View { public string name; public Vector3 feet, look; }
+
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        tiny = new Texture2D(1, 1, TextureFormat.RGB24, false);
+        rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "CxRt 1080p" };
+        rt.Create();
+        Log("tag " + tag + " · phases " + string.Join(",", phases) + " · gfx " + SystemInfo.graphicsDeviceType + " · " + SystemInfo.graphicsDeviceName + " · plugin caps 0x"
+            + FrontRoomsGlassRTNative.FRGlassRT_QueryCaps().ToString("x") + " · " + FrontRoomsGlassRT.Status);
+        while ((game = Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        while (Time.time < 2.0f) yield return 1;
+        UnityEngine.Random.InitState(4242);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (!Get<bool>(game, "mapPlay")) { Log("FAILED: could not start a run"); yield break; }
+        map = Get<FrontRoomsMapWorld>(game, "map");
+        var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+        tuning.releaseDelaySeconds = 1e6f;
+        var t0 = Time.time;
+        while (!Get<bool>(game, "startDoorOpened") && Time.time - t0 < 8f) { Resume(); yield return 1; }
+        yield return 30;
+        Time.captureDeltaTime = 1f / 60f;
+        camState = cam.GetComponent<FrontRoomsGlassRTCamera>();
+        Log("run started · seed " + Get<int>(game, "runSeed") + " · quality level " + QualitySettings.GetQualityLevel() + " (" + QualitySettings.names[QualitySettings.GetQualityLevel()]
+            + ") → RT quality " + FrontRoomsGlassRT.Quality + " · game camera has FrontRoomsGlassRTCamera " + (camState != null) + " (hideFlags " + (camState != null ? camState.hideFlags.ToString() : "-") + ")"
+            + " · zone reflection " + FrontRoomsZoneReflection.Zone);
+
+        // what the map now gives G14: receivers and the glass shader passes
+        yield return Settle(10);
+        FrontRoomsGlassRTSystem.Flush();
+        Render(rt);
+        int bit30 = 0, bit29 = 0, slabs = 0, panesDrawn = 0;
+        var mats = new Dictionary<string, int>();
+        foreach (var r in Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+        {
+            if ((r.renderingLayerMask & (1u << FrontRoomsGlassRTSystem.PrepassBit)) != 0)
+            {
+                bit30++;
+                var key = r.sharedMaterial != null ? r.sharedMaterial.name + " / " + r.sharedMaterial.shader.name : "null";
+                mats[key] = mats.TryGetValue(key, out var n) ? n + 1 : 1;
+            }
+            if ((r.renderingLayerMask & (1u << FrontRoomsGlassRTSystem.OverrideBit)) != 0) bit29++;
+            if (r.TryGetComponent<FrontRoomsMetalGlassTarget>(out _)) { if (r.gameObject.name.StartsWith("Window pane")) { if (r.enabled) panesDrawn++; } else slabs++; }
+        }
+        var glassShader = Shader.Find("FrontRooms/Glass");
+        var passNames = new List<string>();
+        if (glassShader != null) { var sd = ShaderUtil.GetShaderData(glassShader); for (var s = 0; s < sd.SubshaderCount; s++) for (var p = 0; p < sd.GetSubshader(s).PassCount; p++) passNames.Add(sd.GetSubshader(s).GetPass(p).Name); }
+        var tagIndex = glassShader != null ? glassShader.FindPassTagValue(0, new ShaderTagId("LightMode")).name : "";
+        Log("RECEIVERS after a flush: renderers on prepass bit 30 (own FRGlassRTPrepass pass) " + bit30 + " [" + string.Join(", ", mats.Select(kv => kv.Key + " ×" + kv.Value)) + "] · on override bit 29 " + bit29
+            + " · interim slabs " + slabs + " · map pane cubes still drawn " + panesDrawn + " · FrontRooms/Glass passes [" + string.Join(", ", passNames) + "] · pass0 LightMode '" + tagIndex + "'"
+            + " · registered " + FrontRoomsGlassRTSystem.RegisteredInstances + " instances in " + FrontRoomsGlassRTSystem.KnownChunks + " chunks · meshes CPU " + FrontRoomsGlassRTSystem.MeshUploadsCPU
+            + " / GPU " + FrontRoomsGlassRTSystem.MeshUploadsGPU + " · materials " + FrontRoomsGlassRTSystem.MaterialsUsed + " · textures " + FrontRoomsGlassRTSystem.TexturesUsed
+            + " · receivers " + FrontRoomsGlassRTSystem.Receivers + " · lenses " + FrontRoomsGlassRTSystem.Lens);
+
+        // find one Level 0 window seen head-on
+        var startDoorCell = (GridCoord)Get(game, "startDoorCell");
+        var origin = startDoorCell + new GridCoord(0, 3);
+        View? headon = null, close = null; Vector3 paneCentre = Vector3.zero; Vector3 walkStart = PlayerRoot.position;
+        var tried = 0;
+        foreach (var c in CellsAround(origin, 70))
+        {
+            if (headon != null || tried > 24) break;
+            if (map.InStartArea(c)) continue;
+            foreach (var s in new[] { new GridCoord(1, 0), new GridCoord(0, 1) })
+            {
+                if (headon != null) break;
+                var n = c + s;
+                if (map.InStartArea(n) || map.Cache.Edge(c, n) != EdgeKind.Window) continue;
+                if (map.Cache.ZoneOf(c).theme == ZoneTheme.Office || map.Cache.ZoneOf(n).theme == ZoneTheme.Office) continue;
+                tried++;
+                var cross = map.CrossingPoint(c, n);
+                var d = map.CellCenter(n) - map.CellCenter(c); d.y = 0f; d.Normalize();
+                var centre = cross + Vector3.up * ((ModuleUnits.WindowSill + ModuleUnits.WindowTop) * .5f);
+                Place(cross - d * 1.5f, centre);
+                yield return Settle(6);
+                Resume();
+                var col = WindowCollider(c, n);
+                if (col == null) continue;
+                foreach (var sign in new[] { 1f, -1f })
+                {
+                    var dd = d * sign;
+                    var fHead = cross - dd * 1.5f;
+                    if (!FreeStanding(fHead)) continue;
+                    var eye = fHead + Vector3.up * ModuleUnits.PlayerEye;
+                    var toC = col.bounds.center - eye;
+                    if (Physics.Raycast(eye, toC.normalized, out var hit, toC.magnitude + .2f, ~0, QueryTriggerInteraction.Ignore) && hit.collider != col) continue;
+                    paneCentre = col.bounds.center;
+                    headon = new View { name = "v2_headon_centre", feet = fHead, look = paneCentre };
+                    foreach (var dist in new[] { .55f, .6f, .7f, .8f })
+                    {
+                        var fc = cross - dd * dist;
+                        if (!FreeStanding(fc)) continue;
+                        close = new View { name = "v5_close" + Mathf.RoundToInt(dist * 100), feet = fc, look = paneCentre };
+                        break;
+                    }
+                    walkStart = fHead;
+                    Log("WINDOW " + col.name + " · centre " + V(paneCentre) + " · head-on feet " + V(fHead));
+                    break;
+                }
+            }
+        }
+        if (headon == null) { Log("NO usable Level 0 window"); yield break; }
+
+        if (phases.Contains("views"))
+        {
+            var views = new List<View> { headon.Value };
+            if (close != null) views.Add(close.Value);
+            foreach (var v in views) yield return Views(v);
+        }
+        if (phases.Contains("walk")) yield return Walk(walkStart);
+        if (phases.Contains("fault")) yield return Fault(headon.Value);
+        Log("DONE · " + FrontRoomsGlassRT.Status + " · " + StatsLine());
+    }
+
+    static IEnumerator Warm(string why)
+    {
+        var start = Time.frameCount;
+        for (var k = 0; k < 300; k++)
+        {
+            FrontRoomsGlassRTSystem.Flush();
+            Render(rt); Sync(rt);
+            FrontRoomsGlassRT.TryGetStats(out var s);
+            if (FrontRoomsGlassRT.Supported && s.meshesPending == 0 && FrontRoomsGlassRTSystem.PendingRescans == 0 && k > 3) break;
+            yield return 1;
+        }
+        Log("WARM (" + why + ") after " + (Time.frameCount - start) + " frames · " + FrontRoomsGlassRT.Status);
+    }
+
+    static IEnumerator Views(View v)
+    {
+        Place(v.feet, v.look); yield return 2; Resume(); Place(v.feet, v.look); yield return 1;
+        var keep = FrontRoomsGlassRT.Quality;
+        FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+        yield return Warm(v.name);
+        Grain(false);
+        var result = new Dictionary<FrontRoomsGlassRTQuality, byte[]>();
+        byte[] off2 = null;
+        var order = new[] { FrontRoomsGlassRTQuality.Off, FrontRoomsGlassRTQuality.High, FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTQuality.Off };
+        for (var qi = 0; qi < order.Length; qi++)
+        {
+            var q = order[qi];
+            var second = qi == order.Length - 1;
+            FrontRoomsGlassRT.Quality = q;
+            for (var k = 0; k < 3; k++) RenderTimed(rt);   // settle
+            FrontRoomsGlassRT.TryGetStats(out var s0);
+            var gpu = new List<double>(); var cpu = new List<double>(); var mainMs = new List<double>();
+            for (var k = 0; k < 9; k++) { gpu.Add(RenderTimed(rt)); cpu.Add(lastRenderCpuMs); FrontRoomsGlassRT.TryGetStats(out var sk); mainMs.Add(q == FrontRoomsGlassRTQuality.Off ? 0 : sk.mainThreadMs); }
+            FrontRoomsGlassRT.TryGetStats(out var s1);
+            var px = Read8(rt);
+            if (second) off2 = px; else result[q] = px;
+            SavePng(v.name + "_" + q.ToString().ToLowerInvariant() + (second ? "2" : "") + ".png");
+            var line = "VIEW " + v.name + " · RT " + q + (second ? " (again, noise control)" : "") + " · whole-frame GPU median " + F3(Median(gpu)) + " ms (min " + F3(gpu.Min()) + ", max " + F3(gpu.Max()) + ")"
+                + " · camera.Render CPU median " + F3(Median(cpu)) + " ms · RT main-thread median " + F3(Median(mainMs)) + " ms · trace events in 9 renders " + (s1.traceEvents - s0.traceEvents);
+            if (q != FrontRoomsGlassRTQuality.Off)
+            {
+                var depth = ReadFloat(camState != null && camState.depth != null ? camState.depth.rt : null);
+                var outPx = ReadFloat(camState != null && camState.outTex != null ? camState.outTex.rt : null);
+                var depthPx = depth != null ? depth.Count(c => c.r > 0f) : -1;
+                var outCov = outPx != null ? outPx.Count(c => c.a > 1f) : -1;
+                line += " · prepass GlassDepth px > 0: " + depthPx + " · RT output px with coverage (A > 1): " + outCov + " · rect " + (camState != null ? camState.lastRect.ToString() : "-")
+                    + " · visible receivers " + (camState != null ? camState.lastVisibleReceivers : -1) + " · weight " + (camState != null ? camState.lastWeight : -1) + " · " + StatsLine();
+            }
+            Log(line);
+        }
+        foreach (var q in new[] { FrontRoomsGlassRTQuality.High, FrontRoomsGlassRTQuality.Ultra, (FrontRoomsGlassRTQuality)99 })
+        {
+            var a = result[FrontRoomsGlassRTQuality.Off]; var b = (int)q == 99 ? off2 : result[q];
+            int d1 = 0, d2 = 0, d8 = 0; double sumDy = 0;
+            for (var i = 0; i < a.Length / 3; i++)
+            {
+                var d = Math.Max(Math.Abs(a[3 * i] - b[3 * i]), Math.Max(Math.Abs(a[3 * i + 1] - b[3 * i + 1]), Math.Abs(a[3 * i + 2] - b[3 * i + 2])));
+                if (d >= 1) d1++; if (d >= 2) d2++; if (d >= 8) d8++;
+                sumDy += (.2126 * b[3 * i] + .7152 * b[3 * i + 1] + .0722 * b[3 * i + 2]) - (.2126 * a[3 * i] + .7152 * a[3 * i + 1] + .0722 * a[3 * i + 2]);
+            }
+            Log("DIFF " + v.name + " RT Off vs " + ((int)q == 99 ? "Off again (noise control)" : q.ToString()) + " (grain off, 1920x1080): px differing ≥1/255 " + d1 + " · ≥2/255 " + d2 + " · ≥8/255 " + d8 + " · mean ΔY " + F3(sumDy / (a.Length / 3)) + "/255");
+        }
+        Grain(true);
+        FrontRoomsGlassRT.Quality = keep;
+    }
+
+    // Fault injection (clone only, audit 2026-10-07): null the RT instance buffer so BuildFrame throws a
+    // NullReferenceException inside URP's RecordRenderGraph, as 8ef5b64's DropChunk did. Measures what the game shows.
+    static IEnumerator Fault(View v)
+    {
+        Place(v.feet, v.look); yield return 2; Resume(); Place(v.feet, v.look); yield return 1;
+        FrontRoomsGlassRT.Quality = FrontRoomsGlassRTQuality.High;
+        yield return Warm("fault " + v.name);
+        var lumas0 = new List<double>();
+        for (var k = 0; k < 3; k++) { yield return 1; Render(rt); lumas0.Add(Luma(Read8(rt))); }
+        SavePng("fault_before.png");
+        Log("FAULT before: quality " + FrontRoomsGlassRT.Quality + " · errors so far " + errTotal + " (ZBin " + errZBin + ") · mean luma " + string.Join(" ", lumas0.Select(x => F(x))));
+        var fi = typeof(FrontRoomsGlassRTSystem).GetField("instBuffer", BindingFlags.NonPublic | BindingFlags.Static);
+        var keepBuf = fi.GetValue(null);
+        fi.SetValue(null, null);
+        var e0 = errTotal; var z0 = errZBin; var o0 = errOther;
+        var lumas = new List<double>();
+        for (var k = 0; k < 12; k++) { yield return 1; Render(rt); lumas.Add(Luma(Read8(rt))); if (k == 6) SavePng("fault_during.png"); }
+        fi.SetValue(null, keepBuf);
+        var lumas2 = new List<double>();
+        for (var k = 0; k < 6; k++) { yield return 1; Render(rt); lumas2.Add(Luma(Read8(rt))); }
+        SavePng("fault_after.png");
+        Log("FAULT 12 renders with BuildFrame throwing: new errors " + (errTotal - e0) + " (ZBinningJob " + (errZBin - z0) + ", other " + (errOther - o0) + ") · quality now " + FrontRoomsGlassRT.Quality
+            + " · mean luma per render " + string.Join(" ", lumas.Select(x => F(x))) + " · after restoring the buffer " + string.Join(" ", lumas2.Select(x => F(x))));
+    }
+
+    static double Luma(byte[] px)
+    {
+        double sum = 0; for (var i = 0; i < px.Length; i += 3) sum += .2126 * px[i] + .7152 * px[i + 1] + .0722 * px[i + 2];
+        return sum / (px.Length / 3);
+    }
+
+    static List<Vector3> WalkPath(Vector3 start, int cells)
+    {
+        var s0 = map.CellOf(start);
+        var prev = new Dictionary<GridCoord, GridCoord> { [s0] = s0 };
+        var dist = new Dictionary<GridCoord, int> { [s0] = 0 };
+        var q = new Queue<GridCoord>(); q.Enqueue(s0);
+        var far = s0;
+        while (q.Count > 0 && dist.Count < 20000)
+        {
+            var c = q.Dequeue();
+            if (dist[c] > dist[far]) far = c;
+            if (dist[c] >= cells) break;
+            foreach (var dlt in new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) })
+            {
+                var n = c + dlt;
+                if (dist.ContainsKey(n) || map.InStartArea(n)) continue;
+                var e = map.Cache.Edge(c, n);
+                if (e == EdgeKind.Wall || e == EdgeKind.Window) continue;
+                dist[n] = dist[c] + 1; prev[n] = c; q.Enqueue(n);
+            }
+        }
+        var path = new List<Vector3>();
+        for (var c = far; ; c = prev[c]) { var p = map.CellCenter(c); path.Add(new Vector3(p.x, start.y, p.z)); if (c.Equals(s0)) break; }
+        path.Reverse();
+        return path;
+    }
+
+    static IEnumerator Walk(Vector3 start)
+    {
+        var path = WalkPath(start, 90);
+        var pathLen = 0f; for (var k = 1; k < path.Count; k++) pathLen += (path[k] - path[k - 1]).magnitude;
+        var q = FrontRoomsGlassRT.Quality;
+        FrontRoomsGlassRTSystem.ResetMaxima();
+        var rows = new StringBuilder("frame\trender_cpu_ms\tframe_gpu_ms\trt_main_ms\tscene_ms\tvisible\ttraced\tchunks\tregistered\tmeshes_cpu\tmono_delta_kb\n");
+        var cpu = new List<double>(); var gpu = new List<double>(); var rtMain = new List<double>(); var scene = new List<double>();
+        long allocPositive = 0; var gc0 = GC.CollectionCount(0);
+        var reg0 = FrontRoomsGlassRTSystem.RegisteredInstances; var up0 = FrontRoomsGlassRTSystem.MeshUploadsCPU + FrontRoomsGlassRTSystem.MeshUploadsGPU;
+        var seen = new HashSet<int>();
+        var visibleFrames = 0; var tracedFrames = 0;
+        long mono = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+        FrontRoomsGlassRT.TryGetStats(out var sStart);
+        for (var f = 0; f < walkFrames; f++)
+        {
+            var dAlong = Mathf.PingPong(f * 8f / 60f, Mathf.Max(pathLen, .01f));
+            Vector3 pos = path[0], ahead = path[Math.Min(1, path.Count - 1)];
+            var acc = 0f;
+            for (var k = 1; k < path.Count; k++)
+            {
+                var seg = (path[k] - path[k - 1]).magnitude;
+                if (acc + seg >= dAlong) { pos = Vector3.Lerp(path[k - 1], path[k], (dAlong - acc) / Mathf.Max(seg, 1e-4f)); ahead = path[Math.Min(k + 1, path.Count - 1)]; break; }
+                acc += seg;
+            }
+            var root = PlayerRoot; var body = Get<CharacterController>(game, "playerBody");
+            body.enabled = false; root.position = pos; body.enabled = true;
+            var look = ahead - pos; look.y = 0f; if (look.sqrMagnitude < 1e-4f) look = Vector3.forward;
+            Look(pos + Vector3.up * ModuleUnits.PlayerEye + look.normalized * 3f + Vector3.Cross(Vector3.up, look.normalized) * Mathf.Sin(f * .05f) * 2f);
+            yield return 1;
+            Resume();
+            var g = RenderTimed(rt);
+            var m = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+            var dm = m - mono; mono = m; if (dm > 0) allocPositive += dm;
+            FrontRoomsGlassRT.TryGetStats(out var s);
+            var vis = camState != null ? camState.lastVisibleReceivers : 0;
+            var tr = camState != null && camState.lastWeight > 0f;
+            if (vis > 0) visibleFrames++; if (tr) tracedFrames++;
+            var rm = q == FrontRoomsGlassRTQuality.Off ? 0 : s.mainThreadMs;
+            cpu.Add(lastRenderCpuMs); gpu.Add(g); rtMain.Add(rm); scene.Add(q == FrontRoomsGlassRTQuality.Off ? 0 : FrontRoomsGlassRTSystem.Breakdown[0]);
+            foreach (Transform c in map.transform) seen.Add(c.GetInstanceID());
+            rows.Append(f).Append('\t').Append(F3(lastRenderCpuMs)).Append('\t').Append(F3(g)).Append('\t').Append(F3(rm)).Append('\t').Append(F3(scene[scene.Count - 1]))
+                .Append('\t').Append(vis).Append('\t').Append(tr ? 1 : 0).Append('\t').Append(FrontRoomsGlassRTSystem.KnownChunks).Append('\t').Append(FrontRoomsGlassRTSystem.RegisteredInstances)
+                .Append('\t').Append(FrontRoomsGlassRTSystem.MeshUploadsCPU).Append('\t').Append((dm / 1024.0).ToString("0", CultureInfo.InvariantCulture)).Append('\n');
+        }
+        File.WriteAllText(Path.Combine(OutDir, "walk_frames.tsv"), rows.ToString());
+        FrontRoomsGlassRT.TryGetStats(out var sEnd);
+        Log("WALK RT " + q + " · " + walkFrames + " frames at 8 m/s over a " + path.Count + "-cell path (" + F(pathLen) + " m, ping-pong) · chunk roots seen " + seen.Count
+            + " · frames with a visible receiver " + visibleFrames + " · traced " + tracedFrames
+            + " · camera.Render CPU ms p50 " + F3(Pct(cpu, .5)) + " p95 " + F3(Pct(cpu, .95)) + " p99 " + F3(Pct(cpu, .99)) + " max " + F3(cpu.Max())
+            + " · frame GPU ms p50 " + F3(Pct(gpu, .5)) + " p95 " + F3(Pct(gpu, .95)) + " p99 " + F3(Pct(gpu, .99))
+            + " · RT main-thread ms p50 " + F3(Pct(rtMain, .5)) + " p99 " + F3(Pct(rtMain, .99)) + " max " + F3(rtMain.Max()) + " (scene diff/registration p99 " + F3(Pct(scene, .99)) + " max " + F3(scene.Max()) + ")"
+            + " · mono heap growth (sum of positive per-frame deltas) " + F(allocPositive / 1048576.0) + " MB · gen0 GCs " + (GC.CollectionCount(0) - gc0)
+            + " · RT registrations +" + (FrontRoomsGlassRTSystem.RegisteredInstances - reg0) + " · mesh uploads +" + (FrontRoomsGlassRTSystem.MeshUploadsCPU + FrontRoomsGlassRTSystem.MeshUploadsGPU - up0)
+            + " · BLAS built +" + (sEnd.blasBuiltTotal - sStart.blasBuiltTotal) + " · plugin events +" + (sEnd.events - sStart.events) + " (trace +" + (sEnd.traceEvents - sStart.traceEvents) + ")");
+        Log("WALK END " + StatsLine());
+    }
+}
+#endif

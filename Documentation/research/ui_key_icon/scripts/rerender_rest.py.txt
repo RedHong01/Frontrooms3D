@@ -1,0 +1,23 @@
+"""Finish the 2026-10-03 integer-size re-render after the full run was stopped at the full frames
+(A_S and A_L full frames were re-rendered byte-identical; only Achip's carry a numeral).
+Renders: Achip_fullframe_<bg>.jpg (4) and, as a check of the durable dark background,
+A_S_held_dark_1x.png into a scratch path (compared with the live file)."""
+import os, sys, subprocess
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import composites as C
+L = C.L
+for bg in ("lit", "wallpaper", "office", "dark"):
+    img = C.frame(bg, 1)
+    C.room_type(img, 1, meta=C.ROOM[bg][0], room=C.ROOM[bg][1])
+    C.crosshair(img, 1)
+    C.held(img, "Achip", 1)
+    p_ = os.path.join(C.HUD, "Achip_fullframe_%s.png" % bg)
+    L.write_png(p_, img)
+    subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "92", p_, "--out", p_[:-4] + ".jpg"], check=True, capture_output=True)
+    os.remove(p_)
+    print("full", bg, flush=True)
+img = C.frame("dark", 1)
+C.held(img, "A_S", 1)
+chk = os.path.join(os.path.dirname(C.HERE), "keyicon_figma", "check_A_S_held_dark_1x.png")
+C.save_crop(img, chk, 1, C.hud_box("A_S"))
+print("check", open(chk, "rb").read() == open(os.path.join(C.HUD, "A_S_held_dark_1x.png"), "rb").read(), flush=True)

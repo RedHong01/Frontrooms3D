@@ -1,0 +1,110 @@
+"""ana5.py - numpy analysis of rt_bench5 'dump' output (report 11, G14b revision 1). Not part of the game.
+Reads d5_<tag>_c<cube>_sg<g>_<case>_<name>.png (8-bit sRGB composites after exposure + ACES, 1920x1080) via sips -> BMP.
+Prints, per case and floor/glass mask:
+  - convergence of the GGX reference: N-ray blocks vs the 2048-ray reference, per pixel and on 8x8 block means,
+    and the reference's own noise from its two independent 1024-ray halves;
+  - every method's error vs its own tree's 2048-ray reference: per pixel (mean, p99, >= 8), noise-corrected RMS
+    (sqrt(max(0, MSE(X, ref) - MSE(ref_a, ref_b) / 4))), and 8x8 block means (mean, p99, max);
+  - RT off vs reference, and the share of floor px each frame changes by >= 8/255 against RT off;
+  - streak capture: S = floor px where |ref - off| >= 24/255 (red streak: dR >= 24 and dR > 2 max(dG, dB));
+    captured = sum(sign * (X - off)) / sum(|ref - off|) on S; recall = share of S where X moves >= half as far.
+Run: /usr/bin/python3 ana5.py <tag> <cube> <sg>
+"""
+import sys, os, subprocess, struct
+import numpy as np
+
+tag, cube, sg = sys.argv[1], sys.argv[2], sys.argv[3]
+W, H = 1920, 1080
+cache = {}
+
+def load(case, name):
+    fn = f"d5_{tag}_c{cube}_sg{sg}_{case}_{name}.png"
+    if fn in cache: return cache[fn]
+    if not os.path.exists(fn): return None
+    bmp = "/tmp/" + fn + ".bmp" if False else fn + ".bmp"
+    if not os.path.exists(bmp):
+        subprocess.run(["sips", "-s", "format", "bmp", fn, "--out", bmp], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    b = open(bmp, "rb").read()
+    off = struct.unpack_from("<I", b, 10)[0]; w, h = struct.unpack_from("<ii", b, 18); bpp = struct.unpack_from("<H", b, 28)[0]
+    stride = ((w * bpp // 8) + 3) & ~3
+    a = np.frombuffer(b, dtype=np.uint8, count=stride * abs(h), offset=off).reshape(abs(h), stride)[:, : w * bpp // 8].reshape(abs(h), w, bpp // 8)
+    if h > 0: a = a[::-1]
+    rgb = a[..., [2, 1, 0]].astype(np.int32)   # BMP stores BGR(A)
+    cache[fn] = rgb
+    return rgb
+
+def d8(a, b):
+    return np.abs(a - b).max(axis=2)
+
+def blocks(img, m, k=8):
+    """8x8 block means of img (float, HxWx3) over mask m; returns (means HbxWbx3, valid HbxWb) with >= 32 px."""
+    hb, wb = H // k, W // k
+    im = img[: hb * k, : wb * k].astype(np.float64) * m[: hb * k, : wb * k, None]
+    mm = m[: hb * k, : wb * k].astype(np.float64)
+    s = im.reshape(hb, k, wb, k, 3).sum(axis=(1, 3)); n = mm.reshape(hb, k, wb, k).sum(axis=(1, 3))
+    return s / np.maximum(n, 1)[..., None], n >= 32
+
+def stat(x, ref, m, refa=None, refb=None):
+    d = d8(x, ref)[m]
+    out = {"mean": d.mean(), "p99": np.percentile(d, 99), "ge8": 100.0 * (d >= 8).mean()}
+    mse = (((x - ref).astype(np.float64)) ** 2).mean(axis=2)[m].mean()
+    if refa is not None:
+        nz = (((refa - refb).astype(np.float64)) ** 2).mean(axis=2)[m].mean() / 4.0
+        out["nrms"] = np.sqrt(max(0.0, mse - nz)); out["refnoise"] = np.sqrt(nz)
+    out["rms"] = np.sqrt(mse)
+    bx, v = blocks(x, m); br, _ = blocks(ref, m)
+    bd = np.abs(bx - br).max(axis=2)[v]
+    if bd.size == 0: out["bmean"] = out["bp99"] = out["bmax"] = float("nan")
+    else: out["bmean"] = bd.mean(); out["bp99"] = np.percentile(bd, 99); out["bmax"] = bd.max()
+    return out
+
+def fmt(s, noise=True):
+    t = f"px mean {s['mean']:.2f} p99 {s['p99']:.0f} >=8 {s['ge8']:.2f}% | rms {s['rms']:.2f}"
+    if noise and "nrms" in s: t += f" noise-corrected {s['nrms']:.2f} (ref noise {s['refnoise']:.2f})"
+    return t + f" | 8x8 blocks mean {s['bmean']:.2f} p99 {s['bp99']:.1f} max {s['bmax']:.1f}"
+
+for case in ["A20", "B20", "D20", "F20", "G15"]:
+    mk = load(case, "mask")
+    if mk is None: continue
+    F = mk[..., 0] > 127; G = mk[..., 1] > 127
+    off, ref, ra, rb = load(case, "off"), load(case, "ref"), load(case, "refa"), load(case, "refb")
+    refu, rua, rub = load(case, "refu"), load(case, "refua"), load(case, "refub")
+    print(f"\n=== {case}: floor {100 * F.mean():.1f}% of screen, glass {100 * G.mean():.2f}% | cube c{cube} soft gate {sg}")
+    print(f"  reference own noise (1024 vs 1024 halves): floor {fmt(stat(ra, rb, F), False)}")
+    for n in ["x128", "x256", "x512", "x1024"]:
+        x = load(case, n)
+        if x is not None: print(f"  conv {n:>5} vs 2048 ref, floor: {fmt(stat(x, ref, F, ra, rb))}")
+    print(f"  RT OFF vs ref, floor: {fmt(stat(off, ref, F, ra, rb))}")
+    for n in ["high_k1", "high_k2", "high_k3"]:
+        x = load(case, n); print(f"  {n:>8} vs ref, floor: {fmt(stat(x, ref, F, ra, rb))}")
+    for n in ["u2", "u3", "u4"]:
+        x = load(case, n); xs = load(case, n + "_seed8")
+        if x is None or refu is None: continue
+        sh = d8(x, xs)[F]
+        print(f"  {n:>8} vs Ultra-tree ref, floor: {fmt(stat(x, refu, F, rua, rub))} | re-seeded shimmer >=8 {100 * (sh >= 8).mean():.2f}% mean {sh.mean():.2f}")
+    if G.sum() > 50:
+        print(f"  glass: High k2 vs ref {fmt(stat(load(case, 'high_k2'), ref, G, ra, rb))}")
+        if refu is not None: print(f"  glass: Ultra u2 vs Ultra ref {fmt(stat(load(case, 'u2'), refu, G, rua, rub))}")
+    # change against RT off (the check's metric), floor
+    for n, x in [("ref", ref), ("high_k2", load(case, "high_k2")), ("u3" if case in ("A20", "F20") else "u2", load(case, "u3" if case in ("A20", "F20") else "u2"))]:
+        dd = d8(x, off)[F]
+        print(f"  off -> {n:>8}: floor px >= 8/255 {100 * (dd >= 8).mean():.1f}%, mean {dd.mean():.2f}, p99 {np.percentile(dd, 99):.0f}, max {dd.max()}")
+    # streaks
+    dref = ref - off
+    mag = np.abs(dref).max(axis=2)
+    S_all = F & (mag >= 24)
+    S_red = S_all & (dref[..., 0] >= 24) & (dref[..., 0] > 2 * np.maximum(dref[..., 1], dref[..., 2]))
+    ch = np.abs(dref).argmax(axis=2)
+    def take(img): return np.take_along_axis(img, ch[..., None], axis=2)[..., 0].astype(np.float64)
+    dr = take(ref) - take(off)
+    for nm, S in [("all", S_all), ("red", S_red)]:
+        if S.sum() == 0: print(f"  streak {nm}: none"); continue
+        res = []
+        for mn, rr in [("high_k2", ref), ("u3" if case in ("A20", "F20") else "u2", refu if refu is not None else ref)]:
+            x = load(case, mn)
+            if x is None: continue
+            drr = take(rr)[S] - take(off)[S]; sgn = np.sign(drr); tot = np.abs(drr).sum()
+            dx = take(x)[S] - take(off)[S]
+            cap = (sgn * dx).sum() / tot; rec = 100.0 * ((sgn * dx) >= 0.5 * np.abs(drr)).mean()
+            res.append(f"{mn} captured {cap:.2f} recall {rec:.1f}%")
+        print(f"  streak {nm}: {S.sum()} px ({100 * S.mean():.2f}% of screen), mean ref change {np.abs(dr[S]).mean():.1f}/255 | " + " | ".join(res))

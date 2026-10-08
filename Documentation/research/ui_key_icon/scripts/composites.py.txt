@@ -1,0 +1,488 @@
+"""HUD composites: the icon PNGs + HUD type on real game frames, blended in linear light
+(Unity linear colour space, Screen Space Overlay canvas = no post on the HUD).
+
+Layout from FrontRooms3DGame.cs BuildHud (read 2026-10-03): CanvasScaler 1920x1080,
+match 0.5; HUD / Key anchored bottom-left at (72, 118), 22 px row -> glyph rect top-left
+(72, 940); label at +54 (glyph 40 + 14 gap), Bayon 20, paper F4F1E8, MiddleLeft
+(caps sit at rect top + 4 .. + 18, measured on audit frame 58). Full form (Figma
+HUD / Key 2256:161): 4 px yellow rule, gap 14, glyph, gap 14, name Bayon 20 +
+meta IBM Plex Mono 13 muted BDBAB0.
+2x crops = the same HUD at canvas scale 2 (3840x2160 / Retina): background
+upsampled bilinear, 2x sprites, type at 2x size.
+"""
+import json, math, os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import numpy as np
+import iconlib as L
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+SCR = "/Users/redwang/FrontRoomsVisualWork"
+DES = os.environ.get("KEYICON_DES", os.path.join(PROJ, "Documentation/research/ui_key_icon/design"))  # override for scratch re-renders
+PNG = os.path.join(DES, "png")
+HUD = os.path.join(DES, "hud")
+os.makedirs(HUD, exist_ok=True)
+RV = os.path.join(PROJ, "Documentation/research/room_visuals/images")
+BGS = {"lit": os.path.join(RV, "room_map-l0-low_wide.jpg"),
+       "wallpaper": os.path.join(RV, "room_map-l0-standard_wide.jpg"),
+       "office": os.path.join(RV, "room_map-office_wide.jpg"),
+       # durable copy (2026-10-03, Figma stage) of SCR/audit_run3_frames/59_door_key_open_t0000ms.png, same bytes
+       "dark": os.path.join(DES, "bg/dark_59_door_key_open_t0000ms.png"),
+       # fix stage 2026-10-07 (critic issue 2): the locked door the prompt always sits on. In-engine
+       # audit frame 48 (a locked door) with the leaf re-coloured to the spec's almond enamel
+       # #CDC5B0 at full albedo: the worst case. Made by make_leaf_bg.py.
+       "leaf": os.path.join(DES, "bg/leaf_48_almond.png")}
+# the bottom-left row is measured and cropped on the four room frames; the leaf is for the prompt
+BG_ROW = ("lit", "wallpaper", "office", "dark")
+# extra measurement-only background (not cropped): today's wood leaf of frame 48, HUD painted out
+BG_MEASURE_ONLY = {"leafwood": os.path.join(DES, "bg/leaf_48_wood.png")}
+BAYON = L.Font(os.path.join(PROJ, "Assets/Resources/Fonts/Bayon-Regular.ttf"))
+MONO = L.Font(os.path.join(PROJ, "Assets/Resources/Fonts/IBMPlexMono-Regular.ttf"))
+SERIF = L.Font(os.path.join(PROJ, "Assets/Resources/Fonts/SourceSerif4-Variable.ttf"))
+PAPER, MUTED, ACCENT = "F4F1E8", "BDBAB0", "F4DF3B"
+CACHE = os.path.join(HERE, "cache")
+
+_frames = {}
+def frame(name, s=1):
+    key = (name, s)
+    if key not in _frames:
+        img = L.load_frame(BGS.get(name) or BG_MEASURE_ONLY[name], CACHE)
+        if s != 1:
+            # only the bottom-left HUD region is ever cropped at 2x: upsample that part
+            y0, x0 = 840, 0
+            reg = img[y0:1080, x0:640]
+            up = L.resample_bilinear(reg, reg.shape[1] * s, reg.shape[0] * s)
+            big = np.zeros((1080 * s, 1920 * s, 3))
+            big[y0 * s:1080 * s, x0 * s:640 * s] = up
+            img = big
+        _frames[key] = img
+    return _frames[key].copy()
+
+
+def text(img, font, s_text, size, x, baseline, colour, s=1, opacity=1.0, tracking=0.0):
+    """Draw text (font px size at 1x) with its baseline at `baseline` (1x coords)."""
+    polys, adv = font.text_polys(s_text, size * s, 0, 0, tracking * s)
+    if not polys:
+        return adv / s
+    bx0, by0, bx1, by1 = L.bbox(polys)
+    ox, oy = int(math.floor(x * s + bx0)) - 1, int(math.floor(baseline * s + by0)) - 1
+    w, h = int(math.ceil(bx1 - bx0)) + 3, int(math.ceil(by1 - by0)) + 3
+    local = L.xform(polys, 1.0, 1.0, x * s - ox, baseline * s - oy)
+    cov = L.coverage(local, w, h, 1.0, "nonzero") * opacity
+    if MEASURE is not None:
+        _measure("text " + s_text, img, ox + 1, oy + 1, w - 3, h - 3, L.hexrgb(colour), opacity)
+    sprite = np.tile(L.hexrgb(colour), (h, w, 1))
+    img[:] = L.composite_over(img, sprite, cov, ox, oy)
+    return adv / s
+
+
+def sprite(img, name, x, y, s=1, opacity=1.0):
+    rgb, a = L.read_png(os.path.join(PNG, "%s@%dx.png" % (name, s)))
+    if MEASURE is not None:
+        iy, ix = np.unravel_index(np.argmax(a), a.shape)          # the sprite's fullest pixel (its paper)
+        _measure("sprite " + name, img, int(round(x * s)), int(round(y * s)), a.shape[1], a.shape[0], rgb[iy, ix], opacity * float(a.max()))
+    img[:] = L.composite_over(img, rgb, a * opacity, int(round(x * s)), int(round(y * s)))
+    return a.shape[1] / s
+
+
+# ------------------------------------------------------------------ contrast measurement (fix stage 2026-10-07)
+# When MEASURE is a list, every text and sprite drawn records the WCAG contrast of its colour
+# (blended at its opacity, in linear light) against the ground pixels under its box, i.e. the
+# frame plus anything drawn before it (the prompt card). Same method as the critic's contrast.py.
+MEASURE = None
+
+
+def _lum(rgb_lin):
+    return 0.2126 * rgb_lin[..., 0] + 0.7152 * rgb_lin[..., 1] + 0.0722 * rgb_lin[..., 2]
+
+
+def _measure(what, img, x, y, w, h, colour, opacity):
+    g = img[max(0, y):y + h, max(0, x):x + w]
+    if g.size == 0:
+        return
+    gl = L.to_lin(g)
+    fl = gl * (1 - opacity) + L.to_lin(np.asarray(colour))[None, None, :] * opacity
+    a, b = _lum(fl), _lum(gl)
+    c = (np.maximum(a, b) + 0.05) / (np.minimum(a, b) + 0.05)
+    MEASURE.append({"what": what, "min": float(c.min()), "p10": float(np.percentile(c, 10)), "median": float(np.median(c)),
+                    "box": [x, y, w, h], "colour": "".join("%02X" % int(round(v * 255)) for v in np.asarray(colour)), "opacity": round(float(opacity), 3)})
+
+
+def rect(img, x, y, w, h, colour, s=1, opacity=1.0):
+    ww, hh = int(round(w * s)), int(round(h * s))
+    img[:] = L.composite_over(img, np.tile(L.hexrgb(colour), (hh, ww, 1)), np.full((hh, ww), opacity), int(round(x * s)), int(round(y * s)))
+
+
+# ------------------------------------------------------------------ panels
+COURIER_B = L.Font(os.path.join(PROJ, "Assets/Fonts/Period1990/CourierPrime/CourierPrime-Bold.ttf"))
+# Courier Prime Bold sized so its cap height = Bayon 20's cap height (the tag's own type in the label).
+# The HUD uses Unity legacy Text, whose fontSize is an int: every text size here is the whole
+# number the game can render (2026-10-03, 平面视觉's type review). Exact cap matches kept for reference:
+# Courier Prime Bold 24.63 -> 25 (cap 14.49 px vs Bayon 14.28), IBM Plex Mono 20.45 -> 20 (cap 13.96).
+COUR_SZ_EXACT = 20 * (BAYON.cap / BAYON.upm) / (COURIER_B.cap / COURIER_B.upm)
+MONO_SZ_EXACT = 20 * (BAYON.cap / BAYON.upm) / (MONO.cap / MONO.upm)
+COUR_SZ = int(round(COUR_SZ_EXACT))      # 25
+MONO_SZ = int(round(MONO_SZ_EXACT))      # 20
+
+
+def draw_label(img, label, x, baseline, col, s=1, op=1.0):
+    """'KEY 14' -> Bayon KEY + Courier Prime Bold 14 (Bayon draws 1 as I). Anything else: Bayon."""
+    m = re.match(r"^KEY (\d+)$", label)
+    if not m:
+        return text(img, BAYON, label, 20, x, baseline, col, s, op)
+    a = text(img, BAYON, "KEY", 20, x, baseline, col, s, op) + 6
+    return a + text(img, COURIER_B, m.group(1), COUR_SZ, x + a, baseline, col, s, op)
+
+
+def today_prompt(img, cx, baseline, size, s=1, col=PAPER):
+    """The prompt the code draws today: "LOCKED  ·  NEEDS THIS ZONE'S KEY" (FrontRoomsMapWorld.Describe),
+    Bayon, paper, centred. Bayon has no U+00B7: Unity falls back to another font for the dot
+    (audit frame 48); drawn here with IBM Plex Mono."""
+    parts = [(BAYON, "LOCKED  "), (MONO, "\u00b7"), (BAYON, "  NEEDS THIS ZONE'S KEY")]
+    total = sum(f.width(t, size) for f, t in parts)
+    x = cx - total / 2
+    for f, t in parts:
+        x += text(img, f, t, size, x, baseline, col, s)
+
+
+# Outline masters whose box was grown so their stroke is not cut (design.py emit_outline,
+# fix stage 2026-10-07): (left, top) pad in 1x px. The sprite is drawn that much up-left,
+# so the key itself stays where the unpadded master put it.
+OUTLINE_PAD = {"A_L_missing": (1, 1), "A_S_missing": (1, 0), "C_dark_missing": (1, 0), "B_rect_red_missing": (0, 0)}
+ROW_Y = 940          # glyph rect top (1x)
+LABEL_BASE = ROW_Y + 18
+
+
+def compact(img, glyph, gw, label, s=1, glyph_op=1.0, label_col=PAPER, label_op=1.0, meta=None, meta_col=MUTED):
+    px, py = OUTLINE_PAD.get(glyph, (0, 0))
+    sprite(img, glyph, 72 - px, ROW_Y - py, s, glyph_op)
+    x = 72 + gw + 14
+    adv = draw_label(img, label, x, LABEL_BASE, label_col, s, label_op)
+    if meta:
+        text(img, MONO, meta, 13, x + adv + 12, LABEL_BASE - 1, meta_col, s)
+
+
+FULL_Y = 914         # full form: 48 px tall, same bottom edge (962) as the compact row
+
+
+def full(img, glyph, gw, name, meta, s=1, rule=True, glyph_op=1.0, name_col=PAPER, op=1.0, meta_col=MUTED):
+    if rule:
+        rect(img, 72, FULL_Y, 4, 48, ACCENT, s)
+    gx = 72 + (4 + 14 if rule else 0)
+    px, py = OUTLINE_PAD.get(glyph, (0, 0))
+    sprite(img, glyph, gx - px, FULL_Y - py, s, glyph_op)
+    tx = gx + gw + 14
+    draw_label(img, name, tx, FULL_Y + 22, name_col, s, op)
+    text(img, MONO, meta, 13, tx, FULL_Y + 41, meta_col, s, op)
+
+
+def prompt_v1(img, glyph, gw, gh, s=1, word="LOCKED", meta="NEEDS THE LEVEL 0 KEY"):
+    """The 2026-10-03 prompt (no ground, LOCKED and meta muted). Kept only for before/after images."""
+    wword = BAYON.width(word, 20)
+    total = gw + 10 + wword
+    x0 = 960 - total / 2
+    sprite(img, glyph, round(x0), 584 - gh / 2, s)
+    text(img, BAYON, word, 20, x0 + gw + 10, 584 + 7, MUTED, s)
+    wm = MONO.width(meta, 13)
+    text(img, MONO, meta, 13, 960 - wm / 2, 584 + max(30, gh / 2 + 16), MUTED, s)
+
+
+# The prompt ground (critic issue 2): the HUD's own hint card, #141414 at 90 % ('media' in
+# FrontRooms3DGame.cs BuildHud), padding 12 x 8 px around the glyph row and the meta line.
+CARD, CARD_OP = "141414", 0.9
+CARD_PAD_X, CARD_PAD_Y = 12, 8
+
+
+def prompt(img, glyph, gw, gh, s=1, word="LOCKED", meta="NEEDS KEY 14", card=True, word_col=PAPER, meta_col=MUTED,
+           cx=960, cy=584, label_sz=20, meta_sz=13, gap=10, meta_dy=None, pad=(CARD_PAD_X, CARD_PAD_Y)):
+    """Locked-door prompt under the crosshair (Key prompt: centre x 960, row centre y 584, Bayon 20):
+    the outline key + "LOCKED" (paper) on one row, the meta line (Plex Mono 13) centred under it,
+    both on a #141414 90 % card. Returns the card box (x, y, w, h) in 1x units."""
+    wword = BAYON.width(word, label_sz)
+    total = gw + gap + wword
+    x0 = cx - total / 2
+    gx, gy = round(x0), cy - gh / 2
+    wm = MONO.width(meta, meta_sz)
+    mb = cy + (meta_dy if meta_dy is not None else max(30, gh / 2 + 16))
+    box = None
+    if card:
+        bx0 = math.floor(min(gx, cx - wm / 2) - pad[0])
+        bx1 = math.ceil(max(x0 + total, cx + wm / 2) + pad[0])
+        by0 = math.floor(gy - pad[1])
+        by1 = math.ceil(mb + pad[1])            # caps and figures only: the baseline is the ink bottom
+        rect(img, bx0, by0, bx1 - bx0, by1 - by0, CARD, s, CARD_OP)
+        box = (bx0, by0, bx1 - bx0, by1 - by0)
+    px, py = OUTLINE_PAD.get(glyph, (0, 0))
+    sprite(img, glyph, gx - px, gy - py, s)
+    # cap-centred on the row: Bayon caps 0.714 em, baseline = row centre + cap / 2
+    text(img, BAYON, word, label_sz, x0 + gw + gap, cy + round(BAYON.cap / BAYON.upm * label_sz / 2), word_col, s)
+    text(img, MONO, meta, meta_sz, cx - wm / 2, mb, meta_col, s)
+    return box
+
+
+def label_parts(img, parts, x, baseline, s=1):
+    """parts: [(font, text, size, colour, gap_after)] set on one baseline."""
+    for font, t, size, col, gap in parts:
+        x += text(img, font, t, size, x, baseline, col, s) + gap
+    return x
+
+
+def crosshair(img, s=1):
+    rgb, a = L.read_png(os.path.join(PROJ, "Assets/Resources/UI/HUD_Crosshair.png"))
+    size = 32 * s
+    a2 = L.resample_bilinear(a, size, size)
+    rgb2 = L.resample_bilinear(rgb, size, size)
+    img[:] = L.composite_over(img, rgb2, a2, int(960 * s - size / 2), int(540 * s - size / 2))
+
+
+ROOM = {"lit": ("ZONE 03  /  TIER 1  /  LOW  2.4 M", "LEVEL 0 / LOW ROOMS"),
+        "wallpaper": ("ZONE 06  /  TIER 1  /  STANDARD  2.9 M", "LEVEL 0 / THE MAZE"),
+        "office": ("ZONE 11  /  TIER 2  /  STANDARD  2.9 M", "LEVEL 4 / OFFICE"),
+        "dark": ("ZONE 09  /  TIER 2  /  STANDARD  2.9 M", "LEVEL 0 / THE MAZE")}
+
+
+def room_type(img, s=1, meta="ZONE 06  /  TIER 1  /  STANDARD  2.9 M", room="LEVEL 0 / THE MAZE"):
+    text(img, MONO, meta, 13, 96, 90 + 12, MUTED, s)
+    text(img, SERIF, room, 50, 96, 116 + 49, PAPER, s)
+
+
+def save_crop(img, path, s=1, box=(40, 880, 640, 1000)):
+    x0, y0, x1, y1 = [int(v * s) for v in box]
+    L.write_png(path, img[y0:y1, x0:x1])
+
+
+DIRS = {"A_S": ("A_S", 40, "compact"), "A_L": ("A_L", 49, "compact"), "C": ("C_dark", 40, "compact"),
+        "B": ("B_rect_red", 72, "full"), "Achip": ("Achip_rect_red", 77, "compact")}
+# At a locked door the prompt shows the key-only outline: the chip option and B use A's
+# outline (B's key is the same traced key; its 72 x 48 lockup is too heavy beside the crosshair).
+MISSING = {"Achip": ("A_L", 49, 22), "B": ("A_L", 49, 22)}
+
+
+# States, fix stage 2026-10-07 (critic issues 2, 5): dim by SHAPE, not by opacity, and keep the
+# type in paper. "Other zone" = the outline key (the same "not usable here" glyph as the locked
+# prompt) + paper label + paper meta. A + chip has no outline master: its glyph is held at 70 %
+# (the critic's floor). "Used" exists only if keys become single-use (today keysHeld is a set):
+# held glyph at 70 %, paper label, paper meta. The _muted masters stay in the library, unused
+# (muted #BDBAB0 is 2.3-2.5 : 1 on lit carpet).
+STATE_BGS = ("lit", "dark", "wallpaper", "office", "leaf")
+PROMPT_BOX = (720, 512, 1200, 632)
+OTHER_OUTLINE = {"A_S": "A_S_missing", "A_L": "A_L_missing", "C": "C_dark_missing", "B": "B_rect_red_missing"}
+FLOOR_OP = 0.7
+
+
+def state(img, d, st, s=1):
+    g, gw, form = DIRS[d]
+    gh = 48 if form == "full" else 22
+    if st == "held":
+        held(img, d, s, "KEY 14")
+    elif st == "other":
+        glyph, op = (OTHER_OUTLINE[d], 1.0) if d in OTHER_OUTLINE else (g + "_held", FLOOR_OP)
+        if form == "compact":
+            compact(img, glyph, gw, "KEY 14", s, glyph_op=op, meta="NOT THIS ZONE", meta_col=PAPER)
+        else:
+            full(img, glyph, gw, "KEY 14", "OPENS ZONE 14 ONLY", s, rule=False, glyph_op=op, meta_col=PAPER)
+    elif st == "used":
+        if form == "compact":
+            compact(img, g + "_held", gw, "KEY 14", s, glyph_op=FLOOR_OP, meta="DOOR OPENED", meta_col=PAPER)
+        else:
+            full(img, g + "_held", gw, "KEY 14", "DOOR OPENED", s, rule=False, glyph_op=FLOOR_OP, meta_col=PAPER)
+    else:
+        mg, mw, mh = MISSING.get(d, (g, gw, gh))
+        prompt(img, mg + "_missing", mw, mh, s, meta="NEEDS KEY 14")
+        crosshair(img, s)
+
+
+# ------------------------------------------------------------------ phone (fix stage 2026-10-07, critic issue 6)
+# TestFlight layout from FrontRooms3DGame.cs BuildHud / ApplyMobileSafeAreaLayout at 279c144: CanvasScaler
+# 874 x 402 pt (match 0.5), drawn @3x = 2622 x 1206 px. Key panel top-left (78, 72) pt, 150 x 22;
+# glyph rect 40 x 22 from the ONE sprite UI/HUD_KeyGlyph; label at +54, Bayon 11 today (TOUCH_CONTROLS
+# ramp: label 17, key numeral Courier Prime Bold 21). Crosshair rect 24 pt, today the 64 px desktop
+# sprite (dot 12 pt). Key prompt at -26 pt under the dot, Bayon 17, paper. Zone block: rule 3 x 40
+# at x 79.5, meta Plex 11 and zone name Serif 26 at x 91 (tops 16 and 34).
+PH_W, PH_H, PH_S = 874, 402, 3
+PH_CX, PH_CY = 437, 201
+_phone = {}
+
+
+def phone_frame(name):
+    """The 16:9 frame cropped to 874:402 (rows 98-981 of 1080) and resampled to 2622 x 1206."""
+    if name not in _phone:
+        img = frame(name, 1)
+        h = int(round(1920 * PH_H / PH_W))
+        y0 = (1080 - h) // 2
+        _phone[name] = L.resample_bilinear(img[y0:y0 + h], PH_W * PH_S, PH_H * PH_S)
+    return _phone[name].copy()
+
+
+def disc(img, cx, cy, d, s, colour="FFFFFF"):
+    """An anti-aliased dot (diameter d pt) centred on (cx, cy) pt, at scale s."""
+    n = int(math.ceil(d * s)) + 4
+    x0, y0 = int(math.floor(cx * s - n / 2)), int(math.floor(cy * s - n / 2))
+    ss = 16
+    g = (np.arange(n * ss) + 0.5) / ss
+    X, Y = np.meshgrid(g + x0, g + y0)
+    a = ((((X - cx * s) ** 2 + (Y - cy * s) ** 2) <= (d * s / 2) ** 2).reshape(n, ss, n, ss).mean(axis=(1, 3)))
+    img[:] = L.composite_over(img, np.tile(L.hexrgb(colour), (n, n, 1)), a, x0, y0)
+
+
+def phone_hud(img, bg, version, st):
+    """version 'today' = what TestFlight draws at 279c144; 'target' = the proposal (TOUCH_CONTROLS ramp)."""
+    s = PH_S
+    meta, room = ROOM.get(bg, ROOM["wallpaper"])
+    rect(img, 79.5, 16, 3, 40, ACCENT, s)
+    text(img, MONO, meta, 11, 91, 16 + 10, MUTED, s)
+    text(img, SERIF, room, 26, 91, 34 + 25, PAPER, s)
+    if version == "today":
+        # the 64 px desktop sprite stretched into the 24 pt rect (72 px)
+        rgb, a = L.read_png(os.path.join(PROJ, "Assets/Resources/UI/HUD_Crosshair.png"))
+        n = 24 * s
+        img[:] = L.composite_over(img, L.resample_bilinear(rgb, n, n), L.resample_bilinear(a, n, n), PH_CX * s - n // 2, PH_CY * s - n // 2)
+    else:
+        disc(img, PH_CX, PH_CY, 12, s)
+    if st == "held":
+        if version == "today":
+            rgb, a = L.read_png(os.path.join(PROJ, "Assets/Resources/UI/HUD_KeyGlyph.png"))      # 40 x 22 px, stretched x3
+            img[:] = L.composite_over(img, L.resample_bilinear(rgb, 40 * s, 22 * s), L.resample_bilinear(a, 40 * s, 22 * s), 78 * s, 72 * s)
+            text(img, BAYON, "LEVEL 0 / THE MAZE KEY", 11, 78 + 54, 72 + 11 + 4, PAPER, s)
+        else:
+            sprite(img, "A_L_held", 78, 72, s)
+            x = 78 + 49 + 12
+            base = 72 + 11 + round(BAYON.cap / BAYON.upm * 17 / 2)
+            a_ = text(img, BAYON, "KEY", 17, x, base, PAPER, s) + 5
+            text(img, COURIER_B, "14", 21, x + a_, base, PAPER, s)
+    else:
+        if version == "today":
+            today_prompt(img, PH_CX, PH_CY + 26 + 6, 17, s)
+        else:
+            prompt(img, "A_L_missing", 49, 22, s, meta="NEEDS KEY 14", cx=PH_CX, cy=PH_CY + 32, label_sz=17, meta_sz=11,
+                   gap=8, meta_dy=26, pad=(10, 7))
+
+
+def hud_box(d):
+    """Crop box (1x) for a bottom-left HUD crop: B's 48 px panel gets 20 px more headroom."""
+    return (40, 860, 640, 980) if d == "B" else (40, 880, 640, 1000)
+
+
+def held(img, d, s, label="LEVEL 0 KEY"):
+    g, gw, form = DIRS[d]
+    if d == "Achip":
+        label = "KEY 14"     # the chip only makes sense once zones carry a tag number
+    if form == "compact":
+        compact(img, g + "_held", gw, label, s)
+    else:
+        full(img, g + "_held", gw, label, "OPENS DOORS OUT OF THIS ZONE", s)
+
+
+if __name__ == "__main__":
+    which = sys.argv[1] if len(sys.argv) > 1 else "all"
+    meta = {}
+    # 1. every direction, held, on the four backgrounds, 1x and 2x
+    if which in ("all", "held"):
+        for d in DIRS:
+            for bg in BG_ROW:
+                for s in (1, 2):
+                    img = frame(bg, s)
+                    held(img, d, s)
+                    save_crop(img, os.path.join(HUD, "%s_held_%s_%dx.png" % (d, bg, s)), s, hud_box(d))
+        print("[comp] held crops done")
+    # 2. states (lit + dark): held, other zone, missing (prompt), used
+    if which in ("all", "states"):
+        for d in DIRS:
+            g, gw, form = DIRS[d]
+            gh = 48 if form == "full" else 22
+            for bg in STATE_BGS:
+                for st in ("held", "other", "missing", "used"):
+                    if bg not in ("lit", "dark") and st != "missing":
+                        continue        # the row states on lit (worst) and dark; the prompt on all five
+                    img = frame(bg, 1)
+                    state(img, d, st)
+                    # the carded prompt runs to y 622: the prompt crop moved down 12 px (was 720, 500, 1200, 620)
+                    box = PROMPT_BOX if st == "missing" else hud_box(d)
+                    save_crop(img, os.path.join(HUD, "%s_state_%s_%s_1x.png" % (d, st, bg)), 1, box)
+        print("[comp] state crops done")
+    # 2b. label set: the number in Bayon is ambiguous (Bayon "1" = "I", "0" ~ "O")
+    if which in ("all", "labels"):
+        # Plex Mono / Courier figures sized to Bayon 20's cap height (14.3 px), rounded to whole sizes
+        mono_sz = MONO_SZ
+        cour_sz = COUR_SZ
+        opts = {"bayon": [(BAYON, "KEY 14", 20, PAPER, 0)],
+                "plex": [(BAYON, "KEY", 20, PAPER, 6), (MONO, "14", mono_sz, PAPER, 0)],
+                "courier": [(BAYON, "KEY", 20, PAPER, 6), (COURIER_B, "14", cour_sz, PAPER, 0)],
+                "level": [(BAYON, "LEVEL 0 KEY", 20, PAPER, 0)],
+                "code": [(BAYON, "LEVEL 0 / THE MAZE KEY", 20, PAPER, 0)]}
+        for o, parts in opts.items():
+            for bg in ("lit", "dark"):
+                for s in (1, 2):
+                    img = frame(bg, s)
+                    sprite(img, "A_L_held", 72, ROW_Y, s)
+                    label_parts(img, parts, 72 + 49 + 14, LABEL_BASE, s)
+                    save_crop(img, os.path.join(HUD, "label_%s_%s_%dx.png" % (o, bg, s)), s, (40, 920, 440, 980))
+        print("[comp] labels done, plex %.1f px, courier %.1f px" % (mono_sz, cour_sz))
+    # 2c. zone variants in the HUD (lit)
+    if which in ("all", "zones"):
+        mono_sz = MONO_SZ
+        for bg in ("lit", "dark"):
+            for kind, num in (("rect", "14"), ("round", "37"), ("long", "08")):
+                for col in ("red", "blue", "white"):
+                    img = frame(bg, 1)
+                    full(img, "B_%s_%s_held" % (kind, col), 72, "KEY %s" % num, "OPENS DOORS OUT OF THIS ZONE", 1)
+                    save_crop(img, os.path.join(HUD, "B_zone_%s_%s_%s_1x.png" % (kind, col, bg)), 1, hud_box("B"))
+            for v in ("dark", "red", "blue", "white"):
+                img = frame(bg, 1)
+                sprite(img, "C_%s_held" % v, 72, ROW_Y, 1)
+                label_parts(img, [(BAYON, "KEY", 20, PAPER, 6), (MONO, {"dark": "00", "red": "14", "blue": "37", "white": "08"}[v], mono_sz, PAPER, 0)], 126, LABEL_BASE, 1)
+                save_crop(img, os.path.join(HUD, "C_zone_%s_%s_1x.png" % (v, bg)), 1, (40, 920, 440, 980))
+        W = {"rect": 77, "round": 69, "long": 85}
+        for bg in ("lit", "dark"):
+            for kind, num in (("rect", "14"), ("round", "37"), ("long", "08")):
+                for col in ("red", "blue", "white"):
+                    for s_ in (1, 2):
+                        img = frame(bg, s_)
+                        compact(img, "Achip_%s_%s_held" % (kind, col), W[kind], "KEY %s" % num, s_)
+                        save_crop(img, os.path.join(HUD, "Achip_zone_%s_%s_%s_%dx.png" % (kind, col, bg, s_)), s_, (40, 920, 440, 980))
+        print("[comp] zones done")
+    # 2d. phone composites (874 x 402 pt @3x): today's TestFlight HUD vs the proposal, held and locked
+    # (a recording run, e.g. 平面视觉's plan.py, swaps L and skips this: the phone frames are not twins)
+    if which in ("all", "phone") and getattr(L, "__name__", None) == "iconlib":
+        import subprocess
+        for version, st, bg in (("today", "held", "wallpaper"), ("target", "held", "wallpaper"), ("target", "held", "lit"),
+                                ("today", "locked", "leaf"), ("target", "locked", "leaf"), ("target", "locked", "dark")):
+            img = phone_frame(bg)
+            phone_hud(img, bg, version, st)
+            p_ = os.path.join(HUD, "phone_%s_%s_%s_3x.png" % (version, st, bg))
+            L.write_png(p_, img)
+            if getattr(L, "__name__", None) == "iconlib" and os.path.exists(p_):
+                subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "92", p_, "--out", p_[:-4] + ".jpg"],
+                               check=True, capture_output=True)
+                os.remove(p_)
+        print("[comp] phone frames done")
+    # 3. full frames for the board hero shots
+    if which in ("all", "full"):
+        for d in DIRS:
+            for bg in ("lit", "wallpaper", "office", "dark"):
+                img = frame(bg, 1)
+                room_type(img, 1, meta=ROOM[bg][0], room=ROOM[bg][1])
+                crosshair(img, 1)
+                held(img, d, 1)
+                p_ = os.path.join(HUD, "%s_fullframe_%s.png" % (d, bg))
+                L.write_png(p_, img)
+                # the design set keeps the full frames as JPG (macOS sips, quality 92, as on 2026-10-03 17:16);
+                # only a PNG this run really wrote is converted (a recording run writes nothing)
+                if getattr(L, "__name__", None) == "iconlib" and os.path.exists(p_):
+                    import subprocess
+                    subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "92", p_, "--out", p_[:-4] + ".jpg"],
+                                   check=True, capture_output=True)
+                    os.remove(p_)
+        # board 10 hero (fix stage 2026-10-07, critic issue 10): the TARGET, A_L + "KEY 14", not the default text
+        img = frame("wallpaper", 1)
+        room_type(img, 1, meta=ROOM["wallpaper"][0], room=ROOM["wallpaper"][1])
+        crosshair(img, 1)
+        held(img, "A_L", 1, "KEY 14")
+        p_ = os.path.join(HUD, "A_L_fullframe_target_wallpaper.png")
+        L.write_png(p_, img)
+        if getattr(L, "__name__", None) == "iconlib" and os.path.exists(p_):
+            import subprocess
+            subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "92", p_, "--out", p_[:-4] + ".jpg"],
+                           check=True, capture_output=True)
+            os.remove(p_)
+        print("[comp] full frames done")

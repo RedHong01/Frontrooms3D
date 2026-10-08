@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""patch6f.py - G14b revision 2 (2026-10-07), issue 9: the facing rule on MAIN's kernel. Not part of the game.
+
+b6_stack.metal -> b6_stack_f.metal, rt_bench6.mm -> rt_bench6f.mm.
+main's FRFetchHit flips nGeo to face the ray (FrontRoomsGlassRT.metal:160), so 'exiting = dot(dir, nGeo) > 0' is never
+true. Options tested here, per glass hit of the revised layout:
+  truth  : the object-space outward vertex normal taken to world by FRNormalToWorld (transpose of w2o: exact for
+           negative scale) - the bench's boxes have outward per-face normals, as Unity's cube does;
+  lg     : G14's rule (skip the instance of the last pane entered) read as 'exiting';
+  ff     : the intersector's triangle_front_facing, default winding;
+  ffccw  : the same with set_triangle_front_facing_winding(winding::counterclockwise);
+  xd     : the unflipped world cross product (w1 - w0) x (w2 - w0) times sign(det(o2w)) (design r2);
+  x      : the same without the determinant sign.
+FR_FACING (macro): 0 = lastGlass (as bench 6), 2 = xd replaces lastGlass, 1 = ff replaces lastGlass.
+FR_FSTATS (macro): 1 = count disagreements (stats slots 8-14), 0 = timed build.
+MIRROR=1 (env) mirrors the RN-X lite instance (x scale -0.25: same box, world winding reversed, det < 0).
+"""
+import sys
+s = open("b6_stack.metal").read()
+
+def rep(old, new, count=1):
+    global s
+    n = s.count(old)
+    if n != count: sys.exit(f"patch6f: expected {count} x {old[:60]!r}, found {n}")
+    s = s.replace(old, new)
+
+rep("#define FR_CUTOFF 0.004f", r'''#define FR_CUTOFF 0.004f
+#ifndef FR_FACING
+#define FR_FACING 0
+#endif
+#ifndef FR_FSTATS
+#define FR_FSTATS 0
+#endif
+struct FRFaceCounts { uint hits, truthExit, lgBad, ffBad, ffccwBad, xdBad, xBad; };
+// Facing of a glass hit from the UNFLIPPED geometry (main's FRFetchHit flips nGeo toward the ray at :160).
+static inline float3 FRB6Tri(thread const FRScene& S, uint instanceId, uint geometryId, uint primitiveId, thread float3& nVertObjW)
+{
+    FRInstance I = S.insts[instanceId];
+    FRMeshGPU M = S.meshes[I.meshSlot];
+    uint base = M.submeshStart[geometryId] + primitiveId * 3u;
+    uint i0 = M.indices[base], i1 = M.indices[base + 1u], i2 = M.indices[base + 2u];
+    float3 p0 = float3(M.positions[i0 * 3u], M.positions[i0 * 3u + 1u], M.positions[i0 * 3u + 2u]);
+    float3 p1 = float3(M.positions[i1 * 3u], M.positions[i1 * 3u + 1u], M.positions[i1 * 3u + 2u]);
+    float3 p2 = float3(M.positions[i2 * 3u], M.positions[i2 * 3u + 1u], M.positions[i2 * 3u + 2u]);
+    float3 w0 = FRRowMul(I.o2w0, I.o2w1, I.o2w2, p0), w1 = FRRowMul(I.o2w0, I.o2w1, I.o2w2, p1), w2 = FRRowMul(I.o2w0, I.o2w1, I.o2w2, p2);
+    FRVertexAttr a0 = M.attrs[i0];
+    nVertObjW = FRNormalToWorld(I, float3(a0.nx, a0.ny, a0.nz));
+    return cross(w1 - w0, w2 - w0);
+}
+static inline float FRB6DetSign(thread const FRInstance& I)
+{
+    float d = dot(I.o2w0.xyz, cross(I.o2w1.xyz, I.o2w2.xyz));   // rows: det(A) = r0 . (r1 x r2)
+    return d < 0.0f ? -1.0f : 1.0f;
+}''')
+
+# signature: counters
+rep("""                                        float coneAtOrigin, float spread, float glassSmooth, float importance,
+                                        thread uint& shadowRays)""",
+    """                                        float coneAtOrigin, float spread, float glassSmooth, float importance,
+                                        thread uint& shadowRays, thread FRFaceCounts& fc)""")
+rep("FRTraceResult tr = FRTraceReflectionS(F, S, origin, r, spread * t1, spread, glassSmooth, importance, c.shadow);",
+    "FRFaceCounts fcl = {0u, 0u, 0u, 0u, 0u, 0u, 0u};\n    FRTraceResult tr = FRTraceReflectionS(F, S, origin, r, spread * t1, spread, glassSmooth, importance, c.shadow, fcl);\n    fc.hits += fcl.hits; fc.truthExit += fcl.truthExit; fc.lgBad += fcl.lgBad; fc.ffBad += fcl.ffBad; fc.ffccwBad += fcl.ffccwBad; fc.xdBad += fcl.xdBad; fc.xBad += fcl.xBad;")
+rep("""                          texture2d<float, access::write> rawOut, texture2d<float, access::write> auxOut, thread FRTraceCounts& c)""",
+    """                          texture2d<float, access::write> rawOut, texture2d<float, access::write> auxOut, thread FRTraceCounts& c, thread FRFaceCounts& fc)""")
+rep("        FRTracePixelS(p, F, S, gDepth, gNormal, rawOut, auxOut, c);",
+    "        FRTracePixelS(p, F, S, gDepth, gNormal, rawOut, auxOut, c, fcs);")
+rep("    FRTraceCounts c = { 0u, 0u, 0u, 0u, 0u };\n    uint2 p = gid + F.rect.xy;",
+    "    FRTraceCounts c = { 0u, 0u, 0u, 0u, 0u };\n    FRFaceCounts fcs = {0u, 0u, 0u, 0u, 0u, 0u, 0u};\n    uint2 p = gid + F.rect.xy;")
+rep("""        if (sh) atomic_fetch_add_explicit(&stats[FR_STAT_SHADOW_RAYS], sh, memory_order_relaxed);
+    }""", """        if (sh) atomic_fetch_add_explicit(&stats[FR_STAT_SHADOW_RAYS], sh, memory_order_relaxed);
+    }
+#if FR_FSTATS
+    uint q0 = simd_sum(fcs.hits), q1 = simd_sum(fcs.truthExit), q2 = simd_sum(fcs.lgBad), q3 = simd_sum(fcs.ffBad), q4 = simd_sum(fcs.ffccwBad), q5 = simd_sum(fcs.xdBad), q6 = simd_sum(fcs.xBad);
+    if (lane == 0u)
+    {
+        atomic_fetch_add_explicit(&stats[8], q0, memory_order_relaxed); atomic_fetch_add_explicit(&stats[9], q1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&stats[10], q2, memory_order_relaxed); atomic_fetch_add_explicit(&stats[11], q3, memory_order_relaxed);
+        atomic_fetch_add_explicit(&stats[12], q4, memory_order_relaxed); atomic_fetch_add_explicit(&stats[13], q5, memory_order_relaxed);
+        atomic_fetch_add_explicit(&stats[14], q6, memory_order_relaxed);
+    }
+#endif""")
+
+# the revised layout's glass branch: facing first
+rep("""            FRInstance I = S.insts[hit.instance_id];
+            if (I.flags & FR_FLAG_GLASS)
+            {
+                if (hit.instance_id != lastGlass)
+                {""", """            FRInstance I = S.insts[hit.instance_id];
+            if (I.flags & FR_FLAG_GLASS)
+            {
+#if FR_FSTATS || FR_FACING
+                float3 nTruthW; float3 cW = FRB6Tri(S, hit.instance_id, hit.geometry_id, hit.primitive_id, nTruthW);
+                bool exitTruth = dot(nTruthW, d) > 0.0f;
+                bool exitLg = hit.instance_id == lastGlass;
+                bool exitFf = !hit.triangle_front_facing;
+                bool exitXd = dot(cW, d) * FRB6DetSign(I) > 0.0f;
+                bool exitX = dot(cW, d) > 0.0f;
+#endif
+#if FR_FSTATS
+                fc.hits++; fc.truthExit += exitTruth ? 1u : 0u; fc.lgBad += exitLg != exitTruth ? 1u : 0u;
+                fc.ffBad += exitFf != exitTruth ? 1u : 0u; fc.ffccwBad += (!exitFf) != exitTruth ? 1u : 0u;
+                fc.xdBad += exitXd != exitTruth ? 1u : 0u; fc.xBad += exitX != exitTruth ? 1u : 0u;
+#endif
+#if FR_FACING == 2
+                bool entering = !exitXd;
+#elif FR_FACING == 1
+                bool entering = !exitFf;
+#else
+                bool entering = hit.instance_id != lastGlass;
+#endif
+                if (entering)
+                {""")
+open("b6_stack_f.metal", "w").write(s)
+
+m = open("rt_bench6.mm").read()
+def repm(old, new, count=1):
+    global m
+    n = m.count(old)
+    if n != count: sys.exit(f"patch6f (mm): expected {count} x {old[:60]!r}, found {n}")
+    m = m.replace(old, new)
+repm('slurp("b6_stack.metal")', 'slurp("b6_stack_f.metal")')
+repm('struct Var { const char* name; int maxd; int full; id<MTLComputePipelineState> pso; };',
+     'struct Var { const char* name; int maxd; int full; int facing; int fstats; id<MTLComputePipelineState> pso; };')
+repm('std::vector<Var> vars = {{"main", 1, 0, nil}, {"s1", 1, 0, nil}, {"s2", 2, 0, nil}, {"s3", 3, 0, nil}, {"f2", 2, 1, nil}, {"f3", 3, 1, nil}};',
+     'std::vector<Var> vars = {{"main", 1, 0, 0, 0, nil}, {"s1", 1, 0, 0, 0, nil}, {"s2", 2, 0, 0, 0, nil}, {"s3", 3, 0, 0, 0, nil},\n'
+     '                             {"x1", 1, 0, 2, 0, nil}, {"x2", 2, 0, 2, 0, nil}, {"x3", 3, 0, 2, 0, nil}, {"y1", 1, 0, 1, 0, nil},\n'
+     '                             {"c2", 2, 0, 0, 1, nil}, {"c3", 3, 0, 0, 1, nil}};')
+repm('o.preprocessorMacros = @{@"FR_MAXD": @(v.maxd), @"FR_FULL": @(v.full)};',
+     'o.preprocessorMacros = @{@"FR_MAXD": @(v.maxd), @"FR_FULL": @(v.full), @"FR_FACING": @(v.facing), @"FR_FSTATS": @(v.fstats)};')
+repm('printf("# pso %-4s maxd %d full %d: maxTotal', 'printf("# pso %-4s maxd %d full %d facing %d stats %d: maxTotal')
+repm('(unsigned long)v.pso.maxTotalThreadsPerThreadgroup, (unsigned long)v.pso.threadExecutionWidth',
+     '(unsigned long)v.pso.maxTotalThreadsPerThreadgroup, (unsigned long)v.pso.threadExecutionWidth')
+repm('v.name, v.maxd, v.full,\n', 'v.name, v.maxd, v.full, v.facing, v.fstats,\n')
+# MIRROR: the lite instance mirrored in x
+repm("    boxAB(-0.125f, 1.15f, (zl0 + zl1) * .5f - .003f, 0.125f, 1.90f, (zl0 + zl1) * .5f + .003f, 1, 0.04f);",
+     "    { BInst& lite = boxAB(-0.125f, 1.15f, (zl0 + zl1) * .5f - .003f, 0.125f, 1.90f, (zl0 + zl1) * .5f + .003f, 1, 0.04f);\n"
+     "      if (getenv(\"MIRROR\")) { lite.m[0][0] = -lite.m[0][0]; printf(\"# MIRROR: the RN-X lite instance has x scale %.3f (det < 0)\\n\", lite.m[0][0]); } }")
+# stats buffer has 16 slots; print the facing counts of the c-variants after the identity block
+repm('    printf("# main shadow rays per frame %u\\n", sh0);',
+     '''    printf("# main shadow rays per frame %u\\n", sh0);
+    for (size_t k = 0; k < vars.size(); k++) { if (!vars[k].fstats) continue; run(vars[k].pso); const uint32_t* st = (const uint32_t*)stats.contents;
+      printf("# facing %-3s glass hits %u (truth: %u exiting, %u entering) | wrong vs truth: lastGlass %u, front_facing(default) %u, front_facing(ccw) %u, cross x det %u, cross alone %u\\n",
+             vars[k].name, st[8], st[9], st[8] - st[9], st[10], st[11], st[12], st[13], st[14]); }''')
+# timing: only the non-stats variants
+repm("for (int rep = 0; rep < 40; rep++) for (size_t k = 0; k < vars.size(); k++) { double t = run(vars[k].pso); if (rep >= 4) T[k].push_back(t); }",
+     "for (int rep = 0; rep < 40; rep++) for (size_t k = 0; k < vars.size(); k++) { if (vars[k].fstats) continue; double t = run(vars[k].pso); if (rep >= 4) T[k].push_back(t); }")
+repm("    for (size_t k = 0; k < vars.size(); k++)\n      printf(\"%s b6 %c",
+     "    for (size_t k = 0; k < vars.size(); k++) if (!vars[k].fstats)\n      printf(\"%s b6 %c")
+# identity of each facing variant against the lastGlass variant at the same depth
+old = '    printf("# main shadow rays per frame %u\\n", sh0);\n'
+new = old + """    { auto byName = [&](const char* nm) -> int { for (size_t k = 0; k < vars.size(); k++) if (!strcmp(vars[k].name, nm)) return (int)k; return -1; };
+      for (auto pr : {std::pair<const char*, const char*>{"x1", "s1"}, {"x2", "s2"}, {"x3", "s3"}, {"y1", "s1"}, {"y2", "s2"}, {"y3", "s3"}}) {
+        int a = byName(pr.first), b = byName(pr.second); run(vars[a].pso); auto Xa = grab(); run(vars[b].pso); auto Xb = grab();
+        size_t n = 0, diff = 0; for (size_t i = 0; i < Xa.size(); i += 4) { if (Xb[i + 3] <= 1.f && Xa[i + 3] <= 1.f) continue; n++; diff += memcmp(&Xa[i], &Xb[i], 16) != 0; }
+        printf("# %s (facing rule) vs %s (lastGlass): %zu of %zu traced px differ in any bit\\n", pr.first, pr.second, diff, n); } }
+"""
+repm(old, new)
+# NOTIME=1: identity and facing counts only
+repm("    std::vector<std::vector<double>> T(vars.size());\n", "    if (getenv(\"NOTIME\")) { printf(\"# NOTIME: identity only\\n\"); return 0; }\n    std::vector<std::vector<double>> T(vars.size());\n")
+# front_facing variants at depth 2 and 3
+repm('{"y1", 1, 0, 1, 0, nil},\n', '{"y1", 1, 0, 1, 0, nil}, {"y2", 2, 0, 1, 0, nil}, {"y3", 3, 0, 1, 0, nil},\n')
+open("rt_bench6f.mm", "w").write(m)
+print("wrote b6_stack_f.metal, rt_bench6f.mm")

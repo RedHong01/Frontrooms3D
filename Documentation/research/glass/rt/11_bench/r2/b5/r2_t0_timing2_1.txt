@@ -1,0 +1,33 @@
+16:30  up 2 days, 15:31, 1 user, load averages: 34.19 43.01 88.33
+# rt_bench4 r2t0_1 timing2 device=Apple M3 Max supportsRaytracing=1 Apple9=1  load 34/43/88
+# scene office: 2990 instances, 32 lights, 15.04 M instanced tris
+# scene run_corridor_tripped: 3059 instances, 17 lights, 15.05 M instanced tris
+# scene stream_run: 3060 instances, 12 lights, 15.05 M instanced tris
+# scene run_corridor_armed: 3059 instances, 18 lights, 15.05 M instanced tris
+# FARFADE: Ultra floor rays fade to High's mirror + k2 between pixel footprints 6.0 and 12.0 mm
+# pso maxThreads/tg: reflTrace (stack) 1024, reflTraceNS (stackless) 1024, simd width 32
+# cube cube_l0cap_latlong.png: mean luminance (cos-weighted, mip 0) 0.4439; up (theta<45) 0.7550; down (theta>135) 0.3807
+# loaded Refl_Level0_main75cfdff.exr: 1536x256 strip, face 256 px
+# cube cube_l0exr_latlong.png: mean luminance (cos-weighted, mip 0) 0.3929; up (theta<45) 1.4893; down (theta>135) 0.2017
+# units cross-check: main Refl_Level0 mean 0.3929 vs bench Level 0 anteroom capture mean 0.4439 (ratio 0.89)
+# CUBE=l0exr: RT-off and every RT fallback use main's Refl_Level0.exr x 0.5 (FrontRoomsZoneReflection.ZoneLinear[Level0]), URP roughness->mip, GGX mips
+# SOFTGATE: glossy/metal hits recurse with g = 1 - smoothstep(0.10, 0.25, r_hit), rest = cube at the hit mip (design 11 s2.4)
+# --- timing2 2560x1440 interleaved, jitter 2, soft gate 1  load 34/43/88
+r2t0_1 timing2 2560x1440 A_H   total min 1.316 p25 1.329 med 1.351 | trace med 0.739 filter med 0.599 | floor 12.0% glass 0.01% rays/recv 1.00 | load 34/43/88 | S1 tripped: High
+r2t0_1 timing2 2560x1440 A_U2  total min 2.315 p25 2.340 med 2.372 | trace med 1.753 filter med 0.610 | floor 12.0% glass 0.01% rays/recv 2.06 | load 34/43/88 | S1 tripped: Ultra 2 rays
+r2t0_1 timing2 2560x1440 A_U3  total min 3.044 p25 3.114 med 3.147 | trace med 2.518 filter med 0.607 | floor 12.0% glass 0.01% rays/recv 3.03 | load 34/43/88 | S1 tripped: Ultra 3 rays
+r2t0_1 timing2 2560x1440 A_U4  total min 3.828 p25 3.905 med 4.091 | trace med 3.308 filter med 0.616 | floor 12.0% glass 0.01% rays/recv 4.00 | load 34/43/88 | S1 tripped: Ultra 4 rays
+r2t0_1 timing2 2560x1440 B_H   total min 1.416 p25 1.438 med 1.453 | trace med 0.843 filter med 0.613 | floor 15.1% glass 0.18% rays/recv 1.04 | load 34/43/88 | near goal tripped: High
+r2t0_1 timing2 2560x1440 B_U2  total min 2.638 p25 2.674 med 2.749 | trace med 2.121 filter med 0.616 | floor 15.1% glass 0.18% rays/recv 2.05 | load 34/43/88 | near goal tripped: Ultra 2 rays
+r2t0_1 timing2 2560x1440 B_U3  total min 3.549 p25 3.714 med 3.781 | trace med 3.147 filter med 0.623 | floor 15.1% glass 0.18% rays/recv 3.07 | load 34/43/88 | near goal tripped: Ultra 3 rays
+r2t0_1 timing2 2560x1440 C_H   total min 1.584 p25 1.604 med 1.616 | trace med 1.002 filter med 0.617 | floor 17.6% glass 0.01% rays/recv 1.00 | load 34/43/88 | pitched 10 deg: High
+r2t0_1 timing2 2560x1440 C_U2  total min 2.905 p25 3.070 med 3.116 | trace med 2.484 filter med 0.625 | floor 17.6% glass 0.01% rays/recv 2.03 | load 34/43/88 | pitched 10 deg: Ultra 2 rays
+r2t0_1 timing2 2560x1440 C_U3  total min 4.196 p25 4.274 med 4.423 | trace med 3.740 filter med 0.628 | floor 17.6% glass 0.01% rays/recv 3.01 | load 34/43/88 | pitched 10 deg: Ultra 3 rays
+r2t0_1 timing2 2560x1440 D_H   total min 2.307 p25 2.327 med 2.461 | trace med 1.625 filter med 0.714 | floor 37.2% glass 0.00% rays/recv 1.01 | load 34/43/88 | stream Run room: High
+r2t0_1 timing2 2560x1440 D_U2  total min 5.499 p25 5.820 med 6.422 | trace med 5.670 filter med 0.711 | floor 37.2% glass 0.00% rays/recv 2.26 | load 34/43/88 | stream Run room: Ultra 2 rays
+r2t0_1 timing2 2560x1440 F_H   total min 1.294 p25 1.317 med 1.325 | trace med 0.728 filter med 0.597 | floor 12.0% glass 0.01% rays/recv 1.00 | load 34/43/88 | S1 armed: High
+r2t0_1 timing2 2560x1440 F_U3  total min 3.585 p25 3.762 med 4.011 | trace med 3.162 filter med 0.612 | floor 12.0% glass 0.01% rays/recv 3.03 | load 34/43/88 | S1 armed: Ultra 3 rays
+r2t0_1 timing2 2560x1440 G_H   total min 1.671 p25 1.704 med 1.716 | trace med 1.079 filter med 0.635 | floor 19.4% glass 0.87% rays/recv 1.05 | load 34/43/88 | 2.5 m armed r0.15: High
+r2t0_1 timing2 2560x1440 G_U2  total min 3.259 p25 3.303 med 4.001 | trace med 2.758 filter med 0.647 | floor 19.4% glass 0.87% rays/recv 2.04 | load 34/43/88 | 2.5 m armed r0.15: Ultra 2 rays
+# done load 34/43/88
+16:30  up 2 days, 15:31, 1 user, load averages: 34.19 43.01 88.33
