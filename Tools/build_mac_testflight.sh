@@ -11,7 +11,7 @@ set -euo pipefail
 project_dir="${PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 unity_bin="${UNITY_BIN:-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity}"
 output_root="${FRONTROOMS_CLOUD_OUTPUT:-$(mktemp -d /tmp/frontrooms-mac-testflight.XXXXXX)}"
-build_number="${FRONTROOMS_MAC_BUILD_NUMBER:-16}"
+build_number="${FRONTROOMS_MAC_BUILD_NUMBER:-20}"
 team_id="${DEVELOPMENT_TEAM:-T9WR6QR3UY}"
 
 if [[ ! -x "$unity_bin" ]]; then
