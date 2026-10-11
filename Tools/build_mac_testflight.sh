@@ -53,6 +53,37 @@ cat > "$entitlements" <<'PLIST'
 </plist>
 PLIST
 
+# Unity's bundled FMOD haptics plug-in ships with an underscore in its
+# CFBundleIdentifier. App Store Connect rejects that identifier even though
+# the plug-in file name must remain fmod_haptics.bundle for runtime loading.
+fmod_info="$xcode_dir/FRONTROOMSSS/PlugIns/fmod_haptics.bundle/Contents/Info.plist"
+if [[ -f "$fmod_info" ]]; then
+  /usr/bin/plutil -replace CFBundleIdentifier -string com.fmod.fmodhaptics "$fmod_info"
+  # Unity exports this plug-in with a stale signature whose identifier still
+  # contains the rejected underscore. Remove it so Xcode CodeSignOnCopy signs
+  # the bundle again using the patched Bundle Identifier.
+  fmod_binary="$xcode_dir/FRONTROOMSSS/PlugIns/fmod_haptics.bundle/Contents/MacOS/fmod_haptics"
+  /usr/bin/codesign --remove-signature "$fmod_binary" 2>/dev/null || true
+  /usr/bin/find "$xcode_dir/FRONTROOMSSS/PlugIns/fmod_haptics.bundle" -type d -name _CodeSignature -prune -exec /bin/rm -rf {} +
+fi
+
+# Unity can emit an empty placeholder icon when no macOS icon is configured.
+# Build a valid ICNS from the maintained 1024px source artwork so the Mac
+# App Store package contains the required 512pt @2x representation.
+icon_source="$project_dir/Assets/Resources/Brand/FrontRoomsAppIcon1024.png"
+iconset_dir="$output_root/FRONTROOMSSS.iconset"
+if [[ -f "$icon_source" ]] && command -v iconutil >/dev/null 2>&1; then
+  rm -rf "$iconset_dir"
+  mkdir -p "$iconset_dir"
+  for size in 16 32 128 256 512; do
+    /usr/bin/sips -z "$size" "$size" "$icon_source" --out "$iconset_dir/icon_${size}x${size}.png" >/dev/null
+    double=$((size * 2))
+    /usr/bin/sips -z "$double" "$double" "$icon_source" --out "$iconset_dir/icon_${size}x${size}@2x.png" >/dev/null
+  done
+  /usr/bin/iconutil -c icns "$iconset_dir" -o "$xcode_dir/FRONTROOMSSS/Resources/PlayerIcon.icns"
+  rm -rf "$iconset_dir"
+fi
+
 # Xcode can consume an entitlements file through the build setting without a
 # PBX file reference. Keep the edit deterministic and scoped to the generated
 # FRONTROOMSSS target's Debug/Release configurations.
@@ -65,7 +96,7 @@ text = path.read_text()
 
 text = text.replace(
     'CODE_SIGN_STYLE = Automatic;\n\t\t\t\tCOMBINE_HIDPI_IMAGES',
-    f'CODE_SIGN_STYLE = Automatic;\n\t\t\t\tCODE_SIGN_INJECT_BASE_ENTITLEMENTS = YES;\n\t\t\t\tCODE_SIGN_ENTITLEMENTS = FRONTROOMSSS/FRONTROOMSSS.entitlements;\n\t\t\t\tDEVELOPMENT_TEAM = {team};\n\t\t\t\tCOMBINE_HIDPI_IMAGES',
+    f'CODE_SIGN_STYLE = Automatic;\n\t\t\t\tCODE_SIGN_INJECT_BASE_ENTITLEMENTS = YES;\n\t\t\t\tCODE_SIGN_ENTITLEMENTS = FRONTROOMSSS/FRONTROOMSSS.entitlements;\n\t\t\t\tDEVELOPMENT_TEAM = {team};\n\t\t\t\tENABLE_HARDENED_RUNTIME = YES;\n\t\t\t\tCOMBINE_HIDPI_IMAGES',
 )
 if 'CODE_SIGN_ENTITLEMENTS = FRONTROOMSSS/FRONTROOMSSS.entitlements;' not in text:
     raise SystemExit('Could not patch the generated FRONTROOMSSS signing settings')
