@@ -13,8 +13,8 @@ public static class FrontRoomsMobileInteractionEvents
     {
         UsePressed,
         UseReleased,
-        SprintLatched,
-        SprintReleased,
+        RunStarted,
+        RunEnded,
         GlassHoldStarted,
         GlassBeat,
         GlassShattered,
@@ -28,8 +28,8 @@ public static class FrontRoomsMobileInteractionEvents
     }
 
     /// <summary>
-    /// Raised after a signal: the bool is the sprint latch (other kinds pass
-    /// false) and the float the glass progress or crack stage.
+    /// Raised after a signal: the bool is whether the stick runs (other kinds
+    /// pass false) and the float the glass progress or crack stage.
     /// </summary>
     public static event Action<Kind, bool, float> Raised;
 
@@ -41,10 +41,11 @@ public static class FrontRoomsMobileInteractionEvents
 
     public static void UseReleased() => Emit(Kind.UseReleased);
 
-    public static void SprintLatched(bool latched)
+    /// <summary>The thumb crossed the run line (or the RUN button went on): one firm click says "running" (Red, 2026-10-08).</summary>
+    public static void RunChanged(bool running)
     {
-        if (latched) FrontRoomsMobileHaptics.SprintLatched();
-        Emit(latched ? Kind.SprintLatched : Kind.SprintReleased, latched);
+        if (running) FrontRoomsMobileHaptics.RunStarted();
+        Emit(running ? Kind.RunStarted : Kind.RunEnded, running);
     }
 
     public static void Winded()

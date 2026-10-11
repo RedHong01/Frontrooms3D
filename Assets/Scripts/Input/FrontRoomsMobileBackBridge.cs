@@ -77,6 +77,27 @@ public sealed class FrontRoomsMobileBackBridge : MonoBehaviour
     /// </summary>
     public static FrontRoomsMobileBackBridge Instance => instance;
 
+    /// <summary>Raised when Back at the root hands the app to the system (tests listen; Android acts).</summary>
+    public static event Action LeftApp;
+
+    /// <summary>
+    /// Back at the root (the title): leave the game the way Android expects, like Home, keeping its state. The
+    /// predictive-back callback would otherwise swallow the gesture and trap the player in the app.
+    /// </summary>
+    public static void LeaveApp()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
+                activity.Call<bool>("moveTaskToBack", true);
+        }
+        catch (Exception) { }
+#endif
+        LeftApp?.Invoke();
+    }
+
     /// <summary>
     /// Editor-safe test hook. It queues the same main-thread edge as Android.
     /// </summary>

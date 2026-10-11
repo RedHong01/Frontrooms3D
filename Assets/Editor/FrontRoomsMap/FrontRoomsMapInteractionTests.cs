@@ -14,13 +14,20 @@ using UnityEngine;
 /// - DoorSqueeze: 0 at a shut door, near 1 on the line of the open one it
 ///   walks through, 0 in the middle of a room;
 /// - ListenPoint: the last noise heard;
-/// - DoorUnlocked (doors need keys): a locked door stays shut, raises
-///   DoorLocked and rattles (two leaf jolts toward its swing side, the hinge
-///   still); with the key it raises DoorUnlocked once, with the zone and
-///   the lock point on the opener's side, then swings after UnlockSwingDelay,
-///   to its swing side; a second use while the key turns does nothing, and
-///   later uses are plain; with no delay it swings at once; with keys off it
-///   never raises;
+/// - keys (doors need keys; door_shots_plan.md §5.3): LockedByRule is the
+///   level's rule for every door; a locked door's Use answers Rattled, raises
+///   DoorLocked and DoorRattled once each (the lock point on the trier's face)
+///   and rattles (two leaf jolts toward its swing side, the hinge still); a
+///   try within Rattle.Duration does nothing, a later one rattles again; with
+///   the key and a key-turn owner Use answers KeyTurn and holds the door (no
+///   prompt, Use and TryOpenDoor leave it, no DoorUnlocked); CommitUnlock
+///   raises DoorUnlocked once with the zone and the keyhole, and the leaf
+///   shifts and settles; ReleaseKeyTurn opens it to its swing side, with a
+///   drawn latch at once and with no DoorHandleTurned; later opens are plain,
+///   and from the far side it stays unlocked; with no owner the key unlocks
+///   and opens at once; CancelKeyTurn leaves a door locked; TryOpenDoor with
+///   the key unlocks at once; DoorOpenBegan carries the source; DoorsPaused
+///   freezes a swing; with keys off DoorUnlocked is never raised;
 /// - single-acting doors: each door's swing side is its edge's (the same after
 ///   a rebuild and a revisit shift, both sides occur); a push waits for the
 ///   lever (Open.SwingStart, a second E ignored), eases out to 95° with the 2°
@@ -122,11 +129,11 @@ public static class FrontRoomsMapInteractionTests
             RelayBreakAborts(roots);
             RelayKeepsShutDoors(roots);
             RelayLosesTrack(roots);
-            Keys(roots, profiles, 1.1f);
-            Keys(roots, profiles, 0f);
+            Keys(roots, profiles);
             Columns(roots, profiles);
             InnerWalls(roots, profiles);
             FillKeepsClear(roots, profiles);
+            StartKeepClear(roots, profiles);
             BuildGuard(roots);
             Tiers(roots, profiles);
             KeySpot(roots, profiles);
@@ -274,32 +281,58 @@ public static class FrontRoomsMapInteractionTests
         Check(middleSqueeze == 0f, "relay: DoorSqueeze 0 in the middle of a cell (" + middleSqueeze.ToString("0.00") + ")");
     }
 
-    // ---------- Keys: DoorUnlocked and the swing delay ----------
+    // ---------- Keys: the rattle, the key turn's hold, the commit and the release ----------
 
-    static void Keys(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, float delay)
+    static void Keys(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
     {
-        var label = "keys (delay " + delay.ToString("0.0") + " s): ";
+        const string label = "keys: ";
         var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
         profile.hideFlags = HideFlags.DontSave;
         profile.doorsNeedKeys = true;
         profiles.Add(profile);
-        var world = World(roots, profile, delay > 0f ? -28f : -29f, "MAP INTERACTION TEST / keys");
+        var world = World(roots, profile, -28f, "MAP INTERACTION TEST / keys");
         world.BuildForCapture();
-        world.UnlockSwingDelay = delay;
+        var all = Doors(world).Values.Select(d => world.DoorBetween(d.a, d.b)).Where(d => d != null).ToList();
+        Check(all.Count > 0 && all.All(world.LockedByRule), label + "LockedByRule is the level's rule (doors need keys) for all " + all.Count + " doors");
+        var used = new HashSet<long>();
         if (!FindDoor(world, out var a, out var b, out _)) { Check(false, label + "no closed door near the spawn"); return; }
         var door = world.DoorBetween(a, b);
+        used.Add(door.edge);
+        // Work from the stop side (a push), so the release's drawn latch opens at once.
+        if (FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(a))) (a, b) = (b, a);
         var player = world.Player;
         player.position = world.CellCenter(a) + Vector3.up * .05f;
 
         var unlocked = new List<(FrontRoomsMapWorld.Door door, GridCoord zone, Vector3 at)>();
-        var locked = 0;
-        var moved = 0;
+        var rattled = new List<(FrontRoomsMapWorld.Door door, Vector3 at)>();
+        var began = new List<(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)>();
+        int locked = 0, moved = 0, handles = 0;
+        var lockedFrame = -1;
+        var frame = 0;
         world.DoorUnlocked += (d, z, p) => unlocked.Add((d, z, p));
-        world.DoorLocked += _ => locked++;
+        world.DoorLocked += _ => { locked++; lockedFrame = frame; };
+        world.DoorRattled += (d, p) => { rattled.Add((d, p)); if (lockedFrame != frame) lockedFrame = -2; };
         world.DoorMoved += _ => moved++;
+        world.DoorHandleTurned += (d, p) => handles++;
+        world.DoorOpenBegan += (d, src, latch) => began.Add((d, src, latch));
+        void Tick(float seconds) { for (var s = 0f; s < seconds - 1e-4f; s += Dt) { frame++; world.TickDoorsForTools(Dt); } }
 
-        world.Use(door.leaf);
-        Check(locked == 1 && !door.open && unlocked.Count == 0, label + "without the key the door stays shut and raises DoorLocked (locked " + locked + ", open " + door.open + ")");
+        // 1. Locked: Rattled, DoorLocked then DoorRattled in the same frame, the lock point on the trier's face.
+        var result = world.Use(door.leaf);
+        Check(result == FrontRoomsMapWorld.UseResult.Rattled && locked == 1 && rattled.Count == 1 && rattled[0].door == door && lockedFrame == frame && !door.open && unlocked.Count == 0,
+            label + "without the key Use answers Rattled (" + result + "), the door stays shut, DoorLocked and DoorRattled once each in the same frame (locked " + locked + ", rattled " + rattled.Count + ")");
+        if (rattled.Count > 0)
+        {
+            var rotation = door.hinge.parent.rotation * door.closed;
+            var offset = rattled[0].at - door.position;
+            var across = rotation * Vector3.right;
+            var face = Vector3.Dot(offset, across);
+            Check(Mathf.Abs(offset.y - ModuleUnits.DoorHandleHeight) < .01f
+                && Mathf.Abs(Vector3.Dot(offset, rotation * Vector3.forward) - (ModuleUnits.DoorWidth * .5f - ModuleUnits.DoorHandleInset)) < .01f
+                && Mathf.Sign(face) == Mathf.Sign(Vector3.Dot(player.position - door.position, across))
+                && Mathf.Abs(Mathf.Abs(face) - (ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.DoorHandleProud)) < .01f,
+                label + "DoorRattled's lock point " + offset.ToString("F3") + " from the opening: 1.0 m up, 0.08 m in from the latch jamb, on the trier's face");
+        }
         // The rattle: two jolts of the leaf child toward the swing side (the stops hold the other way), at Rattle.Jolt1 and Jolt2; the hinge never moves.
         var home = door.leaf.transform.localPosition;
         var towardSwing = Vector3.right * -door.swing;
@@ -309,6 +342,7 @@ public static class FrontRoomsMapInteractionTests
         var wasJolting = false;
         for (var k = 1; k <= 30; k++)
         {
+            frame++;
             world.TickDoorsForTools(Dt);
             var offset = door.leaf.transform.localPosition - home;
             maxShift = Mathf.Max(maxShift, Vector3.Dot(offset, towardSwing));
@@ -321,76 +355,196 @@ public static class FrontRoomsMapInteractionTests
             && maxShift > FrontRoomsShotTimings.Rattle.JoltMetres * .5f && hingeStill && door.leaf.transform.localPosition == home,
             label + "the rattle jolts the leaf twice toward its swing side (at " + string.Join(", ", joltStarts.Select(x => x.ToString("0.000"))) + " s, up to "
             + (maxShift * 1000f).ToString("0.0") + " mm), the hinge still, and it settles home");
-
-        // Give the key of the player's zone (as walking over it would).
-        var zone = world.ZoneOf(a).id;
-        var keys = (HashSet<GridCoord>)typeof(FrontRoomsMapWorld).GetField("keysHeld", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(world);
-        keys.Add(zone);
+        // The debounce: a try 0.2 s after a rattle does nothing; one at 0.45 s rattles again.
         world.Use(door.leaf);
-        Check(unlocked.Count == 1 && unlocked[0].door == door && unlocked[0].zone == zone, label + "with the key: DoorUnlocked once, for this door and zone " + zone);
+        var lockedBefore = locked;
+        var rattledBefore = rattled.Count;
+        Tick(.2f);
+        var early = world.Use(door.leaf);
+        var earlyQuiet = locked == lockedBefore && rattled.Count == rattledBefore;
+        Tick(.25f);
+        var late = world.Use(door.leaf);
+        Check(early == FrontRoomsMapWorld.UseResult.None && earlyQuiet && late == FrontRoomsMapWorld.UseResult.Rattled && locked == lockedBefore + 1 && rattled.Count == rattledBefore + 1,
+            label + "a try 0.2 s after a rattle answers " + early + " and raises nothing; at 0.45 s it rattles again (" + late + ")");
+        Tick(.5f);
+
+        // 2. With the key and a key-turn owner: the door is held for the shot, nothing raised.
+        var zone = world.ZoneOf(a).id;
+        world.GiveKeyForTools(zone);
+        world.KeyTurnOwner = new object();
+        result = world.Use(door.leaf);
+        var held = world.IsHeldForKey(door);
+        var prompt = world.Describe(door.leaf, out _);
+        var again = world.Use(door.leaf);
+        var tools = world.TryOpenDoor(a, b);
+        Check(result == FrontRoomsMapWorld.UseResult.KeyTurn && unlocked.Count == 0 && held && prompt == null && again == FrontRoomsMapWorld.UseResult.None && !tools && !door.open,
+            label + "with the key and an owner Use answers KeyTurn (" + result + "): held, no prompt, a second Use (" + again + ") and TryOpenDoor (" + tools + ") leave it, no DoorUnlocked");
+
+        // 3. The commit: DoorUnlocked once with the zone and the keyhole; the leaf shifts as the bolt draws and settles home.
+        world.CommitUnlock(door);
+        var shiftedMax = 0f;
+        for (var k = 0; k < 12; k++)
+        {
+            frame++;
+            world.TickDoorsForTools(Dt);
+            shiftedMax = Mathf.Max(shiftedMax, (door.leaf.transform.localPosition - home).magnitude);
+        }
+        Check(unlocked.Count == 1 && unlocked[0].door == door && unlocked[0].zone == zone && world.IsUnlockedForTools(door) && world.IsHeldForKey(door) && !door.open
+              && shiftedMax > FrontRoomsShotTimings.Unlock.LeafShiftMetres * .5f && door.leaf.transform.localPosition == home,
+            label + "CommitUnlock: DoorUnlocked once for this door and zone " + zone + ", unlocked and still held, the leaf shifts " + (shiftedMax * 1000f).ToString("0.0") + " mm and settles home");
         if (unlocked.Count > 0)
         {
             var at = unlocked[0].at;
             var rotation = door.hinge.parent.rotation * door.closed;
-            var along = rotation * Vector3.forward;
             var across = rotation * Vector3.right;
             var offset = at - door.position;
-            var playerSide = Mathf.Sign(Vector3.Dot(player.position - door.position, across));
             var face = Vector3.Dot(offset, across);
+            var expected = world.LockPose(door, player.position);
             Check(Mathf.Abs(offset.y - ModuleUnits.DoorHandleHeight) < .01f
-                && Mathf.Abs(Vector3.Dot(offset, along) - (ModuleUnits.DoorWidth * .5f - ModuleUnits.DoorHandleInset)) < .01f
-                && Mathf.Sign(face) == playerSide && Mathf.Abs(Mathf.Abs(face) - (ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.DoorHandleProud)) < .01f,
-                label + "lock point " + offset.ToString("F3") + " from the opening: 1.0 m up, 0.08 m in from the latch jamb, on the player's face");
+                && Mathf.Abs(Vector3.Dot(offset, rotation * Vector3.forward) - (ModuleUnits.DoorWidth * .5f - ModuleUnits.DoorHandleInset)) < .01f
+                && Mathf.Sign(face) == Mathf.Sign(Vector3.Dot(player.position - door.position, across))
+                && Mathf.Abs(Mathf.Abs(face) - .0315f) < .001f && (expected.position - at).magnitude < 1e-4f
+                && Vector3.Dot(expected.rotation * Vector3.forward, door.position - player.position) > 0f,
+                label + "DoorUnlocked's point is the keyhole " + offset.ToString("F4") + ": 1.0 m up, 0.92 m from the hinge, 0.0315 m off the leaf's centre plane on the opener's face (LockPose, +Z into the lock)");
         }
-        if (delay > 0f)
-        {
-            Check(!door.open, label + "the door waits while the key turns");
-            world.Use(door.leaf);
-            Check(unlocked.Count == 1 && !door.open, label + "a second use while the key turns does nothing");
-            for (var s = 0f; s < delay - .1f; s += Dt) world.TickDoorsForTools(Dt);
-            Check(!door.open, label + "still shut just before the delay ends");
-            for (var s = 0f; s < .2f; s += Dt) world.TickDoorsForTools(Dt);
-            Check(door.open, label + "it swings once the delay is over");
-        }
-        else Check(door.open, label + "no delay: it swings at once");
-        for (var s = 0f; s < 1f; s += Dt) world.TickDoorsForTools(Dt);
-        Check(door.angle == ModuleUnits.DoorSwingDegrees && FrontRoomsMapWorld.OnSwingSide(door, door.leaf.transform.position),
-            label + "the key opens it to its swing side (" + door.angle.ToString("0.0") + "°)");
+
+        // 4. The release: a drawn latch opens at once (no lever wait, no DoorHandleTurned), to the swing side.
+        var handlesBefore = handles;
+        var movedBefore = moved;
+        world.ReleaseKeyTurn(door, true, player.position, true);
+        var beganNow = began.Count > 0 ? began[began.Count - 1] : default;
+        var movedAtOnce = moved == movedBefore + 1;
+        frame++;
+        world.TickDoorsForTools(Dt);
+        var leafMoving = door.angle > 0f;
+        Tick(1f);
+        Check(!world.IsHeldForKey(door) && handles == handlesBefore && beganNow.door == door && beganNow.source == FrontRoomsMapWorld.DoorOpenSource.Unlock && beganNow.latchDrawn
+              && movedAtOnce && leafMoving && door.angle == ModuleUnits.DoorSwingDegrees && FrontRoomsMapWorld.OnSwingSide(door, door.leaf.transform.position),
+            label + "ReleaseKeyTurn(open, latch drawn): no DoorHandleTurned, DoorOpenBegan(Unlock, drawn), DoorMoved at once, the leaf moving the next frame, open to its swing side (" + door.angle.ToString("0.0") + "°)");
         world.Use(door.leaf);
-        for (var s = 0f; s < 1f; s += Dt) world.TickDoorsForTools(Dt);
+        Tick(1f);
         Check(!door.open, label + "shut again");
-        world.Use(door.leaf);
-        Check(door.open && unlocked.Count == 1, label + "opening it again is plain: no second DoorUnlocked, no wait");
+        result = world.Use(door.leaf);
+        beganNow = began[began.Count - 1];
+        Check(result == FrontRoomsMapWorld.UseResult.Opened && door.open && unlocked.Count == 1 && beganNow.source == FrontRoomsMapWorld.DoorOpenSource.Use && !beganNow.latchDrawn,
+            label + "opening it again is plain: Opened, no second DoorUnlocked, DoorOpenBegan(Use, not drawn)");
         // From the other side, whose zone's key the player does not hold: a door a key has opened stays unlocked.
-        for (var s = 0f; s < 1f; s += Dt) world.TickDoorsForTools(Dt);
+        Tick(1f);
         world.Use(door.leaf);
-        for (var s = 0f; s < 1f; s += Dt) world.TickDoorsForTools(Dt);
+        Tick(1f);
         player.position = world.CellCenter(b) + Vector3.up * .05f;
         var otherZone = world.ZoneOf(b).id;
-        var lockedBefore = locked;
-        world.Use(door.leaf);
-        Check(otherZone != zone && !keys.Contains(otherZone) && door.open && locked == lockedBefore && unlocked.Count == 1,
+        lockedBefore = locked;
+        result = world.Use(door.leaf);
+        Check(otherZone != zone && !world.HasKeyFor(otherZone) && result == FrontRoomsMapWorld.UseResult.Opened && door.open && locked == lockedBefore && unlocked.Count == 1,
             label + "from the far side without its zone's key, the unlocked door opens (no DoorLocked, no second DoorUnlocked)");
+        Tick(1f);
 
-        // Keys off: never raised.
-        if (delay > 0f) return;
+        // 5. No owner (the walker, tools): the key unlocks and opens at once.
+        world.KeyTurnOwner = null;
+        if (FindDoor(world, out var a2, out var b2, out _, (d, cell) => !used.Contains(d.edge)))
+        {
+            var door2 = world.DoorBetween(a2, b2);
+            used.Add(door2.edge);
+            player.position = world.CellCenter(a2) + Vector3.up * .05f;
+            var zone2 = world.ZoneOf(a2).id;
+            world.GiveKeyForTools(zone2);
+            var count = unlocked.Count;
+            result = world.Use(door2.leaf);
+            Check(result == FrontRoomsMapWorld.UseResult.Opened && unlocked.Count == count + 1 && unlocked[unlocked.Count - 1].door == door2 && unlocked[unlocked.Count - 1].zone == zone2
+                  && door2.open && !world.IsHeldForKey(door2) && world.IsUnlockedForTools(door2),
+                label + "with no key-turn owner the key unlocks (DoorUnlocked at once) and opens it (" + result + "), no hold");
+            Tick(1f);
+        }
+        else Check(false, label + "no second closed door for the no-owner case");
+
+        // 6. A cancelled key turn leaves the door locked: from the side whose key is not held, it still rattles.
+        world.KeyTurnOwner = new object();
+        if (FindDoor(world, out var a3, out var b3, out _, (d, cell) => !used.Contains(d.edge) && !world.HasKeyFor(world.ZoneOf(OtherCell(d, cell)).id)))
+        {
+            var door3 = world.DoorBetween(a3, b3);
+            used.Add(door3.edge);
+            player.position = world.CellCenter(a3) + Vector3.up * .05f;
+            world.GiveKeyForTools(world.ZoneOf(a3).id);
+            var count = unlocked.Count;
+            result = world.Use(door3.leaf);
+            world.CancelKeyTurn(door3);
+            player.position = world.CellCenter(b3) + Vector3.up * .05f;
+            Tick(.5f);
+            var after = world.Use(door3.leaf);
+            Check(result == FrontRoomsMapWorld.UseResult.KeyTurn && !world.IsHeldForKey(door3) && !world.IsUnlockedForTools(door3) && unlocked.Count == count && after == FrontRoomsMapWorld.UseResult.Rattled && !door3.open,
+                label + "CancelKeyTurn: the hold goes, the door is still locked, and without the key it rattles (" + after + ")");
+            Tick(.5f);
+        }
+        else Check(false, label + "no third closed door for the cancel case");
+
+        // 7. The tools path: TryOpenDoor never turns a key; with the key it unlocks and opens at once, without it nothing.
+        if (FindDoor(world, out var a4, out var b4, out _, (d, cell) => !used.Contains(d.edge) && !world.HasKeyFor(world.ZoneOf(cell).id)))
+        {
+            var door4 = world.DoorBetween(a4, b4);
+            used.Add(door4.edge);
+            player.position = world.CellCenter(a4) + Vector3.up * .05f;
+            lockedBefore = locked;
+            var refused = !world.TryOpenDoor(a4, b4) && !door4.open && locked == lockedBefore;
+            world.GiveKeyForTools(world.ZoneOf(a4).id);
+            var count = unlocked.Count;
+            var opened = world.TryOpenDoor(a4, b4);
+            Check(refused && opened && unlocked.Count == count + 1 && door4.open && !world.IsHeldForKey(door4),
+                label + "TryOpenDoor: refused without the key (nothing raised); with it DoorUnlocked at once and the door opens, no hold, even with an owner set");
+        }
+        else Check(false, label + "no fourth closed door for the tools case");
+        world.KeyTurnOwner = null;
+
+        // Keys off: never raised, never locked by the rule; DoorOpenBegan's sources; DoorsPaused freezes a swing.
         var keysOff = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
         keysOff.hideFlags = HideFlags.DontSave;
         keysOff.doorsNeedKeys = false;
         profiles.Add(keysOff);
         var plain = World(roots, keysOff, -30f, "MAP INTERACTION TEST / no keys");
         plain.BuildForCapture();
-        var count = 0;
-        plain.DoorUnlocked += (_, __, ___) => count++;
+        var count0 = 0;
+        var plainBegan = new List<(FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)>();
+        int plainMoved = 0, plainLatched = 0;
+        plain.DoorUnlocked += (_, __, ___) => count0++;
+        plain.DoorOpenBegan += (d, src, latch) => plainBegan.Add((src, latch));
+        plain.DoorMoved += _ => plainMoved++;
+        plain.DoorLatched += (_, __) => plainLatched++;
+        var plainDoors = Doors(plain).Values.Select(d => plain.DoorBetween(d.a, d.b)).Where(d => d != null).ToList();
+        Check(plainDoors.Count > 0 && plainDoors.All(d => !plain.LockedByRule(d)), "keys off: LockedByRule is false for all " + plainDoors.Count + " doors");
         if (FindDoor(plain, out var pa, out var pb, out _))
         {
             plain.Player.position = plain.CellCenter(pa) + Vector3.up * .05f;
             var d = plain.DoorBetween(pa, pb);
-            plain.Use(d.leaf);
-            Check(d.open && count == 0, "keys off: the door opens and DoorUnlocked is never raised");
+            var r = plain.Use(d.leaf);
+            Check(r == FrontRoomsMapWorld.UseResult.Opened && d.open && count0 == 0 && plainBegan.Count == 1 && plainBegan[0].source == FrontRoomsMapWorld.DoorOpenSource.Use && !plainBegan[0].latchDrawn,
+                "keys off: Use opens the door (" + r + "), DoorOpenBegan(Use, not drawn), DoorUnlocked never raised");
+            // A pause mid-swing: the leaf and its events wait, then go on.
+            for (var s = 0f; s < .3f; s += Dt) plain.TickDoorsForTools(Dt);
+            var angle = d.angle;
+            var movedThen = plainMoved;
+            var latchedThen = plainLatched;
+            plain.DoorsPaused = true;
+            for (var s = 0f; s < 1f; s += Dt) plain.TickDoorsForTools(Dt);
+            var frozen = d.angle == angle && plainMoved == movedThen && plainLatched == latchedThen;
+            plain.DoorsPaused = false;
+            for (var s = 0f; s < 1f; s += Dt) plain.TickDoorsForTools(Dt);
+            Check(angle > 0f && angle < ModuleUnits.DoorSwingDegrees && frozen && d.angle == ModuleUnits.DoorSwingDegrees,
+                "DoorsPaused: a swing at " + angle.ToString("0.0") + "° holds still for 1 s with no DoorMoved or DoorLatched, then finishes at 95° once resumed");
         }
         else Check(false, "keys off: no closed door near the spawn");
+        if (FindDoor(plain, out var ta, out var tb, out _))
+        {
+            plain.Player.position = plain.CellCenter(ta) + Vector3.up * .05f;
+            plainBegan.Clear();
+            var opened = plain.TryOpenDoor(ta, tb);
+            Check(opened && plainBegan.Count == 1 && plainBegan[0].source == FrontRoomsMapWorld.DoorOpenSource.Tools && !plainBegan[0].latchDrawn && count0 == 0,
+                "keys off: TryOpenDoor opens with DoorOpenBegan(Tools, not drawn), no DoorUnlocked");
+        }
+        else Check(false, "keys off: no second closed door near the spawn");
     }
+
+    // The door's cell on the other side from cell.
+    static GridCoord OtherCell(FrontRoomsMapWorld.Door door, GridCoord cell) => door.a == cell ? door.b : door.a;
 
     // ---------- Single-acting doors: the fixed side, the lever, pulls, bodies, the passage ----------
 
@@ -1869,6 +2023,60 @@ public static class FrontRoomsMapInteractionTests
         // Optional: reuse RelayEntry's release procedure (factored out as a helper) on `world` and assert Arrived with tag "vent" at the entry.
     }
 
+    /// <summary>
+    /// Visual Q16-1: KeepClearAtStart keeps the furnishing out of a world-XZ rect (the placard's floor) while a start area
+    /// stands, and SetStartArea empties the list. The start area sits far off, so only the rect changes the room.
+    /// </summary>
+    static void StartKeepClear(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        var cs = MapGrid.CellSize;
+        var far = new RectInt(200, 200, 3, 3);
+        var farDoor = new GridCoord(201, 203);
+        var m = Room(6, 6, ZoneTheme.Office);
+        m.fill = ModuleFill.Office;
+        // Low dressing colliders in a world, as world-XZ rects.
+        List<Rect> Low(FrontRoomsMapWorld w) => w.GetComponentsInChildren<Transform>(true).Where(t => t.name == "office dressing")
+            .SelectMany(t => t.GetComponentsInChildren<Collider>(true)).Select(c => c.bounds).Where(b => b.min.y <= ModuleUnits.RelayHeight)
+            .Select(b => Rect.MinMaxRect(b.min.x, b.min.z, b.max.x, b.max.z)).ToList();
+        // A probe with a far start area and no rect: where the kit puts something, well inside the room.
+        var probe = ModuleWorld(roots, profiles, m, 1, 1, -50f, "MAP INTERACTION TEST / start keep-clear probe", w => w.SetStartArea(far, farDoor));
+        var origin = probe.transform.TransformPoint(new Vector3(cs, 0f, cs));
+        var hit = Low(probe).Select(r => r.center - new Vector2(origin.x, origin.z))
+            .FirstOrDefault(c => c.x > 2f && c.y > 2f && c.x < m.WidthMetres - 2f && c.y < m.DepthMetres - 2f);
+        if (hit == default) { Check(false, "start keep-clear: the Office kit put nothing inside the probe room"); return; }
+        Rect Around(FrontRoomsMapWorld w)
+        {
+            var o = w.transform.TransformPoint(new Vector3(cs, 0f, cs));
+            return new Rect(o.x + hit.x - .8f, o.z + hit.y - .8f, 1.6f, 1.6f);
+        }
+        bool Inside(Rect a, Rect b) => a.xMin < b.xMax - .02f && b.xMin + .02f < a.xMax && a.yMin < b.yMax - .02f && b.yMin + .02f < a.yMax;
+
+        // The same room with a 1.6 m rect round that spot: nothing low in it, and the room is still furnished.
+        Rect kept = default;
+        var world = ModuleWorld(roots, profiles, m, 1, 1, -51f, "MAP INTERACTION TEST / start keep-clear", w =>
+        {
+            w.SetStartArea(far, farDoor);
+            kept = Around(w);
+            w.KeepClearAtStart(kept);
+        });
+        var low = Low(world);
+        var inRect = low.Count(r => Inside(r, kept));
+        Check(low.Count > 0 && inRect == 0, "start keep-clear: KeepClearAtStart keeps the Office fill out of a 1.6 m rect where it put furniture without it ("
+            + inRect + " of " + low.Count + " low pieces in it)");
+
+        // SetStartArea after the rect empties the list: the furniture comes back.
+        Rect dropped = default;
+        var reset = ModuleWorld(roots, profiles, m, 1, 1, -52f, "MAP INTERACTION TEST / start keep-clear reset", w =>
+        {
+            w.SetStartArea(far, farDoor);
+            dropped = Around(w);
+            w.KeepClearAtStart(dropped);
+            w.SetStartArea(far, farDoor);
+        });
+        var back = Low(reset).Count(r => Inside(r, dropped));
+        Check(back > 0, "start keep-clear: SetStartArea empties the list (" + back + " low pieces back in the rect)");
+    }
+
     // ---------- P4: live tuning ----------
 
     static void Live(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
@@ -1974,7 +2182,7 @@ public static class FrontRoomsMapInteractionTests
     }
 
     /// <summary>A world whose zones all take the module's height and theme, with the module in chunk (0, 0) at (x0, y0), as the Level Designer preview builds it.</summary>
-    static FrontRoomsMapWorld ModuleWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, RoomModuleData m, int x0, int y0, float period, string name)
+    static FrontRoomsMapWorld ModuleWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, RoomModuleData m, int x0, int y0, float period, string name, Action<FrontRoomsMapWorld> beforeBuild = null)
     {
         var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
         profile.hideFlags = HideFlags.DontSave;
@@ -1990,6 +2198,7 @@ public static class FrontRoomsMapInteractionTests
         var world = World(roots, profile, period, name);
         world.TagModuleProps = true;
         world.PlaceModule(m, new GridCoord(0, 0), x0, y0);
+        beforeBuild?.Invoke(world);
         world.BuildForCapture();
         return world;
     }

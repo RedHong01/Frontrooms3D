@@ -98,6 +98,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.MapRunStarted += OnMapRunStarted;
             FrontRooms3DGame.MapRunEnded += OnMapRunEnded;
             FrontRooms3DGame.PlayerClimbed += OnPlayerClimbed;
+            FrontRooms3DGame.Paused += OnPaused;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -106,6 +107,8 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.MapRunStarted -= OnMapRunStarted;
             FrontRooms3DGame.MapRunEnded -= OnMapRunEnded;
             FrontRooms3DGame.PlayerClimbed -= OnPlayerClimbed;
+            FrontRooms3DGame.Paused -= OnPaused;
+            OnPaused(false);
             SceneManager.sceneLoaded -= OnSceneLoaded;
             OnMapRunEnded();
             StopRoomTone(true);
@@ -440,6 +443,7 @@ namespace FrontRooms.Audio
             map.GlassBroken += OnGlassBroken;
             map.DoorBroken += OnDoorBroken;
             map.DoorLocked += OnDoorLocked;
+            map.DoorOpenBegan += OnDoorOpenBegan;
             map.KeyTaken += OnKeyTaken;
             relay.StateChanged += OnRelayState;
             relay.DoorBlow += OnDoorBlow;
@@ -475,6 +479,7 @@ namespace FrontRooms.Audio
                 map.GlassBroken -= OnGlassBroken;
                 map.DoorBroken -= OnDoorBroken;
                 map.DoorLocked -= OnDoorLocked;
+                map.DoorOpenBegan -= OnDoorOpenBegan;
                 map.KeyTaken -= OnKeyTaken;
             }
             if (relay != null)
@@ -534,6 +539,25 @@ namespace FrontRooms.Audio
             if (window == null) return;
             FrontRoomsFmod.OneShot(SoundIds.WindowCrack, window.position);
             Cap("[GLASS CRACKS]", window.position, 22f);
+        }
+
+        static readonly string[] PausedBuses = { SoundIds.BusSfx, SoundIds.BusAmbience, SoundIds.BusMusic, SoundIds.BusSubjective };
+
+        /// <summary>The pause screen freezes the game: everything heard freezes with it, and resumes where it was.</summary>
+        void OnPaused(bool paused)
+        {
+            if (!FrontRoomsFmod.Ready) return;
+            foreach (var path in PausedBuses)
+            {
+                try { RuntimeManager.GetBus(path).setPaused(paused); }
+                catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] pause " + path + ": " + e.Message); }
+            }
+            FrontRoomsFmod.Note(paused ? "paused" : "resumed");
+        }
+
+        void OnDoorOpenBegan(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)
+        {
+            if (door != null && source == FrontRoomsMapWorld.DoorOpenSource.Unlock && latchDrawn) FrontRoomsDoorSound.SkipHandle(door.position);
         }
 
         void OnDoorLocked(Vector3 position) => FrontRoomsFmod.OneShot(SoundIds.DoorLocked, position);

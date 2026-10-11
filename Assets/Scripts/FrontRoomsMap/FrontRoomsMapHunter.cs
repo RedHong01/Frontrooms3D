@@ -225,9 +225,12 @@ public sealed class FrontRoomsMapHunter
         if (world != null) world.RelayBody = () => Released ? position : (Vector3?)null;
     }
 
+    /// <summary>Tools (the autopilot's door scenario): while true, Tick does nothing and the Relay stands where it is, so it cannot cancel a shot under test.</summary>
+    public bool HeldForTools { get; set; }
+
     public void Tick(float dt, Vector3 playerFeet, Vector3 playerEye, Vector3 playerForward)
     {
-        if (caught || world == null) return;
+        if (caught || world == null || HeldForTools) return;
         if (State == HunterState.Dormant)
         {
             ResetWarningMetrics();

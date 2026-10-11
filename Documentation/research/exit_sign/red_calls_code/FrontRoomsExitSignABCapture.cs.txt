@@ -1,0 +1,504 @@
+// EXIT SIGN A/B CAPTURE (visual chat, Red's calls on the merged EXIT sign; clone-only, never merged).
+// Built on the integrate stage's FrontRoomsExitSignStreamCapture: the same Play-mode start (title,
+// Space with Random.InitState(4242), Relay held dormant), the same game camera (URP, post, 4x MSAA,
+// 1920x1080) and the same title-profile build (BuildEditorPreview at world (4992, 0, 4992)).
+// Nothing in the game code is changed: each option is toggled in place on the built rooms, so A and
+// B share the build, the troffer deal, the camera and the exposure. Film grain is pinned by
+// Random.InitState before every camera render. A third pass (A again) checks that the toggle restores.
+//   Call 2 (Run room): A = main today (red light at the hanging kit's glow anchor, y 1.96, sign casts
+//     shadows); B = red light at the kit's centre anchor (y 2.394) and every sign renderer
+//     ShadowCastingMode.Off. Eye 1.62 m, 1.5 / 4 / 8 m before sign B, pitch +20 deg, game FOV; plus
+//     the room-visuals wide frame.
+//   VL211 (Exit room): A = today (no light); B = the spec 8.6 spill light at the wall sign's glow
+//     anchor: colour (1, .13, .07), intensity 0.5, range 1.5 m, no shadows. Eye 1.62 m at 2 m and
+//     6 m from the sign face, aimed at the sign.
+// Run:  Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignABCapture.RunBatch -logFile <f> [-esABOut dir]
+// Prep: Unity -batchmode -nographics -quit -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignABCapture.ReimportScripts -logFile <f>
+// Output: <out>/*.png, shots.tsv (per shot: file, option, eye, rotation, fov, light state, troffer hash,
+// post exposure) and points.tsv (screen pixels of the measuring points), log.txt.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+[InitializeOnLoad]
+public static class FrontRoomsExitSignABCapture
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const string ActiveKey = "FrontRooms.ESAB.Active";
+    const string DeadlineKey = "FrontRooms.ESAB.Deadline";
+    const string DoneKey = "FrontRooms.ESAB.Done";
+    const string OutKey = "FrontRooms.ESAB.Out";
+    const int W = 1920, H = 1080;
+    const int InitSeed = 4242;
+    const int GrainSeed = 20261008;
+    static readonly Vector3 PreviewRoot = new Vector3(4992f, 0f, 4992f);
+    const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    static int waitUntilFrame = -1;
+    static bool finished;
+    static string outDir;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly StringBuilder shots = new StringBuilder();
+    static readonly StringBuilder points = new StringBuilder();
+    static readonly Stack<IEnumerator> stack = new Stack<IEnumerator>();
+
+    static FrontRooms3DGame game;
+    static Camera cam;
+    static RenderTexture rt;
+    static Transform spaceRoot;
+
+    static FrontRoomsExitSignABCapture()
+    {
+        if (SessionState.GetBool(ActiveKey, false)) EditorApplication.update += Tick;
+    }
+
+    /// <summary>Known issue (TOOLS.md, 2026-10-08): force a reimport of Assets/Scripts before the first Play run.</summary>
+    public static void ReimportScripts()
+    {
+        AssetDatabase.ImportAsset("Assets/Scripts", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+        AssetDatabase.Refresh();
+        Debug.Log("[ESAB] reimported Assets/Scripts");
+    }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        var o = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign_ab");
+        for (var i = 0; i < args.Length; i++)
+            if (args[i] == "-esABOut" && i + 1 < args.Length) o = args[i + 1];
+        SessionState.SetString(OutKey, o);
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 3000f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        EditorApplication.EnterPlaymode();
+    }
+
+    static string OutDir
+    {
+        get
+        {
+            if (outDir == null)
+            {
+                outDir = SessionState.GetString(OutKey, Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign_ab"));
+                Directory.CreateDirectory(outDir);
+            }
+            return outDir;
+        }
+    }
+
+    static void Log(string s)
+    {
+        var line = "[" + Time.frameCount + " t=" + Time.time.ToString("0.000", CultureInfo.InvariantCulture) + "] " + s;
+        log.AppendLine(line);
+        Debug.Log("[ESAB] " + line);
+        try { File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString()); } catch { }
+    }
+
+    static void Flush()
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(OutDir, "log.txt"), log.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "shots.tsv"), shots.ToString());
+            File.WriteAllText(Path.Combine(OutDir, "points.tsv"), points.ToString());
+        }
+        catch (Exception e) { Debug.LogError(e); }
+    }
+
+    static void Finish()
+    {
+        finished = true;
+        Time.captureDeltaTime = 0f;
+        SessionState.SetBool(DoneKey, true);
+        Flush();
+    }
+
+    static void Tick()
+    {
+        var timedOut = EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue);
+        if (finished || timedOut || SessionState.GetBool(DoneKey, false))
+        {
+            if (timedOut && !finished && !SessionState.GetBool(DoneKey, false)) { Log("TIMEOUT"); Finish(); }
+            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); return; }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EditorApplication.update -= Tick;
+            SessionState.EraseBool(ActiveKey);
+            SessionState.EraseBool(DoneKey);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+            return;
+        }
+        if (!EditorApplication.isPlaying) return;
+        if (stack.Count == 0) { stack.Push(Main()); Log("routine created"); }
+        if (Time.frameCount < waitUntilFrame) return;
+        try
+        {
+            for (var guard = 0; guard < 1000; guard++)
+            {
+                var top = stack.Peek();
+                if (!top.MoveNext())
+                {
+                    stack.Pop();
+                    if (stack.Count == 0) { Finish(); return; }
+                    continue;
+                }
+                var cur = top.Current;
+                var sub = cur as IEnumerator;
+                if (sub != null) { stack.Push(sub); continue; }
+                waitUntilFrame = Time.frameCount + (cur is int ? Mathf.Max(1, (int)cur) : 1);
+                return;
+            }
+        }
+        catch (Exception e) { Log("EXCEPTION " + e); Finish(); }
+    }
+
+    // ---------------- reflection ----------------
+    static FieldInfo FI(Type t, string n)
+    {
+        for (; t != null; t = t.BaseType)
+        {
+            var f = t.GetField(n, BF);
+            if (f != null) return f;
+        }
+        return null;
+    }
+    static object Get(object o, string n) { var f = FI(o.GetType(), n); return f == null ? null : f.GetValue(o); }
+    static T Get<T>(object o, string n) { return (T)Get(o, n); }
+    static void Set(object o, string n, object v) { FI(o.GetType(), n).SetValue(o, v); }
+    static object Call(object o, string n, params object[] a) { return o.GetType().GetMethod(n, BF).Invoke(o, a); }
+    static string V(Vector3 v) { return "(" + F3(v.x) + ", " + F3(v.y) + ", " + F3(v.z) + ")"; }
+    static string F3(float f) { return f.ToString("0.000", CultureInfo.InvariantCulture); }
+    static string F(float f) { return f.ToString("0.###", CultureInfo.InvariantCulture); }
+
+    // ---------------- capture ----------------
+    static Texture2D Render(float fov)
+    {
+        if (rt == null)
+        {
+            rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4, name = "ESAB capture" };
+            rt.Create();
+        }
+        var prevFov = cam.fieldOfView;
+        cam.fieldOfView = fov;
+        var prev = cam.targetTexture;
+        cam.targetTexture = rt;
+        UnityEngine.Random.InitState(GrainSeed);
+        cam.Render();
+        UnityEngine.Random.InitState(GrainSeed);
+        cam.Render();
+        cam.targetTexture = prev;
+        cam.fieldOfView = prevFov;
+        var active = RenderTexture.active;
+        RenderTexture.active = rt;
+        var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+        tex.Apply();
+        RenderTexture.active = active;
+        return tex;
+    }
+
+    sealed class MeasurePoint
+    {
+        public string name;
+        public Vector3 world;
+        public MeasurePoint(string n, Vector3 w) { name = n; world = w; }
+    }
+
+    static float gameFov = 76f;
+    static Transform runRoom, exitRoom;
+
+    static string TrofferHash(Transform room)
+    {
+        var sb = new StringBuilder();
+        foreach (var l in room.GetComponentsInChildren<Light>(true).Where(x => x.name.StartsWith("fluorescent light ", StringComparison.Ordinal)).OrderBy(x => x.name, StringComparer.Ordinal))
+            sb.Append(l.name.Substring(18)).Append(l.enabled && l.gameObject.activeInHierarchy ? ":" + F(l.intensity) : ":off").Append(' ');
+        return sb.ToString().Trim();
+    }
+
+    static string PostExposure()
+    {
+        var stack = VolumeManager.instance.stack;
+        var ca = stack == null ? null : stack.GetComponent<ColorAdjustments>();
+        var tm = stack == null ? null : stack.GetComponent<Tonemapping>();
+        return "postExposure " + (ca != null && ca.active ? F(ca.postExposure.value) : "n/a") + " tonemap " + (tm != null && tm.active ? tm.mode.value.ToString() : "n/a");
+    }
+
+    /// <summary>Render one frame from a preview-local eye with a world rotation and record it.</summary>
+    static void Shot(string file, string option, Vector3 eyeL, Quaternion rotWorld, float fov, string note, Transform room, string lightState, List<MeasurePoint> pts)
+    {
+        var t = cam.transform;
+        var lp = t.localPosition;
+        var lr = t.localRotation;
+        var far = cam.farClipPlane;
+        var eye = spaceRoot.TransformPoint(eyeL);
+        t.SetPositionAndRotation(eye, rotWorld);
+        cam.farClipPlane = 80f;
+        var tex = Render(fov);
+        File.WriteAllBytes(Path.Combine(OutDir, file), tex.EncodeToPNG());
+        UnityEngine.Object.Destroy(tex);
+        // measuring points, in pixels of the saved PNG (y from the top)
+        var prevFov = cam.fieldOfView; var prevTarget = cam.targetTexture;
+        cam.fieldOfView = fov; cam.targetTexture = rt;
+        foreach (var p in pts)
+        {
+            var v = cam.WorldToViewportPoint(p.world);
+            points.Append(file).Append('\t').Append(p.name).Append('\t').Append(F3(v.x * W)).Append('\t').Append(F3((1f - v.y) * H)).Append('\t').Append(F3(v.z)).Append('\n');
+        }
+        cam.fieldOfView = prevFov; cam.targetTexture = prevTarget;
+        var e = t.eulerAngles;
+        shots.Append(file).Append('\t').Append(option).Append('\t').Append(V(eyeL)).Append('\t').Append("euler " + V(e)).Append('\t').Append("vfov " + F(fov))
+            .Append('\t').Append(lightState).Append('\t').Append("troffers " + TrofferHash(room)).Append('\t').Append(PostExposure()).Append('\t').Append(note).Append('\n');
+        Flush();
+        Log("captured " + file + " [" + option + "] " + note);
+        t.localPosition = lp;
+        t.localRotation = lr;
+        cam.farClipPlane = far;
+    }
+
+    // ---------------- main ----------------
+    static IEnumerator Main()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        foreach (var old in Directory.GetFiles(OutDir, "*.png")) File.Delete(old);
+        while ((game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>()) == null) yield return 1;
+        cam = Get<Camera>(game, "cam");
+        Time.captureDeltaTime = 1f / 60f;
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        Log("game found - quality " + QualitySettings.names[QualitySettings.GetQualityLevel()] + " - gfx " + SystemInfo.graphicsDeviceType + " " + SystemInfo.graphicsDeviceName
+            + " - URP asset " + (urp != null ? urp.name + " MSAA " + urp.msaaSampleCount + " HDR " + urp.supportsHDR : "none") + " - reduce flashing " + FrontRoomsSettings.ReduceFlashing);
+        while (Time.time < 1.0f) yield return 1;
+        UnityEngine.Random.InitState(InitSeed);
+        for (var tries = 0; tries < 60 && !Get<bool>(game, "mapPlay"); tries++)
+        {
+            Call(game, "RequestTitleStart");
+            if (!Get<bool>(game, "mapPlay")) yield return 15;
+        }
+        if (Get<bool>(game, "mapPlay"))
+        {
+            var tuning = Get<FrontRoomsHunterTuning>(game, "hunterTuning");
+            tuning.releaseDelaySeconds = 1e6f;
+            Log("run started - run seed " + Get<int>(game, "runSeed") + " - Relay held dormant");
+        }
+        else Log("could not start a run; capturing from the title");
+        yield return 120;
+        gameFov = cam.fieldOfView;
+        Log("game camera vFOV " + F(gameFov));
+        yield return BuildPreview();
+        if (runRoom == null || exitRoom == null) yield break;
+        yield return RunCall();
+        yield return ExitCall();
+        Log("DONE");
+    }
+
+    static IEnumerator BuildPreview()
+    {
+        var go = new GameObject("ESAB / title profiles (harness)");
+        go.transform.position = PreviewRoot;
+        var stream = go.AddComponent<FrontRoomsRoomStream>();
+        stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
+            FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
+            FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+        // The Lobby breather after Exit (as the room-visuals and integrate harnesses), its far door shut.
+        var slotType = typeof(FrontRoomsRoomStream).GetNestedType("RoomSlot", BindingFlags.NonPublic);
+        var count = Enum.GetValues(typeof(RoomRule)).Length;
+        var slot = Activator.CreateInstance(slotType, true);
+        Set(slot, "sequence", count);
+        Set(slot, "rule", RoomRule.Lobby);
+        Set(slot, "startZ", count * FrontRoomsRoomStream.RoomLength);
+        Set(slot, "endZ", (count + 1) * FrontRoomsRoomStream.RoomLength);
+        var breather = new GameObject("Profile " + count + " / Lobby (breather after Exit, added by the harness)");
+        breather.transform.SetParent(go.transform, false);
+        breather.transform.localPosition = new Vector3(0f, 0f, count * FrontRoomsRoomStream.RoomLength);
+        Set(slot, "root", breather);
+        typeof(FrontRoomsRoomStream).GetMethod("BuildRoom", BF).Invoke(stream, new[] { slot, (object)count });
+        Set(slot, "doorProgress", 0f);
+        typeof(FrontRoomsRoomStream).GetMethod("ApplyDoorPose", BF).Invoke(stream, new[] { slot });
+        typeof(FrontRoomsRoomStream).GetMethod("ActivateRoomLightImmediately", BF).Invoke(stream, new[] { slot });
+        yield return 5;
+        spaceRoot = go.transform;
+        foreach (Transform t in go.transform)
+        {
+            if (t.name == "Profile 3 / Run") runRoom = t;
+            if (t.name == "Profile 4 / Exit") exitRoom = t;
+        }
+        if (runRoom == null || exitRoom == null)
+        {
+            var names = new List<string>();
+            foreach (Transform t in go.transform) names.Add(t.name);
+            Log("preview rooms not found: " + string.Join(", ", names.ToArray()));
+        }
+    }
+
+    static Transform FindChild(Transform room, string name)
+    {
+        return room.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == name);
+    }
+
+    sealed class HangState
+    {
+        public Transform sign;
+        public FrontRoomsExitSign driver;
+        public Light light;
+        public Vector3 glowLocal;
+        public string dealt;
+        public List<Renderer> renderers = new List<Renderer>();
+        public List<ShadowCastingMode> modes = new List<ShadowCastingMode>();
+    }
+
+    // ---------------- call 2: the Run sign's light ----------------
+    static IEnumerator RunCall()
+    {
+        var zr = 3 * FrontRoomsRoomStream.RoomLength;
+        float za = zr + 3.4f, zb = zr + 9.2f;
+        Vector3 centre;
+        var info = FrontRoomsKitLibrary.GetInfo("Kit_ExitSign_Hanging");
+        if (info == null || !info.TryAnchor("centre", out centre)) { centre = new Vector3(0f, -.506f, 0f); Log("WARN centre anchor not found, using (0, -0.506, 0)"); }
+        var signs = new List<HangState>();
+        foreach (var label in new[] { "exit sign A", "exit sign B" })
+        {
+            var s = new HangState();
+            s.sign = FindChild(runRoom, label);
+            if (s.sign == null) { Log("WARN " + label + " not found"); continue; }
+            s.driver = s.sign.GetComponent<FrontRoomsExitSign>();
+            s.light = s.sign.GetComponentsInChildren<Light>(true).FirstOrDefault(l => l.name == "run exit sign light");
+            s.glowLocal = s.light != null ? s.light.transform.localPosition : Vector3.zero;
+            s.dealt = s.driver != null ? s.driver.State + " Level " + F(s.driver.Level) : "no driver";
+            foreach (var r in s.sign.GetComponentsInChildren<Renderer>(true)) { s.renderers.Add(r); s.modes.Add(r.shadowCastingMode); }
+            // Both options use a LIT sign, so the light is 3.6 in both (the hash deal is logged).
+            if (s.driver != null) s.driver.Configure(20261008u, FrontRoomsExitSign.Temperament.Lit, s.light, 3.6f);
+            Log(label + ": dealt " + s.dealt + "; forced LIT; light local " + V(s.glowLocal) + " world y " + F3(s.light != null ? s.light.transform.position.y : -1f)
+                + " intensity " + F(s.light != null ? s.light.intensity : -1f) + " range " + F(s.light != null ? s.light.range : -1f) + " shadows " + (s.light != null ? s.light.shadows.ToString() : "-")
+                + "; renderers " + s.renderers.Count + " (" + string.Join(", ", s.renderers.Select(r => r.name + ":" + r.shadowCastingMode).ToArray()) + ")");
+            signs.Add(s);
+        }
+        Log("hanging kit centre anchor " + V(centre) + " = world y " + F3(FrontRoomsRoomStream.RoomHeight + centre.y));
+        yield return 3;
+
+        var pitchUp = spaceRoot.rotation * Quaternion.Euler(-20f, 0f, 0f);
+        var wideEye = new Vector3(0f, 1.62f, zr + .9f);
+        var wideRot = Quaternion.LookRotation(spaceRoot.TransformPoint(new Vector3(0f, .85f, zr + 12f)) - spaceRoot.TransformPoint(wideEye));
+        var pts = new List<MeasurePoint>();
+        Func<Vector3, Vector3> W2 = p => spaceRoot.TransformPoint(p);
+        pts.Add(new MeasurePoint("signB_face", W2(new Vector3(0f, 2.394f, zb - .04f))));
+        pts.Add(new MeasurePoint("signB_under", W2(new Vector3(0f, 2.286f, zb - .02f))));
+        pts.Add(new MeasurePoint("ceil_shadow_L", W2(new Vector3(.40f, 2.899f, zb))));
+        pts.Add(new MeasurePoint("ceil_shadow_R", W2(new Vector3(-.40f, 2.899f, zb))));
+        pts.Add(new MeasurePoint("ceil_ref_L", W2(new Vector3(1.20f, 2.899f, zb))));
+        pts.Add(new MeasurePoint("ceil_ref_R", W2(new Vector3(-1.20f, 2.899f, zb))));
+        pts.Add(new MeasurePoint("ceil_above_B", W2(new Vector3(0f, 2.899f, zb - .25f))));
+        pts.Add(new MeasurePoint("floor_under_B", W2(new Vector3(0f, .001f, zb))));
+        pts.Add(new MeasurePoint("floor_under_A", W2(new Vector3(0f, .001f, za))));
+        pts.Add(new MeasurePoint("floor_mid_AB", W2(new Vector3(0f, .001f, (za + zb) * .5f))));
+        pts.Add(new MeasurePoint("signA_face", W2(new Vector3(0f, 2.394f, za - .04f))));
+        pts.Add(new MeasurePoint("signA_under", W2(new Vector3(0f, 2.286f, za - .02f))));
+        pts.Add(new MeasurePoint("ceil_shadowA_L", W2(new Vector3(.40f, 2.899f, za))));
+        pts.Add(new MeasurePoint("ceil_shadowA_R", W2(new Vector3(-.40f, 2.899f, za))));
+
+        foreach (var option in new[] { "A", "B", "A2" })
+        {
+            var isB = option == "B";
+            foreach (var s in signs)
+            {
+                if (s.light != null) s.light.transform.localPosition = isB ? centre : s.glowLocal;
+                for (var i = 0; i < s.renderers.Count; i++) s.renderers[i].shadowCastingMode = isB ? ShadowCastingMode.Off : s.modes[i];
+            }
+            yield return 3;
+            var ls = string.Join(" | ", signs.Select(s => s.sign.name + " light y " + F3(s.light.transform.position.y) + " I " + F(s.light.intensity) + " sign shadows " + s.renderers[0].shadowCastingMode).ToArray());
+            var tag = option.ToLowerInvariant();
+            Shot("run_" + tag + "_d1p5.png", option, new Vector3(0f, 1.62f, zb - 1.5f), pitchUp, gameFov, "Run - eye 1.62 m, 1.5 m before sign B, pitch +20", runRoom, ls, pts);
+            yield return 1;
+            Shot("run_" + tag + "_d4.png", option, new Vector3(0f, 1.62f, zb - 4f), pitchUp, gameFov, "Run - eye 1.62 m, 4 m before sign B, pitch +20", runRoom, ls, pts);
+            yield return 1;
+            Shot("run_" + tag + "_d8.png", option, new Vector3(0f, 1.62f, zb - 8f), pitchUp, gameFov, "Run - eye 1.62 m, 8 m before sign B (sign A 2.2 m ahead), pitch +20", runRoom, ls, pts);
+            yield return 1;
+            Shot("run_" + tag + "_wide.png", option, wideEye, wideRot, gameFov, "Run - wide from the entry down the room (room-visuals run_wide aim)", runRoom, ls, pts);
+            yield return 1;
+        }
+        // restore A
+        foreach (var s in signs)
+        {
+            if (s.light != null) s.light.transform.localPosition = s.glowLocal;
+            for (var i = 0; i < s.renderers.Count; i++) s.renderers[i].shadowCastingMode = s.modes[i];
+        }
+        yield return 2;
+    }
+
+    // ---------------- VL211: the Exit sign's spill light ----------------
+    static IEnumerator ExitCall()
+    {
+        var ze = 4 * FrontRoomsRoomStream.RoomLength;
+        var sign = FindChild(exitRoom, "exit sign over door");
+        if (sign == null) { Log("WARN exit sign over door not found"); yield break; }
+        var driver = sign.GetComponent<FrontRoomsExitSign>();
+        Log("exit sign: state " + (driver != null ? driver.State + " Level " + F(driver.Level) : "no driver") + " world " + V(sign.position) + " local " + V(spaceRoot.InverseTransformPoint(sign.position))
+            + " lights under it " + sign.GetComponentsInChildren<Light>(true).Length);
+        Vector3 glow;
+        var info = FrontRoomsKitLibrary.GetInfo("Kit_ExitSign");
+        if (info == null || !info.TryAnchor("glow", out glow)) { glow = new Vector3(0f, -.02f, .06f); Log("WARN glow anchor not found, using (0, -0.02, 0.06)"); }
+        // spec 8.6: one unshadowed point at the glow anchor, colour (1, .13, .07), 0.5, range 1.5 m
+        var spill = new GameObject("exit sign spill light (harness, spec 8.6)").AddComponent<Light>();
+        spill.transform.SetParent(sign, false);
+        spill.transform.localPosition = glow;
+        spill.type = LightType.Point;
+        spill.color = new Color(1f, .13f, .07f);
+        spill.intensity = .5f;
+        spill.range = 1.5f;
+        spill.shadows = LightShadows.None;
+        spill.enabled = false;
+        Log("spill light at glow anchor " + V(glow) + " = world " + V(spill.transform.position) + " (preview-local " + V(spaceRoot.InverseTransformPoint(spill.transform.position)) + ")");
+
+        // far door shut, as the player arrives
+        var hinges = new List<Transform>();
+        var hingeRot = new List<Quaternion>();
+        foreach (var t in exitRoom.GetComponentsInChildren<Transform>(true))
+            if (t.name == "double door left hinge" || t.name == "double door right hinge") { hinges.Add(t); hingeRot.Add(t.localRotation); t.localRotation = Quaternion.identity; }
+        yield return 3;
+
+        var faceCentre = sign.TransformPoint(new Vector3(0f, .106f, .0605f));
+        var faceL = spaceRoot.InverseTransformPoint(faceCentre);
+        var pts = new List<MeasurePoint>();
+        pts.Add(new MeasurePoint("face_centre", faceCentre));
+        pts.Add(new MeasurePoint("face_endL", sign.TransformPoint(new Vector3(.142f, .106f, .0605f))));
+        pts.Add(new MeasurePoint("face_endR", sign.TransformPoint(new Vector3(-.142f, .106f, .0605f))));
+        pts.Add(new MeasurePoint("face_top", sign.TransformPoint(new Vector3(0f, .197f, .0605f))));
+        pts.Add(new MeasurePoint("letter_I", sign.TransformPoint(new Vector3(-.036f, .106f, .0605f))));
+        pts.Add(new MeasurePoint("letter_X", sign.TransformPoint(new Vector3(.0155f, .106f, .0605f))));
+        pts.Add(new MeasurePoint("housing_under", sign.TransformPoint(new Vector3(0f, -.001f, .035f))));
+        pts.Add(new MeasurePoint("door_top_L", sign.TransformPoint(new Vector3(.40f, -.15f, -.01f))));
+        pts.Add(new MeasurePoint("door_top_R", sign.TransformPoint(new Vector3(-.40f, -.15f, -.01f))));
+        pts.Add(new MeasurePoint("header_L", sign.TransformPoint(new Vector3(.60f, .106f, -.002f))));
+        pts.Add(new MeasurePoint("header_R", sign.TransformPoint(new Vector3(-.60f, .106f, -.002f))));
+        pts.Add(new MeasurePoint("wall_side_L", sign.TransformPoint(new Vector3(1.70f, .106f, -.004f))));
+        pts.Add(new MeasurePoint("ceil_over", sign.TransformPoint(new Vector3(0f, .23f, .30f))));
+
+        foreach (var option in new[] { "A", "B", "A2" })
+        {
+            spill.enabled = option == "B";
+            yield return 3;
+            var ls = "spill " + (spill.enabled ? "on I " + F(spill.intensity) + " range " + F(spill.range) + " colour (1, .13, .07) shadows None" : "off") + " - sign " + (driver != null ? driver.State.ToString() : "?");
+            var tag = option.ToLowerInvariant();
+            foreach (var d in new[] { 2f, 6f })
+            {
+                var eyeL = new Vector3(0f, 1.62f, faceL.z - d);
+                var rot = Quaternion.LookRotation(faceCentre - spaceRoot.TransformPoint(eyeL));
+                Shot("exit_" + tag + "_d" + F(d) + ".png", option, eyeL, rot, gameFov, "Exit - eye 1.62 m, " + F(d) + " m from the sign face, aimed at its centre; far door shut", exitRoom, ls, pts);
+                yield return 1;
+            }
+        }
+        spill.enabled = false;
+        for (var i = 0; i < hinges.Count; i++) hinges[i].localRotation = hingeRot[i];
+        yield return 1;
+    }
+}

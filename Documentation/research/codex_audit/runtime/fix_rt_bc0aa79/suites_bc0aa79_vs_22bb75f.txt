@@ -1,0 +1,18 @@
+camera-rig-tests.json                22bb75f passed 25 failed 0 PASS: 25 passed, 0 failed
+                                     bc0aa79 passed 33 failed 0 PASS: 33 passed, 0 failed
+captions-tests.json                  22bb75f passed 9 failed 0 PASS: 9 passed, 0 failed
+                                     bc0aa79 passed 9 failed 0 PASS: 9 passed, 0 failed
+fixture-tick-tests.json              22bb75f passed 28 failed 0 PASS: 28 passed, 0 failed
+                                     bc0aa79 passed 28 failed 0 PASS: 28 passed, 0 failed
+glass-shot-tests.json                22bb75f passed 20 failed 0 PASS: 20 passed, 0 failed
+                                     bc0aa79 passed 20 failed 0 PASS: 20 passed, 0 failed
+level-designer-tests.json            22bb75f passed 138 failed 0 PASS
+                                     bc0aa79 passed 138 failed 0 PASS
+map-interaction-tests.json           22bb75f passed 143 failed 0 PASS: 143 passed, 0 failed
+                                     bc0aa79 passed 152 failed 0 PASS: 152 passed, 0 failed
+map-verification-latest.json         22bb75f passed 100 failed 0 
+                                     bc0aa79 passed 100 failed 0 
+relay-nav-test.json                  22bb75f passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+                                     bc0aa79 passed None failed None PASS · 60/60 hunts arrived, 0 pass-throughs, 0 frames in architecture,
+stream-verification-latest.json      22bb75f passed 5 failed 0 
+                                     bc0aa79 passed 5 failed 0 

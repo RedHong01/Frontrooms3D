@@ -4,96 +4,174 @@
  "colliders": [],
  "anchors": [
   {
-   "name": "back",
+   "name": "hang",
    "pos": [
-    0,
-    0,
-    0
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "back_centre",
+   "pos": [
+    0.0,
+    0.106,
+    0.0
    ]
   },
   {
    "name": "face",
    "pos": [
-    0,
-    0,
-    0.052099999999999994
+    0.0,
+    0.106,
+    0.059500000000000004
    ]
   },
   {
    "name": "face_dir",
    "pos": [
-    0,
-    0,
-    0.1521
+    0.0,
+    0.106,
+    0.1595
+   ]
+  },
+  {
+   "name": "diffuser",
+   "pos": [
+    0.0,
+    0.106,
+    0.0526
+   ]
+  },
+  {
+   "name": "lamp_a",
+   "pos": [
+    0.05439999999999999,
+    0.1432,
+    0.03
+   ]
+  },
+  {
+   "name": "lamp_b",
+   "pos": [
+    -0.048,
+    0.1432,
+    0.03
+   ]
+  },
+  {
+   "name": "glow",
+   "pos": [
+    0.0,
+    -0.02,
+    0.06
+   ]
+  },
+  {
+   "name": "mount_l",
+   "pos": [
+    0.0445,
+    0.14,
+    0.0
+   ]
+  },
+  {
+   "name": "mount_r",
+   "pos": [
+    -0.0445,
+    0.14,
+    0.0
    ]
   }
  ],
  "tags": [
-  "interactable",
-  "exit_sign"
+  "exit_sign",
+  "wall_decor"
  ],
  "noCollider": true,
+ "exitSign": {
+  "faces": 1,
+  "openingM": [
+   0.32,
+   0.186
+  ],
+  "letterHeightM": 0.1524,
+  "strokeM": 0.01905,
+  "faceSlot": "ExitSign_Face",
+  "diffuserSlot": "ExitSign_Diffuser",
+  "deadSlot": "ExitSign_Diffuser_Dead",
+  "chevrons": "closed",
+  "lampField": {
+   "lampA": [
+    0.33,
+    0.7,
+    0.08,
+    0.2
+   ],
+   "lampB": [
+    0.65,
+    0.7,
+    0.08,
+    0.2
+   ],
+   "fill": 0.06,
+   "dc": [
+    [
+     0.12,
+     0.7,
+     0.08,
+     0.2
+    ],
+    [
+     0.88,
+     0.7,
+     0.08,
+     0.2
+    ]
+   ],
+   "dcLevel": 0.25,
+   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
+  }
+ },
  "lodDistances": [
-  3.0,
-  10.0,
-  null
+  5.0,
+  0.0,
+  0.0
  ],
  "lodBudget": [
-  2000,
-  700,
-  100
+  3500,
+  1100,
+  200
  ],
- "lodRatios": [
-  0.35,
-  0.05
- ],
- "face": {
-  "slot": "Run_ExitSign",
-  "deadSlot": "Run_ExitSign_Dead",
-  "textureRegion": [
-   0.165,
-   0.1441,
-   0.845,
-   0.9069
-  ],
-  "materialTile": [
-   0.36,
-   0.18
-  ],
-  "materialST": [
-   -1,
-   1,
-   1,
-   0
-  ],
-  "letterHeightM": 0.096
- },
- "trianglesCheck": 1916,
+ "trianglesCheck": 3136,
  "boundsMin": [
-  -0.16500000655651093,
-  -0.10000000149011612,
+  -0.17299999296665192,
+  0.0,
   -0.0
  ],
  "boundsMax": [
-  0.16500000655651093,
-  0.10159999877214432,
-  0.05983543023467064
+  0.17299999296665192,
+  0.21240000426769257,
+  0.06393542885780334
  ],
- "triangles": 1916,
+ "triangles": 3136,
  "slots": [
-  "Prop_SteelBlack",
-  "Run_ExitSign"
+  "ExitSign_Housing",
+  "ExitSign_Face",
+  "ExitSign_Diffuser",
+  "Prop_Chrome"
  ],
+ "trianglesLod1": 984,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
-  0.02991771511733532
+  0.03196771442890167
  ],
  "footprintSize": [
-  0.33000001311302185,
-  0.05983543023467064
+  0.34599998593330383,
+  0.06393542885780334
  ],
- "placement": "Floor",
+ "placement": "Wall",
  "service": 0.0,
- "minCeiling": 0.152
+ "minCeiling": 0.262
 }

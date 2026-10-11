@@ -55,7 +55,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap }
 
     /// <summary>Buttons the view draws a press state for.</summary>
-    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow }
+    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow }
 
     /// <summary>The touch preference rows (the TOUCH column of the settings card).</summary>
     public enum TouchRow { LookSpeed, InvertLook, GyroLook, Stick, Sprint, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls }
@@ -107,8 +107,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         public Rect Rect;
     }
 
+    /// <summary>The slow gait's speed as a share of the walk: 3.2 m/s × 0.45 = 1.44 m/s.</summary>
+    public const float SlowSpeedShare = .45f;
+    /// <summary>A run starts only within this many degrees of straight ahead, so a hard strafe never runs by accident.</summary>
+    public const float RunHalfAngle = 70f;
+
     // Timing (seconds) and slop (points).
-    const float SocketDwellSeconds = .15f;
     const float TapMaxSeconds = .22f;
     const float TapSlop = 8f;
     const float UseLookSlop = 12f;
@@ -121,23 +125,31 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     /// <summary>Raised for a settings row tap: the row id (game row index, or TouchRowBase + TouchRow) and a step (−1, +1, or 2 to cycle).</summary>
     public event Action<int, int> SettingsRowRequested;
     public event Action RestartCancelRequested;
+    /// <summary>Raised by the pause card's QUIT TO TITLE chip; the game owns the scene/title reset.</summary>
+    public event Action ReturnTitleRequested;
     /// <summary>A short, still tap on the look side, in viewport coordinates (0..1): the game uses what is under it (a door).</summary>
     public event Action<Vector2> LookTapped;
-    public event Action<bool> SprintLatchChanged;
+    public event Action<bool> RunChanged;
 
     // ------------------------------------------------------- state for the view
     public FrontRoomsTouchLayout Layout { get; private set; }
     public MenuState CurrentMenuState => menuState;
+    /// <summary>The caught card's TRY AGAIN has waited its 0.6 s: Android Back may retry too.</summary>
+    public bool TryAgainReady => menuState == MenuState.Caught && FrontRoomsTouchMotion.Now - menuStateSince >= TryAgainDelay;
     public bool RestartConfirmationOpen { get; private set; }
     public bool StickTouched => moveId >= 0;
     public Vector2 StickOrigin { get; private set; }
-    /// <summary>Where the thumb is drawn: the finger, held inside the ring unless it is reaching for (or sitting in) the socket.</summary>
+    /// <summary>Where the thumb is drawn: the finger, held inside the ring unless it reaches ahead for the run line (or runs).</summary>
     public Vector2 StickThumb { get; private set; }
-    /// <summary>0..1 while the thumb dwells in the socket; 1 when latched.</summary>
-    public float SocketArm { get; private set; }
-    public bool SprintLatched { get; private set; }
+    /// <summary>The stick's gait this frame: slow near the centre, walk out to the ring, run past the line (Red, 2026-10-08).</summary>
+    public FrontRoomsGait CurrentGait { get; private set; }
+    /// <summary>0..1 as the thumb goes from the ring to the run line, ahead; 1 while running.</summary>
+    public float RunReach { get; private set; }
+    /// <summary>Running: the stick is past the run line (or the RUN button is on). The game still applies stamina.</summary>
+    public bool Running { get; private set; }
     public bool Winded { get; private set; }
-    public bool SprintSocketMode => sprintSocketMode;
+    /// <summary>Settings › RUN: STICK (push past the ring) or BUTTON.</summary>
+    public bool RunStickMode => runStickMode;
     public bool FloatingStick => floatingStick;
     public bool LeftHanded => leftHanded;
     public UsePrompt CurrentUsePrompt { get; private set; } = UsePrompt.Hidden;
@@ -157,7 +169,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     /// <summary>TRY AGAIN takes taps only after this long on the caught card (a thumb still down from the chase must not restart).</summary>
     public const float TryAgainDelay = .6f;
     bool floatingStick = true;
-    bool sprintSocketMode = true;
+    bool runStickMode = true;
     bool leftHanded;
     float controlsScale = 1f;
     float lookDegreesPerPoint = BaseLookDegreesPerPoint;
@@ -190,6 +202,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         public bool Cancelled;
         public bool Moved;
         public float ScrollStart;
+        /// <summary>A tap on the frost around the settings card: it goes back like the BACK chip.</summary>
+        public bool Scrim;
     }
 
     readonly Dictionary<int, Finger> fingers = new Dictionary<int, Finger>();
@@ -263,7 +277,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         FrontRoomsInput.SetVirtualSnapshot(new FrontRoomsInput.FrameSnapshot(
             frameMove,
             frameLook,
-            SprintLatched && !Winded,
+            Running && !Winded,
             frameUseDown,
             useId >= 0,
             framePauseDown,
@@ -309,15 +323,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         RestartConfirmationOpen = open && menuState == MenuState.Paused;
     }
 
+    /// <summary>A camera takeover's HUD fade, 0..1 (the rig's HudFade): the desktop HUD fades with it, and so does USE unless a thumb holds it.</summary>
+    public float Takeover { get; private set; }
+
+    public void SetTakeover(float value) => Takeover = Mathf.Clamp01(value);
+
     public void SetWinded(bool value)
     {
         if (Winded == value) return;
         Winded = value;
-        if (Winded)
-        {
-            SocketArm = 0f;
-            SetSprintLatched(false);
-        }
+        if (Winded) SetRunning(false);
     }
 
     /// <summary>Binds what the crosshair is on. Losing the target releases a held USE so a stale hold never leaks into the next one.</summary>
@@ -343,8 +358,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         gyroMode = Mathf.Clamp(FrontRoomsSettings.TouchGyroMode, 0, 2);
         var floating = FrontRoomsSettings.TouchFloatingStick;
         if (floating != floatingStick) { floatingStick = floating; ClearTouchState(); }
-        var socket = FrontRoomsSettings.TouchSprintSocket;
-        if (socket != sprintSocketMode) { sprintSocketMode = socket; SetSprintLatched(false); SocketArm = 0f; }
+        // The preference keeps its old name: TouchSprintSocket true = run with the stick.
+        var stickRun = FrontRoomsSettings.TouchSprintSocket;
+        if (stickRun != runStickMode) { runStickMode = stickRun; SetRunning(false); }
         FrontRoomsMobileHaptics.GameplayEnabled = FrontRoomsSettings.TouchHaptics;
         FrontRoomsMobileHaptics.ControlsEnabled = FrontRoomsSettings.TouchHapticsControls;
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
@@ -361,65 +377,61 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         {
             StickOrigin = floatingStick ? StickOrigin : Layout.StickRest;
             StickThumb = StickOrigin;
+            CurrentGait = FrontRoomsGait.Still;
+            RunReach = 0f;
             return;
         }
         var L = Layout;
         var offset = moveFinger - StickOrigin;
         var r = L.StickRadius;
+        var magnitude = offset.magnitude;
+        var ahead = magnitude > .001f && Vector2.Angle(Vector2.up, offset) <= RunHalfAngle;
+        var canRun = runStickMode && !Winded;
 
-        // The sprint socket: a deliberate reach past the ring, held for 150 ms. Never a hard push (Alien: Isolation's edge sprint broke stealth).
-        if (sprintSocketMode && !Winded)
+        // Run past the ring (Red, 2026-10-08): in at the line 24 pt beyond the ring, ahead, with a click you feel;
+        // out once the thumb is back inside the ring (or pulled back). Between the two the gait holds, so a thumb
+        // resting near the edge never flickers. Alien: Isolation's sprint fired at the edge itself and broke stealth.
+        if (canRun)
         {
-            var socket = new Vector2(0f, L.SocketOffset);
-            if (!SprintLatched)
-            {
-                var inSocket = (offset - socket).sqrMagnitude <= L.SocketCatchRadius * L.SocketCatchRadius;
-                SocketArm = inSocket ? Mathf.MoveTowards(SocketArm, 1f, FrontRoomsTouchMotion.Delta / SocketDwellSeconds) : 0f;
-                if (SocketArm >= 1f) SetSprintLatched(true);
-            }
-            else if (offset.y <= 0f)
-            {
-                // Latched sprint holds while the thumb stays forward; pulling it to (or below) the centre walks again.
-                SetSprintLatched(false);
-                SocketArm = 0f;
-            }
+            if (!Running) { if (ahead && magnitude >= L.RunLineRadius) SetRunning(true); }
+            else if (magnitude < r || offset.y < 0f) SetRunning(false);
         }
-        else if (!sprintSocketMode && SprintLatched && offset.y <= 0f && offset.sqrMagnitude > L.StickDeadZone * L.StickDeadZone)
+        else if (!runStickMode && Running && offset.y <= 0f && magnitude > L.StickDeadZone)
         {
-            // A SPRINT-button sprint also ends on a pull back.
-            SetSprintLatched(false);
+            // A RUN-button run also ends on a pull back.
+            SetRunning(false);
         }
+        RunReach = Running ? 1f : canRun && ahead ? Mathf.Clamp01((magnitude - r) / Mathf.Max(1f, L.RunLineRadius - r)) : 0f;
 
         // A pull well below the centre is the desktop S: it cancels a shot that allows it.
         var pulledBack = offset.y < -L.ShotBackDepth;
         if (pulledBack && !shotBackArmed) { frameShotBack = true; shotBackArmed = true; }
         else if (!pulledBack) shotBackArmed = false;
 
-        var magnitude = offset.magnitude;
-        if (SprintLatched)
+        // Three gaits, one speed each, toward the thumb: slow inside 36 pt (the Relay can't hear it), walk beyond
+        // (the desktop walk), run past the line (the desktop sprint).
+        if (magnitude <= L.StickDeadZone) CurrentGait = FrontRoomsGait.Still;
+        else if (Running) CurrentGait = FrontRoomsGait.Run;
+        else
         {
-            // Sprinting: full speed toward the thumb, so the stick still steers.
-            frameMove = magnitude > .001f ? offset / magnitude : Vector2.up;
+            var walking = CurrentGait == FrontRoomsGait.Walk || CurrentGait == FrontRoomsGait.Run;
+            var edge = L.SlowRadius + (walking ? -L.SlowHysteresis : L.SlowHysteresis);
+            CurrentGait = magnitude >= edge ? FrontRoomsGait.Walk : FrontRoomsGait.Slow;
         }
-        else if (magnitude > L.StickDeadZone)
-        {
-            var amount = Mathf.Clamp01((magnitude - L.StickDeadZone) / Mathf.Max(1f, r - L.StickDeadZone));
-            frameMove = offset / magnitude * amount;
-        }
-        else frameMove = Vector2.zero;
+        frameMove = CurrentGait == FrontRoomsGait.Still ? Vector2.zero
+            : offset / magnitude * (CurrentGait == FrontRoomsGait.Slow ? SlowSpeedShare : 1f);
 
-        // The drawn thumb stays inside the ring, except on its way up to (or sitting in) the socket.
-        var towardSocket = sprintSocketMode && !Winded && offset.y > 0f && Mathf.Abs(offset.x) < L.SocketCatchRadius;
-        StickThumb = StickOrigin + (towardSocket ? Vector2.ClampMagnitude(offset, L.SocketOffset) : Vector2.ClampMagnitude(offset, r));
+        // The drawn thumb stays inside the ring, except ahead, where it follows the finger to just over the line.
+        var reach = canRun && (ahead || Running) ? L.RunThumbReach : r;
+        StickThumb = StickOrigin + Vector2.ClampMagnitude(offset, reach);
     }
 
-    void SetSprintLatched(bool value)
+    void SetRunning(bool value)
     {
-        if (SprintLatched == value) return;
-        SprintLatched = value;
-        if (value) SocketArm = 1f;
-        FrontRoomsMobileInteractionEvents.SprintLatched(value);
-        SprintLatchChanged?.Invoke(value);
+        if (Running == value) return;
+        Running = value;
+        FrontRoomsMobileInteractionEvents.RunChanged(value);
+        RunChanged?.Invoke(value);
     }
 
     // -------------------------------------------------------------- settings
@@ -501,7 +513,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case TouchRow.InvertLook: return "INVERT LOOK";
             case TouchRow.GyroLook: return "GYRO LOOK";
             case TouchRow.Stick: return "STICK";
-            case TouchRow.Sprint: return "SPRINT";
+            case TouchRow.Sprint: return "RUN";
             case TouchRow.ControlsSize: return "CONTROLS SIZE";
             case TouchRow.ControlsOpacity: return "CONTROLS OPACITY";
             case TouchRow.LeftHanded: return "LEFT-HANDED";
@@ -519,7 +531,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case TouchRow.InvertLook: return FrontRoomsSettings.TouchInvertLook ? "ON" : "OFF";
             case TouchRow.GyroLook: return FrontRoomsSettings.TouchGyroMode == 0 ? "OFF" : FrontRoomsSettings.TouchGyroMode == 1 ? "WHILE TOUCHING" : "ALWAYS";
             case TouchRow.Stick: return FrontRoomsSettings.TouchFloatingStick ? "FLOATING" : "FIXED";
-            case TouchRow.Sprint: return FrontRoomsSettings.TouchSprintSocket ? "SOCKET" : "BUTTON";
+            case TouchRow.Sprint: return FrontRoomsSettings.TouchSprintSocket ? "STICK" : "BUTTON";
             case TouchRow.ControlsSize: return FrontRoomsSettings.TouchControlsScalePercent + "%";
             case TouchRow.ControlsOpacity: return FrontRoomsSettings.TouchOpacityPercent + "%";
             case TouchRow.LeftHanded: return FrontRoomsSettings.TouchLeftHanded ? "ON" : "OFF";
@@ -566,6 +578,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (button == Button.Resume) { center = c + new Vector2(-96.5f, -89f); size = new Vector2(75f, h); return true; }
                 if (button == Button.Settings) { center = c + new Vector2(-1.5f, -89f); size = new Vector2(83f, h); return true; }
                 if (button == Button.Restart) { center = c + new Vector2(95.5f, -89f); size = new Vector2(79f, h); return true; }
+                // QUIT TO TITLE: centred 16 pt under the row, as wide as Figma's hug (平面视觉, 2026-10-08).
+                if (button == Button.ReturnTitle) { center = c + new Vector2(0f, -145f); size = new Vector2(109f, h); return true; }
                 return false;
             case MenuState.Paused when RestartConfirmationOpen:
                 if (button == Button.RestartCancel) { center = c + new Vector2(-46f, -89f); size = new Vector2(74f, h); return true; }
@@ -574,9 +588,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case MenuState.Settings:
                 if (button == Button.SettingsClose)
                 {
+                    // BACK, in the card's top-right corner (it was CLOSE, drawn under the card and invisible).
                     var card = L.SettingsCardSize;
-                    center = L.SettingsCardCenter + new Vector2(card.x * .5f - 24f - 32.5f, card.y * .5f - 8f - 20f);
-                    size = new Vector2(65f, h);
+                    center = L.SettingsCardCenter + new Vector2(card.x * .5f - 24f - 29f, card.y * .5f - 8f - 20f);
+                    size = new Vector2(58f, h);
                     return true;
                 }
                 return false;
@@ -587,7 +602,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         return false;
     }
 
-    static readonly Button[] MenuButtons = { Button.Resume, Button.Settings, Button.Restart, Button.RestartCancel, Button.RestartConfirm, Button.SettingsClose, Button.TryAgain };
+    static readonly Button[] MenuButtons = { Button.Resume, Button.Settings, Button.Restart, Button.ReturnTitle, Button.RestartCancel, Button.RestartConfirm, Button.SettingsClose, Button.TryAgain };
 
     Button MenuButtonAt(Vector2 p)
     {
@@ -683,7 +698,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     frameUseDown = true;
                     FrontRoomsMobileInteractionEvents.UsePressed();
                 }
-                else if (!sprintSocketMode && FrontRoomsTouchLayout.Contains(L.SprintButtonCenter, L.SprintButtonHitRadius, p))
+                else if (!runStickMode && FrontRoomsTouchLayout.Contains(L.SprintButtonCenter, L.SprintButtonHitRadius, p))
                 {
                     f.Role = Role.Button;
                     f.Button = Button.SprintToggle;
@@ -694,7 +709,6 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     moveId = id;
                     moveFinger = p;
                     StickOrigin = floatingStick ? L.FloatingOrigin(p) : L.StickRest;
-                    SocketArm = 0f;
                     shotBackArmed = false;
                 }
                 else if (lookId < 0 && L.InLookZone(p))
@@ -719,6 +733,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     f.RowDirection = dir;
                     f.ScrollStart = SettingsScroll;
                     scrollVelocity = 0f;
+                }
+                else if (!SettingsCardRect.Contains(p))
+                {
+                    // The frost around the card is a way back too; BACK shows pressed while the tap is held.
+                    f.Role = Role.Button;
+                    f.Button = Button.SettingsClose;
+                    f.Scrim = true;
                 }
                 break;
         }
@@ -773,9 +794,20 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         }
     }
 
+    Rect SettingsCardRect
+    {
+        get
+        {
+            var size = Layout.SettingsCardSize;
+            return new Rect(Layout.SettingsCardCenter - size * .5f, size);
+        }
+    }
+
     bool StillOnButton(Finger f, Vector2 p)
     {
         var L = Layout;
+        // A frost tap must stay a tap outside the card (a drag that wanders onto the card cancels it).
+        if (f.Scrim) return !SettingsCardRect.Contains(p) && (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
         switch (f.Button)
         {
             case Button.Pause: return FrontRoomsTouchLayout.Contains(L.PauseCenter, new Vector2(L.PauseHitSize + ButtonCancelSlop, L.PauseHitSize + ButtonCancelSlop), p);
@@ -796,8 +828,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (moveId == id)
                 {
                     moveId = -1;
-                    SocketArm = 0f;
-                    SetSprintLatched(false);
+                    SetRunning(false);
                     shotBackArmed = false;
                 }
                 break;
@@ -846,11 +877,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Button.TryAgain:
                 frameRestartDown = true;
                 break;
+            case Button.ReturnTitle:
+                ReturnTitleRequested?.Invoke();
+                break;
             case Button.RestartCancel:
                 RestartCancelRequested?.Invoke();
                 break;
             case Button.SprintToggle:
-                if (!Winded) SetSprintLatched(!SprintLatched);
+                if (!Winded) SetRunning(!Running);
                 break;
             case Button.SettingsRow:
                 ActiveSettingsRow = f.Row;
@@ -907,8 +941,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 #endif
         moveId = lookId = -1;
         shotBackArmed = false;
-        SocketArm = 0f;
-        SetSprintLatched(false);
+        SetRunning(false);
+        CurrentGait = FrontRoomsGait.Still;
+        RunReach = 0f;
         PressedButton = Button.None;
         PressedSettingsRow = -1;
         frameMove = frameLook = Vector2.zero;

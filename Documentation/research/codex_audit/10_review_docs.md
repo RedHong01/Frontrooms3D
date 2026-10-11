@@ -244,6 +244,8 @@ Severity: **major** misleads Red or a merging workflow about what is live or dec
 
 ## 4. Proposed replacement text for `VISUAL_CHAT_TASKS.md` (for the fix stage or the orchestrator)
 
+> **Superseded 2026-10-08 by `30_fix_docs.md`**, which records the text actually applied on current main. This draft is kept as written on 10-03, with three known errors: G14's shader hunks landed on 10-04 (9eddc35), so "traces no window glass" and "still owed" no longer hold; `proj_rt`'s shader size (42,863 B) kept changing and is not a stable reference; and the r3 facade was compiled (17:54) but never tested, not "never compiled".
+
 **Bullet L18 (Clone merge audit):**
 > **Clone merge audit 2026-10-03 (Codex, corrected by codex-audit):** Codex added `Kit_MiniBlind_Lowered.fbx/json` at 19:27 with two metas it wrote itself (uuid4 GUIDs `75e18a03…`, `af825826…`, importer block copied from `Kit_MiniBlind_Raised`); placement Wall, like `Kit_InteriorWindow`. Still owed and not in main: G14's `FrontRooms/Glass` hunks G-1/G-2/G-3 (the `FRGlassRTPrepass` pass; `proj_rt` 42,863 B vs main 29,095 B) and the window map contract (window-landing r4, `research/interactables/window_landing/03_contract_map.md`). Full list: `research/codex_audit/00_main_state.md` and `20_findings.md`.
 

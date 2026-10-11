@@ -95,7 +95,7 @@ Details and evidence follow in §3. Checks that passed are in §2. The list of u
 | StandaloneOSX | 23 | 608,768 B | 0 | 19 | 9 | 3 | 2 |
 
 - **WebGL, Windows and iOS players compile with 0 errors and hold no G14 code:** no P/Invoke entry, no RT system, no camera component, no pass. The renderer feature class compiles there with an empty body, so the shared renderer asset has no missing script.
-- **The macOS player holds all of it** (the 19 `FRGlassRT_` P/Invoke names = the 19 dylib exports).
+- **The macOS player holds all of it** (the 19 `FRGlassRT_` P/Invoke names = the 19 dylib exports). *[2026-10-08, COV-1:]* the scripts, yes; the dylib itself is not packaged into today's universal Mac app, so G14 is off in the player.
 - **WebGL rule.** G14 adds nothing to WebGL scripts. WebGL shaders lose the `_FR_GLASS_RT` variants and the prepass (both strippers act on WebGL). Codex's change to `FrontRooms_URP_Renderer.asset` is one line: the feature (already there before Codex) gets `prepassShader: {guid: 9e07ae8a…}`. The field is serialized on every platform (`Feature.cs:34`), so the shader is referenced on WebGL too, but the WebGL stripper empties it. So the WebGL build is unchanged by this track. On iOS and Windows the same reference keeps the shader: F6.
 - **Note.** On Windows and iOS the `FrontRoomsGlassRTCamera` class does not exist. That is why F5 matters.
 - The "exit code: 1" at log line 267 is Unity's Android `adb` probe. It is not the compile.
@@ -156,9 +156,9 @@ Details and evidence follow in §3. Checks that passed are in §2. The list of u
 
 **Why this is a finding.** Default quality follows the quality level (`FrontRoomsGlassRTSystem.cs:82–83`):
 - Red's editor is at level 3 → **High**;
-- the macOS player default is level 5 → **Ultra**.
+- the macOS player default is level 5 → **Ultra**, but only on paper. *[Correction, fix phase 2026-10-08, COV-1:]* no Mac player made by the current scripts loads G14. The arm64-only plugin is left out of the universal (x86_64 + arm64) app, and the player logs `[FrontRoomsGlassRT] off: plugin not loaded`. See `30_fix_runtime_rt.md`.
 
-So every Play session and every Mac build now shows unreviewed RT output. Nothing has been run against it:
+So every Editor Play session now shows unreviewed RT output (Mac players: RT off, COV-1). Nothing has been run against it:
 - no P0-A1…A13 or P1-B1…B8 (design §4.1–4.2);
 - no `rt/11_p0_p1_report.md`;
 - no `rt/images/P0_*`;
@@ -168,7 +168,7 @@ So every Play session and every Mac build now shows unreviewed RT output. Nothin
 
 **Two related results:**
 - **The shader proof is not clean (§4.3).** The re-run on today's shader gives 154/175. The one real open fail is P5 at the dead-lamp window: a depth tag 0.5 m off is not rejected.
-- **The window-landing workflow reports a visible problem.** Its VL107 (W1, queued 2026-10-07): "Intact glass in Play" FAILs. Intact vs broken differ by only 3.2 / 2.8 luma at 1 m, against a bar of 12. That run had G14's prepass in main, so the RT path is the first suspect.
+- **The window-landing workflow reports a visible problem.** Its VL107 (W1, queued 2026-10-07): "Intact glass in Play" FAILs. Intact vs broken differ by only 3.2 / 2.8 luma at 1 m, against a bar of 12. That run had G14's prepass in main, so the RT path is the first suspect. *[Correction, fix phase 2026-10-08 (F2 verifier):]* not an RT symptom. Intact vs broken was 2.9 / 2.7 before the prepass merge and 2.9 / 2.8 with it, so this FAIL stays with window-landing and the raster reflection (box projection) work, not with G14.
 
 **GPU cost could not be judged today.** G14's stage timers show 11.4 ms (High, head-on) and 15.9 ms (High, 0.55 m). Design §3.1 gives 1.3–2.0 ms typical. But whole-frame RT Off varied from 11.9 to 27.2 ms between two identical renders under this load, so these numbers are not evidence either way. P1-B8 must measure on an idle machine and in a player.
 
@@ -328,7 +328,7 @@ Outside the RT track, and covered by their own reviews:
 | Item | State |
 |---|---|
 | P0-A1…A13, P1-B1…B8 (design §4.1–4.2) | **Not run on the promoted code.** No `rt/11_p0_p1_report.md`, no `rt/images/P0_*` / `P1_*`. The harness `Assets/Editor/RT/FrontRoomsGlassRTVerify.cs` (1,634 lines) is in main, never run there; it still carries the clone-only pane-swap switch (editor only, not in builds) |
-| Player build (P0-A12, P1-B8) | None. The macOS player defaults to Ultra (quality level 5), which has never been measured |
+| Player build (P0-A12, P1-B8) | None. *[Corrected 2026-10-08, COV-1:]* today every Mac player leaves the arm64-only plugin out of the universal app, so G14 is off there (`off: plugin not loaded`). Only after COV-1 is fixed does the level-5 default (Ultra) apply; it has never been measured |
 | Metal validation layer (P0-A1) | Not run |
 | Fail-closed gate, design §2.7 | Missing (F1) |
 | Streaming / cost (P2): map events C3/C5/C6/C7, static TLAS, candidate set | Not started; P0 diff-scan and name-based `Classify` still in use (F3) |
@@ -336,7 +336,7 @@ Outside the RT track, and covered by their own reviews:
 | Design §4.1 "Delete": `Assets/Shaders/FrontRoomsMetalGlassRTComposite.shader` and the empty `Assets/Scripts/Rendering/MetalGlassReflection/` (+ `.meta`) | Still in main. Both predate Codex (`edfbc92`) and nothing references them (the shader's guid appears only in its own `.meta`). The `[Obsolete]` `FrontRoomsMetalGlassRTController.Ensure()` shim now has no caller and can go too |
 | Shader proof | 154/175, 1 open (§4.3); the harness's PROPS check must also hide the kit slab |
 | G14b secondary reflections | Design `rt/11_secondary_reflections.md` revised; its check:1 never ran (wiped). Separate workflow (VL110–112 today) |
-| Look (P1-B4) and the W1 intact-glass FAIL (VL107) | Not judged; needs eyes on frames |
+| Look (P1-B4) | Not judged; needs eyes on frames. *[2026-10-08: the W1 intact-glass FAIL (VL107) is not an RT symptom, see F2; it stays with window-landing]* |
 
 ## 6. Verification images (Figma, FRONTROOMS · VISUAL VERIFICATION LOG 2595:6093)
 

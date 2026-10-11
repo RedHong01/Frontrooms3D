@@ -1,0 +1,71 @@
+# F1 kit LOD readout (after_final, 2026-10-08 20:00:12), no re-import: what the clone's Library holds from FrontRoomsKitImporter
+# distances at vFOV 76 and lodBias 1 (Editor High). Expected: level i < last takes lodDistances[i]; the last level takes the LAST entry (<= 0 or null = never culled)
+---- Kit_BarStool: size 0.760, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 4.9 m | LOD1 cull h 0.0200 = 24.3 m | default spec (no 3-entry sidecar)
+---- Kit_BergereChair: size 1.059, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 6.8 m | LOD1 cull h 0.0200 = 33.9 m | default spec (no 3-entry sidecar)
+---- Kit_Bookcase: size 1.800, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 11.5 m | LOD1 cull h 0.0200 = 57.6 m | default spec (no 3-entry sidecar)
+---- Kit_ClubChair: size 0.862, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 5.5 m | LOD1 cull h 0.0200 = 27.6 m | default spec (no 3-entry sidecar)
+---- Kit_ClubChair_Oatmeal: size 0.862, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 5.5 m | LOD1 cull h 0.0200 = 27.6 m | default spec (no 3-entry sidecar)
+---- Kit_Copier: size 1.146, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 7.3 m | LOD1 cull h 0.0200 = 36.7 m | default spec (no 3-entry sidecar)
+---- Kit_Crate: size 1.001, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 6.4 m | LOD1 cull h 0.0200 = 32.0 m | default spec (no 3-entry sidecar)
+---- Kit_Credenza: size 1.588, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 10.2 m | LOD1 cull h 0.0200 = 50.8 m | default spec (no 3-entry sidecar)
+---- Kit_CRTMonitor: size 0.524, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 3.4 m | LOD1 cull h 0.0300 = 11.2 m | default spec (no 3-entry sidecar)
+---- Kit_CRTTV: size 0.837, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 5.4 m | LOD1 cull h 0.0200 = 26.8 m | default spec (no 3-entry sidecar)
+---- Kit_CubiclePanel: size 1.524, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 9.8 m | LOD1 cull h 0.0200 = 48.8 m | default spec (no 3-entry sidecar)
+---- Kit_CubiclePanelShort: size 1.520, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 9.7 m | LOD1 cull h 0.0200 = 48.6 m | default spec (no 3-entry sidecar)
+---- Kit_CubiclePanelTall: size 1.650, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 10.6 m | LOD1 cull h 0.0200 = 52.8 m | default spec (no 3-entry sidecar)
+---- Kit_DeskPedestal: size 1.370, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 8.8 m | LOD1 cull h 0.0200 = 43.8 m | default spec (no 3-entry sidecar)
+---- Kit_DeskPhone: size 0.325, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 2.1 m | LOD1 cull h 0.0300 = 6.9 m | default spec (no 3-entry sidecar)
+---- Kit_DisplayCabinet: size 1.800, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 11.5 m | LOD1 cull h 0.0200 = 57.6 m | default spec (no 3-entry sidecar)
+PASS Kit_DoorFrame_Steel: size 2.175, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3480 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorFrame_Steel_Alu: size 2.175, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3480 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorFrame_Wood: size 2.175, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3480 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorLeaf_Steel: size 2.080, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3328 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorLeaf_Steel_PaintedMetal: size 2.080, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3328 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorLeaf_SteelLite: size 2.080, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3328 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorLeaf_Veneer: size 2.080, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3328 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorLeaf_Veneer_Oak: size 2.080, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3328 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_DoorLeaf_Ward: size 2.080, 2 LODs, sidecar [4, 12, -1] | LOD0 ends h 0.3328 = 4.0 m | LOD1 cull h 0.0000 = never
+---- Kit_DoorwayStuds: size 2.327, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 14.9 m | LOD1 cull h 0.0200 = 74.5 m | default spec (no 3-entry sidecar)
+---- Kit_DoorwayStuds140: size 2.327, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 14.9 m | LOD1 cull h 0.0200 = 74.5 m | default spec (no 3-entry sidecar)
+---- Kit_DoorwayStuds180: size 2.327, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 14.9 m | LOD1 cull h 0.0200 = 74.5 m | default spec (no 3-entry sidecar)
+---- Kit_Dresser70s: size 1.295, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 8.3 m | LOD1 cull h 0.0200 = 41.4 m | default spec (no 3-entry sidecar)
+---- Kit_DresserLow: size 1.469, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 9.4 m | LOD1 cull h 0.0200 = 47.0 m | default spec (no 3-entry sidecar)
+PASS Kit_ExitSign: size 0.346, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0443 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_Dead: size 0.346, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0443 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_End: size 0.361, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0462 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_End_Dead: size 0.361, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0462 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_Hanging: size 0.612, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0783 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_Hanging_Dead: size 0.612, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0783 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_HangingFlush: size 0.346, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0443 = 5.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_ExitSign_HangingFlush_Dead: size 0.346, 2 LODs, sidecar [5, 0, 0] | LOD0 ends h 0.0443 = 5.0 m | LOD1 cull h 0.0000 = never
+---- Kit_FilingCabinet: size 1.320, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 8.4 m | LOD1 cull h 0.0200 = 42.2 m | default spec (no 3-entry sidecar)
+---- Kit_HatStand: size 1.802, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 11.5 m | LOD1 cull h 0.0200 = 57.6 m | default spec (no 3-entry sidecar)
+---- Kit_Hutch: size 1.900, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 12.2 m | LOD1 cull h 0.0200 = 60.8 m | default spec (no 3-entry sidecar)
+---- Kit_Hutch_Cherry: size 1.900, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 12.2 m | LOD1 cull h 0.0200 = 60.8 m | default spec (no 3-entry sidecar)
+---- Kit_Keyboard: size 0.460, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 2.9 m | LOD1 cull h 0.0300 = 9.8 m | default spec (no 3-entry sidecar)
+---- Kit_LadderChair: size 0.965, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 6.2 m | LOD1 cull h 0.0200 = 30.9 m | default spec (no 3-entry sidecar)
+PASS Kit_MiniBlind_Lowered: size 2.400, 2 LODs, sidecar [3, 10, 30] | LOD0 ends h 0.5120 = 3.0 m | LOD1 cull h 0.0512 = 30.0 m
+PASS Kit_MiniBlind_Raised: size 1.550, 2 LODs, sidecar [3, 10, 30] | LOD0 ends h 0.3307 = 3.0 m | LOD1 cull h 0.0331 = 30.0 m
+---- Kit_Nightstand2: size 0.600, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 3.8 m | LOD1 cull h 0.0300 = 12.8 m | default spec (no 3-entry sidecar)
+---- Kit_OfficeDesk: size 1.524, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 9.8 m | LOD1 cull h 0.0200 = 48.8 m | default spec (no 3-entry sidecar)
+---- Kit_Pallet: size 1.206, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 7.7 m | LOD1 cull h 0.0200 = 38.6 m | default spec (no 3-entry sidecar)
+---- Kit_PCDesktop: size 0.504, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 3.2 m | LOD1 cull h 0.0300 = 10.7 m | default spec (no 3-entry sidecar)
+---- Kit_Pouf: size 0.505, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 3.2 m | LOD1 cull h 0.0300 = 10.8 m | default spec (no 3-entry sidecar)
+---- Kit_QueenAnneArmchair: size 1.059, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 6.8 m | LOD1 cull h 0.0200 = 33.9 m | default spec (no 3-entry sidecar)
+---- Kit_RollingCabinet: size 0.622, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 4.0 m | LOD1 cull h 0.0200 = 19.9 m | default spec (no 3-entry sidecar)
+---- Kit_SideTableTurned: size 0.660, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 4.2 m | LOD1 cull h 0.0200 = 21.1 m | default spec (no 3-entry sidecar)
+---- Kit_Sofa3: size 2.001, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 12.8 m | LOD1 cull h 0.0200 = 64.0 m | default spec (no 3-entry sidecar)
+---- Kit_Sofa3_Charcoal: size 2.001, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 12.8 m | LOD1 cull h 0.0200 = 64.0 m | default spec (no 3-entry sidecar)
+---- Kit_Sofa3_Floral: size 2.001, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 12.8 m | LOD1 cull h 0.0200 = 64.0 m | default spec (no 3-entry sidecar)
+---- Kit_StepStool: size 1.000, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 6.4 m | LOD1 cull h 0.0200 = 32.0 m | default spec (no 3-entry sidecar)
+---- Kit_TableLampPleated: size 0.621, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 4.0 m | LOD1 cull h 0.0200 = 19.9 m | default spec (no 3-entry sidecar)
+---- Kit_TaskChair: size 0.953, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 6.1 m | LOD1 cull h 0.0200 = 30.5 m | default spec (no 3-entry sidecar)
+---- Kit_Torchiere: size 1.853, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 11.9 m | LOD1 cull h 0.0200 = 59.3 m | default spec (no 3-entry sidecar)
+---- Kit_Urn: size 0.381, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 2.4 m | LOD1 cull h 0.0300 = 8.1 m | default spec (no 3-entry sidecar)
+---- Kit_VendingMachine: size 1.830, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 11.7 m | LOD1 cull h 0.0200 = 58.6 m | default spec (no 3-entry sidecar)
+---- Kit_WaterCooler: size 1.339, 2 LODs, sidecar [none] | LOD0 ends h 0.1000 = 8.6 m | LOD1 cull h 0.0200 = 42.8 m | default spec (no 3-entry sidecar)
+PASS Kit_WindowFrame_Alu: size 1.800, 2 LODs, sidecar [4, 12, 0] | LOD0 ends h 0.2880 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_WindowFrame_Steel: size 1.800, 2 LODs, sidecar [4, 12, 0] | LOD0 ends h 0.2880 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_WindowFrame_Steel_Enamel: size 1.800, 2 LODs, sidecar [4, 12, 0] | LOD0 ends h 0.2880 = 4.0 m | LOD1 cull h 0.0000 = never
+PASS Kit_WindowFrame_Wood: size 1.828, 2 LODs, sidecar [4, 12, 0] | LOD0 ends h 0.2925 = 4.0 m | LOD1 cull h 0.0000 = never
+# kits with a LODGroup: 68, sidecar-driven PASS 23, FAIL 0, default-spec 45

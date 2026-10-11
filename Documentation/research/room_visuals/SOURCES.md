@@ -81,3 +81,19 @@ The raw trailers were downloaded on 2026-10-02 with Red's approval for the IP re
 |---|---|
 | 2245:9 (DESIGN PLAN DP01, file 0tCbAiVUlrPId3RWd9LRif) | "train of rooms" Lobby, Lobby, Shift, Office, Run, Next |
 | 2235:735 (Week 1 slide 09 "Different rooms, different rules") | "Level ! · Run: A red corridor. The hunter behind. Nothing to read." |
+
+---
+
+## 30 Figma section FRONTROOMS · ROOM VISUALS (`30_figma.md`), 2026-10-08
+
+No new media. Every image in the section is either our own render or on-disk media that already has a row in a ledger:
+
+| Image in the section | Ledger row |
+|---|---|
+| `ETB_3_run`, `DD_3_chase`, `run_ref_*` (ETB 1.0 trailer, Kane Found Footage, A24 trailer, Backrooms 1998) | §03 above (video frames); trailers in `Research/week02/ip-research/SOURCES.md` |
+| `gn_tritium_exit_sign` (Commons, Gazebo, CC BY-SA 4.0) | `Research/week02/phosphor-narrative/SOURCES.md` and §03 above |
+| `gn_scandinavian_star_1990-04` (copied from GLOW INK `2471:3804`; Commons, MS Scandinavian Star 001) | `Research/week02/phosphor-narrative/SOURCES.md` |
+| `fig-2312-852`, `fig-2349-852` (copied from IP RESEARCH and REAL vs MODEL) | the ledgers of those sections: `Research/week02/ip-research/SOURCES.md`, `Research/week02/kit-references/` |
+| all `room*`, `run_dir_*`, `run_research_*`, `run_*_matte`, `11r2_*`, `es_*`, `q16_*`, `d_03_*`, `01_rep_L0`, `g10r3_*`, `20_*`, `04_b_*`, `db_*`, `office_round2`, other `fig-*` | our own renders or diagrams; no third-party source |
+
+The three `media:` placeholders on RV24 are candidates A4, A5 and A9 in `media_candidates.md` (not downloaded).

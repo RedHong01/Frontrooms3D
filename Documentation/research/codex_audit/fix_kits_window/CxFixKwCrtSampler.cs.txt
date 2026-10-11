@@ -1,0 +1,66 @@
+// CLONE-ONLY sampler (codex audit, fix group kits+window, 2026-10-08). Never merge into Red's project.
+// Active only when the command line has -cxCrtSample (add it to a FrontRoomsCxPlayRun.RunBatch call).
+// Every 10 s of game time in Play mode it counts the live meshes named "FrontRooms CRT screen quad" and the
+// live FrontRoomsScreenVideo screens, and writes <clone>/Verification/cx_fix_kw/crt_sampler_<cxLabel>.tsv.
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+[InitializeOnLoad]
+public static class CxFixKwCrtSampler
+{
+    const string QuadName = "FrontRooms CRT screen quad";
+    const BindingFlags IF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    static readonly StringBuilder rows = new StringBuilder();
+    static float next;
+    static int maxQuads, maxScreens, samples;
+    static string path;
+
+    static CxFixKwCrtSampler()
+    {
+        if (!Environment.GetCommandLineArgs().Contains("-cxCrtSample")) return;
+        var args = Environment.GetCommandLineArgs();
+        var label = "run";
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-cxLabel") label = args[i + 1];
+        var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "cx_fix_kw");
+        Directory.CreateDirectory(dir);
+        path = Path.Combine(dir, "crt_sampler_" + label + ".tsv");
+        EditorApplication.update += Tick;
+    }
+
+    static void Tick()
+    {
+        if (!EditorApplication.isPlaying) return;
+        if (Time.time < next) return;
+        next = Time.time + 10f;
+        try
+        {
+            var quads = Resources.FindObjectsOfTypeAll<Mesh>().Count(m => m != null && m.name == QuadName);
+            var screens = UnityEngine.Object.FindObjectsByType<FrontRoomsScreenVideo>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var field = typeof(FrontRoomsScreenVideo).GetField("surfaceObject", IF);
+            int withSurface = 0;
+            var used = new HashSet<int>();
+            foreach (var s in screens)
+            {
+                var so = field != null ? field.GetValue(s) as GameObject : null;
+                if (so == null) continue;
+                withSurface++;
+                var mf = so.GetComponent<MeshFilter>();
+                if (mf != null && mf.sharedMesh != null) used.Add(mf.sharedMesh.GetInstanceID());
+            }
+            samples++;
+            maxQuads = Mathf.Max(maxQuads, quads);
+            maxScreens = Mathf.Max(maxScreens, screens.Length);
+            rows.Append(Time.time.ToString("0.0")).Append('\t').Append(Time.frameCount).Append('\t').Append(quads).Append('\t')
+                .Append(screens.Length).Append('\t').Append(withSurface).Append('\t').Append(used.Count).Append('\n');
+            File.WriteAllText(path, "# samples " + samples + ", max quad meshes " + maxQuads + ", max live screens " + maxScreens + "\n"
+                + "game_time_s\tframe\tquad_meshes_alive\tscreens_live\tscreens_with_surface\tdistinct_meshes_in_use\n" + rows);
+        }
+        catch (Exception e) { File.AppendAllText(path ?? "crt_sampler_error.txt", "# sampler threw: " + e.Message + "\n"); }
+    }
+}

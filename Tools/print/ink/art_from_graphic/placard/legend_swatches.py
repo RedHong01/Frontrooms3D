@@ -17,6 +17,26 @@ src = src.split("os.makedirs(OUT")[0].replace("OUT=sys.argv[1]", "OUT=None")
 src = src.replace('field.append(("grey", X([(fx0, cy-gt/2)', 'field.append(("cue", X([(fx0, cy-gt/2)').replace('field.append(("grey", X(clipx(rb, fx0, fx1))))', 'field.append(("cue", X(clipx(rb, fx0, fx1))))')
 exec(compile(src, "states.py", "exec"))
 PAL["cue"] = PAL["grey"]
+# v3 (2026-10-08, adopted from 游戏视觉's Q16 candidate, research/placard/42_request_graphic.md): the swatches
+# print in the colours the game prints WP03 with, so the legend reads as the wall's own paper. Each reference ink
+# -> the game's encoding (hard_edge.encode_table: R density, G cream) -> print_tool.shade with the Lobby palette
+# (FrontRoomsRenderSetup.LobbyPrint: #D2C27C ground, #AC9A52 mid, #766A34 deep, #E3D594 cream).
+# --reference keeps the WP03 reference palette (v2).
+if "--reference" not in sys.argv:
+    import numpy as _np
+    sys.path.insert(0, os.path.join(os.path.dirname(he.__file__), ".."))
+    import print_tool as _pt
+
+    def _game(rgb):
+        c = _np.array(rgb, _np.float64) / 255.0
+        lum = c @ _np.array([0.2126, 0.7152, 0.0722])
+        enc = _np.array([[_np.clip((0.92 - lum) / 0.35, 0, 1), _np.clip((lum - 0.90) / 0.06, 0, 1), 0.0]], _np.float32)
+        out = _pt.shade(enc[None, :, :])[0, 0]
+        return tuple(int(round(v * 255)) for v in _np.clip(out, 0, 1))
+    for _k in list(PAL):
+        _old = PAL[_k]; PAL[_k] = _game(_old)
+        print("ink %-6s %s -> %s" % (_k, "#%02X%02X%02X" % _old, "#%02X%02X%02X" % PAL[_k]))
+    sys.argv = [a for a in sys.argv if a != "--reference"]
 SCALE = 25.0                 # wall mm per placard mm
 PX = 6.0                     # placard px per mm
 K = PX / SCALE               # px per wall mm

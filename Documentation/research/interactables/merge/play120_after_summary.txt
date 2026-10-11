@@ -1,0 +1,29 @@
+label merge_after
+map seconds 120.0 · frames rendered 7307 · restarts after caught 0 · chunk roots destroyed 60 · max chunks built 25
+console: 31 warnings, 0 errors, 1 exceptions, 0 asserts
+G14 status: on: Apple9, High, kernel 6 ms (async), layout OK, residency set, hazard depth 2 / out 2, timers stage-boundary counters · quality High
+G14 stats: tlas 1650 · candidates 1650 · meshes 1570 (pending 0) · receiversVisible 2 · glassPixels 0 · hitPixels 0 · gpuMsTotal 0.93 · mainThreadMs 1.48 (max 15.76) · traceEvents 5323 · commandBufferErrors 0 · residency residency set · blasBytes 5146408 · geometryBytes 7735172 · targetBytes 51840000 · blasBuiltTotal 5382 · gpuMsFrame 0.00 · encodeMs 0.15 (max 3.70)
+G14 coverage: renderers with Glass_Window* material 63 · on prepass bit 30 63 (material has FRGlassRTPrepass pass: 63) · on override bit 29 0
+    bit 30: 63 × Glass_Window (FrontRooms/Glass, passes 2)
+renderers that would draw pink (null / missing / unsupported / error shader): 0
+G14 per map frame, main-thread ms of BuildFrame: n 7200 · mean 1.354 · p50 1.561 · p95 2.215 · p99 3.257 · max 15.758
+G14 per map frame, GPU ms: n 7200 · mean 0.756 · p50 0.653 · p95 1.484 · p99 2.345 · max 6.239 · frames with glass pixels > 0: 901
+
+messages (count · first at map s · message):
+  27 · 0.0 s · Warning: [FMOD] FMOD_OS_Net_Listen : Cannot listen for connections, port 9264 is currently in use.
+  1 · 0.0 s · Warning: No Theme Style Sheet set to PanelSettings , UI will not render properly
+  1 · 0.0 s · Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+  1 · 0.1 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (33, 24) · revision 0; left out.
+  1 · 8.5 s · Warning: [FrontRoomsMap] Module prop Kit_PlyCabinet at (5.20, 0.34) would block an opening of chunk Chunk (37, 24) · revision 0; left out.
+  1 · 60.8 s · Warning: [FrontRoomsMap] Module prop Kit_Crate at (1.40, 1.40) would block an opening of chunk Chunk (42, 25) · revision 0; left out.
+
+first stack of each error / exception:
+=== Exception: ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection.
+System.Collections.Generic.List`1[T].get_Item (System.Int32 index) (at <c5eeda5e65d44b388e164c6c5cfe0702>:0)
+UnityEditor.Search.SearchDatabase+<EnumerateAll>d__80.MoveNext () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:445)
+System.Linq.Enumerable.TryGetFirst[TSource] (System.Collections.Generic.IEnumerable`1[T] source, System.Boolean& found) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+System.Linq.Enumerable.First[TSource] (System.Collections.Generic.IEnumerable`1[T] source) (at <8203c5af529241e2a5cc4b3c5a3dc69a>:0)
+UnityEditor.Search.SearchDatabase.GetDefaultSearchDatabase () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/Indexing/SearchDatabase.cs:420)
+UnityEditor.Search.SearchInit.IndexationOnStartup () (at /Users/bokken/build/output/unity/unity/Modules/QuickSearch/Editor/SearchInit.cs:109)
+UnityEditor.EditorApplication.Internal_CallDelayFunctions () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:407)
+

@@ -167,6 +167,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     FrontRoomsCameraRig rig;
     // The glass break's shot ("Brace, strike, flinch") on the rig.
     FrontRoomsGlassShot glassShot;
+    // The door shots on the rig: the unlock (the head dip) when a key turns in a locked door. The map's key-turn owner.
+    FrontRoomsDoorShot doorShot;
     // The pane the glass shot belongs to (E on it is the shot's), and this frame's wish to move (before any lock).
     Collider glassPane;
     bool moveIntent;
@@ -654,6 +656,23 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         rig = FrontRoomsCameraRig.Attach(playerRoot, cam, EyeHeight);
         rig.ResetLayers();
         glassShot = new FrontRoomsGlassShot(rig);
+        // The unlock shot owns the map's key turns: E on a keyable door holds it for the shot (keys are off in shipped play).
+        doorShot = new FrontRoomsDoorShot(rig, map, cam, playerRoot);
+        map.KeyTurnOwner = doorShot;
+        // It also presents picked-up keys, only when there is a model to show (none in shipped play: pickups stay instant).
+        map.KeyPresenter = doorShot.BeginKeyPickup;
+#if UNITY_EDITOR
+        // FrontRooms/Map/Play with keys on: this run's map needs keys (the profile asset is untouched). Never for the autopilot.
+        if (!autopilot && UnityEditor.SessionState.GetBool(KeysOnSessionKey, false))
+        {
+            map.DoorsNeedKeysForTools = true;
+            Log("KEYS ON · doors need keys this run (FrontRooms/Map/Play with keys on)");
+        }
+        // FrontRooms/Map/Show placeholder key: the cube key is presented on pickup (timing captures). Never for the autopilot.
+        FrontRoomsMapWorld.ShowPlaceholderKey = !autopilot && UnityEditor.SessionState.GetBool(PlaceholderKeySessionKey, false);
+        if (FrontRoomsMapWorld.ShowPlaceholderKey) Log("PLACEHOLDER KEY · pickups present the cube key (FrontRooms/Map/Show placeholder key)");
+        if (autopilot) map.KeyPickupStarted += AutoKeyPickupStarted;
+#endif
         yaw = 0f;
         pitch = 0f;
         fallSpeed = 0f;
@@ -663,6 +682,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         winded = false;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
+        PlayerGait = FrontRoomsGait.Still;
         sinceSprint = 0f;
         glide = Vector3.forward * FrontRoomsRoomStream.TitleSpeed;
         mouseSettleFrames = 2;
@@ -685,6 +705,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             rattleJolts.Add((elapsed + FrontRoomsShotTimings.Rattle.Jolt1, p));
             rattleJolts.Add((elapsed + FrontRoomsShotTimings.Rattle.Jolt2, p));
         };
+        map.DoorRattled += OnDoorRattled;
         map.DoorBroken += p => Jolt(p, FrontRoomsShotTimings.DoorBreak.CameraRange, FrontRoomsShotTimings.DoorBreak.BreakShakeDeg, FrontRoomsShotTimings.DoorBreak.BreakShakeDecay);
         // A live build radius change moves the far plane (in the start rooms UpdateStartRooms sets it every frame).
         map.LiveApplied += () => { if (cam != null && roomStream == null) cam.farClipPlane = map.SightDistance; };
@@ -934,6 +955,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         keysTaken++;
         // The key panel fading in is the pickup cue until keys open doors (audit F1, 1.8).
         Event("key", zone.ToString());
+#if UNITY_EDITOR
+        if (autopilot) AutoKeyTaken(zone);
+#endif
     }
 
     static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
@@ -954,11 +978,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // While a shot holds the look, mouse movement is dropped, not saved for later.
             else if ((rig == null || !rig.LookLocked) && (glassShot == null || !glassShot.LookLocked))
             {
-                var dx = input.Look.x;
-                var dy = input.Look.y;
+                // The unlock holds the look (scale 0, then back over 0.2 s): the dropped share is lost, not queued.
+                var lookScale = doorShot != null ? doorShot.LookScale : 1f;
+                var dx = input.Look.x * lookScale;
+                var dy = input.Look.y * lookScale;
                 yaw += dx;
                 pitch = Mathf.Clamp(pitch - dy, -75f, 75f);
                 lookDegrees = Mathf.Abs(dx) + Mathf.Abs(dy);
+                // A presented key in view draws the base pitch toward it (≤ 6°, 0.2 s) while the mouse is idle; any look ends it.
+                if (doorShot != null) pitch = Mathf.Clamp(pitch + doorShot.AimAssistStep(dt, lookDegrees <= FrontRoomsShotTimings.KeyPickup.MouseIdleDeg), -75f, 75f);
             }
             local = input.Move;
             sprintHeld = input.SprintHeld;
@@ -980,6 +1008,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             glassShot.ClampLook(ref yaw, ref pitch);
             if (glassShot.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
         }
+        if (doorShot != null)
+        {
+            // The unlock: its own clock, the Relay's cancel rule (UnlockThreat), and its move lock (also on the autopilot's steer).
+            UnlockThreat(out var chase, out var sees, out var relayMetres);
+            doorShot.Tick(dt, chase, sees, relayMetres);
+            if (doorShot.MoveLocked) { local = Vector2.zero; sprintHeld = false; }
+        }
         playerRoot.rotation = Quaternion.Euler(0f, yaw, 0f);
         if (rig != null) rig.SetBase(pitch);
         else cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
@@ -988,19 +1023,20 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (pullClear.HasValue)
         {
             pullClearTime += dt;
-            // A door pull steps at PullStepSpeed; the glass step-in follows a smoothstep from where it began.
-            var stepIn = FrontRoomsShotTimings.GlassBreak.StepInSeconds;
-            var target = pullIsGlass ? Vector3.Lerp(glassStepFrom, pullClear.Value, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(pullClearTime / stepIn))) : pullClear.Value;
+            // A door pull steps at PullStepSpeed; the glass and key-turn step-ins follow a smoothstep from where they began.
+            var smooth = pullIsGlass || pullIsUnlock;
+            var stepIn = pullIsUnlock ? FrontRoomsShotTimings.Unlock.StepInSeconds : FrontRoomsShotTimings.GlassBreak.StepInSeconds;
+            var target = smooth ? Vector3.Lerp(glassStepFrom, pullClear.Value, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(pullClearTime / stepIn))) : pullClear.Value;
             var toClear = target - playerRoot.position;
             toClear.y = 0f;
             // Arrive exactly (the last step lands on the spot): the spot sits right at the leaf's reach, so stopping short leaves the body in its way.
-            var arrived = toClear.magnitude < 1e-3f && (!pullIsGlass || pullClearTime >= stepIn);
+            var arrived = toClear.magnitude < 1e-3f && (!smooth || pullClearTime >= stepIn);
             if (arrived || pullClearTime > PullStepSeconds || (relay != null && (relay.SeesPlayer || relay.State == HunterState.Chase))) pullClear = null;
             else
             {
                 local = Vector2.zero;
                 sprintHeld = false;
-                stepVelocity = Vector3.ClampMagnitude(toClear / Mathf.Max(dt, 1e-4f), pullIsGlass ? GlassStepMaxSpeed : PullStepSpeed);
+                stepVelocity = Vector3.ClampMagnitude(toClear / Mathf.Max(dt, 1e-4f), smooth ? GlassStepMaxSpeed : PullStepSpeed);
             }
         }
         var wish = playerRoot.right * local.x + playerRoot.forward * local.y;
@@ -1021,6 +1057,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         PlayerStamina01 = stamina / StaminaSeconds;
         PlayerWinded = winded;
         PlayerSprinting = sprinting;
+        PlayerGait = GaitOf(sprinting, wish.sqrMagnitude);
         fallSpeed = playerBody.isGrounded ? -1f : fallSpeed - 9.81f * dt;
         var before = playerPos;
         if (climbTime >= 0f || TryStartClimb(wish)) Climb(dt);
@@ -1039,6 +1076,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #else
                 if (sprinting) relay?.Noise(playerRoot.position, hunterTuning.sprintNoiseRadius);
 #endif
+                // A handheld walk step is heard nearby; the slow gait and desktop walking stay silent (Mobile.cs).
+                if (!sprinting) HandheldStepNoise();
             }
         }
         UpdateStartRooms(dt);
@@ -1090,6 +1129,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateReflectionZone(false);
         // Picture layers last, after gameplay has read BaseEye this frame.
         rig?.Tick(dt);
+        // A presented key rides the camera as rendered (after the rig), so it never lags a frame.
+        doorShot?.PlaceKey();
     }
 
     /// <summary>
@@ -1145,10 +1186,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         pullClear = clear;
         pullClearTime = 0f;
         pullIsGlass = false;
+        pullIsUnlock = false;
     }
 
-    // The pull step's mover also carries the glass step-in; this says whose step it is, and where the step-in began.
-    bool pullIsGlass;
+    // The pull step's mover also carries the glass and key-turn step-ins; these say whose step it is, and where the step-in began.
+    bool pullIsGlass, pullIsUnlock;
     Vector3 glassStepFrom;
     // The step-in's peak speed: its smoothstep over 0.2 s peaks at 1.5× the average of a 0.7 m step.
     const float GlassStepMaxSpeed = 6f;
@@ -1214,7 +1256,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool EDown()
     {
 #if UNITY_EDITOR
-        if (autoGlassActive || autoBaseline) return autoEDown;
+        if (autoGlassActive || autoDoorActive || autoBaseline) return autoEDown;
 #endif
         return FrontRoomsInput.UseDown;
     }
@@ -1222,7 +1264,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     bool EHeld()
     {
 #if UNITY_EDITOR
-        if (autoGlassActive || autoBaseline) return autoEHeld;
+        if (autoGlassActive || autoDoorActive || autoBaseline) return autoEHeld;
 #endif
         return FrontRoomsInput.UseHeld;
     }
@@ -1252,7 +1294,71 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         pullClear = stand;
         pullClearTime = 0f;
         pullIsGlass = true;
+        pullIsUnlock = false;
         glassStepFrom = feet;
+    }
+
+    /// <summary>
+    /// E on a door (what the crosshair is on, or the touch layer's look tap: HandleMobileLookTap): the map's Use,
+    /// and the unlock shot when it answers with a key turn. Every input path reaches doors through here. With
+    /// look+E keys (map.KeyPickupNeedsE, off) E on a key comes here too: Use takes it and hands it to the presenter.
+    /// </summary>
+    FrontRoomsMapWorld.UseResult UseDoor(Collider c)
+    {
+        if (map == null) return FrontRoomsMapWorld.UseResult.None;
+        var result = map.Use(c);
+        if (result == FrontRoomsMapWorld.UseResult.KeyTurn) BeginUnlock(map.DoorOf(c));
+        return result;
+    }
+
+    /// <summary>
+    /// A key turns in a locked door (plan §3.2.1): the unlock shot starts on the keyhole of the face the
+    /// player stands on, in place while chunks are still building or during a climb; then the body steps
+    /// in toward the lock (capped like the glass step-in, never while a door pull's step runs, and clear
+    /// of the leaf's sweep on the pull side; not at Camera motion Off or in place).
+    /// </summary>
+    void BeginUnlock(FrontRoomsMapWorld.Door door)
+    {
+        if (door == null || doorShot == null || playerRoot == null) return;
+        var feet = playerRoot.position;
+        var face = FrontRoomsMapWorld.FaceOf(door, feet);
+        var lockPose = map.LockPose(door, feet);
+        var normal = FrontRoomsMapWorld.LockNormal(door, feet);
+        var pull = face == DoorFace.S;
+        var inPlace = !map.Settled || climbTime >= 0f;
+        doorShot.BeginUnlock(door, face, lockPose, normal, pull, inPlace);
+        Event("unlock", door.a + "-" + door.b + (pull ? " pull" : " push") + (inPlace ? " in place" : ""));
+        if (inPlace || FrontRoomsSettings.CameraMotionScale <= 0f) return;
+        if (!FrontRoomsDoorShot.UnlockStepIn(door, feet, lockPose.position, normal, pull, pullClear.HasValue && !pullIsGlass && !pullIsUnlock, out var stand)) return;
+        // The step-in rides the pull step's mover (swept by the controller; it stops when the Relay sees or chases).
+        pullClear = stand;
+        pullClearTime = 0f;
+        pullIsGlass = false;
+        pullIsUnlock = true;
+        glassStepFrom = feet;
+    }
+
+    /// <summary>
+    /// What the Relay is doing, for the unlock shot's cancel rule (FrontRoomsDoorShot.Threatened: before the
+    /// commit a chase, or sight within 6 m; after it, a chase or any sight). Step 1 of the Relay pursuit
+    /// redesign is in (the path field, WarnStage, PlayerSeesRelay; the director policy is not wired to the
+    /// hunter yet), but its sight is still v1's (SeesPlayer, which starts a chase at once outside a door
+    /// break), so these stay the inputs; v2's "target acquired / spotting ≥ 0.5" replaces them here.
+    /// </summary>
+    void UnlockThreat(out bool chase, out bool sees, out float distance)
+    {
+        var released = relay != null && relay.Released;
+        chase = released && relay.State == HunterState.Chase;
+        sees = released && relay.SeesPlayer;
+        distance = RelayDistance();
+    }
+
+    // A locked door's try: a Relay noise at the lock, off until Red decides (the audit's 6 m, plan §3.4). Not const: a const 0 would make the call unreachable code.
+    static readonly float RattleNoiseRadius = 0f;
+
+    void OnDoorRattled(FrontRoomsMapWorld.Door door, Vector3 lockPoint)
+    {
+        if (RattleNoiseRadius > 0f) relay?.Noise(lockPoint, RattleNoiseRadius);
     }
 
     /// <summary>What the crosshair is on: E opens or shuts a door, holding E breaks glass.</summary>
@@ -1274,6 +1380,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (aimedHold && FrontRoomsSettings.TapToBreak) prompt = "TAP E  ·  BREAK GLASS";
             if (prompt != null) aimed = hit.collider;
             hitPoint = hit.point;
+        }
+        // Look+E keys (map.KeyPickupNeedsE, off by default): a key's trigger on the same ray, nearer than anything
+        // solid (the body's own controller aside), takes the aim and the prompt ("E  ·  TAKE KEY").
+        if (map.KeyPickupNeedsE)
+        {
+            var key = map.KeyOnRay(new Ray(eye.position, eye.rotation * Vector3.forward), Reach, playerRoot);
+            if (key != null)
+            {
+                prompt = map.Describe(key, out aimedHold);
+                aimed = key;
+            }
         }
         if (previous != null && previous != aimed)
         {
@@ -1297,7 +1414,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (!aimedHold)
         {
             holdProgress = 0f;
-            if (pressed) map.Use(aimed);
+            if (pressed) UseDoor(aimed);
             return;
         }
         float step;
@@ -1408,6 +1525,15 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     void BuildSound()
     {
+        // Mobile builds use FMOD for all sound and the Unity AudioManager is
+        // intentionally disabled. Creating procedural AudioClips here makes
+        // every SetData call fail on iOS before FMOD has finished booting.
+        // Leave the legacy fallback unallocated; FMOD owns the mobile path.
+        if (FrontRoomsHandheld.Active)
+        {
+            Debug.Log("[FrontRoomsAudio] Handheld FMOD path active; skipped legacy Unity clips.");
+            return;
+        }
         var recordedDoorCreak = Resources.Load<AudioClip>("Audio/door-creak");
         foley = new FrontRoomsFoley(recordedDoorCreak);
         playerStepClip = FrontRoomsAudio.PlayerStep(); playerRunStepClip = FrontRoomsAudio.PlayerRunStep(); hunterStepClip = FrontRoomsAudio.HunterStep();
@@ -1420,6 +1546,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     }
     void Sound(AudioClip clip, Vector2 p, float volume = .7f)
     {
+        if (clip == null) return;
         var g = new GameObject("Spatial sound"); g.transform.position = V(p, 1f);
         var source = g.AddComponent<AudioSource>(); source.clip = clip; source.spatialBlend = 1f; source.minDistance = 2f; source.maxDistance = 26f; source.volume = volume; source.Play();
         Destroy(g, clip.length + .1f);
@@ -2040,6 +2167,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var wasPlaying = phase == Phase.Playing;
         var wasPaused = phase == Phase.Paused;
         phase = p; bool playing = p == Phase.Playing;
+        // Doors freeze with the game (a swing, a jolt, a key turn's watchdog), so nothing moves or sounds under the pause card.
+        if (map != null) map.DoorsPaused = !playing;
         if ((p == Phase.Paused) != wasPaused) Paused?.Invoke(p == Phase.Paused);
         if (playing && !wasPlaying) gameplayHudAlpha = 0f;
         if (!playing) gameplayHudAlpha = 0f;
@@ -2161,7 +2290,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             for (var i = rattleJolts.Count - 1; i >= 0; i--)
             {
                 if (elapsed < rattleJolts[i].at) continue;
-                Jolt(rattleJolts[i].p, DoorJoltRange, FrontRoomsShotTimings.Rattle.CameraImpulseDeg, FrontRoomsShotTimings.Open.PushImpulseDecay);
+                Kick(rattleJolts[i].p, DoorJoltRange, FrontRoomsShotTimings.Rattle.CameraImpulseDeg, FrontRoomsShotTimings.Open.PushImpulseDecay);
                 rattleJolts.RemoveAt(i);
             }
             UpdateMapPlay(dt);
@@ -2207,7 +2336,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         if (roomPanel != null) roomPanel.SetActive(play);
         if (threatPanel != null) threatPanel.SetActive(showThreat);
-        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id);
+        // A presented key's panel waits for the pocket (KeyPickup.PocketEnd), then fades in over PanelFadeIn
+        // (keyPanelFade, in ApplyGameplayHudAlpha). On the instant path (no model) it is up at once, as before.
+        var presentingKey = doorShot != null && doorShot.Presenting(zone.id);
+        if (presentingKey) keyPanelFade = 0f;
+        else if (keyPanelFade < 1f) keyPanelFade = Mathf.MoveTowards(keyPanelFade, 1f, Mathf.Min(Time.deltaTime, .1f) / FrontRoomsShotTimings.KeyPickup.PanelFadeIn);
+        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
         if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
         {
             keyLabelZone = zone.id;
@@ -2250,6 +2384,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // The zone the key panel's label was written for (written again only when it changes).
     GridCoord keyLabelZone;
     bool keyLabelSet;
+    // The key panel's fade-in after a presented pickup (0..1; 1 whenever no key is being presented).
+    float keyPanelFade = 1f;
 
     /// <summary>What the key panel calls the key it shows: the zone it belongs to (audit 1.8).</summary>
     static string KeyLabel(ZoneInfo zone) => ZoneName(zone) + " KEY";
@@ -2264,7 +2400,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
         if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
         if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
-        if (keyHudGroup != null) keyHudGroup.alpha = hud;
+        // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).
+        if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
     }
     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
 
@@ -2274,6 +2411,18 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (rig == null || playerRoot == null || phase != Phase.Playing) return;
         if (Flat(at - playerRoot.position).sqrMagnitude > range * range) return;
         rig.AddTrauma(degrees, decaySeconds);
+    }
+
+    /// <summary>
+    /// A forward pitch impulse (picture only, the audit's §3.3/§3.4 impulse rather than a shake) when something
+    /// happens within <paramref name="range"/> metres of the player. The locked rattle uses it; normal opens keep
+    /// Jolt until Red answers the door-shot landing question.
+    /// </summary>
+    void Kick(Vector3 at, float range, float degrees, float decaySeconds)
+    {
+        if (rig == null || playerRoot == null || phase != Phase.Playing) return;
+        if (Flat(at - playerRoot.position).sqrMagnitude > range * range) return;
+        rig.Kick(degrees, decaySeconds);
     }
 
     /// <summary>How much faster than the base the tier makes the chase: the run cycle and its step clock follow, so the feet keep up (1 at tier 1).</summary>
@@ -2309,6 +2458,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
 #if UNITY_EDITOR
         AutoBaseRestoreTime();
+        FrontRoomsCameraRig.ShotStarted -= AutoShotStarted;
 #endif
         if (mobileTouch != null)
         {
@@ -2320,7 +2470,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             FrontRoomsMobileBackBridge.BackPressed -= HandleMobileBack;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
+        PlayerGait = FrontRoomsGait.Still;
         if (phase == Phase.Paused) Paused?.Invoke(false);
+        if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
+        if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
         if (map != null) MapRunEnded?.Invoke();
         OnDestroyMobile();
     }
@@ -2328,6 +2481,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void End()
     {
         if (phase != Phase.Playing) return;
+        // Caught > cancel > shot: a key turn resolves now (locked before its commit, unlocked and shut after), the camera stays.
+        doorShot?.Abort();
         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
@@ -2344,6 +2499,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // Verification/main-autopilot, writes report.json and a done file. It
     // never runs in a build or in a normal Play session.
     public const string AutopilotKey = "FrontRooms.Autopilot";
+    /// <summary>Session key set by FrontRooms/Map/Play with keys on: the next runs' maps need keys (the autopilot ignores it).</summary>
+    public const string KeysOnSessionKey = "FrontRooms.Map.KeysOn";
+    /// <summary>Session key set by FrontRooms/Map/Show placeholder key: the next runs present the cube key on pickup (the autopilot ignores it).</summary>
+    public const string PlaceholderKeySessionKey = "FrontRooms.Map.PlaceholderKey";
     /// <summary>Session key for a fixed maze seed on the autopilot (0 = the profile's).</summary>
     public const string AutopilotSeedKey = "FrontRooms.Autopilot.Seed";
     int autopilotSeed, autoSkipFrames, autoGhostsSeen;
@@ -2425,11 +2584,70 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // The glass scenario (-autopilotGlass): what it checked, ok or FAIL.
         public bool glassScenario;
         public List<string> glassChecks = new List<string>();
+        // The door shots: Unlock shots started (none with keys off: shipped play never shows one), and what was checked, ok or FAIL.
+        public int unlockShotsStarted;
+        public List<string> doorChecks = new List<string>();
+        // Key pickups (door_shots_plan.md §5.4): how many, the worst KeyTaken lag after KeyPickupStarted (s; −1: no
+        // pickup), and how many were presented. Without a model (shipped play) none is, and every lag is 0, same frame.
+        public int keyPickups;
+        public float keyTakenLagMax = -1f;
+        public int keyPresentations;
         // HUD panels laid out outside the screen (any one fails the run).
         public List<string> hudOffscreen = new List<string>();
     }
 
     readonly List<string> autoFrameNames = new List<string>();
+
+    // ---------- Key pickups (§5.4): KeyTaken after each KeyPickupStarted ----------
+    // On the instant path (no model, the placeholder off: shipped play) KeyTaken comes in the same frame as
+    // KeyPickupStarted; a presented key's comes at its arrival, KeyPickup.Arrive later and never after it plus
+    // a frame. A pickup never announced, or a KeyTaken with no pickup, breaks the rule too. Any break fails the run.
+    readonly Dictionary<GridCoord, int> autoKeyStartFrame = new Dictionary<GridCoord, int>();
+    readonly Dictionary<GridCoord, float> autoKeyStartAt = new Dictionary<GridCoord, float>();
+    readonly HashSet<GridCoord> autoKeyAnnounced = new HashSet<GridCoord>();
+    readonly List<string> autoKeyBreaks = new List<string>();
+    int autoKeyPickups, autoKeyPresentations;
+    float autoKeyLagMax = -1f, autoKeyLastLag = -1f;
+    bool autoKeyLastPresented;
+
+    void AutoKeyPickupStarted(GridCoord zone, Vector3 at)
+    {
+        autoKeyPickups++;
+        autoKeyStartFrame[zone] = Time.frameCount;
+        autoKeyStartAt[zone] = elapsed;
+    }
+
+    void AutoKeyTaken(GridCoord zone)
+    {
+        if (!autoKeyStartFrame.TryGetValue(zone, out var frame))
+        {
+            autoKeyBreaks.Add("KeyTaken " + zone + " with no KeyPickupStarted");
+            return;
+        }
+        autoKeyAnnounced.Add(zone);
+        var presented = doorShot != null && doorShot.Presenting(zone);
+        var lag = elapsed - autoKeyStartAt[zone];
+        autoKeyLastLag = lag;
+        autoKeyLastPresented = presented;
+        autoKeyLagMax = Mathf.Max(autoKeyLagMax, lag);
+        if (presented) autoKeyPresentations++;
+        if (!presented && frame != Time.frameCount)
+            autoKeyBreaks.Add("key " + zone + ": not presented, but KeyTaken " + (Time.frameCount - frame) + " frames (" + lag.ToString("0.000") + " s) after KeyPickupStarted");
+        if (presented && lag > FrontRoomsShotTimings.KeyPickup.Arrive + .1f + 1e-3f)
+            autoKeyBreaks.Add("key " + zone + ": presented, KeyTaken " + lag.ToString("0.000") + " s after KeyPickupStarted (arrival " + FrontRoomsShotTimings.KeyPickup.Arrive + ")");
+        Log("AUTOPILOT KEY " + zone + (presented ? " presented" : " instant") + ", KeyTaken " + (Time.frameCount - frame) + " frames / " + lag.ToString("0.000") + " s after KeyPickupStarted");
+    }
+
+    // The key rule's report line, at the finish: a pickup still being presented is not yet due.
+    string AutoKeyRuleLine()
+    {
+        foreach (var zone in autoKeyStartFrame.Keys)
+            if (!autoKeyAnnounced.Contains(zone) && (doorShot == null || !doorShot.Presenting(zone)))
+                autoKeyBreaks.Add("key " + zone + ": KeyPickupStarted, never KeyTaken");
+        var ok = autoKeyBreaks.Count == 0;
+        return (ok ? "ok   " : "FAIL ") + "keys: " + autoKeyPickups + " pickups, " + autoKeyPresentations + " presented; every one not presented took the key in its contact frame"
+            + " (KeyTaken lag max " + (autoKeyLagMax < 0f ? "none" : autoKeyLagMax.ToString("0.000") + " s") + ")" + (ok ? "" : ": " + string.Join("; ", autoKeyBreaks));
+    }
 
     void AutopilotStart()
     {
@@ -2441,11 +2659,21 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         for (var i = 0; i < args.Length - 1; i++)
             if (args[i] == "-autopilotSpaceAt" && float.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var at)) autoSpaceAt = Mathf.Max(.2f, at);
         autoGlassWanted = Array.IndexOf(args, "-autopilotGlass") >= 0;
+        autoDoorWanted = Array.IndexOf(args, "-autopilotDoors") >= 0;
+        FrontRoomsCameraRig.ShotStarted += AutoShotStarted;
         autoOutDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "main-autopilot");
         Directory.CreateDirectory(autoOutDir);
         foreach (var old in Directory.GetFiles(autoOutDir, "*.png")) File.Delete(old);
         Application.logMessageReceived += AutopilotLog;
         Log("AUTOPILOT on · frames to " + autoOutDir);
+    }
+
+    // Every Unlock shot the run starts (keys off: there must be none).
+    int autoUnlockShots;
+    void AutoShotStarted(ShotKind kind, Vector3 focus)
+    {
+        if (this == null) { FrontRoomsCameraRig.ShotStarted -= AutoShotStarted; return; }
+        if (kind == ShotKind.Unlock) autoUnlockShots++;
     }
 
     void AutopilotLog(string condition, string stack, LogType type)
@@ -2557,8 +2785,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             }
         }
         if (autoGlassWanted && !autoGlassDone) AutopilotGlass(dt);
+        if (autoDoorWanted && !autoDoorDone) AutopilotDoors(dt);
         if (!autoHudChecked && autoPlayClock > 1f) AutopilotHudCheck();
-        if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive)
+        if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive && !autoDoorActive)
         {
             autoNextShot = autoPlayClock + 9f;
             AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_play_" + Mathf.RoundToInt(autoPlayClock) + "s");
@@ -2578,6 +2807,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             if (autoGlassStep == 4) local = new Vector2(0f, 1f);
             return;
         }
+        // The door scenario stands where it put the player.
+        if (autoDoorActive) return;
         // Out of the stream rooms first: down the centreline, through the door
         // and on past its open leaves into the cell ahead (always open, MapRootFor).
         // The edge-runner needs to clear the door cell before choosing a lateral edge route;
@@ -2946,6 +3177,485 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
     }
 
+    // ---------- The door scenario (-autopilotDoors, editor only; door_shots_plan.md §3.11, §5.4) ----------
+    // Keys go on for this run's map (the profile asset is untouched) and the Relay is held where it stands, so it
+    // cannot cancel a shot under test. Four cases on the nearest shut doors, each pressed through the player's E
+    // (EDown): a locked try and a second try 0.2 s later (the rattle and its debounce); the unlock from the push
+    // side, with the key (its timings, the camera, frames at the beats); a second E 0.4 s into an unlock on another
+    // door (the cancel); and the unlock from the pull side (the leaf stays shut through the shot). Times are on the
+    // shot's own clock (from E-down); a long frame (a capture renders twice) widens the tolerance to that frame.
+    // Then two key pickups (plan §3.3) on the nearest keys still lying, walked onto by a teleport from 1.4–2 m off:
+    // without a model (the instant path: KeyTaken and the panel at contact, the cube gone), and with the placeholder
+    // (presented: KeyTaken at 0.25 s, the pocket beat at 0.85, the key gone and the panel fading in from 0.95, frames
+    // at the beats). Keys and the placeholder go back off at the end. A failed check fails the run.
+    bool autoDoorWanted, autoDoorActive, autoDoorDone, autoDoorKeysWere;
+    int autoDoorCase, autoDoorStep, autoDoorCapture, autoDoorLocked, autoDoorRattled, autoDoorUnlocked, autoDoorShots, autoDoorKickRises;
+    float autoDoorClock, autoDoorUnlockedAt, autoDoorOpenAt, autoDoorShotEndAt, autoDoorFreeAt, autoDoorCamBackAt, autoDoorFovBackAt;
+    float autoDoorMaxOffset, autoDoorMinFov, autoDoorMaxDt, autoDoorPrevKick, autoDoorPressAt;
+    bool autoDoorLatchDrawn, autoDoorHingeMoved;
+    FrontRoomsMapWorld.DoorOpenSource autoDoorOpenSource;
+    FrontRoomsMapWorld.Door autoDoor;
+    Quaternion autoDoorHingeAt;
+    readonly List<string> autoDoorChecks = new List<string>();
+    static readonly float[] AutoDoorCaptureAt = { .30f, .55f, .70f, .86f, 1.00f, 1.30f, 1.55f };
+    static readonly string[] AutoDoorCaseNames = { "rattle", "unlock (push)", "cancel", "unlock (pull)", "key (instant)", "key (presented)" };
+    // The key cases: the key, its zone, the spot to walk onto it from; the counts before contact; what the
+    // presentation did (on the play clock from contact: KeyTaken, the pocket beat, the end; the panel's alpha).
+    Transform autoKey;
+    GridCoord autoKeyZone;
+    Vector3 autoKeyContact;
+    int autoKeyPickupsBefore, autoKeyTakenBefore, autoKeyBreaksBefore;
+    float autoKeyStartedAt, autoKeyPocketAt, autoKeyGoneAt, autoKeyPanelFirstAlpha, autoKeyMaxHudFade;
+    bool autoKeyPanelEarly, autoKeyParentedToMap, autoKeyPanelSeen;
+    static readonly float[] AutoKeyCaptureAt = { .10f, .25f, .50f, .85f };
+    void AutoKeyBeat(ShotKind kind, DoorBeat beat, Vector3 p)
+    {
+        if (autoDoorActive && kind == ShotKind.KeyPickup && beat == DoorBeat.Pocket && autoKeyPocketAt < 0f) autoKeyPocketAt = elapsed - autoKeyStartedAt;
+    }
+
+    void AutoDoorCheck(bool ok, string what)
+    {
+        autoDoorChecks.Add((ok ? "ok   " : "FAIL ") + what);
+        Log("AUTOPILOT DOORS " + (ok ? "ok   " : "FAIL ") + what);
+    }
+
+    void AutoDoorLockedAt(Vector3 p) { if (autoDoorActive) autoDoorLocked++; }
+    void AutoDoorRattledAt(FrontRoomsMapWorld.Door d, Vector3 p) { if (autoDoorActive && d == autoDoor) autoDoorRattled++; }
+    void AutoDoorUnlockedAt(FrontRoomsMapWorld.Door d, GridCoord zone, Vector3 p)
+    {
+        if (!autoDoorActive || d != autoDoor) return;
+        autoDoorUnlocked++;
+        autoDoorUnlockedAt = doorShot != null ? doorShot.Clock : -1f;
+    }
+    void AutoDoorOpenBegan(FrontRoomsMapWorld.Door d, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)
+    {
+        if (!autoDoorActive || d != autoDoor || autoDoorOpenAt >= 0f) return;
+        autoDoorOpenAt = doorShot != null ? doorShot.Clock : -1f;
+        autoDoorOpenSource = source;
+        autoDoorLatchDrawn = latchDrawn;
+    }
+    void AutoDoorShotStarted(ShotKind kind, Vector3 focus) { if (autoDoorActive && kind == ShotKind.Unlock) autoDoorShots++; }
+    void AutoDoorShotEnded(ShotKind kind, Vector3 focus)
+    {
+        if (autoDoorActive && kind == ShotKind.Unlock && autoDoorShotEndAt < 0f) autoDoorShotEndAt = doorShot != null ? doorShot.Clock : -1f;
+    }
+
+    void AutoDoorEnd()
+    {
+        autoDoorActive = false;
+        autoDoorDone = true;
+        autoEDown = autoEHeld = false;
+        map.DoorsNeedKeysForTools = autoDoorKeysWere;
+        if (relay != null) relay.HeldForTools = false;
+        map.DoorLocked -= AutoDoorLockedAt;
+        map.DoorRattled -= AutoDoorRattledAt;
+        map.DoorUnlocked -= AutoDoorUnlockedAt;
+        map.DoorOpenBegan -= AutoDoorOpenBegan;
+        FrontRoomsCameraRig.ShotStarted -= AutoDoorShotStarted;
+        FrontRoomsCameraRig.ShotEnded -= AutoDoorShotEnded;
+        FrontRoomsDoorShot.Beat -= AutoKeyBeat;
+        // The autopilot runs with the placeholder off (set at run start); only the presented key case turns it on.
+        FrontRoomsMapWorld.ShowPlaceholderKey = false;
+        // Back to the walk: plan a fresh route from wherever the last door left it.
+        autoRouteIndex = autoRoute.Count;
+    }
+
+    // Stand 0.9 m out from the lock on the face `side` is on, facing the door, the crosshair 1.3 m up the leaf (as the
+    // glass scenario): the shot finds the keyhole itself, and an aim ray 36° down (at the lock) meets the player's own
+    // controller (see AutoDoorSelfHitNote).
+    void AutoDoorStand(FrontRoomsMapWorld.Door door, Vector3 side)
+    {
+        var lockPose = map.LockPose(door, side);
+        var normal = FrontRoomsMapWorld.LockNormal(door, side);
+        var feet = lockPose.position + normal * .9f;
+        feet.y = playerRoot.position.y;
+        playerBody.enabled = false;
+        playerRoot.position = feet;
+        playerBody.enabled = true;
+        Physics.SyncTransforms();
+        yaw = Quaternion.LookRotation(-normal, Vector3.up).eulerAngles.y;
+        pitch = Mathf.Atan2(EyeHeight - 1.3f, .9f) * Mathf.Rad2Deg;
+    }
+
+    // Once per run: the shallowest downward pitch at which the base-eye aim ray meets the player's own CharacterController
+    // instead of the world (E then reaches nothing). A note for the report, not a check.
+    void AutoDoorSelfHitNote()
+    {
+        var eye = rig != null ? rig.BaseEye.position : cam.transform.position;
+        var flat = Quaternion.Euler(0f, yaw, 0f);
+        for (var deg = 0; deg <= 75; deg++)
+            if (Physics.Raycast(new Ray(eye, flat * Quaternion.Euler(deg, 0f, 0f) * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore) && hit.collider == playerBody)
+            {
+                autoDoorChecks.Add("note the aim ray meets the player's own controller from " + deg + "° down (E reaches nothing past it)");
+                Log("AUTOPILOT DOORS note: the aim ray meets the player's own controller from " + deg + "° down");
+                return;
+            }
+        autoDoorChecks.Add("note the aim ray never meets the player's own controller (0–75° down)");
+    }
+
+    // The next case: its door (the first unlock reuses the rattled one), the player put in front of it, the counters cleared.
+    void AutoDoorNext(int next)
+    {
+        autoDoorCase = next;
+        autoDoorStep = 0;
+        autoDoorClock = 0f;
+        autoDoorCapture = 0;
+        autoDoorLocked = autoDoorRattled = autoDoorUnlocked = autoDoorShots = autoDoorKickRises = 0;
+        autoDoorUnlockedAt = autoDoorOpenAt = autoDoorShotEndAt = autoDoorFreeAt = autoDoorCamBackAt = autoDoorFovBackAt = -1f;
+        autoDoorMaxOffset = autoDoorMaxDt = 0f;
+        autoDoorMinFov = cam.fieldOfView;
+        autoDoorHingeMoved = autoDoorLatchDrawn = false;
+        autoDoorPrevKick = rig != null ? Mathf.Abs(rig.KickPitch) : 0f;
+        if (next == 1) return;
+        if (next >= 4)
+        {
+            AutoKeyNext(next);
+            return;
+        }
+        var pullSide = next == 3;
+        autoDoor = map.NearestClosedDoorForTools(playerRoot.position, pullSide);
+        if (autoDoor == null)
+        {
+            AutoDoorCheck(false, "doors: no shut door built near the player with them on its " + (pullSide ? "swing" : "stop") + " side (" + AutoDoorCaseNames[next] + ")");
+            AutoDoorEnd();
+            return;
+        }
+        AutoDoorStand(autoDoor, playerRoot.position);
+        Log("AUTOPILOT DOORS " + AutoDoorCaseNames[next] + " · door " + autoDoor.a + "-" + autoDoor.b);
+    }
+
+    // A key case: the nearest key still lying, the player put 1.4–2 m from it (a clear walk onto it), facing it.
+    void AutoKeyNext(int next)
+    {
+        autoKey = map.NearestKeyForTools(playerRoot.position, out autoKeyZone, out _);
+        if (autoKey == null || !AutoKeyStand(autoKey.position))
+        {
+            AutoDoorCheck(false, "doors: " + (autoKey == null ? "no key lying in the built map" : "no clear spot to walk onto the key of zone " + autoKeyZone) + " (" + AutoDoorCaseNames[next] + ")");
+            AutoDoorEnd();
+            return;
+        }
+        autoKeyPocketAt = autoKeyGoneAt = autoKeyPanelFirstAlpha = -1f;
+        autoKeyMaxHudFade = 0f;
+        autoKeyPanelEarly = autoKeyParentedToMap = autoKeyPanelSeen = false;
+        Log("AUTOPILOT DOORS " + AutoDoorCaseNames[next] + " · key of zone " + autoKeyZone + " at " + autoKey.position.ToString("F2"));
+    }
+
+    // Where to stand for a key: a clear spot within 0.6 m (flat) of it to walk onto (contact is 0.9 m), and one
+    // 1.4–2 m off with a clear line to it at knee height (the same room). The player goes to the second, facing the key.
+    bool AutoKeyStand(Vector3 keyPosition)
+    {
+        var floor = playerRoot.position.y;
+        var keyFlat = new Vector3(keyPosition.x, floor, keyPosition.z);
+        var found = false;
+        foreach (var r in new[] { 0f, .3f, .6f })
+        {
+            for (var i = 0; i < 16 && !found; i++)
+            {
+                var spot = keyFlat + Quaternion.Euler(0f, i * 22.5f, 0f) * Vector3.forward * r;
+                if (AutoBodyClear(spot)) { autoKeyContact = spot; found = true; }
+            }
+            if (found) break;
+        }
+        if (!found) return false;
+        foreach (var r in new[] { 1.6f, 1.4f, 2f })
+            for (var i = 0; i < 16; i++)
+            {
+                var spot = autoKeyContact + Quaternion.Euler(0f, i * 22.5f, 0f) * Vector3.forward * r;
+                if (Flat(spot - keyFlat).magnitude < 1.2f || !AutoBodyClear(spot)) continue;
+                if (Physics.Linecast(spot + Vector3.up * .5f, autoKeyContact + Vector3.up * .5f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                playerBody.enabled = false;
+                playerRoot.position = spot;
+                playerBody.enabled = true;
+                Physics.SyncTransforms();
+                yaw = Quaternion.LookRotation(keyFlat - spot, Vector3.up).eulerAngles.y;
+                pitch = 15f;
+                return true;
+            }
+        return false;
+    }
+
+    // A body (the player's capsule) fits here: only walls, doors and furniture count, as ClearStandingSpot.
+    bool AutoBodyClear(Vector3 feet)
+    {
+        var r = ModuleUnits.PlayerRadius;
+        return !Physics.CheckCapsule(feet + Vector3.up * (r + .2f), feet + Vector3.up * (ModuleUnits.PlayerHeight - r), r, ~0, QueryTriggerInteraction.Ignore);
+    }
+
+    // After a teleport the map streams round the new spot: wait until it has settled and frames are short again, or
+    // a long frame (the map's door clock takes raw deltaTime up to 0.33 s; the game's is capped at 0.1 s) skews the
+    // debounce, and an unsettled map makes the unlock play in place. Gives up (a FAIL) after 8 s.
+    bool AutoDoorReady()
+    {
+        if (map.Settled && Time.deltaTime < .1f) return true;
+        if (autoDoorClock > 8f)
+        {
+            AutoDoorCheck(false, "doors: the map never settled round " + AutoDoorCaseNames[autoDoorCase] + "'s door (8 s)");
+            AutoDoorEnd();
+        }
+        return false;
+    }
+
+    // One frame of E, as a player's press.
+    void AutoDoorPress()
+    {
+        Log("AUTOPILOT DOORS press E at " + autoDoorClock.ToString("0.000") + " (aimed " + (aimed != null ? aimed.name : "nothing") + ", door clock " + map.DoorClockForTools.ToString("0.000") + ")");
+        autoEDown = autoEHeld = true;
+        autoDoorPressAt = autoDoorClock;
+    }
+
+    void AutoDoorCaptures(string label)
+    {
+        if (doorShot == null) return;
+        while (autoDoorCapture < AutoDoorCaptureAt.Length && (doorShot.Clock >= AutoDoorCaptureAt[autoDoorCapture] || !doorShot.UnlockActive))
+            AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_door_" + label + "_t" + Mathf.RoundToInt(AutoDoorCaptureAt[autoDoorCapture++] * 100f).ToString("000"));
+    }
+
+    void AutopilotDoors(float dt)
+    {
+        if (phase != Phase.Playing) return;
+        if (!autoDoorActive)
+        {
+            if (inStartRooms || autoSettledAt < 0f || autoPlayClock < 6f || climbTime >= 0f || pullClear.HasValue) return;
+            if (autoGlassWanted && !autoGlassDone) return;
+            if (relay != null && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor || relay.SeesPlayer)) return;
+            autoDoorKeysWere = map.DoorsNeedKeysForTools;
+            map.DoorsNeedKeysForTools = true;
+            if (relay != null) relay.HeldForTools = true;
+            map.DoorLocked += AutoDoorLockedAt;
+            map.DoorRattled += AutoDoorRattledAt;
+            map.DoorUnlocked += AutoDoorUnlockedAt;
+            map.DoorOpenBegan += AutoDoorOpenBegan;
+            FrontRoomsCameraRig.ShotStarted += AutoDoorShotStarted;
+            FrontRoomsCameraRig.ShotEnded += AutoDoorShotEnded;
+            autoDoorActive = true;
+            AutoDoorSelfHitNote();
+            Log("AUTOPILOT DOORS keys on for this run's map; the Relay held (" + (relay != null ? relay.State.ToString() : "none") + ")");
+            AutoDoorNext(0);
+            return;
+        }
+        autoDoorClock += dt;
+        autoDoorMaxDt = Mathf.Max(autoDoorMaxDt, dt);
+        // A press lasts one frame.
+        if (autoEDown && autoDoorClock > autoDoorPressAt) autoEDown = autoEHeld = false;
+        var moving = FrontRoomsSettings.CameraMotionScale > 0f;
+        var full = FrontRoomsSettings.CameraMotionScale >= .999f;
+        var slack = Mathf.Max(.03f, autoDoorMaxDt);
+        var offset = cam.transform.localPosition.magnitude;
+        autoDoorMaxOffset = Mathf.Max(autoDoorMaxOffset, offset);
+        autoDoorMinFov = Mathf.Min(autoDoorMinFov, cam.fieldOfView);
+        var baseFov = rig != null ? rig.BaseFov : cam.fieldOfView;
+        switch (autoDoorCase)
+        {
+            case 0:
+            {
+                // A locked try, and a second one 0.2 s later inside Rattle.Duration: one rattle, two pitch kicks. No frame is
+                // captured in that window: a capture's long frame runs the map's door clock (raw deltaTime) past the game's
+                // (capped at 0.1 s), which a player's two presses never see. Then a third try after the window, for the frame.
+                var kick = rig != null ? Mathf.Abs(rig.KickPitch) : 0f;
+                if (kick > autoDoorPrevKick + .05f) autoDoorKickRises++;
+                autoDoorPrevKick = kick;
+                if (autoDoorStep == 0 && autoDoorClock >= .25f && AutoDoorReady()) { autoDoorClock = 0f; AutoDoorPress(); autoDoorStep = 1; return; }
+                if (autoDoorStep == 1 && autoDoorClock >= .2f) { AutoDoorPress(); autoDoorStep = 2; return; }
+                if (autoDoorStep == 2 && autoDoorClock >= .55f)
+                {
+                    AutoDoorCheck(autoDoorLocked == 1 && autoDoorRattled == 1, "doors: two tries 0.2 s apart on a locked door raise DoorLocked and DoorRattled once each (" + autoDoorLocked + ", " + autoDoorRattled + ")");
+                    AutoDoorCheck(!moving || autoDoorKickRises == 2, "doors: the rattle kicks the camera's pitch twice (" + autoDoorKickRises + ")");
+                    autoDoorClock = 0f;
+                    AutoDoorPress();
+                    autoDoorStep = 3;
+                    return;
+                }
+                if (autoDoorStep == 3 && autoDoorClock >= .05f && autoDoorCapture == 0)
+                {
+                    AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_door_rattle_t005");
+                    autoDoorCapture = 1;
+                }
+                if (autoDoorStep == 3 && autoDoorClock >= .5f)
+                {
+                    AutoDoorCheck(autoDoorLocked == 2 && autoDoorRattled == 2, "doors: a try after Rattle.Duration rattles again (" + autoDoorLocked + ", " + autoDoorRattled + ")");
+                    AutoDoorCheck(autoDoorShots == 0 && (rig == null || !rig.InShot) && !map.IsUnlockedForTools(autoDoor), "doors: no shot and no unlock without the key");
+                    AutoDoorNext(1);
+                }
+                return;
+            }
+            case 1:
+            case 3:
+            {
+                // The unlock with the key: push side (case 1, the rattled door) or pull side (case 3).
+                if (autoDoorStep == 0)
+                {
+                    if (autoDoorClock < .45f || !AutoDoorReady()) return;
+                    map.GiveKeyForTools(map.ZoneOf(map.CellOf(playerRoot.position)).id);
+                    autoDoorHingeAt = autoDoor.hinge != null ? autoDoor.hinge.localRotation : Quaternion.identity;
+                    autoDoorMinFov = cam.fieldOfView;
+                    autoDoorMaxOffset = 0f;
+                    autoDoorMaxDt = 0f;
+                    autoDoorClock = 0f;
+                    AutoDoorPress();
+                    autoDoorStep = 1;
+                    return;
+                }
+                var label = autoDoorCase == 1 ? "unlock" : "unlock_pull";
+                if (autoDoorStep == 1 && autoDoorClock > autoDoorPressAt && !autoEDown)
+                {
+                    AutoDoorCheck(doorShot != null && doorShot.UnlockActive && autoDoorShots == 1, "doors: E with the key starts the Unlock shot (" + AutoDoorCaseNames[autoDoorCase] + ", door " + autoDoor.a + "-" + autoDoor.b + ")");
+                    if (doorShot == null || !doorShot.UnlockActive) { AutoDoorEnd(); return; }
+                    autoDoorStep = 2;
+                }
+                if (autoDoorStep < 2) return;
+                AutoDoorCaptures(label);
+                if (autoDoorFreeAt < 0f && doorShot.Clock > .5f && !doorShot.MoveLocked) autoDoorFreeAt = doorShot.Clock;
+                if (autoDoorCase == 3 && doorShot.UnlockActive && doorShot.Clock < 1.50f && autoDoor.hinge != null && Quaternion.Angle(autoDoor.hinge.localRotation, autoDoorHingeAt) > .1f) autoDoorHingeMoved = true;
+                if (autoDoorClock < (autoDoorCase == 1 ? 1.8f : 2.6f)) return;
+                var unlockOk = autoDoorUnlocked == 1 && Mathf.Abs(autoDoorUnlockedAt - FrontRoomsShotTimings.Unlock.Commit) <= slack;
+                AutoDoorCheck(unlockOk && map.IsUnlockedForTools(autoDoor), "doors: DoorUnlocked once, at " + autoDoorUnlockedAt.ToString("0.000") + " s (commit 0.86 ± " + slack.ToString("0.000") + ") (" + label + ")");
+                if (autoDoorCase == 1)
+                {
+                    AutoDoorCheck(!full || autoDoorMaxOffset > .2f, "doors: the camera dipped toward the lock (max " + autoDoorMaxOffset.ToString("0.000") + " m from the eye)");
+                    AutoDoorCheck(!full || autoDoorMinFov <= baseFov - 13.5f, "doors: the FOV pushed in (min " + autoDoorMinFov.ToString("0.0") + " of " + baseFov.ToString("0.0") + ")");
+                    AutoDoorCheck(autoDoorOpenAt >= 0f && autoDoorOpenAt <= 1.03f + slack && autoDoorOpenSource == FrontRoomsMapWorld.DoorOpenSource.Unlock && autoDoorLatchDrawn,
+                        "doors: push side: the leaf opens at " + autoDoorOpenAt.ToString("0.000") + " s with the latch drawn (by 1.03; source " + autoDoorOpenSource + ")");
+                    AutoDoorCheck(autoDoorFreeAt >= 0f && autoDoorFreeAt <= FrontRoomsShotTimings.Unlock.MoveLockEnd + .02f + slack, "doors: move is free at " + autoDoorFreeAt.ToString("0.000") + " s (by 1.47)");
+                }
+                else
+                {
+                    AutoDoorCheck(!autoDoorHingeMoved, "doors: pull side: the leaf stays shut through the shot (no hinge turn before 1.50 s)");
+                    AutoDoorCheck(autoDoorOpenAt >= FrontRoomsShotTimings.Unlock.Duration - slack && autoDoorOpenAt <= FrontRoomsShotTimings.Unlock.Duration + .05f + slack
+                        && autoDoorOpenSource == FrontRoomsMapWorld.DoorOpenSource.Unlock && !autoDoorLatchDrawn,
+                        "doors: pull side: a normal open at " + autoDoorOpenAt.ToString("0.000") + " s (1.55; source " + autoDoorOpenSource + ", latch drawn " + autoDoorLatchDrawn + ")");
+                }
+                AutoDoorCheck(autoDoorShotEndAt >= 0f && autoDoorShotEndAt <= 1.60f + slack && offset < 1e-3f && Mathf.Abs(cam.fieldOfView - baseFov) < .05f && (rig == null || !rig.InShot),
+                    "doors: ShotEnded at " + autoDoorShotEndAt.ToString("0.000") + " s (by 1.60), the camera back on the eye (" + offset.ToString("0.0000") + " m, FOV " + cam.fieldOfView.ToString("0.0") + ") (" + label + ")");
+                AutoDoorCheck(autoDoor.open, "doors: the door is open after the shot (" + label + ")");
+                AutoDoorNext(autoDoorCase == 1 ? 2 : 4);
+                return;
+            }
+            case 2:
+            {
+                // A second E 0.4 s into the unlock (after Unlock.CancelAfter): the key comes out, the door stays locked and shut.
+                if (autoDoorStep == 0)
+                {
+                    if (autoDoorClock < .25f || !AutoDoorReady()) return;
+                    map.GiveKeyForTools(map.ZoneOf(map.CellOf(playerRoot.position)).id);
+                    autoDoorClock = 0f;
+                    AutoDoorPress();
+                    autoDoorStep = 1;
+                    return;
+                }
+                if (autoDoorStep == 1)
+                {
+                    if (doorShot == null || doorShot.Clock < .4f) return;
+                    AutoDoorPress();
+                    autoDoorStep = 2;
+                    return;
+                }
+                var since = doorShot.Clock;
+                if (autoDoorStep == 2 && !autoEDown)
+                {
+                    if (autoDoorCamBackAt < 0f && offset < 1e-3f) autoDoorCamBackAt = autoDoorClock;
+                    if (autoDoorFovBackAt < 0f && Mathf.Abs(cam.fieldOfView - baseFov) < .05f) autoDoorFovBackAt = autoDoorClock;
+                }
+                if (autoDoorClock < 1.4f) return;
+                AutoDoorCheck(autoDoorUnlocked == 0 && !map.IsUnlockedForTools(autoDoor) && !autoDoor.open, "doors: cancel at 0.4 s: no DoorUnlocked, the door locked and shut");
+                AutoDoorCheck(autoDoorCamBackAt >= 0f && autoDoorCamBackAt <= .70f + slack, "doors: cancel: the camera back on the eye at " + autoDoorCamBackAt.ToString("0.000") + " s (by 0.70)");
+                AutoDoorCheck(autoDoorFovBackAt >= 0f && autoDoorFovBackAt <= .85f + slack, "doors: cancel: the FOV back at " + autoDoorFovBackAt.ToString("0.000") + " s (by 0.85)");
+                AutoDoorCheck(!doorShot.UnlockActive && (rig == null || !rig.InShot), "doors: cancel: the shot is over (stopped at " + since.ToString("0.000") + " s)");
+                AutoDoorNext(3);
+                return;
+            }
+            case 4:
+            case 5:
+            {
+                // A key pickup: the walk onto the key (a teleport from the stand spot) once the map has settled round it.
+                var presentedCase = autoDoorCase == 5;
+                var caseName = AutoDoorCaseNames[autoDoorCase];
+                if (autoDoorStep == 0)
+                {
+                    if (autoDoorClock < .25f || !AutoDoorReady()) return;
+                    if (autoKey == null)
+                    {
+                        AutoDoorCheck(false, "doors: the key of zone " + autoKeyZone + " went before the walk onto it (" + caseName + ")");
+                        AutoDoorEnd();
+                        return;
+                    }
+                    FrontRoomsMapWorld.ShowPlaceholderKey = presentedCase;
+                    if (presentedCase) FrontRoomsDoorShot.Beat += AutoKeyBeat;
+                    autoKeyPickupsBefore = autoKeyPickups;
+                    autoKeyTakenBefore = keysTaken;
+                    autoKeyBreaksBefore = autoKeyBreaks.Count;
+                    playerBody.enabled = false;
+                    playerRoot.position = autoKeyContact;
+                    playerBody.enabled = true;
+                    Physics.SyncTransforms();
+                    autoDoorMaxDt = 0f;
+                    autoDoorClock = 0f;
+                    autoDoorStep = 1;
+                    return;
+                }
+                var inZone = map.ZoneOf(map.CellOf(playerRoot.position)).id == autoKeyZone;
+                if (autoDoorStep == 1)
+                {
+                    // The map takes it in its Update (contact: 0.9 m, flat).
+                    if (autoKeyPickups == autoKeyPickupsBefore || !autoKeyStartAt.ContainsKey(autoKeyZone))
+                    {
+                        if (autoDoorClock <= 1f) return;
+                        AutoDoorCheck(false, "doors: walked onto the key of zone " + autoKeyZone + " and nothing was picked up in 1 s (" + caseName + ")");
+                        AutoDoorEnd();
+                        return;
+                    }
+                    autoKeyStartedAt = autoKeyStartAt[autoKeyZone];
+                    if (!presentedCase)
+                        AutoDoorCheck(keysTaken == autoKeyTakenBefore + 1 && !autoKeyLastPresented && autoKeyLastLag == 0f && autoKeyBreaks.Count == autoKeyBreaksBefore
+                                && map.HasKeyFor(autoKeyZone) && !doorShot.Presenting(autoKeyZone),
+                            "doors: key (instant): KeyPickupStarted and KeyTaken in the same frame, not presented (no model, the placeholder off), the key held");
+                    else
+                    {
+                        autoKeyParentedToMap = autoKey != null && autoKey.parent == map.transform;
+                        AutoDoorCheck(doorShot.Presenting(autoKeyZone) && map.HasKeyFor(autoKeyZone) && keysTaken == autoKeyTakenBefore && autoKeyParentedToMap,
+                            "doors: key (presented): at contact the key is held and presented, KeyTaken not yet, the object on the map's root");
+                    }
+                    autoDoorStep = 2;
+                    return;
+                }
+                var since = elapsed - autoKeyStartedAt;
+                if (!presentedCase)
+                {
+                    // The frame after contact: the cube gone, the panel up at full alpha (as before step 5).
+                    AutoDoorCheck(autoKey == null && (!inZone || (keyPanel != null && keyPanel.activeSelf && keyPanelFade >= 1f)),
+                        "doors: key (instant): the cube is gone at once and the key panel is up at full alpha" + (inZone ? "" : " (the player stands in another zone: panel not checked)"));
+                    AutoDoorNext(5);
+                    return;
+                }
+                var presenting = doorShot.Presenting(autoKeyZone);
+                if (presenting && keyPanel != null && keyPanel.activeSelf) autoKeyPanelEarly = true;
+                if (rig != null) autoKeyMaxHudFade = Mathf.Max(autoKeyMaxHudFade, rig.HudFade + (rig.InShot ? 1f : 0f));
+                while (autoDoorCapture < AutoKeyCaptureAt.Length && (doorShot.KeyClock >= AutoKeyCaptureAt[autoDoorCapture] || !presenting))
+                    AutopilotCapture((autoShots < 10 ? "0" : "") + autoShots + "_key_pickup_t" + Mathf.RoundToInt(AutoKeyCaptureAt[autoDoorCapture++] * 100f).ToString("000"));
+                if (!presenting && autoKeyGoneAt < 0f) autoKeyGoneAt = since;
+                if (!presenting && !autoKeyPanelSeen && keyPanel != null && keyPanel.activeSelf)
+                {
+                    autoKeyPanelSeen = true;
+                    autoKeyPanelFirstAlpha = keyPanelFade;
+                }
+                if (since < 1.6f) return;
+                var keySlack = Mathf.Max(.03f, autoDoorMaxDt);
+                var arrive = FrontRoomsShotTimings.KeyPickup.Arrive;
+                AutoDoorCheck(autoKeyLastPresented && Mathf.Abs(autoKeyLastLag - arrive) <= keySlack && keysTaken == autoKeyTakenBefore + 1,
+                    "doors: key (presented): KeyTaken " + autoKeyLastLag.ToString("0.000") + " s after contact (" + arrive.ToString("0.00") + " ± " + keySlack.ToString("0.000") + ")");
+                AutoDoorCheck(autoKeyPocketAt >= 0f && Mathf.Abs(autoKeyPocketAt - FrontRoomsShotTimings.KeyPickup.PocketSound) <= keySlack,
+                    "doors: key (presented): the pocket beat at " + autoKeyPocketAt.ToString("0.000") + " s (" + FrontRoomsShotTimings.KeyPickup.PocketSound.ToString("0.00") + ")");
+                AutoDoorCheck(autoKeyGoneAt >= 0f && Mathf.Abs(autoKeyGoneAt - FrontRoomsShotTimings.KeyPickup.PocketEnd) <= keySlack + autoDoorMaxDt && autoKey == null,
+                    "doors: key (presented): gone at " + autoKeyGoneAt.ToString("0.000") + " s (" + FrontRoomsShotTimings.KeyPickup.PocketEnd.ToString("0.00") + "), the object destroyed");
+                AutoDoorCheck(!autoKeyPanelEarly && (!inZone || (autoKeyPanelSeen && autoKeyPanelFirstAlpha < 1f - 1e-3f && keyPanelFade >= 1f)),
+                    "doors: key (presented): the key panel waited for the pocket and faded in (first frame × " + autoKeyPanelFirstAlpha.ToString("0.00") + ", not at once; " + keyPanelFade.ToString("0.00") + " at the end)"
+                    + (inZone ? "" : " (the player stands in another zone: fade not checked)"));
+                AutoDoorCheck(autoKeyMaxHudFade <= 0f, "doors: key (presented): no rig shot and no HUD fade (" + autoKeyMaxHudFade.ToString("0.00") + ")");
+                AutoDoorEnd();
+                return;
+            }
+        }
+    }
+
     // ---------- HUD layout: every panel inside the screen ----------
     // Laid out by hand per platform, the HUD can drift off the canvas without any error
     // (the desktop key row once sat 96-118 px above the top edge). Each panel's rect is
@@ -3032,13 +3742,30 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             glassScenario = autoGlassWanted,
             glassChecks = autoGlassChecks,
             hudOffscreen = autoHudOffscreen,
+            unlockShotsStarted = autoUnlockShots,
+            keyPickups = autoKeyPickups,
+            keyTakenLagMax = autoKeyLagMax,
+            keyPresentations = autoKeyPresentations,
         };
+        FrontRoomsCameraRig.ShotStarted -= AutoShotStarted;
+        // Keys off (shipped play): a key turn never happens, so no Unlock shot may have started. The door scenario turns keys on for its cases.
+        if (map != null && !autoDoorWanted && !map.DoorsNeedKeysForTools)
+            report.doorChecks.Add((autoUnlockShots == 0 ? "ok   " : "FAIL ") + "keys off: no Unlock shot started (" + autoUnlockShots + ")");
+        // Every pickup, the door scenario's key cases too: KeyTaken in its contact frame unless presented (§5.4).
+        if (map != null) report.doorChecks.Add(AutoKeyRuleLine());
+        if (autoDoorWanted)
+        {
+            if (!autoDoorDone) AutoDoorCheck(false, "doors: the scenario did not finish (case " + autoDoorCase + ", step " + autoDoorStep + ")");
+            if (autoDoorActive) AutoDoorEnd();
+            report.doorChecks.AddRange(autoDoorChecks);
+        }
+        var doorsOk = report.doorChecks.TrueForAll(c => !c.StartsWith("FAIL"));
         if (!autoHudChecked && mapPlay) AutopilotHudCheck();
         var reached = mapPlay && autoDistance > 20f && autoCells.Count > 8;
         if (autoGlassWanted && !autoGlassDone) AutoGlassCheck(false, "glass: the scenario did not finish (step " + autoGlassStep + ")");
         var glassOk = !autoGlassWanted || autoGlassChecks.TrueForAll(c => c.StartsWith("ok"));
         var hudOk = autoHudOffscreen.Count == 0;
-        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk ? "PASS" : "FAIL") + " · ended by " + reason
+        report.verdict = (reached && autoErrors == 0 && relay != null && relay.Released && glassOk && hudOk && doorsOk ? "PASS" : "FAIL") + " · ended by " + reason
             + (hudOk ? "" : " · HUD off screen: " + string.Join("; ", autoHudOffscreen));
         if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));

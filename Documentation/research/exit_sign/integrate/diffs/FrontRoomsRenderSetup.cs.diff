@@ -1,0 +1,63 @@
+--- a/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
++++ b/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+@@ -271,6 +271,9 @@
+         public string print;
+         public Color inkGround, inkMid, inkDeep, inkCream;
+         public float printAmount = 1f;
++        // Exit-sign lamp field (FrontRooms/Surface _FR_LAMP_FIELD): texture stem of the linear
++        // field map (R lamp A, G lamp B, B DC pair, A transmission). Needs emission.
++        public string lampField;
+     }
+ 
+     // Level 0 print palettes (gen_surfaces.py LOBBY_PALETTE / COLD_PALETTE); Shift is the Lobby
+@@ -308,7 +311,17 @@
+         new SurfaceDef { name = "Run_Ceiling", texture = "Office_Ceiling2x2", tile = new Vector2(FourFoot, FourFoot), tint = new Color(1.04f, 1.04f, 1.04f), macroTone = .2f, stain = .2f },
+         // The sign faces are quads whose U runs right-to-left as seen from the
+         // front, so the print is flipped back with a -1 scale and +1 offset.
+-        new SurfaceDef { name = "Run_ExitSign", texture = "Run_ExitSign", tile = new Vector2(.36f, .18f), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "Run_ExitSign", emissionColor = new Color(3.2f, 3.2f, 3.2f), st = new Vector4(-1, 1, 1, 0) },
++        // smooth .38: there is no mask, so the scale IS the smoothness (1.0 was a perfect mirror; glass/rt/11a M2).
++        new SurfaceDef { name = "Run_ExitSign", texture = "Run_ExitSign", tile = new Vector2(.36f, .18f), meshUV = true, smooth = .38f, macroTone = 0f, macroDirt = 0f, emission = "Run_ExitSign", emissionColor = new Color(3.2f, 3.2f, 3.2f), st = new Vector4(-1, 1, 1, 0) },
++        // The 1990 EXIT sign family (research/exit_sign/10_spec.md §6-§7; Kit_ExitSign*): white enamel
++        // pan (tiling), the stamped frame + stencil plate (decal over the 0.346 x 0.212 face), and the red
++        // diffuser behind the letter holes (decal over the 0.320 x 0.186 opening). Smoothness comes from
++        // the masks (means .50 / .42 / .72): no mirrors. Emission only on the lit diffuser, shaped by the
++        // lamp field; the _Dead copy has no emission keyword at all.
++        new SurfaceDef { name = "ExitSign_Housing", texture = "ExitSign_Enamel", tile = new Vector2(.40f, .40f), meshUV = true, macroTone = .04f, macroDirt = .04f },
++        new SurfaceDef { name = "ExitSign_Face", texture = "ExitSign_Face", tile = new Vector2(.346f, .212f), meshUV = true, macroTone = 0f, macroDirt = .03f },
++        new SurfaceDef { name = "ExitSign_Diffuser", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, macroTone = 0f, macroDirt = 0f, emission = "ExitSign_Diffuser", emissionColor = new Color(3.2f, .013f, .006f), lampField = "ExitSign_Diffuser_F" },
++        new SurfaceDef { name = "ExitSign_Diffuser_Dead", texture = "ExitSign_Diffuser", tile = new Vector2(.320f, .186f), meshUV = true, macroTone = 0f, macroDirt = 0f },
+ 
+         // Shared construction.
+         new SurfaceDef { name = "Door_Veneer", texture = "DoorVeneer", tile = new Vector2(1.12f, 2.62f), meshUV = true, macroTone = .15f, macroDirt = .1f },
+@@ -530,6 +543,20 @@
+                 m.SetFloat("_UseEmission", 0f);
+                 m.DisableKeyword("_EMISSION");
+             }
++            // Exit-sign lamp field: written only where it is used, so other materials stay untouched.
++            if (d.lampField != null && d.emission != null)
++            {
++                m.SetTexture("_LampFieldMap", Tex(d.lampField));
++                m.SetVector("_LampField", new Vector4(1f, 1f, 0f, 0f));
++                m.SetFloat("_UseLampField", 1f);
++                m.EnableKeyword("_FR_LAMP_FIELD");
++            }
++            else if (m.IsKeywordEnabled("_FR_LAMP_FIELD"))
++            {
++                m.SetTexture("_LampFieldMap", null);
++                m.SetFloat("_UseLampField", 0f);
++                m.DisableKeyword("_FR_LAMP_FIELD");
++            }
+             EditorUtility.SetDirty(m);
+         }
+     }
+@@ -707,7 +734,9 @@
+         importer.mipmapEnabled = true;
+         importer.filterMode = FilterMode.Trilinear;
+         importer.anisoLevel = 16;
+-        importer.wrapMode = stem.StartsWith("Run_ExitSign") ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
++        // Decals clamp so their edges never bleed at far mips (the tiling ExitSign_Enamel repeats).
++        importer.wrapMode = stem.StartsWith("Run_ExitSign") || stem.StartsWith("ExitSign_Face") || stem.StartsWith("ExitSign_Diffuser")
++            ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+         importer.maxTextureSize = 4096;
+         importer.textureCompression = TextureImporterCompression.CompressedHQ;
+         importer.alphaSource = TextureImporterAlphaSource.FromInput;

@@ -17,7 +17,7 @@ public static class FrontRoomsMobileBuild
     const string Version = "0.1.0";
     // Increment for each App Store Connect/TestFlight upload while keeping
     // the Figma-aligned public version at 0.1.0.
-    const string IOSBuildNumber = "10";
+    const string IOSBuildNumber = "15";
     const string OutputEnvironment = "FRONTROOMS_MOBILE_OUTPUT";
 
     static string OutputRoot
@@ -117,6 +117,7 @@ public static class FrontRoomsMobileBuild
         ApplyCommonProfile(target);
         if (target == BuildTarget.iOS) ApplyIOSProfile(simulator);
         else if (target == BuildTarget.Android) ApplyAndroidProfile();
+        RejectDuplicateLibraryCopies();
         PruneStaleTypeDatabases();
         try
         {
@@ -138,6 +139,13 @@ public static class FrontRoomsMobileBuild
                       " output=" + Path.GetFullPath(output));
             if (report.summary.result != BuildResult.Succeeded)
                 throw new Exception(target + " mobile build failed");
+            // Unity 6 can report Success while emitting thousands of TypeDB
+            // duplicate-registration diagnostics. Those stale type trees
+            // produce a player whose level0/sharedassets data is unreadable
+            // and it crashes in Loading.PreloadManager on launch.
+            if (report.summary.totalErrors != 0)
+                throw new Exception(target + " mobile build reported " + report.summary.totalErrors +
+                                    " errors; refuse to ship a potentially corrupted serialized player");
             if (target == BuildTarget.iOS && !simulator)
                 EnsureIOSAppStoreIcon(output);
         }
@@ -150,6 +158,32 @@ public static class FrontRoomsMobileBuild
                 PlayerSettings.iOS.simulatorSdkArchitecture = previousIOSSimulatorArchitecture;
             }
         }
+    }
+
+    static void RejectDuplicateLibraryCopies()
+    {
+        var root = Path.GetFullPath("Library");
+        if (!Directory.Exists(root)) return;
+
+        var conflicts = new System.Collections.Generic.List<string>();
+        foreach (var path in Directory.GetDirectories(root, "* [0-9]", SearchOption.AllDirectories))
+        {
+            var name = Path.GetFileName(path);
+            if (!string.IsNullOrEmpty(name) && System.Text.RegularExpressions.Regex.IsMatch(name, @" \d+$"))
+                conflicts.Add(path);
+        }
+        foreach (var path in Directory.GetFiles(root, "* [0-9].*", SearchOption.AllDirectories))
+        {
+            var name = Path.GetFileName(path);
+            if (!string.IsNullOrEmpty(name) && System.Text.RegularExpressions.Regex.IsMatch(name, @" \d+\.[^/]+$"))
+                conflicts.Add(path);
+        }
+
+        if (conflicts.Count == 0) return;
+        conflicts.Sort(StringComparer.Ordinal);
+        var sample = string.Join("\n  ", conflicts.GetRange(0, Math.Min(conflicts.Count, 12)));
+        throw new InvalidOperationException("Duplicate Unity Library copies detected (" + conflicts.Count +
+                                            "). Move these generated conflict copies out of Library before building:\n  " + sample);
     }
 
     static void PruneStaleTypeDatabases()

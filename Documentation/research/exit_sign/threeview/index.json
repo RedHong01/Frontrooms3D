@@ -1,0 +1,1786 @@
+{
+ "schema": "frontrooms.kit-sheets.interactables/1",
+ "generated": "2026-10-08T19:56:27-07:00",
+ "by": "visual chat (游戏视觉), exit-sign critic follow-up 4 (three-views after the 2026-10-08 merge), for 平面视觉's K-sheets",
+ "figma": {
+  "file": "0tCbAiVUlrPId3RWd9LRif",
+  "page": "2099:76",
+  "propKitSection": "2324:852 (平面视觉, read-only for us)",
+  "placed": "not yet: 平面视觉 places the 4 sheets from K82 (GRAPHIC_VISUAL_TASKS.md §3f)",
+  "supersedes": "the exit_sign sheet in research/interactables/threeview/index.json (G3 Kit_ExitSign/_Dead of 2026-10-03, flagged pending there)"
+ },
+ "source": {
+  "models": "the 8 Kit_ExitSign* kits as merged in main 2026-10-08 19:40 (W/apply/exit_sign.sh, MANIFEST OK; main bc0aa79 + working tree). FBX and sidecar sha1 in the render clone equal main's",
+  "renderClone": "W/proj_es_tv (mkclone.sh 2026-10-08 19:44, compiled OSXUniversal, 0 errors; moved to W/_partial/proj_es_tv after the run)",
+  "renderer": "W/tools FrontRoomsThreeView (interactables version), Unity 6000.3.10f1",
+  "command": "Unity -batchmode -buildTarget OSXUniversal -projectPath W/proj_es_tv -executeMethod FrontRoomsThreeView.RunBatch -quit -threeViewOut W/es_tv_out/raw -threeViewOnly Kit_ExitSign,Kit_ExitSign_Dead,Kit_ExitSign_Hanging,Kit_ExitSign_Hanging_Dead,Kit_ExitSign_HangingFlush,Kit_ExitSign_HangingFlush_Dead,Kit_ExitSign_End,Kit_ExitSign_End_Dead -threeViewYaw Kit_ExitSign_End=-90,Kit_ExitSign_End_Dead=-90 -frGlassRT off",
+  "log": "W/logs/es_tv_render.log",
+  "builder": "W/es_tv_out/build_index_es.py",
+  "manifest": "png/manifest.json"
+ },
+ "conventions": {
+  "oversample": 2,
+  "paddingPx": 16,
+  "pngPerSheetPx": "PNG px = 2 x sheet px; place each PNG at 50 % so the sheet reads at sheetPpm",
+  "sheetPpmLadder": [
+   8000,
+   4000,
+   2000,
+   1000,
+   500,
+   250,
+   125
+  ],
+  "sheetPpmNote": "The tool's ladder: the largest step whose third-angle layout (W + D wide, D + H tall) fits the 1080 x 688 drawing area. Wall, flush and end read at 2000. The hanging sign (0.612 m with its stems) drops to 500: at 1000 its D + H is 691 px, 3 px over 688.",
+  "groundLine": "Part-frame kits: drawn about their origin, not on a floor. Wall and end: the PNG bottom (less padding) is the housing bottom. Hanging and flush: the PNG top (less padding) is the ceiling plane, the sign hangs below it. aboveFloor_m = the bottom's height in the game where the game places the kit, else null",
+  "views": "third-angle: front = camera on +Z (the sign face), side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
+  "viewYaw": "-90 on Kit_ExitSign_End(_Dead): its faces are +/-X (a flag mount), so it is turned to show the +X face in the front view. The wall plate is then at image left and the sign projects to the right; size_m and dims are in that turned frame (W = projection from the wall)",
+  "litFace": "Lit kits render the diffuser at the material default _LampField (1, 1, 0, 0) = both AC lamps (the LIT temperament, no driver in the studio). The studio camera has no HDR and no post, so the letters clip to a full red (mean #e52f2b). Dead kits use ExitSign_Diffuser_Dead (no emission)",
+  "swatchRule": "hex = sRGB of ( linear(mean of the _BaseMap's sRGB pixels) x linear(_BaseColor) ), read from Resources/Surfaces/<slot>.mat in the render clone (interactables/threeview/tools/swatch.py); Prop_Chrome reuses the existing K-sheet hex (equal under the rule). The glow swatch is the emission colour at its peak",
+  "eraAxis": {
+   "band": [
+    1985,
+    1993
+   ],
+   "chips": [
+    "Current stock",
+    "Second-hand",
+    "Timeless"
+   ],
+   "now": 1990,
+   "t0": 1950,
+   "t1": 2000
+  }
+ },
+ "verification": {
+  "vl": "VL220",
+  "slide": "2961:6863 (FRONTROOMS · VISUAL VERIFICATION LOG 2595:6093)",
+  "image": "research/exit_sign/images/threeview/es_tv_contact.jpg",
+  "checks": "32 / 32 PNGs: exactly 16 px clear margin on every side, 0 opaque black px, 0 magenta; 8 / 8 kits ok, none failed",
+  "topViewNote": "The ceiling kits' top views look into the canopy pan, which is open on its ceiling side (exit_sign_common.build_canopy); its shadow marks the footprint"
+ },
+ "counts": {
+  "kits": 8,
+  "sheets": 4,
+  "pngs": 32,
+  "heroes": 0
+ },
+ "sheets": [
+  {
+   "id": "exit_sign",
+   "order": 1,
+   "title": "Exit sign",
+   "primary": "Kit_ExitSign",
+   "kit": "Kit_ExitSign",
+   "lede": "Over the Exit room's far door: 6 in stencil letters cut through white enamel, two lamps behind red acrylic.",
+   "family": "Signage · wall",
+   "dims_mm": {
+    "w": 346,
+    "d": 63.9,
+    "h": 212.4
+   },
+   "dims_label": "W 346 · D 63.9 · H 212.4 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "members": [
+    "Exit room: 1 over the far door, back on the header, bottom 2.674 m; no light of its own (spec §8.6)",
+    "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %; Reduce flashing holds it steady"
+   ],
+   "parts": [],
+   "variants": [
+    "Kit_ExitSign_Dead"
+   ],
+   "variantImages": {
+    "Kit_ExitSign_Dead": "png/Kit_ExitSign_Dead_persp.png"
+   },
+   "variantNote": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "images": {
+    "top": "png/Kit_ExitSign_top.png",
+    "front": "png/Kit_ExitSign_front.png",
+    "side": "png/Kit_ExitSign_side.png",
+    "persp": "png/Kit_ExitSign_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_top",
+    "front": "img:Kit_ExitSign_front",
+    "side": "img:Kit_ExitSign_side",
+    "persp": "img:Kit_ExitSign_persp"
+   },
+   "variantFigmaSlots": {
+    "Kit_ExitSign_Dead": "img:Kit_ExitSign_Dead_persp"
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "sheetPpm": 2000,
+   "viewYaw": 0,
+   "tris": {
+    "budget": [
+     3500,
+     1100,
+     200
+    ],
+    "lod0": 3136,
+    "lod1": 984,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  {
+   "id": "exit_sign_hanging",
+   "order": 2,
+   "title": "Exit sign · hanging",
+   "primary": "Kit_ExitSign_Hanging",
+   "kit": "Kit_ExitSign_Hanging",
+   "lede": "Two per Run room on 0.4 m stems, faces down the corridor; each is dealt lit, half-lit or loose.",
+   "family": "Signage · ceiling",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 612
+   },
+   "dims_label": "W 346 · D 78.9 · H 612 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (stems, collars, nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "members": [
+    "Run room: 2 per room at z 3.4 and 9.2 m under the 2.9 m ceiling, housing 2.288–2.500 m; the red point light at the glow anchor (1.96 m) follows the sign's Level",
+    "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %; Reduce flashing holds it steady"
+   ],
+   "parts": [],
+   "variants": [
+    "Kit_ExitSign_Hanging_Dead"
+   ],
+   "variantImages": {
+    "Kit_ExitSign_Hanging_Dead": "png/Kit_ExitSign_Hanging_Dead_persp.png"
+   },
+   "variantNote": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "images": {
+    "top": "png/Kit_ExitSign_Hanging_top.png",
+    "front": "png/Kit_ExitSign_Hanging_front.png",
+    "side": "png/Kit_ExitSign_Hanging_side.png",
+    "persp": "png/Kit_ExitSign_Hanging_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Hanging_top",
+    "front": "img:Kit_ExitSign_Hanging_front",
+    "side": "img:Kit_ExitSign_Hanging_side",
+    "persp": "img:Kit_ExitSign_Hanging_persp"
+   },
+   "variantFigmaSlots": {
+    "Kit_ExitSign_Hanging_Dead": "img:Kit_ExitSign_Hanging_Dead_persp"
+   },
+   "scaleBar": {
+    "label": "50 cm",
+    "metres": 0.5,
+    "sheetPx": 250
+   },
+   "sheetPpm": 500,
+   "viewYaw": 0,
+   "tris": {
+    "budget": [
+     6500,
+     2000,
+     300
+    ],
+    "lod0": 6502,
+    "lod1": 1999,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  {
+   "id": "exit_sign_hanging_flush",
+   "order": 3,
+   "title": "Exit sign · flush",
+   "primary": "Kit_ExitSign_HangingFlush",
+   "kit": "Kit_ExitSign_HangingFlush",
+   "lede": "The double-faced sign on a 25 mm drop, for low 2.4 m rooms; the game does not place it yet.",
+   "family": "Signage · ceiling",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 237
+   },
+   "dims_label": "W 346 · D 78.9 · H 237 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "members": [
+    "Not placed by the game yet. Meant for Low (2.4 m) zones, where its bottom sits at 2.163 m",
+    "A Ceiling kit: the Level Designer cannot drop it yet (NewProp has no Ceiling case; contract request in 40_merged.md)"
+   ],
+   "parts": [],
+   "variants": [
+    "Kit_ExitSign_HangingFlush_Dead"
+   ],
+   "variantImages": {
+    "Kit_ExitSign_HangingFlush_Dead": "png/Kit_ExitSign_HangingFlush_Dead_persp.png"
+   },
+   "variantNote": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "images": {
+    "top": "png/Kit_ExitSign_HangingFlush_top.png",
+    "front": "png/Kit_ExitSign_HangingFlush_front.png",
+    "side": "png/Kit_ExitSign_HangingFlush_side.png",
+    "persp": "png/Kit_ExitSign_HangingFlush_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_HangingFlush_top",
+    "front": "img:Kit_ExitSign_HangingFlush_front",
+    "side": "img:Kit_ExitSign_HangingFlush_side",
+    "persp": "img:Kit_ExitSign_HangingFlush_persp"
+   },
+   "variantFigmaSlots": {
+    "Kit_ExitSign_HangingFlush_Dead": "img:Kit_ExitSign_HangingFlush_Dead_persp"
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "sheetPpm": 2000,
+   "viewYaw": 0,
+   "tris": {
+    "budget": [
+     5800,
+     1800,
+     300
+    ],
+    "lod0": 6254,
+    "lod1": 1940,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  {
+   "id": "exit_sign_end",
+   "order": 4,
+   "title": "Exit sign · end mount",
+   "primary": "Kit_ExitSign_End",
+   "kit": "Kit_ExitSign_End",
+   "lede": "A flag mount 0.36 m off the wall, so both faces read down a corridor; the game does not place it yet.",
+   "family": "Signage · wall",
+   "dims_mm": {
+    "w": 361,
+    "d": 78.9,
+    "h": 212
+   },
+   "dims_label": "W 361 · D 78.9 · H 212 mm",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "members": [
+    "Not placed by the game yet: Level Designer palette only (Wall)"
+   ],
+   "parts": [],
+   "variants": [
+    "Kit_ExitSign_End_Dead"
+   ],
+   "variantImages": {
+    "Kit_ExitSign_End_Dead": "png/Kit_ExitSign_End_Dead_persp.png"
+   },
+   "variantNote": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "images": {
+    "top": "png/Kit_ExitSign_End_top.png",
+    "front": "png/Kit_ExitSign_End_front.png",
+    "side": "png/Kit_ExitSign_End_side.png",
+    "persp": "png/Kit_ExitSign_End_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_End_top",
+    "front": "img:Kit_ExitSign_End_front",
+    "side": "img:Kit_ExitSign_End_side",
+    "persp": "img:Kit_ExitSign_End_persp"
+   },
+   "variantFigmaSlots": {
+    "Kit_ExitSign_End_Dead": "img:Kit_ExitSign_End_Dead_persp"
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "sheetPpm": 2000,
+   "viewYaw": -90,
+   "tris": {
+    "budget": [
+     6000,
+     1900,
+     300
+    ],
+    "lod0": 5758,
+    "lod1": 1822,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  }
+ ],
+ "kits": {
+  "Kit_ExitSign": {
+   "kit": "Kit_ExitSign",
+   "title": "Exit sign",
+   "lede": "Over the Exit room's far door: 6 in stencil letters cut through white enamel, two lamps behind red acrylic.",
+   "role": "primary",
+   "sheet": "exit_sign",
+   "dims_mm": {
+    "w": 346,
+    "d": 63.9,
+    "h": 212.4
+   },
+   "dims_label": "W 346 · D 63.9 · H 212.4 mm",
+   "size_m": [
+    0.346,
+    0.2124,
+    0.0639
+   ],
+   "boundsMin": [
+    -0.173,
+    0,
+    0
+   ],
+   "boundsMax": [
+    0.173,
+    0.2124,
+    0.0639
+   ],
+   "aboveFloor_m": 2.674,
+   "aboveFloorNote": "Exit room: the sign's bottom on the far door's header (RoomStream.BuildDoorExitSign)",
+   "placement": "Wall",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · wall",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1416,
+     882
+    ],
+    "side": [
+     288,
+     882
+    ],
+    "top": [
+     1416,
+     288
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "wall_decor"
+   ],
+   "anchors": [
+    "hang",
+    "back_centre",
+    "face",
+    "face_dir",
+    "diffuser",
+    "lamp_a",
+    "lamp_b",
+    "glow",
+    "mount_l",
+    "mount_r"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_top.png",
+    "front": "png/Kit_ExitSign_front.png",
+    "side": "png/Kit_ExitSign_side.png",
+    "persp": "png/Kit_ExitSign_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_top",
+    "front": "img:Kit_ExitSign_front",
+    "side": "img:Kit_ExitSign_side",
+    "persp": "img:Kit_ExitSign_persp"
+   },
+   "tris": {
+    "budget": [
+     3500,
+     1100,
+     200
+    ],
+    "lod0": 3136,
+    "lod1": 984,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  "Kit_ExitSign_Dead": {
+   "kit": "Kit_ExitSign_Dead",
+   "title": "Exit sign · dead",
+   "lede": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "role": "variant",
+   "sheet": "exit_sign",
+   "dims_mm": {
+    "w": 346,
+    "d": 63.9,
+    "h": 212.4
+   },
+   "dims_label": "W 346 · D 63.9 · H 212.4 mm",
+   "size_m": [
+    0.346,
+    0.2124,
+    0.0639
+   ],
+   "boundsMin": [
+    -0.173,
+    0,
+    0
+   ],
+   "boundsMax": [
+    0.173,
+    0.2124,
+    0.0639
+   ],
+   "aboveFloor_m": 2.674,
+   "aboveFloorNote": "Exit room: the sign's bottom on the far door's header (RoomStream.BuildDoorExitSign)",
+   "placement": "Wall",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · wall",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser_Dead",
+     "slot": "ExitSign_Diffuser_Dead",
+     "label": "Red acrylic, unlit",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1416,
+     882
+    ],
+    "side": [
+     288,
+     882
+    ],
+    "top": [
+     1416,
+     288
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "wall_decor"
+   ],
+   "anchors": [
+    "hang",
+    "back_centre",
+    "face",
+    "face_dir",
+    "diffuser",
+    "lamp_a",
+    "lamp_b",
+    "glow",
+    "mount_l",
+    "mount_r"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_Dead_top.png",
+    "front": "png/Kit_ExitSign_Dead_front.png",
+    "side": "png/Kit_ExitSign_Dead_side.png",
+    "persp": "png/Kit_ExitSign_Dead_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Dead_top",
+    "front": "img:Kit_ExitSign_Dead_front",
+    "side": "img:Kit_ExitSign_Dead_side",
+    "persp": "img:Kit_ExitSign_Dead_persp"
+   },
+   "tris": {
+    "budget": [
+     3500,
+     1100,
+     200
+    ],
+    "lod0": 3136,
+    "lod1": 984,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "variantOf": "Kit_ExitSign",
+   "swap": [
+    "ExitSign_Diffuser -> ExitSign_Diffuser_Dead"
+   ],
+   "behaviour": "A _Dead model is always Dead (FrontRoomsExitSign); the game places only the lit models today"
+  },
+  "Kit_ExitSign_Hanging": {
+   "kit": "Kit_ExitSign_Hanging",
+   "title": "Exit sign · hanging",
+   "lede": "Two per Run room on 0.4 m stems, faces down the corridor; each is dealt lit, half-lit or loose.",
+   "role": "primary",
+   "sheet": "exit_sign_hanging",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 612
+   },
+   "dims_label": "W 346 · D 78.9 · H 612 mm",
+   "size_m": [
+    0.346,
+    0.612,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.612,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": 2.288,
+   "aboveFloorNote": "Run room (ceiling 2.9 m): the housing bottom",
+   "placement": "Ceiling",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (stems, collars, nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 500,
+   "pngPpm": 1000,
+   "px": {
+    "front": [
+     378,
+     644
+    ],
+    "side": [
+     111,
+     644
+    ],
+    "top": [
+     378,
+     111
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "50 cm",
+    "metres": 0.5,
+    "sheetPx": 250
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_Hanging_top.png",
+    "front": "png/Kit_ExitSign_Hanging_front.png",
+    "side": "png/Kit_ExitSign_Hanging_side.png",
+    "persp": "png/Kit_ExitSign_Hanging_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Hanging_top",
+    "front": "img:Kit_ExitSign_Hanging_front",
+    "side": "img:Kit_ExitSign_Hanging_side",
+    "persp": "img:Kit_ExitSign_Hanging_persp"
+   },
+   "tris": {
+    "budget": [
+     6500,
+     2000,
+     300
+    ],
+    "lod0": 6502,
+    "lod1": 1999,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  "Kit_ExitSign_Hanging_Dead": {
+   "kit": "Kit_ExitSign_Hanging_Dead",
+   "title": "Exit sign · hanging · dead",
+   "lede": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "role": "variant",
+   "sheet": "exit_sign_hanging",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 612
+   },
+   "dims_label": "W 346 · D 78.9 · H 612 mm",
+   "size_m": [
+    0.346,
+    0.612,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.612,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": 2.288,
+   "aboveFloorNote": "Run room (ceiling 2.9 m): the housing bottom",
+   "placement": "Ceiling",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser_Dead",
+     "slot": "ExitSign_Diffuser_Dead",
+     "label": "Red acrylic, unlit",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (stems, collars, nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 500,
+   "pngPpm": 1000,
+   "px": {
+    "front": [
+     378,
+     644
+    ],
+    "side": [
+     111,
+     644
+    ],
+    "top": [
+     378,
+     111
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "50 cm",
+    "metres": 0.5,
+    "sheetPx": 250
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_Hanging_Dead_top.png",
+    "front": "png/Kit_ExitSign_Hanging_Dead_front.png",
+    "side": "png/Kit_ExitSign_Hanging_Dead_side.png",
+    "persp": "png/Kit_ExitSign_Hanging_Dead_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_Hanging_Dead_top",
+    "front": "img:Kit_ExitSign_Hanging_Dead_front",
+    "side": "img:Kit_ExitSign_Hanging_Dead_side",
+    "persp": "img:Kit_ExitSign_Hanging_Dead_persp"
+   },
+   "tris": {
+    "budget": [
+     6500,
+     2000,
+     300
+    ],
+    "lod0": 6502,
+    "lod1": 1999,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "variantOf": "Kit_ExitSign_Hanging",
+   "swap": [
+    "ExitSign_Diffuser -> ExitSign_Diffuser_Dead"
+   ],
+   "behaviour": "A _Dead model is always Dead (FrontRoomsExitSign); the game places only the lit models today"
+  },
+  "Kit_ExitSign_HangingFlush": {
+   "kit": "Kit_ExitSign_HangingFlush",
+   "title": "Exit sign · flush",
+   "lede": "The double-faced sign on a 25 mm drop, for low 2.4 m rooms; the game does not place it yet.",
+   "role": "primary",
+   "sheet": "exit_sign_hanging_flush",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 237
+   },
+   "dims_label": "W 346 · D 78.9 · H 237 mm",
+   "size_m": [
+    0.346,
+    0.237,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.237,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": null,
+   "aboveFloorNote": "not placed; under a 2.4 m ceiling the bottom is at 2.163 m, under 2.9 m at 2.663 m",
+   "placement": "Ceiling",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1416,
+     980
+    ],
+    "side": [
+     348,
+     980
+    ],
+    "top": [
+     1416,
+     348
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_HangingFlush_top.png",
+    "front": "png/Kit_ExitSign_HangingFlush_front.png",
+    "side": "png/Kit_ExitSign_HangingFlush_side.png",
+    "persp": "png/Kit_ExitSign_HangingFlush_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_HangingFlush_top",
+    "front": "img:Kit_ExitSign_HangingFlush_front",
+    "side": "img:Kit_ExitSign_HangingFlush_side",
+    "persp": "img:Kit_ExitSign_HangingFlush_persp"
+   },
+   "tris": {
+    "budget": [
+     5800,
+     1800,
+     300
+    ],
+    "lod0": 6254,
+    "lod1": 1940,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  "Kit_ExitSign_HangingFlush_Dead": {
+   "kit": "Kit_ExitSign_HangingFlush_Dead",
+   "title": "Exit sign · flush · dead",
+   "lede": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "role": "variant",
+   "sheet": "exit_sign_hanging_flush",
+   "dims_mm": {
+    "w": 346,
+    "d": 78.9,
+    "h": 237
+   },
+   "dims_label": "W 346 · D 78.9 · H 237 mm",
+   "size_m": [
+    0.346,
+    0.237,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.173,
+    -0.237,
+    -0.0394
+   ],
+   "boundsMax": [
+    0.173,
+    0,
+    0.0394
+   ],
+   "aboveFloor_m": null,
+   "aboveFloorNote": "not placed; under a 2.4 m ceiling the bottom is at 2.163 m, under 2.9 m at 2.663 m",
+   "placement": "Ceiling",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · ceiling",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan, canopy)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser_Dead",
+     "slot": "ExitSign_Diffuser_Dead",
+     "label": "Red acrylic, unlit",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (nuts, screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1416,
+     980
+    ],
+    "side": [
+     348,
+     980
+    ],
+    "top": [
+     1416,
+     348
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "ceiling"
+   ],
+   "anchors": [
+    "ceiling",
+    "centre",
+    "face_front",
+    "face_back",
+    "stem_l",
+    "stem_r",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_HangingFlush_Dead_top.png",
+    "front": "png/Kit_ExitSign_HangingFlush_Dead_front.png",
+    "side": "png/Kit_ExitSign_HangingFlush_Dead_side.png",
+    "persp": "png/Kit_ExitSign_HangingFlush_Dead_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_HangingFlush_Dead_top",
+    "front": "img:Kit_ExitSign_HangingFlush_Dead_front",
+    "side": "img:Kit_ExitSign_HangingFlush_Dead_side",
+    "persp": "img:Kit_ExitSign_HangingFlush_Dead_persp"
+   },
+   "tris": {
+    "budget": [
+     5800,
+     1800,
+     300
+    ],
+    "lod0": 6254,
+    "lod1": 1940,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "variantOf": "Kit_ExitSign_HangingFlush",
+   "swap": [
+    "ExitSign_Diffuser -> ExitSign_Diffuser_Dead"
+   ],
+   "behaviour": "A _Dead model is always Dead (FrontRoomsExitSign); the game places only the lit models today"
+  },
+  "Kit_ExitSign_End": {
+   "kit": "Kit_ExitSign_End",
+   "title": "Exit sign · end mount",
+   "lede": "A flag mount 0.36 m off the wall, so both faces read down a corridor; the game does not place it yet.",
+   "role": "primary",
+   "sheet": "exit_sign_end",
+   "dims_mm": {
+    "w": 361,
+    "d": 78.9,
+    "h": 212
+   },
+   "dims_label": "W 361 · D 78.9 · H 212 mm",
+   "size_m": [
+    0.361,
+    0.212,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.361,
+    0,
+    -0.0394
+   ],
+   "boundsMax": [
+    0,
+    0.212,
+    0.0394
+   ],
+   "aboveFloor_m": null,
+   "aboveFloorNote": "not placed; origin = the wall plane at the housing bottom",
+   "placement": "Wall",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · wall",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser",
+     "slot": "ExitSign_Diffuser",
+     "label": "Red acrylic diffuser",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+    },
+    {
+     "name": "ExitSign_Diffuser (glow)",
+     "slot": "ExitSign_Diffuser",
+     "label": "Lit letters (lamp glow)",
+     "hex": "#ff0d06",
+     "emissive": true,
+     "renderedHex": "#e52f2b",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": -90,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1476,
+     880
+    ],
+    "side": [
+     348,
+     880
+    ],
+    "top": [
+     1476,
+     348
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "wall_decor"
+   ],
+   "anchors": [
+    "wall",
+    "centre",
+    "face_pos_x",
+    "face_neg_x",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_End_top.png",
+    "front": "png/Kit_ExitSign_End_front.png",
+    "side": "png/Kit_ExitSign_End_side.png",
+    "persp": "png/Kit_ExitSign_End_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_End_top",
+    "front": "img:Kit_ExitSign_End_front",
+    "side": "img:Kit_ExitSign_End_side",
+    "persp": "img:Kit_ExitSign_End_persp"
+   },
+   "tris": {
+    "budget": [
+     6000,
+     1900,
+     300
+    ],
+    "lod0": 5758,
+    "lod1": 1822,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+  },
+  "Kit_ExitSign_End_Dead": {
+   "kit": "Kit_ExitSign_End_Dead",
+   "title": "Exit sign · end mount · dead",
+   "lede": "Lamps and battery gone: the letters read as dark red holes in the white enamel.",
+   "role": "variant",
+   "sheet": "exit_sign_end",
+   "dims_mm": {
+    "w": 361,
+    "d": 78.9,
+    "h": 212
+   },
+   "dims_label": "W 361 · D 78.9 · H 212 mm",
+   "size_m": [
+    0.361,
+    0.212,
+    0.0789
+   ],
+   "boundsMin": [
+    -0.361,
+    0,
+    -0.0394
+   ],
+   "boundsMax": [
+    0,
+    0.212,
+    0.0394
+   ],
+   "aboveFloor_m": null,
+   "aboveFloorNote": "not placed; origin = the wall plane at the housing bottom",
+   "placement": "Wall",
+   "era": {
+    "chip": "Current stock",
+    "from": 1977,
+    "to": 1993,
+    "label": "Period",
+    "span": [
+     1977,
+     1993
+    ],
+    "spanLabel": "1977–93",
+    "note": "An incandescent stencil-face sign of the late 1970s to the early 1990s: 6 in letters with 3/4 in strokes (1:8, within the 1:8–1:12 of most signs in Cohn 1978; NFPA 101-1988, UL 924 of 1989), built like the USACE Type 602/604 drawings of 1985–86 (two 20 W lamps behind red acrylic). No LED sign was in NIST's August 1990 sample. Red letters, both chevrons closed; no LED, no running man, no brand, no date.",
+    "sources": [
+     "10_spec §2.1–2.2",
+     "SOURCES.md S1, S3–S7"
+    ]
+   },
+   "family": "Signage · wall",
+   "materials": [
+    {
+     "name": "ExitSign_Housing",
+     "slot": "ExitSign_Housing",
+     "label": "White enamel (pan)",
+     "hex": "#e6e2d4",
+     "source": "Resources/Surfaces/ExitSign_Housing.mat: mean of ExitSign_Enamel_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Face",
+     "slot": "ExitSign_Face",
+     "label": "Stencil plate, white enamel",
+     "hex": "#e1dccd",
+     "source": "Resources/Surfaces/ExitSign_Face.mat: mean of ExitSign_Face_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1"
+    },
+    {
+     "name": "ExitSign_Diffuser_Dead",
+     "slot": "ExitSign_Diffuser_Dead",
+     "label": "Red acrylic, unlit",
+     "hex": "#6c2b27",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome (screws)",
+     "hex": "#d8d8d8",
+     "source": "existing K-sheet swatch (PROP KIT 2324:852), same rule"
+    }
+   ],
+   "variants": [],
+   "viewYaw": -90,
+   "sheetPpm": 2000,
+   "pngPpm": 4000,
+   "px": {
+    "front": [
+     1476,
+     880
+    ],
+    "side": [
+     348,
+     880
+    ],
+    "top": [
+     1476,
+     348
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "scaleBar": {
+    "label": "10 cm",
+    "metres": 0.1,
+    "sheetPx": 200
+   },
+   "tags": [
+    "exit_sign",
+    "wall_decor"
+   ],
+   "anchors": [
+    "wall",
+    "centre",
+    "face_pos_x",
+    "face_neg_x",
+    "lamp_a",
+    "lamp_b",
+    "glow"
+   ],
+   "images": {
+    "top": "png/Kit_ExitSign_End_Dead_top.png",
+    "front": "png/Kit_ExitSign_End_Dead_front.png",
+    "side": "png/Kit_ExitSign_End_Dead_side.png",
+    "persp": "png/Kit_ExitSign_End_Dead_persp.png"
+   },
+   "figmaSlots": {
+    "top": "img:Kit_ExitSign_End_Dead_top",
+    "front": "img:Kit_ExitSign_End_Dead_front",
+    "side": "img:Kit_ExitSign_End_Dead_side",
+    "persp": "img:Kit_ExitSign_End_Dead_persp"
+   },
+   "tris": {
+    "budget": [
+     6000,
+     1900,
+     300
+    ],
+    "lod0": 5758,
+    "lod1": 1822,
+    "lodDistances_m": [
+     5.0,
+     0.0,
+     0.0
+    ],
+    "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
+   },
+   "variantOf": "Kit_ExitSign_End",
+   "swap": [
+    "ExitSign_Diffuser -> ExitSign_Diffuser_Dead"
+   ],
+   "behaviour": "A _Dead model is always Dead (FrontRoomsExitSign); the game places only the lit models today"
+  }
+ },
+ "heroes": []
+}

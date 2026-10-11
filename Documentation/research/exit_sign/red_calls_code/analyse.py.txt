@@ -1,0 +1,178 @@
+# Red's calls on the merged EXIT sign: measure the A/B frames and build one board per call.
+# usage: W/venv/bin/python analyse.py <frames dir> <out images dir>
+import os, sys, json
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+FR, OUT = sys.argv[1], sys.argv[2]
+os.makedirs(OUT, exist_ok=True)
+BOLD = '/System/Library/Fonts/Supplemental/Arial Bold.ttf'
+MONO = os.path.expanduser('~/Library/Fonts/IBMPlexMono-Regular.otf')
+f_chip = ImageFont.truetype(BOLD, 22)
+f_title = ImageFont.truetype(BOLD, 26)
+f_sub = ImageFont.truetype(MONO, 19)
+f_num = ImageFont.truetype(MONO, 18)
+
+pts = {}
+for line in open(os.path.join(FR, 'points.tsv')):
+    p = line.rstrip('\n').split('\t')
+    if len(p) < 5: continue
+    pts[(p[0], p[1])] = (float(p[2]), float(p[3]), float(p[4]))
+shots = {}
+for line in open(os.path.join(FR, 'shots.tsv')):
+    p = line.rstrip('\n').split('\t')
+    shots[p[0]] = p
+
+def load(n):
+    return np.asarray(Image.open(os.path.join(FR, n)).convert('RGB')).astype(np.float64)
+
+def lin(c):
+    c = c / 255.0
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+def sample(img, file, name, r):
+    if (file, name) not in pts: return None
+    x, y, z = pts[(file, name)]
+    h, w, _ = img.shape
+    if z <= 0 or x < r or y < r or x >= w - r or y >= h - r: return None
+    xi, yi = int(round(x)), int(round(y))
+    win = img[yi - r:yi + r + 1, xi - r:xi + r + 1].reshape(-1, 3)
+    srgb = win.mean(0)
+    L = lin(win)
+    Y = (0.2126 * L[:, 0] + 0.7152 * L[:, 1] + 0.0722 * L[:, 2]).mean()
+    return {'srgb': [round(v, 1) for v in srgb], 'Y': round(float(Y), 4), 'px': [round(x, 1), round(y, 1)]}
+
+def diff(a, b):
+    d = np.abs(a - b).max(2)
+    return {'pct_gt8': round(float((d > 8).mean() * 100), 3), 'mean_abs': round(float(np.abs(a - b).mean()), 3), 'max': int(d.max())}
+
+report = {'run': {}, 'exit': {}}
+RUN = [('d1p5', '1.5 m', 4), ('d4', '4 m', 3), ('d8', '8 m', 2), ('wide', 'wide', 2)]
+RUN_PTS = ['ceil_shadow_L', 'ceil_shadow_R', 'ceil_ref_L', 'ceil_ref_R', 'ceil_above_B', 'signB_under', 'signB_face', 'floor_under_B', 'floor_under_A', 'floor_mid_AB', 'signA_under', 'ceil_shadowA_L', 'ceil_shadowA_R']
+for key, label, r in RUN:
+    files = {o: 'run_%s_%s.png' % (o, key) for o in ('a', 'b', 'a2')}
+    imgs = {o: load(f) for o, f in files.items()}
+    row = {'A_vs_B': diff(imgs['a'], imgs['b']), 'A_vs_A2': diff(imgs['a'], imgs['a2']), 'points': {}}
+    for pn in RUN_PTS:
+        row['points'][pn] = {o.upper(): sample(imgs[o], files[o], pn, r) for o in ('a', 'b')}
+    report['run'][key] = row
+EXIT = [('d2', '2 m', 3), ('d6', '6 m', 1)]
+EXIT_PTS = ['face_endL', 'face_endR', 'face_top', 'letter_I', 'letter_X', 'housing_under', 'door_top_L', 'door_top_R', 'header_L', 'header_R', 'wall_side_L', 'ceil_over']
+for key, label, r in EXIT:
+    files = {o: 'exit_%s_%s.png' % (o, key) for o in ('a', 'b', 'a2')}
+    imgs = {o: load(f) for o, f in files.items()}
+    row = {'A_vs_B': diff(imgs['a'], imgs['b']), 'A_vs_A2': diff(imgs['a'], imgs['a2']), 'points': {}}
+    for pn in EXIT_PTS:
+        row['points'][pn] = {o.upper(): sample(imgs[o], files[o], pn, r) for o in ('a', 'b')}
+    report['exit'][key] = row
+json.dump(report, open(os.path.join(OUT, 'red_calls_measure.json'), 'w'), indent=1)
+
+# ---------------- boards ----------------
+TW, TH, G = 944, 531, 10
+BW = 2 * TW + 3 * G   # 1918
+
+def chip(d, xy, text, dark=True):
+    x, y = xy
+    tb = d.textbbox((0, 0), text, font=f_chip)
+    w, h = tb[2] - tb[0], tb[3] - tb[1]
+    bg, fg = ((10, 10, 10), (255, 255, 255)) if dark else ((244, 223, 59), (10, 10, 10))
+    d.rectangle([x, y, x + w + 16, y + h + 14], fill=bg)
+    d.text((x + 8 - tb[0], y + 7 - tb[1]), text, font=f_chip, fill=fg)
+
+def tile(name):
+    return Image.open(os.path.join(FR, name)).convert('RGB').resize((TW, TH), Image.LANCZOS)
+
+def header(d, y, lines, h):
+    d.rectangle([0, y, BW, y + h], fill=(10, 10, 10))
+    yy = y + 12
+    for i, (t, f) in enumerate(lines):
+        d.text((G + 6, yy), t, font=f, fill=(255, 255, 255) if i == 0 else (215, 215, 215))
+        yy += 34 if i == 0 else 27
+
+def numline(d, y, text):
+    d.rectangle([0, y, BW, y + 30], fill=(238, 236, 230))
+    d.text((G + 6, y + 5), text, font=f_num, fill=(10, 10, 10))
+
+def Yv(row, pn, o):
+    s = row['points'][pn][o]
+    return '-' if s is None else '%.3f' % s['Y']
+
+def rgb(row, pn, o):
+    s = row['points'][pn][o]
+    return '-' if s is None else '(%d,%d,%d)' % tuple(int(round(v)) for v in s['srgb'])
+
+# Board 1: call 2
+H1 = 110 + 4 * (TH + G + 30 + G)
+b1 = Image.new('RGB', (BW, H1), (255, 255, 255))
+d = ImageDraw.Draw(b1)
+header(d, 0, [('CALL 2 - RUN SIGN: "A LAMP HANGING UNDER THE SIGN"', f_title),
+              ('A = main today: red point light at the kit glow anchor, y 1.96 m (0.33 m under the housing); sign casts shadows', f_sub),
+              ('B = same light at the kit centre anchor, y 2.394 m (inside the housing); every sign renderer ShadowCastingMode.Off', f_sub)], 100)
+y = 110
+for key, label, r in RUN:
+    row = report['run'][key]
+    for i, o in enumerate(('a', 'b')):
+        x = G + i * (TW + G)
+        b1.paste(tile('run_%s_%s.png' % (o, key)), (x, y))
+        lab = ('A - TODAY' if o == 'a' else 'B - LIGHT IN SIGN, NO SIGN SHADOW') + ' - ' + ('WIDE' if key == 'wide' else label.upper() + ' TO SIGN B' + (' (SIGN A AT 2.2 M)' if key == 'd8' else ''))
+        chip(d, (x + 12, y + 12), lab, dark=True)
+    y += TH + G
+    if key == 'd8':
+        t = 'sign A (2.2 m ahead): ceiling 0.4 m beside  Y %s -> %s   underside  sRGB %s -> %s     sign B: ceiling beside  Y %s -> %s' % (
+            Yv(row, 'ceil_shadowA_L', 'A'), Yv(row, 'ceil_shadowA_L', 'B'), rgb(row, 'signA_under', 'A'), rgb(row, 'signA_under', 'B'), Yv(row, 'ceil_shadow_L', 'A'), Yv(row, 'ceil_shadow_L', 'B'))
+    elif key == 'wide':
+        t = 'floor under sign B  Y %s -> %s   floor under sign A  Y %s -> %s   floor between  Y %s -> %s' % (
+            Yv(row, 'floor_under_B', 'A'), Yv(row, 'floor_under_B', 'B'), Yv(row, 'floor_under_A', 'A'), Yv(row, 'floor_under_A', 'B'), Yv(row, 'floor_mid_AB', 'A'), Yv(row, 'floor_mid_AB', 'B'))
+    else:
+        t = 'ceiling 0.4 m beside sign B  Y %s -> %s  (1.2 m out: %s -> %s)   sign B underside  sRGB %s -> %s' % (
+            Yv(row, 'ceil_shadow_L', 'A'), Yv(row, 'ceil_shadow_L', 'B'), Yv(row, 'ceil_ref_L', 'A'), Yv(row, 'ceil_ref_L', 'B'), rgb(row, 'signB_under', 'A'), rgb(row, 'signB_under', 'B'))
+    numline(d, y, t)
+    b1.crop((0, y - TH - G, BW, y + 30)).save(os.path.join(OUT, 'es_rc1_pair_%s.jpg' % key), quality=88)
+    y += 30 + G
+b1.save(os.path.join(OUT, 'es_rc1_run_sign_light_ab.jpg'), quality=88)
+
+# Board 2: VL211
+def crop(name, cx, cy, cw, ch, scale):
+    im = Image.open(os.path.join(FR, name)).convert('RGB')
+    box = (int(round(cx - cw / 2)), int(round(cy - ch / 2)), int(round(cx - cw / 2)) + cw, int(round(cy - ch / 2)) + ch)
+    return im.crop(box).resize((cw * scale, ch * scale), Image.NEAREST)
+
+CW = (BW - 5 * G) // 4  # 474
+H2 = 110 + 2 * (TH + G + 30 + G) + 268 + G + 30 + G
+b2 = Image.new('RGB', (BW, H2), (255, 255, 255))
+d = ImageDraw.Draw(b2)
+header(d, 0, [('VL211 - EXIT ROOM SIGN FACE READS MID-GREY', f_title),
+              ('A = main today: wall sign over the far door, no light of its own (far door shut, as the player arrives)', f_sub),
+              ('B = spec 8.6 spill light at the sign glow anchor: point, colour (1, .13, .07), intensity 0.5, range 1.5 m, no shadows', f_sub)], 100)
+y = 110
+for key, label, r in EXIT:
+    row = report['exit'][key]
+    for i, o in enumerate(('a', 'b')):
+        x = G + i * (TW + G)
+        b2.paste(tile('exit_%s_%s.png' % (o, key)), (x, y))
+        chip(d, (x + 12, y + 12), ('A - TODAY' if o == 'a' else 'B - SPILL LIGHT') + ' - ' + label.upper() + ' FROM THE SIGN', dark=True)
+    y += TH + G
+    t = 'face enamel  sRGB %s -> %s   letter X  Y %s -> %s   under the sign  Y %s -> %s   ceiling above  Y %s -> %s' % (
+        rgb(row, 'face_endL', 'A'), rgb(row, 'face_endL', 'B'), Yv(row, 'letter_X', 'A'), Yv(row, 'letter_X', 'B'),
+        Yv(row, 'housing_under', 'A'), Yv(row, 'housing_under', 'B'), Yv(row, 'ceil_over', 'A'), Yv(row, 'ceil_over', 'B'))
+    numline(d, y, t)
+    b2.crop((0, y - TH - G, BW, y + 30)).save(os.path.join(OUT, 'es_rc2_pair_%s.jpg' % key), quality=88)
+    y += 30 + G
+x = G
+ycrop = y
+for key, cw, ch, sc in (('d2', 237, 134, 2), ('d6', 158, 89, 3)):
+    for o in ('a', 'b'):
+        f = 'exit_%s_%s.png' % (o, key)
+        cx, cy, _ = pts[(f, 'letter_X')]
+        cx2, cy2, _ = pts[(f, 'letter_I')]
+        c = crop(f, (cx + cx2) / 2, (cy + cy2) / 2 + ch * 0.12, cw, ch, sc)
+        c = c.resize((CW, int(round(CW * c.height / c.width))), Image.NEAREST)
+        b2.paste(c, (x, y))
+        chip(d, (x + 10, y + 10), ('A' if o == 'a' else 'B') + ' - ' + ('2 M' if key == 'd2' else '6 M') + ' x' + str(sc), dark=True)
+        x += CW + G
+y += 268 + G
+ra, rb = report['exit']['d2'], report['exit']['d6']
+numline(d, y, 'sign crops, nearest-neighbour   pixels changed > 8/255, A vs B: 2 m %.1f %%, 6 m %.1f %%   A vs A again (grain): 2 m %.3f %%, 6 m %.3f %%' % (ra['A_vs_B']['pct_gt8'], rb['A_vs_B']['pct_gt8'], ra['A_vs_A2']['pct_gt8'], rb['A_vs_A2']['pct_gt8']))
+b2.crop((0, ycrop - G, BW, y + 30)).save(os.path.join(OUT, 'es_rc2_crops.jpg'), quality=88)
+b2.save(os.path.join(OUT, 'es_rc2_exit_spill_ab.jpg'), quality=88)
+print(json.dumps({k: {kk: {'A_vs_B': vv['A_vs_B'], 'A_vs_A2': vv['A_vs_A2']} for kk, vv in v.items()} for k, v in report.items()}, indent=1))

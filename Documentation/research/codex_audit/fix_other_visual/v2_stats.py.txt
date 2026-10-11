@@ -1,0 +1,113 @@
+# Codex audit fix group other-visual, V2 check.
+# usage: v2_stats.py <off_dir> <high_main_dir> <high_fix_dir> <out_dir> <images_dir>
+# off  = main, -frGlassRT off;  high = main, RT High (default);  fix = main + V2 stopgap, RT High.
+# Red-shift metric (as in 10_review_visual.md V2): pixels whose (R - G) rose by more than 10 vs RT Off.
+import sys, os, json, glob
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+off_d, high_d, fix_d, out_d, img_d = sys.argv[1:6]
+os.makedirs(out_d, exist_ok=True)
+FONT = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Medium.otf")
+f22 = ImageFont.truetype(FONT, 22)
+
+
+def load(d, n):
+    return np.asarray(Image.open(os.path.join(d, n)).convert("RGB"), dtype=np.float32)
+
+
+def Y(a):
+    return a[..., 0] * .2126 + a[..., 1] * .7152 + a[..., 2] * .0722
+
+
+names = sorted(os.path.basename(p) for p in glob.glob(os.path.join(fix_d, "*.png")))
+rows, stats = [], {}
+for n in names:
+    if not (os.path.exists(os.path.join(off_d, n)) and os.path.exists(os.path.join(high_d, n))):
+        rows.append((n, "missing in off/high"))
+        continue
+    O, Hm, Fx = load(off_d, n), load(high_d, n), load(fix_d, n)
+    rg = lambda a: a[..., 0] - a[..., 1]
+    red_h = (rg(Hm) - rg(O)) > 10
+    red_f = (rg(Fx) - rg(O)) > 10
+    tot = red_h.size
+    dY_fix_main = np.abs(Y(Fx) - Y(Hm))
+    dY_fix_off = np.abs(Y(Fx) - Y(O))
+    dY_high_off = np.abs(Y(Hm) - Y(O))
+    s = {
+        "red_px_main_high": [int(red_h.sum()), round(red_h.mean() * 100, 2)],
+        "red_px_fix_high": [int(red_f.sum()), round(red_f.mean() * 100, 2)],
+        "mean_abs_dY_fix_vs_main": round(float(dY_fix_main.mean()), 3),
+        "pct_gt8_fix_vs_main": round(float((dY_fix_main > 8).mean() * 100), 2),
+        "mean_abs_dY_high_vs_off": round(float(dY_high_off.mean()), 3),
+        "mean_abs_dY_fix_vs_off": round(float(dY_fix_off.mean()), 3),
+    }
+    if red_h.sum() > 200:
+        s["region_off"] = [round(float(v), 1) for v in O[red_h].mean(0)]
+        s["region_main_high"] = [round(float(v), 1) for v in Hm[red_h].mean(0)]
+        s["region_fix_high"] = [round(float(v), 1) for v in Fx[red_h].mean(0)]
+    stats[n[:-4]] = s
+    rows.append((n, s))
+
+with open(os.path.join(out_d, "v2_stats.json"), "w") as fh:
+    json.dump(stats, fh, indent=1)
+with open(os.path.join(out_d, "v2_stats.tsv"), "w") as fh:
+    fh.write("frame\tred%_main_high\tred%_fix_high\tmean|dY|_fix_vs_main\t%>8_fix_vs_main\tmean|dY|_high_vs_off\tmean|dY|_fix_vs_off\n")
+    for n, s in rows:
+        if isinstance(s, str):
+            fh.write(f"{n}\t{s}\n"); continue
+        fh.write(f"{n[:-4]}\t{s['red_px_main_high'][1]}\t{s['red_px_fix_high'][1]}\t{s['mean_abs_dY_fix_vs_main']}\t{s['pct_gt8_fix_vs_main']}\t{s['mean_abs_dY_high_vs_off']}\t{s['mean_abs_dY_fix_vs_off']}\n")
+
+vals = [s["mean_abs_dY_fix_vs_main"] for s in stats.values()]
+big = [k for k, s in stats.items() if s["mean_abs_dY_fix_vs_main"] > .5]
+summary = {
+    "frames": len(stats),
+    "mean_abs_dY_fix_vs_main_all": round(float(np.mean(vals)), 3) if vals else None,
+    "frames_over_0.5": big,
+    "max_red_pct_fix": max((s["red_px_fix_high"][1] for s in stats.values()), default=None),
+}
+with open(os.path.join(out_d, "v2_summary.json"), "w") as fh:
+    json.dump(summary, fh, indent=1)
+print(json.dumps(summary, indent=1))
+
+# Before/after triptychs for the hall-side window frames (where V2 shows) + one room-side control.
+W2, H2 = 624, 351
+for key in ("55_win1_OF_hall_head_0.3m", "60_win2_L0_hall_head_0.3m", "65_win3_OF_hall_head_0.3m", "70_win4_L0_hall_head_0.3m", "56_win2_L0_room_1.5m", "59_win2_L0_hall_1.5m"):
+    n = key + ".png"
+    if key not in stats:
+        continue
+    ims = [Image.open(os.path.join(d, n)).convert("RGB").resize((W2, H2), Image.LANCZOS) for d in (off_d, high_d, fix_d)]
+    s = stats[key]
+    labels = ["RT OFF (main)", "RT HIGH, main: red %.2f %%" % s["red_px_main_high"][1], "RT HIGH + V2 fix: red %.2f %%" % s["red_px_fix_high"][1]]
+    c = Image.new("RGB", (3 * W2 + 32, H2 + 44), (18, 18, 18))
+    dr = ImageDraw.Draw(c)
+    for i, (im, lb) in enumerate(zip(ims, labels)):
+        x = i * (W2 + 16)
+        dr.text((x + 10, 10), lb, font=f22, fill=(235, 235, 235))
+        c.paste(im, (x, 44))
+    c.save(os.path.join(img_d, "fix_other_visual_v2_" + key.split("_", 1)[1] + ".jpg"), quality=85)
+
+# Red-shift masks sheet (main vs fix) for the 4 frames, 2 x 4 grid at 480x270.
+cells = []
+for key in ("55_win1_OF_hall_head_0.3m", "60_win2_L0_hall_head_0.3m", "65_win3_OF_hall_head_0.3m", "70_win4_L0_hall_head_0.3m"):
+    if key not in stats:
+        continue
+    n = key + ".png"
+    O, Hm, Fx = load(off_d, n), load(high_d, n), load(fix_d, n)
+    rg = lambda a: a[..., 0] - a[..., 1]
+    row = []
+    for X in (Hm, Fx):
+        m = (rg(X) - rg(O)) > 10
+        base = (Y(X) * .5).clip(0, 255)
+        rgb = np.stack([base, base, base], -1)
+        rgb[m] = [255, 40, 40]
+        row.append(Image.fromarray(rgb.astype(np.uint8)).resize((640, 360), Image.BILINEAR))
+    cells.append((key, row))
+if cells:
+    sheet = Image.new("RGB", (2 * 640 + 16, len(cells) * (360 + 40)), (18, 18, 18))
+    dr = ImageDraw.Draw(sheet)
+    for r, (key, row) in enumerate(cells):
+        y = r * 400
+        dr.text((8, y + 8), key.split("_", 1)[1] + "   main RT HIGH  |  + V2 fix   (red = R-G rose > 10 vs RT OFF)", font=f22, fill=(235, 235, 235))
+        sheet.paste(row[0], (0, y + 40)); sheet.paste(row[1], (656, y + 40))
+    sheet.save(os.path.join(img_d, "fix_other_visual_v2_redmask_sheet.jpg"), quality=85)

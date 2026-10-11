@@ -32,6 +32,49 @@ public static class FrontRoomsCloudBuild
         Build(output, BuildTarget.StandaloneOSX, "macOS");
     }
 
+    /// <summary>
+    /// Export the macOS target as an Xcode project prepared for the Mac App
+    /// Store/TestFlight signing flow. The direct macOS build above remains the
+    /// local QA path; this method is deliberately separate because App Store
+    /// distribution requires App Sandbox, a positive platform build number,
+    /// and Xcode's distribution archive rather than an ad-hoc Unity .app.
+    /// </summary>
+    [MenuItem("FrontRooms 3D/Cloud Build macOS TestFlight Xcode")]
+    public static void BuildMacTestFlight()
+    {
+        Verify();
+        SwitchTarget(BuildTarget.StandaloneOSX);
+        ApplyStandaloneSettings();
+
+        var output = Path.Combine(Root, "MacTestFlight", "FRONTROOMSSS");
+        Directory.CreateDirectory(Path.GetDirectoryName(output));
+
+        var previousCreateXcodeProject = UnityEditor.OSXStandalone.UserBuildSettings.createXcodeProject;
+        var previousMacStoreValidation = PlayerSettings.useMacAppStoreValidation;
+        var previousMacBuildNumber = PlayerSettings.macOS.buildNumber;
+        var previousAppleTeam = PlayerSettings.iOS.appleDeveloperTeamID;
+        var previousAutomaticSigning = PlayerSettings.iOS.appleEnableAutomaticSigning;
+        try
+        {
+            UnityEditor.OSXStandalone.UserBuildSettings.createXcodeProject = true;
+            PlayerSettings.useMacAppStoreValidation = true;
+            PlayerSettings.iOS.appleDeveloperTeamID =
+                Environment.GetEnvironmentVariable("DEVELOPMENT_TEAM") ?? "T9WR6QR3UY";
+            PlayerSettings.iOS.appleEnableAutomaticSigning = true;
+            PlayerSettings.macOS.buildNumber =
+                Environment.GetEnvironmentVariable("FRONTROOMS_MAC_BUILD_NUMBER") ?? "15";
+            Build(output, BuildTarget.StandaloneOSX, "macOS TestFlight Xcode");
+        }
+        finally
+        {
+            UnityEditor.OSXStandalone.UserBuildSettings.createXcodeProject = previousCreateXcodeProject;
+            PlayerSettings.useMacAppStoreValidation = previousMacStoreValidation;
+            PlayerSettings.macOS.buildNumber = previousMacBuildNumber;
+            PlayerSettings.iOS.appleDeveloperTeamID = previousAppleTeam;
+            PlayerSettings.iOS.appleEnableAutomaticSigning = previousAutomaticSigning;
+        }
+    }
+
     [MenuItem("FrontRooms 3D/Cloud Build Windows")]
     public static void BuildWindows()
     {

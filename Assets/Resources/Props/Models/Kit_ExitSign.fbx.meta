@@ -7,6 +7,26 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: ExitSign_Diffuser
+    second: {fileID: 2100000, guid: 9a5638b0bb58d4af7b1d992dc46949d3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ExitSign_Face
+    second: {fileID: 2100000, guid: 283ad3e8de64b4411974792679881664, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ExitSign_Housing
+    second: {fileID: 2100000, guid: b9104065a3359497288741abfd252b32, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Prop_Chrome
+    second: {fileID: 2100000, guid: dfe95bc2fc6ec41df8fe411fc1cc19c5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Prop_SteelBlack
     second: {fileID: 2100000, guid: 5068572ebe87e452e8f3cff8c8405cdf, type: 2}
   - first:
@@ -42,7 +62,9 @@ ModelImporter:
     clipAnimations: []
     isReadable: 0
   meshes:
-    lODScreenPercentages: []
+    lODScreenPercentages:
+    - 0.25
+    - 0.01
     globalScale: 1
     meshCompression: 0
     addColliders: 0

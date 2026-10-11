@@ -142,6 +142,16 @@ public sealed class FrontRoomsMapWalker : MonoBehaviour
             prompt = world.Describe(hit.collider, out holdPrompt);
             if (prompt != null) aimed = hit.collider;
         }
+        // Look+E keys (world.KeyPickupNeedsE, off by default): the game's key query, a key's trigger nearer than anything solid.
+        if (world.KeyPickupNeedsE)
+        {
+            var key = world.KeyOnRay(ray, Reach, transform);
+            if (key != null)
+            {
+                prompt = world.Describe(key, out holdPrompt);
+                aimed = key;
+            }
+        }
         if (previous != null && previous != aimed) world.ReleaseHold(previous);
         if (aimed == null) { holdProgress = 0f; return; }
         if (!holdPrompt)

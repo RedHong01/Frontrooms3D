@@ -16,7 +16,7 @@ Exit-sign workflow, integrate stage, round 4 (2026-10-07 23:24 to 2026-10-08 01:
   - `FrontRoomsExitSign` (`Assets/Scripts/Rendering/`) drives the lamps and the light.
   - `FrontRoomsKitLibrary.Spawn` attaches it to every kit tagged `exit_sign`, so map and facade spawns get a working sign.
 - **Verdict: PASS.**
-  - **Compile:** 0 errors on current main 22bb75f plus Red's working tree (Unity, OSXUniversal). The Roslyn check also gives 0 errors with the macOS and the iOS defines.
+  - **Compile:** 0 errors on current main 22bb75f plus Red's working tree as of 01:45, which includes the Q16 placard merge (Unity, OSXUniversal). The Roslyn check also gives 0 errors with the macOS and the iOS defines.
   - **Own tests:** 10 of 10 pass.
   - **Look-dev:** the build stage's acceptance numbers come back unchanged (T2 1.88, T3 0.88, T4 the same).
   - **Nothing else changed:**
@@ -24,14 +24,14 @@ Exit-sign workflow, integrate stage, round 4 (2026-10-07 23:24 to 2026-10-08 01:
     - all 10 project suites, the map interaction tests among them, give identical results;
     - the one exception is the Level Designer palette count, which changes because there are 6 new kits;
     - 38 map frames and every Lobby and Shift frame of the room-visuals harness are bit-identical.
-- **Merge:** the v2 package `W/apply/exit_sign` covers the build and integrate stages: 76 paths, 61 of them new. Its dry run is OK and `rebase_apply.sh` says PASS. Run `bash /Users/redwang/FrontRoomsVisualWork/apply/exit_sign.sh --apply` (§7).
+- **Merge:** the v2 package `W/apply/exit_sign` covers the build and integrate stages: 76 paths, 61 of them new. The Q16 placard merge landed in main at 01:44 and touched `FrontRoomsRenderSetup.cs` and `FrontRoomsRoomStream.cs`. `rebase_apply.sh` merged both cleanly (no overlap, Roslyn 0 errors on macOS and iOS), and the dry run is OK again. Run `bash /Users/redwang/FrontRoomsVisualWork/apply/exit_sign.sh --apply` (§7).
 - **One FLAG (VL211).** The Exit room's sign face reads mid-grey. The lamps sit at 2.85 m, so the top 0.25 m of the end wall gets only grazing light. The letters read. Red's call: switch on the optional spill light (spec §8.6) or leave it (§9).
 
 ## 1. State, bases and what this round fixed
 
 | Item | Value |
 |---|---|
-| Main | `22bb75f` (2026-10-07 23:46) plus Red's uncommitted working tree as of 01:2x. Since `3ff05ee` (the previous attempt's base), main changed `FrontRoomsKitLibrary.cs` (dress-hitch: `Prewarm`, cached `Prepared` sets) and `interact_door_frame_steel.py` (saddle fix pass). Both of this track's edits were re-applied on top of main's new files (§4, §5). Every other touched base is unchanged |
+| Main | `22bb75f` (2026-10-07 23:46) plus Red's uncommitted working tree as of 01:45. At 01:44 the Q16 placard merge added SurfaceDefs and importer rules to `FrontRoomsRenderSetup.cs` and a `FrontRoomsPlacard.Prepare` call to RoomStream's `EndStreamAt`. `W/tools/rebase_apply.sh exit_sign --ios` merged both 3-way with no conflict (work dir `W/tools/_rebase/exit_sign/20261008-014534`). The final clone was then re-synced and passed the compile and the 10 tests again. Since `3ff05ee` (the previous attempt's base), main changed `FrontRoomsKitLibrary.cs` (dress-hitch: `Prewarm`, cached `Prepared` sets) and `interact_door_frame_steel.py` (saddle fix pass). Both of this track's edits were re-applied on top of main's new files (§4, §5). Every other touched base is unchanged |
 | Codex audit | `codex_audit/20_findings.md` does not exist. The 10_review_*.md files hold 3 exit-sign items, all closed by this package: K4 (`Kit_ExitSign_Dead` used a missing `Run_ExitSign_Dead` material; it now uses `ExitSign_Diffuser_Dead`), K7 (`null` in `lodDistances`; now `[5, 0, 0]`) and F4 (slots without materials). No finding touches RoomStream's sign code |
 | Clones | `W/proj_es_before` = main (ee5c9bb + working tree, synced 10-07 23:29) + tools + capture harness. `W/proj_es_int` = the same + the package. `W/proj_es_final` = main 22bb75f + working tree (synced 10-08 01:22) + the package, for the final compile and tests. All three: `mkclone.sh` steps (rsync from main with iCloud copies excluded, `apply_local_patches.py` = nothing to do, `install_tools.py`) on existing clones, so the imported Library was kept |
 | Fixed in this round | (1) The previous attempt put the Exit sign in `BuildProfileProps`' `else if (rule == RoomRule.Exit)` branch. That branch can never run, because the first branch already takes `Lobby \|\| Shift \|\| Exit`, so no Exit sign was built. It now builds in the first branch (§3). (2) The test and capture harness looked rooms up with `Transform.Find("Profile 3 / Run")`. `Find` reads "/" as a path separator, so it found nothing; the rooms are now looked up by exact name. (3) The stream walk test started after 1 s of title. From that start the stream never connected room 2 and never advanced. The walk now uses the stream verification's own 3 s start and walks 86 rooms, so it reaches the first two LOOSE signs the hash deals (rooms 76 and 81). (4) The 60 Hz render probe rendered inside one editor tick, and that render ignored the new light intensity and `_LampField`. The probe now advances one engine frame per sample. (5) The before clone first lost 2 scripts in Play mode ("referenced script (Unknown)"): the 19:5x import had been killed halfway. A forced reimport of `Assets/Scripts` fixed it, and both clones then ran the same scene |
@@ -90,7 +90,7 @@ Base: main's file, sha1 in `integrate/logs/exit_sign_bases.txt`. Main has not ch
 
 - **Hanging sign.**
   - `FrontRoomsKitLibrary.Spawn("Kit_ExitSign_Hanging", props, (0, RoomHeight, z), 0°, colliders: false, label)`.
-  - Origin on the ceiling; housing y 2.288–2.900, so its centre is 2.394 (the code-built sign's was 2.36).
+  - Origin on the ceiling; housing y 2.288–2.500, so its centre is 2.394 (the code-built sign's was 2.36). The whole kit, canopy to housing bottom, spans 2.288–2.900. *(Corrected by exit_sign_fix1, 2026-10-08: this line said housing 2.288–2.900.)*
   - The light "run exit sign light" (the same name as before) sits at the sidecar's `glow` anchor (0, −0.94, 0), which is y 1.96 under the 2.9 m ceiling.
   - If the model is missing, an empty object still carries the light, so the level keeps its red source.
 - **Wall sign.**
@@ -125,13 +125,13 @@ Base: main's file, sha1 in `integrate/logs/exit_sign_bases.txt`. Main has not ch
 
 | Check | Result |
 |---|---|
-| Compile, Unity 6000.3.10f1, `-buildTarget OSXUniversal` | 0 `error CS` in all three clones; final clone = current main 22bb75f + working tree + package |
-| Roslyn, payload over Red's current tree (`W/tools/roslyn_check.py`) | Assembly-CSharp 75 files, Assembly-CSharp-Editor 52 files: 0 errors, 0 warnings, both with the macOS and with the iOS defines |
+| Compile, Unity 6000.3.10f1, `-buildTarget OSXUniversal` | 0 `error CS` in all three clones. The final clone was re-synced at 01:46 (main 22bb75f + working tree with the Q16 merge) and given the rebased package |
+| Roslyn, payload over Red's current tree (`W/tools/roslyn_check.py`; again inside `rebase_apply.sh` after the Q16 merge) | Assembly-CSharp 79 files, Assembly-CSharp-Editor 52 files: 0 errors, 0 warnings, both with the macOS and with the iOS defines |
 | T5 photosafety, driver at 60 Hz (`FrontRoomsExitSignTests`) | LOOSE 200 seeds × 120 s: max **1** flash in any 1 s (bar ≤ 2), longest episode 2.65 s (≤ 5), darkest Level 0.486, 14.5 flashes a minute, every seed flickers. REDUCE FLASHING 50 seeds × 120 s: **0** transitions, Level 0.78–0.82; switching it on mid-run: largest step 0.007 per frame |
 | Mains transfer | brownout 0.8 → Level 0.468 (= 0.8^3.4); drop to 0.3: 0.217 s black, then BATTERY 0.166; back: no gap; REDUCE FLASHING: no black, largest step 0.028 per frame |
 | D1 static and batching | LIT and LOOSE (between drop-outs) keep 0 property blocks; HALF / BATTERY / DEAD write 1 per diffuser (LOD0 + LOD1); only LOOSE needs a tick; a library sign's `Update` runs only while LOOSE |
 | D2, D3, D4 | the 4 `_Dead` models are always Dead with the light off; the driver attaches to the 8 exit-sign kits only; 0 B allocated in 36,000 LOOSE ticks |
-| R1 placement (editor preview) | Run: 2 signs, housing y 2.288–2.900 at z 3.36–3.44 and 9.16–9.24, light y 1.960, 3.6, soft, range 9.5, 2 LODs. Exit: 1 sign, y 2.674–2.886, z 11.912–11.976. Lobby, Shift and Office: 0 active. 56 sign transforms, none with a forbidden word (T11) |
+| R1 placement (editor preview) | Run: 2 signs, kit bounds y 2.288–2.900 (canopy to housing bottom; the housing is 2.288–2.500) at z 3.36–3.44 and 9.16–9.24, light y 1.960, 3.6, soft, range 9.5, 2 LODs. Exit: 1 sign, y 2.674–2.886, z 11.912–11.976. Lobby, Shift and Office: 0 active. 56 sign transforms, none with a forbidden word (T11) |
 | R2 stream walk (the verification's own player, 3.2 m/s) | 86 rooms in 311 s: 17 Run + 17 Exit rooms; signs LIT 40, HALF 9, LOOSE 2. 0 mismatches against the hash; light = 3.6 × Level on every sign frame; a LOOSE Level never moved before its room's lamps were cued; 6 LOOSE flashes, max 1 per s. Same walk with REDUCE FLASHING: 0 flashes |
 | Mesh probe | all 76 submesh lines: 0 NaN tangents, 0 short, 0 non-perpendicular (`integrate/logs/mesh_probe_final.txt`) |
 | Build look-dev re-run on the newer base (`FrontRoomsExitSignLookdev -esPrepare 0` + `exit_sign_measure.py`) | T2 1.883 (bar 1.5–2.5; build R3 1.87), T3 0.88 (≥ 0.5), T4 E/X/I/T 0.495 / 0.587 / 1 / 0.562, spread 0.52–0.64, max/min 8.99: identical to the build stage |
@@ -150,15 +150,15 @@ Verification log (Figma section `2595:6093`):
 
 ## 7. Files to merge (the package) and the command
 
-`W/apply/exit_sign` (apply convention v2: `exit_sign.sh`, `_bases.txt`, `_expected.txt`, `_keep.txt`, `_payload/`, `_base/`, `exit_sign.diff`). Bases recorded 2026-10-08 01:2x on main 22bb75f + working tree.
+`W/apply/exit_sign` (apply convention v2: `exit_sign.sh`, `_bases.txt`, `_expected.txt`, `_keep.txt`, `_payload/`, `_base/`, `exit_sign.diff`). Bases recorded 2026-10-08 01:26 on main 22bb75f + working tree. RenderSetup and RoomStream were rebased at 01:45 over the Q16 placard merge (bases d595a60 / 04efde1, payloads 342060b / 59d96d4).
 
 - **Dry run:** `bash /Users/redwang/FrontRoomsVisualWork/apply/exit_sign.sh` → `DRY RUN OK`.
   - 76 bases match (61 absent, 15 at their sha1).
   - 9 kept metas unchanged.
   - 76 payload files match.
   - The 2 replaced metas keep main's GUID; the 27 new GUIDs are unused in Assets.
-- **Rebase check:** `W/tools/rebase_apply.sh exit_sign --no-install` → `PASS: nothing to rebase`.
-- **Rehearsal:** `--apply` was run on an APFS copy of Red's Assets+Tools. Result: `MANIFEST OK`, and a second run says `ALREADY APPLIED`.
+- **Rebase check:** `W/tools/rebase_apply.sh exit_sign --ios` → `PASS: 2 path(s) rebased cleanly`; Roslyn 0 errors on macOS and iOS; dry run OK.
+- **Rehearsal (before the rebase):** `--apply` was run on an APFS copy of Red's Assets+Tools. Result: `MANIFEST OK`, and a second run says `ALREADY APPLIED`.
 - **Apply:** `bash /Users/redwang/FrontRoomsVisualWork/apply/exit_sign.sh --apply`.
   - It backs up main's 15 replaced files to `W/backup/2026-10-07_exit_sign`.
   - It writes every .meta first, then textures, materials, shader, models, Tools and the C# last.

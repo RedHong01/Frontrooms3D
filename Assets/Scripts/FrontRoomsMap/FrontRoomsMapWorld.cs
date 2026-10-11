@@ -96,13 +96,58 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>A shut leaf landed in its frame and latched (the end of a shut swing): the door, at its centre.</summary>
     public event Action<Door, Vector3> DoorLatched;
     /// <summary>
-    /// The lever: the moment a door is opened (Use, TryOpenDoor, a key's door after its delay), before
+    /// The lever: the moment a door is opened (Use, TryOpenDoor, a key turn's release), before
     /// the latch frees and the leaf moves (DoorMoved, Open.SwingStart later; longer on a pull). Carries
     /// the lock and handle point on the opener's side, so the handle and latch sound land before the swing.
+    /// Not raised when the latch is already drawn (the push-side unlock: its knob beat was the handle).
     /// </summary>
     public event Action<Door, Vector3> DoorHandleTurned;
-    /// <summary>The player picked up a zone key.</summary>
+    /// <summary>
+    /// Every open, where DoorHandleTurned is raised (also when a drawn latch leaves it out): the door,
+    /// what opened it, and whether the latch was already drawn (no lever wait, no DoorHandleTurned). Lets
+    /// the sound skip its own handle on an unlock's open, and the game give an unlock's swing its own
+    /// Relay radius once that is decided (RELAY_PURSUIT_REDESIGN §6). DoorMoved's 14 m noise is unchanged.
+    /// </summary>
+    public event Action<Door, DoorOpenSource, bool> DoorOpenBegan;
+    /// <summary>
+    /// The player picked up a zone key, once per zone. On the instant path (no key presenter, or one that
+    /// shows no model: shipped play today) in the same call as KeyPickupStarted, at contact; when a presenter
+    /// shows the key, at its arrival beat (KeyArrived, KeyPickup.Arrive after contact).
+    /// </summary>
     public event Action<GridCoord> KeyTaken;
+    /// <summary>
+    /// The player reached a zone key (walked onto it, or E on it with KeyPickupNeedsE): the zone, and the
+    /// key's world position at contact. Raised on every pickup, just before KeyTaken on the instant path.
+    /// The key is held from here (HasKeyFor), whatever its presentation does.
+    /// </summary>
+    public event Action<GridCoord, Vector3> KeyPickupStarted;
+
+    /// <summary>
+    /// Who shows a picked-up key (the game's FrontRoomsDoorShot.BeginKeyPickup): the zone and the key's
+    /// object. True: it takes the object over (the map moves it to its own root, so a chunk drop or rebuild
+    /// cannot kill it) and calls KeyArrived when the key reaches the held pose. Null (tests, tools, the
+    /// walker) or false (no model to show): the instant path, the object gone and KeyTaken at contact.
+    /// </summary>
+    public Func<GridCoord, Transform, bool> KeyPresenter { get; set; }
+
+    /// <summary>
+    /// Look+E keys (plan §3.3, built and off; later a profile bool): keys spawned while it is on carry a
+    /// trigger the game's key query finds (KeyOnRay), Describe says "E  ·  TAKE KEY", Use takes them, and
+    /// walking over them does not. No gameplay query sees a trigger (they all pass
+    /// QueryTriggerInteraction.Ignore) and a trigger never blocks a body. Off: no collider on any key.
+    /// </summary>
+    public bool KeyPickupNeedsE { get; set; }
+
+    /// <summary>
+    /// Editor and dev only: with no key model, the presenter shows the cube key itself, shrunk to
+    /// KeyPlaceholderSize, travelling to the held pose (timing captures). Off in shipped play, so a pickup
+    /// stays instant; the game sets it at run start from FrontRooms/Map/Show placeholder key (never for the
+    /// autopilot, whose door scenario turns it on for one case).
+    /// </summary>
+    public static bool ShowPlaceholderKey { get; set; }
+
+    /// <summary>The placeholder key's size while presented (m): a real key's envelope, the cube shrunk to it over the travel.</summary>
+    public static readonly Vector3 KeyPlaceholderSize = new Vector3(.065f, .022f, .004f);
     /// <summary>Every frame E is held on glass: the window's position and how far it is to breaking (0-1).</summary>
     public event Action<Vector3, float> GlassHold;
     /// <summary>E was let go before the glass broke (or, in tap mode, a tap's credit ran out: the progress is kept).</summary>
@@ -123,17 +168,41 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public event Action<Window, GlassBreakRecord> WindowBuilt;
     /// <summary>A built window goes (its chunk dropped or rebuilt): clean up what hangs on its root.</summary>
     public event Action<Window> WindowReleased;
-    /// <summary>The player tried a door that needs this zone's key.</summary>
+    /// <summary>The player tried a door that needs this zone's key (at the door's centre). Not raised again for a try within Rattle.Duration of the last.</summary>
     public event Action<Vector3> DoorLocked;
+    /// <summary>The same try as DoorLocked, right after it: the door, and the lock point on the trier's face (LockPoint).</summary>
+    public event Action<Door, Vector3> DoorRattled;
     /// <summary>
-    /// A held key opened a locked door (doors need keys), once per door: the
-    /// door, the zone whose key opened it, and the lock's world point on the
-    /// opener's side. Raised before the leaf swings; the open (the lever,
-    /// then the leaf, to the door's swing side) starts after UnlockSwingDelay.
+    /// A held key unlocked a locked door (doors need keys), once per door, for
+    /// good from both sides: the door, the zone whose key opened it, and the
+    /// keyhole on the opener's face (LockPose). With a key-turn owner (the
+    /// game's door shot) it is raised at the shot's commit (Unlock.Commit,
+    /// 0.86 s), never for a turn cancelled before it, and the open comes after
+    /// (ReleaseKeyTurn). Without one (the walker, tools, TryOpenDoor) the
+    /// door unlocks and opens in the same call.
     /// </summary>
     public event Action<Door, GridCoord, Vector3> DoorUnlocked;
-    /// <summary>Seconds from DoorUnlocked to the open starting (the key turning in the lock); the lever's Open.SwingStart follows. 0 opens at once.</summary>
-    public float UnlockSwingDelay { get; set; }
+
+    /// <summary>What E on something did (Use's answer).</summary>
+    public enum UseResult { None, Opened, Shut, Rattled, KeyTurn, KeyTaken }
+
+    /// <summary>What opened a door (DoorOpenBegan).</summary>
+    public enum DoorOpenSource { Use, Tools, Unlock }
+
+    /// <summary>
+    /// The key turn's owner (the game's FrontRoomsDoorShot). While it is set, E on a keyable door
+    /// holds the door for the unlock shot (Use returns KeyTurn) and the owner drives the commit and
+    /// the release; it must call RefreshKeyTurn every tick, or the watchdog resolves the hold. Null
+    /// (the walker, the Level Designer preview, tools, tests): a keyable door unlocks and opens at once.
+    /// </summary>
+    public object KeyTurnOwner { get; set; }
+
+    /// <summary>
+    /// The game is paused (or the run is over): door motion, leaf jolts and the key-turn watchdog
+    /// freeze with it, so nothing swings (or sounds, FrontRoomsDoorSound reads the hinge) under
+    /// the pause card. The Level Designer preview has no game and leaves it false.
+    /// </summary>
+    public bool DoorsPaused { get; set; }
 
     // ---------- Doors: single-acting (Red, 2026-10-02) ----------
     // Every door swings into one fixed side (a hash of its edge), against
@@ -220,6 +289,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         internal DoorMotion motion;
         internal float wait, clock, from, to, seconds, shutPhase;
         internal bool bump;
+        /// <summary>The visual chat's door rig (FrontRoomsKitSeam), or null until DressDoor lands (D1.6): the shots then fall back to the cube leaf.</summary>
+        internal IFrontRoomsDoorRig rig;
+        // The map clock (TickDoors) at the last locked rattle: a try within Rattle.Duration of it does nothing.
+        internal float rattledAt = float.NegativeInfinity;
         // The leaf child: where it hangs when whole, how crooked a broken one
         // hangs, the jolt playing (clock, size, spring) and the jolts to come.
         internal Vector3 leafHome;
@@ -356,6 +429,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // Chunks whose build threw: left out (not retried every frame) until they leave the build radius.
     readonly HashSet<GridCoord> failedChunks = new HashSet<GridCoord>();
     readonly HashSet<GridCoord> keysHeld = new HashSet<GridCoord>();
+    // The zones whose KeyTaken has been raised (KeyArrived announces each once), and the look+E keys' triggers by zone.
+    readonly HashSet<GridCoord> keysAnnounced = new HashSet<GridCoord>();
+    readonly Dictionary<Collider, GridCoord> keyByCollider = new Dictionary<Collider, GridCoord>();
+    readonly RaycastHit[] keyHits = new RaycastHit[16];
     readonly HashSet<long> brokenWindows = new HashSet<long>();
     // Window breaks by edge (stage, seed, impact): kept through drops, rebuilds and shifts.
     readonly Dictionary<long, GlassBreakRecord> glassBreaks = new Dictionary<long, GlassBreakRecord>();
@@ -376,9 +453,22 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     readonly HashSet<long> breakingDoors = new HashSet<long>();
     readonly Dictionary<Collider, Door> doorByCollider = new Dictionary<Collider, Door>();
     readonly Dictionary<long, Door> doorByEdge = new Dictionary<long, Door>();
-    // Doors a key has opened (they stay unlocked), and those whose key is still turning (seconds left).
+    // Doors a key has opened (they stay unlocked, from both sides), and the doors a key turn holds for
+    // the unlock shot, by edge (so a rebuilt or shifted chunk keeps both).
     readonly HashSet<long> unlockedDoors = new HashSet<long>();
-    readonly List<(Door door, float left)> unlocking = new List<(Door, float)>();
+    readonly Dictionary<long, KeyTurnHold> keyTurns = new Dictionary<long, KeyTurnHold>();
+    readonly List<long> keyTurnScratch = new List<long>();
+    // The doors' own clock: advanced by TickDoors, so it stops with DoorsPaused (the rattle debounce, the watchdog).
+    float doorClock;
+
+    // A key turn under way: the zone whose key turns, where the opener stood, whether it has passed the commit, and the owner's last heartbeat.
+    sealed class KeyTurnHold
+    {
+        public GridCoord zone;
+        public Vector3 from;
+        public bool committed;
+        public float sinceRefresh;
+    }
     readonly Dictionary<Collider, Window> windowByCollider = new Dictionary<Collider, Window>();
     readonly HashSet<Collider> shellColliders = new HashSet<Collider>();
     // Modules placed by hand (the Level Designer preview), stamped whenever their chunk is generated.
@@ -390,6 +480,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     RectInt startArea;
     bool hasStartArea;
     GridCoord startDoorCell;
+    // World-XZ rects the start area keeps free of furnishing (visual Q16, research/placard/40_contract_map.md).
+    readonly List<Rect> startKeepClear = new List<Rect>();
+
+    /// <summary>
+    /// Keep furnishing (office kits, piles and module props) out of a world-XZ rect
+    /// while the start area stands: the evacuation placard's wall and the floor in
+    /// front of it. Cleared by SetStartArea and ClearStartArea. MapRunStarted is
+    /// early enough: rooms are dressed one a frame from Update. [Preserve]: the
+    /// visual mount reaches it by reflection until it calls it directly, and WebGL
+    /// (managed stripping High) / iOS (Low) may strip a method nothing calls.
+    /// </summary>
+    [UnityEngine.Scripting.Preserve]
+    public void KeepClearAtStart(Rect worldXZ) => startKeepClear.Add(worldXZ);
     readonly List<GridCoord> scratch = new List<GridCoord>();
     readonly List<Door> movingDoors = new List<Door>();
     Transform player;
@@ -471,6 +574,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         dressOffices = source.dressOffices;
         pileChance = source.pileChance;
         tierRules = source.tiers ?? tierRules;
+        // A key turn never outlives a live change of the rules: its owner sees the hold gone and cancels.
+        keyTurns.Clear();
         var walker = player != null ? player.GetComponent<FrontRoomsMapWalker>() : null;
         if (walker != null) walker.RefreshView();
         LiveApplied?.Invoke();
@@ -568,6 +673,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         player = playerTransform;
         begun = true;
+        keyTurns.Clear();
         if (buildAllNow)
         {
             Stream(ChunkOf(StreamCenter), int.MaxValue);
@@ -640,6 +746,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public void SetStartArea(RectInt cells, GridCoord doorCell)
     {
+        startKeepClear.Clear();
         startArea = cells;
         startDoorCell = doorCell;
         hasStartArea = cells.width > 0 && cells.height > 0;
@@ -650,7 +757,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Only while StartAreaBuilt is false: a chunk built round the rooms keeps
     /// their hole and its walls until it is rebuilt.
     /// </summary>
-    public void ClearStartArea() => hasStartArea = false;
+    public void ClearStartArea() { hasStartArea = false; startKeepClear.Clear(); }
 
     public bool HasStartArea => hasStartArea;
 
@@ -856,6 +963,42 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     public bool HasKeyFor(GridCoord zone) => keysHeld.Contains(zone);
 
+    /// <summary>
+    /// A held key is announced: KeyTaken, once per zone. The instant pickup calls it at contact; a key
+    /// presenter calls it when the shown key reaches the held pose (KeyPickup.Arrive), or sooner when its
+    /// presentation is cut short. A zone the player does not hold, or one already announced: nothing.
+    /// </summary>
+    public void KeyArrived(GridCoord zone)
+    {
+        if (keysHeld.Contains(zone) && keysAnnounced.Add(zone)) KeyTaken?.Invoke(zone);
+    }
+
+    /// <summary>
+    /// The look+E key query (KeyPickupNeedsE): the trigger of a key on <paramref name="ray"/> within
+    /// <paramref name="reach"/>, the nearest one, when nothing solid is nearer; null otherwise. Other
+    /// triggers are skipped, and so is <paramref name="self"/> (the asking body's own colliders). The game's
+    /// aim and the walker use it beside their solid ray (QueryTriggerInteraction.Ignore).
+    /// </summary>
+    public Collider KeyOnRay(Ray ray, float reach, Transform self)
+    {
+        if (keyByCollider.Count == 0) return null;
+        var count = Physics.RaycastNonAlloc(ray, keyHits, reach, ~0, QueryTriggerInteraction.Collide);
+        Collider key = null;
+        float keyDistance = float.MaxValue, solid = float.MaxValue;
+        for (var i = 0; i < count; i++)
+        {
+            var c = keyHits[i].collider;
+            if (c == null || (self != null && c.transform.IsChildOf(self))) continue;
+            if (!c.isTrigger) solid = Mathf.Min(solid, keyHits[i].distance);
+            else if (keyByCollider.ContainsKey(c) && keyHits[i].distance < keyDistance)
+            {
+                key = c;
+                keyDistance = keyHits[i].distance;
+            }
+        }
+        return key != null && keyDistance < solid ? key : null;
+    }
+
     void Update()
     {
         if (!begun || player == null) return;
@@ -947,6 +1090,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             {
                 windowByCollider.Remove(c);
                 shellColliders.Remove(c);
+                keyByCollider.Remove(c);
             }
         // The glass kit cleans up after the map's own bookkeeping, while the objects still exist.
         foreach (var window in chunk.windows) RaiseWindowReleased(window);
@@ -1541,18 +1685,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     /// <summary>
-    /// Open a door without aiming at it (autopilot), standing in cell
-    /// <paramref name="a"/>. Respects the key rule. True when this call
-    /// started it opening (or its key turning); false when it is locked,
-    /// already open or opening, being broken, or not built.
+    /// Tools only (the autopilot, tests): open a door without aiming at it,
+    /// standing in cell <paramref name="a"/>. Respects the key rule, but never
+    /// starts a key turn: with the key, the door unlocks (DoorUnlocked at once)
+    /// and opens in this call, with no shot. True when this call started it
+    /// opening; false when it is locked, already open or opening, held by a
+    /// key turn, being broken, or not built.
     /// </summary>
     public bool TryOpenDoor(GridCoord a, GridCoord b)
     {
         var door = DoorBetween(a, b);
         if (door == null || door.open || door.broken || IsBeingBroken(door)) return false;
-        if (LockedHere(door) || door.motion == DoorMotion.Lever || Unlocking(door)) return false;
+        if (door.motion == DoorMotion.Lever || IsHeldForKey(door)) return false;
         var from = player != null && CellOf(player.position) == a ? player.position : CellCenter(a);
-        if (!Unlock(door, from)) OpenDoor(door, from);
+        if (NeedsKey(door))
+        {
+            var zone = KeyFor(door, from);
+            if (!zone.HasValue) return false;
+            UnlockAtOnce(door, zone.Value, from);
+            return true;
+        }
+        OpenDoor(door, from, DoorOpenSource.Tools);
         return true;
     }
 
@@ -1976,6 +2129,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 doorway = new Rect((startDoorCell.x - o.x) * cs, (startDoorCell.y - o.y) * cs, cs, depth);
                 clear.Add(doorway.Value);
             }
+            foreach (var w in startKeepClear)
+            {
+                var a = chunk.root.transform.InverseTransformPoint(new Vector3(w.xMin, 0f, w.yMin));
+                var b = chunk.root.transform.InverseTransformPoint(new Vector3(w.xMax, 0f, w.yMax));
+                var local = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
+                if (local.Overlaps(new Rect(room.x * cs, room.y * cs, room.w * cs, room.h * cs))) clear.Add(local);
+            }
         }
         else
         {
@@ -2285,10 +2445,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         holdToUse = false;
         if (c == null) return null;
+        // A look+E key's trigger (KeyPickupNeedsE).
+        if (keyByCollider.ContainsKey(c)) return "E  ·  TAKE KEY";
         if (doorByCollider.TryGetValue(c, out var door))
         {
-            // Broken, or the Relay is breaking it: nothing to do with it.
-            if (door.broken || IsBeingBroken(door)) return null;
+            // Broken, the Relay is breaking it, or a key is turning in it: nothing to do with it.
+            if (door.broken || IsBeingBroken(door) || IsHeldForKey(door)) return null;
             if (door.open) return "E  ·  SHUT DOOR";
             return LockedHere(door) ? "LOCKED  ·  NEEDS THIS ZONE'S KEY" : "E  ·  OPEN DOOR";
         }
@@ -2300,39 +2462,178 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return null;
     }
 
-    public void Use(Collider c)
+    /// <summary>
+    /// E on a door: shut it, open it, rattle it (locked), or start a key turn
+    /// (keyable, with a KeyTurnOwner: the door is held and nothing is raised;
+    /// the owner's unlock shot commits and opens it). Without an owner a
+    /// keyable door unlocks and opens at once. A broken door, one being broken,
+    /// one whose lever is down, one held by a key turn, or a locked door tried
+    /// again within Rattle.Duration of its last rattle: nothing (None). With
+    /// KeyPickupNeedsE, E on a key's trigger takes the key (KeyTaken: it is
+    /// held at once and goes to the presenter, as a walk-over would).
+    /// </summary>
+    public UseResult Use(Collider c)
     {
-        if (c == null || !doorByCollider.TryGetValue(c, out var door) || door.broken) return;
+        if (c != null && keyByCollider.ContainsKey(c)) return TakeKeyByE(c) ? UseResult.KeyTaken : UseResult.None;
+        if (c == null || !doorByCollider.TryGetValue(c, out var door) || door.broken) return UseResult.None;
         // The Relay is breaking it: hands off (Describe shows no prompt).
-        if (IsBeingBroken(door)) return;
-        // The lever is down or the key is still turning: the door opens by itself.
-        if (door.motion == DoorMotion.Lever || Unlocking(door)) return;
-        if (!door.open && LockedHere(door))
-        {
-            DoorLocked?.Invoke(door.position);
-            Rattle(door);
-            return;
-        }
+        if (IsBeingBroken(door)) return UseResult.None;
+        // The lever is down (the door opens by itself), or a key is turning in it.
+        if (door.motion == DoorMotion.Lever || IsHeldForKey(door)) return UseResult.None;
+        // A try right after a rattle: no second rattle, so the jolts and the sounds never stack.
+        if (doorClock - door.rattledAt < FrontRoomsShotTimings.Rattle.Duration) return UseResult.None;
         var from = player != null ? player.position : door.position;
-        if (door.open) ShutDoor(door, from);
-        else if (!Unlock(door, from)) OpenDoor(door, from);
+        if (door.open)
+        {
+            ShutDoor(door, from);
+            return UseResult.Shut;
+        }
+        if (NeedsKey(door))
+        {
+            var zone = KeyFor(door, from);
+            if (!zone.HasValue)
+            {
+                door.rattledAt = doorClock;
+                DoorLocked?.Invoke(door.position);
+                DoorRattled?.Invoke(door, LockPoint(door, from));
+                Rattle(door);
+                return UseResult.Rattled;
+            }
+            if (KeyTurnOwner != null)
+            {
+                // The owner's shot turns the key: the door waits, held, until it commits and releases.
+                keyTurns[door.edge] = new KeyTurnHold { zone = zone.Value, from = from };
+                return UseResult.KeyTurn;
+            }
+            UnlockAtOnce(door, zone.Value, from);
+            return UseResult.Opened;
+        }
+        OpenDoor(door, from, DoorOpenSource.Use);
+        return UseResult.Opened;
     }
 
-    bool Unlocking(Door door) => unlocking.Exists(u => u.door == door);
+    /// <summary>The door whose leaf this collider is, or null.</summary>
+    public Door DoorOf(Collider c) => c != null && doorByCollider.TryGetValue(c, out var door) ? door : null;
 
     /// <summary>
-    /// The first time a key opens this door: raise DoorUnlocked. True when the
-    /// leaf waits for UnlockSwingDelay (TickDoors opens it); false when the
-    /// caller opens it now.
+    /// W5 seam: is this a locked door by the level's rule (position-independent)? Today every door is
+    /// when doors need keys. It will pick the LOCKED kit member at build time, the short prompt, and is
+    /// KeyFor's precondition.
     /// </summary>
-    bool Unlock(Door door, Vector3 from)
+    public bool LockedByRule(Door door) => door != null && doorsNeedKeys;
+
+    /// <summary>
+    /// §7 Q3 seam, the only place the key rule lives: the zone whose key opens this door from
+    /// <paramref name="from"/>, if it is held; null when none does, or when the door needs no key
+    /// (not LockedByRule, or unlocked already). Today: the zone <paramref name="from"/> stands in.
+    /// </summary>
+    public GridCoord? KeyFor(Door door, Vector3 from)
     {
-        if (!doorsNeedKeys || !unlockedDoors.Add(door.edge)) return false;
-        var zone = Cache.ZoneOf(CellOf(player != null ? player.position : from)).id;
-        DoorUnlocked?.Invoke(door, zone, LockPoint(door, from));
-        if (UnlockSwingDelay <= 0f) return false;
-        unlocking.Add((door, UnlockSwingDelay));
-        return true;
+        if (!NeedsKey(door) || Cache == null) return null;
+        var zone = Cache.ZoneOf(CellOf(from)).id;
+        return keysHeld.Contains(zone) ? zone : (GridCoord?)null;
+    }
+
+    // Locked by the rule and not yet opened by a key (from either side).
+    bool NeedsKey(Door door) => LockedByRule(door) && !unlockedDoors.Contains(door.edge);
+
+    /// <summary>True while a key turn holds this door (the unlock shot runs): Use and TryOpenDoor leave it, and Describe shows nothing.</summary>
+    public bool IsHeldForKey(Door door) => door != null && keyTurns.ContainsKey(door.edge);
+
+    /// <summary>The key-turn owner's heartbeat, every tick of its shot. A hold without one for Unlock.Duration + KeyTurnWatchdogGrace is resolved.</summary>
+    public void RefreshKeyTurn(Door door)
+    {
+        if (door != null && keyTurns.TryGetValue(door.edge, out var hold)) hold.sinceRefresh = 0f;
+    }
+
+    /// <summary>
+    /// The key has turned (the shot's Unlock.Commit): the door is unlocked for good, the leaf shifts
+    /// Unlock.LeafShiftMetres as the bolt draws (the rig's leaf, or the cube's JoltLeaf), and
+    /// DoorUnlocked is raised with the hold's zone and the keyhole. The deadbolt's slide is the
+    /// shot's. The door stays held until ReleaseKeyTurn.
+    /// </summary>
+    public void CommitUnlock(Door door)
+    {
+        if (door == null || !keyTurns.TryGetValue(door.edge, out var hold) || hold.committed) return;
+        if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        hold.committed = true;
+        unlockedDoors.Add(door.edge);
+        if (door.rig != null) door.rig.Jolt(FrontRoomsShotTimings.Unlock.LeafShiftMetres);
+        else JoltLeaf(door, FrontRoomsShotTimings.Unlock.LeafShiftMetres, 0f, FrontRoomsShotTimings.Unlock.BoltJolt);
+        DoorUnlocked?.Invoke(door, hold.zone, LockPose(door, hold.from).position);
+    }
+
+    /// <summary>A key turn given up before its commit: the hold goes and the door is still locked. Nothing is raised.</summary>
+    public void CancelKeyTurn(Door door)
+    {
+        if (door != null) keyTurns.Remove(door.edge);
+    }
+
+    /// <summary>
+    /// A committed key turn is over: the hold goes. <paramref name="open"/>: the door opens from
+    /// <paramref name="from"/> (DoorOpenSource.Unlock), unless it is open, broken or being broken,
+    /// or its chunk is gone. <paramref name="latchDrawn"/> (the push-side unlock, after its knob
+    /// beat): no lever wait and no DoorHandleTurned; the leaf leaves the frame at once.
+    /// </summary>
+    public void ReleaseKeyTurn(Door door, bool open, Vector3 from, bool latchDrawn = false)
+    {
+        if (door == null || !keyTurns.Remove(door.edge) || !open) return;
+        if (!doorByEdge.TryGetValue(door.edge, out var current)) return;
+        if (current.open || current.broken || IsBeingBroken(current) || current.motion == DoorMotion.Lever) return;
+        OpenDoor(current, from, DoorOpenSource.Unlock, latchDrawn);
+    }
+
+    // No owner to turn the key (the walker, tools): unlock and open in one go, as a key turn would.
+    void UnlockAtOnce(Door door, GridCoord zone, Vector3 from)
+    {
+        keyTurns[door.edge] = new KeyTurnHold { zone = zone, from = from };
+        CommitUnlock(door);
+        ReleaseKeyTurn(door, true, from);
+    }
+
+    /// <summary>Unit, flat: out of the leaf's face on <paramref name="from"/>'s side (toward the opener), as LockPoint picks the face.</summary>
+    public static Vector3 LockNormal(Door door, Vector3 from)
+    {
+        var across = DoorRotation(door) * Vector3.right;
+        across.y = 0f;
+        across.Normalize();
+        return Vector3.Dot(from - door.position, across) >= 0f ? across : -across;
+    }
+
+    /// <summary>The face <paramref name="from"/> stands on, in the kit's terms: S, the swing side (SPEC §6.4), or P.</summary>
+    public static DoorFace FaceOf(Door door, Vector3 from) => OnSwingSide(door, from) ? DoorFace.S : DoorFace.P;
+
+    /// <summary>Unit, flat: along the shut leaf from the latch jamb toward the hinge.</summary>
+    public static Vector3 TowardHinge(Door door)
+    {
+        var along = DoorRotation(door) * Vector3.back;
+        along.y = 0f;
+        return along.normalized;
+    }
+
+    // The keyway with no rig: the spec's numbers (SPEC §6.4) on today's door root. LockPoint's height and
+    // inset (1.0 m up, 0.92 m from the hinge), proud of the leaf's centre plane by half the leaf plus the
+    // cylinder's 6.5 mm (±0.0315) instead of the handle's 0.03.
+    const float KeyholeProud = .0065f;
+
+    /// <summary>
+    /// The keyway on <paramref name="from"/>'s face: position, and a rotation whose +Z goes into the
+    /// lock and +Y is the keyhole's up. From the door's rig when it has one; otherwise the spec's
+    /// numbers on the door root. LockPoint (DoorLocked, DoorHandleTurned) keeps the handle's point.
+    /// </summary>
+    public Pose LockPose(Door door, Vector3 from)
+    {
+        if (door == null) return new Pose(from, Quaternion.identity);
+        if (door.rig != null)
+        {
+            var face = FaceOf(door, from);
+            return new Pose(door.rig.Keyhole(face), Quaternion.LookRotation(door.rig.KeyholeDir(face), door.rig.KeyholeUp(face)));
+        }
+        var rotation = DoorRotation(door);
+        var normal = LockNormal(door, from);
+        var position = door.position + rotation * Vector3.forward * (DoorWidth * .5f - ModuleUnits.DoorHandleInset) + Vector3.up * ModuleUnits.DoorHandleHeight
+            + normal * (ModuleUnits.DoorLeafThickness * .5f + KeyholeProud);
+        return new Pose(position, Quaternion.LookRotation(-normal, Vector3.up));
     }
 
     /// <summary>A shut door's lock on the side of a point: in from the latch jamb, at handle height, on the leaf's face.</summary>
@@ -2351,7 +2652,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // The leaf as its swing sees it: its reach from the hinge axis and half its thickness.
     const float LeafLength = DoorWidth - ModuleUnits.DoorLeafGap * .5f, LeafHalfThickness = ModuleUnits.DoorLeafThickness * .5f;
     // The bodies a leaf stops on: the player's capsule plus the controller's 0.03 m skin and a centimetre; the Relay's plus a centimetre.
-    const float PlayerClearance = ModuleUnits.PlayerRadius + .04f, RelayClearance = ModuleUnits.RelayRadius + .01f;
+    // (The door shot's step-in keeps its stand point clear of a leaf by the player's.)
+    internal const float PlayerClearance = ModuleUnits.PlayerRadius + .04f;
+    const float RelayClearance = ModuleUnits.RelayRadius + .01f;
     // A leaf within this of shut is latched: opening it takes the lever first.
     const float LatchedDegrees = .5f;
     // A leaf with only a few degrees to go still eases over at least this long.
@@ -2452,23 +2755,26 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     /// <summary>
-    /// The one way a door opens (Use, TryOpenDoor, a key): the lever goes
+    /// The one way a door opens (Use, TryOpenDoor, a key turn's release): the lever goes
     /// down, and Open.SwingStart later the leaf leaves the frame toward its
     /// swing side, easing out over Open.SwingSeconds onto the 95° stop with
     /// the Open overshoot. From the swing side it is a pull: DoorPulled now,
     /// and DoorPullBeatSeconds more before the leaf moves. A leaf caught
     /// mid-shut has no latch to free, so a push turns it back at once.
+    /// <paramref name="latchDrawn"/>: the latch is already drawn (the unlock's
+    /// knob beat), so there is no lever wait and no DoorHandleTurned.
     /// </summary>
-    void OpenDoor(Door door, Vector3 from)
+    void OpenDoor(Door door, Vector3 from, DoorOpenSource source, bool latchDrawn = false)
     {
         door.open = true;
         openDoors.Add(door.edge);
         door.pull = OnSwingSide(door, from);
-        door.wait = (door.angle <= LatchedDegrees ? FrontRoomsShotTimings.Open.SwingStart : 0f) + (door.pull ? DoorPullBeatSeconds : 0f);
+        door.wait = (door.angle <= LatchedDegrees && !latchDrawn ? FrontRoomsShotTimings.Open.SwingStart : 0f) + (door.pull ? DoorPullBeatSeconds : 0f);
         door.motion = DoorMotion.Lever;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
         TouchPassageRevision();
-        DoorHandleTurned?.Invoke(door, LockPoint(door, from));
+        DoorOpenBegan?.Invoke(door, source, latchDrawn);
+        if (!latchDrawn) DoorHandleTurned?.Invoke(door, LockPoint(door, from));
         if (door.pull)
         {
             // A step only when the opening leaf would meet the body.
@@ -2796,27 +3102,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         window.pushing = false;
     }
 
-    bool HasKeyHere() => player != null && keysHeld.Contains(Cache.ZoneOf(CellOf(player.position)).id);
+    // Shut and needing a key the player does not hold where they stand: doors need keys, no key has opened
+    // this door yet, and KeyFor finds none (with no player there is nobody holding one).
+    bool LockedHere(Door door) => NeedsKey(door) && (player == null || !KeyFor(door, player.position).HasValue);
 
-    // Shut and needing a key here: doors need keys, no key has opened this door yet, and the player holds none for this zone.
-    bool LockedHere(Door door) => doorsNeedKeys && !unlockedDoors.Contains(door.edge) && !HasKeyHere();
-
-    /// <summary>Tools and tests in edit mode, where Update does not run: move doors that are opening or breaking.</summary>
+    /// <summary>Tools and tests in edit mode, where Update does not run: move doors that are opening or breaking (DoorsPaused holds them too).</summary>
     public void TickDoorsForTools(float dt) => TickDoors(dt);
 
     void TickDoors(float dt)
     {
-        for (var i = unlocking.Count - 1; i >= 0; i--)
-        {
-            var (door, left) = unlocking[i];
-            // Rebuilt, broken or opened meanwhile: nothing left to open.
-            if (door.hinge == null || door.broken || door.open) { unlocking.RemoveAt(i); continue; }
-            left -= dt;
-            if (left > 0f) { unlocking[i] = (door, left); continue; }
-            unlocking.RemoveAt(i);
-            // The key has turned: it opens from where the player stands now (a pull is judged at the swing, not the press).
-            OpenDoor(door, player != null ? player.position : door.position);
-        }
+        // Paused: every leaf, jolt and key-turn hold waits with the game.
+        if (DoorsPaused) return;
+        doorClock += dt;
+        TickKeyTurnWatchdog(dt);
         for (var i = movingDoors.Count - 1; i >= 0; i--)
         {
             if (i >= movingDoors.Count) continue;
@@ -2825,6 +3123,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             var swinging = TickSwing(door, dt);
             var jolting = TickJolt(door, dt);
             if (!swinging && !jolting) movingDoors.Remove(door);
+        }
+    }
+
+    // An orphaned key turn can never disable a door: a hold its owner stopped refreshing (it never
+    // ticked, or lost the door) is resolved, as a cancel before the commit and a release (shut) after it.
+    void TickKeyTurnWatchdog(float dt)
+    {
+        if (keyTurns.Count == 0) return;
+        keyTurnScratch.Clear();
+        foreach (var pair in keyTurns)
+        {
+            pair.Value.sinceRefresh += dt;
+            if (pair.Value.sinceRefresh > FrontRoomsShotTimings.Unlock.Duration + FrontRoomsShotTimings.Unlock.KeyTurnWatchdogGrace) keyTurnScratch.Add(pair.Key);
+        }
+        foreach (var edge in keyTurnScratch)
+        {
+            var committed = keyTurns[edge].committed;
+            keyTurns.Remove(edge);
+            Debug.LogWarning("[FrontRoomsMap] A key turn on door " + edge + " was not refreshed by its owner for "
+                + (FrontRoomsShotTimings.Unlock.Duration + FrontRoomsShotTimings.Unlock.KeyTurnWatchdogGrace).ToString("0.00") + " s: "
+                + (committed ? "released, the door unlocked and shut." : "cancelled, the door still locked."));
         }
     }
 
@@ -2937,17 +3256,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>
     /// The zone key of a chunk: at its module key spot (lying still, turned as
     /// the marker says), or spinning 1.05 m above its cell's centre. The one
-    /// place a key is made, so the key model and its host plug in here.
+    /// place a key is made, so the key model and its host plug in here. No
+    /// collider, except the look+E trigger while KeyPickupNeedsE is on.
     /// </summary>
     void SpawnKey(BuiltChunk chunk, MapChunk data, bool atSpot)
     {
         var cs = MapGrid.CellSize;
         var key = GameObject.CreatePrimitive(PrimitiveType.Cube);
         key.name = "Key · zone " + data.ownZone.id;
-        // Out of the physics scene at once: a deferred Destroy would leave it for this frame's queries.
         var keyCollider = key.GetComponent<Collider>();
-        keyCollider.enabled = false;
-        Kill(keyCollider);
+        if (KeyPickupNeedsE)
+        {
+            // Look+E: the cube's own box (the key's envelope) as a trigger, for KeyOnRay only.
+            keyCollider.isTrigger = true;
+            keyByCollider[keyCollider] = data.ownZone.id;
+        }
+        else
+        {
+            // Out of the physics scene at once: a deferred Destroy would leave it for this frame's queries.
+            keyCollider.enabled = false;
+            Kill(keyCollider);
+        }
         key.transform.SetParent(chunk.root.transform, false);
         key.transform.localScale = new Vector3(.32f, .12f, .12f);
         if (atSpot)
@@ -3207,6 +3536,73 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>Tools and tests: drop a built chunk as streaming does (it comes back with RebuildChunk).</summary>
     public void DropChunkForTools(GridCoord coord) => Drop(coord);
 
+    // ---------- Doors and keys for tools (the autopilot's door scenario, tests) ----------
+
+    /// <summary>Tools and tests: the run's working copy of "doors need keys" (the profile asset is never changed).</summary>
+    public bool DoorsNeedKeysForTools
+    {
+        get => doorsNeedKeys;
+        set => doorsNeedKeys = value;
+    }
+
+    /// <summary>Tools and tests: hold a zone's key, as walking over it would (without the pickup's event).</summary>
+    public void GiveKeyForTools(GridCoord zone) => keysHeld.Add(zone);
+
+    /// <summary>
+    /// Tools and tests: the nearest built door to a point that is shut, whole, not being broken and not held,
+    /// outside the start area, with the point on its swing side (<paramref name="swingSide"/>, a pull) or its
+    /// stop side (a push). Null when there is none.
+    /// </summary>
+    public Door NearestClosedDoorForTools(Vector3 near, bool swingSide)
+    {
+        Door best = null;
+        var bestDistance = float.MaxValue;
+        foreach (var door in doorByEdge.Values)
+        {
+            if (door.hinge == null || door.open || door.broken || IsBeingBroken(door) || IsHeldForKey(door)) continue;
+            if (!IsBuilt(door.a) || !IsBuilt(door.b) || OnSwingSide(door, near) != swingSide) continue;
+            var d = (door.position - near).sqrMagnitude;
+            if (d < bestDistance) { bestDistance = d; best = door; }
+        }
+        return best;
+    }
+
+    /// <summary>Tools: the doors' own clock (TickDoors; it stops with DoorsPaused).</summary>
+    public float DoorClockForTools => doorClock;
+
+    /// <summary>Tools and tests: a key has unlocked this door (it stays unlocked from both sides).</summary>
+    public bool IsUnlockedForTools(Door door) => door != null && unlockedDoors.Contains(door.edge);
+
+    /// <summary>Tools and tests: give a door a rig (a fake that records the shots' calls), or take it away (null).</summary>
+    public void SetDoorRigForTools(Door door, IFrontRoomsDoorRig rig)
+    {
+        if (door != null) door.rig = rig;
+    }
+
+    /// <summary>
+    /// Tests: put a door back as it was built, shut, latched and locked again (no unlock, no hold, no
+    /// break, no jolt, no rattle stamp), so one door can serve many cases.
+    /// </summary>
+    public void ResetDoorForTools(Door door)
+    {
+        if (door == null) return;
+        if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        unlockedDoors.Remove(door.edge);
+        keyTurns.Remove(door.edge);
+        openDoors.Remove(door.edge);
+        brokenDoors.Remove(door.edge);
+        breakingDoors.Remove(door.edge);
+        door.open = door.broken = door.pull = false;
+        door.angle = door.crooked = door.wait = 0f;
+        door.motion = DoorMotion.None;
+        door.jolts.Clear();
+        door.joltClock = -1f;
+        door.rattledAt = float.NegativeInfinity;
+        movingDoors.Remove(door);
+        PoseDoor(door);
+        TouchPassageRevision();
+    }
+
     /// <summary>Every Relay entry of the built map (module markers), with its tag (null for none). The Relay prefers them when it appears.</summary>
     public void RelayEntries(List<(Vector3 pos, string tag)> into)
     {
@@ -3214,6 +3610,33 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         foreach (var chunk in built.Values) into.AddRange(chunk.relayEntries);
     }
 
+    /// <summary>Tools and tests in edit mode, where Update does not run: turn the spinning keys and take the ones the player stands on, as Update does.</summary>
+    public void CollectKeysForTools() => CollectKeys();
+
+    /// <summary>
+    /// Tools and tests: the nearest zone key still lying in a built chunk, its zone, and the chunk that
+    /// built it. Null when there is none.
+    /// </summary>
+    public Transform NearestKeyForTools(Vector3 near, out GridCoord zone, out GridCoord chunk)
+    {
+        Transform best = null;
+        zone = chunk = default;
+        var bestDistance = float.MaxValue;
+        foreach (var pair in built)
+            foreach (var k in pair.Value.keys)
+            {
+                if (k.go == null) continue;
+                var d = (k.go.transform.position - near).sqrMagnitude;
+                if (d >= bestDistance) continue;
+                bestDistance = d;
+                best = k.go.transform;
+                zone = k.zone;
+                chunk = pair.Key;
+            }
+        return best;
+    }
+
+    // Keys are taken by walking onto them (0.9 m, flat), except a look+E key's trigger, which only E takes.
     void CollectKeys()
     {
         var p = player.position;
@@ -3223,13 +3646,48 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 var (go, zone, spin) = chunk.keys[i];
                 if (go == null) { chunk.keys.RemoveAt(i); continue; }
                 if (spin) go.transform.Rotate(0f, 90f * Time.deltaTime, 0f, Space.World);
+                if (keyByCollider.Count > 0 && go.TryGetComponent<Collider>(out var trigger) && keyByCollider.ContainsKey(trigger)) continue;
                 var d = go.transform.position - p;
                 if (new Vector2(d.x, d.z).sqrMagnitude > .9f * .9f) continue;
-                keysHeld.Add(zone);
-                Kill(go);
-                chunk.keys.RemoveAt(i);
-                KeyTaken?.Invoke(zone);
+                TakeKey(chunk, i);
             }
+    }
+
+    // E on a look+E key's trigger: the key it belongs to is taken. False when the key is no longer lying in a built chunk.
+    bool TakeKeyByE(Collider trigger)
+    {
+        foreach (var chunk in built.Values)
+            for (var i = 0; i < chunk.keys.Count; i++)
+                if (chunk.keys[i].go != null && chunk.keys[i].go == trigger.gameObject)
+                {
+                    TakeKey(chunk, i);
+                    return true;
+                }
+        keyByCollider.Remove(trigger);
+        return false;
+    }
+
+    /// <summary>
+    /// A key is taken (plan §3.3): off the chunk's list (only listed keys spin), held at once (a rebuild
+    /// in the next moment cannot respawn it, and its doors open), KeyPickupStarted, then the presenter. A
+    /// presented key moves to the map's root and the presenter announces it (KeyArrived); otherwise it is
+    /// gone and announced now: the instant path, KeyTaken in the same call as KeyPickupStarted.
+    /// </summary>
+    void TakeKey(BuiltChunk chunk, int index)
+    {
+        var (go, zone, _) = chunk.keys[index];
+        chunk.keys.RemoveAt(index);
+        keysHeld.Add(zone);
+        // A look+E trigger is spent: no query finds a key that is already taken.
+        if (keyByCollider.Count > 0 && go.TryGetComponent<Collider>(out var trigger) && keyByCollider.Remove(trigger)) trigger.enabled = false;
+        KeyPickupStarted?.Invoke(zone, go.transform.position);
+        if (KeyPresenter != null && KeyPresenter(zone, go.transform))
+        {
+            if (go != null) go.transform.SetParent(transform, true);
+            return;
+        }
+        Kill(go);
+        KeyArrived(zone);
     }
 
     // ---------- Materials ----------

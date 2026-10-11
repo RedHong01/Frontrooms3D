@@ -47,8 +47,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     // ------------------------------------------------------------ the stick
     sealed class StickView
     {
-        public RectTransform Root, Thumb, Socket, Halo, Label;
-        public Image BaseDisc, BaseRing, SocketRing, SocketArc, HaloRing, ThumbDisc, LabelChip;
+        public RectTransform Root, Thumb, RunLine, Label;
+        public Image BaseDisc, BaseRing, SlowRingDashed, SlowRingLit, RunLineDashed, RunLineLit, ThumbDisc, LabelChip;
         public Text LabelText;
         public CanvasGroup Group;
     }
@@ -58,12 +58,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     readonly MotionValue liveAlpha = new MotionValue();
     readonly MotionValue liveScale = new MotionValue(1f);
     readonly MotionValue thumbReturn = new MotionValue(1f);
-    readonly MotionValue haloGrow = new MotionValue();
-    readonly MotionValue latchPop = new MotionValue();
-    readonly MotionValue sprintTint = new MotionValue();
+    readonly MotionValue runPop = new MotionValue();
+    readonly MotionValue runTint = new MotionValue();
+    readonly MotionValue slowTint = new MotionValue();
     readonly MotionValue labelAlpha = new MotionValue();
     readonly MotionValue windTint = new MotionValue();
-    bool wasTouched, wasLatched, wasWinded;
+    bool wasTouched, wasRunning, wasWinded;
     Vector2 releasedThumb, lastOrigin;
 
     // ------------------------------------------------------------------ USE
@@ -77,6 +77,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     readonly MotionValue holdTrackAlpha = new MotionValue();
     readonly MotionValue labelSwap = new MotionValue(1f);
     readonly MotionValue lockedShake = new MotionValue(1f);
+    readonly MotionValue useTakeover = new MotionValue();
     string useLabelShown = string.Empty;
     bool useLabelOnA = true;
     bool wasUseHeld;
@@ -268,6 +269,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         return img;
     }
 
+    /// <summary>An arc sprite (its texture holds only the arc) placed with its ring's centre on the parent's centre.</summary>
+    static void PlaceArc(Image image, Sprite sprite)
+    {
+        image.sprite = sprite;
+        var rt = image.rectTransform;
+        rt.sizeDelta = FrontRoomsTouchSprites.PointSize(sprite);
+        rt.pivot = FrontRoomsTouchSprites.PivotOf(sprite);
+        rt.anchoredPosition = Vector2.zero;
+    }
+
     Text Txt(string name, Transform parent, string value, Font font, int size, Color color, TextAnchor anchor, Vector2 box, bool frameAnchored = false)
     {
         var rt = Node(name, parent, box, frameAnchored);
@@ -292,18 +303,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         s.Group = s.Root.gameObject.AddComponent<CanvasGroup>();
         s.BaseDisc = Img("base", s.Root, Vector2.zero, Media);
         s.BaseRing = Img("base ring", s.Root, Vector2.zero, Paper);
-        s.Socket = Node("socket", s.Root, Vector2.zero, false);
-        s.SocketRing = Img("socket ring", s.Socket, Vector2.zero, Paper);
-        s.SocketArc = Img("socket arming arc", s.Socket, Vector2.zero, Accent);
-        s.SocketArc.type = Image.Type.Filled;
-        s.SocketArc.fillMethod = Image.FillMethod.Radial360;
-        s.SocketArc.fillOrigin = (int)Image.Origin360.Top;
-        s.SocketArc.fillClockwise = true;
-        s.SocketArc.fillAmount = 0f;
-        s.Halo = Node("halo", s.Root, Vector2.zero, false);
-        s.HaloRing = s.Halo.gameObject.AddComponent<Image>();
-        s.HaloRing.color = Accent;
-        s.HaloRing.raycastTarget = false;
+        // The slow ring (36 pt): dashed while walking, solid while creeping (Red, 2026-10-08; Figma Touch / Stick).
+        s.SlowRingDashed = Img("slow ring", s.Root, Vector2.zero, Paper);
+        s.SlowRingLit = Img("slow ring lit", s.Root, Vector2.zero, Paper);
+        // The run line, 24 pt past the ring and only ahead: dashed paper that firms up as the thumb nears it, yellow
+        // once it runs, the same rule as USE's hold ring.
+        s.RunLine = Node("run line", s.Root, Vector2.zero, false);
+        s.RunLineDashed = Img("run line dashed", s.RunLine, Vector2.zero, Paper);
+        s.RunLineLit = Img("run line lit", s.RunLine, Vector2.zero, Accent);
         s.Thumb = Node("thumb", s.Root, Vector2.zero, false);
         s.ThumbDisc = s.Thumb.gameObject.AddComponent<Image>();
         s.ThumbDisc.color = Paper;
@@ -355,7 +362,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         sprintToggleRoot = Node("Sprint toggle", parent, Vector2.zero);
         sprintToggleDisc = Img("button", sprintToggleRoot, Vector2.zero, Media);
         sprintToggleRing = Img("ring", sprintToggleRoot, Vector2.zero, Paper);
-        sprintToggleText = Txt("label", sprintToggleRoot, "SPRINT", bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(60f, 22f));
+        sprintToggleText = Txt("label", sprintToggleRoot, "RUN", bayon, 17, Paper, TextAnchor.MiddleCenter, new Vector2(60f, 22f));
     }
 
     void ApplyGeometry(FrontRoomsTouchLayout L)
@@ -368,22 +375,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             s.BaseDisc.rectTransform.sizeDelta = new Vector2(d, d);
             s.BaseRing.sprite = FrontRoomsTouchSprites.Ring(d, 2f);
             s.BaseRing.rectTransform.sizeDelta = new Vector2(d, d);
-            var sd = L.SocketRadius * 2f;
-            s.Socket.anchoredPosition = new Vector2(0f, L.SocketOffset);
-            s.SocketRing.sprite = FrontRoomsTouchSprites.Ring(sd, 2f);
-            s.SocketRing.rectTransform.sizeDelta = new Vector2(sd, sd);
-            // The arming arc fills outside the thumb (Ø52 covers the Ø40 socket), where the latched halo sits:
-            // the halo is the arc completed, the same rule as USE's hold ring.
-            var hd = 66f * k;
-            s.SocketArc.sprite = FrontRoomsTouchSprites.Ring(hd, 3.5f);
-            s.SocketArc.rectTransform.sizeDelta = new Vector2(hd, hd);
-            s.HaloRing.sprite = FrontRoomsTouchSprites.Ring(hd, 3.5f);
-            s.Halo.sizeDelta = new Vector2(hd, hd);
-            s.Halo.anchoredPosition = new Vector2(0f, L.SocketOffset);
+            var sr = L.SlowRadius * 2f;
+            PlaceArc(s.SlowRingDashed, FrontRoomsTouchSprites.Arc(sr, 1.5f, 180f, 4f, 4f));
+            s.SlowRingLit.sprite = FrontRoomsTouchSprites.Ring(sr, 1.5f);
+            s.SlowRingLit.rectTransform.sizeDelta = new Vector2(sr, sr);
+            var rl = L.RunLineRadius * 2f;
+            PlaceArc(s.RunLineDashed, FrontRoomsTouchSprites.Arc(rl, 2f, FrontRoomsTouchControls.RunHalfAngle, 6f, 6f));
+            PlaceArc(s.RunLineLit, FrontRoomsTouchSprites.Arc(rl, 3.5f, FrontRoomsTouchControls.RunHalfAngle, 0f, 0f));
             var td = L.ThumbRadius * 2f;
             s.ThumbDisc.sprite = FrontRoomsTouchSprites.Disc(td);
             s.Thumb.sizeDelta = new Vector2(td, td);
-            s.Label.anchoredPosition = new Vector2(0f, L.SocketOffset + 33f * k + 14f);
             s.LabelChip.sprite = FrontRoomsTouchSprites.Solid();
         }
         var ud = L.UseRadius * 2f;
@@ -426,13 +427,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         pauseKeycapFill.color = WithAlpha(Color.Lerp(Media, Paper, pausePress * .35f), Mathf.Min(1f, (.35f + .35f * pausePress) * opacity));
         pauseKeycapLine.color = WithAlpha(Paper, Mathf.Min(1f, .9f * opacity));
 
-        // SPRINT toggle (only when Settings › SPRINT is BUTTON).
-        var showToggle = !controls.SprintSocketMode;
+        // RUN button (only when Settings › RUN is BUTTON).
+        var showToggle = !controls.RunStickMode;
         sprintToggleRoot.gameObject.SetActive(showToggle);
         if (showToggle)
         {
             sprintToggleRoot.anchoredPosition = L.SprintButtonCenter;
-            toggleOn.To(controls.SprintLatched ? 1f : 0f, Dur(.12f), Ease.OutCubic);
+            toggleOn.To(controls.Running ? 1f : 0f, Dur(.12f), Ease.OutCubic);
             var toggleWinded = controls.Winded;
             // It carries a word, so its disc is solid whatever CONTROLS OPACITY says.
             sprintToggleDisc.color = Color.Lerp(CardColor, Accent, toggleOn);
@@ -446,7 +447,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     void TickStick(FrontRoomsTouchLayout L, float opacity)
     {
         var touched = controls.StickTouched;
-        var latched = controls.SprintLatched;
+        var running = controls.Running;
         var winded = controls.Winded;
 
         if (touched != wasTouched)
@@ -470,40 +471,40 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             wasTouched = touched;
         }
 
-        if (latched != wasLatched)
+        if (running != wasRunning)
         {
-            if (latched)
+            if (running)
             {
-                haloGrow.Snap(1f);
-                sprintTint.To(1f, Dur(.12f), Ease.OutCubic);
+                runTint.To(1f, Dur(.12f), Ease.OutCubic);
                 labelAlpha.To(1f, Dur(.14f), Ease.OutCubic);
-                if (!Reduced) latchPop.Restart(1f, 0f, .22f, Ease.OutCubic);
+                // The click you feel, seen once: the thumb and the line pop as the thumb crosses.
+                if (!Reduced) runPop.Restart(1f, 0f, .22f, Ease.OutCubic);
             }
             else
             {
-                haloGrow.To(0f, Dur(.15f), Ease.InCubic);
-                sprintTint.To(0f, Dur(.15f), Ease.InCubic);
+                runTint.To(0f, Dur(.15f), Ease.InCubic);
                 if (!winded) labelAlpha.To(0f, Dur(.1f), Ease.InCubic);
             }
-            wasLatched = latched;
+            wasRunning = running;
         }
 
         if (winded != wasWinded)
         {
             windTint.To(winded ? 1f : 0f, Dur(.2f), Ease.OutCubic);
-            labelAlpha.To(winded || latched ? 1f : 0f, Dur(.14f), Ease.OutCubic);
+            labelAlpha.To(winded || running ? 1f : 0f, Dur(.14f), Ease.OutCubic);
             wasWinded = winded;
         }
+
+        var slow = touched && controls.CurrentGait == FrontRoomsGait.Slow;
+        slowTint.To(slow ? 1f : 0f, Dur(slow ? .1f : .14f), Ease.OutCubic);
 
         // The resting ghost (floating stick) or the fixed stick at rest.
         ghost.Root.anchoredPosition = L.StickRest;
         ghost.Thumb.anchoredPosition = Vector2.zero;
         ghost.Group.alpha = ghostAlpha;
-        ApplyStickStyle(ghost, 0f, 0f, 0f, windTint, opacity, 0f);
+        ApplyStickStyle(ghost, 0f, 0f, 0f, 0f, windTint, opacity, false);
         ghost.LabelText.text = string.Empty;
         ghost.LabelChip.color = WithAlpha(CardColor, 0f);
-        ghost.SocketArc.fillAmount = 0f;
-        ghost.Halo.gameObject.SetActive(false);
 
         // The live stick under the thumb.
         if (touched) lastOrigin = controls.StickOrigin;
@@ -512,40 +513,42 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         live.Group.alpha = liveAlpha;
         var thumb = touched ? controls.StickThumb - controls.StickOrigin : Vector2.LerpUnclamped(releasedThumb, Vector2.zero, thumbReturn);
         live.Thumb.anchoredPosition = thumb;
-        var arm = controls.SocketArm;
-        live.SocketArc.fillAmount = latched ? 1f : arm;
-        // Latched: the completed arc stays as the halo; letting go fades it instead of snapping it off.
-        live.Halo.gameObject.SetActive(haloGrow > .001f);
-        live.Halo.localScale = Vector3.one * (1f + .15f * latchPop);
-        live.HaloRing.color = WithAlpha(Accent, Mathf.Clamp01(haloGrow));
-        live.Socket.localScale = Vector3.one * (1f + .15f * latchPop);
-        live.LabelText.text = winded ? "WINDED" : "SPRINT";
+        live.Thumb.localScale = Vector3.one * (1f + .15f * runPop);
+        live.RunLine.localScale = Vector3.one * (1f + .04f * runPop);
+        live.LabelText.text = winded ? "WINDED" : "RUN";
         // WINDED in paper, not muted: the muted thumb already says "not now"; the word must still read.
         live.LabelText.color = WithAlpha(winded ? Paper : Accent, labelAlpha);
-        var labelAt = new Vector2(0f, L.SocketOffset + 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
+        // The label rides above the thumb (the thumb is wherever the run took it).
+        var labelAt = thumb + new Vector2(0f, 33f * L.Scale + 14f - (Reduced ? 0f : 6f * (1f - labelAlpha)));
         live.Label.anchoredPosition = labelAt;
         // The chip: 4 pt over and under Bayon 17's caps, 7 pt either side, square, opaque once the label is in.
         var caps = Caps(live.LabelText);
         live.LabelChip.rectTransform.anchoredPosition = labelAt + new Vector2(caps.x, caps.y);
         live.LabelChip.rectTransform.sizeDelta = new Vector2(caps.z + 14f, caps.w + 8f);
         live.LabelChip.color = WithAlpha(CardColor, labelAlpha);
-        ApplyStickStyle(live, 1f, sprintTint, arm, windTint, opacity, 1f);
+        ApplyStickStyle(live, 1f, runTint, controls.RunReach, slowTint, windTint, opacity, controls.RunStickMode);
     }
 
-    /// <summary>The Figma stick states: rest (ghost), walk, sprint (yellow thumb in the socket), winded (muted).</summary>
-    static void ApplyStickStyle(StickView s, float activeness, float sprint, float arm, float winded, float opacity, float liveLayer)
+    /// <summary>
+    /// The Figma stick states (Touch / Stick): rest (the ghost), slow (the inner ring lit), walk, run (yellow thumb
+    /// past the yellow line) and winded (muted). The rings and lines are text-free ghosts, so CONTROLS OPACITY
+    /// thins them; the running thumb and line are the state itself and stay solid.
+    /// </summary>
+    static void ApplyStickStyle(StickView s, float activeness, float run, float reach, float slow, float winded, float opacity, bool runLine)
     {
         var baseFill = Mathf.Lerp(.18f, .28f, activeness);
         var ring = Mathf.Lerp(.35f, .6f, activeness);
-        var socket = Mathf.Lerp(.25f, .45f, activeness);
         var thumb = Mathf.Lerp(.30f, .9f, activeness);
         s.BaseDisc.color = WithAlpha(Media, Mathf.Min(1f, baseFill * opacity));
         s.BaseRing.color = WithAlpha(Paper, Mathf.Min(1f, ring * opacity));
-        var socketColor = Color.Lerp(Color.Lerp(Paper, Accent, arm * .6f), Muted, winded);
-        s.SocketRing.color = WithAlpha(socketColor, Mathf.Min(1f, Mathf.Lerp(socket, .35f, winded) * opacity));
-        s.SocketArc.color = WithAlpha(Accent, Mathf.Min(1f, liveLayer * (1f - winded)));
-        var thumbColor = Color.Lerp(Color.Lerp(Paper, Accent, sprint), Muted, winded);
-        s.ThumbDisc.color = WithAlpha(thumbColor, Mathf.Min(1f, Mathf.Lerp(thumb, 1f, sprint) * Mathf.Lerp(1f, .85f, winded) * (sprint > .5f ? 1f : opacity)));
+        s.SlowRingDashed.color = WithAlpha(Paper, Mathf.Min(1f, .25f * activeness * (1f - slow) * (1f - run) * opacity));
+        s.SlowRingLit.color = WithAlpha(Paper, Mathf.Min(1f, .6f * activeness * slow * opacity));
+        var line = runLine ? activeness : 0f;
+        var lineColor = Color.Lerp(Paper, Muted, winded);
+        s.RunLineDashed.color = WithAlpha(lineColor, Mathf.Min(1f, Mathf.Lerp(.35f, .75f, reach * (1f - winded)) * line * (1f - run) * opacity));
+        s.RunLineLit.color = WithAlpha(Accent, line * run);
+        var thumbColor = Color.Lerp(Color.Lerp(Paper, Accent, run), Muted, winded);
+        s.ThumbDisc.color = WithAlpha(thumbColor, Mathf.Min(1f, Mathf.Lerp(thumb, 1f, run) * Mathf.Lerp(1f, .85f, winded) * (run > .5f ? 1f : opacity)));
     }
 
     void TickUse(FrontRoomsTouchLayout L, float opacity)
@@ -563,7 +566,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             if (!Reduced) useScale.To(.94f, .12f, Ease.InCubic);
         }
         useRoot.anchoredPosition = L.UseCenter + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f);
-        useGroup.alpha = useAlpha;
+        // A camera takeover fades USE with the desktop HUD (关卡设计, 2026-10-08), except under a holding thumb:
+        // the glass hold is a takeover too, and its ring is the hold's feedback. Visual only; presses still go to the rig.
+        useTakeover.To(controls.UseHeld ? 0f : controls.Takeover, Dur(.12f), Ease.OutCubic);
+        useGroup.alpha = useAlpha * (1f - useTakeover);
 
         var held = controls.UseHeld;
         if (held != wasUseHeld)
@@ -766,7 +772,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         confirmTextText = Txt("Restart question", menuLayer, "RESTART THIS RUN?", bayon, 17, Ink, TextAnchor.MiddleCenter, new Vector2(400f, 22f), true);
         confirmText = MakeItem("confirm", confirmTextText.rectTransform);
 
-        foreach (var b in new[] { FrontRoomsTouchControls.Button.Resume, FrontRoomsTouchControls.Button.Settings, FrontRoomsTouchControls.Button.Restart,
+        foreach (var b in new[] { FrontRoomsTouchControls.Button.Resume, FrontRoomsTouchControls.Button.Settings, FrontRoomsTouchControls.Button.Restart, FrontRoomsTouchControls.Button.ReturnTitle,
                      FrontRoomsTouchControls.Button.RestartCancel, FrontRoomsTouchControls.Button.RestartConfirm, FrontRoomsTouchControls.Button.TryAgain,
                      FrontRoomsTouchControls.Button.SettingsClose })
             BuildChip(b);
@@ -794,6 +800,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         titlePrompt = MakeItem("TAP TO START", promptRoot);
 
         BuildSettingsCard();
+        // BACK sits on the card: draw it above the card (it was built first and the opaque card hid it).
+        chips[FrontRoomsTouchControls.Button.SettingsClose].Rect.SetAsLastSibling();
     }
 
     Item MakeItem(string name, RectTransform rt)
@@ -808,7 +816,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         legendATextMove = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Move, "MOVE", out _);
         legendATextDrag = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Drag, "DRAG  ·  LOOK", out _);
-        legendATextSprint = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Socket, "SOCKET  ·  SPRINT", out legendSprintGlyph);
+        legendATextSprint = LegendEntry(legendA.Rect, FrontRoomsTouchSprites.Glyph.Run, "PAST THE RING  ·  RUN", out legendSprintGlyph);
         legendBTextUse = LegendEntry(legendB.Rect, FrontRoomsTouchSprites.Glyph.Use, "USE  ·  DOOR", out _);
         legendBTextHold = LegendEntry(legendB.Rect, FrontRoomsTouchSprites.Glyph.Hold, "HOLD USE  ·  BREAK GLASS", out _);
     }
@@ -847,7 +855,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     {
         if (entry == legendATextMove) return FrontRoomsTouchSprites.Glyph.Move.ToString();
         if (entry == legendATextDrag) return FrontRoomsTouchSprites.Glyph.Drag.ToString();
-        if (entry == legendATextSprint) return FrontRoomsTouchSprites.Glyph.Socket.ToString();
+        if (entry == legendATextSprint) return FrontRoomsTouchSprites.Glyph.Run.ToString();
         if (entry == legendBTextUse) return FrontRoomsTouchSprites.Glyph.Use.ToString();
         return FrontRoomsTouchSprites.Glyph.Hold.ToString();
     }
@@ -877,14 +885,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var label = ChipLabel(button);
         var rt = Node("Chip " + label, menuLayer, new Vector2(80f, FrontRoomsTouchLayout.ChipHeight));
         var fill = rt.gameObject.AddComponent<Image>();
-        fill.color = Accent;
+        var dark = DarkChip(button);
+        fill.color = dark ? CardColor : Accent;
         fill.raycastTarget = false;
         fill.sprite = FrontRoomsTouchSprites.Solid();
-        Txt("label", rt, label, bayon, 17, Ink, TextAnchor.MiddleCenter, new Vector2(120f, 22f)).rectTransform.anchoredPosition = new Vector2(0f, 1f);
+        Txt("label", rt, label, bayon, 17, dark ? Paper : Ink, TextAnchor.MiddleCenter, new Vector2(140f, 22f)).rectTransform.anchoredPosition = new Vector2(0f, 1f);
         var item = MakeItem(label, rt);
         chips[button] = item;
         chipFills[button] = fill;
     }
+
+    /// <summary>An exit, not a go: QUIT TO TITLE sits on the solid ink chip with paper caps, so it never weighs as much as RESUME (平面视觉, 2026-10-08).</summary>
+    static bool DarkChip(FrontRoomsTouchControls.Button b) => b == FrontRoomsTouchControls.Button.ReturnTitle;
 
     static string ChipLabel(FrontRoomsTouchControls.Button b)
     {
@@ -893,10 +905,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsTouchControls.Button.Resume: return "RESUME";
             case FrontRoomsTouchControls.Button.Settings: return "SETTINGS";
             case FrontRoomsTouchControls.Button.Restart: return "RESTART";
+            case FrontRoomsTouchControls.Button.ReturnTitle: return "QUIT TO TITLE";
             case FrontRoomsTouchControls.Button.RestartCancel: return "CANCEL";
             case FrontRoomsTouchControls.Button.RestartConfirm: return "RESTART";
             case FrontRoomsTouchControls.Button.TryAgain: return "TRY AGAIN";
-            case FrontRoomsTouchControls.Button.SettingsClose: return "CLOSE";
+            case FrontRoomsTouchControls.Button.SettingsClose: return "BACK";
             default: return string.Empty;
         }
     }
@@ -983,6 +996,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             ShowChip(FrontRoomsTouchControls.Button.Resume, paused && !confirm, .16f);
             ShowChip(FrontRoomsTouchControls.Button.Settings, paused && !confirm, .19f);
             ShowChip(FrontRoomsTouchControls.Button.Restart, paused && !confirm, .22f);
+            // Keep the existing RESUME / SETTINGS / RESTART row stable; the explicit
+            // QUIT TO TITLE action sits beneath it so it cannot be confused with RESTART.
+            ShowChip(FrontRoomsTouchControls.Button.ReturnTitle, paused && !confirm, .25f);
             ShowChip(FrontRoomsTouchControls.Button.RestartCancel, paused && confirm, .05f);
             ShowChip(FrontRoomsTouchControls.Button.RestartConfirm, paused && confirm, .08f);
 
@@ -1019,8 +1035,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (paused)
         {
             pauseMetaText.text = controls.Host != null ? controls.Host.PauseMeta : string.Empty;
-            legendATextSprint.text = controls.SprintSocketMode ? "SOCKET  ·  SPRINT" : "SPRINT BUTTON";
-            legendSprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.SprintSocketMode ? FrontRoomsTouchSprites.Glyph.Socket : FrontRoomsTouchSprites.Glyph.SprintButton);
+            legendATextSprint.text = controls.RunStickMode ? "PAST THE RING  ·  RUN" : "RUN BUTTON";
+            legendSprintGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(controls.RunStickMode ? FrontRoomsTouchSprites.Glyph.Run : FrontRoomsTouchSprites.Glyph.SprintButton);
             legendBTextHold.text = FrontRoomsSettings.TapToBreak ? "TAP USE  ·  BREAK GLASS" : "HOLD USE  ·  BREAK GLASS";
             LayoutLegendRow(legendA.Rect, legendATextMove, legendATextDrag, legendATextSprint);
             LayoutLegendRow(legendB.Rect, legendBTextUse, legendBTextHold);
@@ -1031,7 +1047,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             if (size.x > 0f) pair.Value.Rect.sizeDelta = size;
             var pressed = controls.PressedButton == pair.Key;
             pair.Value.Scale.To(pressed ? .94f : 1f, Dur(pressed ? .07f : .16f), pressed ? Ease.OutCubic : Ease.OutBackSoft);
-            chipFills[pair.Key].color = pressed ? Color.Lerp(Accent, Ink, .08f) : Accent;
+            chipFills[pair.Key].color = DarkChip(pair.Key) ? (pressed ? Color.Lerp(CardColor, Paper, .12f) : CardColor)
+                : (pressed ? Color.Lerp(Accent, Ink, .08f) : Accent);
         }
         Place(caughtTitle, L.FromMaster(437f, 64f));
         for (var i = 0; i < 4; i++)

@@ -376,7 +376,7 @@ if __name__ == "__main__":
                            "Not in main yet: the interactables merge copies them over main's Kit_* FBX/JSON and keeps main's .meta GUIDs. "
                            "7 FBX are content-identical to main (timestamp only). Sidecars/FBX path in the project: Assets/Resources/Props/Models." % payload,
                     materials="Assets/Resources/Surfaces/<slot>.mat (the kit library remaps every FBX slot to it). Missing (P-4, render with the FBX preview colour): Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved.",
-                    renderClone="W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time",
+                    renderClone="W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time (01:3x). Main then auto-committed bc0aa79 (01:47): new placard kits and materials and a FrontRoomsKitLibrary refactor; no interactables Kit_* file and none of their slot materials changed.",
                     renderer="FrontRoomsThreeView (clone version) with -threeViewOversample 1 -threeViewMaxPpm 2000; copy: threeview/FrontRoomsThreeView.handoff.cs.txt"),
         notIncluded=dict(
             hinges="No separate hinge asset: the 5-knuckle butt hinges are merged into the meshes (frame halves = knuckles 1, 3, 5 in Kit_DoorFrame_*; leaf halves = knuckles 2, 4 in Kit_DoorLeaf_*), on the A2 axis (0.0295, y, 0.0098).",

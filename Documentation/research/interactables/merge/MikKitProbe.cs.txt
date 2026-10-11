@@ -1,0 +1,124 @@
+// CLONE-ONLY (interactables-kit merge stage, 2026-10-08). Never promoted. ASCII only, no tuples.
+// For every Kit_* sidecar under Resources/Props/Models whose name is in the interactables list, loads the imported
+// model as Unity sees it and writes one TSV row: LOD switch / cull distances (lodBias 1, FOV 76) vs the sidecar,
+// triangles per LOD vs the sidecar, the materials on the renderers (project surface or FBX fallback), and any
+// Collider / Light / non-LOD renderer. Output: <clone>/Verification/mik/kit_probe.tsv + a VERDICT line in the log.
+// Run: Unity -batchmode -quit -projectPath <clone> -buildTarget OSXUniversal -executeMethod MikKitProbe.Run
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public static class MikKitProbe
+{
+    [Serializable]
+    class Side
+    {
+        public float[] lodDistances;
+        public int triangles;
+        public int trianglesLod1;
+        public string[] slots;
+    }
+
+    static readonly string[] Prefixes = { "Kit_Door", "Kit_Lock_", "Kit_Key", "Kit_WindowFrame_", "Kit_MiniBlind_", "Kit_ExitDevice_" };
+
+    static string F(float v) { return v.ToString("0.00", CultureInfo.InvariantCulture); }
+
+    static int Tris(Renderer r)
+    {
+        var mf = r.GetComponent<MeshFilter>();
+        if (mf == null || mf.sharedMesh == null) return 0;
+        var m = mf.sharedMesh;
+        var n = 0;
+        for (var i = 0; i < m.subMeshCount; i++) n += (int)m.GetIndexCount(i) / 3;
+        return n;
+    }
+
+    public static void Run()
+    {
+        var root = Directory.GetParent(Application.dataPath).FullName;
+        var outDir = Path.Combine(root, "Verification", "mik");
+        Directory.CreateDirectory(outDir);
+        var sb = new StringBuilder();
+        sb.AppendLine("name\thasLOD\td01_unity\tdcull_unity\td01_side\tdcull_side\tlod_ok\ttris0_unity\ttris1_unity\ttris0_side\ttris1_side\ttris_ok\tmaterials\tfallback_slots\tcolliders\tlights\tstray_renderers");
+        var tanHalf = Mathf.Tan(38f * Mathf.Deg2Rad);
+        int rows = 0, bad = 0;
+        var dir = Path.Combine(Application.dataPath, "Resources/Props/Models");
+        var files = Directory.GetFiles(dir, "Kit_*.json");
+        Array.Sort(files, StringComparer.Ordinal);
+        foreach (var f in files)
+        {
+            var name = Path.GetFileNameWithoutExtension(f);
+            var take = false;
+            foreach (var p in Prefixes) if (name.StartsWith(p, StringComparison.Ordinal)) take = true;
+            if (name == "Kit_Keyboard" || name.StartsWith("Kit_DoorwayStuds", StringComparison.Ordinal)) take = false;
+            if (!take) continue;
+            var side = JsonUtility.FromJson<Side>(File.ReadAllText(f));
+            var go = Resources.Load<GameObject>("Props/Models/" + name);
+            if (go == null) { sb.AppendLine(name + "\tMISSING MODEL"); bad++; rows++; continue; }
+            var g = go.GetComponent<LODGroup>();
+            string d01u = "-", dcu = "-";
+            var lodOk = true;
+            int t0 = 0, t1 = 0;
+            var lodRenderers = new HashSet<Renderer>();
+            if (g != null)
+            {
+                var lods = g.GetLODs();
+                for (var i = 0; i < lods.Length; i++)
+                {
+                    foreach (var r in lods[i].renderers)
+                    {
+                        if (r == null) continue;
+                        lodRenderers.Add(r);
+                        if (i == 0) t0 += Tris(r); else if (i == 1) t1 += Tris(r);
+                    }
+                }
+                Func<float, float> dist = h => h > 0f ? g.size / (2f * h * tanHalf) : -1f;
+                var a = dist(lods[0].screenRelativeTransitionHeight);
+                var c = dist(lods[lods.Length - 1].screenRelativeTransitionHeight);
+                d01u = F(a);
+                dcu = c < 0f ? "never" : F(c);
+                if (side.lodDistances != null && side.lodDistances.Length >= 2)
+                {
+                    var want01 = side.lodDistances[0];
+                    var wantC = side.lodDistances[side.lodDistances.Length - 1];
+                    if (Mathf.Abs(a - want01) > .02f) lodOk = false;
+                    if (wantC > 0f ? Mathf.Abs(c - wantC) > .05f : c >= 0f) lodOk = false;
+                }
+            }
+            else lodOk = side.lodDistances == null;
+            var all = go.GetComponentsInChildren<Renderer>(true);
+            var stray = 0;
+            if (g == null) foreach (var r in all) t0 += Tris(r);
+            else foreach (var r in all) if (!lodRenderers.Contains(r)) stray++;
+            var trisOk = t0 == side.triangles && (side.trianglesLod1 == 0 || g == null || t1 == side.trianglesLod1);
+            var mats = new SortedSet<string>(StringComparer.Ordinal);
+            var fallback = new SortedSet<string>(StringComparer.Ordinal);
+            foreach (var r in all)
+                foreach (var m in r.sharedMaterials)
+                {
+                    if (m == null) { fallback.Add("NULL"); continue; }
+                    var path = AssetDatabase.GetAssetPath(m);
+                    if (path.StartsWith("Assets/Resources/Surfaces/", StringComparison.Ordinal)) mats.Add(m.name);
+                    else { mats.Add(m.name + "(fbx)"); fallback.Add(m.name); }
+                }
+            var cols = go.GetComponentsInChildren<Collider>(true).Length;
+            var lights = go.GetComponentsInChildren<Light>(true).Length;
+            var rowOk = lodOk && trisOk && cols == 0 && lights == 0 && stray == 0;
+            if (!rowOk) bad++;
+            rows++;
+            var s01 = side.lodDistances != null && side.lodDistances.Length > 0 ? F(side.lodDistances[0]) : "-";
+            var sc = side.lodDistances != null && side.lodDistances.Length > 0 ? (side.lodDistances[side.lodDistances.Length - 1] > 0f ? F(side.lodDistances[side.lodDistances.Length - 1]) : "never") : "-";
+            sb.AppendLine(string.Join("\t", new[] {
+                name, g != null ? "yes" : "no", d01u, dcu, s01, sc, lodOk ? "ok" : "BAD",
+                t0.ToString(), g != null ? t1.ToString() : "-", side.triangles.ToString(), side.trianglesLod1.ToString(), trisOk ? "ok" : "BAD",
+                string.Join(",", mats), string.Join(",", fallback), cols.ToString(), lights.ToString(), stray.ToString() }));
+        }
+        File.WriteAllText(Path.Combine(outDir, "kit_probe.tsv"), sb.ToString());
+        Debug.Log("[MikKitProbe] VERDICT " + (bad == 0 ? "PASS" : "FAIL") + ": " + rows + " kits, " + bad + " bad (LOD distance, tris, collider, light or stray renderer)");
+        if (Application.isBatchMode) EditorApplication.Exit(0);
+    }
+}

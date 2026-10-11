@@ -1,0 +1,25 @@
+[WindowTF kitoff] seed 20261001: LOD0 tris per room (dressing): max Office 60646 / 120000, max other 9196 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 516574485: LOD0 tris per room (dressing): max Office 14730 / 120000, max other 37632 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 4242: LOD0 tris per room (dressing): max Office 54140 / 120000, max other 46712 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 1990: LOD0 tris per room (dressing): max Office 54620 / 120000, max other 2658 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 7: LOD0 tris per room (dressing): max Office 59410 / 120000, max other 9196 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 1955: LOD0 tris per room (dressing): max Office 13942 / 120000, max other 9196 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 1993: LOD0 tris per room (dressing): max Office 60206 / 120000, max other 2658 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 8086: LOD0 tris per room (dressing): max Office 3438 / 120000, max other 2658 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 6502: LOD0 tris per room (dressing): max Office 85556 / 120000, max other 9196 / 60000, rooms over budget 0
+[WindowTF kitoff] seed 68000: LOD0 tris per room (dressing): max Office 0 / 120000, max other 2658 / 60000, rooms over budget 0
+[WindowTF kitoff] VERDICT kitoff PASS: 8847 passed, 0 failed
+[WindowTF kitthrow] VERDICT kitthrow PASS: 307 passed, 0 failed
+[WindowTF kit] per window W-L0: renderers 1 submeshes 2 shadowRenderers 1 shadowSubmeshes 2 transparent 0 lights 0 tris 2322 lod1Renderers 1 lod1Tris 1044
+[WindowTF kit] seed 20261001: LOD0 tris per room (dressing + frames): max Office 60646 / 120000, max other 11610 / 60000, rooms over budget 0; frames counted on both sides: max Office 60646, max other 20898, over 0; most frame tris in one room: (1, -2)/-: dressing 0 + 5 frames 11610 = 11610
+[WindowTF kit] per window W-OF: renderers 1 submeshes 2 shadowRenderers 1 shadowSubmeshes 2 transparent 0 lights 0 tris 4054 lod1Renderers 1 lod1Tris 1458
+[WindowTF kit] seed 516574485: LOD0 tris per room (dressing + frames): max Office 16216 / 120000, max other 37632 / 60000, rooms over budget 0; frames counted on both sides: max Office 28378, max other 37632, over 0; most frame tris in one room: (2, 1)/-: dressing 0 + 7 frames 19718 = 19718
+[WindowTF kit] seed 4242: LOD0 tris per room (dressing + frames): max Office 54140 / 120000, max other 46712 / 60000, rooms over budget 0; frames counted on both sides: max Office 54140, max other 46712, over 0; most frame tris in one room: (1, 2)/-: dressing 0 + 5 frames 15074 = 15074
+[WindowTF kit] seed 1990: LOD0 tris per room (dressing + frames): max Office 54620 / 120000, max other 16254 / 60000, rooms over budget 0; frames counted on both sides: max Office 54620, max other 39474, over 0; most frame tris in one room: (2, -1)/0: dressing 0 + 7 frames 16254 = 16254
+[WindowTF kit] seed 7: LOD0 tris per room (dressing + frames): max Office 59410 / 120000, max other 9288 / 60000, rooms over budget 0; frames counted on both sides: max Office 59410, max other 20898, over 0; most frame tris in one room: (-1, 1)/- (Office): dressing 0 + 6 frames 17396 = 17396
+[WindowTF kit] seed 1955: LOD0 tris per room (dressing + frames): max Office 13942 / 120000, max other 18576 / 60000, rooms over budget 0; frames counted on both sides: max Office 13942, max other 39474, over 0; most frame tris in one room: (-1, 0)/-: dressing 0 + 8 frames 18576 = 18576
+[WindowTF kit] seed 1993: LOD0 tris per room (dressing + frames): max Office 60206 / 120000, max other 23772 / 60000, rooms over budget 0; frames counted on both sides: max Office 60206, max other 47544, over 0; most frame tris in one room: (-2, 1)/-: dressing 0 + 8 frames 23772 = 23772
+[WindowTF kit] seed 8086: LOD0 tris per room (dressing + frames): max Office 13342 / 120000, max other 21450 / 60000, rooms over budget 0; frames counted on both sides: max Office 26684, max other 38846, over 0; most frame tris in one room: (1, -1)/-: dressing 0 + 7 frames 21450 = 21450
+[WindowTF kit] seed 6502: LOD0 tris per room (dressing + frames): max Office 85556 / 120000, max other 20270 / 60000, rooms over budget 0; frames counted on both sides: max Office 85556, max other 49238, over 0; most frame tris in one room: (-2, 2)/0: dressing 0 + 5 frames 20270 = 20270
+[WindowTF kit] seed 68000: LOD0 tris per room (dressing + frames): max Office 0 / 120000, max other 13932 / 60000, rooms over budget 0; frames counted on both sides: max Office 0, max other 32508, over 0; most frame tris in one room: (-2, 0)/0: dressing 0 + 6 frames 13932 = 13932
+[WindowTF kit] VERDICT kit PASS: 20391 passed, 0 failed

@@ -1,0 +1,286 @@
+// CLONE-ONLY harness (codex audit, fix group kits+window, 2026-10-08). Never merge into Red's project.
+// Entry: -executeMethod CxFixKwLeak.RunBatch -cxLabel <name>   (Play mode; exits Unity by itself; no -quit)
+// 1. F1 check: reads the LODGroup that the CURRENT FrontRoomsKitImporter left on every Kit_*.fbx (no re-import)
+//    and compares each switch height with the sidecar's lodDistances (last level = last entry; <= 0 or null = never).
+// 2. COV-5 check: compiles FrontRooms/ScreenVideo (and URP/Unlit's Unlit pass, the F6 template's shader) for
+//    WebGL 2 (GLES3x), WebGPU, Metal, D3D and Vulkan.
+// 3. COV-4 check: in an empty Play-mode scene, spawns 20 Kit_CRTMonitor + FrontRoomsScreenVideo.Attach, destroys
+//    them, three cycles; then a second screen size; then Resources.UnloadUnusedAssets and one more spawn. After each
+//    step it counts the live meshes named "FrontRooms CRT screen quad".
+// Output: <clone>/Verification/cx_fix_kw/{lod_<label>.txt, shader_<label>.txt, leak_<label>.txt}
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+[InitializeOnLoad]
+public static class CxFixKwLeak
+{
+    const string ActiveKey = "CxFixKw.Leak.Active";
+    const string LabelKey = "CxFixKw.Leak.Label";
+    const string DeadlineKey = "CxFixKw.Leak.Deadline";
+    const string QuadName = "FrontRooms CRT screen quad";
+    const BindingFlags IF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly List<GameObject> spawned = new List<GameObject>();
+    static int phase, cycle, waitFrames;
+    static AsyncOperation unload;
+
+    static string OutDir
+    {
+        get { var d = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "cx_fix_kw"); Directory.CreateDirectory(d); return d; }
+    }
+
+    static string Label => SessionState.GetString(LabelKey, "run");
+
+    static CxFixKwLeak()
+    {
+        if (!SessionState.GetBool(ActiveKey, false)) return;
+        EditorApplication.update += Tick;
+    }
+
+    static string Arg(string name)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+        return null;
+    }
+
+    public static void RunBatch()
+    {
+        SessionState.SetString(LabelKey, Arg("-cxLabel") ?? "run");
+        try { LodReadout(); } catch (Exception e) { File.WriteAllText(Path.Combine(OutDir, "lod_" + Label + ".txt"), "LOD readout threw: " + e); }
+        try { ShaderCompile(); } catch (Exception e) { File.WriteAllText(Path.Combine(OutDir, "shader_" + Label + ".txt"), "Shader compile threw: " + e); }
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        SessionState.SetBool(ActiveKey, true);
+        SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + 1800f);
+        EditorApplication.update -= Tick;
+        EditorApplication.update += Tick;
+        Debug.Log("[CxFixKw] entering Play mode for the CRT quad leak check (" + Label + ")");
+        EditorApplication.EnterPlaymode();
+    }
+
+    // ---------------------------------------------------------------- F1: imported LOD heights vs sidecars
+    static void LodReadout()
+    {
+        var sb = new StringBuilder();
+        var tan = Mathf.Tan(38f * Mathf.Deg2Rad);
+        sb.AppendLine("# F1 kit LOD readout (" + Label + ", " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "), no re-import: what the clone's Library holds from FrontRoomsKitImporter");
+        sb.AppendLine("# distances at vFOV 76 and lodBias 1 (Editor High). Expected: level i < last takes lodDistances[i]; the last level takes the LAST entry (<= 0 or null = never culled)");
+        int checkedKits = 0, pass = 0, fail = 0, noSidecarDist = 0;
+        foreach (var path in Directory.GetFiles("Assets/Resources/Props/Models", "Kit_*.fbx").OrderBy(p => p))
+        {
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var name = Path.GetFileNameWithoutExtension(path);
+            if (go == null) { sb.AppendLine(name + ": not loadable"); continue; }
+            var g = go.GetComponent<LODGroup>();
+            var sidecar = Path.ChangeExtension(path, ".json");
+            FrontRoomsKitLibrary.Info info = null;
+            if (File.Exists(sidecar)) info = JsonUtility.FromJson<FrontRoomsKitLibrary.Info>(File.ReadAllText(sidecar));
+            var d = info?.lodDistances;
+            if (g == null) continue;
+            var lods = g.GetLODs();
+            var line = new StringBuilder(name + ": size " + g.size.ToString("0.000") + ", " + lods.Length + " LODs, sidecar [" + (d == null ? "none" : string.Join(", ", d.Select(x => x.ToString("0.##")))) + "]");
+            var ok = true;
+            for (var i = 0; i < lods.Length; i++)
+            {
+                var h = lods[i].screenRelativeTransitionHeight;
+                var dist = h > 0f ? g.size / (2f * h * tan) : float.PositiveInfinity;
+                line.Append(" | LOD" + i + (i == lods.Length - 1 ? " cull" : " ends") + " h " + h.ToString("0.0000") + " = " + (float.IsInfinity(dist) ? "never" : dist.ToString("0.0") + " m"));
+                if (d != null && d.Length >= lods.Length)
+                {
+                    var last = lods.Length - 1;
+                    var want = i == last ? d[d.Length - 1] : d[i];
+                    var wantH = want > 0f ? g.size / (2f * want * tan) : (i == last ? 0f : h);
+                    if (Mathf.Abs(wantH - h) > 1e-4f) { ok = false; line.Append(" (WANT h " + wantH.ToString("0.0000") + ")"); }
+                }
+            }
+            checkedKits++;
+            if (d == null || d.Length < lods.Length) { noSidecarDist++; line.Append(" | default spec (no 3-entry sidecar)"); }
+            else if (ok) pass++; else fail++;
+            sb.AppendLine((d != null && d.Length >= lods.Length ? (ok ? "PASS " : "FAIL ") : "---- ") + line);
+        }
+        sb.AppendLine("# kits with a LODGroup: " + checkedKits + ", sidecar-driven PASS " + pass + ", FAIL " + fail + ", default-spec " + noSidecarDist);
+        File.WriteAllText(Path.Combine(OutDir, "lod_" + Label + ".txt"), sb.ToString());
+        Debug.Log("[CxFixKw] LOD readout: PASS " + pass + ", FAIL " + fail);
+    }
+
+    // ---------------------------------------------------------------- COV-5: shader compiles per platform
+    static void ShaderCompile()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("# COV-5 shader compile check (" + Label + ")");
+        var platformNames = new[] { "GLES3x", "WebGPU", "Metal", "Metal", "D3D", "Vulkan" };
+        var platformTargets = new[] { BuildTarget.WebGL, BuildTarget.WebGL, BuildTarget.StandaloneOSX, BuildTarget.iOS, BuildTarget.StandaloneWindows64, BuildTarget.StandaloneLinux64 };
+        var shaderNames = new[] { "FrontRooms/ScreenVideo", "Universal Render Pipeline/Unlit" };
+        var passNames = new[] { (string)null, "Unlit" };
+        var keywordSetsPerShader = new[]
+        {
+            new[] { new string[0] },
+            new[] { new string[0], new[] { "FOG_EXP2" }, new[] { "FOG_EXP2", "_SCREEN_SPACE_OCCLUSION" } },
+        };
+        int ok = 0, bad = 0;
+        for (var shaderIndex = 0; shaderIndex < shaderNames.Length; shaderIndex++)
+        {
+            var shaderName = shaderNames[shaderIndex];
+            var passName = passNames[shaderIndex];
+            var keywordSets = keywordSetsPerShader[shaderIndex];
+            var shader = Shader.Find(shaderName);
+            if (shader == null) { sb.AppendLine(shaderName + ": NOT FOUND"); bad++; continue; }
+            var data = ShaderUtil.GetShaderData(shader);
+            ShaderData.Pass pass = null;
+            for (var si = 0; si < data.SubshaderCount && pass == null; si++)
+            {
+                var sub = data.GetSubshader(si);
+                for (var pi = 0; pi < sub.PassCount; pi++)
+                    if (passName == null || sub.GetPass(pi).Name == passName) { pass = sub.GetPass(pi); sb.AppendLine(shaderName + ": subshader " + si + ", pass '" + pass.Name + "'"); break; }
+            }
+            if (pass == null) { sb.AppendLine(shaderName + ": pass not found"); bad++; continue; }
+            for (var pIndex = 0; pIndex < platformNames.Length; pIndex++)
+            {
+                var platformName = platformNames[pIndex];
+                var target = platformTargets[pIndex];
+                if (!Enum.TryParse<UnityEditor.Rendering.ShaderCompilerPlatform>(platformName, out var platform)) { sb.AppendLine(shaderName + " " + platformName + ": platform enum missing in this Unity"); continue; }
+                foreach (var keywords in keywordSets)
+                foreach (var stage in new[] { UnityEditor.Rendering.ShaderType.Vertex, UnityEditor.Rendering.ShaderType.Fragment })
+                {
+                    string result;
+                    try
+                    {
+                        var info = pass.CompileVariant(stage, keywords, platform, target);
+                        var errors = info.Messages.Where(x => x.severity == UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error).Select(x => x.message + " (line " + x.line + ")").ToArray();
+                        if (info.Success) ok++; else bad++;
+                        result = (info.Success ? "OK" : "FAILED") + ", " + (info.ShaderData != null ? info.ShaderData.Length : 0) + " bytes" + (errors.Length > 0 ? " ERRORS: " + string.Join(" | ", errors) : "");
+                    }
+                    catch (Exception e) { bad++; result = "THREW " + e.GetType().Name + ": " + e.Message; }
+                    sb.AppendLine(shaderName + " " + platformName + "/" + target + " " + stage + " [" + string.Join(" ", keywords) + "]: " + result);
+                }
+            }
+        }
+        sb.AppendLine("# OK " + ok + ", failed " + bad);
+        File.WriteAllText(Path.Combine(OutDir, "shader_" + Label + ".txt"), sb.ToString());
+        Debug.Log("[CxFixKw] shader compile: OK " + ok + ", failed " + bad);
+    }
+
+    // ---------------------------------------------------------------- COV-4: Play-mode spawn / destroy cycles
+    static GameObject SpawnMonitor(int i)
+    {
+        var go = FrontRoomsKitLibrary.Spawn("Kit_CRTMonitor", null, new Vector3(i * .8f, 0f, 0f), 0f);
+        if (go == null) go = new GameObject("monitor stand-in " + i);
+        FrontRoomsScreenVideo.Attach(go);
+        return go;
+    }
+
+    static void Count(string step)
+    {
+        var meshes = Resources.FindObjectsOfTypeAll<Mesh>().Where(m => m != null && m.name == QuadName).ToArray();
+        var screens = UnityEngine.Object.FindObjectsByType<FrontRoomsScreenVideo>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var field = typeof(FrontRoomsScreenVideo).GetField("surfaceObject", IF);
+        int withSurface = 0; var used = new HashSet<int>(); var shaders = new HashSet<string>();
+        foreach (var s in screens)
+        {
+            var so = field != null ? field.GetValue(s) as GameObject : null;
+            if (so == null) continue;
+            withSurface++;
+            var mf = so.GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null) used.Add(mf.sharedMesh.GetInstanceID());
+            var mr = so.GetComponent<MeshRenderer>();
+            if (mr != null && mr.sharedMaterial != null) shaders.Add(mr.sharedMaterial.shader.name);
+        }
+        log.AppendLine(step + "\tquad_meshes_alive " + meshes.Length + "\tscreens " + screens.Length + "\twith_surface " + withSurface + "\tdistinct_meshes_in_use " + used.Count + "\tshaders [" + string.Join(", ", shaders) + "]");
+    }
+
+    static void Describe(GameObject monitor)
+    {
+        var field = typeof(FrontRoomsScreenVideo).GetField("surfaceObject", IF);
+        var s = monitor != null ? monitor.GetComponent<FrontRoomsScreenVideo>() : null;
+        var so = s != null && field != null ? field.GetValue(s) as GameObject : null;
+        var mf = so != null ? so.GetComponent<MeshFilter>() : null;
+        if (mf == null || mf.sharedMesh == null) { log.AppendLine("quad: none"); return; }
+        var m = mf.sharedMesh;
+        log.AppendLine("quad geometry: name '" + m.name + "', verts [" + string.Join(" ", m.vertices.Select(v => v.ToString("F4"))) + "], uv [" + string.Join(" ", m.uv.Select(v => v.ToString("F1")))
+            + "], tris [" + string.Join(",", m.triangles) + "], normals [" + string.Join(" ", m.normals.Select(v => v.ToString("F2"))) + "], bounds " + m.bounds + ", readable " + m.isReadable
+            + ", local pos " + so.transform.localPosition.ToString("F4") + ", collider " + (so.GetComponent<BoxCollider>() != null));
+    }
+
+    static void Finish(int code)
+    {
+        log.Insert(0, "# COV-4 CRT quad leak check (" + Label + ", " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + ")\n");
+        File.WriteAllText(Path.Combine(OutDir, "leak_" + Label + ".txt"), log.ToString());
+        Debug.Log("[CxFixKw] leak check done (" + Label + ")\n" + log);
+        SessionState.EraseBool(ActiveKey);
+        EditorApplication.update -= Tick;
+        EditorApplication.Exit(code);
+    }
+
+    static void Tick()
+    {
+        if (EditorApplication.timeSinceStartup > SessionState.GetFloat(DeadlineKey, float.MaxValue)) { log.AppendLine("TIMEOUT in phase " + phase); Finish(2); return; }
+        if (!EditorApplication.isPlaying) return;
+        if (waitFrames > 0) { waitFrames--; return; }
+        try
+        {
+            switch (phase)
+            {
+                case 0:
+                    Count("start (empty scene)");
+                    phase = 1; break;
+                case 1:
+                    for (var i = 0; i < 20; i++) spawned.Add(SpawnMonitor(i));
+                    Count("cycle " + (cycle + 1) + ": 20 monitors spawned");
+                    if (cycle == 0) Describe(spawned[0]);
+                    waitFrames = 2; phase = 2; break;
+                case 2:
+                    foreach (var go in spawned) if (go != null) UnityEngine.Object.Destroy(go);
+                    spawned.Clear();
+                    waitFrames = 2; phase = 3; break;
+                case 3:
+                    Count("cycle " + (cycle + 1) + ": all destroyed, +2 frames");
+                    cycle++;
+                    phase = cycle < 3 ? 1 : 4; break;
+                case 4:
+                {
+                    // a second screen size: an inactive object defers Awake until the field is set
+                    spawned.Add(SpawnMonitor(0));
+                    var go = new GameObject("monitor 30x20");
+                    go.SetActive(false);
+                    var s = go.AddComponent<FrontRoomsScreenVideo>();
+                    typeof(FrontRoomsScreenVideo).GetField("screenSize", IF).SetValue(s, new Vector2(.30f, .20f));
+                    go.SetActive(true);
+                    spawned.Add(go);
+                    Count("two sizes live (0.28x0.19 + 0.30x0.20)");
+                    waitFrames = 2; phase = 5; break;
+                }
+                case 5:
+                    foreach (var go in spawned) if (go != null) UnityEngine.Object.Destroy(go);
+                    spawned.Clear();
+                    waitFrames = 2; phase = 6; break;
+                case 6:
+                    Count("two sizes destroyed, +2 frames");
+                    unload = Resources.UnloadUnusedAssets();
+                    phase = 7; break;
+                case 7:
+                    if (unload != null && !unload.isDone) return;
+                    Count("after Resources.UnloadUnusedAssets");
+                    spawned.Add(SpawnMonitor(0));
+                    Count("one monitor spawned after the unload (rebuilt quad)");
+                    Describe(spawned[0]);
+                    waitFrames = 2; phase = 8; break;
+                case 8:
+                    foreach (var go in spawned) if (go != null) UnityEngine.Object.Destroy(go);
+                    spawned.Clear();
+                    waitFrames = 2; phase = 9; break;
+                case 9:
+                    Count("end");
+                    Finish(0); break;
+            }
+        }
+        catch (Exception e) { log.AppendLine("EXCEPTION in phase " + phase + ": " + e); Finish(3); }
+    }
+}

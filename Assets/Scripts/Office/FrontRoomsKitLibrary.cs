@@ -226,6 +226,11 @@ public static class FrontRoomsKitLibrary
         if (current.x != s.x || current.y != s.y || current.z != s.z) t.localScale = s;
         ApplyMaterials(assetName, model, instance);
         if (colliders) AddColliders(assetName, model, instance);
+        // EXIT signs carry their own lamp driver (research/exit_sign/10_spec.md §8.6), so a
+        // map-module or facade spawn gets a working sign with no map edit.
+        var info = GetInfo(assetName);
+        if (info != null && info.HasTag("exit_sign") && instance.GetComponent<FrontRoomsExitSign>() == null)
+            instance.AddComponent<FrontRoomsExitSign>();
         return instance;
     }
 

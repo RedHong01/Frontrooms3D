@@ -9,7 +9,15 @@ A framed 1990 US evacuation plan for the start door: 432 × 279 mm (17 × 11 in,
 | `placard_lit_preview.png`, `placard_dark_preview.png` | Review renders at 3 px/mm |
 | `placard.swift` | The generator: `swiftc -O placard.swift -o placard_gen && ./placard_gen <outdir> [legend dir]` |
 | `legend_swatches.py`, `legend/` | The v2 legend swatches and masks (see below) |
+| `v2/` | The 2026-10-07 version (legend swatches in the WP03 reference palette) |
 | `v1/` | The 2026-10-03 version |
+
+**v3 (2026-10-08):** the legend swatches now print in the colours the game prints WP03 with, so the legend reads as the wall's own paper.
+- The pipeline is unchanged; only the palette remap moved into `legend_swatches.py` (adopted from 游戏视觉's Q16 candidate, `Documentation/research/placard/42_request_graphic.md`).
+- `--reference` brings back the v2 palette.
+- The output is byte-identical to the candidate (md5 5f71409a…).
+- The glow mask is unchanged.
+- Dark legibility is 1.37× / 1.32× (P1 / P2), still above the 1.30 floor.
 
 **System, shared with the wall ink.**
 - **Face:** TeX Gyre Heros Bold (Helvetica Bold stand-in), caps.

@@ -1,16 +1,17 @@
 {
  "schema": "frontrooms.kit-sheets.interactables/1",
- "generated": "2026-10-08T01:18:42-07:00",
- "by": "visual chat (游戏视觉), Q16 fix stage, for 平面视觉's K-sheets",
+ "generated": "2026-10-08T19:32:00-07:00",
+ "by": "visual chat (游戏视觉), Q16 art v3 re-render, for 平面视觉's K-sheets",
  "figma": {
   "file": "0tCbAiVUlrPId3RWd9LRif",
   "page": "2099:76",
-  "propKitSection": "2324:852 (平面视觉, read-only for us)"
+  "propKitSection": "2324:852 (平面视觉, read-only for us)",
+  "placed": "K81 · Evacuation plan 2948:6863 (平面视觉, 2026-10-08), right of K80 at (2160, 24960); slots front 2948:6901, side 2948:6902, top 2948:6903, persp 2948:6882; the sheet lede drops \"1 in clear-anodised\" (two-line limit), the text here is unchanged"
  },
  "source": {
-  "models": "Kit_EvacPlacard / Kit_EvacPlacardLens rebuilt 2026-10-08 from Tools/Blender/frontrooms_kit/assets/evac_placard*.py (fix stage: frame slot Prop_AluminiumAnodised) into the clone W/proj_placard_fix (main 22bb75f + the Q16 package); art v2 (2026-10-07) packed to 4096 x 2048",
-  "renderClone": "W/proj_placard_fix",
-  "renderer": "W/tools FrontRoomsThreeView (interactables version), via FrontRoomsPlacardLookdev -placardThreeView",
+  "models": "Kit_EvacPlacard / Kit_EvacPlacardLens as merged in main (Q16 package, main bc0aa79 working tree as of 2026-10-08 19:29); art v3 (2026-10-08, 平面视觉's mustard wallpaper swatches) packed to 4096 x 2048, Resources/Surfaces/Textures/Prop_EvacPlan_A.png sha1 37a86ae7",
+  "renderClone": "W/placard_v3_2 (mkclone.sh; moved to W/_partial/placard_v3_2 after the run)",
+  "renderer": "W/tools FrontRoomsThreeView (interactables version): FrontRoomsThreeView.RunBatch -threeViewOnly Kit_EvacPlacard,Kit_EvacPlacardLens -frGlassRT off, the same tool and settings the fix stage reached through FrontRoomsPlacardLookdev -placardThreeView",
   "manifest": "png/manifest.json"
  },
  "conventions": {
@@ -93,8 +94,8 @@
      "name": "Prop_EvacPlan",
      "slot": "Prop_EvacPlan",
      "label": "Printed plan (paper)",
-     "hex": "#e9dfd8",
-     "source": "Resources/Surfaces/Prop_EvacPlan.mat: mean of Prop_EvacPlan_A.png (art v2, 4096 x 2048) x _BaseColor white (tint sRGB->linear, product -> sRGB)"
+     "hex": "#e7ded4",
+     "source": "Resources/Surfaces/Prop_EvacPlan.mat: mean of Prop_EvacPlan_A.png (art v3, 4096 x 2048) x _BaseColor white (tint sRGB->linear, product -> sRGB)"
     },
     {
      "name": "Prop_EvacPlan (glow)",
@@ -152,8 +153,7 @@
      30.0
     ],
     "note": "LOD1 106 and LOD2 26 tris are built and reviewed; the FBX holds LOD0 until kitlib.make_lods (P-1) lands"
-   },
-   "pending": "The legend swatches are in the WP03 reference colourway (pink/grey); 平面视觉 has a request to redraw them in the game colourway (placard 42_request_graphic.md). Re-render this sheet if the art changes."
+   }
   }
  ],
  "kits": {
@@ -215,8 +215,8 @@
      "name": "Prop_EvacPlan",
      "slot": "Prop_EvacPlan",
      "label": "Printed plan (paper)",
-     "hex": "#e9dfd8",
-     "source": "Resources/Surfaces/Prop_EvacPlan.mat: mean of Prop_EvacPlan_A.png (art v2, 4096 x 2048) x _BaseColor white (tint sRGB->linear, product -> sRGB)"
+     "hex": "#e7ded4",
+     "source": "Resources/Surfaces/Prop_EvacPlan.mat: mean of Prop_EvacPlan_A.png (art v3, 4096 x 2048) x _BaseColor white (tint sRGB->linear, product -> sRGB)"
     },
     {
      "name": "Prop_EvacPlan (glow)",

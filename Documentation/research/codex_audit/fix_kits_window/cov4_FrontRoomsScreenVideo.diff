@@ -1,0 +1,21 @@
+--- codex_audit_kits_window_base/Assets/Scripts/Media/FrontRoomsScreenVideo.cs	2026-10-08 16:41:14
++++ codex_audit_kits_window_payload/Assets/Scripts/Media/FrontRoomsScreenVideo.cs	2026-10-08 19:48:15
+@@ -181,9 +181,18 @@
+         surfaceCollider.center = new Vector3(0f, 0f, .002f);
+     }
+ 
++    // Every monitor of one screen size shares one quad (codex audit COV-4).
++    // A new Mesh per monitor was never destroyed, so each Office chunk
++    // teardown leaked one per CRT. Never destroy the shared quad per screen.
++    // If something else destroys it, the Unity null check builds a new one.
++    static readonly Dictionary<Vector2, Mesh> SharedQuads = new Dictionary<Vector2, Mesh>();
++
+     static Mesh MakeQuad(float width, float height)
+     {
++        var key = new Vector2(width, height);
++        if (SharedQuads.TryGetValue(key, out var shared) && shared != null) return shared;
+         var mesh = new Mesh { name = "FrontRooms CRT screen quad" };
++        SharedQuads[key] = mesh;
+         var x = width * .5f;
+         var y = height * .5f;
+         mesh.vertices = new[]

@@ -36,6 +36,13 @@ Shader "FrontRooms/Surface"
         _EmissionMap ("Emission", 2D) = "white" {}
         [HDR] _EmissionColor ("Emission colour", Color) = (0, 0, 0, 1)
 
+        // EXIT sign diffusers (research/exit_sign/10_spec.md §7.2): with this on, emission =
+        // dot(field.rgb, _LampField.rgb) * field.a * _EmissionColor (field: R lamp A, G lamp B,
+        // B DC pair, A transmission; linear). FrontRoomsExitSign writes _LampField per renderer.
+        [Toggle(_FR_LAMP_FIELD)] _UseLampField ("Lamp field (exit-sign diffusers)", Float) = 0
+        _LampFieldMap ("Lamp field (R A, G B, B DC, A transmission; linear)", 2D) = "black" {}
+        _LampField ("Lamp weights (A, B, DC, unused)", Vector) = (1, 1, 0, 0)
+
         // Print layer (wallpaper "sandwich", research/wallpaper_motion): with it on, the
         // Albedo slot holds the PAPER modulation (linear, see FR_PAPER_*) and the colour
         // comes from the print: frame 0 below, or the global _FR_Print flipbook.
@@ -86,6 +93,8 @@ Shader "FrontRooms/Surface"
             half4 _InkDeep;
             half4 _InkCream;
             half _PrintAmount;
+            // Exit-sign lamp weights: in every pass, so the SRP batcher layout never changes.
+            float4 _LampField;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -116,6 +125,8 @@ Shader "FrontRooms/Surface"
             // Wallpaper print layer (L0_Wallpaper, L0_Wallpaper_Shift, Exit_Wallpaper). Runtime
             // on/off goes through _FR_PrintClock.w, never through this keyword.
             #pragma shader_feature_local_fragment _FR_PRINT
+            // Exit-sign lamp field (ExitSign_Diffuser only). Off: emission is the plain map, bit-identical.
+            #pragma shader_feature_local_fragment _FR_LAMP_FIELD
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -287,6 +298,13 @@ Shader "FrontRooms/Surface"
                 half3 inkColour = lerp(InkRamp(ink.r), _InkCream.rgb, ink.g * FR_CREAM_MIX);
                 return inkColour * paper.x + FR_TOBACCO_LIN * paper.y + paper.z;
             }
+        #endif
+
+        #if defined(_FR_LAMP_FIELD)
+            // Its own sampler: with the keyword on, _EmissionMap is not sampled, so the
+            // compiler strips it and sampler_EmissionMap no longer exists (HLSLcc error on
+            // Metal). The field map's importer state is clamped, trilinear.
+            TEXTURE2D(_LampFieldMap); SAMPLER(sampler_LampFieldMap);
         #endif
 
         #if defined(_FR_DEBUG_VIEW)
@@ -465,7 +483,12 @@ Shader "FrontRooms/Surface"
                 s.occlusion = cavity;
                 s.alpha = 1;
             #if defined(_EMISSION)
+            #if defined(_FR_LAMP_FIELD)
+                half4 lampField = SAMPLE_TEXTURE2D(_LampFieldMap, sampler_LampFieldMap, uv);
+                s.emission = dot(lampField.rgb, (half3)_LampField.rgb) * lampField.a * _EmissionColor.rgb;
+            #else
                 s.emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;
+            #endif
             #endif
 
             #if defined(_FR_DEBUG_VIEW)

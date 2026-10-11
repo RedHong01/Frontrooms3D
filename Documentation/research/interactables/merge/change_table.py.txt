@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Per-kit change table for the interactables-kit merge: main's sidecar/FBX vs the verified payload.
+Usage: change_table.py <main root> <payload root> <fbx_diff.json> <out.md> <out.json>
+Reads only. Geometry = FBX content state from the fix stage's Blender diff (fbx_diff.json) + sidecar tris;
+materials = sidecar slots; anchors = sidecar anchors (added / removed / moved > 0.1 mm); LOD = lodDistances."""
+import hashlib, json, os, sys
+
+M, P, FD, OUT, OUTJ = sys.argv[1:6]
+MOD = "Assets/Resources/Props/Models"
+fd = json.load(open(FD))
+
+
+def sha(p):
+    return hashlib.sha1(open(p, "rb").read()).hexdigest() if os.path.isfile(p) else None
+
+
+def load(p):
+    return json.load(open(p)) if os.path.isfile(p) else None
+
+
+names = sorted({f[:-5] for f in os.listdir(os.path.join(M, MOD)) if f.endswith(".json")} & set(fd))
+rows, data = [], {}
+for n in names:
+    mj, pj = os.path.join(M, MOD, n + ".json"), os.path.join(P, MOD, n + ".json")
+    mf, pf = os.path.join(M, MOD, n + ".fbx"), os.path.join(P, MOD, n + ".fbx")
+    fbx_promote = os.path.isfile(pf)
+    json_promote = os.path.isfile(pj)
+    a = load(mj)
+    b = load(pj) if json_promote else a
+    tri = lambda d, k: d.get(k) if d else None
+    t0a, t0b = tri(a, "triangles"), tri(b, "triangles")
+    t1a, t1b = tri(a, "trianglesLod1"), tri(b, "trianglesLod1")
+    sa, sb = (a or {}).get("slots") or [], (b or {}).get("slots") or []
+    anA = {x["name"]: x["pos"] for x in (a or {}).get("anchors") or []}
+    anB = {x["name"]: x["pos"] for x in (b or {}).get("anchors") or []}
+    added = sorted(set(anB) - set(anA))
+    removed = sorted(set(anA) - set(anB))
+    moved = sorted(k for k in set(anA) & set(anB) if max(abs(p - q) for p, q in zip(anA[k], anB[k])) > 1e-4)
+    lda, ldb = (a or {}).get("lodDistances"), (b or {}).get("lodDistances")
+    tags_a, tags_b = (a or {}).get("tags") or [], (b or {}).get("tags") or []
+    bmin_a, bmax_a = (a or {}).get("boundsMin"), (a or {}).get("boundsMax")
+    bmin_b, bmax_b = (b or {}).get("boundsMin"), (b or {}).get("boundsMax")
+    bounds_moved = None
+    if bmin_a and bmin_b:
+        bounds_moved = max(abs(p - q) for p, q in zip(bmin_a + bmax_a, bmin_b + bmax_b))
+    st = fd[n]["state"]
+    geo = []
+    if not fbx_promote:
+        geo.append("FBX kept (main's)" + (" — export timestamp only" if st != "SAME" and st != "CHANGED" else ""))
+    else:
+        geo.append("FBX replaced")
+    if t0a != t0b or t1a != t1b:
+        geo.append("tris %s/%s → %s/%s" % (t0a, t1a if t1a is not None else "–", t0b, t1b if t1b is not None else "–"))
+    elif fbx_promote:
+        geo.append("tris %s/%s (same)" % (t0b, t1b if t1b is not None else "–"))
+    if bounds_moved is not None and bounds_moved > 1e-4:
+        geo.append("bounds Δ≤%.1f mm" % (bounds_moved * 1000))
+    mat = "same" if sa == sb else ("%s → %s" % ("+".join(sa), "+".join(sb)))
+    if sa == sb and fbx_promote and n in ("Kit_DoorFrame_Steel",):
+        mat = "slots same; saddle face moved Aluminium→SteelBrown"
+    anc = []
+    if added: anc.append("+" + ",".join(added))
+    if removed: anc.append("−" + ",".join(removed))
+    if moved: anc.append("moved " + ",".join(moved))
+    lod = "same" if lda == ldb else "%s → %s" % (lda, ldb)
+    other = []
+    if set(tags_a) != set(tags_b):
+        other.append("tags +" + ",".join(sorted(set(tags_b) - set(tags_a))) + ("" if not set(tags_a) - set(tags_b) else " −" + ",".join(sorted(set(tags_a) - set(tags_b)))))
+    for k in sorted(set(b or {}) - set(a or {})):
+        other.append("new field " + k)
+    for k in sorted(set(a or {}) - set(b or {})):
+        other.append("dropped field " + k)
+    d = dict(name=n, fbx=("PROMOTE" if fbx_promote else "keep"), json=("PROMOTE" if json_promote else "keep"),
+             fbx_state=st, fbx_why=fd[n].get("why"), tris=[t0a, t1a, t0b, t1b], slots=[sa, sb], anchors=dict(added=added, removed=removed, moved=moved),
+             lod=[lda, ldb], other=other, main_fbx=sha(mf), new_fbx=sha(pf) if fbx_promote else sha(mf),
+             main_json=sha(mj), new_json=sha(pj) if json_promote else sha(mj))
+    data[n] = d
+    rows.append("| `%s` | %s / %s | %s | %s | %s | %s | %s |" % (
+        n, d["fbx"], d["json"], "; ".join(geo), mat, "; ".join(anc) if anc else "same", lod, "; ".join(other) if other else "—"))
+
+with open(OUT, "w") as f:
+    f.write("| Kit | FBX / JSON | Geometry (tris LOD0/LOD1) | Materials (slots) | Anchors | LOD d01/d12/dcull (m) | Other sidecar |\n")
+    f.write("|---|---|---|---|---|---|---|\n")
+    f.write("\n".join(rows) + "\n")
+json.dump(data, open(OUTJ, "w"), indent=1)
+print(len(rows), "kits;", sum(1 for d in data.values() if d["fbx"] == "PROMOTE"), "FBX,", sum(1 for d in data.values() if d["json"] == "PROMOTE"), "JSON")

@@ -13,7 +13,7 @@
      }
  
      enum LampState { Off, Waiting, Striking, Rising, Steady, Unstable, Dead }
-@@ -800,7 +806,23 @@
+@@ -804,7 +810,23 @@
              if (room == null || room.lampState == null || room.sequence > terminalSequence) continue;
              for (var lamp = 0; lamp < room.lampState.Length; lamp++)
                  TickLamp(room, lamp, dt);
@@ -37,7 +37,7 @@
      }
  
      void TickLamp(RoomSlot room, int lamp, float dt)
-@@ -861,6 +883,7 @@
+@@ -865,6 +887,7 @@
          // Only dark lamps are cued; a lamp that is already on keeps its clock.
          for (var lamp = 0; lamp < room.lampState.Length; lamp++)
              if (room.lampState[lamp] == LampState.Off) room.lampState[lamp] = LampState.Waiting;
@@ -45,7 +45,7 @@
      }
  
      void TickUnstableLamp(RoomSlot room, int lamp, float dt)
-@@ -1125,6 +1148,7 @@
+@@ -1129,6 +1152,7 @@
          room.rearSeal.SetActive(index == 0);
          BuildDoor(room);
          BuildProfileProps(room);
@@ -53,7 +53,7 @@
          RefreshRoomMaterials(room);
      }
  
-@@ -1409,6 +1433,7 @@
+@@ -1413,6 +1437,7 @@
      {
          EnsurePropMaterials();
          room.profileVariants = new GameObject[5];
@@ -61,7 +61,7 @@
          for (var ruleIndex = 0; ruleIndex < room.profileVariants.Length; ruleIndex++)
          {
              var rule = (RoomRule)ruleIndex;
-@@ -1426,6 +1451,10 @@
+@@ -1430,6 +1455,10 @@
                      var outlet = Box(props.transform, "outlet plate", new Vector3(x, .32f, z), new Vector3(.012f, .115f, .07f), outletMaterial);
                      outlet.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                  }
@@ -72,7 +72,7 @@
              }
              else if (rule == RoomRule.Office)
              {
-@@ -1469,28 +1498,13 @@
+@@ -1473,28 +1502,13 @@
                      Box(bed, "run gurney wheel", new Vector3(wx, .06f, wz), new Vector3(.04f, .11f, .11f), officeDarkMaterial);
                  }
                  Cylinder(props.transform, "run IV pole", new Vector3(4.3f, .95f, 8.6f), new Vector3(.03f, .95f, .03f), runChromeMaterial, Vector3.zero);
@@ -107,7 +107,7 @@
              }
              else if (rule == RoomRule.Exit)
              {
-@@ -1511,6 +1525,7 @@
+@@ -1515,6 +1529,7 @@
              var renderer = renderers[i];
              if (renderer == null) continue;
              var name = renderer.gameObject.name.ToLowerInvariant();
@@ -115,7 +115,7 @@
              if (name.Contains("floor") || name.Contains("carpet")) renderer.sharedMaterial = floor;
              else if (name.Contains("ceiling")) renderer.sharedMaterial = ceiling;
              else if (name.Contains("wall") || name.Contains("seal") || name.Contains("partition") || name.Contains("threshold marker")) renderer.sharedMaterial = wall;
-@@ -1663,8 +1678,48 @@
+@@ -1667,8 +1682,48 @@
              room.lampRiseFrom[lamp] = 0f;
              room.lampUnstableElapsed[lamp] = 0f;
          }
@@ -164,7 +164,7 @@
      static float Hash01(int sequence, int salt)
      {
          unchecked
-@@ -1682,6 +1737,7 @@
+@@ -1686,6 +1741,7 @@
      void ActivateRoomLightImmediately(RoomSlot room)
      {
          if (room == null || room.lampState == null) return;
@@ -172,7 +172,7 @@
          for (var lamp = 0; lamp < room.lampState.Length; lamp++)
          {
              if (room.lampDead[lamp])
-@@ -1840,13 +1896,58 @@
+@@ -1844,13 +1900,58 @@
          return reveal;
      }
  

@@ -26,6 +26,13 @@ public static class FrontRoomsShotTimings
         public const float Arrive = .25f;              // KeyTaken fires here (moved from pickup)
         public const float HoldUntil = .75f;
         public const float PocketStart = .75f, PocketSound = .85f, PocketEnd = .95f;
+        // The door-shot plan's additions (door_shots_plan.md §3.7), estimates to tune on a capture.
+        public const float HeldViewportX = .65f, HeldViewportY = .30f;   // "65% across, 70% down" (viewport y from the bottom)
+        public const float PocketViewportY = -.25f;                      // below the frame at PocketEnd
+        public const float TagSwingDeg = 25f, TagSwingHz = 2.2f, TagSwingDecay = 2.5f; // "damped, two swings" (KeyRig.Sway)
+        public const float PanelFadeIn = .25f;                           // the key panel at 0.95
+        public const float MouseIdleDeg = .05f;                          // look degrees per frame that still count as idle
+        public const float AimAssistConeDeg = 30f;                       // assist only for a key this close to the view
     }
 
     // ---- 3.2 Unlock a locked door with the key: the HEAD DIP (input lock)
@@ -36,13 +43,14 @@ public static class FrontRoomsShotTimings
         public const float MoveLockEnd = 1.45f, LookLockEnd = 1.30f, LookBlendBack = .2f;
         // Head dip: the eye drops toward the lock and pitches down, then pushes in.
         public const float DipEyeDrop = .25f;          // metres below the 1.62 eye (to ~1.37); scaled by the motion setting
-        public const float DipDistanceFromLock = .45f; // metres along the door normal toward the player (~0.57 m to the lock)
-        public const float DipPitchDeg = 38f;          // looking down at the cylinder (lock at 1.0 m)
+        public const float DipDistanceFromLock = .45f; // metres out from the lock, flat: 0.58 m to the lock, 39° down (look-at), yawed PoseYawTowardHingeDeg
+        public const float DipPitchDeg = 38f;          // the audit's pitch; the shot looks at the lock (39.4°), this is a ±2° test bound
         public const float FovDeltaDeg = -14f;         // 76 -> 62 at the default FOV, on the same curve
         public const float TravelBase = .30f, TravelPerMetre = .12f, TravelMin = .35f, TravelMax = .55f; // cubic ease-in-out
         public const float PostBlendIn = .40f;         // shot volume: mild far blur, vignette +0.1, exposure +0.15
         public const float HandheldDriftDeg = .1f;     // 0.30-0.55 s
         public const float KeyApproach = .30f, KeyAtKeyway = .55f; // the key enters from lower right to 3 cm in front
+        // PinCatchAt is a fraction of InsertDepth (the audit's "a 30 ms catch at 60%"), not a time.
         public const float InsertStart = .55f, InsertEnd = .68f, InsertDepth = .025f, PinCatchAt = .6f, PinCatch = .03f;
         public const float TurnStart = .68f, TurnEnd = .90f, TurnDeg = 90f, TurnResistDeg = 10f, TurnRollDeg = .2f;
         public const float BoltJoltDeg = .3f, BoltJolt = .08f, LeafShiftMetres = .0015f; // on the "Door leaf" child
@@ -54,6 +62,17 @@ public static class FrontRoomsShotTimings
         public const float ChaseFreeSnap = .15f;       // after Commit: Chase/sight frees the player, camera back <= 0.15 s
         public const float CancelRelayDistance = 6f;   // Relay within 6 m with sight cancels before Commit
         public const float ShotLightIntensity = .6f;   // optional unshadowed light on the camera (costs 1 of 32 WebGL lights)
+        // The door-shot plan's additions (door_shots_plan.md §3.7), estimates to tune on a capture.
+        public const float FovSeconds = .45f;                            // FOV ramp >= MinFovChangeSeconds (audit row 0.00-0.45)
+        public const float PoseYawTowardHingeDeg = 12f;                  // G2 finding: the key reads at insertion, not edge-on
+        public const float KeyStandoff = .03f;                           // the tip 3 cm in front of the keyhole at KeyAtKeyway
+        public const float KeyEnterViewportX = .85f, KeyEnterViewportY = .10f, KeyEnterDistance = .30f; // "enters from lower right"
+        public const float TurnResistShare = .35f;                       // share of the turn window spent on the first 10 deg
+        public const float KnobTurnStart = .92f, KnobTurnEnd = 1.00f, KnobDeg = 40f;      // SPEC §3.4 (push side)
+        public const float KnobReturnStart = 1.20f, KnobReturnEnd = 1.35f;
+        public const float StandDistance = .75f;                         // step-in: feet this far from the lock along the normal
+        public const float StepInMaxForward = .65f, StepInMaxLateral = .25f, StepInSeconds = .20f; // = GlassBreak's caps
+        public const float KeyTurnWatchdogGrace = .5f;                   // a hold not refreshed for Duration + this is resolved
     }
 
     // ---- 3.3 Open a door normally (no lock)
@@ -75,6 +94,7 @@ public static class FrontRoomsShotTimings
         public const float Jolt1 = .05f, Jolt2 = .16f, JoltSpring = .06f, JoltMetres = .002f, JoltDeg = .3f, CameraImpulseDeg = .25f;
         public const float LeverBackStart = .20f, LeverBackEnd = .40f;
         public const float LockedLabelSeconds = 1.5f;
+        public const float KnobDeg = 40f;              // locked doors (SPEC §6.5 item 11); LeverDeg 20 if call 4 picks a lever
     }
 
     // ---- 3.5 Hold to break glass: "Brace, strike, flinch" (replaces Glass). The visual chat's glass destruction

@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""Merge-stage before/after sheets for the interactables-kit merge (clone frames, main vs main + payload).
+Usage: sheet.py <out dir>
+Writes:
+  mik_window_before_after.jpg  LandCheck Play frames of the live Office window (Kit_WindowFrame_Steel): BEFORE | AFTER | diff x8
+  mik_kits_before_after.jpg    FrontRoomsKitLookdev close-ups of changed kits (main's FBX vs the merged FBX)
+  mik_landcheck_diff.png       per-frame changed-pixel counts over all 37 LandCheck frames (bar strip)"""
+import os, sys
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+W = "/Users/redwang/FrontRoomsVisualWork"
+BASE = W + "/proj_merge_interactables_kit_base/Verification"
+AFT = W + "/proj_merge_interactables_kit_2/Verification"
+out = sys.argv[1]
+os.makedirs(out, exist_ok=True)
+
+
+def font(sz):
+    for p in ["/System/Library/Fonts/Supplemental/Courier New Bold.ttf", "/System/Library/Fonts/Menlo.ttc", "/System/Library/Fonts/Helvetica.ttc"]:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, sz)
+            except Exception:
+                pass
+    return ImageFont.load_default()
+
+
+F = font(26)
+FS = font(20)
+
+
+def label(im, text, xy=(12, 10), fill=(10, 10, 10), bg=(244, 223, 59)):
+    d = ImageDraw.Draw(im)
+    x, y = xy
+    tw = d.textlength(text, font=F)
+    d.rectangle([x - 6, y - 4, x + tw + 6, y + 30], fill=bg)
+    d.text((x, y), text, font=F, fill=fill)
+
+
+def fit1920(im):
+    """VERIFICATION_LOG §1.2: JPG sheets at most 1920 px wide."""
+    if im.width <= 1920:
+        return im
+    return im.resize((1920, round(im.height * 1920 / im.width)), Image.LANCZOS)
+
+
+def load(p):
+    return np.asarray(Image.open(p).convert("RGB")).astype(np.int16)
+
+
+def diff_img(a, b, k=8):
+    d = np.abs(a - b).max(axis=2)
+    v = np.clip(d * k, 0, 255).astype(np.uint8)
+    rgb = np.stack([v, v, v], axis=2)
+    rgb[d > 8] = [255, 60, 40]
+    return Image.fromarray(rgb), int((d > 8).sum())
+
+
+def crop_box(a, b, pad=80, aspect=16 / 9):
+    d = np.abs(a - b).max(axis=2)
+    ys, xs = np.where(d > 8)
+    H, Wd = d.shape
+    if len(xs) == 0:
+        return (0, 0, Wd, H)
+    x0, x1, y0, y1 = xs.min() - pad, xs.max() + pad, ys.min() - pad, ys.max() + pad
+    w, h = x1 - x0, y1 - y0
+    if w / h < aspect:
+        w2 = h * aspect; x0 -= (w2 - w) / 2; w = w2
+    else:
+        h2 = w / aspect; y0 -= (h2 - h) / 2; h = h2
+    w, h = min(w, Wd), min(h, H)
+    x0 = int(max(0, min(x0, Wd - w))); y0 = int(max(0, min(y0, H - h)))
+    return (x0, y0, x0 + int(w), y0 + int(h))
+
+
+# ---------------------------------------------------------------- 1. live Office window (Play mode, LandCheck)
+frames = [("20_window_wide.png", "OFFICE WINDOW 2.0 M"), ("22_window_detail.png", "FRAME DETAIL 1.2 M"), ("32_glass_before_hud.png", "AT THE PANE 0.95 M")]
+cw, ch = 900, 506
+sheet = Image.new("RGB", (cw * 3 + 2 * 12, ch * len(frames) + (len(frames) - 1) * 12), (255, 255, 255))
+for r, (f, name) in enumerate(frames):
+    a, b = load(os.path.join(BASE, "landcheck", f)), load(os.path.join(AFT, "landcheck", f))
+    box = crop_box(a, b)
+    dimg, n = diff_img(a, b)
+    tiles = [Image.fromarray(a.astype(np.uint8)).crop(box), Image.fromarray(b.astype(np.uint8)).crop(box), dimg.crop(box)]
+    tags = ["BEFORE · " + name, "AFTER · " + name, "DIFF x8 · %d PX > 8" % n]
+    for c, (t, tag) in enumerate(zip(tiles, tags)):
+        t = t.resize((cw, ch), Image.LANCZOS)
+        label(t, tag)
+        sheet.paste(t, (c * (cw + 12), r * (ch + 12)))
+fit1920(sheet).save(os.path.join(out, "mik_window_before_after.jpg"), quality=88)
+
+# ---------------------------------------------------------------- 2. kit close-ups (edit-mode look-dev)
+kits = ["Kit_WindowFrame_Steel", "Kit_KeyCabinet", "Kit_DoorFrame_Steel", "Kit_DoorLeaf_Veneer_Oak", "Kit_Lock_Knob", "Kit_ExitDevice_Crossbar", "Kit_KeyHookBoard", "Kit_DoorCloser_Shoe"]
+tw, th = 640, 360
+rows = []
+for k in kits:
+    pa, pb = os.path.join(BASE, "kit_lookdev", "asset_%s.png" % k), os.path.join(AFT, "kit_lookdev", "asset_%s.png" % k)
+    if os.path.exists(pa) and os.path.exists(pb):
+        rows.append((k, pa, pb))
+if rows:
+    cols = 2  # pairs per row
+    pr = (len(rows) + cols - 1) // cols
+    sh = Image.new("RGB", (cols * (2 * tw + 12) + (cols - 1) * 36, pr * th + (pr - 1) * 12), (255, 255, 255))
+    for i, (k, pa, pb) in enumerate(rows):
+        r, c = divmod(i, cols)
+        x = c * (2 * tw + 12 + 36)
+        y = r * (th + 12)
+        for j, (p, tag) in enumerate([(pa, "BEFORE"), (pb, "AFTER")]):
+            im = Image.open(p).convert("RGB").resize((tw, th), Image.LANCZOS)
+            label(im, tag + " · " + k.replace("Kit_", ""))
+            sh.paste(im, (x + j * (tw + 12), y))
+    fit1920(sh).save(os.path.join(out, "mik_kits_before_after.jpg"), quality=88)
+print("rows", len(rows))
+
+# ---------------------------------------------------------------- 3. every LandCheck frame: changed pixels
+names = sorted(f for f in os.listdir(os.path.join(BASE, "landcheck")) if f.endswith(".png"))
+vals = []
+for f in names:
+    a, b = load(os.path.join(BASE, "landcheck", f)), load(os.path.join(AFT, "landcheck", f))
+    vals.append((f, int((np.abs(a - b).max(axis=2) > 8).sum())))
+with open(os.path.join(out, "..", "merge", "mik_landcheck_diff.txt"), "w") as fh:
+    for f, n in vals:
+        fh.write("%s\t%d\n" % (f, n))
+print("\n".join("%s %d" % v for v in vals if v[1]))

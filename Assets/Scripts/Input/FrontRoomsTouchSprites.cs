@@ -5,12 +5,12 @@ using UnityEngine;
 /// Anti-aliased sprites for the touch layer, drawn at the device's pixel
 /// density (points × FrontRoomsHandheld.PointScale) so a 2 pt ring is a crisp
 /// 6 px ring on a @3x iPhone. The shapes are the desktop HUD kit's: discs,
-/// rings (the keycap outline and the hold ring), a rounded keycap and the
-/// pause card's legend glyphs. Cached by size.
+/// rings (the keycap outline and the hold ring), arcs (the stick's run line),
+/// a rounded keycap and the pause card's legend glyphs. Cached by size.
 /// </summary>
 public static class FrontRoomsTouchSprites
 {
-    public enum Glyph { Move, Drag, Socket, Use, Hold, SprintButton }
+    public enum Glyph { Move, Drag, Run, Use, Hold, SprintButton }
 
     static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
 
@@ -41,6 +41,74 @@ public static class FrontRoomsTouchSprites
         }
         return Finish(tex, pixels, key);
     }
+
+    /// <summary>
+    /// Part of a ring (inside stroke at <paramref name="diameter"/>) centred on straight up, ±<paramref name="halfAngle"/>
+    /// degrees, solid or dashed: <paramref name="dash"/> on and <paramref name="gap"/> off, in points along the stroke's
+    /// middle, with a dash on the top. 180 draws the whole ring, its dashes evened out round it. The texture holds only
+    /// the arc's bounds; place it with <see cref="PointSize"/> and <see cref="PivotOf"/> (the pivot is the ring's centre).
+    /// </summary>
+    public static Sprite Arc(float diameter, float stroke, float halfAngle, float dash, float gap)
+    {
+        var density = Density;
+        var outer = diameter * density * .5f;
+        var inner = outer - stroke * density;
+        var mid = (outer + inner) * .5f;
+        var half = Mathf.Clamp(halfAngle, 1f, 180f) * Mathf.Deg2Rad;
+        var full = half >= Mathf.PI - 1e-4f;
+        var key = "arc:" + Mathf.RoundToInt(outer * 20f) + ":" + Mathf.RoundToInt(stroke * density * 10f) + ":" + Mathf.RoundToInt(halfAngle * 10f) + ":" + dash + ":" + gap;
+        if (cache.TryGetValue(key, out var cached) && cached != null) return cached;
+        // Bounds in pixels round the centre, y up, one pixel of margin.
+        var reachX = half >= Mathf.PI * .5f ? outer : outer * Mathf.Sin(half);
+        var lowY = full ? -outer : Mathf.Min(inner * Mathf.Cos(half), outer * Mathf.Cos(half));
+        var minX = -reachX - 1f;
+        var minY = lowY - 1f;
+        var w = Mathf.Clamp(Mathf.CeilToInt(reachX * 2f + 2f), 4, 1024);
+        var h = Mathf.Clamp(Mathf.CeilToInt(outer - lowY + 2f), 4, 1024);
+        var period = (dash + gap) * density;
+        var on = dash * density;
+        if (dash > 0f && full)
+        {
+            var count = Mathf.Max(1, Mathf.RoundToInt(Mathf.PI * 2f * mid / period));
+            on *= Mathf.PI * 2f * mid / count / period;
+            period = Mathf.PI * 2f * mid / count;
+        }
+        var tex = NewTexture(w, h, key);
+        var pixels = new Color32[w * h];
+        for (var y = 0; y < h; y++)
+        for (var x = 0; x < w; x++)
+        {
+            var px = minX + x + .5f;
+            var py = minY + y + .5f;
+            var d = Mathf.Sqrt(px * px + py * py);
+            var a = Mathf.Clamp01(outer - d + .5f) * Mathf.Clamp01(d - inner + .5f);
+            if (a > 0f)
+            {
+                var theta = Mathf.Atan2(px, py);
+                if (!full) a *= Mathf.Clamp01((half - Mathf.Abs(theta)) * mid + .5f);
+                if (dash > 0f)
+                {
+                    var u = theta * mid + on * .5f;
+                    u -= Mathf.Floor(u / period) * period;
+                    a *= Mathf.Clamp01(Mathf.Min(u, on - u) + .5f);
+                }
+            }
+            pixels[y * w + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
+        }
+        tex.SetPixels32(pixels);
+        tex.Apply(false, true);
+        var sprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(-minX / w, -minY / h), 100f * density, 0, SpriteMeshType.FullRect);
+        sprite.name = key;
+        sprite.hideFlags = HideFlags.DontSave;
+        cache[key] = sprite;
+        return sprite;
+    }
+
+    /// <summary>A sprite's size in points (canvas units).</summary>
+    public static Vector2 PointSize(Sprite sprite) => sprite == null ? Vector2.zero : sprite.rect.size * (100f / sprite.pixelsPerUnit);
+
+    /// <summary>A sprite's pivot as a RectTransform pivot (0..1 of its rect, may lie outside).</summary>
+    public static Vector2 PivotOf(Sprite sprite) => sprite == null ? new Vector2(.5f, .5f) : new Vector2(sprite.pivot.x / sprite.rect.width, sprite.pivot.y / sprite.rect.height);
 
     /// <summary>A rounded rectangle, filled or (stroke &gt; 0) outlined, as a 9-slice sprite.</summary>
     public static Sprite RoundRect(float radius, float stroke)
@@ -140,8 +208,14 @@ public static class FrontRoomsTouchSprites
                 var line = Mathf.Clamp01((1f - Mathf.Abs(p.y - 11f)) / aa + .5f) * (p.x > 3f && p.x < 19f ? 1f : 0f);
                 return Mathf.Max(line, Mathf.Max(DiscCov(p, new Vector2(4f, 11f), 3.5f, aa), DiscCov(p, new Vector2(19f, 11f), 2.5f, aa) * .45f));
             }
-            case Glyph.Socket:
-                return Mathf.Max(RingCov(p, new Vector2(11f, 7f), 6.5f, 1.5f, aa) * .4f, Mathf.Max(RingCov(p, new Vector2(11f, 17.5f), 4f, 1.5f, aa), DiscCov(p, new Vector2(11f, 17.5f), 2.25f, aa)));
+            case Glyph.Run:
+            {
+                // The stick (faint), its run line ahead (±60°) and the thumb just past it (Figma glyph · run).
+                var o = new Vector2(11f, 7f);
+                var ang = Mathf.Abs(Mathf.Atan2(p.x - o.x, p.y - o.y));
+                var line = RingCov(p, o, 10.75f, 1.5f, aa) * Mathf.Clamp01((Mathf.PI / 3f - ang) * 10f / aa + .5f);
+                return Mathf.Max(RingCov(p, o, 6.75f, 1.5f, aa) * .35f, Mathf.Max(line, DiscCov(p, new Vector2(11f, 19.4f), 2.25f, aa)));
+            }
             case Glyph.Use:
                 return Mathf.Max(RingCov(p, c, 10f, 2f, aa), DiscCov(p, c, 3f, aa));
             case Glyph.Hold:

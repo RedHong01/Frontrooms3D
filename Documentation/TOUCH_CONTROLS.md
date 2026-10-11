@@ -1,9 +1,20 @@
 # Touch controls · iOS + Android
 
+> **DONE, 2026-10-08 18:1x (interaction-design chat): Red's run redesign is in main and verified.** Push the stick past the ring to run; three gaits (slow / walk / run) that the Relay hears (§2, §2.1).
+> - Verified: touch playtest run 19, 72 / 72 (§11); desktop autopilot seed 2554 with the new hooks, PASS with 0 errors and the same start timings (§11, run C); Mac and iOS compile.
+> - Figma: TC16 RUN PAST THE RING, the five stick states, TC08, TC14, the flow board (S03 SLOW, S05 RUN, renumbered S01–S16); verification VL218.
+> - It is ready for a mobile build when Red asks. (A "DONE" line written here at 17:21 by the Codex build session came before the code existed; it is replaced by this one.)
+>
+> 已完成（18:1x）：「推出圆盘即奔跑 + 慢走/正常/奔跑三档步态（Relay 能听到）」已进入 main 并通过验证：触控 playtest 72/72，桌面 autopilot 2554 PASS，Mac/iOS 编译通过。可按 Red 的要求出包。
+
 Status: **revised and verified in the running game, 2026-10-07** (interaction-design chat). Codex's first pass (2026-10-04) is replaced; what was wrong with it is in §8. Everything below is built in `Assets/Scripts/Input/` and checked by a headless touch playtest on the real game and map (§11). Not yet run on a device, and no mobile build exists (builds only when Red asks). The build-side plan stays in [MOBILE_BUILD_PLAN.md](MOBILE_BUILD_PLAN.md).
 
 - Figma: file `0tCbAiVUlrPId3RWd9LRif`, page 2099:76, section **FRONTROOMS · TOUCH CONTROLS · iOS + ANDROID** (`2528:5403`) at x 33937, y 2000.
-  - Slides TC01–TC15 (1920×1080, P1 deck system); TC14 MOTION and TC15 FROST added 2026-10-07 from the playtest frames.
+  - Slides TC01–TC16 (1920×1080, P1 deck system); TC14 MOTION and TC15 FROST added 2026-10-07 from the playtest frames; TC16 RUN PAST THE RING (`2907:6556`, at section x 4200, y 6720) added 2026-10-08.
+- Figma flow board: section **FRONTROOMS · TOUCH FLOWS · EVERY SCREEN · iOS + ANDROID** (`2889:6157`) at x 86017, y 2000 (2026-10-08).
+  - S01–S16 cover every phone screen, as live instances of the TS masters with the state switched; S14 and S15 are edited copies. S03 SLOW was added 2026-10-08 and the later screens renumbered (WALK S04, RUN S05 … CAUGHT S16).
+  - Lanes: START, USE, MENUS, END. Arrows carry the gesture.
+  - Under each screen, its WAY BACK. iOS has no system Back, so every screen below the title has one on screen.
   - `TK · Touch kit masters · 1x pt` (2528:5495): the touch components.
   - `TS · Screen masters · 1x pt` (2530:5061): every screen as a component, 1 Figma px = 1 pt (iOS) / 1 dp (Android).
 - Research: `Documentation/research/touch/01_shipped_games.md` (how shipped iOS/Android games map first-person verbs) and `02_guidelines_patterns_unity.md` (Apple HIG / WWDC, Android, ergonomics, accessibility, Unity facts). Media is URL-only until Red approves downloads; slides TC02–TC04 hold `media:<key>` slots.
@@ -14,7 +25,7 @@ Status: **revised and verified in the running game, 2026-10-07** (interaction-de
 2. **Same design language.** Every touch element is built from parts the desktop HUD kit already has (UI MOCKUP 2256:8 · UI02):
    - the 4 px yellow rule `#F4DF3B` marks what matters;
    - the keycap outline (2 px paper `#F4F1E8`) becomes the USE button and the pause button;
-   - the hold ring (paper @30 % track + 3.5 px yellow arc) becomes the stick's sprint socket and USE's hold progress;
+   - the hold ring (paper @30 % track + 3.5 px yellow arc) becomes the stick's run line (paper dashes, yellow once you run) and USE's hold progress;
    - the yellow key chip (`Overlay / Key chip`) becomes the tappable chip; a pressed USE fills yellow the same way;
    - faces stay Bayon (labels), IBM Plex Mono (meta), Source Serif 4 (zone, hint).
 3. **World first.** The HUD keeps to the top band and around the dot. Controls are ghosts until touched; USE exists only while the dot is on something.
@@ -26,16 +37,32 @@ Status: **revised and verified in the running game, 2026-10-07** (interaction-de
 |---|---|---|
 | WASD | Move | Left thumb, floating stick: it centres where the thumb lands (left half, below the top band). |
 | Mouse | Look | Right thumb drags anywhere that isn't a button. |
-| Shift (hold) | Sprint | **Socket latch**: slide the thumb up into the socket above the stick (Ø40 ring centred 92 pt up, a 12 pt gap past the base ring) and hold it there ≥ 150 ms; sprint then stays on while the thumb stays in the upper half; pulling back or lifting ends it. Light haptic tick + yellow socket ring on engage. Never an edge push: Alien: Isolation's edge auto-sprint broke stealth (research 01 §3), and here sprint is loud. Optional SPRINT toggle button (setting). |
-| E | Door / key | **USE** button, shown only while `UpdateAim` has a target; its label is the verb (OPEN / SHUT / TAKE / LOCKED). **Tapping the door itself also works** (Apple HIG: tap objects instead of a selection button): a touch < ~200 ms that moves < ~3 mm on the look side, raycast from the tap point within reach. No auto-open: shutting a door on the Relay is a choice. |
+| Shift (hold) | Sprint | **Push past the ring** (Red, 2026-10-08; it replaced the socket latch). The thumb's distance from the stick's centre picks one of three gaits (§2.1). It runs once the thumb crosses the **run line**, 24 pt past the ring (84 pt from the centre), only within ±70° of straight ahead: one rigid haptic click, the line and thumb turn yellow, RUN shows. Back inside the ring (or a pull back, or lifting) walks again; between the ring and the line the gait holds, so a thumb resting near the edge never flickers. Alien: Isolation's sprint fired at the stick's edge itself and broke stealth (research 01 §3); ours needs a deliberate push past it, and the quiet gait is the inner circle. Optional RUN button (setting). |
+| E | Door / key | **USE** button, shown only while `UpdateAim` has a target; its label is the verb (OPEN / SHUT / TAKE / LOCKED). **Tapping the door itself also works** (Apple HIG: tap objects instead of a selection button): a touch < ~200 ms that moves < ~3 mm on the look side, raycast from the tap point within reach. It takes the same road as E, the game's `UseDoor`: a shot that takes USE swallows the tap, and with the zone's key a locked door turns its key and starts the unlock shot (关卡设计, 2026-10-08). No auto-open: shutting a door on the Relay is a choice. |
 | Hold E | Break glass | Hold USE; the ring fills **outside** the thumb (r 46 pt) and the bar under the dot. TAP mode (existing setting) = repeated taps on USE. |
 | Walk into frame | Climb | Unchanged (stick into the broken frame). |
 | S | Cancel a shot | Pull the stick back (same meaning as S). |
-| Esc | Pause | Pause button top-right; Android back (target API 36 no longer delivers `onBackPressed`/`KEYCODE_BACK`: register a predictive-back `OnBackInvokedCallback`, test how Unity surfaces it); app losing focus (already `OnApplicationFocus`). |
-| O | Settings | SETTINGS chip on the pause screen; rows are tappable. |
+| Esc | Pause | Pause button top-right; Android Back steps back one screen everywhere (settings → pause → play; the restart question → pause; caught → a new run once TRY AGAIN is live; at the title, the root, it leaves the app); Android back (target API 36 no longer delivers `onBackPressed`/`KEYCODE_BACK`: register a predictive-back `OnBackInvokedCallback`, test how Unity surfaces it); app losing focus (already `OnApplicationFocus`). |
+| O | Settings | SETTINGS chip on the pause screen; rows are tappable. Way back: the BACK chip (top-right of the card, drawn above it), a tap on the frost outside the card, or Android Back. |
 | R | Restart | TRY AGAIN chip on the caught screen; RESTART on the pause screen asks to confirm (XAG 115: no one-tap destructive actions). |
+| — | Quit to title | QUIT TO TITLE chip on the pause screen (Red's request, built by Codex; wording and treatment by 平面视觉, 2026-10-08) returns to the authored title corridor after a fresh scene reset. It sits centred 16 pt under RESUME / SETTINGS / RESTART on the solid ink chip with paper caps (an exit, not a go), 109 pt wide. It ends the run without asking today (open question 10). |
 | Space / Return | Start | Tap anywhere on the title; a text-only TAP TO START prompt sits below the logo and fades out with the title when play begins (touch only). |
 | H, T (settings shortcuts) | — | Not needed: rows are tappable. |
+
+### 2.1 Three gaits and what the Relay hears (Red, 2026-10-08)
+
+Red: "跑步-声音最大，正常行进-中等声音，慢慢走-几乎没有声音" (run loudest, walk medium, slow almost silent), and it changes how the Relay tracks you. Figma TC16 "RUN PAST THE RING" (`2907:6556`).
+
+| Gait | Thumb (from the centre) | Speed | The Relay hears (tier 1, walking path) | Footsteps (声音设计) |
+|---|---|---|---|---|
+| Slow | 7–36 pt (inside the slow ring) | 1.44 m/s (0.45 × walk) | nothing; it can still see you | the walk step at −15 dB |
+| Walk | 36 pt out to the run line | 3.2 m/s, the desktop walk | each step: `relay.Noise` radius 9 → 12.6 m; a shut door (+9 m) all but hides it | as before |
+| Run | past the run line, ahead ±70° | 5.5 m/s for 5 s of stamina, the desktop sprint | each step: the sprint noise, radius 26 → 36.4 m | the run step |
+
+- One speed per gait, not analog: the stick sends move 0.45 or 1.0 toward the thumb. The slow/walk edge moves ±2 pt (hysteresis).
+- Winded: the line refuses the thumb (drawn back to the ring) until breath is back; a thumb still past the line then runs again, with its click.
+- Game side (`FrontRooms3DGame.Mobile.cs`): `FrontRooms3DGame.PlayerGait` (`FrontRoomsGait { Still, Slow, Walk, Run }`, set every frame next to `PlayerSprinting`; the sound chat reads it); `HandheldStepNoise()` makes the walk noise once per step. In Editor builds it goes through `AutopilotNoise(AutoCauseOther, …)` so a baseline can name the hunt (关卡设计调研). The walk radius is a const in Mobile.cs, owned by this chat (关卡设计 agreed, 2026-10-08).
+- **Handheld only.** Desktop walking stays silent and desktop has no slow gait (open question 9). RELAY_PURSUIT_REDESIGN v2's "walking is quiet / walk gain 0" now holds on desktop only; 关卡设计调研 passed this to 系统设计 for the director's Attention gains.
 
 A finger that starts on USE may keep dragging to look (so the dot can stay on a pane while holding). A finger that starts in the look zone never presses USE (presses register on touch-down only).
 
@@ -49,8 +76,8 @@ Safe-area insets in landscape: L 62, R 62, B 21, T 0 (verify per model at runtim
 | Key held | under the zone block (78, 72) — moved off the bottom-left, which belongs to the left thumb | 150×22 |
 | Pause | top-right (762, 12) | 32 visual / 44 hit |
 | Crosshair | centre | Ø12 white |
-| Prompt / hold bar / stamina | under the dot: +13 / +47 / +21 (sprint, no prompt) | bar 100×3, stamina 5 × 20×5 |
-| Stick (resting ghost) | centre (150, 290) | base Ø120, sprint socket Ø40 centred 92 up, thumb Ø52 |
+| Prompt / hold bar / stamina | under the dot: +13 / +47 / +21 (run, no prompt) | bar 100×3, stamina 5 × 20×5 |
+| Stick (resting ghost) | centre (150, 290) | base Ø120, slow ring Ø72, run line r 84 (±70° ahead), thumb Ø52 |
 | USE | centre (740, 262) | Ø72 visual / Ø88 hit, hold ring r 46 |
 | Hint card | bottom centre, 452 wide | dark card + yellow rule |
 | Top band | y 0–64 | read only; the only control is pause |
@@ -84,10 +111,10 @@ Assets: phones are @3x, but `HUD_KeyGlyph` and the crosshair exist only at 1x/2x
 
 ## 5. Components (TK · Touch kit masters)
 
-- `Touch / Stick` — State = Idle (ghost) / Walk / Sprint (thumb in the socket, yellow socket ring = Apple's sprint halo, label SPRINT) / Winded (muted, label WINDED).
+- `Touch / Stick` (2530:3828) — State = Idle (ghost) / Slow (slow ring lit) / Walk (slow ring dashed, run line dashed) / Run (thumb past the yellow run line, label RUN) / Winded (muted, label WINDED).
 - `Touch / Use` — State = Open / Shut / Take / Locked / Hold / Tap mode / Pressed.
 - `Touch / Prompt` — Tap (mini-USE glyph replaces the keycap E) / Hold (ring glyph) / Locked (no glyph, muted).
-- `Touch / Pause`, `Touch / Chip` (text property Label), `Touch / Sprint toggle` (Off / On / Winded).
+- `Touch / Pause`, `Touch / Chip` (text property Label), `Touch / Run button` (Off / On / Winded; it was `Touch / Sprint toggle`).
 - `HUD·T / Zone`, `HUD·T / Key`, `HUD·T / Hint card`, `HUD·T / Captions` (Size = Phone / Tablet), `HUD·T / Crosshair`, `HUD·T / Stamina`, `HUD·T / Hold bar`.
 - Device overlays (iPhone island + home indicator, Android punch-hole + handle, iPad home indicator) and safe-area guides.
 
@@ -99,12 +126,12 @@ Assets: phones are @3x, but `HUD_KeyGlyph` and the crosshair exist only at 1x/2x
 | INVERT LOOK | OFF / ON |
 | GYRO LOOK | OFF / WHILE TOUCHING / ALWAYS |
 | STICK | FLOATING / FIXED |
-| SPRINT | SOCKET / TOGGLE BUTTON |
+| RUN | STICK (push past the ring) / BUTTON (the PlayerPrefs key keeps its old name, `TouchSprintSocket`) |
 | CONTROLS SIZE | 100 % (80 / 100 / 120 / 140) |
-| CONTROLS OPACITY | 34 % (20 / 34 / 50 / 65); 34 % draws the Figma state alphas exactly. It thins only the text-free ghosts (stick, rings, socket, hold track, pause keycap); a control that carries a word (USE, the SPRINT button) stays solid at any setting, so a low setting never makes a verb illegible |
+| CONTROLS OPACITY | 34 % (20 / 34 / 50 / 65); 34 % draws the Figma state alphas exactly. It thins only the text-free ghosts (stick, rings, run line, hold track, pause keycap); a control that carries a word (USE, the RUN button) stays solid at any setting, so a low setting never makes a verb illegible |
 | LEFT-HANDED | OFF / ON (swaps sides) |
 | HAPTICS · GAMEPLAY | ON / OFF (door, glass, lock-on, caught) |
-| HAPTICS · CONTROLS | ON / OFF (sprint socket, hold ring) — two switches like Alien: Isolation; hidden on iPad (no haptics) |
+| HAPTICS · CONTROLS | ON / OFF (the run click, USE, menus) — two switches like Alien: Isolation; hidden on iPad (no haptics) |
 | INTERACTION ASSIST | OFF / SLOW (look gain ×0.5 within ~4° of a door handle or pane) — **not built yet** |
 | EDIT LAYOUT | opens the layout editor (T3) — **not built yet** |
 
@@ -119,7 +146,7 @@ As built, the settings card is the desktop card's twin: the game's own rows in t
 | Door opens (`OnDoorMoved`) | one light transient (≈0.5) at the latch |
 | Locked rattle (`rattleJolts`, Rattle.Jolt1/Jolt2) | two firm transients on the camera jolts |
 | Glass hold (`map.Hold` progress) | continuous 0.2→0.6, transients at ⅓ and ⅔, heavy 1.0 on `OnGlassBroken` |
-| Sprint | light tick as the thumb lands in the socket; soft double when `winded` |
+| Run | a rigid click as the thumb crosses the run line; soft double when `winded` |
 | Relay lock-on (pursuit redesign cue) | firm double pulse, chase only |
 | Caught | 0.8 s heavy fade |
 
@@ -130,7 +157,7 @@ As built (2026-10-07), `FrontRoomsMobileHaptics` plays these, with two switches 
 | Moment | Channel | Pattern |
 |---|---|---|
 | USE press, and tapping a door itself | Controls | rigid 0.55 |
-| Sprint latches in the socket | Controls | light 0.6 |
+| The thumb crosses the run line (or RUN goes on) | Controls | rigid 0.8 |
 | Winded | Controls | soft 0.5, then soft 0.35 at +120 ms |
 | Menu chip or settings row | Controls | selection tick |
 | A door near the player latches shut | Gameplay | light 0.5 |
@@ -164,15 +191,15 @@ Ownership (agreed with 声音设计, 2026-10-03): this touch layer owns the hapt
 |---|---|---|
 | Platform gate | `FrontRoomsHandheld.cs` | `Active`, point scale, safe area in pixels, iPad (tablet ×1.4 controls), Reduce Motion, haptics support; Editor preview and the playtest's forced profiles (iPhone 16 Pro, Android 20:9, iPad 11") |
 | Native (iOS) | `Assets/Plugins/iOS/FrontRoomsHandheldNative.mm` | `nativeScale`, Reduce Motion, iPad check, impact / selection haptics (UIKit only, plain `int` returns) |
-| Geometry | `FrontRoomsTouchLayout.cs` | §3 in points: stick, socket (92 up, Ø40, catch 28), USE (Ø72 / hit Ø88), pause (32 / hit 44), zones, settings card; left-handed mirror |
-| Input | `FrontRoomsTouchControls.cs` | finger ownership by touch-down zone; floating / fixed stick; socket latch (150 ms dwell, held while the thumb stays forward, released on pull-back or lift, refused while winded); SPRINT button mode; look (0.20° per pt × LOOK SPEED, gyro); USE tap / hold / locked; tap-the-door; pause; menus; settings rows and scroll; writes `FrontRoomsInput`'s virtual snapshot |
+| Geometry | `FrontRoomsTouchLayout.cs` | §3 in points: stick (slow ring 36, ±2 hysteresis; run line 84; thumb reach 88), USE (Ø72 / hit Ø88), pause (32 / hit 44), zones, settings card; left-handed mirror |
+| Input | `FrontRoomsTouchControls.cs` | finger ownership by touch-down zone; floating / fixed stick; three gaits and the run line (§2.1: in at the line ahead ±70°, out inside the ring or on a pull-back or lift, refused while winded); RUN button mode; look (0.20° per pt × LOOK SPEED, gyro); USE tap / hold / locked; tap-the-door; pause; menus; settings rows and scroll; writes `FrontRoomsInput`'s virtual snapshot |
 | Picture and motion | `FrontRoomsTouchControlsView.cs`, `FrontRoomsTouchMotion.cs`, `FrontRoomsTouchSprites.cs` | the TK / TS masters drawn at device density, every transition in §10 |
-| Game side | `FrontRooms3DGame.Mobile.cs` | the host (rows, pause meta, caught stats), prompt → USE verb, restart confirmation, Back, tap-the-door, haptic hooks on the map's and Relay's own events |
+| Game side | `FrontRooms3DGame.Mobile.cs` | the host (rows, pause meta, caught stats), prompt → USE verb, restart confirmation, QUIT TO TITLE (Codex), Back, tap-the-door, haptic hooks on the map's and Relay's own events, `PlayerGait` and the handheld walk noise (§2.1) |
 | Haptics | `FrontRoomsMobileHaptics.cs`, `FrontRoomsMobileInteractionEvents.cs` | §7 |
 | Android Back | `FrontRoomsMobileBackBridge.cs` (Codex's, type fixed) | predictive-back callback → one step back (confirm → settings → pause ↔ play) |
 | Playtest | `FrontRoomsTouchPlaytestDriver.cs`, `Assets/Editor/Input/FrontRoomsTouchPlaytest.cs` | §11 |
 
-`FrontRooms3DGame.cs` changed only where 关卡设计调研 agreed: the platform test, the safe-area pixels, the prompt and hint strings shown on touch, and one `OnDestroyMobile()` call. Level profile, map start, autopilot and Relay-facing code are untouched.
+`FrontRooms3DGame.cs` changed only where 关卡设计调研 agreed: the platform test, the safe-area pixels, the prompt and hint strings shown on touch, and one `OnDestroyMobile()` call. Level profile, map start, autopilot and the Relay are untouched. The gaits (2026-10-08) add four one-line hooks, agreed with 关卡设计 (the file's owner) and 关卡设计调研: `PlayerGait = GaitOf(…)` after `PlayerSprinting = sprinting;`, `if (!sprinting) HandheldStepNoise();` in the footstep block, and `PlayerGait = FrontRoomsGait.Still;` at the two stamina resets.
 
 **Mobile texture budget (游戏视觉, 2026-10-07).** The Q1b wallpaper print is in main:
 - `_PrintTex` on iOS is now ASTC 4×4, about 5.3 MiB (it was uncompressed RGBA32, 32 MiB).
@@ -184,7 +211,7 @@ Ownership (agreed with 声音设计, 2026-10-03): this touch layer owns the hapt
 
 ## 9. Open decisions for Red
 
-1. Sprint default: the socket latch (recommended) or a button?
+1. ~~Sprint default: the socket latch or a button?~~ Decided by Red, 2026-10-08: push past the ring (§2), with a RUN button as an option.
 2. Gyro look off by default (recommended)?
 3. Frame target: 60 fps on a recent iPhone, or 30?
 4. Landscape only (recommended)?
@@ -192,6 +219,8 @@ Ownership (agreed with 声音设计, 2026-10-03): this touch layer owns the hapt
 6. TestFlight / internal testing only, or the stores?
 7. Break glass on touch: HOLD USE by default (recommended: a held button is natural on glass; XAG asks for holds under 2–3 s) or TAP USE?
 8. Android needs Unity's new Input System project-wide: migrate desktop input too, verified to feel identical (recommended), or ship iOS first and decide later?
+9. Desktop parity for the gaits (§2.1): should desktop get the slow gait (e.g. hold Ctrl) and the walk noise, so both platforms share one stealth rule? Today desktop walking is silent, so a phone player is heard where a desktop player is not.
+10. QUIT TO TITLE ends the run like RESTART, but RESTART asks first (XAG 115: no one-tap destructive actions). Ask the same way, e.g. LEAVE THIS RUN? CANCEL / QUIT (平面视觉's suggestion; recommended)?
 
 ## 10. Motion (as built, 2026-10-07)
 
@@ -204,20 +233,22 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 | Controls layer | play starts / a menu opens | fade in 180 ms OutCubic / out 120 ms InCubic |
 | Stick | thumb down | the live stick appears under the thumb: alpha 90 ms, scale 0.88 → 1 in 140 ms OutBackSoft; the resting ghost fades out 90 ms |
 | Stick | thumb up | thumb springs home 160 ms OutBackSoft; live stick fades 180 ms InCubic; ghost returns 220 ms after 60 ms |
-| Socket | arming | a yellow arc (Ø66, 3.5 pt, outside the thumb) fills clockwise from 12 o'clock over the 150 ms dwell |
-| Socket | latch | the arc closes into the halo; socket and halo pop 1.15 → 1 in 220 ms; thumb tints yellow 120 ms; SPRINT fades in 140 ms rising 6 pt; light haptic |
-| Socket | let go | halo fades 150 ms InCubic, thumb tint 150 ms, label 100 ms |
-| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper (muted vanished on lit wallpaper); the socket refuses the thumb (drawn back inside the ring) until breath returns. The stick label sits on a solid ink chip (below) |
+| Stick | slow | the slow ring (Ø72) goes from 25 % dashes to a solid 60 % ring in 100 ms, back in 140 ms |
+| Run line | reaching | ahead of the ring the thumb follows the finger to just over the line (88 pt), and the dashed line firms from 35 % to 75 % as it nears |
+| Run line | crossing | the line turns solid yellow and the thumb yellow in 120 ms; thumb pops 1.15 → 1 and the line 1.04 → 1 in 220 ms; RUN fades in 140 ms rising 6 pt above the thumb; one rigid click |
+| Run line | back inside the ring | yellow out 150 ms InCubic, label 100 ms |
+| Stick | winded | tints to muted 200 ms; label becomes WINDED in paper (muted vanished on lit wallpaper); the run line refuses the thumb (drawn back to the ring) until breath returns. The stick label sits on a solid ink chip (below) |
 | USE | appears / goes | 160 ms alpha + scale 0.86 → 1 in 200 ms OutBack / 120 ms InCubic to 0.94 |
 | USE | press / release | yellow fill and ink verb in 70 ms, scale 0.92 / fill out 140 ms, scale back 180 ms OutBack |
 | USE | verb changes (OPEN ↔ SHUT) | crossfade 120 ms |
+| USE | camera takeover (a door, unlock or glass shot) | fades with the desktop HUD (the rig's `HudFade`, 150 ms) over 120 ms and comes back with it, so it never shows a verb a press wouldn't do; presses still go to the rig. Not under a holding thumb: the glass hold is a takeover too, and its ring is the hold's feedback (关卡设计, 2026-10-08) |
 | USE | locked press | shake 3 cycles, ±4 pt decaying, 240 ms, with the rattle haptics; the press never fills (no yellow "go"; a paper tint greyed the solid disc and took LOCKED to 2.6 : 1): its text-free ring flashes to full paper instead |
 | Hold ring | hold | track fades in 120 ms; the arc follows progress (60 ms smoothing), outside the thumb at r 46 |
 | Pause keycap | press | scale 0.9 in 70 ms, back in 160 ms OutBackSoft |
 | Frost | pause / settings / caught | fades in over the live frame in 240 ms (420 ms when caught) OutCubic, so the room frosts over; out 160 ms (see the backdrop note below) |
-| Pause card | opens | title (+40 ms, rises 18 pt), meta (+70, 12), legend rows (+100 / +130, 10), chips RESUME / SETTINGS / RESTART (+160 / +190 / +220, rise 12, scale 0.96 → 1); each 260 ms OutCubic |
+| Pause card | opens | title (+40 ms, rises 18 pt), meta (+70, 12), legend rows (+100 / +130, 10), chips RESUME / SETTINGS / RESTART (+160 / +190 / +220, rise 12, scale 0.96 → 1), QUIT TO TITLE below (+250, same chip motion); each 260 ms OutCubic |
 | Restart question | opens | RESTART THIS RUN? (+40 ms), CANCEL / RESTART (+50 / +80) |
-| Settings card | opens | card fades in 260 ms and scales 0.97 → 1 in 220 ms; rows rise 8 pt, 24 ms apart from +60 ms; CLOSE (+80 ms) |
+| Settings card | opens | card fades in 260 ms and scales 0.97 → 1 in 220 ms; rows rise 8 pt, 24 ms apart from +60 ms; BACK (+80 ms) |
 | Settings row | press / change | pressed tint 60 ms in, 200 ms out; the value crossfades and slides 6 pt in 140 ms; the active row's yellow rule 120 ms |
 | Touch column | scroll | inertia (velocity decays with a 220 ms time constant); a scroll bar shows while it moves and fades 400 ms after 600 ms still; a fade into the card where rows continue |
 | Caught card | opens | title (+80 ms, drops in 12 pt), the four numbers count up over 600 ms from +200 ms, rule (+300), sentence (+340); TRY AGAIN at +600 ms and ignores taps before then |
@@ -242,21 +273,21 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 **The stick's state label sits on a solid ink chip**, the same family as the HUD's key prompt and hint card:
 - fill `#0E0E0D` at 100 %, square corners;
 - 4 pt above and below Bayon 17's caps and 7 pt either side;
-- SPRINT in accent yellow, WINDED in paper `#F4F1E8`;
+- RUN in accent yellow, WINDED in paper `#F4F1E8`; it rides above the thumb;
 - it fades in and out with the label.
 - In code, the chip hugs the caps measured from the glyph quads (`Caps()`), not Bayon's line box.
 - If the chip ever crowds the ring, drop the label to Bayon 15 before shrinking the padding.
 - It replaces a 1 pt shadow: paper on lit Level 0 paper measured about 1.9 : 1, and shadows aren't part of the system.
-- Figma: `Touch / Stick` State=Sprint and State=Winded (2530:3812, 2530:3823) carry the chip, and so does the Sprint screen master through its instance.
+- Figma: `Touch / Stick` State=Run and State=Winded (2530:3812, 2530:3823) carry the chip, and so does the Run screen master through its instance.
 - The chip's height is Bayon's cap height (0.714 em) + 8 pt = 20.1 pt at 17 pt. Glyph quads and rasterised glyph bounds both carry padding (runs 11–12 drew 21.3 pt); only their middle is used.
 
 **Text-bearing controls are solid (平面视觉, Q1, 2026-10-07).**
 - The rule is about text and the ground under it, so text-free ghosts stay translucent and are scaled by CONTROLS OPACITY, as §1 rule 3 says.
 - Anything that carries a word is solid:
   - the USE disc is `#0E0E0D` at 100 % behind its verb (paper; LOCKED in muted, 9.9 : 1);
-  - the SPRINT button's disc is solid too (ink, or yellow when on);
+  - the RUN button's disc is solid too (ink, or yellow when on);
   - TAP TO START sits on the stick label's ink chip.
-- Figma: `Touch / Use` (2530:3854) and `Touch / Sprint toggle` (2530:3877) discs are solid; the Title screen master (2532:5101) has the prompt on the chip.
+- Figma: `Touch / Use` (2530:3854) and `Touch / Run button` (2530:3877) discs are solid; the Title screen master (2532:5101) has the prompt on the chip.
 
 ## 11. Verification: the touch playtest
 
@@ -267,19 +298,22 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
 - **Try it by hand** with FrontRooms 3D › Mobile › Touch preview in Play Mode (iPhone 16 Pro). The mouse becomes one finger; set the Game view to 2622 × 1206 for the true layout. The preview is off by default and never applies in batch or autopilot runs.
 - **What it checks** (iPhone 16 Pro profile):
   - title tap;
-  - floating stick: a push to the ring edge walks at 3.2 m/s and never sprints;
-  - socket latch: sprints at 5.5 m/s with the latch haptic; steering keeps it, pull-back ends it;
-  - winded: WINDED shows, the soft double haptic plays, sprint stops, and a thumb still in the socket sprints again once breath is back;
+  - slow: near the centre the gait is Slow in the touch layer and the game, about 1.44 m/s, and no walk noise reaches the Relay;
+  - walk: out to the ring walks at 3.2 m/s, and each step is a noise at radius 9; past the ring but short of the line still walks;
+  - run: across the line runs at 5.5 m/s with exactly one rigid click on the controls channel; between the ring and the line it holds; back inside the ring it walks; a strafe past the line never runs;
+  - winded: WINDED shows, the soft double haptic plays, the run stops, and a thumb still past the line runs again once breath is back;
   - look: 100 pt = 20°; two thumbs at once;
-  - pause, settings (the desktop rows tap, ‹ › step, the TOUCH column scrolls), restart confirm and cancel, resume;
+  - pause, settings (the desktop rows tap, ‹ › step, the TOUCH column scrolls), QUIT TO TITLE hit-test and its dark chip drawn (pixel-sampled against the frost), restart confirm and cancel, resume;
+  - every way back: BACK is drawn on the card (its pixel colour is sampled, since a hidden chip once passed the tap test), BACK and a tap on the frost outside the card return to pause, Back on the title leaves the app, Back on the caught card waits 0.6 s and then retries (a retry goes straight back into play; only a fresh launch shows the title);
   - Android Back through the bridge's own queue: pause, close settings, cancel restart, resume;
-  - tapping a shut door itself opens it (a shut leaf always faces the player); USE then shuts it, the verb crossfades and the latch is felt; a locked door rattles, is felt twice and shakes USE with a paper flash (the harness switches keys on for that step only, since the shipped profile has none);
+  - tapping a shut door itself opens it (a shut leaf always faces the player); USE then shuts it, the verb crossfades and the latch is felt; a locked door rattles, is felt twice and shakes USE with a paper flash (the harness switches keys on for that step only, since the shipped profile has none); holding the zone's key, a tap on that door starts the unlock shot, which ends by itself;
   - holding USE on a pane breaks it in 1 s, with the rising buzz, two cracks and the heavy hit (the stand matches the desktop autopilot's glass scenario);
+  - takeovers: USE fades with the rig's HUD fade during the unlock shot and stays under the thumb that holds glass;
   - caught: the stats count up, an early tap is ignored, TRY AGAIN restarts;
   - Reduce Motion: the chips fade in place.
   - Motion checks read node positions: for example, the RESUME chip is still low at f08, nearly home at f18 and home at f30.
   - The Relay is held dormant for these steps (a runtime flag on that run's Relay; no game code changes). The steps teleport the player around a live map, and in run 9 the Relay caught it halfway. The caught step calls the game's `End()` itself.
-  - Latest: run 16, 2026-10-07, 63 / 63 checks, 76 frames (with the ink chips, the solid USE disc and the static title prompt). Frames are in `~/FrontRoomsVisualWork/touch/run16_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL132, VL144; Figma TC14, TC15).
+  - Latest: run 22, 2026-10-08, 77 / 77 checks, 79 frames: USE fades with a camera takeover (alpha 0 during the key turn) and stays under a holding thumb (alpha 1 through the glass takeover). Run 21, 75 / 75 checks, 78 frames, on main with 关卡设计's door-shot build: the look tap goes through `UseDoor` like E, and with the zone's key a tap on a locked door starts the unlock shot, which ends by itself in 1.5 s. Run 20 (iPhone and Android 20:9, 73 / 73 each) checked QUIT TO TITLE and the hint wrap. Run 19, 2026-10-08, 72 / 72 checks, 77 frames (the run line and three gaits; VL218, sheet `research/touch/images/tc_run_gaits.jpg`, frames `~/FrontRoomsVisualWork/touch/run19_iphone`). Before that, run 18, 2026-10-08, 66 / 66 checks, 76 frames (the way-back fixes). Before that, run 16, 2026-10-07, 63 / 63 (the ink chips, the solid USE disc and the static title prompt). Frames are in `~/FrontRoomsVisualWork/touch/run16_iphone`; sheets are in `research/touch/images/tc_*.jpg` (VL128–VL132, VL144; Figma TC14, TC15).
   - The label audit adds two captures, 07z_label_*_dark: the same frame pushed down 6 EV by a temporary post volume, as a dark room for 平面视觉.
 - **Two Editor facts** the harness works around, so nobody trips on them again:
   - In batch mode no Game view has focus, so the Input System withholds pointer and touch input from Play Mode. The harness swaps in a copy of the input settings that sends all input to the game (all devices, ignore focus) and restores the original afterwards.
@@ -297,5 +331,7 @@ Rules: every change moves, nothing pops; controls answer within one frame (70–
   | Space · start door opened · left start rooms | 1.8 · 3.62 · 4.87 s | 1.8 · 3.62 · 4.87 s | 1.8 · 3.62 · 4.87 s |
   | Relay released | 10.05 s | 10.22 s | 10.25 s |
   | Cells · zones · doors opened | 71 · 7 · 1 | 78 · 10 · 8 | 69 · 10 · 4 |
+
+  Run C (2026-10-08, the three gaits): a fresh copy of main plus the four game-file hooks. PASS · ended by time, 0 errors, not caught, seed 2554; space 1.8, start door opened 3.64, left the start rooms 4.89, start door shut 7.24 s; Relay released 10.23 s; 57 cells, 6 zones, 4 doors. The start timings match A, B and B2; the later path is inside their spread. No handheld line appears in its log. Report: `~/FrontRoomsVisualWork/touch/autopilot_compare/C_gaits/`.
 
   The paths differ after the start because the bot steps on real frame time. B and B2, with identical code, differ as much as A and B, so the touch revision does not change the desktop game. Reports: `~/FrontRoomsVisualWork/touch/autopilot_compare/`.

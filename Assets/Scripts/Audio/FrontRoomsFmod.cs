@@ -46,7 +46,7 @@ namespace FrontRooms.Audio
         }
 
         /// <summary>Bumped with every change to the audio scripts, so a console line says which code is running.</summary>
-        public const string CodeVersion = "2026-10-03.6";
+        public const string CodeVersion = "2026-10-08.2";
 
         /// <summary>
         /// Which sound set is loaded: the audio code version plus the bank build time and short checksums of the
@@ -171,7 +171,7 @@ namespace FrontRooms.Audio
 
         /// <summary>Fire-and-forget one-shot with up to three parameters.</summary>
         public static void OneShot(string path, Vector3 position, string p1 = null, float v1 = 0f, string p2 = null, float v2 = 0f,
-            string p3 = null, float v3 = 0f)
+            string p3 = null, float v3 = 0f, float volumeDb = 0f)
         {
             Trace("oneshot", path, p1, v1, p2, v2, p3, v3);
             if (!Ready) return;
@@ -182,6 +182,7 @@ namespace FrontRooms.Audio
                 if (p1 != null) instance.setParameterByName(p1, v1);
                 if (p2 != null) instance.setParameterByName(p2, v2);
                 if (p3 != null) instance.setParameterByName(p3, v3);
+                if (volumeDb != 0f) instance.setVolume(Mathf.Pow(10f, volumeDb / 20f));
                 instance.start();
                 instance.release();
             }

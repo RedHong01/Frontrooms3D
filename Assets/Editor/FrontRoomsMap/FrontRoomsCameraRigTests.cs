@@ -13,7 +13,11 @@ using UnityEngine;
 /// after the delay; one E in the last 0.2 s of a door shot is a buffered
 /// push); every offset stops short of a wall; a shake ends at its decay time;
 /// FOV changes are deltas; Camera motion Off plays a shot in place with look
-/// free; the climb's stance drop is part of BaseEye at once.
+/// free; the climb's stance drop is part of BaseEye at once. The door
+/// shots' additions (door_shots_plan.md §5.1): EndShot with a blend-out is
+/// not a cancel; hudUntil brings the HUD back before the shot ends;
+/// CancelledBy records the input; ReleaseFov eases a held FOV back over
+/// 0.4 s; Kick is a signed pitch impulse falling linearly to nothing.
 /// Writes Verification/camera-rig-tests.json.
 /// Headless: -executeMethod FrontRoomsCameraRigTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -224,11 +228,113 @@ public static class FrontRoomsCameraRigTests
             rig.ClampLook(ref yaw, ref lookPitch);
             Check(Mathf.Abs(Mathf.DeltaAngle(body.eulerAngles.y + 40f, yaw)) < 1e-3f && Mathf.Abs(lookPitch - 30f) < 1e-3f, "cone: an ending shot frees look at once");
             Tick(rig, .2f);
+
+            DoorShotAdditions(rig, camera, target, () => ended);
         }
         finally
         {
             FrontRoomsCameraRig.ShotStarted -= onStart;
             FrontRoomsCameraRig.ShotEnded -= onEnd;
         }
+    }
+
+    // The rig's additions for the door shots (plan §5.1). The rig is at rest when this starts.
+    static void DoorShotAdditions(FrontRoomsCameraRig rig, Camera camera, Pose target, Func<int> ended)
+    {
+        rig.ResetLayers();
+        var endedBefore = ended();
+
+        // EndShot(handle, 0): not a cancel; ShotEnded on the next Tick with the camera home.
+        var home = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => rig.BaseEye, blendIn = 0f, blendOut = .25f, cancel = ShotCancel.PlayerInput, duration = 1.55f });
+        Tick(rig, .3f);
+        rig.EndShot(home, 0f);
+        var stillOn = rig.InShot;
+        rig.Tick(Dt);
+        Check(stillOn && !home.Cancelled && home.Ended && !rig.InShot && ended() == endedBefore + 1 && (camera.transform.position - rig.BaseEye.position).magnitude < 1e-4f,
+            "EndShot(handle, 0): not cancelled, ShotEnded on the next Tick, the camera on BaseEye");
+        var blended = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = 0f, blendOut = .25f });
+        Tick(rig, .1f);
+        rig.EndShot(blended, .3f);
+        Tick(rig, .25f);
+        var midway = rig.InShot && (camera.transform.position - rig.BaseEye.position).magnitude > 1e-3f;
+        Tick(rig, .07f);
+        Check(midway && !rig.InShot && !blended.Cancelled, "EndShot(handle, 0.3): still blending at 0.25 s, home by 0.32 s, not cancelled");
+
+        // hudUntil: the HUD comes back from 1.45 s while the shot runs on to 1.55 s; 0 keeps the whole shot.
+        var hud = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = 0f, blendOut = .25f, duration = 1.55f, hudUntil = 1.45f });
+        var fadeAt = -1f;
+        var full = true;
+        var t = 0f;
+        for (var i = 1; i <= 96; i++)
+        {
+            rig.Tick(Dt);
+            t = i * Dt;
+            if (t > .2f && t < 1.44f && rig.HudFade < .999f) full = false;
+            if (fadeAt < 0f && rig.HudFade < .999f && t > .5f) fadeAt = t;
+        }
+        var zeroBy = rig.HudFade;
+        rig.EndShot(hud, 0f);
+        rig.Tick(Dt);
+        Check(full && Mathf.Abs(fadeAt - 1.45f) <= Dt * 1.5f && zeroBy < 1e-4f && hud.Ended,
+            "hudUntil 1.45 on a 1.55 s shot: the HUD stays faded 0.2–1.44 s, comes back from " + fadeAt.ToString("0.000") + " s, and is back by 1.60 (fade " + zeroBy.ToString("0.000") + ")");
+        var whole = rig.BeginShot(new ShotSpec { kind = ShotKind.Glass, target = () => target, blendIn = .1f, blendOut = .1f, duration = 1f });
+        Tick(rig, .95f);
+        var wholeFaded = rig.HudFade > .999f;
+        rig.EndShot(whole);
+        Tick(rig, .3f);
+        Check(wholeFaded, "hudUntil 0: the HUD stays faded for the whole shot (as before)");
+
+        // CancelledBy: the input that cancelled the shot.
+        var back = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = 0f, blendOut = .25f, cancel = ShotCancel.PlayerInput, duration = 1.55f });
+        Tick(rig, .3f);
+        rig.Consume(ShotInput.Back);
+        Tick(rig, .3f);
+        var use = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = 0f, blendOut = .25f, cancel = ShotCancel.PlayerInput, duration = 1.55f });
+        Tick(rig, .3f);
+        rig.Consume(ShotInput.Use);
+        Tick(rig, .3f);
+        var early = rig.BeginShot(new ShotSpec { kind = ShotKind.Unlock, target = () => target, blendIn = 0f, blendOut = .25f, cancel = ShotCancel.PlayerInput, duration = 1.55f });
+        Tick(rig, .05f);
+        rig.Consume(ShotInput.Back);
+        var earlyBy = early.CancelledBy;
+        rig.EndShot(early, 0f);
+        Tick(rig, .05f);
+        Check(back.Cancelled && back.CancelledBy == ShotInput.Back && use.Cancelled && use.CancelledBy == ShotInput.Use && !early.Cancelled && earlyBy == null,
+            "CancelledBy: S after the cancel delay records Back, a second E records Use; a swallowed S before it records nothing");
+
+        // ReleaseFov: a held −14° back over 0.40 s, never more than 8° in any 0.1 s.
+        rig.ResetLayers();
+        rig.ReleaseFov(-14f, .4f);
+        var fovs = new List<float>();
+        for (var i = 0; i < 30; i++) { rig.Tick(Dt); fovs.Add(camera.fieldOfView); }
+        var worst = 0f;
+        for (var i = 6; i < fovs.Count; i++) worst = Mathf.Max(worst, Mathf.Abs(fovs[i] - fovs[i - 6]));
+        worst = Mathf.Max(worst, Mathf.Abs(fovs[5] - (rig.BaseFov - 14f)));
+        Check(Mathf.Abs(fovs[0] - (rig.BaseFov - 14f)) < .2f && Mathf.Abs(fovs[23] - rig.BaseFov) < .1f && Mathf.Abs(fovs[17] - rig.BaseFov) > .5f && worst <= 8f,
+            "ReleaseFov(−14, 0.4): starts at " + fovs[0].ToString("0.00") + ", still " + (fovs[17] - rig.BaseFov).ToString("0.00") + "° off at 0.30 s, back within 0.1° at 0.40 s, at most " + worst.ToString("0.0") + "° per 0.1 s");
+
+        // Kick: +0.25° of pitch at once, linear to nothing at 0.15 s, no yaw or roll; nothing at Camera motion Off.
+        rig.ResetLayers();
+        rig.Kick(.25f, .15f);
+        var kicks = new List<float>();
+        var yawRoll = 0f;
+        for (var i = 0; i < 12; i++)
+        {
+            rig.Tick(Dt);
+            kicks.Add(rig.KickPitch);
+            var local = (Quaternion.Inverse(rig.BaseEye.rotation) * camera.transform.rotation).eulerAngles;
+            yawRoll = Mathf.Max(yawRoll, Mathf.Abs(Mathf.DeltaAngle(0f, local.y)) + Mathf.Abs(Mathf.DeltaAngle(0f, local.z)));
+        }
+        var firstPitch = kicks[0];
+        var linear = Mathf.Abs(kicks[4] - .25f * (1f - 4f * Dt / .15f)) < 1e-3f;
+        Check(Mathf.Abs(firstPitch - .25f) < 1e-4f && linear && Mathf.Abs(kicks[8]) > 0f && kicks[9] < 1e-3f && kicks[10] == 0f && yawRoll < 1e-3f,
+            "Kick(0.25, 0.15): +" + firstPitch.ToString("0.000") + "° at once, linear, nothing at 0.15 s (" + kicks[9].ToString("0.0000") + "), no yaw or roll");
+        while (FrontRoomsSettings.CameraMotionPercent > 0) FrontRoomsSettings.StepCameraMotion(-1);
+        rig.Kick(.25f, .15f);
+        rig.Tick(Dt);
+        var off = rig.KickPitch;
+        while (FrontRoomsSettings.CameraMotionPercent < 100) FrontRoomsSettings.StepCameraMotion(1);
+        Check(off == 0f && Quaternion.Angle(camera.transform.rotation, rig.BaseEye.rotation) < 1e-3f, "Kick at Camera motion Off: nothing");
+        rig.ResetLayers();
     }
 }

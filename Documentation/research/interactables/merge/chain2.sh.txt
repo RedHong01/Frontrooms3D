@@ -1,0 +1,14 @@
+#!/bin/zsh
+# usage: chain2.sh after|base — waits for chain.sh, then the kit probe, the patched window harness and the kit look-dev.
+R=/Users/redwang/FrontRoomsVisualWork/int_work/merge2
+W=/Users/redwang/FrontRoomsVisualWork
+side=$1
+if [ $side = after ]; then C=proj_merge_interactables_kit_2; else C=proj_merge_interactables_kit_base; fi
+cd $R
+until grep -q "chain $side done" logs/chain_$side.out 2>/dev/null; do sleep 15; done
+cp $R/MikKitProbe.cs $W/$C/Assets/Editor/Audit/MikKitProbe.cs
+SHOTS=asset_Kit_WindowFrame_Steel,asset_Kit_WindowFrame_Alu,asset_Kit_KeyCabinet,asset_Kit_DoorFrame_Steel,asset_Kit_DoorLeaf_Veneer_Oak,asset_Kit_DoorLeaf_Ward,asset_Kit_Lock_Knob,asset_Kit_KeyHookBoard,asset_Kit_ExitDevice_Crossbar,asset_Kit_DoorCloser_Shoe,asset_Kit_Key_Zone,asset_Kit_Lock_Escutcheon,lineup
+zsh ./run_u.sh $C q mik_${side} MikKitProbe.Run
+zsh ./run_u.sh $C FrontRoomsWindowTF.RunAll tf2_${side}
+zsh ./run_u.sh $C q kit_${side} FrontRoomsKitLookdev.RunBatch -kitShots $SHOTS
+echo "chain2 $side done $(date +%T)"

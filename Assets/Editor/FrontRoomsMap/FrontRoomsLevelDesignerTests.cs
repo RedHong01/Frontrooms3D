@@ -157,6 +157,10 @@ public static class FrontRoomsLevelDesignerTests
         var desks = FrontRoomsModuleEditing.PaletteKits("DeskTop", "");
         Check("palette lists kits by placement", floors.Count > 0 && walls.Count > 0 && desks.Count > 0 && floors.Count + walls.Count + desks.Count <= all.Count,
             all.Count + " kits: " + floors.Count + " floor, " + walls.Count + " wall, " + desks.Count + " desk-top");
+        // Ceiling kits (the hanging EXIT signs) stay out of the palette until the designer can hang them (exit_sign spec C-3).
+        var ceiling = FrontRoomsModuleEditing.Kits().Where(n => FrontRoomsModuleEditing.Placement(n) == "Ceiling").ToList();
+        Check("palette leaves out ceiling kits", !all.Any(n => FrontRoomsModuleEditing.Placement(n) == "Ceiling"),
+            ceiling.Count + " ceiling kits in the library (" + string.Join(", ", ceiling) + "), none in All");
         var crates = FrontRoomsModuleEditing.PaletteKits("All", "crate");
         Check("palette search (any case)", crates.Contains("Kit_Crate") && crates.All(n => n.IndexOf("crate", StringComparison.OrdinalIgnoreCase) >= 0), string.Join(", ", crates));
 

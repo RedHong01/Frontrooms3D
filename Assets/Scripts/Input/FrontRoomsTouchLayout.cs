@@ -39,12 +39,15 @@ public readonly struct FrontRoomsTouchLayout
     public float StickRadius => 60f * Scale;
     public float ThumbRadius => 26f * Scale;
     public float StickDeadZone => .12f * StickRadius;
-    /// <summary>The sprint socket's centre above the stick's centre.</summary>
-    public float SocketOffset => 92f * Scale;
-    public float SocketRadius => 20f * Scale;
-    /// <summary>How close the thumb must come to the socket's centre to arm it (a little wider than the ring, so it is easy to find).</summary>
-    public float SocketCatchRadius => 28f * Scale;
-    /// <summary>A pull back past this (below the stick's centre) is the desktop S: it cancels a shot and ends a sprint.</summary>
+    /// <summary>Inside this the stick creeps (the slow gait); beyond it, it walks (Red, 2026-10-08).</summary>
+    public float SlowRadius => 36f * Scale;
+    /// <summary>The slow/walk edge moves this far either way, so a thumb resting on it never flickers between gaits.</summary>
+    public float SlowHysteresis => 2f * Scale;
+    /// <summary>The run line, 24 pt past the ring and drawn only ahead: crossing it runs, back inside the ring walks.</summary>
+    public float RunLineRadius => 84f * Scale;
+    /// <summary>How far the drawn thumb follows the finger ahead (or while running): just over the run line.</summary>
+    public float RunThumbReach => 88f * Scale;
+    /// <summary>A pull back past this (below the stick's centre) is the desktop S: it cancels a shot and ends a run.</summary>
     public float ShotBackDepth => .55f * StickRadius;
 
     /// <summary>Where the stick rests (the ghost) and where a FIXED stick lives.</summary>
@@ -58,7 +61,7 @@ public readonly struct FrontRoomsTouchLayout
         }
     }
 
-    /// <summary>The optional SPRINT toggle (Settings › SPRINT: BUTTON): above the stick's rest.</summary>
+    /// <summary>The optional RUN button (Settings › RUN: BUTTON): above the stick's rest.</summary>
     public Vector2 SprintButtonCenter => StickRest + Vector2.up * (104f * Scale);
     public float SprintButtonRadius => 28f * Scale;
     public float SprintButtonHitRadius => Mathf.Max(22f, 40f * Scale);

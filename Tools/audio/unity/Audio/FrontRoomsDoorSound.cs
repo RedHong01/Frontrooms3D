@@ -75,6 +75,18 @@ namespace FrontRooms.Audio
                 }
         }
 
+        bool skipHandle;
+
+        /// <summary>
+        /// The door at this position is opening from a key unlock with its latch already drawn back (DoorOpenBegan,
+        /// Unlock, latchDrawn): the unlock shot's knob beat is the handle, so the next leaf-out plays only the latch.
+        /// </summary>
+        public static void SkipHandle(Vector3 doorPosition)
+        {
+            foreach (var d in active)
+                if ((d.transform.position - doorPosition).sqrMagnitude < DoorReach * DoorReach) d.skipHandle = true;
+        }
+
         void Silence()
         {
             moving = false;
@@ -155,9 +167,10 @@ namespace FrontRooms.Audio
             }
             else if (previousAngle < ClosedAngle)
             {
-                FrontRoomsFmod.OneShot(SoundIds.DoorHandle, p);
+                if (!skipHandle) FrontRoomsFmod.OneShot(SoundIds.DoorHandle, p);   // a key-unlock open already turned the knob
                 FrontRoomsFmod.OneShot(SoundIds.DoorUnlatch, p);
             }
+            skipHandle = false;
             if (!idsReady && FrontRoomsFmod.Ready)
             {
                 velocityId = FrontRoomsFmod.ParameterId(SoundIds.DoorSwing, SoundIds.Param.AngularVelocity);

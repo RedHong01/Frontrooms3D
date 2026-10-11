@@ -1,0 +1,664 @@
+EXAMINE (close-up inspect) — map chat (关卡设计) CONTRACT diff, research/inspect/10_design.md §7.2 (C1-C19, C25; C11 hint slot PROPOSED).
+Written by the visual chat (游戏视觉) 2026-10-08 01:50 PDT. Anchored on Red's CURRENT main: HEAD bc0aa79.
+Base sha1 of each file (re-read before applying; a mismatch means re-anchor):
+  105a845384a28e701440dab11af92b8d2ede8670  Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
+  b5c12c80e26f28dc9df162ac41051e63c28f364f  Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
+  d3c9259b580de43b2315e7e468ee857fd7fd5bf0  Assets/Scripts/FrontRooms3DGame.cs
+  a01b019b2662b503a80074ccffb4a483b619d852  Assets/Scripts/FrontRooms3DGame.Mobile.cs
+Apply (map chat, in its own checkout):  patch -p1 < map_inspect.diff     (dry run: patch -p1 --dry-run < map_inspect.diff)
+Not in this diff: the visual-owned files (W/apply/inspect.sh) — they need C16-C19 first (ShotKind.Inspect, ShotSpec.fullPose/ease/rotBlendOut/fovMin,
+ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested end to end in W/proj_inspect (research/inspect/20_prototype.md).
+
+--- a/Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
++++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
+@@ -3,7 +3,7 @@
+ using UnityEngine;
+ 
+ /// <summary>What a shot is, for listeners (the sound chat's snapshots, the visual chat's post).</summary>
+-public enum ShotKind { KeyPickup, Unlock, Open, Rattle, Glass, Climb, DoorBreak, Caught }
++public enum ShotKind { KeyPickup, Unlock, Open, Rattle, Glass, Climb, DoorBreak, Caught, Inspect }   // append-only (sound and touch read it by name)
+ 
+ /// <summary>How a shot may end early.</summary>
+ [Flags]
+@@ -20,6 +20,13 @@
+ public enum ShotInput { Use, Back }
+ 
+ /// <summary>
++/// How a shot's weight becomes the camera's pull. Cubic: the rig's ease-in-out both ways (every shot
++/// before EXAMINE). Sine (research/inspect/10_design.md §3.5, C17b): in 0.5 - 0.5 cos(πw); out
++/// 1 - cos(πw/2) from wherever the pull was when the shot began to end (fast start, settles).
++/// </summary>
++public enum ShotEase { Cubic, Sine }
++
++/// <summary>
+ /// A shot: where the camera goes (a world pose, asked every frame so it can
+ /// follow a moving anchor), how it blends in and out, and what it locks.
+ /// </summary>
+@@ -41,6 +48,18 @@
+     public ShotCancel cancel;
+     /// <summary>The shot's length in seconds, for the push buffer of door shots (0 = open-ended: no buffer).</summary>
+     public float duration;
++    /// <summary>
++    /// The full pose and FOV at every Camera motion setting (C17): not scaled by the setting. At
++    /// 0 &lt; motion &lt; 1 every blend time is ×FrontRoomsShotTimings.Inspect.HalfMotionTimeScale;
++    /// at motion 0 the shot cuts in and out.
++    /// </summary>
++    public bool fullPose;
++    /// <summary>The weight-to-pull curve (C17b). Cubic is the default.</summary>
++    public ShotEase ease;
++    /// <summary>Sine shots: rotation's own blend-out (seconds; 0 = blendOut). CancelShot shortens both (C17b).</summary>
++    public float rotBlendOut;
++    /// <summary>ShotKind.Inspect only: the lowest absolute FOV (degrees; 0 = BaseFov - MaxFovDeltaDeg), for the angular zoom (C17c).</summary>
++    public float fovMin;
+ }
+ 
+ /// <summary>A running shot, to end or cancel it.</summary>
+@@ -50,7 +69,16 @@
+     internal float weight, age;
+     internal bool ending;
+     internal float blendOut;
++    // Sine shots (C17b): the rotation's weight, its blend-out, and the pulls held when the shot began to end.
++    internal float rotWeight, rotBlendOut, outPull, outRotPull, eased, rotEased;
++    internal bool outStarted;
+     public ShotKind Kind => spec.kind;
++    /// <summary>The raw blend weight, 0..1 (C18).</summary>
++    public float Weight => weight;
++    /// <summary>The position and FOV pull this frame, through the same ease the pose uses (C18): what a shot volume should follow.</summary>
++    public float EasedWeight => eased;
++    /// <summary>The rotation pull this frame (equals EasedWeight except while a Sine shot returns).</summary>
++    public float RotationWeight => rotEased;
+     public bool Ended { get; internal set; }
+     public bool Cancelled { get; internal set; }
+     /// <summary>Seconds since the shot began.</summary>
+@@ -85,7 +113,7 @@
+     readonly List<(Vector3 local, float seconds, float age)> offsets = new List<(Vector3, float, float)>();
+     readonly List<(float delta, float seconds, float age)> fovPushes = new List<(float, float, float)>();
+     float trauma, traumaPeak, traumaDecay, traumaTime, hudFade, pitch, stanceDrop;
+-    readonly RaycastHit[] hits = new RaycastHit[8];
++    readonly RaycastHit[] hits = new RaycastHit[16];   // C17d: never drop the nearest hit
+ 
+     FrontRoomsCameraRig(Transform body, Transform eye, Camera camera, float eyeHeight)
+     {
+@@ -160,8 +188,8 @@
+     /// <summary>Begin a shot. Shots stack: the newest decides the pose.</summary>
+     public ShotHandle BeginShot(ShotSpec spec)
+     {
+-        spec.fovDelta = Mathf.Clamp(spec.fovDelta, -FrontRoomsShotTimings.MaxFovDeltaDeg, FrontRoomsShotTimings.MaxFovDeltaDeg);
+-        var handle = new ShotHandle { spec = spec, blendOut = spec.blendOut };
++        spec.fovDelta = Mathf.Clamp(spec.fovDelta, -MaxFovDrop(spec), FrontRoomsShotTimings.MaxFovDeltaDeg);
++        var handle = new ShotHandle { spec = spec, blendOut = spec.blendOut, rotBlendOut = spec.rotBlendOut > 0f ? spec.rotBlendOut : spec.blendOut };
+         shots.Add(handle);
+         BufferedPush = false;   // a push buffered in an earlier shot never carries over
+         ShotStarted?.Invoke(spec.kind, spec.focus);
+@@ -182,11 +210,13 @@
+         if (handle.ending)
+         {
+             handle.blendOut = Mathf.Min(handle.blendOut, blendOut);
++            handle.rotBlendOut = Mathf.Min(handle.rotBlendOut, blendOut);
+             return;
+         }
+         handle.Cancelled = true;
+         handle.ending = true;
+         handle.blendOut = Mathf.Min(handle.blendOut > 0f ? handle.blendOut : blendOut, blendOut);
++        handle.rotBlendOut = Mathf.Min(handle.rotBlendOut > 0f ? handle.rotBlendOut : blendOut, blendOut);
+     }
+ 
+     /// <summary>Cancel every shot that the Relay may interrupt (it chases or sees the player), fast.</summary>
+@@ -285,7 +315,17 @@
+         {
+             var shot = shots[i];
+             shot.age += dt;
+-            if (shot.ending)
++            if (shot.spec.ease == ShotEase.Sine)
++            {
++                if (TickSine(shot, dt, motion))
++                {
++                    shots.RemoveAt(i);
++                    shot.Ended = true;
++                    ShotEnded?.Invoke(shot.spec.kind, shot.spec.focus);
++                    continue;
++                }
++            }
++            else if (shot.ending)
+             {
+                 shot.weight = shot.blendOut > 0f ? Mathf.MoveTowards(shot.weight, 0f, dt / shot.blendOut) : 0f;
+                 if (shot.weight <= 0f)
+@@ -297,6 +337,7 @@
+                 }
+             }
+             else shot.weight = shot.spec.blendIn > 0f ? Mathf.MoveTowards(shot.weight, 1f, dt / shot.spec.blendIn) : 1f;
++            if (shot.spec.ease != ShotEase.Sine) shot.eased = shot.rotEased = Ease(shot.weight);
+             if (!shot.ending)
+             {
+                 MoveLocked |= shot.spec.lockMove;
+@@ -311,18 +352,21 @@
+         var position = basePose.position;
+         var rotation = basePose.rotation;
+         var fov = BaseFov;
++        var fovFloor = BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg;
+         if (shots.Count > 0)
+         {
+             var shot = shots[shots.Count - 1];
+-            var w = Ease(shot.weight);
+-            if (shot.spec.target != null && motion > 0f)
++            var w = shot.eased;
++            // A full-pose shot (C17) is never scaled by Camera motion: at Off it cuts.
++            var scale = shot.spec.fullPose ? 1f : motion;
++            if (shot.spec.target != null && scale > 0f)
+             {
+                 var target = shot.spec.target();
+-                var pull = w * motion;
+-                position = Vector3.Lerp(position, target.position, pull);
+-                rotation = Quaternion.Slerp(rotation, target.rotation, pull);
++                position = Vector3.Lerp(position, target.position, w * scale);
++                rotation = Quaternion.Slerp(rotation, target.rotation, shot.rotEased * scale);
+             }
+-            fov += (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
++            fov += (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * scale;
++            if (shot.spec.kind == ShotKind.Inspect) fovFloor = BaseFov - MaxFovDrop(shot.spec);
+         }
+ 
+         // Offsets: sine there and back, camera-local.
+@@ -346,7 +390,7 @@
+             fovPushes[i] = (delta, seconds, age);
+             fov += delta * Mathf.Sin(age / seconds * Mathf.PI);
+         }
+-        fov = Mathf.Clamp(fov, BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
++        fov = Mathf.Clamp(fov, fovFloor, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
+ 
+         // Shake: smooth noise on pitch, yaw and roll, falling linearly so it ends at its decay time.
+         if (trauma > 0f)
+@@ -386,4 +430,49 @@
+     }
+ 
+     static float Ease(float t) => t < .5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * .5f;
++
++    /// <summary>Sine in-out (C17b): peak slope π/2 = 1.57 × the average.</summary>
++    public static float SineIn(float w) => .5f - .5f * Mathf.Cos(Mathf.PI * Mathf.Clamp01(w));
++    /// <summary>Sine out (C17b): from 1 at w = 1 to 0 at w = 0; fastest at the start of the return, settling at the end.</summary>
++    public static float SineOut(float w) => 1f - Mathf.Cos(Mathf.PI * .5f * Mathf.Clamp01(w));
++
++    /// <summary>How far below BaseFov a shot may narrow: MaxFovDeltaDeg, or down to fovMin for ShotKind.Inspect (C17c).</summary>
++    float MaxFovDrop(ShotSpec spec) =>
++        spec.kind == ShotKind.Inspect && spec.fovMin > 0f ? Mathf.Max(FrontRoomsShotTimings.MaxFovDeltaDeg, BaseFov - spec.fovMin) : FrontRoomsShotTimings.MaxFovDeltaDeg;
++
++    /// <summary>A blend time at this Camera motion for a full-pose shot (C17): ×1.5 at 0 &lt; motion &lt; 1, 0 (a cut) at Off.</summary>
++    static float Blend(ShotHandle shot, float seconds, float motion)
++    {
++        if (!shot.spec.fullPose) return seconds;
++        if (motion <= 0f) return 0f;
++        return motion < 1f ? seconds * FrontRoomsShotTimings.Inspect.HalfMotionTimeScale : seconds;
++    }
++
++    /// <summary>One Sine shot's weights (C17b). True when it has ended.</summary>
++    static bool TickSine(ShotHandle shot, float dt, float motion)
++    {
++        if (!shot.ending)
++        {
++            var blendIn = Blend(shot, shot.spec.blendIn, motion);
++            shot.weight = blendIn > 0f ? Mathf.MoveTowards(shot.weight, 1f, dt / blendIn) : 1f;
++            shot.rotWeight = shot.weight;
++            shot.eased = shot.rotEased = SineIn(shot.weight);
++            return false;
++        }
++        if (!shot.outStarted)
++        {
++            // The return starts from the pulls the camera has now (an early exit returns from where it is).
++            shot.outStarted = true;
++            shot.outPull = shot.eased;
++            shot.outRotPull = shot.rotEased;
++            shot.weight = shot.rotWeight = 1f;
++        }
++        var outPos = Blend(shot, shot.blendOut, motion);
++        var outRot = Blend(shot, shot.rotBlendOut > 0f ? shot.rotBlendOut : shot.blendOut, motion);
++        shot.weight = outPos > 0f ? Mathf.MoveTowards(shot.weight, 0f, dt / outPos) : 0f;
++        shot.rotWeight = outRot > 0f ? Mathf.MoveTowards(shot.rotWeight, 0f, dt / outRot) : 0f;
++        shot.eased = shot.outPull * SineOut(shot.weight);
++        shot.rotEased = shot.outRotPull * SineOut(shot.rotWeight);
++        return shot.weight <= 0f && shot.rotWeight <= 0f;
++    }
+ }
+--- a/Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
++++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
+@@ -146,6 +146,24 @@
+         public const float RevealHold = .3f;           // the Relay holds in the doorway, back-lit
+     }
+ 
++    // ---- EXAMINE: the close-up inspect shot (visual chat, research/inspect/10_design.md §2-§5, C19). The world is
++    // paused (Phase.Inspect, timeScale 0) from the E press until the camera starts home; every time here runs on the
++    // inspect clock (FrontRoomsInspect.Dt: captureDeltaTime under a harness, else unscaled).
++    public static class Inspect
++    {
++        public const float Reach = 1.6f, ApproachAngle = 60f, ReachHysteresis = .1f, AngleHysteresis = 5f;
++        public const float TravelBase = .30f, TravelPerMetre = .12f, TravelMin = .40f, TravelMax = .55f; // sine in-out
++        public const float BlendOut = .40f;          // position + FOV, sine out (= MinFovChangeSeconds)
++        public const float RotBlendOut = .15f;       // rotation, sine out (glass LookBlendBack precedent)
++        public const float HalfMotionTimeScale = 1.5f;
++        public const float CancelAfter = .2f, Cooldown = .3f;
++        public const float FovFlat = -15f, FovObject = -10f, MinSurface = .15f, MaxRise = .10f, MaxDrop = .55f, MaxYawOff = 25f;
++        public const float ZoomSeconds = .25f, ZoomFovSeconds = .40f, PanSeconds = .12f, TurnSeconds = .08f;
++        public const float BaseLookDeg = 3f, BaseLookSeconds = .12f, ScrollRearm = .2f;
++        public const float AdaptTau = .6f, AdaptTauCalm = 1.2f, AdaptMaxEv = 1f, AdaptContrast = 12f;
++        public const float FirstKeyHoldMax = 2.0f, FirstKeyBreakMove = .2f, FirstKeyBreakLookDeg = 2f;
++    }
++
+     // ---- 3.8 Being caught (full input lock; Phase.Dying)
+     public static class Caught
+     {
+--- a/Assets/Scripts/FrontRooms3DGame.cs
++++ b/Assets/Scripts/FrontRooms3DGame.cs
+@@ -28,7 +28,7 @@
+ // (FrontRoomsMapHunter).
+ public sealed partial class FrontRooms3DGame : MonoBehaviour
+ {
+-    enum Phase { Title, Playing, Paused, Caught }
++    enum Phase { Title, Playing, Paused, Caught, Inspect }   // append only (the touch playtest reads phases by name)
+     Phase phase;
+     Camera cam;
+     [SerializeField, Tooltip("The Relay rig serialized in this scene. It stays hidden until the hunter is released.")]
+@@ -51,6 +51,19 @@
+     public static bool PlayerWinded { get; private set; }
+     /// <summary>The sprint rule's answer this frame (Shift held, moving, stamina left, not winded).</summary>
+     public static bool PlayerSprinting { get; private set; }
++    /// <summary>EXAMINE (research/inspect/10_design.md): a close-up began (true, at the E press) or gave control back (false, as the camera starts home). False on teardown.</summary>
++    public static event Action<bool> Inspecting;
++    /// <summary>A close-up holds the world (from the E press until the camera starts home).</summary>
++    public static bool InspectingNow { get; private set; }
++    FrontRoomsInspectable inspectAimed, pendingInspect;
++    ShotHandle inspectShot;
++    Phase pausedFrom = Phase.Playing;
++    bool useLatch, backLatch, timeFrozenByInspect;
++    float inspectCooldown;
++    // C11: in a close-up the hint slot sits in the bottom band, clear of the framed subject (PROPOSED; 平面视觉 places it).
++    Vector2 promptHome;
++    bool promptHomeSet;
++    const float InspectHintBottom = 64f;
+ 
+     [SerializeField, Tooltip("The Level 0 maze's numbers: generation, run seed, streaming, light budget, dressing (Assets/Levels/FrontRoomsLevel0.asset). Empty: the code defaults.")]
+     FrontRoomsLevelProfile levelProfile;
+@@ -341,6 +354,9 @@
+         if (!Application.isPlaying) return;
+ 
+         Application.targetFrameRate = 60;
++        // C12c: a close-up's target went away (chunk unload, Level Designer rebuild): end it at once.
++        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
++        FrontRoomsInspect.AbortRequested += OnInspectAbortRequested;
+         // Full-resolution textures; MSAA, HDR and shadows come from the URP
+         // pipeline asset (Assets/Settings/FrontRooms_URP).
+         QualitySettings.globalTextureMipmapLimit = 0;
+@@ -963,6 +979,9 @@
+             local = input.Move;
+             sprintHeld = input.SprintHeld;
+         }
++        // C25: E and S that ended a close-up are latched until released (no door on the exit E, no walking backward on the exit S).
++        if (useLatch && !EHeld()) useLatch = false;
++        if (backLatch) { if (input.Move.y < -.1f) local.y = Mathf.Max(local.y, 0f); else backLatch = false; }
+         moveIntent = local.sqrMagnitude > .01f;
+         if (rig != null)
+         {
+@@ -1088,10 +1107,78 @@
+ #endif
+         UpdateRelayRig(dt);
+         UpdateReflectionZone(false);
++        // C5b: an E press on a close-up target commits with this frame's Relay state.
++        if (pendingInspect != null)
++        {
++            var t = pendingInspect;
++            pendingInspect = null;
++            if (CanShowInspect(t) && CanPressInspect()) BeginInspect(t);
++        }
+         // Picture layers last, after gameplay has read BaseEye this frame.
+         rig?.Tick(dt);
+     }
+ 
++    // ---------- EXAMINE (C4, C5): the gate, entry and exit ----------
++
++    bool HarnessRunning
++    {
++        get
++        {
++#if UNITY_EDITOR
++            return autopilot || autoBaseline;      // the game's own fields; no static the autopilot must set
++#else
++            return false;
++#endif
++        }
++    }
++
++    /// <summary>Hard checks (C4): false hides the prompt.</summary>
++    bool CanShowInspect(FrontRoomsInspectable t) =>
++        t != null && !HarnessRunning && mapPlay && phase == Phase.Playing
++        && (glassShot == null || !(glassShot.Active || glassShot.Blending))
++        && climbTime < 0f && !pullClear.HasValue && !RelayBlocksInspect()
++        && FrontRoomsInspect.CanOpen(t, rig);
++
++    /// <summary>Transient checks (C4): false keeps the prompt but swallows E.</summary>
++    bool CanPressInspect() => !useLatch && inspectCooldown <= 0f && (rig == null || !rig.InShot);
++
++    /// <summary>Only cues the player perceives (RELAY_PURSUIT_REDESIGN §8 honest senses). Never SeesPlayer.</summary>
++    bool RelayBlocksInspect() => relay != null && relay.Released
++        && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor || relay.PlayerSeesRelay);
++
++    void BeginInspect(FrontRoomsInspectable t)
++    {
++        ReleaseGlass();
++        holdProgress = 0f;
++        inspectShot = FrontRoomsInspect.Open(t, rig);
++        if (inspectShot == null) return;
++        InspectingNow = true;
++        SetPhase(Phase.Inspect);                            // timeScale 0 (C8)
++        Inspecting?.Invoke(true);
++        Event("inspect", t.Id);
++    }
++
++    void EndInspect(bool byBack)
++    {
++        if (!InspectingNow) return;
++        FrontRoomsInspect.Close(rig);                       // rig.EndShot: rotation 0.15 s, position 0.40 s
++        InspectingNow = false;                              // before SetPhase, so C8's guard does not recurse
++        SetPhase(Phase.Playing);                            // timeScale 1, settle frames
++        Inspecting?.Invoke(false);
++        useLatch = true;
++        backLatch = byBack;
++        inspectCooldown = FrontRoomsShotTimings.Inspect.Cooldown;
++    }
++
++    void OnInspectAbortRequested()
++    {
++        var shot = inspectShot;
++        EndInspect(false);
++        if (shot != null) rig?.CancelShot(shot, 0f);
++    }
++
++    void ResumeFromPause() => SetPhase(pausedFrom);
++
+     /// <summary>
+     /// The reflection cube for where the player stands (FrontRoomsLook, the visual chat's): the
+     /// zone's kind, or the dead-lamp cube under a dead, dim or missing lamp, keyed by the lamp's
+@@ -1265,8 +1352,18 @@
+         // Gameplay aims from the base eye: shots, shakes and leans are picture only.
+         var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+         var hitPoint = Vector3.zero;
+-        if (Physics.Raycast(new Ray(eye.position, eye.rotation * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
++        var ray = new Ray(eye.position, eye.rotation * Vector3.forward);
++        var hitAny = Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore);
++        // EXAMINE (C3): the registry's aim boxes are asked first; a box on a wall face wins up to 2 cm behind the
++        // physics hit, a door or furniture in front of it still wins.
++        inspectAimed = null;
++        if (FrontRoomsInspect.Find(ray, hitAny ? hit.distance + FrontRoomsInspect.SurfaceSlack : Reach, out var inspectTarget) && CanShowInspect(inspectTarget))
+         {
++            inspectAimed = inspectTarget;
++            prompt = inspectTarget.Prompt;
++        }
++        else if (hitAny)
++        {
+             prompt = map.Describe(hit.collider, out aimedHold);
+             // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
+             if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
+@@ -1289,6 +1386,14 @@
+         var eDown = EDown();
+         var glassOwnsE = glassShot != null && aimedHold && aimed == glassPane && !glassShot.Shattered && (glassShot.Active || glassShot.Blending);
+         var pressed = eDown && (glassOwnsE || rig == null || !rig.Consume(ShotInput.Use));
++        // C5: E on a close-up target is committed after relay.Tick (C5b). A transient refusal (latch, cooldown, a
++        // shot running) keeps the prompt and swallows E: it never falls through to the door or wall behind.
++        if (inspectAimed != null)
++        {
++            holdProgress = 0f;
++            if (pressed && CanPressInspect()) pendingInspect = inspectAimed;
++            return;
++        }
+         if (aimed == null)
+         {
+             holdProgress = 0f;
+@@ -2037,12 +2142,24 @@
+     }
+     void SetPhase(Phase p)
+     {
++        // C8: a stray resume never strands a close-up; the phase a pause came from is recorded here, for every caller.
++        if (p == Phase.Playing && InspectingNow) { EndInspect(false); return; }
++        if (p == Phase.Paused && phase != Phase.Paused) pausedFrom = phase;
+         var wasPlaying = phase == Phase.Playing;
+         var wasPaused = phase == Phase.Paused;
++        var wasHud = wasPlaying || phase == Phase.Inspect;
+         phase = p; bool playing = p == Phase.Playing;
++        // Inspect is a HUD phase: the panels stay and rig.HudFade fades them; the crosshair goes at once.
++        var hudPhase = playing || p == Phase.Inspect;
+         if ((p == Phase.Paused) != wasPaused) Paused?.Invoke(p == Phase.Paused);
+-        if (playing && !wasPlaying) gameplayHudAlpha = 0f;
+-        if (!playing) gameplayHudAlpha = 0f;
++        if (hudPhase && !wasHud) gameplayHudAlpha = 0f;
++        if (!hudPhase) gameplayHudAlpha = 0f;
++        // The close-up pauses the world (Phase.Inspect + timeScale 0); 1 is restored only where the close-up set 0.
++        var freeze = p == Phase.Inspect || (p == Phase.Paused && pausedFrom == Phase.Inspect);
++        if (freeze) Time.timeScale = 0f;
++        else if (timeFrozenByInspect) Time.timeScale = 1f;
++        timeFrozenByInspect = freeze;
++        if (p != Phase.Paused) pausedFrom = Phase.Playing;
+         if (p != Phase.Paused)
+         {
+             displaySettingsOpen = false;
+@@ -2052,7 +2169,7 @@
+         // is leaving. This is the only frame in which the title layer and the
+         // playing HUD overlap; all title children are non-raycast targets.
+         var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
+-        overlay.SetActive(!playing || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
++        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
+         if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
+             ? new Color(0f, 0f, 0f, 0f)
+             : new Color(.93f, .92f, .88f, .98f);
+@@ -2068,12 +2185,12 @@
+             if (logoLeftImage != null) logoLeftImage.enabled = LogoShown;
+             if (logoSlideImage != null) logoSlideImage.enabled = LogoShown;
+         }
+-        if (roomPanel != null) roomPanel.SetActive(playing);
+-        if (threatPanel != null) threatPanel.SetActive(playing);
+-        if (keyPanel != null) keyPanel.SetActive(playing);
++        if (roomPanel != null) roomPanel.SetActive(hudPhase);
++        if (threatPanel != null) threatPanel.SetActive(hudPhase);
++        if (keyPanel != null) keyPanel.SetActive(hudPhase);
+         if (contextPanel != null) contextPanel.SetActive(false);
+         ApplyGameplayHudAlpha();
+-        Cursor.lockState = playing ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !playing;
++        Cursor.lockState = hudPhase ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !hudPhase;
+         if (overlayText != null)
+         {
+             overlayText.enabled = !FrontRoomsHandheld.Active && p != Phase.Title && !displaySettingsOpen;
+@@ -2090,8 +2207,8 @@
+             if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
+             if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK        SOCKET · SPRINT\nUSE · DOOR        HOLD USE · BREAK GLASS";
+         }
+-        // Re-locking the cursor can report one large mouse jump: ignore the first frames back.
+-        if (playing && wasPaused) mouseSettleFrames = 2;
++        // Re-locking the cursor can report one large mouse jump: ignore the first frames back (also Paused → Inspect).
++        if (hudPhase && wasPaused) mouseSettleFrames = 2;
+         if (p == Phase.Caught)
+         {
+             var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
+@@ -2110,7 +2227,7 @@
+ #if UNITY_EDITOR
+         if (autopilot) return;
+ #endif
+-        if (!focused && phase == Phase.Playing) SetPhase(Phase.Paused);
++        if (!focused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
+     }
+ 
+     void OnApplicationPause(bool paused)
+@@ -2118,7 +2235,7 @@
+ #if UNITY_EDITOR
+         if (autopilot) return;
+ #endif
+-        if (paused && phase == Phase.Playing) SetPhase(Phase.Paused);
++        if (paused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
+     }
+     void Update()
+     {
+@@ -2129,12 +2246,22 @@
+         else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
+         else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
+         else if (displaySettingsOpen) HandleSettingsKeys();
+-        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
++        else if (phase == Phase.Inspect)
++        {
++            // C6: E, S or Esc leaves the close-up once CancelAfter has passed (Esc exits: no pause-card loop).
++            if ((input.UseDown || input.ShotBackDown || input.PauseDown) && FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter)
++                EndInspect(input.ShotBackDown);
++        }
++        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused))
++        {
++            if (phase == Phase.Playing) SetPhase(Phase.Paused);
++            else ResumeFromPause();
++        }
+         // R restarts from the pause or caught card, never while the settings panel is open.
+         // Touch restart gets one confirmation step because it is easy to hit while
+         // reaching for the pause card; desktop keyboard and the caught retry chip
+         // retain their immediate restart behavior.
+-        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title)
++        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
+         {
+             if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
+             {
+@@ -2153,8 +2280,18 @@
+ #endif
+         if (phase == Phase.Title) UpdateTitleSequence(dt);
+         if (logoFading) UpdateLogoFade(dt);
+-        if (phase == Phase.Playing && mapPlay)
++        // C7: Inspect first, then else-if Playing, so the rig ticks exactly once per frame.
++        if (inspectCooldown > 0f) inspectCooldown -= FrontRoomsInspect.Dt;
++        if (phase == Phase.Inspect)
+         {
++            var u = FrontRoomsInspect.Dt;
++            var look = Vector2.zero;
++            if (mouseSettleFrames > 0) mouseSettleFrames--; else look = input.Look;
++            FrontRoomsInspect.Tick(u, look, 0f, false);        // v1; after T3: input.Zoom, input.ZoomToggleDown
++            rig?.Tick(u);
++        }
++        else if (phase == Phase.Playing && mapPlay)
++        {
+             elapsed += dt;
+             flashTime -= dt;
+             FrontRoomsCaptions.Tick(dt);
+@@ -2171,7 +2308,9 @@
+     void UpdateHud()
+     {
+         bool play = phase == Phase.Playing;
+-        if (play)
++        var inspecting = phase == Phase.Inspect;
++        // C11: Inspect keeps the gameplay HUD alpha (rig.HudFade fades the panels); the prompt slot carries the hint.
++        if (play || inspecting)
+             gameplayHudAlpha = Mathf.MoveTowards(gameplayHudAlpha, 1f, Time.unscaledDeltaTime / GameplayHudFadeSeconds);
+         else
+             gameplayHudAlpha = 0f;
+@@ -2181,17 +2320,28 @@
+         var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
+         var released = relay != null && relay.Released;
+         var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "RELAY  /  BREAKING DOOR" : "RELAY  /  " + relay.State.ToString().ToUpperInvariant();
+-        roomMetaText.text = play ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
+-        roomText.text = play ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
++        var hudOn = play || inspecting;
++        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
++        roomText.text = hudOn ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
+         // The Relay's state and distance are an assist, off by default.
+-        var showThreat = play && released && FrontRoomsSettings.RelayReadout;
++        var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
+         threatStateText.text = showThreat ? threat : "";
+         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
+         if (crosshairImage != null) crosshairImage.enabled = play;
+         // The hint card is timed: the first-run hint, then only flashes.
+         var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : elapsed < CalmHintSeconds ? CurrentCalmHint : "";
+         contextText.text = play ? hint : "";
+-        if (promptText != null) promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
++        if (promptText != null)
++        {
++            if (inspecting) promptText.text = DisplayPrompt(FrontRoomsInspect.HintText);
++            else promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
++            var c = promptText.color;
++            c.a = inspecting ? FrontRoomsInspect.HintAlpha : 1f;   // the hint's own alpha, not the HUD fade
++            promptText.color = c;
++            if (!promptHomeSet) { promptHome = promptText.rectTransform.anchoredPosition; promptHomeSet = true; }
++            var canvasHeight = hudCanvas != null ? ((RectTransform)hudCanvas.transform).rect.height : 1080f;
++            promptText.rectTransform.anchoredPosition = inspecting ? new Vector2(promptHome.x, -(canvasHeight * .5f - InspectHintBottom)) : promptHome;
++        }
+         if (holdBar != null)
+         {
+             holdBar.SetActive(play && holdProgress > 0f);
+@@ -2205,9 +2355,9 @@
+             staminaSegments[i].enabled = tired;
+             staminaSegments[i].color = stamina >= (i + .5f) * (StaminaSeconds / staminaSegments.Length) ? new Color(.957f, .875f, .231f) : new Color(1f, 1f, 1f, .25f);
+         }
+-        if (roomPanel != null) roomPanel.SetActive(play);
++        if (roomPanel != null) roomPanel.SetActive(hudOn);
+         if (threatPanel != null) threatPanel.SetActive(showThreat);
+-        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id);
++        var showKey = hudOn && !inStartRooms && map.HasKeyFor(zone.id);
+         if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
+         {
+             keyLabelZone = zone.id;
+@@ -2263,7 +2413,7 @@
+         if (threatHudGroup != null) threatHudGroup.alpha = hud;
+         if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
+         if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
+-        if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
++        if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
+         if (keyHudGroup != null) keyHudGroup.alpha = hud;
+     }
+     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
+@@ -2320,6 +2470,12 @@
+             FrontRoomsMobileBackBridge.BackPressed -= HandleMobileBack;
+         PlayerStamina01 = 1f;
+         PlayerWinded = PlayerSprinting = false;
++        // C12: a close-up torn down (R restart, Play stopped) gives the world back.
++        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
++        if (timeFrozenByInspect) Time.timeScale = 1f;
++        timeFrozenByInspect = false;
++        if (InspectingNow) { InspectingNow = false; Inspecting?.Invoke(false); }
++        FrontRoomsInspect.Abort();
+         if (phase == Phase.Paused) Paused?.Invoke(false);
+         if (map != null) MapRunEnded?.Invoke();
+         OnDestroyMobile();
+@@ -2328,6 +2484,8 @@
+     void End()
+     {
+         if (phase != Phase.Playing) return;
++        // C12b: caught during a close-up's return: nothing freezes mid-blend (other shots behave as before).
++        if (FrontRoomsInspect.Active) { FrontRoomsInspect.Abort(); rig?.ResetLayers(); }
+         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
+         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
+         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
+--- a/Assets/Scripts/FrontRooms3DGame.Mobile.cs
++++ b/Assets/Scripts/FrontRooms3DGame.Mobile.cs
+@@ -129,8 +129,10 @@
+         if (this == null || phase == Phase.Title || phase == Phase.Caught) return;
+         if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
+         if (displaySettingsOpen) { ToggleDisplaySettings(); return; }
++        // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
++        if (phase == Phase.Inspect) { if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false); return; }
+         if (phase == Phase.Playing) SetPhase(Phase.Paused);
+-        else if (phase == Phase.Paused) SetPhase(Phase.Playing);
++        else if (phase == Phase.Paused) ResumeFromPause();
+     }
+ 
+     void RequestMobileRestartConfirmation()
+@@ -168,7 +170,14 @@
+     void HandleMobileLookTap(Vector2 viewport)
+     {
+         if (phase != Phase.Playing || map == null || cam == null) return;
++        // C15: no taps through a shot camera (it may sit 0.36 m from a leaf); a tap on a close-up target opens it through the gate.
++        if (rig != null && rig.InShot) return;
+         var ray = cam.ViewportPointToRay(new Vector3(viewport.x, viewport.y, 0f));
++        if (FrontRoomsInspect.Find(ray, Reach, out var tapTarget) && CanShowInspect(tapTarget))
++        {
++            if (CanPressInspect()) pendingInspect = tapTarget;
++            return;
++        }
+         if (!Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore)) return;
+         var description = map.Describe(hit.collider, out var hold);
+         if (hold || string.IsNullOrEmpty(description)) return;
+@@ -185,7 +194,7 @@
+             mobileTouch.SetRestartConfirmation(false);
+         }
+         var state = phase == Phase.Title ? FrontRoomsTouchControls.MenuState.Title
+-            : phase == Phase.Playing ? FrontRoomsTouchControls.MenuState.Playing
++            : phase == Phase.Playing || phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Playing   // C13 interim: MenuState.Inspect lands with T1
+             : phase == Phase.Paused ? (displaySettingsOpen ? FrontRoomsTouchControls.MenuState.Settings : FrontRoomsTouchControls.MenuState.Paused)
+             : FrontRoomsTouchControls.MenuState.Caught;
+         mobileTouch.SetMenuState(state);

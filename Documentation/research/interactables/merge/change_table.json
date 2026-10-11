@@ -1,0 +1,2703 @@
+{
+ "Kit_DoorCloser_Arm": {
+  "name": "Kit_DoorCloser_Arm",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorCloser_Arm'] vs ['Kit_DoorCloser_Arm_LOD0', 'Kit_DoorCloser_Arm_LOD1']",
+  "tris": [
+   1112,
+   null,
+   1112,
+   1112
+  ],
+  "slots": [
+   [
+    "Prop_SteelBrown"
+   ],
+   [
+    "Prop_SteelBrown"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    20.0
+   ],
+   [
+    1.5,
+    5.0,
+    20.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "7ee82570c508d0219ee5b7d08647eca76f92d9e3",
+  "new_fbx": "ac89f0f3bb88e4932a08ab361c919bd30b430b1c",
+  "main_json": "e5b8b2062aa1bfa60b030214dd17d3f8313b2904",
+  "new_json": "341afea9d121e23d6195120bf682c0f0b54041f8"
+ },
+ "Kit_DoorCloser_Body": {
+  "name": "Kit_DoorCloser_Body",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorCloser_Body'] vs ['Kit_DoorCloser_Body_LOD0', 'Kit_DoorCloser_Body_LOD1']",
+  "tris": [
+   3236,
+   null,
+   3236,
+   1067
+  ],
+  "slots": [
+   [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    20.0
+   ],
+   [
+    1.5,
+    5.0,
+    20.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "a2f375742f880d23533628199e709f8afc0ca260",
+  "new_fbx": "a08024e5b106a60e3644af8e6e09fbc0602779de",
+  "main_json": "029b130dddeadd142ca11691564e9084eb04308b",
+  "new_json": "cb8639982a88c10a09cf54642aa3bf57f16a80fc"
+ },
+ "Kit_DoorCloser_Forearm": {
+  "name": "Kit_DoorCloser_Forearm",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorCloser_Forearm'] vs ['Kit_DoorCloser_Forearm_LOD0', 'Kit_DoorCloser_Forearm_LOD1']",
+  "tris": [
+   940,
+   null,
+   940,
+   940
+  ],
+  "slots": [
+   [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    20.0
+   ],
+   [
+    1.5,
+    5.0,
+    20.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "b24d656be23674327db61f76e63c8a688ef6a7ad",
+  "new_fbx": "dac97ca4e080263a9d21401a4f730b222f3ca1e6",
+  "main_json": "df9b043d1a30c11bd8b64980da3fb182d75a193d",
+  "new_json": "4997709810d77a74e2e90665a5fc1b0376e0f511"
+ },
+ "Kit_DoorCloser_Shoe": {
+  "name": "Kit_DoorCloser_Shoe",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorCloser_Shoe'] vs ['Kit_DoorCloser_Shoe_LOD0', 'Kit_DoorCloser_Shoe_LOD1']",
+  "tris": [
+   570,
+   null,
+   922,
+   922
+  ],
+  "slots": [
+   [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_SteelBrown",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    20.0
+   ],
+   [
+    1.5,
+    5.0,
+    20.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "2bf555cfe3384aa9184bcf96a595814c2f0e49e9",
+  "new_fbx": "3a67b733c64f294d4e0f81ad086aa975b91b68c0",
+  "main_json": "25033df46d0c83adb058069162aa22de5aa59472",
+  "new_json": "23f7d03207f46a2b655c58994b99f09402e907cc"
+ },
+ "Kit_DoorFrame_Steel": {
+  "name": "Kit_DoorFrame_Steel",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_DoorFrame_Steel_LOD0: materials ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome', 'Prop_Aluminium'] vs ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome']",
+   "Kit_DoorFrame_Steel_LOD1: materials ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome', 'Prop_Aluminium'] vs ['Prop_SteelBrown', 'Prop_Rubber', 'Prop_Chrome']"
+  ],
+  "tris": [
+   3866,
+   1430,
+   3866,
+   1430
+  ],
+  "slots": [
+   [
+    "Prop_SteelBrown",
+    "Prop_Rubber",
+    "Prop_Chrome",
+    "Prop_Aluminium"
+   ],
+   [
+    "Prop_SteelBrown",
+    "Prop_Rubber",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "d45236086b6b18fdd2fd428f4296ef385c7bd5ad",
+  "new_fbx": "f19ad102d6369d21e3af0a0b7dd637ed42a36183",
+  "main_json": "8fa919c965c0c38cd5b57d2c922f5dca5c6e247c",
+  "new_json": "60ab758e81364a61121ac3b396e441c647a2c51e"
+ },
+ "Kit_DoorFrame_Steel_Alu": {
+  "name": "Kit_DoorFrame_Steel_Alu",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_DoorFrame_Steel_LOD0: materials ['Prop_Aluminium', 'Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome'] vs ['Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome']",
+   "Kit_DoorFrame_Steel_LOD1: materials ['Prop_Aluminium', 'Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome'] vs ['Prop_Aluminium', 'Prop_Rubber', 'Prop_Chrome']"
+  ],
+  "tris": [
+   3866,
+   1430,
+   3866,
+   1430
+  ],
+  "slots": [
+   [
+    "Prop_Aluminium",
+    "Prop_Rubber",
+    "Prop_Chrome",
+    "Prop_Aluminium"
+   ],
+   [
+    "Prop_Aluminium",
+    "Prop_Rubber",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "89f4bd726c405ffb595dd51a9a301a66e76f7856",
+  "new_fbx": "216c41a5a06e8f5a3ce8b9bf3f4676c71846f935",
+  "main_json": "827c663e4662be86efc96666a221d420353ad8cb",
+  "new_json": "4fb74916d18ea2f202cff71678cf010f66735065"
+ },
+ "Kit_DoorFrame_Wood": {
+  "name": "Kit_DoorFrame_Wood",
+  "fbx": "PROMOTE",
+  "json": "keep",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_DoorFrame_Wood_LOD0: UVs differ by 1.07400",
+   "Kit_DoorFrame_Wood_LOD1: UVs differ by 1.07400"
+  ],
+  "tris": [
+   3152,
+   1260,
+   3152,
+   1260
+  ],
+  "slots": [
+   [
+    "Prop_WoodWalnut",
+    "Prop_WoodOak",
+    "Prop_Brass"
+   ],
+   [
+    "Prop_WoodWalnut",
+    "Prop_WoodOak",
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "443f898b5e6429a61800b04953500740df211e1d",
+  "new_fbx": "cb469c1431d99492f082fc3c76f3761ed87e194c",
+  "main_json": "eced0178f239402f789f74a3f3492d6825ac7de2",
+  "new_json": "eced0178f239402f789f74a3f3492d6825ac7de2"
+ },
+ "Kit_DoorLeaf_Steel": {
+  "name": "Kit_DoorLeaf_Steel",
+  "fbx": "keep",
+  "json": "keep",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   3930,
+   1572,
+   3930,
+   1572
+  ],
+  "slots": [
+   [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "a4812c84cff24e06c30e9337ba05533a5094587a",
+  "new_fbx": "a4812c84cff24e06c30e9337ba05533a5094587a",
+  "main_json": "600dc813904137aeb9f4d7af294fbea6dd417d2e",
+  "new_json": "600dc813904137aeb9f4d7af294fbea6dd417d2e"
+ },
+ "Kit_DoorLeaf_SteelLite": {
+  "name": "Kit_DoorLeaf_SteelLite",
+  "fbx": "keep",
+  "json": "keep",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   4586,
+   1834,
+   4586,
+   1834
+  ],
+  "slots": [
+   [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome",
+    "Prop_Glass"
+   ],
+   [
+    "Door_Enamel",
+    "Prop_Aluminium",
+    "Prop_Chrome",
+    "Prop_Glass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "46aed89053228a8bdc7d9faa18fb1cd0c805203e",
+  "new_fbx": "46aed89053228a8bdc7d9faa18fb1cd0c805203e",
+  "main_json": "62de8075dd2fc6ab82cf7d739f9130d92cce8e4d",
+  "new_json": "62de8075dd2fc6ab82cf7d739f9130d92cce8e4d"
+ },
+ "Kit_DoorLeaf_Steel_PaintedMetal": {
+  "name": "Kit_DoorLeaf_Steel_PaintedMetal",
+  "fbx": "keep",
+  "json": "keep",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   3930,
+   1572,
+   3930,
+   1572
+  ],
+  "slots": [
+   [
+    "Painted_Metal",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   [
+    "Painted_Metal",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "7dbe19a147acac8c5a6f090833bc92885cb39e1c",
+  "new_fbx": "7dbe19a147acac8c5a6f090833bc92885cb39e1c",
+  "main_json": "5b2079f8618db967ef9a7c231b1021715de7e9d6",
+  "new_json": "5b2079f8618db967ef9a7c231b1021715de7e9d6"
+ },
+ "Kit_DoorLeaf_Veneer": {
+  "name": "Kit_DoorLeaf_Veneer",
+  "fbx": "keep",
+  "json": "keep",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   2464,
+   886,
+   2464,
+   886
+  ],
+  "slots": [
+   [
+    "Door_Veneer",
+    "Prop_Brass"
+   ],
+   [
+    "Door_Veneer",
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [],
+  "main_fbx": "d537920fb2f0233783402e9b2288ea22b4d696c7",
+  "new_fbx": "d537920fb2f0233783402e9b2288ea22b4d696c7",
+  "main_json": "6f8e108aabf8182c0e6a492061017bc234effd23",
+  "new_json": "6f8e108aabf8182c0e6a492061017bc234effd23"
+ },
+ "Kit_DoorLeaf_Veneer_Oak": {
+  "name": "Kit_DoorLeaf_Veneer_Oak",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorLeaf_Veneer_LOD0', 'Kit_DoorLeaf_Veneer_LOD1'] vs ['Kit_DoorLeaf_Veneer_Oak_LOD0', 'Kit_DoorLeaf_Veneer_Oak_LOD1']",
+  "tris": [
+   2464,
+   886,
+   2464,
+   886
+  ],
+  "slots": [
+   [
+    "Prop_WoodOak",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_WoodOak",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [
+   "new field grainAxis"
+  ],
+  "main_fbx": "9f2c3a31012479c453b2843e4b73923c2571a1a7",
+  "new_fbx": "7f739bc5134767714fdf8428d2c46db8bb7aca38",
+  "main_json": "fbc3f3a2d040a244ba7a7bb6bb2a931cfcb955d4",
+  "new_json": "d13ec77bcae688e0f5ddf8daec6ee7c0326d2119"
+ },
+ "Kit_DoorLeaf_Ward": {
+  "name": "Kit_DoorLeaf_Ward",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_DoorLeaf_Ward_LOD0: UVs differ by 3.08900",
+   "Kit_DoorLeaf_Ward_LOD1: UVs differ by 3.08900"
+  ],
+  "tris": [
+   4930,
+   1972,
+   4930,
+   1972
+  ],
+  "slots": [
+   [
+    "Prop_WoodLaminate",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_WoodLaminate",
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    -1.0
+   ],
+   [
+    4.0,
+    12.0,
+    -1.0
+   ]
+  ],
+  "other": [
+   "new field grainAxis"
+  ],
+  "main_fbx": "6a58ff2bd209ae9b2ead6419bd43c0f0425c98dd",
+  "new_fbx": "b93701b84ff6590f61139b8ea45617c3c2a91c5f",
+  "main_json": "44dc5a37fcafdefad9034e0e69cd44c953a5d096",
+  "new_json": "d5c6d0e9532e23c0fba1308b0d987b8eb2548333"
+ },
+ "Kit_DoorNumberPlate": {
+  "name": "Kit_DoorNumberPlate",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorNumberPlate'] vs ['Kit_DoorNumberPlate_LOD0', 'Kit_DoorNumberPlate_LOD1']",
+  "tris": [
+   480,
+   null,
+   480,
+   480
+  ],
+  "slots": [
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    15.0
+   ],
+   [
+    1.5,
+    5.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "07424526332df2fbc979a8f69ecb9f7c37f76487",
+  "new_fbx": "75b30fb13b030a00d57ad6153dba8e5c3ae0d2d9",
+  "main_json": "94f8400db4e8490218dcb7fb20eba9831668e19a",
+  "new_json": "c22beae6751df8073f2f661ed2831c96b8788252"
+ },
+ "Kit_DoorNumberPlate_Blue": {
+  "name": "Kit_DoorNumberPlate_Blue",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorNumberPlate'] vs ['Kit_DoorNumberPlate_LOD0', 'Kit_DoorNumberPlate_LOD1']",
+  "tris": [
+   480,
+   null,
+   480,
+   480
+  ],
+  "slots": [
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    15.0
+   ],
+   [
+    1.5,
+    5.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "a2c31a6d973ae885a6bf7ce57ec6c2454f5adc28",
+  "new_fbx": "d4db7b7497e4ca647bfa212c4e3abb3f468444c4",
+  "main_json": "6aa4f2373947b945f9780ea4900179b8f355ddd2",
+  "new_json": "e45ecffda3d8c2fe29c3d474d435b16329a60ec7"
+ },
+ "Kit_DoorNumberPlate_White": {
+  "name": "Kit_DoorNumberPlate_White",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorNumberPlate'] vs ['Kit_DoorNumberPlate_LOD0', 'Kit_DoorNumberPlate_LOD1']",
+  "tris": [
+   480,
+   null,
+   480,
+   480
+  ],
+  "slots": [
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    5.0,
+    15.0
+   ],
+   [
+    1.5,
+    5.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "6e5d195a80af92564f03ad1ba014be2d1f8b6cf4",
+  "new_fbx": "80e206bcedc4b967a0c64da9de49b39663e682f6",
+  "main_json": "d200d44fe49706950efe08d5389fa738639df148",
+  "new_json": "b308a61fdf6c6d6279084441f98326c95bf7699d"
+ },
+ "Kit_DoorSign": {
+  "name": "Kit_DoorSign",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_DoorSign'] vs ['Kit_DoorSign_LOD0', 'Kit_DoorSign_LOD1']",
+  "tris": [
+   664,
+   null,
+   664,
+   664
+  ],
+  "slots": [
+   [
+    "Prop_PlasticBlack",
+    "Prop_PlasticWhite",
+    "Prop_SignEngraved",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_PlasticBlack",
+    "Prop_PlasticWhite",
+    "Prop_SignEngraved",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    2.0,
+    6.0,
+    25.0
+   ],
+   [
+    2.0,
+    6.0,
+    25.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "ac49d16ba8844164a43ea9d0e336a95ec34b668c",
+  "new_fbx": "f548487db3e008ae417fc5a487b6bc24f15efa93",
+  "main_json": "9834a72ec1f51eb93dcba8fbdfe39ca04ea3c4a2",
+  "new_json": "8a15594f98dc2946a8abc4d49645b03f268f1167"
+ },
+ "Kit_ExitDevice_Crossbar": {
+  "name": "Kit_ExitDevice_Crossbar",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_ExitDevice_Crossbar'] vs ['Kit_ExitDevice_Crossbar_LOD0', 'Kit_ExitDevice_Crossbar_LOD1']",
+  "tris": [
+   3948,
+   null,
+   3588,
+   3588
+  ],
+  "slots": [
+   [
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_Aluminium",
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    2.0,
+    6.0,
+    25.0
+   ],
+   [
+    2.0,
+    6.0,
+    25.0
+   ]
+  ],
+  "other": [
+   "new field swingClearWorstZ",
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "28d6297b0e2490312aec7d7d39204200801f9c57",
+  "new_fbx": "efba691f35dd55a70b722781f76e20ec57a24993",
+  "main_json": "e2664aa4da5862a809acceeb84c9ec3843404ef2",
+  "new_json": "3ea5975a385bf2b4e62a3e30d972e51d97ba2547"
+ },
+ "Kit_KeyCabinet": {
+  "name": "Kit_KeyCabinet",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyCabinet'] vs ['Kit_KeyCabinet_LOD0', 'Kit_KeyCabinet_LOD1']",
+  "tris": [
+   6804,
+   null,
+   6804,
+   6804
+  ],
+  "slots": [
+   [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite",
+    "Prop_Chrome",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite",
+    "Prop_Chrome",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    3.0,
+    8.0,
+    40.0
+   ],
+   [
+    3.0,
+    8.0,
+    40.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "f7e570c78981f9132c11feb65a50b157d347ae3a",
+  "new_fbx": "29d8332f3595e3b418a5a146150f0c6111f87502",
+  "main_json": "2f1aba0a36b13954b256c4024f6954a85cf50bcc",
+  "new_json": "028d87124e5f2500c1d7185c8bcfd05ad3de049a"
+ },
+ "Kit_KeyHook": {
+  "name": "Kit_KeyHook",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyHook'] vs ['Kit_KeyHook_LOD0', 'Kit_KeyHook_LOD1']",
+  "tris": [
+   530,
+   null,
+   922,
+   922
+  ],
+  "slots": [
+   [
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "d3c0c2d954b14eab2c03074d19628e73a989a7aa",
+  "new_fbx": "847092533ea55486cfdd87facc351e0763bb5b37",
+  "main_json": "53e87e3b09df0b55f091c9b6d3414922e188060e",
+  "new_json": "62082ace66545a9ce70429a2f137a5e8098716c4"
+ },
+ "Kit_KeyHookBoard": {
+  "name": "Kit_KeyHookBoard",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyHookBoard'] vs ['Kit_KeyHookBoard_LOD0', 'Kit_KeyHookBoard_LOD1']",
+  "tris": [
+   4392,
+   null,
+   4392,
+   4392
+  ],
+  "slots": [
+   [
+    "Prop_WoodDark",
+    "Prop_Brass",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_WoodDark",
+    "Prop_Brass",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    3.0,
+    8.0,
+    40.0
+   ],
+   [
+    3.0,
+    8.0,
+    40.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "22f3ae0ee5b966a5948b4131750385233f21d1e3",
+  "new_fbx": "242f399cf2c6772a29006bada4433783fad4e21f",
+  "main_json": "7145328b40f7e05cf52538c8bf411b7032e01c9e",
+  "new_json": "cb54ff0dc1a2ae0e2a6031734d8f634d902c13d1"
+ },
+ "Kit_KeyRing": {
+  "name": "Kit_KeyRing",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyRing'] vs ['Kit_KeyRing_LOD0', 'Kit_KeyRing_LOD1']",
+  "tris": [
+   1972,
+   null,
+   1972,
+   1972
+  ],
+  "slots": [
+   [
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    12.0
+   ],
+   [
+    1.0,
+    3.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "cb436f7215986c0295c49f73074cd61b8ea7d33a",
+  "new_fbx": "a0c1bdc0ebab3585b13d0142b349ce5faf9d7306",
+  "main_json": "32f0c5a07da94e618d725af990b878db56666f69",
+  "new_json": "c15ad4b93dd5e942aab9b3d8511466b4eeb516e0"
+ },
+ "Kit_KeyTag_Long": {
+  "name": "Kit_KeyTag_Long",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Long'] vs ['Kit_KeyTag_Long_LOD0', 'Kit_KeyTag_Long_LOD1']",
+  "tris": [
+   1038,
+   null,
+   1038,
+   1038
+  ],
+  "slots": [
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "4c96e2061738f57e9b5c32d2d2c7530a40527bc6",
+  "new_fbx": "fc655f7f1eca0953ca9bf94df34baa341d13af7f",
+  "main_json": "846b726a282273c1b6f15be5ef2cef8d95183a4b",
+  "new_json": "62800829287bcfb765e70e8168f0172fe3dee103"
+ },
+ "Kit_KeyTag_Long_Blue": {
+  "name": "Kit_KeyTag_Long_Blue",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Long'] vs ['Kit_KeyTag_Long_LOD0', 'Kit_KeyTag_Long_LOD1']",
+  "tris": [
+   1038,
+   null,
+   1038,
+   1038
+  ],
+  "slots": [
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "9659fed340dba4cbeee5d12fd0ae12ea2aeb75b8",
+  "new_fbx": "ac9e2ac927d873947e410ed406125a5afcbef77f",
+  "main_json": "1b42cf86dc4d7c6c8de012785200f1688af05b26",
+  "new_json": "7db30d57af2af80d56cddeb90ee7453f8b584d9d"
+ },
+ "Kit_KeyTag_Long_White": {
+  "name": "Kit_KeyTag_Long_White",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Long'] vs ['Kit_KeyTag_Long_LOD0', 'Kit_KeyTag_Long_LOD1']",
+  "tris": [
+   1038,
+   null,
+   1038,
+   1038
+  ],
+  "slots": [
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "26dd25bff093190d5ec704c9e5dff20abb36846d",
+  "new_fbx": "a27e95943a96a0557019aec67729765a20865638",
+  "main_json": "e4d3e0aff0fe5529c95036f0521a77fb8d02178f",
+  "new_json": "d3bec018c18c8ab7a77ec3b8f91925024b837acd"
+ },
+ "Kit_KeyTag_Rect": {
+  "name": "Kit_KeyTag_Rect",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Rect'] vs ['Kit_KeyTag_Rect_LOD0', 'Kit_KeyTag_Rect_LOD1']",
+  "tris": [
+   1038,
+   null,
+   1038,
+   1038
+  ],
+  "slots": [
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "46e31bd038a7031e173272a9409370f288c03380",
+  "new_fbx": "4c325d3e4f7df03046558402565deffd7db9a455",
+  "main_json": "a51a547266bba98874f6a9cb6c645d24f7967085",
+  "new_json": "1e30270da54f4b48edb585857397b07bb4f3fb49"
+ },
+ "Kit_KeyTag_Rect_Blue": {
+  "name": "Kit_KeyTag_Rect_Blue",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Rect'] vs ['Kit_KeyTag_Rect_LOD0', 'Kit_KeyTag_Rect_LOD1']",
+  "tris": [
+   1038,
+   null,
+   1038,
+   1038
+  ],
+  "slots": [
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "1ecf46ff22d20d3037e1821842f2347908950268",
+  "new_fbx": "89e733f60682879febb64209c78f0735bbd0b608",
+  "main_json": "f1d817e8671e8ca312073822fe288355e5154643",
+  "new_json": "04e319f1096ae84a619a5cfeba289d4af8369ee3"
+ },
+ "Kit_KeyTag_Rect_White": {
+  "name": "Kit_KeyTag_Rect_White",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Rect'] vs ['Kit_KeyTag_Rect_LOD0', 'Kit_KeyTag_Rect_LOD1']",
+  "tris": [
+   1038,
+   null,
+   1038,
+   1038
+  ],
+  "slots": [
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "745afed17ec732350b7da93cc29b9163a3999020",
+  "new_fbx": "dc28aafa4efd8f49319eeb74a52bda8e8957a982",
+  "main_json": "dd2d24b6549bc7f6e6883b8b14707ddaf77e4644",
+  "new_json": "47fe5718b435404e52c7bfa2cad0e0216ae7cf35"
+ },
+ "Kit_KeyTag_Round": {
+  "name": "Kit_KeyTag_Round",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Round'] vs ['Kit_KeyTag_Round_LOD0', 'Kit_KeyTag_Round_LOD1']",
+  "tris": [
+   1282,
+   null,
+   1282,
+   1282
+  ],
+  "slots": [
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticRed",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "d30dacd9f2e14b477b12f07d31009f3bea24a3a4",
+  "new_fbx": "c3834d780f91713c5c8ac356fcbc8f865ebc9400",
+  "main_json": "21dc03df9e78b0b5017e7001ec05ca24c95e9b13",
+  "new_json": "00177b403be28527b0aa281102023095e71adafd"
+ },
+ "Kit_KeyTag_Round_Blue": {
+  "name": "Kit_KeyTag_Round_Blue",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Round'] vs ['Kit_KeyTag_Round_LOD0', 'Kit_KeyTag_Round_LOD1']",
+  "tris": [
+   1282,
+   null,
+   1282,
+   1282
+  ],
+  "slots": [
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticBlue",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "413b00b26741e247ff09868094a11ce1b394b7f3",
+  "new_fbx": "04758eb6b67eea0519c4ef78c83e2a335cc7ae34",
+  "main_json": "2b3f6e4a9eeb30fa40fefb9a98ec6b1c76a2b4a7",
+  "new_json": "d860288f1b9efb62962eb1b5d59f149cfc4611e2"
+ },
+ "Kit_KeyTag_Round_White": {
+  "name": "Kit_KeyTag_Round_White",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_KeyTag_Round'] vs ['Kit_KeyTag_Round_LOD0', 'Kit_KeyTag_Round_LOD1']",
+  "tris": [
+   1282,
+   null,
+   1282,
+   1282
+  ],
+  "slots": [
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ],
+   [
+    "Prop_PlasticWhite",
+    "Prop_KeyTagNo"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    15.0
+   ],
+   [
+    1.0,
+    3.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "866d4a0c52e0e3671bb888f28fd3216fe2ec113b",
+  "new_fbx": "023b09ed4bff56fbe515cee0cff15b5a469b6884",
+  "main_json": "aef339429112195a650aa961d3a5583debf03d9c",
+  "new_json": "7a16afd8adfbe63c8077098bea28fe87af9e5cf8"
+ },
+ "Kit_Key_Zone": {
+  "name": "Kit_Key_Zone",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Key_Zone'] vs ['Kit_Key_Zone_LOD0', 'Kit_Key_Zone_LOD1']",
+  "tris": [
+   2184,
+   null,
+   2188,
+   2188
+  ],
+  "slots": [
+   [
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    12.0
+   ],
+   [
+    1.0,
+    3.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "93f0101b6e9e735eeac074481adde320b91926df",
+  "new_fbx": "931c66ff95a1389a429500974fa64bbaebd60d98",
+  "main_json": "d7410e37303963ea79aa4ea2c3aac6371498e51a",
+  "new_json": "c897cf8821a27e3ac083696e1cda92a1298e366c"
+ },
+ "Kit_Key_Zone_Nickel": {
+  "name": "Kit_Key_Zone_Nickel",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Key_Zone'] vs ['Kit_Key_Zone_LOD0', 'Kit_Key_Zone_LOD1']",
+  "tris": [
+   2184,
+   null,
+   2188,
+   2188
+  ],
+  "slots": [
+   [
+    "Prop_Aluminium"
+   ],
+   [
+    "Prop_Aluminium"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    12.0
+   ],
+   [
+    1.0,
+    3.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "3374895d3f04b0a900e4b6ed2b09d1c2c28de4b9",
+  "new_fbx": "ec84915bef59913b57c5ced3e0792ecdbd2bbc86",
+  "main_json": "cd9dbf503e16beba561835e37e692da92ec7858d",
+  "new_json": "6b1fee0c626ff0e00007ec2602ce4934e841773a"
+ },
+ "Kit_Lock_CylinderShell": {
+  "name": "Kit_Lock_CylinderShell",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_CylinderShell'] vs ['Kit_Lock_CylinderShell_LOD0', 'Kit_Lock_CylinderShell_LOD1']",
+  "tris": [
+   2708,
+   null,
+   2708,
+   2708
+  ],
+  "slots": [
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "4b9d37731ed27be43c4ae5de63a5a3ef0bdfcd64",
+  "new_fbx": "04879e14cb0a4ef76c05a795c8b163aa378c74d2",
+  "main_json": "29717267fa4fb043947034ddee17b814df9c53a7",
+  "new_json": "48de614d1f8a99cf1a2905b77fd0439c9bfd8f32"
+ },
+ "Kit_Lock_CylinderShell_Brass": {
+  "name": "Kit_Lock_CylinderShell_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_CylinderShell'] vs ['Kit_Lock_CylinderShell_LOD0', 'Kit_Lock_CylinderShell_LOD1']",
+  "tris": [
+   2708,
+   null,
+   2708,
+   2708
+  ],
+  "slots": [
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "117bf75061c8cc88555546275727973735b5dac3",
+  "new_fbx": "fa5fc05e49060b203b430996d514d3b6dbb062f9",
+  "main_json": "e2830b5064da2071520fec9b6725e705700d6c31",
+  "new_json": "732ec888b43f946ae5648782e44d4b3367167955"
+ },
+ "Kit_Lock_Deadbolt": {
+  "name": "Kit_Lock_Deadbolt",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Deadbolt'] vs ['Kit_Lock_Deadbolt_LOD0', 'Kit_Lock_Deadbolt_LOD1']",
+  "tris": [
+   380,
+   null,
+   380,
+   380
+  ],
+  "slots": [
+   [
+    "Prop_Chrome",
+    "Prop_Aluminium"
+   ],
+   [
+    "Prop_Chrome",
+    "Prop_Aluminium"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    8.0
+   ],
+   [
+    1.0,
+    3.0,
+    8.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "871bd45a4863a820186fd755080b19124031f7c0",
+  "new_fbx": "10902025cb3fbb4427c19ba257359c19a28c511c",
+  "main_json": "212659889c5c83c131220d5bc376f0a8664e591c",
+  "new_json": "d05bfc3052d6937c8e764a54048441937b7754d9"
+ },
+ "Kit_Lock_Escutcheon": {
+  "name": "Kit_Lock_Escutcheon",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Escutcheon'] vs ['Kit_Lock_Escutcheon_LOD0', 'Kit_Lock_Escutcheon_LOD1']",
+  "tris": [
+   3176,
+   null,
+   3248,
+   3248
+  ],
+  "slots": [
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "fe74755868237cdc715ffe1b8dbb982f7f021a8f",
+  "new_fbx": "5960e8864810b1ac67af598f67f6f447ee6c5d59",
+  "main_json": "1e23a5c21a33d5c06d3d0448b97a7e0298c5a9b3",
+  "new_json": "3eeb426cec9ad797c932b8b8b7b3d8b3e788875b"
+ },
+ "Kit_Lock_Escutcheon_Brass": {
+  "name": "Kit_Lock_Escutcheon_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Escutcheon'] vs ['Kit_Lock_Escutcheon_LOD0', 'Kit_Lock_Escutcheon_LOD1']",
+  "tris": [
+   3176,
+   null,
+   3248,
+   3248
+  ],
+  "slots": [
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "fd66e95bc4450b5f03d03cd74fdbcf4d9d9810d9",
+  "new_fbx": "d866211d33c40fd26401972bc3db8967b0725f8c",
+  "main_json": "c1ec626822bd05591dad8d3413654e5ade5a8a61",
+  "new_json": "0a47d48bf9c1f2032e99c15291313e85e011443f"
+ },
+ "Kit_Lock_Knob": {
+  "name": "Kit_Lock_Knob",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Knob'] vs ['Kit_Lock_Knob_LOD0', 'Kit_Lock_Knob_LOD1']",
+  "tris": [
+   4608,
+   null,
+   4992,
+   1996
+  ],
+  "slots": [
+   [
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "141a5474f19e8089d81f24ad1861cf5ee006c2d1",
+  "new_fbx": "edcd67445014366dc2e2f3de2d3796bf380e1891",
+  "main_json": "3fe4fd4ee8b96832683df582940300535ec1e054",
+  "new_json": "e86edc0bb91a1351e0fe1439f73b3fffa83c6da9"
+ },
+ "Kit_Lock_Knob_Brass": {
+  "name": "Kit_Lock_Knob_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Knob'] vs ['Kit_Lock_Knob_LOD0', 'Kit_Lock_Knob_LOD1']",
+  "tris": [
+   4608,
+   null,
+   4992,
+   1996
+  ],
+  "slots": [
+   [
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "217809421ecea0b192cc66c3d9692c33a716cb57",
+  "new_fbx": "006e6057fd5f432779448474e898b4ed32026a17",
+  "main_json": "1d5558a360f33dd4511326ee380bf3c4c8dcaaea",
+  "new_json": "106659ec2cf9dda63cd96835f7bc7b2d03c055ea"
+ },
+ "Kit_Lock_Latchbolt_Bored": {
+  "name": "Kit_Lock_Latchbolt_Bored",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Latchbolt_Bored'] vs ['Kit_Lock_Latchbolt_Bored_LOD0', 'Kit_Lock_Latchbolt_Bored_LOD1']",
+  "tris": [
+   476,
+   null,
+   476,
+   476
+  ],
+  "slots": [
+   [
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    8.0
+   ],
+   [
+    1.0,
+    3.0,
+    8.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "d08510aee12caba0264b660660bafa4d6d2da644",
+  "new_fbx": "ba49ceff57ad01b5eac935b9dd919d222d2a77de",
+  "main_json": "27927d45f121360f2cfbe793321821aa40817e54",
+  "new_json": "36dd2bed423299905c4cff1afa69caed56233a2a"
+ },
+ "Kit_Lock_Latchbolt_Bored_Brass": {
+  "name": "Kit_Lock_Latchbolt_Bored_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Latchbolt_Bored'] vs ['Kit_Lock_Latchbolt_Bored_LOD0', 'Kit_Lock_Latchbolt_Bored_LOD1']",
+  "tris": [
+   476,
+   null,
+   476,
+   476
+  ],
+  "slots": [
+   [
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    8.0
+   ],
+   [
+    1.0,
+    3.0,
+    8.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "fd1884162f127175be293c734dd9eaec0f5fe284",
+  "new_fbx": "861465e4e86e59d6ab336e4a86ff2351587f9645",
+  "main_json": "f32c96f9e4388ee5c29c00ddf818832c94d32e19",
+  "new_json": "b3a0c11a125052432019b87cc58fa4cdf6622c14"
+ },
+ "Kit_Lock_Latchbolt_Mortise": {
+  "name": "Kit_Lock_Latchbolt_Mortise",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Latchbolt_Mortise'] vs ['Kit_Lock_Latchbolt_Mortise_LOD0', 'Kit_Lock_Latchbolt_Mortise_LOD1']",
+  "tris": [
+   600,
+   null,
+   600,
+   600
+  ],
+  "slots": [
+   [
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    8.0
+   ],
+   [
+    1.0,
+    3.0,
+    8.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "890d46236972104193248085d668988f32e23bd8",
+  "new_fbx": "2b7482cac63e1cfeea30f424ba69abf95c5a5b65",
+  "main_json": "408781895a6c70544d5eb3963827da3e7f96e0df",
+  "new_json": "f09218d8e76e08ce536974f6b9aed29419b685b5"
+ },
+ "Kit_Lock_Lever": {
+  "name": "Kit_Lock_Lever",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Lever'] vs ['Kit_Lock_Lever_LOD0', 'Kit_Lock_Lever_LOD1']",
+  "tris": [
+   3974,
+   null,
+   3974,
+   1588
+  ],
+  "slots": [
+   [
+    "Prop_Chrome"
+   ],
+   [
+    "Prop_Chrome"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    15.0
+   ],
+   [
+    1.5,
+    4.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "4be0f4aa1c6e62561850cd1408ec0a3003633ee2",
+  "new_fbx": "04d57a4026c420be5ca36291fb350a38aac0d6c6",
+  "main_json": "eeddd7e87e396efa2b061b3ebb6708421a18f0a6",
+  "new_json": "6a662572043105611199830f4dc8bb9a69f2a941"
+ },
+ "Kit_Lock_Lever_Brass": {
+  "name": "Kit_Lock_Lever_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Lever'] vs ['Kit_Lock_Lever_LOD0', 'Kit_Lock_Lever_LOD1']",
+  "tris": [
+   3974,
+   null,
+   3974,
+   1588
+  ],
+  "slots": [
+   [
+    "Prop_Brass"
+   ],
+   [
+    "Prop_Brass"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    15.0
+   ],
+   [
+    1.5,
+    4.0,
+    15.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "efe357512942b937ea411bafe14408964423b5d5",
+  "new_fbx": "99e848810b00ea9ba2892bdfd089ec7e56e07962",
+  "main_json": "a6417068712543c380bbec371e1d13cf4b63f24c",
+  "new_json": "97398bffba691422a411c4abbfb9ccd6bb2da37b"
+ },
+ "Kit_Lock_Plug": {
+  "name": "Kit_Lock_Plug",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Plug'] vs ['Kit_Lock_Plug_LOD0', 'Kit_Lock_Plug_LOD1']",
+  "tris": [
+   1884,
+   null,
+   1884,
+   1884
+  ],
+  "slots": [
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.0,
+    3.0,
+    8.0
+   ],
+   [
+    1.0,
+    3.0,
+    8.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "8782a534817fcc7010e1d696597b709647d307c8",
+  "new_fbx": "560e250c1d9f529e7bc1900d1b4e3ad33ea3a70d",
+  "main_json": "678728582d85f81b9f71889fa3853f39339a6b77",
+  "new_json": "238250163bb6bef12a461e338aede2daa7220e66"
+ },
+ "Kit_Lock_Rose": {
+  "name": "Kit_Lock_Rose",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Rose'] vs ['Kit_Lock_Rose_LOD0', 'Kit_Lock_Rose_LOD1']",
+  "tris": [
+   2728,
+   null,
+   2728,
+   2728
+  ],
+  "slots": [
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "f36958c4d32ef662d54169e0f5b3d1bb2ac6a2f5",
+  "new_fbx": "dd7c199a2b99a3486d02a18a209b26eab88b4c20",
+  "main_json": "98b5aa3275610251c5b6492d13c908ab487e76b5",
+  "new_json": "50d429a7927ab52d57cb4baa11b9ac78012af84f"
+ },
+ "Kit_Lock_Rose_Brass": {
+  "name": "Kit_Lock_Rose_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_Rose'] vs ['Kit_Lock_Rose_LOD0', 'Kit_Lock_Rose_LOD1']",
+  "tris": [
+   2728,
+   null,
+   2728,
+   2728
+  ],
+  "slots": [
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "79b47b547b4070c9dad70e518830cf338ccf0377",
+  "new_fbx": "d6058ef9e3fdcc5b4e449de1d6511c99b5f87d83",
+  "main_json": "69bb6c78977cc2f4d9c4d5322f0b278a99ba6806",
+  "new_json": "e931892085f736b25b75a6f967ab24e87dec07fd"
+ },
+ "Kit_Lock_StrikeBored": {
+  "name": "Kit_Lock_StrikeBored",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_StrikeBored'] vs ['Kit_Lock_StrikeBored_LOD0', 'Kit_Lock_StrikeBored_LOD1']",
+  "tris": [
+   674,
+   null,
+   674,
+   674
+  ],
+  "slots": [
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "e1dc943a15206677392126a6e5ad3453dc61fd28",
+  "new_fbx": "feb7fe1851d5809ee03629f246fd5d45e4bf3d40",
+  "main_json": "aa82d302f88c23bb770cf3419a026cd0729b5b39",
+  "new_json": "78fb7bd62e26937b753f28106aad46e8c6472907"
+ },
+ "Kit_Lock_StrikeBored_Brass": {
+  "name": "Kit_Lock_StrikeBored_Brass",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_StrikeBored'] vs ['Kit_Lock_StrikeBored_LOD0', 'Kit_Lock_StrikeBored_LOD1']",
+  "tris": [
+   674,
+   null,
+   674,
+   674
+  ],
+  "slots": [
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Brass",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "70373bb53d415f44924fe9ad8855aa603612f63e",
+  "new_fbx": "7895ebae7e9e7a2e7707a808f70d4924faef9519",
+  "main_json": "d74dde0cca2be0a235a0694c549193b557b664fa",
+  "new_json": "4731c61f324d12f24e788064a64731d0bf0973e2"
+ },
+ "Kit_Lock_StrikeMortise": {
+  "name": "Kit_Lock_StrikeMortise",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": "objects ['Kit_Lock_StrikeMortise'] vs ['Kit_Lock_StrikeMortise_LOD0', 'Kit_Lock_StrikeMortise_LOD1']",
+  "tris": [
+   988,
+   null,
+   988,
+   988
+  ],
+  "slots": [
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ],
+   [
+    "Prop_Chrome",
+    "Prop_PlasticBlack"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    1.5,
+    4.0,
+    12.0
+   ],
+   [
+    1.5,
+    4.0,
+    12.0
+   ]
+  ],
+  "other": [
+   "new field trianglesLod1"
+  ],
+  "main_fbx": "5a00506c1516c6804e6e0cf5e3fa2cbaf590ed6d",
+  "new_fbx": "1ca9f5d94ab40620c74097c2f3982aa7a7c90ea9",
+  "main_json": "eaadf602944c85c5282552ee544db3529c592fa3",
+  "new_json": "604ef741c43688d85556ce7d1bdb709415ef943e"
+ },
+ "Kit_MiniBlind_Lowered": {
+  "name": "Kit_MiniBlind_Lowered",
+  "fbx": "keep",
+  "json": "PROMOTE",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   6376,
+   1594,
+   6376,
+   1594
+  ],
+  "slots": [
+   [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite"
+   ],
+   [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    3.0,
+    10.0,
+    30.0
+   ],
+   [
+    3.0,
+    10.0,
+    30.0
+   ]
+  ],
+  "other": [
+   "tags +wall_decor"
+  ],
+  "main_fbx": "a9c7d218c8c962046ac3c7004878d46943c1e067",
+  "new_fbx": "a9c7d218c8c962046ac3c7004878d46943c1e067",
+  "main_json": "6da5159dcbb1983051c4c5c0bb24dc561eeb79b6",
+  "new_json": "be1ad77fca174e398a9659f87b410b9b3b7c06df"
+ },
+ "Kit_MiniBlind_Raised": {
+  "name": "Kit_MiniBlind_Raised",
+  "fbx": "keep",
+  "json": "PROMOTE",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   2572,
+   876,
+   2572,
+   876
+  ],
+  "slots": [
+   [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite"
+   ],
+   [
+    "Prop_SteelAlmond",
+    "Prop_PlasticWhite"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    3.0,
+    10.0,
+    30.0
+   ],
+   [
+    3.0,
+    10.0,
+    30.0
+   ]
+  ],
+  "other": [
+   "tags +wall_decor"
+  ],
+  "main_fbx": "8b52c643820a76d83d96db25418c02ad75cdccc5",
+  "new_fbx": "8b52c643820a76d83d96db25418c02ad75cdccc5",
+  "main_json": "e64be2219b489c054eae4ac23a305bfed28774e3",
+  "new_json": "8559f00892378757b2e7ae8ee64068ae7c44a479"
+ },
+ "Kit_WindowFrame_Alu": {
+  "name": "Kit_WindowFrame_Alu",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_WindowFrame_Alu_LOD0: 752/1328 verts, 616/1167 polys",
+   "Kit_WindowFrame_Alu_LOD1: 736/737 verts, 1064/1050 polys"
+  ],
+  "tris": [
+   1088,
+   1064,
+   2190,
+   1050
+  ],
+  "slots": [
+   [
+    "Prop_Aluminium",
+    "Prop_Rubber"
+   ],
+   [
+    "Prop_Aluminium",
+    "Prop_Rubber"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    null
+   ],
+   [
+    4.0,
+    12.0,
+    0.0
+   ]
+  ],
+  "other": [
+   "tags +wall_decor"
+  ],
+  "main_fbx": "e9776aa16c68674f0be151e3bc917aa774c3d184",
+  "new_fbx": "99a2814c1742dae44b24f25f77444505948d3774",
+  "main_json": "0a9511bef5ac2e27821b30fb8a6a085b72c2cf0b",
+  "new_json": "363217d2daa38f9c734793f435aed476b06afd5b"
+ },
+ "Kit_WindowFrame_Steel": {
+  "name": "Kit_WindowFrame_Steel",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_WindowFrame_Steel_LOD0: 2462/2540 verts, 2145/2241 polys",
+   "Kit_WindowFrame_Steel_LOD1: 946/934 verts, 783/1458 polys"
+  ],
+  "tris": [
+   3862,
+   1438,
+   4054,
+   1458
+  ],
+  "slots": [
+   [
+    "Prop_SteelBrown",
+    "Prop_Rubber"
+   ],
+   [
+    "Prop_SteelBrown",
+    "Prop_Rubber"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    null
+   ],
+   [
+    4.0,
+    12.0,
+    0.0
+   ]
+  ],
+  "other": [
+   "tags +wall_decor"
+  ],
+  "main_fbx": "f2b4b53fcee5d687e650e5d33f601c31b10654dd",
+  "new_fbx": "9bbda940e6f4e7f023b5975e131d05e6959e9da3",
+  "main_json": "670a02d9e0e14217874305c2894026a0a2a900fa",
+  "new_json": "a0c45d7a34ce59ada15ae5870a9f727d66ff2e5f"
+ },
+ "Kit_WindowFrame_Steel_Enamel": {
+  "name": "Kit_WindowFrame_Steel_Enamel",
+  "fbx": "PROMOTE",
+  "json": "PROMOTE",
+  "fbx_state": "CHANGED",
+  "fbx_why": [
+   "Kit_WindowFrame_Steel_LOD0: 2462/2540 verts, 2145/2241 polys",
+   "Kit_WindowFrame_Steel_LOD1: 946/934 verts, 783/1458 polys"
+  ],
+  "tris": [
+   3862,
+   1438,
+   4054,
+   1458
+  ],
+  "slots": [
+   [
+    "Door_Enamel",
+    "Prop_Rubber"
+   ],
+   [
+    "Door_Enamel",
+    "Prop_Rubber"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    null
+   ],
+   [
+    4.0,
+    12.0,
+    0.0
+   ]
+  ],
+  "other": [
+   "tags +wall_decor"
+  ],
+  "main_fbx": "82e1637cf3c345bc477c70e0bd346e2c3cd0f8c2",
+  "new_fbx": "700a16ce08106e270cfa058c0429d02a73e892c3",
+  "main_json": "99e7736b04f345bd56f14a8e556b250e21517534",
+  "new_json": "c1dbc6e623c1fd1c113e8467ef856c31c27901ae"
+ },
+ "Kit_WindowFrame_Wood": {
+  "name": "Kit_WindowFrame_Wood",
+  "fbx": "keep",
+  "json": "PROMOTE",
+  "fbx_state": "SAME_CONTENT",
+  "fbx_why": [],
+  "tris": [
+   2322,
+   1044,
+   2322,
+   1044
+  ],
+  "slots": [
+   [
+    "Prop_WoodWalnut",
+    "Prop_Rubber"
+   ],
+   [
+    "Prop_WoodWalnut",
+    "Prop_Rubber"
+   ]
+  ],
+  "anchors": {
+   "added": [],
+   "removed": [],
+   "moved": []
+  },
+  "lod": [
+   [
+    4.0,
+    12.0,
+    null
+   ],
+   [
+    4.0,
+    12.0,
+    0.0
+   ]
+  ],
+  "other": [
+   "tags +wall_decor"
+  ],
+  "main_fbx": "aae0da45583ace87742c0a6b98732c8996a16a63",
+  "new_fbx": "aae0da45583ace87742c0a6b98732c8996a16a63",
+  "main_json": "8bd6645e50853b9774c78cc902d89f827e038502",
+  "new_json": "c87cea85b2e88a54dcf3dec62b201b1890fa0e8c"
+ }
+}

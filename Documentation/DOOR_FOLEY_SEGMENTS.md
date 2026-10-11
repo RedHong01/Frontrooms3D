@@ -87,6 +87,8 @@ The E press is at −100 ms. The code should delay the leaf 80–120 ms after E.
 | Locked | M-L1 Locked rattle | The lever hits its limit, then the leaf knocks in the latch/bolt clearance. One compound, played at most once per 0.5 s. | at E | 0.3–1.0 s | −12 | Keep |
 | Unlock | M-U1 Key compound | Key goes in (pin ratchet), then turns, and the turn pulls the latch back. No "key out": it happens mid-swing and cannot be heard. Then M-O2 and M-O3 play, with no handle. | at key use; the leaf follows 0.5–0.7 s later | 400–700 ms | −14 | Keep |
 
+Unlock timing update (map chat, 2026-10-08): the unlock is now a camera 'head dip' shot. Beats from E: KeyInsert 0.55, KeyTurn 0.68, BoltRetract 0.86 (= DoorUnlocked), KeyWithdraw 0.90, KnobTurn 0.92 (push side), leaf out of the frame 1.00, KnobReturn 1.20; pull side opens at 1.55 as a normal open. M-U1 is therefore split onto those beats instead of one compound; the push-side open skips M-O1 (the KnobTurn beat is the handle) and keeps M-O2. Lock recordings are still a gap.
+
 ### 2.4 Map door, close (2 runtime segments)
 
 | # | Segment | What makes the sound | When (ms) | Length | Level | 1–4 m |

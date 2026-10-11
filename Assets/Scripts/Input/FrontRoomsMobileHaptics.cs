@@ -9,10 +9,10 @@ using System.Runtime.InteropServices;
 /// Haptics for the handheld build (Documentation/TOUCH_CONTROLS.md §7, Figma TC12).
 ///
 /// Each moment plays a short, specific pattern instead of one long buzz:
-/// a light tick when the sprint socket latches, two firm ticks on a locked
+/// a firm click when the stick crosses the run line, two firm ticks on a locked
 /// door's rattle jolts, a buzz that rises while glass is held, a heavy hit when
 /// it breaks. Two switches, like Alien: Isolation's: gameplay (the world) and
-/// controls (the sprint socket, USE and menu presses).
+/// controls (the run click, USE and menu presses).
 ///
 /// iOS uses UIImpactFeedbackGenerator through FrontRoomsHandheldNative.mm;
 /// Android uses VibrationEffect's predefined clicks (API 29+) or a short one-shot
@@ -78,7 +78,8 @@ public static class FrontRoomsMobileHaptics
     // The touch layer and FrontRooms3DGame.Mobile.cs call these from the game's own events.
 
     public static void UsePressed() => Play(Channel.Controls, Style.Rigid, .55f);
-    public static void SprintLatched() => Play(Channel.Controls, Style.Light, .6f);
+    /// <summary>Into the run (Red, 2026-10-08): a rigid click, crisp enough to feel through a thumb that is still moving.</summary>
+    public static void RunStarted() => Play(Channel.Controls, Style.Rigid, .8f);
     public static void Winded() => Pattern(Channel.Controls, new Beat(0f, Style.Soft, .5f), new Beat(.12f, Style.Soft, .35f));
     public static void MenuConfirm() => Play(Channel.Controls, Style.Selection);
     public static void DoorLatched() => Play(Channel.Gameplay, Style.Light, .5f);

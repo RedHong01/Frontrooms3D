@@ -41,6 +41,11 @@ public struct ShotSpec
     public ShotCancel cancel;
     /// <summary>The shot's length in seconds, for the push buffer of door shots (0 = open-ended: no buffer).</summary>
     public float duration;
+    /// <summary>
+    /// An age after which the shot no longer fades the HUD (0 = the whole shot). The unlock brings the
+    /// HUD back with movement at 1.45 s while the shot stays alive to 1.55 s for the buffered push.
+    /// </summary>
+    public float hudUntil;
 }
 
 /// <summary>A running shot, to end or cancel it.</summary>
@@ -53,6 +58,8 @@ public sealed class ShotHandle
     public ShotKind Kind => spec.kind;
     public bool Ended { get; internal set; }
     public bool Cancelled { get; internal set; }
+    /// <summary>The input that cancelled the shot through Consume (S or a second E); null when it was not cancelled by input.</summary>
+    public ShotInput? CancelledBy { get; internal set; }
     /// <summary>Seconds since the shot began.</summary>
     public float Age => age;
 }
@@ -84,6 +91,9 @@ public sealed class FrontRoomsCameraRig
     readonly List<ShotHandle> shots = new List<ShotHandle>();
     readonly List<(Vector3 local, float seconds, float age)> offsets = new List<(Vector3, float, float)>();
     readonly List<(float delta, float seconds, float age)> fovPushes = new List<(float, float, float)>();
+    // FOV deltas easing back to nothing (ReleaseFov) and signed pitch kicks falling to nothing (Kick).
+    readonly List<(float delta, float seconds, float age)> fovReleases = new List<(float, float, float)>();
+    readonly List<(float degrees, float seconds, float age)> kicks = new List<(float, float, float)>();
     float trauma, traumaPeak, traumaDecay, traumaTime, hudFade, pitch, stanceDrop;
     readonly RaycastHit[] hits = new RaycastHit[8];
 
@@ -147,6 +157,12 @@ public sealed class FrontRoomsCameraRig
     /// <summary>A "push open" buffered by one E in the last moments of a door shot (read and cleared by the owner).</summary>
     public bool BufferedPush { get; set; }
 
+    /// <summary>The newest shot's FOV delta as the last Tick applied it (after its blend weight and the Camera motion setting), for ReleaseFov.</summary>
+    public float ShotFovDelta { get; private set; }
+
+    /// <summary>The signed pitch the kicks add this frame (degrees, + = down), for tests.</summary>
+    public float KickPitch { get; private set; }
+
     static float Motion => FrontRoomsSettings.CameraMotionScale;
 
     /// <summary>Set the base look's pitch (positive looks down); yaw is the body's rotation.</summary>
@@ -173,6 +189,18 @@ public sealed class FrontRoomsCameraRig
     {
         if (handle == null || handle.ending) return;
         handle.ending = true;
+    }
+
+    /// <summary>
+    /// End a shot that has already brought the camera home itself, over <paramref name="blendOut"/>
+    /// seconds (0: ShotEnded on the next Tick). Not a cancel: Cancelled stays false. The unlock ends
+    /// this way at 1.55 s, after its own return, so its buffered push window is not cut short.
+    /// </summary>
+    public void EndShot(ShotHandle handle, float blendOut)
+    {
+        if (handle == null || handle.ending) return;
+        handle.ending = true;
+        handle.blendOut = Mathf.Max(0f, blendOut);
     }
 
     /// <summary>End a shot early, blending back over <paramref name="blendOut"/> seconds. A shot already on its way out only ever goes faster.</summary>
@@ -211,6 +239,29 @@ public sealed class FrontRoomsCameraRig
         fovPushes.Add((delta * Motion, Mathf.Max(.01f, seconds), 0f));
     }
 
+    /// <summary>
+    /// Hold a FOV delta the camera already shows (ShotFovDelta, so already scaled by Camera motion) and
+    /// ease it back to nothing over <paramref name="seconds"/>, on a smoothstep. A cancelled shot's pose may
+    /// snap back in 0.25 s, but its FOV must still take MinFovChangeSeconds (audit §3.0).
+    /// </summary>
+    public void ReleaseFov(float delta, float seconds)
+    {
+        if (Mathf.Abs(delta) < 1e-4f) return;
+        fovReleases.Add((delta, Mathf.Max(.01f, seconds), 0f));
+    }
+
+    /// <summary>
+    /// A signed pitch impulse (+ = forward, down) of <paramref name="pitchDeg"/> at once, falling
+    /// linearly to nothing over <paramref name="decaySeconds"/>: the audit's "forward pitch impulse"
+    /// (§3.3, §3.4), where AddTrauma is a shake. Picture only; scaled by Camera motion.
+    /// </summary>
+    public void Kick(float pitchDeg, float decaySeconds)
+    {
+        var degrees = pitchDeg * Motion;
+        if (Mathf.Abs(degrees) < 1e-5f) return;
+        kicks.Add((degrees, Mathf.Max(.01f, decaySeconds), 0f));
+    }
+
     /// <summary>A camera-local offset (lean, jab, dip) there and back over <paramref name="seconds"/>. Clamped against the world.</summary>
     public void AddOffset(Vector3 local, float seconds)
     {
@@ -236,7 +287,10 @@ public sealed class FrontRoomsCameraRig
             return true;
         }
         if ((shot.spec.cancel & ShotCancel.PlayerInput) != 0 && shot.age >= FrontRoomsShotTimings.Unlock.CancelAfter)
+        {
             CancelShot(shot, FrontRoomsShotTimings.Unlock.CancelCameraBack);
+            shot.CancelledBy = input;   // the unlock opens or not after its commit by this
+        }
         return true;   // otherwise swallowed, not queued
     }
 
@@ -260,6 +314,9 @@ public sealed class FrontRoomsCameraRig
         shots.Clear();
         offsets.Clear();
         fovPushes.Clear();
+        fovReleases.Clear();
+        kicks.Clear();
+        ShotFovDelta = KickPitch = 0f;
         trauma = 0f;
         hudFade = 0f;
         BufferedPush = false;
@@ -302,7 +359,7 @@ public sealed class FrontRoomsCameraRig
                 MoveLocked |= shot.spec.lockMove;
                 LookLocked |= shot.spec.lockLook && motion > 0f;
             }
-            anyHud = true;
+            if (shot.spec.hudUntil <= 0f || shot.age < shot.spec.hudUntil) anyHud = true;
         }
         hudFade = Mathf.MoveTowards(hudFade, anyHud ? 1f : 0f, dt / FrontRoomsShotTimings.HudFadeSeconds);
 
@@ -311,6 +368,7 @@ public sealed class FrontRoomsCameraRig
         var position = basePose.position;
         var rotation = basePose.rotation;
         var fov = BaseFov;
+        var shotFov = 0f;
         if (shots.Count > 0)
         {
             var shot = shots[shots.Count - 1];
@@ -322,8 +380,10 @@ public sealed class FrontRoomsCameraRig
                 position = Vector3.Lerp(position, target.position, pull);
                 rotation = Quaternion.Slerp(rotation, target.rotation, pull);
             }
-            fov += (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
+            shotFov = (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
+            fov += shotFov;
         }
+        ShotFovDelta = shotFov;
 
         // Offsets: sine there and back, camera-local.
         var offset = Vector3.zero;
@@ -346,7 +406,28 @@ public sealed class FrontRoomsCameraRig
             fovPushes[i] = (delta, seconds, age);
             fov += delta * Mathf.Sin(age / seconds * Mathf.PI);
         }
+        // FOV releases: a held delta easing back to nothing.
+        for (var i = fovReleases.Count - 1; i >= 0; i--)
+        {
+            var (delta, seconds, age) = fovReleases[i];
+            age += dt;
+            if (age >= seconds) { fovReleases.RemoveAt(i); continue; }
+            fovReleases[i] = (delta, seconds, age);
+            fov += delta * (1f - Mathf.SmoothStep(0f, 1f, age / seconds));
+        }
         fov = Mathf.Clamp(fov, BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
+
+        // Kicks: signed pitch, full at once, falling linearly to nothing.
+        var kick = 0f;
+        for (var i = kicks.Count - 1; i >= 0; i--)
+        {
+            var (degrees, seconds, age) = kicks[i];
+            if (age >= seconds) { kicks.RemoveAt(i); continue; }
+            kick += degrees * (1f - age / seconds);
+            kicks[i] = (degrees, seconds, age + dt);
+        }
+        KickPitch = kick;
+        if (kick != 0f) rotation *= Quaternion.Euler(kick, 0f, 0f);
 
         // Shake: smooth noise on pitch, yaw and roll, falling linearly so it ends at its decay time.
         if (trauma > 0f)
@@ -385,5 +466,6 @@ public sealed class FrontRoomsCameraRig
         return from + dir * reach;
     }
 
-    static float Ease(float t) => t < .5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * .5f;
+    /// <summary>The rig's cubic ease-in-out on 0..1 (shot blends; the door shot's curves use it too).</summary>
+    public static float Ease(float t) => t < .5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * .5f;
 }

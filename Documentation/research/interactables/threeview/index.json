@@ -63,7 +63,8 @@
   "pngs": 248,
   "heroes": 32,
   "groupHeroes": 4,
-  "proposalSlots": 26
+  "proposalSlots": 26,
+  "pngFix": 72
  },
  "sheets": [
   {
@@ -11646,7 +11647,7 @@
     1600,
     1200
    ],
-   "note": "Zone key, split ring and red square tag hung on the key board's key_hook (hung pose: ring yaw -60, key/tag twist -30), on Level 0 wallpaper. Wall fills the frame, so there is no transparent copy.",
+   "note": "Zone key, split ring and red square tag hung on the key board's key_hook (hung pose v2 from the hosts' sidecar hungPose: ring yaw 120, key twist -30, tag twist 150, so the tag hangs on the wall side and the brass key faces the room), on Level 0 wallpaper. Wall fills the frame, so there is no transparent copy.",
    "proposalSlots": [
     "img:KeySet_Rack_persp"
    ]
@@ -11660,7 +11661,7 @@
     1600,
     1200
    ],
-   "note": "Close-up of the hung key, ring and tag. Wall fills the frame, so there is no transparent copy.",
+   "note": "Close-up of the hung key, ring and tag (hung pose v2: key in front, tag behind). Wall fills the frame, so there is no transparent copy.",
    "proposalSlots": []
   },
   {
@@ -11672,7 +11673,7 @@
     1600,
     1200
    ],
-   "note": "The same assembly in the Office key cabinet (white valet tag). Wall fills the frame, so there is no transparent copy.",
+   "note": "The same assembly in the Office key cabinet (white valet tag) (hung pose v2: key in front, tag behind). Wall fills the frame, so there is no transparent copy.",
    "proposalSlots": [
     "img:KeySet_Cabinet_persp"
    ]
@@ -11686,7 +11687,7 @@
     1600,
     1200
    ],
-   "note": "The same assembly on the single brass hook (blue round tag). Wall fills the frame, so there is no transparent copy.",
+   "note": "The same assembly on the single brass hook (blue round tag) (hung pose v2: key in front, tag behind). Wall fills the frame, so there is no transparent copy.",
    "proposalSlots": [
     "img:KeySet_Hook_persp"
    ]
@@ -11901,13 +11902,13 @@
    "slide": "DW06",
    "slot": "img:Kit_Lock_Escutcheon_persp",
    "node": "2750:6154",
-   "source": "png/Kit_Lock_Escutcheon_persp.png",
+   "source": "png_fix/Kit_Lock_Escutcheon_persp.png",
    "flat": "heroes/slots/Kit_Lock_Escutcheon_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2750:6155"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6155 (source: fix-pass three-view, 1.5 mm edge)"
   },
   {
    "slide": "DW06",
@@ -11937,13 +11938,13 @@
    "slide": "DW06",
    "slot": "img:Kit_Lock_Knob_persp",
    "node": "2750:6166",
-   "source": "png/Kit_Lock_Knob_persp.png",
+   "source": "png_fix/Kit_Lock_Knob_persp.png",
    "flat": "heroes/slots/Kit_Lock_Knob_persp.png",
    "slotPx": [
     276,
     204
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2750:6167"
+   "action": "fills PHASE 2 placeholder; delete text 2750:6167 (source: fix-pass three-view, domed face)"
   },
   {
    "slide": "DW06",
@@ -12093,25 +12094,25 @@
    "slide": "DW08",
    "slot": "img:Kit_MiniBlind_Raised_persp",
    "node": "2751:6151",
-   "source": "png/Kit_MiniBlind_Raised_persp.png",
+   "source": "png_fix/Kit_MiniBlind_Raised_persp.png",
    "flat": "heroes/slots/Kit_MiniBlind_Raised_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2751:6152"
+   "action": "fills PHASE 2 placeholder; delete text 2751:6152 (source: fix-pass three-view; geometry = main)"
   },
   {
    "slide": "DW12",
    "slot": "img:Kit_ExitSign_persp",
    "node": "2753:6293",
-   "source": "png/Kit_ExitSign_persp.png",
+   "source": "../../exit_sign/threeview/png/Kit_ExitSign_persp.png",
    "flat": "heroes/slots/Kit_ExitSign_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "replaces WIP; HOLD if the exit-sign workflow has re-modelled Kit_ExitSign since (it is running)"
+   "action": "replaces WIP; source = the exit-sign track's three-view of the kit merged into main 2026-10-08 19:40 (VL220); the 10-03 png/ copy is the old model"
   }
  ],
  "assets": [
@@ -14145,7 +14146,7 @@
  ],
  "assetsMeta": {
   "schema": "frontrooms.interactables.handoff-assets/1",
-  "generated": "2026-10-08T01:45:48-07:00",
+  "generated": "2026-10-08T01:49:30-07:00",
   "by": "visual chat (游戏视觉), interactables-kit workflow, three-view hand-off stage, for 平面视觉",
   "count": 57,
   "fields": [
@@ -14186,7 +14187,7 @@
   "source": {
    "models": "the 2026-10-08 fix-pass builds in W/proj_int (= the promote payload /Users/redwang/FrontRoomsVisualWork/int_work/fix/payload, 102 files, SHA1SUMS.txt; checked 0 differ). Not in main yet: the interactables merge copies them over main's Kit_* FBX/JSON and keeps main's .meta GUIDs. 7 FBX are content-identical to main (timestamp only). Sidecars/FBX path in the project: Assets/Resources/Props/Models.",
    "materials": "Assets/Resources/Surfaces/<slot>.mat (the kit library remaps every FBX slot to it). Missing (P-4, render with the FBX preview colour): Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved.",
-   "renderClone": "W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time",
+   "renderClone": "W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time (01:3x). Main then auto-committed bc0aa79 (01:47): new placard kits and materials and a FrontRoomsKitLibrary refactor; no interactables Kit_* file and none of their slot materials changed.",
    "renderer": "FrontRoomsThreeView (clone version) with -threeViewOversample 1 -threeViewMaxPpm 2000; copy: threeview/FrontRoomsThreeView.handoff.cs.txt"
   },
   "notIncluded": {
@@ -14372,5 +14373,47 @@
    ]
   },
   "note": "`assets` describes the current models (fix pass, 2026-10-08). `sheets` and `kits` above are the 2026-10-04 record behind the placed K46-K80 sheets; where they differ, `assets` wins. changedSincePlaced lists what each placed sheet would change."
+ },
+ "heroesMeta": {
+  "rendered": "2026-10-08 19:56-20:00 PDT",
+  "by": "visual chat, kit-documentation workflow, render stage",
+  "models": "the interactables fix-pass finals (W/apply/interactables_kit_payload: 52 JSON + 50 FBX, sha1 list interactables_kit_expected.txt) applied with interactables_kit.sh --apply into the clone only (MANIFEST OK), over main bc0aa79 plus its working tree at 19:53 (this includes the exit-sign kit merged 19:40). Red's project still holds the pre-fix kit until the visual chat runs the apply (dry run OK 2026-10-08 19:5x).",
+  "clone": "W/proj_3view_int (mkclone.sh, main bc0aa79)",
+  "renderer": "FrontRoomsInteractableHeroes.RunBatch -heroOut <dir> (copy: FrontRoomsInteractableHeroes.cs.txt here). One change from the 10-04 run: Hang() uses hungPose v2 (ring yaw 120, key twist -30, tag twist 150) instead of v1 (-60, -30, -30). Cameras, framing and sizes are unchanged (see heroes/heroes_log.txt).",
+  "groupHeroes": {
+   "doors": "heroes/doors_lineup_pull_face.png",
+   "lock": "heroes/lock_exploded.png",
+   "keys": "heroes/keys_board_hung.png",
+   "windows": "heroes/windows_lineup_face_a.png"
+  },
+  "groupHeroSha1": {
+   "doors_lineup_pull_face": "071a4fae568d",
+   "lock_exploded": "b5db62f5f19a",
+   "keys_board_hung": "43e2b29d2218",
+   "windows_lineup_face_a": "8ff33e2e97e8"
+  },
+  "visibleChanges": [
+   "oak (OF-F, EX-F) and ward (RN-F) leaves: grain now runs vertically (was horizontal)",
+   "steel frame saddle: dark bronze, no lit line under the Office and Run doors (Exit frame keeps aluminium)",
+   "EX-F crossbar: larger latch case",
+   "knob: domed face; escutcheon: 1.5 mm edge",
+   "keys: tag hangs behind the key on the board, the hook and in the cabinet; key board grain vertical",
+   "EXIT signs: the exit-sign track's merged kit (19:40), live and dead",
+   "windows: steel, enamel and aluminium frames from main's 10-04 modules (small profile changes; not visible at lineup scale)",
+   "L0 and Exit wallpapers: main's hard-edge print (Q1b), not a kit change"
+  ],
+  "previous": "heroes/_pre_fix_2026-10-04/ holds the 10-04 renders and slots these replace (65 files + 26 slots)",
+  "slots": "heroes/slots/ regenerated by tools/slots.py: 26 crops at 2x slot size; 4 sources moved off the stale png/ set (see proposalSlots: Escutcheon, Knob, MiniBlind_Raised from png_fix/, ExitSign from the exit-sign track)",
+  "png_fix": "png_fix/ = the fix pass's three-views of the 18 kits that changed (W/proj_int/Verification/threeview_fix, rendered 2026-10-08 00:30 with the 10-03 tool and scales; FBX sha1 = the payload). png/ is left as the 10-03 record behind K46-K80; 平面视觉 refreshes those 18 sheets from png_fix/ after the apply.",
+  "checkSheets": [
+   "../images/heroes_fix_doors.jpg",
+   "../images/heroes_fix_doors_push.jpg",
+   "../images/heroes_fix_lock.jpg",
+   "../images/heroes_fix_keys.jpg",
+   "../images/heroes_fix_windows.jpg",
+   "../images/heroes_fix_slots.jpg"
+  ],
+  "known": "tag inserts and sign faces stay blank (Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved do not exist yet); L0-F veneer stripes come from DoorVeneer_A (to be redrawn); chrome reads bright in this studio light but near black in the game (H1)",
+  "verificationLog": "VL225, frame 2964:6869 (FRONTROOMS · VISUAL VERIFICATION LOG 2595:6093), PASS"
  }
 }

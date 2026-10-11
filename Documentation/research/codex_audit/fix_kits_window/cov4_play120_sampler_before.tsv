@@ -1,0 +1,15 @@
+# samples 13, max quad meshes 16, max live screens 20
+game_time_s	frame	quad_meshes_alive	screens_live	screens_with_surface	distinct_meshes_in_use
+0.0	1	0	12	0	0
+10.0	601	8	20	8	8
+20.0	1201	9	9	9	9
+30.0	1801	9	8	8	8
+40.0	2401	9	1	1	1
+50.0	3001	9	1	1	1
+60.0	3601	16	8	8	8
+70.0	4201	16	8	8	8
+80.0	4801	16	8	8	8
+90.0	5401	16	1	1	1
+100.0	6001	16	0	0	0
+110.0	6601	16	0	0	0
+120.0	7201	16	0	0	0

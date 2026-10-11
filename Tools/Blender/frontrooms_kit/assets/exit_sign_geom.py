@@ -1,0 +1,237 @@
+"""EXIT sign family: the numbers (no bpy). Shared by the Blender modules
+(exit_sign_common.py) and the texture generator (Tools/lookdev/gen_exit_sign.py),
+so the letter holes in the plate and the letters printed in the textures can
+never drift apart.
+
+Spec: Documentation/research/exit_sign/10_spec.md §4.2 (construction), §4.4
+(chevrons), §5 (the letter face), §6.3 (the lamp field). Millimetres unless a
+name ends in _M. The READER frame: x to the reader's right, y up, origin at the
+centre of the face, seen from the front. (Unity part space has +X to the
+reader's LEFT when the face looks down +Z; exit_sign_common converts.)
+
+Period basis (S1 NISTIR 4399, Aug 1990; S4 UL 924-1989; S2 NISTIR 4532, 1991):
+6 in letters, 3/4 in strokes (1:8, the code minimum), letters >= 2 in wide
+except I, spacing >= 3/8 in, a 2.25 in chevron outside the legend (closed
+knockouts by default: a scored outline, not a hole).
+"""
+
+import math
+
+# ---------------------------------------------------------------- housing
+HOUSING_W, HOUSING_H = 346.0, 212.0       # outside of the pan (ESTIMATE in the 12-14 x 8-9 in period range)
+HOUSING_R = 10.0                          # drawn corners
+DEPTH_SINGLE = 64.0                       # wall sign: wall face to the frame's front flat (+ bead/screws)
+DEPTH_DOUBLE = 76.0                       # double face: front flat to front flat
+SHEET = 0.9                               # 20 ga steel
+
+# Face frame (a shallow pressed tray whose skirt overlaps the pan).
+BORDER = 13.0                             # frame border = (346 - 320) / 2
+OPEN_W, OPEN_H, OPEN_R = 320.0, 186.0, 3.0
+FRAME_SKIRT = 12.0                        # the skirt wraps 12 mm over the pan's side walls
+SEAM_GAP = 0.4                            # skirt edge to the pan's front flange (the 0.6 x 0.4 seam)
+SEAM_RETURN = 0.6
+ROLL_R = 1.5                              # outer roll of the frame
+# Bead: 3.5 wide x 1.0 high at 8.0-11.5 from the outer edge. Deviation from the
+# spec's 4 x 1.2 at 6-10: the Ø6.2 face screws need the outer 1.5-7.7 mm flat.
+BEAD_IN0, BEAD_IN1, BEAD_H = 8.0, 11.5, 1.0
+LIP_R = 0.8
+LIP_DEPTH = 3.0                           # the inner lip returns 3 mm into the box
+SCREW_X = 120.0                           # face screws at x +-120 on the top and bottom borders
+SCREW_INSET = 4.6                         # screw centre from the outer edge
+SCREW_HEAD_D, SCREW_DOME = 6.2, 1.2
+SCREW_SLOT_DEG = (20.0, -35.0, 75.0, 5.0)  # TL, TR, BL, BR (reader frame), fixed "random"
+
+# Stencil plate and diffuser.
+PLATE_MARGIN = 5.0                        # the plate runs 5 mm under the frame on every side
+PLATE_R = 3.0
+HOLE_CHAMFER = 0.2                        # front chamfer on every hole
+HOLE_FILLET = 0.5                         # stamped inner (reflex) corners
+DIFFUSER_GAP = 6.0                        # plate back to diffuser front
+DIFFUSER_T = 2.5
+SPACER_W = 6.0                            # white spacer frame round the opening, plate to diffuser
+
+# Mounting.
+KO_D = 22.0                               # 1/2 in trade-size concentric knockout (wall sign top)
+KEYHOLE_PITCH = 89.0                      # 3.5 in outlet-box screws
+KEYHOLE_Y = 140.0 - HOUSING_H / 2         # keyhole screw centres 140 mm above the housing bottom
+STEM_X = 105.0                            # hanging stems
+STEM_D = 12.0
+CANOPY_L, CANOPY_W, CANOPY_H, CANOPY_R = 250.0, 70.0, 16.0, 4.0   # deviation: 250 long so it reaches both stems (spec 127 x 70)
+HANG_DROP = 400.0                         # ceiling to housing top
+FLUSH_DROP = 25.0
+END_PLATE = (70.0, 150.0, 3.0)
+END_CANOPY = (127.0, 70.0, 12.0)          # wall canopy of the end mount (tall x wide x deep)
+
+# ---------------------------------------------------------------- letters
+H, S = 152.4, 19.05                       # 6 in, 3/4 in
+GAP = 12.0
+EW, XW, TW = 54.0, 60.0, 54.0
+E_MID = 48.0                              # E middle arm reaches x = 48 (6 mm short of the 54 arms)
+CH_H, CH_W = 57.15, 24.6                  # 2.25 in chevron, w/h 0.43
+CH_ARM = 0.45 * CH_W                      # 11.07 mm arm
+CH_GAP = 10.0                             # >= 3/8 in from the letters
+LEGEND_W = CH_W + CH_GAP + EW + GAP + XW + GAP + S + GAP + TW + CH_GAP + CH_W   # 292.25
+Y0 = (OPEN_H - H) / 2                     # baseline 16.8 above the opening's bottom
+
+
+def _isect(p1, p2, p3, p4):
+    """Intersection of lines p1-p2 and p3-p4."""
+    x1, y1 = p1
+    x2, y2 = p2
+    x3, y3 = p3
+    x4, y4 = p4
+    d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    a = x1 * y2 - y1 * x2
+    b = x3 * y4 - y3 * x4
+    return ((a * (x3 - x4) - (x1 - x2) * b) / d, (a * (y3 - y4) - (y1 - y2) * b) / d)
+
+
+def x_half_width():
+    """Horizontal width of one X bar whose square stroke is S."""
+    hw = S
+    for _ in range(12):
+        hw = S / math.cos(math.atan((XW - hw) / H))
+    return hw
+
+
+def letter_polys_open():
+    """{name: [poly, ...]} in OPENING mm (origin = the opening's bottom-left,
+    x to the reader's right). E, X, I and T are single simple polygons (the
+    X is the union of its two bars); "<" and ">" are the chevron knockouts.
+    Every polygon is counter-clockwise. Same construction as
+    research/exit_sign/tools/make_diagrams.py letter_polys()."""
+    x = (OPEN_W - LEGEND_W) / 2
+    polys = {}
+    chl_x = x
+    x += CH_W + CH_GAP
+    m0, m1 = (H - S) / 2, (H + S) / 2
+    e = [(0, 0), (EW, 0), (EW, S), (S, S), (S, m0), (E_MID, m0), (E_MID, m1), (S, m1), (S, H - S), (EW, H - S), (EW, H), (0, H)]
+    polys["E"] = [[(x + a, Y0 + b) for a, b in e]]
+    x += EW + GAP
+    hw = x_half_width()
+    p1 = [(0, 0), (hw, 0), (XW, H), (XW - hw, H)]            # rising bar
+    p2 = [(XW - hw, 0), (XW, 0), (hw, H), (0, H)]            # falling bar
+    B = _isect(p1[1], p1[2], p2[0], p2[3])
+    R = _isect(p1[1], p1[2], p2[1], p2[2])
+    T = _isect(p1[0], p1[3], p2[1], p2[2])
+    L = _isect(p1[0], p1[3], p2[0], p2[3])
+    xu = [(0, 0), (hw, 0), B, (XW - hw, 0), (XW, 0), R, (XW, H), (XW - hw, H), T, (hw, H), (0, H), L]
+    polys["X"] = [[(x + a, Y0 + b) for a, b in xu]]
+    x += XW + GAP
+    polys["I"] = [[(x, Y0), (x + S, Y0), (x + S, Y0 + H), (x, Y0 + H)]]
+    x += S + GAP
+    a0, a1 = (TW - S) / 2, (TW + S) / 2
+    t = [(a0, 0), (a1, 0), (a1, H - S), (TW, H - S), (TW, H), (0, H), (0, H - S), (a0, H - S)]
+    polys["T"] = [[(x + a, Y0 + b) for a, b in t]]
+    x += TW + CH_GAP
+    chr_x = x
+    cy = Y0 + H / 2 - CH_H / 2
+    a = CH_ARM
+
+    def chevron(x0, left):
+        pts = [(0, CH_H / 2), (CH_W - a, CH_H), (CH_W, CH_H), (a, CH_H / 2), (CH_W, 0), (CH_W - a, 0)]
+        if not left:
+            pts = [(CH_W - px, py) for px, py in pts]
+        return ccw([(x0 + px, cy + py) for px, py in pts])
+
+    polys["<"] = [chevron(chl_x, True)]
+    polys[">"] = [chevron(chr_x, False)]
+    return polys
+
+
+def area(poly):
+    return 0.5 * sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))
+
+
+def ccw(poly):
+    return poly if area(poly) > 0 else list(reversed(poly))
+
+
+def fillet_reflex(poly, r, segs=2):
+    """Round every reflex (inward) corner of a CCW polygon with radius r
+    (segs + 1 points per corner); convex corners stay sharp (the punch)."""
+    out = []
+    n = len(poly)
+    for i in range(n):
+        p0, p1, p2 = poly[i - 1], poly[i], poly[(i + 1) % n]
+        e0 = (p1[0] - p0[0], p1[1] - p0[1])
+        e1 = (p2[0] - p1[0], p2[1] - p1[1])
+        cross = e0[0] * e1[1] - e0[1] * e1[0]
+        if cross >= 0 or r <= 0:          # convex (left turn) in a CCW polygon
+            out.append(p1)
+            continue
+        l0, l1 = math.hypot(*e0), math.hypot(*e1)
+        u0 = (e0[0] / l0, e0[1] / l0)
+        u1 = (e1[0] / l1, e1[1] / l1)
+        ang = math.acos(max(-1.0, min(1.0, -(u0[0] * u1[0] + u0[1] * u1[1]))))   # interior angle at p1 (of the turn)
+        t = r / math.tan(ang / 2)                    # tangent length
+        t = min(t, 0.45 * l0, 0.45 * l1)
+        a = (p1[0] - u0[0] * t, p1[1] - u0[1] * t)
+        b = (p1[0] + u1[0] * t, p1[1] + u1[1] * t)
+        # Quadratic Bezier through the corner: close enough to an arc at 0.5 mm.
+        for k in range(segs + 1):
+            s = k / segs
+            out.append(((1 - s) ** 2 * a[0] + 2 * (1 - s) * s * p1[0] + s * s * b[0],
+                        (1 - s) ** 2 * a[1] + 2 * (1 - s) * s * p1[1] + s * s * b[1]))
+    return out
+
+
+def hole_polys(chevrons="closed"):
+    """The plate's through-holes in OPENING mm: EXIT (+ the open chevron).
+    chevrons: "closed" (default; both stay as scored outlines), "left", "right"."""
+    p = letter_polys_open()
+    names = ["E", "X", "I", "T"]
+    if chevrons == "left":
+        names.append("<")
+    elif chevrons == "right":
+        names.append(">")
+    holes = []
+    for k in names:
+        for poly in p[k]:
+            holes.append(fillet_reflex(ccw(poly), HOLE_FILLET))
+    return holes
+
+
+def open_to_reader(pt):
+    """OPENING mm -> READER mm (origin at the face centre)."""
+    return (pt[0] - OPEN_W / 2, pt[1] - OPEN_H / 2)
+
+
+def rounded_rect(w, h, r, seg, cx=0.0, cy=0.0):
+    """CCW rounded rectangle (same construction as interact_key_common)."""
+    hw, hh = w / 2, h / 2
+    pts = []
+    for (x, y, a0) in ((hw - r, -hh + r, -90), (hw - r, hh - r, 0), (-hw + r, hh - r, 90), (-hw + r, -hh + r, 180)):
+        for i in range(seg + 1):
+            a = math.radians(a0 + 90 * i / seg)
+            pts.append((cx + x + r * math.cos(a), cy + y + r * math.sin(a)))
+    out = []
+    for p in pts:
+        if not out or abs(p[0] - out[-1][0]) > 1e-9 or abs(p[1] - out[-1][1]) > 1e-9:
+            out.append(p)
+    if abs(out[0][0] - out[-1][0]) < 1e-9 and abs(out[0][1] - out[-1][1]) < 1e-9:
+        out.pop()
+    return out
+
+
+def screw_positions():
+    """Face screws in READER mm: TL, TR, BL, BR."""
+    y = HOUSING_H / 2 - SCREW_INSET
+    return [(-SCREW_X, y), (SCREW_X, y), (-SCREW_X, -y), (SCREW_X, -y)]
+
+
+# ---------------------------------------------------------------- lamp field (§6.3)
+# (u, v) on the opening, 0-1 from the reader's bottom-left; sigma in opening fractions.
+LAMP_A = (0.33, 0.70, 0.08, 0.20)        # 20 W behind the E-X web
+LAMP_B = (0.65, 0.70, 0.08, 0.20)        # 20 W behind the I-T web
+LAMP_FILL = 0.06                          # each working lamp adds 0.06 everywhere (cavity inter-reflection)
+DC_LAMPS = ((0.12, 0.70, 0.08, 0.20), (0.88, 0.70, 0.08, 0.20))   # 2 x 5 W DC (positions ESTIMATE)
+DC_LEVEL = 0.25
+# Lamp positions in the housing (READER mm from the face centre, depth from the face), for anchors.
+def lamp_reader_mm(lamp):
+    u, v = lamp[0], lamp[1]
+    return (u * OPEN_W - OPEN_W / 2, v * OPEN_H - OPEN_H / 2)
+
+
+# Targets (S1 Table 1, mean of red signs 2 and 3R, relative to I).
+NIST_REL = {"E": 0.544, "X": 0.651, "I": 1.0, "T": 0.531}

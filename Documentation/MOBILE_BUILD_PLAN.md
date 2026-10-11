@@ -2,6 +2,8 @@
 
 状态：T0/T1 已落第一版，T2 菜单闭环与 T3 触觉接口已接入；`FRONTROOMSSS` 的 Figma 对齐版已生成 iPhone Xcode、分发归档并上传 TestFlight `0.1.0 (3)`，Android 暂缓。本文把 Figma 手机交互规格和当前 Unity 工程状态对齐；真实 iPhone 交互验收、测试组配置和 App Store Connect processing 结果仍待完成。
 
+> **2026-10-08 再修订（交互设计 chat，Red 的要求）：socket latch 已取消。** 奔跑改为「摇杆推出圆盘外的跑线（离中心 84 pt，前方 ±70°）」，越线时一次 rigid 震动；回到圈内即恢复行走。三档步态：慢走（中心 36 pt 内，1.44 m/s，Relay 听不到）、行走（3.2 m/s，每步 relay.Noise 半径 9）、奔跑（5.5 m/s，沿用桌面冲刺噪声 26）。设置行 RUN: STICK / BUTTON。规格见 TOUCH_CONTROLS §2、§2.1；playtest run 19 72/72；桌面 autopilot 2554 PASS。下文所有 socket latch 的描述都已过时。
+>
 > **2026-10-07 修订（交互设计 chat）。** 触控层已按 [TOUCH_CONTROLS.md](TOUCH_CONTROLS.md) 重写，并在无头 touch playtest 里对真实游戏逐项验证（TOUCH_CONTROLS §11）。下面 2026-10-04 的描述里，有几处已经不成立：
 > - **冲刺从未生效。** 摇杆用屏幕像素去比 pt 尺寸，3× iPhone 上判定的 socket 只在拇指上方约 31 pt（圈内），不在画出来的 92 pt 处。现在全部按 pt 计算（iOS `nativeScale`、Android density）。
 > - **动效只是整组线性淡入淡出**，现已按元素做缓动、错峰和回弹（TOUCH_CONTROLS §10），并支持 Reduce Motion。
@@ -56,7 +58,7 @@
 4. Sprint：socket latch、stamina 五段、key readout、captions。
 5. Thumb map：左半 MOVE、右半 LOOK、顶部只允许 pause；以安全区和 hit area 可视化验收。
 6. Android 20:9 door、iPad 11 door：分别验证运行时 safe area 和尺寸规则。
-7. Title、Pause、Settings、Caught：分别支持 TAP TO START、RESUME/SETTINGS/RESTART、可点击设置、TRY AGAIN。
+7. Title、Pause、Settings、Caught：分别支持 TAP TO START、RESUME/SETTINGS/RESTART/QUIT TO TITLE、可点击设置、TRY AGAIN。
 
 ### 设置和辅助功能
 
@@ -134,10 +136,10 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 | 层 | 完成证据 | 当前状态 |
 | --- | --- | --- |
 | 输入 facade | 桌面/WASM/autopilot 与基线行为一致，脚本化输入检查通过 | 代码已接线；完整回归待做 |
-| Touch / Stick | Calm、Walk、Sprint、Winded 四态；双指移动+look；socket latch 正确释放 | 2026-10-07 playtest 已验证（3.2 / 5.5 m/s、latch 与回拉、winded 与恢复、双指）；设备待测 |
+| Touch / Stick | Idle、Slow、Walk、Run、Winded 五态；双指移动+look；推出跑线奔跑、回圈即走（2026-10-08 起取代 socket latch） | 2026-10-07 playtest 已验证（3.2 / 5.5 m/s、latch 与回拉、winded 与恢复、双指）；设备待测 |
 | Touch / Use | Open/Shut/Take/Locked/Hold/Tap/Pressed；hold 环和 tap mode 与玻璃逻辑一致 | 2026-10-07 playtest 已验证 Open/Shut、直接点门、Locked 晃动、Hold 碎玻璃及其触觉；Take（地图暂无钥匙）与 Tap mode 待测；设备待测 |
 | Safe area | iPhone 62/62/0/21、Android runtime、iPad bottom 20 的截图和数值日志 | 运行时 safe area 已接入；截图待做 |
-| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认 | 2026-10-07 playtest 已验证 Title、Pause、Settings（行、‹ ›、滚动）、重启确认/取消、Caught 早按无效与 TRY AGAIN、Android Back 四步；实机待做 |
+| Menus | Title/Pause/Settings/Caught 全部可触控；失焦/back 会 pause；重启需要确认；暂停卡可回标题 | 2026-10-07 playtest 已验证 Title、Pause、Settings（行、‹ ›、滚动）、重启确认/取消、Caught 早按无效与 TRY AGAIN、Android Back 四步；TITLE PAGE 芯片已接入，实机待做 |
 | Mobile render | iOS Metal 与 Android arm64 的 fallback、HDR/MSAA、玻璃、FMOD 均有设备记录 | 未开始 |
 | Build | Xcode export、包版本/identifier/横屏、Release archive、分发签名 | iOS Xcode 导出、Release archive、Cloud Managed Distribution 签名和开发签名 iPhone 安装已通过；FMOD/触控运行时验收待做；Android 暂缓 |
 | Store/TestFlight | `FRONTROOMSSS` App record 已由 Xcode 创建；`0.1.0 (3)` 已上传，等待 App Store Connect processing；测试组配置仍待做，真机 build 3 已安装并启动 |
@@ -156,3 +158,21 @@ Android API 36 的 back 不应再依赖 `KeyCode.Escape`；通过 Unity predicti
 ## 下一步
 
 下一步是把 Xcode 工程配置开发 Team 后安装到真实 iPhone，校准 safe-area 与 hit rect，再补原生 Core Haptics、gyro 和 FMOD iOS banks，最后留下截图、手势日志和性能记录。Android 保持暂停，待 iPhone 验收完成后再开阶段。
+
+## 2026-10-08 Build 15 TestFlight release
+
+- `0.1.0 (15)` / `com.redwang.frontroomsss` 已从最新工作区的干净副本重新序列化并导出；导出时所有 C# 与主工程一致。Unity export、Xcode Debug build、Release archive、App Store Connect 分发签名 IPA export 均通过。此前 17:21 的 Build 15 快照已被最新 `tmYWkS` 快照取代，不用于上传。
+- 包含最新三档步态、门镜头/USE 接管、黑色 `QUIT TO TITLE` 芯片，以及视频 shader 资源加载和移动端 FMOD/Unity AudioClip 保护。
+- 独立副本复用 Run22，并追加真实 `QUIT TO TITLE → scene reload → Title → Playing → Pause → Settings → BACK → RESUME` 验证：88/88 PASS，0 测试失败。此为 Editor 的 iPhone 16 Pro profile 流程测试，不等同于真机验收；副本日志仍有 Desktop FMOD bank 缺失、QuickSearch 和 Theme 警告。
+- 线上 Xcode 同步的 9 份真实 TestFlight `.crash` 均来自旧 build 1，具有同一场景预加载序列化读取越界栈：`CachedReader::OutOfBoundsError → SerializedFile::ReadObject → PreloadManager`；App Store Connect 显示 26 次累计事件和 4 条用户反馈。堆栈未指出具体损坏资产。
+- Archive: `Builds/Mobile/iOS/FRONTROOMSSS/Archives/FRONTROOMSSS-Build15-latest.xcarchive`；IPA: `Builds/Mobile/iOS/FRONTROOMSSS/Exports/Build15-latest/FRONTROOMSSS.ipa`；证据: `Builds/Mobile/iOS/FRONTROOMSSS/Build15-evidence/`。
+- **外部测试已发布：`0.1.0 (15) — Testing`（2026-10-08 21:08 PDT 核实）。** Red 明确要求把当前 build 直接发到 TestFlight；Xcode 于 19:45 PDT 返回 `Upload succeeded`。Apple processing 已完成，加密合规已保存为 `None of the algorithms mentioned above`。提交 `What to Test` / `Submit for Review` 后，现有 `FRONTROOMSSS External` 组的构建列表确认 Build 15 为 `Testing`，共 7 名测试者；提交时保留 `Automatically notify testers`。公开链接为 `https://testflight.apple.com/join/a43h3GY7`。状态截图：`Builds/Mobile/iOS/FRONTROOMSSS/Build15-evidence/testflight-external-testing.jpg`。
+- 最终 Build 15 真机运行仍未完成，先前 Build 14 的启动成功不能代替 Build 15 验收。新包发布成功及 Editor 流程通过不代表已验证所有外部设备的闪退消失；需要 Build 15 的真实运行和后续崩溃报告确认。
+
+## 2026-10-10 iPhone / native macOS TestFlight split
+
+- Build 15 的 IPA 是手机目标（`CFBundleSupportedPlatforms=iPhoneOS`、`UIDeviceFamily=1,2`），不能在 TestFlight 中变成原生 Mac 客户端。要让同一公开入口按设备提供不同客户端，App Store Connect 需要在同一 App 记录中启用 macOS 平台，并额外上传一个 `MacOSX` 构建；TestFlight 会只显示与当前设备兼容的构建。
+- 当前源代码已补充独立的 `FrontRoomsCloudBuild.BuildMacTestFlight` 入口。它使用最新工作区、保持 URP、设置 `com.redwang.frontroomsss`、`0.1.0`、Mac build `15`，并导出用于 Xcode 归档的 macOS 工程；直接 `Cloud Build macOS` 仍只用于本地 QA。
+- 临时 Xcode 导出已通过：`macOS TestFlight Xcode Succeeded errors=0 warnings=0`，生成的 Info.plist 为 `CFBundleSupportedPlatforms=MacOSX`、`CFBundleVersion=15`。证据日志：`Builds/Mac/FRONTROOMSSS-Build15-TestFlight-Xcode.log`。
+- **ASC 平台状态复核：**第一次操作时同一页面出现两个重复 `Add Platform` 对话框；macOS 原生 checkbox 已勾选但 Add 仍 disabled，页面控制台同时报 React `removeChild`/脚本错误。用干净页面的语义 checkbox 操作后，ASC 现在已经显示 `macOS App 1.0 — Prepare for Submission`，所以此前的 disabled 是前端对话框状态竞态/重复 modal，不是账户角色不足。Business > Agreements 当前仍显示 Paid Apps Agreement=`New`；这会阻止付费应用/IAP 的创建或提交，但本项目目前没有证据表明它是本次添加 macOS 平台的直接原因，仍应由 Account Holder 处理后再上传。
+- **当前上传阻塞：**本机只有 Apple Development 证书，没有 Mac App Distribution/Installer（或 Apple Distribution）证书；macOS `.pkg` 尚未签名、上传或加入 TestFlight。下一步是取得 Mac 分发签名、配置 App Sandbox、归档并上传，然后将 macOS 构建加入外部组。现有 iOS 外部链接暂时仍只提供 iOS Build 15。

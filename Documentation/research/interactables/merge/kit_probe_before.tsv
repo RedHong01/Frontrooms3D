@@ -1,0 +1,58 @@
+name	hasLOD	d01_unity	dcull_unity	d01_side	dcull_side	lod_ok	tris0_unity	tris1_unity	tris0_side	tris1_side	tris_ok	materials	fallback_slots	colliders	lights	stray_renderers
+Kit_DoorCloser_Arm	no	-	-	1.50	20.00	BAD	1112	-	1112	0	ok	Prop_SteelBrown		0	0	0
+Kit_DoorCloser_Body	no	-	-	1.50	20.00	BAD	3236	-	3236	0	ok	Prop_Chrome,Prop_SteelBrown		0	0	0
+Kit_DoorCloser_Forearm	no	-	-	1.50	20.00	BAD	940	-	940	0	ok	Prop_Chrome,Prop_SteelBrown		0	0	0
+Kit_DoorCloser_Shoe	no	-	-	1.50	20.00	BAD	570	-	570	0	ok	Prop_Chrome,Prop_SteelBrown		0	0	0
+Kit_DoorFrame_Steel	yes	4.00	never	4.00	never	ok	3866	1430	3866	1430	ok	Prop_Aluminium,Prop_Chrome,Prop_Rubber,Prop_SteelBrown		0	0	0
+Kit_DoorFrame_Steel_Alu	yes	4.00	never	4.00	never	ok	3866	1430	3866	1430	ok	Prop_Aluminium,Prop_Chrome,Prop_Rubber		0	0	0
+Kit_DoorFrame_Wood	yes	4.00	never	4.00	never	ok	3152	1260	3152	1260	ok	Prop_Brass,Prop_WoodOak,Prop_WoodWalnut		0	0	0
+Kit_DoorLeaf_Steel	yes	4.00	never	4.00	never	ok	3930	1572	3930	1572	ok	Door_Enamel(fbx),Prop_Aluminium,Prop_Chrome	Door_Enamel	0	0	0
+Kit_DoorLeaf_SteelLite	yes	4.00	never	4.00	never	ok	4586	1834	4586	1834	ok	Door_Enamel(fbx),Prop_Aluminium,Prop_Chrome,Prop_Glass	Door_Enamel	0	0	0
+Kit_DoorLeaf_Steel_PaintedMetal	yes	4.00	never	4.00	never	ok	3930	1572	3930	1572	ok	Painted_Metal,Prop_Aluminium,Prop_Chrome		0	0	0
+Kit_DoorLeaf_Veneer	yes	4.00	never	4.00	never	ok	2464	886	2464	886	ok	Door_Veneer,Prop_Brass		0	0	0
+Kit_DoorLeaf_Veneer_Oak	yes	4.00	never	4.00	never	ok	2464	886	2464	886	ok	Prop_Chrome,Prop_WoodOak		0	0	0
+Kit_DoorLeaf_Ward	yes	4.00	never	4.00	never	ok	4930	1972	4930	1972	ok	Prop_Aluminium,Prop_Chrome,Prop_WoodLaminate		0	0	0
+Kit_DoorNumberPlate	no	-	-	1.50	15.00	BAD	480	-	480	0	ok	Prop_Chrome,Prop_KeyTagNo(fbx),Prop_PlasticRed	Prop_KeyTagNo	0	0	0
+Kit_DoorNumberPlate_Blue	no	-	-	1.50	15.00	BAD	480	-	480	0	ok	Prop_Chrome,Prop_KeyTagNo(fbx),Prop_PlasticBlue	Prop_KeyTagNo	0	0	0
+Kit_DoorNumberPlate_White	no	-	-	1.50	15.00	BAD	480	-	480	0	ok	Prop_Chrome,Prop_KeyTagNo(fbx),Prop_PlasticWhite	Prop_KeyTagNo	0	0	0
+Kit_DoorSign	no	-	-	2.00	25.00	BAD	664	-	664	0	ok	Prop_Chrome,Prop_PlasticBlack,Prop_PlasticWhite,Prop_SignEngraved(fbx)	Prop_SignEngraved	0	0	0
+Kit_ExitDevice_Crossbar	no	-	-	2.00	25.00	BAD	3948	-	3948	0	ok	Prop_Aluminium,Prop_Chrome		0	0	0
+Kit_KeyCabinet	no	-	-	3.00	40.00	BAD	6804	-	6804	0	ok	Prop_Chrome,Prop_KeyTagNo(fbx),Prop_PlasticWhite,Prop_SteelAlmond	Prop_KeyTagNo	0	0	0
+Kit_KeyHook	no	-	-	1.50	12.00	BAD	530	-	530	0	ok	Prop_Brass		0	0	0
+Kit_KeyHookBoard	no	-	-	3.00	40.00	BAD	4392	-	4392	0	ok	Prop_Brass,Prop_KeyTagNo(fbx),Prop_WoodDark	Prop_KeyTagNo	0	0	0
+Kit_KeyRing	no	-	-	1.00	12.00	BAD	1972	-	1972	0	ok	Prop_Chrome		0	0	0
+Kit_KeyTag_Long	no	-	-	1.00	15.00	BAD	1038	-	1038	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticRed	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Long_Blue	no	-	-	1.00	15.00	BAD	1038	-	1038	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticBlue	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Long_White	no	-	-	1.00	15.00	BAD	1038	-	1038	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticWhite	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Rect	no	-	-	1.00	15.00	BAD	1038	-	1038	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticRed	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Rect_Blue	no	-	-	1.00	15.00	BAD	1038	-	1038	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticBlue	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Rect_White	no	-	-	1.00	15.00	BAD	1038	-	1038	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticWhite	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Round	no	-	-	1.00	15.00	BAD	1282	-	1282	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticRed	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Round_Blue	no	-	-	1.00	15.00	BAD	1282	-	1282	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticBlue	Prop_KeyTagNo	0	0	0
+Kit_KeyTag_Round_White	no	-	-	1.00	15.00	BAD	1282	-	1282	0	ok	Prop_KeyTagNo(fbx),Prop_PlasticWhite	Prop_KeyTagNo	0	0	0
+Kit_Key_Zone	no	-	-	1.00	12.00	BAD	2184	-	2184	0	ok	Prop_Brass		0	0	0
+Kit_Key_Zone_Nickel	no	-	-	1.00	12.00	BAD	2184	-	2184	0	ok	Prop_Aluminium		0	0	0
+Kit_Lock_CylinderShell	no	-	-	1.50	12.00	BAD	2708	-	2708	0	ok	Prop_Brass,Prop_Chrome,Prop_PlasticBlack		0	0	0
+Kit_Lock_CylinderShell_Brass	no	-	-	1.50	12.00	BAD	2708	-	2708	0	ok	Prop_Brass,Prop_PlasticBlack		0	0	0
+Kit_Lock_Deadbolt	no	-	-	1.00	8.00	BAD	380	-	380	0	ok	Prop_Aluminium,Prop_Chrome		0	0	0
+Kit_Lock_Escutcheon	no	-	-	1.50	12.00	BAD	3176	-	3176	0	ok	Prop_Chrome,Prop_PlasticBlack		0	0	0
+Kit_Lock_Escutcheon_Brass	no	-	-	1.50	12.00	BAD	3176	-	3176	0	ok	Prop_Brass,Prop_PlasticBlack		0	0	0
+Kit_Lock_Knob	no	-	-	1.50	12.00	BAD	4608	-	4608	0	ok	Prop_Chrome		0	0	0
+Kit_Lock_Knob_Brass	no	-	-	1.50	12.00	BAD	4608	-	4608	0	ok	Prop_Brass		0	0	0
+Kit_Lock_Latchbolt_Bored	no	-	-	1.00	8.00	BAD	476	-	476	0	ok	Prop_Chrome		0	0	0
+Kit_Lock_Latchbolt_Bored_Brass	no	-	-	1.00	8.00	BAD	476	-	476	0	ok	Prop_Brass		0	0	0
+Kit_Lock_Latchbolt_Mortise	no	-	-	1.00	8.00	BAD	600	-	600	0	ok	Prop_Chrome		0	0	0
+Kit_Lock_Lever	no	-	-	1.50	15.00	BAD	3974	-	3974	0	ok	Prop_Chrome		0	0	0
+Kit_Lock_Lever_Brass	no	-	-	1.50	15.00	BAD	3974	-	3974	0	ok	Prop_Brass		0	0	0
+Kit_Lock_Plug	no	-	-	1.00	8.00	BAD	1884	-	1884	0	ok	Prop_Brass,Prop_PlasticBlack		0	0	0
+Kit_Lock_Rose	no	-	-	1.50	12.00	BAD	2728	-	2728	0	ok	Prop_Chrome,Prop_PlasticBlack		0	0	0
+Kit_Lock_Rose_Brass	no	-	-	1.50	12.00	BAD	2728	-	2728	0	ok	Prop_Brass,Prop_PlasticBlack		0	0	0
+Kit_Lock_StrikeBored	no	-	-	1.50	12.00	BAD	674	-	674	0	ok	Prop_Chrome,Prop_PlasticBlack		0	0	0
+Kit_Lock_StrikeBored_Brass	no	-	-	1.50	12.00	BAD	674	-	674	0	ok	Prop_Brass,Prop_PlasticBlack		0	0	0
+Kit_Lock_StrikeMortise	no	-	-	1.50	12.00	BAD	988	-	988	0	ok	Prop_Chrome,Prop_PlasticBlack		0	0	0
+Kit_MiniBlind_Lowered	yes	3.00	30.00	3.00	30.00	ok	6376	1594	6376	1594	ok	Prop_PlasticWhite,Prop_SteelAlmond		0	0	0
+Kit_MiniBlind_Raised	yes	3.00	30.00	3.00	30.00	ok	2572	876	2572	876	ok	Prop_PlasticWhite,Prop_SteelAlmond		0	0	0
+Kit_WindowFrame_Alu	yes	4.00	never	4.00	never	ok	1088	1064	1088	1064	ok	Prop_Aluminium,Prop_Rubber		0	0	0
+Kit_WindowFrame_Steel	yes	4.00	never	4.00	never	ok	3862	1438	3862	1438	ok	Prop_Rubber,Prop_SteelBrown		0	0	0
+Kit_WindowFrame_Steel_Enamel	yes	4.00	never	4.00	never	ok	3862	1438	3862	1438	ok	Door_Enamel(fbx),Prop_Rubber	Door_Enamel	0	0	0
+Kit_WindowFrame_Wood	yes	4.00	never	4.00	never	ok	2322	1044	2322	1044	ok	Prop_Rubber,Prop_WoodWalnut		0	0	0

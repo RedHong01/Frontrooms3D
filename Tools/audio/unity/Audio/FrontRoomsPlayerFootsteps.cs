@@ -16,6 +16,7 @@ namespace FrontRooms.Audio
         const float WalkSpeed = 3.2f, RunSpeed = 5.5f;
         const float WalkStride = 1.45f, RunStride = 1.72f;
         const float DefaultDampness = .4f, ShoeDryTime = 30f;
+        const float SlowStepDb = -15f;      // Red 2026-10-08: slow walk is almost silent
 
         public Func<Vector3, SoundIds.Surface> surfaceAt;
         public Func<Vector3, float> dampnessAt;
@@ -83,8 +84,11 @@ namespace FrontRooms.Audio
             var feet = Feet();
             var surface = surfaceAt != null ? surfaceAt(feet) : SoundIds.Surface.Carpet;
             shoe = Mathf.Max(shoe, dampnessAt != null ? dampnessAt(feet) : DefaultDampness);
+            // Touch slow walk (inner part of the stick, 1.44 m/s): the same walk step, barely audible. Its slower
+            // cadence comes from the distance-based stride. Desktop only ever reports Walk / Run.
+            var quiet = FrontRooms3DGame.PlayerGait == FrontRoomsGait.Slow ? SlowStepDb : 0f;
             FrontRoomsFmod.OneShot(SoundIds.Footstep, feet,
-                SoundIds.Param.Surface, (float)surface, SoundIds.Param.Gait, (float)gait, SoundIds.Param.Dampness, shoe);
+                SoundIds.Param.Surface, (float)surface, SoundIds.Param.Gait, (float)gait, SoundIds.Param.Dampness, shoe, quiet);
         }
     }
 }

@@ -152,7 +152,7 @@ def build(kit):
     dc.anchor(kit, "head_dust_b", 0.0, dc.LINING_Y, 0.95)
     dc.anchor(kit, "threshold", 0.0, dc.SADDLE_H, 0.50)
     dc.anchor(kit, "closer_shoe", *CLOSER_SHOE)
-    dc.anchor(kit, "exit_sign_p", -0.080, 2.280, 0.500)
+    dc.anchor(kit, "exit_sign_p", -0.080, 2.180, 0.500)   # the wall sign's origin (its bottom): 3 mm over the head casing (exit_sign/10_spec.md §4.5)
     kit.no_collider()
     kit.tag("interactable", "door", "door_frame", "office", "lobby", "frame_steel")
     kit.meta["frameType"] = "steel"

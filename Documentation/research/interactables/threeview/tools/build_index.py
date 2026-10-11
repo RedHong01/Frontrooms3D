@@ -250,10 +250,10 @@ PROPOSAL_SLOTS = [
     ("DW05", "img:DoorSet_OF-K_persp", "2750:6124", "heroes/doorset_OF-K_pull.png", "replaces WIP (Blender spec render)", 426, 317),
     ("DW05", "img:DoorSet_RN-K_persp", "2750:6129", "heroes/doorset_RN-K_pull.png", "fills PHASE 2 placeholder; delete text 2750:6130, keep chip 2750:6131", 426, 317),
     ("DW05", "img:DoorSet_EX-K_persp", "2750:6134", "heroes/doorset_EX-K_pull.png", "fills PHASE 2 placeholder; delete text 2750:6135, keep chip 2750:6136", 426, 317),
-    ("DW06", "img:Kit_Lock_Escutcheon_persp", "2750:6154", "png/Kit_Lock_Escutcheon_persp.png", "fills PHASE 2 placeholder; delete text 2750:6155", 276, 204),
+    ("DW06", "img:Kit_Lock_Escutcheon_persp", "2750:6154", "png_fix/Kit_Lock_Escutcheon_persp.png", "fills PHASE 2 placeholder; delete text 2750:6155 (source: fix-pass three-view, 1.5 mm edge)", 276, 204),
     ("DW06", "img:Kit_Lock_CylinderShell_persp", "2750:6158", "png/Kit_Lock_CylinderShell_persp.png", "fills PHASE 2 placeholder; delete text 2750:6159", 276, 204),
     ("DW06", "img:Kit_Lock_Plug_persp", "2750:6162", "png/Kit_Lock_Plug_persp.png", "fills PHASE 2 placeholder; delete text 2750:6163", 276, 204),
-    ("DW06", "img:Kit_Lock_Knob_persp", "2750:6166", "png/Kit_Lock_Knob_persp.png", "fills PHASE 2 placeholder; delete text 2750:6167", 276, 204),
+    ("DW06", "img:Kit_Lock_Knob_persp", "2750:6166", "png_fix/Kit_Lock_Knob_persp.png", "fills PHASE 2 placeholder; delete text 2750:6167 (source: fix-pass three-view, domed face)", 276, 204),
     ("DW06", "img:Kit_Lock_Deadbolt_persp", "2750:6170", "png/Kit_Lock_Deadbolt_persp.png", "fills PHASE 2 placeholder; delete text 2750:6171", 276, 204),
     ("DW06", "img:Kit_Lock_Latchbolt_Mortise_persp", "2750:6174", "png/Kit_Lock_Latchbolt_Mortise_persp.png", "fills PHASE 2 placeholder; delete text 2750:6175", 276, 204),
     ("DW06", "img:Kit_Lock_StrikeMortise_persp", "2750:6178", "png/Kit_Lock_StrikeMortise_persp.png", "fills PHASE 2 placeholder; delete text 2750:6179", 276, 204),
@@ -266,8 +266,8 @@ PROPOSAL_SLOTS = [
     ("DW08", "img:Kit_WindowFrame_Steel_persp", "2751:6130", "heroes/window_W-OF_face_a.png", "replaces WIP (Blender look-dev)", 426, 316),
     ("DW08", "img:Kit_WindowFrame_Steel_Enamel_persp", "2751:6133", "heroes/window_W-RN_face_a.png", "fills PHASE 2 placeholder; delete text 2751:6134", 426, 317),
     ("DW08", "img:Kit_WindowFrame_Alu_persp", "2751:6137", "heroes/window_W-EX_face_a.png", "replaces WIP (Blender look-dev)", 426, 316),
-    ("DW08", "img:Kit_MiniBlind_Raised_persp", "2751:6151", "png/Kit_MiniBlind_Raised_persp.png", "fills PHASE 2 placeholder; delete text 2751:6152", 426, 317),
-    ("DW12", "img:Kit_ExitSign_persp", "2753:6293", "png/Kit_ExitSign_persp.png", "replaces WIP; HOLD if the exit-sign workflow has re-modelled Kit_ExitSign since (it is running)", 426, 317),
+    ("DW08", "img:Kit_MiniBlind_Raised_persp", "2751:6151", "png_fix/Kit_MiniBlind_Raised_persp.png", "fills PHASE 2 placeholder; delete text 2751:6152 (source: fix-pass three-view; geometry = main)", 426, 317),
+    ("DW12", "img:Kit_ExitSign_persp", "2753:6293", "../../exit_sign/threeview/png/Kit_ExitSign_persp.png", "replaces WIP; source = the exit-sign track's three-view of the kit merged into main 2026-10-08 19:40 (VL220); the 10-03 png/ copy is the old model", 426, 317),
 ]
 proposal_slots = []
 for slide, slot, node, src, action, w, h in PROPOSAL_SLOTS:

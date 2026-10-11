@@ -1,0 +1,13 @@
+{
+ "frames": 84,
+ "mean_abs_dY_fix_vs_main_all": 0.068,
+ "frames_over_0.5": [
+  "55_win1_OF_hall_head_0.3m",
+  "56_win2_L0_room_1.5m",
+  "59_win2_L0_hall_1.5m",
+  "66_win4_L0_room_1.5m",
+  "69_win4_L0_hall_1.5m",
+  "70_win4_L0_hall_head_0.3m"
+ ],
+ "max_red_pct_fix": 2.67
+}

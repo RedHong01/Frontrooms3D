@@ -1,0 +1,52 @@
+# COV-5 shader compile check (after_final)
+FrontRooms/ScreenVideo: subshader 0, pass 'FrontRoomsScreenVideo'
+FrontRooms/ScreenVideo GLES3x/WebGL Vertex []: OK, 4597 bytes
+FrontRooms/ScreenVideo GLES3x/WebGL Fragment []: OK, 0 bytes
+FrontRooms/ScreenVideo WebGPU/WebGL Vertex []: OK, 5774 bytes
+FrontRooms/ScreenVideo WebGPU/WebGL Fragment []: OK, 0 bytes
+FrontRooms/ScreenVideo Metal/StandaloneOSX Vertex []: OK, 2854 bytes
+FrontRooms/ScreenVideo Metal/StandaloneOSX Fragment []: OK, 1122 bytes
+FrontRooms/ScreenVideo Metal/iOS Vertex []: OK, 2854 bytes
+FrontRooms/ScreenVideo Metal/iOS Fragment []: OK, 1186 bytes
+FrontRooms/ScreenVideo D3D/StandaloneWindows64 Vertex []: OK, 722 bytes
+FrontRooms/ScreenVideo D3D/StandaloneWindows64 Fragment []: OK, 414 bytes
+FrontRooms/ScreenVideo Vulkan/StandaloneLinux64 Vertex []: OK, 1514 bytes
+FrontRooms/ScreenVideo Vulkan/StandaloneLinux64 Fragment []: OK, 0 bytes
+Universal Render Pipeline/Unlit: subshader 0, pass 'Unlit'
+Universal Render Pipeline/Unlit GLES3x/WebGL Vertex []: OK, 6219 bytes
+Universal Render Pipeline/Unlit GLES3x/WebGL Fragment []: OK, 0 bytes
+Universal Render Pipeline/Unlit GLES3x/WebGL Vertex [FOG_EXP2]: OK, 6655 bytes
+Universal Render Pipeline/Unlit GLES3x/WebGL Fragment [FOG_EXP2]: OK, 0 bytes
+Universal Render Pipeline/Unlit GLES3x/WebGL Vertex [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 7340 bytes
+Universal Render Pipeline/Unlit GLES3x/WebGL Fragment [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 0 bytes
+Universal Render Pipeline/Unlit WebGPU/WebGL Vertex []: OK, 7611 bytes
+Universal Render Pipeline/Unlit WebGPU/WebGL Fragment []: OK, 0 bytes
+Universal Render Pipeline/Unlit WebGPU/WebGL Vertex [FOG_EXP2]: OK, 8249 bytes
+Universal Render Pipeline/Unlit WebGPU/WebGL Fragment [FOG_EXP2]: OK, 0 bytes
+Universal Render Pipeline/Unlit WebGPU/WebGL Vertex [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 9491 bytes
+Universal Render Pipeline/Unlit WebGPU/WebGL Fragment [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 0 bytes
+Universal Render Pipeline/Unlit Metal/StandaloneOSX Vertex []: OK, 3560 bytes
+Universal Render Pipeline/Unlit Metal/StandaloneOSX Fragment []: OK, 1604 bytes
+Universal Render Pipeline/Unlit Metal/StandaloneOSX Vertex [FOG_EXP2]: OK, 3560 bytes
+Universal Render Pipeline/Unlit Metal/StandaloneOSX Fragment [FOG_EXP2]: OK, 2065 bytes
+Universal Render Pipeline/Unlit Metal/StandaloneOSX Vertex [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 3560 bytes
+Universal Render Pipeline/Unlit Metal/StandaloneOSX Fragment [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 3142 bytes
+Universal Render Pipeline/Unlit Metal/iOS Vertex []: OK, 3560 bytes
+Universal Render Pipeline/Unlit Metal/iOS Fragment []: OK, 1652 bytes
+Universal Render Pipeline/Unlit Metal/iOS Vertex [FOG_EXP2]: OK, 3560 bytes
+Universal Render Pipeline/Unlit Metal/iOS Fragment [FOG_EXP2]: OK, 2173 bytes
+Universal Render Pipeline/Unlit Metal/iOS Vertex [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 3560 bytes
+Universal Render Pipeline/Unlit Metal/iOS Fragment [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 3373 bytes
+Universal Render Pipeline/Unlit D3D/StandaloneWindows64 Vertex []: OK, 894 bytes
+Universal Render Pipeline/Unlit D3D/StandaloneWindows64 Fragment []: OK, 538 bytes
+Universal Render Pipeline/Unlit D3D/StandaloneWindows64 Vertex [FOG_EXP2]: OK, 894 bytes
+Universal Render Pipeline/Unlit D3D/StandaloneWindows64 Fragment [FOG_EXP2]: OK, 770 bytes
+Universal Render Pipeline/Unlit D3D/StandaloneWindows64 Vertex [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 894 bytes
+Universal Render Pipeline/Unlit D3D/StandaloneWindows64 Fragment [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 1170 bytes
+Universal Render Pipeline/Unlit Vulkan/StandaloneLinux64 Vertex []: OK, 2006 bytes
+Universal Render Pipeline/Unlit Vulkan/StandaloneLinux64 Fragment []: OK, 0 bytes
+Universal Render Pipeline/Unlit Vulkan/StandaloneLinux64 Vertex [FOG_EXP2]: OK, 2283 bytes
+Universal Render Pipeline/Unlit Vulkan/StandaloneLinux64 Fragment [FOG_EXP2]: OK, 0 bytes
+Universal Render Pipeline/Unlit Vulkan/StandaloneLinux64 Vertex [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 2910 bytes
+Universal Render Pipeline/Unlit Vulkan/StandaloneLinux64 Fragment [FOG_EXP2 _SCREEN_SPACE_OCCLUSION]: OK, 0 bytes
+# OK 48, failed 0

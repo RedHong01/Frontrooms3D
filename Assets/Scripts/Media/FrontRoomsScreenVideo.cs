@@ -207,7 +207,18 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
 
     static Material MakeMaterial(Texture texture)
     {
-        var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
+        // The built-in URP/Unlit shader can be stripped from an iOS player when
+        // it is only looked up by name. Keep the screen shader in Resources so
+        // the runtime path has a deterministic, player-safe asset to load.
+        var shader = Resources.Load<Shader>("Rendering/FrontRoomsScreenVideo") ??
+            Shader.Find("FrontRooms/ScreenVideo") ??
+            Shader.Find("Universal Render Pipeline/Unlit") ??
+            Shader.Find("Unlit/Texture");
+        if (shader == null)
+        {
+            Debug.LogError("[FrontRoomsScreenVideo] No screen surface shader is available in this player.");
+            return null;
+        }
         var material = new Material(shader) { name = "FrontRooms / CRT ad surface" };
         if (texture != null)
         {

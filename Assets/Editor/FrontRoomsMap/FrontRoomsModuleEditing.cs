@@ -55,9 +55,13 @@ public static class FrontRoomsModuleEditing
     /// <summary>A kit has been dropped: forget it, so no later drag reads it.</summary>
     public static void DragDone() => DragAndDrop.SetGenericData(DragKey, null);
 
-    /// <summary>The palette's kits: those of one placement ("All", "Floor", "Wall", "DeskTop") whose name contains <paramref name="search"/>.</summary>
+    /// <summary>
+    /// The palette's kits: those of one placement ("All", "Floor", "Wall", "DeskTop") whose name contains <paramref name="search"/>.
+    /// Ceiling kits (the hanging EXIT signs) are left out until the designer places them on the ceiling (exit_sign spec C-3):
+    /// NewProp would stand them on the floor, and the map's prop checks treat their footprint as standing in the room.
+    /// </summary>
     public static List<string> PaletteKits(string placement, string search) =>
-        Kits().Where(n => (placement == "All" || Placement(n) == placement)
+        Kits().Where(n => Placement(n) != "Ceiling" && (placement == "All" || Placement(n) == placement)
             && (string.IsNullOrEmpty(search) || n.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
 
     /// <summary>The kit's placement from its sidecar (Floor, Wall, DeskTop, Ceiling), or "" if unknown.</summary>

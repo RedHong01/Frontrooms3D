@@ -2,6 +2,12 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+/// <summary>
+/// The player's gait, quietest to loudest after Still (Red, 2026-10-08: "跑步-声音最大，正常行进-中等声音，
+/// 慢慢走-几乎没有声音"). The touch stick makes all three (TOUCH_CONTROLS.md §2); desktop has walk and run.
+/// </summary>
+public enum FrontRoomsGait { Still, Slow, Walk, Run }
+
 // The handheld (iOS / Android) glue, kept in its own partial so the desktop
 // HUD and gameplay stay readable. Everything here runs only while
 // FrontRoomsHandheld.Active: desktop, WebGL and normal Editor Play Mode never
@@ -19,13 +25,54 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     FrontRoomsMapHunter mobileHapticRelay;
     HunterState mobileRelayState;
 
-    const string MobileCalmHintSocket = "Slide up into the socket to sprint. About 5 seconds, and it hears every step.";
-    const string MobileCalmHintButton = "Tap SPRINT to run. About 5 seconds, and it hears every step.";
+    const string MobileCalmHintStick = "Push past the ring to run: it hears every step. Stay near the centre to creep unheard.";
+    const string MobileCalmHintButton = "Tap RUN to run: it hears every step. Stay near the centre to creep unheard.";
 
     /// <summary>The first-run hint: the touch gesture on a handheld, Shift on desktop.</summary>
     string CurrentCalmHint => FrontRoomsHandheld.Active
-        ? (FrontRoomsSettings.TouchSprintSocket ? MobileCalmHintSocket : MobileCalmHintButton)
+        ? (FrontRoomsSettings.TouchSprintSocket ? MobileCalmHintStick : MobileCalmHintButton)
         : CalmHint;
+
+    // ------------------------------------------------------------- gaits
+
+    /// <summary>
+    /// A handheld walk step's noise radius. With hearing ×1.4 that is 12.6 m of walking path at tier 1, so a shut door
+    /// between you (+9 m) all but hides it. The run keeps the desktop sprint's radius; the slow gait makes none.
+    /// </summary>
+    const float HandheldWalkNoiseRadius = 9f;
+
+    /// <summary>The player's gait this frame, for the sound layer's footsteps (AUDIO_CONTRACT). Slow happens only on a handheld.</summary>
+    public static FrontRoomsGait PlayerGait { get; private set; }
+
+#if UNITY_EDITOR
+    /// <summary>Each handheld walk noise (its radius), for the touch playtest.</summary>
+    internal static event System.Action<float> HandheldNoiseEmitted;
+#endif
+
+    /// <summary>
+    /// The gait from the sprint rule and the move's size. The touch stick sends one size per gait (slow 0.45, walk 1),
+    /// so a handheld move under 0.7 is the slow creep; desktop keys and pads keep walk and run, as before.
+    /// </summary>
+    static FrontRoomsGait GaitOf(bool sprinting, float wishSqrMagnitude)
+    {
+        if (wishSqrMagnitude <= .01f) return FrontRoomsGait.Still;
+        if (sprinting) return FrontRoomsGait.Run;
+        return FrontRoomsHandheld.Active && wishSqrMagnitude < .49f ? FrontRoomsGait.Slow : FrontRoomsGait.Walk;
+    }
+
+    /// <summary>A handheld walk footstep reaches the Relay's ears. Desktop walking stays silent; the slow gait is silent everywhere.</summary>
+    void HandheldStepNoise()
+    {
+        if (!FrontRoomsHandheld.Active || PlayerGait != FrontRoomsGait.Walk || relay == null || playerRoot == null) return;
+#if UNITY_EDITOR
+        // Through the bots' wrapper, like door, glass and sprint, so a baseline run can name the hunt it starts
+        // (关卡设计调研, 2026-10-08). Outside a baseline it is relay.Noise.
+        AutopilotNoise(AutoCauseOther, playerRoot.position, HandheldWalkNoiseRadius);
+        HandheldNoiseEmitted?.Invoke(HandheldWalkNoiseRadius);
+#else
+        relay.Noise(playerRoot.position, HandheldWalkNoiseRadius);
+#endif
+    }
 
     /// <summary>
     /// The prompt line under the dot. On a handheld the key drops out ("E · OPEN DOOR"
@@ -54,6 +101,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         {
             mobileTouch.SettingsRowRequested += HandleMobileSettingsRow;
             mobileTouch.RestartCancelRequested += CancelMobileRestartConfirmation;
+            mobileTouch.ReturnTitleRequested += ReturnToMobileTitle;
             mobileTouch.LookTapped += HandleMobileLookTap;
             FrontRoomsMobileBackBridge.BackPressed += HandleMobileBack;
             MapRunStarted += OnMobileMapRunStarted;
@@ -126,7 +174,22 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
 
     void HandleMobileBack()
     {
-        if (this == null || phase == Phase.Title || phase == Phase.Caught) return;
+        if (this == null) return;
+        // Every screen has a way back. The title is the root: Back leaves the game (Android's convention).
+        if (phase == Phase.Title)
+        {
+            FrontRoomsMobileBackBridge.LeaveApp();
+            return;
+        }
+        // Caught: Back is TRY AGAIN, after the chip's own 0.6 s guard.
+        if (phase == Phase.Caught)
+        {
+            if (mobileTouch == null || !mobileTouch.TryAgainReady) return;
+            FrontRoomsMobileInteractionEvents.MenuConfirmed();
+            restart = true;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            return;
+        }
         if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
         if (displaySettingsOpen) { ToggleDisplaySettings(); return; }
         if (phase == Phase.Playing) SetPhase(Phase.Paused);
@@ -155,6 +218,16 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
+    /// <summary>Returns to the authored title corridor from the mobile pause card.</summary>
+    void ReturnToMobileTitle()
+    {
+        if (phase != Phase.Paused || mobileRestartConfirmOpen) return;
+        // A title return is a fresh scene, rather than a run restart: leave the
+        // static restart latch clear so Awake builds the normal title corridor.
+        restart = false;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
     void HandleMobileSettingsRow(int id, int direction)
     {
         if (phase != Phase.Paused || !displaySettingsOpen) return;
@@ -173,7 +246,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         var description = map.Describe(hit.collider, out var hold);
         if (hold || string.IsNullOrEmpty(description)) return;
         FrontRoomsMobileInteractionEvents.UsePressed();
-        map.Use(hit.collider);
+        // The same road as E (UpdateAim): a shot that takes USE swallows the tap, and a key turn starts the unlock shot.
+        if (rig == null || !rig.Consume(ShotInput.Use)) UseDoor(hit.collider);
     }
 
     void UpdateMobileTouchMenu()
@@ -233,6 +307,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         if (winded && !mobileWasWinded) FrontRoomsMobileInteractionEvents.Winded();
         mobileWasWinded = winded;
         mobileTouch.SetWinded(winded);
+        // A shot fades the HUD (ApplyGameplayHudAlpha); USE follows, so it never shows a verb a press wouldn't do.
+        mobileTouch.SetTakeover(rig != null ? rig.HudFade : 0f);
         UpdateMobilePromptGlyph(visible, locked);
     }
 

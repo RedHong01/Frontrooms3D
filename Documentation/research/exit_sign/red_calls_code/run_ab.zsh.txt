@@ -1,0 +1,27 @@
+#!/bin/zsh
+# Red's calls on the merged EXIT sign: A/B captures in W/proj_es_ab (one Unity process at a time on the clone).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_ab; L=$W/logs/es_ab; O=$W/es_ab/frames
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+mkdir -p $O $L; S=$W/es_ab/_status.txt; : > $S
+run_to() {
+  local name=$1 lim=$2; shift 2
+  echo "$(date +%H:%M:%S) $name start (limit ${lim}s)" >> $S
+  $U "$@" -logFile $L/$name.log > /dev/null 2>&1 &
+  local pid=$! t=0
+  while kill -0 $pid 2>/dev/null; do
+    sleep 10; t=$((t+10))
+    if [ $t -ge $lim ]; then
+      kill $pid 2>/dev/null; sleep 5; kill -9 $pid 2>/dev/null
+      echo "$(date +%H:%M:%S) $name KILLED after ${t}s" >> $S
+      break
+    fi
+  done
+  wait $pid 2>/dev/null; local rc=$?
+  echo "$(date +%H:%M:%S) $name exit $rc ($(grep -c 'error CS' $L/$name.log 2>/dev/null) error CS, ${t}s)" >> $S
+}
+if [ "$1" != "capture" ]; then
+  if [ -d $C/Library/ScriptAssemblies ]; then mv $C/Library/ScriptAssemblies ~/.Trash/FRVW_proj_es_ab_ScriptAssemblies_$(date +%Y%m%d%H%M%S); fi
+  run_to compile 3600 -batchmode -nographics -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignABCapture.ReimportScripts
+fi
+run_to capture 3600 -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignABCapture.RunBatch -esABOut $O
+echo "$(date +%H:%M:%S) ALL DONE" >> $S

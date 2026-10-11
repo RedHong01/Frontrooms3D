@@ -479,7 +479,7 @@ public static class FrontRoomsInteractableHeroes
         const string board = "Kit_KeyHookBoard";
         S(board, root, Vector3.zero, Quaternion.identity);
         var info = FrontRoomsKitLibrary.GetInfo(board);
-        Hang(root, board, A(board, "key_hook"), "Kit_KeyTag_Rect", "Kit_Key_Zone", -60f, .0012f, -30f, -30f);
+        Hang(root, board, A(board, "key_hook"), "Kit_KeyTag_Rect", "Kit_Key_Zone", 120f, .0012f, -30f, 150f);   // hungPose v2 (fix pass 2026-10-08): tag on the wall side, key faces the room
         var boardBounds = RenderedBounds(root);
         boardBounds.SetMinMax(new Vector3(-.2f, 1.22f, -.01f), new Vector3(.2f, 1.68f, .06f));
         ShootPersp("keys_board_hung", boardBounds, 1600, 1200, 152f, 8f, 30f, .95f);
@@ -496,7 +496,7 @@ public static class FrontRoomsInteractableHeroes
             var wall = host == "Kit_KeyHook" ? "L0_Wallpaper" : "Office_Wall";
             Box(r, "wall", new Vector3(-1.6f, .6f, -.16f), new Vector3(1.5f, 2.4f, 0f), Surface(wall));
             S(host, r, Vector3.zero, Quaternion.identity);
-            Hang(r, host, A(host, "key_hook"), host == "Kit_KeyHook" ? "Kit_KeyTag_Round_Blue" : "Kit_KeyTag_Long_White", "Kit_Key_Zone", -60f, host == "Kit_KeyHook" ? .0014f : .0011f, -30f, -30f);
+            Hang(r, host, A(host, "key_hook"), host == "Kit_KeyHook" ? "Kit_KeyTag_Round_Blue" : "Kit_KeyTag_Long_White", "Kit_Key_Zone", 120f, host == "Kit_KeyHook" ? .0014f : .0011f, -30f, 150f);   // hungPose v2
             var hb = new Bounds();
             if (host == "Kit_KeyHook") hb = new Bounds(A(host, "key_hook") + new Vector3(0f, -.035f, .01f), new Vector3(.10f, .12f, .05f));
             else hb.SetMinMax(new Vector3(-.40f, 1.20f, -.01f), new Vector3(.40f, 1.74f, .10f));
@@ -552,10 +552,11 @@ public static class FrontRoomsInteractableHeroes
         Box(root, "room side r", new Vector3(1.15f, 0f, -2.76f), new Vector3(1.31f, 2.4f, -.08f), wm);
         Box(root, "room ceiling", new Vector3(-1.15f, 2.35f, -2.6f), new Vector3(1.15f, 2.4f, -.08f), Surface(w.wall.StartsWith("Office") ? "Office_Ceiling" : w.wall.StartsWith("Run") ? "Run_Ceiling" : "L0_Ceiling"));
         S(w.frame, root, Vector3.zero, Quaternion.identity);
-        // Stand-in pane: the glass track's 6 mm slab (10_spec §5.4), Prop_Glass. Not part of the window kit.
+        // Pane: the glass track's 6 mm slab (10_spec §5.4). Main's window kit draws it with Glass_Window
+        // (FrontRoomsInteractableKit.Window.cs, FrontRoomsGlassPane.WindowMaterial); Prop_Glass only if that is missing.
         var info = FrontRoomsKitLibrary.GetInfo(w.frame);
         var slab = A(w.frame, "glass_slab");
-        var pane = Box(root, "pane (stand-in)", slab - new Vector3(1.391f, 1.642f, .006f) * .5f, slab + new Vector3(1.391f, 1.642f, .006f) * .5f, Surface("Prop_Glass"));
+        var pane = Box(root, "pane (stand-in)", slab - new Vector3(1.391f, 1.642f, .006f) * .5f, slab + new Vector3(1.391f, 1.642f, .006f) * .5f, Resources.Load<Material>("Surfaces/Glass_Window") != null ? Surface("Glass_Window") : Surface("Prop_Glass"));
         pane.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
         if (w.blind) S("Kit_MiniBlind_Raised", root, A(w.frame, "blind_rail"), Quaternion.identity);
         return root;
@@ -566,9 +567,11 @@ public static class FrontRoomsInteractableHeroes
         var group = new GameObject("WINDOWS").transform;
         var row = new GameObject("lineup").transform;
         row.SetParent(group, false);
-        for (var i = 0; i < WindowSet.Length; i++) BuildWindow(WindowSet[i], row, new Vector3(i * 2.5f, 0f, 0f));
+        // The camera looks -Z from +Z, so image right = world -X: step -X to read W-L0 ... W-EX left to right (as the doors).
+        for (var i = 0; i < WindowSet.Length; i++) BuildWindow(WindowSet[i], row, new Vector3(-i * 2.5f, 0f, 0f));
         // Face A (+Z) toward the camera: the camera sits on +Z looking -Z.
-        ShootFront("windows_lineup_face_a", RenderedBounds(row), 4000, 1100, 9f, 6f, true);
+        // Level camera (pitch 0): the room boxes behind face B stay hidden behind the wall heads (no box roofs).
+        ShootFront("windows_lineup_face_a", RenderedBounds(row), 4000, 1100, 9f, 0f, true);
         UnityEngine.Object.DestroyImmediate(row.gameObject);
         foreach (var w in WindowSet)
         {

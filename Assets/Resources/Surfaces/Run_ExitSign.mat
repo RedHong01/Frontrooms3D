@@ -59,7 +59,7 @@ Material:
     - _MeshUV: 1
     - _Metallic: 0
     - _OcclusionStrength: 0.8
-    - _Smoothness: 1
+    - _Smoothness: 0.38
     - _StainStrength: 0
     - _UseEmission: 1
     - _WetStrength: 0

@@ -226,6 +226,23 @@ def power_off(s, ctx):
     return Image.blend(cv.out(), Image.composite(Image.new("RGB", (W, H), C["cream"]), cv.out(), ghost.out().convert("L")), .05)
 
 
+def logo(s, ctx):
+    """The game's wordmark on the set (promo end): Assets/Resources/Brand/FrontRoomsLogo.png, dark ink
+    inverted to white on black, with a soft phosphor bloom. Width 520 of 640 (inside title safe)."""
+    path = os.path.join(HERE, "..", "..", "Assets", "Resources", "Brand", "FrontRoomsLogo.png")
+    lg = Image.open(path).convert("RGBA")
+    w = 520 * SS
+    lg = lg.resize((w, round(lg.height * w / lg.width)), Image.LANCZOS)
+    a = np.asarray(lg, np.float32) / 255.0
+    white = (1.0 - a[..., :3]) * a[..., 3:4]
+    cv = np.zeros((H * SS, W * SS, 3), np.float32)
+    y0, x0 = (H * SS - lg.height) // 2, (W * SS - lg.width) // 2
+    cv[y0:y0 + lg.height, x0:x0 + lg.width] = white
+    glow = np.asarray(Image.fromarray((cv * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(6 * SS)), np.float32) / 255.0
+    out = np.clip(cv * np.array([.96, .97, .92]) + glow * .35, 0, 1)
+    return Image.fromarray((out * 255 + .5).astype(np.uint8)).resize((W, H), Image.LANCZOS)
+
+
 def office(lines, pos):
     def f(s, ctx):
         cv = Canvas((11, 10, 8))
@@ -264,6 +281,7 @@ def main(argv):
         cards[key] = CARDS[key](s, ctx)
         cards[key].save(os.path.join(out, "cards", key + ".png"))
     states = {"standby": standby(s, ctx), "signoff": signoff(s, ctx), "alarm": alarm(s, ctx), "power_off": power_off(s, ctx),
+              "logo": logo(s, ctx),
               "office_dos": office(["C:\\>_"], (64, 60))(s, ctx),
               "office_print": office(["PRINT QUEUE  1 JOB", "", "PLAN SHEET A-3 OF 4", "PRINTING"], (64, 60))(s, ctx),
               "office_idle": office(["SYSTEM IDLE", "OCCUPANT LOAD 1"], (300, 280))(s, ctx),

@@ -1,0 +1,20 @@
+compile: /Users/redwang/FrontRoomsVisualWork/logs/cxfix_rrt/c01_compile.log
+error CS: 0  warning CS: 0
+== p01_play_rthigh.log
+  Collection was modified          0
+  ZBinningJob                      0
+  Render Graph Execution error     0
+  NullReferenceException           0
+  InvalidOperationException        0
+  MissingReferenceException        0
+  Shader error                     0
+  [FrontRoomsGlassRT] off          0
+== p02_play_rthigh_restart.log
+  Collection was modified          0
+  ZBinningJob                      0
+  Render Graph Execution error     0
+  NullReferenceException           0
+  InvalidOperationException        0
+  MissingReferenceException        0
+  Shader error                     0
+  [FrontRoomsGlassRT] off          0

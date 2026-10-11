@@ -1,0 +1,15 @@
+#!/bin/zsh
+# usage: chain.sh after|base  — merge checks in one clone, one Unity at a time.
+R=/Users/redwang/FrontRoomsVisualWork/int_work/merge2
+side=$1
+if [ $side = after ]; then C=proj_merge_interactables_kit_2; else C=proj_merge_interactables_kit_base; fi
+cd $R
+SHOTS=asset_Kit_WindowFrame_Steel,asset_Kit_WindowFrame_Alu,asset_Kit_KeyCabinet,asset_Kit_DoorFrame_Steel,asset_Kit_DoorLeaf_Veneer_Oak,asset_Kit_DoorLeaf_Ward,asset_Kit_Lock_Knob,asset_Kit_KeyHookBoard,asset_Kit_ExitDevice_Crossbar,asset_Kit_DoorCloser_Shoe,asset_Kit_Key_Zone,asset_Kit_Lock_Escutcheon,lineup
+zsh ./run_u.sh $C FrontRoomsWindowTF.RunAll tf_${side}
+zsh ./run_u.sh $C FrontRoomsWindowTF.RunLodProbe lod_${side}
+zsh ./run_u.sh $C FrontRoomsWindowTF.RunFramesOnly frames_${side}
+zsh ./run_u.sh $C q FrontRoomsKitLookdev.RunBatch kit_${side} -kitShots $SHOTS
+zsh ./run_u.sh $C FrontRoomsLandCheckCapture.RunBatch land_${side}
+zsh ./run_u.sh $C FrontRoomsCxPlayRun.RunBatch cx120_${side} -cxLabel merge_${side} -cxSeconds 120 -cxSeed 516574485
+zsh ./run_u.sh $C FrontRoomsCxSuites.RunBatch suites_${side}
+echo "chain $side done $(date +%T)"

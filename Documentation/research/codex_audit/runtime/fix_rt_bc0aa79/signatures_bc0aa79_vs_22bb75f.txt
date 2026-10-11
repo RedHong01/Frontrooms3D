@@ -1,0 +1,21 @@
+TOTAL over 20 seeds: renderers 0/500 chunks differ, lights 0/500, colliders 0/500 (chunk only in cx 0, only in base 0)
+seed 7: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 1955: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 1990: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 1993: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 2554: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 4242: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 6502: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 8086: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 68000: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261001: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261002: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261003: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261004: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261005: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261006: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261007: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261008: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261009: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 20261010: chunks 25 · differ: renderers 0, lights 0, colliders 0
+seed 516574485: chunks 25 · differ: renderers 0, lights 0, colliders 0

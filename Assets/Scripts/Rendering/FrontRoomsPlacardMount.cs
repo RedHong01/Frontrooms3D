@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -8,8 +7,8 @@ using UnityEngine.Rendering;
 /// Waits for FrontRooms3DGame.MapRunStarted (fired in StartRunInPlace after EndStreamAt
 /// and map.Begin; rooms are dressed one a frame from Update, so a keep-clear rect
 /// registered here is in time), then once: resolves the spot (§5.2), asks the map to
-/// keep its floor clear (map.KeepClearAtStart, CONTRACT Q16-1, called only if the map
-/// has it), spawns the kits render-only with shadow casting OFF on every renderer
+/// keep its floor clear (map.KeepClearAtStart, CONTRACT Q16-1, in main since 10-08),
+/// spawns the kits render-only with shadow casting OFF on every renderer
 /// (KitLibrary would turn it on: the frame is over 0.3 m), and binds the glow.
 /// research/placard/10_spec.md §4.6, §5.
 /// </summary>
@@ -24,9 +23,6 @@ public sealed class FrontRoomsPlacardMount : MonoBehaviour
 #else
     static readonly bool SpawnLens = true;
 #endif
-
-    static MethodInfo keepClearAtStart;
-    static bool keepClearLooked;
 
     Vector3 doorPoint;
     float facadeZ;
@@ -98,21 +94,10 @@ public sealed class FrontRoomsPlacardMount : MonoBehaviour
                   + ", at " + spot.position.ToString("F4"));
     }
 
-    // CONTRACT Q16-1 (map-owned FrontRoomsMapWorld.KeepClearAtStart(Rect), research/placard/40_contract_map.md): used
-    // when the map has it, else a no-op. Found by reflection only until the map lands it, so this file compiles against
-    // today's map; the contract asks for [UnityEngine.Scripting.Preserve] on the method, because a method reached only by
-    // reflection can be stripped (WebGL managed stripping High, iOS Low). Once it lands, replace this with a direct call.
-    static void KeepClear(FrontRoomsMapWorld map, Rect worldXZ)
-    {
-        if (!keepClearLooked)
-        {
-            keepClearLooked = true;
-            keepClearAtStart = typeof(FrontRoomsMapWorld).GetMethod("KeepClearAtStart", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(Rect) }, null);
-            if (keepClearAtStart == null)
-                Debug.Log("[Placard] the map has no KeepClearAtStart (contract Q16-1): furniture may be dressed in front of a P2/P3 placard");
-        }
-        keepClearAtStart?.Invoke(map, new object[] { worldXZ });
-    }
+    // CONTRACT Q16-1: map-owned FrontRoomsMapWorld.KeepClearAtStart(Rect), research/placard/40_contract_map.md.
+    // It landed in main on 10-08 (MapWorld fb9164f7, test FrontRoomsMapInteractionTests.StartKeepClear), so the call
+    // is direct; SetStartArea clears the list, and this runs after it (MapRunStarted).
+    static void KeepClear(FrontRoomsMapWorld map, Rect worldXZ) => map.KeepClearAtStart(worldXZ);
 
     void OnDestroy() => Retire();
 }

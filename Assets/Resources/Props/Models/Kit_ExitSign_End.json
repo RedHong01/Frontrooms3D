@@ -1,0 +1,153 @@
+{
+ "name": "Kit_ExitSign_End",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "wall",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "centre",
+   "pos": [
+    0.0,
+    0.106,
+    0.188
+   ]
+  },
+  {
+   "name": "face_pos_x",
+   "pos": [
+    0.035,
+    0.106,
+    0.188
+   ]
+  },
+  {
+   "name": "face_neg_x",
+   "pos": [
+    -0.035,
+    0.106,
+    0.188
+   ]
+  },
+  {
+   "name": "lamp_a",
+   "pos": [
+    0.0,
+    0.1432,
+    0.13360000000000002
+   ]
+  },
+  {
+   "name": "lamp_b",
+   "pos": [
+    0.0,
+    0.1432,
+    0.23600000000000002
+   ]
+  },
+  {
+   "name": "glow",
+   "pos": [
+    0.0,
+    -0.02,
+    0.188
+   ]
+  }
+ ],
+ "tags": [
+  "exit_sign",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "exitSign": {
+  "faces": 2,
+  "openingM": [
+   0.32,
+   0.186
+  ],
+  "letterHeightM": 0.1524,
+  "strokeM": 0.01905,
+  "faceSlot": "ExitSign_Face",
+  "diffuserSlot": "ExitSign_Diffuser",
+  "deadSlot": "ExitSign_Diffuser_Dead",
+  "chevrons": "closed",
+  "lampField": {
+   "lampA": [
+    0.33,
+    0.7,
+    0.08,
+    0.2
+   ],
+   "lampB": [
+    0.65,
+    0.7,
+    0.08,
+    0.2
+   ],
+   "fill": 0.06,
+   "dc": [
+    [
+     0.12,
+     0.7,
+     0.08,
+     0.2
+    ],
+    [
+     0.88,
+     0.7,
+     0.08,
+     0.2
+    ]
+   ],
+   "dcLevel": 0.25,
+   "channels": "ExitSign_Diffuser_F: R lamp A, G lamp B, B DC pair, A transmission"
+  }
+ },
+ "lodDistances": [
+  5.0,
+  0.0,
+  0.0
+ ],
+ "lodBudget": [
+  6000,
+  1900,
+  300
+ ],
+ "trianglesCheck": 5758,
+ "boundsMin": [
+  -0.03943542763590813,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.03943542763590813,
+  0.21199999749660492,
+  0.3610000014305115
+ ],
+ "triangles": 5758,
+ "slots": [
+  "ExitSign_Housing",
+  "ExitSign_Face",
+  "ExitSign_Diffuser",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 1822,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.18050000071525574
+ ],
+ "footprintSize": [
+  0.07887085527181625,
+  0.3610000014305115
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.262
+}

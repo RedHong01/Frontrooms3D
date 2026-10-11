@@ -1,0 +1,28 @@
+[1 t=0.000] routine created
+[1 t=0.000] game found - quality High - gfx Metal Apple M3 Max - URP asset FrontRooms_URP MSAA 4 HDR True - reduce flashing False
+[61 t=1.000] run started - run seed 516574485 - Relay held dormant
+[181 t=3.000] game camera vFOV 76
+[186 t=3.083] exit sign A: dealt Lit Level 1; forced LIT; light local (0.000, -0.940, 0.000) world y 1.960 intensity 3.6 range 9.5 shadows Soft; renderers 2 (Kit_ExitSign_Hanging_LOD0:On, Kit_ExitSign_Hanging_LOD1:On)
+[186 t=3.083] exit sign B: dealt Lit Level 1; forced LIT; light local (0.000, -0.940, 0.000) world y 1.960 intensity 3.6 range 9.5 shadows Soft; renderers 2 (Kit_ExitSign_Hanging_LOD0:On, Kit_ExitSign_Hanging_LOD1:On)
+[186 t=3.083] hanging kit centre anchor (0.000, -0.506, 0.000) = world y 2.394
+[192 t=3.183] captured run_a_d1p5.png [A] Run - eye 1.62 m, 1.5 m before sign B, pitch +20
+[193 t=3.200] captured run_a_d4.png [A] Run - eye 1.62 m, 4 m before sign B, pitch +20
+[194 t=3.217] captured run_a_d8.png [A] Run - eye 1.62 m, 8 m before sign B (sign A 2.2 m ahead), pitch +20
+[195 t=3.233] captured run_a_wide.png [A] Run - wide from the entry down the room (room-visuals run_wide aim)
+[199 t=3.300] captured run_b_d1p5.png [B] Run - eye 1.62 m, 1.5 m before sign B, pitch +20
+[200 t=3.317] captured run_b_d4.png [B] Run - eye 1.62 m, 4 m before sign B, pitch +20
+[201 t=3.333] captured run_b_d8.png [B] Run - eye 1.62 m, 8 m before sign B (sign A 2.2 m ahead), pitch +20
+[202 t=3.350] captured run_b_wide.png [B] Run - wide from the entry down the room (room-visuals run_wide aim)
+[206 t=3.417] captured run_a2_d1p5.png [A2] Run - eye 1.62 m, 1.5 m before sign B, pitch +20
+[207 t=3.433] captured run_a2_d4.png [A2] Run - eye 1.62 m, 4 m before sign B, pitch +20
+[208 t=3.450] captured run_a2_d8.png [A2] Run - eye 1.62 m, 8 m before sign B (sign A 2.2 m ahead), pitch +20
+[209 t=3.467] captured run_a2_wide.png [A2] Run - wide from the entry down the room (room-visuals run_wide aim)
+[212 t=3.517] exit sign: state Lit Level 1 world (4992.000, 2.674, 5051.976) local (0.000, 2.674, 59.976) lights under it 0
+[212 t=3.517] spill light at glow anchor (0.000, -0.020, 0.060) = world (4992.000, 2.654, 5051.916) (preview-local (0.000, 2.654, 59.916))
+[218 t=3.617] captured exit_a_d2.png [A] Exit - eye 1.62 m, 2 m from the sign face, aimed at its centre; far door shut
+[219 t=3.633] captured exit_a_d6.png [A] Exit - eye 1.62 m, 6 m from the sign face, aimed at its centre; far door shut
+[223 t=3.700] captured exit_b_d2.png [B] Exit - eye 1.62 m, 2 m from the sign face, aimed at its centre; far door shut
+[224 t=3.717] captured exit_b_d6.png [B] Exit - eye 1.62 m, 6 m from the sign face, aimed at its centre; far door shut
+[228 t=3.783] captured exit_a2_d2.png [A2] Exit - eye 1.62 m, 2 m from the sign face, aimed at its centre; far door shut
+[229 t=3.800] captured exit_a2_d6.png [A2] Exit - eye 1.62 m, 6 m from the sign face, aimed at its centre; far door shut
+[231 t=3.833] DONE

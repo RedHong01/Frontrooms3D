@@ -575,6 +575,12 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
 
 **Rules.**
 - **Walk** at 3.2 m/s is silent to the panel at every tier and faster than every non-chase speed. From T3 the on-map Relay hears walking within 3–5 m of path (§7).
+- **Handheld gaits** (Red, 2026-10-08, touch run redesign; iOS/Android only, while `FrontRoomsHandheld.Active`):
+  - **Slow:** silent at every tier. This is the quiet option on touch.
+  - **Walk:** heard by the on-map Relay only, never by the panel: loudness 9 m of path (× hearing, v2 base 1.0; today 9 × 1.4 = 12.6 m), once per 0.5 s step. Attention **0**. At T3–T5 it uses max(9, the desktop walk value).
+  - **Run:** the sprint step, 27 m, +3.
+  - Why Attention 0: +1 per step would be +2/s with no decay while walking, so a walk would summon the Relay in about 30 s. Walking may be heard up close, but it never calls.
+  - This is a platform asymmetry, because desktop walking is silent at T1–T2. The Step-0 bots run on desktop, so the baseline does not cover it. A handheld bot mode is needed before G1 or G8 can be claimed for touch.
 - **Speed classification** uses input-driven velocity only (walk or sprint wish), never the door pull step (`PullStepSpeed` 4 m/s) or the title glide.
 - **Doors** (on the single-acting doors):
   - **EASE:** E while walking or standing. Today's 0.55 s swing (unchanged, so `FrontRoomsShotTimings` and the door Foley segments hold) and a soft latch click. 6 m, +1.
@@ -598,6 +604,11 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
   - A chase that reaches one ends at the threshold: it watches up to 6 s in the "almost" pose (stage 2 goes on), then the give-up beat and Withdraw. Never straight to Away.
   - Stage 1 inside is audio only. The dry clock pauses inside.
 - **Keys:** pick-up silent; an unlock is an ease; the timed swing is source World.
+  - Decided 2026-10-08 for the landed door shot:
+    - **The open after a key turn** (`DoorOpenSource.Unlock`): 6 m, +1, replacing today's 14 m DoorMoved.
+    - **A locked-door rattle** (`OnDoorRattled`): 6 m, +1.
+    - **Ajar** stays 30° (one `Passage.Ajar` value, appended to the enum). It reads as open from a distance, so a door the Relay came through is an honest trace. 10° would be hard to read.
+  - **Shot cancel in v2:** `FrontRoomsDoorShot.Threatened` takes `TargetAcquired` (stage 3) or `Spotting ≥ 0.5` (§8), not today's "sight within 6 m". `SeesPlayer` is silent in v2, so a shot that cancels on it would work as a Relay detector.
 
 **Numbers.**
 
