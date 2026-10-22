@@ -1,0 +1,486 @@
+"""Security desk (station) blockouts, workflow station-look stage 2: measure the renders of FrontRoomsStationLookdev.
+
+usage: venv/bin/python measure_station.py <run dir with W/ Wp/ D/ Dp/ H/> <ad30.rgb> <out json>
+
+The six blockout checks of research/station/20_layout.md section 8, per plan:
+  1 squint   a) from the last junction (1.5 cells out on E1's axis): does a moving TV-lit patch read inside E1?
+             b) from E1: are the set, the key and E2 in view?
+             c) from the board after the take (TV dead): are the two exits the brightest shapes?
+             plus the light at E1 (call 1): the TV's share of the floor light 1 m outside and inside E1.
+  2 key      E on the key and its plate from the set alone (white-Lambert passes; mean card and darkest card),
+             the lamps' share, the angle to the screen axis / plane (harness metrics).
+  3 take     is the set in the take frame (G5 literal), and how far does the light on the board drop (G5 fallback)?
+  4 wiggle   the key's visible fraction from 5 eye spots at E1 and at E2 (occluders: counter, chair backs, ...).
+  5 collide  capsule walk grids (player r 0.30-0.70 in y 0.31-1.74; Relay r 0.30 in y 0.40-1.95): routes E1 -> take
+             -> E2, the staff strip through-route, bottlenecks, player-only floor.
+  6 photo    the beacon view at every card and at the collapse: luminance steps, flash area, red flashes,
+             changes per second from the ad's own cut times.
+Images (beauty) are sRGB 1920 x 1080 through the game's post; E passes are linear float 960 x 540 (white albedo,
+real lights + the game's ambient + scene fill, emitters hidden), so E_all - E_notv is exactly the set's light.
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+R, AD, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+PLANS = ['W', 'Wp', 'Wp2', 'Wp3', 'D', 'Dp', 'Dp3', 'H']
+# the light track of 30_look 3.1 as the harness drives it (index 0 = loop mean, 1-5 = the cards)
+CARD_I = [4.000, 3.643, 5.512, 3.248, 3.669, 2.052]
+CARD_C = [(.922, .822, 1.), (.824, .724, 1.), (.951, .850, .884), (.951, .818, .672), (.802, .707, 1.), (.374, .466, 1.)]
+LUM = np.array([.2126, .7152, .0722], np.float32)
+KEY, P2, P1, SCREEN, PLATE, SETBODY, FURN = (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)
+RADII = [.30, .35, .40, .45, .50, .55, .60, .65, .70]
+# staff-strip through-routes (module metres): (x range, south mouth, north mouth); None where the plan has no strip
+STRIP = {'W': ((7.52, 8.88), (8.20, .60), (8.20, 3.70)), 'Wp': ((7.52, 8.88), (8.20, .60), (8.20, 3.70)),
+         'Wp2': ((6.96, 8.88), (7.90, .60), (7.90, 3.70)), 'Wp3': ((6.96, 8.88), (7.90, .60), (7.90, 3.70)), 'Dp3': None,
+         'H': ((.12, 1.68), (.90, 6.30), (.90, 9.30)), 'D': None, 'Dp': None}
+
+
+def load(p):
+    return np.asarray(Image.open(p).convert('RGB')).astype(np.float32) / 255.0
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def Yimg(p):
+    return lin(load(p)) @ LUM
+
+
+def Emap(p):
+    a = np.fromfile(p, dtype='<f4').reshape(540, 960, 4)[::-1, :, :3]
+    return a @ LUM
+
+
+def mask(p, rgb):
+    q = (load(p) > .5).astype(np.int32)
+    return (q[..., 0] == rgb[0]) & (q[..., 1] == rgb[1]) & (q[..., 2] == rgb[2])
+
+
+def half(m):
+    return m[1::2, 1::2]
+
+
+def squint(y, k=24):
+    h, w = y.shape
+    return y[:h - h % k, :w - w % k].reshape(h // k, k, w // k, k).mean(axis=(1, 3))
+
+
+def r3(v):
+    return None if v is None else float(round(float(v), 3))
+
+
+def mean_or_none(a, m):
+    return float(a[m].mean()) if m.sum() > 0 else None
+
+
+
+def board_visible(idp, ikp):
+    """visible fraction of the key board (key + plate + sign) and of the key alone, from an ID pass without portal boxes
+    (idp: furniture white, set cyan/yellow, shell black) and one with the board alone (ikp). The key is counted only inside
+    a window round the plate (specks elsewhere can't count). Hidden board pixels are split by what covers them: the shell
+    (walls, jambs: black) or furniture and the set (any other ID colour)."""
+    q = (load(idp) > .5).astype(np.int32)
+    is_c = lambda c: (q[..., 0] == c[0]) & (q[..., 1] == c[1]) & (q[..., 2] == c[2])
+    a, pa = is_c(KEY), is_c(PLATE)
+    b, pb = mask(ikp, KEY), mask(ikp, PLATE)
+    if pb.sum() == 0:
+        return {'board_visible': None, 'key_visible': None, 'key_px': 0, 'board_px': 0, 'hidden_by_shell': None, 'hidden_by_furniture': None}
+    ys, xs = np.nonzero(pb)
+    h, w = ys.max() - ys.min() + 1, xs.max() - xs.min() + 1
+    y0, y1 = max(0, ys.min() - h), min(pb.shape[0], ys.max() + 2 * h)
+    x0, x1 = max(0, xs.min() - w), min(pb.shape[1], xs.max() + w)
+    win = np.zeros_like(pb); win[y0:y1, x0:x1] = True
+    a, b = a & win, b & win
+    board = b | pb
+    tot = int(board.sum())
+    vis = (a | pa) & board
+    black = is_c((0, 0, 0)) & board
+    other = board & ~vis & ~black
+    return {'board_visible': r3(vis.sum() / tot), 'key_visible': r3((a & b).sum() / b.sum()) if b.sum() else None,
+            'key_px': int(b.sum()), 'board_px': tot, 'hidden_by_shell': r3(black.sum() / tot), 'hidden_by_furniture': r3(other.sum() / tot)}
+
+# ------------------------------------------------------------------ the ad's own cut times (check 6)
+def ad_track(path):
+    raw = np.fromfile(path, dtype=np.uint8)
+    n = raw.size // (32 * 24 * 3)
+    f = raw[:n * 32 * 24 * 3].reshape(n, 24, 32, 3).astype(np.float32) / 255.0
+    y = (lin(f) @ LUM).mean(axis=(1, 2))
+    d = np.abs(np.diff(y)) / np.maximum(y[:-1], 1e-4)
+    cuts = [i + 1 for i in range(len(d)) if d[i] > .15]
+    # merge cuts closer than 3 frames (a dissolve or a two-frame cut counts once)
+    merged = []
+    for c in cuts:
+        if not merged or c - merged[-1] > 3:
+            merged.append(c)
+    t = [c / 30.0 for c in merged]
+    wrap = abs(y[0] - y[-1]) / max(y[-1], 1e-4) > .15
+    times = t + ([n / 30.0] if wrap else [])
+    gaps = np.diff(times).tolist() if len(times) > 1 else []
+    # changes in any 1 s window (the loop repeats)
+    allt = sorted(times + [x + n / 30.0 for x in times])
+    perwin = max(sum(1 for x in allt if s <= x < s + 1.0) for s in np.arange(0, n / 30.0, 1 / 30.0))
+    return {'frames': int(n), 'seconds': n / 30.0, 'cut_times_s': [round(x, 2) for x in times], 'min_gap_s': round(min(gaps), 2) if gaps else None,
+            'max_changes_in_any_1s': int(perwin), 'y_per_frame_min': r3(y.min()), 'y_per_frame_max': r3(y.max()), 'y_mean': r3(y.mean())}
+
+
+# ------------------------------------------------------------------ walk grids (check 5)
+def walk(d, met, plan):
+    meta = json.load(open(os.path.join(d, 'walk_meta.json')))
+    nx, nz, step, mx, mz = meta['nx'], meta['nz'], meta['step'], meta['minX'], meta['minZ']
+    pl = np.fromfile(os.path.join(d, 'walk_player.u8'), dtype=np.uint8).reshape(nz, nx)
+    rl = np.fromfile(os.path.join(d, 'walk_relay.u8'), dtype=np.uint8).reshape(nz, nx)
+    W, D = met['room_w_m'], met['room_d_m']
+
+    def idx(x, z):
+        return int(round((z - mz) / step - .5)), int(round((x - mx) / step - .5))
+
+    def free_near(p, grid, lvl=1, reach_m=.6):
+        """the most open cell within reach_m of p (ties: the nearest), so a route's width is not capped by where its
+        end point happens to fall (beside a counter end, a jamb)"""
+        j, i = idx(*p)
+        rr = int(round(reach_m / step))
+        best = None
+        for dj in range(-rr, rr + 1):
+            for di in range(-rr, rr + 1):
+                if dj * dj + di * di > rr * rr:
+                    continue
+                jj, ii = j + dj, i + di
+                if 0 <= jj < nz and 0 <= ii < nx and grid[jj, ii] >= lvl:
+                    key = (-int(grid[jj, ii]), dj * dj + di * di)
+                    if best is None or key < best[0]:
+                        best = (key, jj, ii)
+        return (best[1], best[2]) if best else None
+
+    def widest(a, b, grid, allow=None):
+        """maximin path level between two cells (a Dijkstra on the bottleneck); 0 = no path at r 0.30"""
+        import heapq
+        if a is None or b is None:
+            return 0
+        best = np.zeros_like(grid, dtype=np.int16)
+        h = [(-int(grid[a]), a)]
+        best[a] = grid[a]
+        while h:
+            negv, (j, i) = heapq.heappop(h)
+            v = -negv
+            if (j, i) == b:
+                return int(v)
+            if v < best[j, i]:
+                continue
+            for dj, di in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                jj, ii = j + dj, i + di
+                if not (0 <= jj < nz and 0 <= ii < nx) or grid[jj, ii] == 0:
+                    continue
+                if allow is not None and not allow[jj, ii]:
+                    continue
+                nv = min(v, int(grid[jj, ii]))
+                if nv > best[jj, ii]:
+                    best[jj, ii] = nv
+                    heapq.heappush(h, (-nv, (jj, ii)))
+        return 0
+
+    def reach(start, grid):
+        seen = np.zeros(grid.shape, bool)
+        if start is None:
+            return seen
+        st = [start]
+        seen[start] = True
+        while st:
+            j, i = st.pop()
+            for dj, di in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                jj, ii = j + dj, i + di
+                if 0 <= jj < nz and 0 <= ii < nx and not seen[jj, ii] and grid[jj, ii] > 0:
+                    seen[jj, ii] = True
+                    st.append((jj, ii))
+        return seen
+
+    e1m, e1i = np.array(met['e1_mid']), np.array(met['e1_inward'])
+    e2m, e2i = np.array(met['e2_mid']), np.array(met['e2_inward'])
+    e1o = (e1m - e1i * 1.2)[[0, 2]]
+    e2o = (e2m - e2i * 1.2)[[0, 2]]
+    take = np.array(met['take_spot'])[[0, 2]]
+    a, b, t = free_near(e1o, pl), free_near(e2o, pl), free_near(take, pl)
+    lv = lambda v: RADII[v - 1] if v > 0 else None
+    out = {}
+    out['route_e1_take_clear_width_m'] = r3(2 * lv(widest(a, t, pl))) if widest(a, t, pl) else 0.0
+    out['route_take_e2_clear_width_m'] = r3(2 * lv(widest(t, b, pl))) if widest(t, b, pl) else 0.0
+    out['route_e1_e2_clear_width_m'] = r3(2 * lv(widest(a, b, pl))) if widest(a, b, pl) else 0.0
+    # the same routes stopped 1.2 m inside each arch (the arch's own width, hashed by the map at 1.1-1.8 m, left out)
+    ai = free_near((e1m + e1i * 1.2)[[0, 2]], pl); bi = free_near((e2m + e2i * 1.2)[[0, 2]], pl)
+    for nm, u, w_ in (('in_room_e1_take', ai, t), ('in_room_take_e2', t, bi)):
+        v_ = widest(u, w_, pl)
+        out['route_' + nm + '_clear_width_m'] = r3(2 * lv(v_)) if v_ else 0.0
+    out['e2_arch_width_m'] = met.get('e2_width')
+    out['width_note'] = 'clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more'
+    # room interior cells (clear floor)
+    xs = mx + (np.arange(nx) + .5) * step
+    zs = mz + (np.arange(nz) + .5) * step
+    X, Z = np.meshgrid(xs, zs)
+    room = (X > .08) & (X < W - .08) & (Z > .08) & (Z < D - .08)
+    rp = reach(a, pl)
+    rr = reach(free_near(e1o, rl), rl)
+    only_player = rp & ~rr & room
+    out['player_only_floor_m2'] = r3(only_player.sum() * step * step)
+    out['room_floor_reachable_player_m2'] = r3((rp & room).sum() * step * step)
+    out['room_floor_reachable_relay_m2'] = r3((rr & room).sum() * step * step)
+    # pinch cells inside the room: free for r 0.30 but not 0.35 (a gap only a 0.6 m body fits) that are reachable
+    pinch = (pl == 1) & rp & room
+    out['pinch_cells_r030_only_m2'] = r3(pinch.sum() * step * step)
+    if STRIP.get(plan):
+        (x0, x1), s0, s1 = STRIP[plan]
+        allow = (X >= x0) & (X <= x1)
+        sa, sb = free_near(np.array(s0), pl), free_near(np.array(s1), pl)
+        v = widest(sa, sb, pl, allow)
+        out['staff_strip_through_clear_width_m'] = r3(2 * lv(v)) if v else 0.0
+    else:
+        out['staff_strip_through_clear_width_m'] = None
+    return out, pl, rl, (nx, nz, step, mx, mz), only_player, pinch
+
+
+# ------------------------------------------------------------------ per plan
+def plan_metrics(p, track):
+    d = os.path.join(R, p)
+    met = json.load(open(os.path.join(d, 'metrics.json')))
+    res = {'plan': met['plan'], 'seed': met['seed']}
+
+    # ---- check 1a: the last junction (far = 4.5 m out on E1's axis, the middle of the 2nd cell; near = 1.5 m out)
+    for ap in ('approach_far', 'approach_near'):
+        tag = 'c1a_' + ap.split('_')[1] + '_'
+        if not os.path.exists(os.path.join(d, ap + '_c1.png')):
+            continue
+        ys = {c: Yimg(os.path.join(d, ap + '_' + c + '.png')) for c in ('c1', 'c2', 'c5')}
+        portal = mask(os.path.join(d, ap + '_id.png'), P1)
+        npid = os.path.join(d, ap + '_idnp.png')
+        scr = mask(npid, SCREEN) if os.path.exists(npid) else np.zeros_like(portal)
+        sq = {c: squint(v) for c, v in ys.items()}
+        psq = squint(portal.astype(np.float32))
+        hi = np.maximum(np.maximum(sq['c1'], sq['c2']), sq['c5'])
+        lo = np.minimum(np.minimum(sq['c1'], sq['c2']), sq['c5'])
+        swing = (hi - lo) / np.maximum(hi, 1e-4)
+        moving = swing >= .20
+        inside = psq >= .5
+        # full-resolution swing: pixels inside E1 whose luminance changes >= 20 % between the brightest and darkest card
+        fhi = np.maximum(np.maximum(ys['c1'], ys['c2']), ys['c5']); flo = np.minimum(np.minimum(ys['c1'], ys['c2']), ys['c5'])
+        fsw = (fhi - flo) / np.maximum(fhi, 1e-4)
+        fmove = (fsw >= .20) & portal & (fhi > .01)
+        res[tag + 'portal_frac_of_frame'] = r3(portal.mean())
+        res[tag + 'screen_px_through_E1'] = int((scr & portal).sum())
+        res[tag + 'screen_px_total'] = int(scr.sum())
+        res[tag + 'moving_px_in_E1'] = int(fmove.sum())
+        res[tag + 'moving_frac_of_frame'] = r3(fmove.mean())
+        res[tag + 'moving_frac_of_E1'] = r3(fmove.sum() / max(portal.sum(), 1))
+        res[tag + 'moving_squint_cells_in_E1'] = int((moving & inside).sum())
+        res[tag + 'moving_squint_cells_outside_E1'] = int((moving & ~inside).sum())
+        res[tag + 'max_squint_swing_in_E1'] = r3(swing[inside].max()) if inside.any() else None
+        res[tag + 'E1_meanY_c2'] = r3(ys['c2'][portal].mean()) if portal.any() else None
+        res[tag + 'corridor_meanY_c2'] = r3(ys['c2'][~portal].mean())
+        Ea, En = Emap(os.path.join(d, ap + '_E_all.f32')), Emap(os.path.join(d, ap + '_E_notv.f32'))
+        hp = half(portal)
+        tvE = Ea - En
+        res[tag + 'tvE_mean_in_E1'] = r3(mean_or_none(tvE, hp))
+        res[tag + 'tvE_p95_in_E1'] = r3(np.percentile(tvE[hp], 95)) if hp.sum() else None
+        res[tag + 'tv_share_in_E1_mean'] = r3(mean_or_none(tvE / np.maximum(Ea, 1e-5), hp))
+        if ap == 'approach_far':
+            # light at E1 (call 1): floor 1 m outside (probe out) and 1 m inside (probe in), seen from the far junction
+            prb = os.path.join(d, ap + '_idprobe.png')
+            po, pi = half(mask(prb, (1, 0, 0))), half(mask(prb, (0, 1, 0)))
+            for nm, m in (('outside', po), ('inside', pi)):
+                res['e1_floor_' + nm + '_px'] = int(m.sum())
+                res['e1_floor_' + nm + '_E_all'] = r3(mean_or_none(Ea, m))
+                res['e1_floor_' + nm + '_E_tv'] = r3(mean_or_none(tvE, m))
+                res['e1_floor_' + nm + '_tv_share'] = r3(mean_or_none(tvE, m) / mean_or_none(Ea, m)) if m.sum() else None
+
+    # ---- check 1b: from E1 (reveal: just inside E1 along its axis; beacon: from the threshold toward the set)
+    vis = {}
+    for shot in ('reveal', 'beacon'):
+        idp, npp = os.path.join(d, shot + '_id.png'), os.path.join(d, shot + '_idnp.png')
+        vis[shot] = {k: int(mask(npp, c).sum()) for k, c in (('screen', SCREEN), ('key', KEY), ('plate', PLATE))}
+        vis[shot]['e2'] = int(mask(idp, P2).sum())
+    res['c1b_from_E1'] = vis
+    bv = board_visible(os.path.join(d, 'wig_e1_0_idnp.png'), os.path.join(d, 'wig_e1_0_idkey.png'))
+    res['c1b_board_visible_frac_E1'] = bv['board_visible']
+    res['c1b_key_visible_frac_E1'] = bv['key_visible']
+    res['c1b_key_px_E1'] = bv['key_px']
+
+    # ---- check 1c: from the board after the take
+    bid = os.path.join(d, 'board_id.png')
+    bp = mask(bid, P1) | mask(bid, P2)
+    hb = half(bp)
+    Eb_after = Emap(os.path.join(d, 'board_E_after.f32'))
+    Eb_before = Emap(os.path.join(d, 'board_E_before.f32'))
+    res['c1c_exits_px'] = int(bp.sum())
+    res['c1c_E1_px'], res['c1c_E2_px'] = int(mask(bid, P1).sum()), int(mask(bid, P2).sum())
+    if hb.sum():
+        ex = Eb_after[hb].mean()
+        rest = Eb_after[~hb]
+        res['c1c_after_exits_meanE'] = r3(ex)
+        res['c1c_after_room_meanE'] = r3(rest.mean())
+        res['c1c_after_exits_over_room'] = r3(ex / max(rest.mean(), 1e-5))
+        res['c1c_after_exits_pct_rank'] = r3((rest < ex).mean() * 100)
+        exb = Eb_before[hb].mean()
+        res['c1c_before_exits_over_room'] = r3(exb / max(Eb_before[~hb].mean(), 1e-5))
+        # squint on the beauty frame (lens patches included): is the brightest 2 % of squint cells mostly exits?
+        ya = squint(Yimg(os.path.join(d, 'board_after.png')))
+        pa = squint(bp.astype(np.float32)) >= .5
+        thr = np.percentile(ya, 98)
+        top = ya >= thr
+        res['c1c_beauty_top2pct_cells_in_exits'] = r3((top & pa).sum() / max(top.sum(), 1))
+        res['c1c_beauty_exits_meanY'] = r3(ya[pa].mean()) if pa.any() else None
+        res['c1c_beauty_room_meanY'] = r3(ya[~pa].mean())
+
+    # ---- check 2: the key lit by the screen
+    tid = os.path.join(d, 'take_id.png')
+    km, pm = half(mask(tid, KEY)), half(mask(tid, PLATE))
+    E_all, E_notv = Emap(os.path.join(d, 'take_E_all.f32')), Emap(os.path.join(d, 'take_E_notv.f32'))
+    E_dark, E_tvo = Emap(os.path.join(d, 'take_E_dark.f32')), Emap(os.path.join(d, 'take_E_tvonly_nolamps.f32'))
+    for nm, m in (('key', km), ('plate', pm), ('board', km | pm)):
+        if not m.sum():
+            continue
+        ea, en, ed, eo = (mean_or_none(x, m) for x in (E_all, E_notv, E_dark, E_tvo))
+        res['c2_' + nm + '_px'] = int(m.sum())
+        res['c2_' + nm + '_E_all'] = r3(ea)
+        res['c2_' + nm + '_E_tv_mean_card'] = r3(ea - en)
+        res['c2_' + nm + '_E_tv_darkest_card'] = r3(ed - en)
+        res['c2_' + nm + '_E_lamps_ambient'] = r3(en)
+        res['c2_' + nm + '_E_ambient_only'] = r3(eo - (ea - en))
+        res['c2_' + nm + '_tv_share'] = r3((ea - en) / ea)
+        res['c2_' + nm + '_tv_over_lamps'] = r3((ea - en) / max(en, 1e-5))
+    # per card: the set's light on the board scales with I x lum(colour, linear); the E pass of state 9 is card 0 (loop mean)
+    if (km | pm).sum():
+        e_tv0 = mean_or_none(E_all, km | pm) - mean_or_none(E_notv, km | pm)
+        en0 = mean_or_none(E_notv, km | pm)
+        lum = [float(lin(np.array(c, np.float32)) @ LUM) for c in CARD_C]
+        spec = [e_tv0 * CARD_I[k] * lum[k] / (CARD_I[0] * lum[0]) for k in range(6)]
+        fix = [e_tv0 * CARD_I[k] / CARD_I[0] for k in range(6)]
+        res['c2_board_E_tv_by_card_as_specified'] = [r3(x) for x in spec]
+        res['c2_board_E_tv_by_card_lum_preserving'] = [r3(x) for x in fix]
+        res['c2_board_tv_share_min_card_as_specified'] = r3(min(x / (x + en0) for x in spec[1:]))
+        res['c2_board_tv_share_min_card_lum_preserving'] = r3(min(x / (x + en0) for x in fix[1:]))
+        res['c2_card_lum_linear'] = [r3(x) for x in lum]
+        res['c2_check_card5_pass_vs_scaled'] = [r3(mean_or_none(E_dark, km | pm) - en0), r3(spec[5])]
+    for k in ('key_off_screen_axis_plan_deg', 'key_off_screen_axis_3d_deg', 'key_angle_to_screen_plane_deg', 'key_ahead_of_screen_plane_m',
+              'key_dist_3d_m', 'key_incidence_deg', 'plate_E_analytic_mean', 'plate_E_analytic_darkest'):
+        res['c2_' + k] = met.get(k)
+
+    # ---- check 3: one frame at the take
+    res['c3_set_off_view_deg'] = met.get('take_set_off_view_deg')
+    res['c3_set_px_in_take'] = int(mask(tid, SCREEN).sum() + mask(tid, SETBODY).sum())
+    yb, ya = Yimg(os.path.join(d, 'take_before.png')), Yimg(os.path.join(d, 'take_after.png'))
+    fm = mask(tid, KEY) | mask(tid, PLATE)
+    res['c3_board_drop_E'] = r3(1 - mean_or_none(E_notv, km | pm) / mean_or_none(E_all, km | pm)) if (km | pm).sum() else None
+    res['c3_board_drop_beautyY'] = r3(1 - ya[fm].mean() / yb[fm].mean()) if fm.sum() else None
+    res['c3_frame_drop_beautyY'] = r3(1 - ya.mean() / yb.mean())
+    ywb, ywa = Yimg(os.path.join(d, 'take_wide_before.png')), Yimg(os.path.join(d, 'take_wide_after.png'))
+    res['c3_wide_frame_drop_beautyY'] = r3(1 - ywa.mean() / ywb.mean())
+
+    # ---- check 4: camera wiggle (5 eye spots at E1 and at E2, each looking at the key)
+    wig = {}
+    for e in ('e1', 'e2'):
+        rows = []
+        for k in range(5):
+            bv = board_visible(os.path.join(d, 'wig_%s_%d_idnp.png' % (e, k)), os.path.join(d, 'wig_%s_%d_idkey.png' % (e, k)))
+            bv['pos'] = met.get('wig_%s_%d_pos' % (e, k))
+            rows.append(bv)
+        wig[e] = rows
+    res['c4_wiggle'] = wig
+    vals = [r['board_visible'] for e in wig for r in wig[e] if r['board_visible'] is not None]
+    hf = [r['hidden_by_furniture'] for e in wig for r in wig[e] if r['hidden_by_furniture'] is not None]
+    hs = [r['hidden_by_shell'] for e in wig for r in wig[e] if r['hidden_by_shell'] is not None]
+    res['c4_hidden_by_furniture_max'] = r3(max(hf)) if hf else None
+    res['c4_hidden_by_shell_max'] = r3(max(hs)) if hs else None
+    res['c4_positions_hidden_by_shell'] = sum(1 for e in wig for r in wig[e] if (r['hidden_by_shell'] or 0) > .5)
+    kv = [r['key_visible'] for e in wig for r in wig[e] if r['key_visible'] is not None]
+    res['c4_board_visible_min'] = r3(min(vals)) if vals else None
+    res['c4_key_visible_min'] = r3(min(kv)) if kv else None
+    res['c4_key_px_range'] = [min(r['key_px'] for e in wig for r in wig[e]), max(r['key_px'] for e in wig for r in wig[e])]
+    res['c4_out_of_frame_positions'] = sum(1 for e in wig for r in wig[e] if r['board_visible'] is None)
+
+    # ---- check 5: collision
+    w5, pl, rl, gm, only_player, pinch = walk(d, met, p)
+    res.update({'c5_' + k: v for k, v in w5.items()})
+    res['c5_validate_errors'] = met.get('validate_errors')
+    res['c5_g6_tall_on_line_to_e1'] = met.get('g6_tall_on_line_to_e1')
+    res['c5_g6_tall_on_line_to_e2'] = met.get('g6_tall_on_line_to_e2')
+
+    # ---- check 6: photosafety (the beacon view at every card, the collapse)
+    seq = {'c1': 'beacon_lamps.png', 'c2': 'beacon_seq_c2.png', 'c3': 'beacon_seq_c3.png', 'c4': 'beacon_seq_c4.png', 'c5': 'beacon_seq_c5.png', 'off': 'beacon_seq_off.png'}
+    yl, rgbl = {}, {}
+    for k, f in seq.items():
+        im = lin(load(os.path.join(d, f)))
+        rgbl[k] = im
+        yl[k] = im @ LUM
+    steps = []
+    for a_, b_ in (('c1', 'c2'), ('c2', 'c3'), ('c3', 'c4'), ('c4', 'c5'), ('c5', 'c1'), ('c1', 'off'), ('c2', 'off')):
+        ya_, yb_ = yl[a_], yl[b_]
+        hi_, lo_ = np.maximum(ya_, yb_), np.minimum(ya_, yb_)
+        flash = ((hi_ - lo_) >= .1 * hi_) & (lo_ < .8) & ((hi_ - lo_) > .005)
+        def red(im):
+            s = im.sum(axis=-1)
+            return (im[..., 0] / np.maximum(s, 1e-5) >= .8) & (s > .02)
+        redch = (red(rgbl[a_]) ^ red(rgbl[b_]))
+        steps.append({'from': a_, 'to': b_, 'meanY_from': r3(ya_.mean()), 'meanY_to': r3(yb_.mean()),
+                      'frame_step_rel': r3((yb_.mean() - ya_.mean()) / max(ya_.mean(), 1e-5)),
+                      'flash_area_frac': r3(flash.mean()), 'red_change_area_frac': r3(redch.mean())})
+    res['c6_steps'] = steps
+    res['c6_max_flash_area_frac'] = r3(max(s['flash_area_frac'] for s in steps))
+    res['c6_max_red_change_frac'] = r3(max(s['red_change_area_frac'] for s in steps))
+    res['c6_changes_per_s_max'] = track['max_changes_in_any_1s']
+    res['c6_min_gap_s'] = track['min_gap_s']
+    return res, met, (pl, rl, gm, only_player, pinch)
+
+
+def verdicts(r):
+    v = {}
+    # 1a: from the last junction, does a moving TV-lit patch read inside E1? (>= 20 % card swing over >= 0.25 % of the frame,
+    #     or the screen itself in view through E1); 'near' = 1.5 m out
+    def reads(t):
+        return (r.get(t + 'moving_frac_of_frame') or 0) >= .0025 or (r.get(t + 'screen_px_through_E1') or 0) >= 150
+    v['c1a_far'] = 'PASS' if reads('c1a_far_') else 'FAIL'
+    v['c1a_near'] = 'PASS' if reads('c1a_near_') else 'FAIL'
+    b = r['c1b_from_E1']
+    sc = max(b['reveal']['screen'], b['beacon']['screen'])
+    ky = max(b['reveal']['key'], b['beacon']['key'])
+    e2 = max(b['reveal']['e2'], b['beacon']['e2'])
+    v['c1b'] = 'PASS' if sc > 0 and ky > 0 and e2 > 0 and (r['c1b_board_visible_frac_E1'] or 0) >= .75 else ('PARTIAL' if sc > 0 else 'FAIL')
+    v['c1c'] = 'PASS' if (r.get('c1c_after_exits_over_room') or 0) >= 1.5 and (r.get('c1c_E1_px', 0) > 0 and r.get('c1c_E2_px', 0) > 0) else (
+        'PARTIAL' if (r.get('c1c_after_exits_over_room') or 0) >= 1.5 else 'FAIL')
+    geom = (r['c2_key_off_screen_axis_3d_deg'] or 99) <= 60 and (r['c2_key_ahead_of_screen_plane_m'] or 0) > 0 and (r['c2_key_dist_3d_m'] or 9) <= 2.0
+    mean_ok = (r.get('c2_board_tv_share') or 0) >= .5
+    dark_spec = (r.get('c2_board_tv_share_min_card_as_specified') or 0) >= .5
+    dark_fix = (r.get('c2_board_tv_share_min_card_lum_preserving') or 0) >= .5
+    v['c2'] = 'PASS' if geom and mean_ok and dark_spec else ('FLAG' if geom and mean_ok and dark_fix else 'FAIL')
+    v['c3_literal'] = 'PASS' if (r.get('c3_set_off_view_deg') or 999) <= 50 else 'FAIL'
+    v['c3_fallback'] = 'PASS' if (r.get('c3_board_drop_E') or 0) >= .70 else 'FAIL'
+    # 4: no furniture (counter, chair back, set) hides more than a quarter of the board from any wiggle spot; a doorway's own
+    #    wall hiding a board on the same wall from outside it is geometry, reported apart
+    v['c4'] = 'PASS' if r['c4_hidden_by_furniture_max'] is not None and r['c4_hidden_by_furniture_max'] <= .25 and r['c4_out_of_frame_positions'] == 0 else 'FAIL'
+    # 5: inside the room every route and the staff strip keep MinAisle 1.0 m for the capsule test, nothing is player-only;
+    #    G6's 1.2 m escape line is reported (the E2 arch, 1.1-1.4 m by G2 and hashed by the map, caps the full route)
+    inner = min(r['c5_route_in_room_e1_take_clear_width_m'] or 0, r['c5_route_in_room_take_e2_clear_width_m'] or 0)
+    ok5 = inner >= 1.0 and (r['c5_player_only_floor_m2'] or 0) < .05 and (r['c5_route_take_e2_clear_width_m'] or 0) > 0
+    if r['c5_staff_strip_through_clear_width_m'] is not None:
+        ok5 = ok5 and r['c5_staff_strip_through_clear_width_m'] >= 1.0
+    v['c5'] = 'PASS' if ok5 else 'FAIL'
+    v['c6'] = 'PASS' if r['c6_changes_per_s_max'] <= 3 and r['c6_max_red_change_frac'] < .01 else 'FAIL'
+    return v
+
+
+track = ad_track(AD)
+allr = {'ad_track': track, 'run': R, 'plans': {}}
+grids = {}
+for p in PLANS:
+    if not os.path.isdir(os.path.join(R, p)):
+        continue
+    r, met, g = plan_metrics(p, track)
+    r['verdicts'] = verdicts(r)
+    allr['plans'][p] = r
+    grids[p] = g
+json.dump(allr, open(OUT, 'w'), indent=1)
+np.savez_compressed(os.path.splitext(OUT)[0] + '_grids.npz', **{p + '_' + k: v for p, g in grids.items() for k, v in zip(('pl', 'rl', 'only', 'pinch'), (g[0], g[1], g[3], g[4]))})
+for p, r in allr['plans'].items():
+    print(p, r['verdicts'])
+print('ad track', track)

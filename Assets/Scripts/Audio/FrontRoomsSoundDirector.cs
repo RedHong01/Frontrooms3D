@@ -20,6 +20,12 @@ namespace FrontRooms.Audio
     {
         public static FrontRoomsSoundDirector Instance { get; private set; }
 
+        // C30 (asked of Red through 系统设计, 2026-10-22): RELAY §13 items 3 and 5 now, or with v2. Off is the v1
+        // behaviour, unchanged. HumByStage: the Relay's low hum only at warning stage 2 or in sight (Relay/Hum), in place
+        // of the always-on Relay/Presence drone. TensionByStage: Tension from the warning stage, in place of the state
+        // weight x straight-line proximity.
+        public static readonly bool HumByStage = true, TensionByStage = true;
+
         [SerializeField] bool muteLegacyUnityAudio = true;
         [SerializeField] int fixtureVoices = 4;
         // Every fixture voice plays the same recorded loop. Started in the same frame they stay
@@ -36,13 +42,16 @@ namespace FrontRooms.Audio
 #endif
         float nextDiscover, nextFixtureUpdate, tension;
         EventInstance humBed, airBed, breath, heartbeat, windowStress;
-        PARAMETER_ID staminaId, heartProximityId, stressProgressId;
+        PARAMETER_ID staminaId, arousalId, stressProgressId, groanId;
+        bool groanIdReady;
+        float groan, groanSent, lastChase = float.NegativeInfinity;
+        // RELAY §9.4: the heartbeat comes from exertion and the chase only, and fades over 3 s after a chase.
+        const float ChaseFade = 3f;
         bool runIdsReady;
 
         FrontRoomsMapWorld map;
         FrontRoomsMapHunter relay;
-        HunterState lastState = HunterState.Dormant;
-        bool relayRevealed, caught;
+        bool caught;
         float nextBedCheck;
         Transform listener;
         FrontRoomsPlayerFootsteps player;
@@ -100,6 +109,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.PlayerClimbed += OnPlayerClimbed;
             FrontRooms3DGame.Paused += OnPaused;
             FrontRooms3DGame.Inspecting += OnInspecting;
+            FrontRooms3DGame.WarnBurst += OnWarnBurst;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -110,6 +120,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.PlayerClimbed -= OnPlayerClimbed;
             FrontRooms3DGame.Paused -= OnPaused;
             FrontRooms3DGame.Inspecting -= OnInspecting;
+            FrontRooms3DGame.WarnBurst -= OnWarnBurst;
             OnPaused(false);
             OnInspecting(false);
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -171,6 +182,7 @@ namespace FrontRooms.Audio
                 UpdateGlobals(Time.unscaledDeltaTime);
                 UpdateSubjective();
             }
+            UpdateGroan();
         }
 
         // ------------------------------------------------------------ room tone
@@ -388,22 +400,34 @@ namespace FrontRooms.Audio
         void UpdateGlobals(float dt)
         {
             var target = .05f;
-            if (relay != null && relay.Released && listener != null)
+            float rate;
+            if (TensionByStage)
             {
-                var proximity = 1f - Mathf.Clamp01(Vector3.Distance(listener.position, relay.Position) / 30f);
-                float stateWeight;
-                switch (relay.State)
-                {
-                    case HunterState.Chase: stateWeight = 1f; break;
-                    case HunterState.BreakDoor: stateWeight = .8f; break;
-                    case HunterState.Search: stateWeight = .55f; break;
-                    case HunterState.Hunt: stateWeight = .45f; break;
-                    case HunterState.Wander: stateWeight = .2f; break;   // roaming, not tracking you
-                    default: stateWeight = .25f; break;
-                }
-                target = stateWeight * Mathf.Lerp(.5f, 1f, proximity);
+                // RELAY §9.4 (C30): Tension follows the warning stage only (0.05 / 0.2 / 0.4, 1.0 in a chase), never the
+                // straight-line distance through walls. Rise 1/s, fall 0.25/s.
+                if (relay != null && relay.Released)
+                    target = relay.State == HunterState.Chase ? 1f : relay.WarnStage >= 2 ? .4f : relay.WarnStage == 1 ? .2f : .05f;
+                rate = target > tension ? 1f : .25f;
             }
-            var rate = target > tension ? 2f : .5f;                    // rise fast, settle slowly
+            else
+            {
+                if (relay != null && relay.Released && listener != null)
+                {
+                    var proximity = 1f - Mathf.Clamp01(Vector3.Distance(listener.position, relay.Position) / 30f);
+                    float stateWeight;
+                    switch (relay.State)
+                    {
+                        case HunterState.Chase: stateWeight = 1f; break;
+                        case HunterState.BreakDoor: stateWeight = .8f; break;
+                        case HunterState.Search: stateWeight = .55f; break;
+                        case HunterState.Hunt: stateWeight = .45f; break;
+                        case HunterState.Wander: stateWeight = .2f; break;   // roaming, not tracking you
+                        default: stateWeight = .25f; break;
+                    }
+                    target = stateWeight * Mathf.Lerp(.5f, 1f, proximity);
+                }
+                rate = target > tension ? 2f : .5f;                      // rise fast, settle slowly
+            }
             tension = Mathf.MoveTowards(tension, target, rate * dt);
             FrontRoomsFmod.SetGlobal(SoundIds.Param.Tension, tension);
 
@@ -422,14 +446,39 @@ namespace FrontRooms.Audio
         {
             if (map == null || caught) return;
             if (breath.isValid() && player != null) breath.setParameterByID(staminaId, player.Stamina01);
-            if (relay == null || !relay.Released || listener == null) return;
+            // RELAY §9.4 / C10: the heartbeat comes from exertion (winded: the slow beat) and the chase (the fast beat,
+            // fading over 3 s after it), never from the straight-line distance to an unseen Relay.
+            var now = Time.time;
+            if (relay != null && relay.Released && relay.State == HunterState.Chase) lastChase = now;
+            var chase = Mathf.Clamp01(1f - (now - lastChase) / ChaseFade);
+            var exertion = FrontRooms3DGame.PlayerWinded ? .5f : .4f * Mathf.Clamp01(1f - FrontRooms3DGame.PlayerStamina01 / .25f);
             if (FrontRoomsFmod.Finished(ref heartbeat))
             {
                 heartbeat = FrontRoomsFmod.Create2D(SoundIds.Heartbeat);
                 if (heartbeat.isValid()) heartbeat.start();
             }
-            var proximity = 1f - Mathf.Clamp01(Vector3.Distance(listener.position, relay.Position) / 20f);
-            heartbeat.setParameterByID(heartProximityId, relay.SeesPlayer ? 0f : proximity);
+            heartbeat.setParameterByID(arousalId, Mathf.Max(chase, exertion));
+        }
+
+        // ------------------------------------------------------------ W1 ballast groan (RELAY §9.2)
+        /// <summary>A warning burst began in the player's room: the room-tone hum sags with the lamps (driven by WarnBurst only).</summary>
+        void OnWarnBurst(Vector3 roomCentre, int lamps)
+        {
+            if (!FrontRoomsFmod.Ready || map == null || caught) return;
+            FrontRoomsFmod.Note("warn burst, " + lamps + " lamps");
+            FrontRoomsFmod.Caption(lamps > 0 ? "[LIGHTS DIP]" : "[HUM DROPS]", null, 2f);
+        }
+
+        /// <summary>The groan follows the burst: in over 0.1 s while its dips play, out over 0.3 s (scaled time, so a pause holds it).</summary>
+        void UpdateGroan()
+        {
+            var target = FrontRooms3DGame.WarnBursting && map != null && !caught ? 1f : 0f;
+            var dt = Time.deltaTime;
+            groan = Mathf.MoveTowards(groan, target, dt / (target > groan ? .10f : .30f));
+            if (!humBed.isValid() || (groan <= 0f && groanSent <= 0f)) return;
+            if (!groanIdReady) { groanId = FrontRoomsFmod.ParameterId(SoundIds.HumBed, SoundIds.Param.Groan); groanIdReady = true; }
+            humBed.setParameterByID(groanId, groan);
+            groanSent = groan;
         }
 
         // ------------------------------------------------------------ game events
@@ -438,8 +487,7 @@ namespace FrontRooms.Audio
             OnMapRunEnded();
             map = world;
             relay = hunter;
-            lastState = HunterState.Dormant;
-            relayRevealed = false;
+            lastChase = float.NegativeInfinity;
             caught = false;
             FrontRoomsFmod.Note("map run started");
             // Hook the run first: whether FMOD has finished loading must never decide whether a run is heard.
@@ -465,7 +513,7 @@ namespace FrontRooms.Audio
             if (!runIdsReady)
             {
                 staminaId = FrontRoomsFmod.ParameterId(SoundIds.Breath, SoundIds.Param.Stamina);
-                heartProximityId = FrontRoomsFmod.ParameterId(SoundIds.Heartbeat, SoundIds.Param.Proximity);
+                arousalId = FrontRoomsFmod.ParameterId(SoundIds.Heartbeat, SoundIds.Param.Arousal);
                 stressProgressId = FrontRoomsFmod.ParameterId(SoundIds.WindowStress, SoundIds.Param.Progress);
                 runIdsReady = true;
             }
@@ -557,7 +605,7 @@ namespace FrontRooms.Audio
             if (!FrontRoomsFmod.Ready) return;
             foreach (var path in PausedBuses)
             {
-                try { RuntimeManager.GetBus(path).setPaused(paused); }
+                try { Check(RuntimeManager.GetBus(path).setPaused(paused), "pause " + path); }
                 catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] pause " + path + ": " + e.Message); }
             }
             FrontRoomsFmod.Note(paused ? "paused" : "resumed");
@@ -591,7 +639,7 @@ namespace FrontRooms.Audio
             {
                 // Under the pause screen these stay paused: a close-up that ends there (an R restart) must not bring the
                 // stingers or the heartbeat back over the menu. OnPaused(false) re-applies the mix on resume.
-                try { RuntimeManager.GetBus(path).setPaused(on || pausedNow); }
+                try { Check(RuntimeManager.GetBus(path).setPaused(on || pausedNow), "inspect " + path); }
                 catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + path + ": " + e.Message); }
             }
             try { RuntimeManager.GetBus(SoundIds.BusRelay).setVolume(on ? InspectRelayVolume : 1f); }
@@ -602,6 +650,14 @@ namespace FrontRooms.Audio
             // the camera's parent under the rig (FrontRoomsCameraRig parents the camera to its eye).
             var ears = listener != null ? listener.GetComponent<StudioListener>() : null;
             if (ears != null) ears.AttenuationObject = on && listener.parent != null ? listener.parent.gameObject : null;
+        }
+
+        /// <summary>An FMOD call that returned an error: logged and traced, never thrown into gameplay.</summary>
+        static void Check(FMOD.RESULT result, string what)
+        {
+            if (result == FMOD.RESULT.OK) return;
+            FrontRoomsFmod.Note(what + " " + result);
+            Debug.LogWarning("[FrontRoomsAudio] " + what + ": " + result);
         }
 
         void OnDoorOpenBegan(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)
@@ -629,22 +685,9 @@ namespace FrontRooms.Audio
             Cap("[DOOR BLOWS]", position, 36f);
         }
 
-        void OnRelayState(HunterState state)
-        {
-            var stinger = -1;
-            if (state == HunterState.Hunt && lastState != HunterState.Chase) stinger = (int)SoundIds.RelayState.Hunt;
-            else if (state == HunterState.Search) stinger = (int)SoundIds.RelayState.Search;
-            else if (state == HunterState.Chase && lastState != HunterState.BreakDoor) stinger = (int)SoundIds.RelayState.Chase;
-            else if (state == HunterState.Listen && (lastState == HunterState.Search || lastState == HunterState.Chase)) stinger = (int)SoundIds.RelayState.Lost;
-            if (stinger >= 0) FrontRoomsFmod.OneShot2D(SoundIds.RelayStinger, SoundIds.Param.RelayState, stinger);
-            if (!relayRevealed && state != HunterState.Dormant && relay != null)
-            {
-                relayRevealed = true;                                   // first move after release: heard before seen
-                FrontRoomsFmod.OneShot(SoundIds.RelayClicks, relay.Position + Vector3.up * 2f);
-                Cap("[CLICKING]", relay.Position + Vector3.up * 2f, 30f);
-            }
-            lastState = state;
-        }
+        // C10 (RELAY §13 items 1 and 2): no 2D Hunt/Search/Chase/Lost stingers and no release clicks. They said
+        // "near" at any range; the Relay is now heard only through its own 3D steps and hum (W2, FrontRoomsRelaySound).
+        void OnRelayState(HunterState state) => FrontRoomsFmod.Note("relay " + state);
 
         void OnCaught()
         {

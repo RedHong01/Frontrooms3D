@@ -4,6 +4,8 @@ Date: 2026-10-07, revised 2026-10-08 by the fix stage. This ledger covers every 
 
 Nothing new was downloaded for this section. All outside media was already on disk, and credits come from the ledgers that already exist. Media still waiting for Red's approval is listed in `media_candidates.md` and `media_candidates_buildings.md`, and on the backup slide LT17.
 
+**2026-10-22:** `media_candidates.md` row `lt_kane_ff_firedoor` was fetched once, with the stairwell batch (Red-approved there as `sw_kane_ff_firedoor`): `Research/week03/stairwell/clips/sw_kane_ff_firedoor.mp4` (368.0–416.0 s, MP4, no audio, no GIF) and `sw_kane_ff_firedoor_poster.jpg` (405.0 s). Bytes, SHA-1 and licence are in `Research/week03/stairwell/SOURCES.md`. It is not on any LT slide yet.
+
 ## Outside media (reused from disk)
 
 | File stem (slot `img:<stem>`) | On disk | Source | Time | Licence | Existing ledger |

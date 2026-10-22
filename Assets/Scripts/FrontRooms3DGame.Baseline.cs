@@ -166,6 +166,7 @@ public sealed partial class FrontRooms3DGame
     readonly System.Diagnostics.Stopwatch autoBaseWall = new System.Diagnostics.Stopwatch();
     string autoBaseLoadStart;
     BaselineBuild autoBuild;
+    string autoReleaseCause;
 
     // The start hold: while the player is in the stream rooms the map furnishes on a wall-clock budget (8 ms a
     // frame), so the frame the stream door opens depends on machine load. The bot waits short of the door until
@@ -328,6 +329,16 @@ public sealed partial class FrontRooms3DGame
     }
 
     [Serializable]
+    sealed class BaselineFlags
+    {
+        // Game rules that change v1's release, sight or doors, read from the game by name so this harness compiles
+        // before they exist: "on", "off" or "absent" (not in this build). E1 = the Floor 1 send (the Relay waits
+        // for the station key), floor1Grace = the first-approach grace, a12 = double-acting doors. releaseCause is
+        // why the Relay was first released, when the game reports it ("" otherwise).
+        public string e1 = "absent", floor1Grace = "absent", a12 = "absent", releaseCause = "";
+    }
+
+    [Serializable]
     sealed class BaselineBot
     {
         public float distanceWalked;
@@ -425,6 +436,7 @@ public sealed partial class FrontRooms3DGame
         // FNV-1a of everything above: two runs that played the same have the same hash (build and perf are not in it).
         public string behaviourHash;
         public BaselineBuild build = new BaselineBuild();
+        public BaselineFlags flags = new BaselineFlags();
         public BaselinePerf perf = new BaselinePerf();
     }
 
@@ -827,6 +839,7 @@ public sealed partial class FrontRooms3DGame
             autoReleaseStraight = Vector3.Distance(feet, player);
             autoReleaseWalk = AutoWalkMetres(feet);
             AutoLadderAt(feet, out autoReleaseF, out autoReleaseW);
+            autoReleaseCause = AutoText(relay, "ReleaseCause");
             return;
         }
         var entry = new BaselineRelay
@@ -1970,6 +1983,7 @@ public sealed partial class FrontRooms3DGame
         // The hash covers the behaviour only: build and perf are still their blank defaults here.
         r.behaviourHash = AutoHash(JsonUtility.ToJson(r));
         r.build = autoBuild ?? new BaselineBuild();
+        r.flags = AutoBaseFlags();
         r.perf = AutoBasePerf();
         var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "relay-baseline");
         Directory.CreateDirectory(dir);
@@ -1977,6 +1991,40 @@ public sealed partial class FrontRooms3DGame
         File.WriteAllText(path, JsonUtility.ToJson(r, true));
         Log("BASELINE " + r.verdict + " · " + path);
         return r.verdict;
+    }
+
+    /// <summary>The rule flags of this build (BaselineFlags), read by reflection; names agreed with the map line.</summary>
+    BaselineFlags AutoBaseFlags()
+    {
+        var flags = new BaselineFlags
+        {
+            e1 = AutoFlag(relay, "Floor1SendActive"),
+            floor1Grace = AutoFlag(relay, "FirstApproachGraceActive"),
+            a12 = AutoFlag(map, "DoubleActingDoors"),
+        };
+        if (autoReleaseCause != null) flags.releaseCause = autoReleaseCause;
+        return flags;
+    }
+
+    /// <summary>A public bool property or field by name: "on", "off", or "absent" when this build has no such member.</summary>
+    static string AutoFlag(object target, string member)
+    {
+        if (target == null) return "absent";
+        var type = target.GetType();
+        const System.Reflection.BindingFlags Public = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static;
+        var property = type.GetProperty(member, Public);
+        if (property != null && property.PropertyType == typeof(bool)) return (bool)property.GetValue(property.GetGetMethod().IsStatic ? null : target) ? "on" : "off";
+        var field = type.GetField(member, Public);
+        if (field != null && field.FieldType == typeof(bool)) return (bool)field.GetValue(field.IsStatic ? null : target) ? "on" : "off";
+        return "absent";
+    }
+
+    /// <summary>A public string property by name, or null when this build has no such member.</summary>
+    static string AutoText(object target, string member)
+    {
+        if (target == null) return null;
+        var property = target.GetType().GetProperty(member, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        return property != null && property.PropertyType == typeof(string) ? (string)property.GetValue(target) : null;
     }
 
     void AutoCheck(string check, bool ok, string detail, bool soft = false) => autoModeChecks.Add(new BaselineModeCheck { check = check, ok = ok, detail = detail, soft = soft });

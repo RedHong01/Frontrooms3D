@@ -7,7 +7,7 @@ using UnityEngine;
 // fall back to the spec's numbers on today's cube leaf (FrontRoomsMapWorld.LockPose, JoltLeaf).
 // Render only: no gameplay query ever reads a rig, and no kit part carries a collider.
 
-/// <summary>A door's face in the kit's terms (SPEC §6.4): S is the swing side (the door root's +X), P the stop side.</summary>
+/// <summary>A door's face in the kit's terms (SPEC §6.4): S is the door root's +X face, P its −X face. Since A12 (double-acting doors, Red 2026-10-22) the rig is not mirrored for a handing, so S and P are fixed faces and the leaf swings toward either (FrontRoomsMapWorld.FaceOf).</summary>
 public enum DoorFace { S, P }
 
 /// <summary>

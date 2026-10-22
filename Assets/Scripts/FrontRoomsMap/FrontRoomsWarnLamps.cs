@@ -20,6 +20,8 @@ using UnityEngine;
 ///   at stage 0, a jump of up to +0.72 that added a flash (Office: 3 a second) and a hard step under Reduce
 ///   flashing (lamp check, research/lamp_warn/10_lamp_look_check.md). A crossfaded hold at Dim (its M1) is to
 ///   come after the Alpha; until then they are simply left out.
+/// - M2 (§9.5): from stage 1 until stage 0 the room's Dead lamps strike no blink (FrontRoomsMapWorld.SetAmbientHold
+///   on the room the player stands in, moved with them; released at stage 0 and on Reset). Nothing else changes.
 /// Built on the map's lamp overrides (LampFx.Warn); one instance per map, ticked by the game after the Relay.
 /// </summary>
 public sealed class FrontRoomsWarnLamps
@@ -42,6 +44,10 @@ public sealed class FrontRoomsWarnLamps
     readonly List<GridCoord> room = new List<GridCoord>(), live = new List<GridCoord>();
     GridCoord roomFor;
     bool roomValid;
+    // M2: the room whose Dead lamps are held dark (worked out apart from the burst's room, so a burst is unchanged).
+    readonly List<GridCoord> holdRoom = new List<GridCoord>(), held = new List<GridCoord>();
+    GridCoord holdFor;
+    bool holdValid;
     readonly Queue<Step> walk = new Queue<Step>();
     readonly HashSet<GridCoord> seen = new HashSet<GridCoord>();
 
@@ -86,6 +92,7 @@ public sealed class FrontRoomsWarnLamps
         if (warnStage != stage) StageChanged(warnStage);
         PlayDue();
         if (stage == 0) return;
+        HoldRoom(world.CellOf(player));
         if (lockedOn || clock < nextBurst || Bursting) return;
         BeginBurst(player, relay);
     }
@@ -94,13 +101,16 @@ public sealed class FrontRoomsWarnLamps
     public void RoomForTools(Vector3 player, Vector3 relay)
     {
         var p = world.CellOf(player);
-        RoomOf(p);
+        RoomOf(p, room);
         roomFor = p;
         roomValid = true;
         LiveLampsOf(p, world.CellOf(relay));
     }
 
-    /// <summary>Stop at once: no burst planned, every warning dip released.</summary>
+    /// <summary>Tools and tests (M2): the cells whose Dead strikes this warning holds dark now (empty at stage 0).</summary>
+    public IReadOnlyList<GridCoord> HeldCells => held;
+
+    /// <summary>Stop at once: no burst planned, every warning dip released, no Dead lamp held.</summary>
     public void Reset()
     {
         stage = 0;
@@ -108,6 +118,7 @@ public sealed class FrontRoomsWarnLamps
         burstEnd = float.NegativeInfinity;
         pending.Clear();
         ReleaseAll();
+        ReleaseHolds();
     }
 
     void StageChanged(int next)
@@ -120,6 +131,7 @@ public sealed class FrontRoomsWarnLamps
             nextBurst = float.PositiveInfinity;
             pending.Clear();
             ReleaseAll();
+            ReleaseHolds();
             burstEnd = Mathf.Min(burstEnd, clock + DipRelease);
             return;
         }
@@ -130,7 +142,7 @@ public sealed class FrontRoomsWarnLamps
     void BeginBurst(Vector3 player, Vector3 relay)
     {
         var p = world.CellOf(player);
-        if (!roomValid || p != roomFor) { RoomOf(p); roomFor = p; roomValid = true; }
+        if (!roomValid || p != roomFor) { RoomOf(p, room); roomFor = p; roomValid = true; }
         LiveLampsOf(p, world.CellOf(relay));
         var dips = stage == 1 ? (Next() % 2 == 0 ? 2 : 3) : 2;
         var reduced = FrontRoomsSettings.ReduceFlashing;
@@ -180,12 +192,34 @@ public sealed class FrontRoomsWarnLamps
         handles.Clear();
     }
 
+    // M2: hold the Dead lamps of the room the player stands in (worked out again when they change cell); a cell
+    // left behind is let go.
+    void HoldRoom(GridCoord p)
+    {
+        if (holdValid && p == holdFor) return;
+        holdFor = p;
+        holdValid = true;
+        RoomOf(p, holdRoom);
+        foreach (var c in held)
+            if (!holdRoom.Contains(c)) world.SetAmbientHold(c, false);
+        world.SetAmbientHold(holdRoom, true);
+        held.Clear();
+        held.AddRange(holdRoom);
+    }
+
+    void ReleaseHolds()
+    {
+        world.SetAmbientHold(held, false);
+        held.Clear();
+        holdValid = false;
+    }
+
     // ---------- The room and its live lamps ----------
 
     // The carved room the cell stands in, else a walk over Open edges (depth 2, at most 9 cells). Never the start area.
-    void RoomOf(GridCoord p)
+    void RoomOf(GridCoord p, List<GridCoord> into)
     {
-        room.Clear();
+        into.Clear();
         if (!world.IsBuilt(p)) return;
         var chunk = MapGrid.ChunkOf(p);
         if (world.Cache.TryGetGenerated(chunk, out var data))
@@ -199,12 +233,12 @@ public sealed class FrontRoomsWarnLamps
                 for (var x = rect.x; x < rect.x + rect.w; x++)
                 {
                     var c = new GridCoord(o.x + x, o.y + y);
-                    if (world.IsBuilt(c)) room.Add(c);
+                    if (world.IsBuilt(c)) into.Add(c);
                 }
                 return;
             }
         }
-        Walk(p, RoomDepth, RoomCells, false, room);
+        Walk(p, RoomDepth, RoomCells, false, into);
     }
 
     // The room's lit lamps within lightRadius, never near the Relay; widened inside the zone when fewer than 2.

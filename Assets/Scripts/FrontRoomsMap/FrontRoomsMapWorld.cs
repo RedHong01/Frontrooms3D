@@ -78,26 +78,27 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public event Action<Vector3> DoorBroken;
     /// <summary>
     /// The Relay broke a door down: the door, where the Relay stood, and true
-    /// when it stood on the swing side (the leaf came toward it) rather than
-    /// the stop side (it burst the leaf away). Raised right after DoorBroken.
+    /// when it stood on the side the leaf swung into (the leaf came toward it)
+    /// rather than the other (it burst the leaf away). Raised right after
+    /// DoorBroken. Since A12 a shut leaf is always burst away from the Relay,
+    /// so true only for a leaf caught partly open on the Relay's side.
     /// </summary>
     public event Action<Door, Vector3, bool> DoorBrokenFrom;
     /// <summary>
-    /// A pull: the player opens a door from the side its leaf swings into, or
-    /// shuts one standing in the leaf's way. The door, and a clear standing
-    /// point on the floor on the latch side, out of the leaf's sweep and
-    /// inside the door's keep-clear strip. Raised before the leaf moves, and
-    /// only when the swing would meet the body (a player already clear is not
-    /// moved); an open from the swing side waits
-    /// <see cref="DoorPullBeatSeconds"/> longer than a push either way, for
-    /// the game to step the player there. A leaf that meets a body stops on it.
+    /// A pull: the player shuts a door standing in the leaf's way, on the side
+    /// it is open to. The door, and a clear standing point on the floor on the
+    /// latch side, out of the leaf's sweep and inside the door's keep-clear
+    /// strip. Raised as the leaf starts back, and only when the shut would meet
+    /// the body (a player already clear is not moved), for the game to step the
+    /// player there. A leaf that meets a body stops on it. Opens never pull
+    /// (A12, Red 2026-10-22: a leaf always opens away from its opener).
     /// </summary>
     public event Action<Door, Vector3> DoorPulled;
     /// <summary>A shut leaf landed in its frame and latched (the end of a shut swing): the door, at its centre.</summary>
     public event Action<Door, Vector3> DoorLatched;
     /// <summary>
     /// The lever: the moment a door is opened (Use, TryOpenDoor, a key turn's release), before
-    /// the latch frees and the leaf moves (DoorMoved, Open.SwingStart later; longer on a pull). Carries
+    /// the latch frees and the leaf moves (DoorMoved, Open.SwingStart later; opens never pull since A12). Carries
     /// the lock and handle point on the opener's side, so the handle and latch sound land before the swing.
     /// Not raised when the latch is already drawn (the push-side unlock: its knob beat was the handle).
     /// </summary>
@@ -150,7 +151,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     public static readonly Vector3 KeyPlaceholderSize = new Vector3(.065f, .022f, .004f);
     /// <summary>Every frame E is held on glass: the window's position and how far it is to breaking (0-1).</summary>
     public event Action<Vector3, float> GlassHold;
-    /// <summary>E was let go before the glass broke (or, in tap mode, a tap's credit ran out: the progress is kept).</summary>
+    /// <summary>E was let go before the glass broke (or, in tap mode, a tap's credit ran out). The progress is kept either way.</summary>
     public event Action<Vector3> GlassHoldReleased;
     /// <summary>
     /// The glass break (visual chat's plan §4.4, Red 2026-10-03). E went down on
@@ -219,18 +220,22 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public bool DoorsPaused { get; set; }
 
-    // ---------- Doors: single-acting (Red, 2026-10-02) ----------
-    // Every door swings into one fixed side (a hash of its edge), against
-    // stops on the other face, and latches when shut. The beats come from
-    // FrontRoomsShotTimings (Open, Rattle, DoorBreak); these are the map's own.
+    // ---------- Doors: double-acting (A12, Red 2026-10-22) ----------
+    // A leaf swings both ways (no stops) and always away from whoever moves it:
+    // from the frame it goes to the far side of its opener, and a leaf out of
+    // the frame goes on away from them (further open, or back through the
+    // frame when they stand ahead of it). It stays where it is left and
+    // latches when shut. The side it went to is kept by edge (doorSides) for
+    // rebuilds. The beats come from FrontRoomsShotTimings (Open, Rattle,
+    // DoorBreak); these are the map's own.
 
-    /// <summary>A pull's extra wait after the lever, before the leaf moves, for the game to step the player to DoorPulled's point.</summary>
+    /// <summary>The old single-acting pull's extra wait after the lever. No open waits for it since A12 (opens never pull); kept for readers of the constant.</summary>
     public const float DoorPullBeatSeconds = .25f;
     /// <summary>
-    /// The game's pull step: the player walks to DoorPulled's clear spot at
-    /// PullStepSpeed (m/s) for at most PullStepSeconds (the lever plus the
-    /// pull beat, so they are clear before the leaf moves). A spot further
-    /// than PullStepSpeed × PullStepSeconds is not stepped to.
+    /// The game's pull step (a shut from the leaf's side, DoorPulled): the
+    /// player walks to the clear spot at PullStepSpeed (m/s) for at most
+    /// PullStepSeconds. A spot further than PullStepSpeed × PullStepSeconds is
+    /// not stepped to.
     /// </summary>
     public const float PullStepSeconds = .35f, PullStepSpeed = 4f;
     /// <summary>A built door is a way through (PassageBetween Open) from this leaf angle: the opening left beside the leaf is 0.64 m, so a 0.6 m body fits.</summary>
@@ -274,6 +279,32 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public bool lightOn = true;
         public LightShadows shadowMode = LightShadows.None;
         public float emissionWritten = -1f;
+        // The ambient flicker (M2, RELAY §9.5), modes 1-3 only: the dip's gain on the mode's level this frame
+        // (1: none); Stutter's episode (2 or 3 dips, 0 = none) and its shape seed; Failing's dropout; Dead's
+        // strike (shown, or held dark) and the last one shown; SetAmbientHold; the flash limiter's track.
+        public float gain = 1f;
+        public byte episodeDips;
+        public float episodeStart;
+        public uint episodeSeed;
+        public bool dropping;
+        public float dropStart = float.NegativeInfinity, dropEnd = float.NegativeInfinity;
+        public bool strikeShown;
+        public float lastStrike = float.NegativeInfinity;
+        public bool ambientHold;
+        public FlashTrack flash;
+    }
+
+    // The flash limiter's state for one lamp: a zigzag over its level (turning points FlashStep apart), whether
+    // the current swing has been counted, the times of the last FlashMaxTransitions counted swings (a ring,
+    // oldest at head), the last level given out, and how many frames it has held one back (tools).
+    sealed class FlashTrack
+    {
+        public bool begun;
+        public sbyte dir;
+        public float pivot, ext, lo, hi, last;
+        public bool counted;
+        public readonly float[] times = new float[FlashMaxTransitions];
+        public int count, head, held;
     }
 
     public sealed class Door
@@ -290,14 +321,17 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         /// <summary>The hinge angle over 95°, held to 0..1 (older readers; <see cref="angle"/> is the leaf).</summary>
         public float progress;
         /// <summary>
-        /// +1 or -1: the side the leaf swings into, fixed for the door's edge
-        /// (FixedSwing). With +1 an east edge's leaf goes west (into a) and a
-        /// north edge's goes north (into b). The stops are on the other face.
+        /// +1 or -1: the side the leaf swings into now. With +1 an east edge's
+        /// leaf goes west (into a) and a north edge's goes north (into b). A12:
+        /// set away from whoever moves the leaf while it is in the frame
+        /// (SwingAwayFrom), turned over when it is pushed back through the
+        /// frame, and kept by edge (doorSides) for rebuilds; a door never
+        /// opened has its edge's hash (FixedSwing).
         /// </summary>
         public float swing = 1f;
-        /// <summary>The hinge angle in degrees: 0 shut and latched, 95 open on the stop, past it only in a break throw.</summary>
+        /// <summary>The hinge angle in degrees, on the swing side: 0 shut and latched, 95 open on its rest, past it only in a break throw.</summary>
         public float angle;
-        /// <summary>The last open or shut came from the swing side (a pull).</summary>
+        /// <summary>The last shut came from the side the leaf is open to (a pull). Opens never pull (A12).</summary>
         public bool pull;
 
         // The swing in progress (TickDoors): what it is, the lever's wait, and its curve.
@@ -318,7 +352,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         internal readonly List<(float at, float metres, float degrees, float spring)> jolts = new List<(float, float, float, float)>();
     }
 
-    internal enum DoorMotion { None, Lever, Swing, Shut, Throw, Bounce }
+    // Through (A12): a leaf pushed from ahead of it runs back to the frame, then opens to the far side.
+    internal enum DoorMotion { None, Lever, Swing, Shut, Throw, Bounce, Through }
 
     public sealed class Window
     {
@@ -349,7 +384,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// impactUV is the same point over the exposed glass (1.367 × 1.617 m from
     /// x −0.6835, y 0.3665). Rotation (degrees) turns the crack pattern, from the
     /// seed. Side is +1 when struck from cell a (the glass goes toward b, the
-    /// root's +Z), −1 from b. The impact is fixed once the pane has cracked.
+    /// root's +Z), −1 from b. The impact is fixed once the pane has been
+    /// struck (Red 2026-10-22: a knock is never undone). Hold is the progress
+    /// so far (seconds of E held, 0–1 × HoldSeconds): kept through a release,
+    /// a chunk drop and a rebuild, so the next hold resumes exactly there.
     /// </summary>
     public struct GlassBreakRecord
     {
@@ -359,6 +397,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         public Vector2 impactUV;
         public float rotation;
         public int side;
+        public float hold;
     }
 
     // The exposed glass in the window root's frame (the visual chat's 16 mm stops hide the rest of the 1.4 × 1.65 box).
@@ -458,9 +497,13 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     static bool glassBreakableResolved;
     readonly HashSet<long> openDoors = new HashSet<long>();
     readonly HashSet<long> brokenDoors = new HashSet<long>();
+    // A12: the side (Door.swing) each door's leaf last went to, by edge, so an open or broken door is rebuilt on it.
+    readonly Dictionary<long, float> doorSides = new Dictionary<long, float>();
     // Lamp modes set at run time (SetLampMode): kept by cell like brokenDoors, so a dropped,
     // rebuilt or shifted chunk comes back with them. Never in MapChunk.lamp (Shift regenerates it).
     readonly Dictionary<GridCoord, ModuleLamp> lampModes = new Dictionary<GridCoord, ModuleLamp>();
+    // Lamps whose Dead strikes a warning holds dark (SetAmbientHold), by cell for the same reason.
+    readonly HashSet<GridCoord> ambientHolds = new HashSet<GridCoord>();
     // Built lamps by cell, and the active lamp overrides (all, and by cell).
     readonly Dictionary<GridCoord, Fixture> fixtureByCell = new Dictionary<GridCoord, Fixture>();
     readonly List<LampOverride> lampOverrides = new List<LampOverride>();
@@ -1479,8 +1522,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             leaf.transform.localScale = new Vector3(ModuleUnits.DoorLeafThickness, DoorHeight - ModuleUnits.DoorLeafGap, width - ModuleUnits.DoorLeafGap);
             leaf.GetComponent<Renderer>().sharedMaterial = doorLeaf;
             var door = new Door { hinge = hinge, closed = hinge.localRotation, leaf = leaf.GetComponent<Collider>(), a = a, b = b, edge = edge, position = openingCenter,
-                swing = FixedSwing(a, b), leafHome = leaf.transform.localPosition };
-            // Rebuilt as it was left: open on its stop, or broken at rest and hanging crooked.
+                swing = doorSides.TryGetValue(edge, out var side) ? side : FixedSwing(a, b), leafHome = leaf.transform.localPosition };
+            // Rebuilt as it was left, on the side it went to: open at rest, or broken at rest and hanging crooked.
             if (brokenDoors.Contains(edge))
             {
                 door.broken = door.open = true;
@@ -1519,8 +1562,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 pane.GetComponent<Renderer>().sharedMaterial = glass;
                 pane.AddComponent<FrontRoomsMetalGlassTarget>();
                 window.pane = pane;
-                // A cracked pane resumes from the stage it reached.
-                window.hold = StageFloor(window.stage);
+                // A struck pane resumes from the progress it reached (never below its stage: cracks do not heal).
+                window.hold = Mathf.Max(StageFloor(window.stage), record.hold);
                 windowByCollider[pane.GetComponent<Collider>()] = window;
             }
             // The visual chat's glass draws the slab and every stage on the root; the box keeps only its collider.
@@ -1552,6 +1595,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     void RaiseWindowReleased(Window window)
     {
+        // A pane torn down mid-hold keeps what it reached (a release normally stored it already).
+        KeepHold(window);
         if (!window.announced || WindowReleased == null) return;
         window.announced = false;
         foreach (Action<Window> handler in WindowReleased.GetInvocationList())
@@ -1647,10 +1692,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     const int DoorSwingSalt = 89;
 
     /// <summary>
-    /// The side a door on the edge between two neighbouring cells swings
-    /// into, as Door.swing (+1 or -1): a hash of the seed and the edge, with
-    /// no revision, so every build, rebuild and revisit shift agrees. Either
-    /// side is equally likely, so pulls come as often as pushes.
+    /// The starting side of a door on the edge between two neighbouring cells,
+    /// as Door.swing (+1 or -1), until its leaf first moves: a hash of the
+    /// seed and the edge, with no revision, so every build, rebuild and revisit
+    /// shift agrees. Since A12 it only says which way a shut leaf rests; every
+    /// open picks the far side of its opener (SwingAwayFrom).
     /// </summary>
     float FixedSwing(GridCoord a, GridCoord b)
     {
@@ -1723,9 +1769,10 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The Relay forces a door from where it stands: it stays open for good.
-    /// Whichever side the Relay is on, the leaf goes to its swing side (the
-    /// stops hold the other way): thrown past the stop in DoorBreak.ThrowSeconds,
-    /// it bounces back to rest at DoorBreak.BounceRestDeg, hanging crooked.
+    /// A shut leaf is burst away from the Relay, into the room it breaks into
+    /// (A12); a leaf caught partly open keeps its side. Thrown past its rest in
+    /// DoorBreak.ThrowSeconds, it bounces back to rest at
+    /// DoorBreak.BounceRestDeg, hanging crooked, on that side for the run.
     /// </summary>
     public void BreakDoor(Door door, Vector3 from)
     {
@@ -1734,10 +1781,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (doorByEdge.TryGetValue(door.edge, out var current)) door = current;
         breakingDoors.Remove(door.edge);
         if (door.broken) return;
+        SwingAwayFrom(door, from);
         var fromSwingSide = OnSwingSide(door, from);
         door.broken = true;
         door.open = true;
         brokenDoors.Add(door.edge);
+        doorSides[door.edge] = door.swing;
         door.wait = 0f;
         door.motion = DoorMotion.Throw;
         door.from = door.angle;
@@ -1834,6 +1883,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         if (lamp != ModuleLamp.Auto) fixture.mode = (int)lamp - 1;
         // A mode set at run time wins over both (the rolls above are still drawn, so the rest stay put).
         if (lampModes.TryGetValue(cell, out var set)) fixture.mode = (int)set - 1;
+        fixture.ambientHold = ambientHolds.Contains(cell);
         fixture.phase = Rand(ref fixture.rng) * 50f;
         fixture.nextEvent = 2f + Rand(ref fixture.rng) * 14f;
         chunk.fixtures.Add(fixture);
@@ -2028,6 +2078,33 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return mismatches;
     }
 
+    // ---------- Ambient flicker and its limits (M2: RELAY_PURSUIT_REDESIGN.md §9.5; lamp check 10_lamp_look_check.md) ----------
+    // The measured problem (2026-10-22): a Stutter lamp ran a PerlinNoise(t·23) strobe between 0.95 and 0.05,
+    // 5-14 flashes a second per lamp, and lights a whole wall (Office: > 3 flashes/s over 37 % of a 1/4 field).
+    // Every flicker mode now stays at or under 2 flashes a second by design, and a per-lamp limiter holds back
+    // any change that would make a 4th flash within a second. Steady, Dim and Off, and every lamp between its
+    // events, are bit-identical to before; each mode keeps its timers and its own RNG, so it stays deterministic.
+
+    /// <summary>A flash (WCAG 2.3.1): two opposing changes of at least FlashStep of full level, the darker side under FlashDark.</summary>
+    public const float FlashStep = .10f, FlashDark = .80f;
+    /// <summary>The flash limiter: at most FlashMaxTransitions changes (3 flashes) in any FlashWindow seconds; the next one waits.</summary>
+    public const float FlashWindow = 1f;
+    public const int FlashMaxTransitions = 6;
+    /// <summary>
+    /// Stutter (mode 1): an episode of 2 dips (the old stutter's draw under 0.5 s) or 3, one per StutterSlot
+    /// (the 0.5 s slot plus W1's 0.05 s guard, so the first and third dips' edges are never 1 s apart), each down
+    /// to StutterFloor..StutterFloor + StutterFloorSpread of the lamp's level over a 60-80 ms ramp, held
+    /// 0.05-0.15 s, back over 60-80 ms: at most 1.41 s, then at least 3.7 s steady (the old 5-20 s gap).
+    /// </summary>
+    public const float StutterSlot = .55f, StutterRampMin = .06f, StutterRampMax = .08f, StutterHoldMin = .05f, StutterHoldMax = .15f;
+    public const float StutterFloor = .5f, StutterFloorSpread = .1f;
+    /// <summary>Failing (mode 2): a dropout is held at least FailingHoldMin, and the next starts at least FailingGap after one ends.</summary>
+    public const float FailingHoldMin = .34f, FailingGap = 1.1f;
+    /// <summary>Dead (mode 3): one strike, at most one per DeadStrikeGap seconds.</summary>
+    public const float DeadStrikeGap = 4f;
+    /// <summary>Reduce flashing: an ambient dip is one sag to this share of the lamp's level, in and out over ReducedFlashingEnvelopeSeconds.</summary>
+    public const float ReducedAmbientDepth = .7f;
+
     static float Level(Fixture f)
     {
         var t = f.clock + f.phase;
@@ -2036,27 +2113,11 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         switch (f.mode)
         {
             case 1:
-                // Steady, then a short stutter at its own random interval.
-                if (f.clock >= f.nextEvent && f.eventEnd <= f.clock)
-                {
-                    f.eventEnd = f.clock + .15f + Rand(ref f.rng) * .7f;
-                    f.nextEvent = f.eventEnd + 5f + Rand(ref f.rng) * 15f;
-                }
-                if (f.clock < f.eventEnd) return calm ? .7f : Mathf.PerlinNoise(t * 23f, f.phase) > .45f ? .95f : .05f;
-                return .97f + .03f * Mathf.Sin(t * 120f);
+                return Limit(f, Stutter(f, t, calm));
             case 2:
-                // Failing ballast: never settles, drops out at its own rhythm.
-                var wave = .5f + .5f * Mathf.Sin(t * 3.1f) * (.7f + .3f * Mathf.Sin(t * 1.27f));
-                var dropout = Mathf.PerlinNoise(t * 1.4f, f.phase) > .72f ? (calm ? .7f : .05f) : 1f;
-                return (.25f + .45f * wave) * dropout;
+                return Limit(f, Failing(f, t, calm));
             case 3:
-                // Dead tube that blinks once in a long while.
-                if (f.clock >= f.nextEvent && f.eventEnd <= f.clock)
-                {
-                    f.eventEnd = f.clock + .06f + Rand(ref f.rng) * .12f;
-                    f.nextEvent = f.eventEnd + 8f + Rand(ref f.rng) * 20f;
-                }
-                return f.clock < f.eventEnd && !calm ? .8f : 0f;
+                return Limit(f, DeadBlink(f, calm));
             case 4:
                 return .42f + .03f * Mathf.Sin(t * 90f);
             case 5:
@@ -2065,6 +2126,177 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             default:
                 return .98f + .02f * Mathf.Sin(t * 110f);
         }
+    }
+
+    // Steady, then a stutter at its own random interval: the old timers and draws, now an episode of dips.
+    static float Stutter(Fixture f, float t, bool calm)
+    {
+        if (f.clock >= f.nextEvent && f.eventEnd <= f.clock)
+        {
+            f.eventEnd = f.clock + .15f + Rand(ref f.rng) * .7f;
+            f.nextEvent = f.eventEnd + 5f + Rand(ref f.rng) * 15f;
+            // The episode's shape comes from the RNG's state here without drawing from it, so every later
+            // event keeps its old time.
+            f.episodeStart = f.clock;
+            f.episodeDips = (byte)(f.eventEnd - f.clock < .5f ? 2 : 3);
+            f.episodeSeed = f.rng;
+        }
+        if (f.episodeDips == 0) return .97f + .03f * Mathf.Sin(t * 120f);
+        f.gain = StutterGain(f, f.clock - f.episodeStart, calm);
+        return (.97f + .03f * Mathf.Sin(t * 120f)) * f.gain;
+    }
+
+    // The episode's gain u seconds in (1 between dips); ends the episode after its last dip (or sag).
+    static float StutterGain(Fixture f, float u, bool calm)
+    {
+        var n = f.episodeDips;
+        if (calm)
+        {
+            // One sag for the whole episode, held as long as the dips would have played.
+            StutterDip(f, n - 1, out var down0, out var hold0, out var up0, out _);
+            var until = (n - 1) * StutterSlot + down0 + hold0 + up0;
+            if (u >= Mathf.Max(until, ReducedFlashingEnvelopeSeconds) + ReducedFlashingEnvelopeSeconds) { f.episodeDips = 0; return 1f; }
+            return ReducedSag(u, until);
+        }
+        var k = Mathf.Min((int)(u / StutterSlot), n - 1);
+        var x = u - k * StutterSlot;
+        StutterDip(f, k, out var down, out var hold, out var up, out var depth);
+        if (x >= down + hold + up)
+        {
+            if (k == n - 1) f.episodeDips = 0;
+            return 1f;
+        }
+        if (x < down) return Mathf.Lerp(1f, depth, x / down);
+        if (x < down + hold) return depth;
+        return Mathf.Lerp(depth, 1f, (x - down - hold) / up);
+    }
+
+    // Dip k of the current episode, from the episode's seed: the ramps and the hold are the episode's (so every
+    // dip's edges stay StutterSlot apart, and the first and third never come within 1 s), the depth is the dip's.
+    static void StutterDip(Fixture f, int k, out float down, out float hold, out float up, out float depth)
+    {
+        var seed = (int)f.episodeSeed;
+        down = Mathf.Lerp(StutterRampMin, StutterRampMax, MapHash.Unit(MapHash.Hash(seed, 0, 0, 239)));
+        hold = Mathf.Lerp(StutterHoldMin, StutterHoldMax, MapHash.Unit(MapHash.Hash(seed, 0, 1, 239)));
+        up = Mathf.Lerp(StutterRampMin, StutterRampMax, MapHash.Unit(MapHash.Hash(seed, 0, 2, 239)));
+        depth = StutterFloor + StutterFloorSpread * MapHash.Unit(MapHash.Hash(seed, k, 3, 239));
+    }
+
+    // Failing ballast: never settles, drops out at its own rhythm (the old PerlinNoise above 0.72), each dropout
+    // held at least FailingHoldMin and the next at least FailingGap after it ends.
+    static float Failing(Fixture f, float t, bool calm)
+    {
+        var wave = .5f + .5f * Mathf.Sin(t * 3.1f) * (.7f + .3f * Mathf.Sin(t * 1.27f));
+        var want = Mathf.PerlinNoise(t * 1.4f, f.phase) > .72f;
+        if (f.dropping)
+        {
+            if (!want && f.clock - f.dropStart >= FailingHoldMin) { f.dropping = false; f.dropEnd = f.clock; }
+        }
+        else if (want && f.clock - f.dropEnd >= FailingGap) { f.dropping = true; f.dropStart = f.clock; }
+        if (!calm) f.gain = f.dropping ? .05f : 1f;
+        else if (f.dropping) f.gain = ReducedSag(f.clock - f.dropStart, float.PositiveInfinity);
+        else if (float.IsNegativeInfinity(f.dropStart)) f.gain = 1f;
+        else
+        {
+            // The sag comes back over its release after the dropout ends.
+            var until = f.dropEnd - f.dropStart;
+            var u = f.clock - f.dropStart;
+            f.gain = u < Mathf.Max(until, ReducedFlashingEnvelopeSeconds) + ReducedFlashingEnvelopeSeconds ? ReducedSag(u, until) : 1f;
+        }
+        return (.25f + .45f * wave) * f.gain;
+    }
+
+    // Dead tube that blinks once in a long while: one strike, at most one per DeadStrikeGap, and none while a
+    // warning holds the lamp's room (SetAmbientHold): a strike that starts held stays dark to its end.
+    static float DeadBlink(Fixture f, bool calm)
+    {
+        if (f.clock >= f.nextEvent && f.eventEnd <= f.clock)
+        {
+            f.eventEnd = f.clock + .06f + Rand(ref f.rng) * .12f;
+            f.nextEvent = f.eventEnd + 8f + Rand(ref f.rng) * 20f;
+            f.strikeShown = !f.ambientHold && f.clock - f.lastStrike >= DeadStrikeGap;
+            if (f.strikeShown) f.lastStrike = f.clock;
+        }
+        return f.clock < f.eventEnd && !calm && f.strikeShown && !f.ambientHold ? .8f : 0f;
+    }
+
+    // Reduce flashing's ambient sag, u seconds in: down to ReducedAmbientDepth over the envelope (smoothstep),
+    // held to `until` (never before it is all the way down), back over the envelope. At most 0.9/s of gain.
+    static float ReducedSag(float u, float until)
+    {
+        var r = ReducedFlashingEnvelopeSeconds;
+        var down = Smooth01(u / r);
+        var back = Smooth01((u - Mathf.Max(until, r)) / r);
+        return 1f - (1f - ReducedAmbientDepth) * down * (1f - back);
+    }
+
+    static float Smooth01(float x)
+    {
+        x = Mathf.Clamp01(x);
+        return x * x * (3f - 2f * x);
+    }
+
+    // The flash limiter over a flicker mode's level (§9.5, per lamp): a swing of FlashStep or more between
+    // turning points whose darker side is under FlashDark is one change, counted the frame it gets there; a level
+    // that would make the 7th change (a 4th flash) within FlashWindow is held back, and the lamp keeps its last
+    // level until the oldest change leaves the window. Under the cap it gives the mode's level back untouched.
+    static float Limit(Fixture f, float v)
+    {
+        var z = f.flash;
+        if (z == null) f.flash = z = new FlashTrack();
+        if (!z.begun)
+        {
+            z.begun = true;
+            z.dir = 0;
+            z.pivot = z.ext = z.lo = z.hi = z.last = v;
+            z.counted = false;
+            return v;
+        }
+        var dir = z.dir;
+        float pivot = z.pivot, ext = z.ext, lo = z.lo, hi = z.hi;
+        var counted = z.counted;
+        if (dir == 0)
+        {
+            lo = Mathf.Min(lo, v);
+            hi = Mathf.Max(hi, v);
+            if (v - lo >= FlashStep) { dir = 1; pivot = lo; ext = v; counted = false; }
+            else if (hi - v >= FlashStep) { dir = -1; pivot = hi; ext = v; counted = false; }
+        }
+        else if (dir > 0)
+        {
+            if (v > ext) ext = v;
+            else if (ext - v >= FlashStep) { dir = -1; pivot = ext; ext = v; counted = false; }
+        }
+        else
+        {
+            if (v < ext) ext = v;
+            else if (v - ext >= FlashStep) { dir = 1; pivot = ext; ext = v; counted = false; }
+        }
+        var change = dir != 0 && !counted
+            && (dir > 0 ? ext - pivot >= FlashStep && pivot < FlashDark : pivot - ext >= FlashStep && ext < FlashDark);
+        // A closed window, 1 ms wider, so two changes a frame-rounded second apart still count as one second.
+        if (change && z.count == FlashMaxTransitions && z.times[z.head] >= f.clock - FlashWindow - .001f)
+        {
+            z.held++;
+            return z.last;
+        }
+        z.dir = dir;
+        z.pivot = pivot;
+        z.ext = ext;
+        z.lo = lo;
+        z.hi = hi;
+        z.counted = counted || change;
+        if (change)
+        {
+            if (z.count < FlashMaxTransitions) z.times[(z.head + z.count++) % FlashMaxTransitions] = f.clock;
+            else
+            {
+                z.times[z.head] = f.clock;
+                z.head = (z.head + 1) % FlashMaxTransitions;
+            }
+        }
+        z.last = v;
+        return v;
     }
 
     static float Rand(ref uint state)
@@ -2615,6 +2847,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (!zone.HasValue)
             {
                 door.rattledAt = doorClock;
+                // A12: the trier pushes, so the leaf jolts away from them.
+                SwingAwayFrom(door, from);
                 DoorLocked?.Invoke(door.position);
                 DoorRattled?.Invoke(door, LockPoint(door, from));
                 Rattle(door);
@@ -2623,6 +2857,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             if (KeyTurnOwner != null)
             {
                 // The owner's shot turns the key: the door waits, held, until it commits and releases.
+                // A12: the leaf will open away from the key's side, so the shot is a push from any face.
+                SwingAwayFrom(door, from);
                 keyTurns[door.edge] = new KeyTurnHold { zone = zone.Value, from = from };
                 return UseResult.KeyTurn;
             }
@@ -2721,8 +2957,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return Vector3.Dot(from - door.position, across) >= 0f ? across : -across;
     }
 
-    /// <summary>The face <paramref name="from"/> stands on, in the kit's terms: S, the swing side (SPEC §6.4), or P.</summary>
-    public static DoorFace FaceOf(Door door, Vector3 from) => OnSwingSide(door, from) ? DoorFace.S : DoorFace.P;
+    /// <summary>
+    /// The face <paramref name="from"/> stands on, in the kit's terms: S, the door root's +X face (the kit's
+    /// authored S face), or P, its −X face. Since A12 the double-acting door is not mirrored for a handing and
+    /// its leaf swings either way, so the face is fixed by where the point stands, as LockNormal picks it.
+    /// </summary>
+    public static DoorFace FaceOf(Door door, Vector3 from) => Vector3.Dot(from - door.position, DoorRotation(door) * Vector3.right) >= 0f ? DoorFace.S : DoorFace.P;
 
     /// <summary>Unit, flat: along the shut leaf from the latch jamb toward the hinge.</summary>
     public static Vector3 TowardHinge(Door door)
@@ -2786,6 +3026,9 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     // ease-out ends and lasts this long (Open.OvershootStart to OvershootEnd after the press).
     const float OvershootLead = FrontRoomsShotTimings.Open.SwingStart + FrontRoomsShotTimings.Open.SwingSeconds - FrontRoomsShotTimings.Open.OvershootStart;
     const float OvershootLength = FrontRoomsShotTimings.Open.OvershootEnd - FrontRoomsShotTimings.Open.OvershootStart;
+    // A12's push back through the frame runs at the open's starting speed (its ease-out's slope at 0), so the
+    // leaf passes the frame without a pause and the far side's open carries on at the same speed.
+    const float ThroughDegreesPerSecond = 2f * FrontRoomsShotTimings.Open.SwingDeg / FrontRoomsShotTimings.Open.SwingSeconds;
 
     /// <summary>The Relay's feet while it is out (FrontRoomsMapHunter sets this), so a moving leaf stops on its body as on the player's.</summary>
     public Func<Vector3?> RelayBody { get; set; }
@@ -2830,8 +3073,40 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return point;
     }
 
-    /// <summary>True when a point stands on the side the door's leaf swings into (opening it from there is a pull); false on the stop side.</summary>
+    /// <summary>True when a point stands on the side the door's leaf swings into now (the side it is open to, or would open to from the frame); false on the other.</summary>
     public static bool OnSwingSide(Door door, Vector3 point) => door != null && DoorPlan(door, point).y > 0f;
+
+    /// <summary>True while the leaf is in the frame (latched, or within half a degree of it): its next open picks its side.</summary>
+    public static bool IsLatched(Door door) => door != null && door.angle <= LatchedDegrees;
+
+    // A12: the point stands ahead of a leaf out of the frame, where opening it further would carry the leaf
+    // toward them: its bearing from the hinge axis in the door's floor plan is past the leaf's angle.
+    // Anything on the other side of the frame is behind the leaf.
+    static bool AheadOfLeaf(Door door, Vector3 point)
+    {
+        var p = DoorPlan(door, point);
+        return Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg > door.angle;
+    }
+
+    /// <summary>A12 is in: doors are double-acting (always away from the opener). Read by reflection by the Relay
+    /// baseline harness (FrontRooms3DGame.Baseline.cs) so its reports say which door rule they ran under.</summary>
+    public static bool DoubleActingDoors => true;
+
+    /// <summary>
+    /// A12 (Red, 2026-10-22): a leaf in the frame swings to the far side of whoever moves it. While the
+    /// leaf is latched and <paramref name="from"/> stands on its swing side, the swing side turns over
+    /// (nothing moves: the leaf is shut). The map calls it for every open, rattle, key turn and break; the
+    /// hunter calls it as a break begins and again before every blow, so the blows jolt the leaf away from it. A leaf out of the frame
+    /// keeps its side.
+    /// </summary>
+    public void SwingAwayFrom(Door door, Vector3 from)
+    {
+        // The door standing on that edge now (a rebuild mid-break makes a new Door), as JoltLeaf and BreakDoor read it.
+        if (door != null && doorByEdge.TryGetValue(door.edge, out var current)) door = current;
+        if (door == null || !IsLatched(door) || !OnSwingSide(door, from)) return;
+        door.swing = -door.swing;
+        PoseDoor(door);
+    }
 
     /// <summary>
     /// The nearest spot to <paramref name="near"/> where a body of this radius
@@ -2876,41 +3151,50 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     }
 
     /// <summary>
-    /// The one way a door opens (Use, TryOpenDoor, a key turn's release): the lever goes
-    /// down, and Open.SwingStart later the leaf leaves the frame toward its
-    /// swing side, easing out over Open.SwingSeconds onto the 95° stop with
-    /// the Open overshoot. From the swing side it is a pull: DoorPulled now,
-    /// and DoorPullBeatSeconds more before the leaf moves. A leaf caught
-    /// mid-shut has no latch to free, so a push turns it back at once.
-    /// <paramref name="latchDrawn"/>: the latch is already drawn (the unlock's
-    /// knob beat), so there is no lever wait and no DoorHandleTurned.
+    /// The one way a door opens (Use, TryOpenDoor, a key turn's release), always away from its opener
+    /// (A12, Red 2026-10-22). A leaf in the frame goes to the far side of the opener: the lever goes
+    /// down, and Open.SwingStart later the leaf leaves the frame, easing out over Open.SwingSeconds onto
+    /// its 95° rest with the Open overshoot. A leaf out of the frame (caught mid-shut, or resting on a
+    /// body) has no latch to free: with the opener behind it, it turns back open at once; with the
+    /// opener ahead of it, it runs on back through the frame and opens to the far side
+    /// (DoorMotion.Through). Opens never pull, so DoorPulled is never raised here.
+    /// <paramref name="latchDrawn"/>: the latch is already drawn (the unlock's knob beat), so there is
+    /// no lever wait and no DoorHandleTurned.
     /// </summary>
     void OpenDoor(Door door, Vector3 from, DoorOpenSource source, bool latchDrawn = false)
     {
+        SwingAwayFrom(door, from);
+        var through = !IsLatched(door) && AheadOfLeaf(door, from);
         door.open = true;
         openDoors.Add(door.edge);
-        door.pull = OnSwingSide(door, from);
-        door.wait = (door.angle <= LatchedDegrees && !latchDrawn ? FrontRoomsShotTimings.Open.SwingStart : 0f) + (door.pull ? DoorPullBeatSeconds : 0f);
+        doorSides[door.edge] = through ? -door.swing : door.swing;
+        door.pull = false;
+        door.wait = IsLatched(door) && !latchDrawn ? FrontRoomsShotTimings.Open.SwingStart : 0f;
         door.motion = DoorMotion.Lever;
         if (!movingDoors.Contains(door)) movingDoors.Add(door);
         TouchPassageRevision();
         DoorOpenBegan?.Invoke(door, source, latchDrawn);
         if (!latchDrawn) DoorHandleTurned?.Invoke(door, LockPoint(door, from));
-        if (door.pull)
-        {
-            // A step only when the opening leaf would meet the body.
-            var clear = ClearOfSwing(door, from, PlayerClearance, door.angle);
-            if ((clear - from).sqrMagnitude > 1e-6f) DoorPulled?.Invoke(door, clear);
-        }
-        if (door.wait <= 0f) BeginOpenSwing(door, 0f);
+        if (through) BeginThrough(door);
+        else if (door.wait <= 0f) BeginOpenSwing(door, 0f);
+    }
+
+    // A12's push back through the frame: the leaf runs to the frame at the open's starting speed, then
+    // TickSwing turns it over and the open's ease-out carries it to the far side. The noise goes with it.
+    void BeginThrough(Door door)
+    {
+        door.motion = DoorMotion.Through;
+        door.from = door.angle;
+        door.clock = 0f;
+        DoorMoved?.Invoke(door.position);
     }
 
     /// <summary>
     /// Shut a door from a point: the leaf turns back at once on today's
     /// smoothstep over Open.SwingSeconds (the close Foley is timed on it) and
-    /// lands in the frame, latched; the stops never let it through. Standing
-    /// in its way on the swing side raises DoorPulled, and the leaf rests on
-    /// the body until it is clear.
+    /// lands in the frame, latched. Standing in its way on the side it is open
+    /// to raises DoorPulled (the game's step aside, kept by Red's A12 answer),
+    /// and the leaf rests on the body until it is clear.
     /// </summary>
     void ShutDoor(Door door, Vector3 from)
     {
@@ -2963,7 +3247,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     /// Knock a door's leaf, for the picture only: the "Door leaf" child (not
     /// the hinge, so FrontRoomsDoorSound and the door's angle never see it)
     /// shifts <paramref name="metres"/> and turns <paramref name="degrees"/>
-    /// on its hinge toward the swing side (the stops hold the other way), then
+    /// on its hinge toward the swing side (A12: away from whoever moved it last), then
     /// springs back over <paramref name="springSeconds"/>. A new jolt replaces
     /// one still playing.
     /// </summary>
@@ -3107,14 +3391,23 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         };
     }
 
-    // Where a hold resumes after a release: the stage reached (cracks do not heal).
+    // The least a struck pane keeps: the stage reached (cracks do not heal). The kept progress (record.hold) is at least this.
     static float StageFloor(int stage) => stage >= 2 ? FrontRoomsShotTimings.GlassBreak.Crack2 : stage >= 1 ? FrontRoomsShotTimings.GlassBreak.Crack1 : 0f;
+
+    // Keep a struck pane's progress with its record (Red 2026-10-22): on a release or a pause, and when the window is torn
+    // down, never per Hold tick. The record exists from BeginGlassHold on; an unchanged hold writes nothing.
+    void KeepHold(Window window)
+    {
+        if (window.hold <= 0f || !glassBreaks.TryGetValue(window.edge, out var record) || record.hold == window.hold) return;
+        record.hold = window.hold;
+        glassBreaks[window.edge] = record;
+    }
 
     /// <summary>
     /// E went down on a pane: the hold begins. The impact is
     /// <paramref name="hitPoint"/> (the base-eye hit), kept 0.2 m inside the
-    /// exposed glass, while the pane is uncracked; once it has cracked the
-    /// cracks' own centre stays. <paramref name="strike"/> is the base-eye
+    /// exposed glass, at the first strike; once the pane has been struck
+    /// (any kept progress) that point stays. <paramref name="strike"/> is the base-eye
     /// forward (the pieces' impulse at the shatter). Raises GlassHoldStarted.
     /// Returns the window, or null when the collider is not a pane.
     /// </summary>
@@ -3122,7 +3415,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return null;
         var record = GlassBreakOf(window);
-        if (record.stage == 0)
+        if (record.stage == 0 && record.hold <= 0f)
         {
             var local = window.root.InverseTransformPoint(hitPoint);
             var m = FrontRoomsShotTimings.GlassBreak.ImpactMinFromFrame;
@@ -3201,12 +3494,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         return true;
     }
 
-    /// <summary>E let go (or the aim left the pane) before the break: the hold drops back to the stage reached, never below it.</summary>
+    /// <summary>E let go (or the aim left the pane) before the break: the progress is kept (Red 2026-10-22), the next hold resumes from it.</summary>
     public void ReleaseHold(Collider c)
     {
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
         if (window.hold > 0f && window.pushing) GlassHoldReleased?.Invoke(window.position);
-        window.hold = StageFloor(window.stage);
+        KeepHold(window);
         window.pushing = false;
         window.started = false;
     }
@@ -3220,6 +3513,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
     {
         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
         if (window.pushing && window.hold > 0f) GlassHoldReleased?.Invoke(window.position);
+        KeepHold(window);
         window.pushing = false;
     }
 
@@ -3325,6 +3619,12 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
                 done = u >= 1f;
                 break;
             }
+            case DoorMotion.Through:
+                // Pushed from ahead of it (A12): back to the frame at the open's starting speed; at the frame it turns over (below).
+                door.clock += dt;
+                target = Mathf.Max(0f, door.from - ThroughDegreesPerSecond * door.clock);
+                done = target <= 0f;
+                break;
             default:
                 return false;
         }
@@ -3340,6 +3640,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             // Resting on the body: the swing starts again from here once it moves away.
             if (door.motion == DoorMotion.Shut) door.shutPhase = InverseSmoothstep(Mathf.Clamp01(door.angle / ModuleUnits.DoorSwingDegrees));
             else if (door.motion == DoorMotion.Swing) StartSwing(door, door.to, door.bump);
+            else if (door.motion == DoorMotion.Through) { door.from = door.angle; door.clock = 0f; }
             else
             {
                 StartSwing(door, FrontRoomsShotTimings.DoorBreak.BounceRestDeg, false);
@@ -3348,6 +3649,14 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
             return true;
         }
         if (!done || Mathf.Abs(door.angle - target) > 1e-3f) return true;
+        if (door.motion == DoorMotion.Through)
+        {
+            // At the frame (A12): the far side becomes its side, and the open's ease-out carries it on, never latching.
+            door.swing = -door.swing;
+            PoseDoor(door);
+            StartSwing(door, ModuleUnits.DoorSwingDegrees, true);
+            return true;
+        }
         var latched = door.motion == DoorMotion.Shut;
         door.motion = DoorMotion.None;
         if (latched) DoorLatched?.Invoke(door, door.position);
@@ -3554,6 +3863,84 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
         // turned Dead would blink at once on its old build-time event).
         f.eventEnd = f.clock;
         f.nextEvent = f.clock + 2f + Rand(ref f.rng) * 14f;
+        // Nor the old mode's stutter, dropout or strike. The flash limiter starts its zigzag again from the new
+        // level (the switch itself is not counted) but keeps the changes it counted (lastStrike likewise).
+        f.gain = 1f;
+        f.episodeDips = 0;
+        f.dropping = false;
+        f.dropStart = f.dropEnd = float.NegativeInfinity;
+        f.strikeShown = false;
+        if (f.flash != null) f.flash.begun = false;
+    }
+
+    /// <summary>
+    /// M2 (RELAY §9.5): while a warning plays in the player's room, its Dead lamps strike no blink (held dark;
+    /// FrontRoomsWarnLamps holds its room set from stage 1 and lets go at stage 0). Kept by cell, so a rebuilt or
+    /// shifted chunk keeps it; a cell need not be built. Only Dead lamps read it: every other mode is unchanged.
+    /// </summary>
+    public void SetAmbientHold(GridCoord cell, bool hold)
+    {
+        if (hold) ambientHolds.Add(cell);
+        else ambientHolds.Remove(cell);
+        if (fixtureByCell.TryGetValue(cell, out var f)) f.ambientHold = hold;
+    }
+
+    /// <summary>SetAmbientHold for each of these cells.</summary>
+    public void SetAmbientHold(IReadOnlyList<GridCoord> cells, bool hold)
+    {
+        if (cells == null) return;
+        for (var i = 0; i < cells.Count; i++) SetAmbientHold(cells[i], hold);
+    }
+
+    /// <summary>Whether a cell's Dead strikes are held dark now (SetAmbientHold).</summary>
+    public bool AmbientHeld(GridCoord cell) => ambientHolds.Contains(cell);
+
+    /// <summary>The cells held now (tools and tests).</summary>
+    public int AmbientHoldCount => ambientHolds.Count;
+
+    /// <summary>
+    /// Tools and tests (M2): a built lamp's flicker this frame. <paramref name="gain"/> is the ambient dip on its
+    /// mode's level (1: none; Stutter's dips and sag, Failing's dropout); <paramref name="active"/> is a Stutter
+    /// episode playing, a Failing dropout held, or a Dead strike lit; <paramref name="held"/> counts the frames
+    /// the flash limiter has held the lamp back. False where there is no lamp.
+    /// </summary>
+    public bool LampAmbientForTools(GridCoord cell, out float gain, out bool active, out int held)
+    {
+        gain = 1f;
+        active = false;
+        held = 0;
+        if (!fixtureByCell.TryGetValue(cell, out var f)) return false;
+        gain = f.gain;
+        active = f.mode == 1 ? f.episodeDips > 0 : f.mode == 2 ? f.dropping : f.mode == 3 && f.baseLevel > 0f;
+        held = f.flash != null ? f.flash.held : 0;
+        return true;
+    }
+
+    /// <summary>Tools and tests: a built lamp's own clock and phase (its temperament's time is clock + phase). False where there is no lamp.</summary>
+    public bool LampClockForTools(GridCoord cell, out float clock, out float phase)
+    {
+        clock = phase = 0f;
+        if (!fixtureByCell.TryGetValue(cell, out var f)) return false;
+        clock = f.clock;
+        phase = f.phase;
+        return true;
+    }
+
+    /// <summary>
+    /// Tools and tests (M2): run a level sequence, one per frame <paramref name="dt"/> apart, through the flash
+    /// limiter as a fresh lamp would (no mode keeps it busy now, so this is how its hold is checked); the levels
+    /// it gives out go to <paramref name="output"/>. Returns the frames it held back.
+    /// </summary>
+    public static int LimitFlashesForTools(IReadOnlyList<float> levels, float dt, List<float> output)
+    {
+        var f = new Fixture();
+        output.Clear();
+        for (var i = 0; i < levels.Count; i++)
+        {
+            f.clock += dt;
+            output.Add(Limit(f, levels[i]));
+        }
+        return f.flash != null ? f.flash.held : 0;
     }
 
     /// <summary>
@@ -3671,8 +4058,8 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// Tools and tests: the nearest built door to a point that is shut, whole, not being broken and not held,
-    /// outside the start area, with the point on its swing side (<paramref name="swingSide"/>, a pull) or its
-    /// stop side (a push). Null when there is none.
+    /// outside the start area, with the point on its swing side (<paramref name="swingSide"/>; with A12 any E
+    /// from there first turns the leaf away, so both are pushes) or the other face. Null when there is none.
     /// </summary>
     public Door NearestClosedDoorForTools(Vector3 near, bool swingSide)
     {

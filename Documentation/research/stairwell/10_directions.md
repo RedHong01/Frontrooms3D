@@ -342,14 +342,22 @@ B and C: the same sign and Relay numbers; lock 2.9–3.5 : 1 (B), 2.7–3.8 : 1 
     - keep the extra glass guard: same intent, small cost;
     - `FrontRoomsExitSign.EmissionGain` is already a public field: set 2.0 before `Configure` (Configure applies it; setting the LIT lock re-applies too);
     - **ask for a map event, not more map-spawned kits:** `ExitDoorBuilt(door, hinge, leaf, frame)` plus a lock-state signal (`ExitLockChanged(door, locked)`, or a readable state with the existing door events). The visual dressing then attaches the steel leaf/frame materials, closer, NO REENTRY plate and A13 chain/padlock itself, parented to the leaf and frame, so they swing with the leaf and go with NextFloor.
-- **Map API for the EXIT dressing (关卡设计 10-22 14:3x; lands in its C22 round 3, proj3):**
-  - `public event Action<Door, Transform, Transform, Transform> ExitDoorBuilt` (door, hinge, leaf, frame). It is raised from BuildEdge on every build of the EXIT edge: after rebuilds and on every floor. "frame" is the map's parent for the jambs and head trim.
-  - `public bool ExitLocked` (the A13 floor-key lock; read it inside the ExitDoorBuilt handler for the initial state) and `event Action<Door, bool> ExitLockChanged`, which fires only on real changes. It stays false on every floor until the floor key lands (教程设计's M rows, after C22).
-  - The crossbar stays map-spawned, as the leaf's child "EXIT crossbar"; the chain finds it there.
+- **Map API for the EXIT dressing (关卡设计 10-22 14:3x, corrected by its C22 round 3 at 14:58; built in its clone proj3, lands with C22):**
+  - `public event Action<Door, Transform, Transform, Transform> ExitDoorBuilt` (door, hinge, leaf, frame).
+    - **Timing (round 3):** it is raised from `Build`, right after X's chunk registers (next to `WindowBuilt`), **not** from BuildEdge. So `ExitDoor`, `ExitSign`, `ExitCrossbar` and `ExitLocked` already answer inside the handler, and a failed build raises nothing.
+    - Triggers: the first build, `RebuildChunk`, a chunk streaming back, and every floor after `NextFloor`. It is not raised on a drop.
+  - **Parenting (round 3):**
+    - Parent the dressing to `leaf` = the unscaled "Leaf rig" (it swings with the leaf) and to `frame` = "EXIT frame N-X". Never parent to `door.leaf` (the scaled cube).
+    - Each build gives fresh transforms; the old ones go with the chunk or NextFloor, and there is no release event. So dress on every build, and subscribe before `Begin`.
+    - The door's shut frame in frame space is (`hinge.localPosition`, `door.closed`). For the EXIT (swing +1) the kit's door root is that frame mirrored in X.
+  - `public bool ExitLocked` (the A13 floor-key lock; read it inside the ExitDoorBuilt handler for the initial state) and `event Action<Door, bool> ExitLockChanged`, which fires only on real changes. `SetExitLocked(bool)` is called by the floor-key work (today only by tests). It stays false on every floor until the floor key lands (教程设计's M rows, after C22).
+    - `ExitLocked` resets to false on `SetExitArea`, `ClearExitArea` and `NextFloor` **without** an event, so read it in every ExitDoorBuilt handler.
+    - A locked EXIT behaves like any locked map door: the prompt reads "LOCKED · NEEDS THIS ZONE'S KEY" until the floor-key string exists, E rattles, and N's zone key does not open it.
+  - The crossbar stays map-spawned, as the leaf's child named exactly "EXIT crossbar" (round 3; it was "EXIT crossbar N-X"). The chain finds it there.
   - The seal (ExitSealed / ExitDoorSealed) is separate.
   - The dressing objects are children of leaf and frame, so they swing with the leaf and leave with the chunk and NextFloor.
   - EmissionGain 2.0 is set before Configure.
-- **系统设计:** confirm the Floor 1 rule (no key under A13 → its EXIT shows UNLOCKED from the start).
+- ~~**系统设计:** confirm the Floor 1 rule (no key under A13 → its EXIT shows UNLOCKED from the start).~~ **Answered by 系统设计, 10-22 12:5x:** Floor 1's EXIT **starts LOCKED** (chain and padlock), and the station key unlocks it. The same rule holds on every floor. Interim case: if C22 ships before the tutorial's lock (sheet A Phase 0 has no padlock), the EXIT has no lock yet and reads UNLOCKED, so keep both states switchable.
 - **声音设计:** steel-door Foley on the exit door (01 §0.9a); chain rattle on a locked push, chain drop on unlock; the far door's heavy pull, whistle and 1–2 mm give during a hold; echo stays the player's own.
 - **叙事 / 平面视觉:**
   - Numbering: **DECIDED by Red 10-22 12:15 (叙事设计 chat, Q1 = C28): `LEVEL 0`, `LEVEL B1`, `B2` …, the same on CAUGHT via `FloorLabel()`.** The stencil placeholders 3 → 4 in the renders become `0` (exit landing) / `B1` (far landing) in the look pass.

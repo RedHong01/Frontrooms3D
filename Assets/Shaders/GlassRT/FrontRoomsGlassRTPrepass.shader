@@ -80,7 +80,7 @@ Shader "Hidden/FrontRooms/GlassRTPrepass"
                 float eye = input.eye;
                 float sceneRaw = LOAD_TEXTURE2D_X(_FRGlassRTSceneDepth, uint2(input.positionCS.xy)).r;
                 float sceneEye = LinearEyeDepth(sceneRaw, _ZBufferParams);
-                clip(sceneEye + 0.01 + 0.002 * eye - eye);   // behind an opaque occluder: not visible, not traced
+                clip(sceneEye + 0.001 + 0.0005 * eye - eye);   // behind an opaque occluder (incl. the window stops 3 mm in front of the glass): not traced
                 outDepth = eye;
                 outNormal = half4(normalize(input.normalWS), _Smoothness);
             }

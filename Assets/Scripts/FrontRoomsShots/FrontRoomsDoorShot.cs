@@ -18,6 +18,8 @@ public enum DoorBeat { Pocket, KeyApproach, KeyInsert, PinCatch, KeyTurn, BoltRe
 /// door commits at 0.86 s (DoorUnlocked, the bolt's jolt); a push-side door's knob turns and the leaf leaves
 /// the frame at 1.00 s, away from the camera; the camera returns over 1.15–1.55 s, and a pull-side door
 /// opens normally at 1.55 s, once the camera is home (the leaf never moves toward the camera in the shot).
+/// Since A12 (double-acting doors) the map turns the shut leaf away from the key's side when the turn
+/// starts, so every unlock the game starts is a push; the pull branch stays for a leaf out of the frame.
 ///
 /// The driver owns the curves (the rig holds weight 1), the locks (move until the commit, and to 1.45 s
 /// while there is a picture to protect; look to 1.30 s, back by 1.50 s) and the cancel policy: S or a
@@ -159,7 +161,8 @@ public sealed class FrontRoomsDoorShot
 
     /// <summary>
     /// The key turn's step-in (plan §3.2.1): where the body would stand, Unlock.StandDistance from the lock
-    /// along the face normal (on the pull side, clear of the leaf's sweep). True with <paramref name="stand"/>
+    /// along the face normal (with A12 always the push side: the key turn turns the leaf away first; the pull
+    /// branch stays for a leaf caught out of the frame). True with <paramref name="stand"/>
     /// only when that is a step toward or along the door within Unlock.StepInMaxForward / StepInMaxLateral and
     /// more than 5 cm; never while a door pull's step is running (it keeps the mover).
     /// </summary>
@@ -341,8 +344,8 @@ public sealed class FrontRoomsDoorShot
 
         if (t >= U.ReturnEnd)
         {
-            // Pull side: the camera is home, so the leaf may come toward it now: a normal open (the
-            // handle, then DoorPulled if the body is in the sweep, and the leaf after the pull beat).
+            // Pull side (since A12 only a leaf that was out of the frame when the key turned): the camera is
+            // home, so the leaf may come toward it now: a normal open, the handle and then the leaf.
             if (!opened)
             {
                 opened = true;

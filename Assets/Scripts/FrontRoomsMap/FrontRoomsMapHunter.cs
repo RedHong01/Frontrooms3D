@@ -46,7 +46,7 @@ public sealed class FrontRoomsMapHunter
     const float SqueezeReach = .6f;
     // After the last blow it waits for the leaf to fall open: the throw past the stop and the bounce to rest.
     const float DoorFallSeconds = FrontRoomsShotTimings.DoorBreak.ThrowSeconds + FrontRoomsMapWorld.DoorBreakBounceSeconds;
-    // Breaking from the stop side it stands this far in front of the opening; from the swing side, beside the latch, out of the leaf's sweep.
+    // It shoulders a shut door this far in front of the opening (A12: the leaf bursts away from it); only for a leaf caught partly open on its side it stands beside the latch, out of the sweep.
     const float BreakFaceDistance = .45f;
     const float ReplanSeconds = .35f;
     const float LeashCheckSeconds = 1f;
@@ -132,7 +132,7 @@ public sealed class FrontRoomsMapHunter
     bool hasLeg;
     float straightCheck;
     FrontRoomsMapWorld.Door breakingDoor;
-    // Where it faces while it breaks: the door from the stop side, the lock from the swing side.
+    // Where it faces while it breaks: the door; the lock for a leaf caught partly open on its side.
     Vector3 breakFacing;
     HunterState resumeState;
     bool caught;
@@ -702,10 +702,11 @@ public sealed class FrontRoomsMapHunter
                 // The chunk that owns this door was dropped under the path: plan again over what is built.
                 return !Replan(here);
             }
-            if (door.broken)
+            if (door.broken || door.open)
             {
-                // Already broken, its leaf still falling or resting on a body short of passable:
-                // wait at the stance, no new blows. It walks through once the leaf swings clear.
+                // Already broken, or opened by the player (A12: a leaf opened from the far side swings toward it),
+                // its leaf still swinging or resting on a body short of passable: wait at the stance, out of the
+                // leaf's sweep when it is on this side, no blows. It walks through once the leaf swings clear.
                 MoveDirect(BreakStance(door, here, next, out _), speed, dt);
                 return false;
             }
@@ -713,6 +714,8 @@ public sealed class FrontRoomsMapHunter
             {
                 breakingDoor = door;
                 breakFacing = facing;
+                // A12: a shut leaf goes away from it, so the blows jolt it that way and it bursts into the next room.
+                world.SwingAwayFrom(door, position);
                 world.MarkBeingBroken(door, true);
                 blowsStruck = 0;
                 BlowIndex = -1;
@@ -1072,17 +1075,18 @@ public sealed class FrontRoomsMapHunter
 
     /// <summary>
     /// Where to stand to break a shut door from cell <paramref name="here"/>,
-    /// and which way to face. From the stop side it shoulders the door in
-    /// front of the opening, and the leaf bursts away from it. From the swing
-    /// side the leaf will come toward it: it stands beside the latch, out of
-    /// the leaf's sweep, facing the lock, and rips it open.
+    /// and which way to face. It shoulders the door in front of the opening,
+    /// and the leaf bursts away from it: a leaf in the frame always goes to
+    /// the far side (A12). Only a leaf caught partly open on its side comes
+    /// toward it: then it stands beside the latch, out of the leaf's sweep,
+    /// facing the lock, and rips it open.
     /// </summary>
     Vector3 BreakStance(FrontRoomsMapWorld.Door door, GridCoord here, GridCoord next, out Vector3 facing)
     {
         var into = Flat(world.CellCenter(next) - world.CellCenter(here)).normalized;
         var face = world.CrossingPoint(here, next) - into * BreakFaceDistance;
         facing = into;
-        if (!FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(here))) return face;
+        if (FrontRoomsMapWorld.IsLatched(door) || !FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(here))) return face;
         // The body plus 5 cm: MoveDirect calls a point reached 4 cm short of it.
         var stance = FrontRoomsMapWorld.ClearOfSwing(door, face, Radius + .05f);
         var toLock = Flat(FrontRoomsMapWorld.LockPoint(door, stance) - stance);
@@ -1100,8 +1104,10 @@ public sealed class FrontRoomsMapHunter
     void TickBreak(float dt)
     {
         // Opened under it (it was already swinging when the break began): nothing to break, walk on through.
+        // A12: a leaf opened from the far side comes toward it and may rest on its body short of passable; it
+        // is open all the same, so it stops and steps clear of the sweep (Follow) instead of breaking it.
         // Either way it goes back to what it was doing when it began (a hunt or a chase: nothing else breaks doors).
-        if (breakingDoor != null && !breakingDoor.broken && world.PassageBetween(breakingDoor.a, breakingDoor.b) == FrontRoomsMapWorld.Passage.Open)
+        if (breakingDoor != null && !breakingDoor.broken && (breakingDoor.open || world.PassageBetween(breakingDoor.a, breakingDoor.b) == FrontRoomsMapWorld.Passage.Open))
         {
             StopBreaking();
             SetState(resumeState);
@@ -1109,13 +1115,16 @@ public sealed class FrontRoomsMapHunter
         }
         // Blows every 0.5 s from 0.5 s in (0, 1, ... BlowCount - 2); the last one
         // (BlowCount - 1) a beat before the door gives at breakDoorSeconds.
-        // Each jolts the leaf toward its swing side (the map's picture of the blow).
+        // Each jolts the leaf toward its swing side, away from the Relay since A12 (the map's picture of the blow).
         var final = BlowCount - 1;
         var due = StateTime + TimeSlack >= BreakSeconds - FinalBlowLead ? final : Mathf.Min(final - 1, Mathf.FloorToInt((StateTime + TimeSlack) / BlowInterval) - 1);
         while (breakingDoor != null && blowsStruck <= due)
         {
             BlowIndex = blowsStruck++;
             DoorBlow?.Invoke(breakingDoor.position);
+            // Again at every blow, not only as the break begins: a leaf still shutting then (out of the frame, so it kept
+            // its side) latches during the break and must then jolt away like any shut leaf (A12 review, finding 4).
+            world.SwingAwayFrom(breakingDoor, position);
             world.JoltForBlow(breakingDoor, BlowIndex, BlowCount);
         }
         if (StateTime + TimeSlack < BreakSeconds) return;

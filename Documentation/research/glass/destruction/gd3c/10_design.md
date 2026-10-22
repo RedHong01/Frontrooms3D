@@ -17,6 +17,7 @@ Files in this folder:
 | `README_CONTRACT_map.md` | Why each hunk exists |
 | `images/VL359–VL364_*.jpg` | Verification images in Shot format. Their rows are in `W/vl_pending/glass_debris.md` |
 | `data/` | Harness logs and records for both runs (`base_*` is main as it is; `kept_*` has the contract applied in the clone), plus the map test result |
+| `20_build.md`, `FOR_RED.md` | **Build stage (15:2x):** what was built from this design, tests, numbers, open defects; Red's open calls. Build images `images/VL359–VL364_build_*.jpg`, data `data/build_*`, package `W/apply/gd3c_debris` |
 
 ---
 

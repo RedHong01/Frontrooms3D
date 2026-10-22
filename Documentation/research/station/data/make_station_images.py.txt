@@ -1,45 +1,36 @@
-"""Security desk (station) blockouts, workflow station-look stage 2: framed verification images (SHOT_FORMAT, shotframe).
+"""Security desk (station) blockouts r7 (fix stage after the critics): framed verification images (SHOT_FORMAT, shotframe).
 
-usage: venv/bin/python make_station_images.py <run dir> <metrics json> <images dir>
-Writes (our own renders; JPG q92, the walk map PNG):
-  station_sheet_<plan>.jpg        the beats of one plan, 3 x 3 (VL354)
-  station_blockout_compare.jpg    8 plans x junction, reveal, take, after the take, plan (VL354)
-  station_c1_junction.jpg         check 1a: E1 from the junction 4.5 m out, and what moves inside it (VL355)
-  station_c1_board_after.jpg      check 1c: the room from the board after the take, and squinted (VL355)
-  station_c2_key_light.jpg        check 2: the take frame, and the set's share of the light (VL356)
-  station_c3_take_frame.jpg       check 3: one step back from the board, before and after the take (VL356)
-  station_c4_wiggle.jpg           check 4: the key board from E1 and from E2 (VL357)
-  station_c5_walk.png             check 5: capsule clearance over the plan (VL357)
-  station_c6_photosafety.jpg      check 6: the beacon view at every card and dead (VL358)
+usage: venv/bin/python make_station_images_r7.py <r7 run dir> <r7 metrics json> <r6 run dir> <images dir> <load text>
+Every image is our own render, framed by shotframe (header band, logo, sentence, meta; captions per tile). JPG q90, the walk map PNG.
 """
 import json
 import os
 import sys
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, '/Users/redwang/FrontRoomsVisualWork/tools/shotframe')
 import shotframe as S  # noqa: E402
 
-R, MJ, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
+R, MJ, R6, OUT, LOAD = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
 os.makedirs(OUT, exist_ok=True)
 M = json.load(open(MJ))
-PLANS = [('W', 'W as drawn'), ('Wp', "W' (30_look)"), ('Wp2', "W' rev 2 strip 2.0 m"), ('Wp3', "W' rev 3 E1 on axis"),
-         ('D', 'D as drawn'), ('Dp', "D' (30_look)"), ('Dp3', "D' rev 3 E1 on axis"), ('H', 'H as drawn')]
-PLANS = [(p, n) for p, n in PLANS if p in M['plans']]
-META_TAIL = 'clone W/proj_station · FrontRoomsStationLookdev run r6 · eye 1.62 m, vFOV 76, game post · UNDER LOAD (load 51-158)'
-DATE = '2026-10-22 12:30'
-REL = 'research/station/images/'
+P = M['plans']
 LUM = np.array([.2126, .7152, .0722], np.float32)
+DATE = '2026-10-22 14:13-14:28'
+REL = 'research/station/images/'
+TAIL = 'clone W/proj_station · FrontRoomsStationLookdev r7 · V3 r7 (k 6, floor 0.81, lum kept, 60 % white, cosine cookie) · eye 1.62 m, vFOV 76, game post · UNDER LOAD (' + LOAD + ')'
+NAMES = {'Wp4': "W' rev 4 (B, Floor 1)", 'Wp4o': "W' rev 4, (1,1) Off", 'Dp4': "D' rev 4 (A, Office)", 'H': 'H (long rooms)'}
+MAIN = [p for p in ('Wp4', 'Dp4', 'H') if p in P]
 
 
-def P(plan, f):
+def pr(plan, f):
     return os.path.join(R, plan, f)
 
 
-def met(plan):
-    return json.load(open(P(plan, 'metrics.json')))
+def p6(plan, f):
+    return os.path.join(R6, plan, f)
 
 
 def lin(c):
@@ -78,10 +69,12 @@ def pct(v):
     return '%d %%' % round(100 * v) if v is not None else '-'
 
 
-def save(img, name, title, sentence, vl, status):
-    out = S.frame(img, title, sentence, [vl, DATE, 'GAME VISUAL', REL + name, META_TAIL], status)
+def save(img, name, title, sentence, vl, status, tail=None):
+    out = S.frame(img, title, sentence, [vl, DATE, 'GAME VISUAL', REL + name, tail or TAIL], status)
+    if out.width > 1920:
+        out = out.resize((1920, round(out.height * 1920 / out.width)), Image.LANCZOS)
     path = os.path.join(OUT, name)
-    S.save(out, path)
+    S.save(out, path, quality=85)
     print('wrote', path, out.size)
     return path
 
@@ -98,52 +91,60 @@ def crop_box(mask, aspect=16 / 9., grow=1.7, minh=200):
     return (x0, y0, x1, y1)
 
 
-# ------------------------------------------------------------------ per-plan sheets (VL354)
-for p, name in PLANS:
-    m, r = met(p), M['plans'][p]
-    tiles = [
-        (P(p, 'approach_far_c2.png'), 'Junction 4.5 m out', 'screen %d px through E1 · %s of E1 moves' % (r['c1a_far_screen_px_through_E1'], pct(r['c1a_far_moving_frac_of_E1']))),
-        (P(p, 'approach_near_c2.png'), '1.5 m out', 'screen %d px · %s of E1 moves' % (r['c1a_near_screen_px_through_E1'], pct(r['c1a_near_moving_frac_of_E1']))),
-        (P(p, 'reveal.png'), 'Reveal', 'set %.0f deg off E1 axis, %.1f m' % (m['set_off_e1_axis_deg'], m['e1_to_screen_m'])),
-        (P(p, 'beacon_tvonly.png'), 'The set alone', 'all lamps off, mean card'),
-        (P(p, 'beacon_lamps.png'), 'Tutorial lamps', 'lamps %s (S steady, D dim, O none; rows from S)' % m['lamps']),
-        (P(p, 'take_before.png'), 'Take, before', 'key %.0f deg off screen axis, %.2f m; set gives %s' % (m['key_off_screen_axis_3d_deg'], m['key_dist_3d_m'], pct(r['c2_board_tv_share']))),
-        (P(p, 'take_after.png'), 'Take, after', 'light on the board -%s in one change' % pct(r['c3_board_drop_E'])),
-        (P(p, 'board_after.png'), 'After the take', 'exits %.2f x the room mean E' % r['c1c_after_exits_over_room']),
-        (P(p, 'plan.png'), 'Plan', 'E1 %.2f m, E2 %.2f m, seed %d' % (m['e1_width'], m['e2_width'], m['seed'])),
-    ]
-    v = r['verdicts']
-    sent = ('Junction %s, near %s; from E1 %s; exits after %s; key light %s; take %s (literal %s); wiggle %s; paths %s; photosafety %s.'
-            % (v['c1a_far'], v['c1a_near'], v['c1b'], v['c1c'], v['c2'], v['c3_fallback'], v['c3_literal'], v['c4'], v['c5'], v['c6']))
-    ev = S.grid(tiles, cols=3, width=1920)
-    save(ev, 'station_sheet_%s.jpg' % p, 'Station %s' % name, sent, 'VL354', 'FINDING')
+def met(plan):
+    return json.load(open(pr(plan, 'metrics.json')))
 
-# ------------------------------------------------------------------ compare sheet (VL354)
-cols = [('approach_far_c2.png', 'junction'), ('reveal.png', 'reveal'), ('take_before.png', 'take'), ('board_after.png', 'after'), ('plan.png', 'plan')]
+
+def worst_card(plan):
+    rows = P[plan]['c3_per_card']
+    return min(rows, key=lambda r: r['drop_disp'])
+
+
+# ------------------------------------------------------------------ VL354: per-plan sheets and the r6 / r7 compare
+for p in MAIN:
+    r, m = P[p], met(p)
+    wc = worst_card(p)
+    v = r['verdicts']
+    tiles = [
+        (pr(p, 'approach_far_c2.png') if os.path.exists(pr(p, 'approach_far_c2.png')) else pr(p, 'approach_near_c2.png'), 'Junction 4.5 m out',
+         'screen %s px through E1 · %s of E1 moves' % (r.get('c1a_far_screen_px_through_E1', '-'), pct(r.get('c1a_far_moving_frac_of_E1')))),
+        (pr(p, 'reveal.png'), 'Reveal', 'set %.1f deg off E1 axis, %.1f m' % (m['set_off_e1_axis_deg'], m['e1_to_screen_m'])),
+        (pr(p, 'beacon_tvonly.png'), 'The set alone', 'all lamps off, card 1'),
+        (pr(p, 'take_before_c%d.png' % wc['card']), 'Take, worst card %d' % wc['card'], 'key %.0f deg off axis, %.2f m; set %s on that card' % (
+            m['key_off_screen_axis_3d_deg'], m['key_dist_3d_m'], pct(r['c2_per_card'][wc['card'] - 1]['tv_share']))),
+        (pr(p, 'take_after.png'), 'Take, after', 'board -%s seen (L* %.0f -> %.0f), -%s in E' % (pct(wc['drop_disp']), wc['L_before'], wc['L_after'], pct(wc['drop_E']))),
+        (pr(p, 'board_after.png'), 'After the take', 'exits %.2f x room (seen); E1 %.3f, E2 %.3f' % (r.get('c1c_disp_exits_over_room') or 0, r.get('c1c_disp_E1_meanY') or 0, r.get('c1c_disp_E2_meanY') or 0)),
+        (pr(p, 'turn_after.png'), 'Turn to the dead set', 'W1 dip 0.70: %s of the frame changes >= 10 %%' % pct(r['c7_w1'].get('turn_70_frac_ge10'))),
+        (pr(p, 'timing_t050.png'), 'Take + 0.50 s', 'light at %s, the key in hand' % pct(0.125)),
+        (pr(p, 'plan.png'), 'Plan', 'E1 %.2f m, E2 %.2f m, seed %d; lamps %s' % (m['e1_width'], m['e2_width'], m['seed'], m['lamps'])),
+    ]
+    sent = ('Junction %s, near %s; from E1 %s; exits seen %s; key light %s; take seen %s (worst %s); wiggle %s; paths (1.2 m) %s; photosafety %s; W1 %s.'
+            % (v['c1a_far'], v['c1a_near'], v['c1b'], v['c1c'], v['c2'], v['c3'], pct(r['c3_worst_drop_disp']), v['c4'], v['c5'], v['c6'], v['c7']))
+    save(S.grid(tiles, cols=3, width=1920), 'station_r7_sheet_%s.jpg' % p, 'Station %s' % NAMES[p], sent, 'VL354', 'FINDING')
+
+rows6 = [('Wp3', "W' rev 3 (r6)"), ('Wp4', "W' rev 4 (r7)"), ('Dp3', "D' rev 3 (r6)"), ('Dp4', "D' rev 4 (r7)"), ('H', 'H (r6)'), ('H', 'H (r7)')]
 tiles = []
-for p, name in PLANS:
-    m, r = met(p), M['plans'][p]
-    data = {
-        'junction': 'screen %d px' % r['c1a_far_screen_px_through_E1'],
-        'reveal': 'set %.0f deg off E1' % m['set_off_e1_axis_deg'],
-        'take': 'TV %s of the key light' % pct(r['c2_board_tv_share']),
-        'after': 'exits %.2f x room' % r['c1c_after_exits_over_room'],
-        'plan': '%d x %d cells' % (round(m['room_w_m'] / 3), round(m['room_d_m'] / 3)),
-    }
-    for f, c in cols:
-        tiles.append((P(p, f), (name + ' ' + c) if c == 'junction' else c, data[c]))
-ev = S.grid(tiles, cols=5, width=1920)
-save(ev, 'station_blockout_compare.jpg', 'Station blockouts, 8 plans',
-     'Rows: W, D and H as drawn, the 30_look amendments, and the revisions this blockout found; columns: the junction, the reveal, the take, the room after the take, the plan.',
+for i, (p, name) in enumerate(rows6):
+    is6 = '(r6)' in name
+    base = R6 if is6 else R
+    fj = os.path.join(base, p, 'approach_far_c2.png')
+    if not os.path.exists(fj):
+        fj = os.path.join(base, p, 'approach_near_c2.png')
+    take = os.path.join(base, p, 'take_before.png' if is6 else 'take_before_c1.png')
+    tiles += [(fj, name + ' junction', ''), (os.path.join(base, p, 'reveal.png'), 'reveal', ''), (take, 'take, card 1', ''),
+              (os.path.join(base, p, 'board_after.png'), 'after', ''), (os.path.join(base, p, 'plan.png'), 'plan', '')]
+save(S.grid(tiles, cols=5, width=1920), 'station_r7_compare.jpg', 'Station blockouts, before and after the critics',
+     'Each r6 plan above its r7 fix: putty panel without glass, white tag, conduit from below, backer, chair out of the strip, rows turned, E2 moved in D, light per V3 r7.',
      'VL354', 'FINDING')
 
-# ------------------------------------------------------------------ check 1a: the junction (VL355)
+# ------------------------------------------------------------------ VL355: junction (1a) and the exits after the take (1c, displayed)
 tiles = []
-for p, name in PLANS:
-    r = M['plans'][p]
-    portal = idmask(P(p, 'approach_far_id.png'), (0, 0, 1))
+for p in MAIN:
+    r = P[p]
+    f = 'approach_far' if os.path.exists(pr(p, 'approach_far_c1.png')) else 'approach_near'
+    portal = idmask(pr(p, f + '_id.png'), (0, 0, 1))
     box = crop_box(portal)
-    imgs = [rgb(P(p, 'approach_far_' + c + '.png')) for c in ('c1', 'c2', 'c5')]
+    imgs = [rgb(pr(p, f + '_' + c + '.png')) for c in ('c1', 'c2', 'c5')]
     ys = [lin(i) @ LUM for i in imgs]
     hi, lo = np.maximum(np.maximum(ys[0], ys[1]), ys[2]), np.minimum(np.minimum(ys[0], ys[1]), ys[2])
     mv = ((hi - lo) / np.maximum(hi, 1e-4) >= .20) & portal & (hi > .01)
@@ -152,83 +153,98 @@ for p, name in PLANS:
     ov = enc(grey * .8)
     ov[mv] = np.array([1.0, .85, .1])
     ov[portal & ~mv] = ov[portal & ~mv] * .7 + np.array([.15, .25, .55]) * .3
-    a = Image.fromarray((base * 255).astype(np.uint8)).crop(box)
-    b = Image.fromarray((ov * 255).astype(np.uint8)).crop(box)
-    tiles.append((a, name, 'E1 from 4.5 m, mean-bright card'))
-    tiles.append((b, 'moves', 'screen %d px, %s of E1 swings >= 20 %%' % (r['c1a_far_screen_px_through_E1'], pct(r['c1a_far_moving_frac_of_E1']))))
-ev = S.grid(tiles, cols=4, width=1920)
-save(ev, 'station_c1_junction.jpg', 'Light leaving the room, junction',
-     'From 4.5 m out the set adds 0.000 at E1; the screen shows through E1 only when it sits on E1\'s axis (rev 3, H); at 19-23 deg the jamb hides it.',
-     'VL355', 'PARTIAL')
+    tiles.append((Image.fromarray((base * 255).astype(np.uint8)).crop(box), NAMES[p], 'E1 from 4.5 m, card 2'))
+    tiles.append((Image.fromarray((ov * 255).astype(np.uint8)).crop(box), 'moves', 'screen %s px, %s of E1 swings >= 20 %%' % (r.get('c1a_far_screen_px_through_E1', '-'), pct(r.get('c1a_far_moving_frac_of_E1')))))
+save(S.grid(tiles, cols=2, width=1920), 'station_r7_c1_junction.jpg', 'Light leaving the room, junction',
+     'With the set on E1\'s axis the screen itself shows through E1 from the last junction; the set\'s light still adds nothing at E1.', 'VL355', 'PASS')
 
-# ------------------------------------------------------------------ check 1c: after the take (VL355)
 tiles = []
-for p, name in PLANS:
-    r = M['plans'][p]
-    im = Image.open(P(p, 'board_after.png')).convert('RGB')
-    y = lin(rgb(P(p, 'board_after.png'))) @ LUM
+for p in MAIN:
+    r = P[p]
+    im = rgb(pr(p, 'board_after.png'))
+    y = lin(im) @ LUM
     k = 24
     sq = y[:1080 - 1080 % k, :].reshape(1080 // k, k, 1920 // k, k).mean(axis=(1, 3))
-    sqi = Image.fromarray((enc(np.repeat(sq[..., None], 3, -1)) * 255).astype(np.uint8)).resize((1920, 1080), Image.NEAREST)
-    tiles.append((im, name, 'from the board, set dead'))
-    tiles.append((sqi, 'squint', 'exits %.2f x room mean E (bar 1.5)' % r['c1c_after_exits_over_room']))
-ev = S.grid(tiles, cols=4, width=1920)
-save(ev, 'station_c1_board_after.jpg', 'Exits after the take',
-     'Once the set dies, the two exits are 1.35-1.96 x the room\'s mean light from the board; only D as drawn misses the 1.5 bar.',
-     'VL355', 'PARTIAL')
+    sqi = np.repeat(np.repeat(enc(sq), k, 0), k, 1)
+    sqi = np.repeat(sqi[..., None], 3, -1)
+    lens = idmask(pr(p, 'board_idlens.png'), (1, 0, 0))
+    m1, m2 = idmask(pr(p, 'board_id.png'), (0, 0, 1)), idmask(pr(p, 'board_id.png'), (0, 1, 0))
+    H_, W_ = sqi.shape[:2]
+    sqi[lens[:H_, :W_]] = sqi[lens[:H_, :W_]] * .3 + np.array([.9, .2, .2]) * .7
+    edge1 = m1[:H_, :W_] & ~np.roll(m1[:H_, :W_], 3, 0)
+    edge2 = m2[:H_, :W_] & ~np.roll(m2[:H_, :W_], 3, 0)
+    sqi[edge1] = [.3, .5, 1.]; sqi[edge2] = [.3, 1., .5]
+    tiles.append((pr(p, 'board_after.png'), NAMES[p], 'from the board, set dead'))
+    tiles.append((Image.fromarray((np.clip(sqi, 0, 1) * 255).astype(np.uint8)), 'squint (lenses red)',
+                  'exits %.2f x room seen; brightest 2 %%: %s exits; E1 %.3f vs E2 %.3f' % (
+                      r.get('c1c_disp_exits_over_room') or 0, pct(r.get('c1c_disp_top2pct_in_exits_lens_excluded')), r.get('c1c_disp_E1_meanY') or 0, r.get('c1c_disp_E2_meanY') or 0)))
+v1c = [P[p]['verdicts']['c1c'] for p in MAIN]
+save(S.grid(tiles, cols=2, width=1920), 'station_r7_c1_board_after.jpg', 'Exits after the take, as seen',
+     'Judged on the displayed frame with lamp lenses left out: the exits are brighter than the room, but the brightest shapes only where the corridor lamp is Steady.',
+     'VL355', 'PARTIAL' if 'PARTIAL' in v1c or 'FAIL' in v1c else 'PASS')
 
-# ------------------------------------------------------------------ check 2: key light (VL356)
+# ------------------------------------------------------------------ VL356: key light share, the take on the worst card, the V3 grid
 tiles = []
-for p, name in PLANS:
-    m, r = met(p), M['plans'][p]
-    Ea, En = Emap(P(p, 'take_E_all.f32')), Emap(P(p, 'take_E_notv.f32'))
+for p in MAIN:
+    m, r = met(p), P[p]
+    Ea, En = Emap(pr(p, 'take_E_all.f32')), Emap(pr(p, 'take_E_notv.f32'))
     share = np.clip((Ea - En) / np.maximum(Ea, 1e-4), 0, 1)
     col = (ramp(share) * 255).astype(np.uint8)
-    tiles.append((P(p, 'take_before.png'), name, 'key %.0f deg off axis, %.2f m, %.2f m ahead' % (m['key_off_screen_axis_3d_deg'], m['key_dist_3d_m'], m['key_ahead_of_screen_plane_m'])))
-    tiles.append((Image.fromarray(col).resize((1920, 1080), Image.NEAREST), 'set share',
-                  'board %s mean card; darkest %s, %s lum-kept' % (pct(r['c2_board_tv_share']), pct(r['c2_board_tv_share_min_card_as_specified']), pct(r['c2_board_tv_share_min_card_lum_preserving']))))
-ev = S.grid(tiles, cols=4, width=1920)
-save(ev, 'station_c2_key_light.jpg', 'Key lit by the set',
-     'Share of each pixel\'s light that comes from the set (dark blue 0, yellow 0.75, cream 1): the key board gets 82-86 % from it everywhere except W as drawn (45 %).',
-     'VL356', 'FLAG')
+    tiles.append((pr(p, 'take_before.png'), NAMES[p], 'key %.0f deg off axis, %.2f m, %.2f m ahead' % (m['key_off_screen_axis_3d_deg'], m['key_dist_3d_m'], m['key_ahead_of_screen_plane_m'])))
+    tiles.append((Image.fromarray(col).resize((1920, 1080), Image.NEAREST), 'set share, loop mean',
+                  'board %s; darkest card %s; E on it %.2f (target 0.3)' % (pct(r['c2_board_tv_share_mean_card']), pct(r['c2_board_tv_share_min_card']), r['c2_board_E_tv_darkest_card'])))
+save(S.grid(tiles, cols=2, width=1920), 'station_r7_c2_key_light.jpg', 'Key lit by the set',
+     'Share of each pixel\'s light that comes from the set (dark blue 0, yellow 0.75, cream 1), with V3 r7: the key board gets most of its light from the set on every card.', 'VL356',
+     'PASS' if all(P[p]['verdicts']['c2'] == 'PASS' for p in MAIN) else 'FLAG')
 
-# ------------------------------------------------------------------ check 3: the take frame (VL356)
 tiles = []
-for p, name in PLANS:
-    m, r = met(p), M['plans'][p]
-    tiles.append((P(p, 'take_wide_before.png'), name, 'set %.0f deg off the view' % m['take_set_off_view_deg']))
-    tiles.append((P(p, 'take_wide_after.png'), 'after', 'board -%s (E), frame -%s' % (pct(r['c3_board_drop_E']), pct(r['c3_wide_frame_drop_beautyY']))))
-ev = S.grid(tiles, cols=4, width=1920)
-save(ev, 'station_c3_take_frame.jpg', 'One frame at the take',
-     'The set is never in the take frame (85-113 deg off the view), so G5 holds only as \"the light on the board drops in view\": 82-86 % in one change.',
-     'VL356', 'FLAG')
+for p in MAIN:
+    r = P[p]
+    wc = worst_card(p)
+    tiles.append((pr(p, 'take_before_c%d.png' % wc['card']), NAMES[p] + ' card %d' % wc['card'], 'worst card for the drop; board L* %.0f' % wc['L_before']))
+    tiles.append((pr(p, 'take_after.png'), 'after', 'board -%s seen, -%s in E, L* %.0f' % (pct(wc['drop_disp']), pct(wc['drop_E']), wc['L_after'])))
+    tiles.append((pr(p, 'take_before_spec_c5.png'), 'V3 as specified, card 5', 'board -%s seen (r6 light, r7 room)' % pct(r.get('c3_spec_card5_drop_disp'))))
+save(S.grid(tiles, cols=3, width=1920), 'station_r7_c3_take_frame.jpg', 'One frame at the take, seen',
+     'G5 measured on the displayed board on the worst of the five cards: %s; with V3 as specified the dark card loses only a quarter to a third.' % ', '.join(
+         '%s %s' % (NAMES[p].split(' (')[0], pct(P[p]['c3_worst_drop_disp'])) for p in MAIN), 'VL356',
+     'PASS' if all(P[p]['verdicts']['c3'] == 'PASS' for p in MAIN) else 'FLAG')
 
-# ------------------------------------------------------------------ check 4: wiggle (VL357)
+G = json.load(open(os.path.join(os.path.dirname(R), 'r7a', 'grid_r7a.json')))
 tiles = []
-for p, name in PLANS:
-    r = M['plans'][p]
-    w = r['c4_wiggle']
+for p in ('Wp4', 'Dp4'):
+    g = G[p]
+    for c, lab in (('spec', 'V3 as specified'), ('k4_f0.81', 'k 4, floor 0.81'), ('k5_f0.81', 'k 5, floor 0.81'), ('k6_f0.81', 'k 6, floor 0.81 (picked)')):
+        v = g['cfgs'][c]
+        wc = min(v['rows'], key=lambda x: x['drop_Y'])
+        tiles.append((os.path.join(os.path.dirname(R), 'r7a', p, 'grid_%s_c%d.png' % (c, wc['card'])), NAMES[p].split(' (')[0] + ' ' + lab,
+                      'worst card %d: -%s seen, -%s E, dL* %.0f' % (wc['card'], pct(wc['drop_Y']), pct(wc['drop_E']), wc['dL'])))
+save(S.grid(tiles, cols=4, width=1920), 'station_r7_c3_v3grid.jpg', 'V3 light options at the take',
+     'The worst card of each light option: only the luminance-kept colour with k 6 and a 0.81 floor clears 70 %% seen in every plan (W\' %s, D\' %s).' % (
+         pct(G['Wp4']['cfgs']['k6_f0.81']['worst_drop_Y']), pct(G['Dp4']['cfgs']['k6_f0.81']['worst_drop_Y'])), 'VL356', 'FINDING',
+     tail='clone W/proj_station · FrontRoomsStationLookdev r7a (-stationGridOnly) · take frame, 5 cards x 7 light options · UNDER LOAD (49-45)')
+
+# ------------------------------------------------------------------ VL357: wiggle and walk
+tiles = []
+for p in MAIN:
+    r = P[p]
+    w = r['c4']['per_spot']
     e1min = min((x['board_visible'] for x in w['e1'] if x['board_visible'] is not None), default=None)
     e2min = min((x['board_visible'] for x in w['e2'] if x['board_visible'] is not None), default=None)
-    hf = max((x['hidden_by_furniture'] or 0) for e in w for x in w[e])
-    tiles.append((P(p, 'wig_e1_0.png'), name + ' from E1', 'board seen %s (worst of 5 spots)' % pct(e1min)))
-    tiles.append((P(p, 'wig_e2_0.png'), 'from E2', 'worst %s; furniture hides %s max' % (pct(e2min), pct(hf))))
-ev = S.grid(tiles, cols=4, width=1920)
-save(ev, 'station_c4_wiggle.jpg', 'Key board from E1 and E2',
-     'From five eye spots at each opening no furniture hides more than 1 % of the key board; 0 % means the doorway\'s own wall (seen from outside it), not an occluder.',
-     'VL357', 'PASS')
+    tiles.append((pr(p, 'wig_e1_0.png'), NAMES[p] + ' from E1', 'board seen %s (worst of 5 spots)' % pct(e1min)))
+    tiles.append((pr(p, 'wig_e2_0.png'), 'from E2', 'worst %s; furniture hides %s max' % (pct(e2min), pct(r['c4']['hidden_by_furniture_max']))))
+save(S.grid(tiles, cols=2, width=1920), 'station_r7_c4_wiggle.jpg', 'Key board from E1 and E2',
+     'From five eye spots at each opening no furniture hides the key board; a low figure from outside E2 is the doorway\'s own wall.', 'VL357',
+     'PASS' if all(P[p]['verdicts']['c4'] == 'PASS' for p in MAIN) else 'FAIL')
 
-# ------------------------------------------------------------------ check 5: walk grids (VL357)
-G = np.load(os.path.splitext(MJ)[0] + '_grids.npz')
-tiles = []
+Gr = np.load(os.path.splitext(MJ)[0] + '_grids.npz')
 LV = [(1.0, .15, .15), (1.0, .5, .1), (1.0, .8, .1), (.9, .9, .2), (.55, .85, .25), (.25, .75, .35), (.15, .65, .55), (.15, .5, .75), (.2, .35, .85)]
-for p, name in PLANS:
-    m, r = met(p), M['plans'][p]
-    meta = json.load(open(P(p, 'walk_meta.json')))
-    pl = G[p + '_pl']
-    base = rgb(P(p, 'plan.png'))
-    s_ = m['plan_ortho_size']
-    k = 540.0 / s_
+tiles = []
+for p in MAIN:
+    m, r = met(p), P[p]
+    meta = json.load(open(pr(p, 'walk_meta.json')))
+    pl = Gr[p + '_pl']
+    base = rgb(pr(p, 'plan.png'))
+    s_ = m['plan_ortho_size']; k = 540.0 / s_
     W_, D_ = m['room_w_m'], m['room_d_m']
     H_, Wd = base.shape[0], base.shape[1]
     yy, xx = np.mgrid[0:H_, 0:Wd]
@@ -245,17 +261,18 @@ for p, name in PLANS:
         ov[sel] = ov[sel] * .4 + np.array(LV[li - 1]) * .6
     sel0 = ok & (lvl == 0)
     ov[sel0] = ov[sel0] * .35
-    tiles.append((Image.fromarray((np.clip(ov, 0, 1) * 255).astype(np.uint8)), name,
-                  'E1-key %.1f, key-E2 %.1f, strip %s' % (r['c5_route_in_room_e1_take_clear_width_m'], r['c5_route_in_room_take_e2_clear_width_m'],
-                                                         ('%.1f m' % r['c5_staff_strip_through_clear_width_m']) if r['c5_staff_strip_through_clear_width_m'] is not None else 'none')))
-ev = S.grid(tiles, cols=4, width=1920)
-save(ev, 'station_c5_walk.png', 'Clear paths at r 0.30',
-     'Largest capsule that stands at each point (red r 0.30, orange 0.35, yellow 0.40-0.45, green 0.50-0.60, blue 0.65-0.70+, dark: none); no player-only floor anywhere; W\' 1.44 m strip pinches to 0.7 m at the turned chair, rev 2 and 3 keep 1.1 m.',
-     'VL357', 'PARTIAL')
+    strip = r['c5_staff_strip_through_clear_width_m']
+    tiles.append((Image.fromarray((np.clip(ov, 0, 1) * 255).astype(np.uint8)), NAMES[p],
+                  'E1-take %.1f, take-E2 %.1f, E1-E2 %.1f, strip %s' % (r['c5_route_in_room_e1_take_clear_width_m'], r['c5_route_in_room_take_e2_clear_width_m'],
+                                                                     r['c5_route_in_room_e1_e2_clear_width_m'], ('%.1f m' % strip) if strip is not None else 'none')))
+save(S.grid(tiles, cols=3, width=1920), 'station_r7_c5_walk.png', 'Clear paths, G6 bar 1.2 m',
+     'Largest capsule standing at each point (red r 0.30 to blue 0.70+): with the guard\'s chair out of the strip every escape line keeps 1.4 m inside the room.',
+     'VL357', 'PASS' if all(P[p]['verdicts']['c5'] == 'PASS' for p in MAIN) else 'FAIL',
+     tail='clone W/proj_station · FrontRoomsStationLookdev r7 · orthographic plan from under the ceiling, capsule grid 0.05 m · UNDER LOAD (' + LOAD + ')')
 
-# ------------------------------------------------------------------ check 6: photosafety (VL358)
-worst = max(PLANS, key=lambda t: M['plans'][t[0]]['c6_max_flash_area_frac'])[0]
-r = M['plans'][worst]
+# ------------------------------------------------------------------ VL358: photosafety (cards, collapse) and the combined case
+worst = max(MAIN, key=lambda t: P[t]['c6_max_flash_area_frac'])
+r = P[worst]
 steps = {(s['from'], s['to']): s for s in r['c6_steps']}
 card_t = {'c1': '0-3 s logo', 'c2': '3-7 s sofa set', 'c3': '7-10 s call card', 'c4': '10-14 s logo', 'c5': '14-16 s WTCZ', 'off': 'after the take'}
 seq = [('c1', 'beacon_lamps.png', ('c5', 'c1')), ('c2', 'beacon_seq_c2.png', ('c1', 'c2')), ('c3', 'beacon_seq_c3.png', ('c2', 'c3')),
@@ -263,9 +280,174 @@ seq = [('c1', 'beacon_lamps.png', ('c5', 'c1')), ('c2', 'beacon_seq_c2.png', ('c
 tiles = []
 for c, f, st in seq:
     s_ = steps[st]
-    tiles.append((P(worst, f), c.upper() + ' ' + card_t[c], 'step %+d %% from %s, flash area %s, red 0 %%' % (round(100 * s_['frame_step_rel']), st[0], pct(s_['flash_area_frac']))))
-ev = S.grid(tiles, cols=3, width=1920)
-names = dict(PLANS)
-save(ev, 'station_c6_photosafety.jpg', 'Station TV photosafety',
-     'Worst plan (%s): five cuts per 16 s loop, never closer than 2.0 s, so at most 1 change a second against WCAG\'s 3; no red flash; the collapse is one step.' % names[worst],
+    tiles.append((pr(worst, f), c.upper() + ' ' + card_t[c], 'step %+d %% from %s, flash area %s, red 0 %%' % (round(100 * s_['frame_step_rel']), st[0], pct(s_['flash_area_frac']))))
+save(S.grid(tiles, cols=3, width=1920), 'station_r7_c6_photosafety.jpg', 'Station TV photosafety',
+     'Worst plan (%s) with V3 r7: five cuts per 16 s loop, never closer than 2.0 s, so at most 1 change a second against 3; no red flash; one collapse.' % NAMES[worst],
      'VL358', 'PASS')
+tiles = []
+for p in MAIN:
+    fd = pr(p, 'flash')
+    if not os.path.isdir(fd):
+        continue
+    fc = P[p].get('flash_combined', {})
+    for f, lab in (('f010.png', 't 0.33 s, dip 1'), ('f029.png', 't 0.97 s, card 5'), ('f031.png', 't 1.03 s, the wrap + dip 2'), ('f047.png', 't 1.57 s, dip 3')):
+        tiles.append((os.path.join(fd, f), NAMES[p].split(' (')[0] + ' ' + lab, 'max %.1f flashes / s in any 10 deg' % fc.get('max_flashes_any_1s_any_10deg_block', -1)))
+save(S.grid(tiles, cols=4, width=1920), 'station_r7_c6_combined.jpg', 'W1 burst over the loop wrap',
+     'Three W1 dips 0.55 s apart, the middle one on the loop wrap: at most %.1f flashes a second in any 10 deg field (limit 3), once the capture grain is averaged out.' % max(
+         P[p].get('flash_combined', {}).get('max_flashes_any_1s_any_10deg_block', 0) for p in MAIN), 'VL358', 'PASS' if all(P[p]['verdicts'].get('c6_combined') == 'PASS' for p in MAIN) else 'FAIL',
+     tail='clone W/proj_station · FrontRoomsStationLookdev r7 · beacon view from E1, 30 fps x 2 s, 960 x 540, lamps that stutter held off · UNDER LOAD (' + LOAD + ')')
+
+# ------------------------------------------------------------------ VL372: the random-seed sweep (and the E2 door seed)
+for p in ('Wp4', 'Dp4'):
+    sw = M['sweeps'].get(p)
+    if not sw:
+        continue
+    rows = sw['rows']
+    tiles = []
+    for rr in rows[:31]:
+        d = os.path.join(R, 'sweep_' + p, 's%d' % rr['seed'])
+        img = os.path.join(d, 'board_after.png')
+        v = rr.get('verdicts', {})
+        far = os.path.join(d, 'approach_far_c2.png')
+        src = far if os.path.exists(far) else os.path.join(d, 'approach_near_c2.png')
+        tiles.append((src, 's%d %s' % (rr['seed'], 'door' if rr.get('e2_kind') == 'Door' else ''),
+                      'E1 %.2f E2 %.2f · 1a %s 1b %s 1c %s 4 %s 5 %s' % (rr.get('e1_width') or 0, rr.get('e2_width') or 0, v.get('c1a_far', '-')[:4], v.get('c1b', '-')[:4],
+                                                                          v.get('c1c', '-')[:4], v.get('c4', '-')[:4], v.get('c5', '-')[:4])))
+    s = sw['summary']
+    pc = s['pass_counts']
+    def cnt(k):
+        d = pc.get(k, {})
+        return '%d/%d' % (d.get('PASS', 0), sum(d.values()))
+    sent = ('%d seeds that pass the proposed M4 rules, real generator, widths as hashed: junction %s, from E1 %s, exits seen %s, wiggle %s, paths %s.'
+            % (s['seeds_measured'], cnt('c1a_far'), cnt('c1b'), cnt('c1c'), cnt('c4'), cnt('c5')))
+    save(S.grid(tiles, cols=6, width=1920), 'station_r7_sweep_%s.jpg' % p, 'Station %s across random seeds' % NAMES[p].split(' (')[0], sent, 'VL377', 'FINDING',
+         tail='clone W/proj_station · FrontRoomsStationLookdev r7 sweep · real generator (profile defaults) · junction view per seed, card 2 · UNDER LOAD (' + LOAD + ')')
+    door = [rr for rr in rows if rr.get('e2_kind') == 'Door']
+    if door:
+        rr = door[0]
+        d = os.path.join(R, 'sweep_' + p, 's%d' % rr['seed'])
+        lo = rr.get('c4_leaf_open', {})
+        tiles = [(os.path.join(d, 'board_after.png'), 's%d leaf shut' % rr['seed'], 'from the board after the take; exits %.2f x room seen' % (rr.get('c1c_disp_exits_over_room') or 0)),
+                 (os.path.join(d, 'exit_e2.png'), 'E2 from the take', 'shut leaf %.3f vs room %.3f' % (rr.get('c1c_view_e2_meanY') or 0, rr.get('c1c_view_e2_room_meanY') or 0)),
+                 (os.path.join(d, 'wigopen_e2_0_idnp.png'), 'leaf open into the room', 'board seen %s from E2; %s' % (pct(lo.get('board_visible_min')), (rr.get('door_swing_clear') or '')[:60]))]
+        save(S.grid(tiles, cols=3, width=1920), 'station_r7_sweep_%s_door.jpg' % p, 'E2 as a map door (%s)' % NAMES[p].split(' (')[0],
+             'Where E2 lands on a Low border the map hangs a door: the leaf open into the room does not hide the key board, and the swing area is %s.' % (
+                 'clear' if (rr.get('door_swing_clear') or '').startswith('clear') else 'blocked'), 'VL377', 'FINDING',
+             tail='clone W/proj_station · FrontRoomsStationLookdev r7 sweep, seed %d · real generator · UNDER LOAD (%s)' % (rr['seed'], LOAD))
+
+# ------------------------------------------------------------------ VL373: the take frame by frame, and W1 after the take
+tiles = []
+for p in ('Wp4', 'Dp4'):
+    tl = {x['t_s']: x for x in P[p]['timing']}
+    for t, lab in ((0, 'E pressed'), (25, 'KeyTaken: key off the hook, cut, fall starts'), (40, 'light 29 %'), (50, 'light 13 %'), (60, 'light 0, key in hand'), (100, 'pocket done')):
+        tiles.append((pr(p, 'timing_t%03d.png' % t), NAMES[p].split(' (')[0] + ' t %.2f s' % (t / 100), '%s · board Y %.3f' % (lab, tl.get(t / 100, {}).get('board_Y', 0))))
+save(S.grid(tiles, cols=6, width=1920), 'station_r7_take_timing.jpg', 'The take, frame by frame',
+     'One timing for sound, picture and light: everything starts at KeyTaken (0.25 s) and the key board is dark by 0.60 s, before the key reaches the pocket.', 'VL378', 'FINDING')
+tiles = []
+for p in ('Wp4', 'Wp4o', 'Dp4'):
+    if p not in P:
+        continue
+    w = P[p]['c7_w1']
+    for view, base in (('take', 'take_after_w1base.png'), ('turn', 'turn_after.png')):
+        yb = lin(rgb(pr(p, base))) @ LUM
+        yd = lin(rgb(pr(p, '%s_after_w1_70.png' % view))) @ LUM
+        ch = (yb - yd) / np.maximum(yb, 1e-4)
+        ov = enc(np.repeat((yb * .8)[..., None], 3, -1))
+        ov[(ch >= .10) & (yb > .003)] = np.array([1.0, .85, .1])
+        tiles.append((Image.fromarray((ov * 255).astype(np.uint8)), NAMES[p].split(' (')[0] + ' ' + view + ' view',
+                      'dip to 0.70: %s of the frame changes >= 10 %% (0.55: %s)' % (pct(w.get(view + '_70_frac_ge10')), pct(w.get(view + '_55_frac_ge10')))))
+save(S.grid(tiles, cols=2, width=1920), 'station_r7_c7_w1.jpg', 'W1 seen after the take',
+     'Yellow: pixels that change 10 %% or more when the room\'s lamps dip to 0.70. W\' with (1,1) Dim: %s (take) / %s (turn); with it Off: %s / %s.' % (
+         pct(P['Wp4']['c7_w1'].get('take_70_frac_ge10')), pct(P['Wp4']['c7_w1'].get('turn_70_frac_ge10')),
+         pct(P.get('Wp4o', {}).get('c7_w1', {}).get('take_70_frac_ge10')), pct(P.get('Wp4o', {}).get('c7_w1', {}).get('turn_70_frac_ge10'))), 'VL378',
+     P['Wp4']['verdicts']['c7'])
+
+# ------------------------------------------------------------------ VL374: the look fixes, r6 against r7
+def crop_around(path, idpath, colour, grow=3.0, aspect=16 / 9., minh=260):
+    m = idmask(idpath, colour)
+    box = crop_box(m, aspect, grow, minh)
+    return Image.open(path).convert('RGB').crop(box)
+
+
+tiles = []
+# annunciator + key board, r6 Wp3 vs r7 Wp4 (the take frame), and D
+for p6_, p7_, nm in (('Wp3', 'Wp4', "W'"), ('Dp3', 'Dp4', "D'")):
+    tiles.append((Image.open(p6(p6_, 'take_before.png')).convert('RGB'), nm + ' r6 take', 'black glass door, red tag, conduit at hook height'))
+    tiles.append((Image.open(pr(p7_, 'take_before_c1.png')).convert('RGB'), nm + ' r7 take', 'putty face, round unlit lenses, white tag, backer, EMT from below'))
+# jacket and chair from E1
+tiles.append((Image.open(p6('Dp3', 'reveal.png')).convert('RGB'), "D' r6 reveal", 'navy jacket on a dark desk, guest chairs in two rows'))
+tiles.append((Image.open(pr('Dp4', 'reveal.png')).convert('RGB'), "D' r7 reveal", 'chair pulled to the set, jacket lighter and draped; sled chairs on the W wall'))
+tiles.append((Image.open(p6('Wp3', 'plan.png')).convert('RGB'), "W' r6 plan", 'two rows facing the set; chair in the strip'))
+tiles.append((Image.open(pr('Wp4', 'plan.png')).convert('RGB'), "W' r7 plan", 'one row along the S wall + beam table; chair at the counter end, 22 deg off the axis'))
+save(S.grid(tiles, cols=2, width=1920), 'station_r7_lookfix.jpg', 'Era and look fixes, r6 against r7',
+     'The panel now reads as a 1990 putty annunciator, the tag is white, the EMT enters from below, and the guard\'s things sit where he would leave them.', 'VL379', 'FINDING')
+
+# the POWER pilot against the glow ink: measured displayed colours as swatches beside the crops
+sw = []
+for p in MAIN:
+    h = P[p].get('jewel_take_hsv_bright_half')
+    if h:
+        sw.append((NAMES[p].split(' (')[0], h))
+img = Image.new('RGB', (1920, 540), (10, 10, 10))
+d = ImageDraw.Draw(img)
+import colorsys  # noqa: E402
+x = 40
+for nm, (hh, ss, vv) in sw:
+    r_, g_, b_ = colorsys.hsv_to_rgb(hh / 360.0, ss, max(vv, .5))
+    d.rectangle([x, 60, x + 300, 420], fill=(int(r_ * 255), int(g_ * 255), int(b_ * 255)))
+    x += 340
+for hexs in ('B6F5A0', 'C9F7B0'):
+    c = tuple(int(hexs[i:i + 2], 16) for i in (0, 2, 4))
+    d.rectangle([x, 60, x + 300, 420], fill=c)
+    x += 340
+crops = []
+for p in MAIN:
+    if os.path.exists(pr(p, 'take_idjewel.png')):
+        crops.append((crop_around(pr(p, 'take_before_c1.png'), pr(p, 'take_idjewel.png'), (1, 0, 0), grow=30, minh=200), NAMES[p].split(' (')[0] + ' pilot crop',
+                      'hue %.0f, sat %.2f (bright half)' % (P[p]['jewel_take_hsv_bright_half'][0], P[p]['jewel_take_hsv_bright_half'][1])))
+labels = ['%s pilot as displayed: hue %.0f, sat %.2f' % (nm, h[0], h[1]) for nm, h in sw] + ['glow ink #B6F5A0 (hue 103, sat 0.35)', 'glow ink #C9F7B0 (hue 104, sat 0.29)']
+tiles = crops + [(img, 'swatches, left to right', ' · '.join(labels)[:150])]
+save(S.grid(crops, cols=max(1, len(crops)), width=1920), 'station_r7_jewel.jpg', 'POWER pilot against the glow ink',
+     'The incandescent pilot shows at hue %s with saturation %s: 35 deg or more away from the glow ink and far more saturated (hue 99-104, 0.29-0.35).' % (
+         '-'.join('%.0f' % h[0] for _, h in sw), '-'.join('%.2f' % h[1] for _, h in sw)), 'VL379', 'PASS')
+save(S.grid([(img, 'measured pilots, then the two glow inks', ' · '.join(labels)[:160])], cols=1, width=1920), 'station_r7_jewel_swatch.png', 'POWER pilot and glow ink, side by side',
+     'Swatches of the measured displayed pilot colour (bright half of the jewel) beside the two glow-ink colours of W6.', 'VL379', 'PASS')
+
+# ------------------------------------------------------------------ VL375: phone, legibility, EXAMINE plate, the leak
+HUD = [('stick', 150, 290, 60), ('use', 740, 262, 36)]
+
+
+def hud(path):
+    im = Image.open(path).convert('RGB')
+    d = ImageDraw.Draw(im)
+    s = im.width / 874.0
+    for nm, cx, cy, rr in HUD:
+        d.ellipse([(cx - rr) * s, (cy - rr) * s, (cx + rr) * s, (cy + rr) * s], outline=(244, 241, 232), width=max(2, int(1.5 * s)))
+    return im
+
+
+tiles = []
+for p in ('Wp4', 'Dp4'):
+    ph = P[p].get('phone', {})
+    tiles.append((hud(pr(p, 'phone_approach_far.png')), NAMES[p].split(' (')[0] + ' phone, junction', 'screen %s px = %s mm tall on a 6.3 in phone' % (ph.get('screen_px_through_E1'), ph.get('screen_h_mm'))))
+    b = ph.get('board_from_E1', {})
+    tiles.append((hud(pr(p, 'phone_reveal.png')), 'phone, from E1', 'key board %s mm tall, key %s px' % (b.get('h_mm'), b.get('key_px'))))
+    tiles.append((hud(pr(p, 'phone_take_before_c5.png')), 'phone, take, card 5', 'board -%s seen at the take (card 1: -%s)' % (pct(ph.get('phone_take_before_c5_drop_disp')), pct(ph.get('phone_take_before_drop_disp')))))
+save(S.grid(tiles, cols=3, width=1920), 'station_r7_phone.jpg', 'The station on a phone',
+     'iPhone landscape at the iOS quality level, touch stick and USE drawn as outlines: the take reads, but from the junction the screen is only a few millimetres tall.', 'VL380', 'FINDING',
+     tail='clone W/proj_station · FrontRoomsStationLookdev r7 · 2622 x 1206 (19.5:9), quality level 2, vFOV 76; HUD outlines from TOUCH_CONTROLS.md section 3, not the game HUD · UNDER LOAD (' + LOAD + ')')
+
+tiles = []
+for p in ('Wp4', 'Dp4'):
+    rr = P[p]
+    for nm, lab in (('exam_before_c5', 'EXAMINE before, card 5'), ('exam_after', 'EXAMINE after the take')):
+        e = rr.get(nm, {})
+        tiles.append((pr(p, nm + '.png'), NAMES[p].split(' (')[0] + ' ' + lab, 'plate face Y %.3f (L* %.0f), glyph contrast %.2f : 1' % (e.get('meanY', 0), e.get('L_mean', 0), e.get('contrast_p90_p5', 0))))
+    lk = rr.get('leak', {})
+    tiles.append((pr(p, 'leak_view.png'), 'beyond the wall', 'set adds %.3f soft / %.3f hard 512 / %.3f no shadow (off %.3f)' % (
+        lk.get('dE_soft_high_mean', 0), lk.get('dE_hard_512_mean', 0), lk.get('dE_noshadow_mean', 0), lk.get('E_off', 0))))
+    k3 = rr.get('legib_key_tag_px_at_3m')
+    tiles.append((pr(p, 'key_3m.png'), 'key from 3 m', 'key + tag %s px; board %s deg from E1' % (k3, (rr.get('c1b_board_size_from_E1') or {}).get('h_deg'))))
+save(S.grid(tiles, cols=4, width=1920), 'station_r7_examine_leak.jpg', 'Plate, legibility and light leak',
+     'Key and tag clear 150 px at 3 m; after the take the plate is dim and its placeholder face low in contrast; in this harness the set\'s light reaches past the wall in every shadow mode.', 'VL380', 'FLAG')
+print('done')

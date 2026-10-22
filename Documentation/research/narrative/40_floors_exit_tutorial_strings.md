@@ -1,6 +1,6 @@
 # 40 · Floors, the EXIT, the stair and the tutorial: fiction and strings (叙事设计, 2026-10-22)
 
-**Status: v1.1 (2026-10-22 12:16). Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
+**Status: v1.2 (2026-10-22 15:2x): §9 adds the first room (Red, 叙事设计 chat, account A, 15:2x: "按推荐，第一个房间选方案 1"). v1.1 (12:16): Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
 - **Signed by 叙事:** every string in §3–§6. Peers build on them.
 - **Decided by Red (were RED in v1):** B levels (§2, C28); the `FLOOR WARDEN` fine-print line (§3); the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR` (§6); the start-room line `LEVEL 0 / FRONT ROOMS` (§6).
 - **Ownership:** 叙事 owns the words. Faces, sizes, separators and layout are 平面视觉's (`type-with-graphic-visual`). Code belongs to its owners.
@@ -114,7 +114,7 @@
 
 | Item | String | Note |
 |---|---|---|
-| EXIT sign (C23) | `EXIT` | 游戏视觉's lit kit, unchanged |
+| EXIT sign (C23) | `EXIT` | 游戏视觉's lit kit, unchanged. **v1.2:** the stair door no longer carries the business-hours plate; it moves to the first room's main entrance (§9) |
 | Stair letter, maze side of the EXIT door (optional plate) | `STAIR A` | NYC LL5 C26-608.4: stair letters on the occupancy side [read, `stairwell/SOURCES.md` S4]. It matches the plan and the tag |
 | Key tag (C18 close-up) | `STAIR A` | Matches the plan, the door and the stair sign |
 | HUD key panel | `STAIR KEY` / `OPENS THE STAIR DOOR`, with the floor token on the tag | **Approved by Red 2026-10-22 in the 平面视觉 chat** ("全部按推荐"; as reported by 平面视觉, table in `research/desktop_ui/FIX_CARD_VL217.md` §B). No digits in Bayon (`LEVEL 0 KEY` reads `LEVEL O KEY`) |
@@ -197,6 +197,29 @@ On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LE
 3. **Q3, the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR`:** recommended yes, under `CAUGHT` (it pairs with Q2's warden).
 4. The other open items of this line, answered in the same words: glow **B** (walls don't glow; in a blackout only the placard and the EXIT sign glow) **re-confirmed by Red at 12:34** ("Q4 保持 B：墙不发光") after a corrected re-ask: glow A no longer hides the FLOW arrows on the A+M4+V1 geometry (wallpaper line, VL350), so B is kept for cost and simplicity, not for that reason. Then: the scratch-throughs **cut**, **no** T4 figure layer in v1, forged FLOW **retired** (C29; the arrows always tell the truth). Recorded in the handoff §6 and in `wallpaper_motion/30_narrative_phosphor.md`.
 5. Also answered: the station media Set 1 download, and the start-room rename to `LEVEL 0 / FRONT ROOMS` (§6).
+
+## 9. The first room (Red, 2026-10-22 15:2x, 叙事设计 chat, account A: "按推荐，第一个房间选方案 1")
+
+Red's 15:14 direction, given in the 游戏视觉 chat, was: the reception or guard room gets its own walls, distinct from Level 0, and is the **first room the player enters**. Red then picked **option 1** of the tutorial note (`station/NOTE_1022_first_room_tutorial.md` §4):
+- Floor 1's station is the first room: desk, TV, placard and key;
+- **the locked EXIT is in view** through a doorway, about 3–6 cells away;
+- the first send waits until the player has left the room, from the far side, with the 150 s fallback kept;
+- Floor 2+ stations stay rooms you find by the TV's sound.
+
+The fiction is in `station/NOTE_1022_first_room_narrative.md` §1–§2: the front rooms against the back rooms; the building's front desk at the main entrance; the player as an after-hours visitor.
+
+| Where | String | Note |
+|---|---|---|
+| HUD, start rooms | `LEVEL 0 / FRONT ROOMS` | Unchanged (Red 12:15). It now names the reception |
+| Main entrance doors of the first room (locked; solid or with a vestibule, never glass to an outside) | `THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS` | UBC 1991 §3304(c) exception 1 is written for exactly these doors, the main exit of a Group B building (`station/01_research.md` §4). **Moved here from the stair door** |
+| Desk front lettering (optional) | `SECURITY` | One name per thing (the placard says SECURITY DESK). Never `LOBBY`, never `STATION` |
+| Desk tent card | `PLEASE SIGN IN` | As `station/01` §6 |
+| Visitor register | `DATE  NAME  COMPANY  VISITING  TIME IN  TIME OUT` | The last ruled line is blank. EXAMINE only, no text entry |
+| Key board plate | `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` | Unchanged. On Floor 1 it is the first thing read before the first decision |
+| Placard (sheet A), Floor 1 | `YOU ARE HERE` at the desk; the legend's `SECURITY DESK (KEY)` at the same spot; a short route to `STAIR A` · `EXIT` | The four lines stay, including line 4 `KEY AT SECURITY DESK.` (a building rule sheet holds on every floor). 平面视觉 redraws the route and moves the mount into the room, by the desk |
+| Start door (first room → back rooms) | `NO REENTRY` (placard plan) | Unchanged. It is also the §702(c)2 fire door between the front and the back |
+
+**Unchanged:** the floor tokens; `STAIR A`; the stair signs (§5); CAUGHT (§6); WTCZ-TV 61; the live-clock date rules (`station/01` §5); the IP lines (no showroom, never LOBBY or STATION).
 
 ## Sources (new for this doc; the stair and sign facts are `research/stairwell/SOURCES.md` S1, S4)
 

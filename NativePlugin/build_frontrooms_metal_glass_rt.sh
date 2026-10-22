@@ -1,14 +1,27 @@
 #!/bin/sh
-# Build the desktop Metal ray-traced glass bridge (G14) for Unity 6000.3.10f1, macOS arm64.
+# Build the desktop Metal ray-traced glass bridge (G14) for Unity 6000.3.10f1, macOS universal (arm64 + x86_64).
 #
 #   1. Embed FRGlassRTShared.h + FrontRoomsGlassRT.metal into build/FRGlassRTEmbedded.h (one MSL string).
 #   2. Build and run tools/frglassrt_validate: it compiles that exact string with the OS Metal compiler,
 #      creates every pipeline and runs the GPU layout self-test. Any shader error fails HERE, not in the game
-#      (no offline Metal toolchain is needed; design 10 §1.9, decision D4).
-#   3. Build Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib (arm64, macOS 13+, @rpath install name).
+#      (no offline Metal toolchain is needed; design 10 §1.9, decision D4). The validator runs as arm64; when
+#      Rosetta 2 is installed it also runs as x86_64, which checks the x86_64 CPU-side struct layout on the GPU.
+#   3. Build each slice with the same flags into build/<arch>/libFrontRoomsMetalGlassRT.dylib, then lipo them into
+#      Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib (universal, minimum macOS 12.0, @rpath install name).
+#
+# Fix round 33 (review 3 R3-L2 (a), 2026-10-22): the slices are built for macOS 12.0, the app's macOSTargetOSVersion
+# (they were 13.0, which store validation reports against a 12.0 app). RT itself needs macOS 14 and is gated at runtime
+# (InitDevice: CapOS14); every macOS 13+ API sits behind @available or in a function marked API_AVAILABLE(macos(14.0)),
+# and the compiler enforces it: -Werror=unguarded-availability(-new) (the slices used -Wno-unguarded-availability-new
+# before). On macOS 12 and 13 the dylib loads and RT stays Off with one status line. The validator is a build-host
+# tool and keeps 13.0 (it compiles the kernels with MSL 3.0).
+#
+# RD2 (Red 2026-10-21, option b): the universal Mac app loads this dylib on both CPUs. Whether RT runs is decided at
+# runtime by the plugin's capability checks (supportsRaytracing + MTLGPUFamilyApple9 + Metal3 + macOS 14, see
+# InitDevice); an Intel Mac reports no Apple9 and stays on the raster path with one status line, no errors.
 #
 # Only run while no Unity process has this project open: the editor keeps a loaded dylib for its lifetime.
-# Unity imports the dylib only for the Editor (macOS, ARM64) and Standalone macOS ARM64
+# Unity imports the dylib only for the Editor (macOS, ARM64) and Standalone macOS (AnyCPU = universal)
 # (Assets/Editor/RT/FrontRoomsGlassRTImporter.cs pins this); no other platform sees it.
 set -eu
 
@@ -18,8 +31,10 @@ UNITY_EDITOR_VERSION=${UNITY_EDITOR_VERSION:-6000.3.10f1}
 UNITY_APP=${UNITY_APP:-/Applications/Unity/Hub/Editor/${UNITY_EDITOR_VERSION}/Unity.app}
 PLUGIN_API="$UNITY_APP/Contents/PluginAPI"
 OUTPUT_DIR="$PROJECT_ROOT/Assets/Plugins/macOS"
-OUTPUT="$OUTPUT_DIR/libFrontRoomsMetalGlassRT.dylib"
+NAME=libFrontRoomsMetalGlassRT.dylib
+OUTPUT="$OUTPUT_DIR/$NAME"
 BUILD_DIR="$SCRIPT_DIR/build"
+ARCHS="arm64 x86_64"
 
 if [ ! -f "$PLUGIN_API/IUnityGraphicsMetal.h" ]; then
   echo "Unity PluginAPI not found: $PLUGIN_API" >&2
@@ -38,23 +53,48 @@ EMBED="$BUILD_DIR/FRGlassRTEmbedded.h"
   echo ')FRMSL";'
 } > "$EMBED"
 
-# 2. validate at build time
+# 2. validate at build time (arm64; x86_64 too when Rosetta 2 can run it, never prompting for an install)
 xcrun clang++ -std=c++17 -fobjc-arc -O1 -arch arm64 -mmacosx-version-min=13.0 \
   -I "$BUILD_DIR" -I "$SCRIPT_DIR" \
   -framework Metal -framework Foundation \
   -o "$BUILD_DIR/frglassrt_validate" "$SCRIPT_DIR/tools/frglassrt_validate.mm"
 "$BUILD_DIR/frglassrt_validate"
+if [ -f /Library/Apple/usr/libexec/oah/libRosettaRuntime ] && arch -x86_64 /usr/bin/true 2>/dev/null; then
+  xcrun clang++ -std=c++17 -fobjc-arc -O1 -arch x86_64 -mmacosx-version-min=13.0 \
+    -I "$BUILD_DIR" -I "$SCRIPT_DIR" \
+    -framework Metal -framework Foundation \
+    -o "$BUILD_DIR/frglassrt_validate_x86_64" "$SCRIPT_DIR/tools/frglassrt_validate.mm"
+  echo "frglassrt_validate (x86_64 under Rosetta 2):"
+  arch -x86_64 "$BUILD_DIR/frglassrt_validate_x86_64"
+else
+  echo "frglassrt_validate x86_64 skipped: Rosetta 2 is not installed (the x86_64 sizes are still pinned by the static_asserts)"
+fi
 
-# 3. the plugin
-xcrun clang++ -std=c++17 -fobjc-arc -O2 -dynamiclib \
-  -arch arm64 -mmacosx-version-min=13.0 \
-  -Wall -Wno-unused-function -Wno-unguarded-availability-new \
-  -install_name @rpath/libFrontRoomsMetalGlassRT.dylib \
-  -isystem "$PLUGIN_API" -I "$BUILD_DIR" -I "$SCRIPT_DIR" \
-  -framework Metal -framework Foundation \
-  -o "$OUTPUT" "$SCRIPT_DIR/FrontRoomsMetalGlassRT.mm" "$SCRIPT_DIR/FRGlassRTScene.mm"
+# 3. the plugin: one slice per CPU with identical flags, then one universal file
+SLICES=""
+for ARCH in $ARCHS; do
+  mkdir -p "$BUILD_DIR/$ARCH"
+  xcrun clang++ -std=c++17 -fobjc-arc -O2 -dynamiclib \
+    -arch "$ARCH" -mmacosx-version-min=12.0 \
+    -Wall -Wno-unused-function -Werror=unguarded-availability -Werror=unguarded-availability-new \
+    -install_name @rpath/$NAME \
+    -isystem "$PLUGIN_API" -I "$BUILD_DIR" -I "$SCRIPT_DIR" \
+    -framework Metal -framework Foundation \
+    -o "$BUILD_DIR/$ARCH/$NAME" "$SCRIPT_DIR/FrontRoomsMetalGlassRT.mm" "$SCRIPT_DIR/FRGlassRTScene.mm"
+  # the linker ad-hoc signs arm64 only; give an unsigned slice (x86_64) the same ad-hoc signature, as Unity's own
+  # universal player and FMOD's bundles carry one per slice (local, no identity, no network)
+  if ! codesign -d "$BUILD_DIR/$ARCH/$NAME" 2>/dev/null; then
+    codesign -s - -i "$NAME" "$BUILD_DIR/$ARCH/$NAME"
+  fi
+  SLICES="$SLICES $BUILD_DIR/$ARCH/$NAME"
+done
+# shellcheck disable=SC2086
+lipo -create $SLICES -output "$OUTPUT"
+for ARCH in $ARCHS; do lipo "$OUTPUT" -verify_arch "$ARCH"; done
 
 echo "Built $OUTPUT"
 lipo -info "$OUTPUT"
-otool -D "$OUTPUT" | tail -n 1
+for ARCH in $ARCHS; do
+  echo "$ARCH: $(otool -arch "$ARCH" -D "$OUTPUT" | tail -n 1) | minos $(otool -arch "$ARCH" -l "$OUTPUT" | awk '/LC_BUILD_VERSION/{b=1} b&&/minos/{print $2; exit}') | slice sha1 $(shasum "$BUILD_DIR/$ARCH/$NAME" | cut -d' ' -f1)"
+done
 shasum "$OUTPUT"

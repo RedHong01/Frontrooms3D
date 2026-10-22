@@ -1,0 +1,36 @@
+GD3c debris tests | 2026-10-22 15:18:23 | Unity 6000.3.10f1
+PASS R1  121 shards + 8 clusters: 2076 B (2,076 expected), position error 0.079 mm (<= 0.087: 0.05 per axis), rotation error 0.0000 deg (<= 0.01), pieces/flags True, clusters True, header True
+PASS R2  Annealed6 max (121 bodies) 2076 B, Cinematic (132) 2252 B, reduced (40) 780 B; 512 records at the desktop maximum = 1.04 MB
+PASS R3  oldest released first True | again True | live never dropped True | KeepFloorRecords off keeps none True | evicted 2
+PASS R4  20013 values: 0 differ from Mathf.FloatToHalf
+PASS R5a  F5: 2214 downward tris (bottom face + bottom bevel) dropped of 6912 (32.0 % of the flat pieces' tris; expected 2214), LOD0 4698 tris (expected 4698)
+PASS R5b  LOD1 388 tris, pane faces only (crack/crushed vertices in LOD1: 0)
+PASS R5c  vertex stride 44 B (44), 9856 verts, indices valid True | LOD0 451.0 KB
+PASS R5d  V9 counter: 96 LOD0 vertices inside the clear zone with one shard left standing in the opening (must be > 0)
+PASS R5e  LOD0 bounds (-0.695, -0.002, -0.221) .. (0.695, 1.294, 1.421)
+PASS R6  Editor (handheld preview off): reduced False, Annealed6 tier High | lab switch on: WebGL | Wired6 unchanged: High
+PASS R7  fin tris 212 -> 212 | lean off 3.1-8.9 deg, on 10.2-19.9 deg | largest offset from the crack across the 6 mm: 1.08 mm (<= 1.2)
+PASS R8  teeth mask patched at bytes 32-39 reads back as 0x00F0000000000F0F
+PASS R9  FrontRooms/Glass: has error False, 0 error messages, 44 properties, _ImpactUV present True
+TOTAL 13 passed, 0 failed
+GD3 stage mesh tests · 2026-10-22 15:18:23 · Unity 6000.3.10f1 · load { 40.73 103.90 101.35 }
+SKIP S1a/S1b  no reference copy of main's shader here (Assets/GlassLab/Reference/FrontRoomsGlass.main.shader.txt lives in the GD3 lab clone only); keyword pragmas now: 17 lines
+     variant count (ShaderUtil.GetVariantCount, all keywords): 491533
+     keywords: STEREO_INSTANCING_ON UNITY_SINGLE_PASS_STEREO STEREO_MULTIVIEW_ON STEREO_CUBEMAP_RENDER_ON _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS _LIGHT_LAYERS _CLUSTER_LIGHT_LOOP FOG_LINEAR FOG_EXP FOG_EXP2 INSTANCING_ON _FR_GLASS_RT _ADDITIONAL_LIGHT_SHADOWS _REFLECTION_PROBE_BLENDING _REFLECTION_PROBE_BOX_PROJECTION _REFLECTION_PROBE_ATLAS _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH _LIGHT_COOKIES _WRITE_RENDERING_LAYERS _FR_GLASS_GRIME DOTS_INSTANCING_ON
+PASS S1c  no GD3 keyword (uniform branches only)
+PASS S1d WebGL 2 (GLES3x)  WebGL 2 (GLES3x): 6 / 6 representative stage variants compile
+PASS S1d Metal (macOS)  Metal (macOS): 20 / 20 representative stage variants compile
+     warm-up break 1: pattern 2.78 ms + meshes 2.62 ms thread CPU (first in this process: JIT + pools)
+     warm-up break 6: pattern 2.55 ms + meshes 2.65 ms thread CPU
+PASS M1  stage-2 triangles = the reference's rule (12n-4 bevelled / 4n-4 flat) in 109 / 109 breaks
+PASS M1b  within the budgets (S2 <= profile, fins <= the profile (plan: 400), crater <= profile): 109 / 109
+PASS M2  closed, consistently wound pieces (each welded edge twice, opposite directions): 0 bad pieces
+PASS M3  outward winding, volume = inset area x 6 mm within 3 %: 0 bad · flat normals agree with the winding: 0 bad triangles
+PASS M4  posed vertex = StagePoint(rest) = the generator's PosePoint after the seat tilt (worst 0.08 um, bar 2 um) · UV0 = rest: 0 bad
+PASS M5  16-bit indices, one submesh, Float32 x 3 positions in stream 0, readable, no NaN: 0 bad
+PASS M6  same pattern -> same bytes (0 bad) · BuildPieceSource ranges cover every triangle and are closed slabs (0 bad)
+PASS M7  fins on the stage-1 cracks (<= 1.2 mm) and inside the 6 mm: 0 bad · crater within 15 mm of the impact: 0 bad
+     mesh slices (thread CPU ms): all n 2962 p50 0.104 p99 0.166 p99.9 0.183 max 0.222 · Stage1 n 122 p50 0.084 p99 0.124 max 0.126 · Pieces n 2590 p50 0.113 p99 0.166 max 0.222 · Upload1 n 125 p50 0.008 p99 0.021 max 0.022 · Upload2 n 125 p50 0.019 p99 0.034 max 0.034
+PASS M8  mesh slice thread CPU p99 0.166 ms (bar 1 ms), worst 0.222 ms · per break p50 / p90 / max 2.77 / 3.19 / 3.54 ms · frames at 1 ms p50 / max 3 / 4 · worst slice by phase (Stage1 / Pieces / Upload1 / Upload2) 0.126 / 0.222 / 0.020 / 0.031 ms · pattern p50 / p90 2.86 / 5.61 ms · load { 37.70 101.18 100.42 }
+     M9 memory (Annealed6, seed 4242, eye-height centre, 145 pieces): working set managed 2.46 MB (2.27 MB of it allocated empty) · stage meshes GPU 0.95 MB (S2 17544 verts x 52 B), the same again as Unity's readable CPU copy · an intact window: none
+RESULT PASS: 12 passed, 0 failed · 109 breaks

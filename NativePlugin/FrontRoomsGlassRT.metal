@@ -8,8 +8,11 @@
 //                      (FrontRooms/Surface + URP Lit parity, lamps, shadows, SH ambient, zone cube, fog),
 //                      thin-glass see-through of other panes; writes raw radiance + depth tag.
 //   fr_trace_aa        Ultra: 3 extra rotated-grid rays on high-contrast reflection pixels (budgeted).
-//   fr_resolve         1 px dilation, back-surface image, smudge blur, edge filter, temporal accumulation
-//                      while the camera is still (neighbourhood-clamped), writes _FR_GlassRTReflection.
+//   fr_resolve         1 px dilation, back-surface image, edge filter -> the camera's resolve target A.
+//   fr_blur_h          smudge blur, horizontal: dense separable Gaussian inside one pane (depth tag), only where the
+//                      pane is smudged (smoothness below F.soft.w); clean glass stays sharp. A -> B.
+//   fr_blur_v          the vertical half, then temporal accumulation while the camera is still (neighbourhood-
+//                      clamped), writes _FR_GlassRTReflection. B -> out.
 //   fr_parity          debug: primary rays through the same hit shader over the whole screen.
 //   fr_gather_vertices / fr_gather_indices   copy a non-readable Unity mesh into the plugin's own pool.
 //   fr_layout          one-time layout self-test of every shared struct.
@@ -19,6 +22,9 @@ using namespace metal;
 using namespace metal::raytracing;
 
 constexpr sampler kRepeat(address::repeat, filter::linear, mip_filter::linear);
+// Hit textures: trilinear + 16x anisotropic like the raster (FrontRoomsRenderSetup imports the surface maps with
+// anisoLevel 16; QualitySettings anisotropicTextures = ForceEnable at levels 4-5), driven by explicit ray-cone gradients.
+constexpr sampler kAniso(address::repeat, filter::linear, mip_filter::linear, max_anisotropy(16));
 constexpr sampler kClamp(address::clamp_to_edge, filter::linear, mip_filter::linear);
 
 typedef intersector<triangle_data, instancing> FRIsect;
@@ -55,6 +61,9 @@ static inline float3 FRNormalToWorld(thread const FRInstance& I, float3 n)
 }
 
 static inline float FRLuma(float3 c) { return dot(c, float3(0.2126f, 0.7152f, 0.0722f)); }
+// Lens-border AA domain (fix round 32): c = x / (2 + x) per channel (Reinhard with its knee at 2), and back.
+static inline float3 FRLensCompress(float3 x) { x = max(x, float3(0.0f)); return x / (2.0f + x); }
+static inline float3 FRLensExpand(float3 c) { c = clamp(c, float3(0.0f), float3(0.999f)); return 2.0f * c / (1.0f - c); }
 
 static inline float FRPow4(float x) { float x2 = x * x; return x2 * x2; }
 
@@ -114,6 +123,35 @@ static inline float4 FRTex(thread const FRScene& S, uint slot, float2 uv, float 
 static inline float FRTexWidth(thread const FRScene& S, uint slot)
 {
     return float(max(S.texs[slot].tex.get_width(), 1u));
+}
+
+// Texture fetch with explicit UV gradients (one pixel's footprint): anisotropic like the raster.
+static inline float4 FRTexG(thread const FRScene& S, uint slot, float2 uv, float2 g1, float2 g2)
+{
+    return S.texs[slot].tex.sample(kAniso, uv, gradient2d(g1, g2));
+}
+
+// The pixel's footprint at a hit (ray cone, Akenine-Moeller et al., RT Gems ch. 20): a circle of diameter coneWidth
+// across the ray, i.e. an ellipse on the surface with its long axis (coneWidth / cos) along the ray's projection.
+struct FRFootprint { float3 major; float3 minor; };
+
+static inline FRFootprint FRMakeFootprint(float3 n, float3 rayDir, float coneWidth)
+{
+    float c = max(abs(dot(rayDir, n)), 0.02f);
+    float3 ds = rayDir - n * dot(rayDir, n);
+    float l = length(ds);
+    float3 a = l > 1e-5f ? ds / l : (abs(n.y) < 0.9f ? normalize(cross(n, float3(0, 1, 0))) : float3(1, 0, 0));
+    FRFootprint f;
+    f.major = a * (coneWidth / c);
+    f.minor = cross(n, a) * coneWidth;
+    return f;
+}
+
+// UV gradients of a map whose UV = (dot(p, t), dot(p, b)) * scale (planar metres, or a mesh UV's local frame).
+static inline void FRGrad(thread const FRFootprint& f, float3 t, float3 b, float2 scale, thread float2& g1, thread float2& g2)
+{
+    g1 = float2(dot(f.major, t), dot(f.major, b)) * scale;
+    g2 = float2(dot(f.minor, t), dot(f.minor, b)) * scale;
 }
 
 // ------------------------------------------------------------------ hit fetch
@@ -191,13 +229,6 @@ struct FRPbrInput
     float3 emission;
 };
 
-// Texture LOD from the ray cone: footprint (m) x texels per metre.
-static inline float FRLod(float coneWidth, float cosHit, float texelsPerMetre)
-{
-    float footprint = coneWidth / max(cosHit, 0.08f);
-    return log2(max(footprint * texelsPerMetre, 1e-6f));
-}
-
 static FRPbrInput FREvaluateMaterial(thread const FRScene& S, thread const FRSurfaceHit& h, float3 rayDir, float coneWidth)
 {
     FRMaterial m = S.mats[h.material];
@@ -205,8 +236,9 @@ static FRPbrInput FREvaluateMaterial(thread const FRScene& S, thread const FRSur
     o.alpha = 1.0f;
     o.emission = float3(0.0f);
     o.occlusion = 1.0f;
-    float cosHit = abs(dot(rayDir, h.nVert));
     float3 nGeo = h.nVert;
+    // EmissiveLens: the renderer's own emission this frame (troffer lenses from their property block; live props such as
+    // the glow placard from their material instance), in place of the material record's value
     float3 emissionColor = (h.flags & FR_FLAG_EMISSIVE_LENS) ? h.emissionOverride.xyz : m.emission.xyz;
 
     if (m.kind == FR_KIND_SURFACE)
@@ -223,19 +255,35 @@ static FRPbrInput FREvaluateMaterial(thread const FRScene& S, thread const FRSur
         float2 tile = max(m.tile.xy, float2(1e-3f));
         float2 uv = metres / tile * m.baseST.xy + m.baseST.zw;
         float uvPerMetre = (m.flags & FR_MAT_MESH_UV) ? h.uvPerMetre : 1.0f;
-        float tpmBase = FRTexWidth(S, m.texBase) * uvPerMetre * abs(m.baseST.x) / tile.x;
-        float lod = FRLod(coneWidth, cosHit, tpmBase);
-        float lodMask = FRLod(coneWidth, cosHit, FRTexWidth(S, m.texMask) * uvPerMetre * abs(m.baseST.x) / tile.x);
-        float lodBump = FRLod(coneWidth, cosHit, FRTexWidth(S, m.texBump) * uvPerMetre * abs(m.baseST.x) / tile.x);
-        float4 albedo = FRTex(S, m.texBase, uv, lod) * m.baseColor;
-        float4 mask = FRTex(S, m.texMask, uv, lodMask);
-        float3 nTS = FRUnpackNormal(FRTex(S, m.texBump, uv, lodBump), m.p0.w);
+        FRFootprint fp = FRMakeFootprint(nGeo, rayDir, coneWidth);
+        float2 g1, g2;
+        FRGrad(fp, t, b, uvPerMetre * m.baseST.xy / tile, g1, g2);
+        float4 albedo;
+        if (m.flags & FR_MAT_PRINT)
+        {
+            // FrontRoomsSurface.shader PrintAlbedo: the paper modulation (alpha, beta, gamma) in _BaseMap and the
+            // ink of print frame 0 (_PrintTex) through the duotone ramp, in linear light. Known gap (PRINT-1, 30_final
+            // §12.5): since main's print driver (FrontRoomsPrintDriver, 2026-10-22 10:20) the raster shades the live
+            // flipbook (_FR_Print array, _FR_PrintClock, _FR_PrintWarp) while this hit shader still reads keyframe K00,
+            // so after the first keyframe change a reflected wall can show another print than the wall itself.
+            float3 paper = FRTexG(S, m.texBase, uv, g1, g2).rgb * float3(0.70f, 0.14f, 0.02f) + float3(0.46f, -0.001f, -0.004f);
+            float2 rollUV = uv * m.printST.xy + m.printST.zw;
+            float2 ink = FRTexG(S, m.texPrint, rollUV, g1 * m.printST.xy, g2 * m.printST.xy).rg * m.inkGround.w;
+            float3 ramp = ink.r < 0.5f ? mix(m.inkGround.rgb, m.inkMid.rgb, ink.r * 2.0f) : mix(m.inkMid.rgb, m.inkDeep.rgb, ink.r * 2.0f - 1.0f);
+            float3 inkColour = mix(ramp, m.inkCream.rgb, ink.g * 0.55f);
+            albedo = float4(inkColour * paper.x + float3(0.194618f, 0.104616f, 0.023153f) * paper.y + paper.z, 1.0f) * m.baseColor;
+        }
+        else albedo = FRTexG(S, m.texBase, uv, g1, g2) * m.baseColor;
+        float4 mask = FRTexG(S, m.texMask, uv, g1, g2);
+        float3 nTS = FRUnpackNormal(FRTexG(S, m.texBump, uv, g1, g2), m.p0.w);
 
         float2 wearUV; float3 wt, wb;
         FRPlanarFrame(h.pos, nGeo, wearUV, wt, wb);
-        float macroW = FRTexWidth(S, m.texMacro);
-        float4 m1 = FRTex(S, m.texMacro, wearUV / 8.0f, FRLod(coneWidth, cosHit, macroW / 8.0f));
-        float4 m2 = FRTex(S, m.texMacro, float2(wearUV.y, -wearUV.x) / 12.8f, FRLod(coneWidth, cosHit, macroW / 12.8f));
+        float2 w1a, w1b, w2a, w2b;
+        FRGrad(fp, wt, wb, float2(1.0f / 8.0f), w1a, w1b);
+        FRGrad(fp, wb, -wt, float2(1.0f / 12.8f), w2a, w2b);
+        float4 m1 = FRTexG(S, m.texMacro, wearUV / 8.0f, w1a, w1b);
+        float4 m2 = FRTexG(S, m.texMacro, float2(wearUV.y, -wearUV.x) / 12.8f, w2a, w2b);
         float tone = mix(1.0f, 0.84f + 0.30f * m1.r * m2.r, m.p1.x);
         float dirt = 1.0f - m.p1.y * smoothstep(0.55f, 0.95f, m1.g * 0.6f + m2.g * 0.4f);
         albedo.rgb *= tone * dirt;
@@ -262,19 +310,31 @@ static FRPbrInput FREvaluateMaterial(thread const FRScene& S, thread const FRSur
         o.occlusion = cavity;
         o.normal = normalize(t * nTS.x + b * nTS.y + nGeo * nTS.z);
         if (m.flags & FR_MAT_EMISSION)
-            o.emission = FRTex(S, m.texEmission, uv, lod).rgb * emissionColor;
+        {
+            if (m.flags & FR_MAT_LAMP_FIELD)
+            {
+                // FrontRoomsSurface.shader _FR_LAMP_FIELD (exit-sign diffusers): the lamp weights come from the renderer's
+                // property block (FrontRoomsExitSign: lit / failing / dead) when the instance carries them, else the material's.
+                float3 w = (h.flags & FR_FLAG_LAMP_WEIGHTS) ? h.emissionOverride.xyz : float3(m.tile.z, m.tile.w, m.emission.w);
+                float4 lf = FRTexG(S, m.texLampField, uv, g1, g2);
+                o.emission = dot(lf.rgb, w) * lf.a * m.emission.rgb;
+            }
+            else o.emission = FRTexG(S, m.texEmission, uv, g1, g2).rgb * emissionColor;
+        }
     }
     else if (m.kind == FR_KIND_LIT)
     {
         // URP Lit, metallic workflow (LitInput.hlsl InitializeStandardLitSurfaceData).
         float2 uv = h.uv * m.baseST.xy + m.baseST.zw;
-        float tpm = FRTexWidth(S, m.texBase) * h.uvPerMetre * abs(m.baseST.x);
-        float lod = FRLod(coneWidth, cosHit, tpm);
-        float4 albedo = FRTex(S, m.texBase, uv, lod) * m.baseColor;
+        FRFootprint fp = FRMakeFootprint(nGeo, rayDir, coneWidth);
+        float3 bt = h.tangentSign * cross(nGeo, h.tangent);
+        float2 g1, g2;
+        FRGrad(fp, h.tangent, bt, h.uvPerMetre * m.baseST.xy, g1, g2);
+        float4 albedo = FRTexG(S, m.texBase, uv, g1, g2) * m.baseColor;
         float metallic = m.p0.y, smoothness = m.p0.x;
         if (m.flags & FR_MAT_METALLIC_MAP)
         {
-            float4 mg = FRTex(S, m.texMask, uv, lod);
+            float4 mg = FRTexG(S, m.texMask, uv, g1, g2);
             metallic = mg.r;
             smoothness = ((m.flags & FR_MAT_SMOOTH_ALBEDO) ? albedo.a : mg.a) * m.p0.x;
         }
@@ -282,19 +342,19 @@ static FRPbrInput FREvaluateMaterial(thread const FRScene& S, thread const FRSur
         float3 n = nGeo;
         if (m.flags & FR_MAT_NORMAL_MAP)
         {
-            float3 nTS = FRUnpackNormal(FRTex(S, m.texBump, uv, lod), m.p0.w);
+            float3 nTS = FRUnpackNormal(FRTexG(S, m.texBump, uv, g1, g2), m.p0.w);
             float3 b = h.tangentSign * cross(nGeo, h.tangent);
             n = normalize(h.tangent * nTS.x + b * nTS.y + nGeo * nTS.z);
         }
         if (m.flags & FR_MAT_OCCLUSION_MAP)
-            o.occlusion = mix(1.0f, FRTex(S, m.texOcclusion, uv, lod).g, m.p0.z);
+            o.occlusion = mix(1.0f, FRTexG(S, m.texOcclusion, uv, g1, g2).g, m.p0.z);
         o.albedo = albedo.rgb;
         o.alpha = albedo.a;
         o.metallic = metallic;
         o.smoothness = saturate(smoothness);
         o.normal = n;
         if (m.flags & FR_MAT_EMISSION)
-            o.emission = FRTex(S, m.texEmission, uv, lod).rgb * emissionColor;
+            o.emission = FRTexG(S, m.texEmission, uv, g1, g2).rgb * emissionColor;
     }
     else
     {
@@ -333,78 +393,195 @@ static float FRShadowRay(thread const FRScene& S, float3 origin, float3 dir, flo
     return hit.type == intersection_type::none ? 1.0f : 0.0f;
 }
 
+// Soft shadow of one lamp (AD-2, 2026-10-14). The raster's lamp shadows are URP soft shadows (PCF over a 1024 px spot
+// shadow map spread over 162 deg): their penumbra is tens of centimetres wide on the carpet. One ray to the lamp's centre
+// gave razor-sharp wedges instead. The lamp is treated as a disc of radius F.soft.x facing the hit:
+//   F.soft.y == 1: one ray to a point of the disc picked by a hash of the hit's position (5 mm cells, plus the frame index
+//                  while the still-camera accumulation runs): the penumbra is a fine grain locked to the world (it never
+//                  crawls over the screen) that averages out when the camera stops;
+//   F.soft.y >= 2: that many rays on a ring (0.75 x radius) rotated by the same hash, and F.soft.z more, interleaved,
+//                  only where they disagree (the penumbra).
+// F.soft.x == 0: one ray to the centre (hard). Returns the visible fraction.
+static inline float FRHash(float3 p, uint salt)
+{
+    int3 c = int3(floor(p * 200.0f));
+    uint h = uint(c.x) * 73856093u ^ uint(c.y) * 19349663u ^ uint(c.z) * 83492791u ^ salt * 2654435761u;
+    h ^= h >> 13; h *= 0x5bd1e995u; h ^= h >> 15;
+    return float(h & 0xffffffu) / 16777216.0f;
+}
+
+static float FRSoftShadow(constant FRFrame& F, thread const FRScene& S, float3 origin, float3 lampPos, float3 lightDir,
+                          float3 spotDir, float dist, uint type, uint lampIndex, thread uint& shadowRays)
+{
+    uint base = max(uint(F.soft.y + 0.5f), 1u);
+    if (type == FR_LAMP_DIRECTIONAL || F.soft.x <= 0.0f)
+    {
+        shadowRays++;
+        return FRShadowRay(S, origin, lightDir, max(dist - 0.02f, 0.0f));
+    }
+    // The disc lies in the emitter's plane: a spot's (troffer lens) is perpendicular to its axis, horizontal under the
+    // ceiling; a point light's faces the hit. (A disc facing the hit stood up vertically for wall points and put half its
+    // samples into the ceiling slab: false shadows on the walls, fix pass run f2.)
+    float3 nrm = type == FR_LAMP_SPOT ? normalize(spotDir) : lightDir;
+    float3 up = abs(nrm.y) < 0.95f ? float3(0, 1, 0) : float3(1, 0, 0);
+    float3 ax = normalize(cross(up, nrm));
+    float3 ay = cross(nrm, ax);
+    // world-locked hash (harness knob F.fill.z > 0.5: a fixed pattern, no hash)
+    uint salt = lampIndex * 977u + (F.jitter.w > 0.5f ? F.shadow.z : 0u);
+    float u0 = F.fill.z > 0.5f ? 0.0f : FRHash(origin, salt);
+    if (base == 1u)
+    {
+        // one ray to a uniform point of the disc
+        float u1 = F.fill.z > 0.5f ? 0.5f : FRHash(origin + float3(0.0025f), salt ^ 0x9e3779b9u);
+        float rr = F.soft.x * sqrt(u1);
+        float a = u0 * 6.2831853f;
+        float3 d = lampPos + (ax * cos(a) + ay * sin(a)) * rr - origin;
+        float dl = length(d);
+        shadowRays++;
+        return FRShadowRay(S, origin, d / max(dl, 1e-5f), max(dl - 0.02f, 0.0f));
+    }
+    uint extra = uint(F.soft.z + 0.5f);
+    uint total = base + extra;
+    float rot = u0 * 6.2831853f;
+    float vis = 0.0f;
+    uint traced = 0u;
+    for (uint k = 0u; k < total; k++)
+    {
+        // the base rays agree (fully lit or fully shadowed): no penumbra here, stop
+        if (k == base && (vis == 0.0f || vis == float(base))) break;
+        // a ring of 0.75 x the radius: the base rays evenly spread, the refinement rays interleaved between them
+        float a = rot + (k < base ? float(k) * (6.2831853f / float(base))
+                                  : (float(k - base) + 0.5f) * (6.2831853f / float(max(extra, 1u))));
+        float3 d = lampPos + (ax * cos(a) + ay * sin(a)) * (0.75f * F.soft.x) - origin;
+        float dl = length(d);
+        vis += FRShadowRay(S, origin, d / max(dl, 1e-5f), max(dl - 0.02f, 0.0f));
+        traced++;
+    }
+    shadowRays += traced;
+    return vis / float(max(traced, 1u));
+}
+
+#define FR_RANK_MAX 8u
+
+// One lamp's unshadowed contribution at a hit (URP UniversalFragmentPBR's direct term). False when it adds nothing.
+struct FRBrdf { float3 n, v, diffuse, specular; float roughness2, roughness2MinusOne, normalizationTerm; };
+
+static inline bool FRLampLight(constant FRFrame& F, thread const FRLamp& L, thread const FRSurfaceHit& h, thread const FRBrdf& B,
+                               thread float3& contribution, thread float3& lightDir, thread float& dist)
+{
+    uint type = uint(L.spotDir.w + 0.5f);
+    float atten;
+    if (type == FR_LAMP_DIRECTIONAL)
+    {
+        lightDir = L.posInvRange2.xyz;
+        atten = 1.0f;
+        dist = F.camFwd.w;
+    }
+    else
+    {
+        float3 lv = L.posInvRange2.xyz - h.pos;
+        float distSqr = max(dot(lv, lv), FR_HALF_MIN);
+        if (distSqr * L.posInvRange2.w >= 1.0f) return false;
+        float rd = rsqrt(distSqr);
+        lightDir = lv * rd;
+        dist = distSqr * rd;
+        atten = FRDistanceAttenuation(distSqr, L.posInvRange2.w);
+        if (type == FR_LAMP_SPOT) atten *= FRAngleAttenuation(L.spotDir.xyz, lightDir, L.atten.zw);
+    }
+    float NdotL = saturate(dot(B.n, lightDir));
+    if (atten <= 0.0f || NdotL <= 0.0f) return false;
+    float3 halfDir = normalize(lightDir + B.v);
+    float NoH = saturate(dot(B.n, halfDir));
+    float LoH = saturate(dot(lightDir, halfDir));
+    float d = NoH * NoH * B.roughness2MinusOne + 1.00001f;
+    float specularTerm = B.roughness2 / ((d * d) * max(0.1f, LoH * LoH) * B.normalizationTerm);
+    contribution = (B.diffuse + B.specular * specularTerm) * (L.color.xyz * (atten * NdotL));
+    return true;
+}
+
 static float3 FRShade(constant FRFrame& F, thread const FRScene& S, thread const FRSurfaceHit& h, thread const FRPbrInput& p,
                       float3 rayDir, thread uint& shadowRays)
 {
-    float3 n = p.normal;
-    float3 v = -rayDir;
+    FRBrdf B;
+    B.n = p.normal;
+    B.v = -rayDir;
     float oneMinusReflectivity = 0.96f - p.metallic * 0.96f;   // OneMinusReflectivityMetallic, kDielectricSpec (0.04)
     float reflectivity = 1.0f - oneMinusReflectivity;
-    float3 diffuse = p.albedo * oneMinusReflectivity;
-    float3 specular = mix(float3(0.04f), p.albedo, p.metallic);
+    B.diffuse = p.albedo * oneMinusReflectivity;
+    B.specular = mix(float3(0.04f), p.albedo, p.metallic);
     float perceptualRoughness = 1.0f - p.smoothness;
     float roughness = max(perceptualRoughness * perceptualRoughness, FR_HALF_MIN_SQRT);
-    float roughness2 = max(roughness * roughness, FR_HALF_MIN);
+    B.roughness2 = max(roughness * roughness, FR_HALF_MIN);
     float grazing = saturate(p.smoothness + reflectivity);
-    float normalizationTerm = roughness * 4.0f + 2.0f;
-    float roughness2MinusOne = roughness2 - 1.0f;
+    B.normalizationTerm = roughness * 4.0f + 2.0f;
+    B.roughness2MinusOne = B.roughness2 - 1.0f;
 
     // Global illumination: ambient SH + the zone cube, x material occlusion (no SSAO at hits).
-    float NoV = saturate(dot(n, v));
+    float NoV = saturate(dot(B.n, B.v));
     float fresnelTerm = FRPow4(1.0f - NoV);
-    float3 indirectDiffuse = FRSampleSH(F, n);
-    float3 indirectSpecular = FREnvironment(F, S, reflect(-v, n), perceptualRoughness);
-    float surfaceReduction = 1.0f / (roughness2 + 1.0f);
-    float3 envSpec = surfaceReduction * mix(specular, float3(grazing), fresnelTerm);
-    float3 color = (indirectDiffuse * diffuse + indirectSpecular * envSpec) * p.occlusion;
+    float3 indirectDiffuse = FRSampleSH(F, B.n);
+    float3 indirectSpecular = FREnvironment(F, S, reflect(-B.v, B.n), perceptualRoughness);
+    float surfaceReduction = 1.0f / (B.roughness2 + 1.0f);
+    float3 envSpec = surfaceReduction * mix(B.specular, float3(grazing), fresnelTerm);
+    float3 color = (indirectDiffuse * B.diffuse + indirectSpecular * envSpec) * p.occlusion;
 
-    // Direct lights: every lamp the raster has on this frame.
+    // Direct lights: every lamp the raster has on this frame. Lamps whose shadow the raster draws this frame (w > 0) are
+    // RANKED per hit by their unshadowed contribution (AD-2): the strongest F.shadow.x of them get soft shadow rays; the
+    // rest take the average visibility of the traced ones (weighted by contribution). Before 2026-10-14 the budget went
+    // to the lamps nearest the CAMERA, in list order, and a shadowed lamp outside it shone through walls at full
+    // strength: hard light wedges on the reflected carpet that could switch as the camera moved.
+    // Registers: the ranked set holds only luminance + index (compile-time indexed, unrolled); the traced lamps'
+    // contributions are evaluated again in the second loop, and the untraced ones are the shadowed sum minus the traced.
     uint lampCount = F.counts.x;
-    uint shadowBudget = F.shadow.x;
+    uint budget = min(F.shadow.x, FR_RANK_MAX);
     float3 shadowOrigin = h.pos + h.nGeo * 0.002f;
+    float rankL[FR_RANK_MAX];
+    uint rankI[FR_RANK_MAX];
+    for (uint j = 0u; j < FR_RANK_MAX; j++) { rankL[j] = -1.0f; rankI[j] = 0u; }
+    float3 shC = float3(0.0f);     // every shadowed lamp: unshadowed sum ...
+    float3 shCS = float3(0.0f);    // ... and the same weighted by its shadow strength
     for (uint i = 0; i < lampCount; i++)
     {
         FRLamp L = S.lamps[i];
-        uint type = uint(L.spotDir.w + 0.5f);
-        float3 lightDir;
-        float atten;
-        float dist;
-        if (type == FR_LAMP_DIRECTIONAL)
+        float3 contribution, lightDir; float dist;
+        if (!FRLampLight(F, L, h, B, contribution, lightDir, dist)) continue;
+        // no raster shadow this frame, a back-facing geometric normal, or too weak to show (< 0.01 linear before the
+        // glass's Fresnel: under 1/255 of the final pixel even at grazing): unshadowed
+        float lum = FRLuma(contribution);
+        float s = L.color.w;
+        if (s <= 0.0f || budget == 0u || dot(h.nGeo, lightDir) <= 0.0f || lum <= 0.01f) { color += contribution; continue; }
+        shC += contribution; shCS += contribution * s;
+        // (harness knob F.fill.y > 0.5: no ranking: the first `budget` in list order = nearest the camera, as before)
+        if (F.fill.y > 0.5f) lum = 1e20f;
+        // keep the `budget` strongest (descending): one branch-free bubble pass
+        float cL = lum; uint cI = i;
+        for (uint j = 0u; j < FR_RANK_MAX; j++)
         {
-            lightDir = L.posInvRange2.xyz;
-            atten = 1.0f;
-            dist = F.camFwd.w;
+            bool take = j < budget && cL > rankL[j];
+            float tL = rankL[j]; uint tI = rankI[j];
+            rankL[j] = take ? cL : tL; rankI[j] = take ? cI : tI;
+            cL = take ? tL : cL; cI = take ? tI : cI;
         }
-        else
-        {
-            float3 lv = L.posInvRange2.xyz - h.pos;
-            float distSqr = max(dot(lv, lv), FR_HALF_MIN);
-            if (distSqr * L.posInvRange2.w >= 1.0f) continue;
-            dist = sqrt(distSqr);
-            lightDir = lv / dist;
-            atten = FRDistanceAttenuation(distSqr, L.posInvRange2.w);
-            if (type == FR_LAMP_SPOT) atten *= FRAngleAttenuation(L.spotDir.xyz, lightDir, L.atten.zw);
-        }
-        float NdotL = saturate(dot(n, lightDir));
-        if (atten <= 0.0f || NdotL <= 0.0f) continue;
-        float3 halfDir = normalize(lightDir + v);
-        float NoH = saturate(dot(n, halfDir));
-        float LoH = saturate(dot(lightDir, halfDir));
-        float d = NoH * NoH * roughness2MinusOne + 1.00001f;
-        float specularTerm = roughness2 / ((d * d) * max(0.1f, LoH * LoH) * normalizationTerm);
-        float3 contribution = (diffuse + specular * specularTerm) * (L.color.xyz * (atten * NdotL));
-        // Shadow rays only where the raster has this lamp's shadow on this frame (w = strength), within the
-        // per-hit budget, and only for a contribution that can show (> 0.01 linear before the glass's Fresnel:
-        // under 1/255 of the final pixel even at grazing): weak lamps keep their unshadowed light.
-        if (L.color.w > 0.0f && shadowBudget > 0u && dot(h.nGeo, lightDir) > 0.0f && FRLuma(contribution) > 0.01f)
-        {
-            shadowBudget--;
-            float vis = FRShadowRay(S, shadowOrigin, lightDir, max(dist - 0.02f, 0.0f));
-            contribution *= 1.0f - L.color.w * (1.0f - vis);
-            shadowRays++;
-        }
-        color += contribution;
     }
+    float visW = 0.0f, visSum = 0.0f;
+    for (uint k = 0u; k < FR_RANK_MAX; k++)
+    {
+        if (rankL[k] < 0.0f) continue;
+        FRLamp L = S.lamps[rankI[k]];
+        float3 contribution, lightDir; float dist;
+        FRLampLight(F, L, h, B, contribution, lightDir, dist);
+        uint type = uint(L.spotDir.w + 0.5f);
+        float vis = FRSoftShadow(F, S, shadowOrigin, L.posInvRange2.xyz, lightDir, L.spotDir.xyz, dist, type, rankI[k], shadowRays);
+        color += contribution * (1.0f - L.color.w * (1.0f - vis));
+        shC -= contribution; shCS -= contribution * L.color.w;
+        float wgt = F.fill.y > 0.5f ? 1.0f : FRLuma(contribution);
+        visW += wgt; visSum += wgt * vis;
+    }
+    // the untraced shadowed lamps: the traced lamps' visibility here (a point the strong lamps cannot see is most likely
+    // shadowed from the weaker ones too; never full light through a wall), or one half when none was traced
+    float vbar = visW > 0.0f ? visSum / visW : 0.5f;
+    if (F.fill.x > 0.5f) vbar = 1.0f;   // harness knob: the untraced shadowed lamps at full light (the pre-2026-10-14 rule)
+    color += max(shC - shCS * (1.0f - vbar), float3(0.0f));
     return color + p.emission;
 }
 
@@ -509,6 +686,36 @@ static inline float3 FRCameraRay(constant FRFrame& F, float2 pixel)
 // ------------------------------------------------------------------ fr_trace
 struct FRTraceCounts { uint glass, miss, hit, layer, shadow; };
 
+// AD-1 (fix round 31, 2026-10-22): the direction of a glass pixel's mirror ray. The prepass normal carries the smudge,
+// print and grime micro-normals (FrontRooms/Glass's _SmearNormal map, about one pixel per texel at 1-2 m): one ray along
+// it is one random sample of the smudge's glossy lobe. Inside a dark reflected object some of those rays reached the
+// floor behind it, and the sparse smudge blur could not average them away: carpet-coloured blocks inside the Relay's boot
+// and the test cube (review 1, art AD-1). The ray now follows the pane's mean normal over a 13x13 pixel window (25 taps
+// of the same pane, every 3rd pixel): the pane's orientation, the slow roll wave and GD3's bow do not change at that
+// scale, the smear's micro-normals and its centimetre wipe streaks average out, so the traced image is coherent. The lobe's width is put back by the smudge blur alone (fr_resolve's
+// radius from the smoothness and from the micro-normals' spread). Clean glass is unchanged (its normals are smooth).
+static inline float3 FRMeanNormal(constant FRFrame& F, texture2d<float, access::read> gDepth, texture2d<float, access::read> gNormal,
+                                  uint2 p, float d, float3 n0)
+{
+    float tol = 0.02f + 0.01f * d;                 // = FRTagTol(1 + d): the same pane
+    int2 hi = int2(F.screen.xy) - 1;
+    float3 s = float3(0.0f);
+    for (int dy = -6; dy <= 6; dy += 3)
+    for (int dx = -6; dx <= 6; dx += 3)
+    {
+        int2 q = clamp(int2(p) + int2(dx, dy), int2(0), hi);
+        float dq = gDepth.read(uint2(q)).x;
+        if (!(dq > 0.0f) || abs(dq - d) > tol) continue;
+        float3 nq = gNormal.read(uint2(q)).xyz;
+        float l = length(nq);
+        if (l < 1e-4f) continue;
+        nq /= l;
+        s += dot(nq, n0) < 0.0f ? -nq : nq;
+    }
+    float ls = length(s);
+    return ls > 1e-4f ? s / ls : n0;
+}
+
 static void FRTracePixel(uint2 p, constant FRFrame& F, thread const FRScene& S,
                          texture2d<float, access::read> gDepth, texture2d<float, access::read> gNormal,
                          texture2d<float, access::write> rawOut, texture2d<float, access::write> auxOut,
@@ -524,7 +731,7 @@ static void FRTracePixel(uint2 p, constant FRFrame& F, thread const FRScene& S,
     }
     c.glass++;
     float4 nrm = gNormal.read(p);
-    float3 n = normalize(nrm.xyz);
+    float3 n = FRMeanNormal(F, gDepth, gNormal, p, d, normalize(nrm.xyz));   // AD-1: the coherent mirror direction
     float glassSmooth = nrm.w;
     float3 dirC = FRCameraRay(F, float2(p) + 0.5f);
     float3 posC = F.camPos.xyz + dirC * (d / max(dot(dirC, F.camFwd.xyz), 1e-4f));
@@ -593,6 +800,14 @@ kernel void fr_trace(uint2 gid [[thread_position_in_grid]],
     }
 }
 
+// Every neighbour read of the AA and resolve passes stays inside this frame's dispatch rectangle (the union of this and
+// the last frame's receiver rectangles). Outside it the raw / rawAA / resolve targets hold texels from an earlier,
+// larger rectangle: Ultra's 1 px dilation copied them as a 1-texel line beside the glass (E5, 2026-10-14).
+static inline bool FRInRect(constant FRFrame& F, int2 q)
+{
+    return q.x >= int(F.rect.x) && q.y >= int(F.rect.y) && q.x < int(F.rect.z) && q.y < int(F.rect.w);
+}
+
 // ------------------------------------------------------------------ fr_trace_aa (Ultra)
 kernel void fr_trace_aa(uint2 gid [[thread_position_in_grid]],
                         constant FRFrame& F [[buffer(0)]],
@@ -615,12 +830,11 @@ kernel void fr_trace_aa(uint2 gid [[thread_position_in_grid]],
     if (c.a <= 1.0f) { rawAA.write(c, p); return; }
     float tol = 0.02f + 0.01f * (c.a - 1.0f);
     float lmin = FRLuma(c.rgb), lmax = lmin;
-    uint2 size = uint2(rawIn.get_width(), rawIn.get_height());
     for (int dy = -1; dy <= 1; dy++)
     for (int dx = -1; dx <= 1; dx++)
     {
         int2 q = int2(p) + int2(dx, dy);
-        if (q.x < 0 || q.y < 0 || q.x >= int(size.x) || q.y >= int(size.y)) continue;
+        if (!FRInRect(F, q)) continue;
         float4 s = rawIn.read(uint2(q));
         if (s.a <= 1.0f || abs(s.a - c.a) > tol) continue;
         float l = FRLuma(s.rgb);
@@ -634,7 +848,7 @@ kernel void fr_trace_aa(uint2 gid [[thread_position_in_grid]],
     FRScene S = { tlas, insts, meshes, mats, texs, lamps, env };
     float d = gDepth.read(p).x;
     float4 nrm = gNormal.read(p);
-    float3 n = normalize(nrm.xyz);
+    float3 n = FRMeanNormal(F, gDepth, gNormal, p, d, normalize(nrm.xyz));   // AD-1: the same direction as fr_trace
     float3 dirC = FRCameraRay(F, float2(p) + 0.5f);
     float3 posC = F.camPos.xyz + dirC * (d / max(dot(dirC, F.camFwd.xyz), 1e-4f));
     // rotated-grid 4x pattern; the centre sample stands in for the fourth
@@ -657,42 +871,56 @@ kernel void fr_trace_aa(uint2 gid [[thread_position_in_grid]],
     rawAA.write(float4(sum * 0.25f, c.a), p);
 }
 
-// ------------------------------------------------------------------ fr_resolve
+// ------------------------------------------------------------------ fr_resolve, fr_blur_h, fr_blur_v
 static inline float FRTagTol(float tag) { return 0.02f + 0.01f * max(tag - 1.0f, 0.0f); }
+
+// Smudge blur radius in pixels (design 10 §1.6): the pane's roughness spread over the reflected path, seen from the eye.
+// None on clean glass (AD-3, 2026-10-14): real float glass with a light dust film keeps a sharp mirror image; only the
+// smudged, printed and grimy parts (prepass smoothness below F.soft.w) blur. fr_resolve averages it over the pane around
+// the pixel and drops what stays under 1 px (fix round 31; it was 1.5 px per pixel).
+static inline float FRBlurRadius(constant FRFrame& F, float tag, float hitDist, float smooth)
+{
+    if (hitDist <= 0.0f || smooth >= F.soft.w) return 0.0f;
+    float pr = 1.0f - smooth;
+    float alpha = pr * pr;
+    float d1 = tag - 1.0f;
+    // AD-1 (fix round 31): faded in over 0.1 of smoothness below the cut-off instead of starting at full size there, so the
+    // radius field has no step at a smudge's rim (a separable blur turns a step in its radius into rectangles)
+    float ramp = saturate((F.soft.w - smooth) * 10.0f);
+    return min((hitDist * alpha) / max((d1 + hitDist) * F.fog.z, 1e-6f), F.blur.x) * ramp;   // no threshold: averaged first
+}
 
 kernel void fr_resolve(uint2 gid [[thread_position_in_grid]],
                        constant FRFrame& F [[buffer(0)]],
                        texture2d<float, access::read> raw [[texture(0)]],
-                       texture2d<float, access::read> aux [[texture(1)]],
+                       texture2d<float, access::read_write> aux [[texture(1)]],
                        texture2d<float, access::read> gDepth [[texture(2)]],
                        texture2d<float, access::read> gNormal [[texture(3)]],
-                       texture2d<float, access::read_write> outTex [[texture(4)]])
+                       texture2d<float, access::write> outA [[texture(4)]])
 {
     uint2 p = gid + F.rect.xy;
     if (p.x >= F.rect.z || p.y >= F.rect.w) return;
-    int2 size = int2(raw.get_width(), raw.get_height());
     float4 c = raw.read(p);
     float gd = gDepth.read(p).x;
     if (c.a <= 1.0f)
     {
-        if (gd > 0.0f) { outTex.write(float4(0.0f), p); return; }   // a glass pixel whose ray missed: the zone cube
+        if (gd > 0.0f) { outA.write(float4(0.0f), p); return; }   // a glass pixel whose ray missed: the zone cube
         // 1 px dilation: an MSAA edge sample of the pane whose pixel centre is off the pane
         const int2 nb[4] = { int2(1, 0), int2(-1, 0), int2(0, 1), int2(0, -1) };
         for (uint k = 0; k < 4u; k++)
         {
             int2 q = int2(p) + nb[k];
-            if (q.x < 0 || q.y < 0 || q.x >= size.x || q.y >= size.y) continue;
+            if (!FRInRect(F, q)) continue;
             float4 s = raw.read(uint2(q));
-            if (s.a > 1.0f) { outTex.write(s, p); return; }
+            if (s.a > 1.0f) { outA.write(s, p); return; }
         }
-        outTex.write(float4(0.0f), p);
+        outA.write(float4(0.0f), p);
         return;
     }
     float tag = c.a;
     float tol = FRTagTol(tag);
     float4 ax = aux.read(p);
     float hitDist = ax.x;
-    float smooth = ax.y;
     float3 L = c.rgb;
 
     // --- back-surface image of 6 mm glass (design 10 §1.6)
@@ -729,7 +957,7 @@ kernel void fr_resolve(uint2 gid [[thread_position_in_grid]],
                 for (int i = 0; i < 2; i++)
                 {
                     int2 q = q0 + int2(i, j);
-                    if (q.x < 0 || q.y < 0 || q.x >= size.x || q.y >= size.y) continue;
+                    if (!FRInRect(F, q)) continue;
                     float4 s = raw.read(uint2(q));
                     if (s.a <= 1.0f || abs(s.a - tag) > tol) continue;
                     float w = (i == 0 ? 1.0f - fr.x : fr.x) * (j == 0 ? 1.0f - fr.y : fr.y);
@@ -741,66 +969,191 @@ kernel void fr_resolve(uint2 gid [[thread_position_in_grid]],
         }
     }
 
-    // --- smudge blur: radius from the pane's roughness, hit distance and view distance (bilateral on the tag)
-    float pr = 1.0f - smooth;
-    float alpha = pr * pr;
-    float d1 = tag - 1.0f;
-    float radiusPx = hitDist > 0.0f ? (hitDist * alpha) / max((d1 + hitDist) * F.fog.z, 1e-6f) : 0.0f;
-    radiusPx = min(radiusPx, F.blur.x);
-    if (radiusPx > 0.75f)
-    {
-        float3 acc = L; float wsum = 1.0f;
-        float rot = fract(52.9829189f * fract(0.06711056f * float(p.x) + 0.00583715f * float(p.y))) * 6.2831853f;
-        for (uint k = 1; k <= 12u; k++)
-        {
-            float rr = radiusPx * sqrt(float(k) / 12.0f);
-            float a = float(k) * 2.39996323f + rot;
-            int2 q = int2(p) + int2(round(float2(cos(a), sin(a)) * rr));
-            if (q.x < 0 || q.y < 0 || q.x >= size.x || q.y >= size.y) continue;
-            float4 s = raw.read(uint2(q));
-            if (s.a <= 1.0f || abs(s.a - tag) > tol) continue;
-            acc += s.rgb; wsum += 1.0f;
-        }
-        L = acc / wsum;
-    }
-
     // --- edge filter (FXAA-style luminance contrast inside one tag), High and Ultra
     float lc = FRLuma(c.rgb);
     float lmin = lc, lmax = lc;
-    float3 nbSum = float3(0.0f); float nbW = 0.0f;
-    float3 cmin = c.rgb, cmax = c.rgb;
+    float3 nbSum = float3(0.0f), nbCSum = float3(0.0f); float nbW = 0.0f;
     for (int dy = -1; dy <= 1; dy++)
     for (int dx = -1; dx <= 1; dx++)
     {
         if (dx == 0 && dy == 0) continue;
         int2 q = int2(p) + int2(dx, dy);
-        if (q.x < 0 || q.y < 0 || q.x >= size.x || q.y >= size.y) continue;
+        if (!FRInRect(F, q)) continue;
         float4 s = raw.read(uint2(q));
         if (s.a <= 1.0f || abs(s.a - tag) > tol) continue;
         float l = FRLuma(s.rgb);
         lmin = min(lmin, l); lmax = max(lmax, l);
-        cmin = min(cmin, s.rgb); cmax = max(cmax, s.rgb);
         float w = (dx == 0 || dy == 0) ? 1.0f : 0.5f;
         nbSum += s.rgb * w; nbW += w;
+        nbCSum += FRLensCompress(s.rgb) * w;
     }
     if (F.blur.y > 0.0f && nbW > 0.0f)
     {
+        // Without TAA the 1-ray mirror is point-sampled: at a high-contrast pixel (lens border, print edge, door
+        // frame) blend toward the 3x3 kernel [.5 1 .5; 1 1 1; .5 1 .5] / 7 inside the same pane. Strength per tier.
         float contrast = (lmax - lmin) / max(lmax, 1e-3f);
-        float edge = smoothstep(0.25f, 0.75f, contrast) * F.blur.y;
-        L = mix(L, (L + nbSum) / (1.0f + nbW), edge * 0.5f);
+        float edge = smoothstep(0.15f, 0.60f, contrast) * F.blur.y;
+        float lit = smoothstep(1.0f, 2.0f, lmax);
+        float inside = smoothstep(0.6f, 1.0f, lmin);
+        // inside a lit lens (the whole 3x3 lit) the linear kernel is scaled by F.fogColor.w (C# LensInteriorFilter): it
+        // smooths the lens's own structure (less crawl) but also its peaks (the AD-3 core)
+        float3 filtered = mix(L, (L + nbSum) / (1.0f + nbW), edge * mix(1.0f, F.fogColor.w, lit * inside));
+        // Lit lens BORDER (fix round 32, review 2 art #2). Round 31 switched the filter off wherever the 3x3 held a lit
+        // lens (luminance > 1-2), to stop the linear kernel spreading each reflected troffer by a pixel all round (AD-3
+        // footprint). That also switched it off INSIDE the lenses and on their borders, and the moving shot's lens crawl
+        // rose 0.096 -> 0.136. Now: inside a lens (the whole 3x3 lit) the linear kernel runs as before (every tap is lit,
+        // so no pixel crosses the footprint threshold); on the border (lit and dark taps) the same kernel runs in a
+        // compressed domain c = x / (2 + x): a 1-px AA that softens the step mostly on the lit side and lifts the dark
+        // neighbour of a 4.7 lens only to ~0.5 (below the 0.8 footprint threshold). Clean glass and dark edges keep the
+        // linear filter.
+        float border = lit * (1.0f - inside);
+        if (border > 0.0f)
+        {
+            float3 cL = FRLensCompress(L);
+            float3 soft = FRLensExpand(mix(cL, (cL + nbCSum) / (1.0f + nbW), edge));
+            filtered = mix(filtered, soft, border);
+        }
+        L = filtered;
     }
 
-    // --- temporal accumulation while the camera and the scene are still (no reprojection, clamped)
+    // --- the smudge blur radius (aux.w) for fr_blur_h / fr_blur_v: the pane's roughness (smoothness) over the reflected
+    // path, AVERAGED over the pane around this pixel (25 taps 4 px apart, Gaussian weights, sigma 5 px).
+    // Fix round 31 (AD-1, review 1): a separable Gaussian is exact only while its radius changes slowly. Per pixel the
+    // radius jumped (the smear texture is patchy, the hit distance changes at a reflected silhouette, and the 3x3
+    // normal-spread term flickered), and the two passes turned every jump into a rectangle: the carpet-coloured blocks
+    // and the flat-topped boot inside dark reflected objects. The normal-spread term is gone: the trace follows the mean
+    // normal now (no speckle to hide) and a smudge's roughness is its smoothness. Clean glass stays sharp (AD-3): its
+    // smoothness is above F.soft.w, so every tap gives 0. aux.xy of the neighbours are read while this kernel rewrites
+    // them unchanged (only .w changes), so any read returns the same hit distance and smoothness.
+    float radius = 0.0f;
+    if (hitDist > 0.0f)
+    {
+        float rs = 0.0f, ws = 0.0f;
+        for (int j = -2; j <= 2; j++)
+        for (int i = -2; i <= 2; i++)
+        {
+            int2 q = int2(p) + int2(i, j) * 4;
+            if (!FRInRect(F, q)) continue;
+            float tq = raw.read(uint2(q)).a;
+            if (tq <= 1.0f || abs(tq - tag) > tol) continue;
+            float2 aq = (i == 0 && j == 0) ? ax.xy : aux.read(uint2(q)).xy;
+            if (aq.x <= 0.0f) continue;
+            float w = exp(-float(i * i + j * j) * 0.32f);
+            rs += w * FRBlurRadius(F, tq, aq.x, aq.y); ws += w;
+        }
+        radius = ws > 0.0f ? rs / ws : 0.0f;
+        if (radius < 1.0f) radius = 0.0f;
+    }
+    aux.write(float4(ax.xyz, radius), p);
+    outA.write(float4(L, tag), p);
+}
+
+// One half of the smudge blur (AD-1, 2026-10-14): a separable Gaussian (sigma = radius / 2; taps every radius/6 px,
+// so at most ~6 a side) over the texels of the same pane (depth tag) that hold a traced reflection. A smudge is
+// a glossy mirror: everything inside its lobe mixes, near and far hits alike, so a dark object keeps a dark interior and
+// gets a soft silhouette. The 12-tap disc it replaces used a random rotation per pixel: 13 samples of the lobe gave
+// salt-and-pepper speckle (carpet specks inside the Relay, a hairy fringe on the test cube). A hit-distance test was tried
+// first (fix pass run f1): it kept exactly those specks (a speck is a pixel whose ray reached the far floor, and the test
+// kept it from mixing with its near neighbours), so the taps are weighted by distance on the screen only.
+// AD-1 (fix round 31): both passes blur with the same SMOOTHED radius: the mean of fr_resolve's radius over a 9x9 pixel
+// window (taps every 4 px, this pane only; clean texels count as 0). A separable blur whose radius jumps between
+// neighbouring rows or columns leaves stripes and rectangles (review 1, art AD-1: carpet blocks inside the Relay's boot,
+// streaks at the cube's lower edge); a radius that varies slowly is blurred correctly by two passes.
+static float FRSmoothRadius(constant FRFrame& F, texture2d<float, access::read> src, texture2d<float, access::read> aux, uint2 p, float tag)
+{
+    float tol = FRTagTol(tag);
+    float sum = 0.0f, n = 0.0f;
+    for (int dy = -4; dy <= 4; dy += 4)
+    for (int dx = -4; dx <= 4; dx += 4)
+    {
+        int2 q = int2(p) + int2(dx, dy);
+        if (!FRInRect(F, q)) continue;
+        if (abs(src.read(uint2(q)).a - tag) > tol) continue;
+        sum += aux.read(uint2(q)).w; n += 1.0f;
+    }
+    float r = n > 0.0f ? sum / n : 0.0f;
+    return r >= 1.0f ? r : 0.0f;
+}
+
+static float4 FRBlurAxis(constant FRFrame& F, texture2d<float, access::read> src, texture2d<float, access::read> aux,
+                         uint2 p, int2 axis, float4 c, float radius)
+{
+    float tag = c.a;
+    float tol = FRTagTol(tag);
+    float sigma = max(radius * 0.5f, 0.5f);
+    float inv2s2 = 0.5f / (sigma * sigma);
+    int r = int(ceil(radius));
+    int step = max(1, (r + 3) / 6);   // <= ~6 taps a side: sigma / step >= 1.5, smooth for a Gaussian (fix pass: dense taps cost 1 ms at 0.55 m)
+    float3 acc = c.rgb; float wsum = 1.0f;
+    for (int k = step; k <= r; k += step)
+    {
+        float w = exp(-float(k * k) * inv2s2) * float(step);
+        for (int sgn = -1; sgn <= 1; sgn += 2)
+        {
+            int2 q = int2(p) + axis * (k * sgn);
+            if (!FRInRect(F, q)) continue;
+            float4 s = src.read(uint2(q));
+            if (s.a <= 1.0f || abs(s.a - tag) > tol) continue;
+            if (aux.read(uint2(q)).x <= 0.0f) continue;   // a dilated edge texel or a miss: not this pane's reflection
+            acc += s.rgb * w; wsum += w;
+        }
+    }
+    return float4(acc / wsum, tag);
+}
+
+kernel void fr_blur_h(uint2 gid [[thread_position_in_grid]],
+                      constant FRFrame& F [[buffer(0)]],
+                      texture2d<float, access::read> inA [[texture(0)]],
+                      texture2d<float, access::read> aux [[texture(1)]],
+                      texture2d<float, access::write> outB [[texture(2)]],
+                      texture2d<float, access::read> gDepth [[texture(3)]])
+{
+    uint2 p = gid + F.rect.xy;
+    if (p.x >= F.rect.z || p.y >= F.rect.w) return;
+    float4 c = inA.read(p);
+    float radius = c.a > 1.0f && gDepth.read(p).x > 0.0f ? FRSmoothRadius(F, inA, aux, p, c.a) : 0.0f;   // fr_resolve's, smoothed
+    outB.write(radius > 0.0f ? FRBlurAxis(F, inA, aux, p, int2(1, 0), c, radius) : c, p);
+}
+
+kernel void fr_blur_v(uint2 gid [[thread_position_in_grid]],
+                      constant FRFrame& F [[buffer(0)]],
+                      texture2d<float, access::read> inA [[texture(0)]],
+                      texture2d<float, access::read> inB [[texture(1)]],
+                      texture2d<float, access::read> aux [[texture(2)]],
+                      texture2d<float, access::read> gDepth [[texture(3)]],
+                      texture2d<float, access::read_write> outTex [[texture(4)]])
+{
+    uint2 p = gid + F.rect.xy;
+    if (p.x >= F.rect.z || p.y >= F.rect.w) return;
+    float4 c = inB.read(p);
+    if (c.a <= 1.0f || !(gDepth.read(p).x > 0.0f)) { outTex.write(c, p); return; }   // dilated edge texel, miss or none
+    float radius = FRSmoothRadius(F, inA, aux, p, c.a);   // the same smoothed field as fr_blur_h (read from the same inputs)
+    float4 L = radius > 0.0f ? FRBlurAxis(F, inB, aux, p, int2(0, 1), c, radius) : c;
+    // --- temporal accumulation while the camera and the scene are still (no reprojection, clamped to the
+    // neighbourhood of the unblurred picture)
     if (F.jitter.w > 0.5f)
     {
+        float tag = c.a, tol = FRTagTol(tag);
+        float4 c0 = inA.read(p);
+        float3 cmin = c0.rgb, cmax = c0.rgb;
+        for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            int2 q = int2(p) + int2(dx, dy);
+            if ((dx == 0 && dy == 0) || !FRInRect(F, q)) continue;
+            float4 s = inA.read(uint2(q));
+            if (s.a <= 1.0f || abs(s.a - tag) > tol) continue;
+            cmin = min(cmin, s.rgb); cmax = max(cmax, s.rgb);
+        }
+        cmin = min(cmin, L.rgb); cmax = max(cmax, L.rgb);
         float4 prev = outTex.read(p);
         if (prev.a > 1.0f && abs(prev.a - tag) <= tol)
         {
             float3 h = clamp(prev.rgb, cmin, cmax);
-            L = mix(h, L, F.jitter.z);
+            L.rgb = mix(h, L.rgb, F.jitter.z);
         }
     }
-    outTex.write(float4(L, tag), p);
+    outTex.write(L, p);
 }
 
 // ------------------------------------------------------------------ fr_parity (debug)
@@ -945,13 +1298,13 @@ kernel void fr_layout(uint tid [[thread_position_in_grid]],
     o[k++] = I.meshSlot; o[k++] = I.materialBase; o[k++] = I.flags; o[k++] = I.windowId; o[k++] = as_type<uint>(I.emission.w);
     FRMaterial M = mat[1];
     o[k++] = as_type<uint>(M.baseColor.x); o[k++] = as_type<uint>(M.tile.y); o[k++] = as_type<uint>(M.p2.w);
-    o[k++] = M.kind; o[k++] = M.flags; o[k++] = M.texBase; o[k++] = M.texOcclusion;
+    o[k++] = M.kind; o[k++] = M.flags; o[k++] = M.texBase; o[k++] = M.texOcclusion; o[k++] = as_type<uint>(M.inkCream.z); o[k++] = M.texPrint; o[k++] = M.texLampField;
     FRLamp L = lamp[1];
     o[k++] = as_type<uint>(L.posInvRange2.w); o[k++] = as_type<uint>(L.atten.w);
     FRMeshGPU G = mesh[1];
     o[k++] = G.vertexCount; o[k++] = G.indexCount; o[k++] = G.submeshCount;
     o[k++] = as_type<uint>(F.camPos.w); o[k++] = F.rect.z; o[k++] = as_type<uint>(F.sh[8].y); o[k++] = as_type<uint>(F.envDecode.x);
-    o[k++] = as_type<uint>(F.fill.w); o[k++] = F.counts.y; o[k++] = F.shadow.w; o[k++] = as_type<uint>(F.invViewProj[3][2]);
+    o[k++] = as_type<uint>(F.fill.w); o[k++] = F.counts.y; o[k++] = F.shadow.w; o[k++] = as_type<uint>(F.invViewProj[3][2]); o[k++] = as_type<uint>(F.soft.w);
     FRVertexAttr A = va[1];
     o[k++] = as_type<uint>(A.colorR); o[k++] = as_type<uint>(A.v);
     uint sentinel = 0xC0FFEE00u + k + 1u;

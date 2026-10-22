@@ -69,6 +69,8 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 | S4 | 1 | **Take beat:** the power-off zip at +0.4 s on `StationKeyTaken`. No CALLED tick: on a device call the device's own sound replaces it (RELAY §6) | M6 | 0.25 |
 | S5 | 1 | **Captions:** `[TV, muffled]` with a direction tag from the doorway position (at most once per 20 s), `[TV]`, `[TV switches off]`. **Handheld only** (`FrontRoomsHandheld.Active`): far-band cut-off floor about 600 Hz and +4 dB (SP); desktop unchanged | 交互设计 check | 0.25 |
 
+- **2026-10-22 16:2x, S1 content DONE (声音设计):** `~/FrontRoomsSoundWork/tutorial_s1/out/wtcz_loop.wav` (+ README, generator): 16 s seamless loop at 120 BPM cut to Ad_02/Ad_03 (hits on the 3/7/10/14 s cuts, ident 14–16 s), derived from 广告's synthesised promo music, no downloads; no bell/glock/chime, no 520 Hz alarm, no voice; far bands keep the beat (250 Hz line 5× median, 16 dB swing). Blocked: S2 `Screen/Beacon` on M5 BeaconPath; S4 on M6 StationKeyTaken; T6/V5 on 游戏视觉 naming the sounding screen. Open with 游戏视觉: `FrontRoomsScreenAdBank` pauses the shared video when no screen is visible, but the beacon is heard through walls, so the audio must be the clock (picture follows audio time or keeps playing unseen).
+
 ## 平面视觉 (the tutorial-placard session)
 
 | # | Ph | Request | Needs | Days |
@@ -94,6 +96,7 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 
 **平面视觉 · 广告** (not running; inbox note): the WTCZ loop's on-screen content stays Ad_02. The still desk screens (V4) are its art, from `screens/30_screen_strings.md` §6.
   - **2026-10-22 09:02, V4 art LANDED** (平面视觉 · 广告, running again since the account switch): `Tools/screens/out/still_desk/` (six screens, 640 × 480 + @2x, README, generator `still_desk.py` sha1 c6743734). Still, dim, neutral white; amber/green/VGA blue kept for their TM04 meanings. 游戏视觉 told; V4 is unblocked on the art side. 广告 sends 声音设计 an S1 content note (Ad_02's 16 s card timing, ident and jingle cue points).
+  - **2026-10-22 16:0x, V4 staging (总控 as tutorial tracker, within Red's T3):** 游戏视觉 wires the three still frames + the seeded mix now, gated on **"this floor has a station"**. Before V1/M4 no floor has one, so desks keep Ad_03. Once V1/M4 land, station floors go still automatically (no second landing). After the take the desks stay still (§4.4). The title corridor TV is unaffected. M4 must expose a "floor has a station" query.
   - The call sign is now **WTCZ-TV 61** (叙事设计 `screens/30_screen_strings.md` v2.1, 10-22, under rule 11 "no real brands": WXRM-LP is a real licensed LPFM station, FCC facility 197239; 广告's FCC check in `AD_TYPE_SYSTEM.md` §7.1).
 
 ## 叙事设计 (not running: inbox note)

@@ -9,7 +9,8 @@
 //   Render thread (IssuePluginEventAndData, event 1): pops the ops up to the frame packet it was issued for, then
 //     encodes into UNITY'S CURRENT command buffer (EndCurrentCommandEncoder first, never commits):
 //       gather (non-readable meshes) -> acceleration structures (budgeted BLAS builds, refits, compaction, this
-//       frame's TLAS from a 3-slot ring) -> event barrier -> trace (+ Ultra adaptive rays) -> resolve -> event barrier.
+//       frame's TLAS from a 3-slot ring) -> event barrier -> trace (+ Ultra adaptive rays) -> resolve (edge filter,
+//       back image) -> smudge blur (two separable bilateral passes) + temporal -> event barrier.
 //     A completion handler on Unity's command buffer publishes the done serial, GPU timestamps, stats and
 //     compacted sizes, and fails closed on any command-buffer error.
 //   Device init (render thread): capability probe, asynchronous MSL compile, then a one-time GPU layout self-test.
@@ -19,6 +20,7 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include <mach/mach_time.h>
+#include <time.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -68,13 +70,26 @@ enum Stat : int
     StEncodeMsMax, StGlassPx, StMissPx, StHitPx, StLayerPx, StAAPx, StShadowRays, StCbErrors,
     StCompileMs, StResidencyMode, StHazardDepth, StHazardOut, StTrianglesLast, StBuildsLast, StTimerFrameGpuMs, StDoneSerial,
     StEventSerial, StRetired, StTimestampMode, StGpuMsCB, StLayoutOK, StSkippedNoFrame, StClears, StOpsApplied,
-    StMeshesUploaded, StCounterNsPerTick, StTargetsBytes, StLastFrameNumber, StWarmEvents, StPoolBusy, StCount = 64
+    StMeshesUploaded, StCounterNsPerTick, StTargetsBytes, StLastFrameNumber, StWarmEvents, StPoolBusy, StSubmitMs, StSubmitMsMax,
+    StBarriers, StGeoPages, StGeoSpareHits, StTlasBuilt, StTlasReused,
+    StStreamTriBudget, StStreamBuildBudget,   // fix round 33: the streamed-mesh BLAS budget in force (FRGlassRT_SetBuildBudget)
+    StCount = 64
 };
-std::mutex g_StatMutex;
-double g_Stats[StCount];
-void SetStat(int i, double v) { std::lock_guard<std::mutex> l(g_StatMutex); g_Stats[i] = v; }
-void AddStat(int i, double v) { std::lock_guard<std::mutex> l(g_StatMutex); g_Stats[i] += v; }
-double GetStatValue(int i) { std::lock_guard<std::mutex> l(g_StatMutex); return g_Stats[i]; }
+// Lock-free (2026-10-07): the main thread, the render thread and Metal's completion threads all write stats. With a mutex,
+// a preempted low-priority completion thread holding it stalled the main thread inside UploadMeshCPU / SubmitFrame.
+std::atomic<double> g_Stats[StCount];
+void SetStat(int i, double v) { g_Stats[i].store(v, std::memory_order_relaxed); }
+void AddStat(int i, double v)
+{
+    double cur = g_Stats[i].load(std::memory_order_relaxed);
+    while (!g_Stats[i].compare_exchange_weak(cur, cur + v, std::memory_order_relaxed)) {}
+}
+void MaxStat(int i, double v)
+{
+    double cur = g_Stats[i].load(std::memory_order_relaxed);
+    while (v > cur && !g_Stats[i].compare_exchange_weak(cur, v, std::memory_order_relaxed)) {}
+}
+double GetStatValue(int i) { return g_Stats[i].load(std::memory_order_relaxed); }
 
 std::mutex g_ErrorMutex;
 std::string g_LastError;
@@ -92,8 +107,9 @@ IUnityGraphicsMetalV2* s_Metal = nullptr;
 id<MTLDevice> g_Device;
 
 // ------------------------------------------------------------------ pipelines
-enum { PTrace = 0, PTraceAA, PResolve, PParity, PGatherV, PGatherI, PLayout, PCount };
-const char* kKernelNames[PCount] = { "fr_trace", "fr_trace_aa", "fr_resolve", "fr_parity", "fr_gather_vertices", "fr_gather_indices", "fr_layout" };
+enum { PTrace = 0, PTraceAA, PResolve, PParity, PGatherV, PGatherI, PLayout, PBlurH, PBlurV, PCount };
+const char* kKernelNames[PCount] = { "fr_trace", "fr_trace_aa", "fr_resolve", "fr_parity", "fr_gather_vertices", "fr_gather_indices", "fr_layout",
+                                     "fr_blur_h", "fr_blur_v" };
 std::mutex g_PsoMutex;
 id<MTLComputePipelineState> g_Pso[PCount];
 std::atomic<int> g_PsoPending{ 0 };
@@ -140,7 +156,8 @@ uint64_t Push(std::unique_ptr<Op> op)
 
 // ------------------------------------------------------------------ render-thread state
 FRGlassRTScene g_Scene;
-bool g_SceneReady = false;
+// Read by FRGlassRT_MeshState(s) on the main thread, written by device init / shutdown on the render thread (E12).
+std::atomic<bool> g_SceneReady{ false };
 std::unordered_map<int32_t, std::unique_ptr<FRCameraState>> g_Cameras;
 id<MTLFence> g_FenceAS, g_FenceTrace;
 id<MTLEvent> g_Event;
@@ -161,6 +178,51 @@ uint64_t g_TimestampCpu0 = 0, g_TimestampGpu0 = 0;
 std::atomic<double> g_NsPerTick{ 0.0 };
 mach_timebase_info_data_t g_Timebase;
 std::atomic<double> g_TimerStart{ 0.0 };
+// Event barriers around the trace (design §1.2 c/f): 0 = only when a camera texture is not hazard-tracked (then Metal
+// cannot order Unity's encoders against ours by itself), 1 = always. With tracked textures Metal already makes our
+// trace wait for the prepass writes and Unity's transparent pass wait for our output, while Unity's opaque pass (which
+// touches none of them) may overlap the trace on the GPU instead of waiting for it.
+std::atomic<int> g_BarrierMode{ 0 };
+
+// Per-camera coverage of the last completed traced frame (fix round 32, review 2 art #1): C# holds a camera's RT weight
+// at 0 after a stream-in until ITS OWN frame shows no holes (misses <= 0.5 % of glass px). The global StGlassPx /
+// StMissPx belong to whichever camera completed last. Written by completion handlers, read by the main thread.
+// Fix round 33 (review 3 R3-B3): a real seqlock. Round 32 stored -1 and the data with relaxed order and no fence, and
+// the reader had no acquire fence before its re-check, so on arm64 the gate could read one frame's glass and miss
+// counts under another frame's number (and two renders of one camera in one Unity frame share a frame number, so the
+// frame number cannot serve as the sequence). Now each slot has its own sequence counter: odd while a write is in
+// progress. Writer: seq odd (relaxed) + release fence, data, seq even (release). Reader: seq (acquire), data, acquire
+// fence, seq again; the reading is valid only when both reads are the same even value. Writers (completion handlers,
+// which Metal may run on more than one thread, plus the main thread's FreeCamera / ResetScene) are serialized by a mutex
+// held for a few stores; the reader never takes it.
+constexpr int kCamCov = 32;
+std::atomic<uint32_t> g_CovSeq[kCamCov];
+std::atomic<int32_t> g_CovCam[kCamCov];
+std::atomic<int64_t> g_CovGlass[kCamCov], g_CovMiss[kCamCov];
+std::atomic<int32_t> g_CovFrame[kCamCov];
+std::mutex g_CovWriteMutex;
+void WriteCoverageSlot(int i, int32_t cam, int32_t frameNumber, int64_t glass, int64_t miss)
+{
+    std::lock_guard<std::mutex> l(g_CovWriteMutex);
+    uint32_t s = g_CovSeq[i].load(std::memory_order_relaxed);
+    g_CovSeq[i].store(s + 1, std::memory_order_relaxed);        // odd: a write is in progress
+    std::atomic_thread_fence(std::memory_order_release);         // ... before any of the data stores below
+    g_CovCam[i].store(cam, std::memory_order_relaxed);
+    g_CovGlass[i].store(glass, std::memory_order_relaxed);
+    g_CovMiss[i].store(miss, std::memory_order_relaxed);
+    g_CovFrame[i].store(frameNumber, std::memory_order_relaxed);
+    g_CovSeq[i].store(s + 2, std::memory_order_release);        // even: the data above is complete
+}
+void PublishCoverage(int32_t cam, int32_t frameNumber, uint32_t glass, uint32_t miss)
+{
+    if (cam < 0) return;
+    WriteCoverageSlot(cam % kCamCov, cam, frameNumber, glass, miss);
+}
+void ClearCoverageSlot(int32_t cam)
+{
+    if (cam < 0) return;
+    WriteCoverageSlot(cam % kCamCov, -1, -1, 0, 0);
+}
 
 void AtomicMax(std::atomic<uint64_t>& a, uint64_t v)
 {
@@ -175,7 +237,9 @@ void StartCompile()
     g_Caps.fetch_or(CapCompileStarted);
     g_CompileStart = CFAbsoluteTimeGetCurrent();
     MTLCompileOptions* options = [MTLCompileOptions new];
-    options.languageVersion = MTLLanguageVersion3_0;
+    // MSL 3.0 needs macOS 13; RT needs 14 (InitDevice returns before this without CapOS14; fix round 33, R3-L2 (a))
+    if (@available(macOS 14.0, *)) options.languageVersion = MTLLanguageVersion3_0;
+    else { g_Caps.fetch_or(CapCompileFailed); SetError("MSL 3.0 kernels need macOS 14"); return; }
     options.fastMathEnabled = YES;
     id<MTLDevice> device = g_Device;
     [device newLibraryWithSource:[NSString stringWithUTF8String:kFRGlassRTMSL] options:options
@@ -232,15 +296,18 @@ void InitDevice()
     mach_timebase_info(&g_Timebase);
     int caps = CapDevice;
     if (device.supportsRaytracing) caps |= CapRaytracing;
-    if ([device supportsFamily:MTLGPUFamilyApple9]) caps |= CapApple9;
-    if ([device supportsFamily:MTLGPUFamilyMetal3]) caps |= CapMetal3;
+    if ([device supportsFamily:MTLGPUFamilyApple9]) caps |= CapApple9;   // an unknown family before macOS 14: NO
+    if (@available(macOS 13.0, *)) { if ([device supportsFamily:MTLGPUFamilyMetal3]) caps |= CapMetal3; }
     if (@available(macOS 14.0, *)) caps |= CapOS14;
     if (@available(macOS 15.0, *)) caps |= CapResidencySets;
     g_Caps.fetch_or(caps);
     if (!(caps & CapRaytracing) || !(caps & CapApple9) || !(caps & CapMetal3) || !(caps & CapOS14)) return;   // fail closed (M1/M2: P2 tier)
 
+    // Fix round 33 (R3-L2 (a)): the dylib is built for macOS 12.0, the app's minimum. On macOS 12 and 13 it loads, reports
+    // no CapOS14 and returns above: RT stays Off with one status line ("macOS 14 or newer is required" / not Apple9).
     std::string err;
-    if (!g_Scene.Init(device, err)) { SetError(err); return; }
+    if (@available(macOS 14.0, *)) { if (!g_Scene.Init(device, err)) { SetError(err); return; } }
+    else return;
     g_SceneReady = true;
     SetStat(StResidencyMode, g_Scene.UsesResidencySet() ? 1.0 : 2.0);
     g_FenceAS = [device newFence];
@@ -290,15 +357,18 @@ void InitDevice()
     StartCompile();
 }
 
+void PoolReset();
+
 void ShutdownDevice()
 {
+    PoolReset();
     {
         std::lock_guard<std::mutex> l(g_OpMutex);
         g_Ops.clear();
     }
     g_Cameras.clear();
-    if (g_SceneReady) g_Scene.Shutdown();
-    g_SceneReady = false;
+    bool wasReady = g_SceneReady.exchange(false);
+    if (wasReady) g_Scene.Shutdown();
     {
         std::lock_guard<std::mutex> l(g_PsoMutex);
         for (auto& p : g_Pso) p = nil;
@@ -355,12 +425,31 @@ void ApplyOp(Op& op, uint64_t serial, uint64_t forSeq, std::unique_ptr<FramePack
             auto& c = g_Cameras[op.cam];
             if (!c) { c = std::make_unique<FRCameraState>(); c->cameraId = op.cam; }
             c->t = op.targets;
+            // the resolve / blur intermediates are the plugin's own (RGBA16F, private, same size as the camera targets)
+            c->t.resolveA = nil; c->t.resolveB = nil;
+            if (g_Device && c->t.width > 0 && c->t.height > 0)
+            {
+                MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float
+                                                                                             width:c->t.width height:c->t.height mipmapped:NO];
+                d.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+                d.storageMode = MTLStorageModePrivate;
+                c->t.resolveA = [g_Device newTextureWithDescriptor:d];
+                c->t.resolveB = [g_Device newTextureWithDescriptor:d];
+                c->t.resolveA.label = @"FRGlassRT resolve A";
+                c->t.resolveB.label = @"FRGlassRT resolve B";
+                SetStat(StTargetsBytes, 2.0 * 8.0 * c->t.width * c->t.height);
+            }
             // new targets hold undefined memory: the first traced frame resolves the whole screen
             c->prevRect = simd_make_uint4(0, 0, c->t.width, c->t.height);
+            c->allTracked = false;
             if (@available(macOS 10.15, *))
             {
                 if (c->t.depth) SetStat(StHazardDepth, (double)c->t.depth.hazardTrackingMode);
                 if (c->t.out) SetStat(StHazardOut, (double)c->t.out.hazardTrackingMode);
+                bool tracked = true;
+                for (id<MTLTexture> x : { c->t.depth, c->t.normal, c->t.raw, c->t.aux, c->t.rawAA, c->t.out, c->t.ids, c->t.resolveA, c->t.resolveB })
+                    if (x && x.hazardTrackingMode != MTLHazardTrackingModeTracked) tracked = false;
+                c->allTracked = tracked && c->t.depth && c->t.out;
             }
             break;
         }
@@ -450,8 +539,10 @@ void TraceEvent(uint64_t seq)
             static const std::vector<FRLamp> noLamps;
             uint32_t ic = 0;
             bool rb = false;
-            g_Scene.EncodeAccelerationStructures(cb, warmCamera, noInstances, noLamps, frame->frameNumber, serial, done, g_FenceAS, nil, 0,
-                                                 g_CompactBuf[wpi], compactQueries, ic, rb);
+            int ts = -1;
+            if (@available(macOS 14.0, *))   // always true here: the kernels exist only on macOS 14+ (fix round 33)
+                g_Scene.EncodeAccelerationStructures(cb, warmCamera, noInstances, noLamps, frame->frameNumber, serial, done, g_FenceAS, nil, 0,
+                                                     g_CompactBuf[wpi], compactQueries, ic, rb, ts);
             SetStat(StBuildsLast, g_Scene.LastBuilds());
             SetStat(StTrianglesLast, g_Scene.LastTriangles());
             SetStat(StMeshes, g_Scene.MeshCount());
@@ -489,7 +580,7 @@ void TraceEvent(uint64_t seq)
     }
     bool ready = kernels && (caps & CapLayoutOK) && !(caps & CapGpuError) && !(caps & CapLayoutFailed);
     uint32_t pi = (uint32_t)(serial % kPool);
-    if (!frame || !cam || !cam->t.out || !cam->t.depth || !cam->t.normal || !cam->t.raw || !cam->t.aux || !ready)
+    if (!frame || !cam || !cam->t.out || !cam->t.depth || !cam->t.normal || !cam->t.raw || !cam->t.aux || !cam->t.resolveA || !cam->t.resolveB || !ready)
     {
         if (!frame) AddStat(StSkippedNoFrame, 1);
         else AddStat(StSkippedNotReady, 1);
@@ -511,9 +602,15 @@ void TraceEvent(uint64_t seq)
     __block std::vector<std::pair<int32_t, uint32_t>> compactQueries;
     uint32_t instanceCount = 0;
     bool ringBusy = false;
-    int slotIndex = g_Scene.EncodeAccelerationStructures(cb, *cam, frame->instances, frame->lamps, frame->frameNumber, serial, done,
-                                                         g_FenceAS, counters, 0, poolFree ? g_CompactBuf[pi] : nil, compactQueries, instanceCount, ringBusy);
+    int tlasSlot = -1;
+    int slotIndex = -1;
+    if (@available(macOS 14.0, *))   // always true here: the kernels exist only on macOS 14+ (fix round 33)
+        slotIndex = g_Scene.EncodeAccelerationStructures(cb, *cam, frame->instances, frame->lamps, frame->frameNumber, serial, done,
+                                                         g_FenceAS, counters, 0, poolFree ? g_CompactBuf[pi] : nil, compactQueries, instanceCount, ringBusy,
+                                                         tlasSlot);
     if (ringBusy) AddStat(StRingBusy, 1);
+    SetStat(StTlasBuilt, (double)g_Scene.TlasBuilt());
+    SetStat(StTlasReused, (double)g_Scene.TlasReused());
     SetStat(StTlasInstances, instanceCount);
     SetStat(StBuildsLast, g_Scene.LastBuilds());
     SetStat(StTrianglesLast, g_Scene.LastTriangles());
@@ -521,9 +618,10 @@ void TraceEvent(uint64_t seq)
     id<MTLBuffer> statsBuf = poolFree ? g_StatsBuf[pi] : g_StatsOverflow;
     id<MTLBuffer> compactBuf = g_CompactBuf[pi];
     bool traced = false;
-    if (slotIndex >= 0 && instanceCount > 0)
+    if (slotIndex >= 0 && tlasSlot >= 0 && instanceCount > 0)
     {
         FRCameraState::Slot& slot = cam->slots[slotIndex];
+        id<MTLAccelerationStructure> tlas = cam->slots[tlasSlot].tlas;   // this slot's own, or the reused owner's (fix round 31)
         FRFrame F = frame->frame;
         F.counts.w = instanceCount;
         F.counts.x = std::min<uint32_t>(F.counts.x, (uint32_t)std::min<size_t>(frame->lamps.size(), FRGlassRTScene::kMaxLamps));
@@ -544,7 +642,9 @@ void TraceEvent(uint64_t seq)
         if (x1 > x0 && y1 > y0)
         {
             if (poolFree) std::memset(statsBuf.contents, 0, statsBuf.length);
-            Barrier(cb);   // (c) Unity's prepass writes -> our reads, whatever hazard mode Unity's textures use
+            bool barriers = g_BarrierMode.load() != 0 || !cam->allTracked;
+            SetStat(StBarriers, barriers ? 1 : 0);
+            if (barriers) Barrier(cb);   // (c) Unity's prepass writes -> our reads, when Metal cannot track them itself
             MTLComputePassDescriptor* cpd = [MTLComputePassDescriptor computePassDescriptor];
             if (counters)
             {
@@ -559,7 +659,7 @@ void TraceEvent(uint64_t seq)
             bool parity = F.counts.z == FR_DEBUG_PARITY;
             [enc setComputePipelineState:Pso(parity ? PParity : PTrace)];
             [enc setBytes:&F length:sizeof(FRFrame) atIndex:0];
-            [enc setAccelerationStructure:slot.tlas atBufferIndex:1];
+            [enc setAccelerationStructure:tlas atBufferIndex:1];
             [enc setBuffer:slot.records offset:0 atIndex:2];
             [enc setBuffer:g_Scene.MeshTable() offset:0 atIndex:3];
             [enc setBuffer:g_Scene.MaterialTable() offset:0 atIndex:4];
@@ -607,17 +707,35 @@ void TraceEvent(uint64_t seq)
                 id<MTLComputeCommandEncoder> res = [cb computeCommandEncoderWithDescriptor:rpd];
                 res.label = @"FRGlassRT resolve";
                 [res waitForFence:g_FenceTrace];
-                [res setComputePipelineState:Pso(PResolve)];
                 [res setBytes:&F length:sizeof(FRFrame) atIndex:0];
+                // 1. dilation, back-surface image, edge filter: raw (or Ultra's rawAA) -> A
+                [res setComputePipelineState:Pso(PResolve)];
                 [res setTexture:(ultraAA ? cam->t.rawAA : cam->t.raw) atIndex:0];
                 [res setTexture:cam->t.aux atIndex:1];
                 [res setTexture:cam->t.depth atIndex:2];
                 [res setTexture:cam->t.normal atIndex:3];
+                [res setTexture:cam->t.resolveA atIndex:4];
+                [res dispatchThreads:grid threadsPerThreadgroup:tg];
+                [res memoryBarrierWithScope:MTLBarrierScopeTextures];
+                // 2. smudge blur, horizontal: A -> B
+                [res setComputePipelineState:Pso(PBlurH)];
+                [res setTexture:cam->t.resolveA atIndex:0];
+                [res setTexture:cam->t.aux atIndex:1];
+                [res setTexture:cam->t.resolveB atIndex:2];
+                [res setTexture:cam->t.depth atIndex:3];
+                [res dispatchThreads:grid threadsPerThreadgroup:tg];
+                [res memoryBarrierWithScope:MTLBarrierScopeTextures];
+                // 3. smudge blur, vertical, then temporal accumulation: B -> _FR_GlassRTReflection
+                [res setComputePipelineState:Pso(PBlurV)];
+                [res setTexture:cam->t.resolveA atIndex:0];
+                [res setTexture:cam->t.resolveB atIndex:1];
+                [res setTexture:cam->t.aux atIndex:2];
+                [res setTexture:cam->t.depth atIndex:3];
                 [res setTexture:cam->t.out atIndex:4];
                 [res dispatchThreads:grid threadsPerThreadgroup:tg];
                 [res endEncoding];
             }
-            Barrier(cb);   // (f) our writes -> Unity's transparent pass
+            if (barriers) Barrier(cb);   // (f) our writes -> Unity's transparent pass, when Metal cannot track them itself
             traced = true;
             AddStat(StTraceEvents, 1);
         }
@@ -634,6 +752,7 @@ void TraceEvent(uint64_t seq)
 
     bool haveCounters = counters != nil && traced;
     bool parityMode = frame->frame.counts.z == FR_DEBUG_PARITY;
+    int32_t covCam = frame->cam, covFrame = frame->frameNumber;
     [cb addCompletedHandler:^(id<MTLCommandBuffer> c) {
         if (c.status == MTLCommandBufferStatusError)
         {
@@ -645,6 +764,7 @@ void TraceEvent(uint64_t seq)
         if (traced && poolFree)
         {
             const uint32_t* s = (const uint32_t*)statsBuf.contents;
+            if (c.status != MTLCommandBufferStatusError && !parityMode) PublishCoverage(covCam, covFrame, s[FR_STAT_GLASS_PX], s[FR_STAT_MISS_PX]);
             SetStat(StGlassPx, s[FR_STAT_GLASS_PX]);
             SetStat(StMissPx, s[FR_STAT_MISS_PX]);
             SetStat(StHitPx, s[FR_STAT_HIT_PX]);
@@ -712,6 +832,70 @@ id<MTLBuffer> NewShared(uint64_t bytes)
 }
 
 uint64_t Align16(uint64_t v) { return (v + 15) & ~15ull; }
+
+// Geometry pages (main thread): readable meshes are copied into ranges of shared 4 MB pages instead of one new
+// MTLBuffer each. Run r4 measured 0.46 ms per newBufferWithLength on the main thread (146 ms for 321 meshes in the
+// 600-frame walk) and every buffer was one more residency-set entry. Bump allocation only: a range is never reused;
+// a page is released (through the scene's retire list) when its last mesh goes and the allocator has moved on.
+// The NEXT page is allocated ahead of time on a GCD worker (2026-10-07, run r8: one 24-vertex upload spent 52 ms in
+// the native call on a walk frame), so the main thread normally only swaps a pointer when a page fills. The worker
+// holds g_PoolMutex only for that pointer write; a spare made before a reset (older generation) is dropped.
+std::mutex g_PoolMutex;
+id<MTLBuffer> g_PoolPage;
+id<MTLBuffer> g_PoolSpare;
+uint64_t g_PoolUsed = 0;
+uint32_t g_PoolGeneration = 0;
+bool g_PoolSparePending = false;
+constexpr uint64_t kPoolPageBytes = 4ull << 20;
+
+// g_PoolMutex held
+void PoolRequestSpareLocked()
+{
+    if (g_PoolSpare || g_PoolSparePending || !g_Device) return;
+    g_PoolSparePending = true;
+    id<MTLDevice> device = g_Device;
+    uint32_t generation = g_PoolGeneration;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        id<MTLBuffer> page = [device newBufferWithLength:kPoolPageBytes options:MTLResourceStorageModeShared];
+        page.label = @"FRGlassRT geometry page";
+        std::lock_guard<std::mutex> l(g_PoolMutex);
+        g_PoolSparePending = false;
+        if (generation == g_PoolGeneration && !g_PoolSpare) g_PoolSpare = page;
+    });
+}
+
+id<MTLBuffer> PoolAlloc(uint64_t bytes, uint64_t& base)
+{
+    bytes = (bytes + 255) & ~255ull;   // 256-byte aligned ranges (AS vertex / index offsets need 4)
+    base = 0;
+    if (bytes > kPoolPageBytes / 4) return NewShared(bytes);
+    std::lock_guard<std::mutex> l(g_PoolMutex);
+    if (!g_PoolPage || g_PoolUsed + bytes > kPoolPageBytes)
+    {
+        if (g_PoolSpare) { g_PoolPage = g_PoolSpare; g_PoolSpare = nil; AddStat(StGeoSpareHits, 1); }
+        else
+        {
+            g_PoolPage = NewShared(kPoolPageBytes);   // the first page of a session, or the worker is not done yet
+            if (g_PoolPage) g_PoolPage.label = @"FRGlassRT geometry page";
+        }
+        g_PoolUsed = 0;
+        if (!g_PoolPage) return nil;
+        AddStat(StGeoPages, 1);
+    }
+    base = g_PoolUsed;
+    g_PoolUsed += bytes;
+    if (g_PoolUsed > kPoolPageBytes / 2) PoolRequestSpareLocked();
+    return g_PoolPage;
+}
+
+void PoolReset()
+{
+    std::lock_guard<std::mutex> l(g_PoolMutex);
+    g_PoolPage = nil;
+    g_PoolSpare = nil;
+    g_PoolUsed = 0;
+    g_PoolGeneration++;
+}
 } // namespace
 
 extern "C"
@@ -723,6 +907,8 @@ UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API UnityPluginLoad(IUnityInterfaces
     s_Graphics = interfaces ? interfaces->Get<IUnityGraphics>() : nullptr;
     s_Metal = interfaces ? interfaces->Get<IUnityGraphicsMetalV2>() : nullptr;
     g_Caps.fetch_or(CapPluginLoaded);
+    SetStat(StStreamTriBudget, FRGlassRTScene::kStreamTrianglesPerFrame);   // fix round 33: the default budget in force
+    SetStat(StStreamBuildBudget, FRGlassRTScene::kStreamBuildsPerFrame);
     if (s_Graphics)
     {
         s_Graphics->RegisterDeviceEventCallback(OnGraphicsDeviceEvent);
@@ -740,6 +926,42 @@ UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API UnityPluginUnload()
 
 UNITY_INTERFACE_EXPORT int UNITY_INTERFACE_API FRGlassRT_QueryCaps() { return g_Caps.load(); }
 
+// Fix round 32 (review 2 engineering #7): the ABI the plugin was built with, and the sizes of every struct C# passes or
+// mirrors, in this order: FRVertexAttr, FRMaterial, FRLamp, FRFrame, FRInstanceIn, FRGatherVertexArgs, FRGatherIndexArgs.
+// C# calls it first (CheckNative): an old plugin has no such export (EntryPointNotFound) and a mismatched one returns a
+// different ABI or size, and RT stays Off for the session with one status line, before any other native call.
+UNITY_INTERFACE_EXPORT int UNITY_INTERFACE_API FRGlassRT_GetAbi(int* sizes, int count)
+{
+    const int s[7] = { (int)sizeof(FRVertexAttr), (int)sizeof(FRMaterial), (int)sizeof(FRLamp), (int)sizeof(FRFrame),
+                       (int)sizeof(FRInstanceIn), (int)sizeof(FRGatherVertexArgsCPU), (int)sizeof(FRGatherIndexArgsCPU) };
+    if (sizes) for (int i = 0; i < count && i < 7; i++) sizes[i] = s[i];
+    return FR_GLASS_RT_ABI;
+}
+
+// Fix round 32 (review 2 art #1): coverage of camera `cam`'s last completed traced frame: out[0] frame number (-1 =
+// none yet), out[1] glass px, out[2] miss px. Returns 1 when the slot holds this camera's data.
+UNITY_INTERFACE_EXPORT int UNITY_INTERFACE_API FRGlassRT_GetCameraCoverage(int cam, int64_t* out)
+{
+    if (!out || cam < 0) return 0;
+    int i = cam % kCamCov;
+    // fix round 33 (R3-B3): seqlock read (see WriteCoverageSlot); lock-free, a torn or in-progress slot reads as "none yet"
+    uint32_t s0 = g_CovSeq[i].load(std::memory_order_acquire);
+    int32_t c = g_CovCam[i].load(std::memory_order_relaxed);
+    int32_t f = g_CovFrame[i].load(std::memory_order_relaxed);
+    int64_t glass = g_CovGlass[i].load(std::memory_order_relaxed);
+    int64_t miss = g_CovMiss[i].load(std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_acquire);         // the data loads above happen before the re-check
+    uint32_t s1 = g_CovSeq[i].load(std::memory_order_relaxed);
+    if ((s0 & 1u) != 0 || s0 != s1 || f < 0 || c != cam) { out[0] = -1; out[1] = 0; out[2] = 0; return 0; }
+    out[0] = f; out[1] = glass; out[2] = miss;
+    return 1;
+}
+
+// Fix round 31: TLAS reuse switch for the harness's A/B cost rounds (default on), and this thread's CPU time for the
+// main-thread cost (wall time is inflated by other processes on a loaded machine).
+UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetTlasReuse(int on) { FRGlassRTScene::SetTlasReuse(on != 0); }
+UNITY_INTERFACE_EXPORT uint64_t UNITY_INTERFACE_API FRGlassRT_ThreadCpuNs() { return clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID); }
+
 UNITY_INTERFACE_EXPORT int UNITY_INTERFACE_API FRGlassRT_CopyLastError(char* buffer, int length)
 {
     std::lock_guard<std::mutex> l(g_ErrorMutex);
@@ -756,9 +978,25 @@ UNITY_INTERFACE_EXPORT double UNITY_INTERFACE_API FRGlassRT_GetStat(int id)
     return GetStatValue(id);
 }
 
-UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_ResetStatMax() { g_EncodeMax = 0; }
+UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_ResetStatMax()
+{
+    g_EncodeMax = 0;
+    SetStat(StSubmitMsMax, 0);
+}
 
 UNITY_INTERFACE_EXPORT UnityRenderingEventAndData UNITY_INTERFACE_API FRGlassRT_GetRenderEventFunc() { return OnRenderEvent; }
+
+// 0 = event barriers only when a camera texture is not hazard-tracked (default), 1 = always (harness A/B)
+UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetBuildBudget(int triangles, int builds)
+{
+    uint32_t t = triangles > 0 ? (uint32_t)triangles : FRGlassRTScene::kStreamTrianglesPerFrame;
+    uint32_t b = builds > 0 ? (uint32_t)builds : FRGlassRTScene::kStreamBuildsPerFrame;
+    FRGlassRTScene::SetStreamBudget(t, b);
+    SetStat(StStreamTriBudget, t);     // fix round 33: the harness reads the budget in force (burst vs default)
+    SetStat(StStreamBuildBudget, b);
+}
+
+UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetBarrierMode(int mode) { g_BarrierMode.store(mode != 0 ? 1 : 0); }
 
 // ---- cameras
 UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetCameraTargets(int cam, void* depth, void* normal, void* raw, void* aux,
@@ -781,6 +1019,7 @@ UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetCameraTargets(int c
 
 UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_FreeCamera(int cam)
 {
+    ClearCoverageSlot(cam);   // fix round 33: through the seqlock writer
     auto op = std::make_unique<Op>();
     op->type = OpType::FreeCamera;
     op->cam = cam;
@@ -801,18 +1040,24 @@ UNITY_INTERFACE_EXPORT int UNITY_INTERFACE_API FRGlassRT_UploadMeshCPU(int key, 
     u->vertexCount = (uint32_t)vertexCount;
     u->indexCount = (uint32_t)indexCount;
     uint64_t posBytes = 12ull * vertexCount;
-    u->attrOffset = Align16(posBytes);
-    u->indexOffset = Align16(u->attrOffset + sizeof(FRVertexAttr) * (uint64_t)vertexCount);
-    u->subOffset = Align16(u->indexOffset + 4ull * indexCount);
-    uint64_t total = u->subOffset + 4ull * submeshCount;
-    u->buffer = NewShared(total);
+    uint64_t attrRel = Align16(posBytes);
+    uint64_t indexRel = Align16(attrRel + sizeof(FRVertexAttr) * (uint64_t)vertexCount);
+    uint64_t subRel = Align16(indexRel + 4ull * indexCount);
+    uint64_t total = subRel + 4ull * submeshCount;
+    uint64_t at = 0;
+    // deforming meshes keep a buffer of their own (their positions ping-pong with a second buffer on refit)
+    if (deforming) { u->buffer = NewShared(total); if (u->buffer) u->buffer.label = @"FRGlassRT mesh (deforming)"; }
+    else u->buffer = PoolAlloc(total, at);
     if (!u->buffer) return -2;
-    u->buffer.label = @"FRGlassRT mesh";
-    uint8_t* base = (uint8_t*)u->buffer.contents;
+    u->posOffset = at;
+    u->attrOffset = at + attrRel;
+    u->indexOffset = at + indexRel;
+    u->subOffset = at + subRel;
+    uint8_t* base = (uint8_t*)u->buffer.contents + at;
     std::memcpy(base, positions, posBytes);
-    std::memcpy(base + u->attrOffset, attrs, sizeof(FRVertexAttr) * (size_t)vertexCount);
-    std::memcpy(base + u->indexOffset, indices, 4ull * indexCount);
-    uint32_t* subs = (uint32_t*)(base + u->subOffset);
+    std::memcpy(base + attrRel, attrs, sizeof(FRVertexAttr) * (size_t)vertexCount);
+    std::memcpy(base + indexRel, indices, 4ull * indexCount);
+    uint32_t* subs = (uint32_t*)(base + subRel);
     for (int k = 0; k < submeshCount; k++)
     {
         if (subStart[k] < 0 || subCount[k] < 3 || subStart[k] + subCount[k] > indexCount) return -3;
@@ -971,6 +1216,8 @@ UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_SetMaterials(int first
 
 UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API FRGlassRT_ResetScene()
 {
+    PoolReset();   // new uploads start a new page; the old pages leave with their meshes (scene reset below)
+    for (int i = 0; i < kCamCov; i++) WriteCoverageSlot(i, -1, -1, 0, 0);   // no coverage from a previous session (fix round 33: seqlock writer)
     auto op = std::make_unique<Op>();
     op->type = OpType::Reset;
     Push(std::move(op));
@@ -994,6 +1241,7 @@ UNITY_INTERFACE_EXPORT uint64_t UNITY_INTERFACE_API FRGlassRT_SubmitFrame(int ca
                                                                          const FRLamp* lamps, int lampCount, void* envCube)
 {
     if (!frame || cam < 0) return 0;
+    uint64_t t0 = mach_absolute_time();
     auto p = std::make_unique<FramePacket>();
     p->cam = cam;
     p->frameNumber = frameNumber;
@@ -1004,7 +1252,12 @@ UNITY_INTERFACE_EXPORT uint64_t UNITY_INTERFACE_API FRGlassRT_SubmitFrame(int ca
     auto op = std::make_unique<Op>();
     op->type = OpType::Frame;
     op->frame = std::move(p);
-    return Push(std::move(op));
+    uint64_t seq = Push(std::move(op));
+    // native share of the main thread's submit (the rest of the C# "submit" figure is the P/Invoke itself)
+    double ms = MachToMs(mach_absolute_time() - t0);
+    SetStat(StSubmitMs, ms);
+    MaxStat(StSubmitMsMax, ms);
+    return seq;
 }
 
 } // extern "C"

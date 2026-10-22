@@ -12,18 +12,17 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// CLONE-ONLY blockout look-dev for the security desk (the tutorial "station"), workflow station-look, stage 2.
-/// Spec: Documentation/research/station/20_layout.md (grammar G1-G10, plans W, D, H, section 8 checks) and
-/// 30_look.md (kit list S01-S36, light plan, the amended plans W' and D').
-/// Each plan is a RoomModuleData stamped into the game's own map (FrontRoomsMapWorld.PlaceModule +
-/// BuildForCapture, as the Level Designer preview does) at world (4992, 0, 4992): the map builds the shell,
-/// its surfaces, the lamps (module lamp modes Steady / Dim / Off) and the module's floor kits with their
-/// colliders. On top: existing kits by FrontRoomsKitLibrary.Spawn (colliders false) and blockout stand-ins
-/// for the new kits, named as in 30_look.md; the TV light (spot 100/160, URP range 9, intensity and colour
-/// from the ad's light track); the game post. Renders at eye 1.62, vFOV 76: approach, reveal, beacon, take,
-/// exit views, plan; ID masks; white-Lambert illuminance passes (linear float); capsule walk grids.
-/// Batch: -executeMethod FrontRoomsStationLookdev.RunBatch -quit [-stationPlans W,Wp,D,Dp,H]
-///        [-stationOut dir] [-stationNoE] -frGlassRT off
+/// CLONE-ONLY blockout look-dev for the security desk (the tutorial "station"), workflow station-look.
+/// r7 (fix stage, 2026-10-22, after the era/look and gameplay critics): see research/station/50_critic_fixes.md.
+/// Spec: Documentation/research/station/20_layout.md (grammar G1-G10, section 8 checks) and 30_look.md (kits, light plan).
+/// Each plan is a RoomModuleData stamped into the game's own map (FrontRoomsMapWorld.PlaceModule + BuildForCapture,
+/// as the Level Designer preview does) at world (4992, 0, 4992). On top: existing kits by FrontRoomsKitLibrary.Spawn
+/// (colliders false) and blockout stand-ins for the new kits; the TV light (V3 as proposed by r7: spot 100/160, URP range 9,
+/// a cosine-falloff cookie that clips up-light, luminance-kept colour 60 % toward the set's white, intensity from the ad's
+/// light track); the game post. Renders at eye 1.62, vFOV 76.
+/// Batch: -executeMethod FrontRoomsStationLookdev.RunBatch -quit [-stationPlans Wp4,Dp4,H] [-stationOut dir]
+///        [-stationNoE] [-stationV3 r7:k=5,floor=0.81] [-stationGridOnly] [-stationSweep 30] [-stationSweepPlans Wp4,Dp4]
+///        -frGlassRT off
 /// ASCII only, no C# tuples (clone editor-script rule).
 /// </summary>
 public static class FrontRoomsStationLookdev
@@ -34,7 +33,7 @@ public static class FrontRoomsStationLookdev
     const string TexDir = "Assets/Resources/Surfaces/Textures/";
     const string CardDir = "Assets/StationLookdevTex/";
 
-    enum Kind { Shell, Furniture, Screen, Key, Plate, SetBody, Lens, Portal1, Portal2, ProbeOut, ProbeIn }
+    enum Kind { Shell, Furniture, Screen, Key, Plate, SetBody, Lens, Portal1, Portal2, ProbeOut, ProbeIn, Jewel, Sign, ProbeLeak }
 
     static Color IdColour(Kind k)
     {
@@ -44,17 +43,19 @@ public static class FrontRoomsStationLookdev
             case Kind.Portal2: return new Color(0f, 1f, 0f);
             case Kind.Portal1: return new Color(0f, 0f, 1f);
             case Kind.Screen: return new Color(1f, 1f, 0f);
-            case Kind.Plate: return new Color(1f, 0f, 1f);
+            case Kind.Plate: case Kind.Sign: return new Color(1f, 0f, 1f);
             case Kind.SetBody: return new Color(0f, 1f, 1f);
-            case Kind.Furniture: return new Color(1f, 1f, 1f);
+            case Kind.Furniture: case Kind.Jewel: return new Color(1f, 1f, 1f);
             default: return new Color(0f, 0f, 0f);
         }
     }
 
-    // ------------------------------------------------------------------ the ad's light track (30_look 3.1)
-    // FrontRooms_Ad_01.mp4 sha1 8bde2101, five still cards per 16 s loop. I = 4 sqrt(Y / 0.140) clamped 2.0-5.6;
-    // colour = the card's mean linear colour normalised to 1, blended 35 % toward (0.86, 0.91, 1.00).
+    // ------------------------------------------------------------------ the ad's light track (30_look 3.1; r7 = 50_critic_fixes V3)
+    // FrontRooms_Ad_01.mp4 sha1 8bde2101, five still cards per 16 s loop; index 0 = the loop mean.
+    // r6 ("as specified"): I = 4 sqrt(Y / 0.140) clamped 2.0-5.6; colour = mean linear colour normalised to 1, 35 % toward white.
     static readonly float[] CardI = { 4.000f, 3.643f, 5.512f, 3.248f, 3.669f, 2.052f };
+    static readonly float[] CardY = { .140f, .116f, .266f, .092f, .118f, .037f };
+    static readonly Color SetWhite = new Color(.86f, .91f, 1f);
     static readonly Color[] CardC =
     {
         new Color(.922f, .822f, 1f),   // 0 = the loop mean ("mean card", I 4)
@@ -64,6 +65,69 @@ public static class FrontRoomsStationLookdev
         new Color(.802f, .707f, 1f),   // 4 logo + address, violet (10-14 s)
         new Color(.374f, .466f, 1f),   // 5 WTCZ-TV 61, blue (14-16 s): the darkest
     };
+
+    class V3Cfg
+    {
+        public string name = "r7";
+        public bool r6Exact;
+        public float k = 5f, floorFrac = .81f, ceilFrac = 1.4f, blend = .6f;
+        public bool lumKeep = true, cookie = true;
+        public string Describe()
+        {
+            if (r6Exact) return "V3 as specified (r6): I = 4 sqrt(Y/0.14) in 2.0-5.6, colour 35 % to white, no cookie";
+            return "V3 r7: I = " + F(k) + " sqrt(Y/0.14) in " + F(floorFrac * k) + "-" + F(ceilFrac * k) + ", colour " + Mathf.RoundToInt(blend * 100f) + " % to white"
+                + (lumKeep ? ", luminance kept" : "") + (cookie ? ", cosine cookie with up-clip" : "");
+        }
+    }
+
+    static V3Cfg v3 = new V3Cfg();
+    static V3Cfg SpecCfg() { return new V3Cfg { name = "spec", r6Exact = true, cookie = false, lumKeep = false, k = 4f, floorFrac = .5f, blend = .35f }; }
+
+    static Color CardNorm(int c)
+    {
+        var b = CardC[c];
+        return new Color((b.r - .35f * SetWhite.r) / .65f, (b.g - .35f * SetWhite.g) / .65f, (b.b - .35f * SetWhite.b) / .65f);
+    }
+
+    static Color BlendWhite(Color n, float b)
+    {
+        var c = new Color(n.r * (1f - b) + SetWhite.r * b, n.g * (1f - b) + SetWhite.g * b, n.b * (1f - b) + SetWhite.b * b);
+        var m = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+        return new Color(c.r / m, c.g / m, c.b / m);
+    }
+
+    static float LumLin(Color c) { var l = c.linear; return .2126f * l.r + .7152f * l.g + .0722f * l.b; }
+
+    static void CardLight(int card, V3Cfg cfg, out float intensity, out Color colour)
+    {
+        if (cfg.r6Exact) { intensity = CardI[card]; colour = CardC[card]; return; }
+        var raw = cfg.k * Mathf.Sqrt(CardY[card] / .140f);
+        intensity = Mathf.Clamp(raw, cfg.floorFrac * cfg.k, cfg.ceilFrac * cfg.k);
+        colour = BlendWhite(CardNorm(card), cfg.blend);
+        if (cfg.lumKeep)
+        {
+            var reference = BlendWhite(CardNorm(0), cfg.blend);
+            intensity *= LumLin(reference) / Mathf.Max(LumLin(colour), 1e-4f);
+        }
+    }
+
+    static V3Cfg ParseV3(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return new V3Cfg();
+        if (s == "spec") return SpecCfg();
+        var c = new V3Cfg();
+        var parts = s.Split(':');
+        if (parts.Length > 1)
+            foreach (var kv in parts[1].Split(','))
+            {
+                var p = kv.Split('=');
+                if (p.Length != 2) continue;
+                var v = float.Parse(p[1], CultureInfo.InvariantCulture);
+                if (p[0] == "k") c.k = v; else if (p[0] == "floor") c.floorFrac = v; else if (p[0] == "blend") c.blend = v;
+                else if (p[0] == "cookie") c.cookie = v > .5f; else if (p[0] == "lum") c.lumKeep = v > .5f; else if (p[0] == "ceil") c.ceilFrac = v;
+            }
+        return c;
+    }
 
     class Opening
     {
@@ -82,6 +146,9 @@ public static class FrontRoomsStationLookdev
         public char e1Side, e2Side; public int e1Index, e2Index;
         public float e1Want = 1.5f, e1Tol = .35f;
         public string lamps;                 // per cell, j-major from the south row: S steady, D dim, O off
+        public ModuleLamp e1OutLamp = ModuleLamp.Steady, e2OutLamp = ModuleLamp.Steady;   // corridor side (ask to level design)
+        public ModuleLamp e1NextLamp = ModuleLamp.Auto;     // the junction cell beyond E1 (variant Wp4s)
+        public bool floorOne;                // a Floor 1 module: E1 must be the brightest opening from the board
         public readonly List<ModuleProp> props = new List<ModuleProp>();
         public Vector3 screen;               // screen centre, module metres
         public float tvYaw, tvTilt;
@@ -94,6 +161,9 @@ public static class FrontRoomsStationLookdev
         public Action dress;                 // stand-ins and small kits after the map build
         public int guardIndex = -1;          // index of the guard's chair in props (jacket)
         public int credenzaIndex = -1;
+        public int cabinetIndex = -1;        // the key cabinet (door shut, r7)
+        public Vector3 leakProbe;            // a floor point in the room beyond the wall the set's cone reaches (leak test)
+        public Vector3 leakEye;
         public string notes = "";
     }
 
@@ -106,7 +176,7 @@ public static class FrontRoomsStationLookdev
     static Plan plan;
     static RoomModuleData stamped;
     static string outRoot, outDir;
-    static bool ePass = true;
+    static bool ePass = true, gridOnly, realGen, sweepMode;
     static readonly Dictionary<Renderer, Kind> kinds = new Dictionary<Renderer, Kind>();
     static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
     static readonly List<string> log = new List<string>();
@@ -118,38 +188,69 @@ public static class FrontRoomsStationLookdev
     static Opening e1, e2;
     static readonly List<Renderer> lensRs = new List<Renderer>();
     static readonly List<Light> lampLights = new List<Light>();
+    static readonly List<GameObject> keyParts = new List<GameObject>();
     static Vector3 keyLook;               // module metres: the key's centre (look target)
     static int seedUsed;
+    static Texture2D cookieTex;
+    static bool cookieFlipV;
+    static Transform e2DoorHinge;         // a map door on E2 (sweep door seed)
+    static float tvScale = 1f;            // extra scale on the TV light (the take's collapse curve)
 
     // ------------------------------------------------------------------ batch
     public static void RunBatch()
     {
         var args = Environment.GetCommandLineArgs();
-        var plans = "W,Wp,Wp2,Wp3,D,Dp,Dp3,H";
+        var plans = "Wp4,Wp4o,Dp4,H";
+        var sweepN = 0; var sweepPlans = "Wp4,Dp4";
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "-stationPlans" && i + 1 < args.Length) plans = args[i + 1];
             if (args[i] == "-stationOut" && i + 1 < args.Length) outRoot = args[i + 1];
             if (args[i] == "-stationNoE") ePass = false;
+            if (args[i] == "-stationV3" && i + 1 < args.Length) v3 = ParseV3(args[i + 1]);
+            if (args[i] == "-stationGridOnly") gridOnly = true;
+            if (args[i] == "-stationSweep" && i + 1 < args.Length) sweepN = int.Parse(args[i + 1], CultureInfo.InvariantCulture);
+            if (args[i] == "-stationSweepPlans" && i + 1 < args.Length) sweepPlans = args[i + 1];
         }
         if (string.IsNullOrEmpty(outRoot)) outRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "station_lookdev");
         Directory.CreateDirectory(outRoot);
+        File.WriteAllText(Path.Combine(outRoot, "v3.txt"), v3.Describe() + "\n");
+        foreach (var a0 in args) if (a0 == "-stationShadowTest") { ShadowTest(); return; }
         FrontRoomsKitLibrary.ClearCache();
+        if (!gridOnly && plans.Length > 0) { try { RelayClipTest(); } catch (Exception e) { Debug.LogError("[StationLookdev] relay clip test failed: " + e); } }
         foreach (var k in plans.Split(','))
         {
             var key = k.Trim();
             if (key.Length == 0) continue;
             var t0 = DateTime.Now;
-            try { RunPlan(key); }
+            try { RunPlan(key, -1, Path.Combine(outRoot, key)); }
             catch (Exception e)
             {
                 Debug.LogError("[StationLookdev] plan " + key + " failed: " + e);
                 File.AppendAllText(Path.Combine(outRoot, "errors.txt"), key + ": " + e + "\n");
+                SafeTeardown();
             }
             File.AppendAllText(Path.Combine(outRoot, "timing.txt"), key + "\t" + (DateTime.Now - t0).TotalSeconds.ToString("0", CultureInfo.InvariantCulture) + " s\n");
         }
+        if (sweepN > 0 && !gridOnly)
+            foreach (var k in sweepPlans.Split(','))
+            {
+                var key = k.Trim();
+                if (key.Length == 0) continue;
+                var t0 = DateTime.Now;
+                try { Sweep(key, sweepN); }
+                catch (Exception e)
+                {
+                    Debug.LogError("[StationLookdev] sweep " + key + " failed: " + e);
+                    File.AppendAllText(Path.Combine(outRoot, "errors.txt"), "sweep " + key + ": " + e + "\n");
+                    SafeTeardown();
+                }
+                File.AppendAllText(Path.Combine(outRoot, "timing.txt"), "sweep " + key + "\t" + (DateTime.Now - t0).TotalSeconds.ToString("0", CultureInfo.InvariantCulture) + " s\n");
+            }
         Debug.Log("[StationLookdev] ALL DONE -> " + outRoot);
     }
+
+    static void SafeTeardown() { try { Teardown(); } catch (Exception) { } realGen = false; sweepMode = false; }
 
     static void Log(string s) { log.Add(s); Debug.Log("[StationLookdev] " + (plan != null ? plan.key : "-") + " " + s); }
     static string F(float v) { return v.ToString("0.###", CultureInfo.InvariantCulture); }
@@ -158,47 +259,61 @@ public static class FrontRoomsStationLookdev
     static void Ms(string k, string v) { metrics[k] = "\"" + (v ?? "").Replace("\\", "/").Replace("\"", "'") + "\""; }
     static void Mv(string k, Vector3 v) { metrics[k] = "[" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + "]"; }
 
-    static void RunPlan(string key)
+    static void ResetState()
+    {
+        kinds.Clear(); mats.Clear(); log.Clear(); virtualProps.Clear(); virtualFoot.Clear(); metrics.Clear();
+        lensRs.Clear(); lampLights.Clear(); keyParts.Clear();
+        tv = null; tvLight = null; screenR = null; e2DoorHinge = null; tvScale = 1f;
+        if (cookieTex != null) { UnityEngine.Object.DestroyImmediate(cookieTex); cookieTex = null; }
+    }
+
+    /// <summary>One plan. seed less than 0: pick by the r6 rule (arch widths as archWidth will set them, straight approach) in the forced
+    /// generator (all Standard, no other modules); seed 0 or more with realGen: the sweep's seed in the real generator.</summary>
+    static void RunPlan(string key, int seed, string dir)
     {
         plan = MakePlan(key);
-        outDir = Path.Combine(outRoot, key);
+        outDir = dir;
         Directory.CreateDirectory(outDir);
-        kinds.Clear(); mats.Clear(); log.Clear(); virtualProps.Clear(); virtualFoot.Clear(); metrics.Clear();
-        lensRs.Clear(); lampLights.Clear();
-        tv = null; tvLight = null; screenR = null;
+        ResetState();
 
         var m = BuildModule(plan);
-        var seeds = CandidateSeeds(m, 300);
-        Log("candidate seeds (arch widths fit G1/G2): " + seeds.Count);
-        // Pick by the map's own data before building any geometry: exactly two openings (G2; the map may reopen a
-        // wall to keep the chunk connected), and a straight corridor 3 cells out on E1's axis (the approach).
-        var pick = -1; var fallback = -1; var tried = 0;
-        foreach (var seed in seeds)
+        if (seed < 0)
         {
-            tried++;
-            int openings; bool far, far2; string desc;
-            SeedData(m, seed, out openings, out far, out far2, out desc);
-            if (openings != 2) continue;
-            if (fallback < 0) { fallback = seed; Log("first two-opening seed " + seed + ": " + desc); }
-            if (far && far2) { pick = seed; Log("picked seed " + seed + " after " + tried + ": " + desc); break; }
+            var seeds = CandidateSeeds(m, 300);
+            Log("candidate seeds (arch widths fit G1/G2): " + seeds.Count);
+            var pick = -1; var fallback = -1; var tried = 0;
+            foreach (var s in seeds)
+            {
+                tried++;
+                int openings; bool far, far2; string desc;
+                SeedData(m, s, out openings, out far, out far2, out desc);
+                if (openings != 2) continue;
+                if (fallback < 0) { fallback = s; Log("first two-opening seed " + s + ": " + desc); }
+                if (far && far2) { pick = s; Log("picked seed " + s + " after " + tried + ": " + desc); break; }
+            }
+            if (pick < 0) { pick = fallback >= 0 ? fallback : seeds[0]; Log("WARNING no seed with two openings and a straight approach; using " + pick); Ms("seed_warning", "no straight approach"); }
+            seedUsed = pick;
+            Mx("seeds_tried", tried);
         }
-        if (pick < 0) { pick = fallback >= 0 ? fallback : seeds[0]; Log("WARNING no seed with two openings and a straight approach; using " + pick); Ms("seed_warning", "no straight approach"); }
-        seedUsed = pick;
+        else seedUsed = seed;
         NewScene();
         BuildWorld(m, seedUsed);
         Log("seed " + seedUsed + ": perimeter openings " + CountOpenings());
         Mx("seed", seedUsed);
-        Mx("seeds_tried", tried);
         Ms("plan", plan.title);
+        Ms("generator", realGen ? "real (profile defaults: heights, themes, modules as the game)" : "forced (all Standard, no other modules)");
+        Ms("v3", v3.Describe());
 
         DisableZoneKeys();
         CollectLamps();
+        CorridorLamps();
         Dress();
         Physics.SyncTransforms();
         ArchCheck(e1, "e1"); ArchCheck(e2, "e2");
         Measure();
-        Shots();
-        WalkGrid();
+        if (gridOnly) { V3Grid(); }
+        else if (sweepMode) { SweepShots(); WalkGrid(); }
+        else { Shots(); WalkGrid(); ExtraShots(); Counts(); }
         ValidateModule(m);
         WriteMetrics();
         File.WriteAllLines(Path.Combine(outDir, "log.txt"), log.ToArray());
@@ -223,7 +338,7 @@ public static class FrontRoomsStationLookdev
         if (root != null) UnityEngine.Object.DestroyImmediate(root.gameObject);
         if (previewProfile != null) UnityEngine.Object.DestroyImmediate(previewProfile);
         world = null; root = null; previewProfile = null; mapT = null; extras = null;
-        kinds.Clear(); lensRs.Clear(); lampLights.Clear();
+        kinds.Clear(); lensRs.Clear(); lampLights.Clear(); keyParts.Clear();
     }
 
     // ------------------------------------------------------------------ hash (FrontRoomsMap.cs MapHash, internal: replicated)
@@ -276,7 +391,7 @@ public static class FrontRoomsStationLookdev
         {
             var a = MakeOpening(seed, plan.e1Side, plan.e1Index, m);
             var b = MakeOpening(seed, plan.e2Side, plan.e2Index, m);
-            if (a.width < 1.6f) continue;                                   // G1: E1 the widest, 1.6-1.8 m
+            if (a.width < 1.6f) continue;                                   // G1: E1 the widest, 1.6-1.8 m (archWidth, M4 iii)
             if (b.width > 1.4f) continue;                                   // G2: E2 1.1-1.4 m
             if (plan.e1Want >= 0f && Mathf.Abs(a.centre - plan.e1Want) > plan.e1Tol) continue;
             list.Add(seed);
@@ -336,12 +451,6 @@ public static class FrontRoomsStationLookdev
         return new GridCoord(c.x + dx, c.y + dy);
     }
 
-    static bool cache_EdgeOk(GridCoord a, GridCoord b)
-    {
-        if (world == null || world.Cache == null) return false;
-        return world.Cache.Edge(a, b) != EdgeKind.Wall;
-    }
-
     // ------------------------------------------------------------------ module and map
     static RoomModuleData BuildModule(Plan p)
     {
@@ -374,9 +483,12 @@ public static class FrontRoomsStationLookdev
         previewProfile = UnityEngine.Object.Instantiate(source != null ? source : FrontRoomsLevelProfile.Default);
         previewProfile.hideFlags = HideFlags.DontSave;
         var g = previewProfile.Generation(seed);
-        g.lowShare = 0f; g.standardShare = 1f; g.tallShare = 0f;
-        g.officeShare = m.theme == ZoneTheme.Office ? 1f : 0f;
-        g.moduleChance = 0f;
+        if (!realGen)
+        {
+            g.lowShare = 0f; g.standardShare = 1f; g.tallShare = 0f;
+            g.officeShare = m.theme == ZoneTheme.Office ? 1f : 0f;
+            g.moduleChance = 0f;
+        }
         previewProfile.generation = g;
         previewProfile.buildRadius = 1;
         var go = new GameObject("STATION / map");
@@ -395,6 +507,12 @@ public static class FrontRoomsStationLookdev
         mapT = world.transform;
         extras = new GameObject("STATION / blockout extras").transform;
         extras.SetParent(root, false);
+        if (world.Cache.Edge(e2.inside, e2.outside) == EdgeKind.Door)
+        {
+            foreach (var t in world.GetComponentsInChildren<Transform>(true))
+                if (t.name.StartsWith("Door hinge") && Vector3.Distance(Mod(t.position), e2.mid) < 2.2f) { e2DoorHinge = t; break; }
+            Log("E2 is a map door: hinge " + (e2DoorHinge != null ? e2DoorHinge.name : "not found"));
+        }
     }
 
     static int CountOpenings()
@@ -411,6 +529,7 @@ public static class FrontRoomsStationLookdev
             if (world.Cache.Edge(new GridCoord(x0 + plan.w - 1, y0 + j), new GridCoord(x0 + plan.w, y0 + j)) != EdgeKind.Wall) { n++; list.Add("E" + j + ":" + world.Cache.Edge(new GridCoord(x0 + plan.w - 1, y0 + j), new GridCoord(x0 + plan.w, y0 + j))); }
         }
         Ms("openings", string.Join(" ", list.ToArray()));
+        Ms("e2_edge_kind", world.Cache.Edge(e2.inside, e2.outside).ToString());
         return n;
     }
 
@@ -435,11 +554,23 @@ public static class FrontRoomsStationLookdev
                 for (var t = r.transform; t != null && t != mapT; t = t.parent)
                     if (t.name.StartsWith("Kit_")) { k = Kind.Furniture; break; }
             }
+            if (r.name == "Door leaf") k = Kind.Furniture;
             kinds[r] = k;
         }
         foreach (var l in world.GetComponentsInChildren<Light>(true))
             if (l.transform.parent != null && l.transform.parent.name.StartsWith("Fixture")) lampLights.Add(l);
         Log("map lamps " + lampLights.Count + ", lenses " + lensRs.Count);
+    }
+
+    /// <summary>The corridor-side lamp of each exit (the ask to level design, 50_critic_fixes G8 / G2): SetLampMode on the outside cell.</summary>
+    static void CorridorLamps()
+    {
+        world.SetLampMode(e1.outside, plan.e1OutLamp);
+        world.SetLampMode(e2.outside, plan.e2OutLamp);
+        if (plan.e1NextLamp != ModuleLamp.Auto) world.SetLampMode(Step(e1.outside, -1, e1), plan.e1NextLamp);
+        world.TickFixturesForTools(0f);
+        Ms("e1_outside_lamp", plan.e1OutLamp + " (asked of level design; mode now " + world.LampModeOf(e1.outside) + ")");
+        Ms("e2_outside_lamp", plan.e2OutLamp + " (asked of level design; mode now " + world.LampModeOf(e2.outside) + ")");
     }
 
     // ------------------------------------------------------------------ coordinates
@@ -475,13 +606,13 @@ public static class FrontRoomsStationLookdev
         return m;
     }
 
-    static Material Glow(string name, Color c, Color emission)
+    static Material Glow(string name, Color c, Color emission, float smooth = .6f)
     {
         Material cached;
         if (mats.TryGetValue(name, out cached)) return cached;
         var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
         m.SetColor("_BaseColor", c);
-        m.SetFloat("_Smoothness", .6f);
+        m.SetFloat("_Smoothness", smooth);
         m.EnableKeyword("_EMISSION");
         m.SetColor("_EmissionColor", emission);
         mats[name] = m;
@@ -514,13 +645,19 @@ public static class FrontRoomsStationLookdev
     static Material Alu { get { return Slot("Prop_Aluminium", "A8A9A4", .5f); } }
     static Material Chrome { get { return Slot("Prop_Chrome", "C8C8C8", .8f); } }
     static Material Navy { get { return Slot("Prop_FabricNavy", "222F4A"); } }
+    static Material Uniform { get { return Flat("Prop_FabricUniform (new slot for the jacket, blockout #59647A: lighter than navy, r7)", Hex("59647A"), .25f); } }
     static Material PaperW { get { return Flat("Prop_StationPaper (atlas pending, blank #DCD8CC)", Hex("DCD8CC"), .2f); } }
-    static Material LabelTile { get { return Flat("annunciator label tile (off-white, never lit)", Hex("DCD8CC"), .35f); } }
+    static Material LabelStrip { get { return Flat("annunciator engraved label strip (#C9C3B2 on putty, matte, r7)", Hex("C9C3B2"), .15f); } }
+    static Material LensUnlit { get { return Flat("annunciator lamp lens, frosted, unlit (#8E8B84, r7)", Hex("8E8B84"), .55f); } }
+    static Material Backer { get { return Flat("key board backer, painted steel (#74766F matte, r7)", Hex("74766F"), .2f); } }
     static Material Hardboard { get { return Slot("Prop_Hardboard", "6B5136"); } }
     static Material Ceramic { get { return Slot("Prop_Ceramic", "E6E2D8", .6f); } }
     static Material GlassM { get { return Slot("Prop_Glass", "B8C4C4", .9f); } }
     static Material CoffeeM { get { return Flat("cold coffee", Hex("2A1A10"), .7f); } }
-    static Material GreenJewel { get { return Glow("POWER jewel (green, steady, emissive only)", new Color(.1f, .6f, .2f), new Color(.05f, 1.6f, .25f)); } }
+    static Material CordBlack { get { return Flat("power cord / RG-59 coax (black PVC)", Hex("161616"), .35f); } }
+    // r7: an incandescent pilot jewel (faceted green glass, hue ~140, a warm filament spot), lower emission than r6's LED green
+    static Material GreenJewel { get { return Glow("POWER pilot jewel (green glass, incandescent, steady, emissive only; r7b hue ~160 before the zone grade)", new Color(.03f, .30f, .18f), new Color(.024f, .40f, .27f), .75f); } }
+    static Material Filament { get { return Glow("POWER pilot filament spot (warm, faint)", new Color(.3f, .25f, .1f), new Color(.17f, .13f, .06f), .2f); } }
 
     // ------------------------------------------------------------------ geometry helpers (module metres)
     static Transform Group(string name)
@@ -581,6 +718,23 @@ public static class FrontRoomsStationLookdev
         if (solid) { var bc = go.AddComponent<BoxCollider>(); bc.size = new Vector3(1f, 2f, 1f); }
         var r = go.GetComponent<MeshRenderer>();
         r.sharedMaterial = m;
+        kinds[r] = k;
+        return r;
+    }
+
+    /// <summary>A disc on a wall (a lens): a short cylinder whose axis is the wall normal.</summary>
+    static Renderer Disc(Transform parent, string name, Vector3 centre, Vector3 normal, float diameter, float depth, Material m, Kind k)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.position = W(centre + normal * (depth * .5f));
+        go.transform.rotation = mapT.rotation * Quaternion.FromToRotation(Vector3.up, normal);
+        go.transform.localScale = new Vector3(diameter, depth * .5f, diameter);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        r.shadowCastingMode = ShadowCastingMode.Off;
         kinds[r] = k;
         return r;
     }
@@ -682,6 +836,42 @@ public static class FrontRoomsStationLookdev
         AddVirtual("Kit_TandemBeam3", o, yaw, new[] { -.92f, -.30f, .92f, .32f, .83f });
     }
 
+    /// <summary>S08b Kit_TandemBeamTable: a beam-end table with a built-in ashtray (local frame as Tandem).</summary>
+    static void BeamTable(Vector3 o, float yaw)
+    {
+        var p = Group("Kit_TandemBeamTable (blockout stand-in)");
+        FBox(p, "beam stub", o, yaw, new Vector3(0f, .36f, -.02f), new Vector3(.52f, .06f, .08f), SteelBlack, Kind.Furniture, true);
+        FBox(p, "leg", o, yaw, new Vector3(.20f, .18f, -.02f), new Vector3(.06f, .36f, .06f), SteelBlack, Kind.Furniture, true);
+        FBox(p, "top (grey laminate)", o, yaw, new Vector3(0f, .45f, .04f), new Vector3(.48f, .03f, .46f), LamGrey, Kind.Furniture, true);
+        Cyl(p, "ashtray bowl", o + Rot(yaw, new Vector3(-.10f, .465f, .06f)), .07f, .025f, Chrome, Kind.Furniture, false);
+        AddVirtual("Kit_TandemBeamTable", o, yaw, new[] { -.26f, -.20f, .26f, .27f, .47f });
+    }
+
+    /// <summary>S09 Kit_GuestChairSled: chrome sled base, navy vinyl seat and back; sitter faces local +z.</summary>
+    static void SledChair(Vector3 o, float yaw)
+    {
+        var p = Group("Kit_GuestChairSled (blockout stand-in)");
+        foreach (var x in new[] { -.24f, .24f })
+        {
+            Seg(p, "sled runner", o + Rot(yaw, new Vector3(x, .012f, -.25f)), o + Rot(yaw, new Vector3(x, .012f, .25f)), .022f, Chrome, Kind.Furniture, false);
+            Seg(p, "sled front post", o + Rot(yaw, new Vector3(x, .012f, .25f)), o + Rot(yaw, new Vector3(x, .45f, .22f)), .022f, Chrome, Kind.Furniture, false);
+            Seg(p, "sled back post", o + Rot(yaw, new Vector3(x, .012f, -.25f)), o + Rot(yaw, new Vector3(x, .84f, -.24f)), .022f, Chrome, Kind.Furniture, false);
+        }
+        FBox(p, "seat", o, yaw, new Vector3(0f, .46f, .0f), new Vector3(.50f, .06f, .46f), VinylNavy, Kind.Furniture, true);
+        FBox(p, "back", o, yaw, new Vector3(0f, .72f, -.23f), new Vector3(.48f, .30f, .05f), VinylNavy, Kind.Furniture, true);
+        AddVirtual("Kit_GuestChairSled", o, yaw, new[] { -.27f, -.27f, .27f, .27f, .86f });
+    }
+
+    static void SideTable(Vector3 o)
+    {
+        var p = Group("Kit_SideTable_Laminate (blockout stand-in; the walnut Kit_SideTableTurned is store furniture)");
+        FBox(p, "top", o, 0f, new Vector3(0f, .55f, 0f), new Vector3(.45f, .03f, .45f), LamBeige, Kind.Furniture, true);
+        foreach (var x in new[] { -.19f, .19f })
+            foreach (var z in new[] { -.19f, .19f })
+                FBox(p, "leg", o, 0f, new Vector3(x, .27f, z), new Vector3(.025f, .54f, .025f), Chrome, Kind.Furniture, false);
+        AddVirtual("Kit_SideTable_Laminate", o, 0f, new[] { -.23f, -.23f, .23f, .23f, .57f });
+    }
+
     /// <summary>S02 Kit_TVWallBracket: a platform under the set (tilting with it), wall plates, braces.</summary>
     static void Bracket()
     {
@@ -719,11 +909,22 @@ public static class FrontRoomsStationLookdev
             Seg(p, "arm R " + k, top + side * .10f, walls.Count > 1 ? (k == 0 ? fr : fl) : br, .025f, SteelBlack, Kind.SetBody, false);
             Seg(p, "brace L " + k, bot - side * .10f, walls.Count > 1 ? (k == 0 ? fr : fl) : fl, .025f, SteelBlack, Kind.SetBody, false);
             Seg(p, "brace R " + k, bot + side * .10f, walls.Count > 1 ? (k == 0 ? br : bl) : fr, .025f, SteelBlack, Kind.SetBody, false);
+            if (plan.mount == "wall")
+            {
+                // r7 (era critic 18): the set's power cord and RG-59 coax run down the wall to a duplex outlet and an F-jack plate
+                var c = Group("power cord + RG-59 coax (blockout)");
+                var wallPt = centre - n * .01f;
+                var cordTop = wallPt + n * .012f + side * .07f + Vector3.up * .05f;
+                var coaxTop = wallPt + n * .012f + side * .11f + Vector3.up * .05f;
+                var outlet = new Vector3(cordTop.x, .35f, cordTop.z);
+                Seg(c, "power cord", cordTop, outlet + Vector3.up * .06f, .008f, CordBlack, Kind.Furniture, false);
+                Seg(c, "RG-59 coax", coaxTop, new Vector3(coaxTop.x, .41f, coaxTop.z), .007f, CordBlack, Kind.Furniture, false);
+                KitAt("Kit_OutletDuplex", c, new Vector3(outlet.x, .35f, outlet.z) - n * .011f, R(yaw), Kind.Furniture);
+                KitAt("Kit_JackBNC", c, new Vector3(coaxTop.x, .35f, coaxTop.z) - n * .011f + side * .02f, R(yaw), Kind.Furniture);
+            }
         }
         var lowest = Mathf.Min(Mod(tv.TransformPoint(new Vector3(0f, 0f, .248f))).y, Mod(tv.TransformPoint(new Vector3(0f, 0f, -.241f))).y) - .022f;
         Mx("set_bottom_m", lowest);
-        var tvm = Mod(tv.position);
-        // (its footprint for the module check is added in BuildTv from the set's measured extent)
     }
 
     static float WallFace(Vector3 n)
@@ -735,26 +936,30 @@ public static class FrontRoomsStationLookdev
         return plan.d * 3f - WF;                        // north wall
     }
 
-    /// <summary>S10 Kit_KeySwitchPlate + S11 the key (Kit_KeyRing, Kit_Key_Zone, Kit_KeyTag_Rect) + S21 the plate sign + S13 conduit + S12 annunciator.</summary>
+    /// <summary>S10 Kit_KeySwitchPlate on its backer + S11 the key (Kit_KeyRing, Kit_Key_Zone, Kit_KeyTag_Rect_White) + S21 the plate sign
+    /// + S13 conduit from below + S12 annunciator (r7: putty face, no glazing, round unlit lenses, an incandescent POWER pilot).</summary>
     static void TakeCluster()
     {
         var n = plan.keyNormal; var yaw = YawOf(n);
         var o = new Vector3(plan.keyWall.x, 0f, plan.keyWall.z);
         var hookY = plan.keyWall.y;
+        const float BK = .012f;                      // backer thickness: everything on the board sits this far out
         var p = Group("Kit_KeySwitchPlate (blockout stand-in)");
-        FBox(p, "4 in box", o, yaw, new Vector3(0f, hookY, .025f), new Vector3(.102f, .102f, .05f), Alu, Kind.Plate, false);
-        FBox(p, "switch plate", o, yaw, new Vector3(0f, hookY + .01f, .053f), new Vector3(.15f, .22f, .006f), Alu, Kind.Plate, false);
-        FBox(p, "plunger switch", o, yaw, new Vector3(0f, hookY - .022f, .062f), new Vector3(.022f, .018f, .014f), PlasticBlack, Kind.Plate, false);
-        Seg(p, "hook", o + Rot(yaw, new Vector3(0f, hookY, .056f)), o + Rot(yaw, new Vector3(0f, hookY, .084f)), .006f, Chrome, Kind.Plate, false);
-        Seg(p, "hook tip", o + Rot(yaw, new Vector3(0f, hookY, .084f)), o + Rot(yaw, new Vector3(0f, hookY + .016f, .084f)), .006f, Chrome, Kind.Plate, false);
-        var sign = KitAt("Kit_DoorSign", p, o + Rot(yaw, new Vector3(0f, hookY + .23f, .001f)), R(yaw), Kind.Plate);
+        FBox(p, "backer board 0.30 x 0.40 (painted steel)", o, yaw, new Vector3(0f, hookY + .08f, BK * .5f), new Vector3(.30f, .40f, BK), Backer, Kind.Plate, false);
+        FBox(p, "4 in box", o, yaw, new Vector3(0f, hookY, BK + .025f), new Vector3(.102f, .102f, .05f), Alu, Kind.Plate, false);
+        FBox(p, "switch plate", o, yaw, new Vector3(0f, hookY + .01f, BK + .053f), new Vector3(.15f, .22f, .006f), Alu, Kind.Plate, false);
+        FBox(p, "plunger switch", o, yaw, new Vector3(0f, hookY - .022f, BK + .062f), new Vector3(.022f, .018f, .014f), PlasticBlack, Kind.Plate, false);
+        Seg(p, "hook", o + Rot(yaw, new Vector3(0f, hookY, BK + .056f)), o + Rot(yaw, new Vector3(0f, hookY, BK + .084f)), .006f, Chrome, Kind.Plate, false);
+        Seg(p, "hook tip", o + Rot(yaw, new Vector3(0f, hookY + .016f, BK + .084f)), o + Rot(yaw, new Vector3(0f, hookY, BK + .084f)), .006f, Chrome, Kind.Plate, false);
+        var sign = KitAt("Kit_DoorSign", p, o + Rot(yaw, new Vector3(0f, hookY + .21f, BK + .001f)), R(yaw), Kind.Sign);
         if (sign != null) sign.transform.localScale = new Vector3(.30f / .254f, .10f / .076f, 1f);
-        // footprint = box + plate (0.056 deep); the hook and the hanging key stand in front of it (the key host convention)
-        AddVirtual("Kit_KeySwitchPlate", o + Vector3.up * (hookY - .10f), yaw, new[] { -.075f, 0f, .075f, .056f, .22f });
+        // footprint = backer + box + plate (0.068 deep); the hook and the hanging key stand in front of it (the key host convention)
+        AddVirtual("Kit_KeySwitchPlate", o + Vector3.up * (hookY - .12f), yaw, new[] { -.15f, 0f, .15f, BK + .056f, .40f });
 
-        // the key on the hook (D1.6's FrontRoomsKeyAssembly is not in main yet: the parts are hung by their anchors)
-        var hookTip = o + Rot(yaw, new Vector3(0f, hookY + .004f, .080f));
-        var kp = Group("stair key (Kit_KeyRing + Kit_Key_Zone + Kit_KeyTag_Rect)");
+        // the key on the hook (D1.6's FrontRoomsKeyAssembly is not in main yet: the parts are hung by their anchors). r7: white tag (S11)
+        var hookTip = o + Rot(yaw, new Vector3(0f, hookY + .004f, BK + .080f));
+        var kp = Group("stair key (Kit_KeyRing + Kit_Key_Zone + Kit_KeyTag_Rect_White)");
+        keyParts.Add(kp.gameObject);
         var ring = KitAt("Kit_KeyRing", kp, hookTip, R(yaw), Kind.Key);
         if (ring != null)
         {
@@ -763,65 +968,155 @@ public static class FrontRoomsStationLookdev
             var keyRot = R(yaw) * Quaternion.LookRotation(Vector3.down, Vector3.forward);
             var key = KitAt("Kit_Key_Zone", kp, keyContact, keyRot, Kind.Key);
             if (key != null) key.transform.position = W(keyContact) - keyRot * new Vector3(0f, .001f, -.026f);
-            var tag = KitAt("Kit_KeyTag_Rect", kp, tagContact, R(yaw), Kind.Key);
+            // r7b: an oversized white fob (Kit_KeyTag_Long_White x 1.5 = 114 x 48 mm) so key + tag clear the 3 m legibility bar
+            var fob = KitAt("Kit_KeyTag_Long_White", kp, tagContact, R(yaw), Kind.Key);
+            if (fob != null) fob.transform.localScale = Vector3.one * 1.5f;
             keyLook = keyContact + Vector3.down * .02f;
         }
         else keyLook = hookTip + Vector3.down * .03f;
         Mv("key_centre_module", keyLook);
 
-        // annunciator, green POWER lamp only (30_look 4.3)
+        // annunciator, green POWER lamp only (30_look 4.3; r7 era critic 1 / 13)
         var an = plan.annWall; var ao = new Vector3(an.x, 0f, an.z);
         var a = Group("Kit_FireAnnunciator (blockout stand-in)");
-        FBox(a, "cabinet (putty enamel)", ao, yaw, new Vector3(0f, an.y, .05f), new Vector3(.38f, .50f, .10f), Putty, Kind.Furniture, false);
-        FBox(a, "door frame", ao, yaw, new Vector3(0f, an.y, .101f), new Vector3(.34f, .46f, .004f), Flat("annunciator door glass (dark)", Hex("3A3C3A"), .9f), Kind.Furniture, false);
-        for (var r = 0; r < 4; r++)
-            for (var c = 0; c < 2; c++)
-                FBox(a, "zone window " + (r * 2 + c + 1) + " (label tile, never lit)", ao, yaw, new Vector3(c == 0 ? -.08f : .08f, an.y + .13f - r * .055f, .104f), new Vector3(.12f, .035f, .004f), LabelTile, Kind.Furniture, false);
-        FBox(a, "TROUBLE window (label tile, never lit)", ao, yaw, new Vector3(0f, an.y - .11f, .104f), new Vector3(.12f, .03f, .004f), LabelTile, Kind.Furniture, false);
-        for (var t = -1; t <= 1; t++)
-            FBox(a, "toggle", ao, yaw, new Vector3(t * .05f, an.y - .17f, .106f), new Vector3(.012f, .02f, .012f), PlasticBlack, Kind.Furniture, false);
-        Ball(a, "POWER jewel (green)", ao + Rot(yaw, new Vector3(.13f, an.y + .20f, .107f)), .012f, GreenJewel, Kind.Furniture);
-        AddVirtual("Kit_FireAnnunciator", ao + Vector3.up * (an.y - .25f), yaw, new[] { -.19f, 0f, .19f, .10f, .50f });
-
-        // conduit from the plate's box up and across to the cabinet top (S13, Kit_ConduitEMT scaled to length)
-        // one horizontal run at hook height from the side of the plate's box into the side of the cabinet (clear of the sign above)
         var along = Vector3.Dot(ao - o, Rot(yaw, Vector3.right));
         var sgn = Mathf.Sign(along);
-        var c1 = o + Rot(yaw, new Vector3(sgn * .051f, hookY + .02f, 0f));
-        var c2 = o + Rot(yaw, new Vector3(along - sgn * .19f, hookY + .02f, 0f));
-        Conduit(c1, c2, yaw);
+        FBox(a, "cabinet (putty enamel)", ao, yaw, new Vector3(0f, an.y, .05f), new Vector3(.38f, .50f, .10f), Putty, Kind.Furniture, false);
+        // the door: a narrow putty frame, no glazing (or clear matte glass) so the putty face shows
+        FBox(a, "door frame top", ao, yaw, new Vector3(0f, an.y + .235f, .103f), new Vector3(.38f, .03f, .006f), Putty, Kind.Furniture, false);
+        FBox(a, "door frame bottom", ao, yaw, new Vector3(0f, an.y - .235f, .103f), new Vector3(.38f, .03f, .006f), Putty, Kind.Furniture, false);
+        FBox(a, "door frame left", ao, yaw, new Vector3(-.175f, an.y, .103f), new Vector3(.03f, .50f, .006f), Putty, Kind.Furniture, false);
+        FBox(a, "door frame right", ao, yaw, new Vector3(.175f, an.y, .103f), new Vector3(.03f, .50f, .006f), Putty, Kind.Furniture, false);
+        Disc(a, "door key cylinder", ao + Rot(yaw, new Vector3(.175f, an.y, .106f)), n, .016f, .006f, Chrome, Kind.Furniture);
+        // 8 zone lamps + TROUBLE: round frosted lenses, 14 mm, never lit, each with a narrow engraved label strip
+        for (var r = 0; r < 4; r++)
+            for (var c = 0; c < 2; c++)
+            {
+                var lx = c == 0 ? -.12f : .03f; var ly = an.y + .14f - r * .06f;
+                Disc(a, "zone lamp lens " + (r * 2 + c + 1) + " (unlit)", ao + Rot(yaw, new Vector3(lx, ly, .100f)), n, .014f, .006f, LensUnlit, Kind.Furniture);
+                FBox(a, "zone label strip " + (r * 2 + c + 1), ao, yaw, new Vector3(lx + .05f, ly, .1005f), new Vector3(.07f, .012f, .002f), LabelStrip, Kind.Furniture, false);
+            }
+        Disc(a, "TROUBLE lamp lens (unlit)", ao + Rot(yaw, new Vector3(-.12f, an.y - .11f, .100f)), n, .014f, .006f, LensUnlit, Kind.Furniture);
+        FBox(a, "TROUBLE label strip", ao, yaw, new Vector3(-.07f, an.y - .11f, .1005f), new Vector3(.07f, .012f, .002f), LabelStrip, Kind.Furniture, false);
+        for (var t = -1; t <= 1; t++)
+            FBox(a, "toggle", ao, yaw, new Vector3(.02f + t * .05f, an.y - .17f, .106f), new Vector3(.012f, .02f, .012f), PlasticBlack, Kind.Furniture, false);
+        // the POWER pilot on the side toward the key, so it stays in the take frame
+        var jx = -sgn * .11f;
+        var jewelC = ao + Rot(yaw, new Vector3(jx, an.y + .205f - .06f * 0f, .100f));
+        FBox(a, "POWER label strip", ao, yaw, new Vector3(jx + (sgn > 0f ? -.05f : .05f) * -1f, an.y + .205f, .1005f), new Vector3(.06f, .012f, .002f), LabelStrip, Kind.Furniture, false);
+        Disc(a, "POWER pilot bezel (chrome)", jewelC, n, .020f, .004f, Chrome, Kind.Furniture);
+        var jw = Ball(a, "POWER pilot jewel (green glass)", jewelC + n * .007f, .014f, GreenJewel, Kind.Jewel);
+        Ball(a, "POWER pilot filament spot", jewelC + n * .012f, .003f, Filament, Kind.Jewel);
+        Mv("jewel_module", Mod(jw.transform.position));
+        AddVirtual("Kit_FireAnnunciator", ao + Vector3.up * (an.y - .25f), yaw, new[] { -.19f, 0f, .19f, .11f, .50f });
+
+        // S13 conduit from below (NOTE_1022_photos, era critic 6): out of the box's bottom knock-out, down to 0.25 m under the
+        // panel, along the wall, up into the panel's bottom knock-out with a connector; 3 straps
+        var runY = an.y - .25f - .25f;
+        var zOut = .012f;                            // the EMT kit's origin on the wall face (its tube sits 2.6-20 mm out)
+        var boxBottom = o + Rot(yaw, new Vector3(0f, hookY - .051f, zOut));
+        var corner1 = o + Rot(yaw, new Vector3(0f, runY, zOut));
+        var corner2 = o + Rot(yaw, new Vector3(along, runY, zOut));
+        var panelBottom = o + Rot(yaw, new Vector3(along, an.y - .25f, zOut));
+        var cg = Group("Kit_ConduitEMT run from below (S13)");
+        Conduit(boxBottom, corner1, yaw, cg);
+        Conduit(corner1, corner2, yaw, cg);
+        Conduit(corner2, panelBottom, yaw, cg);
+        FBox(cg, "connector at the plate box", o, yaw, new Vector3(0f, hookY - .062f, zOut), new Vector3(.026f, .022f, .026f), Alu, Kind.Furniture, false);
+        FBox(cg, "connector + locknut at the panel knock-out", o, yaw, new Vector3(along, an.y - .262f, zOut), new Vector3(.028f, .024f, .028f), Alu, Kind.Furniture, false);
+        FBox(cg, "elbow 1", o, yaw, new Vector3(0f, runY, zOut), new Vector3(.03f, .03f, .024f), Alu, Kind.Furniture, false);
+        FBox(cg, "elbow 2", o, yaw, new Vector3(along, runY, zOut), new Vector3(.03f, .03f, .024f), Alu, Kind.Furniture, false);
+        var strapPts = new[] { new Vector3(0f, (hookY - .051f + runY) * .5f, 0f), new Vector3(along * .5f, runY, 0f), new Vector3(along, (runY + an.y - .25f) * .5f, 0f) };
+        for (var s = 0; s < strapPts.Length; s++)
+        {
+            var sp = o + Rot(yaw, new Vector3(strapPts[s].x, strapPts[s].y, BK * 0f));
+            var runDir = s == 1 ? Rot(yaw, Vector3.right) : Vector3.up;
+            var rot = Quaternion.LookRotation(mapT.rotation * n, mapT.rotation * runDir);
+            var st = KitAt("Kit_ConduitStrap", cg, sp + n * BK * 0f, rot, Kind.Furniture);
+            if (st == null) FBox(cg, "strap " + s, sp, yaw, new Vector3(0f, 0f, .012f), new Vector3(.04f, .02f, .024f), Alu, Kind.Furniture, false);
+        }
+        Mx("conduit_run_y_m", runY);
+        Mx("annunciator_from_key_m", Mathf.Abs(along));
     }
 
-    static void Conduit(Vector3 a, Vector3 b, float yaw)
+    static void Conduit(Vector3 a, Vector3 b, float yaw, Transform parent)
     {
         var d = W(b) - W(a);
         if (d.magnitude < .02f) return;
         var rot = Quaternion.LookRotation(mapT.rotation * Rot(yaw, Vector3.forward), d.normalized);
-        var go = KitAt("Kit_ConduitEMT", extras, a, rot, Kind.Furniture);
+        var go = KitAt("Kit_ConduitEMT", parent, a - Rot(yaw, Vector3.forward) * .012f, rot, Kind.Furniture);
         if (go != null) go.transform.localScale = new Vector3(1f, d.magnitude, 1f);
     }
 
-    /// <summary>S23 Kit_JacketDraped on the guard's chair back (chair-local, back_top anchor (0, 0.95, -0.328)).</summary>
+    /// <summary>S23 Kit_JacketDraped on the guard's chair back (chair-local, back_top anchor (0, 0.95, -0.328)); r7: draped shoulders,
+    /// one sleeve over the arm, a lighter uniform tone (era critic 9).</summary>
     static void Jacket(Transform chair)
     {
         if (chair == null) { Log("no guard chair for the jacket"); return; }
-        var p = Group("Kit_JacketDraped (blockout stand-in)");
-        Action<string, Vector3, Vector3> part = (name, c, s) =>
+        var p = Group("Kit_JacketDraped (blockout stand-in, r7 draped)");
+        Action<string, Vector3, Vector3, Vector3> part = (name, c, s, e) =>
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = name; go.transform.SetParent(p, true);
             go.transform.position = chair.TransformPoint(c);
-            go.transform.rotation = chair.rotation;
+            go.transform.rotation = chair.rotation * Quaternion.Euler(e);
             go.transform.localScale = s;
             UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
-            var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = Navy; kinds[r] = Kind.Furniture;
+            var r = go.GetComponent<MeshRenderer>(); r.sharedMaterial = Uniform; kinds[r] = Kind.Furniture;
         };
-        part("shoulders over the back", new Vector3(0f, .945f, -.335f), new Vector3(.50f, .07f, .17f));
-        part("back panel (hangs behind)", new Vector3(0f, .70f, -.41f), new Vector3(.47f, .46f, .03f));
-        part("front panel (seat side)", new Vector3(0f, .80f, -.265f), new Vector3(.44f, .26f, .03f));
-        part("sleeve L", new Vector3(-.25f, .74f, -.38f), new Vector3(.09f, .42f, .09f));
-        part("sleeve R", new Vector3(.25f, .76f, -.39f), new Vector3(.09f, .38f, .09f));
-        part("shoulder patch (blank)", new Vector3(.24f, .90f, -.42f), new Vector3(.06f, .07f, .005f));
+        part("collar", new Vector3(0f, 1.0f, -.33f), new Vector3(.20f, .05f, .14f), Vector3.zero);
+        part("shoulder L (sloped)", new Vector3(-.15f, .965f, -.335f), new Vector3(.20f, .07f, .19f), new Vector3(0f, 0f, 14f));
+        part("shoulder R (sloped)", new Vector3(.15f, .965f, -.335f), new Vector3(.20f, .07f, .19f), new Vector3(0f, 0f, -14f));
+        part("back panel (hangs behind, flared)", new Vector3(0f, .69f, -.415f), new Vector3(.52f, .50f, .03f), new Vector3(6f, 0f, 0f));
+        part("front L (seat side)", new Vector3(-.12f, .80f, -.262f), new Vector3(.20f, .28f, .03f), new Vector3(-4f, 0f, 0f));
+        part("front R (seat side)", new Vector3(.12f, .80f, -.262f), new Vector3(.20f, .28f, .03f), new Vector3(-4f, 0f, 0f));
+        part("sleeve L (hangs at the side)", new Vector3(-.30f, .74f, -.37f), new Vector3(.10f, .46f, .10f), new Vector3(0f, 0f, 6f));
+        part("sleeve R over the arm", new Vector3(.30f, .66f, -.18f), new Vector3(.10f, .10f, .40f), new Vector3(-12f, 0f, 0f));
+        part("cuff R (hangs off the arm)", new Vector3(.31f, .52f, .02f), new Vector3(.10f, .22f, .09f), Vector3.zero);
+        part("shoulder patch (blank)", new Vector3(.25f, .92f, -.432f), new Vector3(.06f, .07f, .005f), Vector3.zero);
+    }
+
+    /// <summary>Shut the key cabinet's door (era critic 19, gameplay 7): rotate a door child about the hinge anchor; else a stand-in door.</summary>
+    static void ShutCabinet(Transform cab)
+    {
+        if (cab == null) { Log("key cabinet not built"); return; }
+        Transform door = null;
+        var names = new List<string>();
+        foreach (var t in cab.GetComponentsInChildren<Transform>(true))
+        {
+            names.Add(t.name);
+            if (t != cab && t.name.ToLowerInvariant().Contains("door")) door = t;
+        }
+        Ms("cabinet_children", string.Join(" | ", names.Take(24).ToArray()));
+        var hinge = cab.TransformPoint(new Vector3(.0026f, 1.24f, .081f));
+        if (door != null)
+        {
+            var before = door.position;
+            door.RotateAround(hinge, cab.up, 189.68f);
+            var lb = cab.InverseTransformPoint(RendererCentre(door));
+            if (lb.x > .02f) { door.position = before; door.RotateAround(hinge, cab.up, -189.68f); lb = cab.InverseTransformPoint(RendererCentre(door)); }
+            Ms("cabinet_door", "shut by rotating '" + door.name + "' 189.68 deg about the hinge; door centre local x " + F(lb.x));
+        }
+        else
+        {
+            // no separate door: hide the cabinet and put a shut stand-in in its place
+            foreach (var r in cab.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+            var p = Group("Kit_KeyCabinet shut (blockout stand-in: the kit's door is not a separate part)");
+            var c = Mod(cab.TransformPoint(new Vector3(-.1794f, 1.47f, .042f)));
+            var yaw = cab.eulerAngles.y - mapT.eulerAngles.y;
+            Box(p, "body + shut door (almond)", c, new Vector3(.36f, .46f, .084f), yaw, Slot("Prop_SteelAlmond", "D8CDB4", .4f), Kind.Furniture, false);
+            Box(p, "door label KEY CONTROL (art pending)", c + Rot(yaw, new Vector3(0f, .14f, .043f)), new Vector3(.16f, .04f, .002f), yaw, PaperW, Kind.Furniture, false);
+            Box(p, "door lock", c + Rot(yaw, new Vector3(.15f, 0f, .045f)), new Vector3(.02f, .03f, .006f), yaw, Chrome, Kind.Furniture, false);
+            Ms("cabinet_door", "no door part in the kit: hidden and replaced by a shut stand-in");
+        }
+    }
+
+    static Vector3 RendererCentre(Transform t)
+    {
+        var rs = t.GetComponentsInChildren<Renderer>(true);
+        if (rs.Length == 0) return t.position;
+        var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+        return b.center;
     }
 
     static void Clipboard(Vector3 at, float yaw, bool onWall, Vector3 wallN)
@@ -920,6 +1215,43 @@ public static class FrontRoomsStationLookdev
     }
 
     // ------------------------------------------------------------------ the TV (S01) and its light (V3)
+    /// <summary>The cosine-falloff cookie with an up-clip (era critic 12): value = cos(angle off the axis) x a clip that fades the light
+    /// out between 10 and 30 deg above the horizontal (the cabinet top shades steep up-light). Spot cookie UV spans the outer cone.</summary>
+    static Texture2D BuildCookie(float tiltDownDeg, float outerDeg, bool flipV)
+    {
+        const int n = 256;
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false, true) { name = "TV light cookie (cosine + up-clip)", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+        var T = Mathf.Tan(outerDeg * .5f * Mathf.Deg2Rad);
+        var ct = Mathf.Cos(tiltDownDeg * Mathf.Deg2Rad); var st = Mathf.Sin(tiltDownDeg * Mathf.Deg2Rad);
+        var px = new Color[n * n];
+        for (var j = 0; j < n; j++)
+            for (var i = 0; i < n; i++)
+            {
+                var u = (i + .5f) / n * 2f - 1f; var v = (j + .5f) / n * 2f - 1f;
+                if (flipV) v = -v;
+                var d = new Vector3(u * T, v * T, 1f).normalized;
+                var worldY = d.y * ct - d.z * st;
+                var elev = Mathf.Asin(Mathf.Clamp(worldY, -1f, 1f)) * Mathf.Rad2Deg;
+                var clip = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(10f, 30f, elev));
+                var val = Mathf.Max(0f, d.z) * clip;
+                px[i + j * n] = new Color(val, val, val, val);
+            }
+        t.SetPixels(px);
+        t.Apply(false, false);
+        return t;
+    }
+
+    static float CookieValue(Vector3 dirLight)
+    {
+        // the cookie's value for a direction in the light's own frame (analytic twin of BuildCookie)
+        if (!v3.cookie) return 1f;
+        var d = dirLight.normalized;
+        if (d.z <= 0f) return 0f;
+        var ct = Mathf.Cos(plan.tvTilt * Mathf.Deg2Rad); var st = Mathf.Sin(plan.tvTilt * Mathf.Deg2Rad);
+        var elev = Mathf.Asin(Mathf.Clamp(d.y * ct - d.z * st, -1f, 1f)) * Mathf.Rad2Deg;
+        return d.z * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(10f, 30f, elev)));
+    }
+
     static void BuildTv()
     {
         var rot = R(plan.tvYaw) * Quaternion.Euler(plan.tvTilt, 0f, 0f);
@@ -935,7 +1267,6 @@ public static class FrontRoomsStationLookdev
         q.name = "screen surface (ad card, CRT_AdSurface)";
         UnityEngine.Object.DestroyImmediate(q.GetComponent<Collider>());
         q.transform.SetParent(tv, false);
-        // size and place the picture on the kit's own Prop_ScreenCRT faces (LOD0 submesh bounds, set-local)
         var sc = anchor; var sz = new Vector2(.445f, .336f); var front = anchor.z; var found = false;
         foreach (var mr in go.GetComponentsInChildren<MeshRenderer>(true))
         {
@@ -950,7 +1281,6 @@ public static class FrontRoomsStationLookdev
                 var ext = tv.InverseTransformVector(mr.transform.TransformVector(sb.size));
                 sc = c; sz = new Vector2(Mathf.Abs(ext.x), Mathf.Abs(ext.y)); front = c.z + Mathf.Abs(ext.z) * .5f;
                 found = true;
-                Log("screen faces (" + mr.name + " submesh " + i + "): centre " + c.ToString("F3") + " size " + ext.ToString("F3"));
                 break;
             }
             if (found) break;
@@ -977,7 +1307,7 @@ public static class FrontRoomsStationLookdev
         }
         cardM[0] = cardM[1];
         screenOffM = Slot("Prop_ScreenCRT", "1E2422", .9f);
-        var lg = new GameObject("TV light (V3, station: spot 100/160, range 9)");
+        var lg = new GameObject("TV light (V3 r7, station: spot 100/160, range 9)");
         lg.transform.SetParent(tv, false);
         lg.transform.localPosition = new Vector3(sc.x, sc.y, Mathf.Max(front, anchor.z) + .02f);
         lg.transform.localRotation = Quaternion.identity;
@@ -988,36 +1318,84 @@ public static class FrontRoomsStationLookdev
         tvLight.shadows = LightShadows.Soft;
         tvLight.shadowStrength = 1f;
         tvLight.shadowNearPlane = .05f;
-        // shadow resolution tier: URP's default for additional lights is already High (UniversalAdditionalLightData)
-        SetTv(1);
         if (plan.mount == "wall" || plan.mount == "corner") Bracket();
+        SetTv(1);
+        if (v3.cookie) ChooseCookie();
         Mv("screen_world_module", Mod(tvLight.transform.position));
-        // the set's extent in module metres (the body must stay inside the room and under the ceiling)
         var tb = new Bounds(tv.position, Vector3.zero);
         foreach (var r in tv.GetComponentsInChildren<Renderer>(true)) if (r != screenR) tb.Encapsulate(r.bounds);
         Mv("set_bounds_min", Mod(tb.min)); Mv("set_bounds_max", Mod(tb.max));
         if (plan.mount == "wall" || plan.mount == "corner")
         {
-            // set + bracket as one virtual prop for the module check: the measured extent, clamped to the clear floor
             var mn = Mod(tb.min); var mx = Mod(tb.max);
             float cx0 = Mathf.Max(mn.x, WF), cz0 = Mathf.Max(mn.z, WF), cx1 = Mathf.Min(mx.x, plan.w * 3f - WF), cz1 = Mathf.Min(mx.z, plan.d * 3f - WF);
             var cc = new Vector3((cx0 + cx1) * .5f, mn.y - .02f, (cz0 + cz1) * .5f);
             AddVirtual(plan.mount == "corner" ? "Kit_TVWallBracket_Corner" : "Kit_TVWallBracket", cc, 0f,
                 new[] { cx0 - cc.x, cz0 - cc.z, cx1 - cc.x, cz1 - cc.z, Mathf.Min(mx.y - mn.y + .02f, 2.85f - cc.y) });
-            Mx("set_poke_into_wall_m", Mathf.Max(0f, Mathf.Max(Mathf.Max(WF - mn.x, mx.x - (plan.w * 3f - WF)), Mathf.Max(WF - mn.z, mx.z - (plan.d * 3f - WF)))));
         }
     }
 
-    /// <summary>0 = off (picture dead, light off); 1-5 = that card on screen and in the light; 9 = card 1 on screen, the loop-mean light (I 4); 15 = card 1 on screen, card 5's light.</summary>
-    static void SetTv(int state)
+    /// <summary>Pick the cookie's V orientation by test: the variant that dims the ceiling side more than the floor side is the right one.</summary>
+    static void ChooseCookie()
+    {
+        // a ceiling point 0.7 m in front of the screen and a floor point 1.5 m in front: E with each cookie variant, read back
+        var lp = Mod(tvLight.transform.position);
+        var ax = (Quaternion.Inverse(mapT.rotation) * tvLight.transform.forward).normalized;
+        var axFlat = new Vector3(ax.x, 0f, ax.z).normalized;
+        var ceilP = lp + axFlat * .7f; ceilP.y = 2.88f;
+        var floorP = lp + axFlat * 1.5f; floorP.y = .01f;
+        float[] ce = new float[2]; float[] fe = new float[2];
+        for (var v = 0; v < 2; v++)
+        {
+            if (cookieTex != null) UnityEngine.Object.DestroyImmediate(cookieTex);
+            cookieTex = BuildCookie(plan.tvTilt, tvLight.spotAngle, v == 1);
+            tvLight.cookie = cookieTex;
+            ce[v] = PointE(ceilP, Vector3.down);
+            fe[v] = PointE(floorP, Vector3.up);
+        }
+        tvLight.cookie = null;
+        var cn = PointE(ceilP, Vector3.down); var fn = PointE(floorP, Vector3.up);
+        cookieFlipV = (ce[1] / Mathf.Max(fe[1], 1e-5f)) < (ce[0] / Mathf.Max(fe[0], 1e-5f));
+        if (cookieTex != null) UnityEngine.Object.DestroyImmediate(cookieTex);
+        cookieTex = BuildCookie(plan.tvTilt, tvLight.spotAngle, cookieFlipV);
+        tvLight.cookie = cookieTex;
+        Ms("cookie_check", "ceiling E none/v0/v1 " + F(cn) + "/" + F(ce[0]) + "/" + F(ce[1]) + "; floor E " + F(fn) + "/" + F(fe[0]) + "/" + F(fe[1]) + "; flipV " + cookieFlipV);
+        Log("cookie orientation flipV=" + cookieFlipV + " (ceiling none/v0/v1 " + F(cn) + "/" + F(ce[0]) + "/" + F(ce[1]) + ", floor " + F(fn) + "/" + F(fe[0]) + "/" + F(fe[1]) + ")");
+    }
+
+    /// <summary>Rendered illuminance at one point (white Lambert E pass of a 64 px camera looking at it from 0.3 m along its normal).</summary>
+    static float PointE(Vector3 pModule, Vector3 nModule)
+    {
+        var go = new GameObject("point E camera");
+        var c = go.AddComponent<Camera>();
+        c.nearClipPlane = .01f; c.farClipPlane = 2f; c.fieldOfView = 10f;
+        c.clearFlags = CameraClearFlags.SolidColor; c.backgroundColor = Color.black;
+        var e = W(pModule + nModule * .3f);
+        go.transform.SetPositionAndRotation(e, Quaternion.LookRotation(W(pModule) - e, Mathf.Abs(nModule.y) > .9f ? mapT.forward : Vector3.up));
+        var prev = cam; cam = c;
+        var v = RenderEValue();
+        cam = prev;
+        UnityEngine.Object.DestroyImmediate(go);
+        return v;
+    }
+
+    /// <summary>0 = off (picture dead, light off); 1-5 = that card on screen and in the light; 9 = card 1 on screen, the loop-mean light;
+    /// 15 = card 1 on screen, card 5's light; 20 + c = card c on screen with the r6 "as specified" light (comparison).</summary>
+    static void SetTv(int state) { SetTvCfg(state, v3); }
+
+    static void SetTvCfg(int state, V3Cfg cfg)
     {
         if (state == 0) { screenR.sharedMaterial = screenOffM; tvLight.enabled = false; return; }
+        if (state >= 20) { var cc = state - 20; screenR.sharedMaterial = cardM[cc]; tvLight.enabled = true; float ii; Color col; CardLight(cc, SpecCfg(), out ii, out col); tvLight.intensity = ii * tvScale; tvLight.color = col; tvLight.cookie = null; return; }
         var screenCard = state >= 1 && state <= 5 ? state : 1;
         var lightCard = state == 9 ? 0 : state == 15 ? 5 : state;
         screenR.sharedMaterial = cardM[screenCard];
         tvLight.enabled = true;
-        tvLight.intensity = CardI[lightCard];
-        tvLight.color = CardC[lightCard];
+        float i; Color c;
+        CardLight(lightCard, cfg, out i, out c);
+        tvLight.intensity = i * tvScale;
+        tvLight.color = c;
+        tvLight.cookie = cfg.cookie ? cookieTex : null;
     }
 
     // ------------------------------------------------------------------ lamps
@@ -1038,6 +1416,65 @@ public static class FrontRoomsStationLookdev
         }
     }
 
+    static void ClearLensBlocks()
+    {
+        foreach (var r in lensRs) r.SetPropertyBlock(null);
+        foreach (var l in lampLights) l.enabled = true;
+    }
+
+    /// <summary>The station's own live lamps (cells inside the footprint that have a fixture): W1's room set.</summary>
+    static List<GridCoord> StationLampCells()
+    {
+        var list = new List<GridCoord>();
+        for (var j = 0; j < plan.d; j++)
+            for (var i = 0; i < plan.w; i++)
+            {
+                var c = new GridCoord(x0 + i, y0 + j);
+                var lvl = world.LampLevel(c);
+                if (lvl > .01f) list.Add(c);
+            }
+        return list;
+    }
+
+    /// <summary>W1 (FrontRoomsWarnLamps): every live lamp of the player's room dips to the multiplier (attack 0.10 s); tick to the floor.</summary>
+    static List<int> W1Dip(float multiplier)
+    {
+        var hs = new List<int>();
+        foreach (var c in StationLampCells()) hs.Add(world.SetLampOverride(c, FrontRoomsMapWorld.LampFx.Warn, multiplier, 10f, new FrontRoomsMapWorld.LampEnvelope(.10f, .22f)));
+        for (var k = 0; k < 8; k++) world.TickFixturesForTools(.05f);
+        return hs;
+    }
+
+    /// <summary>restore == null: hold off every built lamp outside the station whose mode is Stutter, Failing or Dead (returns them);
+    /// else give those cells back to the map (Auto).</summary>
+    static List<GridCoord> FreezeOtherLamps(List<GridCoord> restore)
+    {
+        if (restore != null)
+        {
+            foreach (var c in restore) world.SetLampMode(c, ModuleLamp.Auto);
+            world.TickFixturesForTools(0f);
+            return restore;
+        }
+        var list = new List<GridCoord>();
+        for (var j = y0 - 7; j < y0 + plan.d + 7; j++)
+            for (var i = x0 - 7; i < x0 + plan.w + 7; i++)
+            {
+                if (i >= x0 && i < x0 + plan.w && j >= y0 && j < y0 + plan.d) continue;
+                var c = new GridCoord(i, j);
+                if (world.LampLevel(c) == FrontRoomsMapWorld.NoLamp) continue;
+                var mode = world.LampModeOf(c);
+                if (mode == ModuleLamp.Stutter || mode == ModuleLamp.Failing || mode == ModuleLamp.Dead) { world.SetLampMode(c, ModuleLamp.Off); list.Add(c); }
+            }
+        world.TickFixturesForTools(0f);
+        return list;
+    }
+
+    static void W1Release(List<int> hs)
+    {
+        foreach (var h in hs) world.RemoveLampOverride(h);
+        for (var k = 0; k < 20; k++) world.TickFixturesForTools(.05f);
+    }
+
     // ------------------------------------------------------------------ dressing
     static void Dress()
     {
@@ -1045,12 +1482,12 @@ public static class FrontRoomsStationLookdev
         TakeCluster();
         if (plan.dress != null) plan.dress();
         if (plan.guardIndex >= 0) Jacket(BuiltProp(plan.guardIndex));
+        if (plan.cabinetIndex >= 0) ShutCabinet(BuiltProp(plan.cabinetIndex));
         if (plan.credenzaIndex >= 0)
         {
             var cr = BuiltProp(plan.credenzaIndex);
             if (cr != null)
             {
-                // S04 Kit_Credenza_Laminate: the same mesh, Prop_LaminateBeige for Prop_WoodCherry, Prop_Chrome for Prop_Brass
                 foreach (var r in cr.GetComponentsInChildren<Renderer>(true))
                 {
                     var arr = r.sharedMaterials;
@@ -1067,10 +1504,13 @@ public static class FrontRoomsStationLookdev
             }
             else Log("credenza not found");
         }
-        // portals and floor probes at the two openings (ID passes only)
         Portal(e1, Kind.Portal1); Portal(e2, Kind.Portal2);
         Probe(e1, -1, Kind.ProbeOut); Probe(e1, 1, Kind.ProbeIn);
-        // every module prop the map built is furniture
+        if (plan.leakProbe != Vector3.zero)
+        {
+            var r = Box(extras, "leak probe (ID only)", plan.leakProbe + Vector3.up * .002f, new Vector3(1.6f, .002f, .8f), 0f, Flat("probe (ID only)", Color.white), Kind.ProbeLeak, false);
+            r.shadowCastingMode = ShadowCastingMode.Off; r.enabled = false;
+        }
         foreach (var tag in world.GetComponentsInChildren<FrontRoomsModulePropTag>(true))
             foreach (var r in tag.GetComponentsInChildren<Renderer>(true))
                 if (kinds.ContainsKey(r) && kinds[r] == Kind.Shell) kinds[r] = Kind.Furniture;
@@ -1105,7 +1545,8 @@ public static class FrontRoomsStationLookdev
         var k = 1f / Mathf.Max(ci - co, .001f); var b = -co * k;
         var sp = Mathf.Clamp01(Vector3.Dot(dir, ax) * k + b); sp *= sp;
         var inc = Mathf.Max(0f, Vector3.Dot(-dir, nModule));
-        return intensity * inc * sp * att;
+        var dl = Quaternion.Inverse(Quaternion.Inverse(mapT.rotation) * tvLight.transform.rotation) * dir;
+        return intensity * inc * sp * att * CookieValue(dl);
     }
 
     static void Measure()
@@ -1118,7 +1559,6 @@ public static class FrontRoomsStationLookdev
         Mx("e1_width", e1.width); Mx("e1_centre_along", e1.centre); Mv("e1_mid", e1.mid);
         Mx("e2_width", e2.width); Mx("e2_centre_along", e2.centre); Mv("e2_mid", e2.mid);
         Mv("e1_inward", e1.inward); Mv("e2_inward", e2.inward);
-        // E1 sightlines (plan angles, from the threshold centre at eye height)
         var e1Eye = e1.mid + Vector3.up * EyeH;
         var toScreen = lp - e1Eye;
         var toScreenFlat = new Vector3(toScreen.x, 0f, toScreen.z);
@@ -1127,10 +1567,10 @@ public static class FrontRoomsStationLookdev
         Mx("e1_off_screen_axis_deg", Vector3.Angle(-toScreenFlat, axFlat));
         var toKey = keyLook - e1Eye; var toKeyFlat = new Vector3(toKey.x, 0f, toKey.z);
         Mx("key_off_e1_axis_deg", Vector3.Angle(toKeyFlat, e1.inward));
+        Mx("e1_to_key_m", toKey.magnitude);
         var toE2 = e2.mid - e1.mid;
         Mx("e2_off_e1_axis_deg", Vector3.Angle(new Vector3(toE2.x, 0f, toE2.z), e1.inward));
         Mx("e1_to_e2_m", new Vector3(toE2.x, 0f, toE2.z).magnitude);
-        // the key against the screen (G4)
         var sk = keyLook - lp;
         Mx("key_dist_3d_m", sk.magnitude);
         Mx("key_off_screen_axis_3d_deg", Vector3.Angle(sk, ax));
@@ -1138,27 +1578,62 @@ public static class FrontRoomsStationLookdev
         Mx("key_ahead_of_screen_plane_m", Vector3.Dot(sk, axFlat));
         Mx("key_angle_to_screen_plane_deg", 90f - Vector3.Angle(new Vector3(sk.x, 0f, sk.z), axFlat));
         Mx("key_incidence_deg", Vector3.Angle(-sk, plan.keyNormal));
-        var plateP = new Vector3(plan.keyWall.x, plan.keyWall.y + .01f, plan.keyWall.z) + plan.keyNormal * .056f;
-        Mx("plate_E_analytic_mean", Etv(plateP, plan.keyNormal, CardI[0]));
-        Mx("plate_E_analytic_darkest", Etv(plateP, plan.keyNormal, CardI[5]));
-        Mx("plate_Y_analytic_mean", Etv(plateP, plan.keyNormal, CardI[0]) * Lum(CardC[0]));
-        Mx("plate_Y_analytic_darkest", Etv(plateP, plan.keyNormal, CardI[5]) * Lum(CardC[5]));
-        // light at E1 from the TV alone (analytic, no shadows): threshold floor, 1.0 m up facing the set, 1.5 m outside
-        Mx("e1_E_tv_floor_threshold", Etv(e1.mid + Vector3.up * .002f, Vector3.up, CardI[0]));
-        var faceSet = (lp - (e1.mid + Vector3.up)).normalized;
-        Mx("e1_E_tv_1m_facing_set", Etv(e1.mid + Vector3.up, faceSet, CardI[0]));
-        Mx("e1_E_tv_floor_outside_1p5", Etv(e1.mid - e1.inward * 1.5f + Vector3.up * .002f, Vector3.up, CardI[0]));
-        Mx("e1_E_tv_floor_inside_1p0", Etv(e1.mid + e1.inward * 1.0f + Vector3.up * .002f, Vector3.up, CardI[0]));
-        // the take
+        var plateP = new Vector3(plan.keyWall.x, plan.keyWall.y + .01f, plan.keyWall.z) + plan.keyNormal * .068f;
+        float im, id; Color cm, cd;
+        CardLight(0, v3, out im, out cm); CardLight(5, v3, out id, out cd);
+        Mx("plate_E_analytic_mean", Etv(plateP, plan.keyNormal, im));
+        Mx("plate_E_analytic_darkest", Etv(plateP, plan.keyNormal, id));
+        Mx("cookie_at_key", CookieValue(Quaternion.Inverse(Quaternion.Inverse(mapT.rotation) * tvLight.transform.rotation) * sk));
+        var cards = new StringBuilder("[");
+        for (var c = 0; c <= 5; c++) { float ii; Color cc; CardLight(c, v3, out ii, out cc); cards.Append((c > 0 ? ", " : "") + "[" + F(ii) + ", " + F(cc.r) + ", " + F(cc.g) + ", " + F(cc.b) + ", " + F(ii * LumLin(cc)) + "]"); }
+        metrics["v3_cards_I_rgb_lum"] = cards.Append("]").ToString();
+        var cardsSpec = new StringBuilder("[");
+        for (var c = 0; c <= 5; c++) { float ii; Color cc; CardLight(c, SpecCfg(), out ii, out cc); cardsSpec.Append((c > 0 ? ", " : "") + "[" + F(ii) + ", " + F(cc.r) + ", " + F(cc.g) + ", " + F(cc.b) + ", " + F(ii * LumLin(cc)) + "]"); }
+        metrics["v3_spec_cards_I_rgb_lum"] = cardsSpec.Append("]").ToString();
+        Mx("e1_E_tv_floor_threshold", Etv(e1.mid + Vector3.up * .002f, Vector3.up, im));
+        Mx("e1_E_tv_floor_outside_1p5", Etv(e1.mid - e1.inward * 1.5f + Vector3.up * .002f, Vector3.up, im));
         var takeEye = new Vector3(plan.take.x, EyeH, plan.take.y);
         var view = (keyLook - takeEye).normalized;
         Mx("take_to_key_m", (keyLook - takeEye).magnitude);
         Mx("take_set_off_view_deg", Vector3.Angle(lp - takeEye, view));
-        Mx("take_e2_dist_m", Vector3.Distance(new Vector3(plan.take.x, 0f, plan.take.y), e2.mid));
-        Mx("take_e1_dist_m", Vector3.Distance(new Vector3(plan.take.x, 0f, plan.take.y), e1.mid));
-        // G6: anything over 1.1 m on the straight floor lines from the take spot to each exit
-        Ms("g6_tall_on_line_to_e1", TallOnLine(new Vector3(plan.take.x, 0f, plan.take.y), e1.mid));
-        Ms("g6_tall_on_line_to_e2", TallOnLine(new Vector3(plan.take.x, 0f, plan.take.y), e2.mid));
+        var take0 = new Vector3(plan.take.x, 0f, plan.take.y);
+        Mx("take_e2_dist_m", Vector3.Distance(take0, e2.mid));
+        Mx("take_e1_dist_m", Vector3.Distance(take0, e1.mid));
+        var d1 = (e1.mid - take0); var d2 = (e2.mid - take0); d1.y = 0f; d2.y = 0f;
+        Mx("take_exits_angle_deg", Vector3.Angle(d1, d2));
+        Ms("g6_tall_on_line_to_e1", TallOnLine(take0, e1.mid));
+        Ms("g6_tall_on_line_to_e2", TallOnLine(take0, e2.mid));
+        Mx("exits_outside_walk_cells", OutsideWalk(e1.outside, e2.outside, 40));
+        Mx("e1_outside_to_c2_open", world.Cache.Edge(e1.outside, Step(e1.outside, -1, e1)) == EdgeKind.Open || world.Cache.Edge(e1.outside, Step(e1.outside, -1, e1)) == EdgeKind.Arch ? 1 : 0);
+        var jewel = metrics.ContainsKey("jewel_module") ? metrics["jewel_module"] : "";
+        Ms("jewel_note", jewel);
+    }
+
+    /// <summary>Walking cells between two outside cells, around the station (station cells removed), over Open / Arch / Door edges (no glass).</summary>
+    static int OutsideWalk(GridCoord a, GridCoord b, int max)
+    {
+        var seen = new Dictionary<GridCoord, int>();
+        var q = new Queue<GridCoord>();
+        q.Enqueue(a); seen[a] = 0;
+        var dirs = new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) };
+        while (q.Count > 0)
+        {
+            var c = q.Dequeue();
+            var dc = seen[c];
+            if (c.x == b.x && c.y == b.y) return dc;
+            if (dc >= max) continue;
+            foreach (var d in dirs)
+            {
+                var nb = new GridCoord(c.x + d.x, c.y + d.y);
+                if (nb.x >= x0 && nb.x < x0 + plan.w && nb.y >= y0 && nb.y < y0 + plan.d) continue;
+                if (seen.ContainsKey(nb)) continue;
+                var k = world.Cache.Edge(c, nb);
+                if (k == EdgeKind.Wall || k == EdgeKind.Window) continue;
+                seen[nb] = dc + 1;
+                q.Enqueue(nb);
+            }
+        }
+        return -1;
     }
 
     static float Lum(Color c) { return .2126f * c.r + .7152f * c.g + .0722f * c.b; }
@@ -1174,7 +1649,7 @@ public static class FrontRoomsStationLookdev
             var bb = r.bounds;
             var bmin = Mod(bb.min); var bmax = Mod(bb.max);
             var lo = Mathf.Min(bmin.y, bmax.y); var hi = Mathf.Max(bmin.y, bmax.y);
-            if (hi <= 1.1f || lo >= 1.75f) continue;     // shorter than 1.1 m, or above head height
+            if (hi <= 1.1f || lo >= 1.75f) continue;
             var minx = Mathf.Min(bmin.x, bmax.x); var maxx = Mathf.Max(bmin.x, bmax.x);
             var minz = Mathf.Min(bmin.z, bmax.z); var maxz = Mathf.Max(bmin.z, bmax.z);
             if (maxx < 0f || minx > plan.w * 3f || maxz < 0f || minz > plan.d * 3f) continue;
@@ -1213,21 +1688,35 @@ public static class FrontRoomsStationLookdev
         poses.Append(F(eye.x) + "," + F(eye.y) + "," + F(eye.z) + "\t" + F(look.x) + "," + F(look.y) + "," + F(look.z) + "\t" + F(fov) + "\n");
     }
 
-    static void Shots()
+    static RenderTexture mainRT;
+
+    static void StartShots()
     {
         poses.Length = 0;
         cam = MakeCamera();
-        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
-        cam.targetTexture = rt;
-        var eye = Vector3.up * EyeH;
+        mainRT = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = mainRT;
+    }
 
-        // approach: the last junction (2 cells out on E1's axis) and 1 cell out
+    static void EndShots()
+    {
+        File.WriteAllText(Path.Combine(outDir, "poses.tsv"), poses.ToString());
+        cam.targetTexture = null; mainRT.Release();
+        UnityEngine.Object.DestroyImmediate(cam.gameObject);
+        cam = null;
+    }
+
+    static void ApproachShots(bool withE)
+    {
+        var eye = Vector3.up * EyeH;
         var near = e1.mid - e1.inward * 1.5f;
         var far = e1.mid - e1.inward * 4.5f;
         var c1 = e1.outside; var c2 = Step(c1, -1, e1);
         var farOpen = world.Cache.Edge(c1, c2) != EdgeKind.Wall;
         var farLos = !Physics.Linecast(W(far + eye), W(e1.mid + Vector3.up * 1.4f));
+        var screenLos = !Physics.Linecast(W(far + eye), tvLight.transform.position - tvLight.transform.forward * .05f);
         Ms("approach_far_cell", farOpen ? (farLos ? "open, line of sight" : "open, sightline blocked") : "walled");
+        Mx("approach_far_screen_los", screenLos ? 1 : 0);
         var approachLook = e1.mid + e1.inward * 3f + Vector3.up * 1.45f;
         var shotsApproach = new List<Vector3>();
         if (farOpen && farLos) shotsApproach.Add(far);
@@ -1237,64 +1726,39 @@ public static class FrontRoomsStationLookdev
             var nm = i == 0 && shotsApproach.Count == 2 ? "approach_far" : "approach_near";
             var at = shotsApproach[i];
             Lamps(true, at);
-            SetTv(1); Pose(at + eye, approachLook, 76f); Beauty(rt, nm + "_c1");
-            SetTv(5); Beauty(rt, nm + "_c5");
-            SetTv(2); Beauty(rt, nm + "_c2");
+            SetTv(1); Pose(at + eye, approachLook, 76f); Beauty(mainRT, nm + "_c1");
+            SetTv(5); Beauty(mainRT, nm + "_c5");
+            SetTv(2); Beauty(mainRT, nm + "_c2");
             SetTv(9); Id(nm); IdProbe(nm); IdNoPortal(nm);
-            if (ePass) { RenderE(nm + "_E_all"); SetTv(0); RenderE(nm + "_E_notv"); }
+            if (withE && ePass) { RenderE(nm + "_E_all"); SetTv(0); RenderE(nm + "_E_notv"); }
             Mx(nm + "_dist_m", Vector3.Distance(at, e1.mid));
         }
+    }
 
-        // reveal: just inside E1, looking along its axis
-        var rev = e1.mid + e1.inward * .5f;
-        Lamps(true, rev);
-        SetTv(1); Pose(rev + eye, e1.mid + e1.inward * 6f + Vector3.up * 1.45f, 76f); Beauty(rt, "reveal"); Id("reveal"); IdNoPortal("reveal");
-
-        // the beacon from E1: the TV alone (all map lamps off), then with the lamps as the tutorial sets them
-        var thr = e1.mid;
-        Lamps(false, thr);
-        SetTv(1); Pose(thr + eye, Mod(tvLight.transform.position), 76f); Beauty(rt, "beacon_tvonly");
-        if (ePass) { SetTv(9); RenderE("beacon_tvonly_E"); }
-        Lamps(true, thr);
-        SetTv(1); Beauty(rt, "beacon_lamps"); Id("beacon"); IdNoPortal("beacon");
-        // photosafety (check 6): the same view at every card of the loop, and the collapse
-        for (var c = 2; c <= 5; c++) { SetTv(c); Beauty(rt, "beacon_seq_c" + c); }
-        SetTv(0); Beauty(rt, "beacon_seq_off");
-        if (ePass) { SetTv(9); RenderE("beacon_E_all"); SetTv(0); RenderE("beacon_E_notv"); }
-
-        // the take: facing the board from the pickup reach
+    static void BoardShots(bool withE)
+    {
+        var eye = Vector3.up * EyeH;
         var take = new Vector3(plan.take.x, 0f, plan.take.y);
         Lamps(true, take);
-        SetTv(1); Pose(take + eye, keyLook, 76f); Beauty(rt, "take_before"); Id("take"); IdKeyOnly("take");
-        if (ePass)
-        {
-            SetTv(9); RenderE("take_E_all");
-            SetTv(15); RenderE("take_E_dark");
-            SetTv(0); RenderE("take_E_notv");
-            Lamps(false, take); SetTv(9); RenderE("take_E_tvonly_nolamps"); Lamps(true, take);
-        }
-        SetTv(0); Beauty(rt, "take_after");
-        // and a wider frame from one step back (the C18 close-up is the HUD's; this is the room)
-        var back = take + (take - new Vector3(keyLook.x, 0f, keyLook.z)).normalized * .9f;
-        SetTv(1); Pose(back + eye, keyLook + Vector3.up * .25f, 76f); Beauty(rt, "take_wide_before");
-        SetTv(0); Beauty(rt, "take_wide_after");
-
-        // exit views after the take (TV dead)
         SetTv(0);
-        Pose(take + eye, e2.mid + Vector3.up * 1.2f, 76f); Beauty(rt, "exit_e2"); Id("exit_e2");
-        Pose(take + eye, e1.mid + Vector3.up * 1.2f, 76f); Beauty(rt, "exit_e1"); Id("exit_e1");
-        if (ePass) { RenderE("exit_e1_E_after"); }
-        // squint from the board after the take (check 1c): a frame on the bisector of the two exits
+        Pose(take + eye, e2.mid + Vector3.up * 1.2f, 76f); Beauty(mainRT, "exit_e2"); Id("exit_e2"); IdLens("exit_e2");
+        Pose(take + eye, e1.mid + Vector3.up * 1.2f, 76f); Beauty(mainRT, "exit_e1"); Id("exit_e1"); IdLens("exit_e1");
+        if (withE && ePass) { RenderE("exit_e1_E_after"); }
         var dE1 = new Vector3(e1.mid.x - take.x, 0f, e1.mid.z - take.z).normalized;
         var dE2 = new Vector3(e2.mid.x - take.x, 0f, e2.mid.z - take.z).normalized;
         var bis = (dE1 + dE2).sqrMagnitude > .01f ? (dE1 + dE2).normalized : dE1;
         Mx("board_exits_spread_deg", Vector3.Angle(dE1, dE2));
         Pose(take + eye, take + bis * 4f + Vector3.up * 1.3f, 76f);
-        SetTv(1); Beauty(rt, "board_before"); Id("board");
-        SetTv(0); Beauty(rt, "board_after");
-        if (ePass) { RenderE("board_E_after"); SetTv(9); RenderE("board_E_before"); SetTv(0); }
+        SetTv(1); Beauty(mainRT, "board_before"); Id("board"); IdLens("board");
+        SetTv(0); Beauty(mainRT, "board_after");
+        if (withE && ePass) { RenderE("board_E_after"); SetTv(9); RenderE("board_E_before"); SetTv(0); }
+        else if (ePass) { RenderE("board_E_after"); }
+    }
 
-        // camera wiggle at E1 and E2 (G4/L37): can the counter, a chair back or a leaf hide the key?
+    static void WiggleShots()
+    {
+        var eye = Vector3.up * EyeH;
+        var rev = e1.mid + e1.inward * .5f;
         var offs = new[] { new Vector2(0f, .3f), new Vector2(.5f, .3f), new Vector2(-.5f, .3f), new Vector2(0f, -.3f), new Vector2(0f, .9f) };
         SetTv(1); Lamps(true, rev);
         for (var k = 0; k < offs.Length; k++)
@@ -1305,9 +1769,70 @@ public static class FrontRoomsStationLookdev
             var p2 = e2.mid + e2.along * offs[k].x + e2.inward * offs[k].y;
             Pose(p2 + eye, keyLook, 76f); IdNoPortal("wig_e2_" + k); IdKeyOnly("wig_e2_" + k);
             Mv("wig_e2_" + k + "_pos", p2);
-            if (k == 0) { Beauty(rt, "wig_e2_0"); }
+            if (k == 0) { Beauty(mainRT, "wig_e2_0"); }
         }
-        Pose(e1.mid + e1.inward * .3f + eye, keyLook, 76f); Beauty(rt, "wig_e1_0");
+        Pose(e1.mid + e1.inward * .3f + eye, keyLook, 76f); Beauty(mainRT, "wig_e1_0");
+    }
+
+    static void Shots()
+    {
+        StartShots();
+        var eye = Vector3.up * EyeH;
+        ApproachShots(true);
+
+        // reveal: just inside E1, looking along its axis
+        var rev = e1.mid + e1.inward * .5f;
+        Lamps(true, rev);
+        SetTv(1); Pose(rev + eye, e1.mid + e1.inward * 6f + Vector3.up * 1.45f, 76f); Beauty(mainRT, "reveal"); Id("reveal"); IdNoPortal("reveal"); IdKeyOnly("reveal");
+
+        // the beacon from E1: the TV alone (all map lamps off), then with the lamps as the tutorial sets them
+        var thr = e1.mid;
+        Lamps(false, thr);
+        SetTv(1); Pose(thr + eye, Mod(tvLight.transform.position), 76f); Beauty(mainRT, "beacon_tvonly");
+        if (ePass) { SetTv(9); RenderE("beacon_tvonly_E"); }
+        Lamps(true, thr);
+        SetTv(1); Beauty(mainRT, "beacon_lamps"); Id("beacon"); IdNoPortal("beacon"); IdJewel("beacon");
+        for (var c = 2; c <= 5; c++) { SetTv(c); Beauty(mainRT, "beacon_seq_c" + c); }
+        SetTv(0); Beauty(mainRT, "beacon_seq_off");
+        if (ePass) { SetTv(9); RenderE("beacon_E_all"); SetTv(0); RenderE("beacon_E_notv"); }
+
+        // the take: facing the board from the pickup reach; every card (check 3 on the worst card, displayed)
+        var take = new Vector3(plan.take.x, 0f, plan.take.y);
+        Lamps(true, take);
+        Pose(take + eye, keyLook, 76f);
+        SetTv(1); Beauty(mainRT, "take_before"); Id("take"); IdKeyOnly("take"); IdJewel("take"); IdSign("take");
+        for (var c = 1; c <= 5; c++) { SetTv(c); Beauty(mainRT, "take_before_c" + c); if (ePass) RenderE("take_E_c" + c); }
+        SetTv(25); Beauty(mainRT, "take_before_spec_c5");
+        SetTv(21); Beauty(mainRT, "take_before_spec_c1");
+        if (ePass)
+        {
+            SetTv(9); RenderE("take_E_all");
+            SetTv(15); RenderE("take_E_dark");
+            SetTv(0); RenderE("take_E_notv");
+            Lamps(false, take); SetTv(9); RenderE("take_E_tvonly_nolamps"); Lamps(true, take);
+        }
+        SetTv(0); Beauty(mainRT, "take_after");
+        // W1 after the take (check 7): the take view and the turn toward the dead set, dips to 0.70 and 0.55; other lamps that
+        // stutter, fail or are dead are held off for these frames so only W1 changes between a pair
+        var frozen = FreezeOtherLamps(null);
+        Beauty(mainRT, "take_after_w1base");
+        var hs = W1Dip(.70f); Beauty(mainRT, "take_after_w1_70"); W1Release(hs);
+        hs = W1Dip(.55f); Beauty(mainRT, "take_after_w1_55"); W1Release(hs);
+        var lp = Mod(tvLight.transform.position);
+        Pose(take + eye, new Vector3(lp.x, 1.5f, lp.z), 76f);
+        SetTv(0); Beauty(mainRT, "turn_after");
+        hs = W1Dip(.70f); Beauty(mainRT, "turn_after_w1_70"); W1Release(hs);
+        hs = W1Dip(.55f); Beauty(mainRT, "turn_after_w1_55"); W1Release(hs);
+        FreezeOtherLamps(frozen);
+        Mx("w1_station_lamps", StationLampCells().Count);
+        Mx("w1_frozen_other_lamps", frozen.Count);
+        // a wider frame from one step back
+        var back = take + (take - new Vector3(keyLook.x, 0f, keyLook.z)).normalized * .9f;
+        SetTv(1); Pose(back + eye, keyLook + Vector3.up * .25f, 76f); Beauty(mainRT, "take_wide_before");
+        SetTv(0); Beauty(mainRT, "take_wide_after");
+
+        BoardShots(true);
+        WiggleShots();
 
         // plan: orthographic from under the ceiling
         Lamps(true, new Vector3(plan.w * 1.5f, 0f, plan.d * 1.5f));
@@ -1320,15 +1845,331 @@ public static class FrontRoomsStationLookdev
         cam.nearClipPlane = .01f; cam.farClipPlane = 4f;
         poses.Append("plan ortho size " + F(cam.orthographicSize) + "\n");
         Mx("plan_ortho_size", cam.orthographicSize);
-        Beauty(rt, "plan");
+        Beauty(mainRT, "plan");
         if (ePass) { SetTv(9); RenderE("plan_E_all"); SetTv(0); RenderE("plan_E_notv"); }
         Id("plan");
         cam.orthographic = false; cam.nearClipPlane = .02f; cam.farClipPlane = 80f;
+        EndShots();
+        SetTv(1); Lamps(true, rev);
+    }
 
-        File.WriteAllText(Path.Combine(outDir, "poses.tsv"), poses.ToString());
+    /// <summary>The sweep's subset: checks 1 (a, b, c), 4 and 5; plus the door leaf, open and shut, where E2 is a map door.</summary>
+    static void SweepShots()
+    {
+        StartShots();
+        var eye = Vector3.up * EyeH;
+        ApproachShots(false);
+        var rev = e1.mid + e1.inward * .5f;
+        Lamps(true, rev);
+        SetTv(1); Pose(rev + eye, e1.mid + e1.inward * 6f + Vector3.up * 1.45f, 76f); Id("reveal"); IdNoPortal("reveal");
+        var thr = e1.mid;
+        Lamps(true, thr);
+        SetTv(1); Pose(thr + eye, Mod(tvLight.transform.position), 76f); Id("beacon"); IdNoPortal("beacon");
+        BoardShots(false);
+        WiggleShots();
+        if (e2DoorHinge != null)
+        {
+            // the leaf shut is the default; open it (95 deg) to the side it swings into and re-run the E2 wiggle and the board frame
+            var closed = e2DoorHinge.localRotation;
+            var best = 0f; var bestIn = -1f;
+            foreach (var s in new[] { 1f, -1f })
+            {
+                e2DoorHinge.localRotation = closed * Quaternion.Euler(0f, s * ModuleUnits.DoorSwingDegrees, 0f);
+                var leafC = Mod(RendererCentre(e2DoorHinge));
+                var inside = Vector3.Dot(leafC - e2.mid, e2.inward);
+                if (inside > bestIn) { bestIn = inside; best = s; }
+            }
+            // the map's own swing side: FixedSwing is hashed; we test the leaf swung INTO the station (the case that can hide the key)
+            e2DoorHinge.localRotation = closed * Quaternion.Euler(0f, best * ModuleUnits.DoorSwingDegrees, 0f);
+            Physics.SyncTransforms();
+            Mx("door_leaf_into_room_m", bestIn);
+            var leafCentre = Mod(RendererCentre(e2DoorHinge));
+            Mv("door_leaf_open_centre", leafCentre);
+            SetTv(1); Lamps(true, rev);
+            for (var k = 0; k < 5; k++)
+            {
+                var offs = new[] { new Vector2(0f, .3f), new Vector2(.5f, .3f), new Vector2(-.5f, .3f), new Vector2(0f, -.3f), new Vector2(0f, .9f) };
+                var p2 = e2.mid + e2.along * offs[k].x + e2.inward * offs[k].y;
+                Pose(p2 + eye, keyLook, 76f); IdNoPortal("wigopen_e2_" + k); IdKeyOnly("wigopen_e2_" + k);
+                p2 = e1.mid + e1.along * offs[k].x + e1.inward * offs[k].y;
+                Pose(p2 + eye, keyLook, 76f); IdNoPortal("wigopen_e1_" + k); IdKeyOnly("wigopen_e1_" + k);
+            }
+            // the swing clearance: any harness stand-in or module prop within the leaf's swept quarter-circle (r = door width) + 1.2 m keep-clear
+            Ms("door_swing_clear", DoorSwingClear(best));
+            e2DoorHinge.localRotation = closed;
+            Physics.SyncTransforms();
+        }
+        EndShots();
+    }
+
+    static string DoorSwingClear(float swingSign)
+    {
+        var hits = new List<string>();
+        var hingeM = Mod(e2DoorHinge.position);
+        var width = 0f;
+        foreach (var r in e2DoorHinge.GetComponentsInChildren<Renderer>(true)) width = Mathf.Max(width, r.bounds.size.x, r.bounds.size.z);
+        foreach (var kv in kinds)
+        {
+            var r = kv.Key;
+            if (r == null || !r.enabled) continue;
+            if (kv.Value != Kind.Furniture && kv.Value != Kind.SetBody) continue;
+            if (r.transform.IsChildOf(e2DoorHinge)) continue;
+            var bb = r.bounds; var c = Mod(bb.center);
+            if (Mod(bb.min).y > 2.1f) continue;
+            var inRoom = Vector3.Dot(c - e2.mid, e2.inward);
+            if (inRoom < 0f) continue;
+            var dh = new Vector3(c.x - hingeM.x, 0f, c.z - hingeM.z).magnitude;
+            var along = Mathf.Abs(Vector3.Dot(c - e2.mid, e2.along));
+            if (dh < width + .05f || (inRoom < 1.2f && along < width * .5f + .3f)) { var nm = r.transform.parent != null ? r.transform.parent.name : r.name; if (!hits.Contains(nm)) hits.Add(nm); }
+        }
+        return (hits.Count == 0 ? "clear" : "BLOCKED by " + string.Join("; ", hits.ToArray())) + " (leaf width " + F(width) + " m, keep-clear 1.2 m)";
+    }
+
+    /// <summary>r7 extras: timing contract frames, legibility from 3 m, EXAMINE plate, phone captures, the light leak, the combined
+    /// photosafety sequence.</summary>
+    static void ExtraShots()
+    {
+        StartShots();
+        var eye = Vector3.up * EyeH;
+        var take = new Vector3(plan.take.x, 0f, plan.take.y);
+
+        // the timing contract (gameplay critic 5): E at t 0; KeyTaken at 0.25 (the key leaves the hook, the sound cut, the collapse and
+        // the light fall start together); the light at zero by 0.6 while the key is in hand; the pocket from 0.75
+        Lamps(true, take);
+        Pose(take + eye, keyLook, 76f);
+        var times = new[] { 0f, .25f, .40f, .50f, .60f, .75f, 1.0f };
+        var tl = new StringBuilder("[");
+        foreach (var t in times)
+        {
+            var s = LightCurve(t);
+            tvScale = s;
+            foreach (var g in keyParts) g.SetActive(t < .25f);
+            if (s <= 0f) SetTv(0); else SetTv(1);
+            Beauty(mainRT, "timing_t" + Mathf.RoundToInt(t * 100f).ToString("000"));
+            tl.Append((tl.Length > 1 ? ", " : "") + "[" + F(t) + ", " + F(s) + "]");
+        }
+        metrics["timing_light_scale"] = tl.Append("]").ToString();
+        tvScale = 1f;
+        foreach (var g in keyParts) g.SetActive(true);
+
+        // legibility (gameplay critic 7): the key and tag from 3 m on the key's normal; the board's size from E1 is in reveal_idkey
+        var at3 = new Vector3(keyLook.x, 0f, keyLook.z) + plan.keyNormal * 3f;
+        Lamps(true, at3);
+        SetTv(1); Pose(at3 + eye, keyLook, 76f); Beauty(mainRT, "key_3m"); IdKeyOnly("key_3m");
+
+        // the EXAMINE plate (gameplay critic 13): a flat close-up of the plate (0.30 m, FOV 61) with the inspect adapt (+1 EV, contrast +12),
+        // before the take on the darkest card and after the take
+        var signC = new Vector3(plan.keyWall.x, plan.keyWall.y + .21f, plan.keyWall.z) + plan.keyNormal * .013f;
+        var exEye = signC + plan.keyNormal * .30f;
+        var vol = InspectAdapt(true);
+        Lamps(true, new Vector3(exEye.x, 0f, exEye.z));
+        Pose(exEye, signC, 61f);
+        SetTv(5); Beauty(mainRT, "exam_before_c5"); IdSign("exam");
+        SetTv(1); Beauty(mainRT, "exam_before_c1");
+        SetTv(0); Beauty(mainRT, "exam_after");
+        InspectAdapt(false, vol);
+
+        // the light leak (gameplay critic 11): E in the room beyond the wall the set's cone reaches, with the desktop shadow (Soft, High tier),
+        // the WebGL tier (Hard, Medium 512) and no shadow (V3's original WebGL line)
+        if (plan.leakProbe != Vector3.zero)
+        {
+            Lamps(true, plan.leakEye);
+            Pose(plan.leakEye, plan.leakProbe, 76f);
+            IdOnly("leak", Kind.ProbeLeak);
+            if (ePass)
+            {
+                SetTv(0); RenderE("leak_E_off");
+                SetTv(9); tvLight.shadows = LightShadows.Soft; SetShadowTier(2); RenderE("leak_E_soft_high");
+                tvLight.shadows = LightShadows.Hard; SetShadowTier(1); RenderE("leak_E_hard_512");
+                tvLight.shadows = LightShadows.None; RenderE("leak_E_noshadow");
+                tvLight.shadows = LightShadows.Soft; SetShadowTier(2);
+                // debug: is the set's shadow there at all? (other lamps off; no cookie; narrower outer cones)
+                foreach (var l in lampLights) l.enabled = false;
+                RenderE("leak_E_soft_nolamps");
+                tvLight.cookie = null; RenderE("leak_E_soft_nolamps_nocookie");
+                tvLight.spotAngle = 150f; RenderE("leak_E_soft_nolamps_outer150");
+                tvLight.spotAngle = 120f; RenderE("leak_E_soft_nolamps_outer120");
+                tvLight.spotAngle = 90f; tvLight.innerSpotAngle = 60f; RenderE("leak_E_soft_nolamps_outer90");
+                tvLight.spotAngle = 160f; tvLight.innerSpotAngle = 100f; tvLight.cookie = v3.cookie ? cookieTex : null;
+                SetTv(0); RenderE("leak_E_off_nolamps"); SetTv(9);
+                // which part fails: (a) every map shell renderer casting two-sided; (b) a closed test box just inside the wall
+                var shellModes = new Dictionary<Renderer, ShadowCastingMode>();
+                foreach (var kv in kinds) if (kv.Key != null && kv.Value == Kind.Shell) { shellModes[kv.Key] = kv.Key.shadowCastingMode; kv.Key.shadowCastingMode = ShadowCastingMode.TwoSided; }
+                RenderE("leak_E_soft_nolamps_twosided");
+                foreach (var kv in shellModes) kv.Key.shadowCastingMode = kv.Value;
+                var lpM = Mod(tvLight.transform.position);
+                var toProbe = plan.leakProbe - lpM; toProbe.y = 0f;
+                var boxC = lpM + toProbe * .55f; boxC.y = 1.45f;
+                var testBox = Box(extras, "leak test box (closed, white)", boxC, new Vector3(2.5f, 2.9f, .2f), YawOf(toProbe.normalized), Flat("leak test box", Color.white), Kind.Furniture, false);
+                RenderE("leak_E_soft_nolamps_testbox");
+                testBox.enabled = false; kinds.Remove(testBox);
+                // (c) every other light in the scene off; (d) a fresh spot light in place of the set's light
+                var others = new List<Light>();
+                foreach (var l in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                    if (l != tvLight && l.enabled && l.type != LightType.Directional) { others.Add(l); l.enabled = false; }
+                Mx("leak_debug_other_lights", others.Count);
+                RenderE("leak_E_soft_alloff");
+                var fresh = new GameObject("fresh spot (debug)").AddComponent<Light>();
+                fresh.transform.SetPositionAndRotation(tvLight.transform.position, tvLight.transform.rotation);
+                fresh.type = LightType.Spot; fresh.spotAngle = 160f; fresh.innerSpotAngle = 100f; fresh.range = 9f; fresh.intensity = tvLight.intensity; fresh.color = tvLight.color;
+                fresh.shadows = LightShadows.Soft; fresh.shadowStrength = 1f;
+                tvLight.enabled = false;
+                RenderE("leak_E_soft_fresh");
+                fresh.transform.SetParent(null, true);
+                fresh.spotAngle = 120f; RenderE("leak_E_soft_fresh120");
+                UnityEngine.Object.DestroyImmediate(fresh.gameObject);
+                // (e) the isolated shadow test rebuilt inside this scene, 20 m above the map (empty space)
+                Ms("leak_debug_inscene_test", InSceneShadowTest(new Vector3(4.5f, 20f, 4.5f)));
+                tvLight.enabled = true;
+                foreach (var l in others) l.enabled = true;
+                Lamps(true, plan.leakEye);
+                Ms("leak_debug", "shadows " + tvLight.shadows + ", strength " + F(tvLight.shadowStrength) + ", near " + F(tvLight.shadowNearPlane) + ", urp addl shadows " + (UniversalRenderPipeline.asset != null ? UniversalRenderPipeline.asset.supportsAdditionalLightShadows.ToString() : "?") + ", shadow distance " + (UniversalRenderPipeline.asset != null ? F(UniversalRenderPipeline.asset.shadowDistance) : "?"));
+            }
+            SetTv(1); Beauty(mainRT, "leak_view");
+        }
+
+        // the combined photosafety case (gameplay critic 14): the beacon view from E1 through the loop wrap (card 5 -> 1) with a W1
+        // burst of three dips 0.55 s apart, the middle one on the cut; 30 fps, 2 s, 960 x 540
+        var thr = e1.mid;
+        Lamps(true, thr);
+        Pose(thr + eye, Mod(tvLight.transform.position), 76f);
+        var frozen = FreezeOtherLamps(null);
+        PhotoSequence("flash", 60, 1f / 30f);
+        FreezeOtherLamps(frozen);
+
+        EndShots();
+
+        // phone captures (gameplay critic 10): 2622 x 1206 (iPhone 16 Pro landscape, 19.5:9), quality level 2 (iOS default), vFOV 76
+        PhoneShots();
+        tvScale = 1f;
+    }
+
+    /// <summary>The take's light scale: 1 until KeyTaken (0.25 s), then e^(-(t-0.25)/0.12) to zero by 0.6 s.</summary>
+    static float LightCurve(float t)
+    {
+        if (t < .25f) return 1f;
+        if (t >= .6f) return 0f;
+        return Mathf.Exp(-(t - .25f) / .12f) * (1f - Mathf.InverseLerp(.5f, .6f, t));
+    }
+
+    static Volume InspectAdapt(bool on, Volume existing = null)
+    {
+        if (!on)
+        {
+            if (existing != null) { var pr = existing.sharedProfile; UnityEngine.Object.DestroyImmediate(existing.gameObject); if (pr != null) UnityEngine.Object.DestroyImmediate(pr); }
+            return null;
+        }
+        var go = new GameObject("inspect adapt (emulated: +1 EV, contrast +12)");
+        go.transform.SetParent(root, false);
+        var v = go.AddComponent<Volume>();
+        v.isGlobal = true; v.priority = 100f;
+        var prof = ScriptableObject.CreateInstance<VolumeProfile>();
+        var ca = prof.Add<ColorAdjustments>(true);
+        ca.postExposure.Override(1f);
+        ca.contrast.Override(12f);
+        v.sharedProfile = prof;
+        return v;
+    }
+
+    static void SetShadowTier(int tier)
+    {
+        var data = tvLight.GetComponent<UniversalAdditionalLightData>();
+        if (data == null) data = tvLight.gameObject.AddComponent<UniversalAdditionalLightData>();
+        var so = new SerializedObject(data);
+        var p = so.FindProperty("m_AdditionalLightsShadowResolutionTier");
+        if (p != null) { p.intValue = tier; so.ApplyModifiedPropertiesWithoutUndo(); }
+    }
+
+    /// <summary>Frames through the loop wrap with a W1 burst; the light track low-passed at tau 0.12 s (V3), the screen switching at the cut.</summary>
+    static void PhotoSequence(string name, int frames, float dt)
+    {
+        var dir = Path.Combine(outDir, name);
+        Directory.CreateDirectory(dir);
+        var rt = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32) { antiAliasing = 2 };
+        var prev = cam.targetTexture; cam.targetTexture = rt;
+        const float cut = 1.0f;                         // the wrap at t = 1.0 s (card 5 until then, card 1 after)
+        float i5; Color c5; CardLight(5, v3, out i5, out c5);
+        float i1; Color c1; CardLight(1, v3, out i1, out c1);
+        var dips = new[] { cut - .55f, cut, cut + .55f };
+        var cells = StationLampCells();
+        var handles = new List<int>();
+        var tlog = new StringBuilder();
+        for (var f = 0; f < frames; f++)
+        {
+            var t = f * dt;
+            foreach (var dd in dips)
+                if (t >= dd && t - dt < dd)
+                    foreach (var c in cells) handles.Add(world.SetLampOverride(c, FrontRoomsMapWorld.LampFx.Warn, .55f, .10f, new FrontRoomsMapWorld.LampEnvelope(.10f, .22f)));
+            world.TickFixturesForTools(dt);
+            var a = t < cut ? 0f : 1f - Mathf.Exp(-(t - cut) / .12f);
+            var inten = Mathf.Lerp(i5, i1, a); var col = Color.Lerp(c5, c1, a);
+            screenR.sharedMaterial = cardM[t < cut ? 5 : 1];
+            tvLight.enabled = true; tvLight.intensity = inten; tvLight.color = col; tvLight.cookie = v3.cookie ? cookieTex : null;
+            cam.Render();
+            Save(rt, Path.Combine(dir, "f" + f.ToString("000") + ".png"));
+            tlog.Append(F(t) + "\t" + F(inten) + "\n");
+        }
+        File.WriteAllText(Path.Combine(dir, "track.tsv"), tlog.ToString());
+        foreach (var h in handles) world.RemoveLampOverride(h);
+        for (var k = 0; k < 20; k++) world.TickFixturesForTools(.05f);
+        cam.targetTexture = prev; rt.Release();
+    }
+
+    static void PhoneShots()
+    {
+        var q = QualitySettings.GetQualityLevel();
+        QualitySettings.SetQualityLevel(2, true);
+        poses.Length = 0;
+        cam = MakeCamera();
+        var rt = new RenderTexture(2622, 1206, 24, RenderTextureFormat.ARGB32) { antiAliasing = 2 };
+        cam.targetTexture = rt;
+        var eye = Vector3.up * EyeH;
+        var far = e1.mid - e1.inward * 4.5f;
+        var approachLook = e1.mid + e1.inward * 3f + Vector3.up * 1.45f;
+        Lamps(true, far); SetTv(1); Pose(far + eye, approachLook, 76f); Beauty(rt, "phone_approach_far"); Id("phone_approach_far");
+        IdNoPortal("phone_approach_far");
+        var rev = e1.mid + e1.inward * .5f;
+        Lamps(true, rev); SetTv(1); Pose(rev + eye, e1.mid + e1.inward * 6f + Vector3.up * 1.45f, 76f); Beauty(rt, "phone_reveal"); IdKeyOnly("phone_reveal");
+        var take = new Vector3(plan.take.x, 0f, plan.take.y);
+        Lamps(true, take); Pose(take + eye, keyLook, 76f);
+        SetTv(1); Beauty(rt, "phone_take_before"); IdKeyOnly("phone_take");
+        SetTv(5); Beauty(rt, "phone_take_before_c5");
+        SetTv(0); Beauty(rt, "phone_take_after");
         cam.targetTexture = null; rt.Release();
         UnityEngine.Object.DestroyImmediate(cam.gameObject);
-        SetTv(1); Lamps(true, rev);
+        cam = null;
+        QualitySettings.SetQualityLevel(q, true);
+        Ms("phone_quality", "level 2 (" + QualitySettings.names[2] + ", the iPhone default), 2622 x 1206, vFOV 76, no touch HUD in the harness");
+    }
+
+    /// <summary>The V3 grid (gridOnly): the take frame on every card for six light configurations, and the frame after the take.</summary>
+    static void V3Grid()
+    {
+        StartShots();
+        var eye = Vector3.up * EyeH;
+        var take = new Vector3(plan.take.x, 0f, plan.take.y);
+        Lamps(true, take);
+        Pose(take + eye, keyLook, 76f);
+        Id("take"); IdKeyOnly("take");
+        var cfgs = new List<V3Cfg> { SpecCfg() };
+        foreach (var k in new[] { 4f, 5f, 6f })
+            foreach (var fl in new[] { .65f, .81f })
+                cfgs.Add(new V3Cfg { name = "k" + F(k) + "_f" + F(fl), k = k, floorFrac = fl });
+        var desc = new StringBuilder();
+        foreach (var cfg in cfgs)
+        {
+            for (var c = 1; c <= 5; c++)
+            {
+                if (cfg.cookie && cookieTex == null) ChooseCookie();
+                SetTvCfg(c, cfg);
+                Beauty(mainRT, "grid_" + cfg.name + "_c" + c);
+                if (ePass) RenderE("grid_E_" + cfg.name + "_c" + c);
+            }
+            desc.Append(cfg.name + "\t" + cfg.Describe() + "\n");
+        }
+        File.WriteAllText(Path.Combine(outDir, "grid_cfgs.tsv"), desc.ToString());
+        SetTv(0); Beauty(mainRT, "grid_after"); if (ePass) RenderE("grid_E_after");
+        EndShots();
     }
 
     static void Beauty(RenderTexture rt, string name)
@@ -1336,7 +2177,6 @@ public static class FrontRoomsStationLookdev
         cam.targetTexture = rt;
         cam.Render(); cam.Render();
         Save(rt, Path.Combine(outDir, name + ".png"));
-        Log("shot " + name);
     }
 
     static void SwapMaterials(Func<Renderer, Kind, Material> pick, Dictionary<Renderer, Material[]> saved, List<Renderer> hidden, List<Renderer> shown)
@@ -1346,8 +2186,8 @@ public static class FrontRoomsStationLookdev
             var r = kv.Key;
             if (r == null) continue;
             var m = pick(r, kv.Value);
-            var isPortal = kv.Value == Kind.Portal1 || kv.Value == Kind.Portal2 || kv.Value == Kind.ProbeIn || kv.Value == Kind.ProbeOut;
-            if (!r.enabled && !isPortal) continue;
+            var isProbe = kv.Value == Kind.Portal1 || kv.Value == Kind.Portal2 || kv.Value == Kind.ProbeIn || kv.Value == Kind.ProbeOut || kv.Value == Kind.ProbeLeak;
+            if (!r.enabled && !isProbe) continue;
             if (!r.gameObject.activeInHierarchy) continue;
             saved[r] = r.sharedMaterials;
             if (m == null) { if (r.enabled) { hidden.Add(r); r.enabled = false; } continue; }
@@ -1369,12 +2209,13 @@ public static class FrontRoomsStationLookdev
     {
         var saved = new Dictionary<Renderer, Material[]>(); var hidden = new List<Renderer>(); var shown = new List<Renderer>();
         SwapMaterials(pick, saved, hidden, shown);
-        var fixtures = FrontRoomsWallFixtureRenderer.Enabled; FrontRoomsWallFixtureRenderer.Enabled = false;   // instanced outlets are not Renderers
+        var fixtures = FrontRoomsWallFixtureRenderer.Enabled; FrontRoomsWallFixtureRenderer.Enabled = false;
         var fog = RenderSettings.fog; RenderSettings.fog = false;
         var data = cam.GetUniversalAdditionalCameraData();
         data.renderPostProcessing = false;
         var prev = cam.targetTexture;
-        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+        var w = prev != null ? prev.width : 1920; var h = prev != null ? prev.height : 1080;
+        var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
         cam.targetTexture = rt; cam.allowMSAA = false;
         cam.Render();
         Save(rt, Path.Combine(outDir, file + ".png"));
@@ -1402,7 +2243,7 @@ public static class FrontRoomsStationLookdev
         RenderFlat(name + "_id", (r, k) =>
         {
             if (k == Kind.Lens || k == Kind.Shell) return Unlit(Color.black);
-            if (k == Kind.ProbeIn || k == Kind.ProbeOut) return null;
+            if (k == Kind.ProbeIn || k == Kind.ProbeOut || k == Kind.ProbeLeak) return null;
             return Unlit(IdColour(k));
         });
     }
@@ -1412,7 +2253,7 @@ public static class FrontRoomsStationLookdev
         RenderFlat(name + "_idnp", (r, k) =>
         {
             if (k == Kind.Lens || k == Kind.Shell) return Unlit(Color.black);
-            if (k == Kind.ProbeIn || k == Kind.ProbeOut || k == Kind.Portal1 || k == Kind.Portal2) return null;
+            if (k == Kind.ProbeIn || k == Kind.ProbeOut || k == Kind.Portal1 || k == Kind.Portal2 || k == Kind.ProbeLeak) return null;
             return Unlit(IdColour(k));
         });
     }
@@ -1423,7 +2264,7 @@ public static class FrontRoomsStationLookdev
         {
             if (k == Kind.ProbeOut) return Unlit(new Color(1f, 0f, 0f));
             if (k == Kind.ProbeIn) return Unlit(new Color(0f, 1f, 0f));
-            if (k == Kind.Portal1 || k == Kind.Portal2) return null;
+            if (k == Kind.Portal1 || k == Kind.Portal2 || k == Kind.ProbeLeak) return null;
             return Unlit(Color.black);
         });
     }
@@ -1433,21 +2274,41 @@ public static class FrontRoomsStationLookdev
         RenderFlat(name + "_idkey", (r, k) =>
         {
             if (k == Kind.Key) return Unlit(new Color(1f, 0f, 0f));
-            if (k == Kind.Plate) return Unlit(new Color(1f, 0f, 1f));
+            if (k == Kind.Plate || k == Kind.Sign) return Unlit(new Color(1f, 0f, 1f));
             return null;
         });
     }
 
-    /// <summary>Illuminance pass: every surface white Lambert, real lights + the game's ambient, no post, no fog; linear float 960 x 540.</summary>
-    static void RenderE(string name)
+    static void IdOnly(string name, Kind only)
+    {
+        RenderFlat(name + "_id" + only.ToString().ToLowerInvariant(), (r, k) =>
+        {
+            if (k == only) return Unlit(new Color(1f, 0f, 0f));
+            if (k == Kind.Portal1 || k == Kind.Portal2 || k == Kind.ProbeIn || k == Kind.ProbeOut || (k == Kind.ProbeLeak && only != Kind.ProbeLeak)) return null;
+            return Unlit(Color.black);
+        });
+    }
+
+    static void IdLens(string name) { IdOnly(name, Kind.Lens); }
+    static void IdJewel(string name) { IdOnly(name, Kind.Jewel); }
+    static void IdSign(string name) { IdOnly(name, Kind.Sign); }
+
+    static Material EWhite()
     {
         var white = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "E pass white" };
         white.SetColor("_BaseColor", Color.white);
         white.SetFloat("_Smoothness", 0f); white.SetFloat("_Metallic", 0f);
         white.SetFloat("_SpecularHighlights", 0f); white.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
         white.SetFloat("_EnvironmentReflections", 0f); white.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+        return white;
+    }
+
+    /// <summary>Illuminance pass: every surface white Lambert, real lights + the game's ambient, no post, no fog; linear float 960 x 540.</summary>
+    static void RenderE(string name)
+    {
+        var white = EWhite();
         var saved = new Dictionary<Renderer, Material[]>(); var hidden = new List<Renderer>(); var shown = new List<Renderer>();
-        SwapMaterials((r, k) => k == Kind.Lens || k == Kind.Screen || k == Kind.Portal1 || k == Kind.Portal2 || k == Kind.ProbeIn || k == Kind.ProbeOut ? null : white, saved, hidden, shown);
+        SwapMaterials((r, k) => k == Kind.Lens || k == Kind.Screen || k == Kind.Portal1 || k == Kind.Portal2 || k == Kind.ProbeIn || k == Kind.ProbeOut || k == Kind.ProbeLeak || k == Kind.Jewel ? null : white, saved, hidden, shown);
         var fixtures = FrontRoomsWallFixtureRenderer.Enabled; FrontRoomsWallFixtureRenderer.Enabled = false;
         var fog = RenderSettings.fog; RenderSettings.fog = false;
         var data = cam.GetUniversalAdditionalCameraData();
@@ -1472,6 +2333,34 @@ public static class FrontRoomsStationLookdev
         UnityEngine.Object.DestroyImmediate(white);
     }
 
+    /// <summary>The same white pass on a tiny camera, returning the mean luminance (ChooseCookie's point test).</summary>
+    static float RenderEValue()
+    {
+        var white = EWhite();
+        var saved = new Dictionary<Renderer, Material[]>(); var hidden = new List<Renderer>(); var shown = new List<Renderer>();
+        SwapMaterials((r, k) => k == Kind.Lens || k == Kind.Screen || k == Kind.Portal1 || k == Kind.Portal2 || k == Kind.ProbeIn || k == Kind.ProbeOut || k == Kind.ProbeLeak || k == Kind.Jewel ? null : white, saved, hidden, shown);
+        var fog = RenderSettings.fog; RenderSettings.fog = false;
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        var rt = new RenderTexture(32, 32, 24, RenderTextureFormat.ARGBFloat) { antiAliasing = 1 };
+        cam.targetTexture = rt; cam.allowMSAA = false;
+        cam.Render();
+        var prevActive = RenderTexture.active;
+        RenderTexture.active = rt;
+        var tex = new Texture2D(32, 32, TextureFormat.RGBAFloat, false, true);
+        tex.ReadPixels(new Rect(0, 0, 32, 32), 0, 0);
+        tex.Apply();
+        RenderTexture.active = prevActive;
+        var px = tex.GetPixels(); var s = 0f;
+        foreach (var p in px) s += .2126f * p.r + .7152f * p.g + .0722f * p.b;
+        UnityEngine.Object.DestroyImmediate(tex);
+        cam.targetTexture = null; rt.Release();
+        RenderSettings.fog = fog;
+        Restore(saved, hidden, shown);
+        UnityEngine.Object.DestroyImmediate(white);
+        return s / px.Length;
+    }
+
     static void Save(RenderTexture rt, string path)
     {
         var prev = RenderTexture.active;
@@ -1482,6 +2371,56 @@ public static class FrontRoomsStationLookdev
         RenderTexture.active = prev;
         File.WriteAllBytes(path, image.EncodeToPNG());
         UnityEngine.Object.DestroyImmediate(image);
+    }
+
+    // ------------------------------------------------------------------ static counts (gameplay critic 11: no GPU capture in batch)
+    static void Counts()
+    {
+        var foot = new Bounds(W(new Vector3(plan.w * 1.5f, 1.45f, plan.d * 1.5f)), new Vector3(plan.w * 3f, 2.9f, plan.d * 3f));
+        int rends = 0, subs = 0, casters = 0, inCone = 0;
+        var matsSeen = new HashSet<Material>();
+        var lp = tvLight.transform.position; var ax = tvLight.transform.forward;
+        foreach (var r in root.GetComponentsInChildren<Renderer>(false))
+        {
+            if (!r.enabled) continue;
+            if (kinds.ContainsKey(r) && (kinds[r] == Kind.Portal1 || kinds[r] == Kind.Portal2 || kinds[r] == Kind.ProbeIn || kinds[r] == Kind.ProbeOut || kinds[r] == Kind.ProbeLeak)) continue;
+            if (!foot.Intersects(r.bounds)) continue;
+            var lod = r.GetComponentInParent<LODGroup>();
+            if (lod != null)
+            {
+                var lods = lod.GetLODs();
+                if (lods.Length > 0 && !lods[0].renderers.Contains(r)) continue;   // count LOD0 only
+            }
+            rends++;
+            subs += r.sharedMaterials.Length;
+            foreach (var m in r.sharedMaterials) if (m != null) matsSeen.Add(m);
+            if (r.shadowCastingMode != ShadowCastingMode.Off)
+            {
+                casters++;
+                var d = r.bounds.center - lp;
+                if (d.magnitude < tvLight.range && Vector3.Angle(d, ax) < 80f) inCone++;
+            }
+        }
+        Mx("count_renderers_lod0_in_footprint", rends);
+        Mx("count_submeshes_lod0_in_footprint", subs);
+        Mx("count_materials_in_footprint", matsSeen.Count);
+        Mx("count_shadow_casters_in_footprint", casters);
+        Mx("count_casters_in_tv_cone", inCone);
+        Mx("count_realtime_lights_station", StationLampCells().Count + 1);
+        int props = 0, propCasters = 0;
+        foreach (var kv in kinds)
+        {
+            var r = kv.Key;
+            if (r == null || !r.enabled || kv.Value == Kind.Shell || kv.Value == Kind.Lens) continue;
+            if (kv.Value == Kind.Portal1 || kv.Value == Kind.Portal2 || kv.Value == Kind.ProbeIn || kv.Value == Kind.ProbeOut || kv.Value == Kind.ProbeLeak) continue;
+            if (!foot.Intersects(r.bounds)) continue;
+            var lod = r.GetComponentInParent<LODGroup>();
+            if (lod != null) { var lods = lod.GetLODs(); if (lods.Length > 0 && !lods[0].renderers.Contains(r)) continue; }
+            props++;
+            if (r.shadowCastingMode != ShadowCastingMode.Off) propCasters++;
+        }
+        Mx("count_station_prop_renderers_lod0", props);
+        Mx("count_station_prop_shadow_casters", propCasters);
     }
 
     // ------------------------------------------------------------------ collision: capsule walk grids
@@ -1516,7 +2455,6 @@ public static class FrontRoomsStationLookdev
         sb.Append(string.Join(", ", Radii.Select(r => F(r)).ToArray()));
         sb.Append("], \"player\": \"capsule y 0.31-1.74, radius per level\", \"relay\": \"capsule r 0.30, y 0.40-1.95\"}");
         File.WriteAllText(Path.Combine(outDir, "walk_meta.json"), sb.ToString());
-        Log("walk grid " + nx + " x " + nz);
     }
 
     static void ValidateModule(RoomModuleData m)
@@ -1533,9 +2471,6 @@ public static class FrontRoomsStationLookdev
         Mx("validate_warnings", warnings.Count);
         Ms("validate_error_list", string.Join(" | ", errors.ToArray()));
         Ms("validate_warning_list", string.Join(" | ", warnings.ToArray()));
-        Log("Validate: " + errors.Count + " errors, " + warnings.Count + " warnings");
-        foreach (var e in errors) Log("  ERROR " + e);
-        foreach (var w in warnings) Log("  warning " + w);
         var vp = new StringBuilder();
         foreach (var p in v.props) vp.Append(p.kit + "\t" + F(p.x) + "\t" + F(p.z) + "\t" + F(p.y) + "\t" + F(p.yaw) + "\n");
         File.WriteAllText(Path.Combine(outDir, "props.tsv"), vp.ToString());
@@ -1548,6 +2483,7 @@ public static class FrontRoomsStationLookdev
         Ms("lamps", plan.lamps);
         Ms("mount", plan.mount);
         Mx("tv_tilt_deg", plan.tvTilt);
+        Mx("floor_one_module", plan.floorOne ? 1 : 0);
         Mv("take_spot", new Vector3(plan.take.x, 0f, plan.take.y));
         Mv("key_wall", plan.keyWall); Mv("key_normal", plan.keyNormal);
         Ms("notes", plan.notes);
@@ -1598,6 +2534,200 @@ public static class FrontRoomsStationLookdev
         l.shadowBias = .045f; l.shadowNormalBias = .28f; l.shadowNearPlane = .1f;
     }
 
+    static string InSceneShadowTest(Vector3 baseModule)
+    {
+        var white = EWhite();
+        var made = new List<GameObject>();
+        var off = W(baseModule);
+        var floor = GameObject.CreatePrimitive(PrimitiveType.Cube); floor.transform.localScale = new Vector3(12f, .1f, 12f); floor.transform.position = off + new Vector3(0f, -.05f, 0f); made.Add(floor);
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.localScale = new Vector3(4f, 2.9f, .16f); wall.transform.position = off + new Vector3(0f, 1.45f, 1.5f); made.Add(wall);
+        foreach (var g in made) g.GetComponent<Renderer>().sharedMaterial = white;
+        var lg = new GameObject("in-scene test light"); lg.transform.position = off + new Vector3(0f, 2.2f, -1.5f); lg.transform.rotation = Quaternion.Euler(20f, 0f, 0f); made.Add(lg);
+        var l = lg.AddComponent<Light>(); l.type = LightType.Spot; l.spotAngle = 160f; l.innerSpotAngle = 100f; l.range = 9f; l.intensity = 6f; l.shadows = LightShadows.Soft; l.shadowStrength = 1f;
+        var cgo = new GameObject("in-scene test cam"); made.Add(cgo); var c = cgo.AddComponent<Camera>(); FrontRoomsPostStack.ConfigureCamera(c);
+        var rtc = c.GetComponent("FrontRoomsGlassRTCamera"); if (rtc != null) UnityEngine.Object.DestroyImmediate(rtc);
+        c.transform.position = off + new Vector3(0f, 6f, 1.5f); c.transform.rotation = Quaternion.Euler(90f, 0f, 0f); c.fieldOfView = 70f; c.nearClipPlane = .05f; c.farClipPlane = 20f;
+        var data = c.GetUniversalAdditionalCameraData(); data.renderPostProcessing = false;
+        var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGBFloat); c.targetTexture = rt; c.Render(); c.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(256, 256, TextureFormat.RGBAFloat, false, true); tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0); tex.Apply(); RenderTexture.active = null;
+        Func<Vector3, float> at = w => { var sp = c.WorldToScreenPoint(w); var px = tex.GetPixel(Mathf.Clamp((int)sp.x, 0, 255), Mathf.Clamp((int)sp.y, 0, 255)); return .2126f * px.r + .7152f * px.g + .0722f * px.b; };
+        var res = "front " + F(at(off + new Vector3(0f, 0f, .5f))) + ", behind the wall " + F(at(off + new Vector3(0f, 0f, 2.6f))) + ", past the end " + F(at(off + new Vector3(2.8f, 0f, 2.6f)));
+        c.targetTexture = null; rt.Release(); UnityEngine.Object.DestroyImmediate(tex);
+        foreach (var g in made) UnityEngine.Object.DestroyImmediate(g);
+        UnityEngine.Object.DestroyImmediate(white);
+        return res;
+    }
+
+    // ------------------------------------------------------------------ isolated test: do spot-light shadows render in this capture path?
+    static void ShadowTest()
+    {
+        var sb = new StringBuilder();
+        foreach (var variant in new[] { "spot160_soft", "spot160_soft_dirfill", "spot160_soft_far", "spot160_soft_dirfill_far" })
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            EditorSceneManager.SetActiveScene(scene);
+            var rootGo = new GameObject("shadow test");
+            FrontRoomsPostStack.Ensure(rootGo.transform);
+            var off = variant.EndsWith("far") ? RootWorld : Vector3.zero;
+            if (variant.Contains("dirfill")) { root = rootGo.transform; SceneFill(); }
+            var white = EWhite();
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube); floor.transform.localScale = new Vector3(12f, .1f, 12f); floor.transform.position = off + new Vector3(0f, -.05f, 0f);
+            floor.GetComponent<Renderer>().sharedMaterial = white;
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.localScale = new Vector3(4f, 2.9f, .16f); wall.transform.position = off + new Vector3(0f, 1.45f, 1.5f);
+            wall.GetComponent<Renderer>().sharedMaterial = white;
+            var lg = new GameObject("light"); lg.transform.position = off + new Vector3(0f, 2.2f, -1.5f); lg.transform.rotation = Quaternion.Euler(20f, 0f, 0f);
+            var l = lg.AddComponent<Light>();
+            l.type = variant.StartsWith("point") ? LightType.Point : LightType.Spot;
+            l.spotAngle = variant.StartsWith("spot60") ? 60f : 160f; l.innerSpotAngle = variant.StartsWith("spot60") ? 40f : 100f;
+            l.range = 9f; l.intensity = 6f; l.shadows = variant.Contains("hard") ? LightShadows.Hard : LightShadows.Soft; l.shadowStrength = 1f;
+            if (variant.Contains("cookie")) l.cookie = BuildCookie(20f, 160f, false);
+            var cgo = new GameObject("cam"); var c = cgo.AddComponent<Camera>(); FrontRoomsPostStack.ConfigureCamera(c);
+            c.transform.position = off + new Vector3(0f, 6f, 1.5f); c.transform.rotation = Quaternion.Euler(90f, 0f, 0f); c.fieldOfView = 70f; c.nearClipPlane = .05f; c.farClipPlane = 20f;
+            var data = c.GetUniversalAdditionalCameraData(); data.renderPostProcessing = false;
+            var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGBFloat); c.targetTexture = rt; c.Render(); c.Render();
+            RenderTexture.active = rt;
+            var tex = new Texture2D(256, 256, TextureFormat.RGBAFloat, false, true); tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0); tex.Apply(); RenderTexture.active = null;
+            // floor points: behind the wall (z 2.5) vs in front (z 0.5), both on the light's centre line (x 0); world to screen
+            Func<Vector3, float> at = w => { var sp = c.WorldToScreenPoint(w); var px = tex.GetPixel(Mathf.Clamp((int)sp.x, 0, 255), Mathf.Clamp((int)sp.y, 0, 255)); return .2126f * px.r + .7152f * px.g + .0722f * px.b; };
+            var behind = at(off + new Vector3(0f, 0f, 2.6f)); var front = at(off + new Vector3(0f, 0f, .5f)); var behindSide = at(off + new Vector3(2.8f, 0f, 2.6f));
+            sb.Append(variant + "\tfront " + F(front) + "\tbehind the wall " + F(behind) + "\tbehind, past the wall end " + F(behindSide) + "\n");
+            File.WriteAllBytes(Path.Combine(outRoot, "shadowtest_" + variant + ".f32"), tex.GetRawTextureData());
+            c.targetTexture = null; rt.Release();
+            UnityEngine.Object.DestroyImmediate(tex);
+        }
+        File.WriteAllText(Path.Combine(outRoot, "shadowtest.tsv"), sb.ToString());
+    }
+
+    // ------------------------------------------------------------------ the Relay under the bracket set (gameplay critic 15)
+    static void RelayClipTest()
+    {
+        var sb = new StringBuilder("{\n");
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        EditorSceneManager.SetActiveScene(scene);
+        var go = new GameObject("Relay rig clip test");
+        var rig = go.AddComponent<FrontRoomsRelayRig>();
+        var mb = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        rig.Configure(mb, mb, mb);
+        rig.EnsureRig();
+        var states = new[] { FrontRoomsRelayRig.MotionState.Walk, FrontRoomsRelayRig.MotionState.Run, FrontRoomsRelayRig.MotionState.BreakDoor, FrontRoomsRelayRig.MotionState.IdleListen, FrontRoomsRelayRig.MotionState.Search, FrontRoomsRelayRig.MotionState.Stagger };
+        var first = true;
+        var overall = 0f;
+        foreach (var st in states)
+        {
+            var maxY = 0f;
+            for (var f = 0; f < 240; f++)
+            {
+                if (st == FrontRoomsRelayRig.MotionState.BreakDoor && f % 50 == 0) rig.DoorBlow(f / 50, 4);
+                rig.TickAnimation(1f / 60f, st, st != FrontRoomsRelayRig.MotionState.IdleListen && st != FrontRoomsRelayRig.MotionState.Search, 1f);
+                foreach (var r in go.GetComponentsInChildren<Renderer>(true)) maxY = Mathf.Max(maxY, r.bounds.max.y);
+            }
+            overall = Mathf.Max(overall, maxY);
+            sb.Append((first ? "" : ",\n") + "  \"" + st + "_max_top_m\": " + F(maxY));
+            first = false;
+        }
+        sb.Append(",\n  \"overall_max_top_m\": " + F(overall) + ",\n  \"note\": \"the prototype rig (FrontRoomsRelayRig, procedural); renderer bounds tops over 4 s per state at 60 Hz\"\n}\n");
+        File.WriteAllText(Path.Combine(outRoot, "relay_clip.json"), sb.ToString());
+        UnityEngine.Object.DestroyImmediate(go);
+        UnityEngine.Object.DestroyImmediate(mb);
+    }
+
+    // ------------------------------------------------------------------ the seed sweep (gameplay critic 2 and 3)
+    /// <summary>Random seeds in the real generator that pass the M4 rules proposed in 50_critic_fixes (i: E1's outside cell and the next
+    /// cell out on its axis open, same height; ii: every other perimeter edge is a wall with a same-height neighbour, no map reopening;
+    /// E2 an arch or a map door, never glass). Widths as hashed (archWidth, rule iii, does not exist yet). Up to n accepted seeds plus one
+    /// where E2 is a map door.</summary>
+    static void Sweep(string key, int n)
+    {
+        plan = MakePlan(key);
+        var m = BuildModule(plan);
+        FrontRoomsModulePreview.Placement(m, out x0, out y0);
+        var source = FrontRoomsLevelProfiles.Resolve();
+        var prof = source != null ? source : FrontRoomsLevelProfile.Default;
+        var reasons = new SortedDictionary<string, int>();
+        Action<string> bump = r => { int c; reasons.TryGetValue(r, out c); reasons[r] = c + 1; };
+        var accepted = new List<int>(); var doorSeed = -1; var scanned = 0;
+        var widths = new StringBuilder();
+        for (var seed = 1; seed < 60000 && (accepted.Count < n || doorSeed < 0); seed++)
+        {
+            scanned++;
+            var g = prof.Generation(seed);
+            var cache = new FrontRoomsMapCache(g, prof.ModuleData());
+            var fits = true;
+            for (var j = 0; j < m.depth && fits; j++)
+                for (var i = 0; i < m.width && fits; i++)
+                {
+                    var z = cache.ZoneOf(new GridCoord(x0 + i, y0 + j));
+                    if (z.height != ZoneHeight.Standard || z.theme != m.theme) fits = false;
+                }
+            if (!fits) { bump("footprint not one Standard " + m.theme + " zone"); continue; }
+            cache.Place(new GridCoord(0, 0), m.Clone(), x0, y0);
+            var a = MakeOpening(seed, plan.e1Side, plan.e1Index, m);
+            var b = MakeOpening(seed, plan.e2Side, plan.e2Index, m);
+            if (cache.Edge(a.inside, a.outside) != EdgeKind.Arch) { bump("E1 not the module's arch (outside cell another height)"); continue; }
+            var c1 = a.outside; var c2 = Step(c1, -1, a);
+            var k12 = cache.Edge(c1, c2);
+            if (k12 != EdgeKind.Open && k12 != EdgeKind.Arch) { bump("rule i: E1's next cell out walled, a door or glass"); continue; }
+            if (cache.ZoneOf(c2).height != ZoneHeight.Standard) { bump("rule i: E1's next cell out another height"); continue; }
+            var e2k = cache.Edge(b.inside, b.outside);
+            if (e2k == EdgeKind.Window) { bump("E2 glass (Tall neighbour): no glass on a station wall"); continue; }
+            if (e2k == EdgeKind.Wall) { bump("E2 walled (height border, no door rolled)"); continue; }
+            var bad = ""; var glass = false;
+            for (var i = 0; i < m.width; i++)
+            {
+                CheckEdge(cache, new GridCoord(x0 + i, y0), new GridCoord(x0 + i, y0 - 1), a, b, ref bad, ref glass);
+                CheckEdge(cache, new GridCoord(x0 + i, y0 + m.depth - 1), new GridCoord(x0 + i, y0 + m.depth), a, b, ref bad, ref glass);
+            }
+            for (var j = 0; j < m.depth; j++)
+            {
+                CheckEdge(cache, new GridCoord(x0, y0 + j), new GridCoord(x0 - 1, y0 + j), a, b, ref bad, ref glass);
+                CheckEdge(cache, new GridCoord(x0 + m.width - 1, y0 + j), new GridCoord(x0 + m.width, y0 + j), a, b, ref bad, ref glass);
+            }
+            if (glass) { bump("rule ii: glass on a station wall (Tall neighbour)"); continue; }
+            if (bad.Length > 0) { bump("rule ii: " + bad); continue; }
+            var isDoor = e2k == EdgeKind.Door;
+            if (isDoor && doorSeed < 0) { doorSeed = seed; bump("accepted (E2 a map door)"); widths.Append(seed + "\tdoor\t" + F(a.width) + "\t" + F(b.width) + "\n"); continue; }
+            if (isDoor) { bump("accepted, E2 a map door (beyond the first)"); continue; }
+            if (accepted.Count < n) { accepted.Add(seed); bump("accepted"); widths.Append(seed + "\tarch\t" + F(a.width) + "\t" + F(b.width) + "\n"); }
+        }
+        var sdir = Path.Combine(outRoot, "sweep_" + key);
+        Directory.CreateDirectory(sdir);
+        var rs = new StringBuilder("{\n  \"scanned\": " + scanned + ",\n  \"accepted\": [" + string.Join(", ", accepted.Select(s => s.ToString()).ToArray()) + "],\n  \"door_seed\": " + doorSeed + ",\n  \"reasons\": {");
+        var firstR = true;
+        foreach (var kv in reasons) { rs.Append((firstR ? "\n" : ",\n") + "    \"" + kv.Key.Replace("\"", "'") + "\": " + kv.Value); firstR = false; }
+        rs.Append("\n  }\n}\n");
+        File.WriteAllText(Path.Combine(sdir, "sweep.json"), rs.ToString());
+        File.WriteAllText(Path.Combine(sdir, "widths.tsv"), "seed\tE2\tE1_w\tE2_w\n" + widths.ToString());
+        var list = new List<int>(accepted);
+        if (doorSeed >= 0) list.Add(doorSeed);
+        realGen = true; sweepMode = true;
+        foreach (var s in list)
+        {
+            var t0 = DateTime.Now;
+            try { RunPlan(key, s, Path.Combine(sdir, "s" + s)); }
+            catch (Exception e)
+            {
+                Debug.LogError("[StationLookdev] sweep " + key + " seed " + s + " failed: " + e);
+                File.AppendAllText(Path.Combine(sdir, "errors.txt"), s + ": " + e + "\n");
+                try { Teardown(); } catch (Exception) { }
+            }
+            File.AppendAllText(Path.Combine(sdir, "timing.txt"), s + "\t" + (DateTime.Now - t0).TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture) + " s\n");
+        }
+        realGen = false; sweepMode = false;
+    }
+
+    static void CheckEdge(FrontRoomsMapCache cache, GridCoord inside, GridCoord outside, Opening a, Opening b, ref string bad, ref bool glass)
+    {
+        var isA = inside.x == a.inside.x && inside.y == a.inside.y && outside.x == a.outside.x && outside.y == a.outside.y;
+        var isB = inside.x == b.inside.x && inside.y == b.inside.y && outside.x == b.outside.x && outside.y == b.outside.y;
+        if (isA || isB) return;
+        var k = cache.Edge(inside, outside);
+        if (k == EdgeKind.Window) glass = true;
+        var hOut = cache.ZoneOf(outside).height;
+        if (hOut != ZoneHeight.Standard) { if (bad.Length == 0) bad = "a station wall on a height border (" + hOut + " neighbour)"; return; }
+        if (k != EdgeKind.Wall && bad.Length == 0) bad = "the map reopened a station wall (" + k + ")";
+    }
+
     // ------------------------------------------------------------------ the plans
     static ModuleProp Prop(string kit, float x, float z, float yaw, float y = 0f) { return new ModuleProp { kit = kit, x = x, z = z, y = y, yaw = yaw }; }
 
@@ -1611,143 +2741,124 @@ public static class FrontRoomsStationLookdev
     static Plan MakePlan(string key)
     {
         var p = new Plan { key = key };
-        if (key == "Wp" || key == "W" || key == "Wp2" || key == "Wp3")
+        if (key == "Wp4" || key == "Wp4o" || key == "Wp4s")
         {
-            var amended = key != "W";
-            var axis = key == "Wp3";
-            // Wp2: W' with the counter 0.56 m further west, so the staff strip is 2.00 m (G6 escape line 1.2 m beside the turned chair)
-            // Wp3: Wp2 with E1 moved to the W wall's north cell, on the set's axis (the screen in view from the junction), rows south of the axis
-            var cs = key == "Wp2" || axis ? -.56f : 0f;
-            p.title = axis ? "W' rev 3 Waiting (B), E1 on the set's axis (W wall north cell), strip 2.0 m"
-                    : key == "Wp2" ? "W' rev 2 Waiting (B), 3 x 2, E-wall bracket, staff strip 2.0 m" : amended ? "W' Waiting (B), 3 x 2, set on the E-wall bracket" : "W Waiting (B), 3 x 2, corner set (20_layout 4.1 as drawn)";
+            // W' rev 4 (B, Level 0 and Floor 1): rev 3 (E1 on the set's axis, strip 2.0 m) with the critic fixes: the guard's chair out of
+            // the strip, at the counter's north end within 30 deg of the set's axis, with his jacket; one tandem row turned along the S wall
+            // with the beam table and the magazine rack; the cabinet on the strip's E wall, door shut; the set's bottom at 2.15 m;
+            // (1,1) Dim (Wp4) or Off (Wp4o) for W1; E1's corridor side Steady, E2's Dim (Floor 1: E1 the brightest opening)
+            const float cs = -.56f;
+            p.title = key == "Wp4" ? "W' rev 4 Waiting (B), Floor 1 / Level 0, (1,1) Dim" : key == "Wp4s" ? "W' rev 4, (1,1) Dim, both corridor sides and the junction beyond E1 Steady" : "W' rev 4 Waiting (B), (1,1) Off (W1 comparison)";
             p.w = 3; p.d = 2; p.theme = ZoneTheme.Level0;
-            if (axis) { p.e1Side = 'W'; p.e1Index = 1; p.e2Side = 'S'; p.e2Index = 2; p.e1Want = 1.83f; p.e1Tol = .35f; }
-            else if (amended) { p.e1Side = 'W'; p.e1Index = 0; p.e2Side = 'S'; p.e2Index = 2; }
-            else { p.e1Side = 'S'; p.e1Index = 0; p.e2Side = 'E'; p.e2Index = 0; }
-            // tutorial V1 (changed 10-22): the TV side Dim or Off, at least two Steady lamps on the entrance side
-            p.lamps = amended ? "SDD" + "SOO" : "SSD" + "DOO";
-            if (amended)
-            {
-                p.screen = new Vector3(8.35f, 2.40f, 4.83f); p.tvYaw = 270f; p.tvTilt = 20f; p.mount = "wall"; p.mountNormal = Vector3.left;
-                p.keyWall = new Vector3(7.13f, 1.42f, 5.92f); p.keyNormal = Vector3.back;
-                p.annWall = new Vector3(7.73f, 1.50f, 5.92f);
-                p.take = new Vector2(7.13f, 5.05f);
-            }
-            else
-            {
-                p.screen = new Vector3(8.354f, 2.28f, 5.354f); p.tvYaw = 225f; p.tvTilt = 15f; p.mount = "corner";
-                p.keyWall = new Vector3(7.42f, 1.42f, 5.92f); p.keyNormal = Vector3.back;
-                p.annWall = new Vector3(6.82f, 1.50f, 5.92f);
-                p.take = new Vector2(7.42f, 5.05f);
-            }
-            // module props (built by the map, with their colliders)
+            p.e1Side = 'W'; p.e1Index = 1; p.e2Side = 'S'; p.e2Index = 2; p.e1Want = 1.83f; p.e1Tol = .35f;
+            p.lamps = key == "Wp4o" ? "SDD" + "SOO" : "SDD" + "SDO";
+            p.floorOne = true; p.e1OutLamp = ModuleLamp.Steady; p.e2OutLamp = key == "Wp4s" ? ModuleLamp.Steady : ModuleLamp.Dim;
+            if (key == "Wp4s") p.e1NextLamp = ModuleLamp.Steady;
+            p.screen = new Vector3(8.35f, 2.44f, 4.83f); p.tvYaw = 270f; p.tvTilt = 20f; p.mount = "wall"; p.mountNormal = Vector3.left;
+            p.keyWall = new Vector3(7.13f, 1.42f, 5.92f); p.keyNormal = Vector3.back;
+            p.annWall = new Vector3(8.13f, 1.50f, 5.92f);
+            p.take = new Vector2(7.13f, 5.05f);
+            p.leakProbe = new Vector3(6.6f, 0f, 6.55f); p.leakEye = new Vector3(6.6f, 1.62f, 8.4f);
             p.guardIndex = p.props.Count;
-            p.props.Add(key == "Wp2" || axis ? Prop("Kit_TaskChair", 7.30f, 2.45f, 15f) : amended ? Prop("Kit_TaskChair", 7.72f, 2.45f, 15f) : Prop("Kit_TaskChair", 8.20f, 4.10f, 270f));
-            // rev 2/3: the cabinet on the N wall beside the annunciator, off the staff strip (the strip keeps 1.2 m beside the turned chair)
-            if (key == "Wp2" || axis) p.props.Add(Against("Kit_KeyCabinet", 8.40f, FrontRoomsModuleEditing.WallSide.North, 3, 2));
-            else p.props.Add(Against("Kit_KeyCabinet", amended ? 1.90f : 3.90f, FrontRoomsModuleEditing.WallSide.East, 3, 2));
+            p.props.Add(Prop("Kit_TaskChair", 6.20f, 3.95f, 68f));
+            p.cabinetIndex = p.props.Count;
+            p.props.Add(Against("Kit_KeyCabinet", 2.10f, FrontRoomsModuleEditing.WallSide.East, 3, 2));
             p.props.Add(Prop("Kit_TrashBin", 7.20f + cs, 1.95f, 90f));
-            p.notes = amended ? "30_look 5.1: set on Kit_TVWallBracket, E wall, screen z 4.83, bottom 2.10, 20 deg down; key N wall x 7.13; E1 W wall south cell; E2 S wall east cell; guard chair turned to the set"
-                              : "20_layout 4.1: corner bracket NE, set bottom 2.0, 15 deg down, facing SW; key N wall 1.5 m W of the corner (x 7.42); E1 S wall west cell; E2 E wall south cell; guard faces the counter";
+            p.notes = "50_critic_fixes: W' rev 4. Set on Kit_TVWallBracket, E wall, screen z 4.83 (on E1's axis), bottom 2.15, 20 deg down; key N wall x 7.13 on a 0.30 x 0.40 backer; annunciator 1.0 m E of the key (near the screen plane, unwashed); E1 W wall north cell; E2 S wall east cell at the strip's south end; guard chair at the counter's north end facing the set (22 deg off its axis), jacket on it; row A along the S wall + beam table, row B faces the set; cabinet E wall z 2.1, shut";
             p.dress = () =>
             {
-                // S05 counter: two runs + two ends, visitor side facing W (yaw 270), back at x 7.48 (staff strip 1.44 m)
                 CounterEnd(new Vector3(7.10f + cs, 0f, 1.105f), 270f);
                 CounterRun(new Vector3(7.10f + cs, 0f, 1.73f), 270f);
                 CounterRun(new Vector3(7.10f + cs, 0f, 2.93f), 270f);
                 CounterEnd(new Vector3(7.10f + cs, 0f, 3.555f), 270f);
-                // S08 two short tandem rows facing the set
-                if (axis) { Tandem(new Vector3(2.55f, 0f, 2.55f), 90f); Tandem(new Vector3(4.05f, 0f, 2.55f), 90f); }
-                else if (amended) { Tandem(new Vector3(2.55f, 0f, 4.50f), 90f); Tandem(new Vector3(4.05f, 0f, 4.50f), 90f); }
-                else { Tandem(new Vector3(3.20f, 0f, 2.80f), 45f); Tandem(new Vector3(4.30f, 0f, 3.90f), 45f); }
-                // G9 evidence cluster on the work surface (top 0.74; x 6.78-7.48)
-                KitAt("Kit_DeskPhone", extras, new Vector3(7.22f + cs, .74f, 1.55f), R(270f), Kind.Furniture);
-                Charger(new Vector3(7.25f + cs, .74f, 2.10f), 270f);
-                Cup(new Vector3(7.12f + cs, .74f, 2.42f));
-                Clipboard(new Vector3(7.20f + cs, .74f, 2.90f), 255f, false, Vector3.zero);
-                KitAt("Kit_Binders", extras, new Vector3(7.30f + cs, .74f, 3.30f), R(270f), Kind.Furniture);
-                Register(new Vector3(6.86f + cs, 1.07f, 2.30f), 270f);
+                // row B faces the set and the counter; row A runs along the S wall (perimeter seating), the beam table at its end
+                Tandem(new Vector3(3.60f, 0f, 2.20f), 90f);
+                Tandem(new Vector3(1.75f, 0f, .40f), 0f);
+                BeamTable(new Vector3(2.95f, 0f, .40f), 0f);
+                // G9 evidence cluster within 2 m of the guard's chair: the counter's north end
+                KitAt("Kit_DeskPhone", extras, new Vector3(7.22f + cs, .74f, 3.25f), R(270f), Kind.Furniture);
+                Charger(new Vector3(7.25f + cs, .74f, 2.95f), 270f);
+                Cup(new Vector3(6.86f + cs, 1.07f, 3.40f));
+                Clipboard(new Vector3(7.20f + cs, .74f, 2.55f), 255f, false, Vector3.zero);
+                KitAt("Kit_Binders", extras, new Vector3(7.30f + cs, .74f, 2.10f), R(270f), Kind.Furniture);
+                Register(new Vector3(6.86f + cs, 1.07f, 2.55f), 270f);
                 TentCard(new Vector3(6.86f + cs, 1.07f, 1.45f), 270f);
-                // the sign-out sheet on a nail by the key cabinet (E wall)
-                Clipboard(new Vector3(8.92f, 1.45f, amended ? 1.30f : 4.55f), 0f, true, Vector3.left);
-                SmokingStand(amended ? new Vector3(4.60f, 0f, .40f) : new Vector3(.45f, 0f, 3.20f), amended ? Vector3.forward : Vector3.right, 0f);
-                MagazineRack(new Vector3(.08f, 0f, axis ? 1.50f : amended ? 4.50f : 4.80f), Vector3.right);
-                // the clock over E1
+                Clipboard(new Vector3(8.92f, 1.45f, 1.30f), 0f, true, Vector3.left);
+                SmokingStand(new Vector3(4.60f, 0f, .40f), Vector3.forward, 0f);
+                MagazineRack(new Vector3(.08f, 0f, 1.55f), Vector3.right);
                 var ep = e1.mid; WallKit("Kit_WallClock", ep, e1.inward, 2.47f);
             };
         }
-        else if (key == "Dp" || key == "D" || key == "Dp3")
+        else if (key == "Dp4")
         {
-            var amended = key != "D";
-            var axis = key == "Dp3";
-            // Dp3: D' with E1 in the S wall's east cell on the set's axis; desk on the axis's left so the chair + jacket sit under the screen
-            p.title = axis ? "D' rev 3 Desk (A), E1 on the set's axis (S wall east cell)" : amended ? "D' Desk (A), 3 x 3, E1 on the set's face" : "D Desk (A), 3 x 3, oblique (20_layout 4.2 as drawn)";
+            // D' rev 4 (A, Office floors): rev 3 (E1 on the set's axis) with E2 moved to the N wall's west cell (two escape directions,
+            // 105 deg apart from the take); the desk ~1 m nearer the set and the chair pulled out to the set, jacket in the wash; the guest
+            // chairs as 2 sled chairs + a side table along the W wall, the sign-in ledge on the W wall's middle; annunciator 1.0 m N of the
+            // key; the cabinet on the E wall's middle, door shut
+            p.title = "D' rev 4 Desk (A), Office floors, E2 N wall west cell";
             p.w = 3; p.d = 3; p.theme = ZoneTheme.Office;
-            if (axis) { p.e1Side = 'S'; p.e1Index = 2; p.e1Want = 1.68f; p.e1Tol = .35f; }
-            else if (amended) { p.e1Side = 'S'; p.e1Index = 1; } else { p.e1Side = 'S'; p.e1Index = 0; }
-            p.e2Side = 'E'; p.e2Index = 1;
-            p.lamps = amended ? "DSS" + "DDD" + "DOO" : "SSD" + "DDD" + "DOO";
+            p.e1Side = 'S'; p.e1Index = 2; p.e1Want = 1.68f; p.e1Tol = .35f;
+            p.e2Side = 'N'; p.e2Index = 0;
+            p.lamps = "DSS" + "DDD" + "DOO";
+            p.e1OutLamp = ModuleLamp.Steady; p.e2OutLamp = ModuleLamp.Steady;
             p.screen = new Vector3(7.68f, 1.044f, 8.425f); p.tvYaw = 180f; p.tvTilt = 0f; p.mount = "credenza";
             p.keyWall = new Vector3(8.92f, 1.42f, 6.92f); p.keyNormal = Vector3.left;
-            p.annWall = new Vector3(8.92f, 1.50f, 7.52f);
+            p.annWall = new Vector3(8.92f, 1.50f, 7.92f);
             p.take = new Vector2(8.05f, 6.92f);
+            p.leakProbe = new Vector3(9.6f, 0f, 6.9f); p.leakEye = new Vector3(11.4f, 1.62f, 6.9f);
             p.credenzaIndex = p.props.Count;
             p.props.Add(Against("Kit_Credenza", 7.68f, FrontRoomsModuleEditing.WallSide.North, 3, 3));
-            var dx = axis ? 6.90f : amended ? 5.75f : 4.35f;
-            p.props.Add(Prop("Kit_OfficeDesk", dx, 5.75f, 180f));
+            p.props.Add(Prop("Kit_OfficeDesk", 5.80f, 6.70f, 180f));
             p.guardIndex = p.props.Count;
-            p.props.Add(Prop("Kit_TaskChair", dx - .20f, 5.13f, axis ? 5f : amended ? 15f : 0f));
-            if (amended)
-            {
-                p.props.Add(Prop("Kit_TaskChair", 1.30f, 7.10f, 90f)); p.props.Add(Prop("Kit_TaskChair", 2.00f, 7.10f, 90f));
-                p.props.Add(Prop("Kit_TaskChair", 1.30f, 5.90f, 90f)); p.props.Add(Prop("Kit_TaskChair", 2.00f, 5.90f, 90f));
-            }
-            else
-            {
-                p.props.Add(Prop("Kit_TaskChair", 1.00f, 4.30f, 90f)); p.props.Add(Prop("Kit_TaskChair", 1.70f, 4.30f, 90f));
-                p.props.Add(Prop("Kit_TaskChair", 1.00f, 3.10f, 90f)); p.props.Add(Prop("Kit_TaskChair", 1.70f, 3.10f, 90f));
-            }
-            p.props.Add(Against("Kit_KeyCabinet", 8.15f, FrontRoomsModuleEditing.WallSide.East, 3, 3));
-            p.props.Add(Prop("Kit_TrashBin", axis ? dx - 1.00f : dx + 1.00f, 5.75f, 0f));
-            p.notes = amended ? "30_look 5.2: E1 S wall middle cell; desk x 5.0-6.5 (moved 1.6 m E), chair + jacket back to E1; set on Kit_Credenza_Laminate N wall x 7.68, screen 1.04 m; key E wall 2.0 m S of the N wall"
-                              : "20_layout 4.2: E1 S wall west cell (oblique entry); desk x 3.6-5.1; set, key, ledge, E2 as D'";
+            p.props.Add(Prop("Kit_TaskChair", 6.85f, 5.95f, 18f));
+            p.cabinetIndex = p.props.Count;
+            p.props.Add(Against("Kit_KeyCabinet", 4.60f, FrontRoomsModuleEditing.WallSide.East, 3, 3));
+            p.props.Add(Prop("Kit_TrashBin", 4.75f, 6.95f, 0f));
+            p.notes = "50_critic_fixes: D' rev 4. E1 S wall east cell on the set's axis; E2 N wall west cell; set on Kit_Credenza_Laminate N wall x 7.68, screen 1.04 m; key E wall z 6.92 on its backer, annunciator 1.0 m N; desk x 5.0-6.6 z 6.3-7.1, chair pulled out at (6.85, 5.95) facing the set, jacket in the wash; ledge W wall z 4.8-7.2; 2 sled chairs + side table W wall z 1.4-3.0; cabinet E wall z 4.6, shut";
             p.dress = () =>
             {
-                // the sign-in ledge against the W wall (two Ledge120, front facing E)
-                Ledge(new Vector3(.08f + .16f, 0f, 7.00f), 90f);
-                Ledge(new Vector3(.08f + .16f, 0f, 8.20f), 90f);
-                TentCard(new Vector3(.24f, 1.07f, 7.30f), 90f);
-                Register(new Vector3(.25f, 1.07f, 8.15f), 90f);
-                // the evidence cluster on the guard desk (top 0.74)
-                var cx = dx;
-                KitAt("Kit_DeskPhone", extras, new Vector3(cx - .55f, .74f, 5.85f), R(180f), Kind.Furniture);
-                Charger(new Vector3(cx + .55f, .74f, 5.95f), 180f);
-                Cup(new Vector3(cx + .18f, .74f, 5.55f));
-                Ashtray(new Vector3(cx + .45f, .74f, 5.55f));
-                Clipboard(new Vector3(cx - .10f, .74f, 5.70f), 175f, false, Vector3.zero);
-                KitAt("Kit_Binders", extras, new Vector3(cx - .30f, .74f, 6.00f), R(180f), Kind.Furniture);
+                Ledge(new Vector3(.08f + .16f, 0f, 5.40f), 90f);
+                Ledge(new Vector3(.08f + .16f, 0f, 6.60f), 90f);
+                TentCard(new Vector3(.24f, 1.07f, 5.10f), 90f);
+                Register(new Vector3(.25f, 1.07f, 6.40f), 90f);
+                SledChair(new Vector3(.45f, 0f, 1.55f), 90f);
+                SideTable(new Vector3(.40f, 0f, 2.25f));
+                SledChair(new Vector3(.45f, 0f, 2.95f), 90f);
+                var cx = 5.80f;
+                KitAt("Kit_DeskPhone", extras, new Vector3(cx - .55f, .74f, 6.80f), R(180f), Kind.Furniture);
+                Charger(new Vector3(cx + .55f, .74f, 6.90f), 180f);
+                Cup(new Vector3(cx + .45f, .74f, 6.50f));
+                Ashtray(new Vector3(cx + .15f, .74f, 6.50f));
+                Clipboard(new Vector3(cx - .10f, .74f, 6.62f), 175f, false, Vector3.zero);
+                KitAt("Kit_Binders", extras, new Vector3(cx - .30f, .74f, 6.95f), R(180f), Kind.Furniture);
+                Clipboard(new Vector3(8.92f, 1.45f, 3.90f), 0f, true, Vector3.left);
                 var ep = e1.mid; WallKit("Kit_WallClock", ep, e1.inward, 2.47f);
+                // the set's power cord to an outlet behind the credenza (N wall)
+                KitAt("Kit_OutletDuplex", extras, new Vector3(7.30f, .35f, 8.92f - .011f), R(180f), Kind.Furniture);
             };
         }
         else
         {
-            p.title = "H Long hall (2 x 4), end-on (20_layout 4.3)";
+            // H, long rooms only (unchanged plan) with the shared take-cluster fixes, the set's bottom at 2.15 m and the cabinet shut
+            p.title = "H Long hall (2 x 4), end-on (20_layout 4.3), r7 take cluster";
             p.w = 2; p.d = 4; p.theme = ZoneTheme.Level0;
             p.e1Side = 'S'; p.e1Index = 0; p.e2Side = 'E'; p.e2Index = 3;
             p.e1Want = 1.20f; p.e1Tol = .30f;
             p.lamps = "SS" + "DD" + "DD" + "OO";
-            p.screen = new Vector3(1.30f, 2.40f, 11.35f); p.tvYaw = 180f; p.tvTilt = 20f; p.mount = "wall"; p.mountNormal = Vector3.back;
+            p.e1OutLamp = ModuleLamp.Steady; p.e2OutLamp = ModuleLamp.Steady;
+            p.screen = new Vector3(1.30f, 2.44f, 11.35f); p.tvYaw = 180f; p.tvTilt = 20f; p.mount = "wall"; p.mountNormal = Vector3.back;
             p.keyWall = new Vector3(.08f, 1.42f, 10.10f); p.keyNormal = Vector3.right;
-            p.annWall = new Vector3(.08f, 1.50f, 10.70f);
+            p.annWall = new Vector3(.08f, 1.50f, 11.10f);
             p.take = new Vector2(.92f, 10.10f);
+            p.leakProbe = new Vector3(-.65f, 0f, 9.6f); p.leakEye = new Vector3(-2.4f, 1.62f, 9.6f);
             p.guardIndex = p.props.Count;
             p.props.Add(Prop("Kit_TaskChair", 1.85f, 7.80f, 90f));
+            p.cabinetIndex = p.props.Count;
             p.props.Add(Against("Kit_KeyCabinet", 5.60f, FrontRoomsModuleEditing.WallSide.West, 2, 4));
             p.props.Add(Prop("Kit_TrashBin", 1.80f, 6.85f, 0f));
-            p.notes = "30_look 3.5: set on a bracket on the N end wall, screen x 1.30 (s 1.22), 20 deg down; key W wall z 10.10 (f 1.25); E1 S wall west cell on the axis; E2 E wall north cell beside the key; counter with the staff strip along the W wall";
+            p.notes = "30_look 3.5 + r7: set on a bracket on the N end wall, screen x 1.30, bottom 2.15, 20 deg down; key W wall z 10.10 on its backer; annunciator 1.0 m N of the key; E1 S wall west cell on the axis; E2 E wall north cell beside the key";
             p.dress = () =>
             {
-                // counter, visitor side facing E (yaw 90), back at x 1.72 (strip 1.64 m; the chair pushed in under the work surface)
                 CounterEnd(new Vector3(2.10f, 0f, 6.575f), 90f);
                 CounterRun(new Vector3(2.10f, 0f, 7.20f), 90f);
                 CounterRun(new Vector3(2.10f, 0f, 8.40f), 90f);

@@ -3,7 +3,8 @@
 // the map, the verify harness) need no #if: off the macOS editor / macOS player every member is a no-op
 // and Supported is false. The work happens in FrontRoomsGlassRTSystem (macOS only).
 //
-// Quality: Off / High / Ultra. Default while Supported: Ultra at quality level 5, High at 3-4, Off at 0-2.
+// Quality: Off / High / Ultra. Default on a Mac that can trace: High at quality level 3 and up, Off at 0-2 (Red's D1 (b),
+// 2026-10-22); Ultra only when asked for explicitly (an override below). Off wherever RT can never run.
 // Overrides: PlayerPrefs "FrontRooms.GlassRT" (off|high|ultra), command line -frGlassRT off|high|ultra.
 using System;
 using UnityEngine;
@@ -50,6 +51,10 @@ public struct FrontRoomsGlassRTStats
 {
     public float gpuMsAccel, gpuMsTrace, gpuMsResolve, gpuMsTotal, gpuMsCommandBuffer, gpuMsFrame;
     public float encodeMs, encodeMsMax, mainThreadMs, mainThreadMsMax, compileMs;
+    /// <summary>The last frame's main-thread span in this thread's CPU time (mainThreadMs is wall time).</summary>
+    public float mainThreadCpuMs;
+    /// <summary>TLAS builds and reuses (descriptors unchanged) this session.</summary>
+    public int tlasBuilt, tlasReused;
     public int tlasInstances, candidates, meshes, meshesPending, blasBuiltTotal, compacted, retired, lamps, receiversVisible;
     public int glassPixels, missPixels, hitPixels, layerPixels, aaPixels, shadowRays;
     public int events, traceEvents, skippedNotReady, ringBusy, commandBufferErrors, accumulation;
@@ -59,7 +64,9 @@ public struct FrontRoomsGlassRTStats
 
 public static class FrontRoomsGlassRT
 {
-    /// <summary>Requested quality. Forced Off while !Supported.</summary>
+    /// <summary>Quality RT runs at: the requested one, or Off on a Mac that can never trace (no plugin, not Metal, not
+    /// Apple9 / macOS 14, a failed compile or GPU error) and after a fail-closed. While the kernels compile it already
+    /// reports the requested quality (Supported is still false then).</summary>
     public static FrontRoomsGlassRTQuality Quality
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX

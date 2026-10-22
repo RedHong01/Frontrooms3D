@@ -86,13 +86,13 @@ Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
 Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有系统设计协作构思这个逻辑在游戏里什么时候启用，以及给我一个游戏内渲染的预览效果视频"
 
 **Status 2026-10-22 (平面视觉 · 信息设计):**
-- **The set is not confirmed.** A + M4 + V1 below is the set 平面视觉 picked for the prototype after Red's 10-07 "apply one set". On 2026-10-22, asked to confirm it, Red chose "再看一次其他方案" (in the wallpaper line's chat). That line re-sent M1–M4 and V1–V3, recommends M4 + V1, and forwards Red's pick.
+- **The set is decided: A + M4 + V1.** Red picked M4 + V1 on 2026-10-22 at 15:05, in the wallpaper line's chat, after the twelve in-game combination previews (earlier that day Red had asked to see the other options again). The flipbook C00–C16 is final.
 - **Where the arrows point is decided:** C24 = A + A20. They point at the station TV until the floor key is taken, then at the floor EXIT. The map-side rules are `research/cue_driver/MAP_ROUTE_SPEC.md` (关卡设计调研).
 - **Done:** the v1 and v2 in-game previews (`Research/week03/wallpaper_cue/`, 10-08; VL193 PASS). The driver doc is v0.2.2; the three TODOs listed below were done in v0.2.1 (10-07).
-- **Nothing is in main.** The map side (关卡设计) and `CueInk` (游戏视觉) are built after the Alpha. The ambient print driver goes into today's Alpha; the cue does not.
+- **Nothing is in main yet.** Left: the map side (关卡设计, per MAP_ROUTE_SPEC) and `CueInk` (游戏视觉). Red, 10-22 via 总控: finished assets go in without waiting for the Alpha; 总控 sequences them. CueInk alone is inert (every cell stays state 0).
 - Everything below is the 10-07/08 record.
 
-**Set used for the prototype:** A + M4 + V1.
+**Set (decided 2026-10-22):** A + M4 + V1.
 - A: every arrow turns 90° and is fitted to its band (field scale 0.654, motif 0.255).
 - M4: ratchet, turning in 30° clicks.
 - V1: stepping with 2 speed systems; every other row shares one system.
@@ -156,7 +156,7 @@ Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有�
 2. ~~Make the clone.~~ Done.
 3. ~~Render the harness, then build the MP4 for Red: pass A down the corridor, pass B oblique along a wall.~~ Done 10-08 (VL193).
 4. Send the driver interface and event list to 系统设计 and 关卡设计. Base it on 关卡设计's `_FR_WayCells` proposal, but with per-cell from/to/fade written by the CPU. Answered in principle on 2026-10-07.
-5. Send the `CueInk` prototype to 游戏视觉 as the shader spec. They land the shader once Red and all four chats agree (after Red's motion pick, and after the Alpha).
+5. Send the `CueInk` prototype to 游戏视觉 as the shader spec. Red picked the motion 10-22 15:05; the prototype went to 游戏视觉 in the 10-22 integration list.
 
 ## 2. Wallpaper = hard-edge only: ROUTED to 游戏视觉 Q1b (lands tonight per 游戏视觉)
 Red, 2026-10-07: "当前游戏的墙纸纹理完全以hardedge 为主，不要当前有纹理干的stroke了"

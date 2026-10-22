@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{adab8ddf-6769-4bbc-8b96-e1470787638d}">
+		<property name="name">
+			<value>Tension</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{1d5da40e-1d34-45aa-88f4-efb7c1126460}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{1d5da40e-1d34-45aa-88f4-efb7c1126460}">
+		<property name="isGlobal">
+			<value>true</value>
+		</property>
+	</object>
+</objects>

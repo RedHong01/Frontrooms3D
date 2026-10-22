@@ -17,7 +17,7 @@ public static class FrontRoomsFmodVerify
 
     static readonly Dictionary<string, string[]> Contract = new Dictionary<string, string[]>
     {
-        { SoundIds.HumBed, new[] { SoundIds.Param.Tension } },
+        { SoundIds.HumBed, new[] { SoundIds.Param.Tension, SoundIds.Param.Groan } },
         { SoundIds.AirBed, new[] { SoundIds.Param.Zone } },
         { SoundIds.Fixture, new[] { SoundIds.Param.Level } },
         { SoundIds.FixtureEvent, new[] { SoundIds.Param.FixtureEvent } },
@@ -40,12 +40,13 @@ public static class FrontRoomsFmodVerify
         { SoundIds.Footstep, new[] { SoundIds.Param.Surface, SoundIds.Param.Gait, SoundIds.Param.Dampness } },
         { SoundIds.Cloth, new string[0] },
         { SoundIds.KeyPickup, new string[0] },
-        { SoundIds.RelayFootstep, new[] { SoundIds.Param.RelayGait, SoundIds.Param.Occlusion, SoundIds.Param.Dampness } },
+        { SoundIds.RelayFootstep, new[] { SoundIds.Param.RelayGait, SoundIds.Param.Occlusion, SoundIds.Param.Dampness, SoundIds.Param.PathGain } },
         { SoundIds.RelayPresence, new[] { SoundIds.Param.Proximity, SoundIds.Param.Occlusion } },
+        { SoundIds.RelayHum, new[] { SoundIds.Param.Occlusion, SoundIds.Param.PathGain } },
         { SoundIds.RelayClicks, new string[0] },
         { SoundIds.RelayStinger, new[] { SoundIds.Param.RelayState } },
         { SoundIds.Breath, new[] { SoundIds.Param.Stamina } },
-        { SoundIds.Heartbeat, new[] { SoundIds.Param.Proximity } },
+        { SoundIds.Heartbeat, new[] { SoundIds.Param.Arousal } },
         { SoundIds.Tinnitus, new string[0] },
         { SoundIds.MusicTitle, new string[0] },
     };

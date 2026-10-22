@@ -227,6 +227,7 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 - Soft shadows of the chairs on the desktop tier (highest spec, COMMON rule 6); shadows off on WebGL.
 - **Photosafety.** No more than 3 luminance swings of 10 % or more per second (WCAG 2.3.1, as RELAY §9.5). With Reduce flashing, τ 0.5 s.
 - The spill through the doorway is the beacon's short-range visual. In a lit corridor it reads as a moving cold glow in one doorway.
+- **Accepted 10-22 (station critic, `research/station/50_critic_fixes.md` §7a):** the spill runs along the doorway's axis so the player sees it from outside the room, before entering. 游戏视觉 places the set and light for that.
 
 ### 4.7 The take
 1. **E · TAKE KEY** (desktop look + E, C14; phones walk over until the tap path lands).
@@ -234,6 +235,7 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 3. **+0.4 s:** the picture collapses to a bright dot that fades (0.6 s); the power-off zip; silence. The room light drops to its dim lamps.
 4. **No panel tick.** RELAY §6: a device call plays the device's own sound instead of the CALLED tick. Here the device is the station, and its sound is the dying set (step 3). (Changed 10-22 after 系统设计's review.)
 5. **The HUD key panel** shows the key (HUD B family, already designed).
+- **Accepted 10-22 (station critic §7b):** at the moment of the take, the frame's subject is the light on the key, not the TV picture. The picture's collapse (step 3, +0.4 s) follows it.
 6. **The hunter is sent to the station** (§6).
 - **Same on every floor**, so the rule stays true: taking the station key always calls it to the station.
 

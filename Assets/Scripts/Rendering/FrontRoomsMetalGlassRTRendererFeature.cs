@@ -2,14 +2,17 @@
 // Same class name and script guid (8c7c221f…) as ChatGPT's prototype, so the renderer asset keeps its entry.
 //
 // Frame order for an opted-in game camera (FrontRoomsGlassRTCamera) on macOS / Metal, quality != Off:
-//   BeforeRenderingTransparents
+//   AfterRenderingPrePasses (right after URP's DepthNormals prepass, before the opaque pass; 2026-10-07: was
+//   BeforeRenderingTransparents, where the two passes split URP's merged opaque+skybox+transparent native render pass
+//   and cost a store and reload of the 4x MSAA attachments, 1.07 ms at 1440p in run 8; see 20_implementation.md §3)
 //     1. FRGlassRT Prepass (raster): the RECEIVING glass only (rendering-layer bit 30: FrontRooms/Glass's own
 //        FRGlassRTPrepass pass; bit 29: Hidden/FrontRooms/GlassRTPrepass for other materials) into GlassDepth
 //        (R32F linear eye depth) + GlassNormal (RGBA16F world normal, smoothness), a transient 1x D32 keeps the
 //        front-most layer, and a manual test against _CameraDepthTexture keeps only glass that is visible.
 //     2. FRGlassRT Trace (unsafe): IssuePluginEventAndData -> the plugin encodes into Unity's current command
 //        buffer: BLAS/TLAS, one mirror ray per glass pixel, hit shading, resolve -> _FR_GlassRTReflection.
-//        Sets _FR_GlassRTWeight = 1 and the global keyword _FR_GLASS_RT for this camera.
+//        Sets _FR_GlassRTWeight (1, or the stream-in gate's 0..1 after a jump; fix round 32) and the global keyword
+//        _FR_GLASS_RT for this camera.
 //   Transparents: FrontRooms/Glass swaps its environment term for the traced radiance (its own Fresnel, grime, fog).
 //   AfterRenderingTransparents
 //     3. FRGlassRT End (unsafe): keyword off, weight 0, so no other camera samples a stale texture.
@@ -40,10 +43,16 @@ public sealed class FrontRoomsMetalGlassRTRendererFeature : ScriptableRendererFe
     public override void Create()
     {
         if (prepassShader == null) prepassShader = Shader.Find("Hidden/FrontRooms/GlassRTPrepass");
-        trace = new TracePass(prepassShader) { renderPassEvent = RenderPassEvent.BeforeRenderingTransparents };
+        trace = new TracePass(prepassShader) { renderPassEvent = TraceEvent };
         end = new EndPass { renderPassEvent = RenderPassEvent.AfterRenderingTransparents };
+        // Depth input before AfterRenderingOpaques makes URP keep a depth prepass (it already runs one for SSAO's
+        // DepthNormals source). _CameraDepthTexture then holds the full opaque depth when the trace pass records.
         trace.ConfigureInput(ScriptableRenderPassInput.Depth);
     }
+
+    /// <summary>Where the prepass + trace run. AfterRenderingPrePasses: no extra render pass split (the trace needs only
+    /// the depth prepass). The harness sets HarnessLateTrace to measure the old BeforeRenderingTransparents placement.</summary>
+    static RenderPassEvent TraceEvent => HarnessLateTrace ? RenderPassEvent.BeforeRenderingTransparents : RenderPassEvent.AfterRenderingPrePasses;
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
@@ -51,8 +60,10 @@ public sealed class FrontRoomsMetalGlassRTRendererFeature : ScriptableRendererFe
         var cam = renderingData.cameraData.camera;
         if (cam == null || renderingData.cameraData.cameraType != CameraType.Game || renderingData.cameraData.renderType != CameraRenderType.Base) return;
         if (!cam.TryGetComponent<FrontRoomsGlassRTCamera>(out var state) || state.id < 0) return;
+        // Off also on a Mac that can never trace (review 1 engineering #4): no pass, no targets, no native call
         if (FrontRoomsGlassRT.Quality == FrontRoomsGlassRTQuality.Off) return;
         trace.State = state;
+        trace.renderPassEvent = TraceEvent;
         renderer.EnqueuePass(trace);
         renderer.EnqueuePass(end);
     }
@@ -89,7 +100,9 @@ public sealed class FrontRoomsMetalGlassRTRendererFeature : ScriptableRendererFe
     /// <summary>Roll-wave scale while RT is on (G-3): annealed glass has none; 0.02 x 0.075 = 0.0015.</summary>
     internal static float RollScale = .075f;
     /// <summary>Harness: force weight 0 (RT traced but not shown) or skip the prepass (empty-pass cost test).</summary>
-    internal static bool HarnessHideResult, HarnessEmptyPassOnly;
+    internal static bool HarnessHideResult, HarnessEmptyPassOnly, HarnessLateTrace;
+    /// <summary>Harness: throw inside the record, after the frame was built (fail-closed test of the record path).</summary>
+    internal static bool HarnessRecordFault;
 
     sealed class PrepassData
     {
@@ -135,21 +148,54 @@ public sealed class FrontRoomsMetalGlassRTRendererFeature : ScriptableRendererFe
             var desc = cameraData.cameraTargetDescriptor;
             int w = Mathf.Max(1, desc.width), h = Mathf.Max(1, desc.height);
             var quality = FrontRoomsGlassRT.Quality;
-            if (state.EnsureTargets(w, h, quality == FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTSystem.DebugMode != FrontRoomsGlassRTNative.DebugNone))
-                FrontRoomsGlassRTSystem.SendTargets(state);
-
             var view = cameraData.GetViewMatrix();
             var gpuProj = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), true);
-            var frame = FrontRoomsGlassRTSystem.BuildFrame(cam, state, w, h, view, gpuProj);
-            state.lastSeq = frame.seq;
-            state.lastRect = frame.rect;
-            state.lastVisibleReceivers = frame.visibleReceivers;
-            var weight = frame.traced && !HarnessHideResult && FrontRoomsGlassRTSystem.DebugMode == FrontRoomsGlassRTNative.DebugNone ? 1f : 0f;
-            state.lastWeight = weight;
-
-            var depthH = renderGraph.ImportTexture(state.depth);
-            var normalH = renderGraph.ImportTexture(state.normal);
-            var outH = renderGraph.ImportTexture(state.outTex);
+            FrontRoomsGlassRTSystem.FrameResult frame;
+            ulong seq;
+            TextureHandle depthH, normalH, outH;
+            float weight;
+            try
+            {
+                // The camera's targets exist only once this Mac traces (kernels compiled, layout self-test passed): while
+                // RT starts the frame only warms the scene, and a Mac that never traces never gets here (review 1
+                // engineering #4: 5-7 full-resolution float targets were allocated before BuildFrame checked anything).
+                if (FrontRoomsGlassRTSystem.Supported
+                    && state.EnsureTargets(w, h, quality == FrontRoomsGlassRTQuality.Ultra, FrontRoomsGlassRTSystem.DebugMode != FrontRoomsGlassRTNative.DebugNone))
+                    FrontRoomsGlassRTSystem.SendTargets(state);
+                frame = FrontRoomsGlassRTSystem.BuildFrame(cam, state, w, h, view, gpuProj);
+                // the warm-up submit is a native call too: inside the guard (codex audit F1 follow-up)
+                seq = HarnessEmptyPassOnly ? 0ul : frame.traced ? frame.seq : FrontRoomsGlassRTSystem.Warmup();
+                if (HarnessRecordFault) throw new InvalidOperationException("harness fault injection in the record (FrontRoomsGlassRTVerify fail-closed test)");
+                if (state.depth == null || state.normal == null || state.outTex == null)
+                {
+                    // no targets yet: only the warm-up event (BLAS builds, deferred releases), weight 0, keyword off
+                    AddWarmupPass(renderGraph, seq);
+                    return;
+                }
+                state.lastSeq = frame.seq;
+                state.lastRect = frame.rect;
+                state.lastVisibleReceivers = frame.visibleReceivers;
+                // fix round 32 (review 2 art #1): the stream-in gate's weight, not 1 on every traced frame. After a jump, a
+                // run start or a floor change the glass keeps its zone cube until this camera's reflection has no holes
+                // and its lamps are gathered, then fades in (FrontRoomsGlassRTSystem.GateWeight)
+                weight = frame.traced && !HarnessHideResult && FrontRoomsGlassRTSystem.DebugMode == FrontRoomsGlassRTNative.DebugNone ? frame.weight : 0f;
+                state.lastWeight = weight;
+                // the imports are the part of the record that can throw (a released target): inside the guard too
+                // (review 1 engineering #8); the passes below only declare what they use
+                depthH = renderGraph.ImportTexture(state.depth);
+                normalH = renderGraph.ImportTexture(state.normal);
+                outH = renderGraph.ImportTexture(state.outTex);
+            }
+            catch (Exception e)
+            {
+                // Design 10 §2.7, fail closed (codex audit F1): an exception escaping URP's record aborts this camera's
+                // whole frame (black screen) and leaves Forward+'s ZBinningJob uncompleted, so every later frame throws
+                // too (Red's 2026-10-03 session: 85 "Collection was modified", then 253 ZBinningJob errors). RT goes Off
+                // for the session instead: one log line, no further native calls; EndPass (already enqueued) keeps the
+                // keyword off and the weight at 0, and the glass keeps its zone cube.
+                FrontRoomsGlassRTSystem.FailClosed(e);
+                return;
+            }
 
             if (frame.traced && !HarnessEmptyPassOnly)
             {
@@ -203,7 +249,7 @@ public sealed class FrontRoomsMetalGlassRTRendererFeature : ScriptableRendererFe
                 builder.UseTexture(normalH, AccessFlags.Read);
                 builder.UseTexture(outH, AccessFlags.ReadWrite);
                 data.func = FrontRoomsGlassRTSystem.EventFunc;
-                data.seq = HarnessEmptyPassOnly ? 0ul : frame.traced ? frame.seq : FrontRoomsGlassRTSystem.Warmup();
+                data.seq = seq;
                 data.outTex = state.outTex.rt;
                 data.weight = weight;
                 data.fade = Fade;
@@ -222,6 +268,28 @@ public sealed class FrontRoomsMetalGlassRTRendererFeature : ScriptableRendererFe
                     cmd.SetKeyword(d.keyword, d.weight > 0f);
                 });
             }
+        }
+    }
+
+    sealed class WarmData { public IntPtr func; public ulong seq; public GlobalKeyword keyword; }
+
+    /// <summary>The frame of a camera without targets (RT still starting): the plugin event alone, so the scene keeps building.</summary>
+    static void AddWarmupPass(RenderGraph renderGraph, ulong seq)
+    {
+        using (var builder = renderGraph.AddUnsafePass<WarmData>("FRGlassRT Warm-up", out var data))
+        {
+            data.func = FrontRoomsGlassRTSystem.EventFunc;
+            data.seq = seq;
+            data.keyword = Keyword;
+            builder.AllowPassCulling(false);
+            builder.AllowGlobalStateModification(true);
+            builder.SetRenderFunc((WarmData d, UnsafeGraphContext ctx) =>
+            {
+                var cmd = CommandBufferHelpers.GetNativeCommandBuffer(ctx.cmd);
+                if (d.seq != 0 && d.func != IntPtr.Zero) cmd.IssuePluginEventAndData(d.func, 1, new IntPtr((long)d.seq));
+                cmd.SetGlobalFloat(WeightId, 0f);
+                cmd.SetKeyword(d.keyword, false);
+            });
         }
     }
 

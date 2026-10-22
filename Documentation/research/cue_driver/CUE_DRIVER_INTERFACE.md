@@ -1,4 +1,6 @@
-# Wallpaper cue: driver interface and event list (v0.2.2, 平面视觉 · 信息设计, 2026-10-22)
+# Wallpaper cue: driver interface and event list (v0.2.3, 平面视觉 · 信息设计, 2026-10-22)
+
+**v0.2.3 (2026-10-22 15:07).** The motion is decided: Red picked **M4 + V1** (15:05, in the wallpaper line's chat, after the twelve in-game combination previews). The set is A + M4 + V1 as written here, so §1 and §6 stand and the flipbook C00–C16 is final. Only Status and §4 item 5 change.
 
 **v0.2.2 (2026-10-22).** Where the arrows point is now decided. Red's C24 = A and its amendment A20 (systems.json) say: the arrows point at the station TV until the floor key is taken, then at the floor EXIT (C22). 关卡设计调研 wrote the map-side rules in `MAP_ROUTE_SPEC.md` (this folder). This version:
 - points to it from §2, §4 and §5;
@@ -16,9 +18,9 @@ The per-cell data (`_FR_WayCells`), the events in §3 and the pursuit rules (REL
 - **V1:** the rows then step along the route on two speed systems.
 
 **Status (2026-10-22).** Prototype only. It runs in 平面视觉's clone `~/FrontRoomsVisualWork/proj_pgcue2`; nothing is in main. 游戏视觉 lands the shader part. The map side is 关卡设计's and is built after the Alpha.
-- **The motion is not confirmed.** On 2026-10-22, asked whether A + M4 + V1 can be confirmed, Red chose "再看一次其他方案" (show the other options again), in the wallpaper line's chat. That line re-sent M1–M4 and V1–V3, recommends M4 + V1, and forwards Red's pick. If the pick changes, the slices (`cue_flipbook.py`), the states in §1 and the timing table in §6 change with it. The route data the map hands over (dir and message per cell) does not.
-- **The ambient print driver goes into the 2026-10-22 Alpha; the cue does not.** `FrontRoomsPrintDriver` (HoldAndJump) already holds K00 on warn ≥ 1, Chase, BreakDoor and Reduce Motion (§5 items 12 and 14). 游戏视觉 merges it (`wallpaper_motion/20_level_design_phosphor.md`, Rev 5).
-- All of the cue waits until Red, 系统设计, 关卡设计, 游戏视觉 and 平面视觉 agree.
+- **The motion is decided: A + M4 + V1** (Red, 2026-10-22 15:05, in the wallpaper line's chat; earlier that day Red had asked to see the other options again). The flipbook C00–C16 at 2048² is final.
+- **The ambient print driver is in the 2026-10-22 build; the cue is not yet.** `FrontRoomsPrintDriver` (HoldAndJump) already holds K00 on warn ≥ 1, Chase, BreakDoor and Reduce Motion (§5 items 12 and 14). 游戏视觉 merges it (`wallpaper_motion/20_level_design_phosphor.md`, Rev 5).
+- Left before the cue is in the game: the map side (关卡设计: Wayfinding + WayCueDriver per `MAP_ROUTE_SPEC.md`) and 游戏视觉's CueInk landing. CueInk alone is inert: with no writer for `_FR_WayCells`, every cell is state 0, which is the live print exactly (§5 item 14).
 
 **Sources:**
 - Slices: `Tools/print/ink/art_from_graphic/cue_states/cue_flipbook.py`.
@@ -77,13 +79,13 @@ The per-cell data (`_FR_WayCells`), the events in §3 and the pursuit rules (REL
 
 ## 4. Open questions
 
-Items 1–4 are settled; their numbers are kept because other docs cite them. Item 5 is open.
+All five items are settled; their numbers are kept because other docs cite them.
 
 1. **What is an exit?** **Answered 2026-10-22.** Each floor has an EXIT that leads one floor deeper (C22). The arrows point at the station TV until the floor key is taken, then at the EXIT (C24 = A + A20). Rules: `MAP_ROUTE_SPEC.md` §1; see §5 item 9.
 2. **Lamp gate.** 关卡设计 proposed that a cell may hint only below lamp level 0.55, with flicker overrides. That fits the old glow-ink hint. For the pattern-native cue, 平面视觉 proposes no darkness gate: the turn is meant to be seen in lit rooms. It is driven by the warn and chase events above, and a dead lamp only makes it harder to see. **Settled:** no darkness gate (§5 item 10).
 3. **WebGL tier.** The array is R8G8 at 1024²; maybe turn only (no flow) to save fill rate. This is its own track and must never change desktop. **Settled:** turn only, gated by platform (§5 item 11).
 4. **Ambient keyframes.** Once the driver lands, the HoldAndJump keyframes must not use cue vocabulary (straight match, 90/180° turns, flatten, single-row change). **Settled and rebuilt 2026-10-22:** K02 → plate shift, K03 → missing slate plate, K07 → block swap (§5 item 12, VL349).
-5. **Motion (open).** Red picks one of M1–M4 (how the turn moves) and one of V1–V3 (how the rows step). A + M4 + V1 is the recommendation, not a decision (see Status).
+5. **Motion.** **Decided 2026-10-22 15:05: M4 + V1** (Red, in the wallpaper line's chat; C31 in systems.json). The set is A + M4 + V1 as specified here.
 
 ## 5. v0.2 decisions (系统设计 §9.6, 关卡设计)
 

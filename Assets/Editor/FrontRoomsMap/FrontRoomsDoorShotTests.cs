@@ -12,7 +12,8 @@ using U = FrontRoomsShotTimings.Unlock;
 /// (door_shots_plan.md §5.2, checks 1–19): pose P (0.45 m out, 0.25 m down, 12° toward the hinge,
 /// looking at the keyhole) and the travel; the FOV ramp and its 0.4 s return on cancels; the camera
 /// at 100 / 50 / 0 % Camera motion with BaseEye still; the beats, DoorUnlocked at the 0.86 s commit
-/// at the keyhole, the push-side open at 1.00 s (drawn latch) and the pull-side open at 1.55 s;
+/// at the keyhole, the open at 1.00 s (drawn latch) from either face (A12: the key turn turns the shut leaf
+/// away from the key's side, so the old pull-side open at 1.55 s never runs);
 /// the hold (no prompt, Use and TryOpenDoor leave it); the move and look locks; player, Relay and
 /// door cancels before and after the commit (locked, or unlocked and shut, or opened by a second E);
 /// the buffered push; pause (DoorsPaused); in place; a chunk rebuild; Abort; orphaned holds (no
@@ -342,7 +343,8 @@ public static class FrontRoomsDoorShotTests
     }
 
     // The door shut, locked and still; the body on one side, 0.9 m from the keyhole along the face normal, facing it.
-    static void Stand(H h, bool pullSide)
+    // leafSide: the side the leaf last went to (the single-acting pull side); A12 makes it a push all the same.
+    static void Stand(H h, bool leafSide)
     {
         if (h.shot.Live) h.shot.Abort();
         h.door = h.world.DoorBetween(h.a, h.b);
@@ -351,7 +353,7 @@ public static class FrontRoomsDoorShotTests
         h.world.DoorsPaused = false;
         h.rig.ResetLayers();
         var swingIsA = FrontRoomsMapWorld.OnSwingSide(h.door, h.world.CellCenter(h.a));
-        var probe = h.world.CellCenter(pullSide == swingIsA ? h.a : h.b);
+        var probe = h.world.CellCenter(leafSide == swingIsA ? h.a : h.b);
         var n = FrontRoomsMapWorld.LockNormal(h.door, probe);
         var key = h.world.LockPose(h.door, probe).position;
         var feet = new Vector3(key.x, h.door.position.y, key.z) + n * StandOut;
@@ -362,14 +364,15 @@ public static class FrontRoomsDoorShotTests
     }
 
     /// <summary>E on the door from one side (Use must answer KeyTurn), then the shot begins as the game begins it.</summary>
-    static bool Start(H h, bool pullSide, bool inPlace = false, FakeRig fake = null)
+    static bool Start(H h, bool leafSide, bool inPlace = false, FakeRig fake = null)
     {
-        Stand(h, pullSide);
+        Stand(h, leafSide);
         if (fake != null)
         {
-            // The rig's keyways: the spec's, read before the rig is set (LockPose then comes from it).
-            fake.s = h.world.LockPose(h.door, h.world.CellCenter(FrontRoomsMapWorld.OnSwingSide(h.door, h.world.CellCenter(h.a)) ? h.a : h.b));
-            fake.p = h.world.LockPose(h.door, h.world.CellCenter(FrontRoomsMapWorld.OnSwingSide(h.door, h.world.CellCenter(h.a)) ? h.b : h.a));
+            // The rig's keyways: the spec's, read before the rig is set (LockPose then comes from it). S is the door root's +X face (A12: geometric).
+            var aIsS = FrontRoomsMapWorld.FaceOf(h.door, h.world.CellCenter(h.a)) == DoorFace.S;
+            fake.s = h.world.LockPose(h.door, h.world.CellCenter(aIsS ? h.a : h.b));
+            fake.p = h.world.LockPose(h.door, h.world.CellCenter(aIsS ? h.b : h.a));
             fake.clock = () => h.clock;
             h.world.SetDoorRigForTools(h.door, fake);
         }
@@ -377,7 +380,7 @@ public static class FrontRoomsDoorShotTests
         var result = h.world.Use(h.door.leaf);
         if (result != FrontRoomsMapWorld.UseResult.KeyTurn)
         {
-            Check(false, "start (" + (pullSide ? "pull" : "push") + "): Use answered " + result + ", not KeyTurn");
+            Check(false, "start (" + (leafSide ? "leaf side" : "push") + "): Use answered " + result + ", not KeyTurn");
             return false;
         }
         h.Clear();
@@ -385,7 +388,8 @@ public static class FrontRoomsDoorShotTests
         h.face = FrontRoomsMapWorld.FaceOf(h.door, feet);
         h.lockPose = h.world.LockPose(h.door, feet);
         h.normal = FrontRoomsMapWorld.LockNormal(h.door, feet);
-        h.pull = h.face == DoorFace.S;
+        // A12: Use's key turn turned the shut leaf away from the key's side, so this is a push from either face (the game reads it the same way).
+        h.pull = FrontRoomsMapWorld.OnSwingSide(h.door, feet);
         h.eye0 = h.rig.BaseEye;
         h.poseP = FrontRoomsDoorShot.UnlockPoseP(h.lockPose, h.normal, FrontRoomsMapWorld.TowardHinge(h.door), h.eye0.position.y);
         h.shot.BeginUnlock(h.door, h.face, h.lockPose, h.normal, h.pull, inPlace);
@@ -504,8 +508,9 @@ public static class FrontRoomsDoorShotTests
     static void Battery(H h)
     {
         var m = FrontRoomsSettings.CameraMotionScale;
-        FullPush(h, m);
-        FullPull(h, m);
+        FullPush(h, m, false);
+        FullPush(h, m, true);
+        PullBranch(h, m);
         WithRig(h, false);
         WithRig(h, true);
         PlayerCancelEarly(h);
@@ -522,10 +527,14 @@ public static class FrontRoomsDoorShotTests
         Orphans(h);
     }
 
-    // 3, 4, 5, 6 (push), 7, and 19 without a rig: one uncancelled push-side unlock.
-    static void FullPush(H h, float m)
+    // 3, 4, 5, 6 (push), 7, and 19 without a rig: one uncancelled unlock, from either side (A12: both are pushes).
+    static void FullPush(H h, float m, bool leafSide)
     {
-        if (!Start(h, false)) return;
+        var sideBefore = h.door != null ? h.world.DoorBetween(h.a, h.b).swing : 0f;
+        if (!Start(h, leafSide)) return;
+        // A12: from the side the leaf last went to, the key turn turns the shut leaf over; from the other side it stays.
+        Check(!h.pull && !FrontRoomsMapWorld.OnSwingSide(h.door, h.feet) && h.face == FrontRoomsMapWorld.FaceOf(h.door, h.feet) && (h.door.swing == -sideBefore) == leafSide,
+            "A12 " + (leafSide ? "from the leaf's side" : "from the other side") + ": at the key turn the shut leaf swings away from the key's face (" + h.face + "), so the shot is a push");
         var startedOk = h.started == 1 && h.startedAt == 0f;
         var home = h.door.leaf.transform.localPosition;
         var expected06 = Vector3.Lerp(h.eye0.position, h.poseP.position, m);
@@ -575,6 +584,8 @@ public static class FrontRoomsDoorShotTests
             else if (c >= 1.50f - 1e-3f && !Near(look, 1f, 1e-4f) && lockBad.Length == 0) lockBad = "LookScale " + look + " at " + c.ToString("0.000");
         });
         var zone = h.world.ZoneOf(h.world.CellOf(h.feet)).id;
+        var awayOk = h.door.open && h.door.angle == ModuleUnits.DoorSwingDegrees && FrontRoomsMapWorld.FaceOf(h.door, h.door.leaf.transform.position) != h.face;
+        Check(awayOk, "A12 " + (leafSide ? "from the leaf's side" : "from the other side") + ": the leaf rests at 95° on the far face from the key's (" + h.face + ")");
         // 4: the camera.
         Check(maxBase < 1e-4f, "4 push: BaseEye never moves (" + (maxBase * 1000f).ToString("0.000") + " mm)");
         if (m > 0f) Check(camErr06 >= 0f && camErr06 < .02f, "4 push: at 0.6 s the camera is " + (m * 100f).ToString("0") + "% of the way to pose P (off by " + (camErr06 * 100f).ToString("0.0") + " cm)");
@@ -618,40 +629,89 @@ public static class FrontRoomsDoorShotTests
         Done(h);
     }
 
-    // 5 and 6 on the pull side: no knob beats, the leaf still until the camera is home, then a normal open.
-    static void FullPull(H h, float m)
+    // 5 and 6 on the pull branch, kept for a leaf out of the frame (A12): a locked door's leaf is only out of the frame when
+    // the key rule came on mid-run (ApplyLive on a profile edit in Play, or DoorsNeedKeysForTools as the autopilot's door
+    // scenario sets it) after the door was opened with keys off. Opened toward the body, it rests on it; shut, and E with the
+    // key from the leaf's side before it latches: Use's SwingAwayFrom leaves a leaf out of the frame on its side, so the game
+    // reads a pull. No knob beats in the shot; the leaf goes on shutting and latches under the hold, and only once the camera
+    // is home (1.55 s) does the map open it, a normal open (DoorHandleTurned), away from the key's face.
+    static void PullBranch(H h, float m)
     {
-        if (!Start(h, true)) return;
-        var stillUntil = true;
-        var minGap = float.MaxValue;
-        var maxCamOff = 0f;
-        RunTo(h, 2.1f, () =>
+        Stand(h, true);
+        var feet = h.body.position;
+        var near = h.world.CellOf(feet);
+        var far = near == h.a ? h.b : h.a;
+        try
         {
-            if (h.clock < U.ReturnEnd - Dt * .5f && (h.door.angle != 0f || h.handles.Count > 0)) stillUntil = false;
-            if (h.clock <= U.ReturnEnd + 1e-3f) minGap = Mathf.Min(minGap, (h.door.leaf.ClosestPoint(h.camera.transform.position) - h.camera.transform.position).magnitude);
-            maxCamOff = Mathf.Max(maxCamOff, CamToEye(h));
-        });
-        var inSweep = (FrontRoomsMapWorld.ClearOfSwing(h.door, h.feet, LeafClearance) - h.feet).sqrMagnitude > 1e-6f;
-        var open = h.began.Count > 0 ? h.began[0] : default;
-        Check(h.face == DoorFace.S && !h.Has(DoorBeat.KnobTurn) && !h.Has(DoorBeat.KnobReturn) && h.unlocked.Count == 1 && Near(h.unlocked[0].t, U.Commit, Dt * 1.01f),
-            "5 pull: DoorUnlocked at " + (h.unlocked.Count > 0 ? h.unlocked[0].t.ToString("0.000") : "-") + ", no knob beats in the shot");
-        Check(stillUntil && minGap >= .1f && h.handles.Count == 1 && Near(h.handles[0], U.ReturnEnd, Dt * 1.01f) && h.began.Count == 1 && open.source == FrontRoomsMapWorld.DoorOpenSource.Unlock && !open.latchDrawn
-              && h.pulls.Count == (inSweep ? 1 : 0) && Near(h.BeatAt(DoorBeat.Open), U.ReturnEnd, Dt * 1.01f) && h.ended == 1 && h.endedAt <= U.ReturnEnd + Dt * 2.01f,
-            "6 pull: no hinge change or DoorHandleTurned before 1.55; then DoorHandleTurned (" + (h.handles.Count > 0 ? h.handles[0].ToString("0.000") : "-") + "), DoorOpenBegan(Unlock), "
-            + (inSweep ? "DoorPulled (the body is in the sweep)" : "no DoorPulled (clear)") + " (" + h.pulls.Count + "); the leaf ≥ 0.1 m from the camera (" + minGap.ToString("0.00") + ")");
-        if (m > 0f) Check(maxCamOff > .1f, "4 pull: the camera dips (" + maxCamOff.ToString("0.00") + " m from the eye at most)");
-        Done(h);
+            h.world.DoorsNeedKeysForTools = false;
+            // Opened from the far cell, the leaf swings toward the body and stops on it; then the body shuts it.
+            var opened = h.world.TryOpenDoor(far, near);
+            for (var k = 0; k < 60; k++) h.world.TickDoorsForTools(Dt);
+            var restedAt = h.door.angle;
+            var shut = h.world.Use(h.door.leaf);
+            for (var k = 0; k < 3; k++) h.world.TickDoorsForTools(Dt);
+            var shuttingAt = h.door.angle;
+            // The key rule comes on: this door was never unlocked, so it needs the key now.
+            h.world.DoorsNeedKeysForTools = true;
+            var result = h.world.Use(h.door.leaf);
+            if (!opened || shut != FrontRoomsMapWorld.UseResult.Shut || result != FrontRoomsMapWorld.UseResult.KeyTurn || FrontRoomsMapWorld.IsLatched(h.door))
+            {
+                Check(false, "pull branch: setup (opened " + opened + ", rested at " + restedAt.ToString("0.0") + "°, shut " + shut + ", E with the key at " + shuttingAt.ToString("0.0") + "° answered " + result + ")");
+                return;
+            }
+            // As the game begins it (FrontRooms3DGame.BeginUnlock).
+            h.Clear();
+            h.feet = feet;
+            h.face = FrontRoomsMapWorld.FaceOf(h.door, feet);
+            h.lockPose = h.world.LockPose(h.door, feet);
+            h.normal = FrontRoomsMapWorld.LockNormal(h.door, feet);
+            h.pull = FrontRoomsMapWorld.OnSwingSide(h.door, feet);
+            h.eye0 = h.rig.BaseEye;
+            h.poseP = FrontRoomsDoorShot.UnlockPoseP(h.lockPose, h.normal, FrontRoomsMapWorld.TowardHinge(h.door), h.eye0.position.y);
+            h.shot.BeginUnlock(h.door, h.face, h.lockPose, h.normal, h.pull, false);
+            var latchedAt = -1f;
+            var opensEarly = false;
+            var minGap = float.MaxValue;
+            var maxCamOff = 0f;
+            var lastAngle = h.door.angle;
+            RunTo(h, 3f, () =>
+            {
+                if (latchedAt < 0f && FrontRoomsMapWorld.IsLatched(h.door)) latchedAt = h.clock;
+                if (h.clock < U.ReturnEnd - Dt * .5f && (h.door.angle > lastAngle + 1e-4f || h.handles.Count > 0 || h.began.Count > 0)) opensEarly = true;
+                lastAngle = h.door.angle;
+                if (h.clock <= U.ReturnEnd + 1e-3f) minGap = Mathf.Min(minGap, (h.door.leaf.ClosestPoint(h.camera.transform.position) - h.camera.transform.position).magnitude);
+                maxCamOff = Mathf.Max(maxCamOff, CamToEye(h));
+            });
+            var open = h.began.Count > 0 ? h.began[0] : default;
+            Check(h.pull && !h.Has(DoorBeat.KnobTurn) && !h.Has(DoorBeat.KnobReturn)
+                  && h.unlocked.Count == 1 && Near(h.unlocked[0].t, U.Commit, Dt * 1.01f),
+                "5 pull branch (keys on mid-run, E at " + shuttingAt.ToString("0.0") + "° out of the frame on the key's side): a pull; DoorUnlocked at "
+                + (h.unlocked.Count > 0 ? h.unlocked[0].t.ToString("0.000") : "-") + ", no knob beats in the shot");
+            Check(!opensEarly && latchedAt > 0f && latchedAt < U.Commit && minGap >= .1f && h.handles.Count == 1 && Near(h.handles[0], U.ReturnEnd, Dt * 1.01f)
+                  && h.began.Count == 1 && open.source == FrontRoomsMapWorld.DoorOpenSource.Unlock && !open.latchDrawn && h.pulls.Count == 0
+                  && Near(h.BeatAt(DoorBeat.Open), U.ReturnEnd, Dt * 1.01f) && h.ended == 1 && h.endedAt <= U.ReturnEnd + Dt * 2.01f,
+                "6 pull branch: the leaf goes on shutting under the hold and latches at " + latchedAt.ToString("0.000") + " s, nothing opens it before 1.55; then DoorHandleTurned ("
+                + (h.handles.Count > 0 ? h.handles[0].ToString("0.000") : "-") + "), DoorOpenBegan(Unlock), no DoorPulled; the leaf ≥ 0.1 m from the camera (" + minGap.ToString("0.00") + ")");
+            Check(h.door.open && h.door.angle == ModuleUnits.DoorSwingDegrees && FrontRoomsMapWorld.FaceOf(h.door, h.door.leaf.transform.position) != h.face,
+                "A12 pull branch: the open at 1.55 turns the latched leaf away from the key's face (" + h.face + ") and it rests at " + h.door.angle.ToString("0.0") + "° on the far face");
+            if (m > 0f) Check(maxCamOff > .1f, "4 pull branch: the camera dips (" + maxCamOff.ToString("0.00") + " m from the eye at most)");
+        }
+        finally
+        {
+            h.world.DoorsNeedKeysForTools = true;
+            Done(h);
+        }
     }
 
     // 19: the lock's parts through a fake rig: the plug, the deadbolt, the leaf's jolt, the knob and latch (push side), every call on the opener's face.
-    static void WithRig(H h, bool pullSide)
+    static void WithRig(H h, bool leafSide)
     {
         var fake = new FakeRig();
-        if (!Start(h, pullSide, false, fake)) return;
+        if (!Start(h, leafSide, false, fake)) return;
         var home = h.door.leaf.transform.localPosition;
         var cubeStill = true;
         RunTo(h, 1.6f, () => { if ((h.door.leaf.transform.localPosition - home).sqrMagnitude > 1e-12f) cubeStill = false; });
-        var side = pullSide ? "pull" : "push";
+        var side = leafSide ? "push, leaf side" : "push";
         var plug = fake.calls.Where(c => c.part == "plug").ToList();
         var resistEnd = U.TurnStart + U.TurnResistShare * (U.TurnEnd - U.TurnStart);
         var before = plug.Where(c => c.t <= resistEnd + 1e-4f).Select(c => c.value).DefaultIfEmpty(0f).Max();
@@ -668,16 +728,14 @@ public static class FrontRoomsDoorShotTests
             "19 rig " + side + ": SetDeadbolt to 1 by " + boltFull.ToString("0.000") + "; Jolt(" + (jolts.Count > 0 ? jolts[0].value.ToString("0.0000") : "-") + ") once at the commit, and no JoltLeaf on the cube");
         var knob = fake.calls.Where(c => c.part == "knob").ToList();
         var latch = fake.calls.Where(c => c.part == "latch").ToList();
-        if (!pullSide)
         {
             var knobFull = knob.Where(c => c.value >= U.KnobDeg - .01f).Select(c => c.t).DefaultIfEmpty(-1f).First();
             var knobBack = knob.Count > 0 && knob[knob.Count - 1].value == 0f ? knob[knob.Count - 1].t : -1f;
             var latchFull = latch.Where(c => c.value >= 1f - 1e-4f).Select(c => c.t).DefaultIfEmpty(-1f).First();
             var latchBack = latch.Count > 0 && latch[latch.Count - 1].value == 0f ? latch[latch.Count - 1].t : -1f;
             Check(knobFull > 0f && knobFull <= U.KnobTurnEnd + Dt * 1.01f && knobBack > 0f && knobBack <= U.KnobReturnEnd + Dt * 1.01f && latchFull > 0f && latchFull <= U.KnobTurnEnd + Dt * 1.01f && latchBack > 0f && latchBack <= U.KnobReturnEnd + Dt * 1.01f,
-                "19 rig push: SetKnob 40 by " + knobFull.ToString("0.000") + " and 0 by " + knobBack.ToString("0.000") + "; SetLatch with it");
+                "19 rig " + side + ": SetKnob 40 by " + knobFull.ToString("0.000") + " and 0 by " + knobBack.ToString("0.000") + "; SetLatch with it");
         }
-        else Check(knob.Count == 0 && latch.Count == 0, "19 rig pull: no knob or latch in the shot (the 1.55 open turns them)");
         var faces = fake.calls.Where(c => c.part == "plug" || c.part == "knob").All(c => c.face == h.face);
         Check(faces && h.unlocked.Count == 1 && (h.unlocked[0].at - fake.Keyhole(h.face)).magnitude < 1e-4f,
             "19 rig " + side + ": every plug and knob call carries the opener's face (" + h.face + "); the keyhole comes from the rig");
@@ -773,9 +831,9 @@ public static class FrontRoomsDoorShotTests
     }
 
     // 10 (and 3's Relay cancel). The Relay after the commit: any sight frees the player in 0.15 s; the door stays unlocked and shut; E opens it later.
-    static void RelayAfter(H h, float m, bool pullSide)
+    static void RelayAfter(H h, float m, bool leafSide)
     {
-        if (!Start(h, pullSide)) return;
+        if (!Start(h, leafSide)) return;
         var fovs = new List<float>();
         RunTo(h, .95f, () => fovs.Add(h.camera.fieldOfView));
         var cancelIndex = fovs.Count;
@@ -792,7 +850,7 @@ public static class FrontRoomsDoorShotTests
             if (home < 0f && CamToEye(h) < 1e-3f && !h.rig.InShot) home = h.clock - start;
             if (h.door.angle != 0f || h.door.open) shut = false;
         });
-        var side = pullSide ? "pull" : "push";
+        var side = leafSide ? "push, leaf side" : "push";
         var text = FovReturn(h, fovs, cancelIndex - 1, atCancel, out var fovOk);
         Check(free && h.unlocked.Count == 1 && h.world.IsUnlockedForTools(h.door) && !h.world.IsHeldForKey(h.door) && shut && h.handles.Count == 0 && h.pulls.Count == 0 && h.began.Count == 0
               && home > 0f && home <= U.ChaseFreeSnap + Dt * 1.01f,
@@ -816,16 +874,16 @@ public static class FrontRoomsDoorShotTests
                 "11 S at 0.95 s: unlocked and shut (no hinge motion, no DoorPulled)");
             Done(h);
         }
-        foreach (var pullSide in new[] { false, true })
+        foreach (var leafSide in new[] { false, true })
         {
-            if (!Start(h, pullSide)) continue;
+            if (!Start(h, leafSide)) continue;
             RunTo(h, .95f);
             h.rig.Consume(ShotInput.Use);
             RunTo(h, 3f);
-            var inSweep = (FrontRoomsMapWorld.ClearOfSwing(h.door, h.feet, LeafClearance) - h.feet).sqrMagnitude > 1e-6f;
             var open = h.began.Count > 0 ? h.began[0] : default;
-            Check(h.door.open && h.handles.Count == 1 && h.began.Count == 1 && !open.latchDrawn && open.source == FrontRoomsMapWorld.DoorOpenSource.Unlock && (!pullSide || h.pulls.Count == (inSweep ? 1 : 0)),
-                "11 a second E at 0.95 s (" + (pullSide ? "pull" : "push") + "): a normal open (DoorHandleTurned" + (pullSide ? (inSweep ? ", DoorPulled" : ", no DoorPulled: clear") : "") + ")");
+            Check(h.door.open && h.handles.Count == 1 && h.began.Count == 1 && !open.latchDrawn && open.source == FrontRoomsMapWorld.DoorOpenSource.Unlock && h.pulls.Count == 0
+                  && FrontRoomsMapWorld.FaceOf(h.door, h.door.leaf.transform.position) != h.face,
+                "11 a second E at 0.95 s (" + (leafSide ? "push, leaf side" : "push") + "): a normal open away from the opener (DoorHandleTurned, no DoorPulled)");
             Done(h);
         }
         if (Start(h, false))

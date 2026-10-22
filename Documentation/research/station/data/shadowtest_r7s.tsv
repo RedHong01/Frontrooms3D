@@ -1,0 +1,9 @@
+spot160_soft	front 0.512	behind the wall 0.041	behind, past the wall end 0.072
+spot160_hard	front 0.512	behind the wall 0.041	behind, past the wall end 0.072
+spot60_soft	front 0.072	behind the wall 0.041	behind, past the wall end 0.041
+spot160_soft_cookie	front 0.458	behind the wall 0.041	behind, past the wall end 0.067
+point_soft	front 0.512	behind the wall 0.041	behind, past the wall end 0.053
+spot160_soft	front 0.512	behind the wall 0.041	behind, past the wall end 0.072
+spot160_soft_dirfill	front 0.6	behind the wall 0.129	behind, past the wall end 0.16
+spot160_soft_far	front 0.512	behind the wall 0.041	behind, past the wall end 0.072
+spot160_soft_dirfill_far	front 0.601	behind the wall 0.129	behind, past the wall end 0.16

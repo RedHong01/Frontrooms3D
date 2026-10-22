@@ -589,6 +589,21 @@ def rec(rel):
 
 
 OCCLUSION_DB = [[0, 0], [.55, -6], [.85, -10], [1, -12]]   # walls cost level, not only top end
+# W2 (RELAY §9.3, C10): the Relay's steps and presence take their level from the path, not the straight line. The
+# game passes PathGain = 0.55 + 0.45 (1 - F/18) at warning stage 2 (fading to 0 over the 18-24 m exit; 0.55 * 18/F in
+# sight past 18 m) and the muffle (shut openings on the path + a distance low-pass) as Occlusion, which only filters.
+# PathGain is a control, not a linear gain: measured on FMOD renders (fmod_check relay_w2, 50 ms RMS step peaks,
+# room tone -41 dB, the player's own walk -29 dB) the steps land at about -31 dB at the stage-2 entry through a
+# shut door (F 18), -26 dB at F 10 on an open path and -21 dB at F 5 in sight (the old close level), so the first
+# warning is clearly heard when you stop to listen and never louder than your own steps.
+PATH_GAIN_STEP_DB = [[0, -80], [.05, -45], [.2, -35], [.35, -28], [.55, -21.7], [.75, -16.7], [.875, -11.7], [.95, -6],
+                     [1, -4]]
+# The low hum sits about 2 dB over the room tone at the stage-2 entry (-39 dB RMS against -41) and -31 dB at F 5 in
+# sight: a faint continuous layer, so a still Relay stays audible between steps.
+PATH_GAIN_HUM_DB = [[0, -80], [.05, -46], [.2, -32], [.55, -18], [.75, -13], [1, -6]]
+# W1 ballast groan (RELAY §9.2): the room-tone hum sags under a warning burst, driven by WarnBurst only.
+GROAN_PITCH = [[0, 0], [1, -.7]]      # semitones (-70 cents)
+GROAN_DB = [[0, 0], [1, -5]]
 
 DAMP = {  # Dampness 0-1 on the player's step layers; 0.4 = ordinary Level 0 carpet
     "moist": [[0, -80], [.15, -40], [.4, -14], [.7, -6], [1, -3]],
@@ -631,6 +646,9 @@ SPEC = {
         "Level": dict(min=0, max=1, initial=1),
         "Stamina": dict(min=0, max=1, initial=1),
         "Proximity": dict(min=0, max=1),
+        "PathGain": dict(min=0, max=1, initial=1),
+        "Groan": dict(min=0, max=1),
+        "Arousal": dict(min=0, max=1),
         "Occlusion": dict(min=0, max=1),
         "Dampness": dict(min=0, max=1, initial=.4),
         "Surface": dict(labels=["Carpet", "CarpetTile", "Metal"]),
@@ -654,10 +672,14 @@ SPEC = {
     "banks": ["Ambience", "SFX", "Music"],
     "events": [
         # ---------------------------------------------------------- ambience
-        dict(path="Ambience/HumBed", bus="Hum", bank="Ambience", params=["Tension"], ahdsr=[1500, 2000],
-             note="Room-tone hum. Global Tension fades in a detuned layer (120 vs 118.5 Hz) whose beating is the danger cue.",
-             tracks=[dict(name="Hum", sounds=[dict(files=[rec("Ambience/amb_hum_bed_loop.wav")], loop=True, volume=-17)]),
-                     dict(name="Beat", sounds=[dict(files=[rec("Ambience/amb_hum_beat_loop.wav")], loop=True, volume=-17)],
+        dict(path="Ambience/HumBed", bus="Hum", bank="Ambience", params=["Tension", "Groan"], ahdsr=[1500, 2000],
+             note="Room-tone hum. Global Tension fades in a detuned layer (120 vs 118.5 Hz) whose beating is the danger cue. "
+                  "Groan (0-1, from WarnBurst only) is the ballast brown-out under a warning burst: -5 dB, -70 cents.",
+             masterAuto=[dict(prop="volume", param="Groan", points=GROAN_DB)],
+             tracks=[dict(name="Hum", sounds=[dict(files=[rec("Ambience/amb_hum_bed_loop.wav")], loop=True, volume=-17,
+                                                   auto=[dict(prop="pitch", param="Groan", points=GROAN_PITCH)])]),
+                     dict(name="Beat", sounds=[dict(files=[rec("Ambience/amb_hum_beat_loop.wav")], loop=True, volume=-17,
+                                                    auto=[dict(prop="pitch", param="Groan", points=GROAN_PITCH)])],
                           auto=[dict(prop="volume", param="Tension", points=[[0, -60], [.35, -20], [1, -1]])])]),
         dict(path="Ambience/AirBed", bus="Air", bank="Ambience", params=["Zone"], ahdsr=[2000, 2000],
              note="Recorded room tone (50 Hz mains notched out so it never beats against the 120 Hz hum). "
@@ -798,11 +820,12 @@ SPEC = {
              note="Diegetic key ring. The motif hook (first two notes) gets layered here once the motif is chosen.",
              tracks=[dict(name="Keys", sounds=[dict(files=lib("Foley/plr_key_pickup"), volume=1, randPitch=.6)])]),
         # ---------------------------------------------------------- the Relay
-        dict(path="Relay/Footstep", spatial=True, min=1.5, max=42.0, rolloff=3, extent=140, bus="Relay", bank="SFX",
-             params=["RelayGait", "Occlusion", "Dampness"], occlusion=True,
-             note="Driven by the rig's foot contacts. Occlusion 0-1 comes from the walls between. Hard soles on "
-                  "damp carpet, slowed 2-4 st; the player's damp layers pitched down follow Dampness.",
-             masterAuto=[dict(prop="volume", param="Occlusion", points=OCCLUSION_DB)],
+        dict(path="Relay/Footstep", spatial=True, min=1.5, max=60.0, rolloff=4, extent=140, bus="Relay", bank="SFX",
+             params=["RelayGait", "Occlusion", "Dampness", "PathGain"], occlusion=True,
+             note="Driven by the rig's foot contacts, heard only at warning stage 2 or in sight (W2). No straight-line "
+                  "distance attenuation (rolloff Custom): PathGain carries the level from the path, Occlusion the muffle "
+                  "(low-pass only). Hard soles on damp carpet, slowed 2-4 st; the player's damp layers follow Dampness.",
+             masterAuto=[dict(prop="volume", param="PathGain", points=PATH_GAIN_STEP_DB)],
              tracks=[dict(name="Walk", sounds=[dict(files=lib("Relay/rly_step_carpet_walk_body"), cond=[["RelayGait", "Walk"]],
                                                     randPitch=1, randVol=1.5, volume=5)]),
                      dict(name="Run", sounds=[dict(files=lib("Relay/rly_step_carpet_run_body"), cond=[["RelayGait", "Run"]],
@@ -819,6 +842,12 @@ SPEC = {
              masterAuto=[dict(prop="volume", param="Occlusion", points=OCCLUSION_DB)],
              tracks=[dict(name="Drone", sounds=[dict(files=["Relay/relay_presence_loop.wav"], loop=True, volume=-6)],
                           auto=[dict(prop="volume", param="Proximity", points=[[0, -4], [1, 0]])])]),
+        dict(path="Relay/Hum", spatial=True, min=2.0, max=60.0, rolloff=4, extent=140, bus="Relay", bank="SFX",
+             params=["Occlusion", "PathGain"], occlusion=True, ahdsr=[800, 1500],
+             note="C06/C30: its low hum, only at warning stage 2 or in sight (W2: so a still Relay stays audible); played instead of Relay/Presence when FrontRoomsSoundDirector.HumByStage is on. Level from the "
+                  "path (PathGain), muffle as Occlusion (low-pass only), no straight-line attenuation.",
+             masterAuto=[dict(prop="volume", param="PathGain", points=PATH_GAIN_HUM_DB)],
+             tracks=[dict(name="Drone", sounds=[dict(files=["Relay/relay_presence_loop.wav"], loop=True, volume=-6)])]),
         dict(path="Relay/Clicks", spatial=True, min=1.0, max=30.0, bus="Relay", bank="SFX",
              tracks=[dict(name="Clicks", sounds=[dict(files=files("Relay/relay_clicks", 4))])]),
         dict(path="Relay/Stinger", bus="Music", bank="SFX", params=["RelayState"],
@@ -831,13 +860,14 @@ SPEC = {
                           auto=[dict(prop="volume", param="Stamina", points=[[0, -60], [.5, -18], [1, -8]])]),
                      dict(name="Heavy", sounds=[dict(files=["Subjective/breath_heavy_loop.wav"], loop=True, volume=-4)],
                           auto=[dict(prop="volume", param="Stamina", points=[[0, 0], [.4, -10], [.7, -60], [1, -80]])])]),
-        dict(path="Subjective/Heartbeat", bus="Subjective", bank="SFX", params=["Proximity"], ahdsr=[500, 800],
-             note="Only while the Relay is close but unseen.",
+        dict(path="Subjective/Heartbeat", bus="Subjective", bank="SFX", params=["Arousal"], ahdsr=[500, 800],
+             note="Arousal: exertion (winded, out of stamina) gives the slow beat, a chase the fast one, fading over 3 s "
+                  "after it. Never from distance to the Relay (RELAY §9.4, C10).",
              tracks=[dict(name="Slow", sounds=[dict(files=["Subjective/heartbeat_slow_loop.wav"], loop=True, volume=-6)],
-                          auto=[dict(prop="volume", param="Proximity",
+                          auto=[dict(prop="volume", param="Arousal",
                                      points=[[0, -80], [.3, -18], [.6, -12], [.8, -40], [1, -80]])]),
                      dict(name="Fast", sounds=[dict(files=["Subjective/heartbeat_fast_loop.wav"], loop=True, volume=-4)],
-                          auto=[dict(prop="volume", param="Proximity", points=[[0, -80], [.55, -40], [.8, -8], [1, -2]])])]),
+                          auto=[dict(prop="volume", param="Arousal", points=[[0, -80], [.55, -40], [.8, -8], [1, -2]])])]),
         dict(path="Subjective/Tinnitus", bus="Subjective", bank="SFX",
              tracks=[dict(name="Ring", sounds=[dict(files=["Subjective/tinnitus.wav"], volume=-6)])]),
         # ---------------------------------------------------------- music

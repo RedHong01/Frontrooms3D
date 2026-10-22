@@ -1,0 +1,1220 @@
+{
+ "Dp4": {
+  "board_px": 79293,
+  "after_Y": 0.00707074673846364,
+  "after_E": 0.07992594689130783,
+  "cfgs": {
+   "spec": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.03,
+      "drop_Y": 0.764,
+      "L_before": 20.0,
+      "L_after": 6.4,
+      "dL": 13.7,
+      "before_E": 0.349,
+      "drop_E": 0.771
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0647,
+      "drop_Y": 0.891,
+      "L_before": 30.6,
+      "L_after": 6.4,
+      "dL": 24.2,
+      "before_E": 0.623,
+      "drop_E": 0.872
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0332,
+      "drop_Y": 0.787,
+      "L_before": 21.3,
+      "L_after": 6.4,
+      "dL": 14.9,
+      "before_E": 0.371,
+      "drop_E": 0.785
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0288,
+      "drop_Y": 0.755,
+      "L_before": 19.6,
+      "L_after": 6.4,
+      "dL": 13.2,
+      "before_E": 0.338,
+      "drop_E": 0.764
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0112,
+      "drop_Y": 0.367,
+      "L_before": 9.9,
+      "L_after": 6.4,
+      "dL": 3.5,
+      "before_E": 0.142,
+      "drop_E": 0.438
+     }
+    ],
+    "worst_drop_Y": 0.367,
+    "worst_drop_E": 0.438,
+    "min_dL": 3.5
+   },
+   "k4_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.027,
+      "drop_Y": 0.738,
+      "L_before": 18.8,
+      "L_after": 6.4,
+      "dL": 12.4,
+      "before_E": 0.312,
+      "drop_E": 0.744
+     },
+     {
+      "card": 2,
+      "before_Y": 0.041,
+      "drop_Y": 0.828,
+      "L_before": 24.0,
+      "L_after": 6.4,
+      "dL": 17.6,
+      "before_E": 0.431,
+      "drop_E": 0.815
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0247,
+      "drop_Y": 0.714,
+      "L_before": 17.8,
+      "L_after": 6.4,
+      "dL": 11.4,
+      "before_E": 0.287,
+      "drop_E": 0.721
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0272,
+      "drop_Y": 0.74,
+      "L_before": 18.9,
+      "L_after": 6.4,
+      "dL": 12.5,
+      "before_E": 0.314,
+      "drop_E": 0.745
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0203,
+      "drop_Y": 0.652,
+      "L_before": 15.6,
+      "L_after": 6.4,
+      "dL": 9.3,
+      "before_E": 0.246,
+      "drop_E": 0.675
+     }
+    ],
+    "worst_drop_Y": 0.652,
+    "worst_drop_E": 0.675,
+    "min_dL": 9.3
+   },
+   "k4_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.027,
+      "drop_Y": 0.738,
+      "L_before": 18.8,
+      "L_after": 6.4,
+      "dL": 12.4,
+      "before_E": 0.312,
+      "drop_E": 0.744
+     },
+     {
+      "card": 2,
+      "before_Y": 0.041,
+      "drop_Y": 0.828,
+      "L_before": 24.0,
+      "L_after": 6.4,
+      "dL": 17.6,
+      "before_E": 0.431,
+      "drop_E": 0.815
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0247,
+      "drop_Y": 0.714,
+      "L_before": 17.8,
+      "L_after": 6.4,
+      "dL": 11.4,
+      "before_E": 0.287,
+      "drop_E": 0.721
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0272,
+      "drop_Y": 0.74,
+      "L_before": 18.9,
+      "L_after": 6.4,
+      "dL": 12.5,
+      "before_E": 0.314,
+      "drop_E": 0.745
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0244,
+      "drop_Y": 0.71,
+      "L_before": 17.6,
+      "L_after": 6.4,
+      "dL": 11.2,
+      "before_E": 0.286,
+      "drop_E": 0.721
+     }
+    ],
+    "worst_drop_Y": 0.71,
+    "worst_drop_E": 0.721,
+    "min_dL": 11.2
+   },
+   "k5_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0334,
+      "drop_Y": 0.788,
+      "L_before": 21.3,
+      "L_after": 6.4,
+      "dL": 15.0,
+      "before_E": 0.37,
+      "drop_E": 0.784
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0522,
+      "drop_Y": 0.864,
+      "L_before": 27.3,
+      "L_after": 6.4,
+      "dL": 21.0,
+      "before_E": 0.519,
+      "drop_E": 0.846
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0302,
+      "drop_Y": 0.766,
+      "L_before": 20.1,
+      "L_after": 6.4,
+      "dL": 13.7,
+      "before_E": 0.338,
+      "drop_E": 0.764
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0336,
+      "drop_Y": 0.79,
+      "L_before": 21.4,
+      "L_after": 6.4,
+      "dL": 15.1,
+      "before_E": 0.372,
+      "drop_E": 0.785
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0244,
+      "drop_Y": 0.711,
+      "L_before": 17.7,
+      "L_after": 6.4,
+      "dL": 11.3,
+      "before_E": 0.287,
+      "drop_E": 0.722
+     }
+    ],
+    "worst_drop_Y": 0.711,
+    "worst_drop_E": 0.722,
+    "min_dL": 11.3
+   },
+   "k5_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0334,
+      "drop_Y": 0.788,
+      "L_before": 21.3,
+      "L_after": 6.4,
+      "dL": 15.0,
+      "before_E": 0.37,
+      "drop_E": 0.784
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0522,
+      "drop_Y": 0.864,
+      "L_before": 27.3,
+      "L_after": 6.4,
+      "dL": 21.0,
+      "before_E": 0.519,
+      "drop_E": 0.846
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0302,
+      "drop_Y": 0.766,
+      "L_before": 20.1,
+      "L_after": 6.4,
+      "dL": 13.7,
+      "before_E": 0.338,
+      "drop_E": 0.764
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0336,
+      "drop_Y": 0.79,
+      "L_before": 21.4,
+      "L_after": 6.4,
+      "dL": 15.1,
+      "before_E": 0.372,
+      "drop_E": 0.785
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0298,
+      "drop_Y": 0.763,
+      "L_before": 20.0,
+      "L_after": 6.4,
+      "dL": 13.6,
+      "before_E": 0.338,
+      "drop_E": 0.764
+     }
+    ],
+    "worst_drop_Y": 0.763,
+    "worst_drop_E": 0.764,
+    "min_dL": 13.6
+   },
+   "k6_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0403,
+      "drop_Y": 0.825,
+      "L_before": 23.8,
+      "L_after": 6.4,
+      "dL": 17.4,
+      "before_E": 0.428,
+      "drop_E": 0.813
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0643,
+      "drop_Y": 0.89,
+      "L_before": 30.5,
+      "L_after": 6.4,
+      "dL": 24.1,
+      "before_E": 0.607,
+      "drop_E": 0.868
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0362,
+      "drop_Y": 0.805,
+      "L_before": 22.4,
+      "L_after": 6.4,
+      "dL": 16.0,
+      "before_E": 0.39,
+      "drop_E": 0.795
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0406,
+      "drop_Y": 0.826,
+      "L_before": 23.9,
+      "L_after": 6.4,
+      "dL": 17.5,
+      "before_E": 0.431,
+      "drop_E": 0.815
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0288,
+      "drop_Y": 0.754,
+      "L_before": 19.6,
+      "L_after": 6.4,
+      "dL": 13.2,
+      "before_E": 0.328,
+      "drop_E": 0.757
+     }
+    ],
+    "worst_drop_Y": 0.754,
+    "worst_drop_E": 0.757,
+    "min_dL": 13.2
+   },
+   "k6_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0403,
+      "drop_Y": 0.825,
+      "L_before": 23.8,
+      "L_after": 6.4,
+      "dL": 17.4,
+      "before_E": 0.428,
+      "drop_E": 0.813
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0643,
+      "drop_Y": 0.89,
+      "L_before": 30.5,
+      "L_after": 6.4,
+      "dL": 24.1,
+      "before_E": 0.607,
+      "drop_E": 0.868
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0362,
+      "drop_Y": 0.805,
+      "L_before": 22.4,
+      "L_after": 6.4,
+      "dL": 16.0,
+      "before_E": 0.39,
+      "drop_E": 0.795
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0406,
+      "drop_Y": 0.826,
+      "L_before": 23.9,
+      "L_after": 6.4,
+      "dL": 17.5,
+      "before_E": 0.431,
+      "drop_E": 0.815
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0357,
+      "drop_Y": 0.802,
+      "L_before": 22.2,
+      "L_after": 6.4,
+      "dL": 15.8,
+      "before_E": 0.39,
+      "drop_E": 0.795
+     }
+    ],
+    "worst_drop_Y": 0.802,
+    "worst_drop_E": 0.795,
+    "min_dL": 15.8
+   }
+  }
+ },
+ "H": {
+  "board_px": 85531,
+  "after_Y": 0.01580989360809326,
+  "after_E": 0.07547067850828171,
+  "cfgs": {
+   "spec": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.046,
+      "drop_Y": 0.657,
+      "L_before": 25.6,
+      "L_after": 13.1,
+      "dL": 12.5,
+      "before_E": 0.352,
+      "drop_E": 0.786
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0852,
+      "drop_Y": 0.814,
+      "L_before": 35.0,
+      "L_after": 13.1,
+      "dL": 21.9,
+      "before_E": 0.634,
+      "drop_E": 0.881
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0505,
+      "drop_Y": 0.687,
+      "L_before": 26.9,
+      "L_after": 13.1,
+      "dL": 13.8,
+      "before_E": 0.375,
+      "drop_E": 0.799
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0446,
+      "drop_Y": 0.645,
+      "L_before": 25.1,
+      "L_after": 13.1,
+      "dL": 12.0,
+      "before_E": 0.341,
+      "drop_E": 0.779
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0212,
+      "drop_Y": 0.255,
+      "L_before": 16.1,
+      "L_after": 13.1,
+      "dL": 3.0,
+      "before_E": 0.14,
+      "drop_E": 0.46
+     }
+    ],
+    "worst_drop_Y": 0.255,
+    "worst_drop_E": 0.46,
+    "min_dL": 3.0
+   },
+   "k4_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0464,
+      "drop_Y": 0.66,
+      "L_before": 25.7,
+      "L_after": 13.1,
+      "dL": 12.6,
+      "before_E": 0.355,
+      "drop_E": 0.787
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0658,
+      "drop_Y": 0.76,
+      "L_before": 30.8,
+      "L_after": 13.1,
+      "dL": 17.7,
+      "before_E": 0.498,
+      "drop_E": 0.849
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0435,
+      "drop_Y": 0.637,
+      "L_before": 24.8,
+      "L_after": 13.1,
+      "dL": 11.7,
+      "before_E": 0.324,
+      "drop_E": 0.767
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0467,
+      "drop_Y": 0.661,
+      "L_before": 25.8,
+      "L_after": 13.1,
+      "dL": 12.7,
+      "before_E": 0.357,
+      "drop_E": 0.789
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0361,
+      "drop_Y": 0.562,
+      "L_before": 22.3,
+      "L_after": 13.1,
+      "dL": 9.2,
+      "before_E": 0.275,
+      "drop_E": 0.725
+     }
+    ],
+    "worst_drop_Y": 0.562,
+    "worst_drop_E": 0.725,
+    "min_dL": 9.2
+   },
+   "k4_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0464,
+      "drop_Y": 0.66,
+      "L_before": 25.7,
+      "L_after": 13.1,
+      "dL": 12.6,
+      "before_E": 0.355,
+      "drop_E": 0.787
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0658,
+      "drop_Y": 0.76,
+      "L_before": 30.8,
+      "L_after": 13.1,
+      "dL": 17.7,
+      "before_E": 0.498,
+      "drop_E": 0.849
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0435,
+      "drop_Y": 0.637,
+      "L_before": 24.8,
+      "L_after": 13.1,
+      "dL": 11.7,
+      "before_E": 0.324,
+      "drop_E": 0.767
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0467,
+      "drop_Y": 0.661,
+      "L_before": 25.8,
+      "L_after": 13.1,
+      "dL": 12.7,
+      "before_E": 0.357,
+      "drop_E": 0.789
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0419,
+      "drop_Y": 0.623,
+      "L_before": 24.3,
+      "L_after": 13.1,
+      "dL": 11.2,
+      "before_E": 0.324,
+      "drop_E": 0.767
+     }
+    ],
+    "worst_drop_Y": 0.623,
+    "worst_drop_E": 0.767,
+    "min_dL": 11.2
+   },
+   "k5_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0554,
+      "drop_Y": 0.714,
+      "L_before": 28.2,
+      "L_after": 13.1,
+      "dL": 15.1,
+      "before_E": 0.425,
+      "drop_E": 0.822
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0805,
+      "drop_Y": 0.804,
+      "L_before": 34.1,
+      "L_after": 13.1,
+      "dL": 21.0,
+      "before_E": 0.604,
+      "drop_E": 0.875
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0514,
+      "drop_Y": 0.693,
+      "L_before": 27.1,
+      "L_after": 13.1,
+      "dL": 14.0,
+      "before_E": 0.386,
+      "drop_E": 0.805
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0557,
+      "drop_Y": 0.716,
+      "L_before": 28.3,
+      "L_after": 13.1,
+      "dL": 15.2,
+      "before_E": 0.428,
+      "drop_E": 0.823
+     },
+     {
+      "card": 5,
+      "before_Y": 0.042,
+      "drop_Y": 0.624,
+      "L_before": 24.3,
+      "L_after": 13.1,
+      "dL": 11.2,
+      "before_E": 0.325,
+      "drop_E": 0.768
+     }
+    ],
+    "worst_drop_Y": 0.624,
+    "worst_drop_E": 0.768,
+    "min_dL": 11.2
+   },
+   "k5_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0554,
+      "drop_Y": 0.714,
+      "L_before": 28.2,
+      "L_after": 13.1,
+      "dL": 15.1,
+      "before_E": 0.425,
+      "drop_E": 0.822
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0805,
+      "drop_Y": 0.804,
+      "L_before": 34.1,
+      "L_after": 13.1,
+      "dL": 21.0,
+      "before_E": 0.604,
+      "drop_E": 0.875
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0514,
+      "drop_Y": 0.693,
+      "L_before": 27.1,
+      "L_after": 13.1,
+      "dL": 14.0,
+      "before_E": 0.386,
+      "drop_E": 0.805
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0557,
+      "drop_Y": 0.716,
+      "L_before": 28.3,
+      "L_after": 13.1,
+      "dL": 15.2,
+      "before_E": 0.428,
+      "drop_E": 0.823
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0495,
+      "drop_Y": 0.681,
+      "L_before": 26.6,
+      "L_after": 13.1,
+      "dL": 13.5,
+      "before_E": 0.386,
+      "drop_E": 0.805
+     }
+    ],
+    "worst_drop_Y": 0.681,
+    "worst_drop_E": 0.805,
+    "min_dL": 13.5
+   },
+   "k6_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0647,
+      "drop_Y": 0.755,
+      "L_before": 30.6,
+      "L_after": 13.1,
+      "dL": 17.4,
+      "before_E": 0.494,
+      "drop_E": 0.847
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0955,
+      "drop_Y": 0.834,
+      "L_before": 37.0,
+      "L_after": 13.1,
+      "dL": 23.9,
+      "before_E": 0.71,
+      "drop_E": 0.894
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0597,
+      "drop_Y": 0.735,
+      "L_before": 29.3,
+      "L_after": 13.1,
+      "dL": 16.2,
+      "before_E": 0.449,
+      "drop_E": 0.832
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0651,
+      "drop_Y": 0.757,
+      "L_before": 30.7,
+      "L_after": 13.1,
+      "dL": 17.5,
+      "before_E": 0.498,
+      "drop_E": 0.848
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0481,
+      "drop_Y": 0.671,
+      "L_before": 26.2,
+      "L_after": 13.1,
+      "dL": 13.1,
+      "before_E": 0.375,
+      "drop_E": 0.799
+     }
+    ],
+    "worst_drop_Y": 0.671,
+    "worst_drop_E": 0.799,
+    "min_dL": 13.1
+   },
+   "k6_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0647,
+      "drop_Y": 0.755,
+      "L_before": 30.6,
+      "L_after": 13.1,
+      "dL": 17.4,
+      "before_E": 0.494,
+      "drop_E": 0.847
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0955,
+      "drop_Y": 0.834,
+      "L_before": 37.0,
+      "L_after": 13.1,
+      "dL": 23.9,
+      "before_E": 0.71,
+      "drop_E": 0.894
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0597,
+      "drop_Y": 0.735,
+      "L_before": 29.3,
+      "L_after": 13.1,
+      "dL": 16.2,
+      "before_E": 0.449,
+      "drop_E": 0.832
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0651,
+      "drop_Y": 0.757,
+      "L_before": 30.7,
+      "L_after": 13.1,
+      "dL": 17.5,
+      "before_E": 0.498,
+      "drop_E": 0.848
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0575,
+      "drop_Y": 0.725,
+      "L_before": 28.8,
+      "L_after": 13.1,
+      "dL": 15.7,
+      "before_E": 0.448,
+      "drop_E": 0.832
+     }
+    ],
+    "worst_drop_Y": 0.725,
+    "worst_drop_E": 0.832,
+    "min_dL": 15.7
+   }
+  }
+ },
+ "Wp4": {
+  "board_px": 79292,
+  "after_Y": 0.017267871648073196,
+  "after_E": 0.0807485282421112,
+  "cfgs": {
+   "spec": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0487,
+      "drop_Y": 0.645,
+      "L_before": 26.4,
+      "L_after": 14.0,
+      "dL": 12.4,
+      "before_E": 0.371,
+      "drop_E": 0.783
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0891,
+      "drop_Y": 0.806,
+      "L_before": 35.8,
+      "L_after": 14.0,
+      "dL": 21.8,
+      "before_E": 0.667,
+      "drop_E": 0.879
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0533,
+      "drop_Y": 0.676,
+      "L_before": 27.6,
+      "L_after": 14.0,
+      "dL": 13.7,
+      "before_E": 0.395,
+      "drop_E": 0.796
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0472,
+      "drop_Y": 0.634,
+      "L_before": 25.9,
+      "L_after": 14.0,
+      "dL": 11.9,
+      "before_E": 0.36,
+      "drop_E": 0.776
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0229,
+      "drop_Y": 0.246,
+      "L_before": 16.9,
+      "L_after": 14.0,
+      "dL": 3.0,
+      "before_E": 0.148,
+      "drop_E": 0.455
+     }
+    ],
+    "worst_drop_Y": 0.246,
+    "worst_drop_E": 0.455,
+    "min_dL": 3.0
+   },
+   "k4_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0502,
+      "drop_Y": 0.656,
+      "L_before": 26.8,
+      "L_after": 14.0,
+      "dL": 12.8,
+      "before_E": 0.383,
+      "drop_E": 0.789
+     },
+     {
+      "card": 2,
+      "before_Y": 0.071,
+      "drop_Y": 0.757,
+      "L_before": 32.0,
+      "L_after": 14.0,
+      "dL": 18.0,
+      "before_E": 0.538,
+      "drop_E": 0.85
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0471,
+      "drop_Y": 0.633,
+      "L_before": 25.9,
+      "L_after": 14.0,
+      "dL": 11.9,
+      "before_E": 0.35,
+      "drop_E": 0.769
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0505,
+      "drop_Y": 0.658,
+      "L_before": 26.9,
+      "L_after": 14.0,
+      "dL": 12.9,
+      "before_E": 0.386,
+      "drop_E": 0.791
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0391,
+      "drop_Y": 0.558,
+      "L_before": 23.4,
+      "L_after": 14.0,
+      "dL": 9.4,
+      "before_E": 0.297,
+      "drop_E": 0.728
+     }
+    ],
+    "worst_drop_Y": 0.558,
+    "worst_drop_E": 0.728,
+    "min_dL": 9.4
+   },
+   "k4_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0502,
+      "drop_Y": 0.656,
+      "L_before": 26.8,
+      "L_after": 14.0,
+      "dL": 12.8,
+      "before_E": 0.383,
+      "drop_E": 0.789
+     },
+     {
+      "card": 2,
+      "before_Y": 0.071,
+      "drop_Y": 0.757,
+      "L_before": 32.0,
+      "L_after": 14.0,
+      "dL": 18.0,
+      "before_E": 0.538,
+      "drop_E": 0.85
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0471,
+      "drop_Y": 0.633,
+      "L_before": 25.9,
+      "L_after": 14.0,
+      "dL": 11.9,
+      "before_E": 0.35,
+      "drop_E": 0.769
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0505,
+      "drop_Y": 0.658,
+      "L_before": 26.9,
+      "L_after": 14.0,
+      "dL": 12.9,
+      "before_E": 0.386,
+      "drop_E": 0.791
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0454,
+      "drop_Y": 0.619,
+      "L_before": 25.4,
+      "L_after": 14.0,
+      "dL": 11.4,
+      "before_E": 0.35,
+      "drop_E": 0.769
+     }
+    ],
+    "worst_drop_Y": 0.619,
+    "worst_drop_E": 0.769,
+    "min_dL": 11.4
+   },
+   "k5_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0598,
+      "drop_Y": 0.711,
+      "L_before": 29.4,
+      "L_after": 14.0,
+      "dL": 15.4,
+      "before_E": 0.459,
+      "drop_E": 0.824
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0867,
+      "drop_Y": 0.801,
+      "L_before": 35.3,
+      "L_after": 14.0,
+      "dL": 21.4,
+      "before_E": 0.653,
+      "drop_E": 0.876
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0556,
+      "drop_Y": 0.689,
+      "L_before": 28.3,
+      "L_after": 14.0,
+      "dL": 14.3,
+      "before_E": 0.417,
+      "drop_E": 0.806
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0602,
+      "drop_Y": 0.713,
+      "L_before": 29.5,
+      "L_after": 14.0,
+      "dL": 15.5,
+      "before_E": 0.462,
+      "drop_E": 0.825
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0455,
+      "drop_Y": 0.62,
+      "L_before": 25.4,
+      "L_after": 14.0,
+      "dL": 11.4,
+      "before_E": 0.351,
+      "drop_E": 0.77
+     }
+    ],
+    "worst_drop_Y": 0.62,
+    "worst_drop_E": 0.77,
+    "min_dL": 11.4
+   },
+   "k5_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0598,
+      "drop_Y": 0.711,
+      "L_before": 29.4,
+      "L_after": 14.0,
+      "dL": 15.4,
+      "before_E": 0.459,
+      "drop_E": 0.824
+     },
+     {
+      "card": 2,
+      "before_Y": 0.0867,
+      "drop_Y": 0.801,
+      "L_before": 35.3,
+      "L_after": 14.0,
+      "dL": 21.4,
+      "before_E": 0.653,
+      "drop_E": 0.876
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0556,
+      "drop_Y": 0.689,
+      "L_before": 28.3,
+      "L_after": 14.0,
+      "dL": 14.3,
+      "before_E": 0.417,
+      "drop_E": 0.806
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0602,
+      "drop_Y": 0.713,
+      "L_before": 29.5,
+      "L_after": 14.0,
+      "dL": 15.5,
+      "before_E": 0.462,
+      "drop_E": 0.825
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0536,
+      "drop_Y": 0.678,
+      "L_before": 27.7,
+      "L_after": 14.0,
+      "dL": 13.8,
+      "before_E": 0.417,
+      "drop_E": 0.806
+     }
+    ],
+    "worst_drop_Y": 0.678,
+    "worst_drop_E": 0.806,
+    "min_dL": 13.8
+   },
+   "k6_f0.65": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0697,
+      "drop_Y": 0.752,
+      "L_before": 31.7,
+      "L_after": 14.0,
+      "dL": 17.8,
+      "before_E": 0.534,
+      "drop_E": 0.849
+     },
+     {
+      "card": 2,
+      "before_Y": 0.1026,
+      "drop_Y": 0.832,
+      "L_before": 38.3,
+      "L_after": 14.0,
+      "dL": 24.3,
+      "before_E": 0.767,
+      "drop_E": 0.895
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0644,
+      "drop_Y": 0.732,
+      "L_before": 30.5,
+      "L_after": 14.0,
+      "dL": 16.5,
+      "before_E": 0.485,
+      "drop_E": 0.833
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0702,
+      "drop_Y": 0.754,
+      "L_before": 31.8,
+      "L_after": 14.0,
+      "dL": 17.9,
+      "before_E": 0.538,
+      "drop_E": 0.85
+     },
+     {
+      "card": 5,
+      "before_Y": 0.052,
+      "drop_Y": 0.668,
+      "L_before": 27.3,
+      "L_after": 14.0,
+      "dL": 13.3,
+      "before_E": 0.405,
+      "drop_E": 0.8
+     }
+    ],
+    "worst_drop_Y": 0.668,
+    "worst_drop_E": 0.8,
+    "min_dL": 13.3
+   },
+   "k6_f0.81": {
+    "rows": [
+     {
+      "card": 1,
+      "before_Y": 0.0697,
+      "drop_Y": 0.752,
+      "L_before": 31.7,
+      "L_after": 14.0,
+      "dL": 17.8,
+      "before_E": 0.534,
+      "drop_E": 0.849
+     },
+     {
+      "card": 2,
+      "before_Y": 0.1027,
+      "drop_Y": 0.832,
+      "L_before": 38.3,
+      "L_after": 14.0,
+      "dL": 24.3,
+      "before_E": 0.767,
+      "drop_E": 0.895
+     },
+     {
+      "card": 3,
+      "before_Y": 0.0644,
+      "drop_Y": 0.732,
+      "L_before": 30.5,
+      "L_after": 14.0,
+      "dL": 16.5,
+      "before_E": 0.485,
+      "drop_E": 0.833
+     },
+     {
+      "card": 4,
+      "before_Y": 0.0702,
+      "drop_Y": 0.754,
+      "L_before": 31.8,
+      "L_after": 14.0,
+      "dL": 17.9,
+      "before_E": 0.538,
+      "drop_E": 0.85
+     },
+     {
+      "card": 5,
+      "before_Y": 0.0621,
+      "drop_Y": 0.722,
+      "L_before": 29.9,
+      "L_after": 14.0,
+      "dL": 16.0,
+      "before_E": 0.484,
+      "drop_E": 0.833
+     }
+    ],
+    "worst_drop_Y": 0.722,
+    "worst_drop_E": 0.833,
+    "min_dL": 16.0
+   }
+  }
+ }
+}

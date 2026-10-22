@@ -202,6 +202,15 @@ The visual chat is building the Red-approved placard with an InkShape glyph lege
 5. **Sequenced motion (common fate).** Elements change one after another in the route direction, so the motion itself flows toward the exit.
 
 ### 9.2 Geometry, measured from `hard_edge.py`
+
+> **Superseded on 2026-10-22: the motion is A + M4 + V1 (C31).** Red picked "M4 + V1" in the 动画和动态图形模型技术 chat at 15:05 PDT, after watching all twelve in-game combination previews (relayed by that line; not verified in its transcript here).
+> - **A:** every arrow on a route wall turns to point along the route, fitted to its field. It is not one guide row.
+> - **M4:** the turn ratchets in three 30° clicks (states 1–3).
+> - **V1:** the rows then step along the route on two speed systems, every other row sharing one. Six clicks of 0.25 s is one 750 mm roll.
+> - The binding spec is `research/cue_driver/CUE_DRIVER_INTERFACE.md` §1 (states, direction set, cell lookup) and §6 (`FrontRoomsCueTiming`). The pursuit rules are RELAY §9.6.
+> - §9.1's Gestalt rules still explain why it reads as a line: one shape, one direction, sequenced motion, stripes as rails. **§9.2's single-row geometry, the half-drop "slip", and §9.3's two beats (align, then turn) are history.** So is §9.4's HERE/STOP, which is not in v1 (`30_narrative_phosphor.md` rev 4 §1.1).
+> - §9.6's reserved vocabulary still holds.
+
 - **The piece that turns** is the **grey band of the lower chevron** (64 mm), as in Red's mock.
   - Turned, it is 211.6 mm wide against a 206.7 mm field: it fits edge to edge, with about 2.5 mm trimmed by each hairline.
   - The lower chevron's cream band is absorbed, as in the mock.
@@ -217,6 +226,9 @@ The visual chat is building the Red-approved placard with an InkShape glyph lege
 - **The line:** one grey arrow per field, at a 375 mm pitch, 8 per 3 m wall, about 55 % filled. At 10 m an arrow is about 14 px; the row still reads at 20 m as a broken horizontal band with a direction.
 
 ### 9.3 Choreography (revised: two quantized beats)
+
+> **Superseded on 2026-10-22 by A + M4 + V1 (C31): see the note at the top of §9.2.** The text below is the 10-03 design, kept as history.
+
 
 **Prototype finding (2026-10-03):** a 45° intermediate, clipped by the field hairlines, reads as a stray "7" shape. It is cut. The change is now two beats: **align**, then **turn**.
 - **Beat 1, flicker 1:** unit-1 field contents jump up one half-drop, and the whole wall snaps from half-drop to straight match. The aligned grid is already a cue.

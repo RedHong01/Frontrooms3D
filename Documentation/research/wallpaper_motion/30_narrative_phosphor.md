@@ -24,7 +24,7 @@ Status: **revision 4, 2026-10-22, 叙事设计.** EGRESS stays the direction. Re
 |---|---|
 | 2026-10-03 (relayed by the wallpaper-print chat) | Direction **EGRESS**. All Relay state text hidden from the HUD (assist toggle only). Chase wave on CHASE only. Visible paper WP03 "Hard edge" (55°). The warning is staged (your lamps, steps, lock-on). Placard YES (Q10). Q11 accepted. EAR kept for later (Q8). Forged FLOW ON: **retired 2026-10-22** |
 | 2026-10-03/04 (this line's chat) | Pattern-native cues replace the overlay glyphs: "希望类似于墙纸本身的pattern内部的graphical elements发生了motion transition（形变，旋转，位置移动）". GN07–GN09 replaced ("渲完直接放进figma替换GN07到GN09") |
-| 2026-10-07 (C08, systems.json) | Build the arrows: scale-fit A, staggered V1, a 30° ratchet, **no dark gate**, WebGL turns only. The motion was re-opened on 2026-10-22 (C31, open: "再看一次其他方案") |
+| 2026-10-07 (C08, systems.json) | Build the arrows: scale-fit A, staggered V1, a 30° ratchet, **no dark gate**, WebGL turns only. The motion was re-opened on 2026-10-22 (C31: "再看一次其他方案") and **decided the same day at 15:05: A + M4 + V1** (Red, after all twelve in-game previews, in the 动画和动态图形模型技术 chat) |
 | 2026-10-21/22 (系统设计 and others; systems.json) | C22: an EXIT per floor, a stair one floor down. C24 = A + A20: the arrows point at the station until the floor key is taken, then at the EXIT. C32: Floor 1's first dispatch arrives 1 s after the take, 22–30 m away |
 | 2026-10-22 12:15 (叙事设计 chat) | "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）": forged FLOW retired (C29); scratch-throughs cut; no T4 figure layer; floors `LEVEL 0`, `B1`, `B2`… (C28); the placard line `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.`; CAUGHT + `OCCUPANT ACCOUNTED FOR` |
 | 2026-10-22 12:34 (叙事设计 chat) | "Q4 保持 B：墙不发光": **the walls never glow.** Given after Red was told that glow A no longer hid the cue (VL350), so B stands for cost and simplicity |
@@ -388,7 +388,7 @@ None open. Answered on 2026-10-22 in the 叙事设计 chat:
 - revision 3's frozen strings (A.11) and the M9 scratch lines: moot, cut with the overlay (12:15);
 - the wall glow: B, the walls never glow (12:34).
 
-Still open elsewhere: the cue motion pick (C31, the wallpaper line asks Red in its own chat). It does not change this document: the fiction only needs the bands to turn and step.
+The cue motion pick is now decided: **C31 = A + M4 + V1** (Red, 2026-10-22 15:05, in the 动画和动态图形模型技术 chat). It changes nothing here: the fiction only needs the bands to turn and step, and A + M4 + V1 turns them in three clicks, then steps them.
 
 ## 8. Not done / limits
 

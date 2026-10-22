@@ -7,6 +7,10 @@ namespace
 {
 uint64_t Align(uint64_t v, uint64_t a) { return (v + a - 1) / a * a; }
 
+// streamed-mesh BLAS budget per event (render thread reads, harness may set it from the main thread)
+std::atomic<uint32_t> g_StreamTriangles{ FRGlassRTScene::kStreamTrianglesPerFrame };
+std::atomic<uint32_t> g_StreamBuilds{ FRGlassRTScene::kStreamBuildsPerFrame };
+
 id<MTLTexture> MakeDefault(id<MTLDevice> device, uint8_t r, uint8_t g, uint8_t b, uint8_t a, NSString* label)
 {
     MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:1 height:1 mipmapped:NO];
@@ -35,6 +39,12 @@ void InvertRows(const float4& r0, const float4& r1, const float4& r2, float4& o0
     o1 = simd_make_float4((float)m10, (float)m11, (float)m12, (float)-(m10 * tx + m11 * ty + m12 * tz));
     o2 = simd_make_float4((float)m20, (float)m21, (float)m22, (float)-(m20 * tx + m21 * ty + m22 * tz));
 }
+}
+
+void FRGlassRTScene::SetStreamBudget(uint32_t triangles, uint32_t builds)
+{
+    g_StreamTriangles.store(std::max<uint32_t>(triangles, 1));
+    g_StreamBuilds.store(std::max<uint32_t>(builds, 1));
 }
 
 bool FRGlassRTScene::Init(id<MTLDevice> dev, std::string& error)
@@ -81,7 +91,7 @@ bool FRGlassRTScene::Init(id<MTLDevice> dev, std::string& error)
 void FRGlassRTScene::Shutdown()
 {
     meshes.clear(); pending.clear(); retired.clear(); retiredEntries.clear(); textures.clear();
-    resident.clear(); residentList.clear();
+    resident.clear(); residentList.clear(); bufferRefs.clear();
     residencySet = nil; meshTable = nil; materialTable = nil; textureTable = nil; buildScratch = nil;
     for (auto& d : defaults) d = nil;
     std::lock_guard<std::mutex> lock(stateMutex);
@@ -137,8 +147,12 @@ void FRGlassRTScene::UseResources(id<MTLComputeCommandEncoder> enc)
 void FRGlassRTScene::Retire(id object, uint64_t serial, uint32_t meshSlot)
 {
     if (!object && meshSlot == UINT32_MAX) return;
+    if (object && [object conformsToProtocol:@protocol(MTLAccelerationStructure)]) asGeneration++;
     retired.push_back({ serial, object, meshSlot });
 }
+
+namespace { std::atomic<int> g_TlasReuse{ 1 }; }
+void FRGlassRTScene::SetTlasReuse(bool on) { g_TlasReuse.store(on ? 1 : 0); }
 
 void FRGlassRTScene::Purge(uint64_t doneSerial)
 {
@@ -149,6 +163,10 @@ void FRGlassRTScene::Purge(uint64_t doneSerial)
         if (x.serial <= doneSerial)
         {
             if (x.meshSlot != UINT32_MAX) freeSlots.push_back(x.meshSlot);
+            // a geometry page that new meshes reference again since it was retired stays resident and counted
+            if (x.object && bufferRefs.find((__bridge void*)x.object) != bufferRefs.end()) continue;
+            // so does a texture that a slot holds again (a Reset retired it, the next session registered it again)
+            if (x.object && [x.object conformsToProtocol:@protocol(MTLTexture)] && std::find(textures.begin(), textures.end(), (id<MTLTexture>)x.object) != textures.end()) continue;
             if (x.object) ResidencyRemove(x.object);
             if (x.object && [x.object conformsToProtocol:@protocol(MTLAccelerationStructure)])
             {
@@ -179,8 +197,14 @@ void FRGlassRTScene::WriteSlot(uint32_t slot, const FRMeshEntry& e, bool alt)
 {
     if (slot >= kMaxMeshSlots) return;
     FRMeshGPU g{};
-    uint64_t base = e.buffer.gpuAddress;
-    g.positions = alt && e.altPositions ? e.altPositions.gpuAddress : base;
+    uint64_t base = 0, altBase = 0;
+    if (@available(macOS 13.0, *))   // gpuAddress (macOS 13); the scene exists only on macOS 14+ (Init)
+    {
+        base = e.buffer.gpuAddress;
+        altBase = alt && e.altPositions ? e.altPositions.gpuAddress : 0;
+    }
+    else return;
+    g.positions = alt && e.altPositions ? altBase : base + e.posOffset;
     g.attrs = base + e.attrOffset;
     g.indices = base + e.indexOffset;
     g.submeshStart = base + e.subOffset;
@@ -207,6 +231,7 @@ void FRGlassRTScene::AddMesh(std::unique_ptr<FRMeshUpload> u, uint64_t serial)
     auto e = std::make_unique<FRMeshEntry>();
     e->key = u->key;
     e->buffer = u->buffer;
+    e->posOffset = u->posOffset;
     e->vertexCount = u->vertexCount;
     e->indexCount = u->indexCount;
     e->attrOffset = u->attrOffset;
@@ -215,6 +240,7 @@ void FRGlassRTScene::AddMesh(std::unique_ptr<FRMeshUpload> u, uint64_t serial)
     e->subStart = u->subStart;
     e->subCount = u->subCount;
     e->deforming = u->deforming;
+    e->range = u->range;
     e->notBeforeFrame = u->notBeforeFrame;
     uint32_t tris = 0;
     for (uint32_t c : e->subCount) tris += c / 3;
@@ -225,7 +251,7 @@ void FRGlassRTScene::AddMesh(std::unique_ptr<FRMeshUpload> u, uint64_t serial)
     {
         e->slotAlt = AllocSlot();
         e->altPositions = [device newBufferWithLength:std::max<uint64_t>(12ull * e->vertexCount, 16) options:MTLResourceStorageModeShared];
-        std::memcpy(e->altPositions.contents, e->buffer.contents, 12ull * e->vertexCount);
+        std::memcpy(e->altPositions.contents, (const uint8_t*)e->buffer.contents + e->posOffset, 12ull * e->vertexCount);
         ResidencyAdd(e->altPositions);
         WriteSlot(e->slotAlt, *e, true);
     }
@@ -240,6 +266,7 @@ void FRGlassRTScene::AddMesh(std::unique_ptr<FRMeshUpload> u, uint64_t serial)
     WriteSlot(e->slot, *e, false);
     if (resident.find((__bridge void*)e->buffer) == resident.end()) geometryBytes += e->buffer.length;
     ResidencyAdd(e->buffer);
+    bufferRefs[(__bridge void*)e->buffer]++;
     e->state = FRMeshEntry::Pending;
     pending.push_back(e.get());
     {
@@ -259,11 +286,13 @@ void FRGlassRTScene::ReleaseMesh(int32_t key, uint64_t serial)
     Retire(e->blasAlt, serial);
     Retire(e->compactTarget, serial);
     Retire(e->altPositions, serial);
-    // a shared range buffer is retired by its last range (the retire list drops the residency entry at purge;
-    // other ranges still reference the buffer object, so ARC keeps it alive until they go too)
-    bool shared = false;
-    for (auto& m : meshes) if (m && m.get() != e && m->buffer == e->buffer) { shared = true; break; }
-    if (!shared) Retire(e->buffer, serial);
+    // a shared buffer (geometry page, fracture ranges) is retired by its last mesh (reference count; run 8 scanned
+    // every mesh here, O(n) per release)
+    {
+        auto it = bufferRefs.find((__bridge void*)e->buffer);
+        if (it == bufferRefs.end()) Retire(e->buffer, serial);
+        else if (--it->second == 0) { bufferRefs.erase(it); Retire(e->buffer, serial); }
+    }
     Retire(nil, serial, e->slot);
     if (e->deforming) Retire(nil, serial, e->slotAlt);
     {
@@ -293,8 +322,11 @@ void FRGlassRTScene::SetTexture(uint32_t slot, id<MTLTexture> texture, uint64_t 
     if (old && old != defaults[0]) Retire(old, serial);
     id<MTLTexture> t = texture ? texture : defaults[0];
     textures[slot] = t;
-    MTLResourceID rid = t.gpuResourceID;
-    std::memcpy(&((FRTexSlot*)textureTable.contents)[slot].tex, &rid, 8);
+    if (@available(macOS 13.0, *))   // gpuResourceID (macOS 13); the scene exists only on macOS 14+ (Init)
+    {
+        MTLResourceID rid = t.gpuResourceID;
+        std::memcpy(&((FRTexSlot*)textureTable.contents)[slot].tex, &rid, 8);
+    }
     ResidencyAdd(t);
 }
 
@@ -307,8 +339,24 @@ void FRGlassRTScene::SetMaterials(uint32_t first, const std::vector<FRMaterial>&
 
 void FRGlassRTScene::Reset(uint64_t serial)
 {
+    asGeneration++;
     for (size_t k = 0; k < meshes.size(); k++) if (meshes[k]) ReleaseMesh((int32_t)k, serial);
     pending.clear();
+    // the texture table too (codex audit F4): it retained the session's Unity textures until a later SetTexture
+    // replaced each slot; slots return to the white default (C# re-registers textures from slot 4 after a reset)
+    if (!textureTable) return;   // never initialised (a Mac that cannot trace)
+    if (@available(macOS 13.0, *))   // gpuResourceID (macOS 13); the scene exists only on macOS 14+ (Init)
+    {
+        FRTexSlot* slots = (FRTexSlot*)textureTable.contents;
+        MTLResourceID white = defaults[0].gpuResourceID;
+        for (uint32_t s = 4; s < (uint32_t)textures.size(); s++)
+        {
+            if (!textures[s] || textures[s] == defaults[0]) continue;
+            Retire(textures[s], serial);
+            textures[s] = defaults[0];
+            std::memcpy(&slots[s].tex, &white, 8);
+        }
+    }
 }
 
 void FRGlassRTScene::CompleteCompaction(int32_t key, uint64_t size)
@@ -341,7 +389,7 @@ MTLPrimitiveAccelerationStructureDescriptor* FRGlassRTScene::Describe(const FRMe
     {
         MTLAccelerationStructureTriangleGeometryDescriptor* g = [MTLAccelerationStructureTriangleGeometryDescriptor descriptor];
         g.vertexBuffer = positions;
-        g.vertexBufferOffset = 0;
+        g.vertexBufferOffset = positions == e.buffer ? e.posOffset : 0;
         g.vertexStride = 12;
         g.vertexFormat = MTLAttributeFormatFloat3;
         g.indexBuffer = e.buffer;
@@ -372,7 +420,7 @@ void FRGlassRTScene::EncodeGathers(id<MTLCommandBuffer> cb, id<MTLComputePipelin
         [enc setComputePipelineState:vtx];
         [enc setBytes:&e->gatherVertexArgs length:sizeof(FRGatherVertexArgsCPU) atIndex:0];
         for (int s = 0; s < 4; s++) [enc setBuffer:(e->gatherStreams[s] ? e->gatherStreams[s] : any) offset:0 atIndex:1 + s];
-        [enc setBuffer:e->buffer offset:0 atIndex:5];
+        [enc setBuffer:e->buffer offset:e->posOffset atIndex:5];
         [enc setBuffer:e->buffer offset:e->attrOffset atIndex:6];
         [enc dispatchThreads:MTLSizeMake(e->vertexCount, 1, 1) threadsPerThreadgroup:MTLSizeMake(64, 1, 1)];
         [enc setComputePipelineState:idx];
@@ -397,10 +445,11 @@ int FRGlassRTScene::EncodeAccelerationStructures(id<MTLCommandBuffer> cb, FRCame
                                                  const std::vector<FRLamp>& lamps, int32_t frame, uint64_t serial, uint64_t doneSerial,
                                                  id<MTLFence> fence, id<MTLCounterSampleBuffer> counters, uint32_t sampleBase,
                                                  id<MTLBuffer> compactSizes, std::vector<std::pair<int32_t, uint32_t>>& compactQueries,
-                                                 uint32_t& instanceCountOut, bool& ringBusy)
+                                                 uint32_t& instanceCountOut, bool& ringBusy, int& tlasSlotOut)
 {
     instanceCountOut = 0;
     ringBusy = false;
+    tlasSlotOut = -1;
     lastBuilds = 0;
     lastTriangles = 0;
 
@@ -419,17 +468,30 @@ int FRGlassRTScene::EncodeAccelerationStructures(id<MTLCommandBuffer> cb, FRCame
         meshState[e->key] = FRMeshEntry::Compacted;
     }
 
-    // ---- choose this event's BLAS builds (budget ~50k triangles, at least one)
+    // ---- choose this event's BLAS builds. Fracture pieces first (their own budget: <= 50k triangles and <= 24 builds,
+    // <= ~2 ms GPU, P0-A13), then streamed meshes within the stream budget (E8: <= ~1 ms; at least one per event).
     std::vector<FRMeshEntry*> builds;
-    uint32_t budget = kTrianglesPerFrame;
-    for (FRMeshEntry* e : pending)
     {
-        if (e->gatherPending) continue;
-        if (e->notBeforeFrame > frame) continue;
-        if (!builds.empty() && e->triangles > budget) break;
-        builds.push_back(e);
-        budget = e->triangles >= budget ? 0 : budget - e->triangles;
-        if (budget == 0 || builds.size() >= 64) break;   // ≤ 50k triangles and ≤ 64 builds per frame (~≤ 1 ms GPU)
+        uint32_t budget = kTrianglesPerFrame;
+        for (FRMeshEntry* e : pending)
+        {
+            if (!e->range || e->gatherPending || e->notBeforeFrame > frame) continue;
+            if (!builds.empty() && e->triangles > budget) break;
+            builds.push_back(e);
+            budget = e->triangles >= budget ? 0 : budget - e->triangles;
+            if (budget == 0 || builds.size() >= kBuildsPerFrame) break;
+        }
+        uint32_t streamTris = g_StreamTriangles.load(), streamBuilds = g_StreamBuilds.load();
+        size_t streamed = 0;
+        for (FRMeshEntry* e : pending)
+        {
+            if (e->range || e->gatherPending || e->notBeforeFrame > frame) continue;
+            if (streamed > 0 && e->triangles > streamTris) break;
+            builds.push_back(e);
+            streamed++;
+            streamTris = e->triangles >= streamTris ? 0 : streamTris - e->triangles;
+            if (streamTris == 0 || streamed >= streamBuilds) break;
+        }
     }
     std::vector<MTLPrimitiveAccelerationStructureDescriptor*> descs;
     std::vector<MTLAccelerationStructureSizes> sizes;
@@ -466,9 +528,19 @@ int FRGlassRTScene::EncodeAccelerationStructures(id<MTLCommandBuffer> cb, FRCame
     }
 
     // ---- this camera's TLAS ring slot
-    FRCameraState::Slot& slot = cam.slots[cam.next];
-    bool slotFree = slot.serial <= doneSerial;
+    // first free slot of the ring from cam.next, other than the TLAS owner (its descriptors are what a reuse compares
+    // against); grow the ring before ever reusing an older slot's data; the owner itself only as the last free choice
+    uint32_t pick = cam.next % cam.ringSize;
+    bool slotFree = false;
+    for (uint32_t k = 0; k < cam.ringSize; k++)
+    {
+        uint32_t s = (cam.next + k) % cam.ringSize;
+        if (cam.slots[s].serial <= doneSerial && (int32_t)s != cam.tlasOwner) { pick = s; slotFree = true; break; }
+    }
+    if (!slotFree && cam.ringSize < 8) { pick = cam.ringSize++; slotFree = true; }
+    if (!slotFree && cam.tlasOwner >= 0 && cam.slots[cam.tlasOwner].serial <= doneSerial) { pick = (uint32_t)cam.tlasOwner; slotFree = true; }
     if (!slotFree) ringBusy = true;
+    FRCameraState::Slot& slot = cam.slots[pick];
 
     MTLAccelerationStructurePassDescriptor* pass = [MTLAccelerationStructurePassDescriptor accelerationStructurePassDescriptor];
     if (counters)
@@ -539,10 +611,13 @@ int FRGlassRTScene::EncodeAccelerationStructures(id<MTLCommandBuffer> cb, FRCame
         e->refitPositions = nil;
         id<MTLAccelerationStructure> src = e->usingAlt ? e->blasAlt : e->blas;
         id<MTLAccelerationStructure> dst = e->usingAlt ? e->blas : e->blasAlt;
-        if (!src || !dst) continue;
+        if (!src || !dst) { e->refitPositions = np; continue; }
+        // E12: the target half may still be read by a frame in flight (the ring holds up to 8): keep the new positions
+        // parked until that frame is done, instead of overwriting its positions under it
+        if (e->lastUse[e->usingAlt ? 0 : 1] > doneSerial) { e->refitPositions = np; continue; }
         // copy the new positions into the target half of the ping-pong pair
         id<MTLBuffer> target = e->usingAlt ? e->buffer : e->altPositions;
-        std::memcpy(target.contents, np.contents, std::min<uint64_t>(np.length, 12ull * e->vertexCount));
+        std::memcpy((uint8_t*)target.contents + (target == e->buffer ? e->posOffset : 0), np.contents, std::min<uint64_t>(np.length, 12ull * e->vertexCount));
         MTLPrimitiveAccelerationStructureDescriptor* d = Describe(*e, target);
         [enc refitAccelerationStructure:src descriptor:d destination:dst scratchBuffer:buildScratch scratchBufferOffset:scratchOffset];
         scratchOffset += Align(std::max<uint64_t>([device accelerationStructureSizesWithDescriptor:d].refitScratchBufferSize, 16), 256);
@@ -599,6 +674,7 @@ int FRGlassRTScene::EncodeAccelerationStructures(id<MTLCommandBuffer> cb, FRCame
             FRMeshEntry* e = meshes[in.meshKey].get();
             if (!e || !e->blas || (e->state != FRMeshEntry::Built && e->state != FRMeshEntry::Compacted)) continue;
             id<MTLAccelerationStructure> as = e->deforming && e->usingAlt ? e->blasAlt : e->blas;
+            if (e->deforming) e->lastUse[e->usingAlt ? 1 : 0] = serial;
             MTLIndirectAccelerationStructureInstanceDescriptor& d = descs2[n];
             std::memset(&d, 0, sizeof(d));
             for (int c = 0; c < 4; c++)
@@ -620,29 +696,61 @@ int FRGlassRTScene::EncodeAccelerationStructures(id<MTLCommandBuffer> cb, FRCame
         }
         if (n > 0)
         {
-            MTLInstanceAccelerationStructureDescriptor* d = [MTLInstanceAccelerationStructureDescriptor descriptor];
-            d.instanceDescriptorType = MTLAccelerationStructureInstanceDescriptorTypeIndirect;
-            d.instanceDescriptorBuffer = slot.descriptors;
-            d.instanceDescriptorStride = sizeof(MTLIndirectAccelerationStructureInstanceDescriptor);
-            d.instanceCount = n;
-            [enc buildAccelerationStructure:slot.tlas descriptor:d scratchBuffer:cam.scratch scratchBufferOffset:0];
+            // TLAS reuse (fix round 31; review 1 engineering #2): the TLAS depends only on the instance descriptors
+            // (transform, mask, options, user id = record index, BLAS resource id). When this frame's descriptors are
+            // byte-identical to the ones the owner slot's TLAS was built from, and no acceleration structure was retired
+            // since, that TLAS is still exact: the trace reads it with this slot's fresh records and lamps (lens
+            // emission and lamp levels change every frame; they live in the records, not in the TLAS). Anything that
+            // moved, appeared, left, or swapped its BLAS (compaction, refit half, MeshChanged) changes a descriptor.
+            bool reuse = false;
+            if (g_TlasReuse.load() && cam.tlasOwner >= 0 && cam.tlasOwner != (int32_t)pick)
+            {
+                FRCameraState::Slot& o = cam.slots[cam.tlasOwner];
+                reuse = o.valid && o.tlas && o.descriptors && o.builtCount == n && o.builtGeneration == asGeneration
+                     && std::memcmp(o.descriptors.contents, slot.descriptors.contents, sizeof(MTLIndirectAccelerationStructureInstanceDescriptor) * n) == 0;
+            }
+            if (reuse)
+            {
+                FRCameraState::Slot& o = cam.slots[cam.tlasOwner];
+                o.serial = serial;   // its TLAS is read by this event: out of the ring until this event is done
+                slot.tlasFrom = cam.tlasOwner;
+                tlasReused++;
+            }
+            else
+            {
+                MTLInstanceAccelerationStructureDescriptor* d = [MTLInstanceAccelerationStructureDescriptor descriptor];
+                d.instanceDescriptorType = MTLAccelerationStructureInstanceDescriptorTypeIndirect;
+                d.instanceDescriptorBuffer = slot.descriptors;
+                d.instanceDescriptorStride = sizeof(MTLIndirectAccelerationStructureInstanceDescriptor);
+                d.instanceCount = n;
+                [enc buildAccelerationStructure:slot.tlas descriptor:d scratchBuffer:cam.scratch scratchBufferOffset:0];
+                slot.tlasFrom = (int32_t)pick;
+                slot.builtCount = n;
+                slot.builtGeneration = asGeneration;
+                cam.tlasOwner = (int32_t)pick;
+                tlasBuilt++;
+            }
             size_t ln = std::min<size_t>(lamps.size(), kMaxLamps);
             if (ln) std::memcpy(slot.lamps.contents, lamps.data(), ln * sizeof(FRLamp));
             slot.serial = serial;
             slot.count = n;
             slot.valid = true;
-            usedSlot = (int)cam.next;
+            usedSlot = (int)pick;
+            tlasSlotOut = slot.tlasFrom;
             cam.lastSlot = usedSlot;
-            cam.next = (cam.next + 1) % 3;
+            cam.next = (pick + 1) % cam.ringSize;
         }
         instanceCountOut = n;
     }
-    else if (cam.lastSlot >= 0 && cam.slots[cam.lastSlot].valid)
+    else if (cam.lastSlot >= 0 && cam.slots[cam.lastSlot].valid && cam.slots[cam.lastSlot].tlasFrom >= 0)
     {
         usedSlot = cam.lastSlot;
+        tlasSlotOut = cam.slots[usedSlot].tlasFrom;
         instanceCountOut = cam.slots[usedSlot].count;
-        // the reused slot is read again by this event: keep it out of reuse until this event is done
+        // the reused slot (and the slot whose TLAS it reads) is read again by this event: keep both out of reuse until
+        // this event is done
         cam.slots[usedSlot].serial = serial;
+        cam.slots[tlasSlotOut].serial = serial;
     }
     [enc updateFence:fence];
     [enc endEncoding];

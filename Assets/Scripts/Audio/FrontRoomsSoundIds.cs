@@ -42,6 +42,7 @@ namespace FrontRooms.Audio
         public const string RelayPresence = "event:/Relay/Presence";
         public const string RelayClicks = "event:/Relay/Clicks";
         public const string RelayStinger = "event:/Relay/Stinger";
+        public const string RelayHum = "event:/Relay/Hum";               // C30: the stage-gated low hum (W2), when HumByStage is on
 
         // Subjective
         public const string Breath = "event:/Subjective/Breath";
@@ -77,7 +78,10 @@ namespace FrontRooms.Audio
             public const string Level = "Level";
             public const string Stamina = "Stamina";
             public const string Proximity = "Proximity";
-            public const string Occlusion = "Occlusion";
+            public const string Occlusion = "Occlusion";   // Relay: the muffle (low-pass only since W2)
+            public const string PathGain = "PathGain";     // Relay steps / hum: level from the path distance F (W2), 0..1
+            public const string Groan = "Groan";           // HumBed: ballast brown-out under a warning burst (W1), 0..1
+            public const string Arousal = "Arousal";       // Heartbeat: exertion (slow beat) .. chase (fast), never distance
             public const string Dampness = "Dampness";     // 0 dry .. 0.4 Level 0 carpet .. >0.75 waterlogged
             public const string Surface = "Surface";       // Carpet, CarpetTile, Metal
             public const string Gait = "Gait";             // Walk, Run, Stop

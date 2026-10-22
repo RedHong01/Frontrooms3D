@@ -13,6 +13,7 @@
 | `Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs` | `d9b51f23` | main `2c450e11` |
 
 - `git apply --check CONTRACT_map.diff` passes on main `2c450e11` (run read-only from `Frontrooms3D/`).
+- **Re-checked 2026-10-22 15:0x** (build stage, account A) on main `9d28aaf9` + working tree (MapWorld `223da401`, tests `31b991d1`), on scratch copies: `git apply --check` passes, every hunk with an offset (MapWorld +26 to +211 lines, tests +54), no fuzz. The clone's map files are still exactly base + this diff; the suite there: 176 passed, 0 failed (14:48).
 - **Compile:** `W/tools/roslyn_check.py` gives 0 errors in Assembly-CSharp and Assembly-CSharp-Editor. A Unity batch compile of the clone also succeeded.
 - **The map's own suite in the clone:** `FrontRoomsMapInteractionTests.RunBatch` gives **176 passed, 0 failed**, for rev 1 (13:31) and again for rev 2 (13:42, UNDER LOAD 269–289; `data/kept_map_interaction_tests.txt`).
 - **Play (the game's own E path, harness `FrontRoomsGd3cRepro`):** see `10_design.md` §1, VL360 and VL362. Kept holds: 0.200 / 0.500 / 0.800; three 0.20 s holds reach S1; 0.50 + 0.30 s reaches S2; a chunk rebuild restores every hold.
@@ -40,7 +41,7 @@
 | Check all four `ReleaseHold` callers | `FrontRooms3DGame.cs` l.1525 (the aim leaves the pane): the pane now keeps its progress when the player looks away, as intended. l.1596 (E let go): Red's case. `FrontRoomsMapWalker` l.155 / l.174 (the test-scene walker: aim leaves / E up): the same semantics as the game. No call site needs an edit |
 | `GlassHoldReleased` fires exactly once per release | The line that raises it is unchanged, and `KeepHold` raises nothing. Clone tests: 176/176 |
 | Tests in the diff's test hunk | T1 keeps the progress (0.500); T2: after a hold to 0.75 (0.767 with the test's Dt steps), a rebuild restores exactly that, not Crack2; T3 is new |
-| The visual package must be safe to land before this hunk | The visual side never names `GlassBreakRecord.hold` at compile time. It reads it through a cached reflection accessor that returns 0 when the field is missing (`10_design.md` §7). The debris world (D-a, D-b) does not need it at all |
+| The visual package must be safe to land before this hunk | The visual side never names `GlassBreakRecord.hold`. It reads `Window.hold`, which main already has; C4 is what puts the kept progress there after a rebuild (build stage, 15:1x; this replaces the reflection accessor planned in `10_design.md` §7). Without this hunk the wipe and the armed pattern simply see no kept hold. The debris world (D-a, D-b) does not need it at all. Package `W/apply/gd3c_debris` compiles on main without the hunk (Roslyn macOS, iOS, WebGL player defines: 0 errors) |
 
 ## What is deliberately not in the diff
 
@@ -49,7 +50,7 @@
 - **`FrontRoomsShots/*`.** The beats (0.35 / 0.70 / 1.00, the sound chat's) do not move.
   - A resume a few frames before a beat lands that beat with almost no camera blend. That is open question Q1 in `10_design.md` §10, with options (a) accept, (b) commit the swing, (c) re-wind; it needs Red.
   - Nothing is changed for it here.
-- **No new events.** The visual side reads `GlassBreakRecordOf(window).hold`.
+- **No new events.** The visual side reads `Window.hold` (restored from `record.hold` by C4) and `GlassBreakRecordOf(window)` for the impact and side, as today.
 
 ## If you land it
 

@@ -388,6 +388,102 @@ def scenario_keys(out):
     s.close()
 
 
+# W2 (RELAY §9.3, C10): the game's own gain and muffle rules (FrontRoomsRelaySound), so renders match play.
+def relay_w2_gain(f, seen=False):
+    if f <= 18:
+        return .55 + .45 * (1 - f / 18)
+    return .55 * 18 / f if seen else .55 * max(0.0, min(1.0, 1 - (f - 18) / 6))
+
+
+def relay_w2_muffle(f, cost, seen=False):
+    def by_cost(c):
+        if c <= 0:
+            return 0.0
+        if c <= 4:
+            return .3 * c / 4
+        if c <= 9:
+            return .3 + .25 * (c - 4) / 5
+        return min(.85, .55 + .3 * (c - 9) / 9)
+    return max(0.0 if seen else by_cost(cost), .5 * max(0.0, min(1.0, (f - 3) / 21)))
+
+
+def scenario_relay_w2(out):
+    """W2: 3 s of the room tone the player hears (Standard zone, Tension 0.4), then 5 s of the Relay's steps at the
+    stage-2 entry (F 18 m) through one shut door, then F 10 m on an open path, then in sight at 5 m. The steps sit
+    about 8 m away in a straight line in every phase: only the path decides the level and the muffle."""
+    s = Studio(os.path.join(out, "relay_w2.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", .4)
+    keep = [s.play("event:/Ambience/HumBed", keep=True), s.play("event:/Ambience/AirBed", keep=True),
+            s.play("event:/Ambience/Fixture", (1.2, 1.1, 2.0), keep=True, Level=1.0)]
+    script = []
+    for start, f, cost, seen in ((3.0, 18.0, 9.0, False), (9.0, 10.0, 0.0, False), (15.0, 5.0, 0.0, True)):
+        g, m = relay_w2_gain(f, seen), relay_w2_muffle(f, cost, seen)
+        t, i = start, 0
+        while t < start + 5.0:
+            x = .35 if i % 2 else -.35
+            script.append((t, (lambda g=g, m=m, x=x: s.play("event:/Relay/Footstep", (x - 4.0, -1.6, 7.0), RelayGait=0,
+                                                              Occlusion=m, Dampness=.4, PathGain=g))))
+            t += .62
+            i += 1
+    s.run(21.0, script)
+    for k in keep:
+        s.stop(k)
+    s.close()
+
+
+
+def scenario_relay_w2_hum(out):
+    """The Relay's low hum (Relay/Hum, C30) alone through the same three phases as relay_w2 (no room tone), to set it
+    against the room tone measured there: it must stay audible when the Relay stands still (no gap > 1.2 s, RELAY §9.3)."""
+    s = Studio(os.path.join(out, "relay_w2_hum.wav"))
+    hum = s.play("event:/Relay/Hum", (-4.0, -.4, 7.0), keep=True, PathGain=0.0, Occlusion=0.0)
+    phases = ((3.0, 18.0, 9.0, False), (9.0, 10.0, 0.0, False), (15.0, 5.0, 0.0, True))
+
+    def each(t):
+        g, m = 0.0, 0.0
+        for start, f, cost, seen in phases:
+            if start <= t < start + 5.0:
+                g, m = relay_w2_gain(f, seen), relay_w2_muffle(f, cost, seen)
+        s.set(hum, PathGain=g, Occlusion=m)
+
+    s.run(21.0, (), each)
+    s.stop(hum)
+    s.close()
+
+def scenario_relay_flat(out):
+    """Six steps at 3 m, then six at 25 m in a straight line, same PathGain: no distance attenuation any more (W2)."""
+    s = Studio(os.path.join(out, "relay_flat.wav"))
+    script = []
+    for i, z in enumerate((3.0, 25.0)):
+        for k in range(6):
+            script.append((.3 + i * 4.0 + k * .62, (lambda z=z, k=k: s.play("event:/Relay/Footstep", (.35 if k % 2 else -.35, -1.6, z),
+                                                                          RelayGait=0, Occlusion=0.0, Dampness=.4, PathGain=1.0))))
+    s.run(8.5, script)
+    s.close()
+
+
+def scenario_groan(out):
+    """W1 ballast groan: the HumBed alone; Groan up over 0.1 s, held 1.5 s, down over 0.3 s, at 4 s and 9 s."""
+    s = Studio(os.path.join(out, "hum_groan.wav"))
+    s.set_global("Zone", 1)
+    s.set_global("Tension", 0)
+    hum = s.play("event:/Ambience/HumBed", keep=True)
+
+    def each(t):
+        g = 0.0
+        for a in (4.0, 9.0):
+            if a <= t < a + 1.5:
+                g = min(1.0, (t - a) / .1)
+            elif a + 1.5 <= t < a + 1.8:
+                g = max(0.0, 1 - (t - a - 1.5) / .3)
+        s.set(hum, Groan=g)
+
+    s.run(13.0, (), each)
+    s.stop(hum)
+    s.close()
+
+
 def render(out):
     os.makedirs(out, exist_ok=True)
     scenario_steps(out, "steps_walk_dry", 0, 0, 0.0, 8, .55)
@@ -406,6 +502,10 @@ def render(out):
     scenario_window(out)
     scenario_lamp(out)
     scenario_keys(out)
+    scenario_relay_w2(out)
+    scenario_relay_w2_hum(out)
+    scenario_relay_flat(out)
+    scenario_groan(out)
     print("rendered into", out)
 
 

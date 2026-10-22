@@ -41,6 +41,7 @@
 #define FR_FLAG_DEFORMING        (1u << 9)
 #define FR_FLAG_REFLECTION_ONLY  (1u << 10)
 #define FR_FLAG_RECEIVER         (1u << 11)
+#define FR_FLAG_LAMP_WEIGHTS     (1u << 12)   // emission.xyz = this renderer's _LampField weights (exit-sign diffusers, MPB)
 
 // ---------------------------------------------------------------- instance masks (8 bit) and ray masks
 #define FR_MASK_OPAQUE    0x01u
@@ -48,8 +49,11 @@
 #define FR_MASK_SHARD     0x04u
 #define FR_MASK_DYNAMIC   0x08u
 #define FR_MASK_REFLONLY  0x10u
+#define FR_MASK_CASTER    0x20u   // the renderer casts shadows in the raster (shadowCastingMode != Off)
 #define FR_RAYMASK_REFLECTION (FR_MASK_OPAQUE | FR_MASK_GLASS | FR_MASK_DYNAMIC | FR_MASK_REFLONLY)
-#define FR_RAYMASK_SHADOW     (FR_MASK_OPAQUE | FR_MASK_DYNAMIC)
+// Shadow rays see exactly what the raster's shadow maps see: renderers that cast shadows (troffer lenses, panes and
+// shadow-less props let the lamp through, as in the raster).
+#define FR_RAYMASK_SHADOW     FR_MASK_CASTER
 #define FR_RAYMASK_PRIMARY    (FR_MASK_OPAQUE | FR_MASK_GLASS | FR_MASK_SHARD | FR_MASK_DYNAMIC)
 
 // ---------------------------------------------------------------- material kinds and flags
@@ -65,6 +69,8 @@
 #define FR_MAT_NORMAL_MAP     (1u << 4)
 #define FR_MAT_OCCLUSION_MAP  (1u << 5)
 #define FR_MAT_ALPHA_CLIP     (1u << 6)
+#define FR_MAT_PRINT          (1u << 7)   // FrontRooms/Surface _FR_PRINT: paper (x) print wallpaper sandwich
+#define FR_MAT_LAMP_FIELD     (1u << 8)   // FrontRooms/Surface _FR_LAMP_FIELD: emission = dot(field.rgb, weights) * field.a * _EmissionColor
 
 // ---------------------------------------------------------------- lamps
 #define FR_LAMP_DIRECTIONAL 0u
@@ -119,21 +125,29 @@ struct FRInstance
     float4 emission;           // xyz: linear per-renderer emission (EmissiveLens, from the MPB); w: _CeilingHeight (MPB) or 0
 };
 
-// Per material (160 B).
+// Per material (256 B).
 struct FRMaterial
 {
     float4 baseColor;    // linear rgb, a
-    float4 tile;         // FrontRooms/Surface _TileSize.xy; zw unused
+    float4 tile;         // FrontRooms/Surface _TileSize.xy; zw = _LampField A, B (FR_MAT_LAMP_FIELD)
     float4 baseST;       // _BaseMap_ST
-    float4 emission;     // linear _EmissionColor rgb; w unused
+    float4 emission;     // linear _EmissionColor rgb; w = _LampField DC (FR_MAT_LAMP_FIELD)
     float4 stain;        // linear _StainColor rgb; w = _StainStrength
     float4 p0;           // smoothness (scale or value), metallic, occlusion strength, bump scale
     float4 p1;           // _MacroTone, _MacroDirt, _WetStrength, _FloorGrime
     float4 p2;           // _FloorGrimeHeight, _CeilingGrime, _CeilingHeight (material), alpha cutoff
+    float4 printST;      // _PrintTex_ST (FR_MAT_PRINT)
+    float4 inkGround;    // linear _InkGround rgb; w = _PrintAmount
+    float4 inkMid;       // linear _InkMid rgb
+    float4 inkDeep;      // linear _InkDeep rgb
+    float4 inkCream;     // linear _InkCream rgb
     uint kind;           // FR_KIND_*
     uint flags;          // FR_MAT_*
     uint texBase, texMask;          // texture slots (0 = white, 1 = black, 2 = flat normal, 3 = grey)
     uint texBump, texMacro, texEmission, texOcclusion;
+    uint texPrint;       // _PrintTex (print frame 0: R ink density, G cream; linear)
+    uint texLampField;   // _LampFieldMap (FR_MAT_LAMP_FIELD: R lamp A, G lamp B, B DC pair, A transmission; linear)
+    uint pad1, pad2;
 };
 
 // Per lamp (64 B).
@@ -151,7 +165,7 @@ struct FRTexSlot
     FR_TEXSLOT tex;
 };
 
-// Per-frame constants (setBytes; 496 B).
+// Per-frame constants (setBytes; 512 B).
 struct FRFrame
 {
     float4x4 invViewProj;  // inverse(GPU projection x view): the matrix the glass prepass rasterised with
@@ -161,26 +175,33 @@ struct FRFrame
     float4 screen;         // width, height, 1/width, 1/height
     uint4  rect;           // dispatch rectangle x0, y0, x1, y1 (exclusive), in pixels
     float4 fog;            // x = unity_FogParams.x (exp2 density), y = fog on (1/0), z = pixel spread angle (rad), w = time
-    float4 fogColor;       // linear fog colour
+    float4 fogColor;       // xyz linear fog colour; w lens-interior edge filter scale (fix round 32, C# LensInteriorFilter)
     float4 sh[9];          // ambient SH fit, basis {1, x, y, z, xy, yz, xz, x^2, y^2}, rgb each
     float4 envDecode;      // ReflectionProbe.defaultTextureHDRDecodeValues
     float4 envInfo;        // x = UNITY_SPECCUBE_LOD_STEPS, y = cube valid, z = glass top-up scale (1 + extra), w = cube mip count - 1
     uint4  counts;         // x lamp count, y quality (1 High, 2 Ultra), z debug mode, w instance count
-    uint4  shadow;         // x max shadowed lamps per hit, y glass layers seen through, z frame index, w accumulation index (0 = no history)
+    uint4  shadow;         // x shadowed lamps traced per hit (the strongest, ranked per hit), y glass layers seen through, z frame index, w accumulation index (0 = no history)
     float4 jitter;         // xy sub-pixel jitter (pixels), z history weight 1/(n+1), w accumulate (0/1)
     float4 thin;           // x glass thickness (m), y ior, z ray origin offset (m), w back-surface image on (1/0)
     float4 blur;           // x smudge blur max radius (px), y edge filter strength, z adaptive AA luminance ratio, w adaptive budget fraction
     float4 fill;           // x fill shadow mode (0 none, 1 constant, 2 ray), y constant factor, z fill shadow strength, w directional lamp index (-1 none)
+    float4 soft;           // x area radius of a shadowed lamp (m, soft shadows), y shadow rays per traced lamp (base), z extra rays where the base rays disagree (penumbra), w smudge blur: no blur where the pane smoothness is >= this (clean glass stays sharp)
 };
+
+// ABI of the C# <-> plugin boundary, exported by FRGlassRT_GetAbi together with the struct sizes the plugin was built
+// with. Bump it whenever an export is added or changed or a shared struct changes; C# (FrontRoomsGlassRTNative.Abi)
+// refuses any other value, so a stale plugin left loaded by an open editor fails closed before its first frame (fix
+// round 32, review 2 engineering #7). 32 = fix round 32 (FRGlassRT_GetAbi, FRGlassRT_GetCameraCoverage).
+#define FR_GLASS_RT_ABI 32
 
 #ifndef __METAL_VERSION__
 static_assert(sizeof(FRVertexAttr) == 24, "FRVertexAttr layout");
 static_assert(sizeof(FRMeshGPU) == 48, "FRMeshGPU layout");
 static_assert(sizeof(FRInstance) == 128, "FRInstance layout");
-static_assert(sizeof(FRMaterial) == 160, "FRMaterial layout");
+static_assert(sizeof(FRMaterial) == 256, "FRMaterial layout");
 static_assert(sizeof(FRLamp) == 64, "FRLamp layout");
 static_assert(sizeof(FRTexSlot) == 8, "FRTexSlot layout");
-static_assert(sizeof(FRFrame) == 496, "FRFrame layout");
+static_assert(sizeof(FRFrame) == 512, "FRFrame layout");
 #endif
 
 #endif // FR_GLASS_RT_SHARED_H

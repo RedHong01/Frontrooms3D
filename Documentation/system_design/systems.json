@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22z2",
+ "updated": "2026-10-22z8",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -153,7 +153,7 @@
    "name": "Test bots",
    "status": "BUILT_OFF",
    "status_class": "built",
-   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08. The 10-22 smoke on v1 passed 8 of 8 (C05); the full matrix waits on a new yes.",
+   "summary": "A tool: seeded bots measure the Relay before and after each step; its 15 measurement fixes are in main since 10-08, and its reports carry rule flags (E1, Floor 1 grace, A12, release cause) since 10-22. The 10-22 smoke on v1 passed 8 of 8 (C05). No full matrix after the double-acting doors (Red 10-22: \"不跑直接合\"); the 10-08 Step 0 matrix stays the v1 reference.",
    "owner": "Level design research",
    "needs": [],
    "closed_note": null,
@@ -313,16 +313,14 @@
    "name": "Wallpaper arrows",
    "status": "CLONE_ONLY",
    "status_class": "built",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). The motion pick is open again (C31). The ambient print motion they sit on is in main since 10-22.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). Motion: A + M4 + V1 (C31, 10-22). The ambient print motion they sit on is in main since 10-22.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
     "S6"
    ],
    "closed_note": "Decided: yes (10-07); the exit is set (10-21)",
-   "open_decisions": [
-    "C31"
-   ]
+   "open_decisions": []
   },
   {
    "id": "W7",
@@ -359,7 +357,7 @@
    "name": "Doors: E open, shut",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Decided 10-22: double-acting, always swinging away from the opener (after the Alpha).",
+   "summary": "Doors open on E and shut; each is a noise heard to about 20 m. Double-acting since 10-22 15:11: the leaf always swings away from whoever moves it, every unlock is a push, and an opened door is never broken.",
    "owner": "Level design, Interaction design",
    "needs": [],
    "closed_note": "Decided: swing away from the player (10-22)",
@@ -466,7 +464,7 @@
    "name": "Keys",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Look and press E on desktop. Phones still walk over: their key tap is in main since 10-22 and switches on with A12. Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station.",
+   "summary": "Look and press E on desktop. Phones still walk over: their key tap is in main since 10-22 but still off (KeyPickupNeedsE is desktop-only), even after A12. Today one per zone, opening nothing; decided 10-22: one floor key per floor, at the station.",
    "owner": "Level design",
    "needs": [
     "D8"
@@ -767,9 +765,9 @@
    "id": "P4",
    "group": 8,
    "name": "Photosafety limits",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "No lamp may flash more than 3 times a second. W1's dips pass (at most 2 a second, 1 with Reduce Flashing; 游戏视觉 10-22). Ambient Stutter lamps do not yet; the limiter lands after the Alpha.",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "No lamp may flash more than 3 times a second. Every flicker mode stays at or under 2 a second, and a per-lamp limiter holds 3 as a hard cap (in main since 10-22, 关卡设计 M2; measured: no lamp over 3). W1's dips pass too.",
    "owner": "Level design",
    "needs": [
     "W1"
@@ -795,7 +793,7 @@
    "name": "Station and TV beacon",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "One station per floor: the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter.",
+   "summary": "One station per floor (on Floor 1 it is the first room, A26): the only TV playing, heard through the building. Its rack holds the floor key; taking it kills the TV and calls the hunter.",
    "owner": "Level design, Game visuals, Sound",
    "needs": [
     "L1",
@@ -813,7 +811,7 @@
    "name": "Tutorial floor",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "Floor 1 teaches the loop: the station just past the EXIT, no locked inner doors, the hunter held until the key is taken, then sent 22–30 m away so the lamps dip before you reach the EXIT.",
+   "summary": "Floor 1 teaches the loop: the station is the first room, the locked EXIT in view through its doorway; you see the lock, take the key, and the hunter is sent when you leave the room (150 s fallback), so the lamps dip before you reach the EXIT. No locked inner doors.",
    "owner": "Level design, Tutorial design",
    "needs": [
     "N6",
@@ -1285,7 +1283,7 @@
    "recommendation": "Yes",
    "status": "answered",
    "date": "2026-10-07",
-   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate, WebGL turns only); it waited on the exit. The motion pick was re-opened on 2026-10-22 (C31): asked to confirm A + M4 + V1, Red chose \"再看一次其他方案\" in the 动画和动态图形模型技术 chat"
+   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate, WebGL turns only); it waited on the exit. The motion pick was re-opened on 2026-10-22 morning and settled at 15:04 the same day: A + M4 + V1 (C31)"
   },
   {
    "id": "C09",
@@ -1605,7 +1603,7 @@
    "question": "Tutorial: which option?",
    "recommendation": "",
    "status": "answered",
-   "answer": "A: each floor's EXIT is locked; its one floor key hangs at the station, the only room with a TV playing; the key opens the EXIT and every locked door on that floor. Floor 1 has a key too (its EXIT starts locked); it just has no locked inner doors",
+   "answer": "A: each floor's EXIT is locked; its one floor key hangs at the station, the only room with a TV playing; the key opens the EXIT and every locked door on that floor. Floor 1 has a key too (its EXIT starts locked); it just has no locked inner doors. On Floor 1 the station is the first room, with the locked EXIT in view (A26)",
    "date": "2026-10-22"
   },
   {
@@ -1768,7 +1766,9 @@
    "question": "Which wall-cue motion ships: A + M4 + V1, or another of M1-M4 and V1-V3?",
    "recommendation": "A + M4 + V1 (the wallpaper line's pick)",
    "rationale": "C08 (build the arrows) stays yes. Red's 10-07 picks were scale-fit A, staggered V1, a 30° ratchet, no dark gate and turns only on WebGL. On 2026-10-22, asked to confirm A + M4 + V1 (preview cue_ingame_preview_v2_corridor.mp4), Red chose \"再看一次其他方案\" (look at the other options again) in the 动画和动态图形模型技术 chat. That line re-sent the previews and asks Red in its own chat: record the answer only from Red's words there. Where the arrows point is settled separately (C24 = A + A20).",
-   "status": "open"
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "A + M4 + V1, picked after the in-game previews of all twelve M x V combinations: M4 = three 30° clicks; V1 = two speed systems on alternate rows. It is the existing spec (FrontRoomsCueTiming, CUE_DRIVER_INTERFACE §6; flipbook C00-C16 in Tools/print/ink/art_from_graphic/cue_states/flipbook/), so nothing is rebuilt"
   },
   {
    "id": "C32",
@@ -1779,7 +1779,17 @@
    "rationale": "Today's rule (A14, ≥ 42 m, 3 s after the take) gives a player who walks straight back no W1 on Floor 1: the Relay hunts at 2.6 m/s and the player walks at 3.2, so W only closes while they stand still. From 42 m it needs about 4.6 s to reach the 30 m entry, so the first burst comes 7.9 s or more after the take, while the walk back (2–6 cells) plus the unlock (1.55 s) is done by about 3.5–7.5 s. Sent at 22–30 m after 1 s, stage 1 starts on arrival and the first burst falls 1.3–2 s after the take. That is honest, because it really is near; the Floor 1 grace still bars a chase before a burst. It breaks v2's 42 m Arrive rule for this one send only. Alternatives: a station farther past the EXIT does not help (the gap never closes while the player walks); keeping 42 m and extending the grace to Floor 2 teaches W1 by the placard only; a scripted burst on the take would make the lamps lie.",
    "status": "answered",
    "date": "2026-10-22",
-   "answer": "1: Floor 1's first send only, 1 s after the take, unseen, at 22–30 m, on the station's far side from the EXIT and never within 2 cells of the walk back (fallback 18–34 m, then ≥ 14 cells, logged); the station keeps ≥ 2 Steady lamps by its entrance"
+   "answer": "1: Floor 1's first send only, 1 s after the take, unseen, at 22–30 m, on the station's far side from the EXIT and never within 2 cells of the walk back (fallback 18–34 m, then ≥ 14 cells, logged); the station keeps ≥ 2 Steady lamps by its entrance (retimed by A26 on 10-22: on Floor 1 the first send now comes when you leave the first room, door shut or N cells, from the far side, with the 150 s fallback; the rest holds)"
+  },
+  {
+   "id": "A26",
+   "system": "N7",
+   "ref": "First-room desk (research/station/NOTE_1022_first_room_tutorial.md §4, option 1)",
+   "question": "Which first room on Floor 1, now that the security desk is its own room and the first room you enter?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "Option 1: the station is Floor 1's first room (station, placard and TV), with the locked EXIT in view through its doorway about 3-6 cells away, so the lock is still seen before the key is taken. The first send comes when you leave the room (door shut or N cells; N still open), from the far side, with the 150 s fallback. Floor 2+ stations stay rooms you find (A20 and the beacon unchanged)"
   }
  ],
  "landing_order_proposed": [

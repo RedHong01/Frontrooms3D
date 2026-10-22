@@ -1,0 +1,10 @@
+{
+  "Walk_max_top_m": 3.145,
+  "Run_max_top_m": 3.061,
+  "BreakDoor_max_top_m": 3.032,
+  "IdleListen_max_top_m": 3.118,
+  "Search_max_top_m": 3.109,
+  "Stagger_max_top_m": 3.148,
+  "overall_max_top_m": 3.148,
+  "note": "the prototype rig (FrontRoomsRelayRig, procedural); renderer bounds tops over 4 s per state at 60 Hz"
+}

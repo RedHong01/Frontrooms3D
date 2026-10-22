@@ -826,7 +826,7 @@ Caps are shares of the 480-line active height. "About N characters" assumes each
   - So a memo saying CLOSE DOORS BEHIND YOU would teach v1's beacon.
   - Door memos are written now and merged with RELAY step 4.
 - Memos stay consistent with the placard footer (A.12) and never contradict any platform's pause card. They never name keys: the pause cards do that.
-- One thread runs between R.M. 6/90 and D.K. 11/90 (the A.11 M9 initials).
+- One thread runs between R.M. and D.K., two ordinary memo writers, initials only (叙事设计, 10-22; `research/station/01_research.md` §6). R.M. is facilities or building management: drill notices, posted rules, the plan. D.K. is the night desk, the same initials as the security desk's shift log. They are not another occupant: no lure, nothing about the guard's fate beyond plain duties, no full names. No fixed 1990 dates on screen. Under the live-calendar rule (`research/station/01_research.md` §5), the newest memo is dated this month and the older one four months back, both computed from the live date with 1990 weekdays. A future date, such as the next drill, prints month and day only, never a 1991 year.
 - **Pool size:** set after L6 measures terminals met per run. Interim: 8 memos.
 
 **Print queue: a tenant print job,** such as a memo or a form. Narrative writes it.

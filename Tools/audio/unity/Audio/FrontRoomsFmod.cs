@@ -23,7 +23,8 @@ namespace FrontRooms.Audio
         public static bool Tracing;
         static readonly System.Collections.Generic.List<string> trace = new System.Collections.Generic.List<string>(512);
 
-        static void Trace(string kind, string path, string p1 = null, float v1 = 0f, string p2 = null, float v2 = 0f, string p3 = null, float v3 = 0f)
+        static void Trace(string kind, string path, string p1 = null, float v1 = 0f, string p2 = null, float v2 = 0f, string p3 = null, float v3 = 0f,
+            string p4 = null, float v4 = 0f)
         {
             if (!Tracing) return;
             var sb = new System.Text.StringBuilder(96);
@@ -31,6 +32,7 @@ namespace FrontRooms.Audio
             if (p1 != null) sb.Append('\t').Append(p1).Append('=').Append(v1.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
             if (p2 != null) sb.Append('\t').Append(p2).Append('=').Append(v2.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
             if (p3 != null) sb.Append('\t').Append(p3).Append('=').Append(v3.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+            if (p4 != null) sb.Append('\t').Append(p4).Append('=').Append(v4.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
             trace.Add(sb.ToString());
         }
 
@@ -46,7 +48,7 @@ namespace FrontRooms.Audio
         }
 
         /// <summary>Bumped with every change to the audio scripts, so a console line says which code is running.</summary>
-        public const string CodeVersion = "2026-10-22.1";
+        public const string CodeVersion = "2026-10-22.2";
 
         /// <summary>
         /// Which sound set is loaded: the audio code version plus the bank build time and short checksums of the
@@ -171,9 +173,9 @@ namespace FrontRooms.Audio
 
         /// <summary>Fire-and-forget one-shot with up to three parameters.</summary>
         public static void OneShot(string path, Vector3 position, string p1 = null, float v1 = 0f, string p2 = null, float v2 = 0f,
-            string p3 = null, float v3 = 0f, float volumeDb = 0f)
+            string p3 = null, float v3 = 0f, float volumeDb = 0f, string p4 = null, float v4 = 0f)
         {
-            Trace("oneshot", path, p1, v1, p2, v2, p3, v3);
+            Trace("oneshot", path, p1, v1, p2, v2, p3, v3, p4, v4);
             if (!Ready) return;
             try
             {
@@ -182,6 +184,7 @@ namespace FrontRooms.Audio
                 if (p1 != null) instance.setParameterByName(p1, v1);
                 if (p2 != null) instance.setParameterByName(p2, v2);
                 if (p3 != null) instance.setParameterByName(p3, v3);
+                if (p4 != null) instance.setParameterByName(p4, v4);
                 if (volumeDb != 0f) instance.setVolume(Mathf.Pow(10f, volumeDb / 20f));
                 instance.start();
                 instance.release();

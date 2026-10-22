@@ -31,7 +31,7 @@ int main(int argc, char** argv)
         }
         if (error) printf("frglassrt_validate: compiler warnings:\n%s\n", error.localizedDescription.UTF8String);
         printf("frglassrt_validate: MSL compiled in %.1f ms (%zu chars)\n", compileMs, strlen(kFRGlassRTMSL));
-        const char* kernels[] = { "fr_trace", "fr_trace_aa", "fr_resolve", "fr_parity", "fr_gather_vertices", "fr_gather_indices", "fr_layout" };
+        const char* kernels[] = { "fr_trace", "fr_trace_aa", "fr_resolve", "fr_parity", "fr_gather_vertices", "fr_gather_indices", "fr_layout", "fr_blur_h", "fr_blur_v" };
         id<MTLComputePipelineState> layoutPso = nil;
         for (const char* k : kernels)
         {

@@ -37,23 +37,37 @@ using UnityEngine;
 ///   it; it has kind Broken and no prompt, is an Open passage at 0 m, lets a
 ///   keyless player through a locked door, and stays broken through a rebuild
 ///   and a revisit shift;
-/// - single-acting doors: each door's swing side is its edge's (the same after
-///   a rebuild and a revisit shift, both sides occur); a push waits for the
-///   lever (Open.SwingStart, a second E ignored), eases out to 95° with the 2°
-///   overshoot and rests at Open.Duration on its swing side; PassageBetween is
-///   ClosedDoor below 70° and Open from there; a shut lands in the frame,
-///   latched; a pull raises DoorPulled first with a clear spot (out of the
-///   sweep, latch side, in the keep-clear strip and the room), waits the pull
-///   beat, and a leaf never ends inside a body standing in its way (the
+/// - double-acting doors (A12, Red 2026-10-22): doors opened from alternating
+///   sides each rest beyond their opener (both sides occur) and are rebuilt
+///   open on that side after a rebuild and a revisit shift; a push from either
+///   face waits for the lever (Open.SwingStart, no pull beat, a second E
+///   ignored), eases out to 95° with the 2° overshoot and rests at
+///   Open.Duration on the far face, never touching the opener; PassageBetween
+///   is ClosedDoor below 70° and Open from there; a shut from the far side
+///   lands in the frame, latched, with no DoorPulled; from the side the leaf
+///   last went to, even inside its old sweep or beside the hinge, it turns
+///   over and opens away (no DoorPulled); a shut from the leaf's side inside
+///   its sweep raises DoorPulled with a clear spot (out of the sweep, latch
+///   side, in the keep-clear strip and the cell) and the game's step gets the
+///   player clear while it shuts; E on a leaf resting on its shutter turns it
+///   back open, away from them; E from behind a leaf mid-shut pushes it on
+///   through the frame to the far side without latching (rebuilt on that
+///   side); a leaf never ends inside a body standing in its way (the
 ///   player's or the Relay's): it stops on it and goes on once it is clear;
-///   an open door is rebuilt open on its side;
-/// - the Relay breaks from both sides: it stands out of the sweep on the swing
-///   side, faces the door, IsBeingBroken hides the prompt and blocks E, each
-///   blow jolts the leaf child, DoorBrokenFrom reports the side, and the leaf
-///   is thrown past the stop to its swing side and rests at 80°, 3° crooked;
-///   the hinge never turns more than 40° in a frame, even at 4 fps;
-/// - a break the Relay leaves: a door opened under it is not broken, the mark
-///   clears and it walks through; placed away mid-break, the mark clears;
+/// - the Relay breaks a door whichever side its leaf last went to: it
+///   shoulders it in front of the opening, faces the door, IsBeingBroken hides
+///   the prompt and blocks E, each blow jolts the leaf child, DoorBrokenFrom
+///   reports the side away from the leaf, and the leaf is thrown past its rest
+///   into the far cell and rests at 80°, 3° crooked; the hinge never turns
+///   more than 40° in a frame, even at 4 fps; a leaf held partly open on the
+///   Relay's side (resting on a body that stays put) keeps its side: the Relay
+///   breaks it from beside the latch, out of the leaf's sweep for every break
+///   frame, DoorBrokenFrom reports the leaf's (swing) side, and the leaf is
+///   thrown toward the Relay and rests at 80° in its cell (the rip);
+/// - a break the Relay leaves: a door opened under it (A12: its leaf swings
+///   toward the Relay and may rest on it) is not broken, the mark clears, it
+///   steps clear of the sweep and walks through; placed away mid-break, the
+///   mark clears;
 /// - a wander or a search never breaks a door: one the player shuts across
 ///   the leg stays shut and unbroken (no DoorBlow), and the Relay never turns
 ///   to Hunt or BreakDoor; with a way round it walks round to the leg's end,
@@ -62,9 +76,6 @@ using UnityEngine;
 ///   saw them go through it in its last second of sight; one they went
 ///   through unseen it never learns of, and one it saw over a second before
 ///   it lost them it lets go: either way it goes where it last saw them;
-/// - the game's pull step (PullStepSpeed for at most PullStepSeconds) gets the
-///   player clear before the leaf moves; a player beside the hinge, past the
-///   open leaf, is not moved and never touched;
 /// - module props on a column are left out of the build;
 /// - the Office kit filling a module keeps off its inner walls and inner doorways;
 /// - a chunk whose build throws is undone, logged, not retried while in range,
@@ -85,7 +96,8 @@ using UnityEngine;
 /// - the glass break (the visual chat's contract): an unscaled window root
 ///   facing cell b with the pane under it; the impact kept 0.2 m inside the
 ///   glass and fixed once cracked; each crack once, never replayed; a release
-///   drops to the stage reached; the break record survives a rebuild; the
+///   keeps its progress (GD3c, in the break record too); the break record and
+///   the kept progress survive a rebuild; the
 ///   shatter removes only the pane, with WindowShattered and GlassBroken.
 /// - W1, the warning's lamp bursts (RELAY §9.2, the C10 bridge onto v1): stage 0
 ///   never dips a lamp; stage 1's first burst comes 0.3-1.0 s in, 2-3 dips 0.55 s
@@ -93,7 +105,9 @@ using UnityEngine;
 ///   at least 3 s, at most 2 starts a second per lamp; entering stage 2 bursts at
 ///   once (2 dips); a chase starts no burst; back at stage 0 every dip is gone and
 ///   the held lamps have their own modes; never a lamp within 2 cells of the
-///   Relay; Reduce flashing: one sag per lamp.
+///   Relay; Reduce flashing: one sag per lamp. M2 (RELAY 9.5): from stage 1
+///   until stage 0 the room's Dead lamps strike no blink while one in another
+///   room does; the hold moves with the player and Reset lets it go.
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
@@ -140,7 +154,7 @@ public static class FrontRoomsMapInteractionTests
         try
         {
             Relay(roots);
-            SingleActing(roots);
+            DoubleActing(roots);
             RelayBreaks(roots);
             RelayBreakAborts(roots);
             RelayKeepsShutDoors(roots);
@@ -677,11 +691,11 @@ public static class FrontRoomsMapInteractionTests
 
     static GridCoord OtherCell(FrontRoomsMapWorld.Door door, GridCoord cell) => door.a == cell ? door.b : door.a;
 
-    // ---------- Single-acting doors: the fixed side, the lever, pulls, bodies, the passage ----------
+    // ---------- Double-acting doors (A12, Red 2026-10-22): away from the opener, the side kept, pulls only on a shut ----------
 
     const float HingeStepLimit = FrontRoomsMapWorld.DoorMaxStepDegrees;
 
-    /// <summary>A door's floor plan as the map defines it: x along the wall from the hinge axis to the latch, y out into its swing side.</summary>
+    /// <summary>A door's floor plan as the map defines it: x along the wall from the hinge axis to the latch, y out into its swing side now.</summary>
     static Vector2 Plan(FrontRoomsMapWorld.Door door, Vector3 p)
     {
         var rotation = door.hinge.parent.rotation * door.closed;
@@ -689,11 +703,20 @@ public static class FrontRoomsMapInteractionTests
         return new Vector2(Vector3.Dot(offset, rotation * Vector3.forward), Vector3.Dot(offset, rotation * Vector3.right * -door.swing));
     }
 
-    /// <summary>A point in a door's floor plan, on the floor.</summary>
+    /// <summary>A point in a door's floor plan (on its swing side now), on the floor.</summary>
     static Vector3 FromPlan(FrontRoomsMapWorld.Door door, float along, float outward)
     {
         var rotation = door.hinge.parent.rotation * door.closed;
         var p = door.hinge.position + rotation * Vector3.forward * along + rotation * Vector3.right * (-door.swing * outward);
+        p.y = door.hinge.position.y;
+        return p;
+    }
+
+    /// <summary>A point on one face of a door, on the floor: sign +1 on the door root's +X face (DoorFace.S), -1 on its -X face (P).</summary>
+    static Vector3 OnFace(FrontRoomsMapWorld.Door door, float along, float outward, float sign)
+    {
+        var rotation = door.hinge.parent.rotation * door.closed;
+        var p = door.hinge.position + rotation * Vector3.forward * along + rotation * Vector3.right * (sign * outward);
         p.y = door.hinge.position.y;
         return p;
     }
@@ -729,268 +752,346 @@ public static class FrontRoomsMapInteractionTests
     static bool Overlaps(Collider a, Collider b) =>
         a.enabled && b.enabled && Physics.ComputePenetration(a, a.transform.position, a.transform.rotation, b, b.transform.position, b.transform.rotation, out _, out _);
 
-    static void SingleActing(List<GameObject> roots)
+    // The player and their test body at a point.
+    static void Put(Transform player, Collider body, Vector3 at)
     {
-        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -41f, "MAP INTERACTION TEST / single-acting");
+        player.position = at;
+        body.transform.position = at;
+        Physics.SyncTransforms();
+    }
+
+    static void DoubleActing(List<GameObject> roots)
+    {
+        var world = World(roots, FrontRoomsLevelProfiles.Resolve(), -41f, "MAP INTERACTION TEST / double-acting");
         world.BuildForCapture();
         var player = world.Player;
 
-        // 1. The side belongs to the edge: the same after every chunk is rebuilt, and after a revisit shift.
-        var before = Doors(world);
-        var intoA = before.Values.Count(d => FrontRoomsMapWorld.OnSwingSide(world.DoorBetween(d.a, d.b), world.CellCenter(d.a)));
-        Check(before.Count >= 6 && intoA > 0 && intoA < before.Count,
-            "single-acting: " + before.Count + " doors, " + intoA + " swing into their west/south cell (both sides occur)");
-        var chunks = before.Values.Select(d => MapGrid.ChunkOf(d.a)).Distinct().ToList();
+        // 1. Every open goes to the far side of its opener, from either side, and an open door keeps that side
+        //    through a rebuild and a revisit shift.
+        var opened = new Dictionary<long, (GridCoord from, GridCoord into)>();
+        foreach (var d in Doors(world).Values)
+        {
+            var candidate = world.DoorBetween(d.a, d.b);
+            if (candidate == null || candidate.open || candidate.broken || !world.IsBuilt(d.a) || !world.IsBuilt(d.b)) continue;
+            // The opener's side alternates, whatever side the leaf last went to.
+            var from = opened.Count % 2 == 0 ? d.a : d.b;
+            var into = from == d.a ? d.b : d.a;
+            player.position = world.CellCenter(from);
+            if (world.TryOpenDoor(from, into)) opened[candidate.edge] = (from, into);
+            if (opened.Count >= 16) break;
+        }
+        for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+        int FarSide(Func<long, bool> keep)
+        {
+            var n = 0;
+            foreach (var o in opened)
+            {
+                if (!keep(o.Key)) continue;
+                var door = world.DoorBetween(o.Value.from, o.Value.into);
+                if (door != null && door.open && door.angle == ModuleUnits.DoorSwingDegrees && world.CellOf(door.leaf.transform.position) == o.Value.into) n++;
+            }
+            return n;
+        }
+        var intoNear = opened.Values.Count(o => o.into.x < o.from.x || o.into.y < o.from.y);
+        var away = FarSide(_ => true);
+        Check(opened.Count >= 6 && away == opened.Count && intoNear > 0 && intoNear < opened.Count,
+            "double-acting: " + away + "/" + opened.Count + " doors opened from alternating sides rest in the cell beyond their opener (" + intoNear + " into the west/south cell: both sides occur)");
+        var chunks = opened.Values.Select(o => MapGrid.ChunkOf(o.from)).Concat(opened.Values.Select(o => MapGrid.ChunkOf(o.into))).Distinct().ToList();
         foreach (var c in chunks) world.RebuildChunk(c);
-        var rebuilt = Doors(world);
-        var sameAfterRebuild = before.Count(d => rebuilt.TryGetValue(d.Key, out var r) && r.swing == d.Value.swing);
-        Check(sameAfterRebuild == before.Count && rebuilt.Count == before.Count,
-            "single-acting: after rebuilding " + chunks.Count + " chunks, " + sameAfterRebuild + "/" + before.Count + " doors swing the same way");
+        var afterRebuild = FarSide(_ => true);
+        Check(afterRebuild == opened.Count,
+            "double-acting: after rebuilding " + chunks.Count + " chunks, " + afterRebuild + "/" + opened.Count + " open doors are rebuilt open on the side they went to");
         foreach (var c in chunks) { world.Cache.Shift(c); world.RebuildChunk(c); }
-        var shifted = Doors(world);
-        var common = before.Keys.Where(shifted.ContainsKey).ToList();
-        var sameAfterShift = common.Count(k => shifted[k].swing == before[k].swing);
-        Check(common.Count >= 3 && sameAfterShift == common.Count,
-            "single-acting: after a revisit shift, " + sameAfterShift + "/" + common.Count + " doors still on their edges swing the same way");
+        bool Kept(long edge) => opened.TryGetValue(edge, out var o) && world.DoorBetween(o.from, o.into) is FrontRoomsMapWorld.Door again && again.edge == edge;
+        var common = opened.Keys.Count(Kept);
+        var afterShift = FarSide(Kept);
+        Check(common >= 2 && afterShift == common,
+            "double-acting: after a revisit shift, " + afterShift + "/" + common + " open doors still on their edges are on the side they went to");
 
         // A door to work: shut, both cells built.
         FrontRoomsMapWorld.Door door = null;
         foreach (var d in Doors(world).Values)
         {
             var candidate = world.DoorBetween(d.a, d.b);
-            if (candidate != null && !candidate.open && !candidate.broken) { door = candidate; break; }
+            if (candidate != null && !candidate.open && !candidate.broken && world.IsBuilt(d.a) && world.IsBuilt(d.b)) { door = candidate; break; }
         }
-        if (door == null) { Check(false, "single-acting: no shut door near the spawn"); return; }
-        var swingCell = FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(door.a)) ? door.a : door.b;
+        if (door == null) { Check(false, "double-acting: no shut door near the spawn"); return; }
         var moved = 0;
+        var latchedEvents = 0;
         var pulled = new List<(Vector3 clear, float angleThen, bool openThen)>();
         world.DoorMoved += _ => moved++;
+        world.DoorLatched += (d, _) => { if (d == door) latchedEvents++; };
         world.DoorPulled += (d, clear) => { if (d == door) pulled.Add((clear, d.angle, d.open)); };
         var leaf = door.leaf;
         var playerBody = TestBody(world, "test player body", ModuleUnits.PlayerRadius);
 
-        // 2. A push from the stop side: the lever, then the leaf eases out to its swing side, away from the opener.
-        player.position = FromPlan(door, .5f, -.9f);
-        playerBody.transform.position = player.position;
-        Physics.SyncTransforms();
-        world.Use(leaf);
-        Check(door.open && door.angle == 0f && moved == 0 && pulled.Count == 0,
-            "single-acting: push from the stop side: open at once, the leaf waits for the lever (angle " + door.angle + ", DoorMoved " + moved + ", DoorPulled " + pulled.Count + ")");
-        float t = 0f, startAt = -1f, maxAngle = 0f, maxStep = 0f, restAt = -1f;
-        int movedAtStart = -1, passageWrong = 0, overlapFrames = 0;
-        var secondUseIgnored = false;
-        for (var k = 1; k <= 90; k++)
+        // 2. A push from either face: the lever, then the leaf eases out to the far side, away from the opener.
+        foreach (var sign in new[] { 1f, -1f })
         {
-            var was = door.angle;
-            world.TickDoorsForTools(Dt);
-            Physics.SyncTransforms();
-            t = k * Dt;
-            if (startAt < 0f && door.angle > 0f) { startAt = t; movedAtStart = moved; }
-            if (k == 3)
+            var face = sign > 0f ? "S" : "P";
+            ShutAndLatch(world, door, player, playerBody);
+            Put(player, playerBody, OnFace(door, .5f, .9f, sign));
+            var movedBefore = moved;
+            pulled.Clear();
+            world.Use(leaf);
+            Check(door.open && door.angle == 0f && moved == movedBefore && pulled.Count == 0,
+                "double-acting: push from face " + face + ": open at once, the leaf waits for the lever, no DoorPulled (angle " + door.angle + ", DoorPulled " + pulled.Count + ")");
+            float t = 0f, startAt = -1f, maxAngle = 0f, maxStep = 0f, restAt = -1f;
+            int movedAtStart = -1, passageWrong = 0, overlapFrames = 0;
+            var secondUseIgnored = false;
+            for (var k = 1; k <= 90; k++)
             {
-                world.Use(leaf);
-                secondUseIgnored = door.open && door.angle == 0f;
+                var was = door.angle;
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                t = k * Dt;
+                if (startAt < 0f && door.angle > 0f) { startAt = t; movedAtStart = moved - movedBefore; }
+                if (k == 3)
+                {
+                    world.Use(leaf);
+                    secondUseIgnored = door.open && door.angle == 0f;
+                }
+                maxAngle = Mathf.Max(maxAngle, door.angle);
+                maxStep = Mathf.Max(maxStep, Mathf.Abs(door.angle - was));
+                var passage = world.PassageBetween(door.a, door.b);
+                if ((door.angle >= FrontRoomsMapWorld.DoorPassableDegrees) != (passage == FrontRoomsMapWorld.Passage.Open)) passageWrong++;
+                if (Overlaps(leaf, playerBody)) overlapFrames++;
+                if (restAt < 0f && door.angle == ModuleUnits.DoorSwingDegrees && Mathf.Abs(was - door.angle) < 1e-4f && t > .5f) restAt = t - Dt;
             }
-            maxAngle = Mathf.Max(maxAngle, door.angle);
-            maxStep = Mathf.Max(maxStep, Mathf.Abs(door.angle - was));
-            var passage = world.PassageBetween(door.a, door.b);
-            if ((door.angle >= FrontRoomsMapWorld.DoorPassableDegrees) != (passage == FrontRoomsMapWorld.Passage.Open)) passageWrong++;
-            if (Overlaps(leaf, playerBody)) overlapFrames++;
-            if (restAt < 0f && door.angle == ModuleUnits.DoorSwingDegrees && Mathf.Abs(was - door.angle) < 1e-4f && t > .5f) restAt = t - Dt;
+            Check(secondUseIgnored, "double-acting: face " + face + ": a second E while the lever is down does nothing");
+            Check(Mathf.Abs(startAt - FrontRoomsShotTimings.Open.SwingStart) <= Dt * 1.1f && movedAtStart == 1,
+                "double-acting: face " + face + ": the leaf leaves the frame " + startAt.ToString("0.000") + " s after E (lever " + FrontRoomsShotTimings.Open.SwingStart + " s, no pull beat), with DoorMoved then (" + movedAtStart + ")");
+            Check(Mathf.Abs(maxAngle - (ModuleUnits.DoorSwingDegrees + FrontRoomsShotTimings.Open.OvershootDeg)) < .3f && door.angle == ModuleUnits.DoorSwingDegrees
+                && Mathf.Abs(restAt - FrontRoomsShotTimings.Open.Duration) <= Dt * 2.1f,
+                "double-acting: face " + face + ": it eases out, overshoots to " + maxAngle.ToString("0.0") + "° and rests at " + door.angle.ToString("0.0") + "° at " + restAt.ToString("0.000") + " s (expected 97 / 95 / " + FrontRoomsShotTimings.Open.Duration + ")");
+            Check(FrontRoomsMapWorld.FaceOf(door, leaf.transform.position) != FrontRoomsMapWorld.FaceOf(door, player.position) && FrontRoomsMapWorld.OnSwingSide(door, leaf.transform.position)
+                && !FrontRoomsMapWorld.OnSwingSide(door, player.position) && world.CellOf(leaf.transform.position) != world.CellOf(player.position),
+                "double-acting: pushed from face " + face + ", the leaf rests on the far face, in the cell beyond the opener");
+            Check(passageWrong == 0 && world.PassageBetween(door.a, door.b) == FrontRoomsMapWorld.Passage.Open && maxStep <= HingeStepLimit && overlapFrames == 0,
+                "double-acting: face " + face + ": PassageBetween ClosedDoor below " + FrontRoomsMapWorld.DoorPassableDegrees + "° and Open from there (" + passageWrong + " frames wrong); largest hinge step " + maxStep.ToString("0.0") + "°; the opener never touched");
         }
-        Check(secondUseIgnored, "single-acting: a second E while the lever is down does nothing");
-        Check(Mathf.Abs(startAt - FrontRoomsShotTimings.Open.SwingStart) <= Dt * 1.1f && movedAtStart == 1,
-            "single-acting: the leaf leaves the frame " + startAt.ToString("0.000") + " s after E (lever " + FrontRoomsShotTimings.Open.SwingStart + " s), with DoorMoved then (" + movedAtStart + ")");
-        Check(Mathf.Abs(maxAngle - (ModuleUnits.DoorSwingDegrees + FrontRoomsShotTimings.Open.OvershootDeg)) < .3f && door.angle == ModuleUnits.DoorSwingDegrees
-            && Mathf.Abs(restAt - FrontRoomsShotTimings.Open.Duration) <= Dt * 2.1f,
-            "single-acting: it eases out onto the stop, overshoots to " + maxAngle.ToString("0.0") + "° and rests at " + door.angle.ToString("0.0") + "° at " + restAt.ToString("0.000") + " s (expected 97 / 95 / " + FrontRoomsShotTimings.Open.Duration + ")");
-        Check(FrontRoomsMapWorld.OnSwingSide(door, leaf.transform.position) && !FrontRoomsMapWorld.OnSwingSide(door, player.position) && world.CellOf(leaf.transform.position) == swingCell,
-            "single-acting: pushed open, the leaf rests in its swing-side cell " + swingCell + ", away from the opener");
-        Check(passageWrong == 0, "single-acting: PassageBetween is ClosedDoor below " + FrontRoomsMapWorld.DoorPassableDegrees + "° and Open from there (" + passageWrong + " frames wrong)");
-        Check(world.PassageBetween(door.a, door.b) == FrontRoomsMapWorld.Passage.Open && maxStep <= HingeStepLimit && overlapFrames == 0,
-            "single-acting: open at rest; largest hinge step " + maxStep.ToString("0.0") + "°; the opener never touched");
 
-        // 3. Shut: at once, a smooth close that lands in the frame (never through it), latched.
-        var movedBefore = moved;
-        world.Use(leaf);
-        var minAngle = float.MaxValue;
-        var shutAt = -1f;
-        for (var k = 1; k <= 60; k++)
+        // 3. Shut from the far side: at once, a smooth close that lands in the frame, latched, never toward the shutter.
         {
-            world.TickDoorsForTools(Dt);
-            minAngle = Mathf.Min(minAngle, door.angle);
-            if (shutAt < 0f && door.angle == 0f) shutAt = k * Dt;
-        }
-        Check(!door.open && moved == movedBefore + 1 && minAngle == 0f && Quaternion.Angle(door.hinge.localRotation, door.closed) < .01f
-            && Mathf.Abs(shutAt - FrontRoomsShotTimings.Open.SwingSeconds) <= Dt * 1.1f,
-            "single-acting: shut at once (DoorMoved), latched at " + shutAt.ToString("0.000") + " s, lowest angle " + minAngle.ToString("0.00") + "° (never through the frame)");
-
-        // 4. A pull from the swing side, standing in the leaf's sweep: DoorPulled first, with a clear spot; the leaf waits the pull beat and stops on the body.
-        player.position = FromPlan(door, .5f, .62f);
-        playerBody.transform.position = player.position;
-        Physics.SyncTransforms();
-        movedBefore = moved;
-        world.Use(leaf);
-        Check(pulled.Count == 1 && pulled[0].angleThen == 0f && pulled[0].openThen && moved == movedBefore,
-            "single-acting: pull: DoorPulled once, before the leaf moves (angle then " + (pulled.Count > 0 ? pulled[0].angleThen.ToString("0.0") : "-") + ")");
-        if (pulled.Count == 0) return;
-        var clear = pulled[0].clear;
-        var plan = Plan(door, clear);
-        var reach = ModuleUnits.DoorWidth - ModuleUnits.DoorLeafGap * .5f + ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.PlayerRadius;
-        Check(plan.magnitude >= reach + .03f && plan.x >= ModuleUnits.DoorWidth * .5f
-            && plan.y >= ModuleUnits.WallHalf + ModuleUnits.PlayerRadius && plan.y <= ModuleUnits.WallHalf + ModuleUnits.DoorClearDepth - ModuleUnits.PlayerRadius
-            && plan.x <= (MapGrid.CellSize + ModuleUnits.DoorWidth) * .5f - ModuleUnits.WallHalf - ModuleUnits.PlayerRadius
-            && world.CellOf(clear) == swingCell,
-            "single-acting: pull: the clear spot is " + plan.magnitude.ToString("0.00") + " m from the hinge (sweep + body " + reach.ToString("0.00") + "), " + plan.x.ToString("0.00")
-            + " m along toward the latch, " + plan.y.ToString("0.00") + " m out, inside the keep-clear strip and the cell " + swingCell);
-        startAt = -1f;
-        overlapFrames = 0;
-        var pullIgnored = false;
-        maxAngle = 0f;
-        for (var k = 1; k <= 120; k++)
-        {
-            world.TickDoorsForTools(Dt);
-            Physics.SyncTransforms();
-            if (k == 15)
+            var movedBefore = moved;
+            var latchedBefore = latchedEvents;
+            pulled.Clear();
+            world.Use(leaf);
+            var minAngle = float.MaxValue;
+            var shutAt = -1f;
+            for (var k = 1; k <= 60; k++)
             {
-                world.Use(leaf);
-                pullIgnored = door.open && door.angle == 0f;
+                world.TickDoorsForTools(Dt);
+                minAngle = Mathf.Min(minAngle, door.angle);
+                if (shutAt < 0f && door.angle == 0f) shutAt = k * Dt;
             }
-            if (startAt < 0f && door.angle > 0f) startAt = k * Dt;
-            maxAngle = Mathf.Max(maxAngle, door.angle);
-            if (Overlaps(leaf, playerBody)) overlapFrames++;
+            Check(!door.open && moved == movedBefore + 1 && minAngle == 0f && Quaternion.Angle(door.hinge.localRotation, door.closed) < .01f && pulled.Count == 0
+                && latchedEvents == latchedBefore + 1 && Mathf.Abs(shutAt - FrontRoomsShotTimings.Open.SwingSeconds) <= Dt * 1.1f,
+                "double-acting: shut from the far side at once (DoorMoved, no DoorPulled), latched at " + shutAt.ToString("0.000") + " s (DoorLatched), lowest angle " + minAngle.ToString("0.00") + "°");
         }
-        Check(pullIgnored, "single-acting: pull: a second E during the pull beat does nothing");
-        Check(Mathf.Abs(startAt - (FrontRoomsShotTimings.Open.SwingStart + FrontRoomsMapWorld.DoorPullBeatSeconds)) <= Dt * 1.1f,
-            "single-acting: pull: the leaf starts " + startAt.ToString("0.000") + " s after E (lever + pull beat " + (FrontRoomsShotTimings.Open.SwingStart + FrontRoomsMapWorld.DoorPullBeatSeconds).ToString("0.00") + ")");
-        Check(overlapFrames == 0 && maxAngle > 1f && door.angle < FrontRoomsMapWorld.DoorPassableDegrees
-            && world.PassageBetween(door.a, door.b) == FrontRoomsMapWorld.Passage.ClosedDoor,
-            "single-acting: pull: a player who stays put stops the leaf on their body at " + door.angle.ToString("0.0") + "°, never inside it; the way stays ClosedDoor");
-        // The player steps to the clear spot: the leaf goes on to its stop without touching them.
-        player.position = clear;
-        playerBody.transform.position = clear;
-        Physics.SyncTransforms();
-        overlapFrames = 0;
-        for (var k = 1; k <= 90; k++)
+
+        // 4. From the side the leaf last went to, standing in its old sweep (the single-acting pull): it turns away instead.
         {
-            world.TickDoorsForTools(Dt);
-            Physics.SyncTransforms();
-            if (Overlaps(leaf, playerBody)) overlapFrames++;
+            var at = FromPlan(door, .5f, .62f);
+            Put(player, playerBody, at);
+            var sideBefore = door.swing;
+            var movedBefore = moved;
+            pulled.Clear();
+            world.Use(leaf);
+            var turned = door.swing == -sideBefore && !FrontRoomsMapWorld.OnSwingSide(door, at);
+            float startAt = -1f;
+            var overlapFrames = 0;
+            for (var k = 1; k <= 90; k++)
+            {
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (startAt < 0f && door.angle > 0f) startAt = k * Dt;
+                if (Overlaps(leaf, playerBody)) overlapFrames++;
+            }
+            Check(turned && pulled.Count == 0 && overlapFrames == 0 && door.angle == ModuleUnits.DoorSwingDegrees && moved == movedBefore + 1
+                && Mathf.Abs(startAt - FrontRoomsShotTimings.Open.SwingStart) <= Dt * 1.1f && world.CellOf(leaf.transform.position) != world.CellOf(at),
+                "double-acting: from the side it last opened to (0.62 m out, in its old sweep) the leaf turns over and opens away at " + startAt.ToString("0.000") + " s: no DoorPulled, no pull beat, never touches the opener");
         }
-        Check(overlapFrames == 0 && door.angle == ModuleUnits.DoorSwingDegrees && world.PassageBetween(door.a, door.b) == FrontRoomsMapWorld.Passage.Open
-            && FrontRoomsMapWorld.OnSwingSide(door, leaf.transform.position),
-            "single-acting: pull: from the clear spot the leaf swings on to its stop (" + door.angle.ToString("0.0") + "°) toward the player, past them");
 
         // 5. Shutting onto a body in the doorway: the leaf stops on it, short of the frame.
-        player.position = FromPlan(door, .5f, 0f);
-        playerBody.transform.position = player.position;
-        Physics.SyncTransforms();
+        Put(player, playerBody, FromPlan(door, .5f, 0f));
         world.Use(leaf);
-        overlapFrames = 0;
+        var stopFrames = 0;
         for (var k = 1; k <= 60; k++)
         {
             world.TickDoorsForTools(Dt);
             Physics.SyncTransforms();
-            if (Overlaps(leaf, playerBody)) overlapFrames++;
+            if (Overlaps(leaf, playerBody)) stopFrames++;
         }
-        Check(!door.open && overlapFrames == 0 && door.angle > 20f,
-            "single-acting: shutting on a player in the doorway, the leaf stops on them at " + door.angle.ToString("0.0") + "°");
-        // They step out (to the stop side): it shuts and latches.
-        player.position = FromPlan(door, .5f, -1.5f);
-        playerBody.transform.position = player.position;
+        Check(!door.open && stopFrames == 0 && door.angle > 20f,
+            "double-acting: shutting on a player in the doorway, the leaf stops on them at " + door.angle.ToString("0.0") + "°");
+        // They step out (to the other side): it shuts and latches.
+        Put(player, playerBody, FromPlan(door, .5f, -1.5f));
         for (var k = 1; k <= 60; k++) world.TickDoorsForTools(Dt);
-        Check(door.angle == 0f, "single-acting: once they step out, it shuts and latches");
+        Check(door.angle == 0f, "double-acting: once they step out, it shuts and latches");
 
-        // 6. The Relay's body stops a leaf too (RelayBody, as the hunter sets it).
+        // 6. The Relay's body stops a leaf too (RelayBody, as the hunter sets it): a push from the far side meets it.
         var relayAt = FromPlan(door, .55f, .6f);
         var relayBody = TestBody(world, "test relay body", ModuleUnits.RelayRadius);
         relayBody.transform.position = relayAt;
         world.RelayBody = () => relayAt;
-        player.position = FromPlan(door, .5f, -1.5f);
+        Put(player, playerBody, FromPlan(door, .5f, -1.5f));
         world.Use(leaf);
-        overlapFrames = 0;
+        var relayOverlap = 0;
         for (var k = 1; k <= 60; k++)
         {
             world.TickDoorsForTools(Dt);
             Physics.SyncTransforms();
-            if (Overlaps(leaf, relayBody)) overlapFrames++;
+            if (Overlaps(leaf, relayBody)) relayOverlap++;
         }
         var heldAt = door.angle;
         world.RelayBody = null;
+        relayBody.transform.position += Vector3.down * 10f;
         for (var k = 1; k <= 60; k++) world.TickDoorsForTools(Dt);
-        Check(overlapFrames == 0 && heldAt > 1f && heldAt < 60f && door.angle == ModuleUnits.DoorSwingDegrees,
-            "single-acting: a push stops on the Relay's body at " + heldAt.ToString("0.0") + "° and goes on once it is gone");
+        Check(relayOverlap == 0 && heldAt > 1f && heldAt < 60f && door.angle == ModuleUnits.DoorSwingDegrees,
+            "double-acting: a push stops on the Relay's body beyond the door at " + heldAt.ToString("0.0") + "° and goes on once it is gone");
 
-        // 8. The game's pull step: the player walks to the clear spot (PullStepSpeed, at most PullStepSeconds),
-        //    from the frame after E, and the leaf never meets them on its way to the stop.
-        ShutAndLatch(world, door, player, playerBody);
-        var stepStart = FromPlan(door, .5f, .62f);
-        player.position = stepStart;
-        playerBody.transform.position = stepStart;
-        Physics.SyncTransforms();
-        pulled.Clear();
-        world.Use(leaf);
-        var stepOk = pulled.Count == 1;
-        var stepTo = stepOk ? pulled[0].clear : stepStart;
-        var stepped = 0f;
-        overlapFrames = 0;
-        var bodyStoppedLeaf = false;
-        for (var k = 1; k <= 90; k++)
+        // 7. Shutting from the leaf's side, standing in its sweep: DoorPulled with a clear spot, and the game's step
+        //    (PullStepSpeed for at most PullStepSeconds; Red's A12 answer keeps it) gets them clear while it shuts.
         {
-            var was = door.angle;
-            if (k >= 2 && stepped <= FrontRoomsMapWorld.PullStepSeconds)
+            var stepStart = FromPlan(door, .5f, .62f);
+            Put(player, playerBody, stepStart);
+            pulled.Clear();
+            world.Use(leaf);
+            var stepOk = pulled.Count == 1 && pulled[0].angleThen == ModuleUnits.DoorSwingDegrees && !pulled[0].openThen;
+            var clear = stepOk ? pulled[0].clear : stepStart;
+            var plan = Plan(door, clear);
+            var reach = ModuleUnits.DoorWidth - ModuleUnits.DoorLeafGap * .5f + ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.PlayerRadius;
+            Check(stepOk && plan.magnitude >= reach + .03f && plan.x >= ModuleUnits.DoorWidth * .5f
+                && plan.y >= ModuleUnits.WallHalf + ModuleUnits.PlayerRadius && plan.y <= ModuleUnits.WallHalf + ModuleUnits.DoorClearDepth - ModuleUnits.PlayerRadius
+                && plan.x <= (MapGrid.CellSize + ModuleUnits.DoorWidth) * .5f - ModuleUnits.WallHalf - ModuleUnits.PlayerRadius
+                && world.CellOf(clear) == world.CellOf(stepStart),
+                "double-acting: shut from the leaf's side in its sweep: DoorPulled once, the clear spot " + plan.magnitude.ToString("0.00") + " m from the hinge (sweep + body " + reach.ToString("0.00") + "), "
+                + plan.x.ToString("0.00") + " m toward the latch, " + plan.y.ToString("0.00") + " m out, in the keep-clear strip and the same cell");
+            var stepped = 0f;
+            var overlapFrames = 0;
+            var bodyStoppedLeaf = false;
+            for (var k = 1; k <= 90; k++)
             {
-                var to = stepTo - player.position;
-                to.y = 0f;
-                if (to.magnitude >= 1e-3f)
+                var was = door.angle;
+                if (k >= 2 && stepped <= FrontRoomsMapWorld.PullStepSeconds)
                 {
-                    player.position += Vector3.ClampMagnitude(to, FrontRoomsMapWorld.PullStepSpeed * Dt);
-                    playerBody.transform.position = player.position;
-                    stepped += Dt;
+                    var to = clear - player.position;
+                    to.y = 0f;
+                    if (to.magnitude >= 1e-3f)
+                    {
+                        player.position += Vector3.ClampMagnitude(to, FrontRoomsMapWorld.PullStepSpeed * Dt);
+                        playerBody.transform.position = player.position;
+                        stepped += Dt;
+                    }
                 }
+                Physics.SyncTransforms();
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (Overlaps(leaf, playerBody)) overlapFrames++;
+                // Once moving, the leaf only goes on toward the frame (a body in the way would hold it).
+                if (was > 1f && was < ModuleUnits.DoorSwingDegrees - 1f && door.angle >= was - 1e-4f) bodyStoppedLeaf = true;
             }
-            Physics.SyncTransforms();
-            world.TickDoorsForTools(Dt);
-            Physics.SyncTransforms();
-            if (Overlaps(leaf, playerBody)) overlapFrames++;
-            // Once moving, the leaf only goes on toward the stop (a body in the way would hold it).
-            if (was > 1f && was < ModuleUnits.DoorSwingDegrees - 1f && door.angle <= was + 1e-4f) bodyStoppedLeaf = true;
+            Check(stepOk && overlapFrames == 0 && !bodyStoppedLeaf && door.angle == 0f && Flat(player.position - clear) < 1e-3f && stepped <= FrontRoomsMapWorld.PullStepSeconds + Dt,
+                "double-acting: the step: the player walks " + Flat(clear - stepStart).ToString("0.00") + " m clear in " + stepped.ToString("0.00")
+                + " s (≤ " + FrontRoomsMapWorld.PullStepSeconds + "), the leaf shuts to " + door.angle.ToString("0.0") + "° without touching or stopping on them");
         }
-        Check(stepOk && overlapFrames == 0 && !bodyStoppedLeaf && door.angle == ModuleUnits.DoorSwingDegrees
-            && Flat(player.position - stepTo) < 1e-3f && stepped <= FrontRoomsMapWorld.PullStepSeconds + Dt,
-            "single-acting: pull step: the player walks " + Flat(stepTo - stepStart).ToString("0.00") + " m clear in " + stepped.ToString("0.00")
-            + " s (≤ " + FrontRoomsMapWorld.PullStepSeconds + "), the leaf swings to " + door.angle.ToString("0.0") + "° without touching or stopping on them");
 
-        // 9. Beside the hinge, past the open leaf: a pull from there moves no one and touches no one.
-        ShutAndLatch(world, door, player, playerBody);
-        var hingeSide = FromPlan(door, -.5f, .75f);
-        player.position = hingeSide;
-        playerBody.transform.position = hingeSide;
-        Physics.SyncTransforms();
-        pulled.Clear();
-        world.Use(leaf);
-        overlapFrames = 0;
-        for (var k = 1; k <= 90; k++)
+        // 8a. E on a leaf resting on its shutter (a chase: no step): the leaf turns back open, away from them.
         {
-            world.TickDoorsForTools(Dt);
-            Physics.SyncTransforms();
-            if (Overlaps(leaf, playerBody)) overlapFrames++;
+            Put(player, playerBody, FromPlan(door, .5f, -.9f));
+            world.Use(leaf);
+            for (var k = 1; k <= 90; k++) world.TickDoorsForTools(Dt);
+            var inSweep = FromPlan(door, .5f, .62f);
+            Put(player, playerBody, inSweep);
+            world.Use(leaf);
+            for (var k = 1; k <= 60; k++) { world.TickDoorsForTools(Dt); Physics.SyncTransforms(); }
+            var restingAt = door.angle;
+            var side = door.swing;
+            pulled.Clear();
+            world.Use(leaf);
+            var overlapFrames = 0;
+            var minAngle = restingAt;
+            for (var k = 1; k <= 60; k++)
+            {
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                minAngle = Mathf.Min(minAngle, door.angle);
+                if (Overlaps(leaf, playerBody)) overlapFrames++;
+            }
+            Check(restingAt > 1f && restingAt < ModuleUnits.DoorSwingDegrees && door.open && door.swing == side && minAngle >= restingAt - 1e-3f && door.angle == ModuleUnits.DoorSwingDegrees
+                && overlapFrames == 0 && pulled.Count == 0,
+                "double-acting: E on a leaf resting on its shutter at " + restingAt.ToString("0.0") + "°: it turns back open to 95° on its side, away from them, never toward them");
         }
-        Check(door.open && door.pull && pulled.Count == 0 && overlapFrames == 0 && door.angle == ModuleUnits.DoorSwingDegrees,
-            "single-acting: from beside the hinge (out of the sweep) a pull raises no DoorPulled (" + pulled.Count + ") and the leaf opens to " + door.angle.ToString("0.0") + "° past them");
 
-        // 7. An open door is rebuilt open, on its stop, on its own side.
-        var edge = door.edge;
-        world.RebuildChunk(MapGrid.ChunkOf(door.a));
-        var again = world.DoorBetween(door.a, door.b);
-        Check(again != null && again != door && again.edge == edge && again.open && again.angle == ModuleUnits.DoorSwingDegrees
-            && FrontRoomsMapWorld.OnSwingSide(again, again.leaf.transform.position),
-            "single-acting: an open door is rebuilt open at 95° on its swing side");
+        // 8b. Push-through: the shutter stands behind the leaf (between it and the hinge-side wall); the leaf shuts away
+        //     from them, and E again mid-shut carries it on through the frame to the far side, without latching.
+        {
+            var behind = FromPlan(door, -.45f, .55f);
+            Put(player, playerBody, behind);
+            pulled.Clear();
+            world.Use(leaf);
+            var noStep = pulled.Count == 0;
+            for (var k = 1; k <= 60 && door.angle > 45f; k++) { world.TickDoorsForTools(Dt); Physics.SyncTransforms(); }
+            var midAngle = door.angle;
+            var side = door.swing;
+            var movedBefore = moved;
+            var latchedBefore = latchedEvents;
+            world.Use(leaf);
+            var movedAtUse = moved - movedBefore;
+            int zeroFrames = 0, overlapFrames = 0;
+            var maxStep = 0f;
+            var crossedAt = -1f;
+            for (var k = 1; k <= 90; k++)
+            {
+                var was = door.angle;
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (door.angle == 0f) zeroFrames++;
+                if (crossedAt < 0f && door.swing == -side) crossedAt = k * Dt;
+                maxStep = Mathf.Max(maxStep, Mathf.Abs(door.angle - was));
+                if (Overlaps(leaf, playerBody)) overlapFrames++;
+            }
+            var expectCross = midAngle / (2f * FrontRoomsShotTimings.Open.SwingDeg / FrontRoomsShotTimings.Open.SwingSeconds);
+            Check(noStep && midAngle > 20f && midAngle < 60f && movedAtUse == 1 && latchedEvents == latchedBefore && zeroFrames <= 1 && door.swing == -side
+                && Mathf.Abs(crossedAt - expectCross) <= Dt * 2.1f && door.open && door.angle == ModuleUnits.DoorSwingDegrees && !FrontRoomsMapWorld.OnSwingSide(door, behind)
+                && world.CellOf(leaf.transform.position) != world.CellOf(behind) && overlapFrames == 0 && maxStep <= HingeStepLimit,
+                "double-acting: push-through from behind the leaf at " + midAngle.ToString("0.0") + "°: DoorMoved once at E, through the frame at " + crossedAt.ToString("0.000")
+                + " s (" + expectCross.ToString("0.000") + " expected, " + zeroFrames + " frame at 0°, no DoorLatched), open to 95° on the far side, never touching them");
+            var edge = door.edge;
+            var leafCell = world.CellOf(leaf.transform.position);
+            var sideNow = door.swing;
+            world.RebuildChunk(MapGrid.ChunkOf(door.a));
+            var again = world.DoorBetween(door.a, door.b);
+            Check(again != null && again != door && again.edge == edge && again.open && again.angle == ModuleUnits.DoorSwingDegrees && again.swing == sideNow
+                && world.CellOf(again.leaf.transform.position) == leafCell,
+                "double-acting: rebuilt after a push-through, the door is open at 95° on the side it went to");
+            door = again;
+            leaf = door.leaf;
+        }
+
+        // 9. Beside the hinge, on the side the leaf last went to: it turns over and opens away; no one is moved or touched.
+        {
+            ShutAndLatch(world, door, player, playerBody);
+            var hingeSide = FromPlan(door, -.5f, .75f);
+            Put(player, playerBody, hingeSide);
+            pulled.Clear();
+            world.Use(leaf);
+            var overlapFrames = 0;
+            for (var k = 1; k <= 90; k++)
+            {
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                if (Overlaps(leaf, playerBody)) overlapFrames++;
+            }
+            Check(door.open && !door.pull && pulled.Count == 0 && overlapFrames == 0 && door.angle == ModuleUnits.DoorSwingDegrees && !FrontRoomsMapWorld.OnSwingSide(door, hingeSide),
+                "double-acting: from beside the hinge the leaf opens to the far side (" + door.angle.ToString("0.0") + "°): no DoorPulled, never touched");
+        }
         UnityEngine.Object.DestroyImmediate(playerBody.gameObject);
         UnityEngine.Object.DestroyImmediate(relayBody.gameObject);
     }
 
-    // Shut a door from its stop side and tick it into the frame.
+    // Shut a door from the side away from its leaf and tick it into the frame.
     static void ShutAndLatch(FrontRoomsMapWorld world, FrontRoomsMapWorld.Door door, Transform player, Collider playerBody)
     {
         player.position = FromPlan(door, .5f, -1.5f);
@@ -1000,7 +1101,7 @@ public static class FrontRoomsMapInteractionTests
         for (var k = 1; k <= 90; k++) world.TickDoorsForTools(Dt);
     }
 
-    // ---------- The Relay breaking a door from either side ----------
+    // ---------- The Relay breaking a door from either side (A12: the leaf always bursts away from it) ----------
 
     static void RelayBreaks(List<GameObject> roots)
     {
@@ -1013,17 +1114,17 @@ public static class FrontRoomsMapInteractionTests
         body.radius = ModuleUnits.PlayerRadius;
         body.center = Vector3.up * (ModuleUnits.PlayerHeight * .5f);
         var reachRelay = ModuleUnits.DoorWidth - ModuleUnits.DoorLeafGap * .5f + ModuleUnits.DoorLeafThickness * .5f + ModuleUnits.RelayRadius;
-        foreach (var fromSwing in new[] { true, false })
+        foreach (var ledToward in new[] { true, false })
         {
-            var label = "relay breaks from the " + (fromSwing ? "swing" : "stop") + " side: ";
-            if (!FindDoor(world, out var a, out var b, out var c, (d, near) => FrontRoomsMapWorld.OnSwingSide(d, world.CellCenter(near)) == fromSwing))
+            var label = "relay breaks a door last open " + (ledToward ? "toward" : "away from") + " it: ";
+            if (!FindDoor(world, out var a, out var b, out var c, (d, near) => FrontRoomsMapWorld.OnSwingSide(d, world.CellCenter(near)) == ledToward))
             {
                 Check(false, label + "no closed door with an open cell behind it near the spawn");
                 continue;
             }
             var door = world.DoorBetween(a, b);
-            // The side its leaf must end on, read before the break: the near cell when the Relay comes from the swing side.
-            var swingCell = fromSwing ? a : b;
+            // A12: whichever side the leaf last went to, a shut leaf bursts away from the Relay, into the far cell b.
+            var swingCell = b;
             var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
             var hunter = new FrontRoomsMapHunter(world, tuning, body, null, 5);
             var target = world.CellCenter(b);
@@ -1068,10 +1169,10 @@ public static class FrontRoomsMapInteractionTests
                 if (door.broken && hunter.State == HunterState.Search) break;
             }
             world.DoorBrokenFrom -= OnBrokenFrom;
-            Check(door.broken && brokenFrom.Count == 1 && brokenFrom[0].swingSide == fromSwing && (brokenFrom[0].at - stance).sqrMagnitude < .01f,
-                label + "DoorBrokenFrom once, from the " + (brokenFrom.Count > 0 ? (brokenFrom[0].swingSide ? "swing" : "stop") : "-") + " side, at where it stood");
-            Check(breakFrames > 0 && standOnSwingSide == (fromSwing ? breakFrames : 0) && (!fromSwing || minReach >= reachRelay),
-                label + "it stands on its own side for the whole break, " + minReach.ToString("0.00") + " m from the hinge" + (fromSwing ? " (out of the sweep: ≥ " + reachRelay.ToString("0.00") + ")" : ""));
+            Check(door.broken && brokenFrom.Count == 1 && !brokenFrom[0].swingSide && (brokenFrom[0].at - stance).sqrMagnitude < .01f,
+                label + "DoorBrokenFrom once, from the side away from the leaf (" + (brokenFrom.Count > 0 ? (brokenFrom[0].swingSide ? "toward" : "away") : "-") + "), at where it stood");
+            Check(breakFrames > 0 && standOnSwingSide == 0,
+                label + "it shoulders the door in front of the opening for the whole break, never on the leaf's side (" + standOnSwingSide + " frames; " + minReach.ToString("0.00") + " m from the hinge, sweep " + reachRelay.ToString("0.00") + ")");
             Check(markedFrames == breakFrames && promptFrames == 0 && useIgnored && !world.IsBeingBroken(door),
                 label + "while it breaks the door: IsBeingBroken, no prompt, E does nothing; cleared once broken");
             Check(minFacing > .3f, label + "it faces the door while it breaks it (worst " + minFacing.ToString("0.00") + ")");
@@ -1081,7 +1182,7 @@ public static class FrontRoomsMapInteractionTests
             Check(world.CellOf(door.leaf.transform.position) == swingCell && FrontRoomsMapWorld.OnSwingSide(door, door.leaf.transform.position)
                 && Mathf.Abs(door.angle - FrontRoomsShotTimings.DoorBreak.BounceRestDeg) < .01f
                 && maxAngle >= FrontRoomsMapWorld.DoorBreakThrowDegrees - 1f && maxStep <= HingeStepLimit && Mathf.Abs(tilt - FrontRoomsShotTimings.DoorBreak.CrookedDeg) < .05f,
-                label + "the leaf is thrown to " + maxAngle.ToString("0.0") + "° into its swing-side cell " + swingCell + " (" + (fromSwing ? "toward" : "away from") + " the Relay) and rests at " + door.angle.ToString("0.0") + "°, " + tilt.ToString("0.0") + "° crooked; largest hinge step " + maxStep.ToString("0.0") + "°");
+                label + "the leaf is thrown to " + maxAngle.ToString("0.0") + "° into the far cell " + swingCell + " (away from the Relay) and rests at " + door.angle.ToString("0.0") + "°, " + tilt.ToString("0.0") + "° crooked; largest hinge step " + maxStep.ToString("0.0") + "°");
         }
 
         // A break seen at a very low frame rate: the hinge never turns more than DoorMaxStepDegrees in one frame.
@@ -1100,6 +1201,144 @@ public static class FrontRoomsMapInteractionTests
                 "relay breaks: at 4 fps the hinge turns at most " + maxStep.ToString("0.0") + "° a frame and still rests at " + door.angle.ToString("0.0") + "°");
         }
         else Check(false, "relay breaks: no third closed door for the low frame rate break");
+
+        // A12 contract rule 7, the kept rip: a leaf caught partly open on the Relay's side keeps its side. The Relay stands beside
+        // the latch, out of the leaf's sweep (BreakStance: ClearOfSwing), and the leaf is thrown toward it (DoorBrokenFrom from the
+        // swing side). The leaf is held by the map's player, a body that stays put: on the Relay's own body a leaf would go on
+        // shutting once it stepped away, and latch.
+        RelayRipsHeldLeaf(world, player, body, reachRelay);
+    }
+
+    static void RelayRipsHeldLeaf(FrontRoomsMapWorld world, Transform player, Collider body, float reachRelay)
+    {
+        const string label = "relay breaks a leaf held partly open on its side (the rip): ";
+        if (!FindDoor(world, out var a, out var b, out var c))
+        {
+            Check(false, label + "no fourth closed door with an open cell behind it near the spawn");
+            return;
+        }
+        var door = world.DoorBetween(a, b);
+        // The Relay first, standing in c: from here on a leaf stops on its body (RelayBody), not on an earlier case's Relay.
+        var tuning = new FrontRoomsHunterTuning { sightRange = 0f };
+        var hunter = new FrontRoomsMapHunter(world, tuning, body, null, 5);
+        hunter.DebugPlace(world.CellCenter(c));
+        var target = world.CellCenter(b);
+        player.position = target;
+        // The map's player (BuildForCapture's eye: LimitByBodies stops every leaf on it) waits in b, behind the opening leaf.
+        var holder = world.Player;
+        var holderWas = holder.position;
+        holder.position = world.CellCenter(b);
+        Physics.SyncTransforms();
+        // Opened from the far cell b, the leaf swings away from there: into a, the side the Relay will come from.
+        var opened = world.TryOpenDoor(b, a);
+        for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+        // Then it steps into the leaf's return sweep in the mouth of the opening (0.60 m along, 0.40 m out, its body just off the
+        // trim's face) and shuts it from there: the leaf stops on it about 64 degrees out of the frame (bearing 33.7 + contact
+        // half-angle 30.4), short of DoorPassableDegrees (70), so the door is still no way through. That spot is about 0.65 m
+        // from the Relay's stance beside the latch (ClearOfSwing: about 1.10 m along, 0.81 m out), so the two bodies (0.3 m
+        // each) do not overlap. Nearer the hinge the leaf would rest at 70 degrees or more (open: no rip); further along it
+        // would stand within two bodies of the Relay. Nothing answers DoorPulled here (no game), so it stays put.
+        var holderAt = FromPlan(door, .6f, .4f);
+        holder.position = holderAt;
+        Physics.SyncTransforms();
+        var shut = world.Use(door.leaf);
+        for (var k = 0; k < 90; k++) world.TickDoorsForTools(Dt);
+        Physics.SyncTransforms();
+        var heldAt = door.angle;
+        var leafInA = world.CellOf(door.leaf.transform.position) == a;
+        Check(opened && shut == FrontRoomsMapWorld.UseResult.Shut && !door.open && !door.broken && !FrontRoomsMapWorld.IsLatched(door) && heldAt >= 30f && heldAt < FrontRoomsMapWorld.DoorPassableDegrees
+            && FrontRoomsMapWorld.OnSwingSide(door, world.CellCenter(a)) && leafInA && world.PassageBetween(a, b) == FrontRoomsMapWorld.Passage.ClosedDoor,
+            label + "setup: opened from " + b + " and shut onto a body standing in its sweep, the leaf rests at " + heldAt.ToString("0.0") + "° in " + a
+            + " (" + (leafInA ? "the Relay's side" : "the far side") + "), shut but not latched, no way through");
+
+        hunter.Noise(target, 1000f);
+        var brokenEvents = 0;
+        var brokenSwingSide = false;
+        var brokenAngle = -1f;
+        var brokenAt = Vector3.zero;
+        void OnBrokenFrom(FrontRoomsMapWorld.Door d, Vector3 at, bool swingSide)
+        {
+            if (d.edge != door.edge) return;
+            brokenEvents++;
+            brokenSwingSide = swingSide;
+            brokenAngle = d.angle;
+            brokenAt = at;
+        }
+        world.DoorBrokenFrom += OnBrokenFrom;
+        float minReach = float.MaxValue, maxAngle = 0f, maxStep = 0f, startAngle = -1f;
+        // Where it stands in the door's plan over the break (along from the hinge, out into the swing side, from the hinge),
+        // and how squarely it faces the lock on its own face.
+        float minAlong = float.MaxValue, maxOut = float.MinValue, maxReach = 0f, minLockFacing = 1f;
+        int breakFrames = 0, standOnSwingSide = 0;
+        Vector3 stance = default;
+        try
+        {
+            for (var t = 0f; t < 40f; t += Dt)
+            {
+                var was = door.angle;
+                hunter.Tick(Dt, target, target + Vector3.up * ModuleUnits.PlayerEye, Vector3.forward);
+                // The leaf as the break begins (a latched leaf would have been turned away by now; this one is out of the frame).
+                if (hunter.State == HunterState.BreakDoor && breakFrames == 0) startAngle = door.angle;
+                world.TickDoorsForTools(Dt);
+                Physics.SyncTransforms();
+                maxAngle = Mathf.Max(maxAngle, door.angle);
+                maxStep = Mathf.Max(maxStep, Mathf.Abs(door.angle - was));
+                // Every frame of the break, the throw and the fall included (it stands still until it walks on).
+                if (hunter.State == HunterState.BreakDoor)
+                {
+                    breakFrames++;
+                    if (!door.broken) stance = hunter.Position;
+                    if (FrontRoomsMapWorld.OnSwingSide(door, hunter.Position)) standOnSwingSide++;
+                    var plan = Plan(door, hunter.Position);
+                    minReach = Mathf.Min(minReach, plan.magnitude);
+                    minAlong = Mathf.Min(minAlong, plan.x);
+                    maxOut = Mathf.Max(maxOut, plan.y);
+                    maxReach = Mathf.Max(maxReach, plan.magnitude);
+                    var toLock = FrontRoomsMapWorld.LockPoint(door, hunter.Position) - hunter.Position;
+                    toLock.y = 0f;
+                    minLockFacing = Mathf.Min(minLockFacing, Vector3.Dot(hunter.Heading, toLock.normalized));
+                }
+                if (door.broken && hunter.State == HunterState.Search) break;
+            }
+        }
+        finally
+        {
+            world.DoorBrokenFrom -= OnBrokenFrom;
+            holder.position = holderWas;
+            Physics.SyncTransforms();
+        }
+        Check(breakFrames > 0 && startAngle >= 30f && startAngle < FrontRoomsMapWorld.DoorPassableDegrees,
+            label + "it breaks the door (no wait at the stance: the door is shut, not open) with the leaf still out of the frame at " + startAngle.ToString("0.0") + "° (not latched)");
+        Check(breakFrames > 0 && standOnSwingSide == breakFrames && minReach >= reachRelay,
+            label + "it stands beside the latch on the leaf's side for all " + breakFrames + " break frames (" + standOnSwingSide + " on that side), never in the sweep: "
+            + minReach.ToString("0.000") + " m from the hinge at the closest (sweep " + reachRelay.ToString("0.000") + ")");
+        // Beside the latch, not just out of the sweep, and facing the lock it rips the leaf by. ClearOfSwing's stance (body
+        // 0.35 m) is at least 1.365 m from the hinge and at most 0.83 m out, so at least 1.08 m along: past the latch jamb
+        // (DoorWidth), even 4 cm short of it (MoveDirect). Its body stays inside the 1.2 m keep-clear strip, within a hand of
+        // the sweep. It faces the lock from where it stands (BreakStance), so the worst facing is about 1; the face stance in
+        // front of the opening (0.5 m along) faces the door at about 0.7 to the lock, which these bounds tell apart.
+        var stripOut = ModuleUnits.WallHalf + ModuleUnits.DoorClearDepth - ModuleUnits.RelayRadius;
+        Check(breakFrames > 0 && minAlong >= ModuleUnits.DoorWidth && maxOut <= stripOut && maxReach <= reachRelay + .15f,
+            label + "it stands beside the latch: " + minAlong.ToString("0.000") + " m along at the least (past the latch jamb at " + ModuleUnits.DoorWidth.ToString("0.00")
+            + "), " + maxOut.ToString("0.000") + " m out at the most (its body in the keep-clear strip: " + stripOut.ToString("0.00") + "), "
+            + maxReach.ToString("0.000") + " m from the hinge at the farthest (sweep + 0.15: " + (reachRelay + .15f).ToString("0.000") + ")");
+        Check(breakFrames > 0 && minLockFacing > .9f,
+            label + "it faces the lock on its face for every break frame (worst " + minLockFacing.ToString("0.00") + ", at least 0.9)");
+        var holderGap = new Vector2(holderAt.x - stance.x, holderAt.z - stance.z).magnitude;
+        Check(breakFrames > 0 && holderGap >= ModuleUnits.PlayerRadius + ModuleUnits.RelayRadius,
+            label + "the body holding the leaf stands clear of the Relay: " + holderGap.ToString("0.000") + " m apart (two bodies "
+            + (ModuleUnits.PlayerRadius + ModuleUnits.RelayRadius).ToString("0.00") + ")");
+        Check(door.broken && brokenEvents == 1 && brokenSwingSide && (brokenAt - stance).sqrMagnitude < .01f && brokenAngle >= 30f && brokenAngle < FrontRoomsMapWorld.DoorPassableDegrees,
+            label + "DoorBrokenFrom " + brokenEvents + " time(s), from the " + (brokenEvents > 0 ? (brokenSwingSide ? "leaf's (swing)" : "far") : "-") + " side, at where it stood; the leaf ripped from "
+            + brokenAngle.ToString("0.0") + "°");
+        var tilt = Quaternion.Angle(door.leaf.transform.localRotation, Quaternion.identity);
+        var restCell = world.CellOf(door.leaf.transform.position);
+        Check(door.broken && restCell == a && FrontRoomsMapWorld.OnSwingSide(door, door.leaf.transform.position) && FrontRoomsMapWorld.OnSwingSide(door, stance)
+            && Mathf.Abs(door.angle - FrontRoomsShotTimings.DoorBreak.BounceRestDeg) < .01f && maxAngle >= FrontRoomsMapWorld.DoorBreakThrowDegrees - 1f
+            && Mathf.Abs(tilt - FrontRoomsShotTimings.DoorBreak.CrookedDeg) < .05f,
+            label + "the leaf keeps its side: thrown to " + maxAngle.ToString("0.0") + "° into " + restCell + " (" + (restCell == a ? "the Relay's cell" : "not the Relay's cell " + a) + "), it rests there at " + door.angle.ToString("0.0") + "°, "
+            + tilt.ToString("0.0") + "° crooked");
+        Check(maxStep <= HingeStepLimit, label + "the hinge never turns more than " + HingeStepLimit.ToString("0") + "° in a frame (largest " + maxStep.ToString("0.0") + "°)");
     }
 
     // ---------- The Relay leaving a break ----------
@@ -1806,6 +2045,58 @@ public static class FrontRoomsMapInteractionTests
         world.SetLampMode(failing, ModuleLamp.Auto);
         if (stutter != failing) world.SetLampMode(stutter, ModuleLamp.Auto);
         for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
+
+        // M2 (RELAY 9.5): from stage 1 the room's Dead lamps strike no blink until stage 0 (the map's SetAmbientHold);
+        // a Dead lamp outside the room strikes as ever; the hold moves with the player and Reset lets it go.
+        probe.RoomForTools(p, far);
+        var roomSet = new List<GridCoord>(probe.RoomSet);
+        var deadIn = roomSet.Where(c => world.LampLevel(c) != FrontRoomsMapWorld.NoLamp).Take(3).ToList();
+        GridCoord? other = null;
+        for (var y = mid.y - 10; y <= mid.y + 10 && !other.HasValue; y++)
+        for (var x = mid.x - 10; x <= mid.x + 10 && !other.HasValue; x++)
+        {
+            var c = new GridCoord(x, y);
+            if (world.LampLevel(c) == FrontRoomsMapWorld.NoLamp || roomSet.Any(r => Mathf.Max(Mathf.Abs(r.x - c.x), Mathf.Abs(r.y - c.y)) < 4)) continue;
+            probe.RoomForTools(world.CellCenter(c), far);
+            if (probe.RoomSet.Contains(c) && !probe.RoomSet.Any(deadIn.Contains)) other = c;
+        }
+        if (deadIn.Count == 0 || !other.HasValue) { Check(false, label + "M2: no lamp in the room (" + deadIn.Count + ") or no lamp in another room near the spawn"); return; }
+        var outside = other.Value;
+        foreach (var c in deadIn) world.SetLampMode(c, ModuleLamp.Dead);
+        world.SetLampMode(outside, ModuleLamp.Dead);
+        var holder = new FrontRoomsWarnLamps(world, 31337);
+        int litIn = 0, litOutside = 0;
+        void RunHold(float seconds, int stage, Vector3 at)
+        {
+            for (var s = 0f; s < seconds - 1e-4f; s += Dt)
+            {
+                clock += Dt;
+                holder.Tick(Dt, stage, false, at, far);
+                world.TickFixturesForTools(Dt);
+                foreach (var c in deadIn) if (world.LampBaseLevel(c) > 0f) litIn++;
+                if (world.LampBaseLevel(outside) > 0f) litOutside++;
+            }
+        }
+        RunHold(45f, 1, p);
+        RunHold(15f, 2, p);
+        var heldAll = deadIn.All(world.AmbientHeld) && holder.HeldCells.Count == roomSet.Count && !world.AmbientHeld(outside);
+        Check(litIn == 0 && litOutside > 0 && heldAll,
+            label + "M2: through 60 s of warning (stages 1 and 2) the room's " + deadIn.Count + " Dead lamps never strike (" + litIn + " lit frames), held (" + heldAll + "); a Dead lamp in another room does (" + litOutside + ")");
+        RunHold(Dt, 0, p);
+        var released = holder.HeldCells.Count == 0 && world.AmbientHoldCount == 0;
+        litIn = 0;
+        RunHold(45f, 0, p);
+        Check(released && litIn > 0, label + "M2: at stage 0 the hold lets go (" + released + ") and the room's Dead lamps strike again within 45 s (" + litIn + " lit frames)");
+        RunHold(.5f, 1, p);
+        var heldHere = deadIn.All(world.AmbientHeld);
+        RunHold(Dt, 1, world.CellCenter(outside));
+        var moved = heldHere && !deadIn.Any(world.AmbientHeld) && world.AmbientHeld(outside);
+        holder.Reset();
+        Check(moved && world.AmbientHoldCount == 0 && holder.HeldCells.Count == 0,
+            label + "M2: the hold moves with the player to another room (" + moved + "); Reset lets go of it (" + world.AmbientHoldCount + " held)");
+        foreach (var c in deadIn) world.SetLampMode(c, ModuleLamp.Auto);
+        world.SetLampMode(outside, ModuleLamp.Auto);
+        for (var s = 0f; s < 2f; s += Dt) world.TickFixturesForTools(Dt);
     }
 
     static float LastStart(List<float> times) => times.Count > 0 ? times[times.Count - 1] : float.NegativeInfinity;
@@ -2011,17 +2302,17 @@ public static class FrontRoomsMapInteractionTests
         world.BeginGlassHold(pane, root.TransformPoint(new Vector3(-.3f, 1.5f, 0f)), root.forward);
         world.TryGetGlassBreak(window.edge, out var resumed);
         while (p < .75f) world.Hold(pane, Dt, out p);
-        Check(cracks.Count == 2 && cracks[0] == 1 && cracks[1] == 2 && Mathf.Abs(floor - FrontRoomsShotTimings.GlassBreak.Crack1) < 1e-4f && resumed.impact == record.impact,
-            "glass: cracks 1 then 2, once each (" + string.Join(",", cracks) + "); a release drops to 0.35 (" + floor.ToString("0.00") + "); a resumed strike keeps the impact");
+        Check(cracks.Count == 2 && cracks[0] == 1 && cracks[1] == 2 && floor >= .5f && floor < .5f + 2f * Dt && resumed.impact == record.impact && resumed.hold == floor,
+            "glass: cracks 1 then 2, once each (" + string.Join(",", cracks) + "); a release keeps the progress (" + floor.ToString("0.000") + ", kept in the record); a resumed strike keeps the impact");
 
-        // A rebuild: the window goes and comes back cracked, from 0.70.
+        // A rebuild: the window goes and comes back cracked, from the progress it had.
         var chunk = MapGrid.ChunkOf(window.a);
         world.RebuildChunk(chunk);
         if (!released.Contains(window)) { chunk = MapGrid.ChunkOf(window.b); world.RebuildChunk(chunk); }
         var again = built.LastOrDefault(x => x.window.edge == window.edge);
         Check(released.Contains(window) && again.window != null && again.window != window && again.record.stage == 2 && again.window.stage == 2
-              && Mathf.Abs(again.window.hold - FrontRoomsShotTimings.GlassBreak.Crack2) < 1e-4f && again.record.impact == record.impact,
-            "glass: a rebuild raises WindowReleased, then WindowBuilt with the record (stage " + again.record.stage + "), resuming from 0.70");
+              && Mathf.Abs(again.window.hold - p * FrontRoomsShotTimings.GlassBreak.HoldSeconds) < 1e-4f && again.record.impact == record.impact,
+            "glass: a rebuild raises WindowReleased, then WindowBuilt with the record (stage " + again.record.stage + "), resuming from the kept progress (" + again.window.hold.ToString("0.000") + ")");
 
         // A tap's float sum a rounding step short of a beat still cracks (the stage tolerance); a strike from b says side −1.
         var other = built.Select(x => x.window).FirstOrDefault(x => x.pane != null && x.stage == 0 && x != window && x.edge != window.edge && world.IsBuilt(x.a) && world.IsBuilt(x.b));
@@ -2040,6 +2331,23 @@ public static class FrontRoomsMapInteractionTests
             player.position = world.CellCenter(window.a);
         }
         else Check(false, "glass: no second intact window for the tolerance and side checks");
+
+        // A knock below Crack1 is kept too (Red 2026-10-22): 0.2 s, let go, struck again elsewhere: 0.2 kept, the first impact stays.
+        var third = built.Select(x => x.window).FirstOrDefault(x => x.pane != null && x.stage == 0 && x.hold == 0f && x != window && x != other && world.IsBuilt(x.a) && world.IsBuilt(x.b));
+        if (third != null)
+        {
+            var thirdPane = third.pane.GetComponent<Collider>();
+            world.BeginGlassHold(thirdPane, third.root.TransformPoint(new Vector3(.3f, 1.4f, 0f)), third.root.forward);
+            world.Hold(thirdPane, .2f, out _);
+            world.ReleaseHold(thirdPane);
+            world.TryGetGlassBreak(third.edge, out var knocked);
+            world.BeginGlassHold(thirdPane, third.root.TransformPoint(new Vector3(-.3f, .9f, 0f)), third.root.forward);
+            world.TryGetGlassBreak(third.edge, out var reknocked);
+            Check(Mathf.Abs(third.hold - .2f) < 1e-5f && third.stage == 0 && Mathf.Abs(knocked.hold - .2f) < 1e-5f && reknocked.impact == knocked.impact,
+                "glass: a 0.2 s knock is kept (" + third.hold.ToString("0.000") + ") and a second strike keeps its impact " + reknocked.impact.ToString("F3"));
+            world.ReleaseHold(thirdPane);
+        }
+        else Check(false, "glass: no third intact window for the kept-knock check");
 
         // A glass-kit handler that throws is logged and never breaks a build.
         Action<FrontRoomsMapWorld.Window, FrontRoomsMapWorld.GlassBreakRecord> throwing = (w, r) => throw new InvalidOperationException("test: a broken glass kit");

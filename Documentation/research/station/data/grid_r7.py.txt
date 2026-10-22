@@ -1,0 +1,71 @@
+"""Station r7a: the V3 light grid at the take (displayed and E drop of the light on the key board, per card and configuration).
+
+usage: venv/bin/python grid_r7.py <run dir> <out json>
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+R, OUT = sys.argv[1], sys.argv[2]
+LUM = np.array([.2126, .7152, .0722], np.float32)
+
+
+def load(p):
+    return np.asarray(Image.open(p).convert('RGB')).astype(np.float32) / 255.0
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def Y(p):
+    return lin(load(p)) @ LUM
+
+
+def E(p):
+    a = np.fromfile(p, dtype='<f4').reshape(540, 960, 4)[::-1, :, :3]
+    return a @ LUM
+
+
+def Lstar(y):
+    y = np.asarray(y, float)
+    f = np.where(y > (6 / 29) ** 3, np.cbrt(y), y / (3 * (6 / 29) ** 2) + 4 / 29)
+    return 116 * f - 16
+
+
+def mask(p, rgb):
+    q = (load(p) > .5).astype(np.int32)
+    return (q[..., 0] == rgb[0]) & (q[..., 1] == rgb[1]) & (q[..., 2] == rgb[2])
+
+
+out = {}
+for plan in sorted(os.listdir(R)):
+    d = os.path.join(R, plan)
+    if not os.path.isfile(os.path.join(d, 'grid_cfgs.tsv')):
+        continue
+    cfgs = [l.split('\t')[0] for l in open(os.path.join(d, 'grid_cfgs.tsv')) if l.strip()]
+    board = mask(os.path.join(d, 'take_id.png'), (1, 0, 0)) | mask(os.path.join(d, 'take_id.png'), (1, 0, 1))
+    hb = board[1::2, 1::2]
+    ya = Y(os.path.join(d, 'grid_after.png'))[board].mean()
+    ea = E(os.path.join(d, 'grid_E_after.f32'))[hb].mean() if os.path.exists(os.path.join(d, 'grid_E_after.f32')) else None
+    res = {'board_px': int(board.sum()), 'after_Y': float(ya), 'after_E': None if ea is None else float(ea), 'cfgs': {}}
+    for c in cfgs:
+        rows = []
+        for k in range(1, 6):
+            yb = Y(os.path.join(d, 'grid_%s_c%d.png' % (c, k)))[board].mean()
+            eb = E(os.path.join(d, 'grid_E_%s_c%d.f32' % (c, k)))[hb].mean() if ea is not None else None
+            rows.append({'card': k, 'before_Y': round(float(yb), 4), 'drop_Y': round(float(1 - ya / yb), 3),
+                         'L_before': round(float(Lstar(yb)), 1), 'L_after': round(float(Lstar(ya)), 1), 'dL': round(float(Lstar(yb) - Lstar(ya)), 1),
+                         'before_E': None if eb is None else round(float(eb), 3), 'drop_E': None if eb is None else round(float(1 - ea / eb), 3)})
+        res['cfgs'][c] = {'rows': rows, 'worst_drop_Y': min(r['drop_Y'] for r in rows), 'worst_drop_E': min(r['drop_E'] for r in rows) if ea is not None else None,
+                          'min_dL': min(r['dL'] for r in rows)}
+    out[plan] = res
+json.dump(out, open(OUT, 'w'), indent=1)
+for p, r in out.items():
+    print(p, 'after Y %.4f E %s' % (r['after_Y'], r['after_E']))
+    for c, v in r['cfgs'].items():
+        print('  %-10s worst drop displayed %.3f  E %s  min dL* %.1f  | %s' % (c, v['worst_drop_Y'], v['worst_drop_E'], v['min_dL'],
+              ' '.join('%.2f/%s' % (x['drop_Y'], x['drop_E']) for x in v['rows'])))

@@ -241,7 +241,9 @@ The draft as it stood:
   - That is the grammar the pause card already uses (`PauseText()`, `FrontRooms3DGame.cs:1983`). Plex Mono has the `·` that Bayon lacks.
 - **Handheld:** keep the existing touch line (`DRAG · LOOK`, …) at the touch ramp's 11.
 - **No dark card behind it:** on a light ground, a 1 px #141414 keyline at 85 %.
-- **Title:** centred under the title prompt, one step quieter than it (paper at 77 % in Unity's linear UI = 90 % in Figma terms). It stays until the first input, with no fade-in animation.
+- **Title:** centred under the title prompt, one step quieter than it **through face and size only**: 100 % paper with the keyline.
+  - **Revised 2026-10-22 ~15:3x.** The earlier "paper at 77 %" is withdrawn. Unity's `Outline` draws under the fill, so a 77 % fill shows the ink keyline through and the paper reads light grey and soft (交互设计's X2 board 3564:7362 renders it). That also breaks "no translucent ink in game UI".
+  - It stays until the first input, with no fade-in animation.
 - Steady text, never blinking (photosafety).
 - `SPRINT` names a control; the never-RUN rule covers advice strings (the placard, the cards), not key names.
 
@@ -252,7 +254,7 @@ The draft as it stood:
   - **Glyphs stay at their present size.** Text drops to the meta weight, but the glyph is the mnemonic and keeps its size, centred on the label's cap middle. The 6 pt glyph-to-label gap and the 26 pt gap between entries stay.
   - **Colour:**
     - on the pause card's frost: Ink, as now;
-    - on the title: paper at 77 % α in Unity (90 % in Figma terms), one step quieter than TAP TO START, with the keyline.
+    - on the title: **100 % paper with the keyline** (revised 15:3x; not 77 %, see the T5 Title line). It is quieter than TAP TO START through face and size (Plex Mono 11 against Bayon 17).
 - **Q2, separators:**
   - In the legend, Plex Mono has its own `·`, so nothing falls back.
   - For Bayon strings (the stick slot's `SLOW · UNHEARD`, desktop prompts such as `E  ·  OPEN DOOR`), the fix is **one importer change**: Bayon's font fallback → IBM Plex Mono Regular. Until then the OS face shows.
@@ -267,6 +269,15 @@ The draft as it stood:
   - Same stroke weight and outer diameter as the 10-08 Run glyph.
   - The inner ring at the true slow / run proportion: Ø72 slow ring against the r 84 run line, so the inner radius ≈ 0.43 of the outer.
   - The dot is the knob, filled. No motion marks; the sprite keyline like the other glyphs.
+- **X2 board sign-off, 2026-10-22 ~15:3x** (交互设计's board `3564:7362`, gate 2 of X2 spec v3.2 §8):
+  - **Title lockup: (c).** The whole lockup moves up 14 pt, so TAP TO START is centred at y 306; the internal gaps stay. Row B clears the iPhone home inset by 8.3 pt and Android 20:9 by 14.3 pt. As specified, (a) and (b) put row B 5.7 pt inside the iPhone inset.
+  - **The title legend is 100 % paper with the keyline,** not 77 % (see the T5 Title line).
+  - **Confirmed as drawn:**
+    - the slot words T1–T5 (Bayon 17, 1 pt keyline, no chip; "·" in Plex Mono until 游戏视觉's Bayon fallback);
+    - T5's BUTTON-mode word below the stick (the RUN button's hit radius);
+    - the pause legend in Plex Mono 11 ink on the frost, rows where they are;
+    - the flow S02 / S03 / S05.
+  - The S05 key panel still shows today's `LEVEL 4 / OFFICE KEY` in Bayon digits. That is FIX_CARD A4's (关卡设计), not X2's.
   - **Signed off 2026-10-22 09:5x** (Figma board `3503:7311` on the TK master `2528:5495`; glyph `3503:7312` at ×1 and `3503:7320` at ×4).
     - It matches the Run glyph: the stick ring r 10 at 35 %, the knob a filled Ø4.5, all strokes 1.5.
     - The slow ring r 4.29 at 100 %. At ×1 the knob keeps a ≈ 1.3-unit gap inside it, so it reads as "stay in the middle" next to Run's "push past the line".

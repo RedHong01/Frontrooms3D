@@ -45,6 +45,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     public static event Action<bool> Paused;
     /// <summary>The run's difficulty tier: 1 when a run starts, then each rise (level profile Tiers: every 4 new zones, or 2 minutes without one).</summary>
     public static event Action<int> TierChanged;
+    /// <summary>W1: a warning burst began (the room's centre, how many lamps dip; 0 = audio only), re-raised from the run's FrontRoomsWarnLamps for the sound layer's ballast groan.</summary>
+    public static event Action<Vector3, int> WarnBurst;
+    /// <summary>W1: true while a warning burst's dips play (FrontRoomsWarnLamps.Bursting); false outside a run, once caught, and when the run is torn down.</summary>
+    public static bool WarnBursting { get; private set; }
     /// <summary>The player's stamina, 0..1 (5 s of sprint), for the sound layer's breath and run gait: read it, don't mirror the rule.</summary>
     public static float PlayerStamina01 { get; private set; } = 1f;
     /// <summary>Run dry and not yet one segment (1 s) back: no sprint until then.</summary>
@@ -705,6 +709,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         winded = false;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
+        WarnBursting = false;
         PlayerGait = FrontRoomsGait.Still;
         sinceSprint = 0f;
         glide = Vector3.forward * FrontRoomsRoomStream.TitleSpeed;
@@ -745,6 +750,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         UpdateRelayTuning();
         relay = new FrontRoomsMapHunter(map, relayTuning, playerBody, hunter, runSeed);
         warnLamps = new FrontRoomsWarnLamps(map, runSeed);
+        warnLamps.WarnBurst += (centre, lamps) => WarnBurst?.Invoke(centre, lamps);
         relay.StateChanged += state => Event("hunter", state.ToString());
         relay.DoorBlow += p =>
         {
@@ -1045,7 +1051,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         playerRoot.rotation = Quaternion.Euler(0f, yaw, 0f);
         if (rig != null) rig.SetBase(pitch);
         else cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-        // A pull: the player steps clear onto the latch side while the leaf waits (single-acting doors).
+        // A pull (a shut from the leaf's side, A12): the player steps clear onto the latch side while the leaf waits.
         var stepVelocity = Vector3.zero;
         if (pullClear.HasValue)
         {
@@ -1147,6 +1153,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         // W1: stage 1 and 2 dip the lamps of the player's room; a chase (v1's lock-on) starts no new burst.
         warnLamps?.Tick(dt, relay.Released ? relay.WarnStage : 0, relay.State == HunterState.Chase, playerRoot.position, relay.Position);
+        WarnBursting = warnLamps != null && warnLamps.Bursting;
 #if UNITY_EDITOR
         if (tickWatch != null && tickWatch.Elapsed.TotalMilliseconds > autoRelayTickMs)
         {
@@ -1270,9 +1277,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     readonly List<(float at, Vector3 p)> rattleJolts = new List<(float, Vector3)>();
 
     /// <summary>
-    /// The door opens toward the player: step them to the clear spot beside the latch, with the
-    /// controller (so walls still hold), during the pull beat. Not while the Relay chases or sees
-    /// them: they keep control, and the leaf rests on them until they move.
+    /// A shut from the side the leaf is open to (the one pull left with A12's double-acting doors; opens never
+    /// pull): step the player to the clear spot beside the latch, with the controller (so walls still hold),
+    /// during the pull beat. Not while the Relay chases or sees them: they keep control, and the leaf rests on
+    /// them until they move.
     /// </summary>
     void OnDoorPulled(FrontRoomsMapWorld.Door door, Vector3 clear)
     {
@@ -1411,8 +1419,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// <summary>
     /// A key turns in a locked door (plan §3.2.1): the unlock shot starts on the keyhole of the face the
     /// player stands on, in place while chunks are still building or during a climb; then the body steps
-    /// in toward the lock (capped like the glass step-in, never while a door pull's step runs, and clear
-    /// of the leaf's sweep on the pull side; not at Camera motion Off or in place).
+    /// in toward the lock (capped like the glass step-in, never while a door pull's step runs; not at Camera
+    /// motion Off or in place). With A12 every key turn first turns the shut leaf away from the player, so the
+    /// unlock is always a push and the leaf never comes toward the camera.
     /// </summary>
     void BeginUnlock(FrontRoomsMapWorld.Door door)
     {
@@ -1421,7 +1430,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var face = FrontRoomsMapWorld.FaceOf(door, feet);
         var lockPose = map.LockPose(door, feet);
         var normal = FrontRoomsMapWorld.LockNormal(door, feet);
-        var pull = face == DoorFace.S;
+        // A12: the map turned the shut leaf away from the key's side (Use's key turn), so this is a push from either face.
+        var pull = FrontRoomsMapWorld.OnSwingSide(door, feet);
         var inPlace = !map.Settled || climbTime >= 0f;
         doorShot.BeginUnlock(door, face, lockPose, normal, pull, inPlace);
         Event("unlock", door.a + "-" + door.b + (pull ? " pull" : " push") + (inPlace ? " in place" : ""));
@@ -1526,7 +1536,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             ReleaseGlass();
             glassArmed = false;
             tapCredit = 0f;
-            // Every pane not aimed at has no progress (leaving one releases it), so the bar starts again.
+            // The bar shows only while E holds a pane. A pane left keeps its progress in the map (GD3c, Red 2026-10-22),
+            // and the bar picks it up from there on the next hold.
             holdProgress = 0f;
         }
         // During a shot E belongs to the shot (cancel, or a buffered push), never to what is aimed at; the
@@ -2654,6 +2665,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             FrontRoomsMobileBackBridge.BackPressed -= HandleMobileBack;
         PlayerStamina01 = 1f;
         PlayerWinded = PlayerSprinting = false;
+        WarnBursting = false;
         PlayerGait = FrontRoomsGait.Still;
         // C12: a close-up torn down (R restart, Play stopped) gives the world back.
         FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
@@ -2675,6 +2687,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         doorShot?.Abort();
         // C12b: caught during a close-up's return: nothing freezes mid-blend (other shots behave as before).
         if (FrontRoomsInspect.Active) { FrontRoomsInspect.Abort(); rig?.ResetLayers(); }
+        WarnBursting = false;
         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
@@ -3374,7 +3387,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // cannot cancel a shot under test. Four cases on the nearest shut doors, each pressed through the player's E
     // (EDown): a locked try and a second try 0.2 s later (the rattle and its debounce); the unlock from the push
     // side, with the key (its timings, the camera, frames at the beats); a second E 0.4 s into an unlock on another
-    // door (the cancel); and the unlock from the pull side (the leaf stays shut through the shot). Times are on the
+    // door (the cancel); and the unlock from the side the leaf last went to (A12: the key turn turns the shut leaf
+    // away, so it opens at 1.00 s like the push and rests beyond the player). Times are on the
     // shot's own clock (from E-down); a long frame (a capture renders twice) widens the tolerance to that frame.
     // Then two key pickups (plan §3.3) on the nearest keys still lying, walked onto by a teleport from 1.4–2 m off:
     // without a model (the instant path: KeyTaken and the panel at contact, the cube gone), and with the placeholder
@@ -3390,7 +3404,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     Quaternion autoDoorHingeAt;
     readonly List<string> autoDoorChecks = new List<string>();
     static readonly float[] AutoDoorCaptureAt = { .30f, .55f, .70f, .86f, 1.00f, 1.30f, 1.55f };
-    static readonly string[] AutoDoorCaseNames = { "rattle", "unlock (push)", "cancel", "unlock (pull)", "key (instant)", "key (presented)" };
+    static readonly string[] AutoDoorCaseNames = { "rattle", "unlock (push)", "cancel", "unlock (leaf side)", "key (instant)", "key (presented)" };
     // The key cases: the key, its zone, the spot to walk onto it from; the counts before contact; what the
     // presentation did (on the play clock from contact: KeyTaken, the pocket beat, the end; the panel's alpha).
     Transform autoKey;
@@ -3675,7 +3689,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             case 1:
             case 3:
             {
-                // The unlock with the key: push side (case 1, the rattled door) or pull side (case 3).
+                // The unlock with the key: from the side away from the leaf (case 1, the rattled door) or from the side
+                // the leaf last went to (case 3; A12: a push all the same).
                 if (autoDoorStep == 0)
                 {
                     if (autoDoorClock < .45f || !AutoDoorReady()) return;
@@ -3689,7 +3704,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                     autoDoorStep = 1;
                     return;
                 }
-                var label = autoDoorCase == 1 ? "unlock" : "unlock_pull";
+                var label = autoDoorCase == 1 ? "unlock" : "unlock_leafside";
                 if (autoDoorStep == 1 && autoDoorClock > autoDoorPressAt && !autoEDown)
                 {
                     AutoDoorCheck(doorShot != null && doorShot.UnlockActive && autoDoorShots == 1, "doors: E with the key starts the Unlock shot (" + AutoDoorCaseNames[autoDoorCase] + ", door " + autoDoor.a + "-" + autoDoor.b + ")");
@@ -3699,8 +3714,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (autoDoorStep < 2) return;
                 AutoDoorCaptures(label);
                 if (autoDoorFreeAt < 0f && doorShot.Clock > .5f && !doorShot.MoveLocked) autoDoorFreeAt = doorShot.Clock;
-                if (autoDoorCase == 3 && doorShot.UnlockActive && doorShot.Clock < 1.50f && autoDoor.hinge != null && Quaternion.Angle(autoDoor.hinge.localRotation, autoDoorHingeAt) > .1f) autoDoorHingeMoved = true;
-                if (autoDoorClock < (autoDoorCase == 1 ? 1.8f : 2.6f)) return;
+                if (autoDoorCase == 3 && doorShot.UnlockActive && doorShot.Clock < .99f && autoDoor.hinge != null && Quaternion.Angle(autoDoor.hinge.localRotation, autoDoorHingeAt) > .1f) autoDoorHingeMoved = true;
+                if (autoDoorClock < 1.8f) return;
                 var unlockOk = autoDoorUnlocked == 1 && Mathf.Abs(autoDoorUnlockedAt - FrontRoomsShotTimings.Unlock.Commit) <= slack;
                 AutoDoorCheck(unlockOk && map.IsUnlockedForTools(autoDoor), "doors: DoorUnlocked once, at " + autoDoorUnlockedAt.ToString("0.000") + " s (commit 0.86 ± " + slack.ToString("0.000") + ") (" + label + ")");
                 if (autoDoorCase == 1)
@@ -3713,10 +3728,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 }
                 else
                 {
-                    AutoDoorCheck(!autoDoorHingeMoved, "doors: pull side: the leaf stays shut through the shot (no hinge turn before 1.50 s)");
-                    AutoDoorCheck(autoDoorOpenAt >= FrontRoomsShotTimings.Unlock.Duration - slack && autoDoorOpenAt <= FrontRoomsShotTimings.Unlock.Duration + .05f + slack
-                        && autoDoorOpenSource == FrontRoomsMapWorld.DoorOpenSource.Unlock && !autoDoorLatchDrawn,
-                        "doors: pull side: a normal open at " + autoDoorOpenAt.ToString("0.000") + " s (1.55; source " + autoDoorOpenSource + ", latch drawn " + autoDoorLatchDrawn + ")");
+                    AutoDoorCheck(!autoDoorHingeMoved, "doors: leaf side: the leaf stays shut until the knob beat (no hinge turn before 1.00 s)");
+                    AutoDoorCheck(autoDoorOpenAt >= 0f && autoDoorOpenAt <= 1.03f + slack && autoDoorOpenSource == FrontRoomsMapWorld.DoorOpenSource.Unlock && autoDoorLatchDrawn,
+                        "doors: leaf side (A12): the leaf opens at " + autoDoorOpenAt.ToString("0.000") + " s with the latch drawn, a push (by 1.03; source " + autoDoorOpenSource + ")");
+                    AutoDoorCheck(!FrontRoomsMapWorld.OnSwingSide(autoDoor, playerRoot.position) && map.CellOf(autoDoor.leaf.transform.position) != map.CellOf(playerRoot.position),
+                        "doors: leaf side (A12): the leaf went away from the player, into the cell beyond the door");
                 }
                 AutoDoorCheck(autoDoorShotEndAt >= 0f && autoDoorShotEndAt <= 1.60f + slack && offset < 1e-3f && Mathf.Abs(cam.fieldOfView - baseFov) < .05f && (rig == null || !rig.InShot),
                     "doors: ShotEnded at " + autoDoorShotEndAt.ToString("0.000") + " s (by 1.60), the camera back on the eye (" + offset.ToString("0.0000") + " m, FOV " + cam.fieldOfView.ToString("0.0") + ") (" + label + ")");

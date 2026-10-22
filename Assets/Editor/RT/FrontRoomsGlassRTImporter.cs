@@ -1,5 +1,6 @@
-// Pins the import settings of the G14 plugin and the feature's serialized shader (design 10 §2.5, R21, R22).
-//   libFrontRoomsMetalGlassRT.dylib: Editor (OS OSX, CPU ARM64) + Standalone OSX (ARM64), every other platform off,
+// Pins the import settings of the G14 plugin and the feature's serialized shader (design 10 sec. 2.5, R21, R22).
+//   libFrontRoomsMetalGlassRT.dylib: Editor (OS OSX, CPU ARM64) + Standalone OSX (AnyCPU: the dylib is universal,
+//   arm64 + x86_64, so the universal Mac app ships it; RD2, Red 2026-10-21), every other platform off,
 //   isPreloaded = true (UnityPluginLoad runs at start-up and sees the device-init event).
 //   FrontRooms_URP_Renderer.asset: the FrontRoomsMetalGlassRTRendererFeature entry references
 //   Hidden/FrontRooms/GlassRTPrepass, so player builds keep the shader.
@@ -33,7 +34,9 @@ public sealed class FrontRoomsGlassRTImporter : AssetPostprocessor
         Set(p.GetEditorData("OS") == "OSX", () => p.SetEditorData("OS", "OSX"));
         Set(p.GetEditorData("CPU") == "ARM64", () => p.SetEditorData("CPU", "ARM64"));
         Set(p.GetCompatibleWithPlatform(BuildTarget.StandaloneOSX), () => p.SetCompatibleWithPlatform(BuildTarget.StandaloneOSX, true));
-        Set(p.GetPlatformData(BuildTarget.StandaloneOSX, "CPU") == "ARM64", () => p.SetPlatformData(BuildTarget.StandaloneOSX, "CPU", "ARM64"));
+        // AnyCPU, not ARM64: a universal (x64ARM64) player leaves an ARM64-only plugin out of the app entirely
+        // (snapshot 20261021-2221 had no RT dylib), and an Intel Mac must load the plugin to report "no Apple9".
+        Set(p.GetPlatformData(BuildTarget.StandaloneOSX, "CPU") == "AnyCPU", () => p.SetPlatformData(BuildTarget.StandaloneOSX, "CPU", "AnyCPU"));
         foreach (var t in new[] { BuildTarget.StandaloneWindows, BuildTarget.StandaloneWindows64, BuildTarget.StandaloneLinux64, BuildTarget.WebGL, BuildTarget.iOS, BuildTarget.Android })
             Set(!p.GetCompatibleWithPlatform(t), () => p.SetCompatibleWithPlatform(t, false));
         Set(p.isPreloaded, () => p.isPreloaded = true);
@@ -44,11 +47,11 @@ public sealed class FrontRoomsGlassRTImporter : AssetPostprocessor
     {
         var sb = new StringBuilder();
         sb.Append("any " + p.GetCompatibleWithAnyPlatform());
-        sb.Append(" · editor " + p.GetCompatibleWithEditor() + " (OS " + p.GetEditorData("OS") + ", CPU " + p.GetEditorData("CPU") + ")");
-        sb.Append(" · StandaloneOSX " + p.GetCompatibleWithPlatform(BuildTarget.StandaloneOSX) + " (CPU " + p.GetPlatformData(BuildTarget.StandaloneOSX, "CPU") + ")");
+        sb.Append(" | editor " + p.GetCompatibleWithEditor() + " (OS " + p.GetEditorData("OS") + ", CPU " + p.GetEditorData("CPU") + ")");
+        sb.Append(" | StandaloneOSX " + p.GetCompatibleWithPlatform(BuildTarget.StandaloneOSX) + " (CPU " + p.GetPlatformData(BuildTarget.StandaloneOSX, "CPU") + ")");
         foreach (var t in new[] { BuildTarget.StandaloneWindows64, BuildTarget.StandaloneLinux64, BuildTarget.WebGL, BuildTarget.iOS })
-            sb.Append(" · " + t + " " + p.GetCompatibleWithPlatform(t));
-        sb.Append(" · preloaded " + p.isPreloaded);
+            sb.Append(" | " + t + " " + p.GetCompatibleWithPlatform(t));
+        sb.Append(" | preloaded " + p.isPreloaded);
         return sb.ToString();
     }
 
