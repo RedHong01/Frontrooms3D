@@ -86,6 +86,8 @@ public static class FrontRoomsMobileHaptics
     /// <summary>Two firm ticks on the camera's two rattle jolts.</summary>
     public static void DoorRattle(float jolt1, float jolt2) =>
         Pattern(Channel.Gameplay, new Beat(jolt1, Style.Rigid, .8f), new Beat(jolt2, Style.Rigid, .8f));
+    /// <summary>A broken door won't shut: one soft knock as the swing meets the frame, duller than the locked rattle.</summary>
+    public static void DoorBrokenTried(float knock) => Pattern(Channel.Gameplay, new Beat(knock, Style.Soft, .6f));
     /// <summary>The held-glass buzz: light ticks that rise from 0.2 to 0.6 with the hold.</summary>
     public static void GlassBeat(float progress) => Play(Channel.Gameplay, Style.Light, Mathf.Lerp(.2f, .6f, Mathf.Clamp01(progress)));
     public static void GlassCracked(int stage) => Play(Channel.Gameplay, Style.Medium, stage >= 2 ? .8f : .7f);

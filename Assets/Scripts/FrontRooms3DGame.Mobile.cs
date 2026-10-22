@@ -24,6 +24,8 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     FrontRoomsMapWorld mobileHapticMap;
     FrontRoomsMapHunter mobileHapticRelay;
     HunterState mobileRelayState;
+    // The broken door USE names (BROKEN), or null.
+    Collider mobileBrokenAimed;
 
     const string MobileCalmHintStick = "Push past the ring to run: it hears every step. Stay near the centre to creep unheard.";
     const string MobileCalmHintButton = "Tap RUN to run: it hears every step. Stay near the centre to creep unheard.";
@@ -239,10 +241,15 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             StepGameSetting(id, direction);
     }
 
-    /// <summary>A quick tap on the look side uses what is under the finger (a door): Apple HIG's direct touch.</summary>
+    /// <summary>
+    /// A quick tap on the look side uses what is under the finger, a door or a key: Apple HIG's direct touch.
+    /// A key (C14 on phones, 交互设计 2026-10-22) needs no exact hit: when the finger's own ray finds nothing
+    /// to use, a key within KeyTapRadiusPoints of the tap is taken. A broken door answers a tap as it answers
+    /// USE: it won't shut.
+    /// </summary>
     void HandleMobileLookTap(Vector2 viewport)
     {
-        if (phase != Phase.Playing || map == null || cam == null) return;
+        if (phase != Phase.Playing || map == null || cam == null || playerRoot == null) return;
         // C15: no taps through a shot camera (it may sit 0.36 m from a leaf); a tap on a close-up target opens it through the gate.
         if (rig != null && rig.InShot) return;
         var ray = cam.ViewportPointToRay(new Vector3(viewport.x, viewport.y, 0f));
@@ -251,12 +258,42 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             if (CanPressInspect()) pendingInspect = tapTarget;
             return;
         }
-        if (!Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore)) return;
-        var description = map.Describe(hit.collider, out var hold);
-        if (hold || string.IsNullOrEmpty(description)) return;
+        // A10: the finger's ray never stops on the player's own body (looking down at a key on the floor).
+        var key = TapKey(ray);
+        var hitAny = AimCast(ray, out var hit);
+        string description = null;
+        var hold = false;
+        if (key == null && hitAny) description = map.Describe(hit.collider, out hold);
+        var usable = key != null || (!hold && !string.IsNullOrEmpty(description));
+        // A broken door has no prompt, but a tap on it is the won't-shut try; a key near the finger comes first.
+        if (!usable && (key = TapKeyNear(viewport)) == null
+            && (!hitAny || map.Kind(hit.collider, playerRoot.position, out _, out _) != FrontRoomsMapWorld.AimKind.Broken)) return;
         FrontRoomsMobileInteractionEvents.UsePressed();
-        // The same road as E (UpdateAim): a shot that takes USE swallows the tap, and a key turn starts the unlock shot.
-        if (rig == null || !rig.Consume(ShotInput.Use)) UseDoor(hit.collider);
+        // The same road as E (UpdateAim): a shot that takes USE swallows the tap, a key turn starts the unlock shot, a key is taken.
+        if (rig == null || !rig.Consume(ShotInput.Use)) UseDoor(key != null ? key : hit.collider);
+    }
+
+    // A key's finger target (Apple HIG: 44 pt): a tap this close to one takes it when nothing usable is under the finger.
+    const float KeyTapRadiusPoints = 22f;
+
+    // A key under the finger: its trigger on the ray, nearer than anything solid (KeyOnRay), while keys are taken on purpose (C14).
+    Collider TapKey(Ray ray) => map.KeyPickupNeedsE ? map.KeyOnRay(ray, Reach, playerRoot) : null;
+
+    // Two rings of rays round the tap, at half and the whole of KeyTapRadiusPoints, the nearer ring first.
+    Collider TapKeyNear(Vector2 viewport)
+    {
+        if (!map.KeyPickupNeedsE) return null;
+        var points = FrontRoomsHandheld.ScreenPoints;
+        for (var ring = 1; ring <= 2; ring++)
+        for (var k = 0; k < 8; k++)
+        {
+            var a = k * Mathf.PI * .25f;
+            var r = KeyTapRadiusPoints * ring * .5f;
+            var v = viewport + new Vector2(Mathf.Cos(a) * r / Mathf.Max(1f, points.x), Mathf.Sin(a) * r / Mathf.Max(1f, points.y));
+            var key = TapKey(cam.ViewportPointToRay(new Vector3(v.x, v.y, 0f)));
+            if (key != null) return key;
+        }
+        return null;
     }
 
     void UpdateMobileTouchMenu()
@@ -290,39 +327,71 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         FrontRoomsMobileInteractionEvents.GlassBeat(progress);
     }
 
+    /// <summary>
+    /// USE mirrors what the crosshair is on, its verb keyed on the map's AimKind (H4, 30_crosshair_grammar §6), never
+    /// on the prompt's words. A broken door has no prompt, so E's aim (UpdateAim) passes it by: USE finds it on the
+    /// same ray and says BROKEN, and a press is the won't-shut try (Red, 2026-10-22, 交互设计).
+    /// </summary>
     void UpdateMobileTouchPrompt()
     {
         if (mobileTouch == null) return;
-        var visible = phase == Phase.Playing && aimed != null && !string.IsNullOrEmpty(prompt);
-        var locked = visible && prompt.IndexOf("LOCKED", System.StringComparison.OrdinalIgnoreCase) >= 0;
-        var kind = !visible ? FrontRoomsTouchControls.UseKind.Hidden
-            : locked ? FrontRoomsTouchControls.UseKind.Locked
-            : aimedHold ? FrontRoomsTouchControls.UseKind.Hold
-            : prompt.IndexOf("SHUT", System.StringComparison.OrdinalIgnoreCase) >= 0 ? FrontRoomsTouchControls.UseKind.Shut
-            : prompt.IndexOf("TAKE", System.StringComparison.OrdinalIgnoreCase) >= 0 ? FrontRoomsTouchControls.UseKind.Take
-            : FrontRoomsTouchControls.UseKind.Open;
+        var playing = phase == Phase.Playing && map != null && playerRoot != null;
+        var target = playing ? aimed : null;
+        // Nothing usable aimed and no close-up target: the base eye's ray, cast as UpdateAim casts it.
+        if (playing && target == null && inspectAimed == null && cam != null)
+        {
+            var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+            if (AimCast(new Ray(eye.position, eye.rotation * Vector3.forward), out var hit)) target = hit.collider;
+        }
+        var aimKind = target != null ? map.Kind(target, playerRoot.position, out _, out _) : FrontRoomsMapWorld.AimKind.None;
+        // Past E's aim only a broken door counts: anything else there has no prompt for a reason (glass beyond 1.2 m).
+        if (aimed == null && aimKind != FrontRoomsMapWorld.AimKind.Broken) aimKind = FrontRoomsMapWorld.AimKind.None;
+        mobileBrokenAimed = aimKind == FrontRoomsMapWorld.AimKind.Broken ? target : null;
+        var kind = UseKindOf(aimKind);
+        var visible = kind != FrontRoomsTouchControls.UseKind.Hidden;
+        var refused = kind == FrontRoomsTouchControls.UseKind.Locked || kind == FrontRoomsTouchControls.UseKind.Broken;
         mobileTouch.SetUsePrompt(new FrontRoomsTouchControls.UsePrompt
         {
             Visible = visible,
-            // A locked door still takes the press: it rattles, as E does on desktop.
+            // A locked door still takes the press: it rattles, as E does on desktop. A broken one won't shut.
             Interactable = visible,
             Hold = visible && aimedHold,
-            Locked = locked,
+            Locked = kind == FrontRoomsTouchControls.UseKind.Locked,
             TapMode = FrontRoomsSettings.TapToBreak,
             Label = prompt ?? string.Empty,
             Progress = holdProgress,
             Kind = kind
         });
+        // USE on a broken door: E's road (UpdateAim) had nothing aimed, so the try is made here, as a tap makes it. A
+        // shot running took the press there; a broken door that E's road aims at itself is tried there.
+        if (mobileBrokenAimed != null && aimed == null && FrontRoomsInput.UseDown && (rig == null || !rig.InShot)) UseDoor(mobileBrokenAimed);
         if (winded && !mobileWasWinded) FrontRoomsMobileInteractionEvents.Winded();
         mobileWasWinded = winded;
         mobileTouch.SetWinded(winded);
         // A shot fades the HUD (ApplyGameplayHudAlpha); USE follows, so it never shows a verb a press wouldn't do.
         mobileTouch.SetTakeover(rig != null ? rig.HudFade : 0f);
-        UpdateMobilePromptGlyph(visible, locked);
+        UpdateMobilePromptGlyph(visible, refused);
     }
 
-    /// <summary>The mini USE glyph (or the hold ring glyph) in front of the prompt under the dot.</summary>
-    void UpdateMobilePromptGlyph(bool visible, bool locked)
+    /// <summary>USE's verb for the map's kind (H4). LockedHaveKey stays OPEN until the A22 strings land (phone UNLOCK).</summary>
+    static FrontRoomsTouchControls.UseKind UseKindOf(FrontRoomsMapWorld.AimKind kind)
+    {
+        switch (kind)
+        {
+            case FrontRoomsMapWorld.AimKind.Open:
+            case FrontRoomsMapWorld.AimKind.LockedHaveKey: return FrontRoomsTouchControls.UseKind.Open;
+            case FrontRoomsMapWorld.AimKind.Shut: return FrontRoomsTouchControls.UseKind.Shut;
+            case FrontRoomsMapWorld.AimKind.TakeKey: return FrontRoomsTouchControls.UseKind.Take;
+            case FrontRoomsMapWorld.AimKind.Locked: return FrontRoomsTouchControls.UseKind.Locked;
+            case FrontRoomsMapWorld.AimKind.Broken: return FrontRoomsTouchControls.UseKind.Broken;
+            case FrontRoomsMapWorld.AimKind.Glass:
+            case FrontRoomsMapWorld.AimKind.GlassTap: return FrontRoomsTouchControls.UseKind.Hold;
+            default: return FrontRoomsTouchControls.UseKind.Hidden;
+        }
+    }
+
+    /// <summary>The mini USE glyph (or the hold ring glyph) in front of the prompt under the dot; none for a refusal.</summary>
+    void UpdateMobilePromptGlyph(bool visible, bool refused)
     {
         if (promptText == null) return;
         if (mobilePromptGlyph == null)
@@ -335,7 +404,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
             rt.sizeDelta = new Vector2(18f, 18f);
         }
-        var show = visible && !locked && !string.IsNullOrEmpty(promptText.text);
+        var show = visible && !refused && !string.IsNullOrEmpty(promptText.text);
         mobilePromptGlyph.enabled = show;
         if (!show) return;
         mobilePromptGlyph.sprite = FrontRoomsTouchSprites.GlyphSprite(aimedHold ? FrontRoomsTouchSprites.Glyph.Hold : FrontRoomsTouchSprites.Glyph.Use);
@@ -357,6 +426,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         {
             world.DoorLatched += OnMobileDoorLatched;
             world.DoorLocked += OnMobileDoorLocked;
+            world.DoorBrokenTried += OnMobileDoorBrokenTried;
             world.GlassCracked += OnMobileGlassCracked;
         }
         if (hunter != null)
@@ -372,6 +442,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         {
             mobileHapticMap.DoorLatched -= OnMobileDoorLatched;
             mobileHapticMap.DoorLocked -= OnMobileDoorLocked;
+            mobileHapticMap.DoorBrokenTried -= OnMobileDoorBrokenTried;
             mobileHapticMap.GlassCracked -= OnMobileGlassCracked;
         }
         if (mobileHapticRelay != null) mobileHapticRelay.StateChanged -= OnMobileRelayState;
@@ -390,6 +461,15 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     {
         // Two firm ticks on the camera's two rattle jolts.
         if (this != null && NearPlayer(p)) FrontRoomsMobileInteractionEvents.DoorRattled(FrontRoomsShotTimings.Rattle.Jolt1, FrontRoomsShotTimings.Rattle.Jolt2);
+    }
+
+    void OnMobileDoorBrokenTried(FrontRoomsMapWorld.Door door, Vector3 p)
+    {
+        if (this == null || !NearPlayer(p)) return;
+        // One soft knock as the swing meets the frame (the map's guard already dropped a repeat inside 0.55 s).
+        FrontRoomsMobileInteractionEvents.DoorBrokenTried(FrontRoomsTouchControls.BrokenKnockSeconds);
+        // USE swings only for the door it names: a tap may try another broken door.
+        if (mobileTouch != null && mobileBrokenAimed != null && mobileHapticMap.DoorOf(mobileBrokenAimed) == door) mobileTouch.NoteBrokenTried();
     }
 
     void OnMobileGlassCracked(FrontRoomsMapWorld.Window window, int stage)

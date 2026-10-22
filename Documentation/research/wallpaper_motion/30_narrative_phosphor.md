@@ -229,7 +229,7 @@ None of this is stated in the game. It is the reason each rule is the way it is,
 - Every turn of the paper is the building's, and true about the building.
 - The calm plan knows nothing about the hunter and can lead you past it. Its turning only says "near", because it comes with the lamps.
 - In a chase it knows where the alarm came from and sends you to a door you can shut.
-- **There is no forger and no other occupant** (C29, 2026-10-22).
+- **There is no forger** (C29, 2026-10-22). The other occupant survives only as atmosphere: at most one distant door slam far below in the stairwell, never a mark and never a cue (Q7's approved option; 声音设计's to make; `40` §5).
   - The paper never lies, so the player can always trust its direction.
   - The player must judge danger from the lamps and the sound.
   - This keeps one meaning per cue, which the warning design relies on.
@@ -270,7 +270,8 @@ None of this is stated in the game. It is the reason each rule is the way it is,
 | Caught | `CAUGHT` / `OCCUPANT ACCOUNTED FOR` / `LEVEL B2  /  123 S  /  …` | The building counted you |
 
 - Tiers change only the Relay. The paper is the same at T0 and T5.
-- With no human marks, the only trace of anyone else is at the security desk: the guard's log, initials `D.K.`, `0200 TOUR 3`.
+- With no human marks, the traces of anyone else are the guard's leftovers at the security desk (the log, initials `D.K.`, `0200 TOUR 3`) and, at most once per stair, a door slamming somewhere far below.
+- **Why the alarm never unlocks the stairs:** by code the release comes from the central control station on the street floor (UBC 1991 §1807(f), (j)). Nobody can reach that floor, and nobody is at the controls at night (`40` §1).
 
 ### A.7 Writing rules
 

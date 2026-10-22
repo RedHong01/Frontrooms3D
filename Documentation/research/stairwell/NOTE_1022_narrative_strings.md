@@ -1,27 +1,41 @@
-# Stairwell plate strings from 叙事设计 (2026-10-22)
+# Stairwell plate strings from 叙事设计 (2026-10-22, final after Red's 13:00 answer)
 
-The strings for the blank sign plates are ready. Spec: `Documentation/research/narrative/40_floors_exit_tutorial_strings.md` §5. It fills the placeholders in `10_directions.md` §1.4. Type and lettering go through 平面视觉. These are for the stairwell dressing after the Alpha.
+**Source of truth:** `Documentation/research/narrative/40_floors_exit_tutorial_strings.md` §1 and §5 (c8822bc7). These strings fill the placeholders in `10_directions.md` §1.4.
 
-**Exit landing**
-- **EXIT door, stair face:**
-  - floor plate at 5 ft: `LEVEL 0`;
-  - re-entry plate below it: `NO REENTRY` / `NEAREST REENTRY ON LEVEL B1` (**updated 10-22 to NYC LL5 1973 §C26-608.5**; was `NO RE-ENTRY` / `RE-ENTRY AT LEVEL B1`).
-- **Block-wall stencil:** `0` here and `B1` at the far landing. This replaces the placeholder 7/6 seven-segment shapes.
-- **Stair ID sign at about 5 ft on each landing:** `STAIR A` / `LEVEL 0` (or `LEVEL B1`) / `LEVELS 0 TO B1` / `NO ROOF ACCESS`. These are the UBC 1991 §3306(p) contents.
-- **Gate across the up flight:** `NO ACCESS ABOVE THIS LEVEL`.
+**Who does what:**
+- Lettering, faces and plate art come from **平面视觉 · 信息设计**.
+- The LEVEL B1 placard copy comes from **平面视觉**.
+- Never set the numerals in Bayon (it draws 0 as O and 1 as I).
 
-**Far landing**
-- **Gate across the down flight:** `NO ACCESS BELOW THIS LEVEL`.
-- **Far door, stair face:** `REENTRY ON THIS FLOOR` (**updated 10-22, LL5 §C26-608.5**; was `ACCESS ONTO FLOOR THIS LEVEL`).
-- **Placard by the far door:** sheet A with `LEVEL B1` (平面视觉's art).
+**When:** the stairwell dressing comes after the Alpha. First comes C22's 3 × 3 vestibule, then the walkable two-level stair (`60_walkable_stair_for_map.md`).
 
-**Floor numbering**
-- Every token moves down one per floor.
-- **The B scheme is final** (Red 2026-10-22 12:15 in the 叙事设计 chat, Q1 = C28: `LEVEL 0`, then `LEVEL B1`, `B2`, … going down). The strings above stand as written.
+**Two levels only:** there are no gates and no flights beyond the two landings, so the gate strings (`NO ACCESS ABOVE / BELOW THIS LEVEL`) are dropped. The stair ID sign goes on the wall at each landing and takes over the leaf's floor plate.
 
-**Optional:** a `STAIR A` letter plate on the maze side of the EXIT door (NYC LL5 stair letters).
+**Exit landing (LEVEL 0 side)**
+- **EXIT door, stair face:** `NO REENTRY` / `NEAREST REENTRY ON LEVEL B1` (NYC LL5 1973 §C26-608.5).
+- **Block-wall stencil:** `0`.
+- **Wall ID sign at about 5 ft:** `STAIR A` / `LEVEL 0` / `LEVELS 0 TO B1` / `NO ROOF ACCESS` (UBC 1991 §3306(p)).
 
-**Do NOT add:**
-- an EXIT sign inside the stair;
-- photoluminescent strips or a running man;
-- any arrows.
+**Far landing (LEVEL B1 side)**
+- **Far door, stair face:** `REENTRY ON THIS FLOOR` (LL5 §C26-608.5).
+- **Block-wall stencil:** `B1`.
+- **Wall ID sign:** `STAIR A` / `LEVEL B1` / `LEVELS 0 TO B1` / `NO ROOF ACCESS`.
+- **Placard copy:** sheet A, LEVEL B1. Staged by 平面视觉 10-22 13:1x (md5):
+  - `Tools/print/ink/art_from_graphic/placard/sheetA_B1/`: print 2bcf6c87, glow 99ea4ac6, examine 16c7f397;
+  - `sheetA_phase0_B1/`: print ce35c086, glow 0f42609b, examine e5bfc405.
+  - Mount: beside the arrival door at P1 west, facing into the floor (same rule as Level 0, so YOU ARE HERE stays true).
+  - Full vs Phase 0 follows the same lock condition as Level 0.
+
+**Far door, floor side (what you see when you turn round on B1)**
+- `NOT AN EXIT`. This is OSHA's "Not an Exit" sign, required since 1974 for doors likely to be mistaken for an exit. It is true here: up that stair the way is NO REENTRY.
+- It replaces the dead EXIT sign Red turned down (13:00), and it is not a `STAIR A` plate, because B1's own EXIT is STAIR A.
+
+**Numbering:** the B scheme is final (Red 2026-10-22 12:15, 叙事设计 chat, Q1 = C28): `LEVEL 0`, then `LEVEL B1`, `B2`, … going down. Every token moves down one per floor.
+
+**Alarm fiction (no visual consequence; SW01 flag closed):** a 1991 stair door unlocks from the central control station (UBC §1807(j), §1807(f)). That station is a room on the street floor. This building has no street floor you can reach, and at night nobody is at the controls, so the signal never comes. It is never stated in the game.
+
+**Optional:**
+- A `STAIR A` letter plate on the maze side of the EXIT door (NYC LL5 stair letters).
+- At most one distant door slam far below per stairwell: 声音设计's, no visual.
+
+**Do NOT add inside the stair:** an EXIT sign, photoluminescent strips, a running man, or any arrows.

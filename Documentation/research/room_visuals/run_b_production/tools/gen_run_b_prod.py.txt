@@ -1,0 +1,392 @@
+"""Run! B (EMERGENCY POWER) PRODUCTION textures. CLONE-ONLY TOOL (never merged; its
+outputs are). Successor of the r8 look-dev generator gen_run_b.py
+(W/proj_run_emergency_power/Tools/lookdev), per run_b_production/10_plan.md §1.3.
+
+Run (W venv python, no -I):
+  W/venv/bin/python W/tools/feature/run_b/gen_run_b_prod.py <clone> [names...]
+Writes <clone>/Assets/Resources/Surfaces/Textures (the FrontRoomsSurfaceTextureImporter
+folder: _A/_E sRGB, _N normal, _S linear, BC7 / BC5 with mips; the WebGL tab is capped at
+1024 by the clone setup tool). Every size is a power of two, so nothing stays RGBA32.
+
+Kept from r8 (same code, same seeds): Run_Block A/N/S (0.4 m world tile), Run_SoffitPaint
+A/N/S (2.4 m), Run_UnitLegend_A (1024^2, 5 px/mm on the nameplate), Run_SealedBeamLens
+A/N/S/E (512^2) and both cookies (Cookie_SealedBeam_S with ~2 % stray to 45 deg,
+Cookie_SealedBeamCore_S), stored as r8 did (sRGB-encoded linear profile, RGB PNG).
+New: RunB_VCT A/N/S (2048^2, world-projected 1.2 m = 4 x 4 tiles of 12 in / 0.30 m,
+0.59 mm/px; field #B9B4A6 with per-tile tone and through-chip flecks laid in quarter turns;
+S = Red's gloss: field ~.80, seams ~.38); Run_WrapLens A/N/E rebuilt for the hero wrap's
+authored UVs (u along 1.22 m, v along the 0.32838 m outer arc; tubes at v .3624 / .6376);
+plates at power-of-two sizes >= 2.5 px/mm (Notice / Electrical / Staff 1024 x 512 for
+254 x 178 mm, Pull 512 x 1024 for 130 x 180 mm, Extinguisher atlas 512 x 2048, Stencil
+2048 x 512 RGBA for 560 x 140 mm). Faces and the unit legend go through 平面视觉 before shipping.
+"""
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+CLONE = sys.argv[1]
+ONLY = sys.argv[2:]
+OUT = os.path.join(CLONE, "Assets", "Resources", "Surfaces", "Textures")
+FONTS = os.path.join(CLONE, "Assets", "Fonts", "Period1990", "TeXGyre")
+os.makedirs(OUT, exist_ok=True)
+sys.argv = [sys.argv[0], OUT, OUT]
+exec(open(os.path.join(CLONE, "Tools", "lookdev", "gen_common.py")).read())
+
+SPILL = .02
+HEROS_CN = os.path.join(FONTS, "texgyreheroscn-bold.otf")
+HEROS = os.path.join(FONTS, "texgyreheros-bold.otf")
+HEROS_REG = os.path.join(FONTS, "texgyreheros-regular.otf")
+WRITTEN = []
+
+
+def mask(smooth, cavity, wet=None):
+    z = np.zeros_like(smooth)
+    return np.stack([np.clip(smooth, 0, 1), np.clip(cavity, 0, 1), z if wet is None else wet, np.ones_like(smooth)], -1)
+
+
+def write(name, col, n=None, s=None, e=None):
+    save_rgb(f"{OUT}/{name}_A.png", col); WRITTEN.append(name + "_A")
+    if n is not None: save_normal(f"{OUT}/{name}_N.png", n); WRITTEN.append(name + "_N")
+    if s is not None: save_rgba(f"{OUT}/{name}_S.png", s); WRITTEN.append(name + "_S")
+    if e is not None: save_rgb(f"{OUT}/{name}_E.png", e); WRITTEN.append(name + "_E")
+    print("wrote", name)
+
+
+def to_size(arr, w, h):
+    """Resample an (H, W, C) float image to w x h (Lanczos per channel)."""
+    chans = []
+    for c in range(arr.shape[2]):
+        im = Image.fromarray(arr[..., c].astype(np.float32), "F").resize((w, h), Image.LANCZOS)
+        chans.append(np.asarray(im))
+    return np.clip(np.stack(chans, -1), 0, 1)
+
+
+# ---------------------------------------------------------------- walls (r8, unchanged)
+def block():
+    N = 1024
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    v = 1 - (yy + .5) / N
+    u = (xx + .5) / N
+    course = np.floor(v * 2)
+    uo = (u + .5 * course) % 1.0
+    jw = 10 / 400
+    dv = np.minimum(np.abs((v * 2) % 1.0), 1 - np.abs((v * 2) % 1.0)) * .5
+    du = np.minimum(uo, 1 - uo)
+    d = np.minimum(dv, du)
+    hw = jw * .5
+    joint = np.clip(1 - d / hw, 0, 1)
+    concave = np.where(d < hw, -(1 - (d / hw) ** 2), 0.0)
+    edge = np.clip(1 - (d - hw) / (1.2 / 400), 0, 1) * (d >= hw)
+    bid = (np.floor(uo * 1) + 7 * course).astype(int)
+    pores = band(N, N, 160, 520, 201)
+    pits = np.clip((pores - .70) / .12, 0, 1)
+    pits = blur(pits, .8)
+    grain = band(N, N, 40, 140, 202)
+    r = np.random.default_rng(203)
+    tone = r.normal(0, .012, 64)[bid % 64]
+    height = .55 * concave - .35 * edge * 0 + (-.30 * pits + .10 * grain) * (1 - joint)
+    alb = (0.955 + tone - .045 * pits - .02 * (grain - .5)) * (1 - .06 * joint)
+    drip = np.zeros((N, N), np.float32)
+    for _ in range(6):
+        x0 = int(r.integers(0, N)); y0 = int(r.integers(0, N)); L = int(r.integers(30, 120))
+        for k in range(L):
+            drip[(y0 + k) % N, (x0 + int(2 * np.sin(k * .05))) % N] = 1 - k / L
+    drip = blur(drip, 1.1)
+    height += .25 * drip
+    col = np.repeat(np.clip(alb, 0, 1)[..., None], 3, -1)
+    col *= np.array([1.0, .995, .985])
+    smooth = .66 - .20 * pits - .10 * joint - .05 * (grain - .5)
+    cav = 1 - .45 * joint - .25 * pits
+    write("Run_Block", col, normal_from_height(blur(height, .7), 2.2), mask(smooth, cav))
+
+
+# ---------------------------------------------------------------- floor (new, layout-independent)
+def vct():
+    """RunB_VCT: 1.2 x 1.2 m world tile = 4 x 4 VCT tiles of 0.30 m. The texture carries the
+    field colour, the chips, per-tile tone, seams and light traffic wear; lane, wax and
+    accent rows are material tints on their own floor slabs (FrontRoomsRunDress)."""
+    N = 2048
+    T = 1.2
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    x = (xx + .5) / N * T
+    z = (1 - (yy + .5) / N) * T
+    t = .30
+    gx = x / t; gz = z / t
+    col_id = np.floor(gx).astype(int); row_id = np.floor(gz).astype(int)
+    tid = col_id * 4 + row_id
+    r = np.random.default_rng(311)
+    tone = r.normal(0, .020, 16)[tid % 16]
+    hue = r.normal(0, .006, 16)[tid % 16]
+    base = hexc("#B9B4A6")[None, None, :]
+    # Through-chip flecks: a directional chip field, laid in quarter turns (the standard
+    # "quarter-turn" VCT installation), so neighbouring tiles' streaks cross.
+    chipsA = to_size(band(N * 3, N, 150, 620, 312)[..., None], N, N)[..., 0]
+    chipsB = to_size(band(N, N * 3, 150, 620, 313)[..., None], N, N)[..., 0]
+    turn = ((col_id + row_id) % 2 == 0)
+    chips = np.where(turn, chipsA, chipsB)
+    darkf = np.clip((chips - .60) / .2, 0, 1)
+    lightf = np.clip((.30 - chips) / .2, 0, 1)
+    col = base * (1 + tone[..., None]) + np.stack([hue, 0 * hue, -hue], -1)
+    col = col * (1 - .20 * darkf[..., None]) + .05 * lightf[..., None]
+    fx = np.minimum(gx % 1, 1 - gx % 1) * t; fz = np.minimum(gz % 1, 1 - gz % 1) * t
+    seam = np.exp(-(np.minimum(fx, fz) / .0010) ** 2)
+    col *= (1 - .24 * seam[..., None])
+    # Light traffic wear and heel scuffs, everywhere (the lane slab adds its own burnish).
+    wear = spectral(N, N, 1.9, 314)
+    img = Image.new("L", (N, N), 0); dr = ImageDraw.Draw(img)
+    for _ in range(220):
+        px, py = r.random() * N, r.random() * N
+        a = r.normal(0, .6) + (np.pi / 2 if r.random() < .5 else 0); l = r.random() * 45 + 10
+        for ox in (-N, 0, N):
+            for oy in (-N, 0, N):
+                dr.line([(px + ox, py + oy), (px + ox + np.cos(a) * l, py + oy + np.sin(a) * l)], fill=int(130 + r.integers(0, 125)), width=int(r.integers(1, 4)))
+    sc = blur(np.asarray(img).astype(np.float32) / 255, 1.0)
+    col *= (1 - .28 * sc[..., None])
+    # Gloss (Red 2026-10-03: glossy waxed VCT): field ~.80, seams hold dirt ~.38, scuffs cut the wax.
+    gloss = .80 - .06 * (wear - .5) - .20 * sc - .44 * seam
+    height = -.9 * seam + .08 * band(N, N, 300, 900, 316) - .05 * sc
+    write("RunB_VCT", np.clip(col, 0, 1), normal_from_height(blur(height, .6), 1.4), mask(np.clip(gloss, .30, .90), 1 - .35 * seam))
+
+
+# ---------------------------------------------------------------- soffit (r8, unchanged)
+def soffit():
+    N = 1024
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    u = (xx + .5) / N * 2.4; v = (1 - (yy + .5) / N) * 2.4
+    mott = spectral(N, N, 2.2, 401)
+    fine = band(N, N, 200, 600, 402)
+    su = np.minimum(u % 1.2, 1.2 - u % 1.2); sv = np.minimum(v % 2.4, 2.4 - v % 2.4)
+    seam = np.exp(-(np.minimum(su, sv) / .004) ** 2)
+    tu = np.minimum(u % .6, .6 - u % .6) - 0; tv = np.minimum((v + .3) % .6, .6 - (v + .3) % .6)
+    tie = np.exp(-((tu ** 2 + tv ** 2) / .012 ** 2))
+    alb = .93 + .07 * (mott - .5) - .05 * seam - .25 * tie
+    col = np.repeat(np.clip(alb, 0, 1)[..., None], 3, -1)
+    height = -.6 * tie + .3 * seam + .15 * fine + .2 * mott
+    write("Run_SoffitPaint", col, normal_from_height(blur(height, .8), 1.2), mask(.22 + .05 * fine - .1 * tie, 1 - .5 * tie - .2 * seam))
+
+
+# ---------------------------------------------------------------- type helpers
+def cap_font(path, cap_px):
+    size = cap_px
+    for _ in range(6):
+        f = ImageFont.truetype(path, int(size))
+        bb = f.getbbox("H")
+        h = bb[3] - bb[1]
+        size *= cap_px / max(1, h)
+    return ImageFont.truetype(path, int(round(size)))
+
+
+def text_centered(dr, cx, cy, text, font, fill):
+    bb = dr.textbbox((0, 0), text, font=font)
+    dr.text((cx - (bb[0] + bb[2]) / 2, cy - (bb[1] + bb[3]) / 2), text, font=font, fill=fill)
+
+
+def rgb01(img):
+    return np.asarray(img.convert("RGB")).astype(np.float32) / 255
+
+
+# ---------------------------------------------------------------- plates (production sizes)
+def plates():
+    PX = 4                                   # draw at 4 px/mm, then fit the POT texture
+    W, H = 254 * PX, 178 * PX
+
+    def finish(img):
+        a = rgb01(img)
+        return to_size(a, 1024, 512)         # 4.03 x 2.88 px/mm
+
+    # NOTICE (ANSI Z35.1 style): blue header, white NOTICE; black on white body.
+    img = Image.new("RGB", (W, H), (238, 236, 228)); dr = ImageDraw.Draw(img)
+    hdr = int(52 * PX)
+    dr.rectangle([0, 0, W, hdr], fill=(28, 72, 150))
+    text_centered(dr, W / 2, hdr / 2, "NOTICE", cap_font(HEROS, 30 * PX), (245, 245, 240))
+    fb = cap_font(HEROS_CN, 20 * PX)
+    text_centered(dr, W / 2, hdr + (H - hdr) * .33, "AUTHORIZED", fb, (20, 20, 20))
+    text_centered(dr, W / 2, hdr + (H - hdr) * .66, "PERSONNEL ONLY", fb, (20, 20, 20))
+    dr.rectangle([int(4 * PX), int(4 * PX), W - int(4 * PX), H - int(4 * PX)], outline=(28, 72, 150), width=int(2.5 * PX))
+    write("Run_PlateNotice", finish(img))
+
+    # Engraved laminate faces (white core under a black skin) on the same 10 x 7 plate.
+    def engraved(name, lines, caps):
+        img = Image.new("RGB", (W, H), (24, 24, 23)); dr = ImageDraw.Draw(img)
+        n = len(lines)
+        for i, (line, cap) in enumerate(zip(lines, caps)):
+            text_centered(dr, W / 2, H * (i + .5) / n, line, cap_font(HEROS, cap * PX), (232, 230, 222))
+        m = int(6 * PX)
+        dr.rectangle([m, m, W - m, H - m], outline=(200, 198, 190), width=int(1.2 * PX))
+        write(name, finish(img))
+    engraved("Run_PlateElectrical", ["ELECTRICAL", "ROOM", "AUTHORIZED PERSONNEL ONLY"], [26, 26, 9])
+    engraved("Run_PlateStaff", ["STAFF", "ONLY"], [34, 34])
+
+    # NOT AN EXIT spray stencil (RGBA, alpha = paint), 560 x 140 mm, bridged counters.
+    SW, SH = 2048, 512
+    pxmm = SW / 560
+    img = Image.new("L", (SW, SH), 0); dr = ImageDraw.Draw(img)
+    f = cap_font(HEROS_CN, 76 * pxmm)
+    text = "NOT AN EXIT"
+    bb = dr.textbbox((0, 0), text, font=f)
+    x0 = SW / 2 - (bb[0] + bb[2]) / 2; y0 = SH / 2 - (bb[1] + bb[3]) / 2
+    dr.text((x0, y0), text, font=f, fill=255)
+    xcur = x0
+    for ch in text:
+        cb = dr.textbbox((xcur, y0), ch, font=f)
+        if ch in "OA":
+            cx = (cb[0] + cb[2]) / 2; bw = 4 * pxmm
+            if ch == "O":
+                dr.rectangle([cx - bw / 2, cb[1] - 4, cx + bw / 2, cb[1] + (cb[3] - cb[1]) * .22], fill=0)
+                dr.rectangle([cx - bw / 2, cb[3] - (cb[3] - cb[1]) * .22, cx + bw / 2, cb[3] + 4], fill=0)
+            else:
+                dr.rectangle([cx - bw / 2, cb[1] + (cb[3] - cb[1]) * .30, cx + bw / 2, cb[1] + (cb[3] - cb[1]) * .52], fill=0)
+        xcur += f.getlength(ch)
+    al = np.asarray(img).astype(np.float32) / 255
+    over = blur(al, 6.0) * .35
+    al = np.clip(np.maximum(blur(al, 1.2), over), 0, 1)
+    noise = band(SH, SW, 60, 400, 501)
+    al = np.clip(al * (0.85 + .3 * noise), 0, 1)
+    rgba = np.zeros((SH, SW, 4), np.float32)
+    rgba[..., :3] = .06; rgba[..., 3] = al
+    Image.fromarray((rgba * 255 + .5).astype(np.uint8), "RGBA").save(f"{OUT}/Run_StencilNotExit_A.png")
+    WRITTEN.append("Run_StencilNotExit_A"); print("wrote Run_StencilNotExit")
+
+    # Pull station face, 130 x 180 mm on 512 x 1024 (3.9 x 5.7 px/mm): FIRE over the handle
+    # slot, PULL DOWN under it, white on red.
+    PW, PH = 130 * 8, 180 * 8; pp = 8
+    img = Image.new("RGB", (PW, PH), (176, 30, 24)); dr = ImageDraw.Draw(img)
+    text_centered(dr, PW / 2, 26 * pp, "FIRE", cap_font(HEROS, 20 * pp), (244, 242, 236))
+    # handle slot (the bezel frames it; the T-handle stands in front)
+    dr.rectangle([int(25 * pp), int((180 - 104 - 12) * pp), PW - int(25 * pp), int((180 - 104 + 12) * pp)], fill=(70, 10, 8))
+    text_centered(dr, PW / 2, 128 * pp, "PULL DOWN", cap_font(HEROS_CN, 11 * pp), (244, 242, 236))
+    dr.polygon([(PW / 2 - 7 * pp, 140 * pp), (PW / 2 + 7 * pp, 140 * pp), (PW / 2, 150 * pp)], fill=(244, 242, 236))
+    write("Run_PlatePull", to_size(rgb01(img), 512, 1024))
+
+    # Extinguisher cabinet atlas, 512 x 2048 (v from the bottom):
+    #   u 0 .. .5        the vertical legend strip (red letters on white), full height;
+    #   u .5 .. 1, v .875 .. 1   plain cabinet white (#E4E2DA);
+    #   u .5 .. 1, v .625 .. .875 the extinguisher's instruction label;
+    #   u .5 .. 1, v .5 .. .625   the gauge face; the rest plain white.
+    AW, AH = 512, 2048
+    white = (228, 226, 218)
+    img = Image.new("RGB", (AW, AH), white); dr = ImageDraw.Draw(img)
+    strip = Image.new("RGB", (AH, AW // 2), white); ds = ImageDraw.Draw(strip)
+    text_centered(ds, AH / 2, AW / 4, "FIRE EXTINGUISHER", cap_font(HEROS_CN, 150), (196, 30, 22))
+    strip = strip.rotate(-90, expand=True)
+    img.paste(strip, (0, 0))
+    # label: two rows of type on a white field with a red band (generic, no brand)
+    ly0, ly1 = int(AH * (1 - .875)), int(AH * (1 - .625))
+    dr.rectangle([AW // 2, ly0, AW, ly1], fill=(236, 234, 228))
+    dr.rectangle([AW // 2, ly0 + 40, AW, ly0 + 120], fill=(176, 30, 24))
+    text_centered(dr, AW * .75, ly0 + 80, "FIRE", cap_font(HEROS, 40), (244, 242, 236))
+    text_centered(dr, AW * .75, ly0 + 190, "EXTINGUISHER", cap_font(HEROS_CN, 30), (24, 24, 22))
+    text_centered(dr, AW * .75, ly0 + 260, "ABC  2-1/2 LB", cap_font(HEROS_CN, 26), (24, 24, 22))
+    for k in range(6):
+        dr.rectangle([AW // 2 + 30, ly0 + 320 + k * 26, AW - 30, ly0 + 330 + k * 26], fill=(150, 150, 146))
+    # gauge face: white dial, green arc, black needle in the green
+    gy0, gy1 = int(AH * (1 - .625)), int(AH * (1 - .5))
+    gcx, gcy, gr = AW * .75, (gy0 + gy1) / 2, min(AW / 4, (gy1 - gy0) / 2) - 8
+    dr.rectangle([AW // 2, gy0, AW, gy1], fill=(20, 20, 20))
+    dr.ellipse([gcx - gr, gcy - gr, gcx + gr, gcy + gr], fill=(240, 238, 230))
+    dr.arc([gcx - gr * .8, gcy - gr * .8, gcx + gr * .8, gcy + gr * .8], 230, 310, fill=(40, 150, 60), width=14)
+    dr.line([(gcx, gcy), (gcx + gr * .1, gcy - gr * .7)], fill=(10, 10, 10), width=6)
+    write("Run_PlateExtinguisher", rgb01(img))
+
+
+# ---------------------------------------------------------------- unit legend (r8, unchanged)
+def unit_legend():
+    W, H = 1024, 1024
+    img = Image.new("RGB", (W, H), (226, 220, 204))
+    dr = ImageDraw.Draw(img)
+    rh = H // 4
+    dr.rectangle([6, 6, W - 6, rh - 6], fill=(214, 210, 198), outline=(40, 40, 38), width=6)
+    text_centered(dr, W / 2, rh * .36, "EMERGENCY LIGHTING UNIT", cap_font(HEROS_CN, 52), (28, 28, 26))
+    text_centered(dr, W / 2, rh * .74, "6 V  -  2 x 12 W SEALED BEAM  -  90 MIN", cap_font(HEROS_REG, 30), (40, 40, 38))
+    text_centered(dr, W / 2, rh * 1.5, "AC ON", cap_font(HEROS, 120), (28, 28, 26))
+    text_centered(dr, W / 2, rh * 2.5, "PUSH TO TEST", cap_font(HEROS, 100), (28, 28, 26))
+    text_centered(dr, W / 2, rh * 3.5, "CHARGE RATE  -  TEST MONTHLY", cap_font(HEROS_REG, 44), (40, 40, 38))
+    write("Run_UnitLegend", np.asarray(img).astype(np.float32) / 255)
+
+
+# ---------------------------------------------------------------- lens and cookies (r8, unchanged)
+def sealed_beam():
+    N = 512
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    x = (xx + .5) / N * 2 - 1; y = 1 - (yy + .5) / N * 2
+    rr = np.sqrt(x * x + y * y)
+    bx = (x + 1) * 7; by = (y + 1) * 5
+    fu = bx % 1; fv = by % 1
+    lens_h = np.sqrt(np.clip(1 - (2 * fu - 1) ** 2, 0, 1)) * (1 - .4 * (2 * fv - 1) ** 8)
+    edge = np.exp(-(np.minimum(np.minimum(fu, 1 - fu), np.minimum(fv, 1 - fv)) / .05) ** 2)
+    inside = rr < .985
+    height = (lens_h - .3 * edge) * inside
+    refl = .52 + .22 * np.cos(rr * 9.0) * np.exp(-rr * 1.2) + .10 * (1 - rr)
+    alb = (refl * (0.92 + .08 * lens_h) - .08 * edge) * inside + .25 * (~inside)
+    col = np.stack([alb * 1.0, alb * .98, alb * .93], -1)
+    core = np.exp(-((x / .16) ** 2 + (y / .10) ** 2))
+    glow = np.exp(-(rr / .62) ** 2)
+    ring = np.exp(-((rr - .78) / .05) ** 2) * .25
+    e = (1.0 * core + .55 * glow + ring) * (0.80 + .25 * lens_h) * inside
+    emit = np.stack([e, e * .86, e * .66], -1)
+    write("Run_SealedBeamLens", np.clip(col, 0, 1), normal_from_height(blur(height, .8), 3.0), mask(.88 - .2 * edge, np.ones_like(rr)), np.clip(emit / max(1e-6, e.max()), 0, 1))
+
+    def beam(rr, x):
+        core = np.exp(-(rr / .22) ** 2)
+        plateau = np.clip((.97 - rr) / .30, 0, 1) ** 1.2
+        ring = np.exp(-((rr - .70) / .05) ** 2)
+        flutes = 1 + .06 * np.sin(x * np.pi * 14) * np.clip(1 - rr, 0, 1)
+        return (0.45 * core + .62 * plateau + .10 * ring) * flutes
+
+    def store(lin, name):
+        lin = blur(np.clip(lin, 0, 1), 1.0)
+        enc = np.where(lin <= .0031308, lin * 12.92, 1.055 * np.power(np.clip(lin, 0, 1), 1 / 2.4) - .055)
+        save_rgb(f"{OUT}/{name}.png", np.repeat(np.clip(enc, 0, 1)[..., None], 3, -1))
+        WRITTEN.append(name); print("wrote", name)
+
+    C = 256
+    yy, xx = np.mgrid[0:C, 0:C].astype(np.float32)
+    x = (xx + .5) / C * 2 - 1; y = (yy + .5) / C * 2 - 1
+    rr = np.sqrt(x * x + (y * 1.08) ** 2)
+    lin = beam(rr, x)
+    store(np.clip(lin / lin.max(), 0, 1) * (rr < .995), "Cookie_SealedBeamCore_S")
+    rc = np.sqrt(x * x + (y * 1.0) ** 2)
+    theta = np.degrees(np.arctan(rc * np.tan(np.radians(50.0))))
+    rr_old = np.tan(np.radians(theta)) / np.tan(np.radians(25.0))
+    xs = x * np.tan(np.radians(50.0)) / np.tan(np.radians(25.0))
+    core = beam(np.sqrt((rr_old * np.cos(np.arctan2(y, x))) ** 2 + (rr_old * np.sin(np.arctan2(y, x)) * 1.08) ** 2), xs)
+    core = np.where(rr_old < .995, core, 0) / beam(np.zeros(1), np.zeros(1))[0]
+    spill = SPILL * (1 - np.clip((theta - 24.0) / 24.0, 0, 1)) ** 1.5 * (1 + .25 * np.exp(-((theta - 31.0) / 3.0) ** 2))
+    lin = np.maximum(np.clip(core, 0, None), spill) * (rc < .995)
+    store(np.clip(lin / lin.max(), 0, 1), "Cookie_SealedBeam_S")
+
+
+# ---------------------------------------------------------------- hero wrap lens (new UVs)
+ARC = 0.32838
+SIDE_END = (0.04743 + 0.03456) / ARC          # v where the right side + corner meet the bottom
+TUBE_V = (0.3624, 0.6376)
+
+
+def wrap_lens():
+    W, H = 1024, 512
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    u = (xx + .5) / W
+    v = 1 - (yy + .5) / H
+    s = v * ARC                                 # arc length (m) from the +Y top edge
+    # prism field: pyramids on a 4 mm pitch in metres along both directions
+    pu = (u * 1220 / 4.0) % 1; pv = (s * 1000 / 4.0) % 1
+    pyr = 1 - np.maximum(np.abs(2 * pu - 1), np.abs(2 * pv - 1))
+    ends = np.clip(np.minimum(u, 1 - u) / .025, 0, 1)
+    bottom = (v > SIDE_END) & (v < 1 - SIDE_END)
+    # two T8 tubes 90 mm apart seen through the bottom panel; the sides glow evenly
+    bands = sum(np.exp(-((v - tv) / .060) ** 2) for tv in TUBE_V)
+    side_glow = .42 + .22 * np.exp(-((np.minimum(v, 1 - v) - SIDE_END) / .10) ** 2)
+    e = np.where(bottom, .55 + .45 * bands, side_glow) * (0.9 + .1 * pyr) * ends
+    emit = np.stack([e * .92, e * .96, e], -1)
+    alb = (.86 + .06 * pyr) * np.where(bottom, 1.0, .95)
+    col = np.stack([alb, alb, alb * .98], -1)
+    write("Run_WrapLens", np.clip(col, 0, 1), normal_from_height(pyr * 1.0, 1.2), None, np.clip(emit, 0, 1))
+
+
+if __name__ == "__main__":
+    for fn in (block, vct, soffit, plates, unit_legend, sealed_beam, wrap_lens):
+        if not ONLY or fn.__name__ in ONLY:
+            fn()
+    print("WROTE", len(WRITTEN), " ".join(WRITTEN))

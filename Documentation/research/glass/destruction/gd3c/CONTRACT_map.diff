@@ -1,0 +1,162 @@
+# GD3c map contract (kept glass progress, D-c). Base: FrontRoomsMapWorld.cs sha1 7ef0ca45, FrontRoomsMapInteractionTests.cs sha1 d9b51f23 (main 2c450e11).
+# Apply from the Frontrooms3D folder: git apply --check CONTRACT_map.diff, then git apply. Owner: map line. Why each hunk: README_CONTRACT_map.md.
+# Rev 2 (13:4x): the progress is written on release, pause and teardown (KeepHold), never per Hold tick, per the map owner note of 13:3x.
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -150,7 +150,7 @@
+     public static readonly Vector3 KeyPlaceholderSize = new Vector3(.065f, .022f, .004f);
+     /// <summary>Every frame E is held on glass: the window's position and how far it is to breaking (0-1).</summary>
+     public event Action<Vector3, float> GlassHold;
+-    /// <summary>E was let go before the glass broke (or, in tap mode, a tap's credit ran out: the progress is kept).</summary>
++    /// <summary>E was let go before the glass broke (or, in tap mode, a tap's credit ran out). The progress is kept either way.</summary>
+     public event Action<Vector3> GlassHoldReleased;
+     /// <summary>
+     /// The glass break (visual chat's plan §4.4, Red 2026-10-03). E went down on
+@@ -349,7 +349,10 @@
+     /// impactUV is the same point over the exposed glass (1.367 × 1.617 m from
+     /// x −0.6835, y 0.3665). Rotation (degrees) turns the crack pattern, from the
+     /// seed. Side is +1 when struck from cell a (the glass goes toward b, the
+-    /// root's +Z), −1 from b. The impact is fixed once the pane has cracked.
++    /// root's +Z), −1 from b. The impact is fixed once the pane has been
++    /// struck (Red 2026-10-22: a knock is never undone). Hold is the progress
++    /// so far (seconds of E held, 0–1 × HoldSeconds): kept through a release,
++    /// a chunk drop and a rebuild, so the next hold resumes exactly there.
+     /// </summary>
+     public struct GlassBreakRecord
+     {
+@@ -359,6 +362,7 @@
+         public Vector2 impactUV;
+         public float rotation;
+         public int side;
++        public float hold;
+     }
+ 
+     // The exposed glass in the window root's frame (the visual chat's 16 mm stops hide the rest of the 1.4 × 1.65 box).
+@@ -1519,8 +1523,8 @@
+                 pane.GetComponent<Renderer>().sharedMaterial = glass;
+                 pane.AddComponent<FrontRoomsMetalGlassTarget>();
+                 window.pane = pane;
+-                // A cracked pane resumes from the stage it reached.
+-                window.hold = StageFloor(window.stage);
++                // A struck pane resumes from the progress it reached (never below its stage: cracks do not heal).
++                window.hold = Mathf.Max(StageFloor(window.stage), record.hold);
+                 windowByCollider[pane.GetComponent<Collider>()] = window;
+             }
+             // The visual chat's glass draws the slab and every stage on the root; the box keeps only its collider.
+@@ -1552,6 +1556,8 @@
+ 
+     void RaiseWindowReleased(Window window)
+     {
++        // A pane torn down mid-hold keeps what it reached (a release normally stored it already).
++        KeepHold(window);
+         if (!window.announced || WindowReleased == null) return;
+         window.announced = false;
+         foreach (Action<Window> handler in WindowReleased.GetInvocationList())
+@@ -3107,14 +3113,23 @@
+         };
+     }
+ 
+-    // Where a hold resumes after a release: the stage reached (cracks do not heal).
++    // The least a struck pane keeps: the stage reached (cracks do not heal). The kept progress (record.hold) is at least this.
+     static float StageFloor(int stage) => stage >= 2 ? FrontRoomsShotTimings.GlassBreak.Crack2 : stage >= 1 ? FrontRoomsShotTimings.GlassBreak.Crack1 : 0f;
++
++    // Keep a struck pane's progress with its record (Red 2026-10-22): on a release or a pause, and when the window is torn
++    // down, never per Hold tick. The record exists from BeginGlassHold on; an unchanged hold writes nothing.
++    void KeepHold(Window window)
++    {
++        if (window.hold <= 0f || !glassBreaks.TryGetValue(window.edge, out var record) || record.hold == window.hold) return;
++        record.hold = window.hold;
++        glassBreaks[window.edge] = record;
++    }
+ 
+     /// <summary>
+     /// E went down on a pane: the hold begins. The impact is
+     /// <paramref name="hitPoint"/> (the base-eye hit), kept 0.2 m inside the
+-    /// exposed glass, while the pane is uncracked; once it has cracked the
+-    /// cracks' own centre stays. <paramref name="strike"/> is the base-eye
++    /// exposed glass, at the first strike; once the pane has been struck
++    /// (any kept progress) that point stays. <paramref name="strike"/> is the base-eye
+     /// forward (the pieces' impulse at the shatter). Raises GlassHoldStarted.
+     /// Returns the window, or null when the collider is not a pane.
+     /// </summary>
+@@ -3122,7 +3137,7 @@
+     {
+         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return null;
+         var record = GlassBreakOf(window);
+-        if (record.stage == 0)
++        if (record.stage == 0 && record.hold <= 0f)
+         {
+             var local = window.root.InverseTransformPoint(hitPoint);
+             var m = FrontRoomsShotTimings.GlassBreak.ImpactMinFromFrame;
+@@ -3201,12 +3216,12 @@
+         return true;
+     }
+ 
+-    /// <summary>E let go (or the aim left the pane) before the break: the hold drops back to the stage reached, never below it.</summary>
++    /// <summary>E let go (or the aim left the pane) before the break: the progress is kept (Red 2026-10-22), the next hold resumes from it.</summary>
+     public void ReleaseHold(Collider c)
+     {
+         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
+         if (window.hold > 0f && window.pushing) GlassHoldReleased?.Invoke(window.position);
+-        window.hold = StageFloor(window.stage);
++        KeepHold(window);
+         window.pushing = false;
+         window.started = false;
+     }
+@@ -3220,6 +3235,7 @@
+     {
+         if (c == null || !windowByCollider.TryGetValue(c, out var window)) return;
+         if (window.pushing && window.hold > 0f) GlassHoldReleased?.Invoke(window.position);
++        KeepHold(window);
+         window.pushing = false;
+     }
+ 
+--- a/Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs
++++ b/Assets/Editor/FrontRoomsMap/FrontRoomsMapInteractionTests.cs
+@@ -2011,17 +2011,17 @@
+         world.BeginGlassHold(pane, root.TransformPoint(new Vector3(-.3f, 1.5f, 0f)), root.forward);
+         world.TryGetGlassBreak(window.edge, out var resumed);
+         while (p < .75f) world.Hold(pane, Dt, out p);
+-        Check(cracks.Count == 2 && cracks[0] == 1 && cracks[1] == 2 && Mathf.Abs(floor - FrontRoomsShotTimings.GlassBreak.Crack1) < 1e-4f && resumed.impact == record.impact,
+-            "glass: cracks 1 then 2, once each (" + string.Join(",", cracks) + "); a release drops to 0.35 (" + floor.ToString("0.00") + "); a resumed strike keeps the impact");
++        Check(cracks.Count == 2 && cracks[0] == 1 && cracks[1] == 2 && floor >= .5f && floor < .5f + 2f * Dt && resumed.impact == record.impact && resumed.hold == floor,
++            "glass: cracks 1 then 2, once each (" + string.Join(",", cracks) + "); a release keeps the progress (" + floor.ToString("0.000") + ", kept in the record); a resumed strike keeps the impact");
+ 
+-        // A rebuild: the window goes and comes back cracked, from 0.70.
++        // A rebuild: the window goes and comes back cracked, from the progress it had.
+         var chunk = MapGrid.ChunkOf(window.a);
+         world.RebuildChunk(chunk);
+         if (!released.Contains(window)) { chunk = MapGrid.ChunkOf(window.b); world.RebuildChunk(chunk); }
+         var again = built.LastOrDefault(x => x.window.edge == window.edge);
+         Check(released.Contains(window) && again.window != null && again.window != window && again.record.stage == 2 && again.window.stage == 2
+-              && Mathf.Abs(again.window.hold - FrontRoomsShotTimings.GlassBreak.Crack2) < 1e-4f && again.record.impact == record.impact,
+-            "glass: a rebuild raises WindowReleased, then WindowBuilt with the record (stage " + again.record.stage + "), resuming from 0.70");
++              && Mathf.Abs(again.window.hold - p * FrontRoomsShotTimings.GlassBreak.HoldSeconds) < 1e-4f && again.record.impact == record.impact,
++            "glass: a rebuild raises WindowReleased, then WindowBuilt with the record (stage " + again.record.stage + "), resuming from the kept progress (" + again.window.hold.ToString("0.000") + ")");
+ 
+         // A tap's float sum a rounding step short of a beat still cracks (the stage tolerance); a strike from b says side −1.
+         var other = built.Select(x => x.window).FirstOrDefault(x => x.pane != null && x.stage == 0 && x != window && x.edge != window.edge && world.IsBuilt(x.a) && world.IsBuilt(x.b));
+@@ -2041,6 +2041,23 @@
+         }
+         else Check(false, "glass: no second intact window for the tolerance and side checks");
+ 
++        // A knock below Crack1 is kept too (Red 2026-10-22): 0.2 s, let go, struck again elsewhere: 0.2 kept, the first impact stays.
++        var third = built.Select(x => x.window).FirstOrDefault(x => x.pane != null && x.stage == 0 && x.hold == 0f && x != window && x != other && world.IsBuilt(x.a) && world.IsBuilt(x.b));
++        if (third != null)
++        {
++            var thirdPane = third.pane.GetComponent<Collider>();
++            world.BeginGlassHold(thirdPane, third.root.TransformPoint(new Vector3(.3f, 1.4f, 0f)), third.root.forward);
++            world.Hold(thirdPane, .2f, out _);
++            world.ReleaseHold(thirdPane);
++            world.TryGetGlassBreak(third.edge, out var knocked);
++            world.BeginGlassHold(thirdPane, third.root.TransformPoint(new Vector3(-.3f, .9f, 0f)), third.root.forward);
++            world.TryGetGlassBreak(third.edge, out var reknocked);
++            Check(Mathf.Abs(third.hold - .2f) < 1e-5f && third.stage == 0 && Mathf.Abs(knocked.hold - .2f) < 1e-5f && reknocked.impact == knocked.impact,
++                "glass: a 0.2 s knock is kept (" + third.hold.ToString("0.000") + ") and a second strike keeps its impact " + reknocked.impact.ToString("F3"));
++            world.ReleaseHold(thirdPane);
++        }
++        else Check(false, "glass: no third intact window for the kept-knock check");
++
+         // A glass-kit handler that throws is logged and never breaks a build.
+         Action<FrontRoomsMapWorld.Window, FrontRoomsMapWorld.GlassBreakRecord> throwing = (w, r) => throw new InvalidOperationException("test: a broken glass kit");
+         world.WindowBuilt += throwing;

@@ -2,6 +2,7 @@
 
 Date: 2026-10-03. **Nothing here has been downloaded.** Red approves the batch; the visual chat asks once (together with `media_candidates_buildings.md`).
 Every time below was checked by eye in the YouTube player today (±1 s). The research file says what each moment proves.
+**2026-10-22:** row `lt_kane_ff_firedoor` (section A) was fetched once with the stairwell batch; its path is in that row. Nothing else here has been downloaded.
 
 ## Already on disk (no download needed)
 
@@ -28,7 +29,7 @@ Sizes: "raw" is the scratchpad download (deleted after). "Kept" is what stays in
 |---|---|---|---|---:|---:|---|
 | 1 | `lt_kane_ff3_neck.{mp4,gif}` + `_poster.jpg` (poster 34:25.0) | *Found Footage #3*, https://www.youtube.com/watch?v=acdYs9tPLko | 34:18–34:30 | ≈4 MB | ≈5 MB | **The key frame.** Yellow room → deep recess → doorway whose jambs are white; yellow stops at the outside corner; black base and carpet continue; brighter cooler light beyond (P2, P3, P4) |
 | 1 | `lt_kane_ff3_white_office.jpg` | same | 35:04 | ≈0.5 MB | 0.2 MB | the white open-plan office reached through that neck: Kane's own "Office" zone |
-| 1 | `lt_kane_ff_firedoor.{mp4,gif}` + poster (6:57) | *The Backrooms (Found Footage)*, https://www.youtube.com/watch?v=H4dGpz6cnHo | 6:40–6:58 | ≈5 MB | ≈6 MB | "Fire exit / Keep clear" sign, concrete stair, push-bar door opens straight into Level 0 (P1 door cut) |
+| 1 | `lt_kane_ff_firedoor.{mp4,gif}` + poster (6:57) | *The Backrooms (Found Footage)*, https://www.youtube.com/watch?v=H4dGpz6cnHo | 6:40–6:58 | ≈5 MB | ≈6 MB | "Fire exit / Keep clear" sign, concrete stair, push-bar door opens straight into Level 0 (P1 door cut). **Fetched 2026-10-22 once, with the stairwell batch (Red-approved there as `sw_kane_ff_firedoor`), for 368–416 s (6:08–6:56), MP4 only, no GIF:** `Research/week03/stairwell/clips/sw_kane_ff_firedoor.mp4` (1010 × 720, 48 s, no audio) + `sw_kane_ff_firedoor_poster.jpg` (405.0 s, the stair). Ledger: `Research/week03/stairwell/SOURCES.md`. The clip shows the fire-exit door 392–402.5 s and the straight concrete stair 403.5–410 s; the top door opens to black at 412.75–416 s. The Level 0 cut and the 6:57 poster time fall just after 416 s and are **not** in the clip |
 | 1 | `lt_kane_ff_green_pocket.{mp4,gif}` + poster (2:15) | same | 2:08–2:20 | ≈3 MB | ≈5 MB | same paper and carpet, green light: light as the zone code (P6) |
 | 1 | `lt_kane_ff_ladder_hole.jpg` | same | 2:02 | ≈0.5 MB | 0.2 MB | ladder into a square hole in a Level 0 wall (P8) |
 | 1 | `lt_kane_pit_fall_lower.{mp4,gif}` + poster (6:10) | *Backrooms – Pitfalls*, https://www.youtube.com/watch?v=0XwlWXtpaCM | 5:36–6:14 (cut to 6 s around 5:40 and a still at 6:10) | ≈8 MB | ≈5 MB | fall into a pit; the lower level is the same architecture in grey; the hole seen from below (P8, P5) |

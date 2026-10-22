@@ -1,6 +1,6 @@
 # W2 · Office prop period fixes: brass torchiere, armless task chair (spec)
 
-Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 游戏视觉. Built 2026-10-22 (`20_build.md`); corrected by fix round 1, see the errata below.
+Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 游戏视觉. Built 2026-10-22 (`20_build.md`); corrected by fix rounds 1 and 2, see the errata below (fix 2 supersedes fix 1 where they differ).
 
 **Errata from fix round 1 (2026-10-22, `20_build.md` §12).** The verifiers found these points of this spec wrong or not good enough; the build follows the corrections:
 - **§3.3 / §3.7, brass.** The shared `Prop_Brass` (sRGB 0.69/0.54/0.29, smoothness 0.6) reads dark bronze on the vertical pole in the game's rooms (pole L\* 19 at 0.3 m against walls at 42). The torchiere now has its own `Prop_BrassPolished` (sRGB 0.95/0.87/0.62, smoothness 0.78, metallic 1), a new .mat with a new GUID; its RenderSetup SurfaceDef is a separate diff. `Prop_Brass` itself is unchanged.
@@ -8,6 +8,13 @@ Status: SPEC (research stage of workflow `office-props-w2`, 2026-10-21). Owner: 
 - **§3.5, knob.** The knob face is chamfered (1.8 mm, 45°) and domed, not flat.
 - **§3.8, base.** 40 sides (the §8 fallback), five rounded beads instead of flat treads and near-vertical risers.
 - **§3.9, collider in piles.** "Pile pieces have their boxes disabled anyway" was wrong: `FrontRoomsFurniturePile` gives every non-Small pile piece over 0.5 m its colliders. The kit now carries the tag `pile_walkthrough`, and the pile code skips colliders for it, so a pile torchiere stays walk-through as before W2. Module placements (L0_WaitingRoom_4x3) keep the box.
+
+**Errata from fix round 2 (2026-10-22, `20_build.md` §14).** Round 2's verifiers measured hue and chroma, not only L\*, and looked at the outline:
+- **§3.3 / §3.7, brass hue.** `Prop_BrassPolished` is now sRGB 0.95/0.72/0.32, smoothness 0.72, macro tone and dirt 0: after the game's green-yellow grade the fix-1 tint (0.95/0.87/0.62) read khaki (pole h 88). The pole now measures h 75 (target 70–82) and the base's highlights C 22.
+- **§3.4, bowl.** Six sloped bands (45°) step out by five ledges of 8 mm, so the notches show in the outline at standing distance (3–4 px at 2.4 m), as on the scan; the fix-1 4 mm steps showed nowhere. The glass lip now shows 4.5 mm above a 4.5 mm brass band (the band is no longer on the very top). The outside of the bowl carries custom normals tilted 45° above the outward horizontal (5° lower on the ledges), a fake for the light coming through frosted glass: from below it is lighter than the walls (L\* 66 against 22 at 0.3 m), not a dark cone. Nothing is emissive.
+- **§3.5, knob.** The dimmer knob is on the cup's right side as seen from the front (where Sears N has its switch), on a short shank, with an 11 mm knurled cylinder of shallow ribs, so it reads in profile. The `dimmer` anchor moved with it. Whether a halogen lamp's dimmer belongs on the pole instead is an open question for Red (`20_build.md` §11).
+- **§3.8, segments.** Bowl outside, bottom ring and band 48 sides (0.41 mm sagitta, ≤ 1 px at 0.3 m); cup 24.
+- **§4, task chair.** About 2 cm of chrome piston shows (was 6 cm: a long chrome rod mirrors the dim room and read rusty at 0.3 m). LOD2 of `Kit_TaskChair`, `_Navy` and `_Armed` is a hand-built proxy of whole low-poly parts (`fr_lods "2"`), not a 10 % decimation, which broke into spikes and shards at the 12 m switch.
 
 Red's decision (VISUAL_CHAT_TASKS.md:15 and :416, 2026-10-21): "the torchiere to brass with a glass/acrylic shade; the task chair to armless grey/coloured fabric (keep the black armed one as a variant)".
 

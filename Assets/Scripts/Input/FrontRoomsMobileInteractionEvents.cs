@@ -24,7 +24,8 @@ public static class FrontRoomsMobileInteractionEvents
         DoorLatched,
         DoorRattled,
         GlassCracked,
-        LockOn
+        LockOn,
+        DoorBrokenTried
     }
 
     /// <summary>
@@ -84,6 +85,13 @@ public static class FrontRoomsMobileInteractionEvents
     {
         FrontRoomsMobileHaptics.DoorRattle(jolt1, jolt2);
         Emit(Kind.DoorRattled);
+    }
+
+    /// <summary>A try on a broken door (the map answered Broken): it won't shut, and the knock comes at <paramref name="knock"/> s.</summary>
+    public static void DoorBrokenTried(float knock)
+    {
+        FrontRoomsMobileHaptics.DoorBrokenTried(knock);
+        Emit(Kind.DoorBrokenTried);
     }
 
     public static void LockOn()

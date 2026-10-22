@@ -1,0 +1,12 @@
+[MapInteractionTests] PASS: 176 passed, 0 failed
+ok   glass: an unscaled `Window {a}-{b}` root at the opening, +Z into b, the pane under it 1.175 m up
+ok   glass: a north edge's box is (1.400, 1.650, 0.030) (expected (1.400, 1.650, 0.030)), centred 1.175 m up
+ok   glass: an east edge's box is (0.029, 1.650, 1.400) (expected (0.030, 1.650, 1.400)), centred 1.175 m up
+ok   glass: E-down raises GlassHoldStarted with the seed; a corner hit is kept 0.2 m inside ((0.484, 0.567)), struck from a (side 1)
+ok   glass: cracks 1 then 2, once each (1,2); a release keeps the progress (0.500, kept in the record); a resumed strike keeps the impact
+ok   glass: a rebuild raises WindowReleased, then WindowBuilt with the record (stage 2), resuming from the kept progress (0.767)
+ok   glass: a hold one rounding step short of 0.35 still cracks once; struck from b, side −1 (-1)
+ok   glass: a 0.2 s knock is kept (0.200) and a second strike keeps its impact (0.300, 1.400)
+ok   glass: a WindowBuilt handler that throws does not stop the chunk building (4 windows announced)
+ok   glass: the shatter raises WindowShattered (impulse 3.0 m/s) and GlassBroken once, removes only the pane, the way opens; no crack replayed
+ok   glass: rebuilt broken, the window keeps its root and record (stage 3) with no pane

@@ -1,11 +1,11 @@
 {
  "oversample": 1,
  "padding": 16,
- "failed": [],
  "assets": [
   {"name": "Kit_TaskChair", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 250, "size_m": [0.6171, 0.9327, 0.6544], "boundsMin": [-0.3113, 0.0002, -0.3567], "boundsMax": [0.3058, 0.9329, 0.2977], "triangles": 4634, "trianglesLod1": 1620, "slots": ["Prop_PlasticBlack", "Prop_Chrome", "Prop_FabricCubicle"], "tags": ["office", "seat"], "pile": "Seat", "palette": "office90s", "placement": "Floor", "px": {"front": [187, 266], "side": [196, 266], "top": [187, 196], "persp": [1152, 864]}},
   {"name": "Kit_TaskChair_Armed", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 250, "size_m": [0.6171, 0.9527, 0.6534], "boundsMin": [-0.3113, 0.0002, -0.3558], "boundsMax": [0.3058, 0.9529, 0.2977], "triangles": 4484, "trianglesLod1": 1792, "slots": ["Prop_PlasticBlack", "Prop_Chrome", "Prop_FabricChair"], "tags": ["office", "seat"], "pile": null, "palette": null, "placement": "Floor", "px": {"front": [187, 271], "side": [196, 271], "top": [187, 196], "persp": [1152, 864]}},
   {"name": "Kit_TaskChair_Navy", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 250, "size_m": [0.6171, 0.9327, 0.6544], "boundsMin": [-0.3113, 0.0002, -0.3567], "boundsMax": [0.3058, 0.9329, 0.2977], "triangles": 4634, "trianglesLod1": 1620, "slots": ["Prop_PlasticBlack", "Prop_Chrome", "Prop_FabricNavy"], "tags": ["office", "seat"], "pile": "Seat", "palette": "office90s", "placement": "Floor", "px": {"front": [187, 266], "side": [196, 266], "top": [187, 196], "persp": [1152, 864]}},
-  {"name": "Kit_Torchiere", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 250, "size_m": [0.39, 1.689, 0.39], "boundsMin": [-0.195, 0, -0.195], "boundsMax": [0.195, 1.689, 0.195], "triangles": 4392, "trianglesLod1": 1536, "slots": ["Prop_BrassPolished", "Prop_PlasticBlack", "Prop_FrostedGlass"], "tags": ["pile", "lamp", "domestic", "pile_walkthrough"], "pile": "Tall", "palette": "domestic70s", "placement": "Floor", "px": {"front": [130, 455], "side": [130, 455], "top": [130, 130], "persp": [1152, 864]}}
- ]
+  {"name": "Kit_Torchiere", "viewYaw": 0, "sheetPpm": 250, "pngPpm": 250, "size_m": [0.39, 1.689, 0.39], "boundsMin": [-0.195, 0, -0.195], "boundsMax": [0.195, 1.689, 0.195], "triangles": 4488, "trianglesLod1": 1569, "slots": ["Prop_BrassPolished", "Prop_PlasticBlack", "Prop_FrostedGlass"], "tags": ["pile", "lamp", "domestic", "pile_walkthrough"], "pile": "Tall", "palette": "domestic70s", "placement": "Floor", "px": {"front": [130, 455], "side": [130, 455], "top": [130, 130], "persp": [1152, 864]}}
+ ],
+ "failed": []
 }

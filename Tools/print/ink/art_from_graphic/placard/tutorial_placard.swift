@@ -151,6 +151,7 @@ func sheet(level: String, tb: [String]) {
   for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }; text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1); x += w } }
 // The four lines (signed by 叙事 2026-10-22, research/narrative/40_floors_exit_tutorial_strings.md §3): white on safety red, x 20-288, y 214-259. Never RUN or HIDE as advice,
 // nothing that says darkness hides you, never "relay" (RELAY §9.4; tutorial 10_proposal §5.2).
+var LEVEL = "LEVEL 0"     // the floor on the header and the title block; CLI "level=B1" (C28: LEVEL 0, then B1, B2 …)
 let WARDEN = "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM."
 func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT SECURITY DESK."]) {
   rect(20, 208, 268, 51, ink: .red)
@@ -237,7 +238,7 @@ func startEdge(doorX: Double, wallY: Double, x0: Double, x1: Double, s: Double) 
 // =====================================================================================================
 // OPTION A · ROUTE DIAGRAM: a typical floor, not to scale: YOU ARE HERE -> the station (key) -> the locked stair door -> down.
 func buildA() {
-  sheet(level: "LEVEL 0", tb: ["LEVEL 0", "SHEET A-2 OF 4", "PRINTED 03/90"])
+  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 03/90"])
   let x0 = 24.0, x1 = 284.0, top = 64.0, bot = 200.0
   let (yx, yy) = startEdge(doorX: 92, wallY: top, x0: x0, x1: x1, s: 10)
   wallV(x0, top, bot); wallV(x1, top, bot); wallH(x0, 220, bot)
@@ -256,7 +257,7 @@ func buildA() {
   legend(lock: false)
   notes(["TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN"], y: 176)
   alarmBlock()
-  tr("LEVEL 0 · SHEET A-2 OF 4 · PRINTED 03/90")
+  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 03/90")
   regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 158),
                 RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
 }
@@ -292,7 +293,7 @@ func buildB() {
 // =====================================================================================================
 // OPTION C · SEEDED SHEET: printed from this floor's map at its arrival door (illustration, not seed data).
 func buildC() {
-  sheet(level: "LEVEL 3", tb: ["LEVEL 3", "SHEET C-2 OF 4", "PRINTED 03/90"])
+  sheet(level: "LEVEL B3", tb: ["LEVEL B3", "SHEET C-2 OF 4", "PRINTED 03/90"])
   let s = 8.4, gx0 = 30.0, gy0 = 66.0, cols = 7, rows = 5, cw = 3 * s
   for i in 0...cols { stroke([(gx0 + Double(i) * cw, gy0 - 4), (gx0 + Double(i) * cw, gy0 + Double(rows) * cw + 2)], 0.2, dash: [6, 2, 1, 2]) }
   for j in 0...rows { stroke([(gx0 - 4, gy0 + Double(j) * cw), (gx0 + Double(cols) * cw + 2, gy0 + Double(j) * cw)], 0.2, dash: [6, 2, 1, 2]) }
@@ -315,13 +316,13 @@ func buildC() {
   GLOW = false
   call(27, "L1", gx0 + 6.5 * cw, gy0 + Double(rows) * cw + 4, "the bearing to the stair, set on arrival, never updates")
   legend(lock: true)
-  notes(["SHEET C-3 BEYOND THIS EDGE", "PRINTED FOR LEVEL 3"], y: 176)
+  notes(["SHEET C-3 BEYOND THIS EDGE", "PRINTED FOR LEVEL B3"], y: 176)
   alarmBlock()
 }
 
 // SHEET A · PHASE 0 (教程设计 10_proposal §5.5): ships before the stair locks. No station, no padlock; line 4 without the key.
 func buildA0() {
-  sheet(level: "LEVEL 0", tb: ["LEVEL 0", "SHEET A-2 OF 4", "PRINTED 03/90"])
+  sheet(level: LEVEL, tb: [LEVEL, "SHEET A-2 OF 4", "PRINTED 03/90"])
   let x0 = 24.0, x1 = 284.0, top = 64.0, bot = 200.0
   let (yx, yy) = startEdge(doorX: 92, wallY: top, x0: x0, x1: x1, s: 10)
   wallV(x0, top, bot); wallV(x1, top, bot); wallH(x0, 220, bot)
@@ -336,7 +337,7 @@ func buildA0() {
   legend(lock: false, phase0: true)
   notes(["TYPICAL FLOOR · NOT TO SCALE", "THIS FLOOR MAY DIFFER FROM PLAN"], y: 176)
   alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."])
-  tr("LEVEL 0 · SHEET A-2 OF 4 · PRINTED 03/90")
+  tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 03/90")
   regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 158),
                 RegionDef(id: "alarm", x: 20, y: 208, w: 268, h: 51), RegionDef(id: "titleblock", x: 296, y: 241, w: 118, h: 20)]
 }
@@ -363,7 +364,8 @@ func render(_ path: String, pxPerMM: Double, mode: String) {
   let d = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, UTType.png.identifier as CFString, 1, nil)!
   CGImageDestinationAddImage(d, c.makeImage()!, nil); CGImageDestinationFinalize(d) }
 
-let out = CommandLine.arguments[1], opt = CommandLine.arguments[2], handoff = CommandLine.arguments.count > 3 && CommandLine.arguments[3] == "handoff"
+let out = CommandLine.arguments[1], opt = CommandLine.arguments[2], handoff = CommandLine.arguments.dropFirst(3).contains("handoff")
+for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("level=") { LEVEL = "LEVEL " + a.dropFirst(6) }
 switch opt { case "A": buildA(); case "A0": buildA0(); case "B": buildB(); default: buildC() }
 if handoff {
   // the v3 file names (Tools/lookdev/pack_evac_plan.py reads placard_print_lit.png + placard_glow_mask.png at 2592 x 1674)

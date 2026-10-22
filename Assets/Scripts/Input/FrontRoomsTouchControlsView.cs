@@ -77,6 +77,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     readonly MotionValue holdTrackAlpha = new MotionValue();
     readonly MotionValue labelSwap = new MotionValue(1f);
     readonly MotionValue lockedShake = new MotionValue(1f);
+    readonly MotionValue brokenSwing = new MotionValue(1f);
+    float brokenSwingSeen = float.NegativeInfinity;
     readonly MotionValue useTakeover = new MotionValue();
     string useLabelShown = string.Empty;
     bool useLabelOnA = true;
@@ -565,7 +567,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             useAlpha.To(0f, Dur(.12f), Ease.InCubic);
             if (!Reduced) useScale.To(.94f, .12f, Ease.InCubic);
         }
-        useRoot.anchoredPosition = L.UseCenter + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f);
+        // A broken door's answer (the map's Broken, for the door USE names): USE swings once round its top point, as
+        // the leaf hangs from its hinge, the bottom inward. LOCKED shakes sideways instead (a rattle). Reduce Motion:
+        // no swing; the press's ring flash and the knock say it.
+        if (controls.BrokenTriedAt != brokenSwingSeen)
+        {
+            brokenSwingSeen = controls.BrokenTriedAt;
+            if (!Reduced) brokenSwing.Restart(0f, 1f, FrontRoomsShotTimings.BrokenDoor.Duration, Ease.Linear);
+        }
+        var swing = Reduced ? 0f : (controls.LeftHanded ? 1f : -1f) * BrokenSwing(brokenSwing.Current);
+        var hang = new Vector2(Mathf.Sin(swing * Mathf.Deg2Rad), 1f - Mathf.Cos(swing * Mathf.Deg2Rad)) * L.UseRadius;
+        useRoot.anchoredPosition = L.UseCenter + new Vector2(Reduced ? 0f : Shake(lockedShake.Current), 0f) + hang;
+        useRoot.localRotation = Quaternion.Euler(0f, 0f, swing);
         // A camera takeover fades USE with the desktop HUD (关卡设计, 2026-10-08), except under a holding thumb:
         // the glass hold is a takeover too, and its ring is the hold's feedback. Visual only; presses still go to the rig.
         useTakeover.To(controls.UseHeld ? 0f : controls.Takeover, Dur(.12f), Ease.OutCubic);
@@ -598,9 +611,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             }
             useLabelShown = label;
         }
-        var locked = prompt.Kind == FrontRoomsTouchControls.UseKind.Locked || prompt.Locked;
+        // LOCKED and BROKEN are refusals: the verb in muted ink, and a press says no instead of "go".
+        var refused = prompt.Kind == FrontRoomsTouchControls.UseKind.Locked || prompt.Kind == FrontRoomsTouchControls.UseKind.Broken || prompt.Locked;
         var press = usePress.Current;
-        var textColor = locked ? Muted : Color.Lerp(Paper, Ink, press);
+        var textColor = refused ? Muted : Color.Lerp(Paper, Ink, press);
         var current = useLabelOnA ? useTextA : useTextB;
         var previous = useLabelOnA ? useTextB : useTextA;
         current.color = WithAlpha(textColor, labelSwap);
@@ -611,11 +625,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // A control that carries a word is solid (平面视觉, 2026-10-07): the verb reads on any room, and
         // CONTROLS OPACITY only thins the text-free ghosts (its ring here, the stick, the keycap).
         useDisc.color = CardColor;
-        // A locked press never fills (no yellow "go", and no paper tint either: it greyed the solid disc and took
+        // A refused press never fills (no yellow "go", and no paper tint either: it greyed the solid disc and took
         // LOCKED to 2.6 : 1 in run 15). The text-free ring flashes to full paper instead; the shake and the rattle
-        // say no.
-        usePressed.color = locked ? WithAlpha(Accent, 0f) : WithAlpha(Accent, press);
-        useRing.color = WithAlpha(Paper, locked ? Mathf.Lerp(.3f, 1f, press) : Mathf.Min(1f, .9f * opacity + .3f));
+        // say no to LOCKED, the swing and the knock to BROKEN.
+        usePressed.color = refused ? WithAlpha(Accent, 0f) : WithAlpha(Accent, press);
+        useRing.color = WithAlpha(Paper, refused ? Mathf.Lerp(.3f, 1f, press) : Mathf.Min(1f, .9f * opacity + .3f));
 
         // The hold ring sits outside the thumb, so the progress stays visible under a pressing thumb.
         var hold = visible && prompt.Hold;
@@ -663,6 +677,28 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
     static float Shake(float t) => t >= 1f ? 0f : Mathf.Sin(t * Mathf.PI * 6f) * 4f * (1f - t);
 
+    const float BrokenSwingDegrees = 4f;
+
+    /// <summary>
+    /// B·4's won't-shut on the crosshair (Red, 10-14), on the disc, t 0..1 over BrokenDoor.Duration: out to
+    /// BrokenSwingDegrees in BrokenKnockSeconds, then it meets the frame and falls back, a 2.6 Hz swing with
+    /// damping 0.3 that is all but still by the end.
+    /// </summary>
+    static float BrokenSwing(float t)
+    {
+        if (t >= 1f) return 0f;
+        var s = t * FrontRoomsShotTimings.BrokenDoor.Duration;
+        var knock = FrontRoomsTouchControls.BrokenKnockSeconds;
+        if (s < knock)
+        {
+            var u = 1f - s / knock;
+            return BrokenSwingDegrees * (1f - u * u * u);
+        }
+        var w = 2f * Mathf.PI * 2.6f;
+        var after = s - knock;
+        return BrokenSwingDegrees * Mathf.Exp(-.3f * w * after) * Mathf.Cos(w * Mathf.Sqrt(1f - .3f * .3f) * after);
+    }
+
     static string UseVerb(FrontRoomsTouchControls.UsePrompt prompt)
     {
         switch (prompt.Kind)
@@ -671,6 +707,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             case FrontRoomsTouchControls.UseKind.Shut: return "SHUT";
             case FrontRoomsTouchControls.UseKind.Take: return "TAKE";
             case FrontRoomsTouchControls.UseKind.Locked: return "LOCKED";
+            case FrontRoomsTouchControls.UseKind.Broken: return "BROKEN";
             case FrontRoomsTouchControls.UseKind.Hold: return prompt.TapMode ? "TAP" : "BREAK";
             case FrontRoomsTouchControls.UseKind.Tap: return "TAP";
             default: return string.Empty;

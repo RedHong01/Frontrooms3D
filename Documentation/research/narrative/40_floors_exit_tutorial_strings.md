@@ -25,11 +25,16 @@
 - **The building is honest about itself and blind to what it sends.** Its plans, signs and stair hardware tell the truth about doors, keys and levels. They never mention the thing in the halls, except as a fire-safety role if Red picks one (§8, Q2).
 - **Every exit leads further in, now literally down.** Each floor has one EXIT: a fire stair, always called STAIR A.
   - The stair serves exactly one floor. Its sign says so: `LEVELS 0 TO B1`.
-  - Its far landing has the code's basement barrier gate (UBC 1991 §3309(e)). By code that gate marks the grade-level exit, so the stair "believes" its bottom door is the street. It opens onto the next floor.
+  - It has two landings and no flights beyond them (Red's stairwell answer, 2026-10-22 13:00, in the 游戏视觉 chat: look A, a walkable two-level stair after C22).
+  - Its far door carries the hardware of a grade-level exit, as if it opened onto the street. It opens onto the next floor.
   - The hardware is real. The building's use of it is wrong.
 - **Why the stair door is locked:**
   - 1990 buildings locked stair doors for security. The plan says it plainly, `STAIR DOORS ARE LOCKED.` / `KEY AT SECURITY DESK.`, so the lock is not a trick.
   - The guard is gone, but the desk set still plays WTCZ-TV 61 (`STAY TUNED.`; the call sign replaced the real WXRM on 10-22, `screens/30_screen_strings.md` v2.1).
+- **Why the alarm never unlocks the stairs** (asked by 游戏视觉; stairwell `10_directions.md` §7):
+  - By code a 1990 high-rise unlocks its locked stair doors all at once on a signal from the central control station (UBC 1991 §1807(j) [read, station `SOURCES.md` P01]). The station holds the controls for it, among its twelve required items (§1807(f) [read P01]).
+  - That station is a room on the street floor, by the fire department's entrance [ESTIMATE: §1807(f) requires FD approval of its location]. This building has no street floor you can reach, and at night nobody is at the controls. The signal never comes.
+  - Never stated. It is why the plan sends you to a key instead of telling you to wait.
 - **Taking the key is an alarm condition.**
   - The key rack is on the panel, like any device. Lifting the key trips it.
   - The panel drops the desk's non-emergency circuit, so the TV dies, and sends its responder to the desk, never to you (`relay_pursuit/30_narrative.md` §1; tutorial `10_proposal.md` §4.1).
@@ -125,21 +130,22 @@ The C22 stairwell is 1 × 2 cells, the exit door above the far door (`stairwell/
 
 | Where | String | Source of the form |
 |---|---|---|
-| Exit landing, stair face of the EXIT door (it locks behind you), floor plate at 5 ft | `LEVEL 0` | NYC LL5 C26-608.3, floor numbers on the stair side [read] |
-| Same door, re-entry plate below it | `NO REENTRY` / `NEAREST REENTRY ON LEVEL B1` | NYC LL5 1973 §C26-608.5(b)(2) wording form, "NO REENTRY, NEAREST REENTRY ON THE ___ AND ___ FLOORS", read by 平面视觉 from the law's p. 9 (placard `SOURCES.md` §7.3 M5). Only the floor below exists, so one level is named. Spelled without a hyphen, as the code does |
-| Stencilled numeral on the block wall, latch side | `0` (exit landing), `B1` (far landing) | trade practice, 12–24 in [ESTIMATE, `stairwell/01_research.md`] |
-| Stair ID sign at each landing, about 5 ft | `STAIR A` / `LEVEL 0` (or `LEVEL B1`) / `LEVELS 0 TO B1` / `NO ROOF ACCESS` | UBC 1991 §3306(p): stair ID, roof access, floor level, upper and lower terminus [read]. Layout per UBC Std 33-2 is unread, so it is 平面视觉's |
-| Gate across the up flight (exit landing) | `NO ACCESS ABOVE THIS LEVEL` | building voice [ESTIMATE wording] |
-| Gate across the down flight (far landing; UBC 3309(e) barrier) | `NO ACCESS BELOW THIS LEVEL` | building voice [ESTIMATE wording] |
+| ~~Exit landing, stair face of the EXIT door, floor plate at 5 ft~~ | ~~`LEVEL 0`~~ | **Moved into the wall ID sign** (游戏视觉, after Red's 13:00 answer). The level is still read on the stair side, as NYC LL5 C26-608.3 asks |
+| Exit landing, stair face of the EXIT door (it locks behind you): the re-entry plate | `NO REENTRY` / `NEAREST REENTRY ON LEVEL B1` | NYC LL5 1973 §C26-608.5(b)(2) wording form, "NO REENTRY, NEAREST REENTRY ON THE ___ AND ___ FLOORS", read by 平面视觉 from the law's p. 9 (placard `SOURCES.md` §7.3 M5). Only the floor below exists, so one level is named. Spelled without a hyphen, as the code does |
+| Stencilled numeral on the block wall, **hinge side** (the latch side holds the wall ID sign and the standpipe; lookdev and `stairwell/10_directions.md` §1.4) | `0` (exit landing), `B1` (far landing) | trade practice, 12–24 in [ESTIMATE, `stairwell/01_research.md`] |
+| Stair ID sign **on the wall** at each landing, about 5 ft | `STAIR A` / `LEVEL 0` (or `LEVEL B1`) / `LEVELS 0 TO B1` / `NO ROOF ACCESS` | UBC 1991 §3306(p): stair ID, roof access, floor level, upper and lower terminus [read]. Layout per UBC Std 33-2 is unread, so it is 平面视觉's |
+| ~~Gates across the up and down flights~~ | ~~`NO ACCESS ABOVE THIS LEVEL`~~ / ~~`NO ACCESS BELOW THIS LEVEL`~~ | **Dropped** (2026-10-22): a two-level stair has no flights beyond its landings, so no gates |
 | Far door, stair face | `REENTRY ON THIS FLOOR` | LL5 §C26-608.5(b)(1) wording [read by 平面视觉, M5]. It replaces v1's UBC `ACCESS ONTO FLOOR THIS LEVEL` so both re-entry plates use one code's family |
 | Placard copy by the far door | sheet A with `LEVEL B1` | §3 |
+| **Far door, floor side** (what you see when you turn round on B1) | `NOT AN EXIT` | OSHA's "Not an Exit" sign, required since 1974 for a door likely to be mistaken for an exit (`wallpaper_motion/30_narrative_phosphor.md` §3.5, ledger §9). Replaces a dead EXIT sign (Red agreed, 13:00). True: up this stair the way is `NO REENTRY`. Not `STAIR A`, which would give B1 two doors called STAIR A. Set by 平面视觉 · 信息设计: one line, 1 in, black on white, never red, so it never reads as an EXIT beacon (board Figma 3545:7368) |
 
 On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LEVEL B2`, `LEVELS B1 TO B2`.
 
 **The quiet wrongness, never stated:**
 - every stair is STAIR A and serves one floor;
-- the well looks endless (the periodic shaft), but both gates close it;
-- the far door has the grade-level hardware and is not the street.
+- the stair has only its two landings: no flight up to a lobby, none down;
+- the far door has the grade-level hardware and is not the street;
+- the door you came through says `NOT AN EXIT`, and it is right.
 - An attentive player sees it; nobody is told.
 
 **Do not add:**
@@ -150,8 +156,9 @@ On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LE
 
 **Optional sound line** (a story beat for 声音设计 if it wants one):
 - one distant door slam far **below**, at most once per stairwell, never above you and never steps (steps belong to the hunter's family);
-- the "other occupant" (`OCCUPANT LOAD 2`) is a floor ahead of you;
+- it is all that is left of "the other occupant": Red approved it as Q7's flavour on 2026-10-22 ("全部按推荐"; the screens' `OCCUPANT LOAD 2` frame is gone with the text-free desk screens);
 - not directional, not a cue (stairwell research §"distant slams").
+- **Taken by 声音设计** (2026-10-22, after C22): it plays only during the walkable descent while the Relay is parked (Dormant), from the library's CC0 stairwell-door slam rendered far away. **Caption: `[DISTANT DOOR SLAMS]`**. It follows the game's caption form (`[DOOR BREAKS]`, `[GLASS SHATTERS]`) but uses a different verb from the Relay's `[DOOR BREAKS]`, and it gives no direction.
 
 ## 6. CAUGHT (D13)
 

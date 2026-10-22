@@ -1,5 +1,7 @@
 # 10 · Stairwell directions (C22): three looks behind the floor's EXIT door
 
+**DECIDED 2026-10-22 13:00 (Red, 游戏视觉 chat): "楼梯间剩下的五项全部按推荐（选 A、C22 合进去之后做真楼梯、钢门用真实声音、到达门不挂不亮的 EXIT、优先级 1 的素材可以下载）".** Look **A**. The walkable two-level stair comes after C22 lands (map contract `60_walkable_stair_for_map.md`); until then the C22 3 × 3 vestibule is dressed in A. The steel door gets its real Foley (crossbar, closer, latch, chain). No dead EXIT over the arrival door: a stair-ID or floor plate instead. Priority-1 media are approved. Numbering: B scheme (12:15).
+
 Workflow `c22-stairwell-look`. Stage 2 (Directions) written 2026-10-22 morning; **revised the same day in stage 5 (Fix)** after two critics (`50_critic_fixes.md` lists every issue and what changed). Written by 游戏视觉.
 - **Read first:** `01_research.md` (code facts, geometry, references) and `SOURCES.md` (S1… ids used below).
 - **Where the work happened:** pre-renders and blockout kits only in the clone `W/proj_stair` (main dfc0086 + working tree, synced 07:2x). Nothing was merged. Main was not opened in Unity. The only files written in main are in this folder.
@@ -328,13 +330,25 @@ B and C: the same sign and Relay numbers; lock 2.9–3.5 : 1 (B), 2.7–3.8 : 1 
   - (e) Exits on a corridor side wall get `Kit_ExitSign_End`; a lit EXIT first seen through a Window edge counts as a cue at glass, so placement checks that sightline.
   - (f) Standard 2.9 m ceiling on the exit side; rebase favoured by the world-y grime.
   - (g) Map lamps keep Unity's default shadow bias, which paints a sliver on recessed leaves (§1.6.4).
+- **关卡设计 status (10-22 13:4x, C22 clone proj3, C23 step 1):**
+  - Round 1 is green:
+    - the LIT-locked sign is Kit_ExitSign, or Kit_ExitSign_End when both of N's side edges are passable (123 end-on / 177 flat over 300 EXITs);
+    - the lamp hold covers Chebyshev 2 of N;
+    - N must be Standard (rejects 47 %);
+    - the window sightline check rejects 3.9 %, plus an extra guard against a Tall↔lower edge that a revisit shift could turn into glass (79 of 1,037 rejects);
+    - 300/300 EXITs; autopilot 27/27, touch 90/90.
+  - Round 2 (wf_8109437d-dd7) matches §1.2: sign bottom 2.18 m on the exit_sign_p anchor, no shadows from the sign and EXIT frame, EmissionGain 2.0, Kit_ExitDevice_Crossbar on the push face.
+  - **游戏视觉's answers:**
+    - keep the extra glass guard: same intent, small cost;
+    - `FrontRoomsExitSign.EmissionGain` is already a public field: set 2.0 before `Configure` (Configure applies it; setting the LIT lock re-applies too);
+    - **ask for a map event, not more map-spawned kits:** `ExitDoorBuilt(door, hinge, leaf, frame)` plus a lock-state signal (`ExitLockChanged(door, locked)`, or a readable state with the existing door events). The visual dressing then attaches the steel leaf/frame materials, closer, NO REENTRY plate and A13 chain/padlock itself, parented to the leaf and frame, so they swing with the leaf and go with NextFloor.
 - **系统设计:** confirm the Floor 1 rule (no key under A13 → its EXIT shows UNLOCKED from the start).
 - **声音设计:** steel-door Foley on the exit door (01 §0.9a); chain rattle on a locked push, chain drop on unlock; the far door's heavy pull, whistle and 1–2 mm give during a hold; echo stays the player's own.
 - **叙事 / 平面视觉:**
-  - Numbering: one scheme for the stair token and CAUGHT (count up, or `0` / `B1`), Red's call.
-  - With two levels, the gate strings (`NO ACCESS ABOVE / BELOW THIS LEVEL`) are not needed; the ID sign moves to the wall and takes the leaf's floor plate.
-  - The alarm condition: a code-true 1990 stair unlocks on a control-station signal (UBC §1807(j)); EGRESS makes the Relay the alarm responder, so the fiction needs "no signal reaches the doors".
-  - Arrival door: a stair-ID or floor plate on the floor side, not a dead EXIT.
+  - Numbering: **DECIDED by Red 10-22 12:15 (叙事设计 chat, Q1 = C28): `LEVEL 0`, `LEVEL B1`, `B2` …, the same on CAUGHT via `FloorLabel()`.** The stencil placeholders 3 → 4 in the renders become `0` (exit landing) / `B1` (far landing) in the look pass.
+  - With two levels, the gate strings (`NO ACCESS ABOVE / BELOW THIS LEVEL`) are not needed; the ID sign moves to the wall and takes the leaf's floor plate. **CONFIRMED by 叙事 10-22 13:1x** (final list: `NOTE_1022_narrative_strings.md`).
+  - The alarm condition: a code-true 1990 stair unlocks on a control-station signal (UBC §1807(j)); EGRESS makes the Relay the alarm responder, so the fiction needs "no signal reaches the doors". **CLOSED by 叙事 10-22 13:1x:** the control station is on the unreachable street floor and unmanned at night (40 §1); never stated, no visual consequence.
+  - Arrival door: a stair-ID or floor plate on the floor side, not a dead EXIT. **FINAL (叙事 10-22 13:1x): `NOT AN EXIT`** (OSHA 1974 sign); art 平面视觉 · 信息设计.
   - Numeral face and size (placeholders: stencil, A 0.46 m, B 0.60 m).
 - **Relay design:** the pale head reads 1.05–1.11 : 1 against Level 0 paper at the exit and fails every "whole" test on the turn landing. Re-run `-stairShots relay_stair,relay_maze` and the ladder's `relay_45,relay_70` with the squeezed-giant rig.
 

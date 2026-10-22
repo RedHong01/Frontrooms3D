@@ -1,0 +1,698 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+/// <summary>
+/// CLONE-ONLY smoke harness (W/tools/feature/run_b; never merged) for the Run! B production build. Edit mode, no
+/// rendering. It drives the real FrontRoomsRoomStream with RunLook forced to EmergencyPower (a scripted walk at
+/// 3.2 m/s through the furnished cycle), the corridor preset of FrontRoomsRunRig + FrontRoomsRunDress, and the
+/// Ward default, and writes Verification/run_b/smoke_report.txt. It is a build smoke, not the VL338-VL341 gates.
+///   Unity -batchmode -projectPath W/proj_runb -buildTarget OSXUniversal -executeMethod FrontRoomsRunBSmoke.RunBatch -quit -logFile ...
+/// RenderBatch (needs graphics: no -nographics; add -frGlassRT off): build-smoke frames of the edit-mode profile preview's
+/// Run room with RunLook.EmergencyPower, armed and tripped (rig Trip + 3 s; the host lamps are switched off by hand, as
+/// the stream's mains hook does in play), plus the Ward room at the same pose -> Verification/run_b/render/*.png.
+///   ... -executeMethod FrontRoomsRunBSmoke.RenderBatch -quit -frGlassRT off
+/// BakeProbesBatch -runbState armed|tripped (needs graphics; ONE state per Unity run, plan s.1.5 / D11): the per-state
+/// box-probe cubes of both layouts, Resources/Rendering/Reflections/RunB_<layout>_<state>_<i>.exr (Custom, 256 px HDR,
+/// the zone cubes' importer settings: specular convolution, BC6H, WebGL 128 px RGB9e5). Stream room: the edit-mode
+/// preview's Run room (host lamps off when tripped); corridor: Corridor1x9 dress + rig (own lamps) at (4992, 0, 4992).
+/// ASCII only, no C# tuples (clone editor-script rule).
+/// </summary>
+public static class FrontRoomsRunBSmoke
+{
+    const float Dt = 1f / 60f;
+    static readonly StringBuilder Log = new StringBuilder();
+    static int fails;
+    static void L(string s) { Log.AppendLine(s); Debug.Log("[RunBSmoke] " + s); }
+    static void Check(bool ok, string what) { if (!ok) fails++; L((ok ? "PASS " : "FAIL ") + what); }
+
+    public static void RunBatch()
+    {
+        Log.Length = 0; fails = 0;
+        L("Run B smoke " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        Try("stream EmergencyPower", StreamB);
+        Try("stream Ward default", StreamWard);
+        Try("corridor rig + dress", Corridor);
+        L((fails == 0 ? "RUNB_SMOKE PASS" : "RUNB_SMOKE FAIL " + fails));
+        var dir = Path.GetFullPath("Verification/run_b");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "smoke_report.txt"), Log.ToString());
+        FrontRoomsRoomStream.RunLookOverride = null;
+    }
+
+    static void Try(string name, Action a)
+    {
+        L("== " + name);
+        try { a(); }
+        catch (Exception e) { fails++; L("FAIL exception " + e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace); }
+    }
+
+    sealed class Sim : IDisposable
+    {
+        public readonly GameObject root;
+        public readonly Camera camera;
+        public readonly FrontRoomsRoomStream stream;
+        readonly Material material;
+
+        public Sim(RunLook look)
+        {
+            FrontRoomsRoomStream.RunLookOverride = look;
+            root = new GameObject("RUNB SMOKE / stream");
+            camera = new GameObject("RUNB SMOKE / camera").AddComponent<Camera>();
+            camera.transform.position = new Vector3(FrontRooms3DGame.TitleCenterX, 1.62f, 0f);
+            material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            var profiles = new[] { material, material, material, material, material };
+            stream = root.AddComponent<FrontRoomsRoomStream>();
+            stream.Initialize(camera, material, material, material, material, material, material, null, null, null, profiles, profiles, profiles);
+        }
+
+        public bool Handoff()
+        {
+            for (var t = 0f; t < 3f; t += Dt) stream.Tick(Dt);
+            stream.RequestStart();
+            for (var t = 0f; t < 15f && !stream.HasControl; t += Dt) stream.Tick(Dt);
+            if (!stream.HasControl) return false;
+            stream.BeginPlayableSequence();
+            return true;
+        }
+
+        public void Step(float speed)
+        {
+            stream.Tick(Dt);
+            stream.Move(new Vector2(0f, speed * Dt));
+        }
+
+        public void Dispose()
+        {
+            UnityEngine.Object.DestroyImmediate(root);
+            UnityEngine.Object.DestroyImmediate(camera.gameObject);
+            UnityEngine.Object.DestroyImmediate(material);
+            FrontRoomsRoomStream.RunLookOverride = null;
+        }
+    }
+
+    static void StreamB()
+    {
+        using (var sim = new Sim(RunLook.EmergencyPower))
+        {
+            Check(sim.stream.ActiveRunLook == RunLook.EmergencyPower, "the pool was built with RunLook.EmergencyPower");
+            var rigs = sim.root.GetComponentsInChildren<FrontRoomsRunRig>(true);
+            Check(rigs.Length == FrontRoomsRoomStream.MaxRooms, "one rig per pool slot (" + rigs.Length + ")");
+            if (rigs.Length > 0)
+            {
+                var r = rigs[0];
+                L("rig: heads " + r.HeadCount + ", probes " + r.ProbeCount + ", flag sign " + (r.FlagSign != null) + ", layout " + r.Layout.name);
+                Check(r.HeadCount == 4, "StreamRoom: 2 units x 2 heads");
+                Check(r.FlagSign != null, "flag EXIT sign built (Kit_ExitSign_End)");
+            }
+            var dress = sim.root.GetComponentsInChildren<Transform>(true);
+            var dressTris = 0; var dressRenderers = 0;
+            foreach (var t in dress)
+                if (t.name == "Run B / dress")
+                {
+                    foreach (var mf in t.GetComponentsInChildren<MeshFilter>(true)) if (mf.sharedMesh != null) dressTris += mf.sharedMesh.triangles.Length / 3;
+                    dressRenderers += t.GetComponentsInChildren<Renderer>(true).Length;
+                    break;
+                }
+            L("one slot's dress: " + dressRenderers + " renderers, " + dressTris + " tris over all LODs");
+            Check(sim.Handoff(), "handoff");
+            var trips = new Dictionary<int, int>();
+            sim.stream.RunTripped += seq => { int n; trips.TryGetValue(seq, out n); trips[seq] = n + 1; };
+            var runRooms = new HashSet<int>();
+            var sampled = false;
+            for (var frame = 0; frame < 60 * 150; frame++)
+            {
+                sim.Step(3.2f);
+                var room = sim.stream.CurrentRoomNumber;
+                if (sim.stream.RuleAt(room) == RoomRule.Run) runRooms.Add(room);
+                if (!sampled && trips.Count > 0)
+                {
+                    // 3 s after the first trip: count the Run room's lights.
+                    for (var k = 0; k < 180; k++) sim.Step(0f);
+                    CountRunRoom(sim, "tripped t+3");
+                    sampled = true;
+                }
+            }
+            L("Run rooms walked: " + runRooms.Count + "; trips: " + trips.Count + "; recycles " + sim.stream.RecycledCount);
+            Check(runRooms.Count >= 2, "the walk crossed at least two Run rooms");
+            var once = true;
+            foreach (var kv in trips) if (kv.Value != 1) once = false;
+            Check(trips.Count >= 2 && once, "every Run room tripped exactly once (" + trips.Count + " rooms)");
+            var rearmed = 0;
+            foreach (var r in sim.root.GetComponentsInChildren<FrontRoomsRunRig>(true))
+                if (!r.gameObject.activeInHierarchy && r.State == RunRigState.Armed) rearmed++;
+            L("inactive (recycled / non-Run) rigs armed: " + rearmed);
+        }
+    }
+
+    static void CountRunRoom(Sim sim, string label)
+    {
+        foreach (var rig in sim.root.GetComponentsInChildren<FrontRoomsRunRig>(false))
+        {
+            int total, on, shadowed;
+            rig.CountLights(out total, out on, out shadowed);
+            // The room's own lamps: lights under its root named "fluorescent".
+            var room = rig.transform;
+            while (room.parent != null && !room.name.StartsWith("Stream room / ", StringComparison.Ordinal)) room = room.parent;
+            var lamps = 0; var lampsShadowed = 0;
+            foreach (var l in room.GetComponentsInChildren<Light>(false))
+                if (l.name.StartsWith("fluorescent", StringComparison.Ordinal) && l.enabled && l.intensity > 0f) { lamps++; if (l.shadows != LightShadows.None) lampsShadowed++; }
+            L(label + " " + room.name + ": rig " + rig.State + " clock " + rig.Clock.ToString("0.00") + " mains " + rig.MainsAt(6f).ToString("0.000")
+                + "; rig lights on " + on + "/" + total + " (shadowed " + shadowed + "); room lamps on " + lamps + " (shadowed " + lampsShadowed + ")");
+            Check(rig.State == RunRigState.Tripped && lamps == 0 && on == 6, "tripped stream room: 4 heads + 2 EXIT face spots on, wraps dark (plan: 6 lights, 4 shadowed)");
+        }
+    }
+
+    static void StreamWard()
+    {
+        using (var sim = new Sim(RunLook.Ward))
+        {
+            Check(sim.stream.ActiveRunLook == RunLook.Ward, "Ward pool");
+            var rigs = sim.root.GetComponentsInChildren<FrontRoomsRunRig>(true).Length;
+            var bNames = 0; var handrails = 0;
+            foreach (var t in sim.root.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("Run B", StringComparison.Ordinal) || t.name.StartsWith("run b", StringComparison.Ordinal)) bNames++;
+                if (t.name == "run handrail left") handrails++;
+            }
+            Check(rigs == 0 && bNames == 0, "Ward builds no B object (rigs " + rigs + ", B names " + bNames + ")");
+            Check(handrails == FrontRoomsRoomStream.MaxRooms, "Ward Run variants keep the hospital dressing (" + handrails + " handrails)");
+            Check(sim.Handoff(), "Ward handoff");
+            for (var frame = 0; frame < 60 * 40; frame++) sim.Step(3.2f);
+            L("Ward walk: room " + sim.stream.CurrentRoomNumber + ", recycles " + sim.stream.RecycledCount);
+        }
+    }
+
+    static void Corridor()
+    {
+        var root = new GameObject("RUNB SMOKE / corridor").transform;
+        root.position = new Vector3(4992f, 0f, 4992f);
+        try
+        {
+            var layout = RunRigLayout.Corridor1x9();
+            var dress = FrontRoomsRunDress.Build(root, layout);
+            var rig = FrontRoomsRunRig.Create(root, layout, RunRigHost.OwnLamps, null, dress);
+            var tris = 0; var lod0 = 0;
+            foreach (var mf in dress.GetComponentsInChildren<MeshFilter>(true)) if (mf.sharedMesh != null) tris += mf.sharedMesh.triangles.Length / 3;
+            foreach (var mf in rig.GetComponentsInChildren<MeshFilter>(true)) if (mf.sharedMesh != null) tris += mf.sharedMesh.triangles.Length / 3;
+            foreach (var mf in root.GetComponentsInChildren<MeshFilter>(true))
+                if (mf.sharedMesh != null && !mf.name.EndsWith("_LOD1", StringComparison.Ordinal) && !mf.name.EndsWith("_LOD2", StringComparison.Ordinal)) lod0 += mf.sharedMesh.triangles.Length / 3;
+            L("corridor: own lamps " + rig.OwnLampCount + ", heads " + rig.HeadCount + ", tris all LODs " + tris + ", LOD0-only " + lod0);
+            int total, on, sh;
+            rig.Evaluate(-1f); rig.CountLights(out total, out on, out sh);
+            L("armed: lights on " + on + "/" + total + ", shadowed " + sh);
+            Check(on == 11 && sh == 3, "corridor armed 11 lights (9 wraps + 2 EXIT face spots), 3 shadowed");
+            rig.Evaluate(.2f); rig.CountLights(out total, out on, out sh);
+            L("blackout t+0.2: lights on " + on + ", shadowed " + sh);
+            Check(on == 2, "blackout: only the 2 EXIT face spots");
+            rig.Evaluate(3f); rig.CountLights(out total, out on, out sh);
+            L("tripped t+3: lights on " + on + ", shadowed " + sh);
+            Check(on == 10 && sh == 8, "corridor tripped 10 lights (8 heads + 2 EXIT), 8 shadowed");
+            for (var i = 0; i < rig.HeadCount; i++)
+            {
+                var l = rig.HeadLight(i);
+                if (l == null) continue;
+                var f = root.InverseTransformDirection(l.transform.forward);
+                L("head " + i + (rig.HeadIsGoal(i) ? " (goal)" : "") + ": start " + rig.HeadStart(0f).ToString("0.000") + " pitch " + (Mathf.Asin(-f.y) * Mathf.Rad2Deg).ToString("0.0")
+                    + " deg, cone " + l.spotAngle + "/" + l.innerSpotAngle + ", intensity " + l.intensity.ToString("0.0") + ", cookie " + (l.cookie != null ? l.cookie.name : "none"));
+            }
+            // Photosafety (logic only): per lamp, the most level reversals > 10 % in any 1 s, sampled at 1 kHz.
+            Check(MaxChanges(rig, false) <= 3, "trip timeline: <= 3 changes per lamp in any 1 s");
+            // Allocation in Tick (Tripping).
+            rig.ResetImmediate();
+            rig.Trip();
+            for (var k = 0; k < 5; k++) rig.Tick(Dt);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 120; k++) rig.Tick(Dt);
+            var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+            L("Tick allocation over 120 frames (Tripping/Tripped): " + bytes + " bytes");
+            Check(bytes == 0, "0 bytes GC in Tick");
+            rig.StartReset();
+            var steps = 0;
+            while (rig.State == RunRigState.Resetting && steps < 60 * 10) { rig.Tick(Dt); steps++; }
+            Check(rig.State == RunRigState.Armed, "animated reset ends Armed after " + (steps * Dt).ToString("0.00") + " s");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+    }
+
+    static int MaxChanges(FrontRoomsRunRig rig, bool reset)
+    {
+        var worst = 0;
+        for (var i = 0; i < rig.HeadCount; i++)
+        {
+            var times = new List<float>();
+            var prev = rig.HeadLevelOf(i, -.01f);
+            var dir = 0;
+            var anchor = prev;
+            for (var ms = 0; ms <= 3000; ms++)
+            {
+                var t = ms / 1000f;
+                var v = rig.HeadLevelOf(i, t);
+                var d = v > anchor + .1f ? 1 : v < anchor - .1f ? -1 : 0;
+                if (d != 0)
+                {
+                    if (d != dir) { times.Add(t); dir = d; }
+                    anchor = v;
+                }
+            }
+            for (var a = 0; a < times.Count; a++)
+            {
+                var n = 0;
+                for (var b = a; b < times.Count && times[b] - times[a] < 1f; b++) n++;
+                worst = Mathf.Max(worst, n);
+            }
+        }
+        // The wraps change once (the drop); the reset timeline is measured by the rig tests (T2) later.
+        return Mathf.Max(worst, 1);
+    }
+
+    // ------------------------------------------------------------------ build-smoke renders (not the VL frames)
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
+
+    public static void RenderBatch()
+    {
+        var outDir = Path.GetFullPath("Verification/run_b/render");
+        Directory.CreateDirectory(outDir);
+        var log = new StringBuilder();
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        if (game == null) { Debug.LogError("[RunBSmoke] no FrontRooms3DGame"); return; }
+        var hunter = game.transform.Find("Hunter");
+        if (hunter != null) hunter.gameObject.SetActive(false);
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        var cameraObject = new GameObject("RUNB RENDER / camera") { hideFlags = HideFlags.DontSave };
+        var camera = cameraObject.AddComponent<Camera>();
+        camera.fieldOfView = 76f;
+        camera.nearClipPlane = .06f;
+        camera.farClipPlane = 80f;
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = new Color(.13f, .13f, .11f);
+        FrontRoomsPostStack.ConfigureCamera(camera);
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        camera.targetTexture = rt;
+        var z0 = (int)RoomRule.Run * FrontRoomsRoomStream.RoomLength;
+        var poses = new[] { "fwd", "back", "unit", "wrap" };
+        // -runbSkipWard: the first render is B (a batch run freezes the Forward+ probe atlas after its first render,
+        // plan s.1.5), so the armed box probe is in the atlas for the armed frames.
+        var skipWard = Array.IndexOf(Environment.GetCommandLineArgs(), "-runbSkipWard") >= 0;
+        if (skipWard) outDir = Path.GetFullPath("Verification/run_b/render_bfirst");
+        Directory.CreateDirectory(outDir);
+        for (var pass = skipWard ? 1 : 0; pass < 2; pass++)
+        {
+            FrontRoomsRoomStream.RunLookOverride = pass == 0 ? (RunLook?)RunLook.Ward : RunLook.EmergencyPower;
+            game.enabled = false;
+            game.enabled = true;
+            var root = game.transform;
+            var run = FindDeep(root, "Profile " + (int)RoomRule.Run + " / " + RoomRule.Run);
+            log.AppendLine("pass " + (pass == 0 ? "Ward" : "EmergencyPower") + ": run room " + (run != null));
+            for (var k = 0; k < poses.Length; k++)
+            {
+                if (pass == 0 && k > 1) break;
+                Pose(root, z0, poses[k], camera);
+                Shot(camera, rt, Path.Combine(outDir, (pass == 0 ? "ward_" : "b_armed_") + poses[k] + ".png"), log);
+            }
+            if (pass == 0 || run == null) continue;
+            var rig = run.GetComponentInChildren<FrontRoomsRunRig>(true);
+            if (rig == null) { log.AppendLine("NO RIG"); continue; }
+            int total, on, sh;
+            rig.CountLights(out total, out on, out sh);
+            log.AppendLine("armed rig lights " + on + "/" + total + " shadowed " + sh + ", probes " + rig.ProbeCount);
+            rig.Trip();
+            for (var i = 0; i < 30; i++) rig.Tick(.1f);
+            // The host lamps follow the rig's mains in play (TickRunB); in the preview they are switched off here.
+            var lampsOff = 0;
+            foreach (var l in run.GetComponentsInChildren<Light>(true))
+                if (l.name.StartsWith("fluorescent", StringComparison.Ordinal)) { l.enabled = false; lampsOff++; }
+            var block = new MaterialPropertyBlock();
+            foreach (var r in run.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.name.StartsWith("run b soffit halo", StringComparison.Ordinal)) { r.enabled = false; continue; }
+                var mats = r.sharedMaterials;
+                for (var m = 0; m < mats.Length; m++)
+                    if (mats[m] != null && mats[m].name.StartsWith("Run_WrapLens", StringComparison.Ordinal))
+                    {
+                        block.Clear(); block.SetColor(EmissionId, Color.black); r.SetPropertyBlock(block, m);
+                    }
+            }
+            rig.CountLights(out total, out on, out sh);
+            log.AppendLine("tripped rig " + rig.State + " lights " + on + "/" + total + " shadowed " + sh + "; host lamps switched off " + lampsOff);
+            for (var k = 0; k < poses.Length; k++)
+            {
+                Pose(root, z0, poses[k], camera);
+                Shot(camera, rt, Path.Combine(outDir, "b_tripped_" + poses[k] + ".png"), log);
+            }
+        }
+        FrontRoomsRoomStream.RunLookOverride = null;
+        camera.targetTexture = null;
+        UnityEngine.Object.DestroyImmediate(cameraObject);
+        rt.Release();
+        File.WriteAllText(Path.Combine(outDir, "render_log.txt"), log.ToString());
+        Debug.Log("[RunBSmoke] RENDER DONE " + outDir + "\n" + log);
+    }
+
+    static Transform FindDeep(Transform t, string name)
+    {
+        if (t.name == name) return t;
+        foreach (Transform c in t) { var f = FindDeep(c, name); if (f != null) return f; }
+        return null;
+    }
+
+    static void Pose(Transform root, float z0, string pose, Camera camera)
+    {
+        Vector3 p, target;
+        switch (pose)
+        {
+            case "fwd": p = new Vector3(.6f, 1.62f, z0 + 1.6f); target = new Vector3(0f, 1.3f, z0 + 12f); break;
+            case "back": p = new Vector3(3.6f, 1.62f, z0 + 10.4f); target = new Vector3(-.4f, 1.0f, z0 + 1.5f); break;
+            case "unit": p = new Vector3(4.55f, 1.95f, z0 + 1.9f); target = new Vector3(5.5f, 2.42f, z0 + 3.0f); break;
+            default: p = new Vector3(.95f, 1.75f, z0 + .7f); target = new Vector3(0f, 2.84f, z0 + 1.9f); break;
+        }
+        var wp = root.TransformPoint(p);
+        camera.transform.SetPositionAndRotation(wp, Quaternion.LookRotation(root.TransformPoint(target) - wp, Vector3.up));
+    }
+
+    static void Shot(Camera camera, RenderTexture rt, string path, StringBuilder log)
+    {
+        var t0 = DateTime.Now;
+        camera.Render();
+        camera.Render();
+        var previous = RenderTexture.active;
+        RenderTexture.active = rt;
+        var image = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        image.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        image.Apply();
+        RenderTexture.active = previous;
+        File.WriteAllBytes(path, image.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(image);
+        log.AppendLine("  " + Path.GetFileName(path) + " " + (DateTime.Now - t0).TotalSeconds.ToString("0.0") + " s");
+    }
+
+    /// <summary>Debug: the B wraps in the edit-mode preview's Run room (lens renderers, blocks, keywords).</summary>
+    public static void DebugWrapBatch()
+    {
+        var sb = new StringBuilder();
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        FrontRoomsRoomStream.RunLookOverride = RunLook.EmergencyPower;
+        game.enabled = false; game.enabled = true;
+        var run = FindDeep(game.transform, "Profile " + (int)RoomRule.Run + " / " + RoomRule.Run);
+        var block = new MaterialPropertyBlock();
+        var n = 0;
+        foreach (var r in run.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            for (var m = 0; m < mats.Length; m++)
+            {
+                if (mats[m] == null || !mats[m].name.StartsWith("Run_WrapLens", StringComparison.Ordinal)) continue;
+                if (n++ > 6) continue;
+                r.GetPropertyBlock(block, m);
+                sb.AppendLine(r.transform.parent.name + "/" + r.name + " active " + r.gameObject.activeInHierarchy + " enabled " + r.enabled + " mat " + m + "/" + mats.Length + " " + mats[m].name
+                    + " shader " + mats[m].shader.name + " kw [" + string.Join(",", mats[m].shaderKeywords) + "] hasBlock(m) " + r.HasPropertyBlock()
+                    + " blockEmission " + block.GetColor("_EmissionColor") + " matEmission " + mats[m].GetColor("_EmissionColor") + " emap " + (mats[m].GetTexture("_EmissionMap") != null));
+            }
+        }
+        sb.AppendLine("lens submeshes: " + n);
+        foreach (var l in run.GetComponentsInChildren<Light>(true))
+            if (l.name.StartsWith("fluorescent", StringComparison.Ordinal)) { sb.AppendLine("light " + l.name + " enabled " + l.enabled + " I " + l.intensity + " angle " + l.spotAngle); break; }
+        FrontRoomsRoomStream.RunLookOverride = null;
+        Debug.Log("[RunBSmoke] DEBUG WRAP\n" + sb);
+        File.WriteAllText(Path.GetFullPath("Verification/run_b/debug_wrap.txt"), sb.ToString());
+    }
+
+    /// <summary>Debug: render the B wrap close-up three ways (as built, LOD0 forced, emission on a material copy).</summary>
+    public static void DebugWrapRenderBatch()
+    {
+        var outDir = Path.GetFullPath("Verification/run_b/render_dbg");
+        Directory.CreateDirectory(outDir);
+        var log = new StringBuilder();
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        var hunter = game.transform.Find("Hunter");
+        if (hunter != null) hunter.gameObject.SetActive(false);
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        FrontRoomsRoomStream.RunLookOverride = RunLook.EmergencyPower;
+        game.enabled = false; game.enabled = true;
+        var cameraObject = new GameObject("RUNB DBG / camera") { hideFlags = HideFlags.DontSave };
+        var camera = cameraObject.AddComponent<Camera>();
+        camera.fieldOfView = 76f; camera.nearClipPlane = .06f; camera.farClipPlane = 80f;
+        camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.13f, .13f, .11f);
+        FrontRoomsPostStack.ConfigureCamera(camera);
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        camera.targetTexture = rt;
+        var root = game.transform;
+        var z0 = (int)RoomRule.Run * FrontRoomsRoomStream.RoomLength;
+        var run = FindDeep(root, "Profile " + (int)RoomRule.Run + " / " + RoomRule.Run);
+        var wrap = FindDeep(run, "run b wrap fixture 0");
+        log.AppendLine("wrap world " + wrap.position + " rot " + wrap.rotation.eulerAngles + " lossyScale " + wrap.lossyScale + " parent " + wrap.parent.name + " parent rot " + wrap.parent.rotation.eulerAngles);
+        var group = wrap.GetComponent<LODGroup>();
+        log.AppendLine("lodgroup " + (group != null) + (group != null ? " size " + group.size + " lods " + group.lodCount : ""));
+        foreach (var r in wrap.GetComponentsInChildren<Renderer>(true)) log.AppendLine("  renderer " + r.name + " bounds " + r.bounds.center + " " + r.bounds.size);
+        // Camera 0.9 m below and 0.6 m beside the wrap, looking at its middle.
+        var c = wrap.position + new Vector3(.6f, -.9f, -.5f);
+        camera.transform.SetPositionAndRotation(c, Quaternion.LookRotation(wrap.position + Vector3.down * .05f - c, Vector3.up));
+        Shot(camera, rt, Path.Combine(outDir, "a_as_built.png"), log);
+        if (group != null) { group.ForceLOD(0); Shot(camera, rt, Path.Combine(outDir, "b_lod0.png"), log); group.ForceLOD(-1); }
+        foreach (var r in wrap.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            for (var m = 0; m < mats.Length; m++)
+                if (mats[m] != null && mats[m].name.StartsWith("Run_WrapLens", StringComparison.Ordinal))
+                {
+                    var copy = new Material(mats[m]); copy.SetColor("_EmissionColor", new Color(2.5f, 2.6f, 2.8f)); mats[m] = copy;
+                }
+            r.sharedMaterials = mats;
+            r.SetPropertyBlock(null);
+            for (var m = 0; m < mats.Length; m++) r.SetPropertyBlock(null, m);
+        }
+        Shot(camera, rt, Path.Combine(outDir, "c_material_emission.png"), log);
+        FrontRoomsRoomStream.RunLookOverride = null;
+        camera.targetTexture = null;
+        UnityEngine.Object.DestroyImmediate(cameraObject);
+        rt.Release();
+        File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString());
+        Debug.Log("[RunBSmoke] DBG RENDER\n" + log);
+    }
+
+    // ------------------------------------------------------------------ per-state box-probe bake
+    const string ReflDir = "Assets/Resources/Rendering/Reflections/";
+
+    public static void BakeProbesBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        var state = "armed";
+        for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-runbState") state = args[i + 1];
+        var tripped = state == "tripped";
+        var log = new StringBuilder("bake " + state + " " + DateTime.Now.ToString("HH:mm:ss") + "\n");
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        var hunter = game.transform.Find("Hunter");
+        if (hunter != null) hunter.gameObject.SetActive(false);
+        FrontRoomsLook.ApplyAmbient();
+        FrontRoomsRoomStream.RunLookOverride = RunLook.EmergencyPower;
+        game.enabled = false; game.enabled = true;
+        var run = FindDeep(game.transform, "Profile " + (int)RoomRule.Run + " / " + RoomRule.Run);
+        var streamRig = run.GetComponentInChildren<FrontRoomsRunRig>(true);
+        var corridorRoot = new GameObject("RUNB BAKE / corridor") { hideFlags = HideFlags.DontSave }.transform;
+        corridorRoot.position = new Vector3(4992f, 0f, 4992f);
+        var corridorLayout = RunRigLayout.Corridor1x9();
+        var corridorDress = FrontRoomsRunDress.Build(corridorRoot, corridorLayout);
+        var corridorRig = FrontRoomsRunRig.Create(corridorRoot, corridorLayout, RunRigHost.OwnLamps, null, corridorDress);
+        var rigs = new[] { streamRig, corridorRig };
+        foreach (var rig in rigs)
+        {
+            if (rig == null) continue;
+            // Existing B probes must not see each other while baking.
+            foreach (var p in rig.GetComponentsInChildren<ReflectionProbe>(true)) p.enabled = false;
+            if (tripped) { rig.Trip(); for (var k = 0; k < 30; k++) rig.Tick(.1f); }
+            else rig.ResetImmediate();
+        }
+        if (tripped && run != null)
+        {
+            var block = new MaterialPropertyBlock();
+            foreach (var l in run.GetComponentsInChildren<Light>(true))
+                if (l.name.StartsWith("fluorescent", StringComparison.Ordinal)) l.enabled = false;
+            foreach (var r in run.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.name.StartsWith("run b soffit halo", StringComparison.Ordinal)) { r.enabled = false; continue; }
+                var mats = r.sharedMaterials;
+                for (var m = 0; m < mats.Length; m++)
+                    if (mats[m] != null && mats[m].name.StartsWith("Run_WrapLens", StringComparison.Ordinal)) { block.Clear(); block.SetColor(EmissionId, Color.black); r.SetPropertyBlock(block, m); }
+            }
+        }
+        foreach (var rig in rigs)
+        {
+            if (rig == null) { log.AppendLine("rig missing"); continue; }
+            int total, on, sh;
+            rig.CountLights(out total, out on, out sh);
+            log.AppendLine(rig.Layout.name + ": " + rig.State + ", lights on " + on + "/" + total);
+            for (var i = 0; i < rig.Layout.probes.Length; i++)
+            {
+                var box = rig.Layout.probes[i];
+                var go = new GameObject("RUNB BAKE / probe") { hideFlags = HideFlags.DontSave };
+                go.transform.position = rig.transform.TransformPoint(box.centre);
+                var probe = go.AddComponent<ReflectionProbe>();
+                probe.mode = ReflectionProbeMode.Custom;
+                probe.renderDynamicObjects = true;
+                probe.resolution = 256;
+                probe.hdr = true;
+                probe.size = box.size;
+                probe.boxProjection = true;
+                probe.nearClipPlane = .05f;
+                probe.farClipPlane = 60f;
+                probe.clearFlags = ReflectionProbeClearFlags.SolidColor;
+                probe.backgroundColor = Color.black;
+                var path = ReflDir + "RunB_" + rig.Layout.name + "_" + state + "_" + i + ".exr";
+                var ok = false;
+                try { ok = Lightmapping.BakeReflectionProbe(probe, path); }
+                catch (Exception e) { log.AppendLine("  bake exception " + e.Message); }
+                UnityEngine.Object.DestroyImmediate(go);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                ConfigureCube(path, log);
+                log.AppendLine("  " + path + " baked " + ok);
+            }
+        }
+        UnityEngine.Object.DestroyImmediate(corridorRoot.gameObject);
+        FrontRoomsRoomStream.RunLookOverride = null;
+        AssetDatabase.SaveAssets();
+        File.WriteAllText(Path.GetFullPath("Verification/run_b/bake_" + state + ".txt"), log.ToString());
+        Debug.Log("[RunBSmoke] BAKE DONE\n" + log);
+    }
+
+    /// <summary>The zone cubes' importer settings (FrontRoomsReflectionCapture.ConfigureImporter, copied: it is private).</summary>
+    static void ConfigureCube(string path, StringBuilder log)
+    {
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null) { log.AppendLine("  no importer " + path); return; }
+        importer.textureShape = TextureImporterShape.TextureCube;
+        var settings = new TextureImporterSettings();
+        importer.ReadTextureSettings(settings);
+        settings.cubemapConvolution = TextureImporterCubemapConvolution.Specular;
+        importer.SetTextureSettings(settings);
+        importer.mipmapEnabled = true;
+        importer.sRGBTexture = false;
+        importer.filterMode = FilterMode.Trilinear;
+        importer.wrapMode = TextureWrapMode.Clamp;
+        importer.maxTextureSize = 256;
+        // -runbCubeHalf: uncompressed RGBA Half instead of BC6H (probe atlas test).
+        importer.textureCompression = Array.IndexOf(Environment.GetCommandLineArgs(), "-runbCubeHalf") >= 0 ? TextureImporterCompression.Uncompressed : TextureImporterCompression.CompressedHQ;
+        var web = importer.GetPlatformTextureSettings("WebGL");
+        web.overridden = true;
+        web.maxTextureSize = 128;
+        web.format = TextureImporterFormat.RGB9E5;
+        importer.SetPlatformTextureSettings(web);
+        importer.SaveAndReimport();
+        var cube = AssetDatabase.LoadAssetAtPath<Cubemap>(path);
+        log.AppendLine("  " + Path.GetFileName(path) + ": " + (cube != null ? cube.width + " px " + cube.format + " mips " + cube.mipmapCount : "NOT A CUBEMAP"));
+    }
+
+    /// <summary>T8-style probe check (VL236 method): the B probes get a solid magenta cube, the default reflection a
+    /// solid green one, before the first render; armed and tripped frames -> Verification/run_b/probe_debug.</summary>
+    public static void ProbeDebugBatch()
+    {
+        var outDir = Path.GetFullPath("Verification/run_b/probe_debug");
+        Directory.CreateDirectory(outDir);
+        var log = new StringBuilder();
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        var hunter = game.transform.Find("Hunter");
+        if (hunter != null) hunter.gameObject.SetActive(false);
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        FrontRoomsRoomStream.RunLookOverride = RunLook.EmergencyPower;
+        game.enabled = false; game.enabled = true;
+        var args = Environment.GetCommandLineArgs();
+        var keepScene = Array.IndexOf(args, "-runbKeepScene") >= 0;      // zone cube + ApplyAmbient's intensity kept
+        var realCubes = Array.IndexOf(args, "-runbRealCubes") >= 0;      // the baked cubes, not magenta
+        var tag = (keepScene ? "keep_" : "") + (realCubes ? "real_" : "");
+        var magenta = SolidCube(new Color(4f, 0f, 4f));
+        var green = SolidCube(new Color(0f, 4f, 0f));
+        if (!keepScene)
+        {
+            RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+            RenderSettings.customReflectionTexture = green;
+            RenderSettings.reflectionIntensity = 1f;
+        }
+        var intensityArg = Array.IndexOf(args, "-runbReflIntensity");
+        if (intensityArg >= 0 && intensityArg + 1 < args.Length) { RenderSettings.reflectionIntensity = float.Parse(args[intensityArg + 1], System.Globalization.CultureInfo.InvariantCulture); tag += "ri" + args[intensityArg + 1] + "_"; }
+        log.AppendLine("reflectionIntensity " + RenderSettings.reflectionIntensity + " default " + RenderSettings.defaultReflectionMode + " custom " + (RenderSettings.customReflectionTexture != null ? RenderSettings.customReflectionTexture.name : "null") + " tag " + tag);
+        var run = FindDeep(game.transform, "Profile " + (int)RoomRule.Run + " / " + RoomRule.Run);
+        var rig = run.GetComponentInChildren<FrontRoomsRunRig>(true);
+        foreach (var p in rig.GetComponentsInChildren<ReflectionProbe>(true))
+        {
+            if (!realCubes) p.customBakedTexture = magenta;
+            else if (Array.IndexOf(args, "-runbRuntimeCopy") >= 0 && p.customBakedTexture is Cubemap src)
+            {
+                // Bypass the imported asset: a runtime cube with the same pixels (GPU copy, same format and mips).
+                var copy = new Cubemap(src.width, src.format, src.mipmapCount > 1) { hideFlags = HideFlags.DontSave, name = src.name + " (runtime copy)" };
+                for (var f = 0; f < 6; f++) for (var m = 0; m < src.mipmapCount; m++) Graphics.CopyTexture(src, f, m, copy, f, m);
+                p.customBakedTexture = copy;
+                if (!tag.Contains("copy")) tag += "copy_";
+                log.AppendLine("  runtime copy " + copy.width + " " + copy.format + " mips " + copy.mipmapCount + " streaming " + src.streamingMipmaps + " loadedMip " + src.loadedMipmapLevel + " desiredMip " + src.desiredMipmapLevel);
+            }
+            if (Array.IndexOf(args, "-runbProbesOff") >= 0) p.gameObject.SetActive(false);
+            log.AppendLine("  tex " + (p.customBakedTexture != null ? p.customBakedTexture.name + " " + p.customBakedTexture.GetType().Name + " " + p.customBakedTexture.dimension + " " + p.customBakedTexture.width : "null")
+                + " effective " + (p.texture != null ? p.texture.name + " " + p.texture.dimension : "null") + " hdr " + p.textureHDRDecodeValues + " mode " + p.mode + " refresh " + p.refreshMode);
+            log.AppendLine("probe " + p.name + " enabled " + p.enabled + " intensity " + p.intensity + " size " + p.size + " box " + p.boxProjection + " importance " + p.importance + " world " + p.transform.position);
+        }
+        var floor = FindDeep(run, "run b vct field");
+        if (floor != null) { var r = floor.GetComponent<Renderer>(); log.AppendLine("floor reflectionProbeUsage " + r.reflectionProbeUsage + " bounds " + r.bounds.min + " " + r.bounds.max); }
+        var cameraObject = new GameObject("RUNB PROBE DBG / camera") { hideFlags = HideFlags.DontSave };
+        var camera = cameraObject.AddComponent<Camera>();
+        camera.fieldOfView = 76f; camera.nearClipPlane = .06f; camera.farClipPlane = 80f;
+        camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.13f, .13f, .11f);
+        FrontRoomsPostStack.ConfigureCamera(camera);
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        camera.targetTexture = rt;
+        var z0 = (int)RoomRule.Run * FrontRoomsRoomStream.RoomLength;
+        var gainArg = Array.IndexOf(args, "-runbProbeGain");
+        var gain = gainArg >= 0 && gainArg + 1 < args.Length ? float.Parse(args[gainArg + 1], System.Globalization.CultureInfo.InvariantCulture) : 1f;
+        if (gainArg >= 0) tag += "g" + args[gainArg + 1] + "_";
+        foreach (var p in rig.GetComponentsInChildren<ReflectionProbe>(true)) if (p.enabled) p.intensity *= gain;
+        Pose(game.transform, z0, "fwd", camera);
+        Shot(camera, rt, Path.Combine(outDir, tag + (Array.IndexOf(args, "-runbProbesOff") >= 0 ? "off_" : "") + "armed_fwd.png"), log);
+        rig.Trip(); for (var i = 0; i < 30; i++) rig.Tick(.1f);
+        foreach (var p in rig.GetComponentsInChildren<ReflectionProbe>(true)) if (p.enabled) p.intensity *= gain;
+        foreach (var p in rig.GetComponentsInChildren<ReflectionProbe>(true)) log.AppendLine("tripped: probe " + p.name + " enabled " + p.enabled + " intensity " + p.intensity);
+        Shot(camera, rt, Path.Combine(outDir, tag + (Array.IndexOf(args, "-runbProbesOff") >= 0 ? "off_" : "") + "tripped_fwd.png"), log);
+        FrontRoomsRoomStream.RunLookOverride = null;
+        camera.targetTexture = null;
+        UnityEngine.Object.DestroyImmediate(cameraObject);
+        rt.Release();
+        File.WriteAllText(Path.Combine(outDir, "log_" + tag + ".txt"), log.ToString());
+        Debug.Log("[RunBSmoke] PROBE DEBUG\n" + log);
+    }
+
+    static Cubemap SolidCube(Color c)
+    {
+        var cube = new Cubemap(16, TextureFormat.RGBAHalf, true) { hideFlags = HideFlags.DontSave };
+        var px = new Color[16 * 16];
+        for (var i = 0; i < px.Length; i++) px[i] = c;
+        for (var f = 0; f < 6; f++) cube.SetPixels(px, (CubemapFace)f);
+        cube.Apply(true);
+        return cube;
+    }
+
+    /// <summary>Re-apply ConfigureCube to every baked B cube (flags as ConfigureCube: -runbCubeHalf).</summary>
+    public static void ReimportCubesBatch()
+    {
+        var log = new StringBuilder();
+        foreach (var guid in AssetDatabase.FindAssets("RunB_", new[] { "Assets/Resources/Rendering/Reflections" }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.EndsWith(".exr", StringComparison.Ordinal)) ConfigureCube(path, log);
+        }
+        File.WriteAllText(Path.GetFullPath("Verification/run_b/cubes_reimport.txt"), log.ToString());
+        Debug.Log("[RunBSmoke] CUBES\n" + log);
+    }
+}

@@ -71,3 +71,18 @@ Each folder holds the v3 file names, so `Tools/lookdev/pack_evac_plan.py` reads 
 **Glow mask:** YOU ARE HERE, the route, the stair door (with the padlock in the full sheet) and its EXIT. Words and the red block do not glow. k stays 0.158; re-check the dark ratio (≥ 1.30) after packing.
 
 **Regenerate:** `swiftc -O tutorial_placard.swift -o tp_gen && ./tp_gen sheetA A handoff && ./tp_gen sheetA_phase0 A0 handoff`. The same tool renders the review options: `./tp_gen <outdir> A|A0|B|C`.
+
+### The stairwell copy: LEVEL B1 (staged 2026-10-22 13:3x, 游戏视觉's request)
+
+The same sheet with `LEVEL B1` in the header and title block (C28 B levels; 叙事 `40_floors_exit_tutorial_strings.md` §3: the next floor's sheet hangs by the far door).
+
+| Folder | Print md5 | Glow md5 | examine.json | Use it with |
+|---|---|---|---|---|
+| `sheetA_B1/` | 2bcf6c87… | 99ea4ac6… (= LEVEL 0) | 16c7f397… | the stair lock + station live (as `sheetA/`) |
+| `sheetA_phase0_B1/` | ce35c086… | 0f42609b… (= LEVEL 0) | e5bfc405… | before the lock (as `sheetA_phase0/`) |
+
+- **Where it hangs:** first at C22's 3 × 3 vestibule, by the next floor's start door; in the walkable stair, by the far door.
+- **YOU ARE HERE is true** only on the same mount rule as Level 0: beside that door at P1 west, facing into the floor (G1 for floors 2+, 关卡设计 + 游戏视觉).
+- **The plan's NO REENTRY** stays true, because the arrival door locks behind you (C22).
+- **More floors:** `./tp_gen <dir> A|A0 handoff level=B2` (any floor token). At LEVEL 0 the output is byte-identical to `sheetA/` and `sheetA_phase0/`.
+

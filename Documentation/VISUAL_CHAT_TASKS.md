@@ -9,6 +9,9 @@ Header updated 2026-10-21 (the body below keeps its dated notes; where a note an
   - **Red 12:36, "G14 的 D1、D6、D2 全部按推荐":** D1 High at every level now, plus a GPU-core gate before a store build with RT; D6 accept now, the 4-lamp budget comes with P2; D2 a reflection-only body proxy now. Spec: `research/glass/rt/NOTE_1022_red_decisions.md`.
   - **Queued `g14-followup`** (D1 (c) + D2 (b)): right after G14 lands.
   - **Red 12:34 (叙事设计 chat): wall glow B.** Q2 glow-ink is PARKED for v1.
+  - **Red 13:0x, glass:** shattered glass stays on the floor; it is cleared only when the player is far. A knock keeps its break progress → GD3c debris world + kept progress, `wf_29d3a927-38d`.
+  - **Red 13:1x asked about Run! and the rooms.** Relaunched Run! B `wf_a2dbb946-20f` and Hunter B `wf_f2d854bd-a69`: both had died at 08:4x after their plans. Started level transitions production `wf_81041a8c-86f`: decided 10-21, never launched. DB1 C2 is still queued.
+  - **Red 13:00, the stairwell (C22) "全部按推荐":** look A. The walkable stair comes after C22 lands (`research/stairwell/60_walkable_stair_for_map.md`); real steel-door Foley; no dead EXIT over the arrival door; priority-1 media approved (`wf_1928b4cd-f2a`). Production is queued after wave 2: first the vestibule dressing, then the shell.
 
 - **Rules now:** `Documentation/Takeover_2026-10-18/briefs/COMMON.md` (only Red commits; clones only; claim/land/release in `Takeover_2026-10-18/LANDINGS.md`; no workflows or subagents unless Red asks). Main HEAD `dfc0086` (Red, 10-21, unpushed) holds every 10-14 merge.
 - **Landed 10-21:** `outlets_int` (N3, 90 paths; MANIFEST OK; Roslyn 0 errors macOS + iOS). Outlets show in the title corridor; the maze needs map contract C-1. Still waiting: P-1 `outlets_lods` (now needs `rebase_apply.sh`), P-4b/P-6, the ivory tint (VL277).

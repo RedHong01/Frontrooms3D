@@ -52,7 +52,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 {
     public enum MenuState { Title, Playing, Paused, Settings, Caught }
 
-    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap }
+    public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken }
 
     /// <summary>Buttons the view draws a press state for.</summary>
     public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow }
@@ -76,7 +76,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         [Range(0f, 1f)] public float Progress;
         public UseKind Kind;
 
-        /// <summary>A locked door still takes the press: it rattles (desktop E does the same).</summary>
+        /// <summary>A locked door still takes the press: it rattles (desktop E does the same). So does a broken one: it won't shut.</summary>
         public bool AllowsPress => Visible && Interactable && Kind != UseKind.Hidden;
 
         public static UsePrompt Hidden => new UsePrompt { Label = string.Empty, Kind = UseKind.Hidden };
@@ -111,6 +111,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public const float SlowSpeedShare = .45f;
     /// <summary>A run starts only within this many degrees of straight ahead, so a hard strafe never runs by accident.</summary>
     public const float RunHalfAngle = 70f;
+    /// <summary>A broken door's try: USE swings out this long, then meets the frame (B·4's 90 ms), where the soft knock is felt.</summary>
+    public const float BrokenKnockSeconds = .09f;
 
     // Timing (seconds) and slop (points).
     const float TapMaxSeconds = .22f;
@@ -346,6 +348,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     }
 
     public void ClearUsePrompt() => SetUsePrompt(UsePrompt.Hidden);
+
+    /// <summary>When the broken door USE names last answered a try (FrontRoomsTouchMotion.Now): the view swings USE once.</summary>
+    public float BrokenTriedAt { get; private set; } = float.NegativeInfinity;
+
+    /// <summary>The broken door USE names answered a try (USE, or a tap on it) with the map's Broken: it won't shut.</summary>
+    public void NoteBrokenTried() => BrokenTriedAt = FrontRoomsTouchMotion.Now;
 
     /// <summary>Reads the touch preferences (Settings › TOUCH).</summary>
     public void ApplySavedSettings()

@@ -273,7 +273,7 @@ No writing band lost height.
 Red, 2026-10-15, to 系统设计: "把这个给我设置成正常的indesign文件，就是咱们的问卷，同时所有黑色要用rich black" ("set this up as a normal InDesign file, our questionnaire, with every black in rich black").
 
 - **File:** `EGAM-401A-01 Individual Game Project/Print/FR-PT04_Playtest_Questionnaire.indd`, outside the repo; printable PDF `Print/FR-PT04_Playtest_Questionnaire_printable.pdf`.
-  - REV. 10-22-26 (2026-10-22, VL352): rebuilt by 印刷与演示 from the v2.1 white form 3512:7677 with 系统设计's kit `~/FrontRoomsVisualWork/print_indesign/`. Its SH / TX tables are regenerated from the Figma export by `gen_tables.py`; the kit's baseline check reads 0.000 pt over 66 frames.
+  - REV. 10-22-26 (2026-10-22, VL352; rebuilt at opsz 10 13:49, VL372): rebuilt by 印刷与演示 from the v2.1 white form 3512:7677 with 系统设计's kit `~/FrontRoomsVisualWork/print_indesign/`. Its SH / TX tables are regenerated from the Figma export by `gen_tables.py`; the kit's baseline check reads 0.000 pt over 66 frames.
   - REV. 10-15-26: built by 系统设计 from 3227:7424 (VL295); archived in `Print/_archive_REV-10-15-26/`.
 - **Rich black lives only in InDesign** (Red 10-15, for every chat): "所有rich black 都是在Indesign里，因为只有indesign是CMYK印刷 … figma里面不用Rich Black" ("all rich black is in InDesign, because only InDesign is CMYK print; Figma doesn't use rich black"). The Figma frames stay plain black (RGB).
 - **Ink: rich black everywhere in the InDesign files** (Red 10-15, confirmed to 印刷与演示 the same day).
@@ -286,12 +286,16 @@ Red, 2026-10-15, to 系统设计: "把这个给我设置成正常的indesign文�
 - **Line breaks match Figma.** Figma sets Source Serif 4 at its optical size (opsz 10 at 10 pt).
   - In InDesign, use the variable font at opsz 10. Or, if Adobe Fonts' static family of the same name shadows it, use the static optical-size cut whose breaks match Figma: try Caption first.
   - Adobe's default "Text" cut (opsz 20) is narrower and breaks three questions differently.
+  - **Done since 2026-10-22 13:46 (VL372):** both kits set the serif in `Source Serif 4 Variable` (Adobe's GitHub release, `~/Library/Fonts/SourceSerif4Variable-{Roman,Italic}.ttf`, OFL) at wght 400, opsz = point size, through `designAxes` on the paragraph styles. Its family name differs from Adobe Fonts' static "Source Serif 4", so nothing shadows it; the game's Google build (`Assets/Resources/Fonts/SourceSerif4-Variable.ttf`) is named "Source Serif 4" and is shadowed. Static Caption (opsz 8) stays the fallback.
+  - Set `designAxes` after `pointSize`. InDesign's automatic optical size keeps the opsz of the size a style had when the font was applied: the first 10-22 build came out at opsz 12 ("SmallText-12.000") from the 12 pt default.
+  - Pick the font by PostScript name (the kits' `findCaption()`): an unknown style of an installed family resolves to its default instance and still reports INSTALLED. `doc.fonts` lists the variable font as "Caption ExtraLight"; read `characters[0].appliedFont` and `designAxes` instead (`id_probe_serif.jsx`).
 - **Baselines match Figma, font by font** (found 10-15, VL296).
   - Figma centres each font's box (hhea ascender to descender) in the line height. A frame whose first baseline sits one leading below its top therefore goes at y + ld/2 + r × size − ld, where r = (ascender + descender) / 2 / unitsPerEm of that font.
   - From the font files: Bayon 0.3174, IBM Plex Mono 0.375, Source Serif 4 0.3505.
   - One r = 0.35 for every face sets Bayon about 0.03 em low (the 32 pt title 1 pt) and Plex Mono 0.025 em high.
   - Check baselines in the document (`lines[0].baseline`), not only on renders: Figma's export and PDFKit both snap baselines to whole pixels (0.33 pt at 3×).
 - **Bayon** is packaged in `Print/Document Fonts` with its OFL licence. It has no "·", so a GREP style sets the dot in Plex Mono.
+  - The Plex Mono dot is wider than Figma's fallback dot: on the 12 pt cue line it sat 1.83 pt right of Figma and the next word 3.67 pt right (measured 10-22). Since VL372, a second GREP style (`Space before dot`, " (?=·)") and the dot style each set tracking −113 (the label's +40 − 153), so the dot and the words after it land on Figma's positions within 0.34 pt.
   - Since 2026-10-16 Bayon is also installed in `~/Library/Fonts` (same file, md5 cda3375f), so it resolves however a document is opened. Keep `Print/Document Fonts` for packaging and for other machines.
   - Before that, Document Fonts loaded only for a .indd opened from `Print/`, and a crash-recovered document set Bayon in Khmer Sangam MN (10-15).
 
@@ -300,9 +304,9 @@ Red, 2026-10-15, to 系统设计: "把这个给我设置成正常的indesign文�
 Red, 2026-10-15: "答题卡我也需要你给我做成indesign文件，同时rich black" ("make the answer sheet an InDesign file too, in rich black"), from the white twin 3290:7602.
 
 - **File:** `Print/FR-PT05_Playtest_Answer_Sheet.indd`, outside the repo. It is a separate edition and does not replace FR-PT04.
-  - **Now REV. 10-22-26** (2026-10-22, VL352), built from 3510:7787. Printable PDF: `Print/FR-PT05_Playtest_Answer_Sheet_printable.pdf`. The REV. 10-15-26 file and its printable PDF are in `Print/_archive_REV-10-15-26/`, and the kit's 10-15 inputs are in `indesign/rev_10-15-26/`.
+  - **Now REV. 10-22-26** (2026-10-22, VL352; rebuilt at opsz 10 13:46, VL372), built from 3510:7787. Printable PDF: `Print/FR-PT05_Playtest_Answer_Sheet_printable.pdf`. The REV. 10-15-26 file and its printable PDF are in `Print/_archive_REV-10-15-26/`, and the kit's 10-15 inputs are in `indesign/rev_10-15-26/`.
   - It is the master (Red 2026-10-22, "全部按推荐"). The three dated copies saved on 10-16 while Bayon was being fixed are in `Print/_archive_FR-PT05_2026-10-16/`, not deleted.
-  - `Print/FR-PT05_Playtest_Answer_Sheet.font-fixed-20261016_printable.pdf` prints as is: it is pixel-identical to this build's proof. Replace it at the next rebuild.
+  - The old `FR-PT05_Playtest_Answer_Sheet.font-fixed-20261016_printable.pdf` is no longer in `Print/`; `FR-PT05_Playtest_Answer_Sheet_printable.pdf` (REV. 10-22-26, VL372) is the one to print.
 - **Built natively by 印刷与演示 from the Figma export.** Kit: `~/FrontRoomsVisualWork/print_ref_work/scantron/indesign/`.
   - `fig_shapes.json`, `fig_texts.json` and `fig_values.json` are the geometry exported from 3290:7602.
   - `make_jsx.py` writes `id_build_answer_sheet.jsx` from `id_build_template.jsx`.
@@ -320,7 +324,7 @@ Red, 2026-10-15: "答题卡我也需要你给我做成indesign文件，同时ric
   - 0 objects or text in [Black] or Registration;
   - scanner marks within 0.17 pt of the Figma render;
   - 280 / 280 fields read from 20 simulated fills of its PDF.
-- **Caption, not yet in InDesign (2026-10-22 10:3x).** Red activated it ("Caption 已经启用了"), but InDesign still reports Source Serif 4 Caption NOT_AVAILABLE, and Adobe Fonts' local entitlement list is unchanged since 10-14. Both REV. 10-22-26 files therefore use the Text cut for now.
+- **History: Caption, not yet in InDesign (2026-10-22 10:3x; solved 13:46 by the variable font, §10 and VL372).** Red activated it ("Caption 已经启用了"), but InDesign still reports Source Serif 4 Caption NOT_AVAILABLE, and Adobe Fonts' local entitlement list is unchanged since 10-14. Both REV. 10-22-26 files therefore use the Text cut for now.
   - The kits only take Caption when its status is INSTALLED. `itemByName()` alone is "valid" even for a missing font; the FR-PT05 template was fixed for this on 10-22.
   - At the Caption rebuild, also tune the "·" in the Bayon cue label. It is set in Plex Mono (Bayon has none), and sits 4 pt wider than Figma's fallback dot.
 - **Caption (Red 2026-10-22: yes, "全部按推荐"; Red activates it in Creative Cloud):** then run `python3 make_jsx.py --caption`, close FR-PT05 (`id_close.jsx`) and run `id_run.jsx`. Until then "favorite aspects" sets on one line instead of two, and the serif lines run slightly narrower. Rebuild once, from the next revision's frames (top of this doc), together with FR-PT04 (also approved for an overwrite).
@@ -373,4 +377,4 @@ Red, 2026-10-22: "同时在问卷里的这个during play的section在未来的�
 - The 10-15 template is `FR-PT-05_REV-10-15-26_template.json`. Choose by the REV. printed in the slug.
 - Simulated reads: 280/280 on the white, canary, blank-calibrated and InDesign routes (VL352).
 
-**InDesign:** both files were rebuilt on 2026-10-22 (§10, §10.1, VL352). Caption still has to sync before the final rebuild.
+**InDesign:** both files were rebuilt on 2026-10-22 (§10, §10.1, VL352), then again at 13:46–13:49 with Source Serif 4 Variable at opsz 10 and the dot fix (VL372, PASS): 17/17 serif breaks on each form as in Figma, baselines 0.000 pt, marks within 0.167 pt, reader 280/280. These are the final REV. 10-22-26 files. The 10:24 Text-cut files are in `Print/_archive_REV-10-22-26_text-cut/`.

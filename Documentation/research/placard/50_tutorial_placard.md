@@ -332,3 +332,14 @@ The draft as it stood:
   - The placard's own glow mask (dot, route, stair door, EXIT) is unchanged.
   - Until W6, the wall legend stays off the sheet.
 
+## 14. The stairwell copy, LEVEL B1 (staged 2026-10-22 13:3x)
+
+游戏视觉 asked for it before its first stairwell step, which dresses C22's 3 × 3 vestibule. The copy hangs by the next floor's start door there, and later by the walkable stair's far door.
+- **Generator:** `tutorial_placard.swift` takes `level=B1` (header + title block). At LEVEL 0 it reproduces `sheetA/` and `sheetA_phase0/` byte for byte (checked).
+- **Staged:**
+  - `Tools/print/ink/art_from_graphic/placard/sheetA_B1/`: print 2bcf6c87…, glow 99ea4ac6…, examine 16c7f397…;
+  - `sheetA_phase0_B1/`: print ce35c086…, glow 0f42609b…, examine e5bfc405….
+  - The glow masks equal LEVEL 0's: the header does not glow.
+- **Conditions:** the same mount rule (P1 west of the arrival door). The full or Phase 0 variant is chosen by the same lock condition as Level 0.
+- **Sheet C's illustration** now reads `LEVEL B3` / `PRINTED FOR LEVEL B3` (C28). TP03 and VL337's C images and board texts were refreshed.
+

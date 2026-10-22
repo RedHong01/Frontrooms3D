@@ -152,6 +152,11 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         if (aborted) yield break;
         yield return Frames(2.5f);
         Check("touch layer in Playing state", controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Playing, controls.CurrentMenuState.ToString());
+        // The top band of TS 1–4 (Figma 2528:5403): the level label hangs from the top-left. From 10-04 to 10-22 the phone
+        // layout anchored it to the bottom edge, so it was drawn below the screen and no check noticed.
+        var roomRect = HudRect("Room typography");
+        Check("HUD: the level label is on screen, top-left", roomRect.HasValue && roomRect.Value.xMin >= 0f && roomRect.Value.xMin < .5f && roomRect.Value.xMax <= 1f && roomRect.Value.yMin >= .5f && roomRect.Value.yMax <= 1f,
+            roomRect.HasValue ? "rect " + F(roomRect.Value.xMin) + "," + F(roomRect.Value.yMin) + " – " + F(roomRect.Value.xMax) + "," + F(roomRect.Value.yMax) + " of the HUD (y up)" : "no Room typography");
         yield return Capture("02_calm_ghost_stick");
 
         var L = controls.Layout;
@@ -490,6 +495,157 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         else Note("locked", "no locked door on the map (skipped)");
         if (keysField != null && !keysWere) keysField.SetValue(Map, false);
 
+        // ------------------------------------------------------- USE: broken door (交互设计, 2026-10-22)
+        // Red: "手机上对着被撞坏的门时，USE 按钮显示门已经坏了". A door the Relay broke (here the map's own BreakDoor, from the
+        // far side) hangs open for the run. USE says BROKEN; a press is the won't-shut try (the map answers Broken: no
+        // door verb, no noise), USE swings once and one soft knock is felt; a press inside 0.55 s is dropped (the map's
+        // guard); a tap on the leaf is the same try.
+        var toBreak = Map.NearestClosedDoorForTools(PlayerRoot.position, false);
+        if (toBreak != null)
+        {
+            var tries = 0;
+            Action<FrontRoomsMapWorld.Door, Vector3> onTry = (d, p) => { if (d != null && d.edge == toBreak.edge) tries++; };
+            Map.DoorBrokenTried += onTry;
+            Map.BreakDoor(toBreak, toBreak.position + (toBreak.position - PlayerRoot.position));
+            yield return Frames(1.2f);
+            Func<Collider, bool> isBroken = col => Map.DoorOf(col) is FrontRoomsMapWorld.Door d && d.edge == toBreak.edge && d.broken;
+            Collider brokenLeaf = null;
+            if (StandAt(MapColliders("doorByCollider"), isBroken, 1.4f, out brokenLeaf) || StandAt(MapColliders("doorByCollider"), isBroken, 1f, out brokenLeaf))
+            {
+                yield return Frames(.35f);
+                var usePrompt = controls.CurrentUsePrompt;
+                Check("broken: the crosshair on the hanging leaf turns USE into BROKEN", usePrompt.Visible && usePrompt.Kind == FrontRoomsTouchControls.UseKind.Broken,
+                    usePrompt.Kind + ", desktop prompt '" + Describe(brokenLeaf, out _) + "'");
+                yield return Capture("18f_broken_use");
+                var heard = haptics.Count;
+                var maxSwing = 0f;
+                Send(21, L.UseCenter, InputTouchPhase.Began);
+                for (var i = 0; i < 45; i++)
+                {
+                    yield return null;
+                    if (i == 4) Send(21, L.UseCenter, InputTouchPhase.Ended);
+                    // A second press 0.25 s in, inside the 0.55 s window.
+                    if (i == 15) Send(22, L.UseCenter, InputTouchPhase.Began);
+                    if (i == 18) Send(22, L.UseCenter, InputTouchPhase.Ended);
+                    maxSwing = Mathf.Max(maxSwing, Mathf.Abs(NodeAngle("USE")));
+                    if (i == 3 || i == 8 || i == 14 || i == 24) yield return Capture("18g_broken_swing_f" + i.ToString("00"));
+                }
+                var brokenDoor = Map.DoorOf(brokenLeaf);
+                Check("broken: a USE press is the won't-shut try (the map answers Broken once; the second press, 0.25 s in, is dropped)", tries == 1, tries + " tries");
+                Check("broken: the door stays broken and open (no door verb)", brokenDoor != null && brokenDoor.broken && brokenDoor.open,
+                    brokenDoor == null ? "no door" : "broken " + brokenDoor.broken + ", open " + brokenDoor.open);
+                Check("broken: USE swings once from its top point (B·4's won't-shut), then rests", maxSwing >= 3f && Mathf.Abs(NodeAngle("USE")) < .01f,
+                    "max " + F(maxSwing) + " deg, now " + F(NodeAngle("USE")) + " deg");
+                var felt = haptics.GetRange(heard, haptics.Count - heard);
+                var click = felt.Find(h => h.Contains("Controls,Rigid"));
+                var knock = felt.Find(h => h.Contains("Gameplay,Soft"));
+                var gap = click != null && knock != null ? float.Parse(knock.Split(',')[0], System.Globalization.CultureInfo.InvariantCulture) - float.Parse(click.Split(',')[0], System.Globalization.CultureInfo.InvariantCulture) : -1f;
+                Check("broken: the press clicks, then one soft knock as the swing meets the frame (about 0.09 s)", felt.FindAll(h => h.Contains("Gameplay,Soft")).Count == 1 && gap >= .06f && gap <= .15f,
+                    string.Join(" | ", felt));
+                // Past the window, a press tries it again.
+                Send(23, L.UseCenter, InputTouchPhase.Began);
+                for (var i = 0; i < 4; i++) yield return null;
+                Send(23, L.UseCenter, InputTouchPhase.Ended);
+                yield return Frames(.7f);
+                Check("broken: past 0.55 s a press tries it again", tries == 2, tries + " tries");
+                // A tap on the leaf itself is the same try, and USE (naming this door) swings again.
+                var swungAt = controls.BrokenTriedAt;
+                if (TapPointOn(brokenLeaf, out var onLeaf))
+                {
+                    yield return Tap(onLeaf, 24);
+                    yield return Frames(.1f);
+                    Check("broken: a tap on the hanging leaf is the same try, and USE swings", tries == 3 && controls.BrokenTriedAt > swungAt, tries + " tries, tap at " + onLeaf);
+                    yield return Capture("18h_broken_tapped");
+                    yield return Frames(.6f);
+                }
+                else Note("broken", "no tap point on the broken leaf (tap case skipped)");
+            }
+            else Check("broken: a stand at the broken leaf", false, "no stand with the leaf in view");
+            Map.DoorBrokenTried -= onTry;
+        }
+        else Note("broken", "no shut door to break (skipped)");
+
+        // ------------------------------------------------------- keys: on purpose (C14 on phones)
+        // Phones take keys on purpose too (2026-10-22): walking over one does nothing, USE says TAKE with the
+        // crosshair on it, and a tap on it, or within KeyTapRadiusPoints of it, takes it.
+        var keys = new List<Collider>(MapColliders("keyByCollider"));
+        keys.Sort((a, b) => (a.bounds.center - PlayerRoot.position).sqrMagnitude.CompareTo((b.bounds.center - PlayerRoot.position).sqrMagnitude));
+        // Until 关卡设计's line (KeyPickupNeedsE on handhelds, queued with A12) lands, phones still walk over keys: skip these steps.
+        if (Map.KeyPickupNeedsE) Check("keys: phones take keys on purpose (each key carries a look+tap trigger)", keys.Count > 0, keys.Count + " keys");
+        else { Note("keys", "KeyPickupNeedsE is off on handhelds (walk-over keys): the key-tap steps are skipped"); keys.Clear(); }
+        var keyIndex = 0;
+        Collider NextKey(float distance)
+        {
+            for (; keyIndex < keys.Count; keyIndex++)
+                if (keys[keyIndex] != null && PlaceAtKey(keys[keyIndex], distance)) return keys[keyIndex++];
+            return null;
+        }
+        var keyA = NextKey(1.2f);
+        if (keyA != null)
+        {
+            yield return Frames(.35f);
+            var usePrompt = controls.CurrentUsePrompt;
+            Check("keys: the crosshair on a key turns USE into TAKE", usePrompt.Visible && usePrompt.Kind == FrontRoomsTouchControls.UseKind.Take, usePrompt.Kind + " '" + usePrompt.Label + "'");
+            yield return Capture("19a_key_use_take");
+            Send(18, L.UseCenter, InputTouchPhase.Began);
+            for (var i = 0; i < 4; i++) yield return null;
+            Send(18, L.UseCenter, InputTouchPhase.Ended);
+            yield return Frames(.5f);
+            Check("keys: USE takes it", KeyGone(keyA), keyA != null ? keyA.name : "-");
+        }
+        else Note("keys", "no key to stand at for the USE case (skipped)");
+        var keyB = NextKey(1.2f);
+        if (keyB != null)
+        {
+            // Look past it to the left, so the key sits right of the crosshair in the look zone and the tap is the only way in.
+            TurnBy(-14f);
+            yield return Frames(.3f);
+            var offAim = controls.CurrentUsePrompt.Kind != FrontRoomsTouchControls.UseKind.Take;
+            var onOff = 0f;
+            if (KeyTapPoint(keyB, ref onOff, out var onKey))
+            {
+                yield return Tap(onKey, 19);
+                yield return Frames(.5f);
+                Check("keys: a tap on the key takes it (crosshair elsewhere)", offAim && KeyGone(keyB), "crosshair off it " + offAim + ", tap at " + onKey);
+                yield return Capture("19b_key_tapped");
+            }
+            else Note("keys", "no tap point on " + keyB.name + " (direct tap skipped)");
+        }
+        else Note("keys", "no second key for the direct tap (skipped)");
+        var keyC = NextKey(1.2f);
+        if (keyC != null)
+        {
+            // Walking over it does nothing on phones now.
+            var over = keyC.bounds.center;
+            var keyBody = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
+            var standOver = new Vector3(over.x, PlayerRoot.position.y, over.z);
+            if (!Physics.CheckCapsule(standOver + Vector3.up * .35f, standOver + Vector3.up * 1.6f, .25f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                var back = PlayerRoot.position;
+                keyBody.enabled = false;
+                PlayerRoot.position = standOver;
+                keyBody.enabled = true;
+                yield return Frames(.6f);
+                Check("keys: walking over a key leaves it", !KeyGone(keyC), keyC.name);
+                keyBody.enabled = false;
+                PlayerRoot.position = back;
+                keyBody.enabled = true;
+            }
+            else Note("keys", "no room to stand over " + keyC.name + " (walk-over case skipped)");
+            PlaceAtKey(keyC, 1.2f);
+            TurnBy(-14f);
+            yield return Frames(.3f);
+            var nearOff = 12f;
+            if (KeyTapPoint(keyC, ref nearOff, out var nearKey))
+            {
+                yield return Tap(nearKey, 20);
+                yield return Frames(.5f);
+                Check("keys: a tap " + F(nearOff) + " pt off the key, where the finger's own ray misses it, still takes it (the finger target)", KeyGone(keyC), "tap at " + nearKey);
+            }
+            else Note("keys", "no off-key tap point near " + keyC.name + " (finger-target case skipped)");
+        }
+        else Note("keys", "no third key for the walk-over and finger-target cases (skipped)");
+
         // ------------------------------------------------------------ USE: glass
         // Stand as the desktop autopilot's glass scenario does: 0.9 m in front of the nearest intact pane,
         // facing it, aimed 1.3 m up (an oblique stand lets the glass shot's step-in swing the aim off the pane).
@@ -678,6 +834,73 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         game.GetType().GetField("pitch", Any).SetValue(game, pitch);
     }
 
+    /// <summary>A key is taken: its look+tap trigger left the map's registry, or the key itself is gone.</summary>
+    bool KeyGone(Collider key)
+    {
+        if (key == null) return true;
+        foreach (var c in MapColliders("keyByCollider")) if (c == key) return false;
+        return true;
+    }
+
+    /// <summary>Stands the player <paramref name="distance"/> m from a key, on the floor, looking at it, when the key is in plain view (KeyOnRay).</summary>
+    bool PlaceAtKey(Collider key, float distance)
+    {
+        var center = key.bounds.center;
+        var feet = PlayerRoot.position;
+        var body = (CharacterController)game.GetType().GetField("playerBody", Any).GetValue(game);
+        for (var k = 0; k < 16; k++)
+        {
+            var a = k * Mathf.PI / 8f;
+            var spot = new Vector3(center.x + Mathf.Sin(a) * distance, feet.y, center.z + Mathf.Cos(a) * distance);
+            var eye = spot + Vector3.up * 1.6f;
+            if (Physics.CheckCapsule(spot + Vector3.up * .35f, spot + Vector3.up * 1.6f, .25f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (Map.KeyOnRay(new Ray(eye, (center - eye).normalized), distance + 1.5f, PlayerRoot) != key) continue;
+            body.enabled = false;
+            PlayerRoot.position = spot;
+            body.enabled = true;
+            Physics.SyncTransforms();
+            var to = center - eye;
+            game.GetType().GetField("yaw", Any).SetValue(game, Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg);
+            game.GetType().GetField("pitch", Any).SetValue(game, Mathf.Atan2(-to.y, new Vector2(to.x, to.z).magnitude) * Mathf.Rad2Deg);
+            Note("stand", key.name + " at " + F(distance) + " m");
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Turns the view by <paramref name="degrees"/> of yaw (the crosshair leaves what it was on).</summary>
+    void TurnBy(float degrees)
+    {
+        var field = game.GetType().GetField("yaw", Any);
+        field.SetValue(game, (float)field.GetValue(game) + degrees);
+    }
+
+    /// <summary>
+    /// A point (pt) in the look zone, clear of USE: on the key's projected centre (<paramref name="off"/> 0), or
+    /// the nearest point from <paramref name="off"/> pt out (2 pt steps, up to the 22 pt finger radius) where the
+    /// finger's own ray misses the key (the finger-target case); <paramref name="off"/> returns the distance used.
+    /// </summary>
+    bool KeyTapPoint(Collider key, ref float off, out Vector2 points)
+    {
+        points = default;
+        var cam = (Camera)game.GetType().GetField("cam", Any).GetValue(game);
+        var L = controls.Layout;
+        var v = cam.WorldToViewportPoint(key.bounds.center);
+        if (v.z <= 0f) return false;
+        var center = new Vector2(v.x * L.Frame.x, v.y * L.Frame.y);
+        for (var r = off; r <= 22f + 1e-3f; r += 2f)
+        for (var k = 0; k < 8; k++)
+        {
+            var a = k * Mathf.PI / 4f;
+            var p = center + (off > 0f ? new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r : Vector2.zero);
+            if (!L.InLookZone(p) || FrontRoomsTouchLayout.Contains(L.UseCenter, L.UseHitRadius + 6f, p)) continue;
+            var hit = Map.KeyOnRay(cam.ViewportPointToRay(new Vector3(p.x / L.Frame.x, p.y / L.Frame.y, 0f)), 2.4f, PlayerRoot);
+            if (off > 0f ? hit == null : hit == key) { points = p; off = r; return true; }
+            if (off <= 0f) return false;
+        }
+        return false;
+    }
+
     /// <summary>The map's own registry of doors or windows (reflection: the harness reads, never changes, it).</summary>
     IEnumerable<Collider> MapColliders(string field)
     {
@@ -719,6 +942,39 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             if (canvas.name != "Handheld touch UI") continue;
             foreach (var t in canvas.GetComponentsInChildren<RectTransform>(true))
                 if (t.name == name) return t.anchoredPosition.y;
+        }
+        return float.NaN;
+    }
+
+    /// <summary>A desktop-HUD node's rect as a share of the HUD canvas (0..1, y up), by name; null when it is not built.</summary>
+    Rect? HudRect(string name)
+    {
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (canvas.name != "Minimal HUD") continue;
+            var root = (RectTransform)canvas.transform;
+            var r = root.rect;
+            foreach (var t in canvas.GetComponentsInChildren<RectTransform>(true))
+            {
+                if (t.name != name) continue;
+                var corners = new Vector3[4];
+                t.GetWorldCorners(corners);
+                var a = root.InverseTransformPoint(corners[0]);
+                var b = root.InverseTransformPoint(corners[2]);
+                return Rect.MinMaxRect((a.x - r.xMin) / r.width, (a.y - r.yMin) / r.height, (b.x - r.xMin) / r.width, (b.y - r.yMin) / r.height);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The z rotation (degrees, −180..180) of a touch-layer node, by name (the broken door's swing).</summary>
+    float NodeAngle(string name)
+    {
+        foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (canvas.name != "Handheld touch UI") continue;
+            foreach (var t in canvas.GetComponentsInChildren<RectTransform>(true))
+                if (t.name == name) return Mathf.DeltaAngle(0f, t.localEulerAngles.z);
         }
         return float.NaN;
     }
@@ -834,6 +1090,7 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             data.antialiasing = AntialiasingMode.None;
         }
         uiCam.targetTexture = uiTarget;
+        var convertedNow = false;
         foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
         {
             if (!canvas.isRootCanvas || canvas.renderMode != RenderMode.ScreenSpaceOverlay || converted.Contains(canvas)) continue;
@@ -842,6 +1099,14 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
             canvas.planeDistance = 1f;
             foreach (var t in canvas.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 5;
             converted.Add(canvas);
+            convertedNow = true;
+        }
+        // The game laid the phone HUD out against the batch window's overlay scale (about 0.8, so the 62 pt safe-area
+        // inset came out near 220 pt). On the profile's own pixels, as on the device (×3), lay it out again.
+        if (convertedNow)
+        {
+            Canvas.ForceUpdateCanvases();
+            game.GetType().GetMethod("ApplyMobileSafeAreaLayout", Any)?.Invoke(game, new object[] { true });
         }
     }
 

@@ -1,13 +1,13 @@
 {
  "schema": "frontrooms.kit-sheets.outlets/1",
- "generated": "2026-10-22T08:25:00-07:00",
- "by": "visual chat (游戏视觉), W2 office props workflow (office-props-w2), build stage, for 平面视觉 · 印刷与演示's PROP KIT sheets; Kit_Torchiere re-rendered in fix round 1",
+ "generated": "2026-10-22T13:45:00-07:00",
+ "by": "visual chat (游戏视觉), W2 office props workflow (office-props-w2), build stage, for 平面视觉 · 印刷与演示's PROP KIT sheets; all four kits re-rendered in fix round 2 (Kit_Torchiere also in fix 1)",
  "figma": "PROP KIT 2324:852 belongs to 平面视觉: K40 (Kit_Torchiere, 2328:1066) and K04 (Kit_TaskChair, 2325:947) need a re-render from these images; Kit_TaskChair_Navy and Kit_TaskChair_Armed are new kits. This workflow did not edit Figma.",
  "kits": {
   "Kit_Torchiere": {
    "kit": "Kit_Torchiere",
    "title": "Brass torchiere",
-   "lede": "A polished brass halogen uplight on a beaded, terraced base, frosted glass bowl, knurled dimmer on the cup. Unplugged.",
+   "lede": "A polished brass halogen uplight on a beaded, terraced base; a stepped frosted glass bowl whose lip shows above a thin brass band; a knurled dimmer on the right side of the cup. Unplugged.",
    "dims_mm": {
     "w": 390.0,
     "d": 390.0,
@@ -22,8 +22,8 @@
     {
      "name": "Prop_BrassPolished",
      "slot": "Prop_BrassPolished",
-     "label": "Polished lacquered brass (torchiere-only slot, smoothness 0.78; W2 fix 1)",
-     "hex": "#F2DE9E"
+     "label": "Polished lacquered brass (torchiere-only slot, sRGB 0.95/0.72/0.32, smoothness 0.72; W2 fix 2)",
+     "hex": "#F2B852"
     },
     {
      "name": "Prop_PlasticBlack",
@@ -34,7 +34,7 @@
     {
      "name": "Prop_FrostedGlass",
      "slot": "Prop_FrostedGlass",
-     "label": "Frosted (satin-etched) glass bowl, rendered opaque, no normal map; halogen tube (off) (W2 fix 1)",
+     "label": "Frosted (satin-etched) glass bowl, opaque, no normal map; outside lit by tilted normals (W2 fix 2); halogen tube (off)",
      "hex": "#EBE7DE"
     }
    ],
@@ -285,9 +285,9 @@
     1.689,
     0.39
    ],
-   "tris_lod0": 4392,
-   "tris_lod1": 1536,
-   "tris_lod2": 385,
+   "tris_lod0": 4488,
+   "tris_lod1": 1569,
+   "tris_lod2": 394,
    "materials": [
     "Prop_BrassPolished",
     "Prop_PlasticBlack",
@@ -298,7 +298,7 @@
     "Level 0",
     "Pile"
    ],
-   "era_note": "After Sears 1993 p.319 item N (66 1/2 in, terraced bowl, gold rim, beaded terraced brass base); kept a 300 W halogen tube (era lock row 76). Lamp off: no emissive slot. W2 fix 1 (2026-10-22): torchiere-only polished brass and frosted-glass slots, 4 mm sloped bowl steps, rounded base beads, domed knob.",
+   "era_note": "After Sears 1993 p.319 item N (66 1/2 in, terraced bowl, gold rim, beaded terraced brass base, switch on the side of the cup); kept a 300 W halogen tube (era lock row 76). Lamp off: no emissive slot. W2 fix 2 (2026-10-22): 6 bands and 5 ledges of 8 mm, glass lip above the band, knob on the cup's side, brass hue set after the grade.",
    "suggested_sheet_scale": 250
   },
   {
@@ -311,7 +311,7 @@
    ],
    "tris_lod0": 4634,
    "tris_lod1": 1620,
-   "tris_lod2": 416,
+   "tris_lod2": 420,
    "materials": [
     "Prop_PlasticBlack",
     "Prop_Chrome",
@@ -325,7 +325,7 @@
     "Office",
     "Pile"
    ],
-   "era_note": "After Sears 1993 p.359 chairs M/N (armless, contoured seat, pneumatic lift) and p.358 B 'gray nylon upholstery'.",
+   "era_note": "After Sears 1993 p.359 chairs M/N (armless, contoured seat, pneumatic lift) and p.358 B 'gray nylon upholstery'. W2 fix 2: 2 cm of chrome piston shows; LOD2 is a hand-built proxy.",
    "suggested_sheet_scale": 250
   },
   {
@@ -338,7 +338,7 @@
    ],
    "tris_lod0": 4634,
    "tris_lod1": 1620,
-   "tris_lod2": 416,
+   "tris_lod2": 420,
    "materials": [
     "Prop_PlasticBlack",
     "Prop_Chrome",
@@ -352,7 +352,7 @@
     "Office",
     "Pile"
    ],
-   "era_note": "Material variant of Kit_TaskChair (VARIANTS in task_chair.py); Sears 1993 colour '775 Royal navy'.",
+   "era_note": "Material variant of Kit_TaskChair (VARIANTS in task_chair.py); Sears 1993 colour '775 Royal navy'. W2 fix 2: 2 cm of chrome piston shows; LOD2 is a hand-built proxy.",
    "suggested_sheet_scale": 250
   },
   {
@@ -365,7 +365,7 @@
    ],
    "tris_lod0": 4484,
    "tris_lod1": 1792,
-   "tris_lod2": 447,
+   "tris_lod2": 428,
    "materials": [
     "Prop_PlasticBlack",
     "Prop_Chrome",
@@ -378,7 +378,7 @@
    "level": [
     "Office"
    ],
-   "era_note": "The pre-W2 Kit_TaskChair, renamed (Red 2026-10-21: keep the black armed one as a variant). Black armed chairs are the minority in 1993 catalogues (R03). Not a pile piece.",
+   "era_note": "The pre-W2 Kit_TaskChair, renamed (Red 2026-10-21: keep the black armed one as a variant). Black armed chairs are the minority in 1993 catalogues (R03). Not a pile piece. W2 fix 2: LOD2 is a hand-built proxy (whole star, casters, column, arms).",
    "suggested_sheet_scale": 250
   }
  ],

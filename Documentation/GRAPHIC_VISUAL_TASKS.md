@@ -78,8 +78,8 @@ Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
     - Figma section 3510:7478.
     - Reader template regenerated; 280/280 on every simulated route.
     - Both InDesign files rebuilt in rich black. Printable PDFs are in `Print/`; the 10-15 files are archived in `Print/_archive_REV-10-15-26/`.
+  - **Final InDesign build, 2026-10-22 13:46–13:49 (VL372, PASS):** Source Serif 4 Variable at opsz 10 (Figma's own optical size; Adobe Fonts' Caption never synced) and the cue-dot spacing fixed. Both forms break 17/17 serif lines as in Figma; reader 280/280. The 10:24 Text-cut files are in `Print/_archive_REV-10-22-26_text-cut/`.
   - **Next:**
-    - Caption has to reach InDesign. Red activated it, but it is still NOT_AVAILABLE locally. Then rebuild both forms with Caption and tune the "·" spacing in the cue label.
     - Print the new PDF on canary stock, fill it in pencil, scan it and run the reader (plan in the 印刷与演示 handoff).
 
 ## 1. In-game wallpaper cue: IN PROGRESS
