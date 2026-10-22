@@ -151,14 +151,17 @@ func sheet(level: String, tb: [String]) {
   for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }; text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1); x += w } }
 // The four lines (signed by 叙事 2026-10-22, research/narrative/40_floors_exit_tutorial_strings.md §3): white on safety red, x 20-288, y 214-259. Never RUN or HIDE as advice,
 // nothing that says darkness hides you, never "relay" (RELAY §9.4; tutorial 10_proposal §5.2).
+let WARDEN = "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM."
 func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT SECURITY DESK."]) {
   rect(20, 208, 268, 51, ink: .red)
   text("IN CASE OF ALARM", 26, 216.4, cap: 4.4, track: 0.5, ink: .white)
   stroke([(26, 219.4), (282, 219.4)], 0.35, ink: .white)
+  // Fine print (叙事 v1.1 §3, Red 2026-10-22 12:15 in the 叙事 chat): names a role only; not a numbered line.
+  text(WARDEN, 282, 216.4, cap: 3.6, track: 0.2, ink: .white, align: 2)
   func item(_ n: Int, _ x: Double, _ base: Double, _ lines: [String]) {
     text("\(n)", x, base, cap: 5.0, track: 0, ink: .white)
     for (i, l) in lines.enumerated() { text(l, x + 7, base + Double(i) * 7.6, cap: 5.0, track: 0.1, ink: .white) } }
-  tr("IN CASE OF ALARM")
+  tr("IN CASE OF ALARM"); tr(WARDEN)
   for (n, l) in [(1, ["WALK, DO NOT RUN."]), (2, ["CLOSE DOORS BEHIND YOU."]), (3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]), (4, line4)] { tr("\(n) " + l.joined(separator: " ")) }
   item(1, 26, 228, ["WALK, DO NOT RUN."])
   item(2, 26, 246, ["CLOSE DOORS BEHIND YOU."])

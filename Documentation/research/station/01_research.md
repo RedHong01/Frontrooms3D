@@ -113,7 +113,7 @@ So the station reads truest as a **post: a working place someone just left**, no
   - The EXIT door's plate says it should be unlocked during business hours.
 - **Why taking it calls the hunter.**
   - The key board is on the alarm panel as a device: lifting the key opens its contact. The panel drops the desk's non-emergency circuit, so the TV dies, and sends its responder to the device (`relay_pursuit/30_narrative.md` §1; tutorial `10_proposal.md` §4.1).
-  - The plate warns you honestly, in the building's voice.
+  - The plate warns you honestly, in the building's voice, if you stop to read it (`SILENT ALARM: REMOVAL SIGNALS PANEL`, §6).
 - **The night clock.**
   - The TV, the log and the phone all keep the same night: Friday 11-30-90 (`screens/30_screen_strings.md` §4.1).
   - The guard's last log entry stops before the station's 2 AM sign-off.
@@ -123,7 +123,7 @@ So the station reads truest as a **post: a working place someone just left**, no
 
 | Where | String | Note |
 |---|---|---|
-| Plate over the key board | `STAIR KEY` / `ALARMED: REMOVAL SOUNDS ALARM AT PANEL` | The building's honest warning, in the grammar of §3304(e). It tells the player that the take is an alarm before they do it: fair, and EGRESS-true. **Pending 教程设计/总控 agreement, since it touches the take beat (§4.7)** |
+| Plate over the key board | `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` | The building's honest warning, in the grammar of §3304(e). **Decided by 教程设计 2026-10-22 12:1x** (`tutorial/10_proposal.md` §4.7): kept, on the **close-reading layer only** (EXAMINE / E · READ, or within ~1 m; not legible from the counter or the first view); it stays after the take so the player can come back and read why; never glows, never changes, the same on every floor. **Wording v2 (12:1x):** the take makes no sound in the room (the set dies, the dispatch is silent), so v1's `ALARMED: REMOVAL SOUNDS ALARM AT PANEL` could read as "a bell will ring here". `SILENT ALARM` says nothing rings and someone is told; `SIGNALS PANEL` keeps the panel as the place that knows. "Silent alarm" was everyday security language well before 1990 [memory]. Type size: 平面视觉, under the EXAMINE readability rule |
 | Key cabinet door | `KEY CONTROL` / `ALL KEYS MUST BE SIGNED OUT` | Period key-control practice [search P52; memory] |
 | Sign-out sheet header | `DATE  KEY NO.  NAME  OUT  IN  INIT.` | The stair key's line is the last one, and its OUT is blank |
 | Post-orders binder spine | `POST ORDERS` | No company name (no brands) |

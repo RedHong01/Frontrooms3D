@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22s",
+ "updated": "2026-10-22x",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -231,7 +231,7 @@
    "name": "Warning stages",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "Walking distance to the Relay sets stages 0 to 2; drives the W1 lamps since 10-22.",
+   "summary": "Walking distance to the Relay sets stages 0 to 2; since 10-22 it drives the W1 lamps and holds the moving wallpaper on plain K00.",
    "owner": "Level design",
    "needs": [],
    "closed_note": null,
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "CLONE_ONLY",
    "status_class": "built",
-   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase. The motion pick is open again (C31).",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase; they never lie (C29) and never glow (A24). The motion pick is open again (C31). The ambient print motion they sit on is in main since 10-22.",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -321,7 +321,6 @@
    ],
    "closed_note": "Decided: yes (10-07); the exit is set (10-21)",
    "open_decisions": [
-    "C29",
     "C31"
    ]
   },
@@ -638,7 +637,7 @@
    "name": "Desk monitors",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "The ad plays on desk monitors today (since 10-14); decided 10-22: still screens in the maze, the ad only on the title and station TVs.",
+   "summary": "Ad_03 (WTCZ, since 10-22) plays on desk monitors today; decided 10-22: still screens in the maze, the ad only on the title and station TVs.",
    "owner": "Game visuals",
    "needs": [
     "L6",
@@ -653,15 +652,13 @@
    "name": "Exit and win",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "One locked EXIT per floor; the floor key opens it; a stairwell behind it leads one floor deeper; a run ends only when caught.",
+   "summary": "One locked EXIT per floor; the floor key opens it; a stairwell behind it leads one floor deeper (LEVEL 0, then B1, B2, ...); a run ends only when caught.",
    "owner": "Level design, Game visuals, Narrative",
    "needs": [
     "N6"
    ],
    "closed_note": "Decided: an EXIT per floor leads deeper (10-21)",
-   "open_decisions": [
-    "C28"
-   ]
+   "open_decisions": []
   },
   {
    "id": "N2",
@@ -698,7 +695,7 @@
    "name": "Plan legend",
    "status": "LIVE",
    "status_class": "in_game",
-   "summary": "The plan's legend; sheet A (picked 10-22) marks the stair as EXIT and holds the wall-arrow glow back until W6 ships.",
+   "summary": "The plan's legend; sheet A (picked 10-22) marks the stair as EXIT. A wall legend that returns with W6 must never show a glowing wall (A24).",
    "owner": "Graphic, Narrative",
    "needs": [
     "N1",
@@ -772,7 +769,7 @@
    "name": "Photosafety limits",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "No lamp may flash more than 3 times a second. Not yet true for ambient lamps: a Tall-hall Stutter lamp chatters at 9 flashes/s (small area); the limiter lands after the Alpha.",
+   "summary": "No lamp may flash more than 3 times a second. W1's dips pass (at most 2 a second, 1 with Reduce Flashing; 游戏视觉 10-22). Ambient Stutter lamps do not yet; the limiter lands after the Alpha.",
    "owner": "Level design",
    "needs": [
     "W1"
@@ -816,7 +813,7 @@
    "name": "Tutorial floor",
    "status": "DESIGN",
    "status_class": "not_built",
-   "summary": "Floor 1 teaches the loop: the station just past the EXIT, no locked inner doors, the hunter held until the key is taken, a lamp burst before any chase.",
+   "summary": "Floor 1 teaches the loop: the station just past the EXIT, no locked inner doors, the hunter held until the key is taken, then sent 22–30 m away so the lamps dip before you reach the EXIT.",
    "owner": "Level design, Tutorial design",
    "needs": [
     "N6",
@@ -825,7 +822,7 @@
     "W1",
     "I1"
    ],
-   "closed_note": "Decided: E1 (10-22)",
+   "closed_note": "Decided: E1; first send at 22–30 m (10-22)",
    "open_decisions": []
   }
  ],
@@ -1618,7 +1615,7 @@
    "question": "What does taking the station key do?",
    "recommendation": "",
    "status": "answered",
-   "answer": "Kills the TV (its own sound, no CALLED tick) and sends the hunter to the station: a Noise and Hunt on v1, a device call on v2; it arrives at least 42 m from the player",
+   "answer": "Kills the TV (its own sound, no CALLED tick) and sends the hunter to the station: a Noise and Hunt on v1, a device call on v2; it arrives at least 42 m from the player (Floor 1's first send: C32, 10-22)",
    "date": "2026-10-22"
   },
   {
@@ -1698,16 +1695,20 @@
    "question": "How are floors numbered on the signs, the HUD and the CAUGHT line?",
    "recommendation": "LEVEL 0 for the start floor, then B1, B2, ... going down",
    "rationale": "1990 US stair and elevator signs used B1, B2 for floors below, and it stays clear of the Backrooms wiki's numbered levels. Counting up is the alternative. One FloorLabel(floor) function makes either a one-place change; until Red answers, the strings use B. Asked by 叙事设计 in its own chat on 2026-10-22: record the answer only from Red's words there.",
-   "status": "open"
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "LEVEL 0 for the start floor, then LEVEL B1, B2, ... going down (Red in the 叙事设计 chat: \"全部按推荐\")"
   },
   {
    "id": "C29",
    "system": "W6",
    "ref": "EGRESS forged FLOW (Red ON, 10-03, §15 Q4)",
    "question": "Keep forged FLOW from tier 4, now that the arrows and the TV beacon must never pull two ways (A20)?",
-   "recommendation": "Retire it; keep the other occupant as flavour only (OCCUPANT LOAD 2). Nothing is built, so it costs nothing",
+   "recommendation": "Retire it. Nothing is built, so it costs nothing",
    "rationale": "Red turned it ON on 10-03 (research/wallpaper_motion/20_level_design_phosphor.md §15 Q4; mark M10 in 30_narrative_phosphor.md): from tier 4 a forged FLOW chevron, glowing under a lit lamp, leads into a dead end. Since 10-22 the arrows lead to the station and then the EXIT (C24, A20), and RELAY §9.6 keeps tiers from making the hints worse. Asked by 叙事设计 in its own chat on 2026-10-22: record the answer only from Red's words there.",
-   "status": "open"
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "Retired: the arrows always tell the truth. The \"other occupant\" flavour frame is gone too, since screens v2.1 made the desk screens text-free; the scratch-throughs (M9) are cut and v1 has no T4 figure layer (Red in the 叙事设计 chat: \"全部按推荐\")"
   },
   {
    "id": "C30",
@@ -1741,6 +1742,16 @@
    "answer": "Keep E·1. A playtest question asks what the eye meant; if testers read it as being seen, switch to E·3 (parameters only)"
   },
   {
+   "id": "A24",
+   "system": "W6",
+   "ref": "Narrative Q4 (wall glow)",
+   "question": "Do the walls glow in a blackout (glow ink A), or not (B)?",
+   "recommendation": "",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "B: the walls never glow. In a blackout only the placard and the EXIT sign glow, and wall cues read only where there is light. Asked again after the premise was corrected (glow A no longer hides FLOW on the A + M4 + V1 geometry, VL350); kept for cost and simplicity"
+  },
+  {
    "id": "C31",
    "system": "W6",
    "ref": "Wall-cue motion (动画和动态图形模型技术; previews in Research/week03/wallpaper_cue/)",
@@ -1748,6 +1759,17 @@
    "recommendation": "A + M4 + V1 (the wallpaper line's pick)",
    "rationale": "C08 (build the arrows) stays yes. Red's 10-07 picks were scale-fit A, staggered V1, a 30° ratchet, no dark gate and turns only on WebGL. On 2026-10-22, asked to confirm A + M4 + V1 (preview cue_ingame_preview_v2_corridor.mp4), Red chose \"再看一次其他方案\" (look at the other options again) in the 动画和动态图形模型技术 chat. That line re-sent the previews and asks Red in its own chat: record the answer only from Red's words there. Where the arrows point is settled separately (C24 = A + A20).",
    "status": "open"
+  },
+  {
+   "id": "C32",
+   "system": "N7",
+   "ref": "A14/A15",
+   "question": "Floor 1: the first lamp burst comes after a prompt player is through the EXIT. Send the first Relay closer?",
+   "recommendation": "Yes: Floor 1 first send only, 1 s after the take, unseen, just inside stage 1 (22 to 30 m)",
+   "rationale": "Today's rule (A14, ≥ 42 m, 3 s after the take) gives a player who walks straight back no W1 on Floor 1: the Relay hunts at 2.6 m/s and the player walks at 3.2, so W only closes while they stand still. From 42 m it needs about 4.6 s to reach the 30 m entry, so the first burst comes 7.9 s or more after the take, while the walk back (2–6 cells) plus the unlock (1.55 s) is done by about 3.5–7.5 s. Sent at 22–30 m after 1 s, stage 1 starts on arrival and the first burst falls 1.3–2 s after the take. That is honest, because it really is near; the Floor 1 grace still bars a chase before a burst. It breaks v2's 42 m Arrive rule for this one send only. Alternatives: a station farther past the EXIT does not help (the gap never closes while the player walks); keeping 42 m and extending the grace to Floor 2 teaches W1 by the placard only; a scripted burst on the take would make the lamps lie.",
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "1: Floor 1's first send only, 1 s after the take, unseen, at 22–30 m, on the station's far side from the EXIT and never within 2 cells of the walk back (fallback 18–34 m, then ≥ 14 cells, logged); the station keeps ≥ 2 Steady lamps by its entrance"
   }
  ],
  "landing_order_proposed": [

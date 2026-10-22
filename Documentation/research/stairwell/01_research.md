@@ -14,6 +14,8 @@ Workflow `c22-stairwell-look`, stage 1 (research). Written 2026-10-22 by 游戏�
 
 Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is in `media_candidates.md`.
 
+**Revised 2026-10-22 in the fix stage** (`50_critic_fixes.md`): the alarm condition (§0.1), the two-level stair and 1.12 m flights (§0.2, §0.4, §3.3–3.5), the Kane timecode and the withdrawn stair claim (§0.10, §2.1), the NPS and ADA wording (§1.1, §1.5), the down-gate wording (§1.1, §3.5) and the arrival-door recommendation (§3.5, §3.6).
+
 ---
 
 ## 0. The findings that matter for the look
@@ -21,18 +23,19 @@ Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is
 1. **The game's mechanic is a real 1990 code condition.** Stair doors locked on the stair side, with signs saying where re-entry is possible, were legal and common. NBS (1979) describes people "locked inside the stairwell and forced to descend" (S3).
    - NYC Local Law 5 (1973) required re-entry signs inside each stair (S4).
    - UBC 1991 requires stair doors locked from the stair side to unlock from a control station. Its existing high-rise appendix asks for a sign reading `ACCESS ONTO FLOOR THIS LEVEL` (S1).
-   - So **"the door locks behind you" and "the only way is down" need no fiction.** A `NO RE-ENTRY` sign on the stair side of the exit door explains it.
+   - So **"the door locks behind you" and "the only way is down" need almost no fiction.** A `NO RE-ENTRY` sign on the stair side of the exit door explains it.
+   - **The one condition (critic era 10):** under UBC §1807(j) locked stair doors in a high-rise must all unlock on a signal from the central control station, and NFPA 101-1988 asks for re-entry or automatic release [memory]. EGRESS makes the Relay the fire-alarm responder, so a code-true 1990 stair would unlock during an alarm. The fiction needs "no alarm signal reaches the doors" or "the control station is dead" (a flag for 叙事).
 2. **A code-true 1990 switchback stair fits exactly into 1 × 2 map cells** (3 × 6 m on centre lines, 2.84 × 5.84 m clear).
    - Floor to floor 3.50 m: 20 risers of 175 mm and 2 flights of 9 treads × 280 mm. That meets UBC 1991's 7 in / 11 in.
-   - Flights 1.22 m wide, which meets the 44 in minimum, with a 0.40 m well.
+   - Flights 1.12 m wide (44 in, the minimum) with a 0.60 m well (fix stage; stage 2 had 1.22 m and 0.40 m).
    - Landings 1.40–1.66 m deep.
    - Both doors end up in the same end wall, one directly above the other (§3.3).
 3. **Map doors are centred on a 3 m cell edge, so a stair door can only sit on the landing's end wall.** A door in the long wall would open over the steps, which UBC 3304(i)/(j) forbids.
-   - An end-wall door opens straight onto the guard and the well. The first view in is down the shaft. That is the signature image.
-4. **Build the shaft so it repeats every floor.** Every landing is identical except its floor sign.
-   - The game can then shift the player by one floor height at any moment without the player noticing.
-   - Or 关卡设计 can descend for real. The look supports both (§3.4).
-   - The floor sign carries all the progress. The Exit 8 counter sign proves this (S31).
+   - An end-wall door opens straight onto the guard and the well. The first view in is down to the far landing.
+4. **Build each stair for two levels: the exit floor and the far floor** (fix stage; stage 2 proposed an endlessly repeating shaft).
+   - A slab closes the shaft over the exit landing and the far landing is the shaft floor, as 叙事's stair ID string says (`LEVELS 0 TO B1`, `NO ROOF ACCESS`). No up flight, no gate, nothing in the well below.
+   - The two landings are identical except their floor sign, so the game can still rebase or descend for real (§3.4).
+   - The floor sign carries the progress. The Exit 8 counter sign shows the device (S31).
 5. **The period door kit already exists in main.** `Kit_DoorLeaf_Steel` (no lite), `Kit_DoorFrame_Steel`, `Kit_DoorCloser_*`, `Kit_ExitDevice_Crossbar` (bar at 1.0 m, inside UBC's 30–44 in), and `Kit_ExitSign` (6 in letters, 3/4 in stroke).
    - **Use the no-lite leaf on the exit door.** Through a lite the player would watch the old map being released.
    - The C23 lit sign over the door fits Standard zones (2.9 m). In Low zones (2.4 m) it ends at 2.392 m, which breaks the 0.05 m ceiling clearance.
@@ -48,13 +51,13 @@ Source IDs (S1…) are in `SOURCES.md`. No media was downloaded. Wanted media is
    - **No** photoluminescent stripes, no tactile/Braille signs, and no ISO running man: all are later or foreign.
 8. **Light, cues and photosafety.**
    - Exits must be lit at ≥ 1 fc (10.8 lx) at the floor whenever the building is occupied (UBC 3313). A dark stairwell is a code violation, which agrees with "darkness is never cover".
-   - Real stair lamps fail one at a time. BSS 120 found 83 % of surveyed stairs below 10 fc (residential sample). So a dim, uneven but never dark shaft is honest.
+   - Real stair lamps fail one at a time. (BSS 120's "83 % of stairs below 10 fc" is a 1970s residential sample and does not back a dim office stair; the fix stage stopped using it.) The renders hold the walk path at about one stop under the maze.
    - Any lamp change must stay ≤ 3 changes/s and follow Reduce Flashing.
 9. **Two cross-line flags.**
    - (a) **Sound.** Red's 10-03 rulings (no panic-bar sound, no closer layers) were about the wooden map doors. This steel stair door is the one door where crossbar, closer and latch sounds are real (freesound 341176 is a real steel stairwell door). Ask 声音设计, without re-asking C22.
    - (b) **Strings.** Floor numbering for "deeper" (12, 11, 10… vs B1, B2…), the `NO RE-ENTRY` wording and the stair letter are strings. They belong to 叙事 and 平面视觉. I give only the period facts.
 10. **Canon gives the device, not a design.**
-    - Kane Pixels ties every change of look to something you can name. In *Found Footage*, a concrete stair leads up to a push-bar door, and opening it hard-cuts back to Level 0 (6:44–6:57, frames on disk).
+    - Kane Pixels ties every change of look to something you can name. In *Found Footage* (368–416 s, the ledger's times; frames on disk), a grey back-of-house of corridors and **push-bar doors** ends in a door that hard-cuts back to Level 0. **The frames on disk show no stair** (critic era 2); a stair in that sequence is unconfirmed until the clip is approved and checked.
     - Fandom Level 1 is entered "by walking up a flight of stairs". Fandom Level 4 has "stairwells that loop back to the same floor".
     - FrontRooms' own twist: every stair goes one floor deeper and never back. Do not copy SCP-087's 13-step semicircular landings, Level !'s red chevron corridor or Exit 8's tiled subway.
 
@@ -78,8 +81,8 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
 | Landings at doors | width ≥ stair or door, whichever is greater. Length ≥ 44 in in the direction of travel. A fully open door may not reduce a required dimension by more than 7 in (OCR damaged, wording reconstructed). With ≥ 50 occupants, a door in any position may not cut the landing below half its width (§3304(j)) | ≥ 1,118 mm; 178 mm | — | the leaf must clear the landing when open |
 | Floor at doors | a floor or landing on each side of every door, level (§3304(i)). **A door may not swing over a step** (implied for commercial; explicit only in the R-3 exception) | — | — | end-wall doors only (§3.3) |
 | Headroom | **6 ft 8 in**, measured vertically from the nosing line to the soffit (§3306(o)) | 2,032 mm | — | soffit = the underside of the flight above |
-| Handrails | both sides (one if < 44 in wide). Top **34–38 in** above the nosings. Continuous. At least one extends **12 in** beyond the top riser and 12 in beyond the bottom riser. Ends returned or on newels. Grip **1½–2 in**. **1½ in** clear of the wall. Intermediate rail per 88 in of width (§3306(i)) | 864–965 mm; 305 mm; 38–51 mm; 38 mm | NBS residential survey: mean rail height 31 in (SD 5.0), so many older rails were low (S3) | Ø 42 mm (1.66 in) pipe is a common 1½ in NPS pipe [ESTIMATE] |
-| Guards | open sides more than 30 in above the floor: **42 in** guard; along flights the guard may be at handrail height. Infill: a **4 in sphere** may not pass. Commercial/industrial areas not open to the public: **12 in sphere**. The triangle at riser/tread: 6 in (§1712(a)) | 1,067 mm; 102 / 305 / 152 mm | — | office stair = pickets ≤ 4 in; back-of-house stair = two-rail pipe guard |
+| Handrails | both sides (one if < 44 in wide). Top **34–38 in** above the nosings. Continuous. At least one extends **12 in** beyond the top riser and 12 in beyond the bottom riser. Ends returned or on newels. Grip **1½–2 in**. **1½ in** clear of the wall. Intermediate rail per 88 in of width (§3306(i)) | 864–965 mm; 305 mm; 38–51 mm; 38 mm | NBS residential survey: mean rail height 31 in (SD 5.0), so many older rails were low (S3) | 1.660 in OD (42 mm) is **1¼ in NPS**; 1½ in NPS is 1.900 in OD (48 mm). Both are inside the grip (corrected in the fix stage). The renders: A 42 mm, B and C 48 mm, all ends returned to the wall on flanges |
+| Guards | open sides more than 30 in above the floor: **42 in** guard; along flights the guard may be at handrail height. Infill: a **4 in sphere** may not pass. Commercial/industrial areas not open to the public: **12 in sphere**. The triangle at riser/tread: 6 in (§1712(a)) | 1,067 mm; 102 / 305 / 152 mm | — | the floor's one EXIT stair is open to the public, so the 12 in exception does not apply: every guard closes under 4 in (pickets, mesh or balusters) |
 | Doors | at least 3 ft × 6 ft 8 in door, 32 in clear; leaf ≤ 4 ft (§3304(f)(g)) | 914 × 2,032; 813; 1,219 mm | trade standard leaf 3070 = 36 × 84 in (0.914 × 2.134 m), SDI 111 (LEVEL_MODULE_SPEC §3) | our map leaf 0.98 × 2.08 |
 | Swing | in the direction of exit travel for ≥ 50 occupants or hazardous areas. Latch releases at 15 lbf, door starts at 30 lbf, opens fully at 15 lbf. No key or special knowledge from the inside (§3304(b)(c)) | 67 / 133 N | — | the player pushes into the stair from the floor |
 | Panic hardware | when fitted: UL 305 (UBC Std 33-4). Bar **30–44 in** above the floor. Unlatches at ≤ 15 lbf (§3304(d)) | 762–1,118 mm | — | `Kit_ExitDevice_Crossbar` at 1.000 m ✓ |
@@ -89,11 +92,11 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
 | Fire-door hardware | a closing device on every fire assembly. ≥ 2 hinges, plus one per extra 30 in over 60 in, so **3 hinges on a 7 ft leaf**. Ball-bearing hinges. Automatic latch (§4306(f)) | — | — | 3 hinges, visible closer |
 | Glazing in fire doors | none in 3-hour doors. In 1½-hour and 1-hour doors: **≤ 100 in²** per leaf, wired glass (§4306(g), OCR damaged) | ≤ 645 cm² | `Kit_DoorLeaf_SteelLite` glass slab 0.119 × 0.652 m = 0.0776 m² ≈ **120 in² ✗**. That is over the limit for a 1-hour or 1½-hour stair door, though fine for ¾-hour doors (≤ 1,296 in², §4306(g)). A stair-door lite would need about 0.10 × 0.645 m | no lite on the exit door. On the far door only if resized (§3.5) |
 | Under the stair | no enclosed usable space, and the open space under it may not be used for anything (§3309(f)) | — | — | commonly broken in practice: storage on landings [ESTIMATE]. A period-true "violation" pile |
-| Basement barrier | the stair may not continue below the grade-level exit without an approved barrier (§3309(e), §3306(h)) | — | — | **a real-world gate across the downward flight** (§3.5) |
+| Basement barrier | the stair may not continue below the grade-level exit without an approved barrier (§3309(e), §3306(h)) | — | — | in code it marks the street floor. Our stair ends at the far floor, so no barrier is built; if a stair ever continued below, a gate there would be a **borrowed** discharge-level device, not the real-world one (§3.5) |
 | Roof | in 4+ story buildings one stair goes to the roof, or the top of the shaft has a 16 ft² hatch (§3306(l)(n)) | 1.49 m² | — | sign content "ROOF ACCESS / NO ROOF ACCESS" |
 | Standpipe | a Class I outlet at **every floor-level landing** of every required stairway, where standpipes are required (§3805(c), Table 38-A) | — | — | the red riser and valve repeat each floor: a strong vertical rhythm |
 
-**ADA marker.** The ADA became law in July 1990. ADAAG followed in July 1991. Tactile and Braille room signs, sloped risers with no open risers, and 12 in + one tread rail extensions are therefore **after** our date [memory]. A 1990 stair shows none of them.
+**ADA marker** (reworded in the fix stage, critic era 12). The ADA became law in July 1990, ADAAG followed in July 1991, and Title III covers new buildings first occupied after 26 January 1993, inside our ≤ 1993 lock. Tactile and raised signs and 12 in + one tread rail extensions were already in ANSI A117.1-1980 and UFAS (1984), and some states adopted them in the 1980s [memory, verify against UFAS 4.9.4 and 4.30]. So: **rare in private offices before 1992; we show a pre-1992 private building**, with no tactile signs. Our wall rails still carry the 12 in extensions, which UBC 1991 §3306(i) asks for anyway.
 
 ### 1.2 Construction
 
@@ -112,7 +115,7 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
   - Looking down it you see guard after guard receding. This is the Vertigo image (§2.2).
 - **Handrails and guards.** Steel pipe or tube, welded or with flanges. The guard is on the well side, the wall rail on brackets.
   - Office public stairs: vertical pickets (4 in rule). Service and back-of-house stairs: top rail plus mid-rail(s) (12 in rule) (§1712).
-- **Services on the walls.** The standpipe riser (red), sprinkler branch with an upright head per landing, EMT conduit to the fixtures and the emergency unit, and a junction box ≤ 16 in² (§3309(c)).
+- **Services on the walls.** The standpipe riser (red), sprinklers (in a noncombustible shaft NFPA 13-1989 asks for heads only at the top and under the first landing above the bottom [memory, UNVERIFIED]; the renders put one head at the top), EMT conduit to the fixtures and the emergency unit, and a junction box ≤ 16 in² (§3309(c)).
   - These are the only "objects" a real shaft holds.
 
 ### 1.3 Finishes and wear (period, US)
@@ -163,7 +166,7 @@ The UBC 1991 is the binding text read here (S1, CC0 scan, Chapter 33 pp. 632–6
 | Use stairs | elevator landings | "IN CASE OF FIRE, USE STAIRS UNLESS OTHERWISE INSTRUCTED", red letters ≥ ½ in on white, with a diagram | NYC LL5 [read] S4 (already used by `research/placard`) |
 | Low-level exit signs | **hotels only**: exit corridors serving guest rooms | sign bottom **6–8 in** above the floor, within 4 in of the door frame | UBC 3314(e) [read] S1 |
 | `NO RE-ENTRY` | stair side of locked doors | common trade wording on stock signs [ESTIMATE]; the code asks only that re-entry be signed | — |
-| Tactile, Braille, photoluminescent | — | **post-1990.** ADAAG tactile signs date from July 1991. Photoluminescent stair markings followed NYC Local Law 26 of 2004 [memory] | do not use |
+| Tactile, Braille, photoluminescent | — | **rare in private buildings before 1992** (ADAAG July 1991; earlier ANSI A117.1-1980 / UFAS 1984 [memory]). Photoluminescent stair markings followed NYC Local Law 26 of 2004 [memory] | do not use |
 
 Common 1990 forms [ESTIMATE]:
 - a stencilled painted numeral, 12–24 in high, on the CMU beside the door;
@@ -214,20 +217,20 @@ For FrontRooms (Level 0 and Office themes): **office core stair**, with back-of-
 
 | Source | What happens | What works | Do not copy |
 |---|---|---|---|
-| Kane Pixels, *The Backrooms (Found Footage)* (2022-01-07), 4:44–5:56 and 6:00–6:57 [read via `level_transitions/01_ip_research.md` §3.1; frames on disk `room_visuals/images/run_research_r05_kane_backofhouse.jpg`, `run_ref_kane_ff_0398_fire_exit.jpg`] | A far lit wooden stair climbs into white rooms (a new look entered by stairs). Later: a grey concrete back-of-house, a "Fire exit · Keep clear" sign over a grey door with a **push bar**, a **dark concrete stair** up to it, and the door opening hard-cuts back to Level 0 | Each change of look is tied to an object you can name (a stair, a fire door). The push-bar door is the cleanest cut in the series | The UK/ISO green running-man signs (not 1990 US). The exact service-tunnel composition |
+| Kane Pixels, *The Backrooms (Found Footage)* (2022-01-07), back of house **368–416 s** (the ledger `room_visuals/SOURCES.md`); the earlier lit wooden stair 4:44–5:56 [read via `level_transitions/01_ip_research.md` §3.1; frames on disk `room_visuals/images/run_research_r05_kane_backofhouse.jpg`, `run_ref_kane_ff_0398_fire_exit.jpg`] | A far lit wooden stair climbs into white rooms (a new look entered by stairs). Later: a grey concrete back-of-house, a sign over a grey door with a **push bar**, and the door opening hard-cuts back to Level 0. **The on-disk frames show corridors and push-bar doors, no stair** (fix stage) | Each change of look is tied to an object you can name (a stair, a fire door). The push-bar door is the cleanest cut in the series | The UK/ISO green running-man signs (not 1990 US). The exact service-tunnel composition |
 | Backrooms Fandom, Level 1 [read via `level_transitions/01_ip_research.md` §6.2] | Entered from Level 0 "by walking up a flight of stairs"; left by stairs, hallways or an unlocked door | The vertical move is canon | — |
 | Backrooms Fandom, Level 4 "The Abandoned Office" [read via `office_and_film/03_ip_canon.md` §2.2] | "Multiple stairwells that loop back to the same floor"; emergency exits | Office levels own the stairwell | **Ours never loops back**: every stair goes one deeper |
 | Backrooms wikidot, Level 4 [read, same] | "Exits are office-style stairwells and occasional elevators" | Same | — |
 | *Inside the Backrooms* (2022), 1:51:50–1:52:02 [read via `01_ip_research.md` §7] | Dark corridor, then a stairwell, then the office | The stair as the joint between levels | — |
 | *Escape the Backrooms*, Level ! "Run For Your Life!" [on disk: `room_visuals/images/run_ref_etb_levelbang_0094.jpg`] | A ceiling-hung "‹EXIT›" with both chevrons over a red troffer row in a chase corridor | EXIT as the goal of a chase | The red corridor and chevrons. C23's later chevron signs must use our own 1990 grammar (NISTIR 4532 chevrons, S5) |
-| *The Exit 8* (Kotake Create, 2023) [on disk `Research/week01/assets/clips/EX8_*`; `01_ip_research.md` §7] | Each loop ends round a corner and down a stair. A numbered exit sign shows how far you are | **A number on a sign is the whole progress UI.** The stair hides the reset | The tiled subway, the yellow tactile strip, its sign graphics |
+| *The Exit 8* (Kotake Create, 2023) [on disk `Research/week01/assets/clips/EX8_*`; `01_ip_research.md` §7] | Each loop ends round a corner and down a stair. A numbered exit sign shows how far you are. A 2023 Japanese subway, not a 1990 US reference | **A number on a sign is the whole progress UI.** The stair hides the reset | The tiled subway, the yellow tactile strip, its sign graphics |
 | *POOLS* (Tensori, 2024), 54:42–54:56 [read via `01_ip_research.md` §7] | Ladder, stairs up, then a new tiled space with light from above | Light from the next space spills down the stair first | — |
 
 ### 2.2 Film and TV
 
 | Title (year) | Scene | What works | Read |
 |---|---|---|---|
-| *Vertigo* (Hitchcock, 1958) | Bell-tower stair. The look down the well with the dolly zoom | The **well** as vertigo: repeated rails shrinking into depth. Our 0.40 m well gives this view on entry | [memory] |
+| *Vertigo* (Hitchcock, 1958) | Bell-tower stair. The look down the well with the dolly zoom | The **well** as vertigo: repeated rails shrinking into depth. **Not ours:** a two-level stair with a 0.60 m well shows one landing below, not an endless shaft (the claim was dropped in the fix stage) | [memory] |
 | *Jacob's Ladder* (Lyne, **1990**) | Subway: Jacob finds the station exit locked. He climbs the stairs, finds the exits locked, crosses the tracks and is nearly hit by a train | Era-exact. **A locked exit forces a worse route.** It is the dread of the `NO RE-ENTRY` door | [search] S20 (Wikipedia, Looper) |
 | *Die Hard* (McTiernan, **1988**) | Nakatomi Plaza, a late-1980s office tower partly under construction. McClane moves floor to floor by the fire stairs | The office fire stair as the hidden spine of the building: bare concrete, steel doors | [memory] |
 | *[REC]* (Balagueró & Plaza, 2007) | A sealed Barcelona apartment block. The stairwell round a central well is the only way between floors. The camera light looks up and down the well | A sealed building turns the stair into the only path. "Up" and "down" both feel wrong | [memory]; trailer listed [search] S21 |
@@ -293,8 +296,9 @@ Footprint 1 × 2 cells: 3 × 6 m on centre lines, **2.84 × 5.84 m clear**. Swit
 | Floor to floor | **3.50 m** (alternative 3.60 m = 22 × 163.6 mm, 11 per flight) | — |
 | Risers | 20 × **175 mm**, 10 per flight | ≤ 178 ✓ |
 | Treads | 9 per flight × **280 mm** = 2.52 m run | ≥ 279 ✓ |
-| Flight width | **1.22 m** each, wall face to guard | ≥ 1,118 ✓ |
-| Well | **0.40 m** between guards | — (a wider well gives a better view down) |
+| Flight width | **1.12 m** each, wall face to guard (fix stage; was 1.22) | ≥ 1,118 ✓ |
+| Well | **0.60 m** between guards (was 0.40) | — |
+| Levels | **two**: the exit floor and the far floor; a slab over the exit landing, the far landing is the shaft floor | §3306(o): only one stair needs to reach the roof |
 | Landings | 2 per floor, each 2.84 wide × **1.66 m** deep (2.52 + 2 × 1.66 = 5.84) | ≥ width 1.22 ✓; ≥ 44 in ✓; the leaf (0.98) clears inside 1.66 ✓ |
 | Headroom | about 3.25 m under the flight above (3.50 − 0.25 structure) | ≥ 2.032 ✓ |
 | Guard | 1,067 mm at landings and the well; rail 864–965 mm along flights; pickets ≤ 100 mm apart | ✓ |
@@ -315,20 +319,17 @@ The far door, by code, also swings into the stair (it is the new floor's stair d
   - The new map stays at y 0.
   - The look needs: identical landings except the floor sign; no unique decals across the period; geometry visible two floors up and down through the well, built as instances.
 
-The look delivers (B)'s periodicity in both cases. It is also what makes the well read as endless.
+The two landings are identical except their floor sign, so either way works. The stair no longer repeats down the well (fix stage).
 
 ### 3.5 Things the look must add (proposal; 游戏视觉 builds, 关卡设计 places)
 
-1. **Barriers.**
-   - A period **barrier gate** across the flight below the far-door landing. UBC 3309(e) requires one at the grade level, so the device is real.
-   - A gate or a "NO ROOF ACCESS" landing above the exit landing.
-   - Only one door works. The well still shows flights below.
-2. **Signs on the stair side of each door**: floor number, stair letter, re-entry / `NO RE-ENTRY`, and a stencilled numeral on the CMU. The type is 平面视觉's.
+1. **No barriers needed** (fix stage). The stair serves two levels: a slab over the exit landing (`NO ROOF ACCESS` on the ID sign) and the far landing as the shaft floor. A gate across an up flight is not a 1990 device (critic era 3). If a stair ever continued below, a down-gate would be a **borrowed** discharge-level device (§3309(e) means the street floor), with a mid-grey plate.
+2. **Signs on the stair side**: the stair ID sign on the **wall beside the latch jamb** at 5 ft (§3306(p)), re-entry / `NO RE-ENTRY` on the leaf (LL5), a stencilled numeral on the CMU (hinge side). Only the far door has pull trim and a floor-access plate. The type is 平面视觉's.
 3. **Light.** One twin-head battery unit and one normal fixture per landing. Steady, ≥ 1 fc. A deeper floor may have one more dead normal lamp, never a dark landing, and changes stay ≤ 3 per second.
 4. **Exit door kit.** C23 recommendation: `Kit_DoorLeaf_Steel` (no lite), `Kit_DoorFrame_Steel`, `Kit_DoorCloser_*`, and `Kit_ExitDevice_Crossbar` on the push face, with the lit `Kit_ExitSign` over it, locked to LIT.
-   - **Arrival door on the new floor** (seen from the new floor after it locks): a proposal is an unlit `Kit_ExitSign_Dead` over it. LIT means the way on, DEAD means the way you came.
-   - This keeps "one EXIT per floor" readable, since a real stair door is also an exit. It needs 系统设计 and 平面视觉 to agree.
-5. **Standpipe riser and valve per landing, conduit, sprinkler head.** These are the real objects of a shaft and carry the vertical rhythm.
+   - **A13:** two states on the push face, LOCKED (a chain round the crossbar to a wall eye bolt, a padlock) and UNLOCKED (the chain on the floor); the sign stays LIT in both (`10_directions.md` §1.2).
+   - **Arrival door on the new floor:** **no** dead EXIT sign (changed in the fix stage; both critics): a DEAD `Kit_ExitSign` still reads "EXIT", puts a second EXIT where the player starts and reads as decay. A non-EXIT stair-ID or floor plate goes on its floor side; strings 叙事, art 平面视觉.
+5. **Standpipe riser and valve at both door landings, conduit, one sprinkler head at the top.** These are the real objects of a shaft.
 
 ### 3.6 Open questions for 关卡设计 (one message, with recommendations)
 
@@ -336,7 +337,7 @@ The look delivers (B)'s periodicity in both cases. It is also what makes the wel
 2. A 1 × 2-cell footprint, 3.50 m floor to floor, doors in the end wall? Recommendation: yes.
 3. Exit door only on a Standard-zone wall? Recommendation: yes. The EXIT sign fits, and Tall zones are glass-only anyway.
 4. Far door: pull toward the player (true to code) or push? Recommendation: pull, if the existing pull give-way handles it.
-5. Does the arrival door get `Kit_ExitSign_Dead` on the floor side? Recommendation: yes, with 系统设计 / 平面视觉.
+5. Does the arrival door get `Kit_ExitSign_Dead` on the floor side? Recommendation (revised): **no**; a stair-ID or floor plate instead.
 
 ---
 
@@ -357,6 +358,7 @@ The look delivers (B)'s periodicity in both cases. It is also what makes the wel
 1. NFPA 101-1988 stair numbers (§5-2.2: 7/11, 44 in, 6 ft 8 in, 12 ft; stair ID for 5+ stories; re-entry). From memory and consistent with UBC 1991, but **not read**. The *Life Safety Code Handbook* 1988 exists on archive.org only as a lending copy (S7).
 2. BOCA National Building Code/1990 (11th ed.): not read (lending copy, S8). Its commercial stair values may match UBC. The only BOCA fact found is about residential stairs (S10).
 3. UBC 1988 versus 1991 differences in §3306: not checked. The older 7½ in / 10 in values are from a California Title 24 text [search].
-4. Typical 1990 office floor-to-floor (3.66–4.11 m) and stair-light fixture types: ESTIMATE.
+4. Typical 1990 office floor-to-floor (3.66–4.11 m) and stair-light fixture types: ESTIMATE. A 3.96 m option that fits 1 × 2 cells (24 × 165 mm risers, 11 × 280 mm treads, 1.38 m landings) is passed to 关卡设计 (`10_directions.md` §1.1).
+7. The 1991 Hamlet, NC poultry-plant fire as the period case of chained exits: [memory], verify before quoting.
 5. Film and TV scenes marked [memory]: check times before any frame is used.
 6. Wording such as `NO RE-ENTRY` and "FIRE DOOR · KEEP CLOSED": common stock wording, ESTIMATE. The strings are not mine.

@@ -48,6 +48,28 @@ Everything lands **after the Alpha**. Line numbers are main at 2026-10-22 09:3x 
 
 **A6. The `Flash()` card.** `contextText` (:2117) loses its dark card on desktop: paper text with the 1 px #141414 keyline at 85 % (Unity `Outline`), in the same slot. The CalmHint itself goes with tutorial M1. The phone card is 交互设计's (X2).
 
+**A7. The CAUGHT screen** (叙事 v1.1 §6; Red, 2026-10-22 12:15, in the 叙事设计 chat: "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）"). Code: desktop :2374–:2381, touch :2183–:2186.
+- **Title `CAUGHT`:** unchanged (Bayon 88 bold on desktop, Bayon 48 on touch).
+- **Subtitle `OCCUPANT ACCOUNTED FOR`:**
+  - **Desktop:** directly under `CAUGHT` in the same `overlayText`, with no blank line between them: `<size=28>OCCUPANT ACCOUNTED FOR</size>`. Same Bayon and the same ink, about one third of the title's size. The blank line (`\n\n`) stays between the subtitle and the stats.
+  - **Touch** (corrected 12:5x after 交互设计's check): the HUD copies in `FrontRooms3DGame.cs` (:2183–:2191) are switched off on handhelds. The visible card is the touch layer's `FrontRoomsTouchControlsView` (Figma TS 8 · CAUGHT; master 874 × 402 pt, y down), owned by 交互设计.
+    - Subtitle `OCCUPANT ACCOUNTED FOR`: Bayon 17, ink, centred, a 600 × 22 box centred at **y 97**, under CAUGHT (Bayon 48, box 40–88).
+    - **Push everything below down 10 pt:** the four numbers to y 135, their labels to y 164, the rule to y 196, the sentence to y 235, and the TRY AGAIN chip by the same 10.
+    - That leaves about 10 pt from CAUGHT's caps to the subtitle's caps and about 21 pt from the subtitle to the numbers, so the subtitle reads as part of the title (proximity), not as a fifth row. With y 99 and no push the two gaps were equal (about 12 / 11.5 pt).
+    - Motion as 交互设计 proposed: it fades in with the title (+80 ms) and drops 12 pt like it.
+    - The phone card has no Plex Mono stats: its numbers are Source Serif 26, unchanged. `TIER REACHED` is replaced by 叙事's string (proposed `KEYS TAKEN`), same style.
+- **Stats line, desktop: out of Bayon.**
+  - Today it is `<size=24>` inside the Bayon `overlayText`, so every digit misprints: `1 KEYS` reads "I KEYS", `0 DOORS` reads "O DOORS", and a `LEVEL B1` would read "LEVEL BI".
+  - Fix: put it in its own `Text` ("Menu stats", where the `\n\n` put it): **IBM Plex Mono 20 caps**, ink, centred, the `  /  ` separators as today.
+  - The touch stats already use Plex Mono 17: unchanged.
+- **Strings** come from 叙事 v1.1 §6 through one `FloorLabel()`: `LEVEL B2  /  123 S  /  5 ZONES  /  1 KEY  /  0 DOORS BROKEN`, with singular forms for 1.
+  - **No TIER:** C04 c (Red, 2026-10-21, 系统设计 chat) moves it to the off-by-default readout. Confirmed by 系统设计 and 叙事, 12:4x.
+
+**A8. The HUD room line.**
+- `LEVEL 0 / FRONT ROOMS` (was `THE LOBBY`), `LEVEL B1 / THE MAZE`, … (叙事 v1.1 §6).
+- `roomText` is Source Serif 4 (50 desktop, 26 touch), which draws 0 and 1 correctly: **no face change**. Caps as today. The touch card's sentence-case form is `Level 0 / Front Rooms` (交互设计).
+- Code: :2487, Mobile :155, and `ZoneName()` :1651–:1658 for the floor token.
+
 ## B. HUD prompt strings (decided)
 
 All strings go in one constant (`FrontRoomsKeyHud.Strings`, DECISIONS #7/#11/#29; the map's prompt table). The two spaces round "·" follow today's grammar (`E  ·  OPEN DOOR`). Never RUN, HIDE or "relay" (RELAY §9.4).
@@ -64,15 +86,20 @@ All strings go in one constant (`FrontRoomsKeyHud.Strings`, DECISIONS #7/#11/#29
 | A READ terminal (C19) | `E  ·  READ SCREEN`; **never on ambient desk monitors** (AT-T19) | READ |
 | A sign, including the stair plates | `E  ·  READ SIGN` | READ |
 
-- **The HUD key panel** (KeyHud B): `STAIR KEY`; the tag shows the floor token (`00`, `B1`, `B2` …; 叙事's scheme, pending Red in 叙事's chat); the meta line reads `OPENS THE STAIR DOOR`.
-  - Two characters up to B9. B10 and deeper scale uniformly to the tag insert's width, never stretched.
+- **The HUD key panel** (KeyHud B): `STAIR KEY`; the meta line reads `OPENS THE STAIR DOOR`; the tag shows the floor token (`00`, `B1`, `B2` …; C28, decided by Red 12:15 in 叙事's chat).
+  - Token type is in the "B · the floor token" block below (= hud_build DECISIONS #33): B10 and deeper at 0.8×, not scaled to the insert's width.
 - **The map's one-line prompt until KeyHud B lands** (MapWorld :2537 today reads `LOCKED  ·  NEEDS THIS ZONE'S KEY`):
   - `LOCKED  ·  NEEDS STAIR KEY` once floor keys replace zone keys (tutorial M3);
   - a broken door shows `BROKEN`, then `WON'T SHUT` for 0.55 s on a shut try.
 - **叙事 signed this table as written** (2026-10-22 09:4x); its §4 "no string" row was a mistake and is corrected. 叙事's scope notes:
   - `READ SCREEN` is only on READ terminals (C19), never on ambient desk monitors (AT-T19);
   - `READ SIGN` covers the stair plates;
-  - the B10+ tag rule is fine.
+  - the B10+ tag rule is fine (since replaced by the 0.8× rule below, DECISIONS #33).
+
+**B · the floor token on the key tag (KeyHud B; 叙事 v1.1 §4, C28 B levels).**
+- The tag shows `00`, `B1`, `B2` … `B9` in the tag's Courier Prime numerals: two characters fit as designed.
+- From `B10`: set the three characters at **0.8×** the size, on the same baseline, centred in the same tag. The tag does not grow.
+- The A panel's interim label stays `STAIR KEY` (A4).
 
 ## C. E·1 stays, and the playtest checks it
 

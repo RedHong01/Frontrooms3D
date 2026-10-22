@@ -1,0 +1,228 @@
+"""C22 stairwell, fix stage: measure the fix renders (stair runs and exit-approach ladder runs).
+
+usage: venv/bin/python measure_fix.py <run dir with A/ B/ C/> <out json> [E_ref]
+
+Everything measure_stair.py measured (luminance, walk Y, walk E in fc-eq, Relay whole / body vs a 12 px ring), plus,
+from the door-parts mask (<shot>_parts.png: red lock, green EXIT letters, blue sign face, yellow housing, magenta exit
+leaf enamel, cyan crossbar, white far-door trim):
+  sign   letters Y vs the paper ring (12 px round the whole sign), whole sign vs ring, face vs ring, letters vs face,
+         letters protan vs ring, the brightest troffer lens (ID emitter) vs the letters, letter pixel count
+  leaf   exit-leaf enamel mean Y vs the paper ring round the door (ID door mask, 12 px, sign excluded)
+  lock   chain + padlock pixel count, bbox, mean Y, the leaf Y within 24 px of it, leaf / lock ratio
+  trim   far-door lever + plate pixel count and bbox (normal vs held)
+  door   for far_approach / far_door: the far door's mean Y and its percentile in the frame (is it the brightest?)
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageFilter
+
+R, OUT = sys.argv[1], sys.argv[2]
+E_REF = float(sys.argv[3]) if len(sys.argv) > 3 else None
+FC_REF = 50.0
+IDS = {"Background": (0, 0, 0), "Relay": (1, 1, 1), "Walk": (0, 1, 0), "MazeFloor": (0, 0, 1),
+       "Sign": (1, 0, 0), "Emitter": (1, 1, 0), "Door": (1, 0, 1), "OtherFloor": (0, 1, 1)}
+PARTS = {"lock": (1, 0, 0), "letters": (0, 1, 0), "face": (0, 0, 1), "housing": (1, 1, 0), "leaf": (1, 0, 1),
+         "bar": (0, 1, 1), "trim": (1, 1, 1)}
+PROT = np.array([[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]], np.float32)
+
+
+def load(p):
+    return np.asarray(Image.open(p).convert("RGB")).astype(np.float32) / 255.0
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def enc(c):
+    c = np.clip(c, 0, 1)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+
+
+def Y(img):
+    return lin(img) @ np.array([.2126, .7152, .0722], np.float32)
+
+
+def protan(img):
+    return enc(np.clip(lin(img) @ PROT.T, 0, 1))
+
+
+def masks(p, table):
+    q = (load(p) > .5).astype(np.int32)
+    return {k: (q[..., 0] == c[0]) & (q[..., 1] == c[1]) & (q[..., 2] == c[2]) for k, c in table.items()}
+
+
+def dil(mask, px):
+    """square (2 px + 1) dilation via a summed-area table (same result as PIL MaxFilter, O(n))"""
+    m = mask.astype(np.int32)
+    c = np.pad(m, ((px + 1, px), (px + 1, px))).cumsum(0).cumsum(1)
+    k = 2 * px + 1
+    s = c[k:, k:] - c[:-k, k:] - c[k:, :-k] + c[:-k, :-k]
+    return s > 0
+
+
+def ring(mask, px=12):
+    return dil(mask, px) & ~mask
+
+
+def ratio(a, b):
+    hi, lo = max(a, b), min(a, b)
+    return round(hi / max(lo, 1e-6), 2)
+
+
+def r4(x):
+    return round(float(x), 4)
+
+
+def bbox(m):
+    ys, xs = np.nonzero(m)
+    return [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
+
+
+if E_REF is None:
+    refs = []
+    for d0 in sorted(os.listdir(R)):
+        ep0, ip0 = os.path.join(R, d0, "door_E960x540.f32"), os.path.join(R, d0, "door_id.png")
+        if os.path.exists(ep0) and os.path.exists(ip0):
+            e0 = np.fromfile(ep0, dtype="<f4").reshape(540, 960, 4)[::-1, :, :3] @ np.array([.2126, .7152, .0722], np.float32)
+            q0 = np.asarray(Image.open(ip0).convert("RGB"))[1::2, 1::2] > 127
+            mf = (~q0[..., 0]) & (~q0[..., 1]) & q0[..., 2]
+            if mf.sum() > 50:
+                refs.append(float(np.median(e0[mf])))
+    E_REF = float(np.mean(refs)) if refs else 1.2831
+res = {"_method": __doc__.strip().splitlines()[0], "E_ref": r4(E_REF), "fc_ref": FC_REF, "dirs": {}}
+for d in sorted(os.listdir(R)):
+    dd = os.path.join(R, d)
+    if not os.path.isdir(dd) or len(d) != 1:
+        continue
+    res["dirs"][d] = {}
+    for f in sorted(os.listdir(dd)):
+        if not f.endswith(".png") or any(f.endswith(x) for x in ("_id.png", "_relayparts.png", "_parts.png")):
+            continue
+        shot = f[:-4]
+        img = load(os.path.join(dd, f))
+        y = Y(img)
+        o = dict(meanY=r4(y.mean()), medianY=r4(np.median(y)), p5Y=r4(np.percentile(y, 5)), p95Y=r4(np.percentile(y, 95)))
+        o["spread"] = round(float((np.percentile(y, 95) + .005) / (np.percentile(y, 5) + .005)), 1)
+        idp = os.path.join(dd, shot + "_id.png")
+        m = masks(idp, IDS) if os.path.exists(idp) else None
+        if m is not None:
+            if m["Walk"].sum() > 200:
+                o["walkY_p5"] = r4(np.percentile(y[m["Walk"]], 5)); o["walkY_median"] = r4(np.median(y[m["Walk"]]))
+            if m["MazeFloor"].sum() > 200:
+                o["mazefloorY_median"] = r4(np.median(y[m["MazeFloor"]]))
+            rel = m["Relay"]
+            if rel.sum() > 0:
+                yp = Y(protan(img))
+                rg = ring(rel) & ~rel
+                o["relay"] = dict(px=int(rel.sum()), bbox_h=int(bbox(rel)[3] - bbox(rel)[1] + 1), bbox=bbox(rel),
+                                  relayY=r4(y[rel].mean()), ringY=r4(y[rg].mean()),
+                                  ratio=ratio(float(y[rel].mean()), float(y[rg].mean())),
+                                  ratio_protan=ratio(float(yp[rel].mean()), float(yp[rg].mean())))
+                pp = os.path.join(dd, shot + "_relayparts.png")
+                if os.path.exists(pp):
+                    q = load(pp) > .5
+                    head = q[..., 0] & ~q[..., 1] & ~q[..., 2]
+                    body = ~q[..., 0] & q[..., 1] & ~q[..., 2]
+                    for nm, mk in (("body", body), ("head", head)):
+                        if mk.sum() > 30:
+                            o["relay"][nm + "_px"] = int(mk.sum())
+                            o["relay"][nm + "Y"] = r4(y[mk].mean())
+                            o["relay"][nm + "_ratio"] = ratio(float(y[mk].mean()), float(y[rg].mean()))
+                    if body.sum() > 30:
+                        rb = ring(body) & rg
+                        if rb.sum() > 30:
+                            o["relay"]["body_vs_own_ring"] = ratio(float(y[body].mean()), float(y[rb].mean()))
+            ep = os.path.join(dd, shot + "_E960x540.f32")
+            if os.path.exists(ep):
+                raw = np.fromfile(ep, dtype="<f4")
+                if raw.size == 960 * 540 * 4:
+                    e = raw.reshape(540, 960, 4)[::-1, :, :3]
+                    E = e @ np.array([.2126, .7152, .0722], np.float32)
+                    small = {k: v[1::2, 1::2] for k, v in m.items()}
+                    for key in ("Walk", "MazeFloor"):
+                        mk = small[key]
+                        if mk.sum() > 50:
+                            v = E[mk]
+                            o["E_" + key] = dict(p2=r4(np.percentile(v, 2)), median=r4(np.median(v)),
+                                                  fc_eq_p2=round(float(np.percentile(v, 2) / E_REF * FC_REF), 1),
+                                                  fc_eq_median=round(float(np.median(v) / E_REF * FC_REF), 1),
+                                                  max_min_p98_p2=round(float(np.percentile(v, 98) / max(np.percentile(v, 2), 1e-6)), 1))
+        pp = os.path.join(dd, shot + "_parts.png")
+        if os.path.exists(pp) and m is not None:
+            P = masks(pp, PARTS)
+            sign = P["letters"] | P["face"] | P["housing"]
+            if P["letters"].sum() > 3:
+                yp = Y(protan(img))
+                rg = ring(sign) & ~sign & ~m["Door"] & ~m["Emitter"]
+                if rg.sum() > 10:
+                    s = dict(letters_px=int(P["letters"].sum()), lettersY=r4(y[P["letters"]].mean()), paperY=r4(y[rg].mean()),
+                             letters_vs_paper=round(float(y[P["letters"]].mean() / max(y[rg].mean(), 1e-6)), 2),
+                             whole_vs_paper=round(float(y[sign].mean() / max(y[rg].mean(), 1e-6)), 2),
+                             letters_vs_paper_protan=round(float(yp[P["letters"]].mean() / max(yp[rg].mean(), 1e-6)), 2),
+                             sign_bbox=bbox(sign))
+                    if P["face"].sum() > 3:
+                        s["faceY"] = r4(y[P["face"]].mean())
+                        s["letters_vs_face"] = ratio(float(y[P["letters"]].mean()), float(y[P["face"]].mean()))
+                    rp = os.path.join(dd, shot + "_raw1920x1080.f16")
+                    if os.path.exists(rp):
+                        raw = np.fromfile(rp, dtype="<f2").reshape(1080, 1920, 4)[::-1, :, :3].astype(np.float32)
+                        ry = raw @ np.array([.2126, .7152, .0722], np.float32)
+                        s["T2_raw_letters_vs_paper"] = round(float(ry[P["letters"]].mean() / max(ry[rg].mean(), 1e-6)), 2)
+                        s["raw_lettersY"] = r4(ry[P["letters"]].mean()); s["raw_paperY"] = r4(ry[rg].mean())
+                    import colorsys
+                    cm = img[P["letters"]].mean(0)
+                    h, sat, v = colorsys.rgb_to_hsv(*[float(c) for c in cm])
+                    s["letters_hue_deg"] = round(h * 360, 1); s["letters_sat"] = round(sat, 2)
+                    if m["Emitter"].sum() > 20:
+                        s["lens_meanY"] = r4(y[m["Emitter"]].mean())
+                        s["lens_vs_letters"] = round(float(y[m["Emitter"]].mean() / max(y[P["letters"]].mean(), 1e-6)), 2)
+                    o["sign"] = s
+            if P["leaf"].sum() > 50:
+                door = m["Door"] | P["lock"]
+                rg = ring(door, 12) & ~door & ~m["Sign"] & ~m["Emitter"] & ~m["MazeFloor"] & ~m["Walk"] & ~m["Relay"]
+                lf = dict(leaf_px=int(P["leaf"].sum()), leafY=r4(y[P["leaf"]].mean()))
+                if rg.sum() > 20:
+                    lf["paperY"] = r4(y[rg].mean()); lf["leaf_vs_paper"] = round(float(y[P["leaf"]].mean() / max(y[rg].mean(), 1e-6)), 2)
+                o["leaf"] = lf
+            if P["lock"].sum() > 0:
+                lk = P["lock"]
+                near = dil(lk, 24) & P["leaf"]
+                L = dict(px=int(lk.sum()), bbox=bbox(lk), lockY=r4(y[lk].mean()))
+                if near.sum() > 10:
+                    L["leaf_nearY"] = r4(y[near].mean()); L["leaf_vs_lock"] = ratio(float(y[near].mean()), float(y[lk].mean()))
+                o["lock"] = L
+            if P["trim"].sum() > 0:
+                o["trim"] = dict(px=int(P["trim"].sum()), bbox=bbox(P["trim"]), trimY=r4(y[P["trim"]].mean()))
+            if shot.startswith("far_") and m["Door"].sum() > 200:
+                # the far door (door ID minus the exit door, which is behind the camera here)
+                dv = y[m["Door"]]
+                o["far_door"] = dict(meanY=r4(dv.mean()), percentile_in_frame=round(float((y < dv.mean()).mean() * 100), 1),
+                                     frame_p95=r4(np.percentile(y, 95)), frame_p99=r4(np.percentile(y, 99)))
+        res["dirs"][d][shot] = o
+
+json.dump(res, open(OUT, "w"), indent=1)
+for d, shots in res["dirs"].items():
+    for s, o in shots.items():
+        line = f"{d} {s:20s} med {o['medianY']:.4f} p5 {o['p5Y']:.4f} p95 {o['p95Y']:.4f}"
+        if "walkY_median" in o:
+            line += f" | walkY med {o['walkY_median']:.4f}"
+        if "E_Walk" in o:
+            line += f" | E {o['E_Walk']['fc_eq_p2']}-{o['E_Walk']['fc_eq_median']} fc-eq mm {o['E_Walk']['max_min_p98_p2']}"
+        if "relay" in o:
+            line += f" | RELAY {o['relay']['ratio']} (p {o['relay']['ratio_protan']}) body {o['relay'].get('body_ratio')} head {o['relay'].get('head_ratio')} h {o['relay']['bbox_h']}px"
+        if "sign" in o:
+            sg = o["sign"]
+            line += f" | SIGN let/pap {sg['letters_vs_paper']} (p {sg['letters_vs_paper_protan']}) T2raw {sg.get('T2_raw_letters_vs_paper')} whole {sg['whole_vs_paper']} hue {sg.get('letters_hue_deg')} sat {sg.get('letters_sat')} lens/let {sg.get('lens_vs_letters')} px {sg['letters_px']}"
+        if "leaf" in o:
+            line += f" | LEAF {o['leaf'].get('leaf_vs_paper')}"
+        if "lock" in o:
+            line += f" | LOCK px {o['lock']['px']} leaf/lock {o['lock'].get('leaf_vs_lock')}"
+        if "trim" in o:
+            line += f" | TRIM px {o['trim']['px']} bbox {o['trim']['bbox']}"
+        if "far_door" in o:
+            line += f" | FARDOOR Y {o['far_door']['meanY']} pct {o['far_door']['percentile_in_frame']}"
+        print(line)

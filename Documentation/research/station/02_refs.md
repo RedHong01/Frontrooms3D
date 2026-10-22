@@ -101,6 +101,7 @@ FrontRooms borrows only these principles:
     - In-world signs never say Lobby, Threshold or Station. Those are the Backrooms wiki's Level 0 names and Escape the Backrooms' sign [read R84, R85; search R83].
     - The player-facing name stays `SECURITY DESK`.
     - **Flag for Red:** the HUD's start-room text `LEVEL 0 / THE LOBBY` matches the Fandom wiki's "Level 0: The Lobby" [search R87]. See `20_layout.md` §7.
+    - **Decided (Red, 2026-10-22 12:15, 叙事设计 chat, "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）"):** the start-room line becomes `LEVEL 0 / FRONT ROOMS` (`narrative/40_floors_exit_tutorial_strings.md` §6; code with 关卡设计 and 交互设计).
 
 ## 4. One optional idea from the references (for the directions; not proposed for Phase 1)
 

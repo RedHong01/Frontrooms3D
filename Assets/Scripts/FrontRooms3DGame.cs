@@ -2259,9 +2259,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var centerY = Mathf.Clamp(frameHeight * .5f, safeMinY, safeMaxY);
         var logoCenterY = Mathf.Clamp(frameHeight * .5f + 14f, safeMinY + 54f, safeMaxY - 54f);
 
-        SetMobileAnchor(roomPanel != null ? roomPanel.transform : null, Vector2.zero, new Vector2(0f, 1f), new Vector2(leftX, -Mathf.Max(16f, topInset)));
-        SetMobileAnchor(keyPanel != null ? keyPanel.transform : null, Vector2.zero, new Vector2(0f, 1f), new Vector2(leftX, -keyTop));
-        SetMobileAnchor(threatPanel != null ? threatPanel.transform : null, Vector2.right, new Vector2(1f, 1f), new Vector2(rightEdge - frameWidth, -Mathf.Max(16f, topInset)));
+        // The top band hangs from the top edge (Unity's y is up): anchored at the bottom, these sat below the screen.
+        SetMobileAnchor(roomPanel != null ? roomPanel.transform : null, Vector2.up, new Vector2(0f, 1f), new Vector2(leftX, -Mathf.Max(16f, topInset)));
+        SetMobileAnchor(keyPanel != null ? keyPanel.transform : null, Vector2.up, new Vector2(0f, 1f), new Vector2(leftX, -keyTop));
+        SetMobileAnchor(threatPanel != null ? threatPanel.transform : null, Vector2.one, new Vector2(1f, 1f), new Vector2(rightEdge - frameWidth, -Mathf.Max(16f, topInset)));
         SetMobileAnchor(contextPanel != null ? contextPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomHint));
         SetMobileAnchor(captionPanel != null ? captionPanel.transform : null, new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, bottomCaption));
         SetMobileAnchor(crosshairImage != null ? crosshairImage.transform.parent as RectTransform : null, new Vector2(centerX / frameWidth, centerY / frameHeight), new Vector2(.5f, .5f), Vector2.zero);

@@ -1,0 +1,19 @@
+#!/bin/zsh
+# C22 stairwell fix stage: f1 stair (A,B,C all shots), f2 ladder hall hold (A,B,C), f3 ladder hall exit cells dead (A,B,C subset)
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+P=/Users/redwang/FrontRoomsVisualWork/proj_stair
+R=/Users/redwang/FrontRoomsVisualWork/stair_work/runs
+ST=$R/status_fix.txt
+run() {
+  local name=$1; shift
+  local S=$(date +%s)
+  echo "$name start $(date '+%H:%M:%S') load $(uptime | sed 's/.*averages: //')" >> $ST
+  $U -batchmode -quit -projectPath $P -buildTarget OSXUniversal -executeMethod FrontRoomsStairLookdev.RunBatch -frGlassRT off -stairOut $R/$name -logFile $R/$name.log "$@"
+  local rc=$?
+  echo "$name exit $rc $(( $(date +%s) - S )) s errors=$(grep -c 'error CS' $R/$name.log) load $(uptime | sed 's/.*averages: //')" >> $ST
+  return $rc
+}
+run f8 -stairLamp edge || exit 1
+run f9_ladder -stairLadder -stairLadderLamps hold -stairNoE || exit 1
+run f10_ladder_dead -stairLadder -stairLadderLamps dead -stairNoE -stairShots lad12_00_lk,lad20_00_lk,lad12_45_lk,relay_45,relay_70,relay_00
+echo "ALL DONE $(date '+%H:%M:%S')" >> $ST

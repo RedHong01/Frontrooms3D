@@ -1,0 +1,1039 @@
+{
+ "_method": "C22 stairwell, fix stage: measure the fix renders (stair runs and exit-approach ladder runs).",
+ "E_ref": 1.2831,
+ "fc_ref": 50.0,
+ "dirs": {
+  "A": {
+   "lad12_00_lk": {
+    "meanY": 0.1146,
+    "medianY": 0.0731,
+    "p5Y": 0.024,
+    "p95Y": 0.2919,
+    "spread": 10.2,
+    "mazefloorY_median": 0.162,
+    "sign": {
+     "letters_px": 53,
+     "lettersY": 0.1247,
+     "paperY": 0.0246,
+     "letters_vs_paper": 5.08,
+     "whole_vs_paper": 2.77,
+     "letters_vs_paper_protan": 3.66,
+     "sign_bbox": [
+      950,
+      491,
+      969,
+      503
+     ],
+     "faceY": 0.0547,
+     "letters_vs_face": 2.28,
+     "T2_raw_letters_vs_paper": 16.87,
+     "raw_lettersY": 0.4105,
+     "raw_paperY": 0.0243,
+     "letters_hue_deg": 9.6,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4937,
+     "lens_vs_letters": 3.96
+    },
+    "leaf": {
+     "leaf_px": 5688,
+     "leafY": 0.0273,
+     "paperY": 0.0266,
+     "leaf_vs_paper": 1.02
+    },
+    "lock": {
+     "px": 118,
+     "bbox": [
+      920,
+      568,
+      947,
+      586
+     ],
+     "lockY": 0.013,
+     "leaf_nearY": 0.0275,
+     "leaf_vs_lock": 2.13
+    }
+   },
+   "lad12_45_lk": {
+    "meanY": 0.099,
+    "medianY": 0.0529,
+    "p5Y": 0.0227,
+    "p95Y": 0.1972,
+    "spread": 7.3,
+    "mazefloorY_median": 0.1459,
+    "sign": {
+     "letters_px": 41,
+     "lettersY": 0.1147,
+     "paperY": 0.0245,
+     "letters_vs_paper": 4.68,
+     "whole_vs_paper": 2.46,
+     "letters_vs_paper_protan": 3.43,
+     "sign_bbox": [
+      947,
+      491,
+      963,
+      503
+     ],
+     "faceY": 0.0531,
+     "letters_vs_face": 2.16,
+     "letters_hue_deg": 10.2,
+     "letters_sat": 0.77,
+     "lens_meanY": 0.4636,
+     "lens_vs_letters": 4.04
+    },
+    "leaf": {
+     "leaf_px": 3690,
+     "leafY": 0.0273,
+     "paperY": 0.027,
+     "leaf_vs_paper": 1.01
+    },
+    "lock": {
+     "px": 127,
+     "bbox": [
+      927,
+      568,
+      948,
+      585
+     ],
+     "lockY": 0.0119,
+     "leaf_nearY": 0.0274,
+     "leaf_vs_lock": 2.3
+    }
+   },
+   "lad20_00_lk": {
+    "meanY": 0.1124,
+    "medianY": 0.0901,
+    "p5Y": 0.0243,
+    "p95Y": 0.2443,
+    "spread": 8.5,
+    "mazefloorY_median": 0.1605,
+    "sign": {
+     "letters_px": 16,
+     "lettersY": 0.1274,
+     "paperY": 0.0251,
+     "letters_vs_paper": 5.07,
+     "whole_vs_paper": 3.03,
+     "letters_vs_paper_protan": 3.65,
+     "sign_bbox": [
+      954,
+      511,
+      965,
+      517
+     ],
+     "faceY": 0.0642,
+     "letters_vs_face": 1.99,
+     "letters_hue_deg": 9.5,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.547,
+     "lens_vs_letters": 4.29
+    },
+    "leaf": {
+     "leaf_px": 2049,
+     "leafY": 0.0285,
+     "paperY": 0.0268,
+     "leaf_vs_paper": 1.06
+    },
+    "lock": {
+     "px": 52,
+     "bbox": [
+      936,
+      557,
+      952,
+      567
+     ],
+     "lockY": 0.0146,
+     "leaf_nearY": 0.0286,
+     "leaf_vs_lock": 1.96
+    }
+   },
+   "relay_00": {
+    "meanY": 0.0635,
+    "medianY": 0.0356,
+    "p5Y": 0.0219,
+    "p95Y": 0.1339,
+    "spread": 5.2,
+    "mazefloorY_median": 0.0839,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0147,
+     "ringY": 0.0236,
+     "ratio": 1.61,
+     "ratio_protan": 1.61,
+     "body_px": 7627,
+     "bodyY": 0.0108,
+     "body_ratio": 2.18,
+     "head_px": 908,
+     "headY": 0.0399,
+     "head_ratio": 1.69,
+     "body_vs_own_ring": 2.14
+    },
+    "sign": {
+     "letters_px": 114,
+     "lettersY": 0.1383,
+     "paperY": 0.0249,
+     "letters_vs_paper": 5.55,
+     "whole_vs_paper": 2.72,
+     "letters_vs_paper_protan": 3.89,
+     "sign_bbox": [
+      950,
+      438,
+      978,
+      455
+     ],
+     "faceY": 0.0493,
+     "letters_vs_face": 2.8,
+     "letters_hue_deg": 8.7,
+     "letters_sat": 0.8,
+     "lens_meanY": 0.2317,
+     "lens_vs_letters": 1.68
+    },
+    "leaf": {
+     "leaf_px": 5227,
+     "leafY": 0.0256,
+     "paperY": 0.0262,
+     "leaf_vs_paper": 0.97
+    },
+    "lock": {
+     "px": 193,
+     "bbox": [
+      910,
+      548,
+      940,
+      572
+     ],
+     "lockY": 0.0128,
+     "leaf_nearY": 0.0245,
+     "leaf_vs_lock": 1.91
+    }
+   },
+   "relay_45": {
+    "meanY": 0.0582,
+    "medianY": 0.0331,
+    "p5Y": 0.0196,
+    "p95Y": 0.1531,
+    "spread": 6.4,
+    "mazefloorY_median": 0.0674,
+    "relay": {
+     "px": 6925,
+     "bbox_h": 190,
+     "bbox": [
+      868,
+      467,
+      973,
+      656
+     ],
+     "relayY": 0.0149,
+     "ringY": 0.0261,
+     "ratio": 1.75,
+     "ratio_protan": 1.74,
+     "body_px": 5649,
+     "bodyY": 0.0107,
+     "body_ratio": 2.43,
+     "head_px": 829,
+     "headY": 0.0388,
+     "head_ratio": 1.49,
+     "body_vs_own_ring": 2.38
+    },
+    "sign": {
+     "letters_px": 74,
+     "lettersY": 0.1023,
+     "paperY": 0.0232,
+     "letters_vs_paper": 4.41,
+     "whole_vs_paper": 2.5,
+     "letters_vs_paper_protan": 3.27,
+     "sign_bbox": [
+      1004,
+      439,
+      1027,
+      457
+     ],
+     "faceY": 0.0558,
+     "letters_vs_face": 1.83,
+     "letters_hue_deg": 10.9,
+     "letters_sat": 0.77,
+     "lens_meanY": 0.2211,
+     "lens_vs_letters": 2.16
+    },
+    "leaf": {
+     "leaf_px": 7214,
+     "leafY": 0.026,
+     "paperY": 0.026,
+     "leaf_vs_paper": 1.0
+    },
+    "lock": {
+     "px": 241,
+     "bbox": [
+      976,
+      548,
+      1005,
+      571
+     ],
+     "lockY": 0.0111,
+     "leaf_nearY": 0.0253,
+     "leaf_vs_lock": 2.27
+    }
+   },
+   "relay_70": {
+    "meanY": 0.1048,
+    "medianY": 0.0749,
+    "p5Y": 0.0203,
+    "p95Y": 0.2467,
+    "spread": 9.9,
+    "mazefloorY_median": 0.1359,
+    "relay": {
+     "px": 1974,
+     "bbox_h": 122,
+     "bbox": [
+      908,
+      492,
+      941,
+      613
+     ],
+     "relayY": 0.0174,
+     "ringY": 0.08,
+     "ratio": 4.6,
+     "ratio_protan": 4.56,
+     "body_px": 1496,
+     "bodyY": 0.0115,
+     "body_ratio": 6.93,
+     "head_px": 353,
+     "headY": 0.0389,
+     "head_ratio": 2.06,
+     "body_vs_own_ring": 6.91
+    },
+    "sign": {
+     "letters_px": 51,
+     "lettersY": 0.1032,
+     "paperY": 0.0247,
+     "letters_vs_paper": 4.17,
+     "whole_vs_paper": 2.38,
+     "letters_vs_paper_protan": 3.03,
+     "sign_bbox": [
+      991,
+      470,
+      1011,
+      482
+     ],
+     "faceY": 0.0514,
+     "letters_vs_face": 2.01,
+     "letters_hue_deg": 10.1,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4852,
+     "lens_vs_letters": 4.7
+    },
+    "leaf": {
+     "leaf_px": 1494,
+     "leafY": 0.0266,
+     "paperY": 0.0266,
+     "leaf_vs_paper": 1.0
+    },
+    "lock": {
+     "px": 98,
+     "bbox": [
+      995,
+      547,
+      1008,
+      563
+     ],
+     "lockY": 0.0124,
+     "leaf_nearY": 0.0268,
+     "leaf_vs_lock": 2.17
+    }
+   }
+  },
+  "B": {
+   "lad12_00_lk": {
+    "meanY": 0.1146,
+    "medianY": 0.0731,
+    "p5Y": 0.0236,
+    "p95Y": 0.2921,
+    "spread": 10.4,
+    "mazefloorY_median": 0.162,
+    "sign": {
+     "letters_px": 53,
+     "lettersY": 0.1248,
+     "paperY": 0.0245,
+     "letters_vs_paper": 5.09,
+     "whole_vs_paper": 2.77,
+     "letters_vs_paper_protan": 3.67,
+     "sign_bbox": [
+      950,
+      491,
+      969,
+      503
+     ],
+     "faceY": 0.0547,
+     "letters_vs_face": 2.28,
+     "T2_raw_letters_vs_paper": 16.87,
+     "raw_lettersY": 0.4105,
+     "raw_paperY": 0.0243,
+     "letters_hue_deg": 9.7,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4937,
+     "lens_vs_letters": 3.96
+    },
+    "leaf": {
+     "leaf_px": 5688,
+     "leafY": 0.0194,
+     "paperY": 0.0266,
+     "leaf_vs_paper": 0.73
+    },
+    "lock": {
+     "px": 118,
+     "bbox": [
+      920,
+      568,
+      947,
+      586
+     ],
+     "lockY": 0.0121,
+     "leaf_nearY": 0.0195,
+     "leaf_vs_lock": 1.6
+    }
+   },
+   "lad12_45_lk": {
+    "meanY": 0.099,
+    "medianY": 0.0529,
+    "p5Y": 0.0224,
+    "p95Y": 0.1969,
+    "spread": 7.4,
+    "mazefloorY_median": 0.1459,
+    "sign": {
+     "letters_px": 41,
+     "lettersY": 0.1147,
+     "paperY": 0.0245,
+     "letters_vs_paper": 4.69,
+     "whole_vs_paper": 2.46,
+     "letters_vs_paper_protan": 3.44,
+     "sign_bbox": [
+      947,
+      491,
+      963,
+      503
+     ],
+     "faceY": 0.0531,
+     "letters_vs_face": 2.16,
+     "letters_hue_deg": 10.2,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4636,
+     "lens_vs_letters": 4.04
+    },
+    "leaf": {
+     "leaf_px": 3690,
+     "leafY": 0.0193,
+     "paperY": 0.027,
+     "leaf_vs_paper": 0.72
+    },
+    "lock": {
+     "px": 127,
+     "bbox": [
+      927,
+      568,
+      948,
+      585
+     ],
+     "lockY": 0.0115,
+     "leaf_nearY": 0.0194,
+     "leaf_vs_lock": 1.68
+    }
+   },
+   "lad20_00_lk": {
+    "meanY": 0.1124,
+    "medianY": 0.0901,
+    "p5Y": 0.0243,
+    "p95Y": 0.2443,
+    "spread": 8.5,
+    "mazefloorY_median": 0.1605,
+    "sign": {
+     "letters_px": 16,
+     "lettersY": 0.1276,
+     "paperY": 0.0251,
+     "letters_vs_paper": 5.08,
+     "whole_vs_paper": 3.03,
+     "letters_vs_paper_protan": 3.66,
+     "sign_bbox": [
+      954,
+      511,
+      965,
+      517
+     ],
+     "faceY": 0.0641,
+     "letters_vs_face": 1.99,
+     "letters_hue_deg": 9.5,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.547,
+     "lens_vs_letters": 4.29
+    },
+    "leaf": {
+     "leaf_px": 2049,
+     "leafY": 0.0203,
+     "paperY": 0.0268,
+     "leaf_vs_paper": 0.76
+    },
+    "lock": {
+     "px": 52,
+     "bbox": [
+      936,
+      557,
+      952,
+      567
+     ],
+     "lockY": 0.0135,
+     "leaf_nearY": 0.0203,
+     "leaf_vs_lock": 1.5
+    }
+   },
+   "relay_00": {
+    "meanY": 0.0635,
+    "medianY": 0.0356,
+    "p5Y": 0.0214,
+    "p95Y": 0.1339,
+    "spread": 5.3,
+    "mazefloorY_median": 0.0839,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0146,
+     "ringY": 0.0214,
+     "ratio": 1.46,
+     "ratio_protan": 1.45,
+     "body_px": 7627,
+     "bodyY": 0.0108,
+     "body_ratio": 1.98,
+     "head_px": 908,
+     "headY": 0.0398,
+     "head_ratio": 1.86,
+     "body_vs_own_ring": 1.93
+    },
+    "sign": {
+     "letters_px": 114,
+     "lettersY": 0.1382,
+     "paperY": 0.0248,
+     "letters_vs_paper": 5.57,
+     "whole_vs_paper": 2.73,
+     "letters_vs_paper_protan": 3.9,
+     "sign_bbox": [
+      950,
+      438,
+      978,
+      455
+     ],
+     "faceY": 0.0492,
+     "letters_vs_face": 2.81,
+     "letters_hue_deg": 8.7,
+     "letters_sat": 0.8,
+     "lens_meanY": 0.2317,
+     "lens_vs_letters": 1.68
+    },
+    "leaf": {
+     "leaf_px": 5227,
+     "leafY": 0.0184,
+     "paperY": 0.0261,
+     "leaf_vs_paper": 0.71
+    },
+    "lock": {
+     "px": 193,
+     "bbox": [
+      910,
+      548,
+      940,
+      572
+     ],
+     "lockY": 0.0122,
+     "leaf_nearY": 0.0178,
+     "leaf_vs_lock": 1.45
+    }
+   },
+   "relay_45": {
+    "meanY": 0.0582,
+    "medianY": 0.0331,
+    "p5Y": 0.0195,
+    "p95Y": 0.1531,
+    "spread": 6.5,
+    "mazefloorY_median": 0.0674,
+    "relay": {
+     "px": 6925,
+     "bbox_h": 190,
+     "bbox": [
+      868,
+      467,
+      973,
+      656
+     ],
+     "relayY": 0.0149,
+     "ringY": 0.0261,
+     "ratio": 1.75,
+     "ratio_protan": 1.74,
+     "body_px": 5649,
+     "bodyY": 0.0107,
+     "body_ratio": 2.43,
+     "head_px": 829,
+     "headY": 0.0388,
+     "head_ratio": 1.49,
+     "body_vs_own_ring": 2.38
+    },
+    "sign": {
+     "letters_px": 74,
+     "lettersY": 0.1023,
+     "paperY": 0.0231,
+     "letters_vs_paper": 4.42,
+     "whole_vs_paper": 2.51,
+     "letters_vs_paper_protan": 3.28,
+     "sign_bbox": [
+      1004,
+      439,
+      1027,
+      457
+     ],
+     "faceY": 0.0557,
+     "letters_vs_face": 1.84,
+     "letters_hue_deg": 10.9,
+     "letters_sat": 0.77,
+     "lens_meanY": 0.2211,
+     "lens_vs_letters": 2.16
+    },
+    "leaf": {
+     "leaf_px": 7214,
+     "leafY": 0.0185,
+     "paperY": 0.0259,
+     "leaf_vs_paper": 0.71
+    },
+    "lock": {
+     "px": 241,
+     "bbox": [
+      976,
+      548,
+      1005,
+      571
+     ],
+     "lockY": 0.011,
+     "leaf_nearY": 0.0181,
+     "leaf_vs_lock": 1.65
+    }
+   },
+   "relay_70": {
+    "meanY": 0.1048,
+    "medianY": 0.0749,
+    "p5Y": 0.0203,
+    "p95Y": 0.2468,
+    "spread": 9.9,
+    "mazefloorY_median": 0.1359,
+    "relay": {
+     "px": 1974,
+     "bbox_h": 122,
+     "bbox": [
+      908,
+      492,
+      941,
+      613
+     ],
+     "relayY": 0.0174,
+     "ringY": 0.08,
+     "ratio": 4.6,
+     "ratio_protan": 4.56,
+     "body_px": 1496,
+     "bodyY": 0.0115,
+     "body_ratio": 6.93,
+     "head_px": 353,
+     "headY": 0.0389,
+     "head_ratio": 2.06,
+     "body_vs_own_ring": 6.91
+    },
+    "sign": {
+     "letters_px": 51,
+     "lettersY": 0.103,
+     "paperY": 0.0247,
+     "letters_vs_paper": 4.17,
+     "whole_vs_paper": 2.38,
+     "letters_vs_paper_protan": 3.03,
+     "sign_bbox": [
+      991,
+      470,
+      1011,
+      482
+     ],
+     "faceY": 0.0515,
+     "letters_vs_face": 2.0,
+     "letters_hue_deg": 10.1,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4852,
+     "lens_vs_letters": 4.71
+    },
+    "leaf": {
+     "leaf_px": 1494,
+     "leafY": 0.019,
+     "paperY": 0.0266,
+     "leaf_vs_paper": 0.72
+    },
+    "lock": {
+     "px": 98,
+     "bbox": [
+      995,
+      547,
+      1008,
+      563
+     ],
+     "lockY": 0.0123,
+     "leaf_nearY": 0.0191,
+     "leaf_vs_lock": 1.55
+    }
+   }
+  },
+  "C": {
+   "lad12_00_lk": {
+    "meanY": 0.1146,
+    "medianY": 0.0731,
+    "p5Y": 0.0236,
+    "p95Y": 0.292,
+    "spread": 10.4,
+    "mazefloorY_median": 0.162,
+    "sign": {
+     "letters_px": 53,
+     "lettersY": 0.1248,
+     "paperY": 0.0245,
+     "letters_vs_paper": 5.09,
+     "whole_vs_paper": 2.77,
+     "letters_vs_paper_protan": 3.67,
+     "sign_bbox": [
+      950,
+      491,
+      969,
+      503
+     ],
+     "faceY": 0.0546,
+     "letters_vs_face": 2.29,
+     "T2_raw_letters_vs_paper": 16.87,
+     "raw_lettersY": 0.4105,
+     "raw_paperY": 0.0243,
+     "letters_hue_deg": 9.6,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4937,
+     "lens_vs_letters": 3.95
+    },
+    "leaf": {
+     "leaf_px": 6444,
+     "leafY": 0.0177,
+     "paperY": 0.0265,
+     "leaf_vs_paper": 0.67
+    },
+    "lock": {
+     "px": 118,
+     "bbox": [
+      920,
+      568,
+      947,
+      586
+     ],
+     "lockY": 0.012,
+     "leaf_nearY": 0.0179,
+     "leaf_vs_lock": 1.49
+    }
+   },
+   "lad12_45_lk": {
+    "meanY": 0.099,
+    "medianY": 0.0529,
+    "p5Y": 0.0224,
+    "p95Y": 0.1972,
+    "spread": 7.4,
+    "mazefloorY_median": 0.1458,
+    "sign": {
+     "letters_px": 41,
+     "lettersY": 0.1147,
+     "paperY": 0.0245,
+     "letters_vs_paper": 4.69,
+     "whole_vs_paper": 2.46,
+     "letters_vs_paper_protan": 3.44,
+     "sign_bbox": [
+      947,
+      491,
+      963,
+      503
+     ],
+     "faceY": 0.0531,
+     "letters_vs_face": 2.16,
+     "letters_hue_deg": 10.3,
+     "letters_sat": 0.77,
+     "lens_meanY": 0.4636,
+     "lens_vs_letters": 4.04
+    },
+    "leaf": {
+     "leaf_px": 4230,
+     "leafY": 0.0174,
+     "paperY": 0.0269,
+     "leaf_vs_paper": 0.65
+    },
+    "lock": {
+     "px": 127,
+     "bbox": [
+      927,
+      568,
+      948,
+      585
+     ],
+     "lockY": 0.0115,
+     "leaf_nearY": 0.0175,
+     "leaf_vs_lock": 1.52
+    }
+   },
+   "lad20_00_lk": {
+    "meanY": 0.1124,
+    "medianY": 0.0901,
+    "p5Y": 0.0243,
+    "p95Y": 0.2443,
+    "spread": 8.5,
+    "mazefloorY_median": 0.1605,
+    "sign": {
+     "letters_px": 16,
+     "lettersY": 0.1273,
+     "paperY": 0.0251,
+     "letters_vs_paper": 5.07,
+     "whole_vs_paper": 3.03,
+     "letters_vs_paper_protan": 3.65,
+     "sign_bbox": [
+      954,
+      511,
+      965,
+      517
+     ],
+     "faceY": 0.0641,
+     "letters_vs_face": 1.99,
+     "letters_hue_deg": 9.4,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.5471,
+     "lens_vs_letters": 4.3
+    },
+    "leaf": {
+     "leaf_px": 2337,
+     "leafY": 0.0187,
+     "paperY": 0.0268,
+     "leaf_vs_paper": 0.7
+    },
+    "lock": {
+     "px": 52,
+     "bbox": [
+      936,
+      557,
+      952,
+      567
+     ],
+     "lockY": 0.0134,
+     "leaf_nearY": 0.0186,
+     "leaf_vs_lock": 1.39
+    }
+   },
+   "relay_00": {
+    "meanY": 0.0635,
+    "medianY": 0.0356,
+    "p5Y": 0.0214,
+    "p95Y": 0.1339,
+    "spread": 5.3,
+    "mazefloorY_median": 0.0839,
+    "relay": {
+     "px": 9075,
+     "bbox_h": 202,
+     "bbox": [
+      877,
+      464,
+      1049,
+      665
+     ],
+     "relayY": 0.0146,
+     "ringY": 0.0212,
+     "ratio": 1.45,
+     "ratio_protan": 1.43,
+     "body_px": 7627,
+     "bodyY": 0.0108,
+     "body_ratio": 1.97,
+     "head_px": 908,
+     "headY": 0.0398,
+     "head_ratio": 1.87,
+     "body_vs_own_ring": 1.92
+    },
+    "sign": {
+     "letters_px": 114,
+     "lettersY": 0.1382,
+     "paperY": 0.0248,
+     "letters_vs_paper": 5.57,
+     "whole_vs_paper": 2.73,
+     "letters_vs_paper_protan": 3.9,
+     "sign_bbox": [
+      950,
+      438,
+      978,
+      455
+     ],
+     "faceY": 0.0493,
+     "letters_vs_face": 2.81,
+     "letters_hue_deg": 8.7,
+     "letters_sat": 0.8,
+     "lens_meanY": 0.2317,
+     "lens_vs_letters": 1.68
+    },
+    "leaf": {
+     "leaf_px": 6591,
+     "leafY": 0.0167,
+     "paperY": 0.0261,
+     "leaf_vs_paper": 0.64
+    },
+    "lock": {
+     "px": 193,
+     "bbox": [
+      910,
+      548,
+      940,
+      572
+     ],
+     "lockY": 0.0121,
+     "leaf_nearY": 0.0161,
+     "leaf_vs_lock": 1.32
+    }
+   },
+   "relay_45": {
+    "meanY": 0.0581,
+    "medianY": 0.0331,
+    "p5Y": 0.0194,
+    "p95Y": 0.1531,
+    "spread": 6.5,
+    "mazefloorY_median": 0.0674,
+    "relay": {
+     "px": 6925,
+     "bbox_h": 190,
+     "bbox": [
+      868,
+      467,
+      973,
+      656
+     ],
+     "relayY": 0.0149,
+     "ringY": 0.0261,
+     "ratio": 1.75,
+     "ratio_protan": 1.74,
+     "body_px": 5649,
+     "bodyY": 0.0107,
+     "body_ratio": 2.43,
+     "head_px": 829,
+     "headY": 0.0388,
+     "head_ratio": 1.49,
+     "body_vs_own_ring": 2.38
+    },
+    "sign": {
+     "letters_px": 74,
+     "lettersY": 0.1023,
+     "paperY": 0.0231,
+     "letters_vs_paper": 4.43,
+     "whole_vs_paper": 2.51,
+     "letters_vs_paper_protan": 3.29,
+     "sign_bbox": [
+      1004,
+      439,
+      1027,
+      457
+     ],
+     "faceY": 0.0557,
+     "letters_vs_face": 1.84,
+     "letters_hue_deg": 10.9,
+     "letters_sat": 0.77,
+     "lens_meanY": 0.2211,
+     "lens_vs_letters": 2.16
+    },
+    "leaf": {
+     "leaf_px": 8249,
+     "leafY": 0.0168,
+     "paperY": 0.0259,
+     "leaf_vs_paper": 0.65
+    },
+    "lock": {
+     "px": 241,
+     "bbox": [
+      976,
+      548,
+      1005,
+      571
+     ],
+     "lockY": 0.0109,
+     "leaf_nearY": 0.0165,
+     "leaf_vs_lock": 1.51
+    }
+   },
+   "relay_70": {
+    "meanY": 0.1048,
+    "medianY": 0.0749,
+    "p5Y": 0.0203,
+    "p95Y": 0.2467,
+    "spread": 9.9,
+    "mazefloorY_median": 0.1359,
+    "relay": {
+     "px": 1974,
+     "bbox_h": 122,
+     "bbox": [
+      908,
+      492,
+      941,
+      613
+     ],
+     "relayY": 0.0174,
+     "ringY": 0.08,
+     "ratio": 4.6,
+     "ratio_protan": 4.56,
+     "body_px": 1496,
+     "bodyY": 0.0115,
+     "body_ratio": 6.93,
+     "head_px": 353,
+     "headY": 0.0389,
+     "head_ratio": 2.05,
+     "body_vs_own_ring": 6.91
+    },
+    "sign": {
+     "letters_px": 51,
+     "lettersY": 0.1031,
+     "paperY": 0.0247,
+     "letters_vs_paper": 4.17,
+     "whole_vs_paper": 2.38,
+     "letters_vs_paper_protan": 3.03,
+     "sign_bbox": [
+      991,
+      470,
+      1011,
+      482
+     ],
+     "faceY": 0.0514,
+     "letters_vs_face": 2.0,
+     "letters_hue_deg": 10.0,
+     "letters_sat": 0.78,
+     "lens_meanY": 0.4852,
+     "lens_vs_letters": 4.71
+    },
+    "leaf": {
+     "leaf_px": 1711,
+     "leafY": 0.0174,
+     "paperY": 0.0265,
+     "leaf_vs_paper": 0.65
+    },
+    "lock": {
+     "px": 98,
+     "bbox": [
+      995,
+      547,
+      1008,
+      563
+     ],
+     "lockY": 0.0123,
+     "leaf_nearY": 0.0174,
+     "leaf_vs_lock": 1.42
+    }
+   }
+  }
+ }
+}

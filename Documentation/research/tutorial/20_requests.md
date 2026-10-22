@@ -22,8 +22,10 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 | M4 | 1 | **Station placement:** one station module per floor; kept through revisit shifts. Floor 1: 2–6 cells of walking past the EXIT, with the EXIT at 14–18 cells. Floor 2+: 10–20 cells from the arrival, off the EXIT's shortest route, ≥ 6 cells from it. Never Tall; reachable without glass or keys (L5) | 游戏视觉 modules (V1); L5 | 1 |
 | M5 | 1 | **Beacon field:** a path field seeded at the station TV's cell (C24's machinery). Reach about 90 m; glass impassable; counts shut openings; rebuilt only on topology or opening changes. Public read: `BeaconPath(playerCell, out pathMetres, out shutOpenings, out portalPos)`, where `portalPos` is the first opening leaving the player's room set. Beyond the built map: the nearest built border doorway, as C24 Per A20 (Red, 10-22), the C24 calm route reads this station field until the key is taken, then the EXIT field | M4 | 0.75 |
 | M6 | 1 | **The take:** `StationKeyTaken(stationCell)` event, which the TV (V2) and the sound (S3, S4) listen to. On v1, a Noise at the station with unlimited radius, so the Relay walks there (Hunt). On v2, a device call | M3, M4 | 0.25 |
-| M7 | 1 | **Floor 1 send (E1):** the Relay is not released until `StationKeyTaken`, with a fallback of 150 s (SP) after the start door shuts or entering a third zone. Then it arrives at least 14 cells (42 m) of walking from the player (v2's Arrive rule, RELAY §5), away from the EXIT side if possible, and its first leg is the Hunt to the station. **First-approach grace, Floor 1 only:** no chase before the player has had ≥ 1 W1 burst, unless within 6 m | M6; T2 | 0.5 |
+| M7 | 1 | **Floor 1 send (E1):** the Relay is not released until `StationKeyTaken`, with a fallback of 150 s (SP) after the start door shuts or entering a third zone. **Then, 1 s after the take, it arrives out of sight at 22–30 m of walking from the player** (C32, Red 10-22), on the station's far side from the EXIT and never within 2 cells of the walk back. Fallback ladder: 18–34 m, then ≥ 14 cells, logged in M8. Its first leg is the Hunt to the station. Floor 2+ keeps ≥ 14 cells (42 m), v2's Arrive rule. **First-approach grace, Floor 1 only:** no chase before the player has had ≥ 1 W1 burst, unless within 6 m | M6; T2 | 0.5 |
 | M8 | 1 | Autopilot report fields: Space → station, take → EXIT, EXAMINE on the placard, first W1 burst before first chase (`10_proposal.md` §10). The baseline bots (C05) log whether E1 and the Floor 1 grace are on, because both change v1's release and sight | — | 0.25 |
+
+**M7 note (C32, answered):** Red, 2026-10-22 in 系统设计's chat: "C32 选 1：第 1 层第一次派怪物改到拿钥匙后 1 秒、在 22–30 m 处出现". Recorded in systems.json 2026-10-22v. M7 above is updated; the station's ≥ 2 Steady lamps are V1's.
 
 **Status from 关卡设计 (10-22):** it checked Red's words in this chat and accepted M1–M8 as specified, with no number changes; all after the Alpha.
 - **Phase 0 first:**
@@ -38,13 +40,15 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 
 | # | Ph | Request | Needs | Days |
 |---|---|---|---|---|
-| V1 | 1 | **Two station modules** (Level Designer): Station · Waiting (Level 0) and Station · Desk (Office).<br>• Kits: `Kit_CRTTV`, `Kit_KeyHookBoard` with `Kit_KeyRing` and a tag, chairs, a desk lamp.<br>• One KeySpot on the rack.<br>• The TV side's lamps Dim or Off; one lit lamp by the entrance | Key model (D7) on a hook | 1 |
+| V1 | 1 | **Two station modules** (Level Designer): Station · Waiting (Level 0) and Station · Desk (Office).<br>• Kits: `Kit_CRTTV`, `Kit_KeyHookBoard` with `Kit_KeyRing` and a tag, chairs, a desk lamp.<br>• One KeySpot on the rack.<br>• The TV side's lamps Dim or Off; **at least two Steady lamps on the entrance side** (changed 10-22, so a W1 burst shows in the station) | Key model (D7) on a hook | 1 |
 | V2 | 1 | **Beacon mode for the station TV:**<br>• the ad plays with its light (V3);<br>• on `StationKeyTaken`, the picture collapses to a dot and fades (0.4 + 0.6 s), then stays off | M6 | 0.5 |
 | V3 | 1 | **TV light:**<br>• colour from the video's mean colour, intensity from its luminance (0.1 s sampling, τ 0.12 s);<br>• range about 6 m; soft shadows on desktop, none on WebGL;<br>• ≤ 3 swings of 10 % or more per second; Reduce flashing τ 0.5 s | — | 0.5 |
 | V4 | 1 | **Still desk screens:** on a floor whose key is untaken, Office CRTs show still, dim screens (`screens/30_screen_strings.md` §6) instead of the ad. No motion, no sound (T3) | 平面视觉 · 广告 art | 0.5 |
 | V5 | 1 | **Title corridor TV with sound:** route its ad audio to 声音设计's event (T6). The surface keeps `audioOutputMode None` | S1 | 0.1 |
 | V6 | 2 | Placard copies on each stairwell landing (same kit, new art per floor); the painted floor number on the landing wall | C22 stairwell look | 0.5 |
 | V7 | — | **Not chosen** (T2 = E1). Kept for the record: (E2) a one-time black-and-white security monitor at the station showing the hunter cross a corridor | Hunter look final | 1.5–2 |
+
+**V1 note (教程设计, 10-22):** the rack's warning plate (`10_proposal.md` §4.7) reads only in EXAMINE or within about 1 m. Its EXAMINE aim box must never take the aim from the key (aiming at the key always gives E · TAKE KEY). The plate stays after the take; the conduit to the annunciator (`station/30_look.md` §4.3) carries the wordless hint.
 
 **Status from 游戏视觉 (10-22):** it checked Red's words in this chat and accepted V1–V6, plus the placard mount code for M2 (`FrontRoomsPlacardMount.cs`, P1 west; G1/G2 and `MapRootFor` stay 关卡设计's).
 - **Order:**
@@ -76,8 +80,9 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 **Status from 平面视觉 (10-22):**
 - **G1:** the v2 boards are done (Figma `3459:7280`, VL337) and already carry the Option A changes. Its options are now called "sheet A/B/C", so they are not confused with this doc's Option A.
 - **Phase 0:** sheet TP06 `3471:7309` has no station and no padlock; line 4 reads `EXIT BY STAIR, / ONE FLOOR DOWN.` It becomes TP01 once Option A lands, and it still needs G1 (P1 west) and the C22 stairwell.
-- **G2:** the pictograms exist. Proposal for the HUD key panel: the tag's number becomes the floor number (03 on Level 3), so it matches the placard's LEVEL. 平面视觉 builds it after T1 = A.
+- **G2:** the pictograms exist. Proposal for the HUD key panel: the tag's number becomes the floor number, so it matches the placard's LEVEL. **Format picked by 平面视觉 (10-22, C28):** the tag shows the floor token in Courier Prime at the same size and place: `00` on Level 0, then `B1`…`B9`. From `B10` on, three characters at 0.8×, same baseline, centred; the tag does not grow. It matches the placard and the stair signs (LEVEL B1). Specs in `desktop_ui/FIX_CARD_VL217.md` §B and `placard/50_tutorial_placard.md` §11. The interim A-panel label stays `STAIR KEY`. 平面视觉 builds it after T1 = A.
 - **G3:** sheet C's grammar, Phase 2.
+- **10-22, after C28:** sheet A (79b46369…) and the Phase 0 sheet (1e5d244b…) are regenerated with the warden fine-print line and sent to 游戏视觉 (`50_tutorial_placard.md` §13).
 - **Sheet picked:** Red chose sheet A in 平面视觉's chat ("A 先上", 2026-10-22). Calls 2–4 are unanswered, so the sheet ships as drawn: no enemy drawn, no wall legend, DRAFT strings. **G1 is done.** The art is handed to 游戏视觉 in `Tools/print/ink/art_from_graphic/placard/`, each folder with `examine.json`:
   - `sheetA_phase0/`: swap in once the C22 stairwell and G1 land;
   - `sheetA/`: swap in once the stair lock and the station land.
@@ -96,7 +101,9 @@ Written 2026-10-22 by 教程设计. These implement `10_proposal.md`.
 | # | Ph | Request | Days |
 |---|---|---|---|
 | N1 | 0 | Placard strings v2: the four instruction lines (L4, L5, L6, L1 + L2 in `10_proposal.md` §5.2), the legend labels, and the start door's label or none. Rules: never RUN or HIDE; nothing that implies darkness hides you; never "relay" | 0.25 |
-| N2 | 1 | The key tag (placeholder `STAIR A`); the station's in-world name ("attendant station"?); whether the placard names the hunter's role (for example "floor warden"); the stairwell sheet numbering | 0.25 |
+| N2 | 1 | The key tag (placeholder `STAIR A`); the station's in-world name ("attendant station"?); whether the placard names the hunter's role (for example "floor warden"); the stairwell sheet numbering. **Done 10-22** (Red in 叙事's chat): `STAIR A`; `SECURITY DESK`; fine-print line `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.`; floors `LEVEL 0`, `B1`, `B2`, … (C28); CAUGHT adds `OCCUPANT ACCOUNTED FOR` (`narrative/40_floors_exit_tutorial_strings.md` v1.1) | 0.25 |
+
+**N2 note (教程设计, 10-22):** the warning plate over the key rack is kept, on the close-reading layer only (EXAMINE or ≤ 1 m; not legible from the counter), and stays after the take. The wording must keep the alarm "at the panel", not in the room. See `10_proposal.md` §4.7.
 
 ## 系统设计 (records decisions; running)
 
@@ -128,4 +135,9 @@ T4 is not recorded, because the sheet is 平面视觉's TP04 pick. 系统设计 
   - **2026-10-22 10:3x, X2 spec reviewed by 总控 (tutorial tracker): sent back with changes, not approved to build.** Spec `/Users/redwang/FrontRoomsInteractionWork/x2/X2_PHONE_HINTS_SPEC.md`; review `<作业根>/Documentation/Takeover_2026-10-18/reviews/X2_review_20261022.md`. Blockers: RUN: BUTTON mode not covered; SLOW inside the slow ring sits under the thumb; type (Bayon 17) conflicts with 平面视觉's T5 handheld spec (`placard/50_tutorial_placard.md` §11) and goes to 平面视觉. Also: keep the phone-only noise rule (slow unheard, walk heard), deliberate-creep retire rule, land step 1 with M1.
   - **2026-10-22 11:3x, X2 v2/v2.1 re-reviewed: direction approved, one more revision (v3) before build; nothing needs Red.** Review `<作业根>/Documentation/Takeover_2026-10-18/reviews/X2_rereview_v2_20261022.md`. Open: the slot overlaps the RUN button in BUTTON mode; one-slot word handover (priority, latch, SLOW dwell); edge rule on the real label rect vs the key panel; a named release signal before M7; a playtest seam for the retire check; keyline legibility on lit ground; 关卡设计's ack of the joint M1 landing and the phone Flash-card hunk.
   - **2026-10-22 12:3x, X2 v3 re-reviewed: approved to build after v3.1** (pin the below-slot anchor so FIXED + BUTTON still shows and retires SLOW; higher-priority words cut the hold short; complete the placement rect: top edge, key panel mid-touch, iPad scale, sideways reach, canvas → points, caption rail; name check 12's route). 总控 checks the v3.1 diff only. Build waits for the Alpha cut-off, M1 and the spec's §8 gates (叙事's sign-off of `SLOW · UNHEARD`, 游戏视觉's KeylineAlpha + Bayon fallback). Review `<作业根>/Documentation/Takeover_2026-10-18/reviews/X2_rereview_v3_20261022.md`.
+  - **2026-10-22 11:5x, X2 v3.1 light check by 教程设计 (diff against the v3 review only, no workflow): APPROVED TO BUILD.** Spec `X2_PHONE_HINTS_SPEC.md` v3.1 (sha1 ef2f0cf2). All four fixes hold (anchor + margins; interrupt; full placement rect; check 12 last + `HeldForTools`, EXAMINE step, check 3 ≥ 3 s). Three wording notes go in at build time, with no further review:
+    1. **The placement test uses the settled liveScale 1.** At touch-down it is 0.88 (View :459), which would test a rectangle about 12 % short (R3-3 d, not carried into v3.1).
+    2. **The iPad margins row** says "Bayon 19, cap 13.6", but §3.3 and today's code use Bayon 17 at every scale (View :321, never rescaled). Either keep 17 (cap 12.1, margin 3.9 pt), or name the tablet size as 平面视觉's and count the 1.4 pt keyline (margin about 2.0 pt). Positive either way.
+    3. **Check 10** gets one Android 20:9 run beside the iPad run (R3-4).
+    The build still waits for the Alpha cut-off, M1, and the §8 gates (`FrontRoomsHudStyle`, the Bayon → Plex Mono fallback, 平面视觉's sign-off of the Figma states). Recorded in `reviews/X2_rereview_v3_20261022.md` § "v3.1 light check".
   - Note for the record: L4 "walking is silent at T1" (`10_proposal.md` L4 row) is true on desktop only; on phones a walk is heard (9 m), only the slow gait is silent (`TOUCH_CONTROLS.md`).

@@ -1,0 +1,288 @@
+"""C22 stairwell, fix stage: research and check images from the fix renders (own renders, clone W/proj_stair).
+
+usage: venv/bin/python make_fix_images.py <stair run> <stair metrics> <ladder hold run> <ladder metrics> <ladder dead run>
+       <dead metrics> <diag run> <out images dir>
+Writes:
+  stair_dir_{a,b,c}_<shot>.jpg     full frames, 1920 x 1080 (slide images; no captions)
+  stair_ladder_{a,b,c}_<shot>.jpg  a few full exit-approach frames
+  figma/fig_*.jpg                  label-free crops for the Figma slides (numbers go in the slide chips)
+  framed with the Shot format (W/tools/shotframe, SHOT_FORMAT.md), never hand-drawn captions:
+    stair_dir_{a,b,c}_sheet.jpg, stair_dirs_compare.jpg                       (VL325)
+    stair_v_relay_readability.jpg, stair_v_illuminance.jpg                    (VL326)
+    stair_v_far_door.jpg                                                      (VL327)
+    stair_v_exit_states.jpg, stair_v_exit_ladder.jpg, stair_v_sign_gain.jpg   (VL328)
+    stair_v_door_head.jpg                                                     (critic era 9, support for VL325)
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+sys.path.insert(0, '/Users/redwang/FrontRoomsVisualWork/tools/shotframe')
+import shotframe as S  # noqa: E402
+
+R, MJ, LR, LJ, DR, DJ, GR, OUT = sys.argv[1:9]
+os.makedirs(os.path.join(OUT, 'figma'), exist_ok=True)
+met, lmet, dmet = json.load(open(MJ)), json.load(open(LJ)), json.load(open(DJ))
+E_REF, FC_REF = met['E_ref'], met['fc_ref']
+NAMES = {'A': 'A painted block + steel pan', 'B': 'B bare concrete service stair', 'C': 'C pretends to be inside'}
+STAMP = '2026-10-22 12:30'
+LINE = 'GAME VISUAL'
+RUNNOTE = 'clone W/proj_stair, harness FrontRoomsStairLookdev (fix stage), game post, vFOV 76, eye 1.62 m, UNDER LOAD'
+
+
+def P(run, d, shot, suffix='.png'):
+    return os.path.join(run, d, shot + suffix)
+
+
+def img(run, d, shot):
+    return Image.open(P(run, d, shot)).convert('RGB')
+
+
+def m(d, shot, src=None):
+    return (src or met)['dirs'].get(d, {}).get(shot, {})
+
+
+def parts(run, d, shot):
+    q = np.asarray(Image.open(P(run, d, shot, '_parts.png')).convert('RGB')) > 127
+    return q
+
+
+def bbox_of(mask):
+    ys, xs = np.nonzero(mask)
+    return int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
+
+
+def door_crop(run, d, shot, w=640, h=360, pad=1.6):
+    """crop round the exit door + sign (leaf, sign, lock from the parts mask), 16:9, at least w x h px"""
+    q = parts(run, d, shot)
+    mk = (q[..., 0] & ~q[..., 1] & q[..., 2]) | (q[..., 1] & ~q[..., 0]) | (q[..., 0] & ~q[..., 1] & ~q[..., 2]) | (~q[..., 0] & ~q[..., 1] & q[..., 2])
+    im = img(run, d, shot)
+    if mk.sum() < 5:
+        return im
+    x0, y0, x1, y1 = bbox_of(mk)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    hh = max((y1 - y0) * pad / 2, h / 2 / 4)
+    hw = hh * 16 / 9
+    box = [int(cx - hw), int(cy - hh), int(cx + hw), int(cy + hh)]
+    dx = -min(0, box[0]) - max(0, box[2] - 1920); dy = -min(0, box[1]) - max(0, box[3] - 1080)
+    box = [box[0] + dx, box[1] + dy, box[2] + dx, box[3] + dy]
+    return im.crop(box)
+
+
+def f2(x):
+    return '-' if x is None else f'{x:.2f}'
+
+
+shots_full = ['door', 'door_unlocked', 'exit_8m', 'exit_8m_unlocked', 'landing', 'flight', 'turn_back', 'far_approach',
+              'far_door', 'far_door_held', 'detail', 'relay_stair', 'relay_maze']
+for d in 'ABC':
+    for s in shots_full:
+        if os.path.exists(P(R, d, s)):
+            img(R, d, s).save(os.path.join(OUT, f'stair_dir_{d.lower()}_{s}.jpg'), quality=90)
+    for s in ('lad12_00_lk', 'lad12_00_un', 'lad20_45_lk', 'lad30_00_lk', 'lad12_70_lk', 'lad12_70_end', 'relay_45', 'relay_70'):
+        if os.path.exists(P(LR, d, s)):
+            img(LR, d, s).save(os.path.join(OUT, f'stair_ladder_{d.lower()}_{s}.jpg'), quality=90)
+    if os.path.exists(P(DR, d, 'relay_45')):
+        img(DR, d, 'relay_45').save(os.path.join(OUT, f'stair_ladder_{d.lower()}_relay_45_dead.jpg'), quality=90)
+
+
+def lum(o):
+    s = f"med Y {o.get('medianY', 0):.3f}"
+    if 'walkY_median' in o:
+        s += f" · walk {o['walkY_median']:.3f}"
+    if 'E_Walk' in o:
+        s += f" · {o['E_Walk']['fc_eq_p2']}/{o['E_Walk']['fc_eq_median']} fc-eq"
+    return s
+
+
+# ---- VL325: one sheet per direction, and the comparison
+for d in 'ABC':
+    tiles = []
+    for s, lab in (('door', 'exit · locked'), ('turn_back', 'turn back'), ('landing', 'first view in'), ('flight', 'flight 1'),
+                   ('far_approach', 'to the far door'), ('far_door', 'far door'), ('detail', 'detail'), ('relay_stair', 'relay · landing'),
+                   ('relay_maze', 'relay · exit')):
+        o = m(d, s); extra = ''
+        if 'relay' in o:
+            extra = f" · whole {o['relay']['ratio']} body {o['relay'].get('body_ratio')}"
+        if 'leaf' in o and s == 'door':
+            extra = f" · leaf/paper {o['leaf'].get('leaf_vs_paper')} · lock {o.get('lock', {}).get('leaf_vs_lock')}"
+        tiles.append((P(R, d, s), lab, lum(o) + extra))
+    ev = S.grid(tiles, cols=3, width=1920)
+    sk = {'A': 'stats_A', 'B': 'stats_B', 'C': 'stats_C'}
+    out = S.frame(ev, f'Stairwell {NAMES[d]}',
+                  'The fixed look behind the EXIT: two levels, no gates, the period kit framed, the far door with its trim.',
+                  ['VL325', STAMP, LINE, f'research/stairwell/images/stair_dir_{d.lower()}_sheet.jpg', RUNNOTE], 'WAIT-RED')
+    S.save(out, os.path.join(OUT, f'stair_dir_{d.lower()}_sheet.jpg'), quality=88)
+
+tiles = []
+for d in 'ABC':
+    for s, lab in (('door', 'exit'), ('landing', 'first view in'), ('turn_back', 'turn back'), ('far_approach', 'far door')):
+        tiles.append((P(R, d, s), f'{d} · {lab}', lum(m(d, s))))
+ev = S.grid(tiles, cols=4, width=1920)
+S.save(S.frame(ev, 'Stairwell · three looks · same cameras',
+               'Which look: A painted block + steel pan (recommended), B bare concrete, or C the stair that pretends to be inside?',
+               ['VL325', STAMP, LINE, 'research/stairwell/images/stair_dirs_compare.jpg', RUNNOTE], 'WAIT-RED'),
+       os.path.join(OUT, 'stair_dirs_compare.jpg'), quality=88)
+
+
+# ---- VL326: Relay crops and illuminance
+def relay_crop(run, d, s, metsrc):
+    o = metsrc['dirs'][d][s]
+    x0, y0, x1, y1 = o['relay']['bbox']
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    hh = max(y1 - y0, 160) * .75 + 40
+    hw = hh * 480 / 540
+    box = [int(max(0, cx - hw)), int(max(0, cy - hh)), int(min(1920, cx + hw)), int(min(1080, cy + hh))]
+    return img(run, d, s).crop(box).resize((480, 540), Image.LANCZOS)
+
+
+tiles = []
+for d in 'ABC':
+    for s, lab in (('relay_stair', 'turn landing'), ('relay_maze', 'exit · 8.6 m')):
+        r = m(d, s)['relay']
+        vw = 'PASS' if r['ratio'] >= 4 else 'FAIL'; vb = 'PASS' if (r.get('body_ratio') or 0) >= 4 else 'FAIL'
+        c = relay_crop(R, d, s, met)
+        c.save(os.path.join(OUT, 'figma', f"fig_relay_{d.lower()}_{'stair' if s == 'relay_stair' else 'maze'}.jpg"), quality=90)
+        tiles.append((c, f'{d} · {lab}', f"whole {r['ratio']} {vw} · body {r.get('body_ratio')} {vb} · head {r.get('head_ratio')} · protan {r['ratio_protan']}"))
+ev = S.grid(tiles, cols=6, width=1920)
+S.save(S.frame(ev, 'Relay at 2.05 m · stair and exit',
+               'Exit PASS in A, B and C; on the turn landing the dark body passes in all three and the whole figure fails on the pale head.',
+               ['VL326', STAMP, LINE, 'research/stairwell/images/stair_v_relay_readability.jpg', 'Run! method: 12 px ring, linear Y, bar 4:1; ' + RUNNOTE], 'PARTIAL'),
+       os.path.join(OUT, 'stair_v_relay_readability.jpg'), quality=90)
+
+
+def ramp(t):
+    t = np.clip(t, 0, 1)
+    stops = np.array([[0.20, 0.0, 0.35], [0.0, 0.35, 0.85], [0.0, 0.75, 0.55], [0.95, 0.85, 0.1], [1.0, 0.3, 0.1]])
+    x = t * (len(stops) - 1)
+    i = np.minimum(np.floor(x).astype(int), len(stops) - 2)
+    f = (x - i)[..., None]
+    return stops[i] * (1 - f) + stops[i + 1] * f
+
+
+tiles = []
+for d in 'ABC':
+    for s in ('flight', 'far_approach'):
+        e = np.fromfile(P(R, d, s, '_E960x540.f32'), dtype='<f4').reshape(540, 960, 4)[::-1, :, :3] @ np.array([.2126, .7152, .0722], np.float32)
+        idm = np.asarray(Image.open(P(R, d, s, '_id.png')).convert('RGB'))[1::2, 1::2] > 127
+        walk = (~idm[..., 0]) & idm[..., 1] & (~idm[..., 2])
+        base = np.asarray(img(R, d, s).convert('L').resize((960, 540))).astype(np.float32) / 255
+        fc = e / E_REF * FC_REF
+        col = ramp(np.log10(np.maximum(fc, 1)) / np.log10(60))
+        o = np.repeat(base[..., None] * .55, 3, -1)
+        o[walk] = col[walk]
+        im = Image.fromarray((o * 255).astype(np.uint8))
+        if s == 'flight':
+            im.save(os.path.join(OUT, 'figma', f'fig_illum_{d.lower()}_flight.jpg'), quality=90)
+        v = fc[walk]
+        tiles.append((im, f'{d} · {s.replace("_", " ")}', f'walk p2 {np.percentile(v, 2):.1f} · median {np.median(v):.1f} fc-eq · max/min {np.percentile(v, 98) / max(np.percentile(v, 2), 1e-6):.1f}'))
+leg = np.zeros((60, 960, 3))
+for k in range(960):
+    leg[:, k] = ramp(np.array(k / 959.0))
+tiles.append((Image.fromarray((leg * 255).astype(np.uint8)), 'legend', 'fc-eq, log: 1 (violet) · 3 · 10 · 30 · 60 (red); code minimum 1 fc, UBC 1991 3313'))
+ev = S.grid(tiles, cols=2, width=1920)
+S.save(S.frame(ev, 'Walk-path light · fc-eq',
+               'Never dark: every walk path stays above the 1 fc minimum at p2, relative to an assumed 50 fc maze floor (absolute fc not measured).',
+               ['VL326', STAMP, LINE, 'research/stairwell/images/stair_v_illuminance.jpg', 'white-Lambert float pass, the game lights + ambient + scene fill; fc-eq = E / median maze-floor E x 50 (ESTIMATE)'], 'PASS'),
+       os.path.join(OUT, 'stair_v_illuminance.jpg'), quality=90)
+
+# ---- VL327: the far door, normal and held
+tiles = []
+for d in 'ABC':
+    for s, lab in (('far_approach', 'from the turn landing'), ('far_door', 'arrival · eye level'), ('far_door_held', 'held · lever down')):
+        o = m(d, s)
+        tr = o.get('trim', {}); fd = o.get('far_door', {})
+        tiles.append((P(R, d, s), f'{d} · {lab}', f"door Y {fd.get('meanY', 0):.3f} (frame pct {fd.get('percentile_in_frame', 0):.0f}) · trim {tr.get('px', 0)} px · walk {o.get('walkY_median', 0):.3f}"))
+ev = S.grid(tiles, cols=3, width=1920)
+S.save(S.frame(ev, 'The far door · live, not locked',
+               'Only the far door has stair-side trim (lever, dark plate); during a hold the lever is down and the leaf gives 2 mm, so it reads stuck, not locked.',
+               ['VL327', STAMP, LINE, 'research/stairwell/images/stair_v_far_door.jpg', RUNNOTE], 'PASS'),
+       os.path.join(OUT, 'stair_v_far_door.jpg'), quality=88)
+for d in 'ABC':
+    for s in ('far_door', 'far_door_held'):
+        q = parts(R, d, s); tm = q[..., 0] & q[..., 1] & q[..., 2]
+        x0, y0, x1, y1 = bbox_of(tm)
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        box = [int(cx - 260), int(cy - 146), int(cx + 260), int(cy + 146)]
+        img(R, d, s).crop(box).save(os.path.join(OUT, 'figma', f'fig_{s}_{d.lower()}.jpg'), quality=90)
+
+# ---- VL328: exit states, ladder, sign gain
+tiles = []
+for d in 'ABC':
+    for s, lab in (('door', '5 m · locked'), ('door_unlocked', '5 m · unlocked'), ('exit_8m', '8.6 m · locked'), ('exit_8m_unlocked', '8.6 m · unlocked')):
+        o = m(d, s)
+        c = door_crop(R, d, s)
+        c.save(os.path.join(OUT, 'figma', f'fig_lock_{d.lower()}_{s}.jpg'), quality=90)
+        tiles.append((c, f'{d} · {lab}', f"lock {o.get('lock', {}).get('px')} px, {o.get('lock', {}).get('leaf_vs_lock')}:1 · leaf/paper {o.get('leaf', {}).get('leaf_vs_paper')}"))
+ev = S.grid(tiles, cols=4, width=1920)
+S.save(S.frame(ev, 'A13 · the exit, locked and unlocked',
+               'LOCKED = a dark chain round the crossbar to a wall eye bolt with a padlock; UNLOCKED = the chain on the floor. The EXIT stays lit in both.',
+               ['VL328', STAMP, LINE, 'research/stairwell/images/stair_v_exit_states.jpg', 'crops of 1920 x 1080 frames; ' + RUNNOTE], 'PASS'),
+       os.path.join(OUT, 'stair_v_exit_states.jpg'), quality=90)
+
+def relay_wide(run, d, s, metsrc):
+    q = np.asarray(Image.open(P(run, d, s, '_id.png')).convert('RGB')) > 127
+    rel = q[..., 0] & q[..., 1] & q[..., 2]
+    door = q[..., 0] & ~q[..., 1]
+    x0, y0, x1, y1 = bbox_of(rel | door)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    hh = (y1 - y0) * .7; hw = max(hh * 16 / 9, (x1 - x0) * .7); hh = hw * 9 / 16
+    box = [int(cx - hw), int(cy - hh), int(cx + hw), int(cy + hh)]
+    dx = -min(0, box[0]) - max(0, box[2] - 1920); dy = -min(0, box[1]) - max(0, box[3] - 1080)
+    return img(run, d, s).crop([box[0] + dx, box[1] + dy, box[2] + dx, box[3] + dy])
+
+
+tiles = []
+for dist in ('12', '20', '30'):
+    for ang in ('00', '45', '70'):
+        s = f'lad{dist}_{ang}_lk'
+        o = m('A', s, lmet)
+        c = door_crop(LR, 'A', s, pad=2.4)
+        sg = o.get('sign', {})
+        tiles.append((c, f'{dist} m · {int(ang)} deg', f"letters {sg.get('letters_px', 0)} px · sign {f2(sg.get('whole_vs_paper'))}x · lock {o.get('lock', {}).get('px', 0)} px, {f2(o.get('lock', {}).get('leaf_vs_lock'))}:1"))
+for dist in ('12', '20'):
+    s = f'lad{dist}_70_end'
+    o = m('A', s, lmet); sg = o.get('sign', {})
+    tiles.append((door_crop(LR, 'A', s, pad=2.4), f'{dist} m · 70 deg · end sign', f"letters {sg.get('letters_px', 0)} px · sign {f2(sg.get('whole_vs_paper'))}x"))
+r1 = m('A', 'relay_45', lmet)['relay']; r2 = m('A', 'relay_45', dmet)['relay']; r3 = m('A', 'relay_70', lmet)['relay']
+tiles.append((relay_wide(LR, 'A', 'relay_45', lmet), 'relay 45 deg · cells held', f"whole {r1['ratio']} · body {r1.get('body_ratio')}"))
+tiles.append((relay_wide(DR, 'A', 'relay_45', dmet), 'relay 45 deg · cells dead', f"whole {r2['ratio']} · body {r2.get('body_ratio')} FAIL"))
+tiles.append((relay_wide(LR, 'A', 'relay_70', lmet), 'relay 70 deg · 12 m', f"whole {r3['ratio']} FAIL · body {r3.get('body_ratio')}"))
+ev = S.grid(tiles, cols=3, width=1920)
+S.save(S.frame(ev, 'Exit approach · tier-5 lamps · A',
+               'With the exit cells held steady the sign and the lock read to 20 m and the Relay passes at 0 and 45 degrees; with them dead it fails. A corridor exit needs the end sign.',
+               ['VL328', STAMP, LINE, 'research/stairwell/images/stair_v_exit_ladder.jpg', 'Level 0 hall 63 x 33 m, 231 map troffers, tier-5 draw seed 5 (steady 103, stutter 52, failing 48, dead 19, dim 9); stills of stutter = 0.97; ' + RUNNOTE], 'PARTIAL'),
+       os.path.join(OUT, 'stair_v_exit_ladder.jpg'), quality=88)
+
+tiles = []
+for g in ('1.0', '1.5', '2.0', '2.5'):
+    s = f'sign_g{g}'
+    o = m('A', s); sg = o.get('sign', {})
+    c = door_crop(R, 'A', s, pad=1.0)
+    tiles.append((c, f'gain {g}', f"T2 raw {f2(sg.get('T2_raw_letters_vs_paper'))} · post {f2(sg.get('letters_vs_paper'))} · hue {sg.get('letters_hue_deg')}° sat {sg.get('letters_sat')}"))
+ev = S.grid(tiles, cols=4, width=1920)
+S.save(S.frame(ev, 'EXIT sign gain · in place · 5 m',
+               'The family bar (T2, raw HDR) is letters 1.5-2.5 x the lit wall: gain 1 gives 1.26 (FAIL), gain 2 gives 2.44 (PASS), with no hue shift.',
+               ['VL328', STAMP, LINE, 'research/stairwell/images/stair_v_sign_gain.jpg', 'raw = post off, linear half float; the ring is 12 px of wallpaper round the sign; ' + RUNNOTE], 'PASS'),
+       os.path.join(OUT, 'stair_v_sign_gain.jpg'), quality=90)
+
+# ---- era 9: the door-head strip
+tiles = []
+for d in ('A', 'B'):
+    for s, lab in (('diag_head_oldshadow', 'before · frame + sign cast shadow'), ('diag_head', 'after · C23 spec, no shadow')):
+        tiles.append((P(GR if d == 'A' and False else R, d, s), f'{d} · {lab}', 'LOD0 and LOD1 identical (door_lod0)'))
+ev = S.grid(tiles, cols=2, width=1920)
+S.save(S.frame(ev, 'Exit-door head strip · cause and fix',
+               'The strip over the leaf was the frame head and the sign shadowing the leaf recessed 58 mm behind them, not a LOD hole; it goes when they cast no shadow.',
+               ['VL325', STAMP, LINE, 'research/stairwell/images/stair_v_door_head.jpg', RUNNOTE], 'FAIL→FIXED'),
+       os.path.join(OUT, 'stair_v_door_head.jpg'), quality=90)
+
+# ---- figma: a few more label-free frames
+for d in 'ABC':
+    for s in ('lad12_00_lk', 'lad20_45_lk', 'lad12_70_end'):
+        door_crop(LR, d, s, pad=2.4).save(os.path.join(OUT, 'figma', f'fig_ladder_{d.lower()}_{s}.jpg'), quality=90)
+print('images ->', OUT)
+print(sorted(os.listdir(OUT)))

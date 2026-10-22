@@ -1,0 +1,60 @@
+EXIT sign LIT, level 1.00, EmissionGain 2.00
+A13 lock states: locked chain 33 links, dropped chain 38 links (1/2 in proof coil, dark oxide), laminated padlock
+exit leaf LOD0 Kit_DoorLeaf_Veneer_LOD0 bounds y 0.015..2.095 screenRel 0.333
+exit leaf LOD1 Kit_DoorLeaf_Veneer_LOD1 bounds y 0.015..2.095 screenRel 0.000
+exit leaf LOD0 Kit_DoorCloser_Body_LOD0 bounds y 1.992..2.075 screenRel 0.125
+exit leaf LOD1 Kit_DoorCloser_Body_LOD1 bounds y 1.992..2.075 screenRel 0.009
+exit leaf LOD0 Kit_DoorCloser_Arm_LOD0 bounds y 2.068..2.089 screenRel 0.113
+exit leaf LOD1 Kit_DoorCloser_Arm_LOD1 bounds y 2.068..2.089 screenRel 0.009
+exit leaf LOD0 Kit_DoorCloser_Forearm_LOD0 bounds y 2.080..2.130 screenRel 0.119
+exit leaf LOD1 Kit_DoorCloser_Forearm_LOD1 bounds y 2.080..2.130 screenRel 0.009
+exit leaf LOD0 Kit_DoorCloser_Shoe_LOD0 bounds y 2.110..2.150 screenRel 0.017
+exit leaf LOD1 Kit_DoorCloser_Shoe_LOD1 bounds y 2.110..2.150 screenRel 0.001
+exit leaf LOD0 Kit_ExitDevice_Crossbar_LOD0 bounds y 0.910..1.090 screenRel 0.291
+exit leaf LOD1 Kit_ExitDevice_Crossbar_LOD1 bounds y 0.910..1.090 screenRel 0.023
+Relay (stair, turn landing): the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x0.655 from a native top of 3.13 m to 2.05 m (ModuleUnits.RelayHeight 2.05), width 1.73
+Relay (maze, before the exit): the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x0.655 from a native top of 3.13 m to 2.05 m (ModuleUnits.RelayHeight 2.05), width 1.73
+shot door rendered
+shot door_unlocked rendered
+shot door_lod0 rendered
+shot exit_8m rendered
+shot exit_8m_unlocked rendered
+shot landing rendered
+shot flight rendered
+shot turn_back rendered
+shot far_approach rendered
+shot far_door rendered
+shot far_door_held rendered
+shot detail rendered
+shot relay_stair rendered
+shot relay_maze rendered
+shot diag_head rendered
+shot diag_head_oldshadow rendered
+shot door_oldshadow rendered
+shot diag_head_side rendered
+shot sign_g1.0 rendered
+shot sign_g1.5 rendered
+shot sign_g2.0 rendered
+shot sign_g2.5 rendered
+direction C, lamp mode edge, lamp gain 1, fixture gain 1.50, sign gain 2.00
+shaft renderers 543 (1 floors + pit), distinct materials 28, triangles 78832
+one floor period (floor 0 kits): renderers 507, distinct materials 26, triangles 53989
+  kit BK_C_Door: renderers 15, triangles 25201
+  kit BK_C_ExitDoor: renderers 312, triangles 15872
+  kit BK_C_Flight: renderers 24, triangles 372
+  kit BK_C_Guard: renderers 98, triangles 1448
+  kit BK_C_Landing: renderers 10, triangles 120
+  kit BK_C_Light: renderers 2, triangles 24
+  kit BK_C_Sign: renderers 2, triangles 960
+  kit BK_C_Skirt: renderers 6, triangles 72
+  kit BK_C_WallRail: renderers 38, triangles 9920
+lights total 16; stair fixtures 6 (shadowed 6)
+  map lamp (across) D0 W Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) D0 E Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) T0 W Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) T0 E Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) D1 W Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) D1 E Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+relay scale 0.655
+
+lamp mode edge; saved 9 blockout kit prefabs to Assets/StairBlockout/C (12 materials, 6 meshes)

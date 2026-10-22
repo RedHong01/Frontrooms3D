@@ -118,8 +118,8 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 | 5 | 0:40–1:10 | **The station**, 2–6 cells past the EXIT: an attendant's desk or a waiting area. Chairs face a TV on a stand, still playing; the room's own lamps are dim. On the key rack beside it, one key, lit by the screen | "Something is going on here" (Red's words); the key is the thing | Visual (module look), map (module + KeySpot) |
 | 6 | Take | E · TAKE KEY. First key of the run: the hand-off close-up (C18) shows the tag: `STAIR A` (placeholder; narrative) | Why this key: it is the stair's | LIVE close-up; tag string DESIGN |
 | 7 | +0.4 s | **The TV switches off**: the picture collapses to a dot, the power-off zip, the jingle stops. The room drops to its dim lamps. No panel tick: on a device call the device's own sound replaces it (RELAY §6), and here the dying set is that sound | A loud change of state (R7): "I set something off" | Visual (collapse), sound (zip) |
-| 8 | +3 s | The hunter is sent **to the station**, arriving out of sight at least 14 cells (42 m) of walking from the player (§6) | — (unseen) | Map / Relay code |
-| 9 | 1:10–2:00 | The player heads back to the EXIT, 2–6 cells away. Within seconds their room's lamps **dip together** (W1 stage 1, LIVE) | L6: "lamps dipping = it is near"; placard line 3 pays off | LIVE |
+| 8 | +1 s | The hunter is sent **to the station**, arriving out of sight at **22–30 m** of walking from the player, on the station's far side from the EXIT and never within 2 cells of the walk back (C32, Red 10-22; §6) | — (unseen) | Map / Relay code |
+| 9 | +1.3–2 s | The first burst: the station's lamps **dip together** (W1 stage 1, LIVE; its ≥ 2 Steady lamps, §4.2) while the player heads back to the EXIT, 2–6 cells away. The distance grows as they leave | L6: "lamps dip → it's near → I leave → I'm safe"; placard line 3 pays off | LIVE |
 | 10 | At the EXIT | E · UNLOCK: the head-dip unlock shot (LIVE), then the door opens on a stairwell. It shuts and locks behind them (C22) | L2 closes | Map (C22 minimum) |
 | 11 | Stairwell | Safe. The floor number is painted on the landing wall (NYC LL5 floor numerals, `stairwell/01` S4) and **a copy of the plan, the next sheet**, hangs by the far door | L9: progress number (Exit 8 pattern); a re-read | Visual + graphic |
 | 12 | Floor 2 | Same rules: hear the TV, take the key, reach the stair. The station is farther and off the EXIT route; the hunter is already out | Rehearsed → tested (R2) | Map |
@@ -146,7 +146,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
   - **Station · Desk** (Office theme): a guard desk with the TV on its end; a desk lamp; the key rack beside it.
 - **Kits that exist:** `Kit_CRTTV` (screen anchor), `Kit_KeyHookBoard` ("key rack", A09), `Kit_KeyRing`, `Kit_KeyTag_*`, `Kit_TableLampPleated`, the chair and desk kits.
 - **One KeySpot marker** on the rack (host: the rack); everything else is ordinary props.
-- **Lamps.** The TV side's lamps are Dim or Off in the module (Level Designer lamp modes), so the TV's light is the brightest thing in the room (L4D's single focal light, Rogers' squint test). At least one lamp by the entrance stays lit, so W1 can still burst in the room.
+- **Lamps.** The TV side's lamps are Dim or Off in the module (Level Designer lamp modes), so the TV's light is the brightest thing in the room (L4D's single focal light, Rogers' squint test). **At least two Steady lamps (not Dim) on the entrance side** (changed 10-22). W1 needs ≥ 2 live lamps in the player's room set, a dip on a Dim lamp barely shows, and the ballast groan is not built yet. The TV corner stays Dim or Off, so the set is still the focal light near it.
 - **Doors.** Modules cannot author doors (the map makes them). Not needed: the sound path and the light spill work through arches and open edges.
 
 ### 4.3 Placement (map side; rules for 关卡设计)
@@ -237,6 +237,20 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 6. **The hunter is sent to the station** (§6).
 - **Same on every floor**, so the rule stays true: taking the station key always calls it to the station.
 
+**The warning plate over the rack (decided 2026-10-22 by 教程设计, at 叙事设计's request).**
+- 叙事's plate (`research/station/01_research.md` §6), **wording settled 10-22:** `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL`. The first draft was `ALARMED: REMOVAL SOUNDS ALARM AT PANEL`; it was changed because it could read as "a bell will ring here".
+- **Decision: keep the plate, on the close-reading layer only.**
+  - It is readable from about 1 m or in EXAMINE (E · READ on the plate), and **not legible from the counter or from where the player first sees the rack**.
+  - The first-time player who walks up and presses E still gets the cause and effect in one frame (R7).
+  - The careful reader is told the truth before the take, which keeps the beat fair and EGRESS-honest: the building is honest about itself and blind to the hunter.
+- **The plate stays after the take.** A player who wonders "what did I do?" can walk back and read it, so the effect is explained after the fact as well as before. The conduit from the plate to the annunciator (`station/30_look.md` §4.3) says "this key is wired" without words, at any distance.
+- **Constraints:**
+  - The plate's EXAMINE aim box must not take the aim from the key: aiming at the key always gives E · TAKE KEY.
+  - Type size is 平面视觉's call, against the EXAMINE readability rule (`inspect/10_design.md` §3.4), so it reads in the close-up and not at walk-up distance.
+  - The words are 叙事's. `SILENT ALARM` tells the reader that nothing rings here and that the panel is told, which matches the take beat: the set dies and the dispatch is silent.
+  - Same on every floor: the plate never glows, never tells the hunter's position and never changes.
+- **Rejected:** the pure surprise (no plate). It is less fair, and it leaves nothing to explain the dispatch afterwards. A plate legible from the counter was rejected too, because it turns the first take into "I knew".
+
 ### 4.8 Rules check (beacon)
 
 | Rule | How the beacon keeps it |
@@ -271,7 +285,7 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 | Column grid, north arrow, scale | Period detail | — | Keep |
 | Glow legend `IN POWER FAILURE`: `WAY ON` / `EXIT` / `NO EXIT` | The wallpaper points the way in the dark | The wall arrows (W6) are CLONE_ONLY, not in main (N4) | A promise the game cannot keep yet. **Keep it only in a build that ships W6;** until then print it without the glow, or drop it (D17 kill switch) |
 | Footer `WALK, DO NOT RUN.` / `CLOSE DOORS BEHIND YOU.` | Walk; shut doors | Sprint steps are a 26 m noise and walking is silent at T1. A shut door adds 9 m to its hearing path and stops a wander. On v1, shutting a door is itself a 14 m noise | True enough, and v2's lesson. Keep, merged into the instructions |
-| Title block `LEVEL 0` · `SHEET A-2 OF 4` · `PRINTED 03/90` | Which floor | Floors exist after C22 | **Make LEVEL the floor number**; each stairwell copy carries its own |
+| Title block `LEVEL 0` · `SHEET A-2 OF 4` · `PRINTED 03/90` | Which floor | Floors exist after C22 | **Make it the floor**: `LEVEL 0`, then `B1`, `B2`, … (C28, decided 10-22); each stairwell copy carries its own |
 | (missing) the key, the station, the lamps | — | W1 is live; keys are about to matter | **Add** |
 
 ### 5.2 What the plan must teach (contract for 平面视觉 and 叙事)
@@ -309,7 +323,13 @@ All values are SP. 声音设计 sets the absolute level against the room tone; t
 - never the word "relay";
 - no live threat information.
 
-**Open for 叙事 and Red:** whether a line names the hunter's role (for example "floor warden", the person who checks every room in a fire drill). My recommendation is to name the role at most, never the body. The hunter's look is still open (`research/hunter`).
+**Decided (Red, 2026-10-22 12:15 in 叙事设计's chat: "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）"; strings `research/narrative/40_floors_exit_tutorial_strings.md` v1.1 §3):**
+- **A fine-print line, not numbered:** `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.` The four lines are unchanged.
+  - It names the role only; the warden is never drawn.
+  - It adds one lesson: the hunter checks every room, so hiding in one is no plan (it searches rooms, MAP_GENERATION §5).
+  - 平面视觉 regenerates sheet A and the Phase 0 sheet.
+- **Floors:** `LEVEL 0`, then `B1`, `B2`, … (C28) on the placard's title block, the stairs, the HUD and CAUGHT. Every "LEVEL n" / "floor number" in this doc means that sequence.
+- **CAUGHT** gets `OCCUPANT ACCOUNTED FOR` under it.
 
 ### 5.3 Where and how it is read
 - **Mount: 平面视觉's G1, P1 west on every seed** (the reader's right of the start door, facing into the map). A turned plan needs one fixed mount for the dot to be true.
@@ -347,10 +367,17 @@ Until the EXIT is locked, line 4 must read without the key (for example `EXIT BY
 | Cost, ESTIMATE | Map 0.5–1 d on v1 (the key take is a large noise at the station; Floor 1 release gate) | +1.5–2 d (render-texture camera, monitor look); the hunter's look must be final; one-time only, or it becomes a radar | 0 |
 
 **E1 in detail (Floor 1).**
-- **The send.** 3 s after the take, it arrives out of sight **at least 14 cells (42 m) of walking from the player**, the same hard rule as v2's Arrive (RELAY §5), preferring the side away from the EXIT, at a Relay entry if a module has one. The lamps then start while it walks in, not at the moment it arrives. (Was 10–12 cells from the station; 系统设计 pointed out that is 30–36 m from a player still in the station.) Its first leg walks to the station: a Hunt, at hunt speed, never a chase.
-  - On v1 this is the existing Noise → Hunt with an unlimited radius at the station.
-  - On v2 it is a device call (B2 director, L2 devices).
-- **The first approach is announced.** Under E1 the player is 2–6 cells from the EXIT, walking away from the station while it walks in. W1 bursts at W ≤ 30 m are very likely before any sighting.
+- **The send (C32, Red 2026-10-22 in 系统设计's chat: "C32 选 1：第 1 层第一次派怪物改到拿钥匙后 1 秒、在 22–30 m 处出现").** Floor 1's first send only:
+  - **1 s after the take,** it arrives out of sight at **22–30 m of walking from the player**, just inside stage 1;
+  - on the station's **far side from the EXIT**, never within 2 cells of the walk back, at a Relay entry if a module has one;
+  - its first leg walks to the station: a Hunt, at hunt speed, never a chase.
+  - If no cell qualifies, 关卡设计's fallback ladder applies: 18–34 m, then ≥ 14 cells; M8 logs which rung was used.
+  - On v1 this is the existing Noise → Hunt with an unlimited radius at the station. On v2 it is a device call (B2 director, L2 devices).
+  - Recorded as systems.json 2026-10-22v (RELAY decisions block).
+- **Floor 2+** keeps v2's Arrive rule: ≥ 14 cells (42 m) from the player (RELAY §5).
+- **Why not 42 m on Floor 1** (found 10-22 by 叙事设计 via 系统设计). From ≥ 42 m, sent 3 s after the take, the hunter (2.6 m/s) never closes on a prompt player walking to the EXIT (3.2 m/s). The walk back plus the unlock takes about 3.5–7.5 s, so the first burst would come after the player has left, and from the far side it never comes at all.
+- **The first approach is announced.** The first burst lands 1.3–2 s after the take, in the station (its ≥ 2 Steady lamps, §4.2), and the distance grows as the player leaves: "lamps dip → it's near → I leave → I'm safe".
+- **Rejected alternatives:** a station farther past the EXIT (the gap still never closes); W1 taught by the placard only (breaks R2); a scripted burst (lamps would lie).
 - **First-approach grace (Floor 1 only; v1 bridge).** Its first chase cannot start until the player has had at least one W1 burst, unless they are within 6 m.
   - It is invisible, and the same idea as v2's G3 gate (warnings first).
   - Alien: Isolation's early, limited behaviours are the precedent (`01` T8).

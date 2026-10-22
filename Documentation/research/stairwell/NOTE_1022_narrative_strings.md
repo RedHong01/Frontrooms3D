@@ -17,7 +17,7 @@ The strings for the blank sign plates are ready. Spec: `Documentation/research/n
 
 **Floor numbering**
 - Every token moves down one per floor.
-- The B scheme waits on Red. If floors count up instead, `B1` becomes `1`.
+- **The B scheme is final** (Red 2026-10-22 12:15 in the 叙事设计 chat, Q1 = C28: `LEVEL 0`, then `LEVEL B1`, `B2`, … going down). The strings above stand as written.
 
 **Optional:** a `STAIR A` letter plate on the maze side of the EXIT door (NYC LL5 stair letters).
 

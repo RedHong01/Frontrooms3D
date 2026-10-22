@@ -1,0 +1,20 @@
+direction C, lamp mode edge, lamp gain 1, fixture gain 1.50, sign gain 2.00
+shaft renderers 543 (1 floors + pit), distinct materials 28, triangles 78832
+one floor period (floor 0 kits): renderers 507, distinct materials 26, triangles 53989
+  kit BK_C_Door: renderers 15, triangles 25201
+  kit BK_C_ExitDoor: renderers 312, triangles 15872
+  kit BK_C_Flight: renderers 24, triangles 372
+  kit BK_C_Guard: renderers 98, triangles 1448
+  kit BK_C_Landing: renderers 10, triangles 120
+  kit BK_C_Light: renderers 2, triangles 24
+  kit BK_C_Sign: renderers 2, triangles 960
+  kit BK_C_Skirt: renderers 6, triangles 72
+  kit BK_C_WallRail: renderers 38, triangles 9920
+lights total 16; stair fixtures 6 (shadowed 6)
+  map lamp (across) D0 W Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) D0 E Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) T0 W Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) T0 E Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) D1 W Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+  map lamp (across) D1 E Spot I 3.75 range 6.5 cone 162/96 rgb 1.00,0.96,0.88 shadows Soft
+relay scale 0.655

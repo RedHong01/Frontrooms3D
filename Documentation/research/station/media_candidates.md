@@ -1,6 +1,6 @@
 # Media candidates · the security desk (station)
 
-**Status: nothing downloaded.** Every download needs Red's explicit OK first (project rule). Sizes come from HTTP HEAD requests and yt-dlp metadata only, on 2026-10-22. Full lists are in the agents' notes: A §10 has M01–M45 (photos, museum objects, patents), and B §8 has M1–M31 (film, TV and game pages, avoid-refs).
+**Status: Set 1 DOWNLOADED 2026-10-22 12:18** on Red's OK (12:15, 叙事设计 chat, "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）"): all 7 files, 6,348,865 bytes, in `<作业根>/Research/week03/station/stills/` with their own `SOURCES.md` (rights, credits, the two rechecks). Set 2 stays links. Every further download still needs Red's explicit OK first (project rule). Sizes come from HTTP HEAD requests and yt-dlp metadata only, on 2026-10-22. Full lists are in the agents' notes: A §10 has M01–M45 (photos, museum objects, patents), and B §8 has M1–M31 (film, TV and game pages, avoid-refs).
 
 **Where files would go once approved:**
 - outside the repo: `Research/week03/station/` (stills, clips);
@@ -31,6 +31,6 @@ The real guard-desk photos (Reagan Library contact sheets 1981; Toronto Star arc
 
 Film stills (*Die Hard*, *Halloween II*, *Twin Peaks*, *Barton Fink*, *Silent Hill 2* …) stay as **links with timestamps** on the board (`02_refs.md`). Their times are [memory] and must be checked first.
 
-## To ask Red (in the 叙事设计 chat)
+## Asked and answered (叙事设计 chat)
 
 Set 1 is seven files, about 6.3 MB from Wikimedia Commons and USF Digital Commons, all with a licence named. Item 7's licence needs a recheck. Set 2 stays links unless Red wants clips.

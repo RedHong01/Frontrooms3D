@@ -1,7 +1,8 @@
 # 30 · Security desk: look, kit inventory, light plan (游戏视觉, 2026-10-22)
 
 Workflow `station-look`, stage 1 (look and directions, no Unity). Written 2026-10-22 by 游戏视觉.
-- **Status: PROPOSAL, paper only.** Every number comes from the kit sidecars, the code or the light math in `data/light_math.py.txt`. The blockout stage (clone `W/proj_station`) proves them with `20_layout.md` §8 and the extra checks in §6 here.
+- **2026-10-22 12:4x: the blockout stage ran** (clone `W/proj_station`, eight plans, the six checks of `20_layout.md` §8). Results, and what they changed here (V1 lamps, the 12° E1 rule, V3 colour, the strip width), are in **§9**; VL354–VL358.
+- **Status: PROPOSAL, paper only** (§0–§8). Every number comes from the kit sidecars, the code or the light math in `data/light_math.py.txt`. The blockout stage (clone `W/proj_station`) proves them with `20_layout.md` §8 and the extra checks in §6 here.
 - **Read first:** `00_brief.md`, `01_research.md`, `02_refs.md`, `20_layout.md` (G1–G10, plans W, D, H), `05_visual_answers.md`; tutorial `10_proposal.md` §4 and `20_requests.md` V1–V6 (inputs, not re-opened); `LEVEL_MODULE_SPEC.md`.
 - Nothing was built, merged or downloaded. Unity was not opened. The only files written are this one, `data/light_math.py.txt` and the visual half of `10_directions.md`.
 
@@ -336,7 +337,7 @@ The TV's wash tops a Dim pool out to about 3 m and a Steady pool only inside abo
 - **After the take it stays lit.** The take drops only the desk's non-emergency circuit (01 §5), so the set dies and the panel stays awake: the one point of colour left in the take frame, 0.6 m to the right of the empty hook. It does not dip in W1 (it is not a map lamp).
 - **The wire tells the fiction:**
   - an EMT conduit from the key plate's box to the cabinet shows "this key is on the alarm" without a word;
-  - it sits under the honest plate (`STAIR KEY` / `ALARMED…`, 01 §6; the plate is 教程设计 / 总控's call).
+  - it sits under the honest plate (`STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL`, 01 §6 wording v2; the plate is 教程设计 / 总控's call).
 - **The same rule for other small lamps in view:**
   - the phone's line lamps are **dark**. A winking hold would be a second blinking light in view (G3). If 叙事 wants the hold call, a steady lamp;
   - the charger's lamp is dark (nothing in it).
@@ -434,6 +435,18 @@ Then the Figma section `FRONTROOMS · SECURITY DESK (STATION) · PROPOSAL` in th
   - can a module fix an arch's width, so E1 is the widest (1.6–1.8 m, G1)?
   - "no door on E1" (20 §7 Q2);
   - the WebGL light-layer fallback needs the shell split per room (§3.6).
+- **关卡设计's answers (2026-10-22 12:3x, all buildable, into M4 after C22):**
+  - hero budget ≤ 100k LOD0 in both themes: OK; one station per floor; props beyond one dress frame spread over the dress queue (3 ms desktop / 2 ms WebGL);
+  - M4 places Station · Waiting only in Standard-height zones. **Station · Desk (游戏视觉 answer): Office theme, Low or Standard (the set stands on the credenza, no bracket), never Tall;**
+  - Columns = None in the module asset (no pillars inside the footprint);
+  - arch width: a per-edge `archWidth` override in RoomModuleData is coming (0 = the map's own), read by BuildEdge; author E1 at 1.6–1.8 m once the field exists (关卡设计 sends the field name);
+  - no door on E1: M4 only accepts spots where E1's outside cell is in the station's zone at the same height;
+  - WebGL light-layer fallback: the station footprint's shell (walls, floor, ceiling) gets its own mesh/renderer under the chunk. **游戏视觉 answer: URP rendering-layer bit 1 (name "Station"; bits 29/30 are G14's): the station shell and props carry mask Default|Station (value 3), the TV light renders only Station (value 2); used on WebGL only unless the desktop pass needs it;**
+  - from 叙事's questions: E1 faces the arriving beacon route; both openings loop and reach the EXIT; Floor 1's Relay arrival avoids the station→EXIT corridor.
+- **教程设计 (2026-10-22 12:4x): the key-rack warning plate stays, close-reading layer only** (EXAMINE or ≤ 1 m; its aim box never takes the aim from the key, which always gives `E · TAKE KEY`; it stays after the take). See `NOTE_1022_key_plate.md`.
+- **教程设计 (2026-10-22 12:1x): lamp rule** replaces "one lit lamp by the entrance": **≥ 2 Steady lamps on the entrance side, the TV corner Dim/Off** (W1 needs ≥ 2 live lamps in the room set). Re-check §3–§4 light numbers with it. See `NOTE_1022_key_plate.md` addendum.
+- **叙事设计 (2026-10-22 12:2x): plate wording v2** `STAIR KEY` / `SILENT ALARM: REMOVAL SIGNALS PANEL` replaces `ALARMED: REMOVAL SOUNDS ALARM AT PANEL` (nothing rings at the take; "SOUNDS" read as a local bell). Use v2 in every blockout and draft. Source of truth `01_research.md` §6; see `NOTE_1022_key_plate.md` addendum.
+- **叙事设计 (2026-10-22 12:2x): 7 research photos** for the board / Figma: use the metadata-free board copies in `/Users/redwang/FrontRoomsVisualWork/station/board_stills/`, credits and rules in `NOTE_1022_photos.md`. `faraday_panel.jpg` backs S12 (cream cabinet, not red); new look call: **the S13 conduit enters the annunciator from below**. `detex_*` back S35.
 - **平面视觉:** one `Prop_StationPaper` atlas: sign-out sheet, DAR, register page, post-orders spine, tent card, magazine covers, annunciator labels, key plate, `NO SMOKING`, `KEY CONTROL`. Strings are 叙事's.
 - **叙事:**
   - W′ and D′ (§5);
@@ -448,3 +461,114 @@ Then the Figma section `FRONTROOMS · SECURITY DESK (STATION) · PROPOSAL` in th
 - `30_look.md`: this file.
 - `data/light_math.py.txt`: the light and geometry math (URP falloff and cone, the plans, the ad's measured track); `python3 data/light_math.py.txt` reprints every number in §4.
 - `10_directions.md`: the visual half, appended under a dated header; 叙事's text is untouched.
+
+---
+
+## 9. Blockout results (stage 2, clone `W/proj_station`, 2026-10-22 12:08–12:45)
+
+Written by 游戏视觉 (workflow `station-look`, stage 2). §0–§8 above are the paper stage; where the blockout changed a number or a call, this section says so, and the text above stays as it was.
+- **How it was built:** each plan is a `RoomModuleData`, stamped into the game's own map by `FrontRoomsMapWorld.PlaceModule` + `BuildForCapture`, as the Level Designer preview does it. The map builds the shell, the surfaces, the lamps (module lamp modes) and the module props (with colliders).
+- **Seeds:** each seed is picked from the generator's data, before any geometry is built. It needs E1 ≥ 1.6 m, E2 ≤ 1.4 m, exactly two openings, and a corridor straight for three cells on E1's axis.
+- **Kits on top:**
+  - existing kits through `FrontRoomsKitLibrary.Spawn`, colliders false;
+  - the new kits as blockout stand-ins named as in §1: `Kit_StationCounter_*`, `Kit_TandemBeam3`, `Kit_TVWallBracket`, `Kit_KeySwitchPlate`, `Kit_FireAnnunciator`, `Kit_JacketDraped`, `Kit_Clipboard`, `Kit_RegisterBook`, `Kit_RadioCharger`, `Kit_CoffeeCup`, `Kit_Ashtray`, `Kit_SmokingStand`, `Kit_MagazineRack`, `Kit_TentCard`, `Kit_Credenza_Laminate`;
+  - the key as `Kit_KeyRing` + `Kit_Key_Zone` + `Kit_KeyTag_Rect`, hung by their anchors (D1.6's assembly is not in main).
+- **The set:** the screen shows the ad's five real cards on `CRT_AdSurface`, sized to the kit's own `Prop_ScreenCRT` faces. The set's light follows §3.1: spot 100°/160°, range 9, Soft shadows, intensity and colour per card.
+- **Renders:** eye 1.62 m, vFOV 76, through the game's post.
+- **The module check:** `Validate` (with the stand-ins as virtual props) gives 0 errors and 0 warnings in every plan.
+- **Where the files are:**
+  - the harness: `data/FrontRoomsStationLookdev.cs.txt`;
+  - the runs: `data/runs.md`;
+  - every number: `data/blockout_metrics.json`;
+  - the images: `images/`, as VL354–VL358.
+- **Load:** every run was UNDER LOAD (1-min load 46–314).
+
+**Eight plans:**
+- **W, D and H** as drawn (20_layout §4).
+- **W′ and D′** as amended in §5.
+- **Three revisions the checks asked for:**
+  - **W′ rev 2:** the counter 0.56 m further west, so the staff strip is 2.0 m; the key cabinet moves to the N wall.
+  - **W′ rev 3:** rev 2, with E1 in the W wall's north cell, on the set's axis. The tandem rows move south of that axis.
+  - **D′ rev 3:** E1 in the S wall's east cell, on the set's axis. The desk sits left of the axis, so the chair and the jacket are seen below the screen.
+
+**Lamps follow tutorial V1, not §3.3.** V1 (`tutorial/20_requests.md`, changed 10-22) asks for at least two Steady lamps on the entrance side, and the TV side Dim or Off. §3.3 had one Steady lamp. The blockout uses two Steady lamps in the entrance-side cells and none in the set's two cells.
+
+### 9.1 The six checks of 20_layout §8, per plan
+
+Bars:
+- **1a:** the squint from the last junction (4.5 m out on E1's axis, in the middle of the second cell). It passes if the screen shows through E1 (≥ 150 px) or ≥ 0.25 % of the frame swings ≥ 20 % between cards.
+- **1c:** the exits' mean E ≥ 1.5 × the room's.
+- **2:** key ≤ 60° off the screen axis, ahead of the screen plane, ≤ 2.0 m away, and the set ≥ 50 % of the board's light. FLAG means it passes on the mean card only, or only with the luminance-preserving colour (§9.2).
+- **3:** the set within 50° of the take view (G5 literal), else the light on the board drops ≥ 70 % (G5's fallback).
+- **4:** furniture hides ≤ 25 % of the key board from 5 eye spots at each opening.
+- **5:** in-room routes and the staff strip ≥ 1.0 m (`MinAisle`) for the capsule test, and no player-only floor.
+- **6:** ≤ 3 changes a second (WCAG 2.3.1), and no red flash.
+
+| Plan | 1a junction 4.5 m | 1a 1.5 m out | 1b from E1 | 1c exits after the take | 2 key lit by the set | 3 take frame | 4 wiggle | 5 paths | 6 photosafety |
+|---|---|---|---|---|---|---|---|---|---|
+| W (as drawn) | screen 0 px, 0 % of E1 moves · **FAIL** | screen 0 px, 0.8 % of frame moves · **PASS** | set 829 px, key 36 px, E2 23371 px; board 100 % seen · **PASS** | 1.96 × room E (before 1.71) · **PASS** | 68° off axis, 1.37 m, 0.29 m ahead; set 45 % (darkest card 12 % as specified, 30 % lum-kept) · **FAIL** | set 85° off the view (literal **FAIL**); board −45 % in one change · **FAIL** | furniture hides ≤ 0.7 %; wall hides it from 0.3 m outside E2 · **PASS** | E1→key 1.4 m, key→E2 1.1 m, strip 1.3 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 11 %, red 0 · **PASS** |
+| W′ (30_look) | screen 0 px, 3 % of E1 moves · **FAIL** | screen 699 px, 2 % of frame moves · **PASS** | set 1068 px, key 18 px, E2 3850 px; board 100 % seen · **PASS** | 1.59 × room E (before 1.40) · **PASS** | 38° off axis, 1.86 m, 1.20 m ahead; set 84 % (darkest card 47 % as specified, 73 % lum-kept) · **FLAG** | set 107° off the view (literal **FAIL**); board −84 % in one change · **PASS** | furniture hides ≤ 0.0 % · **PASS** | E1→key 1.4 m, key→E2 0.9 m, strip 0.7 m; player-only 0 m² · **FAIL** | ≤ 1 change/s, flash area ≤ 14 %, red 0 · **PASS** |
+| W′ rev 2 | screen 0 px, 3 % of E1 moves · **FAIL** | screen 699 px, 2 % of frame moves · **PASS** | set 1068 px, key 18 px, E2 3850 px; board 100 % seen · **PASS** | 1.75 × room E (before 1.58) · **PASS** | 38° off axis, 1.86 m, 1.20 m ahead; set 84 % (darkest card 47 % as specified, 73 % lum-kept) · **FLAG** | set 107° off the view (literal **FAIL**); board −84 % in one change · **PASS** | furniture hides ≤ 0.0 % · **PASS** | E1→key 1.4 m, key→E2 1.1 m, strip 1.1 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 13 %, red 0 · **PASS** |
+| W′ rev 3 | screen 368 px, 19 % of E1 moves · **PASS** | screen 713 px, 3 % of frame moves · **PASS** | set 1064 px, key 11 px, E2 17569 px; board 100 % seen · **PASS** | 1.74 × room E (before 1.56) · **PASS** | 38° off axis, 1.86 m, 1.20 m ahead; set 86 % (darkest card 50 % as specified, 76 % lum-kept) · **PASS** (darkest card on the bar) | set 107° off the view (literal **FAIL**); board −86 % in one change · **PASS** | furniture hides ≤ 0.0 % · **PASS** | E1→key 1.4 m, key→E2 1.1 m, strip 1.1 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 18 %, red 0 · **PASS** |
+| D (as drawn) | screen 0 px, 0 % of E1 moves · **FAIL** | screen 0 px, 0.5 % of frame moves · **PASS** | set 1093 px, key 30 px, E2 19652 px; board 100 % seen · **PASS** | 1.35 × room E (before 1.29) · **FAIL** | 39° off axis, 1.92 m, 1.49 m ahead; set 82 % (darkest card 44 % as specified, 71 % lum-kept) · **FLAG** | set 97° off the view (literal **FAIL**); board −82 % in one change · **PASS** | furniture hides ≤ 0.0 %; wall hides it from 0.3 m outside E2 · **PASS** | E1→key 1.4 m, key→E2 1.4 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 6 %, red 0 · **PASS** |
+| D′ (30_look) | screen 0 px, 4 % of E1 moves · **FAIL** | screen 660 px, 4 % of frame moves · **PASS** | set 1078 px, key 22 px, E2 76207 px; board 100 % seen · **PASS** | 1.92 × room E (before 1.68) · **PASS** | 39° off axis, 1.92 m, 1.49 m ahead; set 82 % (darkest card 43 % as specified, 70 % lum-kept) · **FLAG** | set 97° off the view (literal **FAIL**); board −82 % in one change · **PASS** | furniture hides ≤ 0.0 %; wall hides it from 0.3 m outside E2 · **PASS** | E1→key 1.4 m, key→E2 1.4 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 11 %, red 0 · **PASS** |
+| D′ rev 3 | screen 414 px, 16 % of E1 moves · **PASS** | screen 660 px, 4 % of frame moves · **PASS** | set 1073 px, key 12 px, E2 48512 px; board 100 % seen · **PASS** | 1.59 × room E (before 1.36) · **PASS** | 39° off axis, 1.92 m, 1.49 m ahead; set 82 % (darkest card 43 % as specified, 70 % lum-kept) · **FLAG** | set 97° off the view (literal **FAIL**); board −82 % in one change · **PASS** | furniture hides ≤ 0.0 %; wall hides it from 0.3 m outside E2 · **PASS** | E1→key 1.4 m, key→E2 1.4 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 11 %, red 0 · **PASS** |
+| H (as drawn) | screen 266 px, 9 % of E1 moves · **PASS** | screen 408 px, 1 % of frame moves · **PASS** | set 588 px, key 7 px, E2 5879 px; board 100 % seen · **PASS** | 1.90 × room E (before 1.71) · **PASS** | 40° off axis, 1.96 m, 1.23 m ahead; set 83 % (darkest card 45 % as specified, 72 % lum-kept) · **FLAG** | set 113° off the view (literal **FAIL**); board −83 % in one change · **PASS** | furniture hides ≤ 0.0 % · **PASS** | E1→key 1.4 m, key→E2 1.4 m, strip 1.3 m; player-only 0 m² · **PASS** | ≤ 1 change/s, flash area ≤ 5 %, red 0 · **PASS** |
+
+**Geometry per plan** (from `blockout_metrics.json`):
+
+| Plan | Seed | E1 width at centre | E2 | Set off E1's axis | E1 → screen |
+|---|---|---|---|---|---|
+| W | 13 | 1.77 m at 1.25 | 1.13 m | 53.0° | 8.9 m |
+| W′ | 8 | 1.62 m at 1.23 | 1.18 m | 23.4° | 9.1 m |
+| W′ rev 2 | 8 | 1.62 m at 1.23 | 1.18 m | 23.4° | 9.1 m |
+| W′ rev 3 | 44 | 1.77 m at 1.64 | 1.29 m | 1.3° | 8.4 m |
+| D | 12 | 1.68 m at 1.71 | 1.27 m | 35.4° | 10.3 m |
+| D′ | 53 | 1.69 m at 1.74 | 1.18 m | 19.3° | 8.9 m |
+| D′ rev 3 | 43 | 1.63 m at 1.41 | 1.40 m | 1.8° | 8.4 m |
+| H | 167 | 1.77 m at 1.32 | 1.29 m | 0.1° | 11.4 m |
+
+### 9.2 What the blockout changed
+
+1. **Call 1 (light leaving the room): (b) confirmed, with a tighter rule.**
+   - **The set's light never reaches E1.** On the floor 1 m outside and 1 m inside E1 it adds 0.000–0.001, against 1.15–1.58 from the corridor and entry lamps. So (a) and a reading wash on the corridor are out, as §4.1 said.
+   - **What reads from the junction is the screen itself, framed by E1.** At 19–23° off E1's axis (W′, D′) E1's jamb hides the screen from 4.5 m out. Only 3–4 % of E1's opening swings with the cards: a weak glint.
+   - **On the axis the screen is in view:** W′ rev 3 368 px, D′ rev 3 414 px, H 266 px, with 9–19 % of the opening swinging.
+   - From 1.5 m out every plan reads.
+   - **New rule for 叙事 (G1):** the set within about **12° of E1's axis** (SP), not ±30°. Geometry: a 1.6 m arch seen from 4.5 m out shows ±10°, and a set 8–9 m in at 12° appears about 8° off.
+   - **The spill light (c) is still not needed.**
+2. **Call 2 (key lit by the screen): the position rule holds; V3's colour needs a fix.**
+   - **The rule holds.** Key on the perpendicular wall, 38–40° off the screen axis (3-D), 1.86–1.96 m away, 1.2–1.5 m ahead of the plane. There the set gives 82–86 % of the board's light on the mean card (E 0.40–0.45; lamps and ambient 0.07–0.09).
+   - The corner set of plan W fails as computed: 68°, 45 %.
+   - **New: §3.1's colour normalisation (max channel = 1) costs the dark blue WTCZ card most of its luminance.** Its light is luminance 0.23 per unit intensity, against 0.71 for the loop mean. On that card the set gives only 43–50 % of the board's light.
+   - **Fix for V3:** set the intensity from the track's Y, and normalise the colour to constant luminance (I_eff = I × 0.71 / Y(colour, linear)). That gives 70–76 % on the darkest card.
+   - The paper numbers in §4.2 (0.64 / 0.33) were intensity-only. Measured luminance-weighted E is 0.40–0.45 on the mean card.
+3. **Call 3 (annunciator):** green POWER lamp only, as built. One blockout note for the era/look critic: in the Office plans the set's light makes a hard specular hot spot on the panel's dark glass door (`station_c2_key_light.jpg`, D rows). Lower the door glass's smoothness at the hero pass, or tilt the panel.
+4. **G5 (one frame at the take):**
+   - the set is never in the take frame: 85–113° off the view in every plan, as §4.2 predicted;
+   - the light on the board drops 82–86 % in one change (W: 45 %);
+   - so the wording "at the take, the light on the key board drops in view" stands, for 叙事.
+5. **G7 / G6 (staff strip):**
+   - **The 1.44 m strip of W′ cannot hold the guard's chair turned to face the set.** The chair pinches the strip to 0.7 m and the take→E2 route to 0.9 m. The strip is the escape line to E2.
+   - **The 2.0 m strip of rev 2 and 3 keeps 1.1 m.** That clears `MinAisle`, but not G6's 1.2 m escape line. 1.2 m needs a 2.2 m strip, or the chair pushed in under the counter.
+   - In D, D′ and D′ rev 3 every in-room route is 1.4 m.
+   - Every full route is capped by the map's hashed E2 arch, 1.13–1.40 m. A module cannot fix an arch's width (§7, the question to 关卡设计).
+6. **Check 1c (exits brightest after the take):**
+   - from the board, the exits are 1.59–1.96 × the room's mean light in every amended plan;
+   - D as drawn fails at 1.35: its E1 is in the far corner from the board.
+7. **Set heights:**
+   - the bracket sets of W′ and H hang at 2.11 m (screen 2.40), clear of the Relay's 2.05 m;
+   - plan W's corner set as drawn hangs at 1.98 m, below the Relay's head;
+   - its rendered bounds poke up to 0.13 m into both corner walls (axis-aligned bounds), so a corner bracket needs the screen about 0.65 m out of the corner, not 0.57 m.
+8. **Module check note for V1:**
+   - `Validate`'s key-spot rule ("inside a prop") accepts a hanging key only if the host's footprint stops in front of the hook. The `Kit_KeySwitchPlate` sidecar must give a 0.056 m footprint depth: box plus plate, with the hook and the key in front.
+   - The set + bracket as one virtual prop at y ≥ 2.10 leaves the floor free, as `Validate` intends.
+
+### 9.3 Recommendation from the blockout (for the joint draft; layout calls are 叙事's)
+
+- **Level 0 / Floor 1 (direction B): W′ rev 3.**
+  - It is the only Waiting plan that passes every check except the literal G5. G5 is answered by the reworded rule.
+  - Its parts: set on the E-wall bracket; key on the N wall; E1 in the W wall's north cell, on the set's axis; the tandem rows south of that axis; the staff strip at 2.0 m; the cabinet on the N wall; two Steady lamps on the west side.
+- **Office (direction A): D′ rev 3.** Checks as D′, plus the junction squint. Its parts: E1 in the S wall's east cell, on the axis; the desk left of the axis, with the chair and the jacket under the screen.
+- **H passes as drawn,** for long rooms.
+- **For V3,** in its own workflow: luminance-preserving light colour.

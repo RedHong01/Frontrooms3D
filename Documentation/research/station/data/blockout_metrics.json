@@ -1,0 +1,4432 @@
+{
+ "ad_track": {
+  "frames": 480,
+  "seconds": 16.0,
+  "cut_times_s": [
+   3.0,
+   7.0,
+   10.0,
+   14.0,
+   16.0
+  ],
+  "min_gap_s": 2.0,
+  "max_changes_in_any_1s": 1,
+  "y_per_frame_min": 0.037,
+  "y_per_frame_max": 0.266,
+  "y_mean": 0.14
+ },
+ "run": "runs/r6",
+ "plans": {
+  "W": {
+   "plan": "W Waiting (B), 3 x 2, corner set (20_layout 4.1 as drawn)",
+   "seed": 13,
+   "c1a_far_portal_frac_of_frame": 0.044,
+   "c1a_far_screen_px_through_E1": 0,
+   "c1a_far_screen_px_total": 0,
+   "c1a_far_moving_px_in_E1": 0,
+   "c1a_far_moving_frac_of_frame": 0.0,
+   "c1a_far_moving_frac_of_E1": 0.0,
+   "c1a_far_moving_squint_cells_in_E1": 0,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.06,
+   "c1a_far_E1_meanY_c2": 0.148,
+   "c1a_far_corridor_meanY_c2": 0.137,
+   "c1a_far_tvE_mean_in_E1": 0.002,
+   "c1a_far_tvE_p95_in_E1": 0.008,
+   "c1a_far_tv_share_in_E1_mean": 0.008,
+   "e1_floor_outside_px": 5812,
+   "e1_floor_outside_E_all": 1.331,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2650,
+   "e1_floor_inside_E_all": 1.235,
+   "e1_floor_inside_E_tv": 0.0,
+   "e1_floor_inside_tv_share": 0.0,
+   "c1a_near_portal_frac_of_frame": 0.33,
+   "c1a_near_screen_px_through_E1": 0,
+   "c1a_near_screen_px_total": 0,
+   "c1a_near_moving_px_in_E1": 17462,
+   "c1a_near_moving_frac_of_frame": 0.008,
+   "c1a_near_moving_frac_of_E1": 0.026,
+   "c1a_near_moving_squint_cells_in_E1": 28,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.315,
+   "c1a_near_E1_meanY_c2": 0.136,
+   "c1a_near_corridor_meanY_c2": 0.129,
+   "c1a_near_tvE_mean_in_E1": 0.003,
+   "c1a_near_tvE_p95_in_E1": 0.016,
+   "c1a_near_tv_share_in_E1_mean": 0.019,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 0,
+     "key": 36,
+     "plate": 1080,
+     "e2": 0
+    },
+    "beacon": {
+     "screen": 829,
+     "key": 12,
+     "plate": 311,
+     "e2": 23371
+    }
+   },
+   "c1b_board_visible_frac_E1": 0.997,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 9,
+   "c1c_exits_px": 73400,
+   "c1c_E1_px": 32367,
+   "c1c_E2_px": 41033,
+   "c1c_after_exits_meanE": 0.627,
+   "c1c_after_room_meanE": 0.32,
+   "c1c_after_exits_over_room": 1.961,
+   "c1c_after_exits_pct_rank": 79.325,
+   "c1c_before_exits_over_room": 1.705,
+   "c1c_beauty_top2pct_cells_in_exits": 0.083,
+   "c1c_beauty_exits_meanY": 0.165,
+   "c1c_beauty_room_meanY": 0.08,
+   "c2_key_px": 319,
+   "c2_key_E_all": 0.211,
+   "c2_key_E_tv_mean_card": 0.096,
+   "c2_key_E_tv_darkest_card": 0.016,
+   "c2_key_E_lamps_ambient": 0.115,
+   "c2_key_E_ambient_only": 0.069,
+   "c2_key_tv_share": 0.453,
+   "c2_key_tv_over_lamps": 0.83,
+   "c2_plate_px": 10902,
+   "c2_plate_E_all": 0.169,
+   "c2_plate_E_tv_mean_card": 0.076,
+   "c2_plate_E_tv_darkest_card": 0.013,
+   "c2_plate_E_lamps_ambient": 0.093,
+   "c2_plate_E_ambient_only": 0.063,
+   "c2_plate_tv_share": 0.449,
+   "c2_plate_tv_over_lamps": 0.814,
+   "c2_board_px": 11221,
+   "c2_board_E_all": 0.17,
+   "c2_board_E_tv_mean_card": 0.076,
+   "c2_board_E_tv_darkest_card": 0.013,
+   "c2_board_E_lamps_ambient": 0.094,
+   "c2_board_E_ambient_only": 0.063,
+   "c2_board_tv_share": 0.449,
+   "c2_board_tv_over_lamps": 0.814,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.076,
+    0.054,
+    0.11,
+    0.059,
+    0.052,
+    0.013
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.076,
+    0.07,
+    0.105,
+    0.062,
+    0.07,
+    0.039
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.119,
+   "c2_board_tv_share_min_card_lum_preserving": 0.295,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.013,
+    0.013
+   ],
+   "c2_key_off_screen_axis_plan_deg": 73.591,
+   "c2_key_off_screen_axis_3d_deg": 67.94,
+   "c2_key_angle_to_screen_plane_deg": 16.409,
+   "c2_key_ahead_of_screen_plane_m": 0.295,
+   "c2_key_dist_3d_m": 1.373,
+   "c2_key_incidence_deg": 68.664,
+   "c2_plate_E_analytic_mean": 0.135,
+   "c2_plate_E_analytic_darkest": 0.069,
+   "c3_set_off_view_deg": 85.37,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.449,
+   "c3_board_drop_beautyY": 0.17,
+   "c3_frame_drop_beautyY": 0.14,
+   "c3_wide_frame_drop_beautyY": 0.171,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 0.997,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 296,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.003,
+      "pos": [
+       1.25,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 0.995,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 365,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.005,
+      "pos": [
+       1.75,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 0.993,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 286,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.007,
+      "pos": [
+       0.75,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 0.993,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 307,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.007,
+      "pos": [
+       1.25,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 0.994,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 326,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.006,
+      "pos": [
+       1.25,
+       0,
+       0.9
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 39,
+      "board_px": 1274,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       1.216
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 47,
+      "board_px": 1518,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       1.716
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 33,
+      "board_px": 1045,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       0.716
+      ]
+     },
+     {
+      "board_visible": 0.0,
+      "key_visible": 0.0,
+      "key_px": 39,
+      "board_px": 1142,
+      "hidden_by_shell": 1.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       9.3,
+       0,
+       1.216
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 36,
+      "board_px": 1349,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.1,
+       0,
+       1.216
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.007,
+   "c4_hidden_by_shell_max": 1.0,
+   "c4_positions_hidden_by_shell": 1,
+   "c4_board_visible_min": 0.0,
+   "c4_key_visible_min": 0.0,
+   "c4_key_px_range": [
+    8,
+    47
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.4,
+   "c5_route_e1_e2_clear_width_m": 1.4,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.1,
+   "c5_e2_arch_width_m": 1.126,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 32.77,
+   "c5_room_floor_reachable_relay_m2": 33.195,
+   "c5_pinch_cells_r030_only_m2": 2.378,
+   "c5_staff_strip_through_clear_width_m": 1.3,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.101,
+     "meanY_to": 0.104,
+     "frame_step_rel": 0.022,
+     "flash_area_frac": 0.066,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.104,
+     "meanY_to": 0.102,
+     "frame_step_rel": -0.018,
+     "flash_area_frac": 0.056,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.102,
+     "meanY_to": 0.101,
+     "frame_step_rel": -0.004,
+     "flash_area_frac": 0.005,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.101,
+     "meanY_to": 0.1,
+     "frame_step_rel": -0.015,
+     "flash_area_frac": 0.047,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.1,
+     "meanY_to": 0.101,
+     "frame_step_rel": 0.016,
+     "flash_area_frac": 0.05,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.101,
+     "meanY_to": 0.099,
+     "frame_step_rel": -0.02,
+     "flash_area_frac": 0.061,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.104,
+     "meanY_to": 0.099,
+     "frame_step_rel": -0.041,
+     "flash_area_frac": 0.111,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.111,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "FAIL",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "FAIL",
+    "c3_literal": "FAIL",
+    "c3_fallback": "FAIL",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 73.096,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.25,
+    "e1_E_tv_1m_facing_set": 0,
+    "e1_E_tv_floor_inside_1p0": 0,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     0,
+     0,
+     1
+    ],
+    "e1_mid": [
+     1.25,
+     0,
+     0
+    ],
+    "e1_off_screen_axis_deg": 8.013,
+    "e1_to_e2_m": 7.845,
+    "e1_to_screen_m": 8.9,
+    "e1_width": 1.769,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.216,
+    "e2_inward": [
+     -1,
+     0,
+     0
+    ],
+    "e2_mid": [
+     9,
+     0,
+     1.216
+    ],
+    "e2_off_e1_axis_deg": 81.084,
+    "e2_width": 1.126,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 0.295,
+    "key_angle_to_screen_plane_deg": 16.409,
+    "key_centre_module": [
+     7.424,
+     1.383,
+     5.84
+    ],
+    "key_dist_3d_m": 1.373,
+    "key_incidence_deg": 68.664,
+    "key_normal": [
+     0,
+     0,
+     -1
+    ],
+    "key_off_e1_axis_deg": 46.592,
+    "key_off_screen_axis_3d_deg": 67.94,
+    "key_off_screen_axis_plan_deg": 73.591,
+    "key_wall": [
+     7.42,
+     1.42,
+     5.92
+    ],
+    "lamps": "SSDDOO",
+    "module_props_missing": 0,
+    "mount": "corner",
+    "notes": "20_layout 4.1: corner bracket NE, set bottom 2.0, 15 deg down, facing SW; key N wall 1.5 m W of the corner (x 7.42); E1 S wall west cell; E2 E wall south cell; guard faces the counter",
+    "openings": "S0:Arch E0:Arch",
+    "plan": "W Waiting (B), 3 x 2, corner set (20_layout 4.1 as drawn)",
+    "plan_ortho_size": 3.5,
+    "plate_E_analytic_darkest": 0.069,
+    "plate_E_analytic_mean": 0.135,
+    "plate_Y_analytic_darkest": 0.034,
+    "plate_Y_analytic_mean": 0.115,
+    "room_d_m": 6,
+    "room_w_m": 9,
+    "screen_axis": [
+     -0.683,
+     -0.259,
+     -0.683
+    ],
+    "screen_centre": [
+     8.34,
+     2.275,
+     5.34
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     8.34,
+     2.275,
+     5.34
+    ],
+    "seed": 13,
+    "seeds_tried": 1,
+    "set_bottom_m": 1.983,
+    "set_bounds_max": [
+     9.048,
+     2.625,
+     6.021
+    ],
+    "set_bounds_min": [
+     8.028,
+     2.002,
+     5.002
+    ],
+    "set_off_e1_axis_deg": 53.013,
+    "set_poke_into_wall_m": 0.128,
+    "take_e1_dist_m": 7.973,
+    "take_e2_dist_m": 4.147,
+    "take_set_off_view_deg": 85.37,
+    "take_spot": [
+     7.42,
+     0,
+     5.05
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Level0",
+    "tv_tilt_deg": 15,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     1.25,
+     0,
+     0.3
+    ],
+    "wig_e1_1_pos": [
+     1.75,
+     0,
+     0.3
+    ],
+    "wig_e1_2_pos": [
+     0.75,
+     0,
+     0.3
+    ],
+    "wig_e1_3_pos": [
+     1.25,
+     0,
+     -0.3
+    ],
+    "wig_e1_4_pos": [
+     1.25,
+     0,
+     0.9
+    ],
+    "wig_e2_0_pos": [
+     8.7,
+     0,
+     1.216
+    ],
+    "wig_e2_1_pos": [
+     8.7,
+     0,
+     1.716
+    ],
+    "wig_e2_2_pos": [
+     8.7,
+     0,
+     0.716
+    ],
+    "wig_e2_3_pos": [
+     9.3,
+     0,
+     1.216
+    ],
+    "wig_e2_4_pos": [
+     8.1,
+     0,
+     1.216
+    ]
+   }
+  },
+  "Wp": {
+   "plan": "W' Waiting (B), 3 x 2, set on the E-wall bracket",
+   "seed": 8,
+   "c1a_far_portal_frac_of_frame": 0.04,
+   "c1a_far_screen_px_through_E1": 0,
+   "c1a_far_screen_px_total": 0,
+   "c1a_far_moving_px_in_E1": 2748,
+   "c1a_far_moving_frac_of_frame": 0.001,
+   "c1a_far_moving_frac_of_E1": 0.033,
+   "c1a_far_moving_squint_cells_in_E1": 3,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.3,
+   "c1a_far_E1_meanY_c2": 0.127,
+   "c1a_far_corridor_meanY_c2": 0.131,
+   "c1a_far_tvE_mean_in_E1": 0.007,
+   "c1a_far_tvE_p95_in_E1": 0.032,
+   "c1a_far_tv_share_in_E1_mean": 0.021,
+   "e1_floor_outside_px": 5328,
+   "e1_floor_outside_E_all": 1.197,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2431,
+   "e1_floor_inside_E_all": 1.173,
+   "e1_floor_inside_E_tv": 0.0,
+   "e1_floor_inside_tv_share": 0.0,
+   "c1a_near_portal_frac_of_frame": 0.302,
+   "c1a_near_screen_px_through_E1": 699,
+   "c1a_near_screen_px_total": 699,
+   "c1a_near_moving_px_in_E1": 34123,
+   "c1a_near_moving_frac_of_frame": 0.016,
+   "c1a_near_moving_frac_of_E1": 0.055,
+   "c1a_near_moving_squint_cells_in_E1": 64,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.775,
+   "c1a_near_E1_meanY_c2": 0.121,
+   "c1a_near_corridor_meanY_c2": 0.096,
+   "c1a_near_tvE_mean_in_E1": 0.011,
+   "c1a_near_tvE_p95_in_E1": 0.036,
+   "c1a_near_tv_share_in_E1_mean": 0.034,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 1068,
+     "key": 18,
+     "plate": 532,
+     "e2": 3016
+    },
+    "beacon": {
+     "screen": 719,
+     "key": 11,
+     "plate": 264,
+     "e2": 3850
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 8,
+   "c1c_exits_px": 93300,
+   "c1c_E1_px": 36782,
+   "c1c_E2_px": 56518,
+   "c1c_after_exits_meanE": 0.457,
+   "c1c_after_room_meanE": 0.287,
+   "c1c_after_exits_over_room": 1.593,
+   "c1c_after_exits_pct_rank": 71.336,
+   "c1c_before_exits_over_room": 1.403,
+   "c1c_beauty_top2pct_cells_in_exits": 0.014,
+   "c1c_beauty_exits_meanY": 0.114,
+   "c1c_beauty_room_meanY": 0.07,
+   "c2_key_px": 318,
+   "c2_key_E_all": 0.493,
+   "c2_key_E_tv_mean_card": 0.394,
+   "c2_key_E_tv_darkest_card": 0.065,
+   "c2_key_E_lamps_ambient": 0.099,
+   "c2_key_E_ambient_only": 0.068,
+   "c2_key_tv_share": 0.799,
+   "c2_key_tv_over_lamps": 3.983,
+   "c2_plate_px": 10911,
+   "c2_plate_E_all": 0.534,
+   "c2_plate_E_tv_mean_card": 0.451,
+   "c2_plate_E_tv_darkest_card": 0.075,
+   "c2_plate_E_lamps_ambient": 0.083,
+   "c2_plate_E_ambient_only": 0.063,
+   "c2_plate_tv_share": 0.845,
+   "c2_plate_tv_over_lamps": 5.441,
+   "c2_board_px": 11229,
+   "c2_board_E_all": 0.533,
+   "c2_board_E_tv_mean_card": 0.45,
+   "c2_board_E_tv_darkest_card": 0.074,
+   "c2_board_E_lamps_ambient": 0.083,
+   "c2_board_E_ambient_only": 0.063,
+   "c2_board_tv_share": 0.844,
+   "c2_board_tv_over_lamps": 5.392,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.45,
+    0.321,
+    0.647,
+    0.347,
+    0.308,
+    0.074
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.45,
+    0.41,
+    0.62,
+    0.365,
+    0.413,
+    0.231
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.471,
+   "c2_board_tv_share_min_card_lum_preserving": 0.734,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.074,
+    0.074
+   ],
+   "c2_key_off_screen_axis_plan_deg": 40.144,
+   "c2_key_off_screen_axis_3d_deg": 37.904,
+   "c2_key_angle_to_screen_plane_deg": 49.856,
+   "c2_key_ahead_of_screen_plane_m": 1.197,
+   "c2_key_dist_3d_m": 1.864,
+   "c2_key_incidence_deg": 57.194,
+   "c2_plate_E_analytic_mean": 0.646,
+   "c2_plate_E_analytic_darkest": 0.331,
+   "c3_set_off_view_deg": 107.199,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.844,
+   "c3_board_drop_beautyY": 0.64,
+   "c3_frame_drop_beautyY": 0.618,
+   "c3_wide_frame_drop_beautyY": 0.503,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 284,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       1.233
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 271,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       1.733
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 280,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       0.733
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 230,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       -0.3,
+       0,
+       1.233
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 328,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.9,
+       0,
+       1.233
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 976,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.265,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 939,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.765,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 976,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       6.765,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 26,
+      "board_px": 821,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.265,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 36,
+      "board_px": 1225,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.265,
+       0,
+       0.9
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 0.0,
+   "c4_positions_hidden_by_shell": 0,
+   "c4_board_visible_min": 1.0,
+   "c4_key_visible_min": 1.0,
+   "c4_key_px_range": [
+    8,
+    36
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 0.9,
+   "c5_route_e1_e2_clear_width_m": 0.9,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 0.9,
+   "c5_e2_arch_width_m": 1.18,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 33.393,
+   "c5_room_floor_reachable_relay_m2": 33.733,
+   "c5_pinch_cells_r030_only_m2": 2.208,
+   "c5_staff_strip_through_clear_width_m": 0.7,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.105,
+     "meanY_to": 0.108,
+     "frame_step_rel": 0.032,
+     "flash_area_frac": 0.067,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.108,
+     "meanY_to": 0.105,
+     "frame_step_rel": -0.026,
+     "flash_area_frac": 0.056,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.105,
+     "meanY_to": 0.104,
+     "frame_step_rel": -0.006,
+     "flash_area_frac": 0.012,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.104,
+     "meanY_to": 0.102,
+     "frame_step_rel": -0.022,
+     "flash_area_frac": 0.048,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.102,
+     "meanY_to": 0.105,
+     "frame_step_rel": 0.024,
+     "flash_area_frac": 0.05,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.105,
+     "meanY_to": 0.102,
+     "frame_step_rel": -0.029,
+     "flash_area_frac": 0.062,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.108,
+     "meanY_to": 0.102,
+     "frame_step_rel": -0.058,
+     "flash_area_frac": 0.135,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.135,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "FAIL",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "FLAG",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "FAIL",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 63.372,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.233,
+    "e1_E_tv_1m_facing_set": 0,
+    "e1_E_tv_floor_inside_1p0": 0.001,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     1,
+     0,
+     0
+    ],
+    "e1_mid": [
+     0,
+     0,
+     1.233
+    ],
+    "e1_off_screen_axis_deg": 23.35,
+    "e1_to_e2_m": 7.369,
+    "e1_to_screen_m": 9.107,
+    "e1_width": 1.619,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.265,
+    "e2_inward": [
+     0,
+     0,
+     1
+    ],
+    "e2_mid": [
+     7.265,
+     0,
+     0
+    ],
+    "e2_off_e1_axis_deg": 9.636,
+    "e2_width": 1.18,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.197,
+    "key_angle_to_screen_plane_deg": 49.856,
+    "key_centre_module": [
+     7.134,
+     1.383,
+     5.84
+    ],
+    "key_dist_3d_m": 1.864,
+    "key_incidence_deg": 57.194,
+    "key_normal": [
+     0,
+     0,
+     -1
+    ],
+    "key_off_e1_axis_deg": 32.851,
+    "key_off_screen_axis_3d_deg": 37.904,
+    "key_off_screen_axis_plan_deg": 40.144,
+    "key_wall": [
+     7.13,
+     1.42,
+     5.92
+    ],
+    "lamps": "SDDSOO",
+    "module_props_missing": 0,
+    "mount": "wall",
+    "notes": "30_look 5.1: set on Kit_TVWallBracket, E wall, screen z 4.83, bottom 2.10, 20 deg down; key N wall x 7.13; E1 W wall south cell; E2 S wall east cell; guard chair turned to the set",
+    "openings": "S2:Arch W0:Arch",
+    "plan": "W' Waiting (B), 3 x 2, set on the E-wall bracket",
+    "plan_ortho_size": 3.5,
+    "plate_E_analytic_darkest": 0.331,
+    "plate_E_analytic_mean": 0.646,
+    "plate_Y_analytic_darkest": 0.161,
+    "plate_Y_analytic_mean": 0.553,
+    "room_d_m": 6,
+    "room_w_m": 9,
+    "screen_axis": [
+     -0.94,
+     -0.342,
+     0
+    ],
+    "screen_centre": [
+     8.331,
+     2.393,
+     4.83
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     8.331,
+     2.393,
+     4.83
+    ],
+    "seed": 8,
+    "seeds_tried": 1,
+    "set_bottom_m": 2.11,
+    "set_bounds_max": [
+     8.905,
+     2.779,
+     5.229
+    ],
+    "set_bounds_min": [
+     8.27,
+     2.13,
+     4.393
+    ],
+    "set_off_e1_axis_deg": 23.35,
+    "set_poke_into_wall_m": 0,
+    "take_e1_dist_m": 8.087,
+    "take_e2_dist_m": 5.052,
+    "take_set_off_view_deg": 107.199,
+    "take_spot": [
+     7.13,
+     0,
+     5.05
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Level0",
+    "tv_tilt_deg": 20,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     0.3,
+     0,
+     1.233
+    ],
+    "wig_e1_1_pos": [
+     0.3,
+     0,
+     1.733
+    ],
+    "wig_e1_2_pos": [
+     0.3,
+     0,
+     0.733
+    ],
+    "wig_e1_3_pos": [
+     -0.3,
+     0,
+     1.233
+    ],
+    "wig_e1_4_pos": [
+     0.9,
+     0,
+     1.233
+    ],
+    "wig_e2_0_pos": [
+     7.265,
+     0,
+     0.3
+    ],
+    "wig_e2_1_pos": [
+     7.765,
+     0,
+     0.3
+    ],
+    "wig_e2_2_pos": [
+     6.765,
+     0,
+     0.3
+    ],
+    "wig_e2_3_pos": [
+     7.265,
+     0,
+     -0.3
+    ],
+    "wig_e2_4_pos": [
+     7.265,
+     0,
+     0.9
+    ]
+   }
+  },
+  "Wp2": {
+   "plan": "W' rev 2 Waiting (B), 3 x 2, E-wall bracket, staff strip 2.0 m",
+   "seed": 8,
+   "c1a_far_portal_frac_of_frame": 0.04,
+   "c1a_far_screen_px_through_E1": 0,
+   "c1a_far_screen_px_total": 0,
+   "c1a_far_moving_px_in_E1": 2448,
+   "c1a_far_moving_frac_of_frame": 0.001,
+   "c1a_far_moving_frac_of_E1": 0.029,
+   "c1a_far_moving_squint_cells_in_E1": 3,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.299,
+   "c1a_far_E1_meanY_c2": 0.127,
+   "c1a_far_corridor_meanY_c2": 0.131,
+   "c1a_far_tvE_mean_in_E1": 0.006,
+   "c1a_far_tvE_p95_in_E1": 0.03,
+   "c1a_far_tv_share_in_E1_mean": 0.02,
+   "e1_floor_outside_px": 5328,
+   "e1_floor_outside_E_all": 1.197,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2431,
+   "e1_floor_inside_E_all": 1.173,
+   "e1_floor_inside_E_tv": 0.0,
+   "e1_floor_inside_tv_share": 0.0,
+   "c1a_near_portal_frac_of_frame": 0.302,
+   "c1a_near_screen_px_through_E1": 699,
+   "c1a_near_screen_px_total": 699,
+   "c1a_near_moving_px_in_E1": 32994,
+   "c1a_near_moving_frac_of_frame": 0.016,
+   "c1a_near_moving_frac_of_E1": 0.053,
+   "c1a_near_moving_squint_cells_in_E1": 60,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.775,
+   "c1a_near_E1_meanY_c2": 0.12,
+   "c1a_near_corridor_meanY_c2": 0.096,
+   "c1a_near_tvE_mean_in_E1": 0.011,
+   "c1a_near_tvE_p95_in_E1": 0.033,
+   "c1a_near_tv_share_in_E1_mean": 0.033,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 1068,
+     "key": 18,
+     "plate": 532,
+     "e2": 3016
+    },
+    "beacon": {
+     "screen": 719,
+     "key": 11,
+     "plate": 264,
+     "e2": 3850
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 8,
+   "c1c_exits_px": 98920,
+   "c1c_E1_px": 36782,
+   "c1c_E2_px": 62138,
+   "c1c_after_exits_meanE": 0.496,
+   "c1c_after_room_meanE": 0.284,
+   "c1c_after_exits_over_room": 1.746,
+   "c1c_after_exits_pct_rank": 75.101,
+   "c1c_before_exits_over_room": 1.576,
+   "c1c_beauty_top2pct_cells_in_exits": 0.014,
+   "c1c_beauty_exits_meanY": 0.116,
+   "c1c_beauty_room_meanY": 0.069,
+   "c2_key_px": 318,
+   "c2_key_E_all": 0.493,
+   "c2_key_E_tv_mean_card": 0.394,
+   "c2_key_E_tv_darkest_card": 0.065,
+   "c2_key_E_lamps_ambient": 0.099,
+   "c2_key_E_ambient_only": 0.068,
+   "c2_key_tv_share": 0.799,
+   "c2_key_tv_over_lamps": 3.983,
+   "c2_plate_px": 10911,
+   "c2_plate_E_all": 0.534,
+   "c2_plate_E_tv_mean_card": 0.451,
+   "c2_plate_E_tv_darkest_card": 0.075,
+   "c2_plate_E_lamps_ambient": 0.083,
+   "c2_plate_E_ambient_only": 0.063,
+   "c2_plate_tv_share": 0.845,
+   "c2_plate_tv_over_lamps": 5.441,
+   "c2_board_px": 11229,
+   "c2_board_E_all": 0.533,
+   "c2_board_E_tv_mean_card": 0.45,
+   "c2_board_E_tv_darkest_card": 0.074,
+   "c2_board_E_lamps_ambient": 0.083,
+   "c2_board_E_ambient_only": 0.063,
+   "c2_board_tv_share": 0.844,
+   "c2_board_tv_over_lamps": 5.392,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.45,
+    0.321,
+    0.647,
+    0.347,
+    0.308,
+    0.074
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.45,
+    0.41,
+    0.62,
+    0.365,
+    0.413,
+    0.231
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.471,
+   "c2_board_tv_share_min_card_lum_preserving": 0.734,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.074,
+    0.074
+   ],
+   "c2_key_off_screen_axis_plan_deg": 40.144,
+   "c2_key_off_screen_axis_3d_deg": 37.904,
+   "c2_key_angle_to_screen_plane_deg": 49.856,
+   "c2_key_ahead_of_screen_plane_m": 1.197,
+   "c2_key_dist_3d_m": 1.864,
+   "c2_key_incidence_deg": 57.194,
+   "c2_plate_E_analytic_mean": 0.646,
+   "c2_plate_E_analytic_darkest": 0.331,
+   "c3_set_off_view_deg": 107.199,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.844,
+   "c3_board_drop_beautyY": 0.64,
+   "c3_frame_drop_beautyY": 0.625,
+   "c3_wide_frame_drop_beautyY": 0.506,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 284,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       1.233
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 271,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       1.733
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 280,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       0.733
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 230,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       -0.3,
+       0,
+       1.233
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 328,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.9,
+       0,
+       1.233
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 976,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.265,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 939,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.765,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 976,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       6.765,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 26,
+      "board_px": 821,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.265,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 36,
+      "board_px": 1225,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.265,
+       0,
+       0.9
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 0.0,
+   "c4_positions_hidden_by_shell": 0,
+   "c4_board_visible_min": 1.0,
+   "c4_key_visible_min": 1.0,
+   "c4_key_px_range": [
+    8,
+    36
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.1,
+   "c5_route_e1_e2_clear_width_m": 1.1,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.1,
+   "c5_e2_arch_width_m": 1.18,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 33.28,
+   "c5_room_floor_reachable_relay_m2": 33.62,
+   "c5_pinch_cells_r030_only_m2": 2.223,
+   "c5_staff_strip_through_clear_width_m": 1.1,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.104,
+     "meanY_to": 0.108,
+     "frame_step_rel": 0.031,
+     "flash_area_frac": 0.066,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.108,
+     "meanY_to": 0.105,
+     "frame_step_rel": -0.026,
+     "flash_area_frac": 0.055,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.105,
+     "meanY_to": 0.104,
+     "frame_step_rel": -0.006,
+     "flash_area_frac": 0.012,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.104,
+     "meanY_to": 0.102,
+     "frame_step_rel": -0.022,
+     "flash_area_frac": 0.047,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.102,
+     "meanY_to": 0.104,
+     "frame_step_rel": 0.024,
+     "flash_area_frac": 0.049,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.104,
+     "meanY_to": 0.101,
+     "frame_step_rel": -0.028,
+     "flash_area_frac": 0.06,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.108,
+     "meanY_to": 0.101,
+     "frame_step_rel": -0.058,
+     "flash_area_frac": 0.133,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.133,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "FAIL",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "FLAG",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 63.372,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.233,
+    "e1_E_tv_1m_facing_set": 0,
+    "e1_E_tv_floor_inside_1p0": 0.001,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     1,
+     0,
+     0
+    ],
+    "e1_mid": [
+     0,
+     0,
+     1.233
+    ],
+    "e1_off_screen_axis_deg": 23.35,
+    "e1_to_e2_m": 7.369,
+    "e1_to_screen_m": 9.107,
+    "e1_width": 1.619,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.265,
+    "e2_inward": [
+     0,
+     0,
+     1
+    ],
+    "e2_mid": [
+     7.265,
+     0,
+     0
+    ],
+    "e2_off_e1_axis_deg": 9.636,
+    "e2_width": 1.18,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.197,
+    "key_angle_to_screen_plane_deg": 49.856,
+    "key_centre_module": [
+     7.134,
+     1.383,
+     5.84
+    ],
+    "key_dist_3d_m": 1.864,
+    "key_incidence_deg": 57.194,
+    "key_normal": [
+     0,
+     0,
+     -1
+    ],
+    "key_off_e1_axis_deg": 32.851,
+    "key_off_screen_axis_3d_deg": 37.904,
+    "key_off_screen_axis_plan_deg": 40.144,
+    "key_wall": [
+     7.13,
+     1.42,
+     5.92
+    ],
+    "lamps": "SDDSOO",
+    "module_props_missing": 0,
+    "mount": "wall",
+    "notes": "30_look 5.1: set on Kit_TVWallBracket, E wall, screen z 4.83, bottom 2.10, 20 deg down; key N wall x 7.13; E1 W wall south cell; E2 S wall east cell; guard chair turned to the set",
+    "openings": "S2:Arch W0:Arch",
+    "plan": "W' rev 2 Waiting (B), 3 x 2, E-wall bracket, staff strip 2.0 m",
+    "plan_ortho_size": 3.5,
+    "plate_E_analytic_darkest": 0.331,
+    "plate_E_analytic_mean": 0.646,
+    "plate_Y_analytic_darkest": 0.161,
+    "plate_Y_analytic_mean": 0.553,
+    "room_d_m": 6,
+    "room_w_m": 9,
+    "screen_axis": [
+     -0.94,
+     -0.342,
+     0
+    ],
+    "screen_centre": [
+     8.331,
+     2.393,
+     4.83
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     8.331,
+     2.393,
+     4.83
+    ],
+    "seed": 8,
+    "seeds_tried": 1,
+    "set_bottom_m": 2.11,
+    "set_bounds_max": [
+     8.905,
+     2.779,
+     5.229
+    ],
+    "set_bounds_min": [
+     8.27,
+     2.13,
+     4.393
+    ],
+    "set_off_e1_axis_deg": 23.35,
+    "set_poke_into_wall_m": 0,
+    "take_e1_dist_m": 8.087,
+    "take_e2_dist_m": 5.052,
+    "take_set_off_view_deg": 107.199,
+    "take_spot": [
+     7.13,
+     0,
+     5.05
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Level0",
+    "tv_tilt_deg": 20,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     0.3,
+     0,
+     1.233
+    ],
+    "wig_e1_1_pos": [
+     0.3,
+     0,
+     1.733
+    ],
+    "wig_e1_2_pos": [
+     0.3,
+     0,
+     0.733
+    ],
+    "wig_e1_3_pos": [
+     -0.3,
+     0,
+     1.233
+    ],
+    "wig_e1_4_pos": [
+     0.9,
+     0,
+     1.233
+    ],
+    "wig_e2_0_pos": [
+     7.265,
+     0,
+     0.3
+    ],
+    "wig_e2_1_pos": [
+     7.765,
+     0,
+     0.3
+    ],
+    "wig_e2_2_pos": [
+     6.765,
+     0,
+     0.3
+    ],
+    "wig_e2_3_pos": [
+     7.265,
+     0,
+     -0.3
+    ],
+    "wig_e2_4_pos": [
+     7.265,
+     0,
+     0.9
+    ]
+   }
+  },
+  "Wp3": {
+   "plan": "W' rev 3 Waiting (B), E1 on the set's axis (W wall north cell), strip 2.0 m",
+   "seed": 44,
+   "c1a_far_portal_frac_of_frame": 0.044,
+   "c1a_far_screen_px_through_E1": 368,
+   "c1a_far_screen_px_total": 368,
+   "c1a_far_moving_px_in_E1": 17073,
+   "c1a_far_moving_frac_of_frame": 0.008,
+   "c1a_far_moving_frac_of_E1": 0.186,
+   "c1a_far_moving_squint_cells_in_E1": 36,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.805,
+   "c1a_far_E1_meanY_c2": 0.114,
+   "c1a_far_corridor_meanY_c2": 0.123,
+   "c1a_far_tvE_mean_in_E1": 0.033,
+   "c1a_far_tvE_p95_in_E1": 0.177,
+   "c1a_far_tv_share_in_E1_mean": 0.083,
+   "e1_floor_outside_px": 5825,
+   "e1_floor_outside_E_all": 1.254,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2655,
+   "e1_floor_inside_E_all": 1.146,
+   "e1_floor_inside_E_tv": 0.001,
+   "e1_floor_inside_tv_share": 0.001,
+   "c1a_near_portal_frac_of_frame": 0.331,
+   "c1a_near_screen_px_through_E1": 713,
+   "c1a_near_screen_px_total": 713,
+   "c1a_near_moving_px_in_E1": 61227,
+   "c1a_near_moving_frac_of_frame": 0.03,
+   "c1a_near_moving_frac_of_E1": 0.089,
+   "c1a_near_moving_squint_cells_in_E1": 119,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.837,
+   "c1a_near_E1_meanY_c2": 0.128,
+   "c1a_near_corridor_meanY_c2": 0.102,
+   "c1a_near_tvE_mean_in_E1": 0.015,
+   "c1a_near_tvE_p95_in_E1": 0.061,
+   "c1a_near_tv_share_in_E1_mean": 0.048,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 1064,
+     "key": 11,
+     "plate": 195,
+     "e2": 17569
+    },
+    "beacon": {
+     "screen": 936,
+     "key": 8,
+     "plate": 173,
+     "e2": 15142
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 10,
+   "c1c_exits_px": 220005,
+   "c1c_E1_px": 101338,
+   "c1c_E2_px": 118667,
+   "c1c_after_exits_meanE": 0.514,
+   "c1c_after_room_meanE": 0.295,
+   "c1c_after_exits_over_room": 1.743,
+   "c1c_after_exits_pct_rank": 75.83,
+   "c1c_before_exits_over_room": 1.557,
+   "c1c_beauty_top2pct_cells_in_exits": 0.0,
+   "c1c_beauty_exits_meanY": 0.121,
+   "c1c_beauty_room_meanY": 0.072,
+   "c2_key_px": 318,
+   "c2_key_E_all": 0.481,
+   "c2_key_E_tv_mean_card": 0.394,
+   "c2_key_E_tv_darkest_card": 0.065,
+   "c2_key_E_lamps_ambient": 0.086,
+   "c2_key_E_ambient_only": 0.068,
+   "c2_key_tv_share": 0.82,
+   "c2_key_tv_over_lamps": 4.564,
+   "c2_plate_px": 10911,
+   "c2_plate_E_all": 0.525,
+   "c2_plate_E_tv_mean_card": 0.451,
+   "c2_plate_E_tv_darkest_card": 0.075,
+   "c2_plate_E_lamps_ambient": 0.073,
+   "c2_plate_E_ambient_only": 0.063,
+   "c2_plate_tv_share": 0.86,
+   "c2_plate_tv_over_lamps": 6.146,
+   "c2_board_px": 11229,
+   "c2_board_E_all": 0.524,
+   "c2_board_E_tv_mean_card": 0.45,
+   "c2_board_E_tv_darkest_card": 0.074,
+   "c2_board_E_lamps_ambient": 0.074,
+   "c2_board_E_ambient_only": 0.063,
+   "c2_board_tv_share": 0.859,
+   "c2_board_tv_over_lamps": 6.094,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.45,
+    0.321,
+    0.647,
+    0.347,
+    0.308,
+    0.074
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.45,
+    0.41,
+    0.62,
+    0.365,
+    0.413,
+    0.231
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.502,
+   "c2_board_tv_share_min_card_lum_preserving": 0.758,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.074,
+    0.074
+   ],
+   "c2_key_off_screen_axis_plan_deg": 40.144,
+   "c2_key_off_screen_axis_3d_deg": 37.904,
+   "c2_key_angle_to_screen_plane_deg": 49.856,
+   "c2_key_ahead_of_screen_plane_m": 1.197,
+   "c2_key_dist_3d_m": 1.864,
+   "c2_key_incidence_deg": 57.194,
+   "c2_plate_E_analytic_mean": 0.646,
+   "c2_plate_E_analytic_darkest": 0.331,
+   "c3_set_off_view_deg": 107.199,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.859,
+   "c3_board_drop_beautyY": 0.647,
+   "c3_frame_drop_beautyY": 0.661,
+   "c3_wide_frame_drop_beautyY": 0.542,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 193,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       4.636
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 154,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       5.136
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 209,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.3,
+       0,
+       4.136
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 6,
+      "board_px": 150,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       -0.3,
+       0,
+       4.636
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 241,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.9,
+       0,
+       4.636
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 29,
+      "board_px": 976,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.29,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 30,
+      "board_px": 922,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.79,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 30,
+      "board_px": 973,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       6.79,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 26,
+      "board_px": 833,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.29,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 36,
+      "board_px": 1225,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.29,
+       0,
+       0.9
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 0.0,
+   "c4_positions_hidden_by_shell": 0,
+   "c4_board_visible_min": 1.0,
+   "c4_key_visible_min": 1.0,
+   "c4_key_px_range": [
+    6,
+    36
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.1,
+   "c5_route_e1_e2_clear_width_m": 1.1,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.1,
+   "c5_e2_arch_width_m": 1.291,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 33.33,
+   "c5_room_floor_reachable_relay_m2": 33.67,
+   "c5_pinch_cells_r030_only_m2": 2.398,
+   "c5_staff_strip_through_clear_width_m": 1.1,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.123,
+     "meanY_to": 0.126,
+     "frame_step_rel": 0.026,
+     "flash_area_frac": 0.08,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.126,
+     "meanY_to": 0.124,
+     "frame_step_rel": -0.022,
+     "flash_area_frac": 0.063,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.124,
+     "meanY_to": 0.123,
+     "frame_step_rel": -0.005,
+     "flash_area_frac": 0.008,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.123,
+     "meanY_to": 0.121,
+     "frame_step_rel": -0.018,
+     "flash_area_frac": 0.052,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.121,
+     "meanY_to": 0.123,
+     "frame_step_rel": 0.02,
+     "flash_area_frac": 0.055,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.123,
+     "meanY_to": 0.12,
+     "frame_step_rel": -0.024,
+     "flash_area_frac": 0.073,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.126,
+     "meanY_to": 0.12,
+     "frame_step_rel": -0.049,
+     "flash_area_frac": 0.184,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.184,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "PASS",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "PASS",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 88.491,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.636,
+    "e1_E_tv_1m_facing_set": 0.003,
+    "e1_E_tv_floor_inside_1p0": 0.004,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     1,
+     0,
+     0
+    ],
+    "e1_mid": [
+     0,
+     0,
+     4.636
+    ],
+    "e1_off_screen_axis_deg": 1.334,
+    "e1_to_e2_m": 8.639,
+    "e1_to_screen_m": 8.369,
+    "e1_width": 1.774,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.29,
+    "e2_inward": [
+     0,
+     0,
+     1
+    ],
+    "e2_mid": [
+     7.29,
+     0,
+     0
+    ],
+    "e2_off_e1_axis_deg": 32.455,
+    "e2_width": 1.291,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.197,
+    "key_angle_to_screen_plane_deg": 49.856,
+    "key_centre_module": [
+     7.134,
+     1.383,
+     5.84
+    ],
+    "key_dist_3d_m": 1.864,
+    "key_incidence_deg": 57.194,
+    "key_normal": [
+     0,
+     0,
+     -1
+    ],
+    "key_off_e1_axis_deg": 9.578,
+    "key_off_screen_axis_3d_deg": 37.904,
+    "key_off_screen_axis_plan_deg": 40.144,
+    "key_wall": [
+     7.13,
+     1.42,
+     5.92
+    ],
+    "lamps": "SDDSOO",
+    "module_props_missing": 0,
+    "mount": "wall",
+    "notes": "30_look 5.1: set on Kit_TVWallBracket, E wall, screen z 4.83, bottom 2.10, 20 deg down; key N wall x 7.13; E1 W wall south cell; E2 S wall east cell; guard chair turned to the set",
+    "openings": "S2:Arch W1:Arch",
+    "plan": "W' rev 3 Waiting (B), E1 on the set's axis (W wall north cell), strip 2.0 m",
+    "plan_ortho_size": 3.5,
+    "plate_E_analytic_darkest": 0.331,
+    "plate_E_analytic_mean": 0.646,
+    "plate_Y_analytic_darkest": 0.161,
+    "plate_Y_analytic_mean": 0.553,
+    "room_d_m": 6,
+    "room_w_m": 9,
+    "screen_axis": [
+     -0.94,
+     -0.342,
+     0
+    ],
+    "screen_centre": [
+     8.331,
+     2.393,
+     4.83
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     8.331,
+     2.393,
+     4.83
+    ],
+    "seed": 44,
+    "seeds_tried": 4,
+    "set_bottom_m": 2.11,
+    "set_bounds_max": [
+     8.905,
+     2.779,
+     5.229
+    ],
+    "set_bounds_min": [
+     8.27,
+     2.13,
+     4.393
+    ],
+    "set_off_e1_axis_deg": 1.334,
+    "set_poke_into_wall_m": 0,
+    "take_e1_dist_m": 7.142,
+    "take_e2_dist_m": 5.053,
+    "take_set_off_view_deg": 107.199,
+    "take_spot": [
+     7.13,
+     0,
+     5.05
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Level0",
+    "tv_tilt_deg": 20,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     0.3,
+     0,
+     4.636
+    ],
+    "wig_e1_1_pos": [
+     0.3,
+     0,
+     5.136
+    ],
+    "wig_e1_2_pos": [
+     0.3,
+     0,
+     4.136
+    ],
+    "wig_e1_3_pos": [
+     -0.3,
+     0,
+     4.636
+    ],
+    "wig_e1_4_pos": [
+     0.9,
+     0,
+     4.636
+    ],
+    "wig_e2_0_pos": [
+     7.29,
+     0,
+     0.3
+    ],
+    "wig_e2_1_pos": [
+     7.79,
+     0,
+     0.3
+    ],
+    "wig_e2_2_pos": [
+     6.79,
+     0,
+     0.3
+    ],
+    "wig_e2_3_pos": [
+     7.29,
+     0,
+     -0.3
+    ],
+    "wig_e2_4_pos": [
+     7.29,
+     0,
+     0.9
+    ]
+   }
+  },
+  "D": {
+   "plan": "D Desk (A), 3 x 3, oblique (20_layout 4.2 as drawn)",
+   "seed": 12,
+   "c1a_far_portal_frac_of_frame": 0.042,
+   "c1a_far_screen_px_through_E1": 0,
+   "c1a_far_screen_px_total": 0,
+   "c1a_far_moving_px_in_E1": 27,
+   "c1a_far_moving_frac_of_frame": 0.0,
+   "c1a_far_moving_frac_of_E1": 0.0,
+   "c1a_far_moving_squint_cells_in_E1": 0,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.061,
+   "c1a_far_E1_meanY_c2": 0.068,
+   "c1a_far_corridor_meanY_c2": 0.082,
+   "c1a_far_tvE_mean_in_E1": 0.0,
+   "c1a_far_tvE_p95_in_E1": 0.003,
+   "c1a_far_tv_share_in_E1_mean": 0.001,
+   "e1_floor_outside_px": 5502,
+   "e1_floor_outside_E_all": 1.402,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2510,
+   "e1_floor_inside_E_all": 1.417,
+   "e1_floor_inside_E_tv": 0.0,
+   "e1_floor_inside_tv_share": 0.0,
+   "c1a_near_portal_frac_of_frame": 0.313,
+   "c1a_near_screen_px_through_E1": 0,
+   "c1a_near_screen_px_total": 0,
+   "c1a_near_moving_px_in_E1": 10699,
+   "c1a_near_moving_frac_of_frame": 0.005,
+   "c1a_near_moving_frac_of_E1": 0.017,
+   "c1a_near_moving_squint_cells_in_E1": 18,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.652,
+   "c1a_near_E1_meanY_c2": 0.074,
+   "c1a_near_corridor_meanY_c2": 0.096,
+   "c1a_near_tvE_mean_in_E1": 0.001,
+   "c1a_near_tvE_p95_in_E1": 0.007,
+   "c1a_near_tv_share_in_E1_mean": 0.009,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 1093,
+     "key": 30,
+     "plate": 846,
+     "e2": 0
+    },
+    "beacon": {
+     "screen": 501,
+     "key": 8,
+     "plate": 238,
+     "e2": 19652
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 8,
+   "c1c_exits_px": 115017,
+   "c1c_E1_px": 22987,
+   "c1c_E2_px": 92030,
+   "c1c_after_exits_meanE": 0.547,
+   "c1c_after_room_meanE": 0.405,
+   "c1c_after_exits_over_room": 1.352,
+   "c1c_after_exits_pct_rank": 69.547,
+   "c1c_before_exits_over_room": 1.292,
+   "c1c_beauty_top2pct_cells_in_exits": 0.097,
+   "c1c_beauty_exits_meanY": 0.096,
+   "c1c_beauty_room_meanY": 0.052,
+   "c2_key_px": 318,
+   "c2_key_E_all": 0.539,
+   "c2_key_E_tv_mean_card": 0.436,
+   "c2_key_E_tv_darkest_card": 0.072,
+   "c2_key_E_lamps_ambient": 0.104,
+   "c2_key_E_ambient_only": 0.046,
+   "c2_key_tv_share": 0.808,
+   "c2_key_tv_over_lamps": 4.195,
+   "c2_plate_px": 10901,
+   "c2_plate_E_all": 0.478,
+   "c2_plate_E_tv_mean_card": 0.394,
+   "c2_plate_E_tv_darkest_card": 0.065,
+   "c2_plate_E_lamps_ambient": 0.083,
+   "c2_plate_E_ambient_only": 0.041,
+   "c2_plate_tv_share": 0.825,
+   "c2_plate_tv_over_lamps": 4.724,
+   "c2_board_px": 11219,
+   "c2_board_E_all": 0.479,
+   "c2_board_E_tv_mean_card": 0.395,
+   "c2_board_E_tv_darkest_card": 0.065,
+   "c2_board_E_lamps_ambient": 0.084,
+   "c2_board_E_ambient_only": 0.041,
+   "c2_board_tv_share": 0.825,
+   "c2_board_tv_over_lamps": 4.706,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.395,
+    0.282,
+    0.569,
+    0.305,
+    0.271,
+    0.065
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.395,
+    0.36,
+    0.545,
+    0.321,
+    0.363,
+    0.203
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.438,
+   "c2_board_tv_share_min_card_lum_preserving": 0.707,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.065,
+    0.065
+   ],
+   "c2_key_off_screen_axis_plan_deg": 37.917,
+   "c2_key_off_screen_axis_3d_deg": 39.061,
+   "c2_key_angle_to_screen_plane_deg": 52.083,
+   "c2_key_ahead_of_screen_plane_m": 1.489,
+   "c2_key_dist_3d_m": 1.917,
+   "c2_key_incidence_deg": 52.783,
+   "c2_plate_E_analytic_mean": 0.648,
+   "c2_plate_E_analytic_darkest": 0.332,
+   "c3_set_off_view_deg": 96.88,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.825,
+   "c3_board_drop_beautyY": 0.775,
+   "c3_frame_drop_beautyY": 0.712,
+   "c3_wide_frame_drop_beautyY": 0.475,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 239,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.707,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 263,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       2.207,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 232,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.207,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 232,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.707,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 264,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.707,
+       0,
+       0.9
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 67,
+      "board_px": 1024,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       4.426
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 113,
+      "board_px": 1755,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       4.926
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 50,
+      "board_px": 641,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       3.926
+      ]
+     },
+     {
+      "board_visible": 0.0,
+      "key_visible": 0.0,
+      "key_px": 73,
+      "board_px": 1376,
+      "hidden_by_shell": 1.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       9.3,
+       0,
+       4.426
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 70,
+      "board_px": 1790,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.1,
+       0,
+       4.426
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 1.0,
+   "c4_positions_hidden_by_shell": 1,
+   "c4_board_visible_min": 0.0,
+   "c4_key_visible_min": 0.0,
+   "c4_key_px_range": [
+    8,
+    113
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.2,
+   "c5_route_e1_e2_clear_width_m": 1.2,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.4,
+   "c5_e2_arch_width_m": 1.273,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 58.205,
+   "c5_room_floor_reachable_relay_m2": 58.205,
+   "c5_pinch_cells_r030_only_m2": 2.145,
+   "c5_staff_strip_through_clear_width_m": null,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.055,
+     "meanY_to": 0.057,
+     "frame_step_rel": 0.033,
+     "flash_area_frac": 0.04,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.057,
+     "meanY_to": 0.056,
+     "frame_step_rel": -0.028,
+     "flash_area_frac": 0.036,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.056,
+     "meanY_to": 0.055,
+     "frame_step_rel": -0.005,
+     "flash_area_frac": 0.008,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.055,
+     "meanY_to": 0.054,
+     "frame_step_rel": -0.021,
+     "flash_area_frac": 0.031,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.054,
+     "meanY_to": 0.055,
+     "frame_step_rel": 0.022,
+     "flash_area_frac": 0.032,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.055,
+     "meanY_to": 0.054,
+     "frame_step_rel": -0.027,
+     "flash_area_frac": 0.036,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.057,
+     "meanY_to": 0.054,
+     "frame_step_rel": -0.058,
+     "flash_area_frac": 0.062,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.062,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "FAIL",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "FAIL",
+    "c2": "FLAG",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 63.357,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.707,
+    "e1_E_tv_1m_facing_set": 0,
+    "e1_E_tv_floor_inside_1p0": 0,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     0,
+     0,
+     1
+    ],
+    "e1_mid": [
+     1.707,
+     0,
+     0
+    ],
+    "e1_off_screen_axis_deg": 35.399,
+    "e1_to_e2_m": 8.53,
+    "e1_to_screen_m": 10.327,
+    "e1_width": 1.676,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.426,
+    "e2_inward": [
+     -1,
+     0,
+     0
+    ],
+    "e2_mid": [
+     9,
+     0,
+     4.426
+    ],
+    "e2_off_e1_axis_deg": 58.747,
+    "e2_width": 1.273,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.489,
+    "key_angle_to_screen_plane_deg": 52.083,
+    "key_centre_module": [
+     8.84,
+     1.383,
+     6.916
+    ],
+    "key_dist_3d_m": 1.917,
+    "key_incidence_deg": 52.783,
+    "key_normal": [
+     -1,
+     0,
+     0
+    ],
+    "key_off_e1_axis_deg": 45.882,
+    "key_off_screen_axis_3d_deg": 39.061,
+    "key_off_screen_axis_plan_deg": 37.917,
+    "key_wall": [
+     8.92,
+     1.42,
+     6.92
+    ],
+    "lamps": "SSDDDDDOO",
+    "module_props_missing": 0,
+    "mount": "credenza",
+    "notes": "20_layout 4.2: E1 S wall west cell (oblique entry); desk x 3.6-5.1; set, key, ledge, E2 as D'",
+    "openings": "S0:Arch E1:Arch",
+    "plan": "D Desk (A), 3 x 3, oblique (20_layout 4.2 as drawn)",
+    "plan_ortho_size": 5,
+    "plate_E_analytic_darkest": 0.332,
+    "plate_E_analytic_mean": 0.648,
+    "plate_Y_analytic_darkest": 0.161,
+    "plate_Y_analytic_mean": 0.555,
+    "room_d_m": 9,
+    "room_w_m": 9,
+    "screen_axis": [
+     0,
+     0,
+     -1
+    ],
+    "screen_centre": [
+     7.68,
+     1.044,
+     8.405
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     7.68,
+     1.044,
+     8.405
+    ],
+    "seed": 12,
+    "seeds_tried": 2,
+    "set_bounds_max": [
+     8.117,
+     1.271,
+     8.91
+    ],
+    "set_bounds_min": [
+     7.281,
+     0.757,
+     8.422
+    ],
+    "set_off_e1_axis_deg": 35.399,
+    "take_e1_dist_m": 9.387,
+    "take_e2_dist_m": 2.669,
+    "take_set_off_view_deg": 96.88,
+    "take_spot": [
+     8.05,
+     0,
+     6.92
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Office",
+    "tv_tilt_deg": 0,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     1.707,
+     0,
+     0.3
+    ],
+    "wig_e1_1_pos": [
+     2.207,
+     0,
+     0.3
+    ],
+    "wig_e1_2_pos": [
+     1.207,
+     0,
+     0.3
+    ],
+    "wig_e1_3_pos": [
+     1.707,
+     0,
+     -0.3
+    ],
+    "wig_e1_4_pos": [
+     1.707,
+     0,
+     0.9
+    ],
+    "wig_e2_0_pos": [
+     8.7,
+     0,
+     4.426
+    ],
+    "wig_e2_1_pos": [
+     8.7,
+     0,
+     4.926
+    ],
+    "wig_e2_2_pos": [
+     8.7,
+     0,
+     3.926
+    ],
+    "wig_e2_3_pos": [
+     9.3,
+     0,
+     4.426
+    ],
+    "wig_e2_4_pos": [
+     8.1,
+     0,
+     4.426
+    ]
+   }
+  },
+  "Dp": {
+   "plan": "D' Desk (A), 3 x 3, E1 on the set's face",
+   "seed": 53,
+   "c1a_far_portal_frac_of_frame": 0.042,
+   "c1a_far_screen_px_through_E1": 0,
+   "c1a_far_screen_px_total": 0,
+   "c1a_far_moving_px_in_E1": 3212,
+   "c1a_far_moving_frac_of_frame": 0.002,
+   "c1a_far_moving_frac_of_E1": 0.037,
+   "c1a_far_moving_squint_cells_in_E1": 5,
+   "c1a_far_moving_squint_cells_outside_E1": 1,
+   "c1a_far_max_squint_swing_in_E1": 0.704,
+   "c1a_far_E1_meanY_c2": 0.055,
+   "c1a_far_corridor_meanY_c2": 0.119,
+   "c1a_far_tvE_mean_in_E1": 0.006,
+   "c1a_far_tvE_p95_in_E1": 0.03,
+   "c1a_far_tv_share_in_E1_mean": 0.019,
+   "e1_floor_outside_px": 5564,
+   "e1_floor_outside_E_all": 1.582,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2536,
+   "e1_floor_inside_E_all": 1.529,
+   "e1_floor_inside_E_tv": 0.0,
+   "e1_floor_inside_tv_share": 0.0,
+   "c1a_near_portal_frac_of_frame": 0.316,
+   "c1a_near_screen_px_through_E1": 660,
+   "c1a_near_screen_px_total": 660,
+   "c1a_near_moving_px_in_E1": 72566,
+   "c1a_near_moving_frac_of_frame": 0.035,
+   "c1a_near_moving_frac_of_E1": 0.111,
+   "c1a_near_moving_squint_cells_in_E1": 141,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.878,
+   "c1a_near_E1_meanY_c2": 0.071,
+   "c1a_near_corridor_meanY_c2": 0.126,
+   "c1a_near_tvE_mean_in_E1": 0.017,
+   "c1a_near_tvE_p95_in_E1": 0.074,
+   "c1a_near_tv_share_in_E1_mean": 0.056,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 1078,
+     "key": 22,
+     "plate": 509,
+     "e2": 76207
+    },
+    "beacon": {
+     "screen": 814,
+     "key": 12,
+     "plate": 287,
+     "e2": 26635
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 8,
+   "c1c_exits_px": 110774,
+   "c1c_E1_px": 34772,
+   "c1c_E2_px": 76002,
+   "c1c_after_exits_meanE": 0.743,
+   "c1c_after_room_meanE": 0.388,
+   "c1c_after_exits_over_room": 1.916,
+   "c1c_after_exits_pct_rank": 79.292,
+   "c1c_before_exits_over_room": 1.675,
+   "c1c_beauty_top2pct_cells_in_exits": 0.028,
+   "c1c_beauty_exits_meanY": 0.108,
+   "c1c_beauty_room_meanY": 0.052,
+   "c2_key_px": 318,
+   "c2_key_E_all": 0.54,
+   "c2_key_E_tv_mean_card": 0.436,
+   "c2_key_E_tv_darkest_card": 0.072,
+   "c2_key_E_lamps_ambient": 0.105,
+   "c2_key_E_ambient_only": 0.046,
+   "c2_key_tv_share": 0.806,
+   "c2_key_tv_over_lamps": 4.164,
+   "c2_plate_px": 10901,
+   "c2_plate_E_all": 0.479,
+   "c2_plate_E_tv_mean_card": 0.394,
+   "c2_plate_E_tv_darkest_card": 0.065,
+   "c2_plate_E_lamps_ambient": 0.085,
+   "c2_plate_E_ambient_only": 0.041,
+   "c2_plate_tv_share": 0.823,
+   "c2_plate_tv_over_lamps": 4.644,
+   "c2_board_px": 11219,
+   "c2_board_E_all": 0.481,
+   "c2_board_E_tv_mean_card": 0.395,
+   "c2_board_E_tv_darkest_card": 0.065,
+   "c2_board_E_lamps_ambient": 0.085,
+   "c2_board_E_ambient_only": 0.041,
+   "c2_board_tv_share": 0.822,
+   "c2_board_tv_over_lamps": 4.627,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.395,
+    0.282,
+    0.569,
+    0.305,
+    0.271,
+    0.065
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.395,
+    0.36,
+    0.545,
+    0.321,
+    0.363,
+    0.203
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.434,
+   "c2_board_tv_share_min_card_lum_preserving": 0.704,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.065,
+    0.065
+   ],
+   "c2_key_off_screen_axis_plan_deg": 37.917,
+   "c2_key_off_screen_axis_3d_deg": 39.061,
+   "c2_key_angle_to_screen_plane_deg": 52.083,
+   "c2_key_ahead_of_screen_plane_m": 1.489,
+   "c2_key_dist_3d_m": 1.917,
+   "c2_key_incidence_deg": 52.783,
+   "c2_plate_E_analytic_mean": 0.648,
+   "c2_plate_E_analytic_darkest": 0.332,
+   "c3_set_off_view_deg": 96.88,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.822,
+   "c3_board_drop_beautyY": 0.774,
+   "c3_frame_drop_beautyY": 0.707,
+   "c3_wide_frame_drop_beautyY": 0.486,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 301,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       4.74,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 303,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       5.24,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 9,
+      "board_px": 286,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       4.24,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 238,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       4.74,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 11,
+      "board_px": 339,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       4.74,
+       0,
+       0.9
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 77,
+      "board_px": 1064,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       4.542
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 132,
+      "board_px": 1978,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       5.042
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 52,
+      "board_px": 702,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       4.042
+      ]
+     },
+     {
+      "board_visible": 0.0,
+      "key_visible": 0.0,
+      "key_px": 81,
+      "board_px": 1507,
+      "hidden_by_shell": 1.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       9.3,
+       0,
+       4.542
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 76,
+      "board_px": 2013,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.1,
+       0,
+       4.542
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 1.0,
+   "c4_positions_hidden_by_shell": 1,
+   "c4_board_visible_min": 0.0,
+   "c4_key_visible_min": 0.0,
+   "c4_key_px_range": [
+    8,
+    132
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.1,
+   "c5_route_e1_e2_clear_width_m": 1.1,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.4,
+   "c5_e2_arch_width_m": 1.178,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 58.143,
+   "c5_room_floor_reachable_relay_m2": 58.143,
+   "c5_pinch_cells_r030_only_m2": 2.225,
+   "c5_staff_strip_through_clear_width_m": null,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.07,
+     "meanY_to": 0.073,
+     "frame_step_rel": 0.041,
+     "flash_area_frac": 0.064,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.073,
+     "meanY_to": 0.07,
+     "frame_step_rel": -0.035,
+     "flash_area_frac": 0.057,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.07,
+     "meanY_to": 0.07,
+     "frame_step_rel": -0.006,
+     "flash_area_frac": 0.012,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.07,
+     "meanY_to": 0.068,
+     "frame_step_rel": -0.026,
+     "flash_area_frac": 0.045,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.068,
+     "meanY_to": 0.07,
+     "frame_step_rel": 0.028,
+     "flash_area_frac": 0.047,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.07,
+     "meanY_to": 0.067,
+     "frame_step_rel": -0.034,
+     "flash_area_frac": 0.055,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.073,
+     "meanY_to": 0.067,
+     "frame_step_rel": -0.072,
+     "flash_area_frac": 0.109,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.109,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "FAIL",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "FLAG",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 47.34,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.74,
+    "e1_E_tv_1m_facing_set": 0,
+    "e1_E_tv_floor_inside_1p0": 0.001,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     0,
+     0,
+     1
+    ],
+    "e1_mid": [
+     4.74,
+     0,
+     0
+    ],
+    "e1_off_screen_axis_deg": 19.278,
+    "e1_to_e2_m": 6.227,
+    "e1_to_screen_m": 8.923,
+    "e1_width": 1.693,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.542,
+    "e2_inward": [
+     -1,
+     0,
+     0
+    ],
+    "e2_mid": [
+     9,
+     0,
+     4.542
+    ],
+    "e2_off_e1_axis_deg": 43.159,
+    "e2_width": 1.178,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.489,
+    "key_angle_to_screen_plane_deg": 52.083,
+    "key_centre_module": [
+     8.84,
+     1.383,
+     6.916
+    ],
+    "key_dist_3d_m": 1.917,
+    "key_incidence_deg": 52.783,
+    "key_normal": [
+     -1,
+     0,
+     0
+    ],
+    "key_off_e1_axis_deg": 30.657,
+    "key_off_screen_axis_3d_deg": 39.061,
+    "key_off_screen_axis_plan_deg": 37.917,
+    "key_wall": [
+     8.92,
+     1.42,
+     6.92
+    ],
+    "lamps": "DSSDDDDOO",
+    "module_props_missing": 0,
+    "mount": "credenza",
+    "notes": "30_look 5.2: E1 S wall middle cell; desk x 5.0-6.5 (moved 1.6 m E), chair + jacket back to E1; set on Kit_Credenza_Laminate N wall x 7.68, screen 1.04 m; key E wall 2.0 m S of the N wall",
+    "openings": "S1:Arch E1:Arch",
+    "plan": "D' Desk (A), 3 x 3, E1 on the set's face",
+    "plan_ortho_size": 5,
+    "plate_E_analytic_darkest": 0.332,
+    "plate_E_analytic_mean": 0.648,
+    "plate_Y_analytic_darkest": 0.161,
+    "plate_Y_analytic_mean": 0.555,
+    "room_d_m": 9,
+    "room_w_m": 9,
+    "screen_axis": [
+     0,
+     0,
+     -1
+    ],
+    "screen_centre": [
+     7.68,
+     1.044,
+     8.405
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     7.68,
+     1.044,
+     8.405
+    ],
+    "seed": 53,
+    "seeds_tried": 7,
+    "set_bounds_max": [
+     8.117,
+     1.271,
+     8.91
+    ],
+    "set_bounds_min": [
+     7.281,
+     0.757,
+     8.422
+    ],
+    "set_off_e1_axis_deg": 19.278,
+    "take_e1_dist_m": 7.671,
+    "take_e2_dist_m": 2.56,
+    "take_set_off_view_deg": 96.88,
+    "take_spot": [
+     8.05,
+     0,
+     6.92
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Office",
+    "tv_tilt_deg": 0,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     4.74,
+     0,
+     0.3
+    ],
+    "wig_e1_1_pos": [
+     5.24,
+     0,
+     0.3
+    ],
+    "wig_e1_2_pos": [
+     4.24,
+     0,
+     0.3
+    ],
+    "wig_e1_3_pos": [
+     4.74,
+     0,
+     -0.3
+    ],
+    "wig_e1_4_pos": [
+     4.74,
+     0,
+     0.9
+    ],
+    "wig_e2_0_pos": [
+     8.7,
+     0,
+     4.542
+    ],
+    "wig_e2_1_pos": [
+     8.7,
+     0,
+     5.042
+    ],
+    "wig_e2_2_pos": [
+     8.7,
+     0,
+     4.042
+    ],
+    "wig_e2_3_pos": [
+     9.3,
+     0,
+     4.542
+    ],
+    "wig_e2_4_pos": [
+     8.1,
+     0,
+     4.542
+    ]
+   }
+  },
+  "Dp3": {
+   "plan": "D' rev 3 Desk (A), E1 on the set's axis (S wall east cell)",
+   "seed": 43,
+   "c1a_far_portal_frac_of_frame": 0.041,
+   "c1a_far_screen_px_through_E1": 414,
+   "c1a_far_screen_px_total": 414,
+   "c1a_far_moving_px_in_E1": 13764,
+   "c1a_far_moving_frac_of_frame": 0.007,
+   "c1a_far_moving_frac_of_E1": 0.163,
+   "c1a_far_moving_squint_cells_in_E1": 36,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.803,
+   "c1a_far_E1_meanY_c2": 0.07,
+   "c1a_far_corridor_meanY_c2": 0.082,
+   "c1a_far_tvE_mean_in_E1": 0.032,
+   "c1a_far_tvE_p95_in_E1": 0.193,
+   "c1a_far_tv_share_in_E1_mean": 0.074,
+   "e1_floor_outside_px": 5365,
+   "e1_floor_outside_E_all": 1.45,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2453,
+   "e1_floor_inside_E_all": 1.493,
+   "e1_floor_inside_E_tv": 0.001,
+   "e1_floor_inside_tv_share": 0.001,
+   "c1a_near_portal_frac_of_frame": 0.305,
+   "c1a_near_screen_px_through_E1": 660,
+   "c1a_near_screen_px_total": 660,
+   "c1a_near_moving_px_in_E1": 92537,
+   "c1a_near_moving_frac_of_frame": 0.045,
+   "c1a_near_moving_frac_of_E1": 0.146,
+   "c1a_near_moving_squint_cells_in_E1": 173,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.827,
+   "c1a_near_E1_meanY_c2": 0.084,
+   "c1a_near_corridor_meanY_c2": 0.106,
+   "c1a_near_tvE_mean_in_E1": 0.017,
+   "c1a_near_tvE_p95_in_E1": 0.07,
+   "c1a_near_tv_share_in_E1_mean": 0.064,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 1073,
+     "key": 12,
+     "plate": 239,
+     "e2": 48512
+    },
+    "beacon": {
+     "screen": 972,
+     "key": 8,
+     "plate": 192,
+     "e2": 29956
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 10,
+   "c1c_exits_px": 80212,
+   "c1c_E1_px": 37483,
+   "c1c_E2_px": 42729,
+   "c1c_after_exits_meanE": 0.566,
+   "c1c_after_room_meanE": 0.356,
+   "c1c_after_exits_over_room": 1.591,
+   "c1c_after_exits_pct_rank": 77.364,
+   "c1c_before_exits_over_room": 1.356,
+   "c1c_beauty_top2pct_cells_in_exits": 0.0,
+   "c1c_beauty_exits_meanY": 0.091,
+   "c1c_beauty_room_meanY": 0.055,
+   "c2_key_px": 318,
+   "c2_key_E_all": 0.541,
+   "c2_key_E_tv_mean_card": 0.436,
+   "c2_key_E_tv_darkest_card": 0.072,
+   "c2_key_E_lamps_ambient": 0.106,
+   "c2_key_E_ambient_only": 0.046,
+   "c2_key_tv_share": 0.804,
+   "c2_key_tv_over_lamps": 4.112,
+   "c2_plate_px": 10901,
+   "c2_plate_E_all": 0.482,
+   "c2_plate_E_tv_mean_card": 0.394,
+   "c2_plate_E_tv_darkest_card": 0.065,
+   "c2_plate_E_lamps_ambient": 0.088,
+   "c2_plate_E_ambient_only": 0.041,
+   "c2_plate_tv_share": 0.818,
+   "c2_plate_tv_over_lamps": 4.494,
+   "c2_board_px": 11219,
+   "c2_board_E_all": 0.484,
+   "c2_board_E_tv_mean_card": 0.395,
+   "c2_board_E_tv_darkest_card": 0.065,
+   "c2_board_E_lamps_ambient": 0.088,
+   "c2_board_E_ambient_only": 0.041,
+   "c2_board_tv_share": 0.818,
+   "c2_board_tv_over_lamps": 4.481,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.395,
+    0.282,
+    0.569,
+    0.305,
+    0.271,
+    0.065
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.395,
+    0.36,
+    0.545,
+    0.321,
+    0.363,
+    0.203
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.426,
+   "c2_board_tv_share_min_card_lum_preserving": 0.697,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.065,
+    0.065
+   ],
+   "c2_key_off_screen_axis_plan_deg": 37.917,
+   "c2_key_off_screen_axis_3d_deg": 39.061,
+   "c2_key_angle_to_screen_plane_deg": 52.083,
+   "c2_key_ahead_of_screen_plane_m": 1.489,
+   "c2_key_dist_3d_m": 1.917,
+   "c2_key_incidence_deg": 52.783,
+   "c2_plate_E_analytic_mean": 0.648,
+   "c2_plate_E_analytic_darkest": 0.332,
+   "c3_set_off_view_deg": 96.88,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.818,
+   "c3_board_drop_beautyY": 0.772,
+   "c3_frame_drop_beautyY": 0.701,
+   "c3_wide_frame_drop_beautyY": 0.483,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 10,
+      "board_px": 218,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.411,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 7,
+      "board_px": 186,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.911,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 250,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       6.911,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 8,
+      "board_px": 170,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.411,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 11,
+      "board_px": 274,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       7.411,
+       0,
+       0.9
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 52,
+      "board_px": 685,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       4.006
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 71,
+      "board_px": 1057,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       4.506
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 37,
+      "board_px": 484,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.7,
+       0,
+       3.506
+      ]
+     },
+     {
+      "board_visible": 0.0,
+      "key_visible": 0.0,
+      "key_px": 55,
+      "board_px": 916,
+      "hidden_by_shell": 1.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       9.3,
+       0,
+       4.006
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 57,
+      "board_px": 1241,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       8.1,
+       0,
+       4.006
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 1.0,
+   "c4_positions_hidden_by_shell": 1,
+   "c4_board_visible_min": 0.0,
+   "c4_key_visible_min": 0.0,
+   "c4_key_px_range": [
+    7,
+    71
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.3,
+   "c5_route_e1_e2_clear_width_m": 1.3,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.4,
+   "c5_e2_arch_width_m": 1.395,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 58.185,
+   "c5_room_floor_reachable_relay_m2": 58.185,
+   "c5_pinch_cells_r030_only_m2": 2.218,
+   "c5_staff_strip_through_clear_width_m": null,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.083,
+     "meanY_to": 0.085,
+     "frame_step_rel": 0.033,
+     "flash_area_frac": 0.069,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.085,
+     "meanY_to": 0.083,
+     "frame_step_rel": -0.029,
+     "flash_area_frac": 0.061,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.083,
+     "meanY_to": 0.083,
+     "frame_step_rel": -0.005,
+     "flash_area_frac": 0.01,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.083,
+     "meanY_to": 0.081,
+     "frame_step_rel": -0.021,
+     "flash_area_frac": 0.046,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.081,
+     "meanY_to": 0.083,
+     "frame_step_rel": 0.023,
+     "flash_area_frac": 0.048,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.083,
+     "meanY_to": 0.08,
+     "frame_step_rel": -0.028,
+     "flash_area_frac": 0.058,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.085,
+     "meanY_to": 0.08,
+     "frame_step_rel": -0.059,
+     "flash_area_frac": 0.113,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.113,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "PASS",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "FLAG",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 23.336,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.411,
+    "e1_E_tv_1m_facing_set": 0.003,
+    "e1_E_tv_floor_inside_1p0": 0.003,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     0,
+     0,
+     1
+    ],
+    "e1_mid": [
+     7.411,
+     0,
+     0
+    ],
+    "e1_off_screen_axis_deg": 1.836,
+    "e1_to_e2_m": 4.31,
+    "e1_to_screen_m": 8.429,
+    "e1_width": 1.634,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.006,
+    "e2_inward": [
+     -1,
+     0,
+     0
+    ],
+    "e2_mid": [
+     9,
+     0,
+     4.006
+    ],
+    "e2_off_e1_axis_deg": 21.638,
+    "e2_width": 1.395,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.489,
+    "key_angle_to_screen_plane_deg": 52.083,
+    "key_centre_module": [
+     8.84,
+     1.383,
+     6.916
+    ],
+    "key_dist_3d_m": 1.917,
+    "key_incidence_deg": 52.783,
+    "key_normal": [
+     -1,
+     0,
+     0
+    ],
+    "key_off_e1_axis_deg": 11.675,
+    "key_off_screen_axis_3d_deg": 39.061,
+    "key_off_screen_axis_plan_deg": 37.917,
+    "key_wall": [
+     8.92,
+     1.42,
+     6.92
+    ],
+    "lamps": "DSSDDDDOO",
+    "module_props_missing": 0,
+    "mount": "credenza",
+    "notes": "30_look 5.2: E1 S wall middle cell; desk x 5.0-6.5 (moved 1.6 m E), chair + jacket back to E1; set on Kit_Credenza_Laminate N wall x 7.68, screen 1.04 m; key E wall 2.0 m S of the N wall",
+    "openings": "S2:Arch E1:Arch",
+    "plan": "D' rev 3 Desk (A), E1 on the set's axis (S wall east cell)",
+    "plan_ortho_size": 5,
+    "plate_E_analytic_darkest": 0.332,
+    "plate_E_analytic_mean": 0.648,
+    "plate_Y_analytic_darkest": 0.161,
+    "plate_Y_analytic_mean": 0.555,
+    "room_d_m": 9,
+    "room_w_m": 9,
+    "screen_axis": [
+     0,
+     0,
+     -1
+    ],
+    "screen_centre": [
+     7.68,
+     1.044,
+     8.405
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     7.68,
+     1.044,
+     8.405
+    ],
+    "seed": 43,
+    "seeds_tried": 9,
+    "set_bounds_max": [
+     8.117,
+     1.271,
+     8.91
+    ],
+    "set_bounds_min": [
+     7.281,
+     0.757,
+     8.422
+    ],
+    "set_off_e1_axis_deg": 1.836,
+    "take_e1_dist_m": 6.949,
+    "take_e2_dist_m": 3.065,
+    "take_set_off_view_deg": 96.88,
+    "take_spot": [
+     8.05,
+     0,
+     6.92
+    ],
+    "take_to_key_m": 0.825,
+    "theme": "Office",
+    "tv_tilt_deg": 0,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     7.411,
+     0,
+     0.3
+    ],
+    "wig_e1_1_pos": [
+     7.911,
+     0,
+     0.3
+    ],
+    "wig_e1_2_pos": [
+     6.911,
+     0,
+     0.3
+    ],
+    "wig_e1_3_pos": [
+     7.411,
+     0,
+     -0.3
+    ],
+    "wig_e1_4_pos": [
+     7.411,
+     0,
+     0.9
+    ],
+    "wig_e2_0_pos": [
+     8.7,
+     0,
+     4.006
+    ],
+    "wig_e2_1_pos": [
+     8.7,
+     0,
+     4.506
+    ],
+    "wig_e2_2_pos": [
+     8.7,
+     0,
+     3.506
+    ],
+    "wig_e2_3_pos": [
+     9.3,
+     0,
+     4.006
+    ],
+    "wig_e2_4_pos": [
+     8.1,
+     0,
+     4.006
+    ]
+   }
+  },
+  "H": {
+   "plan": "H Long hall (2 x 4), end-on (20_layout 4.3)",
+   "seed": 167,
+   "c1a_far_portal_frac_of_frame": 0.044,
+   "c1a_far_screen_px_through_E1": 266,
+   "c1a_far_screen_px_total": 266,
+   "c1a_far_moving_px_in_E1": 8195,
+   "c1a_far_moving_frac_of_frame": 0.004,
+   "c1a_far_moving_frac_of_E1": 0.089,
+   "c1a_far_moving_squint_cells_in_E1": 21,
+   "c1a_far_moving_squint_cells_outside_E1": 0,
+   "c1a_far_max_squint_swing_in_E1": 0.694,
+   "c1a_far_E1_meanY_c2": 0.138,
+   "c1a_far_corridor_meanY_c2": 0.122,
+   "c1a_far_tvE_mean_in_E1": 0.014,
+   "c1a_far_tvE_p95_in_E1": 0.066,
+   "c1a_far_tv_share_in_E1_mean": 0.042,
+   "e1_floor_outside_px": 5816,
+   "e1_floor_outside_E_all": 1.339,
+   "e1_floor_outside_E_tv": 0.0,
+   "e1_floor_outside_tv_share": 0.0,
+   "e1_floor_inside_px": 2650,
+   "e1_floor_inside_E_all": 1.387,
+   "e1_floor_inside_E_tv": 0.0,
+   "e1_floor_inside_tv_share": 0.0,
+   "c1a_near_portal_frac_of_frame": 0.33,
+   "c1a_near_screen_px_through_E1": 408,
+   "c1a_near_screen_px_total": 408,
+   "c1a_near_moving_px_in_E1": 22570,
+   "c1a_near_moving_frac_of_frame": 0.011,
+   "c1a_near_moving_frac_of_E1": 0.033,
+   "c1a_near_moving_squint_cells_in_E1": 43,
+   "c1a_near_moving_squint_cells_outside_E1": 0,
+   "c1a_near_max_squint_swing_in_E1": 0.755,
+   "c1a_near_E1_meanY_c2": 0.144,
+   "c1a_near_corridor_meanY_c2": 0.127,
+   "c1a_near_tvE_mean_in_E1": 0.005,
+   "c1a_near_tvE_p95_in_E1": 0.025,
+   "c1a_near_tv_share_in_E1_mean": 0.019,
+   "c1b_from_E1": {
+    "reveal": {
+     "screen": 588,
+     "key": 7,
+     "plate": 83,
+     "e2": 5879
+    },
+    "beacon": {
+     "screen": 494,
+     "key": 6,
+     "plate": 75,
+     "e2": 5137
+    }
+   },
+   "c1b_board_visible_frac_E1": 1.0,
+   "c1b_key_visible_frac_E1": 1.0,
+   "c1b_key_px_E1": 4,
+   "c1c_exits_px": 202265,
+   "c1c_E1_px": 52192,
+   "c1c_E2_px": 150073,
+   "c1c_after_exits_meanE": 0.581,
+   "c1c_after_room_meanE": 0.305,
+   "c1c_after_exits_over_room": 1.902,
+   "c1c_after_exits_pct_rank": 82.888,
+   "c1c_before_exits_over_room": 1.712,
+   "c1c_beauty_top2pct_cells_in_exits": 0.014,
+   "c1c_beauty_exits_meanY": 0.136,
+   "c1c_beauty_room_meanY": 0.074,
+   "c2_key_px": 364,
+   "c2_key_E_all": 0.508,
+   "c2_key_E_tv_mean_card": 0.392,
+   "c2_key_E_tv_darkest_card": 0.065,
+   "c2_key_E_lamps_ambient": 0.116,
+   "c2_key_E_ambient_only": 0.059,
+   "c2_key_tv_share": 0.772,
+   "c2_key_tv_over_lamps": 3.386,
+   "c2_plate_px": 11672,
+   "c2_plate_E_all": 0.52,
+   "c2_plate_E_tv_mean_card": 0.434,
+   "c2_plate_E_tv_darkest_card": 0.072,
+   "c2_plate_E_lamps_ambient": 0.086,
+   "c2_plate_E_ambient_only": 0.054,
+   "c2_plate_tv_share": 0.835,
+   "c2_plate_tv_over_lamps": 5.051,
+   "c2_board_px": 12036,
+   "c2_board_E_all": 0.519,
+   "c2_board_E_tv_mean_card": 0.433,
+   "c2_board_E_tv_darkest_card": 0.072,
+   "c2_board_E_lamps_ambient": 0.087,
+   "c2_board_E_ambient_only": 0.054,
+   "c2_board_tv_share": 0.833,
+   "c2_board_tv_over_lamps": 4.984,
+   "c2_board_E_tv_by_card_as_specified": [
+    0.433,
+    0.309,
+    0.622,
+    0.334,
+    0.296,
+    0.072
+   ],
+   "c2_board_E_tv_by_card_lum_preserving": [
+    0.433,
+    0.394,
+    0.596,
+    0.351,
+    0.397,
+    0.222
+   ],
+   "c2_board_tv_share_min_card_as_specified": 0.452,
+   "c2_board_tv_share_min_card_lum_preserving": 0.719,
+   "c2_card_lum_linear": [
+    0.708,
+    0.555,
+    0.739,
+    0.673,
+    0.529,
+    0.228
+   ],
+   "c2_check_card5_pass_vs_scaled": [
+    0.072,
+    0.072
+   ],
+   "c2_key_off_screen_axis_plan_deg": 42.885,
+   "c2_key_off_screen_axis_3d_deg": 39.983,
+   "c2_key_angle_to_screen_plane_deg": 47.115,
+   "c2_key_ahead_of_screen_plane_m": 1.227,
+   "c2_key_dist_3d_m": 1.956,
+   "c2_key_incidence_deg": 54.358,
+   "c2_plate_E_analytic_mean": 0.626,
+   "c2_plate_E_analytic_darkest": 0.321,
+   "c3_set_off_view_deg": 112.98,
+   "c3_set_px_in_take": 0,
+   "c3_board_drop_E": 0.833,
+   "c3_board_drop_beautyY": 0.65,
+   "c3_frame_drop_beautyY": 0.601,
+   "c3_wide_frame_drop_beautyY": 0.434,
+   "c4_wiggle": {
+    "e1": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 4,
+      "board_px": 78,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.318,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 5,
+      "board_px": 79,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.818,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 4,
+      "board_px": 64,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       0.818,
+       0,
+       0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 4,
+      "board_px": 68,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.318,
+       0,
+       -0.3
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 5,
+      "board_px": 87,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       1.318,
+       0,
+       0.9
+      ]
+     }
+    ],
+    "e2": [
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 32,
+      "board_px": 976,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       5.7,
+       0,
+       10.311
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 30,
+      "board_px": 918,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       5.7,
+       0,
+       10.811
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 32,
+      "board_px": 964,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       5.7,
+       0,
+       9.811
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 27,
+      "board_px": 833,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       6.3,
+       0,
+       10.311
+      ]
+     },
+     {
+      "board_visible": 1.0,
+      "key_visible": 1.0,
+      "key_px": 36,
+      "board_px": 1239,
+      "hidden_by_shell": 0.0,
+      "hidden_by_furniture": 0.0,
+      "pos": [
+       5.1,
+       0,
+       10.311
+      ]
+     }
+    ]
+   },
+   "c4_hidden_by_furniture_max": 0.0,
+   "c4_hidden_by_shell_max": 0.0,
+   "c4_positions_hidden_by_shell": 0,
+   "c4_board_visible_min": 1.0,
+   "c4_key_visible_min": 1.0,
+   "c4_key_px_range": [
+    4,
+    36
+   ],
+   "c4_out_of_frame_positions": 0,
+   "c5_route_e1_take_clear_width_m": 1.4,
+   "c5_route_take_e2_clear_width_m": 1.2,
+   "c5_route_e1_e2_clear_width_m": 1.2,
+   "c5_route_in_room_e1_take_clear_width_m": 1.4,
+   "c5_route_in_room_take_e2_clear_width_m": 1.4,
+   "c5_e2_arch_width_m": 1.29,
+   "c5_width_note": "clear width = 2 x the largest capsule radius that passes (0.30-0.70 m, 0.05 steps); 1.40 = 1.40 or more",
+   "c5_player_only_floor_m2": 0.0,
+   "c5_room_floor_reachable_player_m2": 49.31,
+   "c5_room_floor_reachable_relay_m2": 49.65,
+   "c5_pinch_cells_r030_only_m2": 2.685,
+   "c5_staff_strip_through_clear_width_m": 1.3,
+   "c5_validate_errors": 0,
+   "c5_g6_tall_on_line_to_e1": "none",
+   "c5_g6_tall_on_line_to_e2": "none",
+   "c6_steps": [
+    {
+     "from": "c1",
+     "to": "c2",
+     "meanY_from": 0.114,
+     "meanY_to": 0.115,
+     "frame_step_rel": 0.008,
+     "flash_area_frac": 0.021,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "c3",
+     "meanY_from": 0.115,
+     "meanY_to": 0.114,
+     "frame_step_rel": -0.007,
+     "flash_area_frac": 0.016,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c3",
+     "to": "c4",
+     "meanY_from": 0.114,
+     "meanY_to": 0.114,
+     "frame_step_rel": -0.001,
+     "flash_area_frac": 0.002,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c4",
+     "to": "c5",
+     "meanY_from": 0.114,
+     "meanY_to": 0.113,
+     "frame_step_rel": -0.006,
+     "flash_area_frac": 0.012,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c5",
+     "to": "c1",
+     "meanY_from": 0.113,
+     "meanY_to": 0.114,
+     "frame_step_rel": 0.006,
+     "flash_area_frac": 0.013,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c1",
+     "to": "off",
+     "meanY_from": 0.114,
+     "meanY_to": 0.113,
+     "frame_step_rel": -0.008,
+     "flash_area_frac": 0.019,
+     "red_change_area_frac": 0.0
+    },
+    {
+     "from": "c2",
+     "to": "off",
+     "meanY_from": 0.115,
+     "meanY_to": 0.113,
+     "frame_step_rel": -0.016,
+     "flash_area_frac": 0.046,
+     "red_change_area_frac": 0.0
+    }
+   ],
+   "c6_max_flash_area_frac": 0.046,
+   "c6_max_red_change_frac": 0.0,
+   "c6_changes_per_s_max": 1,
+   "c6_min_gap_s": 2.0,
+   "verdicts": {
+    "c1a_far": "PASS",
+    "c1a_near": "PASS",
+    "c1b": "PASS",
+    "c1c": "PASS",
+    "c2": "FLAG",
+    "c3_literal": "FAIL",
+    "c3_fallback": "PASS",
+    "c4": "PASS",
+    "c5": "PASS",
+    "c6": "PASS"
+   },
+   "harness": {
+    "approach_far_cell": "open, line of sight",
+    "approach_far_dist_m": 4.5,
+    "approach_near_dist_m": 1.5,
+    "board_exits_spread_deg": 90.12,
+    "e1_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e1_centre_along": 1.318,
+    "e1_E_tv_1m_facing_set": 0,
+    "e1_E_tv_floor_inside_1p0": 0,
+    "e1_E_tv_floor_outside_1p5": 0,
+    "e1_E_tv_floor_threshold": 0,
+    "e1_inward": [
+     0,
+     0,
+     1
+    ],
+    "e1_mid": [
+     1.318,
+     0,
+     0
+    ],
+    "e1_off_screen_axis_deg": 0.091,
+    "e1_to_e2_m": 11.324,
+    "e1_to_screen_m": 11.357,
+    "e1_width": 1.771,
+    "e2_arch_check": "OK (middle clear, jambs wall/wall)",
+    "e2_centre_along": 1.311,
+    "e2_inward": [
+     -1,
+     0,
+     0
+    ],
+    "e2_mid": [
+     6,
+     0,
+     10.311
+    ],
+    "e2_off_e1_axis_deg": 24.422,
+    "e2_width": 1.29,
+    "g6_tall_on_line_to_e1": "none",
+    "g6_tall_on_line_to_e2": "none",
+    "key_ahead_of_screen_plane_m": 1.227,
+    "key_angle_to_screen_plane_deg": 47.115,
+    "key_centre_module": [
+     0.16,
+     1.383,
+     10.104
+    ],
+    "key_dist_3d_m": 1.956,
+    "key_incidence_deg": 54.358,
+    "key_normal": [
+     1,
+     0,
+     0
+    ],
+    "key_off_e1_axis_deg": 6.538,
+    "key_off_screen_axis_3d_deg": 39.983,
+    "key_off_screen_axis_plan_deg": 42.885,
+    "key_wall": [
+     0.08,
+     1.42,
+     10.1
+    ],
+    "lamps": "SSDDDDOO",
+    "module_props_missing": 0,
+    "mount": "wall",
+    "notes": "30_look 3.5: set on a bracket on the N end wall, screen x 1.30 (s 1.22), 20 deg down; key W wall z 10.10 (f 1.25); E1 S wall west cell on the axis; E2 E wall north cell beside the key; counter with the staff strip along the W wall",
+    "openings": "S0:Arch E3:Arch",
+    "plan": "H Long hall (2 x 4), end-on (20_layout 4.3)",
+    "plan_ortho_size": 6.5,
+    "plate_E_analytic_darkest": 0.321,
+    "plate_E_analytic_mean": 0.626,
+    "plate_Y_analytic_darkest": 0.156,
+    "plate_Y_analytic_mean": 0.536,
+    "room_d_m": 12,
+    "room_w_m": 6,
+    "screen_axis": [
+     0,
+     -0.342,
+     -0.94
+    ],
+    "screen_centre": [
+     1.3,
+     2.393,
+     11.331
+    ],
+    "screen_picture_h_m": 0.328,
+    "screen_picture_w_m": 0.433,
+    "screen_world_module": [
+     1.3,
+     2.393,
+     11.331
+    ],
+    "seed": 167,
+    "seeds_tried": 9,
+    "set_bottom_m": 2.11,
+    "set_bounds_max": [
+     1.737,
+     2.779,
+     11.905
+    ],
+    "set_bounds_min": [
+     0.9,
+     2.13,
+     11.27
+    ],
+    "set_off_e1_axis_deg": 0.091,
+    "set_poke_into_wall_m": 0,
+    "take_e1_dist_m": 10.108,
+    "take_e2_dist_m": 5.084,
+    "take_set_off_view_deg": 112.98,
+    "take_spot": [
+     0.92,
+     0,
+     10.1
+    ],
+    "take_to_key_m": 0.796,
+    "theme": "Level0",
+    "tv_tilt_deg": 20,
+    "validate_error_list": "",
+    "validate_errors": 0,
+    "validate_warning_list": "",
+    "validate_warnings": 0,
+    "wig_e1_0_pos": [
+     1.318,
+     0,
+     0.3
+    ],
+    "wig_e1_1_pos": [
+     1.818,
+     0,
+     0.3
+    ],
+    "wig_e1_2_pos": [
+     0.818,
+     0,
+     0.3
+    ],
+    "wig_e1_3_pos": [
+     1.318,
+     0,
+     -0.3
+    ],
+    "wig_e1_4_pos": [
+     1.318,
+     0,
+     0.9
+    ],
+    "wig_e2_0_pos": [
+     5.7,
+     0,
+     10.311
+    ],
+    "wig_e2_1_pos": [
+     5.7,
+     0,
+     10.811
+    ],
+    "wig_e2_2_pos": [
+     5.7,
+     0,
+     9.811
+    ],
+    "wig_e2_3_pos": [
+     6.3,
+     0,
+     10.311
+    ],
+    "wig_e2_4_pos": [
+     5.1,
+     0,
+     10.311
+    ]
+   }
+  }
+ },
+ "note": "Station blockouts (游戏视觉, workflow station-look stage 2, 2026-10-22). Run r6 of FrontRoomsStationLookdev in W/proj_station; measured by measure_station.py.txt. harness = the per-plan metrics the harness wrote (module metres from the room SW cell lines; wall faces at 0.08)."
+}

@@ -99,6 +99,7 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.MapRunEnded += OnMapRunEnded;
             FrontRooms3DGame.PlayerClimbed += OnPlayerClimbed;
             FrontRooms3DGame.Paused += OnPaused;
+            FrontRooms3DGame.Inspecting += OnInspecting;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -108,7 +109,9 @@ namespace FrontRooms.Audio
             FrontRooms3DGame.MapRunEnded -= OnMapRunEnded;
             FrontRooms3DGame.PlayerClimbed -= OnPlayerClimbed;
             FrontRooms3DGame.Paused -= OnPaused;
+            FrontRooms3DGame.Inspecting -= OnInspecting;
             OnPaused(false);
+            OnInspecting(false);
             SceneManager.sceneLoaded -= OnSceneLoaded;
             OnMapRunEnded();
             StopRoomTone(true);
@@ -162,8 +165,12 @@ namespace FrontRooms.Audio
             EnsureRunVoices();
             // Caught cuts everything to silence: the lamps must not come back under the tinnitus.
             if (!caught && now >= nextFixtureUpdate) { nextFixtureUpdate = now + .2f; UpdateFixtures(); }
-            UpdateGlobals(Time.unscaledDeltaTime);
-            UpdateSubjective();
+            // EXAMINE (S1): the close-up holds the director's tension slide and the subjective layer where they were.
+            if (!inspecting)
+            {
+                UpdateGlobals(Time.unscaledDeltaTime);
+                UpdateSubjective();
+            }
         }
 
         // ------------------------------------------------------------ room tone
@@ -546,6 +553,7 @@ namespace FrontRooms.Audio
         /// <summary>The pause screen freezes the game: everything heard freezes with it, and resumes where it was.</summary>
         void OnPaused(bool paused)
         {
+            pausedNow = paused;
             if (!FrontRoomsFmod.Ready) return;
             foreach (var path in PausedBuses)
             {
@@ -553,6 +561,47 @@ namespace FrontRooms.Audio
                 catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] pause " + path + ": " + e.Message); }
             }
             FrontRoomsFmod.Note(paused ? "paused" : "resumed");
+            // S2: a focus loss inside a close-up pauses everything; the resume goes back to the close-up's mix, or to
+            // the open mix if the close-up ended under the pause screen.
+            if (!paused) ApplyInspect(inspecting);
+        }
+
+        // ------------------------------------------------------------ EXAMINE (research/inspect/10_design.md §4.3, S1-S4)
+        // Keyed on FrontRooms3DGame.Inspecting only: true at the E press, false as control returns (and on teardown).
+        // The world is paused (timeScale 0), so the mix freezes with it: Foley, mechanisms, stingers and the subjective
+        // layer pause where they are; the Relay bus holds its voices (the presence drone, the warning coil) 6 dB down
+        // with no new steps; the room tone stays, 10 dB down, so the pause still sounds like the place (SOMA's Safe
+        // Mode). The 3D voices that keep playing are attenuated from the body, not the travelling close-up camera.
+        static readonly string[] InspectPausedBuses = { SoundIds.BusFoley, SoundIds.BusMechanism, SoundIds.BusMusic, SoundIds.BusSubjective };
+        const float InspectRelayVolume = .501f, InspectAmbienceVolume = .316f;   // -6 dB, -10 dB
+        bool inspecting, pausedNow;
+
+        void OnInspecting(bool on)
+        {
+            if (inspecting == on) return;
+            inspecting = on;
+            ApplyInspect(on);
+            FrontRoomsFmod.Note(on ? "inspect on" : "inspect off");
+        }
+
+        void ApplyInspect(bool on)
+        {
+            if (!FrontRoomsFmod.Ready) return;
+            foreach (var path in InspectPausedBuses)
+            {
+                // Under the pause screen these stay paused: a close-up that ends there (an R restart) must not bring the
+                // stingers or the heartbeat back over the menu. OnPaused(false) re-applies the mix on resume.
+                try { RuntimeManager.GetBus(path).setPaused(on || pausedNow); }
+                catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + path + ": " + e.Message); }
+            }
+            try { RuntimeManager.GetBus(SoundIds.BusRelay).setVolume(on ? InspectRelayVolume : 1f); }
+            catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusRelay + ": " + e.Message); }
+            try { RuntimeManager.GetBus(SoundIds.BusAmbience).setVolume(on ? InspectAmbienceVolume : 1f); }
+            catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusAmbience + ": " + e.Message); }
+            // S4: the ears stay on the camera (panning follows the view); distance attenuation stays at the body's eye,
+            // the camera's parent under the rig (FrontRoomsCameraRig parents the camera to its eye).
+            var ears = listener != null ? listener.GetComponent<StudioListener>() : null;
+            if (ears != null) ears.AttenuationObject = on && listener.parent != null ? listener.parent.gameObject : null;
         }
 
         void OnDoorOpenBegan(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)

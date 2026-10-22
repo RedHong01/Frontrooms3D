@@ -137,3 +137,19 @@
   - A or B per theme (as above);
   - the hero-room budget;
   - whether the take beat accepts "the light on the key goes out" as G5's frame (the set itself is out of view at the take, by geometry).
+
+## Blockout results (游戏视觉, 2026-10-22 12:4x; workflow `station-look`, stage 2)
+
+**Full table:** `30_look.md` §9; images `images/` (VL354–VL358). Eight plans were built in clone `W/proj_station`, in the game's own map, and measured on the six checks of `20_layout.md` §8.
+- **B (Level 0, Floor 1):** **W′ rev 3** is the only Waiting plan that passes everything except the literal G5.
+  - It keeps W′'s set (E-wall bracket) and key (N wall).
+  - It moves E1 to the W wall's north cell, onto the set's axis, so the screen shows through E1 from the junction.
+  - It widens the staff strip to 2.0 m, so the turned guard chair leaves 1.1 m.
+  - W as drawn fails the key light (68°, 45 %) and the take drop (45 %). W′ as amended on paper fails the junction squint and the strip (0.7 m).
+- **A (Office floors):** **D′ rev 3** has E1 in the S wall's east cell, on the set's axis, and the desk left of it, so the chair and the jacket sit under the screen. It passes as D′ does, plus the junction squint. D as drawn fails the junction and "exits brightest after the take" (1.35×).
+- **H** passes as drawn, for long rooms.
+- **Shared findings, for 叙事 to accept:**
+  - G1's "set within ±30° of E1's axis" becomes **≤ about 12°**. The set's light adds 0.000 at E1, so only the screen itself, framed by E1, reads from the junction.
+  - G5 becomes "the light on the key board drops in view". The set is 85–113° off every take view, and the board loses 82–86 % of its light in one change.
+- **For V3 (游戏视觉's own row):** a luminance-preserving light colour. As specified, the dark WTCZ card gives only 43–50 % of the key's light; preserving luminance raises that to 70–76 %.
+- **Lamps follow tutorial V1 (two Steady at the entrance).** This corrects `30_look.md` §3.3.

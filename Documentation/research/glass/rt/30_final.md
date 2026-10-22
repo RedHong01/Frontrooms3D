@@ -2,6 +2,8 @@
 
 2026-10-22 · 游戏视觉 · workflow stage "G14 independent verification" (Red allowed workflows on 2026-10-21; the first run was cut by a network outage on 10-21 at 23:44 and resumed here) · **verdict: the package is correct, safe and inert off the Mac on today's main, with GD3's glass live. It still fails its cost bars (main thread, GPU at 1440p and at the break-shot pose), it does not register GD3's cracked stages, and it does not make the universal Mac app trace (RD2). It is not landed: this stage only verified it.**
 
+**Update after review round 3 (2026-10-22 12:19, §13): BLOCKED, do NOT apply the package.** Both round-3 reviews are NOT READY. Engineering found three correctness defects in the payload code: a stale held gate keeps the 12x BLAS budget on for the whole session after a restart; a picked-up key counts as a map chunk; and the coverage seqlock has no fences. Art found four claims that its frames contradict, and two sign-off sheets that show the pre-fix build. The package was not refreshed. `40_for_red.md` was not refreshed either, and its cost numbers and D2 text are known wrong (§13.2), so Red should not decide D1/D6/D2 from it yet. §13 lists every blocker with its fix and its test. The fix round 2 status below no longer holds.
+
 **Update after fix round 2 (2026-10-22 11:xx, §12): READY to land. Review round 2 found two new art regressions from fix round 1 (holes and missing lamps in the reflection after a stream-in jump; aliased lens edges in motion) and nine engineering items. All are fixed or answered in §12, the package now holds the round-2 plugin `ec31f4fa` (universal), and Red's three open decisions are written up in `40_for_red.md`. Where §0–§11 and §12 differ, §12 is current.**
 
 **Update after fix round 1 (2026-10-22 10:xx, §11): READY to land. The review's correctness defects are fixed and re-checked in the clone (AD-1 blocks, G14V-1, G14V-3, G14V-4, non-tracing Macs, fail-closed at every entry point, the strippers' build step, TLAS reuse). RD2 is folded into the package (20 paths), and its dry run on main is OK. The universal app traces natively, under Rosetta 2 and as a sandboxed store archive. Cost is still over the bars (Red's D1/D6). Where §0–§10 and §11 differ, §11 is current.**
@@ -722,3 +724,103 @@ The art review's text reached this stage cut off after its defect 2; items Art #
 - Images (Shot format v1.1): new `30v_F32_stream_in.jpg` (VL281), `30v_F32_lens_aa.jpg` (VL282), `30v_F32_GD3_stages.jpg` (VL312); re-framed `30v_P1_parity.jpg`, `30v_P1_office.jpg` (VL283), `30v_AD6_showcase.jpg` (VL284), `30v_H3_prepass_bit.jpg` (VL313), `30v_V2_red_tint.jpg` (VL315), `30v_D2_dark_window.jpg` (VL316).
 - VL rows: `W/vl_pending/glass_rt_g14.md` (VL281, VL282, VL283, VL284, VL312, VL313, VL314, VL315, VL316 updated in place; no new number).
 - For Red: `40_for_red.md`.
+
+---
+
+## 13. Package stage after review round 3 (2026-10-22 12:19): BLOCKED
+
+This is the workflow's package stage (游戏视觉 workflow, session `local_a9a1dce2`, account B). It is BLOCKED because the engineering lens of review round 3 is NOT READY on correctness defects in the payload code. I re-read the code behind each defect in `W/apply/glass_rt_g14_payload/` and in main myself, and all three are real (§13.1).
+
+What this stage did:
+- One plain dry run on main at 12:18: DRY RUN OK, every base matches (`W/logs/package_g14/dry_main_1218.log`). Main is at `c462951a`, and its working tree changes nothing in the package paths.
+- It wrote this section and the banner at the top of this file.
+
+What it did **not** do:
+- It did not refresh `W/apply/glass_rt_g14*`. That package is still the round-2 package with dylib `ec31f4fa`, and it must not be applied.
+- It did not touch `40_for_red.md` or `W/vl_pending/glass_rt_g14.md`.
+- It did not back the package up into `_retired`.
+- It did not run Unity. The clone `W/proj_rt_eng3` is left in the round-2 package state; per the art round-3 check at 12:14, it matches the payload sha1 for sha1.
+- No git command, nothing downloaded.
+
+Load at 12:18: 1-minute average 65.
+
+The sources for this section are the round-3 results in the workflow journal (engineering `aafe6450`, art `a5abfb0d`). Neither stage wrote a `RESULT.md`; their locks are `W/rt_work/review3_eng/OWNER.lockdir`, `W/rt_work/rev3_art/OWNER.lockdir`. The art evidence sheets are in `W/rt_work/rev3_art/sheets/`.
+
+### 13.1 Blockers in the payload code (fix in the clone, re-verify, re-package)
+
+| ID | Severity | Defect (checked in the payload by this stage) | Fix | Test that must pass |
+|---|---|---|---|---|
+| R3-B1 (eng R3 #1) | major | **A stale held gate keeps the burst BLAS budget on for the rest of the session.** `FrontRoomsGlassRTSystem.cs` `ReleaseCamera` (l. 349–355) removes the camera and frees its native slot, but never removes `gates[state.id]`. Camera ids are never reused (`nextCameraId++`). `UpdateBlasBurst` (l. 2030) turns the burst on while *any* gate is held, and it runs only from `GateWeight`. `ResetStatics` runs only at SubsystemRegistration and at Play exit. A new camera's gate starts held and opens only on one of its own traced frames that shows glass (frames without glass do not count, not even towards the timeout). The desktop restart (`FrontRooms3DGame.cs:2434`, `SceneManager.LoadScene` from pause or caught) destroys the camera. If its gate is held at that moment (a restart before the first window is in view, or within 8 frames of a near birth), that gate stays held forever, so `FRGlassRT_SetBuildBudget(120000, 48)` stays on instead of the plugin default (10k triangles / 8 builds), and 48 m streaming builds 12× the triangles per event. No harness restarts the scene with RT on | In `ReleaseCamera`: `gates.Remove(state.id)`, then recompute the burst. Make `UpdateBlasBurst` callable from there, and call it on quality Off and on fail-closed too | A new **restart** phase in the jump harness: `SceneManager.LoadScene` while the gate is held, and again while it is open. Assert that the burst is off once the new camera opens, that the gate count equals the live cameras, and that walk GPU AS time is unchanged against `r8b` |
+| R3-B2 (eng R3 #3) | moderate | **Every direct child of the map root counts as a chunk.** `DiffChunks` (l. 1689–1711) makes a `ChunkRec` for any child of `mapRoot`. Main's `FrontRoomsMapWorld.TakeKey` re-parents a presented key to the map root (`FrontRoomsMapWorld.cs:3807`). The key is within 30 m, so it is a "near birth": on every presented key pickup the gate drops the reflection to the zone cube for about 8 frames, waits about 3 for coverage, then fades back over 12. When the key is destroyed, `DropChunk` (l. 1721) removes its rounded coordinate from the plain `HashSet` `chunkCoords`. That coordinate is usually a real neighbouring chunk, which `CountNearUnbuilt` then counts as unbuilt for good (every later jump near it holds the gate). Live today in the editor with the placeholder key (`ShowPlaceholderKey`); live in players as soon as a dressed key (`IFrontRoomsKeyRig`) lands | Count only real chunk roots (name prefix `Chunk `, or a root exactly on the 24 m grid), and reference-count `chunkCoords`. The reference count also fixes `RebuildChunk` (Level Designer `ReplaceModule`), which drops the old root after the new one is added | A **key pickup** phase with the placeholder key: 0 near births and 0 holds from the pickup; `NearUnbuilt` is 0 after the key is destroyed; and a Level Designer `ReplaceModule` leaves the coordinate counted as built |
+| R3-B3 (eng R3 #4) | minor (same rebuild) | **The coverage slot is not a correct seqlock.** In `FrontRoomsMetalGlassRT.mm`, `PublishCoverage` (l. 194–202) stores −1 and the data with relaxed order and no release fence. `FRGlassRT_GetCameraCoverage` (l. 911–920) has no acquire fence before its second frame read. On arm64 the gate can then read the glass and miss counts of one frame under another frame's number | A release fence after the −1 store and an acquire fence before the re-check (or seq_cst throughout). Rebuild the universal dylib with the repo script; the validator must pass for both slices, with no downloads. The new dylib sha replaces `ec31f4fa` everywhere | Validator both slices; `o1`-style old-plugin check; `ps12` / `ps13` players (native and Rosetta) as in §12 |
+
+The R3-B3 dylib rebuild also carries the comment fix of R3-T5 (the shader source is embedded in the dylib).
+
+### 13.2 Must be fixed before landing: text and evidence (no payload change)
+
+| ID | From | What is wrong | Fix |
+|---|---|---|---|
+| R3-T1 | eng R3 #2 | **`40_for_red.md` understates the cost.** It quotes single values from fix31's quietest run and calls them "upper bounds": l. 7 and 22; l. 49, where D1 (b) saves "1.4–2.8 ms"; l. 64, "4.79 ms at 1440p (bar 5 ms: within)". This file repeats them at l. 558: v5 1440p High **PASS**. The same harness gives very different numbers (table below). | Quote ranges and drop "upper bounds" (run-to-run spread is about ±40 %). v5 1440p High is **FAIL** (4.8–8.2 ms against a 5 ms bar). The 1080p break shot is +1.4–1.6 ms over its +2 ms target, not +0.9. D1 (b) saves up to 4.7 ms. Redo the D1 projection table (base M3/M4 at 1440p High rises to roughly 18–34 ms) |
+| R3-T2 | art R3 #3 | **D2 text is wrong for lit windows.** `40_for_red.md:81` says that in a lit window "the missing body hardly shows". A body-sized figure 2 m behind reads at −5.7/255 mean, p5 −24 (`rev3_art/a3_out` TW_relay2m against the same pose without it, 32,820 px). Art review 2 measured −8.9/255, p5 −36. Head-on, the Relay's ghost sits exactly where the player's own reflection should hide it | Rewrite D2's "What the player sees" so that D2 covers lit windows too, before Red decides |
+| R3-T3 | art R3 #1 | **Red's sign-off sheets show the pre-fix build.** `images/30v_AD6_showcase.jpg` (VL284) and `30v_D2_dark_window.jpg` (VL316) are run `r3a` frames with dylib `518d6769`, from before both fix rounds. Their numbers are stale: "19 specks" is now 0, "lens crawl 0.09" is now 0.104. The showcase keeps a hand-drawn title, caption and yellow tile labels under the Shot header. Neither sheet has RT Off tiles | Re-compose both with `shotframe grid` from `W/rt_work/fix32/r8a_out` (o45/o60 High+Off, darkrelay High/Off/radiance, moving f30, the back image, dark-beyond v2 Off/High) plus `W/rt_work/rev3_art/a3_out`. `r8a` has no HDR-off tile: re-run that phase, or label the old tile with its build. Update the VL284 / VL316 rows |
+| R3-T4 | art R3 #2 | **VL283 claims "no straight-edged wedge" in the v5 radiance. The landing build has one.** `r8a_out/v5_close55_rt_high.png` has a straight diagonal step from the pillar base with a stippled shadow-ray edge: +21 % linear in about 4 px at (752,354), where the planar mirror shows −3.6 %, and +8.5 % at (819,342). That fails AD-2's bar (no straight-edged step above 3 %). It hides at the 8 % lit-window strength in stills, but the stipple will shimmer when accumulation resets | Correct the VL283 row and keep it PARTIAL. AD-2 stays open (glass-rt-track: per-hit ranked soft shadows) |
+| R3-T5 | art R3 #4 | **A stale comment in the payload.** `FrontRoomsGlassRT.metal:264–266` says the live print flipbook "has no runtime driver yet". That is false since main's 10:20 print driver: `a3` logged the print clock live (w 1.00). Cutting the print to K4 changes the walls by 6.0/255 mean (p95 15.9), while the traced radiance changes by 0.55, because the reflection stays on K00 | Fix the comment in the R3-B3 rebuild (or with PRINT-1). Add these numbers to §12.5 PRINT-1. Not a landing blocker in itself: the reflection is about 8–11 % strong, and the zone cube does not follow the print either |
+| R3-T6 | art R3 #5 | **Weak Relay evidence.** The "−1.5/255 over its body" figure for the Relay in a dark window (VL284, VL316, §5.3, `r8a` DARK RELAY) is averaged over 278,560 px: 64 % of the 437,356-px glass and several times the Relay's silhouette. The DL_a_relay2m pose puts the Relay copy behind a wall (the radiance differs in only 573 px) | Measure over the Relay's silhouette mask. Stop citing DL_a_relay2m as dead-lamp-window evidence |
+
+**Added frame time on the M3 Max player.** Whole-frame GPU median, RT minus Off, 16 interleaved rounds, in ms. This stage recomputed every value from each run's `player_smoke.txt`. All runs were UNDER LOAD (31–44).
+
+| Pose | fix31 build: fix31 `ab2_new` / fix32 `ab2_old` / `ab1_old` | shipped round-2 build: fix32 `ab2_new` / `ab1_new` | bar |
+|---|---|---|---|
+| v2 1.5 m, 1080p, High | 1.28 / 1.87 / 1.78 | 1.96 / 2.15 | — |
+| v2 1.5 m, 1440p, High | 3.47 / 4.86 / 5.54 | 4.58 / 4.54 | 2.0 → FAIL |
+| v5 0.55 m, 1080p, High | 2.86 / 3.36 / 4.18 | 3.37 / 3.56 | +2 shot target → over by 1.4–1.6 |
+| v5 0.55 m, 1440p, High | 4.79 / 6.70 / 8.16 | **6.05 / 6.82** | 5 → **FAIL** |
+| v5 0.55 m, 1440p, Ultra | 7.56 / 10.62 / 14.80 | 10.15 / 11.54 | 7 → FAIL |
+| Ultra − High (D1 (b) saving), shipped build | | v2 1080p 1.37–1.59, v2 1440p 2.44–3.29, v5 1080p 2.06–2.49, v5 1440p 4.11–4.71 | |
+
+fix31 `ab1_new` (v5 High +8.11 / +9.19) is left out as a disturbed run.
+
+### 13.3 Landing conditions (Red / the 游戏视觉 session, not code)
+
+- **R3-L1 (eng R3 #5), default quality.**
+  - The package keeps Ultra at quality level ≥ 5 (`FrontRoomsGlassRTSystem.cs:184`), which is the option this report recommends against.
+  - The App Store · 构建 line is waiting for this dylib. If the package lands before D1 is answered, every M3/M4 store build ships Ultra: +7.0–11.5 ms at 1440p on this M3 Max (UNDER LOAD).
+  - Either land with D1 answered, or hold store and snapshot builds from main until it is.
+- **R3-L2 (eng R3 #5), minimum macOS.**
+  - The app's `macOSTargetOSVersion` is 12.0. Both slices of `ec31f4fa` have `LC_BUILD_VERSION` minos 13.0 (checked with `otool` by this stage; the build script passes `-mmacosx-version-min=13.0`). Main's current arm64-only dylib `56a35164` is also 13.0.
+  - Before RD2, the universal app left the dylib out (ARM64 importer). This mismatch therefore reaches store validation for the first time.
+  - On macOS 12 the plugin would not load. The fail-closed path should turn RT Off; that is untested.
+  - Options:
+    - (a) build the plugin with minimum 12.0. RT itself is already gated at runtime (`@available(macOS 14.0)` caps). Needs a check that no 13+ API is used unguarded.
+    - (b) raise the app's minimum to 13.0. That is ProjectSettings, not visual-owned: Red's call with App Store · 构建.
+  - Recommendation: (a), in the same rebuild as R3-B3.
+
+### 13.4 Still holding (round-3 reviews, not re-run here)
+
+- Dry run OK on `c462951a`, plain and `--with-deletions`: 20 bases, 13 keeps, 3 deletions.
+- The clone equals the payload on all 20 paths.
+- Roslyn `--all` on main + the 8 payload `.cs` files: 0 errors, macOS and iOS defines (`W/rt_work/review3_eng/r3_main_{mac,ios}`).
+- `ec31f4fa`: x86_64 + arm64, 25 exports in each slice, ad-hoc signed per slice. It rebuilds byte-identical from the payload, and the layout self-test passes on both slices.
+- The `.meta` GUID `9b3bca94…` is kept, with AnyCPU.
+- `ps12` / `ps13`: `on: Apple9`, 38 of 38 slabs, walk 0 blank, break → 0 px, 0 errors.
+- `o1`: an old plugin with the new scripts turns RT Off.
+- `iso6`: 0 `FRGlassRT_` in the WebGL, iOS and Win64 assemblies.
+- Fail-closed: 6 of 6.
+- Jump and walk TSV numbers hold.
+- Package scratch tests: 13 of 13 PASS.
+- Art, from its own `a3` run:
+  - coverage: 21 poses at weight 1.000, 0 misses, 86–88 lamps;
+  - red tint ≤ 0.020 %, colour shift ≤ 4.3/255;
+  - the dead lamp goes out in the reflection;
+  - GD3 S1/S2 are traced;
+  - stream-in: 0 shown frames with misses above 0.5 %;
+  - AD-1: 0 holes.
+
+### 13.5 Next (fix round 3, then review, then package)
+
+1. Fix the code in `W/proj_rt_eng3`: one Unity at a time, at most 2 on the visual line. Re-check that the clone matches the payload and main's bases first.
+   - R3-B1 and R3-B2 in `FrontRoomsGlassRTSystem.cs`.
+   - R3-B3 + R3-T5 + R3-L2 (a) in the plugin sources and the build script, then the universal rebuild.
+2. Re-run `r8a`, `r8b` (with the new restart and key-pickup phases), `iso`, `o1`, `ps12` / `ps13`, and the player A/B. Roslyn `--all` macOS + iOS.
+3. Fix R3-T1–T4 and R3-T6 in `40_for_red.md`, this file and `W/vl_pending/glass_rt_g14.md`. Re-compose the VL284 / VL316 sheets with `shotframe`.
+4. Re-package in the v2 convention. Back the current package up into `W/apply/_retired/glass_rt_g14_20261014/`. Record the bases from main at that moment, run the `APPLY_REAL` scratch test, then the dry run on main.

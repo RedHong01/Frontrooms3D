@@ -1,8 +1,8 @@
 # 40 · Floors, the EXIT, the stair and the tutorial: fiction and strings (叙事设计, 2026-10-22)
 
-**Status: v1.**
-- **Signed by 叙事:** every string in §3–§6 that is not marked RED. Peers can build on them.
-- **RED:** strings that wait on a decision Red makes in the 叙事设计 chat (§8). Until then they ship as written in the "until Red" column.
+**Status: v1.1 (2026-10-22 12:16). Every string here is final: Red answered §8 in the 叙事设计 chat on 2026-10-22 at 12:15 (account B): "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）".**
+- **Signed by 叙事:** every string in §3–§6. Peers build on them.
+- **Decided by Red (were RED in v1):** B levels (§2, C28); the `FLOOR WARDEN` fine-print line (§3); the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR` (§6); the start-room line `LEVEL 0 / FRONT ROOMS` (§6).
 - **Ownership:** 叙事 owns the words. Faces, sizes, separators and layout are 平面视觉's (`type-with-graphic-visual`). Code belongs to its owners.
 
 **Answers these asks:**
@@ -37,13 +37,13 @@
   - The panel's zones are floors, and a stair enclosure belongs to none of them.
   - The alarm itself does not reset: it is a general alarm, and its level carries down with you. That is why the tier carries over (C22 D13).
 - **There is no ground floor and no roof.**
-  - LEVEL 0 is the highest floor you can reach. Below it are basements, B1, B2, … (RED, Q1).
+  - LEVEL 0 is the highest floor you can reach. Below it are basements, B1, B2, … (Red chose this, Q1 = C28).
   - The stair ID signs say `NO ROOF ACCESS`.
   - The run ends only when you are caught (C22), and the building's last word is about you, not the thing (Q3).
 
-## 2. Floor numbering (RED, Q1)
+## 2. Floor numbering (Red: B levels, C28, 2026-10-22)
 
-| Floor of the run | Recommended (B) | Alternative (count up) |
+| Floor of the run | **Decided (B)** | Not chosen (count up) |
 |---|---|---|
 | 1 (start) | `LEVEL 0` | `LEVEL 0` |
 | 2 | `LEVEL B1` | `LEVEL 1` |
@@ -54,7 +54,7 @@
   - It is building-true for going down: 1990 US elevator panels and stair signs used B, B1, B2 [memory, common practice].
   - It still counts up with depth, so it reads as a score.
   - It stays clear of the Backrooms wiki's numbered level ladder: "Level 1" there is a different world (`stairwell/SOURCES.md` S16, S17). A deep `LEVEL B9` also feels wrong in a good way.
-- **Until Red answers, use B.** Every string below is written with B. Count-up only swaps the token.
+- **Red chose B** (12:15, this line's chat). Every string below is written with B.
 - **For 关卡设计:** build the label in one function, `FloorLabel(floor)`: 0 → `LEVEL 0`, n → `LEVEL B` + n. The CAUGHT line, the HUD room text, the key text and any log then change in one place.
 
 ## 3. The placard: N1 sign-off (sheet A, sheet A · Phase 0, and the stairwell copies)
@@ -91,9 +91,9 @@
 - `LEVEL 0 | SHEET A-2 OF 4 | PRINTED 03/90` on Floor 1;
 - `LEVEL B1 | SHEET A-2 OF 4 | PRINTED 03/90` on the copy in the stair down to B1. That copy hangs by the far door and shows the floor you are about to enter.
 
-**Optional fine-print line (RED, Q2):** `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.`
-- It is not a numbered line, so the four-line limit stands. It sits near the red block at the zoom-step size; placement is 平面视觉's.
-- Ship it only if Red picks the role name.
+**Fine-print line (Red picked the role name, Q2, 2026-10-22):** `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.`
+- **Ship it** on sheet A, sheet A · Phase 0 and the stairwell copies. It is not a numbered line, so the four-line limit stands. It sits near the red block at the zoom-step size; placement and size are 平面视觉's.
+- It names a role only. The hunter is never drawn, described or given a body, and the four numbered lines still never name it (placard call 2, Red in the 平面视觉 chat).
 
 **CHIME row** (cut until W3 is live; `10_proposal.md` §5.2). The draft `CHIME: IT HAS SEEN YOU. RUN.` is out. If W3 ships and a line is freed: `IF A CHIME SOUNDS, YOU HAVE BEEN SEEN.` It explains the cue and gives no advice.
 
@@ -155,29 +155,31 @@ On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LE
 
 ## 6. CAUGHT (D13)
 
-| Item | String | Until Red |
+| Item | String | Status |
 |---|---|---|
-| Title | `CAUGHT` | stays |
-| Subtitle (RED, Q3) | `OCCUPANT ACCOUNTED FOR` | not shown |
-| Stats line, desktop | `LEVEL B2  /  123 S  /  TIER 2  /  5 ZONES  /  1 KEY  /  0 DOORS BROKEN` | ship it (floor scheme per §2) |
+| Title | `CAUGHT` | ship |
+| Subtitle (Red, Q3) | `OCCUPANT ACCOUNTED FOR` | **ship it**, small, under `CAUGHT`, on desktop and on the touch card |
+| Stats line, desktop | `LEVEL B2  /  123 S  /  5 ZONES  /  1 KEY  /  0 DOORS BROKEN` | ship (floor scheme per §2). **No TIER** (v1.1 fix, 12:2x): C04 (Red, 2026-10-21) took TIER off the HUD and CAUGHT; it lives only in the off-by-default readout. v1 copied today's code by mistake (平面视觉's catch). Face: Plex Mono 20, not Bayon (平面视觉, `FIX_CARD_VL217.md`; Bayon prints `1` as `I`) |
 
 - The floor is the first item, the same token the stairs and the placard use.
 - Number agreement is fixed (today's line prints `1 KEYS`). `1 ZONE`, `1 KEY` and `1 DOOR BROKEN` in the singular.
+- **Touch caught card stats** (交互设计's view; signed 12:2x): `SURVIVED` / `ZONES CROSSED` / **`KEYS TAKEN`** / `DOORS IT BROKE`. `KEYS TAKEN` replaces `TIER REACHED` (C04 keeps TIER off CAUGHT). It mirrors the desktop line's `1 KEY` and the verb of `E · TAKE KEY`, and counts `keysTaken`. Labels stay plural whatever the count (column heads, not sentences). The sentence reads `Caught in Level 0 / Front Rooms.` (proper name kept) or `Caught in Level B1 / The maze.`
 - The touch caught card belongs to 交互设计. Its `Where` sentence should read `Level B2 / The maze` from the same `FloorLabel()`.
-- **HUD room text:** `LEVEL B1 / THE MAZE`, `LEVEL B1 / LOW ROOMS`, `LEVEL B1 / TALL HALLS` (today `LEVEL 0 / …`). The start rooms keep `LEVEL 0 / THE LOBBY`.
+- **HUD room text:** `LEVEL B1 / THE MAZE`, `LEVEL B1 / LOW ROOMS`, `LEVEL B1 / TALL HALLS` (today `LEVEL 0 / …`).
+- **Start rooms: `LEVEL 0 / FRONT ROOMS`** (Red, 2026-10-22; was `LEVEL 0 / THE LOBBY`, the Backrooms Fandom wiki's name for Level 0, `station/02_refs.md` §3.11). Today's code: `FrontRooms3DGame.cs:2487` (desktop HUD, 关卡设计) and `FrontRooms3DGame.Mobile.cs:155` (`MobileZoneName()`, the touch card; a shared hunk, so through 关卡设计 with 交互设计). The card's `SentenceCase()` would print `Level 0 / Front rooms`; it should read `Level 0 / Front Rooms`, because Front Rooms is the store's and the game's name.
 
 ## 7. Fit check against the standing rules
 
 | Rule | Check |
 |---|---|
 | Never RUN/HIDE as advice; never "relay" | Pass. `DO NOT RUN` is negated; no "relay" anywhere |
-| Dark is never cover | Pass. Nothing mentions the dark. The warden line, if used, says every room is checked |
+| Dark is never cover | Pass. Nothing mentions the dark. The warden line says every room is checked, so hiding is no plan either |
 | No live threat info / never a radar | Pass. Line 3 says near, not where; signs are static per floor |
 | One name per thing | STAIR A (plan, tag, door, stair sign); LEVEL token (placard, plates, HUD, CAUGHT); SECURITY DESK (plan, legend, line 4); REENTRY, one spelling (placard and plates) |
 | 1990 era | UBC 1991 and LL5 forms; B levels; no post-1990 signs |
 | No real brands | Pass |
 
-## 8. Questions for Red (asked in the 叙事设计 chat, 2026-10-22)
+## 8. Questions for Red: all answered 2026-10-22 12:15 ("全部按推荐（Q1–Q7、照片下载、LOBBY 改名）", 叙事设计 chat, account B)
 
 1. **Q1, floor numbering:** basements `B1, B2…` (recommended) or `1, 2…`.
 2. **Q2, a role name for the hunter:**
@@ -185,7 +187,8 @@ On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LE
    - `FLOOR WARDEN`, recommended, as one fine-print line only. In real fire plans wardens check every room and account for everyone (OSHA Subpart E appendix; NYC high-rise warden teams, sources below).
    - Never the body, never drawn.
 3. **Q3, the CAUGHT subtitle `OCCUPANT ACCOUNTED FOR`:** recommended yes, under `CAUGHT` (it pairs with Q2's warden).
-4. The other open items of this line (glow A/B, scratches, the T4 figure layer, forged FLOW vs A20) are in the same message. They are recorded in the handoff (`Takeover_2026-10-18/handoff/narrative.md`) once answered.
+4. The other open items of this line, answered in the same words: glow **B** (walls don't glow; in a blackout only the placard and the EXIT sign glow) **re-confirmed by Red at 12:34** ("Q4 保持 B：墙不发光") after a corrected re-ask: glow A no longer hides the FLOW arrows on the A+M4+V1 geometry (wallpaper line, VL350), so B is kept for cost and simplicity, not for that reason. Then: the scratch-throughs **cut**, **no** T4 figure layer in v1, forged FLOW **retired** (C29; the arrows always tell the truth). Recorded in the handoff §6 and in `wallpaper_motion/30_narrative_phosphor.md`.
+5. Also answered: the station media Set 1 download, and the start-room rename to `LEVEL 0 / FRONT ROOMS` (§6).
 
 ## Sources (new for this doc; the stair and sign facts are `research/stairwell/SOURCES.md` S1, S4)
 

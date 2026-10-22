@@ -23,7 +23,7 @@
       "texts" : 9
     },
     {
-      "capMm" : 4.4000000000000004,
+      "capMm" : 3.6000000000000001,
       "id" : "alarm",
       "rect" : [
         20,
@@ -31,7 +31,7 @@
         268,
         51
       ],
-      "texts" : 11
+      "texts" : 12
     },
     {
       "capMm" : 3.6000000000000001,
@@ -61,6 +61,7 @@
     "TYPICAL FLOOR · NOT TO SCALE",
     "THIS FLOOR MAY DIFFER FROM PLAN",
     "IN CASE OF ALARM",
+    "ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.",
     "1 WALK, DO NOT RUN.",
     "2 CLOSE DOORS BEHIND YOU.",
     "3 IF THE LIGHTS DIM, LEAVE THE AREA.",

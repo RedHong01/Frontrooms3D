@@ -57,6 +57,10 @@ namespace FrontRooms.Audio
         public const string BusSfx = "bus:/SFX";
         public const string BusMusic = "bus:/Music";
         public const string BusSubjective = "bus:/Subjective";
+        // The SFX group's children (Tools/audio/fmod_frontrooms.py buses), for the EXAMINE close-up (S1).
+        public const string BusFoley = "bus:/SFX/Foley";
+        public const string BusMechanism = "bus:/SFX/Mechanism";
+        public const string BusRelay = "bus:/SFX/Relay";
 
         public static class Param
         {

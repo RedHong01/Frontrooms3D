@@ -1,0 +1,23 @@
+f1 start 12:16:13 load 83.52 70.59 69.37
+f1 exit 0 30 s errors=0 load 119.29 80.59 73.04
+f2_ladder start 12:16:43 load 119.29 80.59 73.04
+f2_ladder exit 0 27 s errors=0 load 87.41 76.73 71.92
+f3_ladder_dead start 12:17:10 load 87.41 76.73 71.92
+f3_ladder_dead exit 0 16 s errors=0 load 80.46 75.74 71.65
+ALL DONE 12:17:26
+slot free 12:21:38 (running: 1)
+f5 start 12:21:38 load 62.16 66.57 68.48
+f5 exit 0 31 s errors=0 load 102.61 75.36 71.56
+f6_ladder start 12:22:09 load 102.61 75.36 71.56
+f6_ladder exit 0 27 s errors=0 load 187.98 98.84 80.21
+f7_ladder_dead start 12:22:36 load 187.98 98.84 80.21
+f7_ladder_dead exit 0 16 s errors=0 load 214.42 109.12 84.21
+ALL DONE 12:22:52
+slot free 12:28:09 (running: 1)
+f8 start 12:28:09 load 87.47 144.24 113.09
+f8 exit 0 31 s errors=0 load 67.58 133.88 110.41
+f9_ladder start 12:28:40 load 67.58 133.88 110.41
+f9_ladder exit 0 27 s errors=0 load 57.84 125.28 108.11
+f10_ladder_dead start 12:29:07 load 57.84 125.28 108.11
+f10_ladder_dead exit 0 15 s errors=0 load 53.86 121.13 106.93
+ALL DONE 12:29:22

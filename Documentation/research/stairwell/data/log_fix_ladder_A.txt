@@ -1,0 +1,49 @@
+hall lamps (hold, seed 5): steady 103, stutter 52, failing 48, dead 19, dim 9; exit cell -2,0 steady shadowed; exit cell -2,1 steady shadowed; exit cell -1,0 steady shadowed; exit cell -1,1 steady shadowed; exit cell 0,0 steady shadowed; exit cell 0,1 steady shadowed; exit cell 1,0 steady shadowed; exit cell 1,1 steady shadowed; exit cell 2,0 steady shadowed; exit cell 2,1 steady shadowed
+EXIT sign LIT, level 1.00, EmissionGain 2.00
+A13 lock states: locked chain 33 links, dropped chain 38 links (1/2 in proof coil, dark oxide), laminated padlock
+exit leaf LOD0 Kit_DoorLeaf_Steel_LOD0 bounds y 0.015..2.095 screenRel 0.333
+exit leaf LOD1 Kit_DoorLeaf_Steel_LOD1 bounds y 0.015..2.095 screenRel 0.000
+exit leaf LOD0 Kit_DoorCloser_Body_LOD0 bounds y 1.992..2.075 screenRel 0.125
+exit leaf LOD1 Kit_DoorCloser_Body_LOD1 bounds y 1.992..2.075 screenRel 0.009
+exit leaf LOD0 Kit_DoorCloser_Arm_LOD0 bounds y 2.068..2.089 screenRel 0.113
+exit leaf LOD1 Kit_DoorCloser_Arm_LOD1 bounds y 2.068..2.089 screenRel 0.009
+exit leaf LOD0 Kit_DoorCloser_Forearm_LOD0 bounds y 2.080..2.130 screenRel 0.119
+exit leaf LOD1 Kit_DoorCloser_Forearm_LOD1 bounds y 2.080..2.130 screenRel 0.009
+exit leaf LOD0 Kit_DoorCloser_Shoe_LOD0 bounds y 2.110..2.150 screenRel 0.017
+exit leaf LOD1 Kit_DoorCloser_Shoe_LOD1 bounds y 2.110..2.150 screenRel 0.001
+exit leaf LOD0 Kit_ExitDevice_Crossbar_LOD0 bounds y 0.910..1.090 screenRel 0.291
+exit leaf LOD1 Kit_ExitDevice_Crossbar_LOD1 bounds y 0.910..1.090 screenRel 0.023
+Relay (stair, turn landing): the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x0.655 from a native top of 3.13 m to 2.05 m (ModuleUnits.RelayHeight 2.05), width 1.73
+Relay (maze, before the exit): the game's Relay rig (FrontRooms3DGame.CreateHunter, walk pose) scaled x0.655 from a native top of 3.13 m to 2.05 m (ModuleUnits.RelayHeight 2.05), width 1.73
+shot lad12_00_lk rendered
+shot lad12_00_un rendered
+shot lad12_45_lk rendered
+shot lad12_45_un rendered
+shot lad12_70_lk rendered
+shot lad12_70_un rendered
+shot lad12_70_end rendered
+shot lad20_00_lk rendered
+shot lad20_00_un rendered
+shot lad20_45_lk rendered
+shot lad20_45_un rendered
+shot lad20_70_lk rendered
+shot lad20_70_un rendered
+shot lad20_70_end rendered
+shot lad30_00_lk rendered
+shot lad30_00_un rendered
+shot lad30_45_lk rendered
+shot lad30_45_un rendered
+shot lad30_70_lk rendered
+shot lad30_70_un rendered
+shot lad30_70_end rendered
+shot relay_45 rendered
+shot relay_70 rendered
+shot relay_00 rendered
+direction A, lamp mode edge, lamp gain 1, fixture gain 2.40, sign gain 2.00, LADDER (hall, lamps hold, seed 5)
+shaft renderers 328 (1 floors + pit), distinct materials 14, triangles 44121
+one floor period (floor 0 kits): renderers 328, distinct materials 14, triangles 44121
+  kit BK_A_Door: renderers 16, triangles 28249
+  kit BK_A_ExitDoor: renderers 312, triangles 15872
+lights total 232; stair fixtures 0 (shadowed 0)
+relay scale 0.655
+

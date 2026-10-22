@@ -32,12 +32,23 @@ public static class FrontRoomsStairLookdev
     static readonly Vector3 RootWorld = new Vector3(4992f, 0f, 4992f);
     const float FF = 3.5f, Rise = .175f, Going = .28f;
     const int Treads = 9;
-    const float XFace = 1.42f, ZNear = .08f, ZFarFace = 5.92f, WellHalf = .20f;
+    // FIX (critic era 15): flights 1.12 m (44 in, UBC 1991 3306(b) minimum) and a 0.60 m well (was 1.22 / 0.40)
+    const float XFace = 1.42f, ZNear = .08f, ZFarFace = 5.92f, WellHalf = .30f;
     const float ZD = 1.74f, ZT = 4.26f;
     const float MazeH = 2.9f;
-    const int FloorMin = -2, FloorMax = 5;
+    // FIX (critic era 3, gameplay 2, era 15): the stair serves exactly two levels, the exit floor (n = 0) and the far
+    // floor (n = 1), as narrative design's stair ID sign already says ("LEVELS 0 TO B1", "NO ROOF ACCESS"). A plain slab closes
+    // the shaft over the exit landing (no up flight, no up gate) and the far landing is the shaft floor (no down
+    // flight, no down gate, no open flights below to make a gate look arbitrary). Code-true: UBC 1991 3306(o) asks
+    // only one stair of a building to reach the roof; 3306(p) puts the terminus and roof access on the ID sign.
+    const int FloorMin = 0, FloorMax = 0;
+    // FIX (critic gameplay 7): placeholder numerals count UP with the run's floor (exit floor = 3, far floor = 4);
+    // the scheme itself (count up, or narrative's 0 / B1) is Red's call
+    const int BaseFloor = 3;
     const float RelayHeight = 2.05f;
     const string TexDir = "Assets/Resources/Surfaces/Textures/";
+    const string NumTexDir = "Assets/StairLookdevTex/";
+    static float FlightCx { get { return -(XFace + WellHalf) * .5f; } }   // centre line of flight 1 (-x); flight 2 is +
 
     enum Id { Background, Relay, Walk, MazeFloor, Sign, Emitter, Door, OtherFloor }
 
@@ -56,10 +67,15 @@ public static class FrontRoomsStairLookdev
         }
     }
 
+    // shot flags: the exit door state and diagnostics
+    const int FUnlocked = 1, FHeld = 2, FLod0 = 4, FEndSign = 8, FAux = 16, FNoE = 32, FRaw = 64;
+
     class Shot
     {
-        public string name; public Vector3 eye; public Vector3 look; public float fov; public int relay;
-        public Shot(string n, Vector3 e, Vector3 l, float f, int r) { name = n; eye = e; look = l; fov = f; relay = r; }
+        public string name; public Vector3 eye; public Vector3 look; public float fov; public int relay; public int flags;
+        public float signGain;   // > 0: the EXIT sign's EmissionGain for this shot only (the gain sweep)
+        public Shot(string n, Vector3 e, Vector3 l, float f, int r) { name = n; eye = e; look = l; fov = f; relay = r; flags = 0; }
+        public Shot(string n, Vector3 e, Vector3 l, float f, int r, int fl) { name = n; eye = e; look = l; fov = f; relay = r; flags = fl; }
     }
 
     // ---------------------------------------------------------------- state
@@ -72,9 +88,28 @@ public static class FrontRoomsStairLookdev
     static readonly List<Light> stairLights = new List<Light>();
     static readonly Dictionary<string, Transform> kitGroups = new Dictionary<string, Transform>();
     static string outRoot, outDir;
-    static Transform relayStair, relayMaze, exitLeaf;
+    static Transform relayStair, relayMaze, exitLeaf, farLeaf, farLever;
     static float relayScale = 1f;
     static bool ePass = true, saveKits = true;
+    // FIX (critic gameplay 1, A13): the exit door has two states. LOCKED: a chain looped through the crossbar to an
+    // eye bolt beside the latch jamb, a padlock on it. UNLOCKED: the chain lies on the floor (one state change).
+    static GameObject lockedSet, unlockedSet, flatSign, endSign;
+    static readonly HashSet<Renderer> lockRs = new HashSet<Renderer>();     // chain + padlock (both states)
+    static readonly HashSet<Renderer> trimRs = new HashSet<Renderer>();     // far-door lever + access plate
+    static readonly HashSet<Renderer> signRs = new HashSet<Renderer>();     // EXIT sign renderers (letters by slot)
+    static readonly HashSet<Renderer> leafRs = new HashSet<Renderer>();     // the exit leaf (parts pass)
+    static readonly HashSet<Renderer> barRs = new HashSet<Renderer>();      // the crossbar (parts pass)
+    static FrontRoomsExitSign flatDrv, endDrv;
+    static Quaternion farLeafRest, farLeverRest;
+    const float SignGainDefault = 2.0f;  // FIX (critic gameplay 5): the one LockLit EXIT over the exit door
+    // FIX (critic gameplay 10): the steady fixtures are lifted so the walk path reads about 1 stop under the maze
+    static float fixtureGain = -1f;      // < 0: the per-direction default (FixtureGainDefault)
+    // FIX (critic gameplay 3 / 5): the exit approach ladder in a large Level 0 hall, tier-5 lamps
+    static bool ladder;
+    static string ladderLamps = "hold";  // hold (exit cells held Steady), dead (exit cells Dead), steady (all)
+    static float signGain = -1f;         // < 0: SignGainDefault
+    static int ladderSeed = 5;
+    static readonly List<string> lampLog = new List<string>();
     // "edge" (default): each landing fixture sits over the end-wall edge of its landing (0.30-0.45 m off the end
     // wall), so the wall you walk toward is washed and anything on the landing is a silhouette against it.
     // "centre": the fixture over the landing centre (the first pass, r1).
@@ -86,7 +121,8 @@ public static class FrontRoomsStairLookdev
     static float dadoTop = 1.1f;
 
     // per-direction materials
-    static Material wallM, dadoM, treadM, riserM, bodyM, landTopM, landBodyM, steelM, railM, railTopM, guardM, gateM, doorLeafM, signPlateM, numeralM, redM, coveM, skirtM, soffitM, nosingM;
+    static Material wallM, dadoM, treadM, riserM, bodyM, landTopM, landBodyM, steelM, railM, railTopM, guardM, gateM, doorLeafM, signPlateM, numeralM, redM, coveM, skirtM, soffitM, nosingM, chipM, cutInM, gatePlateM;
+    static Material chainM, padlockM, shackleM, farPlateM, idPlateM, meshM;
 
     // ------------------------------------------------------------- batch
     public static void RunBatch()
@@ -105,6 +141,11 @@ public static class FrontRoomsStairLookdev
             if (args[i] == "-stairLampGain" && i + 1 < args.Length) lampGain = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
             if (args[i] == "-stairNoEndDado") noEndDado = true;
             if (args[i] == "-stairRemedy") remedy = true;
+            if (args[i] == "-stairFixtureGain" && i + 1 < args.Length) fixtureGain = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+            if (args[i] == "-stairLadder") ladder = true;
+            if (args[i] == "-stairLadderLamps" && i + 1 < args.Length) ladderLamps = args[i + 1];
+            if (args[i] == "-stairSignGain" && i + 1 < args.Length) signGain = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+            if (args[i] == "-stairLadderSeed" && i + 1 < args.Length) ladderSeed = int.Parse(args[i + 1], CultureInfo.InvariantCulture);
         }
         if (string.IsNullOrEmpty(outRoot)) outRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "stair_lookdev");
         EnsureAssets();
@@ -126,6 +167,10 @@ public static class FrontRoomsStairLookdev
         outDir = Path.Combine(outRoot, dir);
         Directory.CreateDirectory(outDir);
         ids.Clear(); mats.Clear(); log.Clear(); stairLights.Clear(); kitGroups.Clear();
+        lockRs.Clear(); trimRs.Clear(); signRs.Clear(); leafRs.Clear(); barRs.Clear(); lampLog.Clear();
+        flatDrv = null; endDrv = null;
+        exitLeaf = null; farLeaf = null; farLever = null; lockedSet = null; unlockedSet = null; flatSign = null; endSign = null;
+        wrapLensLit = null; globeLit = null; pilotRed = null;
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         EditorSceneManager.SetActiveScene(scene);
         root = new GameObject("STAIR LOOKDEV " + dir).transform;
@@ -139,8 +184,17 @@ public static class FrontRoomsStairLookdev
         kitsRoot = Group(shaft, "floor 0 kits");
 
         Materials();
-        BuildMaze();
-        BuildShaft();
+        if (ladder)
+        {
+            // the exit approach ladder: a 63 x 33 m Level 0 hall in front of the exit door; the stair is not built
+            BuildHall();
+            StairDoor(0);
+        }
+        else
+        {
+            BuildMaze();
+            BuildShaft();
+        }
         BuildExitDoor();
         BuildRelays();
         Physics.SyncTransforms();
@@ -148,7 +202,7 @@ public static class FrontRoomsStairLookdev
         var shots = Shots();
         RenderAll(shots, onlyShots);
         Stats();
-        if (saveKits) { try { SaveKits(); } catch (Exception e) { Log("kit save failed: " + e.Message); } }
+        if (saveKits && !ladder) { try { SaveKits(); } catch (Exception e) { Log("kit save failed: " + e.Message); } }
         File.WriteAllLines(Path.Combine(outDir, "log.txt"), log);
         Debug.Log("[StairLookdev] " + dir + " done -> " + outDir);
     }
@@ -164,7 +218,53 @@ public static class FrontRoomsStairLookdev
         foreach (var t in new[] { "Stair_Concrete", "Stair_ConcreteFloor" })
             foreach (var s in new[] { "_A", "_N", "_S" })
                 AssetDatabase.ImportAsset(TexDir + t + s + ".png", ImportAssetOptions.ForceUpdate);
+        // placeholder numerals (gen_stair_numerals.py; the face and size belong to graphic design)
+        if (AssetDatabase.IsValidFolder("Assets/StairLookdevTex"))
+            foreach (var g in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/StairLookdevTex" }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(g);
+                var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (imp == null) continue;
+                imp.alphaIsTransparency = true; imp.mipmapEnabled = true; imp.sRGBTexture = true;
+                imp.wrapMode = path.Contains("mesh") ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
+                imp.SaveAndReimport();
+            }
         FrontRoomsKitLibrary.ClearCache();
+    }
+
+    /// <summary>A placeholder numeral or plate face: an alpha-clipped URP Lit quad material.</summary>
+    static Material DecalMat(string name, string tex, Color tint, float smooth)
+    {
+        Material c;
+        if (mats.TryGetValue(name, out c)) return c;
+        var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
+        var t = AssetDatabase.LoadAssetAtPath<Texture2D>(NumTexDir + tex + ".png");
+        if (t == null) Log("WARNING numeral texture missing " + tex);
+        m.SetTexture("_BaseMap", t);
+        m.SetColor("_BaseColor", tint);
+        m.SetFloat("_Smoothness", smooth);
+        m.SetFloat("_AlphaClip", 1f); m.SetFloat("_Cutoff", .5f); m.EnableKeyword("_ALPHATEST_ON");
+        m.SetFloat("_EnvironmentReflections", 0f); m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+        mats[name] = m;
+        return m;
+    }
+
+    /// <summary>A flat quad on a wall (normal nrm), centred at c, size w x h, with a decal material.</summary>
+    static Renderer Decal(Transform parent, string name, Vector3 c, Vector3 nrm, float w, float h, Material m, Id id)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.position = root.TransformPoint(c);
+        // a Unity quad faces -z: its visible side looks along +forward when forward = -nrm
+        go.transform.rotation = root.rotation * Quaternion.LookRotation(-nrm, Vector3.up);
+        go.transform.localScale = new Vector3(w, h, 1f);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        r.shadowCastingMode = ShadowCastingMode.Off;
+        ids[r] = id;
+        return r;
     }
 
     static Texture2D T(string stem) { return AssetDatabase.LoadAssetAtPath<Texture2D>(TexDir + stem + ".png"); }
@@ -254,22 +354,39 @@ public static class FrontRoomsStairLookdev
         coveM = FrontRoomsSurfaces.CoveBase;
         redM = Flat("standpipe red enamel", Hex("8E1E17"), .55f);
         signPlateM = Flat("sign plate blank (placeholder)", Hex("E8E4D8"), .45f);
+        // FIX (critic era 3): the down-gate plate is mid-grey, never the brightest surface in view
+        gatePlateM = Flat("gate plate mid-grey (placeholder)", Hex("8A8780"), .4f);
+        chipM = null; cutInM = null; meshM = null;
+        // FIX (critic gameplay 1, A13): the LOCKED state. A dark, old 3/8 in proof-coil chain (dark on the pale leaf,
+        // so it reads at 8 m and more) and a laminated-steel padlock; no brand marks.
+        chainM = Flat("lock chain (dark oxidised steel)", Hex("34302B"), .35f, .55f);
+        padlockM = Flat("padlock body (laminated steel)", Hex("9A9C97"), .55f, .85f);
+        shackleM = Flat("padlock shackle (bright steel)", Hex("C4C6C1"), .65f, .9f);
+        // FIX (critic gameplay 2): only the live far door carries a floor-access plate, dark against the leaf
+        // (blank placeholder; the string REENTRY ON THIS FLOOR is narrative's, the plate art graphic design's)
+        farPlateM = Flat("far-door floor-access plate (placeholder, dark)", Hex("2B2925"), .45f);
+        // FIX (critic era 13): the stair ID sign on the wall beside the latch jamb (UBC 1991 3306(p)), blank placeholder
+        idPlateM = Flat("stair ID sign (placeholder)", Hex("DEDAD0"), .45f);
         if (dir == "A")
         {
-            // Painted 8 in CMU, two tones, the darker dado band following the stair (BSS 120 Fig. 2.7.5).
-            wallM = Surf("A block upper (putty eggshell)", "Run_Block", .4f, Hex("D6D1C2"), .55f, 1f, .16f, .18f);
-            dadoM = Surf("A block dado (grey-green semi-gloss)", "Run_Block", .4f, Hex("6E7A6D"), 1.05f, 1f, .2f, .3f);
-            steelM = Flat("A steel enamel (battleship grey)", Hex("6C706B"), .48f);
-            treadM = Surf("A tread fill (grey porch enamel on concrete)", "Stair_ConcreteFloor", 256f / 210f, remedy ? Hex("BDBEB8") : Hex("8F918C"), 1.35f, .6f, .18f, .35f);
-            if (remedy) noEndDado = true;
+            // Painted 8 in CMU, two tones, the band following the stair and wrapping round the landings (BSS 120
+            // Fig. 2.7.5). FIX (critic era 7, 8): >= 15 L* between block (83), band (64) and steel (29); the putty is
+            // warmed so the grade does not turn it green; a thin dark cut-in line on the band top is the slope cue.
+            wallM = Surf("A block upper (warm putty eggshell)", "Run_Block", .4f, Hex("DACFBC"), .55f, 1f, .16f, .18f);
+            dadoM = Surf("A block band (tan semi-gloss)", "Run_Block", .4f, Hex("A39A86"), 1.05f, 1f, .2f, .3f);
+            cutInM = Flat("A band cut-in line (dark brown enamel)", Hex("4A4238"), .5f);
+            steelM = Flat("A steel enamel (dark brown-grey)", Hex("47443E"), .48f);
+            treadM = Surf("A tread fill (grey porch enamel on concrete)", "Stair_ConcreteFloor", 256f / 210f, Hex("BDBEB8"), 1.35f, 1.0f, .18f, .35f);
             riserM = steelM; bodyM = steelM;
             landTopM = treadM; landBodyM = steelM;
-            railM = Flat("A pipe rail enamel", Hex("5E625D"), .5f);
+            railM = Flat("A pipe rail enamel", Hex("3E3B36"), .5f);
             railTopM = Flat("A rail top worn to bare steel", Hex("A8A9A4"), .7f, .85f);
             guardM = steelM; gateM = steelM;
             doorLeafM = Flat("A door enamel (putty)", Hex("B7B09E"), .5f);
             numeralM = Flat("A painted numeral (black enamel)", Hex("1E1E1C"), .55f);
-            soffitM = steelM; nosingM = Flat("A pan nosing (chipped, red-oxide edge)", Hex("7A5A48"), .4f, .2f);
+            // FIX (critic era 6): the nosing is stair enamel; red-oxide primer shows only in chips on the walk line
+            soffitM = steelM; nosingM = steelM;
+            chipM = Flat("A nosing chip (red-oxide primer)", Hex("7B3F2A"), .3f);
         }
         else if (dir == "B")
         {
@@ -286,6 +403,13 @@ public static class FrontRoomsStairLookdev
             doorLeafM = Flat("B door enamel (grey primer)", Hex("8C887E"), .4f);
             numeralM = Flat("B stencil numeral (black spray)", Hex("1A1A19"), .2f);
             soffitM = bodyM; nosingM = Flat("B safety-yellow nosing stripe", Hex("D9A712"), .35f);
+            // FIX (critic era 6): the stripes are worn through on the walk line (concrete shows, a little paint left)
+            chipM = Flat("B nosing stripe worn (yellow ghost on concrete)", Hex("C4B88F"), .3f);
+            // FIX (critic era 4): the two-rail guard left 0.43-0.53 m openings. A galvanized woven-wire mesh panel
+            // (50 mm diamonds, 3 mm wire) fills the pipe frame: openings under 4 in, still a service-stair guard.
+            meshM = DecalMat("B woven wire mesh infill (galvanized)", "mesh_diamond", Hex("A9ACA8"), .45f);
+            meshM.SetFloat("_Cull", 0f); meshM.doubleSidedGI = true;
+            meshM.SetTextureScale("_BaseMap", new Vector2(10f, 10f));   // one tile = 0.10 m = two diamonds
             if (remedy) { dadoM = Flat("B white band (flat white paint on concrete)", Hex("E9E6DD"), .35f); dadoTop = 1.5f; }
         }
         else
@@ -551,6 +675,77 @@ public static class FrontRoomsStairLookdev
                 MapLamp(mazeRoot, new Vector3(cx * 3f, MazeH, -1.5f - 3f * cz), true, Id.Emitter);
     }
 
+    // ---------------------------------------------------------------- the exit approach ladder (Level 0 hall)
+    const float HallHalfX = 30f, HallDepth = 33f;
+
+    /// <summary>FIX (critic gameplay 3, 5, 9): a 63 x 33 m Level 0 hall in front of the exit door, tiled per 3 m cell,
+    /// one map troffer per cell with a tier-5 lamp draw (FrontRoomsLevelProfile Defaults tier 5: steady .40, stutter
+    /// .25, failing .18, dead .12, dim .05). Still levels: steady 1.0, stutter .97 (between dips), failing .47 (mean of
+    /// (.25 + .45 wave)), dead 0, dim .42 (FrontRoomsMapWorld.Level). ladderLamps: "hold" = the cells within 2 of the
+    /// exit door held Steady (the proposed rule), "dead" = the same cells Dead (the worst case), "steady" = all steady.
+    /// Lamps within 9 m of the door cast shadows (as the map's castsShadow near the player).</summary>
+    static void BuildHall()
+    {
+        var carpet = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor);
+        var ceil = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
+        var paper = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
+        var nx = Mathf.RoundToInt(HallHalfX / 3f);   // cells cx -11..11 (x = 3 cx)
+        var nz = Mathf.RoundToInt(HallDepth / 3f);   // cells cz 0..10 (z = -1.5 - 3 cz)
+        for (var cx = -nx; cx <= nx; cx++)
+            for (var cz = 0; cz < nz; cz++)
+            {
+                var c = new Vector3(cx * 3f, 0f, -1.5f - 3f * cz);
+                Box(mazeRoot, "hall carpet " + cx + "," + cz, new Vector3(c.x, -.1f, c.z), new Vector3(3f, .2f, 3f), carpet, Id.MazeFloor);
+                Box(mazeRoot, "hall ceiling " + cx + "," + cz, new Vector3(c.x, MazeH + .08f, c.z), new Vector3(3f, .16f, 3f), ceil, Id.Background);
+            }
+        var w = nx * 6f + 3f; var zMin = -3f * nz;
+        Box(mazeRoot, "hall wall S", new Vector3(0f, MazeH * .5f, zMin - .08f), new Vector3(w, MazeH, .16f), paper, Id.Background);
+        Box(mazeRoot, "hall wall W", new Vector3(-w * .5f - .08f, MazeH * .5f, zMin * .5f), new Vector3(.16f, MazeH, -zMin), paper, Id.Background);
+        Box(mazeRoot, "hall wall E", new Vector3(w * .5f + .08f, MazeH * .5f, zMin * .5f), new Vector3(.16f, MazeH, -zMin), paper, Id.Background);
+        var half = w * .5f;
+        Box(mazeRoot, "hall wall N left", new Vector3(-(half + .5f) * .5f, MazeH * .5f, -.04f), new Vector3(half - .5f, MazeH, .08f), paper, Id.Background);
+        Box(mazeRoot, "hall wall N right", new Vector3((half + .5f) * .5f, MazeH * .5f, -.04f), new Vector3(half - .5f, MazeH, .08f), paper, Id.Background);
+        Box(mazeRoot, "hall wall N header", new Vector3(0f, (2.1f + MazeH) * .5f, -.04f), new Vector3(1.0f, MazeH - 2.1f, .08f), paper, Id.Background);
+        Box(mazeRoot, "hall wall N back", new Vector3(0f, MazeH * .5f, .2f), new Vector3(w, MazeH, .2f), Flat("hall back (unseen)", Hex("202020"), .1f), Id.Background);
+        Box(mazeRoot, "hall cove N left", new Vector3(-(half + .5f) * .5f, .05f, -.09f), new Vector3(half - .5f, .1f, .02f), coveM, Id.Background);
+        Box(mazeRoot, "hall cove N right", new Vector3((half + .5f) * .5f, .05f, -.09f), new Vector3(half - .5f, .1f, .02f), coveM, Id.Background);
+        // tier-5 draw, deterministic per seed
+        var rng = (uint)(ladderSeed * 2654435761u + 12345u);
+        var t5 = new[] { .40f, .25f, .18f, .12f, .05f };
+        var names = new[] { "steady", "stutter", "failing", "dead", "dim" };
+        var levels = new[] { 1f, .97f, .47f, 0f, .42f };
+        var counts = new int[5];
+        for (var cx = -nx; cx <= nx; cx++)
+            for (var cz = 0; cz < nz; cz++)
+            {
+                rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5;
+                var roll = (rng & 0xffffff) / 16777216f;
+                var mode = 0; var acc = 0f;
+                for (var k = 0; k < 5; k++) { acc += t5[k]; if (roll < acc) { mode = k; break; } mode = 4; }
+                var nearExit = Mathf.Abs(cx) <= 2 && cz <= 1;
+                if (nearExit && ladderLamps == "hold") mode = 0;
+                if (nearExit && ladderLamps == "dead") mode = 3;
+                if (ladderLamps == "steady") mode = 0;
+                counts[mode]++;
+                var c = new Vector3(cx * 3f, MazeH, -1.5f - 3f * cz);
+                var shadow = Vector3.Distance(new Vector3(c.x, 0f, c.z), Vector3.zero) < 9f;
+                var l = MapLamp(mazeRoot, c, shadow, Id.Emitter);
+                var lv = levels[mode];
+                l.intensity *= lv;
+                if (lv <= 0f) l.enabled = false;
+                // the lens follows the level (dead = a dark lens)
+                var lensR = l.transform.parent.GetComponentsInChildren<Renderer>().LastOrDefault(r => r.name == "map lamp lens");
+                if (lensR != null && lv < .999f)
+                {
+                    var lm = new Material(lensR.sharedMaterial) { name = "L0 map lamp lens x" + lv.ToString("0.00") };
+                    lm.SetColor("_EmissionColor", new Color(1f, .96f, .84f) * 2.6f * Mathf.Max(lv, .02f));
+                    lensR.sharedMaterial = lm;
+                }
+                if (nearExit) lampLog.Add("exit cell " + cx + "," + cz + " " + names[mode] + (shadow ? " shadowed" : ""));
+            }
+        Log("hall lamps (" + ladderLamps + ", seed " + ladderSeed + "): steady " + counts[0] + ", stutter " + counts[1] + ", failing " + counts[2] + ", dead " + counts[3] + ", dim " + counts[4] + "; " + string.Join("; ", lampLog.ToArray()));
+    }
+
     /// <summary>The map troffer turned 90 degrees (1.2 m across the landing, 0.6 m deep), centred on ceilingCentre.</summary>
     static Light MapLampAcross(Transform parent, Vector3 ceilingCentre, bool shadows)
     {
@@ -599,11 +794,24 @@ public static class FrontRoomsStairLookdev
         BuildFloorBottom(FloorMax + 1);
     }
 
+    /// <summary>The far floor (n = FloorMax + 1): the shaft floor is the far landing. Its door is the live one
+    /// (pull trim, floor-access plate); the open space under the turn landing stays open (UBC 3306: no enclosed
+    /// usable space under an exit stair).</summary>
     static void BuildFloorBottom(int n)
     {
         var y = YD(n);
-        Box(shaft, "pit floor slab", new Vector3(0f, y - .2f, 3f), new Vector3(2.84f, .4f, 5.84f), landBodyM, Id.OtherFloor);
-        Box(shaft, "pit floor top", new Vector3(0f, y - .006f, 3f), new Vector3(2.84f, .012f, 5.84f), landTopM, Id.OtherFloor);
+        Box(shaft, "far floor slab", new Vector3(0f, y - .2f, 3f), new Vector3(2.84f, .4f, 5.84f), landBodyM, Id.OtherFloor);
+        Box(shaft, "far landing top (walk)", new Vector3(0f, y - .006f, (ZNear + ZD) * .5f), new Vector3(2.84f, .012f, ZD - ZNear), landTopM, Id.Walk);
+        Box(shaft, "far floor top (under the turn)", new Vector3(0f, y - .006f, (ZD + ZFarFace) * .5f), new Vector3(2.84f, .012f, ZFarFace - ZD), landTopM, Id.OtherFloor);
+        if (dir == "A") Box(shaft, "far floor cove", new Vector3(0f, y + .05f, ZFarFace - .01f), new Vector3(2.84f, .1f, .02f), Flat("A cove base (black vinyl)", Hex("1F1E1C"), .35f), Id.Background);
+        if (dir == "C")
+        {
+            var ceil = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
+            Box(shaft, "far landing drop ceiling", new Vector3(0f, y + MazeH + .02f, (ZNear + ZD) * .5f), new Vector3(2.84f, .04f, ZD - ZNear), ceil, Id.Background);
+            Box(shaft, "far landing bulkhead", new Vector3(0f, y + MazeH + .2f, ZD), new Vector3(2.84f, .4f, .04f), wallM, Id.Background);
+            Box(shaft, "far landing cove", new Vector3(0f, y + .05f, ZNear + .01f), new Vector3(2.84f, .1f, .02f), coveM, Id.Background);
+        }
+        if (dir == "A") DadoBottom(n);
         StairDoor(n);
         FloorNumber(n);
         LandingLight(n, true);
@@ -628,8 +836,21 @@ public static class FrontRoomsStairLookdev
         LandingLight(n, true);
         LandingLight(n, false);
         if (dir != "C") Services(n);
-        if (n == 0) Gate(n, true);
-        if (n == 1) Gate(n, false);
+        // FIX (critic era 3, gameplay 2): no gates. There is no up flight (the slab closes the shaft over the exit
+        // landing) and no down flight (the far landing is the shaft floor). Gate() stays for the option in 10 1.5.
+        if (n == 0 && dir != "C") TopOfShaft();
+    }
+
+    /// <summary>The top of the shaft over the exit landing: a plain slab (the stair serves this floor and below; another
+    /// stair reaches the roof), and one sprinkler head at the top (NFPA 13: heads at the top of a noncombustible
+    /// shaft, UNVERIFIED) instead of a head under every landing.</summary>
+    static void TopOfShaft()
+    {
+        var p = Kit("Services", 0);
+        var top = YD(FloorMin) + 3.3f;
+        var brass = Flat("sprinkler brass", Hex("A8894A"), .6f, .9f);
+        Cyl(p, "sprinkler drop (top)", new Vector3(.9f, top, 1.0f), new Vector3(.9f, top - .12f, 1.0f), .013f, brass, Id.Background);
+        Cyl(p, "sprinkler deflector (top)", new Vector3(.9f, top - .125f, 1.0f), new Vector3(.9f, top - .13f, 1.0f), .028f, brass, Id.Background);
     }
 
     static void Landing(int n, string which, float y, float z0, float z1, Id walk)
@@ -655,8 +876,8 @@ public static class FrontRoomsStairLookdev
             {
                 // yellow stripe along the landing nosing
                 var zN = which == "D" ? z1 - .025f : z0 + .025f;
-                var xs = which == "D" ? -.81f : .81f;   // only the edge where a flight goes down
-                Box(p, "landing nosing stripe " + which + n, new Vector3(xs, y + .0005f, zN), new Vector3(1.22f, .002f, .05f), nosingM, Id.Background);
+                var xs = which == "D" ? FlightCx : -FlightCx;   // only the edge where a flight goes down
+                Box(p, "landing nosing stripe " + which + n, new Vector3(xs, y + .0005f, zN), new Vector3(XFace - WellHalf, .002f, .05f), nosingM, Id.Background);
             }
             if (dir == "C")
             {
@@ -686,6 +907,7 @@ public static class FrontRoomsStairLookdev
                 Box(p, "tread fill f" + n + "." + f + "." + k, new Vector3(xc, y - .02f, zc), new Vector3(w - .06f, .04f, Going + .025f), treadM, walk);
                 Box(p, "tread pan f" + n + "." + f + "." + k, new Vector3(xc, y - .045f, zc), new Vector3(w - .06f, .01f, Going + .025f), steelM, Id.Background);
                 Box(p, "pan nosing lip f" + n + "." + f + "." + k, new Vector3(xc, y - .02f, zb + dz * .025f), new Vector3(w - .06f, .045f, .006f), nosingM, Id.Background);
+                if (chipM != null && (n == 0 || n == 1)) NosingChips(p, n, f, k, xc, w, y, zb + dz * .028f, dz);
             }
             for (var k = 0; k <= Treads; k++)
             {
@@ -700,7 +922,15 @@ public static class FrontRoomsStairLookdev
             foreach (var sx in new[] { x0 + .03f, x1 - .03f })
             {
                 a.x = sx; b.x = sx;
-                Seg(p, "stringer f" + n + "." + f, a, b, .05f, .25f, steelM, Id.Background);
+                Seg(p, "stringer web f" + n + "." + f, a, b, .006f, .254f, steelM, Id.Background);
+                // FIX (critic era 6): C10 channel flanges (66 x 11 mm), toes turned away from the treads
+                var toe = sx < xc ? -1f : 1f;
+                var nrm = Vector3.Cross(Vector3.right, (b - a).normalized); if (nrm.y < 0f) nrm = -nrm;
+                foreach (var s in new[] { 1f, -1f })
+                {
+                    var off = nrm * (s * (.127f - .0055f)) + Vector3.right * (toe * .030f);
+                    Seg(p, "stringer flange f" + n + "." + f + (s > 0 ? "t" : "b"), a + off, b + off, .066f, .011f, steelM, Id.Background);
+                }
             }
         }
         else
@@ -737,22 +967,70 @@ public static class FrontRoomsStairLookdev
             {
                 var y = yTop - k * Rise;
                 var zb = Zk(zTop, dz, k);
-                if (dir == "B") Box(p, "nosing stripe " + tag + "." + k, new Vector3(xc, y + .0006f, zb - dz * .025f), new Vector3(w - .02f, .002f, .05f), nosingM, Id.Background);
+                if (dir == "B")
+                {
+                    if (chipM != null && (n == 0 || n == 1)) WornStripe(p, tag + "." + k, xc, w, y, zb - dz * .025f, k);
+                    else Box(p, "nosing stripe " + tag + "." + k, new Vector3(xc, y + .0006f, zb - dz * .025f), new Vector3(w - .02f, .002f, .05f), nosingM, Id.Background);
+                }
                 else Box(p, "brass nosing " + tag + "." + k, new Vector3(xc, y + .004f, zb - dz * .012f), new Vector3(w - .04f, .012f, .028f), nosingM, Id.Background);
             }
         }
     }
 
-    /// <summary>Guard on the well side of each flight and across the well at each landing; newels.</summary>
+    static float Hash01(int a, int b, int c)
+    {
+        var h = (uint)(a * 73856093) ^ (uint)(b * 19349663) ^ (uint)(c * 83492791);
+        h ^= h << 13; h ^= h >> 17; h ^= h << 5;
+        return (h & 0xffffff) / 16777216f;
+    }
+
+    /// <summary>A: red-oxide primer showing through the stair enamel in a few chips on the nosing lip, concentrated on
+    /// the walk line (the inner third of the flight, by the guard rail and by the wall rail).</summary>
+    static void NosingChips(Transform p, int n, int f, int k, float xc, float w, float y, float zFace, float dz)
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            var u = Hash01(n * 31 + f, k, i);
+            var v = Hash01(n * 17 + f, k, i + 11);
+            // two walk lines, 0.30 m in from each side; most chips there, a few anywhere
+            var side = u < .5f ? -1f : 1f;
+            var x = i < 4 ? xc + side * (w * .5f - .30f) + (v - .5f) * .28f : xc + (v - .5f) * (w - .1f);
+            var len = .015f + Hash01(k, i, n + 5) * .045f;
+            var hgt = .006f + Hash01(i, k, f + 9) * .016f;
+            Box(p, "nosing chip f" + n + "." + f + "." + k + "." + i, new Vector3(x, y - .004f - Hash01(f, i, k + 3) * .02f, zFace), new Vector3(len, hgt, .0015f), chipM, Id.Background);
+        }
+    }
+
+    /// <summary>B: a 50 mm safety-yellow stripe worn through on the walk lines: crisp only at the ends, a ghost of
+    /// paint on concrete where feet land.</summary>
+    static void WornStripe(Transform p, string tag, float xc, float w, float y, float z, int k)
+    {
+        var x0 = xc - (w - .02f) * .5f; var x1 = xc + (w - .02f) * .5f;
+        // worn zones: 0.45 m wide, centred 0.30 m in from each side (the two walk lines)
+        var wa0 = x0 + .30f - .225f; var wa1 = x0 + .30f + .225f;
+        var wb0 = x1 - .30f - .225f; var wb1 = x1 - .30f + .225f;
+        var segs = new List<Vector2> { new Vector2(x0, wa0), new Vector2(wa1, wb0), new Vector2(wb1, x1) };
+        foreach (var s in segs)
+            if (s.y - s.x > .01f) Box(p, "nosing stripe " + tag, new Vector3((s.x + s.y) * .5f, y + .0006f, z), new Vector3(s.y - s.x, .002f, .05f), nosingM, Id.Background);
+        foreach (var s in new[] { new Vector2(wa0, wa1), new Vector2(wb0, wb1) })
+            for (var i = 0; i < 2; i++)
+            {
+                var a = Mathf.Lerp(s.x + .05f, s.y - .05f, Hash01(k, i, 7)); var len = .012f + Hash01(i, k, 9) * .03f;
+                Box(p, "nosing stripe ghost " + tag + "." + i, new Vector3(a, y + .0005f, z + (Hash01(k, i, 2) - .5f) * .03f), new Vector3(len, .002f, .008f + Hash01(i, k, 4) * .012f), chipM, Id.Background);
+            }
+    }
+
+    /// <summary>Guard on the well side of each flight, across the well at the turn landing, and along the whole top
+    /// edge of the exit landing (with no flight above, the flight-2 side of that edge is a 3.5 m drop).</summary>
     static void Guards(int n)
     {
         var p = Kit("Guard", n);
-        // flight 1 well edge x = -0.20 (rail centre -0.23), flight 2 well edge x = +0.20
         GuardRun(p, n, 1, -WellHalf - .03f, ZD, YD(n), 1f);
         GuardRun(p, n, 2, WellHalf + .03f, ZT, YT(n), -1f);
-        // across the well at the landing edges (42 in = 1.067 m)
-        LandingGuard(p, n, "D", ZD - .03f, YD(n));
-        LandingGuard(p, n, "T", ZT + .03f, YT(n));
+        // 42 in = 1.067 m guards at the landing edges
+        var xw0 = -WellHalf - .03f; var xw1 = WellHalf + .03f;
+        LandingGuard(p, n, "D", ZD - .03f, YD(n), xw0, n == FloorMin ? XFace - .02f : xw1);
+        LandingGuard(p, n, "T", ZT + .03f, YT(n), xw0, xw1);
     }
 
     static void GuardRun(Transform p, int n, int f, float x, float zTop, float yTop, float dz)
@@ -768,7 +1046,8 @@ public static class FrontRoomsStairLookdev
             Seg(p, "guard rail wear " + tag, a + Vector3.up * .017f, b + Vector3.up * .017f, .012f, .006f, railTopM, Id.Background);
             var ba = new Vector3(x, yTop + .10f, zTop); var bb = new Vector3(x, yBotNose + .10f, zBot);
             Seg(p, "guard bottom rail " + tag, ba, bb, .025f, .025f, steelM, Id.Background);
-            var count = Mathf.FloorToInt(Mathf.Abs(zBot - zTop) / .11f);
+            // FIX (critic era 4): pickets at <= 0.10 m centres, under 4 in clear
+            var count = Mathf.CeilToInt(Mathf.Abs(zBot - zTop) / .10f);
             for (var i = 1; i < count; i++)
             {
                 var t = i / (float)count;
@@ -780,8 +1059,8 @@ public static class FrontRoomsStairLookdev
         {
             Cyl(p, "guard top rail " + tag, a, b, .024f, railM, Id.Background);
             Seg(p, "guard rail polish " + tag, a + Vector3.up * .02f, b + Vector3.up * .02f, .012f, .006f, railTopM, Id.Background);
-            var ma = new Vector3(x, yTop + .48f, zTop); var mb = new Vector3(x, yBotNose + .48f, zBot);
-            Cyl(p, "guard mid rail " + tag, ma, mb, .024f, steelM, Id.Background);
+            var ba = new Vector3(x, yTop + .10f, zTop); var bb = new Vector3(x, yBotNose + .10f, zBot);
+            Cyl(p, "guard bottom rail " + tag, ba, bb, .021f, steelM, Id.Background);
             for (var i = 0; i <= 2; i++)
             {
                 var t = i / 2f;
@@ -791,16 +1070,22 @@ public static class FrontRoomsStairLookdev
                 Cyl(p, "guard post " + tag + "." + i, new Vector3(x, yTread, zp), new Vector3(x, yNose + railH + .02f, zp), .024f, steelM, Id.Background);
                 Cyl(p, "post flange " + tag + "." + i, new Vector3(x, yTread, zp), new Vector3(x, yTread + .012f, zp), .055f, steelM, Id.Background);
             }
+            // FIX (critic era 4): woven-wire mesh infill between the bottom rail and the top rail
+            var mb = new MB();
+            var nrm = x < 0f ? Vector3.left : Vector3.right;
+            mb.Quad(ba + Vector3.up * .02f, bb + Vector3.up * .02f, b - Vector3.up * .03f, a - Vector3.up * .03f, nrm);
+            MeshObj(p, "guard mesh " + tag, mb.Build("mesh " + dir + tag), meshM, Id.Background);
         }
         else
         {
-            // oak: moulded handrail on square balusters (2 per tread), turned-ish newels at the ends
-            Seg(p, "oak handrail " + tag, a + Vector3.up * .02f, b + Vector3.up * .02f, .062f, .055f, railM, Id.Background);
+            // FIX (critic era 4): a round oak rail, 48 mm (1.9 in, inside the 1.5-2 in grip), on 32 mm square
+            // balusters, 3 per tread (93 mm centres, 61 mm clear), turned-ish newels at the ends
+            Cyl(p, "oak handrail " + tag, a + Vector3.up * .02f, b + Vector3.up * .02f, .024f, railM, Id.Background);
             Seg(p, "oak shoe rail " + tag, new Vector3(x, yTop + .02f, zTop), new Vector3(x, yBotNose + .02f, zBot), .06f, .03f, steelM, Id.Background);
             for (var k = 1; k <= Treads; k++)
-                for (var j = 0; j < 2; j++)
+                for (var j = 0; j < 3; j++)
                 {
-                    var zc = Zk(zTop, dz, k - 1) + dz * Going * (.25f + .5f * j);
+                    var zc = Zk(zTop, dz, k - 1) + dz * Going * ((1f + 2f * j) / 6f);
                     var yTread = yTop - k * Rise;
                     var yRail = yTop + railH - Rise * Mathf.Abs(zc - zTop) / Going;
                     Box(p, "baluster " + tag + "." + k + "." + j, new Vector3(x, (yTread + yRail) * .5f, zc), new Vector3(.032f, yRail - yTread, .032f), steelM, Id.Background);
@@ -815,30 +1100,47 @@ public static class FrontRoomsStairLookdev
         }
     }
 
-    static void LandingGuard(Transform p, int n, string which, float z, float y)
+    static void LandingGuard(Transform p, int n, string which, float z, float y, float x0, float x1)
     {
         var tag = which + n;
-        var x0 = -WellHalf - .03f; var x1 = WellHalf + .03f;
         var h = 1.067f;
+        var w = x1 - x0;
         if (dir == "C")
         {
-            Seg(p, "landing oak rail " + tag, new Vector3(x0, y + h, z), new Vector3(x1, y + h, z), .062f, .055f, railM, Id.Background);
-            for (var i = 1; i < 4; i++) Box(p, "landing baluster " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / 4f), y + h * .5f, z), new Vector3(.032f, h, .032f), steelM, Id.Background);
+            Cyl(p, "landing oak rail " + tag, new Vector3(x0, y + h, z), new Vector3(x1, y + h, z), .024f, railM, Id.Background);
+            Box(p, "landing oak shoe " + tag, new Vector3((x0 + x1) * .5f, y + .015f, z), new Vector3(w, .03f, .06f), steelM, Id.Background);
+            var cnt = Mathf.CeilToInt(w / .09f);
+            for (var i = 1; i < cnt; i++) Box(p, "landing baluster " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / (float)cnt), y + h * .5f, z), new Vector3(.032f, h, .032f), steelM, Id.Background);
+            Box(p, "landing newel " + tag, new Vector3(x1, y + .6f, z), new Vector3(.09f, 1.2f, .09f), steelM, Id.Background);
             return;
         }
         Cyl(p, "landing guard rail " + tag, new Vector3(x0 - .02f, y + h, z), new Vector3(x1 + .02f, y + h, z), dir == "A" ? .021f : .024f, railM, Id.Background);
         Cyl(p, "landing guard post L " + tag, new Vector3(x0, y, z), new Vector3(x0, y + h, z), .024f, steelM, Id.Background);
         Cyl(p, "landing guard post R " + tag, new Vector3(x1, y, z), new Vector3(x1, y + h, z), .024f, steelM, Id.Background);
-        if (dir == "A") for (var i = 1; i < 4; i++) Box(p, "landing picket " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / 4f), y + h * .5f, z), new Vector3(.0127f, h, .0127f), steelM, Id.Background);
-        else Cyl(p, "landing guard mid " + tag, new Vector3(x0, y + .53f, z), new Vector3(x1, y + .53f, z), .024f, steelM, Id.Background);
+        if (w > 1.2f) Cyl(p, "landing guard post M " + tag, new Vector3((x0 + x1) * .5f, y, z), new Vector3((x0 + x1) * .5f, y + h, z), .024f, steelM, Id.Background);
+        if (dir == "A")
+        {
+            Box(p, "landing bottom rail " + tag, new Vector3((x0 + x1) * .5f, y + .10f, z), new Vector3(w, .025f, .025f), steelM, Id.Background);
+            var cnt = Mathf.CeilToInt(w / .10f);
+            for (var i = 1; i < cnt; i++) Box(p, "landing picket " + tag + "." + i, new Vector3(Mathf.Lerp(x0, x1, i / (float)cnt), y + (h + .10f) * .5f, z), new Vector3(.0127f, h - .10f, .0127f), steelM, Id.Background);
+        }
+        else
+        {
+            Cyl(p, "landing guard bottom " + tag, new Vector3(x0, y + .10f, z), new Vector3(x1, y + .10f, z), .021f, steelM, Id.Background);
+            var mb = new MB();
+            mb.Quad(new Vector3(x0, y + .12f, z), new Vector3(x1, y + .12f, z), new Vector3(x1, y + h - .03f, z), new Vector3(x0, y + h - .03f, z), which == "D" ? Vector3.forward : Vector3.back);
+            MeshObj(p, "landing guard mesh " + tag, mb.Build("landing mesh " + dir + tag), meshM, Id.Background);
+        }
     }
 
-    /// <summary>Wall rails on brackets, 38 mm clear of the wall, 0.91 m above the nosings.</summary>
+    /// <summary>Wall rails on brackets, 38 mm clear of the wall, 0.91 m above the nosings, extended 12 in at the top
+    /// and one tread + 12 in at the bottom. FIX (critic era 4): both ends return 90 degrees to the wall on a flange
+    /// (UBC 1991 3306(i)); C gets the same round rail and extensions as A and B.</summary>
     static void WallRails(int n)
     {
         var p = Kit("WallRail", n);
-        WallRail(p, n, 1, -XFace + .038f + .021f, ZD, YD(n), 1f);
-        WallRail(p, n, 2, XFace - .038f - .021f, ZT, YT(n), -1f);
+        WallRail(p, n, 1, -XFace + .038f + .024f, ZD, YD(n), 1f);
+        WallRail(p, n, 2, XFace - .038f - .024f, ZT, YT(n), -1f);
     }
 
     static void WallRail(Transform p, int n, int f, float x, float zTop, float yTop, float dz)
@@ -846,56 +1148,102 @@ public static class FrontRoomsStairLookdev
         var tag = "f" + n + "." + f;
         var zBot = Zk(zTop, dz, Treads);
         var a = new Vector3(x, yTop + .91f, zTop); var b = new Vector3(x, yTop - Treads * Rise + .91f, zBot);
-        var ext = .30f;   // 12 in beyond the top and bottom risers
-        var a2 = a - new Vector3(0f, 0f, dz * ext); var b2 = b + new Vector3(0f, -0f, dz * ext);
-        b2.y = yTop - 10 * Rise + .91f;
+        var ext = .30f;   // 12 in beyond the top riser, level
+        var a2 = a - new Vector3(0f, 0f, dz * ext);
+        var b1 = new Vector3(x, yTop - 10 * Rise + .91f, zBot + dz * Going);        // one tread beyond, sloping
+        var b2 = b1 + new Vector3(0f, 0f, dz * ext);                                 // then 12 in level
+        var r = dir == "A" ? .021f : .024f;
         var bracketM = dir == "C" ? numeralM : steelM;
-        if (dir == "C") { Seg(p, "wall rail oak " + tag, a, b, .055f, .05f, railM, Id.Background); }
-        else
-        {
-            Cyl(p, "wall rail " + tag, a, b, .021f, railM, Id.Background);
-            Cyl(p, "wall rail top ext " + tag, a2, a, .021f, railM, Id.Background);
-            Cyl(p, "wall rail bottom ext " + tag, b, b2, .021f, railM, Id.Background);
-            Seg(p, "wall rail wear " + tag, a + Vector3.up * .017f, b + Vector3.up * .017f, .012f, .006f, railTopM, Id.Background);
-        }
         var wallX = x < 0f ? -XFace : XFace;
+        Cyl(p, "wall rail " + tag, a, b, r, railM, Id.Background);
+        Cyl(p, "wall rail top ext " + tag, a2, a, r, railM, Id.Background);
+        Cyl(p, "wall rail bottom slope " + tag, b, b1, r, railM, Id.Background);
+        Cyl(p, "wall rail bottom ext " + tag, b1, b2, r, railM, Id.Background);
+        foreach (var e in new[] { a2, b2 })
+        {
+            var w = new Vector3(wallX, e.y, e.z);
+            Cyl(p, "wall rail return " + tag, e, w, r, railM, Id.Background);
+            Cyl(p, "wall rail flange " + tag, w, w + new Vector3(x < 0f ? .008f : -.008f, 0f, 0f), .045f, bracketM, Id.Background);
+            Ball(p, "wall rail elbow " + tag, e, r * 2f, railM, Id.Background);
+        }
+        foreach (var e in new[] { a, b, b1 }) Ball(p, "wall rail joint " + tag, e, r * 2f, railM, Id.Background);
+        if (dir != "C") Seg(p, "wall rail wear " + tag, a + Vector3.up * (r - .004f), b + Vector3.up * (r - .004f), .012f, .006f, railTopM, Id.Background);
         for (var i = 0; i < 3; i++)
         {
             var t = (i + .5f) / 3f;
             var q = Vector3.Lerp(a, b, t);
             Cyl(p, "rail bracket " + tag + "." + i, new Vector3(wallX, q.y - .05f, q.z), new Vector3(x, q.y - .05f, q.z), .007f, bracketM, Id.Background);
-            Cyl(p, "rail bracket post " + tag + "." + i, new Vector3(x, q.y - .05f, q.z), new Vector3(x, q.y - .015f, q.z), .007f, bracketM, Id.Background);
+            Cyl(p, "rail bracket post " + tag + "." + i, new Vector3(x, q.y - .05f, q.z), new Vector3(x, q.y - r + .004f, q.z), .007f, bracketM, Id.Background);
         }
     }
 
-    /// <summary>A: the darker dado band, 2 mm proud, following landings and flights (1.1 m above them).</summary>
+    /// <summary>A: the band, 2 mm proud, following the flights and wrapping round the landings (BSS 120 Fig. 2.7.5),
+    /// FIX (critic era 8): no dead end at the landing corners; a 12 mm dark cut-in line along its top is the slope
+    /// cue (critic era 7: the band is now lighter than the steel by more than 15 L*).</summary>
     static void Dado(int n)
     {
         var p = Kit("Paint", n);
-        var mb = new MB();
+        var mb = new MB(); var ln = new MB();
         var top = dadoTop; var under = .35f;
         var yd = YD(n); var yt = YT(n);
         foreach (var side in new[] { -1, 1 })
         {
             var x = side * (XFace - .002f);
             var nrm = side < 0 ? Vector3.right : Vector3.left;
-            // D landing and T landing, flat
-            mb.Quad(new Vector3(x, yd - .06f, ZNear), new Vector3(x, yd - .06f, ZD), new Vector3(x, yd + top, ZD), new Vector3(x, yd + top, ZNear), nrm);
-            mb.Quad(new Vector3(x, yt - .06f, ZT), new Vector3(x, yt - .06f, ZFarFace), new Vector3(x, yt + top, ZFarFace), new Vector3(x, yt + top, ZT), nrm);
+            SideBand(mb, ln, x, ZNear, ZD, yd - .06f, yd - .06f, yd + top, yd + top, nrm);
+            SideBand(mb, ln, x, ZT, ZFarFace, yt - .06f, yt - .06f, yt + top, yt + top, nrm);
             // west wall carries flight 1 (D n -> T n); east wall carries flight 2 (T n -> D n+1)
-            if (side < 0) mb.Quad(new Vector3(x, yd - under, ZD), new Vector3(x, yt - under, ZT), new Vector3(x, yt + top, ZT), new Vector3(x, yd + top, ZD), nrm);
-            else mb.Quad(new Vector3(x, yt - under, ZT), new Vector3(x, YD(n + 1) - under, ZD), new Vector3(x, YD(n + 1) + top, ZD), new Vector3(x, yt + top, ZT), nrm);
+            if (side < 0) SideBand(mb, ln, x, ZD, ZT, yd - under, yt - under, yd + top, yt + top, nrm);
+            else SideBand(mb, ln, x, ZT, ZD, yt - under, YD(n + 1) - under, yt + top, YD(n + 1) + top, nrm);
         }
-        // end walls: door wall at the D landing (beside the door), far wall at the T landing
-        var zn = ZNear + .002f; var zf = ZFarFace - .002f;
+        // end walls: door wall at the D landing (either side of the door), far wall at the T landing
         if (!noEndDado)
         {
-            mb.Quad(new Vector3(-XFace, yd - .06f, zn), new Vector3(-.5f, yd - .06f, zn), new Vector3(-.5f, yd + top, zn), new Vector3(-XFace, yd + top, zn), Vector3.forward);
-            mb.Quad(new Vector3(.5f, yd - .06f, zn), new Vector3(XFace, yd - .06f, zn), new Vector3(XFace, yd + top, zn), new Vector3(.5f, yd + top, zn), Vector3.forward);
-            mb.Quad(new Vector3(-XFace, yt - .06f, zf), new Vector3(XFace, yt - .06f, zf), new Vector3(XFace, yt + top, zf), new Vector3(-XFace, yt + top, zf), Vector3.back);
+            var zn = ZNear + .002f; var zf = ZFarFace - .002f;
+            EndBand(mb, ln, zn, -XFace, -.56f, yd - .06f, yd + top, Vector3.forward);
+            EndBand(mb, ln, zn, .56f, XFace, yd - .06f, yd + top, Vector3.forward);
+            EndBand(mb, ln, zf, -XFace, XFace, yt - .06f, yt + top, Vector3.back);
         }
         MeshObj(p, "dado band f" + n, mb.Build("dado " + n), dadoM, Id.Background);
-        // a thin dark line at the band top (the cut-in edge)
+        if (cutInM != null) MeshObj(p, "band cut-in line f" + n, ln.Build("cut-in " + n), cutInM, Id.Background);
+    }
+
+    /// <summary>A, far floor: the band round the far landing (side walls and the door wall).</summary>
+    static void DadoBottom(int n)
+    {
+        var mb = new MB(); var ln = new MB();
+        var top = dadoTop; var yd = YD(n);
+        foreach (var side in new[] { -1, 1 })
+        {
+            var x = side * (XFace - .002f);
+            var nrm = side < 0 ? Vector3.right : Vector3.left;
+            if (side < 0) SideBand(mb, ln, x, ZNear, ZD, yd - .06f, yd - .06f, yd + top, yd + top, nrm);
+            else SideBand(mb, ln, x, ZNear, ZD - .002f, yd - .06f, yd - .06f, yd + top, yd + top, nrm);
+        }
+        if (!noEndDado)
+        {
+            var zn = ZNear + .002f;
+            EndBand(mb, ln, zn, -XFace, -.56f, yd - .06f, yd + top, Vector3.forward);
+            EndBand(mb, ln, zn, .56f, XFace, yd - .06f, yd + top, Vector3.forward);
+        }
+        MeshObj(shaft, "dado band far floor", mb.Build("dado far"), dadoM, Id.Background);
+        if (cutInM != null) MeshObj(shaft, "band cut-in line far floor", ln.Build("cut-in far"), cutInM, Id.Background);
+    }
+
+    /// <summary>A band quad on a side wall (x fixed) from zA to zB, bottoms loA / loB, tops topA / topB, and its
+    /// 12 mm cut-in line (1 mm further out) along the top.</summary>
+    static void SideBand(MB mb, MB ln, float x, float zA, float zB, float loA, float loB, float topA, float topB, Vector3 nrm)
+    {
+        mb.Quad(new Vector3(x, loA, zA), new Vector3(x, loB, zB), new Vector3(x, topB, zB), new Vector3(x, topA, zA), nrm);
+        var xl = x + nrm.x * .001f;
+        ln.Quad(new Vector3(xl, topA - .008f, zA), new Vector3(xl, topB - .008f, zB), new Vector3(xl, topB + .004f, zB), new Vector3(xl, topA + .004f, zA), nrm);
+    }
+
+    static void EndBand(MB mb, MB ln, float z, float xA, float xB, float lo, float top, Vector3 nrm)
+    {
+        mb.Quad(new Vector3(xA, lo, z), new Vector3(xB, lo, z), new Vector3(xB, top, z), new Vector3(xA, top, z), nrm);
+        var zl = z + nrm.z * .001f;
+        ln.Quad(new Vector3(xA, top - .008f, zl), new Vector3(xB, top - .008f, zl), new Vector3(xB, top + .004f, zl), new Vector3(xA, top + .004f, zl), nrm);
     }
 
     /// <summary>C: oak skirt boards along the flights at the walls, cove base at the landings.</summary>
@@ -925,15 +1273,42 @@ public static class FrontRoomsStairLookdev
         var frame = KitSpawn(frameKit, p, origin, DoorRot, Id.Door);
         var leaf = KitSpawn(leafKit, p, origin, DoorRot, Id.Door);
         if (leaf == null) return null;
-        if (n == 0) exitLeaf = leaf.transform;
+        if (n == 0)
+        {
+            exitLeaf = leaf.transform;
+            foreach (var r in leaf.GetComponentsInChildren<Renderer>(true)) leafRs.Add(r);
+        }
         if (doorLeafM != null) Recolour(leaf, doorLeafM);
         if (dir != "C" && frame != null) Recolour(frame, Flat(dir + " frame enamel", dir == "A" ? Hex("5F5A50") : Hex("3E3833"), .45f));
         // closer on the pull face (stair side): body at closer_mount_s, regular arm to the frame shoe
         Closer(leaf.transform);
-        // stair-side signs (placeholders; strings and type are not ours): floor sign plate at 5 ft on the leaf,
-        // the re-entry plate under it
-        Box(p, "door floor plate (placeholder) f" + n, LeafPoint(leaf.transform, new Vector3(.026f, 1.524f, .5f)), new Vector3(.18f, .25f, .004f), signPlateM, Id.Sign);
-        Box(p, "door re-entry plate (placeholder) f" + n, LeafPoint(leaf.transform, new Vector3(.026f, 1.30f, .5f)), new Vector3(.25f, .09f, .004f), dir == "B" ? Flat("B plate red", Hex("A3271E"), .4f) : signPlateM, Id.Sign);
+        var live = n == FloorMax + 1;   // the far door: the one door the player opens from the stair side
+        if (live)
+        {
+            // FIX (critic gameplay 2): pull trim on the stair face (a lever at the escutcheon) and a dark
+            // floor-access plate at 5 ft. The exit door stays blank with its NO RE-ENTRY plate.
+            farLeaf = leaf.transform; farLeafRest = farLeaf.rotation;
+            var lever = FrontRoomsKitLibrary.Spawn("Kit_Lock_Lever", leaf.transform, new Vector3(.022f, .968f, .92f), Quaternion.Euler(0f, 90f, 0f), null, false);
+            if (lever != null)
+            {
+                farLever = lever.transform; farLeverRest = farLever.localRotation;
+                foreach (var r in lever.GetComponentsInChildren<Renderer>(true)) { ids[r] = Id.Door; trimRs.Add(r); }
+                var rose = Cyl(p, "far lever rose", LeafPoint(leaf.transform, new Vector3(.022f, .968f, .92f)), LeafPoint(leaf.transform, new Vector3(.032f, .968f, .92f)), .03f, Flat("lever rose (satin chrome)", Hex("B4B6B2"), .6f, .9f), Id.Door);
+                trimRs.Add(rose);
+            }
+            else Log("MISSING Kit_Lock_Lever");
+            var plate = Box(p, "far door floor-access plate (placeholder) f" + n, LeafPoint(leaf.transform, new Vector3(.026f, 1.524f, .5f)), new Vector3(.30f, .20f, .004f), farPlateM, Id.Sign);
+            trimRs.Add(plate);
+        }
+        else
+        {
+            // the exit door's stair face: blank, closer, a NO RE-ENTRY plate at 5 ft (NYC LL5 1973 C26-608.5;
+            // strings narrative's)
+            Box(p, "door re-entry plate (placeholder) f" + n, LeafPoint(leaf.transform, new Vector3(.026f, 1.524f, .5f)), new Vector3(.30f, .20f, .004f), dir == "B" ? Flat("B plate red", Hex("A3271E"), .4f) : signPlateM, Id.Sign);
+        }
+        // FIX (critic era 13): the stair ID sign (stair, level, terminus, roof access) on the WALL beside the latch
+        // jamb at 5 ft, readable with the door open or shut (UBC 1991 3306(p)). C keeps only its suite plate.
+        if (dir != "C") Box(p, "stair ID sign (placeholder) f" + n, new Vector3(-.80f, y + 1.524f, ZNear + .003f), new Vector3(.30f, .36f, .006f), idPlateM, Id.Sign);
         return leaf;
     }
 
@@ -962,34 +1337,185 @@ public static class FrontRoomsStairLookdev
     }
 
     /// <summary>The exit door on the exit floor (n = 0): crossbar on the push face (maze side), lit EXIT
-    /// sign over the frame (C23: Kit_ExitSign locked to LIT).</summary>
+    /// sign over the frame (C23: Kit_ExitSign locked to LIT), and the two A13 lock states.</summary>
     static void BuildExitDoor()
     {
         var p = Kit("ExitDoor", 0);
         var leaf = exitLeaf;
         if (leaf == null) { Log("no exit leaf found"); return; }
         var bar = FrontRoomsKitLibrary.Spawn("Kit_ExitDevice_Crossbar", leaf, new Vector3(-.022f, 1.000f, .900f), Quaternion.Euler(0f, -90f, 0f), new Vector3(-1f, 1f, 1f), false);
-        if (bar != null) { bar.transform.localScale = new Vector3(-1f, 1f, 1f); foreach (var r in bar.GetComponentsInChildren<Renderer>(true)) ids[r] = Id.Door; }
+        if (bar != null) { bar.transform.localScale = new Vector3(-1f, 1f, 1f); foreach (var r in bar.GetComponentsInChildren<Renderer>(true)) { ids[r] = Id.Door; barRs.Add(r); } }
         else Log("MISSING crossbar");
+        var gain = signGain > 0f ? signGain : SignGainDefault;
         // EXIT sign: frame anchor exit_sign_p (-0.080, 2.180, 0.500) in door root -> world (0, 2.18, -0.08), face -z
         var sign = KitSpawn("Kit_ExitSign", p, new Vector3(0f, 2.18f, -.08f), Quaternion.Euler(0f, 180f, 0f), Id.Sign);
         if (sign != null)
         {
-            var drv = sign.GetComponent<FrontRoomsExitSign>();
-            if (drv == null) drv = sign.AddComponent<FrontRoomsExitSign>();
-            drv.SelfTick = false;
-            drv.EmissionGain = 1f;
-            drv.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
-            Log("EXIT sign LIT, level " + drv.Level.ToString("0.00"));
+            flatSign = sign;
+            flatDrv = SignDriver(sign, gain);
+            foreach (var r in sign.GetComponentsInChildren<Renderer>(true)) signRs.Add(r);
+            Log("EXIT sign LIT, level " + flatDrv.Level.ToString("0.00") + ", EmissionGain " + gain.ToString("0.00"));
+        }
+        // FIX (critic gameplay 5): the end-mounted double-face sign for an exit on a corridor side wall (shots with
+        // FEndSign swap it in for the flat sign)
+        var end = KitSpawn("Kit_ExitSign_End", p, new Vector3(0f, 2.18f, -.08f), Quaternion.Euler(0f, 180f, 0f), Id.Sign);
+        if (end != null)
+        {
+            endSign = end;
+            endDrv = SignDriver(end, gain);
+            foreach (var r in end.GetComponentsInChildren<Renderer>(true)) signRs.Add(r);
+            end.SetActive(false);
+        }
+        else Log("MISSING Kit_ExitSign_End");
+        BuildLockStates(p);
+        // LOD diagnostics for the door-head strip (critic era 9)
+        foreach (var lg in leaf.GetComponentsInChildren<LODGroup>(true))
+        {
+            var lods = lg.GetLODs();
+            for (var i = 0; i < lods.Length; i++)
+                foreach (var r in lods[i].renderers)
+                    if (r != null) Log("exit leaf LOD" + i + " " + r.name + " bounds y " + r.bounds.min.y.ToString("0.000") + ".." + r.bounds.max.y.ToString("0.000") + " screenRel " + lods[i].screenRelativeTransitionHeight.ToString("0.000"));
         }
     }
 
-    /// <summary>Floor numeral beside each stair door (placeholder seven-segment shapes: the numbering scheme
-    /// and the type belong to narrative / graphic design).</summary>
+    static FrontRoomsExitSign SignDriver(GameObject sign, float gain)
+    {
+        var drv = sign.GetComponent<FrontRoomsExitSign>();
+        if (drv == null) drv = sign.AddComponent<FrontRoomsExitSign>();
+        drv.SelfTick = false;
+        drv.EmissionGain = gain;
+        drv.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+        return drv;
+    }
+
+    static void SetSignGain(float gain)
+    {
+        foreach (var d in new[] { flatDrv, endDrv })
+        {
+            if (d == null) continue;
+            d.EmissionGain = gain;
+            d.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+        }
+    }
+
+    // ---------------------------------------------------------------- A13 lock states (maze side of the exit door)
+    const float ChainWire = .0127f, ChainLen = .064f, ChainWid = .044f, ChainPitch = .041f;   // 1/2 in proof coil
+
+    /// <summary>FIX (critic gameplay 1, A13): LOCKED = a chain wrapped twice round the crossbar near the latch end,
+    /// run through an eye bolt in the wall beside the latch jamb, its two ends joined by a padlock that hangs below
+    /// the bar. UNLOCKED = the same chain and the open padlock on the floor against the wall, latch side (one state
+    /// change, no blink). The EXIT sign stays LIT in both.</summary>
+    static void BuildLockStates(Transform p)
+    {
+        lockedSet = new GameObject("A13 LOCKED (chain + padlock)");
+        lockedSet.transform.SetParent(p, false);
+        unlockedSet = new GameObject("A13 UNLOCKED (chain on the floor)");
+        unlockedSet.transform.SetParent(p, false);
+        var L = lockedSet.transform; var U = unlockedSet.transform;
+        // eye bolt (both states): wall beside the latch jamb, maze face z -0.08
+        var eye = new Vector3(-.64f, 1.0f, -.115f);
+        Cyl(p, "eye bolt plate", new Vector3(-.64f, 1.0f, -.08f), new Vector3(-.64f, 1.0f, -.086f), .03f, padlockM, Id.Door);
+        Cyl(p, "eye bolt shank", new Vector3(-.64f, 1.0f, -.086f), new Vector3(-.64f, 1.0f, -.095f), .008f, padlockM, Id.Door);
+        for (var i = 0; i < 10; i++)
+        {
+            var a0 = i * Mathf.PI * 2f / 10f; var a1 = (i + 1) * Mathf.PI * 2f / 10f;
+            var e0 = eye + new Vector3(0f, Mathf.Sin(a0), -Mathf.Cos(a0) + 1f) * .022f - new Vector3(0f, 0f, .022f);
+            var e1 = eye + new Vector3(0f, Mathf.Sin(a1), -Mathf.Cos(a1) + 1f) * .022f - new Vector3(0f, 0f, .022f);
+            Seg(p, "eye bolt ring " + i, e0, e1, .009f, .009f, padlockM, Id.Door);
+        }
+        // LOCKED chain path: the wrap round the bar (axis along x at y 1.0, z -0.092), then to the eye, the sag
+        // to the padlock, and from the wrap start down to the padlock
+        var path = new List<Vector3>();
+        var bc = new Vector3(0f, 1.0f, -.092f); var rr = .034f;
+        var pre = new List<Vector3> { new Vector3(-.465f, .80f, -.13f), new Vector3(-.40f, .815f, -.13f), new Vector3(-.31f, .87f, -.128f), new Vector3(-.235f, .945f, -.126f) };
+        path.AddRange(pre);
+        for (var k = 0; k <= 24; k++)
+        {
+            var t = k / 24f; var ang = t * Mathf.PI * 4f;
+            path.Add(new Vector3(-.22f - .08f * t, bc.y - rr * Mathf.Cos(ang), bc.z - rr * Mathf.Sin(ang)));
+        }
+        path.Add(new Vector3(-.45f, 1.0f, -.13f));
+        path.Add(eye + new Vector3(.02f, 0f, -.02f));
+        path.Add(eye + new Vector3(-.01f, -.01f, -.03f));
+        path.Add(new Vector3(-.62f, .90f, -.13f));
+        path.Add(new Vector3(-.56f, .825f, -.13f));
+        path.Add(new Vector3(-.495f, .80f, -.13f));
+        var nLocked = ChainAlong(L, "chain", path);
+        Padlock(L, new Vector3(-.48f, .765f, -.135f), false);
+        // UNLOCKED: the chain on the floor, in a loose coil against the wall on the latch side, the padlock open
+        var heap = new List<Vector3>();
+        var hc = new Vector3(-.78f, 0f, -.24f);
+        for (var k = 0; k <= 40; k++)
+        {
+            var t = k / 40f; var ang = t * Mathf.PI * 4.4f;
+            var rad = .14f - .05f * t;
+            heap.Add(hc + new Vector3(Mathf.Cos(ang) * rad, .008f + .016f * t, Mathf.Sin(ang) * rad * .8f));
+        }
+        heap.Add(hc + new Vector3(.18f, .008f, .06f));
+        var nHeap = ChainAlong(U, "chain (dropped)", heap);
+        Padlock(U, hc + new Vector3(.24f, .012f, .08f), true);
+        foreach (var r in lockedSet.GetComponentsInChildren<Renderer>(true)) { lockRs.Add(r); ids[r] = Id.Door; }
+        foreach (var r in unlockedSet.GetComponentsInChildren<Renderer>(true)) { lockRs.Add(r); ids[r] = Id.Door; }
+        unlockedSet.SetActive(false);
+        Log("A13 lock states: locked chain " + nLocked + " links, dropped chain " + nHeap + " links (1/2 in proof coil, dark oxide), laminated padlock");
+    }
+
+    /// <summary>Links of a 1/2 in chain along a polyline (alternating planes), each link four thin boxes.</summary>
+    static int ChainAlong(Transform p, string name, List<Vector3> pts)
+    {
+        var cum = new List<float> { 0f };
+        for (var i = 1; i < pts.Count; i++) cum.Add(cum[i - 1] + (pts[i] - pts[i - 1]).magnitude);
+        var total = cum[cum.Count - 1];
+        var n = Mathf.Max(1, Mathf.FloorToInt(total / ChainPitch));
+        var seg = 0;
+        for (var k = 0; k < n; k++)
+        {
+            var d = (k + .5f) * total / n;
+            while (seg < pts.Count - 2 && cum[seg + 1] < d) seg++;
+            var tt = Mathf.InverseLerp(cum[seg], cum[seg + 1], d);
+            var c = Vector3.Lerp(pts[seg], pts[seg + 1], tt);
+            var t = (pts[seg + 1] - pts[seg]).normalized;
+            var nref = Mathf.Abs(Vector3.Dot(t, Vector3.up)) > .9f ? Vector3.forward : Vector3.up;
+            var u0 = Vector3.Cross(t, nref).normalized;
+            var u = (k % 2 == 0) ? u0 : Vector3.Cross(t, u0).normalized;
+            var hl = ChainLen * .5f - ChainWire * .5f; var hw = ChainWid * .5f - ChainWire * .5f;
+            Seg(p, name + " link " + k + " a", c - t * hl + u * hw, c + t * hl + u * hw, ChainWire, ChainWire, chainM, Id.Door);
+            Seg(p, name + " link " + k + " b", c - t * hl - u * hw, c + t * hl - u * hw, ChainWire, ChainWire, chainM, Id.Door);
+            Seg(p, name + " link " + k + " c", c - t * hl - u * hw, c - t * hl + u * hw, ChainWire, ChainWire, chainM, Id.Door);
+            Seg(p, name + " link " + k + " d", c + t * hl - u * hw, c + t * hl + u * hw, ChainWire, ChainWire, chainM, Id.Door);
+        }
+        return n;
+    }
+
+    /// <summary>A laminated-steel padlock, 50 mm wide, its face toward the maze (-z); open = lying on its back,
+    /// the shackle swung out.</summary>
+    static void Padlock(Transform p, Vector3 c, bool open)
+    {
+        if (!open)
+        {
+            Box(p, "padlock body", c, new Vector3(.052f, .046f, .026f), padlockM, Id.Door);
+            for (var i = 0; i < 4; i++) Box(p, "padlock lamination " + i, c + new Vector3(0f, -.018f + i * .012f, -.0135f), new Vector3(.053f, .0015f, .001f), chainM, Id.Door);
+            Box(p, "padlock keyway", c + new Vector3(0f, -.0235f, 0f), new Vector3(.006f, .001f, .012f), chainM, Id.Door);
+            var top = c + new Vector3(0f, .023f, 0f);
+            Cyl(p, "shackle L", top + new Vector3(-.016f, 0f, 0f), top + new Vector3(-.016f, .03f, 0f), .0048f, shackleM, Id.Door);
+            Cyl(p, "shackle R", top + new Vector3(.016f, 0f, 0f), top + new Vector3(.016f, .03f, 0f), .0048f, shackleM, Id.Door);
+            Cyl(p, "shackle bow", top + new Vector3(-.019f, .032f, 0f), top + new Vector3(.019f, .032f, 0f), .0048f, shackleM, Id.Door);
+        }
+        else
+        {
+            Box(p, "padlock body (open)", c + new Vector3(0f, .013f, 0f), new Vector3(.052f, .026f, .046f), padlockM, Id.Door);
+            Cyl(p, "shackle (open) L", c + new Vector3(-.016f, .03f, -.023f), c + new Vector3(-.016f, .03f, -.06f), .0048f, shackleM, Id.Door);
+            Cyl(p, "shackle (open) R", c + new Vector3(.016f, .03f, -.023f), c + new Vector3(.03f, .03f, -.055f), .0048f, shackleM, Id.Door);
+        }
+    }
+
+    /// <summary>Floor numeral beside each stair door, on the hinge side (the latch side carries the stair ID sign).
+    /// FIX (critic era 19, gameplay 7): stencil-cut block numerals (gen_stair_numerals.py, placeholder: the face and
+    /// size belong to graphic design) that count UP with the run's floor: exit floor BaseFloor, far floor + 1.</summary>
     static void FloorNumber(int n)
     {
         var p = Kit("Sign", n);
-        var num = 7 - n;
+        var num = BaseFloor + n;
         var y = YD(n);
         if (dir == "C")
         {
@@ -998,10 +1524,9 @@ public static class FrontRoomsStairLookdev
             return;
         }
         var hgt = dir == "A" ? .46f : .60f;
-        var stroke = dir == "A" ? .06f : .075f;
-        // bottom-left as seen from the stair (the viewer faces -z, so their right is -x)
-        var baseP = new Vector3(-.66f, y + (dir == "A" ? 1.25f : 1.15f), ZNear + .002f);
-        Digit(p, num, baseP, hgt, stroke, numeralM, dir == "B", "f" + n);
+        var col = dir == "A" ? Hex("1E1E1C") : Hex("1A1A19");
+        var m = DecalMat(dir + " numeral " + num, "num_" + num, col, dir == "A" ? .55f : .2f);
+        Decal(p, "floor numeral " + num + " f" + n, new Vector3(.95f, y + 1.20f + hgt * .5f, ZNear + .002f), Vector3.forward, hgt * .615f, hgt, m, Id.Sign);
     }
 
     /// <summary>Seven-segment placeholder digit on the door wall, read from the stair side (+z): its right is -x.</summary>
@@ -1033,8 +1558,19 @@ public static class FrontRoomsStairLookdev
     // ---------------------------------------------------------------- lights
     static Material wrapLensLit, globeLit, pilotRed;
 
-    /// <summary>One normal fixture per landing (D and T). A: 4 ft 2-lamp wraparound on the soffit; B: caged
-    /// vapour-tight incandescent globe on the wall; C: the maze's own troffer in a 2.9 m drop ceiling.</summary>
+    /// <summary>The steady-fixture gain per direction (critic gameplay 10: walk-path post Y median about 0.05-0.065,
+    /// about 1 stop under the maze's 0.13), unless -stairFixtureGain overrides it.</summary>
+    static float FixtureGain()
+    {
+        if (fixtureGain >= 0f) return fixtureGain;
+        return dir == "A" ? 2.4f : dir == "B" ? 2.9f : 1.5f;
+    }
+
+    /// <summary>One normal fixture per landing (D and T). A: 4 ft 2-lamp wraparound on the soffit (on the far wall
+    /// at the top turn landing, which has no landing above it); B: caged vapour-tight incandescent globe on the wall;
+    /// C: the maze's own troffer in a 2.9 m drop ceiling. FIX (critic era 5): A's and C's linear sources are two
+    /// spots 0.6 m apart along the lamp (a long soft wash, not a round hot pool); B's cage and box cast no shadow
+    /// and the globe's shadow bias is raised (the dashed arcs were shadow acne).</summary>
     static void LandingLight(int n, bool dLanding)
     {
         var p = Kit("Light", n);
@@ -1042,14 +1578,31 @@ public static class FrontRoomsStairLookdev
         var shadows = n >= -1 && n <= 1;
         var zc = dLanding ? (ZNear + ZD) * .5f : (ZT + ZFarFace) * .5f;
         var edge = lampMode == "edge";
-        var zEdge = dLanding ? ZNear + .30f : ZFarFace - .30f;
+        // FIX (fix stage): the door-landing fixture moves 0.80 m off the door wall so it lights the door face, not
+        // only the wall above it (at 0.30 m the far door measured darker than 3/4 of the frame); the turn-landing
+        // fixture stays 0.30 m off the far wall and washes the wall you walk toward
+        var zEdge = dLanding ? ZNear + .80f : ZFarFace - .30f;
         var name = (dLanding ? "D" : "T") + n;
-        Light l = null;
+        var gain = lampGain * FixtureGain();
+        var lights = new List<Light>();
         if (dir == "A")
         {
-            var soffit = y + FF - .15f;    // underside of the landing above (steel pan landing ~0.15 deep)
+            var top = n == FloorMin && dLanding;                 // under the roof slab
+            var wallMount = n == FloorMin && !dLanding;          // the top turn landing: nothing above it
+            var soffit = top ? YD(FloorMin) + 3.3f : y + FF - .15f;
             var zl = edge ? zEdge : zc;
-            var go = KitSpawn("Kit_WrapFixture_4ft", p, new Vector3(0f, soffit, zl), Quaternion.identity, Id.Emitter);
+            Vector3 pos; Quaternion rot; Vector3 aim; Vector3 lightAt;
+            if (wallMount)
+            {
+                pos = new Vector3(0f, y + 2.55f, ZFarFace); rot = Quaternion.Euler(90f, 0f, 0f);
+                aim = new Vector3(0f, -.55f, -1f); lightAt = new Vector3(0f, y + 2.55f, ZFarFace - .10f);
+            }
+            else
+            {
+                pos = new Vector3(0f, soffit, zl); rot = Quaternion.identity;
+                aim = Vector3.down; lightAt = new Vector3(0f, soffit - .09f, zl);
+            }
+            var go = KitSpawn("Kit_WrapFixture_4ft", p, pos, rot, Id.Emitter);
             if (go != null)
             {
                 var r = go.GetComponentInChildren<Renderer>();
@@ -1060,27 +1613,28 @@ public static class FrontRoomsStairLookdev
                     if (wrapLensLit == null)
                     {
                         wrapLensLit = new Material(r.sharedMaterials[li]) { name = "A wrap lens lit" };
-                        wrapLensLit.SetColor("_EmissionColor", new Color(1f, 1f, 1f) * 1.6f);
+                        wrapLensLit.SetColor("_EmissionColor", new Color(1f, 1f, 1f) * 1.6f * Mathf.Sqrt(FixtureGain()));
                         wrapLensLit.SetFloat("_UseEmission", 1f); wrapLensLit.EnableKeyword("_EMISSION");
                     }
                     var arr = r.sharedMaterials; arr[li] = wrapLensLit; r.sharedMaterials = arr;
                 }
             }
-            l = Spot(p, "wrap light " + name, new Vector3(0f, soffit - .09f, zl), Vector3.down, 170f, 120f, new Color(.95f, .98f, 1f), 3.2f, 6.5f, shadows);
+            foreach (var sx in new[] { -.30f, .30f })
+                lights.Add(Spot(p, "wrap light " + name + (sx < 0f ? " W" : " E"), lightAt + new Vector3(sx, 0f, 0f), aim, 170f, 120f, new Color(.95f, .98f, 1f), 1.6f, 6.5f, shadows));
         }
         else if (dir == "B")
         {
-            // wall globe: D on the east wall over the landing, T on the far wall
+            // wall globe: D on the door wall beside the door, T on the far wall
             Vector3 mount, outN;
             if (dLanding) { mount = edge ? new Vector3(.95f, y + 2.30f, ZNear) : new Vector3(XFace, y + 2.35f, 1.05f); outN = edge ? Vector3.forward : Vector3.left; }
             else { mount = new Vector3(0f, y + 2.35f, ZFarFace); outN = Vector3.back; }
             var box = mount + outN * .03f;
-            Cyl(p, "globe box " + name, mount, mount + outN * .05f, .055f, steelM, Id.Background);
-            if (globeLit == null) globeLit = Glow("B globe lit (100 W A19 behind glass)", new Color(1f, .93f, .8f), new Color(1f, .82f, .6f) * 4.0f);
-            var gc = box + outN * .12f;
+            var bx = Cyl(p, "globe box " + name, mount, mount + outN * .05f, .055f, steelM, Id.Background);
+            bx.shadowCastingMode = ShadowCastingMode.Off;
+            if (globeLit == null) globeLit = Glow("B globe lit (100 W A19 behind glass)", new Color(1f, .93f, .8f), new Color(1f, .82f, .6f) * 4.0f * Mathf.Sqrt(FixtureGain()));
+            var gc = box + outN * .15f;
             var gr = Ball(p, "globe glass " + name, gc, .13f, globeLit, Id.Emitter);
             gr.shadowCastingMode = ShadowCastingMode.Off;
-            // cage: 4 wires + a ring
             for (var i = 0; i < 4; i++)
             {
                 var ang = i * Mathf.PI * .5f;
@@ -1089,25 +1643,34 @@ public static class FrontRoomsStairLookdev
                 var wr = Cyl(p, "globe cage wire " + name + "." + i, box + outN * .03f + off * .8f, gc + outN * .07f + off * .25f, .003f, steelM, Id.Background);
                 wr.shadowCastingMode = ShadowCastingMode.Off;
             }
+            Light l;
             if (edge)
             {
-                // a bare globe lights its own wall too: a point light (omni), its hot halo on the end wall
                 var pgo = new GameObject("globe light " + name);
                 pgo.transform.SetParent(p, false);
                 pgo.transform.position = root.TransformPoint(gc);
                 l = pgo.AddComponent<Light>();
                 l.type = LightType.Point; l.color = new Color(1f, .84f, .66f); l.intensity = 2.6f; l.range = 6f;
-                l.shadows = shadows ? LightShadows.Soft : LightShadows.None; l.shadowStrength = .92f; l.shadowNearPlane = .05f;
+                l.shadows = shadows ? LightShadows.Soft : LightShadows.None; l.shadowStrength = .92f; l.shadowNearPlane = .1f;
+                l.shadowBias = .2f; l.shadowNormalBias = 1.2f;
             }
             else l = Spot(p, "globe light " + name, gc, outN + Vector3.down * .45f, 168f, 110f, new Color(1f, .84f, .66f), 3.6f, 6f, shadows);
+            lights.Add(l);
         }
         else
         {
-            if (edge) l = MapLampAcross(p, new Vector3(0f, y + MazeH, dLanding ? ZNear + .45f : ZFarFace - .45f), shadows);
-            else l = MapLamp(p, new Vector3(0f, y + MazeH, zc - .3f), shadows, Id.Emitter);
-            l.range = 6.5f;
+            // the maze troffer turned across the landing; its 1.2 m length as two spots
+            var cc = new Vector3(0f, y + MazeH, dLanding ? ZNear + .80f : ZFarFace - .45f);
+            var lens = Glow("L0 map lamp lens", new Color(1f, .98f, .92f), new Color(1f, .96f, .84f) * 2.6f);
+            var r = Box(p, "map lamp lens (across)", new Vector3(cc.x, cc.y - .02f - .0125f, cc.z), new Vector3(1.2f, .025f, .6f), lens, Id.Emitter);
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            foreach (var sx in new[] { -.30f, .30f })
+            {
+                var l = Spot(p, "map lamp (across) " + name + (sx < 0f ? " W" : " E"), new Vector3(sx, cc.y - .06f, cc.z), Vector3.down, 162f, 96f, new Color(1f, .96f, .88f), 2.5f, 6.5f, shadows);
+                lights.Add(l);
+            }
         }
-        if (l != null) { l.intensity *= lampGain; stairLights.Add(l); }
+        foreach (var l in lights) { l.intensity *= gain; stairLights.Add(l); }
         // twin-head battery unit over each door (A, B): normal power, so only the red AC pilot glows
         if (dLanding && dir != "C") TwinHead(p, n);
     }
@@ -1124,7 +1687,7 @@ public static class FrontRoomsStairLookdev
             if (pilotRed == null) pilotRed = Glow("twin-head AC pilot (lit)", new Color(.5f, .06f, .04f), new Color(1f, .08f, .04f) * 1.4f);
             var arr = cr.sharedMaterials; arr[pi] = pilotRed; cr.sharedMaterials = arr;
         }
-        var aims = new[] { new Vector3(-.81f, y - 1.0f, 3.2f), new Vector3(.6f, y, 1.2f) };
+        var aims = new[] { new Vector3(FlightCx, y - 1.0f, 3.2f), new Vector3(.6f, y, 1.2f) };
         var mounts = new[] { new Vector3(.105f, .191f, .008f), new Vector3(-.105f, .191f, .008f) };
         for (var i = 0; i < 2; i++)
         {
@@ -1144,26 +1707,24 @@ public static class FrontRoomsStairLookdev
         Cyl(p, "unit feed EMT f" + n, feed, new Vector3(feed.x, y + FF - .2f, feed.z), .0117f, Flat("EMT", Hex("B4B6B2"), .5f, .85f), Id.Background);
     }
 
-    /// <summary>Standpipe riser (red, 4 in) in the latch-side corner of every D landing, a 2.5 in hose valve
-    /// at 1.0 m on each floor landing (UBC 3805(c)), a pendant sprinkler under each landing soffit.</summary>
+    /// <summary>Standpipe riser (red, 4 in) in the latch-side corner of the door landings, from the far floor up to
+    /// the slab, with a 2.5 in hose valve at 1.0 m on each floor landing (UBC 3805(c)). FIX (critic era 18): no
+    /// sprinkler under every landing; the one head at the top of the shaft is in TopOfShaft (NFPA 13, UNVERIFIED).</summary>
     static void Services(int n)
     {
         var p = Kit("Services", n);
-        var y = YD(n);
         var x = -1.30f; var z = .22f;
-        Cyl(p, "standpipe riser f" + n, new Vector3(x, y - FF * .5f, z), new Vector3(x, y + FF * .5f, z), .057f, redM, Id.Background);
-        Cyl(p, "riser coupling f" + n, new Vector3(x, y + .25f, z), new Vector3(x, y + .31f, z), .066f, redM, Id.Background);
-        var v0 = new Vector3(x, y + 1.0f, z);
-        Cyl(p, "hose valve outlet f" + n, v0, v0 + new Vector3(.16f, 0f, 0f), .035f, redM, Id.Background);
-        Cyl(p, "hose valve body f" + n, v0 + new Vector3(.08f, -.05f, 0f), v0 + new Vector3(.08f, .09f, 0f), .045f, Flat("valve brass", Hex("9C7A3C"), .6f, .9f), Id.Background);
-        Cyl(p, "hose valve wheel f" + n, v0 + new Vector3(.08f, .09f, 0f), v0 + new Vector3(.08f, .105f, 0f), .075f, redM, Id.Background);
-        Cyl(p, "hose valve cap f" + n, v0 + new Vector3(.16f, 0f, 0f), v0 + new Vector3(.19f, 0f, 0f), .04f, Flat("valve cap brass", Hex("A88A4A"), .6f, .9f), Id.Background);
-        foreach (var lz in new[] { 1.2f, 5.3f })
+        var yBot = YD(FloorMax + 1); var yTop = YD(FloorMin) + 3.3f;
+        Cyl(p, "standpipe riser", new Vector3(x, yBot, z), new Vector3(x, yTop, z), .057f, redM, Id.Background);
+        for (var f = FloorMin; f <= FloorMax + 1; f++)
         {
-            var yl = lz < 3f ? y : YT(n);
-            var top = yl + FF - (dir == "A" ? .15f : .2f);
-            Cyl(p, "sprinkler drop f" + n + "." + lz, new Vector3(.9f, top, lz), new Vector3(.9f, top - .12f, lz), .013f, Flat("sprinkler brass", Hex("A8894A"), .6f, .9f), Id.Background);
-            Cyl(p, "sprinkler deflector f" + n + "." + lz, new Vector3(.9f, top - .125f, lz), new Vector3(.9f, top - .13f, lz), .028f, Flat("sprinkler brass", Hex("A8894A"), .6f, .9f), Id.Background);
+            var y = YD(f);
+            Cyl(p, "riser coupling f" + f, new Vector3(x, y + .25f, z), new Vector3(x, y + .31f, z), .066f, redM, Id.Background);
+            var v0 = new Vector3(x, y + 1.0f, z);
+            Cyl(p, "hose valve outlet f" + f, v0, v0 + new Vector3(.16f, 0f, 0f), .035f, redM, Id.Background);
+            Cyl(p, "hose valve body f" + f, v0 + new Vector3(.08f, -.05f, 0f), v0 + new Vector3(.08f, .09f, 0f), .045f, Flat("valve brass", Hex("9C7A3C"), .6f, .9f), Id.Background);
+            Cyl(p, "hose valve wheel f" + f, v0 + new Vector3(.08f, .09f, 0f), v0 + new Vector3(.08f, .105f, 0f), .075f, redM, Id.Background);
+            Cyl(p, "hose valve cap f" + f, v0 + new Vector3(.16f, 0f, 0f), v0 + new Vector3(.19f, 0f, 0f), .04f, Flat("valve cap brass", Hex("A88A4A"), .6f, .9f), Id.Background);
         }
         if (dir == "B" && n == 0)
         {
@@ -1209,14 +1770,14 @@ public static class FrontRoomsStairLookdev
                 Box(p, "gate mid rail " + tag, new Vector3((x0 + x1) * .5f, yb + .55f, z), new Vector3(x1 - x0, .032f, .032f), m, Id.Background);
                 Seg(p, "gate brace " + tag, new Vector3(x0 + .03f, yb + .12f, z), new Vector3(x1 - .03f, yb + h - .03f, z), .025f, .025f, m, Id.Background);
             }
-            Box(p, "gate sign plate (placeholder) " + tag, new Vector3((x0 + x1) * .5f, yb + .78f, z - .022f), new Vector3(.30f, .20f, .004f), dir == "B" ? Flat("B plate red", Hex("A3271E"), .4f) : signPlateM, Id.Sign);
+            Box(p, "gate sign plate (placeholder) " + tag, new Vector3((x0 + x1) * .5f, yb + .78f, z - .022f), new Vector3(.30f, .20f, .004f), gatePlateM, Id.Sign);
         }
     }
 
     // ---------------------------------------------------------------- the Relay
     static void BuildRelays()
     {
-        relayStair = MakeRelay("Relay (stair, turn landing)", new Vector3(-.81f, YT(0), 5.15f), 180f);
+        relayStair = MakeRelay("Relay (stair, turn landing)", new Vector3(FlightCx, YT(0), 5.15f), 180f);
         relayMaze = MakeRelay("Relay (maze, before the exit)", new Vector3(.05f, 0f, -1.7f), 180f);
     }
 
@@ -1256,16 +1817,65 @@ public static class FrontRoomsStairLookdev
     // ---------------------------------------------------------------- shots
     static List<Shot> Shots()
     {
-        var detailT = new Vector3(-.30f, -5 * Rise + .05f, 3.10f);   // tread 5 nosing of flight 1, well side, at the mid guard post
-        return new List<Shot>
+        var fx = FlightCx;
+        if (ladder) return LadderShots();
+        // FIX (critic era 6): detail at about 1.0 m above the tread, 0.7 m back, on the walk line (tread 5 of flight 1)
+        var detailT = new Vector3(fx + .26f, -5 * Rise, Zk(ZD, 1f, 5));
+        var y1 = YD(1);
+        var list = new List<Shot>
         {
+            // the C23 exit door from the maze: 5 m and 8.6 m, LOCKED (default) and UNLOCKED (A13), LOD diagnostics
             new Shot("door", new Vector3(.55f, 1.62f, -5.0f), new Vector3(0f, 1.25f, 0f), 76f, 0),
+            new Shot("door_unlocked", new Vector3(.55f, 1.62f, -5.0f), new Vector3(0f, 1.25f, 0f), 76f, 0, FUnlocked | FNoE),
+            new Shot("door_lod0", new Vector3(.55f, 1.62f, -5.0f), new Vector3(0f, 1.25f, 0f), 76f, 0, FLod0 | FNoE),
+            new Shot("exit_8m", new Vector3(.45f, 1.62f, -8.6f), new Vector3(0f, 1.2f, -1.0f), 76f, 0, FNoE | FRaw),
+            new Shot("exit_8m_unlocked", new Vector3(.45f, 1.62f, -8.6f), new Vector3(0f, 1.2f, -1.0f), 76f, 0, FUnlocked | FNoE),
+            // inside
             new Shot("landing", new Vector3(.12f, 1.62f, .45f), new Vector3(0f, -.6f, 3.6f), 76f, 0),
-            new Shot("flight", new Vector3(-.81f, 1.62f, 1.50f), new Vector3(-.81f, -1.05f, 5.0f), 76f, 0),
-            new Shot("detail", new Vector3(-.75f, -5 * Rise + .42f, 2.95f), detailT, 30f, 0),
-            new Shot("relay_stair", new Vector3(-.81f, 1.62f, 1.50f), new Vector3(-.81f, -1.05f, 5.0f), 76f, 1),
-            new Shot("relay_maze", new Vector3(.45f, 1.62f, -8.6f), new Vector3(0f, 1.2f, -1.0f), 76f, 2),
+            new Shot("flight", new Vector3(fx, 1.62f, 1.50f), new Vector3(fx, -1.05f, 5.0f), 76f, 0),
+            // FIX (critic era 1): the period objects behind every old camera, and the far door
+            new Shot("turn_back", new Vector3(.40f, 1.62f, 1.66f), new Vector3(-.12f, 1.55f, .08f), 76f, 0),
+            new Shot("far_approach", new Vector3(-fx, YT(0) + 1.62f, 4.70f), new Vector3(0f, y1 + 1.1f, .08f), 76f, 0),
+            // FIX (critic gameplay 2, 9): the arrival at the far door at eye level, normal and held
+            new Shot("far_door", new Vector3(.75f, y1 + 1.62f, 1.75f), new Vector3(0f, y1 + 1.15f, .08f), 76f, 0),
+            new Shot("far_door_held", new Vector3(.75f, y1 + 1.62f, 1.75f), new Vector3(0f, y1 + 1.15f, .08f), 76f, 0, FHeld | FNoE),
+            new Shot("detail", detailT + new Vector3(-.10f, 1.0f, -.70f), detailT, 40f, 0),
+            new Shot("relay_stair", new Vector3(fx, 1.62f, 1.50f), new Vector3(fx, -1.05f, 5.0f), 76f, 1),
+            new Shot("relay_maze", new Vector3(.45f, 1.62f, -8.6f), new Vector3(0f, 1.2f, -1.0f), 76f, 2, FNoE),
         };
+        // the door-head strip (critic era 9): a close look, with the sign's and frame's shadows on and off
+        list.Add(new Shot("diag_head", new Vector3(.25f, 1.62f, -1.6f), new Vector3(0f, 2.0f, 0f), 40f, 0, FNoE));
+        list.Add(new Shot("diag_head_oldshadow", new Vector3(.25f, 1.62f, -1.6f), new Vector3(0f, 2.0f, 0f), 40f, 0, FAux | FNoE));
+        list.Add(new Shot("door_oldshadow", new Vector3(.55f, 1.62f, -5.0f), new Vector3(0f, 1.25f, 0f), 76f, 0, FAux | FNoE));
+        list.Add(new Shot("diag_head_side", new Vector3(1.2f, 2.0f, -1.2f), new Vector3(0f, 2.05f, 0f), 40f, 0, FNoE));
+        // FIX (critic gameplay 5): the sign gain sweep at 5 m (letters vs the lit paper)
+        foreach (var g in new[] { 1f, 1.5f, 2f, 2.5f })
+            list.Add(new Shot("sign_g" + g.ToString("0.0", CultureInfo.InvariantCulture), new Vector3(.55f, 1.62f, -5.0f), new Vector3(0f, 1.6f, 0f), 76f, 0, FNoE | FRaw) { signGain = g });
+        return list;
+    }
+
+    /// <summary>FIX (critic gameplay 3, 5, 9): the exit approach in the Level 0 hall: 12 / 20 / 30 m at 0 / 45 / 70
+    /// degrees off the door normal, LOCKED and UNLOCKED; the end-mounted sign at 70 degrees (a corridor exit); the
+    /// Relay 1.7 m in front of the door seen at 45 degrees (8.6 m) and at 70 degrees (12 m).</summary>
+    static List<Shot> LadderShots()
+    {
+        var list = new List<Shot>();
+        var look = new Vector3(0f, 1.55f, 0f);
+        foreach (var d in new[] { 12f, 20f, 30f })
+            foreach (var a in new[] { 0f, 45f, 70f })
+            {
+                var r = a * Mathf.Deg2Rad;
+                var eye = new Vector3(d * Mathf.Sin(r) + (a == 0f ? .45f : 0f), 1.62f, -d * Mathf.Cos(r));
+                var tag = "lad" + d.ToString("00") + "_" + a.ToString("00");
+                list.Add(new Shot(tag + "_lk", eye, look, 76f, 0, FNoE | (d == 12f && a == 0f ? FRaw : 0)));
+                list.Add(new Shot(tag + "_un", eye, look, 76f, 0, FUnlocked | FNoE));
+                if (a == 70f) list.Add(new Shot(tag + "_end", eye, look, 76f, 0, FEndSign | FNoE));
+            }
+        var r45 = 45f * Mathf.Deg2Rad; var r70 = 70f * Mathf.Deg2Rad;
+        list.Add(new Shot("relay_45", new Vector3(8.6f * Mathf.Sin(r45), 1.62f, -8.6f * Mathf.Cos(r45)), new Vector3(0f, 1.2f, -1.0f), 76f, 2, FNoE));
+        list.Add(new Shot("relay_70", new Vector3(12f * Mathf.Sin(r70), 1.62f, -12f * Mathf.Cos(r70)), new Vector3(0f, 1.2f, -1.0f), 76f, 2, FEndSign | FNoE));
+        list.Add(new Shot("relay_00", new Vector3(.45f, 1.62f, -8.6f), new Vector3(0f, 1.2f, -1.0f), 76f, 2, FNoE));
+        return list;
     }
 
     static Camera MakeCamera()
@@ -1289,26 +1899,59 @@ public static class FrontRoomsStairLookdev
         cam.fieldOfView = s.fov;
     }
 
+    /// <summary>Sets the scene state a shot asks for: A13 lock state, far-door hold, forced LOD0, end sign, sign gain.</summary>
+    static void ApplyState(Shot s)
+    {
+        var unlocked = (s.flags & FUnlocked) != 0;
+        if (lockedSet != null) lockedSet.SetActive(!unlocked);
+        if (unlockedSet != null) unlockedSet.SetActive(unlocked);
+        var held = (s.flags & FHeld) != 0;
+        if (farLeaf != null)
+        {
+            // the hold: the lever pressed down 40 degrees, the leaf pulled 2 mm at the latch edge (stack pressure)
+            farLeaf.rotation = held ? Quaternion.AngleAxis(Mathf.Asin(.002f / .98f) * Mathf.Rad2Deg, root.up) * farLeafRest : farLeafRest;
+            if (farLever != null) farLever.localRotation = held ? farLeverRest * Quaternion.Euler(0f, 0f, -40f) : farLeverRest;
+        }
+        var end = (s.flags & FEndSign) != 0;
+        if (flatSign != null) flatSign.SetActive(!end);
+        if (endSign != null) endSign.SetActive(end);
+        SetSignGain(s.signGain > 0f ? s.signGain : (signGain > 0f ? signGain : SignGainDefault));
+        // FIX (critic era 9): the strip at the exit-door head was the frame head's and the sign's shadow on the leaf
+        // recessed 58 mm behind them (map-lamp default bias: a lit sliver, then the displaced shadow), at LOD0 and
+        // LOD1 alike. C23 spec: the exit frame and the EXIT sign cast no shadow. FAux restores the old state.
+        var aux = (s.flags & FAux) != 0;
+        foreach (var r in signRs) if (r != null) r.shadowCastingMode = aux ? ShadowCastingMode.On : ShadowCastingMode.Off;
+        if (exitLeaf != null && exitLeaf.parent != null)
+            foreach (var r in exitLeaf.parent.GetComponentsInChildren<Renderer>(true))
+                if (r.name.StartsWith("Kit_DoorFrame")) r.shadowCastingMode = aux ? ShadowCastingMode.On : ShadowCastingMode.Off;
+        var lod0 = (s.flags & FLod0) != 0;
+        foreach (var lg in root.GetComponentsInChildren<LODGroup>(true)) lg.ForceLOD(lod0 ? 0 : -1);
+    }
+
     static void RenderAll(List<Shot> shots, string onlyShots)
     {
         var filter = string.IsNullOrEmpty(onlyShots) ? null : new HashSet<string>(onlyShots.Split(','));
         var cam = MakeCamera();
         var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
         cam.targetTexture = rt;
-        var poses = new StringBuilder("shot\teye\tlook\tfov\trelay\n");
+        var poses = new StringBuilder("shot\teye\tlook\tfov\trelay\tflags\tsignGain\n");
         foreach (var s in shots)
         {
             if (filter != null && !filter.Contains(s.name)) continue;
             ShowRelay(relayStair, s.relay == 1);
             ShowRelay(relayMaze, s.relay == 2);
+            ApplyState(s);
+            Physics.SyncTransforms();
             Pose(cam, s);
             cam.targetTexture = rt;
             cam.Render(); cam.Render();
             Save(rt, Path.Combine(outDir, s.name + ".png"));
             RenderId(cam, s);
+            RenderDoorParts(cam, s);
             if (s.relay > 0) RenderRelayParts(cam, s, s.relay == 1 ? relayStair : relayMaze);
-            if (ePass) RenderE(cam, s);
-            poses.Append(s.name + "\t" + V(s.eye) + "\t" + V(s.look) + "\t" + s.fov.ToString("0", CultureInfo.InvariantCulture) + "\t" + s.relay + "\n");
+            if (ePass && (s.flags & FNoE) == 0) RenderE(cam, s);
+            if ((s.flags & FRaw) != 0) RenderRaw(cam, s);
+            poses.Append(s.name + "\t" + V(s.eye) + "\t" + V(s.look) + "\t" + s.fov.ToString("0", CultureInfo.InvariantCulture) + "\t" + s.relay + "\t" + s.flags + "\t" + s.signGain.ToString("0.0", CultureInfo.InvariantCulture) + "\n");
             Log("shot " + s.name + " rendered");
         }
         File.WriteAllText(Path.Combine(outDir, "poses.tsv"), poses.ToString());
@@ -1316,6 +1959,50 @@ public static class FrontRoomsStairLookdev
         rt.Release();
         UnityEngine.Object.DestroyImmediate(cam.gameObject);
         ShowRelay(relayStair, false); ShowRelay(relayMaze, false);
+        ApplyState(new Shot("rest", Vector3.zero, Vector3.forward, 76f, 0));
+    }
+
+    /// <summary>Door parts mask (unlit, no post, no MSAA, no fog), per material slot: red = the A13 chain and padlock,
+    /// green = the EXIT letters (diffuser), blue = the sign face, yellow = sign housing and chrome, magenta = the exit
+    /// leaf's enamel, cyan = the crossbar, white = the far door's lever and floor-access plate, black = the rest.</summary>
+    static void RenderDoorParts(Camera cam, Shot s)
+    {
+        var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+        Func<Color, Material> mk = c => { var m = new Material(unlit); m.SetColor("_BaseColor", c); return m; };
+        var black = mk(Color.black); var red = mk(Color.red); var green = mk(Color.green); var blue = mk(Color.blue);
+        var yellow = mk(new Color(1f, 1f, 0f)); var magenta = mk(new Color(1f, 0f, 1f)); var cyan = mk(new Color(0f, 1f, 1f)); var white = mk(Color.white);
+        var saved = new Dictionary<Renderer, Material[]>();
+        foreach (var r in root.GetComponentsInChildren<Renderer>(false))
+        {
+            if (!r.enabled) continue;
+            saved[r] = r.sharedMaterials;
+            var src = r.sharedMaterials;
+            var arr = new Material[src.Length];
+            for (var i = 0; i < arr.Length; i++)
+            {
+                var nm = src[i] != null ? src[i].name.Replace(" (Instance)", "") : "";
+                Material m = black;
+                if (lockRs.Contains(r)) m = red;
+                else if (signRs.Contains(r)) m = nm.StartsWith("ExitSign_Diffuser") ? green : nm.StartsWith("ExitSign_Face") ? blue : yellow;
+                else if (leafRs.Contains(r)) m = (i == 0) ? magenta : black;
+                else if (barRs.Contains(r)) m = cyan;
+                else if (trimRs.Contains(r)) m = white;
+                arr[i] = m;
+            }
+            r.sharedMaterials = arr;
+        }
+        var fog = RenderSettings.fog; RenderSettings.fog = false;
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        var prev = cam.targetTexture;
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+        cam.targetTexture = rt; cam.allowMSAA = false;
+        cam.Render();
+        Save(rt, Path.Combine(outDir, s.name + "_parts.png"));
+        cam.targetTexture = prev; cam.allowMSAA = true; rt.Release();
+        data.renderPostProcessing = true;
+        RenderSettings.fog = fog;
+        foreach (var kv in saved) if (kv.Key != null) kv.Key.sharedMaterials = kv.Value;
     }
 
     static string V(Vector3 v) { return v.x.ToString("0.###", CultureInfo.InvariantCulture) + "," + v.y.ToString("0.###", CultureInfo.InvariantCulture) + "," + v.z.ToString("0.###", CultureInfo.InvariantCulture); }
@@ -1425,6 +2112,28 @@ public static class FrontRoomsStairLookdev
         Restore(saved, hidden);
     }
 
+    /// <summary>Raw HDR pass for the EXIT sign's T2 test (the family's bar is on raw HDR: letters 1.5-2.5 x the lit
+    /// wall): the real materials and lights, post OFF, fog on, linear RGBA half, 1920 x 1080, raw little-endian.</summary>
+    static void RenderRaw(Camera cam, Shot s)
+    {
+        var data = cam.GetUniversalAdditionalCameraData();
+        data.renderPostProcessing = false;
+        var prev = cam.targetTexture;
+        var rt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 1 };
+        cam.targetTexture = rt; cam.allowMSAA = false;
+        cam.Render();
+        var prevActive = RenderTexture.active;
+        RenderTexture.active = rt;
+        var tex = new Texture2D(1920, 1080, TextureFormat.RGBAHalf, false, true);
+        tex.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
+        tex.Apply();
+        RenderTexture.active = prevActive;
+        File.WriteAllBytes(Path.Combine(outDir, s.name + "_raw1920x1080.f16"), tex.GetRawTextureData());
+        UnityEngine.Object.DestroyImmediate(tex);
+        cam.targetTexture = prev; cam.allowMSAA = true; rt.Release();
+        data.renderPostProcessing = true;
+    }
+
     static void Save(RenderTexture rt, string path)
     {
         var prev = RenderTexture.active;
@@ -1453,7 +2162,7 @@ public static class FrontRoomsStairLookdev
     static void Stats()
     {
         var sb = new StringBuilder();
-        sb.AppendLine("direction " + dir + ", lamp mode " + lampMode + ", lamp gain " + lampGain + (noEndDado ? ", no end-wall dado" : "") + (remedy ? ", READABILITY REMEDY" : ""));
+        sb.AppendLine("direction " + dir + ", lamp mode " + lampMode + ", lamp gain " + lampGain + ", fixture gain " + FixtureGain().ToString("0.00") + ", sign gain " + (signGain > 0f ? signGain : SignGainDefault).ToString("0.00") + (ladder ? ", LADDER (hall, lamps " + ladderLamps + ", seed " + ladderSeed + ")" : "") + (noEndDado ? ", no end-wall dado" : "") + (remedy ? ", READABILITY REMEDY" : ""));
         var all = shaft.GetComponentsInChildren<Renderer>(true);
         var matsSet = new HashSet<Material>();
         foreach (var r in all) foreach (var m in r.sharedMaterials) if (m != null) matsSet.Add(m);

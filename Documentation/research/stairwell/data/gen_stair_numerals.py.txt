@@ -1,0 +1,68 @@
+"""C22 stairwell fix: placeholder textures for the clone harness (FrontRoomsStairLookdev).
+
+usage: venv/bin/python gen_stair_numerals.py <out dir>   (W/proj_stair/Assets/StairLookdevTex)
+  num_0..num_9.png   stencil-cut block numerals, white on transparent, 256 x 416 (w/h 0.615). PLACEHOLDER: the
+                     face, size and stencil design belong to graphic design (平面视觉); the face used here is the
+                     system's DIN Condensed Bold, with bridges cut where a horizontal stroke crosses the centre line
+                     (the way a cut stencil keeps its islands), so it no longer reads as a seven-segment display.
+  mesh_diamond.png   woven-wire mesh, 50 mm diamonds, 3 mm wire, one tile = 0.10 m, alpha = wire.
+"""
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+OUT = sys.argv[1]
+os.makedirs(OUT, exist_ok=True)
+FONT = "/System/Library/Fonts/Supplemental/DIN Condensed Bold.ttf"
+W, H = 256, 416
+for d in range(10):
+    big = Image.new("L", (W * 4, H * 4), 0)
+    dr = ImageDraw.Draw(big)
+    f = ImageFont.truetype(FONT, 1900)
+    bb = dr.textbbox((0, 0), str(d), font=f)
+    gw, gh = bb[2] - bb[0], bb[3] - bb[1]
+    s = min((W * 4 * .86) / gw, (H * 4 * .90) / gh)
+    f = ImageFont.truetype(FONT, int(1900 * s))
+    bb = dr.textbbox((0, 0), str(d), font=f)
+    gw, gh = bb[2] - bb[0], bb[3] - bb[1]
+    dr.text(((W * 4 - gw) / 2 - bb[0], (H * 4 - gh) / 2 - bb[1]), str(d), fill=255, font=f)
+    a = np.asarray(big).copy()
+    ink = a > 127
+    cx = W * 2
+    col = ink[:, cx]
+    gap = int(W * 4 * .075)
+    # runs of ink on the centre column; a short run is a horizontal stroke crossing it -> cut a bridge
+    y = 0
+    n = len(col)
+    while y < n:
+        if col[y]:
+            y0 = y
+            while y < n and col[y]:
+                y += 1
+            if (y - y0) < H * 4 * .22:
+                a[y0:y, cx - gap // 2: cx + gap // 2] = 0
+        else:
+            y += 1
+    img = Image.fromarray(a).resize((W, H), Image.LANCZOS)
+    rgba = Image.new("RGBA", (W, H), (255, 255, 255, 0))
+    rgba.putalpha(img)
+    rgba.save(os.path.join(OUT, f"num_{d}.png"))
+# mesh
+N = 256
+yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+pitch = 128.0
+wire = 7.7 / 2
+u = np.abs(((xx + yy) % pitch) - pitch / 2)
+v = np.abs(((xx - yy) % pitch) - pitch / 2)
+al = np.clip((wire - np.minimum(np.abs(u - pitch / 2), np.abs(v - pitch / 2)) * .7071 * 1.0) + .5, 0, 1)
+dist = np.minimum(np.abs(((xx + yy) % pitch)), pitch - ((xx + yy) % pitch))
+dist2 = np.minimum(np.abs(((xx - yy) % pitch)), pitch - ((xx - yy) % pitch))
+d = np.minimum(dist, dist2) * .7071
+al = np.clip(wire + .5 - d, 0, 1)
+rgba = np.zeros((N, N, 4), np.uint8)
+rgba[..., :3] = 235
+rgba[..., 3] = (al * 255).astype(np.uint8)
+Image.fromarray(rgba, "RGBA").save(os.path.join(OUT, "mesh_diamond.png"))
+print("textures ->", OUT, sorted(os.listdir(OUT)))

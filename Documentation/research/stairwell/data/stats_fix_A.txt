@@ -1,0 +1,21 @@
+direction A, lamp mode edge, lamp gain 1, fixture gain 2.40, sign gain 2.00
+shaft renderers 710 (1 floors + pit), distinct materials 39, triangles 107736
+one floor period (floor 0 kits): renderers 668, distinct materials 34, triangles 70045
+  kit BK_A_Door: renderers 16, triangles 28249
+  kit BK_A_ExitDoor: renderers 312, triangles 15872
+  kit BK_A_Flight: renderers 176, triangles 2112
+  kit BK_A_Guard: renderers 88, triangles 1668
+  kit BK_A_Landing: renderers 12, triangles 144
+  kit BK_A_Light: renderers 8, triangles 10978
+  kit BK_A_Paint: renderers 2, triangles 36
+  kit BK_A_Services: renderers 13, triangles 1040
+  kit BK_A_Sign: renderers 1, triangles 2
+  kit BK_A_WallRail: renderers 40, triangles 9944
+lights total 16; stair fixtures 6 (shadowed 6)
+  wrap light D0 W Spot I 3.84 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light D0 E Spot I 3.84 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light T0 W Spot I 3.84 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light T0 E Spot I 3.84 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light D1 W Spot I 3.84 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+  wrap light D1 E Spot I 3.84 range 6.5 cone 170/120 rgb 0.95,0.98,1.00 shadows Soft
+relay scale 0.655

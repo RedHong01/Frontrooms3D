@@ -334,3 +334,17 @@ Ledger for `research/station/`. Written by 叙事设计 on 2026-10-22 from resea
 | L105 | Evan Hill, "Designing the Museum Flashback: 'The Last of Us Part II'" (2022) (listed in S88) | talk video | https://www.youtube.com/watch?v=4vQ_HGUtZmk | [read] |
 | L106 | Mark Brown, Game Maker's Toolkit channel (*Boss Keys* series) (linked in S44) | video channel | https://www.youtube.com/user/McBacon1337 | [read] |
 
+
+## D · Downloaded media (2026-10-22)
+
+Set 1 of `media_candidates.md`, downloaded 12:18 PDT on Red's OK (12:15, "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）"). Files and full rights lines: `<作业根>/Research/week03/station/stills/SOURCES.md` (outside the repo; research board only).
+
+| ID | File | Source (P row) | Licence |
+|---|---|---|---|
+| D1 | `detex_station_chain.jpg` | A §10 M01 | CC BY 2.0, Paul Sableman |
+| D2 | `detex_station_open.jpg` | A §10 M02 | CC BY-SA 3.0 |
+| D3 | `watchman_fd210.jpg` | A §10 M10 | GFDL / CC BY-SA 3.0 |
+| D4 | `watchman_fd40a_1985.jpg` | A §10 M11 | CC BY-SA 2.0, Joe Haupt (uploader discrepancy: recheck) |
+| D5 | `faraday_panel.jpg` | A §10 M15 | CC BY-SA 3.0 + GFDL |
+| D6 | `annunciator_2020.jpg` | A §10 M17 | CC0 (post-era contrast; strip GPS EXIF before reuse) |
+| D7 | `office_terminal_1980.jpg` | A §10 M32 | CC BY-NC 3.0 (badge inconsistent: recheck) |

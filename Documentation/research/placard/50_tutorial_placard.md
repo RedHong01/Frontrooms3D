@@ -218,7 +218,7 @@ The draft as it stood:
 
 **Requests to me** (`research/tutorial/20_requests.md` §平面视觉):
 - **G1 (phase 0):** the chosen sheet, with tutorial Option A's changes (already in v2).
-- **G2 (phase 1, after T1 = A):** the STAIR (EXIT) and station pictograms (done in v2's legend), plus the HUD key panel string for one floor key. Proposal: the tag's number becomes the floor number (`03` on Level 3) in the panel's existing Courier Prime numerals, so the HUD tag and the placard's `LEVEL 3` match. The words are 叙事's.
+- **G2 (phase 1, after T1 = A):** the STAIR (EXIT) and station pictograms (done in v2's legend), plus the HUD key panel string for one floor key. Decided: the tag shows the floor token (`00`, then `B1`, `B2` …; C28) in the panel's existing Courier Prime numerals, so the HUD tag and the placard's `LEVEL 3` match. The words are 叙事's.
 - **G3 (phase 2):** the stairwell copy (the next sheet, with its LEVEL) and the station plan (zone blocks, YOU ARE HERE at the station, STAIR marked, drawn at run time). That is sheet C's grammar.
 
 ## 11. Red's tutorial decisions (2026-10-22) and the type specs they trigger
@@ -229,7 +229,7 @@ The draft as it stood:
 - **T5:** 关卡设计 drops the 9 s CalmHint card and puts a controls legend on the title and pause cards.
 
 **G2 spec: the floor key on the HUD** (words are 叙事's; owners: 游戏视觉 for KeyHud B, 关卡设计 for `FrontRooms3DGame.cs`):
-- **KeyHud B** (when it lands): the tag's two-digit number is the floor number (`00` on Level 0, `03` on Level 3). It uses the tag's existing Courier Prime numerals, size and position (`hud_build/10_design.md`), so the HUD tag and the placard's `LEVEL n` say the same number.
+- **KeyHud B** (when it lands): the tag shows the floor token, `00` on Level 0, then `B1`, `B2` … (B levels, C28, 叙事 v1.1 §2/§4; was `00`, `03` before C28). It uses the tag's existing Courier Prime numerals, size and position (`hud_build/10_design.md`); `B10` and deeper are set at 0.8× in the same tag (`FIX_CARD_VL217.md` §B), so the HUD tag and the placard's `LEVEL B1` say the same floor.
 - **Main's A panel until then:** today `keyText.text = KeyLabel(zone)` = `ZoneName + " KEY"` (`FrontRooms3DGame.cs:2154`, `:2574`), set in Bayon 20.
   - Bayon draws 0 as O and 1 as I, so `LEVEL 0 KEY` reads `LEVEL O KEY` on the first floor.
   - Interim label (DRAFT): `STAIR KEY`, no digits.
@@ -292,8 +292,8 @@ The draft as it stood:
 **Red, in this chat:** "A 先上". Sheet A is the placard, and sheet C stays the later step (call 1).
 
 **Art.** In `Tools/print/ink/art_from_graphic/placard/` (see that README §Sheet A), new subfolders only; the v3 files at the top are untouched.
-- `sheetA_phase0/`: print md5 `60fd4cf1…` (regenerated 10-22 10:2x for `NO REENTRY`; before that `dcf46c7a…` (09:1x) and `c3bd0af5…`), glow `0f42609b…` (unchanged). In-game swap when the C22 stairwell (the EXIT) is in main **and** G1 holds.
-- `sheetA/`: print md5 `59705857…` (regenerated 10-22 10:2x for `NO REENTRY`; before that `96f4b0df…` (09:1x) and `b819a8a9…`), glow `99ea4ac6…` (unchanged). Swap when the stair lock and the station (tutorial Option A) are live.
+- `sheetA_phase0/`: print md5 `1e5d244b…` (regenerated 10-22 12:3x for the warden fine print; before that `60fd4cf1…` (10:2x, `NO REENTRY`), `dcf46c7a…` (09:1x) and `c3bd0af5…`), glow `0f42609b…` (unchanged). In-game swap when the C22 stairwell (the EXIT) is in main **and** G1 holds.
+- `sheetA/`: print md5 `79b46369…` (regenerated 10-22 12:3x for the warden fine print; before that `59705857…` (10:2x, `NO REENTRY`), `96f4b0df…` (09:1x) and `b819a8a9…`), glow `99ea4ac6…` (unchanged). Swap when the stair lock and the station (tutorial Option A) are live.
 - Each folder has the v3 file names for `pack_evac_plan.py` (2592 × 1674 print and glow mask, 3 px/mm previews) and `examine.json`.
 - The print is byte-identical to the reviewed render (VL337, TP01/TP06).
 
@@ -313,3 +313,22 @@ The draft as it stood:
 **G1 timing (关卡设计, 2026-10-22):** accepted; it lands right after the C22 stairwell, with a 100-seed check, because C22 is reworking `MapRootFor` now (one change on top, no 3-way merge). 关卡设计 messages 平面视觉 and 游戏视觉 when both are in main; that is the trigger for `sheetA_phase0/`.
 
 **Packing (游戏视觉, 2026-10-22):** accepted sheet A, both folders, with the conditions above (it checked Red's words in this chat). Two apply packages are pre-built with `pack_evac_plan.py` (k 0.158), with a dark-ratio re-check (≥ 1.30) logged as a VL. `examine.json` goes into the kit's `kit.inspect` (`texelsPerMetre` stays 7330), and the 15-line transcript goes into `placard_q16`, shipping with the same sheet. 游戏视觉 sends 平面视觉 the packed in-game renders before each landing: **check them against Figma 3459:7280 (TP01 / TP06) under the game's light.**
+
+## 13. Narrative v1.1 (Red, 2026-10-22 12:15, in the 叙事设计 chat: "全部按推荐（Q1–Q7、照片下载、LOBBY 改名）")
+
+- **Placard fine print** `ON ALARM, A FLOOR WARDEN CHECKS EVERY ROOM.` (叙事 `40_floors_exit_tutorial_strings.md` §3). It names a role only, is not a numbered line, and the four-line limit stands.
+  - **Set:** right-aligned on the `IN CASE OF ALARM` row, x 140.7–282 mm, Heros Bold 3.6 mm caps, +0.2 mm tracking, white on safety red. It is not in the glow mask.
+  - **Reads:** in EXAMINE base it is 14.2′ ("with effort", 9 px at 1080p); at the zoom step it is 27.9′. The alarm region's smallest cap is now 3.6 mm, so the zoom step reaches it.
+  - **Where:** on every sheet (A, Phase 0, B, C, and later the stairwell copies), because `alarmBlock()` is shared.
+  - **Records:** hand-off md5s in §12; review images, TP01 / TP02 / TP03 / TP06 and VL337's slots refreshed in place. The verdict is unchanged: every numbered line is still 5.0 mm.
+- **Figma strip slots get the plain tiles.**
+  - The strip slots on the boards and in VL337 are 4.7 : 1, so they now hold the plain nearest-neighbour tiles (`images/tp2_opt{A,A0}_distance_tiles.png`).
+  - The Shot-format strips (`tp2_opt{A,A0}_distance_strip.png`, 3.3 : 1) stay as the standalone images; FILL had cropped their header in the board slots.
+- **CAUGHT subtitle, HUD room line, tag token:** specs in `research/desktop_ui/FIX_CARD_VL217.md` A7, A8 and §B (owners 关卡设计, 交互设计, 游戏视觉).
+  - The CAUGHT stats line leaves Bayon for Plex Mono 20, because Bayon's digits misprint.
+  - `TIER` on CAUGHT: resolved 12:4x. C04 c holds, so CAUGHT has no TIER (系统设计; 叙事 40 §6 v1.1 fix: `LEVEL B2  /  123 S  /  5 ZONES  /  1 KEY  /  0 DOORS BROKEN`).
+- **Wall glow, settled 12:34:** B, the walls never glow. Red, in the 叙事设计 chat: "Q4 保持 B：墙不发光" (verified in that transcript), given after VL350 showed glow A no longer hides FLOW.
+  - **Rule for the future wall legend** (it returns only with W6): the cue swatches print as printed only. There is no `IN POWER FAILURE` / glowing-wall swatch (v3 had one).
+  - The placard's own glow mask (dot, route, stair door, EXIT) is unchanged.
+  - Until W6, the wall legend stays off the sheet.
+
