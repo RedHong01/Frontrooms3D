@@ -1,0 +1,104 @@
+{
+ "H1_probe_effect": {
+  "A_red_ward": {
+   "frame_px_changed_ge3_levels_pct": 79.85,
+   "frame_blocks_changed_gt5pct": 61.2,
+   "max_level_change": 146,
+   "floor_roi_meanY_probes": 0.1613,
+   "floor_roi_meanY_noprobes": 0.1674,
+   "floor_roi_gain_pct": -3.6,
+   "floor_roi_blocks_changed_gt5pct": 19.1,
+   "floor_roi_p99_probes": 0.2981,
+   "floor_roi_p99_noprobes": 0.3215
+  },
+  "C_house_lights": {
+   "frame_px_changed_ge3_levels_pct": 0.18,
+   "frame_blocks_changed_gt5pct": 0.25,
+   "max_level_change": 52,
+   "floor_roi_meanY_probes": 0.153,
+   "floor_roi_meanY_noprobes": 0.153,
+   "floor_roi_gain_pct": 0.0,
+   "floor_roi_blocks_changed_gt5pct": 0.0,
+   "floor_roi_p99_probes": 0.3806,
+   "floor_roi_p99_noprobes": 0.3806
+  }
+ },
+ "M6_relay": {
+  "A_c4": {
+   "px": 3458,
+   "bbox_h": 114,
+   "bodyY": 0.0366,
+   "ringY": 0.2319,
+   "ratio": 6.34,
+   "ratio_protan": 8.87
+  },
+  "A_c4_k": {
+   "px": 4339,
+   "bbox_h": 127,
+   "bodyY": 0.0634,
+   "ringY": 0.1881,
+   "ratio": 2.97,
+   "ratio_protan": 3.73
+  },
+  "B_c4": {
+   "px": 3458,
+   "bbox_h": 114,
+   "relayY": 0.0144,
+   "ringY": 0.1165,
+   "ratio": 8.07,
+   "ratio_protan": 8.12
+  },
+  "B_c4_k": {
+   "px": 4339,
+   "bbox_h": 127,
+   "relayY": 0.0142,
+   "ringY": 0.1089,
+   "ratio": 7.68,
+   "ratio_protan": 7.74
+  },
+  "C_c4": {
+   "relay_px": 229,
+   "relayY": 0.0522,
+   "ringY": 0.0529,
+   "ratio_plain": 1.02,
+   "body_in_lites_px": 0,
+   "ring_in_lites_px": 0
+  },
+  "C_c4_k": {
+   "relay_px": 391,
+   "relayY": 0.0537,
+   "ringY": 0.0952,
+   "ratio_plain": 1.77,
+   "body_in_lites_px": 136,
+   "ring_in_lites_px": 1174,
+   "bodyY": 0.0308,
+   "ring_in_liteY": 0.2055,
+   "ratio_in_lites": 6.67,
+   "ratio_in_lites_protan": 6.79
+  },
+  "C_c4b": {
+   "relay_px": 2382,
+   "relayY": 0.055,
+   "ringY": 0.0649,
+   "ratio_plain": 1.18,
+   "body_in_lites_px": 2194,
+   "ring_in_lites_px": 990,
+   "bodyY": 0.0313,
+   "ring_in_liteY": 0.1385,
+   "ratio_in_lites": 4.42,
+   "ratio_in_lites_protan": 4.39
+  },
+  "C_c4b_k": {
+   "relay_px": 2989,
+   "relayY": 0.0581,
+   "ringY": 0.0991,
+   "ratio_plain": 1.71,
+   "body_in_lites_px": 2749,
+   "ring_in_lites_px": 889,
+   "bodyY": 0.0318,
+   "ring_in_liteY": 0.2982,
+   "ratio_in_lites": 9.36,
+   "ratio_in_lites_protan": 9.39
+  }
+ }
+}

@@ -1,0 +1,12 @@
+#!/bin/zsh
+# exit_sign_fix1 r2: final Unity compile of the exact payload, the Editor tests, then the three-view re-render (W/proj_es_fix1).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+$U -batchmode -nographics -quit -projectPath $C -buildTarget OSXUniversal -logFile $R/logs/c03_compile_final.log
+echo "rc=$?" > $R/logs/c03_compile_final.status
+$U -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignTests.RunBatch -esTestOut $R/tests_final -logFile $R/logs/t02_tests_final.log
+echo "rc=$?" > $R/logs/t02_tests_final.status
+$U -batchmode -buildTarget OSXUniversal -projectPath $C -executeMethod FrontRoomsThreeView.RunBatch -quit -threeViewOut $R/threeview/raw \
+  -threeViewOnly Kit_ExitSign,Kit_ExitSign_Dead,Kit_ExitSign_Hanging,Kit_ExitSign_Hanging_Dead,Kit_ExitSign_HangingFlush,Kit_ExitSign_HangingFlush_Dead,Kit_ExitSign_End,Kit_ExitSign_End_Dead \
+  -threeViewYaw Kit_ExitSign_End=-90,Kit_ExitSign_End_Dead=-90 -frGlassRT off -logFile $R/logs/tv01_threeview.log
+echo "rc=$?" > $R/logs/tv01_threeview.status

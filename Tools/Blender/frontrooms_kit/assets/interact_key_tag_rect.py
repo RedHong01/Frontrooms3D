@@ -43,6 +43,12 @@ def build(kit):
     wy = Y_TOP - H / 2
     kc.build_tag(kit, ("rect", W, H, R, Y_TOP), ("rect", WIN[0], WIN[1], WIN[2], wy), CROP)
     kc.lod_meta(kit, LOD_DISTANCES, BUDGET)
+    # EXAMINE (research/inspect/10_design.md §3.3 E2): the key on its tag (Red 10-14, direction B) comes to 0.20 m
+    # and turns; the facade sets Display to the whole key + ring + tag. ship=False until D1.5 builds the first-key
+    # hand-off (C21) and Prop_KeyTagNo exists (the digits are blank without it).
+    kit.inspect("object", verb="look", face="face", faceDir="face_dir", dist=(0.20, 0.15), minDist=0.15, fovDelta=-10,
+                reach=1.6, box=(kc.U(0.0, Y_TOP - H / 2, 0.0), kc.U_size(W, H, kc.TAG_T)), aimPad=0.04,
+                texelsPerMetre=3300, regions=[{"id": "number", "rect": [0, 0, 0, 0], "capMm": 15}], sound="keys", ship=False)
     lo, hi = kc.eval_bounds_unity(kit)
     assert abs((hi[0] - lo[0]) - W) < 1e-4, ("width", lo, hi)
     assert abs(lo[1] - (Y_TOP - H)) < 1e-4 and abs(hi[1] - kc.TAB_R) < 1e-4, ("height", lo, hi)

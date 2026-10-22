@@ -501,6 +501,30 @@ class Kit:
     def tag(self, *tags):
         self.meta["tags"].extend(tags)
 
+    INSPECT_KINDS = ("flat", "panel", "object")
+    INSPECT_FIELDS = ("verb", "face", "faceDir", "up", "size", "margin", "screen", "dist", "distMaxA", "minDist", "maxDist",
+                      "maxAngle", "maxYawOff", "fovDelta", "reach", "approachAngle", "orbit", "aimPad", "texelsPerMetre",
+                      "sheet", "regions", "dof", "transcript", "sound")
+
+    def inspect(self, kind, box=None, ship=False, **kw):
+        """EXAMINE close-up block (research/inspect/10_design.md §3.8), read by FrontRoomsKitLibrary.Info.inspect.
+        kind: flat | panel | object. Keyword fields as in §3.8 (Unity units: metres, degrees; face/faceDir/up are
+        anchor names; sheet and region rects in sheet mm from the sheet's top-left, the sheet centred on the face
+        anchor). box=(centre, size) is the aim box in asset (Blender) space, like collider(): the sidecar writer
+        converts it to Unity part-local. ship defaults to False, so a kit opts in on purpose; test-bed and SHOULD
+        kits keep ship=False and register only with FrontRoomsInspect.DevTargets."""
+        if kind not in self.INSPECT_KINDS:
+            raise ValueError("inspect kind %r" % kind)
+        block = {"kind": kind}
+        for k, v in kw.items():
+            if k not in self.INSPECT_FIELDS:
+                raise ValueError("inspect field %r" % k)
+            block[k] = list(v) if isinstance(v, tuple) else v
+        if box is not None:
+            block["_box"] = {"centre": list(box[0]), "size": list(box[1])}
+        block["ship"] = bool(ship)
+        self.meta["inspect"] = block
+
     PILE_CLASSES = ("Seat", "Table", "Case", "Soft", "Tall", "Screen", "Crate", "Small")
     PILE_STATES = ("Upright", "Back", "Front", "Side", "Inverted", "EdgeLean")
 
@@ -804,6 +828,13 @@ class Kit:
         out["supports"] = [{"name": s["name"], "centre": to_unity(s["centre"]), "size": [s["size"][0], s["size"][1]]} for s in self.meta["supports"]]
         out["colliders"] = [{"centre": to_unity(c["centre"]), "size": size_unity(c["size"])} for c in self.meta["colliders"]]
         out["anchors"] = [{"name": k, "pos": to_unity(v)} for k, v in self.meta["anchors"].items()]
+        if "inspect" in self.meta:
+            # EXAMINE block: the aim box goes to Unity part-local like the colliders (research/inspect/10_design.md §3.8).
+            ins = dict(self.meta["inspect"])
+            b = ins.pop("_box", None)
+            if b is not None:
+                ins["box"] = {"c": to_unity(b["centre"]), "s": size_unity(b["size"])}
+            out["inspect"] = ins
         out["frontAxis"] = "+Z"
         # Level Designer fields (LEVEL_MODULE_SPEC): the physical footprint is
         # the union of the collider boxes (cables and overhangs excluded),

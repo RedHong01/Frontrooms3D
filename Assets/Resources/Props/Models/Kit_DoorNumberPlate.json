@@ -85,6 +85,7 @@
   "Prop_KeyTagNo",
   "Prop_Chrome"
  ],
+ "trianglesLod1": 480,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

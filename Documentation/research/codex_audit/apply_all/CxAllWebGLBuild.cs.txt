@@ -1,0 +1,62 @@
+// CLONE-ONLY (codex audit combine stage codex_audit_all, 2026-10-14). Never merge into Red's project.
+// Builds a WebGL development player of one probe scene (CxCrtPlayerProbe from the glass-look fix group) with the
+// project's own WebGL settings (FrontRooms3DBuild.ApplyWebGLSettings, by reflection), then three probe-only
+// overrides: development build, compression Disabled (so the shader name table can be read from the .data file),
+// and explicitly thrown exceptions logged (so an ArgumentNullException is reported instead of aborting).
+// Batch: Unity -batchmode -buildTarget WebGL -projectPath <clone> -executeMethod CxAllWebGLBuild.Build -cxBuildOut <dir> -quit
+using System;
+using System.IO;
+using System.Reflection;
+using UnityEditor;
+using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+public static class CxAllWebGLBuild
+{
+    const string ScenePath = "Assets/CxProbe/CxCrtProbe.unity";
+
+    static string Arg(string name, string fallback)
+    {
+        var a = Environment.GetCommandLineArgs();
+        for (var i = 0; i < a.Length - 1; i++) if (a[i] == name) return a[i + 1];
+        return fallback;
+    }
+
+    public static void Build()
+    {
+        var outRoot = Arg("-cxBuildOut", null);
+        if (string.IsNullOrEmpty(outRoot)) throw new Exception("-cxBuildOut <dir> is required");
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL &&
+            !EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL))
+            throw new Exception("could not switch to WebGL");
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        new GameObject("cx crt probe").AddComponent<CxCrtPlayerProbe>();
+        EditorSceneManager.SaveScene(scene, ScenePath);
+
+        var buildType = Type.GetType("FrontRooms3DBuild, Assembly-CSharp-Editor");
+        var apply = buildType != null ? buildType.GetMethod("ApplyWebGLSettings", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) : null;
+        if (apply == null) throw new Exception("FrontRooms3DBuild.ApplyWebGLSettings not found");
+        apply.Invoke(null, null);
+        Debug.Log("[CxAllWebGL] project settings applied: compression " + PlayerSettings.WebGL.compressionFormat + " exceptions " + PlayerSettings.WebGL.exceptionSupport
+                  + " stripping " + PlayerSettings.GetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL) + " quality " + QualitySettings.names[QualitySettings.GetQualityLevel()]);
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+        PlayerSettings.WebGL.decompressionFallback = false;
+        PlayerSettings.WebGL.nameFilesAsHashes = false;
+        PlayerSettings.WebGL.dataCaching = false;
+        PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.ExplicitlyThrownExceptionsOnly;
+
+        Directory.CreateDirectory(outRoot);
+        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+        {
+            scenes = new[] { ScenePath },
+            locationPathName = outRoot,
+            target = BuildTarget.WebGL,
+            options = BuildOptions.Development
+        });
+        var r = report.summary;
+        Debug.Log("[CxAllWebGL] BUILD " + r.result + " errors=" + r.totalErrors + " warnings=" + r.totalWarnings + " bytes=" + r.totalSize
+                  + " seconds=" + (int)r.totalTime.TotalSeconds + " out=" + outRoot);
+        if (r.result != BuildResult.Succeeded) throw new Exception("build failed");
+    }
+}

@@ -1,0 +1,23 @@
+{
+ "frames": 84,
+ "black_frames(>50%)": [],
+ "magenta_frames(>0.1%)": [],
+ "max_red%_all": 0.04,
+ "max_red%_main": 9.99,
+ "frames_red>0.1%_all": [],
+ "frames_red>0.1%_main": [
+  "54_win1_OF_hall_1.5m",
+  "55_win1_OF_hall_head_0.3m",
+  "56_win2_L0_room_1.5m",
+  "59_win2_L0_hall_1.5m",
+  "60_win2_L0_hall_head_0.3m",
+  "65_win3_OF_hall_head_0.3m",
+  "66_win4_L0_room_1.5m",
+  "69_win4_L0_hall_1.5m",
+  "70_win4_L0_hall_head_0.3m"
+ ],
+ "identical_to_v2only(dY=0)": 67,
+ "within_0.5_of_v2only": 84,
+ "frames_over_0.5_vs_v2only": [],
+ "missing_vs_v2only": []
+}

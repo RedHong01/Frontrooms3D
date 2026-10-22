@@ -84,6 +84,7 @@
   "Prop_Chrome",
   "Prop_Aluminium"
  ],
+ "trianglesLod1": 380,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

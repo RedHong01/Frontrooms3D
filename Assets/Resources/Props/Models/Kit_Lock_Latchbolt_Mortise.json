@@ -92,6 +92,7 @@
  "slots": [
   "Prop_Chrome"
  ],
+ "trianglesLod1": 600,
  "frontAxis": "+Z",
  "footprintCentre": [
   0.003374996827915311,

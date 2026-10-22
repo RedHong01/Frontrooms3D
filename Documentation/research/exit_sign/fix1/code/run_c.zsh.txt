@@ -1,0 +1,12 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 experiment C: diffuser tint x smoothness in the lit Lobby, the Exit room and the Run room (HDR path).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+DIFF='s50|0.5||;t10|1||0.798,0.349,0.349;s50t25|0.5||0.798,0.537,0.537;s50t10|0.5||0.798,0.349,0.349;s50t05|0.5||0.735,0.248,0.248;s30t10|0.3||0.798,0.349,0.349;s0t10|0||0.798,0.349,0.349;s50u10|0.5||1,0.349,0.349'
+LOBBY='lit_s50|lit|1|s50;lit_t10|lit|1|t10;lit_s50t25|lit|1|s50t25;lit_s50t10|lit|1|s50t10;lit_s50t05|lit|1|s50t05;lit_s30t10|lit|1|s30t10;lit_s0t10|lit|1|s0t10;lit_s50u10|lit|1|s50u10;dark_s50t10|dark|1|s50t10;lit_g0_s50t10|lit|0|s50t10'
+RUN='cand|-1|keep;cand_s50t10|-1|keep|3.6|0|0|0.85|s50t10;cand_s30t10|-1|keep|3.6|0|0|0.85|s30t10;cand_g0.8_s50t10|0.8|keep|3.6|0|0|0.85|s50t10;main1008_s50t10|1|pt|3.6|0|0|0.85|s50t10'
+EXIT='stream_s50t10|-1|s50t10;stream_s30t10|-1|s30t10'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/c_capture.log \
+  -esfOut $R/c -esfParts lobby,run,exit -esfDiff "$DIFF" -esfLobby "$LOBBY" -esfRun "$RUN" -esfExit "$EXIT" \
+  -esfPretty lobby_lit_s50t10,lobby_dark_s50t10,cand_s50t10
+echo "exit $?" > $R/logs/c_capture.status

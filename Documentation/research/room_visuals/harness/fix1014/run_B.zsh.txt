@@ -1,0 +1,7 @@
+#!/bin/zsh
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_run_emergency_power; U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+R=$W/rooms_fix/runs
+tag=B_tripped; mkdir -p $R/$tag; S=$(date +%s); echo "$tag start $(date)" >> $R/status_B.txt
+$U -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off -runOut $R/$tag -runState tripped -runShots c4,c4_k -runNoTimeline -logFile $R/$tag.log
+echo "$tag exit $? $(( $(date +%s) - S )) s errors=$(grep -c 'error CS' $R/$tag.log) png=$(ls $R/$tag/*.png 2>/dev/null | wc -l)" >> $R/status_B.txt
+echo "B ALLDONE $(date)" >> $R/status_B.txt

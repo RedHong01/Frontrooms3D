@@ -1,6 +1,6 @@
 # 01 — Room visuals inventory: what every room looks like today
 
-Date: 2026-10-03 (about 11:00–11:40). Status: DONE (inventory step of the room-visuals workflow, task N2 in `Documentation/VISUAL_CHAT_TASKS.md`).
+Date: 2026-10-03 (about 11:00–11:40). Status: DONE (inventory step of the room-visuals workflow, task N2 in `Documentation/VISUAL_CHAT_TASKS.md`). **Updated 2026-10-14 with a dated delta table (below); the body text is the 3 Oct state.**
 Read-only. Nothing in the real project was changed. Only this folder was written.
 
 **How this was made**
@@ -17,6 +17,34 @@ Read-only. Nothing in the real project was changed. Only this folder was written
 - **NOT IN PLAY**: exists in code, but no path in the game reaches it.
 - **MISSING**: does not exist.
 
+## Status 2026-10-14: what changed since this file was written
+
+**Read this first.** This file describes main on 3 Oct, 11:35. Main is now `0a9ee7f` (10-10) plus its working tree. The rows below replace the stale statements. Each stale spot in the text carries a "Δ" mark that points to its row. The current frames are the 14 Oct set (`05_captures_1007_1014.md`), shown on Figma RV00–RV21 (section `2862:6157`). The 14 Oct set is identical to the 7 Oct set except in the title Run and Exit rooms.
+
+| Δ | Section | 3 Oct said | Now (main `0a9ee7f`) | Source |
+|---|---|---|---|---|
+| Δ1 | §1.1, §1.4, §6 #2 | No reflection probes; `SetZoneReflection` is a stub nobody calls | Zone reflection cubes are live. `FrontRoomsZoneReflection` (+ `…Driver`) sets a Level 0 / Office / Tall / DeadLamp cube as the custom default reflection, called from `FrontRoomsLook.SetZoneReflection`. There are still no box-projected probes in the game. Probe blending and box projection are still off (`FrontRooms_URP.asset:54-55`), and `FrontRoomsSurface.shader` has no probe keywords | `FrontRooms3DGame.cs`, `FrontRoomsLook.cs:24-60`, `Rendering/FrontRoomsZoneReflection*.cs` |
+| Δ2 | §1.1 | "FrontRooms Metal Glass RT" draws nothing | G14 ray-traced glass is promoted (Metal RT prepass hook in `FrontRoomsGlass.shader`, `FrontRoomsMetalGlassRT*.cs`, `Rendering/GlassRT/`). Its in-game runtime check is still open | `research/glass/rt/`, commits `9eddc35`, `bf2e883`, `70644f0` |
+| Δ3 | §1.2, §1.3, §2.1, §6 #9 | No `_FR_PRINT`; every Level 0 wall shows the CC0 chevron (`Wallpaper_Chevron`) | All three papers are `Wallpaper_Paper` × the **WP03 hard-edge print** (`Wallpaper_Print_P`, `_PrintTex` from `Resources/Print/FR_Print_HardEdge`, Q1b, merged 10-07 19:2x). `L0_Wallpaper` and `L0_Wallpaper_Shift` use the Lobby palette (`LobbyPrint`); `Exit_Wallpaper` uses the cold palette (`ColdPrint`). The chevron textures are test references outside `Resources` | `FrontRoomsRenderSetup.cs:278-297` |
+| Δ4 | §1.2 | — | New shader keyword `_FR_LAMP_FIELD`: the EXIT sign's lamp field (EXIT merge) | `FrontRoomsRenderSetup.cs:274-276, 552-558` |
+| Δ5 | §1.3 | `Run_ExitSign` smoothness 1.0 | 0.38 (EXIT merge, ends the mirror) | `FrontRoomsRenderSetup.cs:315` |
+| Δ6 | §2.1, §4, §6 #3 | Map Level 0 lens = a flat Lit slab, albedo (1, .98, .92), emission × 2.6, no texture | The map lens is a map-owned copy of the shared prismatic `Troffer_Lens`, emission × 1.5 (`Level0LensEmissionScale`). It is still a lens with no pan and no beam, so Q4 is half done | `FrontRoomsMapWorld.cs:3703-3730` |
+| Δ7 | §2.4, §3.3 | Map Office lamp (1, .96, .88) at 5.5, lens `Troffer_Lens` | V5 light lead (provisional N1 pick): Office lamps are (.90, .96, 1.0) at 6.0 with `Troffer_Lens_Cool`, as close to the stream Office's (.93, .96, 1.0) at 6.0 | `Rendering/Transitions/FrontRoomsTransitionLightLead.cs:21-38` |
+| Δ8 | §2.4 | Dressing an Office room costs 42–166 ms in one frame (Q13) | Fixed: a room dresses in 3 ms slices per frame (since `bc0aa79`, 10-08). Same result, the 14 Oct frames are pixel-identical | `research/dress_hitch/40_merged.md` |
+| Δ9 | §2.4 | — | Every Office CRT plays a WXRM screen ad (`FrontRoomsScreenVideo.Attach` from `FrontRoomsOfficeKit.cs:848-851`, since 10-04). The CRT quad LOD fix COV-4 was merged on 10-14 | `Documentation/SCREEN_ADS.md`, `SCREENS_VISUAL_SYSTEM.md`, Figma SCREENS `2800:6096` |
+| Δ10 | §2.5 | Five modes; the lamp-override layer is not built | **Mode 5 Off**: `SetLampMode(cell, ModuleLamp.Off)` kills a lamp at run time, leaving a dark lens. **Reduce flashing** (Settings): stutter and failing hold at 0.7 instead of flashing, and a dead lamp never blinks. A module **Off** removes the fixture entirely. The **override layer is built**: `SetLampOverride(cell, LampFx.Dip/Sag/Warn, …)`, with default envelopes Dip 0.3/1.2 s, Sag 0.6/1.5 s, Warn 0.08/0.2 s (≥ 0.5 s with Reduce flashing), plus `FixtureChanged` / `LampDipped` events. **Nothing in the game calls it**; only `FrontRoomsMapInteractionTests.cs` does | `FrontRoomsMapWorld.cs:444, 1949-1990, 3366-3460` |
+| Δ11 | §2.3, §2.7 | Window = a 30 mm milky Lit pane | Window facade r6 (merged 10-07 19:4x): the kit frame (`FrontRoomsInteractableKit.Window.cs`) with a 6 mm `Glass_Window` slab in `FrontRooms/Glass` | `FrontRoomsInteractableKit.Window.cs:28-30, 205` |
+| Δ12 | §2.7 | Doors swing 95° both ways; single-acting decided (W6), not built | **Single-acting since 10-03 12:26** (`aba5f77`): each door swings 95° into one fixed side (`FixedSwing`, a hash of seed and edge) in 0.55 s, against stops, and latches when shut. The leaf is still the `Door_Veneer` cube with `Cove_Base` jambs: the kit door rig (`FrontRoomsKitSeam`, `IFrontRoomsDoorRig`) is defined, but no door is dressed with it yet | `FrontRoomsMapWorld.cs:207-212, 279-283, 1452, 1591-1601`; `FrontRoomsShotTimings.cs:84` |
+| Δ13 | §3.4 | Two code-built signs: Arial `Run_ExitSign` faces on a blacked-glass box | Two `Kit_ExitSign_Hanging` at z 3.4 and 9.2 (EXIT merge 10-08 19:5x). Each gets a `FrontRoomsExitSign` driver, dealt **LIT 70 %, HALF 15 %, LOOSE 15 %** (at most one LOOSE per room). The red point (1, .10, .06), 3.6, range 9.5, soft shadows, sits at the kit's glow anchor (1.96 m) and is scaled by the sign's Level. **Open defect:** a LIT sign's letters reach only 0.59 × the ceiling (`exit_sign/40_merged.md`, critic issue 1; `exit_sign_fix1` `EmissionGain` is not merged) | `FrontRoomsRoomStream.cs:1507-1511, 1693-1724, 1903-1932`; `Rendering/FrontRoomsExitSign.cs` |
+| Δ14 | §3.5 | Props: a 2.8 × 0.12 m threshold strip at z 5.9; no exit sign | **The strip is never built.** The branch at `:1449` takes Lobby, Shift and Exit first, so `else if (rule == RoomRule.Exit)` (`:1513-1515`) is dead code (since 10-01, `4740aae`; the comment at `:1458-1459` says so). Exit rooms get the three Lobby outlet plates and, since the EXIT merge, a wall `Kit_ExitSign` over the far door (no light of its own; its face reads mid-grey, VL211 FLAG) | `FrontRoomsRoomStream.cs:1449-1462, 1513-1515, 1934-1945` |
+| Δ15 | §4, §0 | No placard | The EGRESS evacuation placard (Q16) mounts on the map side of the start area, P2 west wall, at about (255.1, 1.56, 19.5) in the capture run. `FrontRoomsPlacardMount` calls `map.KeepClearAtStart` (10-08). Its legend glows only when its cell's lamp goes dark: `FrontRoomsPlacardGlow` reads `LampLevel` of the cell and its 4 neighbours. The wallpaper cue is not in main | `Rendering/FrontRoomsPlacard*.cs`; `research/placard/40_merged.md` |
+| Δ16 | §5 | Exit sign only on paper | The EXIT sign family is in main (8 kits). The true Exit (an ending, goal or end door) is **still missing** | `research/exit_sign/40_merged.md` |
+| Δ17 | §2.6 | — | No change. The 14 Oct column frames are pixel-identical | `05_captures_1007_1014.md` |
+| Δ18 | §2.8, §7 | — | No module room is framed on its own (L10); see `05_captures_1007_1014.md` §2 | — |
+| Δ19 | everywhere | `images/room_*` = current | Current frames are `images/room1014_*`. The `room_*` (3 Oct) and `room1007_*` (7 Oct) sets are history | `05_captures_1007_1014.md` |
+
+**Units (M10).** The room numbers in this file and in `04/05_captures` are sRGB 0–1 on the JPGs. The Run! direction reports (`11_*`, `20_*`, `21_*`) use linear Rec. 709 Y on the PNG renders. For example, the title Run room's darkest 5 % is 0.179 sRGB, which is 0.027 linear.
+
 ---
 
 ## 0. Short answer (for Red)
@@ -31,8 +59,8 @@ Read-only. Nothing in the real project was changed. Only this folder was written
 4. **There is no true Exit (ending).** No exit, goal or end door exists in the map or the game. A run ends only when the Relay catches you (`research/interactables/01_inventory.md` §0). The stream room named "Exit" is a cyan *breather* that loops back to Lobby.
 5. **Biggest cross-room problems today** (details in §6):
    - an even light wash with lamp shadows erased (audit F5);
-   - nothing to reflect: no probes, reflection intensity 0.3, which is only 7 % linear (F4; `research/glass/10_implementation.md` §1);
-   - the map's Level 0 troffer is a plain white slab, not the title's troffer (F10, Q4);
+   - nothing to reflect: no probes, reflection intensity 0.3, which is only 7 % linear (F4; `research/glass/10_implementation.md` §1); **Δ1: zone cubes are live now; still no box probes**;
+   - the map's Level 0 troffer is a plain white slab, not the title's troffer (F10, Q4); **Δ6: now the prismatic lens × 1.5, no pan or beam**;
    - zone borders are hard cuts in paper and height (N1);
    - lamps light through walls (Q5);
    - doors, keys and glass are primitive cubes (F10; R3/G1 running);
@@ -50,7 +78,7 @@ Read-only. Nothing in the real project was changed. Only this folder was written
 | Shadows | main light 2048, additional-light atlas 4096, soft High, distance 40 m, 2 cascades, bias 0.6/0.6 | `FrontRoomsRenderSetup.cs:92-102`; `FrontRooms_URP.asset:46-69` |
 | Probes and layers | reflection-probe blending **off**, box projection **off**, light layers **off** | `FrontRooms_URP.asset:54-55, 76` |
 | SSAO | depth-normals source, radius 0.45 m, intensity 1.6, direct-light strength 0.35, high samples and blur | `FrontRoomsRenderSetup.cs:130-141` |
-| Extra renderer feature | "FrontRooms Metal Glass RT" (ChatGPT's ray-traced glass prototype; draws nothing today, `research/glass/rt/01_code_review.md` §1) | `Assets/Settings/FrontRooms_URP_Renderer.asset:94`; `Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib` |
+| Extra renderer feature | **Δ2 (G14 promoted since).** "FrontRooms Metal Glass RT" (ChatGPT's ray-traced glass prototype; draws nothing today, `research/glass/rt/01_code_review.md` §1) | `Assets/Settings/FrontRooms_URP_Renderer.asset:94`; `Assets/Plugins/macOS/libFrontRoomsMetalGlassRT.dylib` |
 | Camera | vertical FOV **76°**, near 0.06, far 80 in the title; in the map far = build radius × 24 − 2 = **46 m** | scene `FrontRooms3D.unity:311-313`; `FrontRooms3DGame.cs:247, 755-757`; `FrontRoomsMapWorld.cs:69` |
 | Clear colour | solid #22231C (no skybox) | `FrontRooms3D.unity:289-290` |
 | Camera AA / dither | camera AA off (MSAA only), dithering on | `Assets/Scripts/Rendering/FrontRoomsPostStack.cs:64-74` |
@@ -67,7 +95,7 @@ File: `Assets/Resources/Rendering/FrontRoomsSurface.shader` (320 lines). Used by
 - **Damp carpet** (`:210-214`): darker (−32 %), smoother (toward 0.62), flatter normal. `_WetStrength`.
 - **Wall grime** (`:216-223`): dirt in the 0.35 m above the floor (`_FloorGrime`), streaks in the 1.6 m under the ceiling (`_CeilingGrime`). The ceiling height comes from `_CeilingHeight`, which the map sets per renderer with a MaterialPropertyBlock (`FrontRoomsMapWorld.cs:896-913`).
 - Lighting: `UniversalFragmentPBR`, ambient from SH only (`:240, 255`). Fog: URP `MixFog`.
-- **Not in the shader today:** reflection-probe keywords (no box projection possible), a MotionVectors pass (TAA would smear), the wallpaper print layer `_FR_PRINT` (R2, still in a private clone).
+- **Not in the shader today:** reflection-probe keywords (no box projection possible), a MotionVectors pass (TAA would smear), the wallpaper print layer `_FR_PRINT` (R2, still in a private clone). **Δ3, Δ4: the print layer and `_FR_LAMP_FIELD` are in main now; the probe keywords are still missing.**
 - All tile sizes divide **192 m** (`ModuleUnits.WorldPeriod`, `Assets/Scripts/FrontRoomsMap/FrontRoomsModuleUnits.cs:29`). Map roots, capture roots and the title's floating-origin shift all sit on multiples of 192 m.
 
 ### 1.3 Room surface materials (all in `Assets/Resources/Surfaces/`)
@@ -101,7 +129,7 @@ Definitions: `FrontRoomsRenderSetup.cs:269-301`. Textures: `Resources/Surfaces/T
 Notes:
 - `gen_surfaces.py:1-5` still describes the old 256 m grid (paper 256/373 m, 4 ft = 1.219 m). The live tiles are metric (0.75 / 1.2 m, `FrontRoomsRenderSetup.cs:29-33`). The art is shown about 1.6 % smaller than drawn. Harmless, but the doc numbers in `VISUAL_RESEARCH_LOOKDEV.md` are stale.
 - The chevron's ink is baked into the paper's normal, smoothness and cavity maps (`research/wallpaper_motion/10_synthesis.md` §2). This blocks the moving-print plan until R2 splits it.
-- Red picked the **WP03 "Hard edge"** print for the paper (Figma 2407:884; `VISUAL_CHAT_TASKS.md` Q1b). It is not in the game yet. Every Level 0 frame today shows the CC0 chevron.
+- Red picked the **WP03 "Hard edge"** print for the paper (Figma 2407:884; `VISUAL_CHAT_TASKS.md` Q1b). It is not in the game yet. Every Level 0 frame today shows the CC0 chevron. **Δ3: live since 10-07 on all three papers.**
 - The six 2048×3072 wallpaper maps are non-power-of-two. They load **uncompressed** (96 MB in the map, `research/webgl/03_measured_budgets.md` §0.6). This is a memory cost on desktop too.
 
 ### 1.4 Ambient, fog and reflections
@@ -112,7 +140,7 @@ Notes:
 | Fog | Exponential², colour (.16, .15, .11) ≈ #29261C, density 0.014. One value for every zone | scene; `FrontRoomsLook.cs:20-21` |
 | Reflection | default reflection = Unity's built-in skybox cube at 128 px, intensity 0.3. Unity applies it in gamma, so 0.3 = **0.073 linear** | scene; `research/glass/10_implementation.md` §1 finding 1 |
 | Reflection probes | **0** at runtime | audit 05 §A |
-| Zone reflections | `FrontRoomsLook.SetZoneReflection(Level0 / Office / Tall / DeadLamp)` is a **stub** in main (`FrontRoomsLook.cs:24-36`). The real version and four 256 px HDR cubes exist in the glass clone (G6), not promoted. Nobody calls it yet | G6 |
+| Zone reflections | **Δ1: live since; this row is history.** `FrontRoomsLook.SetZoneReflection(Level0 / Office / Tall / DeadLamp)` is a **stub** in main (`FrontRoomsLook.cs:24-36`). The real version and four 256 px HDR cubes exist in the glass clone (G6), not promoted. Nobody calls it yet | G6 |
 | Fill light | scene object "Soft ambient direction": directional, (.769, .816, .80), intensity 0.16, soft shadows at strength 0.18 | scene `FrontRooms3D.unity:2255-2293`. The audit says it lights through every ceiling (F5) and costs a whole shadow pass (WG6) |
 | Who applies it | the game reads the scene's Lighting settings (`FrontRooms3DGame.cs:323` only rebuilds the SH probe). `FrontRoomsLook.ApplyAmbient` runs in the standalone map scene and in edit-mode captures (`FrontRoomsMapWorld.cs:603-607`) | audit F4 |
 
@@ -167,7 +195,7 @@ Map facts used in all of §2:
 - **Floor:** loop pile, `_WetStrength` .55.
 - **Trims:** **no baseboard or cove on walls** (`research/outlets/02_code_paths.md` §0.1). Trim (`Cove_Base`) only on door and window frames and column coves.
 - **Lights:** spot at 0.06 m under the lens, colour (1, .96, .88) ≈ 4000 K-ish warm white, intensity **5** × level, range **10 m**, shadows as in §1.6 (`:1197-1215`; lamp intensity `:2050`).
-- **Lens:** `Map / Level 0 lens`, a plain URP Lit material: albedo (1, .98, .92), smoothness .1, emission (1, .96, .84) × 2.6 (`:2043`). **No texture, no pan, no beam.**
+- **Lens:** `Map / Level 0 lens`, a plain URP Lit material: albedo (1, .98, .92), smoothness .1, emission (1, .96, .84) × 2.6 (`:2043`). **No texture, no pan, no beam.** **Δ6: now the shared prismatic lens × 1.5.**
 - **Fog/ambient/reflection:** global (§1.4). No zone grade.
 - **Props/dressing:**
   - halls of at least 4 × 4 cells: 35 % get a furniture pile (`FrontRoomsLevelProfile.cs:53`; `FrontRoomsMapWorld.cs:1559-1571`);
@@ -181,7 +209,7 @@ Map facts used in all of §2:
   - the lens is a flat white slab and does not match the title troffer the player just walked past (F10 rank 5; Q4);
   - unshadowed lamps light the next rooms through walls (Q5; `FrontRoomsMapWorld.cs:1229-1236` says so itself);
   - no baseboard, outlets or any wall detail at eye level (N3 outlets is RUNNING);
-  - the paper is still the CC0 chevron, not WP03.
+  - the paper is still the CC0 chevron, not WP03 (**Δ3: fixed, WP03 since 10-07**).
 
 ### 2.2 Level 0 · Low (2.4 m)
 
@@ -219,7 +247,7 @@ Map facts used in all of §2:
 - **Player sees** (`images/room_map-office_wide.jpg`, `_detail.jpg`, `room_map-column-office_*.jpg`): greige knockdown drywall, blue-grey carpet tiles, 2'×2' ceiling, cubicle pods, desks with beige CRTs, task chairs, vending machine, water cooler, copier, filing cabinets, a blacked-out interior window, 0.9 m columns joined by bulkheads. A cooler, greener, flatter grade fades in over 2.5 m.
 - **Surfaces:** `Office_Wall` / `Office_Carpet` / `Office_Ceiling` (§1.3).
 - **Ceiling:** 2.9 m; bulkheads 0.35 m deep under it, column-wide, in drywall, render-only (`FrontRoomsMapWorld.cs:1070-1076`).
-- **Lights:** colour (1, .96, .88) (the same as Level 0), intensity **5.5**, range 10 (`:2059`). Lens `Troffer_Lens` (textured prismatic, three tube stripes).
+- **Lights:** colour (1, .96, .88) (the same as Level 0), intensity **5.5**, range 10 (`:2059`). Lens `Troffer_Lens` (textured prismatic, three tube stripes). **Δ7: now (.90, .96, 1.0) at 6.0, `Troffer_Lens_Cool`.**
 - **Grade:** Office local volume (§1.5). **Office fog is not implemented** (the synthesis asked for #3B3F35, density 0.018, `research/office_and_film/10_synthesis.md` §6.5).
 - **Props/dressing:** `FrontRoomsOfficeKit.Dress` (6-argument map path, columns as obstacles) (`Assets/Scripts/Office/FrontRoomsOfficeKit.cs`, 726 lines):
   - pods in rows with 1.6 m chase lanes, 1.05 m off the walls; 8 % of bays left empty; 15 % of pods with tall 1.65 m panels;
@@ -233,7 +261,7 @@ Map facts used in all of §2:
 - **Known problems:**
   - synthesis decisions not landed: flat opal lens `Office_LensOpal` (the lens is still the prismatic striped one); Office lamp odds 25 % dead off the spine; zone fog; 72° FOV (§6 of the synthesis);
   - the grade values in code differ from the synthesis table (temperature +2 vs +1, saturation −18 vs −22, exposure +.32 vs −.15);
-  - dressing one Office room costs 42–166 ms in one frame (Q13 RUNNING);
+  - dressing one Office room costs 42–166 ms in one frame (Q13 RUNNING; **Δ8: fixed 10-08**); **Δ9: every CRT now plays a screen ad**;
   - `Kit_InteriorWindow`'s pane is an opaque black slab (G5);
   - the Office ↔ Level 0 border is a hard paper cut inside one 0.16 m wall (`images/room_map-border-theme_detail.jpg`; N1).
 
@@ -264,7 +292,7 @@ Odds by run tier (`FrontRoomsLevelProfile.cs:164-171`; dim = the rest):
 - **Known problems:**
   - in a still frame, Dim and Failing lenses look as white as Steady ones (the lens clips at emission 2.6 × 0.42 ≈ 1.1, above the bloom threshold 1.05); the difference is only in the pool;
   - stutter and failing reach the hum (the Light's intensity), but there is no matching visual on the lens edge (no end-darkening, no tube flicker pattern);
-  - the planned lamp-override layer (Omen / Dip / Sag; "your room's lamps flicker" as warning stage 1) is not built (`RELAY_PURSUIT_REDESIGN.md`, `research/relay_pursuit/20_level_design.md` §2).
+  - **Δ10 (built since; the game does not call it yet; also mode 5 Off and Reduce flashing):** the planned lamp-override layer (Omen / Dip / Sag; "your room's lamps flicker" as warning stage 1) is not built (`RELAY_PURSUIT_REDESIGN.md`, `research/relay_pursuit/20_level_design.md` §2).
 
 ### 2.6 Columns and bulkheads
 
@@ -282,12 +310,12 @@ Odds by run tier (`FrontRoomsLevelProfile.cs:164-171`; dim = the rest):
 |---|---|---|---|---|
 | Open edge | inside rooms and maze corridors | full 3 m | nothing | `FrontRoomsMap.cs:369-372` |
 | Arch (doorless doorway) | inside a zone | 1.1–1.8 m wide, off-centre, top 2.2 m (or 0.2 m under the ceiling) | bare cut, **no trim** | `FrontRoomsMapWorld.cs:975-979, 1084-1090` |
-| Door | Low ↔ Standard borders | 1.0 × 2.1 m | `Door_Veneer` cube leaf 0.05 × 2.08 × 0.98, no handle; `Cove_Base` jambs and head 0.07 face, 0.20 deep; swings 95° both ways in 0.55 s (0.18 s broken) | `:1000-1039, 1937`; `images/room_map-border-door_*.jpg` |
-| Window | any border with a Tall zone | 1.4 × (0.35–2.0) m | 30 mm milky pane, trims on jambs and head, no stool | `:1040-1053`; `images/room_map-border-window_*.jpg` |
+| Door | Low ↔ Standard borders | 1.0 × 2.1 m | `Door_Veneer` cube leaf 0.05 × 2.08 × 0.98, no handle; `Cove_Base` jambs and head 0.07 face, 0.20 deep; swings 95° both ways in 0.55 s (0.18 s broken) — **Δ12: single-acting since 10-03 12:26** | `:1000-1039, 1937`; `images/room_map-border-door_*.jpg` |
+| Window | any border with a Tall zone | 1.4 × (0.35–2.0) m | 30 mm milky pane, trims on jambs and head, no stool — **Δ11: kit frame + 6 mm `Glass_Window` since 10-07** | `:1040-1053`; `images/room_map-border-window_*.jpg` |
 | Theme border (Level 0 ↔ Office, same height) | normal edge rules | — | the wall is split in two 0.08 m halves, each in its own paper: a hard cut at the arch or open edge | `:961-969`; `images/room_map-border-theme_*.jpg` |
 | Height border wall | where heights change | — | wall rises to the taller ceiling; no transition piece | `:827-828` |
 
-Known problems: see-through slits at shut doors (R4; `research/interactables/04_door_re8_gap.md`); doors swing both ways (W6 decided single-acting); cube leaf, no hardware (F10); no transitions between levels (N1 RUNNING).
+Known problems: see-through slits at shut doors (R4; `research/interactables/04_door_re8_gap.md`); doors swing both ways (W6 decided single-acting; **Δ12: built**); cube leaf, no hardware (F10); no transitions between levels (N1 RUNNING).
 
 ### 2.8 Room modules (Level Designer)
 
@@ -366,7 +394,7 @@ A 0.32 × 0.12 × 0.12 m cube in emissive yellow ("Map test / key", (.96, .87, .
   - 3 waiting chairs at x −5.2 m, z 2.6–3.84 m: "teal vinyl seat" (.20, .36, .35), chrome legs;
   - a gurney at (3.4, 7.3) turned −14°: chrome frame (.70, .70, .68, metallic .9), "mattress" (.72, .80, .77), side rails, posts, black wheels;
   - an IV pole (cylinder 0.03 × 1.9 m) at (4.3, 8.6);
-  - 2 hanging EXIT signs at z 3.4 and 9.2, 2.36 m high: housing 0.40 × 0.21 × 0.05 in `Office_BlackedGlass`, two faces 0.36 × 0.18 in `Run_ExitSign` (emission 3.2), two chrome rods 0.43 m.
+  - 2 hanging EXIT signs at z 3.4 and 9.2, 2.36 m high: housing 0.40 × 0.21 × 0.05 in `Office_BlackedGlass`, two faces 0.36 × 0.18 in `Run_ExitSign` (emission 3.2), two chrome rods 0.43 m. **Δ13: now two `Kit_ExitSign_Hanging` with the `FrontRoomsExitSign` driver.**
 - **Fog/post:** global only. The red comes from the two point lights, not from a grade.
 - **Measured in the captures** (`04_captures.md` §0 point 2): mean frame value 0.283 (Lobby 0.320, Shift 0.230); its darkest 5 % sit at 0.173, the highest black level of all 17 wide frames. **The Run room reads as red-lit, not dark.**
 - **Game role in code:** the old stream Relay brain (`Assets/Scripts/FrontRoomsHunter.cs:122-126`) alarms when the player enters a Run room. Only `FrontRoomsStreamVerification.cs` uses that brain; the game uses `FrontRoomsMapHunter`. So **Run has no role in the current game**.
@@ -396,10 +424,10 @@ A 0.32 × 0.12 × 0.12 m cube in emissive yellow ("Map test / key", (.96, .87, .
 - **Player would see** (`images/room_title-exit_wide.jpg`, `_detail.jpg`, `_doorway.jpg`, `_threshold.jpg`): the Lobby room in a cold green-blue print: grey-green paper, blue-grey damp carpet, cyan tubes, every lamp lit. A thin strip across the floor at 5.9 m.
 - **Surfaces:** `Exit_Wallpaper` (cold print run), `Exit_Carpet` (tint .66/.72/.74), `L0_Ceiling`.
 - **Lights:** (.62, .92, .90) cyan, base 4.4, range 10. **0 % dead, 5 % failing**.
-- **Props:** a "threshold marker" 2.8 × 0.03 × 0.12 m at z 5.9, in the wall paper material (`:1493-1496`). No exit sign, no door hardware change.
+- **Props:** a "threshold marker" 2.8 × 0.03 × 0.12 m at z 5.9, in the wall paper material (`:1493-1496`). No exit sign, no door hardware change. **Δ14: wrong. The strip is dead code and never built; the room gets the Lobby outlets and, since 10-08, a wall `Kit_ExitSign` over the far door.**
 - **Role:** a release beat. It loops into Lobby; it is not an ending.
 - **Status:** FIRST PASS look, NOT IN PLAY.
-- **Known problems:** the threshold strip is wallpaper on the floor; nothing says "exit" except colour; there is no relation to the true Exit (§5).
+- **Known problems:** the threshold strip is wallpaper on the floor; nothing says "exit" except colour; there is no relation to the true Exit (§5). **Δ14: there is no strip; a wall EXIT sign now marks the far door, which still only loops back to Lobby.**
 
 ---
 
@@ -423,7 +451,7 @@ A 0.32 × 0.12 × 0.12 m cube in emissive yellow ("Map test / key", (.96, .87, .
 | Lamp | 5.2 × 0.90, own ballast model | 5.0, temperament model |
 | Room | one 11.5 × 12 m box | 3 m cells, corridors |
 
-- **Status:** FIRST PASS (handoff logic DONE 2026-10-02; visual match not done).
+- **Status:** FIRST PASS (handoff logic DONE 2026-10-02; visual match not done). **Δ15: the EGRESS placard has mounted on the map side since 10-08.**
 - **Known problems:** Q4 (make the map lamp match the stream troffer: pan, lens, beam); Q5 (stream side lamps light the map floor through walls); the start-room baseboard (§3.0).
 
 ---
@@ -437,7 +465,7 @@ A 0.32 × 0.12 × 0.12 m cube in emissive yellow ("Map test / key", (.96, .87, .
   - the window family has an Exit member **W-EX** (clear-anodised aluminium office front) (`06_period_windows.md` §0);
   - EGRESS (Red's chosen narrative) frames the glow ink as the building's own exit plan (`research/wallpaper_motion/30_narrative_phosphor.md` §4);
   - the Week 1 deck's "THREE WAYS OUT" slide (2235:626) covers escaping the Relay (key, door, glass), not an ending.
-- **Status:** MISSING (no design, no visual, no code).
+- **Status:** MISSING (no design, no visual, no code). **Δ16: the EXIT sign family is in main since 10-08; the ending itself is still missing.**
 
 ---
 
@@ -464,7 +492,7 @@ A 0.32 × 0.12 × 0.12 m cube in emissive yellow ("Map test / key", (.96, .87, .
 
 ## 7. Frames on disk, by room
 
-Current (2026-10-03 11:26, this workflow, `images/`, vFOV 72):
+Current on 3 Oct (2026-10-03 11:26, this workflow, `images/`, vFOV 72). **Δ19: the current set is `images/room1014_*` (14 Oct).**
 
 | Room | Frames |
 |---|---|

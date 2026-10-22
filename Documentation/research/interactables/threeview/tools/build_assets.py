@@ -4,7 +4,8 @@
 # Inputs: the fix-pass sidecars (Assets/Resources/Props/Models/<name>.json in the build clone, = the
 # promote payload W/int_work/fix/payload), and the hand-off render manifest (threeview/handoff_manifest.json,
 # written by FrontRoomsThreeView with -threeViewOversample 1 -threeViewMaxPpm 2000).
-# Everything else in index.json (sheets, kits, heroes, proposalSlots: the 2026-10-04 K-sheet record) is kept.
+# Everything else in index.json (sheets, kits, heroes, proposalSlots: the 2026-10-04 K-sheet record) is kept,
+# except that sync_hero_alpha() lists each hero's _alpha file when it exists (2026-10-14), so a rebuild keeps them.
 # Run: /usr/bin/python3 build_assets.py   (env TV_CLONE overrides the clone; default W/proj_int)
 import json, os, sys, datetime
 
@@ -343,10 +344,30 @@ def changed_since_placed(index, assets):
     return out
 
 
+# Hero records (written by build_index.py): every render has <name>.png and <name>_alpha.png. Before 2026-10-14 the
+# four hung-key heroes said alpha None ("no transparent copy") although their _alpha files exist (opaque: the wall
+# fills the frame). build_index.py now lists them; this keeps them listed if an older index.json is rebuilt here.
+OPAQUE_NOTE = " The scene fills the frame, so its _alpha copy is opaque too (same pixels)."   # = build_index.OPAQUE_NOTE
+OLD_OPAQUE_NOTE = " Wall fills the frame, so there is no transparent copy."
+
+
+def sync_hero_alpha(index):
+    n = 0
+    for h in index.get("heroes", []):
+        alpha = h["file"][:-4] + "_alpha.png"
+        if h.get("alpha") is None and os.path.exists(os.path.join(ROOT, alpha)):
+            h["alpha"] = alpha
+            if h.get("note", "").endswith(OLD_OPAQUE_NOTE):
+                h["note"] = h["note"][:-len(OLD_OPAQUE_NOTE)] + OPAQUE_NOTE
+            n += 1
+    return n
+
+
 if __name__ == "__main__":
     assets, manifest = main()
     idx_path = ROOT + "/index.json"
     index = json.load(open(idx_path)) if os.path.exists(idx_path) else {}
+    print("hero _alpha paths filled in:", sync_hero_alpha(index))
     payload = "/Users/redwang/FrontRoomsVisualWork/int_work/fix/payload"
     changed = changed_since_placed(index, assets)
     index["assets"] = assets
@@ -373,7 +394,8 @@ if __name__ == "__main__":
                          "hero = 1152 x 864 3/4 view from the front-left, 22 degrees down, transparent. Place at 100 %.",
                     manifest="threeview/handoff_manifest.json (renderer record: px sizes, bounds, viewYaw)"),
         source=dict(models="the 2026-10-08 fix-pass builds in W/proj_int (= the promote payload %s, 102 files, SHA1SUMS.txt; checked 0 differ). "
-                           "Not in main yet: the interactables merge copies them over main's Kit_* FBX/JSON and keeps main's .meta GUIDs. "
+                           "In main since 2026-10-14 (W/apply/interactables_kit.sh --apply, MANIFEST OK; main's .meta GUIDs kept): main's Kit_* FBX/JSON equal these, "
+                           "except Kit_DoorFrame_Steel(_Alu).json, which also carry the exit-sign anchor exit_sign_p at Y 2.18 (exit-sign apply, 2026-10-08 19:40). "
                            "7 FBX are content-identical to main (timestamp only). Sidecars/FBX path in the project: Assets/Resources/Props/Models." % payload,
                     materials="Assets/Resources/Surfaces/<slot>.mat (the kit library remaps every FBX slot to it). Missing (P-4, render with the FBX preview colour): Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved.",
                     renderClone="W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time (01:3x). Main then auto-committed bc0aa79 (01:47): new placard kits and materials and a FrontRoomsKitLibrary refactor; no interactables Kit_* file and none of their slot materials changed.",
@@ -383,6 +405,9 @@ if __name__ == "__main__":
             glassFracture="No fracture, remnant or shard FBX: Red put glass fracture in the glass-destruction tracks (10_spec decision D12, §5.3); the window frames only carry the interface anchors (glass_slab, stop_*, pocket_*, tooth_band_*, floor_a/b).",
             exitSigns="Kit_ExitSign and Kit_ExitSign_Dead are the exit-sign track's now; not in this set.",
             doorwayStuds="Kit_DoorwayStuds* = the existing K45, unchanged."),
+        keyUi=dict(decision="Red, 2026-10-14: the HUD key on phone and desktop is direction B, the key on its ring and tag. At a locked door the HUD shows a padlock in the tag's language (the zone tag's shape and colour). A, A + chip and C are process history only.",
+                   figma="平面视觉: component set 3113:6999 'Lock glyph · B · padlock' (18 variants: Rect/Round/Long x Red/Blue/White x Closed/Open), boards KV11 3113:7000 and KV12 3113:7147, in section 3113:6872 HUD KEY · B · PADLOCK + MOTION; spec research/ui_key_icon/lock_motion/README.md. Motion is in review.",
+                   kitLink="The B glyph and the padlock body follow the kit's tags: Kit_KeyTag_{Rect,Round,Long} in red (no suffix), _Blue and _White; the locked door's Kit_DoorNumberPlate* carries the same zone colour and number."),
         changedSincePlaced=changed,
         note="`assets` describes the current models (fix pass, 2026-10-08). `sheets` and `kits` above are the 2026-10-04 record behind the placed K46-K80 sheets; where they differ, `assets` wins. changedSincePlaced lists what each placed sheet would change.",
     )

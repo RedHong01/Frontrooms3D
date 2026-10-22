@@ -1,0 +1,6 @@
+# codex_audit_all expected: the payload = the target after --apply, in write order (.meta before its asset, code last)
+fc192900213d029bff9a4bfe198c6998f2a2f35d  Assets/Resources/Media.meta
+0ba14a951d743d1175757534f559ca5e4556ad6a  Assets/Resources/Media/CRT_AdSurface.mat.meta
+b8d02e1ac65e8e4a5d23415470f694be390f0f5c  Assets/Resources/Media/CRT_AdSurface.mat
+ea0c85cfdda1152266e5e82ebac1878307a9ec23  Assets/Scripts/Media/FrontRoomsScreenVideo.cs
+e0b81f363e60a92fbe4825f1be87a14731b91690  Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs

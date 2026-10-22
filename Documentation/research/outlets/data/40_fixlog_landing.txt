@@ -1,0 +1,16 @@
+fixwm_L0_0_2554: papered Duplex y 0.31 | before: plate 110.1 wall 111.7 ratio 0.99 | after: plate 119.3 wall 112.8 ratio 1.06 | load 64.64 74.47 78.18
+fixwm_L0_1_2554: papered Duplex y 0.31 | before: plate 113.2 wall 122.3 ratio 0.93 | after: plate 108.8 wall 123.5 ratio 0.88 | load 64.64 74.47 78.18
+fixwm_L0_2_2554: papered Duplex y 0.31 | before: plate 114.9 wall 110.0 ratio 1.04 | after: plate 106.2 wall 109.0 ratio 0.97 | load 60.58 73.46 77.80
+fixwm_L0_3_2554: papered Duplex y 0.31 | before: plate 110.2 wall 106.9 ratio 1.03 | after: plate 103.3 wall 106.9 ratio 0.97 | load 60.58 73.46 77.80
+fixwm_OF_0_2554: painted Duplex20 y 0.46 | before: plate 119.4 wall 116.2 ratio 1.03 | after: plate 117.9 wall 113.9 ratio 1.04 | load 60.58 73.46 77.80
+fixwm_OF_1_2554: painted Duplex y 0.41 | before: plate 118.8 wall 112.8 ratio 1.05 | after: plate 118.6 wall 111.5 ratio 1.06 | load 58.77 72.87 77.57
+fixmetal_steel_03_2554: stainless duplex at 0.30 m, Office | before: plate 65.8 wall 112.3 ratio 0.59 | after: plate 89.8 wall 112.3 ratio 0.80 | load 58.77 72.87 77.57
+fixmetal_steel_4m_2554: stainless duplex at 4 m | before: plate 74.5 wall 111.7 ratio 0.67 | after: plate 86.8 wall 112.2 ratio 0.77 | load 58.77 72.87 77.57
+fixmetal_handy_042_2554: handy box + EMT at 0.42 m | before: plate 74.2 wall 111.7 ratio 0.66 | after: plate 80.1 wall 113.3 ratio 0.71 | load 55.11 71.88 77.19
+fixmetal_handy_4m_2554: handy box + EMT riser at 4 m | before: plate 84.6 wall 95.7 ratio 0.88 | after: plate 87.8 wall 96.1 ratio 0.91 | load 55.11 71.88 77.19
+fixmetal_floor_2554: FloorBox | before: box top 98.4 box sides 62.7 carpet 62.0 | after: box top 107.9 box sides 72.0 carpet 62.3
+fixtoggle_2554: bat luma at bat height 90.5, from eye height 130.6; plate 133.2 wall 123.8 ratio 1.08
+fixbrown_2554: plate 52.4 wall 136.3 ratio 0.38
+fixpod_2554: feed at (170.16, 0.00, 195.49), lamp 1.5 m
+fixconduit_2554: box at (191.92, 0.31, 173.40) y 0.31
+fixstage2_424242: JackData behind a wall unit at (257.92, 0.41, 156.90), lamp 2.5 m

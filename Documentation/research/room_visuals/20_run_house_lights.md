@@ -1,5 +1,7 @@
 # 20 — Run! direction C · HOUSE LIGHTS: build log, costs, needs, open issues
 
+> **Update 2026-10-14 (fix stage, `21_run_fix_1014.md`):** C's box probes were inert, as suspected on 10-08. They were re-rendered with boxes 0.16 m past the shell and one state per Unity run, and now cover 95 % of the floor (VL236). They change only 0.25 % of the frame: the strips light the floor. At the 2.05 m contract size, the Relay reads 9.36 : 1 off axis and 6.67 : 1 on axis through the lites (VL237). New S1b: median .326, p95/p5 18.6.
+
 Date: 2026-10-08 (final round r9, renders 00:1x). Companion to `11_run_dir_house_lights.md` (every value used, the measurements, pass / fail).
 Clone: `/Users/redwang/FrontRoomsVisualWork/proj_run_house_lights` (clone-only; nothing was promoted; no apply script, because this is a pre-render for Red's pick).
 Red's project was not opened in Unity. Writes there: this folder only (`research/room_visuals/`: the two reports, `images/run_dir_house_lights_*`, `images/run_house_lights_*`, `harness/`) and rows VL189–VL192 in `Documentation/VERIFICATION_LOG.md` (slides placed in the Figma FRONTROOMS · VISUAL VERIFICATION LOG, frames 2852:6151, 2852:6173, 2852:6185, 2852:6194; the section grew to 49 rows).

@@ -1,0 +1,213 @@
+"""exit_sign_fix1 r2: boards and hand-off crops for research/exit_sign/images/fix1 (numpy + Pillow; W/venv/bin/python).
+
+  python fix1_boards.py <out_images_dir>
+
+Reads the r2 captures (W/es_fix1/r2/{v,b}) and their measurements ({v,b}/measure.json). Writes:
+  es_f01_run_light_variants.jpg   Run room, sign A at 1.5 m: six light/gain variants with T2-Run and colour
+  es_f02_run_room_wide.jpg        Run room wide (game vFOV 76): 10-08 main vs the fix1 default
+  es_f03_colour_lit_dark.jpg      the wall sign in the lit and the dark Lobby at 0.3 / 3 / 6 m (after), with numbers
+  es_f04_lit_before_after.jpg     lit Lobby at 3 m and 0.3 m: 10-08 diffuser vs fix1 diffuser
+  es_f05_run_6m_12m.jpg           Run room sign B at 6 m and 12 m + the Exit room's sign at 3 m (after)
+  es_f06_states.jpg               LIT / HALF A / HALF B / LOOSE / BATTERY / DEAD on sign A at 1.5 m and 6 m
+  es_f07_capture_path.jpg         one frame through the old ARGB32 capture path vs the HDR path (the game's)
+  colour/<name>.png + colour/<name>_body.png + colour/measure.json: native-pixel crops of the measured graded frames
+                                  (lens distortion held at 0) and the letter-body masks the numbers come from
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import measure as m  # noqa: E402
+
+R = "/Users/redwang/FrontRoomsVisualWork/es_fix1/r2"
+FONT = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Regular.otf")
+FONTB = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Bold.otf")
+
+
+def font(size, bold=False):
+    try:
+        return ImageFont.truetype(FONTB if bold else FONT, size)
+    except OSError:
+        return ImageFont.load_default()
+
+
+def rows_of(path):
+    by = {}
+    for r in json.load(open(path)):
+        by[(r["part"], r["variant"], r["shot"])] = r
+    return by
+
+
+V = rows_of(R + "/v/measure.json")
+B = rows_of(R + "/b/measure.json")
+
+
+def sign_box(capture, shot, margin=0.6, aspect=None, face_only=False, meta_json=None):
+    ids = m.id_masks(f"{R}/{capture}/id/{shot}_id.png")
+    s = ids["letters"] | ids["dead"] | ids["face"] | (0 if face_only else ids["housing"])
+    if meta_json:
+        meta = json.load(open(meta_json))
+        s = m.target_only(meta, ids["letters"] | ids["dead"])
+    ys, xs = np.nonzero(s)
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    h, w = y1 - y0, x1 - x0
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    w2, h2 = w * (1 + margin) / 2, h * (1 + margin) / 2
+    if aspect:
+        if w2 / h2 < aspect: w2 = h2 * aspect
+        else: h2 = w2 / aspect
+    H, W = s.shape
+    x0, x1 = int(max(0, cx - w2)), int(min(W, cx + w2))
+    y0, y1 = int(max(0, cy - h2)), int(min(H, cy + h2))
+    return x0, y0, x1, y1
+
+
+def fit(im, w, h):
+    return im.resize((w, h), Image.LANCZOS)
+
+
+def label(draw, xy, lines, size=20, fill=(255, 255, 255), bg=(10, 10, 10)):
+    x, y = xy
+    f = font(size)
+    for i, t in enumerate(lines):
+        bb = draw.textbbox((x, y), t, font=f)
+        draw.rectangle((bb[0] - 6, bb[1] - 4, bb[2] + 6, bb[3] + 4), fill=bg)
+        draw.text((x, y), t, font=f, fill=fill)
+        y = bb[3] + 10
+
+
+def hs(r):
+    return f"hue {r['body_hsv'][0]:.1f} sat {r['body_hsv'][1]:.2f}" if r and "body_hsv" in r else "-"
+
+
+def board(cells, cols, cw, ch, path, title=None):
+    rows = (len(cells) + cols - 1) // cols
+    top = 56 if title else 0
+    out = Image.new("RGB", (cols * cw, top + rows * ch), (238, 236, 230))
+    d = ImageDraw.Draw(out)
+    if title:
+        d.text((16, 12), title, font=font(26, True), fill=(10, 10, 10))
+    for i, (im, lines) in enumerate(cells):
+        x, y = (i % cols) * cw, top + (i // cols) * ch
+        out.paste(fit(im, cw - 4, ch - 4), (x + 2, y + 2))
+        label(d, (x + 14, y + 12), lines)
+    out.save(path, quality=88)
+    print("wrote", path, out.size)
+
+
+def t2(by, part, variant, shots=("RA_1p5", "RB_1p5", "RA_6m", "RB_6m", "RB_12m")):
+    v = [by.get((part, variant, s), {}).get("T2run_Y") for s in shots]
+    v = [x for x in v if x is not None]
+    return f"T2-Run {min(v):.2f}-{max(v):.2f}" if v else "T2-Run -"
+
+
+def main():
+    out = sys.argv[1]
+    os.makedirs(out, exist_ok=True)
+    os.makedirs(out + "/colour", exist_ok=True)
+
+    # f01: Run sign A at 1.5 m, six variants
+    vs = [("A_pt", "10-08 main: point light 3.6 at 1.96 m"), ("stream", "fix1 default: spot 162/140 down"),
+          ("B_pc", "Red's B: point in the housing"), ("A_pt_g3", "letters x3 (point light)"),
+          ("A_pt1.2", "point light 1.2 (one third)"), ("B_spc", "B with the fix1 spot")]
+    box = sign_box("v", "RA_1p5", margin=2.2, aspect=16 / 9)
+    cells = []
+    for v, name in vs:
+        im = Image.open(f"{R}/v/run/{v}/RA_1p5_g.png").crop(box)
+        r = V.get(("run", v, "RA_1p5"))
+        cells.append((im, [name, t2(V, "run", v) + " (bar 1.5)", "letters 1.5 m: " + hs(r)]))
+    board(cells, 3, 640, 360, out + "/es_f01_run_light_variants.jpg")
+
+    # f02: wide room, 10-08 main vs fix1
+    cells = []
+    for v, name in [("A_pt", "10-08 main (point light)"), ("stream", "fix1 default (spot 162/140 down)")]:
+        r = V.get(("run", v, "R_wide"), {})
+        cells.append((Image.open(f"{R}/v/run/{v}/R_wide_g.png"),
+                      [name, f"raw mean Y: floor {r.get('floor_meanY')} walls {r.get('wall_meanY')} ceiling {r.get('ceiling_meanY')}"]))
+    board(cells, 1, 960, 540, out + "/es_f02_run_room_wide.jpg")
+
+    # f03: colour, lit and dark Lobby at 0.3 / 3 / 6 m (after) + hand-off crops
+    meas = {}
+    cells = []
+    for room in ("lit", "dark"):
+        for shot, dist in (("L_0p3", "0.3 m"), ("L_3m", "3 m"), ("L_6m", "6 m")):
+            vname = "lobby_" + room + "_g1"
+            bx = sign_box("v", shot, margin=0.5, aspect=16 / 9)
+            im = Image.open(f"{R}/v/lobby/{vname}/{shot}_m.png").crop(bx)
+            r = V[("lobby", vname, shot)]
+            cells.append((im, [f"{room} room, {dist}", hs(r) + f"  contrast {r['contrast']:.2f}"]))
+            name = f"lobby_{room}_{dist.replace(' ', '').replace('.', 'p')}"
+            meas[name] = save_crop(out, name, "v", f"lobby/{vname}", shot, bx, r)
+    board(cells, 3, 640, 360, out + "/es_f03_colour_lit_dark.jpg")
+
+    # f04: lit Lobby before (10-08 diffuser, b) vs after (v), 3 m and 0.3 m
+    cells = []
+    for shot, dist in (("L_3m", "3 m"), ("L_0p3", "0.3 m")):
+        bx = sign_box("v", shot, margin=0.5, aspect=16 / 9)
+        for cap, by, tag in (("b", B, "10-08 diffuser"), ("v", V, "fix1 diffuser")):
+            im = Image.open(f"{R}/{cap}/lobby/lobby_lit_g1/{shot}_m.png").crop(bx)
+            r = by[("lobby", "lobby_lit_g1", shot)]
+            cells.append((im, [f"lit room {dist}: {tag}", hs(r) + f"  contrast {r['contrast']:.2f}"]))
+    board(cells, 2, 960, 540, out + "/es_f04_lit_before_after.jpg")
+
+    # f05: Run room at 6 and 12 m, Exit room at 3 m (after)
+    cells = []
+    for part, vname, shot, name in (("run", "stream", "RB_6m", "Run room, sign B, 6 m"), ("run", "stream", "RB_12m", "Run room, sign B, 12 m"),
+                                    ("exit", "exit_stream", "E_3m", "Exit room, door sign, 3 m")):
+        bx = sign_box("v", shot, margin=2.2, aspect=16 / 9, face_only=True, meta_json=f"{R}/v/{part}/{vname}/{shot}_r.json")
+        im = Image.open(f"{R}/v/{part}/{vname}/{shot}_m.png").crop(bx)
+        r = V[(part, vname, shot)]
+        extra = f"  T2-Run {r['T2run_Y']:.2f}" if r.get("T2run_Y") else ""
+        cells.append((im, [name, hs(r) + extra]))
+        n = f"{part}_{shot}"
+        meas[n] = save_crop(out, n, "v", f"{part}/{vname}", shot, bx, r)
+    board(cells, 3, 640, 360, out + "/es_f05_run_6m_12m.jpg")
+    json.dump(meas, open(out + "/colour/measure.json", "w"), indent=1)
+
+    # f06: lamp states on sign A (fix1 default), 1.5 m and 6 m; light follows Level (as in game)
+    states = [("lit", "LIT"), ("halfa", "HALF A"), ("halfb", "HALF B"), ("loose", "LOOSE drop-out"), ("battery", "BATTERY"), ("dead", "DEAD")]
+    cells = []
+    lit = {s: V[("states", "stream", f"{s}_lit")]["raw_letter_Y"] for s in ("S", "S6")}
+    for pref, dist, margin in (("S", "1.5 m", 1.0), ("S6", "6 m", 1.6)):
+        idn = "states" if pref == "S" else "states6"
+        bx = sign_box("v", idn, margin=margin, aspect=32 / 27, face_only=True)
+        for st, name in states:
+            im = Image.open(f"{R}/v/states/stream/{pref}_{st}_m.png").crop(bx)
+            r = V[("states", "stream", f"{pref}_{st}")]
+            rel = r["raw_letter_Y"] / lit[pref]
+            cells.append((im, [f"{name}, {dist}", f"letters {rel:.2f}x LIT"]))
+    board(cells, 6, 320, 270, out + "/es_f06_states.jpg")
+
+    # f07: capture path: ARGB32 target (old harnesses) vs HDR target (the game), same frame (10-08 main light, old diffuser)
+    bx = sign_box("b", "RA_1p5", margin=2.2, aspect=16 / 9)
+    cells = [(Image.open(f"{R}/b/run/main1008/RA_1p5_ldr.png").crop(bx), ["old capture path: ARGB32 target", "scene clamped at 1.0 before bloom and ACES"]),
+             (Image.open(f"{R}/b/run/main1008/RA_1p5_m.png").crop(bx), ["HDR target = the game's path", "bloom + ACES shoulder on the letters"])]
+    board(cells, 2, 960, 540, out + "/es_f07_capture_path.jpg")
+
+
+def save_crop(out, name, cap, vdir, shot, bx, r):
+    im = Image.open(f"{R}/{cap}/{vdir}/{shot}_m.png").crop(bx)
+    im.save(f"{out}/colour/{name}.png")
+    # the exact letter-body pixels behind the numbers (measure.py: letters eroded 1 px, raw Y <= 1.25 x median)
+    ids = m.id_masks(f"{R}/{cap}/id/{shot}_id.png")
+    raw, meta = m.load_raw(f"{R}/{cap}/{vdir}/{shot}_r")
+    letters = m.target_only(meta, ids["letters"])
+    body = m.erode(letters, 1)
+    Y = m.y709(raw)
+    med = np.median(Y[body])
+    core = body & (Y <= 1.25 * med)
+    if core.sum() >= 20:
+        body = core
+    Image.fromarray((body[bx[1]:bx[3], bx[0]:bx[2]] * 255).astype(np.uint8)).save(f"{out}/colour/{name}_body.png")
+    keep = {k: r.get(k) for k in ("body_srgb", "body_hsv", "body_R_over_G", "hot_srgb", "hot_hsv", "face_srgb", "L_face", "L_letter", "contrast", "raw_letter_Y", "T2run_Y", "body_px")}
+    keep["crop_xyxy_in_1920x1080"] = list(bx)
+    keep["frame"] = f"{vdir}/{shot}_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+    return keep
+
+
+if __name__ == "__main__":
+    main()

@@ -14,6 +14,8 @@ These are captures only. Nothing was packaged, and nothing in main changed excep
 
 ## 1. Critic issue 2: "a lamp hanging under the sign"
 
+**Update 2026-10-14 (`exit_sign_fix1`, `60_fix1.md` §8).** fix1 keeps A's position and makes the light a spot pointing straight down. That removes both of A's symptoms (no dark copy on the ceiling, no glowing underside). B as specified below then fails the new T2-Run gate (letters 0.26–0.28× the ceiling ring against 4.2–5.7× for fix1), and B with the spot leaks light through the sign's seams. The call is still Red's; the numbers below are from 10-08, before fix1.
+
 **Question:** should the Run sign's red light move inside the housing, with the sign casting no shadow?
 
 **Board:** `images/red_calls/es_rc1_run_sign_light_ab.jpg`. Rows are 1.5 m, 4 m and 8 m before sign B, plus a wide frame. The eye is at 1.62 m, pitched up 20°. At 8 m, sign A is 2.2 m ahead and fills the frame. Slide: VL221.

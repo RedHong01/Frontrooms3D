@@ -1,0 +1,7 @@
+A_armed start Thu Oct  8 20:04:35 PDT 2026
+A_armed exit 0 74 s errors=0 png=       4
+A_tripped start Thu Oct  8 20:05:49 PDT 2026
+A_tripped exit 0 50 s errors=0 png=       6
+A_noprobe start Thu Oct  8 20:06:39 PDT 2026
+A_noprobe exit 0 32 s errors=0 png=       2
+A ALLDONE Thu Oct  8 20:07:11 PDT 2026

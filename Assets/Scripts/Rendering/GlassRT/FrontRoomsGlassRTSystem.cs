@@ -502,6 +502,16 @@ static class FrontRoomsGlassRTSystem
             r.texBump = (uint)Slot(m, "_BumpMap", Native.TexBump);
             r.texMacro = (uint)Slot(m, "_MacroMap", Native.TexGrey);
             if (m.IsKeywordEnabled("_FR_MESH_UV")) r.flags |= Native.MatMeshUV;
+            // V2-STOPGAP: remove when MatPrint lands (glass-rt-track); codex audit V2, research/codex_audit/30_fix_other_visual.md.
+            // _FR_PRINT wallpapers: _BaseMap holds the paper modulation code (FrontRoomsSurface.shader,
+            // FR_PAPER_*), not a colour; traced as albedo it reads red-magenta (texel mean 195/15/51).
+            // Until the hit shader composes paper x print, trace the print's mean ink tone, flat.
+            if (m.IsKeywordEnabled("_FR_PRINT"))
+            {
+                r.texBase = Native.TexWhite;
+                var ink = Vector4.Lerp(Lin(m, "_InkGround", new Color(.8235f, .7608f, .4863f)), Lin(m, "_InkMid", new Color(.6745f, .6039f, .3216f)), .55f);
+                r.baseColor = new Vector4(r.baseColor.x * ink.x, r.baseColor.y * ink.y, r.baseColor.z * ink.z, r.baseColor.w);
+            }
             if (m.IsKeywordEnabled("_EMISSION"))
             {
                 r.flags |= Native.MatEmission;

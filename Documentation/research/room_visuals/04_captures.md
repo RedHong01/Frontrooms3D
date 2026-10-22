@@ -1,5 +1,7 @@
 # 04 — Current-state captures: every room type as it renders today
 
+> **Update 2026-10-14:** the current frames are the 14 Oct set (`images/room1014_*`), described in `05_captures_1007_1014.md`. It is identical to the 7 Oct set except in the title Run and Exit rooms (the merged EXIT kit). This file describes the 3 Oct set.
+
 Status: DONE (2026-10-03, re-shot at 11:58). **65 frames** and 3 contact sheets.
 Made in a private clone. Red's project was not opened. Nothing in it changed except
 this folder (`images/room_*`, `harness/`, this file).

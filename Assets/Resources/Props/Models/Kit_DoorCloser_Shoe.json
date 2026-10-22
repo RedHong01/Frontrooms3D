@@ -80,11 +80,12 @@
   0.019999999552965164,
   0.010999999940395355
  ],
- "triangles": 570,
+ "triangles": 922,
  "slots": [
   "Prop_SteelBrown",
   "Prop_Chrome"
  ],
+ "trianglesLod1": 922,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

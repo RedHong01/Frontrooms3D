@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Build the v2 apply package exit_sign_fix1 (r2, 2026-10-14) from the verified payload sources.
+
+usage: build_package.py <out_dir>
+
+The payload is W/es_fix1/r2/src/<path>; every file must be byte-identical to the verified clone W/proj_es_fix1
+(the builder refuses otherwise). Writes into <out_dir> (never into Red's project, which is only read):
+  exit_sign_fix1.sh                 copied from W/es_fix1/r2/tools/exit_sign_fix1.sh
+  exit_sign_fix1_payload/<path>     the payload (15 paths)
+  exit_sign_fix1_base/<path>        exact copies of main's current files for every path main already has
+  exit_sign_fix1_bases.txt          sha1 of main's file per touched path, or ABSENT
+  exit_sign_fix1_expected.txt       sha1 of the payload per touched path
+  exit_sign_fix1_keep.txt           sha1 of main's .meta for every replaced asset whose .meta is not in the payload
+  exit_sign_fix1.diff               unified diff base -> payload (informational)
+Old payload/base folders in <out_dir> are moved aside (never deleted).
+"""
+import datetime
+import hashlib
+import os
+import shutil
+import subprocess
+import sys
+
+W = '/Users/redwang/FrontRoomsVisualWork'
+RED = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D'
+SRC = W + '/es_fix1/r2/src'
+CLONE = W + '/proj_es_fix1'
+T = 'exit_sign_fix1'
+PATHS = [
+    'Assets/Editor/Rendering/FrontRoomsExitSignTests.cs.meta',
+    'Assets/Resources/Surfaces/ExitSign_Diffuser.mat',
+    'Assets/Resources/Surfaces/ExitSign_Diffuser_Dead.mat',
+    'Assets/Resources/Props/Models/Kit_ExitSign_Hanging.json',
+    'Assets/Resources/Props/Models/Kit_ExitSign_Hanging_Dead.json',
+    'Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush.json',
+    'Assets/Resources/Props/Models/Kit_ExitSign_HangingFlush_Dead.json',
+    'Tools/Blender/frontrooms_kit/kitlib.py',
+    'Tools/Blender/frontrooms_kit/assets/exit_sign_hanging.py',
+    'Tools/Blender/frontrooms_kit/assets/exit_sign_hanging_flush.py',
+    'Assets/Editor/Rendering/FrontRoomsRenderSetup.cs',
+    'Assets/Editor/Rendering/FrontRoomsExitSignTests.cs',
+    'Assets/Scripts/Rendering/FrontRoomsExitSign.cs',
+    'Assets/Scripts/FrontRoomsRoomStream.cs',
+]
+TEXT_EXT = {'.cs', '.py', '.json', '.meta', '.mat'}
+
+
+def sha(p):
+    h = hashlib.sha1()
+    with open(p, 'rb') as f:
+        for b in iter(lambda: f.read(1 << 20), b''):
+            h.update(b)
+    return h.hexdigest()
+
+
+def main():
+    out = os.path.realpath(sys.argv[1])
+    assert out.startswith(W + '/') and not out.startswith(os.path.realpath(RED)), out
+    for p in PATHS:
+        a, b = os.path.join(SRC, p), os.path.join(CLONE, p)
+        assert os.path.isfile(a), 'missing payload source ' + a
+        assert os.path.isfile(b) and sha(a) == sha(b), 'payload source differs from the verified clone: ' + p
+    head = subprocess.run(['git', '-C', RED, 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True,
+                          env=dict(os.environ, GIT_OPTIONAL_LOCKS='0')).stdout.strip()
+    stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    os.makedirs(out, exist_ok=True)
+    aside = W + '/_partial/exit_sign_fix1_package_old_' + datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    for d in (f'{T}_payload', f'{T}_base'):
+        if os.path.exists(os.path.join(out, d)):
+            os.makedirs(aside, exist_ok=True)
+            shutil.move(os.path.join(out, d), os.path.join(aside, d))
+    bases, exp, keep, diffs = [], [], [], []
+    for p in PATHS:
+        src = os.path.join(SRC, p)
+        dst = os.path.join(out, f'{T}_payload', p)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(src, dst)
+        exp.append(f'{sha(dst)}  {p}')
+        main_p = os.path.join(RED, p)
+        if os.path.isfile(main_p):
+            b = os.path.join(out, f'{T}_base', p)
+            os.makedirs(os.path.dirname(b), exist_ok=True)
+            shutil.copyfile(main_p, b)
+            bases.append(f'{sha(b)}  {p}')
+            meta = p + '.meta'
+            if p.startswith('Assets/') and not p.endswith('.meta') and meta not in PATHS:
+                keep.append(f'{sha(os.path.join(RED, meta))}  {meta}')
+        else:
+            b = None
+            bases.append(f'ABSENT  {p}')
+        if os.path.splitext(p)[1] in TEXT_EXT:
+            d = subprocess.run(['diff', '-u', '--label', ('a/' + p) if b else '/dev/null', '--label', 'b/' + p,
+                                b or '/dev/null', dst], capture_output=True, text=True)
+            if d.stdout:
+                diffs.append(d.stdout.rstrip('\n'))
+    hdr = f'recorded {stamp} on main {head} + Red\'s working tree (after the exit_sign merge of 10-08)'
+    open(os.path.join(out, f'{T}_bases.txt'), 'w').write(
+        f'# {T} bases: sha1 of every path the script writes, {hdr}; ABSENT = new path\n' + '\n'.join(bases) + '\n')
+    open(os.path.join(out, f'{T}_expected.txt'), 'w').write(
+        f'# expected after --apply (= the payload = W/proj_es_fix1, verified by the exit_sign_fix1 r2 stage), {hdr}\n'
+        + '\n'.join(exp) + '\n')
+    open(os.path.join(out, f'{T}_keep.txt'), 'w').write(
+        f'# kept, never written: the .meta (GUID) of every replaced asset whose .meta is not in the payload, {hdr}\n'
+        + '\n'.join(keep) + '\n')
+    open(os.path.join(out, f'{T}.diff'), 'w').write(
+        f'# {T} (apply convention v2): unified diff base copies {T}_base/ -> payload {T}_payload/, {hdr}.\n'
+        '# Informational: rebases use the base copies, not this file.\n' + '\n'.join(diffs) + '\n')
+    shutil.copyfile(W + '/es_fix1/r2/tools/exit_sign_fix1.sh', os.path.join(out, f'{T}.sh'))
+    os.chmod(os.path.join(out, f'{T}.sh'), 0o755)
+    print(f'package {out}: {len(PATHS)} paths ({sum(1 for b in bases if b.startswith("ABSENT"))} new), '
+          f'{len(keep)} kept metas, main {head}')
+
+
+if __name__ == '__main__':
+    main()

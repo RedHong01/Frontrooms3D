@@ -401,7 +401,11 @@ The full report is `Verification/relay-baseline/summary.md`. Two auditors checke
 **Rules.**
 - **Head.** The hunter owns a logical `LookYaw`, clamped ±70° from the body. It canvasses with TLOU-style turns in Listen and Search, sweeps ±40° while walking, tracks the player once the meter reaches 0.5, locks forward in Chase. The rig draws it: **body follows `Heading`, head follows `LookYaw`** (today the body snaps to face the player on any glimpse).
 - **Calm sight** (Listen, Patrol, Hunt, Search, BreakDoor): ±60° H, ±40° V around `LookYaw` (up to ±130° of the body; rear blind arc ≥ 100°), 12 m in 3D at every tier, no light term (dark is never cover), any collider but the player blocks it. `SeesPlayer` keeps meaning "ray and cone pass this frame".
-- **`PlayerSeesRelay`** (new, one test reused everywhere): frustum test plus 2 rays to its 1.6 m and 1.95 m points, at 10 Hz, platform-identical. Read by Withdraw, FADE, Pressure, the stage-2 footstep rule and Arrive.
+- **Three named sight tests** (amended 2026-10-14; replaces "one test reused everywhere"; see `research/computer_ui/20_design.md` §6.1 and §6.6). They share their parts: `RelayInView(frustum)` means both Relay points, at 1.6 m and 1.95 m, project inside the frustum and are visible from the eye (2 rays, 10 Hz). `RelayLit` means XZ distance ≤ 16 m and the lamp level W ≥ 0.15 (ESTIMATE) over the Relay's cell and its 4 neighbours.
+  - **`PlayerSeesRelay`** (fixed): `RelayInView` on a reference frustum (vertical 76°, 16:9, the camera's real yaw and pitch), out to `SightDistance`, with no light term. It is platform-identical, so bots and phones meet the same Relay. It is read by Withdraw and FADE ("never vanish in view"), Arrive ("never appear in view"), the stage-2 footstep rule and `NotifyPlayerSeesRelay`. These rules must hold whenever the Relay might be seen, so a dark Relay still counts; that is their safe side. Main's flat ±60° test with no pitch and a 46 m reach is replaced. Nothing in main reads it yet, so no live behaviour changes.
+  - **`PlayerPerceivesRelay`** (new) = `PlayerSeesRelay && RelayLit`. It is platform-identical and is read by Pressure ("you see it" +4/s; the "almost" +5/s term reads "while the stage-2 audio is audible or `PlayerPerceivesRelay`"). Pressure is fed only by cues the player perceived (§4).
+  - **`RelayOnScreen`** (new) = `RelayInView` on this device's own camera frustum `&& RelayLit`. It is per device and is read only by UI gates: every EXAMINE close-up's prompt gate, the Office terminal's gate, and the live-mode forced exit. A UI gate must match what this screen shows. Otherwise the band between a 16:9 screen (±54° across) and an iPad (±48°) becomes a detector on the narrower screen.
+  - **The UI prompt gate `ThreatPerceivable`** hides a close-up prompt only for threats the player perceives: chase or stage 3; a door break whose blow is heard; v2 Spotting ≥ 0.5 while the steps are audible or the Relay is on screen; `RelayOnScreen`. After the threat ends, the prompt stays hidden until the player perceives a change: the chase bed fades out (3 s), the steps stop, the blows stop, or the Relay leaves the frame. A prompt that vanished or returned for no perceivable reason would be a detector. Never `SeesPlayer`. One contract for 关卡设计 (L4 in the terminal spec).
 - **Touch:** within 1.5 m on the flat, 360°, only when the two cells are the same or joined by an **Open** passage (open, arch, broken, pried) **and** a capsule cast between the bodies is clear. Fills the meter at 4/s (never instant). Exempt from the gate. Off when `sightRange` is 0. Never through a shut or Ajar door or a window.
 - **Spotting meter (0–1):** fills while the ray and cone pass, full in T(d) = (0.30 + 0.04·d) × spotMul[tier]. **Freeze:** half rate once the player has stood still ≥ 0.5 s at d > 6 m (taught on the pause card; kept only if Step 0 shows no abuse). Drains 0.5/s after a 0.3 s hold. **No fill while the player's cell is a sanctuary cell.**
 - **"Almost" (meter 0.5):** the Relay stops and the head tracks you; one positional **scuff-and-turn** plays from its body (under the stage-2 path rules) and is captioned. If the meter drains from ≥ 0.5 without filling, it takes a cautious look at the glimpse point.
@@ -588,8 +592,33 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
   - **SLAM:** E to shut while fast. 0.3 s swing and a frame bang. 27 m, +12.
   - A door can be swung again only once its swing has finished (no door spam). A quick re-shut while walking stays an ease.
   - A shut door is a barrier: +9 m to all hearing and warnings, blocks sight, a WALL to a Relay without a licence (§5).
-  - **Ajar** (`Passage.Ajar`, new): the rest state of a rehung door or one the Relay OPENed. +4 m, blocks sight. The Relay pushes through in 0.4 s (source Relay). The player opens it fully with E (an ease).
-  - **Rehang:** during Away, each broken door more than 24 m of F from the player and out of sight is rehung Ajar.
+  - **Ajar** (`Passage.Ajar`, new): the rest state of a door the Relay OPENed. +4 m, blocks sight. The Relay pushes through in 0.4 s (source Relay). The player opens it fully with E (an ease).
+  - **Broken doors (Red, 2026-10-14: "a broken door cannot be shut, and the crosshair shows that it is broken").**
+    - **What it is:** once the Relay breaks a door, the door is broken for the rest of the run. It stays open, hanging crooked. The player cannot shut, open, ease, barge, slam, lock or unlock it.
+    - **What follows for the systems:**
+      - It is an **Open** passage (`Passage.Open`). It costs 0 m for hearing and for the warning field. It never blocks sight. It is never a WALL and never needs a licence.
+      - **A broken locked door is open to everyone.** Its zone lock no longer applies. The key still opens the zone's other doors.
+      - It is lost as cover for good, so shutting doors keeps its value only while the Relay leaves them whole. v2's licences (§5) make breaks rare: the Relay only breaks a door it heard or saw you go through.
+      - It is an honest trace of where the Relay has been. It reveals no position now.
+    - **Persistence:** it is kept by edge for the whole run, through chunk drops, rebuilds and revisit shifts. Main already does this: `brokenDoors` (FrontRoomsMapWorld.cs:443, :1453-1456). It clears only with the run (Caught → restart is a new map) and through the test tool `ResetDoorForTools`.
+    - **E on a broken door:** no door action.
+      - `Use` returns a new `UseResult.Broken`, appended to the enum (today it returns `None`, :2478).
+      - The HUD plays a "won't shut" reaction. The crosshair motion is 平面视觉's.
+      - The leaf may wobble for the player. 声音设计 can add a small hanging-leaf Foley through an event.
+      - **The Relay hears nothing:** 0 m and Attention 0. It is a failed action, not a door verb, and the feedback must never cost the player anything.
+      - The reaction cannot retrigger within its own length, like `Rattle.Duration`.
+      - **HUD (Red picked B·4 "hangs off its hinge", 10-14; `hud_build/DECISIONS.md` #11):** on aim the dot becomes a door. The build is 800 ms: complete at 440 ms, then the leaf swing settles. The "won't shut" reaction is 550 ms, which is also the guard (repeat E within it is ignored). Leaving takes 300 ms back to the dot. The full grammar is in `research/computer_ui/30_crosshair_grammar.md`.
+    - **Aim:** at the hanging leaf within the door reach (2.4 m).
+      - `Describe` returns a broken prompt kind instead of null (today null, :2453). Return a kind, not a string, so the HUD keys its state on it.
+      - The strings ("BROKEN" / "WON'T SHUT") are 平面视觉's to settle with Red.
+      - Touch: the USE button shows the same state, and a tap plays the same reaction (touch chat).
+    - **While the Relay is breaking it** (`IsBeingBroken`): no prompt, as today. The door is visibly and audibly being hit, so the HUD adds nothing.
+    - **Tests:**
+      - E on a broken door never changes its state and never emits a Relay noise.
+      - A broken door stays broken after a chunk rebuild and a revisit shift.
+      - Its passage is Open, with 0 m in the path field.
+      - A broken locked door lets a keyless player through.
+  - **No rehang** (Red, 2026-10-14, Q9: "门一直坏着"): broken doors are never repaired during a run. The v2 rehang (broken → Ajar during Away) is dropped.
 - **Windows** (two targets, two inputs):
   - The **pane**: "HOLD E · BREAK GLASS", 1.0 s as today: an instant call.
   - The **sash latch** (its own collider on the meeting rail): "HOLD E · PRY SASH (quiet)", 4 s, 8 m, +8, leaves it open for good. Progress banks between holds; in TAP TO BREAK mode taps bank pry progress. Plain windows only.
@@ -617,7 +646,8 @@ Red wants the pattern-native hint in the game: the wall's arrows click round to 
 | Ease / barge / slam | 0.55 s, 6 m, +1 / 0.3 s, 18 m, +8 / 0.3 s, 27 m, +12 | Closing doors behind you is free; panic costs. |
 | Fast test | input velocity: sprinting or ≤ 0.5 s after a sprint frame | Pull steps never read as slams. |
 | Ajar | +4 m, blocks sight; Relay push 0.4 s | The LD door state machine. |
-| Rehang | during Away, F > 24 m, out of sight | Cover recovers. |
+| Broken door | permanent for the run; Open passage, 0 m; E gives `UseResult.Broken`, no noise, 550 ms retrigger guard; HUD B·4, build 800 ms (complete at 440 ms), leave 300 ms; zone lock void | Red 2026-10-14: a broken door can't be shut. |
+| Rehang | dropped (Red, Q9, 2026-10-14) | A broken door stays broken for the run. |
 | Pry | latch, hold 4 s, 8 m, +8, banks progress | A tall zone is never a forced call. |
 | Plain windows | ≥ 1 per tall border; ≥ min(2, count) per tall zone | Pure, per-zone, stable. |
 | Stamina | landed winded rule; held Shift resumes; first noise at 0.3 s; ≥ 0.5 m per step | No beacon, no dead controls. |
@@ -701,7 +731,7 @@ Steps are ordered so the game always has a working Relay between landings. A scr
 | 3 | 关卡设计 | Hearing: sense links, error, side-correct estimate, margin, re-target limit, repeats, BreakDoor queue, half-range Withdraw hearing, walking loudness T3+; `DebugPlace(feet, facing)` resets. Sight: `LookYaw`, cones, touch (Open passage + capsule), meter with freeze and drain, per-lock-on G3 gate and its look fallback, fixed hold, ramp, lose meter, 24 m exit, chase-cap backstop, cautious look and full search, catch rules. Nav door-rule rewrite; interaction tests updated (release → call-driven Arrive; tier checks) | 3.5 |
 | 4 | 关卡设计 | Flip the define after Step-0 bots, nav, map 100/100 and fixture parity pass. Remove v1 paths in a later clean-up | 0.5 |
 | 5 | 关卡设计 | `FrontRooms3DGame`: stamina (landed winded rule kept; `stepTime` reset; 0.5 m step test); ease/barge/slam from input velocity with `Disturb` sources; swing lock; CalmHint, RESTORE line, pause card; tier by unique GridCoords; stall rule deleted; HUD line and CAUGHT overlay without TIER; `TierChanged` (exists) unchanged. Check the captions session's diff first | 1.5 |
-| 6 | 关卡设计 (+ 声音设计, camera rig) | Doors and windows: `Passage.Ajar` with its own branch in `Follow` and Search; Relay OPEN and push; rehang; the 0.3 s fast swing (ping 声音设计 for its Foley; `FrontRoomsShotTimings`, `FrontRoomsDoorSound`, `DOOR_FOLEY_SEGMENTS` are dependencies); the sash-latch collider and pry with banked progress and tap mode; Relay window frame step; interaction tests incl. "4 s on the latch never raises GlassBroken" and "player behind a shut door, Relay at 1.0 m: no TargetAcquired" | 4.5 |
+| 6 | 关卡设计 (+ 声音设计, camera rig) | Doors and windows: `Passage.Ajar` with its own branch in `Follow` and Search; Relay OPEN and push; `UseResult.Broken` and the broken prompt kind (§10, no rehang); the 0.3 s fast swing (ping 声音设计 for its Foley; `FrontRoomsShotTimings`, `FrontRoomsDoorSound`, `DOOR_FOLEY_SEGMENTS` are dependencies); the sash-latch collider and pry with banked progress and tap mode; Relay window frame step; interaction tests incl. "4 s on the latch never raises GlassBroken" and "player behind a shut door, Relay at 1.0 m: no TargetAcquired" | 4.5 |
 | 7 | 关卡设计 (logic) + 游戏视觉 (look) | Lamps on the landed layer: room set, Relay exclusion, live-lamp count in `lightRadius`, widening, burst scheduler with explicit envelope, `SetLampMode(Steady)` suspension, `WarnBurst`, `LampOverrideStarted`; per-room-set and per-fixture limiters; mode 1 and 2 rewrite; stored first-generation tier per chunk and zone; T5 odds cap; 60 Hz test | 2.5 + look |
 | 8 | 关卡设计 | Level content v2.0: validator rules first (articulation point, keys, alarm door, plain windows per border and zone, ≥ 2 entries per zone ≥ 10 cells apart, cover measure); foiled windows in the budget; Red's first trigger room (Q6) with `RoomTriggered` → director; auto entries | 2.5 |
 | 9 | 声音设计 | **Audio clean-up and new cues** (below). Verify with `fmod_check contract` and a traced autopilot run | 4 |
@@ -858,7 +888,7 @@ The tier-lock and no-capture guards in Game.cs belong to 关卡设计. The smoke
 
 ## 16. Open questions for Red
 
-**Answered by Red, 2026-10-04:** Q2 = **yes** (the quiet-player sweep is in v2.0); Q8 = **yes** (run the Step 0 baseline first; 关卡设计 has the brief). The other six stay open.
+**Answered by Red, 2026-10-04:** Q2 = **yes** (the quiet-player sweep is in v2.0); Q8 = **yes** (run the Step 0 baseline first; 关卡设计 has the brief). The other six stay open. **Q9 answered 2026-10-14:** broken doors stay broken.
 
 Lettered items are separate yes/no decisions.
 
@@ -881,6 +911,7 @@ Lettered items are separate yes/no decisions.
    b. Foil-taped windows that always alarm?
    c. Dead-circuit sanctuary rooms it will not enter (v2.1)?
 8. **Baseline first** — **answered yes (2026-10-04):** the map chat adds the seeded bots and runs Step 0 (no gameplay change) before any of this lands.
+9. **Rehang broken doors** — **answered (2026-10-14): keep them broken** ("门一直坏着"). A door the Relay breaks stays broken for the rest of the run; the v2 rehang is dropped.
 
 ---
 

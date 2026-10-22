@@ -106,10 +106,10 @@
   "base": 0.0002,
   "flat": 0.0008,
   "flankDegFromVertical": 50.0,
-  "tipBevelZ": 0.0215,
+  "tipBevelZ": 0.0234,
   "tipY": 0.0005
  },
- "trianglesCheck": 2184,
+ "trianglesCheck": 2188,
  "boundsMin": [
   -0.0010999999940395355,
   -0.012500000186264515,
@@ -120,10 +120,11 @@
   0.013500000350177288,
   0.02500000037252903
  ],
- "triangles": 2184,
+ "triangles": 2188,
  "slots": [
   "Prop_Aluminium"
  ],
+ "trianglesLod1": 2188,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

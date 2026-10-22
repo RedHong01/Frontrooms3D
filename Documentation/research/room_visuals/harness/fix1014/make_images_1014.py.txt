@@ -1,0 +1,134 @@
+"""Room-visuals fix stage, 2026-10-14: export the fix renders, floor crops and verification composites.
+
+usage: python make_images_1014.py <runs dir> <doc images dir> <jpg1014 dir> <metrics_fix.json>
+"""
+import json
+import os
+import shutil
+import sys
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+R, DOC, J14, MET = sys.argv[1:5]
+met = json.load(open(MET))
+FONT = "/Users/redwang/Library/Fonts/IBMPlexMono-Medium.otf"
+
+
+def font(px):
+    return ImageFont.truetype(FONT, px)
+
+
+def jpg(src, name, crop=None):
+    im = Image.open(src).convert("RGB")
+    if crop:
+        im = im.crop(crop)
+    if im.width > 1920:
+        im = im.resize((1920, round(im.height * 1920 / im.width)), Image.LANCZOS)
+    im.save(os.path.join(DOC, name + ".jpg"), "JPEG", quality=85, optimize=True)
+    return name
+
+
+out = []
+# 1. fix renders (10-08 20:04-20:10, FIX1: live box probes, one state per run; *_k = contract-size Relay)
+for src, name in [
+    ("A_armed/s1a", "run_dir_red_ward_s1a_probes"), ("A_armed/s2", "run_dir_red_ward_s2_probes"),
+    ("A_tripped/s1b", "run_dir_red_ward_s1b_probes"), ("A_tripped/c4", "run_dir_red_ward_c4_probes"),
+    ("A_tripped/c4_k", "run_dir_red_ward_c4k_probes"), ("A_noprobe/s1b", "run_dir_red_ward_s1b_noprobe"),
+    ("C_armed/s1a", "run_dir_house_lights_s1a_probes"), ("C_armed/s2", "run_dir_house_lights_s2_probes"),
+    ("C_tripped/s1b", "run_dir_house_lights_s1b_probes"), ("C_tripped/x2", "run_dir_house_lights_x2_probes"),
+    ("C_relay/c4", "run_dir_house_lights_c4_probes"), ("C_relay/c4b", "run_dir_house_lights_c4b_probes"),
+    ("C_relay/c4_k", "run_dir_house_lights_c4k_probes"), ("C_relay/c4b_k", "run_dir_house_lights_c4bk_probes"),
+    ("C_noprobe/s1b", "run_dir_house_lights_s1b_noprobe"),
+    ("B_tripped/c4_k", "run_dir_emergency_power_c4k"),
+    ("A_dbg2/s1b", "run_fix_a_probe_debug"), ("C_dbg/s1b", "run_fix_c_probe_debug"),
+]:
+    out.append(jpg(os.path.join(R, src + ".png"), name))
+
+# 2. floor crops (bottom centre, 16:9): A and C fix renders, B final glossy r8 (doc jpg)
+CROP = (480, 540, 1440, 1080)
+for d, s1a, s1b in [("a", os.path.join(R, "A_armed/s1a.png"), os.path.join(R, "A_tripped/s1b.png")),
+                    ("b", os.path.join(DOC, "run_dir_emergency_power_s1a.jpg"), os.path.join(DOC, "run_dir_emergency_power_s1b.jpg")),
+                    ("c", os.path.join(R, "C_armed/s1a.png"), os.path.join(R, "C_tripped/s1b.png"))]:
+    out.append(jpg(s1a, "run_floor_" + d + "_s1a", CROP))
+    out.append(jpg(s1b, "run_floor_" + d + "_s1b", CROP))
+
+
+# 3. verification composites (labels in IBM Plex Mono, the deck's mono face)
+def label(dr, xy, text, size=26, dark=True):
+    f = font(size)
+    x, y = xy
+    w = dr.textlength(text, font=f)
+    dr.rectangle([x, y, x + w + 20, y + size + 14], fill=(10, 10, 10) if dark else (244, 223, 59))
+    dr.text((x + 10, y + 5), text, font=f, fill=(255, 255, 255) if dark else (10, 10, 10))
+
+
+def lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def diff_img(a, b, gain=8):
+    A = lin(np.asarray(Image.open(a).convert("RGB")).astype(np.float32) / 255)
+    B = lin(np.asarray(Image.open(b).convert("RGB")).astype(np.float32) / 255)
+    d = np.abs(A - B).max(-1) * gain
+    d = np.clip(d, 0, 1) ** (1 / 2.2) * 255
+    return Image.fromarray(d.astype(np.uint8)).convert("RGB")
+
+
+TW, TH, G = 640, 360, 12
+sheet = Image.new("RGB", (4 * TW + 3 * G, 2 * TH + G), (255, 255, 255))
+dr = ImageDraw.Draw(sheet)
+h1 = met["H1_probe_effect"]
+for row, (key, dbg, on, off, eff) in enumerate([
+        ("A", "A_dbg2/s1b", "A_tripped/s1b", "A_noprobe/s1b", h1["A_red_ward"]),
+        ("C", "C_dbg/s1b", "C_tripped/s1b", "C_noprobe/s1b", h1["C_house_lights"])]):
+    tiles = [Image.open(os.path.join(R, dbg + ".png")).convert("RGB"), Image.open(os.path.join(R, on + ".png")).convert("RGB"),
+             Image.open(os.path.join(R, off + ".png")).convert("RGB"), diff_img(os.path.join(R, on + ".png"), os.path.join(R, off + ".png"))]
+    names = [key + " · PROBES MAGENTA", key + " · PROBES ON", key + " · PROBES OFF", key + " · |ON - OFF| x8"]
+    for c, (t, n) in enumerate(zip(tiles, names)):
+        x, y = c * (TW + G), row * (TH + G)
+        sheet.paste(t.resize((TW, TH), Image.LANCZOS), (x, y))
+        label(dr, (x + 12, y + 12), n, 20)
+    label(dr, (3 * (TW + G) + 12, row * (TH + G) + TH - 46), "%.1f %% OF 8 PX BLOCKS MOVE > 5 %%" % eff["frame_blocks_changed_gt5pct"], 20, dark=False)
+sheet.save(os.path.join(DOC, "run_fix_v_probes_ac.jpg"), "JPEG", quality=88, optimize=True)
+out.append("run_fix_v_probes_ac")
+
+# Relay crops: proxy vs contract size, each direction; crop round the Relay from the mask bboxes
+m6 = met["M6_relay"]
+CW, CH = 480, 540
+rel = Image.new("RGB", (6 * CW + 5 * G, CH), (255, 255, 255))
+dr = ImageDraw.Draw(rel)
+cols = [("A_tripped/c4", "A PROXY", m6["A_c4"]["ratio"]), ("A_tripped/c4_k", "A 2.05 M", m6["A_c4_k"]["ratio"]),
+        ("B_tripped/c4", "B PROXY", m6["B_c4"]["ratio"]), ("B_tripped/c4_k", "B 2.05 M", m6["B_c4_k"]["ratio"]),
+        ("C_relay/c4b", "C PROXY, OFF AXIS", m6["C_c4b"]["ratio_in_lites"]), ("C_relay/c4b_k", "C 2.05 M, OFF AXIS", m6["C_c4b_k"]["ratio_in_lites"])]
+for i, (src, n, r) in enumerate(cols):
+    im = Image.open(os.path.join(R, src + ".png")).convert("RGB")
+    cx, cy = 960, 570
+    box = (cx - 240, cy - 270, cx + 240, cy + 270)
+    rel.paste(im.crop(box), (i * (CW + G), 0))
+    label(dr, (i * (CW + G) + 10, 10), n, 20)
+    label(dr, (i * (CW + G) + 10, CH - 46), "%.2f : 1" % r, 22, dark=r >= 4)
+rel.save(os.path.join(DOC, "run_fix_v_relay_contract.jpg"), "JPEG", quality=88, optimize=True)
+out.append("run_fix_v_relay_contract")
+
+# 4. room captures, 14 Oct (main 0a9ee7f + working tree): copy into the doc folder
+for f in sorted(os.listdir(J14)):
+    if f.endswith(".jpg"):
+        shutil.copy2(os.path.join(J14, f), os.path.join(DOC, f))
+        out.append(f[:-4])
+
+# before / after: the frames that changed since 7 Oct (Run and Exit: the merged EXIT kit)
+pairs = ["title-run_wide", "title-run_sign", "title-exit_arrival"]
+ba = Image.new("RGB", (2 * TW + G, 3 * TH + 2 * G), (255, 255, 255))
+dr = ImageDraw.Draw(ba)
+for i, p in enumerate(pairs):
+    a = Image.open(os.path.join(DOC, "room1007_" + p + ".jpg")).convert("RGB").resize((TW, TH), Image.LANCZOS)
+    b = Image.open(os.path.join(J14, "room1014_" + p + ".jpg")).convert("RGB").resize((TW, TH), Image.LANCZOS)
+    ba.paste(a, (0, i * (TH + G)))
+    ba.paste(b, (TW + G, i * (TH + G)))
+    label(dr, (12, i * (TH + G) + 12), "7 OCT · " + p.upper(), 18)
+    label(dr, (TW + G + 12, i * (TH + G) + 12), "14 OCT · " + p.upper(), 18)
+ba.save(os.path.join(DOC, "room1014_v_changed_frames.jpg"), "JPEG", quality=88, optimize=True)
+out.append("room1014_v_changed_frames")
+print(len(out), "images")
+print("\n".join(out))

@@ -1,5 +1,7 @@
 # 20 — Run! direction A · RED WARD: build log, costs, needs, open issues
 
+> **Update 2026-10-14 (fix stage, `21_run_fix_1014.md`):** A was re-rendered on 10-08 with live box probes, one state per Unity run, and floor smoothness × 1.56 (median .83). The magenta test shows the probes cover 97 % of the floor (VL236). The Relay at its contract size (2.05 m) reads **2.97 : 1, which fails the 4 : 1 bar** (VL237). The S1b numbers below are from before the fix; the new ones are median .0153, contrast 5.66 and saturated red 32 %.
+
 Date: 2026-10-07. Companion to `11_run_dir_red_ward.md` (the values, the measurements, pass / fail).
 Clone: `/Users/redwang/FrontRoomsVisualWork/proj_run_red_ward` (clone-only; nothing was promoted). A second APFS copy, `W/proj_run_red_ward_x`, ran parallel sweeps.
 Red's project was not opened in Unity. Writes there: this folder (`research/room_visuals/`: reports, images, `harness/`) and the three rows VL166–168 in `Documentation/VERIFICATION_LOG.md`.

@@ -73,10 +73,11 @@
   0.027000000700354576,
   0.06300000101327896
  ],
- "triangles": 4608,
+ "triangles": 4992,
  "slots": [
   "Prop_Brass"
  ],
+ "trianglesLod1": 1996,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

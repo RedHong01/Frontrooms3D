@@ -112,8 +112,7 @@
  "slots": [
   "Prop_Aluminium",
   "Prop_Rubber",
-  "Prop_Chrome",
-  "Prop_Aluminium"
+  "Prop_Chrome"
  ],
  "trianglesLod1": 1430,
  "frontAxis": "+Z",

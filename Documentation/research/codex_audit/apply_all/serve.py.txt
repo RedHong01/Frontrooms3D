@@ -1,0 +1,5 @@
+# codex_audit_all: serve a WebGL build folder on 127.0.0.1 with the .wasm/.data MIME types. usage: serve.py <dir> <port>
+import http.server, functools, sys
+H = http.server.SimpleHTTPRequestHandler
+H.extensions_map.update({".wasm": "application/wasm", ".data": "application/octet-stream", ".js": "application/javascript", ".mp4": "video/mp4"})
+http.server.ThreadingHTTPServer(("127.0.0.1", int(sys.argv[2])), functools.partial(H, directory=sys.argv[1])).serve_forever()

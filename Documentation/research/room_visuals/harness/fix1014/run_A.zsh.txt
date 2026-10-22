@@ -1,0 +1,10 @@
+#!/bin/zsh
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_run_red_ward; U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+R=$W/rooms_fix/runs
+run() { tag=$1; shift; mkdir -p $R/$tag; S=$(date +%s); echo "$tag start $(date)" >> $R/status_A.txt
+  $U -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off -runOutDir $R/$tag "$@" -logFile $R/$tag.log
+  echo "$tag exit $? $(( $(date +%s) - S )) s errors=$(grep -c 'error CS' $R/$tag.log) png=$(ls $R/$tag/*.png 2>/dev/null | wc -l)" >> $R/status_A.txt; }
+run A_armed -runState armed -runWax 1.56 -runShots s1a,s2
+run A_tripped -runState tripped -runWax 1.56 -runShots s1b,c4,c4_k
+run A_noprobe -runNoProbes -runWax 1.56 -runShots s1b
+echo "A ALLDONE $(date)" >> $R/status_A.txt

@@ -1,0 +1,241 @@
+"""C2 (rework round 1): strips, key-frame copies and review sheets from the rework's final renders.
+Run with door_break/C/py.
+
+  py publish2.py strips     db_C2_strip_<member>_burst_LA.jpg (3840 x 720) + db_C2_strip_both.jpg
+  py publish2.py before     db_C2_review_before_after_S4V1.jpg   Red's frame: old | new, with x2 crops
+                            db_C2_review_before_after_strip.jpg  the old strip over the new (L0-F)
+                            db_C2_review_before_after_close.jpg  D2 V2H, S4 V2H, S4 V5: old | new
+  py publish2.py reference  db_C2_review_vs_reference.jpg        our crops next to the on-disk references
+  py publish2.py distance   db_C2_review_distance.jpg            V6 at 12 m, both members, D2 + S4, x2 loupes
+  py publish2.py details    db_C2_review_details.jpg             close views of the break (S4)
+  py publish2.py jpgs       every final PNG -> images/db_C2_*.jpg (q85)
+
+Old frames are read from images/db_C_*.jpg (kept for comparison); nothing old is overwritten.
+"""
+import glob
+import os
+import sys
+
+from PIL import Image, ImageDraw, ImageFont
+
+RW = "/Users/redwang/FrontRoomsVisualWork/door_break/C/rework"
+FIN = RW + "/renders/final"
+PROJ = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/"
+DOC = PROJ + "Frontrooms3D/Documentation/research/door_break/images"
+STAGES = ["S0", "M", "D1", "D2", "FINAL", "S4"]
+CLOCK = {"S0": "S0", "M": "M  0.5 / 1.0 s", "D1": "D1  1.5 s", "D2": "D2  2.0 s", "FINAL": "FINAL  2.4 s", "S4": "S4  after"}
+MEMBER = {"L0F": "L0-F  veneer leaf, wood frame", "L0K": "L0-K  steel leaf, steel frame"}
+FONT = os.path.expanduser("~/Library/Fonts/IBMPlexMono-Medium.otf")
+BG = (236, 233, 226)
+
+
+def font(sz):
+    try:
+        return ImageFont.truetype(FONT, sz)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def chip(im, xy, text, sz=22, dark=True):
+    d = ImageDraw.Draw(im)
+    f = font(sz)
+    l, t, r, b = d.textbbox((0, 0), text, font=f)
+    x, y = xy
+    px, py = 10, 7
+    d.rectangle((x, y, x + (r - l) + 2 * px, y + (b - t) + 2 * py), fill=(10, 10, 10) if dark else (244, 223, 59))
+    d.text((x + px - l, y + py - t), text, font=f, fill=(255, 255, 255) if dark else (10, 10, 10))
+
+
+def new(fn):
+    p = os.path.join(FIN, fn + ".png")
+    return Image.open(p).convert("RGB")
+
+
+def old(fn):
+    return Image.open(os.path.join(DOC, fn + ".jpg")).convert("RGB")
+
+
+def tile(im, tw=640, th=720):
+    w, h = im.size
+    s = h / 1080.0
+    ch = int(800 * s)
+    cw = int(round(ch * tw / th))
+    cx, y0 = w // 2, int(60 * s)
+    return im.crop((cx - cw // 2, y0, cx - cw // 2 + cw, y0 + ch)).resize((tw, th), Image.LANCZOS)
+
+
+def strip_img(member, src="new"):
+    st = Image.new("RGB", (3840, 720))
+    for i, s in enumerate(STAGES):
+        fn = "db_C%s_%s_burst_%s_V1_LA" % ("2" if src == "new" else "", member, s)
+        t = tile(new(fn) if src == "new" else old(fn))
+        chip(t, (16, 16), CLOCK[s])
+        st.paste(t, (i * 640, 0))
+    d = ImageDraw.Draw(st)
+    for i in range(1, 6):
+        d.line((i * 640, 0, i * 640, 720), fill=(0, 0, 0), width=2)
+    return st
+
+
+def strips():
+    a = strip_img("L0F")
+    b = strip_img("L0K")
+    a.save(os.path.join(DOC, "db_C2_strip_L0F_burst_LA.jpg"), quality=85)
+    b.save(os.path.join(DOC, "db_C2_strip_L0K_burst_LA.jpg"), quality=85)
+    both = Image.new("RGB", (3840, 1444), (0, 0, 0))
+    a2, b2 = a.copy(), b.copy()
+    chip(a2, (16, 660), MEMBER["L0F"] + "   C2 rework", 20, dark=False)
+    chip(b2, (16, 660), MEMBER["L0K"] + "   C2 rework", 20, dark=False)
+    both.paste(a2, (0, 0))
+    both.paste(b2, (0, 724))
+    both.save(os.path.join(DOC, "db_C2_strip_both.jpg"), quality=85)
+    print("strips ok")
+
+
+def crop(im, box, out_w):
+    """box in fractions of the frame."""
+    w, h = im.size
+    c = im.crop((int(box[0] * w), int(box[1] * h), int(box[2] * w), int(box[3] * h)))
+    return c.resize((out_w, int(out_w * c.height / c.width)), Image.LANCZOS)
+
+
+def before():
+    # 1) Red's frame, old | new, full frames over x2 crops of the three break zones
+    o, n = old("db_C_L0F_burst_S4_V1_LA"), new("db_C2_L0F_burst_S4_V1_LA")
+    W = 1920
+    sheet = Image.new("RGB", (W, 540 + 12 + 540 + 12 + 400), BG)
+    for k, (im, lab) in enumerate(((o, "BEFORE  db_C (Red's note 10-08)"), (n, "AFTER  db_C2 rework"))):
+        sm = im.resize((960, 540), Image.LANCZOS)
+        chip(sm, (12, 12), lab, 18, dark=(k == 0))
+        sheet.paste(sm, (k * 960, 0))
+    boxes = [("hinge-side bay", (0.30, 0.10, 0.47, 0.42)), ("over the head", (0.40, 0.03, 0.60, 0.30)), ("latch-side bay", (0.55, 0.10, 0.72, 0.42))]
+    y = 552
+    for k, (im, lab) in enumerate(((o, "before"), (n, "after"))):
+        for j, (nm, bx) in enumerate(boxes):
+            c = crop(im, bx, 312)
+            c = c.crop((0, 0, 312, min(c.height, 540)))
+            chip(c, (6, 6), "%s  %s" % (lab, nm), 13, dark=(k == 0))
+            sheet.paste(c, (k * 960 + j * 324, y))
+    # floor
+    y2 = 552 + 552
+    for k, (im, lab) in enumerate(((o, "before  floor"), (n, "after  floor"))):
+        c = crop(im, (0.28, 0.66, 0.72, 0.92), 960)
+        c = c.crop((0, 0, 960, min(c.height, 400)))
+        chip(c, (8, 8), lab, 15, dark=(k == 0))
+        sheet.paste(c, (k * 960, y2))
+    sheet = sheet.crop((0, 0, W, y2 + 400))
+    sheet.save(os.path.join(DOC, "db_C2_review_before_after_S4V1.jpg"), quality=85)
+    # 2) the strip, old over new
+    a = strip_img("L0F", "old")
+    b = strip_img("L0F", "new")
+    chip(a, (16, 660), "BEFORE  db_C  (glass crack graph)", 20, dark=True)
+    chip(b, (16, 660), "AFTER  db_C2  (stud-wall break)", 20, dark=False)
+    st = Image.new("RGB", (3840, 1444), (0, 0, 0))
+    st.paste(a, (0, 0))
+    st.paste(b, (0, 724))
+    st = st.resize((1920, 722), Image.LANCZOS)
+    st.save(os.path.join(DOC, "db_C2_review_before_after_strip.jpg"), quality=85)
+    # 3) close views old | new
+    pairs = [("db_C_L0F_burst_D2_V2Hf50_LA", "db_C2_L0F_burst_D2_V2Hf50_LA", "D2  V2H 50 deg"),
+             ("db_C_L0F_burst_S4_V2Hf50_LA", "db_C2_L0F_burst_S4_V2Hf50_LA", "S4  V2H 50 deg"),
+             ("db_C_L0F_burst_S4_V5f62_LA", "db_C2_L0F_burst_S4_V5f62_LA", "S4  V5 62 deg (floor)")]
+    sheet = Image.new("RGB", (1920, 3 * 540 + 2 * 12), BG)
+    for i, (a_, b_, lab) in enumerate(pairs):
+        for k, im in enumerate((old(a_), new(b_))):
+            sm = im.resize((960, 540), Image.LANCZOS)
+            chip(sm, (12, 12), ("BEFORE  " if k == 0 else "AFTER  ") + lab, 18, dark=(k == 0))
+            sheet.paste(sm, (k * 960, i * 552))
+    sheet.save(os.path.join(DOC, "db_C2_review_before_after_close.jpg"), quality=85)
+    print("before ok")
+
+
+REFS = [
+    (PROJ + "Research/week02/ip-research/stills/ir01_dsc00161_20020612_082113.jpg", None,
+     "Level 0 photo (Commons, 2002): papered drywall partitions, wall ends = where corner bead lives",
+     "db_C2_L0F_burst_S4_V1_LA", (0.20, 0.05, 0.80, 0.75), "C2 S4: papered board on studs, the break bounded by the stud bays"),
+    (PROJ + "Frontrooms3D/Documentation/research/level_transitions/images/rb_10_interiors9006_p048_049_vinyl_wallcovering.jpg",
+     (0.50, 0.00, 0.80, 0.42), "Interiors, June 1990: commercial vinyl wallcovering; curled samples show the white back",
+     "db_C2_L0F_burst_S4_VZHf62_LA", (0.05, 0.20, 0.55, 0.70), "C2 S4: the seam strip peels and curls, its white backing out"),
+    (PROJ + "Frontrooms3D/Documentation/research/interactables/proposal/media/kane_emg_0053_oak_door_lever.jpg",
+     (0.15, 0.30, 0.85, 1.0), "Kane Pixels: a cased wood door in a papered wall, mitred head",
+     "db_C2_L0F_burst_S4_V2Hf50_LA", (0.30, 0.15, 0.80, 0.62), "C2 S4: the head casing pried off, split at the mitre, nails in the gap"),
+    (PROJ + "Research/week02/kit-references/a24/a24_trailer_0115_blue_painters_tape.jpg", (0.0, 0.0, 0.62, 0.55),
+     "A24 Backrooms (2025 trailer): a papered partition under a lay-in ceiling",
+     "db_C2_L0F_burst_S4_VZLf62_LA", (0.25, 0.05, 0.75, 0.85), "C2 S4: inside a bay: studs, screws, the far board's grey back"),
+]
+
+
+def reference():
+    rows = []
+    for ref, rbox, rlab, ours, obox, olab in REFS:
+        r = Image.open(ref).convert("RGB")
+        if rbox:
+            r = crop(r, rbox, 940)
+        else:
+            r = r.resize((940, int(940 * r.height / r.width)), Image.LANCZOS)
+        o = crop(new(ours), obox, 940)
+        h = 420
+        r = r.crop((0, 0, 940, min(h, r.height))) if r.height >= h else r
+        o = o.crop((0, 0, 940, min(h, o.height))) if o.height >= h else o
+        row = Image.new("RGB", (1920, h), BG)
+        row.paste(r, (0, 0))
+        row.paste(o, (980, 0))
+        chip(row, (8, 8), "REF  " + rlab, 13, dark=True)
+        chip(row, (988, 8), olab, 13, dark=False)
+        rows.append(row)
+    head = Image.new("RGB", (1920, 64), BG)
+    d = ImageDraw.Draw(head)
+    d.text((12, 8), "C2 against the real references on disk (intact 1990 build only).", font=font(20), fill=(20, 20, 20))
+    d.text((12, 36), "No photo of BROKEN drywall is on disk: media_candidates.md 21 (dv04 body through a stud wall, dw15 CUREE W-15 damage) waits for Red's approval.",
+           font=font(14), fill=(120, 30, 20))
+    sheet = Image.new("RGB", (1920, 64 + len(rows) * 432), BG)
+    sheet.paste(head, (0, 0))
+    for i, r in enumerate(rows):
+        sheet.paste(r, (0, 64 + i * 432))
+    sheet.save(os.path.join(DOC, "db_C2_review_vs_reference.jpg"), quality=85)
+    print("reference ok")
+
+
+def distance():
+    names = [("L0F", "D2"), ("L0F", "S4"), ("L0K", "D2"), ("L0K", "S4")]
+    sheet = Image.new("RGB", (3840, 540 + 24 + 540), (255, 255, 255))
+    for i, (m, s) in enumerate(names):
+        im = new("db_C2_%s_burst_%s_V6_LA_human" % (m, s))
+        small = im.resize((960, 540), Image.LANCZOS)
+        chip(small, (12, 12), "C2  %s  %s  12 m" % (m.replace("L0", "L0-"), s), 18)
+        sheet.paste(small, (i * 960, 0))
+        lo = im.crop((960 - 240, 600 - 270, 960 + 240, 600)).resize((960, 540), Image.NEAREST)
+        chip(lo, (12, 12), "x2 loupe, 1080p pixels", 18)
+        sheet.paste(lo, (i * 960, 564))
+    sheet.save(os.path.join(DOC, "db_C2_review_distance.jpg"), quality=85)
+    print("distance ok")
+
+
+def details():
+    views = [("db_C2_L0F_burst_S4_VZLf62_LA", "S4  hinge-side bay, 1 m"), ("db_C2_L0F_burst_S4_VZRf62_LA", "S4  latch-side bay, 1 m"),
+             ("db_C2_L0F_burst_S4_VZHf62_LA", "S4  over the head, 1 m"), ("db_C2_L0F_burst_D2_VZLf62_LA", "D2  hinge-side bay, 1 m"),
+             ("db_C2_L0F_burst_S4_V5f62_LA", "S4  floor, V5"), ("db_C2_bead_study_S4_LA", "dress option: corner bead at a wall end")]
+    W, H = 636, 358
+    sheet = Image.new("RGB", (3 * W + 2 * 6, 2 * H + 6), BG)
+    for i, (fn, lab) in enumerate(views):
+        p = os.path.join(FIN, fn + ".png")
+        if not os.path.exists(p):
+            continue
+        sm = Image.open(p).convert("RGB").resize((W, H), Image.LANCZOS)
+        chip(sm, (8, 8), lab, 13)
+        sheet.paste(sm, ((i % 3) * (W + 6), (i // 3) * (H + 6)))
+    sheet.save(os.path.join(DOC, "db_C2_review_details.jpg"), quality=88)
+    print("details ok")
+
+
+def jpgs():
+    n = 0
+    for p in sorted(glob.glob(os.path.join(FIN, "db_C2_*.png"))):
+        Image.open(p).convert("RGB").save(os.path.join(DOC, os.path.basename(p)[:-4] + ".jpg"), quality=85)
+        n += 1
+    print("jpgs", n)
+
+
+if __name__ == "__main__":
+    for cmd in sys.argv[1:]:
+        globals()[cmd]()

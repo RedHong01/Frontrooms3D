@@ -1,0 +1,116 @@
+--- /Users/redwang/FrontRoomsVisualWork/rooms_fix/C_FrontRoomsRunLookdev.before.cs	2026-10-08 20:03:41
++++ /Users/redwang/FrontRoomsVisualWork/proj_run_house_lights/Assets/Editor/Rendering/FrontRoomsRunLookdev.cs	2026-10-14 16:26:04
+@@ -996,28 +996,70 @@
+             p.shadowDistance = 40f;
+             p.cullingMask = ~0;
+             p.boxProjection = true;
+-            // the compartment's inside faces (x +-1.42, y 0..2.9), overlapping the 0.16 m cross walls
+-            p.size = new Vector3(2.84f, 2.9f, 9.16f);
++            // FIX1 (2026-10-08, room_visuals fix stage, after B's VL195): URP weights a probe by the distance
++            // to its own box faces / blend, so a box sized exactly to the shell (2.84 x 2.9 x 9.16, blend .25)
++            // gave every wall, floor and ceiling pixel weight 0 (default cube). The box now overhangs the
++            // shell by .16 m on every side (blend .15), as in B r4+.
++            const float m = .16f;
++            p.size = new Vector3(2.84f + 2f * m, 2.9f + 2f * m, 9.16f + 2f * m);
+             p.center = new Vector3(0f, 1.45f - 1.40f, 0f);
+-            p.blendDistance = .25f;
++            p.blendDistance = .15f;
+             p.importance = 1;
+             p.intensity = 1f;
+             probes.Add(p);
+         }
+-        Log("box probes: 3 x " + ProbeRes + " px HDR, Custom (baked per shot state with Lightmapping.BakeReflectionProbe), size 2.84 x 2.9 x 9.16, capture (0, 1.40, 4.5 / 13.5 / 22.5), blend 0.25 m");
++        Log("box probes: 3 x " + ProbeRes + " px HDR, Custom (baked per shot state with Lightmapping.BakeReflectionProbe), size 3.16 x 3.22 x 9.48 (FIX1: .16 m past the shell), capture (0, 1.40, 4.5 / 13.5 / 22.5), blend 0.15 m; Relay hidden while baking; one probe state per Unity run");
+     }
+ 
+     static string bakedKey;
++    static bool probeDebugDone;
++
++    // FIX2 (2026-10-14, room_visuals fix stage): RUNC_PROBEDEBUG=1 paints every box probe solid magenta and the
++    // default reflection solid green before the first shot render (B's r6 test), to see which pixels sample a probe.
++    // RUNC_BAKEMODE=1 bakes as B does: probes in Baked mode with no texture while baking, then Custom + texture.
++    static Cubemap SolidCube(string n, Color c)
++    {
++        var cube = new Cubemap(32, TextureFormat.RGBAHalf, true) { name = n };
++        foreach (CubemapFace f in Enum.GetValues(typeof(CubemapFace)))
++        {
++            if (f == CubemapFace.Unknown) continue;
++            var px = new Color[32 * 32];
++            for (var i = 0; i < px.Length; i++) px[i] = c;
++            cube.SetPixels(px, f);
++        }
++        cube.Apply(true);
++        return cube;
++    }
+ 
++    static void ProbeDebug()
++    {
++        if (probeDebugDone || Env("RUNC_PROBEDEBUG", 0f) < .5f) return;
++        probeDebugDone = true;
++        var mag = SolidCube("dbg magenta", new Color(3f, 0f, 3f));
++        var grn = SolidCube("dbg green", new Color(0f, 3f, 0f));
++        foreach (var p in probes) p.customBakedTexture = mag;
++        RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
++        RenderSettings.customReflectionTexture = grn;
++        Log("PROBE DEBUG: " + probes.Count + " box probes magenta, default reflection green (before the first shot render)");
++    }
++
+     static void BakeProbes(string key)
+     {
+         if (!useProbes || key == bakedKey) return;
++        // FIX1: URP 17.3's Forward+ probe atlas keeps the first texture a probe showed in a batch run, so a
++        // second state baked in the same run never reaches the frame (B, VL195). Render one key per run.
++        if (bakedKey != null) Log("WARNING: second probe state " + key + " in one run (first " + bakedKey + "): its frames keep the first state's reflections");
+         bakedKey = key;
++        var relayWasOn = relay != null && relay.gameObject.activeSelf;
++        if (relay != null) relay.gameObject.SetActive(false);   // FIX1: as A and B, the Relay is not in the probes
+         var sw = System.Diagnostics.Stopwatch.StartNew();
++        var baked = new List<Cubemap>();
+         for (var k = 0; k < probes.Count; k++)
+         {
+             var path = ProbeDir + "/RunC_Refl_c" + k + "_" + key + ".exr";
++            for (var j = 0; j < probes.Count; j++) probes[j].enabled = j == k;   // FIX1: as B, the probes do not see each other while baking
+             var ok = false;
++            if (Env("RUNC_BAKEMODE", 0f) > .5f) { foreach (var q in probes) { q.mode = ReflectionProbeMode.Baked; q.customBakedTexture = null; } }
+             try { ok = Lightmapping.BakeReflectionProbe(probes[k], path); }
+             catch (Exception e) { Log("probe bake threw: " + e.Message); }
+             if (!ok) { Log("probe bake FAILED " + path); continue; }
+@@ -1037,8 +1079,16 @@
+                 importer.textureCompression = TextureImporterCompression.CompressedHQ;
+                 importer.SaveAndReimport();
+             }
+-            probes[k].customBakedTexture = AssetDatabase.LoadAssetAtPath<Cubemap>(path);
++            if (Env("RUNC_BAKEMODE", 0f) > .5f) baked.Add(AssetDatabase.LoadAssetAtPath<Cubemap>(path));
++            else probes[k].customBakedTexture = AssetDatabase.LoadAssetAtPath<Cubemap>(path);
+         }
++        if (Env("RUNC_BAKEMODE", 0f) > .5f)
++        {
++            for (var k = 0; k < probes.Count && k < baked.Count; k++) { probes[k].mode = ReflectionProbeMode.Custom; probes[k].customBakedTexture = baked[k]; }
++            Log("FIX2 bake mode: Baked while baking, then Custom + texture (as B)");
++        }
++        foreach (var pr in probes) pr.enabled = true;
++        if (relay != null) relay.gameObject.SetActive(relayWasOn);
+         Log("probes baked for state " + key + " in " + (sw.ElapsedMilliseconds / 1000f).ToString("0.0") + " s");
+     }
+ 
+@@ -1062,6 +1112,9 @@
+             new Shot { name = "c3", eye = new Vector3(0f, 1.62f, 12.5f), look = look, fov = 72f, t = 2f, masks = "goal,wheelchair,doors" },
+             new Shot { name = "c4", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 1, masks = "relay,relayBody,lites,wheelchair,doors" },
+             new Shot { name = "c4b", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 2, masks = "relay,relayBody,lites,doors" },
++            // FIX1: the same two poses with the contract-size stand-in (the proxy x 1.114: top 1.84 -> 2.05 m, r ~.27)
++            new Shot { name = "c4_k", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 1, masks = "relay,relayBody,lites,wheelchair,doors" },
++            new Shot { name = "c4b_k", eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, t = 4f, relay = 2, masks = "relay,relayBody,lites,doors" },
+             // C4p: the honest chase state. The Relay at z 11.5 came through the z 9 pair ~0.9 s earlier (2.5 m at
+             // ~5.5 m/s plus CR-7's 0.4 s push), so that pair is still swinging shut behind it (66 deg on the closer
+             // curve) and the Relay stands against the lit compartment 1, not the shut wood leaves. Relay 0.65 m off axis
+@@ -1105,7 +1158,9 @@
+             rig.pairAngleOverride[1] = s.push ? FrontRoomsRunLookdevRig.PushAngle(s.pushAge) : float.NaN;
+             foreach (var g in glassRenderers) if (g != null) g.enabled = !s.noGlass;
+             rig.Evaluate(s.t);
+-            BakeProbes("t" + s.t.ToString("+0.00;-0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(".", "p") + (s.relay > 0 ? "_r" + s.relay : "") + (s.flashOff ? "_fo" : "") + (s.push ? "_push" : "") + (s.noGlass ? "_ng" : "") + variantSuffix);
++            relay.localScale = s.name.EndsWith("_k") ? Vector3.one * (2.05f / 1.84f) : Vector3.one;   // FIX1: contract-size stand-in (proxy top 1.84 m -> 2.05 m = RelayHeight)
++            BakeProbes("t" + s.t.ToString("+0.00;-0.00", System.Globalization.CultureInfo.InvariantCulture).Replace(".", "p") + (s.flashOff ? "_fo" : "") + (s.push ? "_push" : "") + (s.noGlass ? "_ng" : "") + variantSuffix);
++            ProbeDebug();
+             if (dump)
+             {
+                 foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))

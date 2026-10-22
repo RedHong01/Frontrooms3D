@@ -33,6 +33,52 @@
   "door_sign"
  ],
  "noCollider": true,
+ "inspect": {
+  "kind": "flat",
+  "verb": "read",
+  "face": "face",
+  "faceDir": "face_dir",
+  "size": [
+   0.254,
+   0.076
+  ],
+  "margin": 0.08,
+  "dist": [
+   0.3,
+   0
+  ],
+  "minDist": 0.18,
+  "maxDist": 1.0,
+  "reach": 1.2,
+  "approachAngle": 60,
+  "aimPad": 0.02,
+  "regions": [
+   {
+    "id": "sign",
+    "rect": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "capMm": 17
+   }
+  ],
+  "sound": "plastic",
+  "ship": false,
+  "box": {
+   "c": [
+    0,
+    0,
+    0.0015
+   ],
+   "s": [
+    0.254,
+    0.076,
+    0.003
+   ]
+  }
+ },
  "lodDistances": [
   2.0,
   6.0,
@@ -80,6 +126,7 @@
   "Prop_SignEngraved",
   "Prop_Chrome"
  ],
+ "trianglesLod1": 664,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

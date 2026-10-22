@@ -1,0 +1,12 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 experiment B: as A, graded frames through the HDR target (the game's path) + the old LDR path.
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+DIFF='s50|0.5||;s0|0||;o1||1|;s50o1|0.5|1|;alb0|||0,0,0'
+LOBBY='lit_g1|lit|1|cur;lit_g0|lit|0|cur;lit_g0.5|lit|0.5|cur;lit_g1_s50|lit|1|s50;lit_g1_s0|lit|1|s0;lit_g1_o1|lit|1|o1;lit_g1_s50o1|lit|1|s50o1;lit_g1_alb0|lit|1|alb0;lit_g0_s0|lit|0|s0;lit_g0_alb0|lit|0|alb0;dark_g1|dark|1|cur;dark_g0.5|dark|0.5|cur;dark_g0.7|dark|0.7|cur;dark_g1.4|dark|1.4|cur;dark_g2|dark|2|cur'
+RUN='main1008|1|pt|3.6|0|0|0.85;cand|-1|keep;sp179|1|sp|3.6|179|120|0.85;sp179w|1|sp|3.6|179|160|0.85;B_pc|1|pc|3.6|0|0|0.85;B_spc162|1|spc|3.6|162|100|0.85;B_spc179w|1|spc|3.6|179|160|0.85;pt1.2|1|pt|1.2|0|0|0.85;none|1|none|0|0|0|0.85;cand_g0.5|0.5|keep;cand_g0.7|0.7|keep;cand_g1.4|1.4|keep;g3pt|3|pt|3.6|0|0|0.85'
+EXIT='stream|-1|cur;g0.5|0.5|cur;s50|-1|s50;s0|-1|s0;o1|-1|o1;s50o1|-1|s50o1'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/b_capture.log \
+  -esfOut $R/b -esfParts ladder,lobby,run,exit -esfDiff "$DIFF" -esfLobby "$LOBBY" -esfRun "$RUN" -esfExit "$EXIT" -esfLdr 1 \
+  -esfPretty lobby_lit_g1,lobby_dark_g1,main1008,cand,sp179,sp179w,B_pc,B_spc162,B_spc179w,g3pt,pt1.2,exit_stream
+echo "exit $?" > $R/logs/b_capture.status

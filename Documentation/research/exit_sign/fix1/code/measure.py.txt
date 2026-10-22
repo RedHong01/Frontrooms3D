@@ -1,0 +1,367 @@
+"""exit_sign_fix1 measurements (numpy + Pillow; W/venv/bin/python).
+
+Reads the FrontRoomsExitSignFix1Capture output (<out>/{lobby,run,states}/<variant>/<shot>_{m.png,r.f16,r.json},
+<out>/id/<shot>_id.png) and reports per shot:
+  graded (the _m frame: game post, lens distortion held at 0):
+    body   mean sRGB of the letter body (ID diffuser pixels, eroded, minus the lamp hot spots = raw Y above
+           1.25 x the letters' raw median), HSV hue (deg, -180..180) and saturation of that mean
+    hot    the same for the hot spots (top 5 % raw Y of the letters)
+    face   mean sRGB of the white face (ID face pixels round the letters, letters dilated 3 px away)
+    contrast (Lface - Lletter) / Lface on relative luminance (sRGB decoded per pixel, then averaged)
+  raw HDR (no post):
+    T2-Run letters mean Rec.709 Y (all letter pixels, eroded 1) / ceiling ring mean Y, the ring being the
+           ceiling pixels (ID) whose ray hits the ceiling plane within 0.5 m of the 250 x 70 mm canopy
+    T4     per-letter means relative to "I" (letters split along the sign's local X), spread std/mean, max/min
+  bloom: with <shot>_off_m.png (letters off, same light), the share of the letters' graded contribution that
+         lands more than 8 px outside the letters, and outside the sign housing.
+
+  python measure.py <out_dir> [--json report.json] [--tsv table.tsv]
+"""
+import colorsys
+import glob
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+
+LETTER_X = {  # sign-local X (m) ranges of E, X, I, T on the hanging and wall faces (from exit_sign_geom via the
+    # build stage: the E's centre is at reader a = -84.5 mm, letters 6 in tall, 3/4 in strokes)
+}
+
+
+def srgb_to_lin(c):
+    c = np.asarray(c, np.float64) / 255.0
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def rel_lum(rgb8):
+    lin = srgb_to_lin(rgb8)
+    return lin[..., 0] * 0.2126 + lin[..., 1] * 0.7152 + lin[..., 2] * 0.0722
+
+
+def y709(raw):
+    return raw[..., 0] * 0.2126 + raw[..., 1] * 0.7152 + raw[..., 2] * 0.0722
+
+
+def shifts(m):
+    p = np.pad(m, 1, constant_values=False)
+    return p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]
+
+
+def erode(m, n=1):
+    m = np.asarray(m, bool)
+    for _ in range(n):
+        a, b, c, d = shifts(m)
+        m = m & a & b & c & d
+    return m
+
+
+def dilate(m, n=1):
+    m = np.asarray(m, bool)
+    for _ in range(n):
+        a, b, c, d = shifts(m)
+        m = m | a | b | c | d
+    return m
+
+
+def hsv_of(rgb):
+    h, s, v = colorsys.rgb_to_hsv(*(np.asarray(rgb, np.float64) / 255.0))
+    h = h * 360.0
+    if h > 180:
+        h -= 360.0
+    return round(h, 1), round(s, 3), round(v, 3)
+
+
+def load_png(p):
+    return np.asarray(Image.open(p).convert("RGB"), np.float64)
+
+
+def load_raw(base):
+    meta = json.load(open(base + ".json"))
+    w, h = meta["w"], meta["h"]
+    a = np.fromfile(base + ".f16", np.float16).reshape(h, w, 4).astype(np.float64)[::-1]   # row 0 = top, as the PNGs
+    return a[..., :3], meta
+
+
+def id_masks(p):
+    a = np.asarray(Image.open(p).convert("RGB"))
+    r, g, b = a[..., 0] > 127, a[..., 1] > 127, a[..., 2] > 127
+    return {
+        "letters": r & ~g & ~b,
+        "dead": r & ~g & b,
+        "face": ~r & g & ~b,
+        "housing": ~r & ~g & b,
+        "ceiling": r & g & ~b,
+        "wall": ~r & g & b,
+        "floor": r & g & b,
+    }
+
+
+def mat(meta, k):
+    return np.array(meta[k], np.float64).reshape(4, 4)
+
+
+def ring_mask(meta, ceiling_id, radius=0.5, half=(0.125, 0.035)):
+    """Ceiling pixels whose view ray meets the ceiling plane within <radius> of the canopy rectangle."""
+    w, h = meta["w"], meta["h"]
+    P, V, S = mat(meta, "proj"), mat(meta, "view"), mat(meta, "sign")
+    inv = np.linalg.inv(P @ V)
+    ys, xs = np.nonzero(ceiling_id)
+    if len(xs) == 0:
+        return np.zeros_like(ceiling_id), None
+    nx = (xs + 0.5) / w * 2 - 1
+    ny = 1 - (ys + 0.5) / h * 2
+    pts = []
+    for z in (-1.0, 1.0):
+        c = np.stack([nx, ny, np.full_like(nx, z), np.ones_like(nx)], 0)
+        wp = inv @ c
+        pts.append(wp[:3] / wp[3])
+    o, f = pts
+    d = f - o
+    cy = meta["ceilingY"]
+    t = (cy - o[1]) / np.where(np.abs(d[1]) < 1e-9, 1e-9, d[1])
+    hit = o + d * t
+    loc = np.linalg.inv(S) @ np.vstack([hit, np.ones_like(hit[0])])
+    lx, lz = np.abs(loc[0]), np.abs(loc[2])
+    dist = np.hypot(np.maximum(lx - half[0], 0), np.maximum(lz - half[1], 0))
+    ok = (dist <= radius) & (t > 0)
+    m = np.zeros_like(ceiling_id)
+    m[ys[ok], xs[ok]] = True
+    return m, float(dist[ok].mean()) if ok.any() else None
+
+
+def target_only(meta, mask):
+    """Keep only the pixels whose view ray meets the TARGET sign's face plane inside that face (sign-local
+    |x| <= 0.25 m and y in the face band), so letters of other signs in the frame (the Exit room's door sign
+    seen through the door, the other Run sign) never enter the numbers (r2 fix, 2026-10-14)."""
+    ys, xs = np.nonzero(mask)
+    if len(xs) == 0 or meta is None:
+        return mask
+    w, h = meta["w"], meta["h"]
+    P, V, S = mat(meta, "proj"), mat(meta, "view"), mat(meta, "sign")
+    if np.allclose(S, np.eye(4)):
+        return mask
+    nx = (xs + 0.5) / w * 2 - 1
+    ny = 1 - (ys + 0.5) / h * 2
+    inv = np.linalg.inv(P @ V)
+    pts = []
+    for z in (-1.0, 1.0):
+        c = np.stack([nx, ny, np.full_like(nx, z), np.ones_like(nx)], 0)
+        wp = inv @ c
+        pts.append(wp[:3] / wp[3])
+    o, f = pts
+    Sinv = np.linalg.inv(S)
+    ol = Sinv @ np.vstack([o, np.ones_like(o[0])])
+    fl = Sinv @ np.vstack([f, np.ones_like(f[0])])
+    d = fl[:3] - ol[:3]
+    cam_local = Sinv @ np.append(np.linalg.inv(V)[:3, 3], 1.0)
+    wall = bool(meta.get("wall"))
+    zf = 0.0595 if wall else (0.0315 if cam_local[2] > 0 else -0.0315)
+    t = (zf - ol[2]) / np.where(np.abs(d[2]) < 1e-9, 1e-9, d[2])
+    lx = ol[0] + d[0] * t
+    ly = ol[1] + d[1] * t
+    ylo, yhi = (-0.05, 0.30) if wall else (-0.70, -0.30)
+    ok = (np.abs(lx) <= 0.25) & (ly >= ylo) & (ly <= yhi) & (t > 0)
+    out = np.zeros_like(mask)
+    out[ys[ok], xs[ok]] = True
+    return out
+
+
+def letter_split(meta, letters):
+    """Split letter pixels into E, X, I, T by the sign-local X of the ray hit on the face plane through the sign."""
+    w, h = meta["w"], meta["h"]
+    P, V, S = mat(meta, "proj"), mat(meta, "view"), mat(meta, "sign")
+    ys, xs = np.nonzero(letters)
+    if len(xs) < 20:
+        return None
+    nx = (xs + 0.5) / w * 2 - 1
+    ny = 1 - (ys + 0.5) / h * 2
+    inv = np.linalg.inv(P @ V)
+    pts = []
+    for z in (-1.0, 1.0):
+        c = np.stack([nx, ny, np.full_like(nx, z), np.ones_like(nx)], 0)
+        wp = inv @ c
+        pts.append(wp[:3] / wp[3])
+    o, f = pts
+    Sinv = np.linalg.inv(S)
+    ol = Sinv @ np.vstack([o, np.ones_like(o[0])])
+    fl = Sinv @ np.vstack([f, np.ones_like(f[0])])
+    d = fl[:3] - ol[:3]
+    # face plane: sign-local z = zf (the face the camera is on)
+    cam_local = Sinv @ np.append(np.linalg.inv(V)[:3, 3], 1.0)
+    zf = 0.0595 if meta.get("wall") else (0.0315 if cam_local[2] > 0 else -0.0315)
+    t = (zf - ol[2]) / np.where(np.abs(d[2]) < 1e-9, 1e-9, d[2])
+    lx = ol[0] + d[0] * t
+    # reader order: the camera sees the face; letters run along -X (front, +Z face) or +X (back face)
+    order = np.argsort(lx)
+    q = np.percentile(lx, [0, 100])
+    return lx, ys, xs, q
+
+
+def t4_from(raw, meta, letters):
+    sp = letter_split(meta, letters)
+    if sp is None:
+        return None
+    lx, ys, xs, q = sp
+    Y = y709(raw)[ys, xs]
+    # four letters: cut at the three largest gaps of the sorted local X (letter spacing > stencil bridges)
+    srt = np.sort(lx)
+    gaps = np.diff(srt)
+    if len(gaps) < 4:
+        return None
+    cut_idx = np.sort(np.argsort(gaps)[-3:])
+    cuts = [(srt[i] + srt[i + 1]) / 2 for i in cut_idx]
+    groups = np.digitize(lx, cuts)
+    means = [float(Y[groups == k].mean()) if (groups == k).any() else float("nan") for k in range(4)]
+    spreads = [float(Y[groups == k].std() / max(Y[groups == k].mean(), 1e-9)) if (groups == k).any() else float("nan") for k in range(4)]
+    # which end is "I"? the brightest letter
+    i = int(np.nanargmax(means))
+    rel = [round(m / means[i], 3) for m in means]
+    allv = Y
+    return {"rel_by_x": rel, "spread_by_x": [round(s, 3) for s in spreads], "brightest": i,
+            "max_over_min": round(float(np.percentile(allv, 99.5) / max(np.percentile(allv, 0.5), 1e-6)), 2)}
+
+
+def measure_shot(out, variant_dir, shot, idname=None):
+    idname = idname or shot
+    idp = os.path.join(out, "id", idname + "_id.png")
+    mp = os.path.join(variant_dir, shot + os.environ.get("ESF_SUFFIX", "_m") + ".png")
+    if not (os.path.exists(idp) and os.path.exists(mp)):
+        return None
+    ids = id_masks(idp)
+    g = load_png(mp)
+    res = {"shot": shot}
+    letters = ids["letters"] if ids["letters"].sum() > 0 else ids["dead"]
+    rb0 = os.path.join(variant_dir, shot + "_r")
+    meta0 = None
+    if os.path.exists(rb0 + ".json"):
+        meta0 = json.load(open(rb0 + ".json"))
+        meta0["wall"] = bool(meta0.get("wall", shot.startswith("L") or shot.startswith("E")))
+        n_all = int(letters.sum())
+        letters = target_only(meta0, letters)
+        res["letter_px_other_signs"] = n_all - int(letters.sum())
+    res["letter_px"] = int(letters.sum())
+    if letters.sum() == 0:
+        return res
+    rb = os.path.join(variant_dir, shot + "_r")
+    raw, meta = (load_raw(rb) if os.path.exists(rb + ".f16") else (None, None))
+    er = 1
+    body = erode(letters, er)
+    if body.sum() < 30:
+        body = letters.copy()
+        res["body_note"] = "no erosion (thin strokes)"
+    hot = np.zeros_like(body)
+    if raw is not None:
+        Y = y709(raw)
+        med = np.median(Y[body])
+        hot_thr = np.percentile(Y[body], 95)
+        hot = body & (Y >= hot_thr)
+        body_core = body & (Y <= 1.25 * med)
+        if body_core.sum() >= 20:
+            body = body_core
+    res["body_px"] = int(body.sum())
+    bm = g[body].mean(0)
+    res["body_srgb"] = [round(float(x), 1) for x in bm]
+    res["body_hsv"] = hsv_of(bm)
+    res["body_R_over_G"] = round(float(bm[0] / max(bm[1], 1e-6)), 2)
+    if hot.sum() > 5:
+        hm = g[hot].mean(0)
+        res["hot_srgb"] = [round(float(x), 1) for x in hm]
+        res["hot_hsv"] = hsv_of(hm)
+    # face round the letters
+    ys, xs = np.nonzero(letters)
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    py, px = int((y1 - y0) * .2) + 2, int((x1 - x0) * .08) + 2
+    box = np.zeros_like(letters)
+    box[max(0, y0 - py):y1 + py + 1, max(0, x0 - px):x1 + px + 1] = True
+    face = erode(ids["face"], 1) & box & ~dilate(letters, 3)
+    if face.sum() > 20:
+        fm = g[face].mean(0)
+        res["face_srgb"] = [round(float(x), 1) for x in fm]
+        Lf = float(rel_lum(g[face]).mean())
+        Ll = float(rel_lum(g[body]).mean())
+        res["L_face"] = round(Lf, 4)
+        res["L_letter"] = round(Ll, 4)
+        res["contrast"] = round((Lf - Ll) / Lf, 3)
+    if raw is not None:
+        Y = y709(raw)
+        lm = erode(letters, 1) if erode(letters, 1).sum() > 30 else letters
+        res["raw_letter_Y"] = round(float(Y[lm].mean()), 4)
+        res["raw_letter_R"] = round(float(raw[..., 0][lm].mean()), 4)
+        res["raw_letter_R_p50"] = round(float(np.median(raw[..., 0][lm])), 4)
+        res["raw_letter_R_p95"] = round(float(np.percentile(raw[..., 0][lm], 95)), 4)
+        if ids["ceiling"].sum() > 0 and meta.get("ceilingY") is not None and shot[:1] in ("R", "S"):
+            ring, dmean = ring_mask(meta, erode(ids["ceiling"], 1))
+            if ring.sum() > 20:
+                res["ring_px"] = int(ring.sum())
+                res["ring_Y"] = round(float(Y[ring].mean()), 4)
+                res["ring_R"] = round(float(raw[..., 0][ring].mean()), 4)
+                res["T2run_Y"] = round(res["raw_letter_Y"] / res["ring_Y"], 3)
+                res["T2run_R"] = round(res["raw_letter_R"] / res["ring_R"], 3)
+        if ids["wall"].sum() > 0:
+            band = np.zeros_like(letters)
+            band[y0:y1 + 1, :] = True
+            wall = erode(ids["wall"], 2) & band
+            if wall.sum() > 50:
+                res["wall_Y"] = round(float(Y[wall].mean()), 4)
+                res["T2lobby_Y"] = round(res["raw_letter_Y"] / res["wall_Y"], 3)
+        meta["wall"] = bool(meta.get("wall", shot.startswith("L") or shot.startswith("E")))
+        for region in ("floor", "ceiling", "wall"):
+            rm = erode(ids[region], 2)
+            if rm.sum() > 200:
+                res[region + "_meanY"] = round(float(Y[rm].mean()), 4)
+                res[region + "_meanRGB"] = [round(float(x), 4) for x in raw[rm].mean(0)]
+        t4 = t4_from(raw, meta, erode(letters, 1) if erode(letters, 1).sum() > 200 else letters)
+        if t4:
+            res["T4"] = t4
+    off = os.path.join(variant_dir, shot + "_off_m.png")
+    if os.path.exists(off):
+        go = load_png(off)
+        d = np.clip(g - go, 0, None).sum(-1)
+        tot = d.sum()
+        if tot > 0:
+            near = dilate(letters, 8)
+            sign = dilate(ids["housing"] | ids["face"] | ids["letters"], 8)
+            res["bloom_out_of_letters8"] = round(float(d[~near].sum() / tot), 3)
+            res["bloom_out_of_sign8"] = round(float(d[~sign].sum() / tot), 3)
+            res["bloom_px_over_4"] = int((d[~sign] > 4 * 3).sum())
+            res["bloom_max_out_of_sign"] = round(float(d[~sign].max() / 3.0), 1)
+            res["bloom_p99_out_of_sign"] = round(float(np.percentile(d[~sign], 99.9) / 3.0), 2)
+    return res
+
+
+def main():
+    out = sys.argv[1]
+    rows = []
+    for part in ("lobby", "run", "exit", "states"):
+        for vd in sorted(glob.glob(os.path.join(out, part, "*"))):
+            if not os.path.isdir(vd):
+                continue
+            for mp in sorted(glob.glob(os.path.join(vd, "*_m.png"))):
+                shot = os.path.basename(mp)[:-6]
+                if shot.endswith("_off"):
+                    continue
+                idname = None
+                if part == "states":
+                    idname = "states6" if shot.startswith("S6_") else "states"
+                r = measure_shot(out, vd, shot, idname)
+                if r is None:
+                    continue
+                r["part"] = part
+                r["variant"] = os.path.basename(vd)
+                rows.append(r)
+                print(json.dumps(r))
+    if "--json" in sys.argv:
+        json.dump(rows, open(sys.argv[sys.argv.index("--json") + 1], "w"), indent=1)
+    if "--tsv" in sys.argv:
+        cols = ["part", "variant", "shot", "body_srgb", "body_hsv", "body_R_over_G", "hot_hsv", "face_srgb", "contrast", "raw_letter_Y", "raw_letter_R", "ring_Y", "ring_R", "T2run_Y", "T2run_R", "wall_Y", "T2lobby_Y", "bloom_out_of_sign8", "letter_px", "body_px"]
+        with open(sys.argv[sys.argv.index("--tsv") + 1], "w") as f:
+            f.write("\t".join(cols) + "\n")
+            for r in rows:
+                f.write("\t".join(str(r.get(c, "")) for c in cols) + "\n")
+
+
+if __name__ == "__main__":
+    main()

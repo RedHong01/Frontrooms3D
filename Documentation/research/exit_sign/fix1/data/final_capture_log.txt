@@ -1,0 +1,32 @@
+start - gfx Metal - parts ladder,lobby,run,exit,states,probe - diff  - lobby lit_g1|lit|1|cur;dark_g1|dark|1|cur - run stream|-1|keep;A_pt|1|pt|3.6|0|0|0.85;A_pt_g3|3|pt|3.6|0|0|0.85;A_pt1.2|1|pt|1.2|0|0|0.85;B_pc|1|pc|3.6|0|0|0.85;B_spc|1|spc|3.6|162|140|0.85;stream_g0.7|0.7|keep;stream_g1.4|1.4|keep;none|1|none|0|0|0|0.85 - exit stream|-1|cur - pretty lobby_lit_g1,lobby_dark_g1,stream,A_pt,A_pt_g3,A_pt1.2,B_pc,B_spc,exit_stream
+stream constants: RunExitSignEmissionGain 1
+ladder: 34 levels x red/grey/warm x HDR/LDR target (grade only: bloom, vignette, grain, CA, lens off; fog off) + raw check
+lobby lobby_lit_g1 captured (room lit, gain 1, diff cur)
+lobby lobby_dark_g1 captured (room dark, gain 1, diff cur)
+preview Run room: exit sign A Lit Level 1 gain 1 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 1 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On;  troffers on 5/12
+preview Exit room: exit sign over door Lit Level 1 gain 1 light none casts On;  troffers on 12/12
+run variant stream captured - exit sign A Lit Level 1 gain 1 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 1 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+run variant A_pt captured - exit sign A Lit Level 1 gain 1 light Point 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 1 light Point 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+run variant A_pt_g3 captured - exit sign A Lit Level 1 gain 3 light Point 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 3 light Point 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+run variant A_pt1.2 captured - exit sign A Lit Level 1 gain 1 light Point 1.2 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 1 light Point 1.2 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+run variant B_pc captured - exit sign A Lit Level 1 gain 1 light Point 3.6 y 2.394 angle 162/140 range 9.5 shadows Soft 0.85 casts Off; exit sign B Lit Level 1 gain 1 light Point 3.6 y 2.394 angle 162/140 range 9.5 shadows Soft 0.85 casts Off; 
+run variant B_spc captured - exit sign A Lit Level 1 gain 1 light Spot 3.6 y 2.394 angle 162/140 range 9.5 shadows Soft 0.85 casts Off; exit sign B Lit Level 1 gain 1 light Spot 3.6 y 2.394 angle 162/140 range 9.5 shadows Soft 0.85 casts Off; 
+run variant stream_g0.7 captured - exit sign A Lit Level 1 gain 0.7 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 0.7 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+run variant stream_g1.4 captured - exit sign A Lit Level 1 gain 1.4 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 1.4 light Spot 3.6 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+run variant none captured - exit sign A Lit Level 1 gain 1 light Point 0 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; exit sign B Lit Level 1 gain 1 light Point 0 y 1.96 angle 162/140 range 9.5 shadows Soft 0.85 casts On; 
+exit exit_stream captured (gain 1, diff cur, troffers on 12/12)
+state lit - Level 1 weights (1.00, 1.00, 0.00, 0.00) light 3.6
+state halfa - Level 0.5413 weights (0.00, 1.00, 0.00, 0.00) light 1.9487
+state halfb - Level 0.4587 weights (1.00, 0.00, 0.00, 0.00) light 1.6513
+state loose - Level 0.4979 weights (1.00, 0.07, 0.00, 0.00) light 1.7923 (drop-out after 489 ticks)
+state battery - Level 0.1655 weights (0.00, 0.00, 0.25, 0.00) light 0.5959
+state dead - Level 0 weights (0.00, 0.00, 0.00, 0.00) light off
+state pin_lit - Level 1 weights (1.00, 1.00, 0.00, 0.00) light 3.6
+state pin_halfa - Level 0.5413 weights (0.00, 1.00, 0.00, 0.00) light 3.6
+state pin_halfb - Level 0.4587 weights (1.00, 0.00, 0.00, 0.00) light 3.6
+state pin_loose - Level 0.4979 weights (1.00, 0.07, 0.00, 0.00) light 3.6 (drop-out after 489 ticks)
+state pin_battery - Level 0.1655 weights (0.00, 0.00, 0.25, 0.00) light 3.6
+state pin_dead - Level 0 weights (0.00, 0.00, 0.00, 0.00) light 3.6
+probe stream default: 720 frames at 60 Hz, gain 1
+probe stream REDUCE FLASHING: 720 frames at 60 Hz, gain 1
+DONE in 317.1404 s

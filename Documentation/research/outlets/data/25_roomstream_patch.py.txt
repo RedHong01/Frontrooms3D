@@ -1,0 +1,97 @@
+"""Outlets on main's FrontRoomsRoomStream.cs (after the EXIT-sign merge, 2026-10-08 19:40).
+2026-10-14: the Exit branch keeps main's look (the EXIT sign only); the dead 10-01 greybox threshold marker is not revived.
+python3 roomstream_patch.py <in.cs> <out.cs>   Anchors must match exactly once."""
+import io, sys
+src, dst = sys.argv[1:3]
+s = io.open(src, encoding="utf-8").read()
+assert "FrontRoomsWallFixtures" not in s, "already patched"
+def sub(old, new, count=1):
+    global s
+    n = s.count(old)
+    assert n == count, (n, old[:160])
+    s = s.replace(old, new)
+sub("""    Material outletMaterial;
+""", "")
+sub("""        outletMaterial = FrontRoomsSurfaces.Lit("Level 0 / outlet plate", new Color(.82f, .78f, .66f), .35f);
+""", "")
+sub("""        doorHardwareMaterial = FrontRoomsSurfaces.Lit("Door / brushed steel", new Color(.64f, .63f, .60f), .62f, .9f);
+    }
+""", """        doorHardwareMaterial = FrontRoomsSurfaces.Lit("Door / brushed steel", new Color(.64f, .63f, .60f), .62f, .9f);
+    }
+
+    // Wall faces of a stream room for the outlet planner, in room space (props root): the side walls'
+    // inner faces (x = +-5.62, four 3 m faces each) and the far end wall's two spans beside the
+    // double door (x +-1.2 ... +-5.62, on the reveal plane), all with the baseboard top at 0.26 m.
+    static readonly System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>[] streamFaces = new System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>[5];
+
+    /// <summary>The outlet planner's faces for one stream room variant (shared, read-only; tools and tests read them too).</summary>
+    public static System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace> StreamFaces(RoomRule rule)
+    {
+        var index = (int)rule;
+        if (streamFaces[index] != null) return streamFaces[index];
+        var faces = new System.Collections.Generic.List<FrontRoomsWallFixtures.WallFace>(10);
+        var theme = rule == RoomRule.Office ? FrontRooms.Map.ZoneTheme.Office : FrontRooms.Map.ZoneTheme.Level0;
+        var inner = RoomWidth * .5f - WallThickness * .5f;            // 5.62
+        const float faceLength = 3f;
+        var perSide = Mathf.RoundToInt(RoomLength / faceLength);     // 4
+        for (var side = 0; side < 2; side++)
+        for (var k = 0; k < perSide; k++)
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = new Vector3(side == 0 ? -inner : inner, 0f, k * faceLength), direction = Vector3.forward, length = faceLength,
+                normal = side == 0 ? Vector3.right : Vector3.left, kind = FrontRooms.Map.EdgeKind.Wall, edgeId = faces.Count, side = 0,
+                cell = new FrontRooms.Map.GridCoord(side == 0 ? -1 : 1, k), foreign = false, room = 0, zone = default, theme = theme,
+                height = FrontRooms.Map.ZoneHeight.Standard, ceiling = RoomHeight, zoneBorder = false, baseTop = .26f,
+            });
+        var endZ = RoomLength - DoorWallDepth * .5f - .002f;           // the door reveals' paper plane
+        var span = inner - DoorWidth * .5f;                            // 4.42
+        for (var side = 0; side < 2; side++)
+            faces.Add(new FrontRoomsWallFixtures.WallFace
+            {
+                start = new Vector3(side == 0 ? -inner : DoorWidth * .5f, 0f, endZ), direction = Vector3.right, length = span,
+                normal = Vector3.back, kind = FrontRooms.Map.EdgeKind.Wall, edgeId = faces.Count, side = 0,
+                cell = new FrontRooms.Map.GridCoord(side, 4), foreign = false, room = 0, zone = default, theme = theme,
+                height = FrontRooms.Map.ZoneHeight.Standard, ceiling = RoomHeight, zoneBorder = false, baseTop = .26f,
+            });
+        streamFaces[index] = faces;
+        return faces;
+    }
+""")
+sub("""            if (rule == RoomRule.Lobby || rule == RoomRule.Shift || rule == RoomRule.Exit)
+            {
+                // Level 0's scattered electrical outlets, low on the paper.
+                var wallFace = RoomWidth * .5f - WallThickness * .5f - .006f;
+                foreach (var (x, z) in new[] { (-wallFace, 2.3f), (wallFace, 5.8f), (-wallFace, 9.1f) })
+                {
+                    var outlet = Box(props.transform, "outlet plate", new Vector3(x, .32f, z), new Vector3(.012f, .115f, .07f), outletMaterial);
+                    outlet.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
+                // (Here, not in the Exit branch below: this branch already takes Exit, so that one never runs.)
+                if (rule == RoomRule.Exit)
+                    room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
+            }
+            else if (rule == RoomRule.Office)
+""", """            // Outlets, switches and jacks (FrontRoomsWallFixtures, research/outlets/10_spec.md §3.5): the
+            // same planner as the map, one class per RoomRule, over this room's wall faces. Render-only
+            // (no GameObject, no collider); seeded like the Office dressing, so a recycled slot keeps its
+            // plates. Installed before the Office kit, whose pods add their floor feeds to this set.
+            FrontRoomsWallFixtures.InstallLocal(props.transform, StreamFaces(rule), 7919 * room.sequence + 104729,
+                FrontRoomsWallFixtures.StreamClass(rule), roomWall);
+            if (rule == RoomRule.Office)
+""")
+sub("""            else if (rule == RoomRule.Exit)
+            {
+                Box(props.transform, "exit threshold marker", new Vector3(0f, .04f, 5.9f), new Vector3(2.8f, .03f, .12f), roomWall);
+            }
+""", """            else if (rule == RoomRule.Exit)
+            {
+                // The way out is signed: a wall sign on the far door's header, facing the arriving player.
+                // (The outlet change took the old Level 0 placeholder branch away, so Exit reaches its own branch.
+                // The 10-01 greybox "exit threshold marker" that stood here has not been built since 10-01 20:07,
+                // when Exit joined that branch; the Exit room was verified without it, so it stays out.)
+                room.exitSigns[ruleIndex] = new[] { BuildDoorExitSign(props.transform, "exit sign over door") };
+            }
+""")
+io.open(dst, "w", encoding="utf-8", newline="").write(s)
+print("patched", dst)

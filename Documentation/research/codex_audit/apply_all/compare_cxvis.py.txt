@@ -1,0 +1,58 @@
+# codex_audit_all: compare the combined clone's cxvis frames with the two member stages' 10-14 runs on the same main.
+# usage: compare_cxvis.py <all_high> <v2only_high> <main_high> <off> <out_dir>
+#   all    = main 0a9ee7f + tree + glass_look + other_visual (this stage), RT High (default)
+#   v2only = main + other_visual only (W/proj_cxfix_other_visual cxvis_high_1014)
+#   main   = main unmodified (W/proj_cxfix_ov_base cxvis_high_1014)
+#   off    = main + other_visual, -frGlassRT off (W/proj_cxfix_other_visual cxvis_off_1014; V2 never runs with RT off)
+# Red-shift metric as in 10_review_visual.md V2: pixels whose (R - G) rose by more than 10 vs RT Off.
+import sys, os, glob, json
+import numpy as np
+from PIL import Image
+
+all_d, v2_d, main_d, off_d, out_d = sys.argv[1:6]
+os.makedirs(out_d, exist_ok=True)
+L = lambda d, n: np.asarray(Image.open(os.path.join(d, n)).convert("RGB"), dtype=np.float32)
+Y = lambda a: a[..., 0] * .2126 + a[..., 1] * .7152 + a[..., 2] * .0722
+rg = lambda a: a[..., 0] - a[..., 1]
+rows = []
+for p in sorted(glob.glob(os.path.join(all_d, "*.png"))):
+    n = os.path.basename(p)
+    A = L(all_d, n)
+    r = {"frame": n[:-4], "lumaA": round(float(Y(A).mean()), 1),
+         "black%": round(float((A.max(-1) < 4).mean() * 100), 2),
+         "magenta%": round(float(((A[..., 0] > 200) & (A[..., 2] > 200) & (A[..., 1] < 60)).mean() * 100), 3)}
+    for tag, d in (("v2", v2_d), ("main", main_d), ("off", off_d)):
+        if os.path.exists(os.path.join(d, n)):
+            B = L(d, n)
+            if B.shape != A.shape: r["dY_" + tag] = "size"; continue
+            dy = np.abs(Y(A) - Y(B))
+            r["dY_" + tag] = round(float(dy.mean()), 3)
+            r["px>8_" + tag] = round(float((dy > 8).mean() * 100), 2)
+        else:
+            r["dY_" + tag] = "missing"
+    if os.path.exists(os.path.join(off_d, n)):
+        O = L(off_d, n)
+        r["red%_all"] = round(float(((rg(A) - rg(O)) > 10).mean() * 100), 2)
+        if os.path.exists(os.path.join(main_d, n)):
+            r["red%_main"] = round(float(((rg(L(main_d, n)) - rg(O)) > 10).mean() * 100), 2)
+    rows.append(r)
+keys = ["frame", "lumaA", "black%", "magenta%", "red%_main", "red%_all", "dY_v2", "px>8_v2", "dY_main", "px>8_main", "dY_off", "px>8_off"]
+with open(os.path.join(out_d, "cxvis_compare.tsv"), "w") as fh:
+    fh.write("\t".join(keys) + "\n")
+    for r in rows: fh.write("\t".join(str(r.get(k, "")) for k in keys) + "\n")
+num = lambda v: isinstance(v, (int, float))
+summ = {
+    "frames": len(rows),
+    "black_frames(>50%)": [r["frame"] for r in rows if r["black%"] > 50],
+    "magenta_frames(>0.1%)": [r["frame"] for r in rows if r["magenta%"] > .1],
+    "max_red%_all": max((r.get("red%_all", 0) for r in rows), default=None),
+    "max_red%_main": max((r.get("red%_main", 0) for r in rows), default=None),
+    "frames_red>0.1%_all": [r["frame"] for r in rows if r.get("red%_all", 0) > .1],
+    "frames_red>0.1%_main": [r["frame"] for r in rows if r.get("red%_main", 0) > .1],
+    "identical_to_v2only(dY=0)": sum(1 for r in rows if r.get("dY_v2") == 0),
+    "within_0.5_of_v2only": sum(1 for r in rows if num(r.get("dY_v2")) and r["dY_v2"] <= .5),
+    "frames_over_0.5_vs_v2only": [(r["frame"], r["dY_v2"], r.get("px>8_v2")) for r in rows if num(r.get("dY_v2")) and r["dY_v2"] > .5],
+    "missing_vs_v2only": [r["frame"] for r in rows if not num(r.get("dY_v2"))],
+}
+with open(os.path.join(out_d, "cxvis_summary.json"), "w") as fh: json.dump(summ, fh, indent=1)
+print(json.dumps(summ, indent=1))

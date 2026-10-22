@@ -1,0 +1,14 @@
+import json, sys
+rows = json.load(open(sys.argv[1]))
+parts = sys.argv[2].split(",") if len(sys.argv) > 2 else ["lobby", "run", "exit", "states"]
+def g(r, k, i=None):
+    v = r.get(k)
+    if v is None: return "-"
+    return v[i] if i is not None else v
+for part in parts:
+    print("==", part)
+    for r in rows:
+        if r["part"] != part: continue
+        if part == "lobby" and r["shot"].endswith("w76"): pass
+        t4 = r.get("T4") or {}
+        print(f"{r['variant']:18} {r['shot']:11} body {str(g(r,'body_srgb')):22} h {g(r,'body_hsv',0):>5} s {g(r,'body_hsv',1):>5} | hot h {g(r,'hot_hsv',0):>5} s {g(r,'hot_hsv',1):>5} {str(g(r,'hot_srgb')):20} | con {g(r,'contrast'):>6} face {str(g(r,'face_srgb')):20} | T2run {g(r,'T2run_Y'):>6} T2lob {g(r,'T2lobby_Y'):>6} | letY {g(r,'raw_letter_Y'):>6} R50 {g(r,'raw_letter_R_p50'):>6} | T4 sp {t4.get('spread_by_x','-')} mm {t4.get('max_over_min','-')} | bloom out {g(r,'bloom_out_of_sign8')} px>4 {g(r,'bloom_px_over_4')} max {g(r,'bloom_max_out_of_sign')}")

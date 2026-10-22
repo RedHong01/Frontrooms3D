@@ -1,0 +1,224 @@
+"""P-1 / P-1b (PROPOSAL, needs visual-chat approval): LOD2 and hand-built LOD
+part sets in kitlib.py, read by build_asset.py. Anchored text edits; writes
+nothing unless every anchor matches exactly once.
+
+  python3 p1_patch.py <frontrooms_kit dir>
+
+Outlets integrate stage, 2026-10-08. Applied ONLY to the private clone
+W/proj_outlet; main's kitlib.py is not edited by this workflow.
+"""
+import sys
+import os
+
+kit_dir = sys.argv[1]
+KL = os.path.join(kit_dir, "kitlib.py")
+BA = os.path.join(kit_dir, "build_asset.py")
+
+edits_kl = [
+    # 1. docstring: the new module options
+    ('''* ``VARIANTS = {"Kit_Sofa3_Floral": {"Prop_FabricBeige": "Prop_FabricFloral"}}``''',
+     '''* ``LODS = (0.4, 0.12)``  P-1: export <NAME>_LOD0/1/2, LOD1 and LOD2
+  collapse-decimated to those ratios (parts flagged ``fr_lod1_drop`` /
+  ``fr_lod2_drop`` removed first). Takes precedence over ``LOD1``.
+* Hand-built LODs (P-1b): mark each part ``obj["fr_lods"] = "0"``, ``"1"``,
+  ``"2"`` or a mix such as ``"012"``; finish() joins each level on its own and
+  make_lods() names them <NAME>_LOD0/1/2 (no decimation). Modules that build
+  LOD parts test ``hasattr(kitlib.Kit, "make_lods")``.
+* ``VARIANTS = {"Kit_Sofa3_Floral": {"Prop_FabricBeige": "Prop_FabricFloral"}}``'''),
+    # 2. per-instance LOD objects
+    ('''        self.meta = {"name": name, "supports": [], "colliders": [], "anchors": {}, "tags": []}
+        self._reset_scene()''',
+     '''        self.meta = {"name": name, "supports": [], "colliders": [], "anchors": {}, "tags": []}
+        self.lods = {}          # P-1: level (1, 2) -> joined LOD object
+        self._reset_scene()'''),
+    # 3. finish(): split hand-built LOD part sets before the per-part steps
+    ('''        """Apply modifiers, generate UVs, join into one object, shade."""
+        for obj in self.parts:
+            self._apply_modifiers(obj)''',
+     '''        """Apply modifiers, generate UVs, join into one object, shade.
+        P-1b: parts listing further levels in obj["fr_lods"] are copied into
+        each level; every copy takes the same per-part steps and each level is
+        joined on its own (LOD0 -> self.object, LOD1/LOD2 -> self.lods)."""
+        levels = {0: [], 1: [], 2: []}
+        if any(any(c in str(o.get("fr_lods", "0")) for c in "12") for o in self.parts):
+            for obj in list(self.parts):
+                want = sorted({int(c) for c in str(obj.get("fr_lods", "0")) if c in "012"}) or [0]
+                for k, lv in enumerate(want):
+                    o = obj
+                    if k > 0:
+                        o = obj.copy()
+                        o.data = obj.data.copy()
+                        bpy.context.scene.collection.objects.link(o)
+                    levels[lv].append(o)
+            assert levels[0], "%s: no part lists LOD0 in fr_lods" % self.name
+            self.parts = levels[0] + levels[1] + levels[2]
+        else:
+            levels[0] = list(self.parts)
+        for obj in self.parts:
+            self._apply_modifiers(obj)'''),
+    # 4. LOD2 drop marks survive the join like the LOD1 ones
+    ('''            if obj.get("fr_lod1_drop"):
+                groups.append("fr_lod1_drop")''',
+     '''            if obj.get("fr_lod1_drop"):
+                groups.append("fr_lod1_drop")
+            if obj.get("fr_lod2_drop"):
+                groups.append("fr_lod2_drop")'''),
+    # 5. join per level
+    ('''        bpy.ops.object.select_all(action="DESELECT")
+        for obj in self.parts:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = self.parts[0]
+        if len(self.parts) > 1:
+            bpy.ops.object.join()
+        merged = bpy.context.view_layer.objects.active
+        merged.name = self.name
+        merged.data.name = self.name
+        mesh = merged.data
+        mesh.shade_smooth()
+        mesh.set_sharp_from_angle(angle=math.radians(smooth_angle))''',
+     '''        for lv in (1, 2):
+            if levels[lv]:
+                lod = self._join(levels[lv])
+                lod.name = lod.data.name = "%s_LOD%d" % (self.name, lv)
+                lod.data.shade_smooth()
+                lod.data.set_sharp_from_angle(angle=math.radians(smooth_angle))
+                self.lods[lv] = lod
+        merged = self._join(levels[0])
+        merged.name = self.name
+        merged.data.name = self.name
+        mesh = merged.data
+        mesh.shade_smooth()
+        mesh.set_sharp_from_angle(angle=math.radians(smooth_angle))'''),
+    # 6. _join helper + set_slot over every LOD
+    ('''    # --------------------------------------------------------------- variants
+    def set_slot(self, old_slot, new_slot):
+        """Swap one material slot on the finished mesh (material variants)."""
+        objects = [self.object] + ([self.lod1] if getattr(self, "lod1", None) is not None else [])''',
+     '''    @staticmethod
+    def _join(objs):
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objs:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objs[0]
+        if len(objs) > 1:
+            bpy.ops.object.join()
+        return bpy.context.view_layer.objects.active
+
+    def _lod_objects(self):
+        """Every exported LOD object after LOD0 (make_lod1's LOD1, make_lods' set)."""
+        out = [self.lod1] if getattr(self, "lod1", None) is not None else []
+        return out + [o for _lv, o in sorted(self.lods.items()) if o is not None and o not in out]
+
+    # --------------------------------------------------------------- variants
+    def set_slot(self, old_slot, new_slot):
+        """Swap one material slot on the finished mesh (material variants)."""
+        objects = [self.object] + self._lod_objects()'''),
+    # 7. strip the bookkeeping groups on every LOD
+    ('''        for obj in [self.object] + ([self.lod1] if getattr(self, "lod1", None) is not None else []):
+            for gname in ("fr_lod1_drop", "fr_lod_keep"):''',
+     '''        for obj in [self.object] + self._lod_objects():
+            for gname in ("fr_lod1_drop", "fr_lod2_drop", "fr_lod_keep"):'''),
+    # 8. make_lod1 -> shared decimation; make_lods
+    ('''        lod1 = self.object.copy()
+        lod1.data = self.object.data.copy()
+        bpy.context.scene.collection.objects.link(lod1)
+        lod0_tris = self.meta.get("triangles") or sum(len(p.vertices) - 2 for p in self.object.data.polygons)
+        target = lod0_tris * ratio
+        # 1. Drop sub-pixel detail parts outright.
+        drop = lod1.vertex_groups.get("fr_lod1_drop")''',
+     '''        lod1 = self._decimated(ratio, 1)
+        self.object.name = self.name + "_LOD0"
+        lod1.name = self.name + "_LOD1"
+        self.lod1 = lod1
+        self.meta["trianglesLod1"] = sum(len(p.vertices) - 2 for p in lod1.data.polygons)
+
+    def make_lods(self, ratios=None):
+        """P-1 / P-1b (PROPOSAL): <NAME>_LOD0/1/2 in one FBX. Hand-built levels
+        (finish() split them by fr_lods) are named and counted only; otherwise
+        ``ratios`` = (r1, r2) collapse-decimate copies of LOD0. The sidecar's
+        lodDistances (d01, d12, dcull) set Unity's switch heights
+        (FrontRoomsKitImporter.OnPostprocessModel) and R3's distances."""
+        if not self.lods and ratios:
+            for lv, r in enumerate(ratios, start=1):
+                if r and r < 0.95:
+                    self.lods[lv] = self._decimated(r, lv)
+        if not self.lods:
+            self.object.name = self.name
+            return
+        self.object.name = self.name + "_LOD0"
+        for lv, obj in sorted(self.lods.items()):
+            obj.name = "%s_LOD%d" % (self.name, lv)
+            self.meta["trianglesLod%d" % lv] = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+
+    def _decimated(self, ratio, level):
+        """A collapse-decimated copy of LOD0 at ``ratio`` of its triangles:
+        parts marked fr_lod<level>_drop deleted first, fr_lod_keep protected."""
+        lod1 = self.object.copy()
+        lod1.data = self.object.data.copy()
+        bpy.context.scene.collection.objects.link(lod1)
+        lod0_tris = self.meta.get("triangles") or sum(len(p.vertices) - 2 for p in self.object.data.polygons)
+        target = lod0_tris * ratio
+        # 1. Drop sub-pixel detail parts outright.
+        drop = lod1.vertex_groups.get("fr_lod%d_drop" % level)'''),
+    ('''        # 3. Re-mark sharp edges: collapse leaves box corners shading round.
+        lod1.data.shade_smooth()
+        lod1.data.set_sharp_from_angle(angle=math.radians(getattr(self, "smooth_angle", 35.0)))
+        self.object.name = self.name + "_LOD0"
+        lod1.name = self.name + "_LOD1"
+        self.lod1 = lod1
+        self.meta["trianglesLod1"] = sum(len(p.vertices) - 2 for p in lod1.data.polygons)''',
+     '''        # 3. Re-mark sharp edges: collapse leaves box corners shading round.
+        lod1.data.shade_smooth()
+        lod1.data.set_sharp_from_angle(angle=math.radians(getattr(self, "smooth_angle", 35.0)))
+        return lod1'''),
+    # 9. export every LOD
+    ('''        self.object.select_set(True)
+        if getattr(self, "lod1", None) is not None:
+            self.lod1.select_set(True)
+        bpy.context.view_layer.objects.active = self.object''',
+     '''        self.object.select_set(True)
+        for obj in self._lod_objects():
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = self.object'''),
+    # 10. previews show LOD0 only
+    ('''        if getattr(self, "lod1", None) is not None:
+            self.lod1.hide_render = True
+        scene.render.engine = "CYCLES"''',
+     '''        for obj in self._lod_objects():
+            obj.hide_render = True
+        scene.render.engine = "CYCLES"'''),
+]
+
+edits_ba = [
+    ('''            # Optional LOD1 (module.LOD1 = triangle ratio) and material variants
+            # (module.VARIANTS = {"Kit_X_Floral": {"Prop_FabricBeige": "Prop_FabricFloral"}}).
+            kit.make_lod1(getattr(module, "LOD1", None))
+            kit.export(os.path.join(out, module.NAME + ".fbx"), os.path.join(out, module.NAME + ".json"))
+            print("[kit] exported %s: %d tris (LOD1 %s), slots %s" % (module.NAME, kit.meta["triangles"], kit.meta.get("trianglesLod1", "-"), kit.meta["slots"]))''',
+     '''            # LODs: hand-built part sets (fr_lods) or module.LODS = (r1, r2) (P-1),
+            # else the optional LOD1 (module.LOD1 = triangle ratio); material variants
+            # (module.VARIANTS = {"Kit_X_Floral": {"Prop_FabricBeige": "Prop_FabricFloral"}}).
+            if kit.lods or getattr(module, "LODS", None):
+                kit.make_lods(getattr(module, "LODS", None))
+            else:
+                kit.make_lod1(getattr(module, "LOD1", None))
+            kit.export(os.path.join(out, module.NAME + ".fbx"), os.path.join(out, module.NAME + ".json"))
+            print("[kit] exported %s: %d tris (LOD1 %s, LOD2 %s), slots %s" % (module.NAME, kit.meta["triangles"], kit.meta.get("trianglesLod1", "-"), kit.meta.get("trianglesLod2", "-"), kit.meta["slots"]))'''),
+]
+
+
+def apply(path, edits):
+    text = open(path).read()
+    for old, new in edits:
+        n = text.count(old)
+        if n != 1:
+            sys.exit("anchor matched %d times in %s:\n%s" % (n, path, old[:200]))
+        text = text.replace(old, new)
+    return text
+
+
+kl = apply(KL, edits_kl)
+ba = apply(BA, edits_ba)
+open(KL, "w").write(kl)
+open(BA, "w").write(ba)
+print("p1_patch: kitlib.py and build_asset.py patched")

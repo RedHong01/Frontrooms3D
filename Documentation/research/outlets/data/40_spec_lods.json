@@ -1,0 +1,208 @@
+{
+ "track": "outlets_lods",
+ "title": "Outlets P-1 (NEEDS VISUAL-CHAT APPROVAL): LOD0/LOD1/LOD2 in one FBX for the 22 outlet kits + the kitlib/build_asset change that builds them.",
+ "header": [
+  "STACKED on outlets_int: apply outlets_int first (the 44 kit bases are outlets_int's payload; before it lands this dry run refuses).",
+  "Report: Documentation/research/outlets/25_integration.md (section 7). P-1 = the interactables spec's proposal (research/interactables/10_spec.md",
+  "section 8): kitlib.make_lods(ratios) + hand-built LOD part sets (fr_lods), build_asset.py calls it; existing kits rebuild identically",
+  "(7 kits checked: crt_monitor, cubicle_panel, copier, lock_escutcheon(+Brass), door_leaf_steel_lite, bar_stool: geometry, normals, JSON equal).",
+  "Touches: replace Tools/Blender/frontrooms_kit/kitlib.py and build_asset.py; replace 20 kit .json + .fbx (sidecar first) with the LOD builds",
+  "  (Unity's FrontRoomsKitImporter already reads lodDistances: LODGroup 1.5/4/12 m plates, 2/6/15 m floor boxes; R3 picks the levels by name).",
+  "Kit .meta files are NOT touched (GUIDs from outlets_int). Effect (10 seeds, 1,000 views): triangles per view mean 25.1k -> 1.1k.",
+  "Kit_OutletScrew and Kit_CubiclePanel_Powered are left out: their LOD build equals outlets_int's (no LOD2; geometry and normals equal).",
+  "2026-10-14 18:0x (outlets fix pass): rebuilt; Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG left out (no longer shipped); stacked on the fix-pass outlets_int."
+ ],
+ "files": [
+  [
+   "Tools/Blender/frontrooms_kit/kitlib.py",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/regress/kit_b/kitlib.py"
+  ],
+  [
+   "Tools/Blender/frontrooms_kit/build_asset.py",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/regress/kit_b/build_asset.py"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_ConduitEMT.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_ConduitEMT.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_ConduitEMT.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_ConduitEMT.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_ConduitStrap.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_ConduitStrap.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_ConduitStrap.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_ConduitStrap.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_FloorBoxTombstone.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackBNC.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackBNC.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackBNC.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackBNC.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackData.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackData.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackData.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackData.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackPhone.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackPhone.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackPhone.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackPhone.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackPhone4Prong.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackPhone4Prong.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_JackPhone4Prong.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_JackPhone4Prong.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletBare.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletBare.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletBare.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletBare.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletBlank.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletBlank.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletBlank.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletBlank.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex20.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex20.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletHandyBox.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletHandyBox.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletToggle1.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletToggle1.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletToggle1.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletToggle1.fbx"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletToggle2.json",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletToggle2.json"
+  ],
+  [
+   "Assets/Resources/Props/Models/Kit_OutletToggle2.fbx",
+   "/Users/redwang/FrontRoomsVisualWork/outlet_int2/stage/lods/Assets/Resources/Props/Models/Kit_OutletToggle2.fbx"
+  ]
+ ],
+ "keep": [],
+ "base_from": {
+  "Assets/Resources/Props/Models/Kit_ConduitEMT.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_ConduitEMT.json",
+  "Assets/Resources/Props/Models/Kit_ConduitEMT.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_ConduitEMT.fbx",
+  "Assets/Resources/Props/Models/Kit_ConduitStrap.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_ConduitStrap.json",
+  "Assets/Resources/Props/Models/Kit_ConduitStrap.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_ConduitStrap.fbx",
+  "Assets/Resources/Props/Models/Kit_FloorBoxTombstone.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.json",
+  "Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx",
+  "Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.json",
+  "Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx",
+  "Assets/Resources/Props/Models/Kit_JackBNC.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackBNC.json",
+  "Assets/Resources/Props/Models/Kit_JackBNC.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackBNC.fbx",
+  "Assets/Resources/Props/Models/Kit_JackData.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackData.json",
+  "Assets/Resources/Props/Models/Kit_JackData.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackData.fbx",
+  "Assets/Resources/Props/Models/Kit_JackPhone.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackPhone.json",
+  "Assets/Resources/Props/Models/Kit_JackPhone.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackPhone.fbx",
+  "Assets/Resources/Props/Models/Kit_JackPhone4Prong.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackPhone4Prong.json",
+  "Assets/Resources/Props/Models/Kit_JackPhone4Prong.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_JackPhone4Prong.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletBare.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletBare.json",
+  "Assets/Resources/Props/Models/Kit_OutletBare.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletBare.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletBlank.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletBlank.json",
+  "Assets/Resources/Props/Models/Kit_OutletBlank.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletBlank.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex.json",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex20.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex20.json",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.json",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.json",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.json",
+  "Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletHandyBox.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletHandyBox.json",
+  "Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletToggle1.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletToggle1.json",
+  "Assets/Resources/Props/Models/Kit_OutletToggle1.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletToggle1.fbx",
+  "Assets/Resources/Props/Models/Kit_OutletToggle2.json": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletToggle2.json",
+  "Assets/Resources/Props/Models/Kit_OutletToggle2.fbx": "/Users/redwang/FrontRoomsVisualWork/apply/outlets_int_payload/Assets/Resources/Props/Models/Kit_OutletToggle2.fbx"
+ }
+}

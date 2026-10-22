@@ -203,6 +203,7 @@
   "Prop_Brass",
   "Prop_PlasticBlack"
  ],
+ "trianglesLod1": 1884,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

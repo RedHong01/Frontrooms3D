@@ -1,0 +1,52 @@
+material Prop_ThermosetIvory: ok, instancing True, shader FrontRooms/Surface
+material Prop_ThermosetAged: ok, instancing True, shader FrontRooms/Surface
+material Prop_ThermosetAlmond: ok, instancing True, shader FrontRooms/Surface
+material Prop_NylonIvory: ok, instancing True, shader FrontRooms/Surface
+material Prop_PlasticOrange: ok, instancing True, shader FrontRooms/Surface
+material Prop_PlasticBeige: ok, instancing True, shader FrontRooms/Surface
+material Prop_PlasticPutty: ok, instancing True, shader FrontRooms/Surface
+material Prop_Aluminium: ok, instancing True, shader FrontRooms/Surface
+material Prop_PlasticBlack: ok, instancing True, shader FrontRooms/Surface
+material Prop_Brass: ok, instancing True, shader FrontRooms/Surface
+material Prop_Ceramic: ok, instancing True, shader FrontRooms/Surface
+material Prop_CeramicGlaze: ok, instancing True, shader FrontRooms/Surface
+material Prop_Chrome: ok, instancing True, shader FrontRooms/Surface
+Kit_OutletDuplex: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex_LOD0 2880 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex_LOD1 954 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack] | Kit_OutletDuplex_LOD2 42 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack]
+Kit_OutletDuplex_Brown: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex_LOD0 2880 tris [Prop_Ceramic, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex_LOD1 954 tris [Prop_Ceramic, Prop_PlasticBlack] | Kit_OutletDuplex_LOD2 42 tris [Prop_Ceramic, Prop_PlasticBlack]
+Kit_OutletDuplex_Steel: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex_Steel_LOD0 2584 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex_Steel_LOD1 954 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack] | Kit_OutletDuplex_Steel_LOD2 42 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack]
+Kit_OutletDuplex20: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex20_LOD0 2920 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex20_LOD1 986 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack] | Kit_OutletDuplex20_LOD2 42 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack]
+Kit_OutletDuplex20_IG: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex20_LOD0 2920 tris [Prop_ThermosetIvory, Prop_PlasticOrange, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex20_LOD1 986 tris [Prop_ThermosetIvory, Prop_PlasticOrange, Prop_PlasticBlack] | Kit_OutletDuplex20_LOD2 42 tris [Prop_ThermosetIvory, Prop_PlasticOrange, Prop_PlasticBlack]
+Kit_OutletDuplex_Cracked: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex_Cracked_LOD0 3414 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex_Cracked_LOD1 1125 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack] | Kit_OutletDuplex_Cracked_LOD2 42 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack]
+Kit_OutletDuplex_Jumbo: LODGroup size 0.133, 3 levels, heights 0.0569 / 0.0213 / 0.0071 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletDuplex_Jumbo_LOD0 2956 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_OutletDuplex_Jumbo_LOD1 954 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack] | Kit_OutletDuplex_Jumbo_LOD2 42 tris [Prop_ThermosetIvory, Prop_NylonIvory, Prop_PlasticBlack]
+Kit_OutletScrew: no LODGroup | Kit_OutletScrew 266 tris [Prop_ThermosetIvory]
+Kit_OutletBare: LODGroup size 0.107, 3 levels, heights 0.0455 / 0.0171 / 0.0057 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletBare_LOD0 3508 tris [Prop_NylonIvory, Prop_Aluminium, Prop_Rubber, Prop_Brass] | Kit_OutletBare_LOD1 1144 tris [Prop_NylonIvory, Prop_Aluminium, Prop_Rubber, Prop_Brass] | Kit_OutletBare_LOD2 68 tris [Prop_NylonIvory, Prop_Aluminium, Prop_Rubber]
+Kit_OutletBlank: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletBlank_LOD0 1412 tris [Prop_ThermosetIvory, Prop_PlasticBlack] | Kit_OutletBlank_LOD1 426 tris [Prop_ThermosetIvory, Prop_PlasticBlack] | Kit_OutletBlank_LOD2 28 tris [Prop_ThermosetIvory, Prop_PlasticBlack]
+Kit_OutletToggle1: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletToggle1_LOD0 2296 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory] | Kit_OutletToggle1_LOD1 780 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory] | Kit_OutletToggle1_LOD2 40 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory]
+Kit_OutletToggle2: LODGroup size 0.116, 3 levels, heights 0.0494 / 0.0185 / 0.0062 (= 1.5 m / 4.0 m / 12.0 m) | Kit_OutletToggle2_LOD0 3660 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory] | Kit_OutletToggle2_LOD1 1462 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory] | Kit_OutletToggle2_LOD2 56 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory]
+Kit_JackPhone: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_JackPhone_LOD0 2118 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory, Prop_Brass] | Kit_JackPhone_LOD1 686 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory] | Kit_JackPhone_LOD2 36 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory]
+Kit_JackData: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_JackData_LOD0 2762 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory, Prop_Brass] | Kit_JackData_LOD1 1000 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory] | Kit_JackData_LOD2 68 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_NylonIvory]
+Kit_JackBNC: LODGroup size 0.114, 3 levels, heights 0.0488 / 0.0183 / 0.0061 (= 1.5 m / 4.0 m / 12.0 m) | Kit_JackBNC_LOD0 2748 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_Chrome, Prop_Brass] | Kit_JackBNC_LOD1 1008 tris [Prop_ThermosetIvory, Prop_PlasticBlack, Prop_Chrome, Prop_Brass] | Kit_JackBNC_LOD2 56 tris [Prop_ThermosetIvory, Prop_Chrome]
+Kit_JackPhone4Prong: LODGroup size 0.052, 3 levels, heights 0.0222 / 0.0083 / 0.0028 (= 1.5 m / 4.0 m / 12.0 m) | Kit_JackPhone4Prong_LOD0 1672 tris [Prop_Ceramic, Prop_PlasticBlack, Prop_Brass] | Kit_JackPhone4Prong_LOD1 628 tris [Prop_Ceramic, Prop_PlasticBlack, Prop_Brass] | Kit_JackPhone4Prong_LOD2 38 tris [Prop_Ceramic]
+Kit_FloorBoxTombstone: LODGroup size 0.111, 3 levels, heights 0.0355 / 0.0118 / 0.0047 (= 2.0 m / 6.0 m / 15.0 m) | Kit_FloorBoxTombstone_LOD0 3576 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_FloorBoxTombstone_LOD1 1118 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack] | Kit_FloorBoxTombstone_LOD2 84 tris [Prop_Aluminium, Prop_NylonIvory]
+Kit_FloorBoxTombstone2: LODGroup size 0.127, 3 levels, heights 0.0406 / 0.0135 / 0.0054 (= 2.0 m / 6.0 m / 15.0 m) | Kit_FloorBoxTombstone2_LOD0 5112 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_FloorBoxTombstone2_LOD1 1836 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack] | Kit_FloorBoxTombstone2_LOD2 92 tris [Prop_Aluminium, Prop_NylonIvory]
+Kit_OutletHandyBox: LODGroup size 0.148, 3 levels, heights 0.0473 / 0.0158 / 0.0047 (= 2.0 m / 6.0 m / 20.0 m) | Kit_OutletHandyBox_LOD0 3860 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack, Prop_Brass] | Kit_OutletHandyBox_LOD1 1300 tris [Prop_Aluminium, Prop_NylonIvory, Prop_PlasticBlack] | Kit_OutletHandyBox_LOD2 80 tris [Prop_Aluminium, Prop_NylonIvory]
+Kit_ConduitEMT: LODGroup size 1, 3 levels, heights 0.2133 / 0.0800 / 0.0267 (= 3.0 m / 8.0 m / 24.0 m) | Kit_ConduitEMT_LOD0 576 tris [Prop_Aluminium] | Kit_ConduitEMT_LOD1 220 tris [Prop_Aluminium] | Kit_ConduitEMT_LOD2 24 tris [Prop_Aluminium]
+Kit_ConduitStrap: LODGroup size 0.03, 2 levels, heights 0.0096 / 0.0000 (= 2.0 m / none) | Kit_ConduitStrap_LOD0 294 tris [Prop_Aluminium] | Kit_ConduitStrap_LOD1 106 tris [Prop_Aluminium]
+Kit_CubiclePanel_Powered: LODGroup size 1.524, 2 levels, heights 0.1000 / 0.0200 (= 9.8 m / 48.8 m) | Kit_CubiclePanel_Powered_LOD0 1460 tris [Prop_SteelPutty, Prop_PlasticBlack, Prop_FabricCubicle, Prop_NylonIvory] | Kit_CubiclePanel_Powered_LOD1 184 tris [Prop_SteelPutty, Prop_FabricCubicle, Prop_PlasticBlack]
+R3 draws Duplex as Kit_OutletDuplex
+R3 draws DuplexSteel as Kit_OutletDuplex_Steel
+R3 draws Duplex20 as Kit_OutletDuplex20
+R3 draws DuplexCracked as Kit_OutletDuplex_Cracked
+R3 draws DuplexJumbo as Kit_OutletDuplex_Jumbo
+R3 draws DuplexScorched as Kit_OutletDuplex
+R3 draws Bare as Kit_OutletBare
+R3 draws Blank as Kit_OutletBlank
+R3 draws Toggle1 as Kit_OutletToggle1
+R3 draws Toggle2 as Kit_OutletToggle2
+R3 draws JackPhone as Kit_JackPhone
+R3 draws JackData as Kit_JackData
+R3 draws JackBNC as Kit_JackBNC
+R3 draws JackPhone4 as Kit_JackPhone4Prong
+R3 draws HandyBox as Kit_OutletHandyBox
+R3 draws FloorBox as Kit_FloorBoxTombstone
+R3 draws FloorBox2 as Kit_FloorBoxTombstone2

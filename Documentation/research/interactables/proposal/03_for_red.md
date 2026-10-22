@@ -2,10 +2,23 @@
 
 2026-10-03. Nothing here is in the game. You confirm or change it; then we build.
 
+## Update 2026-10-14: the kit is built; two calls are still yours
+
+The 57 models are in the project now (not yet placed by the map). The deck shows them: slide 14 "The kit, as built" is new, every grey PHASE 2 box and every WIP tile has its final render, and the chips name the kit files. Slide 11 keeps its Oct 3 text, with a note that points to slide 14. The section moved: it is now at **x 25257, y 13920**, and 13 slides show, numbered 01–14.
+
+Two things on the slides were left as they are, because they are your calls:
+
+| # | Call | What the slides show now | Or |
+|---|---|---|---|
+| A | **Run window frame** (slide 09, DW08) | The Run window (W-RN) uses the dark-bronze steel frame `Kit_WindowFrame_Steel`, the same as the Run doors (fix pass, critic M2). The white enamel frame `Kit_WindowFrame_Steel_Enamel` is shown as "Run option" | White enamel for Run. The model is built; it has no map member yet |
+| B | **Key board name** (slide 08, DW07) | The file is `Kit_KeyHookBoard`. The slide's chip shows that name, and its numeral says "Key rack · 0.30 m". 平面视觉's sheet K73 says "Key board" | Pick "key board" or "key rack" for the slides and the sheet (codex audit F6). The file name can stay |
+
+The `Kit_KeyBoard` / `Kit_Keyboard` clash under "Needs other chats" below is fixed: the file is `Kit_KeyHookBoard`. Only the display name (B) is open.
+
 ## Where to look
 
-- **Figma:** "Undergoing Game Projects", section **FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07)**: https://www.figma.com/design/0tCbAiVUlrPId3RWd9LRif?node-id=2748-6099. It sits at x 51297, y 2000, two columns right of TOUCH CONTROLS. The first section (2497:3804) was deleted from the file. This one rebuilds it with the same slides, text and calls; `02_figma.md` §R lists the few differences.
-- **12 slides show, numbered 01–13.** Slide 02 (RE8) is hidden because it has no RE8 pictures yet (see Downloads).
+- **Figma:** "Undergoing Game Projects", section **FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07)**: https://www.figma.com/design/0tCbAiVUlrPId3RWd9LRif?node-id=2748-6099. It sits at **x 25257, y 13920**: under ROOM VISUALS, above LEVEL TRANSITIONS, between PROP KIT on the left and TOUCH CONTROLS (x 33937) on the right. (It was built at x 51297, y 2000 on Oct 7 and moved since.) The first section (2497:3804) was deleted from the file. This one rebuilds it with the same slides, text and calls; `02_figma.md` §R lists the few differences.
+- **12 slides show, numbered 01–13** (Oct 3; since Oct 14: 13 show, 01–14, see the update above). Slide 02 (RE8) is hidden because it has no RE8 pictures yet (see Downloads).
 - **Reading order:**
   - 01: today's faults (see-through slits, a one-line lock, a glowing key cube, a one-box window);
   - 03: the stop that closes every gap, in game;

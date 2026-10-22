@@ -1,0 +1,371 @@
+{
+ "lobby_lit_0p3m": {
+  "body_srgb": [
+   166.1,
+   46.1,
+   29.0
+  ],
+  "body_hsv": [
+   7.5,
+   0.825,
+   0.652
+  ],
+  "body_R_over_G": 3.6,
+  "hot_srgb": [
+   255.0,
+   135.9,
+   82.7
+  ],
+  "hot_hsv": [
+   18.5,
+   0.676,
+   1.0
+  ],
+  "face_srgb": [
+   189.9,
+   181.6,
+   154.6
+  ],
+  "L_face": 0.4724,
+  "L_letter": 0.1053,
+  "contrast": 0.777,
+  "raw_letter_Y": 0.2319,
+  "T2run_Y": null,
+  "body_px": 141500,
+  "crop_xyxy_in_1920x1080": [
+   0,
+   0,
+   1920,
+   1080
+  ],
+  "frame": "lobby/lobby_lit_g1/L_0p3_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "lobby_lit_3m": {
+  "body_srgb": [
+   179.5,
+   52.6,
+   33.0
+  ],
+  "body_hsv": [
+   8.0,
+   0.816,
+   0.704
+  ],
+  "body_R_over_G": 3.41,
+  "hot_srgb": [
+   255.0,
+   133.4,
+   81.3
+  ],
+  "hot_hsv": [
+   18.0,
+   0.681,
+   1.0
+  ],
+  "face_srgb": [
+   196.6,
+   188.2,
+   161.5
+  ],
+  "L_face": 0.5144,
+  "L_letter": 0.1261,
+  "contrast": 0.755,
+  "raw_letter_Y": 0.2405,
+  "T2run_Y": null,
+  "body_px": 6440,
+  "crop_xyxy_in_1920x1080": [
+   715,
+   397,
+   1203,
+   671
+  ],
+  "frame": "lobby/lobby_lit_g1/L_3m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "lobby_lit_6m": {
+  "body_srgb": [
+   179.0,
+   52.3,
+   32.8
+  ],
+  "body_hsv": [
+   8.0,
+   0.817,
+   0.702
+  ],
+  "body_R_over_G": 3.42,
+  "hot_srgb": [
+   255.0,
+   133.1,
+   81.2
+  ],
+  "hot_hsv": [
+   17.9,
+   0.682,
+   1.0
+  ],
+  "face_srgb": [
+   197.5,
+   189.1,
+   162.2
+  ],
+  "L_face": 0.5146,
+  "L_letter": 0.1253,
+  "contrast": 0.757,
+  "raw_letter_Y": 0.241,
+  "T2run_Y": null,
+  "body_px": 4872,
+  "crop_xyxy_in_1920x1080": [
+   748,
+   418,
+   1170,
+   655
+  ],
+  "frame": "lobby/lobby_lit_g1/L_6m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "lobby_dark_0p3m": {
+  "body_srgb": [
+   159.0,
+   42.0,
+   26.6
+  ],
+  "body_hsv": [
+   7.0,
+   0.833,
+   0.624
+  ],
+  "body_R_over_G": 3.78,
+  "hot_srgb": [
+   255.0,
+   134.2,
+   81.5
+  ],
+  "hot_hsv": [
+   18.2,
+   0.68,
+   1.0
+  ],
+  "face_srgb": [
+   56.8,
+   47.3,
+   24.7
+  ],
+  "L_face": 0.0304,
+  "L_letter": 0.095,
+  "contrast": -2.12,
+  "raw_letter_Y": 0.2223,
+  "T2run_Y": null,
+  "body_px": 140456,
+  "crop_xyxy_in_1920x1080": [
+   0,
+   0,
+   1920,
+   1080
+  ],
+  "frame": "lobby/lobby_dark_g1/L_0p3_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "lobby_dark_3m": {
+  "body_srgb": [
+   168.6,
+   45.1,
+   28.6
+  ],
+  "body_hsv": [
+   7.1,
+   0.83,
+   0.661
+  ],
+  "body_R_over_G": 3.74,
+  "hot_srgb": [
+   255.0,
+   130.4,
+   79.1
+  ],
+  "hot_hsv": [
+   17.5,
+   0.69,
+   1.0
+  ],
+  "face_srgb": [
+   60.7,
+   50.1,
+   26.4
+  ],
+  "L_face": 0.0339,
+  "L_letter": 0.1079,
+  "contrast": -2.179,
+  "raw_letter_Y": 0.2266,
+  "T2run_Y": null,
+  "body_px": 6333,
+  "crop_xyxy_in_1920x1080": [
+   715,
+   397,
+   1203,
+   671
+  ],
+  "frame": "lobby/lobby_dark_g1/L_3m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "lobby_dark_6m": {
+  "body_srgb": [
+   168.4,
+   45.2,
+   28.7
+  ],
+  "body_hsv": [
+   7.1,
+   0.83,
+   0.661
+  ],
+  "body_R_over_G": 3.73,
+  "hot_srgb": [
+   255.0,
+   130.2,
+   79.0
+  ],
+  "hot_hsv": [
+   17.5,
+   0.69,
+   1.0
+  ],
+  "face_srgb": [
+   61.0,
+   50.5,
+   26.6
+  ],
+  "L_face": 0.0343,
+  "L_letter": 0.1078,
+  "contrast": -2.144,
+  "raw_letter_Y": 0.2281,
+  "T2run_Y": null,
+  "body_px": 4765,
+  "crop_xyxy_in_1920x1080": [
+   748,
+   418,
+   1170,
+   655
+  ],
+  "frame": "lobby/lobby_dark_g1/L_6m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "run_RB_6m": {
+  "body_srgb": [
+   163.9,
+   44.3,
+   28.1
+  ],
+  "body_hsv": [
+   7.2,
+   0.828,
+   0.643
+  ],
+  "body_R_over_G": 3.7,
+  "hot_srgb": [
+   255.0,
+   125.3,
+   76.1
+  ],
+  "hot_hsv": [
+   16.5,
+   0.701,
+   1.0
+  ],
+  "face_srgb": [
+   61.5,
+   51.5,
+   27.3
+  ],
+  "L_face": 0.0353,
+  "L_letter": 0.1013,
+  "contrast": -1.87,
+  "raw_letter_Y": 0.2312,
+  "T2run_Y": 5.059,
+  "body_px": 3192,
+  "crop_xyxy_in_1920x1080": [
+   681,
+   381,
+   1232,
+   691
+  ],
+  "frame": "run/stream/RB_6m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "run_RB_12m": {
+  "body_srgb": [
+   162.9,
+   46.1,
+   29.6
+  ],
+  "body_hsv": [
+   7.4,
+   0.818,
+   0.639
+  ],
+  "body_R_over_G": 3.53,
+  "hot_srgb": [
+   254.9,
+   124.7,
+   77.0
+  ],
+  "hot_hsv": [
+   16.1,
+   0.698,
+   1.0
+  ],
+  "face_srgb": [
+   62.8,
+   53.8,
+   29.6
+  ],
+  "L_face": 0.0379,
+  "L_letter": 0.1017,
+  "contrast": -1.688,
+  "raw_letter_Y": 0.2281,
+  "T2run_Y": 4.17,
+  "body_px": 2536,
+  "crop_xyxy_in_1920x1080": [
+   713,
+   400,
+   1202,
+   675
+  ],
+  "frame": "run/stream/RB_12m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ },
+ "exit_E_3m": {
+  "body_srgb": [
+   169.3,
+   45.3,
+   28.8
+  ],
+  "body_hsv": [
+   7.1,
+   0.83,
+   0.664
+  ],
+  "body_R_over_G": 3.73,
+  "hot_srgb": [
+   255.0,
+   130.8,
+   79.4
+  ],
+  "hot_hsv": [
+   17.6,
+   0.689,
+   1.0
+  ],
+  "face_srgb": [
+   48.4,
+   37.2,
+   19.3
+  ],
+  "L_face": 0.0209,
+  "L_letter": 0.1088,
+  "contrast": -4.21,
+  "raw_letter_Y": 0.2265,
+  "T2run_Y": null,
+  "body_px": 5112,
+  "crop_xyxy_in_1920x1080": [
+   642,
+   362,
+   1274,
+   718
+  ],
+  "frame": "exit/exit_stream/E_3m_m.png (graded through the HDR target, game post, lens distortion held at 0)"
+ }
+}

@@ -39,7 +39,8 @@
  "tags": [
   "interactable",
   "window",
-  "blind"
+  "blind",
+  "wall_decor"
  ],
  "mount": {
   "anchor": "blind_rail",

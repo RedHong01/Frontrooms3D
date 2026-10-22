@@ -1,0 +1,11 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 FINAL verification capture: the package as built in W/proj_es_fix1 (HDR graded path).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+LOBBY='lit_g1|lit|1|cur;dark_g1|dark|1|cur'
+RUN='stream|-1|keep;A_pt|1|pt|3.6|0|0|0.85;A_pt_g3|3|pt|3.6|0|0|0.85;A_pt1.2|1|pt|1.2|0|0|0.85;B_pc|1|pc|3.6|0|0|0.85;B_spc|1|spc|3.6|162|140|0.85;stream_g0.7|0.7|keep;stream_g1.4|1.4|keep;none|1|none|0|0|0|0.85'
+EXIT='stream|-1|cur'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/v_capture.log \
+  -esfOut $R/v -esfParts ladder,lobby,run,exit,states,probe -esfLobby "$LOBBY" -esfRun "$RUN" -esfExit "$EXIT" \
+  -esfStates stream -esfProbe stream -esfPretty lobby_lit_g1,lobby_dark_g1,stream,A_pt,A_pt_g3,A_pt1.2,B_pc,B_spc,exit_stream
+echo "exit $?" > $R/logs/v_capture.status

@@ -1,0 +1,9 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 experiment G: red-only reflection that keeps the dead sign red (tint R 1, G/B 0.05 linear).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+DIFF='s30u05m100|0.3||1,0.248,0.248|1;s50u05m100|0.5||1,0.248,0.248|1;s30u05m85|0.3||1,0.248,0.248|0.85;s30u10m100|0.3||1,0.349,0.349|1'
+LOBBY='lit_s30u05m100|lit|1|s30u05m100;lit_s50u05m100|lit|1|s50u05m100;lit_s30u05m85|lit|1|s30u05m85;lit_s30u10m100|lit|1|s30u10m100;dark_s30u05m100|dark|1|s30u05m100'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/g_capture.log \
+  -esfOut $R/g -esfParts lobby -esfDiff "$DIFF" -esfLobby "$LOBBY"
+echo "exit $?" > $R/logs/g_capture.status

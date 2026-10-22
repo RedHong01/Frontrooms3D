@@ -1,0 +1,42 @@
+"""Compact per-variant tables from measure.json (exit_sign_fix1 r2)."""
+import json, sys
+rows = json.load(open(sys.argv[1]))
+by = {}
+for r in rows:
+    by.setdefault((r["part"], r["variant"]), {})[r["shot"]] = r
+def hs(r):
+    if not r or "body_hsv" not in r: return "   -/   -"
+    return f"{r['body_hsv'][0]:4.1f}/{r['body_hsv'][1]:.2f}"
+def hot(r):
+    if not r or "hot_hsv" not in r: return "   -"
+    return f"{r['hot_hsv'][0]:4.1f}/{r['hot_hsv'][1]:.2f}"
+parts = sys.argv[2].split(",") if len(sys.argv) > 2 else ["run", "lobby", "exit", "states"]
+for part in parts:
+    vs = sorted(v for p, v in by if p == part)
+    if not vs: continue
+    print("==", part)
+    if part in ("run",):
+        print(f"{'variant':16} | T2run RA1.5 RB1.5 RA6 RB6 RB12 (min) | body hue/sat RA1.5 RB1.5 RA6 RB6 RB12 | hot RB6 | wide floorY wallY ceilY")
+        for v in vs:
+            d = by[(part, v)]
+            t2 = [d.get(s, {}).get("T2run_Y") for s in ("RA_1p5", "RB_1p5", "RA_6m", "RB_6m", "RB_12m")]
+            mn = min(x for x in t2 if x is not None) if any(x is not None for x in t2) else None
+            w = d.get("R_wide", {})
+            print(f"{v:16} | " + " ".join(f"{x:5.2f}" if x is not None else "    -" for x in t2) + f" ({mn:4.2f}) | " + " ".join(hs(d.get(s)) for s in ("RA_1p5", "RB_1p5", "RA_6m", "RB_6m", "RB_12m")) + f" | {hot(d.get('RB_6m'))} | {w.get('floor_meanY','-')} {w.get('wall_meanY','-')} {w.get('ceiling_meanY','-')}")
+    elif part in ("lobby", "exit"):
+        shots = ["L_0p3", "L_3m", "L_6m"] if part == "lobby" else ["E_0p3", "E_3m", "E_6m"]
+        print(f"{'variant':20} | body hue/sat/contrast " + "  ".join(shots) + " | hot hue/sat 3m | dead 1.2m hue/sat/con")
+        for v in vs:
+            d = by[(part, v)]
+            cells = []
+            for s in shots:
+                r = d.get(s)
+                cells.append(hs(r) + f"/{r.get('contrast', float('nan')):5.2f}" if r else "-")
+            dd = d.get("L_dead_1p2")
+            print(f"{v:20} | " + "  ".join(cells) + f" | {hot(d.get(shots[1]))} | " + (hs(dd) + f"/{dd.get('contrast'):.2f}" if dd else "-"))
+    elif part == "states":
+        for v in vs:
+            d = by[(part, v)]
+            for s in sorted(d):
+                r = d[s]
+                print(f"{v:12} {s:18} body {r.get('body_srgb')} {hs(r)} letY {r.get('raw_letter_Y')} T2 {r.get('T2run_Y')} hot {hot(r)}")

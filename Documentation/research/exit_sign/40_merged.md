@@ -44,6 +44,8 @@ bash /Users/redwang/FrontRoomsVisualWork/apply/exit_sign.sh --apply
 
 ## Not done in this stage (rule a), in order
 
+**Update 2026-10-14:** items 1 and 2, the sidecar follow-up and the two nits are packaged as `exit_sign_fix1` (READY for `--apply`, not applied): see `60_fix1.md`. Issue 1 is solved by turning the Run sign's light into a downward spot, not by a gain of 3 (that fails 平面视觉's colour targets).
+
 1. **Critic issue 1, SHOULD-FIX (a follow-up delta after this merge).** In Run rooms a LIT sign does not read as lit: the letters reach only 0.59× the ceiling (es_i07).
    - Fix: add `EmissionGain` to `FrontRoomsExitSign`, start it at about 3, and keep `Level` and the light un-gained.
    - Add a T2-Run gate on raw HDR at 1.5 m and 6 m: letters at least 1.5× the ceiling ring; graded R/G above 2.5; T4 unchanged.

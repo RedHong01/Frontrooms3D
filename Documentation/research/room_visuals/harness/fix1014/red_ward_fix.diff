@@ -1,0 +1,124 @@
+--- /Users/redwang/FrontRoomsVisualWork/rooms_fix/A_FrontRoomsRunLookdev.before.cs	2026-10-08 20:02:13
++++ /Users/redwang/FrontRoomsVisualWork/proj_run_red_ward/Assets/Editor/Rendering/FrontRoomsRunLookdev.cs	2026-10-14 16:28:15
+@@ -47,6 +47,15 @@
+     static string outDir;
+     static bool sweep;
+     static bool probesOn = true;
++    // FIX1 (2026-10-08, room_visuals fix stage): -runState armed|tripped bakes and enables ONLY that
++    // state's box probes, before the first render, and keeps them on (B's VL195 finding: URP 17.3's
++    // probe atlas keeps the first texture it sees in a batch run, so one state per Unity run).
++    // -runWax v multiplies the corridor floor smoothness (game Run_Floor = 1 x Run_VCT_S, median .53;
++    // 1.56 gives a median ~.82, Red's 10-03 waxed VCT .75-.85). Shots named *_k use the
++    // contract-size Relay stand-in (the proxy x 1.114: its 1.84 m top -> 2.05 m = RelayHeight, r ~.27).
++    static string runState = "all";
++    static float waxMul = 1f;
++    const float ContractScale = 2.05f / 1.84f;   // the proxy top is its shoulder box, 1.84 m
+     static bool debugBuild;
+     const int OutsideLayer = 30;   // anteroom + stub: hidden from the corridor probes only
+     static Volume runVolume;
+@@ -189,6 +198,8 @@
+             if (args[i] == "-runDecalTest") debugBuild = true;
+             if (args[i] == "-runSweep") sweep = true;
+             if (args[i] == "-runNoProbes") probesOn = false;
++            if (args[i] == "-runState" && i + 1 < args.Length) runState = args[i + 1];
++            if (args[i] == "-runWax" && i + 1 < args.Length) waxMul = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+             if (args[i] == "-runGlowY" && i + 1 < args.Length) glowY = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+             if (args[i] == "-runGlowI" && i + 1 < args.Length) glowIntensity = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+             if (args[i] == "-runFaceHold" && i + 1 < args.Length) faceHold = float.Parse(args[i + 1], CultureInfo.InvariantCulture);
+@@ -242,6 +253,13 @@
+             .All(k => Resources.Load<GameObject>("Props/Models/" + k) != null);
+         Note("doors: " + (kitDoors ? "interactables kit (G1 frame/leaf/exit device, G2 lock trim)" : "blockout (kit meshes missing or -runBlockoutDoors)"));
+         BuildMaterials();
++        if (waxMul != 1f)
++        {
++            var wax = new Material(mats["RunFloor"]) { name = "Run_Floor (FIX1 wax x" + F(waxMul) + ")" };
++            wax.SetFloat("_Smoothness", waxMul);
++            mats["RunFloor"] = wax;
++            Note("FIX1 floor: Run_Floor copy, _Smoothness " + F(waxMul) + " x Run_VCT_S (median .533 -> " + F(Mathf.Clamp01(.533f * waxMul)) + ")");
++        }
+         BuildAnteroom();
+         BuildCorridorShell();
+         BuildGoalDoor();
+@@ -291,6 +309,7 @@
+             S("c3", new Vector3(0f, 1.62f, 12.5f), fwd, 72f, 2f, false, false),
+             S("c4", new Vector3(0f, 1.62f, 23.5f), new Vector3(0f, 1.40f, 0f), 72f, 4f, true, true),
+             S("c4_gamerig", new Vector3(0f, 1.62f, 23.5f), new Vector3(0f, 1.40f, 0f), 72f, 4f, true, true),
++            S("c4_k", new Vector3(0f, 1.62f, 23.5f), new Vector3(0f, 1.40f, 0f), 72f, 4f, true, true),
+             // Extras (not in the brief's list): the hero sign up close, armed and tripped,
+             // and the tripped corridor seen from Level 0 (the same camera as S2).
+             S("s3x", new Vector3(.55f, 1.95f, 10.2f), new Vector3(0f, 2.36f, 12f), 30f, 3f, false, false),
+@@ -312,7 +331,39 @@
+              + ", corridor ambient tripped " + F(Final.amb) + " x global tinted (" + F(Final.tint.r) + ", " + F(Final.tint.g) + ", " + F(Final.tint.b) + "), eye adaptation +" + F(Final.exposure)
+              + " stops (delay " + F(rig.adaptDelay) + " s, tau " + F(rig.adaptTau) + " s), sign face hold " + F(rig.faceHold) + ", glow spots y " + F(glowY) + ", sign bounce armed " + F(signBounceArmed) + ", probes " + (probesOn ? "on" : "off"));
+         if (probesOn) BakeProbes();
+-        if (probesOn && rig.probesArmed.Count > 1 && rig.probesTripped.Count > 1)
++        if (probesOn && runState != "all")
++        {
++            var list = runState == "armed" ? rig.probesArmed : rig.probesTripped;
++            if (list.Count > 1) { rig.zoneArmed = list[1]; rig.zoneTripped = list[1]; rig.zoneSwap = true; }
++            foreach (var p in rig.probes) p.enabled = true;
++            Note("FIX1 reflections: " + rig.probes.Count + " box-projected probes ON, state " + runState + " only (baked before the first render), boxes " + V(rig.probes[0].size) + " blend " + F(rig.probes[0].blendDistance) + "; default reflection = probe 1 capture of the same state");
++            // FIX2 (2026-10-14): -runProbeDebug paints the box probes solid magenta and the default (zone) reflection
++            // solid green before the first render (B's r6 test): which pixels sample a box probe?
++            if (Environment.GetCommandLineArgs().Contains("-runProbeDebug"))
++            {
++                Cubemap Solid(string n, Color c)
++                {
++                    var cube = new Cubemap(32, TextureFormat.RGBAHalf, true) { name = n };
++                    foreach (CubemapFace f in Enum.GetValues(typeof(CubemapFace)))
++                    {
++                        if (f == CubemapFace.Unknown) continue;
++                        var px = new Color[32 * 32];
++                        for (var i = 0; i < px.Length; i++) px[i] = c;
++                        cube.SetPixels(px, f);
++                    }
++                    cube.Apply(true);
++                    return cube;
++                }
++                var mag = Solid("dbg magenta", new Color(3f, 0f, 3f));
++                var grn = Solid("dbg green", new Color(0f, 3f, 0f));
++                foreach (var p in rig.probes) p.customBakedTexture = mag;
++                for (var i = 0; i < rig.probesArmed.Count; i++) rig.probesArmed[i] = mag;     // the rig re-applies these lists in Evaluate
++                for (var i = 0; i < rig.probesTripped.Count; i++) rig.probesTripped[i] = mag;
++                rig.zoneArmed = grn; rig.zoneTripped = grn; rig.zoneSwap = true;
++                Note("PROBE DEBUG: box probes magenta, default reflection green");
++            }
++        }
++        else if (probesOn && rig.probesArmed.Count > 1 && rig.probesTripped.Count > 1)
+         {
+             // Round v5-2: the box-projected probes did not reach the FrontRooms/Surface walls in this
+             // build (s1b vs dbg_s1b_noprobe: max diff 7/765), and the default reflection they fell back
+@@ -1313,10 +1364,12 @@
+         RenderSettings.customReflectionTexture = black;
+         foreach (var (state, t, list) in new[] { ("armed", -8f, rig.probesArmed), ("tripped", 3f, rig.probesTripped) })
+         {
++            if (runState != "all" && runState != state) continue;
+             foreach (var p in rig.probes) { p.mode = ReflectionProbeMode.Baked; p.customBakedTexture = null; }
+             rig.Evaluate(t);
+             for (var i = 0; i < rig.probes.Count; i++)
+             {
++                if (runState != "all") for (var j = 0; j < rig.probes.Count; j++) rig.probes[j].enabled = j == i;
+                 var path = dir + "/run_a_probe" + i + "_" + state + ".exr";
+                 var ok = Lightmapping.BakeReflectionProbe(rig.probes[i], path);
+                 if (!ok) Note("WARNING: probe bake failed " + path);
+@@ -1327,6 +1380,11 @@
+             }
+         }
+         foreach (var p in rig.probes) p.mode = ReflectionProbeMode.Custom;
++        if (runState != "all")
++        {
++            var list = runState == "armed" ? rig.probesArmed : rig.probesTripped;
++            for (var i = 0; i < rig.probes.Count && i < list.Count; i++) { rig.probes[i].customBakedTexture = list[i]; rig.probes[i].enabled = true; }
++        }
+         RenderSettings.defaultReflectionMode = savedMode;
+         RenderSettings.customReflectionTexture = savedCustom;
+     }
+@@ -1360,6 +1418,8 @@
+         {
+             if (filter != null && !filter.Contains(s.name)) continue;
+             relay.gameObject.SetActive(s.relay && s.name != "c4_gamerig");
++            relay.localScale = s.name.EndsWith("_k") ? Vector3.one * ContractScale : Vector3.one;
++            if (runState != "all" && (s.t > 2.5f ? "tripped" : s.t < -1f ? "armed" : "transition") != runState) Note("WARNING: shot " + s.name + " t " + F(s.t) + " does not match this run's probe state " + runState);
+             gameRig.gameObject.SetActive(s.name == "c4_gamerig");
+             // dbg_s1b_noprobe now shows the old default reflection (sky, slider .3) for comparison.
+             rig.zoneSwap = rig.zoneArmed != null && s.name != "dbg_s1b_noprobe";

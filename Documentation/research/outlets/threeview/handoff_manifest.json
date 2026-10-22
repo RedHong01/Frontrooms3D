@@ -1,0 +1,1095 @@
+{
+ "oversample": 1,
+ "padding": 16,
+ "assets": [
+  {
+   "name": "Kit_ConduitEMT",
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 250,
+   "size_m": [
+    0.0179,
+    1,
+    0.0179
+   ],
+   "boundsMin": [
+    -0.0089,
+    0,
+    0.0026
+   ],
+   "boundsMax": [
+    0.0089,
+    1,
+    0.0204
+   ],
+   "triangles": 576,
+   "trianglesLod1": 220,
+   "slots": [
+    "Prop_Aluminium"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_surface",
+    "wall_flush",
+    "conduit"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     37,
+     282
+    ],
+    "side": [
+     37,
+     282
+    ],
+    "top": [
+     37,
+     37
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_ConduitStrap",
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 8000,
+   "size_m": [
+    0.03,
+    0.022,
+    0.0222
+   ],
+   "boundsMin": [
+    -0.0193,
+    -0.011,
+    0
+   ],
+   "boundsMax": [
+    0.0107,
+    0.011,
+    0.0222
+   ],
+   "triangles": 294,
+   "trianglesLod1": 106,
+   "slots": [
+    "Prop_Aluminium"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_surface",
+    "wall_flush",
+    "conduit"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     272,
+     208
+    ],
+    "side": [
+     210,
+     208
+    ],
+    "top": [
+     272,
+     210
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_CubiclePanel_Powered",
+   "viewYaw": 0,
+   "sheetPpm": 250,
+   "pngPpm": 250,
+   "size_m": [
+    1.524,
+    1.52,
+    0.067
+   ],
+   "boundsMin": [
+    -0.762,
+    0,
+    -0.0335
+   ],
+   "boundsMax": [
+    0.762,
+    1.52,
+    0.0335
+   ],
+   "triangles": 1460,
+   "trianglesLod1": 184,
+   "slots": [
+    "Prop_SteelPutty",
+    "Prop_PlasticBlack",
+    "Prop_FabricCubicle",
+    "Prop_NylonIvory"
+   ],
+   "tags": [
+    "office",
+    "panel",
+    "outlet",
+    "outlet_surface",
+    "powered_panel"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     413,
+     412
+    ],
+    "side": [
+     49,
+     412
+    ],
+    "top": [
+     413,
+     49
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_FloorBoxTombstone",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.111,
+    0.067,
+    0.076
+   ],
+   "boundsMin": [
+    -0.0555,
+    0,
+    -0.038
+   ],
+   "boundsMax": [
+    0.0555,
+    0.067,
+    0.038
+   ],
+   "triangles": 3576,
+   "trianglesLod1": 1118,
+   "slots": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_floor"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     254,
+     166
+    ],
+    "side": [
+     184,
+     166
+    ],
+    "top": [
+     254,
+     184
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_FloorBoxTombstone2",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.127,
+    0.076,
+    0.086
+   ],
+   "boundsMin": [
+    -0.0635,
+    0,
+    -0.043
+   ],
+   "boundsMax": [
+    0.0635,
+    0.076,
+    0.043
+   ],
+   "triangles": 5112,
+   "trianglesLod1": 1836,
+   "slots": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_floor"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     286,
+     184
+    ],
+    "side": [
+     204,
+     184
+    ],
+    "top": [
+     286,
+     204
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_JackBNC",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.018
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.018
+   ],
+   "triangles": 2748,
+   "trianglesLod1": 1008,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_Chrome",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     68,
+     261
+    ],
+    "top": [
+     172,
+     68
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_JackData",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0245
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0245
+   ],
+   "triangles": 2762,
+   "trianglesLod1": 1000,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     81,
+     261
+    ],
+    "top": [
+     172,
+     81
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_JackPhone",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0056
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0056
+   ],
+   "triangles": 2118,
+   "trianglesLod1": 686,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     44,
+     261
+    ],
+    "top": [
+     172,
+     44
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_JackPhone4Prong",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.052,
+    0.052,
+    0.018
+   ],
+   "boundsMin": [
+    -0.026,
+    -0.026,
+    0
+   ],
+   "boundsMax": [
+    0.026,
+    0.026,
+    0.018
+   ],
+   "triangles": 1672,
+   "trianglesLod1": 628,
+   "slots": [
+    "Prop_Ceramic",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     136,
+     136
+    ],
+    "side": [
+     68,
+     136
+    ],
+    "top": [
+     136,
+     68
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletBare",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0653,
+    0.1067,
+    0.043
+   ],
+   "boundsMin": [
+    -0.0328,
+    -0.0534,
+    -0.035
+   ],
+   "boundsMax": [
+    0.0325,
+    0.0534,
+    0.008
+   ],
+   "triangles": 3508,
+   "trianglesLod1": 1144,
+   "slots": [
+    "Prop_NylonIvory",
+    "Prop_Aluminium",
+    "Prop_Rubber",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     163,
+     246
+    ],
+    "side": [
+     118,
+     246
+    ],
+    "top": [
+     163,
+     118
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletBlank",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0056
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0056
+   ],
+   "triangles": 1412,
+   "trianglesLod1": 426,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     44,
+     261
+    ],
+    "top": [
+     172,
+     44
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletDuplex",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0066
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0066
+   ],
+   "triangles": 2880,
+   "trianglesLod1": 954,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     46,
+     261
+    ],
+    "top": [
+     172,
+     46
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletDuplex20",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0066
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0066
+   ],
+   "triangles": 2920,
+   "trianglesLod1": 986,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     46,
+     261
+    ],
+    "top": [
+     172,
+     46
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletDuplex_Cracked",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0066
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0066
+   ],
+   "triangles": 3416,
+   "trianglesLod1": 1125,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     46,
+     261
+    ],
+    "top": [
+     172,
+     46
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletDuplex_Jumbo",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0889,
+    0.1334,
+    0.0075
+   ],
+   "boundsMin": [
+    -0.0444,
+    -0.0667,
+    0
+   ],
+   "boundsMax": [
+    0.0444,
+    0.0667,
+    0.0075
+   ],
+   "triangles": 2956,
+   "trianglesLod1": 954,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     210,
+     299
+    ],
+    "side": [
+     47,
+     299
+    ],
+    "top": [
+     210,
+     47
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletDuplex_Steel",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0057
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0057
+   ],
+   "triangles": 2584,
+   "trianglesLod1": 954,
+   "slots": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     44,
+     261
+    ],
+    "top": [
+     172,
+     44
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletHandyBox",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.055,
+    0.1479,
+    0.0523
+   ],
+   "boundsMin": [
+    -0.0275,
+    -0.0513,
+    0
+   ],
+   "boundsMax": [
+    0.0275,
+    0.0966,
+    0.0523
+   ],
+   "triangles": 3860,
+   "trianglesLod1": 1300,
+   "slots": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_surface",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     142,
+     328
+    ],
+    "side": [
+     137,
+     328
+    ],
+    "top": [
+     142,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletScrew",
+   "viewYaw": 0,
+   "sheetPpm": 8000,
+   "pngPpm": 8000,
+   "size_m": [
+    0.0066,
+    0.0066,
+    0.001
+   ],
+   "boundsMin": [
+    -0.0033,
+    -0.0033,
+    0
+   ],
+   "boundsMax": [
+    0.0033,
+    0.0033,
+    0.001
+   ],
+   "triangles": 266,
+   "trianglesLod1": 0,
+   "slots": [
+    "Prop_ThermosetIvory"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_screw",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     85,
+     85
+    ],
+    "side": [
+     40,
+     85
+    ],
+    "top": [
+     85,
+     40
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletToggle1",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.0698,
+    0.1143,
+    0.0184
+   ],
+   "boundsMin": [
+    -0.0349,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.0349,
+    0.0571,
+    0.0184
+   ],
+   "triangles": 2296,
+   "trianglesLod1": 780,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_switch",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     69,
+     261
+    ],
+    "top": [
+     172,
+     69
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  },
+  {
+   "name": "Kit_OutletToggle2",
+   "viewYaw": 0,
+   "sheetPpm": 2000,
+   "pngPpm": 2000,
+   "size_m": [
+    0.1159,
+    0.1143,
+    0.0184
+   ],
+   "boundsMin": [
+    -0.058,
+    -0.0571,
+    0
+   ],
+   "boundsMax": [
+    0.058,
+    0.0571,
+    0.0184
+   ],
+   "triangles": 3660,
+   "trianglesLod1": 1462,
+   "slots": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory"
+   ],
+   "tags": [
+    "outlet",
+    "outlet_switch",
+    "wall_flush"
+   ],
+   "pile": null,
+   "palette": null,
+   "placement": "Floor",
+   "px": {
+    "front": [
+     264,
+     261
+    ],
+    "side": [
+     69,
+     261
+    ],
+    "top": [
+     264,
+     69
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   }
+  }
+ ],
+ "failed": []
+}

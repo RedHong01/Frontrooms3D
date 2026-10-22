@@ -1,0 +1,82 @@
+diff --git a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+index 0157d86..57a89fc 100644
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -1309,6 +1309,19 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
+     void CornerReach(GridCoord k, int role, out int reachA, out int reachB)
+     {
+         GridCoord sw = new GridCoord(k.x - 1, k.y - 1), se = new GridCoord(k.x, k.y - 1), nw = new GridCoord(k.x - 1, k.y), ne = k;
++        // MAP-2 (codex audit): a post on a chunk line (not a chunk corner) joins pieces of two chunks, and the
++        // far chunk's cross piece is that chunk's interior, which a revisit shift reshuffles while this chunk
++        // stays built. Such a post follows ChunkLineReach, which never reads the far chunk's interior, so both
++        // chunks agree after any shift. Inside a chunk all four pieces are its own edges, and at a chunk corner
++        // all four are chunk-border edges (pure), so the rule below stays; PostPieceAt reads them without
++        // generating a chunk.
++        var o = MapGrid.ChunkOrigin(MapGrid.ChunkOf(k));
++        bool onX = k.x == o.x, onY = k.y == o.y;
++        if (onX != onY && !InStartArea(sw) && !InStartArea(se) && !InStartArea(nw) && !InStartArea(ne))
++        {
++            ChunkLineReach(sw, se, nw, ne, onX, role, out reachA, out reachB);
++            return;
++        }
+         postPieces[FrontRoomsTransitionKit.South] = PostPieceAt(sw, se, false);
+         postPieces[FrontRoomsTransitionKit.North] = PostPieceAt(nw, ne, false);
+         postPieces[FrontRoomsTransitionKit.West] = PostPieceAt(sw, nw, true);
+@@ -1316,6 +1329,48 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
+         FrontRoomsTransitionKit.CornerReach(postPieces, role, out reachA, out reachB);
+     }
+ 
++    // MAP-2: the post rule on a chunk line (start area left out). The two pieces along the line are chunk-border
++    // edges, so their presence is pure; of the two cross pieces, the near one (west of a vertical line, south of a
++    // horizontal one) is built by the near chunk, like the line pieces, and the far one by the far chunk. So a far
++    // reach reads only pure data, and a near reach pure data plus the near chunk's own edges: both chunks agree
++    // after any shift, and no neighbour chunk is read or generated. Every quadrant of the post square is covered
++    // once where two or more pieces meet (no notch), by a piece at least as tall as the room it faces:
++    //  - one finish round the post: today's reach (nothing can z-fight);
++    //  - no piece on the line: each cross piece runs to the cell line and covers its own half;
++    //  - both line pieces: the run owns the post, each piece its half; the cross pieces stop at the post face;
++    //  - one line piece L: the far cross piece stops at the post face, and B0.1's own rule runs on L and the near
++    //    cross piece. That is safe only if the room on the far side of the post is no taller than L and the near
++    //    cross piece; where it is taller, today's reach stays (the only case left that can z-fight).
++    void ChunkLineReach(GridCoord sw, GridCoord se, GridCoord nw, GridCoord ne, bool onX, int role, out int reachA, out int reachB)
++    {
++        reachA = reachB = 1;
++        float Ceiling(GridCoord c) => MapGrid.CeilingHeight(Cache.ZoneOf(c).height);
++        long Finish(GridCoord c) => ((long)Theme(Cache.ZoneOf(c).theme).wall.GetInstanceID() << 4) | (long)HeightClass(Ceiling(c));
++        var f = Finish(sw);
++        if (Finish(se) == f && Finish(nw) == f && Finish(ne) == f) return;
++        int lo = onX ? FrontRoomsTransitionKit.South : FrontRoomsTransitionKit.West;
++        int hi = onX ? FrontRoomsTransitionKit.North : FrontRoomsTransitionKit.East;
++        int near = onX ? FrontRoomsTransitionKit.West : FrontRoomsTransitionKit.South;
++        int far = onX ? FrontRoomsTransitionKit.East : FrontRoomsTransitionKit.North;
++        var pLo = onX ? PostPieceAt(sw, se, false) : PostPieceAt(sw, nw, true);
++        var pHi = onX ? PostPieceAt(nw, ne, false) : PostPieceAt(se, ne, true);
++        var line = role == lo || role == hi;
++        if (!pLo.present && !pHi.present) { if (!line) reachA = reachB = 0; return; }
++        if (pLo.present && pHi.present) { reachA = reachB = line ? 0 : -1; return; }
++        var l = pLo.present ? lo : hi;
++        var risk = onX ? (l == lo ? ne : se) : (l == lo ? ne : nw);
++        var hL = onX ? (l == lo ? Mathf.Max(Ceiling(sw), Ceiling(se)) : Mathf.Max(Ceiling(nw), Ceiling(ne)))
++                     : (l == lo ? Mathf.Max(Ceiling(sw), Ceiling(nw)) : Mathf.Max(Ceiling(se), Ceiling(ne)));
++        var hNear = onX ? Mathf.Max(Ceiling(sw), Ceiling(nw)) : Mathf.Max(Ceiling(sw), Ceiling(se));
++        if (Ceiling(risk) > Mathf.Min(hL, hNear) + .001f) return;
++        if (role == far) { reachA = reachB = -1; return; }
++        postPieces[lo] = l == lo ? pLo : default;
++        postPieces[hi] = l == hi ? pHi : default;
++        postPieces[near] = onX ? PostPieceAt(sw, nw, true) : PostPieceAt(sw, se, false);
++        postPieces[far] = default;
++        FrontRoomsTransitionKit.CornerReach(postPieces, role, out reachA, out reachB);
++    }
++
+     FrontRoomsTransitionKit.PostPiece PostPieceAt(GridCoord a, GridCoord b, bool northward)
+     {
+         var za = Cache.ZoneOf(a);
+@@ -1324,7 +1379,7 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
+         var hb = MapGrid.CeilingHeight(zb.height);
+         var h = Mathf.Max(ha, hb);
+         Material wa = Theme(za.theme).wall, wb = Theme(zb.theme).wall;
+-        var kind = StartAreaEdge(Cache.Edge(a, b), a, b, northward, ref h, ref wa, ref wb);
++        var kind = StartAreaEdge(EdgeNoGenerate(a, b), a, b, northward, ref h, ref wa, ref wb);
+         if (kind == EdgeKind.Open) return default;
+         var startEdge = InStartArea(a) || InStartArea(b);
+         var ca = HeightClass(startEdge ? h : ha);

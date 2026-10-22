@@ -1,5 +1,7 @@
 # 20 — Run! direction B · EMERGENCY POWER: build log, costs, needs, open issues
 
+> **Update 2026-10-14 (fix stage, `21_run_fix_1014.md`):** B's floor already met the decision (VL195). At the 2.05 m contract size, the Relay reads 7.68 : 1, where the proxy read 8.07 (VL237).
+
 Date: 2026-10-08. Companion to `11_run_dir_emergency_power.md` (the values, the measurements, pass / fail).
 Clone: `/Users/redwang/FrontRoomsVisualWork/proj_run_emergency_power` (clone-only; nothing was promoted). A second copy, `W/proj_run_emergency_power_x`, ran the matte comparison renders in parallel.
 Red's project was not opened in Unity. Writes there: this folder (`research/room_visuals/`: reports, images, `harness/`) and the two rows VL194–195 in `Documentation/VERIFICATION_LOG.md`.

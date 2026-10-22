@@ -1,0 +1,595 @@
+{
+ "schema_version": 1,
+ "updated": "2026-10-15c",
+ "encounter_timeline": {
+  "note": "Illustrative shape of one encounter, not measured. Seconds on one axis.",
+  "axis_s": [
+   0,
+   300
+  ],
+  "lanes": [
+   {
+    "lane": "Director phase",
+    "segments": [
+     [
+      0,
+      100,
+      "RELAX (noise cannot call it)",
+      0
+     ],
+     [
+      100,
+      160,
+      "BUILD-UP",
+      1
+     ],
+     [
+      160,
+      170,
+      "PENDING",
+      1
+     ],
+     [
+      170,
+      230,
+      "ENCOUNTER",
+      2
+     ],
+     [
+      230,
+      252,
+      "SUSTAIN",
+      3
+     ],
+     [
+      252,
+      280,
+      "FADE",
+      1
+     ],
+     [
+      280,
+      300,
+      "RELAX",
+      0
+     ]
+    ],
+    "intensity_note": "the planned pacing: 0 calm (RELAX), 1 building or fading, 2 encounter, 3 peak (SUSTAIN)"
+   },
+   {
+    "lane": "Relay state",
+    "segments": [
+     [
+      0,
+      165,
+      "AWAY (off the map)",
+      0
+     ],
+     [
+      165,
+      172,
+      "ARRIVE",
+      1
+     ],
+     [
+      172,
+      226,
+      "LISTEN / HUNT (honest senses)",
+      2
+     ],
+     [
+      226,
+      252,
+      "CHASE (0.7 s hold, then 4.4 m/s)",
+      3
+     ],
+     [
+      252,
+      262,
+      "SEARCH",
+      2
+     ],
+     [
+      262,
+      278,
+      "WITHDRAW",
+      1
+     ],
+     [
+      278,
+      300,
+      "AWAY",
+      0
+     ]
+    ],
+    "intensity_note": "how close the Relay is to catching you: 0 off the map, 1 on the map but not hunting (ARRIVE, WITHDRAW), 2 hunting with honest senses (LISTEN / HUNT, SEARCH), 3 chasing"
+   },
+   {
+    "lane": "Warning in your room",
+    "segments": [
+     [
+      0,
+      185,
+      "0 nothing",
+      0
+     ],
+     [
+      185,
+      205,
+      "1 lamps dip",
+      1
+     ],
+     [
+      205,
+      226,
+      "2 muffled steps",
+      2
+     ],
+     [
+      226,
+      252,
+      "3 lock-on chime",
+      3
+     ],
+     [
+      252,
+      262,
+      "2",
+      2
+     ],
+     [
+      262,
+      272,
+      "1",
+      1
+     ],
+     [
+      272,
+      300,
+      "0",
+      0
+     ]
+    ],
+    "intensity_note": "equals the warning stage"
+   },
+   {
+    "lane": "Player",
+    "segments": [
+     [
+      0,
+      185,
+      "explores",
+      0
+     ],
+     [
+      185,
+      205,
+      "hears it coming",
+      1
+     ],
+     [
+      205,
+      226,
+      "hides, shuts a door",
+      2
+     ],
+     [
+      226,
+      252,
+      "runs, breaks sight",
+      3
+     ],
+     [
+      252,
+      262,
+      "stays hidden",
+      2
+     ],
+     [
+      262,
+      275,
+      "waits",
+      1
+     ],
+     [
+      275,
+      300,
+      "explores",
+      0
+     ]
+    ],
+    "intensity_note": "what the player feels, from the cues they perceive (Pressure counts only perceived cues), so it follows the warning lane, a little late"
+   }
+  ],
+  "precedent": "Left 4 Dead AI Director lanes (Booth, AIIDE 2009)",
+  "segment_format": "[start_s, end_s, label, intensity 0 calm .. 3 peak]"
+ },
+ "knowledge_layers": {
+  "note": "Who knows what; top to bottom.",
+  "layers": [
+   {
+    "layer": "Director (alarm panel)",
+    "knows": "your zone, Attention, Pressure, call budgets, the RELAX clock",
+    "sends": "a call to a rough area, a sweep, or send-away",
+    "shown_to_player": false
+   },
+   {
+    "layer": "Relay (hunter)",
+    "knows": "only what its senses caught: noises heard along real paths; what its 120° cone saw within 12 m",
+    "decides": "hunt, search, chase, break a door it has a licence for",
+    "shown_to_player": false
+   },
+   {
+    "layer": "Your room (cues)",
+    "shows": "stage 1 lamps dip with a ballast groan; stage 2 muffled steps and a hum; stage 3 one chime",
+    "shown_to_player": true
+   },
+   {
+    "layer": "You (player)",
+    "does": "walk, ease or slam doors, break or pry windows, read, hide; every verb is a noise"
+   }
+  ],
+  "flows": [
+   [
+    "Director",
+    "Relay",
+    "a call to a rough area / a sweep / send away"
+   ],
+   [
+    "Relay",
+    "Your room",
+    "its real position -> walking distance W -> stage"
+   ],
+   [
+    "Your room",
+    "You",
+    "hear and see the cues, choose a verb"
+   ],
+   [
+    "You",
+    "Director",
+    "noise -> Attention"
+   ],
+   [
+    "You",
+    "Relay",
+    "noise -> hearing"
+   ]
+  ],
+  "precedent": "Alien: Isolation director over alien (Thompson 2017, 2020; second-hand)"
+ },
+ "verbs_objects": {
+  "note": "Noise in metres of walking path (x hearing) and Attention gain; v2 design values. Today v1: doors ~20 m, glass ~56 m, sprint step ~36 m, desktop walking silent.",
+  "objects": [
+   "Door shut",
+   "Door open/ajar",
+   "Door locked",
+   "Door broken",
+   "Window plain",
+   "Window foiled",
+   "Terminal/plan",
+   "Key",
+   "Anywhere"
+  ],
+  "rows": [
+   [
+    "Walk",
+    {
+     "Anywhere": {
+      "text": "0 m; 3-5 m from T3, Relay only",
+      "effect": "walk",
+      "noise_m": 0,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": true,
+      "noise_m_by_tier": {
+       "T1": 0,
+       "T2": 0,
+       "T3": 3,
+       "T4": 4,
+       "T5": 5
+      }
+     }
+    }
+   ],
+   [
+    "Walk on a phone",
+    {
+     "Anywhere": {
+      "text": "9 m, Relay only, Attention 0",
+      "effect": "walk (phone)",
+      "noise_m": 9,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": true
+     }
+    }
+   ],
+   [
+    "Sprint step",
+    {
+     "Anywhere": {
+      "text": "27 m, +3",
+      "effect": "sprint step",
+      "noise_m": 27,
+      "attention": 3,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "E walking (ease)",
+    {
+     "Door shut": {
+      "text": "opens, 6 m, +1",
+      "effect": "opens",
+      "noise_m": 6,
+      "attention": 1,
+      "calls_relay": false,
+      "relay_only": false
+     },
+     "Door open/ajar": {
+      "text": "shuts, 6 m, +1",
+      "effect": "shuts",
+      "noise_m": 6,
+      "attention": 1,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "E sprinting",
+    {
+     "Door shut": {
+      "text": "barge, 18 m, +8",
+      "effect": "barge",
+      "noise_m": 18,
+      "attention": 8,
+      "calls_relay": false,
+      "relay_only": false
+     },
+     "Door open/ajar": {
+      "text": "slam, 27 m, +12",
+      "effect": "slam",
+      "noise_m": 27,
+      "attention": 12,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "E, no key",
+    {
+     "Door locked": {
+      "text": "rattle, 6 m, +1",
+      "effect": "rattle",
+      "noise_m": 6,
+      "attention": 1,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "E, with key",
+    {
+     "Door locked": {
+      "text": "unlock, 6 m, +1",
+      "effect": "unlock (an ease)",
+      "noise_m": 6,
+      "attention": 1,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "E on a broken door",
+    {
+     "Door broken": {
+      "text": "won't shut, 0",
+      "effect": "won't shut",
+      "noise_m": 0,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "Hold E on glass",
+    {
+     "Window plain": {
+      "text": "60 m, calls it",
+      "effect": "breaks glass",
+      "noise_m": 60,
+      "attention": null,
+      "calls_relay": true,
+      "relay_only": false,
+      "note": "an instant device call: the Relay is sent to the window, never to you"
+     },
+     "Window foiled": {
+      "text": "60 m + alarm, calls it",
+      "effect": "alarm",
+      "noise_m": 60,
+      "attention": null,
+      "calls_relay": true,
+      "relay_only": false,
+      "note": "the glass is 60 m; the foil alarm also sounds (device, 45 m); the call goes to the window"
+     }
+    }
+   ],
+   [
+    "Hold E on the latch",
+    {
+     "Window plain": {
+      "text": "pry 4 s, 8 m, +8",
+      "effect": "pry",
+      "noise_m": 8,
+      "attention": 8,
+      "calls_relay": false,
+      "relay_only": false,
+      "duration_s": 4
+     },
+     "Window foiled": {
+      "text": "alarm, calls it",
+      "effect": "alarm",
+      "noise_m": 45,
+      "attention": null,
+      "calls_relay": true,
+      "relay_only": false,
+      "note": "prompt reads PRY SASH · ALARMED; the sash contact sounds the alarm (device, 45 m); the call goes to the window"
+     }
+    }
+   ],
+   [
+    "Walk into the frame",
+    {
+     "Window plain": {
+      "text": "climb after a break, 0",
+      "effect": "climb",
+      "noise_m": 0,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "E read / examine",
+    {
+     "Terminal/plan": {
+      "text": "close-up pauses, 0",
+      "effect": "close-up",
+      "noise_m": 0,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": false,
+      "note": "the world pauses"
+     },
+     "Key": {
+      "text": "first key only, 0",
+      "effect": "examine key",
+      "noise_m": 0,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ],
+   [
+    "Take a key",
+    {
+     "Key": {
+      "text": "silent",
+      "effect": "take key",
+      "noise_m": 0,
+      "attention": 0,
+      "calls_relay": false,
+      "relay_only": false
+     }
+    }
+   ]
+  ],
+  "source": "RELAY_PURSUIT_REDESIGN.md §7, §10",
+  "cell_format": "{text, effect, noise_m, attention (null when the act is an instant call), calls_relay, relay_only, optional: noise_m_by_tier, duration_s, note}"
+ },
+ "relay_states": {
+  "states": [
+   {
+    "id": "DORMANT",
+    "new": false
+   },
+   {
+    "id": "AWAY",
+    "new": true
+   },
+   {
+    "id": "ARRIVE",
+    "new": true
+   },
+   {
+    "id": "LISTEN",
+    "new": false
+   },
+   {
+    "id": "HUNT",
+    "new": false
+   },
+   {
+    "id": "CHASE",
+    "new": false,
+    "emphasis": true
+   },
+   {
+    "id": "BREAK DOOR",
+    "new": false
+   },
+   {
+    "id": "SEARCH",
+    "new": false
+   },
+   {
+    "id": "WITHDRAW",
+    "new": true
+   }
+  ],
+  "transitions": [
+   [
+    "DORMANT",
+    "AWAY",
+    "start door shuts"
+   ],
+   [
+    "AWAY",
+    "ARRIVE",
+    "called, or a sweep"
+   ],
+   [
+    "ARRIVE",
+    "LISTEN",
+    "steps in, 42 m or more away"
+   ],
+   [
+    "LISTEN",
+    "HUNT",
+    "hears a noise"
+   ],
+   [
+    "HUNT",
+    "CHASE",
+    "spotting meter full, then a 0.7 s hold"
+   ],
+   [
+    "CHASE",
+    "BREAK DOOR",
+    "a door it saw you cross (and back)"
+   ],
+   [
+    "CHASE",
+    "SEARCH",
+    "lost for 2.0 s"
+   ],
+   [
+    "HUNT",
+    "SEARCH",
+    "reaches the estimate"
+   ],
+   [
+    "SEARCH",
+    "WITHDRAW",
+    "nothing found"
+   ],
+   [
+    "WITHDRAW",
+    "AWAY",
+    "out of sight at an entry"
+   ]
+  ],
+  "note": "Any calm state goes to CHASE when the spotting meter fills, only after warnings 1 and 2 (the G3 gate).",
+  "source": "RELAY_PURSUIT_REDESIGN.md §5, §8"
+ }
+}

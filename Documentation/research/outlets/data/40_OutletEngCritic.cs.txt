@@ -1,0 +1,545 @@
+// CLONE-ONLY critic checks (outlets workflow, ENGINEERING/RULES critic, 2026-10-14). Never for main.
+// Fix pass copy (2026-10-14): part C and D test the renderer's own culling box (R.DrawBounds) instead of the old 0.4 m box,
+// and D toggles instancing on the material the conduit really uses now (Prop_AluminiumAnodised fallback).
+// Landing state = main 0a9ee7f + outlets_int + the clone-only map contract (copied from W/proj_outlet_int_t).
+// A. keep-outs (module props, key spot, Relay entries) vs EVERY fixture category, plus non-architecture colliders;
+// B. stage-2 "desk powered within 2 m": how many desks are powered only through a wall;
+// C. conduit tiles: R3's RenderParams.worldBounds vs the tile's real bounds over camera poses (landing and P-6 paths);
+// D. one render pair: landing (non-instanced) vs instancing switched on in memory for Prop_Aluminium;
+// E. stage-2 order dependence: rebuild a chunk with its 8 neighbours dropped and compare its extras.
+// Run: CRIT_OUT=<dir> Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod OutletEngCritic.Run -logFile <log>
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using F = FrontRoomsWallFixtures;
+using R = FrontRoomsWallFixtureRenderer;
+
+public static class OutletEngCritic
+{
+    const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+    static readonly StringBuilder log = new StringBuilder();
+    static string outDir;
+    static Camera cam;
+    static RenderTexture rt;
+
+    static void Log(string s)
+    {
+        log.AppendLine(s);
+        Debug.Log("[OutletCritic] " + s);
+    }
+
+    public static void Run()
+    {
+        outDir = Environment.GetEnvironmentVariable("CRIT_OUT");
+        if (string.IsNullOrEmpty(outDir)) outDir = Path.GetFullPath("Temp/crit");
+        Directory.CreateDirectory(outDir);
+        var ok = true;
+        try { Body(); }
+        catch (Exception e) { Log("EXCEPTION " + e); ok = false; }
+        File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString());
+        EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    sealed class Totals
+    {
+        public readonly Dictionary<string, int> byCat = new Dictionary<string, int>();
+        public readonly Dictionary<string, int> koHits = new Dictionary<string, int>();
+        public readonly Dictionary<string, int> colHits = new Dictionary<string, int>();
+        public readonly Dictionary<string, int> keyHits = new Dictionary<string, int>();
+        public readonly List<string> samples = new List<string>();
+        public int rowDesks, rowP2, rowSame, podDesks, podP2, podSame;
+        public readonly List<string> powerSamples = new List<string>();
+        public int handy, tileViews, culledLanding, culledP6, posesWithLandingGap;
+        public readonly List<string> conduitSamples = new List<string>();
+        public int orderTested, orderCtrlDiffs, orderDiffs;
+        public readonly List<string> orderSamples = new List<string>();
+    }
+
+    static void Inc(Dictionary<string, int> d, string k) { d.TryGetValue(k, out var v); d[k] = v + 1; }
+    static string D(Dictionary<string, int> d) => "{" + string.Join(", ", d.OrderBy(k => k.Key).Select(k => k.Key + ": " + k.Value)) + "}";
+
+    static void Body()
+    {
+        EditorSceneManager.OpenScene("Assets/Scenes/FrontRooms3D.unity", OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        if (game != null)
+        {
+            game.enabled = false;
+            game.enabled = true;
+            var hunter = game.transform.Find("Hunter");
+            if (hunter != null) hunter.gameObject.SetActive(false);
+        }
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+        var camObject = new GameObject("CRIT / camera") { hideFlags = HideFlags.DontSave };
+        cam = camObject.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = FrontRoomsLook.FogColor;
+        cam.enabled = false;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        rt = new RenderTexture(1600, 900, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = rt;
+        cam.aspect = 16f / 9f;
+
+        var seedsEnv = Environment.GetEnvironmentVariable("CRIT_SEEDS");
+        var seeds = string.IsNullOrEmpty(seedsEnv) ? new[] { 2554, 20388, 7, 424242, 1, 2, 3, 4, 5, 11 } : seedsEnv.Split(',').Select(int.Parse).ToArray();
+        var renderDone = Environment.GetEnvironmentVariable("CRIT_NORENDER") == "1";
+        var t = new Totals();
+        foreach (var seed in seeds)
+        {
+            var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+            profile.generation.seed = seed;
+            var root = new GameObject("CRIT / map " + seed) { hideFlags = HideFlags.DontSave };
+            root.transform.position = new Vector3(26f * ModuleUnits.WorldPeriod, 0f, 26f * ModuleUnits.WorldPeriod);
+            var world = root.AddComponent<FrontRoomsMapWorld>();
+            world.Profile = profile;
+            world.BuildForCapture();
+            Physics.SyncTransforms();
+            try
+            {
+                var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+                Log("seed " + seed + ": " + sets.Length + " sets, " + sets.Sum(s => s.fixtures.Count) + " fixtures");
+                KeepOutAudit(seed, world, sets, t);
+                PowerAudit(seed, world, root, sets, t);
+                ConduitAudit(seed, root, sets, t);
+                if (!renderDone) renderDone = ConduitRender(seed, world, root, sets);
+                OrderAudit(seed, world, root, t);
+            }
+            catch (Exception e) { Log("seed " + seed + " EXCEPTION " + e); }
+            finally
+            {
+                world.Release();
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(profile);
+            }
+        }
+        Log("A. fixtures by category " + D(t.byCat));
+        Log("A. keep-out hits by category " + D(t.koHits));
+        Log("A. non-architecture collider hits by category (plates hidden by stage 2 skipped) " + D(t.colHits));
+        Log("A. key collider hits by category " + D(t.keyHits));
+        foreach (var s in t.samples) Log("A. sample " + s);
+        Log("B. wall-row desks " + t.rowDesks + ", powered within 2 m " + t.rowP2 + ", of those with a source on the desk's side of every wall " + t.rowSame);
+        Log("B. pod desks " + t.podDesks + ", powered within 2 m " + t.podP2 + ", same side " + t.podSame);
+        foreach (var s in t.powerSamples) Log("B. sample " + s);
+        Log("C. handy boxes " + t.handy + ", (pose, tile) pairs in view and passing R3's CPU test " + t.tileViews + ", culled by the landing worldBounds " + t.culledLanding
+            + ", culled by the P-6 bucket bounds " + t.culledP6 + ", poses with a landing gap " + t.posesWithLandingGap);
+        foreach (var s in t.conduitSamples) Log("C. sample " + s);
+        Log("E. chunks tested " + t.orderTested + ", control rebuild diffs " + t.orderCtrlDiffs + ", diffs with the 8 neighbours dropped " + t.orderDiffs);
+        foreach (var s in t.orderSamples) Log("E. sample " + s);
+        cam.targetTexture = null;
+        rt.Release();
+        UnityEngine.Object.DestroyImmediate(camObject);
+    }
+
+    // ------------------------------------------------------------------ A
+
+    static string Cat(FrontRoomsWallFixtureSet s, int i)
+    {
+        var x = s.fixtures[i];
+        var extra = i >= s.fixtures.Count - s.extraCount;
+        if (x.cls == F.FixtureClass.Floor) return extra ? "podFeed" : "floorBox";
+        if (x.cls == F.FixtureClass.Column) return "column";
+        if (x.face < 0) return "noFace";
+        var f = s.faces[x.face];
+        if (extra) return "stage2";
+        if (f.foreign) return "foreignFace";
+        if ((x.flags & F.FixtureFlags.Moved) != 0) return "movedBackToBack";
+        if (x.cls == F.FixtureClass.Level0Corridor && x.kit == F.FixtureKit.Toggle1) return "loneSwitch";
+        if (x.kit == F.FixtureKit.Toggle1 || x.kit == F.FixtureKit.Toggle2) return "archSwitch";
+        if ((x.flags & F.FixtureFlags.Companion) != 0) return "companion";
+        if ((x.flags & F.FixtureFlags.Forced) != 0) return "forced";
+        return "wall";
+    }
+
+    static Bounds FixtureBox(FrontRoomsWallFixtureSet s, F.Fixture x)
+    {
+        Vector3 min, max;
+        if (x.cls == F.FixtureClass.Floor)
+        {
+            min = x.position + new Vector3(-.065f, 0f, -.065f);
+            max = x.position + new Vector3(.065f, .09f, .065f);
+        }
+        else
+        {
+            var n = x.normal;
+            var dir = new Vector3(Mathf.Abs(n.z), 0f, Mathf.Abs(n.x));
+            var handy = x.kit == F.FixtureKit.HandyBox;
+            var half = F.PlateHalf(x.kit);
+            if ((x.flags & F.FixtureFlags.Horizontal) != 0) half = new Vector2(half.y, half.x);
+            var a = x.position - dir * (half.x + .02f) + Vector3.down * half.y;
+            var b = x.position + dir * (half.x + .02f) + n * (handy ? F.HandyProud : .012f) + Vector3.up * half.y;
+            if (handy && x.face >= 0) b.y = Mathf.Max(b.y, s.faces[x.face].ceiling);
+            min = Vector3.Min(a, b);
+            max = Vector3.Max(a, b);
+        }
+        var o = s.transform.position;
+        var bb = new Bounds();
+        bb.SetMinMax(min + o + Vector3.one * .001f, max + o - Vector3.one * .001f);
+        return bb;
+    }
+
+    static void KeepOutAudit(int seed, FrontRoomsMapWorld world, FrontRoomsWallFixtureSet[] sets, Totals t)
+    {
+        var kos = new List<Bounds>();
+        var kinds = new List<string>();
+        foreach (var s in sets)
+        {
+            var o = s.transform.position;
+            foreach (var k in s.keepOut)
+            {
+                var b = new Bounds();
+                b.SetMinMax(new Vector3(k.xz.xMin, k.y0, k.xz.yMin) + o, new Vector3(k.xz.xMax, k.y1, k.xz.yMax) + o);
+                kos.Add(b);
+                var w = k.xz.width;
+                kinds.Add(Mathf.Abs(w - 1.2f) < .01f && Mathf.Abs(k.xz.height - 1.2f) < .01f ? "key" : Mathf.Abs(w - 1.6f) < .01f && Mathf.Abs(k.xz.height - 1.6f) < .01f ? "relayEntry" : "prop");
+            }
+        }
+        var keyDict = typeof(FrontRoomsMapWorld).GetField("keyByCollider", Any)?.GetValue(world) as IDictionary;
+        var keyBounds = new List<Bounds>();
+        if (keyDict != null) foreach (var k in keyDict.Keys) { var c = k as Collider; if (c != null) keyBounds.Add(c.bounds); }
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                var cat = Cat(s, i);
+                Inc(t.byCat, cat);
+                var box = FixtureBox(s, x);
+                for (var k = 0; k < kos.Count; k++)
+                {
+                    if (!kos[k].Intersects(box)) continue;
+                    Inc(t.koHits, cat + "/" + kinds[k]);
+                    if (t.samples.Count < 40) t.samples.Add("seed " + seed + " chunk " + s.coord.x + "," + s.coord.y + " " + cat + " " + x.kit + " y " + x.position.y.ToString("0.00") + " in " + kinds[k] + " keep-out " + kos[k].min.ToString("F2") + "-" + kos[k].max.ToString("F2"));
+                    break;
+                }
+                foreach (var kb in keyBounds)
+                    if (kb.Intersects(box)) { Inc(t.keyHits, cat); if (t.samples.Count < 40) t.samples.Add("seed " + seed + " " + cat + " " + x.kit + " meets the key collider"); }
+                if (s.Occluded(i)) continue;
+                foreach (var h in Physics.OverlapBox(box.center, box.extents, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    if (world.IsArchitecture(h)) continue;
+                    Inc(t.colHits, cat);
+                    if (t.samples.Count < 40) t.samples.Add("seed " + seed + " chunk " + s.coord.x + "," + s.coord.y + " " + cat + " " + x.kit + " y " + x.position.y.ToString("0.00") + " meets collider " + PathOf(h.transform));
+                    break;
+                }
+            }
+    }
+
+    static string PathOf(Transform t) => t.parent != null ? (t.parent.parent != null ? t.parent.parent.name + "/" : "") + t.parent.name + "/" + t.name : t.name;
+
+    // ------------------------------------------------------------------ B
+
+    static void PowerAudit(int seed, FrontRoomsMapWorld world, GameObject root, FrontRoomsWallFixtureSet[] sets, Totals t)
+    {
+        var src = new List<Vector3>();
+        var srcN = new List<Vector3>();
+        var srcFloor = new List<bool>();
+        foreach (var s in sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                var duplexish = x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.DuplexSteel || x.kit == F.FixtureKit.DuplexCracked
+                    || x.kit == F.FixtureKit.DuplexJumbo || x.kit == F.FixtureKit.DuplexScorched || x.kit == F.FixtureKit.Bare || x.kit == F.FixtureKit.HandyBox;
+                var floor = x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2;
+                if (!(duplexish || floor) || s.Occluded(i)) continue;
+                src.Add(s.transform.TransformPoint(x.position));
+                srcN.Add(s.transform.TransformDirection(x.normal));
+                srcFloor.Add(floor);
+            }
+        foreach (var st in root.GetComponentsInChildren<Transform>(true).Where(q => q.name == "workstation"))
+        {
+            if (!st.GetComponentsInChildren<Transform>(true).Any(q => q.name.StartsWith(FrontRoomsOfficeKit.Monitor, StringComparison.Ordinal))) continue;
+            var isRow = st.parent != null && st.parent.name.StartsWith("cubicle row", StringComparison.Ordinal);
+            var desk = st.TransformPoint(new Vector3(0f, 0f, .43f));
+            bool near = false, same = false;
+            for (var k = 0; k < src.Count; k++)
+            {
+                var q = src[k];
+                if (new Vector2(q.x - desk.x, q.z - desk.z).sqrMagnitude > F.StationReach * F.StationReach) continue;
+                near = true;
+                var target = q + (srcFloor[k] ? Vector3.up * .06f : srcN[k] * .05f);
+                var from = new Vector3(desk.x, target.y, desk.z);
+                var through = false;
+                var dir = target - from;
+                if (dir.magnitude > .01f)
+                    foreach (var h in Physics.RaycastAll(from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
+                        if (world.IsArchitecture(h.collider)) { through = true; break; }
+                if (!through) { same = true; break; }
+            }
+            if (isRow) { t.rowDesks++; if (near) t.rowP2++; if (same) t.rowSame++; }
+            else { t.podDesks++; if (near) t.podP2++; if (same) t.podSame++; }
+            if (near && !same && t.powerSamples.Count < 12)
+            {
+                var detail = new StringBuilder();
+                for (var k = 0; k < src.Count; k++)
+                {
+                    var q = src[k];
+                    var dxz = new Vector2(q.x - desk.x, q.z - desk.z).magnitude;
+                    if (dxz > F.StationReach) continue;
+                    var target = q + (srcFloor[k] ? Vector3.up * .06f : srcN[k] * .05f);
+                    var from = new Vector3(desk.x, target.y, desk.z);
+                    var dir = target - from;
+                    var hitName = "-";
+                    foreach (var h in Physics.RaycastAll(from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
+                        if (world.IsArchitecture(h.collider)) { hitName = PathOf(h.collider.transform) + " at " + h.point.ToString("F2"); break; }
+                    detail.Append(" [source at " + q.ToString("F2") + " normal " + srcN[k].ToString("F0") + " xz " + dxz.ToString("0.00") + " m, wall hit " + hitName + "]");
+                }
+                var desknormal = st.TransformDirection(Vector3.forward);
+                t.powerSamples.Add("seed " + seed + (isRow ? " row" : " pod") + " desk at " + desk.ToString("F2") + " facing " + desknormal.ToString("F1") + ", row " + (st.parent != null ? st.parent.name : "-") + ": every source within 2 m is behind a wall;" + detail);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ C / D
+
+    static T Field<T>(object o, string name) => (T)typeof(FrontRoomsWallFixtureSet).GetField(name, Any).GetValue(o);
+
+    static Mesh Lod0(string kit)
+    {
+        var go = Resources.Load<GameObject>(FrontRoomsKitLibrary.ModelFolder + kit);
+        if (go == null) return null;
+        foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
+            if (mf.sharedMesh != null && !mf.gameObject.name.EndsWith("_LOD1", StringComparison.Ordinal) && !mf.gameObject.name.EndsWith("_LOD2", StringComparison.Ordinal)) return mf.sharedMesh;
+        return null;
+    }
+
+    static Bounds Xform(Matrix4x4 m, Bounds b)
+    {
+        var c = m.MultiplyPoint3x4(b.center);
+        var e = b.extents;
+        var x = new Vector3(Mathf.Abs(m.m00), Mathf.Abs(m.m10), Mathf.Abs(m.m20)) * e.x;
+        var y = new Vector3(Mathf.Abs(m.m01), Mathf.Abs(m.m11), Mathf.Abs(m.m21)) * e.y;
+        var z = new Vector3(Mathf.Abs(m.m02), Mathf.Abs(m.m12), Mathf.Abs(m.m22)) * e.z;
+        return new Bounds(c, (x + y + z) * 2f);
+    }
+
+    static bool SphereIn(Plane[] planes, Vector3 p, float r)
+    {
+        for (var k = 0; k < 6; k++) if (planes[k].GetDistanceToPoint(p) < -r) return false;
+        return true;
+    }
+
+    static bool OpenAir(Vector3 p, float r) => !Physics.CheckSphere(p, r, ~0, QueryTriggerInteraction.Ignore);
+
+    sealed class Run1
+    {
+        public FrontRoomsWallFixtureSet set;
+        public int index, first, tiles;
+    }
+
+    static List<Run1> Runs(FrontRoomsWallFixtureSet[] sets)
+    {
+        var prepare = typeof(R).GetMethod("Prepare", Any);
+        var kitFor = typeof(R).GetMethod("KitFor", Any);
+        var conduitRun = typeof(R).GetMethod("ConduitRun", Any);
+        var km = kitFor.Invoke(null, new object[] { F.FixtureKit.HandyBox });
+        var list = new List<Run1>();
+        foreach (var s in sets)
+        {
+            if (!s.fixtures.Any(x => x.kit == F.FixtureKit.HandyBox)) continue;
+            prepare.Invoke(null, new object[] { s });
+            var first = Field<int[]>(s, "attachFirst");
+            var count = Field<byte[]>(s, "attachCount");
+            var hidden = Field<bool[]>(s, "hidden");
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                if (s.fixtures[i].kit != F.FixtureKit.HandyBox || count[i] == 0 || hidden[i]) continue;
+                var args = new object[] { s, s.fixtures[i], km, 0, 0 };
+                conduitRun.Invoke(null, args);
+                list.Add(new Run1 { set = s, index = i, first = first[i], tiles = (int)args[3] });
+            }
+        }
+        return list;
+    }
+
+    static void ConduitAudit(int seed, GameObject root, FrontRoomsWallFixtureSet[] sets, Totals t)
+    {
+        var tile = Lod0(R.ConduitKitName);
+        if (tile == null) { Log("C. no conduit kit"); return; }
+        var eyeY = root.transform.position.y + ModuleUnits.PlayerEye;
+        foreach (var run in Runs(sets))
+        {
+            t.handy++;
+            var s = run.set;
+            var x = s.fixtures[run.index];
+            var aw = Field<Matrix4x4[]>(s, "attachWorld");
+            var ap = Field<Vector3[]>(s, "attachPosition");
+            var p = s.transform.TransformPoint(x.position);
+            var n = s.transform.TransformDirection(x.normal);
+            var side = Vector3.Cross(Vector3.up, n);
+            foreach (var d in new[] { .6f, 1f, 1.5f, 2f, 3f })
+            foreach (var lat in new[] { -.8f, 0f, .8f })
+            foreach (var pitch in new[] { -15f, 0f, 15f })
+            {
+                var from = p + n * d + side * lat;
+                from.y = eyeY;
+                if (!OpenAir(from, .25f)) continue;
+                cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(-n, Vector3.up) * Quaternion.Euler(pitch, 0f, 0f));
+                var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+                var drawn = new List<int>();
+                for (var a = run.first; a < run.first + run.tiles; a++)
+                {
+                    if (Vector3.Distance(ap[a], from) > 12f || !SphereIn(planes, ap[a], .55f)) continue;
+                    drawn.Add(a);
+                }
+                if (drawn.Count == 0) continue;
+                var union = R.DrawBounds(tile, 0, aw[drawn[0]]);
+                foreach (var a in drawn) union.Encapsulate(R.DrawBounds(tile, 0, aw[a]));
+                var gap = false;
+                foreach (var a in drawn)
+                {
+                    var actual = Xform(aw[a], tile.bounds);
+                    if (!GeometryUtility.TestPlanesAABB(planes, actual)) continue;
+                    t.tileViews++;
+                    var landing = R.DrawBounds(tile, 0, aw[a]);
+                    if (!GeometryUtility.TestPlanesAABB(planes, landing))
+                    {
+                        t.culledLanding++;
+                        gap = true;
+                        if (t.conduitSamples.Count < 12)
+                            t.conduitSamples.Add("seed " + seed + " d " + d + " lat " + lat + " pitch " + pitch + ": tile " + (a - run.first) + " (y " + (aw[a].m13 - root.transform.position.y).ToString("0.00")
+                                + "-" + (actual.max.y - root.transform.position.y).ToString("0.00") + " m) in view, landing bounds y " + (landing.min.y - root.transform.position.y).ToString("0.00") + "-" + (landing.max.y - root.transform.position.y).ToString("0.00") + " outside");
+                    }
+                    if (!GeometryUtility.TestPlanesAABB(planes, union)) t.culledP6++;
+                }
+                if (gap) t.posesWithLandingGap++;
+            }
+        }
+    }
+
+    static void LightAt(FrontRoomsMapWorld world, GameObject root, Vector3 at)
+    {
+        var eye = root.GetComponentsInChildren<Transform>(true).FirstOrDefault(q => q.name == "CAPTURE / eye");
+        if (eye == null) return;
+        eye.position = at;
+        world.TickFixturesForTools(.016f);
+        world.TickFixturesForTools(.016f);
+        FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Tall, 0f);
+    }
+
+    static void Save(string name)
+    {
+        cam.Render();
+        cam.Render();
+        var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        tex.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(System.IO.Path.Combine(outDir, name + ".png"), tex.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(tex);
+    }
+
+    static bool ConduitRender(int seed, FrontRoomsMapWorld world, GameObject root, FrontRoomsWallFixtureSet[] sets)
+    {
+        var tile = Lod0(R.ConduitKitName);
+        if (tile == null) return false;
+        var eyeY = root.transform.position.y + ModuleUnits.PlayerEye;
+        foreach (var run in Runs(sets))
+        {
+            var s = run.set;
+            var x = s.fixtures[run.index];
+            if (s.faces[x.face].foreign) continue;
+            var p = s.transform.TransformPoint(x.position);
+            var n = s.transform.TransformDirection(x.normal);
+            var from = p + n * 1f;
+            from.y = eyeY;
+            if (!OpenAir(from, .3f)) continue;
+            if (Physics.Raycast(from, -n, .97f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(-n, Vector3.up));
+            var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+            var aw = Field<Matrix4x4[]>(s, "attachWorld");
+            var gapTiles = new List<int>();
+            for (var a = run.first; a < run.first + run.tiles; a++)
+            {
+                var actual = Xform(aw[a], tile.bounds);
+                var landing = R.DrawBounds(tile, 0, aw[a]);
+                if (GeometryUtility.TestPlanesAABB(planes, actual) && !GeometryUtility.TestPlanesAABB(planes, landing)) gapTiles.Add(a - run.first);
+            }
+            if (gapTiles.Count == 0 && Environment.GetEnvironmentVariable("CRIT_RENDER_ANY") != "1") continue;
+            LightAt(world, root, from);
+            var mat = FrontRoomsSurfaces.TryGet("Prop_Galvanized") ?? FrontRoomsSurfaces.TryGet("Prop_AluminiumAnodised");
+            var was = mat != null && mat.enableInstancing;
+            R.ClearCache();
+            Save("crit_conduit_landing_" + seed);
+            cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(-n, Vector3.up) * Quaternion.Euler(40f, 0f, 0f));
+            Save("crit_conduit_landing_lookdown_" + seed);
+            cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(-n, Vector3.up));
+            if (mat != null)
+            {
+                mat.enableInstancing = true;
+                R.ClearCache();
+                Save("crit_conduit_instanced_" + seed);
+                mat.enableInstancing = was;
+                R.ClearCache();
+            }
+            Log("D. render seed " + seed + " box at " + (p - root.transform.position).ToString("F2") + " (y " + x.position.y.ToString("0.00") + "), camera 1.0 m out at eye " + ModuleUnits.PlayerEye
+                + ", horizontal; tiles in view but outside the landing bounds: " + string.Join(",", gapTiles) + "; Prop_Aluminium instancing was " + was);
+            return true;
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------ E
+
+    static string Extras(FrontRoomsWallFixtureSet s)
+    {
+        var sb = new StringBuilder();
+        for (var i = s.fixtures.Count - s.extraCount; i < s.fixtures.Count; i++)
+        {
+            var x = s.fixtures[i];
+            sb.Append(x.kit).Append(x.position.ToString("F3")).Append('|');
+        }
+        return s.extraCount + ":" + sb;
+    }
+
+    static void OrderAudit(int seed, FrontRoomsMapWorld world, GameObject root, Totals t)
+    {
+        var built = typeof(FrontRoomsMapWorld).GetField("built", Any).GetValue(world) as IDictionary;
+        if (built == null) return;
+        var rowSets = root.GetComponentsInChildren<Transform>(true).Where(q => q.name.StartsWith("cubicle row", StringComparison.Ordinal))
+            .Select(q => q.GetComponentInParent<FrontRoomsWallFixtureSet>(true)).Where(s => s != null).Distinct().ToList();
+        var tested = 0;
+        foreach (var s0 in rowSets)
+        {
+            if (tested >= 4) break;
+            var coord = s0.coord;
+            var ring = new List<GridCoord>();
+            for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+                if (dx != 0 || dy != 0) ring.Add(new GridCoord(coord.x + dx, coord.y + dy));
+            if (!ring.All(c => built.Contains(c))) continue;
+            var cur = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).FirstOrDefault(q => q.coord == coord && q.isActiveAndEnabled);
+            if (cur == null) continue;
+            var before = Extras(cur);
+            world.RebuildChunk(coord);
+            var ctrl = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).FirstOrDefault(q => q.coord == coord && q.isActiveAndEnabled && q != cur);
+            var ctrlSig = ctrl != null ? Extras(ctrl) : "missing";
+            if (ctrlSig != before) t.orderCtrlDiffs++;
+            foreach (var c in ring) world.DropChunkForTools(c);
+            world.RebuildChunk(coord);
+            var alone = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true).FirstOrDefault(q => q.coord == coord && q.isActiveAndEnabled && q != cur && q != ctrl);
+            var aloneSig = alone != null ? Extras(alone) : "missing";
+            tested++;
+            t.orderTested++;
+            if (aloneSig != ctrlSig)
+            {
+                t.orderDiffs++;
+                if (t.orderSamples.Count < 8) t.orderSamples.Add("seed " + seed + " chunk " + coord.x + "," + coord.y + ": with neighbours [" + ctrlSig + "] / alone [" + aloneSig + "]");
+            }
+            foreach (var c in ring) world.RebuildChunk(c);
+        }
+    }
+}

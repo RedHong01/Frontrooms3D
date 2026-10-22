@@ -1,0 +1,181 @@
+#!/bin/bash
+# Codex audit, combined visual fix batches (codex_audit_all) -> Red's real Frontrooms3D project.
+#
+#   codex_audit_all.sh          DRY RUN: checks every base by sha1 against codex_audit_all_bases.txt, every kept file
+#                               against codex_audit_all_keep.txt and every payload file against codex_audit_all_expected.txt;
+#                               prints every action; writes nothing.
+#   codex_audit_all.sh --apply  performs exactly those actions, then prints the sha1 manifest of every touched path and
+#                               compares it with codex_audit_all_expected.txt (MANIFEST OK).
+#
+# What it writes (5 paths, verified together in W/proj_cxapply_all on main 0a9ee7f + working tree, 2026-10-14):
+#   member codex_audit_glass_look (F6 + F7, the CRT ad screens; it already contains the merged COV-4 shared quad):
+#     add      Assets/Resources/Media.meta                    (folder GUID 559c9d02f97c94f6fb076880a2c9569a)
+#     add      Assets/Resources/Media/CRT_AdSurface.mat.meta  (GUID e246c7627984a4a48b9f4bdb207abdb7)
+#     add      Assets/Resources/Media/CRT_AdSurface.mat       (URP Unlit, opaque, white)
+#     replace  Assets/Scripts/Media/FrontRoomsScreenVideo.cs  (.meta NOT touched, GUID 93c5f64b kept)
+#   member codex_audit_other_visual (V2 stopgap: ray-traced window glass no longer paints the Level 0 wallpaper red):
+#     replace  Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs  (.meta NOT touched, GUID 4492b1a2 kept)
+# Not in this package: runtime_rt (0 files by design), kits_window (COV-4, merged 2026-10-14), docs (edited in place),
+#   codex_audit_v3_ad02 (the LEVITZ ad swap; Red's decision, own script with --red-approved).
+# A member is applied whole or not at all. A member that already holds its payload is skipped ("already applied"), so
+# running a member's own script first is safe. A member that is half applied, or any base that is neither the
+# recorded base nor the payload, refuses the whole run (nothing written).
+# glass-rt-track rule (30_fix_other_visual.md §4): if FrontRoomsGlassRTSystem.cs changed because the glass-rt-track
+#   merged its real paper x print fix, this script refuses. Retire codex_audit_other_visual and apply the CRT member
+#   alone with: bash /Users/redwang/FrontRoomsVisualWork/apply/codex_audit_glass_look.sh --apply
+# Never touches FrontRoomsMap/*, FrontRooms3DGame.cs, Editor/FrontRoomsMap/*, Assets/Levels, ProjectSettings or Library/.
+# Never deletes anything, never commits. Files are written in place (no temp file inside Assets/, which an open Unity
+# would import). Unity, if open, imports the material and recompiles once.
+# Report: Documentation/research/codex_audit/40_applied.md
+#
+# apply-convention: v2 (W/apply/README.md): exact base copies in codex_audit_all_base/<path>, unified diff
+# codex_audit_all.diff, member map codex_audit_all_members.txt. On a base mismatch run W/tools/rebase_apply.sh on the
+# MEMBER package that moved (codex_audit_glass_look or codex_audit_other_visual), then rebuild this package with
+# W/cxapply_all/tools/build_package.sh. APPLY_REAL overrides the target, APPLY_DIR the package dir, APPLY_BACKUP the
+# backup dir (to test this script on scratch copies under W). Fully applied -> "ALREADY APPLIED", exit 0, nothing written.
+set -u
+set -o pipefail
+
+T=codex_audit_all
+A="${APPLY_DIR:-/Users/redwang/FrontRoomsVisualWork/apply}"
+REAL="${APPLY_REAL:-/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D}"
+PAYLOAD="$A/${T}_payload"
+BASES="$A/${T}_bases.txt"
+KEEP="$A/${T}_keep.txt"
+EXPECTED="$A/${T}_expected.txt"
+MEMBERS="$A/${T}_members.txt"
+BACKUP="${APPLY_BACKUP:-/Users/redwang/FrontRoomsVisualWork/backup/${T}_$(date +%Y-%m-%d_%H%M%S)}"
+
+MODE=dry
+case "${1:-}" in
+  --apply) MODE=apply ;;
+  "") ;;
+  *) echo "usage: $0 [--apply]"; exit 2 ;;
+esac
+
+FAIL=0
+bad() { echo "  REFUSE: $*"; FAIL=1; }
+sha() { shasum "$1" | cut -c1-40; }
+act() { if [ $MODE = apply ]; then echo "  do:    $*"; else echo "  would: $*"; fi; }
+lines() { grep -v '^#' "$1" | grep -v '^$'; }
+
+echo "$T.sh ($MODE) -> $REAL"
+[ -d "$REAL/Assets/Scripts/Media" ] && [ -d "$REAL/Assets/Resources" ] && [ -d "$REAL/Assets/Scripts/Rendering/GlassRT" ] \
+  || { echo "REFUSED: $REAL is not the project"; exit 1; }
+for f in "$BASES" "$KEEP" "$EXPECTED" "$MEMBERS"; do [ -f "$f" ] || { echo "REFUSED: missing $f"; exit 1; }; done
+
+# ------------------------------------------------------------- 0. scope guard (never map-owned, never Library/ProjectSettings)
+for p in $(lines "$EXPECTED" | sed 's/^[^ ]*  //' | tr ' ' '?'); do
+  case "$p" in
+    Assets/Scripts/FrontRoomsMap/*|Assets/Editor/FrontRoomsMap/*|Assets/Levels/*|*FrontRooms3DGame.cs*|Library/*|ProjectSettings/*|Packages/*)
+      echo "REFUSED: $p is outside the visual chat's scope"; exit 1 ;;
+  esac
+done
+
+# ------------------------------------------------------------- 1. bases, per member
+echo "1. bases ($BASES)"
+TODO=""        # members to write
+DONE_M=""      # members already applied
+for m in $(lines "$MEMBERS" | awk '{print $1}' | uniq); do
+  nb=0; nbase=0; npay=0
+  while IFS= read -r p; do
+    nb=$((nb+1))
+    want=$(lines "$BASES" | awk -v p="$p" 'substr($0, index($0, "  ") + 2) == p {print $1}' | head -1)
+    payl=$(lines "$EXPECTED" | awk -v p="$p" 'substr($0, index($0, "  ") + 2) == p {print $1}' | head -1)
+    [ -n "$want" ] && [ -n "$payl" ] || { bad "$p has no recorded base or payload"; continue; }
+    if [ -e "$REAL/$p" ]; then got=$(sha "$REAL/$p"); else got=ABSENT; fi
+    if [ "$got" = "$want" ]; then nbase=$((nbase+1))
+    elif [ "$got" = "$payl" ]; then npay=$((npay+1)); echo "  $p already holds the payload ($got)"
+    elif [ "$want" = ABSENT ]; then bad "$p exists (expected absent) with sha1 $got"
+    else
+      bad "$p changed since the bases were recorded ($got != $want)"
+      case "$p" in *FrontRoomsGlassRTSystem.cs)
+        echo "         If the glass-rt-track merged its paper x print fix, retire codex_audit_other_visual (30_fix_other_visual.md §4)"
+        echo "         and apply the CRT member alone: bash $A/codex_audit_glass_look.sh --apply" ;;
+      esac
+    fi
+  done < <(lines "$MEMBERS" | awk -v m="$m" '$1 == m {print substr($0, index($0, "  ") + 2)}')
+  if [ $nbase -eq $nb ]; then echo "  $m: all $nb bases match"; TODO="$TODO $m"
+  elif [ $npay -eq $nb ]; then echo "  $m: ALREADY APPLIED (all $nb paths hold the payload), skipped"; DONE_M="$DONE_M $m"
+  elif [ $FAIL -eq 0 ]; then bad "$m is partially applied: $npay of $nb paths hold the payload, $nbase hold the base"; fi
+done
+
+# ------------------------------------------------------------- 2. kept files (GUID metas; the fallback shader, note only)
+echo "2. kept, never written ($KEEP)"
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"
+  got=$(sha "$REAL/$p" 2>/dev/null || echo MISSING)
+  case "$p" in
+    *.meta) [ "$got" = "$want" ] && echo "  $p unchanged" || bad "$p changed ($got != $want): its GUID must stay as verified" ;;
+    *)      [ "$got" = "$want" ] && echo "  $p = as recorded ($want)" \
+              || echo "  NOTE: $p moved ($got != $want): only the CRT fallback path changes; the template material does not depend on it" ;;
+  esac
+done < <(lines "$KEEP")
+
+# ------------------------------------------------------------- 3. payloads
+echo "3. payloads ($PAYLOAD)"
+np=0
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"; np=$((np+1))
+  [ -f "$PAYLOAD/$p" ] || { bad "payload lacks $p"; continue; }
+  got=$(sha "$PAYLOAD/$p"); [ "$got" = "$want" ] || bad "payload $p changed ($got != $want)"
+  lines "$BASES" | grep -q "  $p\$" || bad "$p has no recorded base"
+done < <(lines "$EXPECTED")
+[ "$(find "$PAYLOAD" -type f | wc -l | tr -d ' ')" -eq $np ] || bad "payload holds files not in the expected manifest"
+[ $FAIL -eq 0 ] && echo "  all $np payload files match"
+
+if [ $FAIL -ne 0 ]; then
+  echo "REFUSED: nothing was written."
+  exit 1
+fi
+if [ -z "$TODO" ]; then
+  echo "ALREADY APPLIED: every member holds its payload and the kept files are unchanged; nothing to do (nothing written)."
+  exit 0
+fi
+
+# ------------------------------------------------------------- 4. actions (expected order: .meta before its asset, code last)
+echo "4. actions (members:$TODO)"
+WROTE=""
+while IFS= read -r line; do
+  p="${line#*  }"
+  m=$(lines "$MEMBERS" | awk -v p="$p" 'substr($0, index($0, "  ") + 2) == p {print $1}' | head -1)
+  case " $TODO " in *" $m "*) ;; *) continue ;; esac
+  if [ -e "$REAL/$p" ]; then verb="replace"; else verb="add    "; fi
+  act "$verb $p  (sha1 ${line%%  *}, $m)"
+  if [ -e "$REAL/$p" ]; then act "backup  main's $p -> $BACKUP/$p"; fi
+  if [ $MODE = apply ]; then
+    if [ -e "$REAL/$p" ]; then
+      mkdir -p "$BACKUP/$(dirname "$p")" && cp -p "$REAL/$p" "$BACKUP/$p" || { echo "FAILED backup of $p (stopped; written so far:$WROTE)"; exit 1; }
+    fi
+    mkdir -p "$REAL/$(dirname "$p")" || { echo "FAILED mkdir for $p (written so far:$WROTE)"; exit 1; }
+    cat "$PAYLOAD/${p:?}" > "$REAL/${p:?}" || { echo "FAILED writing $p (written so far:$WROTE)"; exit 1; }
+    WROTE="$WROTE $p"
+  fi
+done < <(lines "$EXPECTED")
+while IFS= read -r line; do act "keep    ${line#*  } (never written)"; done < <(lines "$KEEP")
+
+if [ $MODE = dry ]; then
+  echo "DRY RUN OK: every base matches (members to apply:$TODO${DONE_M:+; already applied:$DONE_M}); run with --apply to perform the actions above."
+  exit 0
+fi
+
+# ------------------------------------------------------------- 5. manifest (every path of the package, applied before or now)
+echo "5. manifest after apply"
+MAN=$(mktemp "$A/.${T}_manifest.XXXXXX") || exit 1
+while IFS= read -r line; do
+  p="${line#*  }"
+  if [ -f "$REAL/$p" ]; then printf '%s  %s\n' "$(sha "$REAL/$p")" "$p"; else printf 'ABSENT  %s\n' "$p"; fi
+done < <(lines "$EXPECTED") > "$MAN"
+cat "$MAN"
+while IFS= read -r line; do
+  want="${line%%  *}"; p="${line#*  }"
+  case "$p" in *.meta) ;; *) continue ;; esac
+  printf '%s  %s   (kept)\n' "$(sha "$REAL/$p")" "$p"
+  [ "$(sha "$REAL/$p")" = "$want" ] || { echo "MANIFEST MISMATCH: kept $p changed"; exit 1; }
+done < <(lines "$KEEP")
+if diff <(lines "$EXPECTED") "$MAN" > /dev/null; then
+  echo "MANIFEST OK: the real project equals ${T}_expected.txt for every touched path; kept .meta GUIDs unchanged. Backup: $BACKUP"
+  mv -f "$MAN" "$A/${T}_applied_manifest.txt"
+else
+  echo "MANIFEST MISMATCH:"; diff <(lines "$EXPECTED") "$MAN"; exit 1
+fi

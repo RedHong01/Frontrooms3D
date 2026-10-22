@@ -56,3 +56,26 @@ window_W-L0_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00,
 window_W-OF_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
 window_W-RN_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
 window_W-EX_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+
+# 2026-10-14 16:2x re-render, -heroOnly windows, clone W/proj_3view_int re-synced to main 0a9ee7f + working tree (kit finals applied 10-14).
+# W-RN member is now Kit_WindowFrame_Steel (30_final.md 5.5, critic M2). W-L0, W-OF and W-EX came out pixel-identical to the 10-08 files.
+# The 10-08 W-RN (enamel) render is kept as window_Steel_Enamel_face_a.png (proposal slot img:Kit_WindowFrame_Steel_Enamel_persp) and in _wrn_enamel_2026-10-08/.
+windows_lineup_face_a: 4000x1100 ss2 cam (-3.750, 1.190, 19.709) rot (0.00, 180.00, 0.00) fov 9.0 bounds c(-3.750, 1.190, -0.930) s(10.120, 2.420, 3.660)
+window_W-L0_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window_W-OF_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window_W-RN_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window_W-EX_face_a: 1600x1200 ss3 cam (-2.358, 1.951, 3.948) rot (10.00, 150.00, 0.00) fov 30.0 bounds c(0.000, 1.200, 0.000) s(1.900, 2.100, 0.300)
+window member W-L0 = Kit_WindowFrame_Wood
+window member W-OF = Kit_WindowFrame_Steel
+window member W-RN = Kit_WindowFrame_Steel
+window member W-EX = Kit_WindowFrame_Alu
+
+# 2026-10-14 17:21 gap close: -heroOnly deskkey,windowclose (clone W/proj_3view_int, main 0a9ee7f; log W/logs/3view_int_gapclose_final2_1014.log; the window close-ups have the outer Shell() so no seam pixel stays transparent). The desk shots' 'bounds' are the clip box (wall included); the framing box is in FrontRoomsInteractableHeroes.DeskKey.
+desk bounds min (-0.7620, 0.0000, -0.3810) max (0.7620, 0.7412, 0.3810); top 0.7400, front edge z 0.3810
+desk key: hole (-0.4200, 0.7412, 0.3830), ring (-0.4200, 0.7412, 0.3830), tag hole (-0.4154, 0.7204, 0.3868)
+keys_desk_overedge: 1600x1200 ss3 cam (-0.568, 0.817, 0.579) rot (24.00, 150.00, 0.00) fov 30.0 bounds c(-0.420, 0.395, -0.064) s(1.800, 0.790, 0.991)
+keys_desk_overedge_wide: 1600x1200 ss3 cam (-0.751, 0.931, 0.814) rot (24.00, 150.00, 0.00) fov 30.0 bounds c(-0.420, 0.395, -0.064) s(1.800, 0.790, 0.991)
+window_W-OF_stop_close: 2304x1264 ss3 cam (0.520, 0.560, 0.227) rot (33.46, 147.26, 0.00) fov 26.0 bounds c(0.655, 0.395, 0.016) s(2.000, 2.000, 2.000)
+window_W-OF_stop_close: target (0.6550, 0.3950, 0.0160), camera 0.3 m from it
+window_W-L0_stool_close: 2304x1264 ss3 cam (-0.875, 0.470, 0.291) rot (29.98, 140.62, 0.00) fov 40.0 bounds c(-0.710, 0.320, 0.090) s(2.000, 2.000, 2.000)
+window_W-L0_stool_close: target (-0.7100, 0.3200, 0.0900), camera 0.3 m from it

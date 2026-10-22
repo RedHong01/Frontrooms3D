@@ -18,9 +18,16 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     public const float DefaultVisibleDistance = 18f;
     public const float DefaultInteractionDistance = 2.4f;
 
+    // Player-safe surface material (codex audit F6). A material asset under Resources keeps
+    // URP Unlit in every player build; a Shader.Find by name alone does not.
+    const string AdSurfaceTemplatePath = "Media/CRT_AdSurface";
+    const string AdSurfaceShaderPath = "Rendering/FrontRoomsScreenVideo";
+
     static readonly List<FrontRoomsScreenVideo> ActiveScreens = new List<FrontRoomsScreenVideo>();
     static FrontRoomsScreenVideo focusedScreen;
     static Camera fallbackCamera;
+    static Material adSurfaceTemplate;
+    static bool warnedNoSurfaceMaterial;
 
     [SerializeField] string streamFile = DefaultStreamFile;
     [SerializeField] VideoClip desktopClip;
@@ -163,6 +170,20 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
     void CreateSurface()
     {
         if (surfaceObject != null) return;
+        // Material first. Without one, build nothing: no quad with an empty material
+        // slot and no trigger collider. Update, BindTexture and TogglePower already
+        // skip a screen that has no surface.
+        var material = MakeMaterial(bank != null ? bank.TargetTexture : null);
+        if (material == null)
+        {
+            if (!warnedNoSurfaceMaterial)
+            {
+                warnedNoSurfaceMaterial = true;
+                Debug.LogWarning("[FrontRoomsScreenVideo] No screen surface material or shader in this player; CRT ad screens stay dark.");
+            }
+            return;
+        }
+        surfaceMaterial = material;
         surfaceObject = new GameObject("screen surface / shared ad video");
         surfaceObject.transform.SetParent(transform, false);
         surfaceObject.layer = gameObject.layer;
@@ -171,7 +192,6 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         var filter = surfaceObject.AddComponent<MeshFilter>();
         filter.sharedMesh = MakeQuad(screenSize.x, screenSize.y);
         surfaceRenderer = surfaceObject.AddComponent<MeshRenderer>();
-        surfaceMaterial = MakeMaterial(bank != null ? bank.TargetTexture : null);
         surfaceRenderer.sharedMaterial = surfaceMaterial;
         surfaceRenderer.enabled = poweredOn;
 
@@ -179,11 +199,47 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         surfaceCollider.isTrigger = true;
         surfaceCollider.size = new Vector3(screenSize.x, screenSize.y, .012f);
         surfaceCollider.center = new Vector3(0f, 0f, .002f);
+
+        AddToMonitorLods(surfaceRenderer);
     }
+
+    /// <summary>
+    /// Put the ad quad into every LOD of the monitor's own LODGroup, so it switches
+    /// and culls with the monitor (codex audit F7). Outside every LOD it kept drawing
+    /// after the monitor culled (11.2 m at High), floating where the monitor stood.
+    /// </summary>
+    void AddToMonitorLods(Renderer quad)
+    {
+        // The kit importer puts the group on the monitor root. A group further up
+        // could belong to something else; a monitor without one (the ScreenAds demo
+        // rig) is left alone.
+        var group = GetComponent<LODGroup>();
+        if (group == null || quad == null) return;
+        var lods = group.GetLODs();
+        if (lods.Length == 0) return;
+        for (var i = 0; i < lods.Length; i++)
+        {
+            var renderers = new List<Renderer>(lods[i].renderers ?? new Renderer[0]);
+            if (!renderers.Contains(quad)) renderers.Add(quad);
+            lods[i].renderers = renderers.ToArray();
+        }
+        // No RecalculateBounds: it would change the imported size (.524 m) and move
+        // the import-time switch and cull distances.
+        group.SetLODs(lods);
+    }
+
+    // Every monitor of one screen size shares one quad (codex audit COV-4).
+    // A new Mesh per monitor was never destroyed, so each Office chunk
+    // teardown leaked one per CRT. Never destroy the shared quad per screen.
+    // If something else destroys it, the Unity null check builds a new one.
+    static readonly Dictionary<Vector2, Mesh> SharedQuads = new Dictionary<Vector2, Mesh>();
 
     static Mesh MakeQuad(float width, float height)
     {
+        var key = new Vector2(width, height);
+        if (SharedQuads.TryGetValue(key, out var shared) && shared != null) return shared;
         var mesh = new Mesh { name = "FrontRooms CRT screen quad" };
+        SharedQuads[key] = mesh;
         var x = width * .5f;
         var y = height * .5f;
         mesh.vertices = new[]
@@ -205,21 +261,34 @@ public sealed class FrontRoomsScreenVideo : MonoBehaviour
         return mesh;
     }
 
+    /// <summary>
+    /// The screen's material, or null when this player has no usable shader. Order:
+    /// 1. Resources/Media/CRT_AdSurface.mat (URP Unlit, opaque, white). It keeps the
+    ///    editor look in players: fog, the depth and normals passes, and the glass RT
+    ///    traces it as emissive.
+    /// 2. Resources/Rendering/FrontRoomsScreenVideo.shader (FrontRooms/ScreenVideo),
+    ///    a minimal unlit fallback that Resources also keeps in every build.
+    /// 3. URP Unlit by name (editor only, when neither asset is present).
+    /// The built-in Unlit/Texture is not tried: no player build includes it.
+    /// Explicit null checks: '??' skips Unity's destroyed-object test.
+    /// </summary>
     static Material MakeMaterial(Texture texture)
     {
-        // The built-in URP/Unlit shader can be stripped from an iOS player when
-        // it is only looked up by name. Keep the screen shader in Resources so
-        // the runtime path has a deterministic, player-safe asset to load.
-        var shader = Resources.Load<Shader>("Rendering/FrontRoomsScreenVideo") ??
-            Shader.Find("FrontRooms/ScreenVideo") ??
-            Shader.Find("Universal Render Pipeline/Unlit") ??
-            Shader.Find("Unlit/Texture");
-        if (shader == null)
+        if (adSurfaceTemplate == null) adSurfaceTemplate = Resources.Load<Material>(AdSurfaceTemplatePath);
+        Material material = null;
+        if (adSurfaceTemplate != null)
         {
-            Debug.LogError("[FrontRoomsScreenVideo] No screen surface shader is available in this player.");
-            return null;
+            material = new Material(adSurfaceTemplate);
         }
-        var material = new Material(shader) { name = "FrontRooms / CRT ad surface" };
+        else
+        {
+            var shader = Resources.Load<Shader>(AdSurfaceShaderPath);
+            if (shader == null) shader = Shader.Find("FrontRooms/ScreenVideo");
+            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader != null) material = new Material(shader);
+        }
+        if (material == null) return null;
+        material.name = "FrontRooms / CRT ad surface";
         if (texture != null)
         {
             if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", texture);

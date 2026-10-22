@@ -228,6 +228,8 @@ HERO_NOTES = {
     "windows_lineup_face_a": "The window family from face A, left to right W-L0 wood, W-OF steel + raised mini-blind, W-RN enamel steel, W-EX aluminium, each in its level's wall with a room box behind. The pane is the 6 mm slab drawn with main's Glass_Window (the glass track's material, as FrontRoomsInteractableKit.Window.cs uses it); it is not part of the window kit.",
 }
 HERO_NOTES.update(json.load(open(heroes_dir + "/hero_notes.json")) if os.path.exists(heroes_dir + "/hero_notes.json") else {})
+# Appended to the note of a render whose scene fills the frame (its _alpha copy is opaque). build_assets.py uses the same text.
+OPAQUE_NOTE = " The scene fills the frame, so its _alpha copy is opaque too (same pixels)."
 # The four grouped heroes the proposal asked for (one per family).
 GROUP_HEROES = {"doors": "doors_lineup_pull_face", "lock": "lock_exploded", "keys": "keys_board_hung", "windows": "windows_lineup_face_a"}
 
@@ -262,12 +264,15 @@ PROPOSAL_SLOTS = [
     ("DW07", "img:KeySet_Cabinet_persp", "2751:6102", "heroes/keys_cabinet_hung.png", "replaces WIP (G3 stand-in colours)", 426, 316),
     ("DW07", "img:KeySet_Hook_persp", "2751:6105", "heroes/keys_hook_hung.png", "replaces WIP (G3 stand-in colours)", 426, 316),
     ("DW07", "img:KeyParts_Lineup_front", "2751:6116", "heroes/keys_parts_lineup_front.png", "fills PHASE 2 placeholder; delete text 2751:6117", 426, 317),
+    ("DW07", "img:KeySet_Desk_persp", "2751:6108", "heroes/keys_desk_overedge.png", "replaces WIP (G3 flat-desk Blender render, 2026-10-14): the over-edge pose of 30_final.md 5.4 rule 3 on Kit_OfficeDesk; chip 2751:6110", 426, 316),
     ("DW08", "img:Kit_WindowFrame_Wood_persp", "2751:6127", "heroes/window_W-L0_face_a.png", "replaces WIP (Blender look-dev)", 426, 316),
     ("DW08", "img:Kit_WindowFrame_Steel_persp", "2751:6130", "heroes/window_W-OF_face_a.png", "replaces WIP (Blender look-dev)", 426, 316),
-    ("DW08", "img:Kit_WindowFrame_Steel_Enamel_persp", "2751:6133", "heroes/window_W-RN_face_a.png", "fills PHASE 2 placeholder; delete text 2751:6134", 426, 317),
+    ("DW08", "img:Kit_WindowFrame_Steel_Enamel_persp", "2751:6133", "heroes/window_Steel_Enamel_face_a.png", "fills PHASE 2 placeholder; delete text 2751:6134 (source: the 2026-10-08 W-RN render; since 2026-10-14 W-RN itself is the bronze steel frame, 30_final 5.5)", 426, 317),
     ("DW08", "img:Kit_WindowFrame_Alu_persp", "2751:6137", "heroes/window_W-EX_face_a.png", "replaces WIP (Blender look-dev)", 426, 316),
     ("DW08", "img:Kit_MiniBlind_Raised_persp", "2751:6151", "png_fix/Kit_MiniBlind_Raised_persp.png", "fills PHASE 2 placeholder; delete text 2751:6152 (source: fix-pass three-view; geometry = main)", 426, 317),
-    ("DW12", "img:Kit_ExitSign_persp", "2753:6293", "../../exit_sign/threeview/png/Kit_ExitSign_persp.png", "replaces WIP; source = the exit-sign track's three-view of the kit merged into main 2026-10-08 19:40 (VL220); the 10-03 png/ copy is the old model", 426, 317),
+    ("DW09", "img:Kit_WindowFrame_Steel_close", "2751:6245", "heroes/window_W-OF_stop_close.png", "replaces WIP (Blender 0.3 m screws render, 2026-10-14): W-OF lower-left corner as seen from face A (world +X) at 0.3 m, the loose stop's screws, world-space key from the room side (re-lit 18:0x); chip 2751:6246", 576, 316),
+    ("DW09", "img:Kit_WindowFrame_Wood_close", "2751:6248", "heroes/window_W-L0_stool_close.png", "replaces WIP (Blender 0.3 m stool render, 2026-10-14): W-L0 lower-right corner as seen from face A (world -X) at 0.3 m, stool horn + apron; chip 2751:6249", 576, 317),
+    ("DW12", "img:Kit_ExitSign_persp", "2753:6293", "../../exit_sign/threeview/png/Kit_ExitSign_persp.png", "replaces WIP; source = the exit-sign track's three-view of the kit merged into main 2026-10-08 19:40 (VL220); the 10-03 png/ copy is the old model. The source file was rewritten 2026-10-14 17:22 by exit_sign_fix1, which is not in main: re-crop DW12 only after exit_sign_fix1 lands in main", 426, 317),
 ]
 proposal_slots = []
 for slide, slot, node, src, action, w, h in PROPOSAL_SLOTS:
@@ -287,17 +292,23 @@ if os.path.isdir(heroes_dir):
         if note is None and name.startswith("window_"):
             note = "Window member %s from face A, 3/4, in its wall with a room box behind and the Glass_Window pane." % name.split("_")[1]
         slots = [p["slot"] for p in proposal_slots if p["source"] == "heroes/" + f]
+        # Every render is written twice (FrontRoomsInteractableHeroes: <name>.png on #EEECE6 + <name>_alpha.png), so
+        # list the _alpha file whenever it exists (2026-10-14: the four hung-key heroes had alpha=None although their
+        # _alpha files exist). A scene that fills the frame (wall, desk, room) has an opaque _alpha copy: the note says so.
         alpha = "heroes/" + name + "_alpha.png"
+        has_alpha = os.path.exists(os.path.join(ROOT, alpha))
         opaque_scene = name.startswith("keys_") and name != "keys_parts_lineup_front"
         size = None
         try:
             from PIL import Image
             size = list(Image.open(os.path.join(heroes_dir, f)).size)
+            if has_alpha:
+                opaque_scene = Image.open(os.path.join(ROOT, alpha)).convert("RGBA").getextrema()[3][0] >= 250
         except Exception:
             pass
-        heroes.append(dict(file="heroes/" + f, alpha=None if opaque_scene else alpha, group=hero_group(name),
+        heroes.append(dict(file="heroes/" + f, alpha=alpha if has_alpha else None, group=hero_group(name),
                            groupHero=GROUP_HEROES.get(hero_group(name)) == name, px=size,
-                           note=(note or "") + (" Wall fills the frame, so there is no transparent copy." if opaque_scene else ""),
+                           note=(note or "") + (OPAQUE_NOTE if opaque_scene else ""),
                            proposalSlots=slots))
 
 index = dict(
@@ -330,10 +341,11 @@ index = dict(
     heroes=heroes,
     proposalSlots=proposal_slots,
 )
-# Keep the hand-off "assets" block (tools/build_assets.py, 2026-10-08) across rebuilds of the K-sheet record.
+# Keep the hand-off "assets" block (tools/build_assets.py, 2026-10-08) and the hero re-render record "heroesMeta"
+# (written by hand at the 2026-10-08 / 2026-10-14 hero renders) across rebuilds of the K-sheet record.
 if os.path.exists(ROOT + "/index.json"):
     _old = json.load(open(ROOT + "/index.json"))
-    for _k in ("assets", "assetsMeta"):
+    for _k in ("assets", "assetsMeta", "heroesMeta"):
         if _k in _old:
             index[_k] = _old[_k]
 json.dump(index, open(ROOT + "/index.json", "w"), indent=1, ensure_ascii=False)

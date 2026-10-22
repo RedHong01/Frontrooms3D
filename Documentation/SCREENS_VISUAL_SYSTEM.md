@@ -38,17 +38,33 @@ The research found two type systems stacked in every 1990 local spot: the agency
    - a script or swash logotype bug in a corner (evans_1990, levitz).
    - The faces are Period1990 stand-ins for the period face, mapped in `FONTS_PERIOD_1990.md`.
    - The brand is fictional; the narrative chat writes all strings.
-2. **Station, the character-generator layer.** One fictional local UHF station is the only "channel" in the game:
-   - a monospaced or slab CG face for dealer tags, addresses and phone numbers (ethanallen, hsc_early90s), its logo bug, and the time and temperature;
-   - its non-programme states: station ID, PLEASE STAND BY slate, colour bars and tone, sign-off, snow.
-   - All of it is laid out on a 4:3 raster with NTSC title-safe (80 %) and action-safe (90 %) areas. The CRT face then crops it the way a real tube's overscan does.
+2. **Station, the character-generator layer.** One fictional local UHF station is the only "channel" in the game.
+   - **Revised 2026-10-15 (平面视觉 · 广告) against 1990 airchecks, the Chyron VP-2 manuals and SMPTE documents.** Research: `~/FrontRoomsVisualWork/reference/ad_reference/station_1990/NOTES.md`, 156 sources. The spec is `AD_TYPE_SYSTEM.md` §3.
+   - **The CG** is a VP-2-class unit: Helvetica Medium and Bold (TeX Gyre Heros in the generator), set in whole scan lines (18–48) with a 2-line black edge and a 4-line drop shadow, unsmoothed. This replaces VT323, which is a terminal face.
+   - **Identity.** The channel number is the brand ("61"); the call letters come second. The legal ID is the call letters immediately followed by the city of licence (47 CFR 73.1201). No "UHF" on screen.
+   - **Not in 1990:**
+     - a permanent corner logo bug: networks only adopted them in autumn 1993;
+     - a corner time and temperature: in 1990 the time showed only over the off-air bars.
+     - Both are dropped.
+   - **Non-programme states:**
+     - the station ID;
+     - stand-by: the ID slide with "PLEASE STAND BY / TECHNICAL DIFFICULTIES";
+     - the sign-off;
+     - off air: SMPTE EG 1-1990 bars with the time and date keyed in;
+     - snow.
+   - **Dealer tags** fill the last 3–7 s of a spot: store, address, town, phone, hours.
+   - **Safe areas.** Everything is laid out on the 4:3 raster inside SMPTE RP 27.3-1989's title-safe (80 %) and action-safe (90 %) areas, which have rounded corners. The CRT face then crops it the way a real tube's overscan does (4–5 % per edge).
 3. **Tube, the physical layer.** Shader work owned by 游戏视觉, specified here:
    - aperture-grille phosphor and scanlines that fade with distance, so they never alias;
    - phosphor bloom and a slight barrel curvature with corner vignette;
    - the curved glass with reflections from the glass system;
-   - a power-off state of dark glass with a faint burn-in ghost of the station bug;
+   - a power-off state of dark glass. The faint burn-in ghost of the station bug was dropped on 2026-10-15: no bug existed in 1990, so there is nothing to burn in;
    - a power-on/off collapse to a horizontal line and a dot.
-   - Brightness follows the room's power: on a lamp Sag or Dip, the picture shrinks a little and rolls (V-hold), driven by the same `FixtureChanged` / `LampDipped` events.
+   - **Power and the warning language stay apart** (amended 2026-10-14; 系统设计, `research/computer_ui/20_design.md` §6.3). The ink's stage-0 power sags and the chase-wave dips fire the same `FixtureChanged` / `LampDipped` events as a real warning. If the screens followed them, ambient would speak in cue vocabulary, which breaks G7: ambient never uses the cue's signs. So on every screen, TVs and terminals alike:
+     - the picture sags, shrinks or rolls only on `WarnBurst`, and only if Red approves §4;
+     - no screen reads `LampLevel` or the Warn overrides;
+     - an ambient set may follow only its own cell's generated lamp temperament;
+     - every change is slow, with an attack of at least 1.5 s.
 
 ## 4. How the screens join the warning language
 
@@ -77,18 +93,32 @@ Proposal only. 系统设计 and 关卡设计 own the events (driver interface pe
 
 | Part | Owner |
 |---|---|
-| Programme and station design, type, safe areas, generator, state visuals, tube look spec | 平面视觉 |
+| Programme and station design, type, safe areas, generator, state visuals, tube look spec | 平面视觉 · 广告 (since the 2026-10-15 split; §4 is co-owned with 平面视觉 · 信息设计) |
 | Station fiction, brand, every on-screen string, EGRESS slate wording | narrative chat |
 | Tube shader and material, the F6 fix (serialized material, no `Shader.Find`), per-kit screen anchors (`Kit_CRTTV`) | 游戏视觉 |
 | Event hooks (warn, chase, search, lamp events), budget gating | 系统设计 / 关卡设计 |
 | Go or no-go on screens joining the warning language | Red |
 
-## 7. Next steps (平面视觉)
+## 7. Next steps (平面视觉 · 广告)
 
-1. Figma style frames, editable layers:
-   - the 4:3 broadcast raster with safe areas;
-   - programme card, station ID, CG tag, stand-by slate and emergency slate;
-   - interference frames;
-   - the tube look over all of them.
-2. Generator prototype: rebuild the four v0 cards in-system, with a fictional brand from the narrative chat and Period1990 faces.
-3. Tube look test in a clone, after the wallpaper-cue preview.
+**Done:**
+1. Style frames v1 (2026-10-08, Figma `2800:6096`).
+2. The generator and Ad_02, in the game since 2026-10-14.
+3. **Station v3 (2026-10-15).**
+   - Figma `3226:7267`: Ad / styles, six 1× masters, slides S09–S12.
+   - The dev generator: `~/FrontRoomsVisualWork/screens_dev/`.
+   - VL287 `3230:8391`.
+
+**Next:**
+1. Red approves v3. Then:
+   - the generator moves into `Tools/screens`;
+   - Ad_03 is cut (Ad_02's cards plus the v3 station card, the numeral fix and the dealer tag);
+   - 游戏视觉 swaps the StreamingAssets file.
+2. Strings from the narrative chat:
+   - a city of licence;
+   - the off-air time and date;
+   - the sign-off notice;
+   - the dealer tag's town;
+   - whether WXRM is renamed (WXRM-LP is a real NJ low-power FM station).
+3. The tube request to 游戏视觉: the tube layer and the Kit_CRTTV anchor. F6 is fixed. It waits for Red's go.
+4. Interference frames and the tube look over all states, once §4 is decided.

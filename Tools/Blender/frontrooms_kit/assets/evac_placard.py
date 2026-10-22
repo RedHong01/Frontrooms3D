@@ -113,6 +113,19 @@ def build(kit):
                            "Kit.make_lods exists (P-1/P-1b). Until then this FBX holds LOD0 only.")
     kit.meta["partFrame"] = "origin = wall-face point at the frame centre; front = Unity +Z (kit -Y); +Y up (placard 10_spec §2.1)"
     kit.meta["wear"] = {"attribute": "fr_wear", "topRailDust": DUST_TOP, "bottomRailThumbs": THUMB_BOTTOM, "channel": "R"}
+    # EXAMINE (research/inspect/10_design.md §3.8): Red's frame, composition A (the plan in the left 63 %, the real
+    # wallpaper on the right) at 0.36 m; the 2.4 mm line drives the angular zoom, which frames the legend region.
+    # Legend rect MEASURED on main's v3 sheet (Prop_EvacPlan_A md5 7d589d81, 4096 x 2048 over 432 x 279 mm: ink
+    # bounding box of the swatches, labels and WALLCOVERING line); 平面视觉 replaces it with placard.swift's constants.
+    # Texel density: 2048 px / 279 mm = 7,330 px/m down (9,481 across); the zoom's 2x cap uses the smaller.
+    fw, fh, fd = round(pc.FRAME[0] * M, 5), round(pc.FRAME[1] * M, 5), round(pc.DEPTH * M, 5)
+    kit.inspect("flat", verb="read", face="face", faceDir="face_dir", up="", size=(fw, fh), margin=0.08,
+                screen=(0.01, 0.0, 0.63, 1.0), dist=(0.36, 0), distMaxA=0.44, minDist=0.18, maxDist=1.0,
+                maxAngle=25, maxYawOff=25, fovDelta=-15, reach=1.6, approachAngle=60, orbit=0,
+                box=(U(0.0, 0.0, fd / 2), kc.U_size(fw, fh, fd)), aimPad=0.02, texelsPerMetre=7330,
+                sheet=(pc.SHEET[0], pc.SHEET[1]),
+                regions=[{"id": "legend", "rect": [299.6, 49.7, 111.0, 174.3], "capMm": 2.4}], dof=False,
+                transcript="placard_q16", sound="metal", ship=True)
 
     # ---- asserts (§2.8)
     lod0 = pc.lod_parts(kit, 0)

@@ -1,0 +1,4 @@
+C_relay exit 0 77 s png=      22
+A_tripped exit 0 111 s png=       6
+B_tripped exit 0 116 s png=       4
+K ALLDONE Thu Oct  8 20:10:16 PDT 2026

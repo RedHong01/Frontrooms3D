@@ -1,0 +1,86 @@
+# codex_audit_all: extract one file (default globalgamemanagers) from a WebGL build's uncompressed .data
+# (UnityWebData1.0 container -> data.unity3d UnityFS bundle with LZ4/LZ4HC blocks). Stdlib only (own LZ4 decoder).
+# usage: webgl_extract.py <Build/X.data> <out_dir> [node name ...]
+import struct, sys, os
+
+def lz4_block(src, usize):
+    dst = bytearray(); i = 0; n = len(src)
+    while i < n:
+        tok = src[i]; i += 1
+        lit = tok >> 4
+        if lit == 15:
+            while True:
+                b = src[i]; i += 1; lit += b
+                if b != 255: break
+        dst += src[i:i + lit]; i += lit
+        if i >= n: break
+        off = src[i] | (src[i + 1] << 8); i += 2
+        ml = tok & 15
+        if ml == 15:
+            while True:
+                b = src[i]; i += 1; ml += b
+                if b != 255: break
+        ml += 4
+        start = len(dst) - off
+        if off >= ml: dst += dst[start:start + ml]
+        else:
+            for k in range(ml): dst.append(dst[start + k])
+    assert len(dst) == usize, (len(dst), usize)
+    return bytes(dst)
+
+def unpack(buf, flags, usize):
+    c = flags & 0x3F
+    if c == 0: return buf
+    if c in (2, 3): return lz4_block(buf, usize)
+    raise SystemExit("unsupported compression %d" % c)
+
+data_path, out_dir = sys.argv[1], sys.argv[2]
+want = sys.argv[3:] or ["globalgamemanagers"]
+d = open(data_path, "rb").read()
+assert d[:16] == b"UnityWebData1.0\0"
+p = 16; hs = struct.unpack("<I", d[p:p + 4])[0]; p += 4
+ents = {}
+while p < hs:
+    off, size, nl = struct.unpack("<III", d[p:p + 12]); p += 12
+    ents[d[p:p + nl].decode()] = (off, size); p += nl
+off, size = ents["data.unity3d"]
+b = d[off:off + size]
+p = 0
+def cstr():
+    global p
+    e = b.index(b"\0", p); s = b[p:e].decode(); p = e + 1; return s
+sig = cstr(); ver = struct.unpack(">I", b[p:p + 4])[0]; p += 4; cstr(); cstr()
+total, csz, usz, flags = struct.unpack(">qIII", b[p:p + 20]); p += 20
+if ver >= 7: p = (p + 15) & ~15
+info = unpack(b[p:p + csz], flags, usz); p += csz
+if flags & 0x200: p = (p + 15) & ~15
+q = 16
+nb = struct.unpack(">i", info[q:q + 4])[0]; q += 4
+blocks = []
+for _ in range(nb):
+    u, c, f = struct.unpack(">IIH", info[q:q + 10]); q += 10; blocks.append((u, c, f))
+nn = struct.unpack(">i", info[q:q + 4])[0]; q += 4
+nodes = []
+for _ in range(nn):
+    o, s, f = struct.unpack(">qqI", info[q:q + 20]); q += 20
+    e = info.index(b"\0", q); name = info[q:e].decode(); q = e + 1
+    nodes.append((name, o, s))
+print("bundle", sig, ver, "blocks", nb, "nodes", nn, [n[0] for n in nodes][:12])
+# map uncompressed offsets to blocks
+starts = []; uo = 0; co = p
+for (u, c, f) in blocks:
+    starts.append((uo, u, co, c, f)); uo += u; co += c
+def read_range(o, s):
+    out = bytearray()
+    for (u0, u, c0, c, f) in starts:
+        if u0 + u <= o or u0 >= o + s: continue
+        blk = unpack(b[c0:c0 + c], f, u)
+        a = max(o, u0) - u0; z = min(o + s, u0 + u) - u0
+        out += blk[a:z]
+    return bytes(out)
+os.makedirs(out_dir, exist_ok=True)
+for name, o, s in nodes:
+    if name in want:
+        data = read_range(o, s)
+        open(os.path.join(out_dir, name), "wb").write(data)
+        print("extracted", name, len(data), "bytes")

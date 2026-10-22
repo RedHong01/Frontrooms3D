@@ -1,0 +1,113 @@
+lobby_lit_g1 | L_0p3 | eye (0, 2.206, 7.5575) look (0, 2.206, 7.92) | vfov 50 | diff cur | "room":"lit","gain":1
+lobby_lit_g1 | L_3m | eye (0, 1.62, 4.92) look (0, 2.206, 7.92) | vfov 24 | diff cur | "room":"lit","gain":1
+lobby_lit_g1 | L_3m_w76 | eye (0, 1.62, 4.92) look (0, 2.206, 7.92) | vfov 76 | diff cur | "room":"lit","gain":1
+lobby_lit_g1 | L_6m | eye (0, 1.62, 1.92) look (0, 2.206, 7.92) | vfov 14 | diff cur | "room":"lit","gain":1
+lobby_lit_g1 | L_6m_w76 | eye (0, 1.62, 1.92) look (0, 2.206, 7.92) | vfov 76 | diff cur | "room":"lit","gain":1
+lobby_lit_g1 | L_dead_1p2 | eye (2, 2.206, 6.66) look (2, 2.206, 7.86) | vfov 30 | diff cur | "room":"lit","gain":1
+lobby_dark_g1 | L_0p3 | eye (0, 2.206, 7.5575) look (0, 2.206, 7.92) | vfov 50 | diff cur | "room":"dark","gain":1
+lobby_dark_g1 | L_3m | eye (0, 1.62, 4.92) look (0, 2.206, 7.92) | vfov 24 | diff cur | "room":"dark","gain":1
+lobby_dark_g1 | L_3m_w76 | eye (0, 1.62, 4.92) look (0, 2.206, 7.92) | vfov 76 | diff cur | "room":"dark","gain":1
+lobby_dark_g1 | L_6m | eye (0, 1.62, 1.92) look (0, 2.206, 7.92) | vfov 14 | diff cur | "room":"dark","gain":1
+lobby_dark_g1 | L_6m_w76 | eye (0, 1.62, 1.92) look (0, 2.206, 7.92) | vfov 76 | diff cur | "room":"dark","gain":1
+lobby_dark_g1 | L_dead_1p2 | eye (2, 2.206, 6.66) look (2, 2.206, 7.86) | vfov 30 | diff cur | "room":"dark","gain":1
+stream | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt_g3 | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":3,"mode":"pt","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+A_pt1.2 | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1,"mode":"pt","lightType":"Point","intensity":1.2,"angle":162,"inner":140,"lightY":1.96
+B_pc | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_pc | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1,"mode":"pc","lightType":"Point","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+B_spc | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1,"mode":"spc","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":2.394
+stream_g0.7 | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g0.7 | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":0.7,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+stream_g1.4 | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1.4,"mode":"keep","lightType":"Spot","intensity":3.6,"angle":162,"inner":140,"lightY":1.96
+none | RA_1p5 | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | RB_1p5 | eye (4991.7, 1.7, 5035.7) look (4992, 2.394, 5037.2) | vfov 36 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | RA_6m | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | RB_6m | eye (4992.6, 1.62, 5031.2) look (4992, 2.394, 5037.2) | vfov 16 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | RB_12m | eye (4992.6, 1.62, 5025.2) look (4992, 2.394, 5037.2) | vfov 9 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | RB_6m_w76 | eye (4992.6, 1.62, 5031.2) look (4992, 1.9, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | RB_12m_w76 | eye (4992.6, 1.62, 5025.2) look (4992, 1.8, 5037.2) | vfov 76 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+none | R_wide | eye (4992, 1.62, 5028.9) look (4992, 0.85, 5040) | vfov 76 | diff cur | "gain":1,"mode":"none","lightType":"Point","intensity":0,"angle":162,"inner":140,"lightY":1.96
+exit_stream | E_0p3 | eye (4992, 2.78, 5051.616) look (4992, 2.78, 5051.916) | vfov 50 | diff cur | "room":"exit","gain":1
+exit_stream | E_3m | eye (4992, 1.62, 5048.916) look (4992, 2.78, 5051.916) | vfov 24 | diff cur | "room":"exit","gain":1
+exit_stream | E_3m_w76 | eye (4992, 1.62, 5048.916) look (4992, 2.78, 5051.916) | vfov 76 | diff cur | "room":"exit","gain":1
+exit_stream | E_6m | eye (4992, 1.62, 5045.916) look (4992, 2.78, 5051.916) | vfov 14 | diff cur | "room":"exit","gain":1
+exit_stream | E_6m_w76 | eye (4992, 1.62, 5045.916) look (4992, 2.78, 5051.916) | vfov 76 | diff cur | "room":"exit","gain":1
+stream | S_lit | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Lit","pinned":false,"level":1,"weights":"(1.00, 1.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S6_lit | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Lit","pinned":false,"level":1,"weights":"(1.00, 1.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S_halfa | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"HalfA","pinned":false,"level":0.5413,"weights":"(0.00, 1.00, 0.00, 0.00)","light":1.9487,"ticks":0
+stream | S6_halfa | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"HalfA","pinned":false,"level":0.5413,"weights":"(0.00, 1.00, 0.00, 0.00)","light":1.9487,"ticks":0
+stream | S_halfb | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"HalfB","pinned":false,"level":0.4587,"weights":"(1.00, 0.00, 0.00, 0.00)","light":1.6513,"ticks":0
+stream | S6_halfb | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"HalfB","pinned":false,"level":0.4587,"weights":"(1.00, 0.00, 0.00, 0.00)","light":1.6513,"ticks":0
+stream | S_loose | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Loose","pinned":false,"level":0.4979,"weights":"(1.00, 0.07, 0.00, 0.00)","light":1.7923,"ticks":489
+stream | S6_loose | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Loose","pinned":false,"level":0.4979,"weights":"(1.00, 0.07, 0.00, 0.00)","light":1.7923,"ticks":489
+stream | S_battery | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Battery","pinned":false,"level":0.1655,"weights":"(0.00, 0.00, 0.25, 0.00)","light":0.5959,"ticks":0
+stream | S6_battery | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Battery","pinned":false,"level":0.1655,"weights":"(0.00, 0.00, 0.25, 0.00)","light":0.5959,"ticks":0
+stream | S_dead | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Dead","pinned":false,"level":0,"weights":"(0.00, 0.00, 0.00, 0.00)","light":0,"ticks":0
+stream | S6_dead | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Dead","pinned":false,"level":0,"weights":"(0.00, 0.00, 0.00, 0.00)","light":0,"ticks":0
+stream | S_pin_lit | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Lit","pinned":true,"level":1,"weights":"(1.00, 1.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S6_pin_lit | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Lit","pinned":true,"level":1,"weights":"(1.00, 1.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S_pin_halfa | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"HalfA","pinned":true,"level":0.5413,"weights":"(0.00, 1.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S6_pin_halfa | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"HalfA","pinned":true,"level":0.5413,"weights":"(0.00, 1.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S_pin_halfb | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"HalfB","pinned":true,"level":0.4587,"weights":"(1.00, 0.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S6_pin_halfb | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"HalfB","pinned":true,"level":0.4587,"weights":"(1.00, 0.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S_pin_loose | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Loose","pinned":true,"level":0.4979,"weights":"(1.00, 0.07, 0.00, 0.00)","light":3.6,"ticks":489
+stream | S6_pin_loose | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Loose","pinned":true,"level":0.4979,"weights":"(1.00, 0.07, 0.00, 0.00)","light":3.6,"ticks":489
+stream | S_pin_battery | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Battery","pinned":true,"level":0.1655,"weights":"(0.00, 0.00, 0.25, 0.00)","light":3.6,"ticks":0
+stream | S6_pin_battery | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Battery","pinned":true,"level":0.1655,"weights":"(0.00, 0.00, 0.25, 0.00)","light":3.6,"ticks":0
+stream | S_pin_dead | eye (4992.3, 1.7, 5029.9) look (4992, 2.394, 5031.4) | vfov 36 | diff cur | "state":"Dead","pinned":true,"level":0,"weights":"(0.00, 0.00, 0.00, 0.00)","light":3.6,"ticks":0
+stream | S6_pin_dead | eye (4992.6, 1.62, 5025.4) look (4992, 2.394, 5031.4) | vfov 16 | diff cur | "state":"Dead","pinned":true,"level":0,"weights":"(0.00, 0.00, 0.00, 0.00)","light":3.6,"ticks":0

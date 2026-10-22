@@ -1,8 +1,8 @@
 # Interactables three-view hand-off (for 平面视觉)
 
-From the visual chat (游戏视觉), interactables-kit workflow, three-view stage, **2026-10-08**. It covers the doors, locks, keys and windows after the fix pass (`../30_final.md`).
+From the visual chat (游戏视觉), interactables-kit workflow, three-view stage, **2026-10-08**; updated **2026-10-14** (§9). It covers the doors, locks, keys and windows after the fix pass (`../30_final.md`). **These models are in main since 2026-10-14**, so a clone of main renders exactly what is here.
 
-平面视觉 places the sheets itself as **K46–Kxx · INTERACTABLES (doors · locks · keys · windows)** inside PROP KIT `2324:852`, re-rendering through its own `Tools/three_view` pipeline. We did not edit Figma.
+平面视觉 places the sheets itself as **K46–Kxx · INTERACTABLES (doors · locks · keys · windows)** inside PROP KIT `2324:852`, re-rendering through its own `Tools/three_view` pipeline. We never edit PROP KIT `2324:852`. Our only Figma work is our own proposal section DOORS + WINDOWS `2748:6099`, which we filled with these renders on 2026-10-14 (§10, §11).
 
 ## 1. What is here
 
@@ -16,17 +16,19 @@ From the visual chat (游戏视觉), interactables-kit workflow, three-view stag
 | `FrontRoomsThreeView.handoff.cs.txt` | The renderer used. It is a superset of `Tools/three_view/FrontRoomsThreeView.cs`; see §3. |
 | `tools/build_assets.py` | Writes `assets` and `assetsMeta` from the sidecars and the manifest. `tools/build_index.py` (the 10-04 K-sheet record) now keeps both blocks when it rebuilds. |
 | `index.json` → `sheets`, `kits`, and `png/` | The 2026-10-04 record behind the placed K46–K80. Kept unchanged. Where it differs from `assets`, **`assets` wins.** |
-| `heroes/` and `index.json` → `heroes`, `proposalSlots`, **`heroesMeta`** | **Re-rendered 2026-10-08 20:00 on the fix-pass models** (§8): the four grouped heroes (door lineup, lock exploded, key + ring + tag + hosts, window lineup), the 8 door sets and 4 window members, and the 26 proposal-slot crops in `heroes/slots/`. The 10-04 versions are in `heroes/_pre_fix_2026-10-04/`. |
-| `png_fix/<Kit>_<top|front|side|persp>.png` | The fix pass's three-views of the **18 kits that changed** since K46–K80 (same tool and scales as `png/`, 72 PNG + `manifest.json`). Use them to refresh those 18 sheets once the kit is applied to main. |
+| `heroes/` and `index.json` → `heroes`, `proposalSlots`, **`heroesMeta`** | **Re-rendered 2026-10-08 20:00 on the fix-pass models** (§8): the four grouped heroes (door lineup, lock exploded, key + ring + tag + hosts, window lineup), the 8 door sets and 4 window members, and the 26 proposal-slot crops in `heroes/slots/`. The window lineup and W-RN were re-rendered on 2026-10-14 (§9). The gap close later that day added 4 renders (the over-edge desk key, its wide view, two 0.3 m window close-ups) and 3 crops, so `heroes/` now holds 37 renders, each with its `_alpha` copy, and `heroes/slots/` 29 crops plus the 4 `DW14_*` (§11). The 10-04 versions are in `heroes/_pre_fix_2026-10-04/`. `heroes/hero_notes.json` holds the current hero notes. |
+| `png_fix/<Kit>_<top|front|side|persp>.png` | The fix pass's three-views of the **18 kits that changed** since K46–K80 (same tool and scales as `png/`, 72 PNG + `manifest.json`). The kit is in main since 2026-10-14, so refresh the sheets now: **13 sheets**, not 18, because 4 kits render pixel-identical and K77 holds two kits (§10). K53 also needs its view slots resized (`HANDOFF_平面视觉.md` §3). |
 
 `index.json` has its own `fields` list in `assetsMeta`, so a script can check that each entry carries exactly those fields.
 
 ## 2. The models: where they are, and how to load them
 
 - **The FBX path** is `Assets/Resources/Props/Models/<name>.fbx`, next to its sidecar `<name>.json`. The sidecar holds bounds, slots, anchors, `motion` and LOD data.
-- **The current builds are not in main yet.** They sit in `/Users/redwang/FrontRoomsVisualWork/proj_int` and in the promote payload `W/int_work/fix/payload/` (102 files; `SHA1SUMS.txt`). The interactables merge stage copies them over main's `Kit_*` files and keeps main's `.meta` GUIDs.
-  - Until that merge lands, render from a copy of `proj_int`, or copy the payload over your clone's `Assets/Resources/Props/Models/`.
-  - A clone of main alone shows the **pre-fix** models for 50 FBX.
+- **The current builds are in main** since 2026-10-14: `W/apply/interactables_kit.sh --apply` wrote the 102 fix-pass files (50 FBX, 52 JSON) over main's `Kit_*` files with `MANIFEST OK` and kept main's `.meta` GUIDs.
+  - Checked 2026-10-14: for all 57 assets, main's FBX and JSON match the files these PNGs were rendered from. 105 of the 114 files are byte-identical. The other 9 differ in ways no image shows:
+    - 7 FBX differ only by their export timestamp; main kept its own copies at the merge;
+    - `Kit_DoorFrame_Steel.json` and `_Alu.json` also carry the exit-sign track's anchor move (`exit_sign_p` Y 2.28 → 2.18, 2026-10-08 19:40).
+  - So render from any fresh clone of main; no payload copy is needed any more.
 - **Materials.** The FBX's embedded materials are only preview colours. `FrontRoomsKitLibrary.Spawn` remaps every slot to `Assets/Resources/Surfaces/<slot>.mat`, so always spawn through the kit library. The three-view tool does this.
   - **Three slots have no surface yet** (P-4). They render with the FBX preview colour:
     - `Door_Enamel`, used by `Kit_DoorLeaf_Steel`, `Kit_DoorLeaf_SteelLite` and `Kit_WindowFrame_Steel_Enamel`. Target almond #cdc5b0.
@@ -108,7 +110,7 @@ Unity metres. Every part's front is its +Z. Rotations are Euler degrees.
 | Strike, locked doors (`Kit_Lock_StrikeMortise`) | frame `strike` (0, 0.968, 0.998) | (0, 180, 0) |
 | Strike, free doors (`Kit_Lock_StrikeBored*`) | frame `strike_bored` (0, 1.000, 0.998) on steel frames; the wood frame's `strike` (0, 1.000, 0.998) | (0, 180, 0) |
 | Closer shoe | frame `closer_shoe` (0.125, 2.13, 0.10) | (0, 90, 0) |
-| Exit sign (exit-sign track) | frame `exit_sign_p` (−0.08, 2.28, 0.5) | — |
+| Exit sign (exit-sign track) | frame `exit_sign_p` (−0.08, 2.18, 0.5) (the exit-sign apply lowered it from 2.28 on 2026-10-08) | — |
 
 ### 5.2 Lock on the leaf
 
@@ -201,7 +203,9 @@ Most of the other entries change only in data: small parts now have a LOD1 count
 
 **Open naming:** `Kit_KeyHookBoard` may be renamed `Kit_KeyRack`. It is Red's pick (codex audit F6); only the kit name and the `img:` layer names would change.
 
-**Spare members:** `Kit_WindowFrame_Steel_Enamel` has had no map member since the fix pass gave the Run window the bronze steel frame; the Run doors use that frame too. The brass mortise parts are spares (§4).
+**Spare members:** `Kit_WindowFrame_Steel_Enamel` has had no map member since the fix pass gave the Run window the bronze steel frame; the Run doors use that frame too (`../30_final.md` §5.5, critic M2; `../10_spec.md` line 645 still lists enamel, and main's window facade dresses only Lobby and Office windows today). The brass mortise parts are spares (§4).
+
+**The key in the HUD (Red's decision, 2026-10-14).** The HUD key on phone and desktop is direction **B**: the key on its ring and tag. At a locked door the HUD shows a **padlock in the tag's language**, with the zone tag's shape and colour. That is your component set `3113:6999` (boards KV11 `3113:7000` and KV12 `3113:7147`; spec `../../ui_key_icon/lock_motion/README.md`). A, A + chip and C are history only. On the kit side, the B glyph and the padlock body follow `Kit_KeyTag_{Rect,Round,Long}` in red (no suffix), `_Blue` and `_White`, and the locked door's `Kit_DoorNumberPlate*` carries the same zone colour and number. `assetsMeta.keyUi` in `index.json` says the same.
 
 ## 7. Earlier record (10-03 / 10-04 hand-off, unchanged)
 
@@ -216,7 +220,7 @@ Most of the other entries change only in data: small parts now have a LOD1 count
 
 ## 8. Hero re-render, 2026-10-08 20:00 (kit-documentation workflow, render stage)
 
-- **Models:** the fix-pass payload (`W/apply/interactables_kit_payload`, 102 files) applied with `interactables_kit.sh --apply` into the clone `W/proj_3view_int` only (`MANIFEST OK`), over main `bc0aa79` plus its working tree at 19:53. So the heroes show what main will hold after the visual chat runs that apply, including the exit-sign kit merged at 19:40.
+- **Models:** the fix-pass payload (`W/apply/interactables_kit_payload`, 102 files) applied with `interactables_kit.sh --apply` into the clone `W/proj_3view_int` only (`MANIFEST OK`), over main `bc0aa79` plus its working tree at 19:53. So the heroes show what main will hold after the visual chat runs that apply, including the exit-sign kit merged at 19:40. The apply ran on 2026-10-14; see §9.
 - **Renderer:** `FrontRoomsInteractableHeroes.RunBatch -heroOut <dir>` (copy: `FrontRoomsInteractableHeroes.cs.txt`). The only change from 10-04 is the hung pose: v2 from the hosts' sidecar `hungPose` (ring yaw 120, key twist −30, tag twist 150), so the tag hangs on the wall side and the brass key faces the room. Cameras, framing and pixel sizes are unchanged (`heroes/heroes_log.txt`).
 - **The four grouped heroes:** `heroes/doors_lineup_pull_face.png` (4800 × 1350; the push face is `doors_lineup_push_face.png`), `heroes/lock_exploded.png` (1600 × 1200; elevation `lock_exploded_front.png`), `heroes/keys_board_hung.png` (1600 × 1200; with `keys_board_hung_close`, `keys_hook_hung`, `keys_cabinet_hung`, `keys_parts_lineup_front`), `heroes/windows_lineup_face_a.png` (4000 × 1100). Each has an `_alpha` copy.
 - **What changed visibly:** oak and ward leaves now have vertical grain; the steel frame's saddle is dark bronze (no lit line under the door); larger crossbar latch case; domed knob face; 1.5 mm escutcheon edge; the tag hangs behind the key on every host; the key board's grain runs vertically; the new EXIT signs. The L0 and Exit wallpapers are main's hard-edge print (not a kit change).
@@ -224,3 +228,44 @@ Most of the other entries change only in data: small parts now have a LOD1 count
 - **Check sheets (before | after):** `../images/heroes_fix_doors.jpg`, `heroes_fix_doors_push.jpg`, `heroes_fix_lock.jpg`, `heroes_fix_keys.jpg`, `heroes_fix_windows.jpg`, and `heroes_fix_slots.jpg` (all 26 slot crops). Logged as **VL225** (`2964:6869`, PASS) in the Figma verification log.
 - **Still blank or known:** tag inserts and sign faces (missing P-4 surfaces), the L0-F veneer stripes (`DoorVeneer_A`), studio-bright chrome.
 
+## 9. Update 2026-10-14 (kit-threeview render stage, resumed after the 2026-10-08 stop)
+
+- **Main holds the kit.** `interactables_kit.sh` was applied to main on 2026-10-14 (`MANIFEST OK`); its dry run now reports `ALREADY APPLIED`. Everything in this folder therefore shows main's models (§2 has the file-by-file check). Main's `Resources/Surfaces` and URP `Settings` are also byte-identical to the render clone's, so the materials match too.
+- **Toolchain after the macOS 27.0.1 upgrade:** Unity 6000.3.10f1 batch compile of the re-synced clone `W/proj_3view_int` (main `0a9ee7f` + working tree) gave 0 errors (`W/logs/3view_int_compile_1014.log`). Blender 4.3.0 rendered a Cycles test frame.
+- **Window lineup corrected.** The 10-08 window heroes still drew W-RN with `Kit_WindowFrame_Steel_Enamel`, the older entry in `../10_spec.md` line 645. The fix pass's member map (`../30_final.md` §5.5, critic M2) and this hand-off's `assets` give W-RN the dark-bronze `Kit_WindowFrame_Steel` that the Run doors use.
+  - Re-rendered with `-heroOnly windows` (the clone harness now defaults W-RN to `Kit_WindowFrame_Steel`; `-heroWRN <frame>` overrides it; copy `FrontRoomsInteractableHeroes.cs.txt`).
+  - W-L0, W-OF and W-EX came out **pixel-identical** to the 10-08 files, which also confirms that the 10-08 heroes equal what current main renders.
+  - Replaced: `heroes/windows_lineup_face_a(_alpha).png`, `heroes/window_W-RN_face_a(_alpha).png`.
+  - Kept: the 10-08 enamel render as `heroes/window_Steel_Enamel_face_a(_alpha).png`, which still feeds the proposal slot `img:Kit_WindowFrame_Steel_Enamel_persp` (its crop in `heroes/slots/` is unchanged), and the 10-08 lineup in `heroes/_wrn_enamel_2026-10-08/`.
+  - Check sheet: `../images/heroes_1014_windows_wrn.jpg`.
+- **Data fixes:** §5.1 `exit_sign_p` is Y 2.18 (was 2.28); every other anchor quoted in §5 was checked against main's sidecars and matches. `index.json` gained `assetsMeta.keyUi` (Red's HUD key decision, §6) and `heroesMeta.update20261014`, and `assetsMeta.source.models` now says the kit is in main. `heroes/hero_notes.json` carries the current hero notes (key hung pose v2, W-RN). `tools/build_index.py` keeps `heroesMeta` on a rebuild, and `tools/build_assets.py` writes the new `source` and `keyUi` text.
+- **Verification log:** **VL228** `3117:7031` (hand-off three-views, 57 of 57 assets, PASS; pending item 6 of 10-08) and **VL229** `3117:7041` (W-RN hero on the steel frame, PASS). The images are `../images/threeview_handoff_heroes57.jpg`, `../images/threeview_handoff_views.jpg` and `../images/heroes_1014_windows_wrn.jpg`.
+- **Not done here (other owners):** the K-sheets in PROP KIT `2324:852` (yours; 13 sheets from the 18 `png_fix` kits, §10), filling the proposal slots (Figma stage), the missing P-4 surfaces and the satin-chrome tune (visual chat), and the door/key facade code (visual chat with the map chat).
+
+## 10. Update 2026-10-14 (kit-threeview Figma stage)
+
+- **Start here:** `HANDOFF_平面视觉.md` is the cover note for 平面视觉: paths, counts, the K46–K80 refresh table by node id, and what is unusual.
+- **Sheet refresh, measured:** of the 18 `png_fix` kits, 14 differ from your `png/` images and 4 are pixel-identical (`Kit_KeyCabinet`, `Kit_WindowFrame_Wood`, both mini-blinds). That makes **13 sheets to refresh**, not 18: K46, K47, K48, K51, K52, K53, K57, K60, K68, K73, K75, K77 and K78. K53 also changes its dims label.
+- **K numbers:** none new for this kit. K81 is the placard's Evacuation plan; the next free cells in `2324:852` are K82 and K83, and a further row would run into PROP KIT · REAL vs MODEL `2349:852`.
+- **Our proposal section** `2748:6099` (moved to x 25257, y 13920) now shows these renders. We filled 25 slots from `heroes/slots/`, put kit names on the chips, and added **DW14 · The kit, as built** (`3122:7042`) from four new crops `heroes/slots/DW14_*.png`, made by `tools/dw14_crops.py`. The record is `../proposal/02_figma.md` §P.
+
+## 11. Update 2026-10-14 (gap close after the kit-threeview check)
+
+- **New renders** in the same clone and harness as the window heroes (`W/proj_3view_int`, main `0a9ee7f`; `FrontRoomsInteractableHeroes.RunBatch -heroOnly deskkey,windowclose`, log `W/logs/3view_int_gapclose_final2_1014.log`; harness copy `FrontRoomsInteractableHeroes.cs.txt`, now ASCII only):
+  - `heroes/keys_desk_overedge.png` (+ `_alpha`, + `_wide`): the surface key in the **over-edge pose**, the only surface pose the fix pass allows (`../30_final.md` §5.4 rule 3, critic C2). The key lies flats-down on the `Kit_OfficeDesk` top, its tip in the desk; only the bow's end passes the front edge, so the ring can drop through the hole. The red `Kit_KeyTag_Long` hangs down the front face over the pedestal;
+  - `heroes/window_W-OF_stop_close.png`: `Kit_WindowFrame_Steel`, camera 0.3 m from the lower-left corner as seen from face A (world +X, inside the opening). Two slotted oval-head screws on the loose stop, the mitre, the tape line. Re-lit the same day (below);
+  - `heroes/window_W-L0_stool_close.png`: `Kit_WindowFrame_Wood`, camera 0.3 m from the lower-right corner as seen from face A (world -X). Stool horn, nosing, apron, casing and glazing stop.
+  - Corners are named as seen from face A, as DW08 and the close-ups show the windows (world +X is image left there). Corrected 2026-10-14 18:0x: these lines said W-OF "lower right" and W-L0 "lower left".
+- **Crops:** `tools/slots.py`, with 3 new rows in `tools/build_index.py` `PROPOSAL_SLOTS`, made `heroes/slots/KeySet_Desk_persp.png` (852 × 632), `Kit_WindowFrame_Steel_close.png` (1152 × 632) and `Kit_WindowFrame_Wood_close.png` (1152 × 634). The record of the uploads to `2748:6099` is `../proposal/02_figma.md` §P.8. Corrected 2026-10-14 18:0x: this line said the 26 earlier crops came out pixel-identical. A scratch run of `tools/slots.py` reproduces **28 of the 29** crops on disk pixel for pixel. `Kit_ExitSign_persp` differs (max 50/255): its source `../../exit_sign/threeview/png/Kit_ExitSign_persp.png` was rewritten at 17:22 by the exit-sign fix1 work, which is not merged into main. Its crop here and the DW12 tile `2753:6293` stay the 2026-10-08 version.
+- **`index.json`:**
+  - `heroes` now lists every `_alpha` file. The four hung-key heroes had `alpha: null` and the note "no transparent copy", although their `_alpha` files exist. Those copies are opaque because the wall fills the frame, and the notes now say so;
+  - `tools/build_index.py` lists any `_alpha` that exists and reads its opacity from the file. `tools/build_assets.py` `sync_hero_alpha()` fills in a missing `_alpha` path when it rebuilds an older `index.json`. The new `heroes` and `proposalSlots` blocks were taken from a scratch run of the edited `build_index.py`, so a rebuild gives the same. (A full `build_index.py` run also rewrites `sheets` and `kits` from whatever clone `TV_CLONE` points at, and drops `counts.pngFix`. That was already so before this pass; the scratch run with today's clone changed both blocks, so it was not written to this folder);
+  - `counts` reads heroes 37, proposalSlots 29, and `heroesMeta.gapClose20261014` records the pass.
+- **K53** (`2653:9218`) needs its view slots resized before the swap. The crossbar's `png_fix` views grew (front 471 × 92 → 487 × 122, side 80 × 92 → 80 × 122, top 471 × 80 → 487 × 80), so the FIT slots become 243.5 × 61, 40 × 61 and 243.5 × 40. The steps are in `HANDOFF_平面视觉.md` §3. No other `png_fix` image changed size.
+
+## 12. Fix 2026-10-14 18:0x (after the verifier's check of the gap close)
+
+- **W-OF close-up re-lit.** At the shot's camera yaw (147°) the camera-relative rig with `keyFromRight` put the key (world z −0.19) and the fill (z −0.09) behind the wall, so no face-A surface took direct light: 6.4 % of the pixels exactly black, mean luminance 0.22 (DW08's W-OF tile 0.68, the W-L0 close-up 0.33), and the two stop screws read as dots. The harness now has a world-space rig for this shot only (`PlaceRig`, `worldKeyFrom` / `worldFillFrom`): key from (−0.45, 0.45, 0.77), the room side, above and to the right as seen from face A, intensity 2.0; fill from (0.30, 0.20, 0.93), intensity 0.5. Ambient, cube, shadows and camera are unchanged. Picked from 18 candidate rigs (`W/int_work/gap_close_fix/render_explore*/`); log `W/logs/3view_int_gapfix_final_1014.log`; harness copy `FrontRoomsInteractableHeroes.cs.txt` (ASCII, no tuples, Unity compile 0 errors).
+- **Measured** (Rec. 709 luminance on sRGB values): the render 2304 × 1264 has mean 0.340, 0.001 % of pixels exactly black, 0.012 % under 0.02; the crop has mean 0.340 and 0.07 % under 0.02, all on the black tape line. The W-L0 close-up, rendered in the same run, is pixel-identical to the file here.
+- **Replaced:** `heroes/window_W-OF_stop_close.png`, its `_alpha` copy (opaque, same pixels) and `heroes/slots/Kit_WindowFrame_Steel_close.png` (1152 × 632, `tools/slots.py` run in a scratch tree; only this crop was copied here). Uploaded to DW09 `2751:6245` and VL271 `3141:7218`: `../proposal/02_figma.md` §P.9.
+- **Left:** re-crop DW12 only after exit_sign_fix1 lands in main.

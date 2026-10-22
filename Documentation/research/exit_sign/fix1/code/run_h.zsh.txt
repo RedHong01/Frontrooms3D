@@ -1,0 +1,8 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 experiment H: inner cone of the 162-degree spot (new diffuser in the clone).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+RUN='main1008|1|pt|3.6|0|0|0.85;sp162i100|1|sp|3.6|162|100|0.85;sp162i120|1|sp|3.6|162|120|0.85;sp162i140|1|sp|3.6|162|140|0.85;sp162i155|1|sp|3.6|162|155|0.85;sp170i150|1|sp|3.6|170|150|0.85'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/h_capture.log \
+  -esfOut $R/h -esfParts run -esfRun "$RUN" -esfPretty sp162i100,sp162i140,sp162i155
+echo "exit $?" > $R/logs/h_capture.status

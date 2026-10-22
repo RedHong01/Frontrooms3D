@@ -14,7 +14,7 @@ Other steps of this workflow may append their own sections below.
 
 ### Video frames (on disk)
 
-The raw trailers were downloaded on 2026-10-02 with Red's approval for the IP research (official uploads, video only). They sit in that session's scratchpad (`…/658709b9-…/scratchpad/src1080/`). Their ledger is `Research/week02/ip-research/SOURCES.md`. Frames were cut with ffmpeg at the times below.
+The raw trailers were downloaded on 2026-10-02 with Red's approval for the IP research (official uploads, video only). They sat in that session's scratchpad (`…/658709b9-…/scratchpad/src1080/`). **That scratchpad was wiped by the 2026-10-05 reboot (`/private/tmp`), so the raw trailers are gone.** The frames cut from them survive in `images/` (`run_ref_*`, `run_research_r0*`); re-cutting needs a new download, which needs Red's approval. Their ledger is `Research/week02/ip-research/SOURCES.md`. Frames were cut with ffmpeg at the times below.
 
 | Used in | Source | URL | Times (s) | Licence / status |
 |---|---|---|---|---|
@@ -97,3 +97,17 @@ No new media. Every image in the section is either our own render or on-disk med
 | all `room*`, `run_dir_*`, `run_research_*`, `run_*_matte`, `11r2_*`, `es_*`, `q16_*`, `d_03_*`, `01_rep_L0`, `g10r3_*`, `20_*`, `04_b_*`, `db_*`, `office_round2`, other `fig-*` | our own renders or diagrams; no third-party source |
 
 The three `media:` placeholders on RV24 are candidates A4, A5 and A9 in `media_candidates.md` (not downloaded).
+
+---
+
+## Fix stage, 2026-10-14
+
+No new media. Nothing was downloaded.
+
+- New images in this stage are our own renders and captures: `room1014_*`, `run_dir_*_probes`, `run_dir_*_noprobe`, `run_dir_*_c4k*`, `run_floor_*`, `run_fix_*`.
+- Figma RV17 now shows our own 14 Oct frames instead of `es_b08_family_lineup`, our render with baked labels.
+- **`DD_3_chase` still has no URL (L5).** A web search on 2026-10-14 ("Dark Deception Enhanced Trailer Glowstick Entertainment youtube", [search]) found no "Enhanced Trailer" upload. It did find:
+  - the IMDb external-sites page for Dark Deception (https://imdb.com/title/tt9661238/externalsites), which lists "Dark Deception Trailer #1";
+  - a Steam thread about a Chapter 3 trailer (https://steamcommunity.com/app/332950/discussions/0/1639789306545652483).
+
+  Neither was opened, and neither is confirmed as the clip's source. The row stays open as media candidate C1: Red or the week 1 chat should log the URL they used on 2026-09-24.

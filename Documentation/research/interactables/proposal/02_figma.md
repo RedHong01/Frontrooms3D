@@ -4,9 +4,179 @@ Date: 2026-10-03. Built about 12:55; fix pass about 17:00 (§0). Owner: visual c
 
 This file records what is in Figma. Nothing landed in the game. Red confirms or changes the proposal; phase 2 then fills the reserved slots. `03_for_red.md` is the one-page guide for Red.
 
-**2026-10-07: the section was deleted and rebuilt as `2748:6099` at x 51297, y 2000. Read §R first. The node ids in §0–§10 are the deleted originals; §R.4 maps each one to its new node.**
+**2026-10-14: phase 2 filled the reserved slots with the as-built renders and added DW14 "The kit, as built". Later that day the gap close (§P.8) filled the last three WIP slots, renamed the OF-K chip and marked DW10 as the Oct 3 record, and a fix (§P.9) re-lit the W-OF close-up. Read §P first, then §R.** (2026-10-07: the section was deleted and rebuilt as `2748:6099`. The node ids in §0–§10 are the deleted originals; §R.4 maps each one to its new node.)
 
-## R. Rebuilt 2026-10-07 (read this first)
+## P. Phase 2 fill, 2026-10-14 (read this first)
+
+Owner: visual chat, kit-threeview workflow, Figma stage (run `wf_ed89d4ce-a3e`). Red asked on 2026-10-03 18:1x why the new door, key and lock models had no documentation in Figma. This pass puts the built kit into our own proposal section. 平面视觉's PROP KIT `2324:852` was only read, never edited (its hand-off note is `../threeview/HANDOFF_平面视觉.md`).
+
+### P.1 Where the section is now
+
+| Item | Value |
+|---|---|
+| Section | `2748:6099` "FRONTROOMS · DOORS + WINDOWS · PROPOSAL (rebuilt 2026-10-07)" (name unchanged) |
+| Position | **x 25257, y 13920.** Someone moved it after 2026-10-07 (§R.1 still says x 51297, y 2000). It now sits under ROOM VISUALS `2862:6157` and above LEVEL TRANSITIONS `2831:6157` |
+| Size | **8280 × 5120** (was 8280 × 3880): one row added for DW14 |
+| Footprint | Unchanged: y 13920–19040. Before this pass the hidden DW01 was parked below the section at (120, 4040), reaching the same y 19040. DW01 now sits inside the new row at **(2160, 3880), still hidden** |
+| Clearance | Listed every page-level node by `absoluteBoundingBox` first. Nothing overlaps. Gaps: 400 px to PROP KIT on the left and to TOUCH CONTROLS on the right, **160 px to LEVEL TRANSITIONS below** (y 19200; the same gap DW01's parking spot already had) |
+| Frames | 14: 13 visible in 4 rows (4, 4, 4, 1) plus the hidden DW01. Every page header now reads `NN / 14` |
+
+To show DW01 later: fill its two `ref:` slots, delete their placeholder texts, set it visible, and reflow all 14 frames by slide order into 4 rows (4, 4, 4, 2). That fits the current 8280 × 5120.
+
+### P.2 DW14 · The kit, as built (new)
+
+| Item | Value |
+|---|---|
+| Frame | **`3122:7042`** "DW14 · The kit, as built", r4 c1 at (120, 3880). Cloned from DW05, so every text keeps its P1 style id |
+| Name | As the brief asked: "DW14". There is no DW13; that number stays free for §6.5's equal-scale front strip, if Red wants one |
+| Header | `Added · Oct 14, 2026` in the date slot (the other slides keep "Week 3 · Oct 3, 2026", §R.5 item 8), page `14 / 14` |
+| Title | The kit, as built |
+| Lede | All 57 models are in the project, rendered here in Unity. None is placed by the map yet. (2 lines) |
+| Statement | Next, the map swaps its box doors and cube keys for these. (1 line) |
+
+| Slot | Node | Box (x, y, w × h) | Chip (node) | Source → upload |
+|---|---|---|---|---|
+| `img:DoorSet_Lineup_front` | `3122:7051` | 72, 232, 1776 × 316 | yellow "8 door sets · Lobby, Office, Run, Exit" (`3122:7079`) | `heroes/doors_lineup_pull_face_alpha.png` → `heroes/slots/DW14_DoorSet_Lineup_front.png` (3552 × 632) |
+| `img:WindowSet_Lineup_front` | `3122:7052` | 72, 572, 876 × 317 | "4 windows · wood, bronze, bronze, aluminium" (`3122:7065`) | `heroes/windows_lineup_face_a_alpha.png` (the 10-14 re-render, W-RN on the bronze steel frame) → `DW14_WindowSet_Lineup_front.png` (1752 × 634) |
+| `img:LockSet_Exploded_persp` | `3122:7053` | 972, 572, 426 × 317 | "Mortise lock · 7 parts + key" (`3122:7067`) | `heroes/lock_exploded_alpha.png` → `DW14_LockSet_Exploded_persp.png` (852 × 634) |
+| `img:KeySet_Hung_close` | `3122:7055` | 1422, 572, 426 × 317 | "Tag behind, key faces the room" (`3122:7069`) | `heroes/keys_board_hung_close.png` → `DW14_KeySet_Hung_close.png` (852 × 634) |
+
+- **Paths** are under `../threeview/`. The crops were made by `../threeview/tools/dw14_crops.py`: the same rules as `tools/slots.py` (alpha flattened on the K-sheet panel #EEECE6, padded, content never cut) but with a margin per tile (2.5 % of the content width for the doors, 3 % for the windows, 6 % for the lock), because 6 % of the longer side wastes a 5.6 : 1 slot.
+- **Grid:** the doors take the full 12 columns; the windows 6, the lock 3 and the keys 3. All 4 chips fit inside their slots (widest 395 px in an 876 slot).
+- **One deviation from "the four group heroes":** the keys tile uses `keys_board_hung_close`, not `keys_board_hung`. `keys_board_hung` already fills DW07's `img:KeySet_Rack_persp`, and the deck says each thing once. The close-up shows what the fix pass changed: hung pose v2, tag behind, key toward the room.
+
+### P.3 The 25 slots filled on DW05–DW08 and DW12
+
+Uploaded with `upload_assets` (raw PNG bytes, so the layer names stayed; `scaleMode` FILL) into the existing node ids. The images are `../threeview/heroes/slots/<slot>.png`, made by `tools/slots.py` from the 2026-10-08/14 hero renders of the models now in main (index.json `proposalSlots`). Before uploading, `slots.py` was re-run into a scratch folder: all 26 crops came out pixel-identical (max difference 0) to the files on disk, so the sources had not moved since 10-08. Every slot holds exactly one IMAGE fill (checked afterwards).
+
+| Slide | Slot | Node | Was | Source (`../threeview/`) | imageHash |
+|---|---|---|---|---|---|
+| DW05 | `img:DoorSet_L0-F_persp` | `2750:6093` | WIP (Blender spec render) | `heroes/doorset_L0-F_pull.png` | `ecf32970fbb9…` |
+| DW05 | `img:DoorSet_OF-F_persp` | `2750:6104` | WIP | `heroes/doorset_OF-F_pull.png` | `d9e909d2bc92…` |
+| DW05 | `img:DoorSet_RN-F_persp` | `2750:6109` | PHASE 2 placeholder | `heroes/doorset_RN-F_pull.png` | `680651482b57…` |
+| DW05 | `img:DoorSet_EX-F_persp` | `2750:6114` | PHASE 2 placeholder | `heroes/doorset_EX-F_pull.png` | `06740549e534…` |
+| DW05 | `img:DoorSet_L0-K_persp` | `2750:6119` | WIP | `heroes/doorset_L0-K_pull.png` | `38950f9cff4b…` |
+| DW05 | `img:DoorSet_OF-K_persp` | `2750:6124` | WIP | `heroes/doorset_OF-K_pull.png` | `4d1b75c07c76…` |
+| DW05 | `img:DoorSet_RN-K_persp` | `2750:6129` | PHASE 2 placeholder | `heroes/doorset_RN-K_pull.png` | `e53f9abce0cc…` |
+| DW05 | `img:DoorSet_EX-K_persp` | `2750:6134` | PHASE 2 placeholder | `heroes/doorset_EX-K_pull.png` | `5c08e093037d…` |
+| DW06 | `img:Kit_Lock_Escutcheon_persp` | `2750:6154` | PHASE 2 placeholder | `png_fix/Kit_Lock_Escutcheon_persp.png` (1.5 mm edge) | `37c0851ce5b5…` |
+| DW06 | `img:Kit_Lock_CylinderShell_persp` | `2750:6158` | PHASE 2 placeholder | `png/Kit_Lock_CylinderShell_persp.png` | `cc97682c6dd9…` |
+| DW06 | `img:Kit_Lock_Plug_persp` | `2750:6162` | PHASE 2 placeholder | `png/Kit_Lock_Plug_persp.png` | `ae1c461f14c1…` |
+| DW06 | `img:Kit_Lock_Knob_persp` | `2750:6166` | PHASE 2 placeholder | `png_fix/Kit_Lock_Knob_persp.png` (domed face) | `37311feb73f9…` |
+| DW06 | `img:Kit_Lock_Deadbolt_persp` | `2750:6170` | PHASE 2 placeholder | `png/Kit_Lock_Deadbolt_persp.png` | `35d6aa50a8b0…` |
+| DW06 | `img:Kit_Lock_Latchbolt_Mortise_persp` | `2750:6174` | PHASE 2 placeholder | `png/Kit_Lock_Latchbolt_Mortise_persp.png` | `5de297806ff2…` |
+| DW06 | `img:Kit_Lock_StrikeMortise_persp` | `2750:6178` | PHASE 2 placeholder | `png/Kit_Lock_StrikeMortise_persp.png` | `2f6bada3542d…` |
+| DW07 | `img:KeySet_Rack_persp` | `2751:6093` | PHASE 2 placeholder | `heroes/keys_board_hung.png` (Kit_KeyHookBoard, hung pose v2) | `e04aabf530e5…` |
+| DW07 | `img:KeySet_Cabinet_persp` | `2751:6102` | WIP (G3 stand-in colours) | `heroes/keys_cabinet_hung.png` | `a2740ca4b502…` |
+| DW07 | `img:KeySet_Hook_persp` | `2751:6105` | WIP (G3 stand-in colours) | `heroes/keys_hook_hung.png` | `dd1e410da115…` |
+| DW07 | `img:KeyParts_Lineup_front` | `2751:6116` | PHASE 2 placeholder | `heroes/keys_parts_lineup_front.png` | `b7bbf6faa5ea…` |
+| DW08 | `img:Kit_WindowFrame_Wood_persp` | `2751:6127` | WIP (Blender look-dev) | `heroes/window_W-L0_face_a.png` | `7a71d82ebd7d…` |
+| DW08 | `img:Kit_WindowFrame_Steel_persp` | `2751:6130` | WIP (Blender look-dev) | `heroes/window_W-OF_face_a.png` (with the raised blind) | `42156de1eba6…` |
+| DW08 | `img:Kit_WindowFrame_Steel_Enamel_persp` | `2751:6133` | PHASE 2 placeholder | `heroes/window_Steel_Enamel_face_a.png` (the 10-08 white-enamel render in the Run wall) | `12e9e44eb0cc…` |
+| DW08 | `img:Kit_WindowFrame_Alu_persp` | `2751:6137` | WIP (640 px recovered tile) | `heroes/window_W-EX_face_a.png` | `5a6fc10aba84…` |
+| DW08 | `img:Kit_MiniBlind_Raised_persp` | `2751:6151` | PHASE 2 placeholder | `png_fix/Kit_MiniBlind_Raised_persp.png` | `78910052a992…` |
+| DW12 | `img:Kit_ExitSign_persp` | `2753:6293` | WIP (JPEG copy of a G3 render) | `../../exit_sign/threeview/png/Kit_ExitSign_persp.png` (the exit-sign track's three-view of the kit merged 2026-10-08) | `d3112d658222…` |
+
+The 15 PHASE 2 placeholder texts were deleted: `2750:6110`, `:6115`, `:6130`, `:6135`, `:6155`, `:6159`, `:6163`, `:6167`, `:6171`, `:6175`, `:6179`, `2751:7368`, `:6117`, `:6134`, `:6152`.
+
+### P.4 Chips: WIP and P2 taken off, final kit names on
+
+The chip text style is P1/Display/Label (Bayon 20, UPPER), so kit names show in capitals; the exact case is in the slot layer names. Every chip fits inside its slot (≤ slot width − 32).
+
+| Node | Before | After |
+|---|---|---|
+| `2750:6101` | Lobby · free · walnut, veneer, brass · WIP | Lobby · free · Kit_DoorLeaf_Veneer |
+| `2750:6106` | Office · free · oak leaf, closer · WIP | Office · free · Kit_DoorLeaf_Veneer_Oak |
+| `2750:6111` | Run · free · P2 · ward door, no latch | Run · free · Kit_DoorLeaf_Ward · no latch |
+| `2750:6116` | Exit · free · P2 · push bar, lit EXIT | Exit · free · Kit_ExitDevice_Crossbar |
+| `2750:6121` | Lobby · locked · almond steel, knob · WIP | Lobby · locked · Kit_DoorLeaf_Steel · knob |
+| `2750:6126` | Office · locked · plus a closer · WIP | Office · locked · Kit_DoorCloser_Body (the first try, "… · Kit_DoorLeaf_Steel · closer", was 403 px in a 394 px budget). Since §P.8: Office · locked · Kit_DoorLeaf_Steel |
+| `2750:6131` | Run · locked · P2 · STAFF ONLY sign | Run · locked · Kit_DoorSign, still blank (`Prop_SignEngraved` does not exist yet, so the sign has no text) |
+| `2750:6136` | Exit · locked · P2 · dead EXIT sign | Exit · locked · Kit_ExitSign_Dead |
+| `2751:6094` (yellow) | Lobby · key rack | Lobby · Kit_KeyHookBoard (the file's name; the KeyHookBoard vs KeyRack name is still Red's call, codex audit F6; listed in `03_for_red.md` as call B) |
+| `2751:6103` | Office · key cabinet · WIP | Office · Kit_KeyCabinet |
+| `2751:6106` | One hook · 1 key in 4 · WIP | Kit_KeyHook · 1 key in 4 |
+| `2751:6128` | Lobby · wood + stool · WIP | Lobby · Kit_WindowFrame_Wood |
+| `2751:6131` | Office · bronze steel · WIP | Office · Kit_WindowFrame_Steel |
+| `2751:6138` | Exit · aluminium · P2 · WIP | Exit · Kit_WindowFrame_Alu |
+| `2751:6135` | Run · white steel · P2 | Run option · Kit_WindowFrame_Steel_Enamel (since the fix pass the Run member W-RN is the bronze `Kit_WindowFrame_Steel`, critic M2 / `30_final.md` §5.5; white enamel is the alternative) |
+| `2751:6153` | Office · raised blind | Office · Kit_MiniBlind_Raised |
+| `2753:6294` | EXIT · red letters · WIP | Kit_ExitSign · red letters (red is still the default of call 10) |
+
+The DW06 part chips (Escutcheon · fixed, Cylinder · fixed, Plug, Knob, Deadbolt, Latch · 19 mm, Strike · tears off) and "9 tags · same number on the door" were not WIP chips and are unchanged; the slot layer names carry the kit names.
+
+### P.5 Not filled, and why (the first three rows were filled by the gap close, §P.8)
+
+| Slot | Node | Chip | Why it stays |
+|---|---|---|---|
+| `img:KeySet_Desk_persp` (DW07) | `2751:6108` | Desk · key lies flat · WIP | No final render exists. The fix pass also changed the rule: a key on a surface only in the over-edge pose with `Kit_KeyTag_Long` (critic C2); at 2 m a flat desk key does not read. Needs a hero render of that pose |
+| `img:Kit_WindowFrame_Steel_close` (DW09) | `2751:6245` | Office · screwed stop · 0.3 m · WIP | No 0.3 m close-up of the rebuilt window exists; the hero harness has no close-up camera. Open window items A3/A9/A11 change this view anyway |
+| `img:Kit_WindowFrame_Wood_close` (DW09) | `2751:6248` | Lobby · stool + apron · WIP | Same |
+| `img:LockSet_Mortise_persp` (DW06) | `2750:6182` | Assembled · pose P (no WIP) | Kept the G2 pose-P render (key in, turned). The exploded view now leads DW14, and the in-engine pose-P frames of the fix pass (`images/renders_fix/intfix_06_lock_poseP_*`) show the hardware near black (critic H1, open). Re-render pose P after the satin-chrome fix |
+| 5 `ref:` slots (DW01 ×2, DW07, DW08 ×2) | §6.3 | AWAITING OK | Need Red's download OK (C1, C2, C8, C10, C11) |
+
+### P.6 Checks
+
+- **Structure (read back):** 610 nodes; 14 frames (DW01 hidden); 72 named slots, 67 hold exactly one IMAGE fill, the other 5 are the `ref:` placeholders; 3 WIP chips left (§P.5); no chip runs past its slot; fonts IBM Plex Mono 70, Bayon 191, Source Serif 4 54 text runs, no Inter.
+- **Screenshots:** the section before and after, and DW05, DW06, DW07, DW08, DW12 and DW14 at 1920 px. All slots read, no clipped or overlapping text, DW14's lede is 2 lines and its statement 1. Copies: `../images/dw_fill_section_before.jpg`, `../images/dw_fill_section_after.jpg`, `../images/dw_fill_dw14.jpg`; full-size PNGs in `/Users/redwang/FrontRoomsVisualWork/int_work/dw_fill/shots/`.
+- **Verification log:** no new row. This pass made no new verification image: the renders behind every tile are already logged (VL225 heroes, VL228 hand-off three-views, VL229 Run window hero, VL220 exit-sign three-view), and per `VERIFICATION_LOG.md` §1.7 a check screenshot is a working file, not a log image.
+- **Upload record:** `/Users/redwang/FrontRoomsVisualWork/int_work/dw_fill/upload_map.tsv` (node, file, URL) and `resp/` (one JSON reply per upload, all `success: true`).
+
+### P.7 Left for the visual chat and Red
+
+1. **DW10 is out of date** against DW14 (§P.8: now marked with a dated note; the text is kept as the Oct 3 record): its visual-chat line still reads "All 38 models built in a test copy, none in the game … LOD1 and LOD2 wait for the LOD change", and its numerals (41K, 0.7K) are pre-fix. Since the fix pass every kit has LOD1 and a cull; only LOD2 waits for the kitlib change. DW11 call 8 ("Or: small parts ship with no LODs") is overtaken the same way. Left unchanged here, because the slides record the Oct 3 proposal (§R.5 item 8); rewrite them, or mark them, if the deck is shown again.
+2. ~~**Three WIP slots** need new renders (§P.5)~~ Done by the gap close (§P.8). The window close-ups show the frames as built today; re-render them with `-heroOnly windowclose` if A3/A9/A11 change the window.
+3. **Pose P** (DW06 assembled slot) after the satin-chrome fix (H1).
+4. **Re-crop DW12 only after exit_sign_fix1 lands in main.** The exit-sign tile `2753:6293` and `heroes/slots/Kit_ExitSign_persp.png` are the 2026-10-08 crop of the exit-sign track's three-view. Its source, `../../exit_sign/threeview/png/Kit_ExitSign_persp.png`, was rewritten at 17:22 on 2026-10-14 by the exit-sign fix1 work, which is not merged into main; a crop made now would show a sign the game does not have. Once fix1 is in main, re-cut the crop with `tools/slots.py` and re-upload it to `2753:6293`.
+5. **Missing surfaces** still show in the tiles: blank door signs, number plates and tags (`Door_Enamel`, `Prop_KeyTagNo`, `Prop_SignEngraved`), and the striped `DoorVeneer_A` on the Lobby free leaf.
+
+
+### P.8 Gap close, 2026-10-14 17:xx (after the kit-threeview check)
+
+The check found three WIP tiles, one off-grammar chip, DW10's stale numbers and three hand-off errors. All changes are in `2748:6099` (ours); PROP KIT `2324:852` was only read (K53's slot sizes).
+
+**Renders.** They were made in `W/proj_3view_int` (main `0a9ee7f` + working tree; no new clone) with the hero harness, which gained `-heroOnly deskkey,windowclose` (copy `../threeview/FrontRoomsInteractableHeroes.cs.txt`, now ASCII only, Roslyn 0 errors). Same studio as the neighbouring heroes. Log: `W/logs/3view_int_gapclose_final2_1014.log`; candidates in `W/int_work/gap_close/render*/`.
+
+| Slide | Slot | Node | Source (`../threeview/`) | Crop (`tools/slots.py`) | imageHash | Chip node: before → after |
+|---|---|---|---|---|---|---|
+| DW07 | `img:KeySet_Desk_persp` | `2751:6108` | `heroes/keys_desk_overedge.png` (1600 × 1200) | `heroes/slots/KeySet_Desk_persp.png` 852 × 632, opaque-scene rule (centre trim) | `c25906bdc01a…` | `2751:6110`: Desk · key lies flat · WIP → **Desk · Kit_KeyTag_Long · over the edge** (345 / 394 px) |
+| DW09 | `img:Kit_WindowFrame_Steel_close` | `2751:6245` | `heroes/window_W-OF_stop_close.png` (2304 × 1264) | `heroes/slots/Kit_WindowFrame_Steel_close.png` 1152 × 632 | `3088984ebcb2…` since the re-light (§P.9; first upload `41a141c59d4c…`) | `2751:6246`: Office · screwed stop · 0.3 m · WIP → **Office · Kit_WindowFrame_Steel · screwed stop · 0.3 m** (478 / 544) |
+| DW09 | `img:Kit_WindowFrame_Wood_close` | `2751:6248` | `heroes/window_W-L0_stool_close.png` (2304 × 1264) | `heroes/slots/Kit_WindowFrame_Wood_close.png` 1152 × 634 | `3732331679c6…` | `2751:6249`: Lobby · stool + apron · WIP → **Lobby · Kit_WindowFrame_Wood · stool + apron** (413 / 544) |
+
+- **Desk key, over-edge pose** (`../30_final.md` §5.4 rule 3, critic C2; `../10_spec.md` §4.1). The zone key lies flats-down on the `Kit_OfficeDesk` top with its tip in the desk, yawed 25°. Only the bow's end passes the front edge: the hole is 2 mm past it, so the split ring can drop through. The ring hangs from the hole facing the room, its bottom 12° out. The red `Kit_KeyTag_Long` hangs plumb from `tag_contact`, face to the room, over the pedestal's top drawer: its top is 14 mm and its bottom 46 mm under the desk top, 1–4 mm clear of the edge band. Office carpet and wall behind. A wide view, `heroes/keys_desk_overedge_wide.png`, is kept but not used.
+- **W-OF close-up:** camera 0.3 m from the lower-left corner as seen from face A (world +X), inside the opening, vertical FOV 26. Two slotted oval-head screws of the loose stop (jamb Y 0.4175, sill X 0.6325, 51 mm from the mitre), the tape line and the glass. This pass lit it with the key from the camera's right; at the shot's yaw (147°) that put key and fill behind the wall and left it under-lit, so §P.9 re-lit it with a world-space key from the room side.
+- **W-L0 close-up:** camera 0.3 m from the lower-right corner as seen from face A (world -X), vertical FOV 40. Stool horn with the returned nosing, the apron, the casing landing on the stool, the glazing stop and the Level 0 wallpaper.
+- **Opaque:** the first W-OF render had one pixel at alpha 232 (a seam of the room box seen through the glass), which would have sent `slots.py` down its cut-out branch. `Shell()` now adds wall slabs outside the room box for the close-ups only. All three renders have alpha 255, so `slots.py` trims them centred like the other wall-filled key tiles. (Corrected in §P.9: this said the 26 earlier crops came out pixel-identical in a scratch run. A scratch run reproduces 28 of the 29 crops; `Kit_ExitSign_persp` differs because its source changed at 17:22.)
+- Uploaded with `upload_assets` (raw PNG, FILL) into the existing nodes. Each slot holds exactly one IMAGE fill, and the layer names are unchanged. Replies: `W/int_work/gap_close/resp/`.
+
+**Text.**
+- `2750:6126` (DW05 OF-K): Office · locked · Kit_DoorCloser_Body → **Office · locked · Kit_DoorLeaf_Steel** (329 / 394 px), named by its leaf like the other seven.
+- DW10 (`2748:6190`): the slide stays the Oct 3 record. A dated note, the black chip `3136:7311` (text `3136:7312`, P1/Display/Label), sits right of the "Visual chat" rule at (1422, 424), 348 px wide: **"Oct 3 proposal state. As built: see DW14"**. The rule body (38 models, LOD) and the numerals (41K, 0.7K) are unchanged.
+- DW08's "Run option · Kit_WindowFrame_Steel_Enamel" chip and the DW07 key-board naming (chip `Kit_KeyHookBoard`, numeral "Key rack · 0.30 m") were left as they are: they are Red's calls, now listed in `03_for_red.md` (Update 2026-10-14, calls A and B).
+
+**Check.** Screenshots of DW05, DW07, DW09 and DW10 after the pass: every slot reads, no chip runs past its slot, no text is clipped. Working copies are in `W/int_work/gap_close/shots/` (not log images). The section has 0 WIP chips left. The renders are logged as **VL271** (`3141:7208`) in the verification log.
+
+### P.9 Fix after the gap-close verify, 2026-10-14 18:0x
+
+The verifier of §P.8 found the W-OF close-up under-lit, two K53 labels missing from the hand-off steps, a stale position in `03_for_red.md`, a wrong crop claim and swapped corner names. All Figma changes are in `2748:6099` and on our VL271 (`3141:7208`); PROP KIT `2324:852` was only read (K52, K53, K54, K55 and K75 label positions).
+
+**W-OF close-up re-lit.**
+- **Cause:** the camera-relative rig with `keyFromRight` at the shot's camera yaw (147.26°, pitch 33.46°) put the key (world direction to the light: −0.49, 0.85, **−0.19**) and the fill (−0.91, 0.40, **−0.09**) behind the wall. No face-A surface took direct light. 6.4 % of the pixels were exactly black (7.4 % under luminance 0.02), mean luminance 0.22, against 0.68 for DW08's W-OF tile and 0.33 for the W-L0 close-up. The two stop screws read as dots.
+- **Fix** (harness `../threeview/FrontRoomsInteractableHeroes.cs.txt`, `PlaceRig` with `worldKeyFrom` / `worldFillFrom`, this shot only): key from **(−0.45, 0.45, 0.77)**, the room side, above and to the right as seen from face A, intensity **2.0**; fill from **(0.30, 0.20, 0.93)**, the room, low left, intensity **0.5**. Ambient (0.55), cube, shadows and camera are unchanged. The jamb lining, face A and the stops' faces toward the opening (−X jamb, +Y sill) all take direct light. The higher intensities are there because the dark bronze `Prop_SteelBrown` fills half the frame. Chosen from 18 candidate rigs (`W/int_work/gap_close_fix/render_explore*/`, contact sheets `explore*_sheet.*`); clone `W/proj_3view_int`, log `W/logs/3view_int_gapfix_final_1014.log`, Unity compile 0 errors, harness ASCII with no tuples.
+- **Measured** (Rec. 709 luminance on the sRGB values): render 2304 × 1264 **mean 0.340**, **0.001 %** of pixels exactly black, 0.012 % under 0.02. Crop 1152 × 632: mean 0.340, 0.07 % under 0.02, all on the black tape line. No black band remains on the room-side faces. At slot size (576 × 316) both screws read as domed heads with a lit rim and a shaded side, about 8 × 12 px (jamb) and 15 × 9 px (sill); the 1.1 mm slot itself is below slot resolution. The W-L0 close-up, rendered in the same run, is pixel-identical to the file on disk (max difference 0), so it was not replaced.
+- **Files:** `../threeview/heroes/window_W-OF_stop_close.png` and `_alpha.png` (opaque, same pixels) replaced; `../threeview/heroes/slots/Kit_WindowFrame_Steel_close.png` re-cropped by `tools/slots.py` in a scratch tree (`W/int_work/gap_close_fix/slotcheck/`), and only that crop was copied in. Copies of the old render and crop: `W/int_work/gap_close_fix/*.before.png`.
+- **Figma:** uploaded (raw PNG, FILL) into DW09 `2751:6245`: **imageHash `3088984ebcb25a518ff59ed1433c1ed7f1f1fa0a`** (was `41a141c59d4c8a7f44406a47d110a2e80056f20d`), one IMAGE fill, layer name unchanged. VL271's W-OF slot `3141:7218` (FIT) now holds `../images/gapclose_1014_wof_stop_0p3m_relit.jpg` (1920 × 1053, q85), imageHash `7d1d4e370d28c4fa1fdcfcf4f2c46ca6914b751e`; the slot is renamed `img:gapclose_1014_wof_stop_0p3m_relit` to match. The VL id stays VL271; the old JPEG stays on disk. Replies: `W/int_work/gap_close_fix/resp/`.
+- **Check:** screenshots of DW09 and VL271 after the upload (`W/int_work/gap_close_fix/shots/`, working copies, not log images): both tiles read, no chip runs past its slot, no text is clipped.
+
+**Crop claim.** A scratch run of `tools/slots.py` (after the re-light) reproduces **28 of the 29** crops on disk pixel for pixel. The 29th, `Kit_ExitSign_persp`, differs (max 50/255) because `../../exit_sign/threeview/png/Kit_ExitSign_persp.png` was rewritten at 17:22 by the exit-sign fix1 work, which is not merged into main. DW12 `2753:6293` was not re-cropped: re-crop DW12 only after exit_sign_fix1 lands in main (§P.7 item 4). The `index.json` notes and `../threeview/README.md` §11 are corrected the same way.
+
+**Corners.** Seen from face A, as DW08 and the close-ups show the windows (world +X is image left), the W-OF close-up is the **lower-left** corner and the W-L0 close-up the **lower-right**. §P.8, `../threeview/README.md` §11, the `index.json` notes (`heroes`, `proposalSlots`, `heroesMeta.gapClose20261014`), `heroes/hero_notes.json`, the harness comment, `tools/build_index.py` `PROPOSAL_SLOTS` and VL271's row in `VERIFICATION_LOG.md` said lower right and lower left; all now read as above. The VL271 slide itself names no corner.
+
+**Hand-off and guide.** `../threeview/HANDOFF_平面视觉.md` §3 (K53): the labels "Side" `2653:9231` and "Top" `2653:9232` move to **x 339.5**, because every K-sheet puts them at the side slot's x + 8 and the side slot moves to 331.5; "Top" also moves to y 820. The other numbers are unchanged. `03_for_red.md` "Where to look" now gives x 25257, y 13920, left of TOUCH CONTROLS (x 33937).
+
+---
+
+## R. Rebuilt 2026-10-07
 
 **The section was deleted and has been rebuilt.** The original section `2497:3804` was deleted from the file. It was last at x 33937, y 8918, under TOUCH CONTROLS. The likely cause is Codex's iOS app-icon run on 2026-10-04 (commit 756a031): it put six "ICON · BRAND YELLOW · 1024×1024" frames inside TOUCH CONTROLS 2528:5403 at that spot. Red asked (2026-10-07): "Rebuild it, in a new position that does not conflict."
 
@@ -381,7 +551,7 @@ The old tile was the corner render, with one faint screw. The jamb screws sit ab
 
 ## 6. Reserved slots for phase 2
 
-### 6.1 Placeholders (`img:`, "· PHASE 2")
+### 6.1 Placeholders (`img:`, "· PHASE 2") — all 15 filled on 2026-10-14 (§P.3); ids below are the deleted originals
 
 | Slide | Slot | Slot node | Placeholder text | Chip | Size |
 |---|---|---|---|---|---|
@@ -403,7 +573,7 @@ The old tile was the corner render, with one faint screw. The jamb screws sit ab
 
 15 slots. To fill one: upload into the slot node, delete the placeholder text, keep the chip.
 
-### 6.2 WIP slots phase 2 must replace
+### 6.2 WIP slots phase 2 must replace — 13 of 14 replaced on 2026-10-14 (§P.3, §P.8); LockSet_Mortise kept on purpose (§P.5)
 
 All 14 rows of §5.2. When the final render goes in, take " · WIP" off the chip (the chip is the frame at the slot's +16 / +16).
 

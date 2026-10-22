@@ -1,0 +1,1014 @@
+// EXIT SIGN FIX1 CAPTURE r2 (exit_sign_fix1, visual chat; clone-only, never merged). ASCII only, no tuples.
+// r2 (2026-10-14): continues W/es_fix1/harness (10-08). Changes: ladder writes linear HDR inputs (SetVector),
+// diffuser material variants, light modes keep / spc, the Exit room part, floor + wall ID colours, raw for the
+// wide shots, states with the light pinned at its LIT intensity, game-FOV (76) companions.
+// Edit mode, -quit. Builds (1) the build stage's look-dev Lobby room (lit / dark) with a wall sign,
+// (2) RoomStream.BuildEditorPreview (the stream's own Run and Exit rooms) at (4992, 0, 4992), and renders per shot:
+//   <shot>_m.png   graded SDR, game post with lens distortion held at 0 (so pixels line up with the ID pass)
+//   <shot>_g.png   graded SDR, the full game post (deliverable images; only for -esfPretty variants)
+//   <shot>_r.f16   raw HDR, no post (RGBA half, row 0 = bottom) + <shot>_r.json (camera + sign matrices)
+//   id/<shot>_id.png  ID pass (unlit): diffuser red, dead diffuser magenta, face green, housing blue,
+//                     ceiling yellow, wall cyan, floor white, everything else black; no fog, no post
+// Parts (-esfParts): ladder, lobby, run, exit, states, probe.
+// Diffuser variants (-esfDiff "name|smoothScale|occlusion|r,g,b|metallic;..."): applied in memory to every ExitSign_Diffuser*
+//   material in the scene (never saved): _Smoothness x smoothScale, _OcclusionStrength = occlusion (-1 keeps),
+//   _BaseColor = (r,g,b) through SetColor as RenderSetup's tint (omit to keep). "cur" = the materials as built.
+// Lobby variants (-esfLobby "name|lit or dark|gain|diff;...").
+// Run variants (-esfRun "name|gain|mode|intensity|angle|inner|shadowStrength|diff;..."), gain -1 keeps the stream's:
+//   keep = the light as RoomStream built it; pt = point at the glow anchor (10-08 main); sp = spot at the glow anchor
+//   pointing down; pc = point at the centre anchor with the sign's shadow casting off (Red's option B);
+//   spc = spot pointing down at the centre anchor, shadow casting off; none = light off.
+// Exit variants (-esfExit "name|gain|diff;...").
+// Batch: Unity -batchmode -projectPath <clone> -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit
+//        [-esfOut dir] [-esfParts a,b] [-esfDiff spec] [-esfLobby spec] [-esfRun spec] [-esfExit spec] [-esfPretty v1,v2]
+//        [-esfStates variant] [-esfProbe variant]
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+public static class FrontRoomsExitSignFix1Capture
+{
+    const float H = 2.9f;
+    const int W = 1920, HT = 1080;
+    static readonly Vector3 PreviewRoot = new Vector3(4992f, 0f, 4992f);
+    static string outDir;
+    static readonly StringBuilder Log = new StringBuilder();
+    static readonly StringBuilder Shots = new StringBuilder();
+    static Camera cam;
+    static UniversalAdditionalCameraData camData;
+    static Volume measureVolume, bloomOffVolume, noBloomVolume;
+    static bool noBloomToo;
+    static RenderTexture rtGraded, rtGradedLdr, rtRaw, rtId;
+    static bool ldrToo;
+    static readonly Dictionary<string, Material> IdMats = new Dictionary<string, Material>();
+    static HashSet<string> pretty = new HashSet<string>();
+    static readonly Dictionary<string, DiffVariant> Diffs = new Dictionary<string, DiffVariant>();
+
+    sealed class DiffVariant
+    {
+        public string name; public float smoothScale = 1f; public float occlusion = -1f; public bool tint; public Color color = Color.white; public float metallic = -1f;
+    }
+
+    sealed class MatState { public Material m; public float smooth, occl, metallic; public Color baseColor; }
+    static readonly List<MatState> MatOriginals = new List<MatState>();
+    static string currentDiff = "cur";
+
+    sealed class RunVariant
+    {
+        public string name; public float gain = -1f; public string mode = "keep"; public float intensity = 3.6f;
+        public float angle = 179f; public float inner = 120f; public float shadow = .85f; public string diff = "cur";
+    }
+
+    sealed class Shot
+    {
+        public string name; public Vector3 pos; public Vector3 look; public float fov; public Transform sign; public float ceilingY; public bool wall;
+    }
+
+    static string F(float f) => f.ToString("0.####", CultureInfo.InvariantCulture);
+    static string V(Vector3 v) => "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
+    static void L(string s) { Log.AppendLine(s); Debug.Log("[ESFix1] " + s); }
+    static float P(string s) => float.Parse(s, CultureInfo.InvariantCulture);
+
+    /// <summary>Clone-only: RenderSetup's own material pass (EnsureSurfaces), saved, so the packaged .mat files are what
+    /// FrontRoomsRenderSetup writes from its SurfaceDefs. Batch: -executeMethod FrontRoomsExitSignFix1Capture.RegenerateSurfaces -quit</summary>
+    public static void RegenerateSurfaces()
+    {
+        var m = typeof(FrontRoomsRenderSetup).GetMethod("EnsureSurfaces", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        if (m == null) { Debug.LogError("[ESFix1] EnsureSurfaces not found"); return; }
+        m.Invoke(null, null);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[ESFix1] EnsureSurfaces done and saved");
+    }
+
+    public static void RunBatch()
+    {
+        var args = Environment.GetCommandLineArgs();
+        outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "exit_sign_fix1");
+        var parts = "ladder,lobby,run";
+        var runSpec = "stream|-1|keep";
+        var lobbySpec = "lit_g1|lit|1|cur;dark_g1|dark|1|cur";
+        var exitSpec = "stream|-1|cur";
+        var diffSpec = "";
+        string statesVariant = null, probeVariant = null;
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "-esfOut") outDir = args[i + 1];
+            if (args[i] == "-esfParts") parts = args[i + 1];
+            if (args[i] == "-esfRun") runSpec = args[i + 1];
+            if (args[i] == "-esfLobby") lobbySpec = args[i + 1];
+            if (args[i] == "-esfExit") exitSpec = args[i + 1];
+            if (args[i] == "-esfDiff") diffSpec = args[i + 1];
+            if (args[i] == "-esfPretty") pretty = new HashSet<string>(args[i + 1].Split(','));
+            if (args[i] == "-esfStates") statesVariant = args[i + 1];
+            if (args[i] == "-esfProbe") probeVariant = args[i + 1];
+            if (args[i] == "-esfLdr") ldrToo = args[i + 1] == "1";
+            if (args[i] == "-esfNoBloom") noBloomToo = args[i + 1] == "1";
+        }
+        Directory.CreateDirectory(outDir);
+        Directory.CreateDirectory(Path.Combine(outDir, "id"));
+        var partSet = new HashSet<string>(parts.Split(','));
+        ParseDiffs(diffSpec);
+        var variants = ParseRun(runSpec);
+        var t0 = EditorApplication.timeSinceStartup;
+        try
+        {
+            ShaderUtil.allowAsyncCompilation = false;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            FrontRoomsKitLibrary.ClearCache();
+            var root = new GameObject("ESFIX1").transform;
+            FrontRoomsLook.ApplyAmbient();
+            FrontRoomsPostStack.Ensure(root);
+            SetupCamera(root);
+            L("start - gfx " + SystemInfo.graphicsDeviceType + " - parts " + parts + " - diff " + diffSpec + " - lobby " + lobbySpec + " - run " + runSpec + " - exit " + exitSpec + " - pretty " + string.Join(",", pretty.ToArray()));
+            L("stream constants: RunExitSignEmissionGain " + StreamGainText());
+            if (partSet.Contains("ladder")) Ladder(root);
+            if (partSet.Contains("lobby")) Lobby(root, lobbySpec);
+            if (partSet.Contains("run") || partSet.Contains("states") || partSet.Contains("probe") || partSet.Contains("exit"))
+            {
+                var stream = BuildPreview(root);
+                if (stream != null)
+                {
+                    if (partSet.Contains("run")) RunRoom(stream, variants);
+                    if (partSet.Contains("exit")) ExitRoom(stream, exitSpec);
+                    if (partSet.Contains("states")) States(stream, variants.FirstOrDefault(v => v.name == statesVariant) ?? variants[0]);
+                    if (partSet.Contains("probe")) Probe(stream, variants.FirstOrDefault(v => v.name == probeVariant) ?? variants[0]);
+                }
+            }
+            L("DONE in " + F((float)(EditorApplication.timeSinceStartup - t0)) + " s");
+        }
+        catch (Exception e) { L("EXCEPTION " + e); }
+        finally
+        {
+            RestoreDiff();
+            File.WriteAllText(Path.Combine(outDir, "log.txt"), Log.ToString());
+            File.WriteAllText(Path.Combine(outDir, "shots.txt"), Shots.ToString());
+        }
+    }
+
+    static string StreamGainText()
+    {
+        var f = typeof(FrontRoomsRoomStream).GetField("RunExitSignEmissionGain", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        return f == null ? "(none)" : Convert.ToString(f.GetValue(null), CultureInfo.InvariantCulture);
+    }
+
+    static void ParseDiffs(string spec)
+    {
+        Diffs["cur"] = new DiffVariant { name = "cur" };
+        foreach (var s in spec.Split(';'))
+        {
+            if (string.IsNullOrWhiteSpace(s)) continue;
+            var p = s.Split('|');
+            var d = new DiffVariant { name = p[0] };
+            if (p.Length > 1 && p[1].Length > 0) d.smoothScale = P(p[1]);
+            if (p.Length > 2 && p[2].Length > 0) d.occlusion = P(p[2]);
+            if (p.Length > 3 && p[3].Length > 0)
+            {
+                var c = p[3].Split(',');
+                d.tint = true;
+                d.color = new Color(P(c[0]), P(c[1]), P(c[2]), 1f);
+            }
+            if (p.Length > 4 && p[4].Length > 0) d.metallic = P(p[4]);
+            Diffs[d.name] = d;
+        }
+    }
+
+    static List<RunVariant> ParseRun(string spec)
+    {
+        var list = new List<RunVariant>();
+        foreach (var s in spec.Split(';'))
+        {
+            if (string.IsNullOrWhiteSpace(s)) continue;
+            var p = s.Split('|');
+            var v = new RunVariant { name = p[0] };
+            if (p.Length > 1) v.gain = P(p[1]);
+            if (p.Length > 2) v.mode = p[2];
+            if (p.Length > 3) v.intensity = P(p[3]);
+            if (p.Length > 4) v.angle = P(p[4]);
+            if (p.Length > 5) v.inner = P(p[5]);
+            if (p.Length > 6) v.shadow = P(p[6]);
+            if (p.Length > 7) v.diff = p[7];
+            list.Add(v);
+        }
+        return list;
+    }
+
+    // ------------------------------------------------------------------ diffuser material variants (in memory only)
+    static void ApplyDiff(string name)
+    {
+        if (!Diffs.TryGetValue(name ?? "cur", out var d)) { L("unknown diffuser variant " + name + "; using cur"); d = Diffs["cur"]; }
+        // "cur" before any variant: never touch the material assets (a batch quit can save a touched material).
+        if (d.name == "cur" && MatOriginals.Count == 0) { currentDiff = "cur"; return; }
+        if (MatOriginals.Count == 0)
+        {
+            var mats = new HashSet<Material>();
+            foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                foreach (var m in r.sharedMaterials)
+                    if (m != null && m.name.StartsWith("ExitSign_Diffuser", StringComparison.Ordinal)) mats.Add(m);
+            foreach (var m in mats)
+                MatOriginals.Add(new MatState { m = m, smooth = m.GetFloat("_Smoothness"), occl = m.GetFloat("_OcclusionStrength"), metallic = m.GetFloat("_Metallic"), baseColor = m.GetColor("_BaseColor") });
+            L("diffuser materials: " + string.Join(", ", MatOriginals.Select(x => x.m.name + " (smooth " + F(x.smooth) + ", occl " + F(x.occl) + ", base " + x.baseColor + ")").ToArray()));
+        }
+        foreach (var o in MatOriginals)
+        {
+            o.m.SetFloat("_Smoothness", o.smooth * d.smoothScale);
+            o.m.SetFloat("_OcclusionStrength", d.occlusion >= 0f ? d.occlusion : o.occl);
+            o.m.SetColor("_BaseColor", d.tint ? d.color : o.baseColor);
+            o.m.SetFloat("_Metallic", d.metallic >= 0f ? d.metallic : o.metallic);
+        }
+        currentDiff = d.name;
+    }
+
+    static void RestoreDiff()
+    {
+        foreach (var o in MatOriginals)
+        {
+            if (o.m == null) continue;
+            o.m.SetFloat("_Smoothness", o.smooth);
+            o.m.SetFloat("_OcclusionStrength", o.occl);
+            o.m.SetColor("_BaseColor", o.baseColor);
+            o.m.SetFloat("_Metallic", o.metallic);
+        }
+        MatOriginals.Clear();
+    }
+
+    // ------------------------------------------------------------------ camera, volumes, passes
+    static void SetupCamera(Transform root)
+    {
+        var camGo = new GameObject("ESFIX1 camera");
+        camGo.transform.SetParent(root, false);
+        cam = camGo.AddComponent<Camera>();
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = Color.black;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        camData = cam.GetUniversalAdditionalCameraData();
+        // Graded frames go through an HDR target: URP uses an external target texture AS its intermediate colour
+        // buffer, so an ARGB32 target clamps the scene at 1.0 before bloom and ACES (UniversalRenderPipelineCore.
+        // CreateRenderTextureDescriptor). The game renders to the backbuffer through an HDR intermediate. The half
+        // target receives display-linear values (no sRGB conversion for a texture target); SaveGraded encodes sRGB.
+        rtGraded = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 4, name = "esf graded hdr" };
+        rtGradedLdr = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4, name = "esf graded ldr (old path)" };
+        rtRaw = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 1, name = "esf raw" };
+        rtId = new RenderTexture(W, HT, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear) { antiAliasing = 1, name = "esf id" };
+        measureVolume = MakeVolume(root, "ESFIX1 measure (lens distortion 0)", p =>
+        {
+            var ld = p.Add<LensDistortion>(true);
+            ld.intensity.Override(0f);
+            ld.scale.Override(1f);
+        });
+        bloomOffVolume = MakeVolume(root, "ESFIX1 bloom off", p =>
+        {
+            var b = p.Add<Bloom>(true);
+            b.intensity.Override(0f);
+            var ld = p.Add<LensDistortion>(true);
+            ld.intensity.Override(0f);
+            ld.scale.Override(1f);
+            var v = p.Add<Vignette>(true);
+            v.intensity.Override(0f);
+            var g = p.Add<FilmGrain>(true);
+            g.intensity.Override(0f);
+            var ca = p.Add<ChromaticAberration>(true);
+            ca.intensity.Override(0f);
+        });
+        noBloomVolume = MakeVolume(root, "ESFIX1 bloom only off (diagnostic)", p =>
+        {
+            var b = p.Add<Bloom>(true);
+            b.intensity.Override(0f);
+            var ld = p.Add<LensDistortion>(true);
+            ld.intensity.Override(0f);
+            ld.scale.Override(1f);
+        });
+        noBloomVolume.weight = 0f;
+        bloomOffVolume.weight = 0f;
+        measureVolume.weight = 0f;
+    }
+
+    static Volume MakeVolume(Transform root, string name, Action<VolumeProfile> fill)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(root, false);
+        var vol = go.AddComponent<Volume>();
+        vol.isGlobal = true;
+        vol.priority = 1000f;
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        fill(profile);
+        vol.sharedProfile = profile;
+        return vol;
+    }
+
+    static void Place(Shot s)
+    {
+        cam.fieldOfView = s.fov;
+        cam.transform.SetPositionAndRotation(s.pos, Quaternion.LookRotation(s.look - s.pos));
+    }
+
+    static void SavePng(RenderTexture rt, string path, bool linear)
+    {
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        var img = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false, linear);
+        img.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(path, img.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(img);
+    }
+
+    static void Graded(string path, bool full)
+    {
+        measureVolume.weight = full ? 0f : 1f;
+        camData.renderPostProcessing = true;
+        cam.allowHDR = true;
+        cam.targetTexture = rtGraded;
+        cam.Render(); cam.Render();
+        cam.targetTexture = null;
+        SaveGraded(rtGraded, path);
+        if (noBloomToo && !full)
+        {
+            noBloomVolume.weight = 1f;
+            cam.targetTexture = rtGraded;
+            cam.Render(); cam.Render();
+            cam.targetTexture = null;
+            noBloomVolume.weight = 0f;
+            SaveGraded(rtGraded, path.Replace("_m.png", "_nb.png"));
+        }
+        if (ldrToo && !full)
+        {
+            cam.targetTexture = rtGradedLdr;
+            cam.Render(); cam.Render();
+            cam.targetTexture = null;
+            SavePng(rtGradedLdr, path.Replace("_m.png", "_ldr.png"), false);
+        }
+        measureVolume.weight = 0f;
+    }
+
+    static byte Srgb8(float v)
+    {
+        v = Mathf.Clamp01(v);
+        var e = v <= .0031308f ? v * 12.92f : 1.055f * Mathf.Pow(v, 1f / 2.4f) - .055f;
+        return (byte)Mathf.Clamp(Mathf.RoundToInt(e * 255f), 0, 255);
+    }
+
+    static void SaveGraded(RenderTexture rt, string path)
+    {
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+        var img = new Texture2D(rt.width, rt.height, TextureFormat.RGBAHalf, false, true);
+        img.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        var px = img.GetPixels();
+        UnityEngine.Object.DestroyImmediate(img);
+        var outp = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false, true);
+        var c32 = new Color32[px.Length];
+        for (var i = 0; i < px.Length; i++) c32[i] = new Color32(Srgb8(px[i].r), Srgb8(px[i].g), Srgb8(px[i].b), 255);
+        outp.SetPixels32(c32);
+        outp.Apply();
+        File.WriteAllBytes(path, outp.EncodeToPNG());
+        UnityEngine.Object.DestroyImmediate(outp);
+    }
+
+    static void Raw(string path, Shot s, string extra)
+    {
+        camData.renderPostProcessing = false;
+        cam.allowHDR = true;
+        cam.targetTexture = rtRaw;
+        cam.Render(); cam.Render();
+        cam.targetTexture = null;
+        camData.renderPostProcessing = true;
+        var prev = RenderTexture.active;
+        RenderTexture.active = rtRaw;
+        var img = new Texture2D(W, HT, TextureFormat.RGBAHalf, false, true);
+        img.ReadPixels(new Rect(0, 0, W, HT), 0, 0);
+        img.Apply();
+        RenderTexture.active = prev;
+        File.WriteAllBytes(path + ".f16", img.GetRawTextureData());
+        UnityEngine.Object.DestroyImmediate(img);
+        File.WriteAllText(path + ".json", Json(s, extra));
+    }
+
+    static string M(Matrix4x4 m)
+    {
+        var a = new List<string>();
+        for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) a.Add(m[r, c].ToString("R", CultureInfo.InvariantCulture));
+        return "[" + string.Join(",", a.ToArray()) + "]";
+    }
+
+    static string Json(Shot s, string extra)
+    {
+        return "{\"w\":" + W + ",\"h\":" + HT + ",\"proj\":" + M(cam.projectionMatrix) + ",\"view\":" + M(cam.worldToCameraMatrix) +
+               ",\"sign\":" + M(s.sign != null ? s.sign.localToWorldMatrix : Matrix4x4.identity) + ",\"ceilingY\":" + s.ceilingY.ToString("R", CultureInfo.InvariantCulture) +
+               ",\"wall\":" + (s.wall ? "true" : "false") + ",\"fov\":" + F(s.fov) + ",\"shot\":\"" + s.name + "\",\"diff\":\"" + currentDiff + "\"" + (string.IsNullOrEmpty(extra) ? "" : "," + extra) + "}";
+    }
+
+    static Material IdMat(Color c)
+    {
+        var key = c.ToString();
+        if (IdMats.TryGetValue(key, out var m)) return m;
+        m = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        m.SetColor("_BaseColor", c);
+        m.name = "esf id " + key;
+        IdMats[key] = m;
+        return m;
+    }
+
+    static bool UnderSign(Transform t)
+    {
+        for (; t != null; t = t.parent) if (t.GetComponent<FrontRoomsExitSign>() != null) return true;
+        return false;
+    }
+
+    static Color IdColour(Renderer r, Material m)
+    {
+        if (m == null) return Color.black;
+        var n = m.name;
+        if (n.StartsWith("ExitSign_Diffuser_Dead", StringComparison.Ordinal)) return new Color(1f, 0f, 1f);
+        if (n.StartsWith("ExitSign_Diffuser", StringComparison.Ordinal)) return new Color(1f, 0f, 0f);
+        if (n.StartsWith("ExitSign_Face", StringComparison.Ordinal)) return new Color(0f, 1f, 0f);
+        if (UnderSign(r.transform)) return new Color(0f, 0f, 1f);
+        var rn = r.gameObject.name.ToLowerInvariant();
+        if (rn.Contains("ceiling")) return new Color(1f, 1f, 0f);
+        if (rn.Contains("floor")) return new Color(1f, 1f, 1f);
+        if (rn.Contains("wall") && !rn.Contains("door")) return new Color(0f, 1f, 1f);
+        return Color.black;
+    }
+
+    static void Id(string path)
+    {
+        var renderers = UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        var saved = new List<Material[]>();
+        var savedOn = new List<bool>();
+        foreach (var r in renderers)
+        {
+            var mats = r.sharedMaterials;
+            saved.Add(mats);
+            savedOn.Add(r.enabled);
+            var transparent = mats.Any(x => x != null && x.renderQueue >= 2500) || !(r is MeshRenderer || r is SkinnedMeshRenderer);
+            if (transparent) { r.enabled = false; continue; }
+            var repl = new Material[mats.Length];
+            for (var i = 0; i < mats.Length; i++) repl[i] = IdMat(IdColour(r, mats[i]));
+            r.sharedMaterials = repl;
+        }
+        var fog = RenderSettings.fog;
+        RenderSettings.fog = false;
+        camData.renderPostProcessing = false;
+        cam.targetTexture = rtId;
+        cam.Render();
+        cam.targetTexture = null;
+        camData.renderPostProcessing = true;
+        RenderSettings.fog = fog;
+        for (var i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].sharedMaterials = saved[i];
+            renderers[i].enabled = savedOn[i];
+        }
+        SavePng(rtId, path, true);
+    }
+
+    static void Capture(string dir, Shot s, string variant, string extra, bool raw, bool doPretty)
+    {
+        Directory.CreateDirectory(dir);
+        Place(s);
+        Graded(Path.Combine(dir, s.name + "_m.png"), false);
+        if (raw) Raw(Path.Combine(dir, s.name + "_r"), s, extra);
+        if (doPretty) Graded(Path.Combine(dir, s.name + "_g.png"), true);
+        Shots.AppendLine(variant + " | " + s.name + " | eye " + V(s.pos) + " look " + V(s.look) + " | vfov " + F(s.fov) + " | diff " + currentDiff + " | " + extra);
+    }
+
+    static void IdOnce(Shot s)
+    {
+        var p = Path.Combine(outDir, "id", s.name + "_id.png");
+        if (File.Exists(p)) return;
+        Place(s);
+        Id(p);
+        File.WriteAllText(Path.Combine(outDir, "id", s.name + "_id.json"), Json(s, ""));
+    }
+
+    // ------------------------------------------------------------------ ladder: the grade's transfer for the sign red and for grey
+    static void Ladder(Transform root)
+    {
+        var dir = Path.Combine(outDir, "ladder");
+        Directory.CreateDirectory(dir);
+        var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.name = "esf ladder patch";
+        go.transform.SetParent(root, false);
+        go.transform.position = new Vector3(-3000f, 1.5f, -3000f);
+        go.transform.localScale = new Vector3(4f, 4f, 1f);
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+        var s = new Shot { name = "ladder", pos = go.transform.position + new Vector3(0f, 0f, -1f), look = go.transform.position, fov = 40f };
+        Place(s);
+        var levels = new[] { .02f, .04f, .06f, .08f, .1f, .13f, .16f, .2f, .25f, .3f, .35f, .4f, .45f, .5f, .6f, .7f, .8f, .9f, 1f, 1.1f, 1.25f, 1.4f, 1.6f, 1.8f, 2f, 2.5f, 3.2f, 4f, 5f, 6.5f, 8f, 10f, 13f, 16f };
+        var csv = new StringBuilder("path,kind,k,r_in,g_in,b_in,R,G,B\n");
+        var small = new RenderTexture(160, 90, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+        var smallHdr = new RenderTexture(160, 90, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 1 };
+        var fog = RenderSettings.fog;
+        RenderSettings.fog = false;
+        bloomOffVolume.weight = 1f;
+        cam.allowHDR = true;
+        // red: the diffuser's emission colour (3.2, .013, .006) scaled; grey; the troffer light colour. Inputs are LINEAR:
+        // a Color property is uploaded through GammaToLinear, so the harness sets c.gamma (raw check below).
+        foreach (var path in new[] { "hdr", "ldr" })
+            foreach (var kind in new[] { "red", "grey", "warm" })
+                foreach (var k in levels)
+                {
+                    var c = kind == "red" ? new Color(k, k * .013f / 3.2f, k * .006f / 3.2f, 1f) : kind == "grey" ? new Color(k, k, k, 1f) : new Color(k, k * .96f, k * .88f, 1f);
+                    mat.SetColor("_BaseColor", c.gamma);
+                    camData.renderPostProcessing = true;
+                    var target = path == "hdr" ? smallHdr : small;
+                    cam.targetTexture = target;
+                    cam.Render(); cam.Render();
+                    cam.targetTexture = null;
+                    var prev = RenderTexture.active;
+                    RenderTexture.active = target;
+                    var img = new Texture2D(160, 90, path == "hdr" ? TextureFormat.RGBAHalf : TextureFormat.RGB24, false, path == "hdr");
+                    img.ReadPixels(new Rect(0, 0, 160, 90), 0, 0);
+                    img.Apply();
+                    RenderTexture.active = prev;
+                    var px = img.GetPixels();
+                    double R = 0, G = 0, B = 0; var n = 0;
+                    for (var y = 30; y < 60; y++) for (var x = 50; x < 110; x++)
+                    {
+                        var p = px[y * 160 + x];
+                        if (path == "hdr") { R += Srgb8(p.r); G += Srgb8(p.g); B += Srgb8(p.b); }
+                        else { R += p.r * 255.0; G += p.g * 255.0; B += p.b * 255.0; }
+                        n++;
+                    }
+                    UnityEngine.Object.DestroyImmediate(img);
+                    csv.Append(path).Append(',').Append(kind).Append(',').Append(F(k)).Append(',').Append(F(c.r)).Append(',').Append(F(c.g)).Append(',').Append(F(c.b)).Append(',')
+                       .Append((R / n).ToString("0.00", CultureInfo.InvariantCulture)).Append(',').Append((G / n).ToString("0.00", CultureInfo.InvariantCulture)).Append(',').Append((B / n).ToString("0.00", CultureInfo.InvariantCulture)).Append('\n');
+                }
+        // the same patch read back raw (no post): the linear input reached the frame unclamped
+        camData.renderPostProcessing = false;
+        foreach (var k in new[] { .5f, 2f, 10f })
+        {
+            mat.SetColor("_BaseColor", new Color(k, k, k, 1f).gamma);
+            cam.targetTexture = smallHdr;
+            cam.Render(); cam.Render();
+            cam.targetTexture = null;
+            var prev = RenderTexture.active;
+            RenderTexture.active = smallHdr;
+            var img = new Texture2D(160, 90, TextureFormat.RGBAHalf, false, true);
+            img.ReadPixels(new Rect(0, 0, 160, 90), 0, 0);
+            img.Apply();
+            RenderTexture.active = prev;
+            var c = img.GetPixel(80, 45);
+            UnityEngine.Object.DestroyImmediate(img);
+            csv.Append("raw,check,").Append(F(k)).Append(',').Append(F(k)).Append(',').Append(F(k)).Append(',').Append(F(k)).Append(',').Append(F(c.r)).Append(',').Append(F(c.g)).Append(',').Append(F(c.b)).Append('\n');
+        }
+        camData.renderPostProcessing = true;
+        smallHdr.Release();
+        bloomOffVolume.weight = 0f;
+        RenderSettings.fog = fog;
+        small.Release();
+        File.WriteAllText(Path.Combine(dir, "ladder.csv"), csv.ToString());
+        UnityEngine.Object.DestroyImmediate(go);
+        L("ladder: " + levels.Length + " levels x red/grey/warm x HDR/LDR target (grade only: bloom, vignette, grain, CA, lens off; fog off) + raw check");
+    }
+
+    // ------------------------------------------------------------------ Lobby (the build look-dev's room A), lit and dark
+    static void Lobby(Transform root, string spec)
+    {
+        var lobby = Room(root, "A lobby", Vector3.zero, 7f, 8f, RoomRule.Lobby, true);
+        const float wallZ = 8f - .08f;
+        const float bottom = 2.10f;
+        var lit = Spawn("Kit_ExitSign", lobby, new Vector3(0f, bottom, wallZ), 180f, "exit sign lit");
+        var dead = Spawn("Kit_ExitSign_Dead", lobby, new Vector3(2.0f, bottom, wallZ), 180f, "exit sign dead");
+        Troffer(lobby, new Vector3(2.0f, 0f, wallZ - 1.25f), FrontRoomsSurfaces.TrofferLens, 5f);
+        Troffer(lobby, new Vector3(-2.0f, 0f, wallZ - 1.25f), FrontRoomsSurfaces.TrofferLens, 5f);
+        Troffer(lobby, new Vector3(0f, 0f, wallZ - 1.25f), FrontRoomsSurfaces.TrofferLens, 5f);
+        var d = lit.GetComponent<FrontRoomsExitSign>();
+        if (d == null) d = lit.AddComponent<FrontRoomsExitSign>();
+        d.SelfTick = false;
+        d.Configure(0u, FrontRoomsExitSign.Temperament.Lit);
+        var c = new Vector3(0f, bottom + .106f, wallZ);
+        var shots = new List<Shot>
+        {
+            new Shot { name = "L_0p3", pos = c + new Vector3(0f, 0f, -(.0625f + .30f)), look = c, fov = 50f, sign = lit.transform },
+            new Shot { name = "L_3m", pos = new Vector3(0f, 1.62f, wallZ - 3f), look = c, fov = 24f, sign = lit.transform },
+            new Shot { name = "L_3m_w76", pos = new Vector3(0f, 1.62f, wallZ - 3f), look = c, fov = 76f, sign = lit.transform },
+            new Shot { name = "L_6m", pos = new Vector3(0f, 1.62f, wallZ - 6f), look = c, fov = 14f, sign = lit.transform },
+            new Shot { name = "L_6m_w76", pos = new Vector3(0f, 1.62f, wallZ - 6f), look = c, fov = 76f, sign = lit.transform },
+            new Shot { name = "L_dead_1p2", pos = dead.transform.TransformPoint(new Vector3(0f, .106f, .06f)) + new Vector3(0f, 0f, -1.2f), look = dead.transform.TransformPoint(new Vector3(0f, .106f, .06f)), fov = 30f, sign = dead.transform },
+        };
+        foreach (var s in shots) { s.ceilingY = H; s.wall = true; IdOnce(s); }
+        var lights = lobby.GetComponentsInChildren<Light>(true);
+        var lenses = lobby.GetComponentsInChildren<MeshRenderer>(true).Where(r => r.name == "lens").ToArray();
+        foreach (var spec1 in spec.Split(';'))
+        {
+            if (string.IsNullOrWhiteSpace(spec1)) continue;
+            var p = spec1.Split('|');
+            var vname = "lobby_" + p[0];
+            var dark = p.Length > 1 && p[1] == "dark";
+            var g = p.Length > 2 ? P(p[2]) : 1f;
+            ApplyDiff(p.Length > 3 ? p[3] : "cur");
+            foreach (var l in lights) l.enabled = !dark;
+            foreach (var r in lenses)
+            {
+                if (!dark) { r.SetPropertyBlock(null); continue; }
+                var mpb = new MaterialPropertyBlock();
+                mpb.SetColor("_EmissionColor", Color.black);
+                r.SetPropertyBlock(mpb);
+            }
+            d.EmissionGain = g;
+            d.Configure(0u, FrontRoomsExitSign.Temperament.Lit);
+            var dir = Path.Combine(outDir, "lobby", vname);
+            foreach (var s in shots)
+                Capture(dir, s, vname, "\"room\":\"" + (dark ? "dark" : "lit") + "\",\"gain\":" + F(g), true, pretty.Contains(vname) || pretty.Contains("lobby_all"));
+            L("lobby " + vname + " captured (room " + (dark ? "dark" : "lit") + ", gain " + F(g) + ", diff " + currentDiff + ")");
+        }
+        foreach (var l in lights) l.enabled = true;
+        foreach (var r in lenses) r.SetPropertyBlock(null);
+        d.EmissionGain = 1f;
+        d.Configure(0u, FrontRoomsExitSign.Temperament.Lit);
+        ApplyDiff("cur");
+        lobby.gameObject.SetActive(false);
+    }
+
+    // ------------------------------------------------------------------ RoomStream preview, Run room
+    static FrontRoomsRoomStream BuildPreview(Transform root)
+    {
+        var go = new GameObject("ESFIX1 / title profiles");
+        go.transform.SetParent(root, false);
+        go.transform.position = PreviewRoot;
+        var stream = go.AddComponent<FrontRoomsRoomStream>();
+        stream.BuildEditorPreview(FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Floor),
+            FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling), FrontRoomsSurfaces.CoveBase, FrontRoomsSurfaces.TrofferLens, FrontRoomsSurfaces.DoorVeneer,
+            FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Wall), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Floor), FrontRoomsSurfaces.RoomArray(FrontRoomsSurfaces.Slot.Ceiling));
+        var run = Child(go.transform, "Profile 3 / Run");
+        if (run == null) { L("preview: no Run room; children " + string.Join(", ", go.transform.Cast<Transform>().Select(t => t.name).ToArray())); return null; }
+        L("preview Run room: " + SignText(RunSigns(stream)) + " troffers on " + TrofferText(run));
+        var exit = Child(go.transform, "Profile 4 / Exit");
+        if (exit != null) L("preview Exit room: " + SignText(exit.GetComponentsInChildren<FrontRoomsExitSign>(true).Where(x => x.gameObject.activeInHierarchy).ToArray()) + " troffers on " + TrofferText(exit));
+        return stream;
+    }
+
+    static string TrofferText(Transform room)
+    {
+        var troffers = room.GetComponentsInChildren<Light>(true).Where(l => l.name.StartsWith("fluorescent light ", StringComparison.Ordinal)).ToArray();
+        return troffers.Count(l => l.enabled) + "/" + troffers.Length;
+    }
+
+    static string SignText(FrontRoomsExitSign[] signs)
+    {
+        var sb = new StringBuilder();
+        foreach (var s in signs)
+            sb.Append(s.name).Append(" ").Append(s.State).Append(" Level ").Append(F(s.Level)).Append(" gain ").Append(F(s.EmissionGain))
+              .Append(" light ").Append(s.RedLight != null ? s.RedLight.type + " " + F(s.RedLight.intensity) + " y " + F(s.RedLight.transform.position.y - PreviewRoot.y) + " angle " + F(s.RedLight.spotAngle) + "/" + F(s.RedLight.innerSpotAngle) + " range " + F(s.RedLight.range) + " shadows " + s.RedLight.shadows + " " + F(s.RedLight.shadowStrength) : "none")
+              .Append(" casts ").Append(string.Join("/", s.GetComponentsInChildren<Renderer>(true).Select(r => r.shadowCastingMode.ToString()).Distinct().ToArray())).Append("; ");
+        return sb.ToString();
+    }
+
+    static Transform Child(Transform parent, string name)
+    {
+        foreach (Transform t in parent) if (t.name == name) return t;
+        return null;
+    }
+
+    static FrontRoomsExitSign[] RunSigns(FrontRoomsRoomStream stream)
+    {
+        var run = Child(stream.transform, "Profile 3 / Run");
+        return run.GetComponentsInChildren<FrontRoomsExitSign>(true).Where(x => x.gameObject.activeInHierarchy).OrderBy(x => x.name).ToArray();
+    }
+
+    sealed class LightState
+    {
+        public LightType type; public Vector3 pos; public Quaternion rot; public float angle, inner, intensity, shadowStrength, gain; public LightShadows shadows; public bool enabled;
+    }
+
+    static readonly Dictionary<FrontRoomsExitSign, LightState> Originals = new Dictionary<FrontRoomsExitSign, LightState>();
+    static readonly Dictionary<Renderer, ShadowCastingMode> CastOriginals = new Dictionary<Renderer, ShadowCastingMode>();
+
+    static void ApplyVariant(FrontRoomsExitSign[] signs, RunVariant v, FrontRoomsExitSign.Temperament t)
+    {
+        ApplyDiff(v.diff);
+        var info = FrontRoomsKitLibrary.GetInfo("Kit_ExitSign_Hanging");
+        Vector3 glow = new Vector3(0f, 1.96f - H, 0f), centre = new Vector3(0f, -.506f, 0f);
+        if (info != null && info.TryAnchor("glow", out var g0)) glow = g0;
+        if (info != null && info.TryAnchor("centre", out var c0)) centre = c0;
+        foreach (var s in signs)
+        {
+            var light = s.RedLight;
+            if (light == null) continue;
+            if (!Originals.ContainsKey(s))
+                Originals[s] = new LightState { type = light.type, pos = light.transform.localPosition, rot = light.transform.localRotation, angle = light.spotAngle, inner = light.innerSpotAngle, intensity = s.LightBase, shadowStrength = light.shadowStrength, shadows = light.shadows, enabled = light.enabled, gain = s.EmissionGain };
+            var o = Originals[s];
+            var shadowOff = v.mode == "pc" || v.mode == "spc";
+            foreach (var r in s.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!CastOriginals.ContainsKey(r)) CastOriginals[r] = r.shadowCastingMode;
+                r.shadowCastingMode = shadowOff ? ShadowCastingMode.Off : CastOriginals[r];
+            }
+            light.shadows = o.shadows;
+            light.shadowStrength = v.mode == "keep" ? o.shadowStrength : v.shadow;
+            switch (v.mode)
+            {
+                case "sp":
+                case "spc":
+                    light.type = LightType.Spot;
+                    light.transform.localPosition = v.mode == "sp" ? glow : centre;
+                    light.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                    light.spotAngle = v.angle;
+                    light.innerSpotAngle = v.inner;
+                    break;
+                case "pc":
+                    light.type = LightType.Point;
+                    light.transform.localPosition = centre;
+                    light.transform.localRotation = Quaternion.identity;
+                    break;
+                case "pt":
+                case "none":
+                    light.type = LightType.Point;
+                    light.transform.localPosition = glow;
+                    light.transform.localRotation = Quaternion.identity;
+                    break;
+                default: // keep: as RoomStream built it
+                    light.type = o.type;
+                    light.transform.localPosition = o.pos;
+                    light.transform.localRotation = o.rot;
+                    light.spotAngle = o.angle;
+                    light.innerSpotAngle = o.inner;
+                    break;
+            }
+            s.EmissionGain = v.gain >= 0f ? v.gain : o.gain;
+            var baseIntensity = v.mode == "none" ? 0f : v.mode == "keep" ? o.intensity : v.intensity;
+            s.Configure(20261008u, t, light, baseIntensity);
+            if (v.mode == "none") light.enabled = false;
+        }
+    }
+
+    static string VariantExtra(RunVariant v, FrontRoomsExitSign[] signs)
+    {
+        var a = signs.Length > 0 ? signs[0] : null;
+        var l = a != null ? a.RedLight : null;
+        return "\"gain\":" + F(a != null ? a.EmissionGain : v.gain) + ",\"mode\":\"" + v.mode + "\",\"lightType\":\"" + (l != null ? l.type.ToString() : "none") + "\",\"intensity\":" + F(l != null && l.enabled ? l.intensity : 0f) +
+               ",\"angle\":" + F(l != null ? l.spotAngle : 0f) + ",\"inner\":" + F(l != null ? l.innerSpotAngle : 0f) + ",\"lightY\":" + F(l != null ? l.transform.position.y - PreviewRoot.y : 0f);
+    }
+
+    static List<Shot> RunShots(FrontRoomsRoomStream stream)
+    {
+        var signs = RunSigns(stream);
+        Transform a = signs.FirstOrDefault(x => x.name == "exit sign A")?.transform, b = signs.FirstOrDefault(x => x.name == "exit sign B")?.transform;
+        var Pt = stream.transform;
+        var zr = 3 * FrontRoomsRoomStream.RoomLength;
+        const float sy = 2.394f;
+        float za = zr + 3.4f, zb = zr + 9.2f;
+        Vector3 W0(float x, float y, float z) => Pt.TransformPoint(new Vector3(x, y, z));
+        var cy = Pt.position.y + H;
+        return new List<Shot>
+        {
+            new Shot { name = "RA_1p5", pos = W0(.3f, 1.70f, za - 1.5f), look = W0(0f, sy, za), fov = 36f, sign = a, ceilingY = cy },
+            new Shot { name = "RB_1p5", pos = W0(-.3f, 1.70f, zb - 1.5f), look = W0(0f, sy, zb), fov = 36f, sign = b, ceilingY = cy },
+            new Shot { name = "RA_6m", pos = W0(.6f, 1.62f, za - 6f), look = W0(0f, sy, za), fov = 16f, sign = a, ceilingY = cy },
+            new Shot { name = "RB_6m", pos = W0(.6f, 1.62f, zb - 6f), look = W0(0f, sy, zb), fov = 16f, sign = b, ceilingY = cy },
+            new Shot { name = "RB_12m", pos = W0(.6f, 1.62f, zb - 12f), look = W0(0f, sy, zb), fov = 9f, sign = b, ceilingY = cy },
+            new Shot { name = "RB_6m_w76", pos = W0(.6f, 1.62f, zb - 6f), look = W0(0f, 1.9f, zb), fov = 76f, sign = b, ceilingY = cy },
+            new Shot { name = "RB_12m_w76", pos = W0(.6f, 1.62f, zb - 12f), look = W0(0f, 1.8f, zb), fov = 76f, sign = b, ceilingY = cy },
+            new Shot { name = "R_wide", pos = W0(0f, 1.62f, zr + .9f), look = W0(0f, .85f, zr + 12f), fov = 76f, sign = a, ceilingY = cy },
+        };
+    }
+
+    static void RunRoom(FrontRoomsRoomStream stream, List<RunVariant> variants)
+    {
+        var signs = RunSigns(stream);
+        var shots = RunShots(stream);
+        foreach (var s in shots) IdOnce(s);
+        foreach (var v in variants)
+        {
+            ApplyVariant(signs, v, FrontRoomsExitSign.Temperament.Lit);
+            var dir = Path.Combine(outDir, "run", v.name);
+            var extra = VariantExtra(v, signs);
+            foreach (var s in shots) Capture(dir, s, v.name, extra, true, pretty.Contains(v.name) || pretty.Contains("run_all"));
+            // letters off (gain 0, same light): the letters' own contribution, bloom included
+            var keep = signs.Select(x => x.EmissionGain).ToArray();
+            foreach (var sg in signs) sg.EmissionGain = 0f;
+            foreach (var sg in signs) sg.Configure(20261008u, FrontRoomsExitSign.Temperament.Lit, sg.RedLight, sg.LightBase);
+            foreach (var s in shots.Where(x => x.name == "RA_1p5" || x.name == "RB_6m" || x.name == "RB_12m")) { Place(s); Graded(Path.Combine(dir, s.name + "_off_m.png"), false); }
+            for (var i = 0; i < signs.Length; i++) { signs[i].EmissionGain = keep[i]; signs[i].Configure(20261008u, FrontRoomsExitSign.Temperament.Lit, signs[i].RedLight, signs[i].LightBase); }
+            if (v.mode == "none") foreach (var sg in signs) if (sg.RedLight != null) sg.RedLight.enabled = false;
+            L("run variant " + v.name + " captured - " + SignText(signs));
+        }
+        ApplyVariant(signs, new RunVariant { name = "restore" }, FrontRoomsExitSign.Temperament.Lit);
+    }
+
+    // ------------------------------------------------------------------ Exit room: the wall sign over the far door, under the room's own troffers
+    static void ExitRoom(FrontRoomsRoomStream stream, string spec)
+    {
+        var exit = Child(stream.transform, "Profile 4 / Exit");
+        if (exit == null) { L("exit: no Exit room"); return; }
+        var sign = exit.GetComponentsInChildren<FrontRoomsExitSign>(true).FirstOrDefault(x => x.gameObject.activeInHierarchy);
+        if (sign == null) { L("exit: no active sign"); return; }
+        var t = sign.transform;
+        var c = t.TransformPoint(new Vector3(0f, .106f, .06f));
+        Vector3 Front(float d, float y) { var p = t.TransformPoint(new Vector3(0f, .106f, .06f + d)); p.y = y; return p; }
+        var cy = stream.transform.position.y + H;
+        var shots = new List<Shot>
+        {
+            new Shot { name = "E_0p3", pos = t.TransformPoint(new Vector3(0f, .106f, .06f + .30f)), look = c, fov = 50f, sign = t, ceilingY = cy, wall = true },
+            new Shot { name = "E_3m", pos = Front(3f, 1.62f), look = c, fov = 24f, sign = t, ceilingY = cy, wall = true },
+            new Shot { name = "E_3m_w76", pos = Front(3f, 1.62f), look = c, fov = 76f, sign = t, ceilingY = cy, wall = true },
+            new Shot { name = "E_6m", pos = Front(6f, 1.62f), look = c, fov = 14f, sign = t, ceilingY = cy, wall = true },
+            new Shot { name = "E_6m_w76", pos = Front(6f, 1.62f), look = c, fov = 76f, sign = t, ceilingY = cy, wall = true },
+        };
+        foreach (var s in shots) IdOnce(s);
+        var keepGain = sign.EmissionGain;
+        foreach (var spec1 in spec.Split(';'))
+        {
+            if (string.IsNullOrWhiteSpace(spec1)) continue;
+            var p = spec1.Split('|');
+            var vname = "exit_" + p[0];
+            var g = p.Length > 1 ? P(p[1]) : -1f;
+            ApplyDiff(p.Length > 2 ? p[2] : "cur");
+            sign.EmissionGain = g >= 0f ? g : keepGain;
+            sign.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+            var dir = Path.Combine(outDir, "exit", vname);
+            foreach (var s in shots) Capture(dir, s, vname, "\"room\":\"exit\",\"gain\":" + F(sign.EmissionGain), true, pretty.Contains(vname) || pretty.Contains("exit_all"));
+            L("exit " + vname + " captured (gain " + F(sign.EmissionGain) + ", diff " + currentDiff + ", troffers on " + TrofferText(exit) + ")");
+        }
+        sign.EmissionGain = keepGain;
+        sign.Configure(0u, FrontRoomsExitSign.Temperament.Lit, null, 0f);
+        ApplyDiff("cur");
+    }
+
+    // ------------------------------------------------------------------ lamp states on the sign itself
+    static void States(FrontRoomsRoomStream stream, RunVariant v)
+    {
+        var signs = RunSigns(stream);
+        var a = signs.First(x => x.name == "exit sign A");
+        var Pt = stream.transform;
+        var zr = 3 * FrontRoomsRoomStream.RoomLength;
+        var cy = Pt.position.y + H;
+        var near = new Shot { name = "states", pos = Pt.TransformPoint(new Vector3(.3f, 1.70f, zr + 3.4f - 1.5f)), look = Pt.TransformPoint(new Vector3(0f, 2.394f, zr + 3.4f)), fov = 36f, sign = a.transform, ceilingY = cy };
+        var far = new Shot { name = "states6", pos = Pt.TransformPoint(new Vector3(.6f, 1.62f, zr + 3.4f - 6f)), look = Pt.TransformPoint(new Vector3(0f, 2.394f, zr + 3.4f)), fov = 16f, sign = a.transform, ceilingY = cy };
+        IdOnce(near);
+        IdOnce(far);
+        var dir = Path.Combine(outDir, "states", v.name);
+        foreach (var pinned in new[] { false, true })
+            foreach (var name in new[] { "Lit", "HalfA", "HalfB", "Loose", "Battery", "Dead" })
+            {
+                var t = (FrontRoomsExitSign.Temperament)Enum.Parse(typeof(FrontRoomsExitSign.Temperament), name);
+                ApplyVariant(signs, v, FrontRoomsExitSign.Temperament.Lit);
+                var litIntensity = a.RedLight != null ? a.RedLight.intensity : 0f;
+                ApplyVariant(new[] { a }, v, t);
+                var ticks = 0;
+                if (t == FrontRoomsExitSign.Temperament.Loose)
+                    while (ticks < 60 * 40 && a.Weights.x > .08f && a.Weights.y > .08f) { a.Tick(1f / 60f); ticks++; }
+                if (pinned && a.RedLight != null) { a.RedLight.enabled = litIntensity > 0f; a.RedLight.intensity = litIntensity; }
+                var tag = (pinned ? "pin_" : "") + name.ToLowerInvariant();
+                var extra = "\"state\":\"" + name + "\",\"pinned\":" + (pinned ? "true" : "false") + ",\"level\":" + F(a.Level) + ",\"weights\":\"" + a.Weights + "\",\"light\":" + F(a.RedLight != null && a.RedLight.enabled ? a.RedLight.intensity : 0f) + ",\"ticks\":" + ticks;
+                Capture(dir, new Shot { name = "S_" + tag, pos = near.pos, look = near.look, fov = near.fov, sign = near.sign, ceilingY = near.ceilingY }, v.name, extra, true, true);
+                Capture(dir, new Shot { name = "S6_" + tag, pos = far.pos, look = far.look, fov = far.fov, sign = far.sign, ceilingY = far.ceilingY }, v.name, extra, true, true);
+                L("state " + tag + " - Level " + F(a.Level) + " weights " + a.Weights + " light " + (a.RedLight != null && a.RedLight.enabled ? F(a.RedLight.intensity) : "off") + (ticks > 0 ? " (drop-out after " + ticks + " ticks)" : ""));
+            }
+        ApplyVariant(signs, v, FrontRoomsExitSign.Temperament.Lit);
+    }
+
+    // ------------------------------------------------------------------ 60 Hz rendered probe of a LOOSE sign (T5)
+    static void Probe(FrontRoomsRoomStream stream, RunVariant v)
+    {
+        var signs = RunSigns(stream);
+        var a = signs.First(x => x.name == "exit sign A");
+        var Pt = stream.transform;
+        var zr = 3 * FrontRoomsRoomStream.RoomLength;
+        var za = zr + 3.4f;
+        var eye = Pt.TransformPoint(new Vector3(0f, 1.62f, za - 3f));
+        var centre = Pt.TransformPoint(new Vector3(0f, 2.394f, za));
+        cam.fieldOfView = 50f;
+        cam.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(centre - eye));
+        const int pw = 480, ph = 270;
+        var prt = new RenderTexture(pw, ph, 24, RenderTextureFormat.ARGBHalf) { antiAliasing = 4 };
+        cam.allowHDR = true;
+        var corners = new[] { Pt.TransformPoint(new Vector3(-.17f, 2.394f - .106f, za - .04f)), Pt.TransformPoint(new Vector3(.17f, 2.394f + .106f, za - .04f)) };
+        var setter = typeof(FrontRoomsSettings).GetProperty("ReduceFlashing").GetSetMethod(true);
+        var before = FrontRoomsSettings.ReduceFlashing;
+        foreach (var reduced in new[] { false, true })
+        {
+            setter.Invoke(null, new object[] { reduced });
+            ApplyVariant(signs, v, FrontRoomsExitSign.Temperament.Lit);
+            ApplyVariant(new[] { a }, v, FrontRoomsExitSign.Temperament.Loose);
+            a.Configure(516574485u, FrontRoomsExitSign.Temperament.Loose, a.RedLight, a.LightBase);
+            var csv = new StringBuilder("frame,t,level,frame_lum,sign_lum,sign_red\n");
+            for (var f = 0; f < 720; f++)
+            {
+                a.Tick(1f / 60f);
+                cam.targetTexture = prt;
+                cam.Render(); cam.Render();
+                cam.targetTexture = null;
+                var prev = RenderTexture.active;
+                RenderTexture.active = prt;
+                var tex = new Texture2D(pw, ph, TextureFormat.RGBAHalf, false, true);
+                tex.ReadPixels(new Rect(0, 0, pw, ph), 0, 0);
+                tex.Apply();
+                RenderTexture.active = prev;
+                var pxl = tex.GetPixels();
+                var px = new Color32[pxl.Length];
+                for (var q = 0; q < pxl.Length; q++) px[q] = new Color32(Srgb8(pxl[q].r), Srgb8(pxl[q].g), Srgb8(pxl[q].b), 255);
+                UnityEngine.Object.DestroyImmediate(tex);
+                var pt = cam.targetTexture;
+                cam.targetTexture = prt;
+                var s0 = cam.WorldToViewportPoint(corners[0]); var s1 = cam.WorldToViewportPoint(corners[1]);
+                cam.targetTexture = pt;
+                int x0 = Mathf.Clamp((int)(Mathf.Min(s0.x, s1.x) * pw), 0, pw - 1), x1 = Mathf.Clamp((int)(Mathf.Max(s0.x, s1.x) * pw), 0, pw - 1);
+                int y0 = Mathf.Clamp((int)(Mathf.Min(s0.y, s1.y) * ph), 0, ph - 1), y1 = Mathf.Clamp((int)(Mathf.Max(s0.y, s1.y) * ph), 0, ph - 1);
+                double all = 0, sign = 0, red = 0; var n = 0;
+                for (var i = 0; i < px.Length; i++)
+                {
+                    var Lm = RelLum(px[i]);
+                    all += Lm;
+                    int x = i % pw, y = i / pw;
+                    if (x >= x0 && x <= x1 && y >= y0 && y <= y1) { sign += Lm; red += px[i].r / 255.0; n++; }
+                }
+                csv.Append(f).Append(',').Append(F((f + 1) / 60f)).Append(',').Append(a.Level.ToString("0.0000", CultureInfo.InvariantCulture)).Append(',')
+                    .Append((all / px.Length).ToString("0.00000", CultureInfo.InvariantCulture)).Append(',').Append((sign / Mathf.Max(1, n)).ToString("0.00000", CultureInfo.InvariantCulture)).Append(',')
+                    .Append((red / Mathf.Max(1, n)).ToString("0.00000", CultureInfo.InvariantCulture)).Append('\n');
+            }
+            Directory.CreateDirectory(Path.Combine(outDir, "probe"));
+            File.WriteAllText(Path.Combine(outDir, "probe", "probe_" + v.name + "_" + (reduced ? "reduced" : "default") + ".csv"), csv.ToString());
+            L("probe " + v.name + (reduced ? " REDUCE FLASHING" : " default") + ": 720 frames at 60 Hz, gain " + F(a.EmissionGain));
+        }
+        setter.Invoke(null, new object[] { before });
+        prt.Release();
+        ApplyVariant(signs, v, FrontRoomsExitSign.Temperament.Lit);
+    }
+
+    static double RelLum(Color32 c)
+    {
+        double Lin(byte v) { var s = v / 255.0; return s <= 0.04045 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
+        return 0.2126 * Lin(c.r) + 0.7152 * Lin(c.g) + 0.0722 * Lin(c.b);
+    }
+
+    // ------------------------------------------------------------------ builders (the build look-dev's, FrontRoomsExitSignLookdev)
+    static GameObject Spawn(string asset, Transform parent, Vector3 pos, float yaw, string label)
+    {
+        var go = FrontRoomsKitLibrary.Spawn(asset, parent, pos, yaw, null, false, label);
+        if (go == null) { L("MISSING asset " + asset); return new GameObject("missing " + asset); }
+        return go;
+    }
+
+    static Transform Room(Transform root, string name, Vector3 origin, float width, float depth, RoomRule rule, bool troffers)
+    {
+        var room = new GameObject(name).transform;
+        room.SetParent(root, false);
+        room.localPosition = origin;
+        var wall = FrontRoomsSurfaces.Room(rule, FrontRoomsSurfaces.Slot.Wall);
+        var floor = FrontRoomsSurfaces.Room(rule, FrontRoomsSurfaces.Slot.Floor);
+        var ceiling = FrontRoomsSurfaces.Room(rule, FrontRoomsSurfaces.Slot.Ceiling);
+        const float t = .16f;
+        Box(room, "floor", new Vector3(0f, -.1f, depth * .5f), new Vector3(width + .4f, .2f, depth + .4f), floor);
+        Box(room, "ceiling", new Vector3(0f, H + .1f, depth * .5f), new Vector3(width + .4f, .2f, depth + .4f), ceiling);
+        Box(room, "wall S", new Vector3(0f, H * .5f, 0f), new Vector3(width, H, t), wall);
+        Box(room, "wall N", new Vector3(0f, H * .5f, depth), new Vector3(width, H, t), wall);
+        Box(room, "wall W", new Vector3(-width * .5f, H * .5f, depth * .5f), new Vector3(t, H, depth), wall);
+        Box(room, "wall E", new Vector3(width * .5f, H * .5f, depth * .5f), new Vector3(t, H, depth), wall);
+        if (troffers)
+            for (var x = -width * .5f + 1.5f; x < width * .5f - 1f; x += 2.4f)
+                for (var z = 1.2f; z < depth - 2f; z += 2.4f)
+                    Troffer(room, new Vector3(x, 0f, z), FrontRoomsSurfaces.TrofferLens, 5f);
+        FrontRoomsPostStack.EnsureZoneVolume(room, rule == RoomRule.Office ? "Office" : rule.ToString(), new Bounds(new Vector3(0f, H * .5f, depth * .5f), new Vector3(width, H, depth)), 1.5f);
+        return room;
+    }
+
+    static void Troffer(Transform room, Vector3 pos, Material lens, float intensity)
+    {
+        var f = new GameObject("troffer").transform;
+        f.SetParent(room, false);
+        f.localPosition = pos;
+        Box(f, "pan", new Vector3(0f, H - .015f, 0f), new Vector3(.588f, .03f, 1.188f), FrontRoomsSurfaces.PaintedMetal);
+        Box(f, "lens", new Vector3(0f, H - .033f, 0f), new Vector3(.54f, .006f, 1.14f), lens);
+        var light = new GameObject("light").AddComponent<Light>();
+        light.transform.SetParent(f, false);
+        light.transform.localPosition = new Vector3(0f, H - .05f, 0f);
+        light.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        light.type = LightType.Spot;
+        light.spotAngle = 162f;
+        light.innerSpotAngle = 96f;
+        light.range = 10f;
+        light.intensity = intensity;
+        light.color = new Color(1f, .96f, .88f);
+        light.shadows = LightShadows.Soft;
+        light.shadowStrength = .9f;
+        light.shadowNearPlane = .1f;
+    }
+
+    static GameObject Box(Transform parent, string name, Vector3 position, Vector3 size, Material material)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = position;
+        go.transform.localScale = size;
+        UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.GetComponent<MeshRenderer>().sharedMaterial = material;
+        return go;
+    }
+}

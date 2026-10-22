@@ -1,0 +1,121 @@
+EXAMINE - sound chat (声音设计) CONTRACT diff, research/inspect/10_design.md §4.3 / §7.3 S1, S2, S4, S5 (verifier 2026-10-08 issue 1: the audio did not pause).
+Written by the visual chat (游戏视觉) 2026-10-14 17:02 PDT, fix stage. Code only: no FMOD Studio change, no new event, no AudioSource, no AudioListener.pause.
+Base sha1 of each file on main 0a9ee7f (re-read before applying):
+  aa64b6ba9caf3fff8f420ca2f25f0ca4d611e4d2  Assets/Scripts/Audio/FrontRoomsSoundDirector.cs
+  dbf9b794d7e1f974f50c995a2589c8799a80a90c  Assets/Scripts/Audio/FrontRoomsSoundIds.cs
+  3b1e29503898a1f6ae8b43124fc2abd1f8c2ae7a  Documentation/AUDIO_CONTRACT.md
+Needs FrontRooms3DGame.Inspecting / InspectingNow (map_inspect_3_game.diff, C2) in main first. Apply: patch -p1 < sound_inspect.diff (dry run: --dry-run).
+What it does on Inspecting(true): pauses bus:/SFX/Foley, bus:/SFX/Mechanism, bus:/Music (Relay stingers), bus:/Subjective (heartbeat, breath);
+holds bus:/SFX/Relay at -6 dB (presence drone and warning coil, no new steps: the Relay is frozen) and bus:/AMB at -10 dB (room tone and fixture hum stay);
+skips UpdateGlobals / UpdateSubjective (Tension held); attenuates from the eye (the listener camera's parent) while the camera travels.
+Inspecting(false) undoes all of it; a focus-loss pause inside a close-up resumes into the close-up mix (S2; compiled, not exercised in the run).
+Tested in clone W/proj_inspect with main's FMOD banks (verifier harness, real move input, a stage-2 Relay warning): buses Foley/Mechanism/
+Music/Subjective paused, Relay 0.501, AMB 0.316 at the commit frame; Tension 0.2354 unchanged over a 5 s hold (v1: 0.2354 -> 0.2396);
+stingers and heartbeat froze after one FMOD update (+21 ms); 0 new sound requests; 17/17. Roslyn: 0 errors with the map contract + visual package.
+
+--- a/Assets/Scripts/Audio/FrontRoomsSoundDirector.cs
++++ b/Assets/Scripts/Audio/FrontRoomsSoundDirector.cs
+@@ -99,6 +99,7 @@
+             FrontRooms3DGame.MapRunEnded += OnMapRunEnded;
+             FrontRooms3DGame.PlayerClimbed += OnPlayerClimbed;
+             FrontRooms3DGame.Paused += OnPaused;
++            FrontRooms3DGame.Inspecting += OnInspecting;
+             SceneManager.sceneLoaded += OnSceneLoaded;
+         }
+ 
+@@ -108,7 +109,9 @@
+             FrontRooms3DGame.MapRunEnded -= OnMapRunEnded;
+             FrontRooms3DGame.PlayerClimbed -= OnPlayerClimbed;
+             FrontRooms3DGame.Paused -= OnPaused;
++            FrontRooms3DGame.Inspecting -= OnInspecting;
+             OnPaused(false);
++            OnInspecting(false);
+             SceneManager.sceneLoaded -= OnSceneLoaded;
+             OnMapRunEnded();
+             StopRoomTone(true);
+@@ -162,8 +165,12 @@
+             EnsureRunVoices();
+             // Caught cuts everything to silence: the lamps must not come back under the tinnitus.
+             if (!caught && now >= nextFixtureUpdate) { nextFixtureUpdate = now + .2f; UpdateFixtures(); }
+-            UpdateGlobals(Time.unscaledDeltaTime);
+-            UpdateSubjective();
++            // EXAMINE (S1): the close-up holds the director's tension slide and the subjective layer where they were.
++            if (!inspecting)
++            {
++                UpdateGlobals(Time.unscaledDeltaTime);
++                UpdateSubjective();
++            }
+         }
+ 
+         // ------------------------------------------------------------ room tone
+@@ -553,8 +560,46 @@
+                 catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] pause " + path + ": " + e.Message); }
+             }
+             FrontRoomsFmod.Note(paused ? "paused" : "resumed");
++            // S2: a focus loss inside a close-up pauses everything; the resume goes back to the close-up's mix.
++            if (!paused && inspecting) ApplyInspect(true);
+         }
+ 
++        // ------------------------------------------------------------ EXAMINE (research/inspect/10_design.md §4.3, S1-S4)
++        // Keyed on FrontRooms3DGame.Inspecting only: true at the E press, false as control returns (and on teardown).
++        // The world is paused (timeScale 0), so the mix freezes with it: Foley, mechanisms, stingers and the subjective
++        // layer pause where they are; the Relay bus holds its voices (the presence drone, the warning coil) 6 dB down
++        // with no new steps; the room tone stays, 10 dB down, so the pause still sounds like the place (SOMA's Safe
++        // Mode). The 3D voices that keep playing are attenuated from the body, not the travelling close-up camera.
++        static readonly string[] InspectPausedBuses = { SoundIds.BusFoley, SoundIds.BusMechanism, SoundIds.BusMusic, SoundIds.BusSubjective };
++        const float InspectRelayVolume = .501f, InspectAmbienceVolume = .316f;   // -6 dB, -10 dB
++        bool inspecting;
++
++        void OnInspecting(bool on)
++        {
++            if (inspecting == on) return;
++            inspecting = on;
++            ApplyInspect(on);
++        }
++
++        void ApplyInspect(bool on)
++        {
++            if (!FrontRoomsFmod.Ready) return;
++            foreach (var path in InspectPausedBuses)
++            {
++                try { RuntimeManager.GetBus(path).setPaused(on); }
++                catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + path + ": " + e.Message); }
++            }
++            try { RuntimeManager.GetBus(SoundIds.BusRelay).setVolume(on ? InspectRelayVolume : 1f); }
++            catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusRelay + ": " + e.Message); }
++            try { RuntimeManager.GetBus(SoundIds.BusAmbience).setVolume(on ? InspectAmbienceVolume : 1f); }
++            catch (System.Exception e) { Debug.LogWarning("[FrontRoomsAudio] inspect " + SoundIds.BusAmbience + ": " + e.Message); }
++            // S4: the ears stay on the camera (panning follows the view); distance attenuation stays at the body's eye,
++            // the camera's parent under the rig (FrontRoomsCameraRig parents the camera to its eye).
++            var ears = listener != null ? listener.GetComponent<StudioListener>() : null;
++            if (ears != null) ears.AttenuationObject = on && listener.parent != null ? listener.parent.gameObject : null;
++            FrontRoomsFmod.Note(on ? "inspect on" : "inspect off");
++        }
++
+         void OnDoorOpenBegan(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorOpenSource source, bool latchDrawn)
+         {
+             if (door != null && source == FrontRoomsMapWorld.DoorOpenSource.Unlock && latchDrawn) FrontRoomsDoorSound.SkipHandle(door.position);
+--- a/Assets/Scripts/Audio/FrontRoomsSoundIds.cs
++++ b/Assets/Scripts/Audio/FrontRoomsSoundIds.cs
+@@ -57,6 +57,10 @@
+         public const string BusSfx = "bus:/SFX";
+         public const string BusMusic = "bus:/Music";
+         public const string BusSubjective = "bus:/Subjective";
++        // The SFX group's children (Tools/audio/fmod_frontrooms.py buses), for the EXAMINE close-up (S1).
++        public const string BusFoley = "bus:/SFX/Foley";
++        public const string BusMechanism = "bus:/SFX/Mechanism";
++        public const string BusRelay = "bus:/SFX/Relay";
+ 
+         public static class Param
+         {
+--- a/Documentation/AUDIO_CONTRACT.md
++++ b/Documentation/AUDIO_CONTRACT.md
+@@ -27,7 +27,7 @@
+ | Source | Members used |
+ |---|---|
+ | `FrontRooms3DGame` (static events) | `MapRunStarted(FrontRoomsMapWorld, FrontRoomsMapHunter)`, `MapRunEnded()`, `PlayerClimbed(Vector3)`, static `PlayerStamina01` / `PlayerWinded` / `PlayerSprinting` (breath and run gait read these), `PlayerGait` (`FrontRoomsGait` Still/Slow/Walk/Run; Slow = touch slow walk, footsteps −15 dB), `static event Action<bool> Paused` (true on pause, false on resume); planned (P4): `static event Action<int> TierChanged` (1..5) |
+-| `FrontRoomsMapWorld` | events: `GlassHold(Vector3, float)`, `GlassHoldReleased(Vector3)` (in tap mode also 'paused, progress kept'; the next `GlassHold` resumes from the kept progress), `GlassBroken(Vector3)`, `GlassCracked(Window, int stage)` (fires the crack, once per stage per pane), `DoorBroken(Vector3)`, `DoorLocked(Vector3)`, `KeyTaken(GridCoord)`, `event Action<Door, GridCoord, Vector3> DoorUnlocked` (the door, its zone, the keyhole on the opener's face; raised at the unlock shot's commit, 0.86 s after E, never for a cancelled shot; `UnlockSwingDelay` is gone), `DoorRattled(Door, Vector3 lockPoint)` (right after DoorLocked, which no longer repeats within 0.40 s per door), `KeyPickupStarted(GridCoord zone, Vector3 keyPos)` (contact, every pickup, just before KeyTaken on the instant path; KeyTaken moves to +0.25 s and `Beat(KeyPickup, Pocket)` fires at 0.85 s only when a key model is presented — slot for Foley/Player/Pocket, not bound yet), `DoorOpenBegan(Door, DoorOpenSource {Use, Tools, Unlock}, bool latchDrawn)` (every open; on Unlock + latchDrawn the audio skips the handle and keeps the latch). Unlock shot beats: static `FrontRoomsDoorShot.Beat(ShotKind, DoorBeat, Vector3 lockPoint)` — KeyInsert 0.55, KeyTurn 0.68, BoltRetract 0.86 (same frame as DoorUnlocked), KeyWithdraw 0.90 / on cancel, KnobTurn 0.92 and KnobReturn 1.20 (push side only), optional PinCatch / KeyApproach; `FrontRoomsDoorShot.Weight` (0..1) for a close-up snapshot. Not yet bound: they need lock recordings (planned events Mechanism/Lock/KeyInsert, KeyTurn, BoltRetract, KnobTurn). Doors freeze under Esc (`DoorsPaused`); the audio pauses the SFX/AMB/Music/Subjective buses on `Paused`. Door hooks for the single-acting door pass (in main, not yet wired by audio): `DoorHandleTurned(Door, Vector3 lockPoint)` (lever, 0.10 s before the leaf; +0.25 s on a pull), `DoorLatched(Door, Vector3)` (shut leaf lands in the frame: latch click), `DoorPulled(Door, Vector3)` (only when the swing meets the player), `DoorBrokenFrom(Door, Vector3, bool fromSwingSide)`, `PauseHold(collider)`. Lamp overrides (in main, nothing raises them yet): `LampDipped(GridCoord, Vector3 lightPos)` (dip/sag/warning starts: buzz or tick), `FixtureChanged(GridCoord, float level)` (crosses 0.15 / 0.55 / 0.8); the fixture hum already follows `light.intensity`. Camera rig: static `FrontRoomsCameraRig.ShotStarted / ShotEnded(ShotKind, Vector3 focus)`. Queries: `CellOf`, `ZoneOf` (`theme`, `height`), `InStartArea` |
++| `FrontRoomsMapWorld` | events: `GlassHold(Vector3, float)`, `GlassHoldReleased(Vector3)` (in tap mode also 'paused, progress kept'; the next `GlassHold` resumes from the kept progress), `GlassBroken(Vector3)`, `GlassCracked(Window, int stage)` (fires the crack, once per stage per pane), `DoorBroken(Vector3)`, `DoorLocked(Vector3)`, `KeyTaken(GridCoord)`, `event Action<Door, GridCoord, Vector3> DoorUnlocked` (the door, its zone, the keyhole on the opener's face; raised at the unlock shot's commit, 0.86 s after E, never for a cancelled shot; `UnlockSwingDelay` is gone), `DoorRattled(Door, Vector3 lockPoint)` (right after DoorLocked, which no longer repeats within 0.40 s per door), `KeyPickupStarted(GridCoord zone, Vector3 keyPos)` (contact, every pickup, just before KeyTaken on the instant path; KeyTaken moves to +0.25 s and `Beat(KeyPickup, Pocket)` fires at 0.85 s only when a key model is presented — slot for Foley/Player/Pocket, not bound yet), `DoorOpenBegan(Door, DoorOpenSource {Use, Tools, Unlock}, bool latchDrawn)` (every open; on Unlock + latchDrawn the audio skips the handle and keeps the latch). Unlock shot beats: static `FrontRoomsDoorShot.Beat(ShotKind, DoorBeat, Vector3 lockPoint)` — KeyInsert 0.55, KeyTurn 0.68, BoltRetract 0.86 (same frame as DoorUnlocked), KeyWithdraw 0.90 / on cancel, KnobTurn 0.92 and KnobReturn 1.20 (push side only), optional PinCatch / KeyApproach; `FrontRoomsDoorShot.Weight` (0..1) for a close-up snapshot. Not yet bound: they need lock recordings (planned events Mechanism/Lock/KeyInsert, KeyTurn, BoltRetract, KnobTurn). Doors freeze under Esc (`DoorsPaused`); the audio pauses the SFX/AMB/Music/Subjective buses on `Paused`. Door hooks for the single-acting door pass (in main, not yet wired by audio): `DoorHandleTurned(Door, Vector3 lockPoint)` (lever, 0.10 s before the leaf; +0.25 s on a pull), `DoorLatched(Door, Vector3)` (shut leaf lands in the frame: latch click), `DoorPulled(Door, Vector3)` (only when the swing meets the player), `DoorBrokenFrom(Door, Vector3, bool fromSwingSide)`, `PauseHold(collider)`. Lamp overrides (in main, nothing raises them yet): `LampDipped(GridCoord, Vector3 lightPos)` (dip/sag/warning starts: buzz or tick), `FixtureChanged(GridCoord, float level)` (crosses 0.15 / 0.55 / 0.8); the fixture hum already follows `light.intensity`. Camera rig: static `FrontRoomsCameraRig.ShotStarted / ShotEnded(ShotKind, Vector3 focus)`; `ShotKind` is append-only (`Inspect` appended for EXAMINE; read it by name). EXAMINE (close-up inspect, `research/inspect/10_design.md` §4.3): static `FrontRooms3DGame.Inspecting(bool)` (true at the E press, false as control returns and on teardown; the world is paused in between) and `FrontRooms3DGame.InspectingNow`; the director pauses `bus:/SFX/Foley`, `bus:/SFX/Mechanism`, `bus:/Music`, `bus:/Subjective`, holds `bus:/SFX/Relay` at −6 dB and `bus:/AMB` at −10 dB, holds Tension, and attenuates from the eye; `ShotStarted/ShotEnded(Inspect)` and `FrontRoomsInspect.Opened`, `FrontRoomsInspectable.Sound` (`InspectSound` Paper/Plastic/Metal/Keys) and `FrontRoomsInspect.HeldReturned` are Foley hooks only (planned `event:/Foley/Player/InspectIn`, `InspectOut`, `KeyTurn`) Queries: `CellOf`, `ZoneOf` (`theme`, `height`), `InStartArea` |
+ | `FrontRoomsMapHunter` | events: `StateChanged(HunterState)`, `DoorBlow(Vector3)`, `Caught()`. Properties: `Released`, `State`, `Position`, `SeesPlayer`, `BlowIndex` (0..BlowCount−1, set before each `DoorBlow`), `BlowCount` (5 today, 4–3 at higher tiers in P4); planned (P4): `event Action<Vector3, string> Arrived` (feet position, RelayEntry marker `tag` such as "vent" / "doorway" / free text, null for an unmarked cell; raised on release and every relay) |
+ | `HunterState` | append new values only; the existing values must keep their numbers |
+ | `FrontRoomsRelayRig` | `event Step(int foot, Vector3 position)`, `LegLeft`, `LegRight`, `event CeilingBrush(Vector3)` (only while `PressesCeiling`), `event Squeeze(Vector3, float)` |

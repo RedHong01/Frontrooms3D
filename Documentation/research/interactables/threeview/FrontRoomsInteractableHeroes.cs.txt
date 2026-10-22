@@ -12,13 +12,15 @@ using UnityEngine.Rendering.Universal;
 /// <summary>
 /// Grouped hero shots of the interactables kit (doors, lock, keys, windows),
 /// composed from the kit FBX + sidecar anchors with the raw recipe of
-/// 10_spec.md §6.2 (S_sign = +1, doors closed, closer linkage solved for 0°).
+/// 10_spec.md s6.2 (S_sign = +1, doors closed, closer linkage solved for 0 deg).
 /// Same studio as FrontRoomsThreeView: key over the camera's upper-left
 /// shoulder with soft shadows, dim fill, flat 0.55 ambient, grey studio cube,
 /// no post, LOD0 only. Walls and floors use the levels' own surfaces.
 /// Each shot is written twice: &lt;name&gt;_alpha.png (transparent) and
 /// &lt;name&gt;.png (on the K-sheet hero panel colour #EEECE6).
 /// Batch: -executeMethod FrontRoomsInteractableHeroes.RunBatch -heroOut DIR
+/// [-heroOnly doors,lock,keys,windows,deskkey,windowclose] [-heroWRN frame] [-heroProbe Kit_A,...]
+/// (deskkey and windowclose added 2026-10-14: the over-edge desk key and the 0.3 m window close-ups)
 /// (needs graphics). Render in a clone only.
 /// </summary>
 public static class FrontRoomsInteractableHeroes
@@ -35,13 +37,17 @@ public static class FrontRoomsInteractableHeroes
     public static void RunBatch()
     {
         var args = Environment.GetCommandLineArgs();
-        string probe = null, only = null;
+        string probe = null, only = null, wrn = null;
         for (var i = 0; i < args.Length - 1; i++)
         {
             if (args[i] == "-heroOut") outDir = args[i + 1];
             if (args[i] == "-heroProbe") probe = args[i + 1];
             if (args[i] == "-heroOnly") only = args[i + 1];
+            if (args[i] == "-heroWRN") wrn = args[i + 1];
         }
+        if (!string.IsNullOrEmpty(wrn))
+            foreach (var ws in WindowSet)
+                if (ws.code == "W-RN") ws.frame = wrn;
         if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "heroes");
         Directory.CreateDirectory(outDir);
         if (AssetDatabase.IsValidFolder("Assets/Resources/Props/Models"))
@@ -71,6 +77,10 @@ public static class FrontRoomsInteractableHeroes
         if (Want("lock")) Try("lock", LockExploded);
         if (Want("keys")) Try("keys", Keys);
         if (Want("windows")) Try("windows", Windows);
+        // 2026-10-14 gap close: the over-edge desk key (DW07) and the 0.3 m window close-ups (DW09).
+        if (Want("deskkey")) Try("deskkey", DeskKey);
+        if (Want("windowclose")) Try("windowclose", WindowClose);
+        foreach (var ws in WindowSet) log.Add("window member " + ws.code + " = " + ws.frame);
         File.WriteAllText(Path.Combine(outDir, "heroes_log.txt"), string.Join("\n", log) + "\n");
         Debug.Log("[Heroes] done: " + log.Count + " lines");
     }
@@ -153,9 +163,18 @@ public static class FrontRoomsInteractableHeroes
     }
 
     static bool keyFromRight;
+    // World-space rig for one shot (2026-10-14 fix: the W-OF close-up looks back at yaw 147, where the camera-relative
+    // key and fill both come from behind the wall, -Z). Directions point toward the light; null = camera-relative rig.
+    static Vector3? worldKeyFrom, worldFillFrom;
 
     static void PlaceRig(Quaternion camRot)
     {
+        if (worldKeyFrom.HasValue && worldFillFrom.HasValue)
+        {
+            key.transform.rotation = Quaternion.LookRotation(-worldKeyFrom.Value.normalized, Vector3.up);
+            fill.transform.rotation = Quaternion.LookRotation(-worldFillFrom.Value.normalized, Vector3.up);
+            return;
+        }
         var keyFrom = new Vector3(keyFromRight ? .55f : -.55f, .7f, -.6f);
         var fillFrom = new Vector3(.8f, .1f, -.55f);
         key.transform.rotation = Quaternion.LookRotation(camRot * -keyFrom.normalized, camRot * Vector3.up);
@@ -276,7 +295,7 @@ public static class FrontRoomsInteractableHeroes
 
     static readonly DoorSpec RunLite = new DoorSpec { code = "RN-K-lite", title = "Run locked, wired-lite option", leaf = "Kit_DoorLeaf_SteelLite", frame = "Kit_DoorFrame_Steel", locked = true, closer = true, sign = "Kit_DoorSign", plate = "Kit_DoorNumberPlate_White", wall = "Run_Wall", floor = "Run_Floor" };
 
-    /// <summary>One door member in the door root frame D (10_spec §1.2, §6.2), S_sign = +1, closed.</summary>
+    /// <summary>One door member in the door root frame D (10_spec s1.2, s6.2), S_sign = +1, closed.</summary>
     static Transform BuildDoor(DoorSpec d, Transform parent, Vector3 pos, Quaternion rot, bool wall)
     {
         var root = new GameObject("DoorSet " + d.code).transform;
@@ -347,7 +366,7 @@ public static class FrontRoomsInteractableHeroes
             var a = A("Kit_DoorCloser_Arm", "elbow").x;
             var fe = A("Kit_DoorCloser_Forearm", "shoe_end");
             var b = new Vector2(fe.x, fe.z).magnitude;
-            // Elbow: circle (spindle, a) ∩ circle (shoe pivot, b), the root farther from the leaf's S face (larger X).
+            // Elbow: circle (spindle, a) meets circle (shoe pivot, b), the root farther from the leaf's S face (larger X).
             var p0 = new Vector2(spindle.x, spindle.z);
             var p1 = new Vector2(shoeAt.x, shoeAt.z);
             var dist = Vector2.Distance(p0, p1);
@@ -362,7 +381,7 @@ public static class FrontRoomsInteractableHeroes
             S("Kit_DoorCloser_Arm", rig, spindle, Quaternion.Euler(0f, Yaw(p0, e), 0f));
             var elbow = new Vector3(e.x, spindle.y + A("Kit_DoorCloser_Arm", "elbow").y, e.y);
             S("Kit_DoorCloser_Forearm", rig, elbow, Quaternion.Euler(0f, Yaw(e, p1), 0f));
-            log.Add(string.Format(CultureInfo.InvariantCulture, "{0} closer elbow plan ({1:F3}, {2:F3}) [spec 0°: (0.222, 0.341)]", d.code, e.x, e.y));
+            log.Add(string.Format(CultureInfo.InvariantCulture, "{0} closer elbow plan ({1:F3}, {2:F3}) [spec 0 deg: (0.222, 0.341)]", d.code, e.x, e.y));
         }
         if (d.crossbar)
             S("Kit_ExitDevice_Crossbar", rig, new Vector3(-.022f, 1f, .9f), rp, mp);
@@ -455,7 +474,7 @@ public static class FrontRoomsInteractableHeroes
 
     // ------------------------------------------------------------------ keys
 
-    /// <summary>Hung pose (10_spec §4.1, sidecar hungPose; Unity port of g3/pose.py).</summary>
+    /// <summary>Hung pose (10_spec s4.1, sidecar hungPose; Unity port of g3/pose.py).</summary>
     static void Hang(Transform parent, string host, Vector3 hook, string tag, string keyKit, float ringYaw, float lift, float keyTwist, float tagTwist)
     {
         var ringRot = Quaternion.Euler(0f, ringYaw, 0f);
@@ -523,6 +542,119 @@ public static class FrontRoomsInteractableHeroes
         UnityEngine.Object.DestroyImmediate(parts.gameObject);
     }
 
+    // ------------------------------------------------------------------ key on a desk (over-edge pose)
+
+    /// <summary>
+    /// Surface key, over-edge pose (10_spec.md s4.1 "over-edge"; 30_final.md s5.4 rule 3: surface keys only
+    /// in this pose, with Kit_KeyTag_Long). The key lies flats-down on the Office desk top, blade behind the
+    /// front edge, tip toward the desk, yawed 25 deg; only the bow's end passes the edge, so the split ring can
+    /// drop through the bow hole. The ring hangs from the hole (hook_contact on the hole) in front of the
+    /// top's edge band, leaning 12 deg out at the bottom; Kit_KeyTag_Long (red) hangs plumb from the ring's
+    /// tag_contact down the front face, face to the room. Office floor and wall close the background.
+    /// </summary>
+    static void DeskKey()
+    {
+        const string desk = "Kit_OfficeDesk";
+        var root = new GameObject("KEYS desk").transform;
+        Box(root, "floor", new Vector3(-2f, -.02f, -.40f), new Vector3(2f, 0f, 2.5f), Surface("Office_Carpet"));
+        Box(root, "wall", new Vector3(-2f, 0f, -.56f), new Vector3(2f, 2.6f, -.40f), Surface("Office_Wall"));
+        var deskGo = S(desk, root, Vector3.zero, Quaternion.identity);
+        var db = RenderedBounds(deskGo.transform);
+        const float top = .74f;                       // sidecar support "top" (worksurface, 30 mm laminate slab)
+        var zF = db.max.z;                            // the top's front edge (D / 2 = 0.381)
+        log.Add(string.Format(CultureInfo.InvariantCulture, "desk bounds min {0} max {1}; top {2:F4}, front edge z {3:F4}", db.min.ToString("F4"), db.max.ToString("F4"), top, zF));
+
+        // Bow hole 2 mm past the edge, key bottom 0.1 mm over the top.
+        var hole = new Vector3(-.42f, top + .0012f, zF + .002f);   // over the pedestal (x -0.682 .. -0.302)
+        var tipDir = Quaternion.Euler(0f, 25f, 0f) * Vector3.back;            // tip back into the desk, 25 deg to the left
+        var keyRot = Quaternion.LookRotation(tipDir, Vector3.Cross(tipDir, Vector3.up));   // key X (flat normal) = up
+        S("Kit_Key_Zone", root, hole - keyRot * A("Kit_Key_Zone", "ring_hole"), keyRot);
+        var ringRot = Quaternion.Euler(0f, 8f, 0f) * Quaternion.Euler(-12f, 0f, 0f);       // faces the room, bottom 12 deg out
+        var ringPos = hole - ringRot * A("Kit_KeyRing", "hook_contact");
+        S("Kit_KeyRing", root, ringPos, ringRot);
+        const string tag = "Kit_KeyTag_Long";
+        var tagAt = ringPos + ringRot * A("Kit_KeyRing", "tag_contact");
+        var tagRot = Quaternion.Euler(0f, 4f, 3f);                                           // plumb, face to the room
+        S(tag, root, tagAt - tagRot * A(tag, "hole"), tagRot);
+        log.Add(string.Format(CultureInfo.InvariantCulture, "desk key: hole {0}, ring {1}, tag hole {2}", hole.ToString("F4"), ringPos.ToString("F4"), tagAt.ToString("F4")));
+
+        keyFromRight = false;
+        // Near/far planes and the shadow distance come from a clip box that reaches the wall behind the desk.
+        var clip = new Bounds();
+        clip.SetMinMax(new Vector3(hole.x - .9f, 0f, -.56f), new Vector3(hole.x + .9f, top + .05f, zF + .05f));
+        var close = new Bounds();
+        close.SetMinMax(new Vector3(hole.x - .09f, top - .07f, zF - .10f), new Vector3(hole.x + .065f, top + .01f, zF + .012f));
+        ShootPersp("keys_desk_overedge", close, 1600, 1200, 150f, 24f, 30f, .95f, clip);
+        var wide = new Bounds();
+        wide.SetMinMax(new Vector3(hole.x - .2f, top - .12f, zF - .25f), new Vector3(hole.x + .16f, top + .01f, zF + .012f));
+        ShootPersp("keys_desk_overedge_wide", wide, 1600, 1200, 150f, 24f, 30f, .95f, clip);
+        UnityEngine.Object.DestroyImmediate(root.gameObject);
+    }
+
+    // ------------------------------------------------------------------ window close-ups (0.3 m)
+
+    /// <summary>A close-up: the camera sits dist metres from target along dirToCam and looks at it.</summary>
+    static void CloseUp(string name, Vector3 target, Vector3 dirToCam, float dist, float fov, int w, int h)
+    {
+        var pos = target + dirToCam.normalized * dist;
+        var rot = Quaternion.LookRotation(target - pos, Vector3.up);
+        Shoot(name, pos, rot, fov, w, h, new Bounds(target, Vector3.one * 2f));
+        log.Add(string.Format(CultureInfo.InvariantCulture, "{0}: target {1}, camera {2} m from it", name, target.ToString("F4"), dist));
+    }
+
+    /// <summary>
+    /// Slabs outside the room box of BuildWindow, in the wall surface: a close-up looks through the glass at the
+    /// room box's edge seams, and a ray through a seam would leave a transparent pixel (it did once, alpha 232).
+    /// </summary>
+    static void Shell(Transform root, WindowSpec w)
+    {
+        var m = Surface(w.wall);
+        Box(root, "shell top", new Vector3(-1.6f, 2.4f, -3.2f), new Vector3(1.6f, 2.7f, .1f), m);
+        Box(root, "shell back", new Vector3(-1.6f, -.2f, -3.2f), new Vector3(1.6f, 2.7f, -2.76f), m);
+        Box(root, "shell left", new Vector3(-1.6f, -.2f, -3.2f), new Vector3(-1.31f, 2.7f, -.08f), m);
+        Box(root, "shell right", new Vector3(1.31f, -.2f, -3.2f), new Vector3(1.6f, 2.7f, -.08f), m);
+        Box(root, "shell floor", new Vector3(-1.6f, -.2f, -3.2f), new Vector3(1.6f, -.02f, 1f), Surface(w.floor));
+    }
+
+    /// <summary>
+    /// DW09's two close-ups, camera 0.3 m from the subject, in the members' own walls (BuildWindow), studio light
+    /// as the window heroes. Slot aspect 576 x 316 (1.82 : 1), rendered at 2304 x 1264.
+    /// Corners are named as seen from face A (as the DW08 heroes show the windows; world +X is image left there).
+    /// W-OF: the lower-left corner of Kit_WindowFrame_Steel (world +X), from face A inside the opening (vFOV 26): the
+    /// loose channel stop's slotted oval-head screws (jamb Y 0.4175, sill X 0.6325, 51 mm from the corner), the mitre
+    /// and the tape line. World-space key and fill from the room side (see below), so face A and the stops'
+    /// sight-line faces (toward the opening) are lit.
+    /// W-L0: the lower-right corner of Kit_WindowFrame_Wood (world -X), from face A (vFOV 40): the through-stool with
+    /// its horn and returned nosing, the apron under it, the casing landing on the stool and the glazing stop.
+    /// </summary>
+    static void WindowClose()
+    {
+        var group = new GameObject("WINDOW close-ups").transform;
+        const int w = 2304, h = 1264;
+        var of = BuildWindow(WindowSet[1], group, Vector3.zero);
+        Shell(of, WindowSet[1]);
+        // W-OF looks back at yaw 147, where the camera-relative rig puts key and fill behind the wall (-Z): no room-side
+        // face took direct light (first render: 6.4 % of the frame pure black, mean luminance 0.22). So this shot has a
+        // world-space rig: key from the room side, above and to the right as seen from face A (-X, +Y, +Z), so face A,
+        // the jamb lining and stop faces (toward the opening, -X) and the sill's (+Y) are all lit; fill from the room,
+        // low and to the left. Key 2.0 and fill 0.5 (studio 1.0 / 0.3), because the dark bronze fills half the frame.
+        worldKeyFrom = new Vector3(-.45f, .45f, .77f);
+        worldFillFrom = new Vector3(.30f, .20f, .93f);
+        key.intensity = 2f;
+        fill.intensity = .5f;
+        CloseUp("window_W-OF_stop_close", new Vector3(.655f, .395f, .016f), new Vector3(-.45f, .55f, .70f), .30f, 26f, w, h);
+        worldKeyFrom = null;
+        worldFillFrom = null;
+        key.intensity = 1f;
+        fill.intensity = .3f;
+        UnityEngine.Object.DestroyImmediate(of.gameObject);
+        var l0 = BuildWindow(WindowSet[0], group, Vector3.zero);
+        Shell(l0, WindowSet[0]);
+        CloseUp("window_W-L0_stool_close", new Vector3(-.71f, .32f, .09f), new Vector3(-.55f, .50f, .67f), .30f, 40f, w, h);
+        UnityEngine.Object.DestroyImmediate(l0.gameObject);
+        UnityEngine.Object.DestroyImmediate(group.gameObject);
+    }
+
     // ------------------------------------------------------------------ windows
 
     sealed class WindowSpec { public string code, frame, wall, floor; public bool blind; }
@@ -531,7 +663,9 @@ public static class FrontRoomsInteractableHeroes
     {
         new WindowSpec { code = "W-L0", frame = "Kit_WindowFrame_Wood", wall = "L0_Wallpaper", floor = "L0_Carpet" },
         new WindowSpec { code = "W-OF", frame = "Kit_WindowFrame_Steel", wall = "Office_Wall", floor = "Office_Carpet", blind = true },
-        new WindowSpec { code = "W-RN", frame = "Kit_WindowFrame_Steel_Enamel", wall = "Run_Wall", floor = "Run_Floor" },
+        // W-RN: the member map of interactables/30_final.md section 5.5 (critic M2, fix pass 2026-10-08): the dark-bronze steel
+        // frame, matching the Run doors. 10_spec.md line 645 (white enamel) is the older entry; -heroWRN <frame> renders it.
+        new WindowSpec { code = "W-RN", frame = "Kit_WindowFrame_Steel", wall = "Run_Wall", floor = "Run_Floor" },
         new WindowSpec { code = "W-EX", frame = "Kit_WindowFrame_Alu", wall = "Exit_Wallpaper", floor = "Exit_Carpet" },
     };
 
@@ -552,7 +686,7 @@ public static class FrontRoomsInteractableHeroes
         Box(root, "room side r", new Vector3(1.15f, 0f, -2.76f), new Vector3(1.31f, 2.4f, -.08f), wm);
         Box(root, "room ceiling", new Vector3(-1.15f, 2.35f, -2.6f), new Vector3(1.15f, 2.4f, -.08f), Surface(w.wall.StartsWith("Office") ? "Office_Ceiling" : w.wall.StartsWith("Run") ? "Run_Ceiling" : "L0_Ceiling"));
         S(w.frame, root, Vector3.zero, Quaternion.identity);
-        // Pane: the glass track's 6 mm slab (10_spec §5.4). Main's window kit draws it with Glass_Window
+        // Pane: the glass track's 6 mm slab (10_spec s5.4). Main's window kit draws it with Glass_Window
         // (FrontRoomsInteractableKit.Window.cs, FrontRoomsGlassPane.WindowMaterial); Prop_Glass only if that is missing.
         var info = FrontRoomsKitLibrary.GetInfo(w.frame);
         var slab = A(w.frame, "glass_slab");
@@ -600,6 +734,15 @@ public static class FrontRoomsInteractableHeroes
         var rot = Quaternion.Euler(pitch, yaw, 0f);
         var pos = FitPerspective(b, rot, fov, (float)w / h, fillFrac);
         Shoot(name, pos, rot, fov, w, h, b);
+    }
+
+    /// <summary>As ShootPersp, framed on b, but near/far planes and the shadow distance from clip (2026-10-14: the desk key).</summary>
+    static void ShootPersp(string name, Bounds b, int w, int h, float yaw, float pitch, float fov, float fillFrac, Bounds clip)
+    {
+        var rot = Quaternion.Euler(pitch, yaw, 0f);
+        var pos = FitPerspective(b, rot, fov, (float)w / h, fillFrac);
+        clip.Encapsulate(b);
+        Shoot(name, pos, rot, fov, w, h, clip);
     }
 
     static void ShootOrtho(string name, Bounds b, int w, int h)

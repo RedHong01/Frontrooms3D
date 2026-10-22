@@ -1,0 +1,937 @@
+--- a/FrontRoomsWallFixtures.cs
++++ b/FrontRoomsWallFixtures.cs
+@@ -18,7 +18,7 @@
+ 
+ public static class FrontRoomsWallFixtures
+ {
+-    public const int RulesVersion = 1;
++    public const int RulesVersion = 2;   // 2: outlets fix pass 2026-10-14 (research/outlets/40_final.md)
+ 
+     /// <summary>
+     /// One wall face the map actually built (both sides of every built edge).
+@@ -117,6 +117,15 @@
+     public const float FourProngShare = .25f;
+     public const float BaseClear = .03f;         // plate bottom above a base trim top
+     public const float SwitchHeight = 1.22f, SwitchFromOpening = .20f;
++    /// <summary>
++    /// Switch centre on a printed wall (Level 0 paper): 1.12 m, so the plate top (1.177 m) clears the
++    /// wallpaper's guide row, where the EGRESS cues turn or flatten (1.184-1.391 m; the placard was raised
++    /// clear of it for the same reason). Office walls carry no print and keep 1.22 m (48 in).
++    /// </summary>
++    public const float SwitchHeightPrinted = 1.12f;
++    static float SwitchY(in WallFace f) => f.theme == ZoneTheme.Office ? SwitchHeight : SwitchHeightPrinted;
++    /// <summary>Ground-up orientation: the share of wall lines a second electrician wired, and single replaced plates.</summary>
++    public const float GroundUpLine = .15f, GroundUpSingle = .025f;
+     public const float RoomSideMin = 4.5f;       // a room side with this much solid wall gets at least one plate
+     public const int ChunkCap = 160;
+ 
+@@ -191,6 +200,15 @@
+         var line = alongX ? (f.side == 0 ? f.cell.y + 1 : f.cell.y) : (f.side == 0 ? f.cell.x + 1 : f.cell.x);
+         var segment = (alongX ? f.cell.x : f.cell.y) >> 3;
+         return MapHash.Hash(seed, line * 2 + (alongX ? 1 : 0), segment, SaltBase + 16 * (int)Field.Line + f.side);
++    }
++
++    /// <summary>Tools and tests: the identity of a face's wall line (world line, orientation, side, 24 m segment), unhashed.</summary>
++    public static long LineKey(in WallFace f)
++    {
++        var alongX = f.direction.x > .5f;
++        var line = alongX ? (f.side == 0 ? f.cell.y + 1 : f.cell.y) : (f.side == 0 ? f.cell.x + 1 : f.cell.x);
++        var segment = (alongX ? f.cell.x : f.cell.y) >> 3;
++        return ((long)(line + (1 << 20)) << 24) ^ ((long)(segment + (1 << 10)) << 2) ^ ((alongX ? 1L : 0L) << 1) ^ f.side;
+     }
+ 
+     static uint Sub(uint h, int k) => MapHash.Hash(unchecked((int)h), k, 0, 1);
+@@ -300,15 +318,17 @@
+             if (!faces[i].foreign) PlanFace(seed, faces, i, Classify(faces[i]), into, s.roomCount, rooms, keepOut);
+         // 2. Every room side with enough solid wall gets at least one receptacle.
+         if (data != null) ForceRoomSides(seed, faces, into, s.roomCount, rooms, keepOut);
++        // 2b. Tall halls: one surface box (and its riser) per wall line; the line's other receptacles stay flush steel plates.
++        OneHandyBoxPerLine(seed, faces, into);
+         // 3. One lone switch per chunk at most (a switch with no door near it).
+-        if (data != null) PlanLoneSwitch(seed, faces, data, into);
++        if (data != null) PlanLoneSwitch(seed, faces, data, into, keepOut);
+         // 4. Opposite faces of one wall: side 0 yields to side 1 (side 1 may be a foreign, seed-pure face).
+-        ResolveBackToBack(faces, into);
++        ResolveBackToBack(faces, into, keepOut);
+         // 5. Columns and floor boxes from the chunk data.
+         if (data != null)
+         {
+-            PlanColumns(seed, data, startArea, cellTheme, into);
+-            PlanFloorBoxes(seed, data, startArea, cellTheme, roomDressed, into);
++            PlanColumns(seed, data, startArea, cellTheme, into, keepOut);
++            PlanFloorBoxes(seed, data, startArea, cellTheme, roomDressed, into, keepOut);
+         }
+     }
+ 
+@@ -318,7 +338,8 @@
+         into.Clear();
+         var s = S;
+         for (var i = 0; i < faces.Count && into.Count < ChunkCap; i++) PlanFace(seed, faces, i, cls, into, s.roomCount, 0, null);
+-        ResolveBackToBack(faces, into);
++        OneHandyBoxPerLine(seed, faces, into);
++        ResolveBackToBack(faces, into, null);
+     }
+ 
+     static void PlanFace(int seed, IReadOnlyList<WallFace> faces, int index, FixtureClass cls, List<Fixture> into, int[] roomCount, int rooms, IReadOnlyList<KeepOut> keepOut)
+@@ -341,11 +362,14 @@
+             {
+                 var left = first == (t == 0);
+                 var u = left ? f.openFrom - SwitchFromOpening : f.openTo + SwitchFromOpening;
+-                if (u < EndMargin || u > f.length - EndMargin || !ClearAtHeight(into, index, u, SwitchHeight)) continue;
++                var sy = SwitchY(f);
++                if (u < EndMargin || u > f.length - EndMargin || !ClearAtHeight(into, index, u, sy)) continue;
+                 var kit = rule.office && U(hS, 2) < .3f ? FixtureKit.Toggle2 : FixtureKit.Toggle1;
+-                var x = Make(f, index, cls, kit, u, SwitchHeight, PlateFinish(seed, f, rule), hS);
++                // A stainless receptacle line still gets an ivory switch: the toggle kits are the domed thermoset plate.
++                var finish = PlateFinish(seed, f, rule);
++                var x = Make(f, index, cls, kit, u, sy, finish == Finish.Stainless ? Finish.Ivory : finish, hS);
++                if (rule.wear) WearSwitch(rule, ref x, Sub(hS, 20));
+                 if (Blocked(x, f, keepOut)) continue;
+-                x.device = x.plate == Finish.Stainless ? Finish.Ivory : DeviceFor(x.plate);
+                 into.Add(x);
+                 roomCount[f.room]++;
+                 break;
+@@ -384,7 +408,7 @@
+         x.flags |= flags;
+         if ((flags & FixtureFlags.Horizontal) != 0) x.roll += 90f;
+         if (rule.wear) Wear(seed, f, rule, ref x);
+-        else if (U(hF, 9) < .15f && IsDuplex(x.kit)) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }
++        else if (GroundUp(seed, f, hF) && IsDuplex(x.kit)) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }
+         x.position.y = Mathf.Max(x.position.y, f.baseTop + BaseClear + (x.kit == FixtureKit.DuplexJumbo ? JumboHalfH : PlateHalfH));
+         if (Blocked(x, f, keepOut)) { StatKeptOut++; return; }
+         into.Add(x);
+@@ -415,8 +439,10 @@
+             if (!gaps.Inside(u) || !FarFromSameFace(into, index, u)) continue;
+             // Level 0 keeps old stock: a quarter of its phone jacks are the brown 4-prong block (a relic of the 1960s-70s).
+             if (kit == FixtureKit.JackPhone && (cls == FixtureClass.Level0Room || cls == FixtureClass.Level0Corridor) && U(h, 5) < FourProngShare) kit = FixtureKit.JackPhone4;
+-            var x = Make(f, index, cls, kit, u, y, plate == Finish.Stainless ? Finish.Stainless : plate, h);
+-            x.device = Finish.Ivory;
++            // Telecom fitted its own plates: a stainless receptacle line gets ivory jack plates (the jack kits are the domed
++            // thermoset plate); otherwise the jack plate and insert follow the line's colour, like its receptacles.
++            var x = Make(f, index, cls, kit, u, y, plate == Finish.Stainless || plate == Finish.WallMatch ? Finish.Ivory : plate, h);
++            x.device = DeviceFor(x.plate);
+             x.flags |= FixtureFlags.Companion;
+             if (Blocked(x, f, keepOut)) continue;
+             into.Add(x);
+@@ -444,7 +470,8 @@
+     }
+ 
+     /// <summary>As SnapSameFace, for a side-0 fixture that must also clear its twin face by BackToBack.</summary>
+-    static bool SnapBackToBack(in Gaps g, float u, float maxShift, List<Fixture> into, int face, int self, int twin, out float result)
++    static bool SnapBackToBack(in WallFace f, in Gaps g, float u, float maxShift, List<Fixture> into, int face, int self, int twin,
++        IReadOnlyList<KeepOut> keepOut, out float result)
+     {
+         var k0 = Mathf.RoundToInt(u / Step);
+         var steps = Mathf.FloorToInt(maxShift / Step + 1e-4f);
+@@ -454,6 +481,13 @@
+             if (d == 0 && s > 0) continue;
+             var c = (k0 + s * d) * Step;
+             if (Mathf.Abs(c - u) > maxShift + 1e-4f || !g.Inside(c) || !BackToBackOk(into, face, self, twin, c)) continue;
++            if (keepOut != null && keepOut.Count > 0)
++            {
++                // The moved plate keeps every stage-1 rule, keep-outs included.
++                var moved = into[self];
++                moved.position += f.direction * (c - moved.along);
++                if (Blocked(moved, f, keepOut)) continue;
++            }
+             result = c;
+             return true;
+         }
+@@ -526,7 +560,7 @@
+         if (U(h, 1) < (o ? .08f : .10f)) x.roll += (U(h, 2) < .5f ? -1f : 1f) * (2f + 4f * U(h, 3));             // crooked 2-6 deg
+         if (U(h, 4) < (o ? .05f : .08f)) x.tilt = .5f + 1.0f * U(h, 5);                                          // not flush: top edge 1-3 mm out
+         if (U(h, 6) < (o ? .04f : .06f)) { x.flags |= FixtureFlags.NoScrew; x.tilt = Mathf.Max(x.tilt, .4f); }  // missing screw
+-        if (IsDuplex(x.kit) && U(h, 7) < .15f) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }           // another electrician
++        if (IsDuplex(x.kit) && GroundUp(seed, f, h)) { x.roll += 180f; x.flags |= FixtureFlags.GroundUp; }      // another electrician (the whole line)
+         if (x.plate == Finish.Ivory && U(h, 8) < (o ? .15f : .30f)) x.plate = Finish.IvoryAged;                  // grime / yellowing
+         if (x.plate != Finish.Stainless && U(h, 9) < (o ? .08f : .03f)) x.plate = Finish.WallMatch;              // papered or painted over
+         if (U(h, 10) < .05f) x.device = x.device == Finish.White ? Finish.Ivory : Finish.White;                 // mismatched device
+@@ -542,28 +576,93 @@
+         var g = U(h, 12);
+         // Geometry variants, one at most, in this order of precedence.
+         if (g < (o ? .01f : .03f)) x.kit = FixtureKit.Bare;
+-        else if ((g -= (o ? .01f : .03f)) < (o ? .04f : .03f)) x.kit = FixtureKit.Blank;
++        else if ((g -= (o ? .01f : .03f)) < (o ? .04f : .03f) && thermoset) x.kit = FixtureKit.Blank;   // the blank kit is the domed thermoset plate
+         else if ((g -= (o ? .04f : .03f)) < .02f && thermoset) x.kit = FixtureKit.DuplexScorched;
+         else if ((g -= .02f) < (o ? .03f : .05f) && thermoset && x.kit == FixtureKit.Duplex) x.kit = FixtureKit.DuplexJumbo;
+         else if ((g -= (o ? .03f : .05f)) < (o ? .03f : .05f) && thermoset && x.kit == FixtureKit.Duplex) x.kit = FixtureKit.DuplexCracked;
+         if (x.kit == FixtureKit.Bare) x.flags |= FixtureFlags.NoScrew;
+     }
+ 
+-    static bool Blocked(in Fixture x, in WallFace f, IReadOnlyList<KeepOut> keepOut)
++    /// <summary>
++    /// Ground-up (rolled 180 degrees) is one electrician's habit: it holds for a whole wall line
++    /// (GroundUpLine), and a few single plates were replaced the other way round (GroundUpSingle).
++    /// </summary>
++    static bool GroundUp(int seed, in WallFace f, uint plateHash) =>
++        (U(LineHash(seed, f), 7) < GroundUpLine) != (U(plateHash, 7) < GroundUpSingle);
++
++    /// <summary>
++    /// Switch plates are the most handled plates in a building: finish (aged more often, papered or painted over,
++    /// a mismatched bat), crooked, not flush and missing-screw rolls as a receptacle gets, but no geometry variant
++    /// and no ground-up. <paramref name="h"/> is the switch's own hash (never the face's receptacle wear hash).
++    /// </summary>
++    static void WearSwitch(in ClassRule rule, ref Fixture x, uint h)
+     {
++        var o = rule.office;
++        if (U(h, 1) < (o ? .08f : .10f)) x.roll += (U(h, 2) < .5f ? -1f : 1f) * (2f + 4f * U(h, 3));
++        if (U(h, 4) < (o ? .05f : .08f)) x.tilt = .5f + 1.0f * U(h, 5);
++        if (U(h, 6) < (o ? .04f : .06f)) { x.flags |= FixtureFlags.NoScrew; x.tilt = Mathf.Max(x.tilt, .4f); }
++        if (x.plate == Finish.Ivory && U(h, 8) < (o ? .25f : .45f)) x.plate = Finish.IvoryAged;          // hands: grimier than receptacles
++        if (x.plate != Finish.Stainless && U(h, 9) < (o ? .12f : .05f)) x.plate = Finish.WallMatch;      // papered or painted over
++        if (U(h, 10) < .05f) x.device = x.device == Finish.White ? Finish.Ivory : Finish.White;         // a replaced bat
++    }
++
++    /// <summary>
++    /// Tall halls (10_spec.md §1.6, fix pass): a 1990 electrician brings one EMT drop down a wall line, not one
++    /// per box. Of the handy boxes on one wall line (LineHash: world line, orientation, side, 24 m segment) only
++    /// the one with the lowest face hash keeps its surface box and riser; the others become flush steel plates.
++    /// Every face of a line is in one chunk's list, and foreign lines hold only foreign faces, so the choice is
++    /// seed-pure and order-free.
++    /// </summary>
++    static void OneHandyBoxPerLine(int seed, IReadOnlyList<WallFace> faces, List<Fixture> into)
++    {
++        for (var k = 0; k < into.Count; k++)
++        {
++            var x = into[k];
++            if (x.kit != FixtureKit.HandyBox || x.face < 0) continue;
++            var line = LineHash(seed, faces[x.face]);
++            var mine = FaceHash(seed, faces[x.face], Field.Line);
++            for (var m = 0; m < into.Count; m++)
++            {
++                if (m == k || into[m].kit != FixtureKit.HandyBox || into[m].face < 0) continue;
++                var g = faces[into[m].face];
++                if (LineHash(seed, g) != line) continue;
++                var other = FaceHash(seed, g, Field.Line);
++                if (other < mine || (other == mine && m < k)) { x.kit = FixtureKit.DuplexSteel; into[k] = x; StatHandyFlattened++; break; }
++            }
++        }
++    }
++
++    /// <summary>Handy boxes turned back into flush steel plates by OneHandyBoxPerLine (tools and tests).</summary>
++    public static int StatHandyFlattened;
++
++    /// <summary>
++    /// The keep-out test for any fixture: a box <paramref name="halfAcross"/> each side along
++    /// <paramref name="across"/>, from the face (or floor) out to <paramref name="proud"/> along
++    /// <paramref name="normal"/>, from <paramref name="y0"/> to <paramref name="y1"/>.
++    /// </summary>
++    static bool BlockedBox(Vector3 centre, Vector3 across, Vector3 normal, float halfAcross, float proud, float y0, float y1, IReadOnlyList<KeepOut> keepOut)
++    {
+         if (keepOut == null || keepOut.Count == 0) return false;
+-        // A handy box stands further out, and its conduit runs up to the ceiling.
+-        var handy = x.kit == FixtureKit.HandyBox;
+-        var a = x.position - f.direction * (PlateHalfW + .02f);
+-        var b = x.position + f.direction * (PlateHalfW + .02f) + f.normal * (handy ? HandyProud : .012f);
++        var a = centre - across * halfAcross;
++        var b = centre + across * halfAcross + normal * proud;
+         var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
+-        var top = handy ? Mathf.Max(f.ceiling, x.position.y + PlateHalfH) : x.position.y + PlateHalfH;
+         for (var i = 0; i < keepOut.Count; i++)
+         {
+             var k = keepOut[i];
+-            if (k.xz.Overlaps(r) && top > k.y0 && x.position.y - PlateHalfH < k.y1) return true;
++            if (k.xz.Overlaps(r) && y1 > k.y0 && y0 < k.y1) return true;
+         }
+         return false;
++    }
++
++    static bool Blocked(in Fixture x, in WallFace f, IReadOnlyList<KeepOut> keepOut)
++    {
++        if (keepOut == null || keepOut.Count == 0) return false;
++        // A handy box stands further out, and its conduit runs up to the ceiling.
++        var handy = x.kit == FixtureKit.HandyBox;
++        var half = PlateHalf(x.kit);
++        if ((x.flags & FixtureFlags.Horizontal) != 0) half = new Vector2(half.y, half.x);
++        var top = handy ? Mathf.Max(f.ceiling, x.position.y + half.y) : x.position.y + half.y;
++        return BlockedBox(x.position, f.direction, f.normal, half.x + .02f, handy ? HandyProud : .012f, x.position.y - half.y, top, keepOut);
+     }
+ 
+     static int DirIndex(Vector3 n) => n.x > .5f ? 0 : n.z > .5f ? 1 : n.x < -.5f ? 2 : 3;
+@@ -626,7 +725,7 @@
+ 
+     static bool IsReceptacle(FixtureKit k) => IsDuplex(k) || k == FixtureKit.Blank || k == FixtureKit.HandyBox;
+ 
+-    static void ResolveBackToBack(IReadOnlyList<WallFace> faces, List<Fixture> into)
++    static void ResolveBackToBack(IReadOnlyList<WallFace> faces, List<Fixture> into, IReadOnlyList<KeepOut> keepOut)
+     {
+         // The twin of a side-0 face is the side-1 face of the same edge (the map lists the two faces next to each other).
+         var s = S;
+@@ -648,7 +747,7 @@
+             var twin = twinOf[x.face];
+             if (twin < 0 || TwinClear(into, twin, x.along)) continue;
+             var f = faces[x.face];
+-            if (SnapBackToBack(PlateGaps(f), x.along, .90f, into, x.face, k, twin, out var moved))
++            if (SnapBackToBack(f, PlateGaps(f), x.along, .90f, into, x.face, k, twin, f.foreign ? null : keepOut, out var moved))
+             {
+                 x.position += f.direction * (moved - x.along);
+                 x.along = moved;
+@@ -665,7 +764,7 @@
+         }
+     }
+ 
+-    static void PlanColumns(int seed, MapChunk data, RectInt startArea, IReadOnlyList<ZoneTheme> cellTheme, List<Fixture> into)
++    static void PlanColumns(int seed, MapChunk data, RectInt startArea, IReadOnlyList<ZoneTheme> cellTheme, List<Fixture> into, IReadOnlyList<KeepOut> keepOut)
+     {
+         const int n = MapGrid.ChunkCells;
+         var o = data.Origin;
+@@ -685,16 +784,23 @@
+             var normal = dir == 0 ? Vector3.right : dir == 1 ? Vector3.forward : dir == 2 ? Vector3.left : Vector3.back;
+             var y = tall ? .46f : theme == ZoneTheme.Office ? .41f : .31f;
+             var plate = tall ? (U(h, 2) < .5f ? Finish.Stainless : Finish.Grey) : theme == ZoneTheme.Office ? Finish.Almond : Finish.Ivory;
++            var position = new Vector3(i * MapGrid.CellSize, y, j * MapGrid.CellSize) + normal * (w * .5f);
++            if (BlockedBox(position, new Vector3(Mathf.Abs(normal.z), 0f, Mathf.Abs(normal.x)), normal, PlateHalfW + .02f, .012f, y - PlateHalfH, y + PlateHalfH, keepOut))
++            {
++                StatKeptOut++;
++                continue;
++            }
+             into.Add(new Fixture
+             {
+                 kit = plate == Finish.Stainless ? FixtureKit.DuplexSteel : FixtureKit.Duplex,
+-                position = new Vector3(i * MapGrid.CellSize, y, j * MapGrid.CellSize) + normal * (w * .5f),
++                position = position,
+                 normal = normal, screwRoll = 180f * U(h, 3), plate = plate, device = DeviceFor(plate), face = -1, cls = FixtureClass.Column,
+             });
+         }
+     }
+ 
+-    static void PlanFloorBoxes(int seed, MapChunk data, RectInt startArea, IReadOnlyList<ZoneTheme> cellTheme, IReadOnlyList<bool> roomDressed, List<Fixture> into)
++    static void PlanFloorBoxes(int seed, MapChunk data, RectInt startArea, IReadOnlyList<ZoneTheme> cellTheme, IReadOnlyList<bool> roomDressed, List<Fixture> into,
++        IReadOnlyList<KeepOut> keepOut)
+     {
+         const int n = MapGrid.ChunkCells;
+         var o = data.Origin;
+@@ -726,17 +832,27 @@
+             var dx = ((int)(Sub(h, 1) % 3u) - 1) * ModuleUnits.Fine;
+             var dz = ((int)(Sub(h, 2) % 3u) - 1) * ModuleUnits.Fine;
+             var yaw = 90f * (Sub(h, 3) % 4u);
++            var floorAt = new Vector3(i * MapGrid.CellSize + dx, 0f, j * MapGrid.CellSize + dz);
++            // A fill-None module room (never dressed) can hold authored props: the box keeps clear of them (0.15 m square, 0.09 m tall).
++            if (BlockedBox(floorAt - Vector3.forward * FloorBoxHalf, Vector3.right, Vector3.forward, FloorBoxHalf, 2f * FloorBoxHalf, 0f, .09f, keepOut))
++            {
++                StatKeptOut++;
++                continue;
++            }
+             into.Add(new Fixture
+             {
+                 kit = U(h, 4) < .2f ? FixtureKit.FloorBox2 : FixtureKit.FloorBox,
+-                position = new Vector3(i * MapGrid.CellSize + dx, 0f, j * MapGrid.CellSize + dz),
++                position = floorAt,
+                 normal = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward, plate = Finish.Stainless, device = Finish.Ivory,
+                 screwRoll = 180f * U(h, 5), face = -1, cls = FixtureClass.Floor,
+             });
+         }
+     }
+ 
+-    static void PlanLoneSwitch(int seed, IReadOnlyList<WallFace> faces, MapChunk data, List<Fixture> into)
++    /// <summary>Half the square a floor box keeps clear of keep-outs (the two-gang box is 127 x 76 mm; 0.02 m margin).</summary>
++    const float FloorBoxHalf = .085f;
++
++    static void PlanLoneSwitch(int seed, IReadOnlyList<WallFace> faces, MapChunk data, List<Fixture> into, IReadOnlyList<KeepOut> keepOut)
+     {
+         var h = MapHash.Hash(seed, data.coord.x, data.coord.y, SaltBase + 16 * (int)Field.Chunk);
+         if (U(h) >= .25f || into.Count >= ChunkCap) return;
+@@ -752,11 +868,15 @@
+         if (best < 0) return;
+         var g = faces[best];
+         var k0 = (int)(Sub(h, 1) % 3u);
++        var sy = SwitchY(g);
+         for (var t = 0; t < 3; t++)
+         {
+             var u = g.length * .5f + Step * 3 * ((k0 + t) % 3 - 1);
+-            if (!ClearAtHeight(into, best, u, SwitchHeight)) continue;
+-            into.Add(Make(g, best, FixtureClass.Level0Corridor, FixtureKit.Toggle1, u, SwitchHeight, Finish.Ivory, h));
++            if (!ClearAtHeight(into, best, u, sy)) continue;
++            var x = Make(g, best, FixtureClass.Level0Corridor, FixtureKit.Toggle1, u, sy, Finish.Ivory, h);
++            WearSwitch(Rules[(int)FixtureClass.Level0Corridor], ref x, Sub(h, 20));
++            if (Blocked(x, g, keepOut)) continue;
++            into.Add(x);
+             return;
+         }
+     }
+@@ -794,6 +914,20 @@
+     public static FrontRoomsWallFixtureSet Install(Transform chunkRoot, List<WallFace> faces, int seed, MapChunk data, RectInt startArea, List<Mesh> ownedMeshes)
+     {
+         if (Suppressed || chunkRoot == null || data == null || faces == null) return null;
++        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
++        var set = InstallBody(chunkRoot, faces, seed, data, startArea);
++        InstallTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
++        InstallCalls++;
++        return set;
++    }
++
++    /// <summary>Tools and tests (the contract probe): time spent in Install and its calls, since the last reset. Two clock reads per chunk.</summary>
++    public static long InstallTicks;
++    public static int InstallCalls;
++    public static double InstallMs => InstallTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
++
++    static FrontRoomsWallFixtureSet InstallBody(Transform chunkRoot, List<WallFace> faces, int seed, MapChunk data, RectInt startArea)
++    {
+         var set = chunkRoot.gameObject.AddComponent<FrontRoomsWallFixtureSet>();
+         set.coord = data.coord;
+         set.isLocal = false;
+@@ -808,6 +942,7 @@
+             s.themes[MapGrid.LocalIndex(i, j)] = cache != null ? cache.ZoneOf(data.Cell(i, j)).theme : ZoneTheme.Level0;
+         set.keepOut.Clear();
+         KeepOuts(data, set.keepOut);
++        if (set.keepOut.Count > 0) FrontRoomsWallFixtureSet.OccluderVersion++;   // a neighbour's foreign plates may stand in them
+         // A room the dress step may furnish (the map's Furnish test): no floor boxes there in stage 1.
+         var rooms = data.rooms.Length;
+         if (s.dressed.Length < rooms) s.dressed = new bool[Mathf.NextPowerOfTwo(rooms)];
+@@ -927,31 +1062,66 @@
+     /// <summary>As IsOccluded, testing only the occluders of <paramref name="set"/> itself and of <paramref name="others"/>.</summary>
+     public static bool IsOccludedBy(FrontRoomsWallFixtureSet set, in Fixture x, List<FrontRoomsWallFixtureSet> others)
+     {
+-        if (!occlusion || set == null || x.cls == FixtureClass.Floor) return false;
++        if (set == null || x.cls == FixtureClass.Floor) return false;
++        // A plate on a foreign face (a wall of this chunk facing into the next chunk's cell) is planned from seed-pure
++        // inputs only, so it cannot see that chunk's module props, key spot or Relay entries when it is planned.
++        // It is not drawn where one of them stands (fix pass), whichever chunk loads first.
++        var foreign = x.face >= 0 && x.face < set.faces.Count && set.faces[x.face].foreign;
++        if (!occlusion && !foreign) return false;
+         var plate = FixtureVolume(set, x);
+-        if (Meets(set.occluders, plate)) return true;
++        if (occlusion && Meets(set.occluders, plate)) return true;
++        if (foreign && MeetsKeepOut(set.keepOut, plate)) return true;
+         if (others == null || others.Count == 0) return false;
+         Bounds world = default;
+         var haveWorld = false;
+         for (var s = 0; s < others.Count; s++)
+         {
+             var other = others[s];
+-            if (other == null || other == set || other.occluders.Count == 0) continue;
++            if (other == null || other == set) continue;
++            var occ = occlusion && other.occluders.Count > 0;
++            var ko = foreign && other.keepOut.Count > 0;
++            if (!occ && !ko) continue;
+             if (!haveWorld) { world = XformBounds(set.transform.localToWorldMatrix, plate); haveWorld = true; }
+-            if (Meets(other.occluders, XformBounds(other.transform.worldToLocalMatrix, world))) return true;
++            var local = XformBounds(other.transform.worldToLocalMatrix, world);
++            if (occ && Meets(other.occluders, local)) return true;
++            if (ko && MeetsKeepOut(other.keepOut, local)) return true;
+         }
+         return false;
+     }
+ 
+-    /// <summary>The world box round every occluder of <paramref name="set"/> (empty bounds when it has none).</summary>
++    /// <summary>True when box <paramref name="b"/> (the list's root space) meets one of the keep-out volumes.</summary>
++    public static bool MeetsKeepOut(List<KeepOut> list, in Bounds b)
++    {
++        if (list == null || list.Count == 0) return false;
++        var r = Rect.MinMaxRect(b.min.x, b.min.z, b.max.x, b.max.z);
++        for (var i = 0; i < list.Count; i++)
++        {
++            var k = list[i];
++            if (k.xz.Overlaps(r) && b.max.y > k.y0 && b.min.y < k.y1) return true;
++        }
++        return false;
++    }
++
++    /// <summary>The world box round every occluder and keep-out of <paramref name="set"/> (empty bounds when it has none).</summary>
+     public static Bounds OccluderWorldBounds(FrontRoomsWallFixtureSet set)
+     {
+         var m = set.transform.localToWorldMatrix;
+         var b = new Bounds();
++        var any = false;
+         for (var i = 0; i < set.occluders.Count; i++)
+         {
+             var w = XformBounds(m, set.occluders[i]);
+-            if (i == 0) b = w; else b.Encapsulate(w);
++            if (!any) b = w; else b.Encapsulate(w);
++            any = true;
++        }
++        for (var i = 0; i < set.keepOut.Count; i++)
++        {
++            var k = set.keepOut[i];
++            var lb = new Bounds();
++            lb.SetMinMax(new Vector3(k.xz.xMin, k.y0, k.xz.yMin), new Vector3(k.xz.xMax, k.y1, k.xz.yMax));
++            var w = XformBounds(m, lb);
++            if (!any) b = w; else b.Encapsulate(w);
++            any = true;
+         }
+         return b;
+     }
+@@ -972,6 +1142,21 @@
+         return new Bounds(c, (x + y + z) * 2f);
+     }
+ 
++    /// <summary>Where a source stands for the through-wall test: 5 cm out from a wall plate's face, a floor box itself.</summary>
++    public static Vector3 PowerPoint(in Fixture x) => x.face >= 0 ? x.position + x.normal * .05f : x.position;
++
++    /// <summary>
++    /// Tools and tests (the probe's desk measure): true when <paramref name="x"/> powers a desk at
++    /// <paramref name="deskLocal"/> (set root space) by the stage-2 rule: within StationReach, drawn,
++    /// and on the desk's side of every wall of the set's face list.
++    /// </summary>
++    public static bool Powers(FrontRoomsWallFixtureSet set, in Fixture x, Vector3 deskLocal)
++    {
++        if (set == null || !PowersPoint(x)) return false;
++        float dx = x.position.x - deskLocal.x, dz = x.position.z - deskLocal.z;
++        return dx * dx + dz * dz <= StationReach * StationReach && !IsOccluded(set, x) && !ThroughWall(set.faces, deskLocal, PowerPoint(x));
++    }
++
+     static bool PowersPoint(in Fixture x) => (IsReceptacle(x.kit) && x.kit != FixtureKit.Blank) || x.kit == FixtureKit.FloorBox || x.kit == FixtureKit.FloorBox2;
+ 
+     /// <summary>
+@@ -995,7 +1180,10 @@
+             var x = fixtures[i];
+             if (!PowersPoint(x)) continue;
+             float dx = x.position.x - p.x, dz = x.position.z - p.z;
+-            if (dx * dx + dz * dz <= reach2 && !IsOccluded(set, x)) return true;
++            if (dx * dx + dz * dz > reach2 || IsOccluded(set, x)) continue;
++            // Only a source on the desk's side of every wall powers it (fix pass: the far face of a wall never counts).
++            if (ThroughWall(set.faces, p, PowerPoint(x))) continue;
++            return true;
+         }
+         var faces = set.faces;
+         int bestFace = -1;
+@@ -1065,6 +1253,10 @@
+         return false;
+     }
+ 
++    /// <summary>Tools and tests: true when the floor-plan segment between two world points crosses a wall of <paramref name="set"/>'s face list.</summary>
++    public static bool ThroughAnyWall(FrontRoomsWallFixtureSet set, Vector3 aWorld, Vector3 bWorld) =>
++        set != null && ThroughWall(set.faces, set.transform.InverseTransformPoint(aWorld), set.transform.InverseTransformPoint(bWorld));
++
+     static int TwinOf(List<WallFace> faces, int fi)
+     {
+         var f = faces[fi];
+--- a/FrontRoomsWallFixtureSet.cs
++++ b/FrontRoomsWallFixtureSet.cs
+@@ -83,13 +83,14 @@
+     {
+         if (!Registry.Contains(this)) Registry.Add(this);
+         cachedChange = -1;
+-        if (occluders.Count > 0) OccluderVersion++;
++        // Keep-outs count too: a neighbour's foreign plates are not drawn where they stand (FrontRoomsWallFixtures.IsOccludedBy).
++        if (occluders.Count > 0 || keepOut.Count > 0) OccluderVersion++;
+     }
+ 
+     void OnDisable()
+     {
+         Registry.Remove(this);
+-        if (occluders.Count > 0) OccluderVersion++;
++        if (occluders.Count > 0 || keepOut.Count > 0) OccluderVersion++;
+     }
+ 
+     /// <summary>Call after changing <see cref="fixtures"/> directly: the renderer rebuilds its cache.</summary>
+--- a/FrontRoomsWallFixtureRenderer.cs
++++ b/FrontRoomsWallFixtureRenderer.cs
+@@ -17,8 +17,17 @@
+ // Stage 2, rule 1: a wall fixture whose plate volume meets a wall unit's box
+ // (FrontRoomsWallFixtureSet.AddOccluder, from the Office kit) is not drawn.
+ //
+-// It never creates a GameObject, a Collider, a Renderer or a
+-// MaterialPropertyBlock, and never allocates a per-chunk mesh. Missing kits
++// Fix pass (2026-10-14, research/outlets/40_final.md): each draw's culling box is the
++// mesh's own bounds through its matrix (a 1 m conduit tile is no longer culled by a
++// 0.4 m box at its foot); attachments never outlive their box; metal finishes use the
++// anodised fallback; papered- and painted-over plates draw the live wall material with
++// its world-planar frame snapped to the wall's axis (_FR_PlanarSnap, so the paper lines
++// up whatever the plate's dome and bevels), painted ones without the wall's bump, and
++// their screws keep their own finish.
++//
++// It never creates a GameObject, a Collider or a Renderer, never allocates a per-chunk
++// mesh or material, and owns exactly two MaterialPropertyBlocks (papered, painted),
++// made once and never changed. Missing kits
+ // fall back at draw time (Jumbo, Cracked, Scorched, Bare -> Duplex; HandyBox ->
+ // Steel; Toggle2 -> Toggle1; data jacks and floor boxes -> nothing); a kit at
+ // the end of the chain that is not built yet draws as a placeholder of the
+@@ -41,13 +50,28 @@
+     /// <summary>Tools and tests: cull, pick LODs and fill buckets as usual, count, but issue no draw.</summary>
+     public static bool DryRun;
+ 
++    /// <summary>Tools and tests: draw every fixture at this LOD (0-2) instead of the distance pick; -1 (default) picks by distance.</summary>
++    public static int ForceLod = -1;
++
++    /// <summary>
++    /// Tools and tests (before/after captures): false draws the 10-14 integrate look, Prop_Aluminium metal and
++    /// wall-match plates through the unsnapped wall frame. Call ClearCache after changing it. Default true.
++    /// </summary>
++    public static bool FixPassLook = true;
++
+     /// <summary>Wall plates (10_spec.md D4): LOD0 to 1.5 m, LOD1 to 4 m, LOD2 to 12 m, at lodBias 1 and FOV 76°.</summary>
+     public const float PlateLod01 = 1.5f, PlateLod12 = 4f, PlateCull = 12f;
+     /// <summary>Never draw past this (world metres), whatever the lodBias: under the map's 48 m ring.</summary>
+     public const float MaxReach = 40f;
++    /// <summary>
++    /// The brief's cull (~10-12 m) for plates; floor boxes and a handy box with its EMT run, which read further
++    /// (a 5 m riser, a box on open floor), stop at 15 m. A sidecar may ask for less, never for more; a conduit
++    /// tile or strap is never drawn past its own box's distance.
++    /// </summary>
++    public const float BoxCull = 15f;
+     const float Tan38 = 0.78128563f;   // tan(76° / 2)
+ 
+-#if UNITY_WEBGL && !UNITY_EDITOR
++#if (UNITY_WEBGL && !UNITY_EDITOR) || FRONTROOMS_WEBGL_PREVIEW
+     // WebGL track only (never lowers desktop): 8 m cull, no screws, papered plates drawn ivory.
+     static readonly float PlatformCullCap = 8f;
+     static readonly bool PlatformScrews = false;
+@@ -301,6 +325,7 @@
+         if (side?.outlet != null && side.outlet.plateH > 0f) km.plateH = side.outlet.plateH > 1f ? side.outlet.plateH * .001f : side.outlet.plateH;
+         else if (side?.boundsMin != null && side.boundsMax != null && side.boundsMin.Length >= 2 && side.boundsMax.Length >= 2) km.plateH = side.boundsMax[1] - side.boundsMin[1];
+         var d = DefaultDistances(k);
++        var cap = k == F.FixtureKit.None ? MaxReach : k == F.FixtureKit.FloorBox || k == F.FixtureKit.FloorBox2 || k == F.FixtureKit.HandyBox ? BoxCull : PlateCull;
+         // A sidecar value <= 0 means "no such level" (Kit_ConduitStrap writes -1 for its cull): keep the default there.
+         if (side?.lodDistances != null && side.lodDistances.Length >= 3)
+         {
+@@ -310,7 +335,7 @@
+             // No LOD2 in the FBX and no cull distance (Kit_ConduitStrap: 2 / 6 / -1): culled where LOD1 ends.
+             else if (!ownLod2 && side.lodDistances[1] > 0f) d.z = d.y;
+         }
+-        km.lodSet = LodSetFor(d.x, d.y, d.z, radius >= 0f ? radius : Radius(k));
++        km.lodSet = LodSetFor(d.x, d.y, Mathf.Min(d.z, cap), radius >= 0f ? radius : Radius(k));
+         return km;
+     }
+ 
+@@ -320,7 +345,7 @@
+         {
+             case F.FixtureKit.FloorBox:
+             case F.FixtureKit.FloorBox2: return new Vector3(2f, 6f, 15f);
+-            case F.FixtureKit.HandyBox: return new Vector3(2f, 6f, 20f);
++            case F.FixtureKit.HandyBox: return new Vector3(2f, 6f, BoxCull);
+             default: return new Vector3(PlateLod01, PlateLod12, PlateCull);
+         }
+     }
+@@ -500,6 +525,42 @@
+         return m;
+     }
+ 
++    /// <summary>
++    /// Metal finishes (fix pass): Prop_Aluminium (metallic 1, albedo .72, occlusion .8, macro dirt) reads gunmetal to
++    /// black in the game's dim zone reflections. Until P-4b adds the two proposed slots, both fall back to the clean
++    /// anodised slot the placard frame uses. Brushed stainless: wall plates. Galvanized: handy box, EMT, straps, floor boxes.
++    /// </summary>
++    static Material Stainless() => (FixPassLook ? Surface("Prop_StainlessBrushed", "Prop_AluminiumAnodised") : null) ?? Surface("Prop_Aluminium");
++    static Material Galvanized() => (FixPassLook ? Surface("Prop_Galvanized", "Prop_AluminiumAnodised") : null) ?? Surface("Prop_Aluminium");
++
++    static bool GalvanizedKit(KitMeshes km) => km != null && km.name != null && (km.name.StartsWith("Kit_OutletHandyBox", StringComparison.Ordinal)
++        || km.name.StartsWith("Kit_Conduit", StringComparison.Ordinal) || km.name.StartsWith("Kit_FloorBox", StringComparison.Ordinal));
++
++    /// <summary>
++    /// Papered- and painted-over plates draw the wall's own material (so they follow any change to it) with one of
++    /// these blocks. FrontRooms/Surface builds its world-planar frame from the interpolated normal and dots it with the
++    /// absolute world position, so a plate's 1-5 degree dome moved the paper by (distance from the origin) x 0.017 per
++    /// degree: 3.4 m at 200 m, 87 m at the 4992 m capture root (art critic, 2026-10-14). _FR_PlanarSnap = 1 builds
++    /// the frame from the normal's dominant axis instead (lighting keeps the real normal). A printed wall (_FR_PRINT,
++    /// the Level 0 paper) is papered over; any other wall (Office knockdown) is painted over, which also drops the
++    /// wall's bump (_BumpScale 0) so the plate stays smooth.
++    /// </summary>
++    static MaterialPropertyBlock papered, painted;
++
++    static MaterialPropertyBlock WallMatchBlock(Material wall)
++    {
++        if (wall == null || !FixPassLook) return null;
++        if (wall.IsKeywordEnabled("_FR_PRINT"))
++        {
++            if (papered == null) { papered = new MaterialPropertyBlock(); papered.SetFloat(PlanarSnapId, 1f); }
++            return papered;
++        }
++        if (painted == null) { painted = new MaterialPropertyBlock(); painted.SetFloat(PlanarSnapId, 1f); painted.SetFloat(BumpScaleId, 0f); }
++        return painted;
++    }
++
++    static readonly int PlanarSnapId = Shader.PropertyToID("_FR_PlanarSnap"), BumpScaleId = Shader.PropertyToID("_BumpScale");
++
+     /// <summary>The palette (10_spec.md §1.5): the new thermoset slots with their fallbacks until P-4b is approved.</summary>
+     static Material PlateMaterial(F.Finish f, Material wall)
+     {
+@@ -510,7 +571,7 @@
+             case F.Finish.White: return Surface("Prop_CeramicGlaze");
+             case F.Finish.Brown: return Surface("Prop_Ceramic");
+             case F.Finish.Grey: return Surface("Prop_PlasticPutty");
+-            case F.Finish.Stainless: return Surface("Prop_Aluminium");
++            case F.Finish.Stainless: return Stainless();
+             case F.Finish.WallMatch: return PlatformWallMatch && wall != null ? wall : PlateMaterial(F.Finish.Ivory, null);
+             default: return Surface("Prop_ThermosetIvory", "Prop_PlasticBeige");
+         }
+@@ -528,11 +589,12 @@
+         }
+     }
+ 
+-    static Material SlotMaterial(string slot, Material imported, Material plate, Material device)
++    static Material SlotMaterial(string slot, Material imported, Material plate, Material device, bool galvanized)
+     {
+         if (string.IsNullOrEmpty(slot)) return imported;
+         if (slot.StartsWith("Prop_Thermoset", StringComparison.Ordinal)) return plate;
+         if (slot == "Prop_NylonIvory" || slot == "Prop_PlasticOrange") return device;
++        if (slot == "Prop_Aluminium") return (galvanized ? Galvanized() : Stainless()) ?? imported;
+         return Surface(slot) ?? imported;
+     }
+ 
+@@ -552,6 +614,8 @@
+         public Matrix4x4[] matrices = new Matrix4x4[32];   // grows to MaxBatch (511, the instanced-draw limit) on demand
+         public int count;
+         public Vector3 min, max;
++        public Vector3 localCenter, localExtents;           // the submesh's own bounds (mesh space)
++        public MaterialPropertyBlock props;                 // wall-match plates only (WallMatchBlock)
+     }
+ 
+     readonly struct BucketKey : IEquatable<BucketKey>
+@@ -589,13 +653,16 @@
+     {
+         var key = new BucketKey(mesh, submesh, material);
+         if (BucketIndex.TryGetValue(key, out var i)) return i;
++        var local = mesh.GetSubMesh(submesh).bounds;
++        if (local.size == Vector3.zero) local = mesh.bounds;
+         Buckets.Add(new Bucket
+         {
+-            mesh = mesh, submesh = submesh, material = material,
++            mesh = mesh, submesh = submesh, material = material, localCenter = local.center, localExtents = local.extents,
+             // A wall-match material (papered-over plates) is always drawn one by one, through the SRP Batcher,
+             // like the wall it matches; the palette instances once P-6 turns instancing on.
+             instanced = !single && material.enableInstancing && SystemInfo.supportsInstancing,
+             single = single,
++            props = single ? WallMatchBlock(material) : null,
+             trianglesPerInstance = (long)(mesh.GetIndexCount(submesh) / 3),
+         });
+         BucketIndex[key] = Buckets.Count - 1;
+@@ -607,12 +674,13 @@
+         var key = new RecipeKey(km, lod, plate, device);
+         if (RecipeIndex.TryGetValue(key, out var r)) return r;
+         var mesh = km.lod[lod];
++        var galvanized = GalvanizedKit(km);
+         var entries = new List<int>(4);
+         for (var s = 0; s < mesh.subMeshCount; s++)
+         {
+             var slot = km.slots[lod] != null && s < km.slots[lod].Length ? km.slots[lod][s] : null;
+             var imported = km.imported[lod] != null && s < km.imported[lod].Length ? km.imported[lod][s] : null;
+-            var material = SlotMaterial(slot, imported, plate, device);
++            var material = SlotMaterial(slot, imported, plate, device, galvanized);
+             if (material == null) continue;
+             entries.Add(BucketFor(mesh, s, material, wallMatch && ReferenceEquals(material, plate)));
+         }
+@@ -756,7 +824,9 @@
+                 set.attachCount[i] = (byte)(tiles + straps);
+             }
+             if ((x.flags & F.FixtureFlags.NoScrew) != 0 || km.screws.Length == 0 || screwKm == null || plate == null) continue;
+-            set.screwRecipe[i] = RecipeFor(screwKm, 0, plate, device, wallMatch);
++            // The paperhanger or painter put the screws back afterwards: they keep their own (ivory) finish.
++            var screwPlate = x.plate == F.Finish.WallMatch ? PlateMaterial(F.Finish.Ivory, null) : plate;
++            set.screwRecipe[i] = RecipeFor(screwKm, 0, screwPlate, device, false);
+             var roll = Quaternion.Euler(0f, 0f, x.screwRoll);
+             for (var s = 0; s < km.screws.Length; s++) set.screwLocal[screw++] = local * Matrix4x4.TRS(km.screws[s], roll, Vector3.one);
+             set.screwCount[i] = (byte)km.screws.Length;
+@@ -908,7 +978,7 @@
+                     if (r0 < 0 || set.hidden[i]) continue;
+                     // A handy box's conduit run: every tile and strap is culled and LOD-picked on its own (it reaches the ceiling).
+                     var ac = set.attachCount[i];
+-                    if (ac > 0) DrawAttachments(set, set.attachFirst[i], ac, eye, lodScale2, reach2);
++                    if (ac > 0) DrawAttachments(set, set.attachFirst[i], ac, eye, lodScale2, reach2, LodSets[set.lodSet[i]].dcull);
+                     var p = set.worldPosition[i];
+                     float dx = p.x - eye.x, dy = p.y - eye.y, dz = p.z - eye.z;
+                     var d2 = dx * dx + dy * dy + dz * dz;
+@@ -917,7 +987,7 @@
+                     var s2 = d2 * lodScale2;
+                     if (s2 >= ls.dcull * ls.dcull) continue;
+                     if (!Visible(p, ls.radius)) continue;
+-                    var lod = s2 < ls.d01 * ls.d01 ? 0 : s2 < ls.d12 * ls.d12 ? 1 : 2;
++                    var lod = ForceLod >= 0 ? Mathf.Min(ForceLod, 2) : s2 < ls.d01 * ls.d01 ? 0 : s2 < ls.d12 * ls.d12 ? 1 : 2;
+                     if (lod == 0) frame.lod0++; else if (lod == 1) frame.lod1++; else frame.lod2++;
+                     var recipe = Recipes[set.recipe[i * 3 + lod]];
+                     for (var e = 0; e < recipe.Length; e++) Append(recipe[e], set.worldMatrix[i], p);
+@@ -965,7 +1035,7 @@
+         Accumulated.submitMs += frame.submitMs;
+     }
+ 
+-    static void DrawAttachments(FrontRoomsWallFixtureSet set, int first, int count, Vector3 eye, float lodScale2, float reach2)
++    static void DrawAttachments(FrontRoomsWallFixtureSet set, int first, int count, Vector3 eye, float lodScale2, float reach2, float parentCull)
+     {
+         for (var a = first; a < first + count; a++)
+         {
+@@ -975,8 +1045,10 @@
+             if (d2 > reach2) continue;
+             var ls = LodSets[set.attachLodSet[a]];
+             var s2 = d2 * lodScale2;
+-            if (s2 >= ls.dcull * ls.dcull || !Visible(p, ls.radius)) continue;
+-            var lod = s2 < ls.d01 * ls.d01 ? 0 : s2 < ls.d12 * ls.d12 ? 1 : 2;
++            // Never past the box it hangs from (a conduit without its box between 15 and 24 m before the fix pass).
++            var cull = Mathf.Min(ls.dcull, parentCull);
++            if (s2 >= cull * cull || !Visible(p, ls.radius)) continue;
++            var lod = ForceLod >= 0 ? Mathf.Min(ForceLod, 2) : s2 < ls.d01 * ls.d01 ? 0 : s2 < ls.d12 * ls.d12 ? 1 : 2;
+             var r = set.attachRecipe[a * 3 + lod];
+             if (r < 0) continue;
+             var recipe = Recipes[r];
+@@ -990,8 +1062,32 @@
+         for (var k = 0; k < 6; k++)
+             if (Planes[k].GetDistanceToPoint(p) < -radius) return false;
+         return true;
++    }
++
++    /// <summary>The world AABB of a bucket's submesh under <paramref name="m"/> (centre and extents).</summary>
++    static void WorldBox(Bucket b, in Matrix4x4 m, out Vector3 centre, out Vector3 extents)
++    {
++        centre = m.MultiplyPoint3x4(b.localCenter);
++        var e = b.localExtents;
++        extents = new Vector3(
++            Mathf.Abs(m.m00) * e.x + Mathf.Abs(m.m01) * e.y + Mathf.Abs(m.m02) * e.z,
++            Mathf.Abs(m.m10) * e.x + Mathf.Abs(m.m11) * e.y + Mathf.Abs(m.m12) * e.z,
++            Mathf.Abs(m.m20) * e.x + Mathf.Abs(m.m21) * e.y + Mathf.Abs(m.m22) * e.z);
+     }
+ 
++    /// <summary>Tools and tests: the culling box the renderer gives one draw of <paramref name="mesh"/> (submesh) under <paramref name="m"/>.</summary>
++    public static Bounds DrawBounds(Mesh mesh, int submesh, in Matrix4x4 m)
++    {
++        var local = mesh.GetSubMesh(submesh).bounds;
++        if (local.size == Vector3.zero) local = mesh.bounds;
++        var probe = new Bucket { localCenter = local.center, localExtents = local.extents };
++        WorldBox(probe, m, out var c, out var e);
++        return new Bounds(c, e * 2f + Vector3.one * BoundsPad);
++    }
++
++    /// <summary>Added to every culling box (metres): float slack only, the boxes are the meshes' own.</summary>
++    const float BoundsPad = .01f;
++
+     static void Append(int bucketIndex, in Matrix4x4 m, Vector3 p)
+     {
+         var b = Buckets[bucketIndex];
+@@ -1000,11 +1096,14 @@
+             b.touched = true;
+             Touched.Add(bucketIndex);
+         }
+-        if (b.count == 0) b.min = b.max = p;
++        // The culling box is the submesh's own bounds through the matrix (fix pass: a 1 m conduit tile has its origin at its
++        // foot, so the old 0.4 m box round the origin let URP cull a tile whose foot was off screen).
++        WorldBox(b, m, out var c, out var e);
++        if (b.count == 0) { b.min = c - e; b.max = c + e; }
+         else
+         {
+-            b.min = Vector3.Min(b.min, p);
+-            b.max = Vector3.Max(b.max, p);
++            b.min = Vector3.Min(b.min, c - e);
++            b.max = Vector3.Max(b.max, c + e);
+         }
+         b.matrices[b.count++] = m;
+         if (b.count < b.matrices.Length) return;
+@@ -1023,7 +1122,8 @@
+             lightProbeUsage = LightProbeUsage.Off,
+             reflectionProbeUsage = ReflectionProbeUsage.Off,
+             motionVectorMode = MotionVectorGenerationMode.Camera,
+-            worldBounds = new Bounds((b.min + b.max) * .5f, b.max - b.min + new Vector3(.4f, .4f, .4f)),
++            worldBounds = new Bounds((b.min + b.max) * .5f, b.max - b.min + Vector3.one * BoundsPad),
++            matProps = b.props,
+         };
+         if (b.single) { frame.forcedSingles += b.count; frame.forcedSingleBuckets++; frame.callsWithInstancing += b.count; }
+         else frame.callsWithInstancing++;
+@@ -1038,7 +1138,8 @@
+             for (var i = 0; i < b.count; i++)
+             {
+                 var m = b.matrices[i];
+-                rp.worldBounds = new Bounds(new Vector3(m.m03, m.m13, m.m23), new Vector3(.4f, .4f, .4f));
++                WorldBox(b, m, out var c, out var e);
++                rp.worldBounds = new Bounds(c, e * 2f + Vector3.one * BoundsPad);
+                 if (!DryRun) Graphics.RenderMesh(rp, b.mesh, b.submesh, m);
+                 frame.singleCalls++;
+             }
+--- a/FrontRoomsOfficeKit.cs
++++ b/FrontRoomsOfficeKit.cs
+@@ -885,7 +885,7 @@
+             b.Kit(run, tall ? PanelTall : powered && c == 0 ? FrontRoomsWallFixtures.PoweredPanelKit : Panel,
+                 new Vector3(-halfW + stationW * (c + .5f), 0f, spine), 0f, true, "spine panel");
+         // Outlets run on the last post, when the whole run exists: a wall row gets its desks powered
+-        // (stage 2, rule 2), a pod its two floor feeds.
++        // (stage 2, rule 2), a pod its one base feed at the powered end.
+         for (var c = 0; c <= cols; c++)
+             b.Kit(run, tall ? PostTall : Post, new Vector3(-halfW + stationW * c, 0f, spine), 0f, false, "panel post",
+                 c < cols ? null : back ? PowerRowOf : PodFeedsOf(halfW, spine));
+@@ -899,24 +899,26 @@
+     };
+ 
+     /// <summary>
+-    /// One floor feed (a tombstone floor box) at each pod end, on the spine line,
+-    /// 0.15 m outside the end panel, its receptacle toward the panel
+-    /// (research/outlets/10_spec.md §2.10). Render-only and 67 mm tall: it goes on
+-    /// the chunk's (or stream room's) FrontRoomsWallFixtureSet; with no set (the
+-    /// look-dev hall) it spawns without colliders. Uses no rng, so the layout is unchanged.
++    /// The pod's one base feed (research/outlets/10_spec.md §2.10, fix pass 2026-10-14): a 1990
++    /// system-furniture pod takes its power at one point, a floor box at the end of the
++    /// spine that carries the powered panel (Kit_CubiclePanel_Powered, column 0), from
++    /// where the panels' base raceway runs it to every station. The tombstone sits on the
++    /// spine line 0.05 m outside the end post, its receptacle toward the panel, so it
++    /// reads as feeding it (a flex whip into the panel base is a later P3 kit).
++    /// Render-only and 67 mm tall: it goes on the chunk's (or stream room's)
++    /// FrontRoomsWallFixtureSet; with no set (the look-dev hall) it spawns without
++    /// colliders. Uses no rng, so the layout is unchanged.
+     /// </summary>
+     static void AddPodFeeds(Transform run, float halfW, float spine)
+     {
+-        const float clear = .15f, boxHalfDepth = .038f;
++        const float clear = .05f, boxHalfDepth = .038f;
++        const int end = -1;   // the powered spine panel is column 0, at -halfW
+         if (run == null || FrontRoomsWallFixtures.Suppressed) return;   // tools and tests: no outlet layer at all
+         var set = run.GetComponentInParent<FrontRoomsWallFixtureSet>(true);   // inactive too: a stream variant is dressed while hidden
+-        for (var end = -1; end <= 1; end += 2)
+-        {
+-            var local = new Vector3(end * (halfW + PostWidth * .5f + clear + boxHalfDepth), 0f, spine);
+-            if (set != null) set.AddExtra(FrontRoomsWallFixtures.FixtureKit.FloorBox, run, local, new Vector3(-end, 0f, 0f));
+-            else if (FrontRoomsWallFixtures.KitExists(FloorFeed))
+-                FrontRoomsKitLibrary.Spawn(FloorFeed, run, local, end > 0 ? -90f : 90f, null, false, "pod floor feed");
+-        }
++        var local = new Vector3(end * (halfW + PostWidth * .5f + clear + boxHalfDepth), 0f, spine);
++        if (set != null) set.AddExtra(FrontRoomsWallFixtures.FixtureKit.FloorBox, run, local, new Vector3(-end, 0f, 0f));
++        else if (FrontRoomsWallFixtures.KitExists(FloorFeed))
++            FrontRoomsKitLibrary.Spawn(FloorFeed, run, local, 90f, null, false, "pod floor feed");
+     }
+ 
+     /// <summary>
+--- a/Assets/Resources/Rendering/FrontRoomsSurface.shader
++++ b/Assets/Resources/Rendering/FrontRoomsSurface.shader
+@@ -57,6 +57,9 @@
+         // Required by URP's shadow/depth passes.
+         _Cutoff ("Alpha cutoff", Range(0, 1)) = 0.5
+         [HideInInspector] _Cull ("__cull", Float) = 2
++        // Wall-match outlet plates set this per draw (FrontRoomsWallFixtureRenderer): the world-planar frame
++        // follows the normal's dominant axis. 0 everywhere else, so no material changes.
++        [HideInInspector] _FR_PlanarSnap ("Planar frame on the dominant axis", Float) = 0
+     }
+ 
+     SubShader
+@@ -95,6 +98,8 @@
+             half _PrintAmount;
+             // Exit-sign lamp weights: in every pass, so the SRP batcher layout never changes.
+             float4 _LampField;
++            // Wall-match outlet plates (per-draw block only): world-planar frame on the normal's dominant axis.
++            half _FR_PlanarSnap;
+         CBUFFER_END
+ 
+         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
+@@ -195,6 +200,17 @@
+                 t = abs(n.y) > 0.5 ? float3(1, 0, 0) : normalize(cross(float3(0, 1, 0), n));
+                 b = cross(n, t);
+                 uvMetres = float2(dot(positionWS, t), dot(positionWS, b));
++            }
++
++            // The world axis closest to n. A papered- or painted-over outlet plate (a few mm proud, its field domed by
++            // 1-5 degrees, bevelled edges) projects the wall's paper through the wall's own frame with it: the frame is
++            // dotted with the absolute world position, so any tilt of n would move the paper by metres (outlets 40_final.md).
++            float3 SnapToAxis(float3 n)
++            {
++                float3 a = abs(n);
++                if (a.y >= a.x && a.y >= a.z) return float3(0, n.y >= 0 ? 1 : -1, 0);
++                if (a.x >= a.z) return float3(n.x >= 0 ? 1 : -1, 0, 0);
++                return float3(0, 0, n.z >= 0 ? 1 : -1);
+             }
+ 
+         #if defined(_FR_PRINT)
+@@ -389,6 +405,12 @@
+                 b = input.tangentWS.w * cross(nGeo, t);
+             #else
+                 PlanarFrame(input.positionWS, nGeo, metres, t, b);
++                if (_FR_PlanarSnap > 0.5)
++                {
++                    // UVs from the snapped frame; the TBN (t, b, nGeo) keeps the real normal's frame for lighting.
++                    float3 st, sb;
++                    PlanarFrame(input.positionWS, SnapToAxis(nGeo), metres, st, sb);
++                }
+             #endif
+                 float2 uv = metres / max(_TileSize.xy, 1e-3) * _BaseMap_ST.xy + _BaseMap_ST.zw;
+ 
+@@ -405,7 +427,7 @@
+                 // 90 degrees). Both periods divide 192 m.
+                 float2 wearUV;
+                 float3 wt, wb;
+-                PlanarFrame(input.positionWS, nGeo, wearUV, wt, wb);
++                PlanarFrame(input.positionWS, _FR_PlanarSnap > 0.5 ? SnapToAxis(nGeo) : nGeo, wearUV, wt, wb);
+                 half4 m1 = SAMPLE_TEXTURE2D(_MacroMap, sampler_MacroMap, wearUV / 8.0);
+                 half4 m2 = SAMPLE_TEXTURE2D(_MacroMap, sampler_MacroMap, float2(wearUV.y, -wearUV.x) / 12.8);
+                 half tone = lerp(1.0h, 0.84h + 0.30h * m1.r * m2.r, _MacroTone);

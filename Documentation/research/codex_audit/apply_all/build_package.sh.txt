@@ -1,0 +1,39 @@
+#!/bin/bash
+# Builds W/apply/codex_audit_all_{bases,keep,expected,members}.txt, _payload/, _base/ and .diff from the two member
+# packages (codex_audit_glass_look, codex_audit_other_visual). Writes only under W/apply/codex_audit_all*. Never touches main.
+set -eu
+A=/Users/redwang/FrontRoomsVisualWork/apply; T=codex_audit_all
+M="/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+MEMBERS="codex_audit_glass_look codex_audit_other_visual"
+head=$(GIT_OPTIONAL_LOCKS=0 git -C "$M" rev-parse --short HEAD)
+stamp=$(date '+%Y-%m-%d %H:%M %Z')
+rm -rf "$A/${T}_payload" "$A/${T}_base"; mkdir -p "$A/${T}_payload" "$A/${T}_base"
+{
+  echo "# $T bases: every path --apply writes, <sha1|ABSENT>  <path>. Copied from the member packages' bases (both"
+  echo "# re-checked by their own dry runs on main $head + working tree, $stamp). Order = write order."
+} > "$A/${T}_bases.txt"
+echo "# $T kept paths (never written). A changed .meta refuses the apply; the fallback shader is a note only." > "$A/${T}_keep.txt"
+echo "# $T expected: the payload = the target after --apply, in write order (.meta before its asset, code last)" > "$A/${T}_expected.txt"
+echo "# $T members: <member package>  <path>. A member is applied whole or not at all." > "$A/${T}_members.txt"
+: > "$A/${T}.diff"
+for m in $MEMBERS; do
+  grep -v '^#' "$A/${m}_bases.txt" | grep -v '^$' >> "$A/${T}_bases.txt"
+  grep -v '^#' "$A/${m}_keep.txt" | grep -v '^$' >> "$A/${T}_keep.txt"
+  grep -v '^#' "$A/${m}_expected.txt" | grep -v '^$' >> "$A/${T}_expected.txt"
+  grep -v '^#' "$A/${m}_expected.txt" | grep -v '^$' | while IFS= read -r line; do
+    p="${line#*  }"; want="${line%%  *}"
+    echo "$m  $p" >> "$A/${T}_members.txt"
+    mkdir -p "$A/${T}_payload/$(dirname "$p")"; cp -p "$A/${m}_payload/$p" "$A/${T}_payload/$p"
+    [ "$(shasum "$A/${T}_payload/$p" | cut -c1-40)" = "$want" ] || { echo "payload sha1 mismatch $p"; exit 1; }
+    base=$(grep "  $p\$" "$A/${m}_bases.txt" | grep -v "^#" | awk "{print \$1}" | head -1)
+    if [ "$base" = ABSENT ]; then
+      diff -u /dev/null "$A/${T}_payload/$p" --label "/dev/null" --label "b/$p" >> "$A/${T}.diff" || true
+    else
+      mkdir -p "$A/${T}_base/$(dirname "$p")"; cp -p "$A/${m}_base/$p" "$A/${T}_base/$p"
+      [ "$(shasum "$A/${T}_base/$p" | cut -c1-40)" = "$base" ] || { echo "base copy sha1 mismatch $p"; exit 1; }
+      diff -u "$A/${T}_base/$p" "$A/${T}_payload/$p" --label "a/$p" --label "b/$p" >> "$A/${T}.diff" || true
+    fi
+  done
+done
+echo "built $T from $MEMBERS on main $head ($stamp)"
+wc -l "$A/${T}_bases.txt" "$A/${T}_keep.txt" "$A/${T}_expected.txt" "$A/${T}_members.txt" "$A/${T}.diff"

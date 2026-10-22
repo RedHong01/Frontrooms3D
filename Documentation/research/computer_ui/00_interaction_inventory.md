@@ -171,7 +171,7 @@ It never wrote under Frontrooms3D/Assets. On 2026-10-03 it told 关卡设计, in
 
 - **Player:** Passive. When the lamp of the placard's glow cell is logically dark, dim, failing or out in a power failure, the IN POWER FAILURE legend glows pale yellow-green. It does not glow under a normal lit lamp, and the start-area lamp hold counts as lit, so in most runs the player sees an ordinary printed sign. The glow freezes when the Relay catches you, and with Reduce flashing on it stays steady.
 - **Where:** The same placard. The glow cell is the side cell for P1/P3 and the door cell for P2.
-- **Owner:** 游戏视觉. The glow strength k = 0.158 is Red's call.
+- **Owner:** 游戏视觉. The glow strength k = 0.158 is Red's decision.
 - **Notes:** This is the only phosphor ink in the game today.
 - **Evidence:** Assets/Scripts/Rendering/FrontRoomsPlacardGlow.cs:5-37, :85-116 (Bind; Caught freezes it), :131-159 (LampModeOf/LampLevel drive _EmissionColor); Assets/Scripts/Rendering/FrontRoomsPhosphor.cs:12-16,38-39; Assets/Resources/Surfaces/Prop_EvacPlan.mat:14-16,36-37 (_EMISSION on); Documentation/research/placard/30_render.md:164 (glows on its own in ~16 % of runs)
 
@@ -508,7 +508,7 @@ It never wrote under Frontrooms3D/Assets. On 2026-10-03 it told 关卡设计, in
 
 - **Player:** None. The only 'EXIT' a player sees in normal play is the word printed on the evacuation placard.
 - **Where:** The generated map and the start-door facade.
-- **Owner:** Only proposed: C-1 Office door signs (Red's call), C-3 a Ceiling placement type
+- **Owner:** Only proposed: C-1 Office door signs (Red decides), C-3 a Ceiling placement type
 - **Evidence:** Documentation/research/exit_sign/10_spec.md:109, 30_integration.md:191; no exit-sign spawn in Assets/Scripts/FrontRoomsMap
 
 ### A reachable exit / goal

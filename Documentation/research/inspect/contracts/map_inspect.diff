@@ -1,13 +1,13 @@
-EXAMINE (close-up inspect) — map chat (关卡设计) CONTRACT diff, research/inspect/10_design.md §7.2 (C1-C19, C25; C11 hint slot PROPOSED).
-Written by the visual chat (游戏视觉) 2026-10-08 01:50 PDT. Anchored on Red's CURRENT main: HEAD bc0aa79.
+EXAMINE (close-up inspect) - map chat (关卡设计) CONTRACT diff, research/inspect/10_design.md §7.2 (C1-C19, C25; C11 hint slot PROPOSED).
+Written by the visual chat (游戏视觉) 2026-10-14 17:02 PDT, fix stage. Anchored on Red's CURRENT main: HEAD 0a9ee7f (these files clean).
 Base sha1 of each file (re-read before applying; a mismatch means re-anchor):
-  105a845384a28e701440dab11af92b8d2ede8670  Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
-  b5c12c80e26f28dc9df162ac41051e63c28f364f  Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
-  d3c9259b580de43b2315e7e468ee857fd7fd5bf0  Assets/Scripts/FrontRooms3DGame.cs
-  a01b019b2662b503a80074ccffb4a483b619d852  Assets/Scripts/FrontRooms3DGame.Mobile.cs
-Apply (map chat, in its own checkout):  patch -p1 < map_inspect.diff     (dry run: patch -p1 --dry-run < map_inspect.diff)
-Not in this diff: the visual-owned files (W/apply/inspect.sh) — they need C16-C19 first (ShotKind.Inspect, ShotSpec.fullPose/ease/rotBlendOut/fovMin,
-ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested end to end in W/proj_inspect (research/inspect/20_prototype.md).
+  53dc51cd3a3fd1886491d931e5e43cdc9ddd5000  Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
+  2ca796cf0883ba1edfb340d126c175a3e073eed8  Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
+  70bedd38112e23ceb93373bed44500b702edeb01  Assets/Scripts/FrontRooms3DGame.cs
+  20d2fe8622fb3eff0a2b81d30c829f43f73e64e2  Assets/Scripts/FrontRooms3DGame.Mobile.cs
+Merge order (research/inspect/20_prototype.md §8): 1. map_inspect_1_rig.diff (C16-C19: rig + timings; compiles alone),
+2. the visual package W/apply/inspect.sh (needs step 1), 3. map_inspect_3_game.diff (C1-C15, C25: needs step 2).
+map_inspect.diff = steps 1 + 3 in one file, for review. Apply: patch -p1 < <file>   (dry run: patch -p1 --dry-run < <file>)
 
 --- a/Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
 +++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
@@ -20,13 +20,14 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
  
  /// <summary>How a shot may end early.</summary>
  [Flags]
-@@ -20,6 +20,13 @@
+@@ -20,6 +20,14 @@
  public enum ShotInput { Use, Back }
  
  /// <summary>
 +/// How a shot's weight becomes the camera's pull. Cubic: the rig's ease-in-out both ways (every shot
 +/// before EXAMINE). Sine (research/inspect/10_design.md §3.5, C17b): in 0.5 - 0.5 cos(πw); out
-+/// 1 - cos(πw/2) from wherever the pull was when the shot began to end (fast start, settles).
++/// 1 - cos(πw/2) from wherever the pull was when the shot began to end (fast start, settles), entered
++/// over FrontRoomsShotTimings.Inspect.OutOnset (2 frames) so the speed never steps from 0 to its peak.
 +/// </summary>
 +public enum ShotEase { Cubic, Sine }
 +
@@ -34,10 +35,10 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
  /// A shot: where the camera goes (a world pose, asked every frame so it can
  /// follow a moving anchor), how it blends in and out, and what it locks.
  /// </summary>
-@@ -41,6 +48,18 @@
-     public ShotCancel cancel;
-     /// <summary>The shot's length in seconds, for the push buffer of door shots (0 = open-ended: no buffer).</summary>
-     public float duration;
+@@ -46,6 +54,18 @@
+     /// HUD back with movement at 1.45 s while the shot stays alive to 1.55 s for the buffered push.
+     /// </summary>
+     public float hudUntil;
 +    /// <summary>
 +    /// The full pose and FOV at every Camera motion setting (C17): not scaled by the setting. At
 +    /// 0 &lt; motion &lt; 1 every blend time is ×FrontRoomsShotTimings.Inspect.HalfMotionTimeScale;
@@ -53,7 +54,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
  }
  
  /// <summary>A running shot, to end or cancel it.</summary>
-@@ -50,7 +69,16 @@
+@@ -55,7 +75,16 @@
      internal float weight, age;
      internal bool ending;
      internal float blendOut;
@@ -69,17 +70,17 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +    public float RotationWeight => rotEased;
      public bool Ended { get; internal set; }
      public bool Cancelled { get; internal set; }
-     /// <summary>Seconds since the shot began.</summary>
-@@ -85,7 +113,7 @@
-     readonly List<(Vector3 local, float seconds, float age)> offsets = new List<(Vector3, float, float)>();
-     readonly List<(float delta, float seconds, float age)> fovPushes = new List<(float, float, float)>();
+     /// <summary>The input that cancelled the shot through Consume (S or a second E); null when it was not cancelled by input.</summary>
+@@ -95,7 +124,7 @@
+     readonly List<(float delta, float seconds, float age)> fovReleases = new List<(float, float, float)>();
+     readonly List<(float degrees, float seconds, float age)> kicks = new List<(float, float, float)>();
      float trauma, traumaPeak, traumaDecay, traumaTime, hudFade, pitch, stanceDrop;
 -    readonly RaycastHit[] hits = new RaycastHit[8];
 +    readonly RaycastHit[] hits = new RaycastHit[16];   // C17d: never drop the nearest hit
  
      FrontRoomsCameraRig(Transform body, Transform eye, Camera camera, float eyeHeight)
      {
-@@ -160,8 +188,8 @@
+@@ -176,8 +205,8 @@
      /// <summary>Begin a shot. Shots stack: the newest decides the pose.</summary>
      public ShotHandle BeginShot(ShotSpec spec)
      {
@@ -90,7 +91,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          shots.Add(handle);
          BufferedPush = false;   // a push buffered in an earlier shot never carries over
          ShotStarted?.Invoke(spec.kind, spec.focus);
-@@ -182,11 +210,13 @@
+@@ -210,11 +239,13 @@
          if (handle.ending)
          {
              handle.blendOut = Mathf.Min(handle.blendOut, blendOut);
@@ -104,13 +105,13 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
      }
  
      /// <summary>Cancel every shot that the Relay may interrupt (it chases or sees the player), fast.</summary>
-@@ -285,7 +315,17 @@
+@@ -342,8 +373,18 @@
          {
              var shot = shots[i];
              shot.age += dt;
 -            if (shot.ending)
 +            if (shot.spec.ease == ShotEase.Sine)
-+            {
+             {
 +                if (TickSine(shot, dt, motion))
 +                {
 +                    shots.RemoveAt(i);
@@ -120,10 +121,11 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +                }
 +            }
 +            else if (shot.ending)
-             {
++            {
                  shot.weight = shot.blendOut > 0f ? Mathf.MoveTowards(shot.weight, 0f, dt / shot.blendOut) : 0f;
                  if (shot.weight <= 0f)
-@@ -297,6 +337,7 @@
+                 {
+@@ -354,6 +395,7 @@
                  }
              }
              else shot.weight = shot.spec.blendIn > 0f ? Mathf.MoveTowards(shot.weight, 1f, dt / shot.spec.blendIn) : 1f;
@@ -131,10 +133,10 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
              if (!shot.ending)
              {
                  MoveLocked |= shot.spec.lockMove;
-@@ -311,18 +352,21 @@
-         var position = basePose.position;
+@@ -369,19 +411,22 @@
          var rotation = basePose.rotation;
          var fov = BaseFov;
+         var shotFov = 0f;
 +        var fovFloor = BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg;
          if (shots.Count > 0)
          {
@@ -153,30 +155,45 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +                position = Vector3.Lerp(position, target.position, w * scale);
 +                rotation = Quaternion.Slerp(rotation, target.rotation, shot.rotEased * scale);
              }
--            fov += (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
-+            fov += (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * scale;
+-            shotFov = (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
++            shotFov = (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * scale;
+             fov += shotFov;
 +            if (shot.spec.kind == ShotKind.Inspect) fovFloor = BaseFov - MaxFovDrop(shot.spec);
          }
+         ShotFovDelta = shotFov;
  
-         // Offsets: sine there and back, camera-local.
-@@ -346,7 +390,7 @@
-             fovPushes[i] = (delta, seconds, age);
-             fov += delta * Mathf.Sin(age / seconds * Mathf.PI);
+@@ -415,7 +460,7 @@
+             fovReleases[i] = (delta, seconds, age);
+             fov += delta * (1f - Mathf.SmoothStep(0f, 1f, age / seconds));
          }
 -        fov = Mathf.Clamp(fov, BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
 +        fov = Mathf.Clamp(fov, fovFloor, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
  
-         // Shake: smooth noise on pitch, yaw and roll, falling linearly so it ends at its decay time.
-         if (trauma > 0f)
-@@ -386,4 +430,49 @@
-     }
+         // Kicks: signed pitch, full at once, falling linearly to nothing.
+         var kick = 0f;
+@@ -468,4 +513,64 @@
  
-     static float Ease(float t) => t < .5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * .5f;
+     /// <summary>The rig's cubic ease-in-out on 0..1 (shot blends; the door shot's curves use it too).</summary>
+     public static float Ease(float t) => t < .5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * .5f;
 +
 +    /// <summary>Sine in-out (C17b): peak slope π/2 = 1.57 × the average.</summary>
 +    public static float SineIn(float w) => .5f - .5f * Mathf.Cos(Mathf.PI * Mathf.Clamp01(w));
 +    /// <summary>Sine out (C17b): from 1 at w = 1 to 0 at w = 0; fastest at the start of the return, settling at the end.</summary>
 +    public static float SineOut(float w) => 1f - Mathf.Cos(Mathf.PI * .5f * Mathf.Clamp01(w));
++
++    /// <summary>
++    /// The sine-out leg entered smoothly (C17b, verifier 2026-10-08): the elapsed fraction s = 1 - w is warped by a
++    /// quadratic onset over the first k of the leg (u = s²/2k, then s - k/2, normalised), so the speed ramps from 0 over
++    /// k instead of starting at its peak. C1 at k; the leg still ends at w = 0. k = 0 is plain SineOut.
++    /// </summary>
++    public static float SineOutOnset(float w, float k)
++    {
++        k = Mathf.Clamp(k, 0f, .5f);
++        if (k <= 0f) return SineOut(w);
++        var s = 1f - Mathf.Clamp01(w);
++        var u = (s < k ? s * s / (2f * k) : s - k * .5f) / (1f - k * .5f);
++        return SineOut(1f - u);
++    }
 +
 +    /// <summary>How far below BaseFov a shot may narrow: MaxFovDeltaDeg, or down to fovMin for ShotKind.Inspect (C17c).</summary>
 +    float MaxFovDrop(ShotSpec spec) =>
@@ -213,14 +230,15 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +        var outRot = Blend(shot, shot.rotBlendOut > 0f ? shot.rotBlendOut : shot.blendOut, motion);
 +        shot.weight = outPos > 0f ? Mathf.MoveTowards(shot.weight, 0f, dt / outPos) : 0f;
 +        shot.rotWeight = outRot > 0f ? Mathf.MoveTowards(shot.rotWeight, 0f, dt / outRot) : 0f;
-+        shot.eased = shot.outPull * SineOut(shot.weight);
-+        shot.rotEased = shot.outRotPull * SineOut(shot.rotWeight);
++        var onset = FrontRoomsShotTimings.Inspect.OutOnset;
++        shot.eased = shot.outPull * SineOutOnset(shot.weight, outPos > 0f ? onset / outPos : 0f);
++        shot.rotEased = shot.outRotPull * SineOutOnset(shot.rotWeight, outRot > 0f ? onset / outRot : 0f);
 +        return shot.weight <= 0f && shot.rotWeight <= 0f;
 +    }
  }
 --- a/Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
 +++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
-@@ -146,6 +146,24 @@
+@@ -166,6 +166,25 @@
          public const float RevealHold = .3f;           // the Relay holds in the doorway, back-lit
      }
  
@@ -238,7 +256,8 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +        public const float FovFlat = -15f, FovObject = -10f, MinSurface = .15f, MaxRise = .10f, MaxDrop = .55f, MaxYawOff = 25f;
 +        public const float ZoomSeconds = .25f, ZoomFovSeconds = .40f, PanSeconds = .12f, TurnSeconds = .08f;
 +        public const float BaseLookDeg = 3f, BaseLookSeconds = .12f, ScrollRearm = .2f;
-+        public const float AdaptTau = .6f, AdaptTauCalm = 1.2f, AdaptMaxEv = 1f, AdaptContrast = 12f;
++        public const float OutOnset = 1f / 30f;      // both return legs ramp in over 2 frames (no speed step at the exit)
++        public const float AdaptTau = .6f, AdaptTauCalm = 1.2f;   // the lift's own amounts are look values (FrontRoomsInspectLook)
 +        public const float FirstKeyHoldMax = 2.0f, FirstKeyBreakMove = .2f, FirstKeyBreakLookDeg = 2f;
 +    }
 +
@@ -256,7 +275,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
      Phase phase;
      Camera cam;
      [SerializeField, Tooltip("The Relay rig serialized in this scene. It stays hidden until the hunter is released.")]
-@@ -51,6 +51,19 @@
+@@ -51,6 +51,21 @@
      public static bool PlayerWinded { get; private set; }
      /// <summary>The sprint rule's answer this frame (Shift held, moving, stamina left, not winded).</summary>
      public static bool PlayerSprinting { get; private set; }
@@ -270,13 +289,15 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +    bool useLatch, backLatch, timeFrozenByInspect;
 +    float inspectCooldown;
 +    // C11: in a close-up the hint slot sits in the bottom band, clear of the framed subject (PROPOSED; 平面视觉 places it).
++    // 83: the 26-unit prompt rect's centre, so Bayon 20's glyph bottom lands on UI_SYSTEM's 72 px outer margin at 1080
++    // (v1's 64 put it at 53 px, inside the margin).
 +    Vector2 promptHome;
 +    bool promptHomeSet;
-+    const float InspectHintBottom = 64f;
++    const float InspectHintBottom = 83f;
  
      [SerializeField, Tooltip("The Level 0 maze's numbers: generation, run seed, streaming, light budget, dressing (Assets/Levels/FrontRoomsLevel0.asset). Empty: the code defaults.")]
      FrontRoomsLevelProfile levelProfile;
-@@ -341,6 +354,9 @@
+@@ -343,6 +358,9 @@
          if (!Application.isPlaying) return;
  
          Application.targetFrameRate = 60;
@@ -286,7 +307,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          // Full-resolution textures; MSAA, HDR and shadows come from the URP
          // pipeline asset (Assets/Settings/FrontRooms_URP).
          QualitySettings.globalTextureMipmapLimit = 0;
-@@ -963,6 +979,9 @@
+@@ -991,6 +1009,9 @@
              local = input.Move;
              sprintHeld = input.SprintHeld;
          }
@@ -296,7 +317,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          moveIntent = local.sqrMagnitude > .01f;
          if (rig != null)
          {
-@@ -1088,10 +1107,78 @@
+@@ -1127,12 +1148,80 @@
  #endif
          UpdateRelayRig(dt);
          UpdateReflectionZone(false);
@@ -309,8 +330,10 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +        }
          // Picture layers last, after gameplay has read BaseEye this frame.
          rig?.Tick(dt);
-     }
- 
+         // A presented key rides the camera as rendered (after the rig), so it never lags a frame.
+         doorShot?.PlaceKey();
++    }
++
 +    // ---------- EXAMINE (C4, C5): the gate, entry and exit ----------
 +
 +    bool HarnessRunning
@@ -361,8 +384,8 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +        useLatch = true;
 +        backLatch = byBack;
 +        inspectCooldown = FrontRoomsShotTimings.Inspect.Cooldown;
-+    }
-+
+     }
+ 
 +    void OnInspectAbortRequested()
 +    {
 +        var shot = inspectShot;
@@ -375,7 +398,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
      /// <summary>
      /// The reflection cube for where the player stands (FrontRoomsLook, the visual chat's): the
      /// zone's kind, or the dead-lamp cube under a dead, dim or missing lamp, keyed by the lamp's
-@@ -1265,8 +1352,18 @@
+@@ -1371,8 +1460,18 @@
          // Gameplay aims from the base eye: shots, shakes and leans are picture only.
          var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
          var hitPoint = Vector3.zero;
@@ -395,7 +418,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
              prompt = map.Describe(hit.collider, out aimedHold);
              // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
              if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
-@@ -1289,6 +1386,14 @@
+@@ -1406,6 +1505,14 @@
          var eDown = EDown();
          var glassOwnsE = glassShot != null && aimedHold && aimed == glassPane && !glassShot.Shattered && (glassShot.Active || glassShot.Blending);
          var pressed = eDown && (glassOwnsE || rig == null || !rig.Consume(ShotInput.Use));
@@ -410,7 +433,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (aimed == null)
          {
              holdProgress = 0f;
-@@ -2037,12 +2142,24 @@
+@@ -2164,14 +2271,26 @@
      }
      void SetPhase(Phase p)
      {
@@ -421,6 +444,8 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          var wasPaused = phase == Phase.Paused;
 +        var wasHud = wasPlaying || phase == Phase.Inspect;
          phase = p; bool playing = p == Phase.Playing;
+         // Doors freeze with the game (a swing, a jolt, a key turn's watchdog), so nothing moves or sounds under the pause card.
+         if (map != null) map.DoorsPaused = !playing;
 +        // Inspect is a HUD phase: the panels stay and rig.HudFade fades them; the crosshair goes at once.
 +        var hudPhase = playing || p == Phase.Inspect;
          if ((p == Phase.Paused) != wasPaused) Paused?.Invoke(p == Phase.Paused);
@@ -437,7 +462,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (p != Phase.Paused)
          {
              displaySettingsOpen = false;
-@@ -2052,7 +2169,7 @@
+@@ -2181,7 +2300,7 @@
          // is leaving. This is the only frame in which the title layer and the
          // playing HUD overlap; all title children are non-raycast targets.
          var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
@@ -446,7 +471,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
              ? new Color(0f, 0f, 0f, 0f)
              : new Color(.93f, .92f, .88f, .98f);
-@@ -2068,12 +2185,12 @@
+@@ -2197,12 +2316,12 @@
              if (logoLeftImage != null) logoLeftImage.enabled = LogoShown;
              if (logoSlideImage != null) logoSlideImage.enabled = LogoShown;
          }
@@ -463,7 +488,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (overlayText != null)
          {
              overlayText.enabled = !FrontRoomsHandheld.Active && p != Phase.Title && !displaySettingsOpen;
-@@ -2090,8 +2207,8 @@
+@@ -2219,8 +2338,8 @@
              if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
              if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK        SOCKET · SPRINT\nUSE · DOOR        HOLD USE · BREAK GLASS";
          }
@@ -474,7 +499,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (p == Phase.Caught)
          {
              var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
-@@ -2110,7 +2227,7 @@
+@@ -2239,7 +2358,7 @@
  #if UNITY_EDITOR
          if (autopilot) return;
  #endif
@@ -483,7 +508,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
      }
  
      void OnApplicationPause(bool paused)
-@@ -2118,7 +2235,7 @@
+@@ -2247,7 +2366,7 @@
  #if UNITY_EDITOR
          if (autopilot) return;
  #endif
@@ -492,7 +517,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
      }
      void Update()
      {
-@@ -2129,12 +2246,22 @@
+@@ -2258,12 +2377,22 @@
          else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
          else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
          else if (displaySettingsOpen) HandleSettingsKeys();
@@ -517,7 +542,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          {
              if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
              {
-@@ -2153,8 +2280,18 @@
+@@ -2282,8 +2411,20 @@
  #endif
          if (phase == Phase.Title) UpdateTitleSequence(dt);
          if (logoFading) UpdateLogoFade(dt);
@@ -529,7 +554,9 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +            var u = FrontRoomsInspect.Dt;
 +            var look = Vector2.zero;
 +            if (mouseSettleFrames > 0) mouseSettleFrames--; else look = input.Look;
-+            FrontRoomsInspect.Tick(u, look, 0f, false);        // v1; after T3: input.Zoom, input.ZoomToggleDown
++            // v1: no zoom input, so FrontRoomsInspect.ZoomInputWired stays false (no zoom step, no CLOSER hint). After touch T3:
++            // FrontRoomsInspect.ZoomInputWired = true (once, in Awake) and pass input.Zoom, input.ZoomToggleDown here.
++            FrontRoomsInspect.Tick(u, look, 0f, false);
 +            rig?.Tick(u);
 +        }
 +        else if (phase == Phase.Playing && mapPlay)
@@ -537,7 +564,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
              elapsed += dt;
              flashTime -= dt;
              FrontRoomsCaptions.Tick(dt);
-@@ -2171,7 +2308,9 @@
+@@ -2300,7 +2441,9 @@
      void UpdateHud()
      {
          bool play = phase == Phase.Playing;
@@ -548,7 +575,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
              gameplayHudAlpha = Mathf.MoveTowards(gameplayHudAlpha, 1f, Time.unscaledDeltaTime / GameplayHudFadeSeconds);
          else
              gameplayHudAlpha = 0f;
-@@ -2181,17 +2320,28 @@
+@@ -2310,17 +2453,28 @@
          var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
          var released = relay != null && relay.Released;
          var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "RELAY  /  BREAKING DOOR" : "RELAY  /  " + relay.State.ToString().ToUpperInvariant();
@@ -581,31 +608,36 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (holdBar != null)
          {
              holdBar.SetActive(play && holdProgress > 0f);
-@@ -2205,9 +2355,9 @@
+@@ -2334,14 +2488,14 @@
              staminaSegments[i].enabled = tired;
              staminaSegments[i].color = stamina >= (i + .5f) * (StaminaSeconds / staminaSegments.Length) ? new Color(.957f, .875f, .231f) : new Color(1f, 1f, 1f, .25f);
          }
 -        if (roomPanel != null) roomPanel.SetActive(play);
 +        if (roomPanel != null) roomPanel.SetActive(hudOn);
          if (threatPanel != null) threatPanel.SetActive(showThreat);
--        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id);
-+        var showKey = hudOn && !inStartRooms && map.HasKeyFor(zone.id);
+         // A presented key's panel waits for the pocket (KeyPickup.PocketEnd), then fades in over PanelFadeIn
+         // (keyPanelFade, in ApplyGameplayHudAlpha). On the instant path (no model) it is up at once, as before.
+         var presentingKey = doorShot != null && doorShot.Presenting(zone.id);
+         if (presentingKey) keyPanelFade = 0f;
+         else if (keyPanelFade < 1f) keyPanelFade = Mathf.MoveTowards(keyPanelFade, 1f, Mathf.Min(Time.deltaTime, .1f) / FrontRoomsShotTimings.KeyPickup.PanelFadeIn);
+-        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
++        var showKey = hudOn && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
          if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
          {
              keyLabelZone = zone.id;
-@@ -2263,7 +2413,7 @@
+@@ -2399,7 +2553,7 @@
          if (threatHudGroup != null) threatHudGroup.alpha = hud;
          if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
          if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
 -        if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
 +        if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
-         if (keyHudGroup != null) keyHudGroup.alpha = hud;
+         // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).
+         if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
      }
-     void Flash(string message, float duration = 3f) { flash = message; flashTime = duration; }
-@@ -2320,6 +2470,12 @@
-             FrontRoomsMobileBackBridge.BackPressed -= HandleMobileBack;
+@@ -2471,6 +2625,12 @@
          PlayerStamina01 = 1f;
          PlayerWinded = PlayerSprinting = false;
+         PlayerGait = FrontRoomsGait.Still;
 +        // C12: a close-up torn down (R restart, Play stopped) gives the world back.
 +        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
 +        if (timeFrozenByInspect) Time.timeScale = 1f;
@@ -613,12 +645,12 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
 +        if (InspectingNow) { InspectingNow = false; Inspecting?.Invoke(false); }
 +        FrontRoomsInspect.Abort();
          if (phase == Phase.Paused) Paused?.Invoke(false);
-         if (map != null) MapRunEnded?.Invoke();
-         OnDestroyMobile();
-@@ -2328,6 +2484,8 @@
-     void End()
-     {
+         if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
+         if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
+@@ -2483,6 +2643,8 @@
          if (phase != Phase.Playing) return;
+         // Caught > cancel > shot: a key turn resolves now (locked before its commit, unlocked and shut after), the camera stays.
+         doorShot?.Abort();
 +        // C12b: caught during a close-up's return: nothing freezes mid-blend (other shots behave as before).
 +        if (FrontRoomsInspect.Active) { FrontRoomsInspect.Abort(); rig?.ResetLayers(); }
          SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
@@ -626,8 +658,8 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
 --- a/Assets/Scripts/FrontRooms3DGame.Mobile.cs
 +++ b/Assets/Scripts/FrontRooms3DGame.Mobile.cs
-@@ -129,8 +129,10 @@
-         if (this == null || phase == Phase.Title || phase == Phase.Caught) return;
+@@ -192,8 +192,10 @@
+         }
          if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
          if (displaySettingsOpen) { ToggleDisplaySettings(); return; }
 +        // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
@@ -638,7 +670,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
      }
  
      void RequestMobileRestartConfirmation()
-@@ -168,7 +170,14 @@
+@@ -241,7 +243,14 @@
      void HandleMobileLookTap(Vector2 viewport)
      {
          if (phase != Phase.Playing || map == null || cam == null) return;
@@ -653,7 +685,7 @@ ShotHandle.EasedWeight/RotationWeight, FrontRoomsShotTimings.Inspect). Tested en
          if (!Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore)) return;
          var description = map.Describe(hit.collider, out var hold);
          if (hold || string.IsNullOrEmpty(description)) return;
-@@ -185,7 +194,7 @@
+@@ -259,7 +268,7 @@
              mobileTouch.SetRestartConfirmation(false);
          }
          var state = phase == Phase.Title ? FrontRoomsTouchControls.MenuState.Title

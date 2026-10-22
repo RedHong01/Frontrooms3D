@@ -40,7 +40,8 @@
   "interactable",
   "window",
   "blind",
-  "decor"
+  "decor",
+  "wall_decor"
  ],
  "decorOnly": "Kit_InteriorWindow (G5); never on a breakable map window",
  "lodDistances": [

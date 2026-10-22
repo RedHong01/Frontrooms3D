@@ -138,6 +138,71 @@
   "bottomRailThumbs": 0.9,
   "channel": "R"
  },
+ "inspect": {
+  "kind": "flat",
+  "verb": "read",
+  "face": "face",
+  "faceDir": "face_dir",
+  "up": "",
+  "size": [
+   0.4668,
+   0.3138
+  ],
+  "margin": 0.08,
+  "screen": [
+   0.01,
+   0.0,
+   0.63,
+   1.0
+  ],
+  "dist": [
+   0.36,
+   0
+  ],
+  "distMaxA": 0.44,
+  "minDist": 0.18,
+  "maxDist": 1.0,
+  "maxAngle": 25,
+  "maxYawOff": 25,
+  "fovDelta": -15,
+  "reach": 1.6,
+  "approachAngle": 60,
+  "orbit": 0,
+  "aimPad": 0.02,
+  "texelsPerMetre": 7330,
+  "sheet": [
+   432.0,
+   279.0
+  ],
+  "regions": [
+   {
+    "id": "legend",
+    "rect": [
+     299.6,
+     49.7,
+     111.0,
+     174.3
+    ],
+    "capMm": 2.4
+   }
+  ],
+  "dof": false,
+  "transcript": "placard_q16",
+  "sound": "metal",
+  "ship": true,
+  "box": {
+   "c": [
+    0.0,
+    0.0,
+    0.00675
+   ],
+   "s": [
+    0.4668,
+    0.3138,
+    0.0135
+   ]
+  }
+ },
  "trianglesCheck": 1754,
  "placardCheck": {
   "tris": [

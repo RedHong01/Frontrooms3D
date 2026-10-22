@@ -1,0 +1,2010 @@
+{
+ "schema": "frontrooms.kit-sheets.outlets/1",
+ "generated": "2026-10-14T17:57:28-07:00",
+ "by": "visual chat (游戏视觉), outlets workflow, fix pass, for 平面视觉's K-sheets",
+ "figma": "PROP KIT 2324:852 belongs to 平面视觉: place these as new K-sheets yourselves; this workflow did not edit Figma there.",
+ "kits": {
+  "Kit_ConduitEMT": {
+   "kit": "Kit_ConduitEMT",
+   "title": "EMT conduit tile",
+   "lede": "A 1 m tile of 1/2 in EMT; the renderer stacks tiles from the box to the ceiling.",
+   "dims_mm": {
+    "w": 17.9,
+    "d": 17.9,
+    "h": 1000
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Galvanized steel (P-4b proposal Prop_Galvanized; today Prop_AluminiumAnodised)",
+     "hex": "#B3B5B3"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_ConduitEMT_top.png",
+    "front": "threeview/Kit_ConduitEMT_front.png",
+    "side": "threeview/Kit_ConduitEMT_side.png",
+    "persp": "threeview/Kit_ConduitEMT_hero.png"
+   },
+   "sheetPpm": 250,
+   "px": {
+    "front": [
+     37,
+     282
+    ],
+    "side": [
+     37,
+     282
+    ],
+    "top": [
+     37,
+     37
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_surface",
+    "wall_flush",
+    "conduit"
+   ]
+  },
+  "Kit_ConduitStrap": {
+   "kit": "Kit_ConduitStrap",
+   "title": "One-hole strap",
+   "lede": "A one-hole EMT strap, near the box and then every 1.5 m.",
+   "dims_mm": {
+    "w": 30.0,
+    "d": 22.2,
+    "h": 22.0
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Galvanized steel (P-4b proposal Prop_Galvanized; today Prop_AluminiumAnodised)",
+     "hex": "#B3B5B3"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_ConduitStrap_top.png",
+    "front": "threeview/Kit_ConduitStrap_front.png",
+    "side": "threeview/Kit_ConduitStrap_side.png",
+    "persp": "threeview/Kit_ConduitStrap_hero.png"
+   },
+   "sheetPpm": 8000,
+   "px": {
+    "front": [
+     272,
+     208
+    ],
+    "side": [
+     210,
+     208
+    ],
+    "top": [
+     272,
+     210
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_surface",
+    "wall_flush",
+    "conduit"
+   ]
+  },
+  "Kit_CubiclePanel_Powered": {
+   "kit": "Kit_CubiclePanel_Powered",
+   "title": "Powered spine panel",
+   "lede": "The cubicle panel that carries a pod's power: a duplex in its base raceway.",
+   "dims_mm": {
+    "w": 1524.0,
+    "d": 67.0,
+    "h": 1520.0
+   },
+   "era": {
+    "from": 1978,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_SteelPutty",
+     "slot": "Prop_SteelPutty",
+     "label": "Putty steel",
+     "hex": "#A79F89"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_FabricCubicle",
+     "slot": "Prop_FabricCubicle",
+     "label": "Cubicle fabric",
+     "hex": "#5A646E"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_CubiclePanel_Powered_top.png",
+    "front": "threeview/Kit_CubiclePanel_Powered_front.png",
+    "side": "threeview/Kit_CubiclePanel_Powered_side.png",
+    "persp": "threeview/Kit_CubiclePanel_Powered_hero.png"
+   },
+   "sheetPpm": 250,
+   "px": {
+    "front": [
+     413,
+     412
+    ],
+    "side": [
+     49,
+     412
+    ],
+    "top": [
+     413,
+     49
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "office",
+    "panel",
+    "outlet",
+    "outlet_surface",
+    "powered_panel"
+   ]
+  },
+  "Kit_FloorBoxTombstone": {
+   "kit": "Kit_FloorBoxTombstone",
+   "title": "Floor box",
+   "lede": "An aluminium \"tombstone\" floor fitting with one duplex: a pod feed or bare floor where desks have gone.",
+   "dims_mm": {
+    "w": 111.0,
+    "d": 76.0,
+    "h": 67.0
+   },
+   "era": {
+    "from": 1965,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Galvanized steel (P-4b proposal Prop_Galvanized; today Prop_AluminiumAnodised)",
+     "hex": "#B3B5B3"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_FloorBoxTombstone_top.png",
+    "front": "threeview/Kit_FloorBoxTombstone_front.png",
+    "side": "threeview/Kit_FloorBoxTombstone_side.png",
+    "persp": "threeview/Kit_FloorBoxTombstone_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     254,
+     166
+    ],
+    "side": [
+     184,
+     166
+    ],
+    "top": [
+     254,
+     184
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_floor"
+   ]
+  },
+  "Kit_FloorBoxTombstone2": {
+   "kit": "Kit_FloorBoxTombstone2",
+   "title": "Two-gang floor box",
+   "lede": "The back-to-back tombstone: a duplex on each face.",
+   "dims_mm": {
+    "w": 127.0,
+    "d": 86.0,
+    "h": 76.0
+   },
+   "era": {
+    "from": 1965,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Galvanized steel (P-4b proposal Prop_Galvanized; today Prop_AluminiumAnodised)",
+     "hex": "#B3B5B3"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_FloorBoxTombstone2_top.png",
+    "front": "threeview/Kit_FloorBoxTombstone2_front.png",
+    "side": "threeview/Kit_FloorBoxTombstone2_side.png",
+    "persp": "threeview/Kit_FloorBoxTombstone2_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     286,
+     184
+    ],
+    "side": [
+     204,
+     184
+    ],
+    "top": [
+     286,
+     204
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_floor"
+   ]
+  },
+  "Kit_JackBNC": {
+   "kit": "Kit_JackBNC",
+   "title": "BNC coax jack",
+   "lede": "A BNC bayonet on a 1-gang plate: thin-coax Ethernet.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 18.0,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1985,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Chrome",
+     "slot": "Prop_Chrome",
+     "label": "Chrome",
+     "hex": "#D8D8D8"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over"
+   ],
+   "images": {
+    "top": "threeview/Kit_JackBNC_top.png",
+    "front": "threeview/Kit_JackBNC_front.png",
+    "side": "threeview/Kit_JackBNC_side.png",
+    "persp": "threeview/Kit_JackBNC_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     68,
+     261
+    ],
+    "top": [
+     172,
+     68
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ]
+  },
+  "Kit_JackData": {
+   "kit": "Kit_JackData",
+   "title": "IBM data connector",
+   "lede": "IBM Cabling System data connector, square and hermaphroditic, beside a phone jack.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 24.5,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1984,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over"
+   ],
+   "images": {
+    "top": "threeview/Kit_JackData_top.png",
+    "front": "threeview/Kit_JackData_front.png",
+    "side": "threeview/Kit_JackData_side.png",
+    "persp": "threeview/Kit_JackData_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     81,
+     261
+    ],
+    "top": [
+     172,
+     81
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ]
+  },
+  "Kit_JackPhone": {
+   "kit": "Kit_JackPhone",
+   "title": "Modular phone jack",
+   "lede": "One 6P modular jack on a 1-gang plate, beside a desk receptacle.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 5.6,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1976,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over"
+   ],
+   "images": {
+    "top": "threeview/Kit_JackPhone_top.png",
+    "front": "threeview/Kit_JackPhone_front.png",
+    "side": "threeview/Kit_JackPhone_side.png",
+    "persp": "threeview/Kit_JackPhone_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     44,
+     261
+    ],
+    "top": [
+     172,
+     44
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ]
+  },
+  "Kit_JackPhone4Prong": {
+   "kit": "Kit_JackPhone4Prong",
+   "title": "4-prong phone jack",
+   "lede": "A brown 4-prong surface block: old stock left on a Level 0 wall.",
+   "dims_mm": {
+    "w": 52.0,
+    "d": 18.0,
+    "h": 52.0
+   },
+   "era": {
+    "from": 1930,
+    "to": 1975,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_Ceramic",
+     "slot": "Prop_Ceramic",
+     "label": "Brown ceramic glaze",
+     "hex": "#5A3A24"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_JackPhone4Prong_top.png",
+    "front": "threeview/Kit_JackPhone4Prong_front.png",
+    "side": "threeview/Kit_JackPhone4Prong_side.png",
+    "persp": "threeview/Kit_JackPhone4Prong_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     136,
+     136
+    ],
+    "side": [
+     68,
+     136
+    ],
+    "top": [
+     136,
+     68
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_jack",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletBare": {
+   "kit": "Kit_OutletBare",
+   "title": "Plate missing",
+   "lede": "The device with its plate gone: plaster ears, terminal screws and the box edge show.",
+   "dims_mm": {
+    "w": 65.3,
+    "d": 43.0,
+    "h": 106.7
+   },
+   "era": {
+    "from": 1962,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Brushed stainless (plates) / galvanized #B3B5B3 (boxes, EMT): P-4b proposal; today Prop_AluminiumAnodised",
+     "hex": "#C7C7C2"
+    },
+    {
+     "name": "Prop_Rubber",
+     "slot": "Prop_Rubber",
+     "label": "Rubber (the Bare kit's gap)",
+     "hex": "#050505"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_OutletBare_top.png",
+    "front": "threeview/Kit_OutletBare_front.png",
+    "side": "threeview/Kit_OutletBare_side.png",
+    "persp": "threeview/Kit_OutletBare_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     163,
+     246
+    ],
+    "side": [
+     118,
+     246
+    ],
+    "top": [
+     163,
+     118
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletBlank": {
+   "kit": "Kit_OutletBlank",
+   "title": "Blank plate",
+   "lede": "A 1-gang blank: a removed outlet, never on a steel line.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 5.6,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletBlank_top.png",
+    "front": "threeview/Kit_OutletBlank_front.png",
+    "side": "threeview/Kit_OutletBlank_side.png",
+    "persp": "threeview/Kit_OutletBlank_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     44,
+     261
+    ],
+    "top": [
+     172,
+     44
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletDuplex": {
+   "kit": "Kit_OutletDuplex",
+   "title": "Duplex receptacle",
+   "lede": "NEMA 5-15R duplex on a 1-gang thermoset plate, the outlet every wall line uses.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 6.6,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1962,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+    "ground-up (rolled 180 deg)",
+    "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletDuplex_top.png",
+    "front": "threeview/Kit_OutletDuplex_front.png",
+    "side": "threeview/Kit_OutletDuplex_side.png",
+    "persp": "threeview/Kit_OutletDuplex_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     46,
+     261
+    ],
+    "top": [
+     172,
+     46
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletDuplex20": {
+   "kit": "Kit_OutletDuplex20",
+   "title": "5-20R duplex",
+   "lede": "T-slot 20 A duplex for Office desk circuits; an orange device marks isolated ground.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 6.6,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1975,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+    "ground-up (rolled 180 deg)",
+    "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing",
+    "orange isolated-ground device (Prop_PlasticOrange)"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletDuplex20_top.png",
+    "front": "threeview/Kit_OutletDuplex20_front.png",
+    "side": "threeview/Kit_OutletDuplex20_side.png",
+    "persp": "threeview/Kit_OutletDuplex20_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     46,
+     261
+    ],
+    "top": [
+     172,
+     46
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletDuplex_Cracked": {
+   "kit": "Kit_OutletDuplex_Cracked",
+   "title": "Cracked plate",
+   "lede": "A duplex whose thermoset plate cracked across the screw: wear, never decoration.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 6.6,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1962,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+    "ground-up (rolled 180 deg)",
+    "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletDuplex_Cracked_top.png",
+    "front": "threeview/Kit_OutletDuplex_Cracked_front.png",
+    "side": "threeview/Kit_OutletDuplex_Cracked_side.png",
+    "persp": "threeview/Kit_OutletDuplex_Cracked_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     46,
+     261
+    ],
+    "top": [
+     172,
+     46
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletDuplex_Jumbo": {
+   "kit": "Kit_OutletDuplex_Jumbo",
+   "title": "Jumbo plate",
+   "lede": "An oversize 3.50 x 5.25 in plate hiding a bad cut-out.",
+   "dims_mm": {
+    "w": 88.9,
+    "d": 7.5,
+    "h": 133.4
+   },
+   "era": {
+    "from": 1962,
+    "to": 1990,
+    "label": "Period"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+    "ground-up (rolled 180 deg)",
+    "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletDuplex_Jumbo_top.png",
+    "front": "threeview/Kit_OutletDuplex_Jumbo_front.png",
+    "side": "threeview/Kit_OutletDuplex_Jumbo_side.png",
+    "persp": "threeview/Kit_OutletDuplex_Jumbo_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     210,
+     299
+    ],
+    "side": [
+     47,
+     299
+    ],
+    "top": [
+     210,
+     47
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletDuplex_Steel": {
+   "kit": "Kit_OutletDuplex_Steel",
+   "title": "Stainless duplex",
+   "lede": "The same duplex under a flat 0.76 mm brushed-stainless plate: Lobby, steel lines, Tall halls.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 5.7,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Brushed stainless (plates) / galvanized #B3B5B3 (boxes, EMT): P-4b proposal; today Prop_AluminiumAnodised",
+     "hex": "#C7C7C2"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [
+    "ground-up (rolled 180 deg)",
+    "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletDuplex_Steel_top.png",
+    "front": "threeview/Kit_OutletDuplex_Steel_front.png",
+    "side": "threeview/Kit_OutletDuplex_Steel_side.png",
+    "persp": "threeview/Kit_OutletDuplex_Steel_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     44,
+     261
+    ],
+    "top": [
+     172,
+     44
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_receptacle",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletHandyBox": {
+   "kit": "Kit_OutletHandyBox",
+   "title": "Handy box",
+   "lede": "A surface utility box with a galvanized cover, fed by EMT from the ceiling.",
+   "dims_mm": {
+    "w": 55.0,
+    "d": 52.3,
+    "h": 147.9
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_Aluminium",
+     "slot": "Prop_Aluminium",
+     "label": "Galvanized steel (P-4b proposal Prop_Galvanized; today Prop_AluminiumAnodised)",
+     "hex": "#B3B5B3"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_Brass",
+     "slot": "Prop_Brass",
+     "label": "Brass",
+     "hex": "#B08A4A"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_OutletHandyBox_top.png",
+    "front": "threeview/Kit_OutletHandyBox_front.png",
+    "side": "threeview/Kit_OutletHandyBox_side.png",
+    "persp": "threeview/Kit_OutletHandyBox_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     142,
+     328
+    ],
+    "side": [
+     137,
+     328
+    ],
+    "top": [
+     142,
+     137
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_surface",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletScrew": {
+   "kit": "Kit_OutletScrew",
+   "title": "Plate screw",
+   "lede": "#6-32 oval-head slotted screw; every plate draws its own with a random slot angle.",
+   "dims_mm": {
+    "w": 6.6,
+    "d": 1.0,
+    "h": 6.6
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    }
+   ],
+   "variants": [],
+   "images": {
+    "top": "threeview/Kit_OutletScrew_top.png",
+    "front": "threeview/Kit_OutletScrew_front.png",
+    "side": "threeview/Kit_OutletScrew_side.png",
+    "persp": "threeview/Kit_OutletScrew_hero.png"
+   },
+   "sheetPpm": 8000,
+   "px": {
+    "front": [
+     85,
+     85
+    ],
+    "side": [
+     40,
+     85
+    ],
+    "top": [
+     85,
+     40
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_screw",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletToggle1": {
+   "kit": "Kit_OutletToggle1",
+   "title": "Toggle switch",
+   "lede": "Snap toggle on a 1-gang plate, beside arches and as a lone switch.",
+   "dims_mm": {
+    "w": 69.8,
+    "d": 18.4,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+    "aged / papered over / crooked / missing screw"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletToggle1_top.png",
+    "front": "threeview/Kit_OutletToggle1_front.png",
+    "side": "threeview/Kit_OutletToggle1_side.png",
+    "persp": "threeview/Kit_OutletToggle1_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     172,
+     261
+    ],
+    "side": [
+     69,
+     261
+    ],
+    "top": [
+     172,
+     69
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_switch",
+    "wall_flush"
+   ]
+  },
+  "Kit_OutletToggle2": {
+   "kit": "Kit_OutletToggle2",
+   "title": "Two-gang toggle",
+   "lede": "Two snap toggles on a 2-gang plate (Office rooms).",
+   "dims_mm": {
+    "w": 115.9,
+    "d": 18.4,
+    "h": 114.3
+   },
+   "era": {
+    "from": 1955,
+    "to": 1990,
+    "label": "Timeless"
+   },
+   "materials": [
+    {
+     "name": "Prop_ThermosetIvory",
+     "slot": "Prop_ThermosetIvory",
+     "label": "Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)",
+     "hex": "#E6DDC2"
+    },
+    {
+     "name": "Prop_PlasticBlack",
+     "slot": "Prop_PlasticBlack",
+     "label": "Black plastic",
+     "hex": "#1A1A1A"
+    },
+    {
+     "name": "Prop_NylonIvory",
+     "slot": "Prop_NylonIvory",
+     "label": "Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)",
+     "hex": "#E2D9BF"
+    }
+   ],
+   "variants": [
+    "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over"
+   ],
+   "images": {
+    "top": "threeview/Kit_OutletToggle2_top.png",
+    "front": "threeview/Kit_OutletToggle2_front.png",
+    "side": "threeview/Kit_OutletToggle2_side.png",
+    "persp": "threeview/Kit_OutletToggle2_hero.png"
+   },
+   "sheetPpm": 2000,
+   "px": {
+    "front": [
+     264,
+     261
+    ],
+    "side": [
+     69,
+     261
+    ],
+    "top": [
+     264,
+     69
+    ],
+    "persp": [
+     1152,
+     864
+    ]
+   },
+   "tags": [
+    "outlet",
+    "outlet_switch",
+    "wall_flush"
+   ]
+  }
+ },
+ "assets": [
+  {
+   "name": "Kit_ConduitEMT",
+   "fbx": "Assets/Resources/Props/Models/Kit_ConduitEMT.fbx",
+   "dims_m": [
+    0.0179,
+    1,
+    0.0179
+   ],
+   "tris_lod0": 576,
+   "tris_lod1": 220,
+   "materials": [
+    "Prop_Aluminium"
+   ],
+   "variants": [],
+   "level": [
+    "Tall"
+   ],
+   "era_note": "Thin-wall EMT, OD 17.9 mm. The top view of the open 1 m tile is a 1 mm ring: empty at 250 px/m.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_ConduitStrap",
+   "fbx": "Assets/Resources/Props/Models/Kit_ConduitStrap.fbx",
+   "dims_m": [
+    0.03,
+    0.022,
+    0.0222
+   ],
+   "tris_lod0": 294,
+   "tris_lod1": 106,
+   "materials": [
+    "Prop_Aluminium"
+   ],
+   "variants": [],
+   "level": [
+    "Tall"
+   ],
+   "era_note": "Trade-standard strap.",
+   "suggested_sheet_scale": 8000
+  },
+  {
+   "name": "Kit_CubiclePanel_Powered",
+   "fbx": "Assets/Resources/Props/Models/Kit_CubiclePanel_Powered.fbx",
+   "dims_m": [
+    1.524,
+    1.52,
+    0.067
+   ],
+   "tris_lod0": 1460,
+   "tris_lod1": 184,
+   "materials": [
+    "Prop_SteelPutty",
+    "Prop_PlasticBlack",
+    "Prop_FabricCubicle",
+    "Prop_NylonIvory"
+   ],
+   "variants": [],
+   "level": [
+    "Office"
+   ],
+   "era_note": "Systems furniture base feed (Steelcase 9000 type). Same bounds and collider as Kit_CubiclePanel.",
+   "suggested_sheet_scale": 250
+  },
+  {
+   "name": "Kit_FloorBoxTombstone",
+   "fbx": "Assets/Resources/Props/Models/Kit_FloorBoxTombstone.fbx",
+   "dims_m": [
+    0.111,
+    0.067,
+    0.076
+   ],
+   "tris_lod0": 3576,
+   "tris_lod1": 1118,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [],
+   "level": [
+    "Office"
+   ],
+   "era_note": "Above-floor fittings on poke-throughs for open offices (SFH-40 type). One feed per pod at the powered end since the fix pass.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_FloorBoxTombstone2",
+   "fbx": "Assets/Resources/Props/Models/Kit_FloorBoxTombstone2.fbx",
+   "dims_m": [
+    0.127,
+    0.076,
+    0.086
+   ],
+   "tris_lod0": 5112,
+   "tris_lod1": 1836,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [],
+   "level": [
+    "Office"
+   ],
+   "era_note": "SFH-50 type; 1 in 5 floor fittings.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_JackBNC",
+   "fbx": "Assets/Resources/Props/Models/Kit_JackBNC.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.018
+   ],
+   "tris_lod0": 2748,
+   "tris_lod1": 1008,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_Chrome",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "10BASE2 (802.3a, 1985): \"the dominant 10 Mbit/s Ethernet standard during the mid to late 1980s\". One network per Office zone.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_JackData",
+   "fbx": "Assets/Resources/Props/Models/Kit_JackData.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0245
+   ],
+   "tris_lod0": 2762,
+   "tris_lod1": 1000,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "IBM Cabling System 1984 (Token Ring). Face is an estimate until a photo (media lead om07).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_JackPhone",
+   "fbx": "Assets/Resources/Props/Models/Kit_JackPhone.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0056
+   ],
+   "tris_lod0": 2118,
+   "tris_lod1": 686,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    }
+   ],
+   "level": [
+    "Office",
+    "Level 0"
+   ],
+   "era_note": "Modular plugs from the mid-1960s; FCC registration program 1976. Ivory plates on steel lines (telecom fitted its own).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_JackPhone4Prong",
+   "fbx": "Assets/Resources/Props/Models/Kit_JackPhone4Prong.fbx",
+   "dims_m": [
+    0.052,
+    0.052,
+    0.018
+   ],
+   "tris_lod0": 1672,
+   "tris_lod1": 628,
+   "materials": [
+    "Prop_Ceramic",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [],
+   "level": [
+    "Level 0"
+   ],
+   "era_note": "Second-hand relic (1930s-70s, replaced by modular jacks); a quarter of Level 0 phone companions. Hole pattern estimated (media lead om08).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletBare",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletBare.fbx",
+   "dims_m": [
+    0.0653,
+    0.1067,
+    0.043
+   ],
+   "tris_lod0": 3508,
+   "tris_lod1": 1144,
+   "materials": [
+    "Prop_NylonIvory",
+    "Prop_Aluminium",
+    "Prop_Rubber",
+    "Prop_Brass"
+   ],
+   "variants": [],
+   "level": [
+    "Level 0"
+   ],
+   "era_note": "Wear variant (1-3 %). The dark gap is a flat sheet: a real hole needs the map wall (spec sec. 8 item 7).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletBlank",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletBlank.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0056
+   ],
+   "tris_lod0": 1412,
+   "tris_lod1": 426,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    }
+   ],
+   "level": [
+    "Level 0",
+    "Office"
+   ],
+   "era_note": "Wear variant (3-4 %); thermoset lines only since the fix pass.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletDuplex",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletDuplex.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0066
+   ],
+   "tris_lod0": 2880,
+   "tris_lod1": 954,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    },
+    {
+     "name": "ground-up (rolled 180 deg)",
+     "kind": "state",
+     "differs": "per wall line (one electrician), plus 2.5 % single replaced plates"
+    },
+    {
+     "name": "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing",
+     "kind": "state",
+     "differs": "render-time pose, same mesh"
+    }
+   ],
+   "level": [
+    "Level 0",
+    "Office",
+    "Title stream"
+   ],
+   "era_note": "Grounding duplex required in new work since the 1962 NEC; ivory and almond thermoset plates are the 1970s-80s office norm (01_period_research.md).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletDuplex20",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletDuplex20.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0066
+   ],
+   "tris_lod0": 2920,
+   "tris_lod1": 986,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    },
+    {
+     "name": "ground-up (rolled 180 deg)",
+     "kind": "state",
+     "differs": "per wall line (one electrician), plus 2.5 % single replaced plates"
+    },
+    {
+     "name": "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing",
+     "kind": "state",
+     "differs": "render-time pose, same mesh"
+    },
+    {
+     "name": "orange isolated-ground device (Prop_PlasticOrange)",
+     "kind": "colour",
+     "differs": "device colour only; was Kit_OutletDuplex20_IG"
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "Commercial spec grade on 20 A circuits; first year of the T-slot unverified (before 1990). Orange IG device: palette variant.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletDuplex_Cracked",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletDuplex_Cracked.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0066
+   ],
+   "tris_lod0": 3416,
+   "tris_lod1": 1125,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    },
+    {
+     "name": "ground-up (rolled 180 deg)",
+     "kind": "state",
+     "differs": "per wall line (one electrician), plus 2.5 % single replaced plates"
+    },
+    {
+     "name": "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing",
+     "kind": "state",
+     "differs": "render-time pose, same mesh"
+    }
+   ],
+   "level": [
+    "Level 0",
+    "Office"
+   ],
+   "era_note": "Thermoset plates crack when over-tightened; 3-5 % of Level 0 plates (01 sec. 8).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletDuplex_Jumbo",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletDuplex_Jumbo.fbx",
+   "dims_m": [
+    0.0889,
+    0.1334,
+    0.0075
+   ],
+   "tris_lod0": 2956,
+   "tris_lod1": 954,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    },
+    {
+     "name": "ground-up (rolled 180 deg)",
+     "kind": "state",
+     "differs": "per wall line (one electrician), plus 2.5 % single replaced plates"
+    },
+    {
+     "name": "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing",
+     "kind": "state",
+     "differs": "render-time pose, same mesh"
+    }
+   ],
+   "level": [
+    "Level 0",
+    "Office"
+   ],
+   "era_note": "Leviton: \"used to conceal greater wall irregularities\"; specs that ban them show they were used (01 sec. 8).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletDuplex_Steel",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletDuplex_Steel.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0057
+   ],
+   "tris_lod0": 2584,
+   "tris_lod1": 954,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [
+    {
+     "name": "ground-up (rolled 180 deg)",
+     "kind": "state",
+     "differs": "per wall line (one electrician), plus 2.5 % single replaced plates"
+    },
+    {
+     "name": "crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing",
+     "kind": "state",
+     "differs": "render-time pose, same mesh"
+    }
+   ],
+   "level": [
+    "Title stream Lobby",
+    "Office",
+    "Tall"
+   ],
+   "era_note": "Stainless plates were standard commercial stock across the whole second-hand span.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletHandyBox",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletHandyBox.fbx",
+   "dims_m": [
+    0.055,
+    0.1479,
+    0.0523
+   ],
+   "tris_lod0": 3860,
+   "tris_lod1": 1300,
+   "materials": [
+    "Prop_Aluminium",
+    "Prop_NylonIvory",
+    "Prop_PlasticBlack",
+    "Prop_Brass"
+   ],
+   "variants": [],
+   "level": [
+    "Tall"
+   ],
+   "era_note": "Utility vocabulary for Tall halls; one box and one riser per wall line since the fix pass.",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletScrew",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletScrew.fbx",
+   "dims_m": [
+    0.0066,
+    0.0066,
+    0.001
+   ],
+   "tris_lod0": 266,
+   "tris_lod1": 266,
+   "materials": [
+    "Prop_ThermosetIvory"
+   ],
+   "variants": [],
+   "level": [
+    "all"
+   ],
+   "era_note": "Pass & Seymour 510 standard plate screw. Papered and painted plates keep an ivory screw (put back after the job).",
+   "suggested_sheet_scale": 8000
+  },
+  {
+   "name": "Kit_OutletToggle1",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletToggle1.fbx",
+   "dims_m": [
+    0.0698,
+    0.1143,
+    0.0184
+   ],
+   "tris_lod0": 2296,
+   "tris_lod1": 780,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    },
+    {
+     "name": "aged / papered over / crooked / missing screw",
+     "kind": "state",
+     "differs": "switches wear since the fix pass; no geometry variant"
+    }
+   ],
+   "level": [
+    "Level 0",
+    "Office"
+   ],
+   "era_note": "Toggle was the commercial norm; Decora rockers (1972-73) a minority. Height 1.22 m on Office walls, 1.12 m on printed Level 0 walls (clears the EGRESS cue band; 30_contract_map.md).",
+   "suggested_sheet_scale": 2000
+  },
+  {
+   "name": "Kit_OutletToggle2",
+   "fbx": "Assets/Resources/Props/Models/Kit_OutletToggle2.fbx",
+   "dims_m": [
+    0.1159,
+    0.1143,
+    0.0184
+   ],
+   "tris_lod0": 3660,
+   "tris_lod1": 1462,
+   "materials": [
+    "Prop_ThermosetIvory",
+    "Prop_PlasticBlack",
+    "Prop_NylonIvory"
+   ],
+   "variants": [
+    {
+     "name": "palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over",
+     "kind": "finish",
+     "differs": "one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits."
+    }
+   ],
+   "level": [
+    "Office"
+   ],
+   "era_note": "As the 1-gang toggle.",
+   "suggested_sheet_scale": 2000
+  }
+ ],
+ "assetsMeta": {
+  "fields": [
+   "name",
+   "fbx",
+   "dims_m",
+   "tris_lod0",
+   "tris_lod1",
+   "materials",
+   "variants",
+   "level",
+   "era_note",
+   "suggested_sheet_scale"
+  ],
+  "count": 20,
+  "units": {
+   "dims_m": "metres, [w, h, d] in the FRONT image frame: w across, h up, d out of the wall (kit +Z). Wall kits: d = how far the kit stands off the wall face.",
+   "suggested_sheet_scale": "px per metre on the 1920 x 1080 K-sheet (Tools/three_view ladder 2000/1000/500/250; Kit_OutletScrew and Kit_ConduitStrap at 8000 so they read)",
+   "tris": "LOD0 / LOD1 from the P-1 build (outlets_lods); the landing FBX holds LOD0 only until P-1 is approved"
+  },
+  "images": {
+   "pattern": "threeview/<name>_{front,side,top,hero}.png",
+   "note": "third-angle orthographic at suggested_sheet_scale (1 PNG px = 1 sheet px, place at 100 %), transparent, 16 px clear padding; hero = 1152 x 864, 3/4 from the front-left, 22 degrees down. Kit front = the plate face (no turned kits).",
+   "manifest": "threeview/handoff_manifest.json"
+  },
+  "renderer": "research/interactables/threeview/FrontRoomsThreeView.handoff.cs.txt (-threeViewOversample 1 -threeViewMaxPpm 2000; 8000 for the screw and strap), LOD0 forced",
+  "renderClone": "W/proj_outlet_int = main 0a9ee7f + working tree + the outlets fix payload + P-1 LOD kits + the P-4b proposal (RenderSetup patch v2, 2026-10-14 17:4x)",
+  "materials": "The materials are the P-4b PROPOSAL (not in main): ThermosetIvory #E6DDC2, NylonIvory #E2D9BF, StainlessBrushed #C7C7C2, Galvanized #B3B5B3. The plate tint is Red's call (VL277): options C #B6AF99 / D #A69F8C. Until P-4b lands the game draws ivory with Prop_PlasticBeige / Prop_PlasticPutty and every metal with Prop_AluminiumAnodised.",
+  "dropped": [
+   "Kit_OutletDuplex_Brown",
+   "Kit_OutletDuplex20_IG: never referenced by the planner (brown plates and the orange IG device come from the palette); not shipped. Their Blender modules stay in Tools/."
+  ],
+  "heights": "Mounting heights are not in the kit: the planner places them (centre 0.31/0.41/0.46 m receptacles, 1.07 m off-height, 1.12/1.22 m switches). Wall kits' origin = the wall-face point at the plate centre."
+ }
+}

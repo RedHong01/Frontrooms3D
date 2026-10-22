@@ -1,12 +1,77 @@
-# Codex audit · 00 · Main state: what Codex put into Red's project, and where each file came from
+# Codex audit · 00 · Main state: what Codex put into Red's project, where each file came from, and where it stands now
 
-Date: 2026-10-03, 21:50–22:20 PDT. Read-only on Red's project: Unity was not opened on Frontrooms3D, nothing was committed, and the only files written are the two in this folder. Per-file table: `00_files.tsv` (337 rows, tab-separated).
+**Updated 2026-10-14 (report stage): §0 below is the state on current main.** The sections after it are the 2026-10-03 provenance map, unchanged (§0a onward). Findings: `20_findings.md`. Map contracts: `contracts/README.md`.
+
+---
+
+## 0. State on current main (2026-10-14)
+
+Main = HEAD `0a9ee7f` (2026-10-10) + Red's working tree (it holds today's merges: interactables-kit finals, COV-4, the GD3 generator; not yet committed). Read-only check; Unity was never opened on `Frontrooms3D`.
+
+**Waiting to be applied (visual chat runs it):**
+
+```
+bash /Users/redwang/FrontRoomsVisualWork/apply/codex_audit_all.sh --apply
+```
+
+5 paths: the CRT ad material in players (GL-F6, COV-5), the ad quad culled with its monitor (GL-F7), the RT wallpaper stopgap (V2). Dry run OK on main + tree. Then commit Codex's untracked `Assets/Resources/Rendering/FrontRoomsScreenVideo.shader` + `.meta` with the next "1", and rebuild Mac and iOS.
+
+### 0.1 Each track on current main
+
+Live = Red sees it in Editor Play Mode. Inert = in the project, but no game code uses it. Pending = owed work and who owes it.
+
+| Track (Codex's copy) | Now | Pending (owner) |
+|---|---|---|
+| Glass G1–G4, G6: `FrontRooms/Glass`, `Glass_Window`, prop glass, zone reflection cubes | **Live**, all targets. Verified final (24 / 24 md5s) | Recapture the 4 zone cubes (GL-F2, glass owner). Look sign-off (Red, dropped GL-F3) |
+| G14 ray-traced glass | **Live in Editor Play on a Mac** (RT High by default) since `9eddc35` (10-04). **Off in Mac players** (plugin not packaged, COV-1). Absent on WebGL, iOS, Windows | glass-rt-track merge: fail-closed guard (RT-F1) first, cost (RT-F3, E1), Play-exit release (RT-F4), edit-mode opt-in (RT-F5), the real paper × print trace (V2). Red: COV-1 a/b |
+| V2 wallpaper red in traced glass | **Live** in Editor Play | Stopgap READY in `codex_audit_all.sh`; real fix glass-rt-track |
+| Window kit W1 (frames, blinds, facade) | **Live** in every map window: kit frame + 6 mm slab, facade r6 (`ee5c9bb`). The map's 3 trim boxes per window are still built under each frame | Window contract R1/R2 (+T, Red) → map chat (window-landing). VL107: intact glass does not read |
+| Kit importer LOD | **Fixed** (`663e858`): frames never cull, blinds 3 / 30 m | — |
+| Doors, locks, keys, tags, signage (59 kits) | **Inert.** Interactables finals merged 10-14 over Codex's pre-renders (main's GUIDs kept); `Kit_KeyCabinet` fixed | 3 slots have no material (P-4, Red) ; door/key rigs (interactables-kit + map chat) |
+| Exit signs (Codex copied `Kit_ExitSign`/`_Dead`) | **Live** in Run and Exit rooms since the exit-sign merge (10-08) | exit-sign's own follow-ups (not this audit) |
+| N1 V5 light lead (cool Office lamps + lens) | **Live by default.** Red keeps it ON (10-03 22:1x). The border rule is off (flags only) | Red's N1 pick (level-transitions, Figma LT15) |
+| N1 B0.1 / B0.2 (corner posts, grime band per side) | **Live.** Correct in a fresh build; after a revisit shift a chunk-line post can show a notch (VL272) | Contracts C2 + C3 → map chat |
+| `LampModeOf` purity with `-lightleadBorders` | Not live (flags only); a map test fails under the flag | Contract C2 → map chat |
+| Zone keys after a restart (R2, not Codex) | **Live bug**: keys magenta in every other life | Contract C1 → map chat |
+| CRT ads on Office monitors (Codex `04c3a6a`) | **Live** in map Office zones and the title corridor's Office rooms. Shows "LEVITZ" (V3). In players the exception is gone since `2ce2087`; the quad leak is fixed (COV-4, merged) | V3: Red a/b/c. GL-F6/F7 READY. NEW-1 (black for 0.15 s at first sight): 游戏视觉 screens. WebGL video or poster: WebGL track |
+| HUD (Codex `c1f2d31`) | Key panel **fixed** (`22bb75f`). Desktop stamina segments 5 px (were 6) | COV-7: Red, then contract C4 |
+| G14 shader hook in `FrontRooms/Glass` (Codex `9eddc35`, `bf2e883`, `70644f0`) | **Live**; compiles everywhere; RT Off is pixel-identical (VL240) | — |
+| GD3 breakage | Generator merged 10-14 (**inert**); no `FrontRoomsGlassBreakable` yet | glass-break-build |
+| Task file (`VISUAL_CHAT_TASKS.md`) | Codex's wrong rows **corrected** 10-08 | glass-rt-track rewrites G14 when it merges |
+| Build script "Build macOS" (not Codex) | Latent: it would strip URP from the build and from Red's editor | COV-2: Red |
+| Git hygiene | 156 tracked `.pyc`; 736 iCloud conflict copies (114 tracked) | HYG-H1, HYG-H3: Red / iCloud chat |
+
+Health of main today: compiles with 0 errors; every project suite passes (MapVerification 100 / 0, RelayNav 60 / 60, MapInteraction 152 / 0, LevelDesigner 139 / 0, FixtureTick 28 / 0, CameraRig 33 / 0, Captions 9 / 0, GlassShot 20 / 0, Stream 5 / 0); the map is deterministic over 20 seeds; a 120 s Play run with RT High logs 0 G14, ZBinningJob or Render Graph errors (`40_applied.md` §3).
+
+### 0.2 Decisions for Red
+
+Plain words, each with the default the audit recommends. Nothing below was acted on.
+
+| # | Question | Recommended default | How |
+|---|---|---|---|
+| RD1 | **V3.** The Office CRTs show a real brand (LEVITZ) and a clipped title. Keep the ads, swap them, or turn them off? | **(b) swap in 平面视觉's Ad_02** (fictional "Front Rooms Furniture"). (a) turn the ads off; (c) trim Ad_01's first 3 s | (b): `bash /Users/redwang/FrontRoomsVisualWork/apply/codex_audit_v3_ad02.sh --apply --red-approved` |
+| RD2 | **COV-1.** Mac players have no ray-traced glass (the plugin is Apple-silicon only, the app is universal). Support Intel Macs or not? | **(b) keep universal apps**: build the plugin for both CPUs, set it in the importer; Intel Macs fall back to normal glass. (a) Apple-silicon-only apps | glass-rt-track implements and checks a player |
+| RD3 | **COV-2.** The menu "FrontRooms 3D → Build macOS" removes URP from the build and from your editor. | **Delete its two `= null` lines** (`FrontRooms3DBuild.cs:61–62`) or the menu item. Until then never use it; snapshot builds use `W/tools/build/snapshot_build.sh` | your build script |
+| RD4 | **COV-7.** Codex made the desktop stamina bar 5 px tall (was 6). | **6 px on desktop, 5 px on phones** | contract C4 → map chat |
+| RD5 | **HYG-H1.** 156 Python bytecode files are tracked; Blender runs keep changing them. | **Untrack them once** (`git rm -r --cached` on the `__pycache__` folders; `.gitignore` already has the rule) | one commit by you |
+| RD6 | **HYG-H3.** iCloud keeps making conflict copies (736 now, 114 tracked, some ship in builds). | **Carry out `ICLOUD_NOSYNC_TASK.md`** (project out of iCloud or `.nosync`; drop its stale dylib item), then remove the copies after a diff check | iCloud chat |
+| RD7 | Window trims "T": remove the map's hidden trim boxes under kit window frames? | **R1/R2 now; T together with the doors (D1.5)** | window-landing's contract |
+| RD8 | Glass look (props, windows, title zone cubes) went live without your sign-off. | **Keep as promoted**; look again at the Run room after the cube recapture | — |
+| RD9 | Key board name: main ships `Kit_KeyHookBoard`; the proposal says `Kit_KeyRack`. | **Keep `Kit_KeyHookBoard`** (main, the map notes and the merge use it); fix the proposal text | interactables-kit |
+| RD10 | P-4: author the 3 missing kit materials (`Door_Enamel`, `Prop_KeyTagNo`, `Prop_SignEngraved`)? | **Yes, before any code spawns those kits** | interactables-kit |
+| RD11 | N1: which level transition? | level-transitions recommends **Frame on every border + renovation on 3 in 10 + the colour as now** (Figma LT13–LT15) | level-transitions |
+
+Already decided, not reopened: V5 stays ON (10-03 22:1x); G14 stays ON in the editor under your highest-spec rule (glass-rt-track lands the fail-closed guard first); COV-4 merged.
+
+---
+
+Provenance map written 2026-10-03, 21:50–22:20 PDT. Read-only on Red's project: Unity was not opened on Frontrooms3D, nothing was committed, and the only files written are the two in this folder. Per-file table: `00_files.tsv` (337 rows, tab-separated).
 
 Base: `7320ed1` (18:25, before Codex). HEAD: `75cfdff` (19:41). Branch `main`.
 
 ---
 
-## 0. Short answer
+## 0a. Short answer (2026-10-03, provenance)
 
 - **335 paths changed** between `7320ed1` and HEAD. 332 come from Codex's four commits. 3 come from another Claude session (`a7b0dbb`, title logo relay), merged cleanly by `fc9e2ca`.
 - **Everything in `8ef5b64` ("1") is Codex's.** Codex wrote it between 18:47 and 19:03. The exception is 110 `.meta` files, which Red's open Unity editor generated at about 18:57 when it imported Codex's files. Proof: Codex's own snapshot at 18:40 (`/tmp/frontrooms-before-merge-20261003-184033.status`) is empty, so the tree was clean before it started. Its session log (`~/.codex/sessions/2026/10/03/rollout-2026-10-03T13-09-08-…jsonl`) holds every copy and patch command. GitHub Desktop made the commit at 19:10, after Codex deleted a stale `.git/index.lock`.

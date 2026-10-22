@@ -103,6 +103,7 @@
  "noCollider": true,
  "doorType": "wood",
  "latch": "none (push/pull; no Unlatch beat)",
+ "grainAxis": "texture U (Prop_WoodLaminate_A is U-grain; see interact_door_common.u_grain)",
  "lodDistances": [
   4.0,
   12.0,

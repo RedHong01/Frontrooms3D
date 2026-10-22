@@ -1,6 +1,6 @@
 # 02 — Index of all visual research (docs, Figma sections, tools, media)
 
-Date: 2026-10-03 (about 11:40). Status: DONE (index step of the room-visuals workflow, N2).
+Date: 2026-10-03 (about 11:40). Status: DONE (index step of the room-visuals workflow, N2). **Updated 2026-10-14: corrections and additions in the first section below; §A–§F are the 3 Oct index.**
 Read-only. This file links the work; it does not repeat it.
 
 **How to read it**
@@ -9,6 +9,58 @@ Read-only. This file links the work; it does not repeat it.
 - Figma: file `0tCbAiVUlrPId3RWd9LRif`, page **2099:76** ("Indivicual Game Project"). Node ids and positions were read with `get_metadata` at 11:0x today.
 - Owner codes: **VIS** = visual chat (游戏视觉); **MAP** = map / level chat (关卡设计); **GFX** = graphic chat (平面视觉); **SND** = sound chat (声音); **SYS** = systems chat (系统设计); **NAR** = narrative chat; **WP** = wallpaper-print chat; **WEB** = WebGL perf session; **RED** = Red's own deck.
 - Status: **DECIDED** (Red or the owning chat decided; may be built or not), **BUILT** (in the real project), **CLONE** (built in a private clone, not promoted), **PROPOSAL** (waits on Red), **RESEARCH** (facts, no decision), **RUNNING**, **STALE** (superseded; read only for history).
+
+## Status 2026-10-14: corrections and additions
+
+**Read this first.** Sections A–F below are the 3 Oct index, kept as written. On 14 Oct the positions in §A were wrong for 5 sections, two "planned" rows had been built, and 7 Figma sections and 14 research folders were missing. The tables below correct and complete it. The Figma deck version of this index is ROOM VISUALS RV18–RV21 and RV33 (section `2862:6157`).
+
+### Δ-A. Figma sections on page 2099:76, positions read 2026-10-14 16:3x (absolute x, y; w × h)
+
+| Node | Name | Position | Size | Owner | Note |
+|---|---|---|---|---|---|
+| 2127:24 | Week 1 · PRESENTATION | −1109, −1046 | 8280 × 5080 | RED | moved since 3 Oct |
+| 2312:852 | IP RESEARCH | **7897, 23900** | 8280 × 2560 | GFX | now top level, no longer nested in 2127:24 |
+| 2324:852 | PROP KIT · THREE-VIEW + ERA | 16577, 1914 | 8280 × 26200 | GFX | K00–K80 (K46–K80 placed 10-07) |
+| 2349:852 | PROP KIT · REAL vs MODEL | **16577, 28576** | 8280 × 15000 | GFX | was listed at 25257, 2000 |
+| 2397:852 | 1990 FURNITURE MEDIA · TYPE + GRID | **−1109, 6409** | 8280 × 7600 | GFX | T01–T24 |
+| 2407:852 | WALLPAPER PRINT · PRECISE VECTOR | **33937, 27233** | 8280 × 2685 | WP | was listed at 25257, 17634 |
+| 2331:852 | HUNTER · EARLY VISUAL PROPOSALS | 7897, 9475 | 8280 × 5040 | VIS | |
+| 2441:3804 | RELAY PURSUIT · AUDIT + REDESIGN | 7897, 15097 | 8280 × 3880 | SYS + MAP | |
+| 2471:3804 | GLOW INK · NARRATIVE RESEARCH | 7897, 19400 | 8280 × 3880 | NAR + VIS | **new to the index**: EGRESS picked |
+| 2528:3900 | PATTERN CUES · FINAL STATES (平面视觉) | 33937, 31287 | 8280 × 1400 | GFX | **new**: the wallpaper cue states (A + M4 + V1) |
+| 2595:6093 | VISUAL VERIFICATION LOG | 42617, 2000 | 8280 × 70760+ | VIS | **new**: every check image; Run! rows VL166–168, 189–192, 194–195, 236–238 |
+| 2748:6099 | DOORS + WINDOWS · PROPOSAL | 25257, 13920 | 8280 × 3880 | VIS | **new** |
+| 2800:6096 | SCREENS · BROADCAST SYSTEM v1 (平面视觉) | −1109, 15097 | 8280 × 3420 | GFX | **new**: the WXRM station, store and slates on every Office CRT |
+| 2831:6157 | LEVEL TRANSITIONS | 25257, 19200 | 8280 × 6360 | VIS | **built** (was "planned"): five border variations wait on Red |
+| 2862:6157 | ROOM VISUALS | **25257, 2000** | 8280 × 11240 | VIS | **built** (was "planned at 42617"): this workflow, RV00–RV33 |
+| 2532:4038 | HUD KEY · UI VARIATIONS (平面视觉) | 33937, 1983 | 8280 × 11920 | GFX | UI only, not room visuals |
+| 3113:6872 | HUD KEY · B · PADLOCK + MOTION (平面视觉, 14 Oct) | 33937, 423 | 4200 × 1400 | GFX | UI only. Red picked HUD key direction B on 10-14 |
+| 2528:5403 | TOUCH CONTROLS · iOS + ANDROID | 33937, 15014 | 8280 × 10850 | GFX + TC | UI only |
+| 2889:6157 | TOUCH FLOWS · EVERY SCREEN | 51297, 2000 | 8280 × 4000 | GFX | UI only |
+| 2911:6716 | DESKTOP UI · SCREENS · MAC + WINDOWS | 103377, 2000 | 8280 × 7720 | GFX | UI only |
+| 2920:6693 | DESKTOP FLOWS · EVERY SCREEN | 94697, 2000 | 8280 × 5560 | GFX | UI only |
+| 2245:8, 2256:8, 2339:858, 2169:2062, 2305:927, 2440:3804, 3061:6889 | Design plan, UI mockup, sound research, diaries, archive | unchanged or not room visuals | | | |
+
+### Δ-B. Research folders the 3 Oct index did not have
+
+| Folder | What it decided or holds | Status | Room relevance |
+|---|---|---|---|
+| `exit_sign/` | The 1990 EXIT family: stencil face, four mounts, dead twins, the `FrontRoomsExitSign` driver (LIT / HALF / LOOSE). Merged 10-08 19:5x. Open: `EmissionGain` fix1, the Run sign light A/B (VL221) and the Exit spill light (VL222) | BUILT; 2 calls wait on Red | Run and Exit rooms |
+| `placard/` | Q16 EGRESS evacuation placard: kit, glow (`FrontRoomsPlacardGlow`: glows when its cell's lamp goes dark), mount at the start area | BUILT 10-08 | start area |
+| `inspect/` | Walk up to a placard or key, the game pauses, a 0.3 m close-up (Red, 10-07) | DESIGN + prototype | all |
+| `door_break/` | A door breaks through staged models, like the glass (DB1) | PROPOSAL | map doors |
+| `landing_audit/` | What the game really shows vs what only clones had (10-03): most new models lived only in clones | AUDIT (history; answers "what is in the game") | all |
+| `cue_driver/` | `CUE_DRIVER_INTERFACE.md`: the wallpaper cue (arrows turn along the route, three 30° clicks, rows step) per map cell; contract with RELAY_PURSUIT §9.6 | CONTRACT v0.2.1; not in main | Level 0 walls |
+| `dress_hitch/` | Q13: Office rooms dress in 3 ms slices | BUILT 10-08 | Office |
+| `screens/` | `30_screen_strings.md`: on-screen strings for the station, store and slates (narrative) | STRINGS v1 | Office CRTs |
+| `computer_ui/` | `00_interaction_inventory.md`, `10_research.md`: reading the CRT and the placard (Red 10-08: walk up, read the CRT with a 1990 office UI) | RESEARCH | Office CRTs |
+| `codex_audit/` | What Codex put into main on 10-03 and how each file was fixed (COV-4 CRT quad merged 10-14) | AUDIT + fixes | glass, kits, windows |
+| `verification_log/` | `media/`: backlog images for the VL section | archive | — |
+| `desktop_ui/`, `touch/`, `ui_key_icon/` | Desktop screens, touch controls, the HUD key icon | UI only | none |
+| `glass/rt/` G14b | `11r2_*`: the waxed floor's true reflections by ray tracing later (2.3 / 255 off a 2048-ray reference) | PROPOSAL | Run! floors |
+| `room_visuals/` (this folder) | 01–05 inventory and captures, 03 research, 10–21 Run! directions, 30 Figma, 40 for Red | this workflow | all |
+
+Top-level documents added since 3 Oct that bear on rooms: `SCREENS_VISUAL_SYSTEM.md`, `SCREEN_ADS.md` (Office CRT ads), `UNREAL_MIGRATION_AUDIT.md` (keep assets and docs clean; Unity stays the source of truth), `GRAPHIC_VISUAL_TASKS.md` (平面视觉's list).
 
 ---
 
@@ -19,7 +71,7 @@ Listed by position. Do not duplicate them; link them.
 | Section (node) | Position (abs) | Owner | Frames | What it decided / shows | Status |
 |---|---|---|---|---|---|
 | Week 1 · PRESENTATION · Razor & Outline (**2127:24**) | −383, −1046 | RED | 16 | The pitch. Visual items: **"Different rooms, different rules" (2235:735)**: Level 0 "the room that moves", Level 4 "the office that offers", **Level ! "A red corridor. The hunter behind. Nothing to read." Tell: the lights turn red. Counter: speed, and the window you learned to break.** S07 "IP — Escape the Backrooms" (2127:68) with the Level ! "run for your life" clip (1:34–1:39) and the lighting target. "THE EXIT 8" (2235:159): one looping corridor, lighting target. "Dark Deception" (2235:137): primary reference. "Three ways out" (2235:626): key, door, glass. "Level design / Environmental experience" (2235:757): atmosphere is information | DECIDED (pitch). Note: `BACKROOMS_VISUAL_SPEC.md` cites the Exit 8 frame as 2127:56; that node is gone, use 2235:159 |
-| ↳ FRONTROOMS · IP RESEARCH (**2312:852**, nested in 2127:24) | −383, 4212 | GFX | IR01–IR06 | IR01 "One bad photo" (the 2002 Oshkosh photo), IR02 "One room, retold" (2002 → 2026 → FrontRooms), **IR03 "Set in 1990"** (on-screen dates), IR04 "Yellow by accident" (white balance, not yellow paper), IR05 "Copy, paste, pile" (film piles), **IR06 "The games"** (ETB, Backrooms 1998, POOLS, and a "FrontRooms · Run zone" still) | DECIDED (era 1990; yellow = grade) |
+| ↳ FRONTROOMS · IP RESEARCH (**2312:852**, nested in 2127:24) — **Δ-A: now top level at 7897, 23900** | −383, 4212 | GFX | IR01–IR06 | IR01 "One bad photo" (the 2002 Oshkosh photo), IR02 "One room, retold" (2002 → 2026 → FrontRooms), **IR03 "Set in 1990"** (on-screen dates), IR04 "Yellow by accident" (white balance, not yellow paper), IR05 "Copy, paste, pile" (film piles), **IR06 "The games"** (ETB, Backrooms 1998, POOLS, and a "FrontRooms · Run zone" still) | DECIDED (era 1990; yellow = grade) |
 | Week 1 DEVELOPER DIARY #1 (**2169:2062**) | −383, −2584 | RED | D01–D02 | Next steps; AI log | history |
 | FRONTROOMS · DESIGN PLAN (**2245:8**) | 7897, −1046 | MAP + RED | DP01–DP08 | DP01: from a train of rooms (Lobby, Lobby, Shift, Office, Run) to a field of rooms. DP03 "No doors, until it matters": pillar halls, off-centre arches, pockets; doors only low ↔ standard, windows into tall. DP04: chunks. **DP08 "It gets harder"**: tiers raise the Relay and, on the slide, **Tall share 10 → 30 %** and **rooms with failing lights 25 → 65 %** | DECIDED; built as the map. DP08's tall-share and failing-room rows are **not** what the code does (tiers change per-lamp odds only, `FrontRoomsLevelProfile.cs:164-171`) |
 | FRONTROOMS · UI MOCKUP · HUD + screens (**2256:8**) | 7897, 2103 | UI (VIS/MAP) | UI01–UI09, S17 | HUD kit, title, calm/chase play, prompts, pause, display settings, caught | DECIDED (UI) |
@@ -28,12 +80,12 @@ Listed by position. Do not duplicate them; link them.
 | FRONTROOMS · HUNTER · EARLY VISUAL PROPOSALS (**2331:852**) | 7897, 9475 | VIS | HR01–HR16 | HR01 the Relay today; HR02 "the box it lives in" (room limits: 2.05 m, doors, 2.4 m ceilings); **HR03 "What the Backrooms teach"** (IP rules, used by later research); HR04–HR08 directions A Floor Sample, B Night Shift, C Duplicate, D Delivery; HR09–HR15 the same as squeezed giants; HR16 what Red decides | PROPOSAL (W1 waits on Red) |
 | FRONTROOMS · RELAY PURSUIT · AUDIT + REDESIGN (**2441:3804**) | 7897, 15097 | SYS + MAP + NAR | RP01–RP10 | why you always run; the new loop; **RP05 three warnings** (your room's lamps flicker → muffled steps → lock-on cue); **RP07 rooms that call it** (trigger rooms with a 1990 device); **RP08 the alarm that sends it** (EGRESS fire-alarm fiction) | PROPOSAL (staged warning and EGRESS decided by Red) |
 | FRONTROOMS · PROP KIT · THREE-VIEW + ERA (**2324:852**) | 16577, 1914 | GFX (VIS models) | K00–K45 | one kit, one scale; K01 when each piece is from; three-views of every kit asset (desk … stud doorway) | BUILT (kit), sheets current to 2026-10-02 |
-| FRONTROOMS · 1990 FURNITURE MEDIA · TYPE + GRID (**2397:852**) | 16577, 17505 | GFX | T01–T19 | the 1990 type and grid kit for in-world print; T19 applied to FrontRooms (price tags, catalogue page, TV end card) | DECIDED; fonts in `Assets/Fonts/Period1990` |
+| FRONTROOMS · 1990 FURNITURE MEDIA · TYPE + GRID (**2397:852**) — **Δ-A: now −1109, 6409** | 16577, 17505 | GFX | T01–T19 | the 1990 type and grid kit for in-world print; T19 applied to FrontRooms (price tags, catalogue page, TV end card) | DECIDED; fonts in `Assets/Fonts/Period1990` |
 | Week 3 · DEVELOPER DIARY #3 (**2440:3804**) | 23257, −2584 | RED | 1–6 | weekly log | history |
-| FRONTROOMS · PROP KIT · REAL vs MODEL (**2349:852**) | 25257, 2000 | GFX | R01–R47 | each model beside its 1990 photo (Sears 1993, Commons, A24); period fixes (W2: torchiere, task chair) | DECIDED (fixes W2 wait on Red) |
-| FRONTROOMS · WALLPAPER PRINT · PRECISE VECTOR (**2407:852**) | 25257, 17634 | WP | WP01–WP05 | WP01 smear to print, WP02 faithful, **WP03 "Hard edge" (2407:884) — Red's pick**, WP04 stepped grid, WP05 hybrid | DECIDED; not in game yet (Q1b after R2) |
-| *planned* FRONTROOMS · LEVEL TRANSITIONS | 33937, 2000 | VIS | — | N1: transitions between levels | RUNNING (not on the page yet) |
-| *planned* FRONTROOMS · ROOM VISUALS | 42617, 2000 | VIS | — | N2: this workflow (inventory, research index, Run! research and three directions) | RUNNING |
+| FRONTROOMS · PROP KIT · REAL vs MODEL (**2349:852**) — **Δ-A: now 16577, 28576** | 25257, 2000 | GFX | R01–R47 | each model beside its 1990 photo (Sears 1993, Commons, A24); period fixes (W2: torchiere, task chair) | DECIDED (fixes W2 wait on Red) |
+| FRONTROOMS · WALLPAPER PRINT · PRECISE VECTOR (**2407:852**) — **Δ-A: now 33937, 27233** | 25257, 17634 | WP | WP01–WP05 | WP01 smear to print, WP02 faithful, **WP03 "Hard edge" (2407:884) — Red's pick**, WP04 stepped grid, WP05 hybrid | DECIDED; not in game yet (Q1b after R2) |
+| *planned* FRONTROOMS · LEVEL TRANSITIONS — **Δ-A: built as 2831:6157 at 25257, 19200** | 33937, 2000 | VIS | — | N1: transitions between levels | RUNNING (not on the page yet) |
+| *planned* FRONTROOMS · ROOM VISUALS — **Δ-A: built as 2862:6157 at 25257, 2000** | 42617, 2000 | VIS | — | N2: this workflow (inventory, research index, Run! research and three directions) | RUNNING |
 
 Notes:
 - The weekly Google Slides deck mirrors the Figma decks; it holds no extra room research (memory: `weekly-dev-log`).

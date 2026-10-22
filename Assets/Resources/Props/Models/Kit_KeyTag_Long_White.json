@@ -76,6 +76,47 @@
   0.3333,
   0.05
  ],
+ "inspect": {
+  "kind": "object",
+  "verb": "look",
+  "face": "face",
+  "faceDir": "face_dir",
+  "dist": [
+   0.2,
+   0.15
+  ],
+  "minDist": 0.15,
+  "fovDelta": -10,
+  "reach": 1.6,
+  "aimPad": 0.04,
+  "texelsPerMetre": 3300,
+  "regions": [
+   {
+    "id": "number",
+    "rect": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "capMm": 12
+   }
+  ],
+  "sound": "keys",
+  "ship": false,
+  "box": {
+   "c": [
+    0.0,
+    -0.0155,
+    0.0
+   ],
+   "s": [
+    0.076,
+    0.022,
+    0.0042
+   ]
+  }
+ },
  "trianglesCheck": 1038,
  "boundsMin": [
   -0.03799999877810478,
@@ -92,6 +133,7 @@
   "Prop_PlasticWhite",
   "Prop_KeyTagNo"
  ],
+ "trianglesLod1": 1038,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

@@ -1,0 +1,71 @@
+"""Fix-pass review sheets -> research/outlets/images/40_*.jpg (JPG q85, <= 1920 px wide)."""
+import os, sys
+from PIL import Image, ImageDraw, ImageFont
+W = '/Users/redwang/FrontRoomsVisualWork'
+F = W + '/outlet_fix/out/'
+D = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/outlets/images/'
+FONT = ImageFont.truetype(os.path.expanduser('~/Library/Fonts/IBMPlexMono-Medium.otf'), 22)
+
+def tile(path, crop=None, h=None, w=None, label=None, dark_chip=True):
+    im = Image.open(path).convert('RGB')
+    if crop: im = im.crop(crop)
+    if h: im = im.resize((round(im.width * h / im.height), h), Image.LANCZOS)
+    elif w: im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
+    if label:
+        d = ImageDraw.Draw(im)
+        tw = d.textlength(label, font=FONT)
+        d.rectangle((12, 12, 12 + tw + 16, 12 + 32), fill=(10, 10, 10) if dark_chip else (244, 223, 59))
+        d.text((20, 15), label, font=FONT, fill=(255, 255, 255) if dark_chip else (10, 10, 10))
+    return im
+
+def grid(rows, out, gap=8, bg=(24, 24, 24), maxw=1920):
+    widths = [sum(t.width for t in r) + gap * (len(r) - 1) for r in rows]
+    W_ = max(widths); H_ = sum(max(t.height for t in r) for r in rows) + gap * (len(rows) - 1)
+    s = Image.new('RGB', (W_, H_), bg); y = 0
+    for r in rows:
+        x = 0
+        for t in r: s.paste(t, (x, y)); x += t.width + gap
+        y += max(t.height for t in r) + gap
+    if s.width > maxw: s = s.resize((maxw, round(s.height * maxw / s.width)), Image.LANCZOS)
+    s.save(D + out, quality=85)
+    print(out, s.size)
+
+Z = (420, 0, 1500, 1080)   # the zoom frame's centre 1080 x 1080
+L, FU = F + 'land_r1/', F + 'full_r1/'
+which = sys.argv[1:] or ['all']
+def want(k): return 'all' in which or k in which
+
+if want('conduit'):
+    b = W + '/critic_outlets_eng/crit_conduit_landing_2554.png'; a = F + 'crit/crit_conduit_landing_2554.png'
+    grid([[tile(b, (640, 0, 960, 900), 900, label='BEFORE'), tile(a, (640, 0, 960, 900), 900, label='AFTER'),
+           tile(F + 'crit/crit_conduit_landing_lookdown_2554.png', None, 900, label='AFTER, 40 DEG DOWN')]], '40_conduit_attached.jpg')
+if want('wm'):
+    grid([[tile(L + 'fixwm_L0_2_2554_before_zoom.png', Z, 700, label='BEFORE'), tile(L + 'fixwm_L0_2_2554_after_zoom.png', Z, 700, label='AFTER')],
+          [tile(L + 'fixwm_L0_0_2554_before_zoom.png', Z, 700, label='BEFORE'), tile(L + 'fixwm_L0_0_2554_after_zoom.png', Z, 700, label='AFTER')]], '40_wallmatch_papered.jpg')
+    grid([[tile(L + 'fixwm_OF_1_2554_before_zoom.png', Z, 700, label='BEFORE')], [tile(L + 'fixwm_OF_1_2554_after_zoom.png', Z, 700, label='AFTER')]], '40_wallmatch_painted.jpg')
+if want('metal'):
+    for src, out in ((L, '40_metal_landing.jpg'), (FU, '40_metal_p4b.jpg')):
+        grid([[tile(src + 'fixmetal_steel_03_2554_before_zoom.png', Z, 560, label='BEFORE'), tile(src + 'fixmetal_steel_03_2554_after_zoom.png', Z, 560, label='AFTER'),
+               tile(src + 'fixmetal_handy_042_2554_before_zoom.png', Z, 560, label='BEFORE')],
+              [tile(src + 'fixmetal_handy_042_2554_after_zoom.png', Z, 560, label='AFTER'),
+               tile(src + 'fixmetal_floor_before_2554_zoom.png', Z, 560, label='BEFORE'), tile(src + 'fixmetal_floor_after_2554_zoom.png', Z, 560, label='AFTER')]], out)
+if want('tint'):
+    names = [('A_E6DDC2', 'A #E6DDC2'), ('B_9E9147', 'B #9E9147'), ('C_B6AF99', 'C #B6AF99'), ('D_A69F8C', 'D #A69F8C')]
+    grid([[tile(FU + 'fixtint_%s_03_2554_zoom.png' % n, (560, 90, 1360, 990), 520, label=l) for n, l in names],
+          [tile(FU + 'fixtint_%s_eye_2554.png' % n, (560, 300, 1360, 900), None, w=469, label=l) for n, l in names]], '40_tint_options.jpg')
+if want('close'):
+    Image.open(FU + 'close_sheet_r1.jpg').save(D + '40_close_sheet_root192.jpg', quality=85); print('40_close_sheet_root192.jpg')
+    Image.open(FU + 'precision_pairs.jpg').save(D + '40_precision_4992_vs_192.jpg', quality=85); print('40_precision_4992_vs_192.jpg')
+if want('lod'):
+    import json
+    shots = {s['name']: s for s in json.load(open(FU + 'shots.json'))}
+    def lodtile(name, r, label):
+        tx, ty = [int(v) for v in shots[name]['targetPx']]
+        return tile(FU + name + '.png', (tx - r, ty - r, tx + r, ty + r), 440, label=label)
+    grid([[lodtile('fixlod_1.5m_LOD0_2554', 110, '1.5 M LOD0'), lodtile('fixlod_1.5m_LOD1_2554', 110, '1.5 M LOD1'),
+           lodtile('fixlod_4.0m_LOD1_2554', 45, '4 M LOD1'), lodtile('fixlod_4.0m_LOD2_2554', 45, '4 M LOD2')]], '40_lod_same_camera.jpg')
+if want('misc'):
+    grid([[tile(FU + 'fixbrown_2554_zoom.png', Z, 437, label='BROWN ON BROWN'), tile(FU + 'fixtoggle_bat_2554_zoom.png', Z, 437, label='TOGGLE, BAT HEIGHT'),
+           tile(FU + 'fixtoggle_eye_2554_zoom.png', Z, 437, label='TOGGLE, EYE HEIGHT'), tile(FU + 'wide_Tall_2554.png', (240, 0, 1680, 1080), 437, label='TALL: ONE RISER')],
+          [tile(L + 'fixpod_close_2554.png', None, 357, label='POD BASE FEED'), tile(L + 'fixstage2_off_424242.png', None, 357, label='STAGE 2 OFF'),
+           tile(L + 'fixstage2_on_424242.png', None, 357, label='STAGE 2 ON')]], '40_misc_checks.jpg')

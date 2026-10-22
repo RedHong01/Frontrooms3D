@@ -1,0 +1,47 @@
+"""Quick look: the wallpaper map (layer colours, powder, height shading) with hole and piece outlines."""
+import json, sys, os
+import numpy as np
+from PIL import Image, ImageDraw
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common as C
+R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+mc, face, stage = sys.argv[1], sys.argv[2], sys.argv[3]
+D = R + "/data/" + mc
+m = np.load(D + "/wp_%s_%s.npy" % (face, stage)).astype(np.float32)
+dep, pw, hh, aux = m[..., 0], m[..., 1], m[..., 2], m[..., 3]
+pal = {0: (200, 180, 100), 1: (0xED, 0xE8, 0xDA), 2: (0xD8, 0xCF, 0xB8), 3: (0xA4, 0x97, 0x7F), 4: (0xE8, 0xE4, 0xDA)}
+di = np.clip(np.round(dep), 0, 4).astype(int)
+img = np.zeros(dep.shape + (3,), np.float32)
+for k, c in pal.items():
+    img[di == k] = c
+comp = (di == 2) & (aux > 0.4) & (aux < 0.8)
+img[comp] = (0xEC, 0xEB, 0xE6)
+img[(di == 2) & (aux > 0.8)] = (0xE3, 0xDA, 0xC6)
+img[(di == 2) & (aux > 0.15) & (aux < 0.35)] = (0xE9, 0xE6, 0xDD)
+gy, gx = np.gradient(hh)
+shade = np.clip(1 + 0.6 * (gx - gy), 0.5, 1.5)
+img = img * shade[..., None]
+img = img * (1 - pw[..., None] * 0.8) + np.array([242, 240, 234]) * pw[..., None] * 0.8
+im = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
+z0, z1, y0, y1 = C.MAPR
+px = C.MPX
+dr = ImageDraw.Draw(im)
+def tp(p): return ((p[0] - z0) / px, (y1 - p[1]) / px)
+sj = json.load(open(D + "/stage_%s_%s.json" % (face, stage)))
+for h in sj["holes"]:
+    pts = [tp(p) for p in h["rows"]["pf"]]
+    dr.line(pts + pts[:1], fill=(255, 0, 0), width=2)
+for q in sj["pieces"]:
+    if q["state"] in ("air", "floor"):
+        continue
+    pts = [tp(p) for p in q["rows"]["pf"]]
+    dr.line(pts + pts[:1], fill=(0, 90, 255), width=2)
+for s in sj["standing"]:
+    x, y = tp((s["z"], s["y"])); dr.ellipse([x - 6, y - 6, x + 6, y + 6], outline=(0, 160, 0), width=2)
+for nm, z, y in json.load(open(D + "/layout.json"))["screws"]:
+    x, yy = tp((z, y)); dr.ellipse([x - 3, yy - 3, x + 3, yy + 3], outline=(80, 80, 80))
+for nm, a, b, c, d in json.load(open(D + "/layout.json"))["members"]:
+    dr.rectangle([tp((a, d)), tp((b, c))], outline=(150, 100, 40))
+im = im.resize((im.width // 2, im.height // 2), Image.LANCZOS)
+im.save(R + "/look/map_%s_%s_%s.png" % (mc, face, stage))
+print("ok", im.size)

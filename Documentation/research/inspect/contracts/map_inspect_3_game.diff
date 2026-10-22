@@ -1,0 +1,439 @@
+EXAMINE contract, STEP 3 of 3: C1-C15, C25 (FrontRooms3DGame + .Mobile). Needs step 1 and the visual package.
+Written by the visual chat (游戏视觉) 2026-10-14 17:02 PDT, fix stage. Anchored on Red's CURRENT main: HEAD 0a9ee7f (these files clean).
+Base sha1 of each file (re-read before applying; a mismatch means re-anchor):
+  70bedd38112e23ceb93373bed44500b702edeb01  Assets/Scripts/FrontRooms3DGame.cs
+  20d2fe8622fb3eff0a2b81d30c829f43f73e64e2  Assets/Scripts/FrontRooms3DGame.Mobile.cs
+Merge order (research/inspect/20_prototype.md §8): 1. map_inspect_1_rig.diff (C16-C19: rig + timings; compiles alone),
+2. the visual package W/apply/inspect.sh (needs step 1), 3. map_inspect_3_game.diff (C1-C15, C25: needs step 2).
+map_inspect.diff = steps 1 + 3 in one file, for review. Apply: patch -p1 < <file>   (dry run: patch -p1 --dry-run < <file>)
+
+--- a/Assets/Scripts/FrontRooms3DGame.cs
++++ b/Assets/Scripts/FrontRooms3DGame.cs
+@@ -28,7 +28,7 @@
+ // (FrontRoomsMapHunter).
+ public sealed partial class FrontRooms3DGame : MonoBehaviour
+ {
+-    enum Phase { Title, Playing, Paused, Caught }
++    enum Phase { Title, Playing, Paused, Caught, Inspect }   // append only (the touch playtest reads phases by name)
+     Phase phase;
+     Camera cam;
+     [SerializeField, Tooltip("The Relay rig serialized in this scene. It stays hidden until the hunter is released.")]
+@@ -51,6 +51,21 @@
+     public static bool PlayerWinded { get; private set; }
+     /// <summary>The sprint rule's answer this frame (Shift held, moving, stamina left, not winded).</summary>
+     public static bool PlayerSprinting { get; private set; }
++    /// <summary>EXAMINE (research/inspect/10_design.md): a close-up began (true, at the E press) or gave control back (false, as the camera starts home). False on teardown.</summary>
++    public static event Action<bool> Inspecting;
++    /// <summary>A close-up holds the world (from the E press until the camera starts home).</summary>
++    public static bool InspectingNow { get; private set; }
++    FrontRoomsInspectable inspectAimed, pendingInspect;
++    ShotHandle inspectShot;
++    Phase pausedFrom = Phase.Playing;
++    bool useLatch, backLatch, timeFrozenByInspect;
++    float inspectCooldown;
++    // C11: in a close-up the hint slot sits in the bottom band, clear of the framed subject (PROPOSED; 平面视觉 places it).
++    // 83: the 26-unit prompt rect's centre, so Bayon 20's glyph bottom lands on UI_SYSTEM's 72 px outer margin at 1080
++    // (v1's 64 put it at 53 px, inside the margin).
++    Vector2 promptHome;
++    bool promptHomeSet;
++    const float InspectHintBottom = 83f;
+ 
+     [SerializeField, Tooltip("The Level 0 maze's numbers: generation, run seed, streaming, light budget, dressing (Assets/Levels/FrontRoomsLevel0.asset). Empty: the code defaults.")]
+     FrontRoomsLevelProfile levelProfile;
+@@ -343,6 +358,9 @@
+         if (!Application.isPlaying) return;
+ 
+         Application.targetFrameRate = 60;
++        // C12c: a close-up's target went away (chunk unload, Level Designer rebuild): end it at once.
++        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
++        FrontRoomsInspect.AbortRequested += OnInspectAbortRequested;
+         // Full-resolution textures; MSAA, HDR and shadows come from the URP
+         // pipeline asset (Assets/Settings/FrontRooms_URP).
+         QualitySettings.globalTextureMipmapLimit = 0;
+@@ -991,6 +1009,9 @@
+             local = input.Move;
+             sprintHeld = input.SprintHeld;
+         }
++        // C25: E and S that ended a close-up are latched until released (no door on the exit E, no walking backward on the exit S).
++        if (useLatch && !EHeld()) useLatch = false;
++        if (backLatch) { if (input.Move.y < -.1f) local.y = Mathf.Max(local.y, 0f); else backLatch = false; }
+         moveIntent = local.sqrMagnitude > .01f;
+         if (rig != null)
+         {
+@@ -1127,12 +1148,80 @@
+ #endif
+         UpdateRelayRig(dt);
+         UpdateReflectionZone(false);
++        // C5b: an E press on a close-up target commits with this frame's Relay state.
++        if (pendingInspect != null)
++        {
++            var t = pendingInspect;
++            pendingInspect = null;
++            if (CanShowInspect(t) && CanPressInspect()) BeginInspect(t);
++        }
+         // Picture layers last, after gameplay has read BaseEye this frame.
+         rig?.Tick(dt);
+         // A presented key rides the camera as rendered (after the rig), so it never lags a frame.
+         doorShot?.PlaceKey();
++    }
++
++    // ---------- EXAMINE (C4, C5): the gate, entry and exit ----------
++
++    bool HarnessRunning
++    {
++        get
++        {
++#if UNITY_EDITOR
++            return autopilot || autoBaseline;      // the game's own fields; no static the autopilot must set
++#else
++            return false;
++#endif
++        }
++    }
++
++    /// <summary>Hard checks (C4): false hides the prompt.</summary>
++    bool CanShowInspect(FrontRoomsInspectable t) =>
++        t != null && !HarnessRunning && mapPlay && phase == Phase.Playing
++        && (glassShot == null || !(glassShot.Active || glassShot.Blending))
++        && climbTime < 0f && !pullClear.HasValue && !RelayBlocksInspect()
++        && FrontRoomsInspect.CanOpen(t, rig);
++
++    /// <summary>Transient checks (C4): false keeps the prompt but swallows E.</summary>
++    bool CanPressInspect() => !useLatch && inspectCooldown <= 0f && (rig == null || !rig.InShot);
++
++    /// <summary>Only cues the player perceives (RELAY_PURSUIT_REDESIGN §8 honest senses). Never SeesPlayer.</summary>
++    bool RelayBlocksInspect() => relay != null && relay.Released
++        && (relay.State == HunterState.Chase || relay.State == HunterState.BreakDoor || relay.PlayerSeesRelay);
++
++    void BeginInspect(FrontRoomsInspectable t)
++    {
++        ReleaseGlass();
++        holdProgress = 0f;
++        inspectShot = FrontRoomsInspect.Open(t, rig);
++        if (inspectShot == null) return;
++        InspectingNow = true;
++        SetPhase(Phase.Inspect);                            // timeScale 0 (C8)
++        Inspecting?.Invoke(true);
++        Event("inspect", t.Id);
++    }
++
++    void EndInspect(bool byBack)
++    {
++        if (!InspectingNow) return;
++        FrontRoomsInspect.Close(rig);                       // rig.EndShot: rotation 0.15 s, position 0.40 s
++        InspectingNow = false;                              // before SetPhase, so C8's guard does not recurse
++        SetPhase(Phase.Playing);                            // timeScale 1, settle frames
++        Inspecting?.Invoke(false);
++        useLatch = true;
++        backLatch = byBack;
++        inspectCooldown = FrontRoomsShotTimings.Inspect.Cooldown;
+     }
+ 
++    void OnInspectAbortRequested()
++    {
++        var shot = inspectShot;
++        EndInspect(false);
++        if (shot != null) rig?.CancelShot(shot, 0f);
++    }
++
++    void ResumeFromPause() => SetPhase(pausedFrom);
++
+     /// <summary>
+     /// The reflection cube for where the player stands (FrontRoomsLook, the visual chat's): the
+     /// zone's kind, or the dead-lamp cube under a dead, dim or missing lamp, keyed by the lamp's
+@@ -1371,8 +1460,18 @@
+         // Gameplay aims from the base eye: shots, shakes and leans are picture only.
+         var eye = rig != null ? rig.BaseEye : new Pose(cam.transform.position, cam.transform.rotation);
+         var hitPoint = Vector3.zero;
+-        if (Physics.Raycast(new Ray(eye.position, eye.rotation * Vector3.forward), out var hit, Reach, ~0, QueryTriggerInteraction.Ignore))
++        var ray = new Ray(eye.position, eye.rotation * Vector3.forward);
++        var hitAny = Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore);
++        // EXAMINE (C3): the registry's aim boxes are asked first; a box on a wall face wins up to 2 cm behind the
++        // physics hit, a door or furniture in front of it still wins.
++        inspectAimed = null;
++        if (FrontRoomsInspect.Find(ray, hitAny ? hit.distance + FrontRoomsInspect.SurfaceSlack : Reach, out var inspectTarget) && CanShowInspect(inspectTarget))
+         {
++            inspectAimed = inspectTarget;
++            prompt = inspectTarget.Prompt;
++        }
++        else if (hitAny)
++        {
+             prompt = map.Describe(hit.collider, out aimedHold);
+             // Panes break from 1.2 m (the glass shot's stand needs it); everything else keeps the 2.4 m reach.
+             if (aimedHold && hit.distance > FrontRoomsShotTimings.GlassBreak.Reach) { prompt = null; aimedHold = false; }
+@@ -1406,6 +1505,14 @@
+         var eDown = EDown();
+         var glassOwnsE = glassShot != null && aimedHold && aimed == glassPane && !glassShot.Shattered && (glassShot.Active || glassShot.Blending);
+         var pressed = eDown && (glassOwnsE || rig == null || !rig.Consume(ShotInput.Use));
++        // C5: E on a close-up target is committed after relay.Tick (C5b). A transient refusal (latch, cooldown, a
++        // shot running) keeps the prompt and swallows E: it never falls through to the door or wall behind.
++        if (inspectAimed != null)
++        {
++            holdProgress = 0f;
++            if (pressed && CanPressInspect()) pendingInspect = inspectAimed;
++            return;
++        }
+         if (aimed == null)
+         {
+             holdProgress = 0f;
+@@ -2164,14 +2271,26 @@
+     }
+     void SetPhase(Phase p)
+     {
++        // C8: a stray resume never strands a close-up; the phase a pause came from is recorded here, for every caller.
++        if (p == Phase.Playing && InspectingNow) { EndInspect(false); return; }
++        if (p == Phase.Paused && phase != Phase.Paused) pausedFrom = phase;
+         var wasPlaying = phase == Phase.Playing;
+         var wasPaused = phase == Phase.Paused;
++        var wasHud = wasPlaying || phase == Phase.Inspect;
+         phase = p; bool playing = p == Phase.Playing;
+         // Doors freeze with the game (a swing, a jolt, a key turn's watchdog), so nothing moves or sounds under the pause card.
+         if (map != null) map.DoorsPaused = !playing;
++        // Inspect is a HUD phase: the panels stay and rig.HudFade fades them; the crosshair goes at once.
++        var hudPhase = playing || p == Phase.Inspect;
+         if ((p == Phase.Paused) != wasPaused) Paused?.Invoke(p == Phase.Paused);
+-        if (playing && !wasPlaying) gameplayHudAlpha = 0f;
+-        if (!playing) gameplayHudAlpha = 0f;
++        if (hudPhase && !wasHud) gameplayHudAlpha = 0f;
++        if (!hudPhase) gameplayHudAlpha = 0f;
++        // The close-up pauses the world (Phase.Inspect + timeScale 0); 1 is restored only where the close-up set 0.
++        var freeze = p == Phase.Inspect || (p == Phase.Paused && pausedFrom == Phase.Inspect);
++        if (freeze) Time.timeScale = 0f;
++        else if (timeFrozenByInspect) Time.timeScale = 1f;
++        timeFrozenByInspect = freeze;
++        if (p != Phase.Paused) pausedFrom = Phase.Playing;
+         if (p != Phase.Paused)
+         {
+             displaySettingsOpen = false;
+@@ -2181,7 +2300,7 @@
+         // is leaving. This is the only frame in which the title layer and the
+         // playing HUD overlap; all title children are non-raycast targets.
+         var keepMobileTitleFade = FrontRoomsHandheld.Active && playing && logoFading;
+-        overlay.SetActive(!playing || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
++        overlay.SetActive(!hudPhase || keepMobileTitleFade); if (crosshairImage != null) crosshairImage.enabled = playing;
+         if (overlayImage != null) overlayImage.color = p == Phase.Title || FrontRoomsHandheld.Active
+             ? new Color(0f, 0f, 0f, 0f)
+             : new Color(.93f, .92f, .88f, .98f);
+@@ -2197,12 +2316,12 @@
+             if (logoLeftImage != null) logoLeftImage.enabled = LogoShown;
+             if (logoSlideImage != null) logoSlideImage.enabled = LogoShown;
+         }
+-        if (roomPanel != null) roomPanel.SetActive(playing);
+-        if (threatPanel != null) threatPanel.SetActive(playing);
+-        if (keyPanel != null) keyPanel.SetActive(playing);
++        if (roomPanel != null) roomPanel.SetActive(hudPhase);
++        if (threatPanel != null) threatPanel.SetActive(hudPhase);
++        if (keyPanel != null) keyPanel.SetActive(hudPhase);
+         if (contextPanel != null) contextPanel.SetActive(false);
+         ApplyGameplayHudAlpha();
+-        Cursor.lockState = playing ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !playing;
++        Cursor.lockState = hudPhase ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !hudPhase;
+         if (overlayText != null)
+         {
+             overlayText.enabled = !FrontRoomsHandheld.Active && p != Phase.Title && !displaySettingsOpen;
+@@ -2219,8 +2338,8 @@
+             if (mobilePauseTitle != null) mobilePauseTitle.text = "PAUSED";
+             if (mobilePauseRows != null) mobilePauseRows.text = "MOVE        DRAG · LOOK        SOCKET · SPRINT\nUSE · DOOR        HOLD USE · BREAK GLASS";
+         }
+-        // Re-locking the cursor can report one large mouse jump: ignore the first frames back.
+-        if (playing && wasPaused) mouseSettleFrames = 2;
++        // Re-locking the cursor can report one large mouse jump: ignore the first frames back (also Paused → Inspect).
++        if (hudPhase && wasPaused) mouseSettleFrames = 2;
+         if (p == Phase.Caught)
+         {
+             var caughtStats = Mathf.RoundToInt(elapsed) + " S  /  TIER " + tier + "  /  " + zonesVisited.Count + " ZONES  /  " + keysTaken + " KEYS  /  " + (relay == null ? 0 : relay.DoorsBroken) + " DOORS BROKEN";
+@@ -2239,7 +2358,7 @@
+ #if UNITY_EDITOR
+         if (autopilot) return;
+ #endif
+-        if (!focused && phase == Phase.Playing) SetPhase(Phase.Paused);
++        if (!focused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
+     }
+ 
+     void OnApplicationPause(bool paused)
+@@ -2247,7 +2366,7 @@
+ #if UNITY_EDITOR
+         if (autopilot) return;
+ #endif
+-        if (paused && phase == Phase.Playing) SetPhase(Phase.Paused);
++        if (paused && (phase == Phase.Playing || phase == Phase.Inspect)) SetPhase(Phase.Paused);
+     }
+     void Update()
+     {
+@@ -2258,12 +2377,22 @@
+         else if (phase == Phase.Paused && input.SettingsDown) ToggleDisplaySettings();
+         else if (input.PauseDown && displaySettingsOpen) ToggleDisplaySettings();
+         else if (displaySettingsOpen) HandleSettingsKeys();
+-        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused)) SetPhase(phase == Phase.Playing ? Phase.Paused : Phase.Playing);
++        else if (phase == Phase.Inspect)
++        {
++            // C6: E, S or Esc leaves the close-up once CancelAfter has passed (Esc exits: no pause-card loop).
++            if ((input.UseDown || input.ShotBackDown || input.PauseDown) && FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter)
++                EndInspect(input.ShotBackDown);
++        }
++        else if (input.PauseDown && (phase == Phase.Playing || phase == Phase.Paused))
++        {
++            if (phase == Phase.Playing) SetPhase(Phase.Paused);
++            else ResumeFromPause();
++        }
+         // R restarts from the pause or caught card, never while the settings panel is open.
+         // Touch restart gets one confirmation step because it is easy to hit while
+         // reaching for the pause card; desktop keyboard and the caught retry chip
+         // retain their immediate restart behavior.
+-        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title)
++        if (!displaySettingsOpen && input.RestartDown && phase != Phase.Playing && phase != Phase.Title && phase != Phase.Inspect)
+         {
+             if (phase == Phase.Paused && FrontRoomsInput.VirtualSnapshotActive)
+             {
+@@ -2282,8 +2411,20 @@
+ #endif
+         if (phase == Phase.Title) UpdateTitleSequence(dt);
+         if (logoFading) UpdateLogoFade(dt);
+-        if (phase == Phase.Playing && mapPlay)
++        // C7: Inspect first, then else-if Playing, so the rig ticks exactly once per frame.
++        if (inspectCooldown > 0f) inspectCooldown -= FrontRoomsInspect.Dt;
++        if (phase == Phase.Inspect)
+         {
++            var u = FrontRoomsInspect.Dt;
++            var look = Vector2.zero;
++            if (mouseSettleFrames > 0) mouseSettleFrames--; else look = input.Look;
++            // v1: no zoom input, so FrontRoomsInspect.ZoomInputWired stays false (no zoom step, no CLOSER hint). After touch T3:
++            // FrontRoomsInspect.ZoomInputWired = true (once, in Awake) and pass input.Zoom, input.ZoomToggleDown here.
++            FrontRoomsInspect.Tick(u, look, 0f, false);
++            rig?.Tick(u);
++        }
++        else if (phase == Phase.Playing && mapPlay)
++        {
+             elapsed += dt;
+             flashTime -= dt;
+             FrontRoomsCaptions.Tick(dt);
+@@ -2300,7 +2441,9 @@
+     void UpdateHud()
+     {
+         bool play = phase == Phase.Playing;
+-        if (play)
++        var inspecting = phase == Phase.Inspect;
++        // C11: Inspect keeps the gameplay HUD alpha (rig.HudFade fades the panels); the prompt slot carries the hint.
++        if (play || inspecting)
+             gameplayHudAlpha = Mathf.MoveTowards(gameplayHudAlpha, 1f, Time.unscaledDeltaTime / GameplayHudFadeSeconds);
+         else
+             gameplayHudAlpha = 0f;
+@@ -2310,17 +2453,28 @@
+         var zone = inStartRooms ? new ZoneInfo { height = ZoneHeight.Standard, theme = ZoneTheme.Level0 } : map.ZoneOf(map.CellOf(playerRoot.position));
+         var released = relay != null && relay.Released;
+         var threat = !released ? "" : relay.State == HunterState.BreakDoor ? "RELAY  /  BREAKING DOOR" : "RELAY  /  " + relay.State.ToString().ToUpperInvariant();
+-        roomMetaText.text = play ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
+-        roomText.text = play ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
++        var hudOn = play || inspecting;
++        roomMetaText.text = hudOn ? "ZONE " + zonesVisited.Count.ToString("00") + "  /  TIER " + tier + "  /  " + zone.height.ToString().ToUpperInvariant() + "  " + MapGrid.CeilingHeight(zone.height).ToString("0.0") + " M" : "";
++        roomText.text = hudOn ? (inStartRooms ? "LEVEL 0 / THE LOBBY" : ZoneName(zone)) : "";
+         // The Relay's state and distance are an assist, off by default.
+-        var showThreat = play && released && FrontRoomsSettings.RelayReadout;
++        var showThreat = hudOn && released && FrontRoomsSettings.RelayReadout;
+         threatStateText.text = showThreat ? threat : "";
+         distanceText.text = showThreat ? "RELAY  " + Mathf.RoundToInt(RelayDistance()) + " M" : "";
+         if (crosshairImage != null) crosshairImage.enabled = play;
+         // The hint card is timed: the first-run hint, then only flashes.
+         var hint = flashTime > 0f && !string.IsNullOrEmpty(flash) ? flash : elapsed < CalmHintSeconds ? CurrentCalmHint : "";
+         contextText.text = play ? hint : "";
+-        if (promptText != null) promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
++        if (promptText != null)
++        {
++            if (inspecting) promptText.text = DisplayPrompt(FrontRoomsInspect.HintText);
++            else promptText.text = play && prompt != null ? DisplayPrompt(prompt) : "";
++            var c = promptText.color;
++            c.a = inspecting ? FrontRoomsInspect.HintAlpha : 1f;   // the hint's own alpha, not the HUD fade
++            promptText.color = c;
++            if (!promptHomeSet) { promptHome = promptText.rectTransform.anchoredPosition; promptHomeSet = true; }
++            var canvasHeight = hudCanvas != null ? ((RectTransform)hudCanvas.transform).rect.height : 1080f;
++            promptText.rectTransform.anchoredPosition = inspecting ? new Vector2(promptHome.x, -(canvasHeight * .5f - InspectHintBottom)) : promptHome;
++        }
+         if (holdBar != null)
+         {
+             holdBar.SetActive(play && holdProgress > 0f);
+@@ -2334,14 +2488,14 @@
+             staminaSegments[i].enabled = tired;
+             staminaSegments[i].color = stamina >= (i + .5f) * (StaminaSeconds / staminaSegments.Length) ? new Color(.957f, .875f, .231f) : new Color(1f, 1f, 1f, .25f);
+         }
+-        if (roomPanel != null) roomPanel.SetActive(play);
++        if (roomPanel != null) roomPanel.SetActive(hudOn);
+         if (threatPanel != null) threatPanel.SetActive(showThreat);
+         // A presented key's panel waits for the pocket (KeyPickup.PocketEnd), then fades in over PanelFadeIn
+         // (keyPanelFade, in ApplyGameplayHudAlpha). On the instant path (no model) it is up at once, as before.
+         var presentingKey = doorShot != null && doorShot.Presenting(zone.id);
+         if (presentingKey) keyPanelFade = 0f;
+         else if (keyPanelFade < 1f) keyPanelFade = Mathf.MoveTowards(keyPanelFade, 1f, Mathf.Min(Time.deltaTime, .1f) / FrontRoomsShotTimings.KeyPickup.PanelFadeIn);
+-        var showKey = play && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
++        var showKey = hudOn && !inStartRooms && map.HasKeyFor(zone.id) && !presentingKey;
+         if (showKey && keyText != null && (!keyLabelSet || !zone.id.Equals(keyLabelZone)))
+         {
+             keyLabelZone = zone.id;
+@@ -2399,7 +2553,7 @@
+         if (threatHudGroup != null) threatHudGroup.alpha = hud;
+         if (contextHudGroup != null) contextHudGroup.alpha = gameplayHudAlpha;
+         if (captionHudGroup != null) captionHudGroup.alpha = gameplayHudAlpha;
+-        if (crosshairHudGroup != null) crosshairHudGroup.alpha = hud;
++        if (crosshairHudGroup != null) crosshairHudGroup.alpha = phase == Phase.Inspect ? gameplayHudAlpha : hud;   // the hint under it keeps its own alpha (C11)
+         // The key panel also fades in after a presented pickup (keyPanelFade stays 1 on the instant path).
+         if (keyHudGroup != null) keyHudGroup.alpha = hud * keyPanelFade;
+     }
+@@ -2471,6 +2625,12 @@
+         PlayerStamina01 = 1f;
+         PlayerWinded = PlayerSprinting = false;
+         PlayerGait = FrontRoomsGait.Still;
++        // C12: a close-up torn down (R restart, Play stopped) gives the world back.
++        FrontRoomsInspect.AbortRequested -= OnInspectAbortRequested;
++        if (timeFrozenByInspect) Time.timeScale = 1f;
++        timeFrozenByInspect = false;
++        if (InspectingNow) { InspectingNow = false; Inspecting?.Invoke(false); }
++        FrontRoomsInspect.Abort();
+         if (phase == Phase.Paused) Paused?.Invoke(false);
+         if (map != null && map.KeyTurnOwner == doorShot) map.KeyTurnOwner = null;
+         if (map != null && map.KeyPresenter != null && map.KeyPresenter.Target == doorShot) map.KeyPresenter = null;
+@@ -2483,6 +2643,8 @@
+         if (phase != Phase.Playing) return;
+         // Caught > cancel > shot: a key turn resolves now (locked before its commit, unlocked and shut after), the camera stays.
+         doorShot?.Abort();
++        // C12b: caught during a close-up's return: nothing freezes mid-blend (other shots behave as before).
++        if (FrontRoomsInspect.Active) { FrontRoomsInspect.Abort(); rig?.ResetLayers(); }
+         SetPhase(Phase.Caught); FrontRoomsMobileInteractionEvents.Caught(); Sound(caughtClip, playerPos); Event("outcome", "caught");
+         string dir = Application.persistentDataPath; Directory.CreateDirectory(dir);
+         File.WriteAllText(Path.Combine(dir, "events-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv"), "time_s,event,detail,relay_m\n" + string.Join("\n", events));
+--- a/Assets/Scripts/FrontRooms3DGame.Mobile.cs
++++ b/Assets/Scripts/FrontRooms3DGame.Mobile.cs
+@@ -192,8 +192,10 @@
+         }
+         if (mobileRestartConfirmOpen) { CancelMobileRestartConfirmation(); return; }
+         if (displaySettingsOpen) { ToggleDisplaySettings(); return; }
++        // C15: Back leaves a close-up; from Paused it resumes where the pause came from (never a raw SetPhase(Playing)).
++        if (phase == Phase.Inspect) { if (FrontRoomsInspect.Age >= FrontRoomsShotTimings.Inspect.CancelAfter) EndInspect(false); return; }
+         if (phase == Phase.Playing) SetPhase(Phase.Paused);
+-        else if (phase == Phase.Paused) SetPhase(Phase.Playing);
++        else if (phase == Phase.Paused) ResumeFromPause();
+     }
+ 
+     void RequestMobileRestartConfirmation()
+@@ -241,7 +243,14 @@
+     void HandleMobileLookTap(Vector2 viewport)
+     {
+         if (phase != Phase.Playing || map == null || cam == null) return;
++        // C15: no taps through a shot camera (it may sit 0.36 m from a leaf); a tap on a close-up target opens it through the gate.
++        if (rig != null && rig.InShot) return;
+         var ray = cam.ViewportPointToRay(new Vector3(viewport.x, viewport.y, 0f));
++        if (FrontRoomsInspect.Find(ray, Reach, out var tapTarget) && CanShowInspect(tapTarget))
++        {
++            if (CanPressInspect()) pendingInspect = tapTarget;
++            return;
++        }
+         if (!Physics.Raycast(ray, out var hit, Reach, ~0, QueryTriggerInteraction.Ignore)) return;
+         var description = map.Describe(hit.collider, out var hold);
+         if (hold || string.IsNullOrEmpty(description)) return;
+@@ -259,7 +268,7 @@
+             mobileTouch.SetRestartConfirmation(false);
+         }
+         var state = phase == Phase.Title ? FrontRoomsTouchControls.MenuState.Title
+-            : phase == Phase.Playing ? FrontRoomsTouchControls.MenuState.Playing
++            : phase == Phase.Playing || phase == Phase.Inspect ? FrontRoomsTouchControls.MenuState.Playing   // C13 interim: MenuState.Inspect lands with T1
+             : phase == Phase.Paused ? (displaySettingsOpen ? FrontRoomsTouchControls.MenuState.Settings : FrontRoomsTouchControls.MenuState.Paused)
+             : FrontRoomsTouchControls.MenuState.Caught;
+         mobileTouch.SetMenuState(state);

@@ -106,6 +106,7 @@
   0.05
  ],
  "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "grainAxis": "texture U (Prop_WoodOak_A is U-grain; see interact_door_common.u_grain)",
  "boundsMin": [
   -0.02199999988079071,
   0.014999999664723873,

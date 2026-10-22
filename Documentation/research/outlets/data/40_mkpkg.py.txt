@@ -1,0 +1,102 @@
+"""Build a v2 apply package (W/apply/README.md) from a list of payload files.
+
+  python3 mkpkg.py <spec.json>
+
+spec = {
+  "track": "outlets_kits",
+  "title": "one line",
+  "header": ["comment lines for the script"],
+  "files": [[<project-relative path>, <source file>], ...],      # in write order (.meta first)
+  "keep": [<project-relative path>, ...],                         # never written; .meta must stay, others note only
+  "base_from": {<path>: <file holding the base the package is verified against>}   # optional: base not in main yet
+}
+Bases come from main (REAL) unless base_from names a file (a package that stacks on another, unapplied one).
+"""
+import hashlib, json, os, shutil, subprocess, sys, time
+
+A = "/Users/redwang/FrontRoomsVisualWork/apply"
+REAL = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+TEMPLATE = os.path.join(A, "outlets_c1.sh")
+
+spec = json.load(open(sys.argv[1]))
+t = spec["track"]
+base_from = spec.get("base_from", {})
+
+
+def sha(p):
+    return hashlib.sha1(open(p, "rb").read()).hexdigest()
+
+
+head = subprocess.run(["git", "-C", REAL, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+payload = os.path.join(A, t + "_payload")
+basedir = os.path.join(A, t + "_base")
+for d in (payload, basedir):
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    os.makedirs(d)
+bases, expected, keep = [], [], []
+diffs = []
+for rel, src in spec["files"]:
+    dst = os.path.join(payload, rel)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copyfile(src, dst)
+    expected.append("%s  %s" % (sha(dst), rel))
+    bsrc = base_from.get(rel) or os.path.join(REAL, rel)
+    if os.path.exists(bsrc):
+        bdst = os.path.join(basedir, rel)
+        os.makedirs(os.path.dirname(bdst), exist_ok=True)
+        shutil.copyfile(bsrc, bdst)
+        bases.append("%s  %s" % (sha(bdst), rel))
+        if not rel.endswith((".fbx", ".png")):
+            r = subprocess.run(["diff", "-u", "--label", "a/" + rel, "--label", "b/" + rel, bdst, dst], capture_output=True, text=True)
+            diffs.append(r.stdout)
+        else:
+            diffs.append("Binary %s differs: base %s, payload %s\n" % (rel, sha(bdst), sha(dst)))
+    else:
+        bases.append("ABSENT  %s" % rel)
+        if not rel.endswith((".fbx", ".png")):
+            r = subprocess.run(["diff", "-u", "--label", "/dev/null", "--label", "b/" + rel, "/dev/null", dst], capture_output=True, text=True)
+            diffs.append(r.stdout)
+        else:
+            diffs.append("Binary %s added: %s\n" % (rel, sha(dst)))
+for rel in spec.get("keep", []):
+    keep.append("%s  %s" % (sha(os.path.join(REAL, rel)), rel))
+src_note = (" (stacked: " + ", ".join(sorted(set(os.path.basename(os.path.dirname(os.path.dirname(v))) for v in base_from.values()))) + ")") if base_from else ""
+open(os.path.join(A, t + "_bases.txt"), "w").write("# %s bases: sha1 of every path the script writes, recorded %s on main %s%s\n%s\n" % (t, stamp, head, src_note, "\n".join(bases)))
+open(os.path.join(A, t + "_expected.txt"), "w").write("# %s payload (= the target after --apply), %s\n%s\n" % (t, stamp, "\n".join(expected)))
+open(os.path.join(A, t + "_keep.txt"), "w").write("# %s kept, never written: GUID .meta files (must stay) and notes\n%s\n" % (t, "\n".join(keep)))
+open(os.path.join(A, t + ".diff"), "w").write("".join(diffs))
+
+tpl = open(TEMPLATE).read()
+# Header: replace the c1 comment block (lines up to 'set -u').
+body = tpl[tpl.index("set -u"):]
+body = body.replace("outlets_c1", t)
+body = body.replace('[ -d "$REAL/Assets/Scripts/Office" ]', '[ -d "$REAL/Assets/Resources" ]')
+# generic keep notes instead of the c1-specific ones
+old = '''act "keep   Assets/Scripts/FrontRoomsRoomStream.cs.meta and Assets/Scripts/Office/FrontRoomsOfficeKit.cs.meta (main's GUIDs)"
+act "keep   Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs (map-owned; the outlet contract is a request to the map chat)"'''
+new = '''while IFS= read -r line; do
+  case "$line" in "#"*|"") continue ;; esac
+  act "keep   ${line#*  }"
+done < "$KEEP"'''
+assert body.count(old) == 1
+body = body.replace(old, new)
+old = '''              || echo "  NOTE: $p moved ($got != $want): the map chat must re-check the outlet contract (20_code.md §6); this package does not depend on it" ;;'''
+new = '''              || echo "  NOTE: $p moved ($got != $want): see the package header; this package does not write it" ;;'''
+assert body.count(old) == 1
+body = body.replace(old, new)
+hdr = "#!/bin/bash\n# %s\n#\n" % spec["title"]
+hdr += "".join("# " + l + "\n" if l else "#\n" for l in spec["header"])
+hdr += """#
+#   %s.sh            DRY RUN: checks every base, kept file and payload by sha1; prints every action; writes nothing.
+#   %s.sh --apply    performs exactly those actions, then prints the sha1 manifest and compares it with %s_expected.txt.
+# Never deletes anything, never commits. Refuses (exit 1, nothing written) on any base, kept .meta or payload change.
+# apply-convention: v2 (W/apply/README.md): exact base copies in %s_base/<path>, unified diff %s.diff;
+# on a base mismatch run W/tools/rebase_apply.sh %s before any re-verify.
+# APPLY_REAL overrides the target, APPLY_DIR the package dir, APPLY_BACKUP the backup dir. Already applied
+# everywhere -> "ALREADY APPLIED", exit 0, nothing written.
+""" % (t, t, t, t, t, t)
+open(os.path.join(A, t + ".sh"), "w").write(hdr + body)
+os.chmod(os.path.join(A, t + ".sh"), 0o755)
+print("package %s: %d files, %d kept, main %s" % (t, len(expected), len(keep), head))

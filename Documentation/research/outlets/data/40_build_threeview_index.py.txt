@@ -1,0 +1,109 @@
+"""Outlets three-view hand-off for 平面视觉: copy PNGs (persp -> hero), merge manifests, write index.json.
+Format = research/interactables/threeview/index.json: a `kits` block (K-sheet record, INDEX_FORMAT.md fields)
+and an `assets` block (10 fields) + `assetsMeta`."""
+import json, os, shutil, time
+W = '/Users/redwang/FrontRoomsVisualWork'
+SRC = [W + '/outlet_fix/out/threeview/', W + '/outlet_fix/out/threeview_small/']
+OUT = '/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/outlets/threeview/'
+man = {}
+for s in SRC:   # later sources (the larger-scale small parts) win
+    for a in json.load(open(s + 'manifest.json'))['assets']:
+        man[a['name']] = (a, s)
+HEX = {
+    'Prop_ThermosetIvory': ('#E6DDC2', 'Ivory thermoset (P-4b proposal; tint WAIT-RED: C #B6AF99 / D #A69F8C rendered)'),
+    'Prop_NylonIvory': ('#E2D9BF', 'Ivory nylon device (P-4b proposal; C #B3AB97 / D #A39C89 with the plate)'),
+    'Prop_Aluminium': ('#C7C7C2', 'Brushed stainless (plates) / galvanized #B3B5B3 (boxes, EMT): P-4b proposal; today Prop_AluminiumAnodised'),
+    'Prop_PlasticBlack': ('#1A1A1A', 'Black plastic'), 'Prop_Brass': ('#B08A4A', 'Brass'), 'Prop_Chrome': ('#D8D8D8', 'Chrome'),
+    'Prop_Rubber': ('#050505', 'Rubber (the Bare kit\'s gap)'), 'Prop_Ceramic': ('#5A3A24', 'Brown ceramic glaze'),
+    'Prop_SteelPutty': ('#A79F89', 'Putty steel'), 'Prop_FabricCubicle': ('#5A646E', 'Cubicle fabric'),
+}
+GALV = ('Kit_OutletHandyBox', 'Kit_ConduitEMT', 'Kit_ConduitStrap', 'Kit_FloorBoxTombstone', 'Kit_FloorBoxTombstone2')
+PALETTE = [{'name': 'palette: ivory / aged ivory / almond / white / brown / grey / stainless / papered or painted over', 'kind': 'finish',
+            'differs': 'one FBX; the renderer picks the plate and device materials per fixture (one colour per wall line). Kit_OutletDuplex_Brown and Kit_OutletDuplex20_IG are no longer separate kits.'},
+           {'name': 'ground-up (rolled 180 deg)', 'kind': 'state', 'differs': 'per wall line (one electrician), plus 2.5 % single replaced plates'},
+           {'name': 'crooked 2-6 deg / top edge 1-3 mm off the wall / a screw missing', 'kind': 'state', 'differs': 'render-time pose, same mesh'}]
+K = {  # kit: (title, lede, level, era from, era to, label, era note, variants, family)
+ 'Kit_OutletDuplex': ('Duplex receptacle', 'NEMA 5-15R duplex on a 1-gang thermoset plate, the outlet every wall line uses.', ['Level 0', 'Office', 'Title stream'], 1962, 1990, 'Period',
+    'Grounding duplex required in new work since the 1962 NEC; ivory and almond thermoset plates are the 1970s-80s office norm (01_period_research.md).', PALETTE),
+ 'Kit_OutletDuplex20': ('5-20R duplex', 'T-slot 20 A duplex for Office desk circuits; an orange device marks isolated ground.', ['Office'], 1975, 1990, 'Period',
+    'Commercial spec grade on 20 A circuits; first year of the T-slot unverified (before 1990). Orange IG device: palette variant.',
+    PALETTE + [{'name': 'orange isolated-ground device (Prop_PlasticOrange)', 'kind': 'colour', 'differs': 'device colour only; was Kit_OutletDuplex20_IG'}]),
+ 'Kit_OutletDuplex_Steel': ('Stainless duplex', 'The same duplex under a flat 0.76 mm brushed-stainless plate: Lobby, steel lines, Tall halls.', ['Title stream Lobby', 'Office', 'Tall'], 1955, 1990, 'Timeless',
+    'Stainless plates were standard commercial stock across the whole second-hand span.', PALETTE[1:]),
+ 'Kit_OutletDuplex_Cracked': ('Cracked plate', 'A duplex whose thermoset plate cracked across the screw: wear, never decoration.', ['Level 0', 'Office'], 1962, 1990, 'Period',
+    'Thermoset plates crack when over-tightened; 3-5 % of Level 0 plates (01 sec. 8).', PALETTE),
+ 'Kit_OutletDuplex_Jumbo': ('Jumbo plate', 'An oversize 3.50 x 5.25 in plate hiding a bad cut-out.', ['Level 0', 'Office'], 1962, 1990, 'Period',
+    'Leviton: "used to conceal greater wall irregularities"; specs that ban them show they were used (01 sec. 8).', PALETTE),
+ 'Kit_OutletBare': ('Plate missing', 'The device with its plate gone: plaster ears, terminal screws and the box edge show.', ['Level 0'], 1962, 1990, 'Period',
+    'Wear variant (1-3 %). The dark gap is a flat sheet: a real hole needs the map wall (spec sec. 8 item 7).', []),
+ 'Kit_OutletScrew': ('Plate screw', '#6-32 oval-head slotted screw; every plate draws its own with a random slot angle.', ['all'], 1955, 1990, 'Timeless',
+    'Pass & Seymour 510 standard plate screw. Papered and painted plates keep an ivory screw (put back after the job).', []),
+ 'Kit_OutletBlank': ('Blank plate', 'A 1-gang blank: a removed outlet, never on a steel line.', ['Level 0', 'Office'], 1955, 1990, 'Timeless',
+    'Wear variant (3-4 %); thermoset lines only since the fix pass.', PALETTE[:1]),
+ 'Kit_OutletToggle1': ('Toggle switch', 'Snap toggle on a 1-gang plate, beside arches and as a lone switch.', ['Level 0', 'Office'], 1955, 1990, 'Timeless',
+    'Toggle was the commercial norm; Decora rockers (1972-73) a minority. Height 1.22 m on Office walls, 1.12 m on printed Level 0 walls (clears the EGRESS cue band; 30_contract_map.md).',
+    PALETTE[:1] + [{'name': 'aged / papered over / crooked / missing screw', 'kind': 'state', 'differs': 'switches wear since the fix pass; no geometry variant'}]),
+ 'Kit_OutletToggle2': ('Two-gang toggle', 'Two snap toggles on a 2-gang plate (Office rooms).', ['Office'], 1955, 1990, 'Timeless', 'As the 1-gang toggle.', PALETTE[:1]),
+ 'Kit_JackPhone': ('Modular phone jack', 'One 6P modular jack on a 1-gang plate, beside a desk receptacle.', ['Office', 'Level 0'], 1976, 1990, 'Period',
+    'Modular plugs from the mid-1960s; FCC registration program 1976. Ivory plates on steel lines (telecom fitted its own).', PALETTE[:1]),
+ 'Kit_JackData': ('IBM data connector', 'IBM Cabling System data connector, square and hermaphroditic, beside a phone jack.', ['Office'], 1984, 1990, 'Period',
+    'IBM Cabling System 1984 (Token Ring). Face is an estimate until a photo (media lead om07).', PALETTE[:1]),
+ 'Kit_JackBNC': ('BNC coax jack', 'A BNC bayonet on a 1-gang plate: thin-coax Ethernet.', ['Office'], 1985, 1990, 'Period',
+    '10BASE2 (802.3a, 1985): "the dominant 10 Mbit/s Ethernet standard during the mid to late 1980s". One network per Office zone.', PALETTE[:1]),
+ 'Kit_JackPhone4Prong': ('4-prong phone jack', 'A brown 4-prong surface block: old stock left on a Level 0 wall.', ['Level 0'], 1930, 1975, 'Period',
+    'Second-hand relic (1930s-70s, replaced by modular jacks); a quarter of Level 0 phone companions. Hole pattern estimated (media lead om08).', []),
+ 'Kit_OutletHandyBox': ('Handy box', 'A surface utility box with a galvanized cover, fed by EMT from the ceiling.', ['Tall'], 1955, 1990, 'Timeless',
+    'Utility vocabulary for Tall halls; one box and one riser per wall line since the fix pass.', []),
+ 'Kit_ConduitEMT': ('EMT conduit tile', 'A 1 m tile of 1/2 in EMT; the renderer stacks tiles from the box to the ceiling.', ['Tall'], 1955, 1990, 'Timeless',
+    'Thin-wall EMT, OD 17.9 mm. The top view of the open 1 m tile is a 1 mm ring: empty at 250 px/m.', []),
+ 'Kit_ConduitStrap': ('One-hole strap', 'A one-hole EMT strap, near the box and then every 1.5 m.', ['Tall'], 1955, 1990, 'Timeless', 'Trade-standard strap.', []),
+ 'Kit_FloorBoxTombstone': ('Floor box', 'An aluminium "tombstone" floor fitting with one duplex: a pod feed or bare floor where desks have gone.', ['Office'], 1965, 1990, 'Period',
+    'Above-floor fittings on poke-throughs for open offices (SFH-40 type). One feed per pod at the powered end since the fix pass.', []),
+ 'Kit_FloorBoxTombstone2': ('Two-gang floor box', 'The back-to-back tombstone: a duplex on each face.', ['Office'], 1965, 1990, 'Period', 'SFH-50 type; 1 in 5 floor fittings.', []),
+ 'Kit_CubiclePanel_Powered': ('Powered spine panel', 'The cubicle panel that carries a pod\'s power: a duplex in its base raceway.', ['Office'], 1978, 1990, 'Period',
+    'Systems furniture base feed (Steelcase 9000 type). Same bounds and collider as Kit_CubiclePanel.', []),
+}
+for n in list(man):
+    a, s = man[n]
+    for v in ('front', 'side', 'top', 'persp'):
+        shutil.copyfile(s + n + '_' + v + '.png', OUT + n + '_' + ('hero' if v == 'persp' else v) + '.png')
+kits, assets = {}, []
+for n in sorted(K):
+    a, s = man[n]
+    title, lede, level, y0, y1, lab, era, variants = K[n]
+    mats = []
+    for slot in a['slots']:
+        hx, label = HEX.get(slot, (None, slot))
+        if slot == 'Prop_Aluminium' and n in GALV: hx, label = '#B3B5B3', 'Galvanized steel (P-4b proposal Prop_Galvanized; today Prop_AluminiumAnodised)'
+        mats.append({'name': slot, 'slot': slot, 'label': label, 'hex': hx})
+    w, h, d = a['size_m']
+    kits[n] = {'kit': n, 'title': title, 'lede': lede, 'dims_mm': {'w': round(w * 1000, 1), 'd': round(d * 1000, 1), 'h': round(h * 1000, 1)},
+               'era': {'from': y0, 'to': y1, 'label': lab}, 'materials': mats, 'variants': [v['name'] for v in variants],
+               'images': {v: 'threeview/' + n + '_' + ('hero' if v == 'persp' else v) + '.png' for v in ('top', 'front', 'side', 'persp')},
+               'sheetPpm': a['sheetPpm'], 'px': a['px'], 'tags': a.get('tags')}
+    assets.append({'name': n, 'fbx': 'Assets/Resources/Props/Models/' + n + '.fbx', 'dims_m': [round(w, 4), round(h, 4), round(d, 4)],
+                   'tris_lod0': a['triangles'], 'tris_lod1': a.get('trianglesLod1') or a['triangles'], 'materials': a['slots'],
+                   'variants': variants, 'level': level, 'era_note': era, 'suggested_sheet_scale': a['sheetPpm']})
+idx = {
+ 'schema': 'frontrooms.kit-sheets.outlets/1', 'generated': time.strftime('%Y-%m-%dT%H:%M:%S-07:00'),
+ 'by': 'visual chat (游戏视觉), outlets workflow, fix pass, for 平面视觉\'s K-sheets',
+ 'figma': 'PROP KIT 2324:852 belongs to 平面视觉: place these as new K-sheets yourselves; this workflow did not edit Figma there.',
+ 'kits': kits, 'assets': assets,
+ 'assetsMeta': {
+   'fields': ['name', 'fbx', 'dims_m', 'tris_lod0', 'tris_lod1', 'materials', 'variants', 'level', 'era_note', 'suggested_sheet_scale'],
+   'count': len(assets),
+   'units': {'dims_m': 'metres, [w, h, d] in the FRONT image frame: w across, h up, d out of the wall (kit +Z). Wall kits: d = how far the kit stands off the wall face.',
+             'suggested_sheet_scale': 'px per metre on the 1920 x 1080 K-sheet (Tools/three_view ladder 2000/1000/500/250; Kit_OutletScrew and Kit_ConduitStrap at 8000 so they read)',
+             'tris': 'LOD0 / LOD1 from the P-1 build (outlets_lods); the landing FBX holds LOD0 only until P-1 is approved'},
+   'images': {'pattern': 'threeview/<name>_{front,side,top,hero}.png', 'note': 'third-angle orthographic at suggested_sheet_scale (1 PNG px = 1 sheet px, place at 100 %), transparent, 16 px clear padding; hero = 1152 x 864, 3/4 from the front-left, 22 degrees down. Kit front = the plate face (no turned kits).',
+              'manifest': 'threeview/handoff_manifest.json'},
+   'renderer': 'research/interactables/threeview/FrontRoomsThreeView.handoff.cs.txt (-threeViewOversample 1 -threeViewMaxPpm 2000; 8000 for the screw and strap), LOD0 forced',
+   'renderClone': 'W/proj_outlet_int = main 0a9ee7f + working tree + the outlets fix payload + P-1 LOD kits + the P-4b proposal (RenderSetup patch v2, 2026-10-14 17:4x)',
+   'materials': 'The materials are the P-4b PROPOSAL (not in main): ThermosetIvory #E6DDC2, NylonIvory #E2D9BF, StainlessBrushed #C7C7C2, Galvanized #B3B5B3. The plate tint is Red\'s call (VL277): options C #B6AF99 / D #A69F8C. Until P-4b lands the game draws ivory with Prop_PlasticBeige / Prop_PlasticPutty and every metal with Prop_AluminiumAnodised.',
+   'dropped': ['Kit_OutletDuplex_Brown', 'Kit_OutletDuplex20_IG: never referenced by the planner (brown plates and the orange IG device come from the palette); not shipped. Their Blender modules stay in Tools/.'],
+   'heights': 'Mounting heights are not in the kit: the planner places them (centre 0.31/0.41/0.46 m receptacles, 1.07 m off-height, 1.12/1.22 m switches). Wall kits\' origin = the wall-face point at the plate centre.',
+ }}
+json.dump(idx, open(OUT + 'index.json', 'w'), indent=1, ensure_ascii=False)
+merged = {'oversample': 1, 'padding': 16, 'assets': [man[n][0] for n in sorted(man)], 'failed': []}
+json.dump(merged, open(OUT + 'handoff_manifest.json', 'w'), indent=1)
+print(len(kits), 'kits;', len(os.listdir(OUT)), 'files in', OUT)

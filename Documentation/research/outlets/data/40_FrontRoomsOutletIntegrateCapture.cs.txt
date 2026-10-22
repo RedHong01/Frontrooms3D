@@ -1,0 +1,1454 @@
+// CLONE-ONLY capture harness for the outlets integrate stage (research/outlets/25_integration.md, 2026-10-08).
+//
+// Prepare: FrontRoomsRenderSetup.SetUp (the clone carries the P-4b/P-6 proposal), force-reimports every outlet kit
+//   FBX so the slot remaps find the new materials, and dumps what Unity imported (LOD levels, triangles, switch
+//   heights, materials) and what R3 resolves per FixtureKit -> Verification/outlets_int/prepare.txt.
+// RunBatch: edit-mode Camera.Render through the game's URP path with post (1920x1080, 4x MSAA, vFOV 76):
+//   - wide eye-height frames per zone (Level 0 Low / Standard / Tall, Office with a pod floor feed), map at 4992;
+//   - title-stream rooms (Lobby, Office) from the edit-mode preview;
+//   - a 0.30-0.45 m close-up of every kit, lit by the map's own lamps (the CAPTURE eye ticks them);
+//   - a dead-lamp close-up and medium frame;
+//   - a duplex LOD dolly (0.3 / 1.4 / 2.8 / 6 / 11 m);
+//   - a top-down orthographic frame of one chunk + plan.json (faces, fixtures, lamps, zones) for the overlay;
+//   - R3 dry-run counts from the centre of every chunk (4 headings) and Render timing on/off.
+// Every shot writes <name>.png (R3 on) and, for wide frames, <name>_off.png, plus shots.json with the screen
+// position of every drawn fixture. Output: Verification/outlets_int (OUTLET_INT_OUT overrides).
+// OUTLET_INT_ONLY=wide,stream,close,dead,dolly,top,views limits the groups.
+// Fix pass (2026-10-14): OUTLET_INT_ROOT=<n> puts the map root at n x 192 m (default 26 = 4992 m; 1 = 192 m, where a
+// float resolves 0.015 mm instead of 0.49 mm); OUTLET_INT_SEEDS=<a,b,..> limits the seeds; groups fixwm, fixmetal,
+// fixtoggle, fixbrown, fixlod, fixtint, fixstage2, fixpod, fixconduit add before/after pairs and luma numbers (fixlog.txt).
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using FrontRooms.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using F = FrontRoomsWallFixtures;
+using R = FrontRoomsWallFixtureRenderer;
+
+public static class FrontRoomsOutletIntegrateCapture
+{
+    const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
+    const int W = 1920, H = 1080, TopPx = 2048;
+    static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+    static readonly string[] KitNames =
+    {
+        "Kit_OutletDuplex", "Kit_OutletDuplex_Steel", "Kit_OutletDuplex20",
+        "Kit_OutletDuplex_Cracked", "Kit_OutletDuplex_Jumbo", "Kit_OutletScrew", "Kit_OutletBare", "Kit_OutletBlank",
+        "Kit_OutletToggle1", "Kit_OutletToggle2", "Kit_JackPhone", "Kit_JackData", "Kit_JackBNC", "Kit_JackPhone4Prong",
+        "Kit_FloorBoxTombstone", "Kit_FloorBoxTombstone2", "Kit_OutletHandyBox", "Kit_ConduitEMT", "Kit_ConduitStrap",
+        "Kit_CubiclePanel_Powered",
+    };
+
+    static string outDir;
+    static Camera cam;
+    static RenderTexture rt;
+    static Texture2D readA, readB;
+    static readonly StringBuilder log = new StringBuilder();
+    static readonly List<string> shotJson = new List<string>();
+    static HashSet<string> only;
+
+    static string Fmt(float v) => v.ToString("0.###", Inv);
+    static string V3(Vector3 v) => "[" + Fmt(v.x) + ", " + Fmt(v.y) + ", " + Fmt(v.z) + "]";
+    static string Q(string s) => "\"" + (s ?? "").Replace("\\", "/").Replace("\"", "'") + "\"";
+
+    static void Log(string s)
+    {
+        log.AppendLine(DateTime.Now.ToString("HH:mm:ss", Inv) + " " + s);
+        Debug.Log("[OutletInt] " + s);
+    }
+
+    static bool Want(string group) => only == null || only.Contains(group);
+
+    // ------------------------------------------------------------------ Prepare
+
+    public static void Prepare()
+    {
+        var ok = true;
+        var sb = new StringBuilder();
+        try
+        {
+            FrontRoomsRenderSetup.SetUp();
+            foreach (var n in KitNames)
+                AssetDatabase.ImportAsset("Assets/Resources/Props/Models/" + n + ".fbx", ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            AssetDatabase.Refresh();
+            FrontRoomsKitLibrary.ClearCache();
+            R.ClearCache();
+            foreach (var slot in new[] { "Prop_ThermosetIvory", "Prop_ThermosetAged", "Prop_ThermosetAlmond", "Prop_NylonIvory", "Prop_PlasticOrange",
+                         "Prop_PlasticBeige", "Prop_PlasticPutty", "Prop_Aluminium", "Prop_PlasticBlack", "Prop_Brass", "Prop_Ceramic", "Prop_CeramicGlaze", "Prop_Chrome" })
+            {
+                var m = FrontRoomsSurfaces.TryGet(slot);
+                sb.AppendLine("material " + slot + ": " + (m == null ? "MISSING" : "ok, instancing " + m.enableInstancing + ", shader " + m.shader.name));
+            }
+            foreach (var n in KitNames)
+            {
+                var go = Resources.Load<GameObject>(FrontRoomsKitLibrary.ModelFolder + n);
+                if (go == null) { sb.AppendLine(n + ": NOT LOADED"); ok = false; continue; }
+                var group = go.GetComponent<LODGroup>();
+                var line = new StringBuilder(n + ": ");
+                if (group != null)
+                {
+                    var lods = group.GetLODs();
+                    line.Append("LODGroup size " + Fmt(group.size) + ", " + lods.Length + " levels, heights ");
+                    line.Append(string.Join(" / ", lods.Select(l => l.screenRelativeTransitionHeight.ToString("0.0000", Inv))));
+                    var tan = Mathf.Tan(38f * Mathf.Deg2Rad);
+                    line.Append(" (= " + string.Join(" / ", lods.Select(l => l.screenRelativeTransitionHeight > 0f ? (group.size / (2f * l.screenRelativeTransitionHeight * tan)).ToString("0.0", Inv) + " m" : "none")) + ")");
+                }
+                else line.Append("no LODGroup");
+                foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    var mr = mf.GetComponent<MeshRenderer>();
+                    line.Append(" | " + mf.name + " " + (mf.sharedMesh != null ? mf.sharedMesh.triangles.Length / 3 : 0) + " tris [" +
+                                string.Join(", ", (mr != null ? mr.sharedMaterials : Array.Empty<Material>()).Select(m => m == null ? "null" : m.name)) + "]");
+                }
+                sb.AppendLine(line.ToString());
+            }
+            foreach (F.FixtureKit k in Enum.GetValues(typeof(F.FixtureKit)))
+                if (k != F.FixtureKit.None) sb.AppendLine("R3 draws " + k + " as " + (R.DrawnKit(k) ?? "nothing"));
+        }
+        catch (Exception e) { sb.AppendLine("EXCEPTION " + e); ok = false; }
+        var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "outlets_int");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "prepare.txt"), sb.ToString());
+        Debug.Log("[OutletInt] prepare\n" + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    // ------------------------------------------------------------------ ExitCheck
+
+    /// <summary>
+    /// The title stream's Exit variant after the outlet change took the old Level 0 placeholder branch away:
+    /// every slot's "Profile props / Exit" holds exactly one EXIT sign over the far door, no "exit threshold marker"
+    /// (the 10-01 greybox strip, unbuilt in main since 10-01 20:07; 2026-10-14: it stays out), an outlet set, and no
+    /// "outlet plate" box anywhere in the stream. Writes Verification/outlets_int/exit_check.txt.
+    /// </summary>
+    public static void ExitCheck()
+    {
+        var sb = new StringBuilder();
+        var ok = true;
+        try
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+            if (game != null) { game.enabled = false; game.enabled = true; }
+            var variants = Resources.FindObjectsOfTypeAll<Transform>().Where(t => t.name == "Profile props / Exit" && t.gameObject.scene.IsValid()).ToArray();
+            sb.AppendLine("Exit variants: " + variants.Length);
+            if (variants.Length == 0) ok = false;
+            foreach (var v in variants)
+            {
+                var all = v.GetComponentsInChildren<Transform>(true);
+                var sign = all.Count(t => t.name == "exit sign over door");
+                var marker = all.FirstOrDefault(t => t.name == "exit threshold marker");
+                var markerCollider = marker != null && marker.GetComponent<Collider>() != null;
+                var set = v.GetComponent<FrontRoomsWallFixtureSet>();
+                var plates = all.Count(t => t.name == "outlet plate");
+                var line = v.parent.name + ": sign " + sign + ", marker " + (marker != null) + " (collider " + markerCollider + "), outlet set " + (set != null ? set.fixtures.Count + " fixtures, class " + set.streamClass : "none") + ", old plate boxes " + plates;
+                sb.AppendLine(line);
+                if (sign != 1 || marker != null || set == null || set.fixtures.Count == 0 || plates != 0) ok = false;
+            }
+            var stray = Resources.FindObjectsOfTypeAll<Transform>().Count(t => t.name == "outlet plate" && t.gameObject.scene.IsValid());
+            sb.AppendLine("outlet plate boxes in the scene: " + stray);
+            if (stray != 0) ok = false;
+        }
+        catch (Exception e) { sb.AppendLine("EXCEPTION " + e); ok = false; }
+        sb.AppendLine(ok ? "EXIT CHECK PASS" : "EXIT CHECK FAIL");
+        var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "outlets_int");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "exit_check.txt"), sb.ToString());
+        Debug.Log("[OutletInt] exit check\n" + sb);
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    // ------------------------------------------------------------------ RunBatch
+
+    public static void RunBatch()
+    {
+        var ok = true;
+        try { ok = Capture(); }
+        catch (Exception e) { Debug.LogError("[OutletInt] " + e); Log("EXCEPTION " + e); ok = false; }
+        try
+        {
+            File.WriteAllText(Path.Combine(outDir, "shots.json"), "[\n " + string.Join(",\n ", shotJson) + "\n]\n");
+            File.WriteAllText(Path.Combine(outDir, "log.txt"), log.ToString());
+        }
+        catch (Exception e) { Debug.LogError(e); }
+        if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    sealed class Needs
+    {
+        public readonly Dictionary<string, bool> done = new Dictionary<string, bool>();
+        public bool Has(string k) => done.ContainsKey(k);
+        public void Mark(string k) => done[k] = true;
+    }
+
+    static bool Capture()
+    {
+        outDir = Environment.GetEnvironmentVariable("OUTLET_INT_OUT");
+        if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "outlets_int");
+        Directory.CreateDirectory(outDir);
+        var onlyEnv = Environment.GetEnvironmentVariable("OUTLET_INT_ONLY");
+        if (!string.IsNullOrEmpty(onlyEnv)) only = new HashSet<string>(onlyEnv.Split(',').Select(s => s.Trim()));
+        EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var game = UnityEngine.Object.FindFirstObjectByType<FrontRooms3DGame>();
+        if (game != null)
+        {
+            game.enabled = false;
+            game.enabled = true;
+            var hunter = game.transform.Find("Hunter");
+            if (hunter != null) hunter.gameObject.SetActive(false);
+        }
+        FrontRoomsLook.ApplyAmbient();
+        var volume = FrontRoomsPostStack.Ensure(null);
+        if (volume != null) volume.gameObject.hideFlags = HideFlags.DontSave;
+
+        var camObject = new GameObject("OUTLET INT / camera") { hideFlags = HideFlags.DontSave };
+        cam = camObject.AddComponent<Camera>();
+        cam.fieldOfView = 76f;
+        cam.nearClipPlane = .02f;
+        cam.farClipPlane = 80f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = FrontRoomsLook.FogColor;
+        cam.enabled = false;
+        FrontRoomsPostStack.ConfigureCamera(cam);
+        SetTarget(W, H);
+        Log("start; load " + LoadAverage());
+
+        // ---- title stream (edit-mode preview rooms)
+        if (Want("stream")) StreamShots();
+
+        // ---- the map
+        var needs = new Needs();
+        var seeds = new[] { 2554, 20388, 7, 424242, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 101, 202, 303, 404, 505, 20261001 };
+        var seedsEnv = Environment.GetEnvironmentVariable("OUTLET_INT_SEEDS");
+        if (!string.IsNullOrEmpty(seedsEnv)) seeds = seedsEnv.Split(',').Select(int.Parse).ToArray();
+        var rootMul = int.TryParse(Environment.GetEnvironmentVariable("OUTLET_INT_ROOT"), out var rm) ? rm : 26;
+        Log("map root " + rootMul + " x " + ModuleUnits.WorldPeriod + " m");
+        var seedCount = 0;
+        foreach (var seed in seeds)
+        {
+            if (seedCount > 0 && AllDone(needs) && (!Want("views") || viewsDone >= 2) && (!Want("top") || topDone)) break;
+            seedCount++;
+            var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+            profile.generation.seed = seed;
+            var root = new GameObject("OUTLET INT / map " + seed) { hideFlags = HideFlags.DontSave };
+            root.transform.position = new Vector3(rootMul * ModuleUnits.WorldPeriod, 0f, rootMul * ModuleUnits.WorldPeriod);
+            var world = root.AddComponent<FrontRoomsMapWorld>();
+            world.Profile = profile;
+            world.BuildForCapture();
+            Physics.SyncTransforms();
+            // Transform.Find reads "/" as a path separator, so look the eye up by name.
+            var eye = root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "CAPTURE / eye");
+            if (eye == null) Log("WARNING: no CAPTURE / eye: lamps stay lit round the spawn only");
+            var sets = root.GetComponentsInChildren<FrontRoomsWallFixtureSet>(true);
+            var ctx = new MapCtx { world = world, root = root.transform, eye = eye, sets = sets, seed = seed, lamps = Lamps(world) };
+            Log("seed " + seed + ": " + sets.Length + " sets, " + sets.Sum(s => s.fixtures.Count) + " fixtures, "
+                + sets.Sum(s => s.fixtures.Count(x => x.kit == F.FixtureKit.HandyBox)) + " handy boxes, " + ctx.lamps.Count + " lamps ("
+                + ctx.lamps.Count(l => l.mode == 3) + " dead)");
+            try
+            {
+                if (Want("wide")) WideShots(ctx, needs);
+                if (Want("close")) CloseUps(ctx, needs);
+                if (Want("dead")) DeadLamp(ctx, needs);
+                if (Want("deadab") && !needs.Has("deadab")) DeadAB(ctx, needs);
+                if (Want("dolly") && !needs.Has("dolly")) Dolly(ctx, needs);
+                if (Want("top") && seed == 2554) { TopDown(ctx); topDone = true; }
+                if (Want("views") && (seed == 2554 || seed == 20388)) { Views(ctx); viewsDone++; }
+                FixGroups(ctx, needs);
+            }
+            finally
+            {
+                world.Release();
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(profile);
+            }
+        }
+        var missing = Expected().Where(k => !needs.Has(k)).ToArray();
+        Log("map seeds used: " + seedCount + "; missing shots: " + (missing.Length == 0 ? "none" : string.Join(", ", missing)));
+        cam.targetTexture = null;
+        if (rt != null) rt.Release();
+        UnityEngine.Object.DestroyImmediate(camObject);
+        Log("done; load " + LoadAverage());
+        return true;
+    }
+
+    static int viewsDone;
+    static bool topDone;
+
+    static IEnumerable<string> Expected()
+    {
+        if (Want("wide")) foreach (var k in new[] { "wide_L0_Low", "wide_L0_Standard", "wide_L0_Tall", "wide_Office" }) yield return k;
+        if (Want("close")) foreach (var c in CloseSpecs) yield return "close_" + c.name;
+        if (Want("dead")) yield return "dead";
+        if (Want("dolly")) yield return "dolly";
+        foreach (var k in FixExpected()) yield return k;
+    }
+
+    static bool AllDone(Needs n) => Expected().All(n.Has);
+
+    static string LoadAverage()
+    {
+        try
+        {
+            var p = Process.Start(new ProcessStartInfo("/usr/sbin/sysctl", "-n vm.loadavg") { RedirectStandardOutput = true, UseShellExecute = false });
+            var s = p.StandardOutput.ReadToEnd().Trim();
+            p.WaitForExit();
+            return s.Trim('{', '}', ' ');
+        }
+        catch (Exception) { return "?"; }
+    }
+
+    // ------------------------------------------------------------------ render helpers
+
+    static void SetTarget(int w, int h)
+    {
+        cam.targetTexture = null;
+        if (rt != null) rt.Release();
+        rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+        cam.targetTexture = rt;
+        readA = new Texture2D(w, h, TextureFormat.RGB24, false);
+        readB = new Texture2D(w, h, TextureFormat.RGB24, false);
+    }
+
+    static void Render(Texture2D into)
+    {
+        cam.Render();
+        cam.Render();
+        var previous = RenderTexture.active;
+        RenderTexture.active = rt;
+        into.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        into.Apply();
+        RenderTexture.active = previous;
+    }
+
+    static string StatsJson(R.FrameStats s) =>
+        "{\"setsInReach\": " + s.setsInReach + ", \"fixtures\": " + s.fixturesDrawn + ", \"screws\": " + s.screwsDrawn + ", \"attachments\": " + s.attachments
+        + ", \"lod0\": " + s.lod0 + ", \"lod1\": " + s.lod1 + ", \"lod2\": " + s.lod2 + ", \"instances\": " + s.instances + ", \"buckets\": " + s.buckets
+        + ", \"instancedCalls\": " + s.instancedCalls + ", \"singleCalls\": " + s.singleCalls + ", \"draws\": " + s.Calls + ", \"drawsWithP6\": " + s.callsWithInstancing
+        + ", \"triangles\": " + s.triangles + ", \"submitMs\": " + s.submitMs.ToString("0.000", Inv) + "}";
+
+    /// <summary>Screen positions of every drawn fixture the camera sees (not hidden, in frame, within 14 m, line of sight clear).</summary>
+    static string VisibleJson(out int count)
+    {
+        var parts = new List<string>();
+        var eye = cam.transform.position;
+        foreach (var set in FrontRoomsWallFixtureSet.Registry)
+        {
+            if (set == null || !set.isActiveAndEnabled) continue;
+            for (var i = 0; i < set.fixtures.Count; i++)
+            {
+                var x = set.fixtures[i];
+                if (set.Occluded(i)) continue;
+                var p = set.transform.TransformPoint(x.position + (x.cls == F.FixtureClass.Floor ? Vector3.up * .04f : x.normal * .01f));
+                var d = Vector3.Distance(eye, p);
+                if (d > 14f) continue;
+                var sp = cam.WorldToScreenPoint(p);
+                if (sp.z <= 0f || sp.x < 0 || sp.y < 0 || sp.x >= rt.width || sp.y >= rt.height) continue;
+                if (Physics.Raycast(eye, (p - eye).normalized, d - .03f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                parts.Add("{\"kit\": " + Q(x.kit.ToString()) + ", \"plate\": " + Q(x.plate.ToString()) + ", \"device\": " + Q(x.device.ToString()) + ", \"cls\": " + Q(x.cls.ToString())
+                    + ", \"px\": [" + Fmt(sp.x) + ", " + Fmt(rt.height - sp.y) + "], \"d\": " + Fmt(d) + "}");
+            }
+        }
+        count = parts.Count;
+        return "[" + string.Join(", ", parts) + "]";
+    }
+
+    /// <summary>Render one frame with R3 on (and off when asked), save PNGs, log stats and visible fixtures.</summary>
+    /// <summary>The detail frame's vertical FOV: from the same spot, about 3.1x the game view (a 1:1 crop of a ~3,300 px tall frame).</summary>
+    const float ZoomFov = 26f;
+
+    static void Shot(string name, Vector3 from, Vector3 target, Action<Vector3> light, bool withOff, string note, bool timing = false, bool zoom = false)
+    {
+        if (light == null) { FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f); lastZone = "Level0"; }
+        light?.Invoke(from);
+        cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from, Vector3.up));
+        if (withOff)
+        {
+            R.Enabled = false;
+            Render(readB);
+            File.WriteAllBytes(Path.Combine(outDir, name + "_off.png"), readB.EncodeToPNG());
+        }
+        R.Enabled = true;
+        R.ResetStats();
+        Render(readA);
+        var stats = R.Last;
+        File.WriteAllBytes(Path.Combine(outDir, name + ".png"), readA.EncodeToPNG());
+        var vis = VisibleJson(out var nVis);
+        var tp = cam.WorldToScreenPoint(target);
+        if (zoom)
+        {
+            cam.fieldOfView = ZoomFov;
+            Render(readB);
+            File.WriteAllBytes(Path.Combine(outDir, name + "_zoom.png"), readB.EncodeToPNG());
+            cam.fieldOfView = 76f;
+        }
+        var time = "";
+        if (timing)
+        {
+            double On() { var t = Stopwatch.StartNew(); Render(readA); return t.Elapsed.TotalMilliseconds; }
+            double Off() { R.Enabled = false; var t = Stopwatch.StartNew(); Render(readB); R.Enabled = true; return t.Elapsed.TotalMilliseconds; }
+            var on = new List<double>();
+            var off = new List<double>();
+            for (var k = 0; k < 6; k++) { on.Add(On()); off.Add(Off()); }
+            on.Sort();
+            off.Sort();
+            time = ", \"renderMsOn\": " + on[3].ToString("0.00", Inv) + ", \"renderMsOff\": " + off[3].ToString("0.00", Inv) + ", \"timingLoad\": " + Q(LoadAverage());
+        }
+        var dist = Vector3.Distance(from, target);
+        Log(name + ": d " + dist.ToString("0.00", Inv) + " m, " + nVis + " fixtures in view, " + StatsJson(stats) + (note != null ? " | " + note : "") + time);
+        shotJson.Add("{\"name\": " + Q(name) + ", \"note\": " + Q(note) + ", \"zone\": " + Q(lastZone) + ", \"size\": [" + rt.width + ", " + rt.height + "], \"targetPx\": [" + Fmt(tp.x) + ", " + Fmt(rt.height - tp.y) + "]"
+            + ", \"from\": " + V3(from) + ", \"target\": " + V3(target) + ", \"distance\": " + Fmt(dist)
+            + ", \"stats\": " + StatsJson(stats) + time + ", \"visible\": " + vis + "}");
+    }
+
+    // ------------------------------------------------------------------ map context
+
+    sealed class Lamp { public Vector3 pos; public int mode; public GridCoord cell; }
+
+    sealed class MapCtx
+    {
+        public FrontRoomsMapWorld world;
+        public Transform root, eye;
+        public FrontRoomsWallFixtureSet[] sets;
+        public int seed;
+        public List<Lamp> lamps;
+    }
+
+    static List<Lamp> Lamps(FrontRoomsMapWorld world)
+    {
+        var list = new List<Lamp>();
+        const BindingFlags any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        var built = typeof(FrontRoomsMapWorld).GetField("built", any)?.GetValue(world) as IDictionary;
+        if (built == null) return list;
+        foreach (var chunk in built.Values)
+        {
+            var fixtures = chunk.GetType().GetField("fixtures", any)?.GetValue(chunk) as IList;
+            if (fixtures == null) continue;
+            foreach (var f in fixtures)
+            {
+                var t = f.GetType();
+                var light = t.GetField("light", any)?.GetValue(f) as UnityEngine.Light;
+                if (light == null) continue;
+                list.Add(new Lamp { pos = light.transform.position, mode = (int)t.GetField("mode", any).GetValue(f), cell = (GridCoord)t.GetField("cell", any).GetValue(f) });
+            }
+        }
+        return list;
+    }
+
+    static void Light(MapCtx c, Vector3 at)
+    {
+        if (c.eye == null) return;
+        c.eye.position = at;
+        c.world.TickFixturesForTools(.016f);
+        c.world.TickFixturesForTools(.016f);
+        // The zone reflection the game would use here (FrontRooms3DGame.UpdateReflectionZone).
+        var cell = c.world.CellOf(at);
+        var info = c.world.ZoneOf(cell);
+        var lamp = c.world.LampModeOf(cell);
+        var zone = lamp == ModuleLamp.Dead || lamp == ModuleLamp.Dim || lamp == ModuleLamp.Off ? FrontRoomsLook.ReflectionZone.DeadLamp
+            : info.theme == ZoneTheme.Office ? FrontRoomsLook.ReflectionZone.Office
+            : info.height == ZoneHeight.Tall ? FrontRoomsLook.ReflectionZone.Tall : FrontRoomsLook.ReflectionZone.Level0;
+        FrontRoomsLook.SetZoneReflection(zone, 0f);
+        lastZone = zone + " (" + info.theme + " " + info.height + ", lamp " + lamp + ", cell " + cell.x + "," + cell.y + ")";
+    }
+
+    static string lastZone = "Level0";
+
+    /// <summary>Horizontal distance to the nearest working lamp (steady or stutter) with a clear line to the point; 99 when none within 6 m.</summary>
+    static float LitBy(MapCtx c, Vector3 p, Vector3 n)
+    {
+        var best = 99f;
+        foreach (var l in c.lamps)
+        {
+            if (l.mode != 0 && l.mode != 1) continue;
+            var d = new Vector2(l.pos.x - p.x, l.pos.z - p.z).magnitude;
+            if (d >= best || d > 6f) continue;
+            if (!LineClear(l.pos - Vector3.up * .15f, p + n * .05f)) continue;
+            best = d;
+        }
+        return best;
+    }
+
+    static int Internal(FrontRoomsWallFixtureSet s, string field) =>
+        (int)(typeof(FrontRoomsWallFixtureSet).GetField(field, BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(s) ?? -1);
+
+    static bool OpenAir(Vector3 p, float r) => !Physics.CheckSphere(p, r, ~0, QueryTriggerInteraction.Ignore);
+
+    static Renderer[] propRenderers;
+    static Transform propRoot;
+
+    /// <summary>No prop renderer's box (props under 4 m, so not the chunk's wall and floor meshes) on the segment.</summary>
+    static bool PropsClear(MapCtx c, Vector3 a, Vector3 b)
+    {
+        if (propRoot != c.root || propRenderers == null)
+        {
+            propRoot = c.root;
+            propRenderers = c.root.GetComponentsInChildren<Renderer>(false).Where(r => r.bounds.size.magnitude < 4f).ToArray();
+        }
+        var ray = new Ray(a, (b - a).normalized);
+        var len = Vector3.Distance(a, b) - .03f;
+        foreach (var r in propRenderers)
+            if (r != null && r.enabled && r.bounds.IntersectRay(ray, out var hit) && hit < len) return false;
+        return true;
+    }
+
+    static bool LineClear(Vector3 a, Vector3 b) => !Physics.Raycast(a, (b - a).normalized, Vector3.Distance(a, b) - .02f, ~0, QueryTriggerInteraction.Ignore);
+
+    /// <summary>A floor under the point within 2.5 m (the camera stands inside the map, not in a wall void).</summary>
+    static bool OverFloor(MapCtx c, Vector3 p) => Physics.Raycast(p, Vector3.down, 2.5f, ~0, QueryTriggerInteraction.Ignore);
+
+    struct Pick
+    {
+        public FrontRoomsWallFixtureSet set;
+        public int index;
+        public bool Valid => set != null;
+        public F.Fixture X => set.fixtures[index];
+        public Vector3 P => set.transform.TransformPoint(set.fixtures[index].position);
+        public Vector3 N => set.transform.TransformDirection(set.fixtures[index].normal);
+    }
+
+    static bool FaceOk(FrontRoomsWallFixtureSet s, in F.Fixture x, out F.WallFace face)
+    {
+        face = default;
+        if (x.face < 0 || x.face >= s.faces.Count) return false;
+        face = s.faces[x.face];
+        return !face.foreign;
+    }
+
+    static IEnumerable<Pick> Fixtures(MapCtx c, Func<FrontRoomsWallFixtureSet, F.Fixture, bool> where)
+    {
+        foreach (var s in c.sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                if (!where(s, x) || s.Occluded(i)) continue;
+                yield return new Pick { set = s, index = i };
+            }
+    }
+
+    /// <summary>How many drawn fixtures a camera at <paramref name="from"/> looking at <paramref name="target"/> sees.</summary>
+    static int Score(MapCtx c, Vector3 from, Vector3 target, float reach = 9f)
+    {
+        cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from, Vector3.up));
+        var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+        var n = 0;
+        foreach (var s in c.sets)
+            for (var i = 0; i < s.fixtures.Count; i++)
+            {
+                var x = s.fixtures[i];
+                var p = s.transform.TransformPoint(x.position + x.normal * .01f + (x.cls == F.FixtureClass.Floor ? Vector3.up * .04f : Vector3.zero));
+                var d = Vector3.Distance(from, p);
+                if (d > reach || d < .5f) continue;
+                if (!GeometryUtility.TestPlanesAABB(planes, new Bounds(p, Vector3.one * .05f))) continue;
+                if (s.Occluded(i) || !LineClear(from, p)) continue;
+                n++;
+            }
+        return n;
+    }
+
+    // ------------------------------------------------------------------ wide frames
+
+    static void WideShots(MapCtx c, Needs needs)
+    {
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        void Zone(string key, Func<F.WallFace, bool> zone, F.FixtureKit mustKit, float[] backs, float[] lats, float aimUp, string note)
+        {
+            if (needs.Has(key)) return;
+            var bestScore = -1;
+            Vector3 bestFrom = default, bestTarget = default;
+            var bestKit = "";
+            foreach (var pick in Fixtures(c, (s, x) => FaceOk(s, x, out var f) && zone(f) && (mustKit == F.FixtureKit.None || x.kit == mustKit) && x.position.y < 1f))
+            {
+                var p = pick.P;
+                var n = pick.N;
+                var side = Vector3.Cross(Vector3.up, n);
+                foreach (var back in backs)
+                foreach (var lat in lats)
+                {
+                    var from = p + n * back + side * lat;
+                    from.y = eyeY;
+                    if (!OpenAir(from, .3f) || !OverFloor(c, from)) continue;
+                    if (!LineClear(from, p + n * .02f)) continue;
+                    var target = p + side * (lat * .35f) + Vector3.up * aimUp;
+                    var lit = LitBy(c, p, n);
+                    var sc = Score(c, from, target) * 10 + (mustKit != F.FixtureKit.None ? 5 : 0) + (lit < 2.5f ? 25 : lit < 4f ? 10 : 0);
+                    if (sc > bestScore) { bestScore = sc; bestFrom = from; bestTarget = target; bestKit = pick.X.kit.ToString(); }
+                }
+            }
+            if (bestScore < 10) return;
+            Shot(key + "_" + c.seed, bestFrom, bestTarget, a => Light(c, a), true, note + "; anchor " + bestKit + "; score " + bestScore, true);
+            needs.Mark(key);
+        }
+        bool L0(F.WallFace f, ZoneHeight h) => f.theme == ZoneTheme.Level0 && f.height == h;
+        Zone("wide_L0_Low", f => L0(f, ZoneHeight.Low), F.FixtureKit.None, new[] { 3.0f, 3.6f, 2.6f }, new[] { 1.6f, -1.6f, 1.0f, -1.0f, 2.2f, -2.2f }, .85f, "Level 0 Low (2.4 m)");
+        Zone("wide_L0_Standard", f => L0(f, ZoneHeight.Standard), F.FixtureKit.None, new[] { 3.2f, 3.8f, 2.8f }, new[] { 1.6f, -1.6f, 1.0f, -1.0f, 2.4f, -2.4f }, .95f, "Level 0 Standard (2.9 m)");
+        TallWide(c, needs);
+        OfficeWide(c, needs);
+    }
+
+    /// <summary>Tall: a handy box with its whole conduit run in view (box, middle and top clear), lit.</summary>
+    static void TallWide(MapCtx c, Needs needs)
+    {
+        if (needs.Has("wide_L0_Tall")) return;
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        var bestScore = -1;
+        Vector3 bestFrom = default, bestTarget = default;
+        foreach (var pick in Fixtures(c, (s, x) => FaceOk(s, x, out var f) && f.height == ZoneHeight.Tall && x.kit == F.FixtureKit.HandyBox))
+        {
+            var p = pick.P;
+            var n = pick.N;
+            var f = pick.set.faces[pick.X.face];
+            var top = pick.set.transform.position.y + f.ceiling;
+            var side = Vector3.Cross(Vector3.up, n);
+            var lit = LitBy(c, p, n);
+            foreach (var back in new[] { 3.4f, 3.0f, 3.8f })
+            foreach (var lat in new[] { 1.2f, -1.2f, .6f, -.6f, 1.8f, -1.8f })
+            {
+                var from = p + n * back + side * lat;
+                from.y = eyeY;
+                if (!OpenAir(from, .3f) || !OverFloor(c, from)) continue;
+                var ok = true;
+                foreach (var h in new[] { .1f, 1.5f, 3f, 4.5f })
+                {
+                    var q = p + n * .03f;
+                    q.y = Mathf.Min(top - .2f, p.y + h);
+                    if (!LineClear(from, q)) { ok = false; break; }
+                }
+                if (!ok) continue;
+                var target = p + side * (lat * .3f) + Vector3.up * 2.2f;
+                var sc = Score(c, from, target) * 10 + (lit < 2.5f ? 40 : lit < 4f ? 15 : 0) + (f.theme == ZoneTheme.Level0 ? 10 : 0);
+                if (sc > bestScore) { bestScore = sc; bestFrom = from; bestTarget = target; }
+            }
+        }
+        if (bestScore < 0) return;
+        Shot("wide_Tall_" + c.seed, bestFrom, bestTarget, a => Light(c, a), true, "Tall hall (5.4 m): handy box + EMT run to the ceiling; score " + bestScore, true);
+        needs.Mark("wide_L0_Tall");
+    }
+
+    /// <summary>Office: a pod floor feed (floor box) in frame with the desks and the wall plates behind.</summary>
+    static void OfficeWide(MapCtx c, Needs needs)
+    {
+        if (needs.Has("wide_Office")) return;
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        var bestScore = -1;
+        Vector3 bestFrom = default, bestTarget = default;
+        foreach (var pick in Fixtures(c, (s, x) => (x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2)))
+        {
+            var p = pick.P;
+            if (c.world.ZoneOf(c.world.CellOf(p)).theme != ZoneTheme.Office) continue;
+            for (var yaw = 0; yaw < 360; yaw += 30)
+            foreach (var back in new[] { 3.2f, 2.6f, 4.0f })
+            {
+                var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                var from = p + dir * back;
+                from.y = eyeY;
+                if (!OpenAir(from, .3f) || !OverFloor(c, from)) continue;
+                var box = p + Vector3.up * .05f;
+                if (!LineClear(from, box)) continue;
+                var target = p + Vector3.up * .55f - dir * 1.2f;
+                var sc = Score(c, from, target, 10f) * 10 + 5;
+                if (sc > bestScore) { bestScore = sc; bestFrom = from; bestTarget = target; }
+            }
+        }
+        if (bestScore < 15) return;
+        Shot("wide_Office_" + c.seed, bestFrom, bestTarget, a => Light(c, a), true, "Office room: pods, a floor feed and wall plates; score " + bestScore, true);
+        needs.Mark("wide_Office");
+    }
+
+    // ------------------------------------------------------------------ title stream
+
+    static void StreamShots()
+    {
+        var sets = FrontRoomsWallFixtureSet.Registry.Where(s => s != null && s.isLocal && s.fixtures.Count > 0).OrderBy(s => s.transform.position.z).ToArray();
+        Physics.SyncTransforms();
+        var taken = new HashSet<F.FixtureClass>();
+        foreach (var set in sets)
+        {
+            if (taken.Contains(set.streamClass) || (set.streamClass != F.FixtureClass.StreamLobby && set.streamClass != F.FixtureClass.StreamOffice)) continue;
+            var best = -1;
+            Vector3 bf = default, bt = default;
+            for (var i = 0; i < set.fixtures.Count; i++)
+            {
+                var x = set.fixtures[i];
+                if (set.Occluded(i) || (x.face < 0 && x.cls != F.FixtureClass.Floor)) continue;
+                var p = set.transform.TransformPoint(x.position);
+                var n = set.transform.TransformDirection(x.normal);
+                if (x.cls == F.FixtureClass.Floor) n = Vector3.ProjectOnPlane(n, Vector3.up).normalized;
+                var side = Vector3.Cross(Vector3.up, n);
+                foreach (var back in new[] { 3.4f, 2.8f, 4.2f })
+                foreach (var lat in new[] { 1.8f, -1.8f, 1.0f, -1.0f, 2.6f, -2.6f })
+                {
+                    var from = p + n * back + side * lat;
+                    from.y = set.transform.position.y + ModuleUnits.PlayerEye;
+                    if (!OpenAir(from, .25f) || !LineClear(from, p + Vector3.up * .03f + n * .02f)) continue;
+                    var target = p + side * (lat * .35f) + Vector3.up * .9f;
+                    cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
+                    var planes = GeometryUtility.CalculateFrustumPlanes(cam);
+                    var sc = 0;
+                    for (var k = 0; k < set.fixtures.Count; k++)
+                    {
+                        var q = set.transform.TransformPoint(set.fixtures[k].position + set.fixtures[k].normal * .01f);
+                        if (!set.Occluded(k) && GeometryUtility.TestPlanesAABB(planes, new Bounds(q, Vector3.one * .05f)) && LineClear(from, q)) sc += set.fixtures[k].cls == F.FixtureClass.Floor ? 15 : 10;
+                    }
+                    if (sc > best) { best = sc; bf = from; bt = target; }
+                }
+            }
+            if (best < 10) continue;
+            Shot("stream_" + set.streamClass, bf, bt, null, true, "title stream " + set.streamClass + " room, score " + best, true);
+            taken.Add(set.streamClass);
+        }
+    }
+
+    // ------------------------------------------------------------------ close-ups
+
+    sealed class CloseSpec
+    {
+        public string name;
+        public Func<F.Fixture, F.WallFace, bool> where;
+        public float d = .32f;
+        public string note;
+    }
+
+    static bool Plain(in F.Fixture x) => (x.flags & (F.FixtureFlags.Horizontal | F.FixtureFlags.OffHeight)) == 0 && x.tilt == 0f;
+
+    static readonly CloseSpec[] CloseSpecs =
+    {
+        new CloseSpec { name = "Duplex", where = (x, f) => x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.Ivory && x.device == F.Finish.Ivory && (x.flags & F.FixtureFlags.NoScrew) == 0 && Plain(x) && f.theme == ZoneTheme.Level0, note = "Kit_OutletDuplex, ivory thermoset, Level 0" },
+        new CloseSpec { name = "Duplex_Aged", where = (x, f) => x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.IvoryAged, note = "Kit_OutletDuplex, aged ivory (Prop_ThermosetAged)" },
+        new CloseSpec { name = "Duplex_Brown", where = (x, f) => x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.Brown && Plain(x), note = "brown plate + device (Prop_Ceramic), Level 0 old stock" },
+        new CloseSpec { name = "Duplex_WallMatch", where = (x, f) => (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20) && x.plate == F.Finish.WallMatch && f.theme == ZoneTheme.Level0, note = "papered over: the plate drawn with the wall's own material" },
+        new CloseSpec { name = "Duplex20", where = (x, f) => x.kit == F.FixtureKit.Duplex20 && x.device != F.Finish.Orange && x.plate != F.Finish.WallMatch, note = "Kit_OutletDuplex20 (5-20R), Office" },
+        new CloseSpec { name = "Duplex20_IG", where = (x, f) => x.kit == F.FixtureKit.Duplex20 && x.device == F.Finish.Orange, note = "isolated-ground device (Prop_PlasticOrange)" },
+        new CloseSpec { name = "Steel", where = (x, f) => x.kit == F.FixtureKit.DuplexSteel && Plain(x), note = "Kit_OutletDuplex_Steel, stainless" },
+        new CloseSpec { name = "Cracked", where = (x, f) => x.kit == F.FixtureKit.DuplexCracked, note = "Kit_OutletDuplex_Cracked" },
+        new CloseSpec { name = "Jumbo", where = (x, f) => x.kit == F.FixtureKit.DuplexJumbo, d = .36f, note = "Kit_OutletDuplex_Jumbo" },
+        new CloseSpec { name = "Bare", where = (x, f) => x.kit == F.FixtureKit.Bare, note = "Kit_OutletBare: missing plate" },
+        new CloseSpec { name = "Blank", where = (x, f) => x.kit == F.FixtureKit.Blank && x.plate != F.Finish.WallMatch, note = "Kit_OutletBlank" },
+        new CloseSpec { name = "Toggle1", where = (x, f) => x.kit == F.FixtureKit.Toggle1, d = .36f, note = "Kit_OutletToggle1 at 1.22 m" },
+        new CloseSpec { name = "Toggle2", where = (x, f) => x.kit == F.FixtureKit.Toggle2, d = .38f, note = "Kit_OutletToggle2" },
+        new CloseSpec { name = "JackPhone", where = (x, f) => x.kit == F.FixtureKit.JackPhone, note = "Kit_JackPhone (6P modular)" },
+        new CloseSpec { name = "JackData", where = (x, f) => x.kit == F.FixtureKit.JackData, d = .36f, note = "Kit_JackData (IBM data connector)" },
+        new CloseSpec { name = "JackBNC", where = (x, f) => x.kit == F.FixtureKit.JackBNC, note = "Kit_JackBNC" },
+        new CloseSpec { name = "JackPhone4", where = (x, f) => x.kit == F.FixtureKit.JackPhone4, d = .30f, note = "Kit_JackPhone4Prong, brown surface block (new Level 0 rule)" },
+        new CloseSpec { name = "HandyBox", where = (x, f) => x.kit == F.FixtureKit.HandyBox, d = .42f, note = "Kit_OutletHandyBox + Kit_ConduitEMT (new Tall rule)" },
+        new CloseSpec { name = "Strap", where = (x, f) => x.kit == F.FixtureKit.HandyBox, d = .40f, note = "Kit_ConduitStrap + EMT tile at 2.1 m" },
+        new CloseSpec { name = "FloorBox", where = (x, f) => x.kit == F.FixtureKit.FloorBox, d = .42f, note = "Kit_FloorBoxTombstone" },
+        new CloseSpec { name = "FloorBox2", where = (x, f) => x.kit == F.FixtureKit.FloorBox2, d = .45f, note = "Kit_FloorBoxTombstone2" },
+        new CloseSpec { name = "Screw", where = (x, f) => x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.Ivory && (x.flags & F.FixtureFlags.NoScrew) == 0 && Plain(x), d = .14f, note = "Kit_OutletScrew at 0.14 m" },
+    };
+
+    static void CloseUps(MapCtx c, Needs needs)
+    {
+        foreach (var spec in CloseSpecs)
+        {
+            var key = "close_" + spec.name;
+            if (needs.Has(key)) continue;
+            var floor = spec.name.StartsWith("FloorBox", StringComparison.Ordinal);
+            var picks = Fixtures(c, (s, x) =>
+                     {
+                         if (floor) return spec.where(x, default);
+                         return FaceOk(s, x, out var f) && spec.where(x, f);
+                     }).ToList();
+            // Best lit first: the nearest working lamp with a clear line to the plate.
+            picks = picks.Select(pk => (pk, lit: LitBy(c, pk.P, pk.N))).OrderBy(t => t.lit).Select(t => t.pk).Take(60).ToList();
+            foreach (var pick in picks)
+            {
+                var x = pick.X;
+                var p = pick.P;
+                var n = pick.N;
+                if (floor) n = Vector3.ProjectOnPlane(n, Vector3.up).normalized;
+                var side = Vector3.Cross(Vector3.up, n);
+                Vector3 from, target;
+                if (floor)
+                {
+                    // A pod feed faces its end panel 0.15 m away, so the camera cannot stand square to it:
+                    // take the first clear three-quarter view (receptacle face and side both in frame).
+                    target = p + Vector3.up * .04f + n * .02f;
+                    from = Vector3.zero;
+                    var found = false;
+                    foreach (var deg in new[] { 0f, 35f, -35f, 55f, -55f, 70f, -70f })
+                    {
+                        var dir = Quaternion.AngleAxis(deg, Vector3.up) * n;
+                        var cand = p + dir * spec.d + Vector3.Cross(Vector3.up, dir) * .06f + Vector3.up * .24f;
+                        var across = Vector3.Cross(Vector3.up, dir) * .055f;
+                        if (!OpenAir(cand, .04f) || !LineClear(cand, target) || !LineClear(cand, target + across) || !LineClear(cand, target - across)) continue;
+                        // Panel posts spawn without colliders: test the prop renderers' boxes too.
+                        if (!PropsClear(c, cand, target) || !PropsClear(c, cand, target + across) || !PropsClear(c, cand, target - across)) continue;
+                        from = cand;
+                        found = true;
+                        break;
+                    }
+                    if (!found) continue;
+                }
+                else if (spec.name == "Strap")
+                {
+                    var strapY = x.position.y + .0926f + R.StrapFirst + R.StrapPitch;   // the second strap, about 2.1 m up
+                    target = p + n * .012f + Vector3.up * (strapY - x.position.y);
+                    from = target + n * spec.d + side * .10f - Vector3.up * .12f;
+                }
+                else if (spec.name == "Screw")
+                {
+                    target = p + n * .007f;
+                    from = target + n * spec.d + side * .025f + Vector3.up * .02f;
+                }
+                else if (spec.name == "HandyBox")
+                {
+                    target = p + n * .03f + Vector3.up * .06f;
+                    from = p + n * spec.d + side * .12f + Vector3.up * .10f;
+                }
+                else
+                {
+                    target = p + n * .005f;
+                    from = p + n * spec.d + side * .06f + Vector3.up * .035f;
+                }
+                if (!OpenAir(from, .04f) || !LineClear(from, target + n * .01f)) continue;
+                Shot(key + "_" + c.seed, from, target, a => Light(c, a), false, spec.note + "; " + x.kit + " plate " + x.plate + " device " + x.device + " flags " + x.flags + " y " + x.position.y.ToString("0.00", Inv)
+                    + "; nearest working lamp " + LitBy(c, p, n).ToString("0.0", Inv) + " m", false, true);
+                needs.Mark(key);
+                break;
+            }
+        }
+        // The powered spine panel (Office kit): a GameObject, not an R3 fixture.
+        if (!needs.Has("close_PanelPowered"))
+            foreach (var t in c.root.GetComponentsInChildren<Transform>(true))
+            {
+                if (!t.name.StartsWith(F.PoweredPanelKit, StringComparison.Ordinal)) continue;
+                var done = false;
+                foreach (var sign in new[] { 1f, -1f })
+                {
+                    // outlet_panel_powered.py: one unit per face, Unity x = -0.30 on the +Z face and +0.30 on the -Z face, rail face |z| = 0.030.
+                    var ux = -.30f * sign;
+                    var target = t.TransformPoint(new Vector3(ux, .07f, .031f * sign));
+                    var from = t.TransformPoint(new Vector3(ux + .10f, .24f, .40f * sign));
+                    if (!OpenAir(from, .04f) || !LineClear(from, t.TransformPoint(new Vector3(ux, .07f, .05f * sign)))) continue;
+                    Shot("close_PanelPowered_" + c.seed, from, target, a => Light(c, a), false, "Kit_CubiclePanel_Powered: duplex in the base rail", false, true);
+                    needs.Mark("close_PanelPowered");
+                    done = true;
+                    break;
+                }
+                if (done) break;
+            }
+    }
+
+    // ------------------------------------------------------------------ fix pass (2026-10-14)
+
+    static readonly StringBuilder fixLog = new StringBuilder();
+    static readonly string[] FixGroupNames = { "fixwm", "fixmetal", "fixtoggle", "fixbrown", "fixlod", "fixtint", "fixstage2", "fixpod", "fixconduit" };
+
+    static IEnumerable<string> FixExpected()
+    {
+        if (only == null) yield break;   // the fix groups run only when asked for by name
+        if (only.Contains("fixwm")) { yield return "fixwm_L0"; yield return "fixwm_OF"; }
+        if (only.Contains("fixmetal")) { yield return "fixmetal_steel"; yield return "fixmetal_handy"; yield return "fixmetal_floor"; }
+        if (only.Contains("fixtoggle")) yield return "fixtoggle";
+        if (only.Contains("fixbrown")) yield return "fixbrown";
+        if (only.Contains("fixlod")) yield return "fixlod";
+        if (only.Contains("fixtint")) yield return "fixtint";
+        if (only.Contains("fixstage2")) yield return "fixstage2";
+        if (only.Contains("fixpod")) yield return "fixpod";
+        if (only.Contains("fixconduit")) yield return "fixconduit";
+    }
+
+    static void FixLog(string s)
+    {
+        fixLog.AppendLine(s);
+        Log("FIX " + s);
+        try { File.WriteAllText(Path.Combine(outDir, "fixlog.txt"), fixLog.ToString()); } catch (Exception) { }
+    }
+
+    static Matrix4x4 KitToWorld(Pick pk)
+    {
+        var x = pk.X;
+        var plateH = x.kit == F.FixtureKit.DuplexJumbo ? 2f * F.JumboHalfH : 2f * F.PlateHalfH;
+        return pk.set.transform.localToWorldMatrix * R.FixtureMatrix(x, plateH);
+    }
+
+    /// <summary>Mean Rec.709 luma (0-255) of 5 x 5 px windows round the screen projections of world points the camera sees.</summary>
+    static float MeanLuma(Texture2D tex, IEnumerable<Vector3> world)
+    {
+        double sum = 0;
+        var n = 0;
+        foreach (var w in world)
+        {
+            var sp = cam.WorldToScreenPoint(w);
+            if (sp.z <= 0f) continue;
+            int cx = Mathf.RoundToInt(sp.x), cy = Mathf.RoundToInt(sp.y);
+            for (var dy = -2; dy <= 2; dy++)
+            for (var dx = -2; dx <= 2; dx++)
+            {
+                int px = cx + dx, py = cy + dy;
+                if (px < 0 || py < 0 || px >= tex.width || py >= tex.height) continue;
+                var c = tex.GetPixel(px, py);
+                sum += 255.0 * (.2126 * c.r + .7152 * c.g + .0722 * c.b);
+                n++;
+            }
+        }
+        return n > 0 ? (float)(sum / n) : -1f;
+    }
+
+    /// <summary>Plate field points (kit space, 0.5 mm off the field) clear of devices and screws, and a paper ring 25-45 mm outside the plate.</summary>
+    static readonly Vector3[] FieldPts =
+    {
+        new Vector3(-.027f, .047f, .006f), new Vector3(.027f, .047f, .006f), new Vector3(-.027f, -.047f, .006f), new Vector3(.027f, -.047f, .006f),
+        new Vector3(-.029f, 0f, .006f), new Vector3(.029f, 0f, .006f), new Vector3(0f, .052f, .006f), new Vector3(0f, -.052f, .006f),
+    };
+    static readonly Vector3[] RingPts =
+    {
+        new Vector3(-.075f, 0f, .0005f), new Vector3(.075f, 0f, .0005f), new Vector3(0f, .095f, .0005f), new Vector3(0f, -.095f, .0005f),
+        new Vector3(-.07f, .08f, .0005f), new Vector3(.07f, .08f, .0005f), new Vector3(-.07f, -.08f, .0005f), new Vector3(.07f, -.08f, .0005f),
+    };
+
+    static string PlateVsWall(Texture2D tex, Pick pk, float proud = .006f)
+    {
+        var m = KitToWorld(pk);
+        var field = MeanLuma(tex, FieldPts.Select(q => m.MultiplyPoint3x4(new Vector3(q.x, q.y, proud))));
+        var ring = MeanLuma(tex, RingPts.Select(q => m.MultiplyPoint3x4(q)));
+        return "plate " + field.ToString("0.0", Inv) + " wall " + ring.ToString("0.0", Inv) + " ratio " + (ring > 0f ? (field / ring).ToString("0.00", Inv) : "?");
+    }
+
+    /// <summary>A camera square-ish to a wall fixture at distance d (small side and up offsets), or false when blocked.</summary>
+    static bool FrontOf(Pick pk, float d, float sideOff, float upOff, out Vector3 from, out Vector3 target)
+    {
+        var p = pk.P;
+        var n = pk.N;
+        var side = Vector3.Cross(Vector3.up, n);
+        target = p + n * .005f;
+        from = p + n * d + side * sideOff + Vector3.up * upOff;
+        return OpenAir(from, .04f) && LineClear(from, target + n * .01f);
+    }
+
+    static void FixShotPair(string name, Vector3 from, Vector3 target, MapCtx c, Pick pk, string note, bool zoom = true)
+    {
+        R.FixPassLook = false;
+        R.ClearCache();
+        Shot(name + "_before", from, target, a => Light(c, a), false, note + " | BEFORE (10-14 integrate look)", false, zoom);
+        var before = pk.Valid ? PlateVsWall(readA, pk) : "";
+        R.FixPassLook = true;
+        R.ClearCache();
+        Shot(name + "_after", from, target, a => Light(c, a), false, note + " | AFTER (fix pass)", false, zoom);
+        var after = pk.Valid ? PlateVsWall(readA, pk) : "";
+        FixLog(name + ": " + note + " | before: " + before + " | after: " + after + " | load " + LoadAverage());
+    }
+
+    static void FixGroups(MapCtx c, Needs needs)
+    {
+        if (only == null) return;
+        if (Want("fixwm")) FixWallMatch(c, needs);
+        if (Want("fixmetal")) FixMetal(c, needs);
+        if (Want("fixtoggle")) FixToggle(c, needs);
+        if (Want("fixbrown")) FixBrown(c, needs);
+        if (Want("fixlod")) FixLod(c, needs);
+        if (Want("fixtint")) FixTint(c, needs);
+        if (Want("fixstage2")) FixStage2(c, needs);
+        if (Want("fixpod")) FixPod(c, needs);
+        if (Want("fixconduit")) FixConduit(c, needs);
+    }
+
+    static List<Pick> LitPicks(MapCtx c, Func<FrontRoomsWallFixtureSet, F.Fixture, F.WallFace, bool> where, float maxLit = 2.6f, int take = 40) =>
+        Fixtures(c, (s, x) => FaceOk(s, x, out var f) && where(s, x, f))
+            .Select(pk => (pk, lit: LitBy(c, pk.P, pk.N))).Where(t => t.lit < maxLit).OrderBy(t => t.lit).Take(take).Select(t => t.pk).ToList();
+
+    /// <summary>Papered (Level 0) and painted (Office) plates at 0.30 m, before/after; up to 4 papered candidates so one sits on printed paper.</summary>
+    static void FixWallMatch(MapCtx c, Needs needs)
+    {
+        foreach (var (key, theme, max) in new[] { ("fixwm_L0", ZoneTheme.Level0, 4), ("fixwm_OF", ZoneTheme.Office, 2) })
+        {
+            if (needs.Has(key)) continue;
+            var done = 0;
+            foreach (var pk in LitPicks(c, (s, x, f) => x.plate == F.Finish.WallMatch && f.theme == theme && Plain(x)
+                         && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20 || x.kit == F.FixtureKit.Toggle1 || x.kit == F.FixtureKit.JackPhone), 3f))
+            {
+                if (!FrontOf(pk, .30f, .05f, .03f, out var from, out var target)) continue;
+                FixShotPair(key + "_" + done + "_" + c.seed, from, target, c, pk, (theme == ZoneTheme.Level0 ? "papered" : "painted") + " " + pk.X.kit + " y " + pk.X.position.y.ToString("0.00", Inv));
+                if (++done >= max) break;
+            }
+            if (done > 0) needs.Mark(key);
+        }
+    }
+
+    /// <summary>Metal before/after: a stainless plate (0.30 m and 4 m), a Tall handy box with its EMT (0.42 m and 4 m), a floor box (0.42 m).</summary>
+    static void FixMetal(MapCtx c, Needs needs)
+    {
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        if (!needs.Has("fixmetal_steel"))
+            foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.DuplexSteel && Plain(x) && f.height != ZoneHeight.Tall))
+            {
+                if (!FrontOf(pk, .30f, .05f, .03f, out var from, out var target)) continue;
+                var far = pk.P + pk.N * 4f + Vector3.Cross(Vector3.up, pk.N) * .8f;
+                far.y = eyeY;
+                if (!OpenAir(far, .25f) || !LineClear(far, target + pk.N * .02f)) continue;
+                FixShotPair("fixmetal_steel_03_" + c.seed, from, target, c, pk, "stainless duplex at 0.30 m, " + c.world.ZoneOf(c.world.CellOf(pk.P)).theme);
+                FixShotPair("fixmetal_steel_4m_" + c.seed, far, target + Vector3.up * .4f, c, pk, "stainless duplex at 4 m", false);
+                needs.Mark("fixmetal_steel");
+                break;
+            }
+        if (!needs.Has("fixmetal_handy"))
+            foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.HandyBox, 3.5f))
+            {
+                var p = pk.P; var n = pk.N; var side = Vector3.Cross(Vector3.up, n);
+                var target = p + n * .03f + Vector3.up * .06f;
+                var from = p + n * .42f + side * .12f + Vector3.up * .10f;
+                if (!OpenAir(from, .04f) || !LineClear(from, target + n * .01f)) continue;
+                var far = p + n * 4f + side * .8f;
+                far.y = eyeY;
+                if (!OpenAir(far, .25f) || !LineClear(far, target + n * .03f)) continue;
+                FixShotPair("fixmetal_handy_042_" + c.seed, from, target, c, pk, "handy box + EMT at 0.42 m");
+                FixShotPair("fixmetal_handy_4m_" + c.seed, far, p + Vector3.up * 1.6f, c, pk, "handy box + EMT riser at 4 m", false);
+                needs.Mark("fixmetal_handy");
+                break;
+            }
+        if (!needs.Has("fixmetal_floor"))
+            foreach (var pk in Fixtures(c, (s, x) => x.kit == F.FixtureKit.FloorBox || x.kit == F.FixtureKit.FloorBox2)
+                         .Select(pk => (pk, lit: LitBy(c, pk.P, Vector3.up))).Where(t => t.lit < 2.6f).OrderBy(t => t.lit).Select(t => t.pk))
+            {
+                var p = pk.P;
+                var n = Vector3.ProjectOnPlane(pk.N, Vector3.up).normalized;
+                var target = p + Vector3.up * .04f + n * .02f;
+                Vector3 from = default;
+                var ok = false;
+                foreach (var deg in new[] { 0f, 35f, -35f, 60f, -60f, 90f, -90f, 180f })
+                {
+                    var dir = Quaternion.AngleAxis(deg, Vector3.up) * n;
+                    var cand = p + dir * .42f + Vector3.up * .24f;
+                    if (!OpenAir(cand, .04f) || !LineClear(cand, target) || !PropsClear(c, cand, target)) continue;
+                    from = cand; ok = true; break;
+                }
+                if (!ok) continue;
+                R.FixPassLook = false; R.ClearCache();
+                Shot("fixmetal_floor_before_" + c.seed, from, target, a => Light(c, a), false, "floor box BEFORE", false, true);
+                var b = FloorVsCarpet(readA, p);
+                R.FixPassLook = true; R.ClearCache();
+                Shot("fixmetal_floor_after_" + c.seed, from, target, a => Light(c, a), false, "floor box AFTER", false, true);
+                var a2 = FloorVsCarpet(readA, p);
+                FixLog("fixmetal_floor_" + c.seed + ": " + pk.X.kit + " | before: " + b + " | after: " + a2);
+                needs.Mark("fixmetal_floor");
+                break;
+            }
+    }
+
+    static string FloorVsCarpet(Texture2D tex, Vector3 p)
+    {
+        var top = MeanLuma(tex, new[] { p + new Vector3(.02f, .085f, .0f), p + new Vector3(-.02f, .085f, 0f), p + new Vector3(0f, .085f, .02f), p + new Vector3(0f, .085f, -.02f) });
+        var sides = MeanLuma(tex, new[] { p + new Vector3(.05f, .04f, 0f), p + new Vector3(-.05f, .04f, 0f), p + new Vector3(0f, .04f, .036f), p + new Vector3(0f, .04f, -.036f) });
+        var carpet = MeanLuma(tex, new[] { p + new Vector3(.2f, .002f, 0f), p + new Vector3(-.2f, .002f, 0f), p + new Vector3(0f, .002f, .2f), p + new Vector3(0f, .002f, -.2f) });
+        return "box top " + top.ToString("0.0", Inv) + " box sides " + sides.ToString("0.0", Inv) + " carpet " + carpet.ToString("0.0", Inv);
+    }
+
+    /// <summary>A toggle at bat height (0.36 m) and from eye height (0.6 m out), to read the bat.</summary>
+    static void FixToggle(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixtoggle")) return;
+        foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.Toggle1 && x.plate != F.Finish.WallMatch && Plain(x)))
+        {
+            if (!FrontOf(pk, .36f, .06f, .035f, out var from, out var target)) continue;
+            var eye = pk.P + pk.N * .6f;
+            eye.y = c.root.position.y + ModuleUnits.PlayerEye;
+            if (!OpenAir(eye, .1f) || !LineClear(eye, target + pk.N * .02f)) continue;
+            Shot("fixtoggle_bat_" + c.seed, from, target, a => Light(c, a), false, "Toggle1 at bat height 0.36 m; " + pk.X.plate + " y " + pk.X.position.y.ToString("0.00", Inv), false, true);
+            var m = KitToWorld(pk);
+            var bat = MeanLuma(readA, new[] { m.MultiplyPoint3x4(new Vector3(0f, .006f, .014f)), m.MultiplyPoint3x4(new Vector3(0f, -.006f, .014f)) });
+            var plate = PlateVsWall(readA, pk);
+            Shot("fixtoggle_eye_" + c.seed, eye, target, a => Light(c, a), false, "Toggle1 from eye height 0.6 m out", false, true);
+            var bat2 = MeanLuma(readA, new[] { m.MultiplyPoint3x4(new Vector3(0f, .006f, .014f)), m.MultiplyPoint3x4(new Vector3(0f, -.006f, .014f)) });
+            FixLog("fixtoggle_" + c.seed + ": bat luma at bat height " + bat.ToString("0.0", Inv) + ", from eye height " + bat2.ToString("0.0", Inv) + "; " + plate);
+            needs.Mark("fixtoggle");
+            break;
+        }
+    }
+
+    /// <summary>A lit brown plate with a brown device (the 5 % mismatch roll gave VL231 a white one): the plan's own if any, else one brown plate's device set brown for the frame.</summary>
+    static void FixBrown(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixbrown")) return;
+        var picks = LitPicks(c, (s, x, f) => (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20) && x.plate == F.Finish.Brown && Plain(x));
+        foreach (var pk in picks.OrderBy(p => p.X.device == F.Finish.Brown ? 0 : 1))
+        {
+            if (!FrontOf(pk, .30f, .05f, .03f, out var from, out var target)) continue;
+            var x = pk.X;
+            var forced = x.device != F.Finish.Brown;
+            if (forced) { var y = x; y.device = F.Finish.Brown; pk.set.fixtures[pk.index] = y; pk.set.MarkChanged(); }
+            Shot("fixbrown_" + c.seed, from, target, a => Light(c, a), false, "brown plate + brown device" + (forced ? " (device set brown for this frame)" : " (as planned)"), false, true);
+            FixLog("fixbrown_" + c.seed + ": " + PlateVsWall(readA, pk) + (forced ? " (device forced brown)" : ""));
+            if (forced) { pk.set.fixtures[pk.index] = x; pk.set.MarkChanged(); }
+            needs.Mark("fixbrown");
+            break;
+        }
+    }
+
+    /// <summary>Same-camera LOD pairs in game light: LOD0 vs LOD1 at 1.5 m, LOD1 vs LOD2 at 4 m (R.ForceLod).</summary>
+    static void FixLod(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixlod")) return;
+        foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.Ivory && Plain(x) && f.theme == ZoneTheme.Level0))
+        {
+            var ok = true;
+            foreach (var (d, a, b) in new[] { (1.5f, 0, 1), (4f, 1, 2) })
+            {
+                if (!FrontOf(pk, d, .25f * d / 1.5f, .30f, out var from, out var target)) { ok = false; break; }
+                foreach (var lod in new[] { a, b })
+                {
+                    R.ForceLod = lod;
+                    Shot("fixlod_" + d.ToString("0.0", Inv) + "m_LOD" + lod + "_" + c.seed, from, target, q => Light(c, q), false, "Duplex at " + d + " m, LOD" + lod + " forced", false, true);
+                    FixLog("fixlod " + d + " m LOD" + lod + ": " + PlateVsWall(readA, pk));
+                }
+                R.ForceLod = -1;
+            }
+            if (!ok) continue;
+            needs.Mark("fixlod");
+            break;
+        }
+        R.ForceLod = -1;
+    }
+
+    /// <summary>The L-1 plate tint options on one lit Level 0 ivory duplex, at 0.30 m and from eye height 1.6 m out (P-4b slots required).</summary>
+    static void FixTint(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixtint")) return;
+        var plateMat = FrontRoomsSurfaces.TryGet("Prop_ThermosetIvory");
+        var deviceMat = FrontRoomsSurfaces.TryGet("Prop_NylonIvory");
+        if (plateMat == null || deviceMat == null) { FixLog("fixtint: no P-4b slots in this clone"); needs.Mark("fixtint"); return; }
+        var colorId = Shader.PropertyToID("_BaseColor");
+        var p0 = plateMat.GetColor(colorId);
+        var d0 = deviceMat.GetColor(colorId);
+        var options = new[]
+        {
+            ("A_E6DDC2", "#E6DDC2", "#E2D9BF"), ("B_9E9147", "#9E9147", "#E2D9BF"),
+            ("C_B6AF99", "#B6AF99", "#B3AB97"), ("D_A69F8C", "#A69F8C", "#A39C89"),
+        };
+        foreach (var pk in LitPicks(c, (s, x, f) => x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.Ivory && x.device == F.Finish.Ivory && Plain(x)
+                     && f.theme == ZoneTheme.Level0 && f.height != ZoneHeight.Tall))
+        {
+            if (!FrontOf(pk, .30f, .05f, .03f, out var from, out var target)) continue;
+            var eye = pk.P + pk.N * 1.6f + Vector3.Cross(Vector3.up, pk.N) * .3f;
+            eye.y = c.root.position.y + ModuleUnits.PlayerEye;
+            if (!OpenAir(eye, .2f) || !LineClear(eye, target + pk.N * .02f)) continue;
+            try
+            {
+                foreach (var (name, plateHex, deviceHex) in options)
+                {
+                    ColorUtility.TryParseHtmlString(plateHex, out var pc);
+                    ColorUtility.TryParseHtmlString(deviceHex, out var dc);
+                    plateMat.SetColor(colorId, pc);
+                    deviceMat.SetColor(colorId, dc);
+                    Shot("fixtint_" + name + "_03_" + c.seed, from, target, a => Light(c, a), false, "plate " + plateHex + " device " + deviceHex + " at 0.30 m", false, true);
+                    var near = PlateVsWall(readA, pk);
+                    var m = KitToWorld(pk);
+                    var dev = MeanLuma(readA, new[] { m.MultiplyPoint3x4(new Vector3(-.011f, .028f, .0075f)), m.MultiplyPoint3x4(new Vector3(.011f, -.011f, .0075f)) });
+                    Shot("fixtint_" + name + "_eye_" + c.seed, eye, target + Vector3.up * .25f, a => Light(c, a), false, "plate " + plateHex + " device " + deviceHex + " from eye height 1.6 m out", false, false);
+                    var far = PlateVsWall(readA, pk);
+                    FixLog("fixtint " + name + " plate " + plateHex + " device " + deviceHex + " | 0.30 m: " + near + " device " + dev.ToString("0.0", Inv) + " | eye 1.6 m: " + far);
+                }
+            }
+            finally
+            {
+                plateMat.SetColor(colorId, p0);
+                deviceMat.SetColor(colorId, d0);
+            }
+            needs.Mark("fixtint");
+            break;
+        }
+    }
+
+    /// <summary>Stage 2 in a lit Office room: a plate behind a wall unit, occlusion off vs on, from 1.6 m.</summary>
+    static void FixStage2(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixstage2")) return;
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        foreach (var s in c.sets)
+            for (var i = 0; i < s.fixtures.Count && !needs.Has("fixstage2"); i++)
+            {
+                if (!s.Occluded(i)) continue;
+                var x = s.fixtures[i];
+                if (x.face < 0) continue;
+                var p = s.transform.TransformPoint(x.position);
+                var n = s.transform.TransformDirection(x.normal);
+                if (LitBy(c, p, n) > 3f) continue;
+                var side = Vector3.Cross(Vector3.up, n);
+                foreach (var lat in new[] { .9f, -.9f, 1.4f, -1.4f })
+                {
+                    var from = p + n * 1.8f + side * lat;
+                    from.y = eyeY;
+                    if (!OpenAir(from, .25f) || !OverFloor(c, from)) continue;
+                    F.OcclusionEnabled = false;
+                    Shot("fixstage2_off_" + c.seed, from, p + Vector3.up * .35f, a => Light(c, a), false, "stage 2 OFF: the plate behind the wall unit is drawn", false, false);
+                    F.OcclusionEnabled = true;
+                    Shot("fixstage2_on_" + c.seed, from, p + Vector3.up * .35f, a => Light(c, a), false, "stage 2 ON: hidden behind the wall unit", false, false);
+                    FixLog("fixstage2_" + c.seed + ": " + x.kit + " behind a wall unit at " + p.ToString("F2") + ", lamp " + LitBy(c, p, n).ToString("0.0", Inv) + " m");
+                    needs.Mark("fixstage2");
+                    break;
+                }
+            }
+        F.OcclusionEnabled = true;
+    }
+
+    /// <summary>A pod's one base feed at the powered spine end: eye height 2.4 m out and a 0.6 m view of the feed and the panel base.</summary>
+    static void FixPod(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixpod")) return;
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        foreach (var s in c.sets)
+            for (var i = s.fixtures.Count - s.extraCount; i < s.fixtures.Count && !needs.Has("fixpod"); i++)
+            {
+                var x = s.fixtures[i];
+                if (x.cls != F.FixtureClass.Floor || x.face >= 0) continue;
+                var p = s.transform.TransformPoint(x.position);
+                var n = Vector3.ProjectOnPlane(s.transform.TransformDirection(x.normal), Vector3.up).normalized;   // toward the panel
+                if (LitBy(c, p, Vector3.up) > 3f) continue;
+                var side = Vector3.Cross(Vector3.up, n);
+                foreach (var lat in new[] { 1.2f, -1.2f, 1.8f, -1.8f })
+                {
+                    var from = p - n * 1.6f + side * lat;
+                    from.y = eyeY;
+                    if (!OpenAir(from, .25f) || !OverFloor(c, from) || !LineClear(from, p + Vector3.up * .05f) || !PropsClear(c, from, p + Vector3.up * .05f)) continue;
+                    Shot("fixpod_eye_" + c.seed, from, p + n * .6f + Vector3.up * .45f, a => Light(c, a), false, "pod base feed at the powered spine end", false, false);
+                    var close = p - n * .35f + side * (lat > 0 ? .35f : -.35f) + Vector3.up * .35f;
+                    if (OpenAir(close, .04f) && LineClear(close, p + Vector3.up * .05f))
+                        Shot("fixpod_close_" + c.seed, close, p + n * .12f + Vector3.up * .08f, a => Light(c, a), false, "the feed beside the powered panel base", false, false);
+                    FixLog("fixpod_" + c.seed + ": feed at " + p.ToString("F2") + ", lamp " + LitBy(c, p, Vector3.up).ToString("0.0", Inv) + " m");
+                    needs.Mark("fixpod");
+                    break;
+                }
+            }
+    }
+
+    /// <summary>The engineering critic's pose: 1.0 m from a Tall handy box at eye height, level and 40 degrees down (non-instanced landing path).</summary>
+    static void FixConduit(MapCtx c, Needs needs)
+    {
+        if (needs.Has("fixconduit")) return;
+        var eyeY = c.root.position.y + ModuleUnits.PlayerEye;
+        foreach (var pk in Fixtures(c, (s, x) => FaceOk(s, x, out var f) && x.kit == F.FixtureKit.HandyBox))
+        {
+            var p = pk.P; var n = pk.N;
+            var from = p + n * 1f;
+            from.y = eyeY;
+            if (!OpenAir(from, .3f) || Physics.Raycast(from, -n, .97f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            Shot("fixconduit_level_" + c.seed, from, from - n, a => Light(c, a), false, "1.0 m from the handy box at eye height, level", false, false);
+            var down = from + (Quaternion.AngleAxis(40f, Vector3.Cross(Vector3.up, -n)) * -n);
+            Shot("fixconduit_down_" + c.seed, from, down, a => Light(c, a), false, "the same, 40 degrees down", false, false);
+            FixLog("fixconduit_" + c.seed + ": box at " + p.ToString("F2") + " y " + pk.X.position.y.ToString("0.00", Inv));
+            needs.Mark("fixconduit");
+            break;
+        }
+    }
+
+    // ------------------------------------------------------------------ dead lamp
+
+    /// <summary>
+    /// The same lit plate three ways: its lamps as generated, its own cell's lamp set Dead
+    /// (MapWorld.SetLampMode, the game's own kill), and a dead patch (its cell and the two
+    /// cells beside it along the wall). Close-up at 0.42 m and an eye-height frame with the troffer.
+    /// </summary>
+    static void DeadAB(MapCtx c, Needs needs)
+    {
+        var picks = Fixtures(c, (s, x) => FaceOk(s, x, out var f) && f.theme == ZoneTheme.Level0 && f.height != ZoneHeight.Tall && x.kit == F.FixtureKit.Duplex
+                && x.plate == F.Finish.Ivory && Plain(x) && f.room >= 0)
+            .Select(pk => (pk, lit: LitBy(c, pk.P, pk.N))).Where(t => t.lit < 2.2f).OrderBy(t => t.lit).Select(t => t.pk).ToList();
+        foreach (var pick in picks)
+        {
+            var p = pick.P;
+            var n = pick.N;
+            var side = Vector3.Cross(Vector3.up, n);
+            var cell = c.world.CellOf(p + n * .5f);
+            var lamp = c.lamps.FirstOrDefault(l => l.cell.Equals(cell));
+            if (lamp == null || (lamp.mode != 0 && lamp.mode != 1)) continue;
+            var close = p + n * .42f + side * .06f + Vector3.up * .04f;
+            var medium = p + n * 2.1f + side * .6f;
+            medium.y = c.root.position.y + ModuleUnits.PlayerEye;
+            if (!OpenAir(close, .04f) || !LineClear(close, p + n * .01f) || !OpenAir(medium, .25f) || !LineClear(medium, p + n * .02f)
+                || !LineClear(medium, lamp.pos - Vector3.up * .05f)) continue;
+            var along = new GridCoord(Mathf.RoundToInt(side.x), Mathf.RoundToInt(side.z));
+            var patch = new[] { cell, new GridCoord(cell.x + along.x, cell.y + along.y), new GridCoord(cell.x - along.x, cell.y - along.y) };
+            var mediumTarget = Vector3.Lerp(p, lamp.pos, .55f);
+            void Pair(string tag, string note)
+            {
+                Shot("deadab_" + tag + "_close_" + c.seed, close, p + n * .005f, a => Light(c, a), false, note, false, true);
+                Shot("deadab_" + tag + "_medium_" + c.seed, medium, mediumTarget, a => Light(c, a), false, note);
+            }
+            Pair("a_lit", "as generated: its own lamp " + (lamp.mode == 0 ? "steady" : "stutter") + ", " + LitBy(c, p, n).ToString("0.0", Inv) + " m");
+            c.world.SetLampMode(cell, ModuleLamp.Dead);
+            Pair("b_dead", "its own cell's lamp set Dead (SetLampMode)");
+            foreach (var g in patch) c.world.SetLampMode(g, ModuleLamp.Dead);
+            Pair("c_patch", "dead patch: its cell and the two beside it along the wall");
+            foreach (var g in patch) c.world.SetLampMode(g, ModuleLamp.Auto);
+            needs.Mark("deadab");
+            return;
+        }
+    }
+
+    static float deadMinWorking = 3.5f;
+
+    static void DeadLamp(MapCtx c, Needs needs)
+    {
+        if (needs.Has("dead")) return;
+        var dead = c.lamps.Where(l => l.mode == 3).ToList();
+        if (dead.Count == 0) return;
+        foreach (var pick in Fixtures(c, (s, x) => FaceOk(s, x, out var f) && f.theme == ZoneTheme.Level0 && (x.kit == F.FixtureKit.Duplex || x.kit == F.FixtureKit.Duplex20) && Plain(x)))
+        {
+            var p = pick.P;
+            var n = pick.N;
+            // The nearest lamp must be dead, within 2.6 m, with no wall between it and the plate.
+            Lamp nearest = null;
+            var best = float.MaxValue;
+            foreach (var l in c.lamps)
+            {
+                var d = new Vector2(l.pos.x - p.x, l.pos.z - p.z).magnitude;
+                if (d < best) { best = d; nearest = l; }
+            }
+            if (nearest == null || nearest.mode != 3 || best > 2.6f) continue;
+            // Lamps sit one per 3 m cell: the plate's own lamp is dead, and no steady or stutter lamp with a clear line is near.
+            var working = LitBy(c, p, n);
+            if (working < deadMinWorking) continue;
+            // no failing or dim lamp close either, and an ivory plate (it shows the dark best)
+            var other = c.lamps.Where(l => l.mode == 2 || l.mode == 4).Select(l => new Vector2(l.pos.x - p.x, l.pos.z - p.z).magnitude).DefaultIfEmpty(99f).Min();
+            if (other < 2.5f || (pick.X.plate != F.Finish.Ivory && pick.X.plate != F.Finish.IvoryAged)) continue;
+            if (!LineClear(nearest.pos - Vector3.up * .1f, p + n * .05f)) continue;
+            var side = Vector3.Cross(Vector3.up, n);
+            var close = p + n * .42f + side * .06f + Vector3.up * .04f;
+            var medium = p + n * 1.9f + side * .5f;
+            medium.y = c.root.position.y + ModuleUnits.PlayerEye;
+            if (!OpenAir(close, .04f) || !LineClear(close, p + n * .01f) || !OpenAir(medium, .25f) || !LineClear(medium, p + n * .02f)) continue;
+            var lit = c.lamps.Where(l => l.mode != 3).Select(l => new Vector2(l.pos.x - p.x, l.pos.z - p.z).magnitude).DefaultIfEmpty(99f).Min();
+            var note = "dead lamp " + best.ToString("0.0", Inv) + " m away; nearest steady/stutter lamp " + working.ToString("0.0", Inv) + " m, nearest failing/dim " + other.ToString("0.0", Inv) + " m";
+            Shot("dead_close_" + c.seed, close, p + n * .005f, a => Light(c, a), false, note, false, true);
+            Shot("dead_medium_" + c.seed, medium, Vector3.Lerp(p, nearest.pos, .45f), a => Light(c, a), true, note);
+            needs.Mark("dead");
+            return;
+        }
+    }
+
+    // ------------------------------------------------------------------ LOD dolly
+
+    static void Dolly(MapCtx c, Needs needs)
+    {
+        var picks = Fixtures(c, (s, x) => FaceOk(s, x, out var f) && x.kit == F.FixtureKit.Duplex && x.plate == F.Finish.Ivory && Plain(x) && f.theme == ZoneTheme.Level0)
+            .Select(pk => (pk, lit: LitBy(c, pk.P, pk.N))).Where(t => t.lit < 2.5f).OrderBy(t => t.lit).Select(t => t.pk).ToList();
+        foreach (var pick in picks)
+        {
+            var p = pick.P;
+            var n = pick.N;
+            if (Physics.Raycast(p + n * .02f + Vector3.up * .1f, n, 11.5f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            foreach (var d in new[] { .30f, 1.4f, 2.8f, 6.0f, 11.0f })
+            {
+                var from = p + n * d + Vector3.up * (d < .5f ? .03f : Mathf.Min(ModuleUnits.PlayerEye - pick.X.position.y, d * .6f));
+                Shot("dolly_" + d.ToString("0.0", Inv).Replace('.', 'p') + "m_" + c.seed, from, p, a => Light(c, a), true, "duplex dolly");
+            }
+            needs.Mark("dolly");
+            return;
+        }
+    }
+
+    // ------------------------------------------------------------------ top-down debug view
+
+    static void TopDown(MapCtx c)
+    {
+        // The chunk with the most variety: kits, classes, opening kinds.
+        FrontRoomsWallFixtureSet best = null;
+        var bestScore = -1;
+        foreach (var s in c.sets)
+        {
+            if (s.isLocal || s.fixtures.Count == 0) continue;
+            var kits = s.fixtures.Select(x => x.kit).Distinct().Count();
+            var classes = s.fixtures.Select(x => x.cls).Distinct().Count();
+            var kinds = s.faces.Where(f => !f.foreign).Select(f => f.kind).Distinct().Count();
+            var tall = s.faces.Any(f => f.height == ZoneHeight.Tall) ? 4 : 0;
+            var themes = s.faces.Select(f => f.theme).Distinct().Count() * 3;
+            var score = kits * 2 + classes * 2 + kinds * 2 + tall + themes + s.occluders.Count;
+            if (score > bestScore) { bestScore = score; best = s; }
+        }
+        if (best == null) return;
+        var centre = best.transform.TransformPoint(new Vector3(12f, 0f, 12f));
+        Light(c, centre + Vector3.up * ModuleUnits.PlayerEye);
+        var half = 12.3f;
+        cam.orthographic = true;
+        cam.orthographicSize = half;
+        var near = cam.nearClipPlane;
+        cam.nearClipPlane = .01f;
+        cam.transform.SetPositionAndRotation(centre + Vector3.up * 2.32f, Quaternion.Euler(90f, 0f, 0f));
+        SetTarget(TopPx, TopPx);
+        R.ResetStats();
+        Render(readA);
+        File.WriteAllBytes(Path.Combine(outDir, "top_" + c.seed + ".png"), readA.EncodeToPNG());
+        cam.orthographic = false;
+        cam.nearClipPlane = near;
+        SetTarget(W, H);
+
+        // plan.json: everything in the chunk root's space (metres), plus the pixel mapping.
+        var sb = new StringBuilder("{\n");
+        sb.Append(" \"seed\": " + c.seed + ", \"coord\": [" + best.coord.x + ", " + best.coord.y + "], \"rootWorld\": " + V3(best.transform.position) + ",\n");
+        sb.Append(" \"pixels\": " + TopPx + ", \"half\": " + Fmt(half) + ", \"centreLocal\": [12, 12], \"note\": \"pixel x = (lx - (12 - half)) / (2 half) * pixels; pixel y = ((12 + half) - lz) / (2 half) * pixels\",\n");
+        sb.Append(" \"rules\": {\"endMargin\": " + Fmt(F.EndMargin) + ", \"archClear\": " + Fmt(F.ArchClear) + ", \"sameFaceGap\": " + Fmt(F.SameFaceGap) + ", \"backToBack\": " + Fmt(F.BackToBack) + ", \"step\": " + Fmt(F.Step) + "},\n");
+        sb.Append(" \"faces\": [\n");
+        sb.Append(string.Join(",\n", best.faces.Select((f, i) => "  {\"i\": " + i + ", \"start\": " + V3(f.start) + ", \"dir\": " + V3(f.direction) + ", \"len\": " + Fmt(f.length) + ", \"normal\": " + V3(f.normal)
+            + ", \"kind\": " + Q(f.kind.ToString()) + ", \"open\": [" + Fmt(f.openFrom) + ", " + Fmt(f.openTo) + ", " + Fmt(f.openBottom) + ", " + Fmt(f.openTop) + "], \"side\": " + f.side
+            + ", \"foreign\": " + (f.foreign ? "true" : "false") + ", \"room\": " + f.room + ", \"theme\": " + Q(f.theme.ToString()) + ", \"height\": " + Q(f.height.ToString())
+            + ", \"ceiling\": " + Fmt(f.ceiling) + ", \"zoneBorder\": " + (f.zoneBorder ? "true" : "false") + ", \"cls\": " + Q(F.Classify(f).ToString()) + "}")));
+        sb.Append("\n ],\n \"fixtures\": [\n");
+        sb.Append(string.Join(",\n", best.fixtures.Select((x, i) => "  {\"i\": " + i + ", \"kit\": " + Q(x.kit.ToString()) + ", \"pos\": " + V3(x.position) + ", \"normal\": " + V3(x.normal)
+            + ", \"cls\": " + Q(x.cls.ToString()) + ", \"plate\": " + Q(x.plate.ToString()) + ", \"device\": " + Q(x.device.ToString()) + ", \"flags\": " + Q(x.flags.ToString())
+            + ", \"face\": " + x.face + ", \"along\": " + Fmt(x.along) + ", \"hidden\": " + (best.Occluded(i) ? "true" : "false") + ", \"extra\": " + (i >= best.fixtures.Count - best.extraCount ? "true" : "false") + "}")));
+        sb.Append("\n ],\n \"keepOut\": [" + string.Join(", ", best.keepOut.Select(k => "[" + Fmt(k.xz.xMin) + ", " + Fmt(k.xz.yMin) + ", " + Fmt(k.xz.xMax) + ", " + Fmt(k.xz.yMax) + "]")) + "],\n");
+        sb.Append(" \"occluders\": [" + string.Join(", ", best.occluders.Select(b => "[" + Fmt(b.min.x) + ", " + Fmt(b.min.z) + ", " + Fmt(b.max.x) + ", " + Fmt(b.max.z) + "]")) + "],\n");
+        var cells = new List<string>();
+        for (var j = 0; j < MapGrid.ChunkCells; j++)
+        for (var i = 0; i < MapGrid.ChunkCells; i++)
+        {
+            var w = best.transform.TransformPoint(new Vector3((i + .5f) * MapGrid.CellSize, 0f, (j + .5f) * MapGrid.CellSize));
+            var cell = c.world.CellOf(w);
+            var z = c.world.ZoneOf(cell);
+            cells.Add("[" + i + ", " + j + ", " + Q(z.theme.ToString()) + ", " + Q(z.height.ToString()) + ", " + (c.world.IsBuilt(cell) ? 1 : 0) + "]");
+        }
+        sb.Append(" \"cells\": [" + string.Join(", ", cells) + "],\n");
+        var inv = best.transform.worldToLocalMatrix;
+        sb.Append(" \"lamps\": [" + string.Join(", ", c.lamps.Select(l => (inv.MultiplyPoint3x4(l.pos), l.mode)).Where(t => t.Item1.x > -1f && t.Item1.x < 25f && t.Item1.z > -1f && t.Item1.z < 25f)
+            .Select(t => "[" + Fmt(t.Item1.x) + ", " + Fmt(t.Item1.z) + ", " + t.mode + "]")) + "],\n");
+        // R3 from the chunk centre at eye height, four headings (counts, dry run)
+        R.DryRun = true;
+        var heads = new List<string>();
+        for (var yaw = 0; yaw < 360; yaw += 90)
+        {
+            cam.transform.SetPositionAndRotation(centre + Vector3.up * ModuleUnits.PlayerEye, Quaternion.Euler(0f, yaw, 0f));
+            R.Submit(cam);
+            heads.Add(StatsJson(R.Last));
+        }
+        R.DryRun = false;
+        sb.Append(" \"r3FromCentre\": [" + string.Join(", ", heads) + "],\n");
+        sb.Append(" \"counts\": {\"fixtures\": " + best.fixtures.Count + ", \"extras\": " + best.extraCount + ", \"hidden\": " + Enumerable.Range(0, best.fixtures.Count).Count(best.Occluded)
+            + ", \"faces\": " + best.faces.Count + ", \"attachments\": " + Internal(best, "attachTotal") + "}\n}\n");
+        File.WriteAllText(Path.Combine(outDir, "top_" + c.seed + "_plan.json"), sb.ToString());
+        Log("top-down: chunk " + best.coord.x + "," + best.coord.y + " score " + bestScore + ", " + best.fixtures.Count + " fixtures, " + Internal(best, "attachTotal") + " conduit parts");
+    }
+
+    // ------------------------------------------------------------------ per-chunk counts
+
+    /// <summary>R3 dry run from the centre cell of every built chunk (4 headings): what one camera submits, and per-chunk totals.</summary>
+    static void Views(MapCtx c)
+    {
+        R.DryRun = true;
+        var lines = new List<string>();
+        foreach (var s in c.sets)
+        {
+            if (s.isLocal) continue;
+            for (var yaw = 0; yaw < 360; yaw += 90)
+            {
+                cam.transform.SetPositionAndRotation(s.transform.TransformPoint(new Vector3(13.5f, ModuleUnits.PlayerEye, 13.5f)), Quaternion.Euler(0f, yaw, 0f));
+                R.Submit(cam);
+                lines.Add(StatsJson(R.Last));
+            }
+        }
+        R.DryRun = false;
+        var chunks = c.sets.Where(s => !s.isLocal).Select(s => "{\"coord\": [" + s.coord.x + ", " + s.coord.y + "], \"fixtures\": " + s.fixtures.Count + ", \"extras\": " + s.extraCount
+            + ", \"handy\": " + s.fixtures.Count(x => x.kit == F.FixtureKit.HandyBox) + ", \"phone4\": " + s.fixtures.Count(x => x.kit == F.FixtureKit.JackPhone4)
+            + ", \"attachments\": " + Internal(s, "attachTotal") + ", \"hidden\": " + Enumerable.Range(0, s.fixtures.Count).Count(s.Occluded) + "}");
+        File.WriteAllText(Path.Combine(outDir, "views_" + c.seed + ".json"), "{\"views\": [\n " + string.Join(",\n ", lines) + "\n],\n\"chunks\": [\n " + string.Join(",\n ", chunks) + "\n]}\n");
+        Log("views " + c.seed + ": " + lines.Count + " dry-run views");
+    }
+}

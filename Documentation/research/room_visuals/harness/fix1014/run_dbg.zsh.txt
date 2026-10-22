@@ -1,0 +1,10 @@
+#!/bin/zsh
+W=/Users/redwang/FrontRoomsVisualWork; U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity; R=$W/rooms_fix/runs; S=$R/status_dbg.txt
+( tag=A_dbg; mkdir -p $R/$tag; T=$(date +%s); $U -batchmode -quit -projectPath $W/proj_run_red_ward -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off -runOutDir $R/$tag -runState tripped -runWax 1.56 -runShots s1b -runProbeDebug -logFile $R/$tag.log; echo "$tag exit $? $(( $(date +%s) - T )) s errors=$(grep -c 'error CS' $R/$tag.log) png=$(ls $R/$tag/*.png 2>/dev/null | wc -l)" >> $S ) &
+( C=$W/proj_run_house_lights; V=$C/Verification/run_lookdev_house_lights
+  crun() { tag=$1; shift; mkdir -p $R/$tag; T=$(date +%s); rm -f $V/*.png $V/lookdev_log.txt
+    env "$@" $U -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off -runQuick -runShots s1b -logFile $R/$tag.log
+    ec=$?; cp $V/*.png $V/*.txt $R/$tag/ 2>/dev/null; echo "$tag exit $ec $(( $(date +%s) - T )) s errors=$(grep -c 'error CS' $R/$tag.log) png=$(ls $R/$tag/*.png 2>/dev/null | wc -l)" >> $S; }
+  crun C_dbg RUNC_PROBEDEBUG=1
+  crun C_dbg_bm RUNC_PROBEDEBUG=1 RUNC_BAKEMODE=1 ) &
+wait; echo "DBG ALLDONE $(date)" >> $S

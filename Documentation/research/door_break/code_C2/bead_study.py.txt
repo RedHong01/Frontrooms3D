@@ -1,0 +1,449 @@
+"""C2 dress-option study: a corner bead hit at an outside corner (21_C_realism_research.md 1.6,
+2.9, checklist 8 / 16 / 21). C's test door has no outside corner within reach (the casing covers
+the board's cut edge at a cased door), so the bead is shown on its own, at a papered wall end like
+the one in the Level 0 photo (ir01_dsc00161): a 0.16 m partition ending in two outside corners,
+galvanized bead with 32 mm flanges and a round nose, fastened every 229 mm (9 in), three coats of
+compound feathered over the flanges, paper-backed vinyl over it all.
+
+Damage at hip height (the usual impact spot, R25): the nose is dented in about 9 mm over 0.22 m
+with a kink at the centre; above it the bead has popped off two fasteners and bows out 4 mm; the
+compound has cracked off the flange in slabs, exposing the perforated galvanized flange and its
+fasteners; the paper tore round it (white backing edges), one slab hangs on the paper, chips and
+powder lie at the base.
+
+  Blender -b --factory-startup --python bead_study.py -- <out.png> [res] [spp]
+"""
+import math
+import sys
+
+import bmesh
+import bpy
+import numpy as np
+from mathutils import Matrix, Vector
+
+TEX = "/Users/redwang/FrontRoomsVisualWork/door_break/C/tex/"
+a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+OUT = a[0] if a else "/tmp/bead.png"
+RES = a[1] if len(a) > 1 else "1920x1080"
+SPP = int(a[2]) if len(a) > 2 else 128
+
+H = 0.08          # half wall
+BRD = 0.0127
+FL = 0.032        # bead flange
+Y0, Y1 = 0.92, 1.38   # damage zone
+
+
+def srgb(c):
+    c = np.asarray(c, float) / 255.0
+    return tuple(np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4))
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.render.engine = "CYCLES"
+    pr = bpy.context.preferences.addons["cycles"].preferences
+    pr.compute_device_type = "METAL"
+    pr.get_devices()
+    for d in pr.devices:
+        d.use = d.type == "METAL"
+    sc.cycles.device = "GPU"
+    sc.cycles.samples = SPP
+    sc.cycles.use_denoising = True
+    sc.cycles.denoiser = "OPENIMAGEDENOISE"
+    w, h = (int(v) for v in RES.split("x"))
+    sc.render.resolution_x, sc.render.resolution_y = w, h
+    sc.view_settings.view_transform = "AgX"
+    sc.view_settings.exposure = -0.9
+    wd = bpy.data.worlds.new("w")
+    wd.use_nodes = True
+    wd.node_tree.nodes["Background"].inputs[1].default_value = 0.0
+    sc.world = wd
+
+
+def mat_tex(name, tex, scale, rough=0.75, ntex=None):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    uv = nt.nodes.new("ShaderNodeUVMap")
+    uv.uv_map = "UV"
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / scale[0], 1 / scale[1], 1)
+    nt.links.new(uv.outputs[0], mp.inputs[0])
+    ti = nt.nodes.new("ShaderNodeTexImage")
+    ti.image = bpy.data.images.load(TEX + tex + ".png")
+    nt.links.new(mp.outputs[0], ti.inputs[0])
+    nt.links.new(ti.outputs[0], b.inputs["Base Color"])
+    b.inputs["Roughness"].default_value = rough
+    if ntex:
+        tn = nt.nodes.new("ShaderNodeTexImage")
+        tn.image = bpy.data.images.load(TEX + ntex + ".png")
+        tn.image.colorspace_settings.name = "Non-Color"
+        nt.links.new(mp.outputs[0], tn.inputs[0])
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nm.uv_map = "UV"
+        nm.inputs["Strength"].default_value = 0.8
+        nt.links.new(tn.outputs[0], nm.inputs["Color"])
+        nt.links.new(nm.outputs[0], b.inputs["Normal"])
+    return m
+
+
+def mat_plain(name, rgb, rough=0.9, metal=0.0, noise=0.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*srgb(rgb), 1)
+    b.inputs["Roughness"].default_value = rough
+    b.inputs["Metallic"].default_value = metal
+    if noise:
+        tc = nt.nodes.new("ShaderNodeTexCoord")
+        nz = nt.nodes.new("ShaderNodeTexNoise")
+        nz.inputs["Scale"].default_value = 500.0
+        nz.inputs["Detail"].default_value = 5.0
+        nt.links.new(tc.outputs["Object"], nz.inputs["Vector"])
+        bp = nt.nodes.new("ShaderNodeBump")
+        bp.inputs["Strength"].default_value = noise
+        bp.inputs["Distance"].default_value = 0.001
+        nt.links.new(nz.outputs[0], bp.inputs["Height"])
+        nt.links.new(bp.outputs[0], b.inputs["Normal"])
+    return m
+
+
+def mat_bead():
+    """Galvanized steel (#A7ABAA, spangled), perforated flange: holes cut by alpha."""
+    m = bpy.data.materials.new("CornerBead")
+    m.use_nodes = True
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*srgb((0xC2, 0xC6, 0xC5)), 1)
+    b.inputs["Metallic"].default_value = 0.85
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    vor = nt.nodes.new("ShaderNodeTexVoronoi")
+    vor.inputs["Scale"].default_value = 60.0
+    nt.links.new(tc.outputs["Object"], vor.inputs["Vector"])
+    rr = nt.nodes.new("ShaderNodeMapRange")
+    rr.inputs["To Min"].default_value = 0.42
+    rr.inputs["To Max"].default_value = 0.62
+    nt.links.new(vor.outputs["Distance"], rr.inputs["Value"])
+    nt.links.new(rr.outputs[0], b.inputs["Roughness"])
+    # perforations: staggered 6 mm holes on 13 mm pitch, only on the flanges (attribute 'perf')
+    at = nt.nodes.new("ShaderNodeAttribute")
+    at.attribute_name = "perf"
+    br = nt.nodes.new("ShaderNodeTexBrick")
+    br.inputs["Scale"].default_value = 1.0
+    sepu = nt.nodes.new("ShaderNodeUVMap")
+    sepu.uv_map = "UV"
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / 0.013, 1 / 0.013, 1)
+    nt.links.new(sepu.outputs[0], mp.inputs[0])
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(mp.outputs[0], sep.inputs[0])
+    fr = nt.nodes.new("ShaderNodeMath")
+    fr.operation = "FRACT"
+    nt.links.new(sep.outputs[0], fr.inputs[0])
+    fr2 = nt.nodes.new("ShaderNodeMath")
+    fr2.operation = "FRACT"
+    off = nt.nodes.new("ShaderNodeMath")
+    off.operation = "ADD"
+    off.inputs[1].default_value = 0.0
+    nt.links.new(sep.outputs[1], off.inputs[0])
+    nt.links.new(off.outputs[0], fr2.inputs[0])
+    dx = nt.nodes.new("ShaderNodeMath")
+    dx.operation = "SUBTRACT"
+    dx.inputs[1].default_value = 0.5
+    nt.links.new(fr.outputs[0], dx.inputs[0])
+    dy = nt.nodes.new("ShaderNodeMath")
+    dy.operation = "SUBTRACT"
+    dy.inputs[1].default_value = 0.5
+    nt.links.new(fr2.outputs[0], dy.inputs[0])
+    vl = nt.nodes.new("ShaderNodeCombineXYZ")
+    nt.links.new(dx.outputs[0], vl.inputs[0])
+    nt.links.new(dy.outputs[0], vl.inputs[1])
+    ln = nt.nodes.new("ShaderNodeVectorMath")
+    ln.operation = "LENGTH"
+    nt.links.new(vl.outputs[0], ln.inputs[0])
+    hole = nt.nodes.new("ShaderNodeMath")
+    hole.operation = "LESS_THAN"
+    hole.inputs[1].default_value = 0.23
+    nt.links.new(ln.outputs["Value"], hole.inputs[0])
+    hm = nt.nodes.new("ShaderNodeMath")
+    hm.operation = "MULTIPLY"
+    nt.links.new(hole.outputs[0], hm.inputs[0])
+    nt.links.new(at.outputs["Fac"], hm.inputs[1])
+    alpha = nt.nodes.new("ShaderNodeMath")
+    alpha.operation = "SUBTRACT"
+    alpha.inputs[0].default_value = 1.0
+    nt.links.new(hm.outputs[0], alpha.inputs[1])
+    nt.links.new(alpha.outputs[0], b.inputs["Alpha"])
+    return m
+
+
+def grid_obj(name, fn, nu, nv, mats, uvfn, matfn=None):
+    """A grid surface: fn(u, v) -> Vector; uvfn(u, v) -> (s, t)."""
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.new("UV")
+    vs = [[bm.verts.new(fn(i / nu, j / nv)) for j in range(nv + 1)] for i in range(nu + 1)]
+    for i in range(nu):
+        for j in range(nv):
+            f = bm.faces.new((vs[i][j], vs[i + 1][j], vs[i + 1][j + 1], vs[i][j + 1]))
+            for l, (ii, jj) in zip(f.loops, ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))):
+                l[uvl].uv = uvfn(ii / nu, jj / nv)
+            if matfn:
+                f.material_index = matfn((i + 0.5) / nu, (j + 0.5) / nv)
+            f.smooth = True
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    for m in mats:
+        me.materials.append(m)
+    o = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(o)
+    return o
+
+
+def dent(y):
+    """Nose dent (m) along the corner: a smooth hollow with a kink at its centre."""
+    yc = 1.12
+    d = 0.009 * math.exp(-((y - yc) / 0.085) ** 2) + 0.0025 * max(0.0, 1 - abs(y - yc) / 0.012)
+    bow = 0.004 * math.exp(-((y - 1.52) / 0.18) ** 2) * (y > 1.30)
+    return d, bow
+
+
+def torn(y, s, which):
+    """True where the paper + compound came off (s = distance from the corner along the face)."""
+    yc = 1.12
+    e = ((y - yc) / 0.17) ** 2 + (s / (0.045 + 0.02 * math.sin(y * 47.0))) ** 2
+    return e < 1.0
+
+
+def finish(y, sd):
+    """What the face shows: 0 paper, 1 compound (cracked-off slab edges), 2 white backing (torn
+    paper edge), 3 nothing (the finish came off the flange: the bead shows)."""
+    yc = 1.12
+    e = math.sqrt(((y - yc) / 0.17) ** 2 + (sd / (0.050 + 0.018 * math.sin(y * 47.0))) ** 2)
+    e2 = math.sqrt(((y - yc) / 0.20) ** 2 + (sd / 0.075) ** 2)
+    if e < 1.0 and sd < 0.031:
+        return 3
+    if e < 1.0:
+        return 1
+    if e2 < 1.0 + 0.08 * math.sin(y * 90.0 + sd * 200.0):
+        return 2 if e2 > 0.93 else 1
+    return 0
+
+
+def finish_mat(wp, comp, back):
+    """Paper / white torn backing ring / compound slab / nothing (the flange shows), from smooth
+    per-vertex fields, so every boundary is a clean torn line, not a stair of faces."""
+    m = bpy.data.materials.new("WallFinish")
+    m.use_nodes = True
+    nt = m.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    def attr(nm):
+        a_ = nt.nodes.new("ShaderNodeAttribute")
+        a_.attribute_name = nm
+        return a_.outputs["Fac"]
+    def mth(op, x, y):
+        n = nt.nodes.new("ShaderNodeMath")
+        n.operation = op
+        for i, v in enumerate((x, y)):
+            if isinstance(v, float):
+                n.inputs[i].default_value = v
+            else:
+                nt.links.new(v, n.inputs[i])
+        return n.outputs[0]
+    e1, e2, sd = attr("e1"), attr("e2"), attr("sd")
+    # surfaces: copy the three BSDFs from the source materials as groups would be heavy: rebuild
+    def bsdf_from(src):
+        b = nt.nodes.new("ShaderNodeBsdfPrincipled")
+        sb = src.node_tree.nodes["Principled BSDF"]
+        b.inputs["Base Color"].default_value = sb.inputs["Base Color"].default_value
+        b.inputs["Roughness"].default_value = sb.inputs["Roughness"].default_value
+        return b
+    # wallpaper print with its image
+    uv = nt.nodes.new("ShaderNodeUVMap")
+    uv.uv_map = "UV"
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / 0.75, 1 / 1.125, 1)
+    nt.links.new(uv.outputs[0], mp.inputs[0])
+    ti = nt.nodes.new("ShaderNodeTexImage")
+    ti.image = bpy.data.images.load(TEX + "Wallpaper_Chevron_A.png", check_existing=True)
+    nt.links.new(mp.outputs[0], ti.inputs[0])
+    bp = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    nt.links.new(ti.outputs[0], bp.inputs["Base Color"])
+    bp.inputs["Roughness"].default_value = 0.72
+    bc = bsdf_from(comp)
+    bb = bsdf_from(back)
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    hole = mth("MULTIPLY", mth("LESS_THAN", e1, 1.0), mth("LESS_THAN", sd, 0.031))
+    compm = mth("MAXIMUM", mth("LESS_THAN", e1, 1.0), mth("LESS_THAN", e2, 0.93))
+    ring = mth("MULTIPLY", mth("LESS_THAN", e2, 1.0), mth("SUBTRACT", 1.0, compm))
+    m1 = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(ring, m1.inputs[0])
+    nt.links.new(bp.outputs[0], m1.inputs[1])
+    nt.links.new(bb.outputs[0], m1.inputs[2])
+    m2 = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(compm, m2.inputs[0])
+    nt.links.new(m1.outputs[0], m2.inputs[1])
+    nt.links.new(bc.outputs[0], m2.inputs[2])
+    m3 = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(hole, m3.inputs[0])
+    nt.links.new(m2.outputs[0], m3.inputs[1])
+    nt.links.new(tr.outputs[0], m3.inputs[2])
+    nt.links.new(m3.outputs[0], out.inputs[0])
+    return m
+
+
+def build():
+    wp = mat_tex("Wallpaper", "Wallpaper_Chevron_A", (0.75, 1.125), 0.72, "Wallpaper_Chevron_N")
+    car = mat_tex("Carpet", "Carpet_LoopPile_A", (1, 1), 0.9, "Carpet_LoopPile_N")
+    comp = mat_plain("Compound", (0xEC, 0xEB, 0xE6), 0.85, 0, 0.3)
+    gyp = mat_plain("Gypsum", (0xE8, 0xE4, 0xDA), 0.96, 0, 0.6)
+    back = mat_plain("Backing", (0xE7, 0xE2, 0xD3), 0.85, 0, 0.2)
+    bead = mat_bead()
+    screw = mat_plain("Screw", (0x2A, 0x2A, 0x2A), 0.5, 0.6)
+    ceil_m = mat_plain("Ceiling", (0xD6, 0xD2, 0xC8), 0.9)
+    # floor and a back wall
+    grid_obj("floor", lambda u, v: Vector((-2.2 + 4.8 * u, -2.5 + 4.5 * v, 0)), 1, 1, [car], lambda u, v: (u * 4.8, v * 4.5))
+    grid_obj("ceil", lambda u, v: Vector((-2.2 + 4.8 * u, -2.5 + 4.5 * v, 2.4)), 1, 1, [ceil_m], lambda u, v: (u, v))
+    # face A (x = +H plane, z from -1.5 to 0) and the end face (z = 0, x from -H to +H); Blender x = wall x, y = -z
+    def faceA(u, v):
+        z = -1.5 + 1.5 * u
+        y = 2.4 * v
+        s = -z
+        d, bow = dent(y)
+        k = max(0.0, 1 - s / 0.06)
+        x = H - (d * 0.7 - bow) * k
+        return Vector((x, -z, y))
+
+    def faceE(u, v):
+        x = H - 0.16 * u
+        y = 2.4 * v
+        sdist = H - x
+        d, bow = dent(y)
+        k = max(0.0, 1 - sdist / 0.06)
+        return Vector((x, (d * 0.7 - bow) * k, y))
+    na, nv = 600, 960
+    fm = finish_mat(wp, comp, back)
+    oA = grid_obj("faceA", faceA, na, nv, [fm], lambda u, v: (-(-1.5 + 1.5 * u), 2.4 * v))
+    oE = grid_obj("faceE", faceE, 64, nv, [fm], lambda u, v: (0.16 * u, 2.4 * v))
+    for o, sdf in ((oA, lambda p: max(0.0, p.y)), (oE, lambda p: max(0.0, H - p.x))):
+        me = o.data
+        e1 = me.attributes.new("e1", "FLOAT", "POINT")
+        e2 = me.attributes.new("e2", "FLOAT", "POINT")
+        sd = me.attributes.new("sd", "FLOAT", "POINT")
+        v1, v2, v3 = [], [], []
+        for vt in me.vertices:
+            y = vt.co.z
+            dd = sdf(vt.co)
+            yc = 1.12
+            v1.append(math.sqrt(((y - yc) / 0.17) ** 2 + (dd / (0.050 + 0.018 * math.sin(y * 47.0))) ** 2))
+            v2.append(math.sqrt(((y - yc) / 0.20) ** 2 + (dd / 0.075) ** 2) - 0.06 * math.sin(y * 90.0 + dd * 200.0))
+            v3.append(dd)
+        e1.data.foreach_set("value", v1)
+        e2.data.foreach_set("value", v2)
+        sd.data.foreach_set("value", v3)
+    # the bead: nose + two flanges, shown where the finish came off (plus a thin rim round it)
+    def beadfn(u, v):
+        y = Y0 - 0.06 + (Y1 - Y0 + 0.30) * v
+        d, bow = dent(y)
+        dd = d * 0.7 - bow
+        r = 0.003
+        if u < 0.45:
+            sd = r + (FL - r) * (1 - u / 0.45)
+            return Vector((H - 0.0009 - dd * 0.7 * max(0, 1 - sd / 0.06), sd, y))
+        if u > 0.55:
+            sd = r + (FL - r) * (u - 0.55) / 0.45
+            return Vector((H - sd, 0.0009 + dd * 0.7 * max(0, 1 - sd / 0.06), y))
+        t = (u - 0.45) / 0.10 * (math.pi / 2)
+        cx, cy = H - r - dd * 0.7, r + dd * 0.7
+        return Vector((cx + (r - 0.0009) * math.cos(t), cy - (r - 0.0009) * math.sin(t), y))
+    ob = grid_obj("bead", beadfn, 60, 160, [bead], lambda u, v: (u * 0.075, v * (Y1 - Y0 + 0.30)))
+    me = ob.data
+    at = me.attributes.new("perf", "FLOAT", "POINT")
+    vals = []
+    for vtx in me.vertices:
+        p = vtx.co
+        sd = max(H - p.x, p.y)
+        vals.append(1.0 if 0.010 < sd < 0.030 else 0.0)
+    at.data.foreach_set("value", vals)
+    sol = ob.modifiers.new("t", "SOLIDIFY")
+    sol.thickness = 0.0004
+    # fasteners at 229 mm on both flanges (two exposed ones popped proud)
+    for y in np.arange(0.24, 2.3, 0.229):
+        if not (0.99 < y < 1.25):
+            continue          # elsewhere the fasteners sit under compound and paper
+        for which in ("A", "E"):
+            bm = bmesh.new()
+            bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.0042, radius2=0.0012, depth=0.0028)
+            mm = bpy.data.meshes.new("fast")
+            bm.to_mesh(mm)
+            bm.free()
+            mm.materials.append(screw)
+            o = bpy.data.objects.new("fastener", mm)
+            proud = -0.0004
+            if which == "A":
+                o.location = (H + proud, 0.021, y)
+                o.rotation_euler = (0, math.pi / 2, 0)
+            else:
+                o.location = (H - 0.021, -proud, y)
+                o.rotation_euler = (math.pi / 2, 0, 0)
+            bpy.context.scene.collection.objects.link(o)
+    # compound slabs: one hanging on the paper, chips on the floor
+    rng = np.random.default_rng(3)
+    for i in range(14):
+        sz = rng.uniform(0.008, 0.035)
+        bm = bmesh.new()
+        pts = [(math.cos(t) * sz * rng.uniform(0.6, 1.0), math.sin(t) * sz * rng.uniform(0.4, 0.9)) for t in np.linspace(0, 2 * math.pi, 7)[:-1]]
+        vb = [bm.verts.new((x, y, 0)) for x, y in pts]
+        vt = [bm.verts.new((x, y, rng.uniform(0.0015, 0.003))) for x, y in pts]
+        bm.faces.new(vb[::-1])
+        bm.faces.new(vt)
+        for k in range(6):
+            bm.faces.new((vb[k], vb[(k + 1) % 6], vt[(k + 1) % 6], vt[k]))
+        mm = bpy.data.meshes.new("slab")
+        bm.to_mesh(mm)
+        bm.free()
+        mm.materials.append(comp if i % 3 else back)
+        o = bpy.data.objects.new("slab", mm)
+        o.location = (H + rng.uniform(0.03, 0.30), rng.uniform(-0.25, 0.25), 0.001)
+        o.rotation_euler = (rng.normal(0, 0.15), rng.normal(0, 0.15), rng.uniform(0, 6.3))
+        bpy.context.scene.collection.objects.link(o)
+    for nm_, fn_ in (("roomX", lambda u, v: Vector((-2.2, -2.5 + 4.5 * u, 2.4 * v))), ("roomY", lambda u, v: Vector((-2.2 + 4.8 * u, -2.5, 2.4 * v))),
+                     ("roomZ", lambda u, v: Vector((-2.2 + 4.8 * u, 2.0, 2.4 * v))), ("roomW", lambda u, v: Vector((2.6, -2.5 + 4.5 * u, 2.4 * v))),
+                     ("wallB", lambda u, v: Vector((-H, 0.0 + 1.5 * u, 2.4 * v)))):
+        grid_obj(nm_, fn_, 1, 1, [wp], lambda u, v: (u * 4, v * 2.4))
+    # light and camera
+    ld = bpy.data.lights.new("troffer", "AREA")
+    ld.shape = "RECTANGLE"
+    ld.size, ld.size_y = 1.18, 0.58
+    ld.energy = 38.0
+    ld.color = (1.0, 0.96, 0.88)
+    lo = bpy.data.objects.new("troffer", ld)
+    lo.location = (1.2, -0.6, 2.395)
+    bpy.context.scene.collection.objects.link(lo)
+    ld2 = bpy.data.lights.new("fill", "AREA")
+    ld2.size = 2.0
+    ld2.energy = 18.0
+    lo2 = bpy.data.objects.new("fill", ld2)
+    lo2.location = (-0.8, -1.0, 2.39)
+    bpy.context.scene.collection.objects.link(lo2)
+    cd = bpy.data.cameras.new("cam")
+    cd.sensor_fit = "VERTICAL"
+    cd.angle = math.radians(46)
+    cam = bpy.data.objects.new("cam", cd)
+    cam.location = (H + 0.52, -0.46, 1.42)
+    d = Vector((H, 0.015, 1.08)) - cam.location
+    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+    bpy.context.scene.collection.objects.link(cam)
+    bpy.context.scene.camera = cam
+
+
+reset()
+build()
+bpy.context.scene.render.filepath = OUT
+bpy.ops.render.render(write_still=True)
+print("[bead] wrote", OUT)

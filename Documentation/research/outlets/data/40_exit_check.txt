@@ -1,0 +1,8 @@
+Exit variants: 5
+Profile 4 / Exit: sign 1, marker False (collider False), outlet set 1 fixtures, class StreamExit, old plate boxes 0
+Profile 3 / Run: sign 1, marker False (collider False), outlet set 5 fixtures, class StreamExit, old plate boxes 0
+Profile 2 / Office: sign 1, marker False (collider False), outlet set 2 fixtures, class StreamExit, old plate boxes 0
+Profile 1 / Shift: sign 1, marker False (collider False), outlet set 3 fixtures, class StreamExit, old plate boxes 0
+Profile 0 / Lobby: sign 1, marker False (collider False), outlet set 4 fixtures, class StreamExit, old plate boxes 0
+outlet plate boxes in the scene: 0
+EXIT CHECK PASS

@@ -1,0 +1,14 @@
+# codex_audit_all WebGL probe run, 2026-10-14 16:51 PDT, Claude desktop Browser pane (Chrome 152, WebGL 2.0 / OpenGL ES 3.0), page http://127.0.0.1:8791/index.html?run=3
+# build: W/cxapply_all/webgl/CxCrtProbeWebGL (clone W/proj_cxapply_all_wgl = main 0a9ee7f + tree + glass_look + other_visual payloads;
+#   FrontRooms3DBuild.ApplyWebGLSettings + probe-only overrides: development, compression Disabled, exceptions ExplicitlyThrownExceptionsOnly)
+# page hook: console lines matching CXPROBE|xception|Parameter name|ERROR|rror|abort (FMOD NULL critical-section spam excluded); rAF driven by a MessageChannel (pane hidden)
+# captured 11 lines; lines with an exception/abort/window.error: 1, and it is the probe's own "exception none"
+log: ERROR: Shader  Hidden/CoreSRP/CoreCopy shader is not supported on this GPU (engine/URP internal hidden shader; this package does not touch it)
+log: ERROR: Shader  Hidden/Universal Render Pipeline/StencilDitherMaskSeed shader is not supported on this GPU (engine/URP internal hidden shader)
+log: ERROR: Shader  Hidden/Universal/HDRDebugView shader is not supported on this GPU (engine/URP internal hidden shader)
+log: CXPROBE start | 6000.3.10f1 | OpenGLES3 | quality High lodBias 1 | pipeline FrontRooms_URP
+log: CXPROBE Shader.Find URP/Unlit True | Shader.Find Unlit/Texture False | Resources Media/CRT_AdSurface True | Resources Rendering/FrontRoomsScreenVideo True
+log: CXPROBE spawn | monitor True | screen True | exception none
+log: CXPROBE surface | object True | renderer True | slots 1 | material 'FrontRooms / CRT ad surface' shader 'Universal Render Pipeline/Unlit' supported True | collider True | video prepared True playing True frame -1
+log: CXPROBE LODGroup size 0.524 | 2 LODs: LOD0 quad True LOD1 quad True
+log: CXPROBE done

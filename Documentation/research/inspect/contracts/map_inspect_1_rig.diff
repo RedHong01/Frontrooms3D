@@ -1,0 +1,264 @@
+EXAMINE contract, STEP 1 of 3: C16-C19 (camera rig + shot timings). Additive; every cubic shot behaves as before.
+Written by the visual chat (游戏视觉) 2026-10-14 17:02 PDT, fix stage. Anchored on Red's CURRENT main: HEAD 0a9ee7f (these files clean).
+Base sha1 of each file (re-read before applying; a mismatch means re-anchor):
+  53dc51cd3a3fd1886491d931e5e43cdc9ddd5000  Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
+  2ca796cf0883ba1edfb340d126c175a3e073eed8  Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
+Merge order (research/inspect/20_prototype.md §8): 1. map_inspect_1_rig.diff (C16-C19: rig + timings; compiles alone),
+2. the visual package W/apply/inspect.sh (needs step 1), 3. map_inspect_3_game.diff (C1-C15, C25: needs step 2).
+map_inspect.diff = steps 1 + 3 in one file, for review. Apply: patch -p1 < <file>   (dry run: patch -p1 --dry-run < <file>)
+
+--- a/Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
++++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsCameraRig.cs
+@@ -3,7 +3,7 @@
+ using UnityEngine;
+ 
+ /// <summary>What a shot is, for listeners (the sound chat's snapshots, the visual chat's post).</summary>
+-public enum ShotKind { KeyPickup, Unlock, Open, Rattle, Glass, Climb, DoorBreak, Caught }
++public enum ShotKind { KeyPickup, Unlock, Open, Rattle, Glass, Climb, DoorBreak, Caught, Inspect }   // append-only (sound and touch read it by name)
+ 
+ /// <summary>How a shot may end early.</summary>
+ [Flags]
+@@ -20,6 +20,14 @@
+ public enum ShotInput { Use, Back }
+ 
+ /// <summary>
++/// How a shot's weight becomes the camera's pull. Cubic: the rig's ease-in-out both ways (every shot
++/// before EXAMINE). Sine (research/inspect/10_design.md §3.5, C17b): in 0.5 - 0.5 cos(πw); out
++/// 1 - cos(πw/2) from wherever the pull was when the shot began to end (fast start, settles), entered
++/// over FrontRoomsShotTimings.Inspect.OutOnset (2 frames) so the speed never steps from 0 to its peak.
++/// </summary>
++public enum ShotEase { Cubic, Sine }
++
++/// <summary>
+ /// A shot: where the camera goes (a world pose, asked every frame so it can
+ /// follow a moving anchor), how it blends in and out, and what it locks.
+ /// </summary>
+@@ -46,6 +54,18 @@
+     /// HUD back with movement at 1.45 s while the shot stays alive to 1.55 s for the buffered push.
+     /// </summary>
+     public float hudUntil;
++    /// <summary>
++    /// The full pose and FOV at every Camera motion setting (C17): not scaled by the setting. At
++    /// 0 &lt; motion &lt; 1 every blend time is ×FrontRoomsShotTimings.Inspect.HalfMotionTimeScale;
++    /// at motion 0 the shot cuts in and out.
++    /// </summary>
++    public bool fullPose;
++    /// <summary>The weight-to-pull curve (C17b). Cubic is the default.</summary>
++    public ShotEase ease;
++    /// <summary>Sine shots: rotation's own blend-out (seconds; 0 = blendOut). CancelShot shortens both (C17b).</summary>
++    public float rotBlendOut;
++    /// <summary>ShotKind.Inspect only: the lowest absolute FOV (degrees; 0 = BaseFov - MaxFovDeltaDeg), for the angular zoom (C17c).</summary>
++    public float fovMin;
+ }
+ 
+ /// <summary>A running shot, to end or cancel it.</summary>
+@@ -55,7 +75,16 @@
+     internal float weight, age;
+     internal bool ending;
+     internal float blendOut;
++    // Sine shots (C17b): the rotation's weight, its blend-out, and the pulls held when the shot began to end.
++    internal float rotWeight, rotBlendOut, outPull, outRotPull, eased, rotEased;
++    internal bool outStarted;
+     public ShotKind Kind => spec.kind;
++    /// <summary>The raw blend weight, 0..1 (C18).</summary>
++    public float Weight => weight;
++    /// <summary>The position and FOV pull this frame, through the same ease the pose uses (C18): what a shot volume should follow.</summary>
++    public float EasedWeight => eased;
++    /// <summary>The rotation pull this frame (equals EasedWeight except while a Sine shot returns).</summary>
++    public float RotationWeight => rotEased;
+     public bool Ended { get; internal set; }
+     public bool Cancelled { get; internal set; }
+     /// <summary>The input that cancelled the shot through Consume (S or a second E); null when it was not cancelled by input.</summary>
+@@ -95,7 +124,7 @@
+     readonly List<(float delta, float seconds, float age)> fovReleases = new List<(float, float, float)>();
+     readonly List<(float degrees, float seconds, float age)> kicks = new List<(float, float, float)>();
+     float trauma, traumaPeak, traumaDecay, traumaTime, hudFade, pitch, stanceDrop;
+-    readonly RaycastHit[] hits = new RaycastHit[8];
++    readonly RaycastHit[] hits = new RaycastHit[16];   // C17d: never drop the nearest hit
+ 
+     FrontRoomsCameraRig(Transform body, Transform eye, Camera camera, float eyeHeight)
+     {
+@@ -176,8 +205,8 @@
+     /// <summary>Begin a shot. Shots stack: the newest decides the pose.</summary>
+     public ShotHandle BeginShot(ShotSpec spec)
+     {
+-        spec.fovDelta = Mathf.Clamp(spec.fovDelta, -FrontRoomsShotTimings.MaxFovDeltaDeg, FrontRoomsShotTimings.MaxFovDeltaDeg);
+-        var handle = new ShotHandle { spec = spec, blendOut = spec.blendOut };
++        spec.fovDelta = Mathf.Clamp(spec.fovDelta, -MaxFovDrop(spec), FrontRoomsShotTimings.MaxFovDeltaDeg);
++        var handle = new ShotHandle { spec = spec, blendOut = spec.blendOut, rotBlendOut = spec.rotBlendOut > 0f ? spec.rotBlendOut : spec.blendOut };
+         shots.Add(handle);
+         BufferedPush = false;   // a push buffered in an earlier shot never carries over
+         ShotStarted?.Invoke(spec.kind, spec.focus);
+@@ -210,11 +239,13 @@
+         if (handle.ending)
+         {
+             handle.blendOut = Mathf.Min(handle.blendOut, blendOut);
++            handle.rotBlendOut = Mathf.Min(handle.rotBlendOut, blendOut);
+             return;
+         }
+         handle.Cancelled = true;
+         handle.ending = true;
+         handle.blendOut = Mathf.Min(handle.blendOut > 0f ? handle.blendOut : blendOut, blendOut);
++        handle.rotBlendOut = Mathf.Min(handle.rotBlendOut > 0f ? handle.rotBlendOut : blendOut, blendOut);
+     }
+ 
+     /// <summary>Cancel every shot that the Relay may interrupt (it chases or sees the player), fast.</summary>
+@@ -342,8 +373,18 @@
+         {
+             var shot = shots[i];
+             shot.age += dt;
+-            if (shot.ending)
++            if (shot.spec.ease == ShotEase.Sine)
+             {
++                if (TickSine(shot, dt, motion))
++                {
++                    shots.RemoveAt(i);
++                    shot.Ended = true;
++                    ShotEnded?.Invoke(shot.spec.kind, shot.spec.focus);
++                    continue;
++                }
++            }
++            else if (shot.ending)
++            {
+                 shot.weight = shot.blendOut > 0f ? Mathf.MoveTowards(shot.weight, 0f, dt / shot.blendOut) : 0f;
+                 if (shot.weight <= 0f)
+                 {
+@@ -354,6 +395,7 @@
+                 }
+             }
+             else shot.weight = shot.spec.blendIn > 0f ? Mathf.MoveTowards(shot.weight, 1f, dt / shot.spec.blendIn) : 1f;
++            if (shot.spec.ease != ShotEase.Sine) shot.eased = shot.rotEased = Ease(shot.weight);
+             if (!shot.ending)
+             {
+                 MoveLocked |= shot.spec.lockMove;
+@@ -369,19 +411,22 @@
+         var rotation = basePose.rotation;
+         var fov = BaseFov;
+         var shotFov = 0f;
++        var fovFloor = BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg;
+         if (shots.Count > 0)
+         {
+             var shot = shots[shots.Count - 1];
+-            var w = Ease(shot.weight);
+-            if (shot.spec.target != null && motion > 0f)
++            var w = shot.eased;
++            // A full-pose shot (C17) is never scaled by Camera motion: at Off it cuts.
++            var scale = shot.spec.fullPose ? 1f : motion;
++            if (shot.spec.target != null && scale > 0f)
+             {
+                 var target = shot.spec.target();
+-                var pull = w * motion;
+-                position = Vector3.Lerp(position, target.position, pull);
+-                rotation = Quaternion.Slerp(rotation, target.rotation, pull);
++                position = Vector3.Lerp(position, target.position, w * scale);
++                rotation = Quaternion.Slerp(rotation, target.rotation, shot.rotEased * scale);
+             }
+-            shotFov = (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * motion;
++            shotFov = (shot.spec.fov != null ? shot.spec.fov() : shot.spec.fovDelta) * w * scale;
+             fov += shotFov;
++            if (shot.spec.kind == ShotKind.Inspect) fovFloor = BaseFov - MaxFovDrop(shot.spec);
+         }
+         ShotFovDelta = shotFov;
+ 
+@@ -415,7 +460,7 @@
+             fovReleases[i] = (delta, seconds, age);
+             fov += delta * (1f - Mathf.SmoothStep(0f, 1f, age / seconds));
+         }
+-        fov = Mathf.Clamp(fov, BaseFov - FrontRoomsShotTimings.MaxFovDeltaDeg, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
++        fov = Mathf.Clamp(fov, fovFloor, BaseFov + FrontRoomsShotTimings.MaxFovDeltaDeg);
+ 
+         // Kicks: signed pitch, full at once, falling linearly to nothing.
+         var kick = 0f;
+@@ -468,4 +513,64 @@
+ 
+     /// <summary>The rig's cubic ease-in-out on 0..1 (shot blends; the door shot's curves use it too).</summary>
+     public static float Ease(float t) => t < .5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * .5f;
++
++    /// <summary>Sine in-out (C17b): peak slope π/2 = 1.57 × the average.</summary>
++    public static float SineIn(float w) => .5f - .5f * Mathf.Cos(Mathf.PI * Mathf.Clamp01(w));
++    /// <summary>Sine out (C17b): from 1 at w = 1 to 0 at w = 0; fastest at the start of the return, settling at the end.</summary>
++    public static float SineOut(float w) => 1f - Mathf.Cos(Mathf.PI * .5f * Mathf.Clamp01(w));
++
++    /// <summary>
++    /// The sine-out leg entered smoothly (C17b, verifier 2026-10-08): the elapsed fraction s = 1 - w is warped by a
++    /// quadratic onset over the first k of the leg (u = s²/2k, then s - k/2, normalised), so the speed ramps from 0 over
++    /// k instead of starting at its peak. C1 at k; the leg still ends at w = 0. k = 0 is plain SineOut.
++    /// </summary>
++    public static float SineOutOnset(float w, float k)
++    {
++        k = Mathf.Clamp(k, 0f, .5f);
++        if (k <= 0f) return SineOut(w);
++        var s = 1f - Mathf.Clamp01(w);
++        var u = (s < k ? s * s / (2f * k) : s - k * .5f) / (1f - k * .5f);
++        return SineOut(1f - u);
++    }
++
++    /// <summary>How far below BaseFov a shot may narrow: MaxFovDeltaDeg, or down to fovMin for ShotKind.Inspect (C17c).</summary>
++    float MaxFovDrop(ShotSpec spec) =>
++        spec.kind == ShotKind.Inspect && spec.fovMin > 0f ? Mathf.Max(FrontRoomsShotTimings.MaxFovDeltaDeg, BaseFov - spec.fovMin) : FrontRoomsShotTimings.MaxFovDeltaDeg;
++
++    /// <summary>A blend time at this Camera motion for a full-pose shot (C17): ×1.5 at 0 &lt; motion &lt; 1, 0 (a cut) at Off.</summary>
++    static float Blend(ShotHandle shot, float seconds, float motion)
++    {
++        if (!shot.spec.fullPose) return seconds;
++        if (motion <= 0f) return 0f;
++        return motion < 1f ? seconds * FrontRoomsShotTimings.Inspect.HalfMotionTimeScale : seconds;
++    }
++
++    /// <summary>One Sine shot's weights (C17b). True when it has ended.</summary>
++    static bool TickSine(ShotHandle shot, float dt, float motion)
++    {
++        if (!shot.ending)
++        {
++            var blendIn = Blend(shot, shot.spec.blendIn, motion);
++            shot.weight = blendIn > 0f ? Mathf.MoveTowards(shot.weight, 1f, dt / blendIn) : 1f;
++            shot.rotWeight = shot.weight;
++            shot.eased = shot.rotEased = SineIn(shot.weight);
++            return false;
++        }
++        if (!shot.outStarted)
++        {
++            // The return starts from the pulls the camera has now (an early exit returns from where it is).
++            shot.outStarted = true;
++            shot.outPull = shot.eased;
++            shot.outRotPull = shot.rotEased;
++            shot.weight = shot.rotWeight = 1f;
++        }
++        var outPos = Blend(shot, shot.blendOut, motion);
++        var outRot = Blend(shot, shot.rotBlendOut > 0f ? shot.rotBlendOut : shot.blendOut, motion);
++        shot.weight = outPos > 0f ? Mathf.MoveTowards(shot.weight, 0f, dt / outPos) : 0f;
++        shot.rotWeight = outRot > 0f ? Mathf.MoveTowards(shot.rotWeight, 0f, dt / outRot) : 0f;
++        var onset = FrontRoomsShotTimings.Inspect.OutOnset;
++        shot.eased = shot.outPull * SineOutOnset(shot.weight, outPos > 0f ? onset / outPos : 0f);
++        shot.rotEased = shot.outRotPull * SineOutOnset(shot.rotWeight, outRot > 0f ? onset / outRot : 0f);
++        return shot.weight <= 0f && shot.rotWeight <= 0f;
++    }
+ }
+--- a/Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
++++ b/Assets/Scripts/FrontRoomsShots/FrontRoomsShotTimings.cs
+@@ -166,6 +166,25 @@
+         public const float RevealHold = .3f;           // the Relay holds in the doorway, back-lit
+     }
+ 
++    // ---- EXAMINE: the close-up inspect shot (visual chat, research/inspect/10_design.md §2-§5, C19). The world is
++    // paused (Phase.Inspect, timeScale 0) from the E press until the camera starts home; every time here runs on the
++    // inspect clock (FrontRoomsInspect.Dt: captureDeltaTime under a harness, else unscaled).
++    public static class Inspect
++    {
++        public const float Reach = 1.6f, ApproachAngle = 60f, ReachHysteresis = .1f, AngleHysteresis = 5f;
++        public const float TravelBase = .30f, TravelPerMetre = .12f, TravelMin = .40f, TravelMax = .55f; // sine in-out
++        public const float BlendOut = .40f;          // position + FOV, sine out (= MinFovChangeSeconds)
++        public const float RotBlendOut = .15f;       // rotation, sine out (glass LookBlendBack precedent)
++        public const float HalfMotionTimeScale = 1.5f;
++        public const float CancelAfter = .2f, Cooldown = .3f;
++        public const float FovFlat = -15f, FovObject = -10f, MinSurface = .15f, MaxRise = .10f, MaxDrop = .55f, MaxYawOff = 25f;
++        public const float ZoomSeconds = .25f, ZoomFovSeconds = .40f, PanSeconds = .12f, TurnSeconds = .08f;
++        public const float BaseLookDeg = 3f, BaseLookSeconds = .12f, ScrollRearm = .2f;
++        public const float OutOnset = 1f / 30f;      // both return legs ramp in over 2 frames (no speed step at the exit)
++        public const float AdaptTau = .6f, AdaptTauCalm = 1.2f;   // the lift's own amounts are look values (FrontRoomsInspectLook)
++        public const float FirstKeyHoldMax = 2.0f, FirstKeyBreakMove = .2f, FirstKeyBreakLookDeg = 2f;
++    }
++
+     // ---- 3.8 Being caught (full input lock; Phase.Dying)
+     public static class Caught
+     {

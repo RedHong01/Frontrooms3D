@@ -1,0 +1,25 @@
+#!/bin/zsh
+# resync.sh <clone> <landing|full>: rsync Red's main into the clone (as mkclone.sh does), then overlay the outlets FIX stage.
+# landing = main + the fix payload (LOD0 kits with the payload's FBX metas, Office scripts, shader, RoomStream) + clean map contract + tests.
+# full    = landing + P-1 LOD kits + the P-4b/P-6 RenderSetup proposal (+ the 5 slot materials) for the after-approval renders.
+set -e
+W=/Users/redwang/FrontRoomsVisualWork; F=$W/outlet_fix; S=$F/stage; C=$1; mode=$2
+M="/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D"
+D="$M/Documentation/research/outlets/data"
+for d in Assets Packages ProjectSettings NativePlugin Tools; do rsync -a --delete --exclude "* [0-9].*" --exclude "* [0-9]" "$M/$d/" "$C/$d/"; done
+$W/venv/bin/python $W/recovery/apply_local_patches.py $C | tail -1
+$W/venv/bin/python $W/tools/install_tools.py $C > /dev/null
+rsync -a $S/common/ $C/
+python3 $W/outlet_int2/roomstream_patch.py "$M/Assets/Scripts/FrontRoomsRoomStream.cs" $C/Assets/Scripts/FrontRoomsRoomStream.cs
+cmp -s "$M/Assets/Scripts/Office/FrontRoomsOfficeKit.cs" $F/orig_main/FrontRoomsOfficeKit.cs || { echo "MAIN OfficeKit moved: re-port"; exit 3; }
+cmp -s "$M/Assets/Resources/Rendering/FrontRoomsSurface.shader" $F/orig/FrontRoomsSurface.shader || { echo "MAIN Surface shader moved: re-merge"; exit 3; }
+python3 $F/contract_patch.py $C/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+if [[ $mode == full ]]; then
+  rsync -a $S/lods/ $C/
+  python3 $F/rendersetup_patch.py $C/Assets/Editor/Rendering/FrontRoomsRenderSetup.cs
+  rsync -a $S/p4b/ $C/
+else
+  rsync -a $S/lod0/ $C/
+  cp $S/landing_meta/*.fbx.meta $C/Assets/Resources/Props/Models/
+fi
+echo "resync $C $mode OK $(date +%H:%M:%S) main $(git -C "$M" rev-parse --short HEAD)"

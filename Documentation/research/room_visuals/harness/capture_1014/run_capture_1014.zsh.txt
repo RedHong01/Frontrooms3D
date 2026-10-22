@@ -1,0 +1,10 @@
+#!/bin/zsh
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_rooms_1008; U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+L=$W/logs; S=$W/rooms_fix/status_1014.txt
+rm -rf $C/Library/ScriptAssemblies $C/Verification/room_visuals
+echo "compile start $(date)" > $S
+$U -batchmode -nographics -quit -projectPath $C -buildTarget OSXUniversal -logFile $L/rooms1014_compile.log
+echo "compile exit $? errors=$(grep -c 'error CS' $L/rooms1014_compile.log) $(date)" >> $S
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRoomVisualsCapture.RunBatch -logFile $L/rooms1014_capture.log
+echo "capture exit $? frames=$(ls $C/Verification/room_visuals/*.png 2>/dev/null | wc -l) $(date)" >> $S
+echo DONE >> $S

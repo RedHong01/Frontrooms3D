@@ -159,7 +159,8 @@
  "tags": [
   "interactable",
   "window",
-  "frame_alu"
+  "frame_alu",
+  "wall_decor"
  ],
  "glassSlab": [
   1.391,
@@ -206,10 +207,10 @@
  "lodDistances": [
   4.0,
   12.0,
-  null
+  0.0
  ],
  "lodRatios": [
-  0.6,
+  0.48,
   0.07
  ],
  "noCollider": true,
@@ -223,12 +224,12 @@
   2.075000047683716,
   0.10499999672174454
  ],
- "triangles": 1088,
+ "triangles": 2190,
  "slots": [
   "Prop_Aluminium",
   "Prop_Rubber"
  ],
- "trianglesLod1": 1064,
+ "trianglesLod1": 1050,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

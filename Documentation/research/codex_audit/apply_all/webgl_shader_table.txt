@@ -1,0 +1,6 @@
+'Universal Render Pipeline/Unlit': offset 15532 PPtr (fileID 4, pathID 694) non-null
+'FrontRooms/ScreenVideo': offset 16320 PPtr (fileID 4, pathID 693) non-null
+'Unlit/Texture': offset 12176 PPtr (fileID 0, pathID 0) NULL
+'Universal Render Pipeline/Lit': offset 15980 PPtr (fileID 4, pathID 695) non-null
+'FrontRooms/Surface': offset 17112 PPtr (fileID 4, pathID 691) non-null
+'FrontRooms/Glass': offset 15792 PPtr (fileID 4, pathID 690) non-null

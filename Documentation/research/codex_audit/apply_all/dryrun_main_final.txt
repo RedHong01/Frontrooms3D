@@ -1,0 +1,26 @@
+codex_audit_all.sh (dry) -> /Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D
+1. bases (/Users/redwang/FrontRoomsVisualWork/apply/codex_audit_all_bases.txt)
+  codex_audit_glass_look: all 4 bases match
+  codex_audit_other_visual: all 1 bases match
+2. kept, never written (/Users/redwang/FrontRoomsVisualWork/apply/codex_audit_all_keep.txt)
+  Assets/Scripts/Media/FrontRoomsScreenVideo.cs.meta unchanged
+  Assets/Resources.meta unchanged
+  Assets/Resources/Rendering/FrontRoomsScreenVideo.shader = as recorded (707084cb0c595912ed0c3162c0e9d84af7820d31)
+  Assets/Resources/Rendering/FrontRoomsScreenVideo.shader.meta unchanged
+  Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs.meta unchanged
+3. payloads (/Users/redwang/FrontRoomsVisualWork/apply/codex_audit_all_payload)
+  all 5 payload files match
+4. actions (members: codex_audit_glass_look codex_audit_other_visual)
+  would: add     Assets/Resources/Media.meta  (sha1 fc192900213d029bff9a4bfe198c6998f2a2f35d, codex_audit_glass_look)
+  would: add     Assets/Resources/Media/CRT_AdSurface.mat.meta  (sha1 0ba14a951d743d1175757534f559ca5e4556ad6a, codex_audit_glass_look)
+  would: add     Assets/Resources/Media/CRT_AdSurface.mat  (sha1 b8d02e1ac65e8e4a5d23415470f694be390f0f5c, codex_audit_glass_look)
+  would: replace Assets/Scripts/Media/FrontRoomsScreenVideo.cs  (sha1 ea0c85cfdda1152266e5e82ebac1878307a9ec23, codex_audit_glass_look)
+  would: backup  main's Assets/Scripts/Media/FrontRoomsScreenVideo.cs -> /Users/redwang/FrontRoomsVisualWork/backup/codex_audit_all_2026-10-14_165945/Assets/Scripts/Media/FrontRoomsScreenVideo.cs
+  would: replace Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs  (sha1 e0b81f363e60a92fbe4825f1be87a14731b91690, codex_audit_other_visual)
+  would: backup  main's Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs -> /Users/redwang/FrontRoomsVisualWork/backup/codex_audit_all_2026-10-14_165945/Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs
+  would: keep    Assets/Scripts/Media/FrontRoomsScreenVideo.cs.meta (never written)
+  would: keep    Assets/Resources.meta (never written)
+  would: keep    Assets/Resources/Rendering/FrontRoomsScreenVideo.shader (never written)
+  would: keep    Assets/Resources/Rendering/FrontRoomsScreenVideo.shader.meta (never written)
+  would: keep    Assets/Scripts/Rendering/GlassRT/FrontRoomsGlassRTSystem.cs.meta (never written)
+DRY RUN OK: every base matches (members to apply: codex_audit_glass_look codex_audit_other_visual); run with --apply to perform the actions above.

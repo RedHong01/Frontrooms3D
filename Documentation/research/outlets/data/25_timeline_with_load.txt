@@ -1,0 +1,96 @@
+prepare start 19:34:58 load { 214.71 156.51 101.21 }
+prepare end 19:35:22 rc=0 load { 236.52 166.43 106.39 }
+capture1 start 19:36:00 load { 223.79 170.66 110.33 }
+capture1 end 19:37:07 rc=0 load { 231.87 185.28 120.69 }
+capture_close2 start 19:41:20 load { 486.99 295.08 181.59 }
+capture_close2 end 19:42:22 rc=0 load { 516.19 341.06 207.23 }
+probe10_lods start 19:43:54 load { 483.52 371.20 232.02 }
+probe10_lods end 19:46:39 rc=0 load { 580.27 460.75 293.60 }
+prepare_l1 start 19:47:22 load { 512.94 459.83 301.88 }
+prepare_l1 end 19:47:45 rc=0 load { 471.92 453.85 303.40 }
+capture_l1 start 19:47:45 load { 471.92 453.85 303.40 }
+capture_l1 end 19:48:06 rc=0 load { 458.71 451.85 306.17 }
+prepare_restore start 19:48:06 load { 454.80 451.16 306.78 }
+prepare_restore end 19:48:24 rc=0 load { 446.04 449.43 308.68 }
+prepare2 start 19:53:48 load { 616.17 487.45 365.42 }
+prepare2 end 19:54:22 rc=0 load { 594.16 496.72 373.75 }
+capture2 start 19:54:22 load { 594.16 496.72 373.75 }
+capture2 end 19:56:13 rc=0 load { 422.94 466.59 377.00 }
+probe10_lods2 start 19:56:13 load { 422.94 466.59 377.00 }
+probe10_lods2 end 19:58:05 rc=0 load { 443.79 464.78 387.38 }
+prepare_l1b start 19:58:05 load { 443.79 464.78 387.38 }
+prepare_l1b end 19:58:46 rc=0 load { 419.16 455.60 388.00 }
+capture_l1b start 19:58:46 load { 419.16 455.60 388.00 }
+capture_l1b end 19:59:07 rc=0 load { 417.53 452.60 388.48 }
+prepare_restore2 start 19:59:07 load { 417.53 452.60 388.48 }
+prepare_restore2 end 19:59:38 rc=0 load { 408.16 447.08 388.71 }
+CHAIN_C_DONE 19:59:38
+exitcheck start 20:00:19 load { 374.76 433.80 386.53 }
+exitcheck end 20:00:34 rc=0 load { 347.48 424.89 384.18 }
+probe10 start 19:53:39 load { 597.68 479.59 361.25 }
+probe10 end 19:55:14 rc=0 load { 496.27 485.56 376.66 }
+dressstep_on start 19:55:14 load { 496.27 485.56 376.66 }
+dressstep_on end 19:56:20 rc=0 load { 423.58 466.00 377.31 }
+dressstep_off start 19:56:20 load { 423.58 466.00 377.31 }
+dressstep_off end 19:58:37 rc=0 load { 424.89 457.89 388.00 }
+relaynav_on start 19:58:37 load { 424.89 457.89 388.00 }
+relaynav_on end 19:59:14 rc=0 load { 415.17 451.52 388.48 }
+relaynav_off start 19:59:14 load { 415.17 451.52 388.48 }
+relaynav_off end 19:59:49 rc=0 load { 401.58 444.44 388.45 }
+interaction_on start 19:59:49 load { 401.58 444.44 388.45 }
+interaction_on end 20:00:20 rc=0 load { 374.76 433.80 386.53 }
+interaction_off start 20:00:20 load { 374.76 433.80 386.53 }
+interaction_off end 20:00:38 rc=0 load { 344.23 422.93 383.73 }
+designer_on start 20:00:38 load { 344.23 422.93 383.73 }
+designer_on end 20:00:54 rc=0 load { 308.87 411.29 380.26 }
+designer_off start 20:00:54 load { 308.87 411.29 380.26 }
+designer_off end 20:01:19 rc=0 load { 282.06 396.68 375.89 }
+mapverify_on start 20:01:19 load { 282.06 396.68 375.89 }
+mapverify_on end 20:01:44 rc=0 load { 308.72 393.20 375.20 }
+mapverify_off start 20:01:44 load { 308.72 393.20 375.20 }
+mapverify_off end 20:02:07 rc=0 load { 291.53 382.86 372.02 }
+fixturetick_on start 20:02:07 load { 291.53 382.86 372.02 }
+fixturetick_on end 20:02:25 rc=0 load { 264.21 372.35 368.46 }
+fixturetick_off start 20:02:25 load { 264.21 372.35 368.46 }
+fixturetick_off end 20:02:41 rc=0 load { 241.83 360.10 364.15 }
+capture_tr2 start 20:02:41 load { 241.83 360.10 364.15 }
+capture_tr2 end 20:04:50 rc=0 load { 250.43 324.13 349.34 }
+designer_cap_on start 20:04:50 load { 250.43 324.13 349.34 }
+resync start 16:21:30 load { 31.23 19.75 14.15 }
+main already compiles here (helpers outside the mobile block); nothing to do
+patched /Users/redwang/FrontRoomsVisualWork/proj_outlet_int_t/Assets/Scripts/FrontRoomsRoomStream.cs
+patched (with PROBE) /Users/redwang/FrontRoomsVisualWork/proj_outlet_int_t/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+resync /Users/redwang/FrontRoomsVisualWork/proj_outlet_int_t landing OK 16:21:31 main 0a9ee7f
+unity exitcheck start 16:21:31 load { 31.23 19.75 14.15 }
+unity exitcheck end 16:21:49 rc=0 load { 33.42 20.97 14.71 }
+DONE_1014
+resync start 16:23:41 load { 28.00 23.62 16.57 }
+main already compiles here (helpers outside the mobile block); nothing to do
+patched /Users/redwang/FrontRoomsVisualWork/proj_outlet_int_t/Assets/Scripts/FrontRoomsRoomStream.cs
+patched (with PROBE) /Users/redwang/FrontRoomsVisualWork/proj_outlet_int_t/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+resync /Users/redwang/FrontRoomsVisualWork/proj_outlet_int_t landing OK 16:23:42 main 0a9ee7f
+unity exitcheck start 16:23:42 load { 28.00 23.62 16.57 }
+unity exitcheck end 16:23:56 rc=0 load { 24.45 23.05 16.49 }
+DONE_1014
+probe10 start 16:25:48 load { 33.57 27.33 18.98 }
+probe10 end 16:26:18 rc=0 load { 51.27 32.16 21.02 }
+playtest_on_2554 start 16:26:18 load { 51.27 32.16 21.02 }
+playtest_on_2554 end 16:28:20 rc=1 load { 74.24 53.02 31.16 }
+playtest_off_2554 start 16:28:20 load { 74.24 53.02 31.16 }
+playtest_off_2554 end 16:29:32 rc=1 load { 42.21 49.20 31.53 }
+playtest_on_20388 start 16:29:32 load { 42.21 49.20 31.53 }
+playtest_on_20388 end 16:30:44 rc=0 load { 26.37 42.78 30.58 }
+playtest_off_20388 start 16:30:44 load { 26.37 42.78 30.58 }
+playtest_off_20388 end 16:32:18 rc=0 load { 31.17 41.31 31.34 }
+designer_cap_on start 16:32:18 load { 31.17 41.31 31.34 }
+designer_cap_on end 16:32:39 rc=0 load { 45.51 43.42 32.36 }
+designer_cap_off start 16:32:39 load { 45.51 43.42 32.36 }
+designer_cap_off end 16:32:53 rc=0 load { 42.56 42.87 32.29 }
+probe100 start 16:32:53 load { 42.56 42.87 32.29 }
+probe100 end 16:34:09 rc=0 load { 31.66 40.48 32.40 }
+CHAIN_T4_DONE 16:34:09
+playtest2_on_2554 start 16:34:21 load { 27.63 39.33 32.09 }
+playtest2_on_2554 end 16:36:12 rc=0 load { 122.63 60.67 40.69 }
+playtest2_off_2554 start 16:36:12 load { 122.63 60.67 40.69 }
+playtest2_off_2554 end 16:37:49 rc=0 load { 49.03 52.45 39.68 }
+CHAIN_T5_DONE 16:37:49

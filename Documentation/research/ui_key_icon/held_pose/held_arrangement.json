@@ -1,0 +1,913 @@
+{
+ "schema": "frontrooms.held_key_arrangement/1",
+ "date": "2026-10-14",
+ "owner": "游戏视觉 (visual chat)",
+ "use": "FrontRoomsKeyAssembly.PoseHeld (D1.6): pose.position = the anchor, pose.rotation = this frame. For each part: world = pose.position + pose.rotation * localPosition, rotation = pose.rotation * localRotation (equivalently: parent the three kit roots under a 'Held' child set to the pose and copy these as local values). Kits are the LOD0 sidecar origins: key = shoulder, ring = hook_contact, tag = hole. No scale (1, 1, 1).",
+ "units": {
+  "position": "metres",
+  "localEulerDeg": "Unity localEulerAngles (Quaternion.Euler(x, y, z) = Ry * Rx * Rz)",
+  "localRotation": "Unity Quaternion (x, y, z, w); the authoritative value"
+ },
+ "frame": {
+  "origin": "the anchor (below)",
+  "+Z": "toward the lens (PoseHeld's LookRotation(lens - held, lens.up) forward)",
+  "+Y": "up of the tag number (camera up)",
+  "+X": "the viewer's LEFT (the frame faces the camera); screen right = -X"
+ },
+ "anchor": {
+  "definition": "The point that corresponds to glyph point (36, 24), the centre of the 72 x 48 B glyph (1x px, top-left origin), taken in the plane of the tag's front face. It sits 12.725 mm right of and 8.633 mm below the tag's ring-hole centre on screen (pose X -0.012725, Y -0.008633 from the hole), 2.1 mm in front of the hole's mid-plane.",
+  "glyph_point_px_1x": [
+   36,
+   24
+  ],
+  "glyph_box_px_1x": [
+   72,
+   48
+  ],
+  "glyph_px_per_mm_1x": 0.69,
+  "tag_hole_in_this_frame_m": [
+   0.012725,
+   0.008633,
+   -0.0021
+  ],
+  "glyph_source": "research/ui_key_icon/scripts/design.py.txt lockup_B: ring centre (27.22, 9.97) px, key ring_hole on the ring's right point, tag hole on its bottom, ring R 11.7 mm"
+ },
+ "tag_number_upright": true,
+ "solution": {
+  "key_roll_deg_top_toward_lens": 17.811,
+  "key_yaw_deg_tip_toward_lens": 3.131,
+  "key_inplane_deg": 0.375,
+  "key_in_front_of_tag_mm": 3.229,
+  "ring_plane_normal_z": 0.3964,
+  "ring_ellipse_minor_over_major_front_view": 0.396,
+  "ring_split_spin_sigma_deg": 35.0,
+  "wire_to_hole_axis_deg": {
+   "key": 38.39,
+   "tag": 36.58
+  },
+  "solver_params": {
+   "dz": 3.228870116587662,
+   "chi": 66.20592210960213,
+   "otx": 0.12584680370428042,
+   "oty": -0.43123824000674427,
+   "oky": 0.1643574037735488,
+   "okz": 0.28625310856869335,
+   "roll": 17.811012540035385,
+   "yaw": 3.130532801631666,
+   "spin_k": -0.3746573926097725,
+   "sx": 0.05508699694193722,
+   "sy": 0.2148546903690609,
+   "sigma": 35.0
+  }
+ },
+ "shapes": {
+  "Rect": {
+   "tagKit": "Kit_KeyTag_Rect",
+   "glyph": "B_rect_<red|blue|white>_held",
+   "glyphNumber": "14",
+   "parts": [
+    {
+     "part": "key",
+     "kit": "Kit_Key_Zone",
+     "variants": [
+      "Kit_Key_Zone_Nickel"
+     ],
+     "localPosition": [
+      -0.025498,
+      0.019907,
+      0.00237
+     ],
+     "localEulerDeg": [
+      0.3567,
+      273.0159,
+      342.1886
+     ],
+     "localRotation": [
+      0.108778,
+      -0.679604,
+      -0.110192,
+      0.717052
+     ]
+    },
+    {
+     "part": "ring",
+     "kit": "Kit_KeyRing",
+     "variants": [],
+     "localPosition": [
+      0.000461,
+      0.02477,
+      -0.004402
+     ],
+     "localEulerDeg": [
+      324.2335,
+      60.7522,
+      35.0
+     ],
+     "localRotation": [
+      -0.10795,
+      0.538633,
+      0.394987,
+      0.736347
+     ]
+    },
+    {
+     "part": "tag",
+     "kit": "Kit_KeyTag_Rect",
+     "variants": [
+      "Kit_KeyTag_Rect_Blue",
+      "Kit_KeyTag_Rect_White"
+     ],
+     "localPosition": [
+      0.012725,
+      0.008633,
+      -0.0021
+     ],
+     "localEulerDeg": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "localRotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    }
+   ],
+   "points_m": {
+    "key_ring_hole": [
+     0.00097,
+     0.020548,
+     0.001129
+    ],
+    "key_grip": [
+     -0.007519,
+     0.020495,
+     0.001576
+    ],
+    "key_shoulder": [
+     -0.025498,
+     0.019907,
+     0.00237
+    ],
+    "key_tip": [
+     -0.050463,
+     0.019752,
+     0.003686
+    ],
+    "tag_hole": [
+     0.012725,
+     0.008633,
+     -0.0021
+    ],
+    "tag_number": [
+     0.012725,
+     -0.010367,
+     -0.00075
+    ],
+    "ring_centre": [
+     0.008069,
+     0.017525,
+     -0.007307
+    ],
+    "ring_normal_unit": [
+     0.707964,
+     0.584483,
+     0.396443
+    ],
+    "wire_point_in_tag_hole": [
+     0.01285,
+     0.008202,
+     -0.0021
+    ],
+    "wire_point_in_key_hole": [
+     0.000685,
+     0.020703,
+     0.001194
+    ],
+    "wire_tangent_at_tag_unit": [
+     0.576017,
+     -0.153065,
+     -0.802979
+    ],
+    "wire_tangent_at_key_unit": [
+     0.317004,
+     -0.764598,
+     0.561158
+    ]
+   },
+   "checks": {
+    "overlaps_from_this_json": {
+     "ring_key": 0,
+     "ring_tag": 0,
+     "key_tag": 0
+    },
+    "overlaps_ring_inflated_0.10mm": {
+     "ring_key": 0,
+     "ring_tag": 0
+    },
+    "overlaps_ring_inflated_0.15mm": {
+     "ring_key": 10,
+     "ring_tag": 8
+    },
+    "min_gap_mm_approx": {
+     "ring_key": 0.193,
+     "ring_tag": 0.21,
+     "key_tag": 1.647
+    },
+    "ring_through_key_hole": true,
+    "ring_through_tag_hole": true,
+    "wire_to_hole_axis_deg": {
+     "key": 38.39,
+     "tag": 36.58
+    },
+    "sway_safe_deg": {
+     "wire": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 11,
+       "first_contact": "key"
+      }
+     },
+     "poseZ": {
+      "neg": {
+       "safe_deg": 8,
+       "first_contact": "key"
+      },
+      "pos": {
+       "safe_deg": 30,
+       "first_contact": null
+      }
+     },
+     "poseX": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 15,
+       "first_contact": "ring"
+      }
+     }
+    }
+   },
+   "depth_m_rel_anchor_plane": {
+    "key": [
+     -0.00374,
+     0.00689
+    ],
+    "ring": [
+     -0.01914,
+     0.00452
+    ],
+    "tag": [
+     -0.0042,
+     0.0
+    ]
+   },
+   "front_view_vs_glyph": {
+    "px_per_mm": 6.9,
+    "screen_axes": "x right, y up, mm from the anchor (orthographic front view)",
+    "silhouette_iou": 0.9122,
+    "silhouette_xor_mm2": 246.1,
+    "parts": {
+     "key": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -7.54,
+       7.83,
+       50.58,
+       33.19
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -7.25,
+       7.25,
+       50.72,
+       33.33
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       -0.29,
+       -0.145,
+       -0.145,
+       0.58
+      ],
+      "visible_iou": 0.8727
+     },
+     "tag": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -41.16,
+       -24.93,
+       15.8,
+       14.06
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -41.16,
+       -24.93,
+       15.8,
+       14.06
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "visible_iou": 0.9918
+     },
+     "ring": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -17.54,
+       6.81,
+       0.87,
+       25.94
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -25.36,
+       7.97,
+       -1.01,
+       32.9
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       7.826,
+       1.884,
+       -6.957,
+       -1.159
+      ],
+      "visible_iou": 0.0049
+     }
+    }
+   }
+  },
+  "Round": {
+   "tagKit": "Kit_KeyTag_Round",
+   "glyph": "B_round_<red|blue|white>_held",
+   "glyphNumber": "37",
+   "parts": [
+    {
+     "part": "key",
+     "kit": "Kit_Key_Zone",
+     "variants": [
+      "Kit_Key_Zone_Nickel"
+     ],
+     "localPosition": [
+      -0.025498,
+      0.019907,
+      0.00237
+     ],
+     "localEulerDeg": [
+      0.3567,
+      273.0159,
+      342.1886
+     ],
+     "localRotation": [
+      0.108778,
+      -0.679604,
+      -0.110192,
+      0.717052
+     ]
+    },
+    {
+     "part": "ring",
+     "kit": "Kit_KeyRing",
+     "variants": [],
+     "localPosition": [
+      0.000461,
+      0.02477,
+      -0.004402
+     ],
+     "localEulerDeg": [
+      324.2335,
+      60.7522,
+      35.0
+     ],
+     "localRotation": [
+      -0.10795,
+      0.538633,
+      0.394987,
+      0.736347
+     ]
+    },
+    {
+     "part": "tag",
+     "kit": "Kit_KeyTag_Round",
+     "variants": [
+      "Kit_KeyTag_Round_Blue",
+      "Kit_KeyTag_Round_White"
+     ],
+     "localPosition": [
+      0.012725,
+      0.008633,
+      -0.0021
+     ],
+     "localEulerDeg": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "localRotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    }
+   ],
+   "points_m": {
+    "key_ring_hole": [
+     0.00097,
+     0.020548,
+     0.001129
+    ],
+    "key_grip": [
+     -0.007519,
+     0.020495,
+     0.001576
+    ],
+    "key_shoulder": [
+     -0.025498,
+     0.019907,
+     0.00237
+    ],
+    "key_tip": [
+     -0.050463,
+     0.019752,
+     0.003686
+    ],
+    "tag_hole": [
+     0.012725,
+     0.008633,
+     -0.0021
+    ],
+    "tag_number": [
+     0.012725,
+     -0.014867,
+     -0.00075
+    ],
+    "ring_centre": [
+     0.008069,
+     0.017525,
+     -0.007307
+    ],
+    "ring_normal_unit": [
+     0.707964,
+     0.584483,
+     0.396443
+    ],
+    "wire_point_in_tag_hole": [
+     0.01285,
+     0.008202,
+     -0.0021
+    ],
+    "wire_point_in_key_hole": [
+     0.000685,
+     0.020703,
+     0.001194
+    ],
+    "wire_tangent_at_tag_unit": [
+     0.576017,
+     -0.153065,
+     -0.802979
+    ],
+    "wire_tangent_at_key_unit": [
+     0.317004,
+     -0.764598,
+     0.561158
+    ]
+   },
+   "checks": {
+    "overlaps_from_this_json": {
+     "ring_key": 0,
+     "ring_tag": 0,
+     "key_tag": 0
+    },
+    "overlaps_ring_inflated_0.10mm": {
+     "ring_key": 0,
+     "ring_tag": 0
+    },
+    "overlaps_ring_inflated_0.15mm": {
+     "ring_key": 10,
+     "ring_tag": 8
+    },
+    "min_gap_mm_approx": {
+     "ring_key": 0.193,
+     "ring_tag": 0.21,
+     "key_tag": 1.647
+    },
+    "ring_through_key_hole": true,
+    "ring_through_tag_hole": true,
+    "wire_to_hole_axis_deg": {
+     "key": 38.39,
+     "tag": 36.58
+    },
+    "sway_safe_deg": {
+     "wire": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 30,
+       "first_contact": null
+      }
+     },
+     "poseZ": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 30,
+       "first_contact": null
+      }
+     },
+     "poseX": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 15,
+       "first_contact": "ring"
+      }
+     }
+    }
+   },
+   "depth_m_rel_anchor_plane": {
+    "key": [
+     -0.00374,
+     0.00689
+    ],
+    "ring": [
+     -0.01914,
+     0.00452
+    ],
+    "tag": [
+     -0.0042,
+     0.0
+    ]
+   },
+   "front_view_vs_glyph": {
+    "px_per_mm": 6.9,
+    "screen_axes": "x right, y up, mm from the anchor (orthographic front view)",
+    "silhouette_iou": 0.8933,
+    "silhouette_xor_mm2": 245.9,
+    "parts": {
+     "key": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -7.54,
+       7.83,
+       50.58,
+       33.19
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -7.25,
+       7.25,
+       50.72,
+       33.33
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       -0.29,
+       -0.145,
+       -0.145,
+       0.58
+      ],
+      "visible_iou": 0.8727
+     },
+     "tag": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -31.74,
+       -33.91,
+       6.23,
+       14.06
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -31.74,
+       -33.91,
+       6.23,
+       14.06
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "visible_iou": 0.9886
+     },
+     "ring": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -17.54,
+       6.81,
+       0.87,
+       25.94
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -25.36,
+       7.97,
+       -1.01,
+       32.9
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       7.826,
+       1.884,
+       -6.957,
+       -1.159
+      ],
+      "visible_iou": 0.0049
+     }
+    }
+   }
+  },
+  "Long": {
+   "tagKit": "Kit_KeyTag_Long",
+   "glyph": "B_long_<red|blue|white>_held",
+   "glyphNumber": "08",
+   "parts": [
+    {
+     "part": "key",
+     "kit": "Kit_Key_Zone",
+     "variants": [
+      "Kit_Key_Zone_Nickel"
+     ],
+     "localPosition": [
+      -0.025498,
+      0.019907,
+      0.00237
+     ],
+     "localEulerDeg": [
+      0.3567,
+      273.0159,
+      342.1886
+     ],
+     "localRotation": [
+      0.108778,
+      -0.679604,
+      -0.110192,
+      0.717052
+     ]
+    },
+    {
+     "part": "ring",
+     "kit": "Kit_KeyRing",
+     "variants": [],
+     "localPosition": [
+      0.000461,
+      0.02477,
+      -0.004402
+     ],
+     "localEulerDeg": [
+      324.2335,
+      60.7522,
+      35.0
+     ],
+     "localRotation": [
+      -0.10795,
+      0.538633,
+      0.394987,
+      0.736347
+     ]
+    },
+    {
+     "part": "tag",
+     "kit": "Kit_KeyTag_Long",
+     "variants": [
+      "Kit_KeyTag_Long_Blue",
+      "Kit_KeyTag_Long_White"
+     ],
+     "localPosition": [
+      0.012725,
+      0.008633,
+      -0.0021
+     ],
+     "localEulerDeg": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "localRotation": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    }
+   ],
+   "points_m": {
+    "key_ring_hole": [
+     0.00097,
+     0.020548,
+     0.001129
+    ],
+    "key_grip": [
+     -0.007519,
+     0.020495,
+     0.001576
+    ],
+    "key_shoulder": [
+     -0.025498,
+     0.019907,
+     0.00237
+    ],
+    "key_tip": [
+     -0.050463,
+     0.019752,
+     0.003686
+    ],
+    "tag_hole": [
+     0.012725,
+     0.008633,
+     -0.0021
+    ],
+    "tag_number": [
+     0.012725,
+     -0.006867,
+     -0.00075
+    ],
+    "ring_centre": [
+     0.008069,
+     0.017525,
+     -0.007307
+    ],
+    "ring_normal_unit": [
+     0.707964,
+     0.584483,
+     0.396443
+    ],
+    "wire_point_in_tag_hole": [
+     0.01285,
+     0.008202,
+     -0.0021
+    ],
+    "wire_point_in_key_hole": [
+     0.000685,
+     0.020703,
+     0.001194
+    ],
+    "wire_tangent_at_tag_unit": [
+     0.576017,
+     -0.153065,
+     -0.802979
+    ],
+    "wire_tangent_at_key_unit": [
+     0.317004,
+     -0.764598,
+     0.561158
+    ]
+   },
+   "checks": {
+    "overlaps_from_this_json": {
+     "ring_key": 0,
+     "ring_tag": 0,
+     "key_tag": 0
+    },
+    "overlaps_ring_inflated_0.10mm": {
+     "ring_key": 0,
+     "ring_tag": 0
+    },
+    "overlaps_ring_inflated_0.15mm": {
+     "ring_key": 10,
+     "ring_tag": 8
+    },
+    "min_gap_mm_approx": {
+     "ring_key": 0.193,
+     "ring_tag": 0.21,
+     "key_tag": 1.647
+    },
+    "ring_through_key_hole": true,
+    "ring_through_tag_hole": true,
+    "wire_to_hole_axis_deg": {
+     "key": 38.39,
+     "tag": 36.58
+    },
+    "sway_safe_deg": {
+     "wire": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 9,
+       "first_contact": "key"
+      }
+     },
+     "poseZ": {
+      "neg": {
+       "safe_deg": 7,
+       "first_contact": "key"
+      },
+      "pos": {
+       "safe_deg": 30,
+       "first_contact": null
+      }
+     },
+     "poseX": {
+      "neg": {
+       "safe_deg": 30,
+       "first_contact": null
+      },
+      "pos": {
+       "safe_deg": 15,
+       "first_contact": "ring"
+      }
+     }
+    }
+   },
+   "depth_m_rel_anchor_plane": {
+    "key": [
+     -0.00374,
+     0.00689
+    ],
+    "ring": [
+     -0.01914,
+     0.00452
+    ],
+    "tag": [
+     -0.0042,
+     0.0
+    ]
+   },
+   "front_view_vs_glyph": {
+    "px_per_mm": 6.9,
+    "screen_axes": "x right, y up, mm from the anchor (orthographic front view)",
+    "silhouette_iou": 0.9117,
+    "silhouette_xor_mm2": 249.0,
+    "parts": {
+     "key": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -7.54,
+       7.83,
+       50.58,
+       33.19
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -7.25,
+       7.25,
+       50.72,
+       33.33
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       -0.29,
+       -0.145,
+       -0.145,
+       0.58
+      ],
+      "visible_iou": 0.8727
+     },
+     "tag": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -50.72,
+       -17.83,
+       25.22,
+       14.06
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -50.72,
+       -17.83,
+       25.22,
+       14.06
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "visible_iou": 0.9902
+     },
+     "ring": {
+      "bbox_mm_3d_screen_xmin_ymin_xmax_ymax": [
+       -17.54,
+       6.81,
+       0.87,
+       25.94
+      ],
+      "bbox_mm_glyph_screen_xmin_ymin_xmax_ymax": [
+       -25.36,
+       7.97,
+       -1.01,
+       32.9
+      ],
+      "edges_3d_minus_glyph_mm_LRTB": [
+       7.826,
+       1.884,
+       -6.957,
+       -1.159
+      ],
+      "visible_iou": 0.0049
+     }
+    }
+   }
+  }
+ },
+ "sources": [
+  "Assets/Resources/Props/Models/Kit_Key_Zone.json, Kit_KeyRing.json, Kit_KeyTag_{Rect,Round,Long}.json (anchors)",
+  "Assets/Resources/Props/Models/*.fbx (LOD0 meshes, BVH test)",
+  "Documentation/research/ui_key_icon/scripts/design.py.txt (B lockup), design/png/B_*_red_held@1x.png",
+  "Documentation/research/interactables/build_g3_keys_tags_hosts_and_door_signage.md (hung/flat poses, 30 deg twist precedent)",
+  "/Users/redwang/FrontRoomsVisualWork/heldkey/ (solver, BVH checks, renders)"
+ ],
+ "doc": "Documentation/research/ui_key_icon/held_pose/01_layout.md"
+}

@@ -5,70 +5,102 @@ File `0tCbAiVUlrPId3RWd9LRif`, page `2099:76` ("Undergoing Game Projects").
 | | |
 |---|---|
 | Section | **FRONTROOMS · ROOM VISUALS** `2862:6157` |
-| Where it is now | x 25257, y 2000, 8280 × 11240. It was built on 10-08 at 01:42 at x 42617, y 2000 (the spot agreed with 平面视觉). Someone moved it later. The VISUAL VERIFICATION LOG (`2595:6093`) now sits at x 42617. I left it where it is. On 10-08 at 19:4x it overlaps no other section. Below it is DOORS + WINDOWS (`2748:6099`, from y 13920). To its right is HUD KEY (`2532:4038`, x 33937). |
-| Slides | 33 frames, 1920 × 1080, in 9 rows of 4, 2040 px apart in x and 1240 px apart in y. |
-| Grammar | Copied from HUNTER `2331:852`. The running header (Plex Mono, meta only) and page numbers sit in the header. Titles are Bayon at y 139 on the 12-col / 72 / 24 grid. Content starts at y 232. Sentences are Source Serif 4. The file's P1 text styles are used (`P1/Display/Title`, `P1/Display/Label`, `P1/Text/Body`, `P1/Text/Statement`, `P1/Header/Meta`). There is no Inter. Chips sit on the images. There are no captions under images and no source footers. Sources are in `SOURCES.md`. |
-| Images | 135 `img:<file stem>` slots, 92 distinct images. Every slot holds exactly one IMAGE fill (checked 10-08 19:4x). |
-| Placeholders | 3 `media:<key>` frames on RV24, for candidates waiting on Red's download approval. |
+| Where it is | x 25257, y 2000, 8280 × 11240. It was built on 10-08 at x 42617; someone moved it later, and the VISUAL VERIFICATION LOG now stands at x 42617. Checked 10-14 16:3x: it overlaps no section. DOORS + WINDOWS `2748:6099` starts below it at y 13920, and HUD KEY `2532:4038` is to its right at x 33937. |
+| Slides | **34 frames** (RV00–RV33), 1920 × 1080, in rows of 4, 2040 px apart in x and 1240 in y. RV33 (new on 10-14) sits at (2160, 10080) inside the section, so the section did not grow. |
+| Grammar | Copied from HUNTER `2331:852`. The header holds the meta only: Plex Mono, `Week 4 · Oct 14, 2026`, page `n / 34`. Titles are Bayon at y 139 on the 12-col / 72 / 24 grid, and content starts at y 232. Text uses the file's P1 styles (`P1/Display/Title`, `P1/Display/Label`, `P1/Text/Body`, `P1/Text/Statement`, `P1/Header/Meta`); there is no Inter. Chips sit on the images. There are no captions under images, no source lines and no doc paths on cards; sources are in `SOURCES.md`. Statements sit at y 966, so they end at 1008, inside the 72 px bottom margin. |
+| Images | 144 `img:<stem>` slots holding 113 distinct stems. Every slot has exactly one IMAGE fill (checked 10-14), except the two pillarboxed Kane stills (black SOLID under a FIT image, on purpose). |
+| Placeholders | 3 `media:<key>` frames on RV24 (A4, A5, A9). They wait on Red's download approval and carry no file names. |
 
 ## Build history
 
-1. **10-08, 01:42–01:51 (the first attempt).** It built all 33 frames and filled 13 slots by copying images from other sections. It then asked for upload URLs for the next 60 slots. The session ended at the POST step. Those 60 images reached Figma anyway: they were there when I resumed.
-2. **10-08, 19:3x–19:4x (this pass).** I checked all 33 frames against current main (`bc0aa79`). Then:
-   - I uploaded the last 33 images with `upload_assets`: raw JPEG POSTs, all 33 returned HTTP 200 with an imageHash.
-   - I copied each stem's hash into its 29 duplicate slots.
-   - I resized two slots to their images' aspect: `gn_tritium_exit_sign` to 716 × 493 and `q16_b_front` to 349 × 240.
-   - I pillarboxed the two 1514 × 1080 Kane stills: a black fill under the image, set to FIT.
-   - I took a screenshot of every slide and fixed what they showed:
-     - **The ↔ glyph.** It rendered as an emoji box in 4 texts. I replaced it with an en dash.
-     - **RV25.** I cut its lede to 2 lines.
-     - **RV27.** "22 : 1" now stays on one line (no-break spaces).
-     - **RV29.** I moved its bench chip off the bench image's own labels.
-   - I updated the facts that changed since the 7 Oct frames:
-     - **RV06:** Q13 is fixed. A room dresses at 3 ms a frame since `bc0aa79`.
-     - **RV11 and RV21:** the EGRESS placard has been on the start door's map side since 8 Oct (Q16, `bc0aa79`).
-     - **RV02:** the statement now lists the placard.
-     - **RV28 and RV29:** they now carry the House Lights probe caveat. See open points.
+1. **10-08, 01:42–01:51.** First build: 33 frames and 13 slots copied from other sections. The other 60 uploads also landed.
+2. **10-08, 19:3x–19:4x.** The last 33 uploads, the duplicate-slot copies, and a screenshot fix round (the ↔ glyph, RV25, RV27, RV29). Facts were updated to main `bc0aa79`.
+3. **10-14, 16:3x–17:3x (the fix stage, after the critic).** Everything below. Unity and Blender ran (compile 0 errors; Blender 4.3.0). Red's project was not opened in Unity.
+
+## The 10-14 fix pass, by critic point
+
+| # | Verdict | What changed in Figma |
+|---|---|---|
+| H1 floors | **Accepted, re-rendered** | A and C re-rendered with live box probes, one state per run (`21_run_fix_1014.md`, VL236). New frames on RV26, RV28 and RV30. RV29 was rebuilt as a 4 × 2 grid of floor crops (A, B glossy, C, B matte × armed, tripped), with "Per direction", "What we learned" and "In main · later" below. The G14b bench image (baked Arial labels) was removed |
+| H2 index and inventory | **Accepted** | Docs only: dated delta tables in `01_inventory.md` (Δ1–Δ19) and `02_research_index.md` (Δ-A, Δ-B), and the new capture report `05_captures_1007_1014.md`. Figma: the new slide RV33 |
+| H3 doors | **Accepted** | RV10 "Door": single-acting since 3 Oct, 95° to one fixed side in 0.55 s, against stops, latches |
+| H4 Exit strip | **Accepted** | RV16: strip chip, text and KPI removed. The Props text lists the Lobby outlets and the wall EXIT sign, and says the coded strip is never built. KPI "EXIT signs 1". New band image of the wall sign over the far door (`es_i05_after_crop`, 620 × 319) |
+| H5 EXIT merge | **Accepted, re-captured** | Title Run and Exit frames re-captured on main `0a9ee7f` (VL238). New frames on RV00, RV15, RV16, RV17 and RV22. RV15 gets kit-sign facts (LIT 70 / HALF 15 / LOOSE 15 %, red × level, dim letters). RV17 was rebuilt with two in-game frames (the Run kit sign, the Exit wall sign); the "MISSING" chip is gone. RV20's exit_sign card says "in main since 8 Oct". RV01's Exit-sign column is filled for Title Run and Title Exit |
+| M1 chase wave | **Accepted** | RV31 "Why B": "once the game calls its built lamp API" |
+| M2 lamp states | **Accepted** | RV07 new block "Outside the roll": mode 5 Off, module Off, Reduce flashing (0.7 hold, dead never blinks), Dip/Sag/Warn built but not called |
+| M3 CRT ads | **Accepted** | RV06 Props: CRTs play WXRM screen ads since 4 Oct. RV33 card: screens/ and SCREENS `2800:6096` |
+| M4 missing research | **Accepted** | New RV33 "Still more research": landing_audit, cue_driver, dress_hitch, codex_audit, screens / SCREENS 2800:6096, computer_ui, interactables kit in main (10-14), and "UI only, not room visuals" (2532:4038, 3113:6872, 2528:5403, 2889:6157, 2911:6716, 2920:6693) |
+| M5 A is red fill | **Accepted (labelled)** | RV26 chip "Pre-render · red-fill control"; the Measured text states the conflict with RV23 and rule 1 and the +3.2 EV hack |
+| M6 Relay size | **Accepted, re-measured** | RV26 / RV27 / RV28 c4 slots show the 2.05 m stand-in with its ratio. RV30's last column shows the 2.05 m Relay. RV31's table gives proxy / 2.05 m: A 6.3 / 3.0, B 8.1 / 7.7, C 4.4 / 9.4 (VL237) |
+| M7 C's red flashers, plain lites | **Accepted (stated)** | RV28 Light: "red breaks rule 4"; Measured: "the lites are plain glass, not 1990 wired glass" |
+| M8 no sprint pass | **Accepted (stated)** | RV31 bottom line: "Not yet checked in any: a 5.5 m/s sprint pass, reset, the stage-1 warning, a Relay pushing a door, WebGL" |
+| M9 RV24 media | **Partly accepted** | File names and sizes were removed from the three placeholders (they live in `media_candidates.md`); each now says what it will show and that it waits on Red. Not replaced with on-disk frames: no on-disk photo shows a real 1990 emergency light, alarm or fire door, and Kane or A24 frames would contradict the slide's "real 1990" claim. `40_for_red.md` asks for A4, A5, A9 and A11 first |
+| M10 units | **Accepted** | RV15 "0.18 sRGB"; Run! slides say "linear" (RV26–RV28, RV31 "Median Y (lin.)"); RV08 already says sRGB |
+| M11 stale frames | **Accepted, re-captured** | Start, Office, Tall and column frames are pixel-identical on main `0a9ee7f` (0.0 % of pixels move), so those slides keep their images. RV00's lede now says 14 Oct. RV11: the placard hangs 15 m into the map, out of these frames |
+| M12 merged EXIT kit in the directions | **Rejected for the pre-renders** | The sign is shared, so it does not change the pick, and the kit's LIT letters are still dim (fix1 not merged). RV31 "Borrow later": the merged EXIT kit over the goal in any direction |
+| L1 baked labels | **Accepted** | RV17's `es_b08_family_lineup` and RV29's G14b bench were replaced or removed. The new card crops on RV33 exclude their sheets' labels |
+| L2 meta lines | **Accepted** | Removed: RV32's "Full rows…" line, RV31's footnote (now the "Not yet checked" line), and "Docs: research/…" on RV18 and RV19. Source and timecode chips on RV22–RV24 now name the content only |
+| L3 density | **Partly accepted** | RV16's empty band now holds the sign image. RV01 stays a matrix: a diagram is the right form for a feed table. RV32 stays text: it lists media that, by definition, is not on disk |
+| L4 margins | **Accepted** | Every statement moved from y 969 to y 966. RV09's KPI "0.35 M" became "35 CM", so it stays inside the margin |
+| L5 ledger | **Accepted** | `SOURCES.md`: the trailers' raw files died with the 10-05 scratchpad wipe (frames survive in `images/`). DD_3_chase is still without a URL: a 10-14 search found no "Enhanced Trailer"; it stays candidate C1 |
+| L6 wallpaper names | **Accepted** | RV13 and RV16: "the WP03 print in the Lobby / cold palette" |
+| L7 placard wording | **Accepted** | RV21: "its legend glows when its own cell's lamp goes dark" |
+| L8 rule 5 | **Accepted (stated)** | RV31: "Rule 5 holds in none"; `40_for_red.md` proposes a shared goal treatment |
+| L9 production gap | **Accepted** | RV29 "In main · later": probe blending and box projection off, no probe keywords in the Surface shader |
+| L10 module rooms | **Rejected for this pass** | No capture seed frames a module room, and adding one needs a harness change. Listed as a follow-up in `40_for_red.md` and `05_captures_1007_1014.md` §2 |
 
 ## Frames
 
-| # | Frame id | Name | What it shows |
+| # | Frame id | Name | What it shows (10-14) |
 |---|---|---|---|
-| 01 | `2862:6158` | RV00 · Every room, today | 15 room types as thumbnails with IN PLAY / NEVER REACHED / missing chips (main `ee5c9bb`, seed 4242, 7 Oct) |
-| 02 | `2862:6240` | RV01 · What feeds each room | Matrix: 15 rooms × 11 research tracks; black square = in the game, outline = proposal |
-| 03 | `2862:6249` | RV02 · Changed since 3 October | 3 Oct vs 7 Oct: wallpaper (WP03 hard edge), window (kit frame + glass), lens (prismatic × 1.5) |
-| 04 | `2862:6276` | RV03 · Level 0 · Standard | Frames, surfaces, ceiling, light, fog / ambient, props, problems, KPIs |
-| 05 | `2862:6303` | RV04 · Level 0 · Low | same layout |
-| 06 | `2862:6330` | RV05 · Level 0 · Tall | same layout |
-| 07 | `2862:6357` | RV06 · Office | same layout |
-| 08 | `2863:6189` | RV07 · Five lamp moods | 5 moods + odds by tier + lens glow rule |
-| 09 | `2863:6226` | RV08 · When a lamp fails | Before / during each fault, with frame means |
-| 10 | `2863:6253` | RV09 · Columns and bulkheads | Rule, sizes, finish, bulkheads, problems |
-| 11 | `2863:6286` | RV10 · Zone borders | Door, window, theme line; links to LEVEL TRANSITIONS `2831:6157` |
-| 12 | `2863:6321` | RV11 · Start rooms | Handoff, the start door, the seam, the placard |
-| 13 | `2863:6356` | RV12 · Title · Lobby | |
-| 14 | `2863:6389` | RV13 · Title · Shift | never reached |
-| 15 | `2864:6157` | RV14 · Title · Office | never reached |
-| 16 | `2864:6186` | RV15 · Title · Run today | never reached; the salmon room |
-| 17 | `2864:6219` | RV16 · Title · Exit | never reached |
-| 18 | `2864:6250` | RV17 · The true Exit | missing; exit-sign track (clone, not merged) and the exit doors on paper |
-| 19 | `2864:6270` | RV18 · Research in Figma | 8 cards linking to sections 2312, 2324, 2349, 2331, 2407, 2397, 2831, 2748 |
-| 20 | `2864:6302` | RV19 · More research in Figma | 7 cards: 2441, 2471, 2528, 2235:735, 2245:8, 2256:8, 2595:6093 |
-| 21 | `2864:6332` | RV20 · Research on disk | 8 cards: office_and_film, interaction_audit, glass, glass/rt, glass/destruction, exit_sign, outlets, door_break |
-| 22 | `2864:6364` | RV21 · More on disk | placard, inspect, webgl, room_visuals; stale top-level specs |
-| 23 | `2865:6157` | RV22 · Run! has no plan | Week 1 clip vs today's Run room; the four old looks |
-| 24 | `2865:6180` | RV23 · What the games do | ETB, Kane × 2, A24, Backrooms 1998, Dark Deception, with measured values |
-| 25 | `2865:6207` | RV24 · What 1990 does | Tritium EXIT, Scandinavian Star, 3 media placeholders, 4 fact blocks |
-| 26 | `2865:6242` | RV25 · Rules for a fair run | Chase numbers, value-only comparison, 7 rules |
-| 27 | `2865:6271` | RV26 · A · Red Ward | Pre-render, light, floor, measured, KPIs |
-| 28 | `2865:6310` | RV27 · B · Emergency Power | same layout |
-| 29 | `2865:6349` | RV28 · C · House Lights | same layout |
-| 30 | `2866:6157` | RV29 · A glossy floor | B matte vs glossy, C waxed, G14b bench; per-direction floor status; RT later |
-| 31 | `2866:6183` | RV30 · Side by side | 3 × 4 grid: from Level 0, armed, tripped, look back |
-| 32 | `2866:6219` | RV31 · My pick | Emergency Power; why; borrow later; 7 questions; metrics table |
-| 33 | `2866:6244` | RV32 · Media to approve | 23 candidates (A1–A12, B1–B5, C1–C4, D1–D2) |
+| 01 | `2862:6158` | RV00 · Every room, today | 15 room types, 14 Oct frames for Title Run and Exit |
+| 02 | `2862:6240` | RV01 · What feeds each room | Matrix; the Exit-sign column is filled for Title Run and Exit |
+| 03 | `2862:6249` | RV02 · Changed since 3 October | 3 Oct vs 7 Oct; statement adds the EXIT kit |
+| 04–07 | `2862:6276`, `6303`, `6330`, `6357` | RV03–RV06 · Level 0 Standard, Low, Tall, Office | RV06 adds the CRT ads |
+| 08 | `2863:6189` | RV07 · Five lamp moods | + "Outside the roll" |
+| 09–12 | `2863:6226`, `6253`, `6286`, `6321` | RV08–RV11 | RV10 single-acting doors; RV11 placard placement |
+| 13–17 | `2863:6356`, `6389`, `2864:6157`, `6186`, `6219` | RV12–RV16 · Title Lobby, Shift, Office, Run, Exit | RV15 and RV16 rebuilt facts |
+| 18 | `2864:6250` | RV17 · The true Exit | Two in-game frames of the merged signs |
+| 19–22 | `2864:6270`, `6302`, `6332`, `6364` | RV18–RV21 · Research | No doc paths; RV19 lists the VL236–238 rows |
+| 23–26 | `2865:6157`, `6180`, `6207`, `6242` | RV22–RV25 · Run! research | Content chips; RV24 placeholders without file names |
+| 27–29 | `2865:6271`, `6310`, `6349` | RV26–RV28 · A, B, C | Probe re-renders, 2.05 m Relay, unit labels |
+| 30 | `2866:6157` | RV29 · A glossy floor | 4 × 2 floor-crop grid |
+| 31 | `2866:6183` | RV30 · Side by side | Probe re-renders, 2.05 m Relay column |
+| 32 | `2866:6219` | RV31 · My pick (Emergency Power) | Proxy / 2.05 m table, gaps line |
+| 33 | `2866:6244` | RV32 · Media to approve | 23 candidates |
+| 34 | `3122:7271` | **RV33 · Still more research** | 8 cards (new) |
 
-## Slot → file
+## Slots changed on 10-14
+
+`DOC` = `Frontrooms3D/Documentation/research/room_visuals/images/`. Every stem below is `DOC/<stem>.jpg`, and every one was uploaded once, with HTTP 200 and an imageHash, then copied to its duplicates.
+
+| Stem | Slots |
+|---|---|
+| `room1014_title-run_wide` | `2862:6226`, `2864:6194`, `2865:6168` |
+| `room1014_title-exit_wide` | `2862:6231`, `2864:6227` |
+| `room1014_title-run_sign` | `2864:6197`, `3122:7241` |
+| `room1014_title-exit_arrival` | `2864:6230` |
+| `es_i05_after_crop` (the AFTER half of `research/exit_sign/images/integrate/es_i05_exit_sign_before_after.jpg`, label cut off) | `3122:7238` (RV16), `3122:7244` (RV17) |
+| `run_dir_red_ward_{s1b,s1a,s2,c4k}_probes` | `2865:6279`+`2866:6199`, `2865:6284`+`2866:6196`, `2865:6287`+`2866:6191`, `2865:6293`+`2866:6202` |
+| `run_dir_emergency_power_c4k` | `2865:6332`, `2866:6210` |
+| `run_dir_house_lights_{s1b,s1a,s2}_probes` | `2865:6357`+`2866:6215`, `2865:6362`+`2866:6214`, `2865:6365`+`2866:6211` |
+| `run_dir_house_lights_c4bk_probes`, `_c4k_probes` | `2865:6371`, `2866:6216` |
+| `run_floor_{a,b,c,b_matte}_{s1a,s1b}` | `3122:7247`, `7250`, `7253`, `7256`, `7259`, `7262`, `7265`, `7268` (RV29, in that order) |
+| `card_cue_driver`, `card_dress_hitch`, `card_crt_ad` (label-free crops of `research/cue_driver/images/cue_ingame_A_corridor_keys.jpg`, `research/dress_hitch/images/dh_merge_lookdev_before_after.jpg`, `research/codex_audit/images/fix_other_visual_v3_crt_crop.jpg`) | `3122:7282`, `3122:7285`, `3122:7291` (RV33) |
+| removed | `img:es_b08_family_lineup` (RV17), `img:run_emergency_power_x_goal_matte`, `img:run_dir_emergency_power_x_goal`, `img:run_dir_house_lights_x2`, `img:11r2_run_cube_per_state` (RV29) |
+| kept as `room1007_*` | every other room frame; the 14 Oct capture of each is pixel-identical (`05_captures_1007_1014.md`) |
+
+Verification slides placed on 10-14 in VISUAL VERIFICATION LOG `2595:6093` (index rows in `Documentation/VERIFICATION_LOG.md`):
+
+| VL | Frame | Check | Verdict | Image slot(s) |
+|---|---|---|---|---|
+| VL236 | `3124:7042` | Probes reach A and C floors | PASS | `3124:7052` `run_fix_v_probes_ac` |
+| VL237 | `3124:7053` | Relay at its true 2.05 m size | PASS B, C / FAIL A | `3124:7063` `run_fix_v_relay_contract` |
+| VL238 | `3124:7064` | Room frames, 7 vs 14 Oct | FINDING | `3124:7074` `room1014_v_changed_frames`, `3124:7075` `room1014_contact_sheet_all` |
+
+The VL section was grown by one row, to 74,480, for these slides; the bounds check found nothing below it. The G14 stage then grew it to 75,720. The cover (`2597:6093`) count matches the section, 242 checks and 685 images, and the N2 legend now reads "VL039–042, 166–195, 236–238 · 16 checks".
+
+## Slot → file, 8 Oct map (still valid except the rows changed above)
 
 `DOC` = `Frontrooms3D/Documentation/research/room_visuals/images/`. A stem with no other path is `DOC/<stem>.jpg`.
 
@@ -176,10 +208,13 @@ File `0tCbAiVUlrPId3RWd9LRif`, page `2099:76` ("Undergoing Game Projects").
 
 When Red approves the batch, upload each file into its frame (or replace the frame with an `img:` slot of the same size) and add its row to `SOURCES.md`.
 
-## Open points
+## Open points (10-14)
 
-1. **The House Lights floor probably shows no probe.** C's three box probes are sized exactly to the corridor's inner faces: 2.84 × 2.9 × 9.16 m, blend 0.25 (`harness/FrontRoomsRunLookdev_house_lights.cs.txt`, lines 999–1002). They are also re-baked and swapped inside one Unity run. Emergency Power found two things (VL195): URP gives a probe zero weight on its own box faces, and a batch run keeps the first probe texture it sees. So C's waxed floor most likely reflects the default cube. Its armed / tripped probe states are probably not real either. This was not re-measured. RV28 and RV29 say so. The fix is to grow the boxes 0.16 m past the shell and render one Unity run per rig state, as B does. Then re-render S1b and X2.
-2. **Red Ward does not meet the 10-03 floor decision.** It uses one corridor cube per state with no box projection (D9), and it has no matte copy. RV26 and RV29 say so.
-3. **The G14b ray-traced path** will add true and second reflections on the waxed floor later. RV29 says so, with the bench numbers.
-4. **The room frames are from 7 Oct** (`ee5c9bb`). Main has moved once since then, to `bc0aa79` on 10-08 at 01:47. That commit added the placard, time-sliced dressing, and changes to the pile, Office kit and kit library. The shells, finishes and lamps are unchanged. The props in the Tall pile and Office frames (RV05, RV06, RV09) may now differ a little. They were not re-captured. The placard is not in RV11's frames.
-5. **No VL row was added.** This pass made no new verification images. The Run! verification rows are VL166–168 (A), VL189–192 (C) and VL194–195 (B).
+1. **Red's picks** wait on RV31 (questions 1–7) and RV32 (the media batch). `40_for_red.md` has the list.
+2. **A fails the Relay bar at 2.05 m** (2.97 : 1). If Red still wants A, its signs' spot cones need to stop lighting the Relay's upper body. One way is lower sign spots with the Relay's head out of the cone. Not tried.
+3. **The probe fix is clone-only.** Production needs probe blending and box projection in the URP asset, the probe keywords in `FrontRoomsSurface.shader`, and one probe set per rig state, toggled and never re-textured. These are visual-owned files and nothing was merged.
+4. **Not rendered in any direction:** a 5.5 m/s sprint pass, reset, the stage-1 warning, a Relay pushing through a door pair, and the WebGL tier.
+5. **The merged EXIT kit's LIT letters are dim** (0.59 × the ceiling; `exit_sign_fix1` `EmissionGain` is not merged). This shows in RV15 and RV17.
+6. **RoomStream's dead Exit-strip branch** (`FrontRoomsRoomStream.cs:1513-1515`) is visual-owned. Delete it, or move the strip into the live branch, in the next RoomStream package.
+7. **No module room is framed** (L10).
+8. **DD_3_chase has no source URL** (L5; candidate C1).

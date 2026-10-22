@@ -1,0 +1,15 @@
+# COV-4 CRT quad leak check (all, 2026-10-14 16:55:40)
+start (empty scene)	quad_meshes_alive 0	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []
+cycle 1: 20 monitors spawned	quad_meshes_alive 1	screens 20	with_surface 20	distinct_meshes_in_use 1	shaders [Universal Render Pipeline/Unlit]
+quad geometry: name 'FrontRooms CRT screen quad', verts [(-0.1400, -0.0950, 0.0000) (0.1400, -0.0950, 0.0000) (0.1400, 0.0950, 0.0000) (-0.1400, 0.0950, 0.0000)], uv [(1.0, 0.0) (0.0, 0.0) (0.0, 1.0) (1.0, 1.0)], tris [0,1,2,0,2,3], normals [(0.00, 0.00, 1.00) (0.00, 0.00, 1.00) (0.00, 0.00, 1.00) (0.00, 0.00, 1.00)], bounds Center: (0.00, 0.00, 0.00), Extents: (0.14, 0.10, 0.00), readable True, local pos (0.0000, 0.2480, 0.1980), collider True
+cycle 1: all destroyed, +2 frames	quad_meshes_alive 1	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []
+cycle 2: 20 monitors spawned	quad_meshes_alive 1	screens 20	with_surface 20	distinct_meshes_in_use 1	shaders [Universal Render Pipeline/Unlit]
+cycle 2: all destroyed, +2 frames	quad_meshes_alive 1	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []
+cycle 3: 20 monitors spawned	quad_meshes_alive 1	screens 20	with_surface 20	distinct_meshes_in_use 1	shaders [Universal Render Pipeline/Unlit]
+cycle 3: all destroyed, +2 frames	quad_meshes_alive 1	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []
+two sizes live (0.28x0.19 + 0.30x0.20)	quad_meshes_alive 2	screens 2	with_surface 2	distinct_meshes_in_use 2	shaders [Universal Render Pipeline/Unlit]
+two sizes destroyed, +2 frames	quad_meshes_alive 2	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []
+after Resources.UnloadUnusedAssets	quad_meshes_alive 2	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []
+one monitor spawned after the unload (rebuilt quad)	quad_meshes_alive 2	screens 1	with_surface 1	distinct_meshes_in_use 1	shaders [Universal Render Pipeline/Unlit]
+quad geometry: name 'FrontRooms CRT screen quad', verts [(-0.1400, -0.0950, 0.0000) (0.1400, -0.0950, 0.0000) (0.1400, 0.0950, 0.0000) (-0.1400, 0.0950, 0.0000)], uv [(1.0, 0.0) (0.0, 0.0) (0.0, 1.0) (1.0, 1.0)], tris [0,1,2,0,2,3], normals [(0.00, 0.00, 1.00) (0.00, 0.00, 1.00) (0.00, 0.00, 1.00) (0.00, 0.00, 1.00)], bounds Center: (0.00, 0.00, 0.00), Extents: (0.14, 0.10, 0.00), readable True, local pos (0.0000, 0.2480, 0.1980), collider True
+end	quad_meshes_alive 2	screens 0	with_surface 0	distinct_meshes_in_use 0	shaders []

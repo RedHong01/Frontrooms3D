@@ -1,0 +1,13 @@
+#!/bin/zsh
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_run_house_lights; U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+R=$W/rooms_fix/runs; V=$C/Verification/run_lookdev_house_lights
+run() { tag=$1; shots=$2; shift 2; mkdir -p $R/$tag; S=$(date +%s); echo "$tag start $(date)" >> $R/status_C.txt
+  rm -f $V/*.png $V/lookdev_log.txt
+  $U -batchmode -quit -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsRunLookdev.RunBatch -frGlassRT off -runQuick -runShots $shots "$@" -logFile $R/$tag.log
+  ec=$?; cp $V/*.png $V/*.txt $R/$tag/ 2>/dev/null
+  echo "$tag exit $ec $(( $(date +%s) - S )) s errors=$(grep -c 'error CS' $R/$tag.log) png=$(ls $R/$tag/*.png 2>/dev/null | wc -l)" >> $R/status_C.txt; }
+run C_armed s1a,s2
+run C_tripped s1b,x2
+run C_relay c4,c4b,c4_k,c4b_k
+RUNC_PROBES=0 run C_noprobe s1b
+echo "C ALLDONE $(date)" >> $R/status_C.txt

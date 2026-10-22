@@ -75,3 +75,13 @@ Size per clip: raw HLS segments about 2–6 MB, kept mp4 + GIF + poster about 3�
 | B | P.T.: R3 zoom on the "HELLO" wall text and the bathroom zoom | a full playthrough upload; P.T. is delisted, so no official source | UNVERIFIED |
 | C | Outlast: blue "CONFIDENTIAL" document pickup → notes screen | Red Barrels trailer (2029178) not checked | UNVERIFIED |
 | C | Silent Hill 2 (2001): paper map with James's red marks; a memo screen | the PS2 manual PDF (silenthillmemories.net) for stills; gameplay upload for motion | UNVERIFIED |
+
+## D. Asked again by the fix stage (2026-10-14): the two families the design adopts have no primary frames on disk
+
+The verifier (2026-10-08) found no inspect media anywhere on disk; `Research/week03/` holds only `instagram_promo`, `touch-research` and `wallpaper_cue` (checked 2026-10-14). `02_game_research.md` cites these two families from the browser pane only. Nothing has been downloaded. These are the first files to fetch once Red approves; the rows and URLs are above.
+
+| Order | Family | Row | Why first |
+|---|---|---|---|
+| 1 | Camera goes to the object (`flat`, the placard) | §B `ins_sh2_wall_photo_closeup` (SILENT HILL 2, 368.0–375.0 s) + poster 371.0 | The closest match to Red's ask: a square-on close-up of a framed print. Its time range was stepped in the pane (±0.05 s), but no frame is on disk, so 02's numbers for it stay UNVERIFIED until the clip is cut |
+| 2 | Object comes to the camera (`object`, the key on its tag) | §B `ins_gonehome_door_note_lift` (Gone Home, 20.5–23.5 s) + §A `ins_gonehome_held_paper_1` | The lift timing (≈ 0.25 s) the object path is checked against |
+| 3 | Object comes to the camera, turned | §C RE Village "item get" / Maiden ring examine | Free turn of a 3D key-like object. Age-restricted on YouTube: needs Red's sign-in, so Red fetches it or skips it |

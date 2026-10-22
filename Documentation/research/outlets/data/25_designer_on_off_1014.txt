@@ -1,0 +1,9 @@
+Level Designer CaptureBatch, landing clone, 2026-10-14 16:32 (load 31-46): pixels that change between outlets on and OUTLETS_OFF=1
+designer-L0_WaitingRoom_4x3-eye.png      changed    241 px, > 8 levels   185 px, max 111
+designer-L0_WaitingRoom_4x3-plan.png     changed   6880 px, > 8 levels   152 px, max 91
+designer-Low_Storage_2x3-eye.png         changed   1283 px, > 8 levels   755 px, max 79
+designer-Low_Storage_2x3-plan.png        changed   8511 px, > 8 levels   270 px, max 53
+designer-Office_Bullpen_4x4-eye.png      changed   6013 px, > 8 levels   778 px, max 155
+designer-Office_Bullpen_4x4-plan.png     changed  14497 px, > 8 levels   582 px, max 143
+designer-Tall_PillarHall_6x5-eye.png     changed    366 px, > 8 levels   159 px, max 43
+designer-Tall_PillarHall_6x5-plan.png    changed   3717 px, > 8 levels   101 px, max 109

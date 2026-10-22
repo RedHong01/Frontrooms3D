@@ -1,0 +1,34 @@
+seed 2554: 25 sets, 906 fixtures
+D. render seed 2554 box at (-0.08, 0.31, -18.60) (y 0.31), camera 1.0 m out at eye 1.62, horizontal; tiles in view but outside the landing bounds: ; Prop_Aluminium instancing was False
+seed 20388: 25 sets, 921 fixtures
+seed 7: 25 sets, 912 fixtures
+seed 424242: 25 sets, 932 fixtures
+seed 1: 25 sets, 850 fixtures
+seed 2: 25 sets, 879 fixtures
+seed 3: 25 sets, 795 fixtures
+seed 4: 25 sets, 933 fixtures
+seed 5: 25 sets, 878 fixtures
+seed 11: 25 sets, 829 fixtures
+seed 12: 25 sets, 803 fixtures
+seed 13: 25 sets, 737 fixtures
+seed 14: 25 sets, 840 fixtures
+seed 15: 25 sets, 797 fixtures
+seed 101: 25 sets, 886 fixtures
+seed 202: 25 sets, 801 fixtures
+seed 303: 25 sets, 883 fixtures
+seed 404: 25 sets, 919 fixtures
+seed 505: 25 sets, 871 fixtures
+seed 20261001: 25 sets, 863 fixtures
+seed 8: 25 sets, 739 fixtures
+seed 9: 25 sets, 920 fixtures
+seed 10: 25 sets, 826 fixtures
+seed 17: 25 sets, 835 fixtures
+seed 19: 25 sets, 783 fixtures
+A. fixtures by category {archSwitch: 449, column: 43, companion: 770, floorBox: 85, forced: 132, foreignFace: 2040, loneSwitch: 144, movedBackToBack: 1499, podFeed: 86, stage2: 3, wall: 16087}
+A. keep-out hits by category {}
+A. non-architecture collider hits by category (plates hidden by stage 2 skipped) {}
+A. key collider hits by category {}
+B. wall-row desks 29, powered within 2 m 25, of those with a source on the desk's side of every wall 25
+B. pod desks 180, powered within 2 m 133, same side 133
+C. handy boxes 245, (pose, tile) pairs in view and passing R3's CPU test 27264, culled by the landing worldBounds 0, culled by the P-6 bucket bounds 0, poses with a landing gap 0
+E. chunks tested 8, control rebuild diffs 0, diffs with the 8 neighbours dropped 0

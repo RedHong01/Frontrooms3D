@@ -89,6 +89,7 @@
   "Prop_SteelBrown",
   "Prop_Chrome"
  ],
+ "trianglesLod1": 1067,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0008499994874000549,

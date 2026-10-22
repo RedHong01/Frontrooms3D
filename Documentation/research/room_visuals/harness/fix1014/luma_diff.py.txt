@@ -1,0 +1,20 @@
+import os, sys
+import numpy as np
+from PIL import Image
+new, old7, old8, imgdir = sys.argv[1:5]
+def lum(p):
+    a = np.asarray(Image.open(p).convert("RGB").resize((480,270)), dtype=np.float32)/255
+    return a, 0.2126*a[...,0]+0.7152*a[...,1]+0.0722*a[...,2]
+rows=[]
+for f in sorted(os.listdir(new)):
+    if not f.startswith("room1014_") or "contact" in f: continue
+    stem=f[len("room1014_"):-4]
+    a,l=lum(os.path.join(new,f)); v=np.sort(l.ravel()); n=v.size
+    s=f"{stem:34s} mean {l.mean():.3f}  p5 {v[int(n*.05)]:.3f}  p95 {v[int(n*.95)]:.3f}  dark {(l<.08).mean()*100:4.1f}%  RGB ({a[...,0].mean():.2f},{a[...,1].mean():.2f},{a[...,2].mean():.2f})"
+    for tag,dd,pre in (("vs1007",imgdir,"room1007_"),("vs1008",old8,"room1008_")):
+        p=os.path.join(dd,pre+stem+".jpg")
+        if os.path.exists(p):
+            b,lb=lum(p); d=np.abs(a-b).max(axis=2)
+            s+=f"  {tag} changed {(d>0.08).mean()*100:5.1f}%"
+        else: s+=f"  {tag} n/a"
+    print(s)

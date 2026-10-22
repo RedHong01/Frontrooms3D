@@ -1,0 +1,92 @@
+{
+ "p4b/deadab_a_lit_close_2554": {
+  "plateRGB": [
+   165.7,
+   155.6,
+   120.2
+  ],
+  "paperRGB": [
+   126.5,
+   112.6,
+   59.0
+  ],
+  "lumaRatio": 1.389,
+  "plateBR": 0.725,
+  "paperBR": 0.466
+ },
+ "p4b/deadab_b_dead_close_2554": {
+  "plateRGB": [
+   131.2,
+   121.3,
+   86.8
+  ],
+  "paperRGB": [
+   94.3,
+   84.2,
+   39.9
+  ],
+  "lumaRatio": 1.455,
+  "plateBR": 0.661,
+  "paperBR": 0.424
+ },
+ "p4b/deadab_c_patch_close_2554": {
+  "plateRGB": [
+   104.7,
+   98.0,
+   63.8
+  ],
+  "paperRGB": [
+   75.4,
+   67.5,
+   30.7
+  ],
+  "lumaRatio": 1.458,
+  "plateBR": 0.61,
+  "paperBR": 0.407
+ },
+ "l1/deadab_a_lit_close_2554": {
+  "plateRGB": [
+   114.7,
+   102.3,
+   43.3
+  ],
+  "paperRGB": [
+   127.7,
+   113.7,
+   59.7
+  ],
+  "lumaRatio": 0.893,
+  "plateBR": 0.378,
+  "paperBR": 0.468
+ },
+ "l1/deadab_b_dead_close_2554": {
+  "plateRGB": [
+   85.0,
+   76.7,
+   30.6
+  ],
+  "paperRGB": [
+   95.4,
+   85.2,
+   40.5
+  ],
+  "lumaRatio": 0.893,
+  "plateBR": 0.36,
+  "paperBR": 0.425
+ },
+ "l1/deadab_c_patch_close_2554": {
+  "plateRGB": [
+   68.6,
+   61.6,
+   24.4
+  ],
+  "paperRGB": [
+   75.7,
+   67.8,
+   30.9
+  ],
+  "lumaRatio": 0.904,
+  "plateBR": 0.355,
+  "paperBR": 0.408
+ }
+}

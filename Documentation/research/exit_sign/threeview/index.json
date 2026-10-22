@@ -1,7 +1,7 @@
 {
  "schema": "frontrooms.kit-sheets.interactables/1",
- "generated": "2026-10-08T19:56:27-07:00",
- "by": "visual chat (游戏视觉), exit-sign critic follow-up 4 (three-views after the 2026-10-08 merge), for 平面视觉's K-sheets",
+ "generated": "2026-10-14T17:27:20-07:00",
+ "by": "visual chat (游戏视觉), exit-sign critic follow-up 4 (three-views after the 2026-10-08 merge), for 平面视觉's K-sheets; fronts and perspectives re-rendered by exit_sign_fix1 (2026-10-14) after its diffuser change",
  "figma": {
   "file": "0tCbAiVUlrPId3RWd9LRif",
   "page": "2099:76",
@@ -10,12 +10,12 @@
   "supersedes": "the exit_sign sheet in research/interactables/threeview/index.json (G3 Kit_ExitSign/_Dead of 2026-10-03, flagged pending there)"
  },
  "source": {
-  "models": "the 8 Kit_ExitSign* kits as merged in main 2026-10-08 19:40 (W/apply/exit_sign.sh, MANIFEST OK; main bc0aa79 + working tree). FBX and sidecar sha1 in the render clone equal main's",
-  "renderClone": "W/proj_es_tv (mkclone.sh 2026-10-08 19:44, compiled OSXUniversal, 0 errors; moved to W/_partial/proj_es_tv after the run)",
+  "models": "the 8 Kit_ExitSign* kits as merged in main 2026-10-08 19:40 (W/apply/exit_sign.sh); FBX equal main's (0a9ee7f + working tree, 2026-10-14). Materials ExitSign_Diffuser(+_Dead) and the 4 hanging sidecars (minCeiling only) = the exit_sign_fix1 payload (W/apply/exit_sign_fix1.sh)",
+  "renderClone": "W/proj_es_fix1 (re-synced from main 0a9ee7f + working tree 2026-10-14 16:28, + the exit_sign_fix1 payload; compiled OSXUniversal, 0 errors)",
   "renderer": "W/tools FrontRoomsThreeView (interactables version), Unity 6000.3.10f1",
-  "command": "Unity -batchmode -buildTarget OSXUniversal -projectPath W/proj_es_tv -executeMethod FrontRoomsThreeView.RunBatch -quit -threeViewOut W/es_tv_out/raw -threeViewOnly Kit_ExitSign,Kit_ExitSign_Dead,Kit_ExitSign_Hanging,Kit_ExitSign_Hanging_Dead,Kit_ExitSign_HangingFlush,Kit_ExitSign_HangingFlush_Dead,Kit_ExitSign_End,Kit_ExitSign_End_Dead -threeViewYaw Kit_ExitSign_End=-90,Kit_ExitSign_End_Dead=-90 -frGlassRT off",
-  "log": "W/logs/es_tv_render.log",
-  "builder": "W/es_tv_out/build_index_es.py",
+  "command": "Unity -batchmode -buildTarget OSXUniversal -projectPath W/proj_es_fix1 -executeMethod FrontRoomsThreeView.RunBatch -quit -threeViewOut W/es_fix1/r2/threeview/raw -threeViewOnly Kit_ExitSign,Kit_ExitSign_Dead,Kit_ExitSign_Hanging,Kit_ExitSign_Hanging_Dead,Kit_ExitSign_HangingFlush,Kit_ExitSign_HangingFlush_Dead,Kit_ExitSign_End,Kit_ExitSign_End_Dead -threeViewYaw Kit_ExitSign_End=-90,Kit_ExitSign_End_Dead=-90 -frGlassRT off",
+  "log": "W/es_fix1/r2/logs/tv01_threeview.log (10-08 set: W/logs/es_tv_render.log)",
+  "builder": "W/es_fix1/r2/tools/build_index_es_fix1.py (from W/es_tv_out/build_index_es.py)",
   "manifest": "png/manifest.json"
  },
  "conventions": {
@@ -35,7 +35,7 @@
   "groundLine": "Part-frame kits: drawn about their origin, not on a floor. Wall and end: the PNG bottom (less padding) is the housing bottom. Hanging and flush: the PNG top (less padding) is the ceiling plane, the sign hangs below it. aboveFloor_m = the bottom's height in the game where the game places the kit, else null",
   "views": "third-angle: front = camera on +Z (the sign face), side = the kit's right (camera on -X), top = from above with the front toward the image bottom, persp = 3/4 hero from the front-left, 22 deg up, 1152 x 864",
   "viewYaw": "-90 on Kit_ExitSign_End(_Dead): its faces are +/-X (a flag mount), so it is turned to show the +X face in the front view. The wall plate is then at image left and the sign projects to the right; size_m and dims are in that turned frame (W = projection from the wall)",
-  "litFace": "Lit kits render the diffuser at the material default _LampField (1, 1, 0, 0) = both AC lamps (the LIT temperament, no driver in the studio). The studio camera has no HDR and no post, so the letters clip to a full red (mean #e52f2b). Dead kits use ExitSign_Diffuser_Dead (no emission)",
+  "litFace": "Lit kits render the diffuser at the material default _LampField (1, 1, 0, 0) = both AC lamps (the LIT temperament, no driver in the studio). The studio camera has no HDR and no post, so the letters clip to a full red (mean #e40f08; #e52f2b before exit_sign_fix1). Dead kits use ExitSign_Diffuser_Dead (no emission)",
   "swatchRule": "hex = sRGB of ( linear(mean of the _BaseMap's sRGB pixels) x linear(_BaseColor) ), read from Resources/Surfaces/<slot>.mat in the render clone (interactables/threeview/tools/swatch.py); Prop_Chrome reuses the existing K-sheet hex (equal under the rule). The glow swatch is the emission colour at its peak",
   "eraAxis": {
    "band": [
@@ -53,6 +53,7 @@
   }
  },
  "verification": {
+  "fix1": "VL259 (exit_sign_fix1 re-render: fronts and perspectives, research/exit_sign/images/fix1/es_f08_threeview_fronts.jpg)",
   "vl": "VL220",
   "slide": "2961:6863 (FRONTROOMS · VISUAL VERIFICATION LOG 2595:6093)",
   "image": "research/exit_sign/images/threeview/es_tv_contact.jpg",
@@ -115,8 +116,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -124,8 +125,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -184,7 +185,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   {
    "id": "exit_sign_hanging",
@@ -235,8 +241,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -244,8 +250,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -256,7 +262,7 @@
     }
    ],
    "members": [
-    "Run room: 2 per room at z 3.4 and 9.2 m under the 2.9 m ceiling, housing 2.288–2.500 m; the red point light at the glow anchor (1.96 m) follows the sign's Level",
+    "Run room: 2 per room at z 3.4 and 9.2 m under the 2.9 m ceiling, housing 2.288–2.500 m; the red light at the glow anchor (1.96 m), a spot pointing straight down since exit_sign_fix1, follows the sign's Level",
     "FrontRoomsExitSign deals it LIT 70 % · HALF 15 % · LOOSE 15 %; Reduce flashing holds it steady"
    ],
    "parts": [],
@@ -304,7 +310,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   {
    "id": "exit_sign_hanging_flush",
@@ -355,8 +366,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -364,8 +375,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -424,7 +435,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   {
    "id": "exit_sign_end",
@@ -475,8 +491,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -484,8 +500,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -543,7 +559,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   }
  ],
  "kits": {
@@ -613,8 +634,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -622,8 +643,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -703,7 +724,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   "Kit_ExitSign_Dead": {
    "kit": "Kit_ExitSign_Dead",
@@ -771,8 +797,8 @@
      "name": "ExitSign_Diffuser_Dead",
      "slot": "ExitSign_Diffuser_Dead",
      "label": "Red acrylic, unlit",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; no emission: the letters read as dark red holes (rendered mean #3b0201)"
     },
     {
      "name": "Prop_Chrome",
@@ -924,8 +950,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -933,8 +959,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -1013,7 +1039,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   "Kit_ExitSign_Hanging_Dead": {
    "kit": "Kit_ExitSign_Hanging_Dead",
@@ -1081,8 +1112,8 @@
      "name": "ExitSign_Diffuser_Dead",
      "slot": "ExitSign_Diffuser_Dead",
      "label": "Red acrylic, unlit",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; no emission: the letters read as dark red holes (rendered mean #3b0201)"
     },
     {
      "name": "Prop_Chrome",
@@ -1233,8 +1264,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -1242,8 +1273,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -1322,7 +1353,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   "Kit_ExitSign_HangingFlush_Dead": {
    "kit": "Kit_ExitSign_HangingFlush_Dead",
@@ -1390,8 +1426,8 @@
      "name": "ExitSign_Diffuser_Dead",
      "slot": "ExitSign_Diffuser_Dead",
      "label": "Red acrylic, unlit",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; no emission: the letters read as dark red holes (rendered mean #3b0201)"
     },
     {
      "name": "Prop_Chrome",
@@ -1542,8 +1578,8 @@
      "name": "ExitSign_Diffuser",
      "slot": "ExitSign_Diffuser",
      "label": "Red acrylic diffuser",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; ExitSign_Diffuser_Dead has the same albedo"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; ExitSign_Diffuser_Dead has the same albedo, tint, smoothness and metallic"
     },
     {
      "name": "ExitSign_Diffuser (glow)",
@@ -1551,8 +1587,8 @@
      "label": "Lit letters (lamp glow)",
      "hex": "#ff0d06",
      "emissive": true,
-     "renderedHex": "#e52f2b",
-     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #fa302d). In game the letters pass ACES; their graded colour is 平面视觉's open item (GRAPHIC_VISUAL_TASKS §3f, exit_sign_fix1)"
+     "renderedHex": "#e40f08",
+     "source": "ExitSign_Diffuser.mat _EmissionColor (3.2, 0.013, 0.006) linear, shown at its peak (R = 1); the shader multiplies it by the lamp field (ExitSign_Diffuser_F: letter means E/X/I/T 0.51 / 0.59 / 1 / 0.58, LIT). renderedHex = mean of the lit letters in Kit_ExitSign_front.png (studio, no HDR, no post; median #f40d06). In game the letters pass bloom and ACES: exit_sign_fix1 measured the graded letter body at hue 6.9–8.0°, saturation 0.80–0.83 (lit and dark rooms, 0.3–12 m; research/exit_sign/60_fix1.md §3)"
     },
     {
      "name": "Prop_Chrome",
@@ -1629,7 +1665,12 @@
     ],
     "note": "LOD1 from 5 m and never culled (lodDistances 0 = no further step); LOD2 not built (pipeline P-1)"
    },
-   "pending": "exit_sign_fix1 (agreed with 平面视觉 2026-10-08) may change ExitSign_Diffuser (transmission = the sRGB red primary, letter body back to mid-curve). If it changes the diffuser texture or material, re-render the lit kits' front and persp (same command); the _Dead kits, tops and sides do not change."
+   "colour": {
+    "status": "pass",
+    "note": "exit_sign_fix1 (2026-10-14) changed both diffuser materials (ExitSign_Diffuser, ExitSign_Diffuser_Dead): tint (1, .248, .248), smoothness x 0.3, metallic 1, so the room's light comes back from the sheet red only; the lit kits' and the dead kits' fronts and perspectives were re-rendered, tops and sides are byte-identical. 平面视觉's in-game colour targets of 2026-10-08 pass: letter body hue 6.9–8.0° (bar 0–8), saturation 0.80–0.83 (bar 0.80 dark and close up, 0.60 lit at 3 m), lit-room contrast 0.76–0.78 (bar 0.5)",
+    "report": "research/exit_sign/60_fix1.md §3",
+    "images": "research/exit_sign/images/fix1/"
+   }
   },
   "Kit_ExitSign_End_Dead": {
    "kit": "Kit_ExitSign_End_Dead",
@@ -1697,8 +1738,8 @@
      "name": "ExitSign_Diffuser_Dead",
      "slot": "ExitSign_Diffuser_Dead",
      "label": "Red acrylic, unlit",
-     "hex": "#6c2b27",
-     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 1.0, 1.0] (tint sRGB->linear, product -> sRGB); metallic 0, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 1; no emission: the letters read as dark red holes (rendered mean #562b29)"
+     "hex": "#6c0403",
+     "source": "Resources/Surfaces/ExitSign_Diffuser_Dead.mat: mean of ExitSign_Diffuser_A.png x _BaseColor [1.0, 0.248, 0.248] (tint sRGB->linear, product -> sRGB); metallic 1, smoothness = the _S mask's R (capped at 0.60) x _Smoothness 0.3; no emission: the letters read as dark red holes (rendered mean #3b0201)"
     },
     {
      "name": "Prop_Chrome",

@@ -1,0 +1,152 @@
+"""Direction C rework (C2): shared constants and fields, imported by the generator (drywall.py, the
+local venv) and by the Blender scene (scene2.py). numpy only.
+
+Door root frame (10_design.md 1.2): Z along the opening (hinge 0 -> latch 1.0), Y up, X toward S
+(the swing side, the player's room in BURST). Blender = (-X, -Z, Y).
+
+The wall build is 21_C_realism_research.md 1.1-1.6, default (a):
+  1/2 in gypsum board (12.7 mm) on 2x6 kiln-dried studs (38.1 x 139.7 mm) at 16 in (406.4 mm),
+  the board hung horizontally (long edges horizontal, joint at Y 1.68 on both faces), notched
+  round the opening (layout L1), screwed at 406 mm on the framing, paper-backed vinyl over it.
+The map wall is 0.16 m, so the boards' inner faces are 134.6 mm apart; the 139.7 mm studs are
+drawn 2.55 mm into each board's back (hidden), not shortened.
+"""
+import math
+
+import numpy as np
+
+STAGES = ["S0", "M", "D1", "D2", "FINAL", "S4"]
+SI = {s: i for i, s in enumerate(STAGES)}
+
+WALL = 0.08              # half wall (map 0.16 m)
+BOARD = 0.0127           # 1/2 in board
+PAPER = 0.0004           # face paper + wallpaper skin used for the band rows
+BACKP = 0.0003
+STUD_T = 0.0381          # 2x face
+STUD_D = 0.1397          # 2x6 depth
+OC = 0.4064              # 16 in centres
+CEIL = {"P": 2.4, "S": 2.9}
+TOP = 2.90               # board top (S ceiling = top of the double top plate)
+JOINT_Y = 1.68           # horizontal sheet joint (top sheet 2.90 -> 1.68, 4 ft)
+TAPE_W = 0.0524          # 2-1/16 in paper tape
+SEAM = 0.75              # wallpaper roll (Tools/lookdev gen_surfaces TILE_M)
+
+# rough opening: 1.0 clear + 19 mm jamb + ~6 mm shim each side, head 2.10 + 19 + 11
+RO = (-0.025, 1.025, 2.13)
+JACK = {"L": (-0.0631, -0.025), "R": (1.025, 1.0631)}
+KING = {"L": (-0.1012, -0.0631), "R": (1.0631, 1.1012)}
+HEADER = (2.13, 2.3142)                       # 2x8 on edge, 184.2 mm deep, between the kings
+TOPPLATE = (2.8238, 2.90)                      # double 2x6 flat
+BOTPLATE = (0.0, 0.0381)
+CASING = (-0.075, 1.075, 2.175)                # casing outline (kit)
+
+
+def stud_centres():
+    """Common studs on the 406.4 mm layout from the king centres outward, and the cripples above
+    the header on the same layout."""
+    kl = 0.5 * (KING["L"][0] + KING["L"][1])
+    kr = 0.5 * (KING["R"][0] + KING["R"][1])
+    left = [kl - OC * k for k in (1, 2, 3)]
+    right = [kr + OC * k for k in (1, 2, 3)]
+    cripples = [kl + OC * k for k in (1, 2) if kl + OC * k + STUD_T / 2 < KING["R"][0]]
+    return left, right, cripples
+
+
+STUDS_L, STUDS_R, CRIPPLES = stud_centres()
+
+
+def members():
+    """Framing members as (name, z0, z1, y0, y1) in the wall plane (X spans the stud depth)."""
+    m = []
+    h = STUD_T / 2
+    for s in ("L", "R"):
+        m.append(("jack_" + s, JACK[s][0], JACK[s][1], BOTPLATE[1], HEADER[0]))
+        m.append(("king_" + s, KING[s][0], KING[s][1], BOTPLATE[1], TOPPLATE[0]))
+    for i, z in enumerate(STUDS_L + STUDS_R):
+        m.append(("stud_%d" % i, z - h, z + h, BOTPLATE[1], TOPPLATE[0]))
+    for i, z in enumerate(CRIPPLES):
+        m.append(("cripple_%d" % i, z - h, z + h, HEADER[1], TOPPLATE[0]))
+    return m
+
+
+def stud_lines():
+    """Centre Z of every vertical framing member the board is screwed to, with its Y span."""
+    out = []
+    for nm, z0, z1, y0, y1 in members():
+        out.append((nm, 0.5 * (z0 + z1), y0, y1))
+    return out
+
+
+def sp(stage, steel=False):
+    """Stage parameters (ESTIMATES, cumulative), kept from the C pre-render (scene.py SP_) for the
+    frame and the leaf, so the leaf stays inside its validated collider band; casing pry raised to
+    the research's FINAL 10-30 mm (21 2.8)."""
+    t = {
+        "S0": dict(B=0.0, rack=0.0, lift=0.0, pry=0.0, bow=0.0, dish=0.0, crease=0.0, twist=0.0),
+        "M": dict(B=0.0008, rack=0.0, lift=0.0, pry=0.0, bow=0.0, dish=0.0, crease=0.0, twist=0.0),
+        "D1": dict(B=0.004, rack=0.003, lift=0.002, pry=0.0015, bow=0.008, dish=1.0, crease=0.0, twist=0.004),
+        "D2": dict(B=0.014, rack=0.008, lift=0.005, pry=0.006, bow=0.030, dish=1.35, crease=0.0, twist=0.014),
+        "FINAL": dict(B=0.020, rack=0.010, lift=0.007, pry=0.016, bow=0.036, dish=1.6, crease=0.0, twist=0.018),
+        "S4": dict(B=0.018, rack=0.010, lift=0.007, pry=0.020, bow=0.026, dish=1.6, crease=1.0, twist=0.009),
+    }[stage]
+    d = dict(t)
+    if steel and stage == "FINAL":
+        d["bow"] = 0.031
+    return d
+
+
+def smooth(a, b, x):
+    t = np.clip((np.asarray(x, float) - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def d_cont(Z, Y, B):
+    """The continuous push toward S of the frame and the leaf (scene.py, unchanged: the leaf band
+    was validated with it)."""
+    Z = np.asarray(Z, float)
+    Y = np.asarray(Y, float)
+    g = np.exp(-(np.maximum(0.0, np.abs(Z - 0.5) - 0.62) / 0.42) ** 2)
+    g = g * smooth(-0.95, -0.70, Z) * (1.0 - smooth(2.0, 2.251, Z))
+    h = smooth(0.9, 2.15, Y) * np.where(Y > 2.25, np.exp(-((Y - 2.25) / 0.55) ** 2), 1.0)
+    return B * g * h
+
+
+DOM = (-0.95, 2.05, 0.90, 2.90)       # damage domain on both faces (Z0, Z1, Y0, Y1)
+MAPR = (-0.80, 1.90, 1.05, 2.90)      # wallpaper map region (1 mm texels)
+MPX = 0.001
+
+
+def bay_profile(Z):
+    """0 on a framing member's centre line, 1 mid-bay: the board is held at its fasteners."""
+    Z = np.asarray(Z, float)
+    lines = np.array([0.5 * (KING["L"][0] + JACK["L"][1]), 0.5 * (KING["R"][1] + JACK["R"][0])] + STUDS_L + STUDS_R)
+    d = np.min(np.abs(Z[..., None] - lines), axis=-1)
+    return np.clip(d / 0.17, 0, 1) ** 1.5
+
+
+def wall_field(Z, Y, B):
+    """Out-of-plane move of the board toward S (both faces ride on the framing): the frame's push,
+    held back at the fasteners (studs, top plate) and bulging between them. <= d_cont at the
+    casing edges, so the casing never sinks into the paper. 0 at the domain edges."""
+    Z = np.asarray(Z, float)
+    Y = np.asarray(Y, float)
+    base = d_cont(Z, Y, B)
+    top = 1.0 - smooth(2.60, 2.86, Y) * 0.85
+    side = smooth(DOM[0], DOM[0] + 0.25, Z) * (1 - smooth(DOM[1] - 0.25, DOM[1], Z)) * smooth(DOM[2], DOM[2] + 0.2, Y)
+    return base * (0.55 + 0.45 * bay_profile(Z)) * top * side
+
+
+def srgb_to_lin(c):
+    c = np.asarray(c, float) / 255.0
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+# research 10.1 colours (sRGB)
+COL = {
+    "gypsum": (0xE8, 0xE4, 0xDA), "powder": (0xF2, 0xF0, 0xEA), "face_paper": (0xD8, 0xCF, 0xB8),
+    "plies": (0xA4, 0x97, 0x7F), "back_paper": (0x9A, 0x95, 0x8A), "compound": (0xEC, 0xEB, 0xE6),
+    "taping_compound": (0xE6, 0xE1, 0xD3), "tape": (0xE3, 0xDA, 0xC6), "torn_edge": (0xED, 0xE8, 0xDA),
+    "backing": (0xE7, 0xE2, 0xD3), "sizing": (0xE9, 0xE6, 0xDD), "stud": (0xD6, 0xB9, 0x8A),
+    "stud_aged": (0xC4, 0x9E, 0x66), "screw": (0x2A, 0x2A, 0x2A), "nail": (0x8D, 0x8F, 0x8C),
+    "bead": (0xA7, 0xAB, 0xAA), "raw_walnut": (0x9C, 0x7A, 0x55), "raw_pine": (0xD9, 0xBE, 0x8E),
+}

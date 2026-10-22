@@ -67,6 +67,11 @@ def build(kit):
     kit.anchor("face_dir", U(0, 0, T + 0.10))
     kit.no_collider()
     kit.tag("interactable", "door_sign")
+    # EXAMINE: v1 reads the sign in place (research/inspect/10_design.md §1.3, R5). This is R5's alternative B
+    # (C22: sign only, reach 1.2 m, no zoom: its 17 mm cap already reads), kept as a test-bed block (ship=False).
+    kit.inspect("flat", verb="read", face="face", faceDir="face_dir", size=(W, H), margin=0.08, dist=(0.30, 0),
+                minDist=0.18, maxDist=1.0, reach=1.2, approachAngle=60, box=(U(0, 0, T / 2), kc.U_size(W, H, T)),
+                aimPad=0.02, regions=[{"id": "sign", "rect": [0, 0, 0, 0], "capMm": 17}], sound="plastic", ship=False)
     kc.lod_meta(kit, LOD_DISTANCES, BUDGET)
     kit.meta["signAtlas"] = {"slot": kc.SIGN_SLOT, "cols": 2, "rows": 2, "cells": ["EMPLOYEES ONLY", "STAFF ONLY", "STORAGE", "spare"],
                              "defaultCell": 0, "setCell": "_BaseMap_ST = (1, 1, (n % 2) / 2, -(n // 2) / 2)",

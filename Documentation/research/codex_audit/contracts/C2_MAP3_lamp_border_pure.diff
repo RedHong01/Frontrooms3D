@@ -1,0 +1,35 @@
+diff --git a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+index 9fb01e1..0157d86 100644
+--- a/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
++++ b/Assets/Scripts/FrontRoomsMap/FrontRoomsMapWorld.cs
+@@ -1785,11 +1785,29 @@ public sealed class FrontRoomsMapWorld : MonoBehaviour
+         {
+             var n = k == 0 ? new GridCoord(cell.x + 1, cell.y) : k == 1 ? new GridCoord(cell.x - 1, cell.y) : k == 2 ? new GridCoord(cell.x, cell.y + 1) : new GridCoord(cell.x, cell.y - 1);
+             borderThemes[k] = Cache.ZoneOf(n).theme;
+-            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : Cache.Edge(cell, n);
++            kinds[k] = InStartArea(n) || InStartArea(cell) ? EdgeKind.Wall : EdgeNoGenerate(cell, n);
+         }
+         return borderThemes;
+     }
+ 
++    // The edge between two side-by-side cells, read without generating a chunk (codex audit MAP-3), so
++    // LampModeOf stays pure and a build reads no neighbour chunk. An edge on a chunk border is a pure
++    // function of the seed (FrontRoomsMapGenerator.BorderEdge; FrontRoomsMapValidator checks that chunks
++    // agree with it across neighbours and shifts). An inner edge comes from its own chunk; if the cache has
++    // not generated that chunk, it reads as Wall (no crossing). Only LampModeOf's prediction for a far cell
++    // meets that case: a chunk being built is always generated, so a build reads what Cache.Edge would.
++    EdgeKind EdgeNoGenerate(GridCoord a, GridCoord b)
++    {
++        if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
++        var east = b.x > a.x;
++        var chunkA = MapGrid.ChunkOf(a);
++        if (chunkA != MapGrid.ChunkOf(b)) return Cache.Generator.BorderEdge(a, east);
++        if (!Cache.TryGetGenerated(chunkA, out var data)) return EdgeKind.Wall;
++        var o = data.Origin;
++        var index = MapGrid.LocalIndex(a.x - o.x, a.y - o.y);
++        return east ? data.east[index] : data.north[index];
++    }
++
+     /// <summary>
+     /// Map lamps near the start area, held dark by the game while the stream
+     /// rooms can be seen: a lamp with no shadow lights straight through the

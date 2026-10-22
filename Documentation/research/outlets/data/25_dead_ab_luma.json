@@ -1,0 +1,23 @@
+[
+ {
+  "state": "a_lit",
+  "label": "lamp as generated",
+  "plateLuma": 155.2,
+  "paperLuma": 111.7,
+  "plateOverPaper": 1.389
+ },
+ {
+  "state": "b_dead",
+  "label": "own lamp dead",
+  "plateLuma": 120.9,
+  "paperLuma": 83.1,
+  "plateOverPaper": 1.455
+ },
+ {
+  "state": "c_patch",
+  "label": "3 lamps dead",
+  "plateLuma": 97.0,
+  "paperLuma": 66.5,
+  "plateOverPaper": 1.458
+ }
+]

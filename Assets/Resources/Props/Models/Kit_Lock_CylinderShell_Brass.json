@@ -78,6 +78,7 @@
   "Prop_PlasticBlack",
   "Prop_Brass"
  ],
+ "trianglesLod1": 2708,
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

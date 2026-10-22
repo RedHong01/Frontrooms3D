@@ -1,0 +1,78 @@
+"""Read-only probe of a saved C2 stage model (never saved back): what V1 sees through the S holes.
+  Blender -b --factory-startup <DB_C2_L0F_burst_S4.blend> --python probe2.py -- <stage json> <out.json>
+Rays from the V1 eye (3.0, 1.62, 0.50) through a grid inside every S hole's core outline (12 mm
+in from the edge); the first hit is sorted by what it is."""
+import json
+import sys
+
+import bpy
+import numpy as np
+from mathutils import Vector
+
+a = sys.argv[sys.argv.index("--") + 1:]
+sj = json.load(open(a[0]))
+OUT = a[1]
+
+
+def B(x, y, z):
+    return Vector((-x, -z, y))
+
+
+def pip(pts, poly):
+    pts = np.asarray(pts)
+    poly = np.asarray(poly)
+    x, y = pts[:, 0][:, None], pts[:, 1][:, None]
+    x0, y0 = poly[:, 0][None], poly[:, 1][None]
+    x1, y1 = np.roll(poly[:, 0], -1)[None], np.roll(poly[:, 1], -1)[None]
+    c = ((y0 > y) != (y1 > y)) & (x < (x1 - x0) * (y - y0) / (y1 - y0 + 1e-15) + x0)
+    return (c.sum(1) % 2) == 1
+
+
+def cat(name):
+    n = name.lower()
+    if n.startswith(("stud", "king", "jack", "header", "cripple", "top plate", "bottom plate")):
+        return "framing"
+    if n.startswith("wall_p"):
+        return "far_board_back"
+    if n.startswith("wall_s"):
+        return "near_board_edge"
+    if n.startswith(("plate_p", "hang_p")):
+        return "far_plates_pushed_in"
+    if n.startswith(("plate_s", "hang_s")):
+        return "near_plates_hanging"
+    if n.startswith("screw"):
+        return "screws"
+    if n.startswith(("flap", "strip")):
+        return "paper"
+    if n.startswith("plenum"):
+        return "plenum"
+    if n.startswith(("tile", "tee", "runner", "wall angle")):
+        return "ceiling_grid"
+    return "other:" + name.split(".")[0][:18]
+
+
+dg = bpy.context.evaluated_depsgraph_get()
+sc = bpy.context.scene
+eye = B(3.0, 1.62, 0.50)
+res = {}
+for h in sj["holes"]:
+    poly = np.asarray(h["rows"]["cf"])
+    lo, hi = poly.min(0), poly.max(0)
+    zs = np.arange(lo[0], hi[0], 0.008)
+    ys = np.arange(lo[1], hi[1], 0.008)
+    P = np.array([(z, y) for z in zs for y in ys])
+    P = P[pip(P, poly)]
+    cnt = {}
+    for z, y in P:
+        tgt = B(0.08, y, z)
+        d = (tgt - eye).normalized()
+        hit, loc, nrm, idx, ob, mw = sc.ray_cast(dg, eye + d * 0.5, d, distance=8.0)
+        k = cat(ob.name) if hit else "through_to_far_room"
+        if hit and k in ("near_board_edge",) and (loc - tgt).length < 0.02:
+            k = "near_board_edge"
+        cnt[k] = cnt.get(k, 0) + 1
+    n = sum(cnt.values())
+    res[h["id"]] = {k: round(v / n, 3) for k, v in sorted(cnt.items(), key=lambda t: -t[1])}
+    res[h["id"]]["rays"] = n
+json.dump(res, open(OUT, "w"), indent=1)
+print(json.dumps(res, indent=1))

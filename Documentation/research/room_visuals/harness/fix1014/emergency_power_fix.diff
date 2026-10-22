@@ -1,0 +1,27 @@
+--- /Users/redwang/FrontRoomsVisualWork/rooms_fix/B_FrontRoomsRunLookdev.before.cs	2026-10-08 20:04:09
++++ /Users/redwang/FrontRoomsVisualWork/proj_run_emergency_power/Assets/Editor/Rendering/FrontRoomsRunLookdev.cs	2026-10-08 20:07:02
+@@ -312,6 +312,8 @@
+             new Shot { name = "c2", t = .20f, eye = new Vector3(0f, 1.62f, 1.5f), look = goal, fov = 72f },
+             new Shot { name = "c3", t = 2f, eye = new Vector3(0f, 1.62f, 12.5f), look = goal, fov = 72f },
+             new Shot { name = "c4", t = 4f, eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, relay = true, id = true },
++            // FIX1 (2026-10-08, room_visuals fix stage): C4 with the contract-size stand-in (the proxy x 1.114: its top 1.84 m -> 2.05 m = RelayHeight, r ~.27)
++            new Shot { name = "c4_k", t = 4f, eye = new Vector3(0f, 1.62f, 23.5f), look = new Vector3(0f, 1.40f, 0f), fov = 72f, relay = true, id = true },
+             // Extra details (not in the brief): the trip-line hardware and the unit from below.
+             new Shot { name = "x_pull", t = -1f, eye = new Vector3(-.4f, 1.62f, 3.6f), look = new Vector3(1.3f, 1.7f, 1.2f), fov = 55f },
+             new Shot { name = "x_goal", t = 3f, eye = new Vector3(-.3f, 1.62f, 21.5f), look = new Vector3(0f, 1.35f, 27f), fov = 60f },
+@@ -365,6 +367,7 @@
+         {
+             if (filter != null && !filter.Contains(s.name)) continue;
+             relay.gameObject.SetActive(s.relay);
++            relay.localScale = s.name.EndsWith("_k") ? Vector3.one * (2.05f / 1.84f) : Vector3.one;   // FIX1 contract-size stand-in: the proxy top (shoulder box) 1.84 m -> 2.05 m = RelayHeight
+             rig.Evaluate(s.t);
+             var shotState = s.t < 0f ? "armed" : rig.MeanHeadLevel(s.t) > 0f ? "tripped" : "none";
+             if (runState != "all" && runState != shotState) Log("WARNING: shot " + s.name + " is " + shotState + " but this run's probes are " + runState);
+@@ -771,6 +774,7 @@
+                 var s = shots.Find(x => x.name == sn);
+                 if (s.name == null) continue;
+                 relay.gameObject.SetActive(s.relay);
++            relay.localScale = s.name.EndsWith("_k") ? Vector3.one * (2.05f / 1.84f) : Vector3.one;   // FIX1 contract-size stand-in: the proxy top (shoulder box) 1.84 m -> 2.05 m = RelayHeight
+                 rig.Evaluate(s.t);
+                 Pose(cam, s);
+                 cam.Render(); cam.Render();

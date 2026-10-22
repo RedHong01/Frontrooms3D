@@ -84,6 +84,7 @@
  "slots": [
   "Prop_Brass"
  ],
+ "trianglesLod1": 1588,
  "frontAxis": "+Z",
  "footprintCentre": [
   0.05449999962002039,

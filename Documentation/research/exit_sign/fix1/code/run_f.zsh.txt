@@ -1,0 +1,9 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 experiment F: last lit-room levers (gain in a lit room, deeper tint, full metallic).
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+DIFF='s50t10m85|0.5||0.798,0.349,0.349|0.85;s30t05m100|0.3||0.735,0.248,0.248|1;s50t05m100|0.5||0.735,0.248,0.248|1;s50t10m70|0.5||0.798,0.349,0.349|0.7'
+LOBBY='lit_s50t10m85_g1.2|lit|1.2|s50t10m85;lit_s50t10m85_g0.8|lit|0.8|s50t10m85;lit_s30t05m100|lit|1|s30t05m100;lit_s50t05m100|lit|1|s50t05m100;lit_s50t10m70|lit|1|s50t10m70'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/f_capture.log \
+  -esfOut $R/f -esfParts lobby -esfDiff "$DIFF" -esfLobby "$LOBBY"
+echo "exit $?" > $R/logs/f_capture.status

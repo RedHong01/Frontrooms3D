@@ -42,6 +42,7 @@
   "exit_device",
   "exit"
  ],
+ "swingClearWorstZ": 0.97664,
  "motion": {
   "type": "static",
   "parent": "Leaf rig",
@@ -84,30 +85,31 @@
  ],
  "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
  "boundsMin": [
-  -0.03862608224153519,
-  -0.05999999865889549,
+  -0.07019999623298645,
+  -0.09000000357627869,
   -1.3783574281944766e-10
  ],
  "boundsMax": [
   0.8386260271072388,
-  0.05999999865889549,
+  0.09000000357627869,
   0.0949999988079071
  ],
- "triangles": 3948,
+ "triangles": 3588,
  "slots": [
   "Prop_Aluminium",
   "Prop_Chrome"
  ],
+ "trianglesLod1": 3588,
  "frontAxis": "+Z",
  "footprintCentre": [
-  0.3999999724328518,
+  0.38421301543712616,
   0.04749999933503568
  ],
  "footprintSize": [
-  0.877252109348774,
+  0.9088260233402252,
   0.09499999894574285
  ],
  "placement": "Floor",
  "service": 0.0,
- "minCeiling": 0.11
+ "minCeiling": 0.14
 }

@@ -1,0 +1,9 @@
+#!/bin/zsh
+# exit_sign_fix1 r2 experiment E: lit Lobby with and without bloom (diagnostic), current and candidate diffusers.
+W=/Users/redwang/FrontRoomsVisualWork; C=$W/proj_es_fix1; R=$W/es_fix1/r2
+U=/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+DIFF='s50t10m85|0.5||0.798,0.349,0.349|0.85;s50t10|0.5||0.798,0.349,0.349|'
+LOBBY='lit_g1|lit|1|cur;lit_s50t10m85|lit|1|s50t10m85;lit_s50t10|lit|1|s50t10;dark_g1|dark|1|cur'
+$U -batchmode -projectPath $C -buildTarget OSXUniversal -executeMethod FrontRoomsExitSignFix1Capture.RunBatch -quit -logFile $R/logs/e_capture.log \
+  -esfOut $R/e -esfParts lobby -esfDiff "$DIFF" -esfLobby "$LOBBY" -esfNoBloom 1
+echo "exit $?" > $R/logs/e_capture.status

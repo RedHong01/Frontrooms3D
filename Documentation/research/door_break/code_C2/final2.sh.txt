@@ -1,0 +1,23 @@
+#!/bin/zsh
+# C2 finals: 1920x1080, 256 spp, OIDN. PNG to rework/renders/final, JPG q85 to the docs (db_C2_*), stage
+# models to rework/models (DB_C2_*.blend).   usage: final2.sh "<member> <case> <stage> <jobs> [args]" ...
+RW=/Users/redwang/FrontRoomsVisualWork/door_break/C/rework
+OUT=$RW/renders/final
+DOC="/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Documentation/research/door_break/images"
+mkdir -p $OUT "$DOC" $RW/models
+for spec in "$@"; do
+  parts=(${=spec})
+  log=$RW/logs/f_${parts[1]}_${parts[2]}_${parts[3]}.log
+  t0=$(date +%s)
+  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python $RW/scripts/scene2.py -- --member ${parts[1]} --case ${parts[2]} --stage ${parts[3]} --jobs ${parts[4]} --res 1920x1080 --spp 256 --out $OUT --kopt FULL --models $RW/models ${parts[5,-1]} > $log 2>&1
+  t1=$(date +%s)
+  grep -E "Traceback|Error:" $log | head -3
+  for f in $(grep -o "wrote [^ ]*" $log | awk '{print $2}'); do
+    /Users/redwang/FrontRoomsVisualWork/door_break/C/py -c "from PIL import Image; import sys; Image.open(sys.argv[1]).convert('RGB').save(sys.argv[2], quality=85)" $OUT/$f "$DOC/${f%.png}.jpg"
+    echo "$(date +%H:%M) ${parts[1]} ${parts[2]} ${parts[3]} -> ${f%.png}.jpg"
+  done
+  grep -o '"opening_violations": {[^}]*}' $log | head -1
+  grep -o '"leaf_X_range": \[[^]]*\]' $log | head -1
+  echo "$(date +%H:%M) run ${parts[1]}_${parts[2]}_${parts[3]} took $((t1 - t0)) s"
+done
+echo ALLDONE

@@ -61,9 +61,9 @@
   "sheets": 36,
   "newSheets": 35,
   "pngs": 248,
-  "heroes": 32,
+  "heroes": 37,
   "groupHeroes": 4,
-  "proposalSlots": 26,
+  "proposalSlots": 29,
   "pngFix": 72
  },
  "sheets": [
@@ -11640,54 +11640,80 @@
   },
   {
    "file": "heroes/keys_board_hung.png",
-   "alpha": null,
+   "alpha": "heroes/keys_board_hung_alpha.png",
    "group": "keys",
    "groupHero": true,
    "px": [
     1600,
     1200
    ],
-   "note": "Zone key, split ring and red square tag hung on the key board's key_hook (hung pose v2 from the hosts' sidecar hungPose: ring yaw 120, key twist -30, tag twist 150, so the tag hangs on the wall side and the brass key faces the room), on Level 0 wallpaper. Wall fills the frame, so there is no transparent copy.",
+   "note": "Zone key, split ring and red square tag hung on the key board's key_hook (hung pose v2 from the hosts' sidecar hungPose: ring yaw 120, key twist -30, tag twist 150, so the tag hangs on the wall side and the brass key faces the room), on Level 0 wallpaper. The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
    "proposalSlots": [
     "img:KeySet_Rack_persp"
    ]
   },
   {
    "file": "heroes/keys_board_hung_close.png",
-   "alpha": null,
+   "alpha": "heroes/keys_board_hung_close_alpha.png",
    "group": "keys",
    "groupHero": false,
    "px": [
     1600,
     1200
    ],
-   "note": "Close-up of the hung key, ring and tag (hung pose v2: key in front, tag behind). Wall fills the frame, so there is no transparent copy.",
+   "note": "Close-up of the hung key, ring and tag (hung pose v2: key in front, tag behind). The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
    "proposalSlots": []
   },
   {
    "file": "heroes/keys_cabinet_hung.png",
-   "alpha": null,
+   "alpha": "heroes/keys_cabinet_hung_alpha.png",
    "group": "keys",
    "groupHero": false,
    "px": [
     1600,
     1200
    ],
-   "note": "The same assembly in the Office key cabinet (white valet tag) (hung pose v2: key in front, tag behind). Wall fills the frame, so there is no transparent copy.",
+   "note": "The same assembly in the Office key cabinet (white valet tag), hung pose v2. The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
    "proposalSlots": [
     "img:KeySet_Cabinet_persp"
    ]
   },
   {
-   "file": "heroes/keys_hook_hung.png",
-   "alpha": null,
+   "file": "heroes/keys_desk_overedge.png",
+   "alpha": "heroes/keys_desk_overedge_alpha.png",
    "group": "keys",
    "groupHero": false,
    "px": [
     1600,
     1200
    ],
-   "note": "The same assembly on the single brass hook (blue round tag) (hung pose v2: key in front, tag behind). Wall fills the frame, so there is no transparent copy.",
+   "note": "Surface key in the over-edge pose (10_spec.md 4.1; 30_final.md 5.4 rule 3: a key on a surface only in this pose, with Kit_KeyTag_Long): the zone key lies flats-down on the Kit_OfficeDesk top, blade behind the front edge, tip into the desk, only the bow's end 2 mm past the edge; the split ring drops through the bow hole and the red Kit_KeyTag_Long hangs down the front face over the pedestal's top drawer. Office floor and wall behind. Rendered 2026-10-14; feeds img:KeySet_Desk_persp (DW07). The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
+   "proposalSlots": [
+    "img:KeySet_Desk_persp"
+   ]
+  },
+  {
+   "file": "heroes/keys_desk_overedge_wide.png",
+   "alpha": "heroes/keys_desk_overedge_wide_alpha.png",
+   "group": "keys",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "The same over-edge desk key, wider: the desk top, its front edge and the pedestal's drawers and lock. Rendered 2026-10-14. The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
+   "proposalSlots": []
+  },
+  {
+   "file": "heroes/keys_hook_hung.png",
+   "alpha": "heroes/keys_hook_hung_alpha.png",
+   "group": "keys",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "The same assembly on the single brass hook (blue round tag), hung pose v2. The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
    "proposalSlots": [
     "img:KeySet_Hook_persp"
    ]
@@ -11733,6 +11759,20 @@
    "proposalSlots": []
   },
   {
+   "file": "heroes/window_Steel_Enamel_face_a.png",
+   "alpha": "heroes/window_Steel_Enamel_face_a_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    1600,
+    1200
+   ],
+   "note": "Kit_WindowFrame_Steel_Enamel (the white-enamel variant, now a spare with no map member) from face A, 3/4, in the Run wall. This is the 2026-10-08 W-RN render; it feeds the proposal slot img:Kit_WindowFrame_Steel_Enamel_persp.",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Steel_Enamel_persp"
+   ]
+  },
+  {
    "file": "heroes/window_W-EX_face_a.png",
    "alpha": "heroes/window_W-EX_face_a_alpha.png",
    "group": "windows",
@@ -11761,6 +11801,20 @@
    ]
   },
   {
+   "file": "heroes/window_W-L0_stool_close.png",
+   "alpha": "heroes/window_W-L0_stool_close_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    2304,
+    1264
+   ],
+   "note": "W-L0, Kit_WindowFrame_Wood, camera 0.3 m from the lower-right corner as seen from face A (world -X; vertical FOV 40): the through-stool's horn with its returned nosing, the apron under it, the casing landing on the stool and the glazing stop, on Level 0 wallpaper. Rendered 2026-10-14; feeds img:Kit_WindowFrame_Wood_close (DW09). The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Wood_close"
+   ]
+  },
+  {
    "file": "heroes/window_W-OF_face_a.png",
    "alpha": "heroes/window_W-OF_face_a_alpha.png",
    "group": "windows",
@@ -11775,6 +11829,20 @@
    ]
   },
   {
+   "file": "heroes/window_W-OF_stop_close.png",
+   "alpha": "heroes/window_W-OF_stop_close_alpha.png",
+   "group": "windows",
+   "groupHero": false,
+   "px": [
+    2304,
+    1264
+   ],
+   "note": "W-OF, Kit_WindowFrame_Steel, camera 0.3 m from the lower-left corner as seen from face A (world +X), inside the opening (vertical FOV 26): the loose channel stop with two slotted oval-head screws 51 mm from the mitred corner (jamb and sill), the black tape line and the Glass_Window pane. World-space rig for this shot: key from the room side, above and to the right as seen from face A (from -0.45, 0.45, 0.77; intensity 2.0), fill from the room, low left (from 0.30, 0.20, 0.93; 0.5), so face A, the jamb lining and the stops' faces toward the opening are lit. Re-lit 2026-10-14 18:0x (the camera-relative rig had put key and fill behind the wall: 6.4 % of the pixels black, mean luminance 0.22; now 0.34). Rendered 2026-10-14; feeds img:Kit_WindowFrame_Steel_close (DW09). The scene fills the frame, so its _alpha copy is opaque too (same pixels).",
+   "proposalSlots": [
+    "img:Kit_WindowFrame_Steel_close"
+   ]
+  },
+  {
    "file": "heroes/window_W-RN_face_a.png",
    "alpha": "heroes/window_W-RN_face_a_alpha.png",
    "group": "windows",
@@ -11783,10 +11851,8 @@
     1600,
     1200
    ],
-   "note": "Window member W-RN from face A, 3/4, in its wall with a room box behind and the Glass_Window pane.",
-   "proposalSlots": [
-    "img:Kit_WindowFrame_Steel_Enamel_persp"
-   ]
+   "note": "Window member W-RN from face A, 3/4, in the Run wall: Kit_WindowFrame_Steel in dark bronze, matching the Run doors' frames (30_final.md 5.5, critic M2). Re-rendered 2026-10-14.",
+   "proposalSlots": []
   },
   {
    "file": "heroes/windows_lineup_face_a.png",
@@ -11797,7 +11863,7 @@
     4000,
     1100
    ],
-   "note": "The window family from face A, left to right W-L0 wood, W-OF steel + raised mini-blind, W-RN enamel steel, W-EX aluminium, each in its level's wall with a room box behind. The pane is the 6 mm slab drawn with main's Glass_Window (the glass track's material, as FrontRoomsInteractableKit.Window.cs uses it); it is not part of the window kit.",
+   "note": "The window family from face A, left to right W-L0 wood, W-OF steel + raised mini-blind, W-RN dark-bronze steel (the member map of 30_final.md 5.5, critic M2; re-rendered 2026-10-14), W-EX aluminium, each in its level's wall with a room box behind. The pane is the 6 mm slab drawn with main's Glass_Window (the glass track's material, as FrontRoomsInteractableKit.Window.cs uses it); it is not part of the window kit. The 2026-10-08 lineup with the white-enamel W-RN is in heroes/_wrn_enamel_2026-10-08/.",
    "proposalSlots": []
   }
  ],
@@ -12043,6 +12109,18 @@
    "action": "fills PHASE 2 placeholder; delete text 2751:6117"
   },
   {
+   "slide": "DW07",
+   "slot": "img:KeySet_Desk_persp",
+   "node": "2751:6108",
+   "source": "heroes/keys_desk_overedge.png",
+   "flat": "heroes/slots/KeySet_Desk_persp.png",
+   "slotPx": [
+    426,
+    316
+   ],
+   "action": "replaces WIP (G3 flat-desk Blender render, 2026-10-14): the over-edge pose of 30_final.md 5.4 rule 3 on Kit_OfficeDesk; chip 2751:6110"
+  },
+  {
    "slide": "DW08",
    "slot": "img:Kit_WindowFrame_Wood_persp",
    "node": "2751:6127",
@@ -12070,13 +12148,13 @@
    "slide": "DW08",
    "slot": "img:Kit_WindowFrame_Steel_Enamel_persp",
    "node": "2751:6133",
-   "source": "heroes/window_W-RN_face_a.png",
+   "source": "heroes/window_Steel_Enamel_face_a.png",
    "flat": "heroes/slots/Kit_WindowFrame_Steel_Enamel_persp.png",
    "slotPx": [
     426,
     317
    ],
-   "action": "fills PHASE 2 placeholder; delete text 2751:6134"
+   "action": "fills PHASE 2 placeholder; delete text 2751:6134 (source: the 2026-10-08 W-RN render; since 2026-10-14 W-RN itself is the bronze steel frame, 30_final 5.5)"
   },
   {
    "slide": "DW08",
@@ -12103,6 +12181,30 @@
    "action": "fills PHASE 2 placeholder; delete text 2751:6152 (source: fix-pass three-view; geometry = main)"
   },
   {
+   "slide": "DW09",
+   "slot": "img:Kit_WindowFrame_Steel_close",
+   "node": "2751:6245",
+   "source": "heroes/window_W-OF_stop_close.png",
+   "flat": "heroes/slots/Kit_WindowFrame_Steel_close.png",
+   "slotPx": [
+    576,
+    316
+   ],
+   "action": "replaces WIP (Blender 0.3 m screws render, 2026-10-14): W-OF lower-left corner as seen from face A (world +X) at 0.3 m, the loose stop's screws, world-space key from the room side (re-lit 18:0x); chip 2751:6246"
+  },
+  {
+   "slide": "DW09",
+   "slot": "img:Kit_WindowFrame_Wood_close",
+   "node": "2751:6248",
+   "source": "heroes/window_W-L0_stool_close.png",
+   "flat": "heroes/slots/Kit_WindowFrame_Wood_close.png",
+   "slotPx": [
+    576,
+    317
+   ],
+   "action": "replaces WIP (Blender 0.3 m stool render, 2026-10-14): W-L0 lower-right corner as seen from face A (world -X) at 0.3 m, stool horn + apron; chip 2751:6249"
+  },
+  {
    "slide": "DW12",
    "slot": "img:Kit_ExitSign_persp",
    "node": "2753:6293",
@@ -12112,7 +12214,7 @@
     426,
     317
    ],
-   "action": "replaces WIP; source = the exit-sign track's three-view of the kit merged into main 2026-10-08 19:40 (VL220); the 10-03 png/ copy is the old model"
+   "action": "replaces WIP; source = the exit-sign track's three-view of the kit merged into main 2026-10-08 19:40 (VL220); the 10-03 png/ copy is the old model. The source file was rewritten 2026-10-14 17:22 by exit_sign_fix1, which is not in main: re-crop DW12 only after exit_sign_fix1 lands in main"
   }
  ],
  "assets": [
@@ -14185,7 +14287,7 @@
    "manifest": "threeview/handoff_manifest.json (renderer record: px sizes, bounds, viewYaw)"
   },
   "source": {
-   "models": "the 2026-10-08 fix-pass builds in W/proj_int (= the promote payload /Users/redwang/FrontRoomsVisualWork/int_work/fix/payload, 102 files, SHA1SUMS.txt; checked 0 differ). Not in main yet: the interactables merge copies them over main's Kit_* FBX/JSON and keeps main's .meta GUIDs. 7 FBX are content-identical to main (timestamp only). Sidecars/FBX path in the project: Assets/Resources/Props/Models.",
+   "models": "the 2026-10-08 fix-pass builds in W/proj_int (= the promote payload /Users/redwang/FrontRoomsVisualWork/int_work/fix/payload, 102 files, SHA1SUMS.txt; checked 0 differ). In main since 2026-10-14 (W/apply/interactables_kit.sh --apply, MANIFEST OK; main's .meta GUIDs kept): main's Kit_* FBX/JSON equal these, except Kit_DoorFrame_Steel(_Alu).json, which also carry the exit-sign anchor exit_sign_p at Y 2.18 (exit-sign apply, 2026-10-08 19:40). 7 FBX are content-identical to main (timestamp only). Sidecars/FBX path in the project: Assets/Resources/Props/Models.",
    "materials": "Assets/Resources/Surfaces/<slot>.mat (the kit library remaps every FBX slot to it). Missing (P-4, render with the FBX preview colour): Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved.",
    "renderClone": "W/proj_int, synced from main 22bb75f at 2026-10-07 23:56; Surfaces, Shaders and Settings byte-identical to main at render time (01:3x). Main then auto-committed bc0aa79 (01:47): new placard kits and materials and a FrontRoomsKitLibrary refactor; no interactables Kit_* file and none of their slot materials changed.",
    "renderer": "FrontRoomsThreeView (clone version) with -threeViewOversample 1 -threeViewMaxPpm 2000; copy: threeview/FrontRoomsThreeView.handoff.cs.txt"
@@ -14195,6 +14297,11 @@
    "glassFracture": "No fracture, remnant or shard FBX: Red put glass fracture in the glass-destruction tracks (10_spec decision D12, §5.3); the window frames only carry the interface anchors (glass_slab, stop_*, pocket_*, tooth_band_*, floor_a/b).",
    "exitSigns": "Kit_ExitSign and Kit_ExitSign_Dead are the exit-sign track's now; not in this set.",
    "doorwayStuds": "Kit_DoorwayStuds* = the existing K45, unchanged."
+  },
+  "keyUi": {
+   "decision": "Red, 2026-10-14: the HUD key on phone and desktop is direction B, the key on its ring and tag. At a locked door the HUD shows a padlock in the tag's language (the zone tag's shape and colour). A, A + chip and C are process history only.",
+   "figma": "平面视觉: component set 3113:6999 'Lock glyph · B · padlock' (18 variants: Rect/Round/Long x Red/Blue/White x Closed/Open), boards KV11 3113:7000 and KV12 3113:7147, in section 3113:6872 HUD KEY · B · PADLOCK + MOTION; spec research/ui_key_icon/lock_motion/README.md. Motion is in review.",
+   "kitLink": "The B glyph and the padlock body follow the kit's tags: Kit_KeyTag_{Rect,Round,Long} in red (no suffix), _Blue and _White; the locked door's Kit_DoorNumberPlate* carries the same zone colour and number."
   },
   "changedSincePlaced": {
    "Kit_DoorFrame_Wood": [
@@ -14377,7 +14484,7 @@
  "heroesMeta": {
   "rendered": "2026-10-08 19:56-20:00 PDT",
   "by": "visual chat, kit-documentation workflow, render stage",
-  "models": "the interactables fix-pass finals (W/apply/interactables_kit_payload: 52 JSON + 50 FBX, sha1 list interactables_kit_expected.txt) applied with interactables_kit.sh --apply into the clone only (MANIFEST OK), over main bc0aa79 plus its working tree at 19:53 (this includes the exit-sign kit merged 19:40). Red's project still holds the pre-fix kit until the visual chat runs the apply (dry run OK 2026-10-08 19:5x).",
+  "models": "the interactables fix-pass finals (W/apply/interactables_kit_payload: 52 JSON + 50 FBX, sha1 list interactables_kit_expected.txt) applied with interactables_kit.sh --apply into the clone only (MANIFEST OK), over main bc0aa79 plus its working tree at 19:53 (this includes the exit-sign kit merged 19:40). Red's project still holds the pre-fix kit until the visual chat runs the apply (dry run OK 2026-10-08 19:5x). Since 2026-10-14 main holds these exact models (interactables_kit.sh --apply, MANIFEST OK): on 2026-10-14 every Kit_* FBX/JSON of the 57 assets in main was byte-identical to the render clone, and so were Resources/Surfaces and URP Settings.",
   "clone": "W/proj_3view_int (mkclone.sh, main bc0aa79)",
   "renderer": "FrontRoomsInteractableHeroes.RunBatch -heroOut <dir> (copy: FrontRoomsInteractableHeroes.cs.txt here). One change from the 10-04 run: Hang() uses hungPose v2 (ring yaw 120, key twist -30, tag twist 150) instead of v1 (-60, -30, -30). Cameras, framing and sizes are unchanged (see heroes/heroes_log.txt).",
   "groupHeroes": {
@@ -14390,7 +14497,7 @@
    "doors_lineup_pull_face": "071a4fae568d",
    "lock_exploded": "b5db62f5f19a",
    "keys_board_hung": "43e2b29d2218",
-   "windows_lineup_face_a": "8ff33e2e97e8"
+   "windows_lineup_face_a": "af089bd400ce"
   },
   "visibleChanges": [
    "oak (OF-F, EX-F) and ward (RN-F) leaves: grain now runs vertically (was horizontal)",
@@ -14414,6 +14521,49 @@
    "../images/heroes_fix_slots.jpg"
   ],
   "known": "tag inserts and sign faces stay blank (Door_Enamel, Prop_KeyTagNo, Prop_SignEngraved do not exist yet); L0-F veneer stripes come from DoorVeneer_A (to be redrawn); chrome reads bright in this studio light but near black in the game (H1)",
-  "verificationLog": "VL225, frame 2964:6869 (FRONTROOMS · VISUAL VERIFICATION LOG 2595:6093), PASS"
+  "verificationLog": "VL225, frame 2964:6869 (FRONTROOMS · VISUAL VERIFICATION LOG 2595:6093), PASS",
+  "update20261014": {
+   "by": "visual chat, kit-threeview workflow, render stage (resumed after the 2026-10-08 usage-limit stop)",
+   "clone": "W/proj_3view_int re-synced in place from main 0a9ee7f + working tree (rsync, local patches: nothing to do, shared tools + the hung-pose-v2 FrontRoomsInteractableHeroes.cs); Unity 6000.3.10f1 batch compile 0 errors (W/logs/3view_int_compile_1014.log)",
+   "rerendered": "windows only (-heroOnly windows, W/logs/3view_int_heroes_windows_1014.log): W-RN is now Kit_WindowFrame_Steel, the member map of 30_final.md 5.5 (critic M2), not Kit_WindowFrame_Steel_Enamel (10_spec.md line 645). W-L0, W-OF and W-EX re-rendered pixel-identical to the 10-08 files (max channel difference 0), which also shows the 10-08 heroes equal what current main renders.",
+   "replaced": [
+    "heroes/windows_lineup_face_a.png",
+    "heroes/windows_lineup_face_a_alpha.png",
+    "heroes/window_W-RN_face_a.png",
+    "heroes/window_W-RN_face_a_alpha.png"
+   ],
+   "kept": "heroes/window_Steel_Enamel_face_a(_alpha).png = the 10-08 W-RN render (feeds img:Kit_WindowFrame_Steel_Enamel_persp); heroes/_wrn_enamel_2026-10-08/ holds the 10-08 lineup and W-RN files",
+   "checkSheet": "../images/heroes_1014_windows_wrn.jpg",
+   "notes": "heroes/hero_notes.json overrides build_index.py HERO_NOTES (keys hung pose v2, window W-RN)"
+  },
+  "gapClose20261014": {
+   "by": "visual chat, kit-threeview gap close (after the 2026-10-14 check), render in W/proj_3view_int (main 0a9ee7f + working tree, the hero harness)",
+   "rendered": "2026-10-14 17:21, FrontRoomsInteractableHeroes.RunBatch -heroOnly deskkey,windowclose (W/logs/3view_int_gapclose_final2_1014.log); copy FrontRoomsInteractableHeroes.cs.txt",
+   "added": [
+    "heroes/keys_desk_overedge(_alpha).png",
+    "heroes/keys_desk_overedge_wide(_alpha).png",
+    "heroes/window_W-OF_stop_close(_alpha).png",
+    "heroes/window_W-L0_stool_close(_alpha).png"
+   ],
+   "deskKey": "Over-edge pose (10_spec.md 4.1; 30_final.md 5.4 rule 3, critic C2): zone key flats-down on the Kit_OfficeDesk top, tip into the desk yawed 25 deg, bow hole 2 mm past the front edge; Kit_KeyRing hangs from the hole facing the room, bottom 12 deg out; red Kit_KeyTag_Long plumb from tag_contact, face to the room, over the pedestal's top drawer.",
+   "windowCloseUps": "Camera 0.3 m from the subject, 2304 x 1264 (the DW09 slot aspect). Corners as seen from face A (as DW08 shows the windows). W-OF: lower-left corner (world +X) from face A inside the opening, vFOV 26: two slotted oval-head screws 51 mm from the mitre. The first render lit it with the camera-relative rig and keyFromRight (key from the camera's right), which at yaw 147 put key and fill behind the wall; re-lit at 18:0x with a world-space rig (gapCloseFix20261014). W-L0: lower-right corner (world -X), vFOV 40: stool horn, nosing, apron, casing and glazing stop. Outer wall slabs (Shell) close the room box's seams.",
+   "slots": "heroes/slots/KeySet_Desk_persp.png, Kit_WindowFrame_Steel_close.png, Kit_WindowFrame_Wood_close.png by tools/slots.py (3 new PROPOSAL_SLOTS rows). Corrected 2026-10-14 18:0x: this said the 26 earlier crops re-made pixel-identical. A scratch run reproduces 28 of the 29 crops on disk pixel for pixel; Kit_ExitSign_persp differs (max 50/255) because its source ../../exit_sign/threeview/png/Kit_ExitSign_persp.png was rewritten at 17:22 by the exit-sign fix1 work, which is not merged into main. Its crop on disk and the DW12 tile 2753:6293 stay the 2026-10-08 version: re-crop DW12 only after exit_sign_fix1 lands in main.",
+   "alpha": "Every hero entry now lists its _alpha file (the four hung-key heroes said None; their _alpha copies are opaque, the wall fills the frame). tools/build_index.py lists any _alpha that exists; tools/build_assets.py sync_hero_alpha() keeps them listed.",
+   "figma": "Uploaded into 2751:6108, 2751:6245, 2751:6248 (proposal/02_figma.md section P.8)"
+  },
+  "gapCloseFix20261014": {
+   "by": "visual chat, kit-threeview gap close fix (after the verifier's check of the gap close)",
+   "rendered": "2026-10-14 18:0x, FrontRoomsInteractableHeroes.RunBatch -heroOnly windowclose in W/proj_3view_int (log W/logs/3view_int_gapfix_final_1014.log; candidates W/int_work/gap_close_fix/render_explore*/)",
+   "problem": "window_W-OF_stop_close was under-lit: the camera-relative rig with keyFromRight at camera yaw 147 put the key (world z -0.19) and the fill (z -0.09) behind the wall, so no face-A surface took direct light: 6.4 % of the pixels exactly black (7.4 % under luminance 0.02), mean luminance 0.22 (W-L0 close-up 0.33)",
+   "fix": "World-space rig for this shot only (PlaceRig worldKeyFrom/worldFillFrom): key from (-0.45, 0.45, 0.77), intensity 2.0; fill from (0.30, 0.20, 0.93), intensity 0.5; studio otherwise unchanged (ambient 0.55, cube, shadows). Camera unchanged (0.3 m, vFOV 26, yaw 147.26, pitch 33.46)",
+   "measured": "render 2304 x 1264: mean luminance 0.340 (Rec. 709 on sRGB values), exactly black 0.001 %, under 0.02 0.012 %; crop 1152 x 632: mean 0.340, under 0.02 0.07 % (the black tape line only). W-L0 re-rendered in the same run pixel-identical to the file here (max difference 0)",
+   "replaced": [
+    "heroes/window_W-OF_stop_close.png",
+    "heroes/window_W-OF_stop_close_alpha.png",
+    "heroes/slots/Kit_WindowFrame_Steel_close.png"
+   ],
+   "figma": "2751:6245 imageHash 3088984ebcb25a518ff59ed1433c1ed7f1f1fa0a (was 41a141c59d4c8a7f44406a47d110a2e80056f20d); VL271 3141:7218 now research/interactables/images/gapclose_1014_wof_stop_0p3m_relit.jpg, imageHash 7d1d4e370d28c4fa1fdcfcf4f2c46ca6914b751e (proposal/02_figma.md section P.9)",
+   "corners": "Corners are named as seen from face A: W-OF close-up = lower-left (world +X), W-L0 close-up = lower-right (world -X). Earlier notes said lower right / lower left"
+  }
  }
 }

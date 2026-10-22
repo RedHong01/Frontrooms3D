@@ -2,6 +2,8 @@
 
 2026-10-08 · visual chat (游戏视觉) · workflow glass-rt-track, implement stage (retry after the 2026-10-07 session limit) · **status: IMPLEMENTED in the clone `W/proj_rt`, verified in engine, NOT merged** (promotion list in §9)
 
+> **Updated 2026-10-14 by the fix pass (stage 30).** The clone now holds the fix pass on top of this stage's code, re-based on main `0a9ee7f` + working tree. What changed, why and the new numbers are in **`30_final.md`**, and §11 below lists the places where this report no longer describes the code. The promotion list is now **`30_final.md` §6** and the apply package **`W/apply/glass_rt_g14.sh`**. Where this report and `30_final.md` differ, `30_final.md` is right.
+
 `W` = `/Users/redwang/FrontRoomsVisualWork`. Design: `10_rt_glass_design.md` (§ numbers below refer to it unless stated). Earlier reports: `01_code_review.md`, `02_runtime_probe.md`, `03_research.md`. Codex audit for this track: `../../codex_audit/10_review_rt.md` (F1–F8).
 
 ---
@@ -371,3 +373,22 @@ Blob = `git hash-object` (first 8 hex). The payload in `W/proj_rt_v` is byte-ide
 | VL186 | `2847:6212` | RT cost on a shared Mac | FAIL | `20_P0_walk_chart.jpg`, `20_P1_cost_p10_chart.jpg` |
 
 Not on a slide: `20_P1_v1_headon_level.jpg`, `20_P1_office_v2_headon_centre.jpg`, `20_P0_orientation.jpg`, `20_P0_frame_delta_chart.jpg`, `20_P1_cost_chart.jpg` (report only). Earlier G14 slides: VL031–037 (review, probe, hook proof), codex-audit VL085–087, VL116–119.
+
+---
+
+## 11. What the fix pass (2026-10-14) changed in this report
+
+The fix pass (`30_final.md`) answered the two verify reports (`25_verify_engineering.md` E1–E14, `25_verify_art-direction.md` AD-1–AD-8). These statements above no longer describe the code:
+
+| § | Was | Now (details in `30_final.md` §2) |
+|---|---|---|
+| 2.2 BLAS | ≤ 24 builds / ~50k triangles per frame for every mesh | Fracture pieces keep 24 / 50k; streamed map meshes get their own budget of 8 builds / 10k triangles per frame (E8). `FRGlassRT_SetBuildBudget` for the harness |
+| 2.2 Resolve | one pass: dilation, back image, 12-tap rotated smudge disc, edge filter, temporal | three passes into two plugin-owned RGBA16F targets: (1) dilation, back image, edge filter and the per-pixel blur radius; (2)/(3) a separable Gaussian, horizontal then vertical, then temporal accumulation (AD-1). The radius is the wider of the pane's roughness (only below smoothness 0.85: clean glass is never blurred, AD-3) and the 3×3 spread of the prepass normals (smudge, print and crack normals). Every neighbour read stays inside the dispatch rectangle (E5) |
+| 2.2 Fail closed | `g_SceneReady` a plain bool | atomic (E12); deforming refits wait until the target half is out of flight (E12) |
+| 2.3 Registration | hidden renderers skipped; statics read once | hidden renderers registered too (out of the TLAS until shown); a cursor re-checks 256 statics per frame for enabled / active / forceRenderingOff (E2); CRT surfaces, EXIT-sign diffusers, the glow placard and every API registration are live props, checked every frame for visibility, material swaps and emission (E2) |
+| 2.3 Materials | material blocks and texture slots only grew | reference-counted, released with their last user, reused after 12 frames; warnings at 90 % and at the cap (E3) |
+| 2.4 Shadows | High: 4 lamps nearest the camera, one hard ray each; Ultra: up to 16 | ranked per hit by contribution: High the 6 strongest shadowed lamps, one ray each to a point of a 0.2 m disc in the lens plane (hashed from the world position); Ultra the 8 strongest, 2 rays on a ring plus 2 more in the penumbra; untraced shadowed lamps take the traced lamps' visibility (AD-2) |
+| 2.4 Shading | `FrontRooms/ScreenVideo` traced as a lit quad; `_FR_LAMP_FIELD` ignored | the CRT ad surface is unlit (emission); EXIT-sign diffusers use their lamp field and their renderer's `_LampField` weights |
+| 2.6 / F1 | fail-closed guard only | plus the three codex follow-ups: the warm-up submit inside the try, `failedClosed` gates every public call and the quality setter, one console entry, `ResetStatics` clears the quality override (E4) |
+| 3 | P/Invoke by managed arrays | by pinned pointers (`FrontRoomsGlassRTNative.Pins`): a 96-vertex upload 3.47 ms → 0.002 ms with 65,536-entry scratch arrays (E1) |
+| 9 | promotion list | superseded by `30_final.md` §6 and `W/apply/glass_rt_g14.sh` |

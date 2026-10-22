@@ -1,0 +1,22 @@
+fixwm_L0_0_2554: papered Duplex y 0.31 | before: plate 109.8 wall 111.5 ratio 0.98 | after: plate 119.5 wall 113.1 ratio 1.06 | load 42.71 61.39 70.47
+fixwm_L0_1_2554: papered Duplex y 0.31 | before: plate 109.1 wall 118.0 ratio 0.92 | after: plate 105.2 wall 119.4 ratio 0.88 | load 42.71 61.39 70.47
+fixwm_L0_2_2554: papered Duplex y 0.31 | before: plate 114.8 wall 109.8 ratio 1.05 | after: plate 106.5 wall 109.4 ratio 0.97 | load 50.18 62.63 70.85
+fixwm_L0_3_2554: papered Duplex y 0.31 | before: plate 110.9 wall 107.6 ratio 1.03 | after: plate 105.4 wall 109.2 ratio 0.97 | load 50.18 62.63 70.85
+fixwm_OF_0_2554: painted Duplex20 y 0.46 | before: plate 134.6 wall 131.2 ratio 1.03 | after: plate 137.9 wall 133.7 ratio 1.03 | load 50.18 62.63 70.85
+fixwm_OF_1_2554: painted Duplex y 0.41 | before: plate 135.6 wall 129.5 ratio 1.05 | after: plate 138.1 wall 131.0 ratio 1.05 | load 56.09 63.64 71.16
+fixmetal_steel_03_2554: stainless duplex at 0.30 m, Office | before: plate 74.6 wall 128.2 ratio 0.58 | after: plate 118.4 wall 128.9 ratio 0.92 | load 56.09 63.64 71.16
+fixmetal_steel_4m_2554: stainless duplex at 4 m | before: plate 90.0 wall 128.2 ratio 0.70 | after: plate 119.2 wall 129.0 ratio 0.92 | load 56.09 63.64 71.16
+fixmetal_handy_042_2554: handy box + EMT at 0.42 m | before: plate 81.7 wall 112.1 ratio 0.73 | after: plate 109.4 wall 112.7 ratio 0.97 | load 54.64 63.22 70.97
+fixmetal_handy_4m_2554: handy box + EMT riser at 4 m | before: plate 88.6 wall 94.6 ratio 0.94 | after: plate 102.1 wall 99.7 ratio 1.02 | load 54.64 63.22 70.97
+fixmetal_floor_2554: FloorBox | before: box top 117.3 box sides 81.2 carpet 74.5 | after: box top 121.0 box sides 112.2 carpet 73.9
+fixtoggle_2554: bat luma at bat height 118.7, from eye height 160.4; plate 157.2 wall 125.5 ratio 1.25
+fixbrown_2554: plate 52.3 wall 136.1 ratio 0.38
+fixlod 1.5 m LOD0: plate 147.2 wall 117.4 ratio 1.25
+fixlod 1.5 m LOD1: plate 149.6 wall 118.6 ratio 1.26
+fixlod 4 m LOD1: plate 138.5 wall 117.2 ratio 1.18
+fixlod 4 m LOD2: plate 135.2 wall 117.4 ratio 1.15
+fixtint A_E6DDC2 plate #E6DDC2 device #E2D9BF | 0.30 m: plate 158.1 wall 120.5 ratio 1.31 device 156.9 | eye 1.6 m: plate 145.7 wall 113.6 ratio 1.28
+fixtint B_9E9147 plate #9E9147 device #E2D9BF | 0.30 m: plate 102.4 wall 120.6 ratio 0.85 device 157.0 | eye 1.6 m: plate 98.7 wall 114.3 ratio 0.86
+fixtint C_B6AF99 plate #B6AF99 device #B3AB97 | 0.30 m: plate 125.4 wall 119.5 ratio 1.05 device 124.2 | eye 1.6 m: plate 119.9 wall 115.4 ratio 1.04
+fixtint D_A69F8C plate #A69F8C device #A39C89 | 0.30 m: plate 112.9 wall 118.9 ratio 0.95 device 112.2 | eye 1.6 m: plate 109.3 wall 115.1 ratio 0.95
+fixconduit_2554: box at (191.92, 0.31, 173.40) y 0.31

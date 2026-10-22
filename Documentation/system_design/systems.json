@@ -1,0 +1,1519 @@
+{
+ "schema_version": 1,
+ "updated": "2026-10-15e",
+ "owner_data": "系统设计 (system design)",
+ "owner_visuals": "平面视觉 · 信息设计 (information design)",
+ "groups": [
+  {
+   "id": 1,
+   "name": "Relay brain",
+   "purpose": "Decides when the Relay comes and goes.",
+   "position_hint": "row0 col0"
+  },
+  {
+   "id": 2,
+   "name": "Relay senses",
+   "purpose": "What the Relay can hear and see.",
+   "position_hint": "row0 col1"
+  },
+  {
+   "id": 3,
+   "name": "Warnings",
+   "purpose": "How the player feels it coming, in their own room.",
+   "position_hint": "row0 col2"
+  },
+  {
+   "id": 4,
+   "name": "Doors, windows, keys",
+   "purpose": "The player's hands on the building.",
+   "position_hint": "row1 col1"
+  },
+  {
+   "id": 5,
+   "name": "Level content",
+   "purpose": "What the generator puts in each zone.",
+   "position_hint": "row1 col0"
+  },
+  {
+   "id": 6,
+   "name": "Inspect and info",
+   "purpose": "Looking closely at things.",
+   "position_hint": "row0 col3"
+  },
+  {
+   "id": 7,
+   "name": "Goal and navigation",
+   "purpose": "Where the player is trying to go.",
+   "position_hint": "row1 col2"
+  },
+  {
+   "id": 8,
+   "name": "Platform and access",
+   "purpose": "Everything that must work on every screen and for every player.",
+   "position_hint": "row1 col3"
+  }
+ ],
+ "group_adjacency_note": "Groups that touch share code or data: 1-2 the Relay itself; 2-3 warning stages; 3-6 screens; 1-5 director rooms; 2-4 door costs in hearing; 3-7 way-out route; 4-7 exit doors; 6-8 touch and reading.",
+ "status_values": {
+  "LIVE": "in normal play",
+  "PARTLY_LIVE": "part of it in normal play",
+  "BUILDING": "being built now",
+  "BUILT_OFF": "in main, switched off or unreachable",
+  "CLONE_ONLY": "built in a private clone, not merged",
+  "DESIGN": "designed, not built",
+  "OPTION": "proposed option",
+  "NOT_DESIGNED": "no design yet"
+ },
+ "systems": [
+  {
+   "id": "B1",
+   "group": 1,
+   "name": "Relay v1 brain",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Wanders, hunts, searches, chases, breaks doors; never leaves the map.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": "Decided: bug fixes 10-03",
+   "open_decisions": []
+  },
+  {
+   "id": "B2",
+   "group": 1,
+   "name": "Director (alarm panel)",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Calm and build-up phases, call budgets, queued calls; scoring core only.",
+   "owner": "Level design",
+   "needs": [
+    "B3",
+    "S3",
+    "S4"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C01"
+   ]
+  },
+  {
+   "id": "B3",
+   "group": 1,
+   "name": "Away, arrive, withdraw",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "It leaves, stays away, and returns at least 42 m from you.",
+   "owner": "Level design",
+   "needs": [
+    "B2"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C02"
+   ]
+  },
+  {
+   "id": "B4",
+   "group": 1,
+   "name": "Noise meter",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Sprints, barges and slams add up and call it; walking is almost free.",
+   "owner": "Level design",
+   "needs": [
+    "D2"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C03"
+   ]
+  },
+  {
+   "id": "B5",
+   "group": 1,
+   "name": "Quiet-player sweep",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "After 240 s with no call it patrols the zone ahead of you.",
+   "owner": "Level design",
+   "needs": [
+    "B2"
+   ],
+   "closed_note": "Decided: yes (Q2, 10-04)",
+   "open_decisions": []
+  },
+  {
+   "id": "B6",
+   "group": 1,
+   "name": "Tiers",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "v1: by zones visited plus a stall. v2: one tier per 150 new cells.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": [
+    "C04"
+   ]
+  },
+  {
+   "id": "B7",
+   "group": 1,
+   "name": "Test bots",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "A tool: seeded bots measure the Relay before and after each step.",
+   "owner": "Level design research",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": [
+    "C05"
+   ]
+  },
+  {
+   "id": "S1",
+   "group": 2,
+   "name": "Path hearing",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Sound follows real paths: a shut door or window adds 9 m; walls block.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": "Decided",
+   "open_decisions": []
+  },
+  {
+   "id": "S2",
+   "group": 2,
+   "name": "Sense links",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "A heard noise gives a rough estimate, never your exact spot.",
+   "owner": "Level design",
+   "needs": [
+    "S1"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "S3",
+   "group": 2,
+   "name": "Eyes and spotting",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "A 120° head cone to 12 m; a meter that fills faster up close.",
+   "owner": "Level design",
+   "needs": [
+    "B3"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "S4",
+   "group": 2,
+   "name": "Lock-on and chase",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Warnings first, a 0.7 s hold and chime; chase capped at 4.4 m/s.",
+   "owner": "Level design, Sound",
+   "needs": [
+    "S3"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "S5",
+   "group": 2,
+   "name": "Sight tests, prompt gate",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Prompts hide only for threats the player can perceive.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "S6",
+   "group": 2,
+   "name": "Warning stages",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Walking distance to the Relay sets stages 0 to 2; fixed 10-08.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "W1",
+   "group": 3,
+   "name": "Stage 1: your lamps",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Your room's lamps dip together with a ballast groan, never near it.",
+   "owner": "Level design, Game visuals",
+   "needs": [
+    "S6"
+   ],
+   "closed_note": "Decided: your rule",
+   "open_decisions": []
+  },
+  {
+   "id": "W2",
+   "group": 3,
+   "name": "Stage 2: muffled steps",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Its steps through walls, muffled by doors; a hum when it stands still.",
+   "owner": "Sound",
+   "needs": [
+    "S6"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C06"
+   ]
+  },
+  {
+   "id": "W3",
+   "group": 3,
+   "name": "Stage 3: lock-on",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "A door-holder thunk and one chime when it sees you.",
+   "owner": "Sound",
+   "needs": [
+    "S4"
+   ],
+   "closed_note": "Decided: your rule",
+   "open_decisions": []
+  },
+  {
+   "id": "W4",
+   "group": 3,
+   "name": "Extra cues",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Device sounds, a panel tick, the hum returning, an edge marker.",
+   "owner": "Sound",
+   "needs": [
+    "B2"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C07"
+   ]
+  },
+  {
+   "id": "W5",
+   "group": 3,
+   "name": "Chase wave",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Lamps ripple out from your room when a chase starts.",
+   "owner": "Level design, Game visuals",
+   "needs": [
+    "S4"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "W6",
+   "group": 3,
+   "name": "Wallpaper arrows",
+   "status": "CLONE_ONLY",
+   "status_class": "built",
+   "summary": "The print's arrows turn toward a way out, and run with a chase.",
+   "owner": "Graphic, Level design",
+   "needs": [
+    "N1",
+    "S6"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C08"
+   ]
+  },
+  {
+   "id": "W7",
+   "group": 3,
+   "name": "Screens join warnings",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "CRTs show interference at stage 1 and an alarm slate in a chase.",
+   "owner": "Graphic, Game visuals",
+   "needs": [
+    "S6"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C09"
+   ]
+  },
+  {
+   "id": "W8",
+   "group": 3,
+   "name": "Warnings on today's Relay",
+   "status": "OPTION",
+   "status_class": "not_built",
+   "summary": "Wire W1 and W2 to the v1 Relay now, as a bridge to v2.",
+   "owner": "Level design, Sound",
+   "needs": [
+    "W1",
+    "W2"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C10"
+   ]
+  },
+  {
+   "id": "D1",
+   "group": 4,
+   "name": "Doors: E open, shut",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "One-way doors; every open or shut is a noise heard to about 20 m.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": "Decided",
+   "open_decisions": []
+  },
+  {
+   "id": "D2",
+   "group": 4,
+   "name": "Ease, barge, slam, ajar",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Walk to open softly; sprint to barge or slam; the Relay leaves doors ajar.",
+   "owner": "Level design, Sound",
+   "needs": [
+    "D1"
+   ],
+   "closed_note": "Part of v2 (C02, C03)",
+   "open_decisions": []
+  },
+  {
+   "id": "D3",
+   "group": 4,
+   "name": "Broken doors",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "Broken for the run (live); crosshair B·4 and won't-shut beat to build.",
+   "owner": "Level design, Graphic",
+   "needs": [
+    "I4"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C11"
+   ]
+  },
+  {
+   "id": "D4",
+   "group": 4,
+   "name": "Glass and climbing",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Hold E to break a pane (a loud call); walk into the frame to climb.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": "Decided",
+   "open_decisions": []
+  },
+  {
+   "id": "D5",
+   "group": 4,
+   "name": "Quiet sash pry",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Hold E on the latch for 4 s: a quiet way through a window.",
+   "owner": "Level design, Game visuals",
+   "needs": [
+    "D4"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C12"
+   ]
+  },
+  {
+   "id": "D6",
+   "group": 4,
+   "name": "Alarmed windows",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Foil-taped windows that always call the Relay.",
+   "owner": "Level design, Game visuals",
+   "needs": [
+    "D4"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C13"
+   ]
+  },
+  {
+   "id": "D7",
+   "group": 4,
+   "name": "Door, lock, key models",
+   "status": "BUILDING",
+   "status_class": "built",
+   "summary": "57 finished models replace the cube doors and the glowing key.",
+   "owner": "Game visuals, Level design",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": [
+    "C14"
+   ]
+  },
+  {
+   "id": "D8",
+   "group": 4,
+   "name": "Locked doors",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Locks, rattle, key-turn shot; today it locks every door or none.",
+   "owner": "Level design",
+   "needs": [
+    "D7",
+    "L5"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C15"
+   ]
+  },
+  {
+   "id": "D9",
+   "group": 4,
+   "name": "Keys",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Walk over to take; one per zone; opens nothing yet.",
+   "owner": "Level design",
+   "needs": [
+    "D8"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "L1",
+   "group": 5,
+   "name": "Map, zones, modules",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Generated zones, rooms as data, streaming, the Level Designer.",
+   "owner": "Level design",
+   "needs": [],
+   "closed_note": "Decided",
+   "open_decisions": []
+  },
+  {
+   "id": "L2",
+   "group": 5,
+   "name": "Trigger rooms",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Rooms you can read from the doorway; entering sounds an alarm.",
+   "owner": "Level design, Game visuals",
+   "needs": [
+    "B2",
+    "L1"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C16"
+   ]
+  },
+  {
+   "id": "L3",
+   "group": 5,
+   "name": "Sanctuaries",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Dead-circuit rooms the Relay will not enter.",
+   "owner": "Level design, Game visuals",
+   "needs": [
+    "B2",
+    "L1"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C17"
+   ]
+  },
+  {
+   "id": "L4",
+   "group": 5,
+   "name": "Relay entries",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "Where it arrives and leaves; markers live, dead-end entries to build.",
+   "owner": "Level design",
+   "needs": [
+    "B3"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "L5",
+   "group": 5,
+   "name": "Map validator",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Checks keys can be reached, windows stay passable, cover exists.",
+   "owner": "Level design",
+   "needs": [
+    "L1"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "L6",
+   "group": 5,
+   "name": "Office dressing",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Cubicles, CRTs and piles; terminal host desks to come.",
+   "owner": "Game visuals",
+   "needs": [
+    "L1"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "I1",
+   "group": 6,
+   "name": "Evacuation plan",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "One printed sheet by the start door; look only; glows in a power cut.",
+   "owner": "Game visuals, Graphic",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "I2",
+   "group": 6,
+   "name": "EXAMINE close-up",
+   "status": "CLONE_ONLY",
+   "status_class": "built",
+   "summary": "E frames the plan or the first key; the game pauses; tests pass.",
+   "owner": "Game visuals",
+   "needs": [
+    "I1",
+    "S5"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C18"
+   ]
+  },
+  {
+   "id": "I3",
+   "group": 6,
+   "name": "Office terminals",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "One readable computer per Office zone; E to read its pages.",
+   "owner": "Game visuals, Graphic, Level design",
+   "needs": [
+    "I2",
+    "L6"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C19",
+    "C20"
+   ]
+  },
+  {
+   "id": "I4",
+   "group": 6,
+   "name": "Crosshair states",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "One grammar for door, lock, broken door and the look-eye.",
+   "owner": "Graphic, Game visuals",
+   "needs": [
+    "S5"
+   ],
+   "closed_note": "Decided: E·1 eye (10-15)",
+   "open_decisions": []
+  },
+  {
+   "id": "I5",
+   "group": 6,
+   "name": "Key and lock HUD motion",
+   "status": "CLONE_ONLY",
+   "status_class": "built",
+   "summary": "The key slides in; the lock opens at the crosshair.",
+   "owner": "Graphic, Game visuals",
+   "needs": [
+    "I4"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C21"
+   ]
+  },
+  {
+   "id": "I6",
+   "group": 6,
+   "name": "Office CRT ads",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "The Front Rooms Furniture ad on desk monitors, since 10-14.",
+   "owner": "Game visuals",
+   "needs": [
+    "L6"
+   ],
+   "closed_note": "Later (terminal spec D14)",
+   "open_decisions": []
+  },
+  {
+   "id": "N1",
+   "group": 7,
+   "name": "Exit and win",
+   "status": "NOT_DESIGNED",
+   "status_class": "not_built",
+   "summary": "What an exit is, and whether a run can end in escape.",
+   "owner": "Red",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": [
+    "C22"
+   ]
+  },
+  {
+   "id": "N2",
+   "group": 7,
+   "name": "Exit signs",
+   "status": "BUILT_OFF",
+   "status_class": "built",
+   "summary": "Lit, dim and loose EXIT signs; only in rooms play never reaches.",
+   "owner": "Game visuals",
+   "needs": [
+    "N1"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C23"
+   ]
+  },
+  {
+   "id": "N3",
+   "group": 7,
+   "name": "Way-out route",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "The route the arrows point: the nearest unvisited doorway for now.",
+   "owner": "Level design research",
+   "needs": [
+    "N1"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C24"
+   ]
+  },
+  {
+   "id": "N4",
+   "group": 7,
+   "name": "Plan legend",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "The plan's EXIT and wall legend point at things not built yet.",
+   "owner": "Graphic, Narrative",
+   "needs": [
+    "N1",
+    "W6"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "N5",
+   "group": 7,
+   "name": "Plan and alarm pages",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "A floor plan and alarm history on terminals, later.",
+   "owner": "System, Narrative",
+   "needs": [
+    "N1",
+    "B2",
+    "I3"
+   ],
+   "closed_note": "Later",
+   "open_decisions": []
+  },
+  {
+   "id": "P1",
+   "group": 8,
+   "name": "Touch controls",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "USE button, tap to open, three gaits; walking is heard on phones.",
+   "owner": "Touch",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": [
+    "C25"
+   ]
+  },
+  {
+   "id": "P2",
+   "group": 8,
+   "name": "Reduce flashing, captions",
+   "status": "LIVE",
+   "status_class": "in_game",
+   "summary": "Lamp changes ramp slower; sounds get captions.",
+   "owner": "Level design, Sound",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "P3",
+   "group": 8,
+   "name": "More settings",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "Lamps still, warning-cue volume, visual sound cues, screen effects.",
+   "owner": "Level design, Sound",
+   "needs": [
+    "W1",
+    "W2"
+   ],
+   "closed_note": null,
+   "open_decisions": [
+    "C26"
+   ]
+  },
+  {
+   "id": "P4",
+   "group": 8,
+   "name": "Photosafety limits",
+   "status": "DESIGN",
+   "status_class": "not_built",
+   "summary": "No lamp may flash more than 3 times a second.",
+   "owner": "Level design",
+   "needs": [
+    "W1"
+   ],
+   "closed_note": null,
+   "open_decisions": []
+  },
+  {
+   "id": "P5",
+   "group": 8,
+   "name": "WebGL tier",
+   "status": "PARTLY_LIVE",
+   "status_class": "in_game",
+   "summary": "A separate, lighter web build; never changes desktop.",
+   "owner": "WebGL track",
+   "needs": [],
+   "closed_note": null,
+   "open_decisions": []
+  }
+ ],
+ "edges": [
+  {
+   "source": "B3",
+   "target": "B2",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "S3",
+   "target": "B2",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S4",
+   "target": "B2",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "B2",
+   "target": "B3",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "D2",
+   "target": "B4",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "B2",
+   "target": "B5",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "S1",
+   "target": "S2",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "B3",
+   "target": "S3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S3",
+   "target": "S4",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "S6",
+   "target": "W1",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S6",
+   "target": "W2",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S4",
+   "target": "W3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "B2",
+   "target": "W4",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S4",
+   "target": "W5",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "N1",
+   "target": "W6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S6",
+   "target": "W6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S6",
+   "target": "W7",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "W1",
+   "target": "W8",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "W2",
+   "target": "W8",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "D1",
+   "target": "D2",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "I4",
+   "target": "D3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "D4",
+   "target": "D5",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "D4",
+   "target": "D6",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "D7",
+   "target": "D8",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "L5",
+   "target": "D8",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "D8",
+   "target": "D9",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "B2",
+   "target": "L2",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "L1",
+   "target": "L2",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "B2",
+   "target": "L3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "L1",
+   "target": "L3",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "B3",
+   "target": "L4",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "L1",
+   "target": "L5",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "L1",
+   "target": "L6",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "I1",
+   "target": "I2",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "S5",
+   "target": "I2",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "I2",
+   "target": "I3",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "L6",
+   "target": "I3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "S5",
+   "target": "I4",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "I4",
+   "target": "I5",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "L6",
+   "target": "I6",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "N1",
+   "target": "N2",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "N1",
+   "target": "N3",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "N1",
+   "target": "N4",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "W6",
+   "target": "N4",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "N1",
+   "target": "N5",
+   "meaning": "target needs source",
+   "cross_group": false
+  },
+  {
+   "source": "B2",
+   "target": "N5",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "I3",
+   "target": "N5",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "W1",
+   "target": "P3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "W2",
+   "target": "P3",
+   "meaning": "target needs source",
+   "cross_group": true
+  },
+  {
+   "source": "W1",
+   "target": "P4",
+   "meaning": "target needs source",
+   "cross_group": true
+  }
+ ],
+ "decisions": [
+  {
+   "id": "C01",
+   "system": "B2",
+   "ref": "Q1",
+   "question": "100 s of guaranteed calm after it leaves, at tier 1?",
+   "recommendation": "Keep 100 s (60 to 120 allowed)",
+   "status": "open"
+  },
+  {
+   "id": "C02",
+   "system": "B3",
+   "ref": "v2",
+   "question": "Approve Relay v2 as a whole?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C03",
+   "system": "B4",
+   "ref": "Q4",
+   "question": "Keep the noise meter beside glass and alarms?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C04",
+   "system": "B6",
+   "ref": "Q5",
+   "question": "A tier per 150 new cells; no stall rise; TIER off the HUD?",
+   "recommendation": "All three",
+   "status": "open"
+  },
+  {
+   "id": "C05",
+   "system": "B7",
+   "ref": "Step 0",
+   "question": "Run the 8-run smoke test, then 6 seeds per mode?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C06",
+   "system": "W2",
+   "ref": "Q3d",
+   "question": "A low hum when it stands still at stage 2?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C07",
+   "system": "W4",
+   "ref": "Q3a b c e",
+   "question": "Device sound, panel tick, hum returning, edge marker?",
+   "recommendation": "All; marker off by default",
+   "status": "open"
+  },
+  {
+   "id": "C08",
+   "system": "W6",
+   "ref": "-",
+   "question": "Build the wallpaper arrows once the exit is set?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C09",
+   "system": "W7",
+   "ref": "SCREENS §4",
+   "question": "Do screens join the warning language?",
+   "recommendation": "No in v1",
+   "status": "open"
+  },
+  {
+   "id": "C10",
+   "system": "W8",
+   "ref": "-",
+   "question": "Wire lamp and step warnings to today's Relay as a bridge?",
+   "recommendation": "Yes, before the next playtest.",
+   "status": "open",
+   "rationale": "W1 and W2 must be built for v2 anyway, and they read WarnStage, which today's hunter already computes (in main since 10-08), so almost nothing is thrown away. It lets the playtest check item 07 (\"noticed it before it reached me\") and the LIGHT cue. The baseline shows stage 0 still holds 64-81 % of on-map time at tier 1, so the lamps will not dip all the time. Limit: today's chases start on first sight, with no G3 gate, so a warning is honest but not yet guaranteed."
+  },
+  {
+   "id": "C11",
+   "system": "D3",
+   "ref": "-",
+   "question": "Broken-door strings: BROKEN / WON'T SHUT?",
+   "recommendation": "With Graphic",
+   "status": "open"
+  },
+  {
+   "id": "C12",
+   "system": "D5",
+   "ref": "Q7a",
+   "question": "Add the quiet sash pry?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C13",
+   "system": "D6",
+   "ref": "Q7b",
+   "question": "Add foil-taped alarmed windows?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C14",
+   "system": "D7",
+   "ref": "D1.5",
+   "question": "Keys on boards: walk over, or look and press E?",
+   "recommendation": "Waiting on Game visuals",
+   "status": "open"
+  },
+  {
+   "id": "C15",
+   "system": "D8",
+   "ref": "DW11 #1",
+   "question": "Which doors lock?",
+   "recommendation": "About 1 in 3, after the key check",
+   "status": "open"
+  },
+  {
+   "id": "C16",
+   "system": "L2",
+   "ref": "Q6",
+   "question": "First trigger room kind?",
+   "recommendation": "Alarm push-bar door",
+   "status": "open"
+  },
+  {
+   "id": "C17",
+   "system": "L3",
+   "ref": "Q7c",
+   "question": "Add dead-circuit sanctuaries in v2.1?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "C18",
+   "system": "I2",
+   "ref": "EXAMINE D2-D12",
+   "question": "Keep EXAMINE's defaults?",
+   "recommendation": "Defaults stand unless you change one",
+   "status": "open"
+  },
+  {
+   "id": "C19",
+   "system": "I3",
+   "ref": "D11",
+   "question": "Terminal: page-turning, or a menu with a cursor?",
+   "recommendation": "Mock ready: TM01, Figma 3218:7277",
+   "status": "open"
+  },
+  {
+   "id": "C20",
+   "system": "I3",
+   "ref": "D10",
+   "question": "Terminal face: our own 8 x 16, a permissive one, or Px437?",
+   "recommendation": "Not Px437 in v1",
+   "status": "open"
+  },
+  {
+   "id": "C21",
+   "system": "I5",
+   "ref": "HUD key",
+   "question": "Key and lock HUD motion",
+   "recommendation": "In your review",
+   "status": "open"
+  },
+  {
+   "id": "C22",
+   "system": "N1",
+   "ref": "-",
+   "question": "What is the exit, and can a run end in escape?",
+   "recommendation": "Yours to define",
+   "status": "open"
+  },
+  {
+   "id": "C23",
+   "system": "N2",
+   "ref": "C-1, C-3",
+   "question": "Where do EXIT signs go: Office door signs, ceiling?",
+   "recommendation": "After C22",
+   "status": "open"
+  },
+  {
+   "id": "C24",
+   "system": "N3",
+   "ref": "-",
+   "question": "Confirm the way-out route rule once the exit is set",
+   "recommendation": "After C22",
+   "status": "open"
+  },
+  {
+   "id": "C25",
+   "system": "P1",
+   "ref": "Q9",
+   "question": "Touch interaction assist and layout editor?",
+   "recommendation": "See TOUCH_CONTROLS",
+   "status": "open"
+  },
+  {
+   "id": "C26",
+   "system": "P3",
+   "ref": "D9",
+   "question": "Screen effects setting: Full, Reduced, Off?",
+   "recommendation": "Yes",
+   "status": "open"
+  },
+  {
+   "id": "A01",
+   "system": "B5",
+   "ref": "Q2",
+   "question": "Does a quiet player get a patrol in the zone ahead after 240 s without a call?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Yes",
+   "date": "2026-10-04"
+  },
+  {
+   "id": "A02",
+   "system": "B7",
+   "ref": "Q8",
+   "question": "Run the baseline bots first, with no gameplay change?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Yes",
+   "date": "2026-10-04"
+  },
+  {
+   "id": "A03",
+   "system": "D3",
+   "ref": "Q9",
+   "question": "Rehang broken doors during Away, or keep them broken?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Keep them broken for the run",
+   "date": "2026-10-14"
+  },
+  {
+   "id": "A04",
+   "system": "D3",
+   "ref": "Crosshair",
+   "question": "Broken-door crosshair style?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "B·4, hangs off its hinge",
+   "date": "2026-10-14"
+  },
+  {
+   "id": "A05",
+   "system": "I6",
+   "ref": "Terminal D0",
+   "question": "Replace the LEVITZ ad?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Swap to Ad_02; keep Ad_01 as history only",
+   "date": "2026-10-14"
+  },
+  {
+   "id": "A06",
+   "system": "I3",
+   "ref": "Terminal D1",
+   "question": "What does walk up and see directly mean?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Front page reads in place, plus E · READ SCREEN",
+   "date": "2026-10-14"
+  },
+  {
+   "id": "A07",
+   "system": "I2",
+   "ref": "Terminal D2",
+   "question": "Does a close-up pause the world?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "Paused, with the ThreatPerceivable gate",
+   "date": "2026-10-14"
+  },
+  {
+   "id": "A08",
+   "system": "I4",
+   "ref": "Look-eye",
+   "question": "Which eye for the Read state?",
+   "recommendation": "",
+   "status": "answered",
+   "answer": "E·1, opens from the dot",
+   "date": "2026-10-15"
+  }
+ ],
+ "landing_order_proposed": [
+  {
+   "step": "1",
+   "groups": [
+    4
+   ],
+   "note": "already moving: door and key models, broken-door hooks"
+  },
+  {
+   "step": "2",
+   "groups": [
+    7
+   ],
+   "note": "decide the exit first (C22)"
+  },
+  {
+   "step": "3",
+   "groups": [
+    1,
+    2
+   ],
+   "note": "the v2 core"
+  },
+  {
+   "step": "4",
+   "groups": [
+    3
+   ],
+   "note": "warnings"
+  },
+  {
+   "step": "5",
+   "groups": [
+    5
+   ],
+   "note": "trigger rooms, sanctuaries"
+  },
+  {
+   "step": "6",
+   "groups": [
+    6
+   ],
+   "note": "EXAMINE merge, then terminals"
+  },
+  {
+   "step": "alongside",
+   "groups": [
+    8
+   ],
+   "note": "platform and access with each group"
+  }
+ ],
+ "glossary": [
+  {
+   "term": "Attention",
+   "definition": "The director’s noise meter for one run. Player noises add to it: sprint step +3, barge +8, slam +12, pry +8, ease a door or unlock +1, walking 0. It drains 3 per second (2 at tier 5), starting 3 s after the last noise. At the threshold (60 at tier 1, down to 45 at tier 5) the Relay is called to the area of the noise, never to the exact spot."
+  },
+  {
+   "term": "Pressure",
+   "definition": "How much threat the player has perceived in the current encounter. Only perceived cues count: lamps +1/s, steps +2.5/s, seeing the Relay +4/s, the chase +6/s, a lock-on +15. At the peak the director holds for 4 s (SUSTAIN), then fades the encounter and the Relay withdraws."
+  },
+  {
+   "term": "tier",
+   "definition": "A difficulty step. Today it rises with zones visited plus a stall rule; v2 proposes one tier per 150 newly explored cells. Tiers make the Relay better, never the warnings shorter."
+  },
+  {
+   "term": "G3 gate",
+   "definition": "The Relay may lock on only after the warning has run continuously for at least 3 s (stage 1 or higher), including at least 1 s of continuous stage 2 (steps). The timers reset when the stage drops. Only a lock-on at touching distance (1.5 m) is exempt."
+  },
+  {
+   "term": "W (walking distance)",
+   "definition": "The Relay’s distance to the player along real walking paths (a shut door adds 9 m), never more than three times the straight line. It sets the warning stages: stage 1 at 30 m or less, stage 2 at 18 m or less."
+  },
+  {
+   "term": "RELAX clock",
+   "definition": "The guaranteed calm after the Relay leaves: 100 s at tier 1, 60 s at tier 5. Noise cannot call it back during RELAX; glass and alarm devices still can."
+  },
+  {
+   "term": "door licence",
+   "definition": "The Relay may break a door only if a sound it heard came through that door, or it saw the player cross it or heard it move. It may quietly open the doors that were shut on its route when it was sent. Any other shut door is a wall to it."
+  },
+  {
+   "term": "sweep",
+   "definition": "When a quiet player goes 240 s (tier 1) without a call, the director sends the Relay to patrol a zone ahead of them, aimed at the area, never the exact spot."
+  },
+  {
+   "term": "stage",
+   "definition": "The warning level in the player’s own room: 0 nothing, 1 lamps dip, 2 muffled steps, 3 the lock-on chime."
+  },
+  {
+   "term": "call",
+   "definition": "The director sending the Relay toward an area, because Attention crossed its threshold, a device was tripped, or a sweep is due."
+  }
+ ],
+ "decision_format": "{id, system, ref, question, recommendation (the answer, at most 120 characters), optional rationale (the reasoning), status: open|answered, answer and date when answered}. Answered decisions are kept, never deleted."
+}

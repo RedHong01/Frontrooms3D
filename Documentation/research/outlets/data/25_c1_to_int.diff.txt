@@ -1,0 +1,402 @@
+--- c1/FrontRoomsWallFixtures.cs
++++ int/FrontRoomsWallFixtures.cs
+@@ -109,6 +109,12 @@
+     public const float SameFaceGap = .30f;       // two fixtures on one face, centre to centre
+     public const float CompanionOffset = .30f;   // phone/data plate beside its receptacle
+     public const float PlateHalfW = .0349f, PlateHalfH = .05715f, JumboHalfH = .0667f;
++    /// <summary>Kit_OutletHandyBox stands 52.3 mm off the wall; its EMT conduit and straps 22.2 mm (keep-outs and stage 2 use this depth).</summary>
++    public const float HandyProud = .055f;
++    /// <summary>Tall halls (10_spec.md §1.6): the stainless wall lines are surface handy boxes fed by EMT conduit from the ceiling.</summary>
++    public const bool HandyBoxInTall = true;
++    /// <summary>Level 0 phone companions: this share is the brown 4-prong surface block, a second-hand relic (Kit_JackPhone4Prong).</summary>
++    public const float FourProngShare = .25f;
+     public const float BaseClear = .03f;         // plate bottom above a base trim top
+     public const float SwitchHeight = 1.22f, SwitchFromOpening = .20f;
+     public const float RoomSideMin = 4.5f;       // a room side with this much solid wall gets at least one plate
+@@ -371,6 +377,8 @@
+         var kit = plate == Finish.Stainless ? FixtureKit.DuplexSteel : (U(hD) < rule.p20 ? FixtureKit.Duplex20 : FixtureKit.Duplex);
+         var device = rule.fixedFinish ? rule.finish : DeviceFor(plate);
+         if (rule.pIG > 0f && U(hD, 1) < rule.pIG) { kit = plate == Finish.Stainless ? FixtureKit.DuplexSteel : FixtureKit.Duplex20; device = Finish.Orange; }
++        // Tall halls: a stainless line is a surface handy box on EMT conduit (P2; the renderer runs the conduit to the ceiling).
++        if (HandyBoxInTall && cls == FixtureClass.Tall && kit == FixtureKit.DuplexSteel && (flags & FixtureFlags.OffHeight) == 0) kit = FixtureKit.HandyBox;
+         var x = Make(f, index, cls, kit, u, y, plate, hF);
+         x.device = device;
+         x.flags |= flags;
+@@ -405,6 +413,8 @@
+             var d = t == 0 ? dir : -dir;
+             var u = from + d * CompanionOffset;
+             if (!gaps.Inside(u) || !FarFromSameFace(into, index, u)) continue;
++            // Level 0 keeps old stock: a quarter of its phone jacks are the brown 4-prong block (a relic of the 1960s-70s).
++            if (kit == FixtureKit.JackPhone && (cls == FixtureClass.Level0Room || cls == FixtureClass.Level0Corridor) && U(h, 5) < FourProngShare) kit = FixtureKit.JackPhone4;
+             var x = Make(f, index, cls, kit, u, y, plate == Finish.Stainless ? Finish.Stainless : plate, h);
+             x.device = Finish.Ivory;
+             x.flags |= FixtureFlags.Companion;
+@@ -520,6 +530,14 @@
+         if (x.plate == Finish.Ivory && U(h, 8) < (o ? .15f : .30f)) x.plate = Finish.IvoryAged;                  // grime / yellowing
+         if (x.plate != Finish.Stainless && U(h, 9) < (o ? .08f : .03f)) x.plate = Finish.WallMatch;              // papered or painted over
+         if (U(h, 10) < .05f) x.device = x.device == Finish.White ? Finish.Ivory : Finish.White;                 // mismatched device
++        if (x.kit == FixtureKit.HandyBox)
++        {
++            // A surface box hangs on its conduit: square and plumb, its cover screws baked in, no plate-only variants.
++            x.roll = 0f;
++            x.tilt = 0f;
++            x.flags &= ~FixtureFlags.NoScrew;
++            return;
++        }
+         var thermoset = x.plate != Finish.Stainless;
+         var g = U(h, 12);
+         // Geometry variants, one at most, in this order of precedence.
+@@ -534,13 +552,16 @@
+     static bool Blocked(in Fixture x, in WallFace f, IReadOnlyList<KeepOut> keepOut)
+     {
+         if (keepOut == null || keepOut.Count == 0) return false;
++        // A handy box stands further out, and its conduit runs up to the ceiling.
++        var handy = x.kit == FixtureKit.HandyBox;
+         var a = x.position - f.direction * (PlateHalfW + .02f);
+-        var b = x.position + f.direction * (PlateHalfW + .02f) + f.normal * .012f;
++        var b = x.position + f.direction * (PlateHalfW + .02f) + f.normal * (handy ? HandyProud : .012f);
+         var r = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z), Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z));
++        var top = handy ? Mathf.Max(f.ceiling, x.position.y + PlateHalfH) : x.position.y + PlateHalfH;
+         for (var i = 0; i < keepOut.Count; i++)
+         {
+             var k = keepOut[i];
+-            if (k.xz.Overlaps(r) && x.position.y + PlateHalfH > k.y0 && x.position.y - PlateHalfH < k.y1) return true;
++            if (k.xz.Overlaps(r) && top > k.y0 && x.position.y - PlateHalfH < k.y1) return true;
+         }
+         return false;
+     }
+@@ -882,6 +903,22 @@
+     }
+ 
+     /// <summary>
++    /// The volume stage 2 tests (root space): the plate volume, or for a handy box the box out to
++    /// HandyProud and its conduit up to the face's ceiling, so a wall unit in front of the run hides it all.
++    /// </summary>
++    public static Bounds FixtureVolume(FrontRoomsWallFixtureSet set, in Fixture x)
++    {
++        var b = PlateBounds(x);
++        if (x.kit != FixtureKit.HandyBox || set == null || x.face < 0 || x.face >= set.faces.Count) return b;
++        var o = x.position + x.normal * HandyProud;
++        var min = Vector3.Min(b.min, o);
++        var max = Vector3.Max(b.max, o);
++        max.y = Mathf.Max(max.y, set.faces[x.face].ceiling);
++        b.SetMinMax(min, max);
++        return b;
++    }
++
++    /// <summary>
+     /// Stage 2, rule 1: true when a wall unit's box (its own set's occluders, or any enabled set's)
+     /// meets the plate volume of <paramref name="x"/>, a fixture of <paramref name="set"/>. Floor boxes never are.
+     /// </summary>
+@@ -891,7 +928,7 @@
+     public static bool IsOccludedBy(FrontRoomsWallFixtureSet set, in Fixture x, List<FrontRoomsWallFixtureSet> others)
+     {
+         if (!occlusion || set == null || x.cls == FixtureClass.Floor) return false;
+-        var plate = PlateBounds(x);
++        var plate = FixtureVolume(set, x);
+         if (Meets(set.occluders, plate)) return true;
+         if (others == null || others.Count == 0) return false;
+         Bounds world = default;
+--- c1/FrontRoomsWallFixtureSet.cs
++++ int/FrontRoomsWallFixtureSet.cs
+@@ -68,6 +68,16 @@
+     [System.NonSerialized] internal int liveCount;             // fixtures with at least one drawable LOD
+     [System.NonSerialized] internal int hiddenCount;           // fixtures not drawn because an occluder covers them
+     [System.NonSerialized] internal bool[] hidden;             // per fixture: behind a wall unit (stage 2, rule 1)
++    // Attachments: the EMT conduit tiles and straps above a handy box, each culled and LOD-picked on its own.
++    [System.NonSerialized] internal int[] attachFirst;         // per fixture: first attachment, count in attachCount
++    [System.NonSerialized] internal byte[] attachCount;
++    [System.NonSerialized] internal Matrix4x4[] attachLocal;   // per attachment: root space
++    [System.NonSerialized] internal Matrix4x4[] attachWorld;
++    [System.NonSerialized] internal Vector3[] attachPosition;  // per attachment: world cull point
++    [System.NonSerialized] internal Vector3[] attachPivot;     // per attachment: the cull point in kit space
++    [System.NonSerialized] internal int[] attachRecipe;        // per attachment x 3 LODs
++    [System.NonSerialized] internal byte[] attachLodSet;
++    [System.NonSerialized] internal int attachTotal;
+ 
+     void OnEnable()
+     {
+--- c1/FrontRoomsWallFixtureRenderer.cs
++++ int/FrontRoomsWallFixtureRenderer.cs
+@@ -10,6 +10,10 @@
+ // always the case for the wall-match material). Shadows off, no light or
+ // reflection probes, the set's layer (Default in the game), camera motion vectors.
+ //
++// A handy box (Tall halls) also draws its EMT run up to the face's ceiling: 1 m
++// Kit_ConduitEMT tiles from its conduit_base anchor (the last one scaled in Y) and
++// a Kit_ConduitStrap every 1.5 m, each tile and strap culled and LOD-picked on its own.
++//
+ // Stage 2, rule 1: a wall fixture whose plate volume meets a wall unit's box
+ // (FrontRoomsWallFixtureSet.AddOccluder, from the Office kit) is not drawn.
+ //
+@@ -88,6 +92,8 @@
+         /// <summary>Draws per pass if every palette material had instancing on (P-6): one per bucket flush, plus the forced singles.</summary>
+         public int callsWithInstancing;
+         public int lod0, lod1, lod2;
++        /// <summary>Conduit tiles and straps drawn above handy boxes (each its own distance, LOD and frustum test).</summary>
++        public int attachments;
+         public long triangles;
+         public double submitMs;
+         public int Calls => instancedCalls + singleCalls;
+@@ -116,6 +122,9 @@
+         public float plateH = .1143f;
+         public Vector3[] screws = Array.Empty<Vector3>();
+         public int lodSet;
++        /// <summary>Kit_OutletHandyBox: where the EMT run starts (its sidecar anchor conduit_base, kit space).</summary>
++        public bool hasConduit;
++        public Vector3 conduitBase;
+     }
+ 
+     struct LodSet
+@@ -145,8 +154,17 @@
+     static readonly bool[] KitResolved = new bool[Kits.Length];
+     static KitMeshes screwKit;
+     static bool screwResolved;
++    static KitMeshes conduitKit, strapKit;
++    static bool conduitResolved;
+     static int libraryVersion = 1;
+ 
++    /// <summary>The EMT run above a handy box (10_spec.md §1.3, §3.4): 1 m tiles stacked to the ceiling, the last one scaled in Y.</summary>
++    public const string ConduitKitName = "Kit_ConduitEMT", StrapKitName = "Kit_ConduitStrap";
++    /// <summary>Strap heights above the conduit's start: the first near the box, then every 1.5 m (10_spec.md §1.3), none in the last 0.15 m.</summary>
++    public const float StrapFirst = .25f, StrapPitch = 1.5f, StrapTopClear = .15f;
++    const float ConduitRadius = .55f, StrapRadius = .05f;
++    const float ConduitAxis = .0115f;   // the tube axis off the wall (Kit_ConduitEMT / Kit_ConduitStrap axisOffset)
++
+     /// <summary>Forget resolved kits, materials and recipes (kits or surfaces were re-imported). Every set rebuilds its cache.</summary>
+     public static void ClearCache()
+     {
+@@ -154,6 +172,8 @@
+         Array.Clear(KitResolved, 0, KitResolved.Length);
+         screwKit = null;
+         screwResolved = false;
++        conduitKit = strapKit = null;
++        conduitResolved = false;
+         Materials.Clear();
+         Recipes.Clear();
+         RecipeIndex.Clear();
+@@ -218,6 +238,20 @@
+         return screwKit;
+     }
+ 
++    /// <summary>The conduit tile and strap kits (no placeholder: a handy box draws no run until both exist).</summary>
++    static bool ConduitKits(out KitMeshes tile, out KitMeshes strap)
++    {
++        if (!conduitResolved)
++        {
++            conduitResolved = true;
++            conduitKit = F.KitExists(ConduitKitName) ? Load(ConduitKitName, F.FixtureKit.None, ConduitRadius) : null;
++            strapKit = F.KitExists(StrapKitName) ? Load(StrapKitName, F.FixtureKit.None, StrapRadius) : null;
++        }
++        tile = conduitKit;
++        strap = strapKit;
++        return tile != null && strap != null;
++    }
++
+     [Serializable]
+     sealed class Sidecar
+     {
+@@ -230,7 +264,7 @@
+     [Serializable]
+     sealed class OutletMeta { public float plateW, plateH, proud; }
+ 
+-    static KitMeshes Load(string name, F.FixtureKit k)
++    static KitMeshes Load(string name, F.FixtureKit k, float radius = -1f)
+     {
+         var model = Resources.Load<GameObject>(FrontRoomsKitLibrary.ModelFolder + name);
+         if (model == null) return null;
+@@ -249,6 +283,7 @@
+             for (var s = 0; s < mats.Length; s++) km.slots[level][s] = mats[s] != null ? mats[s].name.Replace(" (Instance)", string.Empty) : null;
+         }
+         if (km.lod[0] == null) return null;
++        var ownLod2 = km.lod[2] != null;
+         for (var l = 1; l < 3; l++)
+             if (km.lod[l] == null) { km.lod[l] = km.lod[l - 1]; km.slots[l] = km.slots[l - 1]; km.imported[l] = km.imported[l - 1]; }
+         var text = Resources.Load<TextAsset>(FrontRoomsKitLibrary.ModelFolder + name);
+@@ -260,6 +295,9 @@
+                 foreach (var a in side.anchors)
+                     if (a != null && a.name == "screw_" + s && a.pos != null && a.pos.Length >= 3) screws.Add(new Vector3(a.pos[0], a.pos[1], a.pos[2]));
+         km.screws = screws.ToArray();
++        if (side?.anchors != null)
++            foreach (var a in side.anchors)
++                if (a != null && a.name == "conduit_base" && a.pos != null && a.pos.Length >= 3) { km.hasConduit = true; km.conduitBase = new Vector3(a.pos[0], a.pos[1], a.pos[2]); }
+         if (side?.outlet != null && side.outlet.plateH > 0f) km.plateH = side.outlet.plateH > 1f ? side.outlet.plateH * .001f : side.outlet.plateH;
+         else if (side?.boundsMin != null && side.boundsMax != null && side.boundsMin.Length >= 2 && side.boundsMax.Length >= 2) km.plateH = side.boundsMax[1] - side.boundsMin[1];
+         var d = DefaultDistances(k);
+@@ -269,8 +307,10 @@
+             if (side.lodDistances[0] > 0f) d.x = side.lodDistances[0];
+             if (side.lodDistances[1] > 0f) d.y = side.lodDistances[1];
+             if (side.lodDistances[2] > 0f) d.z = side.lodDistances[2];
++            // No LOD2 in the FBX and no cull distance (Kit_ConduitStrap: 2 / 6 / -1): culled where LOD1 ends.
++            else if (!ownLod2 && side.lodDistances[1] > 0f) d.z = d.y;
+         }
+-        km.lodSet = LodSetFor(d.x, d.y, d.z, Radius(k));
++        km.lodSet = LodSetFor(d.x, d.y, d.z, radius >= 0f ? radius : Radius(k));
+         return km;
+     }
+ 
+@@ -604,6 +644,38 @@
+             set.screwLocal = new Matrix4x4[size];
+             set.screwWorld = new Matrix4x4[size];
+         }
++        if (set.attachFirst == null || set.attachFirst.Length < set.localMatrix.Length)
++        {
++            set.attachFirst = new int[set.localMatrix.Length];
++            set.attachCount = new byte[set.localMatrix.Length];
++        }
++    }
++
++    static void EnsureAttachArrays(FrontRoomsWallFixtureSet set, int attachments)
++    {
++        if (attachments == 0 || (set.attachLocal != null && set.attachLocal.Length >= attachments)) return;
++        var size = Mathf.NextPowerOfTwo(Mathf.Max(8, attachments));
++        set.attachLocal = new Matrix4x4[size];
++        set.attachWorld = new Matrix4x4[size];
++        set.attachPosition = new Vector3[size];
++        set.attachRecipe = new int[size * 3];
++        set.attachLodSet = new byte[size];
++        set.attachPivot = new Vector3[size];
++    }
++
++    /// <summary>
++    /// The EMT run above a handy box: from the kit's conduit_base anchor straight up to the face's ceiling.
++    /// Returns the run length (0 when there is none) and how many tiles and straps it takes.
++    /// </summary>
++    static float ConduitRun(FrontRoomsWallFixtureSet set, in F.Fixture x, KitMeshes km, out int tiles, out int straps)
++    {
++        tiles = straps = 0;
++        if (km == null || !km.hasConduit || x.face < 0 || x.face >= set.faces.Count) return 0f;
++        var length = set.faces[x.face].ceiling - (x.position.y + km.conduitBase.y);
++        if (length < .1f) return 0f;
++        tiles = Mathf.Max(1, Mathf.CeilToInt(length - .05f));     // the last tile is scaled to the remainder (0.05-1.05 m)
++        for (var s = StrapFirst; s < length - StrapTopClear; s += StrapPitch) straps++;
++        return length;
+     }
+ 
+     /// <summary>The kit origin's matrix in the set's root space: T(position) R(look at normal) R_z(roll), then the tilt about the plate's bottom edge.</summary>
+@@ -625,15 +697,20 @@
+         var fixtures = set.fixtures;
+         var n = fixtures.Count;
+         var screwKm = ScrewKit();
++        var conduits = ConduitKits(out var tileKm, out var strapKm);
+         var screws = 0;
++        var attachments = 0;
+         for (var i = 0; i < n; i++)
+         {
+             var km = KitFor(fixtures[i].kit);
+             if (km != null && (fixtures[i].flags & F.FixtureFlags.NoScrew) == 0) screws += km.screws.Length;
++            if (conduits && km != null && km.hasConduit && ConduitRun(set, fixtures[i], km, out var t, out var s) > 0f) attachments += t + s;
+         }
+         EnsureArrays(set, n, screws);
++        EnsureAttachArrays(set, attachments);
+         var live = 0;
+         var screw = 0;
++        var attach = 0;
+         for (var i = 0; i < n; i++)
+         {
+             var x = fixtures[i];
+@@ -641,6 +718,8 @@
+             set.screwFirst[i] = screw;
+             set.screwCount[i] = 0;
+             set.screwRecipe[i] = -1;
++            set.attachFirst[i] = attach;
++            set.attachCount[i] = 0;
+             if (km == null)
+             {
+                 set.recipe[i * 3] = set.recipe[i * 3 + 1] = set.recipe[i * 3 + 2] = -1;
+@@ -655,6 +734,27 @@
+             var local = FixtureMatrix(x, km.plateH);
+             set.localMatrix[i] = local;
+             live++;
++            if (conduits && km.hasConduit && plate != null)
++            {
++                var length = ConduitRun(set, x, km, out var tiles, out var straps);
++                for (var t = 0; t < tiles; t++)
++                {
++                    var sy = t < tiles - 1 ? 1f : length - (tiles - 1);
++                    set.attachLocal[attach] = local * Matrix4x4.TRS(km.conduitBase + new Vector3(0f, t, 0f), Quaternion.identity, new Vector3(1f, sy, 1f));
++                    for (var l = 0; l < 3; l++) set.attachRecipe[attach * 3 + l] = RecipeFor(tileKm, l, plate, device, false);
++                    set.attachPivot[attach] = new Vector3(0f, .5f, ConduitAxis);   // the tile's middle, on the tube axis
++                    set.attachLodSet[attach++] = (byte)tileKm.lodSet;
++                }
++                var k = 0;
++                for (var s = StrapFirst; k < straps; s += StrapPitch, k++)
++                {
++                    set.attachLocal[attach] = local * Matrix4x4.Translate(km.conduitBase + new Vector3(0f, s, 0f));
++                    for (var l = 0; l < 3; l++) set.attachRecipe[attach * 3 + l] = RecipeFor(strapKm, l, plate, device, false);
++                    set.attachPivot[attach] = new Vector3(0f, 0f, ConduitAxis);
++                    set.attachLodSet[attach++] = (byte)strapKm.lodSet;
++                }
++                set.attachCount[i] = (byte)(tiles + straps);
++            }
+             if ((x.flags & F.FixtureFlags.NoScrew) != 0 || km.screws.Length == 0 || screwKm == null || plate == null) continue;
+             set.screwRecipe[i] = RecipeFor(screwKm, 0, plate, device, wallMatch);
+             var roll = Quaternion.Euler(0f, 0f, x.screwRoll);
+@@ -662,6 +762,7 @@
+             set.screwCount[i] = (byte)km.screws.Length;
+         }
+         set.liveCount = live;
++        set.attachTotal = attach;
+         set.cachedChange = set.changeCount;
+         set.cachedLibrary = libraryVersion;
+     }
+@@ -715,6 +816,17 @@
+             max = Vector3.Max(max, p);
+             var c = set.screwCount[i];
+             for (var s = 0; s < c; s++) set.screwWorld[set.screwFirst[i] + s] = root * set.screwLocal[set.screwFirst[i] + s];
++            var ac = set.attachCount[i];
++            for (var a = set.attachFirst[i]; a < set.attachFirst[i] + ac; a++)
++            {
++                var aw = root * set.attachLocal[a];
++                set.attachWorld[a] = aw;
++                // Cull at the tile's middle on the tube axis (its origin is the bottom, on the wall); a strap at its own centre.
++                var ap = aw.MultiplyPoint3x4(set.attachPivot[a]);
++                set.attachPosition[a] = ap;
++                min = Vector3.Min(min, ap);
++                max = Vector3.Max(max, ap);
++            }
+         }
+         set.worldBounds = n > 0 ? new Bounds((min + max) * .5f, max - min + Vector3.one * .5f) : default;
+         set.cachedRoot = root;
+@@ -794,6 +906,9 @@
+                 {
+                     var r0 = set.recipe[i * 3];
+                     if (r0 < 0 || set.hidden[i]) continue;
++                    // A handy box's conduit run: every tile and strap is culled and LOD-picked on its own (it reaches the ceiling).
++                    var ac = set.attachCount[i];
++                    if (ac > 0) DrawAttachments(set, set.attachFirst[i], ac, eye, lodScale2, reach2);
+                     var p = set.worldPosition[i];
+                     float dx = p.x - eye.x, dy = p.y - eye.y, dz = p.z - eye.z;
+                     var d2 = dx * dx + dy * dy + dz * dz;
+@@ -845,10 +960,31 @@
+         Accumulated.lod0 += frame.lod0;
+         Accumulated.lod1 += frame.lod1;
+         Accumulated.lod2 += frame.lod2;
++        Accumulated.attachments += frame.attachments;
+         Accumulated.triangles += frame.triangles;
+         Accumulated.submitMs += frame.submitMs;
+     }
+ 
++    static void DrawAttachments(FrontRoomsWallFixtureSet set, int first, int count, Vector3 eye, float lodScale2, float reach2)
++    {
++        for (var a = first; a < first + count; a++)
++        {
++            var p = set.attachPosition[a];
++            float dx = p.x - eye.x, dy = p.y - eye.y, dz = p.z - eye.z;
++            var d2 = dx * dx + dy * dy + dz * dz;
++            if (d2 > reach2) continue;
++            var ls = LodSets[set.attachLodSet[a]];
++            var s2 = d2 * lodScale2;
++            if (s2 >= ls.dcull * ls.dcull || !Visible(p, ls.radius)) continue;
++            var lod = s2 < ls.d01 * ls.d01 ? 0 : s2 < ls.d12 * ls.d12 ? 1 : 2;
++            var r = set.attachRecipe[a * 3 + lod];
++            if (r < 0) continue;
++            var recipe = Recipes[r];
++            for (var e = 0; e < recipe.Length; e++) Append(recipe[e], set.attachWorld[a], p);
++            frame.attachments++;
++        }
++    }
++
+     static bool Visible(Vector3 p, float radius)
+     {
+         for (var k = 0; k < 6; k++)
