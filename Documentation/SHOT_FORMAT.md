@@ -52,6 +52,8 @@ There is no footer and no outer margin, and the gutters are 4 px. Compact on pur
   - `logo_black.png` is the same mark in ink #0A0A0A for a light ground. No light band exists yet.
 - **Size:** the letters are exactly as tall as the title's caps (0.70 × 44 = 30.8 px at 1920 wide).
 - **Place:** right-aligned at the band's side padding (24 px), its letter tops on the title's cap top.
+- **Clear space** (广告's logo rule, AD_TYPE_SYSTEM §6): at least half the letter height between the logo and the title or chip. The title truncates at a 32 px gap (× u), which is more than half of 30.8.
+- The tool crops the PNG's transparent padding at load (`_logo()`), so the letters, not the canvas, match the caps. Measured 10-22 on `tp2_optA_distance_strip.png` at u 1.375: logo letters 42 px, title caps 42 px (expected 42.3).
 - Never recoloured, stretched or cropped. Never made semi-transparent over the evidence.
 
 ## 5. Verdict chips (the words of `VERIFICATION_LOG.md` §1.6)

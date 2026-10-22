@@ -1,0 +1,79 @@
+tag	seq	rf	field	worstShare	worstShare_t	worstShareW1	worstShareW1_t	flashesAll	all_t	all_xy	all_instants	flashesW1	w1_t	w1_xy	w1_instants	flashesNotW1	notW1_t	notW1_xy	notW1_instants	shareGt3	shareGt3_t	shareGt3_dipInWindow	shareGt2	shareGt2_t	shareGt2_dipInWindow	maxInstants	source
+L0_rf0	L0_rf0	rf0	field1/3	0.351	2.800	0.351	2.800	1.0	2.450	(320, 120)	2.45F* 2.80R*	1.0	2.450	(320, 120)	2.45F* 2.80R*	0.0				0.018	19.05	1	0.019	19.10	1	8	verifier ev
+L0_rf0	L0_rf0	rf0	field1/4	0.546	2.800	0.546	2.800	2.0	8.283	(328, 152)	8.28F* 8.63R* 8.88F* 9.23R*	2.0	8.283	(328, 152)	8.28F* 8.63R* 8.88F* 9.23R*	0.0				0.032	19.05	1	0.035	19.10	1	15	verifier ev
+L0_rf0	L0_rf0	rf0	screen	0.069	8.850	0.069	8.850	0.0				0.0				0.0				0.002	19.05	1	0.002	19.10	1	0	verifier ev
+Office_rf0	Office_rf0	rf0	field1/3	0.237	23.100	0.190	15.600	0.0				0.0				0.0				0.213	22.55	0	0.215	22.55	0	0	verifier ev
+Office_rf0	Office_rf0	rf0	field1/4	0.411	23.100	0.279	15.600	1.0	1.667	(0, 40)	1.67R* 2.55F*	1.0	1.667	(0, 40)	1.67R* 2.55F*	1.0	5.183	(32, 176)	5.18F 5.38R	0.369	22.55	0	0.372	22.55	0	5	verifier ev
+Office_rf0	Office_rf0	rf0	screen	0.051	15.583	0.051	15.583	0.0				0.0				0.0				0.024	23.00	1	0.024	23.00	1	0	verifier ev
+Office_rf1	Office_rf1	rf1	field1/3	0.147	28.566	0.144	6.350	0.0				0.0				0.0				0.000		0	0.000		0	0	verifier ev
+Office_rf1	Office_rf1	rf1	field1/4	0.264	28.566	0.256	6.350	0.5	0.383	(0, 40)	0.38F	0.5	6.350	(0, 40)	6.35F*	0.5	0.383	(0, 40)	0.38F	0.000		0	0.000		0	6	verifier ev
+Office_rf1	Office_rf1	rf1	screen	0.023	26.566	0.023	26.566	0.0				0.0				0.0				0.000		0	0.000		0	0	verifier ev
+Tall_rf0	Tall_rf0	rf0	field1/3	0.188	26.750	0.188	26.750	0.0				0.0				0.0				0.014	28.10	0	0.014	28.00	0	0	verifier ev
+Tall_rf0	Tall_rf0	rf0	field1/4	0.252	26.733	0.252	26.733	0.5	26.733	(360, 64)	26.73F*	0.5	26.733	(360, 64)	26.73F*	0.0				0.025	28.10	0	0.025	28.00	0	1	verifier ev
+Tall_rf0	Tall_rf0	rf0	screen	0.036	26.766	0.036	26.766	0.0				0.0				0.0				0.002	28.10	0	0.002	28.15	0	0	verifier ev
+Placard_rf0	Placard_rf0	rf0	field1/3	0.928	14.450	0.918	14.600	1.0	14.383	(288, 64)	14.38R 14.60F*	0.5	14.600	(288, 64)	14.60F*	0.5	4.500	(144, 32)	4.50R	0.000		0	0.000		0	3	verifier ev
+Placard_rf0	Placard_rf0	rf0	field1/4	0.979	14.367	0.976	14.600	1.0	14.383	(288, 64)	14.38R 14.60F*	0.5	14.600	(288, 64)	14.60F*	0.5	4.500	(192, 40)	4.50R	0.000		0	0.000		0	3	verifier ev
+Placard_rf0	Placard_rf0	rf0	screen	0.169	14.450	0.155	14.600	0.0				0.0				0.0				0.000		0	0.000		0	0	verifier ev
+L0Pre_rf0	L0Pre_rf0	rf0	field1/3	0.178	8.883	0.178	8.883	0.0				0.0				0.0				0.025	6.25	0	0.028	6.25	0	0	verifier ev
+L0Pre_rf0	L0Pre_rf0	rf0	field1/4	0.300	15.917	0.296	22.067	1.5	15.417	(0, 40)	15.42R 15.92F 16.42R	0.5	8.167	(0, 32)	8.17F*	1.5	15.417	(0, 40)	15.42R 15.92F 16.42R	0.046	6.25	0	0.050	6.25	0	14	verifier ev
+L0Pre_rf0	L0Pre_rf0	rf0	screen	0.033	2.417	0.033	2.417	0.0				0.0				0.0				0.003	6.25	0	0.003	6.25	0	0	verifier ev
+L0Pre_rf1	L0Pre_rf1	rf1	field1/3	0.156	3.750	0.151	22.983	0.0				0.0				0.0				0.000		0	0.028	12.65	0	0	verifier ev
+L0Pre_rf1	L0Pre_rf1	rf1	field1/4	0.280	3.750	0.271	22.983	1.0	22.983	(0, 40)	22.98F* 23.17R*	1.0	22.983	(0, 40)	22.98F* 23.17R*	0.5	3.750	(0, 32)	3.75R	0.000		0	0.050	12.65	0	10	verifier ev
+L0Pre_rf1	L0Pre_rf1	rf1	screen	0.018	22.983	0.018	22.983	0.0				0.0				0.0				0.000		0	0.003	12.65	0	0	verifier ev
+OfficePre_rf0	OfficePre_rf0	rf0	field1/3	0.221	0.933	0.221	0.933	0.0				0.0				0.0				0.113	6.80	1	0.114	6.80	1	0	verifier ev
+OfficePre_rf0	OfficePre_rf0	rf0	field1/4	0.265	15.600	0.265	15.600	1.0	0.900	(96, 120)	0.90F* 1.20R*	1.0	0.900	(96, 120)	0.90F* 1.20R*	0.0				0.203	6.80	1	0.204	6.80	1	2	verifier ev
+OfficePre_rf0	OfficePre_rf0	rf0	screen	0.043	0.933	0.043	0.933	0.0				0.0				0.0				0.021	22.30	0	0.021	22.30	0	0	verifier ev
+TallPre_rf0	TallPre_rf0	rf0	field1/3	0.194	26.750	0.194	26.750	0.0				0.0				0.0				0.019	13.65	1	0.019	14.00	1	0	verifier ev
+TallPre_rf0	TallPre_rf0	rf0	field1/4	0.253	26.750	0.253	26.750	0.5	26.750	(0, 64)	26.75F*	0.5	26.750	(0, 64)	26.75F*	0.0				0.033	13.65	1	0.034	14.00	1	1	verifier ev
+TallPre_rf0	TallPre_rf0	rf0	screen	0.061	26.783	0.061	26.783	0.0				0.0				0.0				0.002	13.65	1	0.003	14.00	1	0	verifier ev
+L0PreCtl_rf0	L0PreCtl_rf0	rf0	field1/3	0.169	22.916	0.000	0.000	0.0				0.0				0.0				0.040	25.45	0	0.041	25.25	0	0	verifier ev
+L0PreCtl_rf0	L0PreCtl_rf0	rf0	field1/4	0.302	22.916	0.000	0.000	1.0	4.333	(0, 32)	4.33F 4.80R	0.0				1.0	4.333	(0, 32)	4.33F 4.80R	0.072	25.45	0	0.074	25.25	0	14	verifier ev
+L0PreCtl_rf0	L0PreCtl_rf0	rf0	screen	0.019	22.916	0.000	0.000	0.0				0.0				0.0				0.004	25.45	0	0.005	25.25	0	0	verifier ev
+OfficePreCtl_rf0	OfficePreCtl_rf0	rf0	field1/3	0.142	9.717	0.000	0.000	0.0				0.0				0.0				0.114	24.60	0	0.115	24.60	0	0	verifier ev
+OfficePreCtl_rf0	OfficePreCtl_rf0	rf0	field1/4	0.254	9.717	0.000	0.000	0.5	24.850	(80, 120)	24.85F	0.0				0.5	24.850	(80, 120)	24.85F	0.204	24.60	0	0.206	24.60	0	2	verifier ev
+OfficePreCtl_rf0	OfficePreCtl_rf0	rf0	screen	0.016	9.683	0.000	0.000	0.0				0.0				0.0				0.013	24.60	0	0.013	24.60	0	0	verifier ev
+TallPreCtl_rf0	TallPreCtl_rf0	rf0	field1/3	0.035	0.200	0.000	0.000	0.0				0.0				0.0				0.019	18.55	0	0.020	0.00	0	0	verifier ev
+TallPreCtl_rf0	TallPreCtl_rf0	rf0	field1/4	0.051	0.200	0.000	0.000	0.0				0.0				0.0				0.033	18.55	0	0.033	0.00	0	0	verifier ev
+TallPreCtl_rf0	TallPreCtl_rf0	rf0	screen	0.004	0.200	0.000	0.000	0.0				0.0				0.0				0.002	18.55	0	0.002	0.00	0	0	verifier ev
+L0PreCtl_rf1	L0PreCtl_rf1	rf1	field1/3	0.153	15.950	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	verifier y4
+L0PreCtl_rf1	L0PreCtl_rf1	rf1	field1/4	0.274	15.950	0.000	0.000	0.5	15.950	(0, 32)	15.95R	0.0				0.5	15.950	(0, 32)	15.95R	0.000		0	0.000		0	5	verifier y4
+L0PreCtl_rf1	L0PreCtl_rf1	rf1	screen	0.017	15.950	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	verifier y4
+L0_rf1	L0_rf1	rf1	field1/3	0.056	14.500	0.056	14.500	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+L0_rf1	L0_rf1	rf1	field1/4	0.101	14.500	0.101	14.500	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+L0_rf1	L0_rf1	rf1	screen	0.008	14.450	0.008	14.450	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+Tall_rf1	Tall_rf1	rf1	field1/3	0.125	21.866	0.125	21.866	0.0				0.0				0.0				0.001	23.50	0	0.002	0.50	1	0	decoded
+Tall_rf1	Tall_rf1	rf1	field1/4	0.181	21.850	0.181	21.850	0.0				0.0				0.0				0.001	23.50	0	0.004	0.50	1	0	decoded
+Tall_rf1	Tall_rf1	rf1	screen	0.017	12.683	0.017	12.683	0.0				0.0				0.0				0.000	23.50	0	0.000	0.50	1	0	decoded
+Placard_rf1	Placard_rf1	rf1	field1/3	0.002	11.467	0.002	11.467	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+Placard_rf1	Placard_rf1	rf1	field1/4	0.003	11.467	0.003	11.467	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+Placard_rf1	Placard_rf1	rf1	screen	0.000	11.467	0.000	11.467	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+OfficePre_rf1	OfficePre_rf1	rf1	field1/3	0.086	6.633	0.086	6.633	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+OfficePre_rf1	OfficePre_rf1	rf1	field1/4	0.140	6.650	0.140	6.650	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+OfficePre_rf1	OfficePre_rf1	rf1	screen	0.016	22.567	0.016	22.567	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+TallPre_rf1	TallPre_rf1	rf1	field1/3	0.128	21.866	0.128	21.866	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+TallPre_rf1	TallPre_rf1	rf1	field1/4	0.183	27.066	0.183	27.066	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+TallPre_rf1	TallPre_rf1	rf1	screen	0.028	27.083	0.028	27.083	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+OfficePreCtl_rf1	OfficePreCtl_rf1	rf1	field1/3	0.021	21.133	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+OfficePreCtl_rf1	OfficePreCtl_rf1	rf1	field1/4	0.037	21.133	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+OfficePreCtl_rf1	OfficePreCtl_rf1	rf1	screen	0.003	15.150	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+TallPreCtl_rf1	TallPreCtl_rf1	rf1	field1/3	0.017	20.333	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+TallPreCtl_rf1	TallPreCtl_rf1	rf1	field1/4	0.030	20.333	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+TallPreCtl_rf1	TallPreCtl_rf1	rf1	screen	0.002	20.333	0.000	0.000	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_L0_rf0	L0_rf0	rf0	field1/3	0.187	2.817	0.187	2.817	0.0				0.0				0.0				0.025	6.45	0	0.027	6.45	0	0	decoded
+pre_L0_rf0	L0_rf0	rf0	field1/4	0.305	1.117	0.305	1.117	0.5	1.050	(0, 32)	1.05R*	0.5	1.050	(0, 32)	1.05R*	0.0				0.045	6.45	0	0.049	6.45	0	1	decoded
+pre_L0_rf0	L0_rf0	rf0	screen	0.033	8.850	0.033	8.850	0.0				0.0				0.0				0.003	6.45	0	0.003	6.45	0	0	decoded
+pre_L0_rf1	L0_rf1	rf1	field1/3	0.129	1.233	0.129	1.233	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_L0_rf1	L0_rf1	rf1	field1/4	0.232	1.233	0.232	1.233	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_L0_rf1	L0_rf1	rf1	screen	0.014	1.233	0.014	1.233	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_Office_rf0	Office_rf0	rf0	field1/3	0.241	15.600	0.241	15.600	0.0				0.0				0.0				0.000	3.65	0	0.002	0.80	1	0	decoded
+pre_Office_rf0	Office_rf0	rf0	field1/4	0.352	15.600	0.352	15.600	1.0	1.500	(176, 112)	1.50F* 1.77R*	1.0	1.500	(176, 112)	1.50F* 1.77R*	0.0				0.000	3.65	0	0.003	0.80	1	11	decoded
+pre_Office_rf0	Office_rf0	rf0	screen	0.061	15.617	0.061	15.617	0.0				0.0				0.0				0.000	3.65	0	0.000	0.80	1	0	decoded
+pre_Office_rf1	Office_rf1	rf1	field1/3	0.113	14.417	0.113	14.417	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_Office_rf1	Office_rf1	rf1	field1/4	0.168	14.417	0.168	14.417	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_Office_rf1	Office_rf1	rf1	screen	0.021	14.350	0.021	14.350	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_Tall_rf0	Tall_rf0	rf0	field1/3	0.212	26.833	0.212	26.833	0.0				0.0				0.0				0.003	5.10	0	0.004	22.50	1	0	decoded
+pre_Tall_rf0	Tall_rf0	rf0	field1/4	0.312	26.766	0.312	26.766	1.0	26.766	(160, 200)	26.77F* 27.10R*	1.0	26.766	(160, 200)	26.77F* 27.10R*	0.0				0.005	5.10	0	0.007	22.50	1	3	decoded
+pre_Tall_rf0	Tall_rf0	rf0	screen	0.096	26.783	0.096	26.783	0.0				0.0				0.0				0.000	5.10	0	0.000	22.50	1	0	decoded
+pre_Tall_rf1	Tall_rf1	rf1	field1/3	0.134	12.700	0.134	12.700	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_Tall_rf1	Tall_rf1	rf1	field1/4	0.187	12.700	0.187	12.700	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded
+pre_Tall_rf1	Tall_rf1	rf1	screen	0.029	12.717	0.029	12.717	0.0				0.0				0.0				0.000		0	0.000		0	0	decoded

@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated": "2026-10-22o",
+ "updated": "2026-10-22s",
  "owner_data": "系统设计 (system design)",
  "owner_visuals": "平面视觉 · 信息设计 (information design)",
  "groups": [
@@ -255,9 +255,9 @@
    "id": "W2",
    "group": 3,
    "name": "Stage 2: muffled steps",
-   "status": "DESIGN",
-   "status_class": "not_built",
-   "summary": "Its steps through walls, muffled by doors; a hum when it stands still.",
+   "status": "CLONE_ONLY",
+   "status_class": "built",
+   "summary": "Its steps through walls, muffled by doors; a hum when it stands still. Built and measured in 声音设计's clone (steps +10.3 dB over room tone through a shut door); lands with the C10 pass after the Alpha cut.",
    "owner": "Sound",
    "needs": [
     "S6"
@@ -313,7 +313,7 @@
    "name": "Wallpaper arrows",
    "status": "CLONE_ONLY",
    "status_class": "built",
-   "summary": "The print's arrows turn toward a way out, and run with a chase.",
+   "summary": "The print's arrows turn toward the station TV, then the EXIT (C24 = A + A20), and run with a chase. The motion pick is open again (C31).",
    "owner": "Graphic, Level design",
    "needs": [
     "N1",
@@ -321,24 +321,23 @@
    ],
    "closed_note": "Decided: yes (10-07); the exit is set (10-21)",
    "open_decisions": [
-    "C29"
+    "C29",
+    "C31"
    ]
   },
   {
    "id": "W7",
    "group": 3,
    "name": "Screens join warnings",
-   "status": "DESIGN",
+   "status": "OPTION",
    "status_class": "not_built",
-   "summary": "CRTs show interference at stage 1 and an alarm slate in a chase.",
+   "summary": "Parked, not in v1 (C09, Red 10-22): CRTs would show interference at stage 1 and an alarm slate in a chase. Screens never sag or roll with the lamps.",
    "owner": "Graphic, Game visuals",
    "needs": [
     "S6"
    ],
    "closed_note": null,
-   "open_decisions": [
-    "C09"
-   ]
+   "open_decisions": []
   },
   {
    "id": "W8",
@@ -346,16 +345,14 @@
    "name": "Warnings on today's Relay",
    "status": "PARTLY_LIVE",
    "status_class": "in_game",
-   "summary": "W1 lamps live on today's Relay (10-22); W2 steps wait on 声音设计.",
+   "summary": "W1 lamps live on today's Relay (10-22). The W2 pass (steps, stingers and clicks out, tension by stage, the drone gated, the WarnBurst groan) is packaged and lands after the Alpha cut.",
    "owner": "Level design, Sound",
    "needs": [
     "W1",
     "W2"
    ],
    "closed_note": "Decided: yes, W1 first (10-21)",
-   "open_decisions": [
-    "C30"
-   ]
+   "open_decisions": []
   },
   {
    "id": "D1",
@@ -1291,7 +1288,7 @@
    "recommendation": "Yes",
    "status": "answered",
    "date": "2026-10-07",
-   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate, WebGL turns only); it waited on the exit"
+   "answer": "Yes (Red 10-07: scale-fit A, staggered V1, 30° ratchet, no dark gate, WebGL turns only); it waited on the exit. The motion pick was re-opened on 2026-10-22 (C31): asked to confirm A + M4 + V1, Red chose \"再看一次其他方案\" in the 动画和动态图形模型技术 chat"
   },
   {
    "id": "C09",
@@ -1299,8 +1296,10 @@
    "ref": "SCREENS §4",
    "question": "Do screens join the warning language?",
    "recommendation": "No in v1",
-   "status": "open",
-   "rationale": "Asked by 平面视觉 · 广告 as its SCREENS §4 question. Why not in v1: each cue keeps one meaning, the lamps and steps are not even in yet, and a third channel would muddy what the next playtest can tell apart. The tutorial TV beacon (N6, 10-22) is a broadcast, not a warning: it ducks under every warning, so \"one meaning per cue\" still holds."
+   "status": "answered",
+   "rationale": "Asked by 平面视觉 · 广告 as its SCREENS §4 question. Why not in v1: each cue keeps one meaning, the lamps and steps are not even in yet, and a third channel would muddy what the next playtest can tell apart. The tutorial TV beacon (N6, 10-22) is a broadcast, not a warning: it ducks under every warning, so \"one meaning per cue\" still holds.",
+   "date": "2026-10-22",
+   "answer": "1: not in v1. TVs stay ambience and the tutorial beacon a broadcast; the lamps (W1) and steps (W2) carry the warning, one meaning per cue. SCREENS §4 is parked; the 10-14 rule stays: screens never sag or roll on FixtureChanged or LampDipped"
   },
   {
    "id": "C10",
@@ -1717,7 +1716,9 @@
    "question": "Also fix the two other through-wall \"near\" sounds now, in 声音设计's W2 pass, not in v2?",
    "recommendation": "1, both now: tension follows the warning stage; the drone plays only at stage 2 or in sight, muffled like the steps",
    "rationale": "C10 (Red 10-21) moved §13 items 1, 2 and 4 to now: the 2D stingers, the release clicks and the straight-line heartbeat, because they say \"near\" through any number of walls. Items 3 and 5 have the same flaw but stayed with v2 (gated on UsesArrive): (5) tension = state weight x straight-line proximity, so the HumBed beating swells as the Relay closes in through walls; (3) the presence drone [LOW DRONE] is always on while released, louder with straight-line proximity. Their v2 forms are approved (C02, C06): tension 0.05 / 0.2 / 0.4 / 1.0 by stage, rise 1/s, fall 0.25/s; the drone gated to stage >= 2 or PlayerSeesRelay with the steps' path gain and muffle, the proper coil hum still in v2. No new hooks (WarnStage is in v1). Options: 1 both now; 2 tension now, drone in v2; 3 both in v2. 声音设计 builds them as separable parts, so no answer causes rework. Asked by 系统设计 in its own chat on 2026-10-22.",
-   "status": "open"
+   "status": "answered",
+   "date": "2026-10-22",
+   "answer": "1: both now, in 声音设计's W2 pass: tension follows the warning stage (0.05 / 0.2 / 0.4 / 1.0), and the presence drone plays only at stage 2 or in sight, muffled like the steps, until v2's coil hum (apply_c10.sh --c30 both)"
   },
   {
    "id": "A22",
@@ -1738,6 +1739,15 @@
    "status": "answered",
    "date": "2026-10-22",
    "answer": "Keep E·1. A playtest question asks what the eye meant; if testers read it as being seen, switch to E·3 (parameters only)"
+  },
+  {
+   "id": "C31",
+   "system": "W6",
+   "ref": "Wall-cue motion (动画和动态图形模型技术; previews in Research/week03/wallpaper_cue/)",
+   "question": "Which wall-cue motion ships: A + M4 + V1, or another of M1-M4 and V1-V3?",
+   "recommendation": "A + M4 + V1 (the wallpaper line's pick)",
+   "rationale": "C08 (build the arrows) stays yes. Red's 10-07 picks were scale-fit A, staggered V1, a 30° ratchet, no dark gate and turns only on WebGL. On 2026-10-22, asked to confirm A + M4 + V1 (preview cue_ingame_preview_v2_corridor.mp4), Red chose \"再看一次其他方案\" (look at the other options again) in the 动画和动态图形模型技术 chat. That line re-sent the previews and asks Red in its own chat: record the answer only from Red's words there. Where the arrows point is settled separately (C24 = A + A20).",
+   "status": "open"
   }
  ],
  "landing_order_proposed": [

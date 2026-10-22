@@ -136,7 +136,7 @@ Times are for a first-time player who walks. Owner and status are at the end of 
 
 ### 4.1 Fiction
 - **The station is the floor's attendant post.** A 1990 office floor's keys hang at the guard or reception desk. UBC 1991 and NYC LL5 make stair doors that lock and are released from a control station period-true (`stairwell/01` §0).
-- The attendant is gone, but their set is still on: WTCZ-TV 61, `STAY TUNED.`, airing the Front Rooms Furniture ad (`screens/30_screen_strings.md` §1–3). (The ad video in the game today, Ad_02, still shows WXRM until Red OKs Ad_03 in 平面视觉 · 广告's chat.)
+- The attendant is gone, but their set is still on: WTCZ-TV 61, `STAY TUNED.`, airing the Front Rooms Furniture ad (`screens/30_screen_strings.md` §1–3). (The game has shown Ad_03 with the WTCZ card since 10-22 10:03: `Assets/StreamingAssets/FrontRooms_Ad_01.mp4` sha1 8bde2101, swapped by 游戏视觉 on Red's OK in 平面视觉 · 广告's chat.)
 - **Taking the stair key from the rack is an alarm condition**, in EGRESS terms: a device trips, and the panel sends its responder to that device, never to you (`relay_pursuit/30_narrative.md` §1). The TV dies because the panel drops the station's non-emergency circuit.
 - **No new fiction is invented beyond the station.** Station, set, ad and panel already exist in the canon.
 
@@ -416,6 +416,7 @@ On Floor 1 the beacon and the route agree, because the station is past the EXIT.
 | First catch comes after at least one W1 burst | ≥ 90 % | — |
 | Can say what dipping lamps mean after the run | ≥ 5 of 9 | — |
 | Ever confuse the TV with the hunter's sounds | 0 | — |
+| Phones only (L4): can say that a slow creep is unheard and a walk is heard, after the run *(DRAFT, added 10-22 by 总控 after the X2 review; 交互设计's X2 log can time the first deliberate creep after the first release)* | ≥ 5 of the phone players | — |
 
 关卡设计's autopilot report can log the timed ones (Space → station, take → EXIT, EXAMINE opened).
 

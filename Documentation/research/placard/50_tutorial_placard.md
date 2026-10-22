@@ -39,7 +39,7 @@
 | Code | Lesson | On the sheet | Live 10-22 |
 |---|---|---|---|
 | L0 | Where you are (the placard's own) | YOU ARE HERE at the posting spot; the plan turned so the start door is up | yes |
-| L1 | One way on: the EXIT stair | The stair at the route's end, labelled EXIT under its lit sign; the door you came in by drawn shut, NO RE-ENTRY | building (N1, C22, C23) |
+| L1 | One way on: the EXIT stair | The stair at the route's end, labelled EXIT under its lit sign; the door you came in by drawn shut, NO REENTRY | building (N1, C22, C23) |
 | L2 | The stair door is locked; the key is where the TV plays | A padlock on the stair door; the attendant station (desk, TV, key) in the legend; line 4 | design (tutorial option A) |
 | L4 | Walk: running is heard | Line 1 `WALK, DO NOT RUN.` | yes (sprint 26 m) |
 | L5 | Shut doors slow it | Line 2 `CLOSE DOORS BEHIND YOU.` | yes (S1, D1) |
@@ -62,7 +62,7 @@ Not on the sheet:
    - no live threat information. Line 3 says "near", never "where".
 3. **One symbol, one rule.**
    - The padlock means "a key opens this", and nothing else.
-   - The start door is drawn shut with NO RE-ENTRY, never with a padlock: no key opens it.
+   - The start door is drawn shut with NO REENTRY, never with a padlock: no key opens it.
 4. **Turned to the reader** (ISO 23601 §5 j and §7.3 a; Levine 1982; Levine, Marchon and Hanley 1984).
    - Up on the plan is the wall the placard hangs on, so the start door is at the top and north points down.
    - v3 was misaligned on purpose (10_spec §1.6); a tutorial cannot be.
@@ -115,7 +115,7 @@ Derived from the shipped sheet and the EXAMINE readability rule (`research/inspe
 | Header, floor number | Heros Bold 15 mm caps, +0.6 mm, in a 24 mm band (ISO §6 b: ≥ 19.5 mm band, ≥ 11.7 mm caps on a 279 mm sheet) | walk-up (reads from 0.86 m) |
 | The four lines | Heros Bold **5.0 mm** caps, +0.1 mm, white on safety red (5.9:1), numbered, 7.6 mm line pitch | EXAMINE base: 12.75 px (bar 4.7 mm) |
 | Legend labels, YOU ARE HERE, EXIT | Heros Bold 5.0 mm caps | EXAMINE base |
-| Block head, room labels, NO RE-ENTRY | Heros Bold 3.6–4.4 mm caps, +0.3–0.5 mm | zoom step |
+| Block head, room labels, NO REENTRY | Heros Bold 3.6–4.4 mm caps, +0.3–0.5 mm | zoom step |
 | Fine print: scale, sheet refs, title block | Heros 2.8–3.6 mm | zoom step (5.0 px/mm) |
 | Pictograms | 8–40 mm; strokes ≥ 0.6 mm; walls 1.8 mm poché (ISO §6 c, d) | walk-up as shapes; EXAMINE in detail |
 
@@ -169,6 +169,7 @@ Line 4 assumes 教程设计's option A (Red's T1 in `10_proposal.md` §12). Unti
 **Sign-off** (`research/narrative/40_floors_exit_tutorial_strings.md` §3). Three changes; everything else is signed as drafted:
 - line 1 `1 WALK, DO NOT RUN.`: a comma, the set phrase of Red's A.12 footer;
 - line 4 `4 STAIR DOORS ARE LOCKED.` / `KEY AT SECURITY DESK.`;
+- the start-door label `NO REENTRY`, with no hyphen. This is the 1973 code form (NYC LL5 §C26-608.5, `SOURCES.md` M5), set by 叙事 at 10:2x, the same spelling as the stair plates. Sheets B and C keep the old hyphenated form until they are used.
 - legend `SECURITY` / `DESK (KEY)` and plan label `SECURITY DESK`. They replace "attendant station" wherever a player can read it, because that is not a 1990 office-floor term. Internal names (`Station_*`) stay.
 
 **Pending Red, in 叙事's chat; ship the "until Red" form:**
@@ -180,7 +181,7 @@ The draft as it stood:
 - **Lines:** `IN CASE OF ALARM`; `1 WALK. DO NOT RUN.`; `2 CLOSE DOORS BEHIND YOU.`; `3 IF THE LIGHTS DIM,` / `LEAVE THE AREA.`; `4 STAIR DOORS ARE LOCKED.` / `KEY AT ATTENDANT STATION.`
 - **Legend:** `LEGEND`, `YOU ARE HERE`, `STAIR (EXIT)` / `ONE FLOOR DOWN`, `ATTENDANT` / `STATION (KEY)`, and in C `LOCKED DOOR`.
 - **Plan:**
-  - `NO RE-ENTRY`, `EXIT` (the sign), `STAIR A`, `ATTENDANT STATION`;
+  - `NO REENTRY`, `EXIT` (the sign), `STAIR A`, `ATTENDANT STATION`;
   - A: `TYPICAL FLOOR · NOT TO SCALE`, `THIS FLOOR MAY DIFFER FROM PLAN`;
   - B: `MATCH LINE — SEE SHEET A-3`, `NOT TO SCALE`, `BEYOND MATCH LINE: NOT TO SCALE`;
   - C: `STAIR A · EXIT`, `SHEET C-3 BEYOND THIS EDGE`, `PRINTED FOR LEVEL 3` (signed: `PRINTED FOR LEVEL B3`).
@@ -291,8 +292,8 @@ The draft as it stood:
 **Red, in this chat:** "A 先上". Sheet A is the placard, and sheet C stays the later step (call 1).
 
 **Art.** In `Tools/print/ink/art_from_graphic/placard/` (see that README §Sheet A), new subfolders only; the v3 files at the top are untouched.
-- `sheetA_phase0/`: print md5 `dcf46c7a…` (regenerated 10-22 09:1x with 叙事's signed strings; was `c3bd0af5…`), glow `0f42609b…` (unchanged). In-game swap when the C22 stairwell (the EXIT) is in main **and** G1 holds.
-- `sheetA/`: print md5 `96f4b0df…` (regenerated 10-22 09:1x with 叙事's signed strings; was `b819a8a9…`), glow `99ea4ac6…` (unchanged). Swap when the stair lock and the station (tutorial Option A) are live.
+- `sheetA_phase0/`: print md5 `60fd4cf1…` (regenerated 10-22 10:2x for `NO REENTRY`; before that `dcf46c7a…` (09:1x) and `c3bd0af5…`), glow `0f42609b…` (unchanged). In-game swap when the C22 stairwell (the EXIT) is in main **and** G1 holds.
+- `sheetA/`: print md5 `59705857…` (regenerated 10-22 10:2x for `NO REENTRY`; before that `96f4b0df…` (09:1x) and `b819a8a9…`), glow `99ea4ac6…` (unchanged). Swap when the stair lock and the station (tutorial Option A) are live.
 - Each folder has the v3 file names for `pack_evac_plan.py` (2592 × 1674 print and glow mask, 3 px/mm previews) and `examine.json`.
 - The print is byte-identical to the reviewed render (VL337, TP01/TP06).
 

@@ -13,10 +13,10 @@ for f in fields.values():
     if len(ms) == 1: f["mark"] = ms[0]
     elif ms: f["marks"] = ms
 crops = [{"name": k, "type": "crop", "x": v[0], "y": v[1], "w": v[2], "h": v[3]} for k, v in ex["crops"].items()]
-tpl = {"form": "FR-PT 05 · REV. 10-15-26 · Figma " + ex.get("frame", "?"), "shape": ex.get("shape"), "page": {"w": 612, "h": 792}, "fiducials": fid, "timing": timing,
+tpl = {"form": "FR-PT 05 · " + ex.get("rev", "REV. 10-15-26") + " · Figma " + ex.get("frame", "?"), "shape": ex.get("shape"), "page": {"w": 612, "h": 792}, "fiducials": fid, "timing": timing,
        "fields": list(fields.values()) + crops,
        "compose": [{"name": "session", "from": ["session_1", "session_2", "session_3"]}],
-       "paper_probes": [[300, 144], [300, 210], [300, 348], [300, 534], [24, 400], [588, 370]],
+       "paper_probes": ex.get("probes", [[300, 144], [300, 210], [300, 348], [300, 534], [24, 400], [588, 370]]),  # paper-only points of that layout
        "mark_min": 0.30, "light_min": 0.15, "margin": 0.15, "mark_ok": 0.45}
 json.dump(tpl, open(out, "w"), indent=1)
 print(len(fields), "fields,", sum(len(f["options"]) for f in fields.values()), "ovals,", len(timing), "marks,", len(crops), "crops;",

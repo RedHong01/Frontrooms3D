@@ -20,6 +20,12 @@ The P1 base is unchanged:
 - Row 4 now runs old → new: v1 at x 4200, v2 canary at x 4932, v2 white at x 5664.
 - **v3, the answer sheet (Scantron edition, §9):** `… · v3 · ANSWER SHEET · CANARY 25 %` (3290:7280, x 6396) and `… · WHITE` (3290:7602, x 7128), with 12 pt fill boxes. The reader is in `Tools/playtest_scan/`. Boards PF03 (anatomy, 3295:7280) and PF04 (fill shapes, 3285:7280).
 
+**Current revision: REV. 10-22-26 (§11), built 2026-10-22.** Red, 2026-10-22: "同时在问卷里的这个during play的section在未来的版本就不需要了" ("the During play section of the questionnaire is no longer needed in future versions").
+- Both editions (FR-PT 04 questionnaire and FR-PT 05 answer sheet) drop 02 During play. The later sections are renumbered and re-flowed into the freed space.
+- The same revision adds the look-eye item (Red kept E·1 and wants it checked). Its wording comes from 系统设计 and goes in the After play interview.
+- On the answer sheet the scanner rows move with the re-flow, so the reader template was regenerated from the new frame, the simulated tests rerun, and both InDesign files rebuilt from the new frames. The v2 / v3 frames stay as the record of the 10-15 editions.
+- Figma: section 3510:7478 (questionnaire v2.1 3512:7489 / 3512:7677, answer sheet v3.1 3510:7479 / 3510:7787). Details in §11.
+
 ## 1. Medium
 
 - **Page:** US Letter, 612 × 792 pt, on **canary paper** (Red, 2026-10-15). The brand yellow becomes the paper, as on the yellow copy of a 1990 multi-part form, and every mark stays black.
@@ -111,7 +117,7 @@ All values are in pt.
 - The ghost numerals 01–04 were removed; they repeated the section numbers and collided with the answer space.
 - The scale is defined once, in the ratings header.
 
-## 7. Content changes for Red to confirm
+## 7. Content changes (confirmed by Red, 2026-10-22: "全部按推荐")
 
 1. **Rating scale.** v1's head rows read "SD D U A SA N/E" over "1 2 3 4 5 U", so "U" meant both *undecided* and *not experienced*. v2 uses 1–5 plus N/E, with anchors "1 = strongly disagree · 5 = strongly agree".
 2. **Instruction.** v1 said "Circle one response" but printed boxes. v2 says "check one box per row".
@@ -254,7 +260,7 @@ No writing band lost height.
   - The oval edition passed the same tests first (VL292).
 - **Next:** one real sheet, printed, filled in pencil and scanned.
 
-### 9.7 Content changes for Red to confirm
+### 9.7 Content changes (confirmed by Red, 2026-10-22: "全部按推荐")
 
 1. **SESSION NO. (three digits) is new.**
    - §7.4 left SESSION out of v2. A machine-read sheet needs it to join each scan to its session's notes.
@@ -266,9 +272,9 @@ No writing band lost height.
 
 Red, 2026-10-15, to 系统设计: "把这个给我设置成正常的indesign文件，就是咱们的问卷，同时所有黑色要用rich black" ("set this up as a normal InDesign file, our questionnaire, with every black in rich black").
 
-- **File:** `EGAM-401A-01 Individual Game Project/Print/FR-PT04_Playtest_Questionnaire.indd`, outside the repo.
-  - Built natively by 系统设计 from the v2 white form (3227:7424, rev 10-15-26).
-  - Rebuild kit: `~/FrontRoomsVisualWork/print_indesign/`. Logged as VL295 (FLAG).
+- **File:** `EGAM-401A-01 Individual Game Project/Print/FR-PT04_Playtest_Questionnaire.indd`, outside the repo; printable PDF `Print/FR-PT04_Playtest_Questionnaire_printable.pdf`.
+  - REV. 10-22-26 (2026-10-22, VL352): rebuilt by 印刷与演示 from the v2.1 white form 3512:7677 with 系统设计's kit `~/FrontRoomsVisualWork/print_indesign/`. Its SH / TX tables are regenerated from the Figma export by `gen_tables.py`; the kit's baseline check reads 0.000 pt over 66 frames.
+  - REV. 10-15-26: built by 系统设计 from 3227:7424 (VL295); archived in `Print/_archive_REV-10-15-26/`.
 - **Rich black lives only in InDesign** (Red 10-15, for every chat): "所有rich black 都是在Indesign里，因为只有indesign是CMYK印刷 … figma里面不用Rich Black" ("all rich black is in InDesign, because only InDesign is CMYK print; Figma doesn't use rich black"). The Figma frames stay plain black (RGB).
 - **Ink: rich black everywhere in the InDesign files** (Red 10-15, confirmed to 印刷与演示 the same day).
   - The swatch is C60 M40 Y40 K100, with no [Black] or Registration.
@@ -286,14 +292,17 @@ Red, 2026-10-15, to 系统设计: "把这个给我设置成正常的indesign文�
   - One r = 0.35 for every face sets Bayon about 0.03 em low (the 32 pt title 1 pt) and Plex Mono 0.025 em high.
   - Check baselines in the document (`lines[0].baseline`), not only on renders: Figma's export and PDFKit both snap baselines to whole pixels (0.33 pt at 3×).
 - **Bayon** is packaged in `Print/Document Fonts` with its OFL licence. It has no "·", so a GREP style sets the dot in Plex Mono.
-  - **Document Fonts load only when the .indd is opened from `Print/`** (double-click it in Finder).
-  - A document reopened through crash recovery loses them, and InDesign sets Bayon in Khmer Sangam MN (10-15).
+  - Since 2026-10-16 Bayon is also installed in `~/Library/Fonts` (same file, md5 cda3375f), so it resolves however a document is opened. Keep `Print/Document Fonts` for packaging and for other machines.
+  - Before that, Document Fonts loaded only for a .indd opened from `Print/`, and a crash-recovered document set Bayon in Khmer Sangam MN (10-15).
 
 ### 10.1 The answer sheet in InDesign (FR-PT 05)
 
 Red, 2026-10-15: "答题卡我也需要你给我做成indesign文件，同时rich black" ("make the answer sheet an InDesign file too, in rich black"), from the white twin 3290:7602.
 
 - **File:** `Print/FR-PT05_Playtest_Answer_Sheet.indd`, outside the repo. It is a separate edition and does not replace FR-PT04.
+  - **Now REV. 10-22-26** (2026-10-22, VL352), built from 3510:7787. Printable PDF: `Print/FR-PT05_Playtest_Answer_Sheet_printable.pdf`. The REV. 10-15-26 file and its printable PDF are in `Print/_archive_REV-10-15-26/`, and the kit's 10-15 inputs are in `indesign/rev_10-15-26/`.
+  - It is the master (Red 2026-10-22, "全部按推荐"). The three dated copies saved on 10-16 while Bayon was being fixed are in `Print/_archive_FR-PT05_2026-10-16/`, not deleted.
+  - `Print/FR-PT05_Playtest_Answer_Sheet.font-fixed-20261016_printable.pdf` prints as is: it is pixel-identical to this build's proof. Replace it at the next rebuild.
 - **Built natively by 印刷与演示 from the Figma export.** Kit: `~/FrontRoomsVisualWork/print_ref_work/scantron/indesign/`.
   - `fig_shapes.json`, `fig_texts.json` and `fig_values.json` are the geometry exported from 3290:7602.
   - `make_jsx.py` writes `id_build_answer_sheet.jsx` from `id_build_template.jsx`.
@@ -311,8 +320,57 @@ Red, 2026-10-15: "答题卡我也需要你给我做成indesign文件，同时ric
   - 0 objects or text in [Black] or Registration;
   - scanner marks within 0.17 pt of the Figma render;
   - 280 / 280 fields read from 20 simulated fills of its PDF.
-- **Open item (Red):** activate Source Serif 4 Caption in Adobe Fonts. Then run `python3 make_jsx.py --caption`, close FR-PT05 (`id_close.jsx`) and run `id_run.jsx`. Until then "favorite aspects" sets on one line instead of two, and the serif lines run slightly narrower.
+- **Caption, not yet in InDesign (2026-10-22 10:3x).** Red activated it ("Caption 已经启用了"), but InDesign still reports Source Serif 4 Caption NOT_AVAILABLE, and Adobe Fonts' local entitlement list is unchanged since 10-14. Both REV. 10-22-26 files therefore use the Text cut for now.
+  - The kits only take Caption when its status is INSTALLED. `itemByName()` alone is "valid" even for a missing font; the FR-PT05 template was fixed for this on 10-22.
+  - At the Caption rebuild, also tune the "·" in the Bayon cue label. It is set in Plex Mono (Bayon has none), and sits 4 pt wider than Figma's fallback dot.
+- **Caption (Red 2026-10-22: yes, "全部按推荐"; Red activates it in Creative Cloud):** then run `python3 make_jsx.py --caption`, close FR-PT05 (`id_close.jsx`) and run `id_run.jsx`. Until then "favorite aspects" sets on one line instead of two, and the serif lines run slightly narrower. Rebuild once, from the next revision's frames (top of this doc), together with FR-PT04 (also approved for an overwrite).
 - **Rebuild rules,** after InDesign crashed on 10-15:
   - no `#targetengine "session"`;
   - the build refuses to run while FR-PT05 is open: close it in a separate run;
   - never close a referenced document inside a build.
+
+## 11. REV. 10-22-26 (both forms)
+
+Red, 2026-10-22: "同时在问卷里的这个during play的section在未来的版本就不需要了". The same revision adds the look-eye item; its wording is final from 系统设计.
+
+**Figma.** Section `FRONTROOMS · PLAYTEST FORMS · REV. 10-22-26 (印刷与演示)`, 3510:7478, at (33937, 33200).
+- It is a new section because 3198:7273 has no room: STAIRWELL C22 sits 800 px below it, and the 33937 column 400 px to its right.
+- **Questionnaire FR-PT 04 v2.1:** canary 3512:7489, white 3512:7677. Made from a clone of v2 3207:7280, edited by layer name.
+- **Answer sheet FR-PT 05 v3.1:** canary 3510:7479, white 3510:7787. Built by `~/FrontRoomsVisualWork/print_ref_work/scantron/build_v31.js` (r5).
+
+**Content**
+- **01 Before play:** the same question, now with two writing lines.
+- **02 Experience ratings:** items 01–08 unchanged. Only the section number moved, from 03.
+- **03 After play interview,** three rows of two:
+  1. overall impression;
+  2. favorite aspects;
+  3. least favorite aspects;
+  4. confusion, with its hint;
+  5. "If you saw the crosshair turn into an eye, what did you think it meant?";
+  6. the magic wand, with its hint. It is the wrap-up question, so it comes last.
+- **Item 05 is the E·1 check** (`research/computer_ui/30_crosshair_grammar.md` §8).
+  - It is open and asked after play, so it never primes the tester.
+  - The form has no coding boxes, because a label such as BEING SEEN would hint at the meaning.
+  - The interviewer codes each answer LOOK / READ, BEING SEEN, OTHER or DIDN'T NOTICE, working from the reader's `after_05` contact sheet.
+  - The switch rule (BEING SEEN ≥ 2 in a round, or ≥ 25 % overall → E·3) belongs to 平面视觉.
+- **Most helpful cue:** one row of six, under the interview.
+
+**Layout (pt)**
+
+| Band | FR-PT 04 v2.1 | FR-PT 05 v3.1 |
+|---|---|---|
+| Masthead and header band | 36–102, unchanged | 36–138, unchanged (scanner rows band1–3) |
+| 01 Before play | bar 114; question 135; lines 168, 186 | bar 150; question 171; lines 204, 222 |
+| 02 Ratings | bar 198; scale head 219; rows 234–378 (8 × 18); spine x 390 | bar 234; anchors 254; rows 264–408 (8 × 18); spine x 426; marks r01–r08 centred 273–399 |
+| 03 Interview | bar 390; rows at 411 / 501 / 591 (pitch 90) | bar 420; rows at 441 / 525 / 609 (pitch 84) |
+| Writing lines | at row top + 45 / 63 / 81; under a hint, + 63 / 81 (aligned across each row) | the same |
+| Cue | label 690; 9 pt boxes at y 711, x 36 + 90 n | label 696; 12 pt boxes at y 717, x 36 + 90 n; one scanner row whose mark is the end mark (12 × 9, centred 723) |
+| Footer | rule 737; FR-PT 04 · REV. 10-22-26 | slug 768; FR-PT 05 · REV. 10-22-26 |
+| Scanner note | none | right margin, y 468–651, beside the interview and clear of every mark |
+
+**Reader** (`Tools/playtest_scan/`)
+- `FR-PT-05_template.json` is now REV. 10-22-26: 13 fields, 87 boxes, 12 marks, 9 crops, with paper probes taken from the export.
+- The 10-15 template is `FR-PT-05_REV-10-15-26_template.json`. Choose by the REV. printed in the slug.
+- Simulated reads: 280/280 on the white, canary, blank-calibrated and InDesign routes (VL352).
+
+**InDesign:** both files were rebuilt on 2026-10-22 (§10, §10.1, VL352). Caption still has to sync before the final rebuild.

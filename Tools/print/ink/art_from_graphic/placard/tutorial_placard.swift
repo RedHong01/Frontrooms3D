@@ -222,8 +222,8 @@ func startEdge(doorX: Double, wallY: Double, x0: Double, x1: Double, s: Double) 
   wallH(x0, doorX - dw / 2, wallY); wallH(doorX + dw / 2, x1, wallY)
   rect(doorX - dw / 2, wallY - 0.45, leaf, 0.9); rect(doorX + dw / 2 - leaf, wallY - 0.45, leaf, 0.9)   // shut: it locked behind you
   stroke([(doorX, wallY - 1.6), (doorX, wallY + 1.6)], 0.35)
-  text("NO RE-ENTRY", doorX, wallY - 3.4, cap: 3.6, track: 0.3, align: 1)
-  tr("NO RE-ENTRY (the start door, shut)"); tr("YOU ARE HERE")
+  text("NO REENTRY", doorX, wallY - 3.4, cap: 3.6, track: 0.3, align: 1)                    // NYC LL5 1973 §C26-608.5 form (叙事 10-22)
+  tr("NO REENTRY (the start door, shut)"); tr("YOU ARE HERE")
   let yx = doorX + 1.733 * s, yy = wallY + 1.1 * s
   let g = GLOW; GLOW = true; yah(yx, yy); GLOW = g
   text("YOU ARE HERE", yx + 7.5, yy + 1.9, cap: 5.0, track: 0.2, ink: .red)

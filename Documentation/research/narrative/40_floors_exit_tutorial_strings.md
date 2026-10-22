@@ -80,7 +80,8 @@
 - `IN CASE OF ALARM`;
 - `2 CLOSE DOORS BEHIND YOU.` (Red's A.12 wording);
 - `3 IF THE LIGHTS DIM,` / `LEAVE THE AREA.` It says "near", never "where", and fits the W1 burst and the Reduce Flashing sag;
-- `LEGEND`, `YOU ARE HERE`, `STAIR (EXIT)` / `ONE FLOOR DOWN`, `NO RE-ENTRY` (the start door), `EXIT`, `STAIR A`;
+- `LEGEND`, `YOU ARE HERE`, `STAIR (EXIT)` / `ONE FLOOR DOWN`, `EXIT`, `STAIR A`;
+- the start door: `NO REENTRY` (changed 10-22 from the draft's `NO RE-ENTRY` to the 1973 code spelling, so the placard and the stair plates spell it one way);
 - A: `TYPICAL FLOOR`, `NOT TO SCALE`, `THIS FLOOR MAY DIFFER FROM PLAN` (separators are 平面视觉's);
 - B: `MATCH LINE — SEE SHEET A-3`, `NOT TO SCALE`, `BEYOND MATCH LINE: NOT TO SCALE`;
 - C: `STAIR A · EXIT`, `SHEET C-3 BEYOND THIS EDGE`, `LOCKED DOOR`;
@@ -116,6 +117,7 @@
 | Locked EXIT, crosshair, with the key | `E · UNLOCK` / `STAIR KEY` | 平面视觉's wording, signed. Separators are its call |
 | Broken door (C11) | `BROKEN` when aimed; `WON'T SHUT` as line 2 on a shut try | 平面视觉's draft, signed |
 | EXAMINE verbs | `READ PLAN` / `READ SCREEN` / `READ SIGN` / `EXAMINE KEY` / `TAKE KEY` | 平面视觉's draft, signed. `READ SCREEN` only on READ terminals (C19), never on ambient desk monitors, which carry no text (AT-T19). `READ SIGN` covers the stair plates |
+| Phone control legend and stick label (X2, 交互设计; phones only) | `SLOW · UNHEARD` | Signed 2026-10-22. True on phones: the stick's inner-zone creep (1.44 m/s) makes no noise the hunter hears, while a walk is heard (radius 9) and a run more (26) (`FrontRooms3DGame.Mobile.cs` HandheldStepNoise; RELAY :591–592). It names what the hunter perceives about a gait. It is not live threat information, and it doesn't say you can't be seen. It must stay true for any hunter version that ships; reword if the creep ever makes noise |
 
 ## 5. The stairwell (everything it shows)
 
@@ -124,15 +126,15 @@ The C22 stairwell is 1 × 2 cells, the exit door above the far door (`stairwell/
 | Where | String | Source of the form |
 |---|---|---|
 | Exit landing, stair face of the EXIT door (it locks behind you), floor plate at 5 ft | `LEVEL 0` | NYC LL5 C26-608.3, floor numbers on the stair side [read] |
-| Same door, re-entry plate below it | `NO RE-ENTRY` / `RE-ENTRY AT LEVEL B1` | LL5 C26-608.5: say whether re-entry is provided and on which floor [read]. `NO RE-ENTRY` is trade wording [ESTIMATE] |
+| Same door, re-entry plate below it | `NO REENTRY` / `NEAREST REENTRY ON LEVEL B1` | NYC LL5 1973 §C26-608.5(b)(2) wording form, "NO REENTRY, NEAREST REENTRY ON THE ___ AND ___ FLOORS", read by 平面视觉 from the law's p. 9 (placard `SOURCES.md` §7.3 M5). Only the floor below exists, so one level is named. Spelled without a hyphen, as the code does |
 | Stencilled numeral on the block wall, latch side | `0` (exit landing), `B1` (far landing) | trade practice, 12–24 in [ESTIMATE, `stairwell/01_research.md`] |
 | Stair ID sign at each landing, about 5 ft | `STAIR A` / `LEVEL 0` (or `LEVEL B1`) / `LEVELS 0 TO B1` / `NO ROOF ACCESS` | UBC 1991 §3306(p): stair ID, roof access, floor level, upper and lower terminus [read]. Layout per UBC Std 33-2 is unread, so it is 平面视觉's |
 | Gate across the up flight (exit landing) | `NO ACCESS ABOVE THIS LEVEL` | building voice [ESTIMATE wording] |
 | Gate across the down flight (far landing; UBC 3309(e) barrier) | `NO ACCESS BELOW THIS LEVEL` | building voice [ESTIMATE wording] |
-| Far door, stair face | `ACCESS ONTO FLOOR THIS LEVEL` | UBC 1991 App. Ch. 1 §125 item 11 [read] |
+| Far door, stair face | `REENTRY ON THIS FLOOR` | LL5 §C26-608.5(b)(1) wording [read by 平面视觉, M5]. It replaces v1's UBC `ACCESS ONTO FLOOR THIS LEVEL` so both re-entry plates use one code's family |
 | Placard copy by the far door | sheet A with `LEVEL B1` | §3 |
 
-On the next floor every token moves down one: `LEVEL B1`, `RE-ENTRY AT LEVEL B2`, `LEVELS B1 TO B2`.
+On the next floor every token moves down one: `LEVEL B1`, `NEAREST REENTRY ON LEVEL B2`, `LEVELS B1 TO B2`.
 
 **The quiet wrongness, never stated:**
 - every stair is STAIR A and serves one floor;
@@ -171,7 +173,7 @@ On the next floor every token moves down one: `LEVEL B1`, `RE-ENTRY AT LEVEL B2`
 | Never RUN/HIDE as advice; never "relay" | Pass. `DO NOT RUN` is negated; no "relay" anywhere |
 | Dark is never cover | Pass. Nothing mentions the dark. The warden line, if used, says every room is checked |
 | No live threat info / never a radar | Pass. Line 3 says near, not where; signs are static per floor |
-| One name per thing | STAIR A (plan, tag, door, stair sign); LEVEL token (placard, plates, HUD, CAUGHT); SECURITY DESK (plan, legend, line 4) |
+| One name per thing | STAIR A (plan, tag, door, stair sign); LEVEL token (placard, plates, HUD, CAUGHT); SECURITY DESK (plan, legend, line 4); REENTRY, one spelling (placard and plates) |
 | 1990 era | UBC 1991 and LL5 forms; B levels; no post-1990 signs |
 | No real brands | Pass |
 

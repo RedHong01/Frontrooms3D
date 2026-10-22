@@ -1,0 +1,32 @@
+seq	run	field	field_xy	t	blocks	falls	rises	nearestLiveDipStart	dtToLiveDip	ambientWithin0.15s
+L0_rf0	natural	field1/4	(22, 9)	2.4167	9	9	0	2.3330	0.0837	
+L0_rf0	natural	field1/4	(22, 9)	2.7500	8	0	8	2.3330	0.4170	
+Office_rf0	natural	field1/4	(0, 10)	22.9998	11	22	22	24.0330	-1.0332	277,209(Stutter 1.00>0.05 f1.00 @23.000) 277,209(Stutter 0.05>0.95 f1.00 @23.017) 277,209(Stutter 0.95>0.05 f1.00 @23.050) 277,209(Stutter 0.05>0.95 f1.00 @23.083) 277,209(Stutter 0.95>0.05 f1.00 @23.116) 277,209(Stutter 0.05>0.95 f1.00 @23.133) 277,209(Stutter 0.95>0.05 f1.00 @23.150)
+Office_rf0	natural	field1/4	(0, 10)	23.1165	11	43	43	24.0330	-0.9165	277,209(Stutter 1.00>0.05 f1.00 @23.000) 277,209(Stutter 0.05>0.95 f1.00 @23.017) 277,209(Stutter 0.95>0.05 f1.00 @23.050) 277,209(Stutter 0.05>0.95 f1.00 @23.083) 277,209(Stutter 0.95>0.05 f1.00 @23.116) 277,209(Stutter 0.05>0.95 f1.00 @23.133) 277,209(Stutter 0.95>0.05 f1.00 @23.150) 277,209(Stutter 0.05>0.95 f1.00 @23.166) 277,209(Stutter 0.95>0.05 f1.00 @23.200) 277,209(Stutter 0.05>0.95 f1.00 @23.216)
+Office_rf0	natural	field1/4	(0, 10)	23.2165	11	33	32	24.0330	-0.8165	277,209(Stutter 0.05>0.95 f1.00 @23.083) 277,209(Stutter 0.95>0.05 f1.00 @23.116) 277,209(Stutter 0.05>0.95 f1.00 @23.133) 277,209(Stutter 0.95>0.05 f1.00 @23.150) 277,209(Stutter 0.05>0.95 f1.00 @23.166) 277,209(Stutter 0.95>0.05 f1.00 @23.200) 277,209(Stutter 0.05>0.95 f1.00 @23.216) 277,209(Stutter 0.95>0.05 f1.00 @23.267) 277,209(Stutter 0.05>0.95 f1.00 @23.350) 277,209(Stutter 0.95>0.05 f1.00 @23.366)
+Office_rf0	natural	field1/4	(0, 10)	23.3498	11	22	22	24.0330	-0.6832	277,209(Stutter 0.95>0.05 f1.00 @23.200) 277,209(Stutter 0.05>0.95 f1.00 @23.216) 277,209(Stutter 0.95>0.05 f1.00 @23.267) 277,209(Stutter 0.05>0.95 f1.00 @23.350) 277,209(Stutter 0.95>0.05 f1.00 @23.366) 277,209(Stutter 0.05>0.95 f1.00 @23.400) 277,209(Stutter 0.95>0.05 f1.00 @23.450) 277,209(Stutter 0.05>0.95 f1.00 @23.483)
+Office_rf0	natural	field1/4	(0, 10)	23.4498	11	33	33	24.0330	-0.5832	277,209(Stutter 0.05>0.95 f1.00 @23.350) 277,209(Stutter 0.95>0.05 f1.00 @23.366) 277,209(Stutter 0.05>0.95 f1.00 @23.400) 277,209(Stutter 0.95>0.05 f1.00 @23.450) 277,209(Stutter 0.05>0.95 f1.00 @23.483) 277,209(Stutter 0.95>0.05 f1.00 @23.500) 277,209(Stutter 0.05>1.00 f1.00 @23.517)
+Office_rf1	natural	field1/4	(0, 3)	2.2500	8	8	0	1.2500	1.0000	275,209(Failing 0.70>0.29 f1.00 @2.167)
+Office_rf1	natural	field1/4	(0, 3)	2.3667	10	10	0	1.2500	1.1167	
+Office_rf1	natural	field1/4	(0, 3)	3.2000	8	0	8	1.2500	1.9500	275,209(Failing 0.29>0.58 f1.00 @3.183)
+Placard_rf0	natural	field1/3	(11, 2)	4.4333	15	0	15	6.5170	-2.0837	
+Placard_rf0	natural	field1/3	(11, 2)	4.6167	15	15	0	6.5170	-1.9003	
+Placard_rf0	natural	field1/4	(15, 10)	14.3666	32	0	32	14.6330	-0.2664	
+Placard_rf0	natural	field1/4	(15, 10)	14.5000	24	24	0	14.6330	-0.1330	
+Placard_rf0	natural	field1/4	(15, 10)	14.6500	8	8	0	14.6500	0.0000	
+L0Pre_rf0	pinned	field1/4	(0, 3)	20.7999	9	9	0	22.0000	-1.2001	
+L0Pre_rf0	pinned	field1/4	(0, 3)	20.9165	11	11	0	22.0000	-1.0835	
+L0Pre_rf0	pinned	field1/4	(0, 3)	21.4332	8	0	8	22.0000	-0.5668	276,201(Failing 0.28>0.46 f1.00 @21.517)
+L0Pre_rf0	pinned	field1/4	(0, 3)	21.6165	10	10	3	22.0000	-0.3835	276,201(Failing 0.28>0.46 f1.00 @21.517) 276,201(Failing 0.46>0.02 f1.00 @21.683)
+L0Pre_rf1	pinned	field1/4	(0, 3)	10.9833	8	8	0	8.3330	2.6503	
+L0Pre_rf1	pinned	field1/4	(0, 3)	11.1000	11	11	0	8.3330	2.7670	
+L0Pre_rf1	pinned	field1/4	(0, 3)	11.6667	8	0	8	13.8830	-2.2163	276,201(Failing 0.20>0.70 f1.00 @11.767)
+L0Pre_rf1	pinned	field1/4	(0, 3)	11.7833	10	0	10	13.8830	-2.0997	276,201(Failing 0.20>0.70 f1.00 @11.767)
+OfficePre_rf0	pinned	field1/4	(11, 0)	15.5666	9	9	0	15.5670	-0.0004	275,209(Failing 0.34>0.57 f1.00 @15.617)
+OfficePre_rf0	pinned	field1/4	(11, 0)	15.7333	8	0	8	15.5670	0.1663	275,209(Failing 0.34>0.57 f1.00 @15.617)
+L0PreCtl_rf0	pinned	field1/4	(0, 2)	23.4665	8	0	8	nan	nan	276,201(Failing 0.02>0.45 f1.00 @23.466)
+L0PreCtl_rf0	pinned	field1/4	(0, 2)	24.1165	9	9	0	nan	nan	276,201(Failing 0.45>0.02 f1.00 @24.116)
+L0PreCtl_rf0	pinned	field1/4	(0, 2)	24.2665	9	0	9	nan	nan	276,201(Failing 0.02>0.57 f1.00 @24.267)
+L0PreCtl_rf1	pinned	field1/4	(0, 3)	9.1167	10	10	0	nan	nan	
+L0PreCtl_rf1	pinned	field1/4	(0, 3)	9.2667	9	9	0	nan	nan	
+L0PreCtl_rf1	pinned	field1/4	(0, 3)	9.7500	8	0	8	nan	nan	276,201(Failing 0.26>0.58 f1.00 @9.833)

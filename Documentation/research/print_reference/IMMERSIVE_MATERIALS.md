@@ -98,14 +98,20 @@ These merge A §10, B's RISK section and C §7.
 5. **Phone numbers inside the fiction come only from 555-0100 to 0199.**
    - Never 911.
    - Never a real number someone else owns.
-   - A number the team controls is fine, provided it opens with a fiction disclosure (B RISK-18; Advertising's optional facilities line B6).
+   - **No team-controlled line either** (Red, 2026-10-22, via 平面视觉 · 广告: no rented phone line). The facilities line B6 and any voicemail joint are dropped, so nothing printed dials anywhere.
 6. **Missing-person and appeal flyers stay in game or in a ticketed venue,** and say "fiction".
 7. **Proof every line of in-world print.** One unchecked joke cost *Devotion* its publishers.
 8. **Don't reuse wiki text.** The Backrooms wikis are CC BY-SA. Arthur's Manila Room label is copied from Fandom word for word.
 
 ## 6. Candidate print pieces for FrontRooms
 
-These are ideas for Advertising's campaign plan; nothing is decided. Each uses the Print / Form system: canary paper, black ink, the typewriter grid.
+**Decided 2026-10-22** (Red, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐"; `research/ad_campaign/CAMPAIGN_PLAN.md` §8):
+- **A24 overlap: option 1.** FRONT ROOMS FURNITURE stays in game only. Public pieces lead with the station and the building's EGRESS voice, with no fax, BBS or store-flyer endpoints. The five pieces below already speak for the building, so they stand.
+- **No rented phone line.** P1's panel card prints no real facilities number. A 555-01xx number inside the fiction is fine (rule 5).
+- **The station is WTCZ-TV 61**, licensed to FAIRVIEW (叙事设计's `30_screen_strings.md` v2.1). Any print piece that names the station uses WTCZ. The earlier working name WXRM is a real New Jersey station and is never printed.
+- Venue (ArtCenter), accounts and the release date come after the Alpha.
+
+These are ideas for Advertising's campaign plan; the campaign decisions above are taken, the pieces themselves are not commissioned yet. Each uses the Print / Form system: canary paper, black ink, the typewriter grid.
 
 1. **A new-hire packet from building management.** It holds:
    - an employee ID;

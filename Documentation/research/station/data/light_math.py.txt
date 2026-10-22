@@ -1,0 +1,46 @@
+# light_math.py (saved as .txt): the paper light math behind 30_look.md section 4.
+# 游戏视觉, 2026-10-22. Plain python3, no packages. Run: python3 light_math.py.txt
+# Coordinates: x east, z north, y up, metres from the room's south-west clear corner (wall faces).
+# URP 17 punctual falloff (RealtimeLights.hlsl DistanceAttenuation): E = I * cos(incidence) * spot * (1/d^2) * (1 - (d/r)^4)^2
+# URP spot cone: spot = saturate(cos(a) * k + b)^2, k = 1/(cos(inner/2) - cos(outer/2)), b = -cos(outer/2) * k
+import math
+
+def sub(a, b): return [b[i] - a[i] for i in range(3)]
+def norm(a):
+    l = math.sqrt(sum(x * x for x in a)); return [x / l for x in a], l
+def dot(a, b): return sum(a[i] * b[i] for i in range(3))
+def att(d, r):
+    f = d * d / (r * r); s = max(0.0, 1 - f * f); return s * s / (d * d)
+def spot(c, inner=100, outer=160):
+    ci = math.cos(math.radians(inner / 2)); co = math.cos(math.radians(outer / 2))
+    k = 1 / (ci - co); b = -co * k; x = min(1.0, max(0.0, c * k + b)); return x * x
+def axis(yaw_deg, tilt_deg):
+    # yaw: plan direction in degrees from +x (east) toward +z (north); tilt: down
+    y = math.radians(yaw_deg); t = math.radians(tilt_deg)
+    return [math.cos(y) * math.cos(t), math.sin(y) * math.cos(t), -math.sin(t)]  # (x, z, y)
+def board(name, scr, ax, brd, bnorm, I=4.0, r=9.0):
+    d, l = norm(sub(scr, brd)); off = math.degrees(math.acos(max(-1, min(1, dot(d, ax)))))
+    inc = dot([-x for x in d], bnorm); E = I * max(0, inc) * spot(dot(d, ax)) * att(l, r)
+    print(f"{name}: {l:.2f} m, {off:.1f} deg off the screen axis, incidence {math.degrees(math.acos(max(-1, min(1, inc)))):.1f} deg, E {E:.3f} (mean card), {E * 0.515:.3f} (darkest card)")
+
+# Points are (x, z, y). Kit_CRTTV: screen anchor 0.284 up, screen face ~0.54-0.57 m off the wall it hangs or stands against.
+print("Plan W as drawn: corner set NE, facing SW, screen centre 0.566 m off both walls, 2.28 m up")
+scr = [8.84 - 0.566, 5.84 - 0.566, 2.28]
+for tilt in (0, 15, 30):
+    board(f"  K on the N wall 1.5 m W of the corner, tilt {tilt}", scr, axis(225, tilt), [7.34, 5.80, 1.42], [0, -1, 0])
+board("  K on the N wall 3.0 m W of the corner, tilt 15", scr, axis(225, 15), [5.84, 5.80, 1.42], [0, -1, 0])
+print("Plan W' (proposed): E-wall bracket, screen z 4.75, 2.38 m up (set bottom 2.10), faces W, tilt 20")
+board("  K on the N wall x 7.05, hook 1.42", [8.27, 4.75, 2.38], axis(180, 20), [7.05, 5.80, 1.42], [0, -1, 0])
+print("Plan D: set on a credenza on the N wall, x 7.6, screen 1.04 m up, faces S")
+board("  K on the E wall 2.0 m S of the N wall", [7.60, 8.35, 1.04], axis(270, 0), [8.80, 6.84, 1.42], [-1, 0, 0])
+
+print("TV light on its axis, normal incidence, I 4 (mean card): E by distance for URP range 6 and 9")
+for r in (6, 9):
+    print(f"  range {r}: " + "  ".join(f"{d} m {4 * att(d, r):.3f}" for d in (1, 2, 3, 4, 5, 6, 7, 8)))
+print("Troffer (I 5, spot 162/96, range 10, 2.84 m up): floor below %.2f; Dim = x0.42" % (5 / 2.84 ** 2 * (1 - (2.84 / 10) ** 4) ** 2))
+
+# The ad's light track (FrontRooms_Ad_01.mp4, sha1 8bde2101): decode with
+#   ffmpeg -i FrontRooms_Ad_01.mp4 -vf fps=30,scale=32:24 -f rawvideo -pix_fmt rgb24 ad30.rgb
+# then per frame: sRGB -> linear, mean R G B, Y = 0.2126 R + 0.7152 G + 0.0722 B.
+# Measured 2026-10-22: five still cards per 16 s loop; Y 0.116 (0-3 s), 0.266 (3-7 s), 0.092 (7-10 s), 0.118 (10-14 s), 0.037 (14-16 s);
+# loop mean 0.140; mean colour (linear, max 1) 0.96 0.77 1.00.

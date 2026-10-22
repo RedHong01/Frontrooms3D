@@ -73,10 +73,14 @@ Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
   - **Reader:** `Tools/playtest_scan/`; its README is the manual.
   - **Simulated scans:** 560/560 fields (VL292 ovals, VL293 boxes).
   - **InDesign print master (Red 10-15: "答题卡我也需要你给我做成indesign文件，同时rich black"):** `Print/FR-PT05_Playtest_Answer_Sheet.indd`, built natively from 3290:7602; every black is rich black, the scanner geometry is exact, 280/280 read (VL296, `PRINT_FORM_SYSTEM.md` §10.1).
+  - **Red, 2026-10-22, "全部按推荐":** Caption yes, FR-PT04 may be overwritten, canonical FR-PT05 is the master (dated copies archived), §7 / §9.7 accepted. Also: "during play的section在未来的版本就不需要了".
+  - **REV. 10-22-26 done (2026-10-22, VL352):** During play removed, look-eye item 05 added (wording final), cue on one row.
+    - Figma section 3510:7478.
+    - Reader template regenerated; 280/280 on every simulated route.
+    - Both InDesign files rebuilt in rich black. Printable PDFs are in `Print/`; the 10-15 files are archived in `Print/_archive_REV-10-15-26/`.
   - **Next:**
-    - Red activates Source Serif 4 Caption in Adobe Fonts; then I rebuild with `--caption` (one question wraps differently until then);
-    - print the InDesign file on canary stock, fill it in pencil, scan it, run the reader;
-    - Red to confirm `PRINT_FORM_SYSTEM.md` §9.7 (SESSION NO., FR-PT 05, "fill one box").
+    - Caption has to reach InDesign. Red activated it, but it is still NOT_AVAILABLE locally. Then rebuild both forms with Caption and tune the "·" spacing in the cue label.
+    - Print the new PDF on canary stock, fill it in pencil, scan it and run the reader (plan in the 印刷与演示 handoff).
 
 ## 1. In-game wallpaper cue: IN PROGRESS
 Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有系统设计协作构思这个逻辑在游戏里什么时候启用，以及给我一个游戏内渲染的预览效果视频"
@@ -171,7 +175,13 @@ Red, 2026-10-07: "当前游戏的墙纸纹理完全以hardedge 为主，不要�
 
 **Check after it lands:** a before/after frame of Level 0 for Red.
 
-## 3. TV / computer screens: STATION v3 BUILT (平面视觉 · 广告, 2026-10-15) · waits for Red
+## 3. TV / computer screens: Ad_03 APPROVED + RENDERED (平面视觉 · 广告, 2026-10-22)
+**10-22:** Red, 2026-10-22, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐".
+- C09 = 1: no screens in the warnings in v1.
+- Ad_03 (WTCZ-TV 61) is at `Tools/screens/out/FrontRooms_Ad_03/` and handed to 游戏视觉 for the swap.
+- The tube look comes after the Alpha.
+- The tutorial's still desk screens (V4) are at `Tools/screens/out/still_desk/`.
+
 **10-15 status:** the station layer was rebuilt against 1990 research (156 sources).
 - **Changes:**
   - a VP-2-class Helvetica CG (edge + shadow, whole scan lines) replaces VT323;
@@ -210,7 +220,7 @@ Red, 2026-10-07: "之前chat开始做了一个电脑/电视机广告的task…�
 - events: 系统设计 / 关卡设计.
 
 ## 3a. Instagram promo (Red, 2026-10-08: "一个电视机在后室的场景里面，播放一个又一个你做的广告HDR"): v4 DELIVERED
-> **2026-10-15 (平面视觉 · 广告): hold before posting.** A24's *Backrooms* campaign (Apr–May 2026) opened with a 1990 local furniture-store TV spot ("Cap'n Clark's Ottoman Empire"; ARGNet, 27 May 2026), the same format as v4's furniture spots. If Red picks Option A (`research/ad_campaign/CAMPAIGN_PLAN.md` §8), v5 swaps the furniture spots for station content.
+> **2026-10-22: Red chose option A (1): v4 is never published; v5 (station content) after the Alpha.** Earlier note, 2026-10-15 (平面视觉 · 广告): hold before posting. A24's *Backrooms* campaign (Apr–May 2026) opened with a 1990 local furniture-store TV spot ("Cap'n Clark's Ottoman Empire"; ARGNet, 27 May 2026), the same format as v4's furniture spots. If Red picks Option A (`research/ad_campaign/CAMPAIGN_PLAN.md` §8), v5 swaps the furniture spots for station content.
 **v4 (02:50), `FrontRooms_promo_WXRM_v4_{HDR10,SDR}.mp4`: no camera sway.** Red: "我不希望镜头摇晃，直接平滑拉近就可以了".
 - The camera rides one straight line through the screen centre with a constant aim, so the set stays centred and only grows.
 - 2.0 m → 0.80 m from the screen, smoothstep over 0–23.4 s, ending on v3's close-up (camera 1.05 m high). The v3 sway (2.5 cm / 1.2 cm sines) and its 27 cm crane-down are gone.

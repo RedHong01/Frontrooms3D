@@ -1,6 +1,8 @@
 # Sources: Ad type system and campaign plan (平面视觉 · 广告, 2026-10-15)
 
-This file lists the key sources behind `../../AD_TYPE_SYSTEM.md` and `CAMPAIGN_PLAN.md`. All were accessed on 2026-10-15. Nothing was downloaded.
+This file lists the key sources behind `../../AD_TYPE_SYSTEM.md` and `CAMPAIGN_PLAN.md`. All were accessed on 2026-10-15.
+
+On 2026-10-22 Red approved 12 reference downloads in the 广告 chat ("其余全部按推荐"). They are stored outside the repo, in `~/FrontRoomsVisualWork/reference/ad_reference/media/`, and listed in `media/MANIFEST.tsv` with each file's sha256. They are reference only and never ship. The research board built from them is described in the last section.
 
 The full ledgers, with every claim tagged verified, likely or unverified, are outside the repo in `~/FrontRoomsVisualWork/reference/ad_reference/`:
 - `station_1990/NOTES.md`: 156 sources;
@@ -45,3 +47,43 @@ The print side's ledger is `../print_reference/SOURCES.md`, with tracks A–C in
 | P.T. solved in hours | Kotaku, 15 Aug 2014. https://kotaku.com/nobody-actually-knows-how-they-solved-the-silent-hill-t-1621044581 |
 | 900-number disclosure arrived 1992–93, after the era lock | 15 U.S.C. §5701 (Pub. L. 102-556, 28 Oct 1992). https://www.law.cornell.edu/uscode/text/15/5701 · FTC, "Complying with the 900-Number Rule" (Nov 1993). https://www.ftc.gov/business-guidance/resources/complying-900-number-rule |
 | A real hotline: cost, rules and consent | Twilio voice pricing (Aug 2026). https://www.twilio.com/en-us/voice/pricing/us · Google Voice acceptable use. https://support.google.com/voice/answer/9230450 · California Penal Code §632. https://codes.findlaw.com/ca/penal-code/pen-sect-632.html |
+
+## Station research board AD-R1 to AD-R4 (2026-10-22)
+Figma: my section 3226:7267, row 3.
+- AD-R1 "The number is the brand": 3514:7318.
+- AD-R2 "After sign-off": 3514:7364.
+- AD-R3 "Type in scan lines": 3514:7447.
+- AD-R4 "A24 got there first": 3514:7480.
+
+**How the board was built:**
+- Each still was pulled from the approved downloads with ffmpeg. Frames are in `~/FrontRoomsVisualWork/reference/ad_reference/frames/`; the board versions are in `board/` (`tools/board_prep.py`).
+- NTSC captures (704 × 480, 720 × 486) were resampled to square-pixel 4:3. Manual and standards pages were rendered at 200 dpi and cropped to 4:3 around the figure.
+- Times are positions in the original archive item, so anyone can find the frame. Some clips were cut by range request; the cut offset has been added back.
+
+**Uploader watermarks.** Two marks belong to whoever uploaded the tape, not to any station: the "31" corner mark with "Stolen from 31 Rewind" (KENS, KPVI) and "www.FuzzyMemories.TV" (WFLD, WCAE). The board labels each one, because a corner mark would otherwise read as a 1989 station bug.
+
+| Slide | Still | Source | Time | What it shows |
+|---|---|---|---|---|
+| R1 | KHTV "39 HTV" ID | compubit, "KHTV April 7, 1992 7pm", archive.org. https://archive.org/details/khtv-1992-04-07-1900 | 0:57 | The channel number leads; the call letters follow, smaller |
+| R1 | WSBK St. Elsewhere promo | diognesthefox, "Commercials – WSBK – 1990-02", archive.org. https://archive.org/details/vhs_Commercials_WSBK_30_Boston_1990-02 | 0:14 | "TV38" lockup top right; "Weeknights 11:30PM" |
+| R1 | WSBK Cheers promo | same item | 4:33 | "TV38" and the slogan "ENTERTAINING BOSTON" |
+| R1 | KTTV "PRIME MOVIE 11" open | VHSgoodiesWA3, "KTTV-11 (Fox) commercials, 12/7/1989 part 1", archive.org. https://archive.org/details/capture-a-3243 | 0:38 | The movie package is branded by the number |
+| R1 | KENS CBS eye + "5 KENS" | 31 Rewind, "KENS Technical Difficulties, 12/2/1989", archive.org. https://archive.org/details/kenstechnical-difficulties-dec-21989wm | 1:09 | The logo slide used as a stand-by; "31" is the uploader's mark |
+| R1 | KPVI three-station slide | 31 Rewind, "KPVI Technical Difficulties, 11/11/1993", archive.org. https://archive.org/details/kpvitech-difficulties-nov-111993wm | 0:19 | KKVI 35 / KPVI 6 / KJVI 2, POCATELLO, then the towns served: calls with numbers, then the city |
+| R2 | WCAE stand-by card | FM, "WCAE Channel 50 – 3-2-1 Contact (Technical Difficulties Moment, 1980)", archive.org mirror. https://archive.org/details/youtube-iJhxapZQBmE | 0:42 | "TECHNICAL DIFFICULTIES / please stand by" in Helvetica Medium |
+| R2 | WFLD sign-off address card | FM, "WFLD Fox Channel 32 (Station Sign-Off, 1989)", aired 17 Dec 1989, archive.org mirror. https://archive.org/details/youtube-t8PfKlPeSLI | 0:44 | "OFFICE OF GENERAL MANAGER / WFLD-TV / 205 N. MICHIGAN / CHICAGO, ILLINOIS 60601" over the station's building at night |
+| R2 | WFLD bars, 01:25:36 and 01:25:37 | same item | 2:04, 2:05 | SMPTE bars; FOX 32 logo keyed top centre-right; date `12-17-89` and a running clock keyed bottom right in a blocky, segment-style face (a time-and-date inserter, not the CG's Helvetica) |
+| R3 | VP-2 font library: Helvetica rows | Chyron, "VP-2 Operator Handbook", Pub. No. 240 1112, PDF p. 114. https://archive.org/details/chyron-vp-2-operator-handbook | — | Helvetica Bold: 58, 44, 30 scan lines; Helvetica Medium: 58, 44, 30, 18 |
+| R3 | VP-2 Edge Type menu, Fig. 4-5 | same handbook, p. 4-13 (PDF p. 49) | — | Edge types: none, single, continuous (a shadow out to X, Y), bordered. Example: type B, X 2, Y 4 |
+| R3 | Bars layout, Fig. 2 | SMPTE EG 1-1990 (link above), p. 2 | — | Rows 67 / 8 / 25 %; −I, white, +Q, PLUGE |
+| R3 | Safe areas, Fig. 1 | SMPTE RP 27.3-1989 (link above), p. 2 | — | Safe action and safe title, rounded corners |
+| R3 | KTTV news lower third | KTTV item (above) | 0:16 | "11 DENNIS MORGINO / FOX NEWS": a CG name super |
+| R3 | KTTV news cut-in with logo | KTTV item | 0:22 | A FOX 11 logo keyed lower right (the small line under it is unreadable at 320 × 240), in the news cut-in only |
+| R3 | KTTV movie | KTTV item | 0:52 | The film itself carries no corner logo |
+| R3 | WSBK event spot | WSBK item | 0:09 | World on Ice: dates, venue, ticket phone. The info layer a dealer tag uses |
+| R4 | A24 Cap'n Clark's spot | "Cap'n Clark's Ottoman Empire" spot, A24 *Backrooms* campaign (2026), fan re-upload. https://www.youtube.com/watch?v=hbpUcjUxKP8 | 0:09 | The furniture-store spot: store tag, location, a 408 phone number |
+| R4 | Starcourt Mall thumbnail | "Coming Soon: The Starcourt Mall!", Stranger Things (official channel), 16 Jul 2018. https://www.youtube.com/watch?v=aXyju7zFwyE | — | The channel's thumbnail (Netflix, "Digital Exclusive"). The video download was refused (HTTP 403), so only the thumbnail is kept |
+
+**Rights:** off-air recordings and third-party uploads; © Chyron; © SMPTE (public archive copies); © A24; © Netflix. All are reference only and are never shipped or published.
+
+**What the board changed in the spec:** see `../../AD_TYPE_SYSTEM.md` §3.2, the VP-2 chip sizes and the news-only logo.

@@ -3,7 +3,13 @@
 Owner: 平面视觉 · 印刷与演示.
 - **Form design:** `Documentation/research/print_reference/PRINT_FORM_SYSTEM.md` §9.
 - **Research:** track D, `~/FrontRoomsVisualWork/reference/print_reference/research/D_scantron_omr.md`.
-- **Figma:** section 3198:7273. The canary version is **3290:7280**; the white version is **3290:7602**.
+- **Figma (current, REV. 10-22-26):** section 3510:7478. The canary version is **3510:7479**; the white version is **3510:7787**.
+  - REV. 10-22-26 drops the During play section (Red, 2026-10-22) and adds the look-eye item, interview 05.
+  - The 10-15 edition (REV. 10-15-26: 3290:7280 / 3290:7602, section 3198:7273) stays as the record.
+- **Which template:** read the REV. printed in each sheet's slug.
+  - `FR-PT-05_template.json` is always the current revision, REV. 10-22-26.
+  - `FR-PT-05_REV-10-15-26_template.json` reads sheets printed from the 10-15 edition.
+  - The two layouts differ, so never mix them.
 
 The playtest form has two readers:
 - **People** read the v2 form inside the 36 pt frame, and fill 12 pt boxes.
@@ -25,7 +31,7 @@ This folder turns a stack of filled sheets into:
 | White paper, black-only printer | the WHITE version | Same file; the sheet is simply white |
 | White paper, colour printer, to preview canary | the CANARY version (3290:7280) | It prints #FCF7CE as ink; the printer's own margin stays white |
 
-- **Print from InDesign** at 100 %, or from a PDF exported from it. Open the .indd from the `Print/` folder (double-click it in Finder) so Bayon loads from `Print/Document Fonts`. "Fit to page" also works: the reader handles scale.
+- **Print `Print/FR-PT05_Playtest_Answer_Sheet_printable.pdf`** (REV. 10-22-26, exported from the InDesign master), or print from InDesign itself, at 100 %. Open the .indd from the `Print/` folder (double-click it in Finder) so Bayon loads from `Print/Document Fonts`. "Fit to page" also works: the reader handles scale.
   - Every black in that file is rich black (C60 M40 Y40 K100). On an office colour printer, choose black & white (grayscale) so small type doesn't pick up colour fringes.
   - Fallback: export the WHITE frame from Figma as PDF.
 - **One printer, one batch.** Print one extra sheet and leave it blank: it calibrates the reader (§4).
@@ -63,8 +69,8 @@ python3 <repo>/Tools/playtest_scan/omr_read.py <repo>/Tools/playtest_scan/FR-PT-
 |---|---|
 | `results.csv` | One row per page: `file`, `turned` (0 or 180), `session` (three digits), `session_1–3`, `platform`, `rating_01–08` (1–5 or NE), `cue`, `flags` |
 | `out/check/<page>__check.png` | Proof sheet: the straightened page; read boxes outlined blue, problems red; each row's values in a column on the right; the page's flags at the top |
-| `out/crops/<page>__<field>.png` | Each write-in cell, straightened, at 216 dpi: `date`, `session_written`, `before_01`, `during_01–04`, `after_01–05` |
-| `out/by_question/<field>.png` | The same cell from every page, stacked and labelled, for reading and coding the open answers |
+| `out/crops/<page>__<field>.png` | Each write-in cell, straightened, at 216 dpi: `date`, `session_written`, `before_01`, `after_01–06` (REV. 10-15-26 sheets: `during_01–04`, `after_01–05`) |
+| `out/by_question/<field>.png` | The same cell from every page, stacked and labelled, for reading and coding the open answers. Code `after_05` (the look-eye item) as LOOK / READ, BEING SEEN, OTHER or DIDN'T NOTICE (`research/computer_ui/30_crosshair_grammar.md` §8) |
 
 **Flags.** Every flagged page gets a look at its proof sheet.
 
@@ -111,6 +117,17 @@ python3 <repo>/Tools/playtest_scan/omr_read.py <repo>/Tools/playtest_scan/FR-PT-
 
 Every flag was a real blank or a real double mark. On those sheets the lightest real fill measured 0.38, the darkest erasure 0.17 and the darkest empty row 0.05. The oval edition (3275:7280, replaced) passed the same tests first (VL292).
 
+**Tested on 2026-10-22 (VL352), REV. 10-22-26.** Same simulation, 20 sheets per route:
+
+| Test | Fields correct |
+|---|---|
+| Figma render, white | 280 of 280 |
+| Figma render, canary | 280 of 280 |
+| White, with `--blank` | 280 of 280 |
+| The InDesign PDF render | 280 of 280 |
+
+Four pages per run were read upside down, and the flags were exactly the planted blanks and double marks.
+
 **Next:** a real printed, pencil-filled and scanned test sheet.
 
 ## 6. When the form changes
@@ -121,11 +138,13 @@ The template comes from the Figma layer names, so the form and the reader can't 
 - `scan/target/<field>/<value>`
 - `scan/crop/<field>`
 
-The build script (`~/FrontRoomsVisualWork/print_ref_work/scantron/build_v3.js`) returns these as JSON, as in `figma_export_3290-7280.json`. Then run:
+The build script (`~/FrontRoomsVisualWork/print_ref_work/scantron/build_v31.js` for REV. 10-22-26; `build_v3.js` was the 10-15 edition) returns these as JSON, as in `figma_export_3510-7479.json`. The export also carries `rev` (the slug's REV.) and `probes`: paper-only points of that layout, used to measure the paper. Then run:
 
 ```bash
-python3 make_template.py figma_export_3290-7280.json FR-PT-05_template.json
+python3 make_template.py figma_export_3510-7479.json FR-PT-05_template.json
 ```
+
+Before you overwrite `FR-PT-05_template.json`, keep the old one as `FR-PT-05_REV-<old rev>_template.json` if sheets of that revision were printed.
 
 Then rebuild the InDesign print master from the new Figma geometry (`PRINT_FORM_SYSTEM.md` §10.1). Its build checks every scanner element against this template and logs the worst deviation (0.0000 pt on 2026-10-15).
 

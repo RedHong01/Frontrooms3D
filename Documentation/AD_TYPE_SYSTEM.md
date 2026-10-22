@@ -105,7 +105,7 @@ Ad_02's settings (Red approved Ad_02 on 10-14), now named as local text styles. 
 
 ## 3. Station: WTCZ-TV 61's CG and its states (was WXRM)
 
-> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game's Ad_02 still shows WXRM until Red approves the swap.
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red confirmed it on 10-22 in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game has shown WTCZ since 10:03 that day: 游戏视觉 swapped Ad_03 in (StreamingAssets `FrontRooms_Ad_01.mp4`, sha1 8bde2101).
 
 
 ### 3.1 How a 1990 UHF independent looked
@@ -116,8 +116,11 @@ Research: `station_1990/NOTES.md` §1.
   - the call letters immediately followed by the city of licence. Only the licensee name or the channel number may go between them;
   - visual-only IDs are legal;
   - required at sign-on, at sign-off and hourly at a natural break;
-  - "TRI-COUNTY" and "STAY TUNED." sit outside that string. **WXRM has no city of licence yet** (narrative chat).
+  - "TRI-COUNTY" and "STAY TUNED." sit outside that string. The city of licence is FAIRVIEW (叙事设计 v2.1), so the legal ID reads `WTCZ-TV 61 FAIRVIEW`.
 - **No permanent corner bug.** The US networks adopted them in autumn 1993. **No corner time and temperature** either: in 1990 the time showed only over the off-air bars (WFLD 32, 1988–89). WeatherStar was cable only. The power-off "burn-in ghost of the station bug" is gone for the same reason.
+  - The KTTV tape of 7 Dec 1989 (board AD-R3) shows the one exception: a FOX 11 logo keyed lower right during a news cut-in, and none over the movie. The game has no news, so no logo appears at all.
+  - Corner marks on the archive tapes are the uploaders' ("31", "Stolen from 31 Rewind", "www.FuzzyMemories.TV"). They are not station bugs.
+- **Off-air bars as aired** (WFLD, 17 Dec 1989; board AD-R2): the station logo keyed at top centre-right; the date `12-17-89` and a running clock keyed bottom right in a blocky, segment-style face. That face came from a time-and-date inserter, not the CG's Helvetica. Our v3.1 bars centre the call, time and date in the CG face. **Proposed v3.2, after the Alpha:** move them to the WFLD layout. It needs a time-and-date face, which means a font check and Red's OK for any download.
 - **Stand-by:** the ID slide or a text card with "TECHNICAL DIFFICULTIES / PLEASE STAND BY", silent or over a music bed, for 20–90 s. Sometimes a few seconds of bars or a frozen bumper come first.
 - **Sign-off order:**
   1. the late movie;
@@ -132,7 +135,14 @@ Research: `station_1990/NOTES.md` §1.
 A Chyron VP-2-class unit, the common local CG of the late 1980s.
 - **Resolution.** 1,510 positions across × 482 scan lines, so type steps in whole scan lines down the screen.
 - **Faces.** Helvetica Medium and Bold, the VP-2's standard faces. TeX Gyre Heros is the shipping stand-in (`FONTS_PERIOD_1990.md`).
-- **Edges.** A 2-line black edge plus a 4-line hard drop shadow (Dubner's presets; the VP-2 has border and drop-shadow modes).
+- **Sizes on the real unit** (checked 2026-10-22 in the VP-2 Operator Handbook, p. 4-10 and the Font Library card; board AD-R3):
+  - a VP-2 shipped with an 18-line Helvetica Medium and a 30-line Helvetica Bold;
+  - the library lists Bold at 30, 44 and 58 lines, and Medium at 18, 30, 44 and 58;
+  - a chip's size is "the number of vertical scanlines they occupy", so its cap height is smaller. My estimate for Helvetica is about 0.7 of the line count; not measured.
+  - **Our ladder (§3.3) is not copied from the chips.** Its caps of 18–48 lines are set for reading at desk distance on a 0.19 m face. This is a deliberate departure, recorded here. Earlier text that called CG 30 and CG 18 "the VP-2's sizes" was wrong and has been removed.
+- **Edges.** A 2-line black edge plus a 4-line hard drop shadow (Dubner's presets).
+  - The VP-2 sets one edge type per character: none, single, continuous (a shadow out to X pixels across and Y lines down) or bordered. Its handbook example is continuous, X 2, Y 4 (Fig. 4-5).
+  - Our edge-plus-shadow therefore follows the Dubner units, not the VP-2.
 - **Colour.** 16 colours from 512. CG white is (219, 219, 219); CG yellow is (219, 219, 36).
 - **No smoothing.** A cheap unit has no anti-aliasing. The generator renders at CG resolution and box-filters across only, so scan-line steps stay.
 - **VT323 retires from the station layer.** It is a terminal face. The office monitors' face is Information Design's (D10).
@@ -148,9 +158,9 @@ Sizes are cap heights in scan lines.
 | Ad / Station / ID Call | Michroma | 40 px type, cap 30 | 40 | +8 % | 0.8 m |
 | Ad / Station / CG 48 | Heros Bold | 48 | 65.8 | +4 % | 1.3 m |
 | Ad / Station / CG 36 | Heros Bold | 36 | 49.4 | +4 % | 1.0 m |
-| Ad / Station / CG 30 | Heros Bold | 30 (the VP-2's Bold size) | 41.2 | +5 % | 0.8 m |
+| Ad / Station / CG 30 | Heros Bold | 30 | 41.2 | +5 % | 0.8 m |
 | Ad / Station / CG 24 | Heros Regular | 24 | 32.9 | +6 % | 0.66 m |
-| Ad / Station / CG 18 | Heros Regular | 18, the floor (the VP-2's Medium size) | 24.7 | +8 % | 0.49 m |
+| Ad / Station / CG 18 | Heros Regular | 18, the floor | 24.7 | +8 % | 0.49 m |
 
 ### 3.4 States (v3, in the dev generator and the Figma masters)
 
@@ -197,7 +207,7 @@ Approved 28 March 1990, revising ECR 1-1978.
 
 From across a room the slate is read as an event: the cut to green. Its words are for walk-up.
 
-For the words to read at 2 m, the cap must reach 73, so size ≈ 100 with one line per card. That is a timing change for Information Design and 系统设计.
+**C09 = 1 (Red, 2026-10-22): screens do not join the warning language in v1,** so the slate stays a proposal. If it ever returns and the words must read at 2 m, the cap must reach 73, so size ≈ 100 with one line per card. That is a timing change for Information Design and 系统设计.
 
 **Hard rules for the slate and anything alarm-like** (`analog_horror/NOTES.md` §1.7, §4). The FCC fines simulated alert tones even in obvious fiction: the Olympus Has Fallen trailer, $1.93M; ABC, $395K; ESPN, $147K in 2024.
 - **Voice.** The slate speaks only for the building, never for a region or an authority.
@@ -266,7 +276,8 @@ The base faces only, re-derived per format. These settings come from the App Sto
 **System screenshots: the watermark (Red, 2026-10-22, via 平面视觉: "以后所有这种图片，首先需要打上Frontroomsss的这个logo水印，然后有一个固定格式").** It applies to verification images and comparison grids; the ad and broadcast art, promos, store media and Figma boards are exempt. Make them with the shared tool `W/tools/shotframe/shotframe.py` (spec `SHOT_FORMAT.md`), never with hand-drawn captions.
 - The white version sits on the ink header band, at the right end, never over the evidence.
 - The echoes start transparent, so they fade from the band: S1 to full ink, S2 to 25 %.
-- The letters are as tall as the title's caps, measured on the ink, not the PNG canvas. Crop the asset's transparent padding first (reviewed 10-22: the padded asset made the letters about 25 % short).
+- The letters are as tall as the title's caps, measured on the ink, not the PNG canvas. The tool already crops the logo's transparent padding when it loads it (`shotframe.py` `_logo()`, line 47). 平面视觉 measured 42 px letters against 42.3 px caps (10-22). My earlier note that the padding made the letters about 25 % short was wrong: I had measured the raw asset, not the tool's output.
+- Clear space: at least half the letter height between the logo and the title or chip (`SHOT_FORMAT.md` §4).
 - Keep at least half the letter height clear between the logo and the title or chip.
 
 **Video (Red, 10-14):** the 16:9 master's lockup, centred, with height = frame height ÷ 7.5.
@@ -284,12 +295,15 @@ The base faces only, re-derived per format. These settings come from the App Sto
 - The questionnaire chip had S2 at 100 %. 系统设计's nine SD sheets are fixed and verified. The playtest form v1 (2946:7087, now in 印刷与演示's section) keeps the old chip as history; v2 (3207:7280 canary, 3227:7424 white) uses Red's light-paper lockup and passes.
 - Everything else passes.
 
-**Proposals, not yet Red's:**
-- portrait-video lockup width = 0.72 × frame width;
-- clear space ≥ 0.5 × lockup height;
-- minimum lockup height 12 px on screen, 4 mm in print.
+**Adopted (Red, 2026-10-22, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐"):**
+- Portrait video: lockup width = 0.72 × frame width.
+- Clear space ≥ 0.5 × lockup height.
+- Minimum lockup height: 12 px on screen, 4 mm in print.
+- The in-game title's S2 (designed at 25 %) may show at about 50 % under Unity's linear-light blending. It gets measured in a clone after the Alpha, and the result goes to Red.
 
-## 7. Open (Red / narrative chat)
+## 7. Decisions and open items
+
+**Answered, Red, 2026-10-22, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐":** C09 = 1 (no screens in the warnings in v1); Ad_03 approved; WTCZ confirmed; A24 option 1; the tube look after the Alpha (requested from 游戏视觉); the 12 downloads approved; no rented phone line; the logo size rules adopted (§6).
 
 ### 7.1 Call-sign checks for the WXRM replacement (2026-10-22, 平面视觉 · 广告)
 

@@ -1,0 +1,13 @@
+seq	frames	flashesMean	flashesMeanMaxPerSec	maxStepMean_cd200	maxStepMeanF	maxStepMeanStage	flashesTop10	flashesTop10MaxPerSec	maxStepTop10_cd200	maxStepTop10F	maxStepTop10Stage
+L0PreCtl_rf0	1700	0	0	-2.055	1379	0	0	0	-11.787	1379	0
+L0PreCtl_rf1	1700	0	0	-0.726	931	0	0	0	5.024	952	0
+L0Pre_rf0	1687	0	0	2.045	382	1	0	0	-11.663	961	1
+L0Pre_rf1	1786	0	0	0.689	1395	2	0	0	5.230	547	1
+OfficePreCtl_rf0	1700	0	0	-1.777	799	0	0	0	-5.929	801	0
+OfficePreCtl_rf1	1700	0	0	-0.445	1264	0	0	0	-1.405	1264	0
+OfficePre_rf0	1593	0	0	-1.749	1413	2	0	0	-5.885	1413	2
+OfficePre_rf1	1730	0	0	-0.478	273	1	0	0	-1.495	273	1
+TallPreCtl_rf0	1700	0	0	-0.507	19	0	0	0	-2.292	19	0
+TallPreCtl_rf1	1700	0	0	0.200	1533	0	0	0	-0.641	917	0
+TallPre_rf0	1750	0	0	-0.734	877	1	0	0	-3.621	877	1
+TallPre_rf1	1760	0	0	0.203	1025	2	0	0	0.892	340	1

@@ -5,14 +5,14 @@ The strings for the blank sign plates are ready. Spec: `Documentation/research/n
 **Exit landing**
 - **EXIT door, stair face:**
   - floor plate at 5 ft: `LEVEL 0`;
-  - re-entry plate below it: `NO RE-ENTRY` / `RE-ENTRY AT LEVEL B1`.
+  - re-entry plate below it: `NO REENTRY` / `NEAREST REENTRY ON LEVEL B1` (**updated 10-22 to NYC LL5 1973 §C26-608.5**; was `NO RE-ENTRY` / `RE-ENTRY AT LEVEL B1`).
 - **Block-wall stencil:** `0` here and `B1` at the far landing. This replaces the placeholder 7/6 seven-segment shapes.
 - **Stair ID sign at about 5 ft on each landing:** `STAIR A` / `LEVEL 0` (or `LEVEL B1`) / `LEVELS 0 TO B1` / `NO ROOF ACCESS`. These are the UBC 1991 §3306(p) contents.
 - **Gate across the up flight:** `NO ACCESS ABOVE THIS LEVEL`.
 
 **Far landing**
 - **Gate across the down flight:** `NO ACCESS BELOW THIS LEVEL`.
-- **Far door, stair face:** `ACCESS ONTO FLOOR THIS LEVEL`.
+- **Far door, stair face:** `REENTRY ON THIS FLOOR` (**updated 10-22, LL5 §C26-608.5**; was `ACCESS ONTO FLOOR THIS LEVEL`).
 - **Placard by the far door:** sheet A with `LEVEL B1` (平面视觉's art).
 
 **Floor numbering**

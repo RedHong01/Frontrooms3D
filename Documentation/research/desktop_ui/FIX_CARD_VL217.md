@@ -79,7 +79,9 @@ All strings go in one constant (`FrontRoomsKeyHud.Strings`, DECISIONS #7/#11/#29
 - Red kept E·1, the eye that opens from the dot.
 - One playtest item tests the Skyrim risk that 信息设计 raised: **"When the crosshair turned into an eye, what did it mean?"** (open answer; code "look / read" vs "being seen").
 - Questionnaire content belongs to 系统设计 (FR-PT04) and its layout to 印刷与演示.
-- If testers read it as "being seen", the switch is E·3's lowered gaze: parameters only (`LOOK` E·3 in the lab, DECISIONS #17).
+- **Coding and switch rule.** The item is in `research/computer_ui/30_crosshair_grammar.md` §8 (系统设计, data 2026-10-22n A23). Answers are coded LOOK/READ, BEING SEEN, OTHER or DIDN'T NOTICE.
+  - **Switch to E·3's lowered gaze when 2 or more testers in one round, or ≥ 25 % of a round, answer BEING SEEN.** 系统设计 proposed it; 平面视觉 accepts it as the rule.
+  - The switch is parameters only (`LOOK` E·3 in the lab, DECISIONS #17).
 
 ## D. Verification
 

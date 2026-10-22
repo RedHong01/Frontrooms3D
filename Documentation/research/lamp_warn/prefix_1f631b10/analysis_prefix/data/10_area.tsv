@@ -1,0 +1,25 @@
+seq	field	blockTransitions	worstConcurrentTransitionsPer1s	worstFlashesPer1s	at_t	field_xy	maxEventsInField
+L0_rf0	field1/3	43	0	0.000	nan	None	0
+L0_rf0	field1/4	43	3	1.500	0.733	(0, 3)	3
+L0_rf0	screen	43	0	0.000	nan	None	0
+L0_rf1	field1/3	26	0	0.000	nan	None	0
+L0_rf1	field1/4	26	2	1.000	1.150	(0, 2)	2
+L0_rf1	screen	26	0	0.000	nan	None	0
+Office_rf0	field1/3	412	0	0.000	nan	None	0
+Office_rf0	field1/4	412	2	1.000	15.567	(11, 0)	4
+Office_rf0	screen	412	0	0.000	nan	None	0
+Office_rf1	field1/3	96	0	0.000	nan	None	0
+Office_rf1	field1/4	96	0	0.000	nan	None	0
+Office_rf1	screen	96	0	0.000	nan	None	0
+Tall_rf0	field1/3	372	0	0.000	nan	None	0
+Tall_rf0	field1/4	372	0	0.000	nan	None	0
+Tall_rf0	screen	372	0	0.000	nan	None	0
+Tall_rf1	field1/3	36	0	0.000	nan	None	0
+Tall_rf1	field1/4	36	0	0.000	nan	None	0
+Tall_rf1	screen	36	0	0.000	nan	None	0
+Placard_rf0	field1/3	342	2	1.000	7.467	(11, 2)	3
+Placard_rf0	field1/4	342	3	1.500	7.467	(15, 10)	4
+Placard_rf0	screen	342	0	0.000	nan	None	0
+Placard_rf1	field1/3	0	0	0.000	nan	None	0
+Placard_rf1	field1/4	0	0	0.000	nan	None	0
+Placard_rf1	screen	0	0	0.000	nan	None	0

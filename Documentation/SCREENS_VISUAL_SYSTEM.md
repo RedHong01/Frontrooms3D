@@ -5,7 +5,7 @@ Red (2026-10-07) gave the TV/computer-ad slice to 平面视觉: "分析消化并
 - Work items live in `GRAPHIC_VISUAL_TASKS.md` §3.
 - The research is in `../Research/week02/furniture-ads/`: `tv_notes.md`, `FINDINGS.md` and `SOURCES.md`. It is reference only and never ships.
 
-> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game's Ad_02 still shows WXRM until Red approves the swap.
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red confirmed it on 10-22 in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game has shown WTCZ since 10:03 that day: 游戏视觉 swapped Ad_03 in (StreamingAssets `FrontRooms_Ad_01.mp4`, sha1 8bde2101).
 
 ## 1. What exists (v0, Codex chat, 2026-10-04)
 
@@ -70,6 +70,8 @@ The research found two type systems stacked in every 1990 local spot: the agency
 
 ## 4. How the screens join the warning language
 
+> **Decided: not in v1.** Red, 2026-10-22, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐" (C09 = 1, the system-side recommendation): one meaning per cue, and the lamps and steps come first. This section stays as a proposal for later.
+
 These are the same events and timing as the wallpaper cue (A + M4 + V1, `GRAPHIC_VISUAL_TASKS.md` §1). Wallpaper, lamps and screens tell one story.
 
 | Game event | Wallpaper | Screens in the same cells |
@@ -112,7 +114,7 @@ Proposal only. 系统设计 and 关卡设计 own the events (driver interface pe
    - VL287 `3230:8391`.
 
 **Next:**
-1. Red approves v3. Then:
+1. **Done 10-22 (Red approved):** Ad_03 rendered (`Tools/screens/out/FrontRooms_Ad_03/`, sha1 8bde2101) and handed to 游戏视觉 for the StreamingAssets swap. The tube look was requested from 游戏视觉 for after the Alpha. Originally planned:
    - the generator moves into `Tools/screens`;
    - Ad_03 is cut (Ad_02's cards plus the v3 station card, the numeral fix and the dealer tag);
    - 游戏视觉 swaps the StreamingAssets file.

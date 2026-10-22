@@ -16,7 +16,7 @@ Nothing here is decided. The open calls for Red are in §8.
 
 The station and broadcast board waits for Red's OK on my download batch (§8.6).
 
-> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game's Ad_02 still shows WXRM until Red approves the swap.
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red confirmed it on 10-22 in the 广告 chat. Older mentions of WXRM in this file mean the same fictional station. The game has shown WTCZ since 10:03 that day: 游戏视觉 swapped Ad_03 in (StreamingAssets `FrontRooms_Ad_01.mp4`, sha1 8bde2101).
 
 ## 1. The idea
 
@@ -153,14 +153,10 @@ Crowds solve fast: P.T. was meant to take a week and fell in about 4 hours, and 
 | Alarm audio: a period bell or horn, EAS-clean, licensed for public use (not Artlist) | 声音设计 |
 | P4's glow ink: a real phosphorescent screen print, not a digital print job, so it has a production lead time. Book a printer early | 印刷与演示, Red (budget) |
 
-## 8. Decisions for Red
+## 8. Decisions (answered: Red, 2026-10-22, in the 平面视觉 · 广告 chat: "C09 选 1，其余全部按推荐")
 
-1. **The furniture store vs A24.**
-   - **A (recommended):** keep it in-game; public pieces lead with the station and the building.
-   - **B:** the narrative chat changes the advertiser's category; Ad_02 and the promo are re-cut.
-   - **C:** keep as is and accept the comparison.
-2. **WXRM → WTCZ: done by 叙事设计 on 10-22 (rule 11).** Red can still veto. The game file changes only with Red's OK on Ad_03.
-3. **Facilities line (B6).** Rent a real number, or skip phones?
-4. **Venue.** Show P1 and P5 at the ArtCenter showcase? Which room, and who gives permission?
-5. **Release date and accounts.** Which Instagram, YouTube or TikTok accounts post, and when the release is. B3's clock needs the date.
-6. **Downloads.** 印刷与演示's Tier 1 batch is in (146 files, 148.7 MB; boards RS01–RS06). Mine still needs your OK: the candidate airchecks and frames listed in the four NOTES files (§3 of each). A short list follows on request.
+1. **The furniture store vs A24: option A (1).** The furniture spots stay in-game. Public pieces lead with the station and the building, with no fax, BBS or store-flyer endpoints. Promo v4 is never published; v5 (station content) comes after the Alpha.
+2. **WXRM → WTCZ-TV 61** (city of licence FAIRVIEW): done by 叙事设计 and confirmed. The game gets it with Ad_03.
+3. **No rented phone line** (B6 dropped). Fictional 555-01xx numbers only.
+4. **Venue (ArtCenter showcase), 5. accounts and release date:** after the Alpha.
+6. **Downloads:** my 12-file batch is approved (`W/reference/ad_reference/DOWNLOAD_TIER1.tsv`). 印刷与演示's Tier 1 is already in.

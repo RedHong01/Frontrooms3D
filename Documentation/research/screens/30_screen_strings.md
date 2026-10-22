@@ -1,6 +1,6 @@
 # On-screen strings: the station, the store and the slates (narrative)
 
-**Status: strings v2.1, 2026-10-22** (v1 2026-10-07). Written by 叙事设计 for 平面视觉 · 广告's broadcast layer (`AD_TYPE_SYSTEM.md` §3, `SCREENS_VISUAL_SYSTEM.md`) and for the still desk screens (A16).
+**Status: strings v2.1, 2026-10-22** (v1 2026-10-07). **WTCZ is final:** Red, in the 平面视觉 · 广告 chat, 2026-10-22: "C09 选 1，其余全部按推荐" (as reported by 广告). That approves Ad_03 with the WTCZ station card for the game, fictional 555-01xx numbers only (no rented line), and A24 option A. Written by 叙事设计 for 平面视觉 · 广告's broadcast layer (`AD_TYPE_SYSTEM.md` §3, `SCREENS_VISUAL_SYSTEM.md`) and for the still desk screens (A16).
 - **Ownership:** narrative owns every word below. 平面视觉 owns type, layout, CG style and separators: · 广告 for the station, · 信息设计 for office screens.
 - **Limits:** v3's CG slots, as measured by 平面视觉 · 广告 (caps; spaces count; inside RP 27.3 title safe, x 66–574 at 640 × 480):
 
@@ -36,10 +36,7 @@
 | Market line | `TRI-COUNTY` | CG 30, 10/18 | Always outside the legal ID |
 | Slogan | `STAY TUNED.` | CG 30, 11/18 | Ordinary on air, but it lands differently in a building you can't leave. Outside the legal ID |
 
-**In the game:**
-- The shipped Ad_02 station card still says WXRM.
-- It changes only with Red's OK in 平面视觉 · 广告's chat, together with Ad_03.
-- No new piece uses WXRM.
+**In the game:** Ad_03 with the WTCZ station card is approved (Red, 10-22, 广告's chat). 广告 renders it from these strings, and 游戏视觉 swaps the StreamingAssets file. Until then the shipped Ad_02 still says WXRM.
 
 ## 2. The store
 
@@ -53,7 +50,7 @@
 - **Town:** `FAIRVIEW`, the station's city, like any local dealer.
 - **Risk:** "Front Room" is a generic phrase that small real shops may use. No national 1990 chain had it, and it is our own title.
 - **Not used:** "EVERYTHING MUST GO", because it is Kane Pixels' episode 25 title (IP distance).
-- **A24 option A/B/C is Red's** (`CAMPAIGN_PLAN.md` §8.1). These strings stand unless Red picks B (a non-furniture advertiser).
+- **A24: option A** (Red, 10-22, 广告's chat). The furniture ad stays, in-game only. Public pieces lead with the station and the building's EGRESS voice (`CAMPAIGN_PLAN.md` §8.1).
 
 ## 3. Ad copy: four cards
 
@@ -134,11 +131,11 @@ WTCZ-TV 61 FAIRVIEW
 - **In-game:** the loop's clock simply loops. It is a picture, not the game's time, and no game state reads it.
 - **Public campaign B3:** the clock runs to the release time, as `CAMPAIGN_PLAN.md` plans.
 
-**Not written yet:** the facilities voicemail script (`CAMPAIGN_PLAN.md` §147). It waits on Red's campaign-execution answer.
+**Not needed:** the facilities voicemail script. Red chose no rented phone line, fictional 555-01xx numbers only (10-22, 广告's chat).
 
 ## 5. The emergency slate (sets cut to it when the chase wave passes)
 
-**Depends on C09** (screens join the warning language): still open, and 系统设计 recommends not in v1. The strings are refit and stay ready.
+**PARKED: C09 = 1, screens do NOT join the warning language in v1** (Red, 10-22, 广告's chat: "C09 选 1，其余全部按推荐"; systems.json 2026-10-22q, W7 parked). TVs stay ambience. The lamps (W1) and steps (W2) carry the warning, and screens never sag or roll on lamp events. The strings below stay as a parked draft for a later build.
 
 **Recommended:**
 

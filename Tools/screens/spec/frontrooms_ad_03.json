@@ -1,0 +1,100 @@
+{
+ "name": "FrontRooms_Ad_03",
+ "about": "WTCZ-TV 61 broadcast loop for in-game CRTs (Ad_03, Red approved 2026-10-22 in the 平面视觉 · 广告 chat). Cards 1-3 = Ad_02; card 4 = Ad_02's sign-off with the dealer tag in the station CG (v3); the station ID card = v3.1 (WTCZ, legal ID). Same 16 s timing as Ad_02 (cuts at 3/7/10/14 s, which 声音设计's S1 loop is built on). Strings: 叙事设计 research/screens/30_screen_strings.md v2.1. Type and layout: AD_TYPE_SYSTEM.md §2-§3.",
+ "raster": [
+  640,
+  480
+ ],
+ "fps": 30,
+ "photo": "photos/Kit_Sofa3_persp.png",
+ "sequence": [
+  {
+   "card": "card1",
+   "seconds": 3.0
+  },
+  {
+   "card": "card2",
+   "seconds": 4.0
+  },
+  {
+   "card": "card3",
+   "seconds": 3.0
+  },
+  {
+   "card": "card4_v3",
+   "seconds": 4.0
+  },
+  {
+   "card": "station_id_v3",
+   "seconds": 2.0
+  }
+ ],
+ "strings": {
+  "brand_script": "Front Rooms",
+  "brand_caps": "FURNITURE",
+  "card1_super": "BACK ROOM CLEARANCE",
+  "card2_headline": "3-PC SOFA SET",
+  "card2_now": "NOW",
+  "card2_price": "499",
+  "card2_was": "WAS $899",
+  "card2_finance": "90 DAYS SAME AS CASH",
+  "card3_lead": "CALL",
+  "card3_phone": "555-0147",
+  "card3_hours": "OPEN 9 TO 9  ·  7 DAYS",
+  "card3_flag": "FREE DELIVERY",
+  "card4_line": "ALWAYS MORE IN THE BACK",
+  "card4_cg": "RT. 41 AT MAIN ST.  ·  555-0147",
+  "station_ring": "61",
+  "station_call": "WTCZ-TV",
+  "station_market": "TRI-COUNTY",
+  "station_short": "WTCZ 61",
+  "station_slogan": "STAY TUNED.",
+  "standby_1": "PLEASE STAND BY",
+  "standby_2": "TECHNICAL DIFFICULTIES",
+  "signoff_1": "THIS CONCLUDES OUR",
+  "signoff_2": "BROADCAST DAY.",
+  "signoff_short": "WXRM 61 SIGNS OFF AT 2 AM",
+  "alarm": [
+   "ALARM IN PROGRESS",
+   "CLOSE DOORS",
+   "BEHIND YOU"
+  ],
+  "legal_id": "WTCZ-TV 61 FAIRVIEW",
+  "notice": [
+   "PORTIONS OF TODAY'S",
+   "PROGRAMS WERE",
+   "MECHANICALLY",
+   "REPRODUCED.",
+   "WE RETURN AT 6 AM.",
+   "GOOD NIGHT."
+  ],
+  "thought_title": "THOUGHT FOR TODAY",
+  "thought": [
+   "THE STEADY WALKER",
+   "GOES FARTHER THAN",
+   "THE ONE WHO RUNS."
+  ],
+  "bars_call": "WTCZ-TV 61",
+  "bars_time": "2:00 AM",
+  "bars_date": "12-01-90",
+  "tag_store": "FRONT ROOMS",
+  "tag_store_2": "FURNITURE",
+  "tag_address": "RT. 41 AT MAIN ST.",
+  "tag_town": "FAIRVIEW",
+  "tag_hours": "OPEN 9 TO 9",
+  "card4_cg_lines": [
+   "RT. 41, FAIRVIEW",
+   "555-0147"
+  ]
+ },
+ "states": [
+  "station_id_slogan_v3",
+  "standby_v3",
+  "thought_v3",
+  "signoff_v3",
+  "signoff_notice_v3",
+  "bars_clock",
+  "tag_v3",
+  "power_off_v3"
+ ]
+}

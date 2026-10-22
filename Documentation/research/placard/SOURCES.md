@@ -105,7 +105,24 @@ Read on 2026-10-22, 07:10–07:40 PDT. **No media was downloaded.** One text PDF
 | S30 | Valve Developer Community, "Test Sign" / "Sign Maker" (Portal 2 test-chamber signs) | https://developer.valvesoftware.com/wiki/Test_Sign ; https://developer.valvesoftware.com/wiki/Sign_Maker | snippet | The sign before each chamber shows icons for the elements and hazards inside and the progress through the set: an in-world legend that teaches rules without a pop-up |
 | S31 | The Portal Wiki, Portal 2 chapter pages (chamber icon sets) | https://theportalwiki.com/wiki/Portal_2_Chapter_1_Introduction | snippet | Hazards listed separately from mechanics on the signs |
 
-### 7.3 Media wanted for the research frame (NOT downloaded; needs Red's OK, one batch)
+### 7.3 Media for the research frame (downloaded 2026-10-22 ~10:0x; Red, in the 平面视觉 chat: "可以下载")
+
+Each file is kept **outside the repo**, one folder per item, under `~/FrontRoomsVisualWork/reference/placard_research/<M#>/`. The research frame is Figma TP05 `3463:7447`: a media row with credits, above the source table.
+- **M8, M9, M10:** downloaded as listed (1,084,076 / 2,162,918 / 1,945,483 bytes), with the credits below.
+- **M5:** `ll_0573.pdf` (836,814 bytes, 50 pages). Page 9 was rendered with PDFKit to `pl_nyc_ll5_1973_p9_signs.png` (2×). The page holds §C26-608.2–.6:
+  - elevator-landing signs with a diagram;
+  - floor numbers in the stair;
+  - stair letters on the occupancy side;
+  - re-entry signs. The exact wording: "NO REENTRY FROM THIS STAIR", "REENTRY ON THIS FLOOR", "NO REENTRY, NEAREST REENTRY ON THE ___ AND ___ FLOORS".
+- **M12:** the free preview `ISO-23601-2020_preview.pdf` (379,925 bytes, 11 pages), fetched because no cached copy survived. Figure 1 sits on PDF page 11 (text page 5), so the "page 5" above means the text page.
+  - Rendered to `tp_iso23601_p11_text_p5.png`, and cropped to `tp_iso23601_fig1_arrow.png` (the figure plus §7.3 c–f).
+- **M11 (Portal 2 chamber sign): NOT obtained.**
+  - The Valve Developer Community page sits behind an anti-bot check, which must not be bypassed.
+  - theportalwiki.com refused the connection from this machine.
+  - Steam's 12 official store screenshots were checked as thumbnails, in a temp folder, deleted after. None shows a chamber sign; one shows in-world exit pictograms only.
+  - **Dropped:** Red, 2026-10-22, in the 平面视觉 chat: "不要了". The research frame stands without it.
+
+**The list as approved:**
 
 | # | Proposed file | Source | Size (approx.) | Licence | Why |
 |---|---|---|---|---|---|

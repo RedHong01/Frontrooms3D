@@ -66,7 +66,7 @@ Each folder holds the v3 file names, so `Tools/lookdev/pack_evac_plan.py` reads 
 - `regions`: plan, legend, alarm block and title block, as `[x, y, w, h]` in sheet mm from the top-left, with each region's smallest cap. They replace the legend rect that was measured by eye on v3.
 - `transcript`: the lines in reading order. `\u0001` marks a glow line.
 - Keep the kit's `texelsPerMetre` (the packed texture's density).
-- The transcript must match the printed sheet, so they ship together. **Strings signed by 叙事 on 2026-10-22** (`Documentation/research/narrative/40_floors_exit_tutorial_strings.md` §3): `1 WALK, DO NOT RUN.`; line 4 `KEY AT SECURITY DESK.`; legend `SECURITY` / `DESK (KEY)`; plan `SECURITY DESK`. Regenerated 2026-10-22 09:1x: `sheetA/` print md5 96f4b0df…, glow 99ea4ac6… (unchanged); `sheetA_phase0/` print dcf46c7a…, glow 0f42609b… (unchanged). Earlier prints b819a8a9… / c3bd0af5… are superseded.
+- The transcript must match the printed sheet, so they ship together. **Strings signed by 叙事 on 2026-10-22** (`Documentation/research/narrative/40_floors_exit_tutorial_strings.md` §3): `1 WALK, DO NOT RUN.`; line 4 `KEY AT SECURITY DESK.`; legend `SECURITY` / `DESK (KEY)`; plan `SECURITY DESK`. Regenerated 2026-10-22 09:1x, then 10:2x for 叙事's `NO REENTRY` (the start-door label in the NYC LL5 1973 §C26-608.5 form, no hyphen). Current: `sheetA/` print md5 **59705857…**, glow 99ea4ac6… (unchanged); `sheetA_phase0/` print **60fd4cf1…**, glow 0f42609b… (unchanged). Superseded: b819a8a9… / c3bd0af5… (DRAFT) and 96f4b0df… / dcf46c7a… (09:1x).
 
 **Glow mask:** YOU ARE HERE, the route, the stair door (with the padlock in the full sheet) and its EXIT. Words and the red block do not glow. k stays 0.158; re-check the dark ratio (≥ 1.30) after packing.
 

@@ -1,12 +1,12 @@
-# The WXRM loop: content for the beacon and the title TV (tutorial S1)
+# The station loop (WTCZ, was WXRM): content for the beacon and the title TV (tutorial S1)
 
 From 平面视觉 · 广告, 2026-10-22, for 声音设计's S1 (`research/tutorial/20_requests.md`). Red approved the tutorial in the 教程设计 chat on 2026-10-22: "全部按推荐（T1=A，T2=E1，T3 静止屏，T5 去掉文字卡，T6 标题电视带声音）".
 
-The picture stays **Ad_02**, unchanged: `Assets/StreamingAssets/FrontRooms_Ad_01.mp4`, sha1 058d2e28, 640 × 480, 30 fps, 16 s, hard cuts.
+The picture is **Ad_03** (since 10-22 10:03): `Assets/StreamingAssets/FrontRooms_Ad_01.mp4`, sha1 8bde2101, 640 × 480, 30 fps, 16 s, hard cuts. It keeps Ad_02's cuts to the frame, so the timing below is unchanged.
 
 This note says what plays when, so the sound lands on the picture. The sound design itself is 声音设计's.
 
-> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red was told, not asked, and can still veto in the 广告 chat. The ident is music only and says no call letters, so the sound needs no change for the rename. The game's Ad_02 still shows WXRM until Red approves the swap.
+> **2026-10-22: the station is now WTCZ-TV 61** (city of licence FAIRVIEW). WXRM was a real call sign (WXRM-LP, NJ), so 叙事设计 renamed it under rule 11 (no real stations; `research/screens/30_screen_strings.md` v2.1, check record in `AD_TYPE_SYSTEM.md` §7.1). Red confirmed it on 10-22 in the 广告 chat. The ident is music only and says no call letters, so the sound needs no change for the rename.
 
 ## 1. The picture, second by second
 
@@ -15,8 +15,8 @@ This note says what plays when, so the sound lands on the picture. The sound des
 | 0.0–3.0 | 0–6 | 1 · Store + sale | Chevron mark, "Front Rooms" script, FURNITURE; super BACK ROOM CLEARANCE |
 | 3.0–7.0 | 6–14 | 2 · Product + price | 3-PC SOFA SET, the sofa photo, NOW $499, WAS $899, 90 DAYS SAME AS CASH |
 | 7.0–10.0 | 14–20 | 3 · Call | CALL 555-0147, OPEN 9 TO 9 · 7 DAYS, FREE DELIVERY |
-| 10.0–14.0 | 20–28 | 4 · Sign-off + tag | The lockup, ALWAYS MORE IN THE BACK, the address tag |
-| 14.0–16.0 | 28–32 | Station ID | The 61 ring, WXRM-TV, TRI-COUNTY |
+| 10.0–14.0 | 20–28 | 4 · Sign-off + tag | The lockup, ALWAYS MORE IN THE BACK, then the CG tag RT. 41, FAIRVIEW / 555-0147 |
+| 14.0–16.0 | 28–32 | Station ID | The 61 ring, WTCZ-TV, TRI-COUNTY, legal ID WTCZ-TV 61 FAIRVIEW |
 | 16.0 = 0.0 | 32 = 0 | Loop | Back to card 1 |
 
 At 120 BPM every cut falls on a beat: 3, 7, 10 and 14 s are beats 6, 14, 20 and 28. The loop is 32 beats, 8 bars of 4/4.
@@ -24,7 +24,7 @@ At 120 BPM every cut falls on a beat: 3, 7, 10 and 14 s are beats 6, 14, 20 and 
 ## 2. What to play when (proposal)
 
 - **0–14 s: the FRONT ROOMS jingle** under the four store cards. A hit on each cut (3, 7, 10, 14 s) marks the card change, as in the promo.
-- **14–16 s: the WXRM ident** under the station-ID card: one bar.
+- **14–16 s: the WTCZ ident** under the station-ID card: one bar.
 - **The loop seam (16 → 0):** the ident's tail rings into the jingle's downbeat. No gap, no fade.
 
 **Starting material:** the promo's synthesised stems.
